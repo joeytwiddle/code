@@ -2,8 +2,6 @@
 <project version="3" relativePaths="false">
   <component name="FileEditorManager">
     <history>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/StaticsMenu.java" line="5" column="33" vertical-scroll-proportion="0.103174604" horizontal-scroll-proportion="0.40384614" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/LargeCapacityJMenu.java" line="5" column="13" vertical-scroll-proportion="0.103174604" horizontal-scroll-proportion="0.1590909" />
       <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/LazyJMenu.java" line="43" column="51" vertical-scroll-proportion="0.15076923" horizontal-scroll-proportion="0.6241259">
         <folding>
           <element signature="imports" expanded="true" />
@@ -16,62 +14,68 @@
           <element signature="method#addConstructorToMenu#0;class#VisualJavaGUIStatics" expanded="false" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="21" column="37" vertical-scroll-proportion="0.5538847" horizontal-scroll-proportion="0.3043478" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="173" column="52" vertical-scroll-proportion="0.96240604" horizontal-scroll-proportion="0.42773208">
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="21" column="37" vertical-scroll-proportion="0.35079366" horizontal-scroll-proportion="0.4527972" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="173" column="52" vertical-scroll-proportion="1.0131927" horizontal-scroll-proportion="0.6363636">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="64" column="59" vertical-scroll-proportion="0.90225565" horizontal-scroll-proportion="0.46415982">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="64" column="59" vertical-scroll-proportion="0.9498681" horizontal-scroll-proportion="0.69055945">
         <folding>
           <element signature="imports" expanded="true" />
           <element signature="method#MethodFrame#0;class#MethodFrame" expanded="false" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/Assertion.java" line="11" column="56" vertical-scroll-proportion="0.358396" horizontal-scroll-proportion="0.46063456" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/CanAcceptDroppedObject.java" line="5" column="17" vertical-scroll-proportion="0.16290727" horizontal-scroll-proportion="0.13983549" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="62" column="54" vertical-scroll-proportion="0.25062656" horizontal-scroll-proportion="0.44418332">
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/Assertion.java" line="11" column="56" vertical-scroll-proportion="0.3773087" horizontal-scroll-proportion="0.6853147" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/CanAcceptDroppedObject.java" line="5" column="17" vertical-scroll-proportion="0.17150396" horizontal-scroll-proportion="0.20804195" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/HasObject.java" line="6" column="18" vertical-scroll-proportion="0.20580475" horizontal-scroll-proportion="0.22027972" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/BooleanChooser.java" line="8" column="18" vertical-scroll-proportion="0.20580475" horizontal-scroll-proportion="0.22027972" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="82" column="60" vertical-scroll-proportion="2.3060687" horizontal-scroll-proportion="0.73426574">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/HasObject.java" line="6" column="18" vertical-scroll-proportion="0.19548872" horizontal-scroll-proportion="0.14806111" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/BooleanChooser.java" line="8" column="18" vertical-scroll-proportion="0.19548872" horizontal-scroll-proportion="0.14806111" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="24" column="17" vertical-scroll-proportion="0.358396" horizontal-scroll-proportion="0.13983549" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="31" column="12" vertical-scroll-proportion="0.31578946" horizontal-scroll-proportion="0.0987074">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="25" column="14" vertical-scroll-proportion="0.3773087" horizontal-scroll-proportion="0.17132868" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="23" column="32" vertical-scroll-proportion="0.35883906" horizontal-scroll-proportion="0.3916084" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DragAndDropManager.java" line="44" column="0" vertical-scroll-proportion="-0.5778364" horizontal-scroll-proportion="0.0">
+        <folding>
+          <element signature="imports" expanded="true" />
+        </folding>
+      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="33" column="23" vertical-scroll-proportion="0.1530343" horizontal-scroll-proportion="0.28146854">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
     </history>
     <open-files>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="64" column="59" vertical-scroll-proportion="0.90225565" horizontal-scroll-proportion="0.46415982">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="64" column="59" vertical-scroll-proportion="0.9498681" horizontal-scroll-proportion="0.69055945">
         <folding>
           <element signature="imports" expanded="true" />
           <element signature="method#MethodFrame#0;class#MethodFrame" expanded="false" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="31" column="12" vertical-scroll-proportion="0.31578946" horizontal-scroll-proportion="0.0987074" selected="true">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="82" column="60" vertical-scroll-proportion="2.3060687" horizontal-scroll-proportion="0.73426574">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/HasObject.java" line="6" column="18" vertical-scroll-proportion="0.19548872" horizontal-scroll-proportion="0.14806111" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/BooleanChooser.java" line="8" column="18" vertical-scroll-proportion="0.19548872" horizontal-scroll-proportion="0.14806111" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/CanAcceptDroppedObject.java" line="5" column="17" vertical-scroll-proportion="0.16290727" horizontal-scroll-proportion="0.13983549" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="24" column="17" vertical-scroll-proportion="0.358396" horizontal-scroll-proportion="0.13983549" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="62" column="54" vertical-scroll-proportion="0.25062656" horizontal-scroll-proportion="0.44418332">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/HasObject.java" line="6" column="18" vertical-scroll-proportion="0.20580475" horizontal-scroll-proportion="0.22027972" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/BooleanChooser.java" line="8" column="18" vertical-scroll-proportion="0.20580475" horizontal-scroll-proportion="0.22027972" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/CanAcceptDroppedObject.java" line="5" column="17" vertical-scroll-proportion="0.17150396" horizontal-scroll-proportion="0.20804195" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="25" column="14" vertical-scroll-proportion="0.3773087" horizontal-scroll-proportion="0.17132868" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="23" column="32" vertical-scroll-proportion="0.35883906" horizontal-scroll-proportion="0.3916084" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="33" column="23" vertical-scroll-proportion="0.1530343" horizontal-scroll-proportion="0.28146854" selected="true">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/Assertion.java" line="11" column="56" vertical-scroll-proportion="0.358396" horizontal-scroll-proportion="0.46063456" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="21" column="37" vertical-scroll-proportion="0.5538847" horizontal-scroll-proportion="0.3043478" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="173" column="52" vertical-scroll-proportion="0.96240604" horizontal-scroll-proportion="0.42773208">
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DragAndDropManager.java" line="44" column="0" vertical-scroll-proportion="-0.5778364" horizontal-scroll-proportion="0.0">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/Assertion.java" line="11" column="56" vertical-scroll-proportion="0.3773087" horizontal-scroll-proportion="0.6853147" />
     </open-files>
   </component>
   <component name="ToolWindowManager">
@@ -85,7 +89,7 @@
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="2" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33" order="6" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="sliding" type="sliding" visible="false" weight="0.4" order="0" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.29847494" order="0" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="true" weight="0.29847494" order="0" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.3252688" order="10" x="542" y="239" width="656" height="269" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="1" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33064517" order="1" />

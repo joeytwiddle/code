@@ -3,6 +3,7 @@ package visualjava;
 import org.neuralyte.common.swing.LargeCapacityJMenu;
 import org.neuralyte.common.swing.Moveability;
 import org.neuralyte.common.swing.SplittingJMenu;
+import org.neuralyte.common.swing.DragAndDropManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -36,7 +37,7 @@ public class ObjectIcon extends JLabel implements HasObject {
         addPopupMenuTo(this);
         // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],obj);
         // Moveability.allowUserToMove(this); // Implied by:
-        Moveability.hasObjectCanBeDropped(this);
+        DragAndDropManager.hasObjectCanBeDropped(this);
     }
 
 	void addPopupMenuTo(Component thing) {

@@ -13,6 +13,10 @@ LOL, maybe we could make it a boolean option somewhere!
 
 BUGS:
 
+Only the last DropTarget created seem to notice mouseEntered and Exits.  All should!
+Ah no.  The problem is that InnerFrames which are not focused, do not pass mouse events to their children.
+This is also why we have trouble when we bring the moving icons to the front.
+
 Array ObjectIcons do not work.
 Maybe we should opt to make Vector's / Arrays transparantly equivalent to the user.
 Yeah!
