@@ -49,7 +49,8 @@ export RSYNC_RSH="ssh-agent ssh"
 # --size-only is pretty speedy but skips some checksums.
 # -z is for compression of data transfer.  =)
 
-COMMONPARAMS="-a --delete -z -P -vv"
+# COMMONPARAMS="-a --delete -z -P -vv"
+COMMONPARAMS="-a --delete -z --partial -v --stats"
 # COMMONPARAMS="-a --delete -z -P -vv"
 # COMMONPARAMS="$COMMONPARAMS --size-only"
 # COMMONPARAMS="$COMMONPARAMS -n"
