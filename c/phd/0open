@@ -1,5 +1,8 @@
+echo
+echo "Opening $1"
+echo
 gunzip -f images/$1.bmp.gz
 gunzip -f images/regs/$1.bmp.gz
 gunzip -f images/bin/$1.bmp.gz
 gunzip -f images/bin/regs$1/*.gz
-gunzip -f images/pp/$1*/*.gz
+# gunzip -f images/pp/$1*/*.gz

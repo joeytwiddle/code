@@ -1,10 +1,15 @@
-# Must remove rm's!
+echo
+echo "Closing $1"
+echo
 
-# /usr/xpg4/bin/rm -f images/$1.bmp*
-# /usr/xpg4/bin/rm -f images/regs/$1.bmp
-# /usr/xpg4/bin/rm -f images/bin/$1.bmp
 gzip -f images/$1.bmp*
 gzip -f images/regs/$1.bmp
 gzip -f images/bin/$1.bmp
 gzip -f images/bin/regs$1/*
-gzip -f images/pp/$1*/*
+# gzip -f images/pp/$1*/*
+
+# When really needing to save space
+# Weird rm was some problem on tao
+# /usr/xpg4/bin/rm -f images/$1.bmp*
+# /usr/xpg4/bin/rm -f images/regs/$1.bmp
+# /usr/xpg4/bin/rm -f images/bin/$1.bmp
