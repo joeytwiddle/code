@@ -234,12 +234,12 @@ public:
       for (int i=0;i<=1;i++)
       for (int j=0;j<=1;j++)
       for (int k=0;k<=1;k++) {
-        Octree<Object> s=sub[i][j][k];
-        int r=f->include(s.cen,s.myradius+s.largestobject);
+        Octree<Object> *s=&sub[i][j][k];
+        int r=f->include(s->cen,s->myradius+s->largestobject);
         if (r==2)
-          s.addobjstolist(n);
+          s->addobjstolist(n);
         if (r==1)
-          s.collectclipping(f,n);
+          s->collectclipping(f,n);
         // Otherwise ignore
       }
     } else {

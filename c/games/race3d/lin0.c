@@ -17,7 +17,21 @@
 #define QUIET
 
 // #define ALLEGRO
-#include <joeylib.h>
+// #include <joeylib.h>
+#include <maths.h>
+#include <timer.h>
+#include <myrgb.h>
+#include <polygon2d.h>
+#include <v3d.h>
+#include <ori.h>
+#include <line3d.h>
+#include <plane.h>
+#include <writeable.h>
+#include <maps.h>
+#include <jbmp.h>
+#include <pp.h>
+#include <frustrum.h>
+#include <octree.h>
 
 #define REDEFINE
 #include "define.c"
@@ -122,6 +136,9 @@ void line(V3d a,V3d b) {
 	plotline(prepare(a),prepare(b),1);
 }
 
+// OrderedList<V3d> particles=OrderedList<V3d>();
+List<V3d> particles=List<V3d>();
+
 void plotscene() {
 	left.clear(0);
 	right.clear(0);
@@ -130,7 +147,8 @@ void plotscene() {
 	// printf("pos = %s\nori = %s\n",pos.toString(),ori.toString());
 	//  List<V3d> particles=*octree.getsimplelist();
 	//  List<V3d> particles=*octree.getclippedlist(f);
-	OrderedList<V3d> particles=*octree.getorderedlist(f);
+	// OrderedList<V3d> particles=*octree.getorderedlist(f);
+	octree.collectclipping(&f,&particles);
 	//line(f.left.pos,f.left.pos+f.left.nor/5.0);
 	//  line(f.left.pos,f.top.pos);
 	//  line(f.right.pos,f.top.pos);
@@ -145,7 +163,8 @@ void plotscene() {
 		// int c=7.0-chop(6.0*(i/particles.len),0,6);
 		plotsphere(cen,c);
 	}
-	particles.freestruct();
+	particles.clear();
+	// particles.freestruct();
 }    
 
 void writescreen() {
@@ -231,7 +250,7 @@ void init() {
 	SDL_Event event;
 	do {
 		t=t+0.03;
-		V3d from=V3d::rotate(14.0*V3d::k,V3d::j,t)+12.0*V3d::j*sin(t*0.02);
+		V3d from=V3d::rotate(14.0*V3d::k,V3d::j,t); // +12.0*V3d::j*sin(t*0.02);
 		ori.forcez(from.neg());
 		pos=from;
 		plotscene();

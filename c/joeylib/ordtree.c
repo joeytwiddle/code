@@ -9,15 +9,6 @@ public:
   OrderedList<Object> *right;
   int len;
   int mynum; // equiavenlt equiaveltn euqlaievtn equiaveltnt equivalent to 1 + no added on left =)
-  void freedom() {
-    free(o);
-    destroy(left);
-    destroy(right);
-  }
-  void freestruct() {
-    destroystruct(left);
-    destroystruct(right);
-  }
   OrderedList() {
     len=0;
     o=NULL;
@@ -29,17 +20,38 @@ public:
     if (o==NULL) {
       o=op;
       hash=hashp;
-      left=new OrderedList<Object>();
-      right=new OrderedList<Object>();
+		if (left==NULL)
+			left=new OrderedList<Object>();
+		if (right==NULL)
+			right=new OrderedList<Object>();
       mynum=1;
     } else {
       if (hashp<hash) {
         left->add(op,hashp);
         mynum++;
       } else
-      right->add(op,hashp);
+			right->add(op,hashp);
     }
 //    printf("Added\n");
+  }
+  void clear() {
+	  if (o!=NULL) {
+		  o=NULL;
+		  if (left!=NULL)
+			  left->clear();
+		  if (right!=NULL)
+			  right->clear();
+	  }
+		len=0;
+	}
+  void freedom() {
+    free(o);
+    destroy(left);
+    destroy(right);
+  }
+  void freestruct() {
+    destroystruct(left);
+    destroystruct(right);
   }
   Object *p2num(int n) {
     // printf("Asked for num %i of a list with %i.\n",n,mynum);
@@ -51,7 +63,7 @@ public:
       if (n<mynum)
         return left->p2num(n);
       else
-      return right->p2num(n-mynum);
+			return right->p2num(n-mynum);
     }
   }
   Object num(int n) {

@@ -11,9 +11,9 @@ V3d Matrix::operator*(V3d u) {
 }
 
 Matrix::Matrix() {
-  v=new (float*)[2];
-  for (int i=0;i<=2;i++)
-  v[i]=new float[2];
+  // v=new (float*)[2];
+  // for (int i=0;i<=2;i++)
+  // v[i]=new float[2];
 }
 
 fillup Matrix Matrix::rotation(V3d axis,float ang) {
