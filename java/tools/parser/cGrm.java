@@ -101,8 +101,8 @@ public class cGrm {
         rule.add(new Text(""));
     ruleset.replacements.put("h",rule);
 
-    // Although the repeated RHS are inefficient in terms of space,
-    // they are not inefficient when parsing, since the RHS
+    // Although the repeated RHS are unaesthetic,
+    // they are OK when parsing, since the RHS
     // if only reached when the LHS is satisfied.
     ruleset=new RuleSet("HashCom");
       rulesets.add(ruleset);
@@ -119,15 +119,13 @@ public class cGrm {
         rule.add(new Atom("NL"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Text("#"));
-        rule.add(new Text("def"));
+        rule.add(new Text("#def"));
         rule.add(new Var("more","\n"));
         rule.add(new Atom("OptSpc"));
         rule.add(new Atom("NL"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Text("#"));
-        rule.add(new Text("ifdef"));
+        rule.add(new Text("#ifdef"));
         rule.add(new Var("more","\n"));
         rule.add(new Atom("OptSpc"));
         rule.add(new Atom("NL"));
@@ -657,12 +655,6 @@ public class cGrm {
         rule.add(new Text("static"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Text("fillin"));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text("fillup"));
-      ruleset.add(rule);
-      rule=new Vector();
         rule.add(new Text("virtual"));
       ruleset.add(rule);
       rule=new Vector();
@@ -683,10 +675,39 @@ public class cGrm {
       rule=new Vector();
         rule.add(new Text("static"));
       ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Fillin"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Fillup"));
+      ruleset.add(rule);
     // Replacements
     rule=new Vector();
       rule.add( new ActiveReplacement() { public String replace() {  String val=match.string.toString(); if ( val.equals("virtual") || val.equals("static") || val.equals("fillin") /* && match.getUp("Class")==null */ ) return ""; else return ""+match.string;  } } );
     ruleset.replacements.put("c",rule);
+
+    //          | "fillin"
+    //          | "fillup"
+
+    ruleset=new RuleSet("Fillin");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("fillin"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("// fillin"));
+    ruleset.replacements.put("c",rule);
+
+    ruleset=new RuleSet("Fillup");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("fillup"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("// fillup"));
+    ruleset.replacements.put("h",rule);
 
     ruleset=new RuleSet("VarBeing");
       rulesets.add(ruleset);
@@ -721,8 +742,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("OptVarMods"));
+      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));
@@ -745,8 +766,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("OptVarMods"));
+      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));

@@ -182,8 +182,6 @@ OptVarMods = OptVarMod OptWS OptVarMods
 OptVarMod = "public"
           | "private"
           | "static"
-          | "fillin"
-          | "fillup"
           | "virtual"
           | "abstract"
           | "extern"
@@ -191,7 +189,18 @@ OptVarMod = "public"
           | "signed"
           | "const"
           | "static"
+					| Fillin
+					| Fillup
 c: ` String val=match.string.toString(); if ( val.equals("virtual") || val.equals("static") || val.equals("fillin") /* && match.getUp("Class")==null */ ) return ""; else return ""+match.string; `
+
+#          | "fillin"
+#          | "fillup"
+
+Fillin = "fillin"
+c: "// fillin"
+
+Fillup = "fillup"
+h: "// fillup"
 
 VarBeing = OptWS "=" OptWS <varbeing/";">
 
@@ -201,11 +210,11 @@ VariableDecl = VariableDeclBeing
              | VariableDeclExist
 
 VariableDeclExist = OptVarMods VarType WS VarNames ";"
-h: ` return ( match.getUp("Class")==null ? "extern " : "" ); ` OptVarMods VarType WS VarNames "; // Exists"
+h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Exists"
 c: ` return ( match.getUp("Class")==null ? match.renderString("normal") : "// Variable declared in .h file" ); `
 
 VariableDeclBeing = OptVarMods VarType WS VarNames VarBeing ";"
-h: ` return ( match.getUp("Class")==null ? "extern " : "" ); ` OptVarMods VarType WS VarNames "; // Variable initialised in .c file"
+h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Variable initialised in .c file"
 c: OptVarMods VarType WS Class^<name> ` Match cls=match.getUp("Class"); return ( cls==null ? "" : "::" ); ` VarNames VarBeing ";"
 
 VarType = ArgType
