@@ -97,11 +97,13 @@ for DOCUMENT in $DOCUMENTS; do
 									echo
 									echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
 									echo
+
 									simone "$IFILE" $roll $yaw $pitch -imgnoise $NOISE
+
 									FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
 									echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
-									mv genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
-									mv ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
+									cp genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
+									cp ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
 									extractone $roll $yaw $pitch >> "$RES"
 									gzip res/genres-r$roll-y$yaw-p$pitch.txt
 									gzip res/ppres-r$roll-y$yaw-p$pitch.txt
