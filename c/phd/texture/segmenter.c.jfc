@@ -1,0 +1,16 @@
+
+Lines in segmenter.c not present in ../oldtexture/segmenter.c:
+
+105 :     printf("Scanning %i X %i\n",image->width/windres,image->height/windres);
+108 :     if (((i/windres) % 20) == 0)
+
+Lines in ../oldtexture/segmenter.c not present in segmenter.c:
+
+107 :     if (((i/windres) % 5) == 0)
+110 : printf("a%i\n",j);
+112 : printf("b\n");
+114 : printf("c\n");
+116 : printf("d\n");
+119 : printf("e\n");
+121 : printf("f\n");
+123 : printf("g\n");

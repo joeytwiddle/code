@@ -1,0 +1,1 @@
+forall /j/images/*.bmp do locthr %w /j/images/regs/%stop.bmp : cp total.bmp /j/images/bin/%s.bmp

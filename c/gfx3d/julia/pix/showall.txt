@@ -1,0 +1,2 @@
+for %f in (*.bmp) do alshow %f
+exit

@@ -1,0 +1,1 @@
+blob /j/images/$1.bmp /j/images/regs/$1.bmp /j/images/blobs/$1.bmp -inv

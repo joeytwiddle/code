@@ -1,0 +1,105 @@
+#ifndef line2d_H
+  #define line2d_H
+
+//
+
+
+//class Line2d;
+//void flibble(Line2d,int);
+//void fobble(V2d);
+
+// a=one end, b=the other
+// (used to be a=one end, b=direction, but not any more!)
+
+class Line2d {
+public:
+  V2d a,b; // Exists
+
+  float length; // Exists
+
+// Don't know what these were for!  Some PhD stuff no doubt.
+//  List<List<Line2d *> > ls;//=List<List<Line2d *> >();//2,List<Line2d *>());
+//  List<List<int> > es;//=List<List<int> >(2,List<int>());
+//  bool allusedup;
+
+   Line2d(); // Method
+
+   Line2d(V2d aa,V2d bb); // Method
+
+  void refresh(); // Method
+
+  void swapends(); // Method
+
+  float findintersectionnum(Line2d *o); // Method
+
+  float findintersectionnum(Line2d o); // Method
+
+//
+
+  V2d *findintersectionornull(Line2d o); // Method
+
+  V2d findintersection(Line2d o); // Method
+
+  V2d intersection(Line2d o); // Method
+
+  V2d intersect(Line2d o); // Method
+
+  bool crosses(Line2d *o); // Method
+
+  bool crosses(Line2d o); // Method
+
+  V2d end(int i); // Method
+
+  Line2d operator+(V2d v); // Method
+
+  Line2d operator*(float f); // Method
+
+
+  String toString(); // Method
+
+
+  static float getlen(Line2d l); // Method
+
+
+  // Set intersection point only if lines are not parallel
+  void setintifnotpar(Line2d ol,V2d *in); // Method
+
+
+  void clipbyrectangle(float l,float t,float r,float bo); // Method
+
+
+  V2d center(); // Method
+
+
+  int whichsideis(V2d v); // Method
+
+
+  Line2d expandedBy(float dist); // Method
+
+  Line2d expandedForever(); // Method
+
+  Line2d expandedTo(float wid); // Method
+
+
+};
+
+Line2d operator*(float f,Line2d l); // Method
+
+
+class QuadsLine2d : public Line2d {
+public:
+  // Don't know what these were for!  Some PhD stuff no doubt.
+  List<List<QuadsLine2d *> > ls; // Exists//=List<List<Line2d *> >();//2,List<Line2d *>());
+  List<List<int> > es; // Exists//=List<List<int> >(2,List<int>());
+  bool allusedup; // Exists
+
+   QuadsLine2d(); // Method
+
+   QuadsLine2d(V2d aa,V2d bb); // Method
+
+  QuadsLine2d operator*(float f); // Method
+
+
+};
+
+#endif

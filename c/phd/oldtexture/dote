@@ -1,0 +1,2 @@
+rm testdata.dat
+forall ../images/*.bmp do getres %s

@@ -1,0 +1,7 @@
+#hist -i image.bmp -q 8 -r 10 -s 0.2
+#hist -i image.bmp -q 8 -r 5 -s 0.25 -v 0.15
+#hist -i original.bmp -q 20 -r 20 -s 0.25 -v 0.15
+hist -i original.bmp -q 20 -r 20 -s 0.25 -v 0.15
+
+h2
+h3

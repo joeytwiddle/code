@@ -1,0 +1,1 @@
+forall -shell in rest.txt do 0all %s

@@ -1,0 +1,5 @@
+-001/5- convert meas001.bmp -geom 400 /home/pgrad/pclark/solaris/../paperimages/chem012meas001.ps
+-002/5- convert meas002.bmp -geom 400 /home/pgrad/pclark/solaris/../paperimages/chem012meas002.ps
+-003/5- convert meas003.bmp -geom 400 /home/pgrad/pclark/solaris/../paperimages/chem012meas003.ps
+-004/5- convert meas004.bmp -geom 400 /home/pgrad/pclark/solaris/../paperimages/chem012meas004.ps
+-005/5- convert meas005.bmp -geom 400 /home/pgrad/pclark/solaris/../paperimages/chem012meas005.ps

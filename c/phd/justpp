@@ -1,0 +1,5 @@
+0open $1
+cd projprof
+getregres $*
+cd ..
+0close $1

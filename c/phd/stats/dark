@@ -1,0 +1,3 @@
+thresh -i grey.bmp -r 10 -t 0.5 -o s3dark.bmp
+thresh -i grey.bmp -r 10 -t 0.9 -o darktmp.bmp
+invert -i darktmp.bmp -o s4dark.bmp

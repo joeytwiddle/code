@@ -1,0 +1,33 @@
+//start_frame 1
+//end_frame 30
+//total_frames end_frame
+
+//define thru frame/total_frames
+
+define thru 0.15
+
+static define pi 3.141592654
+static define inf 50
+
+define camera rotate(<0,1,-3>,<0,1,0>,-thru)
+
+light rotate(<-8,8,-20>,<0,1,0>,-thru)
+
+viewpoint {
+    from camera
+    at <0,0,0>
+    resolution 420,300
+    aspect 280/200
+    angle 50
+    }
+
+static define jul_text
+    texture {
+        special surface {
+            color <0.5,0,0.5>
+            ambient 0.4
+            diffuse 0.8
+        }
+    }
+
+include "julia.inc"

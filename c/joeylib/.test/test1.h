@@ -1,0 +1,2 @@
+int the_constant;
+

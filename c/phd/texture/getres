@@ -1,0 +1,19 @@
+# echo Warning: getres will crash on images without exp
+# jnn test $1 -wskip 2
+
+jnn scan $1 -wskip 2 -mr 2
+
+#smoothandthresh textseg.bmp final.bmp
+#mv final.bmp ../images/regs/sm/$1.bmp
+
+mv windowmeas.bmp ../images/regs/prob/$1.bmp
+# gzip -f ../images/regs/prob/$1.bmp
+mv textseg.bmp ../images/regs/$1.bmp
+mv meas005.bmp meas5res/$1.bmp
+gzip -f meas5res/$1.bmp &
+
+cd /home/pgrad/pclark/images/regs/
+smandblob $1
+
+# Unix: blob ../images/$1.bmp textseg.bmp results/$1blob.bmp
+#blob ../images/$1.bmp ../images/regs/$1.bmp blobbed/$1.bmp -hue 0.5 -g 0.7 -dl 0.3

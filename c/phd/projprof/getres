@@ -1,0 +1,1 @@
+forall ../images/bin/regs$1/reg*.bmp do getregres $1 %n

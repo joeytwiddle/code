@@ -1,0 +1,1 @@
+@edit current.c

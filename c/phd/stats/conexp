@@ -1,0 +1,7 @@
+#useful for large text
+binexp -i band.bmp -o exptmp.bmp -r 1
+contract -i exptmp.bmp -o contmp.bmp -r 5
+#for smaller text
+#contract -i band.bmp -o contmp.bmp -r 5
+
+binexp -i contmp.bmp -o final.bmp -r 3

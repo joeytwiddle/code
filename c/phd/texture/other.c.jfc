@@ -1,0 +1,36 @@
+
+Lines in other.c not present in ../oldtexture/other.c:
+
+46 :   nv->setaxis(1,measureedgeanglecancelling(ps));
+51 : /*  if (show)
+60 :       }*/
+205 : /*
+209 : */
+227 : /*
+231 : */
+236 : //  Map2d<bool> *b=seg.classifywindows();
+249 :   b=b->expand(morphrad)->contract(2*morphrad)->expand(morphrad);
+250 : //  b=b->expand(morphrad)->inverse()->expand(morphrad)->inverse();
+
+Lines in ../oldtexture/other.c not present in other.c:
+
+45 : printf("X\n");
+47 : printf("Y0\n");
+48 :   float f=measureedgeanglecancelling(ps);
+49 : printf("Y1\n");
+50 :   nv->setaxis(1,f);
+51 : printf("Y2\n");
+53 : printf("Y3\n");
+55 : printf("Y4\n");
+58 : printf("Z\n");
+69 : printf("Z1\n");
+78 : printf("A\n");
+85 : printf("B\n");
+95 : printf("C\n");
+99 : printf("D\n");
+101 : printf("D1\n");
+103 : printf("D2\n");
+117 : printf("E\n");
+226 :     printf("First pass...\n");
+239 :     printf("Second pass...\n");
+262 :   b=b->expand(morphrad)->contract(morphrad);

@@ -1,0 +1,1 @@
+thresh -i eat.bmp -o eat2.bmp -r 4 -t 0.5

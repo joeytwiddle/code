@@ -1,0 +1,2 @@
+forall src/*.c do "jparse c %w h > comp/%s.h" > comp/hout.txt 2> comp/herr.txt
+forall src/*.c do "jparse c %w c > comp/%s.c" > comp/cout.txt 2> comp/cerr.txt

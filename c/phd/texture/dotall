@@ -1,0 +1,21 @@
+rm *.bmp
+rm *.pat
+rm *.res
+rm *.td
+
+jnn trainset new
+
+# It would be better to have wskip 5 in order to really train different 200
+
+forall ../images/fortraining/list/* do gunzip -f ../images/fortraining/%f.gz ../images/fortraining/exp/%f.gz : jnn trainset image fortraining/%s -wskip 5 : gzip -f ../images/fortraining/%f ../images/fortraining/exp/%f
+# forall ../images/exp/*.bmp do jnn trainset image %s -wskip 10
+# jnn trainset image image32 -wskip 10 -nptes 200 -nntes 200
+
+jnn trainset finish
+
+jnn trainnn
+
+cp traindata.pat testdata.pat
+batchman -f testnet.bat
+
+# getallres

@@ -1,0 +1,16 @@
+
+Lines in jnn.c not present in ../oldtexture/jnn.c:
+
+4 : #define ImageDir "/j/images/"
+5 : #else
+6 : #define ImageDir "../images/"
+
+Lines in ../oldtexture/jnn.c not present in jnn.c:
+
+4 :   String ImageDir="/mnt/stig/images/";
+6 : #ifdef DOS
+7 :   String ImageDir="d:\\images\\";
+9 : #ifdef UNIX
+10 :   String ImageDir="~/../images/";
+114 :   mcheck();
+193 :   printf("jnn : Finished.\n");

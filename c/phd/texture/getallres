@@ -1,0 +1,1 @@
+forall ../images/listtoproc/*.bmp do getresz %s

@@ -1,0 +1,3 @@
+sleep 7200
+mv -f getregres projprof
+forall in $HOME/j/images/paper2* do ./just* %s %e

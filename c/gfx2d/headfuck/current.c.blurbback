@@ -1,0 +1,16 @@
+#include <joeylib.c>
+
+void main(int argc,String *argv) {
+
+  ArgParser a=ArgParser(argc,argv);
+  if (argc==1) {
+    printf("Jacket potatoes.\n");
+    exit(0);
+  }
+
+  int scrwid=320;
+  int scrhei=200;
+  allegrosetup(scrwid,scrhei);
+  PPsetup(scrwid,scrhei,2.0);
+
+}

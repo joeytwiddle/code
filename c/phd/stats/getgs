@@ -1,0 +1,2 @@
+./grey
+scale -i grey.bmp -o simage.bmp -s 0.4

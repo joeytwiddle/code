@@ -1,0 +1,17 @@
+rm rec*.bmp
+rm data.txt
+rm data.bmp
+rm lines.bmp
+rm quads.bmp
+rm overlay*.bmp
+# For img??, ?? use scale 2.0
+# For image?? use scale 2.5
+# Actually, don't worry because the program now deals with this.
+g -i gfs/$1.gf -ois 2.0 -ic 0.1 -ml 20 -oi /mnt/stig/images/$1.bmp nod -ol -rqw 600 -fl 0.8 -dbg
+mkdir results
+mkdir results/$1
+mv rec*.bmp results/$1
+mv data.* results/$1
+mv line*.bmp results/$1
+mv quads*.bmp results/$1
+mv overlay*.bmp results/$1

@@ -1,0 +1,81 @@
+#define QUIET
+
+#include <joeylib.c>
+
+bool simple,yesno,difference=false;
+@@>> bool common,nolines;
+
+@@>> void compare(List<String> als,List<String> bls,String aname,String bname) {
+  if (!yesno) {
+    if (!simple) {
+      printf("Lines in %s not present in %s:\n\n",aname,bname);
+    }
+  }
+  for (int i=1;i<=als.len;i++) {
+    String al=als.num(i);
+    bool found=false;
+    for (int j=1;j<=bls.len && !found;j++) {
+      String bl=bls.num(j);
+      found=Ssimilar(al,bl);
+    }
+    if (!found && !common) {
+      difference=true;
+      if (!yesno) {
+      if (!simple && !nolines)
+        printf("%i : ",i);
+      printf("%s\n",al);
+      }
+    } else if (found && common) {
+      printf("%s\n",al);
+    }
+  }
+//  printf("\n");
+}
+
+int main(int argc,String *argv) {
+
+  ArgParser a=ArgParser(argc,argv);
+  simple=a.argexists("simple","Simple output for pasting into files");
+  yesno=a.argexists("yesno","Are they the same (0) or different (1) ?");
+  common=a.argexists("common","Show lines common to two files");
+  bool oneway=(common || a.argexists("oneway","Only compare in one direction"));
+  bool remred=a.argexists("remred","Remove first file if redundant");
+  nolines=a.argexists("nolines","Don't show line numbers");
+  String seperators=a.argafter("-s","Seperators","\\n");
+  seperators=Sreplaceall(seperators,"\\n","\n");
+  String aname=a.getarg("file");
+  String bname=a.getarg("file");
+  a.done();
+
+  List<String> als=readlinesfromfile(aname,seperators);
+  List<String> bls=readlinesfromfile(bname,seperators);
+
+@@>>   compare(als,bls,aname,bname);
+  if (remred && !difference) {
+    printf("%s redundant and removed.\n",aname);
+    removefile(aname);
+    exit(0); // Don't remove this or you might delete both redundant files!
+    // Actually that's probably bollocks
+  }
+
+  if (!oneway) {
+    if (!simple)
+      printf("\n");
+@@>>     compare(bls,als,bname,aname);
+  }
+
+  if (yesno)
+    if (difference) {
+      printf("Different.\n");
+      return 1;
+    } else {
+      printf("The same.\n");
+/*      if (remred) {
+        printf("%s redundant and removed.\n",bname);
+        removefile(bname);
+      }*/
+      return 0;
+    }
+  return 0;
+
+}

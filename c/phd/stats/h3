@@ -1,0 +1,3 @@
+invert -i histdiff.bmp -o hdi.bmp
+#thresh -i hdi.bmp -o s2hd.bmp -r 1 -t 0.4
+./nthresh -i hdi.bmp -o s2hd.bmp -r 2 -t 0.7

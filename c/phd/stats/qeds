@@ -1,0 +1,7 @@
+li $1
+cp original.bmp image.bmp
+getgs
+edges
+nthresh -i edgemag.bmp -o edges.bmp -t 0.3
+#thresh -i edgemag.bmp -o edges.bmp -t 0.9
+cp edges.bmp ../results/edges$1.bmp

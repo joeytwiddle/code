@@ -1,0 +1,4 @@
+Filesystem           1k-blocks      Used Available Use% Mounted on
+/dev/hda5              1139295    887801    192629  82% /
+/dev/hdb                602808    602808         0 100% /mnt/cdrom
+/dev/hda1              1834956   1350164    484792  74% /mnt/filfirin

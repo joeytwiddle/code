@@ -1,0 +1,5 @@
+for x in $@; do
+  echo $HOME/j/images/$x.bmp*
+  echo $HOME/j/images/blobs/$x.*
+  forall $HOME/j/images/bin/regs$x/reg* do -stealth "echo %w $HOME/j/images/pp/$x%n/*"
+done

@@ -1,0 +1,2 @@
+edgehist $1.bmp
+mv edgehist.dat $1.dat
