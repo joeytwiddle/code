@@ -11,7 +11,7 @@ del *.results
 # DOCUMENTS="left" # test "dar-crpage2-left30" # left cen right full"
 # DOCUMENTS="full cen dar-crpage2-left30"
 # DOCUMENTS="cen"
-DOCUMENTS="leafletleft" # leafletfull leafletcen"
+DOCUMENTS="leafletleft leafletfull leafletcen"
 # DOCUMENTS="dar-crpage2-left30"
 # DOCUMENTS="dummy" # when using LINES
 
@@ -27,7 +27,7 @@ PPSCANMETHODS="hier" # full"
 PPMEASURES="deriv"
 
 # VVPMETHODS="spacings simple margins"
-VVPMETHODS="spacings" # simple"
+VVPMETHODS="spacings simple margins"
 
 # NOISES=`seq -w 0 03 50`
 # NOISES=`seq -w 51 03 60`
@@ -39,9 +39,8 @@ NOISES=0
 # ANGLES="60"
 # FOCALS=`seq -w 0.5 0.3 3.0`
 # FOCALS="0.5"
-ANGLES=`seq 30 10 60`
-# ANGLES=`seq 5 5 85`
-# ANGLES=`seq 5 6 85`
+# ANGLES=`seq 30 10 60`
+ANGLES=`seq 5 4 85`
 # ANGLES="30"
 
 FOCALS="4.0"
