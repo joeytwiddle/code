@@ -46,7 +46,8 @@ public class MethodFrame extends JInternalFrame {
         if (member instanceof Method) {
             getContentPane().add(new JLabel(VisualJavaStatics.getSimpleClassName(method.getReturnType())));
         } else {
-            getContentPane().add(new JLabel("new " + constructor.getDeclaringClass().getName()));
+            // getContentPane().add(new JLabel("new " + constructor.getDeclaringClass().getName()));
+            getContentPane().add(new JLabel("new"));
         }
         JButton button = new JButton(member.getName());
         button.addActionListener(
@@ -94,6 +95,7 @@ public class MethodFrame extends JInternalFrame {
             // e.printStackTrace();
             System.err.println(e);
         }
+        setSize(this.getPreferredSize());
     }
 
 }

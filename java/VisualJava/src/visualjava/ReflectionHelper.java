@@ -63,7 +63,7 @@ public class ReflectionHelper {
             }
 
             // Special case: character does not have a String constructor
-            if (type.equals(Character.TYPE)) {
+            if (type.equals(Character.class)) {
                 if (text.length()>0) {
                     return new Character(text.charAt(0));
                 } else {

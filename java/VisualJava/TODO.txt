@@ -1,3 +1,15 @@
+NOTE:
+
+It is a relevant issue at this point, whether we fork into one of the following:
+  - Achieve proper Java support (requires expansion).
+  - Present a nice and easy "functional Java" (requires making more friendliness).
+In fact, the project could be taken in either direction.
+Can we hope to support an N-dimensional project?
+Or can we at least hope to preserve some common code?
+It should be documented in CVS when either of the forks starts.
+
+
+
 BUGS:
 
 Array ObjectIcons do not work.
