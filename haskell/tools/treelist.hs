@@ -9,10 +9,13 @@ data Tree = Branch [Tree] | Leaf [String]
   -- deriving (Show)
 
 instance Show Tree where
-  show (Branch bs) = "{\n" ++ concat (map indent (map show bs)) ++ "}\n"
-    where indent s = "  "++s
-  show (Leaf ss) = concat (map addn ss)
-    where addn s = s++"\n"
+  show (Branch bs) = concat (map (showTree "") bs)
+  -- show (Leaf ss) = concat (map addn ss)
+    -- where addn s = s++"\n"
+
+showTree indent (Branch bs) = concat (map (showTree (indent++" |- ")) bs)
+showTree indent (Leaf ls) = concat (map (sort) ls)
+  where sort xs = indent ++ xs ++ "\n"
 
 test = go ["/stuff/data/cdrom_a2.find"]
 
@@ -28,7 +31,7 @@ treebreak col lines
   | (length breaks) == 1 = assert (breaks == [lines]) (treebreak (col+1) lines)
   | otherwise = Branch ( map (treebreak (col+1)) breaks)
   where breaks = findbreaks col [] lines
-        indextoolarge = col > (3)
+        indextoolarge = col > (500)
 
 assert x y = if x then y else error ( show x ++ "is false" )
 
