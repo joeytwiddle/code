@@ -13,7 +13,7 @@ PPSCANMETHODS="hier" # full"
 PPMEASURES="deriv"
 # PPMEASURES="willbederived"
 # VVPMETHODS="spacings simple margins"
-VVPMETHODS="simple"
+VVPMETHODS="spacings"
 # NOISES=`seq -w 0 03 50`
 # NOISES=`seq -w 51 03 60`
 # NOISES=`seq -w 51 03 60`
@@ -23,7 +23,8 @@ NOISES=0
 # ANGLES=`seq -w 25 05 40`
 # ANGLES=`seq -w 20 07 50`
 # ANGLES="20 40 60 80"
-ANGLES="50"
+# ANGLES="20 35 45 60"
+ANGLES="60"
 # ANGLES=`seq -w 20 20 60`
 # ANGLES=`seq -w 20 20 40`
 # ANGLES="34"
@@ -113,7 +114,43 @@ for DOCUMENT in $DOCUMENTS; do
 									echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
 									echo
 
-									simone "$IFILE" $roll $yaw $pitch -imgnoise $NOISE
+									# simone "$IFILE" $roll $yaw $pitch -imgnoise $NOISE
+
+									# simone
+
+										OFILE="tmp.bmp"
+										INVFILE="tmp-inv.bmp"
+
+										PARAMS="
+										-qnd
+										-centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001
+										-roll $roll -yaw $yaw -pitch $pitch
+										-overlay -image $IFILE $OFILE -size 0.7
+										-gnuplot
+										-imgnoise $NOISE
+										"
+										if test "$VVPMETHOD" = spacings; then
+											PARAMS="$PARAMS -spacings"
+										fi
+
+										curseyellow
+										echo ../gentestimg/simgen $PARAMS
+										cursegrey
+										../gentestimg/simgen $PARAMS | tee genres.txt
+
+										mv gpldata.txt gplsimdata.txt
+										mv gplfit.ps gplsimfit.ps
+
+										curseyellow
+										echo invert -i "$OFILE" -o "$INVFILE"
+										cursegrey
+										invert -i "$OFILE" -o "$INVFILE"
+										echo ./testsim "$INVFILE" "$OFILE"
+										rm recover.bmp
+										# time ./testsim "$INVFILE" "$OFILE" > ppres.txt
+										time ./testsim "$INVFILE" "$OFILE" | tee ppres.txt
+
+									# end simone
 
 									FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
 									echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"

@@ -1,3 +1,7 @@
+##############
+### DEPRECATED
+##############
+
 IFILE=$1
 shift
 roll=$1
