@@ -1,4 +1,6 @@
-IMAGES=`dotexfindimgs | sed "s+^+images/+"`
+DIR="acivs02"
 
-echo tarcfz ../tmp.tar.gz *.tex *.sty *.bib $IMAGES
-tarcfz ../tmp.tar.gz *.tex *.sty *.bib $IMAGES
+IMAGES=`dotexfindimgs | sed "s+^+$DIR/images/+"`
+
+cd ..
+tarcfz tmp.tar.gz $DIR/dotex $DIR/*.tex $DIR/*.sty $DIR/*.bib $IMAGES
