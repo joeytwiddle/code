@@ -6,11 +6,11 @@ int numframes;
 long endtime;
 long pausetime;
 
-// utime seems to perform worse!
-// #ifdef DOS
-//   #define clock uclock
-//   #define CLOCKS_PER_SEC UCLOCKS_PER_SEC
-// #endif
+// uclock tends to perform worse than time, but needed for Cygwin
+#ifdef CYGWIN
+#define uclock clock
+#define UCLOCKS_PER_SEC CLOCKS_PER_SEC
+#endif
 
 void pausetimer() {
   printf("Pausing timer.\n");

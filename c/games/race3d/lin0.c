@@ -5,13 +5,17 @@
 // #define KEEP_TO_FPS
 
 #define LEAVE_EVENTS_ALONE
-// #define DO_FULLSCREEN
+#define DO_FULLSCREEN
+#define DOS
 #include "../../gfx/sdl/stripped-useful.c"
-
+// #undef DOS
 #undef new
 #undef mysgn
 #undef sgn
 #undef square
+
+#define QUIET
+
 // #define ALLEGRO
 #include <joeylib.h>
 
@@ -62,10 +66,11 @@ class Wave {
 		Wave() {
 			f=intrnd(1,7);
 			line=V3d::random();
-			if (planar)
-				line.y=0;
+			// if (planar)
+				// line.y=0;
 			o=myrnd()*2.0*pi;
 			a=myrnd()*waveAmp;
+			// display();
 		}
 		V3d contribution(float thru) {
 			return a*line*mysin(((float)f)*(thru*2.0*pi-o));
@@ -199,6 +204,7 @@ void init() {
 	for (float thru=0;thru<1.0;) {
 		for (int i=0;i<tunnelps;i++) {
 			V3d here=getpos(thru);
+			// printf("%s\n",here.toString());
 			V3d forward=getpos(thru+0.00001)-here;
 			V3d up=V3d::normcross(V3d::crazy,forward);
 			V3d right=V3d::normcross(forward,up);

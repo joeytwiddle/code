@@ -4,7 +4,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
+#ifndef CYGWIN
 #include <fnmatch.h>
+#endif
 
 #define String char *
 
@@ -535,6 +537,7 @@ int Sasc(String s) {
 	return (int)s[0];
 }
 
+#ifndef CYGWIN
 bool Smatches(String s,String p) { // string s, pattern p
 	/*  String g=Stolower(s);
 		 String f=Stolower(p);
@@ -549,6 +552,7 @@ bool Smatches(String s,String p) { // string s, pattern p
 	//    printf("%s !match %s\n",s,p);
 	return res;
 }
+#endif
 
 bool Sstarts(String x,String s) {
 	int slen=Slen(s);

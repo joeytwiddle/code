@@ -15,6 +15,18 @@
 #define LINUX
 // #define DOS
 // #define UNIX
+// #define CYGWIN
+
+#ifdef CYGWIN
+	// // This is a global variable.
+	/*special c*/
+	struct _reent *_impure_ptr;
+	/*end special*/
+	// extern struct _reent *__imp_reent_data;
+	// int entry (HINSTANT hinst, DWORD reason, LPVOID reserved) {
+		// _impure_ptr = __imp_reent_data;
+	// }
+#endif
 
 // For SG machines, without time and difftime functions:
 // #define STUPIDUNIX
@@ -35,7 +47,7 @@
 
 // Are we using the Allegro library for DJGPP (graphics under DOS)?
 #ifdef DOS
- #define ALLEGRO
+ // #define ALLEGRO
 #endif
 
 #ifdef UNIX
@@ -77,7 +89,7 @@
 #include <math.h>
 #include <time.h>
 #ifdef DOS
-  #include <dir.h>
+  // #include <dir.h>
 #endif
 
 void helloworld() {

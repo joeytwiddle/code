@@ -1,9 +1,27 @@
-find . -newer .comp/joeylib.o -maxdepth 1 |
+if test ! "$1" = "robust"; then
+
+	find . -newer .comp/joeylib.o -maxdepth 1 |
 	grep "\.c$" | sed "s+^\./++;s+\.c$++" |
 	while read X; do
 		./make "$X"
 	done
 
+else
+
+	# Slower but more robust (if joeylib.o fails for some reason.)
+	for X in *.c; do
+		Y=`echo "$X" | sed "s/\.c$//"`
+		FND=`find .comp -maxdepth 1 -newer "$X" -name "$Y.c"`
+		if test "$FND" = ""; then
+			./make "$Y"
+		# else
+			# echo "$Y ok."
+		fi
+	done
+
+fi
+
 echo "Now doing the biggie...!"
 cd .comp
 ./make
+cd ..

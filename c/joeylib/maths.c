@@ -10,7 +10,7 @@
 #define bit uchar
 
 float inf=65535.0;
-float infinity=inf;
+// float infinity=inf;
 
 float rad2deg=360.0/2.0/pi;
 
@@ -304,13 +304,27 @@ float power(float x,float y) {
 float myrnd() {
   /* - Returns random float in range [0,1)
      Spaceing between choices is 1/RAND_MAX */
-  return (float)rand()/RAND_MAX;
+#ifdef CYGWIN
+#define MYRANDMAX 12345
+	// printf("%i\n",(int)(RAND_MAX));
+	return ( rand() % MYRANDMAX ) / (float)MYRANDMAX ;
+#else
+  // This doesn't seem to work for me under Cygwin!
+  return (float)rand()/(float)(RAND_MAX);
+#endif
 }
 
 float myrnd2() {
   /* - Returns random float in range [0,1]
      Spaceing between choices is 1/(RAND_MAX-1) */
+#ifdef CYGWIN
+#define MYRANDMAX 12345
+	// printf("%i\n",(int)(RAND_MAX));
+	return ( rand() % MYRANDMAX ) / (float)(MYRANDMAX-1) ;
+#else
+  // This doesn't seem to work for me under Cygwin!
   return (float)rand()/(RAND_MAX-1);
+#endif
 }
 
 float floatrnd(float l,float r) {

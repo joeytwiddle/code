@@ -284,6 +284,8 @@ bool isdir(String fname) {
   #endif */
 }
 
+#ifdef DJGPP
+
 List<String> getfilesrecursive(String dn) {
   if (Seq(Sright(dn,1),"/") && Slen(dn)>1)
     dn=Sleft(dn,Slen(dn)-1);
@@ -352,6 +354,7 @@ List<String> getfilesindir(String dn) {
 return fs;
 }
 
+#ifndef DOS
 List<String> getfiles(String dn,String format) {
 //  printf("Trying to find %s in %s\n",format,dn);
   if (Seq(Sright(dn,1),"/") && Slen(dn)>1)
@@ -390,17 +393,7 @@ List<String> getfiles(String p) {
     return getfiles(d,f);
   }
 }
-
-void removefile(String f) {
-  if (unlink(f)!=0) {
-    error(Sformat("File %s NOT removed!\n",f));
-  }
-/*  #ifdef POSIX
-    String s=Sformat("rm %s",f);
-//    printf(">>> %s\n",s);
-    system(s);
-  #endif */
-}
+#endif
 
 int getfilesize(String fname) {
   if (Seq(Sright(fname,1),"/") && Slen(fname)>1)
@@ -496,6 +489,19 @@ public:
     return "directory";
   }
 };
+
+#endif
+
+void removefile(String f) {
+  if (unlink(f)!=0) {
+    error(Sformat("File %s NOT removed!\n",f));
+  }
+/*  #ifdef POSIX
+    String s=Sformat("rm %s",f);
+//    printf(">>> %s\n",s);
+    system(s);
+  #endif */
+}
 
 String wholepath() {
   int size = 100;

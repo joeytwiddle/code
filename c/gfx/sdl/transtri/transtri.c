@@ -39,18 +39,18 @@ todo: Store #define constants for a variety of video modes so that the
   user may choose at runtime.  (erm what? how?!)
 */
 
-// #define DOS
+#define DOS
 // #define DO_FULLSCREEN
-// #define SCRWID 320
-// #define SCRHEI 200
-#define SCRWID 640
-#define SCRHEI 480
+#define SCRWID 320
+#define SCRHEI 200
+// #define SCRWID 640
+// #define SCRHEI 480
 #define SCRBPS 32
 #define desiredFramesPerSecond 40
 #define KEEP_TO_FPS
 #include "../stripped-useful.c"
 
-// #define REDEFINE
+#define REDEFINE
 #include "define.c"
 
 #define NUMTRIS 400
