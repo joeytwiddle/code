@@ -143,8 +143,14 @@ main(int argc,String *argv) {
 			float rightdiff=-V3d::normdot(gtright,V3d::k);
 			float rightang=180*asin(rightdiff)/pi;
 
+			float realrightangerr=180.0-180.0*V3d::angBetween(gtright,ppright)/pi;
+			float realdownangerr=180.0-180.0*V3d::angBetween(gtdown,ppdown)/pi;
+			float realrightangerrzerone=1.0-realrightangerr/180.0;
+			float realdownangerrzerone=1.0-realdownangerr/180.0;
+
 			// Bad:
 			float focal=2560; // Just seems!
+			// float focal=0; // Just seems!
 			V3d eye=V3d(320,240,-focal);
 			V3d gtrightfromhvp=V3d(gthvp.x,gthvp.y,0)-eye;
 			V3d pprightfromhvp=V3d(pphvp.x,pphvp.y,0)-eye;
@@ -185,13 +191,20 @@ main(int argc,String *argv) {
 			if (badgen) {
 				acc=-2; altacc=-2;
 			}
+
+			float hvpdist=gthvp.dist(pphvp);
+			float vvpdist=gtvvp.dist(ppvvp);
 			
-		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
 				yaw,pitch,acc,corra,corrb,
 				gtright.x,gtright.y,gtright.z,ppright.x,ppright.y,ppright.z,
 				gtdown.x,gtdown.y,gtdown.z,ppdown.x,ppdown.y,ppdown.z,
 				altacc,faceonness,maxangle,rightdiff,rightang,
-				hvpcorr,vvpcorr
+				hvpcorr,vvpcorr, // 23,24
+				hvpdist,vvpdist, // 25,26
+				hvpdist/gthvp.mag(),vvpdist/gtvvp.mag(), // 27,28
+				realrightangerr,realdownangerr, // 29,30
+				realrightangerrzerone,realdownangerrzerone // 31,32
 			);
 		  
 		  // if (!Seq(l,""))
@@ -199,6 +212,10 @@ main(int argc,String *argv) {
 		  // i++;
 		}
 	}
-	printf("\n# 1 yaw     2 pitch   3 acc     4 racc   5 dacc     6 gtrx    7 gtry    8 gtrz    9 pprx    10 ppry    11 pprz    12 gtdx    13 gtdy   14 gtdz   15 ppdx   16 ppdy   17 ppdz   18 altacc  19 faceonness 20 maxang   21 rightdiff  22 rightang  23 hvpcorr  24 vvpcorr\n");
+	printf("\n# 1 yaw\n# 2 pitch\n# 3 acc\n# 4 racc\n# 5 dacc\n# 6 gtrx\n# 7 gtry\n# 8 gtrz\n# 9 pprx\n# 10 ppry\n# 11 pprz\n# 12 gtdx\n# 13 gtdy\n# 14 gtdz\n# 15 ppdx\n# 16 ppdy\n# 17 ppdz\n# 18 altacc\n# 19 faceonness 20 maxang\n# 21 rightdiff\n# 22 rightang\n# 23 hvpcorr\n# 24 vvpcorr\n# 25 hvpdist\n# 26 vvpdist\n# 27 relhvpdist\n# 28 relvvpdist\n");
+	printf("# 29 realrightangerr\n");
+	printf("# 30 realdownangerr\n");
+	printf("# 31 realdownangacc0-1\n");
+	printf("# 32 realdownangacc0-1\n");
 	
 }
