@@ -6,7 +6,7 @@
 
 #define LEAVE_EVENTS_ALONE
 // #define DO_FULLSCREEN
-#define DOS
+// #define DOS
 #include "../../gfx/sdl/stripped-useful.c"
 // #undef DOS
 #undef new
@@ -28,11 +28,12 @@
 #define scrhei SCRHEI
 
 // Rendering
-float brightness=0;
-float change=1;
+#define brightness 64
 float fogdepth;
-float displayFogdepth=40.0;
-float playFogdepth=22.0;
+float displayFogdepth=20.0;
+float playFogdepth=18.0;
+float displayPPd=1.0;
+float playPPd=1.5;
 int taillen=1200;
 
 // Track
@@ -157,7 +158,7 @@ void writescreen() {
 			// if (left.bmp[j][i]!=0)
 			// printf("%i\n",left.bmp[j][i]);
 			// screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],intrnd(0,255)));
-			screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],left.bmp[j][i]));
+			screen_setPixel(i,j,screen_MapRGB(brightness+(256-brightness)*left.bmp[j][i]/256,right.bmp[j][i],brightness+(256-brightness)*left.bmp[j][i]/256));
 		}
 	}
 	// b.writetoscreen();
@@ -218,12 +219,11 @@ void init() {
 	}
 
 	for (int i=1;i<2000;i++) {
-		octree.add(waveAmp*(float)numWaves/10.0*V3d(floatrnd(-1,1),floatrnd(-1,1),floatrnd(-1,1)));
+		octree.add(waveAmp*(float)numWaves/5.0*V3d::randomvolume());
 	}
 
 	ori=Ori(V3d(1,0,0),V3d(0,1,0));
-	float pd=2.5;
-	PPsetup(scrwid,scrhei,pd);
+	PPsetup(scrwid,scrhei,displayPPd);
 
 	// Display track
 	fogdepth=displayFogdepth;
@@ -231,7 +231,7 @@ void init() {
 	SDL_Event event;
 	do {
 		t=t+0.03;
-		V3d from=V3d::rotate(18.0*V3d::k,V3d::j,t)+12.0*V3d::j*sin(t*0.02);
+		V3d from=V3d::rotate(14.0*V3d::k,V3d::j,t)+12.0*V3d::j*sin(t*0.02);
 		ori.forcez(from.neg());
 		pos=from;
 		plotscene();
@@ -247,6 +247,7 @@ void init() {
 	printf("Enough of that, let's play!\n");
 
 	// Race
+	PPsetup(scrwid,scrhei,playPPd);
 	fogdepth=playFogdepth;
 	pos=getpos(0);
 	for (int tailpos=0;tailpos<taillen;tailpos++)
