@@ -5,6 +5,13 @@
 
 <script type="text/javascript"> <!--
 
+// BUGS:
+// Not yet ported to IE.  (Written against Mozilla, ported to Konqueror.)
+// Konqueror's log text freezes up and doesn't display until nudged.
+
+//// Yummy I found reflection:
+// for (var x in top.powerBarFrame) { log(""+x); }     
+
 // Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
 
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
@@ -26,18 +33,40 @@ var browserCanWriteWithDocumentDotOpen = nutscrape;
 #ifdef LOGGING
 
 	#define LOG(str) log(str)
+	// #define LOG(str) try { log(str); } catch (e) { }
 	#define LOG_ELEMENT_ID "logElementId"
-	#define LOG_ELEMENT_HTML '<div id="' + LOG_ELEMENT_ID + '"></div>'
-	#define LOG_MAX_LINES 10
+	// #define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
+	#define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
+	#define LOG_MAX_LINES 7
 	var logText = "";
 	function log(str) {
-		logText += toHtml(str + '\n');
-		while (countCharIn(logText,'\n')>LOG_MAX_LINES) {
+		str = niceDate() + ": " + str;
+		str = "[" + countCharIn(logText,'\n') + "] " + str;
+		logText += str + '\n';
+		while (countCharIn(logText,'\n') > LOG_MAX_LINES) {
+			// alert("Reducing from: "+logText);
 			logText = logText.substring(logText.indexOf('\n')+1);
+			// alert("To: "+logText);
 		}
 		var element = top.powerBarFrame.document.getElementById(LOG_ELEMENT_ID);
 		if (element) {
-			element.innerHTML = logText;
+			element.innerHTML = toHtml( element.style.visibility + ":" + logText);
+			// Force it to refresh:
+			// if (element.style.visibility == "visible") {
+				try { // konq:
+					element.style = "visibility: hidden";
+					element.style.width = 50;
+				} catch (e) { // moz:
+					element.style.visibility = "visibility: hidden";
+				}
+			// } else {
+				try { // konq:
+					element.style = "visibility: visible";
+					element.style.width = 20;
+				} catch (e) { // moz:
+					element.style.visibility = "visibility: visible";
+				}
+			// }
 		}
 	}
 
@@ -52,13 +81,14 @@ var browserCanWriteWithDocumentDotOpen = nutscrape;
 
 /////////// Options: (will be load/saveable using cookies...) ///////////
 
-var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JavaScriptTester", "opt_ButtonsOnPowerBarForms", "opt_ViewInnerHtmlButton" ];
+var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JSTesterEnabled", "opt_ButtonsOnPowerBarForms", "opt_ViewInnerHtmlButton" ];
 
 var opt_powerBarPosition = "top";
 var opt_ClockEnabled = true;
-var opt_JavaScriptTester = true;
+var opt_JSTesterEnabled = true;
 var opt_ButtonsOnPowerBarForms = true;
 var opt_ViewInnerHtmlButton = true;
+var opt_ReflectorEnabled = true;
 
 /////////////////////////// Runtime constants ///////////////////////////
 
@@ -75,7 +105,7 @@ var todoList = "";
 //////////////////////// PowerBar initialisation ////////////////////////
 
 function createFrameset() {
-	var distrib = ( opt_powerBarPosition == "top" ? "20%,*" : "*,20%" );
+	var distrib = ( opt_powerBarPosition == "top" ? "50%,*" : "*,20%" );
 	var startFrameSet     = '<frameset rows="'+distrib+'">';
 	var powerBarFrameHtml = '<frame src="about:blank">';
 	// var mainFrameHtml     = '<frame src="http://www.google.com/">';
@@ -96,13 +126,13 @@ function generatePowerBar() {
 	var powerBarHtml = "";
 	powerBarHtml += '<table width="100%"><tr><td align="center">';
 
-	powerBarHtml += '<INPUT type="button" value="wakeUp!" onclick="refreshTimer()">';
+	powerBarHtml += '<INPUT type="button" value="Wake up!" onclick="top.refreshTimer()">';
 
 	powerBarHtml += '</td><td align="center">';
 
 	//// Location URL textfield:
 	// powerBarHtml += '<FORM name="locationTextBox" action="javascript:top.changeLocation(top.mainFrame,this.location.value)">';
-	powerBarHtml += '<FORM onsubmit="top.changeLocation(top.mainFrame,location.value)" action="javascript:">';
+	powerBarHtml += '<FORM name="locationForm" onsubmit="top.changeLocation(top.mainFrame,location.value)" action="javascript:">';
 	powerBarHtml += 'Location:\n';
 	powerBarHtml += '<INPUT name="location" type="text" size="30" value="http://www.google.com/">';
 	// powerBarHtml += defaultSubmitButton;
@@ -112,7 +142,7 @@ function generatePowerBar() {
 	powerBarHtml += '</FORM>';
 
 	// Javascript tester textfield:
-	if (opt_JavaScriptTester) {
+	if (opt_JSTesterEnabled) {
 		powerBarHtml += '</td><td align="center">';
 		// powerBarHtml += '<FORM action="javascript:top.processJs(code.value)">'; // worked fine for konq
 		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
@@ -123,6 +153,14 @@ function generatePowerBar() {
 			powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
 		}
 		// powerBarHtml += defaultSubmitButton;
+		powerBarHtml += '</FORM>';
+	}
+
+	if (opt_ReflectorEnabled) {
+		powerBarHtml += '</td><td align="center">';
+		powerBarHtml += '<FORM onsubmit="top.jsReflectorInit()" action="javascript:">'; // but this needed for mozilla
+		// powerBarHtml += 'JS reflector:\n';
+		powerBarHtml += '<INPUT type="button" value="JSReflect" onclick="top.jsReflectorInit()">'; // but mozilla needs this too!
 		powerBarHtml += '</FORM>';
 	}
 
@@ -144,7 +182,7 @@ function generatePowerBar() {
 
 	#ifdef LOGGING
 		powerBarHtml += '</td><td align="center">'
-		powerBarHtml += '<INPUT type="button" value="Show log" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\'))">';
+		powerBarHtml += '<INPUT type="button" value="Show log" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\').innerHTML)">';
 	#endif
 
 	powerBarHtml += '</td></tr></table>';
@@ -186,14 +224,20 @@ function updatePowerBar() {
 	//// Disabled because too sensitive (on init, and even if user is typing!)
 	var urlOfMainFrame = mainFrame.location;
 	// var urlInTextBox = powerBarFrame.document.forms[0].location;
-	// if (urlOfMainFrame != urlInTextBox.value) {
-	// if (urlOfMainFrame != lastKnownLocation) {
-		// urlInTextBox.value = urlOfMainFrame;
-		// lastKnownLocation = urlOfMainFrame;
-	// }
+	if (powerBarFrame.document.forms["locationForm"]) {
+		var urlInTextBox = powerBarFrame.document.forms["locationForm"].location;
+		// if (urlOfMainFrame != urlInTextBox.value) {
+		if (urlOfMainFrame != lastKnownLocation) {
+			LOG("URL changed from " + lastKnownLocation + " to " + urlOfMainFrame);
+			urlInTextBox.value = urlOfMainFrame;
+			LOG("B");
+			lastKnownLocation = urlOfMainFrame;
+			LOG("C");
+		}
+	}
 	if (opt_ClockEnabled) {
 		var clockElem = powerBarFrame.document.getElementById('clockHook');
-		clockElem.innerHTML = "" + new Date();
+		clockElem.innerHTML = "" + niceDate();
 	}
 	processTodoList();
 	refreshTimer();
@@ -218,7 +262,7 @@ function processTodoList() {
 		} catch (e) {
 			result = e;
 		}
-		alert("processTodoList(): Tried:\n<EVAL>" + line + "</EVAL>\nGot:\n<RESULT>"+result+"</RESULT>");
+		// alert("processTodoList(): Tried:\n<EVAL>" + line + "</EVAL>\nGot:\n<RESULT>"+result+"</RESULT>");
 	}
 }
 
@@ -238,11 +282,16 @@ function processJs(codeToExecute) {
 	}
 	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
 	var htmlReport = toHtml(report);
-	writeToFrame(mainFrame,htmlReport);
-	// todoList += "mainFrame.document.body.innerHTML = \""+report+"\";";
-	todoList += "mainFrame.document.body.innerHTML = \"" + escapeString(htmlReport) + "\";";
-	// alert(report);
-	// refreshTimer();
+	#ifdef LOGGING
+		LOG(report);
+	#else
+		writeToFrame(mainFrame,htmlReport);
+		//// Failed attempts to get Konqueror to write later since it dosn't always work first time:
+		// todoList += "mainFrame.document.body.innerHTML = \""+report+"\";";
+		todoList += "mainFrame.document.body.innerHTML = \"" + escapeString(htmlReport) + "\";";
+		// alert(report);
+	#endif
+	refreshTimer();
 }
 
 function writeToFrame(frame,html) {
@@ -287,6 +336,84 @@ function editOptions() {
 	writeToFrame(mainFrame,html);
 }
 
+function jsReflectorInit() {
+	jsReflectorShow("top");
+}
+
+function strip(str) {
+	if (str.length > 50) {
+		return str.substring(0,50 - 3) + "...";
+	}
+	return str;
+}
+
+function trytypeof(obj) {
+	try {
+		var type = typeof(obj);
+		return type;
+	} catch (e) {
+		return "TYPE_ERROR:"+e;
+	}
+}
+
+function tryeval(code) {
+	try {
+		var res = eval(code);
+		return res;
+	} catch (e) {
+		return "EVAL_ERROR:"+e;
+	}
+}
+
+function jsReflectorShow(objName) {
+	LOG("jsReflectorShow(\""+objName+"\");");
+	try {
+		var html = "";
+		var obj = tryeval(objName);
+		LOG("D");
+		html += "<h3>Inspecting: " + trytypeof(obj) + " " + objName + " = " + obj + "</h3>";
+		html += "<blockquote>";
+		html += "<table>";
+		LOG("E");
+		for (var name in obj) {
+			// html += "Var " + x + " = " + eval("obj."+x) + "<BR>";
+			var globName = objName + "." + name;
+			var type = "unknown";
+			var value = "unknown";
+			var exc = "";
+			try {
+				value = eval("obj."+name);
+				type = trytypeof(value);
+				// test to prove exc can get set: throw new Exception("poo");
+			} catch (e) {
+				exc = e; // haven't seen it happen =)
+			}
+			html += "<tr>";
+			html += "<td>"+type+"</td>";
+			html += "<td>&nbsp;</td>";
+			// html += "<td>"+name+"</td>";
+			var link = 'javascript:top.jsReflectorShow("' + globName + '")';
+			html += "<td><a href='" + link + "'>" + name + "</a></td>";
+			html += "<td>=</td>";
+			LOG("F");
+			try {
+				LOG(value);
+			} catch (e) {
+				value = "e="+e;
+			}
+			LOG("G");
+			html += "<td>" + toHtml(strip("" + value)) + "</td>";
+			html += "<td>" + toHtml(strip("" + exc)) + "</td>";
+			html += "</tr>";
+		}
+		html += "</table>";
+		html += "</blockquote>";
+		writeToFrame(mainFrame,html);
+	} catch (e) {
+		LOG(e);
+	}
+}
+
 /////////////////////////// Library functions ///////////////////////////
 
 function escapeString(text) {
@@ -320,11 +447,32 @@ function toHtml(text) {
 
 function countCharIn(str,srch) {
 	var cnt = 0;
-	for (var i=0;i<str.len;i++) {
+	for (var i=0;i<str.length;i++) {
 		if (str.charAt(i) == srch)
 			cnt++;
 	}
 	return cnt;
+}
+
+function splitAt(str,srch) {
+	var list = new Array();
+	var i = 0;
+	while (true) {
+		var j = str.indexOf(srch);
+		if (j < 0)
+			break;
+		list[i] = str.substring(0,j);
+		str = str.substring(j + 1);
+		i++;
+	}
+	list[i] = str;
+	return list;
+}
+
+function niceDate() {
+	var now = "" + new Date();
+	var bits = splitAt(now," ");
+	return bits[1] + " " + bits[2] + " " + bits[4];
 }
 
 // --> </script>
