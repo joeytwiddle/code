@@ -1,0 +1,1 @@
+Postgresql's SELECT captures all sub-classes too if inheritance is used.

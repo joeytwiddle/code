@@ -1,0 +1,25 @@
+#!/bin/zsh
+
+FILE="$*"
+CFILE="$*.c"
+HFILE="$*.h"
+
+# Read #include before this file in joeylib.c
+export JLSOFAR=""
+DONE=false;
+cat joeylib.c | grep "#include" | while read X; do
+	IFILE=`echo "$X" | sed "s/.*<//" | sed "s/>.*//"`
+	# echo "$X"
+	# echo "$IFILE"
+	if test "$IFILE" = "$CFILE"; then
+		DONE=true;
+	fi
+	# echo "$DONE"
+	if test "$DONE" = "false"; then
+		JLSOFAR="$JLSOFAR$IFILE
+";
+	fi
+done
+
+NEWINC=`echo "$JLSOFAR" | grep -v "^$" | sed "s/^/#include </" | sed "s/$/>/"`
+echo "$NEWINC"

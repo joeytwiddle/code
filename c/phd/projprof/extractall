@@ -1,0 +1,28 @@
+DOC=$1;
+
+# export PATH="$PATH:."
+
+SRCNAME="dar-page2"
+IFILE="$SRCNAME.bmp"
+RES="results.txt"
+FOCALRES="focalres.txt"
+
+rm -f "$RES"
+echo "START" > "$RES"
+
+rm -f "$FOCALRES"
+echo "" > "$FOCALRES"
+
+gunzip res/*.txt.gz
+
+roll="90";
+# for roll in `listnums -6 6`; do
+  pitch=15;
+  for pitch in `listnums 5 80 by 5`; do
+    yaw=15;
+    for yaw in `listnums 5 80 by 5`; do
+			extractone $roll $yaw $pitch >> "$RES"
+    done
+  done
+# done
+

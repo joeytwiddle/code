@@ -1,0 +1,2 @@
+#!/usr/local/gnu/bin/gnuplot
+u = 301.967651

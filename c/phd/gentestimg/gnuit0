@@ -1,0 +1,3 @@
+simgen -yoff 15 -size 0.5 -width 320 -gnuplot $*
+# simgen -yoff 1 -image -overlay dar-page2-small.bmp -size 0.5 -width 320
+

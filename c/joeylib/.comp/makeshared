@@ -1,0 +1,2 @@
+gcc -shared -o joeylib.so.n joeylib.o
+nm joeylib.so.n | more

@@ -1,0 +1,122 @@
+#!/usr/bin/gnuplot
+splot [] [] [-10:10] 'new5testdata.txt' using 1:2:39 w l
+set view 3,3,1,1
+replot
+set view 6,6,1,1
+replot
+set view 9,9,1,1
+replot
+set view 12,12,1,1
+replot
+set view 15,15,1,1
+replot
+set view 18,18,1,1
+replot
+set view 21,21,1,1
+replot
+set view 24,24,1,1
+replot
+set view 27,27,1,1
+replot
+set view 30,30,1,1
+replot
+set view 33,33,1,1
+replot
+set view 36,36,1,1
+replot
+set view 39,39,1,1
+replot
+set view 42,42,1,1
+replot
+set view 45,45,1,1
+replot
+set view 48,48,1,1
+replot
+set view 51,51,1,1
+replot
+set view 54,54,1,1
+replot
+set view 57,57,1,1
+replot
+set view 60,60,1,1
+replot
+set view 63,63,1,1
+replot
+set view 66,66,1,1
+replot
+set view 69,69,1,1
+replot
+set view 72,72,1,1
+replot
+set view 75,75,1,1
+replot
+set view 78,78,1,1
+replot
+set view 81,81,1,1
+replot
+set view 84,84,1,1
+replot
+set view 87,87,1,1
+replot
+set view 90,90,1,1
+replot
+set view 87,87,1,1
+replot
+set view 84,84,1,1
+replot
+set view 81,81,1,1
+replot
+set view 78,78,1,1
+replot
+set view 75,75,1,1
+replot
+set view 72,72,1,1
+replot
+set view 69,69,1,1
+replot
+set view 66,66,1,1
+replot
+set view 63,63,1,1
+replot
+set view 60,60,1,1
+replot
+set view 57,57,1,1
+replot
+set view 54,54,1,1
+replot
+set view 51,51,1,1
+replot
+set view 48,48,1,1
+replot
+set view 45,45,1,1
+replot
+set view 42,42,1,1
+replot
+set view 39,39,1,1
+replot
+set view 36,36,1,1
+replot
+set view 33,33,1,1
+replot
+set view 30,30,1,1
+replot
+set view 27,27,1,1
+replot
+set view 24,24,1,1
+replot
+set view 21,21,1,1
+replot
+set view 18,18,1,1
+replot
+set view 15,15,1,1
+replot
+set view 12,12,1,1
+replot
+set view 9,9,1,1
+replot
+set view 6,6,1,1
+replot
+set view 3,3,1,1
+replot
+set view 0,0,1,1
+replot

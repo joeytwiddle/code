@@ -1,0 +1,21 @@
+#!/usr/local/gnu/bin/gnuplot
+u = 301.967651
+# u=0.001
+v=-20
+w=0.00001
+
+# This is an estimate of the real eqn, but more likely to converge because less complicated!
+# x=(u-y)/(w*y-u*v)
+# f(x)=u*v/(1+x*w)
+# it gives rubbish results
+# but good as a more stable initial fit
+f(y)=u*v/(1+w*(u-y)/(w*y-u*v))
+fit f(x) "gpldata.txt" via v,w
+
+f(x)=u*(1+v*(((u-x)/(w*x-u*v)-0.5)+1))/(1+w*(((u-x)/(w*x-u*v)-0.5)+1))-u*(1+v*((u-x)/(w*x-u*v)-0.5))/(1+w*((u-x)/(w*x-u*v)-0.5))
+fit f(x) "gpldata.txt" via v,w
+
+set term post
+set output "gplfit.ps"
+plot "gpldata.txt",f(x)
+
