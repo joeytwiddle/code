@@ -87,7 +87,7 @@ echo
 /www/recreatemydb.sh
 # Ensure postgres is not busy so that we may destroy the DB
 /etc/init.d/postgresql stop
-sleep 5
+sleep 15 # 5 was not long enough!
 /etc/init.d/postgresql start
 sleep 15
 su - postgres /www/recreatepgdb.sh
