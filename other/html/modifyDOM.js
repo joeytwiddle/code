@@ -5,6 +5,10 @@
 // Right now this is mainly an implementation of folding,
 // which works by selecting foldable elements, and attaches a handle for each by detecting the last piece of text in the document.  This should be customizable!
 
+
+
+// ======== START general library functions
+
 var uniqueIdCount = 0;
 function getUniqueId() {
 	uniqueIdCount++;
@@ -78,6 +82,12 @@ function escape(str) {
 	return str;
 }
 
+// ======== END general library functions
+
+
+
+// ======== START functions from folding could be useful elsewhere
+
 var debugData = "";
 
 function showData(label,elem) {
@@ -91,6 +101,21 @@ function showData(label,elem) {
 	debugData += data + "\n";
 }
 
+// ======== END functions from folding could be useful elsewhere
+
+
+
+// ======== START functions specific to the page-folding utility.
+
+// Note: folding and unfolding are also called rolling up and unrolling.
+
+// var rollup_image = "http://www.cs.bris.ac.uk/~pclark/bluearrowdown.png";
+// var unroll_image = "http://www.cs.bris.ac.uk/~pclark/bluearrowup.png";
+var rollup_image = "http://hwi.ath.cx/images/minus.png";
+var rollup_image_mouseover = "http://hwi.ath.cx/images/minus-over.png";
+var unroll_image = "http://hwi.ath.cx/images/plus.png";
+var unroll_image_mouseover = "http://hwi.ath.cx/images/plus-over.png";
+
 function addFoldToBlockQuote(elemToFold) {
 	addFoldToBlockQuoteState(elemToFold,true);
 }
@@ -102,7 +127,7 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	elemToFold.id = foldId + "Block";
 	// }
 	var imgElem = document.createElement("IMG");
-	imgElem.setAttribute("src","http://www.cs.bris.ac.uk/~pclark/bluearrowdown.png");
+	imgElem.setAttribute("src",rollup_image);
 	imgElem.id = foldId + "Image";
 	// alert("imgElem = " + imgElem);
 	var handleElem = document.createElement("SPAN");
@@ -110,8 +135,8 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	// handleElem.setAttribute("onClick",'javascript:toggleFold(this);');
 	// handleElem.setAttribute("onclick",'javascript:toggleFold(document.getElementById(\"' + foldId+"Handle" + '\"));');
 	handleElem.setAttribute("onclick",'javascript:toggleFoldNamed(\"' + foldId + '\");');
-	handleElem.setAttribute("onmouseover",'javascript:mouseOverHandle(this);');
-	handleElem.setAttribute("onmouseeout",'javascript:mouseOutHandle(this);');
+	handleElem.setAttribute("onmouseover",'javascript:rollOntoHandle(\"'+foldId+'\");');
+	handleElem.setAttribute("onmouseout",'javascript:rollOffHandle(\"'+foldId+'\");');
 	handleElem.style.cursor = "n-resize";
 	// var labelElem = elemToFold.previousSibling;
 	var labelElem = findPreviousTextNode(elemToFold);
@@ -123,6 +148,7 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	// if (!labelElem) {
 		// labelElem = elemToFold.previousSibling;
 	// }
+	// TODO: optionally, make labelElem a clickable link for folding/unfolding
 	if (labelElem) {
 		labelElem.parentNode.insertBefore(handleElem,labelElem);
 		// alert("handleElem = " + handleElem);
@@ -181,29 +207,41 @@ function chopOffEndIfMatched(string, possEnd) {
 		string = string.substring(0,string.length-possEnd.length);
 	return string;
 }
+/* Not used but I think it prolly works:
 function toggleFold(node) {
 	var name = node.id;
 	name = chopOffEndIfMatched(name,"Handle");
 	// alert("got name: "+name);
 	toggleFoldNamed(name);
 }
+*/
 function toggleFoldNamed(name) {
 	var block = document.getElementById(name+"Block");
 	// alert("found block for name=\""+name+"\": "+block);
 	var img = document.getElementById(name+"Image");
 	// alert(""+name+" -> "+block);
 	if (block) {
-		if (block.style.display == "none") {
-			block.style.display = "";
-			img.src="http://www.cs.bris.ac.uk/~pclark/bluearrowdown.png";
+		if (isFolded(block)) {
+			openFold(block);
+			img.src = rollup_image;
 		} else {
-			block.style.display = "none";
-			img.src="http://www.cs.bris.ac.uk/~pclark/bluearrow.png";
+			closeFold(block);
+			img.src = unroll_image;
 		}
 	}
 }
+function isFolded(block) {
+	return ( block.style.display == "none" );
+}
+function openFold(block) {
+	block.style.display = "";
+}
+function closeFold(block) {
+	block.style.display = "none";
+}
 function mouseOverHandle(node) {
 	node.style.color="#ff8000";
+	// alert("node.nodeid = " + node.nodeid); undefined :-(
 	// node.style="text-decoration: underline;"
 	// node.style.decoration="bold,underline,overline";
 	// alert(node.style.textDecoration);
@@ -212,6 +250,43 @@ function mouseOutHandle(node) {
 	node.style.color="#000080";
 	// node.style.text-decoration="none";
 }
+
+function rollOntoHandle(foldId) {
+	// var img = document.getElementById(foldId+"Image");
+	// img.src = rollup_image_mouseover;
+	var block = document.getElementById(foldId+"Block");
+	var img = document.getElementById(foldId+"Image");
+	if (block) {
+		// alert("(off) isFolded = " + isFolded(block));
+		if (isFolded(block)) {
+			if (unroll_image_mouseover) {
+				img.src = unroll_image_mouseover;
+			}
+		} else {
+			if (rollup_image_mouseover) {
+				img.src = rollup_image_mouseover;
+			}
+		}
+	}
+	// mouseOverHandle(this); 
+}
+
+function rollOffHandle(foldId) {
+	// var img = document.getElementById(foldId+"Image");
+	// img.src = rollup_image_mouseover;
+	var block = document.getElementById(foldId+"Block");
+	var img = document.getElementById(foldId+"Image");
+	if (block) {
+		// alert("isFolded = " + isFolded(block));
+		if (isFolded(block)) {
+			img.src = unroll_image;
+		} else {
+			img.src = rollup_image;
+		}
+	}
+	// mouseOutHandle(this); 
+}
+
 // toggleFoldNamed('quote');
 /* Old for IE:
 function clickHandler() {
@@ -230,3 +305,4 @@ function clickHandler() {
 document.onclick = clickHandler;
 */
 
+// ======== END functions specific to the page-folding utility.
