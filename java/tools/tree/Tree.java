@@ -32,12 +32,9 @@ public class Tree {
 			while ( ( line = read.readLine() ) != null ) {
 
 				int same = countMatch(lastline,line);
-				if (same>lasti)
-					System.out.println("+ "+line.substring(0,same)+"{");
-				if (same<lasti)
-					// System.out.println("- "+lastline.substring(0,lasti)+"}");
-					System.out.println("- }");
-				System.out.println("."+same+" "+line);
+				for (int i=0;i<same;i++)
+					System.out.print(' ');
+				System.out.println(line.substring(same));
 				lastline = line;
 				lasti = same;
 
