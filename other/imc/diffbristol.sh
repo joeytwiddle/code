@@ -1,3 +1,4 @@
+export JPATH=/home/joey/j
 source /home/joey/j/start simple
 
 export DIFFCOM="diff"
