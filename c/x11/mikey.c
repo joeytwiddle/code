@@ -1,4 +1,3 @@
-
 #define Region Banana
 #include <joeylib.h>
 // #include <joeylib.c>
@@ -90,8 +89,8 @@ void wicked_blit() {
 #define uchar unsigned char
 
 #define fs 12
-#define palspeed 1
-#define colspeed 1
+#define palspeed 2
+#define colspeed 2
 #define framespermap 30
 
 //r = .5 + 2 * t / pi + .5 * SIN(1.5 * t)
@@ -341,7 +340,7 @@ void iterate_candy() {
 
         #ifdef X11GFX
           // Fake palette switching
-          c=(c+palspeed*frameno)%colors;
+          // c=(c+palspeed*frameno)%colors;
           ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
         #endif
 				
@@ -351,9 +350,9 @@ void iterate_candy() {
       }
     }
 
-    #ifdef ALLEGRO
+    // #ifdef ALLEGRO
       redocolors(); // Not fake palette switching
-    #endif
+    // #endif
 
 		// for (x=0;x<WIN_W;x++)
 			// for (y=0;y<WIN_H;y++) {
@@ -525,7 +524,7 @@ void redocolors() {
 		// myRGB r=( thru < 1 ? myRGB(0.0,thru*5.0,0.0)
 						             // : myRGB(thru*2.0-1.0,1.0,thru*2.0-1.0)
 						// );
-    float thru=4.0*(float)((frameno*palspeed+i)%colors)/(float)COLORS;
+    float thru=4.0*(float)((frameno*palspeed+i/2)%colors)/(float)COLORS;
 		myRGB r;
 		if (thru<1.0)
 			r=myRGB(0.0,thru,0.0);
@@ -555,8 +554,6 @@ void redocolors() {
   }
 
     #ifdef X11GFX
-			XAllocColorCells(d,colormap,1,0,0,color,colors);
-
 			if (stylee == styleeTrueColor) {
         // XInstallColormap (d, colormap);
 			  for (int i=0;i<colors;i++) {
@@ -565,6 +562,8 @@ void redocolors() {
 				  // works for true-color
 			  }
 			} else {
+			XAllocColorCells(d,colormap,1,0,0,color,colors);
+
 			  // for (int i=0;i<colors;i++) {
 				  // xrgb[i].pixel=color[i];
 			  // }
@@ -680,19 +679,20 @@ void real_main() {
   
     vis = vlist[0];
     XFree (vlist);
-  
-    if (vis.colormap_size < COLORS)
-      fputs ("Colormap is too small.\n", stderr); // , exit (1);
-  
+		
+  	// That's not a fair comparison colormap_size is depth in bits!
+    // if (vis.colormap_size < COLORS)
+      // printf("Colormap is too small: %i.\n",vis.colormap_size); // , exit (1);
+		printf("Colour depth: %i\n",vis.colormap_size);
   
     win = XCreateSimpleWindow (d, DefaultRootWindow (d),
 			       0, 0, WIN_W, WIN_H, 0,
 			       WhitePixel (d, screen), BlackPixel (d, screen));
   
 	  int xclass=get_xvisinfo_class(vis);
-		printf("class = %i\n",xclass);
+		// printf("class = %i\n",xclass);
 	  stylee = ( vis.depth > 8 ? styleeTrueColor : styleePrivate );
-	  printf("stylee=%i\n",stylee);
+	  // printf("stylee=%i\n",stylee);
   
     if ( get_xvisinfo_class(vis) % 2 == 1) {	/* The odd numbers can redefine colors */
   
@@ -705,11 +705,11 @@ void real_main() {
       allocateOK = (XAllocColorCells (d, colormap, 1,
 							      NULL, 0, color, COLORS) != 0);
 
-			printf("Allocated OK? %i\n",allocateOK);
+			// printf("Allocated OK? %i\n",allocateOK);
 			
       if (allocateOK) {
   
-			  printf("Allocated OK\n");
+			  // printf("Allocated OK\n");
         // This doesn't work for installed colormap!
   
         /* Modify the colorcells */
@@ -730,10 +730,11 @@ void real_main() {
 		  // white = XWhitePixel(d,screen);
   
     } else if ( get_xvisinfo_class(vis) == TrueColor) {
-					  printf("TrueColor %i = %i\n",xclass,TrueColor);
+      colormap = DefaultColormap (d, screen);
+					  // printf("TrueColor %i = %i\n",xclass,TrueColor);
       /* This will lookup the color and sets the xrgb[i].pixel value */
-      for (i = 0; i < COLORS; i++)
-        XAllocColor (d, colormap, &xrgb[i]);
+      // for (i = 0; i < COLORS; i++)
+        // XAllocColor (d, colormap, &xrgb[i]);
     } else
       fprintf (stderr, "Not content with visual class %d.\n",
 	       get_xvisinfo_class(vis) ), exit (1);
