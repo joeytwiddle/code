@@ -1,7 +1,10 @@
 package nujutu;
 
 // import java.applet.*;
+import java.awt.Component;
 import java.awt.Container;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
 import java.awt.event.*;
 import java.io.*;
 import java.lang.*;
@@ -14,7 +17,16 @@ import javax.swing.text.html.*;
 import nuju.*;
 import jlib.*;
 
-class MemberBrowser extends Box {
+class MemberBrowser extends JPanel {
+
+	GridBagConstraints c = new GridBagConstraints();
+	GridBagLayout gridbag = new GridBagLayout();
+
+	void addComp(Component comp) {
+		gridbag.setConstraints(comp,c);
+		add(comp);
+		c.gridx++;
+	}
 
 	MemberBrowser(Class cls,Object o,
 		List members,
@@ -24,68 +36,84 @@ class MemberBrowser extends Box {
 		boolean method,
 		boolean constructor
 	) {
-		super(BoxLayout.Y_AXIS);
+		super();
+
+		setLayout(gridbag);
+		// c.fill = GridBagConstraints.BOTH;
+		c.gridx = 0;
+		c.gridy = 0;
+
 		// set(new Integer(1),0,2);
 		// set(new JButton("hello"),2,0);
 		for (int i=0;i<members.size();i++) {
 			try {
 				Member member=(Member)members.get(i);
 				if ( ! (
-					( stat && ! Modifier.isStatic(member.getModifiers()) )
-						||
-					( notstat && Modifier.isStatic(member.getModifiers()) )
-						||
-					( priv && ! Modifier.isPrivate(member.getModifiers()) )
-						||
-					( notpriv && Modifier.isPrivate(member.getModifiers()) )
-						||
-					( field && ! (member instanceof Field) )
-						||
-					( method && ! (member instanceof Method) )
-						||
-					( constructor && ! (member instanceof Constructor) )
-				) ) {
+							( stat && ! Modifier.isStatic(member.getModifiers()) )
+							||
+							( notstat && Modifier.isStatic(member.getModifiers()) )
+							||
+							( priv && ! Modifier.isPrivate(member.getModifiers()) )
+							||
+							( notpriv && Modifier.isPrivate(member.getModifiers()) )
+							||
+							( field && ! (member instanceof Field) )
+							||
+							( method && ! (member instanceof Method) )
+							||
+							( constructor && ! (member instanceof Constructor) )
+						 ) ) {
 					Box boxRow=Box.createHorizontalBox();
 					Box leftBit=Box.createHorizontalBox();
 					Box rightBit=Box.createHorizontalBox();
 					int col=0;
+					c.anchor = GridBagConstraints.EAST;
 					if (member instanceof Field) {
-						leftBit.add(new JLabel(((Field)member).getType().toString()+" "));
+						addComp(new JLabel(((Field)member).getType().toString()+" "));
 					}
 					if (member instanceof Method) {
-						leftBit.add(new JLabel(((Method)member).getReturnType().toString()+" "));
+						addComp(new JLabel(((Method)member).getReturnType().toString()+" "));
 					}
-					leftBit.add(new JLabel(member.getName()+(member instanceof Field?"":"(")));
+					addComp(new JLabel(member.getName()+(member instanceof Field?"":"(")));
+					c.anchor = GridBagConstraints.WEST;
 					if (member instanceof Field) {
-						leftBit.add(new JLabel(" = "));
-						rightBit.add(new JLabel(((Field)member).get(o).toString()));
+						addComp(new JLabel(" = "));
+						// c.gridx++;
+						c.gridwidth = GridBagConstraints.REMAINDER;
+						addComp(new JLabel(((Field)member).get(o).toString()));
 					} else {
+						// c.gridx++;
 						Class[] params=( member instanceof Method
-							? ((Method)member).getParameterTypes()
-							: ((Constructor)member).getParameterTypes()
-						);
+								? ((Method)member).getParameterTypes()
+								: ((Constructor)member).getParameterTypes()
+								);
 						if (params.length==0) {
-							rightBit.add(new JLabel(") "));
-							rightBit.add(new JButton("Execute"));
+							addComp(new JLabel(") "));
+							// c.gridwidth = GridBagConstraints.REMAINDER;
+							addComp(new JButton("Execute"));
 						} else {
-							rightBit.add(new JLabel(" "));
-						for (int j=0;j<params.length;j++) {
-							if (params[j].isPrimitive()) {
-								rightBit.add(new JTextField(params[j].getName(),6));
-							} else {
-								rightBit.add(new JButton(params[j].getName()));
+							addComp(new JLabel(" "));
+							for (int j=0;j<params.length;j++) {
+								if (params[j].isPrimitive()) {
+									addComp(new JTextField(params[j].getName(),6));
+								} else {
+									addComp(new JButton(params[j].getName()));
+								}
+								if (j<params.length-1)
+									addComp(new JLabel(", "));
 							}
-							if (j<params.length-1)
-								rightBit.add(new JLabel(", "));
-						}
-						rightBit.add(new JLabel(" )"));
+							// c.gridwidth = GridBagConstraints.REMAINDER;
+							addComp(new JLabel(" )"));
 						}
 					}
+					// c.gridwidth = GridBagConstraints.RELATIVE;
 					members.remove(member);
 					i--;
-					boxRow.add(leftBit);
-					boxRow.add(rightBit);
-					add(boxRow);
+					// boxRow.add(leftBit);
+					// boxRow.add(rightBit);
+					// add(boxRow);
+					c.gridy++;
+					c.gridx = 0;
 				}
 			} catch (Exception e) {
 				System.err.println(""+e);
@@ -118,7 +146,7 @@ class InfoPane extends JTabbedPane {
 		tabs=new JPanel[tabNames.length];
 		for (int i=0;i<tabs.length;i++) {
 			tabs[i]=new JPanel();
-			addTab(tabNames[i],tabs[i]);
+			addTab(tabNames[i],new JScrollPane(tabs[i]));
 		}
 	}
 
