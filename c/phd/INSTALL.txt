@@ -1,17 +1,23 @@
 You are recommended to follow the following procedure to obtain a working copy of my research code.
 
+Compile for Linux!  The C code used to work under Solaris, but although it still compiles, I believe there are numerical problems somewhere which cause some part of the process to completely fail (texture measures come out as 0 I think).  So do compile and run on Linux, and if you must move to Solaris, observe the difference in the programs' output!
+
 Visit http://hwi.ath.cx/twiki/bin/view/Neuralyte/ProjectJsh and install and run the jsh environment.
+(I don't think the software actually depends on jsh, but it might be easiest to install this way.)
 
 In jsh, type:
 
 	cd $JPATH/code
-	hwicvs co c/phd c/joeylib
+	export CVSROOT=:pserver:anonymous@hwi.ath.cx:/stuff/cvsroot
+	cvs login        ## use the password "anonymous"
+	cvs -z4 co c/joeylib c/tools/forall c/phd
+	makebintools
 	makephdbins
 
 If all goes well, you will have compiled all the executables I used for testing.
 
-The C code used to work under Solaris, but although it still compiles, I believe there are numerical problems somewhere which cause some part of the process to completely fail (texture measures I think).  So do compile and run on Linux, and if you must move to Solaris, observe the difference in the programs' output!
-
-Running the programs may be a little harder!  I used to have some test images in the images/ directory, and I ran 0allall to batch process them.  Maybe, if you put an image called "<imgname>.bmp" there, and call "./0all <imgname>", it will work.
+Running the programs may be a little harder!  I used to have some test images in the images/ directory, and I ran 0allall to batch process them.  Maybe, if you put an image called "<imgname>.bmp" there, and call "./0all <imgname>", it will work.  Take a look at the 0all script to see which other scripts it calls...
 
 If you run into problems, please mail pclark@cs.bris.ac.uk with a copy of your terminal's error output (the whole history if possible!).
+
+You may need to link $JPATH/code/c/joeylib to $JPATH/joeylib in order to compile.  Joeylib needs to be compiled before the programs.

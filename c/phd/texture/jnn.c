@@ -1,10 +1,11 @@
 #include <joeylib.h>
 
-#ifdef LINUX
-#define ImageDir "/home/joey/j/images/"
-#else
-#define ImageDir "/home/pgrad/pclark/images/"
-#endif
+// #ifdef LINUX
+// #define ImageDir "/home/joey/j/images/"
+// #else
+// #define ImageDir "/home/pgrad/pclark/images/"
+// #endif
+#define ImageDir "../images/"
 
 // #define ImageDir "/home/joey/j/images/"
 
