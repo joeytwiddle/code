@@ -1,44 +1,18 @@
-#define SCRWID 320
-#define SCRHEI 200
-#define SCRBPS 24
-#define desiredFramesPerSecond 40
-// #define KEEP_TO_FPS
+#include <joeylib.c>
 
-// #define ALLEGRO
-#include "../../gfx/sdl/stripped-useful.c"
-#undef new
-#undef mysgn
-#undef sgn
-#undef square
-#include <joeylib.h>
-
-#define REDEFINE
-#include "define.c"
-
-#include "keys.c"
-
-#define scrwid SCRWID
-#define scrhei SCRHEI
+#define scrwid 320
+#define scrhei 200
 
 float brightness=0;
-float change=1;
-float fogdepth=20.0;
-//float fogdepth=4.0;
-bool planar=false;
-int numps=500;
-float partrad=0.04;
-int tunnelps=1;
-float tunnelrad=0;
+float change=1.5;
+float fogdepth=2.0;
 
+int numps=500;
+bool planar=false;
 float turnability=0.15;
 float forcevel=0.03;
 float markerrange=3.0;
-int taillen=600;
-
-V3d pos;
-Ori ori;
-Octree<V3d> octree=Octree<V3d>(V3d(0,0,0),50);
-//&Octree<V3d>::posforv3d);
+int taillen=60;
 
 JBmp left=JBmp(scrwid,scrhei);
 JBmp right=JBmp(scrwid,scrhei);
@@ -55,7 +29,7 @@ public:
     if (planar)
       line.y=0;
     o=myrnd()*2.0*pi;
-    a=myrnd()*11.0;
+    a=myrnd()*3.0;
   }
   V3d contribution(float thru) {
     return a*line*mysin(((float)f)*(thru*2.0*pi-o));
@@ -72,10 +46,10 @@ void plotsphere(V3d cen,int c) {
   int x,y;
   float p=PPgetunitnoadd(cen);
   if (p) {
-    float rad=partrad*p;
-    PPgetscrposnoadd(&cen,&PPlefteye,&x,&y);
+    float rad=0.04*p;
+    PPgetscrposnoadd(cen,PPlefteye,&x,&y);
     left.filledcircle(x,y,rad,c);
-    PPgetscrposnoadd(&cen,&PPrighteye,&x,&y);
+    PPgetscrposnoadd(cen,PPrighteye,&x,&y);
     right.filledcircle(x,y,rad,16*c);
     // b.filledcircle(x,y,,c);
     // plotpart2(part[i],-eyewid,sgn(c)*b))
@@ -97,33 +71,15 @@ V3d getpos(float thru) {
   return v;
 }
 
-V3d prepare(V3d v) {
-  return (v-pos).disorientate(ori);
-}
-
-void line(V3d a,V3d b) {
-  plotline(prepare(a),prepare(b),1);
-}
-
-void plotscene() {
+void plotscene(V3d pos,Ori ori,List<V3d> particles) {
   left.clear(0);
   right.clear(0);
   ori.quickorisetup();
-  Frustrum f=Frustrum(pos,ori,0.01,fogdepth);
-  // printf("pos = %s\nori = %s\n",pos.toString(),ori.toString());
-//  List<V3d> particles=*octree.getsimplelist();
-//  List<V3d> particles=*octree.getclippedlist(f);
-  OrderedList<V3d> particles=*octree.getorderedlist(f);
-  //line(f.left.pos,f.left.pos+f.left.nor/5.0);
-//  line(f.left.pos,f.top.pos);
-//  line(f.right.pos,f.top.pos);
-//  line(f.bottom.pos,f.right.pos);
-//  line(f.left.pos,f.bottom.pos);
-  // printf("%i %i\n",octree.totalobjs,particles.len);
-  for (int i=particles.len;i>=1;i--) {
+  for (int i=1;i<=particles.len;i++) {
     int x,y;
     V3d p=particles.num(i);
-    V3d cen=prepare(p);
+    V3d cen=p-pos+0.0*ori.y;
+    cen=V3d::disorientate(cen,ori);
     int c=15.0-chop(14.0*cen.z/fogdepth,0,14);
     // int c=7.0-chop(6.0*(i/particles.len),0,6);
     plotsphere(cen,c);
@@ -134,44 +90,37 @@ void writescreen() {
   // Or screens
   for (int i=0;i<scrwid;i++) {
     for (int j=0;j<scrhei;j++) {
-      // b.bmp[j][i]=(left.bmp[j][i] | right.bmp[j][i]);
-		// screen_setPixel(i,j,b.bmp[j][i]);
-		// screen_setPixel(i,j,intrnd(0,255));
-		// if (left.bmp[j][i]!=0)
-			// printf("%i\n",left.bmp[j][i]);
-		// screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],intrnd(0,255)));
-		screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],0));
+      b.bmp[j][i]=(left.bmp[j][i] | right.bmp[j][i]);
     }
   }
-  // b.writetoscreen();
-	SDL_UpdateRect(screen,0,0,SCRWID,SCRHEI);
+  b.writetoscreen();
 }
 
-void init() {
+void main() {
+  allegrosetup(scrwid,scrhei);
+  makepalette(&greypalette);
   setuptriglookup();
-
-#ifdef REDEFINE
-	fp=fopen("incl.c","wa");
-	if (fp==NULL)
-		printf("Failed to open file incl.c\n");
-	printSurfaceDetails(fp,"screen",screen);
-	fclose(fp);
-#endif
-
-  // allegrosetup(scrwid,scrhei);
-  // makepalette(&greypalette);
-  // mypalette(255,0,0,0);
-  // mypalette(0,0,0,0);
-  // mypalette(255,1,1,1);
-  // mypalette(128,0,0,0);
+  mypalette(255,0,0,0);
+  mypalette(0,0,0,0);
+  mypalette(255,1,1,1);
+  mypalette(128,0,0,0);
   for (int r=0;r<16;r++) {
     for (int g=0;g<16;g++) {
       int palc=r+g*16;
-      // mypalette(palc,(r==0?0:brightness+0.2+change*0.5*r/15.0),(g==0?0:brightness+change*0.1+0.2*g/15.0),(g==0?0:brightness+change*0.2+0.6*g/15.0));
+      mypalette(palc,(r==0?0:brightness+0.2+change*0.5*r/15.0),(g==0?0:brightness+change*0.1+0.2*g/15.0),(g==0?0:brightness+change*0.2+0.6*g/15.0));
       // Groovy colours mypalette(palc,(r==0?0:0.1+0.6*r/15.0),(g==0?0:0.1+0.2*g/15.0),(g==0?0:0.1+0.7*g/15.0));
       // Good colours: mypalette(palc,(r==0?0:0.3+0.4*r/15.0),(g==0?0:0.1+0.2*g/15.0),(g==0?0:0.3+0.5*g/15.0));
     }
   }
+    float pd=2.0;
+    PPsetup(scrwid,scrhei,pd);
+  V3d vel=V3d(0,0,0);
+  V3d acc=V3d(0,0,0);
+  Ori ori;
+  float droll=0;
+  float dyaw=0;
+  float dpitch=0;
+  int frame=0;
 
   // Set up track
   randomise();
@@ -179,67 +128,43 @@ void init() {
     waves+Wave();
     // waves.num(i).display();
   }
-
+  List<V3d> particles=List<V3d>();
+  int ps=1;
+  float rad=0;
   for (float thru=0;thru<1.0;thru+=1.0/(float)numps) {
     V3d here=getpos(thru);
     V3d forward=getpos(thru+0.00001)-here;
     V3d up=V3d::normcross(V3d::crazy,forward);
     V3d right=V3d::normcross(forward,up);
-    for (int i=0;i<tunnelps;i++) {
-      float t=2*pi*(float)i/(float)tunnelps;
+    for (int i=0;i<ps;i++) {
+      float t=2*pi*(float)i/(float)ps;
       float s=sin(t);
       float c=cos(t);
-      V3d v=here+tunnelrad*(s*up+c*right);
-      octree.add(v);
+      particles+(here+rad*(s*up+c*right));
     }
+    // v.print();
   }
 
-  for (int i=1;i<500;i++) {
-    octree.add(8.0*V3d(floatrnd(-1,1),floatrnd(-1,1),floatrnd(-1,1)));
-  }
-
-  ori=Ori(V3d(1,0,0),V3d(0,1,0));
-
-  SDL_Event event;
   // Display track
   float t=0;
   do {
-    t=t+0.03;
-    V3d from=V3d::rotate(6.0*V3d::k,V3d::j,t);
+    t=t+0.015;
+    V3d from=V3d::rotate(10.0*V3d::k,V3d::j,t);
     ori.forcez(from.neg());
-    pos=from;
-    plotscene();
+    plotscene(from,ori,particles);
     writescreen();
-       while(SDL_PollEvent(&event)){  /* Loop until there are no events left on the queue */
-         switch(event.type){  /* Process the appropiate event type */
-           case SDL_KEYDOWN:  /* Handle a KEYDOWN event */
-				  t=-1;
-				 }
-		 }
-  } while (t>=0);
-
-  printf("Enough of that, let's play!\n");
+  } while (!key[KEY_SPACE]);
+  do {
+  } while (key[KEY_SPACE]);
 
   // Race
   starttimer();
-  pos=getpos(0);
-    float pd=2.5;
-    PPsetup(scrwid,scrhei,pd);
-}
-
-  V3d vel=V3d(0,0,0);
-  V3d acc=V3d(0,0,0);
-  float droll=0;
-  float dyaw=0;
-  float dpitch=0;
-  int frame=0;
-
   float thru=0;
   float marker=0;
+  V3d pos=getpos(marker);
   V3d *tail=new V3d[taillen];
   int tailpos=0;
-
-  void doframe() {
+  do {
     thru+=0.001;
     // V3d last=V3d(pos.x,pos.y,pos.z);
     // V3d pos=getpos(thru);
@@ -249,7 +174,7 @@ void init() {
     frame++;
     // float pd=1.6+1.3*sin(2*pi*frame/1000.0);
     
-    plotscene();
+    plotscene(pos,ori,particles);
     
     // Plot and move marker
     V3d m;
@@ -264,13 +189,13 @@ void init() {
     if (u) {
       int x,y;
       float rad=0.12*u;
-      if (PPgetscrposnoadd(m,PPlefteye,&x,&y))
+      PPgetscrposnoadd(m,PPlefteye,&x,&y);
       if (left.inimage(x,y)) {
         plot=true;
         left.opencircle(x,y,rad,15);
         left.opencircle(x,y,rad/2,15);
       }
-      if (PPgetscrposnoadd(m,PPrighteye,&x,&y))
+      PPgetscrposnoadd(m,PPrighteye,&x,&y);
       if (right.inimage(x,y)) {
         plot=true;
         right.opencircle(x,y,rad,15*16);
@@ -324,42 +249,25 @@ void init() {
     // acc=hang(acc,V3d::origin,0.95,0.01);
     // Movement
     float angvel=turnability;
-
-	 SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-	 		observeEvent(event);
-			// printf("KEY: %i\n",event.key.keysym.sym);
-		 			if (event.type == SDL_QUIT) {
-						printf("Received SDL_QUIT event.\n");
-						keepLooping=false;
-					}
-		}
-
-    if (F10pressed) {
-		printf("User pressed F10: exiting.\n");
-		 keepLooping=false;
-	 }
-	if (zpressed) {
-		// printf("%s %f\n",ori.z().toString(),forcevel);
+    if (key[KEY_LCONTROL])
       vel=vel+ori.z()*forcevel;
-	}
     else
     angvel=turnability*2.0;
-    if (UPpressed)
+    if (key[KEY_UP])
       dpitch=dpitch+angvel;
-    if (DOWNpressed)
+    if (key[KEY_DOWN])
       dpitch=dpitch-angvel;
-    if (LEFTpressed)
-      if (xpressed)
+    if (key[KEY_LEFT])
+      if (key[KEY_ALT])
       droll=droll-angvel;
     else
     dyaw=dyaw-angvel;
-    if (RIGHTpressed)
-      if (xpressed)
+    if (key[KEY_RIGHT])
+      if (key[KEY_ALT])
       droll=droll+angvel;
     else
     dyaw=dyaw+angvel;
-    vel=hang(vel,V3d::o,0.92,0);
+    vel=hang(vel,V3d::o,0.91,0);
     pos=pos+vel;
     droll=hang(droll,0,0.9,0);
     dyaw=hang(dyaw,0,0.9,0);
@@ -369,8 +277,8 @@ void init() {
     ori.pitch(dpitch/5.0);
     
     framedone();
-  // } while (true); // !key[KEY_SPACE] && !key[KEY_ESC]);
-  // savetimer();
-  // // allegro_exit();
-  // displayframespersecond();
+  } while (!key[KEY_SPACE] && !key[KEY_ESC]);
+  savetimer();
+  allegro_exit();
+  displayframespersecond();
 }
