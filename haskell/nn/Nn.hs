@@ -1,28 +1,34 @@
 module Nn where
 
-input = "XXXX "
-     ++ "X   X"
-     ++ "X   X"
-     ++ "XXXXX"
-     ++ "X   X"
-     ++ " X  X"
-     ++ "X XXX"
+input = "  XX  "
+     ++ "XX   X"
+     ++ "X    X"
+     ++ "X   X "
+     ++ "X XX  "
+     ++ "X   X "
+     ++ "X    X"
+     ++ " X   X"
+     ++ "X X X "
 
 images :: [[Char]]
-images = [ "  X  "
-        ++ " X X "
-        ++ "X   X"
-        ++ "XXXXX"
-        ++ "X   X"
-        ++ "X   X"
-        ++ "X   X",
-           "XXXX "
-        ++ "X   X"
-        ++ "X   X"
-        ++ "XXXX "
-        ++ "X   X"
-        ++ "X   X"
-        ++ "XXXX " ]
+images = [ "  XX  "
+        ++ " X  X "
+        ++ "X    X"
+        ++ "X    X"
+        ++ "XXXXXX"
+        ++ "X    X"
+        ++ "X    X"
+        ++ "X    X"
+        ++ "X    X",
+           "XXXXX "
+        ++ "X    X"
+        ++ "X    X"
+        ++ "X    X"
+        ++ "XXXXX "
+        ++ "X    X"
+        ++ "X    X"
+        ++ "X    X"
+        ++ "XXXXX " ]
 
 nonodes = length (head images)
 
@@ -53,7 +59,7 @@ it ws im = display next >>
            where next = gimmenode ws im 0
 
 display [] = putChar '\n'
-display list = display2 (take 5 list) >> display (drop 5 list)
+display list = display2 (take 6 list) >> display (drop 6 list)
 
 display2 [] = putChar '\n'
 display2 (x:xs) = putChar x >> display2 xs
