@@ -1,12 +1,21 @@
 /** 
  * TODO:
  * - Framebuffer.
+ * - Call it psychedebian, not debianswirl?
+ * - Rainbow mode (instead of spiral, for non-Debs!)
  * - Integer maths, and other optimisation.
- * - Intercept boot messages and display.
- * - Use time instead of frame count.
+ * - Use time instead of frame count, and do some sleeping!
  * - Could implement more efficient anti-aliasing:
- *   eg. - retain neighbouring heights
+ *   eg. - in current method: retain neighbouring heights
  *    or - work out distance to spiral edge (ie. treat is as a 2D shape, not a thresholded heightmap)
+ * - Integrate into boot process (start early, steal display, exit and end of boot).
+ * - Intercept boot messages and display.
+ * - Some ideas for boot msg display:
+ *   - If single-line scroll bar, use green # to indicate NL
+ *   - If centralised box display, have friendly output (like phosphor) which scrolls at human-readable speed.  (Ie. slows down scrolling when big msg appears.)
+ *   - Could be interesting to record boot msgs for next time to:
+ *     - Highlight what boot msgs are different from usual.
+ *     - Estimate time till boot completion (compare msg against last time).
 **/
 
 #include <math.h>
