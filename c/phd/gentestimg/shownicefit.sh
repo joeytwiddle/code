@@ -4,6 +4,8 @@ rm gplfit-*.eps
 
 RND=$RANDOM && test "$RND" || RND=`getrandom` || RND=20
 # RND=16632
+# RND=13771
+RND=16293
 
 # DOC="simgs/dar-crpage2.bmp"
 # DOC="simgs/left.bmp"
@@ -18,13 +20,16 @@ SIMCOM="./simgen
 $DOC tmp.bmp
 -gnuplot
 -showexp
--ins 2
 -rnd $RND
 $@";
 # -imgnoise 0.0
 # -noise 0.2
-# -rems 2
 # -focal 0.1
+
+SIMMODS="
+-rems 2
+"
+# -ins 2
 
 PPPARAMS="
 -hvpcheat
@@ -52,6 +57,13 @@ for Y in "-noransac" ""; do
 	echo `curseyellow`$SIMCOM $X $Y -focal $F`cursegrey`
 	$SIMCOM $X $Y -focal $F | tee simgen.out | grep RANSAC
 
+	mv gplfit.ps gplfit-$F$X$Y-sim-nomod.eps
+	mv gplsolve.txt gplsolve-$F$X$Y-sim-nomod.txt
+	mv gpldata.txt gpldata-$F$X$Y-sim-nomod.dat
+
+	echo `curseyellow`$SIMCOM $SIMMODS $X $Y -focal $F`cursegrey`
+	$SIMCOM $SIMMODS $X $Y -focal $F | tee simgen.out | grep RANSAC
+
 	mv gplfit.ps gplfit-$F$X$Y-sim.eps
 	mv gplsolve.txt gplsolve-$F$X$Y-sim.txt
 	mv gpldata.txt gpldata-$F$X$Y-sim.dat
@@ -73,8 +85,10 @@ for Y in "-noransac" ""; do
 
 done
 echo `curseyellow`./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat`cursegrey`
-./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
-mv gplfit.ps gplfit-ranvreal-$F$X.eps
+# ./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+# mv gplfit.ps gplfit-ranvreal-$F$X.eps
+./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+mv gplfit.ps gplfit-nomodvreal-$F$X.eps
 done
 done
 
