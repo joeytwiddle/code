@@ -5,18 +5,34 @@
 
 <script type="text/javascript"> <!--
 
-// Options (will be load/saveable w/ cookies?):
-var powerBarPosition = "top";
+//** Constants:
 
-// Runtime vars:
-var powerBar; // == powerBarFrame
+var modules = [ "moduleClockEnabled", "moduleJavaScriptTester", "moduleButtonsOnPowerBarForms" ];
+
+//** Options: (will be load/saveable using cookies...)
+
+var powerBarPosition = "top";
+var moduleClockEnabled = true;
+var moduleJavaScriptTester = true;
+var moduleButtonsOnPowerBarForms = true;
+
+//** Runtime constants:
+
+var defaultSubmitButton = ( moduleButtonsOnPowerBarForms ? '<INPUT type="button" value="Go" onclick="submit()">' : "" );
+var powerBarFrame; // == powerBarFrame
 var mainFrame;
+var powerBarLocationFormElement;
+
+//** Runtime variables:
+
+//** Code:
 
 function createFrameset() {
-	var distrib = ( powerBarPosition == "top" ? "10%,*" : "*,10%" );
+	var distrib = ( powerBarPosition == "top" ? "20%,*" : "*,20%" );
 	var startFrameSet     = '<frameset rows="'+distrib+'">';
 	var powerBarFrameHtml = '<frame src="about:blank">';
-	var mainFrameHtml     = '<frame src="http://www.google.com/">';
+	// var mainFrameHtml     = '<frame src="http://www.google.com/">';
+	var mainFrameHtml     = '<frame src="about:blank">';
 	var endFrameSet       = '</frameset>';
 	var framesetHtml = "";
 	framesetHtml += startFrameSet;
@@ -24,66 +40,109 @@ function createFrameset() {
 	framesetHtml += ( powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
 	framesetHtml += endFrameSet;
 	document.writeln(framesetHtml);
-	powerBar  = window.frames[ ( powerBarPosition == "top" ? 0 : 1 ) ];
+	powerBarFrame  = window.frames[ ( powerBarPosition == "top" ? 0 : 1 ) ];
 	mainFrame = window.frames[ ( powerBarPosition == "top" ? 1 : 0 ) ];
 }
 
-// function addHtml(htmlStr) {
-	// var hook = document.getElementById("pageHook");
-	// hook.innerHTML += htmlStr;
-// }
-
 function generatePowerBar() {
-	var powerBarHtml = '<FORM><INPUT type="text" size="30" value="http://www.google.com/"></FORM>';
-	powerBar.document.open();
-	powerBar.document.write(powerBarHtml);
-	powerBar.document.close();
+	// Note: Since this HTML will sit in a different frame, calls to powerBar's functions and vars must be made with a preceding "top."
+	var powerBarHtml = "";
+	powerBarHtml += '<table width="100%"><tr><td align="center">';
+
+	powerBarHtml += '<FORM action="javascript:top.changeLocation(top.mainFrame,url.value)">';
+	powerBarHtml += 'Location:\n';
+	powerBarHtml += '<INPUT name="url" type="text" size="30" value="http://www.google.com/">';
+	powerBarHtml += defaultSubmitButton;
+	powerBarHtml += '</FORM>';
+
+	if (moduleJavaScriptTester) {
+		powerBarHtml += '</td><td>';
+		powerBarHtml += '<FORM action="javascript:top.processJs(codeToExecute.value)">';
+		powerBarHtml += 'JavaScript tester:\n';
+		powerBarHtml += '<INPUT name="codeToExecute" type="text" size="30" value="type some javascript here">';
+		// powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(codeToExecute.value)">';
+		powerBarHtml += defaultSubmitButton;
+		powerBarHtml += '</FORM>';
+	}
+
+	powerBarHtml += '</td><td>';
+	powerBarHtml += '<INPUT type="button" value="Options..." onclick="top.editOptions()">';
+
+	if (moduleClockEnabled) {
+		powerBarHtml += '</td><td>';
+		powerBarHtml += '<div id="clockHook">clock loading...</div>';
+	}
+
+	powerBarHtml += '</td></tr></table>';
+	writeToFrame(powerBarFrame,powerBarHtml);
+	powerBarLocationFormElement = powerBarFrame.document.forms[0];
+}
+
+var timerId;
+function refreshTimer() {
+	clearTimeout(timerId);
+	timerId = setTimeout('updatePowerBar()',1000);
 }
 
 function init() {
 	createFrameset();
 	generatePowerBar();
-	mainFrame.document.open();
-	mainFrame.document.write("hello");
-	mainFrame.document.close();
+	// TODO: Make this use referer, or last in browser's history, or url provided via CGI.
+	writeToFrame(mainFrame,"It's better to put something here than nothing, don't you think?");
+	updatePowerBar();
 }
 
 init();
 
-	/*
-	if (powerBarPosition == "top") {
-		powerBarFrame = frames[0];
-		mainFrame = frames[1];
-	} else {
-		powerBarFrame = 
-	*/
+function updatePowerBar() {
+	if (moduleClockEnabled) {
+		var clockElem = powerBarFrame.document.getElementById('clockHook');
+		clockElem.innerHTML = "" + new Date();
+	}
+	refreshTimer();
+}
 
-	// window.frames[1].document.open();
-	// window.frames[1].document.write('<h1>World<\/h1>');
-	// window.frames[1].document.close();
+function changeLocation(frame,url) {
+	writeToFrame(frame,'<script type="text/javascript">window.location = "' + url + '";</script>');
+}
 
-/*
+function toHtml(text) {
+	var map = new Array(); // TODO: more!
+	map['\n'] = "<BR>";
+	map[' '] = "&nbsp;";
+	map['\"'] = "&quot;";
+	map['<'] = "&lt;";
+	map['>'] = "&gt;";
+	var html = "";
+	for (var i=0;i<text.length;i++) {
+		var c = text.charAt(i);
+		html += ( map[c] ? map[c] : c );
+	}
+	return html;
+}
 
-	alert("window.frames = " + window.frames[0]);
-	// alert("window.frame0 = " + window.frames[0]);
-	// alert("top.frame0 = " + top.frames[0]);
-	// alert("document.frame0 = " + document.frames[0]);
-	// alert("frame0 = " + frames[0]);
+function processJs(codeToExecute) {
+	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
+	var result;
+	try {
+		result = eval(codeToExecute);
+	} catch (e) {
+		result = e;
+	}
+	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
+	writeToFrame(mainFrame,toHtml(report));
+}
 
-
-	alert("frame1 = " + frames[1]);
-
-	addHtml("hello");
-
-	document.getElementById("pageHook").style.visibility = "visible";
-
-*/
+function writeToFrame(frame,html) {
+	frame.document.open();
+	frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
+	frame.document.write(html);
+	frame.document.write("</body></html>"); // these tags seemed sensible to me
+	frame.document.close();
+}
 
 // --> </script>
 
 </HEAD>
-
-<div id="pageHook" style="visibility: hidden">
-</div>
-
+<BODY></BODY>
 </HTML>
