@@ -30,8 +30,8 @@ for Y in ""; do
 	echo "set title \"$X $Y, f.p. $F\" \"Times-Roman,26\"" > title.dogpl
 	$COM $X $Y -focal $F > simgen.out
 	U=`getparam U`
-	V=`getparam U`
-	W=`getparam U`
+	V=`getparam V`
+	W=`getparam W`
 	echo "u=$U"
 	echo "v=$V"
 	echo "w=$W"
