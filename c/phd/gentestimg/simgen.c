@@ -203,10 +203,18 @@ int main(int argc,String *argv) {
     }
 
     V2d hvp=lines.num(1).intersect(lines.num(lines.len));
-    Line2d baseline=Line2d(lines.num(1).a,lines.num(numlines).a);
-    V2d vvpdir=(baseline.b-baseline.a).norm();
-    Line2d otherline=Line2d(imageplane.intersect(Line3d(eye,worldC)).dropz(),imageplane.intersect(Line3d(eye,worldD)).dropz());
-    V2d vvp=baseline.intersect(otherline);
+    // Line2d baseline=Line2d(lines.num(1).a,lines.num(numlines).a);
+    // V2d vvpdir=(baseline.b-baseline.a).norm();
+    // Line2d otherline=Line2d(imageplane.intersect(Line3d(eye,worldC)).dropz(),imageplane.intersect(Line3d(eye,worldD)).dropz());
+    // V2d vvp=baseline.intersect(otherline);
+		V2d vvp=Line2d(proj(worldA),proj(worldB)).intersect(Line2d(proj(worldC),proj(worldD)));
+
+		if (genimage && overlay) {
+			outputimg.line(hvp,lines.num(1).center(),myRGB::blue);
+			outputimg.line(hvp,lines.num(lines.len).center(),myRGB::blue);
+			outputimg.line(vvp,lines.num(lines.len/2+1).a,myRGB::blue);
+			outputimg.line(vvp,lines.num(lines.len/2+1).b,myRGB::blue);
+		}
 		
 		// Test recquad method:
 		// List<V2d> qs;

@@ -62,11 +62,14 @@ main(int argc,String *argv) {
 		l=lines.get(i);
 		if (!Seq(l,"SIM:")) {
 			fprintf(stderr,"Error A line %i - seeking\n",i);
-			break;
+			i++;
+			// break;
 		}	else {
 		  float roll,yaw,pitch;
 		  V3d gtright,gtdown;
 		  V3d ppright,ppdown;
+			V2d gthvp,gtvvp;
+			V2d pphvp,ppvvp;
 		  i++; l=lines.get(i);
 		  sscanf(l,"roll = %f",&roll);
 		  // printf("Got %f for roll\n",roll);
@@ -82,6 +85,10 @@ main(int argc,String *argv) {
 		  i++; l=lines.get(i);
 		  sscanf(l,"down = (%f,%f,%f)",&gtdown.x,&gtdown.y,&gtdown.z);
 		  // printf("Got %s for GTd\n",gtdown.toString());
+		  i++; l=lines.get(i);
+		  sscanf(l,"HVP = (%f,%f)",&gthvp.x,&gthvp.y);
+		  i++; l=lines.get(i);
+		  sscanf(l,"VVP = (%f,%f)",&gtvvp.x,&gtvvp.y);
 		  i++; l=lines.get(i);
 		  if (!Seq(l,"PP:"))
 			  fprintf(stderr,"Error B line %i\n",i);
@@ -100,6 +107,10 @@ main(int argc,String *argv) {
 			  sscanf(l,"down = (%f,%f,%f)",&ppdown.x,&ppdown.y,&ppdown.z);
 			  // printf("Got %s for GTr\n",ppdown.toString());
 		    i++; l=lines.get(i);
+		    sscanf(l,"HVP = (%f,%f)",&pphvp.x,&pphvp.y);
+		    i++; l=lines.get(i);
+		    sscanf(l,"VVP = (%f,%f)",&ppvvp.x,&ppvvp.y);
+		    i++; l=lines.get(i);
 			}
 			
 			// float corra=myabs(-V3d::normdot(gtright,ppright));
@@ -114,6 +125,16 @@ main(int argc,String *argv) {
 			float maxangle=180*acos(faceonness)/pi;
 			float rightdiff=-V3d::normdot(gtright,V3d::k);
 			float rightang=180*asin(rightdiff)/pi;
+
+			// Bad:
+			float focal=-500; // Just seems!
+			V3d eye=V3d(320,240,-focal);
+			V3d gtrightfromhvp=V3d(gthvp.x,gthvp.y,0)-eye;
+			V3d pprightfromhvp=V3d(pphvp.x,pphvp.y,0)-eye;
+			V3d gtdownfromvvp=V3d(gtvvp.x,gtvvp.y,0)-eye;
+			V3d ppdownfromvvp=V3d(ppvvp.x,ppvvp.y,0)-eye;
+			float hvpcorr=V3d::normdot(gtrightfromhvp,pprightfromhvp);
+			float vvpcorr=V3d::normdot(gtdownfromvvp,ppdownfromvvp);
 
 			if (!bad) {
 				if (corra<0 && corrb<0) {
@@ -144,18 +165,19 @@ main(int argc,String *argv) {
 				acc=-2; altacc=-2;
 			}
 			
-		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
 				yaw,pitch,acc,corra,corrb,
 				gtright.x,gtright.y,gtright.z,ppright.x,ppright.y,ppright.z,
 				gtdown.x,gtdown.y,gtdown.z,ppdown.x,ppdown.y,ppdown.z,
-				altacc,faceonness,maxangle,rightdiff,rightang
+				altacc,faceonness,maxangle,rightdiff,rightang,
+				hvpcorr,vvpcorr
 			);
 		  
-		  if (!Seq(l,""))
-			  fprintf(stderr,"Error C line %i\n",i);
-		  i++;
+		  // if (!Seq(l,""))
+			  // fprintf(stderr,"Error C line %i\n",i);
+		  // i++;
 		}
 	}
-	printf("\n# 1 yaw     2 pitch   3 acc     4 racc   5 dacc     6 gtrx    7 gtry    8 gtrz    9 pprx    10 ppry    11 pprz    12 gtdx    13 gtdy   14 gtdz   15 ppdx   16 ppdy   17 ppdz   18 altacc  19 faceonness 20 maxang   21 rightdiff  22 rightang\n");
+	printf("\n# 1 yaw     2 pitch   3 acc     4 racc   5 dacc     6 gtrx    7 gtry    8 gtrz    9 pprx    10 ppry    11 pprz    12 gtdx    13 gtdy   14 gtdz   15 ppdx   16 ppdy   17 ppdz   18 altacc  19 faceonness 20 maxang   21 rightdiff  22 rightang  23 hvpcorr  24 vvpcorr\n");
 	
 }

@@ -803,7 +803,7 @@ void main(int argc,String *argv) {
   pp.clipsetupby(lowresthresh);
   pp.calculate();
   V2d hvp=pp.getvp();
-	printf("HVP = %s\n",hvp.toString());
+	printf("HVP = %s *note* could wait for corner+diffscale*\n",hvp.toString());
   V2d vvp=pp.getvvp();
   printf("Good old VVP estimate: %s\n",vvp.toString());
 
@@ -811,7 +811,7 @@ void main(int argc,String *argv) {
   hvp=vp.pos;
 
   V3d eye=V3d(binimg.width/2,binimg.height/2,-binimg.width);
-  /*if (usebaselineonly) {
+  if (usebaselineonly) {
     printf("Guessing VVP from base-line.\n");
     V2d newvvp=vvpfromhvpandbaseline(hvp,pp.baseline,eye,info);
     printf("    Original vvp estimate: %s\n",vvp.toString());
@@ -827,7 +827,7 @@ void main(int argc,String *argv) {
     printf("Intersecting two best lines to get VVP.\n");
     vvp=summarybaseline.intersect(summarysecondline);
     printf("%s x %s = %s\n",summarybaseline.toString(),summarysecondline.toString(),vvp.toString());
-  }*/
+  }
   printf("    VVP estimate: %s\n",vvp.toString());
 	printf("VVP = %s\n",vvp.toString());
 
@@ -1082,14 +1082,23 @@ void main(int argc,String *argv) {
       }
 
       hvp=corner+diffscale*hvp;
-//      origimage.thickline(tl,hvp,1,overlaycol);
-//      origimage.thickline(bl,hvp,1,overlaycol);
+      vvp=corner+diffscale*vvp;
+     origimage.thickline(tl,hvp,1,myRGB::black);
+     origimage.thickline(bl,hvp,1,myRGB::black);
 
       // Quadrilateral frame
       origimage.thickline(tl,tr,overlaythickness,overlaycol);
       origimage.thickline(br,tr,overlaythickness,overlaycol);
       origimage.thickline(br,bl,overlaythickness,overlaycol);
       origimage.thickline(tl,bl,overlaythickness,overlaycol);
+
+		 origimage.line(corner+diffscale*top.a,corner+diffscale*top.b,myRGB::red);
+		 origimage.line(corner+diffscale*bottom.a,corner+diffscale*bottom.b,myRGB::red);
+		 origimage.line(corner+diffscale*left.a,corner+diffscale*left.b,myRGB::red);
+		 origimage.line(corner+diffscale*right.a,corner+diffscale*right.b,myRGB::red);
+
+		 origimage.line(tl,vvp,myRGB::green);
+		 origimage.line(tr,vvp,myRGB::green);
 
     }
 
