@@ -1,10 +1,11 @@
 char *Sformat(char *, ... );
 
 void error(char *s, ... ) {
-  #ifdef ALLEGRO
+/*  #ifdef ALLEGRO
     if (allegrostarted>0)
       allegroexit();
   #endif
+*/
 
 /*  va_list vas;
   va_start(vas,s);

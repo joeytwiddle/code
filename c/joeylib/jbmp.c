@@ -1,5 +1,11 @@
 // #define pi 3.1415926535897932385
 
+#ifdef ALLEGRO
+  #include <sys/farptr.h>
+  #include <sys/segments.h>
+  #include <sys/movedata.h>
+#endif
+
 int smileymouthpolarfn(float t,float r) {
   return (myabs(t)>3*pi/5 && r>0.5);
 }
@@ -29,11 +35,15 @@ int starpolarfn(float th,float r) {
   return (r<sqrt(t*t*(1+m*m)+2*m*t+1));
 }
 
+#define MAXJBMPWIDTH 2048
+#define JBMP_PIXEL_SIZE sizeof(unsigned char)
+
 class JBmp : public Writeable {
 public:
-  unsigned char **bmp;
+  unsigned char **bmp; // For Dos allegro
   unsigned char **spare;
   int width,height;
+  unsigned char buffer[MAXJBMPWIDTH];
   JBmp() {
   }
   void setupgrid(int w,int h) {
@@ -72,15 +82,19 @@ public:
   void clear() {
     clear(0);
   }
+  void blitline(int y) {
+    memcpy(buffer,bmp[y],width*JBMP_PIXEL_SIZE);
+    movedata(_my_ds(), (unsigned)buffer, screen->seg, bmp_write_line(screen,y), width);
+  }
   void blit() {
     #ifdef ALLEGRO
     #ifndef NOGRAPHICS
     int y;
     for (y=0; y<height; y++) {
-      movedata(_my_ds(), bmp[y], screen->seg, bmp_write_line(screen,y), width);
+      blitline(y);
     }
     #endif
-    #endif
+    #endif 
   }
   void writetoscreen() {
     blit();
@@ -213,7 +227,7 @@ public:
     if (x>=0 && x<width && y>=0 && y<height) {
       bmp[y][x]=c;
       #ifdef ALLEGRO
-      movedata(_my_ds(), bmp[y], screen->seg, bmp_write_line(screen,y), width);
+        blitline(y);
       #endif
     }
   }
