@@ -11,10 +11,6 @@ export JPATH=/home/joey/j
 
 WHOTO=`echo "$QUERY_STRING" | sed "s/.*\(&\|'\)\([^_]*\)_submit=Send+email.*/\2/"`
 
-getcgi() {
-	echo "$QUERY_STRING" | sed "s/.*\(&\|'\)$1=\([^&']*\)\(&\|'\).*/\2/" | fromcgi
-}
-
 EMAILTO=`getcgi "$WHOTO"_to`
 EMAILSUBJECT=`getcgi "$WHOTO"_subject`
 EMAILBODY=`getcgi "$WHOTO"_body`
