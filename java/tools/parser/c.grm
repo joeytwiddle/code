@@ -25,8 +25,8 @@ CSrcBit = WS
 ##### Simple comments and #commands
 
 Comment = "/*" EndCom
-        | "//" <stuff/"\n"> "\n"
-h: "//" <stuff> "\n"
+        | "//" <stuff/"\n"> NL
+h: "//" <stuff> NL
 
 # Hack for /* */ to deal with eg. " ... /* blah foo*bar */ ... "
 EndCom = <stuff/"*"> "*/"
@@ -38,9 +38,9 @@ h: ""
 # if only reached when the LHS is satisfied.
 HashCom = "#include " HashIncludeLib OptSpc NL
 				| "#include " HashIncludeFile OptSpc NL
-				| "#def" <more/"\n"> OptSpc NL
-				| "#ifdef" <more/"\n"> OptSpc NL
-				| "#" <other/"\n"> OptSpc NL
+				| "#def" <more/"\n"> NL
+				| "#ifdef" <more/"\n"> NL
+				| "#" <other/"\n"> NL
 
 HashIncludeLib = "<" <file/"."> ".c>"
 							 | "<" <file/"."> ".h>"
@@ -269,11 +269,12 @@ String = "!qt!" <str/"!qt!"> "!qt!"
 OptWS = WS
       | ""
 
-WS = "\n" OptWS
+WS = NL OptWS
    | Comment OptWS
 	 | SpcBit OptWS
 
-NL = "\n"
+NL = "\n\r"
+   | "\n"
 
 OptSpc = SpcBit OptSpc
        | ""

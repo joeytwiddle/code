@@ -75,13 +75,13 @@ public class grmGrm {
       rule=new Vector();
         rule.add(new Text("//"));
         rule.add(new Var("stuff","\n"));
-        rule.add(new Text("\n"));
+        rule.add(new Atom("NL"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
         rule.add(new Text("//"));
         rule.add(new Var("stuff"));
-        rule.add(new Text("\n"));
+        rule.add(new Atom("NL"));
     ruleset.replacements.put("h",rule);
 
     // Hack for /* */ to deal with eg. " ... /* blah foo*bar */ ... "
@@ -121,19 +121,16 @@ public class grmGrm {
       rule=new Vector();
         rule.add(new Text("#def"));
         rule.add(new Var("more","\n"));
-        rule.add(new Atom("OptSpc"));
         rule.add(new Atom("NL"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Text("#ifdef"));
         rule.add(new Var("more","\n"));
-        rule.add(new Atom("OptSpc"));
         rule.add(new Atom("NL"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Text("#"));
         rule.add(new Var("other","\n"));
-        rule.add(new Atom("OptSpc"));
         rule.add(new Atom("NL"));
       ruleset.add(rule);
     // Replacements
@@ -965,7 +962,7 @@ public class grmGrm {
     ruleset=new RuleSet("WS");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Text("\n"));
+        rule.add(new Atom("NL"));
         rule.add(new Atom("OptWS"));
       ruleset.add(rule);
       rule=new Vector();
@@ -980,6 +977,9 @@ public class grmGrm {
 
     ruleset=new RuleSet("NL");
       rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("\n\r"));
+      ruleset.add(rule);
       rule=new Vector();
         rule.add(new Text("\n"));
       ruleset.add(rule);

@@ -742,8 +742,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("OptVarMods"));
+      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));
@@ -766,8 +766,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("OptVarMods"));
+      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));
