@@ -43,8 +43,8 @@ public class Stars extends Thread implements ComponentListener {
   int[] rs=new int[nrs];
   int rem=0;
 
-  double rotspd=Math.PI/400.0;
-  double rotang=-20.0*rotspd;
+  double rotspd=Math.PI/600.0;
+  double rotang=-40.0*rotspd*JMaths.rnd(1.0,2.0);
   V3d rotaxis=V3d.random();
   Matrix m;
 
@@ -84,7 +84,7 @@ public class Stars extends Thread implements ComponentListener {
   }
 
   public final static void main(String[] args) {
-    Frame frame=new Frame("IFS 3d");
+    Frame frame=new Frame("Stars");
     frame.setSize(size,size);
     frame.setBackground(Color.black);
 
@@ -111,19 +111,22 @@ public class Stars extends Thread implements ComponentListener {
       // GlyphVector gv=font.createGlyphVector(gfx.getFontRenderContext(),"NEURALYTE!");
       Graphics gfx=buffer.gfx;
       // Graphics2D gfx2d=new Graphics2D();
+      // Font font = new Font("Courier",Font.PLAIN,1);
       // Font font = new Font("Times Roman",Font.PLAIN,14);
       Font font = buffer.com.getFont();
+			// font=font.deriveFont(40);
       echo("Got font "+font);
       FontRenderContext frc=new FontRenderContext(null,true,true);
       // FontRenderContext frc=gfx2d.getFontRenderContext();
       echo("Got FRC "+frc);
-      GlyphVector gv=font.createGlyphVector(frc,"NEURALYTE!");
+      GlyphVector gv=font.createGlyphVector(frc,"HAPPY 2002");
       Shape s=gv.getOutline();
       echo("The shape is a "+s);
 
       Rectangle2D bounds=s.getBounds2D();
 
-      int height=10;
+			int spacing=4;
+      int height=12;
       int width=(int)(height*bounds.getWidth()/bounds.getHeight());
       for (int x=0;x<width;x++)
       for (int y=0;y<height;y++)
@@ -131,7 +134,8 @@ public class Stars extends Thread implements ComponentListener {
         double xx=bounds.getX()+x*bounds.getWidth()/width;
         double yy=bounds.getY()+y*bounds.getHeight()/height;
         if (s.contains(xx,yy)) {
-          V3d v=pp.projectOut(pp.hscrwid+x-width/2,pp.hscrhei+y-height/2,JMaths.rnd(-1.0f,1.0f));
+          // V3d v=pp.projectOut(pp.hscrwid+x-width/2,pp.hscrhei+y-height/2,JMaths.rnd(-1.0f,1.0f));
+          V3d v=pp.projectOut(pp.hscrwid+spacing*(x-width/2),pp.hscrhei+spacing*(y-height/2),JMaths.rnd(-1.0f,1.0f));
           // echo(""+v);
           points.add(new V3d(-v.x,-v.y,-v.z));
         }
