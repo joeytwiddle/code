@@ -16,9 +16,11 @@
 //   1) onblur works if they move out of the component.  onsubmit tends to do zilch.
 //   2) I can put the textfield in a form, but then we need to make the form's action sterile, and any JS must now refer to the textfield's value with an absolute references, because local references don't appear to work in Mozilla.  :-(
 // Compare the <INPUT> in jsReflectorShow() (method 1) to those in generatePowerBar() (method 2).
+// TODO: once above solved, refactor all the <INPUT> string creation code to use nice generic functions.
 
-// TODO:
-// How can we prevent all the parents from capturing the XPath click event in Mozilla?
+// TOGO BUG: How can we prevent all the parents from capturing the XPath click event in Mozilla?  Actually Konqueror has the same issue but still refers to the same srcElement.
+
+// TODO: It would be nice to have some text fields clear their values when entered.  See jumpgate.
 
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
 var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
@@ -48,7 +50,7 @@ var browserCanRewriteFramesUsingDocumentDotWrite = nutscrape;
 	// #define LOG(str) try { log(str); } catch (e) { }
 	#define LOG_ELEMENT_ID "logElementId"
 	// #define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
-	#define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
+	#define LOG_ELEMENT_HTML '<font size="-1">PowerBar log:<BR><div id="' + LOG_ELEMENT_ID + '"></div></font>'
 	#define LOG_MAX_LINES 7
 	var logText = "";
 	function log(str) {
@@ -157,7 +159,8 @@ function createFrameset() {
 function generatePowerBar() {
 	// Note: Since this HTML will sit in a different frame, calls to powerBar's functions and vars must be made with a preceding "top."
 	var powerBarHtml = "";
-	powerBarHtml += '<table width="100%"><tr><td align="center">';
+
+	powerBarHtml += '<table><tr><td valign="top" align="center">';
 
 	//// Location URL textfield:
 	// powerBarHtml += '<FORM name="locationTextBox" action="javascript:top.changeLocation(top.mainFrame,this.location.value)">';
@@ -170,63 +173,67 @@ function generatePowerBar() {
 	}
 	powerBarHtml += '</FORM>';
 
+	powerBarHtml += '</td><td valign="top" align="center">';
+
 	if (opt_ViewInnerHtmlButton) {
 		// BUG: in Konqueror works on initially-loaded page, but not on Google's page.
-		powerBarHtml += '</td><td align="center">'
 		powerBarHtml += '<INPUT type="button" value="View innerHTML" onclick="try { top.writeToWindow(\'Inner HTML of some page at some point\',top.toHtml(top.mainFrame.document.documentElement.innerHTML)) } catch (e) { top.log(e); }">';
+		powerBarHtml += '<BR>';
 	}
 
 	if (opt_XPathGrabberEnabled) {
-		powerBarHtml += '</td><td align="center">';
 		powerBarHtml += '<INPUT id="XPathGrabberButton" type="button" value="XPathGrabber" onclick="top.xPathGrabber()">'; // but mozilla needs this too!
+		powerBarHtml += '<BR>';
 	}
 
+	powerBarHtml += '</td><td valign="top" align="center">';
+
 	if (opt_JSReflectorEnabled) {
-		powerBarHtml += '</td><td align="center">';
-		powerBarHtml += '<FORM onsubmit="top.jsReflectorInit()" action="javascript:">'; // but this needed for mozilla
+		// powerBarHtml += '<FORM onsubmit="top.jsReflectorInit()" action="javascript:">'; // but this needed for mozilla
 		// powerBarHtml += 'JS reflector:\n';
 		powerBarHtml += '<INPUT type="button" value="JSReflect" onclick="top.jsReflectorInit()">'; // but mozilla needs this too!
-		powerBarHtml += '</FORM>';
+		// powerBarHtml += '</FORM>';
+		powerBarHtml += '<BR>';
 	}
 
 	// Javascript tester textfield:
 	if (opt_JSTesterEnabled) {
-		powerBarHtml += '</td><td align="center">';
 		// powerBarHtml += '<FORM action="javascript:top.processJs(code.value)">'; // worked fine for konq
 		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
 		powerBarHtml += 'JavaScript tester:\n';
-		powerBarHtml += '<INPUT id="codeToExecute" name="code" type="text" size="30" value="type some javascript here">';
+		// powerBarHtml += '<INPUT id="codeToExecute" name="code" type="text" size="30" value="type some javascript here">';
+		powerBarHtml += '<TEXTAREA id="codeToExecute" name="code" type="text" columns="20" rows="3">type some javascript here</TEXTAREA>';
 		// powerBarHtml += '<INPUT type="button" value="Go" onclick="submit()">'; // worked fine for konq
 		if (opt_ButtonsOnPowerBarForms) {
 			powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
 		}
 		// powerBarHtml += defaultSubmitButton;
 		powerBarHtml += '</FORM>';
+		powerBarHtml += '<BR>';
 	}
 
-	#ifdef LOGGING
-		powerBarHtml += '</td><td align="center">'
-		powerBarHtml += '<INPUT type="button" value="Show log" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\').innerHTML)">';
-	#endif
-
-	// powerBarHtml += '</td><td align="center">'
-	// powerBarHtml += '<INPUT type="button" value="Wake up PowerBar!" onclick="top.refreshTimer()">';
-
-	// Options button:
-	powerBarHtml += '</td><td align="center">';
-	powerBarHtml += '<INPUT type="button" value="Options..." onclick="top.editOptions()">';
+	powerBarHtml += '</td><td valign="top" align="center">';
 
 	// Clock:
 	if (opt_ClockEnabled) {
-		powerBarHtml += '</td><td align="center">';
 		powerBarHtml += '<div id="clockHook">clock loading...</div>';
 	}
 
-	powerBarHtml += '</td></tr></table>';
+	// Options button:
+	powerBarHtml += '<INPUT type="button" value="Options..." onclick="top.editOptions()">';
+
+	// powerBarHtml += '</td><td valign="top" align="center">'
+	// powerBarHtml += '<INPUT type="button" value="Wake up PowerBar!" onclick="top.refreshTimer()">';
 
 	#ifdef LOGGING
-		powerBarHtml += "<br>" + LOG_ELEMENT_HTML;
+		powerBarHtml += '<INPUT type="button" value="Show log" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\').innerHTML)">';
 	#endif
+
+	#ifdef LOGGING
+		powerBarHtml += "<P>" + LOG_ELEMENT_HTML;
+	#endif
+
+	powerBarHtml += '</td></tr></table>';
 
 	writeToFrame(powerBarFrame,powerBarHtml);
 	powerBarLocationFormElement = powerBarFrame.document.forms[0];
@@ -479,12 +486,17 @@ function jsReflectorShow(objName) {
 
 //////////////////////////// Module: XPath grabber
 
+var cnt;
 function xPathGrabber() {
-	onAllNodesDo(top.mainFrame.document,"",attachClickListener,doNothing); // not working! hence showShapeOld
+	cnt = 0;
+	try {
+		onAllNodesDo(top.mainFrame.document,"",attachClickListener,doNothing); // not working! hence showShapeOld
+	} catch (e) {
+		LOG("Problem during onAllNodesDo(): " + e);
+	}
 	LOG("Added XPath click capture to " + cnt + " nodes.");
 }
 
-var cnt = 0;
 function attachClickListener(context,node) {
 	// if (node.childNodes.length == 0) {
 	if (node.captureEvents) {
