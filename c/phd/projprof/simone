@@ -15,4 +15,4 @@ echo invert -i "$OFILE" -o "$INVFILE"
 invert -i "$OFILE" -o "$INVFILE"
 echo ./testsim "$INVFILE" "$OFILE"
 rm recover.bmp
-time ./testsim "$INVFILE" "$OFILE" > ppres.txt
+time ./testsim "$INVFILE" "$OFILE" | tee ppres.txt

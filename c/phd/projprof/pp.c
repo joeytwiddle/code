@@ -23,7 +23,7 @@
 
 // #define USINGJFONT
 // No printing of file input/output
-// #define QUIET
+#define QUIET
 
 // Fix PP resolution relative to input image
 // or allow user to specify?

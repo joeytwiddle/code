@@ -49,7 +49,7 @@ float testASubSet(List<V2d> ps) { // returns error
 	lastV=V;
 	lastW=W;
 
-	printf("Done testing.\n");
+	// printf("Done testing.\n");
  	
 	return Wssr/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len;
 	
@@ -73,11 +73,11 @@ float doRansac(List<V2d> ps) { // returns error
 		List<V2d> bestps;  bestps.add(currentps);
 		// Try the current list with point number i removed, and keep the best one
 		for (int i=0;i<currentps.len;i++) {
-			printf("Removing %i / %i\n",i,currentps.len);
+			// printf("Removing %i / %i\n",i,currentps.len);
 			List<V2d> testps;
 			testps.add(currentps);
 			testps.removenum(i+1);
-			printf("Testing...\n");
+			// printf("Testing...\n");
 			float newErr=testASubSet(testps);
 			if (newErr<bestErr) {
 				printf("=)\n");
