@@ -1,2 +1,3 @@
-cd projprof
-getres $1
+cd pp2
+# getres $1
+getdocres $1

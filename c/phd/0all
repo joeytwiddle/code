@@ -2,9 +2,9 @@ echo "$1" > current
 
 0open $1
 
-echo "--- 1texture $1"
-# echo "0all: NOT doing Texture"
-1texture $1
+# echo "--- 1texture $1"
+echo "0all: NOT doing Texture"
+# 1texture $1
 
 # echo "--- blob $1"
 echo "--- NOT BLOBBING blob $1"
