@@ -3,6 +3,7 @@
 **/
 
 /** TODO:
+ *  Resizing: Use cached copies of COLS and LINES, and re-allocate array when they change.
  *  Altering happens too fast wrt sliding.  Run them in parallel.
  *  Wider screen => more parallelisation.
  *  Some kind of timing so that it doesn't go too fast on new machines.
@@ -11,6 +12,8 @@
  *  Putty compatability?
  *  Turn cursor off.
  *  Exit cleanly on keypress.
+ *  Turn it into a terminal locker.  Proposed method:
+ *    Block SIGINT etc calls (for CTRL+C/Z), on keypress ask for password, check with "su - $USER /bin/true" before allowing exit.
 **/
 
 #include <time.h>
