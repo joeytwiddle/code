@@ -45,7 +45,7 @@ NOISES=0
 # ANGLES="50"
 # ANGLES=`seq 5 6 85`
 # ANGLES=`seq 30 10 60`
-ANGLES=`seq 5 6 85`
+ANGLES=`seq 5 3 85`
 # ANGLES="30"
 
 FOCALS="4.0"
@@ -129,14 +129,14 @@ for DOCUMENT in $DOCUMENTS; do
 								for pitch in $ANGLES; do
 
 									(
-										echo "$FOCAL / $FOCALS"
-										echo "$DOCUMENT / $DOCUMENTS"
-										echo "$PPSCANMETHOD / $PPSCANMETHODS"
-										echo "$PPMEASURE / $PPMEASURES"
-										echo "$VVPMETHOD / $VVPMETHODS"
-										echo "$NOISE / $NOISES"
-										echo "$LINES / $LINESTODO"
-										echo "$yaw $pitch / $ANGLES"
+										echo $FOCAL / $FOCALS
+										echo $DOCUMENT / $DOCUMENTS
+										echo $PPSCANMETHOD / $PPSCANMETHODS
+										echo $PPMEASURE / $PPMEASURES
+										echo $VVPMETHOD / $VVPMETHODS
+										echo $NOISE / $NOISES
+										echo $LINES / $LINESTODO
+										echo $yaw $pitch / $ANGLES
 									) > current
 
 									echo
@@ -186,7 +186,7 @@ for DOCUMENT in $DOCUMENTS; do
 									echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
 									cp genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
 									cp ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
-									extractone $roll $yaw $pitch >> "$RES"
+									./extractone $roll $yaw $pitch >> "$RES"
 									gzip res/genres-r$roll-y$yaw-p$pitch.txt
 									gzip res/ppres-r$roll-y$yaw-p$pitch.txt
 									convert "lowresmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
