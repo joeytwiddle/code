@@ -7,8 +7,8 @@
 //   expression does not change during macro.
 //   Benchmark test?
 // todo: Resolve palette==NULL at init and switch routing of code to be execed.
-// 	 Or make it part of the SDLwrap model.
-// 	 Or just ignore it because we will only stand for truecolour.
+//   Or make it part of the SDLwrap model.
+//   Or just ignore it because we will only stand for truecolour.
 // todo: Both BR and TR should be given functions to perform on the pixel register
 //   rather than x,y.  This will allow the algorithms to perform fast
 //   reg++'s rather than the given function performing reg=big_calculation(x,y)
@@ -34,8 +34,8 @@
 
 // #define DOS
 // #define DO_FULLSCREEN
-#define SCRWID 320
-#define SCRHEI 200
+#define SCRWID 600
+#define SCRHEI 400
 #define NUMTRIS 400
 #define brightness 8
 // #define SCRWID 640
@@ -44,12 +44,13 @@
 // #define brightness 30
 #define SCRBPS 32
 #define desiredFramesPerSecond 50
-#define IMGSKIP (SCRWID/40)
+#define IMGSKIP (SCRHEI/40)
 // #define IMGSKIP 4
 // #define DOUBLEMERGEBG
 #define DO_TRIANGLES
 // #define DO_STARS
 #define DO_WHITEOUT
+#define BGQUANT 8
 
 #ifdef DOS
 #define M_PI 3.14159265358979323846
@@ -323,7 +324,7 @@ int main(int argc,char *argv[]) {
 	while (keepLooping) {
 
 		int releasetime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
-		framebits=((float)clock()-start_clock)*20.0/CLOCKS_PER_SEC;
+		framebits=((float)clock()-start_clock)*5.0/CLOCKS_PER_SEC;
 
 		// printf("%i %i %li\n",frames,framebits,CLOCKS_PER_SEC);
 
@@ -344,9 +345,9 @@ int main(int argc,char *argv[]) {
 			// float bounce=0.1+0.099*qcos(framebits*M_PI/120.0);
 			// float bounceB=2.0+1.5*qsin(framebits*M_PI/120.0);
 			Uint16 bounceC=2000*(0.05-0.05*(pow((qcos(framebits*M_PI/115.0-2.5)+1.0)/2.0,0.6)*2.0-1.0));
-			Sint16 Doffset=100000+framebits*10.0-600.0*qcos(framebits*M_PI/120.0-1.0);
-			Uint16 aoffset=2000+framebits*2.0+sin(framebits*0.03-0.1)*200.0;
-			Uint32 overd=20000*(0.5+0.5*qcos(framebits*M_PI/120.0-1.0));
+			Sint16 Doffset=BGQUANT*(100000+framebits*10.0-600.0*qcos(framebits*M_PI/120.0-1.0));
+			Uint16 aoffset=BGQUANT*(2000+framebits*2.0+sin(framebits*0.03-0.1)*200.0);
+			Uint32 overd=BGQUANT*20000*(0.5+0.5*qcos(framebits*M_PI/120.0-1.0));
 			// Uint32 tmp=((Uint16)bgtexture_w << 8)/M_PI;
 			// Sint16 D2offset=Doffset+400.0*qsin(framebits*M_PI/140.0+123.6);
 			// Sint16 a2offset=aoffset+100.0*qsin(framebits*M_PI/140.0+123.6);
@@ -361,7 +362,7 @@ int main(int argc,char *argv[]) {
 				// Uint8 thruwid=i*256/screen_w;
 				Uint16 xpart0=abs(i-cylcenx);
 				// Uint32 xpart=(Uint32)square(i-cylcenx);
-				Uint8 br;
+				Uint8 br,brmax;
 				Uint16 d;
 				screen_pixelType p;
 				Uint8 r,g,b;
@@ -385,117 +386,94 @@ int main(int argc,char *argv[]) {
 #define D ( d<2 ? 0 : overd/d )
 					// fprintf(output,"  %i\n",D);
 					// Uint16 a=(Uint16)((((Uint32)(tmp*(atan2(i-cylcenx,j-cylceny))) >> 8)+M_PI)+aoffset);
-#define a ( bgtexture_w * ( atan2(i-cylcenx,j-cylceny ) / M_PI + M_PI ) )
+#define a ( BGQUANT*bgtexture_w * ( atan2(i-cylcenx,j-cylceny ) / M_PI + BGQUANT*M_PI ) )
 					// dstrect.y=j;
 
 #ifdef DO_WHITEOUT
 					br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
+					brmax=255-br;
 #endif
 
-					// Get pixel
-					// p=getPixel(bgtexture, u, v);
-					// br=clip((Uint16)D/3.0,0,255);
-					// p=bgtexture_getPixel( ((Uint16)(a+aoffset)%bgtexture_w), ((Uint16)(D+Doffset)%bgtexture_h) );
 					anow=((Uint16)(a+aoffset));
 					Dnow=((Uint16)(D+Doffset));
-					if (i>0 && j>0) {
-						Uint8 I,J;
-						screen_pixelType *reg;
-						screen_pixelType *startreg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i-IMGSKIP,j-IMGSKIP);
-						/*
-#define TLx as[j-IMGSKIP]
-#define TLy Ds[j-IMGSKIP]
-#define BLx as[j]
-#define BLy Ds[j]
-#define TRx alast
-#define TRy Dlast
-#define BRx anow
-#define BRy Dnow
-*/
-						Uint16 TLx=as[j-IMGSKIP];
-						Uint16 TLy=Ds[j-IMGSKIP];
-						Uint16 BLx=as[j];
-						Uint16 BLy=Ds[j];
-						Uint16 TRx=alast;
-						Uint16 TRy=Dlast;
-						Uint16 BRx=anow;
-						Uint16 BRy=Dnow;
-						// Hack around problem interpolating over TLa=359 TRa=001
-						if (i-cylcenx>=0 && i-cylcenx<IMGSKIP && j-cylceny<0) {
-								if (TRx-TLx>bgtexture_w/2 || BRx-TLx>bgtexture_w/2) {
-									TLx+=bgtexture_w*2;
-								}
-								if (BRx-BLx>bgtexture_w/2 || TRx-BLx>bgtexture_w/2) {
-									BLx+=bgtexture_w*2;
-								}
-						}
-						for (J=0;J<IMGSKIP;J++) {
-							reg=startreg;
-							for (I=0;I<IMGSKIP;I++) {
-								Uint16 ahere,Dhere;
-// #define e ((I))
-// #define s ((J))
-// #define w ((IMGSKIP-I))
-// #define n ((IMGSKIP-J))
-Uint8 e=((I));
-Uint8 s=((J));
-Uint8 w=((IMGSKIP-I));
-Uint8 n=((IMGSKIP-J));
-								// ahere=(Uint32)((Uint32)TLx*n*w+(Uint32)TRx*n*e+(Uint32)BLx*s*w+(Uint32)BRx*s*e)/IMGSKIP/IMGSKIP;
-								// Dhere=(Uint32)((Uint32)TLy*n*w+(Uint32)TRy*n*e+(Uint32)BLy*s*w+(Uint32)BRy*s*e)/IMGSKIP/IMGSKIP;
-								ahere=(TLx*n*w+TRx*n*e+BLx*s*w+BRx*s*e)/IMGSKIP/IMGSKIP;
-								Dhere=(TLy*n*w+TRy*n*e+BLy*s*w+BRy*s*e)/IMGSKIP/IMGSKIP;
-								p=bgpixels[(ahere%bgtexture_w)+(Dhere%bgtexture_h)*bgtexture_w];
-
-#ifdef DO_WHITEOUT
-
-					// Apply whiteout
-					screen_GetRGB(p,&r,&g,&b);
-#ifdef DOUBLEMERGEBG
-					{
-						Uint8 r2,g2,b2;
-						Uint32 p2;
-						p2=bgtexture2_getPixel( ((Uint16)(a+a2offset)%bgtexture2_w), ((Uint16)(D+D2offset)%bgtexture2_h) );
-						bgtexture2_GetRGB(p2,&r2,&g2,&b2);
-						// setPixel(screen,i,j,p);
-						// // screen_setPixel(i,j,p);
-						// Slow but necessary if the colorspaces are different
-						// br=clip(200.0/pow(0.01*d,8.0),0,256);
-						r=clip((int)r/2+(int)r2/2+(int)br,0,256);
-						g=clip((int)g/2+(int)g2/2+(int)br,0,256);
-						b=clip((int)b/2+(int)b2/2+(int)br,0,256);
-					}
-#else
-					r=clip((int)r+(int)br,0,256);
-					g=clip((int)g+(int)br,0,256);
-					b=clip((int)b+(int)br,0,256);
-#endif
-					p=screen_MapRGB(r,g,b);
-#endif
-					// r=max(r,br);
-					// g=max(g,br);
-					// b=max(b,br);
-
-					// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
-					// SDL_MapRGB(screen->format,r,g,b);
-					// float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)framebits*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)framebits/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)framebits/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)framebits*0.29+j/15.0)/23.0));
-					// if (br<0.0) br=0.0;
-					// if (br>1.0) br=1.0;
-					// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,br*i*256/screen_w,br*j*256/screen_h,128+127*qsin(clock()*3.141/5.0/(float)CLOCKS_PER_SEC));
-					// ((int *)screen->pixels)[j*screen_w+i]=0;
-					// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,i*256/screen_w,j*256/screen_h,128+127*qs);
-					// screen_setPixel(i,j,screen_MapRGB(thruwid,j*256/screen_h,qsi));
-					// p=screen_MapRGB(r,g,b);
-
-					// SDL_FillRect(screen,&dstrect,p);
-
-								*reg=p;
-								reg++;
-							}
-							startreg+=screen_w;
-						}
-					}
 					if (j>0) {
+						if (i>0) {
+							Uint16 TLx=as[j-IMGSKIP];
+							Uint16 TLy=Ds[j-IMGSKIP];
+							Uint16 BLx=as[j];
+							Uint16 BLy=Ds[j];
+							Uint16 TRx=alast;
+							Uint16 TRy=Dlast;
+							Uint16 BRx=anow;
+							Uint16 BRy=Dnow;
+							// Hack around problem interpolating over TLa=359 TRa=001
+							if (i-cylcenx>=0 && i-cylcenx<IMGSKIP && j-cylceny<0) {
+								if (TRx-TLx>BGQUANT*bgtexture_w/2 || BRx-TLx>BGQUANT*bgtexture_w/2) {
+									TLx+=BGQUANT*bgtexture_w*2;
+									// }
+								// if (BRx-BLx>BGQUANT*bgtexture_w/2 || TRx-BLx>BGQUANT*bgtexture_w/2) {
+								BLx+=BGQUANT*bgtexture_w*2;
+							}
+							}
+							{
+								register Uint8 I,J;
+								register screen_pixelType *reg;
+								register screen_pixelType *startreg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i-IMGSKIP,j-IMGSKIP);
+								for (J=0;J<IMGSKIP;J++) {
+									reg=startreg;
+									for (I=0;I<IMGSKIP;I++) {
+										Uint16 ahere,Dhere;
+										// #define e ((I))
+										// #define s ((J))
+										// #define w ((IMGSKIP-I))
+										// #define n ((IMGSKIP-J))
+#define e ((I))
+#define s ((J))
+										register Uint8 w=((IMGSKIP-I));
+										register Uint8 n=((IMGSKIP-J));
+										ahere=(TLx*n*w+TRx*n*e+BLx*s*w+BRx*s*e)/IMGSKIP/IMGSKIP;
+										Dhere=(TLy*n*w+TRy*n*e+BLy*s*w+BRy*s*e)/IMGSKIP/IMGSKIP;
+										p=bgpixels[((ahere/BGQUANT)%bgtexture_w)+((Dhere/BGQUANT)%bgtexture_h)*bgtexture_w];
+
+										*reg=p;
+#ifdef DO_WHITEOUT
+										// Apply whiteout
+										// ((Uint8 *)reg)[0] = ( ((Uint8 *)reg)[0] < brmax ? ((Uint8 *)reg)[0]+br : 255 );
+										// ((Uint8 *)reg)[1] = ( ((Uint8 *)reg)[1] < brmax ? ((Uint8 *)reg)[1]+br : 255 );
+										// ((Uint8 *)reg)[2] = ( ((Uint8 *)reg)[2] < brmax ? ((Uint8 *)reg)[2]+br : 255 );
+										r=((Uint8 *)&p)[0];
+										g=((Uint8 *)&p)[1];
+										b=((Uint8 *)&p)[2];
+										((Uint8 *)reg)[0] = ( r < brmax ? r+br : 255 );
+										((Uint8 *)reg)[1] = ( g < brmax ? g+br : 255 );
+										((Uint8 *)reg)[2] = ( b < brmax ? b+br : 255 );
+										// screen_GetRGB(p,&r,&g,&b);
+										// r=clip((int)r+(int)br,0,256);
+										// g=clip((int)g+(int)br,0,256);
+										// b=clip((int)b+(int)br,0,256);
+										// p=screen_MapRGB(r,g,b);
+#endif
+										reg++;
+
+								// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
+								// SDL_MapRGB(screen->format,r,g,b);
+								// float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)framebits*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)framebits/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)framebits/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)framebits*0.29+j/15.0)/23.0));
+								// if (br<0.0) br=0.0;
+								// if (br>1.0) br=1.0;
+								// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,br*i*256/screen_w,br*j*256/screen_h,128+127*qsin(clock()*3.141/5.0/(float)CLOCKS_PER_SEC));
+								// ((int *)screen->pixels)[j*screen_w+i]=0;
+								// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,i*256/screen_w,j*256/screen_h,128+127*qs);
+								// screen_setPixel(i,j,screen_MapRGB(thruwid,j*256/screen_h,qsi));
+								// p=screen_MapRGB(r,g,b);
+
+								// SDL_FillRect(screen,&dstrect,p);
+
+									}
+									startreg+=screen_w;
+								}
+							}
+						}
+						// j>0 but not neccessarily i
 						Ds[j-IMGSKIP]=Dlast;
 						as[j-IMGSKIP]=alast;
 						if (j==screen_h) {
@@ -505,49 +483,49 @@ Uint8 n=((IMGSKIP-J));
 					}
 					Dlast=Dnow;
 					alast=anow;
-}
-}
+				}
+			}
 
 #ifdef DO_TRIANGLES
 
-for (i=0;i<NUMTRIS;i++) {
-	// plotLine(screen,screen_w*frand(),screen_h*frand(),scr een_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
-	// plotTri(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
-	plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
-}
+			for (i=0;i<NUMTRIS;i++) {
+				// plotLine(screen,screen_w*frand(),screen_h*frand(),scr een_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
+				// plotTri(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
+				plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
+			}
 
 #endif
 
 #ifdef DO_STARS
 
-{
+			{
 
 
 
-	// float camX=sin(framebits*0.013);
-	// float camY=cos(framebits*0.013);
-	// float camZ=-1; // sin(framebits*0.013+1.235);
+				// float camX=sin(framebits*0.013);
+				// float camY=cos(framebits*0.013);
+				// float camZ=-1; // sin(framebits*0.013+1.235);
 
 #define brightness 120
-	// #define STARY (SCRHEI/2)
+				// #define STARY (SCRHEI/2)
 #define SCALE ( SCRWID*2 )
 
-	// #define STARX (2*SCRWID/3)
-	float STARX=SCRWID/2+SCRWID/6*sin(framebits*0.02);
-	float STARY=SCRHEI/2+SCRWID/6*cos(framebits*0.02)*sin(framebits*0.001);
+				// #define STARX (2*SCRWID/3)
+				float STARX=SCRWID/2+SCRWID/6*sin(framebits*0.02);
+				float STARY=SCRHEI/2+SCRWID/6*cos(framebits*0.02)*sin(framebits*0.001);
 #define starPlotTri(xa,ya,xb,yb,xc,yc,bright) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,bright*brightness,bright*brightness/2.0,bright*brightness)
 #define starRad(a,b) ( (9.0)*(2.0+sin((a)*2.1+framebits*0.063)+sin((b)*2.6+framebits*0.05)) )
-	// #define starRad(a,b) ( 20 )
+				// #define starRad(a,b) ( 20 )
 #define starRes 30
 #include "starsurface.c"
 #undef starRad
 #undef starRes
 #undef starPlotTri
-	// #undef STARX
+				// #undef STARX
 
-	STARX=SCRWID/2-SCRWID/6*sin(framebits*0.02);
-	STARY=SCRHEI/2-SCRWID/6*cos(framebits*0.02)*sin(framebits*0.001);
-	// #define STARX (SCRWID/3)
+				STARX=SCRWID/2-SCRWID/6*sin(framebits*0.02);
+				STARY=SCRHEI/2-SCRWID/6*cos(framebits*0.02)*sin(framebits*0.001);
+				// #define STARX (SCRWID/3)
 #define starPlotTri(xa,ya,xb,yb,xc,yc,bright) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,bright*brightness/2.0,bright*brightness/2,0)
 #define starRad(a,b) ( (7.0)*(3.0+sinsharp((-a)*2.5+framebits*0.044)+sinsharp((b)*3.5+framebits*0.031)) )
 #define starRes 40
@@ -558,44 +536,44 @@ for (i=0;i<NUMTRIS;i++) {
 
 
 
-}
+			}
 
 #endif
 
-}
+		}
 
-frames++;
+		frames++;
 
-while (SDL_PollEvent(&event)) {
-	if (event.type==SDL_KEYDOWN || event.type==SDL_QUIT || event.type==SDL_MOUSEBUTTONDOWN) {
-		keepLooping=0;
+		while (SDL_PollEvent(&event)) {
+			if (event.type==SDL_KEYDOWN || event.type==SDL_QUIT || event.type==SDL_MOUSEBUTTONDOWN) {
+				keepLooping=0;
+			}
+		}
+
+		{
+			// int timetogo;
+			// sched_yield();
+			// printf("%i %i\n",clock(),releasetime);
+			// timetogo=(int)releasetime-(int)clock();
+			// while ( timetogo > 0) {
+			// // printf(". %i\n",(int)(releasetime-clock()));
+			// // Should release processor...
+			// // int i=timetogo;
+			// // if (i<20)
+			// // i=20;
+			// // SDL_Delay(12);
+			// sched_yield();
+			// timetogo=(int)releasetime-(int)clock();
+			// }
+		}
+
 	}
-}
 
-{
-	// int timetogo;
-	// sched_yield();
-	// printf("%i %i\n",clock(),releasetime);
-	// timetogo=(int)releasetime-(int)clock();
-	// while ( timetogo > 0) {
-	// // printf(". %i\n",(int)(releasetime-clock()));
-	// // Should release processor...
-	// // int i=timetogo;
-	// // if (i<20)
-	// // i=20;
-	// // SDL_Delay(12);
-	// sched_yield();
-	// timetogo=(int)releasetime-(int)clock();
-	// }
-}
-
-}
-
-fprintf(output,"\n");
+	fprintf(output,"\n");
 #ifdef DEBUGTOFILE
-fclose(output);
+	fclose(output);
 #endif
-return 0;
+	return 0;
 
 }
 
