@@ -47,10 +47,12 @@
 
 #include "../gentestimg/linespacings.c"
 
+bool uselinespacings;
+
 int LineSpacing=1;
 int LineWidth=2;
 // int correlator=LineSpacing;
-int correlator=LineWidth;
+// int correlator=LineWidth;
 bool useoldspacingsmethod;
 bool usetwolines;
 
@@ -685,7 +687,7 @@ class ProjectionProfiler {
 								V2d v=baseline.intersect(l);
 								endpoints.add(v);
 							}
-							vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,true);
+							vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,uselinespacings);
 
 							/* } else {
 
@@ -764,6 +766,8 @@ class ProjectionProfiler {
 
 						ArgParser a=ArgParser(argc,argv);
 						bool recoverquad=true;
+
+						a.comment("Finding horizontal vanishing point using projection profiles:");
 						int cirres=a.intafter("-res","resolution of final circle",120);
 						bool dolowresscan=a.argexists("-dolowresscan","do an initial low res scan");
 						bool domiddlescan=a.argexists("-domiddlescan","do a middle scan");
@@ -778,15 +782,20 @@ class ProjectionProfiler {
 #ifndef FIXPPRES
 						ppres=a.intafter("-ppres","resolution of each projection profile",200);
 #endif
+
+						a.comment("Finding vertical vanishing point using margins or curve fitting:");
+						bool usebaselineonly=!a.argexists("-usetwolines","use two best correlated lines instead of just baseline");
+						usetwolines=!usebaselineonly;
+						// correlator=( a.argexists("-spacings","use line spacing not width")
+								// ? LineSpacing
+								// : LineWidth );
+						uselinespacings=a.argexists("-spacings","use spacings rather than simple pos for fitting");
+
+						a.comment("Finding horizontal vanishing point using projection profiles:");
 						bool writepps=a.argexists("-writepps","write the potential PPs");
 						bool writebestpp=!a.argexists("-dontwritebestpp","don't write the best PP");
 						bool doinfo=true; // Needed for summaries!  a.argexists("-doinfo","draw info image");
-						bool usebaselineonly=!a.argexists("-usetwolines","use two best correlated lines instead of just baseline");
-						usetwolines=!usebaselineonly;
 						float gamma=a.floatafter("-gamma","take original image this far to white before summary",0.4);
-						correlator=( a.argexists("-spacings","use line spacing not width")
-								? LineSpacing
-								: LineWidth );
 						useoldspacingsmethod=a.argexists("-oldspacings","use old spacings method");
 						if (a.argexists("-corinc","use over-inclusive RANSAC"))
 							Correlator2dMethod=2;

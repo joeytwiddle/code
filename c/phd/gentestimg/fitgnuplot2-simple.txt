@@ -1,0 +1,28 @@
+# e(x) is expected = ground truth
+# f(x) is fitted
+
+# u must be provided.
+# u=0.001
+# These are the defaults for all images.
+v=-20
+w=0.00001
+# u=U
+# v=V
+# w=W
+
+
+
+# The simple fitting method ---------------------------------------
+
+set xlabel "observed line number n" "Times-Roman,26"
+set ylabel "observed line position y(n)" "Times-Roman,26"
+
+# Expected, with U,V,W known:
+U=0.001667
+V = -2396.83 # -2237.489990
+W = -0.0360439 # -0.033641
+e(x)=U*(1+V*x)/(1+W*x)
+
+# The actual fitting:
+f(x)=u*(1+v*x)/(1+w*x)
+fit f(x) "gpldata.txt" via v,w

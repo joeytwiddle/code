@@ -1,6 +1,6 @@
 bool linespacings_do_ransac=true;
 
-float testASubSet(List<V2d> ps);
+float testASubSet(List<V2d> ps,bool usingspacings);
 
 bool equal(V2d u,V2d v) {
 	return V2d::equal(u,v);
@@ -12,9 +12,12 @@ float guessU;
 float lastV,lastW; // modified by testASubSet, read by doRansac and vvpFromPoints
 
 
-float doRansac(List<V2d> ps) { // returns error
+float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 
-	float currentErr=testASubSet(ps);
+	if (linespacings_do_ransac) {
+		printf("Doing ransac...\n");
+	}
+	float currentErr=testASubSet(ps,usingspacings);
 	system("cp gplfit.ps gplfit1.ps");
 	float bestV=lastV;
 	float bestW=lastW;
@@ -35,7 +38,7 @@ float doRansac(List<V2d> ps) { // returns error
 				testps.add(currentps);
 				testps.removenum(i+1);
 				// printf("Testing...\n");
-				float newErr=testASubSet(testps);
+				float newErr=testASubSet(testps,usingspacings);
 				if (newErr<bestErr) {
 					// printf("=)\n");
 					bestErr=newErr;
@@ -58,12 +61,12 @@ float doRansac(List<V2d> ps) { // returns error
 
 	printf("RANSAC concluded with %i / %i\n",currentps.len,ps.len);
 	// Redo current to get lastV and lastW correct
-	return testASubSet(currentps);
+	return testASubSet(currentps,usingspacings);
 
 }
 
 
-float testASubSet(List<V2d> ps) { // returns error
+float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 
 	FILE *dataout=fopen("gpldata.txt","w");
 	for (int i=0;i<ps.len;i++) {
@@ -84,7 +87,9 @@ float testASubSet(List<V2d> ps) { // returns error
 	// system("grep '^v' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > v.txt");
 	// system("grep '^w' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > w.txt");
 	// system("grep '^WSSR' gplans.txt | tail -1 | between ':' | before 'delta' | sed 's/ //g' > wssr.txt");
-	system("../gentestimg/dogplfitting.sh");
+	String fitmethod = ( ! usingspacings ? Snew("simple") : Snew("spacings") );
+	String com = Sconc("../gentestimg/dogplfitting.sh ",fitmethod);
+	system(com);
 	// system("cat wssr.txt");
 	float V=readfloatfromfile("v.txt");
 	float W=readfloatfromfile("w.txt");
@@ -167,7 +172,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	printf("Using guessU = %f\n",guessU);
 	printf("  from %s\n",endpoints.get(0).toString());
 
-	float finalErr=doRansac(ps);
+	float finalErr=doRansac(ps,usingspacings);
 	printf("final error = %f\n",finalErr);
 
 	printf("guessU = %f\n",guessU);

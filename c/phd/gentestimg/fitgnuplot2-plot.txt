@@ -1,0 +1,12 @@
+# Plotting --------------------------------------------------------
+
+set noclabel
+set nokey
+set nolabel
+set term post eps "Times-Roman,18"
+set output "gplfit.ps"
+set pointsize 1.3
+
+plot "gpldata.txt" w p 7,f(x)
+# plot "gpldata.txt" w p 7,e(x)
+# plot "gpldata.txt" w p 7,f(x),e(x)
