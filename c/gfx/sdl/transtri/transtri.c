@@ -170,29 +170,39 @@ plotLine(screen,TR_x2,TR_y2,TR_x3,TR_y3,MapRGB(screen->format,255,255,255));
 }
 */
 
-inline screen_pixelType merge_pixel(screen_pixelType p,Uint8 dr,Uint8 dg,Uint8 db) {
-	Uint8 r,g,b;
-	Uint16 fr,fg,fb;
-	screen_GetRGB(p,&r,&g,&b);
-	// printf("    %i %i %i\n",r,g,b);
-	// printf("  + %i %i %i\n",dr,dg,db);
-	fr=r+dr;
-	fg=g+dg;
-	fb=b+db;
-	// note: Sum of A B will exceed 255 if from top bit down either both bits are set or one bit is set, check next (worst case 00000001+11111111)
-	// process: In asm, don't we get a register bit set if there was an overflow?
-	// p= SDL_MapRGB(screen->format,fr,fg,fb);
-	return screen_MapRGB(fr>255?255:fr,fg>255?255:fg,fb>255?255:fb);
+// Slight improvement using this fn
+inline void merge_reg(Uint8 *pix,Uint8 dr,Uint8 dg,Uint8 db) {
+#define redreg (pix[0])
+#define greenreg (pix[1])
+#define bluereg (pix[2])
+	redreg=(redreg<255-dr?redreg+dr:255);
+	greenreg=(greenreg<255-dg?greenreg+dg:255);
+	bluereg=(bluereg<255-db?bluereg+db:255);
 }
 
-inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
-	// Uint32 p=getPixel(screen,x,y);
-	// Uint32 p=screen_getPixel(x,y);
-	screen_pixelType p=screen_getPixel(x,y);
-	// printf("%i\n",p);
-	// SDL_GetRGB(p,(screen->format),&r,&g,&b);
-	screen_setPixel(x,y,merge_pixel(p,dr,dg,db));
-}
+// inline screen_pixelType merge_pixel(screen_pixelType p,Uint8 dr,Uint8 dg,Uint8 db) {
+	// Uint8 r,g,b;
+	// Uint16 fr,fg,fb;
+	// screen_GetRGB(p,&r,&g,&b);
+	// // printf("    %i %i %i\n",r,g,b);
+	// // printf("  + %i %i %i\n",dr,dg,db);
+	// fr=r+dr;
+	// fg=g+dg;
+	// fb=b+db;
+	// // note: Sum of A B will exceed 255 if from top bit down either both bits are set or one bit is set, check next (worst case 00000001+11111111)
+	// // process: In asm, don't we get a register bit set if there was an overflow?
+	// // p= SDL_MapRGB(screen->format,fr,fg,fb);
+	// return screen_MapRGB(fr>255?255:fr,fg>255?255:fg,fb>255?255:fb);
+// }
+// 
+// inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
+	// // Uint32 p=getPixel(screen,x,y);
+	// // Uint32 p=screen_getPixel(x,y);
+	// screen_pixelType p=screen_getPixel(x,y);
+	// // printf("%i\n",p);
+	// // SDL_GetRGB(p,(screen->format),&r,&g,&b);
+	// screen_setPixel(x,y,merge_pixel(p,dr,dg,db));
+// }
 
 #define halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY) { if (XA<LX) { YA = YA + (YB-YA)*(LX-XA)/(XB-XA); XA = LX; } if (XA>=HX) { YA = YA + (YB-YA)*(HX-XA)/(XB-XA); XA = HX-1; } if (YA<LY) { XA = XA + (XB-XA)*(LY-YA)/(YB-YA); YA = LY; } if (YA>=HY) { XA = XA + (XB-XA)*(HY-YA)/(YB-YA); YA = HY-1; } }
 // #define halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY) { if ((*(XA))<LX) { (*(YA)) = (*(YA)) + ((*(YB))-(*(YA)))*(LX-(*(XA)))/((*(XB))-(*(XA))); (*(XA)) = LX; } if ((*(XA))>=HX) { (*(YA)) = (*(YA)) + ((*(YB))-(*(YA)))*(HX-(*(XA)))/((*(XB))-(*(XA))); (*(XA)) = HX-1; } if ((*(YA))<LY) { (*(XA)) = (*(XA)) + ((*(XB))-(*(XA)))*(LY-(*(YA)))/((*(YB))-(*(YA))); (*(YA)) = LY; } if ((*(YA))>=HY) { (*(XA)) = (*(XA)) + ((*(XB))-(*(XA)))*(HY-(*(YA)))/((*(YB))-(*(YA))); (*(YA)) = HY-1; } }
@@ -216,7 +226,8 @@ void plotTriRGB(SDL_Surface *screen,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int 
 			TR_y3>=0 && TR_y3<SCRHEI
 	   ) {
 // #define forminmax(xa,xb,TR_todo) { Uint32 *reg,*endreg; minmaxinto(&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xb,y),&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xa,y),reg,endreg);  for (; reg <= endreg; reg += 1) { *reg=merge_pixel(*reg,r,g,b); } }
-#define forminmax(xa,xb,TR_todo) { Uint32 *reg,*endreg; minmaxinto(&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xb,y),&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xa,y),reg,endreg);  for (; reg < endreg; reg += 1) { *reg=merge_pixel(*reg,r,g,b); } }
+// #define forminmax(xa,xb,TR_todo) { Uint32 *reg,*endreg; minmaxinto(&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xb,y),&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xa,y),reg,endreg);  for (; reg < endreg; reg += 1) { *reg=merge_pixel(*reg,r,g,b); } }
+#define forminmax(xa,xb,TR_todo) { Uint32 *reg,*endreg; minmaxinto(&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xb,y),&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xa,y),reg,endreg);  for (; reg < endreg; reg += 1) { merge_reg((Uint8 *)reg,r,g,b); } }
 #define TR_todo(x,y) merge(screen,x,y,r,g,b);
 #include "tri.c"
 #undef TR_todo
