@@ -1,8 +1,8 @@
 
 // #define DOS
 // #define DO_FULLSCREEN
-#define SCRWID 640
-#define SCRHEI 480
+#define SCRWID 800
+#define SCRHEI 300
 #define SCRBPS 32
 #define desiredFramesPerSecond 50
 
@@ -99,37 +99,68 @@ void setuplookups() {
 // #define minmaxinto(x,y,v,w) { if ((x)<(y)) { v=(x); w=(y); } else { v=(y); w=(x); } }
 #define minmaxinto(x,y,v,w) { typeof(v) xa=(x), ya=(y); if ((xa)<(ya)) { v=(xa); w=(ya); } else { v=(ya); w=(xa); } }
 
-SDL_Surface *screen;
-int frames=0;
-
-#define TXTWID (10*4)
-#define TXTHEI 5
-unsigned char text[TXTHEI][TXTWID] =
+#define TXTWID (10*8)
+#define TXTHEI 24
+char text[TXTHEI][TXTWID] =
 {
-	"00  000 0 0 00   0  0   O O 000 000    ",
-	"0 0 0   0 0 0 0 0 0 0   O O  0  0      ",
-	"0 0 00  0 0 00  000 0   OOO  0  00     ",
-	"0 0 0   0 0 0 0 0 0 0    O   0  0      ",
-	"0 0 000 000 0 0 0 0 000  O   0  000    "
+	"  00      00      OO      00      00      OO      OO      00      00     OO     ",
+	"  00      00      OO      00      00      OO      OO      00      00     OO     ",
+	"                                                                                ",
+	"                                                                                ",
+	"                                                                                ",
+	"                                                                                ",
+	"                                                                                ",
+	"00  OO  000000  00  00  0000      00    00      OO  OO  000000  000000          ",
+	"00  OO  000000  00  00  0000O    O00O   00      OO  OO  000000  000000          ",
+	"00O 00  00      00  00  00  00  00  00  00      OO  OO    00    00              ",
+	"00OO00  00      00  00  00  00  00  00  00      OO  OO    00    00              ",
+	"0OOO00  0000    00  00  0000O   000000  00      OOOOOO    00    0000            ",
+	"00OO00  0000    00  00  0000O   000000  00       OOOO     00    0000            ",
+	"00 O00  00      00  00  00  0O  00  00  00        OO      00    00              ",
+	"00  00  00      00  00  00  00  00  00  00        OO      00    00              ",
+	"00  00  000000  000000  00  00  00  00  000000    OO      00    000000          ",
+	"00  00  000000   0000   00  00  00  00  000000    OO      00    000000          ",
+	"                                                                                ",
+	"                                                                                ",
+	"                                                                                ",
+	"                                                                                ",
+	"                                                                                ",
+	"  00      00      OO      00      00      OO      OO      00      00     OO     ",
+	"  00      00      OO      00      00      OO      OO      00      00     OO     "
 };
 
-Uint16 speed[TXTHEI];
-Uint16 space[TXTHEI];
+#define SCALECONST ((float)SCRWID/32.0/82.0)
+#define PADDING 8
+#define cr (SCRHEI/(TXTHEI+PADDING*2))
 
-#define SCALECONST SCRWID/32
-#define cr (SCRHEI/(TXTHEI+2))
+SDL_Surface *screen;
+int frames=0;
 
 SDL_Rect screenrect;
 SDL_Rect dstrect;
 int blackPixel;
 int whitePixel;
 
+float freq[TXTHEI];
+float speed[TXTHEI];
+float space[TXTHEI];
+
+void setSpeed(int i) {
+	// speed[i]=9.0+2.0*sin(freq[i]*M_PI*frames);
+	speed[i]=SCALECONST*(8.0+0.5*sin(freq[i]*M_PI*frames));
+	space[i]=speed[i]*(float)cr/4.0;
+}
+
 void init() {
 	int i;
-	srand(time(NULL));
+	// srand(time(NULL));
 	for (i=0;i<TXTHEI;i++) {
-		speed[i]=8+(i%4);
-		space[i]=speed[i]*cr/4;
+		// speed[i]=12+(i%2);
+		// speed[i]=7.0+3.0*frand();
+		// space[i]=speed[i]*(float)cr/8.0;
+		// freq[i]=0.01*frand();
+		freq[i]=(float)i/(float)TXTHEI/100.0;
+		setSpeed(i);
 	}
 	// dstrect.w=cr/2;
 	// dstrect.h=cr/2;
@@ -142,10 +173,10 @@ void init() {
 }
 
 void plotBlob(int x,int y,int w,int h,int c) {
-	dstrect.x=x;
-	dstrect.y=y;
-	dstrect.w=cr;
-	dstrect.h=h;
+	dstrect.x=x+w/4;
+	dstrect.y=y+h/4;
+	dstrect.w=(w<4?1:w/2);
+	dstrect.h=h/2;
 	SDL_FillRect(screen,&dstrect,c);
 }
 
@@ -153,20 +184,28 @@ void doframe() {
 	int row;
 	SDL_FillRect(screen,&screenrect,blackPixel);
 	for (row=0;row<TXTHEI;row++) {
-		int cy=(1+row)*cr;
+		int cy=(PADDING+row)*cr;
 		int leftat=speed[row]*frames-SCRWID/2;
 		int i0=leftat/space[row];
 		int diff=space[row]-(leftat-i0*space[row]);
 		int col;
-		i0--; diff-=space[row];
+		// i0--; diff-=space[row];
 		// printf("%i %i\n",i0,diff);
 		for (col=0;col<2+SCRWID/space[row];col++) {
 			int i=(i0+col)%TXTWID;
 			// int c=( text[row][i] == ' ' ? blackPixel : whitePixel );
 			if (text[row][i]!=' ')
-			plotBlob(diff+col*space[row],cy,space[row],cr,whitePixel);
+			// plotBlob(diff+col*space[row],cy,space[row],cr,whitePixel);
+			plotBlob(diff+col*space[row],cy,cr,cr,whitePixel);
+			// printf("%s\n",text[row]);
 		}
+		setSpeed(row);
+		// speed[row]+=0.2*(frand()-0.5);
+		// space[row]=speed[row]*(float)cr/8.0;
 	}
+	plotBlob(SCRWID/2-cr,2*SCRHEI/8-cr,2*cr,2*cr,whitePixel);
+	plotBlob(SCRWID/2-cr,6*SCRHEI/8-cr,2*cr,2*cr,whitePixel);
+	// plotBlob(SCRWID/2-cr/4,0,cr/2,SCRHEI,whitePixel);
 }
 
 int main(int argc,char *argv[]) {
