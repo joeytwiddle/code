@@ -5,20 +5,22 @@
 
 <script type="text/javascript"> <!--
 
-//** Constants:
+// Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
 
-var listOfOptions = [ "powerBarPosition", "moduleClockEnabled", "moduleJavaScriptTester", "moduleButtonsOnPowerBarForms" ];
+/////////////////////////////// Constants ///////////////////////////////
 
-//** Options: (will be load/saveable using cookies...)
+var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JavaScriptTester", "opt_ButtonsOnPowerBarForms" ];
 
-var powerBarPosition = "top";
-var moduleClockEnabled = true;
-var moduleJavaScriptTester = true;
-var moduleButtonsOnPowerBarForms = true;
+/////////// Options: (will be load/saveable using cookies...) ///////////
 
-//** Runtime constants:
+var opt_powerBarPosition = "top";
+var opt_ClockEnabled = true;
+var opt_JavaScriptTester = true;
+var opt_ButtonsOnPowerBarForms = true;
 
-var defaultSubmitButton = ( moduleButtonsOnPowerBarForms ? '<INPUT type="button" value="Go" onclick="submit()">' : "" );
+/////////////////////////// Runtime constants ///////////////////////////
+
+var defaultSubmitButton = ( opt_ButtonsOnPowerBarForms ? '<INPUT type="button" value="Go" onclick="submit()">' : "" );
 var powerBarFrame; // == powerBarFrame
 var mainFrame;
 var powerBarLocationFormElement;
@@ -26,12 +28,12 @@ var lastKnownLocation = "";
 
 var todoList = "";
 
-//** Runtime variables:
+/////////////////////////// Runtime variables ///////////////////////////
 
-//** PowerBar initialisation:
+//////////////////////// PowerBar initialisation ////////////////////////
 
 function createFrameset() {
-	var distrib = ( powerBarPosition == "top" ? "20%,*" : "*,20%" );
+	var distrib = ( opt_powerBarPosition == "top" ? "20%,*" : "*,20%" );
 	var startFrameSet     = '<frameset rows="'+distrib+'">';
 	var powerBarFrameHtml = '<frame src="about:blank">';
 	// var mainFrameHtml     = '<frame src="http://www.google.com/">';
@@ -39,12 +41,12 @@ function createFrameset() {
 	var endFrameSet       = '</frameset>';
 	var framesetHtml = "";
 	framesetHtml += startFrameSet;
-	framesetHtml += ( powerBarPosition == "top" ?  powerBarFrameHtml : mainFrameHtml );
-	framesetHtml += ( powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
+	framesetHtml += ( opt_powerBarPosition == "top" ?  powerBarFrameHtml : mainFrameHtml );
+	framesetHtml += ( opt_powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
 	framesetHtml += endFrameSet;
 	document.writeln(framesetHtml);
-	powerBarFrame  = window.frames[ ( powerBarPosition == "top" ? 0 : 1 ) ];
-	mainFrame = window.frames[ ( powerBarPosition == "top" ? 1 : 0 ) ];
+	powerBarFrame  = window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
+	mainFrame = window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
 }
 
 function generatePowerBar() {
@@ -58,18 +60,22 @@ function generatePowerBar() {
 	powerBarHtml += 'Location:\n';
 	powerBarHtml += '<INPUT name="location" type="text" size="30" value="http://www.google.com/">';
 	// powerBarHtml += defaultSubmitButton;
-	powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,location.value)">';
+	if (opt_ButtonsOnPowerBarForms) {
+		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,location.value)">';
+	}
 	powerBarHtml += '</FORM>';
 
 	// Javascript tester textfield:
-	if (moduleJavaScriptTester) {
+	if (opt_JavaScriptTester) {
 		powerBarHtml += '</td><td>';
 		// powerBarHtml += '<FORM action="javascript:top.processJs(code.value)">'; // worked fine for konq
 		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
 		powerBarHtml += 'JavaScript tester:\n';
 		powerBarHtml += '<INPUT id="codeToExecute" name="code" type="text" size="30" value="type some javascript here">';
 		// powerBarHtml += '<INPUT type="button" value="Go" onclick="submit()">'; // worked fine for konq
-		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
+		if (opt_ButtonsOnPowerBarForms) {
+			powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
+		}
 		// powerBarHtml += defaultSubmitButton;
 		powerBarHtml += '</FORM>';
 	}
@@ -79,7 +85,7 @@ function generatePowerBar() {
 	powerBarHtml += '<INPUT type="button" value="Options..." onclick="top.editOptions()">';
 
 	// Clock:
-	if (moduleClockEnabled) {
+	if (opt_ClockEnabled) {
 		powerBarHtml += '</td><td>';
 		powerBarHtml += '<div id="clockHook">clock loading...</div>';
 	}
@@ -105,7 +111,7 @@ function init() {
 
 init();
 
-//** PowerBar calls:
+///////////////////////////// PowerBar calls /////////////////////////////
 
 function updatePowerBar() {
 	//// Watch for change of address in mainFrame from user following link, and update location textbox.
@@ -117,7 +123,7 @@ function updatePowerBar() {
 		// urlInTextBox.value = urlOfMainFrame;
 		// lastKnownLocation = urlOfMainFrame;
 	// }
-	if (moduleClockEnabled) {
+	if (opt_ClockEnabled) {
 		var clockElem = powerBarFrame.document.getElementById('clockHook');
 		clockElem.innerHTML = "" + new Date();
 	}
@@ -210,7 +216,7 @@ function editOptions() {
 	writeToFrame(mainFrame,html);
 }
 
-//** Library functions:
+/////////////////////////// Library functions ///////////////////////////
 
 function escapeString(text) {
 	var map = new Array(); // TODO: more!
