@@ -86,7 +86,7 @@ void wicked_blit(Window win) {
 #define fs 12
 #define palspeed 1
 #define colspeed (-1)
-#define framespermap 20
+#define framespermap 30
 
 //r = .5 + 2 * t / pi + .5 * SIN(1.5 * t)
 
@@ -344,8 +344,8 @@ void moremap() {
   int f,i,j,k,c,x,y,ix,iy,displayloop;
   // Generate some more of the map
   for (maploop=1;maploop<scrwid*scrhei/framespermap;maploop++) {
-    rx=(float)mmx/scrwid*2-1;
-    ry=(float)(mmy-scrhei/2)/scrwid*2;
+    rx=2.0*(float)mmx/(float)scrwid-1.0;
+    ry=2.0*(float)(mmy-scrhei/2)/(float)scrwid;
     
     /* From QB later
        IF fon%(4) THEN
@@ -375,8 +375,10 @@ void moremap() {
       ry=ry+var[11];
     }
     if (fon[0]) {
-      rx = mysgn(rx)/var[7]*mypow(myabs(rx),var[0]);
-      ry = mysgn(ry)/var[7]*mypow(myabs(ry),var[0]);
+      // rx = mysgn(rx)/var[7]*mypow(myabs(rx),var[0]);
+      // ry = mysgn(ry)/var[7]*mypow(myabs(ry),var[0]);
+			rx = rx + (var[8]-1.0)*0.2 * sin(20.0*(var[7])*ry);
+			ry = ry + (var[7]-1.0)*0.2 * sin(20.0*(var[8])*rx);
     }
     if (fon[1]) {
       rx = rx / var[1]; ry = ry / var[1];
