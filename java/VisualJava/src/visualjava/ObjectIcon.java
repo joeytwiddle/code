@@ -129,6 +129,8 @@ public class ObjectIcon extends JLabel implements HasObject {
             new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
                     desktop.remove(toRemove);
+                    // desktop.validate();
+                    desktop.repaint();
                 }
             }
         );

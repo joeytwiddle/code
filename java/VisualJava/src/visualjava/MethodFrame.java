@@ -113,6 +113,7 @@ public class MethodFrame extends JInternalFrame {
         } catch (Exception e) {
             // e.printStackTrace();
             System.err.println(e);
+            VisualJava.desktop.showObject(e);
         }
         setSize(this.getPreferredSize());
     }
