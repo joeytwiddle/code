@@ -559,10 +559,11 @@ function getXPath(node) {
 
 function viewInnerHtml() {
 	try {
+		LOG("viewInnerHtml() called");
 		var innerHTML = top.mainFrame.document.documentElement.innerHTML;
-		LOG("Got innerHTML length " + innerHTML);
+		LOG("Got innerHTML length " + innerHTML.length);
 		var toHtml = top.toHtml(innerHTML);
-		LOG("Got toHtml length " + toHtml);
+		LOG("Got toHtml length " + toHtml.length);
 		top.writeToWindow('Inner HTML of some page at some point',toHtml);
 		LOG("Wrote to window");
 	} catch (e) {
