@@ -24,6 +24,8 @@ var mainFrame;
 var powerBarLocationFormElement;
 var lastKnownLocation = "";
 
+var todoList = "";
+
 //** Runtime variables:
 
 //** PowerBar initialisation:
@@ -119,7 +121,31 @@ function updatePowerBar() {
 		var clockElem = powerBarFrame.document.getElementById('clockHook');
 		clockElem.innerHTML = "" + new Date();
 	}
+	processTodoList();
 	refreshTimer();
+}
+
+function processTodoList() {
+	while (todoList != "") {
+		// powerBarFrame.document.body.innerHTML += "Trying to pop from list:\n" + todoList+"\n\n";
+		// alert("Trying to pop from list:\n" + todoList);
+		var i = todoList.indexOf("\n");
+		var line;
+		if (i>=0) {
+			line = todoList.substring(0,i);
+			todoList = todoList.substring(i+1);
+		} else {
+			line = todoList;
+			todoList = "";
+		}
+		var result;
+		try {
+			result = eval(line);
+		} catch (e) {
+			result = e;
+		}
+		alert("processTodoList(): Tried:\n<EVAL>" + line + "</EVAL>\nGot:\n<RESULT>"+result+"</RESULT>");
+	}
 }
 
 function changeLocation(frame,url) {
@@ -130,7 +156,6 @@ function changeLocation(frame,url) {
 }
 
 function processJs(codeToExecute) {
-	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
 	var result;
 	try {
 		result = eval(codeToExecute);
@@ -138,13 +163,20 @@ function processJs(codeToExecute) {
 		result = e;
 	}
 	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
-	writeToFrame(mainFrame,toHtml(report));
+	var htmlReport = toHtml(report);
+	writeToFrame(mainFrame,htmlReport);
+	// todoList += "mainFrame.document.body.innerHTML = \""+report+"\";";
+	todoList += "mainFrame.document.body.innerHTML = \"" + escapeString(htmlReport) + "\";";
 	// alert(report);
 	// refreshTimer();
 }
 
 function writeToFrame(frame,html) {
-	frame.location = "about:blank";
+	try {
+		frame.location = "about:blank";
+	} catch (e) {
+		alert("Setting "+frame+".location to blank threw: "+e);
+	}
 	frame.document.body.innerHTML = html;
 	// frame.document.open();
 	// frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
@@ -180,6 +212,20 @@ function editOptions() {
 
 //** Library functions:
 
+function escapeString(text) {
+	var map = new Array(); // TODO: more!
+	map['\n'] = "\\n";
+	map['\t'] = "\\t";
+	map['\"'] = "\\\"";
+	map['\\'] = "\\\\";
+	var str = "";
+	for (var i=0;i<text.length;i++) {
+		var c = text.charAt(i);
+		str += ( map[c] ? map[c] : c );
+	}
+	return str;
+}
+
 function toHtml(text) {
 	var map = new Array(); // TODO: more!
 	map['\n'] = "<BR>";
@@ -198,5 +244,5 @@ function toHtml(text) {
 // --> </script>
 
 </HEAD>
-<BODY>If u don't have Javascript, you're not coming in.</BODY>
+<BODY>If you don't have Javascript, you're not getting in.</BODY>
 </HTML>
