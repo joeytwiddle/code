@@ -370,7 +370,21 @@ function processTodoList() {
 function changeLocation(frame,url) {
 	// writeToFrame(frame,'<script type="text/javascript">window.location = "' + url + '";</script>');
 	lastKnownLocation = url;
-	frame.location = url;
+	// frame.location = url;
+	var tidyUrl = '/cgi-bin/joey/tidy?url=';
+	if (new XMLHttpRequest()) {
+		var httpRequest = new XMLHttpRequest();
+		httpRequest.open('GET', tidyUrl+url, false);
+		httpRequest.send(null);
+		var xmlDocument = httpRequest.responseXML;
+		alert(xmlDocument.documentElement.nodeName)
+	} else if (new ActiveXObject('Microsoft.XMLHTTP')) {
+		var httpRequest = new ActiveXObject('Microsoft.XMLHTTP');
+		httpRequest.open('GET', tidyUrl+url, false);
+		httpRequest.send();
+		var xmlDocument = httpRequest.responseXML;
+		alert(xmlDocument.documentElement.nodeName)
+	}
 	refreshTimer();
 }
 

@@ -1,0 +1,14 @@
+<?xml version="1.0"?> 
+<?xml-stylesheet type="text/xsl" href="jumpgate.xsl"?> 
+
+<JumpgateData>
+
+	<CopyFormFromPage name="Google Search" page="http://www.google.com/"/>
+
+	<!--
+	<CopyFormFromPage name="Joey's Jumpgate" page="http://hwi.ath.cx/jumpgate.html"/>
+	-->
+
+	<CopyFormFromPage name="FlyBe.com" page="http://www3.flybe.com/obs/booking-controller/"/>
+
+</JumpgateData>

@@ -71,7 +71,7 @@ export TAROPTS="--exclude=debian/Mail/Lists --exclude=j/music/streamed"
 safetar twiddle \
         debian/.gnupg debian/.wine*/ debian/.vmware \
         debian/.*rc debian/.fetchmail* debian/.forward* \
-        j/*.conf j/org j/music j/logs/debpkgs-list-today.log \
+        j/*.conf j/org j/config j/music j/logs/debpkgs-list-today.log \
         j/*.dummy
         # debian/Mail 
         ## The dummy is to prove thar tar will still work if any of the other files are working.
