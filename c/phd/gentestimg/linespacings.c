@@ -15,7 +15,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	}
 				
 	float angle=(baseline.b-baseline.a).angle();
-	printf(">> rotang = %f\n",angle);
+	printf(">> rotang = %f\n",angle*180.0/pi);
 	// Rotate baseline and endpoints
 	for (int i=0;i<endpoints.len;i++) {
 		V2d v=endpoints.get(i);

@@ -12,12 +12,12 @@ V3d eye=V3d(0,0,0);
 float rotang;
 
 V2d unrotabout(V2d v) {
-	return v.rotateabout(-rotang,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
+	return v.rotateabout(rotang,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
 }
 
 V2d unrot(V2d v) {
 	// return v.rotateabout(-rotang,V2d((float)imgheight/2.0,(float)imgwidth/2.0));
-	return v.rotated(-rotang);
+	return v.rotated(rotang);
 }
 
 V3d imgplaneFromPixel(V2d p) {
@@ -268,8 +268,8 @@ int main(int argc,String *argv) {
 
 	Line2d baseline=Line2d(proj(worldA),proj(worldB));
 	// rotang=(baseline.b-baseline.a).angle();
-	rotang=down.dropz().angle()-pi; // rotang=-rotang;
-	printf(">> rotang = %f\n",rotang);
+	rotang=pi-down.dropz().angle(); // rotang=-rotang;
+	printf(">> rotang = %f\n",180.0*rotang/pi);
 	
 	printf("%f %f\n",(worldA.dropz()).x,(worldA.dropz()).y);
 	printf("worldA %s -> %s\n",worldA.dropz().toString(),unrot(worldA.dropz()).toString());
@@ -292,12 +292,12 @@ int main(int argc,String *argv) {
 	float groundW = groundB/groundK2;
 
 	printf("!>> %s\n",unrotabout(lines.get(0).a).toString());
-	float guessU = (float)imgheight/2.0-unrotabout(lines.get(0).a).y;
+	// float guessU = (float)imgheight/2.0-unrotabout(lines.get(0).a).y;
 	
 	printf("U = %f\n",groundU);
 	printf("V = %f\n",groundV);
 	printf("W = %f\n",groundW);
-	printf("	newguessU = %f\n",guessU);
+	// printf("	newguessU = %f\n",guessU);
 
 	if (genimage && overlay) {
 		outputimg.line(hvp,lines.num(1).center(),myRGB::blue);
@@ -400,7 +400,7 @@ int main(int argc,String *argv) {
 		  fprintf(sout,"groundK2 = %f\n",groundK2);
 		  fprintf(sout,"groundA = %f\n",groundA);
 		  fprintf(sout,"groundB = %f\n",groundB);
-		  fprintf(sout,"guessU = %f\n",guessU);
+		  // fprintf(sout,"guessU = %f\n",guessU);
 		  fclose(sout);
   
 		  system(Sformat("cat data.txt matlab/%s > solve.txt",whichmatlabfile));
