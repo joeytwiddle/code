@@ -1,3 +1,4 @@
+echo "--- pp_getregres $1 $2"
 rm *.bmp
 # ppreg $1 $2 -corinc -badx 40 -bady 40
 ./ppreg "$@" -badx 66 -bady 52

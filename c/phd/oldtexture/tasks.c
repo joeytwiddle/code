@@ -49,7 +49,7 @@ void makenewnn(String type) {
 void trainnetwork() {
   system(Sformat("cp %s initialnet.net",nnname));
   system(Sformat("cp %s traindata.pat",tsname));
-  system("batchman -f trainnet.bat");
+  system("./batchman -f trainnet.bat");
 }
  
 void scanimage() {

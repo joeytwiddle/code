@@ -171,7 +171,7 @@ float classifynn(List<Pixel> *ps) {
   else
     traindata.add("123.456 654.321");
   writelinestofile(traindata,"question.pat");
-  system("asknn > tmp.txt");
+  system("./asknn > tmp.txt");
   List<String> ls=readlinesfromfile("answer.res");
 //  deletefile("answer.res");
   float answer;  // Haven't bothered with twooutnodes case.
@@ -232,7 +232,7 @@ printf("done\n");
       writetraindata(data.num(i).input,123.456);
     addheaderto(&traindata,numtrainexs);
     writelinestofile(&traindata,"question.pat");
-    system("asknn");
+    system("./asknn");
     traindata=readlinesfromfile("answer.res");
     currentline=14;
     pass=2;

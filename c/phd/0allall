@@ -1,5 +1,5 @@
-cat good2.txt |
-sed "s/-.*//" |
+'ls' images/*.bmp* |
+sed 's/\.gz$//;s/\.bmp$//;s+images/++' |
 while read X; do
   ./0all $X
 done

@@ -1,8 +1,8 @@
 cd texture
 # Pale blue background
-# blob $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp $JPATH/images/blobs/$1.bmp -hue 0.67 -inv -dl 0.9 -g 0.8
+# ./blob $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp $JPATH/images/blobs/$1.bmp -hue 0.67 -inv -dl 0.9 -g 0.8
 # Pure white background
-blob $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp $JPATH/images/blobs/$1.bmp -hue 0.67 -inv -dl 1.0 -g 1.0
+./blob $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp $JPATH/images/blobs/$1.bmp -hue 0.67 -inv -dl 1.0 -g 1.0
 mkdir -p $JPATH/images/blobs
 convert $JPATH/images/blobs/$1.bmp -geometry 400 $JPATH/images/blobs/$1.jpg
 # To save space, if it is there!
