@@ -63,7 +63,7 @@ void main() {
 
 		int cenx = COLS / 2;
 		int ceny = LINES / 2;
-		float spacePerSwirl = 0.08;
+		float spacePerSwirl = 0.08+0.02*sin(0.001*(float)frames);
 		float swirlang = (float)frames * M_PI / 800.0;
 
 		move(0,0);
@@ -76,10 +76,11 @@ void main() {
 				float ang = atan2(Y,X)-swirlang;
 				if (y<0)
 					ang=ang+M_PI;
-				float rad = sqrt(X*X+Y*Y) + 0.02*sin(2.0*ang);
+				float wobblemag = 0.06+0.06*sin((float)frames*0.00315);
+				float rad = sqrt(X*X+Y*Y) * (1.0+ wobblemag*sin(2.0*ang));
 				float swirlHeight = sin(rad/spacePerSwirl+ang-swirlang);
 
-				float extra=-0.4+0.5*sin(2.493-rad*5.6+(float)frames*0.0026);
+				float extra=-0.4+0.5*sin(2.493-rad*5.6+(float)frames*0.00184);
 				if ( swirlHeight > - extra ) {
 				// if ( swirlHeight > - 0.7 ) {
 					int c = (((int)((swirlHeight+extra)/(1.0+extra)*(float)PALSIZE)) % PALSIZE);
