@@ -254,7 +254,7 @@ public class MainReal {
 			ex.printStackTrace(out);
     }
     
-	  out.print(Log.logiferror());
+	  out.print(JString.replace(Log.logiferror(),"\n","<br>\n"));
 
   }
   
