@@ -10,6 +10,8 @@ In jsh, type:
 
 If all goes well, you will have compiled all the executables I used for testing.
 
-Running the programs may be a little harder!  I used to have some test images in the images/ directory, and I ran 0allall to batch process them.
+The C code used to work under Solaris, but although it still compiles, I believe there are numerical problems somewhere which cause some part of the process to completely fail (texture measures I think).  So do compile and run on Linux, and if you must move to Solaris, observe the difference in the programs' output!
 
-If you run into problems, please mail joey@hwi.ath.cx with a copy of the error output on your terminal.
+Running the programs may be a little harder!  I used to have some test images in the images/ directory, and I ran 0allall to batch process them.  Maybe, if you put an image called "<imgname>.bmp" there, and call "./0all <imgname>", it will work.
+
+If you run into problems, please mail pclark@cs.bris.ac.uk with a copy of your terminal's error output (the whole history if possible!).
