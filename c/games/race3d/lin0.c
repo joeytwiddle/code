@@ -54,9 +54,9 @@
 #define redambient 64
 #define reddarken 64
 #define greenambient 64
-#define greendarken 192
-#define blueambient 32
-#define bluedarken 16
+#define greendarken 158
+#define blueambient 64
+#define bluedarken 158
 float fogdepth;
 float displayFogdepth=20.0;
 float playFogdepth=18.0;
