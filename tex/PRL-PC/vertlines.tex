@@ -4,6 +4,25 @@
 
 In a non-fronto-parallel view of a document under perspective, the spacing between adjacent lines of text in the image will vary relative to their distance from the camera.  This is the same effect that causes the railway sleepers beneath a train track to appear closer together as they approach the horizon. This change in spacing can be used to determine the angle at which the document is tilted, and hence the vertical vanishing point of the text plane.
 
+In \cite{planargrouping}, Schaffalitzky and Zisserman group repetitive elements
+in an image and use them to detect vanishing points and lines.
+They fit a vanishing point model to a group of objects using maximum likelihood estimation,
+providing the image coordinates of all relevant pixels as data for the fitting.
+Our approach is similar to the latter, except that we have already performed recognition
+of the paragraph and may therefore extract more representative data for the fitting
+(in the form of line position, line spacing pairs).
+We too employ
+Marquardt-Levenberg fitting
+% MLE
+and RANSAC, and will present the functions used.
+
+% He does not explain the details of his algorithm, but does say he uses
+% Marquardt-Levenberg fitting, as do we.  He uses the image coordinates of
+% all relevant pixels as data for fitting, whereas we process the image to
+% extract (a small number of) spacings measurements and use these
+% measurements as data.  He does not report the fitting/RANSAC equation he
+% used.  (We do.)
+
 After first transforming the image to simplify the problem, we will extract observations of the altitude of each line in the image.  A model of the geometry will allow us to express these observations as a function of the paragraph's orientation.  By fitting the observations to the function, we will obtain the desired parameters of the orientation.  We show that a higher-order fitting function can assist in avoiding outliers.
 
 An appropriate rotation of the image plane about the z-axis will position the baseline vertically, as shown in \reffig{zyspacings}.  Henceforth we may disregard the $x$-coordinates and deal solely in the $y,z$ plane.
@@ -107,13 +126,20 @@ Y(X) = \frac{ UV }{ 1+n(X)W }
 
 \begin{figure}[t]
 \begin{centering}
+  % \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/angerr-vvp-margins-full.eps,width=60mm}\label{vvpaccuracya}}
+  % \hspace{2mm}
+  % \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/angerr-vvp-spacings-left.eps,width=60mm}\label{vvpaccuracyc}}
+  % \hspace{2mm}
+  % \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/angerr-vvp-spacings-cen.eps,width=60mm}\label{vvpaccuracyd}}
+  % \hspace{2mm}
+  % \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/angerr-vvp-margins-left.eps,width=60mm}\label{vvpaccuracyb}}
   \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
   \hspace{2mm}
-  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
+  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-cen.ps,width=60mm}\label{vvpaccuracyd}}
   \hspace{2mm}
   \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyc}}
   \hspace{2mm}
-  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyd}}
+  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
 \caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
 \label{vvpaccuracy}
 \end{centering}
@@ -132,6 +158,8 @@ After reversing the transformation made earlier to bring the baseline upright, t
 % \end{centering}
 % \end{figure}
 
+% \reffig{vvpaccuracy} shows the angular error of the vertical vector recovered
+% for each image in the range of $0$ to $90^\circ$ in yaw and pitch using the
 \reffig{vvpaccuracy} shows the accuracy of recovery of the vertical vanishing
 point for the whole range of $0$ to $90^\circ$ in yaw and pitch using the
 methods described.  In \reffig{vvpaccuracya} it can be seen that, as expected,
@@ -211,7 +239,7 @@ suitable for documents with jagged edges.
 \begin{table}[t]
   \begin{center}
     % \begin{tabular}{|p{2.5in}|l|l|}
-    \begin{tabular}{|p{95mm}|l|l|}
+    \begin{tabular}{|p{95mm}|c|c|}
       \hline
       {\bf Paragraph (pgh) types } & {\bf VP} & {\bf Angular} \\
       {\bf } & {\bf error} & {\bf error} \\  \hline \hline
@@ -221,17 +249,24 @@ suitable for documents with jagged edges.
       % VVP using margin intersection on left formatted pghs & 1.23 & 24.50$^\circ$ \\   \hline
       % VVP using margin intersection on right formatted pghs & X &  XX$^\circ$ \\ \hline
       % VVP using margin intersection on centre formatted pghs & X  &  XX$^\circ$ \\ \hline  \hline
+      % HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
+      % VVP using margin intersection for fully justified pghs & 0.105 & ...$^\circ$ \\ \hline
+      % VVP using line spacings for fully justified pghs & 0.211 & ...$^\circ$ \\ \hline
+      % VVP using line spacings for centrally justified pghs & 0.147 & ...$^\circ$ \\ \hline
+      % VVP using line spacings for left justified pghs & 0.233 & ...$^\circ$ \\ \hline
+      % VVP using margin intersection on left justified pghs & 0.209 & ...$^\circ$ \\   \hline
+      % VVP using margin intersection on centrally justified pghs & 0.283 & ...$^\circ$ \\ \hline  \hline
       HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
-      VVP using margin intersection for fully justified pghs & 0.105 & ...$^\circ$ \\ \hline
-      VVP using line spacings for fully justified pghs & 0.211 & ...$^\circ$ \\ \hline
-      VVP using line spacings for centrally justified pghs & 0.147 & ...$^\circ$ \\ \hline
-      VVP using line spacings for left justified pghs & 0.233 & ...$^\circ$ \\ \hline
-      VVP using margin intersection on left justified pghs & 0.209 & ...$^\circ$ \\   \hline
-      VVP using margin intersection on centrally justified pghs & 0.283 & ...$^\circ$ \\ \hline  \hline
+      VVP using margin intersection on fully justified pghs & 0.132 & 3.93$^\circ$ \\ \hline
+      VVP using line spacings on centrally justified pghs & 0.318 & 4.45$^\circ$ \\ \hline
+      VVP using line spacings on fully justified pghs & 0.333 & 4.65$^\circ$ \\ \hline
+      VVP using line spacings on left justified pghs & 0.383 & 4.66$^\circ$ \\ \hline
+      VVP using margin intersection on centrally justified pghs & 0.655 & 17.35$^\circ$ \\ \hline  \hline
+      VVP using margin intersection on left justified pghs & 0.589 & 19.1$^\circ$ \\   \hline
    \end{tabular}
   \end{center}
   % \vspace*{-5mm}
-  \caption{Average error for the various methods over $10^\circ$ to $80^{\circ}$ in yaw and pitch.}
+  \caption{The average error over $10^\circ$ to $80^{\circ}$ in yaw and pitch for the various methods described.}
   \label{accuracytable}
 \end{table}
 
@@ -243,12 +278,21 @@ This quadrilateral is then used to recover a fronto-parallel viewpoint
 of the paragraph of text.
 
 
+% Here is the best OCR result of images currently in paper:
+% When a problem I try to remain humble, i a sin             tude.andbei
+% that the outcome is : Of course, others may try to take advantage of you, and if your remaining detached only encourages unjust aggression,
+% adopt a strong stand. Thia.
+% however, should be done with
+% compassion, and if it is necessary
+% to express your views and
+% take strong countermeasures,
+
 
 
 
 \section{Recovery of fronto-parallel view}
 
-% Given a partially calibrated camera for which only the focal lengthis unknown, a quadrilateral in the image which is known to correspond to some rectangle in the world is sufficient to determine the focal length.
+% Given a partially calibrated camera for which only the focal length is unknown, a quadrilateral in the image which is known to correspond to some rectangle in the world is sufficient to determine the focal length.
 
 In some applications we may not know the focal length of the camera used to capture the image.  However having a quadrilateral in the image which is known to map to a rectangle in the scene is sufficient to recovert the focal length of the camera.
 % We shall briefly demonstrate ...
@@ -272,9 +316,12 @@ f = \sqrt{ - \myvec{HVP}_x \myvec{VVP}_x - \myvec{HVP}_y \myvec{VVP}_y }
 It is worth noting that if $ ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 $, then no solution exists for $f$.  This situation means that the angle between the origin and the two vanishing points on the image plane is acute, and any corresponding quadrilateral cannot possibly be a rectangle in the scene.  If such a quadrilateral is encountered during processing, we could hypothesise that the document is in fact slanted on the text plane, or that the quadrilateral does not actually correspond to a document in the scene, and should be ignored.
 
 Having obtained the focal length of the camera, we may now recover a fronto-parallel view of the document.  The mapping into the recovered image takes place in world space rather than image space.
-
-The knowledge of the image pixel values is projected as a grid onto the document plane.  The square pixels in the image project as quadrilaterals onto the document.  Bi-cubic interpolation between these point is arguably overkill.
-
+The grid of square pixels values in the original image project onto the document in the scene as quadrilaterals.
+% The knowledge of the image pixel values is projected as a grid onto the document plane.
+% The square pixels in the image project as quadrilaterals onto the document.
+However, bi-cubic interpolation between these points on the document plane is arguably overkill.
+A simple perspective mapping with interpolation in the image plane is more efficient, and
+will give rise to the same performance in the final stage of optical character recognition.
 
 
 \begin{figure}[t]
@@ -306,7 +353,43 @@ The knowledge of the image pixel values is projected as a grid onto the document
 
 
 
-\begin{figure}
+%% JOEY USE FIG6b as a new example in Figure 10.
+\reffig{pprecover} shows the rectified images of the examples in
+\reffig{linesegfig}. 
+Further examples in \reffig{againmoreppresults}
+show the recovery of different styles of paragraphs with left justified and
+centrally aligned text.
+\reffig{emppra} shows the recovery of a segmented region of a book cover.  Despite 
+text of different sizes, and other image noise such as the specularity, the document is recovered robustly.
+\reffig{arthurcclarke} shows a centrally justified paragraph which has been recovered at high resolution and is easily readable.
+% In \reffig{empprc} a left justified document was correctly identified and recovered, despite occlusion of part of the paragraph.
+\reftab{ocrtable} shows that when we applied commercial OCR software to the image in \reffig{arthurcclarke},
+81\% of the characters and 84\% of the words were recognised correctly.
+Better performance can be expected from higher-resolution cameras, controlled lighting conditions, and advances in OCR.
+(One similar document in our test set achieved 100\% accuracy.)
+
+
+\begin{table}[t]
+  \begin{center}
+    % \begin{tabular}{|p{95mm}|l|l|}
+    \begin{tabular}{|p{35mm}|c|c|}
+      \hline
+      {\bf Image } & {\bf \%age correct characters} & {\bf \%age correct words} \\
+      \hline \hline
+      \reffig{chem015recover} & 79\% & 88\% \\
+      \hline
+      \reffig{arthurcclarke} & 81\% & 84\% \\
+      \hline
+      \reffig{chem005recover} & 50\% & 53\% \\
+		\hline
+   \end{tabular}
+  \end{center}
+  % \vspace*{-5mm}
+  \caption{Accuracy of Optical Character Recognition for recovered images.}
+  \label{ocrtable}
+\end{table}
+
+\begin{figure}[t]
 \centering
 \begin{center}
 
@@ -401,38 +484,4 @@ The knowledge of the image pixel values is projected as a grid onto the document
 \caption{Further examples of fronto-parallel recovery of documents. In each case the original image is shown above the recovered output.}
 \label{againmoreppresults}
 \end{figure}
-
-%% JOEY USE FIG6b as a new example in Figure 10.
-\reffig{pprecover} shows the rectified images of the examples in
-\reffig{linesegfig}. 
-Further examples in \reffig{againmoreppresults}
-show the recovery of different styles of paragraphs with left justified and
-centrally aligned text.
-\reffig{emppra} shows the recovery of a segmented region of a book cover.  Despite 
-text of different sizes, and other image noise such as the specularity, the document is recovered robustly.
-\reffig{arthurcclarke} shows a centrally justified paragraph which has been recovered at high resolution and is easily readable.
-% In \reffig{empprc} a left justified document was correctly identified and recovered, despite occlusion of part of the paragraph.
-When we applied commercial OCR software to the image in \reffig{arthurcclarke},
-81\% of the characters and 84\% of the words were recognised correctly.
-
-
-\begin{table}[t]
-  \begin{center}
-    % \begin{tabular}{|p{95mm}|l|l|}
-    \begin{tabular}{|p{35mm}|c|c|}
-      \hline
-      {\bf Image } & {\bf \%age correct characters} & {\bf \%age correct words} \\
-      \hline \hline
-      \reffig{chem015recover} & 79\% & 88\% \\
-      \hline
-      \reffig{arthurcclarke} & 81\% & 84\% \\
-      \hline
-      \reffig{chem005recover} & 50\% & 53\% \\
-		\hline  \hline
-   \end{tabular}
-  \end{center}
-  % \vspace*{-5mm}
-  \caption{Accuracy of Optical Character Recognition for recovered images.}
-  \label{ocrtable}
-\end{table}
 
