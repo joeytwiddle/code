@@ -393,7 +393,7 @@ int main(int argc,char *argv[]) {
 					// br=clip((Uint16)D/3.0,0,255);
 					// p=bgtexture_getPixel( ((Uint16)(a+aoffset)%bgtexture_w), ((Uint16)(D+Doffset)%bgtexture_h) );
 					anow=((Uint16)(a+aoffset)%bgtexture_w);
-					Dnow=bgtexture_w*((Uint16)(D+Doffset)%bgtexture_h);
+					Dnow=((Uint16)(D+Doffset)%bgtexture_h);
 					if (i>0 && j>0) {
 #define TLx as[j-1]
 #define TLy Ds[j-1]
