@@ -23,6 +23,7 @@ $@";
 # -focal 0.1
 
 PPPARAMS="
+-hvpcheat
 -deriv
 -res 180 -adapt 0.03 -maxpixels 2000
 -dolowresscan -lowres 60 -lowsmooth 1

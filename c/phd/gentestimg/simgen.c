@@ -273,6 +273,12 @@ int main(int argc,String *argv) {
 	}
 
 	V2d hvp=lines.num(1).intersect(lines.num(lines.len));
+	{
+		if (FILE *fp=fopen("hvpcheat.dat","w")) {
+			fprintf(fp,"%s\n",hvp.toString());
+			fclose(fp);
+		}
+	}
 	V2d vvp=Line2d(proj(worldA),proj(worldB)).intersect(Line2d(proj(worldC),proj(worldD)));
 
 	V2d testvvp=Line2d(proj(worldA),proj(worldB)).intersection(Line2d(proj(worldC),proj(worldD)));

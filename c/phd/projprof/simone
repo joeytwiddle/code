@@ -17,7 +17,12 @@ fi
 
 # PARAMS="-focal 0.5 -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.4"
 # Strong focal perspective:
-PARAMS="-qnd -centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.4"
+PARAMS="
+-qnd -centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001
+-roll $roll -yaw $yaw -pitch $pitch
+-overlay -image $IFILE $OFILE -size 0.4
+-spacings -gnuplot
+"
 # Weak focal perspective:
 # PARAMS="-qnd -centralise -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-imgnoise 0.0 -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
@@ -30,19 +35,19 @@ PARAMS="-qnd -centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001 -roll $r
 PARAMS="$PARAMS $@"
 
 curseyellow
-echo ../gentestimg/simgen $PARAMS 
+echo ../gentestimg/simgen $PARAMS
 cursegrey
-../gentestimg/simgen $PARAMS > genres.txt
+../gentestimg/simgen $PARAMS | tee genres.txt
 
-mv gpldata.txt gpl0data.txt
-mv gplfit.ps gpl0fit.ps
+mv gpldata.txt gplsimdata.txt
+mv gplfit.ps gplsimfit.ps
 # gzip "$OFILE"
+
 curseyellow
 echo invert -i "$OFILE" -o "$INVFILE"
 cursegrey
 invert -i "$OFILE" -o "$INVFILE"
 echo ./testsim "$INVFILE" "$OFILE"
 rm recover.bmp
-
 # time ./testsim "$INVFILE" "$OFILE" > ppres.txt
 time ./testsim "$INVFILE" "$OFILE" | tee ppres.txt

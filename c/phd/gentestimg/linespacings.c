@@ -187,8 +187,8 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	printf("guessU = %f\n",guessU);
 	printf("gotV = %f\n",lastV);
 	printf("gotW = %f\n",lastW);
-	printf("vvpDist = %f\n",vvpdist);
-	printf("VVP = %s\n",vvp.toString());
+	// printf("vvpDist = %f\n",vvpdist);
+	// printf("VVP = %s\n",vvp.toString());
 
 	fclose(log);
 	
