@@ -21,14 +21,15 @@
 #include <string.h>
 #include <curses.h>
 
-void writeToPoint(int x,int y) {
-	mvaddch(y,x,'.');
+void homeAndWrefresh() {
+	move(0,0);
+	wrefresh(stdscr);
 }
 
-void doSummat(void writeFn(int,int)) {
-	// ...
-	writeFn(12,16);
-	// ...
+#define wrefresh(x) homeAndWrefresh()
+
+void writeToPoint(int x,int y) {
+	mvaddch(y,x,'.');
 }
 
 void cls() {
