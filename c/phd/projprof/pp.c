@@ -757,7 +757,7 @@ void main(int argc,String *argv) {
 		Map2d<float> *filter=Map2d<float>::sobel();
 		// Map2d<float> *filter=Map2d<float>::simple();
 		
-		lowresmap=lowresmap->smoothed(smoothlowres);
+		lowresmap=*lowresmap.smoothed(smoothlowres);
 					
 		// // well just a little experiment...
 		// Map2d<float> *edgemag,*edgeang;
