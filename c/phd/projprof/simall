@@ -37,10 +37,11 @@ roll="90";
       gzip ppres.txt
       mv ppres.txt.gz res/ppres-r$roll-y$yaw-p$pitch.txt.gz
 			# convert "$OFILE" -geom 20 "res/1sim-r$roll-y$yaw-p$pitch.jpg"
-			convert "5deriv.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-0lowresderiv.jpg"
+			convert "lowresmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
 			convert "ppmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"
-			convert "origover.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-2ovr.jpg"
-			convert "recover.bmp" -geom 100 "res/r$roll-y$yaw-p$pitch-3rec.jpg"
+			convert "overlay.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-3origsim.jpg"
+			convert "origover.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
+			convert "recover.bmp" -geom 100 "res/r$roll-y$yaw-p$pitch-5rec.jpg"
     done
   done
 # done
