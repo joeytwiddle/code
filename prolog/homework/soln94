@@ -1,0 +1,54 @@
+%% B2 a
+
+intersect([],_,[]).
+intersect([X|R],L,[X|S]):- in(X,L), intersect(R,L,S).
+intersect([X|R],L,S):- \+ in(X,L), intersect(R,L,S).
+
+in(X,[Y|L]):- X=Y; in(X,L).
+
+
+%% B2 b
+
+flatten([],[]).
+flatten([X|R],T):- islist(X), flatten(X,Y), flatten(R,S), conc(Y,S,T).
+flatten([X|R],[X|S]):- \+ islist(X), flatten(R,S).
+
+islist([]).
+islist([_]).
+islist([_|_]).
+
+conc([],L,L).
+conc([X|R],L,[X|S]):- conc(R,L,S).
+
+
+%% B3
+
+f(london,paris,eastbound,10).
+f(paris,berlin,eastbound,5).
+f(paris,cairo,eastbound,12).
+f(berlin,moscow,eastbound,20).
+f(berlin,hk,eastbound,22).
+f(cairo,hk,eastbound,20).
+f(cairo,deli,eastbound,8).
+f(deli,sydney,eastbound,20).
+f(moscow,tokyo,eastbound,12).
+f(moscow,hk,eastbound,8).
+f(hk,tokyo,eastbound,6).
+f(hk,toronto,eastbound,12).
+f(hk,washington,eastbound,10).
+f(tokyo,toronto,eastbound,10).
+f(toronto,london,eastbound,8).
+f(washington,london,eastbound,12).
+f(washington,toronto,eastbound,8).
+
+f(X,Y,westbound,D):- f(Y,X,eastbound,D).
+
+solve(N,MFT,NS,S):- route(N,MFT,NS,london,eastbound,S);
+		    route(N,MFT,NS,london,westbound,S).
+
+route(_,_,_,_,_,[X|_]):- X = london.
+
+route(N,M,NS,C,D,[X|R]):- f(C,X,D,T), \+in(X,NS), \+in(X,Sin),
+			  NewM is (M-T), NewM>=0,
+			  NewN is N-1, NewN>=0,
+		          route(NewN,NewM,NS,X,D,R).

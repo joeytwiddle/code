@@ -1,0 +1,16 @@
+compress([],[]).
+
+compress([seg(X,N),X|R],L):- NewN is (N+1), compress([seg(X,NewN)|R],L), !.
+
+compress([X,X,X,X|R],L):- compress([seg(X,4)|R],L), !.
+
+compress([X|R],[X|L]):- compress(R,L).
+
+
+uncompress([],[]).
+
+uncompress([seg(_,0)|R],L):- uncompress(R,L), !.
+
+uncompress([seg(X,N)|R],[X|L]):- NewN is (N-1), uncompress([seg(X,NewN)|R],L), !.
+
+uncompress([X|R],[X|L]):- uncompress(R,L).

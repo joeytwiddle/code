@@ -1,0 +1,54 @@
+Problem 4 (Date Given: Oct 31, Deadline: Nov 8)
+---------
+
+Please copy the file "jobs.pl" before you start this assignment.
+
+The file jobs.pl contains information about three technicians and 
+a list of jobs which need to be assigned to these three technicians.
+
+(1). Given a list of jobs L and a technician T, please write a
+     program
+
+	jobs_assign(T, L, JobsForT, RestJobs)
+
+     which selects four jobs from L for technician T and
+     returns unselected jobs. In case of having less than four jobs 
+     available for T, we should select as many jobs as possible.
+
+     A list of jobs and the relation "can_do" are defined in 
+     "jobs.pl". Note that a job in the job list is represented as
+     a structure
+
+         j(JobLocation, JobType).
+
+(2). Assume we use the above structure for a job, write a program 
+     
+         get_job_location(JobList, LocationList)
+
+     which extracts all locations from JobList and removes duplicated
+     locations (if any). For example,
+  
+      ?- get_job_location([j(bristol,   j_type1),
+               		   j(bristol,   j_type2),
+               		   j(bristol,   j_type2),
+                           j(exeter,    j_type3) ], L).
+
+     should have a solution L = [bristol, exeter] (or [exeter, bristol]).
+     (In Bratko's book page 132, there is an example on how to add
+      element to a list without duplication)
+
+Please test your program by using 
+
+?- go1.
+
+and
+
+?- go2.
+
+which are defined in "jobs.pl".
+
+A very simple program print_result/3 is provided in "jobs.pl" to 
+print out the results. 
+
+-----------------------------------------------------------
+Please send in your program and the script by the deadline.
