@@ -1,0 +1,87 @@
+// Decompiled by Jad v1.5.8d. Copyright 2001 Pavel Kouznetsov.
+// Jad home page: http://www.geocities.com/kpdus/jad.html
+// Decompiler options: packimports(3) 
+// Source File Name:   Fire1.java
+
+import java.applet.Applet;
+import java.awt.*;
+
+public class Fire1 extends Applet
+    implements Runnable
+{
+
+    public void init()
+    {
+        graphics = getGraphics();
+        the_Fire = new Fire1Producer(300, 300);
+        Img = createImage(the_Fire);
+        setLayout(new BorderLayout());
+        resize(300, 300);
+        the_thread = new Thread(this);
+        the_thread.start();
+    }
+
+    public void stop()
+    {
+        if(the_thread != null)
+            the_thread.stop();
+        the_thread = null;
+    }
+
+    public void run()
+    {
+        prepareImage(Img, this);
+        while(the_thread != null) 
+        {
+            the_Fire.Do_Fire();
+            graphics.drawImage(Img, 0, 0, this);
+            try
+            {
+                Thread.sleep(10L);
+            }
+            catch(InterruptedException interruptedexception) { }
+        }
+    }
+
+    public boolean handleEvent(Event event)
+    {
+        switch(event.id)
+        {
+        case 501: // Event.MOUSE_DOWN
+            return true;
+
+        case 502: // Event.MOUSE_UP
+            the_Fire.Video[event.x + event.y * 300] = 120;
+            return true;
+
+        case 201: // Event.WINDOW_DESTROY
+            System.exit(0);
+            return true;
+        }
+        return false;
+    }
+
+    public void update(Graphics g)
+    {
+        paint(g);
+    }
+
+    public void paint(Graphics g)
+    {
+        graphics.drawImage(Img, 0, 0, this);
+    }
+
+    public String getAppletInfo()
+    {
+        return "Fire applet. Skal 1996.";
+    }
+
+    public Fire1()
+    {
+    }
+
+    Image Img;
+    Graphics graphics;
+    Thread the_thread;
+    Fire1Producer the_Fire;
+}

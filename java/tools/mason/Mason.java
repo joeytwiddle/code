@@ -29,7 +29,7 @@ class Tag {
 		}
 		if (JString.contains(options,'e'))
 			generator.println("    staticOut.println("+s+");");
-			// generator.println("\"+"+s+"\"+");
+			// generator.println("\"+"+s+"+\"");
 	}
 
 }
