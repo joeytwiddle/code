@@ -270,17 +270,23 @@ tryRoutesAndClip(Rts,BestCost,X,Y,R,C):-
 
 % Another attempt:
 
-shortPath(X,Y,[X,Y],C,L):-
+write(A,B,C,D):-
+	writeList([A,B,C,D]).
+
+shortPath(X,Y,[Y],NewCost,L,[CurCost,CurRt],[BestCost,BestRt]):-
 	connected(X,Y,L),
-	move(L,L,C).
-shortPath(X,Y,[Z|R],C,L):-
+	move(L,L,MoveCost),
+	NewCost is CurCost+MoveCost,
+	NewCost < BestCost,
+	write('C=',NewCost,' Rt=',CurRt),nl.
+shortPath(X,Y,[Z|R],C,L,[CurCost,CurRt],[BestCost,BestRt]):-
 	connected(X,Z,L2),
-	shortPath(Z,Y,R,C2,L2),
 	move(L,L2,MoveCost),
-	C is C2+MoveCost.
+	NewCost is CurCost+MoveCost,
+	shortPath(Z,Y,R,C,L2,[NewCost,[Z|CurRt]],[BestCost,BestRt]).
 
 shortestPath3(X,Y,R,C):-
-	shortPath(X,Y,R,C,_).
+	shortPath(X,Y,R,C,_,[0,[X]],[9999,[]]).
 
 test(R,C):-
 	shortestPath3(oxford_circus,paddington,R,C).
