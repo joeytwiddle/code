@@ -8,12 +8,10 @@
 #define max(x,y) (x>y?x:y)
 // #define swap(t,a,b); { t tmp; tmp=a; a=b; b=tmp; }
 #define swap(t,a,b); { t tmp; tmp=*(a); *(a)=*(b); *(b)=tmp; }
-#define swapint(a,b) swap(int,a,b)
-// void swapint(int *a,int *b) { int tmp; tmp=*(a); *(a)=*(b); *(b)=tmp; }
-#define forminmax(forminmax_i1,forminmax_i2,forminmax_do); { int forminmax_a,forminmax_b,forminmax_i; if (forminmax_i1<forminmax_i2) { forminmax_a=forminmax_i1; forminmax_b=forminmax_i2; } else { forminmax_a=forminmax_i2; forminmax_b=forminmax_i1; } for (forminmax_i=forminmax_a;forminmax_i<=forminmax_b;forminmax_i++) { forminmax_do; } }
+#define forminmax(forminmax_i1,forminmax_i2,forminmax_do); { register Sint16 forminmax_a,forminmax_b,forminmax_i; if (forminmax_i1<forminmax_i2) { forminmax_a=forminmax_i1; forminmax_b=forminmax_i2; } else { forminmax_a=forminmax_i2; forminmax_b=forminmax_i1; } for (forminmax_i=forminmax_a;forminmax_i<=forminmax_b;forminmax_i++) { forminmax_do; } }
 
 	{
-		int
+		Sint16
 			x1 = TR_x1,
 			y1 = TR_y1,
 			x2 = TR_x2,
@@ -24,37 +22,40 @@
 		// Order points in ascending x
 		// Hence edge 1-3 is longest
 		if (x1>x2) {
-			swapint(&x1,&x2); swapint(&y1,&y2);
+			swap(Sint16,&x1,&x2); swap(Sint16,&y1,&y2);
 		}
 		if (x2>x3) {
-			swapint(&x2,&x3); swapint(&y2,&y3);
+			swap(Sint16,&x2,&x3); swap(Sint16,&y2,&y3);
 			if (x1>x2) {
-				swapint(&x1,&x2); swapint(&y1,&y2);
+				swap(Sint16,&x1,&x2); swap(Sint16,&y1,&y2);
 			}
 		}
 
 		{
 			
 		// 1-2
-		int
+		Sint16
 			dx12  = abs(x2 - x1),
-			dy12  = abs(y2 - y1),
+			dy12  = abs(y2 - y1);
+        Sint8
 			ddy12 = sgn(y2-y1);
 		// 1-3
-		int
+		Sint16
 			dx13  = abs(x3 - x1),
-			dy13  = abs(y3 - y1),
+			dy13  = abs(y3 - y1);
+        Sint8
 			ddy13 = sgn(y3-y1);
 		// 2-3
-		int
+		Sint16
 			dx23  = abs(x3 - x2),
-			dy23  = abs(y3 - y2),
+			dy23  = abs(y3 - y2);
+        Sint8
 			ddy23 = sgn(y3-y2);
-		register int
+		register Sint16
 			x   = x1,
 			yb  = y1,
 			yt  = y1,
-			et  = 0,
+            et  = 0,
 			eb  = 0;
 
 			if (x1==x2) {

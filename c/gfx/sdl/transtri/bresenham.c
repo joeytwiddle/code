@@ -5,12 +5,13 @@
 // BR_todo(x,y): action to take at each point x,y on line
 
     {
-		int
+		Sint16
 			BR_dx  = abs(BR_x2 - BR_x1),
-			BR_dy  = abs(BR_y2 - BR_y1),
+			BR_dy  = abs(BR_y2 - BR_y1);
+        Sint8
 			BR_ddx = sgn(BR_x2-BR_x1),
 			BR_ddy = sgn(BR_y2-BR_y1);
-		register int
+		register Sint16
 			BR_x   = BR_x1,
 			BR_y   = BR_y1,
 			BR_eps = 0;
