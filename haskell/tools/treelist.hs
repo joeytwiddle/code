@@ -5,7 +5,7 @@ main = do
   args <- getArgs
   go args
 
-data Tree = Layer String Tree | MinBranch [Tree] | Branch String [Tree] | Leaf [String]
+data Tree = Layer String Tree | MinBranch [Tree] | Single String | Branch Bool String [Tree] | Leaf [String]
   -- deriving (Show)
 
 instance Show Tree where
@@ -13,11 +13,15 @@ instance Show Tree where
   -- show (Leaf ss) = concat (map addn ss)
     -- where addn s = s++"\n"
 
-showTree indent (Layer l t) = showTree (indent++""++l++"") t
-showTree indent (MinBranch bs) = concat (map (showTree indent) bs)++"\n"
-showTree indent (Branch c bs) = indent++"{"++c++"\n"++ concat (map (showTree (indent++c)) bs) ++ indent++"}\n"
+showTree indent (Layer l t) = "| " ++ indent++l++"\n" ++ showTree (indent++(replicate (length l) ' ')) t
+showTree indent (Single s) = ". " ++ (indent++""++s++""++"\n")
+showTree indent (MinBranch bs) = indent++"{\n" ++ concat (map (showTree (indent)) bs)++ indent++"}\n"
+showTree indent (Branch same c bs)
+  | same      = "| "++indent++c++"{\n"++ concat (map (showTree (indent++(replicate (length c) ' '))) bs) ++ "| "++indent++"}\n"
+  | otherwise = concat (map (showTree (indent)) bs)
+  -- | otherwise = "< "++indent++"{"++c++"\n"++ concat (map (showTree (indent++(replicate (length c) ' '))) bs) ++ "> "++indent++"}\n"
 showTree indent (Leaf ls) = concat (map (sort) ls)
-  where sort xs = indent ++ ">"++xs++"<" ++ "\n"
+  where sort xs = "= " ++ indent ++ ">"++xs++"<" ++ "\n"
 
 -- test = go ["/stuff/data/cdrom_a2.find"]
 test = go ["test.txt"]
@@ -30,19 +34,23 @@ treelist file = treebreak 0 (lines (file))
 
 treebreak :: Int -> [String] -> (Tree)
 treebreak col lines
-  | indextoolarge = (Leaf (concat breaks))
-  | length breaks == 0  = Leaf []
-  | (length breaks) == 1 = Layer (take (col+1) (head (head breaks))) (treebreak (0) (stripc (col+1) lines))
-  | otherwise = MinBranch ( map subtree breaks )
+  | indextoolarge        = (Leaf (concat breaks))
+  | length breaks == 0   = Leaf []
+  | (length breaks) == 1 = treebreak (col+1) lines
+  | otherwise = Branch True ((take (col) (head (head breaks)))) (( map (subtree col) breaks ))
   where breaks = findbreaks col [] lines
         indextoolarge = length lines <= 1 -- col > 1 -- (length (head (head breaks))) -- col>2000 -- (myhead (head (head breaks))) == '_'
         -- strip n xs = map (stripc n) xs
         stripc n ys = map (drop n) ys
 {-++clip (show (map length breaks)))-}
 
-subtree [] = Leaf []
-subtree [x] = Leaf [x]
-subtree ss = if head ss == [] then Leaf [] else Layer [head (head ss)] (MinBranch [(treebreak 0 (map tail ss))])
+-- subtree col [] = Leaf []
+subtree col [x] = Single (drop col x)
+subtree col ss =
+  if head ss == [] then
+    Leaf []
+  else
+    Branch False [(head ss)!!col] ([(treebreak 1 (map (drop (col)) ss))])
 
 clip xs
   | length xs < 50 = xs
