@@ -263,9 +263,15 @@ of the paragraph of text.
 % \subfigure[Recovery of running example]{\epsfig{figure=images/chem002001recover.ps,height=52mm}}
 \subfigure[Recovery of running example]{\epsfig{figure=images/prlrunning/recover.eps,height=52mm}}
 \hspace{2mm}
-\subfigure[Recovery of paragraph in \reffig{chem015overlay}, suitable for OCR.]{
-	% \epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}
+% \subfigure[Recovery of paragraph in \reffig{chem015overlay}, suitable for OCR.]{
+	% % \epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}
+	% \epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{chem015recover}
+% }
+\subfigure[Recovery of paragraph from \reffig{chem015overlay}, suitable for OCR.]{
 	\epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{chem015recover}
+}
+\subfigure[Recovery of second paragraph from \reffig{chem015overlay}.]{
+	\epsfig{figure=images/prlall/chem015/recover-other.eps,height=52mm}\label{chem015recoverother}
 }
 \end{center}
 %\vspace{-3mm}
@@ -276,80 +282,89 @@ of the paragraph of text.
 
 
 
-\begin{figure}[t]
+\begin{figure}
 \centering
 \begin{center}
 
-    \subfigure[]{ \begin{tabular}{c}
-      \epsfig{figure=images/chem010overlay.ps,width=36mm} \\
-      $\downarrow$ \\
-           \\
-      \epsfig{figure=images/chem010recover.ps,width=36mm}
-        \end{tabular}       \label{arthurcclarke}
-		  \label{empprb}
-    }
-    \subfigure[]{ \begin{tabular}{c}
-      \epsfig{figure=images/chem005001origover.ps,width=36mm} \\
-      $\downarrow$ \\
-           \\
-      \epsfig{figure=images/chem005001recover.ps,width=36mm}
-        \end{tabular}       \label{chem005recover}
-		  % \label{empprb}
-    }
-    % \subfigure[]{ \begin{tabular}{c}
-      % \epsfig{figure=images/dv5.ps,width=36mm} \\
-      % $\downarrow$ \\
-           % \\
-		% % \hspace{11mm}
-      % % \put(10,38){$\rightarrow$}
-		% % \hspace{11mm}
-      % \epsfig{figure=images/dv5recover.ps,width=24mm}
-        % \end{tabular}      \label{empprc}
-     % }
-    % \subfigure[]{ \begin{tabular}{c}
-      % \epsfig{figure=images/dv5.ps,width=36mm} \\
-      % $\downarrow$ \\
-           % \\
-      % \epsfig{figure=images/dv5recover.ps,width=36mm}
-        % \end{tabular}      \label{empprc}
-     % }
-    \subfigure[]{ \begin{tabular}{c}
-      \includegraphics[width=36mm]{images/chem006oo.ps} \\
-      $\downarrow$ \\
-          \\
-      \includegraphics[width=36mm]{images/chem006002recover.ps}
-        \end{tabular}      \label{empprd}
-     }
+\subfigure[]{ \begin{tabular}{c}
+	\epsfig{figure=images/chem010overlay.ps,width=36mm} \\
+		$\downarrow$ \\
+		\vspace{-4.5mm}
+		\\
+		\epsfig{figure=images/chem010recover.ps,width=36mm}
+	\end{tabular}       \label{arthurcclarke}
+	\label{empprb}
+}
+\subfigure[]{ \begin{tabular}{c}
+	\includegraphics[width=36mm]{images/chem008oo.ps}   \\
+		$\downarrow$ \\
+		\vspace{-4.5mm}
+		\\
+		\includegraphics[width=36mm]{images/chem008001recover.ps}   \\
+		\includegraphics[width=36mm]{images/chem008002recover.ps}
+	\end{tabular} \label{emppre}
+}
+\subfigure[]{ \begin{tabular}{c}
+	\epsfig{figure=images/chem011.ps,width=36mm}\label{banana} \\
+		$\downarrow$ \\
+		\vspace{-4.5mm}
+		\\
+		\epsfig{figure=images/chem011recover.ps,width=30mm}
+	\end{tabular}       \label{emppra}
+}
+% \\ \vspace{-3mm}
 \\ \vspace{5mm}
-    \subfigure[]{ \begin{tabular}{c}
-        \includegraphics[width=36mm]{images/chem008oo.ps}   \\
-      $\downarrow$ \\
-          \\
-        \includegraphics[width=36mm]{images/chem008001recover.ps}   \\
-        \includegraphics[width=36mm]{images/chem008002recover.ps}
-    \end{tabular} \label{emppre} }
-    % \subfigure[]{ \begin{tabular}{c}
-        % \includegraphics[width=36mm]{images/clut4allover.ps}       \\
-      % $\downarrow$ \\
-           % \\
-        % \includegraphics[width=36mm]{images/clut4recover1.ps}    \\
-        % \includegraphics[width=36mm]{images/clut4recover2.ps}
-    % \end{tabular} \label{empprf} }
-    \subfigure[]{ \begin{tabular}{c}
-      \epsfig{figure=images/chem011.ps,width=36mm}\label{banana} \\
-      $\downarrow$ \\
-           \\
-      \epsfig{figure=images/chem011recover.ps,width=30mm}
-        \end{tabular}       \label{emppra}
-    }
-	 % \hspace{2mm}
-    \subfigure[]{ \begin{tabular}{c}
-        \includegraphics[width=36mm]{images/clut4allover.ps}       \\
-      $\downarrow$ \\
-           \\
-        \includegraphics[width=36mm]{images/clut4recover1.ps}    \\
-        \includegraphics[width=36mm]{images/clut4recover2.ps}
-    \end{tabular} \label{empprf} }
+\subfigure[]{ \begin{tabular}{c}
+	\includegraphics[width=36mm]{images/chem006oo.ps} \\
+		$\downarrow$ \\
+		\vspace{-4.5mm}
+		\\
+		\includegraphics[width=36mm]{images/chem006002recover.ps}
+	\end{tabular}      \label{empprd}
+}
+\subfigure[]{ \begin{tabular}{c}
+	\includegraphics[width=36mm]{images/clut4allover.ps}       \\
+		$\downarrow$ \\
+		\vspace{-4.5mm}
+		\\
+		\includegraphics[width=36mm]{images/clut4recover1.ps}    \\
+		\includegraphics[width=36mm]{images/clut4recover2.ps}
+	\end{tabular} \label{empprf}
+}
+\subfigure[]{ \begin{tabular}{c}
+	\epsfig{figure=images/chem005001origover.ps,width=36mm} \\
+		$\downarrow$ \\
+		\vspace{-4.5mm}
+		\\
+		\epsfig{figure=images/chem005001recover.ps,width=36mm}
+	\end{tabular}       \label{chem005recover}
+	% \label{empprb}
+}
+% \subfigure[]{ \begin{tabular}{c}
+	% \epsfig{figure=images/dv5.ps,width=36mm} \\
+		% $\downarrow$ \\
+		% \\
+		% % \hspace{11mm}
+	% % \put(10,38){$\rightarrow$}
+	% % \hspace{11mm}
+	% \epsfig{figure=images/dv5recover.ps,width=24mm}
+	% \end{tabular}      \label{empprc}
+	% }
+	% \subfigure[]{ \begin{tabular}{c}
+		% \epsfig{figure=images/dv5.ps,width=36mm} \\
+			% $\downarrow$ \\
+			% \\
+			% \epsfig{figure=images/dv5recover.ps,width=36mm}
+		% \end{tabular}      \label{empprc}
+		% }
+		% \subfigure[]{ \begin{tabular}{c}
+			% \includegraphics[width=36mm]{images/clut4allover.ps}       \\
+				% $\downarrow$ \\
+				% \\
+				% \includegraphics[width=36mm]{images/clut4recover1.ps}    \\
+				% \includegraphics[width=36mm]{images/clut4recover2.ps}
+			% \end{tabular} \label{empprf} }
+% \hspace{2mm}
 
 %%% Note some other good images:
 % chem010 001
