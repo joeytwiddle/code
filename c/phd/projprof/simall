@@ -12,80 +12,96 @@ ANGSTEP=10
 # ENDANG=90
 # ANGSTEP=5
 
-numlines=30
-for numlines in `seq -w 30 -1 02`; do
+for DOCUMENT in left cen right full; do
 
-  echo
-  echo "LINES: $numlines -----------------------------------------"
+SRCNAME="$DOCUMENT"
 
-  SRCNAME="dar-crpage2-left$numlines"
-  # SRCNAME="doc-cen"
-  # SRCNAME="doc-cen-more"
-  # SRCNAME="dar-crpage2"
-  # SRCNAME="leaflet-cen"
-  IFILE="$SRCNAME.bmp"
-  RES="results.txt"
-  FOCALRES="focalres.txt"
+for SCANMETHOD in hier full; do
 
-  rm -rf res
-  mkdir -p res
-  echo "0" > res/.nosync
-  # rm -f "$RES"
-  # echo "START" > "$RES"
-  # rm -f "$FOCALRES"
-  # echo "" > "$FOCALRES"
+for VVPMETHOD in spacings margins; do
 
-  STARTANG=20
-  ENDANG=80
-  ANGSTEP=30
-  # STARTANG=0
-  # ENDANG=90
-  # ANGSTEP=5
+	PPCOM="./pp $MOREPPCOM -adapt 0.02 -maxpixels 2000 -gamma 0.0 -res 180 -deriv"
+	if test "$SCANMETHOD" = hier; then
+		# Hierarchical scan
+		PPCOM="$PPCOM -dolowresscan -recwid 900 -lowres 60 -oth 12 -lowsmooth 3 -light"
+	else
+		# Full PP scan
+		PPCOM="$PPCOM -recwid 200 -oth 12 -lowsmooth 3 -badx 100 -bady 65"
+	fi
+	if test "$VVPMETHOD" = "margins"; then
+		# Margins method
+		PPCOM="$PPCOM -usetwolines"
+	fi
+	export PPCOM;
 
-  roll="90";
-  # for roll in `listnums -6 6`; do
-    yaw=40;
-    # for yaw in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
-    # for yaw in `listnums 0 90 by 5`; do
-    # for yaw in `listnums 20 70 by 10`; do
-      pitch=60;
-      # for pitch in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
-      # for pitch in `listnums 0 90 by 5`; do
-      # for pitch in `listnums 20 70 by 10`; do
-			  echo
-			  echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
-			  echo
-			  simone "$IFILE" $roll $yaw $pitch
-        FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
-        echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
-			  # HVP=`grep "^HVP = " ppres.txt | sed "s/HVP = //"`
-			  # HVPX=`echo "$HVP" | sed "s/,.*//" | tr -d "(,)"`
-			  # HVPY=`echo "$HVP" | sed "s/.*,//" | tr -d "(,)"`
-			  # echo "$yaw $pitch $HVP
-        mv genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
-        mv ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
-			  extractone $roll $yaw $pitch >> "$RES"
-        gzip res/genres-r$roll-y$yaw-p$pitch.txt
-        gzip res/ppres-r$roll-y$yaw-p$pitch.txt
-			  # convert "$OFILE" -geometry 20 "res/1sim-r$roll-y$yaw-p$pitch.jpg"
-			  convert "lowresmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
-			  convert "ppmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"
-			  # convert "overlay.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-3origsim.jpg"
-			  # convert "gpl0fit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-2desfit.jpg"
-			  # convert "gplfit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
-			  convert "origover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
-			  convert "recover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-5rec.jpg"
-			  # ./showdesiredspacings.sh
-			  # convert "gpl1fit.ps" -geometry 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
-			  rm -f fit.log
-      # done
-    # done
-  # done
+# 	numlines=30
+# for numlines in `seq -w 30 -1 02`; do
 
-  # ( cd res
-  # htmlall )
+# 	echo
+# 	echo "LINES: $numlines -----------------------------------------"
 
-  mv "$RES" "lines-$numlines.results"
+# SRCNAME="dar-crpage2-left$numlines"
+# SRCNAME="doc-cen"
+# SRCNAME="doc-cen-more"
+# SRCNAME="dar-crpage2"
+# SRCNAME="leaflet-cen"
+	IFILE="$SRCNAME.bmp"
+	RES="results.txt"
+	FOCALRES="focalres.txt"
+
+	rm -rf res
+	mkdir -p res
+	echo "0" > res/.nosync
+rm -f "$RES"
+echo "START" > "$RES"
+rm -f "$FOCALRES"
+echo "" > "$FOCALRES"
+
+	roll="90";
+# for roll in `listnums -6 6`; do
+	yaw=40;
+	for yaw in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
+	pitch=60;
+	for pitch in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
+	echo
+	echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
+	echo
+	simone "$IFILE" $roll $yaw $pitch
+	FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
+	echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
+# HVP=`grep "^HVP = " ppres.txt | sed "s/HVP = //"`
+# HVPX=`echo "$HVP" | sed "s/,.*//" | tr -d "(,)"`
+# HVPY=`echo "$HVP" | sed "s/.*,//" | tr -d "(,)"`
+# echo "$yaw $pitch $HVP
+	mv genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
+	mv ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
+	extractone $roll $yaw $pitch >> "$RES"
+	gzip res/genres-r$roll-y$yaw-p$pitch.txt
+	gzip res/ppres-r$roll-y$yaw-p$pitch.txt
+# convert "$OFILE" -geometry 20 "res/1sim-r$roll-y$yaw-p$pitch.jpg"
+	convert "lowresmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
+	convert "ppmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"
+# convert "overlay.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-3origsim.jpg"
+# convert "gpl0fit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-2desfit.jpg"
+# convert "gplfit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
+	convert "origover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
+	convert "recover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-5rec.jpg"
+# ./showdesiredspacings.sh
+# convert "gpl1fit.ps" -geometry 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
+	rm -f fit.log
+done
+done
+# done
+
+# ( cd res
+# htmlall )
+
+# mv "$RES" "lines-$numlines.results"
+	mv "$RES" "$DOCUMENT-$SCANMETHOD-$VVPMETHOD.results"
+
+done
+
+done
 
 done
 

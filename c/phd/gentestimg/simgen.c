@@ -149,6 +149,8 @@ int main(int argc,String *argv) {
 		
 		ProgMon progmon;
 
+		TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
+
 		if (quickanddirty) {
 
 			for (int i=0;i<inputimg->width;i++) {
@@ -162,7 +164,6 @@ int main(int argc,String *argv) {
 
 		} else {
 
-			TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
 			for (int i=0;i<imgwidth;i++) {
 				(progmon.*progmon.nowthrough)((float)i/(float)imgwidth);
 				for (int j=0;j<imgheight;j++) {
@@ -176,12 +177,12 @@ int main(int argc,String *argv) {
 				}
 			}
 
-			printf("\nright = %s\n",rec.right.toString());
-			printf("down = %s\n",rec.down.toString());
-			// printf("planeA = %s\n",rec.pos.toString());
-			// printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));
-
 		}
+
+		printf("\nright = %s\n",rec.right.toString());
+		printf("down = %s\n",rec.down.toString());
+		// printf("planeA = %s\n",rec.pos.toString());
+		// printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));
 
 		(progmon.*progmon.end)();
 
