@@ -7,7 +7,8 @@
 
 DOCUMENTS="dar-crpage2-left30" # left
 PPSCANMETHODS="hier full"
-PPMEASURES="square deriv"
+# PPMEASURES="square deriv"
+PPMEASURES="willbederived"
 # VVPMETHODS="spacings margins"
 VVPMETHODS="spacings"
 NOISES=`seq -w 0.0 0.05 0.5001`
@@ -23,6 +24,13 @@ for DOCUMENT in $DOCUMENTS; do
 		for PPMEASURE in $PPMEASURES; do
 
 			for VVPMETHOD in $VVPMETHODS; do
+
+				# Do measure inline with scan method
+				if test "$PPSCANMETHOD" = hier; then
+					PPMEASURE=deriv
+				else
+					PPMEASURE=square
+				fi
 
 				PPPARAMS="
 					-res 180 -adapt 0.03 -maxpixels 2000

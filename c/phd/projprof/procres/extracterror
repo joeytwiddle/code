@@ -1,5 +1,6 @@
 IN="$1.results"
 OUT="$1.data"
+
 if test -f "$IN"; then
 	if test ! -f ./finderr; then
 		(
@@ -7,7 +8,12 @@ if test -f "$IN"; then
 		x finderr
 		) > making-finderr.txt
 	fi
-	./finderr $IN | grep -v "^Opening " | sed "s/nan/0.0/g" > $OUT
+	./finderr $IN |
+		if test "$2" = "-data"; then
+			grep -v "^Opening " | sed "s/nan/0.0/g" > $OUT
+		else
+			echo "Provide second argument -data to write to file"
+		fi
 else
 	echo "No such file: $IN"
 fi

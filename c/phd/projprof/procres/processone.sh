@@ -4,10 +4,25 @@ if test "$1" = "-plot"; then
 	shift
 fi
 
+WRITEDATA=
+if test "$1" = "-data"; then
+	WRITEDATA=-data
+	shift
+fi
+
+WRITETOTALS=
+if test "$1" = "-totals"; then
+	WRITETOTALS=true
+	shift
+fi
+
 X="$1"
 
-./extracterror "$X" 2> /tmp/tmp.txt
-cat /tmp/tmp.txt | grep "ave = " > "$X.totals"
+./extracterror "$X" $WRITEDATA 2> /tmp/tmp.txt
+
+if test $WRITETOTALS; then
+	cat /tmp/tmp.txt | grep "ave = " > "$X.totals"
+fi
 
 if test $PLOT; then
 
