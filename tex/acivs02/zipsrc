@@ -3,4 +3,4 @@ NAME="acivs02"
 IMAGES=`dotexfindimgs | sed "s+^+$NAME/images/+"`
 
 cd ..
-tarcfz $NAME.tar.gz $NAME/dotex $NAME/*.tex $NAME/*.sty $NAME/*.bib $IMAGES
+tar cfh - $NAME/dotex $NAME/*.tex $NAME/*.bib $NAME/*.sty $NAME/*.bst $IMAGES | gzip > $NAME.tar.gz
