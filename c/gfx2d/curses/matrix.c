@@ -4,7 +4,7 @@
 
 /** TODO:
  *  Resizing: Use cached copies of COLS and LINES, and re-allocate array when they change.
- *  Add white things (processes?):
+ *  Block white things (processes?):
  *    A process can appear at the bottom end of a sliding block, and disappear, randomly.  (ie. sometimes when sliding, the front symbols turns white)
  *    A process can appear (on a non-sliding line?) and write symbols onto the line (1 per frame).
  *    A static process can appear on a sliding or non-sliding line, presumably on the latter changing symbols which pass through it (to/from ' '?)
@@ -15,6 +15,7 @@
  *  Putty compatability?
  *  Turn it into a terminal locker.  Proposed method (security audit please!):
  *    Block SIGINT etc calls (for CTRL+C/Z), on keypress ask for password, check with "su - $USER /bin/true" before allowing exit.
+ *  Timing: if machine does not approach our optimal FPS, then it will have its own based on how many columns are sliding.  This should be kept constant!  ATM it will vary wrt that #.
 **/
 
 #include <time.h>
@@ -23,12 +24,12 @@
 #include <curses.h>
 
 #define BOTHER_CLOCKING ON
+#define WHITE_BITS ON
 
 void homeAndWrefresh() {
 	move(0,0);
 	wrefresh(stdscr);
 }
-
 #define wrefresh(x) homeAndWrefresh()
 
 // void writeToPoint(int x,int y) {
@@ -43,24 +44,47 @@ void cls() {
 	}
 }
 
+// returns true on average once every prob calls
+bool prob(int prob) {
+	return ( ( rand() % prob ) == 0 );
+}
+
+template<class Type>
+Type max(Type x,Type y) {
+	return ( x > y ? x : y );
+}
+
 #define mbit char
 
-mbit PROCESS = 'P';
-mbit STATIC_PROCESS = 'S';
 mbit* palette = "^~+ouq/\\*}0&$%@#";
 int paletteSize = strlen(palette);
+mbit PROCESS = 'P';
+mbit STATIC_PROCESS_FULL  = 'S';
+mbit STATIC_PROCESS_EMPTY = 's';
 
 int AVALTLET;
 int averageLengthOfSlide;
 int averageLengthBetweenSlides;
-int averageLengthOfAdd;
-int averageLengthBetweenAdds;
-int slidingProcessDies = 8;
-int newSlidingProcess = 16;
+int averageLengthOfBlock;
+int averageLengthBetweenBlocks;
+int slidingProcessDies;
+int newSlidingProcess;
 
 mbit **thematrix;
 bool *sliding;
 bool *adding;
+
+void setupProbabilities() {
+
+	// Base some on area instead of width?
+	averageLengthOfSlide       = max(2, LINES / 2 );
+	averageLengthBetweenSlides = averageLengthOfSlide * 2;
+	averageLengthOfBlock         = max(2, LINES / 2 );
+	averageLengthBetweenBlocks   = averageLengthOfBlock * 3/2;
+	slidingProcessDies         = max(2, averageLengthOfSlide / 2 );
+	newSlidingProcess          = max(2, averageLengthOfSlide );
+
+}
 
 mbit randSymbol() {
 	return palette[ rand() % paletteSize ];
@@ -76,57 +100,39 @@ void matrix_set(int x,int y,mbit symbol) {
 void matrix_set_process(int x,int y) {
 	// debug: catch oob?
 	mbit symbol = randSymbol();
-	attrset(COLOR_PAIR(7) | A_BOLD);
+	attrset( COLOR_PAIR(7) | ( prob(2) ? A_BOLD : 0 ) );
 	move(y,x);
 	addch(symbol);
 	thematrix[x][y] = PROCESS;
 	attrset(COLOR_PAIR(2));
 }
 
-bool prob(int prob) {
-	return ( (rand() % prob) == 0 );
-}
-
-void slideRow(int x,bool lastSlide) {
+void slideColumn(int x,bool lastSlide) {
 
 	attrset(COLOR_PAIR(2));
 
 	mbit last = 'L';
 
 	for (int y=LINES-1;y>0;y--) {
-		// bool alive = false;
 		mbit src = thematrix[x][y-1];
-		// thematrix[x][y] = src;
+#ifdef WHITE_BITS
 		if (src == PROCESS) {
 			if (lastSlide || prob(slidingProcessDies)) {
 				matrix_set(x,y,randSymbol());
 			} else {
 				matrix_set_process(x,y);
 			}
-		} else if (!lastSlide && last == ' ' && src != ' ' && prob(newSlidingProcess)) {
-			// attrset(COLOR_PAIR(7) | A_BOLD );
-			// alive = true;
+		} else if (src != ' ' && last == ' ' && !lastSlide && prob(newSlidingProcess)) {
 			matrix_set_process(x,y);
 		} else {
 			matrix_set(x,y,src);
 		}
-		// move(y,x);
-		/* if (src == '%') {
-			if ( (rand() % 6*averageLengthOfSlide) == 0 ) {
-				thematrix[x][y] = palette[ rand() % paletteSize ];
-			} else {
-				addch(thematrix[x][y]);
-				attrset(COLOR_PAIR(2));
-			}
-		} else { */
-		// addch(thematrix[x][y]);
-		// if (alive) {
-			// attrset(COLOR_PAIR(2));
-		// }
+#else
+		matrix_set(x,y,src);
+#endif
 		last = src;
-		// }
 	}
-	thematrix[x][0]=' ';
+	thematrix[x][0] = ' ';
 	move(0,x);
 	addch(' ');
 
@@ -134,9 +140,6 @@ void slideRow(int x,bool lastSlide) {
 
 
 void main() {
-
-	// mbit* altPalette = "%@#";
-	// int altPaletteSize = strlen(altPalette);
 	
 	srand(time(NULL));
 	// Needed
@@ -177,102 +180,45 @@ void main() {
 		}
 	}
 
-	// base it on area instead of width
-	// averageLengthOfSlide       = ( LINES>30 ? 8 : 6 );
-	averageLengthOfSlide       = LINES/2;
-	if (averageLengthOfSlide<1)
-		averageLengthOfSlide=1;
-	// averageLengthBetweenSlides = ( LINES>30 ? 64 : 64 );
-	// averageLengthBetweenSlides = averageLengthOfSlide * 6;
-	averageLengthBetweenSlides = averageLengthOfSlide*2;
-	averageLengthOfAdd = LINES / 2;
-	averageLengthBetweenAdds = averageLengthOfAdd * 2;
-	// AVALTLET = ( LINES>30 ? 4 : 2 );
+	setupProbabilities();
 
 #ifdef BOTHER_CLOCKING
-	// clock_t clocksPerFrame = CLOCKS_PER_SEC/100;
-	clock_t clocksPerFrame = CLOCKS_PER_SEC/10;
+	clock_t clocksPerFrame;
 	clock_t lastframe,thisframe;
+ 	clocksPerFrame = CLOCKS_PER_SEC / ( LINES < 30 ? 30 : 100 );
 	lastframe = clock();
 #endif
 
 	while (true) {
 
-		int action = rand() % 100;
+		// Slide: slide a whole column down n spaces
 
-		/*
-		if (action < 100) {
+		for (int x=0;x<COLS;x++) {
 
-			// Alter: add some new symbols and a white "active" symbol (goes too fast atm)
-
-			int x = rand() % COLS;
-			// int y = rand() % (int)((double)LINES * 4);
-			int y = 0;
-			if (y>=LINES)
-				y=0;
-
-			attrset(COLOR_PAIR(2));
-			do {
-
-				move(y,x);
-				attrset(COLOR_PAIR(7) | A_BOLD);
-				addch('%');
-
-				wrefresh(stdscr);
-
-				if (y>0) {
-					mbit symbol = palette[ rand() % paletteSize ];
-					move(y-1,x);
-					attrset(COLOR_PAIR(2));
-					addch(symbol);
-					thematrix[x][y-1] = symbol;
-
-				}
-
-				wrefresh(stdscr);
-
-				y++;
-
-			} while ( (rand() % AVALTLET) != 0 && y < LINES );
-
-			if ( y<LINES && (rand() % 2)==0 ) {
-				move(y,x);
-				attrset(COLOR_PAIR(7) | A_BOLD);
-				addch('%');
-				thematrix[x][y] = '%';
+			// Consider changing state
+			int probadd = ( adding[x] ? averageLengthOfBlock : averageLengthBetweenBlocks );
+			if ( (rand() % probadd) == 0 ) {
+				adding[x] = ! adding[x];
 			}
+
+			// Act upon state
+			if ( sliding[x] ) {
+				if ( prob(averageLengthOfSlide) ) {
+					sliding[x] = false;
+				}
+				slideColumn(x,!sliding[x]);
+				if (adding[x]) {
+					mbit symbol = palette[ rand() % paletteSize ];
+					matrix_set(x,0,symbol);
+				}
+			} else {
+				if ( prob(averageLengthBetweenSlides) ) {
+					sliding[x] = true;
+				}
+			}
+
 
 		}
-		*/
-
-			// Slide: slide a whole column down n spaces
-
-			for (int x=0;x<COLS;x++) {
-
-				// Consider changing state
-				int probadd = ( adding[x] ? averageLengthOfAdd : averageLengthBetweenAdds );
-				if ( (rand() % probadd) == 0 ) {
-					adding[x] = ! adding[x];
-				}
-
-				// Act upon state
-				if ( sliding[x] ) {
-					if ( (rand() % averageLengthOfSlide) == 0 ) {
-						sliding[x] = false;
-					}
-					slideRow(x,!sliding[x]);
-					if (adding[x]) {
-						mbit symbol = palette[ rand() % paletteSize ];
-						matrix_set(x,0,symbol);
-					}
-				} else {
-					if ( (rand() % averageLengthBetweenSlides) == 0 ) {
-						sliding[x] = true;
-					}
-				}
-
-
-			}
 
 #ifdef BOTHER_CLOCKING
 		while (true) {
