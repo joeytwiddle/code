@@ -41,8 +41,10 @@ todo: Store #define constants for a variety of video modes so that the
 
 // #define DOS
 // #define DO_FULLSCREEN
-#define SCRWID 320
-#define SCRHEI 200
+// #define SCRWID 320
+// #define SCRHEI 200
+#define SCRWID 640
+#define SCRHEI 480
 #define SCRBPS 32
 #define desiredFramesPerSecond 40
 #define KEEP_TO_FPS
@@ -53,8 +55,6 @@ todo: Store #define constants for a variety of video modes so that the
 
 #define NUMTRIS 400
 #define brightness 8
-// #define SCRWID 640
-// #define SCRHEI 480
 // #define NUMTRIS 100
 // #define brightness 30
 #define IMGSKIP (SCRHEI/40)

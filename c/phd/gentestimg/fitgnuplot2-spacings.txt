@@ -1,11 +1,15 @@
 # e(x) is expected = ground truth
 # f(x) is fitted
 
-# u must be provided.
+# u must be provided by the program.
 # u=0.001
-# These are the defaults for all images.
+# This "default" work better for some images!
+# v=2
+# w=0.1
+# These are the defaults for all images:
 v=-20
 w=0.00001
+
 # u=U
 # v=V
 # w=W

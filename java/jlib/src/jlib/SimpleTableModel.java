@@ -1,5 +1,4 @@
-package jlib;
-
+package jlib; 
 import javax.swing.table.AbstractTableModel;
 import java.util.Map;
 import java.util.HashMap;
@@ -7,44 +6,53 @@ import java.awt.Point;
 
 public class SimpleTableModel extends AbstractTableModel {
 
-  Map map=new HashMap();
-  int minx,miny;
+	Map map=new HashMap();
+	int minx,miny;
 
-  SimpleTableModel(int x,int y) {
-    minx=x;
-    miny=y;
-  }
+	SimpleTableModel(int x,int y) {
+		minx=x;
+		miny=y;
+	}
 
-  public int getColumnCount() {
-    int x=minx;
-    Object[] keys=map.keySet().toArray();
-    for (int i=0;i<keys.length;i++) {
-      Point p=(Point)keys[i];
-      if (p.x>x)
-        x=p.x;
-    }
-    return x;
-  }
+	public int getColumnCount() {
+		int x=minx;
+		Object[] keys=map.keySet().toArray();
+		for (int i=0;i<keys.length;i++) {
+			Point p=(Point)keys[i];
+			if (p.x>x)
+				x=p.x;
+		}
+		return x;
+	}
 
-  public int getRowCount() {
-    int y=miny;
-    Object[] keys=map.keySet().toArray();
-    for (int i=0;i<keys.length;i++) {
-      Point p=(Point)keys[i];
-      if (p.y>y)
-        y=p.y;
-    }
-    return y;
-  }
+	public int getRowCount() {
+		int y=miny;
+		Object[] keys=map.keySet().toArray();
+		for (int i=0;i<keys.length;i++) {
+			Point p=(Point)keys[i];
+			if (p.y>y)
+				y=p.y;
+		}
+		return y;
+	}
 
-  public Object getValueAt(int row, int col) {
-    Point p=new Point(col,row);
-    Object o=map.get(p);
-    return o;
-  }
+	public Object getValueAt(int col, int row) {
+		Point p=new Point(col,row);
+		Object o=map.get(p);
+		return o;
+	}
 
-  public void setValueAt(Object o,int row,int col) {
-    map.put(new Point(col,row),o);
-  }
+	public void setValueAt(Object o,int col,int row) {
+		map.put(new Point(col,row),o);
+	}
+
+	public Class getColumnClass(int c) {
+		Object o=getValueAt(0, c);
+		System.out.println(""+o);
+		if (o==null)
+			return new String("").getClass();
+		else
+			return o.getClass();
+	}
 
 }

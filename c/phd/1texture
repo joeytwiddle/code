@@ -4,7 +4,7 @@ cd texture
 # jnn scan $1 -mr 1 -ms 2000
 
 # High-res: for nice output images
-jnn scan $1 -mr 1 -ms 2000 -wskip 2
+./jnn scan $1 -mr 1 -ms 2000 -wskip 2
 
 mkdir -p $JPATH/images/regs
 

@@ -6,8 +6,8 @@ module Hlib where
 -- String manipulation
 
 sstrip 0 s = "..."
-sstrip n (h:t) = h:sstrip (n-1) t
 sstrip n "" = ""
+sstrip n (h:t) = h:sstrip (n-1) t
 
 sstartsboth :: String -> String -> (Bool,String)
 sstartsboth x "" = (True,x)

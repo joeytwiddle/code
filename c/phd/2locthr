@@ -1,5 +1,5 @@
 cd locthr
-locthr -all -f $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp
+./locthr -all -f $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp
 
 mkdir -p $JPATH/images/bin/regs$1
 
