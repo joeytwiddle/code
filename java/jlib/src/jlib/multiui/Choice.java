@@ -51,9 +51,14 @@ public class Choice extends Component implements UserEditableComponent {
 		// if (choice==-1)
 		// int i=new Integer(s).intValue();
 		int i=Integer.parseInt(s);
-		if (i<0 || i>choices.length)
+		if (i<0 || i>choices.length) {
 			Log.error("Setting choice \""+s+"\" on "+this+": out of range.");
-		onChange();
+		} else {
+			boolean diff=(i==choice);
+			choice=i;
+			if (diff)
+				onChange();
+		}
 	}
 
 	public String getValue() {

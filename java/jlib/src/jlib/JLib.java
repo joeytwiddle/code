@@ -263,4 +263,31 @@ public class JLib {
     openJar(new File(args[0]),ext);
   } */
 
+	public static void objectToFile(Serializable  o,String fn) {
+		try {
+			File f=new File(fn);
+			FileOutputStream fos=new FileOutputStream(f);
+			ObjectOutputStream oos=new ObjectOutputStream(fos);
+			oos.writeObject(o);
+			oos.flush();
+			fos.close();
+		} catch (Exception e) {
+			Log.error(e);
+		}
+	}
+	
+	public static Object objectFromFile(String fn) {
+		try {
+			File f=new File(fn);
+			FileInputStream fis=new FileInputStream(f);
+			ObjectInputStream ois=new ObjectInputStream(fis);
+			Object o=ois.readObject();
+			fis.close();
+			return o;
+		} catch (Exception e) {
+			Log.error(e);
+		}
+		return null;
+	}
+
 }

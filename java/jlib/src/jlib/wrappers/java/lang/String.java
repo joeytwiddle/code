@@ -1,19 +1,28 @@
-package jlib.wrappers.java.lang.String;
+package jlib.wrappers.java.lang;
 
 import java.io.*;
 import java.lang.*;
 import java.lang.reflect.*;
 import java.util.*;
 import jlib.*;
+import jlib.wrappers.*;
 import nuju.*;
 import jlib.db.*;
 import jlib.multiui.*;
 
-public class String {
+public class String extends Wrapper {
 
-	private String obj;
+	private java.lang.String obj;
 
-	public String(String s) {
+	/****/
+
+	public String() { }
+
+	public java.lang.String SQLtype() {
+		return "text";
+	}
+
+	public String(java.lang.String s) {
 		obj=s;
 	}
 	
@@ -21,12 +30,14 @@ public class String {
 		return obj;
 	}
 
-	public String toString() {
+	public java.lang.String toString() {
 		return obj;
 	}
 
-	public static Object fromString(String s) {
-		return new String(s);
+	public static Object fromString(java.lang.String s) {
+		return new java.lang.String(s);
 	}
+
+	/****/
 
 }

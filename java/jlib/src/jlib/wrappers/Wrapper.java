@@ -9,13 +9,21 @@ import nuju.*;
 import jlib.db.*;
 import jlib.multiui.*;
 
-public class Wrapper {
+public class Wrapper implements Serializable {
 
 	// Unfortunately Object.getClass is not static.
-	
+
 	public final String whatFor=getWrappedClassName();
 
 	// To / from SQL and Java
+
+	/** There must be overwritten **/
+
+	public Wrapper() { } // this must be present but can remain empty
+	
+	public String SQLtype() {
+		return getDePrimWrappedClassName(); // OK so it needn't be overwritten for primitives, int etc.
+	}
 
 	public Object getObject() {
 		return null;
@@ -29,6 +37,20 @@ public class Wrapper {
 		return null;
 	}
 
+	/** End of methods which must be overwritten **/
+
+	public final static Class recommendClassFor(String javaType) {
+		try {
+			if (javaType.indexOf(".")>=0)
+				return Class.forName("jlib.wrappers."+javaType);
+			else
+				return Class.forName("jlib.wrappers.prim_"+javaType);
+		} catch (Exception e) {
+			Log.error(""+e);
+		  return null;
+		}
+	}
+	
 	public final static Object wrapperFromString(String s) {
 		return getWrapper(fromString(s));
 	}
@@ -61,6 +83,14 @@ public class Wrapper {
 		return JString.after(getClass().getName(),"jlib.wrappers.");
 	}
 	
+	public final String getDePrimWrappedClassName() {
+		String n=getWrappedClassName();
+		if (n.startsWith("prim_"))
+			return JString.after(n,"prim_");
+		else
+			return n;
+	}
+
   // public static void main(String[] args) {
 		// ArgParser a=new ArgParser(args);
 		// a.done();
