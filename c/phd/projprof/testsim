@@ -1,8 +1,8 @@
 echo "./pp -dolowresscan -recwid 900 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -light $*"
 	# Hierarchical scan, spacings method
-	# ./pp -dolowresscan -recwid 900 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -light $*
+	./pp -dolowresscan -recwid 900 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -light $*
 	# A full PP scan
-	./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -badx 100 -bady 65 $*
+	# ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -badx 100 -bady 65 $*
 	# Margins method
 	# ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -usetwolines $*
 	# ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -lowres 40 -domiddlescan -medres 80 -res 180 -deriv -oth 12 -lowsmooth 2 -adapt 0.01 $*

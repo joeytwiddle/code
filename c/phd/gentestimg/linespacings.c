@@ -80,15 +80,15 @@ float doRansac(List<V2d> ps) { // returns error
 			// printf("Testing...\n");
 			float newErr=testASubSet(testps);
 			if (newErr<bestErr) {
-				printf("=)\n");
+				// printf("=)\n");
 				bestErr=newErr;
 				bestps=List<V2d>();
 				bestps.add(testps);
-				printf("=)\n");
+				// printf("=)\n");
 			}
 		}
 		if (bestErr<currentErr) {
-			printf("Hello\n");
+			// printf("Hello\n");
 			printf("Improvement: %i %f\n",currentps.len-1,currentErr);
 			currentErr=bestErr;
 			currentps=bestps;
