@@ -21,9 +21,9 @@ vanishing points, rather than from skew angles.
 We need a circular search space $C$ as illustrated in \reffig{searchspacediag}.
 % although a rectangular grid of polar coordinates would also work effectively.
 Each cell $c=(r,\theta)$, $r\in[0,1)$ and $\theta\in[0,2\pi)$, in the space $C$
-corresponds to a hypothesised vanishing point $\myvec{V} = (V_r,V_{\theta})$ on
-the image plane $\mathbb{R}^2$, with scalar distance $V_{r}=r/{(1-r)}$ from the
-centre of the image, and angle $V_{\theta}=\theta$.  This maps the infinite
+corresponds to a hypothesised vanishing point $\myvec{H} = (H_r,H_{\theta})$ on
+the image plane $\mathbb{R}^2$, with scalar distance $H_{r}=r/{(1-r)}$ from the
+centre of the image, and angle $H_{\theta}=\theta$.  This maps the infinite
 plane $\mathbb{R}^2$ exponentially into the finite search space $C$.
 A projection profile of the text is generated for
 every vanishing point in $C$, except those lying within
@@ -47,7 +47,7 @@ the text region itself (the central hole in \reffig{ppmap}).
 \end{figure}
 
 %The projection profile  with respect to a vanishing point
-%$\myvec{V}$ is obtained by collecting each pixel into a bin representing the
+%$\myvec{H}$ is obtained by collecting each pixel into a bin representing the
 %angle between the vanishing point and the pixel.  Relative to the vanishing
 %point, the text region will fall within a small range of angles, depending on
 %the distance and position of the vanishing point.  In order to accumulate
@@ -61,7 +61,7 @@ the text region itself (the central hole in \reffig{ppmap}).
 %%*** !Kill above paragraph?  Keep next but make clearer! ***
 %%*** !Alternative paragraph to the last!  Which do you prefer?!
 
-A projection profile $B$ is a set of bins $\{B_i, i=0,..,N\}$ into which image
+A projection profile $B$ is a set of $N$ bins $\{B_i, i=0,..,N-1\}$ into which image
 pixels are accumulated.  In the classical 2D case, to generate the projection
 profile of a binary image from a particular angle $\phi$, each positive pixel
 $\myvec{p}$ is assigned to bin $B_i$, where $i$ is dependent on $\myvec{p}$ and
@@ -77,7 +77,7 @@ describing the angle of the projection profile, and $s$ is the diagonal
 distance of the image.  In this equation, the dot product $\myvec{p} \cdot
 \myvec{U}$ is the position of the pixel along the axis of the projection profile
 in the image defined by $\phi$. The values of $N$ and $s$ in
-\refeqn{classicproj} help map each pixel to a bin index in the range $0$ to $N$.
+\refeqn{classicproj} then help map each pixel $\myvec{p}$ to a bin index in the range $0$ to $N-1$.
 }
 
 
@@ -85,7 +85,7 @@ in the image defined by $\phi$. The values of $N$ and $s$ in
 \begin{figure}[t]
 \centering
 \begin{center}
-\subfigure[Generating the projection profile of the text from a vanishing point $\myvec{V}$.]{
+\subfigure[Generating the projection profile of the text from a vanishing point $\myvec{H}$.]{
 	\begin{tabular}{c}
 		% \epsfig{figure=images/ppfan.eps,width=70mm}\label{projproffing}
 		\epsfig{figure=images/fan93imgH.eps,width=100mm}\label{projproffing}
@@ -106,7 +106,7 @@ in the image defined by $\phi$. The values of $N$ and $s$ in
 }
 \end{center}
 % \vspace*{0mm}
-% \caption{Two potential vanishing points $\myvec{V}_A$ and $\myvec{V}_B$, and their projection profiles.}
+% \caption{Two potential vanishing points $\myvec{H}_A$ and $\myvec{H}_B$, and their projection profiles.}
 \caption{Generating projection profiles from \reffig{runbin}}
 \label{projprofsfig}
 \end{figure}
@@ -115,37 +115,37 @@ in the image defined by $\phi$. The values of $N$ and $s$ in
 
 
 For a perspectively skewed target, instead of an angle $\phi$, we have the point of projection
-$\myvec{V}$ on the image plane, which has two degrees of freedom. The bins,
+$\myvec{H}$ on the image plane, which has two degrees of freedom. The bins,
 rather than representing parallel slices of the image along a particular
-direction, must represent angular slices projecting from $\myvec{V}$.  Hence, we
+direction, must represent angular slices projecting from $\myvec{H}$.  Hence, we
 refine (\ref{classicproj}) to map from an image pixel $\myvec{p}$ into a bin
 $B_i$ as follows:
 
 
-\begin{equation} \label{persproj} i( \myvec{p,\myvec{V}} ) = \frac{1}{2} N + N \frac{ \mbox{ang}(\myvec{V},\myvec{V}-\myvec{p}) }{ \Delta \theta } \end{equation}
+\begin{equation} \label{persproj} i( \myvec{p,\myvec{H}} ) = \frac{1}{2} N + N \frac{ \mbox{ang}(\myvec{H},\myvec{H}-\myvec{p}) }{ \Delta \theta } \end{equation}
 
 { \parindent 0mm 
-where $\mbox{ang}(\myvec{V},\myvec{V}-\myvec{p})$ is the angle
+where $\mbox{ang}(\myvec{H},\myvec{H}-\myvec{p})$ is the angle
 between pixel $\myvec{p}$ and the centre of the image, relative to the vanishing
-point $\myvec{V}$, and $\Delta \theta$ is the size of the angular range within
+point $\myvec{H}$, and $\Delta \theta$ is the size of the angular range within
 which the text is contained, again relative to the vanishing point
-$\myvec{V}$. $ \Delta \theta$ is obtained from 
+$\myvec{H}$. $ \Delta \theta$ is obtained from 
 }
 %$ \Delta \theta =
-%\mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) $
+%\mbox{ang}(\myvec{H}+\myvec{t},\myvec{H}-\myvec{t}) $
 
-% \begin{equation} \Delta \theta = \mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) \end{equation}
+% \begin{equation} \Delta \theta = \mbox{ang}(\myvec{H}+\myvec{t},\myvec{H}-\myvec{t}) \end{equation}
 \begin{equation} \Delta \theta = \mbox{ang}(\myvec{T}_{\mbox{\tiny L}},\myvec{T}_{\mbox{\tiny R}}) \end{equation}
 
 { \parindent 0mm 
-% where $\myvec{t}$ is a vector perpendicular to $\myvec{V}$ with
+% where $\myvec{t}$ is a vector perpendicular to $\myvec{H}$ with
 % magnitude equal to the radius of the bounding circle of the text region
 where $\myvec{T}_{\mbox{\tiny L}}$ and $\myvec{T}_{\mbox{\tiny R}}$ are the two
-points on the bounding circle whose tangents pass through $\myvec{V}$
+points on the bounding circle whose tangents pass through $\myvec{H}$
 (shown
 in \reffig{projproffing}).  Unlike $s$ in (\ref{classicproj}), it can be seen that
-$\Delta \theta$ is dependent on the point of projection $\myvec{V}$.  In fact
-$\Delta \theta \rightarrow 0$ as $\myvec{V}_r \rightarrow \infty$ since more
+$\Delta \theta$ is dependent on the point of projection $\myvec{H}$.  In fact
+$\Delta \theta \rightarrow 0$ as $\myvec{H}_r \rightarrow \infty$ since more
 distant vanishing points view the text region through a smaller angular range.
 % The use of $\myvec{t}$ to find $\Delta\theta$ ensures that the angular range
 The use of $\myvec{T}_{\mbox{\tiny L}}$ and $\myvec{T}_{\mbox{\tiny R}}$ to find $\Delta\theta$ ensures that the angular range
@@ -158,9 +158,9 @@ absent of text.
 }
 
 \begin{comment}
-Relative to a vanishing point $\myvec{V}$, the text region under examination
+Relative to a vanishing point $\myvec{H}$, the text region under examination
 will fall entirely within a range of angles, forming an arc or wedge shape
-extending from $\myvec{V}$.  The two angles which form this enclosing wedge are
+extending from $\myvec{H}$.  The two angles which form this enclosing wedge are
 used as the left and right bounds of the projection profile.  Hence all pixels
 in the text region will map correctly to a bin in the projection profile, whilst
 ensuring that the text fully spans the projection and a useful profile is
@@ -233,11 +233,11 @@ larger squared-sum, and a more likely vanishing point.
 \centering
 \begin{center}
 \subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,height=42mm}\label{simulated-full}} 
-% \subfigure[Left justified]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}} 
-\hspace*{3mm}
-\subfigure[Centrally justified]{\epsfig{figure=images/simulated-cen.ps,height=42mm}\label{simulated-left}} 
-\hspace*{3mm}
-\subfigure[Left justified with extraneous elements]
+% \subfigure[Left justified.]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}} 
+\hspace*{2mm}
+\subfigure[Centrally justified and with various fonts sizes.]{\epsfig{figure=images/simulated-cen.ps,height=42mm}\label{simulated-left}} 
+\hspace*{2mm}
+\subfigure[Left justified and with extraneous elements.]
 {\epsfig{figure=images/simulated-left-more.ps,height=42mm}\label{simulated-left-more}} 
 \end{center}
 \vspace*{0mm}
@@ -273,7 +273,7 @@ marked in \reffig{ppmap} with a white cross and a black cross respectively.
 
 % It is worth noting that for this adapted algorithm, again the derivative measure
 % $S_d(B)$ performs far more efficiently than the sqaured-sum and entropy
-% measures, in that they can mislead the hierarchical search by also responding
+% measures, in that they can misled the hierarchical search by also responding
 % favourably to the {\em vertical} vanishing point of a `thin' document, i.e. a
 % document which has been rotated about its vertical axes.
 
@@ -298,7 +298,7 @@ point (HVP) for these images,
 calculated as the relative distance of the located vanishing point $\myvec{H}$ 
 from the ground truth $\myvec{H}_{\mbox{\small gt}}$, given by
 \begin{equation} 
-\mbox{HVP accuracy =} -\frac{|\myvec{H}-\myvec{H}_{\mbox{\small gt}}|}{|\myvec{H}_{\mbox{\small gt}}|}
+\mbox{HVP accuracy =} -\frac{|\myvec{H}-\myvec{H}_{\mbox{\small gt}}|}{|\myvec{H}_{\mbox{\small gt}}|} \label{Haccuracy}
 \end{equation}
 As can be seen, the proposed method achieves excellent accuracy across a wide
 range of orientations. However, not unexpectedly, the performance begins to
@@ -356,10 +356,12 @@ repeatedly on images with increasing proportions of speckled noise, and took
 the average of the results over all different orientations.
 \reffig{noiseFullVHier} shows the average accuracy of recovery of the
 horizontal vanishing point against image noise.  The results when using a full
-scan of the search space are also plotted, to demonstrate that there is no loss
-of accuracy when using the hierarchical scan.  A numerical analysis of the
-performance is given in \reftab{accuracytable} and discussed at the end of this
-paper.
+scan of the search space are also plotted, to demonstrate that there is only minimal 
+loss of accuracy at high noise levels when using the hierarchical scan.  
+A numerical analysis of the performance is given in \reftab{accuracytable}
+and discussed at the end of this paper.
+
+
 
 
 

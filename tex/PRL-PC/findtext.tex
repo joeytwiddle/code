@@ -20,15 +20,15 @@
 %accurate rectification.
 
 
-The source images input into the methods proposed in this paper can be typical
-PDA-based point-and-click direct images of text documents or regions of text
+The source images input into the methods proposed in this paper can be either
+direct PDA-based point-and-click images of text documents, or regions of text
 segmented in more cluttered scenes, e.g. using our earlier work in
 \cite{clark-ijdar-2001}. In the simpler point-and-click scenario, 
 the whole image can be searched for clues and features knowing of the presence
 of a paragraph of text. To deal with cluttered scenes, we described two alternative
 algorithms in \cite{clark-ijdar-2001} to segment regions of text first, followed
-with a simple approach to recovery of text orientation. In this work, we can
-take direct point-and-click iamges from a hand-held camera or 
+with a simple approach to their fronto-parallel recovery. In this work, we can
+take direct point-and-click images from a hand-held camera or 
 the output of the segmenation system presented in
 \cite{clark-ijdar-2001} and analyse each recognised region individually to
 classify the shape of paragraphs, recover the 3D orientation of the text plane
@@ -55,8 +55,10 @@ segmented, but on what can be done next to deal with its accurate rectification.
 \end{figure}
 
 In order to analyse the paragraph shape, we first require a classification of
-the text and background pixels to obtain a binary representaion.  Dealing with regions of text only, this
-classification is simplified through thresholding since the region will contain
+the text and background pixels to obtain a binary representaion. Elaborate adaptive 
+thresholding schemes could be used \cite{kittler86,sahoo88}, however dealing with 
+regions of text only, this
+classification is simplified since the region will contain
 easily separable background and foreground colours only. The thresholding does not
 need to be too accurate and breakages in characters or words is not detrimental
 to later stages. Nevertheless, we try for best results and  compute the average
