@@ -1,5 +1,5 @@
-# Want a safe tar, that does not copy:
-# higher directories (.*), symbolic links, executables, zips
+## TODO: Want a safe tar, that does not copy:
+## higher directories (.*), symbolic links, executables, zips
 
 export OLDDESTDIR=/mnt/stig/oldbackups
 export DESTDIR=/mnt/stig/backups

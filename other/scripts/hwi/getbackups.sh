@@ -1,4 +1,5 @@
 ## Note: if script outputs anything then cron will mail it: check same address!
+## Maybe we could ask wget to be silent.
 BACKDIR=/home/joey/.hwibackups
 mkdir -p $BACKDIR
 (
