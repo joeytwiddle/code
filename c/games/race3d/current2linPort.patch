@@ -1,0 +1,193 @@
+1c1,22
+< #include <joeylib.c>
+---
+> #define SCRWID 320
+> #define SCRHEI 200
+> #define SCRBPS 24
+> #define desiredFramesPerSecond 40
+> // #define KEEP_TO_FPS
+> 
+> // #define ALLEGRO
+> #define LEAVE_EVENTS_ALONE
+> #include "../../gfx/sdl/stripped-useful.c"
+> #undef new
+> #undef mysgn
+> #undef sgn
+> #undef square
+> #include <joeylib.h>
+> 
+> #define REDEFINE
+> #include "define.c"
+> 
+> #include "keys.c"
+> 
+> #define scrwid SCRWID
+> #define scrhei SCRHEI
+5c26
+< float fogdepth=8.0;
+---
+> float fogdepth=20.0;
+13,16c34
+< #define scrwid 320
+< #define scrhei 200
+< 
+< float turnability=0.15;
+---
+> float turnability=0.10;
+19c37
+< int taillen=60;
+---
+> int taillen=800;
+41c59
+<     a=myrnd()*7.0;
+---
+>     a=myrnd()*10.0;
+95a114
+>   // printf("pos = %s\nori = %s\n",pos.toString(),ori.toString());
+103a123
+>   // printf("%i %i\n",octree.totalobjs,particles.len);
+118c138,144
+<       b.bmp[j][i]=(left.bmp[j][i] | right.bmp[j][i]);
+---
+>       // b.bmp[j][i]=(left.bmp[j][i] | right.bmp[j][i]);
+> 		// screen_setPixel(i,j,b.bmp[j][i]);
+> 		// screen_setPixel(i,j,intrnd(0,255));
+> 		// if (left.bmp[j][i]!=0)
+> 			// printf("%i\n",left.bmp[j][i]);
+> 		// screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],intrnd(0,255)));
+> 		screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],0));
+121c147,148
+<   b.writetoscreen();
+---
+>   // b.writetoscreen();
+> 	SDL_UpdateRect(screen,0,0,SCRWID,SCRHEI);
+124c151
+< void main() {
+---
+> void init() {
+127,132c154,167
+<   allegrosetup(scrwid,scrhei);
+<   makepalette(&greypalette);
+<   mypalette(255,0,0,0);
+<   mypalette(0,0,0,0);
+<   mypalette(255,1,1,1);
+<   mypalette(128,0,0,0);
+---
+> #ifdef REDEFINE
+> 	fp=fopen("incl.c","wa");
+> 	if (fp==NULL)
+> 		printf("Failed to open file incl.c\n");
+> 	printSurfaceDetails(fp,"screen",screen);
+> 	fclose(fp);
+> #endif
+> 
+>   // allegrosetup(scrwid,scrhei);
+>   // makepalette(&greypalette);
+>   // mypalette(255,0,0,0);
+>   // mypalette(0,0,0,0);
+>   // mypalette(255,1,1,1);
+>   // mypalette(128,0,0,0);
+136c171
+<       mypalette(palc,(r==0?0:brightness+0.2+change*0.5*r/15.0),(g==0?0:brightness+change*0.1+0.2*g/15.0),(g==0?0:brightness+change*0.2+0.6*g/15.0));
+---
+>       // mypalette(palc,(r==0?0:brightness+0.2+change*0.5*r/15.0),(g==0?0:brightness+change*0.1+0.2*g/15.0),(g==0?0:brightness+change*0.2+0.6*g/15.0));
+142,150d176
+<     float pd=2.5;
+<     PPsetup(scrwid,scrhei,pd);
+<   V3d vel=V3d(0,0,0);
+<   V3d acc=V3d(0,0,0);
+<   float droll=0;
+<   float dyaw=0;
+<   float dpitch=0;
+<   int frame=0;
+< 
+175a202,204
+>   ori=Ori(V3d(1,0,0),V3d(0,1,0));
+> 
+>   SDL_Event event;
+185,187c214,222
+<   } while (!key[KEY_SPACE]);
+<   do {
+<   } while (key[KEY_SPACE]);
+---
+>        while(SDL_PollEvent(&event)){  /* Loop until there are no events left on the queue */
+>          switch(event.type){  /* Process the appropiate event type */
+>            case SDL_KEYDOWN:  /* Handle a KEYDOWN event */
+> 				  t=-1;
+> 				 }
+> 		 }
+>   } while (t>=0);
+> 
+>   printf("Enough of that, let's play!\n");
+190a226,237
+>   pos=getpos(0);
+>     float pd=2.5;
+>     PPsetup(scrwid,scrhei,pd);
+> }
+> 
+>   V3d vel=V3d(0,0,0);
+>   V3d acc=V3d(0,0,0);
+>   float droll=0;
+>   float dyaw=0;
+>   float dpitch=0;
+>   int frame=0;
+> 
+193d239
+<   pos=getpos(marker);
+196c242,243
+<   do {
+---
+> 
+>   void doframe() {
+281c328,344
+<     if (key[KEY_LCONTROL])
+---
+> 
+> 	 SDL_Event event;
+> 		while (SDL_PollEvent(&event)) {
+> 	 		observeEvent(event);
+> 			// printf("KEY: %i\n",event.key.keysym.sym);
+> 		 			if (event.type == SDL_QUIT) {
+> 						printf("Received SDL_QUIT event.\n");
+> 						keepLooping=false;
+> 					}
+> 		}
+> 
+>     if (F10pressed) {
+> 		printf("User pressed F10: exiting.\n");
+> 		 keepLooping=false;
+> 	 }
+> 	if (zpressed) {
+> 		// printf("%s %f\n",ori.z().toString(),forcevel);
+282a346
+> 	}
+285c349
+<     if (key[KEY_UP])
+---
+>     if (UPpressed)
+287c351
+<     if (key[KEY_DOWN])
+---
+>     if (DOWNpressed)
+289,290c353,354
+<     if (key[KEY_LEFT])
+<       if (key[KEY_ALT])
+---
+>     if (LEFTpressed)
+>       if (xpressed)
+294,295c358,359
+<     if (key[KEY_RIGHT])
+<       if (key[KEY_ALT])
+---
+>     if (RIGHTpressed)
+>       if (xpressed)
+309,312c373,376
+<   } while (!key[KEY_SPACE] && !key[KEY_ESC]);
+<   savetimer();
+<   allegro_exit();
+<   displayframespersecond();
+---
+>   // } while (true); // !key[KEY_SPACE] && !key[KEY_ESC]);
+>   // savetimer();
+>   // // allegro_exit();
+>   // displayframespersecond();
