@@ -472,6 +472,13 @@ int main(int argc,char *argv[]) {
 								register screen_pixelType *reg;
 								register screen_pixelType *startreg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i-IMGSKIP,j-IMGSKIP);
 								for (J=0;J<IMGSKIP;J++) {
+#define NOTJ (IMGSKIP-J)
+#define Bx (TRx*NOTJ+BRx*J)/IMGSKIP
+#define By (TRy*NOTJ+BRy*J)/IMGSKIP
+									Uint16 Ax=(TLx*NOTJ+BLx*J)/IMGSKIP;
+									Uint16 Ay=(TLy*NOTJ+BLy*J)/IMGSKIP;
+									Sint16 Dx=Bx-Ax;
+									Sint16 Dy=By-Ay;
 									reg=startreg;
 									// todo: This loop should draw a quick line in bgtexture space
 									// rather than averaging compass multiples
@@ -481,12 +488,17 @@ int main(int argc,char *argv[]) {
 										// #define s ((J))
 										// #define w ((IMGSKIP-I))
 										// #define n ((IMGSKIP-J))
-#define e ((I))
-#define s ((J))
-										register Uint8 w=((IMGSKIP-I));
-										register Uint8 n=((IMGSKIP-J));
-										ahere=((TLx*n*w+TRx*n*e+BLx*s*w+BRx*s*e)/IMGSKIP/IMGSKIP)%(bgtexture_w*BGQUANT);
-										Dhere=((TLy*n*w+TRy*n*e+BLy*s*w+BRy*s*e)/IMGSKIP/IMGSKIP)%(bgtexture_h*BGQUANT);
+// #define e ((I))
+// #define s ((J))
+										// register Uint8 w=((IMGSKIP-I));
+										// register Uint8 n=((IMGSKIP-J));
+										// ahere=((TLx*n*w+TRx*n*e+BLx*s*w+BRx*s*e)/IMGSKIP/IMGSKIP)%(bgtexture_w*BGQUANT);
+										// Dhere=((TLy*n*w+TRy*n*e+BLy*s*w+BRy*s*e)/IMGSKIP/IMGSKIP)%(bgtexture_h*BGQUANT);
+#define NOTI (IMGSKIP-I)
+										// ahere=(Ax*NOTI+Bx*I)/IMGSKIP;
+										// Dhere=(Ay*NOTI+By*I)/IMGSKIP;
+										ahere=Ax+(Dx*I)/IMGSKIP;
+										Dhere=Ay+(Dy*I)/IMGSKIP;
 #ifdef INTERPOLATE_BG_FULL
 										{
 											Uint16 iahere=((ahere/BGQUANT)%bgtexture_w);
