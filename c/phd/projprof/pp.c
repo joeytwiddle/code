@@ -102,6 +102,14 @@ float measuresquare(Map1d<PPunit> m) {
 	// return -m.totalsquare()*mysquare(interestingWidth(m));
 }
 
+void map1ddotwritedata(Map1d<float> map,String fileName) {
+	FILE *fp=fopen(fileName,"wa");
+	for (int i=0;i<map.width;i++) {
+		fprintf(fp,"%f\n",map.getpos(i));
+	}
+	fclose(fp);
+}
+
 // A vanishing point with its projection profile
 // which will be accumulated using the add() function
 class VP {
@@ -327,7 +335,9 @@ class ProjectionProfiler {
 							for (int i=0;i<vps.width;i++)
 								for (int j=0;j<vps.height;j++)
 									if (vps.getpos(i,j)!=NULL) {
-										map.setpos(i,j,measure(vps.getpos(i,j)->pp));
+										// float f=sqrt(mysquare((i-vps.width/2)/(float)vps.width)+mysquare((j-vps.height/2)/(float)vps.width));
+										float f=0.0;
+										map.setpos(i,j,(1.0-f)*measure(vps.getpos(i,j)->pp));
 										//        map.setpos(i,j,-vps.getpos(i,j)->pp.totalsquare());
 										//        map.setpos(i,j,-vps.getpos(i,j)->pp.totalderiv());
 										//        map.setpos(i,j,vps.getpos(i,j)->pp.entropy());
@@ -359,6 +369,7 @@ class ProjectionProfiler {
 										if (showbadx==i && showbady==j) {
 											Map2d<bool> acc=vps.getpos(i,j)->pp.draw();
 											acc.writefile("badpp.bmp");
+											map1ddotwritedata(vps.getpos(i,j)->pp,"badpp.data");
 										}
 									}
 								}
@@ -367,6 +378,7 @@ class ProjectionProfiler {
 							if (writebestpp) {
 								Map2d<bool> acc=vps.getpos(best)->pp.draw();
 								acc.writefile("bestpp.bmp");
+								map1ddotwritedata(vps.getpos(best)->pp,"bestpp.data");
 							}
 							/* Enlarge the inf circle map */
 #define crosssize 20.0

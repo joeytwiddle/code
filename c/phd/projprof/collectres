@@ -1,8 +1,32 @@
 TODIR="$JPATH/images/pp/$1-$2"
 mkdir -p "$TODIR"
+
+# Summary for debugging/checking
 convert origover.bmp -geometry 400 "$TODIR/origover.jpg"
 cp gplfit.ps "$TODIR"
 convert recover.bmp -geometry 800 "$TODIR/recover.jpg"
-convert ppmap.bmp -geometry 100 "$TODIR/ppmap.jpg"
+# convert ppmap.bmp -geometry 100 "$TODIR/ppmap.jpg"
 # convert bestppgaps.bmp -geometry 200 "$TODIR/bestppgaps.jpg"
+
+# Summary presentation
+cp ppmap.bmp "$TODIR"
+cp badpp.bmp "$TODIR"
+cp bestpp.bmp "$TODIR"
+
+gnuplot << !
+set noclabel
+set nokey
+set nolabel
+set term post eps "Times-Roman,18"
+set xlabel "Bin number i" "Times-Roman,26"
+set ylabel "# Pixels accumulated in bin B(i)" "Times-Roman,26"
+set output "bestpp-nofill.eps"
+plot [] [0:80] "bestpp.data" w boxes
+set output "badpp-nofill.eps"
+plot [] [0:80] "badpp.data" w boxes
+!
+gnuplot-boxfill.pl -g bestpp-nofill.eps bestpp.eps
+gnuplot-boxfill.pl -g badpp-nofill.eps badpp.eps
+cp bestpp.eps badpp.eps "$TODIR"
+
 ln -s "$JPATH/images/$1$2.bmp" "$TODIR"

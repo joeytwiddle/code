@@ -1,10 +1,19 @@
+# For getting pictures, not testing:
 PPPARAMS="
-	-dolowresscan -lowres 60 -lowsmooth 1
-	-adapt 0.03 -res 220 -maxpixels 2000
+	-writepps
+	-adapt 0.03 -res 120 -maxpixels 2000
 	-spacings
 	-deriv
 	-recwid 800 -gamma 0.0 -oth 12
 "
+For testing:
+# PPPARAMS="
+	# -dolowresscan -lowres 60 -lowsmooth 1
+	# -adapt 0.03 -res 220 -maxpixels 2000
+	# -spacings
+	# -deriv
+	# -recwid 800 -gamma 0.0 -oth 12
+# "
 # -usetwolines
 
 ONE="$1"

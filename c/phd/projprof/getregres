@@ -1,6 +1,6 @@
 rm *.bmp
 # ppreg $1 $2 -corinc -badx 40 -bady 40
-ppreg "$@" -badx 50 -bady 50
+ppreg "$@" -badx 66 -bady 52
 # -writepps
 # ppreg $1 $2 -res 30
 # ppreg $1 $2 -res 50
