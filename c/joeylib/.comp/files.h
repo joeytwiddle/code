@@ -43,7 +43,6 @@ List<String> readlinesfromfile(String fname); // Method
 
 //
 
-
 void writelinestofile(List<String> ls,String fname,String sep); // Method
 
 
@@ -137,7 +136,6 @@ void copyfile(String fname,String tname); // Method
 
 //
 
-
 bool unzipfile(String s); // Method
 
 
@@ -148,7 +146,6 @@ bool fileexists(String fname); // Method
 
 
 //
-
 
 void writeinttofile(String fname, int i); // Method
 

@@ -15,7 +15,6 @@ unsigned int getshort(FILE *fp); // Method
 
 
 //
-
 unsigned int getint(FILE *fp); // Method
 
 
@@ -38,6 +37,5 @@ void anguswritebmp24(char *fn_image,RGBmp *byte_rgb_img); // Method
 
 
 //
-
 
 #endif

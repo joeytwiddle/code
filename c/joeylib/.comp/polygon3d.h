@@ -4,7 +4,6 @@
 //
 
 
-
 class Polygon3d {
 public:
   List<V3d> vs; // Exists

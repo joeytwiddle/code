@@ -2,7 +2,6 @@
   #define readppm_H
 
 //
-
 #include <math.h>
 #include <stdio.h>
 #include "imagproc.h"

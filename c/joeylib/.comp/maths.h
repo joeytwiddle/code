@@ -76,7 +76,6 @@ Pixel operator*(float f,Pixel p); // Method
 
 //
 
-
 float dist(Pixel a,Pixel b); // Method
 
 
@@ -112,7 +111,6 @@ float floatmod(float a,float b,float c); // Method
 
 
 //
-
 
 int intmod(int x,int a,int b); // Method
 
@@ -430,9 +428,7 @@ float tofloat(int f); // Method
 
 //
 
-
 //
-
 
 float ramp(float f); // Method
 
@@ -588,7 +584,6 @@ float invert(float f); // Method
 
 
 //
-
 
 bool angleless(float a,float b); // Method
 

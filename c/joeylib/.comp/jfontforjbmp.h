@@ -53,7 +53,6 @@ public:
   void writetojbmp(JBmp *j,int cx,int cy,float scale,int c); // Method
 
 //
-
 };
 
 List<FontChar> parsefontchars(String fname,float fwgiven); // Method

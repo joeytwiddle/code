@@ -9,7 +9,6 @@
 // too slow!
 //
 
-
 extern float PRdist; // Variable initialised in .c file
 class PerpRecv {
 public:
@@ -53,7 +52,6 @@ void writeppm(char *fn_image,RGBmp *r); // Method
 
 
 //
-
   
 class RGBmp : public Writeable {
 public:
@@ -125,7 +123,6 @@ public:
   
   
   //
-
   
   boolean valid(int x,int y,Map2d<int> *chosen,myRGB *r,float tol); // Method
 
@@ -173,7 +170,6 @@ public:
 
   
   //
-
   
   // attempt for DOS
    RGBmp(String fname); // Method
@@ -182,7 +178,6 @@ public:
 //    error("RGbmp(filename) deprecated");
 
 //
-
   
   void writebmp24(char *fname); // Method
 
@@ -226,7 +221,6 @@ public:
 
 //
 
-
     myRGB getinter(float x,float y); // Method
 
 
@@ -235,7 +229,6 @@ RGBmp *recoverquad(V2d a,V2d b,V2d c,V2d d,int imwidth); // Method
 
 
 //
-
 
   RGBmp *linearrecoverquad(List<V2d> *ls,float scale,int imwid); // Method
 
@@ -360,11 +353,9 @@ void opencircle(int x,int y,float r,myRGB c); // Method
 
 //
 
-
 // #include <writeppm.c>
 
 //
-
 
 
 
@@ -377,7 +368,6 @@ V2d vvpfromhvpandbaseline(V2d hvp,Line2d baseline,V3d eye,RGBmp origimage); // M
 
 
 //
-
 
 List<V3d> rectanglefromquadrilateral(List<V2d> v2ds,V3d eye); // Method
 

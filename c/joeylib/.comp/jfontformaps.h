@@ -45,7 +45,6 @@ public:
   void writetomap(Map2d<Object> *j,int cx,int cy,float scale,Object c); // Method
 
 //
-
 };
 
 List<FontChar> parsefontchars(String fname); // Method

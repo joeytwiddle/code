@@ -7,10 +7,12 @@
 
 
 void error(char *s, ... ) {
-  #ifdef ALLEGRO
-    if (allegrostarted>0)
-      allegroexit();
-  #endif
+
+// #ifdef ALLEGRO
+    // if (allegrostarted>0)
+      // allegroexit();
+  // #endif
+
 
 /*  va_list vas;
   va_start(vas,s);
@@ -36,6 +38,8 @@ void error(char *s, ... ) {
 void myerror(char *s) {
   error(s);
 }
+
+
 
 
 #endif

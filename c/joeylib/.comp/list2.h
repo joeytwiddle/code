@@ -3,7 +3,6 @@
 
 //
 
-
 int *p2int(int x); // Method
 
 
@@ -14,7 +13,6 @@ int *p2int(int x); // Method
 
 
 //
-
 
 
 

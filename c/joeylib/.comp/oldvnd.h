@@ -10,7 +10,6 @@ public:
    Vnd(int ss); // Method
 
 //
-
   Vnd operator+(Vnd o); // Method
 
   Vnd operator*(float f); // Method

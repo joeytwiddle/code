@@ -33,7 +33,6 @@ public:
 
   //
 
-
   void make(); // Method
 
 
@@ -80,7 +79,6 @@ public:
 
 
 //
-
 
 
 Map2d<bool> drawCorrelator2d(Correlator2d cc); // Method

@@ -83,8 +83,10 @@ public:
     clear(0);
   }
   void blitline(int y) {
+#ifdef ALLEGRO
     memcpy(buffer,bmp[y],width*JBMP_PIXEL_SIZE);
     movedata(_my_ds(), (unsigned)buffer, screen->seg, bmp_write_line(screen,y), width);
+#endif
   }
   void blit() {
     #ifdef ALLEGRO

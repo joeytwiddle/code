@@ -27,12 +27,9 @@ public:
 
 //
 
-
 //
 
-
 //
-
 
   Polygon2d maketri(int a,int b,int c); // Method
 

@@ -16,7 +16,6 @@
 
 //
 
-
 String Snew(int x); // Method
 
 
@@ -183,7 +182,6 @@ String toString(char c); // Method
 
 
 //
-
 
 char Stoupper(char c); // Method
 

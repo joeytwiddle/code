@@ -36,7 +36,6 @@ public:
 
   
   //
-
   
   String getargafter(String pre,String fail); // Method
 

@@ -3,7 +3,6 @@
 
 //
 
-
 void writeppm(char *filename,RGBmp *p); // Method
 
 

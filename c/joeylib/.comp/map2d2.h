@@ -20,7 +20,6 @@ List<Region *> *Map2d<Object>::getrealregions(); // Method
 
 
 
-
 // Efficient
 class RErec {
 public:

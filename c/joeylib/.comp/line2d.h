@@ -3,7 +3,6 @@
 
 //
 
-
 //class Line2d;
 //void flibble(Line2d,int);
 //void fobble(V2d);
@@ -35,7 +34,6 @@ public:
   float findintersectionnum(Line2d o); // Method
 
 //
-
   V2d *findintersectionornull(Line2d o); // Method
 
   V2d findintersection(Line2d o); // Method

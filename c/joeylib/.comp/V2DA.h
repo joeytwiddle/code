@@ -5,9 +5,7 @@
 #include <math.h>
 
 //
-
 				//
-
 
 class V2d {
 public:
@@ -96,7 +94,6 @@ public:
 
   
   //
-
   
   static V2d random(); // Method
 

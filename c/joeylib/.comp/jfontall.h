@@ -59,7 +59,6 @@ public:
   void writetojbmp(Image *j,int cx,int cy,float scale,Colour c); // Method
 
 //
-
 };
 
 List<FontChar> parsefontchars(String fname,float fwgiven); // Method

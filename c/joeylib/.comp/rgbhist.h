@@ -16,7 +16,6 @@ public:
 
 
     //
-
   
   float variance(); // Method
 
@@ -24,7 +23,6 @@ public:
   void addocc(myRGB *c); // Method
 
   //
-
   
   RGBHistogram *normsmoothed(int radius); // Method
 

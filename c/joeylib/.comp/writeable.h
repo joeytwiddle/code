@@ -10,7 +10,6 @@ public:
   virtual void setpos(int i,int j,myRGB c); // Method
 
 //
-
   template <class CT>
   void setpos(Pixel p,CT c); // Method
 
@@ -84,7 +83,6 @@ void opencircle(int x,int y,float r,CT c); // Method
 
 //
 
-
   virtual void arrow(Pixel a,Pixel b,myRGB c); // Method
 
 
@@ -101,7 +99,6 @@ void opencircle(int x,int y,float r,CT c); // Method
 };
 
 //
-
 
 // Keep getting error setpos not cast before write!
 

@@ -14,13 +14,11 @@ public:
   bool operator==(myRGB o); // Method
 
   //
-
    myRGB(int x,int y,int z); // Method
 
    myRGB(uchar x,uchar y,uchar z); // Method
 
 //
-
    myRGB(double x,double y,double z); // Method
 
   void print(); // Method

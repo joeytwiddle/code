@@ -2,7 +2,6 @@
   #define readpgm_H
 
 //
-
 #include <math.h>
 #include <stdio.h>
 

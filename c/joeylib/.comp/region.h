@@ -123,7 +123,6 @@ public:
 
   //
 
-
   float error(float a); // Method
 
 
@@ -131,7 +130,6 @@ public:
 
 
 //
-
 
   V2d ori(); // Method
 

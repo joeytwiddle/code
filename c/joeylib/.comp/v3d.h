@@ -8,8 +8,10 @@
  class Viewpoint;
  class Plane;
 
-//
-
+/* class Displayable {
+   public:
+     virtual void print()=0;
+   };*/
 
  class V3d;
 
@@ -20,8 +22,7 @@ V3d operator*(V3d v,float d); // Method
 V3d operator/(V3d v,float d); // Method
 
 
-class V3d //
- {
+class V3d /*: public Displayable*/ {
 public:
   float x,y,z; // Exists
   
@@ -214,8 +215,20 @@ public:
   V3d disorientate(Ori ori); // Method
 
   
-  //
-
+  /* V3d breakdown(V3d a,V3d b,V3d c) { // breaks down vector into axes
+       // p*a+q*b+r*c=this
+       // p=(x-q*b.x-r*c.x)/a.x
+       // (x-q*b.x-r*c.x)/a.x*a.y+q*b.y+r*c.y=y
+       // q(-b.x/a.x*a.y+b.y)=y-r*c.y-(r*c.x+x)/a.x*a.y
+       // q=(y-r*c.y-(r*c.x+x)/a.x*a.y)/(-b.x/a.x*a.y+b.y)
+       // r*c.z=z-(x-q*b.x-r*c.x)/a.x*a.z-(y-r*c.y-(r*c.x+x)/a.x*a.y)/(-b.x/a.x*a.y+b.y)*b.z
+       // r*(c.z-c.x/a.x*a.z-(c.y-c.x/a.x*a.y)/(-b.x/a.x*a.y+b.y)*b.z=z-(x-q*b.x)/a.x*a.z-(y-x/a.x*a.y)/(-b.x/a.x*a.y+b.y)*b.z
+       // r=z-(x-q*b.x)/a.x*a.z-(y-x/a.x*a.y)/(-b.x/a.x*a.y+b.y)*b.z/((c.z-c.x/a.x*a.z-(c.y-c.x/a.x*a.y)/(-b.x/a.x*a.y+b.y)*b.z)
+       float r=z-(x-q*b.x)/a.x*a.z-(y-x/a.x*a.y)/(-b.x/a.x*a.y+b.y)*b.z/((c.z-c.x/a.x*a.z-(c.y-c.x/a.x*a.y)/(-b.x/a.x*a.y+b.y)*b.z);
+       float q=(y-r*c.y-(r*c.x+x)/a.x*a.y)/(-b.x/a.x*a.y+b.y);
+       float p=(x-q*b.x-r*c.x)/a.x;
+       return V3d(p,q,r);
+     } */
 
   V3d operator*(V3d o); // Method
 

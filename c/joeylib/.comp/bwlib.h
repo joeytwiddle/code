@@ -2,29 +2,18 @@
   #define bwlib_H
 
 //
-
+//
+//
+//
+//
+//
+//
+//
 //
 
 //
 
 //
-
-//
-
-//
-
-//
-
-//
-
-//
-
-
-//
-
-
-//
-
 
 #include <stdio.h>
 #include <string.h>
@@ -32,25 +21,19 @@
 //#include "BWlib.h"
 
 //
-
 //
-
 
 Display *BWConnectToServer(); // Method
 
 
 //
-
 //
-
 
 BasicWin BWCreateNewWindow(Display *display, int argc, char **argv); // Method
 
 
 //
-
 //
-
 
 
 

@@ -23,7 +23,6 @@ public:
    Polygon2d(Polygon2d *o,int numps, ... ); // Method
 
 //
-
    Polygon2d(Polygon2d *o,int a,int b); // Method
 
   Polygon2d maketri(int a,int b,int c); // Method

@@ -8,7 +8,6 @@ void quadify(int l,int t,int r,int b,float (*eval)(int,int),void (*fulfil)(int,i
 
 //
 
-
 extern JBmp *Quadjbmp; // Exists
 extern Map2d<int> *Quadmap; // Exists
 extern int (*Quadfn)(int,int); // Exists
