@@ -1,0 +1,64 @@
+# This grammar defines defines the file
+# format for a grammar
+
+GrammarDefn = Grm
+java: "import java.lang.String;\nimport java.util.Vector;\n\nimport Grammar;\nimport RuleSet;\n\npublic class NewGrm extends SrcGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector rule;\n\n" Grm "  }\n}\n"
+
+Grm = "\n" Grm
+    | "\n"
+    | GrmBit "\n" Grm
+    | GrmBit
+
+GrmBit = Comment
+       | Atom
+
+Comment = "#" <comment>
+java: "//" <comment/"\n"> "\n"
+
+Atom = AtomWith "\n"
+     | AtomWithout "\n"
+
+AtomWithout = <atomname/"<>\n!qt! "> " = " Defn
+java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "\n      ruleset.add(rule);\n\n"
+
+AtomWith = <atomname/"<>\n!qt! "> " = " Defn "\n" Replacements
+java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "\n      ruleset.add(rule);\n" Replacements
+
+Replacements = Replacement
+             | Replacement "\n" Replacements
+
+Replacement = <target/"<>\n!qt! "> ": " Defn
+java: "    rule=new Vector();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
+
+Defn = DefnBit
+     | DefnOr
+     | DefnAnd
+
+DefnBit = Variable
+        | Text
+        | AtomRef
+
+DefnOr = DefnBit "\n" Whitespace "| " Defn
+java: Defn "      ruleset.add(rule);\n      rule=new Vector();\n" Defn "\n"
+
+DefnAnd = DefnBit " " Defn
+java: Defn Defn
+
+Variable = Var
+         | VarDeny
+
+Var = "<" <varname/"<>\n!qt!/ "> ">"
+java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
+
+VarDeny = "<" <varname/"<>\n!qt!/ "> "/!qt!" <denied/"!qt!"> "!qt!>"
+java: "        rule.add(new Var(!qt!" <varname> "!qt!,!qt!" <denied> "!qt!));\n"
+
+AtomRef = <atomtype/"<>\n!qt! ">
+java: "        rule.add(new Atom(!qt!" <atomtype> "!qt!));\n"
+
+Text = "!qt!" <text/"!qt!"> "!qt!"
+java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
+
+Whitespace = " "
+           | "\n"
+           | Whitespace Whitespace

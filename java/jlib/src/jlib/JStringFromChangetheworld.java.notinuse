@@ -1,0 +1,181 @@
+package jlib;
+
+import java.lang.String;
+import java.util.Vector;
+
+public class JString {
+
+  public static String replace(String x,String s,String r) {
+//    System.out.println("Doing srep for "+x.length());
+    String n="";
+    int l=0;
+    int i=0;
+    i=x.indexOf(s,i);
+    if (i==-1)
+      return x;
+    while (i>-1) {
+      n+=x.substring(l,i)+r;
+//      x=x.substring(0,i)+r+x.substring(i+s.length());
+      i+=s.length();
+      l=i;
+      i=x.indexOf(s,i);
+    }
+    n+=x.substring(l,x.length());
+    return n;
+  }
+
+/*  public static String replace(String x,String s,String r) {
+    int i=0;
+    i=x.indexOf(s,i);
+    while (i>-1) {
+      x=x.substring(0,i)+r+x.substring(i+s.length());
+      i=i+r.length();
+      System.out.println(""+x);
+      System.out.println(JString.repeat(" ",i)+"^");
+      i=x.indexOf(s,i);
+    }
+    return x;
+  }*/
+
+  public static String remove(String x,String s) {
+    return replace(x,s,"");
+  }
+  public static Vector splitv(String s,String sep) {
+    Vector v=new Vector();
+    int i=s.indexOf(sep);
+    while (i>-1) {
+      String t=s.substring(0,i);
+      if (t.length()>0)
+        v.add(t);
+      s=s.substring(i+sep.length());
+      i=s.indexOf(sep);
+    }
+    if (s.length()>0)
+      v.add(s);
+    return v;
+  }
+  public static String[] split(String s,String sep) {
+    Vector v=new Vector();
+    int i=s.indexOf(sep);
+    while (i>-1) {
+      String t=s.substring(0,i);
+      if (t.length()>0)
+        v.add(t);
+      s=s.substring(i+sep.length());
+      i=s.indexOf(sep);
+    }
+    if (s.length()>0)
+      v.add(s);
+    return JString.Stringarray(v.toArray());
+  }
+  public static String random(int l) {
+    String s="";
+    for (int i=0;i<l;i++) {
+      int j=(int)(Math.random()*(float)(26+26+10));
+      char c=( j<26 ? (char)((int)'a'+j) :
+               ( j-26 < 26 ? (char)((int)'A'+(j-26)) : (char)((int)'0'+(j-26-26)) ) );
+      s=s+c;
+    }
+    return s;
+  }
+  public static boolean isvowel(char c) {
+    c=tolower(c);
+    return (c=='a' || c=='e' || c=='i' || c=='o' || c=='u');
+  }
+  public static char tolower(char c) {
+    return (char)(c>='A' && c<='Z' ? 'a'+c-'A' : c);
+  }
+  public static char toupper(char c) {
+    return (char)(c>='a' && c<='z' ? 'A'+c-'a' : c);
+  }
+  public static String tolower(String s) {
+    String n="";
+    for (int i=0;i<s.length();i++)
+      n=n+tolower(s.charAt(i));
+    return n;
+  }
+
+  public static String before(String x,String s) {
+    int i=x.indexOf(s);
+    if (i>=0)
+      return x.substring(0,i);
+    return x;
+  }
+
+  public static String after(String x,String s) {
+    int i=x.indexOf(s);
+    if (i>=0)
+      return x.substring(i+s.length());
+    return x;
+  }
+
+  public static String beforelast(String x,String s) {
+    int i=x.lastIndexOf(s);
+    if (i>=0)
+      return x.substring(0,i);
+    return x;
+  }
+
+  public static String afterlast(String x,String s) {
+    int i=x.lastIndexOf(s);
+    if (i>=0)
+      return x.substring(i+s.length());
+    return x;
+  }
+
+  public static String stripendsof(String x,String s) {
+    boolean go=true;
+    while (go) {
+      go=false;
+      char a=x.charAt(0);
+      if (s.indexOf(a)>=0) {
+        x=x.substring(1);
+        go=true;
+      }
+      char z=x.charAt(x.length()-1);
+      if (s.indexOf(z)>=0) {
+        x=x.substring(0,x.length()-1);
+        go=true;
+      }
+    }
+    return x;
+  }
+
+  public static String left(String x,int i) {
+    if (x.length()>i)
+      return x.substring(0,i);
+    else
+      return x;
+  }
+
+  public static String clip(String x) {
+    return clip(x,200);
+  }
+
+  public static String clip(String x,int i) {
+    if (x.length()>i)
+      return left(x,i)+"&nbsp;<font color=\"008000\"><b>...</b></font>";
+    else
+      return x;
+  }
+
+  public static String[] Stringarray(Object[] os) {
+    String[] ss=new String[os.length];
+    for (int i=0;i<os.length;i++)
+      ss[i]=(String)os[i];
+    return ss;
+  }
+
+  public static String repeat(String s,int n) {
+    String x="";
+    for (int i=0;i<n;i++)
+      x+=s;
+    return x;
+  }
+
+  public static String formencode(String s) {
+    s=replace(s,"\"","\\\"");
+    return s;
+  }
+
+}

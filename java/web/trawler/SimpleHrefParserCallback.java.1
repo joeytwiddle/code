@@ -1,0 +1,36 @@
+class MyParserCallback extends HTMLEditorKit.ParserCallback {
+
+  URL baseUrl=null;
+  /*List*/Vector/**/ links=new Vector();
+
+  MyParserCallback(URL url,String page) {
+    super();
+    try {
+      baseUrl=url;
+      Reader sr=new StringReader(page);
+      (new ParserDelegator()).parse(sr, this, true);
+    } catch (Exception e) {
+//      Trawler.echo("MyParserCallback(url,page): "+e);
+    }
+  }
+
+  public void handleText(char[] data, int pos) {
+  }
+
+	public void handleStartTag(HTML.Tag t, MutableAttributeSet a, int pos) {
+    if (t.equals(HTML.Tag.A)) {
+      try {
+        String lnk=a.getAttribute(HTML.Attribute.HREF).toString();
+        URL nurl=new URL(baseUrl,lnk);
+        links.add(nurl);
+      } catch (Exception e) {
+//        Trawler.echo("MyParserCallback.handleStartTag(): "+e);
+      }
+    }
+  }
+	
+	public void handleEndTag(HTML.Tag t, int pos) {
+	}
+	
+}
+

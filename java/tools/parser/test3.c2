@@ -1,0 +1,1187 @@
+
+
+
+// Variable  float inf declared in .h file
+
+// Variable  float infinity declared in .h file
+
+
+// Variable  float rad2deg declared in .h file
+
+
+// Not all mod operations allow the right hand constraint
+// for this, use mod2
+// er but for floats i think mymod2 offsets cutoff by second argument
+
+// -deprecated (by what? - I don't know, so let's carry on using it!)
+
+/*typedef struct {
+  int x,y;
+}Pixel;*/
+
+float Correlator::mysgn(float x) {{}
+  if (x>0)
+    return 1;
+  if (x<0)
+    return -1;
+  return 0;
+}
+
+
+int Correlator::sgn(int i) {{}
+  return ( i>0 ? 1 : ( i<0 ? -1 : 0 ) );
+}
+
+
+// Variable  class V2d declared in .h file
+
+// Start of class Pixel
+
+
+  // Variable  int x,y declared in .h file
+
+   Correlator::Pixel( ) {{}
+  }
+
+   Correlator::Pixel(int a,int b) {{}
+    x=a;
+    y=b;
+  }
+
+  Pixel Correlator::(V2d v) {}
+
+  bool Correlator::operator==(Pixel o) {{}
+    return (x==o.x && y==o.y);
+  }
+
+  Pixel Correlator::operator+(Pixel p) {{}
+    return Pixel(x+p.x,y+p.y);
+  }
+
+  Pixel Correlator::operator-(Pixel p) {{}
+    return Pixel(x-p.x,y-p.y);
+  }
+
+  Pixel Correlator::operator*(float f) {{}
+    return Pixel(x*f,y*f);
+  }
+
+  Pixel Correlator::operator/(float f) {{}
+    return *this*(1.0/f);
+  }
+
+  String Correlator::toString( ) {{}
+    return Sformat("(%i,%i)",x,y);
+  }
+
+  static bool Correlator::ishor(int d) {{}
+    return ((d % 2)==1);
+  }
+
+  static int Correlator::plusormin(int d) {{}
+    return ( (d%4)<=1 ? +1 : -1 );
+  }
+
+  static Pixel Correlator::indir(int d) {{}
+    return Pixel( ( ishor(d) ? plusormin(d) : 0 ) ,
+                  ( ishor(d) ? 0 : plusormin(d) ) );
+  }
+
+  static List<Pixel> Correlator::line(Pixel a,Pixel b) {
+//printf("a\n");
+    List<Pixel> ls;
+    if (a==b) {{}
+      ls.add(a);
+//printf("b\n");
+      return ls;
+    }{}
+      ls.add(a);
+//printf("b\n");
+      return ls;
+    }
+
+
+// For backwards compatibility when Pixel wasn't a class
+Pixel Correlator::newPixel(int x,int y) {{}
+  return Pixel(x,y);
+}
+
+
+Pixel Correlator::operator*(float f,Pixel p) {{}
+  return p*f;
+}
+
+
+/*
+Pixel operator+(Pixel a,Pixel b) {
+  return newPixel(a.x+b.x,a.y+b.y);
+}
+
+Pixel operator/(Pixel a,float b) {
+  return newPixel((int)((float)a.x/b),(int)((float)a.y/b));
+}
+
+bool operator==(Pixel a,Pixel b) {
+  return ((a.x==b.x && a.y==b.y) || (a.x==b.y && a.y==b.x));
+}*/
+
+float Correlator::dist(Pixel a,Pixel b) {{}
+  Pixel c=a-b;
+  return sqrt(c.x*c.x+c.y*c.y);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+float Correlator::myangle(float x,float y) {{} // returns (-pi,pi)
+  float ang;
+  ang=atan2(x,y);
+  return ang;
+}
+
+
+float Correlator::mymod(float a,float b) {
+  
+  while (a<0 || a>=b) {{}
+    if (a<0)
+      a=a+b;
+    if (a>=b)
+      a=a-b;
+  }{}
+    if (a<0)
+      a=a+b;
+    if (a>=b)
+      a=a-b;
+  }
+
+
+float Correlator::mymod2(float x,float a,float b) {
+  while (x<a || x>=b) {{}
+    if (x<a)
+      x=x+(b-a);
+    if (x>=b)
+      x=x-(b-a);
+  }{}
+    if (x<a)
+      x=x+(b-a);
+    if (x>=b)
+      x=x-(b-a);
+  }
+
+
+float Correlator::floatmod(float a,float b) {{}
+  return mymod(a,b);
+}
+
+
+float Correlator::floatmod(float a,float b,float c) {{}
+  return mymod2(a,b,c);
+}
+
+
+/* int intmod(int x,int a,int b) { // Don't know if this is valid
+  float f=((float)x-(float)a)/(float)(b-a);
+  return (int)(f*(b-a));
+} */
+
+int Correlator::intmod(int x,int a,int b) {{} 
+  if (x<a)
+    return intmod(x+(b-a),a,b);
+  if (x>=b)
+    return intmod(x-(b-a),a,b);
+  return x;
+}
+
+
+int Correlator::intmod2(int x,int a,int b) {{}
+  if (x<a)
+    return intmod2(x+(b-a+1),a,b);
+  if (x>b)
+    return intmod2(x-(b-a+1),a,b);
+  return x;
+}
+
+
+int Correlator::intmod(int x,int b) {{}
+  return intmod(x,0,b);
+  // return (x % b);
+}
+
+
+float Correlator::mymod(float a) {{}
+  return mymod(a,1);
+}
+
+
+float Correlator::saw(float f) {{}
+  return mymod(f);
+}
+
+
+float Correlator::saw2(float f) {{}
+  float d=mymod(f,2.0);
+  if (d<=1.0)
+    return d;
+  else
+  return 2.0-d;
+}
+
+
+float Correlator::chop(float x,float a,float b) {{}
+  if (x<a)
+    x=a;
+  if (x>b)
+    x=b;
+  return x;
+}
+
+
+int Correlator::intchop(int x,int a,int b) {{}
+  if (x<a)
+    return a;
+  if (x>b)
+    return b;
+  return x;
+}
+
+
+int Correlator::intchop(int x,int b) {{}
+  return intchop(x,0,b);
+}
+
+
+int Correlator::intchop2(int x,int a,int b) {{}
+  if (x<a)
+    return a;
+  if (x>=b)
+    return b;
+  return x;
+}
+
+
+float Correlator::chop(float x) {{}
+  return chop(x,0,1);
+}
+
+
+uchar Correlator::ucharchop(float x) {{}
+  return (uchar)chop(x,0,255);
+}
+
+
+uchar Correlator::ucharsaw(float x) {{}
+  return (uchar)mymod(x,256);
+}
+
+
+float Correlator::fromto(float lambda,float from,float to) {{}
+  return from+lambda*(to-from);
+}
+
+
+float Correlator::myabs(float f) {{}
+  if (f<0)
+    return -f;
+  else
+  return f;
+}
+
+
+float Correlator::floatabs(float f) {{}
+  return myabs(f);
+}
+
+
+float Correlator::mypow(float x,float y) {{}
+  return pow(x,y);
+}
+
+
+float Correlator::power(float x,float y) {{}
+  return pow(x,y);
+}
+
+
+float Correlator::myrnd( ) {{}
+  /* - Returns random float in range [0,1)
+     Spaceing between choices is 1/RAND_MAX */
+  return (float)rand()/RAND_MAX;
+}
+
+
+float Correlator::myrnd2( ) {{}
+  /* - Returns random float in range [0,1]
+     Spaceing between choices is 1/(RAND_MAX-1) */
+  return (float)rand()/(RAND_MAX-1);
+}
+
+
+float Correlator::floatrnd(float l,float r) {{}
+  return l+myrnd2()*(r-l);
+}
+
+
+int Correlator::intrnd(int l,int r) {{}
+  int x=(int)(l+myrnd()*(r-l+1));
+  if (x>r)
+    x=r;
+  return x;
+}
+
+
+int Correlator::intrnd(int r) {{}
+  return intrnd(0,r);
+}
+
+
+float Correlator::magrnd(float m) {{}
+  return -m+2.0*m*myrnd2();
+}
+
+
+float Correlator::nicernd(float f) {{}
+  return -f+2.0*f*myrnd2();
+}
+
+
+float Correlator::nicernd( ) {{}
+  return nicernd(1);
+}
+
+
+float Correlator::mysquare(float f) {{}
+  return f*f;
+}
+
+
+float Correlator::square(float f) {{}
+  return f*f;
+}
+
+
+float Correlator::mysquaresgn(float f) {{}
+  return mysgn(f)*f*f;
+}
+
+
+// - Procedures to make numbers deviate continuously around around means
+
+float Correlator::hang(float x,float cen,float damp,float rnd) {{}
+  return cen+(x-cen)*damp+magrnd(rnd);
+}
+
+
+float Correlator::hang(float *x,float cen,float damp,float rnd) {{}
+  *x=hang(*x,cen,damp,rnd);
+}
+
+
+float Correlator::hang(float *x,float cen,float damp) {{}
+  *x=hang(*x,cen,damp,0);
+}
+
+
+// Start of class Dampener
+
+
+  // Variable  float var,cen,damp,force declared in .h file
+
+   Correlator::Dampener(float c,float d,float f) {{}
+    var=c;
+    cen=c;
+    damp=d;
+    force=f;
+  }
+
+  void Correlator::perturb( ) {{}
+    var=cen+(var-cen)*damp+floatrnd(-force,force);
+  }
+
+  static float Correlator::hang(float x,float cen,float damp,float rnd) {{}
+    return hang(x,cen,damp,rnd);
+  }
+
+
+float Correlator::quantiseto(float t,float x) {{}
+  int y=(int)(x/t);
+  return (float)y*t;
+}
+
+
+// -deprecated nah ballbag!
+List<Pixel> Correlator::pixelsincircle(int cx,int cy,int rad) {
+  List<Pixel> l;
+  for (int x=-rad;x<=rad;x++) {
+    int h=(int)sqrt(rad*rad-x*x);
+    for (int y=-h;y<=h;y++) {{}
+      Pixel p=newPixel(cx+x,cy+y);
+      l+p;
+    }{}
+      Pixel p=newPixel(cx+x,cy+y);
+      l+p;
+    }
+    int h=(int)sqrt(rad*rad-x*x);
+    for (int y=-h;y<=h;y++) {{}
+      Pixel p=newPixel(cx+x,cy+y);
+      l+p;
+    }{}
+      Pixel p=newPixel(cx+x,cy+y);
+      l+p;
+    }
+
+
+List<Pixel> Correlator::*p2pixelsincircle(int cx,int cy,int rad) {
+//  printf("P0\n");
+  List<Pixel> *l=new List<Pixel>(pi*rad*rad);
+//  printf("P1\n");
+  for (int x=-rad;x<=rad;x++) {
+//    printf("P2\n");
+    int h=(int)sqrt(rad*rad-x*x);
+//    printf("P3\n");
+    for (int y=-h;y<=h;y++) {{}
+//      printf("P4\n");
+      Pixel p=Pixel(cx+x,cy+y);
+//      printf("P5\n");
+      l->add(p);
+    }{}
+//      printf("P4\n");
+      Pixel p=Pixel(cx+x,cy+y);
+//      printf("P5\n");
+      l->add(p);
+    }
+//    printf("P2\n");
+    int h=(int)sqrt(rad*rad-x*x);
+//    printf("P3\n");
+    for (int y=-h;y<=h;y++) {{}
+//      printf("P4\n");
+      Pixel p=Pixel(cx+x,cy+y);
+//      printf("P5\n");
+      l->add(p);
+    }{}
+//      printf("P4\n");
+      Pixel p=Pixel(cx+x,cy+y);
+//      printf("P5\n");
+      l->add(p);
+    }
+
+
+List<Pixel> Correlator::*p2pixelsincircle(Pixel p,int rad) {{}
+//  printf("P\n");
+  return p2pixelsincircle(p.x,p.y,rad);
+}
+
+
+List<Pixel> Correlator::*p2pixelsinrectangle(int l,int t,int r,int b) {{}
+  List<Pixel> *ps=new List<Pixel>();
+  for (int i=l;i<=r;i++)
+  for (int j=t;j<=b;j++)
+    ps->add(Pixel(i,j));
+  return ps;
+}
+
+
+int Correlator::arewithinbounds(int x,int y,int left,int top,int right,int bottom) {{}
+  return (x>=left && x<right && y>=top && y<bottom);
+}
+
+
+float Correlator::gimmezerofloat( ) {{}
+  return 0;
+}
+
+
+int Correlator::gimmezeroint( ) {{}
+  return 0;
+}
+
+
+int Correlator::gimmelargeint( ) {{}
+  return 99999999;
+}
+
+
+bool Correlator::gimmetruebool( ) {{}
+  return true;
+}
+
+
+float Correlator::gaussian(float x) {{}
+  // if (x<0.00000001)
+  // return 1;
+  // if (x>10000000.0)
+  // return 0;
+  return pow(nate,-mysquare(1.5*x));
+}
+
+
+float Correlator::gabor(V2d v,V2d d,float size,float freq) {}
+
+
+float Correlator::gaborabs(V2d v,V2d d,float size,float freq) {}
+
+
+float Correlator::min(float a,float b) {{}
+  if (a<b)
+    return a;
+  else
+  return b;
+}
+
+
+float Correlator::max(float a,float b) {{}
+  if (a>b)
+    return a;
+  else
+  return b;
+}
+
+
+void Correlator::randomise(int i) {{}
+//  #ifdef DOS
+  srand(i);
+//  #endif
+}
+
+
+void Correlator::randomise( ) {{}
+#ifndef STUPIDUNIX
+  int i=(int)time(NULL);
+  randomise(i);
+#endif
+}
+
+
+void Correlator::randomiserem( ) {{}
+  int i=(int)time(NULL);
+  randomise(i);
+  FILE* f=fopen("lastrndseed","w");
+  fprintf(f,"%i",i);
+  fclose(f);
+}
+
+
+// Start of class Complex
+
+
+  // Variable  float x,y declared in .h file
+
+   Correlator::Complex(float a,float b) {{}
+    x=a;
+    y=b;
+  }
+
+  Complex Correlator::operator+(Complex o) {{}
+    return Complex(x+o.x,y+o.y);
+  }
+
+  Complex Correlator::operator*(Complex o) {{}
+    // (x+iy)*(ox+ioy)
+    // = x*ox-y*oy+i(ox*y+oy*x)
+    return Complex(x*o.x-y*o.y,x*o.y+y*o.x);
+  }
+
+  Complex Correlator::operator*(Complex *o) {{}
+    // is this more efficient?
+    /* According to experimental results this is the case
+       Isn't C++ a bit stupid?
+    */
+    // (x+iy)*(ox+ioy)
+    // = x*ox-y*oy+i(ox*y+oy*x)
+    return Complex(x*o->x-y*o->y,x*o->y+y*o->x);
+  }
+
+  float Correlator::mod( ) {{}
+    return sqrt(x*x+y*y);
+  }
+
+
+// Start of class Quaternion
+
+
+  // Variable  float a,b,c,d declared in .h file
+
+   Correlator::Quaternion( ) {{}
+  }
+
+   Correlator::Quaternion(float x,float y,float z,float q) {{}
+    a=x; b=y; c=z; d=q;
+  }
+
+  Quaternion Correlator::operator+(Quaternion o) {{}
+    return Quaternion(a+o.a,b+o.b,c+o.c,d+o.d);
+  }
+
+  Quaternion Correlator::operator*(Quaternion o) {{}
+    // (a+ib+jc+kd)*(oa+iob+joc+kod)
+    // = a*oa+i(a*ob)+j(a*oc)+k(a*od)
+    // + i(b*oa)-b*ob+ij(b*oc)+ik(b*od)
+    // + j(c*oa)+ji(c*ob)-c*oc+jk(c*od)
+    // + k(d*oa)+ki(d*ob)+kj(d*oc)-d*od
+    // = a*oa-b*ob-c*oc-d*od
+    // + i(a*ob+b*oa+c*od-d*oc)
+    // + j(a*oc+c*oa-b*od+d*ob)
+    // + k(a*od+d*oa+b*oc-c*ob)
+    return Quaternion(a*o.a-b*o.b-c*o.c-d*o.d,
+    a*o.b+b*o.a+c*o.d-d*o.c,
+    a*o.c+c*o.a-b*o.d+d*o.b,
+    a*o.d+d*o.a+b*o.c-c*o.b);
+  }
+
+  float Correlator::mod( ) {{}
+    return sqrt(a*a+b*b+c*c+d*d);
+  }
+
+  Quaternion Correlator::operator*(float f) {{}
+    return Quaternion(a*f,b*f,c*f,d*f);
+  }
+
+  Quaternion Correlator::operator/(float f) {{}
+    return Quaternion(a/f,b/f,c/f,d/f);
+  }
+
+  Quaternion Correlator::operator-(Quaternion o) {{}
+    return *this+o*-1;
+  }
+
+  void Correlator::setto(Quaternion q) {{}
+    a=q.a; b=q.b; c=q.c; d=q.d;
+  }
+
+  String Correlator::toString( ) {{}
+    return Sformat("(%f,%f,%f,%f)",a,b,c,d);
+  }
+
+
+uchar Correlator::ucharmod(int x) {{}
+  return (uchar)mymod(x,256);
+}
+
+
+int Correlator::ucharmirror(int x) {{}
+  return (int)ucharmod(ucharmod(x)+127)-127;
+}
+
+
+float Correlator::plusminus(int x) {{}
+  if (x%2==0)
+    return -1;
+  else
+  return 1;
+}
+
+
+float Correlator::plusminus( ) {{}
+  return plusminus(myrnd()*2);
+}
+
+
+int Correlator::intabs(int x) {{}
+  return myabs(x);
+}
+
+
+float Correlator::diff(float x,float y) {{}
+  return myabs(y-x);
+}
+
+
+float Correlator::mydiv(float x,float y) {{}
+  return (float)((int)(x/y))*y;
+}
+
+
+void Correlator::swapints(int *x,int *y) {{}
+  int tmp=*x;
+  *x=*y;
+  *y=tmp;
+}
+
+
+template <class Object>void Correlator::swap(Object *x,Object *y) {{}
+  Object tmp=*x;
+  *x=*y;
+  *y=tmp;
+}
+
+
+uchar Correlator::ucharrnd( ) {{}
+  return myrnd()*256;
+}
+
+
+float Correlator::myrnd(float f) {{}
+  return myrnd()*f;
+}
+
+
+float Correlator::deg2rad(float x) {{}
+  return 2*pi*x/360.0;
+}
+
+
+float Correlator::minus(float a,float b) {{}
+  return a-b;
+}
+
+
+float Correlator::pythag(float x,float y) {{}
+  return sqrt(x*x+y*y);
+}
+
+
+float Correlator::hypotenuse(float x,float y) {{}
+  return pythag(x,y);
+}
+
+
+bool Correlator::boolor(bool x,bool y) {{}
+  return (x || y);
+}
+
+
+bool Correlator::booland(bool x,bool y) {{}
+  return (x && y);
+}
+
+
+float Correlator::wrapdist(float a,float b,float s) {{}
+  float c=diff(floatmod(a,0,s),floatmod(b,0,s));
+  if (c>s/2)
+    c=s-c;
+  return c;
+}
+
+
+float Correlator::moddiff(float a,float b,float s) {{}
+  return wrapdist(a,b,s);
+}
+
+
+// Variable  int triglookupquant declared in .h file
+
+// Variable  float *sinlookup declared in .h file
+
+// Variable  float *coslookup declared in .h file
+
+// Variable  bool trigsetup declared in .h file
+
+
+void Correlator::setuptriglookup( ) {
+  if (!trigsetup) {
+    trigsetup=true;
+  for (int i=0;i<triglookupquant;i++) {{}
+    sinlookup[i]=sin(2*pi*i/(float)triglookupquant);
+    coslookup[i]=cos(2*pi*i/(float)triglookupquant);
+  }{}
+    sinlookup[i]=sin(2*pi*i/(float)triglookupquant);
+    coslookup[i]=cos(2*pi*i/(float)triglookupquant);
+  }
+    trigsetup=true;
+  for (int i=0;i<triglookupquant;i++) {{}
+    sinlookup[i]=sin(2*pi*i/(float)triglookupquant);
+    coslookup[i]=cos(2*pi*i/(float)triglookupquant);
+  }{}
+    sinlookup[i]=sin(2*pi*i/(float)triglookupquant);
+    coslookup[i]=cos(2*pi*i/(float)triglookupquant);
+  }
+
+
+void Correlator::setupsinlookup( ) {{} //- deprecated
+  setuptriglookup();
+}
+
+
+float Correlator::mysin(float x) {{}
+#ifdef TRIGLOOKUPOFF
+  return sin(x);
+#endif
+  setuptriglookup();
+  float y=mymod(x,2*pi);
+  return sinlookup[(int)(y*triglookupquant/2/pi)];
+}
+
+
+float Correlator::mycos(float x) {{}
+#ifdef TRIGLOOKUPOFF
+  return cos(x);
+#endif
+  setuptriglookup();
+  float y=mymod(x,2*pi);
+  return coslookup[(int)(y*triglookupquant/2/pi)];
+}
+
+
+bool Correlator::boolrnd( ) {{}
+  return (myrnd()>0.5);
+}
+
+
+float Correlator::floatneg(float f) {{}
+  return -f;
+}
+
+
+bool Correlator::boolneg(bool b) {{}
+  return !b;
+}
+
+
+float Correlator::floatmult(float a,float b) {{}
+  return a*b;
+}
+
+
+int Correlator::wrap(int x,int a,int b) {{}
+//  printf("Wrapping %i in (%i-%i) to %i\n",x,a,b,intmod2(x,a,b));
+  return intmod2(x,a,b);
+}
+
+
+int Correlator::wrap(int x,int b) {{}
+  return wrap(x,1,b);
+}
+
+
+float Correlator::floatdist(float x,float y) {{}
+  return diff(x,y);
+}
+
+
+float Correlator::pull(float a,float t,float b) {{}
+  return a*(1.0-t)+b*t;
+}
+
+
+float Correlator::oldpull(float a,float b,float t) {{}
+  return pull(a,t,b);
+}
+
+
+float Correlator::tofloat(float f) {{}
+  return f;
+}
+
+
+float Correlator::tofloat(int f) {{}
+  return f;
+}
+
+
+float Correlator::tofloat(double f) {{}
+  return f;
+}
+
+
+float Correlator::ramp(float f) {{}
+  if (f<0)
+    return 0;
+  if (f>1)
+    return 1;
+  return f;
+}
+
+
+bool Correlator::even(int i) {{}
+  return ((abs(i) % 2)==0);
+}
+
+
+bool Correlator::odd(int i) {{}
+  return (!even(i));
+}
+
+
+bool Correlator::alternate(int i) {{}
+  if (i>=0)
+    return even(i);
+  else
+    return odd(i);
+}
+
+
+bool Correlator::alternate(float d,float r) {{}
+  int i=d/r;
+  if (d>=0)
+    return even(i);
+  else
+    return odd(i);
+}
+
+
+void Correlator::wait(float secs) {
+  int t=time(NULL);
+  while (difftime(t,time(NULL))<secs) {{} }{} }
+
+
+float Correlator::corrave(List<float> xs) {{}
+  float s=0;
+  for (int i=1;i<=xs.len;i++)
+    s+=xs.num(i);
+  return s/(float)xs.len;
+}
+
+
+float Correlator::corrS(List<float> xs,List<float> ys) {{}
+  float xa=corrave(xs);
+  float ya=corrave(ys);
+  float s=0;
+  for (int i=1;i<=xs.len;i++)
+    s+=(xs.num(i)-xa)*(ys.num(i)-ya);
+  return s/(float)xs.len;
+}
+
+
+float Correlator::correlation(List<float> xs,List<float> ys) {{}
+  return corrS(xs,ys)/sqrt(corrS(xs,xs)*corrS(ys,ys));
+}
+
+
+float Correlator::lscorrelation(List<float> xs,List<float> ys) {{}
+  return corrS(xs,ys)/sqrt(corrS(xs,xs)*corrS(ys,ys));
+}
+
+
+float Correlator::correlation(List<Pixel> *ps) {
+	List<float> xs,ys;
+	for (int i=1;i<=ps->len;i++) {{}
+		xs.add(ps->num(i).x);
+		ys.add(ps->num(i).y);
+	}{}
+		xs.add(ps->num(i).x);
+		ys.add(ps->num(i).y);
+	}
+
+
+// Variable  class V2d declared in .h file
+
+
+// Start of class Correlator
+
+
+	// Variable  List<float> xs declared in .h file
+
+	// Variable  List<float> ys declared in .h file
+
+	// Variable  float *cxy declared in .h file
+
+	// Variable  float *cxx declared in .h file
+
+	// Variable  float *cyy declared in .h file
+
+	// Variable  float *ang declared in .h file
+
+	 Correlator::Correlator( ) {{}
+	  cxy=cxx=cyy=ang=NULL;
+	}
+
+	void Correlator::add(V2d p) {}
+
+	void Correlator::add(float x,float y) {{}
+	  xs.add(x);
+	  ys.add(y);
+  }
+
+	 Correlator::Correlator(List<float> x,List<float> y) {{}
+	  cxy=cxx=cyy=ang=NULL;
+		xs=x;
+		ys=y;
+	}
+
+	 Correlator::Correlator(List<Pixel> *ps) {
+	  cxy=cxx=cyy=ang=NULL;
+		for (int i=1;i<=ps->len;i++) {{}
+			xs.add(ps->num(i).x);
+			ys.add(ps->num(i).y);
+		}{}
+			xs.add(ps->num(i).x);
+			ys.add(ps->num(i).y);
+		}
+
+	float Correlator::corrxy( ) {
+	  if (cxy==NULL) {{}
+	    cxy=new float[1];
+	    *cxy=corrS(xs,ys);
+	  }{}
+	    cxy=new float[1];
+	    *cxy=corrS(xs,ys);
+	  }
+
+	float Correlator::corrxx( ) {
+	  if (cxx==NULL) {{}
+	    cxx=new float[1];
+	    *cxx=corrS(xs,xs);
+	  }{}
+	    cxx=new float[1];
+	    *cxx=corrS(xs,xs);
+	  }
+
+	float Correlator::corryy( ) {
+	  if (cyy==NULL) {{}
+	    cyy=new float[1];
+	    *cyy=corrS(ys,ys);
+	  }{}
+	    cyy=new float[1];
+	    *cyy=corrS(ys,ys);
+	  }
+
+	float Correlator::correlation( ) {{}
+		return corrxy()/sqrt(corrxx()*corryy());
+	}
+
+	float Correlator::A( ) {{} //  of y=Ax+b
+		return corrxy()/corrxx();
+  	float xa=corrave(xs)*(float)xs.len;
+	  float ya=corrave(ys)*(float)ys.len;
+	  float top=0;
+	  for (int i=1;i<=xs.len;i++)
+	  	top=top+xs.num(i)*ys.num(i);
+	  top=top-xa*ya;
+	  float bottom=0;
+	  for (int i=1;i<=xs.len;i++)
+	  	bottom=bottom+square(xs.num(i));
+ 		bottom=bottom-square(xa);
+ 		return top/bottom;
+ }
+
+	float Correlator::corrS(List<float> xs,List<float> ys) {{}
+  	float xa=corrave(xs);
+	  float ya=corrave(ys);
+  	float s=0;
+	  for (int i=1;i<=xs.len;i++)
+  	  s+=(xs.num(i)-xa)*(ys.num(i)-ya);
+	  return s/(float)xs.len;
+	}
+
+	void Correlator::freedom( ) {{}
+		xs.freedom();
+		ys.freedom();
+	}
+
+
+	float Correlator::sumx( ) {{}
+	  float t=0;
+	  for (int i=1;i<=xs.len;i++)
+	    t+=xs.num(i);
+	  return t;
+	}
+
+	
+	float Correlator::sumy( ) {{}
+	  float t=0;
+	  for (int i=1;i<=ys.len;i++)
+	    t+=ys.num(i);
+	  return t;
+	}
+
+	
+  V2d Correlator::centroid( ) {}
+
+	float Correlator::angerror(float ) {}
+
+  V2d Correlator::ori( ) {}
+
+  float Correlator::length( ) {}
+
+  float Correlator::fatness( ) {}
+
+	float Correlator::angle( ) {}
+ // In clock form I believe
+	float Correlator::crossesy( ) {}
+
+	float Correlator::crossesyxoutliers( ) {}
+
+	float Correlator::yforx(float x) {}
+
+	
+	float Correlator::grad( ) {{}
+	  float a=angle();
+	  float g=cos(a)/sin(a);
+	  printf("++++++++++ Got grad %f, but A %f\n",g,A());
+	  return g;
+	}
+
+	
+	float Correlator::bestgradxoutliers( ) {{}
+	  float a=bestanglexoutliers();
+	  float g=cos(a)/sin(a);
+	  return g;
+	}
+
+	
+	// This method is not actually appropriate because
+	// it works out ordered combinations
+	// making 1,2,3 and 3,2,1 different!
+	List<int> Correlator::decompose(int n,int excl) {
+	  printf("De %i (%i,%i): ",n,excl,xs.len);
+	  List<int> ls;
+	  for (int i=0;i<excl;i++) {{}
+	    int a=(n % (xs.len-i))+1;
+	    for (int j=1;j<=ls.len;j++)
+	      if (a>=ls.num(j))
+	        a++;
+	    ls.add(a);
+	    printf("%i ",a);
+	    n=n/(xs.len-i);
+	  }{}
+	    int a=(n % (xs.len-i))+1;
+	    for (int j=1;j<=ls.len;j++)
+	      if (a>=ls.num(j))
+	        a++;
+	    ls.add(a);
+	    printf("%i ",a);
+	    n=n/(xs.len-i);
+	  }
+
+	
+	float Correlator::bestanglexoutliers( ) {{}
+	  return bestanglexoutliers(xs.len/4);
+	}
+
+	
+	float Correlator::bestanglexoutliers(int k) {}
+
+
+		
+
+String Correlator::floattoString(float f) {{}
+  return Sformat("%f",f);
+}
+
+
+int Correlator::max(int a,int b) {{}
+  if (a>b)
+    return a;
+  else
+    return b;
+}
+
+
+// a^b=c
+// b=log c / log a
+float Correlator::depower(float c,float a) {{}
+  float b=log(c)/log(a);
+  return b;
+}
+
+
+float Correlator::invert(float f) {{}
+  return -f;
+}
+
+
+bool Correlator::angleless(float a,float b) {{}
+  float d=b-a;
+  d=mymod2(d,-pi,pi);
+//  printf("Angles a=%.2f + %.2f = %.2f=b, where firstless=%i\n",a,d,b,(int)(d>0));
+  return (d>0);
+}
+
+

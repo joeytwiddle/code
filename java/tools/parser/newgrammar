@@ -1,0 +1,47 @@
+./j
+cp grmGrm.java grmGrm.java.bak
+
+rm -f grmGrm.java.2
+
+echo "Translating grammar to java"
+jparse grm grm.grm java $@ > grmGrm.java
+if [ "$1" = "debug" ]; then
+  edit grmGrm.java
+fi
+
+echo "Compiling new grammar"
+./j
+
+echo "Translating using itself"
+jparse grm grm.grm java $@ > grmGrm.java
+if [ "$1" = "debug" ]; then
+  edit grmGrm.java
+fi
+
+echo "Are they different?"
+cmp grmGrm.java.bak grmGrm.java
+jfc grmGrm.java.bak grmGrm.java
+
+echo "Compiling own version"
+./j
+
+echo "Creating child version to compare"
+jparse grm grm.grm java $@ > grmGrm.java.2
+if [ "$1" = "debug" ]; then
+  edit grmGrm.java
+fi
+
+echo "Comparing first and second generations"
+if cmp grmGrm.java grmGrm.java.2 > /dev/null 2>&1 ; then
+  echo "New grammar installed OK"
+else
+  echo "Bad grammar!  Resetting to original"
+  # Display the problem
+  jfc grmGrm.java grmGrm.java.2
+  # Reset to original
+  echo "Bad grammar!  Resetting to original"
+  cp grmGrm.java.bak grmGrm.java
+  ./j
+fi
+
+# echo "stringhash=$# stringunderscore=$_"

@@ -1,0 +1,2098 @@
+/*
+ * @(#)jstring.java	1.114 99/04/22
+ *
+ * Copyright 1994-1999 by Sun Microsystems, Inc.,
+ * 901 San Antonio Road, Palo Alto, California, 94303, U.S.A.
+ * All rights reserved.
+ * 
+ * This software is the confidential and proprietary information
+ * of Sun Microsystems, Inc. ("Confidential Information").  You
+ * shall not disclose such Confidential Information and shall use
+ * it only in accordance with the terms of the license agreement
+ * you entered into with Sun.
+ */
+
+package jlib;
+
+import java.lang.String;
+import java.util.Hashtable;
+import java.util.Locale;
+import java.util.Comparator;
+import sun.io.ByteToCharConverter;
+import sun.io.CharToByteConverter;
+import java.io.CharConversionException;
+import java.io.UnsupportedEncodingException;
+import java.io.ObjectStreamClass;
+import java.io.ObjectStreamField;
+import java.lang.ref.SoftReference;
+
+/**
+ * The <code>jstring</code> class represents character jstrings. All
+ * jstring literals in Java programs, such as <code>"abc"</code>, are
+ * implemented as instances of this class. 
+ * <p>
+ * jstrings are constant; their values cannot be changed after they
+ * are created. jstring buffers support mutable jstrings.
+ * Because jstring objects are immutable they can be shared. For example:
+ * <p><blockquote><pre>
+ *     jstring str = "abc";
+ * </pre></blockquote><p>
+ * is equivalent to:
+ * <p><blockquote><pre>
+ *     char data[] = {'a', 'b', 'c'};
+ *     jstring str = new jstring(data);
+ * </pre></blockquote><p>
+ * Here are some more examples of how jstrings can be used:
+ * <p><blockquote><pre>
+ *     System.out.println("abc");
+ *     jstring cde = "cde";
+ *     System.out.println("abc" + cde);
+ *     jstring c = "abc".subjstring(2,3);
+ *     jstring d = cde.subjstring(1, 2);
+ * </pre></blockquote>
+ * <p>
+ * The class <code>jstring</code> includes methods for examining
+ * individual characters of the sequence, for comparing jstrings, for
+ * searching jstrings, for extracting subjstrings, and for creating a
+ * copy of a jstring with all characters translated to uppercase or to
+ * lowercase. 
+ * <p>
+ * The Java language provides special support for the jstring
+ * concatentation operator (&nbsp;+&nbsp;), and for conversion of 
+ * other objects to jstrings. jstring concatenation is implemented
+ * through the <code>StringBuffer</code> class and its
+ * <code>append</code> method.
+ * jstring conversions are implemented through the method
+ * <code>tojstring</code>, defined by <code>Object</code> and
+ * inherited by all classes in Java. For additional information on 
+ * jstring concatenation and conversion, see Gosling, Joy, and Steele,
+ * <i>The Java Language Specification</i>. 
+ *
+ * @author  Lee Boynton
+ * @author  Arthur van Hoff
+ * @version 1.114, 04/22/99
+ * @see     java.lang.Object#tojstring()
+ * @see     java.lang.StringBuffer
+ * @see     java.lang.StringBuffer#append(boolean)
+ * @see     java.lang.StringBuffer#append(char)
+ * @see     java.lang.StringBuffer#append(char[])
+ * @see     java.lang.StringBuffer#append(char[], int, int)
+ * @see     java.lang.StringBuffer#append(double)
+ * @see     java.lang.StringBuffer#append(float)
+ * @see     java.lang.StringBuffer#append(int)
+ * @see     java.lang.StringBuffer#append(long)
+ * @see     java.lang.StringBuffer#append(java.lang.Object)
+ * @see     java.lang.StringBuffer#append(java.lang.jstring)
+ * @since   JDK1.0
+ */
+public final
+class jstring implements java.io.Serializable, Comparable {
+    /** The value is used for character storage. */
+    private char value[];
+
+    /** The offset is the first index of the storage that is used. */
+    private int offset;
+
+    /** The count is the number of characters in the jstring. */
+    private int count;
+
+    /** The cached converter for each thread. 
+     *  Note: These are declared null to minimize the classes
+     *  that jstring must depend on during initialization
+     */
+    private static ThreadLocal btcConverter = null;
+    private static ThreadLocal ctbConverter = null;
+
+    /**
+     * Returns a <code>ByteToCharConverter</code> that uses the specified
+     * encoding. For efficiency a cache is maintained that holds the last
+     * used converter.
+     *
+     * @param  enc The name of a character encoding
+     * @return     ByteToCharConverter for the specified encoding.
+     * @exception  UnsupportedEncodingException
+     *             If the named encoding is not supported
+     * @since      JDK1.2
+     */
+    private static ByteToCharConverter getBTCConverter(String encoding)
+                                  throws UnsupportedEncodingException {
+        ByteToCharConverter btc = null;
+        if (btcConverter == null)
+            btcConverter = new ThreadLocal();
+        SoftReference ref = (SoftReference)(btcConverter.get());
+        if (ref==null || (btc = (ByteToCharConverter)ref.get())==null ||
+                          !encoding.equals(btc.getCharacterEncoding())) {
+            btc = ByteToCharConverter.getConverter(encoding);
+            btcConverter.set(new SoftReference(btc));
+        } else {
+            btc.reset();
+        }
+        return btc;
+    }
+
+    /**
+     * Returns a <code>CharToByteConverter</code> that uses the specified
+     * encoding. For efficiency a cache is maintained that holds the last
+     * used converter.
+     *
+     * @param  enc The name of a character encoding
+     * @return     CharToByteConverter for the specified encoding.
+     * @exception  UnsupportedEncodingException
+     *             If the named encoding is not supported
+     * @since      JDK1.2
+     */
+    private static CharToByteConverter getCTBConverter(String encoding)
+                                  throws UnsupportedEncodingException {
+        CharToByteConverter ctb = null;
+        if (ctbConverter == null)
+            ctbConverter = new ThreadLocal();
+        SoftReference ref = (SoftReference)(ctbConverter.get());
+        if (ref==null || (ctb = (CharToByteConverter)ref.get())==null ||
+                          !encoding.equals(ctb.getCharacterEncoding())) {
+            ctb = CharToByteConverter.getConverter(encoding);
+            ctbConverter.set(new SoftReference(ctb));
+        } else {
+            ctb.reset();
+        }
+        return ctb;
+    }
+
+    /** use serialVersionUID from JDK 1.0.2 for interoperability */
+    private static final long serialVersionUID = -6849794470754667710L;
+
+    /**
+     * Class jstring is special cased within the Serialization Stream Protocol.
+     *
+     * A jstring instance is written intially into an ObjectOutputStream in the
+     * following format:
+     * <pre>
+     *      <code>TC_STRING</code> (utf jstring)
+     * </pre>
+     * The jstring is written by method <code>DataOutput.writeUTF</code>.
+     * A new handle is generated to  refer to all future references to the
+     * jstring instance within the stream.
+     */
+    private static final ObjectStreamField[] serialPersistentFields = 
+	ObjectStreamClass.NO_FIELDS;
+
+    /**
+     * Initializes a newly created <code>jstring</code> object so that it
+     * represents an empty character sequence. 
+     */
+    public jstring() {
+	value = new char[0];
+    }
+
+    /**
+     * Initializes a newly created <code>jstring</code> object so that it
+     * represents the same sequence of characters as the argument; in other 
+     * words, the newly created jstring is a copy of the argument jstring.
+     *
+     * @param   value   a <code>jstring</code>.
+     */
+    public jstring(jstring value) {
+	count = value.length();
+	this.value = new char[count];
+	value.getChars(0, count, this.value, 0);
+    }
+
+    /**
+     * Allocates a new <code>jstring</code> so that it represents the
+     * sequence of characters currently contained in the character array 
+     * argument. The contents of the character array are copied; subsequent 
+     * modification of the character array does not affect the newly created 
+     * jstring.
+     *
+     * @param  value   the initial value of the jstring.
+     * @throws NullPointerException if <code>value</code> is <code>null</code>.
+     */
+    public jstring(char value[]) {
+	this.count = value.length;
+	this.value = new char[count];
+	System.arraycopy(value, 0, this.value, 0, count);
+    }
+
+    /**
+     * Allocates a new <code>jstring</code> that contains characters from
+     * a subarray of the character array argument. The <code>offset</code> 
+     * argument is the index of the first character of the subarray and 
+     * the <code>count</code> argument specifies the length of the 
+     * subarray. The contents of the subarray are copied; subsequent 
+     * modification of the character array does not affect the newly 
+     * created jstring.
+     *
+     * @param      value    array that is the source of characters.
+     * @param      offset   the initial offset.
+     * @param      count    the length.
+     * @exception  IndexOutOfBoundsException  if the <code>offset</code>
+     *               and <code>count</code> arguments index characters outside
+     *               the bounds of the <code>value</code> array.
+     * @exception NullPointerException if <code>value</code> is 
+     *               <code>null</code>.
+     */
+    public jstring(char value[], int offset, int count) {
+	if (offset < 0) {
+	    throw new StringIndexOutOfBoundsException(offset);
+	}
+	if (count < 0) {
+	    throw new StringIndexOutOfBoundsException(count);
+	}
+	// Note: offset or count might be near -1>>>1.
+	if (offset > value.length - count) {
+	    throw new StringIndexOutOfBoundsException(offset + count);
+	}
+
+	this.value = new char[count];
+	this.count = count;
+	System.arraycopy(value, offset, this.value, 0, count);
+    }
+
+    /**
+     * Allocates a new <code>jstring</code> constructed from a subarray
+     * of an array of 8-bit integer values. 
+     * <p>
+     * The <code>offset</code> argument is the index of the first byte 
+     * of the subarray, and the <code>count</code> argument specifies the 
+     * length of the subarray. 
+     * <p>
+     * Each <code>byte</code> in the subarray is converted to a 
+     * <code>char</code> as specified in the method above. 
+     *
+     * @deprecated This method does not properly convert bytes into characters.
+     * As of JDK&nbsp;1.1, the preferred way to do this is via the
+     * <code>jstring</code> constructors that take a character-encoding name or
+     * that use the platform's default encoding.
+     *
+     * @param      ascii     the bytes to be converted to characters.
+     * @param      hibyte    the top 8 bits of each 16-bit Unicode character.
+     * @param      offset    the initial offset.
+     * @param      count     the length.
+     * @exception  IndexOutOfBoundsException  if the <code>offset</code>
+     *               or <code>count</code> argument is invalid.
+     * @exception NullPointerException if <code>ascii</code> is 
+     *                       <code>null</code>.
+     * @see        java.lang.jstring#jstring(byte[], int)
+     * @see        java.lang.jstring#jstring(byte[], int, int, java.lang.jstring)
+     * @see        java.lang.jstring#jstring(byte[], int, int)
+     * @see        java.lang.jstring#jstring(byte[], java.lang.jstring)
+     * @see        java.lang.jstring#jstring(byte[])
+     */
+    public jstring(byte ascii[], int hibyte, int offset, int count) {
+	if (offset < 0) {
+	    throw new StringIndexOutOfBoundsException(offset);
+	}
+	if (count < 0) {
+	    throw new StringIndexOutOfBoundsException(count);
+	}
+	// Note: offset or count might be near -1>>>1.
+	if (offset > ascii.length - count) {
+	    throw new StringIndexOutOfBoundsException(offset + count);
+	}
+
+	char value[] = new char[count];
+	this.count = count;
+	this.value = value;
+
+	if (hibyte == 0) {
+	    for (int i = count ; i-- > 0 ;) {
+		value[i] = (char) (ascii[i + offset] & 0xff);
+	    }
+	} else {
+	    hibyte <<= 8;
+	    for (int i = count ; i-- > 0 ;) {
+		value[i] = (char) (hibyte | (ascii[i + offset] & 0xff));
+	    }
+	}
+    }
+
+    /**
+     * Allocates a new <code>jstring</code> containing characters
+     * constructed from an array of 8-bit integer values. Each character 
+     * <i>c</i>in the resulting jstring is constructed from the
+     * corresponding component <i>b</i> in the byte array such that:
+     * <p><blockquote><pre>
+     *     <b><i>c</i></b> == (char)(((hibyte &amp; 0xff) &lt;&lt; 8)
+     *                         | (<b><i>b</i></b> &amp; 0xff))
+     * </pre></blockquote>
+     *
+     * @deprecated This method does not properly convert bytes into characters.
+     * As of JDK&nbsp;1.1, the preferred way to do this is via the
+     * <code>jstring</code> constructors that take a character-encoding name or
+     * that use the platform's default encoding.
+     *
+     * @param      ascii    the bytes to be converted to characters.
+     * @param      hibyte   the top 8 bits of each 16-bit Unicode character.
+     * @exception NullPointerException If <code>ascii</code> is 
+     *                      <code>null</code>.
+     * @see        java.lang.jstring#jstring(byte[], int, int, java.lang.jstring)
+     * @see        java.lang.jstring#jstring(byte[], int, int)
+     * @see        java.lang.jstring#jstring(byte[], java.lang.jstring)
+     * @see        java.lang.jstring#jstring(byte[])
+     */
+    public jstring(byte ascii[], int hibyte) {
+	this(ascii, hibyte, 0, ascii.length);
+    }
+
+   /**
+     * Construct a new <code>jstring</code> by converting the specified
+     * subarray of bytes using the specified character-encoding converter.  The
+     * length of the new <code>jstring</code> is a function of the encoding, and
+     * hence may not be equal to the length of the subarray.
+     *
+     * @param  bytes   The bytes to be converted into characters
+     * @param  offset  Index of the first byte to convert
+     * @param  length  Number of bytes to convert
+     * @param  btc     A ByteToCharConverter
+     * @exception  IndexOutOfBoundsException  if the <code>offset</code>
+     *               and <code>count</code> arguments index characters outside
+     *               the bounds of the <code>value</code> array.
+     */
+    private jstring(byte bytes[], int offset, int length,
+		   ByteToCharConverter btc)
+    {
+        if (length < 0)
+            throw new StringIndexOutOfBoundsException("length must be >= 0");
+        if (offset < 0)
+            throw new StringIndexOutOfBoundsException("offset must be >= 0");
+        if (offset > bytes.length-length)
+            throw new StringIndexOutOfBoundsException(offset + count);
+
+	int estCount = btc.getMaxCharsPerByte() * length;
+	value = new char[estCount];
+
+        try {
+	    count = btc.convert(bytes, offset, offset+length,
+				value, 0, estCount);
+	    count += btc.flush(value, btc.nextCharIndex(), estCount);
+	} catch (CharConversionException x) {
+	    count = btc.nextCharIndex();
+	}
+
+	if (count < estCount) {
+	    // A multi-byte format was used:  Trim the char array.
+	    char[] trimValue = new char[count];
+	    System.arraycopy(value, 0, trimValue, 0, count);
+	    value = trimValue;
+	}
+    }
+
+
+    /**
+     * Construct a new <code>jstring</code> by converting the specified
+     * subarray of bytes using the specified character encoding.  The length of
+     * the new <code>jstring</code> is a function of the encoding, and hence may
+     * not be equal to the length of the subarray.
+     *
+     * @param  bytes   The bytes to be converted into characters
+     * @param  offset  Index of the first byte to convert
+     * @param  length  Number of bytes to convert
+     * @param  enc     The name of a character encoding
+     *
+     * @exception  UnsupportedEncodingException
+     *             If the named encoding is not supported
+     *             IndexOutOfBoundsException  if the <code>offset</code>
+     *               and <code>count</code> arguments index characters outside
+     *               the bounds of the <code>value</code> array.
+     * @since      JDK1.1
+     */
+    public jstring(byte bytes[], int offset, int length, String enc)
+	throws UnsupportedEncodingException
+    {
+	this(bytes, offset, length, getBTCConverter(enc));
+    }
+
+    /**
+     * Construct a new <code>jstring</code> by converting the specified array
+     * of bytes using the specified character encoding.  The length of the new
+     * <code>jstring</code> is a function of the encoding, and hence may not be
+     * equal to the length of the byte array.
+     *
+     * @param  bytes   The bytes to be converted into characters
+     * @param  enc     A character-encoding name
+     *
+     * @exception  UnsupportedEncodingException
+     *             If the named encoding is not supported
+     * @since      JDK1.1
+     */
+    public jstring(byte bytes[], String enc)
+	throws UnsupportedEncodingException
+    {
+	this(bytes, 0, bytes.length, enc);
+    }
+
+    /**
+     * Construct a new <code>jstring</code> by converting the specified
+     * subarray of bytes using the platform's default character encoding.  The
+     * length of the new <code>jstring</code> is a function of the encoding, and
+     * hence may not be equal to the length of the subarray.
+     *
+     * @param  bytes   The bytes to be converted into characters
+     * @param  offset  Index of the first byte to convert
+     * @param  length  Number of bytes to convert
+     * @since  JDK1.1
+     */
+    public jstring(byte bytes[], int offset, int length) {
+	this(bytes, offset, length, ByteToCharConverter.getDefault());
+    }
+
+    /**
+     * Construct a new <code>jstring</code> by converting the specified array
+     * of bytes using the platform's default character encoding.  The length of
+     * the new <code>jstring</code> is a function of the encoding, and hence may
+     * not be equal to the length of the byte array.
+     *
+     * @param  bytes   The bytes to be converted into characters
+     * @since  JDK1.1
+     */
+    public jstring(byte bytes[]) {
+	this(bytes, 0, bytes.length, ByteToCharConverter.getDefault());
+    }
+
+    /**
+     * Allocates a new jstring that contains the sequence of characters
+     * currently contained in the jstring buffer argument. The contents of
+     * the jstring buffer are copied; subsequent modification of the jstring
+     * buffer does not affect the newly created jstring.
+     *
+     * @param   buffer   a <code>StringBuffer</code>.
+     * @throws NullPointerException If <code>buffer</code> is 
+     * <code>null</code>.
+     */
+    public jstring (StringBuffer buffer) {
+	synchronized(buffer) { 
+	    buffer.setShared();
+	    this.value = buffer.getValue();
+	    this.offset = 0;
+	    this.count = buffer.length();
+	}
+    }
+    
+    // Private constructor which shares value array for speed.
+    private jstring(int offset, int count, char value[]) {
+	this.value = value;
+	this.offset = offset;
+	this.count = count;
+    }
+
+    /**
+     * Returns the length of this jstring.
+     * The length is equal to the number of 16-bit
+     * Unicode characters in the jstring.
+     *
+     * @return  the length of the sequence of characters represented by this
+     *          object.
+     */
+    public int length() {
+	return count;
+    }
+
+    /**
+     * Returns the character at the specified index. An index ranges
+     * from <code>0</code> to <code>length() - 1</code>. The first character 
+     * of the sequence is at index <code>0</code>, the next at index 
+     * <code>1</code>, and so on, as for array indexing.
+     *
+     * @param      index   the index of the character.
+     * @return     the character at the specified index of this jstring.
+     *             The first character is at index <code>0</code>.
+     * @exception  IndexOutOfBoundsException  if the <code>index</code> 
+     *             argument is negative or not less than the length of this 
+     *             jstring.
+     */
+    public char charAt(int index) {
+	if ((index < 0) || (index >= count)) {
+	    throw new StringIndexOutOfBoundsException(index);
+	}
+	return value[index + offset];
+    }
+
+    /**
+     * Copies characters from this jstring into the destination character
+     * array. 
+     * <p>
+     * The first character to be copied is at index <code>srcBegin</code>; 
+     * the last character to be copied is at index <code>srcEnd-1</code> 
+     * (thus the total number of characters to be copied is 
+     * <code>srcEnd-srcBegin</code>). The characters are copied into the 
+     * subarray of <code>dst</code> starting at index <code>dstBegin</code> 
+     * and ending at index: 
+     * <p><blockquote><pre>
+     *     dstbegin + (srcEnd-srcBegin) - 1
+     * </pre></blockquote>
+     *
+     * @param      srcBegin   index of the first character in the jstring
+     *                        to copy.
+     * @param      srcEnd     index after the last character in the jstring
+     *                        to copy.
+     * @param      dst        the destination array.
+     * @param      dstBegin   the start offset in the destination array.
+     * @exception IndexOutOfBoundsException If any of the following 
+     *            is true:
+     *            <ul><li><code>srcBegin</code> is negative.
+     *            <li><code>srcBegin</code> is greater than <code>srcEnd</code>
+     *            <li><code>srcEnd</code> is greater than the length of this 
+     *                jstring
+     *            <li><code>dstBegin</code> is negative
+     *            <li><code>dstBegin+(srcEnd-srcBegin)</code> is larger than 
+     *                <code>dst.length</code></ul>
+     * @exception NullPointerException if <code>dst</code> is <code>null</code>
+     */
+    public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) {
+	if (srcBegin < 0) {
+	    throw new StringIndexOutOfBoundsException(srcBegin);
+	} 
+	if (srcEnd > count) {
+	    throw new StringIndexOutOfBoundsException(srcEnd);
+	} 
+	if (srcBegin > srcEnd) {
+	    throw new StringIndexOutOfBoundsException(srcEnd - srcBegin);
+	}
+	System.arraycopy(value, offset + srcBegin, dst, dstBegin, 
+			 srcEnd - srcBegin);
+    }
+
+    /**
+     * Copies characters from this jstring into the destination byte
+     * array. Each byte receives the 8 low-order bits of the 
+     * corresponding character. The eight high-order bits of each character 
+     * are not copied and do not participate in the transfer in any way.
+     * <p>
+     * The first character to be copied is at index <code>srcBegin</code>; 
+     * the last character to be copied is at index <code>srcEnd-1</code>. 
+     * The total number of characters to be copied is 
+     * <code>srcEnd-srcBegin</code>. The characters, converted to bytes, 
+     * are copied into the subarray of <code>dst</code> starting at index 
+     * <code>dstBegin</code> and ending at index: 
+     * <p><blockquote><pre>
+     *     dstbegin + (srcEnd-srcBegin) - 1
+     * </pre></blockquote>
+     *
+     * @deprecated This method does not properly convert characters into bytes.
+     * As of JDK&nbsp;1.1, the preferred way to do this is via the
+     * <code>getBytes(jstring enc)</code> method, which takes a
+     * character-encoding name, or the <code>getBytes()</code> method, which
+     * uses the platform's default encoding.
+     *
+     * @param      srcBegin   index of the first character in the jstring
+     *                        to copy.
+     * @param      srcEnd     index after the last character in the jstring
+     *                        to copy.
+     * @param      dst        the destination array.
+     * @param      dstBegin   the start offset in the destination array.
+     * @exception IndexOutOfBoundsException if any of the following 
+     *            is true:
+     *           <ul<li><code>srcBegin</code> is negative 
+     *           <li><code>srcBegin</code> is greater than <code>srcEnd</code> 
+     *           <li><code>srcEnd</code> is greater than the length of this 
+     *            jstring
+     *           <li><code>dstBegin</code> is negative 
+     *           <li><code>dstBegin+(srcEnd-srcBegin)</code> is larger than 
+     *            <code>dst.length</code> 
+     * @exception NullPointerException if <code>dst</code> is <code>null</code>
+     */
+    public void getBytes(int srcBegin, int srcEnd, byte dst[], int dstBegin) {
+	if (srcBegin < 0) {
+	    throw new StringIndexOutOfBoundsException(srcBegin);
+	} 
+	if (srcEnd > count) {
+	    throw new StringIndexOutOfBoundsException(srcEnd);
+	} 
+	if (srcBegin > srcEnd) {
+	    throw new StringIndexOutOfBoundsException(srcEnd - srcBegin);
+	}
+ 	int j = dstBegin;
+ 	int n = offset + srcEnd;
+ 	int i = offset + srcBegin;
+	char[] val = value;   /* avoid getfield opcode */
+
+ 	while (i < n) {
+ 	    dst[j++] = (byte)val[i++];
+ 	}
+    }
+
+    /**
+     * Apply the specified character-encoding converter to this jstring,
+     * storing the resulting bytes into a new byte array.
+     *
+     * @param  ctb  A CharToByteConverter
+     * @return      The resultant byte array
+     */
+    private byte[] getBytes(CharToByteConverter ctb) {
+	ctb.reset();
+	int estLength = ctb.getMaxBytesPerChar() * count;
+	byte[] result = new byte[estLength];
+	int length = 0;
+	try { 
+	    length += ctb.convertAny(value, offset, (offset + count),
+				     result, 0, estLength);
+	    length += ctb.flushAny(result, ctb.nextByteIndex(), estLength);
+	} catch (CharConversionException e) {
+	    throw new InternalError("Converter malfunction: " +
+				    ctb.getClass().getName());
+	}
+
+
+	if (length < estLength) {
+	    // A short format was used:  Trim the byte array.
+	    byte[] trimResult = new byte[length];
+	    System.arraycopy(result, 0, trimResult, 0, length);
+	    return trimResult;
+	}
+	else {
+	    return result;
+	}
+    }
+
+    /**
+     * Convert this <code>jstring</code> into bytes according to the specified
+     * character encoding, storing the result into a new byte array.
+     *
+     * @param  enc  A character-encoding name
+     * @return      The resultant byte array
+     *
+     * @exception  UnsupportedEncodingException
+     *             If the named encoding is not supported
+     * @since      JDK1.1
+     */
+    public byte[] getBytes(jstring enc)
+	throws UnsupportedEncodingException
+    {
+	return getBytes(getCTBConverter(enc));
+    }
+
+    /**
+     * Convert this <code>jstring</code> into bytes according to the platform's
+     * default character encoding, storing the result into a new byte array.
+     *
+     * @return  the resultant byte array.
+     * @since   JDK1.1
+     */
+    public byte[] getBytes() {
+	return getBytes(CharToByteConverter.getDefault());
+    }
+
+    /**
+     * Compares this jstring to the specified object.
+     * The result is <code>true</code> if and only if the argument is not 
+     * <code>null</code> and is a <code>jstring</code> object that represents
+     * the same sequence of characters as this object. 
+     *
+     * @param   anObject   the object to compare this <code>jstring</code>
+     *                     against.
+     * @return  <code>true</code> if the <code>jstring </code>are equal;
+     *          <code>false</code> otherwise.
+     * @see     java.lang.jstring#compareTo(java.lang.jstring)
+     * @see     java.lang.jstring#equalsIgnoreCase(java.lang.jstring)
+     */
+    public boolean equals(Object anObject) {
+	if (this == anObject) {
+	    return true;
+	}
+	if ((anObject != null) && (anObject instanceof jstring)) {
+	    jstring anotherjstring = (jstring)anObject;
+	    int n = count;
+	    if (n == anotherjstring.count) {
+		char v1[] = value;
+		char v2[] = anotherjstring.value;
+		int i = offset;
+		int j = anotherjstring.offset;
+		while (n-- != 0) {
+		    if (v1[i++] != v2[j++]) {
+			return false;
+		    }
+		}
+		return true;
+	    }
+	}
+	return false;
+    }
+
+    /**
+     * Compares this <code>jstring</code> to another <code>jstring</code>,
+     * ignoring case considerations.  Two jstrings are considered equal
+     * ignoring case if they are of the same length, and corresponding
+     * characters in the two jstrings are equal ignoring case.
+     * <p>
+     * Two characters <code>c1</code> and <code>c2</code> are considered
+     * the same, ignoring case if at least one of the following is true:
+     * <ul><li>The two characters are the same (as compared by the 
+     * <code>==</code> operator).
+     * <li>Applying the method {@link java.lang.Character#toUppercase(char)} 
+     * to each character produces the same result.
+     * <li>Applying the method {@link java.lang.Character#toLowercase(char) 
+     * to each character produces the same result.</ul>
+     *
+     * @param   anotherjstring   the <code>jstring</code> to compare this
+     *                          <code>jstring</code> against.
+     * @return  <code>true</code> if the argument is not <code>null</code> 
+     *          and the <code>jstring</code>s are equal,
+     *          ignoring case; <code>false</code> otherwise.
+     * @see     #equals(Object)
+     * @see     java.lang.Character#toLowerCase(char)
+     * @see java.lang.Character#toUpperCase(char)
+     */
+    public boolean equalsIgnoreCase(jstring anotherjstring) {
+	return (anotherjstring != null) && (anotherjstring.count == count) &&
+		regionMatches(true, 0, anotherjstring, 0, count);
+    }
+
+    /**
+     * Compares two jstrings lexicographically.
+     * The comparison is based on the Unicode value of each character in
+     * the jstrings. The character sequence represented by this
+     * <code>jstring</code> object is compared lexicographically to the
+     * character sequence represented by the argument jstring. The result is
+     * a negative integer if this <code>jstring</code> object
+     * lexicographically precedes the argument jstring. The result is a
+     * positive integer if this <code>jstring</code> object lexicographically
+     * follows the argument jstring. The result is zero if the jstrings
+     * are equal; <code>compareTo</code> returns <code>0</code> exactly when 
+     * the {@link #equals(Object)} method would return <code>true</code>. 
+     * <p>
+     * This is the definition of lexicographic ordering. If two jstrings are
+     * different, then either they have different characters at some index 
+     * that is a valid index for both jstrings, or their lengths are different,
+     * or both. If they have different characters at one or more index 
+     * positions, let <i>k</i> be the smallest such index; then the jstring
+     * whose character at position <i>k</i> has the smaller value, as 
+     * determined by using the < operator, lexicographically precedes the 
+     * other jstring. In this case, <code>compareTo</code> returns the
+     * difference of the two character values at position <code>k</code> in 
+     * the two jstring -- that is, the value:
+     * <blockquote><pre>
+     * this.charAt(k)-anotherjstring.charAt(k)
+     * </pre></blockquote>
+     * If there is no index position at which they differ, then the shorter 
+     * jstring lexicographically precedes the longer jstring. In this case,
+     * <code>compareTo</code> returns the difference of the lengths of the 
+     * jstrings -- that is, the value:
+     * <blockquote><pre>
+     * this.length()-anotherjstring.length()
+     * </pre></blockquote>
+     *
+     * @param   anotherjstring   the <code>jstring</code> to be compared.
+     * @return  the value <code>0</code> if the argument jstring is equal to
+     *          this jstring; a value less than <code>0</code> if this jstring
+     *          is lexicographically less than the jstring argument; and a
+     *          value greater than <code>0</code> if this jstring is
+     *          lexicographically greater than the jstring argument.
+     * @exception java.lang.NullPointerException if <code>anotherjstring</code>
+     *          is <code>null</code>.
+     */
+    public int compareTo(jstring anotherjstring) {
+	int len1 = count;
+	int len2 = anotherjstring.count;
+	int n = Math.min(len1, len2);
+	char v1[] = value;
+	char v2[] = anotherjstring.value;
+	int i = offset;
+	int j = anotherjstring.offset;
+
+	while (n-- != 0) {
+	    char c1 = v1[i++];
+	    char c2 = v2[j++];
+	    if (c1 != c2) {
+		return c1 - c2;
+	    }
+	}
+	return len1 - len2;
+    }
+
+    /**
+     * Compares this jstring to another Object.  If the Object is a jstring,
+     * this function behaves like <code>compareTo(jstring)</code>.  Otherwise,
+     * it throws a <code>ClassCastException</code> (as jstrings are comparable
+     * only to other jstrings).
+     *
+     * @param   o the <code>Object</code> to be compared.
+     * @return  the value <code>0</code> if the argument is a jstring
+     *		lexicographically equal to this jstring; a value less than
+     *		<code>0</code> if the argument is a jstring lexicographically
+     *		greater than this jstring; and a value greater than
+     *		<code>0</code> if the argument is a jstring lexicographically
+     *		less than this jstring.
+     * @exception <code>ClassCastException</code> if the argument is not a
+     *		  <code>jstring</code>.
+     * @see     java.lang.Comparable
+     * @since   JDK1.2
+     */
+    public int compareTo(Object o) {
+	return compareTo((jstring)o);
+    }
+
+    /**
+     * Returns a Comparator that orders <code>jstring</code> objects as by
+     * <code>compareToIgnoreCase</code>.
+     * <p>
+     * Note that this Comparator does <em>not</em> take locale into account,
+     * and will result in an unsatisfactory ordering for certain locales.
+     * The java.text package provides <em>Collators</em> to allow
+     * locale-sensitive ordering.
+     *
+     * @return  Comparator for case insensitive comparison of jstrings
+     * @see     java.text.Collator#compare(jstring, jstring)
+     * @since   JDK1.2
+     */
+    public static final Comparator CASE_INSENSITIVE_ORDER
+                                         = new CaseInsensitiveComparator();
+    private static class CaseInsensitiveComparator
+                         implements Comparator, java.io.Serializable {
+        public int compare(Object o1, Object o2) {
+            jstring s1 = (jstring) o1;
+            jstring s2 = (jstring) o2;
+            int n1=s1.length(), n2=s2.length();
+            for (int i1=0, i2=0; i1<n1 && i2<n2; i1++, i2++) {
+                char c1 = s1.charAt(i1);
+                char c2 = s2.charAt(i2);
+                if (c1 != c2) {
+                    c1 = Character.toUpperCase(c1);
+                    c2 = Character.toUpperCase(c2);
+                    if (c1 != c2) {
+                        c1 = Character.toLowerCase(c1);
+                        c2 = Character.toLowerCase(c2);
+                        if (c1 != c2)
+                            return c1 - c2;
+                    }
+                }
+            }
+            return n1 - n2;
+        }
+    }
+
+    /**
+     * Compares two jstrings lexicographically, ignoring case considerations.
+     * This method returns an integer whose sign is that of
+     * <code>this.toUpperCase().toLowerCase().compareTo(
+     * str.toUpperCase().toLowerCase())</code>.
+     * <p>
+     * Note that this method does <em>not</em> take locale into account,
+     * and will result in an unsatisfactory ordering for certain locales.
+     * The java.text package provides <em>collators</em> to allow
+     * locale-sensitive ordering.
+     *
+     * @param   str   the <code>jstring</code> to be compared.
+     * @return  a negative integer, zero, or a positive integer as the
+     *		the specified jstring is greater than, equal to, or less
+     *		than this jstring, ignoring case considerations.
+     * @see     java.text.Collator#compare(jstring, jstring)
+     * @since   JDK1.2
+     */
+    public int compareToIgnoreCase(jstring str) {
+        return CASE_INSENSITIVE_ORDER.compare(this, str);
+    }
+
+    /**
+     * Tests if two jstring regions are equal.
+     * <p>
+     * A subjstring of this <tt>jstring</tt> object is compared to a subjstring
+     * of the argument other. The result is true if these subjstrings
+     * represent identical character sequences. The subjstring of this
+     * <tt>jstring</tt> object to be compared begins at index <tt>toffset</tt>
+     * and has length <tt>len</tt>. The subjstring of other to be compared
+     * begins at index <tt>ooffset</tt> and has length <tt>len</tt>. The 
+     * result is <tt>false</tt> if and only if at least one of the following 
+     * is true: 
+     * <ul><li><tt>toffset</tt> is negative. 
+     * <li><tt>ooffset</tt> is negative. 
+     * <li><tt>toffset+len</tt> is greater than the length of this 
+     * <tt>jstring</tt> object.
+     * <li><tt>ooffset+len</tt> is greater than the length of the other 
+     * argument. 
+     * <li>There is some nonnegative integer <i>k</i> less than <tt>len</tt> 
+     * such that: 
+     * <tt>this.charAt(toffset+<i>k</i>)&nbsp;!=&nbsp;other.charAt(ooffset+<i>k</i>)</tt> 
+     * </u>
+     *
+     * @param   toffset   the starting offset of the subregion in this jstring.
+     * @param   other     the jstring argument.
+     * @param   ooffset   the starting offset of the subregion in the jstring
+     *                    argument.
+     * @param   len       the number of characters to compare.
+     * @return  <code>true</code> if the specified subregion of this jstring
+     *          exactly matches the specified subregion of the jstring argument;
+     *          <code>false</code> otherwise.
+     * @exception java.lang.NullPointerException if <tt>other</tt> is 
+     *          <tt>null</tt>.
+     */
+    public boolean regionMatches(int toffset, jstring other, int ooffset,
+				 int len) {
+	char ta[] = value;
+	int to = offset + toffset;
+	int tlim = offset + count;
+	char pa[] = other.value;
+	int po = other.offset + ooffset;
+	// Note: toffset, ooffset, or len might be near -1>>>1.
+	if ((ooffset < 0) || (toffset < 0) || (toffset > (long)count - len)
+	    || (ooffset > (long)other.count - len)) {
+	    return false;
+	}
+	while (len-- > 0) {
+	    if (ta[to++] != pa[po++]) {
+	        return false;
+	    }
+	}
+	return true;
+    }
+
+    /**
+     * Tests if two jstring regions are equal.
+     * <p>
+     * A subjstring of this <tt>jstring</tt> object is compared to a subjstring
+     * of the argument <tt>other</tt>. The result is <tt>true</tt> if these 
+     * subjstrings represent character sequences that are the same, ignoring
+     * case if and only if <tt>ignoreCase</tt> is true. The subjstring of
+     * this <tt>jstring</tt> object to be compared begins at index
+     * <tt>toffset</tt> and has length <tt>len</tt>. The subjstring of
+     * <tt>other</tt> to be compared begins at index <tt>ooffset</tt> and 
+     * has length <tt>len</tt>. The result is <tt>false</tt> if and only if 
+     * at least one of the following is true: 
+     * <ul><li><tt>toffset</tt> is negative. 
+     * <li><tt>ooffset</tt> is negative. 
+     * <li><tt>toffset+len</tt> is greater than the length of this 
+     * <tt>jstring</tt> object.
+     * <li><tt>ooffset+len</tt> is greater than the length of the other 
+     * argument. 
+     * <li>There is some nonnegative integer <i>k</i> less than <tt>len</tt> 
+     * such that:
+     * <blockquote><pre>
+     * this.charAt(toffset+k) != other.charAt(ooffset+k) 
+     * </pre></blockquote>
+     * <li><tt>ignoreCase</tt> is <tt>true</tt> and there is some nonnegative 
+     * integer <i>k</i> less than <tt>len</tt> such that: 
+     * <blockquote><pre>
+     * Character.toLowerCase(this.charAt(toffset+k)) !=
+               Character.toLowerCase(other.charAt(ooffset+k))
+     * </pre></blockquote> 
+     * and: 
+     * <blockquote><pre>
+     * Character.toUpperCase(this.charAt(toffset+k)) !=
+     *         Character.toUpperCase(other.charAt(ooffset+k))
+     * </pre></blockquote>
+     * </ul>
+     *
+     * @param   ignoreCase   if <code>true</code>, ignore case when comparing
+     *                       characters.
+     * @param   toffset      the starting offset of the subregion in this
+     *                       jstring.
+     * @param   other        the jstring argument.
+     * @param   ooffset      the starting offset of the subregion in the jstring
+     *                       argument.
+     * @param   len          the number of characters to compare.
+     * @return  <code>true</code> if the specified subregion of this jstring
+     *          matches the specified subregion of the jstring argument;
+     *          <code>false</code> otherwise. Whether the matching is exact
+     *          or case insensitive depends on the <code>ignoreCase</code>
+     *          argument.
+     */
+    public boolean regionMatches(boolean ignoreCase,
+				         int toffset,
+			               jstring other, int ooffset, int len) {
+	char ta[] = value;
+	int to = offset + toffset;
+	int tlim = offset + count;
+	char pa[] = other.value;
+	int po = other.offset + ooffset;
+	// Note: toffset, ooffset, or len might be near -1>>>1.
+	if ((ooffset < 0) || (toffset < 0) || (toffset > (long)count - len) ||
+            (ooffset > (long)other.count - len)) {
+	    return false;
+	}
+	while (len-- > 0) {
+	    char c1 = ta[to++];
+	    char c2 = pa[po++];
+	    if (c1 == c2)
+		continue;
+	    if (ignoreCase) {
+		// If characters don't match but case may be ignored,
+		// try converting both characters to uppercase.
+		// If the results match, then the comparison scan should
+		// continue. 
+		char u1 = Character.toUpperCase(c1);
+		char u2 = Character.toUpperCase(c2);
+		if (u1 == u2)
+		    continue;
+		// Unfortunately, conversion to uppercase does not work properly
+		// for the Georgian alphabet, which has strange rules about case
+		// conversion.  So we need to make one last check before 
+		// exiting.
+		if (Character.toLowerCase(u1) == Character.toLowerCase(u2))
+		    continue;
+	    }
+	    return false;
+	}
+	return true;
+    }
+
+    /**
+     * Tests if this jstring starts with the specified prefix beginning
+     * a specified index.
+     *
+     * @param   prefix    the prefix.
+     * @param   toffset   where to begin looking in the jstring.
+     * @return  <code>true</code> if the character sequence represented by the
+     *          argument is a prefix of the subjstring of this object starting
+     *          at index <code>toffset</code>; <code>false</code> otherwise. 
+     *          The result is <code>false</code> if <code>toffset</code> is 
+     *          negative or greater than the length of this 
+     *          <code>jstring</code> object; otherwise the result is the same
+     *          as the result of the expression
+     *          <pre>
+     *          this.subjstring(toffset).startsWith(prefix)
+     *          </pre>
+     * @exception java.lang.NullPointerException if <code>prefix</code> is 
+     *          <code>null</code>.
+     */
+    public boolean startsWith(jstring prefix, int toffset) {
+	char ta[] = value;
+	int to = offset + toffset;
+	int tlim = offset + count;
+	char pa[] = prefix.value;
+	int po = prefix.offset;
+	int pc = prefix.count;
+	// Note: toffset might be near -1>>>1.
+	if ((toffset < 0) || (toffset > count - pc)) {
+	    return false;
+	}
+	while (--pc >= 0) {
+	    if (ta[to++] != pa[po++]) {
+	        return false;
+	    }
+	}
+	return true;
+    }
+
+    /**
+     * Tests if this jstring starts with the specified prefix.
+     *
+     * @param   prefix   the prefix.
+     * @return  <code>true</code> if the character sequence represented by the
+     *          argument is a prefix of the character sequence represented by
+     *          this jstring; <code>false</code> otherwise.
+     *          Note also that <code>true</code> will be returned if the 
+     *          argument is an empty jstring or is equal to this
+     *          <code>jstring</code> object as determined by the
+     *          {@link #equals(Object)} method.
+     * @exception java.lang.NullPointerException if <code>prefix</code> is 
+     *          <code>null</code>.
+     * @since   JDK1. 0
+     */
+    public boolean startsWith(jstring prefix) {
+	return startsWith(prefix, 0);
+    }
+
+    /**
+     * Tests if this jstring ends with the specified suffix.
+     *
+     * @param   suffix   the suffix.
+     * @return  <code>true</code> if the character sequence represented by the
+     *          argument is a suffix of the character sequence represented by
+     *          this object; <code>false</code> otherwise. Note that the 
+     *          result will be <code>true</code> if the argument is the 
+     *          empty jstring or is equal to this <code>jstring</code> object
+     *          as determined by the {@link #equals(Object)} method.
+     * @exception java.lang.NullPointerException if <code>suffix</code> is 
+     *          <code>null</code>.
+     */
+    public boolean endsWith(jstring suffix) {
+	return startsWith(suffix, count - suffix.count);
+    }
+
+    /**
+     * Returns a hashcode for this jstring. The hashcode for a
+     * <code>jstring</code> object is computed as
+     * <blockquote><pre> 
+     * s[0]*31^(n-1) + s[1]*31^(n-2) + ... + s[n-1]
+     * </pre></blockquote>
+     * using <code>int</code> arithmetic, where <code>s[i]</code> is the 
+     * <i>i</i>th character of the jstring, <code>n</code> is the length of
+     * the jstring, and <code>^</code> indicates exponentiation.
+     * (The hash value of the empty jstring is zero.)
+     *
+     * @return  a hash code value for this object. 
+     */
+    public int hashCode() {
+	int h = 0;
+	int off = offset;
+	char val[] = value;
+	int len = count;
+
+	for (int i = 0; i < len; i++)
+	    h = 31*h + val[off++];
+
+	return h;
+    }
+
+    /**
+     * Returns the index within this jstring of the first occurrence of the
+     * specified character. If a character with value <code>ch</code> occurs 
+     * in the character sequence represented by this <code>jstring</code>
+     * object, then the index of the first such occurrence is returned -- 
+     * that is, the smallest value <i>k</i> such that: 
+     * <blockquote><pre>
+     * this.charAt(<i>k</i>) == ch
+     * </pre></blockquote>
+     * is <code>true</code>. If no such character occurs in this jstring,
+     * then <code>-1</code> is returned.
+     *
+     * @param   ch   a character.
+     * @return  the index of the first occurrence of the character in the
+     *          character sequence represented by this object, or
+     *          <code>-1</code> if the character does not occur.
+     */
+    public int indexOf(int ch) {
+	return indexOf(ch, 0);
+    }
+
+    /**
+     * Returns the index within this jstring of the first occurrence of the
+     * specified character, starting the search at the specified index.
+     * <p>
+     * If a character with value <code>ch</code> occurs in the character 
+     * sequence represented by this <code>jstring</code> object at an index
+     * no smaller than <code>fromIndex</code>, then the index of the first
+     * such occurrence is returned--that is, the smallest value <i>k</i> 
+     * such that: 
+     * <blockquote><pre>
+     * (this.charAt(<i>k</i>) == ch) && (<i>k</i> >= fromIndex)
+     * </pre></blockquote>
+     * is true. If no such character occurs in this jstring at or after
+     * position <code>fromIndex</code>, then <code>-1</code> is returned.
+     * <p>
+     * There is no restriction on the value of <code>fromIndex</code>. If it 
+     * is negative, it has the same effect as if it were zero: this entire 
+     * jstring may be searched. If it is greater than the length of this
+     * jstring, it has the same effect as if it were equal to the length of
+     * this jstring: <code>-1</code> is returned.
+     *
+     * @param   ch          a character.
+     * @param   fromIndex   the index to start the search from.
+     * @return  the index of the first occurrence of the character in the
+     *          character sequence represented by this object that is greater
+     *          than or equal to <code>fromIndex</code>, or <code>-1</code>
+     *          if the character does not occur.
+     */
+    public int indexOf(int ch, int fromIndex) {
+	int max = offset + count;
+	char v[] = value;
+
+	if (fromIndex < 0) {
+	    fromIndex = 0;
+	} else if (fromIndex >= count) {
+	    // Note: fromIndex might be near -1>>>1.
+	    return -1;
+	}
+	for (int i = offset + fromIndex ; i < max ; i++) {
+	    if (v[i] == ch) {
+		return i - offset;
+	    }
+	}
+	return -1;
+    }
+
+    /**
+     * Returns the index within this jstring of the last occurrence of the
+     * specified character. That is, the index returned is the largest 
+     * value <i>k</i> such that:
+     * <blockquote><pre>
+     * this.charAt(<i>k</i>) == ch
+     * </pre></blockquote>
+     * is true. 
+     * The jstring is searched backwards starting at the last character.
+     *
+     * @param   ch   a character.
+     * @return  the index of the last occurrence of the character in the
+     *          character sequence represented by this object, or
+     *          <code>-1</code> if the character does not occur.
+     */
+    public int lastIndexOf(int ch) {
+	return lastIndexOf(ch, count - 1);
+    }
+
+    /**
+     * Returns the index within this jstring of the last occurrence of the
+     * specified character, searching backward starting at the specified 
+     * index. That is, the index returned is the largest value <i>k</i> 
+     * such that:
+     * <blockquote><pre>
+     * this.charAt(k) == ch) && (k <= fromIndex)
+     * </pre></blockquote>
+     * is true.
+     *
+     * @param   ch          a character.
+     * @param   fromIndex   the index to start the search from. There is no 
+     *          restriction on the value of <code>fromIndex</code>. If it is 
+     *          greater than or equal to the length of this jstring, it has
+     *          the same effect as if it were equal to one less than the 
+     *          length of this jstring: this entire jstring may be searched.
+     *          If it is negative, it has the same effect as if it were -1: 
+     *          -1 is returned.
+     * @return  the index of the last occurrence of the character in the
+     *          character sequence represented by this object that is less
+     *          than or equal to <code>fromIndex</code>, or <code>-1</code>
+     *          if the character does not occur before that point.
+     */
+    public int lastIndexOf(int ch, int fromIndex) {
+	int min = offset;
+	char v[] = value;
+	
+	for (int i = offset + ((fromIndex >= count) ? count - 1 : fromIndex) ; i >= min ; i--) {
+	    if (v[i] == ch) {
+		return i - offset;
+	    }
+	}
+	return -1;
+    }
+
+    /**
+     * Returns the index within this jstring of the first occurrence of the
+     * specified subjstring. The integer returned is the smallest value
+     * <i>k</i> such that:
+     * <blockquote><pre>
+     * this.startsWith(str, <i>k</i>)
+     * </pre></blockquote>
+     * is <code>true</code>.
+     *
+     * @param   str   any jstring.
+     * @return  if the jstring argument occurs as a subjstring within this
+     *          object, then the index of the first character of the first
+     *          such subjstring is returned; if it does not occur as a
+     *          subjstring, <code>-1</code> is returned.
+     * @exception java.lang.NullPointerException if <code>str</code> is 
+     *          <code>null</code>.
+     */
+    public int indexOf(jstring str) {
+	return indexOf(str, 0);
+    }
+
+    /**
+     * Returns the index within this jstring of the first occurrence of the
+     * specified subjstring, starting at the specified index. The integer
+     * returned is the smallest value <i>k</i> such that:
+     * <blockquote><pre>
+     * this.startsWith(str, <i>k</i>) && (<i>k</i> >= fromIndex)
+     * </pre></blockquote>
+     * is <code>true</code>.
+     * <p>
+     * There is no restriction on the value of <code>fromIndex</code>. If 
+     * it is negative, it has the same effect as if it were zero: this entire 
+     * jstring may be searched. If it is greater than the length of this
+     * jstring, it has the same effect as if it were equal to the length of
+     * this jstring: <code>-1</code> is returned.
+     *
+     * @param   str         the subjstring to search for.
+     * @param   fromIndex   the index to start the search from.
+     * @return  If the jstring argument occurs as a subjstring within this
+     *          object at a starting index no smaller than
+     *          <code>fromIndex</code>, then the index of the first character
+     *          of the first such subjstring is returned. If it does not occur
+     *          as a subjstring starting at <code>fromIndex</code> or beyond,
+     *          <code>-1</code> is returned.
+     * @exception java.lang.NullPointerException if <code>str</code> is 
+     *          <code>null</code>
+     */
+    public int indexOf(jstring str, int fromIndex) {
+    	char v1[] = value;
+    	char v2[] = str.value;
+    	int max = offset + (count - str.count);
+	if (fromIndex >= count) {
+	    if (count == 0 && fromIndex == 0 && str.count == 0) {
+		/* There is an empty jstring at index 0 in an empty jstring. */
+		return 0;
+	    }
+	    /* Note: fromIndex might be near -1>>>1 */
+	    return -1;
+	}
+    	if (fromIndex < 0) {
+    	    fromIndex = 0;
+    	}
+	if (str.count == 0) {
+	    return fromIndex;
+	}
+
+    	int strOffset = str.offset;
+        char first  = v2[strOffset];
+        int i = offset + fromIndex;
+
+    startSearchForFirstChar:
+        while (true) {
+
+	    /* Look for first character. */
+	    while (i <= max && v1[i] != first) {
+		i++;
+	    }
+	    if (i > max) {
+		return -1;
+	    }
+
+	    /* Found first character, now look at the rest of v2 */
+	    int j = i + 1;
+	    int end = j + str.count - 1;
+	    int k = strOffset + 1;
+	    while (j < end) {
+		if (v1[j++] != v2[k++]) {
+		    i++;
+		    /* Look for str's first char again. */
+		    continue startSearchForFirstChar;
+		}
+	    }
+	    return i - offset;	/* Found whole jstring. */
+        }
+    }
+
+    /**
+     * Returns the index within this jstring of the rightmost occurrence
+     * of the specified subjstring.  The rightmost empty jstring "" is
+     * considered to occur at the index value <code>this.length()</code>. 
+     * The returned index is the largest value <i>k</i> such that 
+     * <blockquote><pre>
+     * this.startsWith(str, k)
+     * </pre></blockquote>
+     * is true.
+     *
+     * @param   str   the subjstring to search for.
+     * @return  if the jstring argument occurs one or more times as a subjstring
+     *          within this object, then the index of the first character of
+     *          the last such subjstring is returned. If it does not occur as
+     *          a subjstring, <code>-1</code> is returned.
+     * @exception java.lang.NullPointerException  if <code>str</code> is 
+     *          <code>null</code>.
+     */
+    public int lastIndexOf(jstring str) {
+	return lastIndexOf(str, count);
+    }
+
+    /**
+     * Returns the index within this jstring of the last occurrence of
+     * the specified subjstring.
+     * The returned index indicates the start of the subjstring, and it
+     * must be equal to or less than <code>fromIndex</code>. That is, 
+     * the index returned is the largest value <i>k</i> such that:
+     * <blockquote><pre>
+     * this.startsWith(str, k) && (k <= fromIndex)
+     * </pre></blockquote>
+     * 
+     * @param   str         the subjstring to search for.
+     * @param   fromIndex   the index to start the search from. There is no 
+     *          restriction on the value of fromIndex. If it is greater than 
+     *          the length of this jstring, it has the same effect as if it
+     *          were equal to the length of this jstring: this entire jstring
+     *          may be searched. If it is negative, it has the same effect 
+     *          as if it were -1: -1 is returned.
+     * @return  If the jstring argument occurs one or more times as a subjstring
+     *          within this object at a starting index no greater than
+     *          <code>fromIndex</code>, then the index of the first character of
+     *          the last such subjstring is returned. If it does not occur as a
+     *          subjstring starting at <code>fromIndex</code> or earlier,
+     *          <code>-1</code> is returned.
+     * @exception java.lang.NullPointerException if <code>str</code> is 
+     *          <code>null</code>.
+     */
+    public int lastIndexOf(jstring str, int fromIndex) {
+        /* 
+	 * Check arguments; return immediately where possible. For
+	 * consistency, don't check for null str.
+	 */
+        int rightIndex = count - str.count;
+	if (fromIndex < 0) {
+	    return -1;
+	}
+	if (fromIndex > rightIndex) {
+	    fromIndex = rightIndex;
+	}
+	/* Empty jstring always matches. */
+	if (str.count == 0) {
+	    return fromIndex;
+	}
+
+	char v1[] = value;
+	char v2[] = str.value;
+	int strLastIndex = str.offset + str.count - 1;
+	char strLastChar = v2[strLastIndex];
+	int min = offset + str.count - 1;
+	int i = min + fromIndex;
+
+    startSearchForLastChar:
+	while (true) {
+
+	    /* Look for the last character */
+	    while (i >= min && v1[i] != strLastChar) {
+		i--;
+	    }
+	    if (i < min) {
+		return -1;
+	    }
+
+	    /* Found last character, now look at the rest of v2. */
+	    int j = i - 1;
+	    int start = j - (str.count - 1);
+	    int k = strLastIndex - 1;
+
+	    while (j > start) {
+	        if (v1[j--] != v2[k--]) {
+		    i--;
+		    /* Look for str's last char again. */
+		    continue startSearchForLastChar;
+		}
+	    }
+
+	    return start - offset + 1;    /* Found whole jstring. */
+	}
+    }
+
+    /**
+     * Returns a new jstring that is a subjstring of this jstring. The
+     * subjstring begins with the character at the specified index and
+     * extends to the end of this jstring. <p>
+     * Examples:
+     * <blockquote><pre>
+     * "unhappy".subjstring(2) returns "happy"
+     * "Harbison".subjstring(3) returns "bison"
+     * "emptiness".subjstring(9) returns "" (an empty jstring)
+     * </pre></blockquote>
+     *
+     * @param      beginIndex   the beginning index, inclusive.
+     * @return     the specified subjstring.
+     * @exception  IndexOutOfBoundsException  if 
+     *             <code>beginIndex</code> is negative or larger than the 
+     *             length of this <code>jstring</code> object.
+     */
+    public jstring subjstring(int beginIndex) {
+	return subjstring(beginIndex, count);
+    }
+
+    /**
+     * Returns a new jstring that is a subjstring of this jstring. The
+     * subjstring begins at the specified <code>beginIndex</code> and
+     * extends to the character at index <code>endIndex - 1</code>. 
+     * Thus the length of the subjstring is <code>endIndex-beginIndex</code>.
+     * <p>
+     * Examples:
+     * <blockquote><pre>
+     * "hamburger".subjstring(4, 8) returns "urge"
+     * "smiles".subjstring(1, 5) returns "mile"
+     * </pre></blockquote>
+     *
+     * @param      beginIndex   the beginning index, inclusive.
+     * @param      endIndex     the ending index, exclusive.
+     * @return     the specified subjstring.
+     * @exception  IndexOutOfBoundsException  if the
+     *             <code>beginIndex</code> is negative, or 
+     *             <code>endIndex</code> is larger than the length of 
+     *             this <code>jstring</code> object, or
+     *             <code>beginIndex</code> is larger than 
+     *             <code>endIndex</code>.
+     */
+    public jstring subjstring(int beginIndex, int endIndex) {
+	if (beginIndex < 0) {
+	    throw new StringIndexOutOfBoundsException(beginIndex);
+	} 
+	if (endIndex > count) {
+	    throw new StringIndexOutOfBoundsException(endIndex);
+	}
+	if (beginIndex > endIndex) {
+	    throw new StringIndexOutOfBoundsException(endIndex - beginIndex);
+	}
+	return ((beginIndex == 0) && (endIndex == count)) ? this :
+	    new jstring(offset + beginIndex, endIndex - beginIndex, value);
+    }
+
+    /**
+     * Concatenates the specified jstring to the end of this jstring.
+     * <p>
+     * If the length of the argument jstring is <code>0</code>, then this
+     * <code>jstring</code> object is returned. Otherwise, a new
+     * <code>jstring</code> object is created, representing a character
+     * sequence that is the concatenation of the character sequence 
+     * represented by this <code>jstring</code> object and the character
+     * sequence represented by the argument jstring.<p>
+     * Examples:
+     * <blockquote><pre>
+     * "cares".concat("s") returns "caress"
+     * "to".concat("get").concat("her") returns "together"
+     * </pre></blockquote>
+     *
+     * @param   str   the <code>jstring</code> that is concatenated to the end
+     *                of this <code>jstring</code>.
+     * @return  a jstring that represents the concatenation of this object's
+     *          characters followed by the jstring argument's characters.
+     * @exception java.lang.NullPointerException if <code>str</code> is 
+     *          <code>null</code>.
+     */
+    public jstring concat(jstring str) {
+	int otherLen = str.length();
+	if (otherLen == 0) {
+	    return this;
+	}
+	char buf[] = new char[count + otherLen];
+	getChars(0, count, buf, 0);
+	str.getChars(0, otherLen, buf, count);
+	return new jstring(0, count + otherLen, buf);
+    }
+
+    /**
+     * Returns a new jstring resulting from replacing all occurrences of
+     * <code>oldChar</code> in this jstring with <code>newChar</code>.
+     * <p>
+     * If the character <code>oldChar</code> does not occur in the 
+     * character sequence represented by this <code>jstring</code> object,
+     * then a reference to this <code>jstring</code> object is returned.
+     * Otherwise, a new <code>jstring</code> object is created that
+     * represents a character sequence identical to the character sequence 
+     * represented by this <code>jstring</code> object, except that every
+     * occurrence of <code>oldChar</code> is replaced by an occurrence
+     * of <code>newChar</code>. 
+     * <p>
+     * Examples:
+     * <blockquote><pre>
+     * "mesquite in your cellar".replace('e', 'o')
+     *         returns "mosquito in your collar"
+     * "the war of baronets".replace('r', 'y')
+     *         returns "the way of bayonets"
+     * "sparring with a purple porpoise".replace('p', 't')
+     *         returns "starring with a turtle tortoise"
+     * "JonL".replace('q', 'x') returns "JonL" (no change)
+     * </pre></blockquote>
+     *
+     * @param   oldChar   the old character.
+     * @param   newChar   the new character.
+     * @return  a jstring derived from this jstring by replacing every
+     *          occurrence of <code>oldChar</code> with <code>newChar</code>.
+     */
+    public jstring replace(char oldChar, char newChar) {
+	if (oldChar != newChar) {
+	    int len = count;
+	    int i = -1;
+	    char[] val = value; /* avoid getfield opcode */
+	    int off = offset;   /* avoid getfield opcode */
+
+	    while (++i < len) {
+		if (val[off + i] == oldChar) {
+		    break;
+		}
+	    }
+	    if (i < len) {
+		char buf[] = new char[len];
+		for (int j = 0 ; j < i ; j++) {
+		    buf[j] = val[off+j];
+		}
+		while (i < len) {
+		    char c = val[off + i];
+		    buf[i] = (c == oldChar) ? newChar : c;
+		    i++;
+		}
+		return new jstring(0, len, buf);
+	    }
+	}
+	return this;
+    }
+
+    /**
+     * Converts all of the characters in this <code>jstring</code> to lower
+     * case using the rules of the given <code>Locale</code>.
+     * Usually, the characters are converted by calling 
+     * <code>Character.toLowerCase</code>.  
+     * Exceptions to this rule are listed in
+     * the following table:
+     * <p> </p>
+     * <table border>
+     * <tr>
+     *   <th>Language Code of Locale</th>
+     *   <th>Upper Case</th>
+     *   <th>Lower Case</th>
+     *   <th>Description</th>
+     * </tr>
+     * <tr>
+     *   <td>tr (Turkish)</td>
+     *   <td>&#92;u0130</td>
+     *   <td>&#92;u0069</td>
+     *   <td>capital letter I with dot above -> small letter i</td>
+     * </tr>
+     * <tr>
+     *   <td>tr (Turkish)</td>
+     *   <td>&#92;u0049</td>
+     *   <td>&#92;u0131</td>
+     *   <td>capital letter I -> small letter dotless i </td>
+     * </tr>
+     * </table>
+     *
+     * @param locale use the case transformation rules for this locale
+     * @return the jstring, converted to lowercase.
+     * @see     java.lang.Character#toLowerCase(char)
+     * @see     java.lang.jstring#toUpperCase()
+     * @since   JDK1.1
+     */
+    public jstring toLowerCase(Locale locale) {
+        int     len        = count;
+	int     off        = offset;
+	char[]  val        = value;
+	int     firstUpper;
+	
+	/* Now check if there are any characters that need to be changed. */
+	scan: {
+	    for (firstUpper = 0 ; firstUpper < len ; firstUpper++) {
+		char c = value[off+firstUpper];
+		if (c != Character.toLowerCase(c)) break scan;
+	    }
+	    return this;
+	}
+
+        char[]  result = new char[count];
+
+	/* Just copy the first few lowerCase characters. */
+	System.arraycopy(val, off, result, 0, firstUpper);
+	
+        if (locale.getLanguage().equals("tr")) {
+            // special loop for Turkey
+	    for (int i = firstUpper; i < len; ++i) {
+                char ch = val[off+i];
+                if (ch == 'I') {
+                    result[i] = '\u0131'; // dotless small i
+                    continue;
+                }
+                if (ch == '\u0130') { 	  // dotted I
+                    result[i] = 'i';	  // dotted i
+                    continue;
+                }
+                result[i] = Character.toLowerCase(ch);
+            }
+        } else {
+            // normal, fast loop
+            for (int i = firstUpper; i < len; ++i) {
+                result[i] = Character.toLowerCase(val[off+i]);
+            }
+        }
+        return new jstring(result);
+    }
+
+    /**
+     * Converts all of the characters in this <code>jstring</code> to lower
+     * case using the rules of the default locale, which is returned
+     * by <code>Locale.getDefault</code>.
+     * <p>
+     * If no character in the jstring has a different lowercase version,
+     * based on calling the <code>toLowerCase</code> method defined by 
+     * <code>Character</code>, then the original jstring is returned.
+     * <p>
+     * Otherwise, this method creates a new <code>jstring</code> object that
+     * represents a character sequence identical in length to the character 
+     * sequence represented by this jstring object, with every character
+     * equal to the result of applying the method 
+     * <code>Character.toLowerCase</code> to the corresponding character of 
+     * this <code>jstring</code> object.
+     * <p>Examples:
+     * <blockquote><pre>
+     * "French Fries".toLowerCase() returns "french fries"
+     * "<img src="doc-files/capiota.gif"><img src="doc-files/capchi.gif"><img 
+     * src="doc-files/captheta.gif"><img src="doc-files/capupsil.gif"><img 
+     * src="doc-files/capsigma.gif">".toLowerCase() returns "<img 
+     * src="doc-files/iota.gif"><img src="doc-files/chi.gif"><img 
+     * src="doc-files/theta.gif"><img src="doc-files/upsilon.gif"><img 
+     * src="doc-files/sigma1.gif">"
+     * </pre></blockquote>
+     *
+     * @return  the jstring, converted to lowercase.
+     * @see     java.lang.Character#toLowerCase(char)
+     * @see     java.lang.jstring#toUpperCase()
+     */
+    public jstring toLowerCase() {
+        return toLowerCase(Locale.getDefault());
+    }
+
+    /**
+     * Converts all of the characters in this <code>jstring</code> to upper
+     * case using the rules of the given locale.
+     * Usually, the characters are converted by calling
+     * <code>Character.toUpperCase</code>.  
+     * Exceptions to this rule are listed in
+     * the following table:
+     * <p> </p>
+     * <table border>
+     * <tr>
+     *   <th>Language Code of Locale</th>
+     *   <th>Lower Case</th>
+     *   <th>Upper Case</th>
+     *   <th>Description</th>
+     * </tr>
+     * <tr>
+     *   <td>tr (Turkish)</td>
+     *   <td>&#92;u0069</td>
+     *   <td>&#92;u0130</td>
+     *   <td>small letter i -> capital letter I with dot above</td>
+     * </tr>
+     * <tr>
+     *   <td>tr (Turkish)</td>
+     *   <td>&#92;u0131</td>
+     *   <td>&#92;u0049</td>
+     *   <td>small letter dotless i -> capital letter I</td>
+     * </tr>
+     * <tr>
+     *   <td>(all)</td>
+     *   <td>&#92;u00df</td>
+     *   <td>&#92;u0053 &#92;u0053</td>
+     *   <td>small letter sharp s -> two letters: SS</td>
+     * </tr>
+     * </table>
+     * @param locale use the case transformation rules for this locale
+     * @return the jstring, converted to uppercase.
+     * @see     java.lang.Character#toUpperCase(char)
+     * @see     java.lang.jstring#toLowerCase(char)
+     * @since   JDK1.1
+     */
+    public jstring toUpperCase(Locale locale) {
+	int     len        = count;
+        int     off        = offset;
+	char[]  val        = value;
+	int     firstLower;
+	
+	/* Now check if there are any characters that need changing. */
+	scan: {
+	    for (firstLower = 0 ; firstLower < len ; firstLower++) {
+		char c = value[off+firstLower];
+		if (c != Character.toUpperCase(c)) break scan;
+	    }
+	    return this;
+	}
+	
+        char[]  result       = new char[len]; /* might grow! */
+	int     resultOffset = 0;  /* result grows, so i+resultOffset
+				    * is the write location in result */
+	
+	/* Just copy the first few upperCase characters. */
+	System.arraycopy(val, off, result, 0, firstLower);
+
+        if (locale.getLanguage().equals("tr")) {
+            // special loop for Turkey
+	    for (int i = firstLower; i < len; ++i) {
+                char ch = val[off+i];
+                if (ch == 'i') {
+		    result[i+resultOffset] = '\u0130';  // dotted cap i
+                    continue;
+                }
+                if (ch == '\u0131') {                   // dotless i
+                    result[i+resultOffset] = 'I';       // cap I
+                    continue;
+                }
+                if (ch == '\u00DF') {                   // sharp s
+		    /* Grow result. */
+		    char[] result2 = new char[result.length + 1];
+		    System.arraycopy(result, 0, result2, 0,
+				     i + 1 + resultOffset);
+                    result2[i+resultOffset] = 'S';
+		    resultOffset++;
+		    result2[i+resultOffset] = 'S';
+		    result = result2;
+                    continue;
+                }
+                result[i+resultOffset] = Character.toUpperCase(ch);
+            }
+        } else {
+            // normal, fast loop
+            for (int i = firstLower; i < len; ++i) {
+                char ch = val[off+i];
+                if (ch == '\u00DF') { // sharp s
+		    /* Grow result. */
+		    char[] result2 = new char[result.length + 1];
+		    System.arraycopy(result, 0, result2, 0,
+				     i + 1 + resultOffset);
+                    result2[i+resultOffset] = 'S';
+		    resultOffset++;
+		    result2[i+resultOffset] = 'S';
+		    result = result2;
+                    continue;
+                }
+                result[i+resultOffset] = Character.toUpperCase(ch);
+            }
+        }
+        return new jstring(result);
+    }
+    
+    /**
+     * Converts all of the characters in this <code>jstring</code> to upper
+     * case using the rules of the default locale, which is returned
+     * by <code>Locale.getDefault</code>.
+     *
+     * <p>
+     * If no character in this jstring has a different uppercase version,
+     * based on calling the <code>toUpperCase</code> method defined by 
+     * <code>Character</code>, then the original jstring is returned.
+     * <p>
+     * Otherwise, this method creates a new <code>jstring</code> object
+     * representing a character sequence identical in length to the 
+     * character sequence represented by this <code>jstring</code> object and
+     * with every character equal to the result of applying the method
+     * <code>Character.toUpperCase</code> to the corresponding character of 
+     * this <code>jstring</code> object. <p>
+     * Examples:
+     * <blockquote><pre>
+     * "Fahrvergnügen".toUpperCase() returns "FAHRVERGNÜGEN"
+     * "Visit Ljubinje!".toUpperCase() returns "VISIT LJUBINJE!"
+     * </pre></blockquote>
+     *
+     * @return  the jstring, converted to uppercase.
+     * @see     java.lang.Character#toUpperCase(char)
+     * @see     java.lang.jstring#toLowerCase()
+     */
+    public jstring toUpperCase() {
+        return toUpperCase(Locale.getDefault());
+    }
+
+    /**
+     * Removes white space from both ends of this jstring.
+     * <p>
+     * If this <code>jstring</code> object represents an empty character
+     * sequence, or the first and last characters of character sequence 
+     * represented by this <code>jstring</code> object both have codes
+     * greater than <code>'&#92;u0020'</code> (the space character), then a 
+     * reference to this <code>jstring</code> object is returned.
+     * <p>
+     * Otherwise, if there is no character with a code greater than 
+     * <code>'&#92;u0020'</code> in the jstring, then a new
+     * <code>jstring</code> object representing an empty jstring is created
+     * and returned.
+     * <p>
+     * Otherwise, let <i>k</i> be the index of the first character in the 
+     * jstring whose code is greater than <code>'&#92;u0020'</code>, and let
+     * <i>m</i> be the index of the last character in the jstring whose code
+     * is greater than <code>'&#92;u0020'</code>. A new <code>jstring</code>
+     * object is created, representing the subjstring of this jstring that
+     * begins with the character at index <i>k</i> and ends with the 
+     * character at index <i>m</i>-that is, the result of 
+     * <code>this.subjstring(<i>k</i>,&nbsp;<i>m</i>+1)</code>.
+     * <p>
+     * This method may be used to trim 
+     * {@link Character#isSpace(char) whitespace} from the beginning and end 
+     * of a jstring; in fact, it trims all ASCII control characters as well.
+     *
+     * @return  this jstring, with white space removed from the front and end.
+     */
+    public jstring trim() {
+	int len = count;
+	int st = 0;
+	int off = offset;      /* avoid getfield opcode */
+	char[] val = value;    /* avoid getfield opcode */
+
+	while ((st < len) && (val[off + st] <= ' ')) {
+	    st++;
+	}
+	while ((st < len) && (val[off + len - 1] <= ' ')) {
+	    len--;
+	}
+	return ((st > 0) || (len < count)) ? subjstring(st, len) : this;
+    }
+
+    /**
+     * This object (which is already a jstring!) is itself returned.
+     *
+     * @return  the jstring itself.
+     */
+    public jstring tojstring() {
+	return this;
+    }
+
+    /**
+     * Converts this jstring to a new character array.
+     *
+     * @return  a newly allocated character array whose length is the length
+     *          of this jstring and whose contents are initialized to contain
+     *          the character sequence represented by this jstring.
+     */
+    public char[] toCharArray() {
+	char result[] = new char[count];
+	getChars(0, count, result, 0);
+	return result;
+    }
+
+    /**
+     * Returns the jstring representation of the <code>Object</code> argument.
+     *
+     * @param   obj   an <code>Object</code>.
+     * @return  if the argument is <code>null</code>, then a jstring equal to
+     *          <code>"null"</code>; otherwise, the value of
+     *          <code>obj.tojstring()</code> is returned.
+     * @see     java.lang.Object#tojstring()
+     */
+    public static jstring valueOf(Object obj) {
+	return (obj == null) ? "null" : obj.tojstring();
+    }
+
+    /**
+     * Returns the jstring representation of the <code>char</code> array
+     * argument. The contents of the character array are copied; subsequent 
+     * modification of the character array does not affect the newly 
+     * created jstring.
+     *
+     * @param   data   a <code>char</code> array.
+     * @return  a newly allocated jstring representing the same sequence of
+     *          characters contained in the character array argument.
+     */
+    public static jstring valueOf(char data[]) {
+	return new jstring(data);
+    }
+
+    /**
+     * Returns the jstring representation of a specific subarray of the
+     * <code>char</code> array argument. 
+     * <p>
+     * The <code>offset</code> argument is the index of the first 
+     * character of the subarray. The <code>count</code> argument 
+     * specifies the length of the subarray. The contents of the subarray 
+     * are copied; subsequent modification of the character array does not 
+     * affect the newly created jstring.
+     *
+     * @param   data     the character array.
+     * @param   offset   the initial offset into the value of the
+     *                  <code>jstring</code>.
+     * @param   count    the length of the value of the <code>jstring</code>.
+     * @return  a newly allocated jstring representing the sequence of
+     *          characters contained in the subarray of the character array
+     *          argument.
+     * @exception NullPointerException if <code>data</code> is 
+     *          <code>null</code>.
+     * @exception IndexOutOfBoundsException if <code>offset</code> is 
+     *          negative, or <code>count</code> is negative, or 
+     *          <code>offset+count</code> is larger than 
+     *          <code>data.length</code>.
+     */
+    public static jstring valueOf(char data[], int offset, int count) {
+	return new jstring(data, offset, count);
+    }
+    
+    /**
+     * Returns a jstring that is equivalent to the specified character array.
+     * It creates a new array and copies the characters into it.
+     *
+     * @param   data     the character array.
+     * @param   offset   initial offset of the subarray.
+     * @param   count    length of the subarray.
+     * @return  a <code>jstring</code> that contains the characters of the
+     *          specified subarray of the character array.
+     */
+    public static jstring copyValueOf(char data[], int offset, int count) {
+	// All public jstring constructors now copy the data.
+	return new jstring(data, offset, count);
+    }
+
+    /**
+     * Returns a jstring that is equivalent to the specified character array.
+     * It creates a new array and copies the characters into it.
+     *
+     * @param   data   the character array.
+     * @return  a <code>jstring</code> that contains the characters of the
+     *          character array.
+     */
+    public static jstring copyValueOf(char data[]) {
+	return copyValueOf(data, 0, data.length);
+    }
+
+    /**
+     * Returns the jstring representation of the <code>boolean</code> argument.
+     *
+     * @param   b   a <code>boolean</code>.
+     * @return  if the argument is <code>true</code>, a jstring equal to
+     *          <code>"true"</code> is returned; otherwise, a jstring equal to
+     *          <code>"false"</code> is returned.
+     */
+    public static jstring valueOf(boolean b) {
+	return b ? "true" : "false";
+    }
+
+    /**
+     * Returns the jstring representation of the <code>char</code>
+     * argument. 
+     *
+     * @param   c   a <code>char</code>.
+     * @return  a newly allocated jstring of length <code>1</code> containing
+     *          as its single character the argument <code>c</code>.
+     */
+    public static jstring valueOf(char c) {
+	char data[] = {c};
+	return new jstring(0, 1, data);
+    }
+
+    /**
+     * Returns the jstring representation of the <code>int</code> argument.
+     * <p>
+     * The representation is exactly the one returned by the 
+     * <code>Integer.tojstring</code> method of one argument.
+     *
+     * @param   i   an <code>int</code>.
+     * @return  a newly allocated jstring containing a jstring representation of
+     *          the <code>int</code> argument.
+     * @see     java.lang.Integer#tojstring(int, int)
+     */
+    public static jstring valueOf(int i) {
+        return Integer.tojstring(i, 10);
+    }
+
+    /**
+     * Returns the jstring representation of the <code>long</code> argument.
+     * <p>
+     * The representation is exactly the one returned by the 
+     * <code>Long.tojstring</code> method of one argument.
+     *
+     * @param   l   a <code>long</code>.
+     * @return  a newly allocated jstring containing a jstring representation of
+     *          the <code>long</code> argument.
+     * @see     java.lang.Long#tojstring(long)
+     */
+    public static jstring valueOf(long l) {
+        return Long.tojstring(l, 10);
+    }
+
+    /**
+     * Returns the jstring representation of the <code>float</code> argument.
+     * <p>
+     * The representation is exactly the one returned by the 
+     * <code>Float.tojstring</code> method of one argument.
+     *
+     * @param   f   a <code>float</code>.
+     * @return  a newly allocated jstring containing a jstring representation of
+     *          the <code>float</code> argument.
+     * @see     java.lang.Float#tojstring(float)
+     */
+    public static jstring valueOf(float f) {
+	return Float.tojstring(f);
+    }
+
+    /**
+     * Returns the jstring representation of the <code>double</code> argument.
+     * <p>
+     * The representation is exactly the one returned by the 
+     * <code>Double.tojstring</code> method of one argument.
+     *
+     * @param   d   a <code>double</code>.
+     * @return  a newly allocated jstring containing a jstring representation of
+     *          the <code>double</code> argument.
+     * @see     java.lang.Double#tojstring(double)
+     */
+    public static jstring valueOf(double d) {
+	return Double.tojstring(d);
+    }
+
+    /**
+     * Returns a canonical representation for the jstring object.
+     * <p>
+     * A pool of jstrings, initially empty, is maintained privately by the
+     * class <code>jstring</code>.
+     * <p>
+     * When the intern method is invoked, if the pool already contains a 
+     * jstring equal to this <code>jstring</code> object as determined by
+     * the {@link #equals(Object)} method, then the jstring from the pool is
+     * returned. Otherwise, this <code>jstring</code> object is added to the
+     * pool and a reference to this <code>jstring</code> object is returned.
+     * <p>
+     * It follows that for any two jstrings <code>s</code> and <code>t</code>,
+     * <code>s.intern()&nbsp;==&nbsp;t.intern()</code> is <code>true</code> 
+     * if and only if <code>s.equals(t)</code> is <code>true</code>.
+     * <p>
+     * All literal jstrings and jstring-valued constant expressions are
+     * interned. jstring literals are defined in §3.10.5 of the
+     * <a href="http://java.sun.com/docs/books/jls/html/">Java Language 
+     * Specification</a>
+     *
+     * @return  a jstring that has the same contents as this jstring, but is
+     *          guaranteed to be from a pool of unique jstrings.
+     */
+    public native jstring intern();
+
+}

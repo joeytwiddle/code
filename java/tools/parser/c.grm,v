@@ -1,0 +1,260 @@
+head	1.4;
+access;
+symbols;
+locks
+	joey:1.4; strict;
+comment	@# @;
+
+
+1.4
+date	2001.08.09.00.17.51;	author joey;	state Exp;
+branches;
+next	1.3;
+
+1.3
+date	2001.08.09.00.05.01;	author joey;	state Exp;
+branches;
+next	1.2;
+
+1.2
+date	2001.08.08.23.32.32;	author joey;	state Exp;
+branches;
+next	1.1;
+
+1.1
+date	2001.08.08.23.29.04;	author joey;	state Exp;
+branches;
+next	;
+
+
+desc
+@C grammar for Joey's parser.
+@
+
+
+1.4
+log
+@added vartype=""
+@
+text
+@Main = CSrc
+
+CSrc = CSrcBit CSrc
+     | CSrcBit
+
+#     | Class "};" CSrc
+#     | CSrcBit "\n" CSrc
+#     | WS CSrc
+#     | CSrcBit CSrc
+#     | CSrcBit
+#     | "\n"
+#     | <iffytypestuff> CSrc
+
+CSrcBit = WS
+        | Comment
+        | Include
+        | Method
+        | VariableDecl
+        | Class
+        | ClassDecl
+
+# Include = "#include" <stuff/"\n">
+# can be define as wel
+Include = "#" <stuff/"\n"> "\n"
+c: ""
+
+ClassDecl = OptTemplate "class" OptWS <name/"{};"> ";"
+c: "// Class declaration of existence: " <name> "\n"
+h: OptTemplate " class " <name> ";"
+
+Class = OptTemplate "class" WS <name/"\n ;{}()"> WS <moremods/"\n;{}()"> "{" ClassInside OptWS "};"
+      | ClassMods "class " <name/"\n ;{}()"> " " <moremods/"\n;{}()"> "{" ClassInside OptWS "};"
+h: ClassMods " class " <name> <moremods> "{\n" ClassInside "};\n"
+c: "// Start of class " <name> "\n" ClassInside
+
+ClassMods = ClassMod ClassMods
+          | ClassMod
+
+ClassMod = WS
+         | "public"
+         | "private"
+
+OptTemplate = OptWS "template" WS "<" <inside/">"> ">" OptWS
+            | ""
+
+VariableDecl = OptTemplate OptWS OptVarMods VarType " " VarName OptVarBeing ";"
+h: OptTemplate " " OptVarMods " " VarType " " VarName OptVarBeing ";\n"
+c: "// Variable " OptTemplate " " VarType " " VarName " declared in .h file\n"
+
+# Second case is constructor (no type)
+MDecl = OptTemplate OptVarMods VarType " " MethName OptWS "(" OptArgs ")"
+      | OptTemplate MethName OptWS "(" OptArgs ")"
+h: OptTemplate OptVarMods VarType " " MethName "(" OptArgs ")"
+c: OptTemplate OptVarMods VarType " " Class^<name> "::" MethName "(" OptArgs ")"
+
+OptVarMods = OptVarMod OptWS OptVarMods
+           | OptVarMod OptWS
+           | ""
+
+# fillin is one of my #defs, abstract may be Java only, not C
+OptVarMod = "public"
+          | "private"
+          | "static"
+          | "fillin"
+          | "virtual"
+          | "abstract"
+					| "unsigned"
+					| "signed"
+
+# Note the latter 2 should also be done for variable types
+
+VarType = <vartype/" ;(){}">
+				| ""
+
+# h: <vartype>
+# c: <vartype>
+
+# need to avoid = or it will be read!
+VarName = <varname/" ;=(){}">
+h: <varname>
+c: <varname>
+
+# Method names can contain, eg. operator=
+MethName = <varname/" ;(){}">
+h: <varname>
+c: <varname>
+
+OptVarBeing = OptWS "=" OptWS <varbeing/";">
+            | ""
+
+# VarStuff = <vartype/"\n;{}() ">
+#          | <varstuff/"\n;{}() "> " " <vartype/"\n;{}() ">
+
+# VarBeing = <varname/"\n;(){} =">
+#          | <varname/"\n;(){} ="> WS "=" <varinit/"\n;">
+
+#               <vartype/"\n ;{}()"> " " <varname/"=">
+#             | <varstuff/"\n;{}()"> " " <vartype/"\n ;{}()"> " " <varname/"=">
+#             | <vartype/"\n ;{}()"> " " <varname/"="> "=" <varinit/";">
+#             | <varstuff/"\n;{}()"> " " <vartype/"\n ;{}()"> " " <varname/"="> "=" <varinit/";">
+
+Comment = "/*" EndCom
+        | "//" <stuff/"\n"> "\n"
+h: "//" <stuff> "\n"
+
+# h: "/* " <stuff> EndCom "*/\n"
+
+# Hack for /* */ since we might have /* blah foo*bar */
+
+EndCom = <stuff/"*"> "*/"
+       | <stuff/"*"> "*" EndCom
+h: ""
+
+ClassInside = OptWS Publicity ClassInside
+            | OptWS Variables OptWS Methods
+            | OptWS Methods
+
+Publicity = PublicColon
+          | PrivateColon
+
+PublicColon = "public:"
+c: ""
+h: "public:"
+
+# c: "public:"
+
+PrivateColon = "private:"
+c: ""
+h: "private:"
+
+# c:"private:"
+
+Variables = Comment OptWS Variables
+          | VariableDecl OptWS Variables
+          | VariableDecl
+
+Methods = OptWS Comment Methods
+        | OptWS Include Methods
+        | OptWS Method Methods
+        | OptWS Method
+
+# Method: Second option is a method declaration
+
+Method = MDecl OptWS "{" Code "}"
+       | MDecl OptWS ";"
+h: MDecl ";\n"
+c: MDecl " {" Code "}\n"
+
+# hreplacement: MDecl ";"
+# creplacement: MDecl<stuff> Class<name>::MDecl<name> "(" MDecl<args> ") {" Code "}"
+#             | MDecl "{" Code "}"
+
+OptArgs = Args
+        | OptWS
+
+Args = DoubleArg
+     | Arg
+
+DoubleArg = Arg "," Args
+h: Arg "," Args
+c: Arg "," Args
+
+Arg = OptWS ArgA OptWS
+
+ArgA = <argtype/" {}();\n,"> WS ArgName
+     | <argtype/" {}();\n,">
+h: <argtype> " " ArgName
+c: <argtype> " " ArgName
+
+ArgName = "(" <argname/"{}();\n, "> ")" OptWS "(" OptArgs ")"
+        | <argname/"{}();\n, ">
+h: <argname> OptArgs
+c: <argname> OptArgs
+
+Code = <out/"{}"> "{" Code "}" Code
+     | <other/"{}">
+c: <out> "{" <in> Code "}" Code <other>
+
+OptWS = WS
+      | ""
+
+WS = WSBit WS
+   | WSBit
+
+WSBit = "\n"
+      | " "
+      | "\t"
+      | Comment
+
+
+@
+
+
+1.3
+log
+@added opttemplate to class (was already in classdecl)
+@
+text
+@d73 1
+@
+
+
+1.2
+log
+@added signed and unsigned to methods, but not yet to variable decls.
+@
+text
+@d31 1
+a31 1
+Class = "class" WS <name/"\n ;{}()"> WS <moremods/"\n;{}()"> "{" ClassInside OptWS "};"
+d69 1
+@
+
+
+1.1
+log
+@Initial revision
+@
+text
+@d67 3
+@

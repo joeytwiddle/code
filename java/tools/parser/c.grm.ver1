@@ -1,0 +1,211 @@
+Main = CSrc
+
+CSrc = CSrcBit CSrc
+     | CSrcBit
+
+#     | Class "};" CSrc
+#     | CSrcBit "\n" CSrc
+#     | WS CSrc
+#     | CSrcBit CSrc
+#     | CSrcBit
+#     | "\n"
+#     | <iffytypestuff> CSrc
+
+CSrcBit = WS
+        | Comment
+        | Include
+        | Method
+        | VariableDecl
+        | Class
+        | ClassDecl
+
+# Include = "#include" <stuff/"\n">
+# can be define as wel
+Include = "#" <stuff/"\n"> "\n"
+c: ""
+
+ClassDecl = OptTemplate "class" OptWS <name/"{};"> ";"
+c: "// Class declaration of existence: " <name> "\n"
+h: OptTemplate " class " <name> ";"
+
+Class = OptWS OptTemplate ClassMods "class" WS <name/"\n ;{}()"> WS <moremods/"\n;{}()"> "{" ClassInside OptWS "};"
+      | OptWS ClassMods "class " <name/"\n ;{}()"> " " <moremods/"\n;{}()"> "{" ClassInside OptWS "};"
+h: ClassMods " class " <name> <moremods> "{\n" ClassInside "};\n"
+c: "// Start of class " <name> "\n" ClassInside
+
+ClassMods = ClassMod WS ClassMods
+          | ClassMod WS
+					| ""
+
+ClassMod = "public"
+         | "private"
+
+OptTemplate = OptWS "template" WS "<" TemplateInside ">" OptWS
+            | ""
+h: OptTemplate " " OptVarMods " " VarType " " VarName OptVarBeing ";\n"
+c: "// Variable " OptTemplate " " VarType " " VarName " declared in .h file\n"
+
+TemplateInside = <inside/"<>,(){}">
+
+# Second case is constructor (no type)
+MDecl = OptTemplate OptVarMods OptWS VarType WS MethName OptWS "(" OptArgs ")"
+      | OptTemplate MethName OptWS "(" OptArgs ")"
+h: OptTemplate OptVarMods VarType " " MethName "(" OptArgs ")"
+c: OptTemplate OptVarMods VarType " " Class^<name> "::" MethName "(" OptArgs ")"
+
+OptVarMods = OptVarMod OptWS OptVarMods
+           | OptVarMod OptWS
+           | ""
+
+# fillin is one of my #defs, abstract may be Java only, not C
+OptVarMod = "public"
+          | "private"
+          | "static"
+          | "fillin"
+          | "virtual"
+          | "abstract"
+					| "unsigned"
+					| "signed"
+
+# Note the latter 2 should also be done for variable types
+
+VarType = TemplateType
+        | <vartype/" ;(){}">
+				| ""
+
+# h: <vartype>
+# c: <vartype>
+
+# need to avoid = or it will be read!
+VarName = <varname/" ;=(){},<>">
+h: <varname>
+c: <varname>
+
+# Method names can contain, eg. operator=
+MethName = <varname/" ;(){}">
+h: <varname>
+c: <varname>
+
+OptVarBeing = OptWS "=" OptWS <varbeing/";">
+            | ""
+
+# VarStuff = <vartype/"\n;{}() ">
+#          | <varstuff/"\n;{}() "> " " <vartype/"\n;{}() ">
+
+# VarBeing = <varname/"\n;(){} =">
+#          | <varname/"\n;(){} ="> WS "=" <varinit/"\n;">
+
+#               <vartype/"\n ;{}()"> " " <varname/"=">
+#             | <varstuff/"\n;{}()"> " " <vartype/"\n ;{}()"> " " <varname/"=">
+#             | <vartype/"\n ;{}()"> " " <varname/"="> "=" <varinit/";">
+#             | <varstuff/"\n;{}()"> " " <vartype/"\n ;{}()"> " " <varname/"="> "=" <varinit/";">
+
+Comment = "/*" EndCom
+        | "//" <stuff/"\n"> "\n"
+h: "//" <stuff> "\n"
+
+# h: "/* " <stuff> EndCom "*/\n"
+
+# Hack for /* */ since we might have /* blah foo*bar */
+
+EndCom = <stuff/"*"> "*/"
+       | <stuff/"*"> "*" EndCom
+h: ""
+
+ClassInside = OptPublicity Variables OptPublicity Methods
+            | OptPublicity Methods
+
+OptPublicity = OptWS PublicColon OptWS
+             | OptWS PrivateColon OptWS
+						 | OptWS
+
+PublicColon = "public:"
+c: ""
+h: "public:"
+
+# c: "public:"
+
+PrivateColon = "private:"
+c: ""
+h: "private:"
+
+# c:"private:"
+
+Variables = Comment OptWS Variables
+          | VariableDecl OptWS Variables
+          | VariableDecl
+
+Methods = OptWS Comment Methods
+        | OptWS Include Methods
+        | OptWS Method Methods
+        | OptWS Method
+
+# Method: Second option is a method declaration
+
+Method = MDecl OptWS "{" Code "}"
+       | MDecl OptWS ";"
+h: MDecl ";\n"
+c: MDecl " {" Code "}\n"
+
+# hreplacement: MDecl ";"
+# creplacement: MDecl<stuff> Class<name>::MDecl<name> "(" MDecl<args> ") {" Code "}"
+#             | MDecl "{" Code "}"
+
+OptArgs = Args
+        | OptWS
+
+Args = DoubleArg
+     | Arg
+
+DoubleArg = Arg "," Args
+h: Arg "," Args
+c: Arg "," Args
+
+Arg = OptWS ArgA OptWS
+
+ArgA = ArgType WS ArgName
+     | ArgType
+h: <argtype> " " ArgName
+c: <argtype> " " ArgName
+
+ArgType = <argtype/" <>{}();\n,"> OptTemplateType
+
+OptTemplateType = TemplateType
+								| ""
+
+TemplateType = <temptype/" (){}<>,"> "<" TemplateTypeInner OptWS ">"
+
+TemplateTypeInner = TemplateType
+                  | TemplateInside
+
+VariableDecl = OptVarMods VarType WS VarNames OptVarBeing ";"
+
+VarNames = VarName OptWS "," OptWS VarNames
+				 | VarName OptWS
+
+# Surely should be: VariableDecl = OptTemplateType OptWS OptVarMods VarType " " VarName OptVarBeing ";"
+
+ArgName = "(" <argname/"{}();\n, "> ")" OptWS "(" OptArgs ")"
+        | <argname/"{}();\n, ">
+h: <argname> OptArgs
+c: <argname> OptArgs
+
+Code = <out/"{}/"> RestCode
+     | <other/"{}">
+c: <out> RestCode <other>
+
+RestCode = Comment Code
+	  		 | InnerCode Code
+c: Comment InnerCode Code
+		 
+InnerCode = "{" Code "}"
+
+OptWS = WS
+      | ""
+
+WS = "\n" OptWS
+   | " " OptWS
+   | "\t" OptWS
+   | Comment OptWS
+
+

@@ -1,0 +1,5 @@
+FILES=`find $JPATH/code/java/tools/ -name "*.java"`
+grep -h "^import " $FILES -r | grep "*" | awk ' { printf($2"\n"); } ' > allimports.txt
+removeduplicates `more allimports.txt` > allimports2.txt
+LINES=`more allimports2.txt | awk ' { printf("import "$1"\\n"); } '`
+echo "$LINES"

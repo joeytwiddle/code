@@ -1,0 +1,4 @@
+rm FastReflect.java
+jikes CtwDB.java
+java changetheworld.CtwDB
+j

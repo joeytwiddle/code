@@ -1,0 +1,227 @@
+import java.io.*;
+import java.lang.*;
+import java.util.*;
+import java.net.*;
+import javax.swing.*;
+import javax.swing.text.*;
+import javax.swing.text.html.*;
+import javax.swing.text.html.parser.ParserDelegator;
+
+import jlib.Files;
+import jlib.Profile;
+import jlib.JString;
+import nuju.*;
+
+import TrawlerApplet;
+
+class MyParserCallback extends HTMLEditorKit.ParserCallback {
+
+  URL baseUrl=null;
+  /*List*/Vector/**/ links=new Vector();
+
+  MyParserCallback(URL url,String page) {
+    super();
+    try {
+      baseUrl=url;
+      Reader sr=new StringReader(page);
+      (new ParserDelegator()).parse(sr, this, true);
+    } catch (Exception e) {
+      Trawler.echo("MyParserCallback(url,page): "+e);
+    }
+  }
+
+  public void handleText(char[] data, int pos) {
+    // echo("Text: "+new String(data));
+  }
+
+	public void handleStartTag(HTML.Tag t, MutableAttributeSet a, int pos) {
+//    if (t.toString().toLowerCase().equals("a")) {
+    if (t.equals(HTML.Tag.A)) {
+      try {
+        String lnk=a.getAttribute(HTML.Attribute.HREF).toString();
+        URL nurl=new URL(baseUrl,lnk);
+        // echo("  found link \""+nurl+"\"");
+        links.add(nurl);
+      } catch (Exception e) {
+        Trawler.echo("MyParserCallback.handleStartTag(): "+e);
+      }
+    }
+    /* System.out.print("Tag: "+t+" { attributes:");
+    Enumeration e=a.getAttributeNames();
+    while (e.hasMoreElements()) {
+      Object key=e.nextElement();
+      Object val=a.getAttribute(key);
+      String keytype="("+key.getClass().getName()+")";
+      String valtype="("+val.getClass().getName()+")";
+      System.out.print(" "+keytype+key+"=\""+val+"\""+valtype);
+    }
+    System.out.print("}\n"); */
+  }
+	
+	public void handleEndTag(HTML.Tag t, int pos) {
+	}
+	
+}
+
+public class Trawler extends Thread {
+
+  String urlstr;
+  int depth;
+  public static boolean inParallel=false;
+  public static volatile int num=0;
+  public final static int max=150;
+
+  public static TrawlerApplet applet=null;
+
+  public static void trawl(String url,int depth) {
+    if (num>max) {
+      echo("Waiting...");
+      while (num>max) {
+        try {
+          Thread.currentThread().sleep(100);
+        } catch (Exception e) { }
+      }
+      echo("Stopped waiting.");
+    }
+    num++;
+    Trawler t=new Trawler(url,depth);
+    if (inParallel) {
+      // In parallel
+      t.start();
+    } else {
+      // In serial
+      t.run();
+    }
+  }
+
+  Trawler(String u,int d) {
+    urlstr=u;
+    depth=d;
+  }
+
+  public void run() {
+
+    URL url=null;
+    String page=null;
+    try {
+      echo("Requesting \""+urlstr+"\"");
+      url=new URL(urlstr);
+      Object o=url.getContent();
+      echo("Connection is a "+o);
+      InputStream b=(InputStream)o;
+
+      page="";
+      boolean done=false;
+      while (!done) {
+
+        // If Stream has nothing to give yet, wait 0.1 seconds
+        if (b.available()<=0) {
+          System.out.print(".");
+          sleep(100);
+          System.out.print("?");
+        }
+
+        // Check if we are at the end of the data
+        int r=b.read();
+        System.out.print(">");
+        if (r<0) {
+          done=true;
+          System.out.print("#EOF#");
+        } else
+          page+=(char)r;
+
+        // Read a block of data
+        if (!done) {
+          int a=b.available();
+          //System.out.print("("+a+"=");
+          byte[] bs=new byte[a];
+          int numread=b.read(bs);
+          //System.out.print(numread+")");
+          String ns=new String(bs);
+          page+=ns;
+          System.out.print(""+numread);
+        }
+
+      }
+      System.out.print("\n");
+
+      // while (b.available()>0)
+      //  page+=(char)b.read();
+      echo("Retrieved \""+url+"\" ("+page.length()+")");
+    } catch (Exception e) {
+      echo("Trawler.trawl(urlstr): "+e);
+    }
+
+// ***   String ext=JString.afterlast(urlstr,".").toLowerCase();
+    String ext=".html";
+
+    if (ext.equals("html") || ext.equals("htm")) {
+      trawlalllinks(url,page,depth);
+    } else if (ext.equals("mp3")) {
+// ***      String fname=JString.afterlast(urlstr,"/");
+  String fname="banana.mp3";
+      echo("Saving mp3 "+fname);
+      Files.writeStringtofile(page,fname);
+    } else {
+      echo("Don't know how to handle extension \"."+ext+"\"");
+      echo("Parsing for links anyway...");
+      trawlalllinks(url,page,depth);
+    }
+    num--;
+    stop();
+
+  }
+
+  public static void trawlalllinks(URL url,String page,int depth) {
+      if (depth>0) {
+        MyParserCallback myparser=new MyParserCallback(url,page);
+        echo("Found "+myparser.links.size()+" links.");
+        echo("");
+        /*List*/Vector/**/ urls=myparser.links;
+        for (int i=0;i<urls.size();i++) {
+          URL u=(URL)urls.get(i);
+          trawl(u.toString(),depth-1);
+        }
+      }
+  }
+
+  public final static void main(String[] args) {
+
+    if (args.length==0) {
+      echo("java Trawler <url> <depth> [ -par ]");
+      echo("  Running wih -par and large depth may lock up your computer, and/or theirs!");
+      System.exit(1);
+    }
+
+    int depth=1;
+    String urlstr=args[0];
+    if (args.length>1)
+      depth=new Integer(args[1]).intValue();
+    if (args.length>2)
+      if (args[2].equals("-par"))
+        Trawler.inParallel=true;
+
+    Profile.clear();
+    Profile.start("Whole trawl");
+
+    trawl(urlstr,depth);
+    while (Trawler.num>0) {
+      try {
+        Thread.currentThread().sleep(100);
+      } catch (Exception e) {
+        echo("Waiting for Trawler to end: "+e);
+      }
+    }
+
+    long time=Profile.stop("Whole trawl");
+    echo("Took "+time+"ms");
+
+  }
+
+  public static void echo(String s) {
+    System.out.println(s);
+    if (applet!=null)
+      applet.echo(s);
+  }
+
+}

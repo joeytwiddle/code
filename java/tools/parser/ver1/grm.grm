@@ -1,0 +1,105 @@
+# This grammar defines defines the file
+# format for a grammar
+
+Main = GrammarDefn
+
+# java: "package grammars;\n\n" GrammarDefn
+
+GrammarDefn = Grm
+java: "import java.lang.String;\nimport java.util.Vector;\n\nimport Grammar;\nimport RuleSet;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector rule;\n\n" Grm "  }\n}\n"
+hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
+
+Grm = GrmBit Grm
+    | GrmBit
+
+GrmBit = "\n"
+       | Whitespace
+       | Comment
+       | Atom
+
+Comment = "#" <comment/"\n"> "\n"
+java: "    //" <comment> "\n"
+
+# hugs: "-- " <comment> "\n"
+
+Atom = AtomWithout "\n\n"
+
+AtomWithout = <atomname/"^.<>\n!qt! ="> " = " Defn OptReplacements
+java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
+hugs: "  ( Atom !qt!" <atomname> "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
+
+OptReplacements = "\n" Replacements
+                | ""
+java: "    // Replacements\n" Replacements
+
+Replacements = TwoReplacements
+             | Replacement
+
+TwoReplacements = Replacement "\n" Replacements
+hugs: Replacement ",\n" Replacements
+
+Replacement = <target/"<>\n!qt! :"> ": " Defn
+java: "    rule=new Vector();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
+hugs: "      ( !qt!" <target> "!qt! , [ " Defn " ] ) "
+
+Defn = DefnOr
+     | DefnAnd
+     | DefnBit
+
+DefnBit = RelativeElement
+        | BasicElement
+
+BasicElement = Variable
+             | Text
+             | AtomRef
+
+DefnOr = DefnBit Whitespace "|" Whitespace Defn
+java: DefnBit "      ruleset.add(rule);\n      rule=new Vector();\n" Defn
+hugs: DefnBit "] ,\n      [ " Defn
+
+DefnAnd = DefnBit " " Defn
+java: DefnBit Defn
+hugs: DefnBit ", " Defn
+
+Variable = Var
+         | VarDeny
+
+Var = "<" <varname/"<>\n!qt!/ "> ">"
+java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
+hugs: "Var !qt!" <varname> "!qt!"
+
+VarDeny = "<" <varname/"<>\n!qt!/ "> "/!qt!" <denied/"!qt!"> "!qt!>"
+java: "        rule.add(new Var(!qt!" <varname> "!qt!,!qt!" <denied> "!qt!));\n"
+hugs: "VarExcl !qt!" <varname> "!qt! !qt!" <denied> "!qt!"
+
+AtomRef = <atomtype/"^.<>\n!qt! ">
+java: "        rule.add(new Atom(!qt!" <atomtype> "!qt!));\n"
+hugs: "Atom !qt!" <atomtype> "!qt!"
+
+Text = "!qt!" <text/"!qt!"> "!qt!"
+     | "!qt!!qt!"
+java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
+hugs: "Str !qt!" <text> "!qt!"
+
+RelativeElement = RelUp
+                | RelDown
+
+RelUp = Ref "^" Var
+java: "        { Vector realrule=rule; rule=new Vector(); " Var " realrule.add(new RelElement('^'," Ref ",(Var)rule.get(0))); rule=realrule; }\n"
+
+RelDown = Ref "." Var
+java: "        { Vector realrule=rule; rule=new Vector(); " Var " realrule.add(new RelElement('.'," Ref ",(Var)rule.get(0))); rule=realrule; }\n"
+
+Ref = <ref/" !qt!\n.^">
+java: "!qt!" <ref> "!qt!"
+
+Whitespace = WhitespaceBit Whitespace
+           | WhitespaceBit
+
+WhitespaceBit = "\n"
+              | " "
+              | "\t"
+              | "\r"
+
+
+

@@ -1,0 +1,8 @@
+toXML() {
+        return xml("name",name),xml("field",
+}
+
+fromXML(xml) {
+        name=xml.get("name");
+        field=xml.get("field");
+}

@@ -1,0 +1,77 @@
+# This grammar defines defines the file
+# format for a grammar
+
+Main = GrammarDefn
+
+GrammarDefn = Grm
+java: "import java.lang.String;\nimport java.util.Vector;\n\nimport Grammar;\nimport RuleSet;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector rule;\n\n" Grm "  }\n}\n"
+hugs: "module Grammar where\n\nrules = " Grm
+
+Grm = "\n" Grm
+    | "\n"
+    | GrmBit "\n" Grm
+    | GrmBit
+
+GrmBit = Comment
+       | Atom "\n"
+
+Comment = "#" <comment/"\n">
+java: "    //" <comment> "\n"
+hugs: "-- " <comment> "\n"
+
+Atom = AtomWith
+     | AtomWithout
+
+AtomWithout = <atomname/"<>\n!qt! "> " = " Defn
+java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n\n"
+hugs: " ( Atom !qt!" <atomname> ",\n  [\n" Defn "  ]) ,\n"
+
+AtomWith = <atomname/"<>\n!qt! "> " = " Defn "\n" Replacements
+java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n" Replacements "\n"
+hugs: " ( Atom !qt!" <atomname> ",\n  [\n" Defn "  ]) ,\n"
+
+Replacements = Replacement
+             | Replacement "\n" Replacements
+
+Replacement = <target/"<>\n!qt! "> ": " Defn
+java: "    rule=new Vector();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
+
+Defn = DefnBit
+     | DefnAnd
+     | DefnOr
+
+DefnBit = Variable
+        | Text
+        | AtomRef
+
+DefnOr = DefnBit " | " Defn
+       | DefnBit "\n" Whitespace "| " Defn
+java: DefnBit "      ruleset.add(rule);\n      rule=new Vector();\n" Defn
+hugs: " [" DefnBit "] ,\n" Defn
+
+DefnAnd = DefnBit " " Defn
+java: DefnBit Defn
+hugs: DefnBit ", " Defn
+
+Variable = Var
+         | VarDeny
+
+Var = "<" <varname/"<>\n!qt!/ "> ">"
+java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
+hugs: " Just Var's are not allowed ! "
+
+VarDeny = "<" <varname/"<>\n!qt!/ "> "/!qt!" <denied/"!qt!"> "!qt!>"
+java: "        rule.add(new Var(!qt!" <varname> "!qt!,!qt!" <denied> "!qt!));\n"
+hugs: " VarExcl !qt!" <varname> "!qt!, !qt!" <denied> "!qt! "
+
+AtomRef = <atomtype/"<>\n!qt! ">
+java: "        rule.add(new Atom(!qt!" <atomtype> "!qt!));\n"
+hugs: " Atom !qt!" <atomtype> "!qt! "
+
+Text = "!qt!" <text/"!qt!"> "!qt!"
+java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
+hugs: "Str !qt!" <text> "!qt!"
+
+Whitespace = " "
+           | "\n"
+           | Whitespace Whitespace

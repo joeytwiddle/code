@@ -1,0 +1,16 @@
+package changetheworld;
+
+import changetheworld.*;
+import jlib.*;
+import java.lang.*;
+import java.lang.reflect.*;
+
+public class FastReflect {
+
+  public static boolean set(String type,Object o,String field,Object value) {
+
+    return false;
+
+  }
+
+}
