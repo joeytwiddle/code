@@ -43,18 +43,25 @@ public class VisualJavaStatics {
                 String classPath = System.getProperty("java.class.path");
                 System.out.println(classPath);
                 int j;
-                while (( j = classPath.indexOf(":")) >= 0) {
-                    String jarOrDir = classPath.substring(0,j);
-                    classPath = classPath.substring(j+1);
+                while (classPath.length() > 0) {
+                    j = classPath.indexOf(":");
+                    String jarOrDir;
+                    if (j>0) {
+                        jarOrDir = classPath.substring(0,j);
+                        classPath = classPath.substring(j+1);
+                    } else {
+                        jarOrDir = classPath;
+                        classPath = "";
+                    }
                     String command;
                     File jarOrDirFile = new File(jarOrDir);
                     if (jarOrDirFile.isFile() && jarOrDirFile.getName().endsWith(".jar")) {
-                        if (jarOrDirFile.getName().equals("rt.jar")) {
+                        // if (jarOrDirFile.getName().equals("rt.jar")) {
                             System.out.println("Extracting class list from jar: " + jarOrDirFile);
                             printClassesInJarTo(jarOrDirFile, writer);
-                        } else {
-                            System.out.println("Skipping non rt.jar: " + jarOrDirFile);
-                        }
+                        // } else {
+                            // System.out.println("Skipping non rt.jar: " + jarOrDirFile);
+                        // }
                     } else {
                         System.out.println("Do not yet know how to parse class list from directory or non-jar: " + jarOrDirFile);
                     }
@@ -78,9 +85,10 @@ public class VisualJavaStatics {
                 if (line == null)
                     break;
                 // Strip .class extension
-                if (line.endsWith(".class")) {
-                    line = line.substring(0,line.length() - ".class".length());
+                if (!line.endsWith(".class")) {
+                    continue;
                 }
+                line = line.substring(0,line.length() - ".class".length());
                 // Convert path '/'s into package '.'s
                 int i;
                 while ((i = line.indexOf("/")) >= 0) {
