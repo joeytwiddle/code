@@ -1,10 +1,13 @@
+# LIBS=$(JPATH)/code/c/joeylib/.comp/joeylib.o
+LIBS=`./getdeps.sh lin0.c`
+
 CC	= g++ -I $(JPATH)/code/c/joeylib/.comp
 # For profiling:
 # -pg
 
 CFLAGS	= -g -fconserve-space -O2 -c `sdl-config --cflags` -ffast-math -w
 # -Wall
-LDFLAGS	= `sdl-config --libs` $(JPATH)/code/c/joeylib/.comp/joeylib.o
+LDFLAGS	= `sdl-config --libs` ${LIBS}
 	
 OBJECT	= lin0.o
 SRC	= lin0.c
@@ -17,7 +20,7 @@ clean:
 	rm -f *.o lin0
 
 lin0:	$(OBJECT)
-	$(CC) $(LDFLAGS) $< -o $@
+	$(CC) $(LDFLAGS) $(JPATH)/code/c/joeylib/.comp/joeylib.o $< -o $@
 
 %.o:	%.c
 	$(CC) $(CFLAGS) $< -o $@

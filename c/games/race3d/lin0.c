@@ -1,3 +1,10 @@
+/* TODO:
+ * - Use a fake palette, allowing us to do transparency and red/cyan mixing with | (logical OR)
+ *   If not possible, use a lookup table to do same
+ * - Render blobs more nicely (aa'ed sprites?)
+ * - When I made change to PP (normdot -> dot for near plane clipping) I think the glitching came back - gotta fix!!!
+ */
+
 #define SCRWID 320
 #define SCRHEI 200
 #define SCRBPS 24
@@ -16,22 +23,24 @@
 
 #define QUIET
 
+// #define PPclipdist 200000.0
+
 // #define ALLEGRO
-// #include <joeylib.h>
-#include <maths.h>
-#include <timer.h>
-#include <myrgb.h>
-#include <polygon2d.h>
-#include <v3d.h>
-#include <ori.h>
-#include <line3d.h>
-#include <plane.h>
-#include <writeable.h>
-#include <maps.h>
-#include <jbmp.h>
-#include <pp.h>
-#include <frustrum.h>
-#include <octree.h>
+#include <joeylib.h>
+// #include <maths.h>
+// #include <timer.h>
+// #include <myrgb.h>
+// #include <polygon2d.h>
+// #include <v3d.h>
+// #include <ori.h>
+// #include <line3d.h>
+// #include <plane.h>
+// #include <writeable.h>
+// #include <maps.h>
+// #include <jbmp.h>
+// #include <pp.h>
+// #include <frustrum.h>
+// #include <octree.h>
 
 #define REDEFINE
 #include "define.c"
@@ -42,7 +51,12 @@
 #define scrhei SCRHEI
 
 // Rendering
-#define brightness 64
+#define redambient 64
+#define reddarken 64
+#define greenambient 64
+#define greendarken 192
+#define blueambient 32
+#define bluedarken 16
 float fogdepth;
 float displayFogdepth=20.0;
 float playFogdepth=18.0;
@@ -54,9 +68,9 @@ int taillen=1200;
 int numWaves=15;
 int waveAmp=10.0;
 bool planar=false;
-// #define SLOW_CPU
+#define SLOW_CPU
 #ifdef SLOW_CPU
-	int numps=1000;
+	int numps=800;
 	int tunnelps=1;
 	float partrad=0.07;
 	float tunnelrad=0.0;
@@ -111,10 +125,10 @@ void plotsphere(V3d cen,int c) {
 	float p=PPgetunitnoadd(cen);
 	if (p) {
 		float rad=partrad*p;
-		PPgetscrposnoadd(&cen,&PPlefteye,&x,&y);
-		left.filledcircle(x,y,rad,16*c); // Fundamental change!
-		PPgetscrposnoadd(&cen,&PPrighteye,&x,&y);
-		right.filledcircle(x,y,rad,16*c);
+		if (PPgetscrposnoadd(&cen,&PPlefteye,&x,&y))
+			left.filledcircle(x,y,rad,16*c); // Fundamental change!
+		if (PPgetscrposnoadd(&cen,&PPrighteye,&x,&y))
+			right.filledcircle(x,y,rad,16*c);
 		// b.filledcircle(x,y,,c);
 		// plotpart2(part[i],-eyewid,sgn(c)*b))
 		// plotpart2(part[i],eyewid,sgn(c)*(128+b)))
@@ -183,7 +197,11 @@ void writescreen() {
 			// if (left.bmp[j][i]!=0)
 			// printf("%i\n",left.bmp[j][i]);
 			// screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],intrnd(0,255)));
-			screen_setPixel(i,j,screen_MapRGB(brightness+(256-brightness)*left.bmp[j][i]/256,right.bmp[j][i],brightness+(256-brightness)*left.bmp[j][i]/256));
+#ifdef MAGENTA_GREEN
+			screen_setPixel(i,j,screen_MapRGB(redambient+(256-reddarken-redambient)*left.bmp[j][i]/256,greenambient+(256-greendarken-greenambient)*right.bmp[j][i]/256,blueambient+(256-bluedarken-blueambient)*left.bmp[j][i]/256));
+#else
+			screen_setPixel(i,j,screen_MapRGB(redambient+(256-reddarken-redambient)*left.bmp[j][i]/256,greenambient+(256-greendarken-greenambient)*right.bmp[j][i]/256,blueambient+(256-bluedarken-blueambient)*right.bmp[j][i]/256));
+#endif
 		}
 	}
 	// b.writetoscreen();
@@ -248,7 +266,8 @@ void init() {
 	}
 
 	ori=Ori(V3d(1,0,0),V3d(0,1,0));
-	PPsetup(scrwid,scrhei,displayPPd);
+	PPsetup(scrwid,scrhei,displayPPd,0.0,0.1);
+	PPclipdist=0.5;
 
 	// Display track
 	fogdepth=displayFogdepth;
@@ -256,8 +275,10 @@ void init() {
 	SDL_Event event;
 	do {
 		t=t+0.03;
-		V3d from=V3d::rotate(14.0*V3d::k,V3d::j,t); // +12.0*V3d::j*sin(t*0.02);
-		ori.forcez(from.neg());
+		// V3d from=V3d::rotate(14.0*V3d::k,V3d::j,t); // +12.0*V3d::j*sin(t*0.02);
+		// ori.forcez(from.neg());
+		V3d from=getpos(t*0.036);
+		ori.forcez(getpos(t*0.036+0.02)-from);
 		pos=from;
 		left.clear(0);
 		right.clear(0);
@@ -271,10 +292,9 @@ void init() {
 		}
 	} while (t>=0);
 
-	printf("Enough of that, let's play!\n");
-
 	// Race
-	PPsetup(scrwid,scrhei,playPPd);
+	PPsetup(scrwid,scrhei,playPPd,0.0,0.1);
+	PPclipdist=0.5;
 	fogdepth=playFogdepth;
 	pos=getpos(0);
 	for (int tailpos=0;tailpos<taillen;tailpos++)
@@ -318,10 +338,12 @@ void doframe() {
 
 	// Plot and move marker
 	V3d m;
-	for (int i=1;i<=15;i++) {
+	for (int i=1;i<=20;i++) {
 		m=V3d::disorientate(getpos(marker)-pos,ori);
 		if (m.mod()<markerrange)
 			marker+=0.0002;
+		else
+			break;
 	}
 
 	float u=PPgetunitnoadd(m);
