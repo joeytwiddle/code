@@ -329,18 +329,6 @@ void main() {
 
 		}
 
-#ifdef BOTHER_CLOCKING
-		while (true) {
-			thisframe = clock();
-			if (thisframe < lastframe+clocksPerFrame) {
-				continue;
-			} else {
-				break;
-			}
-		}
-		lastframe = thisframe;
-#endif
-
 #ifdef PROCESSING_WHITE_BITS
 		for (int i=0;i<numProcesses;i++) {
 			bool recycle = false;
@@ -377,6 +365,18 @@ void main() {
 				newProcess(i);
 			}
 		}
+#endif
+
+#ifdef BOTHER_CLOCKING
+		while (true) {
+			thisframe = clock();
+			if (thisframe < lastframe+clocksPerFrame) {
+				continue;
+			} else {
+				break;
+			}
+		}
+		lastframe = thisframe;
 #endif
 
 		wrefresh(stdscr);
