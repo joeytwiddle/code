@@ -163,7 +163,7 @@ class MemberBrowser extends JPanel {
 						rightBox.add(new JLabel(" ( "));
 						if (params.length==0) {
 							rightBox.add(new JLabel(" ) "));
-							rightBox.add(new JButton("Execute"));
+							// rightBox.add(new JButton("Execute"));
 						} else {
 							for (int j=0;j<params.length;j++) {
 								rightBox.add(componentFor(params[j]));
