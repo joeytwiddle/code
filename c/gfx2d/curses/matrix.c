@@ -103,19 +103,21 @@ void main() {
 					// addch('*');
 					addch(symbol);
 					thematrix[x][y-1] = symbol;
+
 				}
+
+				wrefresh(stdscr);
 
 				y++;
 
 			}
 
-			if (y<LINES) {
+			if ( y<LINES && (rand() % 2)==0 ) {
 				move(y,x);
 				attrset(COLOR_PAIR(7) | A_BOLD);
 				addch('%');
 			}
 
-			
 		} else if (action < 100) {
 
 			// while ( (rand() % 10) != 0 ) {
@@ -128,13 +130,22 @@ void main() {
 				while ( (rand() % AVSLIDELEN) != 0 ) {
 
 					for (int y=LINES-1;y>0;y--) {
-						thematrix[x][y] = thematrix[x][y-1];
+						mbit src = thematrix[x][y-1];
+						thematrix[x][y] = src;
 						move(y,x);
-						addch(thematrix[x][y]);
+						if (src == '%') {
+							attrset(COLOR_PAIR(7) | A_BOLD );
+							addch(thematrix[x][y]);
+							attrset(COLOR_PAIR(2));
+						} else {
+							addch(thematrix[x][y]);
+						}
 					}
 					thematrix[x][0]=' ';
 					move(0,x);
 					addch(' ');
+
+					wrefresh(stdscr);
 
 				}
 
