@@ -2,14 +2,14 @@
 
 getcgi() {
 	TESTRES=`echo "$QUERY_STRING" | sed "s/.*\(^\|&\|'\)$1=\([^&']*\)\($\|&\|'\).*/\2/"`
-	if test "$TESTRES" = "$QUERY_STRING"; then
-		echo "cglib.getcgi(): Error finding var >$1<" > /dev/stderr
-	else
-		echo "$TESTRES" | fromcgi
+	if [ "$TESTRES" = "$QUERY_STRING" ]
+	then echo "cglib.getcgi(): Error finding var >$1<" > /dev/stderr
+	else echo "$TESTRES" | fromcgi
 	fi
 }
 
 ## Note: In order to use serve you will want to import cgilib after setting CGILIB_NO_CONTENT
+## It doesn't return the file properly (wrong name, no mimetype), but it does return it!
 serve() {
 	FILE="$1"
 	# file --mime "$FILE"
@@ -21,9 +21,19 @@ serve() {
 	cat "$FILE"
 }
 
-if test ! $CGILIB_NO_CONTENT; then
-	if test ! $CGILIB_CONTENT_TYPE; then
-		CGILIB_CONTENT_TYPE="text/html"
+starthtml() {
+	TITLE="$1" ## TODO: htmlencode!
+	echo "<HTML><HEAD><TITLE>$TITLE</TITLE></HEAD><BODY>"
+}
+
+endhtml() {
+	echo "</BODY></HTML>"
+}
+
+if [ ! $CGILIB_NO_CONTENT ]
+then
+	if [ ! $CGILIB_CONTENT_TYPE ]
+	then CGILIB_CONTENT_TYPE="text/html"
 	fi
 	echo "Content-type: $CGILIB_CONTENT_TYPE"
 	echo
