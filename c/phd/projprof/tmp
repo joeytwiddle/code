@@ -1,3 +1,0 @@
-./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 60 -lowres 30 -adapt 0.1 -square -oth 12 $*
-# pp -recwid 200 -maxpixels 2000 -spacings -gamma 0.0 -usetwolines -res 120 -lowres 30 -adapt 0.03 -square -oth 12 $*
-
