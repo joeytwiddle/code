@@ -168,7 +168,7 @@ which is oriented relative to the camera, the lines of text all point towards
 the horizontal vanishing point of the text plane in the image.  Also, paragraphs
 often exhibit some form of justification, either with straight margins on the
 left and/or right, or if the text is centred, a central vertical line around which
-the text is aligned.  In such cases these vertical lines point toward the
+the text is aligned.  In such cases these vertical lines point towards the
 vertical vanishing point of the text plane.  We have therefore concentrated our
 work on the recovery of paragraphs with three lines of text or more, with 
 the reasonable assumption that at least some justification exists (left, 
@@ -241,7 +241,7 @@ For other styles of documents, the observed difference in the spacings of the li
 Using the two principal vanishing points we find the orientation of the text plane and recover a fronto-parallel view.
 The algorithm performs well for a wide range of paragraphs, provided each paragraph has at least three lines, or is fully justified.
 An optimisation algorithm for the search for the horizontal vanishing point was presented.
-In total the process takes around 20 seconds to recover a document, demonstrating its potential and applicability to realtime systems, as well as its suitability for normal scanning tasks.
+In total the process takes around 10 seconds to recover a document, demonstrating its potential and applicability to realtime systems, as well as its suitability for normal scanning tasks.
 
 Whilst the described method is suitable for documents or single paragraphs, due to the use of margins or line spacing to recover the vertical vanishing point, there must be at least two lines present for fully justified paragraphs, and at least five for other styles of document, to provide enough data for an accurate fitting.
 However, other forms of text appear in our environment, and it would also be desirable to retrieve these, especially in a realtime system for the visually impaired.

@@ -175,7 +175,10 @@ from the point of view of vanishing points, rather than from skew angles.
 
 We use a circular search space $C$ as illustrated in \reffig{searchspacediag}.
 % although a rectangular grid of polar coordinates would also work effectively.
-Each cell $c=(r,\theta)$, $r\in[0,1)$ and $\theta\in[0,2\pi)$, in the space $C$ corresponds to a hypothesised vanishing point $\myvec{V} = (V_r,V_{\theta})$
+Each cell $c=(r,\theta)$,
+% $r\in[0,1)$ and $\theta\in[0,2\pi)$,
+$ 0 \leq r < 1 $ and $ 0 \leq \theta < 2\pi $,
+in the space $C$ corresponds to a hypothesised vanishing point $\myvec{V} = (V_r,V_{\theta})$
 on the image plane $\mathbb{R}^2$, with
 scalar distance $V_{r}=r/{(1-r)}$ from the centre of the image,
 and angle $V_{\theta}=\theta$.
@@ -437,7 +440,7 @@ rotated about its vertical axes.
 \subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,width=41mm}\label{simulated-full}}
 \subfigure[Left justified]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}}
 % \subfigure[Left justified with extranneous elements]{\epsfig{figure=images/simulated-left-more.ps,width=34mm}\label{simulated-left-more}}
-\subfigure[Centrally justified with separate paragraphs]{\epsfig{figure=images/simulated-cen2.ps,width=34mm}\label{simulated-left-more}}
+\subfigure[Centrally justified with separated paragraphs]{\epsfig{figure=images/simulated-cen2.ps,width=34mm}\label{simulated-left-more}}
 \end{center}
 \vspace*{-3mm}
 \caption{Examples of simulated images used for performance analysis.}
@@ -460,10 +463,10 @@ rotated about its vertical axes.
 % vanishing point is effectively at an infinite distance, and the horizontal axis of the
 % text plane is parallel with the image plane.
 
-In order to assess the performance of the algorithm, simulated images such as those in \reffig{simimages} were generated at various orientations ranging from $0^\circ$ to $90^\circ$ in both yaw and pitch, resulting in 900 test images.
+To assess the performance of the algorithm, simulated images (such as in \reffig{simimages}) were generated at various orientations ranging from $0^\circ$ to $90^\circ$ in both yaw and pitch, resulting in 900 test images.
 % , and the located vanishing point $\myvec{H}$ was compared to the ground truth $\myvec{H}_{\mbox{\small gt}}$.
 \reffig{hvpaccuracy} shows the accuracy of recovery of the horizontal vanishing point for these images,
-calculated as the relative distance of the located vanishing point $\myvec{H}$ from the ground truth $\myvec{H}_{\mbox{\small gt}}$, given by $-|\myvec{H}-\myvec{H}_{\mbox{\small gt}}|/\myvec{H}_{\mbox{\small gt}}$.
+calculated as the relative distance of the located vanishing point $\myvec{H}$ from the ground truth $\myvec{H}_{\mbox{\small gt}}$, given by $-|\myvec{H}-\myvec{H}_{\mbox{\small gt}}| / | \myvec{H}_{\mbox{\small gt}} | $.
 As can be seen, the accuracy of the algorithm's performance begins to drop as the orientation of the plane approaches $90^\circ$ in yaw or pitch.
 In these cases, the document has been rotated so as to be almost orthogonal to the view plane, and hence nearly invisible in the image, explaining the reduction in performance.
 The slope of the graph at low yaw may be attributed to the discretisation of the search space $C$.
@@ -652,7 +655,7 @@ Here, the bottom of the paragraph is positioned at $\myvec{P}$ with lines occurr
 \begin{figure}[t]
 \centering
 \begin{center}
-  \epsfig{figure=images/zyspacings7.eps,width=85mm}
+  \epsfig{figure=images/zyspacings9.eps,width=85mm}
 \caption{The geometry involved in line spacings.}
 \label{zyspacings}
 \end{center}
@@ -689,11 +692,15 @@ The cancelling of the focal length $f$ in this way means that the technique is a
 By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.
 % for these points.
 However, since it is common for documents to also contain lines of text which are not part of an evenly spaced paragraph, and for extraneous elements to enter the data, the $n$th line found in the image may lose correspondence with the $n$th line in the paragraph model.
+% To fit the points to the curve in {\em line number}$\times${\em position} space would be unwise in this situation.
+% It is preferable to perform the fitting in the {\em line position}$\times${\em line spacing} domain, defined by:
 To fit a curve of position $y(n)$ against line number $n$ would be unwise in this situation.
 It is therefore preferable to fit the curve of {\em line spacing} $Y_n$
 against {\em position} $X_n$, defined as:
 
 \begin{eqnarray}
+% Y_n=y(n+1)-y(n) & \mbox{~~~~~~~~~~~~~~~line spacing} \label{linespacingsdefneqn} \\
+% X_n=y(n) & \mbox{~~~~~~~~~~~~~~~line position} \label{linepositiondefneqn}
 Y_n=y(n+1)-y(n) \label{linespacingsdefneqn} \\
 X_n=y(n) \label{linepositiondefneqn}
 \end{eqnarray}
@@ -744,7 +751,7 @@ By reversing the rotation made earlier to bring the baseline upright, this point
 In \reffig{vvpaccuracya} it can be seen that,
 as expected, intersecting the left and right margins of a fully justified paragraph gives a good estimate of the vertical vanishing point.
 Also expected, when margins are used to estimate the VVP of a left-justified
-paragraph, performance is poor due to the pragraph's jagged edge, as can be
+paragraph, performance is poor due to the paragraph's jagged edge, as can be
 seen in \reffig{vvpaccuracyb}.
 % As with the horizontal vanishing point, the method is not suited to situations when the vertical vanishing point is close to infinity, which occurs when the pitch is low.
 Finally, \reffig{vvpaccuracyc} shows the accuracy when the line spacings are employed on left-justified paragraphs.
