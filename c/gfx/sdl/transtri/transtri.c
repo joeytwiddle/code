@@ -477,13 +477,15 @@ int main(int argc,char *argv[]) {
 #define By (TRy*NOTJ+BRy*J)/IMGSKIP
 									Uint16 Ax=(TLx*NOTJ+BLx*J)/IMGSKIP;
 									Uint16 Ay=(TLy*NOTJ+BLy*J)/IMGSKIP;
-									Sint16 Dx=Bx-Ax;
-									Sint16 Dy=By-Ay;
+									Sint16 Dx=(Bx-Ax)/IMGSKIP;
+									Sint16 Dy=(By-Ay)/IMGSKIP;
+										Uint16 ahere,Dhere;
 									reg=startreg;
+									ahere=Ax;
+									Dhere=Ay;
 									// todo: This loop should draw a quick line in bgtexture space
 									// rather than averaging compass multiples
 									for (I=0;I<IMGSKIP;I++) {
-										Uint16 ahere,Dhere;
 										// #define e ((I))
 										// #define s ((J))
 										// #define w ((IMGSKIP-I))
@@ -497,8 +499,8 @@ int main(int argc,char *argv[]) {
 #define NOTI (IMGSKIP-I)
 										// ahere=(Ax*NOTI+Bx*I)/IMGSKIP;
 										// Dhere=(Ay*NOTI+By*I)/IMGSKIP;
-										ahere=Ax+(Dx*I)/IMGSKIP;
-										Dhere=Ay+(Dy*I)/IMGSKIP;
+										// ahere=Ax+(Dx*I)/IMGSKIP;
+										// Dhere=Ay+(Dy*I)/IMGSKIP;
 #ifdef INTERPOLATE_BG_FULL
 										{
 											Uint16 iahere=((ahere/BGQUANT)%bgtexture_w);
@@ -540,6 +542,8 @@ int main(int argc,char *argv[]) {
 										// p=screen_MapRGB(r,g,b);
 #endif
 										reg++;
+ahere+=Dx;
+Dhere+=Dy;
 
 								// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
 								// SDL_MapRGB(screen->format,r,g,b);
