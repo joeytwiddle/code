@@ -1,9 +1,9 @@
 PPPARAMS="
 	-dolowresscan -lowres 60 -lowsmooth 1
-	-adapt 0.03 -res 160 -maxpixels 2000
+	-adapt 0.03 -res 220 -maxpixels 2000
 	-spacings
 	-deriv
-	-recwid 200 -gamma 0.0 -oth 12
+	-recwid 800 -gamma 0.0 -oth 12
 "
 # -usetwolines
 
