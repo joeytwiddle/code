@@ -10,13 +10,20 @@ shift
 export CITYPATH="/www/active-cvs/$CITY_NAME"
 export NEARCITY="/www/" ## on same fs please, used temporarily
 
-JSH=/home/joey/j/jsh
+## Note sedreplace is currently non-reversible, but that could change ...
+test -x "$JSH" || JSH=/home/joey/j/jsh
+# JSH=sh
+# export JPATH=/home/joey/j
+# . $JPATH/startj
 
 ## Set to true if you want to dev on this box and want to be able to check your changes
 DOBACKUPSB4DEV=
 
-# More notes:
-# The SQL log on tronic is linked outside the tree.  I couldn't be bothered to download it.  I created a similar directory+file outside the tree on buggy so the link works.
+
+
+# TODO: Check if this is still an issue, and if so resolve it: The SQL log on tronic is linked outside the tree.  I couldn't be bothered to download it.  I created a similar directory+file outside the tree on buggy so the link works.
+
+
 
 echo "Giving www-data owner privilege on all $CITY_NAME imc files"
 chown www-data:imc $CITYPATH/ /www/uploads/$CITY_NAME/ -R
@@ -24,7 +31,7 @@ echo
 
 if test "$DOBACKUPB4DEV"
 then
-	echo "Making a backup of the local copy before running post-pull scripts."
+	echo "Making a backup of /www/active-cvs/$CITY_NAME before running post-pull scripts."
 	rm -rf /www/active-cvs/$CITY_NAME-b4dev
 	# Hide heavy directories
 	mv $CITYPATH/webcast/logs $NEARCITY/logs.hiding
@@ -35,6 +42,8 @@ then
 	mv $NEARCITY/logs.hiding $CITYPATH/webcast/logs
 	mv $NEARCITY/cache.hiding $CITYPATH/local/webcast/cache
 fi
+
+
 
 echo
 echo "######## Post-pull operations"
@@ -48,18 +57,9 @@ echo "Moving $CITY_NAME/.htaccess to /tmp cos it causes problems."
 mv $CITYPATH/webcast/.htaccess /tmp
 echo
 
-# echo "Pointing towards active_bristoldev instead of active_bristol PG DB."
-# $JSH sedreplace -changes \
-	# '$db_setup\["database"\] = "active_bristol";' \
-	# '$db_setup["database"] = "active_bristoldev";' \
-	# $CITYPATH/local/db-setup.php3
-# echo
-
-# added imc_user now
-# $JSH sedreplace -changes \
-	# 'my $default_usr = "imc_user"' \
-	# 'my $default_usr = "root"' \
-		# $CITYPATH/shared/modules/IMC/Database.pm
+echo "Removing incompatible php"
+$JSH sedreplace -changes '<!-- <?=\$summary_file?> -->' ' ' "$CITYPATH/webcast/index_imc.php3"
+echo
 
 if test $LOOPBACK_HACK
 then
@@ -74,9 +74,24 @@ then
 	# echo
 fi
 
-echo "Removing incompatible php"
-$JSH sedreplace -changes '<!-- <?=\$summary_file?> -->' ' ' "$CITYPATH/webcast/index_imc.php3"
-echo
+## TODO: implement this for MYSQL too and make it an option
+
+# echo "Point PG DB towards active_bristoldev instead of active_bristol."
+# $JSH sedreplace -changes \
+	# '$db_setup\["database"\] = "active_bristol";' \
+	# '$db_setup["database"] = "active_bristoldev";' \
+	# $CITYPATH/local/db-setup.php3
+# echo
+
+# added imc_user now
+# $JSH sedreplace -changes \
+	# 'my $default_usr = "imc_user"' \
+	# 'my $default_usr = "root"' \
+		# $CITYPATH/shared/modules/IMC/Database.pm
+
+## TODO: why not grep Apache conf to check a suitable virtualhost exists for this site otherwise inform user.
+
+
 
 if test "$DOBACKUPB4DEV"
 then
@@ -87,12 +102,12 @@ fi
 
 
 
-
 if test $1
 then echo "Skipping DB creation cos argument passed." ; exit 0
 else
 
-	echo "Local PGDB does not recognise user bristol, so must connect as postgres."
+	echo "Preparing to replace local DBs."
+	## Local PGDB does not recognise user bristol, so must connect as postgres.
 	$JSH sedreplace \
 		'connect - bristol' \
 		'connect - postgres' \
@@ -104,13 +119,15 @@ else
 
 	# Ensure postgres is not busy so that we may destroy the DB:
 	# Note: "su - root" used in case cron does not have full PATH setup.
-	su - root /etc/init.d/postgresql stop
+	su root /etc/init.d/postgresql stop
 	sleep 15
-	su - root /etc/init.d/postgresql start
+	su root /etc/init.d/postgresql start
 	sleep 15
 	# Replace the DB:
-	su - postgres env CITY_NAME=$CITY_NAME /www/scripts/recreatepgdb.sh
+	su postgres env CITY_NAME=$CITY_NAME /www/scripts/recreatepgdb.sh
 
 fi
+
+
 
 echo "All done."
