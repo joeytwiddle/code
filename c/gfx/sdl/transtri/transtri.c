@@ -293,7 +293,7 @@ int main(int argc,char *argv[]) {
 
 	{ int i,j;
 			  bgpixels=new(Uint32,bgtexture_w*bgtexture_h);
-			  for (i=0;i<bgtexture_w;i++)
+			  for (i=0;i<bgtexture_w;i++)     
 						 for (j=0;j<bgtexture_h;j++) {
 									Uint8 r,g,b;
 									Uint32 p;
@@ -429,7 +429,7 @@ int main(int argc,char *argv[]) {
 							regacc=reg;
                             for (I=0;I<IMGSKIP;I++) {
 								*regacc=p;
-						    	regacc+=1;
+						    	regacc+=1;   
                             }
                             reg=reg+screen_w;
                             // printf("%i - %i = %i\n",reg,&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j),reg-&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j));
