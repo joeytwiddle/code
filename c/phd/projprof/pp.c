@@ -758,6 +758,7 @@ void main(int argc,String *argv) {
 		// Map2d<float> *filter=Map2d<float>::simple();
 		
 		lowresmap=*lowresmap.smoothed(smoothlowres);
+  	lowresmap.writefile("lowresmapsmoothed.bmp");
 					
 		// // well just a little experiment...
 		// Map2d<float> *edgemag,*edgeang;
