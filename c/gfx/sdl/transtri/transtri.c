@@ -30,7 +30,7 @@
 // todo: Store #define constants for a variety of video modes so that the
 //   user may choose at runtime.
 
-#define DOS
+// #define DOS
 #ifdef DOS
 #define M_PI 3.14159265358979323846
 #include "SDL.h"
@@ -48,13 +48,14 @@
 
 // #define SCRWID 320
 // #define SCRHEI 200
+// #define NUMTRIS 300
 #define SCRWID 640
 #define SCRHEI 480
+#define NUMTRIS 100
 #define SCRBPS 32
-#define NUMTRIS 300
 #define desiredFramesPerSecond 50
-// #define IMGSKIP (SCRWID/160)
-#define IMGSKIP 4
+#define IMGSKIP (SCRWID/160)
+// #define IMGSKIP 4
 // #define DOUBLEMERGEBG
 
 #include "define.c"
@@ -161,14 +162,9 @@ plotLine(screen,TR_x2,TR_y2,TR_x3,TR_y3,MapRGB(screen->format,255,255,255));
 }
 */
 
-inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
+inline screen_pixelType merge_pixel(screen_pixelType p,Uint8 dr,Uint8 dg,Uint8 db) {
 	Uint8 r,g,b;
 	Uint16 fr,fg,fb;
-	// Uint32 p=getPixel(screen,x,y);
-	// Uint32 p=screen_getPixel(x,y);
-	screen_pixelType p=screen_getPixel(x,y);
-	// printf("%i\n",p);
-	// SDL_GetRGB(p,(screen->format),&r,&g,&b);
 	screen_GetRGB(p,&r,&g,&b);
 	// printf("    %i %i %i\n",r,g,b);
 	// printf("  + %i %i %i\n",dr,dg,db);
@@ -177,18 +173,26 @@ inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
 	fb=b+db;
 	// note: Sum of A B will exceed 255 if from top bit down either both bits are set or one bit is set, check next (worst case 00000001+11111111)
 	// process: In asm, don't we get a register bit set if there was an overflow?
-	if (fr>255) fr=255;
-	if (fg>255) fg=255;
-	if (fb>255) fb=255;
 	// p= SDL_MapRGB(screen->format,fr,fg,fb);
-	p= screen_MapRGB(fr,fg,fb);
-	screen_setPixel(x,y,p);
+	return screen_MapRGB(fr>255?255:fr,fg>255?255:fg,fb>255?255:fb);
+}
+
+inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
+	// Uint32 p=getPixel(screen,x,y);
+	// Uint32 p=screen_getPixel(x,y);
+	screen_pixelType p=screen_getPixel(x,y);
+	// printf("%i\n",p);
+	// SDL_GetRGB(p,(screen->format),&r,&g,&b);
+	screen_setPixel(x,y,merge_pixel(p,dr,dg,db));
 }
 
 #define halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY) { if (XA<LX) { YA = YA + (YB-YA)*(LX-XA)/(XB-XA); XA = LX; } if (XA>=HX) { YA = YA + (YB-YA)*(HX-XA)/(XB-XA); XA = HX-1; } if (YA<LY) { XA = XA + (XB-XA)*(LY-YA)/(YB-YA); YA = LY; } if (YA>=HY) { XA = XA + (XB-XA)*(HY-YA)/(YB-YA); YA = HY-1; } }
 // #define halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY) { if ((*(XA))<LX) { (*(YA)) = (*(YA)) + ((*(YB))-(*(YA)))*(LX-(*(XA)))/((*(XB))-(*(XA))); (*(XA)) = LX; } if ((*(XA))>=HX) { (*(YA)) = (*(YA)) + ((*(YB))-(*(YA)))*(HX-(*(XA)))/((*(XB))-(*(XA))); (*(XA)) = HX-1; } if ((*(YA))<LY) { (*(XA)) = (*(XA)) + ((*(XB))-(*(XA)))*(LY-(*(YA)))/((*(YB))-(*(YA))); (*(YA)) = LY; } if ((*(YA))>=HY) { (*(XA)) = (*(XA)) + ((*(XB))-(*(XA)))*(HY-(*(YA)))/((*(YB))-(*(YA))); (*(YA)) = HY-1; } }
 // #define clipLine(XA,YA,XB,YB,LX,HX,LY,HY) { halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY); halfClipLine(XB,YB,XA,YA,LX,HX,LY,HY); }
 #define clipLine(XA,YA,XB,YB,LX,HX,LY,HY) { halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY); halfClipLine(XB,YB,XA,YA,LX,HX,LY,HY); }
+
+// #define minmaxinto(x,y,v,w) { if ((x)<(y)) { v=(x); w=(y); } else { v=(y); w=(x); } }
+#define minmaxinto(x,y,v,w) { typeof(v) xa=(x), ya=(y); if ((xa)<(ya)) { v=(xa); w=(ya); } else { v=(ya); w=(xa); } }
 
 void plotTriRGB(SDL_Surface *screen,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int TR_x3, int TR_y3, Uint8 r,Uint8 g,Uint8 b) {
 	// Segfaults!  Bad interpolation causes overflow?
@@ -203,6 +207,8 @@ void plotTriRGB(SDL_Surface *screen,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int 
 			TR_y2>=0 && TR_y2<SCRHEI &&
 			TR_y3>=0 && TR_y3<SCRHEI
 	   ) {
+// #define forminmax(xa,xb,TR_todo) { Uint32 *reg,*endreg; minmaxinto(&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xb,y),&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xa,y),reg,endreg);  for (; reg <= endreg; reg += 1) { *reg=merge_pixel(*reg,r,g,b); } }
+#define forminmax(xa,xb,TR_todo) { Uint32 *reg,*endreg; minmaxinto(&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xb,y),&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,xa,y),reg,endreg);  for (; reg < endreg; reg += 1) { *reg=merge_pixel(*reg,r,g,b); } }
 #define TR_todo(x,y) merge(screen,x,y,r,g,b);
 #include "tri.c"
 #undef TR_todo
@@ -236,10 +242,12 @@ int main(int argc,char *argv[]) {
 	SDL_Event event;
 	int keepLooping=1;
 	int frames=0;
+    float framebits;
 	clock_t starttime;
 	FILE *fp;
 	Uint16 cylcenx=SCRWID/2,cylceny=SCRHEI/2;
 	Uint32 *bgpixels;
+    int start_clock;
 
 #ifdef DEBUGTOFILE
 	output=fopen("debug.txt","wa");
@@ -254,7 +262,7 @@ int main(int argc,char *argv[]) {
 	}
 	atexit(SDL_Quit);
 	SDL_WM_SetCaption("transience",NULL);
-	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE | SDL_FULLSCREEN );
+	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE /* | SDL_FULLSCREEN */ );
 	if (screen==NULL) {
 		fprintf(stderr,"Couldn't initialise video.\n");
 		return 1;
@@ -286,9 +294,14 @@ int main(int argc,char *argv[]) {
 
 	starttime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
 
+	start_clock = clock();
+
 	while (keepLooping) {
 
 		int releasetime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
+        framebits=((float)clock()-start_clock)*20.0/CLOCKS_PER_SEC;
+
+        // printf("%i %i %li\n",frames,framebits,CLOCKS_PER_SEC);
 
 		if ((frames % 20) == 0) {
 			fprintf(output,"\rframes/second: %.2f   triangles/second: %.0f ",(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime),NUMTRIS*(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime));
@@ -297,57 +310,65 @@ int main(int argc,char *argv[]) {
 		// SDL_Flip(screen);
 		SDL_UpdateRect(screen,0,0,SCRWID,SCRHEI);
 
-		cylcenx=SCRWID/2+SCRWID/2*sin(frames*0.017);
-		cylceny=SCRHEI/2+SCRHEI/2*cos(frames*0.012);
+		cylcenx=SCRWID/2+SCRWID/2*sin(framebits*0.017);
+		cylceny=SCRHEI/2+SCRHEI/2*cos(framebits*0.012);
 
-		{
-			Uint16 i,j;
-			// float qs=qsin((float)frames*3.141/45.0);
-			// Uint8 qsi=128+127*qs;
-			// float bounce=0.1+0.099*qcos(frames*M_PI/120.0);
-			// float bounceB=2.0+1.5*qsin(frames*M_PI/120.0);
-			Uint16 bounceC=2000*(0.05-0.05*(pow((qcos(frames*M_PI/115.0-2.5)+1.0)/2.0,0.6)*2.0-1.0));
-			Sint16 Doffset=100000+frames*10.0-600.0*qcos(frames*M_PI/120.0-1.0);
-			Uint16 aoffset=2000+frames*2.0+sin(frames*0.03-0.1)*200.0;
-			Uint32 overd=20000*(0.5+0.5*qcos(frames*M_PI/120.0-1.0));
-			// Uint32 tmp=((Uint16)bgtexture_w << 8)/M_PI;
-			// Sint16 D2offset=Doffset+400.0*qsin(frames*M_PI/140.0+123.6);
-			// Sint16 a2offset=aoffset+100.0*qsin(frames*M_PI/140.0+123.6);
+        {
+            Uint16 i,j;
+            // float qs=qsin((float)framebits*3.141/45.0);
+            // Uint8 qsi=128+127*qs;
+            // float bounce=0.1+0.099*qcos(framebits*M_PI/120.0);
+            // float bounceB=2.0+1.5*qsin(framebits*M_PI/120.0);
+            Uint16 bounceC=2000*(0.05-0.05*(pow((qcos(framebits*M_PI/115.0-2.5)+1.0)/2.0,0.6)*2.0-1.0));
+            Sint16 Doffset=100000+framebits*10.0-600.0*qcos(framebits*M_PI/120.0-1.0);
+            Uint16 aoffset=2000+framebits*2.0+sin(framebits*0.03-0.1)*200.0;
+            Uint32 overd=20000*(0.5+0.5*qcos(framebits*M_PI/120.0-1.0));
+            // Uint32 tmp=((Uint16)bgtexture_w << 8)/M_PI;
+            // Sint16 D2offset=Doffset+400.0*qsin(framebits*M_PI/140.0+123.6);
+            // Sint16 a2offset=aoffset+100.0*qsin(framebits*M_PI/140.0+123.6);
 #ifdef DOUBLEMERGEBG
-			Sint16 D2offset=1234+Doffset+frames*4.0+200.0*sin(frames*M_PI/123.0);
-			Sint16 a2offset=4321+aoffset+0.4*frames+20.0*sin(frames*M_PI/453.0+1.2);
+            Sint16 D2offset=1234+Doffset+framebits*4.0+200.0*sin(framebits*M_PI/123.0);
+            Sint16 a2offset=4321+aoffset+0.4*framebits+20.0*sin(framebits*M_PI/453.0+1.2);
 #endif
-			SDL_Rect dstrect;
-			dstrect.w=IMGSKIP;
-			dstrect.h=IMGSKIP;
-			for (i=0;i<screen_w;i+=IMGSKIP) {
-				// Uint8 thruwid=i*256/screen_w;
-				Uint16 xpart0=abs(i-cylcenx);
-				Uint32 xpart=(Uint32)square(i-cylcenx);
-				dstrect.x=i;
-				dstrect.y=0;
-				for (j=0;j<screen_h;j+=IMGSKIP, dstrect.y+=IMGSKIP) {
-					Uint8 br;
-					Uint16 d,D,a;
-					Uint32 p;
-					// todo: Optimise this!
-					// Uint16 d=qsqrt(xpart+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
-					// fprintf(output,"Getting and printing d\n");
-					d=qhypot(xpart0,abs(j-cylceny));
-					// fprintf(output,"%i\n",d);
-					// d=qsqrt(xpart+square(j-cylceny));
-					// Uint16 d=(abs(i-cylcenx)+abs(j-cylceny));
-					// Uint16 D=1000.0/pow(d,bounce)+Doffset;
-					// Uint16 D=(float)overd/d+Doffset;
-					// Uint16 D=( (d & 65534) == 0 ? 0 : overd/d+Doffset);
-					D=(d<2 ? 0 : overd/d);
-					// fprintf(output,"  %i\n",D);
-					// Uint16 a=(Uint16)((((Uint32)(tmp*(atan2(i-cylcenx,j-cylceny))) >> 8)+M_PI)+aoffset);
-					a=(Uint16)(bgtexture_w*(atan2(i-cylcenx,j-cylceny)/M_PI+M_PI));
-					// dstrect.y=j;
-					// p=getPixel(bgtexture, u, v);
-					// br=clip((Uint16)D/3.0,0,255);
-					// br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
+            SDL_Rect dstrect;
+            dstrect.w=IMGSKIP;
+            dstrect.h=IMGSKIP;
+            for (i=0;i<screen_w;i+=IMGSKIP) {
+                // Uint8 thruwid=i*256/screen_w;
+                Uint16 xpart0=abs(i-cylcenx);
+                // Uint32 xpart=(Uint32)square(i-cylcenx);
+                    Uint8 br;
+                    Uint16 d;
+                    screen_pixelType p;
+                    Uint8 r,g,b;
+                dstrect.x=i;
+                dstrect.y=0;
+                for (j=0;j<screen_h;j+=IMGSKIP, dstrect.y+=IMGSKIP) {
+                    // todo: Optimise this!
+                    // Uint16 d=qsqrt(xpart+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
+                    // fprintf(output,"Getting and printing d\n");
+                    d=qhypot(xpart0,abs(j-cylceny));
+                    // fprintf(output,"%i\n",d);
+                    // d=qsqrt(xpart+square(j-cylceny));
+                    // Uint16 d=(abs(i-cylcenx)+abs(j-cylceny));
+                    // Uint16 D=1000.0/pow(d,bounce)+Doffset;
+                    // Uint16 D=(float)overd/d+Doffset;
+                    // Uint16 D=( (d & 65534) == 0 ? 0 : overd/d+Doffset);
+#define D ( d<2 ? 0 : overd/d )
+                    // fprintf(output,"  %i\n",D);
+                    // Uint16 a=(Uint16)((((Uint32)(tmp*(atan2(i-cylcenx,j-cylceny))) >> 8)+M_PI)+aoffset);
+#define a ( bgtexture_w * ( atan2(i-cylcenx,j-cylceny ) / M_PI + M_PI ) )
+                    // dstrect.y=j;
+
+                    // Get pixel
+                    // p=getPixel(bgtexture, u, v);
+                    // br=clip((Uint16)D/3.0,0,255);
+                    // p=bgtexture_getPixel( ((Uint16)(a+aoffset)%bgtexture_w), ((Uint16)(D+Doffset)%bgtexture_h) );
+                    p=bgpixels[((Uint16)(a+aoffset)%bgtexture_w)+bgtexture_w*((Uint16)(D+Doffset)%bgtexture_h)];
+
+                    // Apply whiteout
+                    br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
+					screen_GetRGB(p,&r,&g,&b);
 #ifdef DOUBLEMERGEBG
 					{
 						Uint8 r2,g2,b2;
@@ -363,16 +384,49 @@ int main(int argc,char *argv[]) {
 						b=clip((int)b/2+(int)b2/2+(int)br,0,256);
 					}
 #else
-					// r=clip((int)r+(int)br,0,256);
-					// g=clip((int)g+(int)br,0,256);
-					// b=clip((int)b+(int)br,0,256);
+					r=clip((int)r+(int)br,0,256);
+					g=clip((int)g+(int)br,0,256);
+					b=clip((int)b+(int)br,0,256);
 #endif
+                    p=screen_MapRGB(r,g,b);
 					// r=max(r,br);
 					// g=max(g,br);
 					// b=max(b,br);
-					// p=bgtexture_getPixel( ((Uint16)(a+aoffset)%bgtexture_w), ((Uint16)(D+Doffset)%bgtexture_h) );
-					p=bgpixels[((Uint16)(a+aoffset)%bgtexture_w)+bgtexture_w*((Uint16)(D+Doffset)%bgtexture_h)];
+
+					// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
+					// SDL_MapRGB(screen->format,r,g,b);
+					// float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)framebits*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)framebits/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)framebits/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)framebits*0.29+j/15.0)/23.0));
+					// if (br<0.0) br=0.0;
+					// if (br>1.0) br=1.0;
+					// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,br*i*256/screen_w,br*j*256/screen_h,128+127*qsin(clock()*3.141/5.0/(float)CLOCKS_PER_SEC));
+					// ((int *)screen->pixels)[j*screen_w+i]=0;
+					// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,i*256/screen_w,j*256/screen_h,128+127*qs);
+					// screen_setPixel(i,j,screen_MapRGB(thruwid,j*256/screen_h,qsi));
+					// p=screen_MapRGB(r,g,b);
+
 					// SDL_FillRect(screen,&dstrect,p);
+					{ register Uint8 I,J;
+                        // Uint32 *reg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j);
+                        Uint32 *reg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j);
+                            Uint32 *regacc;
+                        for (J=0;J<IMGSKIP;J++) {
+							regacc=reg;
+                            for (I=0;I<IMGSKIP;I++) {
+								*regacc=p;
+						    	regacc+=1;
+                            }
+                            reg=reg+screen_w;
+                            // printf("%i - %i = %i\n",reg,&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j),reg-&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j));
+                            // reg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j+J);
+                            // printf("%i + %i = %i\n",reg-screen_pitch,screen_pitch,&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j),reg-&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j));
+                        }
+						// for (I=0;I<IMGSKIP;I++)
+							// for (J=0;J<IMGSKIP;J++) {
+								// screen_setPixel(i+I,j+J,p);
+							// }
+					}
+                    /*
+                    // Interpolate
 					screen_setPixel(i,j,p);
 					if (i>0 && j>0 && IMGSKIP>1) {
 					   // Interpolate last square to topleft
@@ -406,63 +460,55 @@ int main(int argc,char *argv[]) {
 							}
 						}
 					}
-					// { register Uint8 I,J;
-						// for (I=0;I<IMGSKIP;I++)
-							// for (J=0;J<IMGSKIP;J++) {
-								// screen_setPixel(i+I,j+J,p);
-							// }
-					// }
-					// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
-					// SDL_MapRGB(screen->format,r,g,b);
-					// float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)frames*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)frames/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)frames/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)frames*0.29+j/15.0)/23.0));
-					// if (br<0.0) br=0.0;
-					// if (br>1.0) br=1.0;
-					// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,br*i*256/screen_w,br*j*256/screen_h,128+127*qsin(clock()*3.141/5.0/(float)CLOCKS_PER_SEC));
-					// ((int *)screen->pixels)[j*screen_w+i]=0;
-					// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,i*256/screen_w,j*256/screen_h,128+127*qs);
-					// screen_setPixel(i,j,screen_MapRGB(thruwid,j*256/screen_h,qsi));
+                    */
 				}
 			}
 
-			{
+#define brightness 30
+            for (i=0;i<NUMTRIS;i++) {
+                // plotLine(screen,screen_w*frand(),screen_h*frand(),scr een_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
+                // plotTri(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
+                plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
+            }
 
-				// float camX=sin(frames*0.013);
-				// float camY=cos(frames*0.013);
-				// float camZ=-1; // sin(frames*0.013+1.235);
+			{
+                /*
+
+
+				// float camX=sin(framebits*0.013);
+				// float camY=cos(framebits*0.013);
+				// float camZ=-1; // sin(framebits*0.013+1.235);
 
 #define brightness 120
 				// #define STARY (SCRHEI/2)
 #define SCALE ( SCRWID*2 )
 
 				// #define STARX (2*SCRWID/3)
-				float STARX=SCRWID/2+SCRWID/6*sin(frames*0.02);
-				float STARY=SCRHEI/2+SCRWID/6*cos(frames*0.02)*sin(frames*0.001);
+				float STARX=SCRWID/2+SCRWID/6*sin(framebits*0.02);
+				float STARY=SCRHEI/2+SCRWID/6*cos(framebits*0.02)*sin(framebits*0.001);
 #define starPlotTri(xa,ya,xb,yb,xc,yc,bright) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,bright*brightness,bright*brightness/2.0,bright*brightness)
-#define starRad(a,b) ( (9.0)*(2.0+sin((a)*2.1+frames*0.063)+sin((b)*2.6+frames*0.05)) )
+#define starRad(a,b) ( (9.0)*(2.0+sin((a)*2.1+framebits*0.063)+sin((b)*2.6+framebits*0.05)) )
 				// #define starRad(a,b) ( 20 )
-#define starRes 40
+#define starRes 30
 #include "starsurface.c"
 #undef starRad
 #undef starRes
 #undef starPlotTri
 				// #undef STARX
 
-				STARX=SCRWID/2-SCRWID/6*sin(frames*0.02);
-				STARY=SCRHEI/2-SCRWID/6*cos(frames*0.02)*sin(frames*0.001);
+				STARX=SCRWID/2-SCRWID/6*sin(framebits*0.02);
+				STARY=SCRHEI/2-SCRWID/6*cos(framebits*0.02)*sin(framebits*0.001);
 				// #define STARX (SCRWID/3)
 #define starPlotTri(xa,ya,xb,yb,xc,yc,bright) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,bright*brightness/2.0,bright*brightness/2,0)
-#define starRad(a,b) ( (7.0)*(3.0+sinsharp((-a)*2.5+frames*0.044)+sinsharp((b)*3.5+frames*0.031)) )
-#define starRes 60
+#define starRad(a,b) ( (7.0)*(3.0+sinsharp((-a)*2.5+framebits*0.044)+sinsharp((b)*3.5+framebits*0.031)) )
+#define starRes 40
 #include "starsurface.c"
 #undef starRad
 #undef starRes
 #undef starPlotTri
 
-			}
-
-			for (i=0;i<NUMTRIS;i++) {
-				// plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
-				// #define starRad(vx,vy,vz) ( 40.0*qsin(vx+frames*0.024)+qsin(vy+frames*0.016)+qsin(vz+frames*0.0048) )
+            */
+                
 			}
 
 		}
