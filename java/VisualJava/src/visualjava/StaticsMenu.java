@@ -6,7 +6,7 @@ import org.neuralyte.common.swing.LazyJMenu;
 public class StaticsMenu extends LazyJMenu {
     String className;
     StaticsMenu(String name, String _className) {
-        super(name,false);
+        super(name);
         className = _className;
     }
     public void generateChildren() {

@@ -79,6 +79,13 @@ public class VisualJava {
 
         menu = new JMenu("File");
         menuItem = new JMenuItem("Exit");
+        menuItem.addActionListener(
+            new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    System.exit(0);
+                }
+            }
+        );
         menu.add(menuItem);
         menuBar.add(menu);
 
