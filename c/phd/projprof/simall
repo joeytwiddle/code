@@ -20,6 +20,7 @@ NOISES=0
 # ANGLES=`seq -w 25 05 40`
 # ANGLES=`seq -w 20 07 50`
 ANGLES="20 60"
+ANGLES="50"
 # ANGLES=`seq -w 20 20 60`
 # ANGLES=`seq -w 20 20 40`
 # ANGLES="34"
@@ -27,7 +28,7 @@ ANGLES="20 60"
 # ANGLES="34"
 # FOCALS=`seq -w 0.5 0.3 3.0`
 # FOCALS="0.5"
-FOCALS="2.0"
+FOCALS="0.5"
 
 touch start
 

@@ -682,7 +682,8 @@ class ProjectionProfiler {
 			}
 			// if (!useoldspacingsmethod)
 
-			// New vvp estimation from spacings
+			// New vvp estimation from spacings (it can do position too).
+			// First, project each line onto the baseline.
 			List<V2d> endpoints;
 			for (int i=0;i<cens.len;i++) {
 			// for (int i=cens.len-1;i>=0;i--) {
@@ -690,7 +691,7 @@ class ProjectionProfiler {
 				V2d v=baseline.intersect(l);
 				endpoints.add(v);
 			}
-			vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,uselinespacings,false);
+			vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,uselinespacings,true);
 
 			/* } else {
 

@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# export PATH="$PATH:."
+
+# DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
+# DOCUMENTS="left cen right full"
+
+DOCUMENTS="dar-crpage2-left30" # left
+# PPSCANMETHODS="hier full"
+PPSCANMETHODS="hier"
+PPMEASURES="deriv"
+# PPMEASURES="willbederived"
+# VVPMETHODS="spacings margins"
+# VVPMETHODS="simple"
+VVPMETHODS="spacings"
+NOISES="0"
+# LINESTODO=`seq -w 30 -1 02`
+# ANGLES=`seq -w 20 20 40`
+ANGLES="40"
+
+for DOCUMENT in $DOCUMENTS; do
+
+	SRCNAME="simgs/$DOCUMENT"
+
+	for PPSCANMETHOD in $PPSCANMETHODS; do
+
+		for PPMEASURE in $PPMEASURES; do
+
+			for VVPMETHOD in $VVPMETHODS; do
+
+				# # Do measure inline with scan method
+				# if test "$PPSCANMETHOD" = hier; then
+					# PPMEASURE=deriv
+				# else
+					# PPMEASURE=deriv # actually keep the same cos square can't handle noise
+					# # PPMEASURE=square
+				# fi
+
+				PPPARAMS="
+					-res 180 -adapt 0.03 -maxpixels 2000
+					-$PPMEASURE
+					-gamma 0.0 -recwid 200 -light -oth 12
+				"
+				# show bad point -badx 100 -bady 65"
+				if test "$PPSCANMETHOD" = hier; then
+					# Hierarchical scan
+					PPPARAMS="$PPPARAMS -dolowresscan -lowres 60 -lowsmooth 1"
+				# else
+					# Full PP scan
+					# PPPARAMS="$PPPARAMS"
+				fi
+				if test "$VVPMETHOD" = "margins"; then
+					# Margins method
+					PPPARAMS="$PPPARAMS -usetwolines"
+				elif test "$VVPMETHOD" = "spacings"; then
+					PPPARAMS="$PPPARAMS -spacings"
+				fi
+				PPCOM="pp $PPPARAMS"
+				export PPCOM;
+
+				for NOISE in $NOISES; do
+
+					# numlines=30
+					# for numlines in $LINESTODO; do
+
+						# 	echo
+						# 	echo "LINES: $numlines -----------------------------------------"
+
+						IFILE="$SRCNAME.bmp"
+						RES="results.txt"
+						FOCALRES="focalres.txt"
+
+						rm -rf res
+						mkdir -p res
+						echo "0" > res/.nosync
+						rm -f "$RES"
+						echo "START" > "$RES"
+						rm -f "$FOCALRES"
+						echo "" > "$FOCALRES"
+
+						# for roll in `listnums -6 6`; do
+						roll="90";
+							for yaw in $ANGLES; do
+								for pitch in $ANGLES; do
+
+									echo
+									echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
+									echo
+									simone "$IFILE" $roll $yaw $pitch -imgnoise $NOISE
+
+								done # pitch
+							done # yaw
+						# done # roll
+
+				done # noise
+
+				# echo "Press a key"
+				# waitforkeypress
+
+			done # vvp method
+
+		done # hvp pp measure
+
+	done # hvp searchspace scan method
+
+done # document
+
+touch done
