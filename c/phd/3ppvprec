@@ -1,3 +1,5 @@
-cd pp2
-# getres $1
-getdocres $1
+cd projprof
+getres $1
+# Lost and forgotten! :-P
+# cd pp2
+# getdocres $1
