@@ -8,8 +8,5 @@ grep "W = " genres.txt | head -1 | sed "s/W/w/"
 
 cat showdesiredspacings.gpl
 
-) > showdesiredspacings.tmp
-
-chmod a+x showdesiredspacings.tmp
-./showdesiredspacings.tmp
+) | gnuplot
 

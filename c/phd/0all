@@ -4,15 +4,15 @@ echo "$1" > current
 
 echo "--- 1texture $1"
 # echo "0all: NOT doing Texture"
-1texture $1
+# 1texture $1
 
 # echo "--- blob $1"
 echo "--- NOT BLOBBING blob $1"
 # blob $1
 # xv /j/images/blobs/$1.bmp &
 
-echo "--- 2locthr $1"
-2locthr $1
+# echo "--- 2locthr $1"
+# 2locthr $1
 
 echo "--- 3ppvprec $1"
 # echo "--- NOT DOING 3ppvprec $1"
