@@ -1,4 +1,6 @@
-cat good2.txt | while read X; do
-  0all $X
+cat good2.txt |
+sed "s/-.*//" |
+while read X; do
+  ./0all $X
 done
 # forall -shell in all2.txt do 0all %s
