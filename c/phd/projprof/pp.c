@@ -751,15 +751,15 @@ void main(int argc,String *argv) {
   pplowres.calculate();
   Map2d<float> lowresmap=pplowres.getppmap();
   lowresmap.writefile("lowresmap.bmp");
+		// lowresmap=*lowresmap.smoothed(smoothlowres);
+		lowresmap=*lowresmap.filterby(lowresmap.gaussian(smoothlowres));
+  	lowresmap.writefile("lowresmapsmoothed.bmp");
   Map2d<bool> *lowresthresh;
 	if (usezerocrossings) {
 
 		Map2d<float> *filter=Map2d<float>::sobel();
 		// Map2d<float> *filter=Map2d<float>::simple();
 		
-		lowresmap=*lowresmap.smoothed(smoothlowres);
-  	lowresmap.writefile("lowresmapsmoothed.bmp");
-					
 		// // well just a little experiment...
 		// Map2d<float> *edgemag,*edgeang;
 		// Map2d<float> *deriv2mag,*deriv2ang;
