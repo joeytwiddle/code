@@ -2,7 +2,7 @@ package jlib.strings;
 
 import jlib.JString;
 
-import javax.servlet.http.HttpSession;
+// import javax.servlet.http.HttpSession;
 
 import java.lang.String;
 import java.util.jar.*;
