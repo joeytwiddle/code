@@ -1,12 +1,66 @@
-#define DONT_RANSAC
+bool linespacings_do_ransac=true;
+
+float testASubSet(List<V2d> ps);
 
 bool equal(V2d u,V2d v) {
 	return V2d::equal(u,v);
 }
 
+
 float guessU;
 
 float lastV,lastW; // modified by testASubSet, read by doRansac and vvpFromPoints
+
+
+float doRansac(List<V2d> ps) { // returns error
+
+	float currentErr=testASubSet(ps);
+	system("cp gplfit.ps gplfit1.ps");
+	float bestV=lastV;
+	float bestW=lastW;
+	List<V2d> currentps;
+	for (int i=0;i<ps.len;i++)
+		currentps.add(ps.get(i));
+
+	boolean loop=true;
+	while (loop) {
+		// See if we can improve currentErr by removing a single point
+		float bestErr=currentErr;
+		List<V2d> bestps;  bestps.add(currentps);
+		if (linespacings_do_ransac) {
+			// Try the current list with point number i removed, and keep the best one
+			for (int i=0;i<currentps.len;i++) {
+				// printf("Removing %i / %i\n",i,currentps.len);
+				List<V2d> testps;
+				testps.add(currentps);
+				testps.removenum(i+1);
+				// printf("Testing...\n");
+				float newErr=testASubSet(testps);
+				if (newErr<bestErr) {
+					// printf("=)\n");
+					bestErr=newErr;
+					bestps=List<V2d>();
+					bestps.add(testps);
+					// printf("=)\n");
+				}
+			}
+		}
+		if (bestErr<currentErr*0.3) {
+			// printf("Hello\n");
+			printf("Improvement: %i %f\n",currentps.len-1,currentErr);
+			currentErr=bestErr;
+			currentps=bestps;
+			// printf("Improvement: %f %s\n",currentErr,currentps.toString());
+		} else {
+			loop=false; // no improvements found, drop out of loop
+		}
+	}
+
+	printf("RANSAC concluded with %i / %i\n",currentps.len,ps.len);
+	// Redo current to get lastV and lastW correct
+	return testASubSet(currentps);
+
+}
 
 
 float testASubSet(List<V2d> ps) { // returns error
@@ -25,12 +79,13 @@ float testASubSet(List<V2d> ps) { // returns error
 	fflush(gplout);
 	fclose(gplout);
 
-	system("cat gpldo.txt fitgnuplot2.txt > gplsolve.txt");
-	system("cat gplsolve.txt | gnuplot > gplans.txt 2>&1");
-	system("grep '^v' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > v.txt");
-	system("grep '^w' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > w.txt");
-	system("grep '^WSSR' gplans.txt | tail -1 | between ':' | before 'delta' | sed 's/ //g' > wssr.txt");
-	system("cat wssr.txt");
+	// system("cat gpldo.txt fitgnuplot2.txt > gplsolve.txt");
+	// system("cat gplsolve.txt | gnuplot > gplans.txt 2>&1");
+	// system("grep '^v' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > v.txt");
+	// system("grep '^w' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > w.txt");
+	// system("grep '^WSSR' gplans.txt | tail -1 | between ':' | before 'delta' | sed 's/ //g' > wssr.txt");
+	system("./dogplfitting.sh");
+	// system("cat wssr.txt");
 	float V=readfloatfromfile("v.txt");
 	float W=readfloatfromfile("w.txt");
 
@@ -53,60 +108,10 @@ float testASubSet(List<V2d> ps) { // returns error
 
 	// printf("Done testing.\n");
  	
-	return Wssr/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len;
+	return Wssr/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len;
 	
 }
 
-
-float doRansac(List<V2d> ps) { // returns error
-
-	float currentErr=testASubSet(ps);
-	system("cp gplfit.ps gplfit1.ps");
-	float bestV=lastV;
-	float bestW=lastW;
-	List<V2d> currentps;
-	for (int i=0;i<ps.len;i++)
-		currentps.add(ps.get(i));
-
-	boolean loop=true;
-	while (loop) {
-		// See if we can improve currentErr by removing a single point
-		float bestErr=currentErr;
-		List<V2d> bestps;  bestps.add(currentps);
-#ifndef DONT_RANSAC
-		// Try the current list with point number i removed, and keep the best one
-		for (int i=0;i<currentps.len;i++) {
-			// printf("Removing %i / %i\n",i,currentps.len);
-			List<V2d> testps;
-			testps.add(currentps);
-			testps.removenum(i+1);
-			// printf("Testing...\n");
-			float newErr=testASubSet(testps);
-			if (newErr<bestErr) {
-				// printf("=)\n");
-				bestErr=newErr;
-				bestps=List<V2d>();
-				bestps.add(testps);
-				// printf("=)\n");
-			}
-		}
-#endif
-		if (bestErr<currentErr) {
-			// printf("Hello\n");
-			printf("Improvement: %i %f\n",currentps.len-1,currentErr);
-			currentErr=bestErr;
-			currentps=bestps;
-			// printf("Improvement: %f %s\n",currentErr,currentps.toString());
-		} else {
-			loop=false; // no improvements found, drop out of loop
-		}
-	}
-
-	printf("Out of loop\n");
-	// Redo current to get lastV and lastW correct
-	return testASubSet(currentps);
-
-}
 
 
 V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usingspacings) {
