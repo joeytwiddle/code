@@ -7,6 +7,7 @@ fi
 
 MYSQLDB="imc"
 test $MYSQLDESTDB || MYSQLDESTDB=$MYSQLDB
+test $MYSQLDB = $MYSQLDESTDB || echo "Since you are saving to a different mysql db, you'll need to hack active's settings."
 BACKUPDIR="/www/db-backups/$CITY_NAME"
 
 echo "######## MYSQL:"

@@ -1,7 +1,7 @@
 # Note: can't adjust db dump here since not owner of file.
 
 PSQLDB="active_bristol"
-BACKUPDIR="/www/db-backups"
+BACKUPDIR="/www/db-backups/$CITY_NAME"
 
 echo "######## POSTGRES:"
 echo "Destroying $PSQLDB database"
