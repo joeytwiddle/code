@@ -790,13 +790,17 @@ class ProjectionProfiler {
 								// ? LineSpacing
 								// : LineWidth );
 						uselinespacings=a.argexists("-spacings","use spacings rather than simple pos for fitting");
+						if (a.argexists("-noransac","do not use RANSAC on fitting"))
+							linespacings_do_ransac=false;
+						useoldspacingsmethod=a.argexists("-oldspacings","use old spacings method (deprecated?)");
 
-						a.comment("Finding horizontal vanishing point using projection profiles:");
+						a.comment("Output images:");
 						bool writepps=a.argexists("-writepps","write the potential PPs");
 						bool writebestpp=!a.argexists("-dontwritebestpp","don't write the best PP");
+						showbadx=a.intafter("-badx","x pos of bad PP to show",-1);
+						showbady=a.intafter("-bady","y pos of bad PP to show",-1);
 						bool doinfo=true; // Needed for summaries!  a.argexists("-doinfo","draw info image");
 						float gamma=a.floatafter("-gamma","take original image this far to white before summary",0.4);
-						useoldspacingsmethod=a.argexists("-oldspacings","use old spacings method");
 						if (a.argexists("-corinc","use over-inclusive RANSAC"))
 							Correlator2dMethod=2;
 						bool overlayquadonly=a.argexists("-quadonly","overlay quadrilateral only on summary image");
@@ -804,6 +808,7 @@ class ProjectionProfiler {
 						bool overlayinfquadonly=a.argexists("-infquadonly","overlay extended quadrilateral only on summary image");
 						bool lightoverlay=a.argexists("-light","light overlay for dark image");
 						//  a.comment("Info image options:");
+
 						a.comment("PP measure of correctness: (default = derivative)");
 						measure=&measurederiv;
 						if (a.argexists("-deriv","use derivative measure"))
@@ -815,8 +820,6 @@ class ProjectionProfiler {
 						if (a.argexists("-variance","use variance measure"))
 							measure=&measurevariance;
 						//  bool invert=a.argexists("-inv","invert input image to look for line spaces");
-						showbadx=a.intafter("-badx","x pos of bad PP to show",-1);
-						showbady=a.intafter("-bady","y pos of bad PP to show",-1);
 						String bname=a.getarg("binary image");
 						String oname=a.argor("original image","*none*");
 						String datafile=a.argor("crop data file","*none*");

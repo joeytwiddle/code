@@ -10,7 +10,9 @@
 # ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -adapt 0.3 -square -oth 12 $*
 # pp -recwid 200 -maxpixels 2000 -spacings -gamma 0.0 -usetwolines -res 120 -lowres 30 -adapt 0.03 -square -oth 12 $*
 
-echo "$PPCOM $@"
+curseyellow
+echo "$PPCOM $@" | tr "\n\t" "  " | tr -s " "; echo
+cursegrey
 $PPCOM "$@"
 
 rm -f fit.log

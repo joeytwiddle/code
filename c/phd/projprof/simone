@@ -29,7 +29,9 @@ PARAMS="-qnd -centralise -focal $FOCAL -noise 0.0 -lines 32 -yoff 0.001 -roll $r
 
 PARAMS="$PARAMS $@"
 
+curseyellow
 echo ../gentestimg/simgen $PARAMS 
+cursegrey
 ../gentestimg/simgen $PARAMS > genres.txt
 
 mv gpldata.txt gpl0data.txt
