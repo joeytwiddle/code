@@ -1,3 +1,0 @@
-echo $HOME/j/images/$1.bmp*
-echo $HOME/j/images/blobs/$1.*
-forall $HOME/j/images/bin/regs$1/reg* do -stealth "echo %w $HOME/j/images/pp/$1%n/*"
