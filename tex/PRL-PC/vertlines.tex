@@ -319,7 +319,8 @@ Having obtained the focal length of the camera, we may now recover a fronto-para
 The grid of square pixels values in the original image project onto the document in the scene as quadrilaterals.
 % The knowledge of the image pixel values is projected as a grid onto the document plane.
 % The square pixels in the image project as quadrilaterals onto the document.
-However, bi-cubic interpolation between these points on the document plane is arguably overkill.
+However, bi-cubic interpolation between these points on the document plane would be overkill,
+unless data is being extracted for superresolution.
 A simple perspective mapping with interpolation in the image plane is more efficient, and
 will give rise to the same performance in the final stage of optical character recognition.
 
