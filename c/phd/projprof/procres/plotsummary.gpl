@@ -1,4 +1,19 @@
-#!/usr/bin/gnuplot
+# #!/usr/bin/gnuplot
+
+# for X in hier-large entire-large large-noise50 large-noise30 centralised centralised2 tmp tmp2; do
+
+echo *.results
+
+for Y in *.results; do
+
+X=`echo "$Y" | sed "s/\(.*\)\..*/\1/"`
+
+echo "$X"
+
+./extracterror "$X" 2> /tmp/tmp.txt
+cat /tmp/tmp.txt | grep "ave = " > "$X.totals"
+
+gnuplot << !
 
 # splot [0:90] [0:90] [0:1] 'errgrid.dat' using 1:2:4
 # set data style points
@@ -12,10 +27,10 @@ set view 45,45,1,1
 set surface
 set noclabel
 set nokey
-# set title "Accuracy of recovery of VVP" "Times-Roman,28"
+# set title "Accuracy of recovery of HVP" "Times-Roman,28"
+# set zlabel "Accuracy of recovery of VVP" "Times-Roman,28"
 set xlabel "yaw" "Times-Roman,28"
 set ylabel "pitch" "Times-Roman,28"
-set zlabel "accuracy" "Times-Roman,28"
 # set term post "landscape,times"
 set term post eps "Times-Roman,18"
 # set output "fullbasedata.eps"
@@ -26,5 +41,27 @@ set term post eps "Times-Roman,18"
 # splot [5:85] [5:85] [-5:0] "morebasedata.txt" using 1:2:28 w l
 # set output "moretestdata.eps"
 # splot [5:85] [5:85] [-5:0] "moretestdata.txt" using 1:2:28 w l
-set output "dataresults.eps"
-splot [5:85] [5:85] [-5:0] "dataresults.txt" using 1:2:28 w l
+
+# set title "Accuracy of recovery of HVP" "Times-Roman,28"
+set zlabel "HVP\naccuracy" "Times-Roman,28"
+set output "$X-hvp.eps"
+splot [5:85] [5:85] [-5:0] "$X.data" using 1:2:27 w l
+
+# set title "Accuracy of recovery of VVP" "Times-Roman,28"
+set zlabel "VVP\naccuracy" "Times-Roman,28"
+set output "$X-vvp.eps"
+splot [5:85] [5:85] [-5:0] "$X.data" using 1:2:28 w l
+
+!
+
+convert "$X-hvp.eps" jpgs/"$X-hvp.jpg"
+convert "$X-vvp.eps" jpgs/"$X-vvp.jpg"
+
+done
+
+convert "lines*hvp*.eps" -geometry 100 -delay 20 -loop 0 "alllines-hvp.gif"
+convert "lines*vvp*.eps" -geometry 100 -delay 20 -loop 0 "alllines-vvp.gif"
+
+convert "noise*hvp*.eps" -geometry 100 -delay 20 -loop 0 "allnoise-hvp.gif"
+convert "noise*vvp*.eps" -geometry 100 -delay 20 -loop 0 "allnoise-vvp.gif"
+
