@@ -1,11 +1,15 @@
-# Joey
-
 (
 
-DESTDIR="/home/mike/db-backups"
+CITY_NAME=bristol
+
+# DESTDIR="/home/mike/db-backups"
+DESTDIR="/www/active-cvs/$CITY_NAME/webcast/db-backups"
+
+## If it's a symlink, remove it.
+test -h "$DESTDIR" && rm -f "$DESTDIR"
 mkdir -p "$DESTDIR"
 
-PSQLDB="active_bristol"
+PSQLDB="active_"$CITY_NAME
 MYSQLDB="imc"
 MYSQLUSER="imc_backup"
 MYSQLPW="imc_backup"
@@ -35,7 +39,7 @@ cksum "$MYSQLDEST"
 
 echo
 echo "Directory after:"
-ls -lrtF "$DESTDIR"
+ls -lrtF "$DESTDIR/"
 
 # gzipping does not help rsync!
 # gzip -f "$PSQLDEST" "$MYSQLDEST"
