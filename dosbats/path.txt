@@ -1,0 +1,16 @@
+
+Push and pull path
+By Paul Clark (C)Dec 1992
+
+These two programs work together to enable the user to store their path along the tree and recall it at a later date.  Push stores the path, pull restores it.
+
+The files necessary for these programs to work are:
+        
+        PUSH.BAT                        PULL.BAT
+        PATH.TXT (this file)            CD.PNC
+
+The last file must be in a directory which can be found in the environment variable TOOLS.  This means that if CD.PNC was in the directory C:\UTILS, then an addition of the following line must be made to the AUTOEXEC.BAT file:
+
+        SET TOOLS=C:\UTILS
+
+The push and pull files will not operate without this.  Perhaps if my programming skills improve I may be able to get around this obstacle, but at the moment this is the best solution I can find.
