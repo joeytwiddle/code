@@ -532,6 +532,14 @@ public:
 			      max=num(i);
 			  return max;
 			}
+
+			void reverse() {
+				for (int i=0;i<len/2;i++) {
+					ListObject o=list[i];
+					list[i]=list[len-1-i];
+					list[len-1-i]=o;
+				}
+			}
 			
     };
 
