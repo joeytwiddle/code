@@ -13,9 +13,15 @@ PPFILE="res/ppres-r$roll-y$yaw-p$pitch.txt"
   grep "^down = " $GENFILE
   grep "^HVP = " $GENFILE
   grep "^VVP = " $GENFILE
+	grep "U = " $GENFILE | tail -1
+	grep "V = " $GENFILE | tail -1
+	grep "W = " $GENFILE | tail -1
   echo "PP:"
   grep "^right = " $PPFILE
   grep "^down = " $PPFILE
   grep "^HVP = " $PPFILE
   grep "^VVP = " $PPFILE
+	grep "U = " $PPFILE | tail -1
+	grep "V = " $PPFILE | tail -1
+	grep "W = " $PPFILE | tail -1
 )
