@@ -51,5 +51,5 @@ ls -lrtF "$DESTDIR/"
 # gzipping does not help rsync!
 # gzip -f "$PSQLDEST" "$MYSQLDEST"
 
-) | tee /home/mike/db-backups/err.txt |
+) | tee /tmp/dumpdbs.err |
     mail cron@hwi.ath.cx

@@ -39,8 +39,8 @@ then
 fi
 
 ## Check lockfile
-if test ! -f /www/getbris-auto && test ! $FORCE; then
-	echo "/www/getbris-auto not present, aborting."
+if test ! -f /www/get$CITY_NAME-auto && test ! $FORCE; then
+	echo "/www/get$CITY_NAME-auto not present, aborting."
 	echo "Use -force from the command line to override."
 	exit 1
 fi
