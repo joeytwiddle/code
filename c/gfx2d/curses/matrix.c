@@ -213,33 +213,33 @@ void slideColumn(int x,bool lastSlide) {
 
 	for (int y=LINES-1;y>0;y--) {
 		mbit src = thematrix[x][y-1];
-#ifdef SLIDING_WHITE_BITS
-		if (src == BLOCKHEAD_PROCESS) {
-			if (lastSlide || prob(slidingProcessDies)) {
-				matrix_set(x,y,randSymbol());
-			} else {
+		#ifdef SLIDING_WHITE_BITS
+			if (src == BLOCKHEAD_PROCESS) {
+				if (lastSlide || prob(slidingProcessDies)) {
+					matrix_set(x,y,randSymbol());
+				} else {
+					matrix_set_process(x,y);
+				}
+			#ifdef PROCESSING_WHITE_BITS
+				} else if (src == STATIC_PROCESS_EMPTY) {
+					matrix_set(x,y,' ');
+				} else if (src == STATIC_PROCESS_FULL) {
+					matrix_set(x,y,randSymbol());
+				} else if (thematrix[x][y] == STATIC_PROCESS_EMPTY || thematrix[x][y] == STATIC_PROCESS_FULL) {
+					// Not working?
+					thematrix[x][y] = ( src == ' ' ? STATIC_PROCESS_EMPTY : STATIC_PROCESS_FULL );
+			#endif
+			} else if (src != ' ' && last == ' ' && !lastSlide && prob(newSlidingProcess)) {
 				matrix_set_process(x,y);
+			} else {
+				if (last == src)
+					thematrix[x][y]=src;
+				else
+					matrix_set(x,y,src);
 			}
-#ifdef PROCESSING_WHITE_BITS
-		} else if (src == STATIC_PROCESS_EMPTY) {
-			matrix_set(x,y,' ');
-		} else if (src == STATIC_PROCESS_FULL) {
-			matrix_set(x,y,randSymbol());
-		} else if (thematrix[x][y] == STATIC_PROCESS_EMPTY || thematrix[x][y] == STATIC_PROCESS_FULL) {
-			// Not working?
-			thematrix[x][y] = ( src == ' ' ? STATIC_PROCESS_EMPTY : STATIC_PROCESS_FULL );
-#endif
-		} else if (src != ' ' && last == ' ' && !lastSlide && prob(newSlidingProcess)) {
-			matrix_set_process(x,y);
-		} else {
-			if (last == src)
-				thematrix[x][y]=src;
-			else
-				matrix_set(x,y,src);
-		}
-#else
-		matrix_set(x,y,src);
-#endif
+		#else
+			matrix_set(x,y,src);
+		#endif
 		last = src;
 	}
 	thematrix[x][0] = ' ';
