@@ -16,7 +16,91 @@ import nuju.*;
 import jlib.db.*;
 import jlib.multiui.*;
 
-public class CEDict {
+public abstract class CEDict {
+
+	public abstract List lookup(String chars);
+
+	public static void main(String[] args) {
+
+		ArgParser a=new ArgParser(args);
+		File f=a.getFile("input page");
+		a.done();
+
+		try {
+
+			// CEDict dict=new DirectCEDict("b");
+			CEDict dict=new DoubleCEDict();
+
+			FileReader fr=new FileReader(f);
+			System.out.println("Encoding: "+fr.getEncoding());
+			BufferedReader br=new BufferedReader(fr);
+
+			boolean inBlock=false;
+			StringBuffer sb=new StringBuffer();
+
+			int i;
+
+			while ((i=br.read())>=0) {
+
+				// System.out.println("int: "+i);
+
+				char c=(char)i;
+				Character.UnicodeBlock ub=Character.UnicodeBlock.of(c);
+				// System.out.println("Unicode: "+ub);
+
+				if (ub!=Character.UnicodeBlock.BASIC_LATIN) {
+					sb.append(c);
+					inBlock=true;
+				} else {
+					if (inBlock) {
+						inBlock=false;
+						// processBlock(sb);
+						// System.out.println(sb.toString());
+						String s=sb.toString();
+						// Pairs
+						for (int j=0;j<sb.length()-3;j+=2) {
+							List res=dict.lookup(s.substring(j,j+4));
+						}
+						for (int j=0;j<sb.length()-1;j+=2) {
+							List res=dict.lookup(s.substring(j,j+2));
+						}
+						sb.delete(0,sb.length());
+					}
+				}
+
+				// System.out.println();
+
+			}
+
+		} catch (Exception e) {
+			System.err.println(""+e);
+		}
+	}
+
+	// static void processBlock(StringBuffer sb) {
+	// }
+
+
+}
+
+class DoubleCEDict extends CEDict {
+
+	CEDict gdict=new DirectCEDict("g");
+	CEDict bdict=new DirectCEDict("b");
+
+	public DoubleCEDict() {
+	}
+
+	public List lookup(String chars) {
+		List l=gdict.lookup(chars);
+		List l2=bdict.lookup(chars);
+		l.addAll(l2);
+		return l;
+	}
+
+}
+
+class DirectCEDict extends CEDict {
 
 	Process dict;
 	BufferedReader dictin;
@@ -33,7 +117,7 @@ public class CEDict {
 		}
 	}
 
-	public CEDict(String charStyle) {
+	public DirectCEDict(String charStyle) {
 
 		try {
 
@@ -85,66 +169,6 @@ public class CEDict {
 		return res;
 
 	}
-
-
-	public static void main(String[] args) {
-
-		ArgParser a=new ArgParser(args);
-		File f=a.getFile("input page");
-		a.done();
-
-		try {
-
-			CEDict dict=new CEDict("b");
-
-			FileReader fr=new FileReader(f);
-			System.out.println("Encoding: "+fr.getEncoding());
-			BufferedReader br=new BufferedReader(fr);
-
-			boolean inBlock=false;
-			StringBuffer sb=new StringBuffer();
-
-			int i;
-
-			while ((i=br.read())>=0) {
-
-				// System.out.println("int: "+i);
-
-				char c=(char)i;
-				Character.UnicodeBlock ub=Character.UnicodeBlock.of(c);
-				// System.out.println("Unicode: "+ub);
-
-				if (ub!=Character.UnicodeBlock.BASIC_LATIN) {
-					sb.append(c);
-					inBlock=true;
-				} else {
-					if (inBlock) {
-						inBlock=false;
-						// processBlock(sb);
-						// System.out.println(sb.toString());
-						String s=sb.toString();
-						// Pairs
-						for (int j=0;j<sb.length()-3;j+=2) {
-							List res=dict.lookup(s.substring(j,j+4));
-						}
-						for (int j=0;j<sb.length()-1;j+=2) {
-							List res=dict.lookup(s.substring(j,j+2));
-						}
-						sb.delete(0,sb.length());
-					}
-				}
-
-				// System.out.println();
-
-			}
-
-		} catch (Exception e) {
-			System.err.println(""+e);
-		}
-	}
-
-	// static void processBlock(StringBuffer sb) {
-	// }
 
 }
 
