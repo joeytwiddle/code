@@ -1,16 +1,28 @@
+#!/usr/bin/runhugs
+-- rats ghc doesn't like that!
+
 -- Usage:
 -- treelist <file> | vi -
 -- then start folding
 -- and :set foldtext=getline(v:foldstart).'\ \ \ ['.(v:foldend-v:foldstart).'\ lines]'
 
--- module Main where
+-- Design problem:
+-- If we don't want it to branch on small differences (eg <3 chars)
+-- then we have to keep the path knowledge in the child.
+-- Actually, I think it might be OK, because it doesn't branch ["branch","bravo"] until they are searched up to col=2.
+-- No I think the problem is there.  To see what's rejected, employ commented code on line: "| same = {- ... -}"
+
+-- TODO:
+-- Possible leave out a single if it == the last branch opening (user has already seen it)
+
+module Main where
 -- import Hlib
 import System
 main = do
   args <- getArgs
   go args
 
-data Tree = Layer String Tree | MinBranch [Tree] | Single String | Branch Bool String [Tree] | Leaf [String]
+data Tree = Single String | Branch Bool String [Tree] | Leaf [String]
   -- deriving (Show)
 
 instance Show Tree where
@@ -18,12 +30,12 @@ instance Show Tree where
   -- show (Leaf ss) = concat (map addn ss)
     -- where addn s = s++"\n"
 
-showTree sofar indent (Layer l t) = "| "++indent++l++"\n" ++ showTree (sofar++l) (indent++(replicate (length l) ' ')) t
-showTree sofar indent (Single s) = ". "++(sofar++""++s++""++"\n")
-showTree sofar indent (MinBranch bs) = "( "++indent++"\n" ++ concat (map (showTree sofar (indent)) bs)++ ")\n"
+showTree sofar indent (Single s) = ". "++(indent++""++s++""++"\n")
 showTree sofar indent (Branch same c bs)
-  | same      = "{ "++indent++c++"\n"++ concat (map (showTree (sofar++c) (indent++(replicate (length c) ' '))) bs) ++ "}\n"
+  | same && (length c)>=3    = "+ "++sofar++c++" {\n"++ concat (map (showTree (sofar++c) ((realindent))) bs) ++ "-"++realindent++"}\n"
+  | same      = {-"| "++indent++"("++c++")\n" ++-} concat (map (showTree (sofar++c) (indent++c)) bs)
   | otherwise = concat (map (showTree sofar (indent)) bs)
+  where realindent = replicate (length indent + length c) ' '
   -- | otherwise = "< "++indent++"{"++c++"\n"++ concat (map (showTree sofar (indent++(replicate (length c) ' '))) bs) ++ "> "++indent++"}\n"
 showTree sofar indent (Leaf ls) = concat (map (sort) ls)
   where sort xs = "= " ++ indent ++ ">"++xs++"<" ++ "\n"
@@ -42,7 +54,7 @@ treebreak col lines
   | indextoolarge        = (Leaf (concat breaks))
   | length breaks == 0   = Leaf []
   | (length breaks) == 1 = treebreak (col+1) lines
-  | otherwise = Branch True ((take (col) (head (head breaks)))) (( map (subtree col) breaks ))
+  | otherwise            = Branch True ((take (col) (head (head breaks)))) (( map (subtree col) breaks ))
   where breaks = findbreaks col [] lines
         indextoolarge = length lines <= 1 -- col > 1 -- (length (head (head breaks))) -- col>2000 -- (myhead (head (head breaks))) == '_'
         -- strip n xs = map (stripc n) xs
