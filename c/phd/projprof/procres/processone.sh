@@ -61,11 +61,13 @@ set term post eps "Times-Roman,18"
 # splot [5:85] [5:85] [-5:0] "moretestdata.txt" using 1:2:28 w l
 
 # set title "Accuracy of recovery of HVP" "Times-Roman,28"
+set title "HVP on $X" "Times-Roman,28"
 set zlabel "HVP\naccuracy" "Times-Roman,28"
 set output "$X-hvp.eps"
 splot [5:85] [5:85] [-3:0] "$X.data" using 1:2:27 w l
 
 # set title "Accuracy of recovery of VVP" "Times-Roman,28"
+set title "VVP on $X" "Times-Roman,28"
 set zlabel "VVP\naccuracy" "Times-Roman,28"
 set output "$X-vvp.eps"
 splot [5:85] [5:85] [-3:0] "$X.data" using 1:2:28 w l
