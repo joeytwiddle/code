@@ -54,4 +54,4 @@ ls -lrtF "$DESTDIR/"
 # gzip -f "$PSQLDEST" "$MYSQLDEST"
 
 ) | tee /tmp/dumpdbs.err |
-    mail cron@hwi.ath.cx
+    mail joey
