@@ -7,8 +7,9 @@
 # v=2
 # w=0.1
 # These are the defaults for all images:
-v=-20
-w=0.00001
+# v=-20
+# w=0.00001
+# Now also provided by calling C program.
 
 # u=U
 # v=V

@@ -10,7 +10,7 @@ DOC="simgs/test.bmp"
 # -centralise
 SIMCOM="./simgen
 -yoff 0.01 -depth 0.5
--lines 11 -roll 0 -yaw 0 -pitch -30 -size 1.2
+-lines 11 -roll 0 -yaw 50 -pitch -50 -size 1.2
 -image -qnd -overlay
 $DOC tmp.bmp
 -nornd
@@ -63,8 +63,8 @@ for F in 0.5; do
 	# waitforkeypress
 
 	# Test pp
-	invert -i tmp.bmp -o tmp-inv.bmp
-	../projprof/pp $X $Y $PPPARAMS | tee pp.out
+	# invert -i tmp.bmp -o tmp-inv.bmp
+	# ../projprof/pp $X $Y $PPPARAMS | tee pp.out
 
 	# gv gplfit$X$Y.eps
 done

@@ -4,9 +4,12 @@ set noclabel
 set nokey
 set nolabel
 set term post eps "Times-Roman,18"
-set output "gplfit.ps"
 set pointsize 1.3
 
+set output "gplfit.ps"
 plot "gpldata.txt" w p 7,f(x)
 # plot "gpldata.txt" w p 7,e(x)
 # plot "gpldata.txt" w p 7,f(x),e(x)
+
+# set output "origdata.ps"
+# plot "whatever.dat" w p 6,f(x), "gpldata.txt" w p 7,f(x)

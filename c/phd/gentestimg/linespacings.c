@@ -67,31 +67,60 @@ float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 }
 
 
-float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
+void writeDataPointsToFile(List<V2d> ps, String fname) {
 
-	FILE *dataout=fopen("gpldata.txt","w");
+	FILE *dataout=fopen(fname,"w");
 	for (int i=0;i<ps.len;i++) {
 		fprintf(dataout,"%f %f\n",ps.get(i).x,ps.get(i).y);
 	}
+	fflush(dataout);
 	fclose(dataout);
 
-	FILE *gplout=fopen("gpldo.txt","w");
+}
 
+
+float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
+
+	// NB: This stuff only applied to spacings method (not simple)!
+	// Determine whether points are slanted up or down, and curved up or down
+	// Slant
+	V2d first=ps.get(0);
+	V2d last=ps.get(ps.len-1);
+	int slantSgn =
+		( mysgn(last.x-first.x) == mysgn(last.y-first.y)
+		  ? +1 : -1 );
+	// Slope
+	Line2d f2l=Line2d(first,last);
+	float sum=0;
+	for (int i=0;i<ps.len;i++)
+		sum+=ps.get(i).y-f2l.yatx(ps.get(i).x);
+	int curveSgn = ( sum > 0 ? +1 : -1 );
+	// // First find average point:
+	// V2d ave=V2d(0,0);
+	// for (int i=0;i<ps.len;i++)
+		// ave+=ps.get(i)/(float)ps.len;
+
+	float defaultV = curveSgn * 20.0;
+	float defaultW = -slantSgn * 0.00001;
+	if (guessU>0)
+		defaultV = -defaultV;
+
+	printf("%c %c\n",(curveSgn<0?'-':'+'),(slantSgn<0?'-':'+'));
+
+	writeDataPointsToFile(ps,"gpldata.txt");
+
+	FILE *gplout=fopen("gpldo.txt","w");
 	fprintf(gplout,"#!/usr/local/gnu/bin/gnuplot\n");
 	fprintf(gplout,"u = %f\n",guessU);
-	
+	fprintf(gplout,"v = %f\n",defaultV);
+	fprintf(gplout,"w = %f\n",defaultW);
 	fflush(gplout);
 	fclose(gplout);
 
-	// system("cat gpldo.txt fitgnuplot2.txt > gplsolve.txt");
-	// system("cat gplsolve.txt | gnuplot > gplans.txt 2>&1");
-	// system("grep '^v' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > v.txt");
-	// system("grep '^w' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > w.txt");
-	// system("grep '^WSSR' gplans.txt | tail -1 | between ':' | before 'delta' | sed 's/ //g' > wssr.txt");
 	String fitmethod = ( ! usingspacings ? Snew("simple") : Snew("spacings") );
 	String com = Sconc("../gentestimg/dogplfitting.sh ",fitmethod," ",linespacings_extraArgs);
 	system(com);
-	// system("cat wssr.txt");
+
 	float V=readfloatfromfile("v.txt");
 	float W=readfloatfromfile("w.txt");
 
@@ -114,12 +143,9 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 	lastV=V;
 	lastW=W;
 
-	// printf("Done testing.\n");
- 	
 	return sqrt(Wssr)/(float)ps.len/(float)ps.len;
-	
-}
 
+}
 
 
 V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usingspacings,bool needsSorting) {
@@ -133,6 +159,9 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	List<V2d> endpoints;
 	endpoints.add(eps);
 	fprintf(log,"first %s\nlast  %s\n",endpoints.num(1).toString(),endpoints.num(endpoints.len).toString());
+
+	bool swapx=false;
+	bool swapy=false;
 
 	// Project the points down onto the line
 	// shouldn't need doing.
@@ -158,15 +187,15 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	baseline.b=baseline.b.rotateabout(-angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
 
 	// Maybe only useful in simall not test:
-	if (needsSorting && usingspacings) {
-		endpoints.reverse();
-	}
+	// if (needsSorting && usingspacings) {
+		// endpoints.reverse();
+	// }
 
 	List<V2d> ps;
 
 	if (usingspacings) {
 
-	  for (int i=0;i<endpoints.len-1;i++) {
+		for (int i=0;i<endpoints.len-1;i++) {
 			V2d u=endpoints.get(i);
 			V2d v=endpoints.get(i+1);
 			ps.add(V2d((float)imgheight/2.0-(u.y+v.y)/2.0,u.y-v.y));
@@ -183,15 +212,15 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 
 	}
 
-	if (needsSorting) {
-		ps.reverse();
-		for (int i=0;i<ps.len;i++) {
-			ps.getptr(i)->x=-ps.getptr(i)->x;
-			// float x=ps.getptr(i)->x;
-			// ps.getptr(i)->x=ps.getptr(ps.len-1-i)->x;
-			// ps.getptr(ps.len-1-i)->x=x;
-		}
-	}
+	// if (needsSorting) {
+		// ps.reverse();
+		// for (int i=0;i<ps.len;i++) {
+			// ps.getptr(i)->x=-ps.getptr(i)->x;
+			// // float x=ps.getptr(i)->x;
+			// // ps.getptr(i)->x=ps.getptr(ps.len-1-i)->x;
+			// // ps.getptr(ps.len-1-i)->x=x;
+		// }
+	// }
 
 	if (needsSorting) {
 		if (usingspacings)
