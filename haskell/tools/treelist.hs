@@ -5,15 +5,16 @@ main = do
   args <- getArgs
   go args
 
-data Tree = Branch String [Tree] | Leaf [String]
+data Tree = Layer String Tree | Branch String [Tree] | Leaf [String]
   -- deriving (Show)
 
 instance Show Tree where
-  show (Branch c bs) = showTree "" (Branch c bs)
+  show (t) = showTree "" t
   -- show (Leaf ss) = concat (map addn ss)
     -- where addn s = s++"\n"
 
-showTree indent (Branch c bs) = indent++""++c++"\n"++ concat (map (showTree (indent++replicate (length c) ' ')) bs) ++ indent++"}\n"
+showTree indent (Layer l t) = showTree (indent++""++l++"") t
+showTree indent (Branch c bs) = indent++c++"\n"++ concat (map (showTree (indent++replicate (length c) ' ')) bs) ++ indent++"\n"
 showTree indent (Leaf ls) = concat (map (sort) ls)
   where sort xs = indent ++ xs ++ "\n"
 
@@ -28,12 +29,14 @@ treelist file = treebreak 0 (lines (file))
 
 treebreak :: Int -> [String] -> (Tree)
 treebreak col lines
-  | indextoolarge = Leaf (concat breaks)
-  | (length breaks) == 1 = assert (breaks == [lines]) (Branch (take (col+1) (head (head breaks))) [(treebreak (0) (stripc (col+1) lines))])
-  | otherwise = Branch (take (col+1) (head (head breaks))) ( map (treebreak (0)) (strip (col+1) breaks))
+  | indextoolarge = (Leaf (concat breaks))
+  | length breaks == 0  = Leaf []
+  | (length breaks) == 1 = Layer (take (col+1) (head (head breaks))) (treebreak (0) (stripc (col+1) lines))
+  | otherwise = Branch "" ( map subtree breaks )
   where breaks = findbreaks col [] lines
-        indextoolarge = length lines == 1 -- col > 1 -- (length (head (head breaks))) -- col>2000 -- (myhead (head (head breaks))) == '_'
-        strip n xs = map (stripc n) xs
+        indextoolarge = length lines <= 1 -- col > 1 -- (length (head (head breaks))) -- col>2000 -- (myhead (head (head breaks))) == '_'
+        subtree ss = if ss == [] then Leaf [] else if head ss == [] then Leaf [] else Branch [head (head ss)] [(treebreak 0 (map tail ss))]
+        -- strip n xs = map (stripc n) xs
         stripc n ys = map (drop n) ys
 {-++clip (show (map length breaks)))-}
 
