@@ -649,7 +649,8 @@ void real_main() {
   int shared_pixmaps;		/* dummy */
 
   int get_xvisinfo_class(XVisualInfo x) {
-					  return 1;
+					return x.c_class;
+					  // return 1;
 				  }
   	
   int main (void)
@@ -689,6 +690,7 @@ void real_main() {
 			       WhitePixel (d, screen), BlackPixel (d, screen));
   
 	  int xclass=get_xvisinfo_class(vis);
+		printf("class = %i\n",xclass);
 	  stylee = ( vis.depth > 8 ? styleeTrueColor : styleePrivate );
 	  printf("stylee=%i\n",stylee);
   
@@ -702,6 +704,9 @@ void real_main() {
       /* Allocate cells */
       allocateOK = (XAllocColorCells (d, colormap, 1,
 							      NULL, 0, color, COLORS) != 0);
+
+			printf("Allocated OK? %i\n",allocateOK);
+			
       if (allocateOK) {
   
 			  printf("Allocated OK\n");
@@ -717,7 +722,7 @@ void real_main() {
 
 			  colormap = XCreateColormap(d,win,defaultVisual,AllocNone);
 		  	
-    	  redocolors();
+    	  // redocolors();
 					  	
       }
   
@@ -725,7 +730,7 @@ void real_main() {
 		  // white = XWhitePixel(d,screen);
   
     } else if ( get_xvisinfo_class(vis) == TrueColor) {
-					  printf("TrueColor\n");
+					  printf("TrueColor %i = %i\n",xclass,TrueColor);
       /* This will lookup the color and sets the xrgb[i].pixel value */
       for (i = 0; i < COLORS; i++)
         XAllocColor (d, colormap, &xrgb[i]);
@@ -782,7 +787,6 @@ void real_main() {
     XSelectInput (d, win, ButtonPressMask | ExposureMask);
     XMapWindow (d, win);
   
-    printf ("Click in the fractal window to terminate the program.\n");
   
   
   
@@ -831,9 +835,12 @@ void real_main() {
   
     /* So you can see how your computer compares to your friend's */
     getrusage (RUSAGE_SELF, &resource_utilization);
-    printf ("CPU seconds consumed: %ds and %dµs\n",
-	    (int) resource_utilization.ru_utime.tv_sec,
-	    (int) resource_utilization.ru_utime.tv_usec);
+		float seconds=(float)resource_utilization.ru_utime.tv_sec
+						     +(float)resource_utilization.ru_utime.tv_usec*0.000000001;
+		printf("CPU seconds per frame: %f\n",seconds/(float)frameno);
+    // printf ("CPU seconds consumed: %ds and %dµs\n",
+	    // (int) resource_utilization.ru_utime.tv_sec,
+	    // (int) resource_utilization.ru_utime.tv_usec);
   
     return 0;
   }
