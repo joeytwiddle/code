@@ -1,3 +1,9 @@
+if test ! "$CITY_NAME"
+then
+	echo "What's your CITY_NAME?"
+	exit 1
+fi
+
 if test `hostname` = buggy && test ! $MYSQLDESTDB
 then
 	echo "ERROR: Running on buggy but didn't specify alternative MYSQLDESTDB."
@@ -16,7 +22,7 @@ mysql << !
 drop database $MYSQLDESTDB;
 !
 mysql << !
-create database $MYSQLDB;
+create database $MYSQLDESTDB;
 !
 echo "Repopulating $MYSQLDESTDB database"
 mysql $MYSQLDESTDB < "$BACKUPDIR/$MYSQLDB.mysql"

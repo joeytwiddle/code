@@ -1,6 +1,12 @@
+if test ! "$CITY_NAME"
+then
+	echo "What's your CITY_NAME?"
+	exit 1
+fi
+
 # Note: can't adjust db dump here since not owner of file.
 
-PSQLDB="active_bristol"
+PSQLDB="active_$CITY_NAME"
 BACKUPDIR="/www/db-backups/$CITY_NAME"
 
 echo "######## POSTGRES:"
