@@ -1,0 +1,4 @@
+IMAGES=`dotexfindimgs | sed "s+^+images/+"`
+
+echo tarcfz ../tmp.tar.gz *.tex *.sty *.bib $IMAGES
+tarcfz ../tmp.tar.gz *.tex *.sty *.bib $IMAGES
