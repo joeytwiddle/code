@@ -7,6 +7,14 @@ import jlib.*;
 import java.io.File;
 import TrawlerStrategy;
 
+
+
+
+
+
+
+
+
 public class Trawler implements ComLineProg {
 
   public static final URL notSimilar=JNet.url("http://default/");
