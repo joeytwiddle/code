@@ -17,7 +17,7 @@ import java.io.*;
 public class CyberPet extends Applet implements ActionListener {
 
 	// Owns one pet
-	public octopus octo;
+	public Octopus octo;
 
 	// AWT components
 	public Button restartbut,loadbut,savebut;
@@ -68,7 +68,7 @@ public class CyberPet extends Applet implements ActionListener {
 		coms=new Label("",Label.CENTER);
 		add(coms);
 		// Start up Octo
-		octo=new octopus(this,(int)(getSize().width/2),(int)(getSize().height*0.64));
+		octo=new Octopus(this,(int)(getSize().width/2),(int)(getSize().height*0.64));
 	}
 
 	// My shortcut add button method
@@ -145,7 +145,7 @@ public class CyberPet extends Applet implements ActionListener {
 			setBackground(fg);
 		}
 		// Start a new Octo
-		octo=new octopus(this,(int)(getSize().width/2),(int)(getSize().height*0.64));
+		octo=new Octopus(this,(int)(getSize().width/2),(int)(getSize().height*0.64));
 	}
 
 	void load() {
@@ -163,7 +163,7 @@ public class CyberPet extends Applet implements ActionListener {
 			try {
 				FileInputStream fis=new FileInputStream(f);
 				ObjectInputStream ois=new ObjectInputStream(fis);
-				octo=(octopus)ois.readObject();
+				octo=(Octopus)ois.readObject();
 				fis.close();
 			}
 			catch (Exception e) {
@@ -210,8 +210,8 @@ public class CyberPet extends Applet implements ActionListener {
 	}
 }
 
-// octopus - The cyberpet itself
-class octopus implements Serializable {
+// Octopus - The cyberpet itself
+class Octopus implements Serializable {
 
 	// Octo's general state
 	public float food=4,happiness=4,mess=0,tiredness=0,illness=-1;
@@ -230,13 +230,13 @@ class octopus implements Serializable {
 
 	// Other local variables
 	CyberPet cpf;
-	animthread at;
-	biothread bt;
-	comsthread ct;
+	AnimationThread at;
+	BiologicalThread bt;
+	UIThread ct;
 	Random r=new Random();
 
 	// Constructor of new Octo
-	octopus(CyberPet temp1,int temp2,int temp3) {
+	Octopus(CyberPet temp1,int temp2,int temp3) {
 		// Store information given in local variables
 		cpf=temp1;
 		xposition=temp2; yposition=temp3;
@@ -264,9 +264,9 @@ class octopus implements Serializable {
 
 	public void start() {
 		// Creates and starts new threads
-		at=new animthread(cpf,this,100);
-		bt=new biothread(cpf,this,300);
-		ct=new comsthread(cpf,this,500);
+		at=new AnimationThread(cpf,this,100);
+		bt=new BiologicalThread(cpf,this,300);
+		ct=new UIThread(cpf,this,500);
 		at.start();
 		bt.start();
 		ct.start();
@@ -483,15 +483,15 @@ class mess implements Serializable {
 }
 
 // General virtual pet thread, extended for use later
-class mythread extends Thread implements Serializable {
+class LoopingThread extends Thread implements Serializable {
 
 	// Thread has access to frame and to Octo
 	CyberPet cpf;
-	octopus octo;
+	Octopus octo;
 	int sleeptime;
 
 	// Constructor stores info
-	mythread(CyberPet temp1,octopus temp2,int temp3) {
+	LoopingThread(CyberPet temp1,Octopus temp2,int temp3) {
 		cpf=temp1;
 		octo=temp2;
 		sleeptime=temp3;
@@ -520,9 +520,9 @@ class mythread extends Thread implements Serializable {
 }
 
 // Octo's animation
-class animthread extends mythread {
+class AnimationThread extends LoopingThread {
 
-	animthread(CyberPet temp1,octopus temp2,int temp3) {
+	AnimationThread(CyberPet temp1,Octopus temp2,int temp3) {
 		super(temp1,temp2,temp3);
 	}
 
@@ -545,9 +545,9 @@ class animthread extends mythread {
 }
 
 // Octo's biology
-class biothread extends mythread {
+class BiologicalThread extends LoopingThread {
 
-	biothread(CyberPet temp1,octopus temp2,int temp3) {
+	BiologicalThread(CyberPet temp1,Octopus temp2,int temp3) {
 		super(temp1,temp2,temp3);
 	}
 
@@ -590,7 +590,7 @@ class biothread extends mythread {
 }
 
 // Octo's communication with user
-class comsthread extends mythread {
+class UIThread extends LoopingThread {
 
 	// Current messsage
 	String s;
@@ -598,7 +598,7 @@ class comsthread extends mythread {
 	// Time to show for
 	int showfor=0;
 
-	comsthread(CyberPet temp1,octopus temp2,int temp3) {
+	UIThread(CyberPet temp1,Octopus temp2,int temp3) {
 		super(temp1,temp2,temp3);
 	}
 
