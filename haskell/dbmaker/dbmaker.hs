@@ -46,12 +46,12 @@ showData t = do
 								putStrLn ""
 								putStrLn name
 								putStrLn ""
-								putStr "Propertys: "
-								putStrLn ( displayList (map displayProperty (allPropertysIn t)) )
+								putStr "Properties: "
+								putStrLn ( displayList (map displayProperty (allPropertiesIn t)) )
 								putStrLn ""
 								putStr "Friends: "
 								putStrLn ( displayList (map displayFriend (objsContaining t)) )
-  where (Obj name inherits propertys) = t
+  where (Obj name inherits properties) = t
 
 
 
@@ -65,21 +65,21 @@ displayProperty (BaseType name,fn) = name ++ " " ++ fn
 
 displayFriend (userTypeName,propertyName) = "[" ++ userTypeName ++ "] " ++ propertyName ++ "()"
 
-allPropertysIn (Obj name inherits propertys) = propertys ++ otherpropertys
-	where otherpropertys = foldl (++) [] (map allPropertysIn inherits)
+allPropertiesIn (Obj name inherits properties) = properties ++ otherproperties
+	where otherproperties = foldl (++) [] (map allPropertiesIn inherits)
 
 objsContaining userType = checkObjs userType userTypes
 
 checkObjs :: Type -> [Type] -> [(String,String)]
 checkObjs _ [] = []
 checkObjs seekType (Obj name i fs : rest) =
-	(checkPropertys seekType name fs) ++ (checkObjs seekType rest)
+	(checkProperties seekType name fs) ++ (checkObjs seekType rest)
 
-checkPropertys _ _ [] = []
-checkPropertys seekType objName (f:fs) =
+checkProperties _ _ [] = []
+checkProperties seekType objName (f:fs) =
 	if (propertyType == seekType) then
 		(objName,propertyName) : rest
 	else
 		rest
   where (propertyType,propertyName) = f
-        rest = checkPropertys seekType objName fs
+        rest = checkProperties seekType objName fs

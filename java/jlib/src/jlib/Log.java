@@ -44,7 +44,7 @@ public class Log {
 	public static final String logFile=JLib.JPATH+"/code/java/servlets/java.txt";
   public static boolean loggingOn = true;
   public static boolean toStdOut  = true;
-	public static boolean toFile    = true;
+	public static boolean toFile    = false;
 	public static boolean toString  = false;
 	public static boolean toHtml    = false;
 	public static boolean toEntries = false;
@@ -58,14 +58,23 @@ public class Log {
 	public static List entries=new Vector();;
 
 	private static PrintWriter getFileWriter() {
+		PrintWriter pw=null;
+		// Exception debug=null;
 		try {
-			return ( loggingOn && toFile ? new PrintWriter(new FileOutputStream(logFile,true)) : null );
+			if (loggingOn && toFile) {
+				pw=new PrintWriter(new FileOutputStream(logFile,true));
+			}
 		} catch (Exception e) {
+			// debug=e;
+			System.out.println("Could not log to file "+logFile+" "+e);
+		}
+		if (pw==null) {
 			toFile=false;
 			toStdOut=toString=toHtml=toEntries=true;
-			error("Could not log to file "+logFile,e);
-			return null;
+			// Can't really go doing this, because this method is called during class instantiation
+			// error("Could not log to file "+logFile,debug);
 		}
+		return pw;
 	}
 
   public static void clear() {
@@ -101,6 +110,9 @@ public class Log {
 		if (err)
 			error=true;
 	}
+
+  public static void warn(String s) {
+		report(s); }
 
   public static void report(String s) {
 		report(false,s,null,null,null); }

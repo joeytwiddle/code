@@ -119,6 +119,10 @@ public class JLib {
     System.exit(1);
   }
 
+  public static void warn(String s) {
+    report(s);
+  }
+
   public static void report(String s) {
     // System.err.println("JLib reports: "+s);
     Log.report(s);

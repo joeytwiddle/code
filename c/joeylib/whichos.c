@@ -1,4 +1,4 @@
-#define LINUX
-// #define UNIX
+// #define LINUX
+ #define UNIX
 // #define DOS
 

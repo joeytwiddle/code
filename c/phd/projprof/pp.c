@@ -1116,6 +1116,8 @@ void main(int argc,String *argv) {
       int size=max(V2d::dist(tl,tr),V2d::dist(bl,br))*4;
       if (size>recwid)
         size=recwid;
+      if (size*size*aspect>recwid*recwid)
+        size=recwid/aspect;
       printf("About to declare rgbmp %ix%i\n",size,(int)(size*aspect));
       RGBmp n=RGBmp(size,size*aspect);
       printf("Done.\n");

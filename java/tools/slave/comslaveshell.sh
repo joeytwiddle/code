@@ -1,1 +1,0 @@
-del fart2
