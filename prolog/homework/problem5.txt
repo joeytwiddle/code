@@ -1,0 +1,40 @@
+
+Problem 5 (Date Given: Nov 11, Deadline: Nov 18)
+---------
+
+Write a program to solve the travelling salesman problem
+
+	best_route(Start, ListPlaces, route(R,D)) 
+where 
+
+(1) R is the shortest route from Start via ListPlaces and back to Start;
+(2) D is the total distance of the route R.
+
+You can use the data we have used in assignment 2 (i.e. the 
+facts on distances between pairs of places), then test
+
+?- best_route(bristol, [exeter, bath, salisbury], R).
+
+Alternatively, you can use the data I gave in lecture 10,
+that is
+
+distance(p1, p2, 3).
+distance(p1, p3, 4).
+distance(p1, p4, 25).
+distance(p2, p3, 20).
+distance(p2, p4, 5).
+distance(p3, p4, 6).
+
+and test
+ 
+?- best_route(p1, [p2,p3,p4], R).
+
+Please try to use the branch-and-bound method discussed during lecture 10.
+Any answer based on the naive method given in lecture 10's handout will be 
+marked down.
+
+Please also try to document your program as detail as you can. The
+documentation will be worth 1 mark in this final assignment. 
+-------------------------------------------------------------
+Send in your program and the script by the deadline.
+

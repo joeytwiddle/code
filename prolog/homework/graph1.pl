@@ -1,0 +1,9 @@
+vertices(5).
+edge(a,b).
+edge(a,c).
+edge(a,d).
+edge(b,c).
+edge(b,d).
+edge(c,d).
+edge(c,e).
+edge(d,e).
