@@ -4,9 +4,12 @@ PSQLDB="active_bristol"
 BACKUPDIR="/www/db-backups"
 
 echo "######## POSTGRES:"
-echo "Destroying $PSQLDB database (doesn't matter if it fails)."
-destroydb $PSQLDB
-echo "Recreating $PSQLDB database (takes a while!)"
+echo "Destroying $PSQLDB database"
+# For postgres < 7:
+# destroydb $PSQLDB
+# For postgres >= 7:
+dropdb $PSQLDB
+echo "Recreating $PSQLDB database"
 createdb $PSQLDB
 # Only needed once per initdb:
 # psql -d $PSQLDB -c 'create user php with password fr0gg3r'

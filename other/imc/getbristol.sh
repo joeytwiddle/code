@@ -10,6 +10,12 @@
 # files on tronic.  Not currently a problem though.  The errors are visible in
 # the output of this script (in the form "send_files failed to open "...).
 
+if test ! -f /www/getbris-auto && test ! "$1" = "-force"; then
+	echo "/www/getbris-auto not present, aborting."
+	echo "Use -force from the command line to override."
+	exit 1
+fi
+
 # Commented out because it's difficult to do anyway!
 # echo "Note: please do not run this script automatically, eg. in a regular cron job."
 # echo "See the code for an explanation."
