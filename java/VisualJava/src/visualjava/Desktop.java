@@ -10,19 +10,22 @@ public class Desktop extends JDesktopPane {
 
     JFrame parent;
 
+    int whereToAddX = 0;
+    int whereToAddY = 0;
+
     public Desktop(JFrame _parent) {
         parent = _parent;
         // putClientProperty("JDesktopPane.dragMode","outline");
 //        setLayout(new FlowLayout());
         // ImageIcon icon = new ImageIcon("/usr/share/pixmaps/gnome-gmush.png","Mushroom");
         // JLabel anIcon = new JLabel(icon);
-        showObject("Hello");
     }
 
     public void showObject(Object object) {
         System.out.println("[Desktop] Showing " + VisualJavaStatics.getSimpleClassName(object.getClass()) + " \"" + object + "\"");
         ObjectIcon anIcon = new ObjectIcon(this,object);
-        anIcon.setLocation(getWidth()/2,getHeight()/2);
+        // anIcon.setLocation(getWidth()/2,getHeight()/2);
+        placeAnItem(anIcon);
         anIcon.setSize(anIcon.getPreferredSize());
         add(anIcon,JLayeredPane.DEFAULT_LAYER);
         anIcon.setVisible(true);
@@ -35,6 +38,20 @@ public class Desktop extends JDesktopPane {
         validate();
     }
 
+    public void placeAnItem(Component component) {
+        component.setLocation(whereToAddX + 10, whereToAddY + 10);
+        whereToAddY += 30;
+//        if (isVisible()) { // Doesn't get confused if not yet displayed
+            if (whereToAddY > getHeight() - 50) {
+                whereToAddY = 0;
+                whereToAddX += 50;
+                if (whereToAddX > getWidth() - 50) {
+                    whereToAddX = whereToAddY = 0;
+                }
+            }
+//        }
+    }
+
     public void displayMethod(Method m, Object obj) {
         MethodFrame methodFrame = new MethodFrame(m,obj);
         initMethodFrame(methodFrame);
@@ -44,7 +61,8 @@ public class Desktop extends JDesktopPane {
         initMethodFrame(methodFrame);
     }
     private void initMethodFrame(MethodFrame methodFrame) {
-        methodFrame.setLocation(getWidth()/2,getHeight()/2);
+        // methodFrame.setLocation(getWidth()/2,getHeight()/2);
+        placeAnItem(methodFrame);
         methodFrame.setSize(methodFrame.getPreferredSize());
         add(methodFrame);
         methodFrame.setVisible(true);

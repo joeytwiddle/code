@@ -62,32 +62,67 @@ public class ObjectIcon extends JLabel implements HasObject {
         };
         //...where the GUI is constructed:
 		//Create the popup menu.
-        JMenuItem menuItem;
-		// menuItem.addActionListener(listener);
 
         // JMenu statics = new JMenu("Statics");
         // VisualJavaGui.addStaticsToMenu(statics,obj.getClass());
         // popup.add(statics);
-        popup.add(new StaticsMenu("Statics",obj.getClass().getName()));
+        JMenu statics = new StaticsMenu("Statics",obj.getClass().getName());
+        if (statics.getItemCount() > 1) // We do >1 rather than >0 because SplittingJMenu's are/were DetachableJMenu's, and hence always had the detach item.
+            popup.add(statics);
 
-        JMenu properties = new SplittingJMenu("Properties");
+        JMenu properties = new SplittingJMenu("Properties"); // all non-static properties from all superclasses
         try {
             Class c = obj.getClass();
-            for (int i=0;i<c.getDeclaredFields().length;i++) {
-                Field f = c.getDeclaredFields()[i];
-                if (!Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers())) {
+            for (int i=0;i<c.getFields().length;i++) {
+                Field f = c.getFields()[i];                 // now including private properties!
+                if (!Modifier.isStatic(f.getModifiers())) { // && Modifier.isPublic(f.getModifiers())) {
                     VisualJavaGUIStatics.addFieldToMenu(f,properties,obj);
                 }
             }
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
-        popup.add(properties);
+        if (properties.getItemCount() > 1)
+            popup.add(properties);
 
-        // SplittingJMenu methods = new SplittingJMenu("Methods");
-        // addNonStaticMethodsToSplittingJMenu(obj.getClass(),methods,true);
-        // popup.add(methods);
-        addAllNonStaticMethodsToMainMenu(obj.getClass(),popup);
+        JMenu getters = new SplittingJMenu("get"); // all non-static accessors from all superclasses
+        try {
+            Class c = obj.getClass();
+            for (int i=0;i<c.getMethods().length;i++) {
+                Method m = c.getMethods()[i];
+                if (m.getName().startsWith("get") && m.getParameterTypes().length == 0
+                    && !Modifier.isStatic(m.getModifiers())) { // && Modifier.isPublic(f.getModifiers())) {
+                    VisualJavaGUIStatics.addMethodToMenu(m,getters,obj);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        if (getters.getItemCount() > 1)
+            popup.add(getters);
+
+        JMenu setters = new SplittingJMenu("set"); // all non-static mutators from all superclasses
+        try {
+            Class c = obj.getClass();
+            for (int i=0;i<c.getMethods().length;i++) {
+                Method m = c.getMethods()[i];
+                if (m.getName().startsWith("set") && m.getParameterTypes().length == 1
+                    && !Modifier.isStatic(m.getModifiers())) { // && Modifier.isPublic(f.getModifiers())) {
+                    VisualJavaGUIStatics.addMethodToMenu(m,setters,obj);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+        if (setters.getItemCount() > 1)
+            popup.add(setters);
+
+        forEachSuperclassAddAllNonStaticMethodsToMenu(obj.getClass(),popup);
+
+        SplittingJMenu allMethods = new SplittingJMenu("All methods");
+        addAllNonStaticMethodsToMenu(obj.getClass(),allMethods);
+        if (allMethods.getItemCount() > 1)
+            popup.add(allMethods);
 
 		//Add listener to components that can bring up popup menus.
 		// MouseListener popupListener = new PopupListener();
@@ -96,12 +131,20 @@ public class ObjectIcon extends JLabel implements HasObject {
 
 	}
 
-    private void addAllNonStaticMethodsToMainMenu(Class c, JPopupMenu mainMenu) {
+    private void forEachSuperclassAddAllNonStaticMethodsToMenu(Class c, JPopupMenu mainMenu) {
         while (c != null) {
             SplittingJMenu menu = new SplittingJMenu(c.getName());
             addNonStaticMethodsToSplittingJMenu(c,menu,false);
             mainMenu.add(menu);
             c = c.getSuperclass();
+        }
+    }
+    private void addAllNonStaticMethodsToMenu(Class c, JMenu menu) {
+        for (int i=0;i<c.getMethods().length;i++) {
+            Method m = c.getMethods()[i];
+            if (!Modifier.isStatic(m.getModifiers())) {
+                VisualJavaGUIStatics.addMethodToMenu(m,menu,obj);
+            }
         }
     }
     private void addNonStaticMethodsToSplittingJMenu(Class c, SplittingJMenu methods, boolean andSuperClasses) {

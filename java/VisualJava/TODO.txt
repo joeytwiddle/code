@@ -43,6 +43,9 @@ We have still left some bits of Java hidden from us.
 
 On the other hand, the current state of the software is more appropriate for a simplified "functional Java", so maybe further expansion will just complicate the project.  (In "functional Java", Java nasties could be hidden behind more appropriate functional wrappers.)
 
+Would be good to remember commonly-used methods of classes,
+and even share them with other users!
+
 
 DONE:
 

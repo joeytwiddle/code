@@ -17,6 +17,8 @@ public class VisualJava {
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setSize(600,400);
         desktop = new Desktop(f);
+        desktop.setSize(800,400);
+        desktop.showObject("Hello");
         desktop.showObject(f);
         desktop.showObject(desktop);
         f.setContentPane(desktop);

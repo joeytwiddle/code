@@ -1,7 +1,5 @@
 package org.neuralyte.common.swing;
 
-
-
 // import java.awt.*;
 // import java.awt.event.*;
 // import java.io.*;
@@ -13,6 +11,19 @@ import javax.swing.*;
 // import javax.swing.text.*;
 // import javax.swing.text.html.*;
 // import jlib.*;
+
+/** This menu breaks up its itemlist into separate submenus if
+ *  the itemlist grows too large.
+ *  <P>
+ *  When items are added they are stored in an internal vector.  It does not actually populate the menu until it is first accessed.
+ *  <P>
+ *  If the list is too long, and requires splitting, the SplittingJMenu
+ *  tries to split them all evenly.
+ *  However (todo) a more user-friendly method might be to generate an uneven
+ *  tree which better follows the words used in the menus.
+ *  (For example, all items starting "get" or "set" appear under a corresponding
+ *  submenu, even if their numbers are unequal.  See Jsh's Haskell and sh "tree" algorithms.)
+ */
 
 public class SplittingJMenu extends DetachableJMenu {
 
