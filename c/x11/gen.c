@@ -376,9 +376,9 @@ void moremap() {
 			float splitleft=myrnd();
 			float splitright=myrnd();
       amount[mmx][mmy][0][0][makingmap]=amountmax/4;
-      amount[mmx][mmy][1][0][makingmap]=amountma/4;
-      amount[mmx][mmy][0][1][makingmap]=amountma/4;
-      amount[mmx][mmy][1][1][makingmap]=amountma/4;
+      amount[mmx][mmy][1][0][makingmap]=amountmax/4;
+      amount[mmx][mmy][0][1][makingmap]=amountmax/4;
+      amount[mmx][mmy][1][1][makingmap]=amountmax/4;
     }
     mmx++;
     if (mmx>=scrwid) {
