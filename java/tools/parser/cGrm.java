@@ -2,8 +2,7 @@ package tools.parser;
 import java.lang.String;
 import java.util.Vector;
 
-import Grammar;
-import RuleSet;
+import tools.parser.*;
 
 public class cGrm {
   public static void setupgrammar() {

@@ -23,13 +23,7 @@ import jlib.Files;
 import jlib.JString;
 import jlib.strings.*;
 
-import Grammar;
-import RuleSet;
-import grmGrm;
-import Type;
-import Atom;
-import Var;
-import Text;
+import tools.parser.*;
 
 public class Match {
   Type type;

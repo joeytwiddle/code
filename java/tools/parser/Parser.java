@@ -28,16 +28,7 @@ import jlib.Profile;
 import jlib.JReflect;
 import java.lang.reflect.*;
 
-import Grammar;
-import RuleSet;
-import Match;
-import grmGrm;
-//import NewGrm;
-import Type;
-import Atom;
-import Var;
-import Text;
-// import Partition;
+import tools.parser.*;
 
 public class Parser implements ActionListener {
 
@@ -153,7 +144,7 @@ public class Parser implements ActionListener {
   
 		  if (failure) {
 				System.err.println("Failure.");
-				if (m.left==null || toparse==null)
+				if (m==null || m.left==null || toparse==null)
 					System.err.println("m="+m+" toparse="+toparse);
 				else {
 	        System.err.println("Error: failed to match last "+m.left.length()+" characters = "+(100*m.left.length()/toparse.length())+"%");
@@ -193,6 +184,7 @@ public class Parser implements ActionListener {
       Object dummy=m.invoke(null,new Object[0]);
     } catch (Exception e) {
       System.out.println("Problem initialising grammar \""+gram+"\": "+e);
+      e.printStackTrace();
     }
 //    grmGrm.setupgrammar();
   }

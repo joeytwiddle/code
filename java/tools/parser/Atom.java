@@ -23,9 +23,7 @@ import jlib.Files;
 import jlib.JString;
 import jlib.strings.*;
 
-import Grammar;
-import RuleSet;
-import grmGrm;
+import tools.parser.*;
 
 public class Atom implements Type {
 	public static int depth=0;

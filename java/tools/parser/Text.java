@@ -21,9 +21,7 @@ import jlib.Files;
 import jlib.JString;
 import jlib.strings.*;
 
-import Grammar;
-import RuleSet;
-import grmGrm;
+import tools.parser.*;
 
 public class Text implements Type {
   String text;

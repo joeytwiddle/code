@@ -1,10 +1,11 @@
+test "$1" = "" && echo "grammar name?" && exit 0
 mv "$1Grm.java" "$1Grm.java.b4create"
 (
-echo "package tools.parser;"
+# echo "package tools.parser;"
 jparse grm "$1.grm" java $2 $3 $4 $5 $6
 ) > "$1Grm.java"
 #mv "$1Grm.java" tmp.txt
 #mv tmp.txt "$1Grm.java"
 sedreplace "grmGrm" "$1Grm" "$1Grm.java"
-jfc "$1Grm.java.b4create" "$1Grm.java"
+jfcsh "$1Grm.java.b4create" "$1Grm.java"
 ./j

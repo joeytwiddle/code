@@ -23,9 +23,7 @@ import jlib.JString;
 import jlib.JLib;
 import jlib.strings.*;
 
-import Grammar;
-import RuleSet;
-import grmGrm;
+import tools.parser.*;
 
 public class RelElement implements Type {
   char dir;

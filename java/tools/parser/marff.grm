@@ -1,0 +1,45 @@
+Main = Definition "@data\n" Data
+
+Definition = DefBit Definition
+           | DefBit
+
+DefBit = Comment
+       | "@" DefBit2 <whatever/"\n"> "\n"
+java: Comment DefBit2
+
+# That said: print whatever Comment or DefBit2 (whichever if matched) print,
+# but skip the "@", "\n" etc.
+
+Comment = CommentStart <comment/"\n"> "\n"
+java: "// " CommentStart <comment> "\n"
+
+CommentStart = "#" | "(*"
+
+DefBit2 = DefRelation
+        | DefLink
+        | DefAttribute
+
+DefRelation = "relation " <relation/"\n">
+java: "	definitions.add(new Relation(!qt!" <relation> "!qt!);\n"
+
+DefLink = "link " <filename/"\n">
+java: "	definitions.add(new Link(!qt!" <filename> "!qt!);\n"
+
+DefAttribute = "attribute " <attrname/" "> OptKey " " <attrtype/" \n">
+java: "	definitions.add(new Attribute(!qt!" <attrname> "!qt!, ... ,!qt!" <attrtype> "!qt!);\n"
+
+OptKey = " key"
+       | ""
+
+Data = DataBit Data
+     | DataBit
+
+DataBit = Fields
+
+Fields = Field "," Fields
+       | Field "\n"
+
+# Field = NumericalField | StringField
+
+Field = <field/",\n">
+

@@ -2,7 +2,7 @@ package tools.parser;
 import java.lang.String;
 import java.util.Vector;
 
-import RuleSet;
+import tools.parser.*;
 
 public class Grammar {
   public static Vector rulesets=new Vector();

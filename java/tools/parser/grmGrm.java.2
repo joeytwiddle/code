@@ -1,8 +1,9 @@
+package tools.parser;
+
 import java.lang.String;
 import java.util.Vector;
 
-import Grammar;
-import RuleSet;
+import tools.parser.*;
 
 public class grmGrm {
   public static void setupgrammar() {
@@ -29,7 +30,7 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-        rule.add(new Text("import java.lang.String;\nimport java.util.Vector;\n\nimport Grammar;\nimport RuleSet;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector rule;\n\n"));
+        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector rule;\n\n"));
         rule.add(new Atom("Grm"));
         rule.add(new Text("  }\n}\n"));
     ruleset.replacements.put("java",rule);
