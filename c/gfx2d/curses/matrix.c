@@ -32,13 +32,13 @@
 // #define sparsenessMovementOff 1
 // For slow machines (eg. 486): less faithful, but animation appears much clearer
 #define sparsenessLengthOn 1
-#define sparsenessLengthOff 2
+#define sparsenessLengthOff 1
 #define sparsenessMovementOn 1
 #define sparsenessMovementOff 4
 
 // For single/double line spacing:
 // #define sparsenessSkipCols 1
-#define sparsenessSkipCols 2
+#define sparsenessSkipCols 3
 
 void homeAndWrefresh() {
 	move(0,0);
