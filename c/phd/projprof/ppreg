@@ -21,7 +21,7 @@ TWO="$2"
 shift
 shift
 
-pp $PPPARAMS ../images/bin/regs$ONE/reg$TWO.bmp ../images/$ONE.bmp ../images/bin/regs$ONE/crop$TWO.dat "$@"
+./pp $PPPARAMS ../images/bin/regs$ONE/reg$TWO.bmp ../images/$ONE.bmp ../images/bin/regs$ONE/crop$TWO.dat "$@"
 
 # pp -gamma 0.0 -usetwolines -res 120 -lowres 30 -adapt 0.03 -square ../images/bin/regs$ONE/reg$TWO.bmp ../images/$ONE.bmp ../images/bin/regs$ONE/crop$TWO.dat "$@" -quadonly -oth 12
 # pp -square ../images/bin/regs$ONE/reg$TWO.bmp ../images/bin/regs$ONE/crop$TWO.bmp "$@"
