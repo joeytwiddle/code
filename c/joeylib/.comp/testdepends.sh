@@ -1,3 +1,8 @@
+# Does it find the lowest-level of required links?
+# (eg. it could claim dependency on a big module, not for its functions, but for its includes!)
+# Nah I think it's OK, because joeylib.c is ordered list
+# and it tried omitting modules from the bottom.
+
 MODULE="$1"
 MODULES=`
 	cat ../joeylib.c |
@@ -17,20 +22,8 @@ MODULES=`
 # echo "Depends on at most:
 # $MODULES"
 
-ORIGMODULES="$MODULES"
-
-stripline () { # 1=lineToDrop
-	N=0
-	while read Y; do
-		N=`expr $N + 1`;
-		if test ! "$N" = "$1"; then
-			echo "$Y"
-		fi
-	done
-}
-
 testwith () {
-	echo "Testing with: "`echo "$1" | tr "\n" " "`
+	# echo "Testing with: "`echo "$1" | tr "\n" " "`
 	(
 		echo "$1" |
 		while read MOD; do
@@ -41,20 +34,22 @@ testwith () {
 	g++ -w -c -I . test.c > /dev/null 2>&1
 }
 
+ORIGMODULES="$MODULES"
+echo "Requires at most: "`echo "$MODULES" | tr "\n" " "`
 testwith "$MODULES"
 
 NOMORE=
 while test ! $NOMORE; do
 	NOMORE=true
-	NUM=`echo "$MODULES" | countlines`
-	if test "$NUM" -gt 1; then
-		echo "$NUM"
-		for NUM2DROP in `seq $NUM 1`; do
-			TESTMODULES=`echo "$MODULES" | stripline "$NUM2DROP"`
+	if test `echo "$MODULES" | countlines` -gt 0; then
+		for OMITMOD in `echo "$MODULES" | reverse`; do
+			echo "Testing without: $OMITMOD"
+			TESTMODULES=`echo "$MODULES" | grep -v "^$OMITMOD$"`
 			testwith "$TESTMODULES"
 			if test "$?" = "0"; then
-				echo "Succeeded!"
 				MODULES="$TESTMODULES"
+				echo "Succeeded ommiting $OMITMOD."
+				echo "Now using: "`echo "$MODULES" | tr "\n" " "`
 				NOMORE=
 				break
 			fi
