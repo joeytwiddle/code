@@ -3,6 +3,8 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	FILE *log=fopen("vvpFromPoints.txt","w");
 
 	Line2d baseline=Line2d(bl.a,bl.b);
+	// if (baseline.a.y<baseline.b.y)
+		// baseline=Line2d(bl.b,bl.a);
 	fprintf(log,"baseline = %s\n",baseline.toString());
 	List<V2d> endpoints;
 	endpoints.add(eps);

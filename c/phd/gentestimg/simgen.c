@@ -291,6 +291,7 @@ int main(int argc,String *argv) {
 	float groundV = groundA/groundK1;
 	float groundW = groundB/groundK2;
 
+	printf("!>> %s\n",unrot(worldA.dropz()).toString());
 	printf("!>> %s\n",unrotabout(lines.get(0).a).toString());
 	// float guessU = (float)imgheight/2.0-unrotabout(lines.get(0).a).y;
 	
