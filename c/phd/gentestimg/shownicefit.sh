@@ -48,13 +48,14 @@ for F in 0.5; do
 	echo `curseyellow`$SIMCOM`cursegrey`
 	$SIMCOM $X $Y -focal $F > simgen.out
 
-	U=`getparam U`
-	V=`getparam V`
-	W=`getparam W`
-	echo "u=$U"
-	echo "v=$V"
-	echo "w=$W"
 	cp gplfit.ps gplfit$X$Y$F.eps
+
+	# U=`getparam U`
+	# V=`getparam V`
+	# W=`getparam W`
+	# echo "u=$U"
+	# echo "v=$V"
+	# echo "w=$W"
 
 	echo "Press a key"
 	waitforkeypress

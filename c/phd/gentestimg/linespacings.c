@@ -179,13 +179,16 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	float finalErr=doRansac(ps,usingspacings);
 	printf("final error = %f\n",finalErr);
 
+	float vvpdist=guessU*lastV/lastW;
+
+	V2d vvp=baseline.a-(baseline.b-baseline.a).norm()*vvpdist;
+	vvp=vvp.rotateabout(angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
+
 	printf("guessU = %f\n",guessU);
 	printf("gotV = %f\n",lastV);
 	printf("gotW = %f\n",lastW);
-
-	float vvpdist=guessU*lastV/lastW;
-	V2d vvp=baseline.a-(baseline.b-baseline.a).norm()*vvpdist;
-	vvp=vvp.rotateabout(angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
+	printf("vvpDist = %f\n",vvpdist);
+	printf("VVP = %s\n",vvp.toString());
 
 	fclose(log);
 	
