@@ -5,6 +5,8 @@ import java.awt.color.*;
 
 import jlib.*;
 
+// todo: 3d-glasses version
+
 class Particle {
 
   public V3d cen=V3d.random();

@@ -1,5 +1,5 @@
 #!/usr/bin/gnuplot
-splot [] [] [-10:10] 'new5testdata.txt' using 1:2:39 w l
+
 set view 3,3,1,1
 replot
 set view 6,6,1,1

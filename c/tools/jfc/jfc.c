@@ -3,7 +3,7 @@
 #include <joeylib.h>
 
 bool simple,yesno,silent,difference=false;
-bool common,nolines,dodiff;
+bool common,nolines,dodiff,showpercentage;
 String diffstringa;
 String diffstringb;
 int cntainb,cntbina,cntina,cntinb;
@@ -68,6 +68,7 @@ int main(int argc,String *argv) {
   separators=Sreplaceall(separators,"\\n","\n");
   silent=a.argexists("silent","No output except err code: 0=equivalent 1=different");
   yesno=a.argexists("yesno","Just print whether they are the same or not");
+  showpercentage=a.argexists("age","Show what %age of the lines in A appear in B");
   String aname=a.getarg("file");
   String bname=a.getarg("file");
   a.done();
@@ -89,8 +90,10 @@ int main(int argc,String *argv) {
     // Actually that's probably bollocks
   }
 
+  if (showpercentage) {
 	printf("# A's lines in B = %i / %i\n",cntainb,cntina);
 	printf("%%age A in B = %.2f\n",100.0*(float)cntainb/(float)cntina);
+  }
 
   if (!oneway) {
     if (!simple && !silent)

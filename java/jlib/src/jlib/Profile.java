@@ -57,6 +57,10 @@ import jlib.*;
    * This is a danger in the presence of Exceptions, unless you put the start and stop above and below the try catch statement.
    * <p>You can use stop(String key) to make the profiler check at runtime that you are indeed trying to stop the correct (current/last) profile.
    * Errors regarding problems with the profile tree will be reported in the report() and in jlib.Log.
+	 * <p align="center">
+	 * Related:
+	 * <p>
+	 * Anyone heard of the Java profiling tool <i>OptimizeIt</i>?
    **/
 
 public class Profile {

@@ -59,10 +59,10 @@ int close(FILE *fp) {
 
 List<String> readlinesfromfile(String fname,String seperators,boolean trim) {
   #ifndef QUIET
-  printf("Opening text file %s\n",fname);
+  fprintf(stderr,"Opening text file %s\n",fname);
   #endif
   #ifdef DEBUG
-    printf("Reading lines from file...\n");
+    fprintf(stderr,"Reading lines from file...\n");
   #endif
   FILE *fp=fopen(fname,"r");
   if (fp==NULL)
@@ -111,10 +111,10 @@ List<String> readlinesfromfile(String fname,String seperators) {
 List<String> mail2list(String fname) {
         String seperators="\n"; // {(char)10};
   #ifndef QUIET
-  printf("Opening text file %s\n",fname);
+  fprintf(stderr,"Opening text file %s\n",fname);
   #endif
   #ifdef DEBUG
-    printf("Reading lines from file...\n");
+    fprintf(stderr,"Reading lines from file...\n");
   #endif
   FILE *fp=fopen(fname,"r");
   if (fp==NULL)

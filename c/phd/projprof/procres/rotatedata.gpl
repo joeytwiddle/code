@@ -4,13 +4,8 @@ set xlabel "yaw"
 set ylabel "pitch"
 
 set zlabel "total accuracy"
-<<<<<<< rotatedata.gpl
-splot [1:90] [1:90] [0:1] "data.txt" using 1:2:3 w l
+splot [1:90] [1:90] [0:1] "data.txt" using 1:2:22 w l
 # splot "data.txt" using 1:2:22
-=======
-splot [1:90] [1:90] [0:1] "data.txt" using 1:2:3
-# splot "data.txt" using 1:2:22
->>>>>>> 1.3
 
 # set zlabel "total accuracy"
 # splot "data.txt" using 1:2:3
