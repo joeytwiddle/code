@@ -1,3 +1,10 @@
+// #define DOS
+// #define DO_FULLSCREEN
+#define SCRWID 640
+#define SCRHEI 400
+#define SCRBPS 32
+#define desiredFramesPerSecond 50
+
 #include "../stripped-useful.c"
 
 #define TXTWID (10*7)
@@ -85,17 +92,16 @@ void init() {
 
 void plotBlob(int x,int y,int w,int h,int c) {
 #define RECTSHRINK 2
-	dstrect.x=x+RECTSHRINK;
-	dstrect.w=(w<RECTSHRINK*2+1?1:w-RECTSHRINK*2);
+	// dstrect.x=x+RECTSHRINK;
+	// dstrect.w=(w<RECTSHRINK*2+1?1:w-RECTSHRINK*2);
 	dstrect.y=y+RECTSHRINK;
 	dstrect.h=h-RECTSHRINK*2;
-	// dstrect.x=x;
 	// dstrect.x=x+w/4;
 	// dstrect.w=(w<4?1:w/2);
 	// dstrect.y=y+h/4;
 	// dstrect.h=h/2;
-	// dstrect.x=x;
-	// dstrect.w=w+1;
+	dstrect.x=x;
+	dstrect.w=w+1;
 	// dstrect.y=y;
 	// dstrect.h=h;
 	SDL_FillRect(screen,&dstrect,c);

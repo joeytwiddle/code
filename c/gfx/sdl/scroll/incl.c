@@ -24,7 +24,7 @@
 #else
 // Constant definitions for screen:
 #define screen_w (640)
-#define screen_h (480)
+#define screen_h (400)
 #define screen_pixelType Uint32
 #define screen_pitch (2560)
 #define screen_BytesPerPixel (4)
