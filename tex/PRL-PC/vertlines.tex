@@ -106,17 +106,17 @@ Y(X) = \frac{ UV }{ 1+n(X)W }
 \end{equation}
 
 This ensures that parameters close to the desired minima are obtained before the final fitting.  Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
-A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
+% A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
 After reversing the transformation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
 % We therefore fit the measured positions against spacing $(y(n),y(n+1)-y(n))$ to the model:
 
-\begin{figure}[t]
-\begin{centering}
-\epsfig{figure=images/prlrunning/gplfit.ps,width=75mm}
-\caption{The final fitting of \refeqn{fittingeqn} to the observed line spacing.}
-\label{fittinggraph}
-\end{centering}
-\end{figure}
+% \begin{figure}[t]
+% \begin{centering}
+% \epsfig{figure=images/prlrunning/gplfit.ps,width=75mm}
+% \caption{The final fitting of \refeqn{fittingeqn} to the observed line spacing.}
+% \label{fittinggraph}
+% \end{centering}
+% \end{figure}
 
 \reffig{vvpaccuracy} shows the accuracy of recovery of the vertical vanishing
 point for the whole range of $0$ to $90^\circ$ in yaw and pitch using the
@@ -146,13 +146,27 @@ method is that it provides consistent results for paragraphs which are not fully
 justified.
 % In contrast, the poor performance of the margins method when dealing with documents which are not fully justified can be seen in \reffig{vvpaccuracyc}.
 
+% \begin{figure}[t]
+% \begin{centering}
+  % \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=42mm}\label{vvpaccuracya}}
+  % \hspace{2mm}
+  % \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=42mm}\label{vvpaccuracyb}}
+  % \hspace{2mm}
+  % \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=42mm}\label{vvpaccuracyc}}
+% \caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
+% \label{vvpaccuracy}
+% \end{centering}
+% \end{figure}
+
 \begin{figure}[t]
 \begin{centering}
-  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=42mm}\label{vvpaccuracya}}
+  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
   \hspace{2mm}
-  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=42mm}\label{vvpaccuracyb}}
+  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
   \hspace{2mm}
-  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=42mm}\label{vvpaccuracyc}}
+  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyc}}
+  \hspace{2mm}
+  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyd}}
 \caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
 \label{vvpaccuracy}
 \end{centering}
@@ -242,8 +256,10 @@ of the paragraph of text.
 % \subfigure[Recovery of running example]{\epsfig{figure=images/chem002001recover.ps,height=52mm}}
 \subfigure[Recovery of running example]{\epsfig{figure=images/prlrunning/recover.eps,height=52mm}}
 \hspace{2mm}
-% \subfigure[Suitable for OCR]{\epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}}
-\subfigure[Suitable for OCR]{\epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{arthurcclarke}}
+\subfigure[Recovery of paragraph in \reffig{chem015overlay}, suitable for OCR.]{
+	% \epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}
+	\epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{chem015recover}
+}
 \end{center}
 %\vspace{-3mm}
 \caption{Fronto-parallel recovery of example documents in \reffig{summaryfig}.}
@@ -258,28 +274,31 @@ of the paragraph of text.
 \begin{center}
 
     \subfigure[]{ \begin{tabular}{c}
-      \epsfig{figure=images/chem011.ps,width=33mm}\label{banana} \\
+      \epsfig{figure=images/chem010overlay.ps,width=36mm} \\
       $\downarrow$ \\
            \\
-      \epsfig{figure=images/chem011recover.ps,width=26mm}
-        \end{tabular}       \label{emppra}
+      \epsfig{figure=images/chem010recover.ps,width=36mm}
+        \end{tabular}       \label{arthurcclarke}
+		  \label{empprb}
     }
-	 \hspace{2mm}
     \subfigure[]{ \begin{tabular}{c}
-      \epsfig{figure=images/chem015.ps,width=36mm} \\
+      \epsfig{figure=images/chem005001origover.ps,width=36mm} \\
       $\downarrow$ \\
            \\
-      \epsfig{figure=images/chem015recover.ps,width=36mm}
-        \end{tabular}       \label{empprb}
+      \epsfig{figure=images/chem005001recover.ps,width=36mm}
+        \end{tabular}       \label{chem005recover}
+		  % \label{empprb}
     }
-    \subfigure[]{ \begin{tabular}{c}
-      \epsfig{figure=images/dv5.ps,width=36mm}
-		\hspace{11mm}
-      \put(10,38){$\rightarrow$}
-		\hspace{11mm}
-      \epsfig{figure=images/dv5recover.ps,width=24mm}
-        \end{tabular}      \label{empprc}
-     }
+    % \subfigure[]{ \begin{tabular}{c}
+      % \epsfig{figure=images/dv5.ps,width=36mm} \\
+      % $\downarrow$ \\
+           % \\
+		% % \hspace{11mm}
+      % % \put(10,38){$\rightarrow$}
+		% % \hspace{11mm}
+      % \epsfig{figure=images/dv5recover.ps,width=24mm}
+        % \end{tabular}      \label{empprc}
+     % }
     % \subfigure[]{ \begin{tabular}{c}
       % \epsfig{figure=images/dv5.ps,width=36mm} \\
       % $\downarrow$ \\
@@ -287,31 +306,52 @@ of the paragraph of text.
       % \epsfig{figure=images/dv5recover.ps,width=36mm}
         % \end{tabular}      \label{empprc}
      % }
-% \\ \vspace{5mm}
+    \subfigure[]{ \begin{tabular}{c}
+      \includegraphics[width=36mm]{images/chem006oo.ps} \\
+      $\downarrow$ \\
+          \\
+      \includegraphics[width=36mm]{images/chem006002recover.ps}
+        \end{tabular}      \label{empprd}
+     }
+\\ \vspace{5mm}
+    \subfigure[]{ \begin{tabular}{c}
+        \includegraphics[width=36mm]{images/chem008oo.ps}   \\
+      $\downarrow$ \\
+          \\
+        \includegraphics[width=36mm]{images/chem008001recover.ps}   \\
+        \includegraphics[width=36mm]{images/chem008002recover.ps}
+    \end{tabular} \label{emppre} }
     % \subfigure[]{ \begin{tabular}{c}
-      % \includegraphics[width=35mm]{images/chem006oo.ps} \\
-      % $\downarrow$ \\
-          % \\
-      % \includegraphics[width=35mm]{images/chem006002recover.ps}
-        % \end{tabular}      \label{empprd}
-     % }
-    % \subfigure[]{ \begin{tabular}{c}
-        % \includegraphics[width=35mm]{images/chem008oo.ps}   \\
-      % $\downarrow$ \\
-          % \\
-        % \includegraphics[width=35mm]{images/chem008001recover.ps}   \\
-        % \includegraphics[width=35mm]{images/chem008002recover.ps}
-    % \end{tabular} \label{emppre} }
-    % \subfigure[]{ \begin{tabular}{c}
-        % \includegraphics[width=35mm]{images/clut4allover.ps}       \\
+        % \includegraphics[width=36mm]{images/clut4allover.ps}       \\
       % $\downarrow$ \\
            % \\
-        % \includegraphics[width=35mm]{images/clut4recover1.ps}    \\
-        % \includegraphics[width=35mm]{images/clut4recover2.ps}
+        % \includegraphics[width=36mm]{images/clut4recover1.ps}    \\
+        % \includegraphics[width=36mm]{images/clut4recover2.ps}
     % \end{tabular} \label{empprf} }
+    \subfigure[]{ \begin{tabular}{c}
+      \epsfig{figure=images/chem011.ps,width=36mm}\label{banana} \\
+      $\downarrow$ \\
+           \\
+      \epsfig{figure=images/chem011recover.ps,width=30mm}
+        \end{tabular}       \label{emppra}
+    }
+	 % \hspace{2mm}
+    \subfigure[]{ \begin{tabular}{c}
+        \includegraphics[width=36mm]{images/clut4allover.ps}       \\
+      $\downarrow$ \\
+           \\
+        \includegraphics[width=36mm]{images/clut4recover1.ps}    \\
+        \includegraphics[width=36mm]{images/clut4recover2.ps}
+    \end{tabular} \label{empprf} }
+
+%%% Note some other good images:
+% chem010 001
+% chem017 001
+% chem004 001-3
+% chem022 001
+% chem026 001 strong persp + OCR!
 
 \end{center}
-\vspace*{-3mm}
 \caption{Further examples of fronto-parallel recovery of documents. In each case the original image is shown above the recovered output.}
 \label{againmoreppresults}
 \end{figure}
@@ -324,6 +364,29 @@ show the recovery of different styles of paragraphs with left justified and
 centrally aligned text.
 \reffig{emppra} shows the recovery of a segmented region of a book cover.  Despite 
 text of different sizes, and other image noise such as the specularity, the document is recovered robustly.
-\reffig{empprb} shows a centrally justified paragraph which has been recovered at high resolution and is easily readable.
-In \reffig{empprc} a left justified document was correctly identified and recovered, despite occlusion of part of the paragraph.
-When we applied commercial OCR software to the image in \reffig{arthurcclarke}, 87\% of the characters and 94\% of the words were recognised correctly.
+\reffig{arthurcclarke} shows a centrally justified paragraph which has been recovered at high resolution and is easily readable.
+% In \reffig{empprc} a left justified document was correctly identified and recovered, despite occlusion of part of the paragraph.
+When we applied commercial OCR software to the image in \reffig{arthurcclarke},
+81\% of the characters and 84\% of the words were recognised correctly.
+
+
+\begin{table}[t]
+  \begin{center}
+    % \begin{tabular}{|p{95mm}|l|l|}
+    \begin{tabular}{|p{35mm}|c|c|}
+      \hline
+      {\bf Image } & {\bf \%age correct characters} & {\bf \%age correct words} \\
+      \hline \hline
+      \reffig{chem015recover} & 79\% & 88\% \\
+      \hline
+      \reffig{arthurcclarke} & 81\% & 84\% \\
+      \hline
+      \reffig{chem005recover} & 50\% & 53\% \\
+		\hline  \hline
+   \end{tabular}
+  \end{center}
+  % \vspace*{-5mm}
+  \caption{Accuracy of Optical Character Recognition for recovered images.}
+  \label{ocrtable}
+\end{table}
+

@@ -26,9 +26,10 @@ vanishing point through each of these central angles.
 % in the range.
 All pixels in the binary image lying between two adjacent segmenting
 lines are collected together as one line of text. Example results of this
-segmentation are shown in \reffig{linesegfig}.  Most lines of
-text are segmented accurately, although in \reffig{chem002overlay} a very short
-line has been ignored.  Noisy pixels, very short lines, and extraneous document
+segmentation are shown in \reffig{linesegfig}.
+% Most lines of text are segmented accurately, although in
+% \reffig{chem002overlay} a very short line has been ignored.
+Noisy pixels, very short lines, and extraneous document
 elements may become attached to a true text line, or be segmented as a separate
 line.  However, the processing which follows will compensate for this irrelevant
 data. 
@@ -39,16 +40,20 @@ data.
 \centering
 \begin{center}
 % \subfigure[A fully formatted document]{\epsfig{figure=images/chem002overlay.ps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
-\subfigure[A left justified paragraph]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
+% \subfigure[A left justified paragraph]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
+% \subfigure[Two centrally aligned paragraphs]{\epsfig{figure=images/prlall/chem015/overboth.eps,width=64mm}\label{summaryfiga}}
+% \subfigure[Centralised paragraphs]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
+\subfigure[The running example.]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
 \hspace{2mm}
 % \subfigure[A centrally aligned document]{\epsfig{figure=images/prlall/chem017/origover.eps,width=64mm}\label{chem010overlay}}
-\subfigure[Two centrally aligned paragraphs]{\epsfig{figure=images/prlall/chem015/overboth.eps,width=64mm}\label{chem010overlay}}
+\subfigure[Two centrally aligned paragraphs]{\epsfig{figure=images/prlall/chem015/overboth.eps,width=64mm}\label{chem015overlay}}
+% \subfigure[Partially left-justified paragraph]{\epsfig{figure=images/prlall/chem005/origover.eps,width=64mm}\label{chem005overlay}}
 % \subfigure[]{\epsfig{figure=images/chem005001origover.ps,width=58mm}\label{chem005001overlay}}
 \end{center}
 \vspace*{0mm}
-\caption{Example paragraphs: 
+\caption{Example of recognition: 
 Line segmentations are marked in white, points for margin fitting in green
-(used) and red (rejected outliers), the baseline in yellow;
+(used) and red (rejected outliers), the baseline in yellow,
 the rectangular frame on the text plane in blue.}
 \label{linesegfig}
 \label{summaryfig}
@@ -94,11 +99,15 @@ normalises the sum, and a further $M^{3}$ rewards the fit for using a large
 number of points. Hence, for the three sets of points $P_L,P_C,P_R$ we obtain
 three lines of best fit $F_L,F_C,F_R$ with respective errors
 $E_L,E_C,E_R$.  It is now possible to classify the formatting style of the
-paragraph using the rules in \reftab{typeofparatable}.  \reffig{summaryfiga}
-shows the line $F_L$ passing through the left margin of the paragraph.  In this
-case $E_L<E_C$ and $E_L<E_R$, hence the second condition in
-\reftab{typeofparatable} is satisfied and the paragraph is correctly identified
-as being left justified.
+paragraph using the rules in \reftab{typeofparatable}.
+\reffig{summaryfiga} shows the line $F_L$ passing through the left margin of
+the paragraph.  In this case $E_L<E_C$ and $E_L<E_R$, hence the second
+condition in \reftab{typeofparatable} is satisfied and the paragraph is
+correctly identified as being left justified.
+% \reffig{summaryfiga} shows the line $F_C$ passing through the centre of
+% the paragraph.  In this case $E_C<E_L$ and $E_C<E_R$, hence the last
+% condition in \reftab{typeofparatable} is satisfied and the paragraph is
+% correctly identified as being centrally justified.
 }
 
 \begin{table}[t]

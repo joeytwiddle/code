@@ -85,22 +85,27 @@ to map from this axis into the range of the bins of the projection profile.  }
 \begin{figure}[t]
 \centering
 \begin{center}
-% \epsfig{figure=images/chem002projprofs.ps,width=85mm}
-\subfigure[Generating a projection profile of the text from vanishing point ${\bf V}$.]{
+\subfigure[Generating the projection profile of the text from a vanishing point $\myvec{V}$.]{
 	\begin{tabular}{c}
-		\epsfig{figure=images/prlrunning/fan93img.eps,width=70mm}\label{projproffing}
+		% \epsfig{figure=images/ppfan.eps,width=70mm}\label{projproffing}
+		\epsfig{figure=images/ppfan.eps,width=100mm}\label{projproffing}
 	\end{tabular}
 }
-\subfigure[The winning projection profile and a poor example]{
-	\begin{tabular}{c}
-		\epsfig{figure=images/prlrunning/bestpp.eps,width=40mm} \\
-		\epsfig{figure=images/prlrunning/badpp.eps,width=40mm}
-		\label{projprofs}
-	\end{tabular}
-}
+% \hspace*{5mm}
+% \subfigure[The winning projection profile and a poor example]{
+	% \begin{tabular}{c}
+		% \epsfig{figure=images/prlrunning/bestpp.eps,width=45mm} \\
+		% \epsfig{figure=images/prlrunning/badpp.eps,width=45mm}
+		% \label{projprofs}
+	% \end{tabular}
+% }
 % \epsfig{figure=images/prlrunning/fan93img.eps,width=40mm}
+\subfigure[The winning projection profile from vanishing point $\myvec{V}_A$ and a poor example from $\myvec{V}_B$.]{
+	\epsfig{figure=images/chem002projprofs.ps,width=100mm}
+	\label{projprofs}
+}
 \end{center}
-\vspace*{0mm}
+% \vspace*{0mm}
 % \caption{Two potential vanishing points $\myvec{V}_A$ and $\myvec{V}_B$, and their projection profiles.}
 \caption{Generating projection profiles from \reffig{runbin}}
 \label{projprofsfig}
@@ -227,11 +232,13 @@ larger squared-sum, and a more likely vanishing point.
 \begin{figure}[t!]
 \centering
 \begin{center}
-\subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,height=36mm}\label{simulated-full}} 
+\subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,height=42mm}\label{simulated-full}} 
 % \subfigure[Left justified]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}} 
-\subfigure[Centrally justified]{\epsfig{figure=images/simulated-cen.ps,height=36mm}\label{simulated-left}} 
-\subfigure[Left justified with extranneous elements]
-{\epsfig{figure=images/simulated-left-more.ps,height=36mm}\label{simulated-left-more}} 
+\hspace*{3mm}
+\subfigure[Centrally justified]{\epsfig{figure=images/simulated-cen.ps,height=42mm}\label{simulated-left}} 
+\hspace*{3mm}
+\subfigure[Left justified with extraneous elements]
+{\epsfig{figure=images/simulated-left-more.ps,height=42mm}\label{simulated-left-more}} 
 \end{center}
 \vspace*{0mm}
 \caption{Examples of simulated images used for performance analysis.}
@@ -306,14 +313,15 @@ situations lie close to infinity, the distances of the located vanishing points
 can not be precise. Nevertheless, the vanishing point chosen will be in the
 correct direction, and suitably large so as not to affect further processing.
 
-To determine the affect of noise on the performance, we performed the same test
-repeatedly on images with increasing amounts of speckled noise, and averaged the
-results over the different orientations.  \reffig{noiseFullVHier} shows the
-average accuracy of recovery of the horizontal vanishing point against image noise.
-The results when using a full scan of the search space are also plotted, to
-demonstrate that there is no loss of accuracy when using the hierarchical scan.
-A numerical analysis of the performance is given in \reftab{accuracytable} and
-discussed at the end of this paper.
+To determine the affect of noise on the performance, we ran the same test
+repeatedly on images with increasing proportions of speckled noise, and took
+the average of the results over all different orientations.
+\reffig{noiseFullVHier} shows the average accuracy of recovery of the
+horizontal vanishing point against image noise.  The results when using a full
+scan of the search space are also plotted, to demonstrate that there is no loss
+of accuracy when using the hierarchical scan.  A numerical analysis of the
+performance is given in \reftab{accuracytable} and discussed at the end of this
+paper.
 
 
 \begin{figure}[t]
