@@ -27,7 +27,7 @@
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
 var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
 var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
-var browserCanRewriteFramesUsingDocumentDotWrite = nutscrape;
+// var browserCanRewriteFramesUsingDocumentDotWrite = nutscrape;
 
 
 
@@ -69,7 +69,12 @@ var browserCanRewriteFramesUsingDocumentDotWrite = nutscrape;
 			logText = logText.substring(logText.indexOf('\n')+1);
 			// alert("To: "+logText);
 		}
-		var element = top.powerBarFrame.document.getElementById(LOG_ELEMENT_ID);
+		var element;
+		try {
+			element = top.powerBarFrame.document.getElementById(LOG_ELEMENT_ID);
+		} catch (e) {
+			alert("Error logging: " + e + "  Log was: \"" + logText + "\"");
+		}
 		if (element) {
 			element.innerHTML = toHtml(logText);
 			// Attempt at forced refresh:
@@ -310,6 +315,7 @@ function updatePowerBar() {
 	//// Disabled because too sensitive (on init, and even if user is typing!)
 	var urlOfMainFrame = mainFrame.location;
 	// var urlInTextBox = powerBarFrame.document.forms[0].location;
+	try {
 	if (powerBarFrame.document.forms["locationForm"]) {
 		var urlInTextBox = powerBarFrame.document.forms["locationForm"].location;
 		// if (urlOfMainFrame != urlInTextBox.value) {
@@ -325,6 +331,9 @@ function updatePowerBar() {
 	}
 	processTodoList();
 	refreshTimer();
+	} catch (e) {
+		LOG(e);
+	}
 }
 
 function processTodoList() {
@@ -612,20 +621,20 @@ function viewInnerHtml() {
 /////////////////////////// Library functions ///////////////////////////
 
 function writeToFrame(frame,html) {
-	if (browserCanRewriteFramesUsingDocumentDotWrite) {
+	// if (frame.document.open()) {
 		frame.document.open();
 		frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
 		frame.document.write(html);
 		frame.document.write("</body></html>"); // these tags seemed sensible to me
 		frame.document.close();
-	} else {
-		try {
-			frame.location = "about:blank";
-		} catch (e) {
-			alert("Setting "+frame+".location to blank threw: "+e);
-		}
-		frame.document.body.innerHTML = html;
-	}
+	// } else {
+		// try {
+			// frame.location = "about:blank";
+		// } catch (e) {
+			// alert("Setting "+frame+".location to blank threw: "+e);
+		// }
+		// frame.document.body.innerHTML = html;
+	// }
 }
 
 function writeToWindow(title,contents,options) {
@@ -635,9 +644,14 @@ function writeToWindow(title,contents,options) {
 		options = 'menubar,resizable,scrollbars,width=800,height=600';
 	}
 	var w = window.open('',title,options);
+	// Dammit something goes wrong here with Konqueror if it is put in mode (open new windows in new tab)
+	writeToFrame(w,contents);
 	// w.document.writeln('<b>Generated XPath of selected HTML Element:</b><br>');
-	w.document.writeln(contents);
-	w.document.close();
+	// w.document.open();
+	// w.document.write("<HTML><BODY>");
+	// w.document.write(contents);
+	// w.document.write("</BODY></HTML>");
+	// w.document.close();
 	w.focus();
 	w.jsReflectorShow = new Function(top.jsReflectorShow);
 	if (w.opener == null) // for older browsers, tell the child window we are the parent:
