@@ -38,8 +38,8 @@ float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 				List<V2d> testps;
 				testps.add(currentps);
 				testps.removenum(i+1);
-				// printf("Testing...\n");
 				float newErr=testASubSet(testps,usingspacings);
+				printf("Got error = %e\n",newErr);
 				if (newErr<bestErr) {
 					// printf("=)\n");
 					bestErr=newErr;
@@ -49,7 +49,7 @@ float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 				}
 			}
 		}
-		if (bestErr<currentErr*0.5) {
+		if (bestErr<currentErr*0.8) {
 			// printf("Hello\n");
 			printf("Improvement: %i %e\n",currentps.len-1,currentErr);
 			currentErr=bestErr;
@@ -105,10 +105,10 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 		float fexp=Stofloat(exp);
 		float num=fpre*pow(10.0,fexp);
 		Wssr=num;
-		fprintf(stdout,"Got wssr: %s = %g\n",s,Wssr);
+		// fprintf(stdout,"Got wssr: %s = %g\n",s,Wssr);
 	} else {
 		Wssr=Stofloat(s);
-		fprintf(stdout,"Got wssr: %f\n",Wssr);
+		// fprintf(stdout,"Got wssr: %f\n",Wssr);
 	}
 
 	lastV=V;
@@ -145,7 +145,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 		}
 		endpoints.put(i,nv);
 	}
-				
+
 	float angle=(baseline.b-baseline.a).angle();
 	printf(">> rotang = %f\n",angle*180.0/pi);
 	// Rotate baseline and endpoints
@@ -163,9 +163,9 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	}
 
 	List<V2d> ps;
-				
+
 	if (usingspacings) {
-					
+
 	  for (int i=0;i<endpoints.len-1;i++) {
 			V2d u=endpoints.get(i);
 			V2d v=endpoints.get(i+1);
@@ -201,7 +201,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	printf("  from %s\n",endpoints.get(0).toString());
 
 	float finalErr=doRansac(ps,usingspacings);
-	printf("final error = %f\n",finalErr);
+	printf("final error = %e\n",finalErr);
 
 	float vvpdist=guessU*lastV/lastW;
 

@@ -1270,7 +1270,7 @@ void main(int argc,String *argv) {
 			// Plot baseline!
 			origimage.thickline(((diffscale*summarybaseline+corner)).expandedTo(2.0*diagonal),myRGB::yellow,3);
 			if (usetwolines)
-				origimage.thickline(((diffscale*summarysecondline+corner)).expandedTo(2.0*diagonal),myRGB::white,3);
+				origimage.thickline(((diffscale*summarysecondline+corner)).expandedTo(2.0*diagonal),myRGB::darkyellow,3);
 			// correlation points
 			for (int i=0;i<summaryleftused.len;i++) {
 				V2d pnt=corner+diffscale*summaryleftused.get(i);

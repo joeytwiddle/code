@@ -21,7 +21,7 @@ PARAMS="
 -qnd
 -centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001
 -roll $roll -yaw $yaw -pitch $pitch
--overlay -image $IFILE $OFILE -size 0.4
+-overlay -image $IFILE $OFILE -size 0.7
 -spacings -gnuplot
 "
 # Weak focal perspective:
