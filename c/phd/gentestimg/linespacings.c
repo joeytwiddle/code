@@ -15,6 +15,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	}
 				
 	float angle=(baseline.b-baseline.a).angle();
+	printf(">> rotang = %f\n",angle);
 	// Rotate baseline and endpoints
 	for (int i=0;i<endpoints.len;i++) {
 		V2d v=endpoints.get(i);
@@ -32,6 +33,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 			V2d u=endpoints.get(i);
 			V2d v=endpoints.get(i+1);
 			fprintf(dataout,"%f %f\n",(float)imgheight/2.0-(u.y+v.y)/2.0,u.y-v.y);
+			// fprintf(dataout,"%f %f\n",(float)imgheight/2.0-u.y,u.y-v.y);
 		}
 
 	} else {
@@ -49,6 +51,8 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	float guessU=(float)imgheight/2.0-endpoints.get(0).y;
 
 	fprintf(gplout,"#!/usr/local/gnu/bin/gnuplot\n");
+	printf("Using guessU = %f\n",guessU);
+	printf("  from %s\n",endpoints.get(0).toString());
 	fprintf(gplout,"u = %f\n",guessU);
 	
 	fflush(gplout);

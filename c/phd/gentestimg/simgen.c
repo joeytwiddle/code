@@ -11,6 +11,10 @@ V3d eye=V3d(0,0,0);
 
 float rotang;
 
+V2d unrotabout(V2d v) {
+	return v.rotateabout(-rotang,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
+}
+
 V2d unrot(V2d v) {
 	// return v.rotateabout(-rotang,V2d((float)imgheight/2.0,(float)imgwidth/2.0));
 	return v.rotated(-rotang);
@@ -238,7 +242,7 @@ int main(int argc,String *argv) {
 	//	 where k1 is y init, A is down.y, k2 is z init, B is down z
 	{
 					
-	  printf("Ground truth (horizontal only):\n");
+	  printf("Ground truth (vertical only):\n");
   
 	  float groundK1 = worldA.y;
 	  float groundK2 = worldA.z;
@@ -260,20 +264,21 @@ int main(int argc,String *argv) {
 	}
 
 	printf("Ground truth:\n");
+		printf(" >> %s\n",unrot(worldA.dropz()).toString());
 
 	Line2d baseline=Line2d(proj(worldA),proj(worldB));
 	// rotang=(baseline.b-baseline.a).angle();
 	rotang=down.dropz().angle()-pi; // rotang=-rotang;
-	printf("rotang = %f\n",rotang);
+	printf(">> rotang = %f\n",rotang);
 	
 	printf("%f %f\n",(worldA.dropz()).x,(worldA.dropz()).y);
 	printf("worldA %s -> %s\n",worldA.dropz().toString(),unrot(worldA.dropz()).toString());
 	printf("%f %f\n",unrot(worldA.dropz()).x,unrot(worldA.dropz()).y);
 	float groundK1 = unrot(worldA.dropz()).y;
-	float testgroundK1 = worldA.dropz().mag();
-	printf("k1 = %f\ntest = %f\n",groundK1,testgroundK1);
-	printf("%f\n",unrot(worldA.dropz()).mag());
-	groundK1=testgroundK1;
+	// float testgroundK1 = worldA.dropz().mag();
+	// printf("k1 = %f\ntest = %f\n",groundK1,testgroundK1);
+	// printf("%f\n",unrot(worldA.dropz()).mag());
+	// groundK1=testgroundK1;
 	float groundK2 = worldA.z;
 	float groundA = unrot(down.dropz()).y/(float)numlines;
 	float groundB = down.z/(float)numlines;
@@ -286,7 +291,8 @@ int main(int argc,String *argv) {
 	float groundV = groundA/groundK1;
 	float groundW = groundB/groundK2;
 
-	float guessU = (float)imgheight/2.0-unrot(lines.get(0).a).y;
+	printf("!>> %s\n",unrotabout(lines.get(0).a).toString());
+	float guessU = (float)imgheight/2.0-unrotabout(lines.get(0).a).y;
 	
 	printf("U = %f\n",groundU);
 	printf("V = %f\n",groundV);
