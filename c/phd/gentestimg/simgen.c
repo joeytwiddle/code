@@ -7,7 +7,7 @@ float focallength,scale;
 Plane imageplane;
 V3d eye=V3d(0,0,0);
 
-V3d imgplaneFromPixel(Pixel p) {
+V3d imgplaneFromPixel(V2d p) {
   return V3d(((float)p.x-(float)imgwidth/2.0)*scale,((float)p.y-(float)imgheight/2.0)*scale,focallength);
 }
 
