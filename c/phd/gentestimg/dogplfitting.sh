@@ -9,12 +9,13 @@ U=$1
 V=$2
 W=$3
 
-SRCDIR="../gentestimg"
+# SRCDIR="../gentestimg"
+SRCDIR="$JPATH/code/c/phd/gentestimg"
 
 # Prepare gnuplot file
 (
 
-	cat gpldo.txt
+	cat "$SRCDIR/gpldo.txt"
 
 	if test ! "$U" = ""; then
 		# Actually the one provided in gpldo.txt is better!
