@@ -142,12 +142,13 @@ int blackPixel;
 int whitePixel;
 
 float freq[TXTHEI];
+float off[TXTHEI];
 float speed[TXTHEI];
 float space[TXTHEI];
 
 void setSpeed(int i) {
 	// speed[i]=9.0+2.0*sin(freq[i]*M_PI*frames);
-	speed[i]=SCALECONST*(8.0+0.5*sin(freq[i]*M_PI*frames));
+	speed[i]=SCALECONST*(12.0+3.0*sin(off[i]+freq[i]*M_PI*frames));
 	space[i]=speed[i]*(float)cr/4.0;
 }
 
@@ -159,7 +160,9 @@ void init() {
 		// speed[i]=7.0+3.0*frand();
 		// space[i]=speed[i]*(float)cr/8.0;
 		// freq[i]=0.01*frand();
-		freq[i]=(float)i/(float)TXTHEI/100.0;
+		// freq[i]=(float)i/(float)TXTHEI/100.0;
+		off[i]=0; // 2.0*M_PI*frand();
+		freq[i]=0.005*(float)((int)(4.0*frand()))/4.0;
 		setSpeed(i);
 	}
 	// dstrect.w=cr/2;
@@ -170,6 +173,7 @@ void init() {
 	screenrect.y=0;
 	screenrect.w=SCRWID;
 	screenrect.h=SCRHEI;
+	frames=12345;
 }
 
 void plotBlob(int x,int y,int w,int h,int c) {
@@ -195,8 +199,8 @@ void doframe() {
 			int i=(i0+col)%TXTWID;
 			// int c=( text[row][i] == ' ' ? blackPixel : whitePixel );
 			if (text[row][i]!=' ')
-			// plotBlob(diff+col*space[row],cy,space[row],cr,whitePixel);
-			plotBlob(diff+col*space[row],cy,cr,cr,whitePixel);
+			plotBlob(diff+col*space[row],cy,space[row],cr,whitePixel);
+			// plotBlob(diff+col*space[row],cy,cr,cr,whitePixel);
 			// printf("%s\n",text[row]);
 		}
 		setSpeed(row);
