@@ -19,19 +19,6 @@ import java.util.*;
 import jlib.*;
 import jlib.simple.*;
 
-/** Simplistic use of drag and drop to transport data between components in a single JVM.
- * Assumes only one mouse.  Does not interact with real DnD.
- * <P>
- * For any component c you wish to be a source for DnD, do DnDManager.setSource(c,Object o) where o is the information about the source which the target will receive.
- * <P>
- * Similarly, for a target component c do DnDManager.setTarget(c).
- * <P>
- * A target component must implement ComponentAcceptingDrop and hence provide a drop(Object) method to receive drops from DnD sources.
- * <P>
- * I added a second way of doing it to any component, but you must provide
- * some code to be executed at drop-time.
- **/
-
 
 public class DnDManager {
 

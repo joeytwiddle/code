@@ -1,6 +1,6 @@
 package jlib.dnd.hack;
 
-/** The component you wish to be a destination should implement this interface.  Furthermore, it should register itself with the DnDManager as a valid target. **/
+/** The Component you wish to be a destination should implement this interface.  Furthermore, it should register itself with the DnDManager as a valid target. **/
 
 public interface ComponentAcceptingDrop {
 	
