@@ -22,7 +22,7 @@
  \def\RCSdate{#4}%
 }
 \readRCS
-$Header: /home/joey/projects/migrating_cvs_to_git/cvsroot/tex/PRL-PC/elsart.cls,v 1.2 2002/05/04 23:50:04 joey Exp $
+$Header: /home/joey/projects/migrating_cvs_to_git/cvsroot/tex/PRL-PC/elsart.cls,v 1.3 2002/05/04 23:57:47 joey Exp $
 \def\@shortjnl{\relax}
  \def\esp@fileversion{2.18}
  \def\esp@filedate{2001/01/05}
