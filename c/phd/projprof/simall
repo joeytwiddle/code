@@ -7,9 +7,9 @@ IFILE="$SRCNAME.bmp"
 RES="results.txt"
 FOCALRES="focalres.txt"
 
+rm -f res/*
 rm -f "$RES"
 echo "START" > "$RES"
-
 rm -f "$FOCALRES"
 echo "" > "$FOCALRES"
 
