@@ -5,31 +5,33 @@
 # STARTANG=05
 # ENDANG=85
 # ANGSTEP=20
-STARTANG=20
+STARTANG=19
+ANGSTEP=17
 ENDANG=70
-ANGSTEP=10
 # STARTANG=0
 # ENDANG=90
 # ANGSTEP=5
 
-# SRCNAME="dar-crpage2-left$numlines"
-# SRCNAME="doc-cen"
-# SRCNAME="doc-cen-more"
-# SRCNAME="dar-crpage2"
-# SRCNAME="leaflet-cen"
+# DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
+# DOCUMENTS="left cen right full"
 
-for DOCUMENT in left dar-crpage2-left30; do
-# for DOCUMENT in left cen right full; do
+DOCUMENTS="left dar-crpage2-left30"
+PPSCANMETHODS="hier full"
+PPMEASURES="square deriv"
+VVPMETHODS="spacings margins"
+NOISES=`seq 0.0 0.2 1.0`
+# LINESTODO=`seq -w 30 -1 02`
+ANGLES=`seq $STARTANG $ANGSTEP $ENDSNG`
+
+for DOCUMENT in $DOCUMENTS; do
 
 	SRCNAME="simgs/$DOCUMENT"
 
-	# for PPSCANMETHOD in hier; do
-	for PPSCANMETHOD in hier full; do
+	for PPSCANMETHOD in $PPSCANMETHODS; do
 
-		for PPMEASURE in square deriv; do
+		for PPMEASURE in $PPMEASURES; do
 
-			# for VVPMETHOD in spacings; do
-			for VVPMETHOD in spacings margins; do
+			for VVPMETHOD in $VVPMETHODS; do
 
 				PPPARAMS="
 					-res 180 -adapt 0.03 -maxpixels 2000
@@ -51,10 +53,10 @@ for DOCUMENT in left dar-crpage2-left30; do
 				PPCOM="pp $PPPARAMS"
 				export PPCOM;
 
-				for NOISE in `seq 0.0 0.2 1.0`; do
+				for NOISE in $NOISES; do
 
 					# numlines=30
-					# for numlines in `seq -w 30 -1 02`; do
+					# for numlines in $LINESTODO; do
 
 						# 	echo
 						# 	echo "LINES: $numlines -----------------------------------------"
@@ -71,12 +73,10 @@ for DOCUMENT in left dar-crpage2-left30; do
 						rm -f "$FOCALRES"
 						echo "" > "$FOCALRES"
 
-						roll="90";
 						# for roll in `listnums -6 6`; do
-							for yaw in 60; do
-							# for yaw in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
-								for pitch in 30; do
-								# for pitch in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
+						roll="90";
+							for yaw in $ANGLES; do
+								for pitch in $ANGLES; do
 
 									echo
 									echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
