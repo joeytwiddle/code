@@ -21,8 +21,16 @@ TMPSCRIPT="$TMPDIR/$SCRIPT.sh"
 
 echo "`date` [$$] compilejshscript: Compiling $SCRIPT" >&2
 
-export NON_INTERACTIVE=true
-compilejshscript "$SCRIPT" 2>&1 > $TMPSCRIPT |
+export DEPWIZ_NON_INTERACTIVE=true
+
+## If we want to make sure they get everything they need for scripts without defined dependency meta:
+export DEPWIZ_VIGILANT=true
+
+## But if we want it faster: ## TODO: hmmm doesn't appear to be any faster.
+# export DEPWIZ_VIGILANT=
+# export DEPWIZ_LAZY=true
+
+compilejshscript "$SCRIPT" > $TMPSCRIPT 2> /tmp/compilejshscript.log
 
 ## Pretty print output to apache log:
 # trimempty | sed "s+^+`date` [$$] compilejshscript:   +" >&2
@@ -31,7 +39,7 @@ compilejshscript "$SCRIPT" 2>&1 > $TMPSCRIPT |
 # cat >&2
 
 ## Discard output:
-cat > /dev/null
+# cat > /dev/null
 
 echo "`date` [$$] compilejshscript: Done" >&2
 

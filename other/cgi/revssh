@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# echo "DISABLED :-P"
+# exit 0
+
 . cgilib
 
 SESSID=`getcgi "sessid"`
@@ -16,7 +19,7 @@ then
 	then echo "yes please init"
 	else
 		echo "no"
-		echo -e "touch $CHECKFILE.on\nto accept revssh sessions from $CHECKHOST" > "$CHECKFILE.off"
+		echo "touch $CHECKFILE.on\nto accept revssh sessions from $CHECKHOST ($REMOTE_ADDR)" > "$CHECKFILE.off"
 	fi
 
 elif [ "$INIT" = true ]
