@@ -103,6 +103,7 @@ int main(int argc,char *argv[]) {
 	int keepLooping=1;
 	clock_t starttime;
 	int start_clock;
+	int releasetime,now;
 
 #ifdef DEBUGTOFILE
 	output=fopen("debug.txt","wa");
@@ -142,23 +143,24 @@ int main(int argc,char *argv[]) {
 	starttime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
 
 	start_clock = clock();
+	releasetime = now = start_clock;
 
 	while (keepLooping) {
 
-		int releasetime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
-		// int releasetime = start_clock+frames*CLOCKS_PER_SEC/desiredFramesPerSecond;
-		framebits=((float)clock()-start_clock)*20.0/CLOCKS_PER_SEC;
+		releasetime = start_clock+frames*CLOCKS_PER_SEC/desiredFramesPerSecond;
+		// if (releasetime<now)
+			// releasetime = now+CLOCKS_PER_SEC/desiredFramesPerSecond;
+
 		if ((frames % 20) == 0) {
-			fprintf(output,"\rframes/second: %.2f",(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime));
+			fprintf(output,"\rframes/second: %.2f",(float)CLOCKS_PER_SEC*(float)frames/(float)(now-starttime));
 		}
 
+		framebits=((float)clock()-start_clock)*20.0/CLOCKS_PER_SEC;
 
 
 		doframe();
 
 
-
-		
 
 		frames++;
 
@@ -169,7 +171,7 @@ int main(int argc,char *argv[]) {
 		}
 
 #ifdef KEEP_TO_FPS
-		while (clock()<releasetime) {
+		while ((now=clock())<releasetime) {
 			sched_yield();
 			// SDL_Delay(12);
 		}
@@ -177,7 +179,6 @@ int main(int argc,char *argv[]) {
 
 		// SDL_Flip(screen);
 		SDL_UpdateRect(screen,0,0,SCRWID,SCRHEI);
-
 
 	}
 
