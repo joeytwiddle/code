@@ -53,21 +53,22 @@ echo
 	# 'my $default_usr = "root"' \
 		# $CITYPATH/shared/modules/IMC/Database.pm
 
-# echo "Buggy see itself fix"
-# WC="$CITYPATH/webcast"
-# sedreplace -changes \
-	# 'getenv("HTTP_HOST")' \
-	# '"localhost:81"' \
-		# `greplist "refresh=y" \`find $WC -name "*.php3"\``
-		# # $WC/led-process.php3 $WC/front.php3 $WC/new_data-process.php3
-		# # `find $CITYPATH/webcast/ -name *.php3`
+echo "Refresh http gets: Can't see $HOST but can see localhost fix"
+WC="$CITYPATH/webcast"
+sedreplace -changes \
+	'getenv("HTTP_HOST")' \
+	'"iraqloopbackhack"' \
+		`greplist "refresh=y" \`find $WC -name "*.php3"\``
+		# $WC/led-process.php3 $WC/front.php3 $WC/new_data-process.php3
+		# `find $CITYPATH/webcast/ -name *.php3`
 # echo
 
 echo "Removing incompatible php"
 sedreplace -changes '<!-- <?=\$summary_file?> -->' ' ' "$CITYPATH/webcast/index_imc.php3"
+echo
 
-cd $CITYPATH/
 echo "Applying other patches:"
+cd $CITYPATH/
 for X in /www/tronic-to-buggy-patches/*
 do patch -p0 < "$X"
 done
@@ -84,9 +85,8 @@ fi
 
 
 
-if test $1; then
-	echo "Skipping DB creation cos argument passed."
-	exit 0
+if test $1
+then echo "Skipping DB creation cos argument passed." ; exit 0
 fi
 
 
