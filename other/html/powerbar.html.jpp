@@ -7,16 +7,53 @@
 
 // Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
 
+///////////////////////// Compile-time options /////////////////////////
+
+// ------------------------ Logging -----------------------
+
+// The simplest demonstration of the usefulness of #define's pre-compile stripping.
+
+#define LOGGING
+
+// You must add LOG_ELEMENT_HTML at some point to the powerBarFrame
+// You can then log to that element using LOG(report);
+
+#ifdef LOGGING
+
+	#define LOG(str) log(str)
+	#define LOG_ELEMENT_ID "logElementId"
+	#define LOG_ELEMENT_HTML '<div id="' + LOG_ELEMENT_ID + '"></div>'
+	#define LOG_MAX_LINES 10
+	var logText = "";
+	function log(str) {
+		logText += toHtml(str + '\n');
+		while (countCharIn(logText,'\n')>LOG_MAX_LINES) {
+			logText = logText.substring(logText.indexOf('\n')+1);
+		}
+		var element = top.powerBarFrame.document.getElementById(LOG_ELEMENT_ID);
+		if (element) {
+			element.innerHTML = logText;
+		}
+	}
+
+#else
+
+	#define LOG(str) 
+	#define LOG_ELEMENT_HTML ""
+
+#endif
+
 /////////////////////////////// Constants ///////////////////////////////
 
-var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JavaScriptTester", "opt_ButtonsOnPowerBarForms" ];
-
 /////////// Options: (will be load/saveable using cookies...) ///////////
+
+var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JavaScriptTester", "opt_ButtonsOnPowerBarForms", "opt_ViewInnerHtmlButton" ];
 
 var opt_powerBarPosition = "top";
 var opt_ClockEnabled = true;
 var opt_JavaScriptTester = true;
 var opt_ButtonsOnPowerBarForms = true;
+var opt_ViewInnerHtmlButton = true;
 
 /////////////////////////// Runtime constants ///////////////////////////
 
@@ -54,6 +91,10 @@ function generatePowerBar() {
 	var powerBarHtml = "";
 	powerBarHtml += '<table width="100%"><tr><td align="center">';
 
+	powerBarHtml += '<INPUT type="button" value="wakeUp!" onclick="refreshTimer()">';
+
+	powerBarHtml += '</td><td align="center">';
+
 	//// Location URL textfield:
 	// powerBarHtml += '<FORM name="locationTextBox" action="javascript:top.changeLocation(top.mainFrame,this.location.value)">';
 	powerBarHtml += '<FORM onsubmit="top.changeLocation(top.mainFrame,location.value)" action="javascript:">';
@@ -67,7 +108,7 @@ function generatePowerBar() {
 
 	// Javascript tester textfield:
 	if (opt_JavaScriptTester) {
-		powerBarHtml += '</td><td>';
+		powerBarHtml += '</td><td align="center">';
 		// powerBarHtml += '<FORM action="javascript:top.processJs(code.value)">'; // worked fine for konq
 		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
 		powerBarHtml += 'JavaScript tester:\n';
@@ -81,18 +122,39 @@ function generatePowerBar() {
 	}
 
 	// Options button:
-	powerBarHtml += '</td><td>';
+	powerBarHtml += '</td><td align="center">';
 	powerBarHtml += '<INPUT type="button" value="Options..." onclick="top.editOptions()">';
 
 	// Clock:
 	if (opt_ClockEnabled) {
-		powerBarHtml += '</td><td>';
+		powerBarHtml += '</td><td align="center">';
 		powerBarHtml += '<div id="clockHook">clock loading...</div>';
 	}
 
+	if (opt_ViewInnerHtmlButton) {
+		// TODO
+		// powerBarHtml += '</td><td align="center">'
+		// powerBarHtml += '<INPUT type="button" value="Check" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\'))">';
+	}
+
+	#ifdef LOGGING
+		powerBarHtml += '</td><td align="center">'
+		powerBarHtml += '<INPUT type="button" value="Show log" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\'))">';
+	#endif
+
 	powerBarHtml += '</td></tr></table>';
+
+	#ifdef LOGGING
+		powerBarHtml += "<br>" + LOG_ELEMENT_HTML;
+	#endif
+
 	writeToFrame(powerBarFrame,powerBarHtml);
 	powerBarLocationFormElement = powerBarFrame.document.forms[0];
+
+	// alert("Getting: "+document.getElementById(LOG_ELEMENT_ID));
+
+	// LOG("generatePowerBar() finished.");
+
 }
 
 var timerId;
@@ -114,6 +176,7 @@ init();
 ///////////////////////////// PowerBar calls /////////////////////////////
 
 function updatePowerBar() {
+	LOG("updatePowerBar() called.");
 	//// Watch for change of address in mainFrame from user following link, and update location textbox.
 	//// Disabled because too sensitive (on init, and even if user is typing!)
 	var urlOfMainFrame = mainFrame.location;
@@ -245,6 +308,15 @@ function toHtml(text) {
 		html += ( map[c] ? map[c] : c );
 	}
 	return html;
+}
+
+function countCharIn(str,srch) {
+	var cnt = 0;
+	for (var i=0;i<str.len;i++) {
+		if (str.charAt(i) == srch)
+			cnt++;
+	}
+	return cnt;
 }
 
 // --> </script>
