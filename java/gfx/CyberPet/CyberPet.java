@@ -28,7 +28,7 @@ public class CyberPet extends Applet implements ActionListener {
 
     // Uncomment the following to run in a Frame
     // For some reason crashes applet!
-    /**/
+    /*
 		public static void main(String argv[]) {
     	// Create new frame, and show it
     	Frame f=new Frame("Octo the cyber pet!");
@@ -48,7 +48,7 @@ public class CyberPet extends Applet implements ActionListener {
     	setSize(300,250);
     	init();
     }
-		/**/
+		*/
 
     public void init() {
 	// Set colours of frame
