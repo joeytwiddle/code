@@ -15,7 +15,7 @@ import javax.swing.*;
  * But a LazyJMenu may be made <I>dynamic</I>, in which case it will regenerate its child items
  * every time the menu is accessed.  (This behaviour assumes the menu's children should only undergo change when the menu is not open!)
  * <P>
- * Any JMenuItems added to a LazyJMenu outside of generateChildren are liable to be removed!
+ * Any JMenuItems added to a LazyJMenu outside of generateChildren are liable to be removed!  (Now this is only true in dynamic mode =)
  * <P>
  * (I'm sure Java Swing menu's used to be lazy!)
  * <P>
@@ -43,7 +43,9 @@ public abstract class LazyJMenu extends LargeCapacityJMenu {
 
     public void setSelected(boolean selected) {
         if (selected && (!generated || dynamic)) {
-            this.removeAll();
+            if (dynamic) {
+                this.removeAll();
+            }
             this.generateChildren();
             generated = true;
         }

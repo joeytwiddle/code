@@ -13,10 +13,10 @@ import javax.swing.*;
 // import javax.swing.text.html.*;
 // import jlib.*;
 
-public class SplittingJMenu extends JMenu {
+public class SplittingJMenu extends DetachableJMenu {
 
-	private Vector items=new Vector();
-	private boolean doneSorting=false;
+	private Vector items = new Vector();
+	private boolean doneSorting = false;
 
 	public static final int maxItems=20;
 	public static final int preferedSplits=14;  // Actually prefered+1
@@ -24,9 +24,6 @@ public class SplittingJMenu extends JMenu {
     public SplittingJMenu(String s) {
         super(s);
     }
-	public SplittingJMenu(String s,boolean b) {
-		super(s,b);
-	}
 
 	public JMenuItem add(JMenuItem j) {
 		// items.add(j);
@@ -84,7 +81,7 @@ public class SplittingJMenu extends JMenu {
 				}
 				String first=((JMenuItem)tmp.get(0)).getText();
 				String last=((JMenuItem)tmp.get(tmp.size()-1)).getText();
-				SplittingJMenu sm=new SplittingJMenu("[ "+first+" ... "+last+" ]",true);
+				SplittingJMenu sm=new SplittingJMenu("[ "+first+" ... "+last+" ]");
 				for (int j=0;j<tmp.size();j++) {
 					sm.add((JMenuItem)tmp.get(j));
 				}

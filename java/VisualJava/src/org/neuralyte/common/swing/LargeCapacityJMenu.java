@@ -3,7 +3,7 @@ package org.neuralyte.common.swing;
 import javax.swing.*;
 
 /** joey Nov 2, 2004 2:29:51 PM */
-public class LargeCapacityJMenu extends JMenu {
+public class LargeCapacityJMenu extends DetachableJMenu {
 
     // final static int maxComponents = 30;
     final static int maxComponents = 15; // Damn those big icons!  Ideally this class would know when it exceeds display size.
