@@ -7,7 +7,7 @@
 
 //** Constants:
 
-var modules = [ "moduleClockEnabled", "moduleJavaScriptTester", "moduleButtonsOnPowerBarForms" ];
+var listOfOptions = [ "powerBarPosition", "moduleClockEnabled", "moduleJavaScriptTester", "moduleButtonsOnPowerBarForms" ];
 
 //** Options: (will be load/saveable using cookies...)
 
@@ -22,10 +22,11 @@ var defaultSubmitButton = ( moduleButtonsOnPowerBarForms ? '<INPUT type="button"
 var powerBarFrame; // == powerBarFrame
 var mainFrame;
 var powerBarLocationFormElement;
+var lastKnownLocation = "";
 
 //** Runtime variables:
 
-//** Code:
+//** PowerBar initialisation:
 
 function createFrameset() {
 	var distrib = ( powerBarPosition == "top" ? "20%,*" : "*,20%" );
@@ -49,25 +50,33 @@ function generatePowerBar() {
 	var powerBarHtml = "";
 	powerBarHtml += '<table width="100%"><tr><td align="center">';
 
-	powerBarHtml += '<FORM action="javascript:top.changeLocation(top.mainFrame,url.value)">';
+	//// Location URL textfield:
+	// powerBarHtml += '<FORM name="locationTextBox" action="javascript:top.changeLocation(top.mainFrame,this.location.value)">';
+	powerBarHtml += '<FORM onsubmit="top.changeLocation(top.mainFrame,location.value)" action="javascript:">';
 	powerBarHtml += 'Location:\n';
-	powerBarHtml += '<INPUT name="url" type="text" size="30" value="http://www.google.com/">';
-	powerBarHtml += defaultSubmitButton;
+	powerBarHtml += '<INPUT name="location" type="text" size="30" value="http://www.google.com/">';
+	// powerBarHtml += defaultSubmitButton;
+	powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,location.value)">';
 	powerBarHtml += '</FORM>';
 
+	// Javascript tester textfield:
 	if (moduleJavaScriptTester) {
 		powerBarHtml += '</td><td>';
-		powerBarHtml += '<FORM action="javascript:top.processJs(codeToExecute.value)">';
+		// powerBarHtml += '<FORM action="javascript:top.processJs(code.value)">'; // worked fine for konq
+		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
 		powerBarHtml += 'JavaScript tester:\n';
-		powerBarHtml += '<INPUT name="codeToExecute" type="text" size="30" value="type some javascript here">';
-		// powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(codeToExecute.value)">';
-		powerBarHtml += defaultSubmitButton;
+		powerBarHtml += '<INPUT id="codeToExecute" name="code" type="text" size="30" value="type some javascript here">';
+		// powerBarHtml += '<INPUT type="button" value="Go" onclick="submit()">'; // worked fine for konq
+		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
+		// powerBarHtml += defaultSubmitButton;
 		powerBarHtml += '</FORM>';
 	}
 
+	// Options button:
 	powerBarHtml += '</td><td>';
 	powerBarHtml += '<INPUT type="button" value="Options..." onclick="top.editOptions()">';
 
+	// Clock:
 	if (moduleClockEnabled) {
 		powerBarHtml += '</td><td>';
 		powerBarHtml += '<div id="clockHook">clock loading...</div>';
@@ -88,13 +97,24 @@ function init() {
 	createFrameset();
 	generatePowerBar();
 	// TODO: Make this use referer, or last in browser's history, or url provided via CGI.
-	writeToFrame(mainFrame,"It's better to put something here than nothing, don't you think?");
+	writeToFrame(mainFrame,"Welcome to PowerBar.  This addition to your browser will act like an extra toolbar, but will provide the latest radical Javascript technology from the Neuralyte laboratories, for your enhanced browsing pleazure.");
 	updatePowerBar();
 }
 
 init();
 
+//** PowerBar calls:
+
 function updatePowerBar() {
+	//// Watch for change of address in mainFrame from user following link, and update location textbox.
+	//// Disabled because too sensitive (on init, and even if user is typing!)
+	var urlOfMainFrame = mainFrame.location;
+	// var urlInTextBox = powerBarFrame.document.forms[0].location;
+	// if (urlOfMainFrame != urlInTextBox.value) {
+	// if (urlOfMainFrame != lastKnownLocation) {
+		// urlInTextBox.value = urlOfMainFrame;
+		// lastKnownLocation = urlOfMainFrame;
+	// }
 	if (moduleClockEnabled) {
 		var clockElem = powerBarFrame.document.getElementById('clockHook');
 		clockElem.innerHTML = "" + new Date();
@@ -103,8 +123,62 @@ function updatePowerBar() {
 }
 
 function changeLocation(frame,url) {
-	writeToFrame(frame,'<script type="text/javascript">window.location = "' + url + '";</script>');
+	// writeToFrame(frame,'<script type="text/javascript">window.location = "' + url + '";</script>');
+	lastKnownLocation = url;
+	frame.location = url;
+	refreshTimer();
 }
+
+function processJs(codeToExecute) {
+	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
+	var result;
+	try {
+		result = eval(codeToExecute);
+	} catch (e) {
+		result = e;
+	}
+	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
+	writeToFrame(mainFrame,toHtml(report));
+	// alert(report);
+	// refreshTimer();
+}
+
+function writeToFrame(frame,html) {
+	frame.location = "about:blank";
+	frame.document.body.innerHTML = html;
+	// frame.document.open();
+	// frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
+	// frame.document.write(html);
+	// frame.document.write("</body></html>"); // these tags seemed sensible to me
+	// frame.document.close();
+}
+
+function componentTypeForJSType(jsType) {
+	return (
+		jsType == "boolean" ? "checkbox" :
+		jsType == "string" ? "text" :
+		jsType == "number" ? "text" :
+		"button"
+	);
+}
+
+function editOptions() {
+	var html = "";
+	for (var i=0;i<listOfOptions.length;i++) {
+		var option = listOfOptions[i];
+		var value = eval(option);
+		var type = typeof(value);
+		var componentType = componentTypeForJSType(type);
+		var componentValue = ( type == "boolean" ? value ? "checked" : "n" : value );
+		html += "Option \""+option+"\": ";
+		html += '<INPUT type="'+componentType+'" value="'+componentValue+'" action="alert(value)">';
+		html += "<BR>";
+		// html += "option "+option+" has value = "+value+" and type "+type+"<BR>";
+	}
+	writeToFrame(mainFrame,html);
+}
+
+//** Library functions:
 
 function toHtml(text) {
 	var map = new Array(); // TODO: more!
@@ -121,28 +195,8 @@ function toHtml(text) {
 	return html;
 }
 
-function processJs(codeToExecute) {
-	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
-	var result;
-	try {
-		result = eval(codeToExecute);
-	} catch (e) {
-		result = e;
-	}
-	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
-	writeToFrame(mainFrame,toHtml(report));
-}
-
-function writeToFrame(frame,html) {
-	frame.document.open();
-	frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
-	frame.document.write(html);
-	frame.document.write("</body></html>"); // these tags seemed sensible to me
-	frame.document.close();
-}
-
 // --> </script>
 
 </HEAD>
-<BODY></BODY>
+<BODY>If u don't have Javascript, you're not coming in.</BODY>
 </HTML>
