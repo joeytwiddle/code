@@ -16,6 +16,21 @@
  *  Writing/clearing processes should be in proportion to desired density!
 **/
 
+/** How the matrix works (my interpretation anyway, and the one implemented here):
+ *  There are columns of data.  Some of the data is blank.  The rest of the data is green, and made of weird symbols which we cannot render in traditional terminals.
+ *  Each column of data slides down for a bit (one whole row at a time, so it kinda jerks instead of slides), stops for a bit, then slides down again.  Hence data is continually flowing through the matrix.
+ *  There are white bits, which I call processes.
+ *  All processes are white and change symbol rapidly.
+ *  There are four types of process:
+ *    - (SLIDING)  When a column is sliding down, sometimes the bottom (head) symbol in a block of data is processed (becomes a process).  (This one is implemented independently from, and more simply than the following three.)
+ *    - (STATIC)   Sometimes a static process appears which sits still, but changes any data that passes through it.
+ *    - (WRITING)  Sometimes a process appears, and starts moving down the column, leaving symbols behind it.
+ *    - (CLEARING) Sometimes a similar process to the latter appears, but deletes symbols instead of creating them.
+ *  The actual content of the data and the way it changes appears to be pretty random.  Unless you know how to read it.  ;)
+ *  My implementation is pretty probabilistic, with different things starting and stopping according to a desired average (a die with a fixed number of sides, one marked true).
+ *  I assume processes do not like to waste time, so encourage them to die if they get bored (eg. a static process in a static column, a clearing process in an empty column), and on creation their type is chosen according to the state of the column.
+**/
+
 #include <time.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,7 +100,7 @@
 
 
 
-/******** Curses functions ********/
+/******** General functions ********/
 
 void cls() {
 	for (int x=0;x<COLS;x++) {
@@ -95,9 +110,9 @@ void cls() {
 	}
 }
 
-// returns true on average once every prob calls
-bool prob(int prob) {
-	return ( ( rand() % prob ) == 0 );
+// returns true on average once every n calls
+bool prob(int n) {
+	return ( ( rand() % n ) == 0 );
 }
 
 template<class Type>
@@ -126,7 +141,7 @@ mbit STATIC_PROCESS_EMPTY = 'E';
 
 
 
-/******** Probabilities ********/
+/******** Probabilities (set at initialisation) ********/
 
 int averageLengthOfSlide;
 int averageLengthBetweenSlides;
