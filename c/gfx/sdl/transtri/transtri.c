@@ -9,6 +9,10 @@
 
 /***************/
 
+// #define CONST
+#include "incl.c"
+#undef CONST
+
 /***************/
 
 #define SDL_w(asurface) (asurface->w)
@@ -69,7 +73,8 @@ void inline TrueGetRGB(Uint32 pixel, SDL_PixelFormat *fmt, Uint8 *r,Uint8 *g,Uin
 
 #define SDLwrap_getPixel(sdl_surface,pixelType,pitch,bytesperpixel,x,y) (SDLwrap_regPixel((sdl_surface),(pixelType),(pitch),(bytesperpixel),(x),(y)))
 #define SDLwrap_setPixel(sdl_surface,pixelType,pitch,bytesperpixel,x,y,c); {SDLwrap_regPixel((sdl_surface),(pixelType),(pitch),(bytesperpixel),(x),(y))=(c);}
-#define SDLwrap_regPixel(sdl_surface,pixelType,pitch,bytesperpixelx,y) (*(pixelType *)((Uint8 *)((sdl_surface)->pixels)+(y)*(pitch)+(x)*(bytesperpixel)))
+// #define SDLwrap_regPixel(sdl_surface,pixelType,pitch,bytesperpixel,x,y) (*(pixelType *)((Uint8 *)((sdl_surface)->pixels)+(y)*(pitch)+(x)*(bytesperpixel)))
+#define SDLwrap_regPixel(sdl_surface,pixelType,pitch,bytesperpixel,x,y) (*(Uint32 *)((Uint8 *)((sdl_surface)->pixels)+(y)*(pitch)+(x)*(bytesperpixel)))
 
 // Very slight increase?
 #define lookupmax 65536
@@ -89,7 +94,8 @@ void setuptriglookup() {
 inline void merge(SDL_Surface *surface,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
 	Uint8 r,g,b;
 	int fr,fg,fb;
-	Uint32 p=getPixel(surface,x,y);
+	// Uint32 p=getPixel(surface,x,y);
+	Uint32 p=surface_getPixel(x,y);
 	// printf("%i\n",p);
 	SDL_GetRGB(p,(surface->format),&r,&g,&b);
 	// printf("    %i %i %i\n",r,g,b);
@@ -103,7 +109,8 @@ inline void merge(SDL_Surface *surface,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
 	// printf("%i %i %i\n",fr,fg,fb);
 	// printf(" -> %i %i %i\n",fr,fg,fb);
 	p= SDL_MapRGB(surface->format,fr,fg,fb);
-	setPixel(surface,x,y,p);
+	// setPixel(surface,x,y,p);
+	surface_setPixel(x,y,p);
 }
 
 void plotLine(SDL_Surface *surface,int BR_x1,int BR_y1,int BR_x2,int BR_y2,Uint32 colour) {
@@ -113,6 +120,7 @@ void plotLine(SDL_Surface *surface,int BR_x1,int BR_y1,int BR_x2,int BR_y2,Uint3
 	#undef BR_todo(x,y)
 }
 
+/*
 void plotTri(SDL_Surface *surface,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int TR_x3, int TR_y3, Uint32 colour) {
 	#define TR_todo(x,y) {setPixel(surface,x,y,colour);}
 	// #define TR_todo(x,y) { if (x>=0 && x<SCRWID && y>=0 && y<SCRHEI) {setPixel(surface,x,y,colour);} }
@@ -123,6 +131,7 @@ void plotTri(SDL_Surface *surface,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int TR
 	plotLine(surface,TR_x1,TR_y1,TR_x3,TR_y3,MapRGB(surface->format,255,255,255));
 	plotLine(surface,TR_x2,TR_y2,TR_x3,TR_y3,MapRGB(surface->format,255,255,255));
 }
+*/
 
 void plotTriRGB(SDL_Surface *surface,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int TR_x3, int TR_y3, int r,int g,int b) {
 	#define TR_todo(x,y) merge(surface,x,y,r,g,b);
@@ -135,51 +144,54 @@ void plotTriRGB(SDL_Surface *surface,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int
 
 	void printSurfaceDefaults(char *name) {
 		printf("// Volatile definitions for %s:\n",name);
-		// printf("#define SDLwrap_%s_w %s->w\n",name,name);
-		// printf("#define SDLwrap_%s_h %s->h\n",name,name);
-		printf("#define SDLwrap_%s_pixelType Uint32 // guess\n",name);
-		printf("#define SDLwrap_%s_pitch %s->pitch\n",name,name);
-		printf("#define SDLwrap_%s_format_BytesPerPixel %s->format->BytesPerPixel\n",name,name);
-		printf("#define SDLwrap_%s_Rmask %s->Rmask\n",name,name);
-		printf("#define SDLwrap_%s_Rloss %s->Rloss\n",name,name);
-		printf("#define SDLwrap_%s_Rshift %s->Rshift\n",name,name);
-		printf("#define SDLwrap_%s_Gmask %s->Gmask\n",name,name);
-		printf("#define SDLwrap_%s_Gloss %s->Gloss\n",name,name);
-		printf("#define SDLwrap_%s_Gshift %s->Gshift\n",name,name);
-		printf("#define SDLwrap_%s_Bmask %s->Bmask\n",name,name);
-		printf("#define SDLwrap_%s_Bloss %s->Bloss\n",name,name);
-		printf("#define SDLwrap_%s_Bshift %s->Bshift\n",name,name);
+		printf("#define %s_w %s->w\n",name,name);
+		printf("#define %s_h %s->h\n",name,name);
+		printf("#define %s_pixelType Uint32 // guess\n",name);
+		printf("#define %s_pitch %s->pitch\n",name,name);
+		printf("#define %s_format_BytesPerPixel %s->format->BytesPerPixel\n",name,name);
+		printf("#define %s_Rmask %s->Rmask\n",name,name);
+		printf("#define %s_Rloss %s->Rloss\n",name,name);
+		printf("#define %s_Rshift %s->Rshift\n",name,name);
+		printf("#define %s_Gmask %s->Gmask\n",name,name);
+		printf("#define %s_Gloss %s->Gloss\n",name,name);
+		printf("#define %s_Gshift %s->Gshift\n",name,name);
+		printf("#define %s_Bmask %s->Bmask\n",name,name);
+		printf("#define %s_Bloss %s->Bloss\n",name,name);
+		printf("#define %s_Bshift %s->Bshift\n",name,name);
 	}
 
 	void printSurfaceConstants(char *name, SDL_Surface *surface) {
 		printf("// Constant definitions for %s:\n",name);
-		printf("#define SDLwrap_%s_w (%i)\n",name,surface->w);
-		printf("#define SDLwrap_%s_h (%i)\n",name,surface->h);
-		printf("#define SDLwrap_%s_pixelType Uint%i\n",name,surface->format->BitsPerPixel);
-		printf("#define SDLwrap_%s_pitch (%i)\n",name,surface->pitch);
-		printf("#define SDLwrap_%s_format_BytesPerPixel (%i)\n",name,surface->format->BytesPerPixel);
-		printf("#define SDLwrap_%s_Rmask (%i)\n",name,surface->format->Rmask);
-		printf("#define SDLwrap_%s_Rloss (%i)\n",name,surface->format->Rloss);
-		printf("#define SDLwrap_%s_Rshift (%i)\n",name,surface->format->Rshift);
-		printf("#define SDLwrap_%s_Gmask (%i)\n",name,surface->format->Gmask);
-		printf("#define SDLwrap_%s_Gloss (%i)\n",name,surface->format->Gloss);
-		printf("#define SDLwrap_%s_Gshift (%i)\n",name,surface->format->Gshift);
-		printf("#define SDLwrap_%s_Bmask (%i)\n",name,surface->format->Bmask);
-		printf("#define SDLwrap_%s_Bloss (%i)\n",name,surface->format->Bloss);
-		printf("#define SDLwrap_%s_Bshift (%i)\n",name,surface->format->Bshift);
+		printf("#define %s_w (%i)\n",name,surface->w);
+		printf("#define %s_h (%i)\n",name,surface->h);
+		printf("#define %s_pixelType Uint%i\n",name,surface->format->BitsPerPixel);
+		printf("#define %s_pitch (%i)\n",name,surface->pitch);
+		printf("#define %s_format_BytesPerPixel (%i)\n",name,surface->format->BytesPerPixel);
+		printf("#define %s_Rmask (%i)\n",name,surface->format->Rmask);
+		printf("#define %s_Rloss (%i)\n",name,surface->format->Rloss);
+		printf("#define %s_Rshift (%i)\n",name,surface->format->Rshift);
+		printf("#define %s_Gmask (%i)\n",name,surface->format->Gmask);
+		printf("#define %s_Gloss (%i)\n",name,surface->format->Gloss);
+		printf("#define %s_Gshift (%i)\n",name,surface->format->Gshift);
+		printf("#define %s_Bmask (%i)\n",name,surface->format->Bmask);
+		printf("#define %s_Bloss (%i)\n",name,surface->format->Bloss);
+		printf("#define %s_Bshift (%i)\n",name,surface->format->Bshift);
 	}
 
 	void printSurfaceInclude(char *name) {
 		printf("// Includes for %s:\n",name);
 		// printf("#define %s_w %s->w\n",name,name);
 		// printf("#define %s_h %s->h\n",name,name);
-		printf("#define %s_getPixel(x,y) SDLwrap_getPixel(SDLwrap_%s,SDLwrap_%s_pixelType,SDLwrap_%s_pitch,SDLwrap_%s_bytesperpixel,(x),(y))\n",name,name,name,name,name);
-		printf("#define %s_setPixel(x,y) SDLwrap_setPixel(SDLwrap_%s,SDLwrap_%s_pixelType,SDLwrap_%s_pitch,SDLwrap_%s_bytesperpixel,(x),(y))\n",name,name,name,name,name);
+		printf("#define %s_getPixel(x,y) ( SDLwrap_getPixel((%s),(%s_pixelType),(%s_pitch),(%s_format_BytesPerPixel),(x),(y)) )\n",name,name,name,name,name);
+		printf("#define %s_setPixel(x,y,c) SDLwrap_setPixel((%s),(%s_pixelType),(%s_pitch),(%s_format_BytesPerPixel),(x),(y),c)\n",name,name,name,name,name);
 	}
 
 void printSurfaceDetails(char *name,SDL_Surface *surface) {
+	printf("#ifndef CONST\n");
 	printSurfaceDefaults(name);
+	printf("#else\n");
 	printSurfaceConstants(name,surface);
+	printf("#endif\n");
 	printSurfaceInclude(name);
 	printf("\n");
 }
@@ -209,7 +221,7 @@ int main(int argc,char *argv[]) {
 	
 	bgtexture=SDL_LoadBMP("bgtexture.bmp");
 	// SDL_LockSurface(bgtexture);
-	printSurfaceDetails("bgtexture",surface);
+	printSurfaceDetails("bgtexture",bgtexture);
 
 	starttime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
 
@@ -227,37 +239,41 @@ int main(int argc,char *argv[]) {
 		int i,j;
 		float qs=qsin((float)frames*3.141/45.0);
 		float bounce=1.4+0.4*qsin(frames*M_PI/10.0);
-		for (i=0;i<SCRWID;i++)
-			for (j=0;j<SCRHEI;j++) {
+		int vs[SCRHEI];
+		for (i=0;i<SCRWID;i++) {
 				float x=(float)(i-SCRWID/2)/(float)(SCRWID/2);
-				float y=(float)(j-SCRHEI/2)/(float)(SCRHEI/2);
-				Uint32 p;
-				unsigned int u,v;
-				unsigned char r,g,b;
-				// fprintf(stderr,"%i %i : %f %f -> \n", i,j, x, y);
+				unsigned int u;
 				x=sgn(x)*pow(fabs(x),bounce);
-				y=sgn(y)*pow(fabs(y),bounce);
-				u=(int)((SDL_w(bgtexture)-5)*(0.5*(x+1.0)));
-				v=(int)((SDL_h(bgtexture)-5)*(0.5*(y+1.0)));
-				// fprintf(stderr,"%f %f : %i %i\n", x, y, u,v);
-				// fprintf(stderr,"%i\n",&regPixel(bgtexture,u,v));
-				// fprintf(stderr,"%i %i\n",bgtexture->w,bgtexture->h);
-				// p=((unsigned char *)(bgtexture->pixels))[bgtexture->h*v+u];
-				// p=((Uint8 *)(bgtexture->pixels))[(bgtexture->h*v+u)*bgtexture->format->BytesPerPixel];
-				// p=((unsigned int *)(bgtexture->pixels))[bgtexture->h*v+u];
-				// fprintf(stderr,"%i\n",p);
-				p=getPixel(bgtexture, u, v);
+				u=(int)((bgtexture_w-5)*(0.5*(x+1.0)));
+			for (j=0;j<SCRHEI;j++) {
+				/*
+				float y;
+				Uint32 p;
+				unsigned int v;
+				if (i==0) {
+					y=(float)(j-SCRHEI/2)/(float)(SCRHEI/2);
+					y=sgn(y)*pow(fabs(y),bounce);
+					v=(int)((bgtexture_h-5)*(0.5*(y+1.0)));
+					vs[j]=v;
+				} else {
+					v=vs[j];
+				}
+				// p=getPixel(bgtexture, u, v);
+				p=bgtexture_getPixel( u, v);
+				// setPixel(surface,i,j,p);
+				surface_setPixel(i,j,p);
 				// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
-				// setPixel(surface,i,j,SDL_MapRGB(bgtexture->format,r,g,b));
-				setPixel(surface,i,j,p);
-				// ((int *)surface->pixels)[j*surface->h+i]=SDL_MapRGB(surface->format,r,g,b);
+				// SDL_MapRGB(surface->format,r,g,b);
+				*/
 				// float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)frames*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)frames/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)frames/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)frames*0.29+j/15.0)/23.0));
 				// if (br<0.0) br=0.0;
 				// if (br>1.0) br=1.0;
 				// ((int *)surface->pixels)[j*SCRWID+i]=MapRGB(surface->format,br*i*256/SCRWID,br*j*256/SCRHEI,128+127*qsin(clock()*3.141/5.0/(float)CLOCKS_PER_SEC));
 				// ((int *)surface->pixels)[j*SCRWID+i]=0;
 				// ((int *)surface->pixels)[j*SCRWID+i]=MapRGB(surface->format,i*256/SCRWID,j*256/SCRHEI,128+127*qs);
+				surface_setPixel(i,j,MapRGB(surface->format,i*256/surface_w,j*256/surface_h,128+127*qs));
 			}
+		}
 
 		#define brightness 80
 		for (i=0;i<50;i++) {
