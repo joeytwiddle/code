@@ -18,10 +18,7 @@
 // Compare the <INPUT> in jsReflectorShow() (method 1) to those in generatePowerBar() (method 2).
 
 // TODO:
-// 
-
-//// Yummy I found reflection:
-// for (var x in top.powerBarFrame) { log(""+x); }     
+// How can we prevent all the parents from capturing the XPath click event in Mozilla?
 
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
 var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
@@ -92,14 +89,15 @@ var browserCanWriteWithDocumentDotOpen = nutscrape;
 
 /////////// Options: (will be load/saveable using cookies...) ///////////
 
-var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JSTesterEnabled", "opt_ButtonsOnPowerBarForms", "opt_ViewInnerHtmlButton" ];
+var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JSTesterEnabled", "opt_ButtonsOnPowerBarForms", "opt_ViewInnerHtmlButton", "opt_XPathGrabber" ];
 
 var opt_powerBarPosition = "top";
 var opt_ClockEnabled = true;
 var opt_JSTesterEnabled = true;
 var opt_ButtonsOnPowerBarForms = true;
 var opt_ViewInnerHtmlButton = true;
-var opt_ReflectorEnabled = true;
+var opt_JSReflectorEnabled = true;
+var opt_XPathGrabber = true;
 
 /////////////////////////// Runtime constants ///////////////////////////
 
@@ -163,12 +161,17 @@ function generatePowerBar() {
 		powerBarHtml += '</FORM>';
 	}
 
-	if (opt_ReflectorEnabled) {
+	if (opt_JSReflectorEnabled) {
 		powerBarHtml += '</td><td align="center">';
 		powerBarHtml += '<FORM onsubmit="top.jsReflectorInit()" action="javascript:">'; // but this needed for mozilla
 		// powerBarHtml += 'JS reflector:\n';
 		powerBarHtml += '<INPUT type="button" value="JSReflect" onclick="top.jsReflectorInit()">'; // but mozilla needs this too!
 		powerBarHtml += '</FORM>';
+	}
+
+	if (opt_XPathGrabber) {
+		powerBarHtml += '</td><td align="center">';
+		powerBarHtml += '<INPUT id="XPathGrabberButton" type="button" value="XPathGrabber" onclick="top.xPathGrabber()">'; // but mozilla needs this too!
 	}
 
 	// Options button:
@@ -281,6 +284,8 @@ function changeLocation(frame,url) {
 	refreshTimer();
 }
 
+//////////////////////////// PowerBar modules ////////////////////////////
+
 function processJs(codeToExecute) {
 	var result;
 	try {
@@ -300,23 +305,6 @@ function processJs(codeToExecute) {
 		// alert(report);
 	#endif
 	refreshTimer();
-}
-
-function writeToFrame(frame,html) {
-	if (browserCanWriteWithDocumentDotOpen) {
-		frame.document.open();
-		frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
-		frame.document.write(html);
-		frame.document.write("</body></html>"); // these tags seemed sensible to me
-		frame.document.close();
-	} else {
-		try {
-			frame.location = "about:blank";
-		} catch (e) {
-			alert("Setting "+frame+".location to blank threw: "+e);
-		}
-		frame.document.body.innerHTML = html;
-	}
 }
 
 function componentTypeForJSType(jsType) {
@@ -351,9 +339,7 @@ function jsReflectorInit() {
 	jsReflectorShow("top.powerBarFrame");
 }
 
-// TODO: Don't generate big long HTML strings.  Pipe straight to document instead.
-//       This will mean somehow genericising the document.open() vs. document.body.innerHTML implementations.
-//       Oh we can't do that until we've sorted them anyway.  Maybe use an array for sorting?
+// TODO: popup reflector in a separate window
 
 function jsReflectorShow(objName) {
 	jsReflectorHistory.push(objName);
@@ -406,7 +392,85 @@ function jsReflectorShow(objName) {
 	}
 }
 
+function xPathGrabber() {
+	onAllNodesDo(top.mainFrame.document,"",attachClickListener,doNothing); // not working! hence showShapeOld
+	LOG("Added XPath click capture to " + cnt + " nodes.");
+}
+
+var cnt = 0;
+function attachClickListener(context,node) {
+	// if (node.childNodes.length == 0) {
+	if (node.captureEvents) {
+		node.captureEvents(Event.CLICK); // only Moz needs this
+	}
+	node.onmouseup = processClick;
+	cnt++;
+	// node.onmouseup = 'alert("Node " + this + " has XPath = " + getXPath(this));';
+	// }
+}
+
+// var eventObj;
+
+function processClick(event) {
+	var node = event.srcElement;
+	if (!node) {
+		node = event.currentTarget;
+	}
+	alert("Node " + node + " has " + node.childNodes.length + " kids and XPath:\n" + getXPath(node));
+	// LOG(getXPath(node) + ": \"" + toHtml(node.)));
+	try {
+		node.style.backgroundColor = randomColour();
+	} catch (e) {
+		LOG(e);
+	}
+	// event.currentTarget.onmouseup = "";
+	// eventObj = node;
+	// jsReflectorShow("top.eventObj");
+}
+
+function getXPath(node) {
+	var parent = node.parentNode;
+	if (!parent) {
+		return "";
+	}
+	var siblings = parent.childNodes;
+	var totalCount = 0;
+	var thisCount = -1;
+	for (var i=0;i<siblings.length;i++) {
+		var sibling = siblings[i];
+		if (sibling.nodeType == node.nodeType) {
+			totalCount++;
+		}
+		if (sibling == node) {
+			thisCount = totalCount;
+		}
+	}
+	//// Extended info xpath: could also show name, id, other attribs if present:
+	// return getXPath(parent) + "/" + node.nodeName + "[" + thisCount + "/" + totalCount + "]";
+	//// Pure xpath:
+	// return getXPath(parent) + "/" + node.nodeName + "[" + thisCount + "]";
+	//// Neat when it can be:
+	return getXPath(parent) + "/" + node.nodeName.toLowerCase() + (totalCount>1 ? "[" + thisCount + "]" : "" );
+}
+
 /////////////////////////// Library functions ///////////////////////////
+
+function writeToFrame(frame,html) {
+	if (browserCanWriteWithDocumentDotOpen) {
+		frame.document.open();
+		frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
+		frame.document.write(html);
+		frame.document.write("</body></html>"); // these tags seemed sensible to me
+		frame.document.close();
+	} else {
+		try {
+			frame.location = "about:blank";
+		} catch (e) {
+			alert("Setting "+frame+".location to blank threw: "+e);
+		}
+		frame.document.body.innerHTML = html;
+	}
+}
 
 function escapeString(text) {
 	var map = new Array(); // TODO: more!
@@ -531,6 +595,32 @@ function areOrderedStrings(a,b) { // is a <= b ?
 	}
 	return true; // b is either identical or longer
 	*/
+}
+
+// From starfield3dj10.html:
+function doNothing(context,node) {
+	return context;
+}
+// Note: possible difference in implementation: if context is always going to be a reference to an object (as opposed to a primitive), then it needn't be passed back by the action functions.
+function onAllNodesDo(node,context,actionBefore,actionAfter) {
+	// TODO: if context is observably null, then needn't pass to actionBefore/After (which in turn shouldn't/needn't accept it).  Note change to doNothing required too!
+	context = actionBefore(context,node);
+	var kids = node.childNodes;
+	for (var i=0;i<kids.length;i++) {
+		var k = kids[i];
+		context = onAllNodesDo(k,context,actionBefore,actionAfter);
+	}
+	context = actionAfter(context,node);
+	return context;
+}
+
+function randomColour() {
+	var hex = "0123456789abcdef";
+	var col = "#";
+	for (var i=0;i<6;i++) {
+		col += hex.charAt(Math.random()*16);
+	}
+	return col;
 }
 
 // --> </script>
