@@ -162,20 +162,18 @@ mbit randSymbol() {
 
 void matrix_set(int x,int y,mbit symbol) {
 	// debug: catch oob?
-	move(y,x);
-	addch(symbol);
+	mvaddch(y,x,symbol);
 	thematrix[x][y] = symbol;
 }
 
-void matrix_set_process(int x,int y) {
+void matrix_set_process(int x,int y,mbit processType) {
 	// debug: catch oob?
 	mbit symbol = randSymbol();
 	attrset( COLOR_PAIR(7) | ( prob(2) ? A_BOLD : 0 ) );
 	// attrset( COLOR_PAIR(7) );
-	move(y,x);
-	addch(symbol);
-	thematrix[x][y] = BLOCKHEAD_PROCESS;
+	mvaddch(y,x,symbol);
 	attrset(COLOR_PAIR(2));
+	thematrix[x][y] = processType;
 }
 
 #ifdef PROCESSING_WHITE_BITS
@@ -186,8 +184,7 @@ void newProcess(int i) {
 	processX[i] = ( rand() % (COLS/sparsenessSkipCols) ) * sparsenessSkipCols;
 	processY[i] = ( rand() % (LINES/sparsenessSkipRows) ) * sparsenessSkipRows;
 	processes[i] = ( sliding[processX[i]] ? 'E' : thematrix[processX[i]][processY[i]] == ' ' ? 'W' : 'C' );
-	matrix_set_process(processX[i],processY[i]);
-	thematrix[processX[i]][processY[i]] = processes[i];
+	matrix_set_process(processX[i],processY[i],processes[i]);
 }
 #endif
 
@@ -205,7 +202,7 @@ void setupEverything() {
 
 #ifdef PROCESSING_WHITE_BITS
 	movingProcessDies = max(2, averageLengthOfBlock / 2 );
-	staticProcessDies = max(2, averageLengthOfBlock + averageLengthBetweenBlocks );
+	staticProcessDies = max(2, averageLengthOfBlock * 2 + averageLengthBetweenBlocks );
 	// Should really be based on area, not width, or maybe something inbetween.
 	numProcesses = max(1, (int)sqrt(COLS * LINES / sparsenessSkipCols / sparsenessSkipRows) / 16 );
 #endif
@@ -217,9 +214,7 @@ void setupEverything() {
 		sliding[x] = prob(averageLengthBetweenSlides);
 		adding[x] = prob(averageLengthBetweenBlocks);
 		for (int y=0;y<LINES;y++) {
-			thematrix[x][y] = ' ';
-			move(y,x);
-			addch(' ');
+			matrix_set(x,y,' ');
 		}
 	}
 
@@ -253,7 +248,7 @@ void slideColumn(int x,bool lastSlide) {
 				if (lastSlide || prob(slidingProcessDies)) {
 					matrix_set(x,y,randSymbol());
 				} else {
-					matrix_set_process(x,y);
+					matrix_set_process(x,y,BLOCKHEAD_PROCESS);
 				}
 			#ifdef PROCESSING_WHITE_BITS
 				} else if (src == STATIC_PROCESS_EMPTY) {
@@ -265,7 +260,7 @@ void slideColumn(int x,bool lastSlide) {
 					thematrix[x][y] = ( src == ' ' ? STATIC_PROCESS_EMPTY : STATIC_PROCESS_FULL );
 			#endif
 			} else if (src != ' ' && last == ' ' && !lastSlide && prob(newSlidingProcess)) {
-				matrix_set_process(x,y);
+				matrix_set_process(x,y,BLOCKHEAD_PROCESS);
 			} else {
 				if (last == src)
 					thematrix[x][y]=src;
@@ -357,9 +352,8 @@ void main() {
 		for (int i=0;i<numProcesses;i++) {
 			bool recycle = false;
 			if (processes[i] == STATIC_PROCESS_EMPTY || processes[i] == STATIC_PROCESS_FULL) {
-				processes[i] = thematrix[processX[i]][processY[i]];
-				matrix_set_process(processX[i],processY[i]);
-				thematrix[processX[i]][processY[i]] = processes[i];
+				processes[i] = thematrix[processX[i]][processY[i]]; // *1
+				matrix_set_process(processX[i],processY[i],processes[i]);
 				// Die if bored:
 				if (
 					processes[i] == STATIC_PROCESS_EMPTY
@@ -368,8 +362,8 @@ void main() {
 					recycle = prob(staticProcessDies);
 				}
 				// Die naturally:
-				// if (prob(staticProcessDies))
-					// recycle = true;
+				if (prob(staticProcessDies))
+					recycle = true;
 			} else if (processes[i] == WRITING_PROCESS || processes[i] == CLEARING_PROCESS) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
 				matrix_set(processX[i],processY[i],toWrite);
@@ -387,9 +381,11 @@ void main() {
 					// Die naturally:
 					if (prob(movingProcessDies))
 						recycle = true;
-					matrix_set_process(processX[i],processY[i]);
-					thematrix[processX[i]][processY[i]] = WRITING_PROCESS; // nobody cares!
+					matrix_set_process(processX[i],processY[i],WRITING_PROCESS);
 				}
+			} else {
+				// Something bad happened, I reckon at *1, probably another processing operating on same position
+				recycle = true;
 			}
 			if (recycle) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS || processes[i] == STATIC_PROCESS_EMPTY ? ' ' : randSymbol() );
@@ -403,10 +399,9 @@ void main() {
 #ifdef BOTHER_CLOCKING
 		while (true) {
 			thisframe = clock();
-			if (thisframe < lastframe+clocksPerFrame)
-				continue;
-			else
+			if (thisframe >= lastframe+clocksPerFrame)
 				break;
+			// TODO: sleep!
 		}
 		lastframe = thisframe;
 #endif
