@@ -1,1 +1,4 @@
-forall -shell in rest.txt do 0all %s
+# forall -shell in all2.txt do 0all %s
+cat all2.txt | while read X; do
+  0all $X
+done

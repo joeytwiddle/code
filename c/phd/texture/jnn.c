@@ -6,7 +6,7 @@
 #define ImageDir "/home/pgrad/pclark/images/"
 #endif
 
-#define ImageDir "/home/joey/j/images/"
+// #define ImageDir "/home/joey/j/images/"
 
 void donothing() { }
 

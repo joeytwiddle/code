@@ -14,9 +14,9 @@ echo "--- NOT BLOBBING blob $1"
 echo "--- 2locthr $1"
 2locthr $1
 
-# echo "--- 3ppvprec $1"
-echo "--- NOT DOING 3ppvprec $1"
-# 3ppvprec $1
+echo "--- 3ppvprec $1"
+# echo "--- NOT DOING 3ppvprec $1"
+3ppvprec $1
 
 0close $1
 
