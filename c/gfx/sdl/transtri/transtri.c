@@ -50,7 +50,7 @@ todo: Store #define constants for a variety of video modes so that the
 #define KEEP_TO_FPS
 #include "../stripped-useful.c"
 
-#define REDEFINE
+// #define REDEFINE
 #include "define.c"
 
 #define NUMTRIS 400

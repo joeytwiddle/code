@@ -670,6 +670,8 @@ float moddiff(float a,float b,float s) {
   return wrapdist(a,b,s);
 }
 
+#ifndef TRIGLOOKUPOFF
+
 int triglookupquant=20000;
 float *sinlookup=new float[triglookupquant];
 float *coslookup=new float[triglookupquant];
@@ -689,22 +691,26 @@ void setupsinlookup() { //- deprecated
   setuptriglookup();
 }
 
+#endif
+
 float mysin(float x) {
 #ifdef TRIGLOOKUPOFF
   return sin(x);
-#endif
+#else
   setuptriglookup();
   float y=mymod(x,2*pi);
   return sinlookup[(int)(y*triglookupquant/2/pi)];
+#endif
 }
 
 float mycos(float x) {
 #ifdef TRIGLOOKUPOFF
   return cos(x);
-#endif
+#else
   setuptriglookup();
   float y=mymod(x,2*pi);
   return coslookup[(int)(y*triglookupquant/2/pi)];
+#endif
 }
 
 bool boolrnd() {

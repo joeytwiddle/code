@@ -46,7 +46,8 @@ NOISES=0
 # ANGLES=`seq 5 6 85`
 # ANGLES=`seq 30 10 60`
 # ANGLES=`seq 5 3 85`
-ANGLES=`seq 10 3 80`
+# ANGLES=`seq 10 3 80`
+ANGLES=`seq 30 20 70`
 # ANGLES="30"
 
 FOCALS="4.0"
@@ -214,6 +215,9 @@ for DOCUMENT in $DOCUMENTS; do
 
 								# echo "Press a key"
 								# waitforkeypress
+
+									xv origover.bmp overlay.bmp
+									gv gplfit.ps
 
 								done # pitch
 							done # yaw

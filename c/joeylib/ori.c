@@ -10,7 +10,8 @@ public:
     x=t1; y=t2;
   }
   String toString() {
-    return "Ori:not written";
+		return Sformat("Ori u=%s r=%s",y.toString(),x.toString());
+    // return "Ori:not written";
   }
   V3d z() {
     return V3d::cross(x,y);

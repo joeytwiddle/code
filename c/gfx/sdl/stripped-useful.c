@@ -67,6 +67,8 @@ void setuptriglookup() {
 	for (i=0;i<triglookupmax;i++)
 		coslookup[i]=cos((float)i*2.0*M_PI/(float)triglookupmax);
 }
+// In case joeylib is used:
+#define TRIGLOOKUPOFF
 
 #define sqrtlookupmax 65536
 #define sqrtlookupquant 8
@@ -98,10 +100,11 @@ float framebits;
 
 FILE *fp;
 
+int keepLooping=1;
+
 int main(int argc,char *argv[]) {
 
 	SDL_Event event;
-	int keepLooping=1;
 	clock_t starttime;
 	int start_clock;
 	int releasetime,now;
@@ -165,11 +168,13 @@ int main(int argc,char *argv[]) {
 
 		frames++;
 
+#ifndef LEAVE_EVENTS_ALONE
 		while (SDL_PollEvent(&event)) {
-			if (event.type==SDL_KEYDOWN || event.type==SDL_QUIT || event.type==SDL_MOUSEBUTTONDOWN) {
+			if ( ( event.type==SDL_KEYDOWN && ( event.key.keysym.sym == SDLK_q || event.key.keysym.sym == SDLK_F10 ) ) || event.type==SDL_QUIT || event.type==SDL_MOUSEBUTTONDOWN) {
 				keepLooping=0;
 			}
 		}
+#endif
 
 #ifdef KEEP_TO_FPS
 		while ((now=clock())<releasetime) {

@@ -3,4 +3,5 @@ if test "$1" = ""; then
 else
 	ARGS="$@"
 fi
-g++ -O3 -w -c -I . $ARGS
+# g++ -O3 -w -c -I . $ARGS
+g++ -w -c -I . $ARGS
