@@ -203,7 +203,8 @@ void setupEverything() {
 #ifdef PROCESSING_WHITE_BITS
 	movingProcessDies = max(2, averageLengthOfBlock / 2 );
 	staticProcessDies = max(2, averageLengthOfBlock * 2 + averageLengthBetweenBlocks );
-	// Should really be based on area, not width, or maybe something inbetween.
+	// Based on "length of side".  If row size doubles, we don't want twice as many processes,
+	// because the two previous process parameters will already be causing them to have a larger effect.
 	numProcesses = max(1, (int)sqrt(COLS * LINES / sparsenessSkipCols / sparsenessSkipRows) / 16 );
 #endif
 
