@@ -58,7 +58,7 @@
 #endif
 
 
-float desiredFPS=15.0;
+float desiredFPS=8.0;
 
 
 int stylee;

@@ -93,6 +93,13 @@ public class JList {
 		return find(toList(l),o);
 	}
 
+  public static boolean contains(List os,Object o) {
+    for (int i=0;i<os.size();i++)
+      if (os.get(i).equals(o))
+        return true;
+    return false;
+  }
+
   public static boolean contains(Object[] os,Object o) {
     for (int i=0;i<os.length;i++)
       if (os[i].equals(o))

@@ -25,7 +25,10 @@ import jlib.*;
 public class Stars extends Thread implements ComponentListener {
 
   public static final int size=400;
+	volatile boolean change=false;
   java.util.Vector points=new java.util.Vector();
+  java.util.Vector randomPoints=new java.util.Vector();
+  java.util.Vector sparePoints=new java.util.Vector();
 
   boolean hideText=false; // radiates the points outwards after coherence to hide them better
   int whichText;
@@ -125,28 +128,42 @@ public class Stars extends Thread implements ComponentListener {
 
       Rectangle2D bounds=s.getBounds2D();
 
-			int spacing=4;
-      int height=12;
-      int width=(int)(height*bounds.getWidth()/bounds.getHeight());
-      for (int x=0;x<width;x++)
-      for (int y=0;y<height;y++)
-      if (JMaths.rnd(1,1)==1) {
-        double xx=bounds.getX()+x*bounds.getWidth()/width;
-        double yy=bounds.getY()+y*bounds.getHeight()/height;
-        if (s.contains(xx,yy)) {
-          // V3d v=pp.projectOut(pp.hscrwid+x-width/2,pp.hscrhei+y-height/2,JMaths.rnd(-1.0f,1.0f));
-          V3d v=pp.projectOut(pp.hscrwid+spacing*(x-width/2),pp.hscrhei+spacing*(y-height/2),JMaths.rnd(-1.0f,1.0f));
-          // echo(""+v);
-          points.add(new V3d(-v.x,-v.y,-v.z));
+			for (int loop=0;loop<2;loop++) {
+				java.util.List addPoints=( loop==0 ? points : sparePoints );
+				int spacing=4;
+				int height=12;
+				int width=(int)(height*bounds.getWidth()/bounds.getHeight());
+        for (int x=0;x<width;x++)
+        for (int y=0;y<height;y++)
+        if (JMaths.rnd(1,1)==1) {
+          double xx=bounds.getX()+x*bounds.getWidth()/width;
+          double yy=bounds.getY()+y*bounds.getHeight()/height;
+          if (s.contains(xx,yy)) {
+            // V3d v=pp.projectOut(pp.hscrwid+x-width/2,pp.hscrhei+y-height/2,JMaths.rnd(-1.0f,1.0f));
+            V3d v=pp.projectOut(pp.hscrwid+spacing*(x-width/2),pp.hscrhei+spacing*(y-height/2),JMaths.rnd(-1.0f,1.0f));
+            // echo(""+v);
+            addPoints.add(new V3d(-v.x,-v.y,-v.z));
+          }
         }
-      }
-      whichText=points.size();
+        whichText=points.size();
+			}
 
       // Add some random stars
       for (int i=0;i<1000;i++)
-        points.add(V3d.randomcube());
-
+        randomPoints.add(V3d.randomcube());
+			points.addAll(randomPoints);
+			
       echo("Setting up done");
+
+			new Thread() {
+				public void run() {
+					String dummy=CommandLine.getUserInput();
+					change=true;
+			// frame.setActionListener(new ActionListener() {
+				// public void actionPerformed(ActionEvent e) {
+				}
+			// });
+		  }.start();
 
   }
 
@@ -172,6 +189,13 @@ public class Stars extends Thread implements ComponentListener {
     Color colb=new Color(0.0f,0.6f,0.0f);
 
 		while (stillgoing) {
+
+			if (change) {
+				points=new java.util.Vector();
+				points.addAll(sparePoints);
+				points.addAll(randomPoints);
+				change=false;
+			}
 
       // echo("loop "+buffer.gfx);
 

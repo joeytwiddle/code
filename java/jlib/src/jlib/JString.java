@@ -334,6 +334,38 @@ public class JString {
     return s;
   }
 
+	public static String squeeze(String x,String s) {
+		StringBuffer n=new StringBuffer();
+		for (int i=0;i<x.length();i++) {
+			int j=i+1;
+			boolean keep=true;
+			if (j<x.length()) {
+				if (s.indexOf(x.charAt(i))>=0 && s.indexOf(x.charAt(j))>=0)
+					keep=false;
+			}
+			if (keep)
+				n.append(x.charAt(i));
+		}
+		return n.toString();
+	}
+
+	public static String trim(String s,String unwanted) {
+		boolean done=false;
+		while (!done) {
+			done=true;
+			if (s.length()>0) {
+				if (unwanted.indexOf(s.charAt(0))>=0) {
+					s=s.substring(1);
+					done=false;
+				} else if (unwanted.indexOf(s.charAt(s.length()-1))>=0) {
+					s=s.substring(0,s.length()-1);
+					done=false;
+				}
+			}
+		}
+		return s;
+	}
+
   public static String trimwhitespace(String s) {
     int n=s.length();
     int l=n+1;
@@ -449,6 +481,10 @@ public class JString {
 		s=replace(s,">","&gt;");
 		s=replace(s,"\n","<br>\n");
 		return s;
+	}
+
+	public static String initCap(String s) {
+		return Character.toUpperCase(s.charAt(0))+s.substring(1);
 	}
 
 }

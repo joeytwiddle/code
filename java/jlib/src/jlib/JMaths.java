@@ -39,6 +39,9 @@ public class JMaths {
   public static double rnd() {
     return Math.random();
   }
+  public static double rnd(double a,double b) {
+    return a+(float)rnd()*(b-a);
+  }
   public static float rnd(float a,float b) {
     return a+(float)rnd()*(b-a);
   }

@@ -19,6 +19,10 @@ public class Container extends Component {
     // comps=new Vector();
 		// init();
   // }
+	
+	public void clear() {
+		comps.clear();
+	}
 
   public void add(Component c) {
     comps.add(c);

@@ -44,7 +44,7 @@ public class Log {
 	public static final String logFile=JLib.JPATH+"/code/java/servlets/java.txt";
   public static boolean loggingOn = true;
   public static boolean toStdOut  = true;
-	public static boolean toFile    = false;
+	public static boolean toFile    = true;
 	public static boolean toString  = false;
 	public static boolean toHtml    = false;
 	public static boolean toEntries = false;
@@ -55,7 +55,7 @@ public class Log {
   public static String log="";
   public static String logHtml="";
 	public static final PrintWriter out=getFileWriter();
-	public static List entries=new Vector();;
+	public static List entries=new Vector();
 
 	private static PrintWriter getFileWriter() {
 		PrintWriter pw=null;

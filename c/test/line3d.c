@@ -15,10 +15,17 @@ void main(int argc,String *argv) {
   
   randomise();
 
-  Line3d la=Line3d(V3d::random(),V3d::random());
-  Line3d lb=Line3d(V3d::random(),V3d::random());
-  V3d *i=la.intersection(lb);
-  if (i==NULL)
-    printf("fail\n");
-
+  for (int i=0;i<20;i++) {
+    Line3d la=Line3d(V3d::random(),V3d::random());
+    Line3d lb=Line3d(V3d::random(),V3d::random());
+    V3d *i=la.intersection(lb);
+    if (i==NULL)
+      printf("fail\n");
+    V3d nor=V3d::cross(la.b-la.a,lb.b-lb.a);
+		printf("%f %f\n",
+				V3d::normdot(la.b-la.a,nor),
+				V3d::normdot(lb.b-lb.a,nor)
+		);
+	}
+		
 }
