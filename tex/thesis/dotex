@@ -8,16 +8,18 @@ if test "$1" = "-pdf"; then
 
 else
 
-# export TEXINPUTS=".:../majidstyles:../shared:/usr/local/teTeX/share/texmf/tex";
-TEXINPUTS=".";
-test -d /usr/local/teTeX/share &&
-  HEAD=/usr/local/teTeX/share ||
-  HEAD=/usr/local/TeX/teTeX
-for X in $HEAD/texmf/tex/latex/*; do
-  TEXINPUTS="$TEXINPUTS:$X";
-done
-# echo "$TEXINPUTS"
-export TEXINPUTS;
+# Not quite right for hwi, but may need uncommenting for tao.
+
+# # export TEXINPUTS=".:../majidstyles:../shared:/usr/local/teTeX/share/texmf/tex";
+# TEXINPUTS=".";
+# test -d /usr/local/teTeX/share &&
+  # HEAD=/usr/local/teTeX/share ||
+  # HEAD=/usr/local/TeX/teTeX
+# for X in $HEAD/texmf/tex/latex/*; do
+  # TEXINPUTS="$TEXINPUTS:$X";
+# done
+# # echo "$TEXINPUTS"
+# export TEXINPUTS;
 
 echo "----------------------------------------------------------------"
 "rm" $FNAME.dvi
