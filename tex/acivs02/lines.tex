@@ -1,0 +1,810 @@
+% \section{Preparing for recovery}
+\section{Finding Text Regions}
+\label{recoveryusinglines}
+
+% After thresholding the image region located in the previous stage, we now have a binary
+% representation of the text within that region.
+
+In \cite{clarkBMVC2000} we introduced a text segmentation algorithm which used
+localised texture measures to train a neural network to classify areas of an
+image as text or non-text. \reffig{runblobbed} shows a large region of text 
+which was found in \reffig{runorig} using this approach.
+In this work we consider the output of the system presented in
+\cite{clarkBMVC2000} and analyse each region individually to recognise the shape
+of the paragraph, recover the 3D orientation of the text plane, and generate a
+fronto-parallel view of the text.
+
+
+% To achieve these goals, we need the vanishing points of the plane.
+% Given a located paragraph of text in the image, our goal is now to extract the 3D properties
+% of the text plane so that a fronto-parallel view may be recovered.
+% The horizontal vanishing point may be easily found from the
+% individual lines of text, provided that they are segmented
+% correctly.
+% Unfortunately, the correct segmentation of separate lines of
+% text can only be performed once the vanishing point is known.
+% Without this knowledge, approaches will be forced into a
+% Either one of the horizontal vanishing point or the correctly segmented text lines
+% will yield the other.
+% First however, we must threshold the region we are examining
+% to distinguish the actual text elements from the background.
+
+% \subsection{Local thresholding}
+
+\begin{figure}[t]
+\begin{centering}
+  \subfigure[Original Image]{\epsfig{figure=images/chem002.ps,width=38mm}\label{runorig}}
+  \hspace*{1mm}
+  \subfigure[A located text region]{\frame{\epsfig{figure=images/chem002blob.ps,width=38mm}\label{runblobbed}}}
+  \hspace*{1mm}
+  \subfigure[After adaptive thresholding]{\frame{\epsfig{figure=images/chem002bin.ps,width=38mm}\label{runbin}}}
+  % \subfigure[Original Image]{\epsfig{figure=images/chem002.ps,width=40mm}\label{runorig}}
+  % \hspace*{3mm}
+  % \subfigure[A located text region]{\frame{\epsfig{figure=images/chem002blob.ps,width=40mm}\label{runblobbed}}} \\
+  % \vspace{2mm}
+  % \subfigure[Thresholded]{\frame{\epsfig{figure=images/chem002bin.ps,width=40mm}\label{runbin}}}
+  % \subfigure[Original Image]{\epsfig{figure=images/chem012.ps,width=40mm}\label{runorig}}
+  % \subfigure[A located text region]{\epsfig{figure=images/chem012blob.ps,width=40mm}\label{runblobbed}}
+  % \subfigure[Thresholded]{\epsfig{figure=images/chem012bin.ps,width=40mm}\label{runbin}}
+\label{runprep}
+\caption{Preparation of paragraph for planar recovery}
+\end{centering}
+\end{figure}
+
+% The region provided by the texture segmentation algorithm is expected
+% to contain only text, implying that the background and foreground should
+% be easily separable through thresholding.
+In order to analyse the paragraph shape,
+we first require a classification of the text and background pixels.
+% , which we achieve
+% by thresholding the original greyscale image.
+% As the objective of this work is the recovery of the text plane, we assume
+Since the region provided by the text segmentation algorithm
+will principally contain text, the background and foreground colours are
+easily separable through thresholding. We choose
+%With confidence that the region provided by the texture segmentation algorithm
+%contains only text, we will threshold the region to label
+%foreground and background pixels.
+% binary representation of the characters in the image,
+% which will be useful for further analysis.
+%Rather than a global threshold,
+the average intensity of the
+image neighbourhood as an adaptive threshold for each pixel, in order to
+compensate for any variation in illumination across a text region.
+The use of partial sums \cite{partialSums}
+% (described in
+% \cite{docsthrucams}
+% )
+allow us to compute these local thresholds efficiently.
+To ensure the correct labelling of both dark-on-light and
+light-on-dark text, the proportion of pixels which fall above
+and below the thresholds is considered.
+Since in a block of text there is always a larger area
+of background than of text elements,
+the group of pixels with the lower proportion is
+labelled as text, and the other group as
+background.
+The example shown in \reffig{runbin} demonstrates the correct
+labelling of some light text on a dark background and is typical of the
+input into the work presented here.
+
+% Gone to texture.tex
+% \begin{figure}[t]
+% \centering
+% % \subfigure[Located text region]{\epsfig{figure=images/image29theblob.ps,width=40mm}\label{beforebinarised}}
+% \subfigure[Located text region]{\frame{\epsfig{figure=images/chem012blob.ps,width=40mm}}\label{beforebinarised}}
+% % \hspace{5mm}
+% \subfigure[Binarised text]{\frame{\epsfig{figure=images/chem012bin.ps,width=40mm}}\label{binarised}}
+% \label{binarising}
+% \caption{Partial sums are used to efficiently threshold a text region}
+% \end{figure}
+
+
+\begin{comment}
+If we could identify the horizontal lines
+first, we could easily intersect these to find the horizontal vanishing point.  Alternatively,
+if we could find the vanishing point first, this would help us to separate the lines of text!
+An initial attempt we made in bottom-up pixel grouping to distinguish lines was fraught with
+problems such as the lack of global context
+% in the bottom-up approach
+and the need to backtrack when two adjacent lines accidentally merge.
+Our latest work has been in the extension of
+a 2D principle to our 3D problem, which allows us to find the horizontal vanishing point
+accurately, by using all of the global information at one time.  A simple algorithm will then
+yield the separate lines of text, from which the vertical vanishing point is found.
+\end{comment}
+
+
+
+% \subsection{Location of the horizontal vanishing point}
+\section{Locating the Horizontal Vanishing Point}
+\label{locatehvpsect}
+
+In \cite{messelod1}, Messelodi and Modena demonstrated a text location method
+on a database of images of book covers.  They employed projection profiles to
+estimate the skew angle (in the view plane) of the text.
+% , and estimate the skew angle
+% using projection profiles.  They demonstrate their work on
+% a database of book covers.
+% of text by using projection profiles.
+A number of potential angles were found from pairs of components in the text,
+and a projection profile was generated for each angle.  They observed that the
+projection profile with the minimum entropy corresponds to the correct skew
+angle.  
+% This is to be expected since the
+% profile at the correct angle will have well-defined peaks
+% and troughs corresponding to each line of text and the gaps
+% between them.  Projection profiles at other angles will cause
+% lines to overlap, merging peaks and troughs, and increasing the
+% entropy of the profile.
+This guided 1D search is not directly applicable to our problem, which is to
+find a {\em vanishing point} in $\mathbb{R}^2$, with two degrees of freedom.  %
+since the paragraphs we
+% are examining have three degrees of freedom.
+% due to 3D rotation in pitch and yaw as well as 2D roll.
+% The horizontal vanishing point which we seek can lie
+% anywhere on the image plane,
+% , i.e. with an angle {\em and a distance} from the centre of the paragraph.
+% hence our
+% search space is two-dimensional.
+In order to search this space, we will generate projection profiles
+from the point of view of vanishing points, rather than from skew angles.
+% need to be able to generate projection
+% profiles from potential vanishing points, rather than from skew angles.
+% We must therefore generate projection profiles for all
+% possible vanishing points rather than for skew angles.
+% By generating a projection profile from a particular vanishing
+% point rather than just a skew angle, using a confidence measure
+% such as the one applied by Messelodi and Modena will still be informative.
+% In fact, its minimum
+
+% We generate projection profiles for
+% a large number of hypothesised vanishing points on the image plane,
+% and apply a confidence measure to each projection profile.
+% The projection profile with the highest confidence
+% will correspond to the horizontal vanishing point of the text plane,
+% the point at which all of the lines of text intersect.
+% In the rest of this section we will describe the mapping
+% from $\mathbb{R}^2$ into a finite search space,
+% the generation of projection profiles from vanishing points,
+% and the confidence measure associated with them.
+% % As in the 2D case, we expect the projection profile with the highest entropy
+% % to indicate the viewing position of highest order, from which the separate
+% % lines of text are most distinguishable.  Indeed the winning projection profile
+% % should be the same as that which would be found in the 2D case.
+
+We use a circular search space $C$ as illustrated in \reffig{searchspacediag}.
+% although a rectangular grid of polar coordinates would also work effectively.
+Each cell $c=(r,\theta)$, $r\in[0,1)$ and $\theta\in[0,2\pi)$, in the space $C$ corresponds to a hypothesised vanishing point $\myvec{V} = (V_r,V_{\theta})$
+on the image plane $\mathbb{R}^2$, with
+scalar distance $V_{r}=r/{(1-r)}$ from the centre of the image,
+and angle $V_{\theta}=\theta$.
+This maps the infinite plane $\mathbb{R}^2$ exponentially into the finite search space $C$.
+%, providing a suitable concentration of accuracy on the correct angle $V_{\theta}$ of distant
+%vanishing points, whilst the precision of their distance $V_{r}$ is relaxed for efficiency.
+% In our experiments, to ensure the accurate location of the vanishing point,
+% the search space was populated with $10,000$ evenly positioned cells.
+A projection profile of the text is generated for
+every vanishing point in $C$, except those lying within
+the text region itself (the central hole in \reffig{ppmap}).
+
+% In our experiments, to ensure the accurate location
+% of the vanishing point we
+% populate the search circle $C$ with 10,000 evenly spaced cells,
+% each of which corresponds to a vanishing point in the image
+% and the projection profile from that vanishing point.
+% set the diameter of the search circle $C$ to 120 cells,
+% which results in a search space of
+
+% For each pixel in
+% the circle $(r,\theta)$, a projection profile profile of the text is generated for the corresponding vanishing point
+% at $\myvec{V}=(r/(1-r),\theta)$ on the image plane.
+
+\begin{comment}
+The projection profile of a binary image with respect to a vanishing
+point $\myvec{V}$ is obtained 
+by collecting each pixel into a bin representing the angle between the
+vanishing point and 
+the pixel.  Relative to the vanishing point, the text region will fall
+within a small 
+range of angles, depending on the distance and position of the vanishing point.
+In order to accumulate projection profiles which are comparable to each other, the angular
+range over which each projection profile is taken is set accordingly.  In other words, the
+left and right bins of the projection profile correspond to the left and right angles
+within which the text region lies.  This ensures that the projection profile of a distant
+vanishing point will not accumulate a tighter distribution, as would be the case if all
+projection profiles were accumulated in the range $0-2\pi$.
+*** !Kill above paragraph?  Keep next but make clearer! ***
+*** !Alternative paragraph to the last!  Which do you prefer?!
+\end{comment}
+
+A projection profile $B$ is a set of bins $\{B_i, i=0,..,N\}$ into which image pixels are accumulated.
+In the classical 2D case,
+to generate the projection profile of a binary image from a particular angle $\phi$, each
+positive pixel $\myvec{p}$ is assigned to bin $B_i$, where $i$ is dependent on
+$\myvec{p}$ and $\phi$ according to the following equation:
+
+\begin{equation} \label{classicproj} i(\myvec{p},\phi) = \frac{1}{2} N + N \frac{ \myvec{p} \cdot \myvec{U} }{ s } \end{equation}
+
+{ \parindent 0mm
+where $\myvec{U}=(\sin \phi,\cos \phi)$ is a normal vector describing the
+angle of the projection profile, and $s>N$ is the diagonal distance
+of the image.
+In this equation, the dot product $\myvec{p} \cdot \myvec{U}$ is the position
+of the pixel along the axis of the projection profile in the image
+defined by $\phi$.
+Manipulation with $s$ and $N$ is then employed to map from this axis
+into the range of the bins of the projection profile.
+}
+
+\begin{comment}
+\begin{figure}[t]
+\centering
+\begin{center}
+% \epsfig{figure=images/image29001bestpp.ps,width=82mm}
+\subfigure[The winning projection profile (white cross below)]{\epsfig{figure=images/image29001bestpp.ps,width=35mm}\label{bestpp}}
+\subfigure[An example of a poor projection profile (black cross below)]{\epsfig{figure=images/image29001poorpp.ps,width=35mm}\label{poorpp}}
+\\
+\subfigure[Scores for all projection profiles]{\epsfig{figure=images/image29001ppmap.ps,width=50mm}\label{ppmap}}
+\end{center}
+\caption{Projection profiles generated from \reffig{runbin}}
+\label{pps}
+\end{figure}
+\end{comment}
+
+\begin{figure}[t]
+\centering
+\begin{center}
+% \epsfig{figure=images/chem012ppmap.ps,width=50mm}
+% \input{images/ppsearchspace.tex}
+\subfigure[Relationship between search space $C$ and $\mathbb{R}^2$]{
+% \input{ppsearchspace.tex}
+% \input{images/ppsearchspace.pictex}
+\epsfig{figure=images/ppsearchspace.eps,width=38mm}
+\label{searchspacediag}
+}
+\hspace{5mm}
+\subfigure[Scores for all projection profiles in $C$ generated from \reffig{runbin}]{\epsfig{figure=images/chem002ppmap.ps,width=38mm}\label{ppmap}}
+\end{center}
+% \caption{Scores for all projection profiles in $C$ generated from \reffig{runbin}}
+\vspace*{-5mm}
+\caption{Search space $C$}
+\label{searchspace}
+\end{figure}
+
+In our case, instead of an angle $\phi$,
+we have a point of projection $\myvec{V}$ on the image plane,
+which has two degrees of freedom.
+Our bins, rather than representing parallel slices of the image
+along a particular direction, must represent angular slices projecting from $\myvec{V}$.
+Hence, we refine (\ref{classicproj}) to map from an image pixel $\myvec{p}$
+into a bin $B_i$ as follows:
+
+\begin{equation} \label{persproj} i( \myvec{p,\myvec{V}} ) = \frac{1}{2} N + N \frac{ \mbox{ang}(\myvec{V},\myvec{V}-\myvec{p}) }{ \Delta \theta } \end{equation}
+
+{ \parindent 0mm
+where $\mbox{ang}(\myvec{V},\myvec{V}-\myvec{p})$ is
+the angle between pixel $\myvec{p}$ and the centre of the image,
+relative to the vanishing point $\myvec{V}$, and
+$\Delta \theta$ is the size of the angular range within which the text
+is contained, again relative to the vanishing point $\myvec{V}$. $ \Delta \theta$
+is obtained from
+$ \Delta \theta = \mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) $
+% }
+%
+% \begin{equation} \Delta \theta = \mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) \end{equation}
+%
+% { \parindent 0mm
+where $\myvec{t}$ is a vector perpendicular to $\myvec{V}$ with
+magnitude equal to the
+radius of the bounding circle of the text region (shown in \reffig{projprofs}).
+% In order for projection profiles to be comparable, the angular range
+% must be as focused as possible, without allowing any text pixels to fall outside
+% of the bins of the projection profile.
+% The use of $\myvec{t}$ and  ensures a mapping from the angular
+% range of the text region into the bins of the projection profile.
+Unlike $s$ in (\ref{classicproj}), it can be seen that
+$\Delta \theta$ is dependent on the point of projection $\myvec{V}$.
+In fact $\Delta \theta \rightarrow 0$ as $\myvec{V}_r \rightarrow \infty$
+since more distant vanishing points view the text region through a smaller
+angular range.
+% This property is illustrated in \reffig{projprofs}.
+The use of $\myvec{t}$ to find $\Delta\theta$ ensures that the angular
+range over which the text region is being analysed is as closely focused on the text
+as possible, without allowing any of the text pixels to fall outside the range of
+the projection profile's bins.
+% Focusing of $\Delta \theta$ for each vanishing point in this way
+This
+is vital in order for the generated profiles to be comparable,
+and also beneficial computationally since no bins need to be generated
+for the angular range $2 {\pi}-\Delta \theta$ which is absent of text.
+%in which no text appears.
+}
+
+\begin{comment}
+Relative to a vanishing point $\myvec{V}$, the text region under examination will fall entirely within a
+range of angles, forming an arc or wedge shape extending from $\myvec{V}$.
+The two angles which form this enclosing wedge are used as the left and right bounds of
+the projection profile.  Hence all pixels in the text region will map correctly to a bin in
+the projection profile, 
+whilst ensuring that the text fully spans the projection
+and a useful profile is obtained.
+Without this resizing of the window over which to collect the projection profile for each
+vanishing point, the profiles obtained will not relate to each other.
+This is because more distant vanishing points find the text lying within a smaller angular range,
+which will produce a drastically different projection unless we focus on the relevant range.
+\end{comment}
+
+% For example,
+% if we were to use a large window of $0-2\pi$ to generate all the projection profiles, those from
+% the more distant vanishing points would find the projection congregating in fewer and fewer bins!
+
+% We have experimented with taking the entropy, squared-sum, and
+% derivative-squared-sum of the projection profile, where:
+
+% \begin{equation} \mbox{Entropy }E(B) = \sum_{i=1}^{N}{B_{i} log(B_{i})} \end{equation}
+% \begin{equation} S(B) = \sum_{i=1}^{N}{{B_{i}}^{2}} \end{equation}
+% \begin{equation} \mbox{Derivative-squared-sum }DSS(B) = \sum_{i=1}^{N-1}{{(B_{i+1}-B_{i}})^{2}} \end{equation}
+
+% We found $SS(B)$ and $DSS(B)$ always respond accurately
+% on a text only region, but in the presence of noisy data the two measures
+% perform differently.
+% % The entropy measure $E(B)$ performed significantly worse than the other two.
+% In our experiments, and in \reffig{ppmap}, the measure we used was the squared-sum, $SS(B)$.
+% % The introduction of different types of noise produced different
+% % results from each, but we shall not go into that here.
+% % although the derivatives can be more informative in the presence of
+% % types of noise.
+% We note that the accurate calculation of derivatives requires
+% the generation of a high-resolution projection profile with proper modelling of the
+% pixel contributions.
+% Since the sum of squares does not require such accurate data, for this measure
+% projection profiles may be generated far more computationally efficiently
+% with a lower resolution of bins and a simplistic model
+% of pixel contribution.
+
+\begin{figure}[t]
+\centering
+\begin{center}
+% \frame{
+% \epsfig{figure=images/chem002projprofs.ps,width=110mm}
+\epsfig{figure=images/chem002projprofs.ps,width=85mm}
+% \epsfig{figure=images/chem002projprofs.ps,angle=-90,width=110mm}
+% }
+\end{center}
+\vspace*{-6mm}
+\caption{Two potential vanishing points $\myvec{V}_A$ and $\myvec{V}_B$, and their
+% corresponding
+projection profiles.}
+%The right hand vanishing point was chosen as the winner.
+\label{projprofs}
+\end{figure}
+
+Having accumulated projection profiles for all the hypothesised vanishing points
+using (\ref{persproj}), a simple measure of confidence is
+applied to each projection profile $B$.
+The confidence measure was chosen to respond favourably to projection profiles
+with distinct peaks and troughs.
+Since straight lines are most clearly distinguishable from the point where they intersect,
+this horizontal vanishing point and its neighbourhood will be favoured by the measure.
+We found the squared-sum of derivatives:
+
+\begin{equation}
+SSQ(B) = \sum_{i=1}^{N-1}{(B_{i+1}-B_{i})^{2}}
+\end{equation}
+
+{ \parindent 0mm
+to respond better than entropy and squared-sum measures,
+as well as being efficient enough to compute.
+The confidence of each of the vanishing points with regard to the binarised text in \reffig{runbin}
+is plotted in \reffig{ppmap},
+where darker pixels represent a larger squared-sum, and a more likely
+vanishing point.
+}
+
+{\newbyjoey To locate the vanishing point accurately, the resolution of the
+search space must be sufficient to hypothesise a large number of potential
+vanishing points.  (During experiments we found empirically that $10^4$
+vanishing points was reasonable.) Since each vanishing point examined requires
+the generation and analysis of a projection profile, a full search of the
+space, as shown in \reffig{ppmap}, is computationally expensive.  However, due
+to the large scale features of the search space, we introduced an efficient
+hierarchical approach to the search.  An initial scan of the search space at a
+low resolution is performed, requiring the generation of only a few hundred
+projection profiles.  Adaptive thresholding is then applied to the confidence
+measures of these projection profiles, to extract the most interesting regions
+of the search space.  (In our experiments, this was taken to be the top scoring
+2\% of the space.) A full resolution scan is then performed on these
+interesting regions in the search space, requiring the generation of a few
+further projection profiles close to the expected solution.  Finally, the
+projection profile with the largest confidence is chosen as the horizontal
+vanishing point of the text plane.  The winning projection profile and an
+example of a poor projection profile are shown in \reffig{projprofs}, and
+marked in \reffig{ppmap} with a white cross and a black cross respectively.
+This hierarchical search reduced the processing time on an HP-UX from over 40
+seconds to about 3 seconds.
+% The hierarchical search reduces the processing time on a Sun Enterprise from
+% over two minutes to under ten seconds.
+It is worth noting that for this adapted algorithm, the derivative measure
+performs far more efficiently than the sqaured-sum and entropy measures, which
+can mislead the hierarchical search by also responding favourably to the {\em
+vertical} vanishing point of a `thin' document, i.e. a document which has been
+rotated about its vertical axes.
+
+\begin{figure}[t]
+\centering
+\begin{center}
+\subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,width=41mm}\label{simulated-full}}
+\subfigure[Left justified]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}}
+\subfigure[Left justified with extranneous elements]{\epsfig{figure=images/simulated-left-more.ps,width=34mm}\label{simulated-left-more}}
+\end{center}
+\vspace*{-3mm}
+\caption{Examples of simulated images used for performance analysis.}
+\label{simimages}
+\end{figure}
+
+% , marked with a white cross in \reffig{ppmap}.
+% The projection profile from this vanishing point will find the lines of text
+% at their most separate and distinct,
+% The vanishing point with the largest confidence is chosen as the winner,
+% which should be a good approximation of the horizontal vanishing point of the text plane.
+% The projection profile from the horizontal vanishing point is the position
+% from which the lines of text are most distinct, and hence it will be found by the measure.
+%Whilst different types of noise can create different problems,
+%in general noisy pixels affect all of the projection profiles similarly,
+%and the horizontal vanishing point still retains the greatest confidence.
+% Despite general image noise and the resolution of the search space, this method 
+% has consistently provided a good estimate of the 
+ % horizontal vanishing point in our experiments.% Note that if the best projection profile is found on the edge of the unit circle, then the
+% vanishing point is effectively at an infinite distance, and the horizontal axis of the
+% text plane is parallel with the image plane.
+
+In order to assess the performance of the algorithm, simulated images such as those in \reffig{simimages} were generated at various orientations ranging from $0^\circ$ to $90^\circ$ in both yaw and pitch, resulting in 900 test images.
+% , and the located vanishing point $\myvec{H}$ was compared to the ground truth $\myvec{H}_{\mbox{\small gt}}$.
+\reffig{hvpaccuracy} shows the accuracy of recovery of the horizontal vanishing point for these images,
+calculated as the relative distance of the located vanishing point $\myvec{H}$ from the ground truth $\myvec{H}_{\mbox{\small gt}}$, given by $-|\myvec{H}-\myvec{H}_{\mbox{\small gt}}|/\myvec{H}_{\mbox{\small gt}}$.
+As can be seen, the accuracy of the algorithm's performance begins to drop as the orientation of the plane approaches $90^\circ$ in yaw or pitch.
+In these cases, the document has been rotated so as to be almost orthogonal to the view plane, and hence nearly invisible in the image, explaining the reduction in performance.
+The slope of the graph at low yaw may be attributed to the discretisation of the search space $C$.
+Since the vanishing points in these situations lie close to infinity, the distances of the located vanishing points can not be precise.
+Nevertheless, the vanishing point chosen will be in the correct direction, and suitably large so as not to affect further processing.
+A numerical analysis of the performance is given in \reftab{accuracytable} and discussed at the end of this paper.
+}
+
+\begin{figure}[t]
+\centering
+\begin{center}
+% \frame{
+\epsfig{figure=images/accuracy-hvp-jagged,width=60mm,angle=-90}
+% }
+\end{center}
+\vspace*{-6mm}
+\caption{Accuracy of recovery of the horizontal vanishing point (HVP) for simulated paragraphs at various orientations.}
+\label{hvpaccuracy}
+\end{figure}
+
+
+
+
+
+
+\section{Determining the Style of Justification} \label{sec-vertvanish}
+
+The location of the horizontal vanishing point, and the projection profile
+of the text from that position, now make it possible to
+separate the individual lines of text.
+This will allow the style of justification of the paragraph to be determined,
+and lead to the location of the vertical vanishing point.
+
+We apply a simple algorithm to the winning projection profile to segment the lines.  A {\em peak} is
+defined to be any range of angles over which all the projection profile's bins register more than $K$
+pixels, taken as the average height of the interesting part of the projection profile:
+% $K=(y-x+1)^{-1}\sum_{i=x}^{y}B_i$,
+
+\begin{equation}
+K= \frac{1}{y-x+1} \sum_{i=x}^{y}B_i
+\end{equation}
+
+{\parindent 0mm
+% where $x$ is the index of the first non-empty bin, and $y$ is the index of the last non-empty bin.
+where $x$ and $y$ are the indices of the first and last non-empty bins respectively.
+A {\em trough} is defined to be the range of angles between one peak and the next.  
+rhe central angle of each trough is used to indicate the separating boundary of
+two adjacent lines in the paragraph.  We project segmenting lines from the
+vanishing point through each of these central angles.
+% in the range.
+All pixels in the binary image lying between two adjacent segmenting
+lines are collected together as one line of text.  The result of this
+segmentation is shown in \reffig{linesegfig}.  Most lines of
+text are segmented accurately, although in \reffig{chem002overlay} a very short line has been ignored.  Noisy pixels, very short lines, and extraneous document elements may become attached to a true text line, or be segmented as a separate line.  However, the processing which follows will compensate for this irrelevant data.
+}
+
+
+\begin{figure}[t]
+\centering
+\begin{center}
+\subfigure[Running example]{\epsfig{figure=images/chem002overlay.ps,width=58mm}\label{chem002overlay}\label{summaryfiga}}
+\hspace{2mm}
+\subfigure[A centrally justified document]{\epsfig{figure=images/chem010overlay.ps,width=58mm}\label{chem010overlay}}
+% \subfigure[]{\epsfig{figure=images/chem005001origover.ps,width=58mm}\label{chem005001overlay}}
+\end{center}
+\vspace*{-3mm}
+\caption{Summary of the information extracted from two test images.
+Line segmentation marked in white;
+points for margin fitting in green (used) and red (rejected outliers);
+the baseline in yellow;
+the rectangular frame on the text plane in pink.}
+\label{linesegfig}
+\label{summaryfig}
+\end{figure}
+
+
+{ \newbyjoey
+Depending on the type of paragraph being recovered, there are now two possible
+ways to analyse the segmented lines to reveal the vertical vanishing point.
+If the paragraph is {\em fully justified}, then the left and right margins of the text are
+straight, and intersecting these two margin lines will provide us with the vertical vanishing point, and the problem is fully resolved.
+Alternatively, if the paragraph is {\em left justified}, {\em right justified}, or {\em centred},
+% .  In this case,
+a straight line will be visible either on the left margin, on the right margin,
+or through the centres of the lines.
+% may be found alone the left or right margin, or up the middle of the paragraph.
+The vanishing point will lie somewhere along this {\em baseline}.  However, the actual position of the vanishing
+point will be unknown, and must be estimated.
+}
+
+Initially, we must determine the structure of the paragraph, i.e. its style of justification.
+We collect the left end, the centroid, and the right end of each of the segmented lines,
+to form three sets of points $P_L,P_C,P_R$ respectively.
+Since we anticipate some justification in the paragraph, we will expect
+a straight line to fit well through at least one of these sets of points,
+representing the left or right margin, or the centre line of the paragraph.
+% This will be the {\em baseline}, a line in the image upon which the vertical 
+% vanishing point must lie.
+To establish the line of best fit for each set of points, we
+use a RANSAC (random sampling concensus, \cite{bolles81ransac-based}) algorithm
+to reject outliers caused for example by short lines, equations or headings.
+Given a set of points $P$,
+% the RANSAC algorithm considers a wide range of subsets of
+% $P$ as possible fits with outliers rejected.
+% The line of best fit through each subset $F=\{\myvec{p}_i, i=1,..,M\}\subseteq P$ is found
+% by minimising the following error function over $\psi$:
+% The
+the line of best fit through a potential fit $F=\{\myvec{p}_i, i=1,..,M\}\subseteq P$
+passes through $\myvec{c}$, the average of the points,
+at an angle $\psi$ found by minimising the following error function:
+
+\begin{equation}
+% E_F(\myvec{c},\myvec{n}) = \frac{1}{M^5} \sum_{i=1}^{M} ( (\myvec{p}_i-\myvec{c}) \cdot \myvec{n})^2
+E_F(\psi) = \frac{1}{M^5} \sum_{i=1}^{M} ( (\myvec{p}_i-\myvec{c}) \cdot \myvec{n})^2
+\label{ransacerroreqn}
+\end{equation}
+
+{\parindent 0mm
+where
+$\myvec{n}=(-\sin \psi,\cos \psi)$ is the normal to the line,
+$M^{2}$ normalises the sum, and a further $M^{3}$ rewards the fit for using a large
+number of points. }
+% where $(\myvec{c},\myvec{n})$ represents the line passing through $\myvec{c}=M^{-1}\sum p_i\in{F}$
+% with normal $\myvec{n}$.
+% The fit with the least error from those initially tested is retained as a start point
+% for gradient descent to find the local (and hopefully global) minimum. }
+Hence for the three sets of points $P_L,P_C,P_R$ we obtain three lines of best
+fit $F_L,F_C,F_R$ with their respective errors $E_L,E_C,E_R$.  It is now
+possible to classify the style of justification of the paragraph using the
+rules in \reftab{typeofparatable}.  \reffig{summaryfiga} shows the line $F_L$
+passing through the left margin of the paragraph.  In this case $E_L<E_C$ and
+$E_L<E_R$, hence the second condition in \reftab{typeofparatable} is satisfied
+and the paragraph is correctly identified as being left justified.
+
+\begin{table}[t]
+  \begin{center}
+    \begin{tabular}{|c|c|}
+      \hline
+      {\bf Condition} & {\bf Type of paragraph} \\
+      \hline \hline
+      % All three lines have low and similar error:
+      $E_L \simeq E_C \simeq E_R$ & Fully justified. \\
+      \hline
+%      $E_L<E_R$ and $E_L<E_C$ & Left justified. \\
+      $\min(E_L,E_C,E_R)=E_L$ & Left justified. \\
+      \hline
+%      $E_R<E_L$ and $E_R<E_C$ & Right justified. \\
+      $\min(E_L,E_C,E_R)=E_R$ & Right justified. \\
+      \hline
+%      $E_C<E_L$ and $E_C<E_R$ & Centrally aligned. \\
+      $\min(E_L,E_C,E_R)=E_C$ & Centrally justified. \\
+      \hline
+    \end{tabular}
+  \end{center}
+  % \vspace*{-5mm}
+  \caption{Classifying the type of paragraph}
+%  \vspace{-5mm} % This is a dirty hack to help page flow
+  \label{typeofparatable}
+\end{table}
+
+
+
+{ \newbyjoey
+
+For fully justified paragraphs, the recovery of the vertical vanishing point is trivial, and may be achieved by intersecting the left and right margins of the paragraphs, the results of which are shown later in \reftab{accuracytable} and \reffig{vvpaccuracya}.
+However, for a left justified, right justified or centralised paragraph, we can retrieve only one baseline.  The other two fitted lines will have significant errors due to the jagged margin(s).
+In these situations, a different method must be used to determine the position on the baseline at which the vanishing point lies.
+
+
+
+
+
+
+\section{Locating the Vertical Vanishing Point} \label{sec-last-vertvanish}
+
+% We propose using the vertical spacings of the lines of text to estimate the slant of the plane.
+Like the sleepers beneath train tracks, which appear closer together as they
+approach the horizon, the spacings exhibited between adjacent lines of text in
+the image will vary relative to their distance from the camera.  This change in
+spacing can be used to determine the angle at which the document is tilted, and
+hence the vertical vanishing point of the text plane.
+
+By rotating the image plane to place the baseline vertically, we may disregard the $x$-coordinates and deal solely in the $y,z$ plane, as shown in \reffig{zyspacings}.
+Here, the bottom of the paragraph is positioned at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.  Therefore the $n$th line from the bottom of the paragraph will appear at:
+
+\begin{figure}[t]
+\centering
+\begin{center}
+  \epsfig{figure=images/zyspacings7.eps,width=85mm}
+\caption{The geometry involved in line spacings.}
+\label{zyspacings}
+\end{center}
+\end{figure}
+
+\begin{eqnarray}
+\myvec{L}(n) = \myvec{P}+n\myvec{Q}
+\end{eqnarray}
+
+{\parindent 0mm
+and will project to the point in the image plane
+}
+
+\begin{eqnarray}
+y(n) = f \frac{ \myvec{L}(n)_y }{ \myvec{L}(n)_z } = f \frac{ \myvec{P}_y + n \myvec{Q}_y }{ \myvec{P}_z + n\myvec{Q}_z } \label{spacingspq}
+\end{eqnarray}
+
+{ \parindent 0mm
+where $f$ is the focal length of the camera.  Without losing the nature of the projection, we may scale the scene about the focal point in order to set $\myvec{P}_z$ to $f$, hence modelling the paragraph as if it touched the image plane.  In this case, $\myvec{P}_y=y(0)$,
+% so the $f$ cancels
+and we may rewrite \refeqn{spacingspq} as:
+}
+
+\begin{eqnarray}
+% y(n) = U \frac{ 1 + V }{ 1 + W }
+y(n) = U \frac{ 1 + nV }{ 1 + nW }
+\label{spacingsvweqn}
+\end{eqnarray}
+
+{ \parindent 0mm
+with $U=y(0)$ and only two unknowns,
+$V = {\myvec{Q}_y}/{\myvec{P}_y}$ and $W = {\myvec{Q}_z}/{\myvec{P}_z}$.
+The cancelling of the focal length $f$ in this way means that the technique is applicable to images for which the internal parameters of the original camera are unknown.
+By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.
+% for these points.
+However, since it is common for documents to also contain lines of text which are not part of an evenly spaced paragraph, and for extraneous elements to enter the data, the $n$th line found in the image may lose correspondence with the $n$th line in the paragraph model.
+To fit a curve of position $y(n)$ against line number $n$ would be unwise in this situation.
+It is therefore preferable to fit the curve of {\em line spacing} $Y_n$
+against {\em position} $X_n$, defined as:
+
+\begin{eqnarray}
+Y_n=y(n+1)-y(n) \label{linespacingsdefneqn} \\
+X_n=y(n) \label{linepositiondefneqn}
+\end{eqnarray}
+
+In this case any odd lines will appear as isolated outliers in line spacing, but will not propagate through the remaining points.
+By substituing \refeqn{spacingsvweqn} into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of $Y$ in terms of $X$ may be written in two parts:
+}
+
+\begin{equation}
+Y(X) = U ( \frac{1+(n(X)+1)V}{1+(n(X)+1)W} - \frac{1+n(X)V}{1+n(X)W} )
+\label{fittingeqn}
+\end{equation}
+
+{\parindent 0mm
+with $n(X)$ derived by a similar substitution of \refeqn{spacingsvweqn} into the definition of line position \refeqn{linepositiondefneqn} and rearranging to:
+}
+
+\begin{equation}
+n(X) = \frac{X-U}{XW-UV}
+\label{nfromxeqn}
+\end{equation}
+
+Initial parameters $V$ and $W$ are chosen for line fitting using a simple estimate for the error optimisation.
+However, due to the complexity of \ref{fittingeqn} and \ref{nfromxeqn}, many false minima exist, and one of these may be converged upon during optimisation.
+Therefore, to refine the parameters, an initial fit is made with an approximation of \refeqn{fittingeqn}:
+
+\begin{equation}
+Y(X) = \frac{ UV }{ 1+n(X)W }
+\end{equation}
+
+This ensures that parameters close to the desired minima are obtained before the final fitting.  Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
+By reversing the rotation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
+% We therefore fit the measured positions against spacing $(y(n),y(n+1)-y(n))$ to the model:
+
+\begin{figure}[t]
+\begin{centering}
+  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=40mm}\label{vvpaccuracya}}
+	\hspace{2mm}
+  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=40mm}\label{vvpaccuracyb}}
+  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=40mm}\label{vvpaccuracyc}}
+\caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
+\label{vvpaccuracy}
+\end{centering}
+\end{figure}
+
+\reffig{vvpaccuracy} shows the accuracy of recovery of the vertical vanishing point using the methods described.
+% The first figure shows that,
+In \reffig{vvpaccuracya} it can be seen that,
+as expected, intersecting the left and right margins of a fully justified paragraph gives a good estimate of the vertical vanishing point.
+Also expected, when margins are used to estimate the VVP of a left-justified
+paragraph, performance is poor due to the pragraph's jagged edge, as can be
+seen in \reffig{vvpaccuracyb}.
+% As with the horizontal vanishing point, the method is not suited to situations when the vertical vanishing point is close to infinity, which occurs when the pitch is low.
+Finally, \reffig{vvpaccuracyc} shows the accuracy when the line spacings are employed on left-justified paragraphs.
+This method provides good results comparable to the first for all of the simulated images except those documents oriented beyond $80^\circ$ in pitch, where the algorithm begins to fail.
+% The method provides comparable results over most of the simulated images, however for documents beyond $80^\circ$ in pitch the algorithm begins to fail.
+As with the horizontal vanishing point in \refsect{locatehvpsect}, this may be explained by the orientation of the document becoming nearly perpendicular to the image plane.
+At such an extreme tilt, even if the lines of text are separated correctly, their proximity in the image means there is little accuracy in position and spacing for the curve fitting.
+In real world images, documents at such extreme angles cannot practically be read or used by OCR once recovered, hence this failure does not concern us.
+The advantage of the line spacings method is that it provides consistent results for paragraphs which are not fully justified.
+% In contrast, the poor performance of the margins method when dealing with documents which are not fully justified can be seen in \reffig{vvpaccuracyc}.
+
+The results for these experiments, and the location of the horizontal vanishing point in \refsect{locatehvpsect}, are shown numerically in \reftab{accuracytable}.
+The vanishing point (VP) error is calculated as the relative distance of the vanishing point from its ground truth, as described in \refsect{locatehvpsect}.
+The angular error is derived from the final determined orientation of the horizontal and vertical vectors of the text plane.
+It can be seen that the accuracy of location of the vertical vanishing point in reasonable for both the margin intersection and the line spacings method.
+As the last row of \reftab{accuracytable} shows, intersecting margins is not suitable for documents with jagged edges.
+
+}
+
+
+\begin{table}[t]
+  \begin{center}
+    % \begin{tabular}{|p{2.5in}|l|l|}
+    \begin{tabular}{|p{1.8in}|r@{}l|r@{}l|}
+      \hline
+      {\bf } & \multicolumn{2}{c|}{\bf VP} & \multicolumn{2}{c|}{\bf Angular} \\
+      {\bf } & \multicolumn{2}{c|}{\bf error} & \multicolumn{2}{c|}{\bf error} \\
+      \hline \hline
+      HVP using projection profiles & ~~~0&.129 & ~~~2&.16$^\circ$ \\
+      \hline
+      VVP using margin intersection & 0&.0785 & 2&.08$^\circ$ \\
+      \hline
+      VVP using line spacings & 0&.133 & 3&.30$^\circ$ \\
+      \hline
+      VVP using margin intersection on left justified paragraphs & 1&.23 & 24&.5$^\circ$ \\
+      \hline
+    \end{tabular}
+  \end{center}
+  % \vspace*{-5mm}
+  \caption{Average error for the various methods over $10^\circ$ to $80^{\circ}$ in yaw and pitch.}
+  \label{accuracytable}
+\end{table}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Having found the vanishing points of the plane, we may project two lines from each
+to describe the left and right margins and the top and bottom limits of the paragraph.
+These lines are intersected to form a quadrilateral enclosing the text,
+as shown in \reffig{summaryfig}. % , which is expanded to frame the paragraph.
+This quadrilateral is then used to recover a fronto-parallel viewpoint
+of the paragraph of text.
+
+

@@ -1,0 +1,122 @@
+\begin{figure}[t]
+\centering
+\begin{center}
+% \epsfig{figure=images/image29001recover.ps,width=60mm}
+% \epsfig{figure=images/chem002001recover.ps,height=54mm}
+% \hspace{2mm}
+% \epsfig{figure=images/chem010recover.ps,height=54mm}
+\subfigure[Recovery of running example]{\epsfig{figure=images/chem002001recover.ps,height=41mm}}
+\hspace{2mm}
+\subfigure[Suitable for OCR]{\epsfig{figure=images/chem010recover.ps,height=41mm}\label{arthurcclarke}}
+% \makebox[30mm]{
+% \subfigure[]{\epsfig{figure=images/chem002001recover.ps,height=30mm}}
+% \subfigure[]{\epsfig{figure=images/chem010recover.ps,height=30mm}}
+% }
+% \hspace{2mm}
+% \subfigure[OCR results of (b)]{
+% \parbox[c]{40mm}{ 
+% \tt \tiny
+% An inquiry into \\
+% the limits of the possible , \\
+% Our problems on Jupiter, . Mercury, Venus- \\
+% conquering "' Time - transport the future \\
+% overcoming gravity - communications Across space \\
+% -benevolent electronic brains. \\
+% The rouge of this enthralling book is immense from the \\
+% ma \_\_king of the h.- mind to the -f reaches of \\
+% the universe. Newly revised even the remarkable \\
+% vents of the last decade have affected d few of the \\
+% fling speculations by Arthur C. Clarke -o \\
+% scientist whose expert and ride knowledge is matched \\
+% only by h 's brilliant imagination. \\
+% 'In the imaginative mopping and measuration of \\
+% the future he is one of the outstanding fig.-* \\
+% 'Every aye hots one visionary who is more \\
+% scientific in method and more accurate in his \\
+% predications s and other... The modern \\
+% equivalent of these   i s Arthur` C. Clarke... a book \\
+% nobody ran afford to ignore }
+% }
+\end{center}
+\vspace{-3mm}
+\caption{Fronto-parallel recovery of example documents in \reffig{summaryfig}.}
+\label{pprecover}
+\end{figure}
+
+
+
+
+\begin{figure}[t]
+\centering
+\begin{center}
+
+    \subfigure[]{ \begin{tabular}{c}
+      \epsfig{figure=images/chem011.ps,width=33mm}\label{banana} \\
+      $\downarrow$ \\
+           \\
+      \epsfig{figure=images/chem011recover.ps,width=26mm}
+        \end{tabular}       \label{emppra}
+    }
+	 \hspace{2mm}
+    \subfigure[]{ \begin{tabular}{c}
+      \epsfig{figure=images/chem015.ps,width=36mm} \\
+      $\downarrow$ \\
+           \\
+      \epsfig{figure=images/chem015recover.ps,width=36mm}
+        \end{tabular}       \label{empprb}
+    }
+    \subfigure[]{ \begin{tabular}{c}
+      \epsfig{figure=images/dv5.ps,width=36mm}
+		\hspace{11mm}
+      \put(10,38){$\rightarrow$}
+		\hspace{11mm}
+      \epsfig{figure=images/dv5recover.ps,width=24mm}
+        \end{tabular}      \label{empprc}
+     }
+    % \subfigure[]{ \begin{tabular}{c}
+      % \epsfig{figure=images/dv5.ps,width=36mm} \\
+      % $\downarrow$ \\
+           % \\
+      % \epsfig{figure=images/dv5recover.ps,width=36mm}
+        % \end{tabular}      \label{empprc}
+     % }
+% \\ \vspace{5mm}
+    % \subfigure[]{ \begin{tabular}{c}
+      % \includegraphics[width=35mm]{images/chem006oo.ps} \\
+      % $\downarrow$ \\
+          % \\
+      % \includegraphics[width=35mm]{images/chem006002recover.ps}
+        % \end{tabular}      \label{empprd}
+     % }
+    % \subfigure[]{ \begin{tabular}{c}
+        % \includegraphics[width=35mm]{images/chem008oo.ps}   \\
+      % $\downarrow$ \\
+          % \\
+        % \includegraphics[width=35mm]{images/chem008001recover.ps}   \\
+        % \includegraphics[width=35mm]{images/chem008002recover.ps}
+    % \end{tabular} \label{emppre} }
+    % \subfigure[]{ \begin{tabular}{c}
+        % \includegraphics[width=35mm]{images/clut4allover.ps}       \\
+      % $\downarrow$ \\
+           % \\
+        % \includegraphics[width=35mm]{images/clut4recover1.ps}    \\
+        % \includegraphics[width=35mm]{images/clut4recover2.ps}
+    % \end{tabular} \label{empprf} }
+
+\end{center}
+\vspace*{-3mm}
+\caption{Further examples of fronto-parallel recovery of documents. In each case the original image is shown above the recovered output.}
+\label{againmoreppresults}
+\end{figure}
+
+
+The recovered page for the running example may be seen in \reffig{pprecover}, alongside the second example introduced earlier.
+% hich was introduced in \reffig{linesegfig}.
+Further examples in \reffig{againmoreppresults}
+show the recovery of different styles of paragraphs with left justified and
+centrally aligned text.
+\reffig{emppra} shows the recovery of a segmented region of a book cover.  Despite 
+text of different sizes, and other image noise such as the specularity, the document is recovered robustly.
+\reffig{empprb} shows a centrally justified paragraph which has been recovered at high resolution and is easily readable.
+In \reffig{empprc} a left justified document was correctly identified and recovered, despite occlusion of part of the paragraph.
+When we applied commercial OCR software to the image in \reffig{arthurcclarke}, 87\% of the characters and 94\% of the words were recognised correctly.

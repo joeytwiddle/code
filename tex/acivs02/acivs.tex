@@ -1,0 +1,257 @@
+% todo:
+% vectors and bold/italics are not consistent.  they use special vector notation
+
+% Paper for submission to ACIVS02
+
+\documentclass{article}
+\usepackage{acivs2002}
+\usepackage[english]{babel}
+\setcounter{page}{1}
+
+\usepackage{amssymb}
+\usepackage{multirow}
+\usepackage{pclark}
+\usepackage{epsfig,mysubfigure,comment}
+
+% For revision highlighting
+\usepackage[usenames]{color}
+\newcommand{\newbyjoey}{
+% \color{Red}
+}
+
+% \ninept
+
+% \titlerunning{On the Recovery of Oriented Documents from Single Images}
+\title{On the Recovery of Oriented Documents from Single Images}
+% \title{Estimating the Orientation and Recovery of Text Planes in a Single Image}
+% \title{Estimating Plane Orientation to Recover Text from a Single Image}
+% \title{Estimating the Orientation and Recovery of Text Planes in a Single Image}
+% \title{Estimation of the Orientation of Text Planes and Recovery from a Single Image}
+% Recovery of Text Planes From a Single Image
+% \\ or \\
+% Extracting Text from a Real Scene Image for OCR
+
+% \author{Alfred Hofmann\inst{1} \and Antje Endemann\inst{1}
+% \and Ingrid Beyer\inst{1} \and Karin Henzold\inst{1} \and\\
+% Anna Kramer\inst{1} \and Erika Siebert-Cole\inst{1}
+% \and Angelika Bernauer-Budiman\inst{2} \and\\
+% Martina Wiese\inst{2} \and Anita B\"urk\inst{3}}
+
+% *** See example
+% \name{A. Nonymous}
+% For final submission
+\name{Paul Clark and Majid Mirmehdi}
+
+% *** See example
+% \address{Institute line 1\\2\\3\\4}
+% \address{Department of Computer Science, University of Bristol, \\
+   % Bristol, BS8~1UB, UK. \\
+   % \email{\{pclark, majid\}@cs.bris.ac.uk} \\
+   % % \texttt{\{pclark/majid\}@cs.bris.ac.uk} \\
+   % \texttt{http://www.cs.bris.ac.uk/{\tiny$^\sim$}\{pclark, majid\}}
+% }
+\address{
+%email of first author
+{\tt \{pclark|majid\}@cs.bris.ac.uk}\\
+%affiliation and address of first author
+Department of Computer Science, Univerity of Bristol, Bristol BS8 1UB, UK.
+}
+
+
+\begin{document}
+
+% \pagestyle{headings}
+
+\maketitle
+
+\begin{abstract}
+{ \ninept
+A method is presented for the fronto-parallel recovery of text documents in images of real scenes.
+Initially an extension of the standard 2D projection profile, commonly used in document recognition, is introduced to locate the horizontal vanishing point of the text plane.
+This allows us to segment the lines of text, which are then analysed to reveal the style of justification of the paragraphs.
+The change in line spacings exhibited due to perspective is then used to recover the vertical vanishing point of the document.  We do not assume any knowledge of the focal length of the camera.
+Finally, a fronto-parallel view is recovered, suitable for OCR or other high-level recognition.
+We provide results demonstrating the algorithm's performance on documents over a wide range of orientations.
+}
+\end{abstract}
+
+\section{Introduction}
+
+Optical character recognition (OCR) is a long-standing area of computer vision which
+% has been well researched.
+% Often applied to scanned documents, OCR
+in general deals with the problem of recognising text in 
+%scanned document images.
+skew-compensated fronto-parallel images.
+%But despite research in the extraction of fronto-parallel text from video images \cite{LIDOERMANN} \cite{LIEN},
+% \cite{WU1}
+% \cite{KIJEONG}
+%there has been little research applied to images of real scenes in which the text is oriented relative to the view plane.
+In preparation to apply OCR to text from images of real scenes,
+a fronto-parallel view of a segmented region of text must be produced.
+This is the issue considered in this paper.
+The extraction of oriented documents from camera images is a new challenge in document processing, made possible by high resolution digital cameras, as well as recent developments and demands in the multimedia environment.
+There has been little research into the recognition of text in real scenes in which the text is oriented relative to the camera.
+Processing and compensating for such perspective skew has
+% Such research has
+applications in
+replacing the document scanner with a point-and-click camera to facilitate non-contact text capture,
+assisting the disabled and/or visually impaired,
+%intelligent robots to gain information from their surroundings,
+% vehicle navigation (road signs) and control (number plates),
+% aid for the visually impaired,
+wearable computing tasks requiring knowledge of local text,
+and general automated tasks requiring the ability to read
+where it is not possible to use a scanner.
+
+% \begin{comment}
+% Previous work in estimating the orientation of planar surfaces in still images
+% has made use of repeating textures, or specific object models based on image features.
+% Ribeiro and Hancock \cite{ribeiro}
+% observe affine distortions in power spectra across
+% an image to find lines of consistent texture indicating the vanishing points of a plane.
+% observe that spectra along
+% a line radiating from a vanishing point will share the same energetic peaks.
+% They find multiple planes in an image
+% by observing the affine distortion of texture spectra across the image.
+% Criminisi and
+% Zisserman \cite{zisserman} also use texture to find the vanishing points of a plane,
+% first by finding the orientation of the vanishing line with normalised auto-correlation,
+% then applying another similarity measure to find its position.
+% Their approach splits the 2D search into two 1D
+% searches: first normalised auto-correlation is used to find the
+% orientation of the vanishing line; they then introduce a projective correlation similarity
+% measure to find the position of the vanishing line.
+% We too will adopt the sequential approach of finding one dimension of the solution at a time.
+% However,
+Previous work in estimating the orientation of planar surfaces in still images
+varies in the assumptions made to achieve this.  Ribeiro and
+Hancock \cite{ribeiro} and Criminisi and Zisserman \cite{zisserman} both
+presented methods which used the distortion of repetitive planar texture to estimate the vanishing points
+of the plane.  Affine transformations in power spectra were found along straight
+lines in \cite{ribeiro}, and correlation measures were used in
+\cite{zisserman} to determine first the orientation of the vanishing line and
+then its position.  Although text has repetitive elements (characters and lines)
+these elements do not match each other exactly, and sometimes may cover only a
+small area of the image.
+% Knowledge of the structure of text may guide
+% Furthermore the regions we are examining may only fill a relatively small area of
+% the plane, and are not of a high resolution.
+% Therefore the general approach of using repeating textures to discover
+% the orientation of the text does not directly apply to our problem.
+Rother \cite{rother0} attempted to find orthogonal lines in architectural
+environments, which were assessed relative to the camera geometry.  Murino and
+Foresti \cite{MURIN} used a 3D Hough transform to estimate the orientation of
+planar shapes with known rectilinear features.  Gool et al. \cite{GOOL} and
+Yip \cite{yip} both found the skewed symmetry of 2D shapes which have an axis of
+symmetry in the plane, allowing for affine recovery.  We require recovery from
+perspective transformation, and as with these latter works we will use a priori
+information about the 2D shape we are observing.
+% Specifically we try to fit the image data to
+% a model of a (possibly asymmetric) paragraph of text.
+% From the parameters of the model
+% We may then derive the
+% perspective transformation of the plane from the paragraph's properties.
+% \end{comment}
+Other than our recent work in \cite{clark-ijdar-2001}, the only other work known to the authors on perspective recovery of text is \cite{pilucvpr1}.  The author seeks visual clues in the image which correspond to horizontal and vertical features on the document plane.  Unfortunately, the vertical vanishing points of the text plane cannot be robustly estimated when only one vertical clue is present.  Examples of this situation are when the document is single-column and when paragraphs are not fully justified.
+
+Knowledge of the principal vanishing points of the plane on which text lies is
+sufficient to recover a fronto-parallel view.  We observe that in a paragraph
+which is oriented relative to the camera, the lines of text all point towards
+the horizontal vanishing point of the text plane in the image.  Also, paragraphs
+often exhibit some form of justification, either with straight margins on the
+left and/or right, or if the text is centred, a central vertical line around which
+the text is aligned.  In such cases these vertical lines point toward the
+vertical vanishing point of the text plane.  We have therefore concentrated our
+work on the recovery of paragraphs with three lines of text or more, with 
+the reasonable assumption that at least some justification exists (left, 
+right, centred or full).
+% When the two vanishing points of the text plane are known, it will be possible
+% to recover a fronto-parallel view.
+% In order to be able to distinguish the separate lines of text
+% in the paragraph recognition stage,
+% we make the further assumption that the character height must be at least 1 pixel.
+
+% One approach to building a model of a paragraph is the
+% bottom-up grouping of pixels into characters, words and lines.
+% Unfortunately, this approach meets problems since it ignores the global context.
+% Local decisions made on the small scale will occasionally be made incorrectly,
+% leading to an incorrect segmentation unless backtracking is employed to find
+% the optimal segmentation.
+To avoid the problems associated with bottom-up grouping of elements into
+a paragraph model, in this work we ensure the use of all of
+the global information about the paragraph at one time.
+The principle of 2D projection profiles are extended to the
+problem of locating the horizontal vanishing point by maximising the
+separation of the lines in the paragraph.
+% which allows us to find the horizontal vanishing point of the text
+% plane accurately by using all of the global information at one time.
+% From this vanishing point we are then able to accurately segment the
+% separate lines of text.
+The segmented lines of text are then analysed to reveal the
+style of justification or alignment of the paragraph.
+Depending on the type of paragraph, either margins or line spacings
+are used to provide an estimate of the vertical vanishing point.
+This allows us to recover the perspective skew (or orientation) of the plane of text, and hence generate a fronto-parallel view.
+The use of line spacings to find the position of the vertical vanishing point makes it possible to recover left, right, and centrally justified paragraphs accurately, a previously unsolved problem.
+Throughout the work we make no use of the focal length of the camera, hence the techniques are applicable to images taken from cameras with unknown internal parameters.
+
+% The novelty of the work outlined in this paper is manifold.
+% To date in document recognition, no attempts have been made at the extraction of text which is oriented in the image.
+% Recent improvements in our method for the location of the horizontal vanishing point have resulted in higher performance, making it suitable for realtime applications.
+
+% In \cite{clarkBMVC2000} we presented a method to segment regions of text in an
+% image of a real scene.  Given the assumption that each located region represents
+% a (partially justified) paragraph of text, in this paper we will demonstrate a
+% technique to recognise the 3D orientation of the text plane and recover a fronto-parallel
+% view suitable for OCR.
+
+The rest of the paper is structured as follows.  In \refsect{recoveryusinglines}
+we briefly review our previous work which provides the input to the work
+described here.  Sections \ref{locatehvpsect} to \ref{sec-last-vertvanish} discuss
+the paragraph model fitting stage, location of the horizontal vanishing point,
+separation of the lines of text, and estimation of the vertical vanishing point, followed by some examples of recovered documents.
+% In \refsect{remper} the vanishing points of the text plane are employed to
+% recover a fronto-parallel view of the paragraph suitable for higher level
+% recognition.
+We conclude and consider future work in \refsect{conclusions}.
+
+% \input{preparation.tex}
+
+\input{lines.tex}
+
+\input{remper.tex}
+
+
+\section{Discussion}
+\label{conclusions}
+
+We have presented a novel approach to the fronto-parallel recovery of a wide range of documents under perspective transformation in a single image, without knowledge of the focal length of the camera.
+Projection profiles from hypothesised vanishing points are used to robustly recover the horizontal vanishing point of the text plane, and to segment the paragraph into its constituent lines.
+Line fitting on the margins and central line of the document is then applied to deduce the style of justification of the paragraphs.
+To estimate the vertical vanishing point, for fully justified paragraphs the margin lines are intersected.
+For other styles of documents, the observed difference in the spacings of the lines of text are used to retrieve the tilt of the text plane, and hence the vertical vanishing point.
+Using the two principal vanishing points we find the orientation of the text plane and recover a fronto-parallel view.
+The algorithm performs well for a wide range of paragraphs, provided each paragraph has at least three lines, or is fully justified.
+An optimisation algorithm for the search for the horizontal vanishing point was presented.
+In total the process takes around 20 seconds to recover a document, demonstrating its potential and applicability to realtime systems, as well as its suitability for normal scanning tasks.
+
+Whilst the described method is suitable for documents or single paragraphs, due to the use of margins or line spacing to recover the vertical vanishing point, there must be at least two lines present for fully justified paragraphs, and at least five for other styles of document, to provide enough data for an accurate fitting.
+However, other forms of text appear in our environment, and it would also be desirable to retrieve these, especially in a realtime system for the visually impaired.
+Examples of such situations include signs and notices, the names of shops on a high street, labels on everyday objects, and number plates.
+To retrieve such isolated lines of text from single images,
+% we could attempt to apply OCR directly, in an orientation independent manner.
+use can be made of the fact that strong horizontal and vertical edges are exhibited by characters in many typefaces, providing clues to the orientation of the text.
+Alternatively, by using a video camera to track text regions over image sequences, the relative orientation of the text plane may be obtained by monocular structure-from-motion algorithms, allowing for fronto-parallel OCR as proposed in this work.
+
+Although the resulting images reproduced here are at low resolution, most of them are nevertheless suitable to be fed to an OCR system to interpret the text or to be read by a human observer.
+In the future we intend to integrate the work described here and in~\cite{justin} towards an automatic system for text recognition in the environment, suitable for a wearable computer system.
+
+% {\bf acknowledgement}
+% The authors would like to thank HP Research Labs, UK for their support.
+
+% \bibliographystyle{plain}
+\bibliographystyle{IEEEbib}
+\bibliography{jrefs}
+
+\end{document}
