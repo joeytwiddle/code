@@ -1,4 +1,4 @@
-# export TEXINPUTS=.:$PWD/../majidstyles:../shared;
+# export TEXINPUTS=.:$PWD/../majidstyles:../shared
 
 FNAME=pcmm
 echo "----------------------------------------------------------------"
