@@ -24,6 +24,8 @@ then
 
 	## Start revssh connection, cat remote host's stdin from local file.
 
+	## TODO: keep server alive by occasionally sending newlines, for up to an hour, or until the session actually starts (client joins)
+
 	echo "" > /tmp/revssh-client-input-$SESSID.txt
 	echo "" > /tmp/revssh-client-output-$SESSID.txt
 	chmod ugo+w /tmp/revssh-client-input-$SESSID.txt
@@ -31,10 +33,11 @@ then
 	# echo 'echo "Connexion established"'
 	tail -f /tmp/revssh-client-input-$SESSID.txt
 
+	## TODO: cleanup after session.  but this line is probably never reached; the whole process is probably killed by apache when the client disconnects.
+
 else
 
-	## Remote host has sent one line of it's stdout.  Cat it to local file.
-	## TODO: these strings are invariable CGI escaped (%xx) so they should be unescaped!
+	## Remote host has sent one line of it's stdout/err.  Cat it to local file.
 
 	OUTPUT=`getcgi "output"`
 
