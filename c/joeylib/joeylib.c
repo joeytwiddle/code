@@ -11,12 +11,10 @@
 
 // Which operating system are we under?
 
-// #include <whichos.c>
-// #include "/whatos"
-
+#include <whichos.c>
 // #define LINUX
-#define DOS
-// #define UNIX
+// #define DOS
+#define UNIX
 
 // For SG machines, without time and difftime functions:
 // #define STUPIDUNIX

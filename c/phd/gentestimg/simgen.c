@@ -23,6 +23,7 @@ int main(int argc,String *argv) {
   
   ArgParser a=ArgParser(argc,argv);
   bool domatlab=a.argexists("-matlab","vvp estimation with Matlab");
+  bool showgraph=a.argexists("-graph","show graph in Matlab");
   bool genimage=a.argexists("-image","generate simulated image");
   bool overlay=a.argexists("-overlay","overlay info on simulated image");
   bool centralise=a.argexists("-centralise","centralise the document in the image");
@@ -82,7 +83,7 @@ int main(int argc,String *argv) {
 
   if (genimage) {
   
-    // RGBmp *inputimg=RGBmp::toRGBmp(Map2d<float>::readfile(inname));
+    // inputimg=RGBmp::toRGBmp(Map2d<float>::readfile(inname));
     inputimg=RGBmp::readfile(inname);
     outputimg=RGBmp(imgwidth,imgheight,myRGB::white);
   
@@ -185,11 +186,17 @@ int main(int argc,String *argv) {
           fprintf(sout,", ");
       }
       fprintf(sout,"];\n");
+      fprintf(sout,"groundU = %f\n",groundU);
+      fprintf(sout,"groundV = %f\n",groundV);
+      fprintf(sout,"groundW = %f\n",groundW);
 			fclose(sout);
 
 			system("cat data.txt matlab/sol1u.txt > solve.txt");
 			system("cat solve.txt | matlab > matlab.out");
-			system("cat matlab.out | tail -2 | head -1 > matlab.ans");
+			if (showgraph)
+        system("infcat matlab.out | tail -2 | head -1 > matlab.ans");
+      else
+        system("cat matlab.out | tail -2 | head -1 > matlab.ans");
 			
 			FILE *sin=fopen("matlab.ans","r");
 			float matlabAns;

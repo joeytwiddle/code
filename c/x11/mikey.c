@@ -5,7 +5,7 @@
 
 #include <time.h>
 
-#define COLORS	255
+#define COLORS 256
 #define colors COLORS
 
 #define WIN_W 320
@@ -89,8 +89,10 @@ void wicked_blit() {
 #define uchar unsigned char
 
 #define fs 12
-#define palspeed 2
-#define colspeed 2
+#define palframes 200
+// used to be 2 and 2
+#define palspeed (COLORS/(float)palframes)
+#define colspeed (2.0*COLORS/256)
 #define framespermap 30
 
 //r = .5 + 2 * t / pi + .5 * SIN(1.5 * t)
@@ -156,7 +158,7 @@ int init_candy(void) {
     for (x=0;x<scrwid;x++) {
       // img.bmp[y][x]=256*y/scrhei;
       // img.bmp[y][x]=0;
-      img.bmp[y][x]=255;
+      img.bmp[y][x]=COLORS-1;
       if (x<scrwid-1 && y<scrhei-1) {
         pix[x][y][usingmap]=x;
         piy[x][y][usingmap]=y;
@@ -255,7 +257,7 @@ void plotsomeshapes() {
 			V2d a=cen-dir*(scrwid);			
 			V2d b=cen+dir*(scrwid);			
       // img.line(a.x,a.y,b.x,b.y,255);
-      img.thickline(a.x,a.y,b.x,b.y,1,255);
+      img.thickline(a.x,a.y,b.x,b.y,1,COLORS-1);
 			// float oth=sqrt(myrnd())*5.0;
 			// V2d perp=oth*dir.perp();
 			// img.filltri((a-perp).x,(a-perp).y,(a+perp).x,(a+perp).y,b.x,b.y,myrnd()*255);
@@ -524,7 +526,7 @@ void redocolors() {
 		// myRGB r=( thru < 1 ? myRGB(0.0,thru*5.0,0.0)
 						             // : myRGB(thru*2.0-1.0,1.0,thru*2.0-1.0)
 						// );
-    float thru=4.0*(float)((frameno*palspeed+i/2)%colors)/(float)COLORS;
+    float thru=4.0*mymod(frameno*palspeed/(float)COLORS+i/2.0/(float)COLORS);
 		myRGB r;
 		if (thru<1.0)
 			r=myRGB(0.0,thru,0.0);
@@ -562,13 +564,11 @@ void redocolors() {
 				  // works for true-color
 			  }
 			} else {
-			XAllocColorCells(d,colormap,1,0,0,color,colors);
 
 			  // for (int i=0;i<colors;i++) {
 				  // xrgb[i].pixel=color[i];
 			  // }
 			  XStoreColors(d,colormap,xrgb,COLORS);
-			  XSetWindowColormap(d,win,colormap);
         // fputs("Couldn't allocate enough colors cells.\n", 
         // stderr), exit(1);
 			}
@@ -683,7 +683,8 @@ void real_main() {
   	// That's not a fair comparison colormap_size is depth in bits!
     // if (vis.colormap_size < COLORS)
       // printf("Colormap is too small: %i.\n",vis.colormap_size); // , exit (1);
-		printf("Colour depth: %i\n",vis.colormap_size);
+		// printf("Colour depth: %i\n",vis.colormap_size);
+		// No way this number means nothing!  It is 64 for 16-bit truecolour and 256 for 8-bit!
   
     win = XCreateSimpleWindow (d, DefaultRootWindow (d),
 			       0, 0, WIN_W, WIN_H, 0,
@@ -705,7 +706,7 @@ void real_main() {
       allocateOK = (XAllocColorCells (d, colormap, 1,
 							      NULL, 0, color, COLORS) != 0);
 
-			// printf("Allocated OK? %i\n",allocateOK);
+			printf("Allocated OK? %i\n",allocateOK);
 			
       if (allocateOK) {
   
@@ -729,6 +730,9 @@ void real_main() {
 		  // black = XBlackPixel(d,screen);
 		  // white = XWhitePixel(d,screen);
   
+			XAllocColorCells(d,colormap,1,0,0,color,colors);
+			XSetWindowColormap(d,win,colormap);
+
     } else if ( get_xvisinfo_class(vis) == TrueColor) {
       colormap = DefaultColormap (d, screen);
 					  // printf("TrueColor %i = %i\n",xclass,TrueColor);
