@@ -1,0 +1,25 @@
+\section{Recovery of fronto-parallel view}
+
+% Given a partially calibrated camera for which only the focal lengthis unknown, a quadrilateral in the image which is known to correspond to some rectangle in the world is sufficient to determine the focal length.
+
+In some applications we may not know the focal length of the camera used to capture the image.  However a quadrilateral in the image which is known to correspond to a rectangle in the world is sufficient to recovert the focal length of the camera.  We shall briefly demonstrate ...
+
+The lines joining the focal point $O$ to the two vanishing points $\myvec{HVP}$ and $\myvec{VVP}$ in the image plane are parallel to the horizontal and vertical vectors of the document.  Since we know the edges of the rectangular document are at right-angles, we can write:
+
+\begin{equation}
+( \myvec{HVP}_x , \myvec{HVP}_y , f ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y , f ) = 0
+\end{equation}
+
+This constraint expands to:
+
+\begin{equation}
+f = \sqrt{ - \myvec{HVP}_x \myvec{VVP}_x - \myvec{HVP}_y \myvec{VVP}_y }
+\end{equation}
+
+% \begin{equation}
+% ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 ~.
+% \end{equation}
+
+It is worth noting that no solution exists for $f$ if $ ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 $.  This situation, where the angle between the two vanishing points on the image plane is acute, corresponds to a quadrilateral which cannot possibly be a rectangle in the scene.  If such a quadrilateral is encountered during processing, we could hypothesise that the document is in fact slanted on the text plane, or that the quadrilateral does not correspond to a document in the scene, and should be ignored.
+
+Having obtained the focal length of the camera, we may now recover a fronto-parallel view of the document.  The interpolation takes place in world space rather than image space.
