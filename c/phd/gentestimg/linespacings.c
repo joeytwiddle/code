@@ -123,7 +123,7 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 
 
 
-V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usingspacings) {
+V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usingspacings,bool needsSorting) {
 
 	FILE *log=fopen("vvpFromPoints.txt","w");
 
@@ -136,9 +136,15 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	fprintf(log,"first %s\nlast  %s\n",endpoints.num(1).toString(),endpoints.num(endpoints.len).toString());
 
 	// Project the points down onto the line
+	// shouldn't need doing.
 	for (int i=0;i<endpoints.len;i++) {
 		V2d v=endpoints.get(i);
-		endpoints.put(i,baseline.perpproject(v));
+		V2d nv=baseline.perpproject(v);
+		if ( V2d::dist(v,nv)>0.00001 ) {
+			fprintf(stderr,"linespacings.c: vvpFromPoints: v != nv by %f\n",V2d::dist(v,nv));
+			fprintf(stderr,"                in other words, the points were not projected onto the baseline.\n");
+		}
+		endpoints.put(i,nv);
 	}
 				
 	float angle=(baseline.b-baseline.a).angle();
@@ -151,6 +157,10 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	}
 	baseline.a=baseline.a.rotateabout(-angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
 	baseline.b=baseline.b.rotateabout(-angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
+
+	// if (needsSorting) {
+		// endpoints.reverse();
+	// }
 
 	List<V2d> ps;
 				
@@ -172,7 +182,21 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 
 	}
 
+	if (needsSorting) {
+		ps.reverse();
+		for (int i=0;i<ps.len;i++) {
+			ps.getptr(i)->x=-ps.getptr(i)->x;
+			// float x=ps.getptr(i)->x;
+			// ps.getptr(i)->x=ps.getptr(ps.len-1-i)->x;
+			// ps.getptr(ps.len-1-i)->x=x;
+		}
+	}
+
+	if (needsSorting) {
+	guessU=(float)imgheight/2.0-endpoints.get(endpoints.len-1).y;
+	} else {
 	guessU=(float)imgheight/2.0-endpoints.get(0).y;
+	}
 	printf("Using guessU = %f\n",guessU);
 	printf("  from %s\n",endpoints.get(0).toString());
 
@@ -182,6 +206,8 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	float vvpdist=guessU*lastV/lastW;
 
 	V2d vvp=baseline.a-(baseline.b-baseline.a).norm()*vvpdist;
+	if (needsSorting)
+		vvp=baseline.b-(baseline.a-baseline.b).norm()*vvpdist;
 	vvp=vvp.rotateabout(angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
 
 	printf("guessU = %f\n",guessU);

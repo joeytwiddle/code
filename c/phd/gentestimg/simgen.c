@@ -394,7 +394,7 @@ int main(int argc,String *argv) {
 
 		V2d v=vvpFromPoints(
 				Line2d(lines.get(0).a,lines.get(lines.len-1).a),
-				endpoints, imgwidth,imgheight, usespacings
+				endpoints, imgwidth,imgheight, usespacings, false
 		);
 		printf("Got VVP = %s\n",v.toString());
 

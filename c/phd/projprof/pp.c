@@ -683,11 +683,12 @@ class ProjectionProfiler {
 			// New vvp estimation from spacings
 			List<V2d> endpoints;
 			for (int i=0;i<cens.len;i++) {
+			// for (int i=cens.len-1;i>=0;i--) {
 				Line2d l=Line2d(hvp,cens.get(i));
 				V2d v=baseline.intersect(l);
 				endpoints.add(v);
 			}
-			vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,uselinespacings);
+			vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,uselinespacings,true);
 
 			/* } else {
 
@@ -860,7 +861,7 @@ void main(int argc,String *argv) {
 			printf("Cheat bestpp = %s\n",bestpp.toString());
 			lowresthresh->setpos(bestpp,false);
 			lowresthresh->invert();
-			lowresthresh=lowresthresh->expand(30);
+			lowresthresh=lowresthresh->expand(10);
 			lowresthresh->invert();
 			pp.setup(lowresthresh);
 		}
