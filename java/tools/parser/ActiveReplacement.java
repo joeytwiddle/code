@@ -1,3 +1,4 @@
+package tools.parser;
 
 /* All my source code is freely distributable under the GNU public licence.
    I would be delighted to hear if have made use of this code.

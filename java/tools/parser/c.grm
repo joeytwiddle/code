@@ -11,6 +11,7 @@ CSrc = CSrcBit CSrc
      | ""
 
 CSrcBit = WS
+	| Special
         | Comment
         | HashCom
         | ClassDecl
@@ -20,7 +21,15 @@ CSrcBit = WS
 
 # Note: Methods given priority because VariableDecl tries to catch eg. "operator==" !
 
+# Doesn't appear to be picking up in joeylib.c
 
+Special = "/*special c*/" EndSpecial
+        | "/*special h*/" EndSpecial
+
+EndSpecial = <stuff/"/"> ContSpecial
+
+ContSpecial = "/*end special*/"
+	    | "/" EndSpecial
 
 ##### Simple comments and #commands
 
@@ -187,8 +196,9 @@ OptVarMod = "public"
           | "signed"
           | "const"
           | "static"
-					| Fillin
-					| Fillup
+          | "struct"
+	  | Fillin
+	  | Fillup
 c: ` String val=match.string.toString(); if ( val.equals("virtual") || val.equals("static") || val.equals("fillin") /* && match.getUp("Class")==null */ ) return ""; else return ""+match.string; `
 
 #          | "fillin"
@@ -208,11 +218,11 @@ VariableDecl = VariableDeclBeing
              | VariableDeclExist
 
 VariableDeclExist = OptVarMods VarType WS VarNames ";"
-h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Exists"
+h: ` return ( match.getUp("Class")==null ? "extern " : "" ); ` OptVarMods VarType WS VarNames "; // Exists"
 c: ` return ( match.getUp("Class")==null ? match.renderString("normal") : "// Variable declared in .h file" ); `
 
 VariableDeclBeing = OptVarMods VarType WS VarNames VarBeing ";"
-h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Variable initialised in .c file"
+h: ` return ( match.getUp("Class")==null ? "extern " : "" ); ` OptVarMods VarType WS VarNames "; // Variable initialised in .c file"
 c: OptVarMods VarType WS Class^<name> ` Match cls=match.getUp("Class"); return ( cls==null ? "" : "::" ); ` VarNames VarBeing ";"
 
 VarType = ArgType

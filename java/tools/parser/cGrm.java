@@ -1,3 +1,4 @@
+package tools.parser;
 import java.lang.String;
 import java.util.Vector;
 
@@ -665,6 +666,9 @@ public class cGrm {
         rule.add(new Text("static"));
       ruleset.add(rule);
       rule=new Vector();
+        rule.add(new Text("struct"));
+      ruleset.add(rule);
+      rule=new Vector();
         rule.add(new Atom("Fillin"));
       ruleset.add(rule);
       rule=new Vector();
@@ -731,8 +735,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-        rule.add(new Atom("OptVarMods"));
       rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
+        rule.add(new Atom("OptVarMods"));
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));
@@ -755,8 +759,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-        rule.add(new Atom("OptVarMods"));
       rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
+        rule.add(new Atom("OptVarMods"));
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));

@@ -1,7 +1,10 @@
 mv "$1Grm.java" "$1Grm.java.b4create"
-jparse grm "$1.grm" java $2 $3 $4 $5 $6 > "$1Grm.java"
+(
+echo "package tools.parser;"
+jparse grm "$1.grm" java $2 $3 $4 $5 $6
+) > "$1Grm.java"
 #mv "$1Grm.java" tmp.txt
 #mv tmp.txt "$1Grm.java"
-sreplace "$1Grm.java" "grmGrm" "$1Grm"
+sedreplace "grmGrm" "$1Grm" "$1Grm.java"
 jfc "$1Grm.java.b4create" "$1Grm.java"
 ./j

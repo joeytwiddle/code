@@ -1,1 +1,2 @@
-javac *.java | more
+# javac *.java | more
+jikes *.java | more

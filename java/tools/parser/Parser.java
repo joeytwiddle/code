@@ -1,3 +1,4 @@
+package tools.parser;
 /* All my source code is freely distributable under the GNU public licence.
    I would be delighted to hear if have made use of this code.
    If you make money with this code, please give me some!
@@ -183,7 +184,7 @@ public class Parser implements ActionListener {
   }
 
   public void setupgrammar(String gram) {
-    String whole=gram+"Grm";
+    String whole="tools.parser."+gram+"Grm";
     try {
       Class c=JReflect.classcalled(whole);
       // System.out.println("Got class "+c);
