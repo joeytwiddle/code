@@ -47,6 +47,8 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 		<html>
 			<body>
 
+				<H1>Jumpgate form scraping wizard n/4</H1>
+
 				<!--
 				MODE=<xsl:value-of select="$mode"/>=<P/>
 				<xsl:variable name="color">red</xsl:variable>
@@ -105,6 +107,7 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 					</xsl:if>
 				</xsl:if>
 				<xsl:if test="$mode='addEntryProgress'">
+					<H2>Processing: <xsl:value-of select='$urlToScrape'/></H2>
 					<!--
 					<xsl:if test="$urlToScrape!='' or $mode='addEntryProgress'">
 					-->
@@ -242,7 +245,7 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 							<xsl:attribute name="value"><xsl:value-of select="$selectedFormNum"/></xsl:attribute>
 						</input>
 						Now please select which of the fields is the one you wish to search on:
-						<table>
+						<table border="1">
 							<xsl:for-each select="$form//*[name(.)='input'] | $form//*[name(.)='select']">
 								<tr>
 									<td><xsl:value-of select="@name"/>=<xsl:value-of select="@value"/></td>
@@ -363,7 +366,7 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 							<xsl:attribute name="value"><xsl:value-of select="$selectedFormNum"/></xsl:attribute>
 						</input>
 						Now please select which of the fields is the one you wish to search on:
-						<table>
+						<table border="1">
 							<xsl:for-each select="$form//*[name(.)='input'] | $form//*[name(.)='select']">
 								<tr>
 									<td><xsl:value-of select="@name"/>=<xsl:value-of select="@value"/></td>

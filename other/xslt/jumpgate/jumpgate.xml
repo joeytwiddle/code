@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="jumpgate.xsl"?>
+<?xml-stylesheet type="text/xsl" href="http://hwi.ath.cx/xslt/src/jumpgate/jumpgate.xsl"?>
 <JumpgateData>
 	<JumpgateEntry name="Google Search" contributor="joey">
 
 		<Category>General</Category>
-		<Description>Popular search engine</Description>
+		<Description>Popular search engine (but TODO: bookmarklet is slightly broken)</Description>
 		<HowToAccess>
 			<Form action="http://www.google.com/search">
 				<HiddenParameters>
@@ -103,4 +103,22 @@
 				-->
 	<CopyFormFromPage name="FlyBe.com"
 	page="http://www3.flybe.com/obs/booking-controller/" />
+
+<JumpgateEntry name="Create a new jumpgate entry">
+<Description>Just enter the URL of a webpage with a search that you like, and follow the wizard.  Note the default bookmarklet is not very suitable (unless you first highlight the URL on which the search engine is located), but if the bookmarklet worked on obtaining the current / referring page, it would be fine.</Description>
+<Category>Jumpgate</Category>
+<HowToAccess>
+<Form action="formscraper.xsl">
+<HiddenParameters>
+<input xmlns="http://www.w3.org/1999/xhtml" type="hidden" name="mode" value="addEntryProgress">
+</input>
+</HiddenParameters>
+<ExposedParameters>
+<input xmlns="http://www.w3.org/1999/xhtml" type="text" name="urlToScrape" value="http://" size="30" maxlength="9999">
+</input>
+</ExposedParameters>
+</Form>
+</HowToAccess>
+</JumpgateEntry>
+
 </JumpgateData>
