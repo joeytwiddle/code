@@ -16,8 +16,8 @@ PPSCANMETHODS="hier" # full"
 # PPMEASURES="willbederived"
 PPMEASURES="deriv"
 
-# VVPMETHODS="spacings simple margins"
-VVPMETHODS="simple"
+VVPMETHODS="spacings simple margins"
+# VVPMETHODS="simple"
 
 # NOISES=`seq -w 0 03 50`
 # NOISES=`seq -w 51 03 60`
@@ -127,7 +127,7 @@ for DOCUMENT in $DOCUMENTS; do
 
 										SIMPARAMS="
 										-qnd
-										-centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001
+										-centralise -focal $FOCAL -noise 0.0 -lines 30 -yoff 0.001
 										-roll $roll -yaw $yaw -pitch $pitch
 										-overlay -image $IFILE $OFILE -size 0.7
 										-gnuplot
@@ -142,6 +142,7 @@ for DOCUMENT in $DOCUMENTS; do
 										cursegrey
 										../gentestimg/simgen $SIMPARAMS | tee genres.txt
 
+										mv gplsolve.txt gplsimsolve.txt
 										mv gpldata.txt gplsimdata.txt
 										mv gplfit.ps gplsimfit.ps
 
