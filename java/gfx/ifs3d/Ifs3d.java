@@ -21,10 +21,10 @@ class Particle {
   }
 
   public void movement() {
-    oria=hang(oria,V3d.o,0.99,0.0001);
-    acc=hang(acc,V3d.o,0.99,0.0001);
-    oriv=oria.add(hang(oriv,V3d.o,0.995,0.0));
-    vel=acc.add(hang(vel,V3d.o,0.9995,0.0));
+    oria=hang(oria,V3d.o,0.9,0.0002);
+    acc=hang(acc,V3d.o,0.9,0.0002);
+    oriv=oria.add(hang(oriv,V3d.o,0.99,0.0));
+    vel=acc.add(hang(vel,V3d.o,0.999,0.0));
     cen=cen.add(vel);
     ori.roll(oriv.x);
     ori.pitch(oriv.y);
