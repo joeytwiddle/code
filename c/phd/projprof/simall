@@ -10,18 +10,17 @@ PPSCANMETHODS="hier" # full"
 # PPMEASURES="square deriv"
 PPMEASURES="deriv"
 # PPMEASURES="willbederived"
-# VVPMETHODS="spacings margins"
-VVPMETHODS="spacings"
+# VVPMETHODS="spacings simple margins"
+VVPMETHODS="simple spacings"
+NOISES=0
 # NOISES=`seq -w 0 03 50`
 # NOISES=`seq -w 51 03 60`
-NOISES=0
 # NOISES=`seq -w 51 03 60`
+NOISES=0
 # LINESTODO=`seq -w 30 -1 02`
-ANGLES=`seq -w 25 05 40`
 # ANGLES=`seq -w 20 07 50`
-# ANGLES=`seq -w 20 20 40`
-# ANGLES="40"
 # ANGLES=`seq -w 20 03 50`
+ANGLES="60"
 
 for DOCUMENT in $DOCUMENTS; do
 
@@ -34,15 +33,15 @@ for DOCUMENT in $DOCUMENTS; do
 			for VVPMETHOD in $VVPMETHODS; do
 
 				# Do measure inline with scan method
-				if test "$PPSCANMETHOD" = hier; then
-					PPMEASURE=deriv
-				else
-					PPMEASURE=deriv # actually keep the same cos square can't handle noise
-					# PPMEASURE=square
-				fi
+				# if test "$PPSCANMETHOD" = hier; then
+					# PPMEASURE=deriv
+				# else
+					# PPMEASURE=deriv # actually keep the same cos square can't handle noise
+					# # PPMEASURE=square
+				# fi
 
 				PPPARAMS="
-					-res 60 -adapt 0.03 -maxpixels 2000
+					-res 140 -adapt 0.03 -maxpixels 2000
 					-$PPMEASURE
 					-gamma 0.0 -recwid 200 -light -oth 12
 					-badx 35 -bady 21
@@ -55,10 +54,16 @@ for DOCUMENT in $DOCUMENTS; do
 					# Full PP scan
 					# PPPARAMS="$PPPARAMS"
 				fi
-				if test "$VVPMETHOD" = "margins"; then
-					# Margins method
-					PPPARAMS="$PPPARAMS -usetwolines"
-				fi
+				case "$VVPMETHOD" in
+					"margins")
+						# Margins method
+						PPPARAMS="$PPPARAMS -usetwolines"
+						;;
+					"spacings")
+						# Fitting with best method
+						PPPARAMS="$PPPARAMS -spacings"
+						;;
+				esac
 				PPCOM="pp $PPPARAMS"
 				export PPCOM;
 
