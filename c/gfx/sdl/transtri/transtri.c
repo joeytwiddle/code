@@ -30,7 +30,7 @@
 // todo: Store #define constants for a variety of video modes so that the
 //   user may choose at runtime.
 
-// #define DOS
+#define DOS
 #ifdef DOS
 #define M_PI 3.14159265358979323846
 #include "SDL.h"
@@ -46,17 +46,22 @@
 #include <time.h>
 #include <SDL.h>
 
-// #define SCRWID 320
-// #define SCRHEI 200
-// #define NUMTRIS 300
-#define SCRWID 640
-#define SCRHEI 480
-#define NUMTRIS 100
+#define SCRWID 320
+#define SCRHEI 200
+#define NUMTRIS 400
+#define brightness 8
+// #define SCRWID 640
+// #define SCRHEI 480
+// #define NUMTRIS 100
+// #define brightness 30
 #define SCRBPS 32
 #define desiredFramesPerSecond 50
 #define IMGSKIP (SCRWID/160)
 // #define IMGSKIP 4
 // #define DOUBLEMERGEBG
+#define DO_TRIANGLES
+// #define DO_STARS
+#define DO_WHITEOUT
 
 #include "define.c"
 #define CONST
@@ -262,7 +267,7 @@ int main(int argc,char *argv[]) {
 	}
 	atexit(SDL_Quit);
 	SDL_WM_SetCaption("transience",NULL);
-	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE /* | SDL_FULLSCREEN */ );
+	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE | SDL_FULLSCREEN );
 	if (screen==NULL) {
 		fprintf(stderr,"Couldn't initialise video.\n");
 		return 1;
@@ -366,6 +371,8 @@ int main(int argc,char *argv[]) {
                     // p=bgtexture_getPixel( ((Uint16)(a+aoffset)%bgtexture_w), ((Uint16)(D+Doffset)%bgtexture_h) );
                     p=bgpixels[((Uint16)(a+aoffset)%bgtexture_w)+bgtexture_w*((Uint16)(D+Doffset)%bgtexture_h)];
 
+#ifdef DO_WHITEOUT
+
                     // Apply whiteout
                     br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
 					screen_GetRGB(p,&r,&g,&b);
@@ -389,6 +396,7 @@ int main(int argc,char *argv[]) {
 					b=clip((int)b+(int)br,0,256);
 #endif
                     p=screen_MapRGB(r,g,b);
+#endif
 					// r=max(r,br);
 					// g=max(g,br);
 					// b=max(b,br);
@@ -464,15 +472,20 @@ int main(int argc,char *argv[]) {
 				}
 			}
 
-#define brightness 30
-            for (i=0;i<NUMTRIS;i++) {
+#ifdef DO_TRIANGLES
+
+         for (i=0;i<NUMTRIS;i++) {
                 // plotLine(screen,screen_w*frand(),screen_h*frand(),scr een_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
                 // plotTri(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
                 plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
             }
 
+#endif
+
+#ifdef DO_STARS
+
 			{
-                /*
+                
 
 
 				// float camX=sin(framebits*0.013);
@@ -507,9 +520,11 @@ int main(int argc,char *argv[]) {
 #undef starRes
 #undef starPlotTri
 
-            */
+            
                 
 			}
+
+#endif
 
 		}
 
