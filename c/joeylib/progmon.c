@@ -25,9 +25,9 @@ public:
 		if (toprnt>unixterm_lastprnt) {
 			// fprintf(stderr,Srep(".",toprnt-unixterm_lastprnt));
 			fprintf(stderr,"\r|");
-			fprintf(stderr,Srep("=",toprnt-1));
+			fprintf(stderr,Srep("=",toprnt));
 			fprintf(stderr,"#");
-			fprintf(stderr,Srep("-",UNIXTERMWID-toprnt));
+			fprintf(stderr,Srep("-",UNIXTERMWID-1-toprnt));
 			fprintf(stderr,"|");
 			unixterm_lastprnt=toprnt;
 		}
