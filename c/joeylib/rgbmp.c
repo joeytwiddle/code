@@ -1803,6 +1803,17 @@ RGBmp *recoverquad(V2d a,V2d b,V2d c,V2d d,int imwidth) {
     int t=y;
     float i=x-(float)l;
     float j=y-(float)t;
+	 /* A really disgusting hack for gentestimg
+	  * due to black bordering.
+	  */
+	 if (l>=width-5) {
+		 l=width-7;
+		 i=0;
+	 }
+	 if (t>=height-5) {
+		 t=height-7;
+		 j=0;
+	 }
     return getpos( l ,t  ) * (1.0-i) * (1.0-j) +
            getpos(l+1,t  ) *   (i)   * (1.0-j) +
            getpos( l ,t+1) * (1.0-i) *   (j) +

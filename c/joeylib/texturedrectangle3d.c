@@ -26,7 +26,8 @@ public:
     if (!inimage(v))
       return myRGB::random();
     V2d p=projectDown(v);
-    return textureimg->getpos(p.x*textureimg->width,p.y*textureimg->height);
+    // return textureimg->getpos(p.x*textureimg->width,p.y*textureimg->height);
+    return textureimg->getposinterpolate(p.x*textureimg->width,p.y*textureimg->height);
   }
 
 };

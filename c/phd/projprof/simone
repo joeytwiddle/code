@@ -4,8 +4,12 @@ yaw=$3
 pitch=$4
 OFILE="tmp.bmp"
 INVFILE="tmp-inv.bmp"
+# PARAMS="-focal 0.5 -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.4"
+PARAMS="-qnd -centralise -focal 0.5 -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.4"
+# PARAMS="-imgnoise 0.0 -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-imgnoise 0.3 -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
-PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
+# PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
+# PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-gnuplot -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 echo ../gentestimg/simgen $PARAMS 

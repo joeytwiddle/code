@@ -23,7 +23,6 @@ for numlines in `seq -w 30 -1 02`; do
   # SRCNAME="doc-cen-more"
   # SRCNAME="dar-crpage2"
   # SRCNAME="leaflet-cen"
-  
   IFILE="$SRCNAME.bmp"
   RES="results.txt"
   FOCALRES="focalres.txt"
@@ -31,19 +30,26 @@ for numlines in `seq -w 30 -1 02`; do
   rm -rf res
   mkdir -p res
   echo "0" > res/.nosync
-  rm -f "$RES"
-  echo "START" > "$RES"
-  rm -f "$FOCALRES"
-  echo "" > "$FOCALRES"
+  # rm -f "$RES"
+  # echo "START" > "$RES"
+  # rm -f "$FOCALRES"
+  # echo "" > "$FOCALRES"
+
+  STARTANG=20
+  ENDANG=80
+  ANGSTEP=30
+  # STARTANG=0
+  # ENDANG=90
+  # ANGSTEP=5
 
   roll="90";
   # for roll in `listnums -6 6`; do
-    yaw=15;
-    for yaw in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
+    yaw=40;
+    # for yaw in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
     # for yaw in `listnums 0 90 by 5`; do
     # for yaw in `listnums 20 70 by 10`; do
-      pitch=15;
-      for pitch in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
+      pitch=60;
+      # for pitch in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
       # for pitch in `listnums 0 90 by 5`; do
       # for pitch in `listnums 20 70 by 10`; do
 			  echo
@@ -72,8 +78,8 @@ for numlines in `seq -w 30 -1 02`; do
 			  # ./showdesiredspacings.sh
 			  # convert "gpl1fit.ps" -geometry 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
 			  rm -f fit.log
-      done
-    done
+      # done
+    # done
   # done
 
   # ( cd res

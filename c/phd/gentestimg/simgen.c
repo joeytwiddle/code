@@ -77,6 +77,7 @@ int main(int argc,String *argv) {
 	float noise=a.floatafter("-noise","noise on line points",0.0*640/imgwidth);
 	int numinserts=a.intafter("-ins","number of noisy inserts",0);
 	bool genimage=a.argexists("-image","generate simulated image");
+	bool quickanddirty=a.argexists("-qnd","use quick and dirty image rendering");
 	float imgnoise=a.floatafter("-imgnoise","image noise for output image",0);
 	bool overlay=a.argexists("-overlay","overlay info on simulated image");
 	String overlayname="overlay.bmp"; // a.argafter("-overlayimage","name of overlay output file","overlay.bmp");
@@ -148,33 +149,39 @@ int main(int argc,String *argv) {
 		
 		ProgMon progmon;
 
-		for (int i=0;i<inputimg->width;i++) {
-			(progmon.*progmon.nowthrough)((float)i/(float)imgwidth);
-			for (int j=0;j<inputimg->height;j++) {
-				V3d v=worldA+right*(float)i/(float)inputimg->width+down*(float)j/(float)inputimg->height;
-				Pixel p=proj(v);
-				outputimg.setpos(p.x,p.y,inputimg->getpos(i,j));
+		if (quickanddirty) {
+
+			for (int i=0;i<inputimg->width;i++) {
+				(progmon.*progmon.nowthrough)((float)i/(float)imgwidth);
+				for (int j=0;j<inputimg->height;j++) {
+					V3d v=worldA+right*(float)i/(float)inputimg->width+down*(float)j/(float)inputimg->height;
+					Pixel p=proj(v);
+					outputimg.setpos(p.x,p.y,inputimg->getpos(i,j));
+				}
 			}
+
+		} else {
+
+			TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
+			for (int i=0;i<imgwidth;i++) {
+				(progmon.*progmon.nowthrough)((float)i/(float)imgwidth);
+				for (int j=0;j<imgheight;j++) {
+					Pixel p=Pixel(i,j);
+					V3d pixel=imgplaneFromPixel(p);
+					Line3d l=Line3d(eye,pixel);
+					V3d intersect=rec.intersect(l);
+					if (rec.inimage(intersect)) {
+						outputimg.setpos(i,j,rec.colAt(intersect));	 
+					}
+				}
+			}
+
+			printf("\nright = %s\n",rec.right.toString());
+			printf("down = %s\n",rec.down.toString());
+			// printf("planeA = %s\n",rec.pos.toString());
+			// printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));
+
 		}
-
-		 TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
-		// for (int i=0;i<imgwidth;i++) {
-			// (progmon.*progmon.nowthrough)((float)i/(float)imgwidth);
-			// for (int j=0;j<imgheight;j++) {
-				// Pixel p=Pixel(i,j);
-				// V3d pixel=imgplaneFromPixel(p);
-				// Line3d l=Line3d(eye,pixel);
-				// V3d intersect=rec.intersect(l);
-				// if (rec.inimage(intersect)) {
-					// outputimg.setpos(i,j,rec.colAt(intersect));	 
-				// }
-			// }
-		// }
-
-		 printf("\nright = %s\n",rec.right.toString());
-		 printf("down = %s\n",rec.down.toString());
-		// printf("planeA = %s\n",rec.pos.toString());
-		// printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));
 
 		(progmon.*progmon.end)();
 
