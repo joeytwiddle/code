@@ -252,10 +252,10 @@ int main(int argc,String *argv) {
   
 	  float guessU = (float)imgheight/2.0-lines.get(0).a.y;
   	
-	  printf("      oldU= %f\n",groundU);
-	  printf("      oldV= %f\n",groundV);
-	  printf("      oldW= %f\n",groundW);
-	  printf("	guessU = %f\n",guessU);
+	  printf("      oldU = %f\n",groundU);
+	  printf("      oldV = %f\n",groundV);
+	  printf("      oldW = %f\n",groundW);
+	  printf(" oldguessU = %f\n",guessU);
 
 	}
 
@@ -288,11 +288,10 @@ int main(int argc,String *argv) {
 
 	float guessU = (float)imgheight/2.0-unrot(lines.get(0).a).y;
 	
-	printf("	U = %f\n",groundU);
-	printf("	V = %f\n",groundV);
-	printf("	W = %f\n",groundW);
-	printf("	U = %f\n",groundU);
-	printf("	guessU = %f\n",guessU);
+	printf("U = %f\n",groundU);
+	printf("V = %f\n",groundV);
+	printf("W = %f\n",groundW);
+	printf("	newguessU = %f\n",guessU);
 
 	if (genimage && overlay) {
 		outputimg.line(hvp,lines.num(1).center(),myRGB::blue);

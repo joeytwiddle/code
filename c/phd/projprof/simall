@@ -2,7 +2,7 @@ DOC=$1;
 
 # export PATH="$PATH:."
 
-SRCNAME="dar-page2-mid-left"
+SRCNAME="dar-crpage2-mid-left"
 IFILE="$SRCNAME.bmp"
 RES="results.txt"
 FOCALRES="focalres.txt"

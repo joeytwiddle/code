@@ -38,6 +38,8 @@ main(int argc,String *argv) {
 		  V3d ppright,ppdown;
 			V2d gthvp,gtvvp;
 			V2d pphvp,ppvvp;
+			float gtU,gtV,gtW;
+			float ppU,ppV,ppW;
 		  i++; l=lines.get(i);
 		  sscanf(l,"roll = %f",&roll);
 		  // printf("Got %f for roll\n",roll);
@@ -58,6 +60,24 @@ main(int argc,String *argv) {
 		  i++; l=lines.get(i);
 		  sscanf(l,"VVP = (%f,%f)",&gtvvp.x,&gtvvp.y);
 		  i++; l=lines.get(i);
+				if (Sstarts(l,"U = ")) {
+		      sscanf(l,"U = %f",&gtU);
+		      i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no gt U line %i r%f y%f p%f\n",i,roll,yaw,pitch);
+				}
+				if (Sstarts(l,"V = ")) {
+		      sscanf(l,"V = %f",&gtV);
+		      i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no gt V line %i r%f y%f p%f\n",i,roll,yaw,pitch);
+				}
+				if (Sstarts(l,"W = ")) {
+		      sscanf(l,"W = %f",&gtW);
+		      i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no gt W line %i r%f y%f p%f\n",i,roll,yaw,pitch);
+				}
 		  if (!Seq(l,"PP:"))
 			  fprintf(stderr,"Error B line %i\n",i);
 		  i++; l=lines.get(i);
@@ -95,6 +115,24 @@ main(int argc,String *argv) {
 				} else {
 					fprintf(stderr,"no vvp line %i r%f y%f p%f\n",i,roll,yaw,pitch);
 					badvvp=true;
+				}
+				if (Sstarts(l,"U = ")) {
+		      sscanf(l,"U = %f",&ppU);
+		      i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no pp U line %i r%f y%f p%f\n",i,roll,yaw,pitch);
+				}
+				if (Sstarts(l,"V = ")) {
+		      sscanf(l,"V = %f",&ppV);
+		      i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no pp V line %i r%f y%f p%f\n",i,roll,yaw,pitch);
+				}
+				if (Sstarts(l,"W = ")) {
+		      sscanf(l,"W = %f",&ppW);
+		      i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no pp W line %i r%f y%f p%f\n",i,roll,yaw,pitch);
 				}
 			}
 			

@@ -51,7 +51,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	fprintf(gplout,"#!/usr/local/gnu/bin/gnuplot\n");
 	fprintf(gplout,"u = %f\n",guessU);
 	
-	// fflush(gplout);
+	fflush(gplout);
 	fclose(gplout);
 
 	system("cat gpldo.txt fitgnuplot2.txt > gplsolve.txt");
@@ -61,8 +61,9 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	float V=readfloatfromfile("v.txt");
 	float W=readfloatfromfile("w.txt");
 
-	printf("got V = %f\n",V);
-	printf("got W = %f\n",W);
+	printf("guessU = %f\n",guessU);
+	printf("gotV = %f\n",V);
+	printf("gotW = %f\n",W);
 
 	float vvpdist=guessU*V/W;
 	V2d vvp=baseline.a-(baseline.b-baseline.a).norm()*vvpdist;
