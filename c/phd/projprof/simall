@@ -7,21 +7,22 @@ del *.results
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
 # DOCUMENTS="left cen right full"
 
-DOCUMENTS="test" # test "dar-crpage2-left30" # left cen right full"
+DOCUMENTS="dar-crpage2-left30" # test "dar-crpage2-left30" # left cen right full"
 PPSCANMETHODS="hier" # full"
 # PPMEASURES="square deriv"
 PPMEASURES="deriv"
 # PPMEASURES="willbederived"
 # VVPMETHODS="spacings simple margins"
-VVPMETHODS="spacings"
+VVPMETHODS="spacings simple margins"
 # NOISES=`seq -w 0 03 50`
 # NOISES=`seq -w 51 03 60`
 # NOISES=`seq -w 51 03 60`
 NOISES=0
 # LINESTODO=`seq -w 30 -1 02`
+ANGLES=`seq 10 10 80`
 # ANGLES=`seq -w 25 05 40`
 # ANGLES=`seq -w 20 07 50`
-ANGLES="20 40 60 80"
+# ANGLES="20 40 60 80"
 # ANGLES="50"
 # ANGLES=`seq -w 20 20 60`
 # ANGLES=`seq -w 20 20 40`
@@ -30,7 +31,7 @@ ANGLES="20 40 60 80"
 # ANGLES="34"
 # FOCALS=`seq -w 0.5 0.3 3.0`
 # FOCALS="0.5"
-FOCALS="0.5"
+FOCALS="4.0"
 
 touch start
 
