@@ -62,6 +62,8 @@
 // #define sparsenessMovementOn 1
 // #define sparsenessMovementOff 3
 // #define sparsenessSkipCols 3
+// #define sparsenessSkipRows 1
+/// when rows > 30
 // #define sparsenessSkipRows 2
 
 /// Another config for slow machines: reduce matrix in every way!  less faithful, but animation appears clearer
@@ -70,6 +72,8 @@
 // #define sparsenessMovementOn 2
 // #define sparsenessMovementOff 2
 // #define sparsenessSkipCols 3
+// #define sparsenessSkipRows 1
+/// when rows > 30
 // #define sparsenessSkipRows 2
 
 /// To reduce state changes but keep the default density:
@@ -239,7 +243,10 @@ void slideColumn(int x,bool lastSlide) {
 	mbit last = 'L';
 
 	// TODO: y will start wrong if sparsenessSkipRows is not a factor of LINES
-	for (int y=LINES-1;y>0;y-=sparsenessSkipRows) {
+	int start = LINES - 1;
+	start = start / sparsenessSkipRows;
+	start = start * sparsenessSkipRows;
+	for (int y=start;y>=sparsenessSkipRows;y-=sparsenessSkipRows) {
 		mbit src = thematrix[x][y-sparsenessSkipRows];
 		#ifdef SLIDING_WHITE_BITS
 			if (src == BLOCKHEAD_PROCESS) {
@@ -353,16 +360,16 @@ void main() {
 				processes[i] = thematrix[processX[i]][processY[i]];
 				matrix_set_process(processX[i],processY[i]);
 				thematrix[processX[i]][processY[i]] = processes[i];
-				// Die if bored
+				// Die if bored:
 				if (
 					processes[i] == STATIC_PROCESS_EMPTY
 					|| !sliding[processX[i]]
 				) {
 					recycle = prob(staticProcessDies);
 				}
-				// Die naturally
-				if (prob(staticProcessDies))
-					recycle = true;
+				// Die naturally:
+				// if (prob(staticProcessDies))
+					// recycle = true;
 			} else if (processes[i] == WRITING_PROCESS || processes[i] == CLEARING_PROCESS) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
 				matrix_set(processX[i],processY[i],toWrite);
@@ -370,14 +377,14 @@ void main() {
 				if (processY[i]>=LINES) {
 					newProcess(i);
 				} else {
-					// Die if bored
+					// Die if bored:
 					if (
 						(processes[i] == CLEARING_PROCESS && thematrix[processX[i]][processY[i]] == ' ')
 						|| sliding[processX[i]]
 					) {
 						recycle = prob(movingProcessDies);
 					}
-					// Die naturally
+					// Die naturally:
 					if (prob(movingProcessDies))
 						recycle = true;
 					matrix_set_process(processX[i],processY[i]);
