@@ -7,6 +7,8 @@ import java.awt.dnd.DropTarget;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
+import org.neuralyte.common.swing.Moveability;
+
 /**
  * @todo Consider how user might be able to pass null instead of a non-null Object.
  */
@@ -25,10 +27,14 @@ public class ParameterTarget extends JPanel {
         /* } else if (type.isPrimitive() || type.equals(String.class) || type.equals(Double.class) ... */
         } else if (ReflectionHelper.isPrimitiveType(type) || type.equals(String.class)) {
             // System.out.println("type = " + type);
-            component = new JTextField("" + VisualJavaStatics.getSimpleClassName(type));
+            // component = new JTextField("" + VisualJavaStatics.getSimpleClassName(type));
+            component = new DroppableJTextField("" + VisualJavaStatics.getSimpleClassName(type),type);
+            Moveability.canAcceptDroppedObject(component);
         } else {
             // component = new JButton("" + VisualJava.getSimpleClassName(type));
-            component = new JLabel("" + VisualJavaStatics.getSimpleClassName(type));
+            // component = new JLabel("" + VisualJavaStatics.getSimpleClassName(type));
+            component = new DroppableJLabel(VisualJavaStatics.getSimpleClassName(type),type);
+            Moveability.canAcceptDroppedObject(component);
         }
         add(component);
         // this.setDropTarget();
@@ -50,6 +56,42 @@ public class ParameterTarget extends JPanel {
         }
         /* || @todo ... */
         return null;
+    }
+
+    class DroppableJLabel extends JLabel implements HasObject, CanAcceptDroppedObject {
+        Object object;
+        Class type;
+        public DroppableJLabel(String text, Class _type) {
+            super(text);
+            type = _type;
+            object = null;
+        }
+        public boolean isAcceptable(Object o) {
+            return (type.isAssignableFrom(o.getClass()));
+        }
+        public boolean acceptObject(Object o) {
+            object = o;
+            setText(VisualJavaStatics.getSimpleClassName(type) + " \"" + o + "\"");
+            return true;
+        }
+        public Object getObject() {
+            return object;
+        }
+    }
+
+    class DroppableJTextField extends JTextField implements CanAcceptDroppedObject {
+        Class type;
+        public DroppableJTextField(String text, Class _type) {
+            super(text);
+            type = _type;
+        }
+        public boolean isAcceptable(Object o) {
+            return (type.isAssignableFrom(o.getClass()));
+        }
+        public boolean acceptObject(Object o) {
+            setText("" + o);
+            return true;
+        }
     }
 
 }

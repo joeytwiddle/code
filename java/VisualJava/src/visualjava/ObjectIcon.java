@@ -16,7 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Constructor;
 
 /** joey Nov 1, 2004 2:27:04 AM */
-public class ObjectIcon extends JLabel {
+public class ObjectIcon extends JLabel implements HasObject {
 
     Desktop desktop;
 
@@ -32,9 +32,11 @@ public class ObjectIcon extends JLabel {
         // JMenuItem statics2 = new JMenuItem("Statics 2");
         // this.add(statics2);
         // VisualJava.addMenuBar(this);
+        setBackground(Color.GRAY);
         addPopupMenuTo(this);
         // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],obj);
-        Moveability.allowUserToMove(this);
+        // Moveability.allowUserToMove(this); // Implied by:
+        Moveability.hasObjectCanBeDropped(this);
     }
 
 	void addPopupMenuTo(Component thing) {
@@ -122,4 +124,7 @@ public class ObjectIcon extends JLabel {
         }
     }
 
+    public Object getObject() {
+        return obj;
+    }
 }
