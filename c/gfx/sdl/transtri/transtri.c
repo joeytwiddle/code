@@ -334,37 +334,35 @@ int main(int argc,char *argv[]) {
 			}
 		}
 
-		#define brightness 30
+		#define brightness 80
             #define STARX (2*SCRWID/3)
             #define STARY (SCRHEI/2)
-            #define starPlotTri(xa,ya,xb,yb,xc,yc) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,brightness,brightness/2,brightness)
             #define SCALE ( 500 )
 
-            #define starRad(a,b) ( (10.0)*(3.0+sinsharp((a)*2.1+frames*0.063)+sinsharp((b)*1.6+frames*0.05)) )
+            #define starPlotTri(xa,ya,xb,yb,xc,yc,bright) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,bright*brightness,bright*brightness/2,bright*brightness)
+            #define starRad(a,b) ( (10.0)*(3.0+sin((a)*2.1+frames*0.063)+sin((b)*1.6+frames*0.05)) )
             // #define starRad(a,b) ( 20 )
             #define starRes 30
             #include "starsurface.c"
-            #undef starRad(vx,vy,vz)
             #undef starRad
             #undef starRes
-		for (i=0;i<NUMTRIS;i++) {
-			// plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
-            // #define starRad(vx,vy,vz) ( 40.0*qsin(vx+frames*0.024)+qsin(vy+frames*0.016)+qsin(vz+frames*0.0048) )
-		}
+            #undef starPlotTri
+            #undef STARX
 
-            #define starPlotTri(xa,ya,xb,yb,xc,yc) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,brightness/2,brightness/2,0)
+            #define starPlotTri(xa,ya,xb,yb,xc,yc,bright) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,bright*brightness/2,bright*brightness/2,0)
             #define STARX (SCRWID/3)
             #define STARY (SCRHEI/2)
-            #define starRad(a,b) ( (12.0)*(2.0+sinsharp((-a)*3.5+frames*0.074)+sinsharp((b)*4.5+frames*0.03)) )
-            #define starRes 30
+            #define starRad(a,b) ( (10.0)*(3.0+sinsharp((-a)*3.5+frames*0.074)+sinsharp((b)*4.5+frames*0.03)) )
+            #define starRes 40
             #include "starsurface.c"
-            #undef starRad(vx,vy,vz)
             #undef starRad
             #undef starRes
-		for (i=0;i<NUMTRIS;i++) {
-			// plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
-            // #define starRad(vx,vy,vz) ( 40.0*qsin(vx+frames*0.024)+qsin(vy+frames*0.016)+qsin(vz+frames*0.0048) )
-		}
+            #undef starPlotTri
+
+            for (i=0;i<NUMTRIS;i++) {
+                // plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
+                // #define starRad(vx,vy,vz) ( 40.0*qsin(vx+frames*0.024)+qsin(vy+frames*0.016)+qsin(vz+frames*0.0048) )
+            }
 
 		}
 
