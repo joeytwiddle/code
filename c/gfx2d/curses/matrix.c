@@ -25,6 +25,20 @@
 
 #define BOTHER_CLOCKING ON
 #define WHITE_BITS ON
+// For fast machines:
+// #define sparsenessLengthOn 1
+// #define sparsenessLengthOff 1
+// #define sparsenessMovementOn 1
+// #define sparsenessMovementOff 1
+// For slow machines (eg. 486): less faithful, but animation appears much clearer
+#define sparsenessLengthOn 1
+#define sparsenessLengthOff 2
+#define sparsenessMovementOn 1
+#define sparsenessMovementOff 4
+
+// For single/double line spacing:
+// #define sparsenessSkipCols 1
+#define sparsenessSkipCols 2
 
 void homeAndWrefresh() {
 	move(0,0);
@@ -54,13 +68,20 @@ Type max(Type x,Type y) {
 	return ( x > y ? x : y );
 }
 
+/* // Thou needest this if sparseness is a float
+int max(int x,double y) {
+	return max(x,(int)y);
+}
+*/
+
 #define mbit char
 
-mbit* palette = "^~+ouq/\\*}0&$%@#";
+mbit* palette = "^~+zovq/\\*kAY}0&$%@#";
 int paletteSize = strlen(palette);
-mbit PROCESS = 'P';
+mbit BLOCKHEAD_PROCESS    = 'B';
+mbit WRITING_PROCESS      = 'W';
 mbit STATIC_PROCESS_FULL  = 'S';
-mbit STATIC_PROCESS_EMPTY = 's';
+mbit STATIC_PROCESS_EMPTY = 'E';
 
 int AVALTLET;
 int averageLengthOfSlide;
@@ -76,12 +97,12 @@ bool *adding;
 
 void setupProbabilities() {
 
-	// Base some on area instead of width?
-	averageLengthOfSlide       = max(2, LINES / 2 );
-	averageLengthBetweenSlides = averageLengthOfSlide * 2;
-	averageLengthOfBlock         = max(2, LINES / 2 );
-	averageLengthBetweenBlocks   = averageLengthOfBlock * 3/2;
-	slidingProcessDies         = max(2, averageLengthOfSlide / 2 );
+	// TODO: Base some on area instead of width?
+	averageLengthOfSlide       = max(2, LINES * 2/3 / sparsenessMovementOn );
+	averageLengthBetweenSlides = max(2, averageLengthOfSlide * 2 * sparsenessMovementOff );
+	averageLengthOfBlock       = max(2, LINES * 2/3 / sparsenessLengthOn );
+	averageLengthBetweenBlocks = max(2, averageLengthOfBlock * 3/2 * sparsenessLengthOff );
+	slidingProcessDies         = max(2, averageLengthOfSlide * 2/3 );
 	newSlidingProcess          = max(2, averageLengthOfSlide );
 
 }
@@ -103,7 +124,7 @@ void matrix_set_process(int x,int y) {
 	attrset( COLOR_PAIR(7) | ( prob(2) ? A_BOLD : 0 ) );
 	move(y,x);
 	addch(symbol);
-	thematrix[x][y] = PROCESS;
+	thematrix[x][y] = BLOCKHEAD_PROCESS;
 	attrset(COLOR_PAIR(2));
 }
 
@@ -116,7 +137,7 @@ void slideColumn(int x,bool lastSlide) {
 	for (int y=LINES-1;y>0;y--) {
 		mbit src = thematrix[x][y-1];
 #ifdef WHITE_BITS
-		if (src == PROCESS) {
+		if (src == BLOCKHEAD_PROCESS) {
 			if (lastSlide || prob(slidingProcessDies)) {
 				matrix_set(x,y,randSymbol());
 			} else {
@@ -125,7 +146,10 @@ void slideColumn(int x,bool lastSlide) {
 		} else if (src != ' ' && last == ' ' && !lastSlide && prob(newSlidingProcess)) {
 			matrix_set_process(x,y);
 		} else {
-			matrix_set(x,y,src);
+			if (last == src)
+				thematrix[x][y]=src;
+			else
+				matrix_set(x,y,src);
 		}
 #else
 		matrix_set(x,y,src);
@@ -185,7 +209,7 @@ void main() {
 #ifdef BOTHER_CLOCKING
 	clock_t clocksPerFrame;
 	clock_t lastframe,thisframe;
- 	clocksPerFrame = CLOCKS_PER_SEC / ( LINES < 30 ? 30 : 100 );
+ 	clocksPerFrame = CLOCKS_PER_SEC / ( LINES < 30 ? 30 : 60 );
 	lastframe = clock();
 #endif
 
@@ -193,7 +217,7 @@ void main() {
 
 		// Slide: slide a whole column down n spaces
 
-		for (int x=0;x<COLS;x++) {
+		for (int x=0;x<COLS;x+=sparsenessSkipCols) {
 
 			// Consider changing state
 			int probadd = ( adding[x] ? averageLengthOfBlock : averageLengthBetweenBlocks );
