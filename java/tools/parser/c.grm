@@ -218,11 +218,13 @@ VariableDecl = VariableDeclBeing
              | VariableDeclExist
 
 VariableDeclExist = OptVarMods VarType WS VarNames ";"
-h: ` return ( match.getUp("Class")==null ? "extern " : "" ); ` OptVarMods VarType WS VarNames "; // Exists"
+h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Exists"
 c: ` return ( match.getUp("Class")==null ? match.renderString("normal") : "// Variable declared in .h file" ); `
 
+# NB: If you try putting OptVarMods after `...` you may end up with "extern // fillup ..." in the output :-(
+
 VariableDeclBeing = OptVarMods VarType WS VarNames VarBeing ";"
-h: ` return ( match.getUp("Class")==null ? "extern " : "" ); ` OptVarMods VarType WS VarNames "; // Variable initialised in .c file"
+h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Variable initialised in .c file"
 c: OptVarMods VarType WS Class^<name> ` Match cls=match.getUp("Class"); return ( cls==null ? "" : "::" ); ` VarNames VarBeing ";"
 
 VarType = ArgType

@@ -42,6 +42,9 @@ public class cGrm {
         rule.add(new Atom("WS"));
       ruleset.add(rule);
       rule=new Vector();
+        rule.add(new Atom("Special"));
+      ruleset.add(rule);
+      rule=new Vector();
         rule.add(new Atom("Comment"));
       ruleset.add(rule);
       rule=new Vector();
@@ -63,7 +66,38 @@ public class cGrm {
 
     // Note: Methods given priority because VariableDecl tries to catch eg. "operator==" !
 
+    // Doesn't appear to be picking up in joeylib.c
 
+    ruleset=new RuleSet("Special");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("/*special c*/"));
+        rule.add(new Atom("EndSpecial"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("/*special h*/"));
+        rule.add(new Atom("EndSpecial"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("EndSpecial");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Var("stuff","/"));
+        rule.add(new Atom("ContSpecial"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("ContSpecial");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("/*end special*/"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("/"));
+        rule.add(new Atom("EndSpecial"));
+      ruleset.add(rule);
+    // Replacements
 
     //#### Simple comments and #commands
 
@@ -735,8 +769,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("OptVarMods"));
+      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));
@@ -759,8 +793,8 @@ public class cGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("OptVarMods"));
+      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));

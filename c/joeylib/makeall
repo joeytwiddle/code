@@ -1,3 +1,12 @@
 mkdir -p .comp
-TODO=`echo *.c | tr " " "\n" | grep -v "^joeylib.c$" | tr "\n" " "`
-forall -shell $TODO do make %s
+TODO=`
+	echo *.c |
+	tr " " "\n" |
+	# grep -v "^joeylib.c$" |
+	sed 's/\.c$//' |
+	tr "\n" " "
+`
+for X in $TODO; do
+	./make "$X"
+done
+# forall -shell $TODO do make %s
