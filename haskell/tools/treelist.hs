@@ -2,18 +2,36 @@
 -- rats ghc doesn't like that!
 
 -- Usage:
--- treelist <file> | vi -
--- then start folding
--- and :set foldtext=getline(v:foldstart).'\ \ \ ['.(v:foldend-v:foldstart).'\ lines]'
+--   treelist <file> | vim -
+--     then start folding
+--     and :set foldtext=getline(v:foldstart).'\ \ \ ['.(v:foldend-v:foldstart).'\ lines]'
+
+-- What does it do?
+--   Given a text stream, it looks for a tree-like pattern in the data.
+--   Subsequent lines which start with the same String are grouped together under a branch.
+
+-- Output:
+--   Currently output adds a one of "+.-" to the start of each line (irrelevant),
+--   adds curly braces around branches (needed for my vim folding rule),
+--   and strips the common start-String (replaces it with spaces).
+
+-- Todo:
+--   - Add options allowing user to specify min group size, min diff, and output (when to
+--     strip, whether or not to include a line for each branch, how to group).
+--   - Possibly leave out a single if it == the last branch opening (user has already seen it)
+--     Nah that shouldn't happen (it shouldn't branch on just 1), or maybe it should be an option.
+--   - Could output visualisation of tree branches (oh no not indent passing again!)
 
 -- Design problem:
--- If we don't want it to branch on small differences (eg <3 chars)
--- then we have to keep the path knowledge in the child.
--- Actually, I think it might be OK, because it doesn't branch ["branch","bravo"] until they are searched up to col=2.
--- No I think the problem is there.  To see what's rejected, employ commented code on line: "| same = {- ... -}"
-
--- TODO:
--- Possible leave out a single if it == the last branch opening (user has already seen it)
+--   If we don't want it to branch on small differences (eg <3 chars)
+--     then we have to keep the path knowledge in the child.
+--   Actually, I think it might be OK, because it doesn't branch ["branch","bravo"]
+--     until they are searched up to col=2.
+--   No I think the problem is there.  To see what's rejected, employ commented
+--     code on line: "| same = {- ... -}"
+--   As you can see the code I finished up with is rather inefficient.  I think a slightly
+--     different search design should solve this, but I initially coded with the algorithm
+--     in my head, then realised I needed to change the algorithm and then change the code.
 
 module Main where
 -- import Hlib
