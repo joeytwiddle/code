@@ -1,3 +1,9 @@
+if test ! $IMC_CONFIG_LOADED
+then
+	echo "No config loaded.  Please source your imc config file first."
+	exit 1
+fi
+
 echo
 echo "######## Post-pull operations"
 echo
@@ -53,27 +59,31 @@ echo
 	# 'my $default_usr = "root"' \
 		# $CITYPATH/shared/modules/IMC/Database.pm
 
-echo "Refresh http gets: Can't see $HOST but can see localhost fix"
-WC="$CITYPATH/webcast"
-sedreplace -changes \
-	'getenv("HTTP_HOST")' \
-	'"iraqloopbackhack"' \
-		`greplist "refresh=y" \`find $WC -name "*.php3"\``
-		# $WC/led-process.php3 $WC/front.php3 $WC/new_data-process.php3
-		# `find $CITYPATH/webcast/ -name *.php3`
-# echo
+if test $LOOPBACK_HACK
+then
+	echo "Refresh http gets: Can't see $HOST but can see $LOOPBACK_HACK fix"
+	WC="$CITYPATH/webcast"
+	sedreplace -changes \
+		'getenv("HTTP_HOST")' \
+		"'$LOOPBACK_HACK'" \
+			`greplist "refresh=y" \`find $WC -name "*.php3"\``
+			# $WC/led-process.php3 $WC/front.php3 $WC/new_data-process.php3
+			# `find $CITYPATH/webcast/ -name *.php3`
+	# echo
+fi
 
 echo "Removing incompatible php"
 sedreplace -changes '<!-- <?=\$summary_file?> -->' ' ' "$CITYPATH/webcast/index_imc.php3"
 echo
 
-echo "Applying other patches:"
-cd $CITYPATH/
-for X in /www/tronic-to-buggy-patches/*
-do patch -p0 < "$X"
-done
-cd /www/
-echo
+## Patches were on the old buggy  :=(
+# echo "Applying other patches:"
+# cd $CITYPATH/
+# for X in /www/tronic-to-buggy-patches/*
+# do patch -p0 < "$X"
+# done
+# cd /www/
+# echo
 
 if test "$DOBACKUPB4DEV"
 then

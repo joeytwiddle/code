@@ -10,6 +10,17 @@
 # files on tronic.  Not currently a problem though.  The errors are visible in
 # the output of this script (in the form "send_files failed to open "...).
 
+# . /www/mirror_tronic.conf
+if test "$1" = -conf
+then
+	CONF_FILE="$2"
+	shift; shift
+	. "$CONF_FILE"
+else
+	echo "Usage: $0 <config_file>"
+	exit 1
+fi
+
 if test ! -x `which rsync`
 then
 	echo "Won't work without rsync!  Please install it."
