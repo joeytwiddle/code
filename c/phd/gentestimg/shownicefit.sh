@@ -24,8 +24,8 @@ $DOC tmp.bmp
 -gnuplot
 -showexp
 -rnd $RND
--noise 0.1
 $@";
+# -noise 0.1
 # -imgnoise 0.0
 # -focal 0.1
 
@@ -98,7 +98,7 @@ else
 cursegreen
 echo ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat
 cursenorm
-./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
 mv gplfit.ps gplfit-ranvreal-$F$X.eps
 fi
 done
