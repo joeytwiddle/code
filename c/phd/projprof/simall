@@ -12,99 +12,117 @@ ANGSTEP=10
 # ENDANG=90
 # ANGSTEP=5
 
-# for DOCUMENT in left; do
-for DOCUMENT in left cen right full; do
+# SRCNAME="dar-crpage2-left$numlines"
+# SRCNAME="doc-cen"
+# SRCNAME="doc-cen-more"
+# SRCNAME="dar-crpage2"
+# SRCNAME="leaflet-cen"
 
-	SRCNAME="$DOCUMENT"
+for DOCUMENT in left dar-crpage2-left30; do
+# for DOCUMENT in left cen right full; do
+
+	SRCNAME="simgs/$DOCUMENT"
 
 	# for PPSCANMETHOD in hier; do
 	for PPSCANMETHOD in hier full; do
 
-		# for VVPMETHOD in spacings; do
-		for VVPMETHOD in spacings margins; do
+		for PPMEASURE in square deriv; do
 
-			PPCOM="./pp $MOREPPCOM -deriv -res 180 -adapt 0.03 -maxpixels 2000 -gamma 0.0 -recwid 200 -light"
-			# show bad point -badx 100 -bady 65"
-			if test "$PPSCANMETHOD" = hier; then
-				# Hierarchical scan
-				PPCOM="$PPCOM -dolowresscan -lowres 60 -oth 12 -lowsmooth 1"
-			else
-				# Full PP scan
-				PPCOM="$PPCOM -oth 12"
-			fi
-			if test "$VVPMETHOD" = "margins"; then
-				# Margins method
-				PPCOM="$PPCOM -usetwolines"
-			fi
-			export PPCOM;
+			# for VVPMETHOD in spacings; do
+			for VVPMETHOD in spacings margins; do
 
-			# numlines=30
-			# for numlines in `seq -w 30 -1 02`; do
+				PPPARAMS="
+					-res 180 -adapt 0.03 -maxpixels 2000
+					-$PPMEASURE
+					-gamma 0.0 -recwid 200 -light -oth 12
+				"
+				# show bad point -badx 100 -bady 65"
+				if test "$PPSCANMETHOD" = hier; then
+					# Hierarchical scan
+					PPPARAMS="$PPPARAMS -dolowresscan -lowres 60 -lowsmooth 1"
+				# else
+					# Full PP scan
+					# PPPARAMS="$PPPARAMS"
+				fi
+				if test "$VVPMETHOD" = "margins"; then
+					# Margins method
+					PPPARAMS="$PPPARAMS -usetwolines"
+				fi
+				PPCOM="pp $PPPARAMS"
+				export PPCOM;
 
-				# 	echo
-				# 	echo "LINES: $numlines -----------------------------------------"
+				for NOISE in `seq 0.0 0.2 1.0`; do
 
-				# SRCNAME="dar-crpage2-left$numlines"
-				# SRCNAME="doc-cen"
-				# SRCNAME="doc-cen-more"
-				# SRCNAME="dar-crpage2"
-				# SRCNAME="leaflet-cen"
-				IFILE="$SRCNAME.bmp"
-				RES="results.txt"
-				FOCALRES="focalres.txt"
+					# numlines=30
+					# for numlines in `seq -w 30 -1 02`; do
 
-				rm -rf res
-				mkdir -p res
-				echo "0" > res/.nosync
-				rm -f "$RES"
-				echo "START" > "$RES"
-				rm -f "$FOCALRES"
-				echo "" > "$FOCALRES"
+						# 	echo
+						# 	echo "LINES: $numlines -----------------------------------------"
 
-				roll="90";
-				# for roll in `listnums -6 6`; do
-					for yaw in 60; do
-					# for yaw in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
-						for pitch in 30; do
-						# for pitch in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
+						IFILE="$SRCNAME.bmp"
+						RES="results.txt"
+						FOCALRES="focalres.txt"
 
-							echo
-							echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
-							echo
-							simone "$IFILE" $roll $yaw $pitch
-							FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
-							echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
-							mv genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
-							mv ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
-							extractone $roll $yaw $pitch >> "$RES"
-							gzip res/genres-r$roll-y$yaw-p$pitch.txt
-							gzip res/ppres-r$roll-y$yaw-p$pitch.txt
-							convert "lowresmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
-							convert "ppmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"
-							# convert "overlay.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-3origsim.jpg"
-							# convert "gpl0fit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-2desfit.jpg"
-							# convert "gplfit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
-							convert "origover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
-							convert "recover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-5rec.jpg"
-							# ./showdesiredspacings.sh
-							# convert "gpl1fit.ps" -geometry 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
-							rm -f fit.log
+						rm -rf res
+						mkdir -p res
+						echo "0" > res/.nosync
+						rm -f "$RES"
+						echo "START" > "$RES"
+						rm -f "$FOCALRES"
+						echo "" > "$FOCALRES"
 
-						done # pitch
-					done # yaw
-				# done # roll
+						roll="90";
+						# for roll in `listnums -6 6`; do
+							for yaw in 60; do
+							# for yaw in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
+								for pitch in 30; do
+								# for pitch in `listnums $STARTANG $ENDANG by $ANGSTEP`; do
 
-				# mv "$RES" "lines-$numlines.results"
-				mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$VVPMETHOD.results"
+									echo
+									echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
+									echo
+									simone "$IFILE" $roll $yaw $pitch -imgnoise $NOISE
+									FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
+									echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
+									mv genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
+									mv ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
+									extractone $roll $yaw $pitch >> "$RES"
+									gzip res/genres-r$roll-y$yaw-p$pitch.txt
+									gzip res/ppres-r$roll-y$yaw-p$pitch.txt
+									convert "lowresmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
+									convert "ppmap.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"
+									# convert "overlay.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-3origsim.jpg"
+									# convert "gpl0fit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-2desfit.jpg"
+									# convert "gplfit.ps" -geometry 100 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
+									convert "origover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
+									convert "recover.bmp" -geometry 100 "res/r$roll-y$yaw-p$pitch-5rec.jpg"
+									# ./showdesiredspacings.sh
+									# convert "gpl1fit.ps" -geometry 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
+									rm -f fit.log
 
-			# done lines
+								done # pitch
+							done # yaw
+						# done # roll
 
-			# echo "Press a key"
-			# waitforkeypress
+						gunzip res/*.txt.gz
+						tar cfz "$DOCUMENT-$PPSCANMETHOD-$VVPMETHOD-$NOISE-ppreg.tgz" res/*.txt
 
-		done # vvp method
+						# mv "$RES" "lines-$numlines.results"
+						# mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$VVPMETHOD.results"
+						mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$VVPMETHOD-$NOISE.results"
 
-	done # hvp method
+					# done lines
+
+				done # noise
+
+				# echo "Press a key"
+				# waitforkeypress
+
+			done # vvp method
+
+		done # hvp pp measure
+
+	done # hvp searchspace scan method
 
 done # document
 

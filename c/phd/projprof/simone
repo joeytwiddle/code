@@ -1,9 +1,15 @@
 IFILE=$1
-roll=$2
-yaw=$3
-pitch=$4
+shift
+roll=$1
+shift
+yaw=$1
+shift
+pitch=$1
+shift
+
 OFILE="tmp.bmp"
 INVFILE="tmp-inv.bmp"
+
 # PARAMS="-focal 0.5 -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.4"
 PARAMS="-qnd -centralise -focal 0.5 -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.4"
 # PARAMS="-imgnoise 0.0 -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
@@ -12,8 +18,12 @@ PARAMS="-qnd -centralise -focal 0.5 -noise 0.0 -lines 32 -yoff 0.001 -roll $roll
 # PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-gnuplot -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
+
+PARAMS="$PARAMS $@"
+
 echo ../gentestimg/simgen $PARAMS 
 ../gentestimg/simgen $PARAMS > genres.txt
+
 mv gpldata.txt gpl0data.txt
 mv gplfit.ps gpl0fit.ps
 # gzip "$OFILE"
@@ -21,4 +31,5 @@ echo invert -i "$OFILE" -o "$INVFILE"
 invert -i "$OFILE" -o "$INVFILE"
 echo ./testsim "$INVFILE" "$OFILE"
 rm recover.bmp
+
 time ./testsim "$INVFILE" "$OFILE" | tee ppres.txt
