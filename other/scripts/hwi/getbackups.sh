@@ -1,9 +1,10 @@
+## Note: if script outputs anything then cron will mail it: check same address!
 BACKDIR=/home/joey/.hwibackups
 mkdir -p $BACKDIR
 (
 	cd $BACKDIR &&
 	rm -f problems &&
-	wget -r --no-parent "http://hwi.ath.cx/.backups" ||
+	wget --no-parent -mirror "http://hwi.ath.cx/.backups" 2>&1 ||
 	touch problems
 ) > $BACKDIR/getbackup.log
 if test ! -d $BACKDIR || test -f $BACKDIR/problems
