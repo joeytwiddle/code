@@ -24,12 +24,12 @@ numlines=30
   rm -f "$FOCALRES"
   echo "" > "$FOCALRES"
 
+  STARTANG=20
+  ENDANG=80
+  ANGSTEP=30
   # STARTANG=0
   # ENDANG=90
   # ANGSTEP=5
-  STARTANG=0
-  ENDANG=90
-  ANGSTEP=5
 
   roll="90";
   # for roll in `listnums -6 6`; do
