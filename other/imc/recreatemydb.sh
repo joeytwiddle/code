@@ -5,6 +5,8 @@ echo "######## MYSQL:"
 echo "Destroying and creating fresh $MYSQLDB database"
 mysql << !
 drop database imc;
+!
+mysql << !
 create database imc;
 !
 echo "Repopulating $MYSQLDB database"

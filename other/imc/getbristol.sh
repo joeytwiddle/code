@@ -27,6 +27,7 @@ fi
 # (which presumably people will be submitting to).
 # But if we want to avoid the redirected bristol.indymedia.org, we should
 # use tronic.southspace.net instead throughout this script.
+# Latter now implemented.
 
 if test ! "$UID" = "0"; then
 	echo "ERROR: If you do not run as root, I may not be able to allocate the same owner:groups as on tronic, or overwrite local files not owned by you ($USER)."
@@ -64,25 +65,25 @@ echo
 # Not really needed so much now that we are taking backups automatically elsewhere.
 
 echo "Skipping: cannot sudo without user passwd, but cron@tronic should have dumped the DBs recently anyway."
-# $RSYNC_RSH mike@bristol.indymedia.org sudo su postgres -c /home/mike/bin/dumpdbs.sh
+# $RSYNC_RSH mike@tronic.southspace.net sudo su postgres -c /home/mike/bin/dumpdbs.sh
 
 echo
 echo "--- 2/4 --- Get local copy of DBs ------------------------------------"
 echo
 
-rsync $COMMONPARAMS mike@bristol.indymedia.org:/home/mike/db-backups .
+rsync $COMMONPARAMS mike@tronic.southspace.net:/home/mike/db-backups .
 
 echo
 echo "--- 3/4 --- Get local copy of code and generated pages ---------------"
 echo
 
-rsync $COMMONPARAMS mike@bristol.indymedia.org:/www/active-cvs/bristol /www/active-cvs/
+rsync $COMMONPARAMS mike@tronic.southspace.net:/www/active-cvs/bristol /www/active-cvs/
 
 echo
 echo "--- 4/4 --- Get local copy of site's uploads ---------------"
 echo
 
-rsync $COMMONPARAMS mike@bristol.indymedia.org:/www/uploads/bristol /www/uploads
+rsync $COMMONPARAMS mike@tronic.southspace.net:/www/uploads/bristol /www/uploads
 
 date > /www/last-got-bristol.at
 

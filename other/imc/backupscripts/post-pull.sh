@@ -2,16 +2,16 @@ echo
 echo "######## Post-pull operations"
 echo
 
-echo "Todo:"
-echo "Put warning signs on the site if it is not a fully active mirror."
-echo '(eg. "please hold your article / post until main site back up")'
-echo
 # More notes:
 # The SQL log on tronic is linked outside the tree.  I couldn't be bothered to download it.  I created a similar directory+file outside the tree on buggy so the link works.
 
 export CITYPATH="/www/active-cvs/bristol"
 
 source /root/j/startj simple
+
+echo 'Putting "Warning: mirror" notice on the site.'
+sedreplace -changes '.*Please refrain' '<font color="#ff8080" size="+2">Please note: You are viewing a mirror / backup of the main site.  <b>Any submissions made here WILL be LOST!</b></font><p><font color="#ffffff">Please refrain' "$CITYPATH/local/include/imcfront-header.inc"
+echo
 
 echo "Giving www-data owner privilege on all bristol imc files"
 chown www-data:imc $CITYPATH/ /www/uploads/bristol/ -R
@@ -70,7 +70,7 @@ echo
 
 
 if test $1; then
-	echo "Skipping rest cos argument passed."
+	echo "Skipping DB creation cos argument passed."
 	exit 0
 fi
 

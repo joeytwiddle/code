@@ -6,7 +6,8 @@
 TIME=`date`
 SITE="bristol.indymedia.org"
 KEYSTRING="B R I S T O L indymedia"
-MAILONERROR="pclark@cs.bris.ac.uk"
+MAILONERROR="joey@hwi.ath.cx"
+# MAILONERROR="pclark@cs.bris.ac.uk martin@appdev.co.uk miketonks@blueyonder.co.uk"
 
 LOGFILE="/tmp/checksite.log"
 DLDIR="/tmp/$SITE"
@@ -47,18 +48,18 @@ else
 		echo
 		echo "$TIME"
 		echo
-		echo "Hi this is $0 running as $USER on $HOSTNAME (aka $HOST)."
+		echo "Hi this is $0 running on $HOSTNAME ($HOST)."
 		echo
 		echo "I tried to download http://$SITE/ to check the active site is delivering the front page OK."
 		echo "But either it didn't download, or it doesn't contain the key string \"$KEYSTRING\""
 		echo
-		echo "-------------------- Here is the log $LOGFILE:"
+		echo "-------------------- Now follows the log $LOGFILE:"
 		cat "$LOGFILE"
 		echo
-		echo "-------------------- Here is the file I retrieved: $DLFILE"
+		echo "-------------------- Now follows the file I retrieved: $DLFILE"
 		cat "$DLFILE"
 		echo
 
-	) 2>&1 | mail -s "Error retrieving $SITE" "$MAILONERROR"
+	) 2>&1 | mail -s "Error retrieving $SITE" $MAILONERROR
 
 fi
