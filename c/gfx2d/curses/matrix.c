@@ -14,6 +14,7 @@
  *    Block SIGINT etc calls (for CTRL+C/Z), on keypress ask for password, check with "su - $USER /bin/true" before allowing exit.
  *  Timing: if machine does not approach our optimal FPS, then it will have its own based on how many columns are sliding.  This should be kept constant!  ATM it will vary wrt that #.  Probably better to cap max (and min) sliding columns.
  *  Writing/clearing processes should be in proportion to desired density!
+ *  Consider: Instead of starting and stopping rows randomly (probabilistically), keep the number of sliding rows constant.
 **/
 
 /** How the matrix works (my interpretation anyway, and the one implemented here):
@@ -29,6 +30,10 @@
  *  The actual content of the data and the way it changes appears to be pretty random.  Unless you know how to read it.  ;)
  *  My implementation is pretty probabilistic, with different things starting and stopping according to a desired average (a die with a fixed number of sides, one marked true).
  *  I assume processes do not like to waste time, so encourage them to die if they get bored (eg. a static process in a static column, a clearing process in an empty column), and on creation their type is chosen according to the state of the column.
+**/
+
+/** BUGS:
+ *  Run maxmised, and defocus your eyes.  There appears to be a process or two constantly flickering on different parts of the matrix, preumably because they never settle.  This is undesirable.  Or is it just the cursor?  On my machine the desired fps is not met so maybe I am just seeing that.
 **/
 
 #include <time.h>
