@@ -62,6 +62,7 @@ int main(int argc,String *argv) {
 	int numlines=a.intafter("-lines","number of lines in paragraph",10);
 	float propsize=a.floatafter("-size","size of page (prop to img width)",0.1);
 	a.comment("Noise on groundtruth data:");
+	bool dornd=!a.argexists("-nornd","don't randomise (for debug/comparison)");
 	float noise=a.floatafter("-noise","noise on line points",0.0*640/imgwidth);
 	int numinserts=a.intafter("-ins","number of noisy inserts",0);
 	int numrems=a.intafter("-rems","number of random removals",0);
@@ -236,7 +237,8 @@ int main(int argc,String *argv) {
 		// printf("	%f\n",inta.y);
 	}
 
-	randomise();
+	if (dornd)
+		randomise();
 	for (int i=0;i<numinserts;i++) {
 		// int a = intrnd(0,lines.len-2);
 		// int a=lines.len/2+lines.len/3*floatrnd(-1.0,1.0);

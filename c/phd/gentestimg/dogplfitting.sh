@@ -27,7 +27,14 @@ SRCDIR="../gentestimg"
 		echo "W=$W"
 	fi
 
+	# Fitting
 	cat "$SRCDIR/fitgnuplot2-$METHOD.txt"
+
+	# Plotting
+	if test -f "title.dogpl"; then
+		cat title.dogpl
+		# rm title.dogpl
+	fi
 	cat "$SRCDIR/fitgnuplot2-plot.txt" |
 		if test ! "$W" = ""; then
 			grep -v "^plot "
@@ -36,6 +43,7 @@ SRCDIR="../gentestimg"
 		fi
 
 	if test ! "$W" = ""; then
+		# echo 'plot "gpldata.txt" w p 7,f(x),e(x)'
 		echo 'plot "gpldata.txt" w p 7,f(x),e(x)'
 	fi
 
