@@ -22,16 +22,18 @@ accurate rectification.
 
 \begin{figure}[h]
 \begin{centering}
-  \subfigure[{\small Original Image}]{\epsfig{figure=images/chem002.ps,width=40mm}\label{runorig}}
+  % \subfigure[{\small Original Image}]{\epsfig{figure=images/chem002.ps,width=40mm}\label{runorig}}
+  \subfigure[{\small Original Image}]{\epsfig{figure=images/prlrunning/original.eps,width=40mm}\label{runorig}}
   \hspace*{1mm}
-  \subfigure[{\small Located text region}]{\frame{\epsfig{figure=images/chem002blob.ps,width=40mm}\label{runblobbed}}}
+  % \subfigure[{\small Located text regions}]{\frame{\epsfig{figure=images/chem002blob.ps,width=40mm}\label{runblobbed}}}
+  \subfigure[{\small Located regions of interest}]{\frame{\epsfig{figure=images/prlrunning/blobbed.eps,width=40mm}\label{runblobbed}}}
   \hspace*{1mm}
-  \subfigure[{\small After adaptive thresholding}]{\frame{\epsfig{figure=images/chem002bin.ps,width=40mm}\label{runbin}}}
+  % \subfigure[{\small After adaptive thresholding}]{\frame{\epsfig{figure=images/chem002bin.ps,width=40mm}\label{runbin}}}
+  \subfigure[{\small One region after adaptive thresholding}]{\frame{\epsfig{figure=images/prlrunning/binarised.eps,width=40mm}\label{runbin}}}
 \label{runprep}
 \caption{Preparation of paragraph for planar recovery}
 \end{centering}
 \end{figure}
-
 
 In order to analyse the paragraph shape, we first require a classification of
 the text and background pixels to obtain a binary representaion.  Dealing with regions of text only, this

@@ -36,8 +36,8 @@ Now using simple perspective projection ratios, we have:
 \end{eqnarray}
 {\parindent 0mm
 where $f$ is the focal length of the camera. Hence, the perspective projection
-of the  $n$th line in the image plane after replacing from (\ref{nthline}) into
-(\ref{spacingspq1}) is: 
+of the  $n$th line in the image plane, after substituting \refeqn{nthline} into
+\refeqn{spacingspq1}, is: 
 }
 \begin{eqnarray}
 y(n) =  f \frac{ \myvec{P}_y + n \myvec{Q}_y }{ \myvec{P}_z + n\myvec{Q}_z } \label{spacingspq}
@@ -63,43 +63,42 @@ A least-squares fit of $O(n)$ to the function $y(n)$ should now yield values for
 However, since it is common for documents to also contain lines of text which are not part of an evenly spaced paragraph, and for extraneous elements to enter the data, the $n$th line observed in the image may lose correspondence with the $n$th line in the paragraph model.
 % For example, an outlier at position $n=K$ would cause all successive observations 
 % When fitting the curve of $y(n)$ against $n$, one such outlier at $n=K$ would cause all succesive observations ($n>K$) to have 
-In the presence of such outliers, fitting a set of points $(n,O(n))$ to the curve $y(n)$ 
-will be problematic, since any outlier will break the correspondence between the x and y coordinates of successive points.
+In the presence of such outliers, fitting a set of points $(n,O(n))$ to the curve $(n,y(n))$ 
+is problematic, since any outlier will break the correspondence between the $x$
+and $y$ coordinates of successive points.
 % in the presence of outliers is problematic, since we cannot guarantee the linkage of all the point's x and y coordinates.
 % To fit a curve of position $y(n)$ against line number $n$ would be unwise in this situation.
 % An alternative curve which may be taken from the data and remains unaffected by line number, is the ratio of 
 % Fortunately it is possible to derive two $n$-invariant observations from the image which
 % To prevent the progression of an outlier through successive observations, we must use 
-It is therefore preferable to fit the curve of
-{\em line spacing} $Y_n$ against {\em position} $X_n$, defined as:
+It is therefore preferable to remove the direct dependence of the points on $n$
+by instead fitting the curve of {\em line spacing} $Y_n$ against {\em position} $X_n$, defined as:
 
 \begin{eqnarray}
 Y_n = y(n+1)-y(n) & \mbox{~~~~~~~~~~~~~~~line spacing} \label{linespacingsdefneqn} \\
 X_n = y(n) & \mbox{~~~~~~~~~~~~~~~line position} \label{linepositiondefneqn}
 \end{eqnarray}
 
-***** Not finished
-
-In this case any odd lines will appear as isolated outliers in line spacing, but will not propagate through the remaining $X_n$. % points.
+In this case any odd lines will appear as isolated outliers with an incorrect line spacing, but the error will not propagate through the remaining $X_n$. % points.
 By substituing \refeqn{spacingsvweqn} into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of $Y$ in terms of $X$ may be written in two parts:
 }
 
 \begin{equation}
-Y(X) = U ( \frac{1+(n(X)+1)V}{1+(n(X)+1)W} - \frac{1+n(X)V}{1+n(X)W} )
+Y(X) = U \frac{1+(n(X)+1)V}{1+(n(X)+1)W} - U \frac{1+n(X)V}{1+n(X)W}
 \label{fittingeqn}
 \end{equation}
 
 {\parindent 0mm
-with $n(X)$ derived by a similar substitution of \refeqn{spacingsvweqn} into the definition of line position \refeqn{linepositiondefneqn} and rearranging to:
+with $n$ in terms of $X$ derived by a similar substitution of \refeqn{spacingsvweqn} into the definition of line position \refeqn{linepositiondefneqn} and rearranging to:
 }
 
 \begin{equation}
-n(X) = \frac{X-U}{XW-UV}
+n(X) = \frac{X-U}{UV-XW}
 \label{nfromxeqn}
 \end{equation}
 
-Initial parameters $V$ and $W$ are chosen for line fitting using a simple estimate for the error optimisation.
-However, due to the complexity of \ref{fittingeqn} and \ref{nfromxeqn}, many false minima exist, and one of these may be converged upon during optimisation.
+Initial parameters $V$ and $W$ are chosen for line fitting using a simple estimate. % for the error optimisation.
+However, due to the complexity of \refeqn{fittingeqn} and \refeqn{nfromxeqn}, many false minima exist, and one of these may be converged upon during optimisation.
 Therefore, to refine the parameters, an initial fit is made with an approximation of \refeqn{fittingeqn}:
 
 \begin{equation}
@@ -107,17 +106,15 @@ Y(X) = \frac{ UV }{ 1+n(X)W }
 \end{equation}
 
 This ensures that parameters close to the desired minima are obtained before the final fitting.  Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
-By reversing the rotation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
+A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
+After reversing the transformation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
 % We therefore fit the measured positions against spacing $(y(n),y(n+1)-y(n))$ to the model:
 
 \begin{figure}[t]
 \begin{centering}
-  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=40mm}\label{vvpaccuracya}}
-	\hspace{2mm}
-  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=40mm}\label{vvpaccuracyb}}
-  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=40mm}\label{vvpaccuracyc}}
-\caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
-\label{vvpaccuracy}
+\epsfig{figure=images/prlrunning/gplfit.ps,width=75mm}
+\caption{The final fitting of \refeqn{fittingeqn} to the observed line spacing.}
+\label{fittinggraph}
 \end{centering}
 \end{figure}
 
@@ -149,6 +146,18 @@ method is that it provides consistent results for paragraphs which are not fully
 justified.
 % In contrast, the poor performance of the margins method when dealing with documents which are not fully justified can be seen in \reffig{vvpaccuracyc}.
 
+\begin{figure}[t]
+\begin{centering}
+  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=42mm}\label{vvpaccuracya}}
+  \hspace{2mm}
+  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=42mm}\label{vvpaccuracyb}}
+  \hspace{2mm}
+  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=42mm}\label{vvpaccuracyc}}
+\caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
+\label{vvpaccuracy}
+\end{centering}
+\end{figure}
+
 The results for these experiments, and the location of the horizontal vanishing
 point in \refsect{locatehvpsect}, are shown numerically in
 \reftab{accuracytable}. 
@@ -159,7 +168,7 @@ horizontal and vertical vectors of the text plane.
 It can be seen that the accuracy of location of the vertical vanishing point in
 reasonable for both the margin intersection and the line spacings method. 
 As the last row of \reftab{accuracytable} shows, intersecting margins is not
-suitable for documents with jagged edges. 
+suitable for documents with jagged edges.
 
 \begin{table}[t]
   \begin{center}
@@ -230,9 +239,11 @@ of the paragraph of text.
 % \epsfig{figure=images/chem002001recover.ps,height=54mm}
 % \hspace{2mm}
 % \epsfig{figure=images/chem010recover.ps,height=54mm}
-\subfigure[Recovery of running example]{\epsfig{figure=images/chem002001recover.ps,height=52mm}}
+% \subfigure[Recovery of running example]{\epsfig{figure=images/chem002001recover.ps,height=52mm}}
+\subfigure[Recovery of running example]{\epsfig{figure=images/prlrunning/recover.eps,height=52mm}}
 \hspace{2mm}
-\subfigure[Suitable for OCR]{\epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}}
+% \subfigure[Suitable for OCR]{\epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}}
+\subfigure[Suitable for OCR]{\epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{arthurcclarke}}
 \end{center}
 %\vspace{-3mm}
 \caption{Fronto-parallel recovery of example documents in \reffig{summaryfig}.}

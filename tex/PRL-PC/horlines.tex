@@ -39,7 +39,8 @@ the text region itself (the central hole in \reffig{ppmap}).
 \label{searchspacediag}
 }
 \hspace{5mm}
-\subfigure[Scores for all projection profiles in $C$ generated from \reffig{runbin}]{\epsfig{figure=images/chem002ppmap.ps,width=45mm}\label{ppmap}}
+% \subfigure[Scores for all projection profiles in $C$ generated from \reffig{runbin}]{\epsfig{figure=images/chem002ppmap.ps,width=45mm}\label{ppmap}}
+\subfigure[Scores for all projection profiles in $C$ generated from \reffig{runbin}]{\epsfig{figure=images/prlrunning/ppmap.eps,width=45mm}\label{ppmap}}
 \end{center}
 \vspace*{0mm}
 \caption{Search space $C$}
@@ -81,6 +82,33 @@ to map from this axis into the range of the bins of the projection profile.  }
 
 
 
+\begin{figure}[t]
+\centering
+\begin{center}
+% \epsfig{figure=images/chem002projprofs.ps,width=85mm}
+\subfigure[Generating a projection profile of the text from vanishing point ${\bf V}$.]{
+	\begin{tabular}{c}
+		\epsfig{figure=images/prlrunning/fan93img.eps,width=70mm}\label{projproffing}
+	\end{tabular}
+}
+\subfigure[The winning projection profile and a poor example]{
+	\begin{tabular}{c}
+		\epsfig{figure=images/prlrunning/bestpp.eps,width=40mm} \\
+		\epsfig{figure=images/prlrunning/badpp.eps,width=40mm}
+		\label{projprofs}
+	\end{tabular}
+}
+% \epsfig{figure=images/prlrunning/fan93img.eps,width=40mm}
+\end{center}
+\vspace*{0mm}
+% \caption{Two potential vanishing points $\myvec{V}_A$ and $\myvec{V}_B$, and their projection profiles.}
+\caption{Generating projection profiles from \reffig{runbin}}
+\label{projprofsfig}
+\end{figure}
+
+
+
+
 In our case, instead of an angle $\phi$, we have a point of projection
 $\myvec{V}$ on the image plane, which has two degrees of freedom.  Our bins,
 rather than representing parallel slices of the image along a particular
@@ -101,12 +129,16 @@ $\myvec{V}$. $ \Delta \theta$ is obtained from
 %$ \Delta \theta =
 %\mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) $
 
-\begin{equation} \Delta \theta = \mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) \end{equation}
+% \begin{equation} \Delta \theta = \mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) \end{equation}
+\begin{equation} \Delta \theta = \mbox{ang}(\myvec{T}_{\mbox{\tiny L}},\myvec{T}_{\mbox{\tiny R}}) \end{equation}
 
 { \parindent 0mm 
-where $\myvec{t}$ is a vector perpendicular to $\myvec{V}$ with
-magnitude equal to the radius of the bounding circle of the text region (shown
-in \reffig{projprofs}).  Unlike $s$ in (\ref{classicproj}), it can be seen that
+% where $\myvec{t}$ is a vector perpendicular to $\myvec{V}$ with
+% magnitude equal to the radius of the bounding circle of the text region
+where $\myvec{T}_{\mbox{\tiny L}}$ and $\myvec{T}_{\mbox{\tiny R}}$ are the two
+points on the bounding circle whose tangents pass through $\myvec{V}$
+(shown
+in \reffig{projproffing}).  Unlike $s$ in (\ref{classicproj}), it can be seen that
 $\Delta \theta$ is dependent on the point of projection $\myvec{V}$.  In fact
 $\Delta \theta \rightarrow 0$ as $\myvec{V}_r \rightarrow \infty$ since more
 distant vanishing points view the text region through a smaller angular range.
@@ -161,18 +193,6 @@ different projection unless we focus on the relevant range.
 % with a lower resolution of bins and a simplistic model
 % of pixel contribution.
 
-\begin{figure}[t]
-\centering
-\begin{center}
-\epsfig{figure=images/chem002projprofs.ps,width=85mm}
-\end{center}
-\vspace*{0mm}
-\caption{Two potential vanishing points $\myvec{V}_A$ and $\myvec{V}_B$, and
-their projection profiles.}
-\label{projprofs}
-\end{figure}
-
-
 Having accumulated projection profiles for all the hypothesised vanishing points
 using (\ref{persproj}), a simple measure of confidence should be
 applied to each projection profile $B$ to mark its significance.
@@ -186,7 +206,13 @@ derivative-squared-sum of the projection profiles, where:
 \begin{equation} \mbox{Squared-sum: } \hspace*{5mm} S(B) = \sum_{i=1}^{N}{{B_{i}}^{2}} \end{equation}
 \begin{equation} \mbox{Derivative-squared-sum: } \hspace*{5mm} S_d(B) = \sum_{i=1}^{N-1}{{(B_{i+1}-B_{i}})^{2}} \end{equation}
 
+The derivative measure $S_d(B)$ proved far more resilient to noise than the
+other measures, which were easily mislead to view narrow paragraphs from the
+top or bottom, rather than the side.
+This made $S_d(B)$ the only viable measure for the hierarchical scan or noisy
+images.
 
+\begin{comment}
 The entropy measure $E(B)$ performed significantly worse in all the above
 measures.  $S(B)$ and $S_d(B)$ always responded well with the $S(B)$ measure
 deteriorating rapidly as the image became noisier. CHECK JOEY.  $S_d(B)$
@@ -194,14 +220,17 @@ responded best even in presence of noise and is also more efficient to compute.
 The confidence of each of the vanishing points with regard to the binarised text
 in \reffig{runbin} is plotted in \reffig{ppmap}, where darker pixels represent a
 larger squared-sum, and a more likely vanishing point.
+\end{comment}
 
-\begin{figure}[b!]
+
+\begin{figure}[t!]
 \centering
 \begin{center}
-\subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,width=41mm}\label{simulated-full}} 
-\subfigure[Left justified]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}} 
-\subfigure[Left justified with extranneouselements]
-{\epsfig{figure=images/simulated-left-more.ps,width=34mm}\label{simulated-left-more}} 
+\subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,height=36mm}\label{simulated-full}} 
+% \subfigure[Left justified]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}} 
+\subfigure[Centrally justified]{\epsfig{figure=images/simulated-cen.ps,height=36mm}\label{simulated-left}} 
+\subfigure[Left justified with extranneous elements]
+{\epsfig{figure=images/simulated-left-more.ps,height=36mm}\label{simulated-left-more}} 
 \end{center}
 \vspace*{0mm}
 \caption{Examples of simulated images used for performance analysis.}
@@ -233,25 +262,25 @@ example of a poor projection profile are shown in \reffig{projprofs}, and
 marked in \reffig{ppmap} with a white cross and a black cross respectively.
 % The hierarchical search reduces the processing time on a Sun Enterprise from
 % over two minutes to under ten seconds.
-It is worth noting that for this adapted algorithm, again the derivative measure
-$S_d(B)$ performs far more efficiently than the sqaured-sum and entropy
-measures, in that they can mislead the hierarchical search by also responding
-favourably to the {\em vertical} vanishing point of a `thin' document, i.e. a
-document which has been rotated about its vertical axes. 
 
+% It is worth noting that for this adapted algorithm, again the derivative measure
+% $S_d(B)$ performs far more efficiently than the sqaured-sum and entropy
+% measures, in that they can mislead the hierarchical search by also responding
+% favourably to the {\em vertical} vanishing point of a `thin' document, i.e. a
+% document which has been rotated about its vertical axes.
 
-JOEY- Can we say something more about noise similar to this commented 
-paragraph I found in your tex file? basically we need to state a little more
-clearly about the reaction of our confidence measure to noise.
-Whilst different types of noise can create different problems,
-in general noisy pixels affect all of the projection profiles similarly,
-and the horizontal vanishing point still retains the greatest confidence.
-Despite general image noise and the resolution of the search space, this method 
-has consistently provided a good estimate of the 
-horizontal vanishing point in our experiments.
-Note that if the best projection profile is found on the edge of the unit
-circle, then the vanishing point is effectively at an infinite distance, and the
-horizontal axis of the text plane is parallel with the image plane.
+% JOEY- Can we say something more about noise similar to this commented 
+% paragraph I found in your tex file? basically we need to state a little more
+% clearly about the reaction of our confidence measure to noise.
+% Whilst different types of noise can create different problems,
+% in general noisy pixels affect all of the projection profiles similarly,
+% and the horizontal vanishing point still retains the greatest confidence.
+% Despite general image noise and the resolution of the search space, this method 
+% has consistently provided a good estimate of the 
+% horizontal vanishing point in our experiments.
+% Note that if the best projection profile is found on the edge of the unit
+% circle, then the vanishing point is effectively at an infinite distance, and the
+% horizontal axis of the text plane is parallel with the image plane.
 
 In order to assess the performance of the algorithm, simulated images such as
 those in \reffig{simimages} were generated at various orientations ranging from
@@ -266,29 +295,60 @@ from the ground truth $\myvec{H}_{\mbox{\small gt}}$, given by
 \end{equation}
 
 As can be seen, the proposed method achieves excellent accuracy across a wide
-range of orientations. However, not unexpectedly, the performance begins to drop
-as the orientation of the plane approaches $90^\circ$ in yaw or pitch. In these
-cases, the document has been rotated so as to be almost orthogonal to the view
-plane, and hence nearly invisible in the image, explaining the reduction in
-performance. The slope of the graph at low yaw may be attributed to the
+range of orientations. However, not unexpectedly, the performance begins to
+drop as the orientation of the plane approaches $90^\circ$ in yaw or pitch. In
+these cases, the document has been rotated so as to be almost orthogonal to the
+view plane, and hence nearly invisible in the image, explaining the reduction
+in performance. The slope of the graph at low yaw may be attributed to the
 discretisation of the search space $C$. Since the vanishing points in these
 situations lie close to infinity, the distances of the located vanishing points
 can not be precise. Nevertheless, the vanishing point chosen will be in the
-correct direction, and suitably large so as not to affect further processing. A
-numerical analysis of the performance is given in \reftab{accuracytable} and
+correct direction, and suitably large so as not to affect further processing.
+
+To determine the affect of noise on the performance, we performed the same test
+repeatedly on images with increasing amounts of speckled noise, and averaged the
+results over the different orientations.  \reffig{noiseFullVHier} shows the
+average accuracy of recovery of the horizontal vanishing point against image noise.
+The results when using a full scan of the search space are also plotted, to
+demonstrate that there is no loss of accuracy when using the hierarchical scan.
+A numerical analysis of the performance is given in \reftab{accuracytable} and
 discussed at the end of this paper.
 
 
 \begin{figure}[t]
 \centering
 \begin{center}
-% \frame{
-\epsfig{figure=images/accuracy-hvp-jagged,width=60mm,angle=-90}
-% }
+% \epsfig{figure=images/accuracy-hvp-jagged,width=60mm,angle=-90}
+% \end{center}
+% \vspace*{0mm}
+% \caption{Accuracy of recovery of the horizontal vanishing point for simulated
+% paragraphs at various orientations. SHOULD COMBINE WITH NEXT FIGURE}
+% \label{hvpaccuracy}
+% \end{figure}
+\subfigure[
+	Accuracy of recovery of a simulated paragraph at various orientations.
+]{
+	\epsfig{figure=images/accuracy-hvp-jagged.eps,width=40mm,angle=-90}
+	\label{hvpaccuracy}
+} 
+\hspace*{4mm}
+\subfigure[
+	Accuracy averaged over all orientations plotted against
+	increasing image noise.
+]{
+	\epsfig{figure=images/accuracy-against-noise-on-full-and-hier.eps,height=40mm}
+	\label{noiseFullVHier}
+} 
+% \begin{figure}[t]
+% \centering
+% \begin{center}
+% \epsfig{figure=images/accuracy-against-noise-on-full-and-hier.eps,width=80mm}
 \end{center}
-\vspace*{0mm}
-\caption{Accuracy of recovery of the horizontal vanishing point for simulated paragraphs at various orientations.}
-\label{hvpaccuracy}
+% \vspace*{0mm}
+% \caption{Average accuracy of recovery of the horizontal vanishing point for
+% simulated paragraphs against increasing image noise.}
+% \label{noiseFullVHier}
+\caption{Accuracy of recovery of the horizontal vanishing point.}
 \end{figure}
 
 
