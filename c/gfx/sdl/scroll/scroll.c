@@ -99,38 +99,37 @@ void setuplookups() {
 // #define minmaxinto(x,y,v,w) { if ((x)<(y)) { v=(x); w=(y); } else { v=(y); w=(x); } }
 #define minmaxinto(x,y,v,w) { typeof(v) xa=(x), ya=(y); if ((xa)<(ya)) { v=(xa); w=(ya); } else { v=(ya); w=(xa); } }
 
-#define TXTWID (10*8)
-#define TXTHEI 24
+#define TXTWID (10*7)
+#define TXTHEI 23
 char text[TXTHEI][TXTWID] =
 {
-	"  00      00      OO      00      00      OO      OO      00      00     OO     ",
-	"  00      00      OO      00      00      OO      OO      00      00     OO     ",
-	"                                                                                ",
-	"                                                                                ",
-	"                                                                                ",
-	"                                                                                ",
-	"                                                                                ",
-	"00  OO  000000  00  00  0000      00    00      OO  OO  000000  000000          ",
-	"00  OO  000000  00  00  0000O    O00O   00      OO  OO  000000  000000          ",
-	"00O 00  00      00  00  00  00  00  00  00      OO  OO    00    00              ",
-	"00OO00  00      00  00  00  00  00  00  00      OO  OO    00    00              ",
-	"0OOO00  0000    00  00  0000O   000000  00      OOOOOO    00    0000            ",
-	"00OO00  0000    00  00  0000O   000000  00       OOOO     00    0000            ",
-	"00 O00  00      00  00  00  0O  00  00  00        OO      00    00              ",
-	"00  00  00      00  00  00  00  00  00  00        OO      00    00              ",
-	"00  00  000000  000000  00  00  00  00  000000    OO      00    000000          ",
-	"00  00  000000   0000   00  00  00  00  000000    OO      00    000000          ",
-	"                                                                                ",
-	"                                                                                ",
-	"                                                                                ",
-	"                                                                                ",
-	"                                                                                ",
-	"  00      00      OO      00      00      OO      OO      00      00     OO     ",
-	"  00      00      OO      00      00      OO      OO      00      00     OO     "
+	"  0      0      O      0      0      O      O      0      0     O     ",
+	"  0      0      O      0      0      O      O      0      0     O     ",
+	"                                                                      ",
+	"                                                                      ",
+	"                                                                      ",
+	"                                                                      ",
+	"                                                                      ",
+	"0   O  00000  0   0  000      0    0      O   O  00000  00000         ",
+	"0   O  0      0   0  0  O    O O   0      O   O    0    0             ",
+	"0O  0  0      0   0  0   0  0   0  0      O   O    0    0             ",
+	"00  0  0      0   0  0  O   0   0  0      O   O    0    0             ",
+	"0 O 0  000    0   0  OOO    00000  0       O O     0    000           ",
+	"0  00  0      0   0  0  O   0   0  0        O      0    0             ",
+	"0  O0  0      0   0  0   0  0   0  0        O      0    0             ",
+	"0   0  0      0   0  0   0  0   0  0        O      0    0             ",
+	"0   0  00000   000   0   0  0   0  00000    O      0    00000         ",
+	"                                                                      ",
+	"                                                                      ",
+	"                                                                      ",
+	"                                                                      ",
+	"                                                                      ",
+	"  0      0      O      0      0      O      O      0      0     O     ",
+	"  0      0      O      0      0      O      O      0      0     O     "
 };
 
 #define SCALECONST ((float)SCRWID/32.0/82.0)
-#define PADDING 8
+#define PADDING 2
 #define cr (SCRHEI/(TXTHEI+PADDING*2))
 
 SDL_Surface *screen;
@@ -143,13 +142,16 @@ int whitePixel;
 
 float freq[TXTHEI];
 float off[TXTHEI];
+float mag[TXTHEI];
+float cen[TXTHEI];
 float speed[TXTHEI];
 float space[TXTHEI];
 
 void setSpeed(int i) {
+	float mess=(1.0+cos((float)frames*0.01))/2.0;
 	// speed[i]=9.0+2.0*sin(freq[i]*M_PI*frames);
-	speed[i]=SCALECONST*(12.0+3.0*sin(off[i]+freq[i]*M_PI*frames));
-	space[i]=speed[i]*(float)cr/4.0;
+	speed[i]=0.2*SCALECONST*square((cen[i]+mess*mag[i]*sin(off[i]+freq[i]*M_PI*(float)frames))/3.0);
+	space[i]=speed[i]*(float)cr/6.0;
 }
 
 void init() {
@@ -161,26 +163,40 @@ void init() {
 		// space[i]=speed[i]*(float)cr/8.0;
 		// freq[i]=0.01*frand();
 		// freq[i]=(float)i/(float)TXTHEI/100.0;
-		off[i]=0; // 2.0*M_PI*frand();
-		freq[i]=0.005*(float)((int)(4.0*frand()))/4.0;
+		off[i]=2.0*M_PI*frand();
+		freq[i]=0.002*frand();
+		mag[i]=25.0*frand();
+		// mag[i]=5.0+20.0*sin(M_PI*(float)i/(float)TXTHEI);
+		// cen[i]=12.0+0.5*frand();
+		cen[i]=30.0; // +2.0*frand();
 		setSpeed(i);
 	}
 	// dstrect.w=cr/2;
 	// dstrect.h=cr/2;
 	blackPixel=SDL_MapRGB(screen->format,0,0,0);
-	whitePixel=SDL_MapRGB(screen->format,255,255,255);
+	whitePixel=SDL_MapRGB(screen->format,255,60,40);
 	screenrect.x=0;
 	screenrect.y=0;
 	screenrect.w=SCRWID;
 	screenrect.h=SCRHEI;
-	frames=12345;
+	frames=0;
 }
 
 void plotBlob(int x,int y,int w,int h,int c) {
-	dstrect.x=x+w/4;
-	dstrect.y=y+h/4;
-	dstrect.w=(w<4?1:w/2);
-	dstrect.h=h/2;
+#define RECTSHRINK 2
+	dstrect.x=x+RECTSHRINK;
+	dstrect.w=(w<RECTSHRINK*2+1?1:w-RECTSHRINK*2);
+	dstrect.y=y+RECTSHRINK;
+	dstrect.h=h-RECTSHRINK*2;
+	// dstrect.x=x;
+	// dstrect.x=x+w/4;
+	// dstrect.w=(w<4?1:w/2);
+	// dstrect.y=y+h/4;
+	// dstrect.h=h/2;
+	// dstrect.x=x;
+	// dstrect.w=w+1;
+	// dstrect.y=y;
+	// dstrect.h=h;
 	SDL_FillRect(screen,&dstrect,c);
 }
 
