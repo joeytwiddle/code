@@ -2,6 +2,9 @@
 
 # export PATH="$PATH:."
 
+# DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
+# DOCUMENTS="left cen right full"
+
 DOCUMENTS="left dar-crpage2-left30"
 # PPSCANMETHODS="hier full"
 PPSCANMETHODS="hier"
