@@ -1,3 +1,8 @@
+-- Usage:
+-- treelist <file> | vi -
+-- then start folding
+-- and :set foldtext=getline(v:foldstart).'\ \ \ ['.(v:foldend-v:foldstart).'\ lines]'
+
 -- module Main where
 -- import Hlib
 import System
@@ -13,18 +18,18 @@ instance Show Tree where
   -- show (Leaf ss) = concat (map addn ss)
     -- where addn s = s++"\n"
 
-showTree sofar indent (Layer l t) = indent++l++"\n" ++ showTree (sofar++l) (indent++(replicate (length l) ' ')) t
-showTree sofar indent (Single s) = (sofar++""++s++""++"\n")
-showTree sofar indent (MinBranch bs) = indent++" {\n" ++ concat (map (showTree sofar (indent)) bs)++ indent++"}\n"
+showTree sofar indent (Layer l t) = "| "++indent++l++"\n" ++ showTree (sofar++l) (indent++(replicate (length l) ' ')) t
+showTree sofar indent (Single s) = ". "++(sofar++""++s++""++"\n")
+showTree sofar indent (MinBranch bs) = "( "++indent++"\n" ++ concat (map (showTree sofar (indent)) bs)++ ")\n"
 showTree sofar indent (Branch same c bs)
-  | same      = sofar++c++"{\n"++ concat (map (showTree (sofar++c) (indent++(replicate (length c) ' '))) bs) ++ indent++"}\n"
+  | same      = "{ "++indent++c++"\n"++ concat (map (showTree (sofar++c) (indent++(replicate (length c) ' '))) bs) ++ "}\n"
   | otherwise = concat (map (showTree sofar (indent)) bs)
   -- | otherwise = "< "++indent++"{"++c++"\n"++ concat (map (showTree sofar (indent++(replicate (length c) ' '))) bs) ++ "> "++indent++"}\n"
 showTree sofar indent (Leaf ls) = concat (map (sort) ls)
   where sort xs = "= " ++ indent ++ ">"++xs++"<" ++ "\n"
 
-test = go ["/stuff/data/cdrom_a2.find"]
--- test = go ["test.txt"]
+-- test = go ["/stuff/data/cdrom_a2.find"]
+test = go ["test.txt"]
 
 go args = do
           file <- readFile (head args)
