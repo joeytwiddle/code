@@ -109,7 +109,7 @@ public class Hwi extends Frame implements HyperlinkListener, CaretListener, Mous
         con.connect();
         // System.out.println("    : "+con.getRequestProperty("user-agent"));
         // System.out.println(" def: "+con.getDefaultRequestProperty("user-agent"));
-        String content=JNet.streamFrom(con.getContent());
+        String content=JNet.streamFrom((java.io.InputStream)con.getContent());
         Files.writeStringtofile(content,"content.txt");
         reportlabel.setText("Loaded.  Giving to pane.");
 
