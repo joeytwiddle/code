@@ -10,25 +10,9 @@
 
 
   // Variable declared in .h file
- myRGB myRGB::white=myRGB(1.0,1.0,1.0);
- myRGB myRGB::red  =myRGB(1.0,0.0,0.0);
- myRGB myRGB::green=myRGB(0.0,1.0,0.0);
- myRGB myRGB::blue =myRGB(0.0,0.0,1.0);
- myRGB myRGB::yellow=myRGB(1.0,1.0,0.0);
- myRGB myRGB::magenta=myRGB(1.0,0.0,1.0);
- myRGB myRGB::cyan=myRGB(0.0,1.0,1.0);
- myRGB myRGB::black=myRGB(0.0,0.0,0.0);
- myRGB myRGB::grey=myRGB(0.5,0.5,0.5);
-
- myRGB myRGB::darkred=red.dark();
- myRGB myRGB::darkgreen=green.dark();
- myRGB myRGB::darkblue=blue.dark();
- myRGB myRGB::darkyellow=yellow.dark();
- myRGB myRGB::darkmagenta=magenta.dark();
- myRGB myRGB::darkcyan=cyan.dark();
-  // static myRGB white,grey,black;
-  // static myRGB red,green,blue,yellow,magenta,cyan;
-  // static myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan;
+  // Variable declared in .h file
+  // Variable declared in .h file
+  // Variable declared in .h file
    myRGB::myRGB() {
     myRGB(0,0,0);
   }
@@ -178,5 +162,21 @@ myRGB operator*(float a,myRGB r) {
   return r*a;
 }
 
+fillup myRGB myRGB::white=myRGB(1.0,1.0,1.0);
+fillup myRGB myRGB::red  =myRGB(1.0,0.0,0.0);
+fillup myRGB myRGB::green=myRGB(0.0,1.0,0.0);
+fillup myRGB myRGB::blue =myRGB(0.0,0.0,1.0);
+fillup myRGB myRGB::yellow=myRGB(1.0,1.0,0.0);
+fillup myRGB myRGB::magenta=myRGB(1.0,0.0,1.0);
+fillup myRGB myRGB::cyan=myRGB(0.0,1.0,1.0);
+fillup myRGB myRGB::black=myRGB(0.0,0.0,0.0);
+fillup myRGB myRGB::grey=myRGB(0.5,0.5,0.5);
+
+fillup myRGB myRGB::darkred=red.dark();
+fillup myRGB myRGB::darkgreen=green.dark();
+fillup myRGB myRGB::darkblue=blue.dark();
+fillup myRGB myRGB::darkyellow=yellow.dark();
+fillup myRGB myRGB::darkmagenta=magenta.dark();
+fillup myRGB myRGB::darkcyan=cyan.dark();
 
 #endif

@@ -10,8 +10,8 @@
 
 
 
- bool Polygon2d::Polygon2d::container=2;
- bool Polygon2d::Polygon2d::contained=3;
+  // Variable declared in .h file
+  // Variable declared in .h file
   // static bool container;
   // static bool contained;
 
@@ -296,5 +296,7 @@
 // End class 
                   
 
+fillup bool Polygon2d::container=2;
+fillup bool Polygon2d::contained=3;
 
 #endif

@@ -21,7 +21,7 @@ V3d Matrix::operator*(V3d u) {
   v[i]=new float[2];
 }
 
- Matrix Matrix::rotation(V3d axis,float ang) {
+fillup Matrix Matrix::rotation(V3d axis,float ang) {
   Matrix m;
   m.makerotation(axis,ang);
   return m;

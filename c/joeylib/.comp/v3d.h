@@ -25,13 +25,7 @@ class V3d //
 public:
   float x,y,z; // Exists
   
-fillin V3d origin; // Variable initialised in .c file
-fillin V3d o; // Variable initialised in .c file
-fillin V3d i; // Variable initialised in .c file
-fillin V3d j; // Variable initialised in .c file
-fillin V3d k; // Variable initialised in .c file
-fillin V3d crazy; // Variable initialised in .c file
-  // static V3d origin,o,i,j,k,crazy;
+  fillin V3d origin,o,i,j,k,crazy; // Exists
   
    V3d(); // Method
 
@@ -286,6 +280,14 @@ V3d pull(V3d a,float t,V3d b); // Method
 
 /* Skipping later :: myRGB myRGB::ave(myRGB o); // Method
 */
+
+
+// fillup extern V3d V3d::origin; // Variable initialised in .c file
+// fillup extern V3d V3d::o; // Variable initialised in .c file
+// fillup extern V3d V3d::i; // Variable initialised in .c file
+// fillup extern V3d V3d::j; // Variable initialised in .c file
+// fillup extern V3d V3d::k; // Variable initialised in .c file
+// fillup extern V3d V3d::crazy; // Variable initialised in .c file
 
 
 #endif

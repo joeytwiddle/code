@@ -6,8 +6,8 @@
 class Polygon2d {
 public:
 
-fillin bool Polygon2d::container; // Variable initialised in .c file
-fillin bool Polygon2d::contained; // Variable initialised in .c file
+  fillin bool container; // Exists
+  fillin bool contained; // Exists
   // static bool container;
   // static bool contained;
 
@@ -94,5 +94,7 @@ fillin bool Polygon2d::contained; // Variable initialised in .c file
 
 };                  
 
+// fillup extern bool Polygon2d::container; // Variable initialised in .c file
+// fillup extern bool Polygon2d::contained; // Variable initialised in .c file
 
 #endif

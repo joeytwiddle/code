@@ -6,25 +6,9 @@
 class myRGB {
 public:
   uchar r,g,b; // Exists
-fillin myRGB white; // Variable initialised in .c file
-fillin myRGB red  ; // Variable initialised in .c file
-fillin myRGB green; // Variable initialised in .c file
-fillin myRGB blue ; // Variable initialised in .c file
-fillin myRGB yellow; // Variable initialised in .c file
-fillin myRGB magenta; // Variable initialised in .c file
-fillin myRGB cyan; // Variable initialised in .c file
-fillin myRGB black; // Variable initialised in .c file
-fillin myRGB grey; // Variable initialised in .c file
-
-fillin myRGB darkred; // Variable initialised in .c file
-fillin myRGB darkgreen; // Variable initialised in .c file
-fillin myRGB darkblue; // Variable initialised in .c file
-fillin myRGB darkyellow; // Variable initialised in .c file
-fillin myRGB darkmagenta; // Variable initialised in .c file
-fillin myRGB darkcyan; // Variable initialised in .c file
-  // static myRGB white,grey,black;
-  // static myRGB red,green,blue,yellow,magenta,cyan;
-  // static myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan;
+  fillin myRGB white,grey,black; // Exists
+  fillin myRGB red,green,blue,yellow,magenta,cyan; // Exists
+  fillin myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan; // Exists
    myRGB(); // Method
 
   bool operator==(myRGB o); // Method
@@ -96,5 +80,21 @@ fillin myRGB darkcyan; // Variable initialised in .c file
 myRGB operator*(float a,myRGB r); // Method
 
 
+// fillup extern myRGB myRGB::white; // Variable initialised in .c file
+// fillup extern myRGB myRGB::red  ; // Variable initialised in .c file
+// fillup extern myRGB myRGB::green; // Variable initialised in .c file
+// fillup extern myRGB myRGB::blue ; // Variable initialised in .c file
+// fillup extern myRGB myRGB::yellow; // Variable initialised in .c file
+// fillup extern myRGB myRGB::magenta; // Variable initialised in .c file
+// fillup extern myRGB myRGB::cyan; // Variable initialised in .c file
+// fillup extern myRGB myRGB::black; // Variable initialised in .c file
+// fillup extern myRGB myRGB::grey; // Variable initialised in .c file
+
+// fillup extern myRGB myRGB::darkred; // Variable initialised in .c file
+// fillup extern myRGB myRGB::darkgreen; // Variable initialised in .c file
+// fillup extern myRGB myRGB::darkblue; // Variable initialised in .c file
+// fillup extern myRGB myRGB::darkyellow; // Variable initialised in .c file
+// fillup extern myRGB myRGB::darkmagenta; // Variable initialised in .c file
+// fillup extern myRGB myRGB::darkcyan; // Variable initialised in .c file
 
 #endif

@@ -21,10 +21,7 @@
 
   // Variable declared in .h file
 
-  // static V2d o,i,j;
- V2d V2d::o=V2d(0,0);
- V2d V2d::i=V2d(1,0);
- V2d V2d::j=V2d(0,1);
+  // Variable declared in .h file
   
    V2d::V2d() {
   }
@@ -358,5 +355,9 @@ V2d operator-(V2d v) {
 float tofloat(V2d v) {
   return v.mag();
 }
+
+fillup V2d V2d::o=V2d(0,0);
+fillup V2d V2d::i=V2d(1,0);
+fillup V2d V2d::j=V2d(0,1);
 
 #endif

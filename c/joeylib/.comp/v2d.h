@@ -18,10 +18,7 @@ class V2d //
 public:
   float x,y; // Exists
 
-  // static V2d o,i,j;
-fillin V2d o; // Variable initialised in .c file
-fillin V2d i; // Variable initialised in .c file
-fillin V2d j; // Variable initialised in .c file
+  fillin V2d o,i,j; // Exists
   
    V2d(); // Method
 
@@ -219,5 +216,9 @@ V2d operator-(V2d v); // Method
 
 float tofloat(V2d v); // Method
 
+
+// fillup extern V2d V2d::o; // Variable initialised in .c file
+// fillup extern V2d V2d::i; // Variable initialised in .c file
+// fillup extern V2d V2d::j; // Variable initialised in .c file
 
 #endif
