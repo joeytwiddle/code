@@ -38,6 +38,7 @@
 #define sparsenessMovementOn 1
 #define sparsenessMovementOff 1
 #define sparsenessSkipCols 1
+#define sparsenessSkipRows 1
 
 // Thick with data, looks like XMatrix defaults:
 // #define sparsenessLengthOn 0.25
@@ -45,6 +46,7 @@
 // #define sparsenessMovementOn 1.5
 // #define sparsenessMovementOff 1
 // #define sparsenessSkipCols 1
+// #define sparsenessSkipRows 1
 
 // Thick with data, looks like XMatrix defaults (more like film?):
 // #define sparsenessLengthOn 1
@@ -52,6 +54,7 @@
 // #define sparsenessMovementOn 0.5
 // #define sparsenessMovementOff 0.5
 // #define sparsenessSkipCols 1
+// #define sparsenessSkipRows 1
 
 /// For slow machines (eg. 486): just reduce movement
 // #define sparsenessLengthOn 1
@@ -59,6 +62,7 @@
 // #define sparsenessMovementOn 1
 // #define sparsenessMovementOff 3
 // #define sparsenessSkipCols 3
+// #define sparsenessSkipRows 2
 
 /// Another config for slow machines: reduce matrix in every way!  less faithful, but animation appears clearer
 // #define sparsenessLengthOn 2
@@ -66,6 +70,7 @@
 // #define sparsenessMovementOn 2
 // #define sparsenessMovementOff 2
 // #define sparsenessSkipCols 3
+// #define sparsenessSkipRows 2
 
 /// To reduce state changes but keep the default density:
 // #define sparsenessLengthOn 0.5
@@ -73,6 +78,7 @@
 // #define sparsenessMovementOn 0.5
 // #define sparsenessMovementOff 2
 // #define sparsenessSkipCols 1
+// #define sparsenessSkipRows 1
 
 
 
@@ -175,7 +181,7 @@ void newProcess(int i) {
 	// processes[i] = ( (rand()%3) == 0 ? STATIC_PROCESS_EMPTY : WRITING_PROCESS );
 	// processes[i] = "EWC"[rand()%2];
 	processX[i] = ( rand() % (COLS/sparsenessSkipCols) ) * sparsenessSkipCols;
-	processY[i] = rand() % LINES;
+	processY[i] = ( rand() % (LINES/sparsenessSkipRows) ) * sparsenessSkipRows;
 	processes[i] = ( sliding[processX[i]] ? 'E' : thematrix[processX[i]][processY[i]] == ' ' ? 'W' : 'C' );
 	matrix_set_process(processX[i],processY[i]);
 	thematrix[processX[i]][processY[i]] = processes[i];
@@ -232,8 +238,9 @@ void slideColumn(int x,bool lastSlide) {
 
 	mbit last = 'L';
 
-	for (int y=LINES-1;y>0;y--) {
-		mbit src = thematrix[x][y-1];
+	// TODO: y will start wrong if sparsenessSkipRows is not a factor of LINES
+	for (int y=LINES-1;y>0;y-=sparsenessSkipRows) {
+		mbit src = thematrix[x][y-sparsenessSkipRows];
 		#ifdef SLIDING_WHITE_BITS
 			if (src == BLOCKHEAD_PROCESS) {
 				if (lastSlide || prob(slidingProcessDies)) {
@@ -359,7 +366,7 @@ void main() {
 			} else if (processes[i] == WRITING_PROCESS || processes[i] == CLEARING_PROCESS) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
 				matrix_set(processX[i],processY[i],toWrite);
-				processY[i]++;
+				processY[i]+=sparsenessSkipRows;
 				if (processY[i]>=LINES) {
 					newProcess(i);
 				} else {
