@@ -1,35 +1,37 @@
+
 #define Region Banana
 #include <joeylib.h>
 // #include <joeylib.c>
 #define Region Region
 
-// #include "xlib/xvvis.h"
-
-// #include "xlib/xvvis.h"
-#include "xlib/xlib.h"
-// #include "xlib/xlib.c"
-
-#include <sys/ipc.h>
-#include <sys/shm.h>
-
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>		/* For the visual matching */
-#include <X11/extensions/XShm.h>
-
-#include <stdlib.h>
-#include <stdio.h>
-
-/* These are for the CPU time measurement. */
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-
-#include <sched.h>
 
 #define COLORS	255
 #define colors COLORS
 
-void redocolors();
+#define WIN_W	320
+#define WIN_H	200
+#define scrwid 320
+#define scrhei 200
+// #define WIN_W	640
+// #define WIN_H	480
+// #define scrwid 160
+// #define scrhei 100
+
+
+#ifdef X11GFX
+  #include "xlib/xlib.h"
+  #include <sys/ipc.h>
+  #include <sys/shm.h>
+  #include <X11/Xlib.h>
+  #include <X11/Xutil.h>    /* For the visual matching */
+  #include <X11/extensions/XShm.h>
+  #include <stdlib.h>
+  #include <stdio.h>
+  /* These are for the CPU time measurement. */
+  #include <sys/time.h>
+  #include <sys/resource.h>
+  #include <unistd.h>
+  #include <sched.h>
 
 /* Some globals */
 int can_use_mitshm = 1;
@@ -43,31 +45,33 @@ int mitshm_handler (Display * d, XErrorEvent * ev)
   return 0;
 }
 
-/* The meaning of these are pretty much given */
-// #define WIN_W	640
-// #define WIN_H	480
-// #define scrwid 160
-// #define scrhei 100
-
-#define WIN_W	320
-#define WIN_H	200
-#define scrwid 320
-#define scrhei 200
-
   Display *d;
   XImage *ximg = NULL;
   GC gc;
 
+  Window win;
+  XColor xrgb[COLORS];
+
+Colormap colormap;
+	static int styleeTrueColor = 0 ;
+	static int styleePrivate   = 1 ;
+    unsigned long color[COLORS];
+
+
+#endif
+
 
 int stylee;
-
-
 int frameno;
+JBmp img,img2,imgtmp;
+
+
 
 
 // Memory leak is here
-void wicked_blit(Window win) {
+void wicked_blit() {
 
+  #ifdef X!!
       if (can_use_mitshm)
 				XShmPutImage (d, win, gc, ximg, 0, 0, 0, 0, WIN_W, WIN_H, True);
       else
@@ -77,6 +81,10 @@ void wicked_blit(Window win) {
 		  // wait(0.01);
 		sched_yield();
 			printf(".\n");
+  #endif
+  #ifdef ALLEGRO
+    img2.blit();
+  #endif
 
 }
 
@@ -95,7 +103,6 @@ void perturb (int f);
 void moremap();
 
 // Maps used for background writing
-JBmp img,img2,imgtmp;
 #define amountmax 256
 int amount[scrwid][scrhei][2][2][2];
 int pix[scrwid][scrhei][2],piy[scrwid][scrhei][2];
@@ -105,6 +112,13 @@ int fon[fs];
 float var[fs],op[fs],damp[fs],force[fs];
 float toff=0;
 int usingmap,makingmap,mmx,mmy,tmpmap,maploop;
+
+
+
+void redocolors();
+
+
+
 
 int huefor(float t,float o) {
   float ctmp;
@@ -121,9 +135,12 @@ int huefor(float t,float o) {
 }
 
 
+
+
 	int f,k,c,ix,iy,displayloop;
   float thru,ctmp;
-  myRGB rgb;
+
+
 
 int init_candy(void) {
 
@@ -218,19 +235,23 @@ int init_candy(void) {
     moremap();
   }
   
-  // allegrosetup(scrwid,scrhei);
-  // _farsetsel(screen->seg);
+  #ifdef ALLEGRO
+    allegrosetup(scrwid,scrhei);
+    // _farsetsel(screen->seg);
+  #endif
   
+  redocolors();
+
   starttimer();
 
 }
   
-//  while(!key[KEY_ESC] && !key[KEY_SPACE]) {
- 
-// while(!keypressed()) {
-List<int> ls;
 
-void plotsomeshapes(int dummy) {
+
+
+
+
+void plotsomeshapes() {
 
 	for (int i=0;i<1;i++) {
 		if (myrnd()<0.4) {
@@ -247,10 +268,12 @@ void plotsomeshapes(int dummy) {
 		}
 	}
 			
-	// ls.add(dummy);			
 }
 
-void iterate_candy(Window win,XColor xrgb[]) {
+
+
+
+void iterate_candy() {
 
 		int ka,kb,la,lb;
 		int nw,ne,se,sw;
@@ -304,14 +327,21 @@ void iterate_candy(Window win,XColor xrgb[]) {
 				// for (j=la;j<lb;j++)
 					// ximg->f.put_pixel(ximg,i,j,xrgb[c].pixel);
 
-				c=(c+palspeed*frameno)%colors;
-				ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
+        #ifdef X11GFX
+          // Fake palette switching
+          c=(c+palspeed*frame)%colors;
+          ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
+        #endif
 				
 				// Doesn't work even in 256-col mode:
 				// ximg->data[i+j*scrwid]=xrgb[c].pixel;
 				
       }
     }
+
+    #ifdef ALLEGRO
+      redocolors(); // Not fake palette switching
+    #endif
 
 		// for (x=0;x<WIN_W;x++)
 			// for (y=0;y<WIN_H;y++) {
@@ -322,14 +352,14 @@ void iterate_candy(Window win,XColor xrgb[]) {
 			// }
 				
 
-	  wicked_blit(win);
+    wicked_blit();
   
     toff=toff-(float)palspeed/256;
     imgtmp=img;
     img=img2;
     img2=imgtmp;
     for (i=1;i<=2;i++) {
-      plotsomeshapes(frameno);
+      plotsomeshapes();
     }
     framedone();
 		frameno++;
@@ -338,9 +368,13 @@ void iterate_candy(Window win,XColor xrgb[]) {
   
 }
 
+
+
 void perturb (int f) {
   var[f] = (var[f] - op[f]) * damp[f] + force[f] * (myrnd() - .5) + op[f];
 }
+
+
 
 /*void mycircle(int cx,int cy,int r,int c) {
   int x,h,y,px,py;
@@ -353,6 +387,8 @@ void perturb (int f) {
     }
   }
 }*/
+
+
 
 void moremap() {
   float rx,ry,nrx,nry,px,py;
@@ -466,12 +502,6 @@ void moremap() {
 
 
 
-XColor xrgb[COLORS];
-Window win;
-Colormap colormap;
-	static int styleeTrueColor = 0 ;
-	static int styleePrivate   = 1 ;
-    unsigned long color[COLORS];
 
 
 		
@@ -485,7 +515,7 @@ void redocolors() {
 		// myRGB r=( thru < 1 ? myRGB(0.0,thru*5.0,0.0)
 						             // : myRGB(thru*2.0-1.0,1.0,thru*2.0-1.0)
 						// );
-		float thru=4.0*(float)(i+frameno)/(float)COLORS;
+    float thru=4.0*(float)((frameno*palspeed+i)%colors)/(float)COLORS;
 		myRGB r;
 		if (thru<1.0)
 			r=myRGB(0.0,thru,0.0);
@@ -495,13 +525,26 @@ void redocolors() {
 			r=myRGB(1.0-(thru-2.0),1.0-(thru-2.0),1.0);
 		else
 			r=myRGB(0.0,0.0,1.0-(thru-3.0));
-    xrgb[i].red = 65535 * r.r/255; // (1.0 - 1.0 * i / COLORS);
-    xrgb[i].green = 65535 * r.g/255;
-    xrgb[i].blue = 65535 * r.b/255;
-    xrgb[i].flags = DoRed | DoGreen | DoBlue;
-		xrgb[i].pixel=i;
+
+    #ifdef X11GFX
+      xrgb[i].red = 65535 * r.r/255; // (1.0 - 1.0 * i / COLORS);
+      xrgb[i].green = 65535 * r.g/255;
+      xrgb[i].blue = 65535 * r.b/255;
+      xrgb[i].flags = DoRed | DoGreen | DoBlue;
+      xrgb[i].pixel=i;
+    #endif
+
+    #ifdef ALLEGRO
+      RGB algrgb;
+      algrgb.r=r.r/4;
+      algrgb.g=r.g/4;
+      algrgb.b=r.b/4;
+      set_color(i,&algrgb);
+    #endif
+
   }
 
+    #ifdef X11GFX
 			XAllocColorCells(d,colormap,1,0,0,color,colors);
 
 			if (stylee == styleeTrueColor) {
@@ -521,18 +564,65 @@ void redocolors() {
         // stderr), exit(1);
 			}
 
+    #endif
+
 }
 
 
 
 
 
+void real_main() {
+
+	init_candy();
+
+  bool should_quit = false;
+	
+  while (!should_quit) {
+
+    iterate_candy();
+
+    #ifdef X11GFX
+    bool ev_occ=XCheckMaskEvent(d,ExposureMask | KeyPressMask | ButtonPressMask | StructureNotifyMask,
+															&ev);
+		if (ev_occ) {
+			switch (ev.type) {
+				case Expose: 			break;
+				case ButtonPress: should_quit=true; break;
+				case KeyPress: 		break;
+				default: 					break;
+			}
+		}
+    #endif
+
+    #ifdef ALLEGRO
+      if (key[KEY_ESC] || key[KEY_SPACE])
+        should_quit=true;
+    #endif
+	
+  }
+
+  #ifdef ALLEGRO
+    allegro_exit();
+  #endif
+
+	displayframespersecond();
+
+}
+
+//  while(!key[KEY_ESC] && !key[KEY_SPACE]) {
+ 
+// while(!keypressed()) {
 
 
+
+
+
+#ifdef X11GFX
 
   XEvent ev;
   XShmSegmentInfo shminfo;
-  int screen, should_quit = 0;
+  int screen;
   XVisualInfo vis, *vlist;
   int match;
   struct rusage resource_utilization;
@@ -550,8 +640,6 @@ int main (void)
 
   ximg = NULL;
 
-	
-	init_candy();
 	
   d = XOpenDisplay (NULL);
 
@@ -675,21 +763,10 @@ int main (void)
 
   printf ("Click in the fractal window to terminate the program.\n");
 
-  while (!should_quit) {
 
-	  iterate_candy(win,xrgb);
 
-		bool ev_occ=XCheckMaskEvent(d,ExposureMask | KeyPressMask | ButtonPressMask | StructureNotifyMask,
-															&ev);
-		if (ev_occ) {
-			switch (ev.type) {
-				case Expose: 			break;
-				case ButtonPress: should_quit=true; break;
-				case KeyPress: 		break;
-				default: 					break;
-			}
-		}
-	
+  real_main();
+
     // XNextEvent (d, &ev);
     // switch (ev.type) {
     // case ButtonPress:
@@ -704,9 +781,8 @@ int main (void)
     // default:
 			// break;
     // }
-  }
 
-	displayframespersecond();
+
 
   if (get_xvisinfo_class(vis) % 2 == 1 || get_xvisinfo_class(vis) == TrueColor) {
     unsigned long color[COLORS];
@@ -738,3 +814,22 @@ int main (void)
 
   return 0;
 }
+
+
+
+
+
+#else
+
+
+  void main() {
+    real_main();
+  }
+
+
+#endif
+
+
+
+
+
