@@ -52,6 +52,10 @@ public class SubString extends SomeString {
     return s.charAt(a+i);
   }
 
+	public int length() { // Now requied, and more efficient this way
+		return z-a;
+	}
+
   public void thrower() throws Exception {
     throw new Exception("SubString.thrower");
   }
@@ -116,5 +120,20 @@ public class SubString extends SomeString {
   public int topIndex(int i) {
     return a+i;
   }
+
+	// These functions are generic given charAt
+	public int indexOf(char c,int s) {
+		for (int i=s;i<length();i++)
+			if (charAt(i)==c)
+				return i;
+		return -1;
+	}
+
+	public int indexOf(String x,int s) {
+		for (int i=s;i<length()-x.length();i++) {
+			if (matchAt(i,x))
+				return i;
+		return -1;
+	}
 
 }

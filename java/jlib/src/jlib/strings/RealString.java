@@ -26,11 +26,22 @@ public class RealString extends SomeString {
     return s;
   }
 
+	public int length() {
+		return s.length();
+	}
+
   public String topString() {
     return s;
   }
   public int topIndex(int i) {
     return i;
   }
+
+	public int indexOf(char c,int x) {
+		return s.indexOf(c,x);
+	}
+	public int indexOf(String ss,int x) {
+		return s.indexOf(ss,x);
+	}
 
 }

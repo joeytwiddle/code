@@ -14,17 +14,41 @@ public abstract class SomeString {
   public int indexOf(String x) { // self-ref
     return indexOf(x,0);
   }
-  public int indexOf(char c,int i) { // eff-over
-    return toString().indexOf(c,i);
-  }
-  public int indexOf(String x,int i) { // eff over
-    return toString().indexOf(x,i);
-  }
+  public int indexOf(char c,int i); // eff-over forced
+  public int indexOf(String x,int i); // eff over forced
+  // public int indexOf(char c,int i) { // eff-over
+    // return toString().indexOf(c,i);
+  // }
+  // public int indexOf(String x,int i) { // eff over
+    // return toString().indexOf(x,i);
+  // }
 
+  // public boolean startsWith(String x) {
+		// try {
+			// for (int i=0;i<x.length();i++)
+				// if (x.charAt(i) != charAt(i))
+					// return false;
+		// } catch (Exception e) {
+		  // return false;
+		// }
+		// return true;
+    // // return toString().startsWith(x);
+  // }
   public boolean startsWith(String x) {
-    return toString().startsWith(x);
-  }
+		return matchAt(0,x);
+	}
 
+	private boolean matchAt(int x,String s) {
+		try {
+			for (int i=0;i<s.length();i++) {
+				if (charAt(x+i) != s.charAt(i))
+					return false;
+		} catch (Exception e) {
+		  return false;
+		}
+		return true;
+	}
+			
   public SubString subString(int i,int j) {
     return new SubString(this,i,j);
   }
@@ -33,15 +57,16 @@ public abstract class SomeString {
   }
 
   public String substring(int i,int j) {
-    return toString().substring(i,j);
+    return subString(i,j).toString(); // toString().substring(i,j);
   }
   public String substring(int i) {
-    return toString().substring(i);
+    return subString(i).toString(); // toString().substring(i);
   }
 
-  public int length() {
-    return toString().length();
-  }
+  public abstract int length(); // eff-over forced
+  // public int length() {
+    // return toString().length();
+  // }
 
   public int indexOf(SomeString s) {
     return indexOf(s,0);
