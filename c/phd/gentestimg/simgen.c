@@ -7,10 +7,10 @@ float focallength,scale;
 Plane imageplane;
 V3d eye=V3d(0,0,0);
 
-// V3d imgplaneFromPixel(Pixel p) {
-  // return V3d(((float)p.x-(float)imgwidth/2.0)*scale,((float)p.y-(float)imgheight/2.0)*scale,focallength);
-// }
-// 
+V3d imgplaneFromPixel(Pixel p) {
+  return V3d(((float)p.x-(float)imgwidth/2.0)*scale,((float)p.y-(float)imgheight/2.0)*scale,focallength);
+}
+
 // Pixel pixelFromImagePlane(V3d v) {
   // return Pixel(v.x/scale+(float)imgwidth/2.0,imgheight-(v.y/scale+(float)imgheight/2.0));
 // }
@@ -19,7 +19,7 @@ V3d eye=V3d(0,0,0);
 	// return pixelFromImagePlane(imageplane.intersect(Line3d(eye,v)));
 // }
 
-Pixel proj(V3d v) {
+V2d proj(V3d v) {
   return Pixel(focallength*v.x/scale/(v.z)+(float)imgwidth/2.0,imgheight-(focallength*v.y/scale/(v.z)+(float)imgheight/2.0));
 }
 
@@ -56,8 +56,8 @@ int main(int argc,String *argv) {
   float yaw=deg2rad(a.floatafter("-yaw","yaw",20.0));
   float pitch=deg2rad(a.floatafter("-pitch","pitch",-20.0));
   float depth=a.floatafter("-depth","depth",100.0);
-  scale=a.floatafter("-scale","scale",0.1);
-  imgwidth=a.intafter("-width",640);
+  scale=a.floatafter("-scale","scale (should change inv prop to width, hopefully input width indep)",0.1);
+  imgwidth=a.intafter("-width","output image width",640);
   imgheight=imgwidth*3/4;
 	float xoff=a.floatafter("-xoff","x offset",0.0);
 	float yoff=a.floatafter("-yoff","y offset",0.0);
@@ -95,8 +95,7 @@ int main(int argc,String *argv) {
   down=down.rotated(V3d::k,roll);
   down.y=-down.y; // Hack to sync with Maple
   // V3d worldA=V3d(imgwidth/2,imgheight/2,depth);
-  V3d worldA=V3d(0,0,depth);
-	worldA=worldA-V3d(xoff,yoff,0);
+  V3d worldA=V3d(xoff,yoff,depth);
 	if (centralise)
 		worldA=worldA-down/2.0-right/2.0;
   V3d worldB=worldA+down;
@@ -130,31 +129,34 @@ int main(int argc,String *argv) {
     
     // Generate image
 		
-		for (int i=0;i<inputimg->width;i++)
-		for (int j=0;j<inputimg->height;j++) {
-			V3d v=worldA+right*(float)i/(float)inputimg->width+down*(float)j/(float)inputimg->height;
-			Pixel p=proj(v);
-			outputimg.setpos(p.x,p.y,inputimg->getpos(i,j));
-		}
+		// for (int i=0;i<inputimg->width;i++)
+		// for (int j=0;j<inputimg->height;j++) {
+			// V3d v=worldA+right*(float)i/(float)inputimg->width+down*(float)j/(float)inputimg->height;
+			// Pixel p=proj(v);
+			// outputimg.setpos(p.x,p.y,inputimg->getpos(i,j));
+		// }
   
-    // for (int i=0;i<imgwidth;i++) {
+		ProgMon progmon;
+    for (int i=0;i<imgwidth;i++) {
       // if ( (i % 30) == 0 )
+				(progmon.*progmon.nowthrough)((float)i/(float)imgwidth);
         // printf("%i/%i\n",i,imgwidth);
-      // for (int j=0;j<imgheight;j++) {
-      // Pixel p=Pixel(i,imgheight-1-j);
-        // V3d pixel=imgplaneFromPixel(p);
-        // Line3d l=Line3d(eye,pixel);
-        // V3d intersect=rec.intersect(l);
-      // // printf("%f\n",intersect.z);
+      for (int j=0;j<imgheight;j++) {
+      Pixel p=Pixel(i,imgheight-1-j);
+        V3d pixel=imgplaneFromPixel(p);
+        Line3d l=Line3d(eye,pixel);
+        V3d intersect=rec.intersect(l);
+      // printf("%f\n",intersect.z);
         // if (!rec.onplane(intersect))
           // printf("Error here %f\n",rec.distto(intersect));
-        // // printf("%s %s %s %s\n",eye.toString(),pixel.toString(),l.toString(),intersect.toString());
-        // if (rec.inimage(intersect)) {
-          // // printf("*\n");
-          // outputimg.setpos(i,j,rec.colAt(intersect));   
-        // }
-      // }
-    // }
+        // printf("%s %s %s %s\n",eye.toString(),pixel.toString(),l.toString(),intersect.toString());
+        if (rec.inimage(intersect)) {
+          // printf("*\n");
+          outputimg.setpos(i,j,rec.colAt(intersect));   
+        }
+      }
+    }
+		(progmon.*progmon.end)();
 
     if (genimage)
       outputimg.writefile(outname);
@@ -200,22 +202,73 @@ int main(int argc,String *argv) {
       // printf("  %f\n",inta.y);
     }
 
-		outputimg.line(proj(worldA),proj(worldB),myRGB::red);
-		outputimg.line(proj(worldB),proj(worldD),myRGB::red);
-		outputimg.line(proj(worldD),proj(worldC),myRGB::red);
-		outputimg.line(proj(worldC),proj(worldA),myRGB::red);
-
-		if (overlay)
-			outputimg.writefile(overlayname);
-		
     V2d hvp=lines.num(1).intersect(lines.num(2));
     Line2d baseline=Line2d(lines.num(1).a,lines.num(numlines).a);
     V2d vvpdir=(baseline.b-baseline.a).norm();
     Line2d otherline=Line2d(imageplane.intersect(Line3d(eye,worldC)).dropz(),imageplane.intersect(Line3d(eye,worldD)).dropz());
     V2d vvp=baseline.intersect(otherline);
+		
+		// Test recquad method:
+		// List<V2d> qs;
+		// qs.add(proj(worldA));
+		// qs.add(proj(worldB));
+		// qs.add(proj(worldC));
+		// qs.add(proj(worldD));
+		// List<V3d> ws=rectanglefromquadrilateral(qs,V3d(imgwidth/2,imgheight/2,-focallength));
+		// V3d gotA=ws.num(1);
+		// V3d gotB=ws.num(2);
+		// V3d gotC=ws.num(3);
+		// V3d gotD=ws.num(4);
+		// V3d gotDown=gotB-gotA;
+		// V3d gotRight=gotC-gotB;
+		// printf("gotA = %s\n",gotA.toString());
+		// printf("gotB = %s\n",gotB.toString());
+		// printf("gotC = %s\n",gotC.toString());
+		// printf("gotD = %s\n",gotD.toString());
+
+		// outputimg.line(proj(gotA),proj(gotB),myRGB::magenta);
+		// outputimg.line(proj(gotB),proj(gotD),myRGB::magenta);
+		// outputimg.line(proj(gotD),proj(gotC),myRGB::magenta);
+		// outputimg.line(proj(gotC),proj(gotA),myRGB::magenta);
+
+		V2d testvvp=Line2d(proj(worldA),proj(worldB)).intersection(Line2d(proj(worldC),proj(worldD)));
+		V2d testhvp=Line2d(proj(worldA),proj(worldC)).intersection(Line2d(proj(worldB),proj(worldD)));
+		// V3d gotRight=V3d(testhvp.x-imgwidth/2.0,testhvp.y-imgheight/2.0,focallength);
+		// V3d gotDown=V3d(testvvp.x-imgwidth/2.0,testvvp.y-imgheight/2.0,focallength);
+		V3d gotRight=imgplaneFromPixel(testhvp);
+		gotRight.y=-gotRight.y;
+		V3d gotDown=imgplaneFromPixel(testvvp);
+		gotDown.y=-gotDown.y;
+
+		printf("gotright = %s\ngotdown = %s\n",gotRight.toString(),gotDown.toString());
+		printf("%f %f\n",V3d::normdot(right,gotRight),V3d::normdot(down,gotDown));
+
+		// outputimg.line(proj(worldA),proj(worldB),myRGB::red);
+		// outputimg.line(proj(worldB),proj(worldD),myRGB::red);
+		// outputimg.line(proj(worldD),proj(worldC),myRGB::red);
+		// outputimg.line(proj(worldC),proj(worldA),myRGB::red);
+
+		if (overlay)
+			outputimg.writefile(overlayname);
+		
+		printf("Testing vanishing point method:\n");
+		printf("%f\n",V3d::normdot(right,down));
+		printf("%f\n",V3d::normdot(gotRight,gotDown));
+		printf("%f\n",V3d::normdot(right,gotRight));
+		printf("%f\n",V3d::normdot(down,gotDown));
+		// float fsq=(gotRight.x-imgwidth/2.0)*(gotDown.x-imgwidth/2.0)+(gotRight.y-imgheight/2.0)*(gotDown.y-imgheight/2.0);
+		float fsq=(gotRight.x)*(gotDown.x)+(gotRight.y)*(gotDown.y);
+		// printf("%f \n",fsq);
+		if (fsq<0)
+			printf("Estimate focal length from quad: %f\n",sqrt(-fsq));
+		else
+			printf("Error resolving focal length fsq>0 %f\n",sqrt(fsq));
+
+		printf("HVP = %s\n",hvp.toString());
+		printf("testHVP = %s\n",testhvp.toString());
     printf("VVP = %s\n",vvp.toString());
+    printf("testVVP = %s\n",testvvp.toString());
     printf("vvp dist = %f\n",(vvp-lines.num(1).a).mag());
-    // printf("down = %s\n",down);
 				
 		// scry = ( k1 + l * A ) / ( l2 + l * B )
 		//   where k1 is y init, A is down.y, k2 is z init, B is down z

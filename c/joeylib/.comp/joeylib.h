@@ -111,6 +111,8 @@ void helloworld(); // Method
 #include <ordtree.h>
 #include <list2.h>
 
+#include <progmon.h>
+
 #include <strings2.h>
 
 // Lots of lovely maths functions

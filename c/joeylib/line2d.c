@@ -237,6 +237,10 @@ public:
     return expandedBy(diff);
   }
 
+	static V2d intersection(Line2d la,Line2d lb) {
+		return la.intersection(lb);
+	}
+
 };
 
 Line2d operator*(float f,Line2d l) {

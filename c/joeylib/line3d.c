@@ -1,3 +1,6 @@
+// a and b are absolute vectors
+// ie. b is not the direction of the line, it is the second end of the line
+
 class Line3d {
 public:
   V3d a,b;
@@ -38,7 +41,10 @@ public:
       return NULL;
   }
   V3d intersect(Line3d o) {
-    return *intersection(o);
+		V3d *v=intersection(o);
+		if (v==NULL)
+			printf("ERROR: Line2d.intersect(): Passing back failed intersection!\n");
+    return *v;
   }
 
   V3d intersection(Plane p);

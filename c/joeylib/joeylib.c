@@ -107,6 +107,8 @@ void helloworld() {
 
 #include <strings2.c>
 
+#include <progmon.c>
+
 // Lots of lovely maths functions
 #include <maths.c>
 

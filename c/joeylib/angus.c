@@ -116,6 +116,7 @@ RGBmp *angusreadbmp8(char *fn_image) {
   int *cmap_g=new int[cmaplen];
   int *cmap_b=new int[cmaplen];
 
+	ProgMon progmon;
   for (i=0; i<cmaplen; i++) {
     cmap_b[i] = getc(fp);
     cmap_g[i] = getc(fp);
@@ -123,7 +124,13 @@ RGBmp *angusreadbmp8(char *fn_image) {
     // printf("Colour %i %i %i\n",cmap_r[i],cmap_g[i],cmap_b[i]);
 
     getc(fp);         /* unused */
+
+		// progmon.nowthrough((float)i/(float)cmaplen);
+		if (i % (int)(cmaplen/100) == 0)
+		  (progmon.*progmon.nowthrough)((float)i/(float)cmaplen);
   }
+	// progmon.end();
+	(progmon.*progmon.end)();
 
 
   /* check to see if cmap is monochrome */
