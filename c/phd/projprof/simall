@@ -115,8 +115,8 @@ for DOCUMENT in $DOCUMENTS; do
 									# convert "gpl1fit.ps" -geometry 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
 									rm -f fit.log
 
-				echo "Press a key"
-				waitforkeypress
+								# echo "Press a key"
+								# waitforkeypress
 
 								done # pitch
 							done # yaw
