@@ -127,8 +127,6 @@ public class VisualJavaGUIStatics {
                 String line = in.readLine();
                 if (line == null)
                     break;
-                if (line.indexOf("WebResponse")>=0)
-                    System.out.println("< "+line);
                 menu.addClass(line);
             }
         } catch (IOException e) {
@@ -200,7 +198,7 @@ public class VisualJavaGUIStatics {
         );
         menu.add(menuItem);
     }
-    
+
     public static void addFieldToMenu(final Field f, JMenu menu, final Object obj) throws IllegalAccessException {
         JMenuItem menuItem = new JMenuItem(VisualJavaStatics.getSimpleClassName(f.getType()) + " " + f.getName() + " = \"" + f.get(obj) + "\"");
         menuItem.addActionListener(
@@ -217,5 +215,5 @@ public class VisualJavaGUIStatics {
         );
         menu.add(menuItem);
     }
-    
+
 }

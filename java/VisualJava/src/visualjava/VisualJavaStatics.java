@@ -75,7 +75,7 @@ public class VisualJavaStatics {
 
         return new BufferedReader(new InputStreamReader(in));
     }
-    
+
     private static void printClassesInDirTo(File topDir, File dir, PrintWriter writer) {
         try {
             if (dir.isDirectory()) {
@@ -168,7 +168,7 @@ public class VisualJavaStatics {
         }
         return line;
     }
-    
+
     public static String getPackageFromClass(String className) {
         int i = className.lastIndexOf(".");
         if (i>=0) {
@@ -177,5 +177,5 @@ public class VisualJavaStatics {
             return "";
         }
     }
-    
+
 }
