@@ -1,0 +1,10 @@
+t=0:.1:10;t=t(:);  % To make t a column vector
+Data=40*exp(-.5*t)+randn(size(t));
+
+Starting=rand(1,2);
+options=optimset('Display','iter');
+Estimates=fminsearch('myfit',Starting,options,t,Data)
+
+plot(t,Data,'*')
+hold on
+plot(t,Estimates(1)*exp(-Estimates(2)*t),'r')

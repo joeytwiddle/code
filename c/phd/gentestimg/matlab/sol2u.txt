@@ -1,6 +1,6 @@
 Data=Data(:);
 
-Starting=[guessU,10,1]
+Starting=[guessU,10,0]
 % Starting=[groundU,groundV,groundW]
 options=optimset('Display','iter','MaxFunEvals',10000);
 Estimates=fminsearch('jfit2u',Starting,options,t,Data)

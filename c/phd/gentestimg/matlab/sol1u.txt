@@ -5,7 +5,7 @@ sz=max(size(Data));
 t=0:1:sz-1; t=t(:);
 
 % Starting=[-0.5,10,1]
-Starting=[guessU,10,1]
+Starting=[guessU,10,0]
 options=optimset('Display','iter','MaxFunEvals',10000);
 Estimates=fminsearch('jfitu',Starting,options,t,Data)
 
