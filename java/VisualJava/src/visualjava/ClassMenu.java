@@ -10,11 +10,11 @@ public class ClassMenu extends JMenu {
     String packageName;
     Map childMenus;
     public ClassMenu(String _packageName) {
-        super(( _packageName.length() > 0 ? getPackageNameFromFullPackage(_packageName) : "Class" ));
+        super(( _packageName.length() > 0 ? getLastInPath(_packageName) : "Class" ));
         packageName = _packageName;
         childMenus = new java.util.HashMap();
     }
-    public static String getPackageNameFromFullPackage(String fullPackage) {
+    public static String getLastInPath(String fullPackage) {
         int i = fullPackage.lastIndexOf(".");
         if (i >= 0) {
             return fullPackage.substring(i+1);
@@ -32,7 +32,8 @@ public class ClassMenu extends JMenu {
         String classPackage = getPackageFromClass(c);
         if (classPackage.equals(packageName)) {
             // JMenuItem item = new JMenuItem(VisualJava.getSimpleClassName(c));
-            JMenuItem item = new JMenuItem(c.substring(classPackage.length()+1));
+            // JMenuItem item = new JMenuItem(c.substring(classPackage.length()+1));
+            // add(item);
             /*
             item.addActionListener(
                     new ActionListener() {
@@ -48,14 +49,16 @@ public class ClassMenu extends JMenu {
             );
             */
             /*
-            JMenu item = new JMenu(c.substring(classPackage.length()+1));
             try {
+                JMenu item = new JMenu(c.substring(classPackage.length()+1));
                 ObjectIcon.addStaticsToMenu(item,Class.forName(c));
+                // JMenu statics = new StaticsMenu(getLastInPath(c),Class.forName(c));
             } catch (Exception e) {
                 e.printStackTrace(System.err);
             }
             */
-            add(item);
+            JMenu statics = new StaticsMenu(getLastInPath(c),c);
+            add(statics);
         } else {
             if (!classPackage.startsWith(packageName)) {
                 throw new Error("Expect classPackage (" + classPackage + ") to start with packageName (" + packageName + ")");
