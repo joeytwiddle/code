@@ -9,9 +9,13 @@
 -- What does it do?
 --   Given a text stream, it looks for a tree-like pattern in the data.
 --   Subsequent lines which start with the same String are grouped together under a branch.
+--   I'm talking about matches at the begining of adjacent lines forming groups.
+--   I'm talking about re-treeing indented text, or path listings, etc...
 
 -- Output:
---   Currently output adds a one of "+.-" to the start of each line (irrelevant),
+--   Currently vim is the only supported method of navigating the tree...
+--   Currently output adds a one of "+-." at the start of each line
+--   (for user, signifies branch start, branch end, or single line),
 --   adds curly braces around branches (needed for my vim folding rule),
 --   and strips the common start-String (replaces it with spaces).
 
@@ -40,6 +44,11 @@ main = do
   args <- getArgs
   go args
 
+-- Options
+minlength = 1
+minsize = 3
+indentwithspaces = False
+
 data Tree = Single String | Branch Bool String [Tree] | Leaf [String]
   -- deriving (Show)
 
@@ -47,16 +56,6 @@ instance Show Tree where
   show (t) = showTree "" "" t
   -- show (Leaf ss) = concat (map addn ss)
     -- where addn s = s++"\n"
-
-showTree sofar indent (Single s) = ". "++(indent++""++s++""++"\n")
-showTree sofar indent (Branch same c bs)
-  | same && (length c)>=3    = "+ "++sofar++c++" {\n"++ concat (map (showTree (sofar++c) ((realindent))) bs) ++ "-"++realindent++"}\n"
-  | same      = {-"| "++indent++"("++c++")\n" ++-} concat (map (showTree (sofar++c) (indent++c)) bs)
-  | otherwise = concat (map (showTree sofar (indent)) bs)
-  where realindent = replicate (length indent + length c) ' '
-  -- | otherwise = "< "++indent++"{"++c++"\n"++ concat (map (showTree sofar (indent++(replicate (length c) ' '))) bs) ++ "> "++indent++"}\n"
-showTree sofar indent (Leaf ls) = concat (map (sort) ls)
-  where sort xs = "= " ++ indent ++ ">"++xs++"<" ++ "\n"
 
 -- test = go ["/stuff/data/cdrom_a2.find"]
 test = go ["test.txt"]
@@ -74,10 +73,9 @@ treebreak col lines
   | (length breaks) == 1 = treebreak (col+1) lines
   | otherwise            = Branch True ((take (col) (head (head breaks)))) (( map (subtree col) breaks ))
   where breaks = findbreaks col [] lines
-        indextoolarge = length lines <= 1 -- col > 1 -- (length (head (head breaks))) -- col>2000 -- (myhead (head (head breaks))) == '_'
+        indextoolarge = length lines < minsize -- col > 1 -- (length (head (head breaks))) -- col>2000 -- (myhead (head (head breaks))) == '_'
         -- strip n xs = map (stripc n) xs
         stripc n ys = map (drop n) ys
-{-++clip (show (map length breaks)))-}
 
 -- subtree col [] = Leaf []
 subtree col [x] = Single (drop col x)
@@ -86,13 +84,6 @@ subtree col ss =
     Leaf []
   else
     Branch False [(head ss)!!col] ([(treebreak 1 (map (drop (col)) ss))])
-
-clip xs
-  | length xs < 50 = xs
-  | otherwise      = take 50 xs
-
-myheads [] = '_'
-myheads (h:t) = h
 
 assert x y = if x then y else error ( show x ++ "is false" )
 
@@ -105,3 +96,15 @@ findbreaks col sofar (x:y:rest)
   | otherwise                        = break
   where break = (sofar++[x]):(findbreaks col [] (y:rest))
         continue = findbreaks col (sofar++[x]) (y:rest)
+
+showTree sofar indent (Single s) = ". "++(indent++""++s++""++"\n")
+showTree sofar indent (Branch same c bs)
+  | same && (length c)>=minlength    = "+ "++sofar++c++" {\n"++ concat (map (showTree (sofar++c) ((realindent))) bs) ++ "-"++realindent++"}\n"
+  | same                             = {-"| "++indent++"("++c++")\n" ++-} concat (map (showTree (sofar++c) (indent++c)) bs)
+  | otherwise                        = concat (map (showTree sofar (indent)) bs)
+  where realindent = if indentwithspaces then replicate (length indent + length c) ' ' else indent ++ c
+  -- | otherwise = "< "++indent++"{"++c++"\n"++ concat (map (showTree sofar (indent++(replicate (length c) ' '))) bs) ++ "> "++indent++"}\n"
+showTree sofar indent (Leaf ls) = concat (map (sort) ls)
+  -- where sort xs = "= " ++ indent ++ ">"++xs++"<" ++ "\n"
+  where sort xs = "= " ++ indent ++ xs ++ "\n"
+
