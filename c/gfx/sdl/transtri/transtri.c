@@ -44,7 +44,7 @@
 // #define brightness 30
 #define SCRBPS 32
 #define desiredFramesPerSecond 50
-#define IMGSKIP (SCRWID/160)
+#define IMGSKIP (SCRWID/40)
 // #define IMGSKIP 4
 // #define DOUBLEMERGEBG
 #define DO_TRIANGLES
@@ -357,7 +357,7 @@ int main(int argc,char *argv[]) {
 			SDL_Rect dstrect;
 			dstrect.w=IMGSKIP;
 			dstrect.h=IMGSKIP;
-			for (i=0;i<screen_w;i+=IMGSKIP) {
+			for (i=0;i<=screen_w;i+=IMGSKIP) {
 				// Uint8 thruwid=i*256/screen_w;
 				Uint16 xpart0=abs(i-cylcenx);
 				// Uint32 xpart=(Uint32)square(i-cylcenx);
@@ -365,13 +365,13 @@ int main(int argc,char *argv[]) {
 				Uint16 d;
 				screen_pixelType p;
 				Uint8 r,g,b;
-				Uint16 Ds[screen_h];
-				Uint16 as[screen_h];
+				Uint16 Ds[screen_h+IMGSKIP]; // Note these are IMGSKIP times bigger than they need to be
+				Uint16 as[screen_h+IMGSKIP]; // and accessed as such throughout.
 				Uint16 Dnow,anow;
 				Uint16 Dlast,alast;
 				dstrect.x=i;
 				dstrect.y=0;
-				for (j=0;j<screen_h;j+=IMGSKIP, dstrect.y+=IMGSKIP) {
+				for (j=0;j<=screen_h;j+=IMGSKIP, dstrect.y+=IMGSKIP) {
 					// todo: Optimise this!
 					// Uint16 d=qsqrt(xpart+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
 					// fprintf(output,"Getting and printing d\n");
@@ -388,52 +388,68 @@ int main(int argc,char *argv[]) {
 #define a ( bgtexture_w * ( atan2(i-cylcenx,j-cylceny ) / M_PI + M_PI ) )
 					// dstrect.y=j;
 
+#ifdef DO_WHITEOUT
+					br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
+#endif
+
 					// Get pixel
 					// p=getPixel(bgtexture, u, v);
 					// br=clip((Uint16)D/3.0,0,255);
 					// p=bgtexture_getPixel( ((Uint16)(a+aoffset)%bgtexture_w), ((Uint16)(D+Doffset)%bgtexture_h) );
-					anow=((Uint16)(a+aoffset)%bgtexture_w);
-					Dnow=((Uint16)(D+Doffset)%bgtexture_h);
+					anow=((Uint16)(a+aoffset));
+					Dnow=((Uint16)(D+Doffset));
 					if (i>0 && j>0) {
-#define TLx as[j-1]
-#define TLy Ds[j-1]
-#define TRx as[j]
-#define TRy Ds[j]
-#define BLx alast
-#define BLy Dlast
-#define BRx anow
-#define BRy Dnow
 						Uint8 I,J;
 						screen_pixelType *reg;
-						screen_pixelType *startreg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j);
+						screen_pixelType *startreg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i-IMGSKIP,j-IMGSKIP);
+						/*
+#define TLx as[j-IMGSKIP]
+#define TLy Ds[j-IMGSKIP]
+#define BLx as[j]
+#define BLy Ds[j]
+#define TRx alast
+#define TRy Dlast
+#define BRx anow
+#define BRy Dnow
+*/
+						Uint16 TLx=as[j-IMGSKIP];
+						Uint16 TLy=Ds[j-IMGSKIP];
+						Uint16 BLx=as[j];
+						Uint16 BLy=Ds[j];
+						Uint16 TRx=alast;
+						Uint16 TRy=Dlast;
+						Uint16 BRx=anow;
+						Uint16 BRy=Dnow;
+						// Hack around problem interpolating over TLa=359 TRa=001
+						if (i-cylcenx>=0 && i-cylcenx<IMGSKIP && j-cylceny<0) {
+								if (TRx-TLx>bgtexture_w/2 || BRx-TLx>bgtexture_w/2) {
+									TLx+=bgtexture_w*2;
+								}
+								if (BRx-BLx>bgtexture_w/2 || TRx-BLx>bgtexture_w/2) {
+									BLx+=bgtexture_w*2;
+								}
+						}
 						for (J=0;J<IMGSKIP;J++) {
 							reg=startreg;
 							for (I=0;I<IMGSKIP;I++) {
 								Uint16 ahere,Dhere;
-#define e ((I))
-#define s ((J))
-#define w ((IMGSKIP-e))
-#define n ((IMGSKIP-s))
-								ahere=anow; // TLx*n*w+TRx*n*e+BLx*s*w+BRx*s*e;
-								Dhere=Dnow; //*n*w+TRy*n*e+BLy*s*w+BRy*s*e;
-								*reg=((Uint32 *)bgtexture->pixels)[(ahere%bgtexture_w)+(Dhere%bgtexture_h)*bgtexture_w];
-								reg++;
-							}
-							startreg+=screen_w;
-						}
-					}
-					Dlast=Dnow;
-					alast=anow;
-					Ds[j]=Dlast;
-					as[j]=alast;
-
-#define POO
-#ifndef POO
+// #define e ((I))
+// #define s ((J))
+// #define w ((IMGSKIP-I))
+// #define n ((IMGSKIP-J))
+Uint8 e=((I));
+Uint8 s=((J));
+Uint8 w=((IMGSKIP-I));
+Uint8 n=((IMGSKIP-J));
+								// ahere=(Uint32)((Uint32)TLx*n*w+(Uint32)TRx*n*e+(Uint32)BLx*s*w+(Uint32)BRx*s*e)/IMGSKIP/IMGSKIP;
+								// Dhere=(Uint32)((Uint32)TLy*n*w+(Uint32)TRy*n*e+(Uint32)BLy*s*w+(Uint32)BRy*s*e)/IMGSKIP/IMGSKIP;
+								ahere=(TLx*n*w+TRx*n*e+BLx*s*w+BRx*s*e)/IMGSKIP/IMGSKIP;
+								Dhere=(TLy*n*w+TRy*n*e+BLy*s*w+BRy*s*e)/IMGSKIP/IMGSKIP;
+								p=bgpixels[(ahere%bgtexture_w)+(Dhere%bgtexture_h)*bgtexture_w];
 
 #ifdef DO_WHITEOUT
 
 					// Apply whiteout
-					br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
 					screen_GetRGB(p,&r,&g,&b);
 #ifdef DOUBLEMERGEBG
 					{
@@ -472,63 +488,23 @@ int main(int argc,char *argv[]) {
 					// p=screen_MapRGB(r,g,b);
 
 					// SDL_FillRect(screen,&dstrect,p);
-					{ register Uint8 I,J;
-						// Uint32 *reg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j);
-						Uint32 *reg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j);
-						Uint32 *regacc;
-						for (J=0;J<IMGSKIP;J++) {
-							regacc=reg;
-							for (I=0;I<IMGSKIP;I++) {
-								*regacc=p;
-								regacc+=1;   
+
+								*reg=p;
+								reg++;
 							}
-							reg=reg+screen_w;
-							// printf("%i - %i = %i\n",reg,&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j),reg-&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j));
-							// reg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j+J);
-							// printf("%i + %i = %i\n",reg-screen_pitch,screen_pitch,&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j),reg-&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i,j));
+							startreg+=screen_w;
 						}
-						// for (I=0;I<IMGSKIP;I++)
-						// for (J=0;J<IMGSKIP;J++) {
-						// screen_setPixel(i+I,j+J,p);
-						// }
 					}
-					/*
-					// Interpolate
-					screen_setPixel(i,j,p);
-					if (i>0 && j>0 && IMGSKIP>1) {
-					// Interpolate last square to topleft
-					Uint8 NWr,NWg,NWb;
-					Uint8 NEr,NEg,NEb;
-					Uint8 SWr,SWg,SWb;
-					Uint8 SEr,SEg,SEb;
-					Uint8 I,J;
-					screen_GetRGB(screen_getPixel(i-IMGSKIP,j-IMGSKIP),&NWr,&NWg,&NWb);
-					screen_GetRGB(screen_getPixel(i,j-IMGSKIP),&NEr,&NEg,&NEb);
-					screen_GetRGB(screen_getPixel(i-IMGSKIP,j),&SWr,&SWg,&SWb);
-					screen_GetRGB(bgpixels[((Uint16)(a+aoffset)%bgtexture_w)+bgtexture_w*((Uint16)(D+Doffset)%bgtexture_h)],&SEr,&SEg,&SEb);
-					// #define SEr r
-					// #define SEg g
-					// #define SEb b
-					for (I=0;I<IMGSKIP;I++) {
-					for (J=0;J<IMGSKIP;J++) {
-					if (I>0 || J>0) {
-#define e ((I))
-#define s ((J))
-#define w ((IMGSKIP-e))
-#define n ((IMGSKIP-s))
-Uint32 ip;
-ip=screen_MapRGB(
-(Uint8)(((NWr*n*w+NEr*n*e+SWr*s*w+SEr*s*e))/IMGSKIP/IMGSKIP),
-(Uint8)(((NWg*n*w+NEg*n*e+SWg*s*w+SEg*s*e))/IMGSKIP/IMGSKIP),
-(Uint8)(((NWb*n*w+NEb*n*e+SWb*s*w+SEb*s*e))/IMGSKIP/IMGSKIP)
-);
-screen_setPixel(i-IMGSKIP+I,j-IMGSKIP+J,ip);
-}
-}
-}
-}
-*/
-#endif
+					if (j>0) {
+						Ds[j-IMGSKIP]=Dlast;
+						as[j-IMGSKIP]=alast;
+						if (j==screen_h) {
+							Ds[j]=Dnow;
+							as[j]=anow;
+						}
+					}
+					Dlast=Dnow;
+					alast=anow;
 }
 }
 
