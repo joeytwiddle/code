@@ -1,3 +1,5 @@
+// TODO: make all open/close "buttons" links so that text-only browsers will let user focus!
+
 // Works for Mozilla
 // Konqueror worked once I made a few things lower case.
 // TODO: Mozilla should include adjacent empty paragraphs in the fold block, because ATM empty gaps are left.
@@ -121,6 +123,7 @@ function addFoldToBlockQuote(elemToFold) {
 }
 
 function addFoldToBlockQuoteState(elemToFold,startClosed) {
+	var drawBranches = false;
 	// elemToFold.parentNode.insertBefore('<FONT size="-2" color="white"><INPUT TYPE="button" VALUE="X" ONCLICK="javascript:clearAndFocus(' + elemToFold + ');"></FONT>',elemToFold);
 	// if (!elemToFold.id) {
 	var foldId = getUniqueId();
@@ -156,8 +159,33 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 		handleElem.appendChild(imgElem);
 		// TODO: doesn't work for Opera:
 	}
+	if (drawBranches) {
+		// Move the hidable block into a table so we can give it a "branch" on the left
+		var newElemToFold = document.createElement("TABLE");
+		var row = document.createElement("TR");
+		var cell = document.createElement("TD");
+		var secondCell = document.createElement("TD");
+		var innerTable = document.createElement("TABLE");
+		var innerRow = document.createElement("TR");
+		var innerCell = document.createElement("TD");
+		innerRow.appendChild(innerCell);
+		innerTable.appendChild(innerRow);
+		innerTable.setAttribute("bgcolor","#ffffff");
+		innerTable.setAttribute("height","50");
+		innerCell.setAttribute("bgcolor","#000000");
+		cell.appendChild(innerTable);
+		cell.setAttribute("valign","top");
+		secondCell.appendChild(elemToFold.cloneNode(true));
+		secondCell.setAttribute("valign","top");
+		row.appendChild(cell);
+		row.appendChild(secondCell);
+		newElemToFold.appendChild(row);
+		elemToFold.parentNode.replaceChild(newElemToFold,elemToFold);
+		newElemToFold.id = foldId + "Block";
+	}
 	if (startClosed)
 		toggleFoldNamed(foldId);
+	// Ouch! alert("" + newElemToFold.innerHTML);
 }
 
 function addFoldsToBlockQuotes() { // TODO: also add the automatic clear on focus if default which are currently hard-wired. BUT ALSO: fork and retain link to non-javascript jumpgate
@@ -178,7 +206,8 @@ function addFoldsToPage(tagTypes,startClosed) {
 		var nodes = window.document.body.getElementsByTagName(tagTypes[t]);
 		debugData += tagTypes[t] + ": " + nodes.length + "\n";
 		for (var i=0;i<nodes.length;i++) {
-			try {
+			//// TODO: This try/catch used to exist!
+			// try {
 			var node = nodes[i];
 			// if (node.type == "ul" || node.type == "blockquote") {
 				// alert("" + node);
@@ -190,9 +219,9 @@ function addFoldsToPage(tagTypes,startClosed) {
 				// }
 				if (i>999) { break; }
 				nodes = window.document.body.getElementsByTagName(tagTypes[t]);
-			} catch (e) {
-				debugData += "ERROR: " + e + "\n";
-			}
+			// } catch (e) {
+				// debugData += "ERROR: " + e + "\n";
+			// }
 		}
 	}
 	// alert(debugData);
