@@ -40,7 +40,8 @@ class LogEntry {
 public class Log {
 
 	// public static final File logFile=new File(JLib.JPATH,"/logs/java.txt");
-	public static final String logFile="/usr/share/java/servlets/java.txt";
+	// public static final String logFile="/usr/share/java/servlets/java.txt";
+	public static final String logFile=JLib.JPATH+"/code/java/servlets/java.txt";
   public static boolean loggingOn = true;
   public static boolean toStdOut  = true;
 	public static boolean toFile    = true;
@@ -111,6 +112,7 @@ public class Log {
 		report(false,null,o,e,null); }
   public static void report(Object o,String method,Exception e) {
 		report(false,method,o,e,null); }
+
   public static void error(String s) {
 		report(true,s,null,null,null); }
   public static void error(Exception e) {

@@ -1,8 +1,0 @@
-DOC=$1;
-for roll in `listnums -6 6`; do
-  for yaw in `listnums -6 6`; do
-    for pitch in `listnums -6 6`; do
-      echo "$roll $yaw $pitch"
-    done
-  done
-done

@@ -3,9 +3,6 @@ class V3d;
 class myRGB {
 public:
   uchar r,g,b;
-  fillin myRGB white,grey,black;
-  fillin myRGB red,green,blue,yellow,magenta,cyan;
-  fillin myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan;
   myRGB() {
     myRGB(0,0,0);
   }
@@ -146,6 +143,28 @@ public:
   String toString() {
     return Sformat("r%i/g%i/b%i",r,g,b);
   }
+#ifdef DOFILLIN
+static myRGB white;
+static myRGB red  ;
+static myRGB green;
+static myRGB blue ;
+static myRGB yellow;
+static myRGB magenta;
+static myRGB cyan;
+static myRGB black;
+static myRGB grey;
+
+static myRGB darkred;
+static myRGB darkgreen;
+static myRGB darkblue;
+static myRGB darkyellow;
+static myRGB myRGB::darkmagenta;
+static myRGB myRGB::darkcyan;
+#else
+  fillin myRGB white,grey,black;
+  fillin myRGB red,green,blue,yellow,magenta,cyan;
+  fillin myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan;
+#endif
 };
 
 myRGB operator*(float a,myRGB r) {

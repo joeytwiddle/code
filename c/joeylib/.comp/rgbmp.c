@@ -1,3 +1,5 @@
+
+
 #ifndef rgbmp_C
   #define rgbmp_C
 
@@ -2342,3 +2344,6 @@ List<V3d> rectanglefromquadrilateralgroovy(List<V2d> v2ds,V3d eye) {
 }
 
 #endif
+
+
+Map2d<unsigned char> justneedtocreateone;

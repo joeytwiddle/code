@@ -117,7 +117,7 @@ class RGBmp;
 RGBmp *angusreadbmp8(char *fn_image);
 RGBmp *angusreadbmp24(char *fn_image);
 void anguswritebmp24(char *fn_image,RGBmp *r);
-void writeppm(char *fn_image,RGBmp *r);
+// void writeppm(char *fn_image,RGBmp *r);
 
 /*class PerpRecv {
 public:
@@ -1288,8 +1288,8 @@ public:
     String ext=Sright(fname,4);
     if (Seq(ext,".bmp"))
       anguswritebmp24(fname,this);
-    if (Seq(ext,".ppm"))
-      writeppm(fname,this);
+    // if (Seq(ext,".ppm"))
+      // writeppm(fname,this);
     if (Seq(ext,".pgm"))
       getgreyscale()->writefile(fname);
     if (zip)

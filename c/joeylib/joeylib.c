@@ -55,6 +55,7 @@
 // #else
   // #define fillin static
 // #endif
+#define DOFILLIN
 #define fillin static
 #define fillup
 
@@ -165,6 +166,7 @@ void helloworld() {
 // Colour histogram
 #include <rgbhist.c>
 // Colour bitmap
+// #include <writeppm.c>
 #include <rgbmp.c>
 #include <texturedrectangle3d.c>
 #include <maths2.c>

@@ -1,4 +1,7 @@
-Data=[-2.000000, -2.301896, -2.585558, -2.852590, -3.104413, -3.342290, -3.567348, -3.780597, -3.982942, -4.175199, -4.358104];
+% line position
+t=[-2.150948, -2.443727, -2.719074, -2.978501, -3.223351, -3.454819, -3.673973, -3.881770, -4.079070, -4.266651];
+% line spacings
+Data=[-0.301896, -0.283662, -0.267032, -0.251823, -0.237877, -0.225058, -0.213249, -0.202345, -0.192257, -0.182905];
 groundU = -2.000000
 groundV = 0.187939
 groundW = 0.032139
@@ -7,16 +10,12 @@ groundK2 = 100.000000
 groundA = -9.396926
 groundB = 3.213938
 guessU = -2.000000
-%Data=[0, -4.55, -8.82, -12.8, -16.6, -20.2, -23.6, -26.8, -29.8, -32.7, -35.5];
-% Data=[0, -4.552159515, -8.829384325, -12.85585195, -16.65298583, -20.23983648, -23.63340136, -26.84889398, -29.89997217, -32.79893179, -35.55687249];
 Data=Data(:);
-sz=max(size(Data));
-t=0:1:sz-1; t=t(:);
 
-% Starting=[-0.5,10,1]
-Starting=[guessU,10,0]
+Starting=[guessU,1,1]
+% Starting=[groundU,groundV,groundW]
 options=optimset('Display','iter','MaxFunEvals',10000);
-Estimates=fminsearch('jfitu',Starting,options,t,Data)
+Estimates=fminsearch('jfit2u',Starting,options,t,Data)
 
 U=Estimates(1)
 V=Estimates(2)
@@ -25,6 +24,7 @@ W=Estimates(3)
 plot(t,Data,'*')
 hold on
 % p=0:.2:10; p=p(:);
-plot(t,U*(1+V*t)./(1+W*t),'r')
-plot(t,groundU*(1+groundV*t)./(1+groundW*t),'r')
+plot(t,posVspcu(t,guessU,1,1),'b')
+plot(t,posVspcu(t,groundU,groundV,groundW),'g')
+plot(t,posVspcu(t,U,V,W),'r')
 U*V/W

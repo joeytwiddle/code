@@ -8,14 +8,22 @@
 #define COLORS 256
 #define colors COLORS
 
+#ifdef X11GFX
+	// Optional - for 256color mode, palette is cycled on blit rather than actual palette switching  which occupies other apps too.
+	// Doesn't really work because we are now using a small set of the whole palette for each frame.
+	// #define FAKE_X_PAL_CYCLE
+#endif
+
 #define WIN_W 320
 #define WIN_H 200
 #define scrwid WIN_W
 #define scrhei WIN_H
-// #define WIN_W	640
-// #define WIN_H	480
-// #define scrwid 160
-// #define scrhei 100
+
+#define POSTERISE
+#define WIN_W	800
+#define WIN_H	600
+#define scrwid 120
+#define scrhei 75
 
 
 #ifdef X11GFX
@@ -335,15 +343,16 @@ void iterate_candy() {
 					// }
 				// }
 
-				// Simple posterisation
-				// for (i=ka;i<kb;i++)
-				// for (j=la;j<lb;j++)
-					// ximg->f.put_pixel(ximg,i,j,xrgb[c].pixel);
-
         #ifdef X11GFX
           // Fake palette switching
-          // c=(c+palspeed*frameno)%colors;
-          ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
+					#ifdef FAKE_X_PAL_CYCLE
+          	c=((int)(c+palspeed*frameno))%COLORS;
+					#endif
+
+					#ifndef POSTERISE
+          	ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
+					#endif
+				
         #endif
 				
 				// Doesn't work even in 256-col mode:
@@ -352,18 +361,27 @@ void iterate_candy() {
       }
     }
 
+		#ifdef POSTERISE
+		  // Simple posterisation
+	    // for (i=ka;i<kb;i++)
+	    // for (j=la;j<lb;j++)
+		    // ximg->f.put_pixel(ximg,i,j,xrgb[c].pixel);
+       for (x=0;x<WIN_W;x++)
+        for (y=0;y<WIN_H;y++) {
+	        i=x*scrwid/WIN_W;
+	        j=y*scrhei/WIN_H;
+	        c=img2.bmp[j][i];
+	        ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
+					// rubbish: XFillRectangle(d,ximg,xrgb[c],x,y,1,1);
+        }
+		#endif
+
     // #ifdef ALLEGRO
+		#ifndef FAKE_X_PAL_CYCLE
       redocolors(); // Not fake palette switching
+		#endif
     // #endif
 
-		// for (x=0;x<WIN_W;x++)
-			// for (y=0;y<WIN_H;y++) {
-				// i=x*scrwid/WIN_W;
-				// j=y*scrhei/WIN_H;
-				// c=(img2.bmp[j][i]+palspeed*frameno)%colors;
-				// ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
-			// }
-				
     wicked_blit();
 		timesync();
   

@@ -5,7 +5,7 @@ sz=max(size(Data));
 t=0:1:sz-1; t=t(:);
 
 % Starting=[-0.5,10,1]
-Starting=[guessU,10,0]
+Starting=[guessU,1,1]
 options=optimset('Display','iter','MaxFunEvals',10000);
 Estimates=fminsearch('jfitu',Starting,options,t,Data)
 
@@ -16,6 +16,6 @@ W=Estimates(3)
 plot(t,Data,'*')
 hold on
 % p=0:.2:10; p=p(:);
+plot(t,groundU*(1+groundV*t)./(1+groundW*t),'g')
 plot(t,U*(1+V*t)./(1+W*t),'r')
-plot(t,groundU*(1+groundV*t)./(1+groundW*t),'r')
 U*V/W

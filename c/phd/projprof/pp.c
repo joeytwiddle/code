@@ -581,7 +581,7 @@ public:
       printf("Created summary baseline %s with %s %s\n",summarybaseline.toString(),baseline.a.toString(),diff.toString());
       info.line(summarybaseline,myRGB::black);
       // Plot correlation points
-      for (int i=1;i<=cens.len;i++) {
+      for (int i=1;i<=cens.len;i++) { 
         if (leftc.used(i)) {
           info.cross(leftc.points.num(i).x,leftc.points.num(i).y,5,myRGB::red);
           summaryleftused.add(new V2d(leftc.points.num(i).x,leftc.points.num(i).y));
@@ -642,14 +642,16 @@ public:
                : cds.len );
     for (int i=1;i<=cdsend;i++) {
       float a=cds.num(i);
+      float pos=a;
       int weight=cnt.num(i);
+      if (i<cds.len) {
       // if (correlator==LineSpacing) {
         // x = average of two cds, y = dist between
         float b=cds.num(i+1);
         // float pos=(a+b)/2.0;
-        float pos=a;
         csspacing.add(V2d(pos,myabs(b-a)),weight);
         // printf("Correlating using lines =)\n");
+      }
       // } else if (correlator==LineWidth) {
         // y = width of line
         // float pos=a;
@@ -882,7 +884,7 @@ void main(int argc,String *argv) {
     B=B+RIGHT-DOWN;
     C=C+RIGHT+DOWN;
     D=D-RIGHT+DOWN;
-
+		
     // Everything up until now has been in binary image space
 
     // Work out mapping from binary image to original image
@@ -907,6 +909,14 @@ void main(int argc,String *argv) {
 
     // Recover
     printf("Doing recovery...\n");
+		printf("right = %s\n",RIGHT.toString());
+		printf("down = %s\n",DOWN.toString());
+		// printf("This is rubbish:\n");
+		// // printf("roll = %f\n",V3d::angle(
+		// // Assuming roll is 90:
+		// printf("pitch = %f\n",V3d::angle(DOWN,-V3d::i));
+		// printf("yaw = %f\n",V3d::angle(RIGHT,-V3d::j));
+
     if ( V2d::dist(tl,tr)/V2d::dist(bl,br) > 6.0 ||
          V2d::dist(bl,br)/V2d::dist(tl,tr) > 6.0 ) {
       printf("Aspect ratio %f (%ix%i) too much.  Skipping recovery.\n",V2d::dist(bl,br)/V2d::dist(tl,tr),V2d::dist(bl,br),V2d::dist(tl,tr));
