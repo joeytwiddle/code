@@ -184,6 +184,11 @@ main(int argc,String *argv) {
 			  } else
 					vvpreldist=0;
 		  }
+
+			if (realrightangerr>45)
+							realrightangerr=45;
+			if (realdownangerr>45)
+							realdownangerr=45;
 			
 		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
 				yaw,pitch,acc,corra,corrb,

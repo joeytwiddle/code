@@ -156,6 +156,7 @@ class ProjectionProfiler {
 public:
   int res,ppres;
   Map2d<VP *> vps;
+	List<VP *> vpslist; // sometimes nicer to access
   Map2d<bool> binimg;
   Pixel best;
   bool writepps,writebestpp,doinfo;
@@ -163,6 +164,8 @@ public:
   V2d imgcen;
   int scale;
   Line2d baseline;
+
+	ProjectionProfiler() { }
 
   ProjectionProfiler(int c,int p,Map2d<bool> b,bool wpps,bool wbpp,bool doi) {
     res=c;
@@ -235,7 +238,9 @@ public:
           if (realpos.mag()>scale*0.1) { // 1.5) {
             realpos=realpos+V2d(hw,hh);
   //          printf("Plane=%s\n",realpos.toString());
-            vps.setpos(i,j,new VP(realpos,ppres,scale,imgcen));
+            VP *vp=new VP(realpos,ppres,scale,imgcen);
+						vps.setpos(i,j,vp);
+						vpslist.add(vp);
             vpcount++;
           }
         }
@@ -287,9 +292,12 @@ public:
             binimg.setpos(i,j,false);
           } else {
             V2d pos=V2d(i,j);
-            for (int a=0;a<vw;a++)
-            for (int b=0;b<vh;b++) {
-              VP *vp=vps.getpos(a,b);
+						VP *vp;
+            // for (register int a=0;a<vw;a++)
+            // for (register int b=0;b<vh;b++) {
+						for (register int a=0;a<vpslist.len;a++) {
+              // vp=vps.getpos(a,b);
+              vp=vpslist.get(a);
               if (vp!=NULL)
                 vp->add(pos);
             }
@@ -727,7 +735,9 @@ void main(int argc,String *argv) {
   ArgParser a=ArgParser(argc,argv);
   bool recoverquad=true;
   int cirres=a.intafter("-res","resolution of final circle",120);
-  int lowcirres=a.intafter("-lowres","resolution of initial circle",60);
+  bool domiddlescan=a.argexists("-domiddlescan","do middle scan (you get two anyway)");
+  int medcirres=a.intafter("-medres","resolution of initial circle",60);
+  int lowcirres=a.intafter("-lowres","resolution of initial circle",30);
 	float smoothlowres=a.floatafter("-lowsmooth","smooth lowres before derivatives",1);
   maxpixelsused=a.intafter("-maxpixels","max # pixels to collect",5000);
   recwid=a.intafter("-recwid","Width of recovered image",500);
@@ -788,15 +798,19 @@ void main(int argc,String *argv) {
    * binimg.invert();
    */
 
-  ProjectionProfiler pplowres=ProjectionProfiler(lowcirres,ppres,binimg,writepps,writebestpp,doinfo);
+  ProjectionProfiler pplowres;
+  Map2d<float> lowresmap;
+  Map2d<bool> *lowresthresh;
+
+	// First scan
+	pplowres=ProjectionProfiler(lowcirres,ppres,binimg,writepps,writebestpp,doinfo);
   pplowres.setup();
   pplowres.calculate();
-  Map2d<float> lowresmap=pplowres.getppmap();
+	lowresmap=pplowres.getppmap();
   lowresmap.writefile("lowresmap.bmp");
 		// lowresmap=*lowresmap.smoothed(smoothlowres);
 		lowresmap=*lowresmap.filterby(lowresmap.gaussian(smoothlowres));
   	lowresmap.writefile("lowresmapsmoothed.bmp");
-  Map2d<bool> *lowresthresh;
 	if (usezerocrossings) {
 
 		Map2d<float> *filter=Map2d<float>::sobel();
@@ -843,8 +857,66 @@ void main(int argc,String *argv) {
 	}
   lowresthresh->invert();
   lowresthresh->writefile("lowresthresh1.bmp");
+
+	if (domiddlescan) {
+		// Second scan
+	  pplowres=ProjectionProfiler(medcirres,ppres,binimg,writepps,writebestpp,doinfo);
+    pplowres.setup(lowresthresh);
+    pplowres.calculate();
+	  lowresmap=pplowres.getppmap();
+    lowresmap.writefile("lowres2map.bmp");
+		  // lowresmap=*lowresmap.smoothed(smoothlowres);
+		  lowresmap=*lowresmap.filterby(lowresmap.gaussian(smoothlowres));
+  	  lowresmap.writefile("lowres2mapsmoothed.bmp");
+	  if (usezerocrossings) {
   
-  ProjectionProfiler pp=ProjectionProfiler(cirres,ppres,binimg,writepps,writebestpp,doinfo);
+		  Map2d<float> *filter=Map2d<float>::sobel();
+		  // Map2d<float> *filter=Map2d<float>::simple();
+	  	
+		  // // well just a little experiment...
+		  // Map2d<float> *edgemag,*edgeang;
+		  // Map2d<float> *deriv2mag,*deriv2ang;
+		  // lowresmap.edgedetection(Map2d<float>::sobel(),&edgemag,&edgeang);
+		  // edgemag->edgedetection(Map2d<float>::sobel(),&deriv2mag,&deriv2ang);
+		  // edgemag->writefile("5edgemag.bmp");
+		  // // edgeang->writefile("5edgeang.bmp");
+		  // deriv2mag->writefile("5deriv2mag.bmp");
+		  // // deriv2ang->writefile("5deriv2ang.bmp");
+  
+		  Map2d<float> hderiv=*lowresmap.filterby(filter);
+		  Map2d<float> vderiv=*lowresmap.filterby(filter->transpose());
+		  hderiv.writefile("5hderiv.bmp");
+		  vderiv.writefile("5vderiv.bmp");
+		  float zero=0;
+		  Map2d<bool> zerocrossimg=Map2d<bool>(hderiv.width,hderiv.height,false);
+		  for (int i=0;i<hderiv.width-1;i++)
+		  for (int j=0;j<hderiv.height-1;j++) {
+			  if (hderiv.getpos(i,j)<zero && hderiv.getpos(i+1,j)>=zero) {
+				  zerocrossimg.setpos(i,j,true);
+				  zerocrossimg.setpos(i+1,j,true);
+				  zerocrossimg.setpos(i-1,j,true); // yuk
+			  }
+        if (vderiv.getpos(i,j)<zero && vderiv.getpos(i,j+1)>=zero) {
+				  zerocrossimg.setpos(i,j,true);
+				  zerocrossimg.setpos(i,j+1,true);
+				  zerocrossimg.setpos(i,j-1,true); // yuk
+			  }
+		  }
+		  zerocrossimg.writefile("5zerocross.bmp");
+		  lowresthresh=&zerocrossimg;
+		  // Dirty hack to normalise:
+  	  lowresthresh=lowresthresh->expand(0);
+	  } else { // Do adaptive thresholding
+		  lowresthresh=lowresmap.adaptivethreshold(0.005);
+  	  lowresthresh->writefile("lowres2thresh0.bmp");
+	    lowresthresh->invert();
+  	  // lowresthresh=lowresthresh->expand(1);
+	  }
+    lowresthresh->invert();
+    lowresthresh->writefile("lowres2thresh1.bmp");
+	}
+
+	ProjectionProfiler pp=ProjectionProfiler(cirres,ppres,binimg,writepps,writebestpp,doinfo);
   pp.setup(lowresthresh);
   // pp.setup();
   // pp.clipsetupby(lowresthresh);

@@ -1,1 +1,7 @@
-./finderr $* | grep -v "^Opening "
+IN="$*res.txt"
+OUT="$*data.txt"
+if test -f "$IN"; then
+	./finderr $IN | grep -v "^Opening " > $OUT
+else
+	echo "No such file: $IN"
+fi
