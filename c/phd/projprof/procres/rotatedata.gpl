@@ -4,7 +4,8 @@ set xlabel "yaw"
 set ylabel "pitch"
 
 set zlabel "total accuracy"
-splot "data.txt" using 1:2:22
+splot [1:90] [1:90] [0:1] "data.txt" using 1:2:3
+# splot "data.txt" using 1:2:22
 
 # set zlabel "total accuracy"
 # splot "data.txt" using 1:2:3
