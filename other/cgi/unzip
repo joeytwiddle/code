@@ -1,0 +1,62 @@
+#!/bin/sh
+
+## TODO: insecurities eg. if "../something" provided in FILENAME
+
+# echo "Content-type: text/plain"
+# echo
+
+export CGILIB_NO_CONTENT=true
+. cgilib
+# export JPATH=/home/joey/j
+# . /home/joey/j/startj-simple
+
+ZIPPED=`getcgi "zipped"`
+
+ZIPFILE=`echo "$ZIPPED" | sed 's+:.*++'`
+FILENAME=`echo "$ZIPPED" | sed 's+.*:++'`
+# echo "|$ZIPFILE|<BR>"
+# ls "$ZIPFILE"
+# echo "<BR>"
+
+ZIPTYPE=`echo "$ZIPFILE" | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz' | sed 's:\.tar\.gz:\.tgz:;s:\.tar\.bz2:\.tgj:;s:.*\.::'`
+
+case $ZIPTYPE in
+
+	gz)
+		# echo "Serving gz $ZIPFILE"
+		# gunzip -c "$ZIPFILE" 2>&1
+		cp "$ZIPFILE" /tmp
+		TMP="$ZIPFILE"
+		ZIPFILE="/tmp/`basename "$ZIPFILE"`"
+		gunzip "$ZIPFILE"
+		FILE=`echo "$ZIPFILE" | sed 's+\.gz$++'`
+		# echo "Content-type: text/html"
+		# echo
+		# echo "$TMP<BR>"
+		# echo "$ZIPFILE<BR>"
+		# echo "$FILE<BR>"
+		serve "$FILE"
+		# echo "Done"
+	;;
+
+	tgz)
+		# echo "Decompressing \"$FILENAME\" from $ZIPFILE"
+		cd /tmp
+		tar xfz "$ZIPFILE" "$FILENAME" &&
+		serve "$FILENAME" &&
+		rm -f /tmp/"$FILENAME"
+	;;
+
+	zip)
+		# echo "Decompressing \"$FILENAME\" from $ZIPFILE"
+		cd /tmp
+		unzip "$ZIPFILE" "$FILENAME" &&
+		serve "$FILENAME" &&
+		rm -f /tmp/"$FILENAME"
+	;;
+
+	*)
+		echo "Don't understand zip type \"$ZIPTYPE\""
+	;;
+
+esac | tee /tmp/unzip-$$.out

@@ -1,0 +1,12 @@
+#!/bin/sh
+
+export CGILIB_NO_CONTENT=true
+. cgilib
+export JPATH=/home/joey/j
+. /home/joey/j/startj-simple
+
+TEXT=`getcgi "text"`
+
+echo "$TEXT" | txt2speech -tomp3 > /tmp/text2speech.log 2>&1
+
+serve /tmp/tts.mp3

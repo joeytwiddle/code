@@ -22,5 +22,22 @@ getcgi() {
 	fi
 }
 
-echo "Content-type: text/html"
-echo
+## Note: In order to use serve you will want to import cgilib after setting CGILIB_NO_CONTENT
+serve() {
+	FILE="$1"
+	# file --mime "$FILE"
+	MIMETYPE=`file --mime "$FILE" | sed 's+.*:.++'`
+	echo "Content-type: $MIMETYPE"
+	# Untested:
+	echo "Content-length: "`ls -ld "$FILE" | awk ' { print $5 } '`
+	echo
+	cat "$FILE"
+}
+
+if test ! $CGILIB_NO_CONTENT; then
+	if test ! $CGILIB_CONTENT_TYPE; then
+		CGILIB_CONTENT_TYPE="text/html"
+	fi
+	echo "Content-type: $CGILIB_CONTENT_TYPE"
+	echo
+fi
