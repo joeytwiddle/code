@@ -5,6 +5,7 @@
 // #define KEEP_TO_FPS
 
 // #define ALLEGRO
+#define LEAVE_EVENTS_ALONE
 #include "../../gfx/sdl/stripped-useful.c"
 #undef new
 #undef mysgn
@@ -30,10 +31,10 @@ float partrad=0.04;
 int tunnelps=1;
 float tunnelrad=0;
 
-float turnability=0.15;
+float turnability=0.10;
 float forcevel=0.03;
 float markerrange=3.0;
-int taillen=600;
+int taillen=800;
 
 V3d pos;
 Ori ori;
@@ -55,7 +56,7 @@ public:
     if (planar)
       line.y=0;
     o=myrnd()*2.0*pi;
-    a=myrnd()*11.0;
+    a=myrnd()*10.0;
   }
   V3d contribution(float thru) {
     return a*line*mysin(((float)f)*(thru*2.0*pi-o));
