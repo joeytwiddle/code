@@ -20,6 +20,9 @@ X="$1"
 
 TMP=`jgettmp $$`
 
+curseyellow
+echo ./extracterror "$X" $WRITEDATA 2> "$TMP"
+cursegrey
 ./extracterror "$X" $WRITEDATA 2> "$TMP"
 
 if test $WRITETOTALS; then

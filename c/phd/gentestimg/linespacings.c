@@ -139,7 +139,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	for (int i=0;i<endpoints.len;i++) {
 		V2d v=endpoints.get(i);
 		V2d nv=baseline.perpproject(v);
-		if ( V2d::dist(v,nv)>0.00001 ) {
+		if ( V2d::dist(v,nv)>0.001 ) {
 			fprintf(stderr,"linespacings.c: vvpFromPoints: v != nv by %f\n",V2d::dist(v,nv));
 			fprintf(stderr,"                in other words, the points were not projected onto the baseline.\n");
 		}

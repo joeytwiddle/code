@@ -12,6 +12,9 @@ for Y in *.results; do
 
 	echo "$X"
 
+	curseyellow
+	echo ./processone.sh "$@" "$X"
+	cursegrey
 	./processone.sh "$@" "$X"
 	# ./processone.sh -plot "$X"
 

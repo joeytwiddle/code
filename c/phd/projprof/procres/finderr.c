@@ -165,6 +165,7 @@ main(int argc,String *argv) {
 			float rightdiff=-V3d::normdot(gtright,V3d::k);
 			float rightang=180*asin(rightdiff)/pi;
 
+			fprintf(stderr,"%s %s\n",gtright.toString(),ppright.toString());
 			float realrightangerr=180.0-180.0*V3d::angBetween(gtright,ppright)/pi;
 			float realdownangerr=180.0-180.0*V3d::angBetween(gtdown,ppdown)/pi;
 			float realrightangerrzerone=1.0-realrightangerr/180.0;
@@ -221,6 +222,7 @@ main(int argc,String *argv) {
 			float vvpreldist=vvpdist/gtvvp.mag();
 			
 		  if (yaw>10 && yaw<80 && pitch>10 && pitch<80) {	
+			  fprintf(stderr,"--> %f\n",realrightangerr);
 			  if (myabs(realrightangerr)<123456789.0) {
 			    realrightangerrsum+=myabs(realrightangerr);
 				  var769++;

@@ -8,6 +8,9 @@ if test -f "$IN"; then
 		x finderr
 		) > making-finderr.txt
 	fi
+	curseyellow
+	echo ./finderr $IN
+	cursegrey
 	./finderr $IN |
 		if test "$2" = "-data"; then
 			grep -v "^Opening " | sed "s/nan/0.0/g" > $OUT
