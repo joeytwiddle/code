@@ -138,13 +138,6 @@ connected(X,Y,Line) :-			% X is connected to Y
 % Solution 1
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Todo: apart from general inefficiency of this method,
-% when backtracking for alternative (longer) routes, it
-% would be better not to repeat the shorter ones already
-% offered!
-
-% I think I have dealt with this is london6
-
 shortestPath(X,Y,[X|R],C):-
 	write('Shows routes in order of ascending cost.'), nl,
 	shortestPath(X,Y,1,R,C).
@@ -277,7 +270,24 @@ tryRoutesAndClip(Rts,BestCost,X,Y,R,C):-
 
 % Another attempt:
 
+shortPath(X,Y,[X,Y],C,L):-
+	connected(X,Y,L),
+	move(L,L,C).
+shortPath(X,Y,[Z|R],C,L):-
+	connected(X,Z,L2),
+	shortPath(Z,Y,R,C2,L2),
+	move(L,L2,MoveCost),
+	C is C2+MoveCost.
+
 shortestPath3(X,Y,R,C):-
+	shortPath(X,Y,R,C,_).
+
+test(R,C):-
+	shortestPath3(oxford_circus,paddington,R,C).
+
+% Another attempt:
+
+shortestPath4(X,Y,R,C):-
 	expandRouteTo([X],Y,R,C).
 
 expandRouteTo(RouteSoFar,Y,FR,0):-
