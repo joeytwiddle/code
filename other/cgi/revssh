@@ -13,6 +13,7 @@ if test "$INIT" = true; then
 	echo "" > /tmp/revssh-client-output-$SESSID.txt
 	chmod ugo+w /tmp/revssh-client-input-$SESSID.txt
 	chmod ugo+r /tmp/revssh-client-output-$SESSID.txt
+	# echo 'echo "Connexion established"'
 	tail -f /tmp/revssh-client-input-$SESSID.txt
 
 else

@@ -36,23 +36,30 @@ cd "$DIR" &&
 
 DBKERROR="0" &&
 
+echo "---- Before" >> $LOGFILE &&
+'ls' -l >> $LOGFILE &&
+echo "---- Retrieval" >> $LOGFILE &&
+
 # Retrieve each file individually - hopefully they are there!
 for FILE in $FILES; do
-	echo "Getting $FILE ..."
 
+	echo "Getting $FILE ..."
 	# wget $WGETOPTS -q -O "$FILE" "$SRCURL/$FILE"
 	# For Debug:
 	wget $WGETOPTS -O "$FILE" "$SRCURL/$FILE"
 
-	if test "$?" = 0; then
+	if test "$?" = 0
+	then
 		echo "Got OK"
 	else
-		echo "DBKERROR getting file"
+		echo "ERROR getting file"
 		DBKERROR="1"
 	fi
 done > "$LOGFILE"
 
 if test "$DBKERROR" != "0"; then
+	echo "---- After" >> $LOGFILE
+	'ls' -l >> $LOGFILE
 	cat "$LOGFILE" | mail -s "$HOST:[$0 $*] wget had exit code $DBKERROR" "$MAILONERROR"
 	cat "$LOGFILE"
 	exit "$DBKERROR"
