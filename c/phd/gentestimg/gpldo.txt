@@ -1,2 +1,2 @@
 #!/usr/local/gnu/bin/gnuplot
-u = 0.001663
+u = -0.034576
