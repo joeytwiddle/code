@@ -63,10 +63,13 @@ echo
 		# # `find $CITYPATH/webcast/ -name *.php3`
 # echo
 
+echo "Removing incompatible php"
+sedreplace -changes '<!-- <?=\$summary_file?> -->' ' ' "$CITYPATH/webcast/index_imc.php3"
+
 cd $CITYPATH/
 echo "Applying other patches:"
-for X in /www/tronic-to-buggy-patches/*; do
-	patch -p0 < "$X"
+for X in /www/tronic-to-buggy-patches/*
+do patch -p0 < "$X"
 done
 cd /www/
 echo
