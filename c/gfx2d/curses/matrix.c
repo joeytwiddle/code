@@ -42,12 +42,43 @@ void cls() {
 
 #define mbit char
 
+mbit **thematrix;
+mbit* palette;
+int paletteSize;
+int AVALTLET;
+int AVSLIDELEN;
+
+void slideRow(int x) {
+
+	attrset(COLOR_PAIR(2));
+
+	for (int y=LINES-1;y>0;y--) {
+		mbit src = thematrix[x][y-1];
+		thematrix[x][y] = src;
+		move(y,x);
+		if (src == '%') {
+			if ( (rand() % 6*AVSLIDELEN) == 0 ) {
+				thematrix[x][y] = palette[ rand() % paletteSize ];
+			} else {
+				attrset(COLOR_PAIR(7) | A_BOLD );
+				addch(thematrix[x][y]);
+				attrset(COLOR_PAIR(2));
+			}
+		} else {
+			addch(thematrix[x][y]);
+		}
+	}
+	thematrix[x][0]=' ';
+	move(0,x);
+	addch(' ');
+
+}
+
+
 void main() {
 
-	mbit** thematrix;
-	
-	mbit* palette = "^+ouq/\\*}0&$@#";
-	int paletteSize = strlen(palette);
+	palette = "^+ouq/\\*}0&$@#";
+	paletteSize = strlen(palette);
 	// mbit* altPalette = "%@#";
 	// int altPaletteSize = strlen(altPalette);
 	
@@ -87,14 +118,14 @@ void main() {
 	}
 
 	// base it on area instead of width
-	int AVSLIDELEN = ( LINES>30 ? 2 : 1 );
-	int AVALTLET = ( LINES>30 ? 4 : 2 );
+	AVSLIDELEN = ( LINES>30 ? 2 : 1 );
+	AVALTLET = ( LINES>30 ? 4 : 2 );
 
 	while (true) {
 
 		int action = rand() % 100;
 
-		if (action < 10) {
+		if (action < 80) {
 
 			// Alter: add some new symbols and a white "active" symbol (goes too fast atm)
 
@@ -134,44 +165,15 @@ void main() {
 				thematrix[x][y] = '%';
 			}
 
-		} else if (action < 100) {
+		}
 
 			// Slide: slide a whole column down n spaces
 
-			// while ( (rand() % 10) != 0 ) {
-
-				int x = rand() % COLS;
-
-				attrset(COLOR_PAIR(2));
-				do {
-
-					for (int y=LINES-1;y>0;y--) {
-						mbit src = thematrix[x][y-1];
-						thematrix[x][y] = src;
-						move(y,x);
-						if (src == '%') {
-							if ( (rand() % 6*AVSLIDELEN) == 0 ) {
-								thematrix[x][y] = palette[ rand() % paletteSize ];
-							} else {
-								attrset(COLOR_PAIR(7) | A_BOLD );
-								addch(thematrix[x][y]);
-								attrset(COLOR_PAIR(2));
-							}
-						} else {
-							addch(thematrix[x][y]);
-						}
-					}
-					thematrix[x][0]=' ';
-					move(0,x);
-					addch(' ');
-
-					wrefresh(stdscr);
-
-				} while ( (rand() % AVSLIDELEN) != 0 );
-
-			// }
-
-		}
+			for (int x=0;x<COLS;x++) {
+				if ( (rand()%16) == 0 ) {
+					slideRow(x);
+				}
+			}
 
 		wrefresh(stdscr);
 
