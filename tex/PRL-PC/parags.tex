@@ -1,6 +1,6 @@
 
 
-\section{Determining the Style of Paragraph Formatting} \label{sec-parags}
+\section{Determining the Format  of Paragraphs} \label{sec-parags}
 
 The location of the horizontal vanishing point, and the projection profile of
 the text from that position, make it possible to separate the individual lines
@@ -43,7 +43,7 @@ data.
 % \subfigure[A left justified paragraph]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
 % \subfigure[Two centrally aligned paragraphs]{\epsfig{figure=images/prlall/chem015/overboth.eps,width=64mm}\label{summaryfiga}}
 % \subfigure[Centralised paragraphs]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
-\subfigure[The running example.]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
+\subfigure[The running example.]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}}
 \hspace{2mm}
 % \subfigure[A centrally aligned document]{\epsfig{figure=images/prlall/chem017/origover.eps,width=64mm}\label{chem010overlay}}
 \subfigure[Two centrally aligned paragraphs]{\epsfig{figure=images/prlall/chem015/overboth.eps,width=64mm}\label{chem015overlay}}
@@ -66,26 +66,24 @@ possible ways to analyse the segmented lines to reveal the vertical vanishing
 point.  If the paragraph is {\em fully justified}, then the left and right
 margins of the text are straight, and intersecting these two margin lines will
 provide us with the vertical vanishing point, and the problem is fully resolved.
+
 Alternatively, if the paragraph is {\em left justified}, {\em right justified},
-or {\em centred},
-a straight line will be visible either on the left margin, on the right margin,
-or through the centres of the lines.  The vanishing point will lie somewhere
-along this baseline.  However, the actual position of the vanishing point will
-still be unknown, and must be estimated.
-
-
-Initially, we must determine the structure of the paragraph, i.e. its 
-formatting style. We collect the left end, the centroid, and the right end of each
-of the segmented lines, to form three sets of points $P_L,P_C,P_R$ respectively.
-Since some justification or formatting is anticipated in the paragraph, we will
-expect a straight line to fit well through at least one of these sets of points,
-representing the left or right margin, or the centre line of the paragraph.  To
-establish the line of best fit for each set of points, we use a RANSAC (random
-sampling concensus, \cite{bolles81ransac-based}) algorithm to reject outliers
-caused for example by short lines, equations or headings.  Given a set of points
-$P$, the line of best fit through a potential fit 
-$F=\{\myvec{p}_i, i=1,..,M\}\subseteq P$ passes through $\myvec{c}$, the average
-of the points, at an angle $\psi$ found by minimising the following error function:
+or {\em centred}, a straight line will be visible either on the left margin, on
+the right margin, or through the centres of the lines, respectively.  The
+vanishing point will lie somewhere along this baseline.  However, its actual
+position will still be unknown, and must be estimated.  Initially, we must
+determine the structure of the paragraph, i.e. its formatting style. We collect
+the left end, the centroid, and the right end of each of the segmented lines, to
+form three sets of points $P_L,P_C,P_R$ respectively.  Since some justification
+or formatting is anticipated in the paragraph, we will expect a straight line to
+fit well through at least one of these sets of points, representing the left or
+right margin, or the centre line of the paragraph.  To establish the line of
+best fit for each set of points, we use a RANSAC (random sampling consensus,
+\cite{bolles81ransac-based}) algorithm to reject outliers caused for example by
+short lines, equations or headings.  Given a set of points $P$, the line of best
+fit through a potential fit $F=\{\myvec{p}_i, i=1,..,M\}\subseteq P$ passes
+through $\myvec{c}$, the average of the points, at an angle $\psi$ found by
+minimising the following error function:
 
 \begin{equation}
 % E_F(\myvec{c},\myvec{n}) = \frac{1}{M^5} \sum_{i=1}^{M} ( (\myvec{p}_i-\myvec{c}) \cdot \myvec{n})^2
@@ -100,10 +98,12 @@ number of points. Hence, for the three sets of points $P_L,P_C,P_R$ we obtain
 three lines of best fit $F_L,F_C,F_R$ with respective errors
 $E_L,E_C,E_R$.  It is now possible to classify the formatting style of the
 paragraph using the rules in \reftab{typeofparatable}.
-\reffig{summaryfiga} shows the line $F_L$ passing through the left margin of
+\reffig{chem002overlay} shows the line $F_L$ passing through the left margin of
 the paragraph.  In this case $E_L<E_C$ and $E_L<E_R$, hence the second
 condition in \reftab{typeofparatable} is satisfied and the paragraph is
-correctly identified as being left justified.
+correctly identified as being left justified. The second example in 
+\reffig{chem015overlay} shows the detection of centrally justified paragraphs
+in a book of poems.
 % \reffig{summaryfiga} shows the line $F_C$ passing through the centre of
 % the paragraph.  In this case $E_C<E_L$ and $E_C<E_R$, hence the last
 % condition in \reftab{typeofparatable} is satisfied and the paragraph is
@@ -131,21 +131,23 @@ correctly identified as being left justified.
     \end{tabular}
   \end{center}
   % \vspace*{-5mm}
-  \caption{Classifying the type of paragraph}
+  \caption{Classifying the type of paragraph given the error fit in (\ref{ransacerroreqn})}
 %  \vspace{-5mm} % This is a dirty hack to help page flow
   \label{typeofparatable}
 \end{table}
 
 
 
-For fully justified paragraphs, the recovery of the vertical vanishing point is
-trivial, and may be achieved by intersecting the left and right margins of the
-paragraphs, the results of which are shown later in \reftab{accuracytable} and
-\reffig{vvpaccuracya}.  However, for a left justified, right justified or
-centralised paragraph, we can retrieve only one baseline.  The other two fitted
-lines will have significant errors due to the jagged margin(s).  In these
-situations, a different method must be used to determine the position on the
-baseline at which the vanishing point lies.
+As mentioned earlier, for fully justified paragraphs, the recovery of the
+vertical vanishing point is trivial, and may be achieved by intersecting the
+left and right margins of the paragraphs, the results of which are shown later
+in \reftab{accuracytable} and \reffig{vvpaccuracya}. 
+However, for a left justified, right justified or centralised paragraph, we can
+retrieve only one baseline.  The other two fitted lines will have significant
+errors due to the jagged margin(s).  In these situations, a different method
+must be used to determine the position on the baseline at which the vanishing
+point lies.
+
 
 
 

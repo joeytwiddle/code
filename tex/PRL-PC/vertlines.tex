@@ -94,11 +94,37 @@ observations $O(n)$.
 % By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.  % for these points.
 A least-squares fit of $O(n)$ to the function $y(n)$ should now yield values for $V$ and $W$, and hence the orientation of the paragraph.
 However, since it is common for documents to also contain lines of text which are not part of an evenly spaced paragraph, and for extraneous elements to enter the data, the $n$th line observed in the image may lose correspondence with the $n$th line in the paragraph model.
-% For example, an outlier at position $n=K$ would cause all successive observations 
+% For example, an outlier at position $n=K$ would cause all successive
+% observations 
 % When fitting the curve of $y(n)$ against $n$, one such outlier at $n=K$ would cause all succesive observations ($n>K$) to have 
 In the presence of such outliers, fitting a set of points $(n,O(n))$ to the curve $(n,y(n))$ 
 is problematic, since any outlier will break the correspondence between the $x$
 and $y$ coordinates of successive points.
+For example, in \reffig{poorfitting}, data point 7 is an undesirable outlier
+which has shifted all successive points one position along the horizontal $n$-axis,
+causing a poor fitting.
+\begin{figure}[t]
+\centering
+\begin{center}
+	\subfigure[Poor fitting using line position due to the presence of an outlier.]{
+		\epsfig{figure=images/fitting/fit-simple-outlier-with-got.eps,width=65mm}
+		\label{poorfitting}
+	}
+	\subfigure[Using line spacing, the outlier does not affect the remaining points.]{
+		\epsfig{figure=images/fitting/fit-spacings-outlier-with-got.eps,width=65mm}
+		\label{goodfitting}
+	}
+	\caption{The response of different fitting methods to outliers.  Fine dashes
+		represent the desired (ground truth) parameters, longer dashes the fit
+		achieved using least-squares.
+		% using
+		% Marquardt-Levenberg
+		% least-squares
+		% fitting
+	}
+	\label{fittingexamples}
+\end{center}
+\end{figure}
 % in the presence of outliers is problematic, since we cannot guarantee the linkage of all the point's x and y coordinates.
 % To fit a curve of position $y(n)$ against line number $n$ would be unwise in this situation.
 % An alternative curve which may be taken from the data and remains unaffected by line number, is the ratio of 
@@ -106,6 +132,7 @@ and $y$ coordinates of successive points.
 % To prevent the progression of an outlier through successive observations, we must use 
 It is therefore preferable to remove the direct dependence of the points on $n$
 by instead fitting the curve of {\em line spacing} $Y_n$ against {\em position} $X_n$, defined as:
+
 
 \begin{eqnarray}
 Y_n = y(n+1)-y(n) & \mbox{~~~~~~~~~~~~~~~ \it line spacing} \label{linespacingsdefneqn} \\
@@ -130,15 +157,22 @@ n(X) = \frac{X-U}{UV-XW}
 \label{nfromxeqn}
 \end{equation}
 
-Initial parameters $V$ and $W$ are chosen for line fitting using a simple estimate. % for the error optimisation.
-However, due to the complexity of \refeqn{fittingeqn} and \refeqn{nfromxeqn}, many false minima exist, and one of these may be converged upon during optimisation.
+% Initial parameters $V$ and $W$ are chosen for line fitting using a simple estimate.
+Initial values for the parameters $V=2.0$ and $W=0.1$ were empyrically chosen as seed values for the fitting.
+% For thesis maybe:
+% These seed values remain constant in our experiments, although for each fitting their signs must be set to correpond to the ordering of the data points (increasing or decreasing $y(n)$) and the general trend of $Y(n)$ (increasing or decreasing).
+% for the error optimisation.
+Due to the complexity of \refeqn{fittingeqn} and \refeqn{nfromxeqn}, many false minima exist, and one of these may be converged upon during optimisation.
 Therefore, to refine the parameters, an initial fit is made with an approximation of \refeqn{fittingeqn}:
 
 \begin{equation}
 Y(X) = \frac{ UV }{ 1+n(X)W }
 \end{equation}
 
-This ensures that parameters close to the desired minima are obtained before the final fitting.  Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
+This ensures that parameters close to the desired minima are obtained before the final fitting.
+\reffig{goodfitting} shows that the outlier from \reffig{poorfitting} has now affected two of the data points, but does not affect the rest of the data.
+However, since the fitting achieved is still not perfect, we employ RANSAC to actually exclude apparent outliers from the final parameter fit.
+Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
 % A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
 After reversing the transformation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
 % We therefore fit the measured positions against spacing $(y(n),y(n+1)-y(n))$ to the model:
@@ -396,7 +430,9 @@ which contains text of different sizes, and other image noise such as specularit
 We put our rectified paragraphs through standard off-the-shelf OCR software,
 however the final character recognition is largely dependent on the quality of
 the camera resolution. In some recovered images, the OCR accuracy was below 50\%
-while for others the accuracy was above 90\% and in some cases 100\%.
+% while for others the accuracy was above 90\% and in some cases 100\%.
+while for others the accuracy was above 90\%.  The image recovered in
+\reffig{chem017recover} achieved 100\% accuracy.
 
 %\reftab{ocrtable} shows that when we applied commercial OCR software to the image in \reffig{arthurcclarke},
 %81\% of the characters and 84\% of the words were recognised correctly.
@@ -437,22 +473,32 @@ while for others the accuracy was above 90\% and in some cases 100\%.
 \begin{center}
 
 \subfigure[]{ \begin{tabular}{c}
-	\epsfig{figure=images/chem010overlay.ps,width=36mm} \\
+	\epsfig{figure=images/chem010overlay.ps,width=42mm} \\
 		$\downarrow$ \\
 		\vspace{-4.5mm}
 		\\
-		\epsfig{figure=images/chem010recover.ps,width=36mm}
+		\epsfig{figure=images/chem010recover.ps,width=42mm}
 	\end{tabular}       \label{arthurcclarke}
 	\label{empprb}
 }
 \subfigure[]{ \begin{tabular}{c}
-	\includegraphics[width=36mm]{images/chem008oo.ps}   \\
+	\includegraphics[width=42mm]{images/chem008oo.ps}   \\
 		$\downarrow$ \\
 		\vspace{-4.5mm}
 		\\
-		\includegraphics[width=36mm]{images/chem008001recover.ps}   \\
-		\includegraphics[width=36mm]{images/chem008002recover.ps}
+		\includegraphics[width=42mm]{images/chem008001recover.ps}   \\
+		\includegraphics[width=42mm]{images/chem008002recover.ps}
 	\end{tabular} \label{emppre}
+}
+\subfigure[]{ \begin{tabular}{c}
+	\epsfig{figure=images/chem017001origover.eps,width=42mm} \\
+		$\downarrow$ \\
+		\vspace{-4.5mm}
+		\\
+		\epsfig{figure=images/prlall/chem017/recover.eps,width=42mm}
+		% \epsfig{figure=images/chem017001recover.ps,width=36mm}
+	\end{tabular}       \label{chem017recover}
+	% \label{empprb}
 }
 \subfigure[]{ \begin{tabular}{c}
 	\epsfig{figure=images/chem011.ps,width=36mm}\label{banana} \\
