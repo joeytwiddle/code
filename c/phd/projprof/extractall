@@ -21,7 +21,7 @@ roll="90";
   for pitch in `listnums 5 80 by 5`; do
     yaw=15;
     for yaw in `listnums 5 80 by 5`; do
-			extractone $roll $yaw $pitch >> "$RES"
+			./extractone $roll $yaw $pitch >> "$RES"
     done
   done
 # done
