@@ -282,6 +282,8 @@ int main(int argc,char *argv[]) {
 
 #ifdef DEBUGTOFILE
 	output=fopen("debug.txt","wa");
+	if (output==NULL)
+		printf("Failed to open file debug.txt\n");
 #endif
 
 	setuplookups();
@@ -309,6 +311,8 @@ int main(int argc,char *argv[]) {
 	// SDL_LockSurface(bgtexture);
 
 	fp=fopen("incl.c","wa");
+	if (fp==NULL)
+		printf("Failed to open file incl.c\n");
 	printSurfaceDetails(fp,"screen",screen);
 	printSurfaceDetails(fp,"bgtexture",bgtexture);
 	printSurfaceDetails(fp,"bgtexture2",bgtexture2);
