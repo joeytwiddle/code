@@ -1,7 +1,7 @@
 IN="$*res.txt"
 OUT="$*data.txt"
 if test -f "$IN"; then
-	./finderr $IN | grep -v "^Opening " > $OUT
+	./finderr $IN | grep -v "^Opening " | sed "s/nan/0.0/g" > $OUT
 else
 	echo "No such file: $IN"
 fi
