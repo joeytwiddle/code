@@ -1,10 +1,10 @@
 HEAD="$1"
 # N=2
-for X in `'ls' $HEAD-*.totals | sed "s/$HEAD-//;s/\(.*\)\..*/\1/;s/[^0123456789\.].*//" | sort -n`; do
+for X in `'ls' $HEAD*.totals | sed "s/$HEAD//;s/\(.*\)\..*/\1/;s/[^0123456789\.].*//" | sort -n`; do
 	N="$X"
-	HVPERR=-`grep "hvpreldistave = " "$HEAD-$X.totals" | sed "s/.*= //;s/ .*//"`
+	HVPERR=-`grep "hvpreldistave = " "$HEAD$X.totals" | sed "s/.*= //;s/ .*//"`
 	echo "$N	$HVPERR" >&3
-	VVPERR=-`grep "vvpreldistave = " "$HEAD-$X.totals" | sed "s/.*= //;s/ .*//"`
+	VVPERR=-`grep "vvpreldistave = " "$HEAD$X.totals" | sed "s/.*= //;s/ .*//"`
 	echo "$N	$VVPERR" >&2
 	# N=`expr $N + 1`
 done 3> "$HEAD-hvpchange.data" 2> "$HEAD-vvpchange.data"
