@@ -36,18 +36,18 @@
 // #define sparsenessSkipCols 1
 //
 // For slow machines (eg. 486): less faithful, but animation appears much clearer
-#define sparsenessLengthOn 1
-#define sparsenessLengthOff 1
-#define sparsenessMovementOn 1
-#define sparsenessMovementOff 3
-#define sparsenessSkipCols 3
+// #define sparsenessLengthOn 1
+// #define sparsenessLengthOff 1
+// #define sparsenessMovementOn 1
+// #define sparsenessMovementOff 3
+// #define sparsenessSkipCols 3
 //
 // Thick with data, looks like XMatrix defaults:
-// #define sparsenessLengthOn 0.25
-// #define sparsenessLengthOff 0.25
-// #define sparsenessMovementOn 1.5
-// #define sparsenessMovementOff 1
-// #define sparsenessSkipCols 1
+#define sparsenessLengthOn 0.25
+#define sparsenessLengthOff 0.25
+#define sparsenessMovementOn 1.5
+#define sparsenessMovementOff 1
+#define sparsenessSkipCols 1
 
 void homeAndWrefresh() {
 	move(0,0);
@@ -308,10 +308,14 @@ void main() {
 
 #ifdef MORE_WHITE_BITS
 		for (int i=0;i<numProcesses;i++) {
+			bool recycle = false;
 			if (processes[i] == STATIC_PROCESS_EMPTY || processes[i] == STATIC_PROCESS_FULL) {
 				processes[i] = thematrix[processX[i]][processY[i]];
 				matrix_set_process(processX[i],processY[i]);
 				thematrix[processX[i]][processY[i]] = processes[i];
+				if (processes[i] == STATIC_PROCESS_EMPTY && prob(6)) {
+					recycle = true;
+				}
 			} else if (processes[i] == WRITING_PROCESS || processes[i] == CLEARING_PROCESS) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
 				matrix_set(processX[i],processY[i],toWrite);
@@ -319,12 +323,15 @@ void main() {
 				if (processY[i]>=LINES) {
 					newProcess(i);
 				} else {
+					if (processes[i] == CLEARING_PROCESS && thematrix[processX[i]][processY[i]] == ' ' && prob(6)) {
+						recycle = true;
+					}
 					matrix_set_process(processX[i],processY[i]);
 					thematrix[processX[i]][processY[i]] = WRITING_PROCESS; // nobody cares!
 				}
 			}
-			if (prob(processDies)) {
-				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
+			if (recycle || prob(processDies)) {
+				mbit toWrite = ( processes[i] == CLEARING_PROCESS || processes[i] == STATIC_PROCESS_EMPTY ? ' ' : randSymbol() );
 				matrix_set(processX[i],processY[i],toWrite);
 				newProcess(i);
 			}
