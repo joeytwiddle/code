@@ -9,18 +9,18 @@ data Tree = Layer String Tree | MinBranch [Tree] | Single String | Branch Bool S
   -- deriving (Show)
 
 instance Show Tree where
-  show (t) = showTree "" t
+  show (t) = showTree "" "" t
   -- show (Leaf ss) = concat (map addn ss)
     -- where addn s = s++"\n"
 
-showTree indent (Layer l t) = "| " ++ indent++l++"\n" ++ showTree (indent++(replicate (length l) ' ')) t
-showTree indent (Single s) = ". " ++ (indent++""++s++""++"\n")
-showTree indent (MinBranch bs) = indent++"{\n" ++ concat (map (showTree (indent)) bs)++ indent++"}\n"
-showTree indent (Branch same c bs)
-  | same      = "| "++indent++c++"{\n"++ concat (map (showTree (indent++(replicate (length c) ' '))) bs) ++ "| "++indent++"}\n"
-  | otherwise = concat (map (showTree (indent)) bs)
-  -- | otherwise = "< "++indent++"{"++c++"\n"++ concat (map (showTree (indent++(replicate (length c) ' '))) bs) ++ "> "++indent++"}\n"
-showTree indent (Leaf ls) = concat (map (sort) ls)
+showTree sofar indent (Layer l t) = "| " ++ indent++l++"\n" ++ showTree (sofar++l) (indent++(replicate (length l) ' ')) t
+showTree sofar indent (Single s) = ". " ++ (indent++""++s++""++"\n")
+showTree sofar indent (MinBranch bs) = indent++"{\n" ++ concat (map (showTree sofar (indent)) bs)++ indent++"}\n"
+showTree sofar indent (Branch same c bs)
+  | same      = "| "++sofar++c++"{\n"++ concat (map (showTree (sofar++c) (indent++(replicate (length c) '>'))) bs) ++ "| "++indent++"}\n"
+  | otherwise = concat (map (showTree sofar (indent)) bs)
+  -- | otherwise = "< "++indent++"{"++c++"\n"++ concat (map (showTree sofar (indent++(replicate (length c) ' '))) bs) ++ "> "++indent++"}\n"
+showTree sofar indent (Leaf ls) = concat (map (sort) ls)
   where sort xs = "= " ++ indent ++ ">"++xs++"<" ++ "\n"
 
 -- test = go ["/stuff/data/cdrom_a2.find"]
