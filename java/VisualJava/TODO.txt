@@ -7,6 +7,7 @@ In fact, the project could be taken in either direction.
 Can we hope to support an N-dimensional project?
 Or can we at least hope to preserve some common code?
 It should be documented in CVS when either of the forks starts.
+LOL, maybe we could make it a boolean option somewhere!
 
 
 
