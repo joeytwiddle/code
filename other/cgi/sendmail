@@ -1,0 +1,26 @@
+#!/bin/sh
+
+echo "Content-type: text/html"
+echo
+
+. cgilib
+export JPATH=/home/joey/j
+. /home/joey/j/startj-simple
+
+# set | tohtml
+
+WHOTO=`echo "$QUERY_STRING" | sed "s/.*\(&\|'\)\([^_]*\)_submit=Send+email.*/\2/"`
+
+getcgi() {
+	echo "$QUERY_STRING" | sed "s/.*\(&\|'\)$1=\([^&']*\)\(&\|'\).*/\2/" | fromcgi
+}
+
+EMAILTO=`getcgi "$WHOTO"_to`
+EMAILSUBJECT=`getcgi "$WHOTO"_subject`
+EMAILBODY=`getcgi "$WHOTO"_body`
+
+echo "\"$EMAILTO\""
+echo "<br>"
+echo "\"$EMAILSUBJECT\""
+echo "<br>"
+echo "\"$EMAILBODY\""

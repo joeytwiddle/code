@@ -1,0 +1,12 @@
+fromcgi () {
+sed '
+s/+/ /g;
+s/%40/@/g;
+# Newlines:
+s/%0D%0A/\
+/g;s/%0D/\
+/g;s/%0A/\
+/g
+'
+}
+

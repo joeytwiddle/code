@@ -1,0 +1,27 @@
+#!/bin/sh
+
+export MSGLIB=/var/www/msgboard
+
+echo "Content-type: text/html"
+echo
+
+. cgilib
+export JPATH=/home/joey/j
+. /home/joey/j/startj-simple
+
+# set | tohtml
+
+FROM=`echo "$REQUEST_URI" | sed "s/.*\?from=\([^&]*\)\(&\|\).*/\1/" | fromcgi | tohtml`
+echo "from = $FROM"
+echo "<P>"
+
+MESSAGE=`echo "$REQUEST_URI" | sed "s/.*\?message=\([^&]*\)\(&\|\).*/\1/" | fromcgi | tohtml`
+echo "message = $MESSAGE"
+echo "<P>"
+
+ls $MSGLIB
+
+echo "<TR><TD>$FROM:</TD><TD>$MESSAGE</TD></TR>" >> $MSGLIB/msgboard.volatile
+
+cat $MSGLIB/msgboard.header $MSGLIB/msgboard.volatile $MSGLIB/msgboard.footer > $MSGLIB/index.html
+
