@@ -1,5 +1,8 @@
 package visualjava;
 
+import org.neuralyte.common.swing.LargeCapacityJMenu;
+import org.neuralyte.common.swing.Moveability;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
@@ -20,7 +23,7 @@ public class ObjectIcon extends JLabel {
 
     public ObjectIcon(Desktop _desktop, Object _obj) {
         // super(_obj.getClass().getName() + " x = " + _obj);
-        super(VisualJava.getSimpleClassName(_obj.getClass()) + " x = \"" + _obj + "\"", new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj), JLabel.RIGHT);
+        super(VisualJavaStatics.getSimpleClassName(_obj.getClass()) + " x = \"" + _obj + "\"", new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj), JLabel.RIGHT);
         desktop = _desktop;
         obj = _obj;
         // JMenu statics = new JMenu("Statics");
@@ -30,6 +33,7 @@ public class ObjectIcon extends JLabel {
         // VisualJava.addMenuBar(this);
         addPopupMenuTo(this);
         // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],obj);
+        Moveability.allowUserToMove(this);
     }
 
 	void addPopupMenuTo(Component thing) {
@@ -62,13 +66,13 @@ public class ObjectIcon extends JLabel {
         // popup.add(statics);
         popup.add(new StaticsMenu("Statics",obj.getClass().getName()));
 
-        JMenu properties = new JMenu("Properties");
+        JMenu properties = new LargeCapacityJMenu("Properties");
         try {
             Class c = obj.getClass();
             for (int i=0;i<c.getDeclaredFields().length;i++) {
                 Field f = c.getDeclaredFields()[i];
                 if (!Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers())) {
-                    VisualJavaGui.addFieldToMenu(f,properties,obj);
+                    VisualJavaGUIStatics.addFieldToMenu(f,properties,obj);
                 }
             }
         } catch (Exception e) {
@@ -76,18 +80,9 @@ public class ObjectIcon extends JLabel {
         }
         popup.add(properties);
 
-        JMenu methods = new JMenu("Methods");
-        try {
-            Class c = obj.getClass();
-            for (int i=0;i<c.getDeclaredMethods().length;i++) {
-                Method m = c.getDeclaredMethods()[i];
-                if (!Modifier.isStatic(m.getModifiers())) {
-                    VisualJavaGui.addMethodToMenu(m,methods,obj);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        }
+        JMenu methods = new LargeCapacityJMenu("Methods");
+        addNonStaticMethodsToMenu(obj.getClass(),methods,true);
+        // addNonStaticMethodsToMenu(methods);
         popup.add(methods);
 
 		//Add listener to components that can bring up popup menus.
@@ -96,5 +91,26 @@ public class ObjectIcon extends JLabel {
 		// menuBar.addMouseListener(popupListener);
 
 	}
+
+    private void addNonStaticMethodsToMenu(Class c, JMenu methods, boolean andSuperClasses) {
+        try {
+            if (andSuperClasses) {
+                Class superClass = c.getSuperclass();
+                if (superClass != null) {
+                    JMenu superClassMethodsMenu = new LargeCapacityJMenu(VisualJavaStatics.getSimpleClassName(superClass));
+                    addNonStaticMethodsToMenu(superClass,superClassMethodsMenu,andSuperClasses);
+                    methods.add(superClassMethodsMenu);
+                }
+            }
+            for (int i=0;i<c.getDeclaredMethods().length;i++) {
+                Method m = c.getDeclaredMethods()[i];
+                if (!Modifier.isStatic(m.getModifiers())) {
+                    VisualJavaGUIStatics.addMethodToMenu(m,methods,obj);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+    }
 
 }

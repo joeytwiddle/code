@@ -1,35 +1,32 @@
 package visualjava;
 
+import org.neuralyte.common.swing.LargeCapacityJMenu;
+
 import javax.swing.*;
 import java.util.Map;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
 /** joey Nov 2, 2004 1:18:49 AM */
-public class ClassMenu extends JMenu {
+public class ClassMenu extends LargeCapacityJMenu {
+
+    final static ImageIcon packageIcon = new ImageIcon("/usr/share/pixmaps/gnome-default-dlg.png");
+
     String packageName;
+
     Map childMenus;
+
     public ClassMenu(String _packageName) {
-        super(( _packageName.length() > 0 ? getLastInPath(_packageName) : "Class" ));
+        super(( _packageName.length() > 0 ? VisualJavaStatics.getLastInPath(_packageName) : "Class" ));
+        setIcon(packageIcon);
         packageName = _packageName;
         childMenus = new java.util.HashMap();
     }
-    public static String getLastInPath(String fullPackage) {
-        int i = fullPackage.lastIndexOf(".");
-        if (i >= 0) {
-            return fullPackage.substring(i+1);
-        } else {
-            return fullPackage;
-        }
-    }
-    public static String getPackageFromClass(String className) {
-        int i = className.lastIndexOf(".");
-        return className.substring(0,i);
-    }
+
     // public void addClass(Class c) {
     public void addClass(final String c) {
         // String classPackage = c.getPackage().getName();
-        String classPackage = getPackageFromClass(c);
+        String classPackage = VisualJavaStatics.getPackageFromClass(c);
         if (classPackage.equals(packageName)) {
             // JMenuItem item = new JMenuItem(VisualJava.getSimpleClassName(c));
             // JMenuItem item = new JMenuItem(c.substring(classPackage.length()+1));
@@ -57,7 +54,7 @@ public class ClassMenu extends JMenu {
                 e.printStackTrace(System.err);
             }
             */
-            JMenu statics = new StaticsMenu(getLastInPath(c),c);
+            JMenu statics = new StaticsMenu(VisualJavaStatics.getLastInPath(c),c);
             add(statics);
         } else {
             if (!classPackage.startsWith(packageName)) {

@@ -36,16 +36,19 @@ public class Desktop extends JDesktopPane {
 
     public void displayMethod(Method m, Object obj) {
         MethodFrame methodFrame = new MethodFrame(m,obj);
+        initMethodFrame(methodFrame);
+    }
+    public void displayConstructor(Constructor con) {
+        MethodFrame methodFrame = new MethodFrame(con);
+        initMethodFrame(methodFrame);
+    }
+    private void initMethodFrame(MethodFrame methodFrame) {
         methodFrame.setLocation(getWidth()/2,getHeight()/2);
         methodFrame.setSize(methodFrame.getPreferredSize());
         add(methodFrame);
         methodFrame.setVisible(true);
         parent.validate();
         // parent.pack();
-    }
-
-    public void displayConstructor(Constructor con) {
-        /** @todo ... **/
     }
 
 }

@@ -11,7 +11,7 @@ public class StaticsMenu extends LazyJMenu {
     }
     public void generateChildren() {
         try {
-            VisualJavaGui.addStaticsToMenu(this,Class.forName(className));
+            VisualJavaGUIStatics.addStaticsToMenu(this,Class.forName(className));
         } catch (Exception e) {
             e.printStackTrace(System.err);
         }
