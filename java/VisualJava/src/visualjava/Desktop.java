@@ -3,6 +3,7 @@ package visualjava;
 import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.Method;
+import java.lang.reflect.Constructor;
 
 /** joey Nov 1, 2004 2:11:42 AM */
 public class Desktop extends JDesktopPane {
@@ -41,6 +42,10 @@ public class Desktop extends JDesktopPane {
         methodFrame.setVisible(true);
         parent.validate();
         // parent.pack();
+    }
+
+    public void displayConstructor(Constructor con) {
+        /** @todo ... **/
     }
 
 }

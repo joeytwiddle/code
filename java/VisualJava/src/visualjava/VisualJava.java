@@ -12,7 +12,7 @@ public class VisualJava {
     public static Desktop desktop;
 
 	public static void main(String[] args) {
-		// visualjava.VisualJavaGui.show(new String("hello test"));
+		// visualjava.VisualJavaGui.oldShowDeprecated(new String("hello test"));
         JFrame f = new JFrame();
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setSize(600,400);
