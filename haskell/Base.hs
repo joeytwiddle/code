@@ -1,3 +1,5 @@
+module Base where
+
 -- A base is an ordered list of symbols
 type Base = [Char]
 
@@ -52,3 +54,8 @@ countandcheck x n
   | otherwise = error ( (show b) ++ " /= " ++ (show n) )
       where a = strbase wretchB n
             b = numbase wretchB a
+
+baseconvpadded n basea baseb s = pad res
+  where res = baseconv basea baseb s
+        pad res = replicate numtoadd '0' ++ res
+        numtoadd = (n - length res)
