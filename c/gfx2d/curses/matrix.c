@@ -79,7 +79,7 @@ void main() {
 
 		int action = rand() % 100;
 
-		if (action < 50) {
+		if (action < 10) {
 
 			// Alter
 
