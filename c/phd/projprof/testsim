@@ -1,4 +1,5 @@
-./pp -usezerocross -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 120 -lowres 60 -deriv -oth 12 $*
+eco "pp -usezerocross -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -deriv -oth 12 $*"
+./pp -usezerocross -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -deriv -oth 12 $*
 # ./pp -usezerocross -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -deriv -oth 12 $*
 # ./pp -usezerocross -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 30 -square -oth 12 $*
 # ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -adapt 0.3 -square -oth 12 $*

@@ -687,6 +687,7 @@ void main(int argc,String *argv) {
   bool recoverquad=true;
   int cirres=a.intafter("-res","resolution of final circle",120);
   int lowcirres=a.intafter("-lowres","resolution of initial circle",60);
+	float smoothlowres=a.floatafter("-lowsmooth","smooth lowres before derivatives",1);
   maxpixelsused=a.intafter("-maxpixels","max # pixels to collect",5000);
   recwid=a.intafter("-recwid","Width of recovered image",500);
   bool usezerocrossings=a.argexists("-usezerocross","use minima to guide second PPmap pass (otherwise use adaptive threshold)");
@@ -755,6 +756,8 @@ void main(int argc,String *argv) {
 
 		Map2d<float> *filter=Map2d<float>::sobel();
 		// Map2d<float> *filter=Map2d<float>::simple();
+		
+		filter=filter->smoothed(smoothlowres);
 					
 		// // well just a little experiment...
 		// Map2d<float> *edgemag,*edgeang;
