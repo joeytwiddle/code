@@ -15,7 +15,7 @@ SRCDIR="$JPATH/code/c/phd/gentestimg"
 # Prepare gnuplot file
 (
 
-	cat "$SRCDIR/gpldo.txt"
+	cat "gpldo.txt"
 
 	if test ! "$U" = ""; then
 		# Actually the one provided in gpldo.txt is better!
