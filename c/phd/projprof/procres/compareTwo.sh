@@ -24,7 +24,8 @@ set term post eps "Times-Roman,18"
 # set ylabel "HVP accuracy" "Times-Roman,28"
 set ylabel "Accuracy of recovery of HVP" "Times-Roman,28"
 set output "$TITLEA Versus $TITLEB hvp.eps"
-plot [] [-2.5:0] "$COLLECTIONA-hvpchange.data" t "$TITLEA","$COLLECTIONB-hvpchange.data" ti "$TITLEB"
+# plot [] [-2.5:0] "$COLLECTIONA-hvpchange.data" t "$TITLEA","$COLLECTIONB-hvpchange.data" ti "$TITLEB"
+plot "$COLLECTIONA-hvpchange.data" t "$TITLEA","$COLLECTIONB-hvpchange.data" ti "$TITLEB"
 
 !
 

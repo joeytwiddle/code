@@ -229,7 +229,7 @@ main(int argc,String *argv) {
 			    realdownangerrsum+=myabs(realdownangerr);
 				  var770++;
 			  }
-			  float maxreldisterr=10.0;
+			  float maxreldisterr=1.0;
 			  if (hvpreldist<maxreldisterr) {
 				  hvpreldistcnt++;
 				  hvpreldistsum+=hvpreldist;
