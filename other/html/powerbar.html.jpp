@@ -7,6 +7,8 @@
 
 // Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
 
+// TODO: make it easy to add javascripttester or whatever to new opened windows.
+
 // BUGS:
 // Not yet ported to IE.  (Written against Mozilla, ported to Konqueror.)
 // Konqueror's log text sometimes freezes up and doesn't display until nudged (eg. by resizing frame).
@@ -33,10 +35,16 @@ var browserCanRewriteFramesUsingDocumentDotWrite = nutscrape;
 
 ///////////////////////// Compile-time options /////////////////////////
 
+// #define STUFF_IM_JUST_TESTING
+
+#define POPUP_JSREFLECTOR
+// otherwise jsReflection appears in mainFrame
+
 // ------------------------ Logging -----------------------
 
 // The simplest demonstration of the usefulness of #define's pre-compile stripping.
 
+// To turn it on or off:
 #define LOGGING
 
 // You must add LOG_ELEMENT_HTML at some point to the powerBarFrame
@@ -189,10 +197,15 @@ function generatePowerBar() {
 
 	powerBarHtml += '</td><td valign="top" align="center">';
 
+	// TODO factorise these forms with their actions duplicated in the buttons etc.
+
 	if (opt_JSReflectorEnabled) {
 		// powerBarHtml += '<FORM onsubmit="top.jsReflectorInit()" action="javascript:">'; // but this needed for mozilla
 		// powerBarHtml += 'JS reflector:\n';
-		powerBarHtml += '<INPUT type="button" value="JSReflect" onclick="top.jsReflectorInit()">'; // but mozilla needs this too!
+		powerBarHtml += '<FORM name="jsReflectorForm" onsubmit="top.jsReflectorShow(path.value)" action="javascript:">';
+		powerBarHtml += '<INPUT name="path" type="text" size="10" value="top.mainFrame">';
+		powerBarHtml += '<INPUT type="button" value="JSReflect" onclick="top.jsReflectorShow(path.value)">';
+		// powerBarHtml += '<INPUT type="button" value="JSReflect" onclick="top.jsReflectorInit()">'; // but mozilla needs this too!
 		// powerBarHtml += '</FORM>';
 		powerBarHtml += '<BR>';
 	}
@@ -203,7 +216,8 @@ function generatePowerBar() {
 		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
 		powerBarHtml += 'JavaScript tester:\n';
 		// powerBarHtml += '<INPUT id="codeToExecute" name="code" type="text" size="30" value="type some javascript here">';
-		powerBarHtml += '<TEXTAREA id="codeToExecute" name="code" type="text" columns="20" rows="3">type some javascript here</TEXTAREA>';
+		// powerBarHtml += '<TEXTAREA id="codeToExecute" name="code" type="text" columns="20" rows="3">type some javascript here</TEXTAREA>';
+		powerBarHtml += '<TEXTAREA id="codeToExecute" name="code" type="text" columns="20" rows="3">Type some javascript here, e.g.: thisbox = top.powerBarFrame.document.getElementsByTagName("textarea")[0]; thisbox.cols=60; thisbox.rows=20; </TEXTAREA>';
 		// powerBarHtml += '<INPUT type="button" value="Go" onclick="submit()">'; // worked fine for konq
 		if (opt_ButtonsOnPowerBarForms) {
 			powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
@@ -276,6 +290,7 @@ function init() {
 		+ "<LI>Need to port to IE."
 		+ "<LI>How to I get javascript to talk between windows?"
 		+ "<LI>Can we stop log freezes in Konqueror?!"
+		+ "<LI>How do we (ahem) get round security preventing access to pages from other sites?"
 		+ "</TL></BLOCKQUOTE>"
 	);
 	updatePowerBar();
@@ -446,6 +461,22 @@ function jsReflectorShow(objName) {
 		}
 		var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
 		html += "<h3>Inspecting: " + trytypeof(obj) + " " + editableObjName + " = " + obj + "</h3>";
+
+		// Ripped off the web, testing here:
+		#ifdef STUFF_IM_JUST_TESTING
+			html += "<script language='JavaScript'><!--\n";
+			html += "  function load(file,target) {\n";
+			html += "    if (target != '')\n";
+			html += "      target.window.location.href = file;\n";
+			html += "    else\n";
+			html += "    window.location.href = file;\n";
+			html += "  }\n";
+			html += "//-"; // must break up!
+			html += "-></script>\n";
+
+			html += "<a href='javascript:load(\"b.html\",top.opener)'>Test opener</a><BR>\n";
+		#endif
+
 		html += "<blockquote>";
 		html += "<table cellpadding='0' cellspacing='0'>";
 		var i = 0;
@@ -474,9 +505,12 @@ function jsReflectorShow(objName) {
 		html += list;
 		html += "</table>";
 		html += "</blockquote>";
-		// BUG re. popup window: It's what we want really, but currently in Mozilla at least, subsequent calls to top.jsReflectorShow() from the new window can not find the function!
-		// writeToWindow('jsReflector',html);
-		writeToFrame(mainFrame,html);
+		#ifdef POPUP_JSREFLECTOR
+			// BUG re. popup window: It's what we want really, but currently in Mozilla at least, subsequent calls to top.jsReflectorShow() from the new window can not find the function!
+			writeToWindow('jsReflector',html);
+		#else
+			writeToFrame(mainFrame,html);
+		#endif
 		// writeToFrame(powerBarFrame,html);
 	} catch (e) {
 		LOG(e);
@@ -558,9 +592,10 @@ function getXPath(node) {
 //////////////////////////// Module: View inner HTML
 
 function viewInnerHtml() {
+	var targetPath = "top.mainFrame.document.documentElement.innerHTML";
 	try {
 		LOG("viewInnerHtml() called");
-		var innerHTML = top.mainFrame.document.documentElement.innerHTML;
+		var innerHTML = eval(targetPath);
 		LOG("Got innerHTML length " + innerHTML.length);
 		var toHtml = top.toHtml(innerHTML);
 		LOG("Got toHtml length " + toHtml.length);
@@ -568,6 +603,7 @@ function viewInnerHtml() {
 		LOG("Wrote to window");
 	} catch (e) {
 		LOG(e);
+		whereDoesPathBreak(targetPath);
 	}
 }
 
@@ -603,7 +639,9 @@ function writeToWindow(title,contents,options) {
 	w.document.writeln(contents);
 	w.document.close();
 	w.focus();
-	window.jsReflectorShow = new Function(top.jsReflectorShow);
+	w.jsReflectorShow = new Function(top.jsReflectorShow);
+	if (w.opener == null) // for older browsers, tell the child window we are the parent:
+		w.opener = self;
 }
 
 function escapeString(text) {
@@ -764,6 +802,27 @@ function arrayContains(array,item) {
 		}
 	}
 	return false;
+}
+
+function whereDoesPathBreak(path) {
+	var i = -1;
+	while (true) {
+		var oldi = i;
+		i = path.indexOf(".",i+1);
+		if (i == oldi || i == -1)
+			break;
+		var testPath = path.substring(0,i);
+		try {
+			var result = eval(testPath);
+			var works = "works: " + result;
+			LOG(testPath + " returned: " + result);
+		} catch (e) {
+			LOG(testPath + " failed with \"" + e + "\"!");
+			alert(testPath + " failed with \"" + e + "\"!");
+			break;
+			// ...
+		}
+	}
 }
 
 

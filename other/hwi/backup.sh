@@ -1,6 +1,9 @@
 ## TODO: Want a safe tar, that does not copy:
 ## higher directories (.*), symbolic links, executables, zips
 
+## TODO: rotate all files in backup dir, not just safetars
+## safetars should be makebackup'ed.
+
 export OLDDESTDIR=/mnt/stig/oldbackups
 export DESTDIR=/mnt/stig/backups
 
@@ -15,8 +18,9 @@ safetar() {
 	echo "Creating $DESTNAME from $*"
 	# cd $1
 	# /bin/tar cfz "$DESTDIR"/$2.tgz *
-	tar $TAROPTS --create -z --file "$DESTDIR/$DESTNAME.tgz" "$@" ||
+	tar $TAROPTS --create --gzip --file "$DESTDIR/$DESTNAME.tgz" "$@" ||
 	error "compressing $DESTDIR/$DESTNAME.tgz"
+	# rotate -nozip "$DESTDIR/$DESTNAME.tgz"
 }
 
 centralise "Starting routine backup"
@@ -32,10 +36,17 @@ ls -l "$DESTDIR/"
 centralise "Doing backup"
 
 # Copy current backups into old and clear ready for new
-mkdir -p "$DESTDIR"/
-mkdir -p "$OLDDESTDIR"/
-echo "Moving backups from $DESTDIR to $OLDDESTDIR"
-mv -f "$DESTDIR"/* "$OLDDESTDIR"
+mkdir -p "$DESTDIR"/ || exit 2
+mkdir -p "$OLDDESTDIR"/ || exit 3
+# echo "Moving backups from $DESTDIR to $OLDDESTDIR"
+# mv -f "$DESTDIR"/* "$OLDDESTDIR"
+echo "Copying backups from $DESTDIR to $OLDDESTDIR"
+cp -f "$DESTDIR"/* "$OLDDESTDIR"
+cd "$OLDDESTDIR" || exit 4
+find . -type f | egrep -v "\.[[:digit:]]+" |
+while read FILE
+do rotate -nozip -max 5 "$FILE"
+done
 
 # /etc
 safetar etc /etc/
@@ -46,16 +57,17 @@ safetar etc /etc/
 # slightly dodgy safetar etc ... !
 # zip -q "$DESTDIR"/twiddle `find /home/joey/debian/ -type f -size 0 -o -size 1 -o -size 2 -o -size 3 -o -size 4 -o -size 5 -o -size 6 -o -size 7 -o -size 8 -o -size 9 -maxdepth 2`
 # zip -q "$DESTDIR"/twiddle .* *
-cd /home/joey/
+cd /home/joey/linux/.private/
 cp private.tgz.encrypted "$DESTDIR" ||
 cp private.tgz.encrypted.old "$DESTDIR" ||
 cp private.tgz.encrypted.bak "$DESTDIR" ||
 error "Error copying private"
+cd /home/joey/
 # zip -q -r "$DESTDIR"/twiddle debian/.gnupg debian/.wine* debian/.mutt debian/Mail debian/.vmware
 ## I have no idea why I need to touch it!
 touch "$DESTDIR"/twiddle.tgz
 # tar cfz "$DESTDIR"/twiddle.tgz debian/.gnupg debian/.wine* debian/Mail debian/.vmware j/org j/music j/logs/debpkgs-list-today.log
-export TAROPTS="--exclude=debian/Mail/Lists"
+export TAROPTS="--exclude=debian/Mail/Lists --exclude=j/music/streamed"
 safetar twiddle \
         debian/.gnupg debian/.wine*/ debian/.vmware \
         debian/.*rc debian/.fetchmail* debian/.forward* \
@@ -63,7 +75,7 @@ safetar twiddle \
         j/*.dummy
         # debian/Mail 
         ## The dummy is to prove thar tar will still work if any of the other files are working.
-        ## (Unless you want it to crash and inform you if they are missing!!)
+        ## (Unless you want it to crash and inform you that they are missing!!)
 unset TAROPTS
 
 ## Now all in CVS.
