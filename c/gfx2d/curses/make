@@ -1,0 +1,1 @@
+g++ -w -lcurses $1.c -o $1
