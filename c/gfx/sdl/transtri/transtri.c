@@ -29,6 +29,7 @@
 // todo: Store #define constants for a variety of video modes so that the
 //   user may choose at runtime.
 
+#include <sched.h>
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -37,9 +38,11 @@
 
 #define SCRWID 320
 #define SCRHEI 200
+// #define SCRWID 640
+// #define SCRHEI 400
 #define SCRBPS 32
 #define NUMTRIS 300
-#define desiredFramesPerSecond 10000
+#define desiredFramesPerSecond 50
 
 #include "define.c"
 #define CONST
@@ -51,8 +54,10 @@
 /* 0.0 <= frand() < 1.0 */
 #define frand() ((float)(rand()/2)/(float)(RAND_MAX/2+1))
 // #define nearhalf() (frand())
-#define nearhalf() (0.5+(frand()-0.5)*frand())
+#define nearhalf() (0.5+0.8*(frand()-0.5)*frand())
 #define cap(x,b) ( (x) > (b) ? (b) : (x) )
+#define square(x) ( (x) * (x) )
+#define clip(x,a,b) ( (x)<(a) ? (a) : (x)>=(b) ? (b)-1 : (x) )
 
 // #define paletteChoice(p,a,b) a
 // #define paletteChoice(p,a,b) ( ( (p) == NULL ) ? (a) : (b) )
@@ -173,6 +178,7 @@ int main(int argc,char *argv[]) {
 	int frames=0;
 	clock_t starttime;
 	FILE *fp;
+    int cylcenx=SCRWID/2,cylceny=SCRHEI/2;
 
 	setuptriglookup();
 	// srand(time(NULL));
@@ -182,7 +188,7 @@ int main(int argc,char *argv[]) {
 		return 1;
 	}
 	atexit(SDL_Quit);
-	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, 0 /* SDL_HWPALETTE */ /* | SDL_FULLSCREEN */ );
+	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE /* | SDL_FULLSCREEN */ );
 	if (screen==NULL) {
 		fprintf(stderr,"Couldn't initialise video.\n");
 		return 1;
@@ -200,60 +206,76 @@ int main(int argc,char *argv[]) {
 
 	while (keepLooping) {
 		
-		clock_t releasetime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
+		int releasetime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
 
 		if ((frames % 20) == 0) {
-			fprintf(stderr,"\rframes/second: %4f   triangles/second: %4f",(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime),NUMTRIS*(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime));
+			fprintf(stderr,"\rframes/second: %.2f   triangles/second: %.0f ",(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime),NUMTRIS*(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime));
 		}
 		
 		SDL_Flip(screen);
 
+        #define brown 0.01
+        // cylcenx+=clip(brown*SCRWID*(-1.0+2.0*frand()),0,SCRWID);
+        // cylceny+=clip(brown*SCRHEI*(-1.0+2.0*frand()),0,SCRHEI);
+        // cylcenx+=brown*SCRWID*(-1.0+2.0*frand());
+        // cylceny+=brown*SCRHEI*(-1.0+2.0*frand());
+        cylcenx=SCRWID/2+SCRWID/2*sin(frames*0.017);
+        cylceny=SCRHEI/2+SCRHEI/2*cos(frames*0.012);
+
+        #define IMGSKIP (SCRWID/160)
 		{
-		int i,j;
+		Uint16 i,j;
 		float qs=qsin((float)frames*3.141/45.0);
         Uint8 qsi=128+127*qs;
-		float bounce=1.4+0.4*qsin(frames*M_PI/10.0);
-		int vs[screen_h];
-		for (i=0;i<screen_w;i++) {
-				float x=(float)(i-screen_w/2)/(float)(screen_w/2);
-				unsigned int u;
-                Uint8 thruwid=i*256/screen_w;
-				x=sgn(x)*pow(fabs(x),bounce);
-				u=(int)((bgtexture_w-5)*(0.5*(x+1.0)));
-			for (j=0;j<screen_h;j++) {
-				// Uint8 r,g,b;
-				// float y;
-				// Uint32 p;
-				// unsigned int v;
-				// if (i==0) {
-					// y=(float)(j-screen_h/2)/(float)(screen_h/2);
-					// y=sgn(y)*pow(fabs(y),bounce);
-					// v=(int)((bgtexture_h-5)*(0.5*(y+1.0)));
-					// vs[j]=v;
-				// } else {
-					// v=vs[j];
-				// }
-				// // p=getPixel(bgtexture, u, v);
-				// p=bgtexture_getPixel( u, v);
-				// // setPixel(screen,i,j,p);
-				// // screen_setPixel(i,j,p);
-				// // Slow but necessary if the colorspaces are different
-				// bgtexture_GetRGB(p,&r,&g,&b);
-				// p=screen_MapRGB(r,g,b);
+		float bounce=0.1+0.099*qcos(frames*M_PI/120.0);
+		float bounceB=2.0+1.5*qsin(frames*M_PI/120.0);
+		float bounceC=0.05-0.05*(pow((qcos(frames*M_PI/130.0)+1.0)/2.0,0.6)*2.0-1.0);
+        Sint16 Doffset=100000-frames*1.0;
+        Uint16 aoffset=2000+frames*2.0+sin(frames*0.03)*200.0;
+		for (i=0;i<screen_w;i+=IMGSKIP) {
+				Uint16 u,v;
+                // Uint8 thruwid=i*256/screen_w;
+			for (j=0;j<screen_h;j+=IMGSKIP) {
+				Uint8 r,g,b,br;
+				Uint32 p;
+                // todo: Optimise this!
+                Uint16 d=sqrt(square(i-cylcenx)+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
+                // Uint16 d=(abs(i-cylcenx)+abs(j-cylceny));
+                Uint16 D=1000.0/pow(d,bounce)+Doffset;
+                Uint16 a=(Uint16)((float)bgtexture_w/M_PI*(atan2(i-cylcenx,j-cylceny)+M_PI)+aoffset);
+                u=a%bgtexture_w;
+                v=D%bgtexture_h;
+				// p=getPixel(bgtexture, u, v);
+				p=bgtexture_getPixel( u, v);
+				// setPixel(screen,i,j,p);
 				// screen_setPixel(i,j,p);
-				// // SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
-				// // SDL_MapRGB(screen->format,r,g,b);
-				// // float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)frames*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)frames/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)frames/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)frames*0.29+j/15.0)/23.0));
-				// // if (br<0.0) br=0.0;
-				// // if (br>1.0) br=1.0;
-				// // ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,br*i*256/screen_w,br*j*256/screen_h,128+127*qsin(clock()*3.141/5.0/(float)CLOCKS_PER_SEC));
-				// // ((int *)screen->pixels)[j*screen_w+i]=0;
-				// // ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,i*256/screen_w,j*256/screen_h,128+127*qs);
-				screen_setPixel(i,j,screen_MapRGB(thruwid,j*256/screen_h,qsi));
+				// Slow but necessary if the colorspaces are different
+				bgtexture_GetRGB(p,&r,&g,&b);
+                // br=clip(200.0/pow(0.01*d,8.0),0,256);
+                br=clip(2000*(SCRWID*2-d)*bounceC/SCRWID,0,256);
+                r=clip((int)r+(int)br,0,256);
+                g=clip((int)g+(int)br,0,256);
+                b=clip((int)b+(int)br,0,256);
+				p=screen_MapRGB(r,g,b);
+                { int I,J;
+                    for (I=0;I<IMGSKIP;I++)
+                        for (J=0;J<IMGSKIP;J++) {
+                            screen_setPixel(i+I,j+J,p);
+                        }
+                }
+				// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
+				// SDL_MapRGB(screen->format,r,g,b);
+				// float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)frames*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)frames/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)frames/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)frames*0.29+j/15.0)/23.0));
+				// if (br<0.0) br=0.0;
+				// if (br>1.0) br=1.0;
+				// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,br*i*256/screen_w,br*j*256/screen_h,128+127*qsin(clock()*3.141/5.0/(float)CLOCKS_PER_SEC));
+				// ((int *)screen->pixels)[j*screen_w+i]=0;
+				// ((int *)screen->pixels)[j*screen_w+i]=MapRGB(screen->format,i*256/screen_w,j*256/screen_h,128+127*qs);
+				// screen_setPixel(i,j,screen_MapRGB(thruwid,j*256/screen_h,qsi));
 			}
 		}
 
-		#define brightness 16
+		#define brightness 11
 		for (i=0;i<NUMTRIS;i++) {
 			// plotLine(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
 			// plotTri(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
@@ -269,12 +291,22 @@ int main(int argc,char *argv[]) {
 			}
 		}
 		
-		{
-			clock_t timetogo;
-			while ( (timetogo=releasetime-clock()) > 0) {
-				// Should release processor...
-			}
-		}
+        {
+		    int timetogo;
+            // sched_yield();
+            // printf("%i %i\n",clock(),releasetime);
+            // timetogo=(int)releasetime-(int)clock();
+			// while ( timetogo > 0) {
+                // // printf(". %i\n",(int)(releasetime-clock()));
+				// // Should release processor...
+                // // int i=timetogo;
+                // // if (i<20)
+                    // // i=20;
+                // // SDL_Delay(12);
+                // sched_yield();
+                // timetogo=(int)releasetime-(int)clock();
+			// }
+        }
 
 	}
     
