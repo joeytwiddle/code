@@ -20,13 +20,7 @@ class V3d /*: public Displayable*/ {
 public:
   float x,y,z;
   
-fillin V3d origin=V3d(0,0,0);
-fillin V3d o=V3d(0,0,0);
-fillin V3d i=V3d(1,0,0);
-fillin V3d j=V3d(0,1,0);
-fillin V3d k=V3d(0,0,1);
-fillin V3d crazy=V3d(123.456,135.527,54.67);
-  // static V3d origin,o,i,j,k,crazy;
+  fillin V3d origin,o,i,j,k,crazy;
   
   V3d() {
     x=0; y=0; z=0;
@@ -445,3 +439,11 @@ V3d pull(V3d a,float t,V3d b) {
 myRGB myRGB::ave(myRGB o) {
   return ((v3d()+o.v3d())/2.0).myrgb();
 }
+
+fillup V3d origin=V3d(0,0,0);
+fillup V3d o=V3d(0,0,0);
+fillup V3d i=V3d(1,0,0);
+fillup V3d j=V3d(0,1,0);
+fillup V3d k=V3d(0,0,1);
+fillup V3d crazy=V3d(123.456,135.527,54.67);
+
