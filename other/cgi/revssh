@@ -7,7 +7,10 @@ echo
 export JPATH=/home/joey/j
 . /home/joey/j/startj-simple
 
+## You don't need the three lines above,
+## if you can get a good alternative for this line:
 OUTPUT=`getcgi "OUTPUT"`
+## (which doesn't convert from cgi properly anyway!)
 
 if test "$OUTPUT"; then
 	echo "$OUTPUT" >> /tmp/revssh-client-output.txt
