@@ -1,6 +1,9 @@
+#!/bin/bash
+#just for the *.eps at the end!
+
 # killall ghostview
 
-rm gplfit-*.eps
+rm fit.log gplfit-*.eps
 
 RND=$RANDOM && test "$RND" || RND=`getrandom` || RND=20
 # RND=16632
@@ -23,13 +26,13 @@ $DOC tmp.bmp
 -rnd $RND
 $@";
 # -imgnoise 0.0
-# -noise 0.2
+-noise 0.2
 # -focal 0.1
 
 SIMMODS="
--rems 2
+-ins 1
 "
-# -ins 2
+# -rems 2
 
 PPPARAMS="
 -hvpcheat
@@ -52,7 +55,7 @@ for Y in "-noransac" ""; do
 
 	# echo "set title \"$X $Y, f.p. $F\" \"Times-Roman,26\"" > title.dogpl
 	# echo "set title \"test\"" > title.dogpl
-	# rm title.dogpl
+	rm -f title.dogpl
 
 	echo `curseyellow`$SIMCOM $X $Y -focal $F`cursegrey`
 	$SIMCOM $X $Y -focal $F | tee simgen.out | grep RANSAC
@@ -84,14 +87,24 @@ for Y in "-noransac" ""; do
 	# gv gplfit$X$Y.eps
 
 done
-echo `curseyellow`./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat`cursegrey`
-# ./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
-# mv gplfit.ps gplfit-ranvreal-$F$X.eps
+if test "$X" = "-spacings"; then
+echo ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat
+cursegreen
 ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+cursenorm
 mv gplfit.ps gplfit-nomodvreal-$F$X.eps
+else
+# ./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+cursegreen
+echo ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat
+cursenorn
+./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+mv gplfit.ps gplfit-ranvreal-$F$X.eps
+fi
 done
 done
 
+echo "gv" gplfit-ran*.eps gplfit-nomod*.eps
 # convert -loop 0 -delay 100 -geometry 400 gplfit*.eps anim.gif
 
 echo "RND=$RND"

@@ -2,6 +2,8 @@
 
 RANSACDATA="$1"
 REALDATA="$2"
+PLOTDATA="$3"
+shift
 
 GPLEXTRAS=""
 if test ! "$3" = ""; then
@@ -64,7 +66,7 @@ fit g(x) "$REALDATA" via v2,w2
 set noclabel
 set nokey
 set nolabel
-set term post eps "Times-Roman,18"
+set term post eps color "Times-Roman,18"
 set pointsize 1.3
 
 set output "gplfit.ps"
@@ -73,7 +75,16 @@ set output "gplfit.ps"
 
 # set output "origdata.ps"
 # plot "whatever.dat" w p 6,f(x), "$REALDATA" w p 7,f(x)
-plot "$REALDATA" w p 7, f(x), g(x)
+# plot "$PLOTDATA" w p 0 7, f(x) w l 84 0, g(x) w l 1234 0
+# Solid:
+# plot "$PLOTDATA" w p 0 7, f(x) w l 7 0, g(x) w l 1 0
+# Dotted:
+plot "$PLOTDATA" w p 0 7, f(x) w l 7 0, g(x) w l 1 0
 
 !
+
+# sedreplace "| /LT3 { PL [1 dl 1.5 dl] 1 0 1 DL } def" "| /LT3 { PL [1 dl 1.5 dl] 0 0 1 DL } def" gplfit.ps
+# sedreplace "^LT6$" "LT0" gplfit.ps
+# sedreplace "/LT6 { PL \[2 dl 2 dl 2 dl 4 dl\] 0 0 0 DL } def" "/LT6 { PL [] 0 0.5 0 DL } def" gplfit.ps
+sedreplace "/LT6 { PL \[2 dl 2 dl 2 dl 4 dl\] 0 0 0 DL } def" "/LT6 { PL [8 dl 6 dl] 0 0.5 0 DL } def" gplfit.ps
 

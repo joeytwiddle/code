@@ -272,6 +272,7 @@ int main(int argc,String *argv) {
 		Line2d noisyline2d=Line2d(line2d.a+V2d::randomcircle()*noise,line2d.b+V2d::randomcircle()*noise);
 		noisylines.add(noisyline2d);
 	}
+	lines=noisylines;
 
 	V2d hvp=lines.num(1).intersect(lines.num(lines.len));
 	{
