@@ -26,21 +26,22 @@
 // #define PPclipdist 200000.0
 
 // #define ALLEGRO
-#include <joeylib.h>
-// #include <maths.h>
-// #include <timer.h>
-// #include <myrgb.h>
-// #include <polygon2d.h>
-// #include <v3d.h>
-// #include <ori.h>
-// #include <line3d.h>
-// #include <plane.h>
-// #include <writeable.h>
-// #include <maps.h>
-// #include <jbmp.h>
-// #include <pp.h>
-// #include <frustrum.h>
-// #include <octree.h>
+// #include <joeylib.h>
+#define joeylib_H
+#include <maths.h>
+#include <timer.h>
+#include <myrgb.h>
+#include <polygon2d.h>
+#include <v3d.h>
+#include <ori.h>
+#include <line3d.h>
+#include <plane.h>
+#include <writeable.h>
+#include <maps.h>
+#include <jbmp.h>
+#include <pp.h>
+#include <frustrum.h>
+#include <octree.h>
 
 #define REDEFINE
 #include "define.c"
@@ -51,22 +52,22 @@
 #define scrhei SCRHEI
 
 // Rendering
-#define redambient 64
-#define reddarken 64
-#define greenambient 64
-#define greendarken 158
-#define blueambient 64
-#define bluedarken 158
+#define redambient 0
+#define reddarken 84
+#define greenambient 0
+#define greendarken 168
+#define blueambient 0
+#define bluedarken 168
 float fogdepth;
 float displayFogdepth=40.0;
-float playFogdepth=30.0;
+float playFogdepth=25.0;
 float displayPPd=1.0;
 float playPPd=1.5;
 int taillen=1200;
 
 // Track
 int numWaves=15;
-int waveAmp=10.0;
+int waveAmp=7.5;
 bool planar=false;
 #define SLOW_CPU
 #ifdef SLOW_CPU
