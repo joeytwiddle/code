@@ -9,6 +9,13 @@ float focallength,scale;
 Plane imageplane;
 V3d eye=V3d(0,0,0);
 
+float rotang;
+
+V2d unrot(V2d v) {
+	// return v.rotateabout(-rotang,V2d((float)imgheight/2.0,(float)imgwidth/2.0));
+	return v.rotated(-rotang);
+}
+
 V3d imgplaneFromPixel(V2d p) {
 	return V3d(((float)p.x-(float)imgwidth/2.0),-((float)p.y-(float)imgheight/2.0),focallength);
 }
@@ -229,25 +236,64 @@ int main(int argc,String *argv) {
 			
 	// scry = ( k1 + l * A ) / ( l2 + l * B )
 	//	 where k1 is y init, A is down.y, k2 is z init, B is down z
+	{
+					
+	  printf("Ground truth (horizontal only):\n");
+  
+	  float groundK1 = worldA.y;
+	  float groundK2 = worldA.z;
+	  float groundA = down.y/(float)numlines;
+	  float groundB = down.z/(float)numlines;
+	  printf("K1 = %f\nK2 = %f\nA = %f\nB = %f\n",groundK1,groundK2,groundA,groundB);
+  
+	  float groundU = focallength * groundK1/groundK2;
+	  float groundV = groundA/groundK1;
+	  float groundW = groundB/groundK2;
+  
+	  float guessU = (float)imgheight/2.0-lines.get(0).a.y;
+  	
+	  printf("      oldU= %f\n",groundU);
+	  printf("      oldV= %f\n",groundV);
+	  printf("      oldW= %f\n",groundW);
+	  printf("	guessU = %f\n",guessU);
 
-	float groundK1 = worldA.y;
+	}
+
+	printf("Ground truth:\n");
+
+	Line2d baseline=Line2d(proj(worldA),proj(worldB));
+	// rotang=(baseline.b-baseline.a).angle();
+	rotang=down.dropz().angle()-pi; // rotang=-rotang;
+	printf("rotang = %f\n",rotang);
+	
+	printf("%f %f\n",(worldA.dropz()).x,(worldA.dropz()).y);
+	printf("worldA %s -> %s\n",worldA.dropz().toString(),unrot(worldA.dropz()).toString());
+	printf("%f %f\n",unrot(worldA.dropz()).x,unrot(worldA.dropz()).y);
+	float groundK1 = unrot(worldA.dropz()).y;
+	float testgroundK1 = worldA.dropz().mag();
+	printf("k1 = %f\ntest = %f\n",groundK1,testgroundK1);
+	printf("%f\n",unrot(worldA.dropz()).mag());
+	groundK1=testgroundK1;
 	float groundK2 = worldA.z;
-	float groundA = down.y/(float)numlines;
+	float groundA = unrot(down.dropz()).y/(float)numlines;
 	float groundB = down.z/(float)numlines;
+	printf("K1 = %f\nK2 = %f\nA = %f\nB = %f\n",groundK1,groundK2,groundA,groundB);
+
+	// Seems ok here, but in vvpFromPoints, U sometimes estimated wrong
+	// Not too much of problem because graph still fits visually
 
 	float groundU = focallength * groundK1/groundK2;
 	float groundV = groundA/groundK1;
 	float groundW = groundB/groundK2;
 
-	float guessU = (float)imgheight/2.0-lines.get(0).a.y;
+	float guessU = (float)imgheight/2.0-unrot(lines.get(0).a).y;
 	
-	printf("Ground truth:\n");
 	printf("	U = %f\n",groundU);
 	printf("	V = %f\n",groundV);
 	printf("	W = %f\n",groundW);
 	printf("	U = %f\n",groundU);
 	printf("	guessU = %f\n",guessU);
-	
+
 	if (genimage && overlay) {
 		outputimg.line(hvp,lines.num(1).center(),myRGB::blue);
 		outputimg.line(hvp,lines.num(lines.len).center(),myRGB::blue);

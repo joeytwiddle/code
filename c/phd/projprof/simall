@@ -36,11 +36,12 @@ roll="90";
 			# convert "lowresmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
 			# convert "ppmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"
 			convert "overlay.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-3origsim.jpg"
-			convert "origover.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
-			convert "gplfit.ps" -geom 300 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
-			./showdesiredspacings.sh
 			convert "gpl0fit.ps" -geom 300 "res/r$roll-y$yaw-p$pitch-2desfit.jpg"
+			convert "gplfit.ps" -geom 300 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
+			convert "origover.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
 			convert "recover.bmp" -geom 100 "res/r$roll-y$yaw-p$pitch-5rec.jpg"
+			./showdesiredspacings.sh
+			convert "gpl1fit.ps" -geom 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
     done
   done
 # done
