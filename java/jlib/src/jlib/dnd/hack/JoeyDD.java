@@ -36,9 +36,10 @@ import jlib.dnd.hack.*;
  * the execute() method and use the input field, which will be set to the
  * drag's source object before execute() is called.
  *
-**/
+ **/
 
-// For Method A
+/** A simple implementation of a ComponentAcceptingDrop, which prints
+ * any Object received to standard out. **/
 class MyDropLabel extends Label implements ComponentAcceptingDrop {
 	MyDropLabel(String s) {
 		super(s);
@@ -51,10 +52,12 @@ class MyDropLabel extends Label implements ComponentAcceptingDrop {
 
 public class JoeyDD {
 
+	/** Examples of the two methods of utilising this drag+drop package. **/
+
 	public static void main(String[] argv) {
 
 		Frame f=new Frame("D+D");
-   	f.setSize(400,250);
+		f.setSize(400,250);
 		f.setLayout(new FlowLayout());
 
 		// A normal label with a dnd source object attached.

@@ -19,15 +19,19 @@ import java.util.*;
 import jlib.*;
 import jlib.simple.*;
 
-/* Simplistic use of drag and drop to transport data between components in a single JVM.
+/** Simplistic use of drag and drop to transport data between components in a single JVM.
  * Assumes only one mouse.  Does not interact with real DnD.
+ * <P>
  * For any component c you wish to be a source for DnD, do DnDManager.setSource(c,Object o) where o is the information about the source which the target will receive.
+ * <P>
  * Similarly, for a target component c do DnDManager.setTarget(c).
+ * <P>
  * A target component must implement ComponentAcceptingDrop and hence provide a drop(Object) method to receive drops from DnD sources.
- */
+ * <P>
+ * I added a second way of doing it to any component, but you must provide
+ * some code to be executed at drop-time.
+ **/
 
-/* Added a second way of doing it to any component, but you must provide
- * some code to be executed at drop-time. */
 
 public class DnDManager {
 
@@ -36,11 +40,17 @@ public class DnDManager {
 	private static Map code=new HashMap();
 
 	// Making a component drag/drop-able
-	
+
+	/** Register any Component you wish to be a drag source here.
+	 * <P>
+	 * You must attach an Object which will be transferred to the target Component
+	 * at the end of a drag-drop.
+	 **/
 	public static void setSource(Component c,Object o) {
 		new MySource(c,o);
 	}
 
+	/** Register a ComponentAcceptingDrop as a drop target. **/
 	public static void setTarget(ComponentAcceptingDrop c) {
 		if (c instanceof Component)
 			new MyDest((Component)c);
@@ -48,16 +58,20 @@ public class DnDManager {
 			Log.warn("You must provide a Component as a drop target!");
 	}
 
+	/** Register any Component as a drop target, providing some Code which
+	 * will be executed at the end of the drag-drop. **/
 	public static void setTarget(java.awt.Component c,jlib.simple.Code cd) {
 		code.put(c,cd); // Of course, rather than remember the c->cd link here, we could store cd alongside c in the MyDest
 		new MyDest(c);
 	}
 
-	public static void pickedUp(Object o) {
+	/** Internal - ignore. **/
+	static void pickedUp(Object o) {
 		lastpickedup=o;
 	}
-				
-	public static void droppedOn(Component c) {
+
+	/** Internal - ignore. **/
+	static void droppedOn(Component c) {
 		if (c instanceof ComponentAcceptingDrop)
 			((ComponentAcceptingDrop)c).drop(lastpickedup);
 		else {
@@ -66,7 +80,7 @@ public class DnDManager {
 			cd.execute();
 		}
 	}
-				
+
 }
 
 
@@ -81,22 +95,24 @@ class MySource implements DragSourceListener, DragGestureListener {
 		component=c;
 		obj=o;
 		dragSource=new DragSource();
-    dragSource.createDefaultDragGestureRecognizer(component, DnDConstants.ACTION_MOVE, this);
+		dragSource.createDefaultDragGestureRecognizer(component, DnDConstants.ACTION_MOVE, this);
 	}
-	
-  public void dragExit(DragSourceEvent dse) { }
-  public void dragOver(DragSourceDragEvent dsde) { }
-  public void dragEnter(DragSourceDragEvent dsde) { }
+
+	public void dragExit(DragSourceEvent dse) { }
+	public void dragOver(DragSourceDragEvent dsde) { }
+	public void dragEnter(DragSourceDragEvent dsde) { }
 	public void dragDropEnd(DragSourceDropEvent dsde) { }
-  public void dropActionChanged(DragSourceDragEvent dsde) { }
+	public void dropActionChanged(DragSourceDragEvent dsde) { }
 
 	public void dragGestureRecognized(DragGestureEvent dge) {
-    // causes exception: dragSource.startDrag (dge, DragSource.DefaultMoveDrop, null, this);
-    dragSource.startDrag (dge, DragSource.DefaultMoveDrop, new StringSelection("dummy Transferable"), this);
+		// causes exception: dragSource.startDrag (dge, DragSource.DefaultMoveDrop, null, this);
+		dragSource.startDrag (dge, DragSource.DefaultMoveDrop, new StringSelection("dummy Transferable"), this);
 		DnDManager.pickedUp(obj);
 	}
 
 }
+
+/** Class used by DnDManager. **/
 
 class MyDest implements DropTargetListener, DragGestureListener {
 
