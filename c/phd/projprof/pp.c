@@ -638,7 +638,7 @@ public:
 
 		V2d vvp;
 
-		// if (!useoldspacingsmethod) {
+		if (!useoldspacingsmethod) {
 						
 		  // New vvp estimation from spacings
 	  	
@@ -651,7 +651,7 @@ public:
 
 	  	vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,true);
 
-		// } else {
+		} else {
 
       // Now correlate line spacings along the central line
       // First, project all centres onto this line
@@ -714,7 +714,7 @@ public:
         // info.line(right,vvp,myRGB::cyan);
       }
  
-		// }
+		}
 	
 		printf("New method got VVP = %s\n",vvp.toString());
 		
