@@ -23,7 +23,7 @@ extract more representative data for the fitting
 It is important to
 note that in \cite{planargrouping}, the objects used contain regularly spaced
 features in the real-world, whereas our text data is corrupted by irregular
-spacings between paragraph lines and various font sizes.
+spacings between paragraph lines and by various font sizes.
 
 % He does not explain the details of his algorithm, but does say he uses
 % Marquardt-Levenberg fitting, as do we.  He uses the image coordinates of
@@ -33,7 +33,7 @@ spacings between paragraph lines and various font sizes.
 % used.  (We do.)
 
 Our overall method is as follows. After first transforming the image to 
-simplify the problem, we may extract observations of the altitude of 
+simplify the problem, we  extract observations of the altitude of 
 each line in the image.  A model of the geometry will allow us to express 
 these observations as a function of the paragraph's orientation.  By 
 fitting the observations to the function, we will obtain the desired 
@@ -51,9 +51,9 @@ baseline (found in the previous section - call it $\myvec{B}$) vertically,
 
 {\parindent 0mm
 where $\theta$ is the angle between $\myvec{B}$ and the horizontal.
-Henceforth, we may disregard the $x$-coordinates and deal
+Henceforth, we can disregard the $x$-coordinates and deal
 solely in the $y,z$ plane. 
-If we disregard spaces between paragraphs for the time being,
+If we ignore spaces between paragraphs momentarily,
 we can describe an ideal geometrical model in which
 the bottom of a single paragraph is positioned
 at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.
@@ -111,17 +111,18 @@ with $U=y(0)$ and only two unknowns,
 $V = {\myvec{Q}_y}/{\myvec{P}_y}$ and $W = {\myvec{Q}_z}/{\myvec{P}_z}$.
 The cancelling of the focal length $f$ in this way means that the technique is applicable to images captured with any optical camera and the internal parameters of the original camera need not be known.
 
-Equation (\ref{spacingsvweqn}) now relates the parameters $V,W$, which describe the
+Equation (\ref{spacingsvweqn}) now relates the parameters $\{V,W\}$, which describe the
 tilt of the document, to a set of points which may be extracted from the
 image.
 Observations for $y(n)$ are obtained by projecting the centroid of
-each detected line of text onto the baseline ($y$-axis), to collect a set of
+each detected line of text onto the baseline $B_v$, to collect a set of
 points $O(n)$.
 % By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.  % for these points.
 A least-squares fit of $O(n)$ to the function $y(n)$ should now yield values for $V$ and $W$, and hence the vertical vanishing point.
 
-However, this fitting is only applicable to the ideal paragraph described above.
-In reality it is common for documents to contain
+However, this fitting is only applicable to the ideal document with
+equally-spaced lines. 
+In reality, it is common for documents to contain
 spaces between paragraphs,
 lines of text which are not part of a regularly spaced block,
 and unexpected extraneous elements.
@@ -137,8 +138,9 @@ the $n$th line in the ideal paragraph and the $n$th data point $O(n)$, which is 
 % and $y$ coordinates of successive points.
 For example, in \reffig{poorfitting}, data point (or line number) 8 is an undesirable outlier
 which has shifted all successive points one position along the horizontal $n$-axis,
-resulting in a poor fitting.
-Due to its proximity, the point was not even rejected when RANSAC was applied.
+resulting in a poor fit.
+Due to its proximity, the point was not even rejected when RANSAC was used in
+ the fitting.
 % Whilst RANSAC has the potential to remove such outliers, it failed to do so in this case, and it would always fail in the case where
 \begin{figure}[t]
 \centering
@@ -170,7 +172,7 @@ Due to its proximity, the point was not even rejected when RANSAC was applied.
 % An alternative curve which may be taken from the data and remains unaffected by line number, is the ratio of 
 % Fortunately it is possible to derive two $n$-invariant observations from the image which
 % To prevent the progression of an outlier through successive observations, we must use 
-However, we can remove the direct influence of $n$ on the fitting, by instead fitting
+However, we can remove the direct influence of $n$, by instead fitting
 % It is therefore preferable to remove the direct dependence of the points on $n$
 % by instead fitting
 the curve of {\em line spacing} $Y_n$ against {\em position} $X_n$, defined by:
@@ -229,7 +231,7 @@ Since the line spacings exhibit more clearly the irregularities of the points ob
 RANSAC was able to easily reject these outliers, and produce a good fit close to the ground truth.
 % Unlike the fitting to $(n,y(n))$, fitting to $(y(n),Y(n))$ will give rise to the correct curve
 In fact, the fitting to line spacings is able to cope with situations
-when points is missing, irrelevant points are included, or a space between paragraphs causes a change
+when points are missing, irrelevant points are included, or a space between paragraphs causes a change
 in the phase of the line positions.
 % % (However, it doesn't deal with adjacent paragraphs of different internal line spacing.)
 % However, since the fitting achieved is still not perfect, we employ RANSAC to
@@ -245,13 +247,13 @@ in the phase of the line positions.
   % \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/angerr-vvp-spacings-cen.eps,width=60mm}\label{vvpaccuracyd}}
   % \hspace{2mm}
   % \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/angerr-vvp-margins-left.eps,width=60mm}\label{vvpaccuracyb}}
-  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
+  \subfigure[VVP recovery on fully-justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
   \hspace{2mm}
-\subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
+\subfigure[Margin intersection fails on left-justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
   \\
-  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-cen.ps,width=60mm}\label{vvpaccuracyc}}
+  \subfigure[VVP recovery on centrally-justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-cen.ps,width=60mm}\label{vvpaccuracyc}}
   \hspace{2mm}
-  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyd}}
+  \subfigure[VVP recovery on left-justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyd}}
   
 \caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
 \label{vvpaccuracy}
@@ -267,12 +269,12 @@ in the phase of the line positions.
 % \end{figure}
 
 Once optimised, $V$ and $W$ may be substituted into
-\refeqn{spacingsvweqn} to find the altitude of the horizon, $y(\infty)=UV/W$.
-% 
-% \begin{equation}
-% y(\infty) = UV/W
-% \end{equation}
-% 
+\refeqn{spacingsvweqn} to find the altitude of the horizon:
+ 
+\begin{equation}
+y(\infty) = UV/W
+\end{equation}
+ 
 % A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
 After reversing the transformation made earlier in (\ref{uprightbaseline}) to
 bring the baseline upright, this point will correspond to the location of the
@@ -290,8 +292,8 @@ left-justified one), performance is poor due to the paragraph's jagged edge.
 %As with the horizontal vanishing point, the method is not suited to situations
 %when the vertical vanishing point is close to infinity, which occurs when the
 %pitch is low.
-Figure \ref{vvpaccuracyc} shows an example of the accuracy when the line
-spacings are employed on centrally-justified paragraphs.
+Figures \ref{vvpaccuracyc} and \ref{vvpaccuracyd} show  examples of the accuracy when the line
+spacings are employed on centrally-justified and left-justified  paragraphs.
 
 This method provides good
 results  for all of the simulated images except those
