@@ -852,8 +852,12 @@ void main(int argc,String *argv) {
   pp.calculate();
   V2d hvp=pp.getvp();
 	printf("HVP = %s *note* could wait for corner+diffscale*\n",hvp.toString());
+	useoldspacingsmethod=false;
   V2d vvp=pp.getvvp();
-  printf("Good old VVP estimate: %s\n",vvp.toString());
+	useoldspacingsmethod=true;
+  V2d oldvvp=pp.getvvp();
+  printf("Good old VVP estimate: %s\n",oldvvp.toString());
+  printf("     New VVP estimate: %s\n",vvp.toString());
 
   VP vp=*pp.vps.getpos(pp.best);
   hvp=vp.pos;
