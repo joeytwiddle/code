@@ -21,7 +21,7 @@
 
 
 The source images input into the methods proposed in this paper can be either
-direct PDA-based point-and-click images of text documents, or regions of text
+direct point-and-click images of text documents, e.g. from a PDA, or regions of text
 segmented in more cluttered scenes, e.g. using our earlier work in
 \cite{clark-ijdar-2001}. In the simpler point-and-click scenario, 
 the whole image can be searched for clues and features knowing of the presence
@@ -29,7 +29,7 @@ of a paragraph of text. To deal with cluttered scenes, we described two alternat
 algorithms in \cite{clark-ijdar-2001} to segment regions of text first, followed
 with a simple approach to their fronto-parallel recovery. In this work, we can
 take direct point-and-click images from a hand-held camera or 
-the output of the segmenation system presented in
+the output of the segmentation system presented in
 \cite{clark-ijdar-2001} and analyse each recognised region individually to
 classify the shape of paragraphs, recover the 3D orientation of the text plane
 more robustly, and generate a fronto-parallel view of the text. However, the
@@ -37,42 +37,25 @@ emphasis here is not on how the text region was originally obtained or
 segmented, but on what can be done next to deal with its accurate rectification.
 
 
-\begin{figure}[h]
-\begin{centering}
-  % \subfigure[Original Image]{\epsfig{figure=images/chem002.ps,width=45mm}\label{runorig}}
-  \subfigure[Original image]{\epsfig{figure=images/prlrunning/original.eps,height=33mm}\label{runorig}}
-  \hspace*{1mm}
-  % \subfigure[Located text regions]{\frame{\epsfig{figure=images/chem002blob.ps,width=45mm}\label{runblobbed}}}
-  % \subfigure[Located regions of interest]{\frame{\epsfig{figure=images/prlrunning/blobbed.eps,height=37mm}\label{runblobbed}}}
-  \subfigure[Classified text region]{\epsfig{figure=images/prlrunning/blobbed.eps,height=33mm}\label{runblobbed}}
-  \hspace*{1mm}
-  % \subfigure[After adaptive thresholding]{\frame{\epsfig{figure=images/chem002bin.ps,width=40mm}\label{runbin}}}
-  % \subfigure[One region after adaptive thresholding]{\frame{\epsfig{figure=images/prlrunning/binarised.eps,height=37mm}\label{runbin}}}
-  \subfigure[Text region after adaptive thresholding]{\epsfig{figure=images/prlrunning/binarised.eps,height=25mm}\label{runbin}}
-\label{runprep}
-\caption{Preparation of paragraph for planar recovery}
-\end{centering}
-\end{figure}
 
 In order to analyse the paragraph shape, we first require a classification of
-the text and background pixels to obtain a binary representaion. Elaborate adaptive 
-thresholding schemes could be used \cite{kittler86,sahoo88}, however dealing with 
-regions of text only, this
-classification is simplified since the region will contain
-easily separable background and foreground colours only. The thresholding does not
-need to be too accurate and breakages in characters or words is not detrimental
-to later stages. Nevertheless, we try for best results and  compute the average
-intensity of the image neighbourhood as an {\em adaptive local threshold}
-for each pixel, in
-order to compensate for any variation in illumination across a text region.
-Partial sums \cite{partialSums} are employed to generate these local thresholds
-efficiently.  To ensure the correct labelling of both dark-on-light and
-light-on-dark text, the proportion of pixels which fall above and below the
-thresholds is considered.  Since in a block of text there is always a larger
-area of background than of text elements, the group of pixels with the lower
-proportion is labelled as text, and the other group as background.  The example
-shown in \reffig{runbin} demonstrates the correct labelling of some light text
-on a dark background and is typical of the input into the work presented here.
+the text and background pixels to obtain a binary representation. Elaborate
+adaptive thresholding schemes could be used \cite{kittler86,sahoo88,ogorman94},
+however dealing with regions of text only, this classification is simplified
+since the region will contain easily separable background and foreground
+colours. The thresholding does not need to be too accurate and breakages in
+characters or words is not detrimental to later stages. Nevertheless, we prefer
+reasonably good results and compute the average intensity of the image
+neighbourhood as an {\em adaptive local threshold} for each pixel, in order to
+compensate for any variation in illumination across a text region.  Partial sums
+\cite{partialSums} are employed to generate these local thresholds efficiently.
+To ensure the correct labelling of both dark-on-light and light-on-dark text,
+the proportion of pixels which fall above and below the sdaptive thresholds is
+considered.  Since in a block of text there is always a larger area of
+background than of text elements, the group of pixels with the lower proportion
+is labelled as text, and the other group as background.  The example shown in
+\reffig{runbin} demonstrates the correct labelling of some light text on a dark
+background and is typical of the input into the work presented here.
 %% SHOW ITS THRESHOLD HISTOGRAM GRAPH? Surely too obvious anyway.
 
 

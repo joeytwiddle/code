@@ -36,29 +36,6 @@ data.
 } 
 
 
-\begin{figure}[t]
-\centering
-\begin{center}
-% \subfigure[A fully formatted document]{\epsfig{figure=images/chem002overlay.ps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
-% \subfigure[A left-justified paragraph]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
-% \subfigure[Two centrally aligned paragraphs]{\epsfig{figure=images/prlall/chem015/overboth.eps,width=64mm}\label{summaryfiga}}
-% \subfigure[Centralised paragraphs]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}\label{summaryfiga}}
-\subfigure[The running example.]{\epsfig{figure=images/prlrunning/origover.eps,width=64mm}\label{chem002overlay}}
-\hspace{2mm}
-% \subfigure[A centrally aligned document]{\epsfig{figure=images/prlall/chem017/origover.eps,width=64mm}\label{chem010overlay}}
-\subfigure[Two centrally aligned paragraphs]{\epsfig{figure=images/prlall/chem015/overboth.eps,width=64mm}\label{chem015overlay}}
-% \subfigure[Partially left-justified paragraph]{\epsfig{figure=images/prlall/chem005/origover.eps,width=64mm}\label{chem005overlay}}
-% \subfigure[]{\epsfig{figure=images/chem005001origover.ps,width=58mm}\label{chem005001overlay}}
-\end{center}
-\vspace*{0mm}
-\caption{Example of recognition: 
-Line segmentations are marked in white, points for margin fitting in green
-(used) and red (rejected outliers), the baseline in yellow,
-the rectangular frame on the text plane in blue.}
-\label{linesegfig}
-\label{summaryfig}
-\end{figure}
-
 
 
 Depending on the formatting of the paragraph being recovered, there are now two
@@ -71,8 +48,8 @@ Alternatively, if the paragraph is {\em left-justified}, {\em right-justified},
 or {\em centred}, a straight line will be visible either on the left margin, on
 the right margin, or through the centres of the lines, respectively.  The
 vanishing point will lie somewhere along this {\em baseline} (see Figure \ref{linesegfig}).  However, its actual
-position will still be unknown, and must be estimated.  Initially, we must
-determine the structure of the paragraph, i.e. its formatting style and its baseline. We collect
+position will still be unknown, and must be estimated.  Initially, 
+the structure of the paragraph must be determined, i.e. its formatting style and its baseline. We collect
 the left end, the centroid, and the right end of each of the segmented paragraph lines, to
 form three sets of points $P_L,P_C,P_R$ respectively.  Since some justification
 or formatting is anticipated in the text document, 
@@ -104,39 +81,12 @@ the paragraph.  In this case $E_L<E_C$ and $E_L<E_R$, hence the second
 condition in \reftab{typeofparatable} is satisfied and the paragraph is
 correctly identified as being left-justified. The examples in 
 \reffig{chem015overlay} show the detection of centrally-justified paragraphs
-in a book of poems.
+in a book of quotations.
 % \reffig{summaryfiga} shows the line $F_C$ passing through the centre of
 % the paragraph.  In this case $E_C<E_L$ and $E_C<E_R$, hence the last
 % condition in \reftab{typeofparatable} is satisfied and the paragraph is
 % correctly identified as being centrally-justified.
 }
-
-\begin{table}[t]
-  \begin{center}
-    \begin{tabular}{|c|c|}
-      \hline
-      {\bf Condition} & {\bf Type of paragraph} \\
-      \hline \hline
-      % All three lines have low and similar error:
-      $E_L \simeq E_C \simeq E_R$ & Fully-justified. \\
-      \hline
-%      $E_L<E_R$ and $E_L<E_C$ & Left-justified. \\
-      $\min(E_L,E_C,E_R)=E_L$ & Left-justified. \\
-      \hline
-%      $E_R<E_L$ and $E_R<E_C$ & Right-justified. \\
-      $\min(E_L,E_C,E_R)=E_R$ & Right-justified. \\
-      \hline
-%      $E_C<E_L$ and $E_C<E_R$ & Centrally-aligned. \\
-      $\min(E_L,E_C,E_R)=E_C$ & Centrally-justified. \\
-      \hline
-    \end{tabular}
-  \end{center}
-  % \vspace*{-5mm}
-  \caption{Classifying the type of paragraph given the error fit in (\ref{ransacerroreqn})}
-%  \vspace{-5mm} % This is a dirty hack to help page flow
-  \label{typeofparatable}
-\end{table}
-
 
 
 As mentioned earlier, for fully-justified paragraphs, the recovery of the

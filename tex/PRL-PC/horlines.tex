@@ -17,7 +17,7 @@ this space, we will generate projection profiles from the point of view of
 vanishing points, rather than from skew angles.
 
 
-
+\subsection{The Search Space}
 We need a circular search space $C$ as illustrated in \reffig{searchspacediag}.
 % although a rectangular grid of polar coordinates would also work effectively.
 Each cell $c=(r,\theta)$, $r\in[0,1)$ and $\theta\in[0,2\pi)$, in the space $C$
@@ -30,21 +30,6 @@ every vanishing point in $C$, except those lying within
 the text region itself (the central hole in \reffig{ppmap}).
 
 
-\begin{figure}[ht!]
-\centering
-\begin{center}
-	\subfigure[Relationship between search space $C$ and $\mathbb{R}^2$]{
-		\epsfig{figure=images/ppsearchspaceH.eps,width=45mm}
-		\label{searchspacediag}
-	}
-	\hspace{5mm}
-	% \subfigure[Scores for all projection profiles in $C$ generated from \reffig{runbin}]{\epsfig{figure=images/chem002ppmap.ps,width=45mm}\label{ppmap}}
-	\subfigure[Scores for all projection profiles in $C$ generated from \reffig{runbin}]{\epsfig{figure=images/prlrunning/ppmap.eps,width=45mm}\label{ppmap}}
-\end{center}
-\vspace*{0mm}
-\caption{Search space $C$}
-\label{searchspace}
-\end{figure}
 
 %The projection profile  with respect to a vanishing point
 %$\myvec{H}$ is obtained by collecting each pixel into a bin representing the
@@ -82,38 +67,6 @@ in the image defined by $\phi$. The values of $N$ and $s$ in
 
 
 
-\begin{figure}[t]
-\centering
-\begin{center}
-\subfigure[Generating the projection profile of the text from a vanishing point $\myvec{H}$.]{
-	\begin{tabular}{c}
-		% \epsfig{figure=images/ppfan.eps,width=70mm}\label{projproffing}
-		\epsfig{figure=images/fan93H.eps,width=100mm}\label{projproffing}
-	\end{tabular}
-}
-% \hspace*{5mm}
-% \subfigure[The winning projection profile and a poor example]{
-	% \begin{tabular}{c}
-		% \epsfig{figure=images/prlrunning/bestpp.eps,width=45mm} \\
-		% \epsfig{figure=images/prlrunning/badpp.eps,width=45mm}
-		% \label{projprofs}
-	% \end{tabular}
-% }
-% \epsfig{figure=images/prlrunning/fan93img.eps,width=40mm}
-\subfigure[The winning projection profile from vanishing point $\myvec{H}_A$ and a poor example from $\myvec{H}_B$.]{
-	\epsfig{figure=images/chem002projprofsH.eps,width=100mm}
-	\label{projprofs}
-}
-\end{center}
-% \vspace*{0mm}
-% \caption{Two potential vanishing points $\myvec{H}_A$ and $\myvec{H}_B$, and their projection profiles.}
-\caption{Generating projection profiles from \reffig{runbin}}
-\label{projprofsfig}
-\end{figure}
-
-
-
-
 For a perspectively skewed target, instead of an angle $\phi$, we have the point of projection
 $\myvec{H}$ on the image plane, which has two degrees of freedom. The bins,
 rather than representing parallel slices of the image along a particular
@@ -122,10 +75,12 @@ refine (\ref{classicproj}) to map from an image pixel $\myvec{p}$ into a bin
 $B_i$ as follows:
 
 
-\begin{equation} \label{persproj} i( \myvec{p,\myvec{H}} ) = \frac{1}{2} N + N \frac{ \mbox{ang}(\myvec{H},\myvec{H}-\myvec{p}) }{ \Delta \theta } \end{equation}
+\begin{equation} \label{persproj} 
+i( \myvec{p,\myvec{H}} ) = \frac{1}{2} N + N \frac{ \mbox{$\angle$}(\myvec{H},\myvec{H}-\myvec{p}) }{ \Delta \theta } 
+\end{equation}
 
 { \parindent 0mm 
-where $\mbox{ang}(\myvec{H},\myvec{H}-\myvec{p})$ is the angle
+where $\mbox{$\angle$}(\myvec{H},\myvec{H}-\myvec{p})$ is the angle
 between pixel $\myvec{p}$ and the centre of the image, relative to the vanishing
 point $\myvec{H}$, and $\Delta \theta$ is the size of the angular range within
 which the text is contained, again relative to the vanishing point
@@ -135,7 +90,9 @@ $\myvec{H}$. $ \Delta \theta$ is obtained from
 %\mbox{ang}(\myvec{H}+\myvec{t},\myvec{H}-\myvec{t}) $
 
 % \begin{equation} \Delta \theta = \mbox{ang}(\myvec{H}+\myvec{t},\myvec{H}-\myvec{t}) \end{equation}
-\begin{equation} \Delta \theta = \mbox{ang}(\myvec{T}_{\mbox{\tiny L}},\myvec{T}_{\mbox{\tiny R}}) \end{equation}
+\begin{equation} 
+\Delta \theta = \mbox{$\angle$}(\myvec{T}_{\mbox{\tiny L}},\myvec{T}_{\mbox{\tiny R}})
+ \end{equation}
 
 { \parindent 0mm 
 % where $\myvec{t}$ is a vector perpendicular to $\myvec{H}$ with
@@ -213,7 +170,7 @@ derivative-squared-sum of the projection profiles, where:
 \begin{equation} \mbox{Derivative-squared-sum: } \hspace*{5mm} \nabla S(B) = \sum_{i=1}^{N-1}{{(B_{i+1}-B_{i}})^{2}} \end{equation}
 
 The derivative measure $\nabla S(B)$ proved far more resilient to noise than the
-other measures, which were easily mislead to view narrow paragraphs from the
+other measures, which were easily misled to view narrow paragraphs from the
 top or bottom, rather than the side.
 This made $\nabla S(B)$ the only viable measure for the hierarchical scan or noisy
 images.
@@ -229,21 +186,6 @@ larger squared-sum, and a more likely vanishing point.
 \end{comment}
 
 
-\begin{figure}[t!]
-\centering
-\begin{center}
-\subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,height=42mm}\label{simulated-full}} 
-% \subfigure[Left justified.]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}} 
-\hspace*{2mm}
-\subfigure[Centrally justified and with various fonts sizes.]{\epsfig{figure=images/simulated-cen.ps,height=42mm}\label{simulated-left}} 
-\hspace*{2mm}
-\subfigure[Left justified and with extraneous elements.]
-{\epsfig{figure=images/simulated-left-more.ps,height=42mm}\label{simulated-left-more}} 
-\end{center}
-\vspace*{0mm}
-\caption{Examples of simulated images used for performance analysis.}
-\label{simimages}
-\end{figure}
 
 To locate the vanishing point accurately, the resolution of the
 search space must be sufficient to hypothesise a large number of potential
@@ -290,6 +232,8 @@ marked in \reffig{ppmap} with a white cross and a black cross respectively.
 % circle, then the vanishing point is effectively at an infinite distance, and the
 % horizontal axis of the text plane is parallel with the image plane.
 
+\subsection{Assessing Horizontal Vanishing Point Accuracy}
+
 In order to assess the performance of the algorithm, simulated images such as
 those in \reffig{simimages} were generated at various orientations ranging from
 $0^\circ$ to $90^\circ$ in both yaw and pitch, resulting in 900 test images. 
@@ -310,44 +254,6 @@ discretisation of the search space $C$. Since the vanishing points in these
 situations lie close to infinity, the distances of the located vanishing points
 can not be precise. Nevertheless, the vanishing point chosen will be in the
 correct direction, and suitably large so as not to affect further processing.
-
-
-\begin{figure}[ht]
-\centering
-\begin{center}
-% \epsfig{figure=images/accuracy-hvp-jagged,width=60mm,angle=-90}
-% \end{center}
-% \vspace*{0mm}
-% \caption{Accuracy of recovery of the horizontal vanishing point for simulated
-% paragraphs at various orientations. SHOULD COMBINE WITH NEXT FIGURE}
-% \label{hvpaccuracy}
-% \end{figure}
-\subfigure[
-	Accuracy of recovery of a simulated paragraph at various orientations.
-]{
-	\epsfig{figure=images/accuracy-hvp-jagged.eps,width=42mm,angle=90}
-	\label{hvpaccuracy}
-} 
-\hspace*{4mm}
-\subfigure[
-	Accuracy averaged over all orientations plotted against
-	increasing image noise.
-]{
-	\epsfig{figure=images/accuracy-against-noise-on-full-and-hier.eps,height=42mm}
-	\label{noiseFullVHier}
-} 
-% \begin{figure}[t]
-% \centering
-% \begin{center}
-% \epsfig{figure=images/accuracy-against-noise-on-full-and-hier.eps,width=80mm}
-\end{center}
-% \vspace*{0mm}
-% \caption{Average accuracy of recovery of the horizontal vanishing point for
-% simulated paragraphs against increasing image noise.}
-% \label{noiseFullVHier}
-\caption{Accuracy of recovery of the horizontal vanishing point.}
-\end{figure}
-
 
 
 

@@ -1,9 +1,9 @@
 % Paper for submission to Pattern Recognition
 
-\documentclass{elsart}   %%[10pt]
+\documentclass{elsart}   %[10pt]
 %\usepackage[english]{babel}
 \usepackage{amssymb}
-\usepackage{pclark,epsfig,mysubfigure,comment}
+\usepackage{pclark,times,epsfig,mysubfigure,comment}
 
 % For revision highlighting
 \usepackage[usenames]{color}
@@ -49,10 +49,12 @@ Vanishing Point Detection \sep Document Analysis and Recognition
 \end{keyword}
 \end{frontmatter}
 
-%\baselineskip 24pt
+\baselineskip 24pt
+
+%\small
 
 \section{Introduction}
-With the use of cheap and simple (digital) cameras becoming common-place in the
+With the use of cheap digital cameras becoming common-place in the
 home, the office, and in Personal Digital Assistants (PDAs), the demand for
 simple, instantaneous scanning of documents is rising. Pointing a camera at a
 document, clicking a button to capture the image and then using some software to
@@ -72,11 +74,11 @@ computing tasks requiring knowledge of local text, and general automated tasks
 requiring the ability to read where it is not possible to use a scanner. In
 recent years, we have presented different methods for locating, segmenting and
 recovery of text in real scenes
-\cite{joey1,ClarkICPR2000,2001-clark,justin,clark-ijdar-2001}. As a result, we
+\cite{ClarkICPR2000,2001-clark,justin,clark-ijdar-2001}. As a result, we
 developed an approach for {\em estimating} the rectification of the perspective
-view of a document \cite{2001-clark,clark-ijdar-2001}. In this work, we address
-the issue in more depth and present a {\em robust} approach. 
-Our method is independent of the focal length of
+view of a document \cite{2001-clark,clark-ijdar-2001}. In this work,  
+the issue is addressed in more depth and we present a {\em robust} approach
+which is also independent of the focal length of
 the camera and document font size. Additionally, we analyse and show the limits
 and range of orientations of the text documents to which our proposed method can
 be applied.
@@ -151,7 +153,7 @@ Rother \cite{rother0} found vanishing points corresponding to the three mutual
 orthogonal directions of a scene using the parallel lines commonly available
 in architectural environments.  Murino and Foresti \cite{MURIN} used a 3D Hough
 transform to estimate the orientation of planar shapes with known rectilinear
-features.  Gool et al. \cite{vangool98planar} have employed invariants to
+features.  Gool et al. \cite{vangool98planar}  employed invariants to
 recover scene geometry from image points with known planar homologies.  All of
 these methods initially require selecting points in the image which are believed
 to have a certain relationship in the scene.  In our work, we first detect
@@ -234,10 +236,11 @@ fronto-parallel view.  The algorithm performs well for all types of paragraphs,
 provided there is some  formatting. As a by-product of the proposed
 method we have demonstrated how to understand the format of paragraphs which is
  of many uses in the Document Recognition area.
-In total the process takes around 20 seconds to recover a document,
+At present, the process takes around 20 seconds to recover a document,
 demonstrating its potential and applicability 
 %to realtime systems, as well as its suitability
-for normal scanning.
+for normal scanning. We hope to report a much faster time soon through
+optimisation of the code and implementation on a faster processor.
 %An optimisation algorithm for the search for the horizontal vanishing point was presented.
 
 %Whilst the described method is suitable for documents or single paragraphs, due
@@ -268,5 +271,6 @@ environment, suitable for a wearable computer system.
 
 \bibliographystyle{elsart-num}
 \bibliography{pr-pcmm}
+\input{allfigs.tex}
 
 \end{document}
