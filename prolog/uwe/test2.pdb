@@ -1,0 +1,12 @@
+startimage(LL):-
+	LL is [ [x,x,x,x] ,
+				  [o,o,o,o] ,
+				  [o,x,x,o] ,
+				  [o,o,x,o] ].
+
+endimage(LL):-
+	startimage(SS),
+	doitfor(0,4,0,4,SS,LL).
+
+doitfor(X0,Y0,X1,Y0,SS,LL):-
+  

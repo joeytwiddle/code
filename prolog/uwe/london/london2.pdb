@@ -1,0 +1,288 @@
+%
+% LIST OF STATIONS & LINES
+% ------------------------
+
+link(paddington, bayswater, circle).
+link(bayswater, notting_hill_gate, circle).
+link(notting_hill_gate, high_street_kensington, circle).
+link(high_street_kensington, gloucester_road, circle).
+link(gloucester_road, south_kensington, circle).
+link(south_kensington, sloane_square, circle).
+link(sloane_square, victoria, circle).
+link(victoria, st_james_park, circle).
+link(st_james_park, westminster, circle).
+link(westminster, embankment, circle).
+link(embankment, temple, circle).
+link(temple, blackfriars, circle).
+link(blackfriars, mansion_house, circle).
+link(mansion_house, cannon_street, circle).
+link(cannon_street, monument, circle).
+link(monument, tower_hill, circle).
+link(tower_hill, aldgate, circle).
+link(aldgate, liverpool_street, circle).
+link(liverpool_street, moorgate, circle).
+link(moorgate, barbican, circle).
+link(barbican, farringdon, circle).
+link(farringdon, kings_cross, circle).
+link(kings_cross, euston_square, circle).
+link(euston_square, warren_street, circle).
+link(warren_street, great_portland_street, circle).
+link(great_portland_street, baker_street, circle).
+link(baker_street, edgware_road, circle).
+link(edgware_road, paddington, circle).
+
+
+link(holland_park, notting_hill_gate, central).
+link(notting_hill_gate, queensway, central).
+link(queensway, lancaster_gate, central).
+link(lancaster_gate, marble_arch, central).
+link(marble_arch, bond_street, central).
+link(bond_street, oxford_circus, central).
+link(oxford_circus, tottenham_court_road, central).
+link(tottenham_court_road, holborn, central).
+link(holborn, chancery_lane, central).
+link(chancery_lane, st_pauls, central).
+link(st_pauls, bank, central).
+link(bank, liverpool_street, central).
+link(liverpool_street, bethnal_green, central).
+link(bethnal_green, mile_end, central).
+
+link(warwick_avenue, paddington, bakerloo).
+link(paddington, edgware_road, bakerloo).
+link(edgware_road, marylebone, bakerloo).
+link(marylebone, baker_street, bakerloo).
+link(baker_street, regents_park, bakerloo).
+link(regents_park, oxford_circus, bakerloo).
+link(oxford_circus, piccadilly_circus, bakerloo).
+link(piccadilly_circus, charing_cross, bakerloo).
+link(charing_cross, embankment, bakerloo).
+link(embankment, waterloo, bakerloo).
+link(waterloo, lambeth_north, bakerloo).
+link(lambeth_north, elephant_and_castle, bakerloo).
+
+link(earls_court, gloucester_road, piccadilly).
+link(gloucester_road, south_kensington, piccadilly).
+link(south_kensington, knightsbridge, piccadilly).
+link(knightsbridge, hyde_park_corner, piccadilly).
+link(hyde_park_corner, green_park, piccadilly).
+link(green_park, piccadilly_circus, piccadilly).
+link(piccadilly_circus, leicester_square, piccadilly).
+link(leicester_square, covent_garden, piccadilly).
+link(covent_garden, holborn, piccadilly).
+link(holborn, russell_square, piccadilly).
+link(russell_square, kings_cross, piccadilly).
+link(kings_cross, caledonian_road, piccadilly).
+
+link(kings_cross, highbury_and_islington, victoria).
+link(euston, kings_cross, victoria).
+link(warren_circus, euston, victoria).
+link(oxford_circus, warren_circus, victoria).
+link(green_park, oxford_circus, victoria).
+link(victoria, green_park, victoria).
+link(pimlico, victoria, victoria).
+
+link(mornington_crescent, camden_town, northern).
+link(euston, mornington_crescent, northern).
+link(warren_street, euston, northern).
+link(goodge_street, warren_street, northern).
+link(holborn, goodge_street, northern).
+link(leicester_square, holborn, northern).
+link(charing_cross, leicester_square, northern).
+link(embankment, charing_cross, northern).
+link(waterloo, embankment, northern).
+link(elephant_and_castle, waterloo, northern).
+link(euston, camden_town, northern).
+link(kings_cross, euston, northern).
+link(angel, kings_cross, northern).
+link(old_street, angel, northern).
+link(moorgate, old_street, northern).
+link(bank, moorgate, northern).
+link(london_bridge, bank, northern).
+link(borough, london_bridge, northern).
+link(elephant_and_castle, borough, northern).
+
+link(edgware_road, paddington, district).
+link(paddington, bayswater, district).
+link(bayswater, notting_hill_gate, district).
+link(notting_hill_gate, high_street_kensington, district).
+link(high_street_kensington, earls_court, district).
+
+link(aldgate, liverpool_street, metropolitan).
+link(liverpool_street, moorgate, metropolitan).
+link(moorgate, barbican, metropolitan).
+link(barbican, farringdon, metropolitan).
+link(farringdon, kings_cross, metropolitan).
+link(kings_cross, euston_square, metropolitan).
+link(euston_square, warren_street, metropolitan).
+link(warren_street, great_portland_street, metropolitan).
+link(great_portland_street, baker_street, metropolitan).
+link(baker_street, finchley_road, metropolitan). 
+
+link(st_johns_wood, baker_street, jubilee).
+link(baker_street, bond_street, jubilee).
+link(bond_street, green_park, jubilee).
+link(green_park, westminster, jubilee).
+link(westminster, waterloo, jubilee).
+
+
+link(waterloo, bank, waterloo_and_city).
+
+%
+% THIS PROMPTS THE USER 
+% ---------------------
+
+run :-
+        getstation('ENTER STARTING STATION : ',A),
+        getstation('ENTER DESTINATION : ',B),
+        prettyPath(A,B)
+	;
+	showbest.
+
+connected(X,Y,Line) :-			% X is connected to Y
+	link(X,Y,Line)			% provided there is an arrow
+	;				% from X to Y or from Y to X
+	link(Y,X,Line).			% - good idea to display 'or'
+
+path(X,Y,[X,Y]) :-
+	connected(X,Y,_).
+path(X,Y,[X|R]) :-
+	connected(X,Z,_),
+	path(Z,Y,R).
+
+% Commented out for swi-prolog
+% member(H,[H|_]).		% the head is a member of the list; also
+% member(X,[_|T]) :-		% X is a member of the list if
+	% member(X,T).		% it is a member of the tail of the list
+
+
+apath(X,Y,[X,Y],A,1,Line) :-
+	connected(X,Y,Line),
+	not(member(Y,A)).
+apath(X,Y,[X|R],A,NewCost,Line) :-
+	connected(X,Z,Line),
+	not(member(Z,A)),
+	apath(Z,Y,R,[Z|A],Cost,NextLine),
+	notOver(Cost),
+	(NextLine = Line,
+        NewCost is Cost+1
+	;
+	NewCost is Cost+4).
+	
+	
+not(X):- \+(X).
+
+notOver(Cost):-
+	bestSoFar(BestCost,_),
+	not(Cost>BestCost).
+
+
+	canGo(X,Y) :-
+		link(X,Y,Line)
+		;
+		link(X,Z,Line),
+		canGo(Z,Y).
+
+	findPath(X,Y,[X,Y,Line]) :-
+		link(X,Y,Line).
+	findPath(X,Y,[X|R]) :-
+		link(X,Z,_),
+		findPath(Z,Y,R).
+
+	getstation(Prompt,Station) :-
+		write(Prompt),
+		read(Station),
+		checkstation(Station)
+		;
+		write('Not a station'),
+		nl,
+		getstation(Prompt,Station),
+		nl.
+   
+        checkstation(A) :-
+		connected(A,_,_).
+
+	findRoute(X,Y):-
+		retractall(bestSoFar),
+		assert(bestSoFar(99999999,[])),
+		prettyPath(X,Y).
+
+adjacent(S,Ss):-
+	findall(X,connected(S,X,_),Ss).
+%	adjacent(X,Ss,[]).
+
+dist(_,_,1).
+
+shortestPath(X,Y,Exclude,[Y],C):-
+	adjacent(X,As),
+	member(Y,As),
+	not(member(Y,Exclude)),
+	dist(X,Y,C).
+shortestPath(X,Y,Exclude,[Z|Rest],C):-
+	% write(X),nl,
+	adjacent(X,As),
+	nextBest(As,Y,Z,Exclude,Rest,C).
+%	member(Z,As),
+%	shortestPath(Z,Y,[Rest,C2]),
+%	C is C2.
+shortestPath(X,Y,Exclude,[],9999999).
+
+nextBest([A],Y,A,Exclude,Route,C):-
+	not(member(A,Exclude)),
+	shortestPath(A,Y,[A|Exclude],Route,C).
+nextBest([A|As],Y,Z,Exclude,BestRoute,C):-
+	not(member(A,Exclude)),
+	shortestPath(A,Y,[A|Exclude],Route,Cost),
+	nextBest(As,Y,A2,Exclude,Route2,Cost2),
+	( Cost < Cost2,
+	  BestRoute is Route, C is Cost, Z is A
+	  ;
+	  BestRoute is Route2, C is Cost2, Z is A2
+	).
+
+%adjacent(X,[H|T],Got):-
+	%connected(X,H,_),
+	%not(member(H,Got)),
+	%adjacent(X,T,[H|Got]).
+
+	prettyPath(X,Y) :-
+		apath(X,Y,Route,[X],Cost,_),
+		checkroute(Cost,Route),fail.
+		
+	prettyPrint([_]).
+	prettyPrint([X,Y|Route]) :-		% head, tail and rest
+		write('Go from '),
+		write(X),
+		write(' to '),
+		write(Y),
+		nl,
+		prettyPrint([Y|Route]).
+
+	writeFirstChar([X|_]):-
+		write(X).
+	
+	shortPrint([]):- nl.
+	shortPrint([X|R]):-
+		% writeFirstChar(X),
+		write(X),
+		shortPrint(R).
+	
+	%bestSoFar(99999999,[]).
+
+	checkroute(NewCost,NewRoute) :-
+      % write(NewCost), nl,
+		% shortPrint(NewRoute),
+		bestSoFar(BestCost,BestRoute),
+		NewCost < BestCost,
+		write('Better =)'), nl,
+		% prettyPrint(NewRoute),
+		retract(bestSoFar(BestCost,BestRoute)),
+		assert(bestSoFar(NewCost,NewRoute)),
+		write('OK'),nl.
+
+ 	showbest :-
+		bestSoFar(Cost,Route),
+		prettyPrint(Route),
+		retract(bestSoFar(Cost,Route)).
+
+
+%----------------------------------------

@@ -1,0 +1,64 @@
+
+% farmer program - without cut, so many repeated solutions
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% revision task:
+% document every clause in this file
+% you should fully understand the problem and the program
+% specially those recursively define clauses
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% A state is a list [self,grain,chicken,fox] where each item
+% is either s or n, meaning on the south or north bank.
+
+% After playing with the question:
+%     possible_state(L,[n,n,n,s]).
+% it seems that the question is the start state and
+% [s,s,s,s] the end state!
+
+% All my notation below should be switched
+% eg. the actions list nicely goes forwards not backwards!
+
+% L is a solution if it is a possible route to the state
+% with everything on the north bank.
+solve(L):-
+    possible_state(L,[n,n,n,n]).
+
+% The start state with no actions taken.
+possible_state([],[s,s,s,s]).
+% The Action can be performed if
+% the state so far is possible
+% the action is a valid transform to the new state
+% and the new state is peaceful (nothing is being eaten!)
+possible_state([Action|ActionsSoFar],NewState):-
+    possible_state(ActionsSoFar,LastState),
+    transform(Action,LastState,NewState),
+    peaceful(NewState).
+
+% How the four actions change the position state of the items.
+transform(row(self),[X,UnG,UnC,UnF],[Y,UnG,UnC,UnF]):-
+    opposite(X,Y).
+transform(row(grain),[X,X,UnC,UnF],[Y,Y,UnC,UnF]):-
+    opposite(X,Y).
+transform(row(chicken),[X,UnG,X,UnF],[Y,UnG,Y,UnF]):-
+    opposite(X,Y).
+transform(row(fox),[X,UnG,UnC,X],[Y,UnG,UnC,Y]):-
+    opposite(X,Y).
+
+% opposite(X,Y):- \+ X==Y.
+opposite(s,n).
+opposite(n,s).
+% opposite(X,Y):-!,opposite(Y,X).
+
+peaceful(State):-
+    isSafe(grain,State),
+    isSafe(chicken,State).
+
+isSafe(grain,[X,X,_,_]).
+isSafe(grain,[_,X,Y,_]):-
+    opposite(X,Y).
+
+isSafe(chicken,[X,_,X,_]).
+isSafe(chicken,[_,_,X,Y]):-
+    opposite(X,Y).
+

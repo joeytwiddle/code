@@ -1,0 +1,37 @@
+printList([]):-write('end'),nl.
+printList([H|T]):-write(H),nl,printList(T).
+
+% Doesn't work backwards
+myreverse([],L).
+myreverse([H|T],L):-
+    write('[H|T] = '),
+    write([H|T]),
+    nl,
+    write('L = '),
+    write(L),
+    nl,
+    myreverse(T,[H|L]).
+    
+concat([],L,L).
+concat([X|L1],L2,[X|L3]):- concat(L1,L2,L3).
+
+reverse4([],[]).
+reverse4([X|R],L):- reverse(R,P), concat(P,[X],L).
+% Probably needs a cut too
+
+myreverse2(A,B):-myreverse2(A,[],B).
+
+myreverse2([],L,L).
+myreverse2([AH|AT],B,L):-
+    write('[AH|AT] = '),
+    write([AH|AT]),
+    nl,
+    write('B = '),
+    write(B),
+    nl,
+    write('L = '),
+    write(L),
+    nl,
+    myreverse2(AT,[AH|B],L),!.
+
+% Cut required when first argument is unknown

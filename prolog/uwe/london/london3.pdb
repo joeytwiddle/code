@@ -1,0 +1,190 @@
+%
+% LIST OF STATIONS & LINES
+% ------------------------
+
+link(paddington, bayswater, circle).
+link(bayswater, notting_hill_gate, circle).
+link(notting_hill_gate, high_street_kensington, circle).
+link(high_street_kensington, gloucester_road, circle).
+link(gloucester_road, south_kensington, circle).
+link(south_kensington, sloane_square, circle).
+link(sloane_square, victoria, circle).
+link(victoria, st_james_park, circle).
+link(st_james_park, westminster, circle).
+link(westminster, embankment, circle).
+link(embankment, temple, circle).
+link(temple, blackfriars, circle).
+link(blackfriars, mansion_house, circle).
+link(mansion_house, cannon_street, circle).
+link(cannon_street, monument, circle).
+link(monument, tower_hill, circle).
+link(tower_hill, aldgate, circle).
+link(aldgate, liverpool_street, circle).
+link(liverpool_street, moorgate, circle).
+link(moorgate, barbican, circle).
+link(barbican, farringdon, circle).
+link(farringdon, kings_cross, circle).
+link(kings_cross, euston_square, circle).
+link(euston_square, warren_street, circle).
+link(warren_street, great_portland_street, circle).
+link(great_portland_street, baker_street, circle).
+link(baker_street, edgware_road, circle).
+link(edgware_road, paddington, circle).
+
+
+link(holland_park, notting_hill_gate, central).
+link(notting_hill_gate, queensway, central).
+link(queensway, lancaster_gate, central).
+link(lancaster_gate, marble_arch, central).
+link(marble_arch, bond_street, central).
+link(bond_street, oxford_circus, central).
+link(oxford_circus, tottenham_court_road, central).
+link(tottenham_court_road, holborn, central).
+link(holborn, chancery_lane, central).
+link(chancery_lane, st_pauls, central).
+link(st_pauls, bank, central).
+link(bank, liverpool_street, central).
+link(liverpool_street, bethnal_green, central).
+link(bethnal_green, mile_end, central).
+
+link(warwick_avenue, paddington, bakerloo).
+link(paddington, edgware_road, bakerloo).
+link(edgware_road, marylebone, bakerloo).
+link(marylebone, baker_street, bakerloo).
+link(baker_street, regents_park, bakerloo).
+link(regents_park, oxford_circus, bakerloo).
+link(oxford_circus, piccadilly_circus, bakerloo).
+link(piccadilly_circus, charing_cross, bakerloo).
+link(charing_cross, embankment, bakerloo).
+link(embankment, waterloo, bakerloo).
+link(waterloo, lambeth_north, bakerloo).
+link(lambeth_north, elephant_and_castle, bakerloo).
+
+link(earls_court, gloucester_road, piccadilly).
+link(gloucester_road, south_kensington, piccadilly).
+link(south_kensington, knightsbridge, piccadilly).
+link(knightsbridge, hyde_park_corner, piccadilly).
+link(hyde_park_corner, green_park, piccadilly).
+link(green_park, piccadilly_circus, piccadilly).
+link(piccadilly_circus, leicester_square, piccadilly).
+link(leicester_square, covent_garden, piccadilly).
+link(covent_garden, holborn, piccadilly).
+link(holborn, russell_square, piccadilly).
+link(russell_square, kings_cross, piccadilly).
+link(kings_cross, caledonian_road, piccadilly).
+
+link(kings_cross, highbury_and_islington, victoria).
+link(euston, kings_cross, victoria).
+link(warren_circus, euston, victoria).
+link(oxford_circus, warren_circus, victoria).
+link(green_park, oxford_circus, victoria).
+link(victoria, green_park, victoria).
+link(pimlico, victoria, victoria).
+
+link(mornington_crescent, camden_town, northern).
+link(euston, mornington_crescent, northern).
+link(warren_street, euston, northern).
+link(goodge_street, warren_street, northern).
+link(holborn, goodge_street, northern).
+link(leicester_square, holborn, northern).
+link(charing_cross, leicester_square, northern).
+link(embankment, charing_cross, northern).
+link(waterloo, embankment, northern).
+link(elephant_and_castle, waterloo, northern).
+link(euston, camden_town, northern).
+link(kings_cross, euston, northern).
+link(angel, kings_cross, northern).
+link(old_street, angel, northern).
+link(moorgate, old_street, northern).
+link(bank, moorgate, northern).
+link(london_bridge, bank, northern).
+link(borough, london_bridge, northern).
+link(elephant_and_castle, borough, northern).
+
+link(edgware_road, paddington, district).
+link(paddington, bayswater, district).
+link(bayswater, notting_hill_gate, district).
+link(notting_hill_gate, high_street_kensington, district).
+link(high_street_kensington, earls_court, district).
+
+link(aldgate, liverpool_street, metropolitan).
+link(liverpool_street, moorgate, metropolitan).
+link(moorgate, barbican, metropolitan).
+link(barbican, farringdon, metropolitan).
+link(farringdon, kings_cross, metropolitan).
+link(kings_cross, euston_square, metropolitan).
+link(euston_square, warren_street, metropolitan).
+link(warren_street, great_portland_street, metropolitan).
+link(great_portland_street, baker_street, metropolitan).
+link(baker_street, finchley_road, metropolitan). 
+
+link(st_johns_wood, baker_street, jubilee).
+link(baker_street, bond_street, jubilee).
+link(bond_street, green_park, jubilee).
+link(green_park, westminster, jubilee).
+link(westminster, waterloo, jubilee).
+
+
+link(waterloo, bank, waterloo_and_city).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+connected(X,Y,Line) :-			% X is connected to Y
+	link(X,Y,Line)			% provided there is an arrow
+	;				% from X to Y or from Y to X
+	link(Y,X,Line).			% - good idea to display 'or'
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Solution 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+quickPath(X,Y,_,[Y],1,Line):-
+	connected(X,Y,Line).
+quickPath(X,Y,Max,[Z|More],C,Line):-
+	connected(X,Z,_),
+	Max2 is Max-1,
+	Max2 > 0,
+	quickPath(Z,Y,Max2,More,C2,NextLine),
+	move(Line,NextLine,Cost),
+	C is C2 + Cost.
+
+% This method of calculating line-change cost causes undesirable backtracking problems.
+	%(
+		%Line = NextLine, !,
+		%C is C2 + 1
+		%;
+		%C is C2 + 4
+	%).
+
+move(L,L,1).
+move(L,X,4):- not(L=X).
+
+shortestPath(X,Y,[X|R],C):-
+	shortestPath(X,Y,1,R,C).
+
+shortestPath(X,Y,M,R,C):-
+	quickPath(X,Y,M,R,C,noLine)
+	;
+	N is M+1,
+	shortestPath(X,Y,N,R,C).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Solution 2
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+expandedRoute([H|T],[X|[H|T]]):-
+	connected(X,H,_),
+	\+member(X,T).
+
+shortestPath2(X,Y,R,C):-
+	expandRouteTo([X],Y,R,C).
+
+expandRouteTo(RouteSoFar,Y,FR,0):-
+	expandedRoute(RouteSoFar,NextRoute),
+	( [H|_] = NextRoute,
+	  H = Y,
+	  FR = NextRoute
+	  ;
+	  expandRouteTo(NextRoute,Y,FR,0)
+	).
+	

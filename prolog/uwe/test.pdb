@@ -1,0 +1,17 @@
+factorial(0,1):- !.
+factorial(N,X):-
+	M is N-1,
+	factorial(M,Y),
+	X is Y*N.
+	% !.
+
+% We need one of these cuts or it will look for alternatives to factorial(0,N) in the -ves!
+
+% However sum does not have this problem, because sum([],0) cannot be reattempted because the other definition requires a splittable list.
+
+sum([],0).
+% or equivalently
+% sum(L,N):- L == [], N is 0.
+sum([X|Xs],N):-
+	sum(Xs,M),
+	N is (M + X).
