@@ -39,7 +39,9 @@ DBKERROR="0" &&
 for FILE in $FILES; do
 	echo "Getting $FILE ..."
 
-	wget $WGETOPTS -q -O "$FILE" "$SRCURL/$FILE"
+	# wget $WGETOPTS -q -O "$FILE" "$SRCURL/$FILE"
+	# For Debug:
+	wget $WGETOPTS -O "$FILE" "$SRCURL/$FILE"
 
 	if test "$?" = 0; then
 		echo "Got OK"
@@ -50,7 +52,7 @@ for FILE in $FILES; do
 done > "$LOGFILE"
 
 if test "$DBKERROR" != "0"; then
-	cat "$LOGFILE" | mail -s "$HOST:$0 had problems" "$MAILONERROR"
+	cat "$LOGFILE" | mail -s "$HOST:[$0 $*] wget had exit code $DBKERROR" "$MAILONERROR"
 	cat "$LOGFILE"
 	exit "$DBKERROR"
 fi

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+. cgilib
+# export JPATH=/home/joey/j
+# . /home/joey/j/startj-simple
+
+WORD=`getcgi "word"`
+
+echo "<HTML><HEAD><TITLE>Dict lookup for $WORD</TITLE></HEAD><BODY>"
+
+/usr/bin/dict "$WORD" |
+sed 's/ /\&nbsp;/g' |
+sed 's/$/<BR>/'
+
+echo "</BODY></HTML>"
