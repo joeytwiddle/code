@@ -5,7 +5,7 @@
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
 # DOCUMENTS="left cen right full"
 
-DOCUMENTS="dar-crpage2-left30" # left
+DOCUMENTS="test" # dar-crpage2-left30" # left
 # PPSCANMETHODS="hier full"
 PPSCANMETHODS="hier"
 PPMEASURES="deriv"

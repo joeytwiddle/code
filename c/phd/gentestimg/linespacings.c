@@ -157,9 +157,10 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	baseline.a=baseline.a.rotateabout(-angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
 	baseline.b=baseline.b.rotateabout(-angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
 
-	// if (needsSorting) {
-		// endpoints.reverse();
-	// }
+	// Maybe only useful in simall not test:
+	if (needsSorting) {
+		endpoints.reverse();
+	}
 
 	List<V2d> ps;
 				

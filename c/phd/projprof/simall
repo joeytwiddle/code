@@ -1,5 +1,7 @@
 #!/bin/sh
 
+del *.results
+
 # export PATH="$PATH:."
 
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
@@ -19,8 +21,8 @@ NOISES=0
 # LINESTODO=`seq -w 30 -1 02`
 # ANGLES=`seq -w 25 05 40`
 # ANGLES=`seq -w 20 07 50`
-ANGLES="20 60"
-ANGLES="50"
+ANGLES="20 40 60 80"
+# ANGLES="50"
 # ANGLES=`seq -w 20 20 60`
 # ANGLES=`seq -w 20 20 40`
 # ANGLES="34"
