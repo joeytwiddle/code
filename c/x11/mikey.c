@@ -4,6 +4,7 @@
 // #include <joeylib.c>
 #define Region Region
 
+#include <time.h>
 
 #define COLORS	255
 #define colors COLORS
@@ -53,6 +54,9 @@
 
 
 #endif
+
+
+float desiredFPS=10.0;
 
 
 int stylee;
@@ -266,6 +270,18 @@ void plotsomeshapes() {
 
 
 
+long lasttime=0; // uclock();
+
+void timesync() {
+	long thistime;
+	while ((thistime=clock())<lasttime+CLOCKS_PER_SEC/desiredFPS)
+		{
+			// Sould release the processor
+		}
+	lasttime=thistime;
+}
+	
+
 
 void iterate_candy() {
 
@@ -345,7 +361,7 @@ void iterate_candy() {
 				// ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
 			// }
 				
-
+		timesync();
     wicked_blit();
   
     toff=toff-(float)palspeed/256;
