@@ -524,6 +524,8 @@ class ProjectionProfiler {
 
 		V2d getvvp() {
 			getgapangles();
+			printf("getvvp(): best = %s\n",best.toString());
+			printf("getvvp(): vps.getpos(best)->pos = %s\n",vps.getpos(best)->pos.toString());
 			V2d hvp=vps.getpos(best)->pos;
 
 			printf("Collecting split lines into regions...\n");
@@ -846,22 +848,27 @@ void main(int argc,String *argv) {
 	ProjectionProfiler pplowres;
 	Map2d<bool> *lowresthresh;
 	ProjectionProfiler pp=ProjectionProfiler(cirres,ppres,binimg,writepps,writebestpp,doinfo);
+	V2d cheathvp=V2d(0,0);
 	V2d hvp=V2d(0,0);
 
 	if (hvpcheat)
 		if (FILE *fp=fopen("hvpcheat.dat","ra")) {
 			fscanf(fp,"(%f,%f)",&hvp.x,&hvp.y);
+			cheathvp=hvp;
 			printf("Cheat HVP = %s\n",hvp.toString());
 			fclose(fp);
 			lowresthresh=new Map2d<bool>(pp.res,pp.res,true);
+			hvp=hvp-V2d(binimg.width/2,binimg.height/2);
 			V2d infcir=planetoinfcircle(hvp);
 			printf("Cheat infcir = %s\n",infcir.toString());
 			Pixel bestpp=pp.mapfromcircle(infcir);
 			// This ends up wrong :-(
 			printf("Cheat bestpp = %s\n",bestpp.toString());
+			printf("Back again infcir = %s\n",pp.maptocircle(bestpp.x,bestpp.y).toString());
+			printf("Back again HVP = %s\n",infcircletoplane(pp.maptocircle(bestpp.x,bestpp.y)).toString());
 			lowresthresh->setpos(bestpp,false);
 			lowresthresh->invert();
-			lowresthresh=lowresthresh->expand(10);
+			lowresthresh=lowresthresh->expand(4);
 			lowresthresh->invert();
 			pp.setup(lowresthresh);
 		}
@@ -964,7 +971,12 @@ void main(int argc,String *argv) {
 	pp.calculate();
 	hvp=pp.getvp();
 	printf("HVP = %s *note* could wait for corner+diffscale*\n",hvp.toString());
+	printf("... infcir = %s\n",planetoinfcircle(hvp-V2d(binimg.width/2,binimg.height/2)).toString());
+	printf("... ppmap = %s\n",pp.mapfromcircle(planetoinfcircle(hvp-V2d(binimg.width/2,binimg.height/2))).toString());
 	useoldspacingsmethod=false;
+	// if (hvpcheat) {
+			// pp.vps.getpos(pp.best)->pos = cheathvp;
+	// }
 	V2d vvp=pp.getvvp();
 	// useoldspacingsmethod=true;
 	// V2d oldvvp=pp.getvvp();
