@@ -123,6 +123,7 @@ class MyDest implements DropTargetListener, DragGestureListener {
 	public void drop(DropTargetDropEvent dtde) {
 		dtde.acceptDrop(DnDConstants.ACTION_MOVE);
 		DnDManager.droppedOn(comp);
+		dtde.getDropTargetContext().dropComplete(true);
 	}
 
 }
