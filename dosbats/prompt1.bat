@@ -7,7 +7,8 @@ rem If you like this prompt, please send me $1000 and you will receive the
 rem latest copy of exactly the same thing.
 rem
 
-PROMPT $e[s$e[0;47m$e[1;59H$e[31m Date: $d $e[2;59H$e[34m  Time: $t   $e[0;37;40m$e[u$e[1;36m$p$g$e[1;37m
+PROMPT $e[s$e[0;47m$e[1;59H$e[31m Date: $d $e[2;59H$e[34m  Time: $t   $e[0;37;40m$e[u$e[1;36m$p$g$e[1;37m 
+rem PROMPT $e[s$e[0;47m$e[1;59H$e[31m Date: $d $e[2;59H$e[34m  Time: $t   $e[0;37;40m$e[u$e[1;36m$p\$e[1;37m 
 
 IF not "%1"=="/V" goto skip
 echo.
