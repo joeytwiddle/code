@@ -4,8 +4,10 @@
 # u must be provided.
 # u=0.001
 # These are the defaults for all images.
-v=-20
-w=0.00001
+# v=-20
+# w=0.00001
+v=-2000
+w=-0.005
 # u=U
 # v=V
 # w=W

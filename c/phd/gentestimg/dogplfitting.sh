@@ -19,7 +19,8 @@ SRCDIR="../gentestimg"
 	if test ! "$U" = ""; then
 		# Actually the one provided in gpldo.txt is better!
 		# to test
-		# echo "u=$U"
+		# aha proved untrue for spacings so kept.
+		echo "u=$U"
 		echo "U=$U"
 	fi
 	if test ! "$W" = ""; then
@@ -43,8 +44,9 @@ SRCDIR="../gentestimg"
 		fi
 
 	if test ! "$W" = ""; then
-		# echo 'plot "gpldata.txt" w p 7,f(x),e(x)'
-		echo 'plot "gpldata.txt" w p 7,f(x),e(x)'
+		echo 'plot "gpldata.txt" w p 7, f(x), e(x)'
+		# echo 'plot "gpldata.txt" w p 7, f(x)'
+		# echo 'plot [-4000:1200] [-100:0] "gpldata.txt" w p 7, e(x), f(x)'
 	fi
 
 )  >  gplsolve.txt
