@@ -1,0 +1,179 @@
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Introduction}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\section{Define the problem} %---------------------------------
+
+The problem is defined mainly by the requirements of a number of potential applications and the expected state of available hardware in the near future.
+
+We overlook the use of sequences/motion.  Justify.
+
+Mention the social benefits to the blind.
+
+Mention some statistics on the forms of text being distributed in society.
+  (Literature, leaflets, business post, magazines, advertising, notices/signs, product labelling.)
+	What proportion of these are black and white?  On flat surfaces?
+
+
+
+\section{Deconstruction of the problem} %----------------------
+
+Locating likely regions, assesment, orientation retrieval, recovery, OCR.
+
+OCR straight from image.
+
+Justification for doing OCR separately: software already exists, humans prefer to read text face-on.
+
+Psychology:  Things humans use to locate and read text:
+	- Context.  They seek text in places it is expected to appear.  (includes "flat surfaces")
+	- Visual appearance:  Generally two colour / high contrast, texture: lines of squiggles.
+	- Tendency to seek text then move closer for further inspection.
+	- Eye has low resolution for colour, texture, general scene, and high resolution centre for inspection of candidates.  (Does this support our method or imply that comparison is less applicable?)
+
+Features available: texture and colour, binary properties, local features.
+
+
+
+\section{Integration versus independence} %--------------------
+
+Structure of system.
+
+Possibilities for information flow.  Different paths to solution.  What do we solve first?
+
+How sequential should the process be?  Ambiguity should be passed forwards.
+
+
+
+\section{Overview of the thesis} %-----------------------------
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Locating text in the image}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Approaches} %------------------------------
+
+The need to generate multiple hypothesese.  Can this be applied to the features as well as the classifier in the texture method?
+
+Search algorithm:
+
+Examine small windows or whole image?
+
+The cluster, assess, reject/process, then continue with rest method.
+
+Top-down optimised classification algorithm.
+
+
+
+\section{Quads approach using local features} %-----------------
+
+(Everything up until now has been theory.  Now we present some results of practical experiments.)
+
+
+
+\section{Texture classification approach} %---------------------
+
+Overview of existing general texture techniques.
+
+Discussion of binary topological analysis.  (Eg. no islands within holes)
+
+Our simple classification NN and our features adapted from OCR research are implemented.
+
+Top-down multiresolution method not yet implemented, but partway there.
+
+The cluster, assess, reject method is not implemented.
+
+
+
+\section{Quads and Texture} %------------------------------------
+
+Example of combining the methods, or at least just discussion.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Determining text orientation}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+From texture, ie. frequency analysis (a la Zissermann...).
+
+From structured model matching (our paragraph recognition).
+
+
+
+% \section{Text orientation by paragraph recognition} %---------
+\section{Locating horizontal vanishing point of paragraph} %---------
+
+\section{Locating vertical vanishing point using paragraph edges} %---------
+
+\section{Locating vertical vanishing point using line spacing} %---------
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Recovery, post-processing, and results}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Recovery of focal length.
+
+Discussion of correct pixel $\rightarrow$  pixel mapping.
+
+Post processing before feeding to OCR.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Results}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\%age paragraphs/documents correctly recovered in ideal scenes.
+
+\%age paragraphs/documents correctly recovered in random scenes.
+
+Comparison of OCR results from our recovery agains scanned images.
+
+Using paragraph recognition to support quadrilateral hypothesese.
+eg. \%age correct quadrilateral hypothesese supported by paragraph.
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\chapter{Conclusions}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\section{Summary and discussion} %-----------------------------
+
+
+
+\section{Future work} %----------------------------------------
+
+Should we try to present all of our past research in this document?  Or should we build on it to develop a better system?
+
+How much theory versus practice?  Presumably a wider area of theory can be covered than is covered by the experiments.  (Ie. not {\em all} theory presented need be backed up by practical experiments.
+
+
+

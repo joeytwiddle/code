@@ -1,0 +1,149 @@
+\documentclass[11pt,a4paper]{report}
+%\documentclass[11pt,a4paper,draft]{report}
+
+\usepackage{times}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+
+\onehalfspacing
+
+%\graphicspath{{Figures/}}
+
+\newcommand{\Chap}[1]{Chapter~\ref{chap:#1}}
+\newcommand{\App}[1]{Appendix~\ref{app:#1}}
+\newcommand{\Sec}[1]{Section~\ref{sec:#1}}
+\newcommand{\Fig}[1]{Figure~\ref{fig:#1}}
+\newcommand{\Eqn}[1]{Equation~\ref{eqn:#1}}
+\newcommand{\Tbl}[1]{Table~\ref{tbl:#1}}
+\newcommand{\Alg}[1]{Algorithm~\ref{alg:#1}}
+
+\setlength{\hoffset}{-1in}
+\setlength{\voffset}{-1in}
+\setlength{\oddsidemargin}{40mm}
+\setlength{\evensidemargin}{40mm}
+\setlength{\textwidth}{150mm}
+\setlength{\topmargin}{20mm}
+\setlength{\headheight}{0mm}
+\setlength{\headsep}{0mm}
+\setlength{\footskip}{20mm}
+\setlength{\textheight}{240mm}
+
+\setlength{\parindent}{0em}
+%\setlength{\parskip}{1.5ex plus 0.5ex minus 0.5ex}
+%\setlength{\parskip}{2.0ex}
+\setlength{\parskip}{\baselineskip}
+%\renewcommand{\baselinestretch}{1.5}
+
+\setcounter{topnumber}{1} % figures at top of page
+\setcounter{bottomnumber}{0} % no figures at bottom of page
+\setcounter{totalnumber}{1} % figures per page
+
+%\includeonly{Conclusions/conclusions}
+%\includeonly{Intro/intro}
+%\includeonly{SegEval/segeval}
+%\includeonly{LblAndApp/lblandapp}
+%\includeonly{LblAndApp/lblandapp,PilotStudy/pilotstudy}
+%\includeonly{ColorConstancy/colorconstancy}
+%\includeonly{Classifier/classifier}
+%\includeonly{MRF/mrf}
+%\includeonly{BristolApproach/bristolapproach}
+%\includeonly{Application/application,BristolApproach/bristolapproach,SegEval/segeval}
+
+\begin{document}
+
+\pagestyle{empty}
+
+
+\begin{center}
+\LARGE{\bf Reading Text in Images of Real Scenes}
+\end{center}
+\vspace{0.5in}
+\begin{center}
+\large{\bf Paul Nelson Clark}
+\end{center}
+\vspace{0.5in}
+\begin{center}
+\includegraphics[scale=0.2]{ubcrest.eps}
+% \includegraphics[scale=0.2]{Preamble/crest.eps}
+\end{center}
+\vspace{0.5in}
+\begin{center}
+A dissertation submitted to the University of Bristol in accordance with the
+requirements for the degree of Doctor of Philosophy in the Faculty of
+Engineering, Department of Computer Science.
+\end{center}
+\vspace{0.18in}
+\begin{center}
+March 2002
+\end{center}
+\vspace{1.0in} \hfill 29,000 words \quad \quad
+
+
+% \include{Preamble/title} \newpage
+% \include{preamble/abstract} \newpage
+% \include{Preamble/declaration} \newpage
+% \include{Preamble/acknowledgements} \newpage
+
+\pagestyle{plain}
+\pagenumbering{roman}
+
+\tableofcontents
+\newpage
+
+\addcontentsline{toc}{chapter}{List of Figures}
+\listoffigures
+\newpage
+
+\addcontentsline{toc}{chapter}{List of Tables}
+\listoftables
+\newpage
+
+\pagenumbering{arabic}
+
+\include{main}
+
+% \addcontentsline{toc}{chapter}{Introduction}
+
+% \typeout{:<+ Intro/intro.tex}
+% \include{Intro/intro}
+
+% \typeout{:<+ LblAndApp/lblandapp.tex}
+% \include{LblAndApp/lblandapp}
+
+% \typeout{:<+ PilotStudy/pilotstudy.tex}
+% \include{PilotStudy/pilotstudy}
+
+% \typeout{:<+ SegEval/segeval.tex}
+% \include{SegEval/segeval}
+
+% \typeout{:<+ Classifier/classifier.tex}
+% \include{Classifier/classifier}
+
+% \typeout{:<+ MRF/mrf.tex}
+% \include{MRF/mrf}
+
+% \typeout{:<+ ColorConstancy/colorconstancy.tex}
+% \include{ColorConstancy/colorconstancy}
+
+% \typeout{:<+ Conclusions/conclusions.tex}
+% \include{Conclusions/conclusions}
+
+% \typeout{:<-}
+
+\addcontentsline{toc}{chapter}{Bibliography}
+% \nocite{Everingham01a}
+% \bibliography{../Bibliography/all}
+\bibliographystyle{abbrv}
+%\bibliographystyle{alpha}
+%\bibliographystyle{plain}
+
+\appendix
+
+% \typeout{:<+ DataAppendix/dataappendix.tex}
+% \include{DataAppendix/dataappendix}
+
+% \typeout{:<-}
+
+\end{document}
