@@ -2,6 +2,8 @@
 
 class ProgMon {
 
+	#define UNIXTERMWID 70
+
 public:
 	void (ProgMon::*nowthrough)(const float f);
 	void (ProgMon::*end)();
@@ -12,25 +14,30 @@ public:
 		unixterm_lastprnt=-1;
 		nowthrough=&ProgMon::unixterm_nowthrough;
 		end=&ProgMon::unixterm_end;
+		// fprintf(stderr,"|");
+		// fprintf(stderr,Srep("=",UNIXTERMWID));
+		// fprintf(stderr,"|\n");
+		// fprintf(stderr,">");
 	}
 
 	void unixterm_nowthrough(const float f) {
-		#define UNIXTERMWID 70
 		int toprnt=f*UNIXTERMWID;
 		if (toprnt>unixterm_lastprnt) {
-			printf("\r|");
-			printf(Srep("=",toprnt-1));
-			printf("#");
-			printf(Srep("-",UNIXTERMWID-toprnt));
-			printf("|");
+			// fprintf(stderr,Srep(".",toprnt-unixterm_lastprnt));
+			fprintf(stderr,"\r|");
+			fprintf(stderr,Srep("=",toprnt-1));
+			fprintf(stderr,"#");
+			fprintf(stderr,Srep("-",UNIXTERMWID-toprnt));
+			fprintf(stderr,"|");
 			unixterm_lastprnt=toprnt;
 		}
 	}
 
 	void unixterm_end() {
-		printf("\r ");
-		printf(Srep(" ",UNIXTERMWID));
-		printf(" \r");
+		fprintf(stderr,"\r ");
+		fprintf(stderr,Srep(" ",UNIXTERMWID));
+		fprintf(stderr," \r");
+		// fprintf(stderr,"\n");
 	}
 
 };

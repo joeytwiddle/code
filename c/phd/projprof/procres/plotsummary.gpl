@@ -18,11 +18,13 @@ set ylabel "pitch" "Times-Roman,28"
 set zlabel "accuracy" "Times-Roman,28"
 # set term post "landscape,times"
 set term post eps "Times-Roman,18"
-set output "fullbasedata.eps"
-splot [5:85] [5:85] [-5:0] "fullbasedata.txt" using 1:2:28 w l
-set output "fulltestdata.eps"
-splot [5:85] [5:85] [-5:0] "fulltestdata.txt" using 1:2:28 w l
-set output "morebasedata.eps"
-splot [5:85] [5:85] [-5:0] "morebasedata.txt" using 1:2:28 w l
-set output "moretestdata.eps"
-splot [5:85] [5:85] [-5:0] "moretestdata.txt" using 1:2:28 w l
+# set output "fullbasedata.eps"
+# splot [5:85] [5:85] [-5:0] "fullbasedata.txt" using 1:2:28 w l
+# set output "fulltestdata.eps"
+# splot [5:85] [5:85] [-5:0] "fulltestdata.txt" using 1:2:28 w l
+# set output "morebasedata.eps"
+# splot [5:85] [5:85] [-5:0] "morebasedata.txt" using 1:2:28 w l
+# set output "moretestdata.eps"
+# splot [5:85] [5:85] [-5:0] "moretestdata.txt" using 1:2:28 w l
+set output "dataresults.eps"
+splot [5:85] [5:85] [-5:0] "dataresults.txt" using 1:2:28 w l
