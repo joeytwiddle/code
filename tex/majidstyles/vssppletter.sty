@@ -1,0 +1,110 @@
+% VSSP letter style  -- Released 23rd June 1995
+
+
+\oddsidemargin 0.6mm
+\topmargin -20mm
+\textheight 240mm 
+\textwidth 160mm 
+\footskip 10mm
+
+
+\font\UOS=/user/eevsspsr/ees1wc/tex/styles/UOS
+
+\def\addressee{
+  \begin{tabular}{l}
+    \toname \\ 
+    \toaddress\\[3em] 
+    \circulate\\ 
+    \enclosure
+  \end{tabular}
+}
+\def\banner{
+  \begin{tabular}{c}
+    {\UOS A}\\
+    {\Large University}\\
+    {\Large of Surrey}\\[3em]
+  {\raggedleft \par\par}
+  \end{tabular}
+}
+
+\def\thedirect{}
+\def\exten#1{\def\theexten{#1}}
+\def\directexten#1{\def\thedirect{#1}}
+\def\telephonenum{
+  \ifx\@empty\thedirect 300800 x \theexten \else 25\thedirect \fi
+}
+\def\emailname#1{\def\email{#1}}
+
+\def\vsspaddress{\footnotesize
+  \begin{tabular}{c}
+  Dr. Majid Mirmehdi\\
+  Vision, Speech and Signal Processing Group\\
+  Department of Electronic Engineering\\
+  University of Surrey\\
+  Guildford, Surrey \\
+  U.K.  GU2 5XH \\[4pt]
+    Tel.\ (+44 1483) \telephonenum\\
+  Fax (+44 1483) 34139\\[4pt]
+  Email: \email @ee.surrey.ac.uk\\
+  WWW: http://www.ee.surrey.ac.uk/
+  \end{tabular}
+}
+
+
+\def\cc#1{
+  \ifx\@empty#1\else
+    \def\circulate{
+      \par\noindent
+      \parbox[t]{\textwidth}{
+        \@hangfrom{\reset@font\rm \ccname: }%
+        \ignorespaces #1\strut
+      }\par
+    }
+  \fi
+}
+\def\circulate{}
+
+\def\encl#1{
+  \ifx\@empty#1\else
+    \def\enclosure{
+      \par\noindent
+      \parbox[t]{\textwidth}{
+        \@hangfrom{\reset@font\rm \enclname: }%
+        \ignorespaces #1\strut
+      }\par
+    }
+  \fi
+}
+\def\enclosure{}
+
+\def\opening#1{
+  \thispagestyle{firstpage} 
+  \vspace*{40mm}
+  \raisebox{-14mm}{\addressee} \hfill \banner  \par
+  \vspace{10mm plus 40mm}%
+  #1\par\vspace{3mm}\nobreak
+}
+
+\long\def\closing#1{\par\nobreak\vspace{\parskip}%
+  \stopbreaks
+  \noindent
+  \hspace*{.1\textwidth}
+  \parbox{\indentedwidth}{\raggedright
+       \ignorespaces #1\\[6\medskipamount]%
+       \ifx\@empty\fromsig
+           \fromname
+       \else \fromsig \fi\strut}%
+   \par}
+
+\def\ps@firstpage{
+  \headheight 70mm \headsep -100mm 
+  \footheight 35mm \footskip 40mm
+  \def\@oddhead{}
+  \def\@oddfoot{ \hfill \vsspaddress }
+  \def\@evenhead{}\def\@evenfoot{}}
+
+
+
+\input date.sty
+
+\endinput

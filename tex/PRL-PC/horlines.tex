@@ -1,0 +1,298 @@
+\section{Locating the Horizontal Vanishing Point}  \label{locatehvpsect}
+
+In \cite{messelod1}, Messelodi and Modena demonstrated a text location method
+on a database of images of book covers.  They employed projection profiles to
+estimate the skew angle (in the view plane) of the text.
+A number of potential angles were found from pairs of components in the text,
+and a projection profile was generated for each angle.  They observed that the
+projection profile with the minimum entropy corresponded to the correct skew
+angle.  
+This is to be expected since the
+profile at the correct angle will have well-defined peaks
+and troughs corresponding to each line of text and the gaps
+between them.  Projection profiles at other angles will cause
+lines to overlap, merging peaks and troughs, and increasing the
+entropy of the profile.
+This guided 1D search is not directly applicable to our problem, which is to
+find a {\em vanishing point} in $\mathbb{R}^2$, with two degrees of freedom. 
+In order to search this space, we will generate projection profiles
+from the point of view of vanishing points, rather than from skew angles.
+
+
+We need a circular search space $C$ as illustrated in \reffig{searchspacediag}.
+% although a rectangular grid of polar coordinates would also work effectively.
+Each cell $c=(r,\theta)$, $r\in[0,1)$ and $\theta\in[0,2\pi)$, in the space $C$
+corresponds to a hypothesised vanishing point $\myvec{V} = (V_r,V_{\theta})$ on
+the image plane $\mathbb{R}^2$, with scalar distance $V_{r}=r/{(1-r)}$ from the
+centre of the image, and angle $V_{\theta}=\theta$.  This maps the infinite
+plane $\mathbb{R}^2$ exponentially into the finite search space $C$.
+A projection profile of the text is generated for
+every vanishing point in $C$, except those lying within
+the text region itself (the central hole in \reffig{ppmap}).
+
+
+\begin{figure}[h!]
+\centering
+\begin{center}
+\subfigure[Relationship between search space $C$ and $\mathbb{R}^2$]{
+\epsfig{figure=images/ppsearchspace.eps,width=45mm}
+\label{searchspacediag}
+}
+\hspace{5mm}
+\subfigure[Scores for all projection profiles in $C$ generated from \reffig{runbin}]{\epsfig{figure=images/chem002ppmap.ps,width=45mm}\label{ppmap}}
+\end{center}
+\vspace*{0mm}
+\caption{Search space $C$}
+\label{searchspace}
+\end{figure}
+
+%The projection profile  with respect to a vanishing point
+%$\myvec{V}$ is obtained by collecting each pixel into a bin representing the
+%angle between the vanishing point and the pixel.  Relative to the vanishing
+%point, the text region will fall within a small range of angles, depending on
+%the distance and position of the vanishing point.  In order to accumulate
+%projection profiles which are comparable to each other, the angular range over
+%which each projection profile is taken is set accordingly.  In other words, the
+%left and right bins of the projection profile correspond to the left and right
+%angles within which the text region lies.  This ensures that the projection
+%profile of a distant vanishing point will not accumulate a tighter distribution,
+%as would be the case if all projection profiles were accumulated in the range
+%$0-2\pi$.
+%%*** !Kill above paragraph?  Keep next but make clearer! ***
+%%*** !Alternative paragraph to the last!  Which do you prefer?!
+
+A projection profile $B$ is a set of bins $\{B_i, i=0,..,N\}$ into which image
+pixels are accumulated.  In the classical 2D case, to generate the projection
+profile of a binary image from a particular angle $\phi$, each positive pixel
+$\myvec{p}$ is assigned to bin $B_i$, where $i$ is dependent on $\myvec{p}$ and
+$\phi$ according to the following equation:
+
+\begin{equation} \label{classicproj} 
+i(\myvec{p},\phi) = \frac{1}{2} N + N
+\frac{ \myvec{p} \cdot \myvec{U} }{ s } 
+\end{equation}
+
+{ \parindent 0mm where $\myvec{U}=(\sin \phi,\cos \phi)$ is a normal vector
+describing the angle of the projection profile, and $s>N$ is the diagonal
+distance of the image.  In this equation, the dot product $\myvec{p} \cdot
+\myvec{U}$ is the position of the pixel along the axis of the projection profile
+in the image defined by $\phi$.  Manipulation with $s$ and $N$ is then employed
+to map from this axis into the range of the bins of the projection profile.  }
+
+
+
+In our case, instead of an angle $\phi$, we have a point of projection
+$\myvec{V}$ on the image plane, which has two degrees of freedom.  Our bins,
+rather than representing parallel slices of the image along a particular
+direction, must represent angular slices projecting from $\myvec{V}$.  Hence, we
+refine (\ref{classicproj}) to map from an image pixel $\myvec{p}$ into a bin
+$B_i$ as follows:
+
+
+\begin{equation} \label{persproj} i( \myvec{p,\myvec{V}} ) = \frac{1}{2} N + N \frac{ \mbox{ang}(\myvec{V},\myvec{V}-\myvec{p}) }{ \Delta \theta } \end{equation}
+
+{ \parindent 0mm 
+where $\mbox{ang}(\myvec{V},\myvec{V}-\myvec{p})$ is the angle
+between pixel $\myvec{p}$ and the centre of the image, relative to the vanishing
+point $\myvec{V}$, and $\Delta \theta$ is the size of the angular range within
+which the text is contained, again relative to the vanishing point
+$\myvec{V}$. $ \Delta \theta$ is obtained from 
+}
+%$ \Delta \theta =
+%\mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) $
+
+\begin{equation} \Delta \theta = \mbox{ang}(\myvec{V}+\myvec{t},\myvec{V}-\myvec{t}) \end{equation}
+
+{ \parindent 0mm 
+where $\myvec{t}$ is a vector perpendicular to $\myvec{V}$ with
+magnitude equal to the radius of the bounding circle of the text region (shown
+in \reffig{projprofs}).  Unlike $s$ in (\ref{classicproj}), it can be seen that
+$\Delta \theta$ is dependent on the point of projection $\myvec{V}$.  In fact
+$\Delta \theta \rightarrow 0$ as $\myvec{V}_r \rightarrow \infty$ since more
+distant vanishing points view the text region through a smaller angular range.
+The use of $\myvec{t}$ to find $\Delta\theta$ ensures that the angular range
+over which the text region is being analysed is as closely focused on the text
+as possible, without allowing any of the text pixels to fall outside the range
+of the projection profile's bins.  This is vital in order for the generated
+profiles to be comparable, and also beneficial computationally since no bins
+need to be generated for the angular range $2 {\pi}-\Delta \theta$ which is
+absent of text.
+}
+
+\begin{comment}
+Relative to a vanishing point $\myvec{V}$, the text region under examination
+will fall entirely within a range of angles, forming an arc or wedge shape
+extending from $\myvec{V}$.  The two angles which form this enclosing wedge are
+used as the left and right bounds of the projection profile.  Hence all pixels
+in the text region will map correctly to a bin in the projection profile, whilst
+ensuring that the text fully spans the projection and a useful profile is
+obtained.  Without this resizing of the window over which to collect the
+projection profile for each vanishing point, the profiles obtained will not
+relate to each other.  This is because more distant vanishing points find the
+text lying within a smaller angular range, which will produce a drastically
+different projection unless we focus on the relevant range.
+\end{comment}
+
+% For example, if we were to use a large window of $0-2\pi$ to generate all the
+%projection profiles, those from the more distant vanishing points would find the
+%projection congregating in fewer and fewer bins! 
+
+% We have experimented with taking the entropy, squared-sum, and
+% derivative-squared-sum of the projection profile, where:
+
+% \begin{equation} \mbox{Entropy }E(B) = \sum_{i=1}^{N}{B_{i} log(B_{i})} \end{equation}
+% \begin{equation} S(B) = \sum_{i=1}^{N}{{B_{i}}^{2}} \end{equation}
+% \begin{equation} \mbox{Derivative-squared-sum }DSS(B) = \sum_{i=1}^{N-1}{{(B_{i+1}-B_{i}})^{2}} \end{equation}
+
+% We found $SS(B)$ and $DSS(B)$ always respond accurately
+% on a text only region, but in the presence of noisy data the two measures
+% perform differently.
+% % The entropy measure $E(B)$ performed significantly worse than the other two.
+% In our experiments, and in \reffig{ppmap}, the measure we used was the squared-sum, $SS(B)$.
+% % The introduction of different types of noise produced different
+% % results from each, but we shall not go into that here.
+% % although the derivatives can be more informative in the presence of
+% % types of noise.
+% We note that the accurate calculation of derivatives requires
+% the generation of a high-resolution projection profile with proper modelling of the
+% pixel contributions.
+% Since the sum of squares does not require such accurate data, for this measure
+% projection profiles may be generated far more computationally efficiently
+% with a lower resolution of bins and a simplistic model
+% of pixel contribution.
+
+\begin{figure}[t]
+\centering
+\begin{center}
+\epsfig{figure=images/chem002projprofs.ps,width=85mm}
+\end{center}
+\vspace*{0mm}
+\caption{Two potential vanishing points $\myvec{V}_A$ and $\myvec{V}_B$, and
+their projection profiles.}
+\label{projprofs}
+\end{figure}
+
+
+Having accumulated projection profiles for all the hypothesised vanishing points
+using (\ref{persproj}), a simple measure of confidence should be
+applied to each projection profile $B$ to mark its significance.
+The confidence measure must be chosen to respond favourably to projection profiles
+with distinct peaks and troughs.
+Since straight lines are most clearly distinguishable from the point where they
+intersect, this horizontal vanishing point and its neighbourhood should be
+favoured by the measure. We experimented with taking the entropy, squared-sum, and
+derivative-squared-sum of the projection profiles, where:
+\begin{equation} \mbox{Entropy: } \hspace*{5mm} E(B) = \sum_{i=1}^{N}{B_{i} log(B_{i})} \end{equation}
+\begin{equation} \mbox{Squared-sum: } \hspace*{5mm} S(B) = \sum_{i=1}^{N}{{B_{i}}^{2}} \end{equation}
+\begin{equation} \mbox{Derivative-squared-sum: } \hspace*{5mm} S_d(B) = \sum_{i=1}^{N-1}{{(B_{i+1}-B_{i}})^{2}} \end{equation}
+
+
+The entropy measure $E(B)$ performed significantly worse in all the above
+measures.  $S(B)$ and $S_d(B)$ always responded well with the $S(B)$ measure
+deteriorating rapidly as the image became noisier. CHECK JOEY.  $S_d(B)$
+responded best even in presence of noise and is also more efficient to compute.
+The confidence of each of the vanishing points with regard to the binarised text
+in \reffig{runbin} is plotted in \reffig{ppmap}, where darker pixels represent a
+larger squared-sum, and a more likely vanishing point.
+
+\begin{figure}[b!]
+\centering
+\begin{center}
+\subfigure[Fully justified]{\epsfig{figure=images/simulated-full.ps,width=41mm}\label{simulated-full}} 
+\subfigure[Left justified]{\epsfig{figure=images/simulated-left.ps,width=41mm}\label{simulated-left}} 
+\subfigure[Left justified with extranneouselements]
+{\epsfig{figure=images/simulated-left-more.ps,width=34mm}\label{simulated-left-more}} 
+\end{center}
+\vspace*{0mm}
+\caption{Examples of simulated images used for performance analysis.}
+\label{simimages}
+\end{figure}
+
+To locate the vanishing point accurately, the resolution of the
+search space must be sufficient to hypothesise a large number of potential
+vanishing points.  During experiments we found empirically that $10^4$
+vanishing points was reasonable. Since each vanishing point examined requires
+the generation and analysis of a projection profile, a full search of the
+space, as shown in \reffig{ppmap}, is computationally expensive.  However, due
+to the large scale features of the search space, we introduced an efficient
+hierarchical approach to the search.  An initial scan of the search space at a
+low resolution is performed, requiring the generation of only a few hundred
+projection profiles.  Adaptive thresholding is then applied to the confidence
+measures of these projection profiles, to extract the most interesting regions
+of the search space.  (In our experiments, this was taken to be the top scoring
+2\% of the space.) A full resolution scan is then performed on these
+interesting regions in the search space, requiring the generation of a few
+further projection profiles close to the expected solution.  Finally, the
+projection profile with the largest confidence is chosen as the horizontal
+vanishing point of the text plane.  
+This hierarchical search reduced the processing time on an HP-UX from over 40
+seconds to about 3 seconds. In all our experiments, this adapted search found
+the same horizontal vanishing point as when we performed a full search.
+The winning projection profile and an
+example of a poor projection profile are shown in \reffig{projprofs}, and
+marked in \reffig{ppmap} with a white cross and a black cross respectively.
+% The hierarchical search reduces the processing time on a Sun Enterprise from
+% over two minutes to under ten seconds.
+It is worth noting that for this adapted algorithm, again the derivative measure
+$S_d(B)$ performs far more efficiently than the sqaured-sum and entropy
+measures, in that they can mislead the hierarchical search by also responding
+favourably to the {\em vertical} vanishing point of a `thin' document, i.e. a
+document which has been rotated about its vertical axes. 
+
+
+JOEY- Can we say something more about noise similar to this commented 
+paragraph I found in your tex file? basically we need to state a little more
+clearly about the reaction of our confidence measure to noise.
+Whilst different types of noise can create different problems,
+in general noisy pixels affect all of the projection profiles similarly,
+and the horizontal vanishing point still retains the greatest confidence.
+Despite general image noise and the resolution of the search space, this method 
+has consistently provided a good estimate of the 
+horizontal vanishing point in our experiments.
+Note that if the best projection profile is found on the edge of the unit
+circle, then the vanishing point is effectively at an infinite distance, and the
+horizontal axis of the text plane is parallel with the image plane.
+
+In order to assess the performance of the algorithm, simulated images such as
+those in \reffig{simimages} were generated at various orientations ranging from
+$0^\circ$ to $90^\circ$ in both yaw and pitch, resulting in 900 test images. 
+\reffig{hvpaccuracy} shows the accuracy of recovery of the horizontal vanishing
+point (HVP) for these images, 
+calculated as the relative distance of the located vanishing point $\myvec{H}$ 
+from the ground truth $\myvec{H}_{\mbox{\small gt}}$, given by
+
+\begin{equation} 
+\mbox{HVP accuracy =} -\frac{|\myvec{H}-\myvec{H}_{\mbox{\small gt}}|}{\myvec{H}_{\mbox{\small gt}}}
+\end{equation}
+
+As can be seen, the proposed method achieves excellent accuracy across a wide
+range of orientations. However, not unexpectedly, the performance begins to drop
+as the orientation of the plane approaches $90^\circ$ in yaw or pitch. In these
+cases, the document has been rotated so as to be almost orthogonal to the view
+plane, and hence nearly invisible in the image, explaining the reduction in
+performance. The slope of the graph at low yaw may be attributed to the
+discretisation of the search space $C$. Since the vanishing points in these
+situations lie close to infinity, the distances of the located vanishing points
+can not be precise. Nevertheless, the vanishing point chosen will be in the
+correct direction, and suitably large so as not to affect further processing. A
+numerical analysis of the performance is given in \reftab{accuracytable} and
+discussed at the end of this paper.
+
+
+\begin{figure}[t]
+\centering
+\begin{center}
+% \frame{
+\epsfig{figure=images/accuracy-hvp-jagged,width=60mm,angle=-90}
+% }
+\end{center}
+\vspace*{0mm}
+\caption{Accuracy of recovery of the horizontal vanishing point for simulated paragraphs at various orientations.}
+\label{hvpaccuracy}
+\end{figure}
+
+
+
+
+
+

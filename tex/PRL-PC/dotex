@@ -1,3 +1,5 @@
+# export TEXINPUTS=.:$PWD/../majidstyles:../shared;
+
 FNAME=pcmm
 echo "----------------------------------------------------------------"
 "rm" $FNAME.dvi

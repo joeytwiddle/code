@@ -1,0 +1,55 @@
+\section{Finding Text Regions}   \label{recoveryusinglines}
+
+The methods described in this paper can be applied to images where the main
+object is the perspective view of a text plane and little or no other clutter
+such as those experimented with in both \cite{pilucvpr1} and \cite{dance02}.
+%Such images are easily obtained for text captured in a point-and-click framework.
+This way the whole image is searched for clues and features regardless of where
+paragraphs of text lie. We can also apply the methods described in
+\cite{ClarkICPR2000,clark-ijdar-2001} where a  a text segmentation algorithm was 
+introduced to segment regions of text in cluttered scenes. This used 
+localised texture measures to train a neural network to classify areas of an
+image as text or non-text. \reffig{runblobbed} shows a large region of text 
+which was found in \reffig{runorig} using this approach. The benefit here is
+that operations can be carried out on the text region only rather than on the
+whole image.
+In this work we consider the output of the system presented in
+\cite{ClarkICPR2000,clark-ijdar-2001} and analyse each region individually to recognise the shape
+of the paragraph, recover the 3D orientation of the text plane, and generate a
+fronto-parallel view of the text. The emphasis here is not on how the text
+region was originally found, but on what can be done next to deal with its
+accurate rectification.
+
+\begin{figure}[h]
+\begin{centering}
+  \subfigure[{\small Original Image}]{\epsfig{figure=images/chem002.ps,width=40mm}\label{runorig}}
+  \hspace*{1mm}
+  \subfigure[{\small Located text region}]{\frame{\epsfig{figure=images/chem002blob.ps,width=40mm}\label{runblobbed}}}
+  \hspace*{1mm}
+  \subfigure[{\small After adaptive thresholding}]{\frame{\epsfig{figure=images/chem002bin.ps,width=40mm}\label{runbin}}}
+\label{runprep}
+\caption{Preparation of paragraph for planar recovery}
+\end{centering}
+\end{figure}
+
+
+In order to analyse the paragraph shape, we first require a classification of
+the text and background pixels to obtain a binary representaion.  Dealing with regions of text only, this
+classification is simplified through thresholding since the region will contain
+easily separable background and foreground colours only. The thresholding does not
+need to be too accurate and breakages in characters or words is not detrimental
+to later stages. Nevertheless, we try for best results and  compute the average
+intensity of the image neighbourhood as an {\em adaptive local threshold}
+for each pixel, in
+order to compensate for any variation in illumination across a text region.
+Partial sums \cite{partialSums} are employed to generate these local thresholds
+efficiently.  To ensure the correct labelling of both dark-on-light and
+light-on-dark text, the proportion of pixels which fall above and below the
+thresholds is considered.  Since in a block of text there is always a larger
+area of background than of text elements, the group of pixels with the lower
+proportion is labelled as text, and the other group as background.  The example
+shown in \reffig{runbin} demonstrates the correct labelling of some light text
+on a dark background and is typical of the input into the work presented here.
+%% SHOW ITS THRESHOLD HISTOGRAM GRAPH? Surely too obvious anyway.
+
+

@@ -1,0 +1,34 @@
+
+\newcommand{\Textwidth}[1]{        
+ \setlength{\textwidth}{#1}
+ \setlength{\oddsidemargin}{-0.5\textwidth} 
+ \addtolength{\oddsidemargin}{0.5\paperwidth} 
+ \addtolength{\oddsidemargin}{-1in}
+}
+
+\newcommand{\Marginwidth}[1]{        
+ \setlength{\oddsidemargin}{#1} 
+ \setlength{\textwidth}{\paperwidth}
+ \addtolength{\textwidth}{-2\oddsidemargin} 
+ \addtolength{\oddsidemargin}{-1in}
+}
+
+\newcommand{\Textheight}[1]{        
+  \setlength{\textheight}{#1}
+  \setlength{\topmargin}{-0.5\textheight} 
+  \addtolength{\topmargin}{-0.5\headheight}
+  \addtolength{\topmargin}{-0.5\headsep}
+  \addtolength{\topmargin}{-0.5\footskip}
+  \addtolength{\topmargin}{0.5\paperheight}
+  \addtolength{\topmargin}{-1in}
+}
+\newcommand{\Marginheight}[1]{        
+  \setlength{\topmargin}{#1} 
+  \setlength{\textheight}{\paperheight}
+  \addtolength{\textheight}{-\headheight}
+  \addtolength{\textheight}{-\headsep}
+  \addtolength{\textheight}{-\footskip}
+  \addtolength{\textheight}{-2\topmargin}
+  \addtolength{\topmargin}{-1in}
+}
+

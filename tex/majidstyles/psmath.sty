@@ -1,0 +1,216 @@
+%%
+%%  psmath.sty   (Febuary 2 1991 Kresten Krab Thorup)
+%%
+
+%%  
+%%  BUGREPORTS:  krab@iesd.auc.dk
+%%
+
+\message{`PostScript math' style option <february 2 1991>}
+
+\def\@declare@font #1#2#3#4%
+   {\new@fontshape{#1}{#2}{#3}{%
+      <5>#4 at4pt%
+      <6>#4 at5pt%
+      <7>#4 at6pt%
+      <8>#4 at7pt%
+      <9>#4 at8pt%
+     <10>#4 at9pt%
+     <11>#4 at10pt%
+     <12>#4 at11pt%
+     <14>#4 at12pt%
+     <17>#4 at14pt%
+     <20>#4 at17pt%
+     <25>#4 at20pt}{}}
+
+\@declare@font{pssymbol}{m}{it}{psyro}
+\@declare@font{pssymbol}{m}{n}{psyr}
+\extra@def{pssymbol}{}{}
+
+\let\@declare@font\relax
+
+\input psfonts
+
+%
+%  Define the new math family
+%
+
+\new@mathversion\mv@times
+
+% Fonts we're going to use...
+
+\define@mathgroup\mv@times{0}
+                 {times}{m}{n}
+\define@mathgroup\mv@times{1}
+                 {times}{m}{it}
+\define@mathgroup\mv@times{2}
+                 {cmsy}{m}{n}
+%\define@mathgroup\mv@times{3}
+%                 {cmex}{m}{n}
+
+
+\new@mathgroup\timsyi@group
+\define@mathgroup\mv@times\timsyi@group
+                 {pssymbol}{m}{it}
+
+\new@mathgroup\timsyn@group
+\define@mathgroup\mv@times\timsyn@group
+                 {pssymbol}{m}{n}
+
+\new@mathgroup\timi@group
+\define@mathgroup\mv@times\timi@group
+                 {cmm}{m}{it}
+
+\new@mathgroup\lyfam@group
+ \define@mathgroup\mv@times\lyfam@group
+       {lasy}{m}{n}
+
+
+\edef\@tempa{\hexnumber@\timsyi@group}  % Math chars from postscript
+				        % font psyro
+% lowercase greek
+
+\mathchardef\alpha="0\@tempa 61
+\mathchardef\beta="0\@tempa 62
+\mathchardef\chi="0\@tempa 63
+\mathchardef\delta="0\@tempa 64
+\mathchardef\varepsilon="0\@tempa 65
+\mathchardef\phi="0\@tempa 66
+\mathchardef\gamma="0\@tempa 67
+\mathchardef\eta="0\@tempa 68
+\mathchardef\iota="0\@tempa 69
+\mathchardef\varphi="0\@tempa 6A
+\mathchardef\kappa="0\@tempa 6B
+\mathchardef\lambda="0\@tempa 6C
+\mathchardef\mu="0\@tempa 6D
+\mathchardef\nu="0\@tempa 6E
+\mathchardef\pi="0\@tempa 70
+\mathchardef\theta="0\@tempa 71
+\mathchardef\rho="0\@tempa 72
+\mathchardef\sigma="0\@tempa 73
+\mathchardef\tau="0\@tempa 74
+\mathchardef\upsilon="0\@tempa 75
+\mathchardef\varpi="0\@tempa 76
+\mathchardef\omega="0\@tempa 77
+\mathchardef\xi="0\@tempa 78
+\mathchardef\psi="0\@tempa 79
+\mathchardef\zeta="0\@tempa 7A
+\mathchardef\partial="0\@tempa B6
+\mathchardef\vartheta="0\@tempa 4A
+
+\edef\@tempa{\hexnumber@\timsyn@group}  % Math chars from postscript
+				        % font psyr
+\mathchardef\angle="0\@tempa D0
+\mathchardef\forall="0\@tempa 22
+\mathchardef\exists="0\@tempa 24
+\mathchardef\aleph="0\@tempa C0
+\mathchardef\Re="0\@tempa C2
+\mathchardef\Im="0\@tempa C1
+\mathchardef\wp="0\@tempa C3
+\mathchardef\nabla="0\@tempa D1
+\mathchardef\infty="0\@tempa A5
+
+\mathchardef\vee="2\@tempa DA
+\mathchardef\wedge="2\@tempa D9
+\mathchardef\cdot="2\@tempa D7
+\mathchardef\ast="2\@tempa 2A
+\mathcode`/="2\@tempa 2F
+\mathchardef\varsigma="0\@tempa 56
+
+\mathchardef\leftrightarrow="3\@tempa AB
+\mathchardef\leftarrow="3\@tempa AC
+\mathchardef\uparrow="3\@tempa AD
+\mathchardef\rightarrow="3\@tempa AE
+\mathchardef\downarrow="3\@tempa AF
+\mathchardef\Leftrightarrow="3\@tempa DB
+\mathchardef\Leftarrow="3\@tempa DC
+\mathchardef\Uparrow="3\@tempa DD
+\mathchardef\Rightarrow="3\@tempa DE
+\mathchardef\Downarrow="3\@tempa DF
+\mathchardef\ldots="3\@tempa BC
+
+\mathchardef\pm="3\@tempa B1
+\mathchardef\geq="3\@tempa B3
+\mathchardef\times="3\@tempa B4
+\mathchardef\div="3\@tempa B8
+\mathchardef\prime="3\@tempa A2
+\mathchardef\bullet="3\@tempa B7
+\mathchardef\equiv="3\@tempa BA
+\mathchardef\approx="3\@tempa BB
+\mathchardef\sim="3\@tempa 7E
+\mathchardef\mid="3\@tempa BD
+\mathchardef\otimes="3\@tempa C4
+\mathchardef\oplus="3\@tempa C5
+\mathchardef\cap="3\@tempa C7
+\mathchardef\cup="3\@tempa C8
+\mathchardef\supset="3\@tempa C9
+\mathchardef\supseteq="3\@tempa CA
+\mathchardef\subset="3\@tempa CC
+\mathchardef\subseteq="3\@tempa CD
+\mathchardef\in="3\@tempa CE
+
+\mathcode`\.="6\@tempa 2E
+\mathcode`\,="6\@tempa 2C
+\mathcode`\f="0\@tempa A6
+
+%
+%  Handle the symbols that are missing in the PostScript fonts, to
+%  complete family 1 
+%
+
+\edef\@tempa{\hexnumber@\timi@group}  
+
+\mathchardef\varrho="0\@tempa 25
+\def\vec{\mathaccent"0\@tempa 7E }
+\mathchardef\natural="0\@tempa 5C
+\mathchardef\epsilon="0\@tempa 0F
+\mathchardef\imath="0\@tempa 7B
+\mathchardef\jmath="0\@tempa 7C
+\mathchardef\ell="0\@tempa 60
+\mathchardef\flat="0\@tempa 5B
+\mathchardef\sharp="0\@tempa 5D
+%
+\mathchardef\star="2\@tempa 3F
+\mathchardef\triangleleft="2\@tempa 2E
+\mathchardef\triangleright="2\@tempa 2F
+%
+\mathchardef\smile="3\@tempa 5E
+\mathchardef\frown="3\@tempa 5F
+\mathchardef\leftharpoonup="3\@tempa 28
+\mathchardef\leftharpoondown="3\@tempa 29
+\mathchardef\rightharpoonup="3\@tempa 2A
+\mathchardef\rightharpoondown="3\@tempa 2B
+\mathchardef\lhook="3\@tempa 2C
+\mathchardef\rhook="3\@tempa 2D
+
+% pick up some symbols from the LaTeX symbol font...
+
+\edef\@tempa{\hexnumber@\lyfam@group}
+
+\mathchardef\mho="0\@tempa 30
+\mathchardef\Join="3\@tempa 31
+\mathchardef\Box="0\@tempa 32
+\mathchardef\Diamond="0\@tempa 33
+\mathchardef\leadsto="3\@tempa 3B
+\mathchardef\sqsubset="3\@tempa 3C
+\mathchardef\sqsupset="3\@tempa 3D
+\mathchardef\lhd="3\@tempa 01
+\mathchardef\unlhd="3\@tempa 02
+\mathchardef\rhd="3\@tempa 03
+\mathchardef\unrhd="3\@tempa 04
+
+\def\dots{\ifmmode\ldots\else$\ldots$\fi}
+
+\declare@font{zapf}{m}{it}{pzcmi}
+\extra@def{zapf}{}{}
+
+\newmathalphabet\zapf
+\addtoversion{times}{\zapf}{zapf}{m}{it}
+
+\gdef\cal#1{{\zapf{#1}}}
+%
+%  1 2 3 - GO!
+%
+\mathversion{times}
+%% 
+%% End of file `psmath.sty'.

@@ -1,0 +1,119 @@
+% ----------------------------------------------------------------------
+% B M V C . S T Y   --   British Machine Vision Conference Proceedings
+% ----------------------------------------------------------------------
+
+\typeout{Adrian Clark's BMVC Proceedings style v1.01 (19-Jun-1997)}
+
+% ----------------------------------------------------------------------
+% Other style files
+% ----------------------------------------------------------------------
+
+\input fancyheadings.sty
+
+% ----------------------------------------------------------------------
+% Page sizes, etc
+% ----------------------------------------------------------------------
+
+\textheight=200mm
+\textwidth=125mm
+\topmargin=-0.2in
+\headsep=0.8in
+\oddsidemargin=0.7in
+
+
+% Headings -- only conference name, outside page boundaries
+
+\lhead{}
+\chead{{\sf British Machine Vision Conference}}
+\rhead{\thepage}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+\headrulewidth=0pt
+\pagestyle{empty}
+
+
+% ----------------------------------------------------------------------
+% Define substitutes for NFSS macros that are missing in the old font
+% selection scheme
+% ----------------------------------------------------------------------
+
+\ifx\undefined\reset@font
+  \@warning{`bmvc.sty' is untested with the old font selection scheme.}
+  \def\reset@font{\normalsize}
+\fi
+
+
+% ----------------------------------------------------------------------
+% Likewise, a pair of macros for producing verbatim listings of files:
+% \listing (with numbered lines) and \verbatimfile (unnumbered lines),
+% with the listings produced in \verbatimfont.
+% ----------------------------------------------------------------------
+
+% Note that the precise layout of line breaks in the following is vital!
+
+\def\verbatimfont{\tt}
+
+\def\verbatimfile#1{\begingroup \@verbatim \frenchspacing \@vobeyspaces
+   \verbatimfont \input#1 \endgroup}
+
+\newcounter{lineno}
+
+\def\listing#1{\setcounter{lineno}{0}%
+   \begingroup \@verbatim \frenchspacing \@vobeyspaces \parindent=20pt
+   \everypar{\stepcounter{lineno}\llap{\thelineno:\ \ }}%
+   \verbatimfont \input#1
+   \endgroup}
+
+
+% ----------------------------------------------------------------------
+% Modifications to section headings, etc
+% ----------------------------------------------------------------------
+
+% Set section headings ragged-right
+
+\def\section{\@startsection {section}{1}{\z@}{-3.5ex plus-1ex minus
+    -.2ex}{2.3ex plus.2ex}{\reset@font\Large\bf\raggedright}}
+\def\subsection{\@startsection{subsection}{2}{\z@}{-3.25ex plus-1ex
+     minus-.2ex}{1.5ex plus.2ex}{\reset@font\large\bf\raggedright}}
+\def\subsubsection{\@startsection{subsubsection}{3}{\z@}{-3.25ex plus
+     -1ex minus-.2ex}{1.5ex plus.2ex}{\reset@font\normalsize\bf\raggedright}}
+
+
+% ----------------------------------------------------------------------
+% Modifications to article title, etc
+% ----------------------------------------------------------------------
+
+\def\@maketitle{\newpage
+ \begin{center}%
+  {\LARGE\bf \@title \par}%
+  \vskip 1.5em
+  {\large \lineskip .5em
+   \begin{tabular}[t]{c}\@author
+   \end{tabular}\par}%
+ \end{center}%
+ \par
+ \vskip 1.5em}
+
+\def\abstract{
+\thispagestyle{empty}
+\begin{center}\small
+{\bf \abstractname}
+\end{center}%
+\begin{quotation}\noindent\ignorespaces}
+
+\def\endabstract{\end{quotation}}
+
+\endinput
+
+
+REVISION HISTORY
+
+1.00  29-Mar-1994  Original version
+1.01  20-Mar-1997  Added page number to top right-hand corner, to aid
+                   the editor's collation task
+1.02  19-Jun-1997  Removed the code to make the underscore character active
+
+% ----------------------------------------------------------------------
+% End of bmvc.sty
+% ----------------------------------------------------------------------

@@ -1,0 +1,35 @@
+%         iee_letters.sty
+%
+% Author: Bill Christmas, University of Surrey.
+%
+%  This style is an approximation to that used by the IEE for their
+%  ``Electronics Letters'' publication.  Use it to get an idea of the final
+% physical size of the article.  (Should be about 3 columns.)
+%
+% Use as follows:
+%
+%\documentstyle[twocolumn,10pt]{article}
+%\usepackage{iee_letters}
+%
+%\begin{document}
+%\small  % <- IMPORTANT!!!!!!!
+% etc. etc.
+%
+%
+% DONT FORGET the \small - I couldn't get it to work any other way.
+%^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+\textwidth 180mm
+\textheight 275mm
+\topmargin -15mm
+\headheight 0mm
+\headsep 0mm
+\oddsidemargin -20mm
+\evensidemargin \oddsidemargin
+\columnsep 10mm
+\renewcommand{\baselinestretch}{0.9}
+
+\def \section#1{\vspace{\parsep}{\parindent 0pt \em #1:}}
+\def \subsection#1{\vspace{\parsep}{\parindent 0pt \em #1:}}
+

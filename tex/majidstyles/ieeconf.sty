@@ -1,0 +1,104 @@
+% --------------------------------------------------------------------------
+% I E E C O N F  --  style option for IEE Conference proceedings
+% --------------------------------------------------------------------------
+% Version 1.00--0 Adrian F Clark <alien@uk.ac.essex> 20-Aug-1991
+% --------------------------------------------------------------------------
+
+\typeout{IEE Conference Proceedings style  v1.00--0  20-Aug-1991}
+
+
+% Page dimensions.
+
+\@twosidetrue                  % two-sided document
+\twocolumn                     % two columns of type
+\sloppy                        % make those columns justify
+\columnsep         11mm        % space between columns
+\columnwidth       80mm        % width of each column
+\parindent         15pt        % paragraph indent
+\parskip           10pt plus 1pt minus 1pt       % paragraph skip
+\baselineskip      11pt plus 0.1pt minus 0.1pt   % baseline skip
+
+\textheight        250mm       % height of text on a page
+\textwidth         171mm       % total width of a page
+\oddsidemargin      -5mm       % shift the page leftwards
+\evensidemargin     -5mm       % shift the page leftwards
+\topmargin          -2mm       % shift the page upwards
+\headheight          0pt       % no running heads...
+\headsep             0pt       % ...so no separation from text
+\marginparwidth     48pt       % don't use marginal notes...
+\marginparsep       10pt       % ...in conference proceedings
+
+
+% Additional macro, to output the authors' affiliation.  Make it
+% default to Essex (since that's where I am!).
+
+\def\affiliation#1{\def\@affiliation{#1}}
+\def\@affiliation{University of Surrey, UK}
+
+
+% Macro for outputting the title of the paper, resetting macros and
+% counters, etc.
+
+\def\maketitle{\par
+ \begingroup
+   \def\thefootnote{\fnsymbol{footnote}}
+   \def\@makefnmark{\hbox to 0pt{$^{\@thefnmark}$\hss}}
+   \twocolumn[\@maketitle]
+   \@thanks
+ \endgroup
+ \setcounter{footnote}{0}
+ \let\maketitle\relax  \let\@maketitle\relax
+ \gdef\@thanks{}\gdef\@author{}\gdef\@title{}\relax
+ \gdef\@affiliation{}\let\thanks\relax}
+
+
+% Output the actual title, author and affiliation according to the IEE
+% guidelines.
+
+\def\@maketitle{\vbox to 44mm{\hsize\textwidth
+ \linewidth\hsize \vfil \raggedright
+ {\large \uppercase\expandafter{\@title} \par}
+ \vskip -\parskip\vskip 6mm\relax
+ \noindent\@author\par
+ \vskip -\parskip\vskip 9mm\relax
+ \noindent\@affiliation\par
+ \vskip -\parskip\vskip 15mm\relax}}
+
+
+% Miscellania
+
+\def\copyrightspace{\footnotetext[0]{\mbox{}\vrule height 97pt width 0pt}}
+
+\def\abstract{\section*{Abstract}}
+\def\endabstract{\par}
+
+\pagestyle{empty}              % no page numbers
+
+
+% Sectioning macros, since the default ones are too big for this page
+% layout (we also ensure they're set ragged-right).
+% These are modified from the definitions in art10.sty.
+
+% (Arguments to \@startsection: name level indent beforeskip afterskip
+% style.)
+
+\def\section{\@startsection {section}{1}{\z@}{-1.5ex plus -.5ex minus
+ -.2ex}{1ex plus .1ex}{\large\bf\raggedright}}
+
+\def\subsection{\@startsection{subsection}{2}{\z@}{-1.25ex plus -.5ex minus
+ -.2ex}{0.8ex plus .1ex}{\normalsize\bf\raggedright}}
+
+\def\subsubsection{\@startsection{subsubsection}{3}{\z@}{-1.25ex plus
+ -.5ex minus -.2ex}{0.8ex plus .1ex}{\normalsize\bf\raggedright}}
+
+\def\paragraph{\@startsection
+ {paragraph}{4}{\z@}{1.25ex plus .5ex minus
+ .2ex}{-1em}{\normalsize\bf\raggedright}}
+
+\def\subparagraph{\@startsection
+ {subparagraph}{4}{\parindent}{1.25ex plus .5ex minus
+ .2ex}{-1em}{\normalsize\bf\raggedright}}
+
+% End of ieeconf.sty.
+
+\parindent         0pt        % paragraph indent

@@ -1,0 +1,88 @@
+% This is the style file for term rewrite systems.
+% The problem is the use of directors [\/^-#], and
+% the square brackets.
+% This is a complete ripoff of the cobcode environment!
+
+% Set up miscellaneous useful definitions
+\def\topensquarebracket{\hspace{-0.4em}[}
+\def\tclosesquarebracket{\hspace{-0.3em}]}
+\def\tuscore{\_}
+\def\tsubscript#1{$_{#1}$}
+\def\tonew{\hspace*{0.2\textwidth}}
+\def\tforwardslash{$/$}
+\def\tvisiblehash{$\#$}
+\def\tminus{$-$}
+\def\tresetcatcode{\catcode`\\=0\catcode`\#=6}
+\def\dspace{\hspace*{1em}}
+\def\openanglebracket{$\langle$}
+\def\closeanglebracket{$\rangle$}
+
+% Set up definitions for active characters for beginterm
+{
+\catcode`\[=\active\gdef\tosq{\def[{\beginannotations}}
+\catcode`\]=\active\gdef\tcsq{\def]{\endannotations}}
+\catcode`\_=\active\gdef\tusk{\def_{\tsubscript}}
+\catcode`\<=\active\gdef\oanglebrack{\def<{\openanglebracket}}
+\catcode`\>=\active\gdef\canglebrack{\def>{\closeanglebracket}}
+\catcode`\|=\active\gdef\verticalbar{\def|{$\mid$}}
+\catcode`\^^I\active\gdef\ttab{\def^^I{\>}}
+}
+
+% Set up definitions for active characters for beginannotations
+{
+    \catcode`\|=0
+    \catcode`\#=\active\gdef\ahash{\def#{\visiblehash}}
+    \catcode`\/=\active\gdef\aleft{\def/{\tforwardslash}}
+    \catcode`\^=\active\gdef\aboth{\def^{$\wedge$}}
+    \catcode`\-=\active\gdef\anone{\def-{\minus}}
+    \catcode`\\=13|gdef|aright{|def\{$|backslash$}}
+}
+
+% The character [ is made active and bound to this
+% macro.
+\def\beginannotations{
+\begingroup
+\topensquarebracket
+\catcode`\|=0
+\catcode`\#=\active\ahash
+\catcode`\/=\active\aleft
+\catcode`\^=\active\aboth
+\catcode`\-=\active\anone
+\catcode`\\=13\aright
+%                 ^   I don't understand this!!  I thought I had just
+%		      redefined its catcode!
+}
+
+% The character ] is made active and bound to this
+% macro
+\def\endannotations{
+\tresetcatcode%
+\catcode`\_=8%
+\tclosesquarebracket%
+\endgroup
+}
+
+\def\beginterm{
+    \begingroup
+    \def\becomes{$\rightarrow$}
+    \def\I{{\sf I}}
+    \catcode`\[=\active\tosq
+    \catcode`\]=\active\tcsq
+    \catcode`\<=\active\oanglebrack
+    \catcode`\>=\active\canglebrack
+    \catcode`\|=\active\verticalbar
+    \catcode`\_=\active\tusk
+    \catcode`\^^I\active\ttab
+    \catcode`\ =\active\dspace
+\begin{center}
+\sl\obeycr%
+\begin{tabular}{lcl}
+}
+
+\def\endterm{
+\end{tabular}%
+\end{center}%
+\endgroup
+}
+
+

@@ -1,0 +1,23 @@
+%% acrobat.sty
+%%
+%% Hacks for running slides with acrobat
+%%
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{acrobat}[1997/11/14 v1.0 Acrobat Package]
+
+\RequirePackage{mathptm}
+
+\linethickness{1pt}
+\fboxrule=1pt
+\setlength\arrayrulewidth{1pt}
+
+\DeclareSymbolFont{operators}   {OT1}{ptm}{m}{n}
+
+\makepdflist
+
+\endinput
+%% 
+%% acrobat.sty
+%%
+%% Use this package along with present.sty if you intend to run your
+%% slides with acroread.

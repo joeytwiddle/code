@@ -1,0 +1,284 @@
+%% 
+%% This is file `present.sty',
+%% generated with the docstrip utility.
+%% 
+%% The original source files were:
+%% 
+%% present.dtx 
+%% 
+%% This is a generated file, so DO NOT EDIT IT. If you want to customise 
+%% this package, you should obtain the source file, change its name, and 
+%% make your changes in there. 
+%% 
+%% The present.sty package was created to make it easier to produce nice 
+%% looking slides for OHP's etc. The documentation for present.sty (what 
+%% there is of it) should be available from whereever you found the style 
+%% file. 
+%% 
+%% This package is distributed in the hope that it will be useful, but 
+%% WITHOUT ANY WARRANTY; without even the implied warranty of 
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+%% 
+%% Please send any bugs or comments to me at paul@cs.bris.ac.uk 
+%% 
+%% Paul Stallard 
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{present}
+         [1996/08/05 v2.0 Present(ation) Package]
+\RequirePackage{fancyheadings}
+\RequirePackage{graphics}
+\newcommand{\mypicdir}{/home/acrc-users/staff/paul/solaris/lib/pics}
+\newcommand{\Head}{\fontsize{40}{45}\selectfont}
+\newcommand{\Foot}{\fontsize{12}{14.5}\selectfont}
+\newcommand{\location}[1]{\gdef\@location{#1}}
+\location{University of Bristol}
+\newcommand{\leftloc}{\def\@loc{\@leftloc}}
+\newcommand{\rightloc}{\def\@loc{\@rightloc}}
+\def\@loc{\@rightloc}
+\newcommand{\defaultalign}[1]{\def\defalign{#1}}
+\defaultalign{n}
+\newcommand{\landscape  }{\setlpage{263.0mm}{172.0mm}}
+\newcommand{\portrait   }{\setpage {193.0mm}{273.0mm}}
+\newcommand{\uslandscape}{\setlpage{245.4mm}{177.9mm}}
+\newcommand{\usportrait }{\setpage {188.9mm}{245.4mm}}
+\newcommand{\projector}{\setlpage{283mm}{196mm}}
+\newcommand{\borderstyle}[1]{\def\@border{\@nameuse{bs@#1}}}
+\borderstyle{box}
+\newcounter{overlay}\setcounter{overlay}{0}
+\def\thesubpage{\ifnum\value{overlay} >\z@ -- \roman{overlay}\fi}
+\newcounter{@giffiles}
+\setcounter{@giffiles}{1}
+\newcommand{\makelist}{%
+  \newwrite\mainlist\immediate\openout\mainlist=\jobname.lst%
+  \def\@makelist{\@addslideinfo}}
+\def\@makelist{\@addnothing}
+\newcommand{\@writelist}[1]{%
+  \immediate\write\mainlist{#1}}
+\newcommand{\@addslideinfo}[1]{%
+  \@writelist{\jobname.pg.\arabic{@giffiles}.gif!\thepage, #1\thesubpage}}
+\newcommand{\addtolist}[1]{\@writelist{#1}}
+\newcommand{\@addnothing}[1]{}
+\newcommand{\repeatslide}[1]{\@writelist{\ref{#1}}}
+\newcommand{\bordercolor}[3]{\def\@bcol{#1 #2 #3 setrgbcolor}}
+\bordercolor{0}{0}{0}
+\newcommand{\fillcolor}[3]{\def\@fcol{#1 #2 #3 setrgbcolor}}
+\fillcolor{1}{1}{1}
+\newcommand{\addcrest}{\cresttrue%
+  \if@crest\special{header=\mypicdir /briscrest.ovr}\@crestfalse\fi}
+\newcommand{\removecrest}{\crestfalse}
+\newcommand{\addpact}{\pacttrue%
+  \if@pact\special{header=\mypicdir /pactlogo.ovr}\@pactfalse\fi}
+\newcommand{\removepact}{\pactfalse}
+\newcommand{\addhorn}{\hornlogotrue%
+  \if@hornlogo\special{header=\mypicdir /horn_slide.ovr}\@hornlogofalse\fi}
+\newcommand{\removehorn}{\hornlogofalse}
+\newcommand{\addnote}{\notelogotrue%
+  \if@notelogo\special{header=\mypicdir /notes.ovr}\@notelogofalse\fi}
+\newcommand{\addnotes}{\addnote}
+\newcommand{\removenote}{\notelogofalse}
+\newcommand{\removenotes}{\removenote}
+\newcommand{\epsfig}[2][!]{\def\@pstrut{}%
+                           \resizebox{#1}{!}{\includegraphics{#2}}}
+\newcommand{\bottomline}[1]{\def\@bottom{#1}}
+\bottomline{}
+\newif\ifhornlogo \hornlogofalse \newif\if@hornlogo \@hornlogotrue
+\newif\ifnotelogo \notelogofalse \newif\if@notelogo \@notelogotrue
+\newif\ifcrest    \crestfalse    \newif\if@crest    \@cresttrue
+\newif\ifpact     \pactfalse     \newif\if@pact     \@pacttrue
+\def\bomb{\raisebox{.6mm}{\epsfig[10pt]{\mypicdir /bomb.eps}\rule{.5mm}{0mm}}}
+\def\emptylineskip{\baselineskip}
+\newlength{\pointindent}\newcount\@pin\newcount\@oldpin\@oldpin \z@
+\def\@mkplab#1{\ifcase #1\or $\bullet$\or --\or $\ast$\or $\cdot$\fi}
+\catcode`\ =13
+\def\eatspace{\global\@pin 0\relax\catcode`\ =13\@ifnextchar {\@atspace}{\@do}}
+\def\@atspace#1#2{\global\advance\@pin 1\relax\@ifnextchar {\@atspace}{\@do}}
+\catcode`\ =10
+\def\@activate{\catcode`\^^M=13}
+\def\@deactivate{\catcode`\^^M=5}
+\@activate%
+\def\@do{\catcode`\ =10%
+             \setlength{\pointindent}{1.5em}%
+             \ifnum\@pin <\@oldpin%
+               \ifnum\@pin <1\setcounter{myenumii}\z@\fi%
+               \ifnum\@pin <2\setcounter{myenumiii}\z@\fi%
+               \setcounter{myenumiv}\z@%
+             \fi\@oldpin \@pin%
+             \@ifnextchar^^M{\vspace{\emptylineskip}}{%
+             \@ifnextchar>{\@incpoint{$\Rightarrow$}\@gobble}{%
+             \@ifnextchar*{\@incpoint{\bomb}\@gobble}{%
+             \@ifnextchar-{\@numbered\@gobble}{%
+             \@ifnextchar~{\@incpoint{$\approx$}\@gobble}{%
+             \@ifnextchar({\@makepoint{(\@mkplab{\@pin}}\@gobble}{%
+               \@makepoint{\@mkplab{\@pin}}}%
+             }}}}}}
+\def\@pcr{\def\@back{}\def^^M{\@back\def\@back{\par}\eatspace}}%
+\@deactivate
+\def\@incpoint#1{%
+  \global\advance\@pin 1\relax\@makepoint{#1}}
+\def\@makepoint#1{%
+  \def\@pstrut{\rule[-.5\baselineskip]{0pt}{0pt}}%
+  \ifnum\@pin=\z@%
+    \def\@back{\@pstrut\par\@itemfill}#1\setcounter{myenumi}\z@%
+  \else%
+    \begin{list}{#1}{\partopsep=0pt\topsep=0pt%
+                     \parskip=0pt\leftmargin=\@pin\pointindent}%
+      \item%
+      \def\@back{\@pstrut\end{list}\@itemfill}%
+  \fi}
+\@definecounter{myenumi}   \@definecounter{myenumii}
+\@definecounter{myenumiii} \@definecounter{myenumiv}
+\def\@numbered{\ifnum \@pin >3 \@toodeep\else
+      \advance\@pin \@ne
+      \edef\@myenumctr{myenum\romannumeral\the\@pin}
+      \addtocounter{\@myenumctr}{1}
+      \begin{list}{\arabic{\@myenumctr}.}%
+      {\parskip=0pt\leftmargin=\@pin\pointindent}\item%
+      \def\@back{\rule{0mm}{0mm}\end{list}}\fi}
+\newcount\@spill\newcount\@spcount
+\def\titlestyle{}
+\def\slide{\@ifnextchar [{\@slidex}%
+           {\edef\@tempa{\noexpand\@slidex[\defalign]}\@tempa}}
+\def\@slidex[#1]#2{\catcode`\^^M=13%
+           \@ifnextchar [{\catcode`\^^M=5\@slidez[#1]{#2}}%
+                         {\catcode`\^^M=5\@slidez[#1]{#2}[0pt]}}
+\def\@slidez[#1]#2[#3]{%
+  \@loc
+  \def\footnoterule{}
+  \def\thefootnote{\fnsymbol{footnote}}
+  \setcounter{footnote}{1}
+  \global\@oldpin \z@
+  \setcounter{myenumi}\z@ \setcounter{myenumii}\z@
+  \setcounter{myenumiii}\z@ \setcounter{myenumiv}\z@
+  \global\@spill \thepage\relax
+  \def\@scstart{}\def\@sfstart{}\def\@spstart{}%
+  \def\@scend{}  \def\@sfend{}  \def\@spend{}%
+  \def\@itemfill{}%
+  \@tfor \@tempa :=#1\do
+  { \if\@tempa c%
+      \def\@scend{\end{center}}\def\@scstart{\begin{center}}%
+    \fi
+    \if\@tempa f%
+      \def\@sfend{\vspace*{\fill}\@bottom}\def\@sfstart{\vspace*{\fill}}%
+    \fi
+    \if\@tempa F%
+      \def\@sfend{\vspace*{\fill}\vspace*{\fill}\@bottom}%
+      \def\@sfstart{\vspace*{\fill}}%
+    \fi
+    \if\@tempa i%
+      \def\@itemfill{\vspace*{\fill}}%
+      \def\@sfstart{\vspace*{\fill}\vspace*{\fill}}%
+      \def\@sfend{\vspace*{\fill}\@bottom}%
+    \fi
+    \if\@tempa p%
+      \def\@spend{\@back\@deactivate}%
+      \def\@spstart{\@activate\parskip=0pt\@pcr}%
+    \fi
+  }
+  \raggedright
+  \@scstart
+  {\bfseries\Head\titlestyle #2\par}
+  \@scend
+  \vspace{#3}\Huge
+  \@sfstart\@scstart\@spstart%
+  \gdef\@currentlabel{\jobname.pg.\arabic{@giffiles}.gif!\thepage, ...Copy...}%
+  \@makelist{#2}}
+\def\endslide{\def\@pstrut{}\@spend\@scend\@sfend\newpage%
+  \addtocounter{@giffiles}{1}
+  \@spcount \thepage\advance\@spcount -1\relax%
+  \ifnum\@spcount=\number\@spill\else%
+  \typeout{**** WARNING: Slide started on page \number\@spill\space%
+           spills over onto page \number\@spcount\space ****}%
+  \fi}
+\def\mylindent{50pt}
+\def\myrindent{0pt}
+\def\points{\ifnum \@itemdepth >3 \@toodeep\else \advance\@itemdepth \@ne
+\edef\@itemitem{labelitem\romannumeral\the\@itemdepth}%
+\list{\csname\@itemitem\endcsname}{\itemsep 20pt\rightmargin \myrindent%
+\leftmargin \mylindent\raggedright\def\makelabel##1{\hss\llap{##1}}}\fi}
+\let\endpoints =\endlist
+\def\bs@empty{}
+\def\bs@line{0 0    moveto xmax 0 rlineto
+             0 ymax moveto xmax 0 rlineto 2 setlinewidth stroke}
+\def\bs@bottom{0 0  moveto xmax 0 rlineto 1 setlinewidth stroke}
+\def\bs@box{newpath radius 0 moveto
+            xmax 0    xmax ymax radius arcto
+            xmax ymax 0    ymax radius arcto
+            0    ymax 0    0    radius arcto
+            0    0    xmax 0    radius arcto closepath
+            2 setlinewidth stroke}
+\chead{}\rhead{}
+\lhead{\special{"
+/radius 10 def
+/mybox {
+  \number\@swidth  \space 65536 div /xmax exch store
+  \number\@sheight \space 65536 div /ymax exch store
+  \@border
+  %% Usage: width height x y clearbox
+  /clearbox { gsave translate newpath
+   0 0 moveto exch dup 0 rlineto exch 0 exch rlineto neg 0 rlineto
+   closepath \@fcol\space fill grestore} def
+  \ifhornlogo
+  100 100 xmax 81 sub ymax 40 sub clearbox
+  gsave
+  xmax 100 sub ymax 70 sub translate % 1 1 scale
+  STMdict begin HORNlogo end
+  grestore
+  \fi\ifnotelogo
+  gsave
+  xmax 12 sub ymax 13 add translate
+  tgifdict begin HORNblurp end
+  grestore
+  \fi\ifcrest
+  61 66 xmax 60 sub ymax 65 sub clearbox
+  .7 xmax 60 sub ymax 60 sub docrest
+  \fi\ifpact
+  100 100 12 -2 clearbox
+  .7 20 0  PACT
+  \fi
+} def
+gsave
+-20 20 translate \@bcol\space mybox
+showpage
+grestore
+}}
+\newcommand{\setcfoot}[1]{\def\@ctext{#1}}
+\setcfoot{\Foot\rule{0pt}{35pt}\thepage}
+\def\@leftloc{\lfoot{\Foot\@author\hspace{2em}\@location}%
+              \cfoot{\@ctext}}
+%% With today's date              \rfoot{\Foot\@date}\cfoot{\@ctext}}
+\def\@rightloc{\lfoot{\Foot\@author}%
+              \rfoot{\Foot\@location\hspace{2em}}\cfoot{\@ctext}}
+%% With today's date    \rfoot{\Foot\@location\hspace{2em}\@date}\cfoot{\@ctext}}
+\newlength{\@sheight}  \newlength{\@swidth}
+\newlength{\@pheight}  \newlength{\@pwidth}
+\newlength{\@afourheight}\@afourheight 698pt% 297mm - 2in
+\newlength{\@afourwidth} \@afourwidth  451pt% 210mm - 2in
+\def\setlpage#1#2{%
+  \@pheight \@afourwidth  \@pwidth \@afourheight
+  \special{landscape}
+  \@setpage{#1}{#2}
+}
+\def\setpage#1#2{%
+  \@pheight \@afourheight \@pwidth \@afourwidth
+  \@setpage{#1}{#2}
+}
+\def\@setpage#1#2{
+  \@swidth            #1\relax      \@sheight              #2\relax
+  \textheight         \@sheight     \advance\textheight    -40pt
+  \headsep           -\@sheight     \advance\headsep       -13pt
+  \headheight         \@sheight     \advance\headheight     43pt
+  \textwidth          \@swidth      \advance\textwidth     -40pt
+  \oddsidemargin     -\textwidth    \advance\oddsidemargin \@pwidth
+  \divide\oddsidemargin\tw@         \evensidemargin        \oddsidemargin
+  \topmargin          \@pheight     \advance\topmargin -20pt
+  \advance\topmargin -\@sheight     \divide\topmargin\tw@
+}
+\headrulewidth 0pt
+\parskip=\baselineskip
+\parindent=0pt
+\portrait
+\AtBeginDocument{\pagestyle{fancy}}
+\endinput
+%% 
+%% End of file `present.sty'.

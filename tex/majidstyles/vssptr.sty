@@ -1,0 +1,31 @@
+\newenvironment{vssptitle}{
+\newlength{\vsspTmp}
+\setlength{\vsspTmp}{1in}     
+\addtolength{\vsspTmp}{\voffset} 
+\addtolength{\vsspTmp}{\topmargin}
+\addtolength{\vsspTmp}{\headsep}  
+\addtolength{\vsspTmp}{\headheight}
+\setlength{\vsspTmp}{-1\vsspTmp}      
+\addtolength{\vsspTmp}{5cm}            %5cm from top of the paper 
+\vspace*{\vsspTmp}
+ 
+\setlength{\vsspTmp}{1in}  
+\addtolength{\vsspTmp}{\hoffset}
+\addtolength{\vsspTmp}{\oddsidemargin} 
+\setlength{\vsspTmp}{-1\vsspTmp}  
+\addtolength{\vsspTmp}{-0.8cm}      %for HP printer, don't know why
+\addtolength{\vsspTmp}{5cm}
+
+\hspace*{\vsspTmp}  
+\rule[-2.5cm]{0cm}{5.5cm}
+\begin{minipage}{11cm}   
+\begin{center} 
+}%
+{                   %end definition 
+\end{center}
+\end{minipage}
+\thispagestyle{empty}
+\newpage
+}
+
+

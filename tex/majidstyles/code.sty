@@ -1,0 +1,10 @@
+\ProvidesPackage{code}[1996/09/02 Code style]
+
+\newcommand{\codefont}{\ttfamily\bfseries}
+\newcommand{\codesize}{}
+\newcommand{\codestyle}{}
+
+\newsavebox{\codebox}
+\newenvironment{code}%
+   {\begin{lrbox}{\codebox}\codefont\codesize\codestyle\begin{tabular}[t]{@{}l@{}}}%
+   {\rule{0pt}{0pt}\end{tabular}\end{lrbox}\makebox{\usebox{\codebox}}}

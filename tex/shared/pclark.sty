@@ -1,0 +1,36 @@
+\newcommand{\pp}{\vspace{\baselineskip}\par}
+\newcommand{\refequation}[1]{Equation~\ref{#1}}
+\newcommand{\refeqn}[1]{(\ref{#1})}
+\newcommand{\reffig}[1]{Figure~\ref{#1}}
+\newcommand{\reftab}[1]{Table~\ref{#1}}
+\newcommand{\refsect}[1]{Section~\ref{#1}}
+
+\newcommand{\fig}[2]{
+\begin{figure}
+\label{#1}
+\begin{center}
+% \vspace{3mm}
+\epsfig{figure=images/#1.eps}
+\caption{#2}
+\end{center}
+\end{figure}
+}
+
+\newcommand{\figwidth}[3]{
+\begin{figure} % [t]
+\begin{center}
+% \vspace{3mm}
+\epsfig{figure=images/#1.eps,width=#3mm}
+\end{center}
+\caption{#2}
+\label{#1}
+\end{figure}
+}
+
+
+\newcommand{\myvec}[1]{
+{ \bf #1 }
+}
+
+
+\endinput
