@@ -20,7 +20,7 @@
 
 
 #ifdef X11GFX
-  #include "xlib/xlib.h"
+  // #include "xlib/xlib.h"
   #include <sys/ipc.h>
   #include <sys/shm.h>
   #include <X11/Xlib.h>
