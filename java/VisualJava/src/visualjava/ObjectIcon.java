@@ -34,7 +34,7 @@ public class ObjectIcon extends JLabel implements HasObject {
         // this.add(statics2);
         // VisualJava.addMenuBar(this);
         setBackground(Color.GRAY);
-        addPopupMenuTo(this);
+        addPopupMenuTo(this); // Note argument is also used as the Component/ObjectIcon to remove from the Desktop.
         // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],obj);
         // Moveability.allowUserToMove(this); // Implied by:
         DragAndDropManager.hasObjectCanBeDropped(this);
@@ -55,8 +55,7 @@ public class ObjectIcon extends JLabel implements HasObject {
 
             private void maybeShowPopup(MouseEvent e) {
                 if (e.isPopupTrigger()) {
-                    popup.show(e.getComponent(),
-                            e.getX(), e.getY());
+                    popup.show(e.getComponent(), e.getX(), e.getY());
                 }
             }
         };
@@ -117,12 +116,23 @@ public class ObjectIcon extends JLabel implements HasObject {
         if (setters.getItemCount() > 1)
             popup.add(setters);
 
-        forEachSuperclassAddAllNonStaticMethodsToMenu(obj.getClass(),popup);
-
         SplittingJMenu allMethods = new SplittingJMenu("All methods");
         addAllNonStaticMethodsToMenu(obj.getClass(),allMethods);
         if (allMethods.getItemCount() > 1)
             popup.add(allMethods);
+
+        forEachSuperclassAddAllNonStaticMethodsToMenu(obj.getClass(),popup);
+
+        final Component toRemove = thing;
+        JMenuItem item = new JMenuItem("Dispose");
+        item.addActionListener(
+            new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    desktop.remove(toRemove);
+                }
+            }
+        );
+        popup.add(item);
 
 		//Add listener to components that can bring up popup menus.
 		// MouseListener popupListener = new PopupListener();

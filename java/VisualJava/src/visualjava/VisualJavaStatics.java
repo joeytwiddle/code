@@ -36,7 +36,7 @@ public class VisualJavaStatics {
         } catch (IOException e) {
             e.printStackTrace(System.err); // If we can't create the PipedOutputStream (never happens)
         }
-        final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
+        final PrintWriter writer = new PrintWriter(new OutputStreamWriter(out));
 
         new Thread() {
             public void run() {
@@ -50,6 +50,7 @@ public class VisualJavaStatics {
                     File jarOrDirFile = new File(jarOrDir);
                     if (jarOrDirFile.isFile() && jarOrDirFile.getName().endsWith(".jar")) {
                         if (jarOrDirFile.getName().equals("rt.jar")) {
+                            System.out.println("Extracting class list from jar: " + jarOrDirFile);
                             printClassesInJarTo(jarOrDirFile, writer);
                         } else {
                             System.out.println("Skipping non rt.jar: " + jarOrDirFile);
@@ -64,7 +65,7 @@ public class VisualJavaStatics {
         return new BufferedReader(new InputStreamReader(in));
     }
 
-    private static void printClassesInJarTo(File jarFile, BufferedWriter writer) {
+    private static void printClassesInJarTo(File jarFile, PrintWriter writer) {
         try {
             // final Process process = Runtime.getRuntime().exec("jar tf /usr/lib/j2se/1.4/jre/lib/rt.jar");
             // final Process process = Runtime.getRuntime().exec("/home/joey/j/jsh memo jar tf /usr/lib/j2se/1.4/jre/lib/rt.jar");
@@ -74,7 +75,6 @@ public class VisualJavaStatics {
             final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             while (true) {
                 String line = reader.readLine();
-                // System.out.println(line);
                 if (line == null)
                     break;
                 // Strip .class extension
@@ -109,7 +109,7 @@ public class VisualJavaStatics {
                     }
                     */
                 }
-                writer.write(line + "\n");
+                writer.println(line);
             }
         } catch (IOException e) {
             e.printStackTrace(System.err);

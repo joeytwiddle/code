@@ -2,9 +2,6 @@
 <project version="3" relativePaths="false">
   <component name="FileEditorManager">
     <history>
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/Assertion.java" line="11" column="56" vertical-scroll-proportion="0.3773087" horizontal-scroll-proportion="0.6853147" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/CanAcceptDroppedObject.java" line="5" column="17" vertical-scroll-proportion="0.17150396" horizontal-scroll-proportion="0.20804195" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/HasObject.java" line="6" column="18" vertical-scroll-proportion="0.20580475" horizontal-scroll-proportion="0.22027972" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/BooleanChooser.java" line="8" column="18" vertical-scroll-proportion="0.20580475" horizontal-scroll-proportion="0.22027972" />
       <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DragAndDropManager.java" line="44" column="0" vertical-scroll-proportion="-0.35079366" horizontal-scroll-proportion="0.0">
         <folding>
@@ -16,49 +13,66 @@
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/StaticsMenu.java" line="7" column="4" vertical-scroll-proportion="0.24010554" horizontal-scroll-proportion="0.04895105" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="48" column="16" vertical-scroll-proportion="0.9313984" horizontal-scroll-proportion="0.1958042" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="24" column="18" vertical-scroll-proportion="0.34300792" horizontal-scroll-proportion="0.22027972" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="48" column="16" vertical-scroll-proportion="0.56031746" horizontal-scroll-proportion="0.1958042" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="47" column="43" vertical-scroll-proportion="0.5646438" horizontal-scroll-proportion="0.5262238" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="82" column="60" vertical-scroll-proportion="2.812665" horizontal-scroll-proportion="0.73426574">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="20" column="15" vertical-scroll-proportion="0.5488127" horizontal-scroll-proportion="0.18356644" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="111" column="0" vertical-scroll-proportion="0.73614776" horizontal-scroll-proportion="0.0" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/StaticsMenu.java" line="5" column="16" vertical-scroll-proportion="0.17150396" horizontal-scroll-proportion="0.1958042" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassMenu.java" line="56" column="32" vertical-scroll-proportion="0.49604222" horizontal-scroll-proportion="0.3916084" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="128" column="25" vertical-scroll-proportion="0.35883906" horizontal-scroll-proportion="0.30594406" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="48" column="30" vertical-scroll-proportion="0.33245382" horizontal-scroll-proportion="0.36713287">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="20" column="15" vertical-scroll-proportion="0.5488127" horizontal-scroll-proportion="0.18356644" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassMenu.java" line="10" column="31" vertical-scroll-proportion="0.105540894" horizontal-scroll-proportion="0.37937063" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="77" column="0" vertical-scroll-proportion="0.33245382" horizontal-scroll-proportion="0.0" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="145" column="17" vertical-scroll-proportion="0.9419525" horizontal-scroll-proportion="0.20804195" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="116" column="36" vertical-scroll-proportion="-0.28496042" horizontal-scroll-proportion="0.44055945" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="57" column="48" vertical-scroll-proportion="0.22955145" horizontal-scroll-proportion="0.5874126" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="79" column="8" vertical-scroll-proportion="0.33245382" horizontal-scroll-proportion="0.0979021">
+        <folding>
+          <element signature="imports" expanded="true" />
+          <element signature="method#MethodFrame#0;class#MethodFrame" expanded="false" />
+        </folding>
+      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassPathEditor.java" line="17" column="9" vertical-scroll-proportion="0.58311343" horizontal-scroll-proportion="0.11013986">
+        <folding>
+          <element signature="imports" expanded="true" />
+        </folding>
+      </source-position-entry>
     </history>
     <open-files>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="82" column="60" vertical-scroll-proportion="2.812665" horizontal-scroll-proportion="0.73426574">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="48" column="30" vertical-scroll-proportion="0.33245382" horizontal-scroll-proportion="0.36713287">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="24" column="18" vertical-scroll-proportion="0.34300792" horizontal-scroll-proportion="0.22027972" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="48" column="16" vertical-scroll-proportion="0.9313984" horizontal-scroll-proportion="0.1958042" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/StaticsMenu.java" line="7" column="4" vertical-scroll-proportion="0.24010554" horizontal-scroll-proportion="0.04895105" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="145" column="17" vertical-scroll-proportion="0.9419525" horizontal-scroll-proportion="0.20804195" selected="true" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassMenu.java" line="10" column="31" vertical-scroll-proportion="0.105540894" horizontal-scroll-proportion="0.37937063" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="47" column="43" vertical-scroll-proportion="0.5646438" horizontal-scroll-proportion="0.5262238" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="57" column="48" vertical-scroll-proportion="0.22955145" horizontal-scroll-proportion="0.5874126" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="79" column="8" vertical-scroll-proportion="0.33245382" horizontal-scroll-proportion="0.0979021">
+        <folding>
+          <element signature="imports" expanded="true" />
+          <element signature="method#MethodFrame#0;class#MethodFrame" expanded="false" />
+        </folding>
+      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassPathEditor.java" line="17" column="9" vertical-scroll-proportion="0.58311343" horizontal-scroll-proportion="0.11013986" selected="true">
+        <folding>
+          <element signature="imports" expanded="true" />
+        </folding>
+      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="116" column="36" vertical-scroll-proportion="-0.28496042" horizontal-scroll-proportion="0.44055945" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/StaticsMenu.java" line="5" column="16" vertical-scroll-proportion="0.17150396" horizontal-scroll-proportion="0.1958042" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="128" column="25" vertical-scroll-proportion="0.35883906" horizontal-scroll-proportion="0.30594406" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassMenu.java" line="56" column="32" vertical-scroll-proportion="0.49604222" horizontal-scroll-proportion="0.3916084" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="20" column="15" vertical-scroll-proportion="0.5488127" horizontal-scroll-proportion="0.18356644" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="77" column="0" vertical-scroll-proportion="0.33245382" horizontal-scroll-proportion="0.0" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="33" column="4" vertical-scroll-proportion="0.26385224" horizontal-scroll-proportion="0.04895105">
-        <folding>
-          <element signature="imports" expanded="true" />
-        </folding>
-      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="111" column="0" vertical-scroll-proportion="0.73614776" horizontal-scroll-proportion="0.0" />
     </open-files>
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="30" width="962" height="867" extended-state="0" />
-    <editor active="false" />
+    <editor active="true" />
     <layout>
       <window_info id="VIM" active="false" anchor="bottom" auto_hide="true" internal_type="sliding" type="sliding" visible="false" weight="0.33064517" order="7" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="1" />
       <window_info id="JavaSig" active="false" anchor="bottom" auto_hide="true" internal_type="sliding" type="sliding" visible="false" weight="0.33" order="8" />
-      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="true" weight="0.33064517" order="2" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="true" weight="0.33064517" order="2" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="2" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33" order="6" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="sliding" type="sliding" visible="false" weight="0.4" order="0" />

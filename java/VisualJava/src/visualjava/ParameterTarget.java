@@ -4,6 +4,8 @@ import visualjava.objecteditingcomponents.BooleanChooser;
 
 import javax.swing.*;
 import java.awt.dnd.DropTarget;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
@@ -37,6 +39,18 @@ public class ParameterTarget extends JPanel {
             component = new DroppableJLabel(VisualJavaStatics.getSimpleClassName(type),type);
             DragAndDropManager.canAcceptDroppedObject(component);
         }
+        component.addMouseListener(
+            new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getButton() == MouseEvent.BUTTON3) {
+                        JMenu statics = new StaticsMenu(type.getName(),type.getName());
+                        JPopupMenu popup = new JPopupMenu("Wish JMenu's and JPopupMenu's had a common ancestor!");
+                        popup.add(statics);
+                        popup.show(e.getComponent(), e.getX(), e.getY());
+                    }
+                }
+            }
+        );
         add(component);
         // this.setDropTarget();
     }
