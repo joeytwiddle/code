@@ -1,3 +1,4 @@
+// todo: Interpolate BG
 // todo: Any macros which use a provided expression N times
 //   should be turned into functions if, in terms of time,
 //   N*eval(expression) > 1*alloc(type)+1*eval(expression)+N*refer(type)
@@ -45,6 +46,7 @@
 #define desiredFramesPerSecond 50
 #define IMGSKIP (SCRWID/160)
 // #define IMGSKIP 1
+// #define DOUBLEMERGEBG
 
 #include "define.c"
 #define CONST
@@ -129,6 +131,8 @@ inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
 	fr=r+dr;
 	fg=g+dg;
 	fb=b+db;
+    // note: Sum of A B will exceed 255 if from top bit down either both bits are set or one bit is set, check next (worst case 00000001+11111111)
+    // process: In asm, don't we get a register bit set if there was an overflow?
 	if (fr>255) fr=255;
 	if (fg>255) fg=255;
 	if (fb>255) fb=255;
@@ -169,7 +173,7 @@ void plotTriRGB(SDL_Surface *screen,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int 
 
 int main(int argc,char *argv[]) {
 
-	SDL_Surface *screen,*bgtexture;
+	SDL_Surface *screen,*bgtexture,*bgtexture2;
 	SDL_Event event;
 	int keepLooping=1;
 	int frames=0;
@@ -185,18 +189,21 @@ int main(int argc,char *argv[]) {
 		return 1;
 	}
 	atexit(SDL_Quit);
+    SDL_WM_SetCaption("trying | touching | transience",NULL);
 	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE /* | SDL_FULLSCREEN */ );
 	if (screen==NULL) {
 		fprintf(stderr,"Couldn't initialise video.\n");
 		return 1;
 	}
-	
+
 	bgtexture=SDL_LoadBMP("bgtexture.bmp");
+	bgtexture2=SDL_LoadBMP("bgtexture2.bmp");
 	// SDL_LockSurface(bgtexture);
 
 	fp=fopen("incl.c","wa");
 	printSurfaceDetails(fp,"screen",screen);
 	printSurfaceDetails(fp,"bgtexture",bgtexture);
+	printSurfaceDetails(fp,"bgtexture2",bgtexture2);
 	fclose(fp);
 
 	starttime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
@@ -226,10 +233,16 @@ int main(int argc,char *argv[]) {
 		// float bounce=0.1+0.099*qcos(frames*M_PI/120.0);
 		// float bounceB=2.0+1.5*qsin(frames*M_PI/120.0);
 		Uint16 bounceC=2000*(0.05-0.05*(pow((qcos(frames*M_PI/115.0-2.5)+1.0)/2.0,0.6)*2.0-1.0));
-        Sint16 Doffset=100000+frames*10.0;
-        Uint16 aoffset=2000+frames*2.0+sin(frames*0.03)*200.0;
-        Uint32 overd=20000*(1.0+1.0*qcos(frames*M_PI/120.0-1.0));
+        Sint16 Doffset=100000+frames*10.0-600.0*qcos(frames*M_PI/120.0-1.0);
+        Uint16 aoffset=2000+frames*2.0+sin(frames*0.03-0.1)*200.0;
+        Uint32 overd=20000*(0.5+0.5*qcos(frames*M_PI/120.0-1.0));
         // Uint32 tmp=((Uint16)bgtexture_w << 8)/M_PI;
+        // Sint16 D2offset=Doffset+400.0*qsin(frames*M_PI/140.0+123.6);
+        // Sint16 a2offset=aoffset+100.0*qsin(frames*M_PI/140.0+123.6);
+    #ifdef DOUBLEMERGEBG
+        Sint16 D2offset=1234+Doffset+frames*4.0+200.0*sin(frames*M_PI/123.0);
+        Sint16 a2offset=4321+aoffset+0.4*frames+20.0*sin(frames*M_PI/453.0+1.2);
+    #endif
         SDL_Rect dstrect;
         dstrect.w=IMGSKIP;
         dstrect.h=IMGSKIP;
@@ -240,33 +253,46 @@ int main(int argc,char *argv[]) {
                 dstrect.y=0;
 			for (j=0;j<screen_h;j+=IMGSKIP, dstrect.y+=IMGSKIP) {
 				Uint8 r,g,b,br;
-				Uint32 p;
+				Uint8 r2,g2,b2;
+				Uint32 p,p2;
                 // todo: Optimise this!
                 Uint16 d=qsqrt(xpart+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
                 // Uint16 d=(abs(i-cylcenx)+abs(j-cylceny));
                 // Uint16 D=1000.0/pow(d,bounce)+Doffset;
                 // Uint16 D=(float)overd/d+Doffset;
                 // Uint16 D=( (d & 65534) == 0 ? 0 : overd/d+Doffset);
-                Uint16 D=(d<2 ? 0 : overd/d+Doffset);
+                Uint16 D=(d<2 ? 0 : overd/d);
                 // Uint16 a=(Uint16)((((Uint32)(tmp*(atan2(i-cylcenx,j-cylceny))) >> 8)+M_PI)+aoffset);
-                Uint16 a=(Uint16)(bgtexture_w*(atan2(i-cylcenx,j-cylceny)/M_PI+M_PI)+aoffset);
+                Uint16 a=(Uint16)(bgtexture_w*(atan2(i-cylcenx,j-cylceny)/M_PI+M_PI));
                 // dstrect.y=j;
 				// p=getPixel(bgtexture, u, v);
-				p=bgtexture_getPixel( (a%bgtexture_w), (D%bgtexture_h) );
-				// setPixel(screen,i,j,p);
-				// screen_setPixel(i,j,p);
-				// Slow but necessary if the colorspaces are different
+				p=bgtexture_getPixel( ((Uint16)(a+aoffset)%bgtexture_w), ((Uint16)(D+Doffset)%bgtexture_h) );
 				bgtexture_GetRGB(p,&r,&g,&b);
-                // br=clip(200.0/pow(0.01*d,8.0),0,256);
+                // br=clip((Uint16)D/3.0,0,255);
                 br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
+                #ifdef DOUBLEMERGEBG
+				p2=bgtexture2_getPixel( ((Uint16)(a+a2offset)%bgtexture2_w), ((Uint16)(D+D2offset)%bgtexture2_h) );
+                bgtexture2_GetRGB(p2,&r2,&g2,&b2);
+                // setPixel(screen,i,j,p);
+                // // screen_setPixel(i,j,p);
+				// Slow but necessary if the colorspaces are different
+                // br=clip(200.0/pow(0.01*d,8.0),0,256);
+                r=clip((int)r/2+(int)r2/2+(int)br,0,256);
+                g=clip((int)g/2+(int)g2/2+(int)br,0,256);
+                b=clip((int)b/2+(int)b2/2+(int)br,0,256);
+                #else
                 r=clip((int)r+(int)br,0,256);
                 g=clip((int)g+(int)br,0,256);
                 b=clip((int)b+(int)br,0,256);
+                #endif
                 // r=max(r,br);
                 // g=max(g,br);
                 // b=max(b,br);
 				p=screen_MapRGB(r,g,b);
                 SDL_FillRect(screen,&dstrect,p);
+                // if (i>0 && j>0) {
+                //     // Interpolate last square to topleft
+                // }
                 // { register int I,J;
                     // for (I=0;I<IMGSKIP;I++)
                         // for (J=0;J<IMGSKIP;J++) {
