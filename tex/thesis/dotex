@@ -1,3 +1,5 @@
+# export TEXINPUTS=".:../majidstyles:../shared:/usr/local/teTeX/share/texmf/tex";
+
 FNAME=thesis
 echo "----------------------------------------------------------------"
 "rm" $FNAME.dvi
