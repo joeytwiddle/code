@@ -1,0 +1,21 @@
+roll=$1
+yaw=$2
+pitch=$3
+GENFILE="res/genres-r$roll-y$yaw-p$pitch.txt"
+PPFILE="res/ppres-r$roll-y$yaw-p$pitch.txt"
+
+(
+  echo "SIM:"
+  echo "roll = $roll"
+  echo "yaw = $yaw"
+  echo "pitch = $pitch"
+  grep "^right = " $GENFILE
+  grep "^down = " $GENFILE
+  grep "^HVP = " $GENFILE
+  grep "^VVP = " $GENFILE
+  echo "PP:"
+  grep "^right = " $PPFILE
+  grep "^down = " $PPFILE
+  grep "^HVP = " $PPFILE
+  grep "^VVP = " $PPFILE
+)

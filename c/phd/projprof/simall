@@ -20,22 +20,17 @@ roll="90";
     yaw=15;
     for yaw in `listnums 5 80 by 5`; do
 			simone "$IFILE" $roll $yaw $pitch
-      (
-        echo "SIM:"
-        echo "roll = $roll"
-        echo "yaw = $yaw"
-        echo "pitch = $pitch"
-        grep "^right = " genres.txt
-        grep "^down = " genres.txt
-        echo "PP:"
-        grep "^right = " ppres.txt
-        grep "^down = " ppres.txt
-        echo
-      ) >> $RES
       FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
       echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
-      gzip ppres.txt
-      mv ppres.txt.gz res/ppres-r$roll-y$yaw-p$pitch.txt.gz
+			# HVP=`grep "^HVP = " ppres.txt | sed "s/HVP = //"`
+			# HVPX=`echo "$HVP" | sed "s/,.*//" | tr -d "(,)"`
+			# HVPY=`echo "$HVP" | sed "s/.*,//" | tr -d "(,)"`
+			# echo "$yaw $pitch $HVP
+      mv genres.txt res/genres-r$roll-y$yaw-p$pitch.txt
+      mv ppres.txt res/ppres-r$roll-y$yaw-p$pitch.txt
+			extractone $roll $yaw $pitch >> "$RES"
+      gzip res/genres-r$roll-y$yaw-p$pitch.txt
+      gzip res/ppres-r$roll-y$yaw-p$pitch.txt
 			# convert "$OFILE" -geom 20 "res/1sim-r$roll-y$yaw-p$pitch.jpg"
 			convert "lowresmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
 			convert "ppmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"

@@ -202,7 +202,7 @@ int main(int argc,String *argv) {
       // printf("  %f\n",inta.y);
     }
 
-    V2d hvp=lines.num(1).intersect(lines.num(2));
+    V2d hvp=lines.num(1).intersect(lines.num(lines.len));
     Line2d baseline=Line2d(lines.num(1).a,lines.num(numlines).a);
     V2d vvpdir=(baseline.b-baseline.a).norm();
     Line2d otherline=Line2d(imageplane.intersect(Line3d(eye,worldC)).dropz(),imageplane.intersect(Line3d(eye,worldD)).dropz());

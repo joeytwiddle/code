@@ -102,6 +102,8 @@ main(int argc,String *argv) {
 		    i++; l=lines.get(i);
 			}
 			
+			// float corra=myabs(-V3d::normdot(gtright,ppright));
+			// float acc=myabs(corra*corrb);
 			float corra=-V3d::normdot(gtright,ppright);
 		  float corrb=-V3d::normdot(gtdown,ppdown);
 			float acc=corra*corrb;
@@ -110,6 +112,8 @@ main(int argc,String *argv) {
 			float altacc=V3d::normdot(gtnor,ppnor);
 			float faceonness=V3d::normdot(gtnor,V3d::k);
 			float maxangle=180*acos(faceonness)/pi;
+			float rightdiff=-V3d::normdot(gtright,V3d::k);
+			float rightang=180*asin(rightdiff)/pi;
 
 			if (!bad) {
 				if (corra<0 && corrb<0) {
@@ -140,11 +144,11 @@ main(int argc,String *argv) {
 				acc=-2; altacc=-2;
 			}
 			
-		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
+		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
 				yaw,pitch,acc,corra,corrb,
 				gtright.x,gtright.y,gtright.z,ppright.x,ppright.y,ppright.z,
 				gtdown.x,gtdown.y,gtdown.z,ppdown.x,ppdown.y,ppdown.z,
-				altacc,faceonness,maxangle
+				altacc,faceonness,maxangle,rightdiff,rightang
 			);
 		  
 		  if (!Seq(l,""))
@@ -152,6 +156,6 @@ main(int argc,String *argv) {
 		  i++;
 		}
 	}
-	printf("\n# 1 yaw     2 pitch   3 acc     4 racc   5 dacc     6 gtrx    7 gtry    8 gtrz    9 pprx    10 ppry    11 pprz    12 gtdx    13 gtdy   14 gtdz   15 ppdx   16 ppdy   17 ppdz   18 altacc  19 faceonness 20 maxang\n");
+	printf("\n# 1 yaw     2 pitch   3 acc     4 racc   5 dacc     6 gtrx    7 gtry    8 gtrz    9 pprx    10 ppry    11 pprz    12 gtdx    13 gtdy   14 gtdz   15 ppdx   16 ppdy   17 ppdz   18 altacc  19 faceonness 20 maxang   21 rightdiff  22 rightang\n");
 	
 }

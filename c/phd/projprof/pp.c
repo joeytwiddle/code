@@ -803,6 +803,7 @@ void main(int argc,String *argv) {
   pp.clipsetupby(lowresthresh);
   pp.calculate();
   V2d hvp=pp.getvp();
+	printf("HVP = %s\n",hvp.toString());
   V2d vvp=pp.getvvp();
   printf("Good old VVP estimate: %s\n",vvp.toString());
 
@@ -828,6 +829,7 @@ void main(int argc,String *argv) {
     printf("%s x %s = %s\n",summarybaseline.toString(),summarysecondline.toString(),vvp.toString());
   }*/
   printf("    VVP estimate: %s\n",vvp.toString());
+	printf("VVP = %s\n",vvp.toString());
 
   if (recoverquad) {
 
