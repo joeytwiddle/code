@@ -3,20 +3,17 @@
 **/
 
 /** TODO:
- *  Factor our principal parameters (density, fps, whitebits, line spacing).
+ *  Factor our principal parameters and provide as user options (density, fps, whitebits, line spacing - this means un #defining sparseness).
+ *  Should also be a sparsenessProcesses.
  *  Resizing: Use cached copies of COLS and LINES, and re-allocate array when they change.
- *  Block white things (processes?):
- *    A process can appear at the bottom end of a sliding block, and disappear, randomly.  (ie. sometimes when sliding, the front symbols turns white)
- *    A process can appear (on a non-sliding line?) and write symbols onto the line (1 per frame).
- *    A static process can appear on a sliding or non-sliding line, presumably on the latter changing symbols which pass through it (to/from ' '?)
- *    Processes are white and change symbol once per frame.
- *  Try this to help observation: /usr/lib/xscreensaver/xmatrix -small -density 50 -geometry 10x768
+ *  Try this for inspiration: /usr/lib/xscreensaver/xmatrix -small -density 50 -geometry 10x768
  *  Turn cursor off.
  *  Exit cleanly on keypress.
  *  Putty compatability?
  *  Turn it into a terminal locker.  Proposed method (security audit please!):
  *    Block SIGINT etc calls (for CTRL+C/Z), on keypress ask for password, check with "su - $USER /bin/true" before allowing exit.
  *  Timing: if machine does not approach our optimal FPS, then it will have its own based on how many columns are sliding.  This should be kept constant!  ATM it will vary wrt that #.
+ *  mvaddch(y,x,'.'); ?
 **/
 
 #include <time.h>
@@ -24,33 +21,23 @@
 #include <string.h>
 #include <curses.h>
 
-#define BOTHER_CLOCKING ON
-#define WHITE_BITS      ON
-#define MORE_WHITE_BITS ON
 
-//// Sparseness parameters tweak probabilities to create less on screen, and less movement at a particular time
-//
-/// Eg. to lessen change but keep the default density:
-// #define sparsenessLengthOn 0.5
-// #define sparsenessLengthOff 2
-// #define sparsenessMovementOn 0.5
-// #define sparsenessMovementOff 2
-// #define sparsenessSkipCols 1
-//
+
+/******** Compile-time options ********/
+
+#define BOTHER_CLOCKING
+#define SLIDING_WHITE_BITS
+#define PROCESSING_WHITE_BITS
+
+//// Sparseness parameters tweak probabilities to create less data, and less movement
+
 /// Defaults for fast machines, 50% density:
 #define sparsenessLengthOn 1
 #define sparsenessLengthOff 1
 #define sparsenessMovementOn 1
 #define sparsenessMovementOff 1
 #define sparsenessSkipCols 1
-//
-/// For slow machines (eg. 486): less faithful, but animation appears much clearer
-// #define sparsenessLengthOn 1
-// #define sparsenessLengthOff 1
-// #define sparsenessMovementOn 1
-// #define sparsenessMovementOff 3
-// #define sparsenessSkipCols 3
-//
+
 // Thick with data, looks like XMatrix defaults:
 // #define sparsenessLengthOn 0.25
 // #define sparsenessLengthOff 0.25
@@ -58,15 +45,36 @@
 // #define sparsenessMovementOff 1
 // #define sparsenessSkipCols 1
 
+/// For slow machines (eg. 486): less faithful, but animation appears much clearer
+// #define sparsenessLengthOn 2
+// #define sparsenessLengthOff 2
+// #define sparsenessMovementOn 2
+// #define sparsenessMovementOff 2
+// #define sparsenessSkipCols 3
+
+/// Another config for slow machines:
+// #define sparsenessLengthOn 1
+// #define sparsenessLengthOff 1
+// #define sparsenessMovementOn 1
+// #define sparsenessMovementOff 3
+// #define sparsenessSkipCols 3
+
+/// To reduce state changes but keep the default density:
+// #define sparsenessLengthOn 0.5
+// #define sparsenessLengthOff 2
+// #define sparsenessMovementOn 0.5
+// #define sparsenessMovementOff 2
+// #define sparsenessSkipCols 1
+
+
+
+/******** Curses functions ********/
+
 void homeAndWrefresh() {
 	move(0,0);
 	wrefresh(stdscr);
 }
 #define wrefresh(x) homeAndWrefresh()
-
-// void writeToPoint(int x,int y) {
-	// mvaddch(y,x,'.');
-// }
 
 void cls() {
 	for (int x=0;x<COLS;x++) {
@@ -91,6 +99,10 @@ int max(int x,double y) {
 	return max(x,(int)y);
 }
 
+
+
+/******** Constants ********/
+
 #define mbit char
 
 mbit* palette = "^~+zovq/\\*kAY}0&$%@#";
@@ -101,17 +113,37 @@ mbit CLEARING_PROCESS     = 'C';
 mbit STATIC_PROCESS_FULL  = 'S';
 mbit STATIC_PROCESS_EMPTY = 'E';
 
-int AVALTLET;
+
+
+/******** Probabilities ********/
+
 int averageLengthOfSlide;
 int averageLengthBetweenSlides;
 int averageLengthOfBlock;
 int averageLengthBetweenBlocks;
 int slidingProcessDies;
 int newSlidingProcess;
+#ifdef PROCESSING_WHITE_BITS
+int processDies;
+int boredProcessDies;
+#endif
+
+
+
+/******** State ********/
 
 mbit **thematrix;
 bool *sliding;
 bool *adding;
+#ifdef PROCESSING_WHITE_BITS
+int numProcesses;
+mbit *processes;
+int *processX,*processY;
+#endif
+
+
+
+/******** Main program ********/
 
 mbit randSymbol() {
 	return palette[ rand() % paletteSize ];
@@ -135,14 +167,7 @@ void matrix_set_process(int x,int y) {
 	attrset(COLOR_PAIR(2));
 }
 
-#ifdef MORE_WHITE_BITS
-int processDies;
-int boredProcessDies;
-
-int numProcesses;
-mbit *processes;
-int *processX,*processY;
-
+#ifdef PROCESSING_WHITE_BITS
 // Consider: only allow write/clear processes on not sliding columns, and static processes on sliding columns.
 // Processes should not operate on empty parts of the matrix.  Eg. if over empty bit, die with prob(3).
 void newProcess(int i) {
@@ -166,11 +191,10 @@ void setupProbabilities() {
 	slidingProcessDies         = max(2, averageLengthOfSlide * 2/3 );
 	newSlidingProcess          = max(2, averageLengthOfSlide );
 
-#ifdef MORE_WHITE_BITS
+#ifdef PROCESSING_WHITE_BITS
 	processDies  = max(2, averageLengthOfBlock);
 	boredProcessDies = max(2, averageLengthOfBlock);
-	// numProcesses = COLS / sparsenessSkipCols / 12;
-	numProcesses = COLS / 3 / 12;
+	numProcesses = COLS * LINES / sparsenessSkipCols / 240;
 	processes    = new mbit[numProcesses];
 	processX     = new int[numProcesses];
 	processY     = new int[numProcesses];
@@ -189,14 +213,14 @@ void slideColumn(int x,bool lastSlide) {
 
 	for (int y=LINES-1;y>0;y--) {
 		mbit src = thematrix[x][y-1];
-#ifdef WHITE_BITS
+#ifdef SLIDING_WHITE_BITS
 		if (src == BLOCKHEAD_PROCESS) {
 			if (lastSlide || prob(slidingProcessDies)) {
 				matrix_set(x,y,randSymbol());
 			} else {
 				matrix_set_process(x,y);
 			}
-#ifdef MORE_WHITE_BITS
+#ifdef PROCESSING_WHITE_BITS
 		} else if (src == STATIC_PROCESS_EMPTY) {
 			matrix_set(x,y,' ');
 		} else if (src == STATIC_PROCESS_FULL) {
@@ -223,7 +247,6 @@ void slideColumn(int x,bool lastSlide) {
 	addch(' ');
 
 }
-
 
 void main() {
 	
@@ -318,7 +341,7 @@ void main() {
 		lastframe = thisframe;
 #endif
 
-#ifdef MORE_WHITE_BITS
+#ifdef PROCESSING_WHITE_BITS
 		for (int i=0;i<numProcesses;i++) {
 			bool recycle = false;
 			if (processes[i] == STATIC_PROCESS_EMPTY || processes[i] == STATIC_PROCESS_FULL) {
@@ -366,3 +389,4 @@ void main() {
 	endwin();
 
 }
+
