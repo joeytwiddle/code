@@ -5,7 +5,7 @@ w=0.001
 
 fit f(x) "gpldata.txt" via v,w
 
-set term post
+set term post portrait
 set output "gplfit.ps"
 plot "gpldata.txt",f(x)
 
