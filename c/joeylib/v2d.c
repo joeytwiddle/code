@@ -11,10 +11,7 @@ class V2d /*: public Displayable*/ {
 public:
   float x,y;
 
-  // static V2d o,i,j;
-fillin V2d o=V2d(0,0);
-fillin V2d i=V2d(1,0);
-fillin V2d j=V2d(0,1);
+  fillin V2d o,i,j;
   
   V2d() {
   }
@@ -345,3 +342,7 @@ V2d operator-(V2d v) {
 float tofloat(V2d v) {
   return v.mag();
 }
+
+fillup V2d V2d::o=V2d(0,0);
+fillup V2d V2d::i=V2d(1,0);
+fillup V2d V2d::j=V2d(0,1);

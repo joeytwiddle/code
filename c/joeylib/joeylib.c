@@ -48,16 +48,17 @@
 #endif
 
 // I needed these for porting - maybe still do!
-#ifdef LINUX
-  #define static const static
-#endif
-#ifdef UNIX
-  #define fillin 
-#else
-  #define fillin static
-#endif
-#define fillup const
-// Used to be static!
+// #ifdef LINUX
+  // #define static const static
+// #endif
+// These are for class constants (of the same type as the class)
+// #ifdef UNIX
+  // #define fillin 
+// #else
+  // #define fillin static
+// #endif
+#define fillin static
+#define fillup
 
 #define uchar unsigned char
 #define bool uchar

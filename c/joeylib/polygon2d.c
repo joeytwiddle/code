@@ -3,8 +3,8 @@ class Region;
 class Polygon2d {
 public:
 
-fillin bool Polygon2d::container=2;
-fillin bool Polygon2d::contained=3;
+  fillin bool container;
+  fillin bool contained;
   // static bool container;
   // static bool contained;
 
@@ -287,3 +287,5 @@ fillin bool Polygon2d::contained=3;
 
 };                  
 
+fillup bool Polygon2d::container=2;
+fillup bool Polygon2d::contained=3;

@@ -16,7 +16,7 @@ Matrix::Matrix() {
   v[i]=new float[2];
 }
 
-fillin Matrix Matrix::rotation(V3d axis,float ang) {
+fillup Matrix Matrix::rotation(V3d axis,float ang) {
   Matrix m;
   m.makerotation(axis,ang);
   return m;

@@ -3,25 +3,9 @@ class V3d;
 class myRGB {
 public:
   uchar r,g,b;
-fillin myRGB white=myRGB(1.0,1.0,1.0);
-fillin myRGB red  =myRGB(1.0,0.0,0.0);
-fillin myRGB green=myRGB(0.0,1.0,0.0);
-fillin myRGB blue =myRGB(0.0,0.0,1.0);
-fillin myRGB yellow=myRGB(1.0,1.0,0.0);
-fillin myRGB magenta=myRGB(1.0,0.0,1.0);
-fillin myRGB cyan=myRGB(0.0,1.0,1.0);
-fillin myRGB black=myRGB(0.0,0.0,0.0);
-fillin myRGB grey=myRGB(0.5,0.5,0.5);
-
-fillin myRGB darkred=red.dark();
-fillin myRGB darkgreen=green.dark();
-fillin myRGB darkblue=blue.dark();
-fillin myRGB darkyellow=yellow.dark();
-fillin myRGB darkmagenta=magenta.dark();
-fillin myRGB darkcyan=cyan.dark();
-  // static myRGB white,grey,black;
-  // static myRGB red,green,blue,yellow,magenta,cyan;
-  // static myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan;
+  fillin myRGB white,grey,black;
+  fillin myRGB red,green,blue,yellow,magenta,cyan;
+  fillin myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan;
   myRGB() {
     myRGB(0,0,0);
   }
@@ -168,3 +152,19 @@ myRGB operator*(float a,myRGB r) {
   return r*a;
 }
 
+fillup myRGB myRGB::white=myRGB(1.0,1.0,1.0);
+fillup myRGB myRGB::red  =myRGB(1.0,0.0,0.0);
+fillup myRGB myRGB::green=myRGB(0.0,1.0,0.0);
+fillup myRGB myRGB::blue =myRGB(0.0,0.0,1.0);
+fillup myRGB myRGB::yellow=myRGB(1.0,1.0,0.0);
+fillup myRGB myRGB::magenta=myRGB(1.0,0.0,1.0);
+fillup myRGB myRGB::cyan=myRGB(0.0,1.0,1.0);
+fillup myRGB myRGB::black=myRGB(0.0,0.0,0.0);
+fillup myRGB myRGB::grey=myRGB(0.5,0.5,0.5);
+
+fillup myRGB myRGB::darkred=red.dark();
+fillup myRGB myRGB::darkgreen=green.dark();
+fillup myRGB myRGB::darkblue=blue.dark();
+fillup myRGB myRGB::darkyellow=yellow.dark();
+fillup myRGB myRGB::darkmagenta=magenta.dark();
+fillup myRGB myRGB::darkcyan=cyan.dark();
