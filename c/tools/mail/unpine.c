@@ -79,7 +79,7 @@ String getHeader(String h) {
 	return NULL;
 }
 
-void readmail() {
+String readmail() {
 
 	maillen=0;
 	int contentLen;
@@ -129,8 +129,8 @@ void readmail() {
 	// Find start of next
 	bool snn=false;
 	while (!Sstarts(currentline,"From - ")) {
-		printf(".");
-		snn=true;
+		// printf(".");
+		// snn=true;
 		copylinetomail();
 		readline();
 	}
@@ -143,7 +143,7 @@ void readmail() {
 		// printf("  Read total:   %i\n",maillen);
 		printf(" How much more: %i\n",maillen-contentStart-contentLen);
 	} else {
-		printf("Happy mail: %i\n",maillen);
+		// printf("Happy mail: %i\n",maillen);
 	}
 
 	String messageID=getHeader("Message-id");
@@ -155,11 +155,11 @@ void readmail() {
 		messageID=getHeader("Message-Id");
 	if (messageID == NULL)
 		messageID=getHeader("message-ID");
-	if (messageID != NULL) {
-		printf("Message-id: %s\n",messageID);
-	}
+	// if (messageID != NULL) {
+		// printf("Message-id: %s\n",messageID);
+	// }
 
-	free(messageID);
+	return messageID;
 
 }
 
@@ -191,10 +191,25 @@ void main(int argc,String *argv) {
 
 	readline();
 	int i=1;
+	String lastMessageID=NULL;
+	int lastMailLen;
 	while (true) {
-		readmail();
-		if (writeToOneFile)
-			writemail();
+		String messageID=readmail();
+		if (writeToOneFile) {
+			bool ok=true;
+			if (lastMessageID!=NULL && messageID!=NULL) {
+				if (writenodups && Seq(messageID,lastMessageID)) {
+					ok=false;
+					printf("Skipping duplicate message %i %i.\n",lastMailLen,maillen);
+				}
+			}
+			if (ok)
+				writemail();
+		}
+		if (lastMessageID!=NULL)
+			free(lastMessageID);
+		lastMessageID=messageID;
+		lastMailLen=maillen;
 		// List<String> nls;
 		// for (int k=i;k<j;k++)
 		// nls.add(ls.num(k));
