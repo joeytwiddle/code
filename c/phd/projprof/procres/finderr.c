@@ -19,6 +19,7 @@ main(int argc,String *argv) {
 
 	List<String> lines=readlinesfromfile(filename);
 	int lastyaw=-1;
+	int lastpitch=-1;
 	int i=0;
 	String l=lines.get(i);
 	if (!Seq(l,"START"))
@@ -145,9 +146,10 @@ main(int argc,String *argv) {
 		  // printf("%f %f %f %f\n",yaw,pitch,corra,corrb);
 		  // printf("%f %f %f %f %f\n",yaw,pitch,(myabs(corra*corrb)+1.0)/2.0,corra,corrb);
 			
-			if (yaw<lastyaw)
-				printf("\n"); // Seperate blocks for grid plot
+			if (yaw<lastyaw || pitch<lastpitch)
+				printf("\n\n");
 			lastyaw=yaw;
+			lastpitch=pitch;
 			
 			// This is no longer cheating but it lets us see real errors
 			// if (acc<0)
