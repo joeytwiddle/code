@@ -1,3 +1,11 @@
+/* A simple sort of diff program.
+ * I have found it incredibly useful!
+ * However, it is not optimised :-P
+ * It should really use some efficient structure to perform a quick
+ * check if a particular string exists in the other file.
+ * At the moment it just searches a big list!
+ */
+
 #define QUIET
 
 #include <joeylib.h>

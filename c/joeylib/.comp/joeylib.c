@@ -13,9 +13,9 @@
 // #include <whichos.c>
 // #include "/whatos"
 
-#define LINUX
+// #define LINUX
 // #define DOS
-// #define UNIX
+#define UNIX
 
 // For SG machines, without time and difftime functions:
 // #define STUPIDUNIX
