@@ -8,6 +8,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.beans.PropertyVetoException;
 
 /** joey Nov 1, 2004 7:51:00 PM */
 public class MethodFrame extends JInternalFrame {
@@ -71,6 +74,22 @@ public class MethodFrame extends JInternalFrame {
         }
         getContentPane().add(new JLabel(")"));
         setSize(this.getPreferredSize());
+
+        // This hack attempts to fix the problem that the DropTarget
+        // components inside InternalFrames weren't receiving mouseEnter/Exit
+        // events when the InternalFrame was not the one currently selected:
+        final JInternalFrame frame = this;
+        addMouseListener(
+            new MouseAdapter() {
+                public void mouseEntered(MouseEvent e) {
+                    try {
+                        frame.setSelected(true);
+                    } catch (PropertyVetoException e1) {
+                        e1.printStackTrace(System.err);
+                    }
+                }
+            }
+        );
     }
 
     void tryToInvoke() {
