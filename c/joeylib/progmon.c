@@ -21,6 +21,7 @@ public:
 	}
 
 	void unixterm_nowthrough(const float f) {
+		/*
 		int toprnt=f*UNIXTERMWID;
 		if (toprnt>unixterm_lastprnt) {
 			fprintf(stderr,Srep(".",toprnt-unixterm_lastprnt));
@@ -31,9 +32,11 @@ public:
 			fprintf(stderr,"|");
 			unixterm_lastprnt=toprnt;
 		}
+		*/
 	}
 
 	void unixterm_end() {
+		/*
 		// Finish it off and newline
 		// fprintf(stderr,"\r|");
 		// fprintf(stderr,Srep("=",UNIXTERMWID));
@@ -43,6 +46,7 @@ public:
 		fprintf(stderr,"\r ");
 		fprintf(stderr,Srep(" ",UNIXTERMWID));
 		fprintf(stderr," \r");
+		*/
 	}
 
 };

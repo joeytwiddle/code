@@ -19,7 +19,6 @@ fit f(x) "gpldata.txt" via v,w
 f(x)=u*(1+v*(((u-x)/(w*x-u*v)-0.5)+1))/(1+w*(((u-x)/(w*x-u*v)-0.5)+1))-u*(1+v*((u-x)/(w*x-u*v)-0.5))/(1+w*((u-x)/(w*x-u*v)-0.5))
 fit f(x) "gpldata.txt" via v,w
 
-set term post
-set output "gplfit.ps"
-plot "gpldata.txt",f(x)
-
+# set term post
+# set output "gplfit.ps"
+# plot "gpldata.txt",f(x)
