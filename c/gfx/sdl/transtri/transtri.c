@@ -1,10 +1,11 @@
-// todo: Interpolate BG
-// todo: Any macros which use a provided expression N times
+// todo: Efficient interpolation (asm?) of BG (interpolate D,a space rather than color space?)
+// process: Any macros which use a provided expression N times
 //   should be turned into functions if, in terms of time,
 //   N*eval(expression) > 1*alloc(type)+1*eval(expression)+N*refer(type)
 //   (This will be done like BR and TR I guess.)
 //   Or does the C compiler do this automatically, assuming state of
 //   expression does not change during macro.
+//   Benchmark test?
 // todo: Resolve palette==NULL at init and switch routing of code to be execed.
 // 	 Or make it part of the SDLwrap model.
 // 	 Or just ignore it because we will only stand for truecolour.
@@ -12,6 +13,7 @@
 //   rather than x,y.  This will allow the algorithms to perform fast
 //   reg++'s rather than the given function performing reg=big_calculation(x,y)
 //   (Actually keep passing x,y just in case the plot function wants to use it.)
+//   [ 19/3/02 Attempted for TR ]
 // process: Are we ever forced to blit on a 16bit surface?
 //   If so, would it be efficient to use a hidden 32bit surface to do
 //   read/writes for transparency, and then blit via the 16bit surface?
@@ -19,7 +21,7 @@
 //   before finally writing to the screen?
 // process: When rendering two overlapping triangles, the result is three
 //   polygons: two containing the pure colours, and one the merged colour.
-//   We can avoid reading pixels from the map if we find the triangle
+//   We can avoid reading all the pixels from the map if we find the triangle
 //   intersections first, and then render the resulting polygons with
 //   the merged colours pre-calculated.
 //   (In fact only one pixel read is needed, for the background.)
@@ -28,7 +30,7 @@
 //   eg. Use transparencies of one colour (essentially greyscale),
 //   or OR otherwise limit bits as Julian suggests.
 // todo: Store #define constants for a variety of video modes so that the
-//   user may choose at runtime.
+//   user may choose at runtime.  (erm what? how?!)
 
 // #define DOS
 // #define DO_FULLSCREEN
