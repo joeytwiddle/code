@@ -4,6 +4,9 @@
  * - Integer maths, and other optimisation.
  * - Intercept boot messages and display.
  * - Use time instead of frame count.
+ * - Could implement more efficient anti-aliasing:
+ *   eg. - retain neighbouring heights
+ *    or - work out distance to spiral edge
 **/
 
 #include <math.h>
@@ -35,9 +38,11 @@ float getSwirlHeight(float x,float y) {
 	float ang = atan2(Y,X)-swirlang;
 	if (y<0)
 		ang=ang+M_PI;
-	float wobblemag = 0.06+0.06*sin((float)frames*0.00315);
-	float rad = sqrt(X*X+Y*Y) * (1.0+ wobblemag*sin(2.0*ang));
-	float extra=-0.4+0.5*sin(2.493-rad*5.6+(float)frames*0.00184);
+	// Squishing otherwise circular spiral
+	float wobblemag = 0.07+0.07*sin((float)frames*0.00115);
+	float rad = sqrt(X*X+Y*Y) * (1.0+ wobblemag*cos(2.0*(M_PI/4.0*cos((float)frames*0.000243)+ang+swirlang)));
+	// Changing width of spiral
+	float extra=-0.6+0.35*sin(2.493-rad*4.5+(float)frames*0.00084);
 	return sin(rad/spacePerSwirl+ang-swirlang)+extra;
 
 }
@@ -53,7 +58,7 @@ void cls() {
 void main() {
 
 	#define PALSIZE 8
-	char *palette=" ::+O####_";
+	char *palette=" -=*O@@@@_";
 	
 	printf("Hello\n");
 	srand(time(NULL));
@@ -85,8 +90,9 @@ void main() {
 
 		cenx = COLS / 2;
 		ceny = LINES / 2;
-		spacePerSwirl = 0.08+0.02*sin(0.001*(float)frames);
 		swirlang = (float)frames * M_PI / 800.0;
+		// Zooming in and out over time
+		spacePerSwirl = 0.08+0.03*cos(0.000638*(float)frames);
 
 		move(0,0);
 
@@ -123,7 +129,7 @@ void main() {
 		// printf("%i ",frames);
 		wrefresh(stdscr);
 
-		frames += 2;
+		frames += 10;
 
 	}
 
