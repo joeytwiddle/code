@@ -22,8 +22,8 @@ public:
   float besterr;
 
   Correlator2d() {
-		mode=perpMode;
-		// mode=joeysMode;
+		// mode=perpMode;
+		mode=joeysMode;
     made=false;
   }
   Correlator2d(List<V2d> pts) {

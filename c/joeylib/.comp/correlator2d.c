@@ -28,8 +28,8 @@ int Correlator2dMethod=1; // 1 = over-exclusive, 2 = over-inclusive
   // Variable declared in .h file
 
    Correlator2d::Correlator2d() {
-		mode=perpMode;
-		// mode=joeysMode;
+		// mode=perpMode;
+		mode=joeysMode;
     made=false;
   }
    Correlator2d::Correlator2d(List<V2d> pts) {

@@ -24,7 +24,7 @@ void error(char *s, ... ) {
   va_start(vas,s); // Scount(f,"%")
   char * t=new char[256];
   vsprintf(t,s,vas);
-  printf("ERROR! %s\n",t);
+  fprintf(stderr,"ERROR! %s\n",t);
   #ifdef FORCESEGFAULT
     int i=*(int *)NULL;
     printf("%i\n",i);
