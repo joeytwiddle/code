@@ -10,8 +10,8 @@ for Y in *.results; do
 
 	echo "$X"
 
-	# ./processone.sh "$X"
-	./processone.sh -plot "$X"
+	./processone.sh "$X"
+	# ./processone.sh -plot "$X"
 
 	# convert "$X-hvp.eps" jpgs/"$X-hvp.jpg"
 	# convert "$X-vvp.eps" jpgs/"$X-vvp.jpg"
