@@ -12,12 +12,28 @@ import jlib.db.*;
 
 public class SpecEditor extends Page {
 
+	public static String topdir="/home/joey/j/code/java/servlets/";
+	public static String dbmakerdir=topdir+"dbmaker/";
+
 	Spec spec;
 
 	TextField spectxt;
 
-	Spec getSpec(String name) {
-		return null;
+	void loadSpec(String name) {
+		
+	}
+
+	void saveSpec() {
+		try {
+			File f=new File(dbmakerdir,"specs/"+spec.name+".spec");
+			FileOutputStream fos=new FileOutputStream(f);
+			ObjectOutputStream oos=new ObjectOutputStream(fos);
+			oos.writeObject(spec);
+			oos.flush();
+			fos.close();
+		} catch (Exception e) {
+			Log.error(""+e);
+		}
 	}
 
 	// As you will see, the window is not very modular
@@ -46,9 +62,16 @@ public class SpecEditor extends Page {
 					// refresh();
 				}
 			} );
-			add(new Button("Go to") {
+			add(new Button("Save") {
 				public void action() {
-					spec=getSpec(spectxt.getValue());
+					spec.name=spectxt.getValue();
+					saveSpec();
+					refresh();
+				}
+			} );
+			add(new Button("Load") {
+				public void action() {
+					loadSpec(spectxt.getValue());
 					refresh();
 				}
 			} );
