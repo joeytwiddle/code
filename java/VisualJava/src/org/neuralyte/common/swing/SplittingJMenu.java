@@ -30,8 +30,8 @@ public class SplittingJMenu extends DetachableJMenu {
 	private Vector items = new Vector();
 	private boolean doneSorting = false;
 
-	public static final int maxItems = 40;
-	public static final int preferedSplits = 30;
+	public static final int maxItems = 15;
+	public static final int preferedSplits = 15;
 
     public SplittingJMenu(String s) {
         super(s);
@@ -91,19 +91,23 @@ public class SplittingJMenu extends DetachableJMenu {
 			}
 			Vector splits=new Vector();
 			for (int i=0;i<preferedSplits;i++) {
-				Vector tmp=new Vector();
-				for (int j=splitAt[i];j<splitAt[i+1];j++) {
-					tmp.add(items.get(j));
-				}
-				String first=((JMenuItem)tmp.get(0)).getText();
-				String last=((JMenuItem)tmp.get(tmp.size()-1)).getText();
-				SplittingJMenu sm=new SplittingJMenu("[ "+first+" ... "+last+" ]");
-				for (int j=0;j<tmp.size();j++) {
-					sm.add((JMenuItem)tmp.get(j));
-				}
-				splits.add(sm);
+                if (splitAt[i+1] - splitAt[i] == 1) {
+                    splits.add((JMenuItem)items.get(splitAt[i]));
+                } else {
+                    Vector tmp=new Vector();
+                    for (int j=splitAt[i];j<splitAt[i+1];j++) {
+                        tmp.add(items.get(j));
+                    }
+                    String first=((JMenuItem)tmp.get(0)).getText();
+                    String last=((JMenuItem)tmp.get(tmp.size()-1)).getText();
+                    SplittingJMenu sm=new SplittingJMenu("[ "+first+" ... "+last+" ]");
+                    for (int j=0;j<tmp.size();j++) {
+                        sm.add((JMenuItem)tmp.get(j));
+                    }
+                    splits.add(sm);
+                }
 			}
-			items=splits;
+			items = splits;
 		}
 	}
 

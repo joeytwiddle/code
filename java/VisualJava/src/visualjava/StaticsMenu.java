@@ -12,7 +12,7 @@ public class StaticsMenu extends LazyJMenu {
     public void generateChildren() {
         try {
             VisualJavaGUIStatics.addStaticsToMenu(this,Class.forName(className));
-        } catch (Exception e) {
+        } catch (Throwable e) { // I once got: "java.lang.NoClassDefFoundError: jlib/db/spec/old/DB (wrong name: jlib/db/spec/DB)" here.
             e.printStackTrace(System.err);
         }
     }

@@ -18,11 +18,11 @@ public class VisualJava {
         f.setSize(600,400);
         desktop = new Desktop(f);
         desktop.setSize(800,400);
+        f.setContentPane(desktop);
+        f.setVisible(true);
         desktop.showObject("Hello");
         desktop.showObject(f);
         desktop.showObject(desktop);
-        f.setContentPane(desktop);
-        f.setVisible(true);
         VisualJavaGUIStatics.addMenuBar(f);
         f.validate();
 	}

@@ -33,7 +33,7 @@ public class ObjectIcon extends JLabel implements HasObject {
         // JMenuItem statics2 = new JMenuItem("Statics 2");
         // this.add(statics2);
         // VisualJava.addMenuBar(this);
-        setBackground(Color.GRAY);
+        // Ne marche pas: setBackground(Color.GRAY);
         addPopupMenuTo(this); // Note argument is also used as the Component/ObjectIcon to remove from the Desktop.
         // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],obj);
         // Moveability.allowUserToMove(this); // Implied by:

@@ -110,6 +110,8 @@ public class MethodFrame extends JInternalFrame {
             } else {
                 VisualJava.desktop.showObject(result);
             }
+        } catch (InvocationTargetException e) {
+            VisualJava.desktop.showObject(e.getCause());
         } catch (Exception e) {
             // e.printStackTrace();
             System.err.println(e);

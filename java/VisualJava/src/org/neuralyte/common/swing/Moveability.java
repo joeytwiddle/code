@@ -49,6 +49,7 @@ class MoveabilityListener extends MouseAdapter implements MouseMotionListener {
 
     public void mouseReleased(MouseEvent e) {
         initialClickPoint = null;
+        componentBeingDragged = null;
         // System.out.println("initialClickPoint=null");
         if (bring_to_front && componentBeingDragged.getParent() instanceof JLayeredPane) {
             ((JLayeredPane)componentBeingDragged.getParent()).setLayer(componentBeingDragged,JLayeredPane.DEFAULT_LAYER.intValue());

@@ -47,7 +47,7 @@ public class DetachableJMenu extends JMenu {
                     // test.setVisible(true);
                     test.show(VisualJava.desktop,0,0); // ,true);
                     */
-                    final JFrame frame = new JFrame();
+                    final JFrame frame = new JFrame(getText());
                     frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(),BoxLayout.Y_AXIS));
                     // frame.getContentPane().add(detachableJMenu);
                     // Note i=1 here is intended to avoid cloning the "detach" button which was just clicked

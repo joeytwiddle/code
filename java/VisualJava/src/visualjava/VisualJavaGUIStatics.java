@@ -127,6 +127,9 @@ public class VisualJavaGUIStatics {
                 String line = in.readLine();
                 if (line == null)
                     break;
+                if (line.length() == 0) {
+                    System.err.println("VisualJavaGUIStatics.buildClassMenu(): Got class = \"\"!");
+                }
                 menu.addClass(line);
             }
         } catch (IOException e) {
@@ -134,6 +137,7 @@ public class VisualJavaGUIStatics {
                 e.printStackTrace(System.err);
             // }
         }
+        System.out.println("Class menu built.");
         // A nice touch: starts to split/populate the menu in the background (because it is a slow operation!)
         // Strangely if I wrap the above population reading in this Thread, the menu still does not appear.
         new Thread() {

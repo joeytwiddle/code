@@ -1,5 +1,6 @@
 package visualjava;
 
+import org.neuralyte.common.Assertion;
 import org.neuralyte.common.swing.SplittingJMenu;
 
 import javax.swing.*;
@@ -60,10 +61,16 @@ public class ClassMenu extends SplittingJMenu {
             if (!classPackage.startsWith(packageName)) {
                 throw new Error("Expect classPackage (" + classPackage + ") to start with packageName (" + packageName + ")");
             }
+            // Assertion.assertThat(packageName.length() > 0);
             String subPackage = classPackage.substring(packageName.length() + ( packageName.length() > 0 ? 1 : 0 ));
             int i = subPackage.indexOf(".");
             if (i>=0) {
                 subPackage = subPackage.substring(0,i);
+            }
+            if (subPackage.length() == 0) {
+                System.err.println("Cannot create SubMenu with no title - might never end!");
+                System.err.println("Class was "+c+" and package is "+packageName);
+                return;
             }
             ClassMenu subMenu = getSubMenu(subPackage);
             subMenu.addClass(c);

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp
+  spec="1.0+"
+  codebase="http://hwi.ath.cx/code/java/VisualJava/"
+  href="VisualJava.jnlp">
+  <information>
+    <title>VisualJava</title>
+    <vendor>joey@neuralyte.org</vendor>
+    <homepage href="http://hwi.ath.cx/code/java/VisualJava/"/>
+    <description>GUI for live interaction with Java Objects</description>
+    <offline-allowed/>
+    <shortcut online="false">
+       <desktop/>
+       <menu submenu="VisualJava"/>
+    </shortcut>
+  </information>
+  <security>
+      <all-permissions/>
+  </security>
+  <resources>
+    <j2se version="1.3+"/>
+  </resources>
+  <resources os="Windows">
+    <jar href="jars/VisualJava.jar" main="true"/>
+  </resources>
+  <resources os="Linux" arch="i386">
+    <jar href="jars/VisualJava.jar" main="true"/>
+  </resources>
+  <resources os="Mac OSX">
+    <jar href="jars/VisualJava.jar" main="true"/>
+  </resources>
+  <application-desc/>
+</jnlp>
+
