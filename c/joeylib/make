@@ -2,11 +2,10 @@ FILE="$*"
 
 OUTDIR=".comp"
 
-HFILE=".comp/$FILE.h"
-CFILE=".comp/$FILE.c"
+HFILE="$OUTDIR/$FILE.h"
+CFILE="$OUTDIR/$FILE.c"
 
-
-echo "Making $FILE"
+echo "Parsing $FILE.c -> $OUTDIR/$FILE-header.h, $HFILE, $CFILE"
 
 jparse c "$FILE.c" "h:$OUTDIR/$FILE-header.h" "c:tmp.c.jparse"
 sedreplace " ::" " " "tmp.c.jparse"
@@ -20,7 +19,7 @@ sedreplace " ::" " " "tmp.c.jparse"
 	echo "  #include <$FILE-header.h>"
 	echo
 	echo "#endif"
-) > "$OUTDIR/$FILE.h"
+) > "$HFILE"
 	
 (
 	echo "#ifndef $FILE""_C"
@@ -31,8 +30,10 @@ sedreplace " ::" " " "tmp.c.jparse"
 	cat tmp.c.jparse
 	echo
 	echo "#endif"
-) > "$OUTDIR/$FILE.c"
+) > "$CFILE"
 
+## Optional I think:
 # cd "$OUTDIR"
 # ./testdepends.sh "$FILE" -w -c -I "$JPATH/code/c/joeylib/.comp/"
+# ./testdepends.sh "$FILE"
 # cd ..
