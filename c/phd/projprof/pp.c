@@ -43,7 +43,7 @@
   #define PPunit int
 #endif
 
-#include <joeylib.c>
+#include <joeylib.h>
 
 int LineSpacing=1;
 int LineWidth=2;
@@ -210,12 +210,13 @@ public:
 //      printf("Circle=%s\n",pos.toString());
       vps.setpos(i,j,NULL);
       // Must lie inside infinity circle
-      if (pos.mag()<1.0) {
+      // if (pos.mag()<1.0) {
+      if (pos.mag()<0.999) {
         // We offset the position of the VP slightly
         // so that the one at (0,0) is resolvable!
         V2d realpos=infcircletoplane(pos+V2d(0.0000001,0.0000001));
         // Must lie at some distance (PP boundary not accurate near or inside image)
-        if (realpos.mag()>scale*1.5) {
+        if (realpos.mag()>scale*0.1) { // 1.5) {
           realpos=realpos+V2d(hw,hh);
 //          printf("Plane=%s\n",realpos.toString());
           vps.setpos(i,j,new VP(realpos,ppres,scale,imgcen));
@@ -688,6 +689,7 @@ void main(int argc,String *argv) {
   int lowcirres=a.intafter("-lowres","resolution of initial circle",60);
   maxpixelsused=a.intafter("-maxpixels","max # pixels to collect",5000);
   recwid=a.intafter("-recwid","Width of recovered image",500);
+  bool usezerocrossings=a.argexists("-usezerocross","use minima to guide second PPmap pass (otherwise use adaptive threshold)");
   float adapthresh=a.floatafter("-adapt","adaptive threshold for clipping",0.1);
   int ppres=-1;
   #ifndef FIXPPRES
@@ -748,10 +750,51 @@ void main(int argc,String *argv) {
   pplowres.calculate();
   Map2d<float> lowresmap=pplowres.getppmap();
   lowresmap.writefile("lowresmap.bmp");
-  Map2d<bool> *lowresthresh=lowresmap.adaptivethreshold(adapthresh);
-  lowresthresh->writefile("lowresthresh0.bmp");
-  lowresthresh->invert();
-  lowresthresh=lowresthresh->expand(1);
+  Map2d<bool> *lowresthresh;
+	if (usezerocrossings) {
+
+		Map2d<float> *filter=Map2d<float>::sobel();
+		// Map2d<float> *filter=Map2d<float>::simple();
+					
+		// // well just a little experiment...
+		// Map2d<float> *edgemag,*edgeang;
+		// Map2d<float> *deriv2mag,*deriv2ang;
+		// lowresmap.edgedetection(Map2d<float>::sobel(),&edgemag,&edgeang);
+		// edgemag->edgedetection(Map2d<float>::sobel(),&deriv2mag,&deriv2ang);
+		// edgemag->writefile("5edgemag.bmp");
+		// // edgeang->writefile("5edgeang.bmp");
+		// deriv2mag->writefile("5deriv2mag.bmp");
+		// // deriv2ang->writefile("5deriv2ang.bmp");
+
+		Map2d<float> hderiv=*lowresmap.filterby(filter);
+		Map2d<float> vderiv=*lowresmap.filterby(filter->transpose());
+		hderiv.writefile("5hderiv.bmp");
+		vderiv.writefile("5vderiv.bmp");
+		float zero=0;
+		Map2d<bool> zerocrossimg=Map2d<bool>(hderiv.width,hderiv.height,false);
+		for (int i=0;i<hderiv.width-1;i++)
+		for (int j=0;j<hderiv.height-1;j++) {
+			if (hderiv.getpos(i,j)<zero && hderiv.getpos(i+1,j)>=zero) {
+				zerocrossimg.setpos(i,j,true);
+				zerocrossimg.setpos(i+1,j,true);
+				// zerocrossimg.setpos(i-1,j,true); // yuk
+			}
+      if (vderiv.getpos(i,j)<zero && vderiv.getpos(i,j+1)>=zero) {
+				zerocrossimg.setpos(i,j,true);
+				zerocrossimg.setpos(i,j+1,true);
+				// zerocrossimg.setpos(i,j-1,true); // yuk
+			}
+		}
+		zerocrossimg.writefile("5zerocross.bmp");
+		lowresthresh=&zerocrossimg;
+		// Dirty hack to normalise:
+  	lowresthresh=lowresthresh->expand(0);
+	} else { // Do adaptive thresholding
+		lowresthresh=lowresmap.adaptivethreshold(adapthresh);
+  	lowresthresh->writefile("lowresthresh0.bmp");
+	  lowresthresh->invert();
+  	lowresthresh=lowresthresh->expand(1);
+	}
   lowresthresh->invert();
   lowresthresh->writefile("lowresthresh1.bmp");
   
@@ -862,29 +905,55 @@ void main(int argc,String *argv) {
     /* // Linear
     RGBmp n=*origimage.recoverquad(tl,tr,br,bl,600); */
 
-    List<V2d> qs;
-    qs.add(tl); qs.add(tr); qs.add(br); qs.add(bl);
-
 /*    // 3D estimate (best so far)
 //    RGBmp n=*origimage.recoverquad(&qs,1,600);
     RGBmp n=*origimage.recoverquadrilateral(tl,tr,br,bl,600); */
 
-    // New using planes
+		// New method using VPs to find focal length
+		V3d RIGHT=V3d(hvp.x-eye.x,hvp.y-eye.y,-1234);
+		V3d DOWN=V3d(vvp.x-eye.x,vvp.y-eye.y,-1234);
+		printf("Know XY of right %s and down %s\n",RIGHT.dropz().toString(),DOWN.dropz().toString());
+		float fls=(RIGHT.x)*(DOWN.x)+(RIGHT.y)*(DOWN.y);
+		if (fls>=0)
+			printf("\n*** failed estimation of focal length %f ***\n\n",fls);
+		float focallength=(
+			fls<0 ? sqrt(-fls) : binimg.width
+		);
+		printf("Got focal length %f\n",focallength);
+		RIGHT.z=focallength;
+		DOWN.z=focallength;
+		eye.z=-focallength;
+		
+		V3d tmpRIGHT=RIGHT; tmpRIGHT.y=-tmpRIGHT.y;
+		printf("right = %s\n",tmpRIGHT.toString());
+		printf("down = %s\n",DOWN.toString());
+		
+		// V3d A=V3d(tl.x,tl.y,0);
+		// V3d B=Line3d(eye,V3d(bl.x,bl.y,0)).intersect(Line3d(A,A+DOWN));
+		// DOWN=B-A;
+		// V3d C=Line3d(eye,V3d(tr.x,tr.y,0)).intersect(Line3d(A,A+RIGHT));
+		// RIGHT=C-A;
+		// V3d D=C+DOWN; // this goes wrong!
+		
+    // Back to crap recovery method
+		List<V2d> qs;
+    qs.add(tl); qs.add(tr); qs.add(br); qs.add(bl);
     List<V3d> ws=rectanglefromquadrilateral(qs,eye);
     V3d A=ws.num(1);
     V3d B=ws.num(2);
     V3d C=ws.num(3);
     V3d D=ws.num(4);
-    float aspect=(V3d::dist(B,C)+V3d::dist(D,A))/(V3d::dist(A,B)+V3d::dist(C,D));
 
+    float aspect=(V3d::dist(B,C)+V3d::dist(D,A))/(V3d::dist(A,B)+V3d::dist(C,D));
+		
     // Expand quadrilateral by 10% of width on all sides
-    V3d RIGHT=(B-A)*0.1;
-    V3d DOWN=(C-B).normalised()*RIGHT.mag();
+    RIGHT=(B-A)*0.1;
+    DOWN=(C-B).normalised()*RIGHT.mag();
     A=A-RIGHT-DOWN;
     B=B+RIGHT-DOWN;
     C=C+RIGHT+DOWN;
     D=D-RIGHT+DOWN;
-		
+
     // Everything up until now has been in binary image space
 
     // Work out mapping from binary image to original image
@@ -909,8 +978,6 @@ void main(int argc,String *argv) {
 
     // Recover
     printf("Doing recovery...\n");
-		printf("right = %s\n",RIGHT.toString());
-		printf("down = %s\n",DOWN.toString());
 		// printf("This is rubbish:\n");
 		// // printf("roll = %f\n",V3d::angle(
 		// // Assuming roll is 90:

@@ -1,0 +1,189 @@
+#!/usr/local/gnu/bin/gnuplot
+
+set xlabel "yaw"
+set ylabel "pitch"
+set zlabel "estimated focal length"
+splot "focaldata.txt" using 1:2:3
+# splot "data.txt" using 1:2:10, "data.txt" using 1:2:15 with points pointtype 2566
+set view 0,0,1,1
+replot
+set view 1,1,1,1
+replot
+set view 2,2,1,1
+replot
+set view 3,3,1,1
+replot
+set view 4,4,1,1
+replot
+set view 5,5,1,1
+replot
+set view 6,6,1,1
+replot
+set view 7,7,1,1
+replot
+set view 8,8,1,1
+replot
+set view 9,9,1,1
+replot
+set view 10,10,1,1
+replot
+set view 11,11,1,1
+replot
+set view 12,12,1,1
+replot
+set view 13,13,1,1
+replot
+set view 14,14,1,1
+replot
+set view 15,15,1,1
+replot
+set view 16,16,1,1
+replot
+set view 17,17,1,1
+replot
+set view 18,18,1,1
+replot
+set view 19,19,1,1
+replot
+set view 20,20,1,1
+replot
+set view 21,21,1,1
+replot
+set view 22,22,1,1
+replot
+set view 23,23,1,1
+replot
+set view 24,24,1,1
+replot
+set view 25,25,1,1
+replot
+set view 26,26,1,1
+replot
+set view 27,27,1,1
+replot
+set view 28,28,1,1
+replot
+set view 29,29,1,1
+replot
+set view 30,30,1,1
+replot
+set view 31,31,1,1
+replot
+set view 32,32,1,1
+replot
+set view 33,33,1,1
+replot
+set view 34,34,1,1
+replot
+set view 35,35,1,1
+replot
+set view 36,36,1,1
+replot
+set view 37,37,1,1
+replot
+set view 38,38,1,1
+replot
+set view 39,39,1,1
+replot
+set view 40,40,1,1
+replot
+set view 41,41,1,1
+replot
+set view 42,42,1,1
+replot
+set view 43,43,1,1
+replot
+set view 44,44,1,1
+replot
+set view 45,45,1,1
+replot
+set view 46,46,1,1
+replot
+set view 47,47,1,1
+replot
+set view 48,48,1,1
+replot
+set view 49,49,1,1
+replot
+set view 50,50,1,1
+replot
+set view 51,51,1,1
+replot
+set view 52,52,1,1
+replot
+set view 53,53,1,1
+replot
+set view 54,54,1,1
+replot
+set view 55,55,1,1
+replot
+set view 56,56,1,1
+replot
+set view 57,57,1,1
+replot
+set view 58,58,1,1
+replot
+set view 59,59,1,1
+replot
+set view 60,60,1,1
+replot
+set view 61,61,1,1
+replot
+set view 62,62,1,1
+replot
+set view 63,63,1,1
+replot
+set view 64,64,1,1
+replot
+set view 65,65,1,1
+replot
+set view 66,66,1,1
+replot
+set view 67,67,1,1
+replot
+set view 68,68,1,1
+replot
+set view 69,69,1,1
+replot
+set view 70,70,1,1
+replot
+set view 71,71,1,1
+replot
+set view 72,72,1,1
+replot
+set view 73,73,1,1
+replot
+set view 74,74,1,1
+replot
+set view 75,75,1,1
+replot
+set view 76,76,1,1
+replot
+set view 77,77,1,1
+replot
+set view 78,78,1,1
+replot
+set view 79,79,1,1
+replot
+set view 80,80,1,1
+replot
+set view 81,81,1,1
+replot
+set view 82,82,1,1
+replot
+set view 83,83,1,1
+replot
+set view 84,84,1,1
+replot
+set view 85,85,1,1
+replot
+set view 86,86,1,1
+replot
+set view 87,87,1,1
+replot
+set view 88,88,1,1
+replot
+set view 89,89,1,1
+replot
+set view 90,90,1,1
+replot
