@@ -5,50 +5,26 @@
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Viewer.java" line="3" column="17" vertical-scroll-proportion="0.058208954" horizontal-scroll-proportion="0.19255663" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/AbstractViewer.java" line="10" column="42" vertical-scroll-proportion="0.19402985" horizontal-scroll-proportion="0.47572815" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGui.java" line="11" column="21" vertical-scroll-proportion="0.21343283" horizontal-scroll-proportion="0.23786408" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/viewers/java/lang/Object.java" line="27" column="8" vertical-scroll-proportion="0.5238806" horizontal-scroll-proportion="0.090614885">
-        <folding>
-          <element signature="imports" expanded="true" />
-        </folding>
-      </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="19" column="79" vertical-scroll-proportion="0.36865672" horizontal-scroll-proportion="0.894822">
-        <folding>
-          <element signature="imports" expanded="true" />
-        </folding>
-      </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="145" column="0" vertical-scroll-proportion="0.8253731" horizontal-scroll-proportion="0.0">
-        <folding>
-          <element signature="imports" expanded="true" />
-        </folding>
-      </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Icon.java" line="63" column="65" vertical-scroll-proportion="0.16119403" horizontal-scroll-proportion="0.63754046">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/viewers/java/lang/Object.java" line="27" column="8" vertical-scroll-proportion="0.46567163" horizontal-scroll-proportion="0.090614885" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="19" column="79" vertical-scroll-proportion="0.34925374" horizontal-scroll-proportion="0.894822" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="145" column="0" vertical-scroll-proportion="0.8552239" horizontal-scroll-proportion="0.0" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="18" column="140" vertical-scroll-proportion="0.34925374" horizontal-scroll-proportion="0.8074434">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
     </history>
     <open-files>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="145" column="0" vertical-scroll-proportion="0.8253731" horizontal-scroll-proportion="0.0">
-        <folding>
-          <element signature="imports" expanded="true" />
-        </folding>
-      </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="19" column="79" vertical-scroll-proportion="0.36865672" horizontal-scroll-proportion="0.894822">
-        <folding>
-          <element signature="imports" expanded="true" />
-        </folding>
-      </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Icon.java" line="63" column="65" vertical-scroll-proportion="0.16119403" horizontal-scroll-proportion="0.63754046" selected="true">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="145" column="0" vertical-scroll-proportion="0.8552239" horizontal-scroll-proportion="0.0" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="19" column="79" vertical-scroll-proportion="0.34925374" horizontal-scroll-proportion="0.894822" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="18" column="140" vertical-scroll-proportion="0.34925374" horizontal-scroll-proportion="0.8074434" selected="true">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGui.java" line="11" column="21" vertical-scroll-proportion="0.21343283" horizontal-scroll-proportion="0.23786408" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Viewer.java" line="3" column="17" vertical-scroll-proportion="0.058208954" horizontal-scroll-proportion="0.19255663" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/viewers/java/lang/Object.java" line="27" column="8" vertical-scroll-proportion="0.5238806" horizontal-scroll-proportion="0.090614885">
-        <folding>
-          <element signature="imports" expanded="true" />
-        </folding>
-      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/viewers/java/lang/Object.java" line="27" column="8" vertical-scroll-proportion="0.46567163" horizontal-scroll-proportion="0.090614885" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/AbstractViewer.java" line="10" column="42" vertical-scroll-proportion="0.19402985" horizontal-scroll-proportion="0.47572815" />
     </open-files>
   </component>
@@ -66,7 +42,7 @@
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="true" weight="0.24836601" order="0" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.32589287" order="10" x="542" y="239" width="656" height="269" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="1" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33035713" order="1" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33064517" order="1" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33064517" order="9" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.4" order="5" />
       <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="2" />
@@ -269,16 +245,16 @@
   <component name="ProjectViewSettings">
     <navigator currentView="ProjectPane" flattenPackages="false" showMembers="false" showStructure="true" autoscrollToSource="true" splitterProportion="0.5" />
     <view id="ProjectPane">
+      <expanded_node type="directory" url="file://$PROJECT_DIR$/src" />
       <expanded_node type="directory" url="file://$PROJECT_DIR$" />
       <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava" />
-      <expanded_node type="directory" url="file://$PROJECT_DIR$/src" />
     </view>
     <view id="SourcepathPane">
-      <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava/viewers" />
-      <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava" />
-      <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava/viewers/java/lang" />
       <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava/viewers/java" />
       <expanded_node type="directory" url="file://$PROJECT_DIR$/src" />
+      <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava/viewers/java/lang" />
+      <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava/viewers" />
+      <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava" />
     </view>
     <view id="ClasspathPane" />
   </component>

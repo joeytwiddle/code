@@ -10,7 +10,7 @@ public class Desktop extends JDesktopPane {
         setLayout(new FlowLayout());
         // ImageIcon icon = new ImageIcon("/usr/share/pixmaps/gnome-gmush.png","Mushroom");
         // JLabel anIcon = new JLabel(icon);
-        Icon anIcon = new Icon("Hello");
+        ObjectIcon anIcon = new ObjectIcon("Hello");
         add(anIcon);
 //        JMenu menu = new JMenu("Menu");
         // menu.setIcon(anIcon.getIcon());
