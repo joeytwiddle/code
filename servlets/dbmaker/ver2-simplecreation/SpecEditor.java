@@ -20,7 +20,14 @@ public class SpecEditor extends Page {
 	TextField spectxt;
 
 	void loadSpec(String name) {
-		
+		try {
+		  File f=new File(dbmakerdir,"specs/"+name+".spec");
+		  FileInputStream fis=new FileInputStream(f);
+		  ObjectInputStream ois=new ObjectInputStream(fis);
+		  spec=(Spec)ois.readObject();
+		} catch (Exception e) {
+			Log.error(""+e);
+		}
 	}
 
 	void saveSpec() {

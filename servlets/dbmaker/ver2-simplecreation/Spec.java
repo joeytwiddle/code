@@ -9,7 +9,7 @@ import nuju.*;
 import jlib.db.*;
 import jlib.multiui.*;
 
-public class Spec {
+public class Spec implements Serializable {
 
 	public String name;
 	public List objects,tables,links;

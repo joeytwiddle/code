@@ -9,7 +9,7 @@ import nuju.*;
 import jlib.db.*;
 import jlib.multiui.*;
 
-interface Type {
+interface Type extends Serializable {
 
 	public String getName();
 

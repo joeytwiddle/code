@@ -33,7 +33,7 @@ class Many2Many extends Property {
 
 }
 
-public class Property {
+public class Property implements Serializable {
 
 	public static final String[] choices={"1 -> 1","1 -> N","N -> N"};
 
