@@ -39,6 +39,7 @@ public class PropertyEditor extends Page {
 					property.type=property.parentSpec.getType(getIndex());
 				}
 			} );
+			print(" with relationship "+property.typeString());
 			nl();
 
 			// Container name=new Container() {
@@ -57,21 +58,48 @@ public class PropertyEditor extends Page {
 			// name.init();
 			// add(name);
 
-			YesNoChoice sep=new YesNoChoice("Store ID in the other table",property.seperateTable) {
-				public void setBoolean(boolean b) {
-					property.seperateTable=b;
-				}
-			};
-			add(sep);
-			
-			YesNoChoice lb=new YesNoChoice("Link back in the other object",property.autoLinkBack) {
-				public void setBoolean(boolean b) {
-					property.autoLinkBack=b;
-				}
-			};
-			add(lb);
+			if (property.canLinkBack())
+				add(new YesNoChoice(property.explainLinkBack,property.autoLinkBack) {
+					public void setBoolean(boolean b) {
+						property.autoLinkBack=b;
+					}
+				} );
 
-			add(new Button("Submit changes"));
+			if (property.canBeSeparate())
+				add(new YesNoChoice(property.explainSeparate,property.separateTable) {
+					public void setBoolean(boolean b) {
+						property.separateTable=b;
+					}
+				} );
+
+			if (property.canHaveSeparateID())
+				add(new YesNoChoice(property.explainSeparateID,property.separateID) {
+					public void setBoolean(boolean b) {
+						property.separateID=b;
+					}
+				} );
+			
+			// YesNoChoice sep=new YesNoChoice("Store ID in the other table",property.seperateTable) {
+				// public void setBoolean(boolean b) {
+					// property.seperateTable=b;
+				// }
+			// };
+			// add(sep);
+		// 	
+			// YesNoChoice lb=new YesNoChoice("Link back in the other object",property.autoLinkBack) {
+				// public void setBoolean(boolean b) {
+					// property.autoLinkBack=b;
+				// }
+			// };
+			// add(lb);
+
+			nl();
+
+			add(new Button("Submit changes") {
+				public void action() {
+					refresh();
+				}
+			} );
 			
 			// Container propertys=new Container();
 			// for (int i=0;i<obj.propertys.size();i++) {

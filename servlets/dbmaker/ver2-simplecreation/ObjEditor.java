@@ -8,6 +8,7 @@ import java.util.*;
 import jlib.*;
 import nuju.*;
 import jlib.multiui.*;
+import jlib.multiui.convenience.*;
 import jlib.db.*;
 
 public class ObjEditor extends Page {
@@ -38,6 +39,26 @@ public class ObjEditor extends Page {
 					this.print("Viewing object: ");
 					this.add(nametxt);
 					this.add(rename);
+
+					this.print(" extends ");
+					for (int i=0;i<obj.extendsObjs.size();i++) {
+						Obj o=(Obj)obj.extendsObjs.get(i);
+						this.print(""+o.name);
+						this.add(new DeleteButton("X",obj.extendsObjs,o) {
+							public void action() {
+								super.action();
+								refresh();
+							}
+						} );
+						this.print(" ");
+					}
+					this.add(new Choice(obj.parentSpec.getObjNamesAndnothing(),"nothing") {
+						public void onChange() {
+							obj.extendsObjs.add((Object)obj.parentSpec.objects.get(getIndex()-1));
+							refresh();
+						}
+					} );
+					this.add(new Button("Chng") { public void action() { refresh(); } });
 					this.nl();
 				}
 			};
@@ -47,7 +68,22 @@ public class ObjEditor extends Page {
 			Container properties=new Container();
 			for (int i=0;i<obj.properties.size();i++) {
 				Property p=(Property)obj.properties.get(i);
-				properties.println(""+p);
+				properties.print(p.type.getName()+" "+p.name+" (relationship "+p.typeString()+") ");
+				properties.add(new PopupWindowButton("Edit",new PropertyEditor(p)));
+				class DeleteButton extends Button {
+					Property pp;
+					public DeleteButton(String n,Property pp2) {
+						super(n);
+						pp=pp2;
+					}
+					public void action() {
+						obj.properties.remove(pp);
+						refresh();
+					}
+				};
+				DeleteButton b=new DeleteButton("Delete",p);
+				properties.add(b);
+				properties.nl();
 			}
 			add(properties);
 
@@ -59,7 +95,7 @@ public class ObjEditor extends Page {
 				Button b=new PopupWindowButton(">") {
 					public Page destination() {
 						// Pick up here
-						Property property=Property.getNew(obj.parentSpec,name.getValue(),obj.parentSpec.getType(c2.getIndex()),c.getIndex());
+						Property property=Property.getNew(obj.parentSpec,obj,name.getValue(),obj.parentSpec.getType(c2.getIndex()),c.getIndex());
 						obj.properties.add(property);
 						return new PropertyEditor(property);
 					}

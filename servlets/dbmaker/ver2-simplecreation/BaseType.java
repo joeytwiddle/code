@@ -10,7 +10,7 @@ import jlib.db.*;
 import jlib.multiui.*;
 import jlib.wrappers.*;
 
-public class BaseType implements Type {
+public class BaseType extends Type {
 
 	public static final String[] types={"int","long","float","double","java.lang.String","java.util.Date","java.sql.Date"};
 
@@ -18,7 +18,7 @@ public class BaseType implements Type {
 
 	public BaseType(String type) {
 		try {
-			Class c=Class.forName("jlib.wrappers."+type);
+			Class c=Wrapper.recommendClassFor(type); // Class.forName("jlib.wrappers."+type);
 			wrapper=(Wrapper)c.newInstance();
 		} catch (Exception e) {
 			Log.error(e);
@@ -27,7 +27,16 @@ public class BaseType implements Type {
 	}
 
 	public String getName() {
-		return JString.after(wrapper.toString(),"jlib.wrappers.");
+		return wrapper.javaType();
+		// return JString.after(wrapper.toString(),"jlib.wrappers.");
+	}
+
+	public String getJavaType() {
+		return wrapper.javaType();
+	}
+
+	public String getSQLType() {
+		return wrapper.SQLtype();
 	}
 
 }

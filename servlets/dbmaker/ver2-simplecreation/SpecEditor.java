@@ -85,24 +85,58 @@ public class SpecEditor extends Page {
 
 			HorizontalSplit h=new HorizontalSplit();
 			Container objects=new Container();
-			Container tables=new Container();
-			Container links=new Container();
+			// Container tables=new Container();
+			// Container links=new Container();
 			h.add(objects);
-			h.add(tables);
-			h.add(links);
+			// h.add(tables);
+			// h.add(links);
 
 			objects.println("Objects:");
+			Map gendb=new HashMap();
+			Map genobj=new HashMap();
+			Map genlooknfeel=new HashMap();
+			Map gensql=new HashMap();
+			Table objtab=new Table(7,spec.objects.size()+1);
+			objects.add(objtab);
+			objtab.set(3,0,new Text("DB"));
+			objtab.set(4,0,new Text("Obj"));
+			objtab.set(5,0,new Text("SQL"));
+			objtab.set(6,0,new Text("Look/Feel"));
 			for (int i=0;i<spec.objects.size();i++) {
 				Obj o=(Obj)spec.objects.get(i);
-				objects.print(o.name);
+				// objects.print(o.name);
+				objtab.set(0,i+1,new Text(o.name));
 				// Button editObj=new Button("Edit") {
 					// public void action() {
 					// 	
 					// }
 				// };
 				Button editObj=new PopupWindowButton("Edit",new ObjEditor(o)); // How inefficient is this - I create a whole new Page, although I do not render it yet.
-				objects.add(editObj);
-				objects.nl();
+				// objects.add(editObj);
+				objtab.set(1,i+1,editObj);
+				class DeleteButton extends Button {
+          Obj pp;
+          public DeleteButton(String n,Obj pp2) {
+            super(n);
+            pp=pp2;
+          }
+          public void action() {
+            spec.objects.remove(pp);
+            refresh();
+          }
+        };
+        DeleteButton b=new DeleteButton("Delete",o);
+				// objects.add(b);
+				objtab.set(2,i+1,b);
+				objtab.set(3,i+1,new CheckBox(true));
+				gendb.put(o,objtab.get(3,i+1));
+				objtab.set(4,i+1,new CheckBox(true));
+				genobj.put(o,objtab.get(4,i+1));
+				objtab.set(5,i+1,new CheckBox(true));
+				gensql.put(o,objtab.get(5,i+1));
+				objtab.set(6,i+1,new CheckBox(true));
+				genlooknfeel.put(o,objtab.get(6,i+1));
+				// objects.nl();
 			}
 			// However, in this case we group the components together and can keep them local
 			// The form really doesn't do much
@@ -123,17 +157,27 @@ public class SpecEditor extends Page {
 			form.init();
 			objects.add(form);
 
-			tables.println("Tables:");
+			// tables.println("Tables:");
 
-			links.println("Links:");
+			// links.println("Links:");
 
 			add(h);
 
-			add( new Button("Generate") {
-				public void action() {
-					spec.generate();
+			class GenButton extends Button {
+				public Map gendb,genobj,gensql,genlooknfeel;
+				public GenButton(String s) {
+					super(s);
 				}
-			} );
+				public void action() {
+					spec.generate(gendb,genobj,gensql,genlooknfeel);
+				}
+			}
+			GenButton genbutton=new GenButton("Generate");
+			genbutton.gendb=gendb;
+			genbutton.genobj=genobj;
+			genbutton.gensql=gensql;
+			genbutton.genlooknfeel=genlooknfeel;
+			add(genbutton);
 			
     } catch (Exception e) {
       println(this+": Exception "+e);

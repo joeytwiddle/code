@@ -214,6 +214,7 @@ public class MainReal {
 			  
 				} else {
 				  out.println("No action");
+					page.init();
 			  }
 
 			}

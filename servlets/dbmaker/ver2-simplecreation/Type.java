@@ -9,8 +9,17 @@ import nuju.*;
 import jlib.db.*;
 import jlib.multiui.*;
 
-interface Type extends Serializable {
+public abstract class Type implements Serializable {
 
-	public String getName();
+	abstract public String getName();
+
+	public String getSQLType() {
+		if (this instanceof BaseType)
+			return "b...";
+		else
+			return "o...";
+	}
+
+	abstract public String getJavaType();
 
 }

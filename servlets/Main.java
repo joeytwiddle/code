@@ -64,7 +64,30 @@ public class Main extends HttpServlet {
 		
     try {
 
-      out.println("<html><body>\n");
+			// Can't force reload in Konqueror with any of the below:
+
+			// res.setHeader("Date",new Date().toString());
+			// res.setHeader("Expires",new Date().toString());
+			// res.setHeader("Vary","*");
+
+      out.println("<html>");
+			// out.println("<head>");
+			// out.println("<meta HTTP-EQUIV=\"Expires\" CONTENT=\"0\">");
+			// out.println("<meta http-equiv=\"Pragma\" content=\"no-cache\">");
+			// out.println("</head>");
+			out.println("<body>");
+
+			// Object test=JThread.get("count");
+			// if (test==null)
+				// test=new Integer(-1);
+			// int count=((Integer)test).intValue()+1;
+			// out.println(""+count);
+			// JThread.put("count",new Integer(count));
+			// Map m=JThread.threadData;
+			// Iterator keys=m.keySet().iterator();
+			// while (keys.hasNext()) {
+				// out.println("  "+keys.next());
+			// }
 
       Map parameters=getParameterMap(req);
 
