@@ -92,7 +92,8 @@ public class JTypes {
    * </blockquote>
    * <p>In the changetheworld case, the String s is assumed to be the path/id
    * of the object in the changetheworld database, and XDB.readnode(s) is called.
-   * @see changetheworld.XDB#readnode(String)
+   * <p>see changetheworld.XDB#readnode(String)<p>
+   * <!-- @see changetheworld.XDB#readnode(String) -->
    * @param t the full class path of the desired Object, for example "java.util.Date"
    * @param s a String from which the desired object is generated
    * @return an Object of class t generated from s, or <i>null</i> if the operation failed

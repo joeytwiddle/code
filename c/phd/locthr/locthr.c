@@ -1,7 +1,7 @@
 // Perform local thresholds on image regions
 // Region by region (but overlap happens)
 
-#include <joeylib.c>
+#include <joeylib.h>
 
 bool flip;
 

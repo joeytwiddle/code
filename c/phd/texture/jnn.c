@@ -1,4 +1,4 @@
-#include <joeylib.c>
+#include <joeylib.h>
 
 #ifdef LINUX
 #define ImageDir "/home/joey/j/images/"

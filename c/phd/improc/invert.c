@@ -1,6 +1,6 @@
 // Invert
 
-#include <joeylib.c>
+#include <joeylib.h>
 
 int main(int argc,String *argv) {
   ArgParser a=ArgParser(argc,argv);
