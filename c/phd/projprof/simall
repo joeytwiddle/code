@@ -45,7 +45,8 @@ NOISES=0
 # ANGLES="50"
 # ANGLES=`seq 5 6 85`
 # ANGLES=`seq 30 10 60`
-ANGLES=`seq 5 3 85`
+# ANGLES=`seq 5 3 85`
+ANGLES=`seq 10 15 80`
 # ANGLES="30"
 
 FOCALS="4.0"
@@ -53,6 +54,14 @@ FOCALS="4.0"
 ######## end params
 
 touch start
+
+showprogress () {
+	D="$1"
+	shift
+	X="$1"
+	shift
+	echo "$D:  $*" | sed "s/$X/[$X]/g"
+}
 
 export FOCAL;
 for FOCAL in $FOCALS; do
@@ -129,14 +138,15 @@ for DOCUMENT in $DOCUMENTS; do
 								for pitch in $ANGLES; do
 
 									(
-										echo "$FOCAL / $FOCALS"
-										echo "$DOCUMENT / $DOCUMENTS"
-										echo "$PPSCANMETHOD / $PPSCANMETHODS"
-										echo "$PPMEASURE / $PPMEASURES"
-										echo "$VVPMETHOD / $VVPMETHODS"
-										echo "$NOISE / $NOISES"
-										echo "$LINES / $LINESTODO"
-										echo "$yaw $pitch / $ANGLES"
+										showprogress "focal length  " $FOCAL $FOCALS
+										showprogress "document      " $DOCUMENT $DOCUMENTS
+										showprogress "pp scan method" $PPSCANMETHOD $PPSCANMETHODS
+										showprogress "pp measure    " $PPMEASURE $PPMEASURES
+										showprogress "vvp method    " $VVPMETHOD $VVPMETHODS
+										showprogress "% noise       " $NOISE $NOISES
+										showprogress "# lines       " $LINES $LINESTODO
+										showprogress "yaw           " $yaw $ANGLES
+										showprogress "pitch         " $pitch $ANGLES
 									) > current
 
 									echo
