@@ -5,6 +5,7 @@ then
 fi
 
 IMC_SITE_NAME="$1"
+shift
 
 echo
 echo "######## Post-pull operations"
@@ -108,7 +109,7 @@ echo "Local PGDB does not recognise user bristol, so must connect as postgres."
 sedreplace \
 	'connect - bristol' \
 	'connect - postgres' \
-		/www/db-backups/active_bristol.psql
+		/www/db-backups/$CITY_NAME/active_$CITY_NAME.psql
 echo
 
 # Re-create the MYSQL DB:

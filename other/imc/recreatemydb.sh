@@ -7,7 +7,7 @@ fi
 
 MYSQLDB="imc"
 test $MYSQLDESTDB || MYSQLDESTDB=$MYSQLDB
-BACKUPDIR="/www/db-backups"
+BACKUPDIR="/www/db-backups/$CITY_NAME"
 
 echo "######## MYSQL:"
 echo "Destroying and creating fresh $MYSQLDESTDB database"

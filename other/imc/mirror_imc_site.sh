@@ -1,6 +1,5 @@
 #!/bin/bash
 # (we need bash in order to check UID)
-# Joey (pclark@cs.bris.ac.uk)
 # Ensures the local /www/active-cvs/$CITY_NAME is an exact copy of $REMOTE_HOST's /www/active-cvs/$CITY_NAME
 # Does the same for /www/uploads/$CITY_NAME
 # Also copies $REMOTE_HOST:/home/mike/db-backups into localhost:/www/db-backups
@@ -28,7 +27,7 @@ REMOTE_HOST="$2"
 # CITY_NAME=bristol
 # REMOTE_HOST=mike@tronic.southspace.net
 if test ! $REMOTE_DBDUMP_PATH
-then REMOTE_DBDUMP_PATH=/www/active-cvs/$CITY_NAME/db-backups
+then REMOTE_DBDUMP_PATH=/www/active-cvs/$CITY_NAME/webcast/db-backups
 fi
 
 ## Check external dependencies:
@@ -67,7 +66,7 @@ fi
 
 cd /www
 
-export RSYNC_RSH="ssh-agent ssh"
+test "$RSYNC_RSH" || export RSYNC_RSH="ssh-agent ssh"
 
 # rsync options:
 # -a means preserve all information (times, permissions) (requires root).
@@ -101,7 +100,8 @@ echo
 echo "--- 2/4 --- Get local copy of DBs ------------------------------------"
 echo
 
-rsync $COMMONPARAMS $REMOTE_HOST:$REMOTE_DBDUMP_PATH /www
+mkdir -p /www/db-backups/$CITY_NAME
+rsync $COMMONPARAMS $REMOTE_HOST:$REMOTE_DBDUMP_PATH/ /www/db-backups/$CITY_NAME
 
 echo
 echo "--- 3/4 --- Get local copy of code and generated pages ---------------"
