@@ -299,7 +299,7 @@ String Sfromfloat(float i); // Method
 int Stoint(String s); // Method
 
 
-int Stofloat(String s); // Method
+float Stofloat(String s); // Method
 
 
 String toString(String s); // Method

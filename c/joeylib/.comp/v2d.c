@@ -162,6 +162,10 @@
     return V2d(v.x*cos(ang)+v.y*sin(ang),-v.x*sin(ang)+v.y*cos(ang));
   }
   
+  V2d V2d::rotateabout(float ang,V2d focal) {
+		return focal+rotate(*this-focal,ang);
+  }
+  
 /*  V2d rotate(float ang) { // Changes me _and_ rotates
     changeto(V2d::rotate(*this,ang));
     return V2d::rotate(*this,ang);

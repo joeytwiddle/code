@@ -20,14 +20,11 @@ public:
 
   float length; // Exists
 
-// Don't know what these were for!  Some PhD stuff no doubt.
-//  List<List<Line2d *> > ls;//=List<List<Line2d *> >();//2,List<Line2d *>());
-//  List<List<int> > es;//=List<List<int> >(2,List<int>());
-//  bool allusedup;
-
    Line2d(); // Method
 
    Line2d(V2d aa,V2d bb); // Method
+
+	V2d perpproject(V2d v); // Method
 
   void refresh(); // Method
 
@@ -95,6 +92,9 @@ public:
   Line2d expandedForever(); // Method
 
   Line2d expandedTo(float wid); // Method
+
+
+	static V2d intersection(Line2d la,Line2d lb); // Method
 
 
 };

@@ -118,6 +118,9 @@ public:
   static V2d rotate(V2d v,float ang); // Method
 
   
+  V2d rotateabout(float ang,V2d focal); // Method
+
+  
 /*  V2d rotate(float ang) { // Changes me _and_ rotates
     changeto(V2d::rotate(*this,ang));
     return V2d::rotate(*this,ang);

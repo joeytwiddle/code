@@ -23,29 +23,22 @@
 
   // Variable declared in .h file
 
-// Don't know what these were for!  Some PhD stuff no doubt.
-//  List<List<Line2d *> > ls;//=List<List<Line2d *> >();//2,List<Line2d *>());
-//  List<List<int> > es;//=List<List<int> >(2,List<int>());
-//  bool allusedup;
-
    Line2d::Line2d() {
-//    allusedup=false;
   }
    Line2d::Line2d(V2d aa,V2d bb) {
-//    allusedup=false;
     a=aa;
     b=bb;
     refresh();
-/*    ls.add(List<Line2d *>());
-    ls.add(List<Line2d *>());
-    es.add(List<int>());
-    es.add(List<int>());*/
   }
+	V2d Line2d::perpproject(V2d v) { // Finds the closest point on the line to v
+		float thru=((b-a).normalised()).dot(v-a);
+		return a+thru*((b-a).normalised());
+		// return intersection(Line2d(v,v+(b-a).perp());
+	}
   void Line2d::refresh() {
     length=V2d::dist(a,b);
   }
   void Line2d::swapends() {
-//    error("End swapping not allowed.");
     V2d tmp=a;
     a=b;
     b=tmp;
@@ -242,6 +235,10 @@
     float diff=(wid-len)/2.0;
     return expandedBy(diff);
   }
+
+	 V2d Line2d::intersection(Line2d la,Line2d lb) {
+		return la.intersection(lb);
+	}
 
 // End class 
 

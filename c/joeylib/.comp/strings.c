@@ -615,7 +615,7 @@ int Stoint(String s) {
   return i;
 }
 
-int Stofloat(String s) {
+float Stofloat(String s) {
   float i;
   sscanf(s,"%f",&i);
   return i;

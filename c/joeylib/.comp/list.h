@@ -143,8 +143,11 @@ public:
   void replacenum(int n,ListObject o) {
     replace(n,o);
   }
-  void setnum(int n,ListObject o) {
+  void setnum(int n,ListObject o) { // 1..len
     replace(n,o);
+  }
+  void put(int n,ListObject o) { // java-style 0..len-1
+    setnum(n+1,o);
   }
   void replace(int n,ListObject o) { // not Java
 //    expandto(n);
@@ -529,5 +532,6 @@ public:
 
 
 void writelinestoscreen(List<String> ls); // Method
+
 
 #endif
