@@ -45,44 +45,85 @@ void cls() {
 
 #define mbit char
 
-mbit* palette;
-int paletteSize;
+mbit PROCESS = 'P';
+mbit STATIC_PROCESS = 'S';
+mbit* palette = "^~+ouq/\\*}0&$%@#";
+int paletteSize = strlen(palette);
 
 int AVALTLET;
 int averageLengthOfSlide;
 int averageLengthBetweenSlides;
 int averageLengthOfAdd;
 int averageLengthBetweenAdds;
+int slidingProcessDies = 8;
+int newSlidingProcess = 16;
 
 mbit **thematrix;
 bool *sliding;
 bool *adding;
 
+mbit randSymbol() {
+	return palette[ rand() % paletteSize ];
+}
+
 void matrix_set(int x,int y,mbit symbol) {
 	// debug: catch oob?
 	move(y,x);
 	addch(symbol);
-	thematrix[x][y]=symbol;
+	thematrix[x][y] = symbol;
 }
 
-void slideRow(int x) {
+void matrix_set_process(int x,int y) {
+	// debug: catch oob?
+	mbit symbol = randSymbol();
+	attrset(COLOR_PAIR(7) | A_BOLD);
+	move(y,x);
+	addch(symbol);
+	thematrix[x][y] = PROCESS;
+	attrset(COLOR_PAIR(2));
+}
+
+bool prob(int prob) {
+	return ( (rand() % prob) == 0 );
+}
+
+void slideRow(int x,bool lastSlide) {
 
 	attrset(COLOR_PAIR(2));
 
+	mbit last = 'L';
+
 	for (int y=LINES-1;y>0;y--) {
+		// bool alive = false;
 		mbit src = thematrix[x][y-1];
-		thematrix[x][y] = src;
-		move(y,x);
+		// thematrix[x][y] = src;
+		if (src == PROCESS) {
+			if (lastSlide || prob(slidingProcessDies)) {
+				matrix_set(x,y,randSymbol());
+			} else {
+				matrix_set_process(x,y);
+			}
+		} else if (!lastSlide && last == ' ' && src != ' ' && prob(newSlidingProcess)) {
+			// attrset(COLOR_PAIR(7) | A_BOLD );
+			// alive = true;
+			matrix_set_process(x,y);
+		} else {
+			matrix_set(x,y,src);
+		}
+		// move(y,x);
 		/* if (src == '%') {
 			if ( (rand() % 6*averageLengthOfSlide) == 0 ) {
 				thematrix[x][y] = palette[ rand() % paletteSize ];
 			} else {
-				attrset(COLOR_PAIR(7) | A_BOLD );
 				addch(thematrix[x][y]);
 				attrset(COLOR_PAIR(2));
 			}
 		} else { */
-			addch(thematrix[x][y]);
+		// addch(thematrix[x][y]);
+		// if (alive) {
+			// attrset(COLOR_PAIR(2));
+		// }
+		last = src;
 		// }
 	}
 	thematrix[x][0]=' ';
@@ -94,8 +135,6 @@ void slideRow(int x) {
 
 void main() {
 
-	palette = "^+ouq/\\*}0&$%@#";
-	paletteSize = strlen(palette);
 	// mbit* altPalette = "%@#";
 	// int altPaletteSize = strlen(altPalette);
 	
@@ -151,7 +190,8 @@ void main() {
 	// AVALTLET = ( LINES>30 ? 4 : 2 );
 
 #ifdef BOTHER_CLOCKING
-	clock_t clocksPerFrame = CLOCKS_PER_SEC/100;
+	// clock_t clocksPerFrame = CLOCKS_PER_SEC/100;
+	clock_t clocksPerFrame = CLOCKS_PER_SEC/10;
 	clock_t lastframe,thisframe;
 	lastframe = clock();
 #endif
@@ -210,10 +250,6 @@ void main() {
 			for (int x=0;x<COLS;x++) {
 
 				// Consider changing state
-				int prob = ( sliding[x] ? averageLengthOfSlide : averageLengthBetweenSlides );
-				if ( (rand() % prob) == 0 ) {
-					sliding[x] = ! sliding[x];
-				}
 				int probadd = ( adding[x] ? averageLengthOfAdd : averageLengthBetweenAdds );
 				if ( (rand() % probadd) == 0 ) {
 					adding[x] = ! adding[x];
@@ -221,12 +257,20 @@ void main() {
 
 				// Act upon state
 				if ( sliding[x] ) {
-					slideRow(x);
+					if ( (rand() % averageLengthOfSlide) == 0 ) {
+						sliding[x] = false;
+					}
+					slideRow(x,!sliding[x]);
 					if (adding[x]) {
 						mbit symbol = palette[ rand() % paletteSize ];
 						matrix_set(x,0,symbol);
 					}
+				} else {
+					if ( (rand() % averageLengthBetweenSlides) == 0 ) {
+						sliding[x] = true;
+					}
 				}
+
 
 			}
 
