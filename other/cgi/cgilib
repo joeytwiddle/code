@@ -12,11 +12,13 @@ getcgi() {
 ## It doesn't return the file properly (wrong name, no mimetype), but it does return it!
 serve() {
 	FILE="$1"
+	FILENAME=`basename "$FILE"`
 	# file --mime "$FILE"
 	MIMETYPE=`file --mime "$FILE" | sed 's+.*:.++'`
 	echo "Content-type: $MIMETYPE"
 	# Untested:
 	echo "Content-length: "`ls -ld "$FILE" | awk ' { print $5 } '`
+	echo "Content-Disposition: attachment; filename=\"$FILENAME\""
 	echo
 	cat "$FILE"
 }
