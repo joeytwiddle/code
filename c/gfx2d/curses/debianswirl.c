@@ -42,7 +42,7 @@ float getSwirlHeight(float x,float y) {
 	float wobblemag = 0.07+0.07*sin((float)frames*0.00115);
 	float rad = sqrt(X*X+Y*Y) * (1.0+ wobblemag*cos(2.0*(M_PI/4.0*cos((float)frames*0.000243)+ang+swirlang)));
 	// Changing width of spiral
-	float extra=-0.6+0.35*sin(2.493-rad*4.5+(float)frames*0.00084);
+	float extra=-0.6+0.35*sin(1.493-rad*4.5+(float)frames*0.00084);
 	return sin(rad/spacePerSwirl+ang-swirlang)+extra;
 
 }
@@ -95,6 +95,7 @@ void main() {
 		spacePerSwirl = 0.08+0.03*cos(0.000638*(float)frames);
 
 		move(0,0);
+		attrset(COLOR_PAIR(2) | A_BOLD);
 
 		for (int y = 0;y<LINES;y++) {
 			for (int x = 0;x<COLS;x++) {
@@ -108,7 +109,6 @@ void main() {
 						+	( getSwirlHeight(x,y) > 0 ? 1 : 0 )
 						+	( getSwirlHeight((float)x+0.5,(float)y+0.5) > 0 ? 1 : 0 );
 					char ch = palette[c];
-					attrset(COLOR_PAIR(2) | A_BOLD);
 					// mvaddch(y,x,32);
 					addch(ch);
 				}
