@@ -1,4 +1,6 @@
 CC	= g++ -I $(JPATH)/code/c/joeylib/.comp
+# For profiling:
+# -pg
 
 CFLAGS	= -g -fconserve-space -O2 -c `sdl-config --cflags` -ffast-math -w
 # -Wall

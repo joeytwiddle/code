@@ -54,14 +54,22 @@ int taillen=1200;
 int numWaves=15;
 int waveAmp=10.0;
 bool planar=false;
-int numps=300;
-float partrad=0.007;
-int tunnelps=40;
-float tunnelrad=0.4;
+// #define SLOW_CPU
+#ifdef SLOW_CPU
+	int numps=1000;
+	int tunnelps=1;
+	float partrad=0.07;
+	float tunnelrad=0.0;
+#else
+	int numps=400;
+	int tunnelps=20;
+	float partrad=0.01;
+	float tunnelrad=0.4;
+#endif
 
 // Movement
 float turnability=0.10;
-float forcevel=0.03;
+float forcevel=0.02;
 float markerrange=3.0;
 
 V3d pos;
@@ -140,8 +148,6 @@ void line(V3d a,V3d b) {
 List<V3d> particles=List<V3d>();
 
 void plotscene() {
-	left.clear(0);
-	right.clear(0);
 	ori.quickorisetup();
 	Frustrum f=Frustrum(pos,ori,0.01,fogdepth);
 	// printf("pos = %s\nori = %s\n",pos.toString(),ori.toString());
@@ -253,6 +259,8 @@ void init() {
 		V3d from=V3d::rotate(14.0*V3d::k,V3d::j,t); // +12.0*V3d::j*sin(t*0.02);
 		ori.forcez(from.neg());
 		pos=from;
+		left.clear(0);
+		right.clear(0);
 		plotscene();
 		writescreen();
 		while(SDL_PollEvent(&event)){  /* Loop until there are no events left on the queue */
@@ -293,6 +301,18 @@ void doframe() {
 	// ori.forcez(newz);
 	frame++;
 	// float pd=1.6+1.3*sin(2*pi*frame/1000.0);
+
+	left.clear(0);
+	right.clear(0);
+
+	// Draw and update tail
+	V3d last=(tail[tailpos]-pos).disorientate(ori);
+	for (int k=1;k<taillen;k++) {
+		int j=mymod(tailpos+k,taillen);
+		V3d next=(tail[j]-pos).disorientate(ori);
+		plotline(last,next,(float)k/(float)taillen);
+		last=next;
+	}
 
 	plotscene();
 
@@ -350,15 +370,6 @@ void doframe() {
 	// 
 	//    }
 
-	// Draw and update tail
-	V3d last=(tail[tailpos]-pos).disorientate(ori);
-	for (int k=1;k<taillen;k++) {
-		int j=mymod(tailpos+k,taillen);
-		V3d next=(tail[j]-pos).disorientate(ori);
-		plotline(last,next,(float)k/(float)taillen);
-		last=next;
-	}
-
 	if ((frame % 2)==0) {
 		tail[tailpos]=pos-ori.qz;
 		tailpos=mymod(tailpos+1,taillen);
@@ -404,7 +415,7 @@ void doframe() {
 			droll=droll+angvel;
 		else
 			dyaw=dyaw+angvel;
-	vel=hang(vel,V3d::o,0.93,0);
+	vel=hang(vel,V3d::o,0.96,0);
 	pos=pos+vel;
 	droll=hang(droll,0,0.9,0);
 	dyaw=hang(dyaw,0,0.9,0);
