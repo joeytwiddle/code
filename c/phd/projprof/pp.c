@@ -45,10 +45,13 @@
 
 #include <joeylib.h>
 
+#include "../gentestimg/linespacings.c"
+
 int LineSpacing=1;
 int LineWidth=2;
 // int correlator=LineSpacing;
 int correlator=LineWidth;
+bool useoldspacingsmethod;
 
 RGBmp info;
 
@@ -185,6 +188,9 @@ public:
   // projection profiles will be calculated
   // VPs are distributed "evenly" across R^2
   void setup() {
+		setup(NULL);
+	}
+  void setup(Map2d<bool> *clipmap) {
     if (doinfo) {
       info=RGBmp(binimg.width,binimg.height,myRGB::white);
       /* for (int i=0;i<binimg.width;i++) // Get coloured in when seperate lines found
@@ -206,28 +212,40 @@ public:
     int vpcount=0;
     for (int i=0;i<res;i++)
     for (int j=0;j<res;j++) {
-      V2d pos=maptocircle(i,j);
-//      printf("Circle=%s\n",pos.toString());
-      vps.setpos(i,j,NULL);
-      // Must lie inside infinity circle
-      // if (pos.mag()<1.0) {
-      if (pos.mag()<0.999) {
-        // We offset the position of the VP slightly
-        // so that the one at (0,0) is resolvable!
-        V2d realpos=infcircletoplane(pos+V2d(0.0000001,0.0000001));
-        // Must lie at some distance (PP boundary not accurate near or inside image)
-        if (realpos.mag()>scale*0.1) { // 1.5) {
-          realpos=realpos+V2d(hw,hh);
-//          printf("Plane=%s\n",realpos.toString());
-          vps.setpos(i,j,new VP(realpos,ppres,scale,imgcen));
-          vpcount++;
+			bool ok=false;
+			if (clipmap==NULL)
+				ok=true;
+			else {
+      	int x=i*clipmap->width/res;
+      	int y=j*clipmap->height/res;
+				if (clipmap->getpos(x,y)<0.5)
+					ok=true;
+			}
+			if (ok) {
+        V2d pos=maptocircle(i,j);
+  //      printf("Circle=%s\n",pos.toString());
+        vps.setpos(i,j,NULL);
+        // Must lie inside infinity circle
+        // if (pos.mag()<1.0) {
+        if (pos.mag()<0.999) {
+          // We offset the position of the VP slightly
+          // so that the one at (0,0) is resolvable!
+          V2d realpos=infcircletoplane(pos+V2d(0.0000001,0.0000001));
+          // Must lie at some distance (PP boundary not accurate near or inside image)
+          if (realpos.mag()>scale*0.1) { // 1.5) {
+            realpos=realpos+V2d(hw,hh);
+  //          printf("Plane=%s\n",realpos.toString());
+            vps.setpos(i,j,new VP(realpos,ppres,scale,imgcen));
+            vpcount++;
+          }
         }
-      }
-    }
+      } else
+			  vps.setpos(i,j,NULL);
+		}
     printf("Set up %i vanishing points with %i projection profiles\n",vpcount,vpcount);
   }
 
-  void clipsetupby(Map2d<bool> *clipmap) {
+  /* void clipsetupby(Map2d<bool> *clipmap) {
     for (int i=0;i<res;i++)
     for (int j=0;j<res;j++) {
       int x=i*clipmap->width/res;
@@ -235,7 +253,7 @@ public:
       if (clipmap->getpos(x,y)>0.5)
         vps.setpos(i,j,NULL);
     }
-  }
+  } */
 
   // Accumulates projection profiles of the points
   // in the input image
@@ -616,66 +634,86 @@ public:
         summarybaseunused=summaryrightunused;
       } else
         error("Baseline != 0 -1 or +1");
-    }
+    	}
 
-    // Now correlate line spacings along the central line
-    // First, project all centres onto this line
-    List<float> cds;
-    for (int i=1;i<=cens.len;i++) {
-      Line2d l=Line2d(hvp,cens.num(i));
-      V2d v=baseline.intersect(l);
-      // if (doinfo)
-      //  info.cross(v,5,myRGB::cyan);
-      float f=(v-baseline.a).dot(vvpdir);
-      cds.add(f);
-    }
-    
-    // We now do simultaneous calculation of
-    // various correlation methods for comparison
-    
-    // Accumulate correlator
-    Correlator2d csspacing;
-    Correlator2d cslength;
-    // Why not do line-spacing with gaps?
-    // (seems equivalent so no worry)
-    int cdsend=( correlator==LineSpacing
-               ? cds.len-1
-               : cds.len );
-    for (int i=1;i<=cdsend;i++) {
-      float a=cds.num(i);
-      float pos=a;
-      int weight=cnt.num(i);
-      if (i<cds.len) {
-      // if (correlator==LineSpacing) {
-        // x = average of two cds, y = dist between
-        float b=cds.num(i+1);
-        // float pos=(a+b)/2.0;
-        csspacing.add(V2d(pos,myabs(b-a)),weight);
-        // printf("Correlating using lines =)\n");
+		V2d vvp;
+
+		if (useoldspacingsmethod) {
+						
+		  // New vvp estimation from spacings
+	  	
+		  List<V2d> endpoints;
+		  for (int i=0;i<cens.len;i++) {
+        Line2d l=Line2d(hvp,cens.get(i));
+			  V2d v=baseline.intersect(l);
+			  endpoints.add(v);
+		  }
+
+	  	vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,true);
+
+		} else {
+
+      // Now correlate line spacings along the central line
+      // First, project all centres onto this line
+      List<float> cds;
+      for (int i=1;i<=cens.len;i++) {
+        Line2d l=Line2d(hvp,cens.num(i));
+        V2d v=baseline.intersect(l);
+        // if (doinfo)
+        //  info.cross(v,5,myRGB::cyan);
+        float f=(v-baseline.a).dot(vvpdir);
+        cds.add(f);
       }
-      // } else if (correlator==LineWidth) {
-        // y = width of line
-        // float pos=a;
-        cslength.add(V2d(pos,lines.num(i).length),weight);
-      // } else {
-        // error("Non existent correlation method");
-      // }
-    }
+  
+	    // We now do simultaneous calculation of
+      // various correlation methods for comparison
+      
+      // Accumulate correlator
+      Correlator2d csspacing;
+      Correlator2d cslength;
+      // Why not do line-spacing with gaps?
+      // (seems equivalent so no worry)
+      int cdsend=( correlator==LineSpacing
+                 ? cds.len-1
+                 : cds.len );
+      for (int i=1;i<=cdsend;i++) {
+        float a=cds.num(i);
+        float pos=a;
+        int weight=cnt.num(i);
+        if (i<cds.len) {
+        // if (correlator==LineSpacing) {
+          // x = average of two cds, y = dist between
+          float b=cds.num(i+1);
+          // float pos=(a+b)/2.0;
+          csspacing.add(V2d(pos,myabs(b-a)),weight);
+          // printf("Correlating using lines =)\n");
+        }
+        // } else if (correlator==LineWidth) {
+          // y = width of line
+          // float pos=a;
+          cslength.add(V2d(pos,lines.num(i).length),weight);
+        // } else {
+          // error("Non existent correlation method");
+        // }
+      }
 
-    // One of the methods is chosen for final VVP.
-    float vpd=( correlator==LineSpacing ?
-        csspacing.crossesy() :
-        cslength.crossesy() );
-    printf("VP is %f along baseline\n",vpd);
-    V2d vvp=baseline.a+vvpdir*vpd;
-    if (doinfo) {
-      drawCorrelator2dInColour(csspacing).writefile("spacings.bmp");
-      drawCorrelator2dInColour(cslength).writefile("lengths.bmp");
-/*      V2d left=imgcen+(hvp-imgcen).norm()*(float)scale/3.0;
-      V2d right=imgcen-(hvp-imgcen).norm()*(float)scale/3.0;
-      info.line(left,vvp,myRGB::cyan);
-      info.line(right,vvp,myRGB::cyan);
-*/    }
+      // One of the methods is chosen for final VVP.
+      float vpd=( correlator==LineSpacing ?
+          csspacing.crossesy() :
+          cslength.crossesy() );
+      printf("VP is %f along baseline\n",vpd);
+      vvp=baseline.a+vvpdir*vpd;
+      if (doinfo) {
+        drawCorrelator2dInColour(csspacing).writefile("spacings.bmp");
+        drawCorrelator2dInColour(cslength).writefile("lengths.bmp");
+        // V2d left=imgcen+(hvp-imgcen).norm()*(float)scale/3.0;
+        // V2d right=imgcen-(hvp-imgcen).norm()*(float)scale/3.0;
+        // info.line(left,vvp,myRGB::cyan);
+        // info.line(right,vvp,myRGB::cyan);
+      }
+ 
+		}
+		
     return vvp;
   }
 
@@ -705,6 +743,7 @@ void main(int argc,String *argv) {
   correlator=( a.argexists("-spacings","use line spacing not width")
     ? LineSpacing
     : LineWidth );
+  useoldspacingsmethod=a.argexists("-oldspacings","use old spacings method");
   if (a.argexists("-corinc","use over-inclusive RANSAC"))
     Correlator2dMethod=2;
   bool overlayquadonly=a.argexists("-quadonly","overlay quadrilateral only on summary image");
@@ -803,8 +842,9 @@ void main(int argc,String *argv) {
   lowresthresh->writefile("lowresthresh1.bmp");
   
   ProjectionProfiler pp=ProjectionProfiler(cirres,ppres,binimg,writepps,writebestpp,doinfo);
-  pp.setup();
-  pp.clipsetupby(lowresthresh);
+  pp.setup(lowresthresh);
+  // pp.setup();
+  // pp.clipsetupby(lowresthresh);
   pp.calculate();
   V2d hvp=pp.getvp();
 	printf("HVP = %s *note* could wait for corner+diffscale*\n",hvp.toString());
@@ -816,23 +856,23 @@ void main(int argc,String *argv) {
 
   V3d eye=V3d(binimg.width/2,binimg.height/2,-binimg.width);
   if (usebaselineonly) {
-    printf("Guessing VVP from base-line.\n");
-    V2d newvvp=vvpfromhvpandbaseline(hvp,pp.baseline,eye,info);
-    printf("    Original vvp estimate: %s\n",vvp.toString());
-    printf("    Dodgy new vvp estimate: %s\n",newvvp.toString());
-    if (mysgn(newvvp.x)!=mysgn(vvp.x)) {
-      printf("Nert swerping.\n");      newvvp.x=-newvvp.x;
-    }
-    if (mysgn(newvvp.y)!=mysgn(vvp.y)) {
-      printf("Nert swerping.\n");      newvvp.y=-newvvp.y;
-    }
-    vvp=newvvp;
+    // printf("Guessing VVP from base-line.\n");
+    // V2d newvvp=vvpfromhvpandbaseline(hvp,pp.baseline,eye,info);
+    // printf("    Original vvp estimate: %s\n",vvp.toString());
+    // printf("    Dodgy new vvp estimate: %s\n",newvvp.toString());
+    // if (mysgn(newvvp.x)!=mysgn(vvp.x)) {
+      // printf("Nert swerping.\n");      newvvp.x=-newvvp.x;
+    // }
+    // if (mysgn(newvvp.y)!=mysgn(vvp.y)) {
+      // printf("Nert swerping.\n");      newvvp.y=-newvvp.y;
+    // }
+    // vvp=newvvp;
   } else {
     printf("Intersecting two best lines to get VVP.\n");
     vvp=summarybaseline.intersect(summarysecondline);
     printf("%s x %s = %s\n",summarybaseline.toString(),summarysecondline.toString(),vvp.toString());
   }
-  printf("    VVP estimate: %s\n",vvp.toString());
+  // printf("    VVP estimate: %s\n",vvp.toString());
 	printf("VVP = %s\n",vvp.toString());
 
   if (recoverquad) {

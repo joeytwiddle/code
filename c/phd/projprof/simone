@@ -5,8 +5,8 @@ pitch=$4
 PARAMS="-centralise -roll $roll -yaw $yaw -pitch $pitch"
 OFILE="tmp.bmp"
 INVFILE="tmp-inv.bmp"
-echo ../gentestimg/simgen -overlay $PARAMS -image $IFILE $OFILE
-../gentestimg/simgen -overlay $PARAMS -image $IFILE $OFILE > genres.txt
+echo ../gentestimg/simgen -overlay $PARAMS -image $IFILE $OFILE -size 0.7
+../gentestimg/simgen -yoff 5 -overlay $PARAMS -image $IFILE $OFILE -size 0.7 > genres.txt
 # gzip "$OFILE"
 echo invert -i "$OFILE" -o "$INVFILE"
 invert -i "$OFILE" -o "$INVFILE"

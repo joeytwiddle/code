@@ -42,8 +42,8 @@ main(int argc,String *argv) {
   // if (a.argexists("-variance","use variance measure"))
     // measure=&measurevariance;
 // //  bool invert=a.argexists("-inv","invert input image to look for line spaces");
-  // showbadx=a.intafter("-badx","x pos of bad PP to show",-1);
-  // showbady=a.intafter("-bady","y pos of bad PP to show",-1);
+  // showbadgenx=a.intafter("-badgenx","x pos of badgen PP to show",-1);
+  // showbadgeny=a.intafter("-badgeny","y pos of badgen PP to show",-1);
   // String bname=a.getarg("binary image");
   // String oname=a.argor("original image","*none*");
   // String datafile=a.argor("crop data file","*none*");
@@ -93,24 +93,41 @@ main(int argc,String *argv) {
 		  if (!Seq(l,"PP:"))
 			  fprintf(stderr,"Error B line %i\n",i);
 		  i++; l=lines.get(i);
-			bool bad=false;
+			bool badgen=false;
+			bool badhvp=false;
+			bool badvvp=false;
 		  if (Seq(l,"")) {
 				fprintf(stderr,"no pp res r%i-y%i-p%i\n",(int)roll,(int)yaw,(int)pitch);
 			  fprintf(stderr,"  Error D line %i\n",i);
 				ppright=gtright;
 				ppdown=gtdown;
-				bad=true;
+				badgen=true;
 		  } else {
-			  sscanf(l,"right = (%f,%f,%f)",&ppright.x,&ppright.y,&ppright.z);
-			  // printf("Got %s for GTr\n",ppright.toString());
-			  i++; l=lines.get(i);
-			  sscanf(l,"down = (%f,%f,%f)",&ppdown.x,&ppdown.y,&ppdown.z);
-			  // printf("Got %s for GTr\n",ppdown.toString());
-		    i++; l=lines.get(i);
-		    sscanf(l,"HVP = (%f,%f)",&pphvp.x,&pphvp.y);
-		    i++; l=lines.get(i);
-		    sscanf(l,"VVP = (%f,%f)",&ppvvp.x,&ppvvp.y);
-		    i++; l=lines.get(i);
+			  if (sscanf(l,"right = (%f,%f,%f)",&ppright.x,&ppright.y,&ppright.z)) {
+			    // printf("Got %s for GTr\n",ppright.toString());
+			    i++; l=lines.get(i);
+				} else {
+					badgen=true;
+				}
+			  if (sscanf(l,"down = (%f,%f,%f)",&ppdown.x,&ppdown.y,&ppdown.z)) {
+			    // printf("Got %s for GTr\n",ppdown.toString());
+		      i++; l=lines.get(i);
+				} else {
+					badgen=true;
+				}
+		    if (sscanf(l,"HVP = (%f,%f)",&pphvp.x,&pphvp.y)) {
+		    	i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no hvp line %i\n",i);
+					badhvp=true;
+				}
+				if (Sstarts(l,"VVP = ")) {
+		      sscanf(l,"VVP = (%f,%f)",&ppvvp.x,&ppvvp.y);
+		      i++; l=lines.get(i);
+				} else {
+					fprintf(stderr,"no vvp line %i r%f y%f p%f\n",i,roll,yaw,pitch);
+					badvvp=true;
+				}
 			}
 			
 			// float corra=myabs(-V3d::normdot(gtright,ppright));
@@ -127,16 +144,20 @@ main(int argc,String *argv) {
 			float rightang=180*asin(rightdiff)/pi;
 
 			// Bad:
-			float focal=-500; // Just seems!
+			float focal=500; // Just seems!
 			V3d eye=V3d(320,240,-focal);
 			V3d gtrightfromhvp=V3d(gthvp.x,gthvp.y,0)-eye;
 			V3d pprightfromhvp=V3d(pphvp.x,pphvp.y,0)-eye;
 			V3d gtdownfromvvp=V3d(gtvvp.x,gtvvp.y,0)-eye;
 			V3d ppdownfromvvp=V3d(ppvvp.x,ppvvp.y,0)-eye;
 			float hvpcorr=V3d::normdot(gtrightfromhvp,pprightfromhvp);
+			if (badhvp)
+				hvpcorr=-1;
 			float vvpcorr=V3d::normdot(gtdownfromvvp,ppdownfromvvp);
+			if (badvvp)
+				vvpcorr=-1;
 
-			if (!bad) {
+			if (!badgen) {
 				if (corra<0 && corrb<0) {
 					fprintf(stderr,"  double negative correl r%i-y%i-p%i\n",(int)roll,(int)yaw,(int)pitch);
 			  } else if (corra<0 || corrb<0) {
@@ -161,7 +182,7 @@ main(int argc,String *argv) {
 			// if (altacc<0)
 				// altacc=1;
 
-			if (bad) {
+			if (badgen) {
 				acc=-2; altacc=-2;
 			}
 			
