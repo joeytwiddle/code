@@ -28,14 +28,23 @@
 #define WHITE_BITS      ON
 #define MORE_WHITE_BITS ON
 
-// For fast machines:
+//// Sparseness parameters tweak probabilities to create less on screen, and less movement at a particular time
+//
+/// Eg. to lessen change but keep the default density:
+// #define sparsenessLengthOn 0.5
+// #define sparsenessLengthOff 2
+// #define sparsenessMovementOn 0.5
+// #define sparsenessMovementOff 2
+// #define sparsenessSkipCols 1
+//
+/// Defaults for fast machines, 50% density:
 #define sparsenessLengthOn 1
 #define sparsenessLengthOff 1
 #define sparsenessMovementOn 1
 #define sparsenessMovementOff 1
 #define sparsenessSkipCols 1
 //
-// For slow machines (eg. 486): less faithful, but animation appears much clearer
+/// For slow machines (eg. 486): less faithful, but animation appears much clearer
 // #define sparsenessLengthOn 1
 // #define sparsenessLengthOff 1
 // #define sparsenessMovementOn 1
@@ -158,7 +167,7 @@ void setupProbabilities() {
 	newSlidingProcess          = max(2, averageLengthOfSlide );
 
 #ifdef MORE_WHITE_BITS
-	processDies  = max(2, LINES);
+	processDies  = max(2, averageLengthOfBlock);
 	boredProcessDies = max(2, averageLengthOfBlock);
 	// numProcesses = COLS / sparsenessSkipCols / 12;
 	numProcesses = COLS / 3 / 12;
@@ -246,18 +255,18 @@ void main() {
 		thematrix[x] = new mbit[LINES];
 	}
 
+	setupProbabilities();
+
 	move(0,0);
 	for (int x=0;x<COLS;x++) {
-		sliding[x] = true;
-		adding[x] = false;
+		sliding[x] = prob(averageLengthBetweenSlides);
+		adding[x] = prob(averageLengthBetweenBlocks);
 		for (int y=0;y<LINES;y++) {
 			thematrix[x][y] = ' ';
 			move(y,x);
 			addch(' ');
 		}
 	}
-
-	setupProbabilities();
 
 #ifdef BOTHER_CLOCKING
 	clock_t clocksPerFrame;
