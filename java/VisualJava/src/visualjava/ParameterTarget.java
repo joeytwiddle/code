@@ -8,6 +8,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 import org.neuralyte.common.swing.Moveability;
+import org.neuralyte.common.swing.DragAndDropManager;
 
 /**
  * @todo Consider how user might be able to pass null instead of a non-null Object.
@@ -29,12 +30,12 @@ public class ParameterTarget extends JPanel {
             // System.out.println("type = " + type);
             // component = new JTextField("" + VisualJavaStatics.getSimpleClassName(type));
             component = new DroppableJTextField("" + VisualJavaStatics.getSimpleClassName(type),type);
-            Moveability.canAcceptDroppedObject(component);
+            DragAndDropManager.canAcceptDroppedObject(component);
         } else {
             // component = new JButton("" + VisualJava.getSimpleClassName(type));
             // component = new JLabel("" + VisualJavaStatics.getSimpleClassName(type));
             component = new DroppableJLabel(VisualJavaStatics.getSimpleClassName(type),type);
-            Moveability.canAcceptDroppedObject(component);
+            DragAndDropManager.canAcceptDroppedObject(component);
         }
         add(component);
         // this.setDropTarget();

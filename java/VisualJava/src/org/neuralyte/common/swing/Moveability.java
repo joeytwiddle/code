@@ -31,7 +31,7 @@ public class Moveability {
 
 class MoveabilityListener extends MouseAdapter implements MouseMotionListener {
 
-    /** bring_to_front works fine except D+D manager does not catch DropTarget enter/exit events. :-( */
+    /** bring_to_front works fine except D+D manager does not catch DropTarget enter/exit events.  :-(  See BUGS in TODO.txt for explanation */
     public final static boolean bring_to_front = false;
 
     Component componentBeingDragged = null;
