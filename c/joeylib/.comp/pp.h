@@ -1,8 +1,6 @@
 #ifndef pp_H
   #define pp_H
 
-  #include <viewpnt.h>
-  #include <jbmp.h>
 
 // Perspective projection
 // Optimised (not fully)
