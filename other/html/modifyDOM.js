@@ -145,12 +145,31 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	// alert("imgElem = " + imgElem);
 	var handleElem = document.createElement("SPAN");
 	handleElem.id = foldId + "Handle";
+
+	// I think these are for /old/ version of Netscape:
+	if (handleElem.captureEvents) {
+		handleElem.captureEvents(Event.CLICK);
+		handleElem.captureEvents(Event.MOUSEOVER);
+		handleElem.captureEvents(Event.MOUSEOUT);
+	}
+	// handleElem.addEventListener("click",handleToggleFoldEvent,false);
+	// handleElem.attachEvent("click","javascript:toggleFoldEvent(\""+foldId+"\");");
+
 	// handleElem.setAttribute("onClick",'javascript:toggleFold(this);');
 	// handleElem.setAttribute("onclick",'javascript:toggleFold(document.getElementById(\"' + foldId+"Handle" + '\"));');
-	handleElem.setAttribute("onclick",'javascript:toggleFoldNamed(\"' + foldId + '\");');
-	handleElem.setAttribute("onmouseover",'javascript:rollOntoHandle(\"'+foldId+'\");');
-	handleElem.setAttribute("onmouseout",'javascript:rollOffHandle(\"'+foldId+'\");');
+
+	//// These standards worked fine for Mozilla and Konqueror, but not for IE:
+	// handleElem.setAttribute("onclick",'javascript:toggleFoldNamed(\"' + foldId + '\");');
+	// handleElem.setAttribute("onmouseover",'javascript:rollOntoHandle(\"'+foldId+'\");');
+	// handleElem.setAttribute("onmouseout",'javascript:rollOffHandle(\"'+foldId+'\");');
+
+	//// But IE can only attach a function (not a function call, with params):
+	handleElem.onclick=handleToggleFoldEvent;
+	handleElem.onmouseover=handleRollOntoEvent;
+	handleElem.onmouseout=handleRollOffEvent;
+
 	handleElem.style.cursor = "n-resize";
+
 	// var labelElem = elemToFold.previousSibling;
 	var labelElem = findPreviousTextNode(elemToFold);
 	// try { labelElem = elemToFold.previousSibling.previousSibling.previousSibling.firstChild;
@@ -207,7 +226,8 @@ function addFoldsToBlockQuotes() { // TODO: also add the automatic clear on focu
 	// var lastId = null;
 	// while (true) {
 	// var nodes = window.document.body.getElementsByTagName("BLOCKQUOTE");
-	var tagTypes = [ "ul", "blockquote" ];
+	// var tagTypes = [ "ul", "blockquote" ];
+	var tagTypes = new Array( "ul", "blockquote" );
 	addFoldsToPage(tagTypes,true);
 }
 
@@ -254,7 +274,23 @@ function toggleFold(node) {
 	toggleFoldNamed(name);
 }
 */
+
+/* These three wrappers were added for IE: */
+function handleToggleFoldEvent(evt) {
+	toggleFoldNamed(chopOffEndIfMatched(this.id,"Handle"));
+}
+function handleRollOntoEvent(evt) {
+	rollOntoHandle(chopOffEndIfMatched(this.id,"Handle"));
+}
+function handleRollOffEvent(evt) {
+	rollOffHandle(chopOffEndIfMatched(this.id,"Handle"));
+}
+// evt = (evt) ? evt : ( (event) ? event : null );
+// if (evt) {
+// }
+
 function toggleFoldNamed(name) {
+	// alert("Toggling fold named: \""+name+"\"");
 	var block = document.getElementById(name+"Block");
 	// alert("found block for name=\""+name+"\": "+block);
 	var img = document.getElementById(name+"Image");
@@ -274,9 +310,11 @@ function isFolded(block) {
 }
 function openFold(block) {
 	block.style.display = "";
+	// block.style.visibility = "visible";
 }
 function closeFold(block) {
 	block.style.display = "none";
+	// block.style.visibility = "hidden";
 }
 function mouseOverHandle(node) {
 	node.style.color="#ff8000";
