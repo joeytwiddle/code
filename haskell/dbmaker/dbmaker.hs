@@ -1,10 +1,10 @@
-type Field = (Type,String)
+type Property = (Type,String)
 
 data Type = BaseType String
-					| UserType String [Type] [Field]
+					| Obj String [Type] [Property]
 					deriving Eq
 
-eq (UserType s h fs) (UserType s2 h2 fs2) = True
+eq (Obj s h fs) (Obj s2 h2 fs2) = True
 eq (BaseType s) (BaseType s2) = True
 
 
@@ -20,15 +20,15 @@ date = BaseType "java.util.Date"
 
 userTypes = [ email, threadbit, address, eperson, gperson ]
 
-email = UserType "email.Email" [] [ (address,"from"), (address,"to"), (date,"date"), (string,"subject"), (string,"body") ]
+email = Obj "email.Email" [] [ (address,"from"), (address,"to"), (date,"date"), (string,"subject"), (string,"body") ]
 
-threadbit = UserType "email.ThreadBit" [] [ (email,"referredTo"), (email,"refersTo") ]
+threadbit = Obj "email.ThreadBit" [] [ (email,"referredTo"), (email,"refersTo") ]
 
-address = UserType "email.Address" [] [ (eperson,"person"), (string,"address") ]
+address = Obj "email.Address" [] [ (eperson,"person"), (string,"address") ]
 
-eperson = UserType "email.Person" [gperson] [ (string,"nickName") ]
+eperson = Obj "email.Person" [gperson] [ (string,"nickName") ]
 
-gperson = UserType "general.Person" [] [ (string,"firstName"), (string,"lastName"), (string,"middleName") ]
+gperson = Obj "general.Person" [] [ (string,"firstName"), (string,"lastName"), (string,"middleName") ]
 
 
 
@@ -46,12 +46,12 @@ showData t = do
 								putStrLn ""
 								putStrLn name
 								putStrLn ""
-								putStr "Fields: "
-								putStrLn ( displayList (map displayField (allFieldsIn t)) )
+								putStr "Propertys: "
+								putStrLn ( displayList (map displayProperty (allPropertysIn t)) )
 								putStrLn ""
 								putStr "Friends: "
 								putStrLn ( displayList (map displayFriend (objsContaining t)) )
-  where (UserType name inherits fields) = t
+  where (Obj name inherits propertys) = t
 
 
 
@@ -60,26 +60,26 @@ displayList = foldl inbet ""
 inbet "" b = b
 inbet a b = a ++ ", " ++ b
 
-displayField (UserType name i fs,fn) = name ++ " " ++ fn
-displayField (BaseType name,fn) = name ++ " " ++ fn
+displayProperty (Obj name i fs,fn) = name ++ " " ++ fn
+displayProperty (BaseType name,fn) = name ++ " " ++ fn
 
-displayFriend (userTypeName,fieldName) = "[" ++ userTypeName ++ "] " ++ fieldName ++ "()"
+displayFriend (userTypeName,propertyName) = "[" ++ userTypeName ++ "] " ++ propertyName ++ "()"
 
-allFieldsIn (UserType name inherits fields) = fields ++ otherfields
-	where otherfields = foldl (++) [] (map allFieldsIn inherits)
+allPropertysIn (Obj name inherits propertys) = propertys ++ otherpropertys
+	where otherpropertys = foldl (++) [] (map allPropertysIn inherits)
 
 objsContaining userType = checkObjs userType userTypes
 
 checkObjs :: Type -> [Type] -> [(String,String)]
 checkObjs _ [] = []
-checkObjs seekType (UserType name i fs : rest) =
-	(checkFields seekType name fs) ++ (checkObjs seekType rest)
+checkObjs seekType (Obj name i fs : rest) =
+	(checkPropertys seekType name fs) ++ (checkObjs seekType rest)
 
-checkFields _ _ [] = []
-checkFields seekType objName (f:fs) =
-	if (fieldType == seekType) then
-		(objName,fieldName) : rest
+checkPropertys _ _ [] = []
+checkPropertys seekType objName (f:fs) =
+	if (propertyType == seekType) then
+		(objName,propertyName) : rest
 	else
 		rest
-  where (fieldType,fieldName) = f
-        rest = checkFields seekType objName fs
+  where (propertyType,propertyName) = f
+        rest = checkPropertys seekType objName fs
