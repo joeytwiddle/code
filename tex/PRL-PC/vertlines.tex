@@ -269,10 +269,11 @@ f = \sqrt{ - \myvec{HVP}_x \myvec{VVP}_x - \myvec{HVP}_y \myvec{VVP}_y }
 % ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 ~.
 % \end{equation}
 
-It is worth noting that no solution exists for $f$ if $ ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 $.  This situation, where the angle between the two vanishing points on the image plane is acute, corresponds to a quadrilateral which cannot possibly be a rectangle in the scene.  If such a quadrilateral is encountered during processing, we could hypothesise that the document is in fact slanted on the text plane, or that the quadrilateral does not correspond to a document in the scene, and should be ignored.
+It is worth noting that if $ ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 $, then no solution exists for $f$.  This situation means that the angle between the origin and the two vanishing points on the image plane is acute, and any corresponding quadrilateral cannot possibly be a rectangle in the scene.  If such a quadrilateral is encountered during processing, we could hypothesise that the document is in fact slanted on the text plane, or that the quadrilateral does not actually correspond to a document in the scene, and should be ignored.
 
-Having obtained the focal length of the camera, we may now recover a fronto-parallel view of the document.  The interpolation takes place in world space rather than image space.
+Having obtained the focal length of the camera, we may now recover a fronto-parallel view of the document.  The mapping into the recovered image takes place in world space rather than image space.
 
+The knowledge of the image pixel values is projected as a grid onto the document plane.  The square pixels in the image project as quadrilaterals onto the document.  Bi-cubic interpolation between these point is arguably overkill.
 
 
 
