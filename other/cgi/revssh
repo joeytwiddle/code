@@ -4,17 +4,24 @@ echo "Content-type: text/html"
 echo
 
 . cgilib
-export JPATH=/home/joey/j
-. /home/joey/j/startj-simple
+# export JPATH=/home/joey/j
+# . /home/joey/j/startj-simple
 
-## You don't need the three lines above,
-## if you can get a good alternative for this line:
-OUTPUT=`getcgi "OUTPUT"`
-## (which doesn't convert from cgi properly anyway!)
+SESSID=`getcgi "sessid"`
+INIT=`getcgi "init"`
 
-if test "$OUTPUT"; then
-	echo "$OUTPUT" >> /tmp/revssh-client-output.txt
+if test "$INIT" = true; then
+
+	echo "" > /tmp/revssh-client-input-$SESSID.txt
+	echo "" > /tmp/revssh-client-output-$SESSID.txt
+	chmod ugo+w /tmp/revssh-client-input-$SESSID.txt
+	chmod ugo+r /tmp/revssh-client-output-$SESSID.txt
+	tail -f /tmp/revssh-client-input-$SESSID.txt
+
+else
+
+	OUTPUT=`getcgi "output"`
+
+	echo "$OUTPUT" >> /tmp/revssh-client-output-$SESSID.txt
+
 fi
-
-# cat /tmp/revssh-client-input.txt && rm -f /tmp/revssh-client-input.txt
-cat /tmp/revssh-client-input.txt && printf "" > /tmp/revssh-client-input.txt
