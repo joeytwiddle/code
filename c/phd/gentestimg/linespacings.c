@@ -84,7 +84,7 @@ float testASubSet(List<V2d> ps) { // returns error
 	// system("grep '^v' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > v.txt");
 	// system("grep '^w' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > w.txt");
 	// system("grep '^WSSR' gplans.txt | tail -1 | between ':' | before 'delta' | sed 's/ //g' > wssr.txt");
-	system("./dogplfitting.sh");
+	system("../gentestimg/dogplfitting.sh");
 	// system("cat wssr.txt");
 	float V=readfloatfromfile("v.txt");
 	float W=readfloatfromfile("w.txt");

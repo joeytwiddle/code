@@ -280,12 +280,14 @@ float fromto(float lambda,float from,float to) {
   return from+lambda*(to-from);
 }
 
-float myabs(float f) {
-  if (f<0)
-    return -f;
-  else
-  return f;
-}
+#define myabs(x) ( (x) < 0 ? -(x) : (x) )
+
+// float myabs(float f) {
+  // if (f<0)
+    // return -f;
+  // else
+  // return f;
+// }
 
 float floatabs(float f) {
   return myabs(f);
