@@ -638,7 +638,7 @@ public:
 
 		V2d vvp;
 
-		if (!useoldspacingsmethod) {
+		// if (!useoldspacingsmethod) {
 						
 		  // New vvp estimation from spacings
 	  	
@@ -651,7 +651,7 @@ public:
 
 	  	vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,true);
 
-		} else {
+		// } else {
 
       // Now correlate line spacings along the central line
       // First, project all centres onto this line
@@ -702,7 +702,9 @@ public:
           csspacing.crossesy() :
           cslength.crossesy() );
       printf("VP is %f along baseline\n",vpd);
-      vvp=baseline.a+vvpdir*vpd;
+      // vvp=baseline.a+vvpdir*vpd;
+      V2d oldvvp=baseline.a+vvpdir*vpd;
+			printf("Old method got VVP = %s\n",oldvvp.toString());
       if (doinfo) {
         drawCorrelator2dInColour(csspacing).writefile("spacings.bmp");
         drawCorrelator2dInColour(cslength).writefile("lengths.bmp");
@@ -712,7 +714,9 @@ public:
         // info.line(right,vvp,myRGB::cyan);
       }
  
-		}
+		// }
+	
+		printf("New method got VVP = %s\n",vvp.toString());
 		
     return vvp;
   }

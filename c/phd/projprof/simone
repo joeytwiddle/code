@@ -2,11 +2,11 @@ IFILE=$1
 roll=$2
 yaw=$3
 pitch=$4
-PARAMS="-centralise -roll $roll -yaw $yaw -pitch $pitch"
 OFILE="tmp.bmp"
 INVFILE="tmp-inv.bmp"
-echo ../gentestimg/simgen -overlay $PARAMS -image $IFILE $OFILE -size 0.7
-../gentestimg/simgen -yoff 5 -overlay $PARAMS -image $IFILE $OFILE -size 0.7 > genres.txt
+PARAMS="-yoff 5 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
+echo ../gentestimg/simgen $PARAMS 
+../gentestimg/simgen $PARAMS > genres.txt
 # gzip "$OFILE"
 echo invert -i "$OFILE" -o "$INVFILE"
 invert -i "$OFILE" -o "$INVFILE"
