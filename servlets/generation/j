@@ -1,0 +1,1 @@
+$JPATH/tools/j -classpath $CLASSPATH:`dirname $PWD` *.java */*.java

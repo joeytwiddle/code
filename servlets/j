@@ -1,0 +1,2 @@
+jikes *.java dbmaker/*.java filfirin/*.java jlib/*.java jlib/multiui/*.java jlib/db/*.java appserver/*.java
+echo "OK"
