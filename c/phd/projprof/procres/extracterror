@@ -12,6 +12,7 @@ if test -f "$IN"; then
 		if test "$2" = "-data"; then
 			grep -v "^Opening " | sed "s/nan/0.0/g" > $OUT
 		else
+			cat > /dev/null
 			echo "Provide second argument -data to write to file"
 		fi
 else

@@ -23,11 +23,11 @@ set term post eps "Times-Roman,18"
 
 set ylabel "HVP accuracy" "Times-Roman,28"
 set output "$HEAD-hvpchange.eps"
-plot "$HEAD-hvpchange.data"
+plot [] [-3:0] "$HEAD-hvpchange.data"
 
 set ylabel "VVP accuracy" "Times-Roman,28"
 set output "$HEAD-vvpchange.eps"
-plot "$HEAD-vvpchange.data"
+plot [] [-3:0] "$HEAD-vvpchange.data"
 
 !
 
