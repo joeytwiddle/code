@@ -27,8 +27,11 @@ MODULES=`
 	# decodeslashn
 `
 
+echo "$MODULES"
+
 testwith () {
 	(
+		echo "#define joeylib_H"
 		echo "$1" |
 		while read MOD; do
 			if test $MOD; then
@@ -36,8 +39,10 @@ testwith () {
 			fi
 		done
 		echo "#include \"$MODULE.c\""
+		echo "void main() { }"
 	) > test.c
-	g++ $GCCARGS -w -I "$JPATH/code/c/joeylib/.comp/" test.c > gcc.out 2>&1
+	INCLFILES=`echo "$1" | while read MOD; do if test -f "$MOD.o"; then echo "$MOD.o"; fi done`
+	g++ $GCCARGS -o "$MODULE.o" -w -I "$JPATH/code/c/joeylib/.comp/" test.c $INCLFILES > gcc.out 2>&1
 }
 
 ORIGMODULES="$MODULES"
@@ -45,12 +50,15 @@ echo
 cursecyan
 echo "$MODULE:"
 cursegrey
-echo "Requires at most: "`echo "$MODULES" | tr "\n" " "`
+echo "Requires at most: $MODULES" | tr "\n" " "; echo
 testwith "$MODULES"
 if test "$?" = "0"; then
 	echo "Compiled OK."
 else
 	echo "Error compiling with everything!"
+	mv gcc.out gcc-all.out
+	more gcc-all.out
+	exit 1
 fi
 echo
 
@@ -113,5 +121,3 @@ if test -d stubs; then
 fi
 
 testwith "$MODULES"
-
-mv test.o $MODULE.o
