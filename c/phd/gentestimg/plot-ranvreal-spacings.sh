@@ -74,10 +74,13 @@ set output "gplfit.ps"
 # set output "origdata.ps"
 # plot "whatever.dat" w p 6,f(x), "$REALDATA" w p 7,f(x)
 # plot "$REALDATA" w p 7, f(x), g(x)
-plot "$REALDATA" w p 7, f(x) w l 8 0, g(x) w l 1 0
+# plot "$REALDATA" w p 7, f(x) w l 8 0, g(x) w l 1 0
+plot "$REALDATA" w p 7, f(x) w l 8 0, f(x) w l 1 0
 
 !
 
-sedreplace "/LT7 { .* } def" "/LT7 { PL [] 0 0 0.7 DL } def" gplfit.ps
-sedreplace "/LT0 { .* } def" "/LT0 { PL [8 dl 6 dl] 0.8 0 0 DL } def" gplfit.ps
+# sedreplace "/LT7 { .* } def" "/LT7 { PL [] 0 0 0.7 DL } def" gplfit.ps
+sedreplace "/LT7 { .* } def" "/LT7 { PL [] 0 0 0.6 DL } def" gplfit.ps
+# sedreplace "/LT0 { .* } def" "/LT0 { PL [8 dl 6 dl] 0.8 0 0 DL } def" gplfit.ps
+sedreplace "/LT0 { .* } def" "/LT0 { PL [8 dl 6 dl] 0 0.6 0 DL } def" gplfit.ps
 

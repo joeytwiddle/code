@@ -24,9 +24,9 @@ $DOC tmp.bmp
 -gnuplot
 -showexp
 -rnd $RND
+-noise 0.1
 $@";
 # -imgnoise 0.0
--noise 0.2
 # -focal 0.1
 
 SIMMODS="
@@ -57,14 +57,14 @@ for Y in "-noransac" ""; do
 	# echo "set title \"test\"" > title.dogpl
 	rm -f title.dogpl
 
-	echo `curseyellow`$SIMCOM $X $Y -focal $F`cursegrey`
+	echo `curseyellow`$SIMCOM $X $Y -focal $F`cursenorm`
 	$SIMCOM $X $Y -focal $F | tee simgen.out | grep RANSAC
 
 	mv gplfit.ps gplfit-$F$X$Y-sim-nomod.eps
 	mv gplsolve.txt gplsolve-$F$X$Y-sim-nomod.txt
 	mv gpldata.txt gpldata-$F$X$Y-sim-nomod.dat
 
-	echo `curseyellow`$SIMCOM $SIMMODS $X $Y -focal $F`cursegrey`
+	echo `curseyellow`$SIMCOM $SIMMODS $X $Y -focal $F`cursenorm`
 	$SIMCOM $SIMMODS $X $Y -focal $F | tee simgen.out | grep RANSAC
 
 	mv gplfit.ps gplfit-$F$X$Y-sim.eps
@@ -88,16 +88,16 @@ for Y in "-noransac" ""; do
 
 done
 if test "$X" = "-spacings"; then
-echo ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat
 cursegreen
-./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+echo ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat
 cursenorm
+./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
 mv gplfit.ps gplfit-nomodvreal-$F$X.eps
 else
 # ./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
 cursegreen
 echo ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat
-cursenorn
+cursenorm
 ./plot-ranvreal$X.sh gpldata-$F$X-sim-nomod.dat gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
 mv gplfit.ps gplfit-ranvreal-$F$X.eps
 fi

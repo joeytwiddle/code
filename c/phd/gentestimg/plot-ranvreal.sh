@@ -86,5 +86,6 @@ plot "$PLOTDATA" w p 0 7, f(x) w l 7 0, g(x) w l 1 0
 # sedreplace "| /LT3 { PL [1 dl 1.5 dl] 1 0 1 DL } def" "| /LT3 { PL [1 dl 1.5 dl] 0 0 1 DL } def" gplfit.ps
 # sedreplace "^LT6$" "LT0" gplfit.ps
 # sedreplace "/LT6 { PL \[2 dl 2 dl 2 dl 4 dl\] 0 0 0 DL } def" "/LT6 { PL [] 0 0.5 0 DL } def" gplfit.ps
-sedreplace "/LT6 { PL \[2 dl 2 dl 2 dl 4 dl\] 0 0 0 DL } def" "/LT6 { PL [8 dl 6 dl] 0 0.5 0 DL } def" gplfit.ps
+sedreplace "/LT6 { .* } def" "/LT6 { PL [8 dl 6 dl] 0 0.6 0 DL } def" gplfit.ps
+sedreplace "/LT0 { .* } def" "/LT0 { PL [] 0 0 0.6 DL } def" gplfit.ps
 
