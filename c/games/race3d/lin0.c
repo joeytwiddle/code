@@ -5,7 +5,7 @@
 // #define KEEP_TO_FPS
 
 #define LEAVE_EVENTS_ALONE
-#define DO_FULLSCREEN
+// #define DO_FULLSCREEN
 #define DOS
 #include "../../gfx/sdl/stripped-useful.c"
 // #undef DOS
