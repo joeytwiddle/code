@@ -12,8 +12,12 @@ import java.beans.PropertyChangeEvent;
 public class DetachableJMenu extends JMenu {
 
     public DetachableJMenu(String name) {
+        this(name,true);
+    }
+    public DetachableJMenu(String name, boolean detachable) {
         super(name,false);
-        init();
+        if (detachable)
+            init();
     }
 
     void init() {
@@ -79,6 +83,9 @@ public class DetachableJMenu extends JMenu {
                 // );
                     // clonedMenu.setSelected(true);
                     // clonedMenu.updateUI();
+                    /** @todo Frame should clean stuff up when it is closed.
+                     *  For example, all the stolen ActionListeners in the clones!
+                    **/
                 }
             }
         );
@@ -100,6 +107,9 @@ public class DetachableJMenu extends JMenu {
                 }
                 clone = new JMenuItem(item.getText());
                 /*
+                clone = item;
+                */
+                /*
                 clone = new JMenuItem(item.getText()) {
                     public void doClick(int pressTime) {
                         newMenu.show(this,(int)this.getWidth(),0);
@@ -119,45 +129,48 @@ public class DetachableJMenu extends JMenu {
                             // newMenu.setVisible(!newMenu.isVisible());
                             // newMenu.show(newMenu,0,0);
                             Component src = (Component)e.getSource();
-                            /*
-                            if (src == last) {
-                                newMenu.setVisible(false);
-                                last = null;
-                            } else {
-                                newMenu.show(src,(int)src.getWidth(),0);
-                                last = src;
-                            }
-                            */
                             newMenu.show(src,(int)src.getWidth(),0);
                         }
                     }
                 );
                 /*
+                final AbstractButton finalClone = clone;
                 clone.addMouseListener(
                     new MouseAdapter() {
                         Component last = null;
                         public void mouseClicked(MouseEvent e) {
+                            System.out.println("Event caught.");
                             Component src = (Component)e.getSource();
                             // newMenu.show(src,10,10);
                             // newMenu.show(src,(int)e.getPoint().getX()-6,(int)e.getPoint().getY()-6);
-                            if (src == last) {
-                                newMenu.setVisible(false);
-                                last = null;
+                            // if (src == last) {
+                            // newMenu.setVisible(false);
+                            // last = null;
+                            // } else {
+                            // newMenu.show(src,(int)src.getWidth(),0);
+                            // last = src;
+                            // }
+                            boolean alreadyOpen = ((JMenu)finalClone).getPopupMenu().isVisible();
+                            finalClone.setSelected(!alreadyOpen);
+                            // ((JMenu)finalClone).setPopupMenuVisible(!alreadyOpen);
+                            JPopupMenu popup = ((JMenu)finalClone).getPopupMenu();
+                            if (alreadyOpen) {
+                                popup.setVisible(false);
                             } else {
-                                newMenu.show(src,(int)src.getWidth(),0);
-                                last = src;
+                                popup.show(e.getComponent(),e.getComponent().getWidth(),0);
                             }
                         }
                     }
                 );
                 */
               } else {
-                JMenu newMenu = new JMenu(item.getText());
-                for (int i=0;i<itemMenu.getItemCount();i++) {
-                    JMenuItem subItem = itemMenu.getItem(i);
-                    newMenu.add(cloneItem(subItem,false));
-                }
-                clone = newMenu;
+                // JMenu newMenu = new JMenu(item.getText());
+                // for (int i=0;i<itemMenu.getItemCount();i++) {
+                    // JMenuItem subItem = itemMenu.getItem(i);
+                    // newMenu.add(cloneItem(subItem,false));
+                // }
+                // clone = newMenu;
+                clone = item;
             }
         } else {
             // if (menusAsButtons) {

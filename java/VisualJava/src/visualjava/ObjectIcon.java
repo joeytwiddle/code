@@ -81,10 +81,10 @@ public class ObjectIcon extends JLabel {
         }
         popup.add(properties);
 
-        SplittingJMenu methods = new SplittingJMenu("Methods");
-        addNonStaticMethodsToSplittingJMenu(obj.getClass(),methods,true);
-        // addNonStaticMethodsToSplittingJMenu(methods);
-        popup.add(methods);
+        // SplittingJMenu methods = new SplittingJMenu("Methods");
+        // addNonStaticMethodsToSplittingJMenu(obj.getClass(),methods,true);
+        // popup.add(methods);
+        addAllNonStaticMethodsToMainMenu(obj.getClass(),popup);
 
 		//Add listener to components that can bring up popup menus.
 		// MouseListener popupListener = new PopupListener();
@@ -93,6 +93,14 @@ public class ObjectIcon extends JLabel {
 
 	}
 
+    private void addAllNonStaticMethodsToMainMenu(Class c, JPopupMenu mainMenu) {
+        while (c != null) {
+            SplittingJMenu menu = new SplittingJMenu(c.getName());
+            addNonStaticMethodsToSplittingJMenu(c,menu,false);
+            mainMenu.add(menu);
+            c = c.getSuperclass();
+        }
+    }
     private void addNonStaticMethodsToSplittingJMenu(Class c, SplittingJMenu methods, boolean andSuperClasses) {
         try {
             if (andSuperClasses) {

@@ -19,8 +19,8 @@ public class SplittingJMenu extends DetachableJMenu {
 	private Vector items = new Vector();
 	private boolean doneSorting = false;
 
-	public static final int maxItems=20;
-	public static final int preferedSplits=14;  // Actually prefered+1
+	public static final int maxItems = 40;
+	public static final int preferedSplits = 30;  // Actually prefered+1
 
     public SplittingJMenu(String s) {
         super(s);

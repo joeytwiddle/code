@@ -22,25 +22,25 @@
           <element signature="method#MethodFrame#0;class#MethodFrame" expanded="false" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="69" column="29" vertical-scroll-proportion="0.88918203" horizontal-scroll-proportion="0.3548951" />
       <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/LazyJMenu.java" line="43" column="51" vertical-scroll-proportion="0.1530343" horizontal-scroll-proportion="0.6241259">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="23" column="29" vertical-scroll-proportion="0.65171504" horizontal-scroll-proportion="0.3548951" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="53" column="9" vertical-scroll-proportion="0.5540897" horizontal-scroll-proportion="0.11013986" />
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="136" column="8" vertical-scroll-proportion="0.6306069" horizontal-scroll-proportion="0.0979021">
         <folding>
           <element signature="method#addFieldToMenu#0;class#VisualJavaGUIStatics" expanded="false" />
           <element signature="method#addConstructorToMenu#0;class#VisualJavaGUIStatics" expanded="false" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="63" column="22" vertical-scroll-proportion="0.5488127" horizontal-scroll-proportion="0.26923078">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="85" column="10" vertical-scroll-proportion="0.41952506" horizontal-scroll-proportion="0.12237762" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="17" column="25" vertical-scroll-proportion="0.44854882" horizontal-scroll-proportion="0.30594406">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
       </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="21" column="37" vertical-scroll-proportion="0.58311343" horizontal-scroll-proportion="0.4527972" />
     </history>
     <open-files>
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="97" column="8" vertical-scroll-proportion="3.0527704" horizontal-scroll-proportion="0.0979021">
@@ -56,9 +56,9 @@
         </folding>
       </source-position-entry>
       <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="23" column="29" vertical-scroll-proportion="0.65171504" horizontal-scroll-proportion="0.3548951" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="69" column="29" vertical-scroll-proportion="0.88918203" horizontal-scroll-proportion="0.3548951" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="53" column="9" vertical-scroll-proportion="0.5540897" horizontal-scroll-proportion="0.11013986" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="63" column="22" vertical-scroll-proportion="0.5488127" horizontal-scroll-proportion="0.26923078" selected="true">
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="85" column="10" vertical-scroll-proportion="0.41952506" horizontal-scroll-proportion="0.12237762" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="21" column="37" vertical-scroll-proportion="0.58311343" horizontal-scroll-proportion="0.4527972" selected="true" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="17" column="25" vertical-scroll-proportion="0.44854882" horizontal-scroll-proportion="0.30594406">
         <folding>
           <element signature="imports" expanded="true" />
         </folding>
