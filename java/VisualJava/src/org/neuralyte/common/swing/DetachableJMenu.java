@@ -1,9 +1,10 @@
 package org.neuralyte.common.swing;
 
 import javax.swing.*;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
+import java.awt.event.*;
 import java.awt.*;
+import java.beans.PropertyChangeListener;
+import java.beans.PropertyChangeEvent;
 
 /** joey Nov 2, 2004 7:35:11 PM */
 public class DetachableJMenu extends JMenu {
@@ -19,19 +20,28 @@ public class DetachableJMenu extends JMenu {
         item.addActionListener(
             new ActionListener() {
                 public void actionPerformed(ActionEvent e) {
-                    JFrame frame = new JFrame();
-                    // JPopupMenu clonedMenu = new JPopupMenu(getText());
+                    final JFrame frame = new JFrame();
                     frame.getContentPane().setLayout(new BoxLayout(frame.getContentPane(),BoxLayout.Y_AXIS));
                     // frame.getContentPane().add(detachableJMenu);
                     // Note i=1 here is intended to avoid cloning the "detach" button which was just clicked
+                    // for (int i=1;i<getItemCount();i++) {
+                        // frame.getContentPane().add(cloneItem(getItem(i),true));
+                    final JPopupMenu clonedMenu = new JPopupMenu(getText());
                     for (int i=1;i<getItemCount();i++) {
-                        frame.getContentPane().add(cloneItem(getItem(i),true));
-                        // clonedMenu.add(cloneItem(getItem(i)));
+                        clonedMenu.add(cloneItem(getItem(i),true));
                     }
-                    // frame.getContentPane().add(clonedMenu);
-                    frame.setSize(frame.getPreferredSize());
+                    frame.getContentPane().add(clonedMenu);
+                    frame.setSize(clonedMenu.getPreferredSize());
                     frame.setVisible(true);
-                    // clonedMenu.setVisible(true);
+                    clonedMenu.setLocation(frame.getContentPane().getLocationOnScreen());
+                    clonedMenu.setVisible(true);
+                    frame.addComponentListener(
+                        new ComponentAdapter() {
+                            public void componentMoved(ComponentEvent e) {
+                                clonedMenu.setLocation(frame.getContentPane().getLocationOnScreen());
+                            }
+                        }
+                    );
                     // clonedMenu.setSelected(true);
                     // clonedMenu.updateUI();
                 }
@@ -52,7 +62,7 @@ public class DetachableJMenu extends JMenu {
                     JMenuItem subItem = itemMenu.getItem(i);
                     newMenu.add(cloneItem(subItem,false));
                 }
-                clone = new JButton(item.getText());
+                clone = new JMenuItem(item.getText());
                 clone.addActionListener(
                     new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
@@ -71,11 +81,11 @@ public class DetachableJMenu extends JMenu {
                 clone = newMenu;
             }
         } else {
-            if (menusAsButtons) {
-                clone = new JButton(item.getText());
-            } else {
+            // if (menusAsButtons) {
+                // clone = new JButton(item.getText());
+            // } else {
                 clone = new JMenuItem(item.getText());
-            }
+            // }
         }
         if (item.getIcon() != null) {
             clone.setIcon(item.getIcon());
