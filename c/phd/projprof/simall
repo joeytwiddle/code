@@ -27,7 +27,7 @@ PPSCANMETHODS="hier" # full"
 PPMEASURES="deriv"
 
 # VVPMETHODS="spacings simple margins"
-VVPMETHODS="spacings simple margins"
+VVPMETHODS="spacings margins"
 
 # NOISES=`seq -w 0 03 50`
 # NOISES=`seq -w 51 03 60`
