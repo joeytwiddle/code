@@ -12,8 +12,9 @@
  *  Putty compatability?
  *  Turn it into a terminal locker.  Proposed method (security audit please!):
  *    Block SIGINT etc calls (for CTRL+C/Z), on keypress ask for password, check with "su - $USER /bin/true" before allowing exit.
- *  Timing: if machine does not approach our optimal FPS, then it will have its own based on how many columns are sliding.  This should be kept constant!  ATM it will vary wrt that #.
- *  mvaddch(y,x,'.'); ?
+ *  Timing: if machine does not approach our optimal FPS, then it will have its own based on how many columns are sliding.  This should be kept constant!  ATM it will vary wrt that #.  Probably better to cap max (and min) sliding columns.
+ *  Static processes shouldn't die so quickly.
+ *  Writing/clearing processes should be in proportion to desired density!
 **/
 
 #include <time.h>
@@ -45,18 +46,25 @@
 // #define sparsenessMovementOff 1
 // #define sparsenessSkipCols 1
 
-/// For slow machines (eg. 486): less faithful, but animation appears much clearer
-// #define sparsenessLengthOn 2
-// #define sparsenessLengthOff 2
-// #define sparsenessMovementOn 2
-// #define sparsenessMovementOff 2
-// #define sparsenessSkipCols 3
+// Thick with data, looks like XMatrix defaults (more like film?):
+// #define sparsenessLengthOn 1
+// #define sparsenessLengthOff 0.25
+// #define sparsenessMovementOn 0.5
+// #define sparsenessMovementOff 0.5
+// #define sparsenessSkipCols 1
 
-/// Another config for slow machines:
+/// For slow machines (eg. 486): just reduce movement
 // #define sparsenessLengthOn 1
 // #define sparsenessLengthOff 1
 // #define sparsenessMovementOn 1
 // #define sparsenessMovementOff 3
+// #define sparsenessSkipCols 3
+
+/// Another config for slow machines: reduce matrix in every way!  less faithful, but animation appears clearer
+// #define sparsenessLengthOn 2
+// #define sparsenessLengthOff 2
+// #define sparsenessMovementOn 2
+// #define sparsenessMovementOff 2
 // #define sparsenessSkipCols 3
 
 /// To reduce state changes but keep the default density:
@@ -69,12 +77,6 @@
 
 
 /******** Curses functions ********/
-
-void homeAndWrefresh() {
-	move(0,0);
-	wrefresh(stdscr);
-}
-#define wrefresh(x) homeAndWrefresh()
 
 void cls() {
 	for (int x=0;x<COLS;x++) {
@@ -194,8 +196,8 @@ void setupEverything() {
 	newSlidingProcess          = max(2, averageLengthOfSlide );
 
 #ifdef PROCESSING_WHITE_BITS
-	processDies  = max(2, averageLengthOfBlock );
-	boredProcessDies = max(2, averageLengthOfBlock );
+	processDies  = max(2, averageLengthOfBlock*2 );
+	boredProcessDies = max(2, averageLengthOfBlock*2 );
 	numProcesses = max(1, (int)sqrt(COLS * LINES / sparsenessSkipCols) / 16 );
 #endif
 
@@ -388,6 +390,7 @@ void main() {
 		lastframe = thisframe;
 #endif
 
+		move(0,0);
 		wrefresh(stdscr);
 
 	}
