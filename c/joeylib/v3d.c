@@ -275,9 +275,9 @@ public:
        a=invcos(1-A/(2*pi)) */
     float t,a,b;
     // V3d v;
-    t=4*myrnd()*pi;
-    a=acos(1-t/2/pi);
-    b=myrnd()*2*pi;
+    t=4.0*myrnd()*pi;
+    a=acos(1.0-t/2.0/pi);
+    b=myrnd()*2.0*pi;
     // printf("\nAngles %f %f :",a,b);
     V3d v=V3d::oldrotate(V3d(0,1,0),V3d(1,0,0),a);
     // printf("First rotation"); v.print();

@@ -10,6 +10,12 @@ ascii = ['\000'..'\127'] -- that is decimal, not octal!
 wretchA = ['0'..'9'] ++ ['.']
 wretchB = ['0'..'9'] ++ ['a'..'z'] ++ ['A'..'Z'] ++ ['.','-']
 
+h2o = baseconv hex octal
+
+-- Convert string s from base a to base b
+baseconv :: Base -> Base -> String -> String
+baseconv basea baseb s = strbase baseb (numbase basea s)
+
 -- Convert from integer to string in given base
 strbase :: Base -> Integer -> String
 strbase base 0 = []
@@ -24,10 +30,6 @@ numbase base (d:ds) = weight*(order^column) + numbase base ds
   where order  = toInteger(length base)
         column = toInteger(length ds)
         weight = toInteger(seek d base)
-
--- Convert string s from base a to base b
-baseconv :: String -> Base -> Base -> String
-baseconv s basea baseb = strbase baseb (numbase basea s)
 
 -- Finds index number of item x in list y
 seek :: Eq a => a -> [a] -> Int
