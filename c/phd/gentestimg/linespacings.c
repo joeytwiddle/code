@@ -158,7 +158,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	baseline.b=baseline.b.rotateabout(-angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
 
 	// Maybe only useful in simall not test:
-	if (needsSorting) {
+	if (needsSorting && usingspacings) {
 		endpoints.reverse();
 	}
 
@@ -176,7 +176,8 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	} else {
 
 		for (int i=0;i<endpoints.len;i++) {
-			ps.add(V2d(i,(float)imgheight/2.0-endpoints.get(i).y));
+			float mult = ( needsSorting ? -1.0 : 1.0 );
+			ps.add(mult*V2d(i,(float)imgheight/2.0-endpoints.get(i).y));
 			// fprintf(dataout,"%i %f\n",i,(float)imgheight/2.0-endpoints.get(i).y);
 		}
 
