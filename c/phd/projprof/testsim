@@ -1,6 +1,6 @@
 echo "./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 $*"
-			./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 $*
-			# ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -usetwolines $*
+			# ./pp -dolowresscan -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -quadonly $*
+			./pp -dolowresscan -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 -usetwolines -quadonly $*
 			# ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -lowres 40 -domiddlescan -medres 80 -res 180 -deriv -oth 12 -lowsmooth 2 -adapt 0.01 $*
 			# ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -lowres 40 -domiddlescan -medres 80 -res 180 -deriv -oth 12 -lowsmooth 2 -adapt 0.01 $*
 			# ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 2 -adapt 0.05 $*
@@ -13,3 +13,4 @@ echo "./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -ot
 # ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -adapt 0.3 -square -oth 12 $*
 # pp -recwid 200 -maxpixels 2000 -spacings -gamma 0.0 -usetwolines -res 120 -lowres 30 -adapt 0.03 -square -oth 12 $*
 
+rm -f fit.log

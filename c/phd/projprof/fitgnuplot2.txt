@@ -2,8 +2,14 @@
 v=-20
 w=0.00001
 
+# y(x)=u(1+xv)/(1+xw)
+# d(x) = y(x+1) - y(x)
+#      = u(1+(x+1)v)/(1+(x+1)w) - u(1+xv)/(1+xw)
+
+#      ~ u(1+(x+1)v-(1+xv))/(1+xw)
+#      = uv/(1+xw)
 # This is an estimate of the real eqn, but more likely to converge because less complicated!
-# x=(u-y)/(w*y-u*v)
+# x(y)=(u-y)/(w*y-u*v)
 # f(x)=u*v/(1+x*w)
 # it gives rubbish results
 # but good as a more stable initial fit

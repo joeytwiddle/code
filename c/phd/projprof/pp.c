@@ -52,6 +52,7 @@ int LineWidth=2;
 // int correlator=LineSpacing;
 int correlator=LineWidth;
 bool useoldspacingsmethod;
+bool usetwolines;
 
 RGBmp info;
 
@@ -165,7 +166,7 @@ public:
   int scale;
   Line2d baseline;
 
-	ProjectionProfiler() { }
+  ProjectionProfiler() { }
 
   ProjectionProfiler(int c,int p,Map2d<bool> b,bool wpps,bool wbpp,bool doi) {
     res=c;
@@ -205,6 +206,7 @@ public:
     #ifdef FIXPPRES
 //      #ifdef PROPORTIONAL
         ppres=scale*2;
+	ppres=scale;
 //      #else
 //        ppres=scale;
 //      #endif
@@ -235,7 +237,7 @@ public:
           // so that the one at (0,0) is resolvable!
           V2d realpos=infcircletoplane(pos+V2d(0.0000001,0.0000001));
           // Must lie at some distance (PP boundary not accurate near or inside image)
-          if (realpos.mag()>scale*0.1) { // 1.5) {
+          if (realpos.mag()>scale*0.4) { // 0.1 // 1.5) {
             realpos=realpos+V2d(hw,hh);
   //          printf("Plane=%s\n",realpos.toString());
             VP *vp=new VP(realpos,ppres,scale,imgcen);
@@ -645,7 +647,13 @@ public:
     	}
 
 		V2d vvp;
-
+  
+  if (usetwolines) {
+    printf("Intersecting two best lines to get VVP.\n");
+    vvp=summarybaseline.intersect(summarysecondline);
+    printf("%s x %s = %s\n",summarybaseline.toString(),summarysecondline.toString(),vvp.toString());
+    return vvp;
+  }
 		// if (!useoldspacingsmethod) {
 						
 		  // New vvp estimation from spacings
@@ -735,7 +743,8 @@ void main(int argc,String *argv) {
   ArgParser a=ArgParser(argc,argv);
   bool recoverquad=true;
   int cirres=a.intafter("-res","resolution of final circle",120);
-  bool domiddlescan=a.argexists("-domiddlescan","do middle scan (you get two anyway)");
+  bool dolowresscan=a.argexists("-dolowresscan","do an initial low res scan");
+  bool domiddlescan=a.argexists("-domiddlescan","do a middle scan");
   int medcirres=a.intafter("-medres","resolution of initial circle",60);
   int lowcirres=a.intafter("-lowres","resolution of initial circle",30);
 	float smoothlowres=a.floatafter("-lowsmooth","smooth lowres before derivatives",1);
@@ -751,7 +760,7 @@ void main(int argc,String *argv) {
   bool writebestpp=!a.argexists("-dontwritebestpp","don't write the best PP");
   bool doinfo=true; // Needed for summaries!  a.argexists("-doinfo","draw info image");
   bool usebaselineonly=!a.argexists("-usetwolines","use two best correlated lines instead of just baseline");
-  bool usetwolines=!usebaselineonly;
+  usetwolines=!usebaselineonly;
   float gamma=a.floatafter("-gamma","take original image this far to white before summary",0.4);
   correlator=( a.argexists("-spacings","use line spacing not width")
     ? LineSpacing
@@ -799,10 +808,11 @@ void main(int argc,String *argv) {
    */
 
   ProjectionProfiler pplowres;
-  Map2d<float> lowresmap;
   Map2d<bool> *lowresthresh;
 
+  if (dolowresscan) {
 	// First scan
+  Map2d<float> lowresmap;
 	pplowres=ProjectionProfiler(lowcirres,ppres,binimg,writepps,writebestpp,doinfo);
   pplowres.setup();
   pplowres.calculate();
@@ -915,10 +925,14 @@ void main(int argc,String *argv) {
     lowresthresh->invert();
     lowresthresh->writefile("lowres2thresh1.bmp");
 	}
+  }
 
 	ProjectionProfiler pp=ProjectionProfiler(cirres,ppres,binimg,writepps,writebestpp,doinfo);
-  pp.setup(lowresthresh);
-  // pp.setup();
+  if (dolowresscan) {
+	  pp.setup(lowresthresh);
+  } else {
+    pp.setup();
+  }
   // pp.clipsetupby(lowresthresh);
   pp.calculate();
   V2d hvp=pp.getvp();
@@ -947,9 +961,6 @@ void main(int argc,String *argv) {
     // }
     // vvp=newvvp;
   } else {
-    printf("Intersecting two best lines to get VVP.\n");
-    vvp=summarybaseline.intersect(summarysecondline);
-    printf("%s x %s = %s\n",summarybaseline.toString(),summarysecondline.toString(),vvp.toString());
   }
   // printf("    VVP estimate: %s\n",vvp.toString());
 	printf("VVP = %s\n",vvp.toString());
@@ -1109,15 +1120,17 @@ void main(int argc,String *argv) {
 		// printf("pitch = %f\n",V3d::angle(DOWN,-V3d::i));
 		// printf("yaw = %f\n",V3d::angle(RIGHT,-V3d::j));
 
-    if ( V2d::dist(tl,tr)/V2d::dist(bl,br) > 6.0 ||
-         V2d::dist(bl,br)/V2d::dist(tl,tr) > 6.0 ) {
+    // if ( V2d::dist(tl,tr)/V2d::dist(bl,br) > 6.0 || V2d::dist(bl,br)/V2d::dist(tl,tr) > 6.0 ) {
+    if ( aspect>6.0 || aspect<1.0/6.0 ) {
       printf("Aspect ratio %f (%ix%i) too much.  Skipping recovery.\n",V2d::dist(bl,br)/V2d::dist(tl,tr),V2d::dist(bl,br),V2d::dist(tl,tr));
     } else {
       int size=max(V2d::dist(tl,tr),V2d::dist(bl,br))*4;
       if (size>recwid)
         size=recwid;
-      if (size*size*aspect>recwid*recwid)
+      if (size*size*aspect>recwid*recwid) {
         size=recwid/aspect;
+	printf("MODIFIED size because too large - probably bad!\n");
+      }
       printf("About to declare rgbmp %ix%i\n",size,(int)(size*aspect));
       RGBmp n=RGBmp(size,size*aspect);
       printf("Done.\n");
@@ -1145,7 +1158,7 @@ void main(int argc,String *argv) {
     }
 
 
-    myRGB overlaycol=( lightoverlay ? myRGB::white : myRGB::blue );
+    myRGB overlaycol=( lightoverlay ? myRGB::red.pastel() : myRGB::blue );
 
     // Overlay info on original image
     if (overlayinfquadonly) {
@@ -1171,15 +1184,14 @@ void main(int argc,String *argv) {
         fromside=fromside*diffscale+corner;
         V2d hitleft=Line2d(tl,bl).intersect(fromside);
         V2d hitright=Line2d(tr,br).intersect(fromside);
-        origimage.thickline(hitleft,hitright,myRGB::black,1); // used to be yellow
+        origimage.thickline(hitleft,hitright,myRGB::white,1); // used to be yellow
       }
       // VVP lines
       float diagonal=sqrt(origimage.width*origimage.width+origimage.height*origimage.height);
-      //origimage.thickline(((diffscale*summaryleftline+ corner)).expandedTo(2.0*diagonal),myRGB::black,2);
-      //origimage.thickline(((diffscale*summaryrightline+corner)).expandedTo(2.0*diagonal),myRGB::black,2);
-      origimage.thickline(((diffscale*summarybaseline+corner)).expandedTo(2.0*diagonal),myRGB::black,3);
+      // Plot baseline!
+      origimage.thickline(((diffscale*summarybaseline+corner)).expandedTo(2.0*diagonal),myRGB::yellow,3);
       if (usetwolines)
-        origimage.thickline(((diffscale*summarysecondline+corner)).expandedTo(2.0*diagonal),myRGB::black,3);
+        origimage.thickline(((diffscale*summarysecondline+corner)).expandedTo(2.0*diagonal),myRGB::white,3);
       // correlation points
       for (int i=0;i<summaryleftused.len;i++) {
         V2d pnt=corner+diffscale*summaryleftused.get(i);
@@ -1208,8 +1220,8 @@ void main(int argc,String *argv) {
 
       hvp=corner+diffscale*hvp;
       vvp=corner+diffscale*vvp;
-     origimage.thickline(tl,hvp,1,myRGB::black);
-     origimage.thickline(bl,hvp,1,myRGB::black);
+     // origimage.thickline(tl,hvp,1,myRGB::white);
+     // origimage.thickline(bl,hvp,1,myRGB::white);
 
       // Quadrilateral frame
       origimage.thickline(tl,tr,overlaythickness,overlaycol);
@@ -1217,13 +1229,13 @@ void main(int argc,String *argv) {
       origimage.thickline(br,bl,overlaythickness,overlaycol);
       origimage.thickline(tl,bl,overlaythickness,overlaycol);
 
-		 origimage.line(corner+diffscale*top.a,corner+diffscale*top.b,myRGB::red);
-		 origimage.line(corner+diffscale*bottom.a,corner+diffscale*bottom.b,myRGB::red);
-		 origimage.line(corner+diffscale*left.a,corner+diffscale*left.b,myRGB::red);
-		 origimage.line(corner+diffscale*right.a,corner+diffscale*right.b,myRGB::red);
+		 //origimage.line(corner+diffscale*top.a,corner+diffscale*top.b,myRGB::red);
+		 //origimage.line(corner+diffscale*bottom.a,corner+diffscale*bottom.b,myRGB::red);
+		 //origimage.line(corner+diffscale*left.a,corner+diffscale*left.b,myRGB::red);
+		 //origimage.line(corner+diffscale*right.a,corner+diffscale*right.b,myRGB::red);
 
-		 origimage.line(tl,vvp,myRGB::green);
-		 origimage.line(tr,vvp,myRGB::green);
+		 // origimage.line(tl,vvp,myRGB::green);
+		 // origimage.line(tr,vvp,myRGB::green);
 
     }
 

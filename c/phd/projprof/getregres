@@ -5,16 +5,4 @@ ppreg $* -badx 50 -bady 50
 # ppreg $1 $2 -res 30
 # ppreg $1 $2 -res 50
 
-mkdir ../images/pp/$1$2
-
-convert origover.bmp ../images/pp/$1$2/origover.jpg
-convert recover.bmp -geom 600 ../images/pp/$1$2/recover.jpg
-convert spacings.bmp ../images/pp/$1$2/spacings.jpg
-
-# convert origover.bmp -geom 400 ../images/pp/$1$2/origover.jpg
-# convert ppmap.bmp ../images/pp/$1$2/ppmap.jpg
-
-#mv info.bmp ../images/pp/$1$2/
-#mv bestpp.bmp bestppgaps.bmp badpp.bmp ../images/pp/$1$2/
-
-#xv ../images/pp/$1$2/recover.bmp ../images/pp/$1$2/*.bmp &
+collectres $1 $2

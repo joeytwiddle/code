@@ -28,6 +28,7 @@ void main(int argc,String *argv) {
   bool zoom=a.argexists("-zoom","change size of images");
   int zoomarea=a.intafter("-zoomarea","zoom all outputs to this area",256*128);
   flip=a.argexists("-f","flip region if mostly black");
+  float usern=a.floatafter("-mod","modify threshold by scalar",1.0);
   String iname=a.getarg();
   String bname=a.argor("*NONE*");
   a.done();
@@ -105,6 +106,7 @@ void main(int argc,String *argv) {
         float c=ps->getposclip(p.x+r/2,p.y+r/2)-ps->getposclip(p.x+r/2,p.y-r/2)-ps->getposclip(p.x-r/2,p.y+r/2)+ps->getposclip(p.x-r/2,p.y-r/2);
         int b=psa->getposclip(p.x+r/2,p.y+r/2)-psa->getposclip(p.x+r/2,p.y-r/2)-psa->getposclip(p.x-r/2,p.y+r/2)+psa->getposclip(p.x-r/2,p.y-r/2);
         c=c/(float)b; // c=Average
+	c=c*usern;
         if (map->getpos(p)<c && b>=toosmall) {
           n->setpos(p,true);
           if (outputseperate)

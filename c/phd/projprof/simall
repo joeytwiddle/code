@@ -2,7 +2,8 @@ DOC=$1;
 
 # export PATH="$PATH:."
 
-SRCNAME="dar-crpage2-mid-left"
+SRCNAME="dar-crpage2-left"
+# SRCNAME="dar-crpage2"
 IFILE="$SRCNAME.bmp"
 RES="results.txt"
 FOCALRES="focalres.txt"
@@ -17,12 +18,12 @@ echo "" > "$FOCALRES"
 
 roll="90";
 # for roll in `listnums -6 6`; do
-  pitch=15;
-  for pitch in `listnums 0 90 by 3`; do
-  # for pitch in `listnums 10 80 by 10`; do
-    yaw=15;
-    for yaw in `listnums 0 90 by 3`; do
-    # for yaw in `listnums 10 80 by 10`; do
+  yaw=15;
+  for yaw in `listnums 0 90 by 3`; do
+  # for yaw in `listnums 10 80 by 10`; do
+    pitch=15;
+    for pitch in `listnums 0 90 by 3`; do
+    # for pitch in `listnums 10 80 by 10`; do
 			simone "$IFILE" $roll $yaw $pitch
       FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
       echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
@@ -39,12 +40,13 @@ roll="90";
 			convert "lowresmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-0lowresmap.jpg"
 			convert "ppmap.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-1ppmap.jpg"
 			convert "overlay.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-3origsim.jpg"
-			convert "gpl0fit.ps" -geom 300 "res/r$roll-y$yaw-p$pitch-2desfit.jpg"
-			convert "gplfit.ps" -geom 300 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
+			convert "gpl0fit.ps" -geom 200 "res/r$roll-y$yaw-p$pitch-2desfit.jpg"
+			convert "gplfit.ps" -geom 200 "res/r$roll-y$yaw-p$pitch-3fit.jpg"
 			convert "origover.bmp" -geom 200 "res/r$roll-y$yaw-p$pitch-4ovr.jpg"
 			convert "recover.bmp" -geom 100 "res/r$roll-y$yaw-p$pitch-5rec.jpg"
 			# ./showdesiredspacings.sh
 			# convert "gpl1fit.ps" -geom 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
+			rm -f fit.log
     done
   done
 # done
