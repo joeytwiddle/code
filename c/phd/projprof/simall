@@ -89,6 +89,7 @@ echo "" > "$FOCALRES"
 # ./showdesiredspacings.sh
 # convert "gpl1fit.ps" -geometry 300 "res/r$roll-y$yaw-p$pitch-6desfit.jpg"
 	rm -f fit.log
+
 done
 done
 # done

@@ -59,7 +59,9 @@ int close(FILE *fp) {
 
 List<String> readlinesfromfile(String fname,String seperators,boolean trim) {
   #ifndef QUIET
+#ifdef NOISY_OPEN_TXT
   fprintf(stderr,"Opening text file %s\n",fname);
+#endif
   #endif
   #ifdef DEBUG
     fprintf(stderr,"Reading lines from file...\n");
@@ -111,7 +113,9 @@ List<String> readlinesfromfile(String fname,String seperators) {
 List<String> mail2list(String fname) {
         String seperators="\n"; // {(char)10};
   #ifndef QUIET
+#ifdef NOISY_OPEN_TXT
   fprintf(stderr,"Opening text file %s\n",fname);
+#endif
   #endif
   #ifdef DEBUG
     fprintf(stderr,"Reading lines from file...\n");

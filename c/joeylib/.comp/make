@@ -1,1 +1,6 @@
-g++ -O3 -w -c -I . $*
+if test "$1" = ""; then
+	ARGS="joeylib.c"
+else
+	ARGS="$@"
+fi
+g++ -O3 -w -c -I . $ARGS

@@ -45,9 +45,9 @@ float doRansac(List<V2d> ps) { // returns error
 				}
 			}
 		}
-		if (bestErr<currentErr*0.3) {
+		if (bestErr<currentErr*0.5) {
 			// printf("Hello\n");
-			printf("Improvement: %i %f\n",currentps.len-1,currentErr);
+			printf("Improvement: %i %e\n",currentps.len-1,currentErr);
 			currentErr=bestErr;
 			currentps=bestps;
 			// printf("Improvement: %f %s\n",currentErr,currentps.toString());
@@ -108,7 +108,7 @@ float testASubSet(List<V2d> ps) { // returns error
 
 	// printf("Done testing.\n");
  	
-	return Wssr/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len;
+	return sqrt(Wssr)/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len;
 	
 }
 
