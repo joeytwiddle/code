@@ -14,7 +14,7 @@ import javax.swing.text.html.*;
 import nuju.*;
 import jlib.*;
 
-class MemberBrowser extends SimpleTable {
+class MemberBrowser extends Box {
 
 	MemberBrowser(Class cls,Object o,
 		List members,
@@ -24,10 +24,9 @@ class MemberBrowser extends SimpleTable {
 		boolean method,
 		boolean constructor
 	) {
-		super(2,2);
+		super(BoxLayout.Y_AXIS);
 		// set(new Integer(1),0,2);
 		// set(new JButton("hello"),2,0);
-		int row=0;
 		for (int i=0;i<members.size();i++) {
 			try {
 				Member member=(Member)members.get(i);
@@ -46,30 +45,47 @@ class MemberBrowser extends SimpleTable {
 						||
 					( constructor && ! (member instanceof Constructor) )
 				) ) {
+					Box boxRow=Box.createHorizontalBox();
+					Box leftBit=Box.createHorizontalBox();
+					Box rightBit=Box.createHorizontalBox();
 					int col=0;
 					if (member instanceof Field) {
-						set(((Field)member).getType().toString(),col++,row);
+						leftBit.add(new JLabel(((Field)member).getType().toString()+" "));
 					}
 					if (member instanceof Method) {
-						set(((Method)member).getReturnType().toString(),col++,row);
+						leftBit.add(new JLabel(((Method)member).getReturnType().toString()+" "));
 					}
-					set(member.getName()+(member instanceof Field?"":"("),col++,row);
+					leftBit.add(new JLabel(member.getName()+(member instanceof Field?"":"(")));
 					if (member instanceof Field) {
-						set("=",col++,row);
-						set(((Field)member).get(o).toString(),col++,row);
+						leftBit.add(new JLabel(" = "));
+						rightBit.add(new JLabel(((Field)member).get(o).toString()));
 					} else {
 						Class[] params=( member instanceof Method
 							? ((Method)member).getParameterTypes()
 							: ((Constructor)member).getParameterTypes()
 						);
+						if (params.length==0) {
+							rightBit.add(new JLabel(") "));
+							rightBit.add(new JButton("Execute"));
+						} else {
+							rightBit.add(new JLabel(" "));
 						for (int j=0;j<params.length;j++) {
-							set(params[j].getName(),col++,row);
+							if (params[j].isPrimitive()) {
+								rightBit.add(new JTextField(params[j].getName(),6));
+							} else {
+								rightBit.add(new JButton(params[j].getName()));
+							}
+							if (j<params.length-1)
+								rightBit.add(new JLabel(", "));
 						}
-						set(")",col++,row);
+						rightBit.add(new JLabel(" )"));
+						}
 					}
 					members.remove(member);
 					i--;
-					row++;
+					boxRow.add(leftBit);
+					boxRow.add(rightBit);
+					add(boxRow);
 				}
 			} catch (Exception e) {
 				System.err.println(""+e);

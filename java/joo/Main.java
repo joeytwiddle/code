@@ -208,7 +208,7 @@ System.out.println("Reading file "+filename);
                 }
                 if (curlycount>0) {
                   String ind="  ";
-                  for (int i=1;i<=curlycount;i++)
+                  for (int ib=1;ib<=curlycount;ib++)
                     ind+="  ";
                   m.code+=ind+l+"\n";
 //System.out.println("Adding code "+l);
