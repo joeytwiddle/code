@@ -116,7 +116,7 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 
 	// printf("Done testing.\n");
  	
-	return sqrt(Wssr)/(float)ps.len/(float)ps.len/(float)ps.len/(float)ps.len;
+	return sqrt(Wssr)/(float)ps.len/(float)ps.len;
 	
 }
 
