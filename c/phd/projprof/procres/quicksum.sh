@@ -1,4 +1,6 @@
+cp ../*.results .
 # Plot whole scans (acc against roll,yaw)
-./plotsummary -data
-./plotsummary -plot
+./plotsummary.gpl -data
+./plotsummary.gpl -plot
 
+forx *.eps gv
