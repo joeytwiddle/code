@@ -129,14 +129,14 @@ for DOCUMENT in $DOCUMENTS; do
 								for pitch in $ANGLES; do
 
 									(
-										echo $FOCAL / $FOCALS
-										echo $DOCUMENT / $DOCUMENTS
-										echo $PPSCANMETHOD / $PPSCANMETHODS
-										echo $PPMEASURE / $PPMEASURES
-										echo $VVPMETHOD / $VVPMETHODS
-										echo $NOISE / $NOISES
-										echo $LINES / $LINESTODO
-										echo $yaw $pitch / $ANGLES
+										echo "$FOCAL / $FOCALS"
+										echo "$DOCUMENT / $DOCUMENTS"
+										echo "$PPSCANMETHOD / $PPSCANMETHODS"
+										echo "$PPMEASURE / $PPMEASURES"
+										echo "$VVPMETHOD / $VVPMETHODS"
+										echo "$NOISE / $NOISES"
+										echo "$LINES / $LINESTODO"
+										echo "$yaw $pitch / $ANGLES"
 									) > current
 
 									echo
