@@ -44,11 +44,7 @@ for DOCUMENT in $DOCUMENTS; do
 				# fi
 
 				PPPARAMS="
-<<<<<<< simall
-					-res 140 -adapt 0.03 -maxpixels 2000
-=======
-					-res 220 -adapt 0.03 -maxpixels 2000
->>>>>>> 1.62
+					-res 180 -adapt 0.03 -maxpixels 2000
 					-$PPMEASURE
 					-gamma 0.0 -recwid 200 -light -oth 12
 					-badx 35 -bady 21
