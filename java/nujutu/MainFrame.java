@@ -71,8 +71,8 @@ class ArgumentView implements ComponentAcceptingDrop {
 
 	JobContext context;
 	Class type;
-	Variable variable;
 	Component component;
+    Variable variable;
 
 	ArgumentView(Class _type, Variable _variable) {
 		type = _type;
@@ -102,8 +102,10 @@ class ArgumentView implements ComponentAcceptingDrop {
 
 	public void drop(Object received) {
 		if (received instanceof Variable) {
-			dropVar(variable);
+            System.out.println("ArgumentView received Variable");
+            dropVar((Variable)received);
 		} else {
+            System.out.println("ArgumentView received Object "+received);
 			dropVar(new Variable(null,received));
 		}
 	}
@@ -112,7 +114,8 @@ class ArgumentView implements ComponentAcceptingDrop {
 			variable = var;
 			init();
 			component.repaint();
-			JobContext.log("Dropped "+variable+" with value "+variable.value+" into "+type);
+            // context.mainFrame.repaint();
+			JobContext.log("Dropped "+var+" with value "+var.value+" into "+type);
 		} else {
 			JobContext.log("Cannot drop object type "+var+" onto "+type);
 		}
@@ -160,72 +163,6 @@ class MemberBrowser extends JPanel {
 
 	GridBagConstraints c = new GridBagConstraints();
 	GridBagLayout gridbag = new GridBagLayout();
-
-	void addComp(Component comp) {
-		gridbag.setConstraints(comp,c);
-		add(comp);
-		c.gridx++;
-	}
-
-	Component componentFor(Class c) {
-		return componentFor(c,NuJuTu.niceName(c));
-	}
-
-	Component componentFor(Object o) {
-		return componentFor(o.getClass(),o);
-	}
-
-	Component componentFor(Class cls,Object o) {
-
-		System.err.println("Dealing with object "+o);
-
-		// First, check if it is possible to instantiate an
-		// object of type cls with a single string constructor.
-		Constructor con=null;
-		try {
-			Class[] conPars={ "".getClass() };
-			con=cls.getConstructor(conPars);
-		} catch (Exception e) { }
-
-		// Component c=null;
-		ArgumentView view;
-		// Decide what type of Component to use.
-		if (
-				cls.isPrimitive()
-				|| cls.getName().equals("java.lang.String")
-				|| con != null
-				// || hasStringConstructor, eg. StringBuffer, Date, ...
-				// || isPrimClass (all fit above?)
-				// also some array types, eg. byte[] and char[]
-		) {
-			view = new TextArgumentView(cls,o);
-			// JTextField field = new JTextField(""+o,4);
-			// if (field.getColumns()>=10) {
-				// field.setColumns(10);
-			// }
-			// c = field;
-		} else {
-			view = new NonTextArgumentView(cls,o);
-			// c = new JButton(""+o);
-		}
-
-		view.setJobContext(context);
-		Component c = view.component;
-		// Set default properties for Component:
-		// Background color:
-		c.setBackground(new java.awt.Color(0.6f,0.9f,0.6f));
-		// Draggable from:
-		c.addInputMethodListener(new InputMethodListener() {
-			public void caretPositionChanged(InputMethodEvent e) {
-				System.out.println("Got caret moved event "+e);
-			}
-			public void inputMethodTextChanged(InputMethodEvent e) {
-				System.out.println("Got text changed event "+e);
-			}
-		} );
-
-		return c;
-	}
 
 	MemberBrowser(JobContext _context, Class cls, Object o,
 		List members,
@@ -319,6 +256,72 @@ class MemberBrowser extends JPanel {
 			}
 		}
 	}
+
+    void addComp(Component comp) {
+        gridbag.setConstraints(comp,c);
+        add(comp);
+        c.gridx++;
+    }
+
+    Component componentFor(Class c) {
+        return componentFor(c,NuJuTu.niceName(c));
+    }
+
+    Component componentFor(Object o) {
+        return componentFor(o.getClass(),o);
+    }
+
+    Component componentFor(Class cls,Object o) {
+
+        System.err.println("Dealing with object "+o);
+
+        // First, check if it is possible to instantiate an
+        // object of type cls with a single string constructor.
+        Constructor con=null;
+        try {
+            Class[] conPars={ "".getClass() };
+            con=cls.getConstructor(conPars);
+        } catch (Exception e) { }
+
+        // Component c=null;
+        ArgumentView view;
+        // Decide what type of Component to use.
+        if (
+                cls.isPrimitive()
+                || cls.getName().equals("java.lang.String")
+                || con != null
+                // || hasStringConstructor, eg. StringBuffer, Date, ...
+                // || isPrimClass (all fit above?)
+                // also some array types, eg. byte[] and char[]
+        ) {
+            view = new TextArgumentView(cls,o);
+            // JTextField field = new JTextField(""+o,4);
+            // if (field.getColumns()>=10) {
+                // field.setColumns(10);
+            // }
+            // c = field;
+        } else {
+            view = new NonTextArgumentView(cls,o);
+            // c = new JButton(""+o);
+        }
+
+        view.setJobContext(context);
+        Component c = view.component;
+        // Set default properties for Component:
+        // Background color:
+        c.setBackground(new java.awt.Color(0.6f,0.9f,0.6f));
+        // Draggable from:
+        c.addInputMethodListener(new InputMethodListener() {
+            public void caretPositionChanged(InputMethodEvent e) {
+                System.out.println("Got caret moved event "+e);
+            }
+            public void inputMethodTextChanged(InputMethodEvent e) {
+                System.out.println("Got text changed event "+e);
+            }
+        } );
+
+        return c;
+    }
 
 }
 
