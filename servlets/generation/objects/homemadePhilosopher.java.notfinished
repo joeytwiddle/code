@@ -1,0 +1,17 @@
+package generation.objects;
+
+import java.lang.String;
+import java.util.Vector;
+import jlib.db.SimpleDBObj;
+import jlib.db.DBKey;
+// import Year;
+
+public class Philosopher extends SimpleDBObj {
+
+  public String name;
+//  public Year datebirth,datedeath; // -1 = still alive! -2 = ?
+  
+  public Philosopher() {
+  }
+  
+}
