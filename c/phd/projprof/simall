@@ -60,7 +60,7 @@ showprogress () {
 	shift
 	X="$1"
 	shift
-	echo "$D:  $*" | sed "s/$X/[$X]/g"
+	echo "$D:  $*" | sed "s/\<$X\>/[$X]/g"
 }
 
 export FOCAL;
