@@ -1,3 +1,5 @@
+MAILONERROR="joey@hwi.ath.cx"
+
 SRCURL="http://bristol.indymedia.org/db-backups"
 
 FILES="imc.mysql active_bristol.psql err.txt"
@@ -7,7 +9,11 @@ TOPDIR="/www/db-cron-backups"
 WGETOPTS="-N"
 # WGETOPTS="-r -L -np -A sql,txt -nd"
 
-case "$1" in
+WHICH="$1"
+
+LOGFILE="$TOPDIR/dobackup-$WHICH.log"
+
+case "$WHICH" in
 	daily)
 		DIR="$TOPDIR/daily/"`date | sed "s/ .*//"`
 		;;
@@ -27,6 +33,8 @@ echo "Changing to directory $DIR" &&
 
 cd "$DIR" &&
 
+DBKERROR="0" &&
+
 # Retrieve each file individually - hopefully they are there!
 for FILE in $FILES; do
 	echo "Getting $FILE ..."
@@ -36,9 +44,16 @@ for FILE in $FILES; do
 	if test "$?" = 0; then
 		echo "Got OK"
 	else
-		echo "ERROR getting file"
+		echo "DBKERROR getting file"
+		DBKERROR="1"
 	fi
-done
+done > "$LOGFILE"
+
+if test "$DBKERROR" != "0"; then
+	cat "$LOGFILE" | mail -s "$HOST:$0 had problems" "$MAILONERROR"
+	cat "$LOGFILE"
+	exit "$DBKERROR"
+fi
 
 # Recursive retrieval yuk
 # wget -r -L -np -A sql,txt -nd "$SRCURL/" ||
