@@ -9,7 +9,16 @@
 
 // BUGS:
 // Not yet ported to IE.  (Written against Mozilla, ported to Konqueror.)
-// Konqueror's log text freezes up and doesn't display until nudged.
+// Konqueror's log text sometimes freezes up and doesn't display until nudged (eg. by resizing frame).
+
+// HELP!
+// I have yet to find a nice way to make a textfield which does something when user hits enter.
+//   1) onblur works if they move out of the component.  onsubmit tends to do zilch.
+//   2) I can put the textfield in a form, but then we need to make the form's action sterile, and any JS must now refer to the textfield's value with an absolute references, because local references don't appear to work in Mozilla.  :-(
+// Compare the <INPUT> in jsReflectorShow() (method 1) to those in generatePowerBar() (method 2).
+
+// TODO:
+// 
 
 //// Yummy I found reflection:
 // for (var x in top.powerBarFrame) { log(""+x); }     
@@ -32,7 +41,9 @@ var browserCanWriteWithDocumentDotOpen = nutscrape;
 
 #ifdef LOGGING
 
-	#define LOG(str) log(str)
+	// #define LOG(str) log(str)
+	//// Works from within DHTML on<action> thingies.
+	#define LOG(str) top.log(str)
 	// #define LOG(str) try { log(str); } catch (e) { }
 	#define LOG_ELEMENT_ID "logElementId"
 	// #define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
@@ -126,10 +137,6 @@ function generatePowerBar() {
 	var powerBarHtml = "";
 	powerBarHtml += '<table width="100%"><tr><td align="center">';
 
-	powerBarHtml += '<INPUT type="button" value="Wake up!" onclick="top.refreshTimer()">';
-
-	powerBarHtml += '</td><td align="center">';
-
 	//// Location URL textfield:
 	// powerBarHtml += '<FORM name="locationTextBox" action="javascript:top.changeLocation(top.mainFrame,this.location.value)">';
 	powerBarHtml += '<FORM name="locationForm" onsubmit="top.changeLocation(top.mainFrame,location.value)" action="javascript:">';
@@ -179,6 +186,9 @@ function generatePowerBar() {
 		// powerBarHtml += '</td><td align="center">'
 		// powerBarHtml += '<INPUT type="button" value="Check" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\'))">';
 	}
+
+	// powerBarHtml += '</td><td align="center">'
+	// powerBarHtml += '<INPUT type="button" value="Wake up PowerBar!" onclick="top.refreshTimer()">';
 
 	#ifdef LOGGING
 		powerBarHtml += '</td><td align="center">'
@@ -230,9 +240,7 @@ function updatePowerBar() {
 		if (urlOfMainFrame != lastKnownLocation) {
 			LOG("URL changed from " + lastKnownLocation + " to " + urlOfMainFrame);
 			urlInTextBox.value = urlOfMainFrame;
-			LOG("B");
 			lastKnownLocation = urlOfMainFrame;
-			LOG("C");
 		}
 	}
 	if (opt_ClockEnabled) {
@@ -336,90 +344,63 @@ function editOptions() {
 	writeToFrame(mainFrame,html);
 }
 
+var jsReflectorHistory;
+
 function jsReflectorInit() {
+	jsReflectorHistory = new Array();
 	jsReflectorShow("top.powerBarFrame");
 }
 
-function strip(str) {
-	if (str.length > 50) {
-		return str.substring(0,50 - 3) + "...";
-	}
-	return str;
-}
-
-function trytypeof(obj) {
-	try {
-		var type = typeof(obj);
-		return type;
-	} catch (e) {
-		return "TYPE_ERROR:"+e;
-	}
-}
-
-function tryeval(code) {
-	try {
-		var res = eval(code);
-		return res;
-	} catch (e) {
-		return "EVAL_ERROR:"+e;
-	}
-}
+// TODO: Don't generate big long HTML strings.  Pipe straight to document instead.
+//       This will mean somehow genericising the document.open() vs. document.body.innerHTML implementations.
+//       Oh we can't do that until we've sorted them anyway.  Maybe use an array for sorting?
 
 function jsReflectorShow(objName) {
-	LOG("jsReflectorShow(\""+objName+"\");");
+	jsReflectorHistory.push(objName);
+	LOG("jsReflectorShow(\"" + objName + "\");");
 	try {
-		var html = "";
 		var obj = tryeval(objName);
-		// LOG("D");
-		html += "<h3>Inspecting: " + trytypeof(obj) + " " + objName + " = " + obj + "</h3>";
-		html += "<blockquote>";
-		html += "<table>";
-		// LOG("E");
-		// var i = 0;
-		for (var name in obj) {
-			// i++;
-			// if (i > 20) {
-				// break;
-			// }
-			// html += "Var " + x + " = " + eval("obj."+x) + "<BR>";
-			var globName = objName + "." + name;
-			// LOG(globName);
-			var type = "unknown";
-			var value = "unknown";
-			var exc = "";
-			try {
-				value = eval("obj."+name);
-				type = trytypeof(value);
-				// test to prove exc can get set: throw new Exception("poo");
-			} catch (e) {
-				exc = "" + e;
-				value = "<unattainable> (" + exc + ")";
-				// type = "<unattainable> (" + exc + ")";
+		var html = "";
+		html += "Go back to: ";
+		for (var i=0;i<jsReflectorHistory.length;i++) {
+			var prevObjName = jsReflectorHistory[i];
+			html += "<a href='javascript:top.jsReflectorShow(\"" + prevObjName + "\")'>" + prevObjName + "</a>";
+			if (i < jsReflectorHistory.length - 1) {
+				html += ", ";
 			}
-			html += "<tr>";
-			html += "<td>"+type+"</td>";
-			html += "<td>&nbsp;</td>";
-			// html += "<td>"+name+"</td>";
-			var link = 'javascript:top.jsReflectorShow("' + globName + '")';
-			html += "<td><a href='" + link + "'>" + name + "</a></td>";
-			html += "<td>=</td>";
-			// LOG("F");
-			// Konqueror needs to check if value can be evaluated, or whether it breaks with "TypeError: no default value"
-			var valueOut;
+		}
+		var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
+		html += "<h3>Inspecting: " + trytypeof(obj) + " " + editableObjName + " = " + obj + "</h3>";
+		html += "<blockquote>";
+		html += "<table cellpadding='0' cellspacing='0'>";
+		var i = 0;
+		var list = "";
+		for (var name in obj) { // BUG: Mozilla doesn't find the "document" in window objects!
+			var globName = objName + "." + name;
+			var value = "<neverset>";
+			var type = "<neverset>";
 			try {
-				// LOG(value); // too slow?
-				valueOut = "" + value;
+				value = eval("obj." + name);
+				type = trytypeof(value);
+				// We need to ensure it can be evaluated as a string or it might fail when added to HTML later:
+				value = "" + value;
 			} catch (e) {
 				value = "<unattainable> (" + e + ")";
 			}
-			// LOG("G");
-			html += "<td>" + toHtml(strip("" + value)) + "</td>";
-			html += "<td>" + toHtml(strip("" + exc)) + "</td>";
-			html += "</tr>";
+			var link = 'javascript:top.jsReflectorShow("' + globName + '")';
+			list += "<tr>";
+			list += "<td align='right'>" + type + "&nbsp;</td>";
+			list += "<td align='center'><a href='" + link + "'>" + name + "</a></td>";
+			list += "<td align='left'>&nbsp;=&nbsp;" + toHtml(strip(value)) + "</td>";
+			list += "</tr>";
+			list += "\n"; // for sortLines
 		}
+		list = sortLines(list);
+		html += list;
 		html += "</table>";
 		html += "</blockquote>";
 		writeToFrame(mainFrame,html);
+		// writeToFrame(powerBarFrame,html);
 	} catch (e) {
 		LOG(e);
 	}
@@ -465,6 +446,37 @@ function countCharIn(str,srch) {
 	return cnt;
 }
 
+function niceDate() {
+	var now = "" + new Date();
+	var bits = splitAt(now," ");
+	return bits[1] + " " + bits[2] + " " + bits[4];
+}
+
+function strip(str) {
+	if (str.length > 100) {
+		return str.substring(0,100 - 3) + "...";
+	}
+	return str;
+}
+
+function trytypeof(obj) {
+	try {
+		var type = typeof(obj);
+		return type;
+	} catch (e) {
+		return "TYPE_ERROR: "+e;
+	}
+}
+
+function tryeval(code) {
+	try {
+		var res = eval(code);
+		return res;
+	} catch (e) {
+		return "EVAL_ERROR: "+e;
+	}
+}
+
 function splitAt(str,srch) {
 	var list = new Array();
 	var i = 0;
@@ -480,10 +492,45 @@ function splitAt(str,srch) {
 	return list;
 }
 
-function niceDate() {
-	var now = "" + new Date();
-	var bits = splitAt(now," ");
-	return bits[1] + " " + bits[2] + " " + bits[4];
+function sortLines(linesStr) {
+	var lines = splitAt(linesStr,'\n');
+	lines = lines.sort();
+	return lines.join("\n");
+	/*
+	var lines = splitAt(linesStr,'\n');
+	linesStr = ""; // can wait till later but why not save memory?!
+	// bubblesort
+	for (var start = 0; start<lines.length; start++) {
+		for (var i = 0; i<lines.length - 1; i++) {
+			// if (lines[i] > lines[i + 1]) {
+			// if (lines[i].compareTo(lines[i + 1]) > 0) {
+			// if (false) {
+			if (!areOrderedStrings(lines[i],lines[i + 1])) {
+				// alert("Swapping " + i + " and " + (i + 1) + "." );
+				var tmp = lines[i];
+				lines[i] = lines[i + 1];
+				lines[i + 1] = tmp;
+			}
+		}
+	}
+	for (var i = 0; i<lines.length; i++) {
+		linesStr += lines[i] + '\n';
+	}
+	return linesStr;
+	*/
+}
+
+function areOrderedStrings(a,b) { // is a <= b ?
+	return (a.localeCompare(b) >= 0);
+	/*
+	for (var i=0;i<a.length;i++) {
+		// all chars so far have been identical
+		if (i >= b.length) return false;
+		if (a.charAt(i) < b.charAt(i)) return true;
+		if (a.charAt(i) > b.charAt(i)) return false;
+	}
+	return true; // b is either identical or longer
+	*/
 }
 
 // --> </script>
