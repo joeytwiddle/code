@@ -6,4 +6,6 @@ cd texture
 # High-res: for nice output images
 jnn scan $1 -mr 1 -ms 2000 -wskip 2
 
+mkdir -p $JPATH/images/regs
+
 mv textseg.bmp $JPATH/images/regs/$1.bmp

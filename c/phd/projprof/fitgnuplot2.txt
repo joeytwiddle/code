@@ -1,24 +1,47 @@
+U=0.001667
+
 # u=0.001
 v=-20
 w=0.00001
 
-# y(x)=u(1+xv)/(1+xw)
-# d(x) = y(x+1) - y(x)
-#      = u(1+(x+1)v)/(1+(x+1)w) - u(1+xv)/(1+xw)
+# e(x) is expected = ground truth
+# f(x) is fitted
 
-#      ~ u(1+(x+1)v-(1+xv))/(1+xw)
-#      = uv/(1+xw)
+# The simple fitting method
+# set xlabel "observed line number n" "Times-Roman,26"
+# set ylabel "observed line position y(n)" "Times-Roman,26"
+# V = -2396.83 # -2237.489990
+# W = -0.0360439 # -0.033641
+# u=U
+# v=V
+# w=W
+# f(x)=u*(1+v*x)/(1+w*x)
+# e(x)=U*(1+V*x)/(1+W*x)
+# fit f(x) "gpldata.txt" via v,w
+
+# The advanced fitting method (using spacings)
+V=-2401.85
+W=-0.0359646
+e(x)=U*(1+V*(((U-x)/(W*x-U*V)-0.5)+1))/(1+W*(((U-x)/(W*x-U*V)-0.5)+1))-U*(1+V*((U-x)/(W*x-U*V)-0.5))/(1+W*((U-x)/(W*x-U*V)-0.5))
+set xlabel "line position X(n)" "Times-Roman,26"
+set ylabel "line spacing Y(n)" "Times-Roman,26"
 # This is an estimate of the real eqn, but more likely to converge because less complicated!
-# x(y)=(u-y)/(w*y-u*v)
+# x=(u-y)/(w*y-u*v)
 # f(x)=u*v/(1+x*w)
 # it gives rubbish results
 # but good as a more stable initial fit
 f(y)=u*v/(1+w*(u-y)/(w*y-u*v))
 fit f(x) "gpldata.txt" via v,w
-
 f(x)=u*(1+v*(((u-x)/(w*x-u*v)-0.5)+1))/(1+w*(((u-x)/(w*x-u*v)-0.5)+1))-u*(1+v*((u-x)/(w*x-u*v)-0.5))/(1+w*((u-x)/(w*x-u*v)-0.5))
 fit f(x) "gpldata.txt" via v,w
 
-set term post
+set noclabel
+set nokey
+set nolabel
+set term post eps "Times-Roman,18"
 set output "gplfit.ps"
-plot "gpldata.txt",f(x)
+set pointsize 1.3
+
+plot "gpldata.txt" w p 7,f(x)
+# plot "gpldata.txt" w p 7,e(x)
+# plot "gpldata.txt" w p 7,f(x),e(x)
