@@ -68,7 +68,7 @@ public class Generate extends Page {
 
 }
 
-private class GenerateButton extends Button {
+class GenerateButton extends Button {
 				
 	Class c;
 	

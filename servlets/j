@@ -1,2 +1,2 @@
-jikes *.java dbmaker/*.java filfirin/*.java jlib/*.java jlib/multiui/*.java jlib/db/*.java appserver/*.java
+jikes *.java dbmaker/*.java dbmaker/data/init/*.java jlib/*.java jlib/multiui/*.java jlib/db/*.java appserver/*.java
 echo "OK"

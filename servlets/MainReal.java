@@ -150,7 +150,7 @@ public class MainReal {
 					if (page==null)
 						throw new Exception("Joey's own page == null exception");
 				} catch (Exception e) {
-					out.println("Problem recovering window "+windowref);
+					Log.error("Problem recovering window "+windowref,e);
 				}
 
 			  if (doValues) {
