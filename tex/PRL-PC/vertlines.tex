@@ -33,7 +33,7 @@ spacings between paragraph lines and various font sizes.
 % used.  (We do.)
 
 Our overall method is as follows. After first transforming the image to 
-simplify the problem, we will extract observations of the altitude of 
+simplify the problem, we may extract observations of the altitude of 
 each line in the image.  A model of the geometry will allow us to express 
 these observations as a function of the paragraph's orientation.  By 
 fitting the observations to the function, we will obtain the desired 
@@ -46,16 +46,18 @@ baseline (found in the previous section - call it $\myvec{B}$) vertically,
 (see \reffig{zyspacings}). This rotation is equivalent to:
 
 \begin{equation}
-\myvec{B_{v}} = \left(\begin{array}{cc}\cos(90-\theta) ~ ~ -\sin(90-\theta)\\\sin(90-\theta) ~  ~  ~ ~ ~ \cos(90-\theta)\end{array}\right) \myvec{B} \label{uprightbaseline}
+\myvec{B_{v}} = \left(\begin{array}{cc}\cos(\frac{\pi}{2}-\theta) ~ ~ -\sin(\frac{\pi}{2}-\theta)\\\sin(\frac{\pi}{2}-\theta) ~  ~  ~ ~ ~ \cos(\frac{\pi}{2}-\theta)\end{array}\right) \myvec{B} \label{uprightbaseline}
 \end{equation}
 
 {\parindent 0mm
-where $\theta$ is the orientation of the $\myvec{B}$ with the horizontal.
+where $\theta$ is the angle between $\myvec{B}$ and the horizontal.
 Henceforth, we may disregard the $x$-coordinates and deal
 solely in the $y,z$ plane. 
-In our ideal geometrical model, the bottom of a single paragraph is positioned 
-at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.  
-Therefore the $n$th line from the bottom of the paragraph will appear at:
+If we disregard spaces between paragraphs for the time being,
+we can describe an ideal geometrical model in which
+the bottom of a single paragraph is positioned
+at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.
+The $n$th line from the bottom of the paragraph will lie at:
 }
 
 \begin{figure}[t]
@@ -73,8 +75,9 @@ Therefore the $n$th line from the bottom of the paragraph will appear at:
 \myvec{L}(n) = \myvec{P}+n\myvec{Q} \label{nthline}
 \end{eqnarray}
 
+and will appear in the image at an observable altitude of $y(n)$.
 {\parindent 0mm
-Using simple perspective projection ratios, we have: 
+Using simple perspective projection ratios, we can relate the image points to the world position with:
 %and will project to the point in the image plane
 }
 %\begin{eqnarray}
@@ -94,7 +97,7 @@ y(n) =  f \frac{ \myvec{P}_y + n \myvec{Q}_y }{ \myvec{P}_z + n\myvec{Q}_z } \la
 \end{eqnarray}
 
 {\parindent 0mm
-with $y(infty)$ giving the position of the vanishing line.
+with $y(\infty)$ giving the position of the vanishing line.
 Without losing the nature of the projection, we may scale the scene about the focal point in order to set $\myvec{P}_z$ to $f$, hence modelling the paragraph as if it touched the image plane.  In this case, $\myvec{P}_y=y(0)$,
 and we may rewrite \refeqn{spacingspq} as:
 }
@@ -108,25 +111,40 @@ with $U=y(0)$ and only two unknowns,
 $V = {\myvec{Q}_y}/{\myvec{P}_y}$ and $W = {\myvec{Q}_z}/{\myvec{P}_z}$.
 The cancelling of the focal length $f$ in this way means that the technique is applicable to images captured with any optical camera and the internal parameters of the original camera need not be known.
 
-To extract approximations of $y(n)$ from the image, we project the centroid of
-each detected line of text onto the baseline (y-axis), and obtain a set of
-observations $O(n)$. 
+Equation (\ref{spacingsvweqn}) now relates the parameters $V,W$, which describe the
+tilt of the document, to a set of points which may be extracted from the
+image.
+Observations for $y(n)$ are obtained by projecting the centroid of
+each detected line of text onto the baseline ($y$-axis), to collect a set of
+points $O(n)$.
 % By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.  % for these points.
 A least-squares fit of $O(n)$ to the function $y(n)$ should now yield values for $V$ and $W$, and hence the vertical vanishing point.
-However, since it is common for documents to also contain lines of text which are not part of an evenly spaced block of text, and for extraneous elements to enter the data, the $n$th line observed in the image may lose correspondence with the $n$th line in the paragraph model.
+
+However, this fitting is only applicable to the ideal paragraph described above.
+In reality it is common for documents to contain
+spaces between paragraphs,
+lines of text which are not part of a regularly spaced block,
+and unexpected extraneous elements.
+% the $n$th line observed in the image may lose correspondence with the $n$th
+% line in the paragraph model.
 % For example, an outlier at position $n=K$ would cause all successive
 % observations 
 % When fitting the curve of $y(n)$ against $n$, one such outlier at $n=K$ would cause all succesive observations ($n>K$) to have 
-In the presence of such outliers, fitting a set of points $(n,O(n))$ to the curve $(n,y(n))$ 
-is problematic, since any outlier will break the correspondence between the $x$
-and $y$ coordinates of successive points.
-For example, in \reffig{poorfitting}, data point (or line number) 7 is an undesirable outlier
+The presence of such outliers in the data can break the correspondence between
+the $n$th line in the ideal paragraph and the $n$th data point $O(n)$, which is implied in the fitting $y(n)=O(n)$.
+% In the presence of such outliers, fitting a set of points $(n,O(n))$ to the curve $(n,y(n))$ 
+% is inappropriate, since any outlier will break the correspondence between the $x$
+% and $y$ coordinates of successive points.
+For example, in \reffig{poorfitting}, data point (or line number) 8 is an undesirable outlier
 which has shifted all successive points one position along the horizontal $n$-axis,
-causing a poor fitting.
+resulting in a poor fitting.
+Due to its proximity, the point was not even rejected when RANSAC was applied.
+% Whilst RANSAC has the potential to remove such outliers, it failed to do so in this case, and it would always fail in the case where
 \begin{figure}[t]
 \centering
 \begin{center}
-	\subfigure[Poor fitting using line position due to the presence of an outlier.]{
+	% \subfigure[Line position gives poor fitting (red) relative to ground truth (dashed, green) due to the presence of an outlier.]{
+	\subfigure[Line position gives a poor fitting due to the presence of an outlier.]{
 		\epsfig{figure=images/fitting/fit-simple-outlier-with-got.eps,width=65mm}
 		\label{poorfitting}
 	}
@@ -134,9 +152,11 @@ causing a poor fitting.
 		\epsfig{figure=images/fitting/fit-spacings-outlier-with-got.eps,width=65mm}
 		\label{goodfitting}
 	}
-	\caption{The response of different fitting methods to outliers.  Fine dashes
-		represent the desired (ground truth) parameters, longer dashes the fit
-		achieved using least-squares.
+	\caption{The response of different fitting methods to outliers.
+		The ground truth is shown with a dashed green line, and the final fitting after RANSAC in blue.
+	% \caption{The response of different fitting methods to outliers.  Fine dashes
+		% represent the desired (ground truth) parameters, longer dashes the fit
+		% achieved using least-squares.
 		% using
 		% Marquardt-Levenberg
 		% least-squares
@@ -150,8 +170,10 @@ causing a poor fitting.
 % An alternative curve which may be taken from the data and remains unaffected by line number, is the ratio of 
 % Fortunately it is possible to derive two $n$-invariant observations from the image which
 % To prevent the progression of an outlier through successive observations, we must use 
-It is therefore preferable to remove the direct dependence of the points on $n$
-by instead fitting the curve of {\em line spacing} $Y_n$ against {\em position} $X_n$, defined as:
+However, we can remove the direct influence of $n$ on the fitting, by instead fitting
+% It is therefore preferable to remove the direct dependence of the points on $n$
+% by instead fitting
+the curve of {\em line spacing} $Y_n$ against {\em position} $X_n$, defined by:
 
 
 \begin{eqnarray}
@@ -159,8 +181,12 @@ Y_n = y(n+1)-y(n) & \mbox{~~~~~~~~~~~~~~~ \it line spacing} \label{linespacingsd
 X_n = y(n) & \mbox{~~~~~~~~~~~~~~~ \it line position} \label{linepositiondefneqn}
 \end{eqnarray}
 
-With this approach, any odd lines will appear as isolated outliers with an incorrect line spacing, but the error will not propagate through the remaining $X_n$. % points.
-By substituing \refeqn{spacingsvweqn} into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of $Y$ in terms of $X$ may be written as: 
+With this approach, any irregularities in line spacing will appear as isolated
+outliers in the data, but will not propagate through the remaining points. % $X_n$.
+% points.
+By substituing \refeqn{spacingsvweqn}
+into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of
+$Y$ in terms of $X$ may be written as: 
 %in two parts:
 }
 
@@ -170,7 +196,7 @@ Y(X) = U \frac{1+(n(X)+1)V}{1+(n(X)+1)W} - U \frac{1+n(X)V}{1+n(X)W}
 \end{equation}
 
 {\parindent 0mm
-with $n$ in terms of $X$ derived by a similar substitution of \refeqn{spacingsvweqn} into the definition of line position \refeqn{linepositiondefneqn} and rearranging to:
+with $n$ in terms of $X$ derived by a similar substitution of \refeqn{spacingsvweqn} into the definition of line position \refeqn{linepositiondefneqn} and rearrangement to:
 }
 
 \begin{equation}
@@ -180,38 +206,35 @@ n(X) = \frac{X-U}{UV-XW}
 
 % Initial parameters $V$ and $W$ are chosen for line fitting using a simple estimate.
 Initial values for the parameters $V=2.0$ and $W=0.1$ were empirically chosen as 
-seed values for the fitting.
+seeds for the fitting.
 % For thesis maybe:
 % These seed values remain constant in our experiments, although for each fitting their signs must be set to correpond to the ordering of the data points (increasing or decreasing $y(n)$) and the general trend of $Y(n)$ (increasing or decreasing).
 % for the error optimisation.
-Due to the complexity of \refeqn{fittingeqn} and \refeqn{nfromxeqn}, many false minima exist, and one of these may be converged upon during optimisation.
-Therefore, to refine the parameters, an initial fit is made with an approximation of \refeqn{fittingeqn}:
+% However, due to the complexity of \refeqn{fittingeqn} and \refeqn{nfromxeqn}, many false
+% local minima exist, one of which may be converged upon during fitting.
+% Therefore, in order to ensure that parameters close to the global minimum are used as seeds,
+To avoid the false local minima caused by the complexity of \refeqn{fittingeqn} and \refeqn{nfromxeqn},
+we ensure that parameters close to the global minimum are used as seeds,
+by making an initial fit with an approximation of \refeqn{fittingeqn}:
 
 \begin{equation}
 Y(X) = \frac{ UV }{ 1+n(X)W }
 \end{equation}
 
-This ensures that parameters close to the desired minima are obtained before the final fitting.
-\reffig{goodfitting} shows that the outlier from \reffig{poorfitting} has now affected two of the data points, but does not affect the rest of the data.
-However, since the fitting achieved is still not perfect, we employ RANSAC to actually exclude apparent outliers from the final parameter fit.
-Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the 
-altitude of the horizon:
-
-\begin{equation}
-y(\infty) = UV/W
-\end{equation}
-
-% A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
-After reversing the transformation made earlier in (\ref{uprightbaseline}) to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
-% We therefore fit the measured positions against spacing $(y(n),y(n+1)-y(n))$ to the model:
-
-% \begin{figure}[t]
-% \begin{centering}
-% \epsfig{figure=images/prlrunning/gplfit.ps,width=75mm}
-% \caption{The final fitting of \refeqn{fittingeqn} to the observed line spacing.}
-% \label{fittinggraph}
-% \end{centering}
-% \end{figure}
+which refines the parameters before the final fitting with \refeqn{fittingeqn}.
+% This ensures that parameters close to the global minimum are obtained before the final fitting.
+\reffig{goodfitting} shows that the outlier from \reffig{poorfitting} has now
+affected two of the data points, but not the rest of the data.
+Since the line spacings exhibit more clearly the irregularities of the points observed in the image,
+RANSAC was able to easily reject these outliers, and produce a good fit close to the ground truth.
+% Unlike the fitting to $(n,y(n))$, fitting to $(y(n),Y(n))$ will give rise to the correct curve
+In fact, the fitting to line spacings is able to cope with situations
+when points is missing, irrelevant points are included, or a space between paragraphs causes a change
+in the phase of the line positions.
+% % (However, it doesn't deal with adjacent paragraphs of different internal line spacing.)
+% However, since the fitting achieved is still not perfect, we employ RANSAC to
+% actually exclude apparent outliers from the final parameter fit.
+% Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the 
 
 \begin{figure}[t]
 \begin{centering}
@@ -235,6 +258,25 @@ After reversing the transformation made earlier in (\ref{uprightbaseline}) to br
 \end{centering}
 \end{figure}
 
+% \begin{figure}[t]
+% \begin{centering}
+% \epsfig{figure=images/prlrunning/gplfit.ps,width=75mm}
+% \caption{The final fitting of \refeqn{fittingeqn} to the observed line spacing.}
+% \label{fittinggraph}
+% \end{centering}
+% \end{figure}
+
+Once optimised, $V$ and $W$ may be substituted into
+\refeqn{spacingsvweqn} to find the altitude of the horizon, $y(\infty)=UV/W$.
+% 
+% \begin{equation}
+% y(\infty) = UV/W
+% \end{equation}
+% 
+% A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
+After reversing the transformation made earlier in (\ref{uprightbaseline}) to
+bring the baseline upright, this point will correspond to the location of the
+vertical vanishing point in the original image.
 % \reffig{vvpaccuracy} shows the angular error of the vertical vector recovered
 % for each image in the range of $0$ to $90^\circ$ in yaw and pitch using the
 \reffig{vvpaccuracy} shows the accuracy of recovery of the vertical vanishing
@@ -249,7 +291,9 @@ left-justified one), performance is poor due to the paragraph's jagged edge.
 %when the vertical vanishing point is close to infinity, which occurs when the
 %pitch is low.
 Figure \ref{vvpaccuracyc} shows an example of the accuracy when the line
-spacings are employed on centrally-justified paragraphs. This method provides good
+spacings are employed on centrally-justified paragraphs.
+
+This method provides good
 results  for all of the simulated images except those
 documents oriented beyond $80^\circ$ in pitch, where the algorithm begins to
 fail. 
@@ -345,9 +389,14 @@ horizontal and vertical vectors of the text plane.
 It can be seen that the accuracy of location of the vertical vanishing point is
 good for both the margin intersection and the line spacings method. 
 As the last two rows of \reftab{accuracytable} shows, intersecting margins is not
-suitable for documents with jagged edges. We keep the  presentation of  our
-results simple by not showing any on right-justified paragraphs since their
-occurrance is very rare compared to other types.
+suitable for documents with jagged edges.
+% Results for right-justified paragraphs are omitted since they are essentially equivalent to
+% left-justified paragraphs.
+Results for right-justified paragraphs have been omitted for brevity, and are of course
+comparable to those for left-justified paragraphs.
+% We keep the  presentation of  our
+% results simple by not showing any on right-justified paragraphs since their
+% occurrance is very rare compared to other types.
 
 
 Having found the vanishing points of the plane, we may project two lines from each
