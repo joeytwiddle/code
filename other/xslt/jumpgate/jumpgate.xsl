@@ -6,7 +6,6 @@
 
 <xsl:import href="../xhtmlCommon.xsl" />
 
-<!--
 <xsl:variable name="mode">
 	<xsl:choose>
 		<xsl:when test="element-available('yaslt:value-of')">
@@ -15,11 +14,12 @@
 		<xsl:otherwise> addEntry </xsl:otherwise>
 	</xsl:choose>
 </xsl:variable>
+<!--
+<xsl:variable name="mode">addEntry</xsl:variable>
 -->
 <!--
 <xsl:param name="mode" value="addEntry"/>
 -->
-<xsl:variable name="mode">addEntry</xsl:variable>
 <!--
 <?modxslt-param name="mode" value="default"/>
 -->
@@ -47,14 +47,14 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 		<html>
 			<body>
 
+				<!--
 				MODE=<xsl:value-of select="$mode"/>=<P/>
-
 				<xsl:variable name="color">red</xsl:variable>
 				<FONT COLOR="{$color}">Red Text</FONT>
-
 				<xsl:if test="$color='red'">
 					success
 				</xsl:if>
+				-->
 
 				<xsl:if test="$mode='default' or $mode=''">
 
@@ -70,27 +70,35 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 
 				</xsl:if>
 
+				<xsl:variable name="urlToScrape">
+					<xsl:choose>
+						<xsl:when test="element-available('yaslt:value-of')">
+							<yaslt:value-of select="$GET[urlToScrape]" />
+						</xsl:when>
+						<xsl:otherwise></xsl:otherwise>
+					</xsl:choose>
+				</xsl:variable>
+				<!--
+				<xsl:if test="$mode='addEntry' or $mode='addEntryProgress'">
+				-->
 				<xsl:if test="$mode='addEntry'">
 					<!--
-					<xsl:variable name="urlToScrape">
-						<xsl:choose>
-							<xsl:when test="element-available('yaslt:value-of')">
-								<yaslt:value-of select="$GET[urlToScrape]" />
-							</xsl:when>
-							<xsl:otherwise> http://www.google.com/ </xsl:otherwise>
-						</xsl:choose>
-					</xsl:variable>
-					-->
 					<xsl:variable name="urlToScrape">http://www.google.com/</xsl:variable>
 					URL=<xsl:value-of select="$urlToScrape"/>
-					<xsl:if test="boolean(1)">
+					-->
+					<xsl:if test="$urlToScrape=''">
 						<FORM action="">
 							Enter the webpage which contains your service's search form:
 							<BR/>
-							<INPUT type="hidden" name="mode" value="addEntry"/>
+							<INPUT type="hidden" name="mode" value="addEntryProgress"/>
 							<INPUT name="urlToScrape" value="http://" size="30" maxlength="9999"/>
 						</FORM>
 					</xsl:if>
+				</xsl:if>
+				<xsl:if test="$mode='addEntryProgress'">
+					<!--
+					<xsl:if test="$urlToScrape!='' or $mode='addEntryProgress'">
+					-->
 					<xsl:if test="boolean(1)">
 						<!--
 						<xsl:apply-templates select="'hello'" mode="xmlverb"/>
@@ -117,10 +125,10 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 							<xsl:call-template name="ScrapeForm" select="$todo/node()"/>
 							-->
 							<xsl:call-template name="AddEntry_SelectForm">
-								<!--
 								<xsl:with-param name="pageUrl" select="string($urlToScrape)"/>
-								-->
+								<!--
 								<xsl:with-param name="pageUrl" select="string('http://www.google.com/')"/>
+								-->
 							</xsl:call-template>
 							<!-- ... -->
 						</xsl:if>
@@ -144,58 +152,155 @@ Hmm well i did move it to /tmp in Apache config, but that's not entirely secure 
 
 	<xsl:template name="AddEntry_SelectForm">
 		<xsl:param name="pageUrl"/>
+		<xsl:variable name="tidyPageUrl" select="concat('http://hwi.ath.cx/cgi-bin/joey/tidy?url=',string($pageUrl))"/>
 
-		<xsl:variable name="forms">
-			<xsl:call-template name="ScrapeFormsFromUrl">
-				<xsl:with-param name="pageUrl" select="$pageUrl"/>
-			</xsl:call-template>
+		<xsl:variable name="thePage" select="document($tidyPageUrl)"/>
+
+		<xsl:variable name="addEntryStage">
+			<xsl:choose>
+				<xsl:when test="element-available('yaslt:value-of')">
+					<yaslt:value-of select="$GET[addEntryStage]" />
+				</xsl:when>
+				<xsl:otherwise> addEntry </xsl:otherwise>
+			</xsl:choose>
+		</xsl:variable>
+		<xsl:variable name="urlToScrape">
+			<xsl:choose>
+				<xsl:when test="element-available('yaslt:value-of')">
+					<yaslt:value-of select="$GET[urlToScrape]" />
+				</xsl:when>
+				<xsl:otherwise></xsl:otherwise>
+			</xsl:choose>
 		</xsl:variable>
 
-		<P>
-		OK I have loaded <xsl:value-of select="$pageUrl"/>, and tidied it.
-		<BR/>
-		It has <xsl:value-of select="count($forms)"/> forms.
-		<!--
-		It has <xsl:value-of select="count($forms//*[name(.)='form'])"/> forms.
-		-->
-		<xsl:value-of select="$forms"/>
-		<!--
-		<xsl:copy-of select="$forms//*[name(.)='form']"/>
-		-->
-		<!--
-		<xsl:for-each select="$forms//*[name(.)='form']">
-		-->
-		<xsl:for-each select="$forms/.">
-			<BR/>MARK
-		</xsl:for-each>
-		<!--
-		<xsl:variable name="mozForms">
-			<xsl:copy>
-			<xsl:value-of select="$forms"/>
-			</xsl:copy>
-			<xsl:copy-of select="$forms"/>
+		<xsl:if test="$addEntryStage=''">
+			<form action="">
+				Please select the form you wish to use:
+				<input type="hidden" name="mode" value="addEntryProgress"/>
+				<input type="hidden" name="addEntryStage" value="2formChosen"/>
+				<INPUT type="hidden" name="urlToScrape">
+					<xsl:attribute name="value"><xsl:value-of select="$urlToScrape"/></xsl:attribute>
+				</INPUT>
+				<table>
+					<xsl:for-each select="$thePage//*[name(.)='form']">
+						<tr>
+						<td>Form #<xsl:value-of select="string(position())"/></td>
+						<td><xsl:copy-of select="."/></td>
+						<!--
+						<td><xsl:apply-templates select="." mode="xmlverb"/></td>
+						-->
+						<td>
+							<!--
+							<input type="radio" value="This one" onclick="javascript:alert('u clicked me');"/>
+							-->
+							<input type="radio" name="selectedFormNum">
+								<xsl:attribute name="value"><xsl:value-of select="string(position())"/></xsl:attribute>
+							</input>
+						</td>
+						</tr>
+					</xsl:for-each>
+					<tr><td colspan="3" align="right">
+						<input type="submit" value="Next"/>
+					</td></tr>
+				</table>
+			</form>
+		</xsl:if>
+
+		<xsl:variable name="selectedFormNum">
+			<xsl:choose>
+				<xsl:when test="element-available('yaslt:value-of')">
+					<yaslt:value-of select="$GET[selectedFormNum]" />
+				</xsl:when>
+				<xsl:otherwise> addEntry </xsl:otherwise>
+			</xsl:choose>
 		</xsl:variable>
-		<xsl:value-of select="$mozForms/."/>
-		-->
-		</P>
 
-		<P/>
-		VALUE-OF(forms):<BR/>
-		<xsl:value-of select="$forms"/>
-		<P/>
+		<xsl:if test="$addEntryStage='2formChosen'">
+			<xsl:variable name="form" select="($thePage//*[name(.)='form'])[number($selectedFormNum)]"/>
+			<form action="">
+				<input type="hidden" name="mode" value="addEntryProgress"/>
+				<input type="hidden" name="addEntryStage" value="3fieldChosen"/>
+				<INPUT type="hidden" name="urlToScrape">
+					<xsl:attribute name="value"><xsl:value-of select="$urlToScrape"/></xsl:attribute>
+				</INPUT>
+				<input type="hidden" name="selectedFormNum">
+					<xsl:attribute name="value"><xsl:value-of select="$selectedFormNum"/></xsl:attribute>
+				</input>
+				Now please select which of the fields is the one you wish to search on:
+				<table>
+					<xsl:for-each select="$form//*[name(.)='input'] | $form//*[name(.)='select']">
+						<tr>
+							<td><xsl:value-of select="@name"/>=<xsl:value-of select="@value"/></td>
+							<td><xsl:copy-of select="."/></td>
+							<td>
+								<input type="radio" name="selectedInputName">
+									<xsl:attribute name="value"><xsl:value-of select="@name"/></xsl:attribute>
+									<!-- TODO: fails -->
+									<xsl:if test="name(.)='input' and ./@type='text'">
+										<xsl:attribute name="selected">true</xsl:attribute>
+									</xsl:if>
+								</input>
+							</td>
+						</tr>
+					</xsl:for-each>
+					<tr><td colspan="3" align="right">
+						<input type="submit" value="Next"/>
+					</td></tr>
+				</table>
+			</form>
+		</xsl:if>
 
-		<!-- mod_xslt complains "Invalid type" here, presumably cannot iterate null result! -->
-		<!--
-		<xsl:for-each select="$forms//*[name(.)='input']">
-			WIKKED <P/>
-		</xsl:for-each>
-		-->
-
-		<!--
-		<xsl:apply-templates select="$forms"/>
-		<xsl:apply-templates select="string($forms)" mode="xmlverb"/>
-		<xsl:apply-templates select="." mode="xmlverb"/>
-		-->
+		<xsl:if test="$addEntryStage='3fieldChosen'">
+			<xsl:variable name="selectedInputName">
+				<xsl:choose>
+					<xsl:when test="element-available('yaslt:value-of')">
+						<yaslt:value-of select="$GET[selectedInputName]" />
+					</xsl:when>
+					<xsl:otherwise> todo:moz </xsl:otherwise>
+				</xsl:choose>
+			</xsl:variable>
+			<xsl:variable name="form" select="($thePage//*[name(.)='form'])[number($selectedFormNum)]"/>
+			<!--
+			<xsl:apply-templates select="$form/." mode="xmlverb"/>
+			-->
+			This is the data you will need to add to the jumpgate:
+			<blockquote>
+				&lt;SearchEntry action=&quot;<xsl:value-of select="$form/@action"/>&quot;&gt;
+				&lt;MainParameter name=&quot;<xsl:value-of select="$selectedInputName"/>&quot;/&gt;
+				<!-- TODO: need to turn them all into hidden input elements -->
+				<xsl:apply-templates select="$form//*[name(.)='input' or name(.)='select'][./@name != string($selectedInputName)]" mode="xmlverb"/>
+				&lt;/SearchEntry&gt;
+			</blockquote>
+			<!--
+			<form action="">
+				<input type="hidden" name="mode" value="addEntry"/>
+				<input type="hidden" name="addEntryStage" value="3fieldChosen"/>
+				<input type="hidden" name="selectedFormNum">
+					<xsl:attribute name="value"><xsl:value-of select="$selectedFormNum"/></xsl:attribute>
+				</input>
+				Now please select which of the fields is the one you wish to search on:
+				<table>
+					<xsl:for-each select="$form//*[name(.)='input'] | $form//*[name(.)='select']">
+						<tr>
+							<td><xsl:value-of select="@name"/>=<xsl:value-of select="@value"/></td>
+							<td><xsl:copy-of select="."/></td>
+							<td>
+								<input type="radio" name="selectedInputName">
+									<xsl:attribute name="value"><xsl:value-of select="@name"/></xsl:attribute>
+									<xsl:if test="name(.)='input' and ./@type='text'">
+										<xsl:attribute name="selected">true</xsl:attribute>
+									</xsl:if>
+								</input>
+							</td>
+						</tr>
+					</xsl:for-each>
+					<tr><td colspan="3" align="right">
+						<input type="submit" value="Next"/>
+					</td></tr>
+				</table>
+			</form>
+			-->
+		</xsl:if>
 
 	</xsl:template>
 
