@@ -1,4 +1,4 @@
-g++ -w -O3 -I /usr/X11R6/include -I $JPATH/joeylib/.comp/ -lm -L /usr/X11R6/lib -lX11 -lXext $*.c $JPATH/joeylib/.comp/joeylib.o -o $*
-# Unix: g++ -w -O3 -I /usr/X11R6/include -I $JPATH/joeylib/.comp/ -lm -L /usr/X11R6/lib -lX11 -lposix4 -lXext $*.c $JPATH/joeylib/.comp/joeylib.o -o $*
+# g++ -w -O3 -I /usr/X11R6/include -I $JPATH/joeylib/.comp/ -lm -L /usr/X11R6/lib -lX11 -lXext $*.c $JPATH/joeylib/.comp/joeylib.o -o $*
+g++ -w -O3 -I /usr/X11R6/include -I $JPATH/joeylib/.comp/ -lm -L /usr/X11R6/lib -lX11 -lposix4 -lXext $*.c $JPATH/joeylib/.comp/joeylib.o -o $*
 # xlib/xlib.o 
 # g++ -I /usr/X11R6/include -lm -L /usr/X11R6/lib -lX11 -lXext $*.c -o $*

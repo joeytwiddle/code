@@ -15,11 +15,17 @@ public class Button extends Component implements ActionComponent {
 
   public String text;
   //private Page destination;
+	public Object carry;
 
 	public Button() { }
 
   public Button(String t) {
     text=t;
+  }
+
+  public Button(String t,Object c) {
+    text=t;
+		carry=c;
   }
 
 	public void action() { }
