@@ -7,9 +7,10 @@ fi
 export CITY_NAME="$1"
 shift
 
-echo
-echo "######## Post-pull operations"
-echo
+export CITYPATH="/www/active-cvs/$CITY_NAME"
+export NEARCITY="/www/" ## on same fs please, used temporarily
+
+JSH=/home/joey/j/jsh
 
 ## Set to true if you want to dev on this box and want to be able to check your changes
 DOBACKUPSB4DEV=
@@ -17,47 +18,45 @@ DOBACKUPSB4DEV=
 # More notes:
 # The SQL log on tronic is linked outside the tree.  I couldn't be bothered to download it.  I created a similar directory+file outside the tree on buggy so the link works.
 
-export CITYPATH="/www/active-cvs/$CITY_NAME"
-export NEARCITY="/www/" ## on same fs please, used temporarily
-
-## This next line was left out but I suspect cron had it.  But check if a lone source works sometime...
-export JPATH=/home/joey/j
-source /home/joey/j/startj-simple
-
-echo 'Putting "Warning: mirror" notice on the site.'
-sedreplace -changes '.*Please refrain' '<font color="#ff8080" size="+2">Please note: You are viewing a mirror / backup of the main site.  <b>Any submissions made here WILL be LOST!</b></font><p><font color="#ffffff">Please refrain' "$CITYPATH/local/include/imcfront-header.inc"
-echo
-
 echo "Giving www-data owner privilege on all $CITY_NAME imc files"
 chown www-data:imc $CITYPATH/ /www/uploads/$CITY_NAME/ -R
 echo
 
 if test "$DOBACKUPB4DEV"
 then
-	echo "Making a backup of the live site before making development changes."
+	echo "Making a backup of the local copy before running post-pull scripts."
 	rm -rf /www/active-cvs/$CITY_NAME-b4dev
 	# Hide heavy directories
 	mv $CITYPATH/webcast/logs $NEARCITY/logs.hiding
 	mv $CITYPATH/local/webcast/cache $NEARCITY/cache.hiding
+	# Make the backup
 	cp -a $CITYPATH /www/active-cvs/$CITY_NAME-b4dev
 	# Restore the heavy directories
 	mv $NEARCITY/logs.hiding $CITYPATH/webcast/logs
 	mv $NEARCITY/cache.hiding $CITYPATH/local/webcast/cache
 fi
 
+echo
+echo "######## Post-pull operations"
+echo
+
+echo 'Putting "Warning: mirror" notice on the site.'
+$JSH sedreplace -changes '.*Please refrain' '<font color="#ff8080" size="+2">Please note: You are viewing a mirror / backup of the main site.  <b>Any submissions made here WILL be LOST!</b></font><p><font color="#ffffff">Please refrain' "$CITYPATH/local/include/imcfront-header.inc"
+echo
+
 echo "Moving $CITY_NAME/.htaccess to /tmp cos it causes problems."
 mv $CITYPATH/webcast/.htaccess /tmp
 echo
 
 # echo "Pointing towards active_bristoldev instead of active_bristol PG DB."
-# sedreplace -changes \
+# $JSH sedreplace -changes \
 	# '$db_setup\["database"\] = "active_bristol";' \
 	# '$db_setup["database"] = "active_bristoldev";' \
 	# $CITYPATH/local/db-setup.php3
 # echo
 
 # added imc_user now
-# sedreplace -changes \
+# $JSH sedreplace -changes \
 	# 'my $default_usr = "imc_user"' \
 	# 'my $default_usr = "root"' \
 		# $CITYPATH/shared/modules/IMC/Database.pm
@@ -66,7 +65,7 @@ if test $LOOPBACK_HACK
 then
 	echo "Refresh http gets: Can't see $HOST but can see $LOOPBACK_HACK fix"
 	WC="$CITYPATH/webcast"
-	sedreplace -changes \
+	$JSH sedreplace -changes \
 		'getenv("HTTP_HOST")' \
 		"'$LOOPBACK_HACK'" \
 			`greplist "refresh=y" \`find $WC -name "*.php3"\``
@@ -76,22 +75,13 @@ then
 fi
 
 echo "Removing incompatible php"
-sedreplace -changes '<!-- <?=\$summary_file?> -->' ' ' "$CITYPATH/webcast/index_imc.php3"
+$JSH sedreplace -changes '<!-- <?=\$summary_file?> -->' ' ' "$CITYPATH/webcast/index_imc.php3"
 echo
-
-## Patches were on the old buggy  :=(
-# echo "Applying other patches:"
-# cd $CITYPATH/
-# for X in /www/tronic-to-buggy-patches/*
-# do patch -p0 < "$X"
-# done
-# cd /www/
-# echo
 
 if test "$DOBACKUPB4DEV"
 then
 echo "Finally checksumming the result so you can easily see what files you have changed."
-cksum `find $CITYPATH/ -type f | notindir CVS cache log logs | grep -v '\.b4sr$'` > /www/"$CITY_NAME"b4local.cksum
+cksum `find $CITYPATH/ -type f | $JSH notindir CVS cache log logs | grep -v '\.b4sr$'` > /www/"$CITY_NAME"b4local.cksum
 echo
 fi
 
@@ -100,28 +90,27 @@ fi
 
 if test $1
 then echo "Skipping DB creation cos argument passed." ; exit 0
+else
+
+	echo "Local PGDB does not recognise user bristol, so must connect as postgres."
+	$JSH sedreplace \
+		'connect - bristol' \
+		'connect - postgres' \
+			/www/db-backups/$CITY_NAME/active_$CITY_NAME.psql
+	echo
+
+	# Re-create the MYSQL DB:
+	/www/scripts/recreatemydb.sh
+
+	# Ensure postgres is not busy so that we may destroy the DB:
+	# Note: "su - root" used in case cron does not have full PATH setup.
+	su - root /etc/init.d/postgresql stop
+	sleep 15
+	su - root /etc/init.d/postgresql start
+	sleep 15
+	# Replace the DB:
+	su - postgres env CITY_NAME=$CITY_NAME /www/scripts/recreatepgdb.sh
+
 fi
-
-
-
-
-echo "Local PGDB does not recognise user bristol, so must connect as postgres."
-sedreplace \
-	'connect - bristol' \
-	'connect - postgres' \
-		/www/db-backups/$CITY_NAME/active_$CITY_NAME.psql
-echo
-
-# Re-create the MYSQL DB:
-/www/scripts/recreatemydb.sh
-
-# Ensure postgres is not busy so that we may destroy the DB:
-# Note: "su - root" used in case cron does not have full PATH setup.
-su - root /etc/init.d/postgresql stop
-sleep 15
-su - root /etc/init.d/postgresql start
-sleep 15
-# Replace the DB:
-su - postgres env CITY_NAME=$CITY_NAME /www/scripts/recreatepgdb.sh
 
 echo "All done."
