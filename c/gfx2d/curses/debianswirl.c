@@ -27,7 +27,8 @@ void cls() {
 }
 void main() {
 
-	char *palette=":=os%#@";
+	#define PALSIZE 8
+	char *palette=" ::+O###_";
 	
 	printf("Hello\n");
 	srand(time(NULL));
@@ -73,11 +74,12 @@ void main() {
 				if (y<0)
 					ang=ang+M_PI;
 				float rad = sqrt(X*X+Y*Y);
-				float swirlHeight = sin(rad/spacePerSwirl+ang-swirlang);
+				float swirlHeight = sin(0.8*M_PI*sin(rad*4.1)+rad/spacePerSwirl+ang-swirlang);
 
-				if ( swirlHeight > - 0.2 ) {
+				#define EXTRA 0.4
+				if ( swirlHeight > - EXTRA ) {
 				// if ( swirlHeight > - 0.7 ) {
-					int c = (((int)((swirlHeight+0.2)/1.2*7.0)) % 7);
+					int c = (((int)((swirlHeight+EXTRA)/(1.0+EXTRA)*(float)PALSIZE)) % PALSIZE);
 					char ch = palette[c];
 					c=1;
 					attrset(COLOR_PAIR(c+1) | A_BOLD);
