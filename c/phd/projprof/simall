@@ -6,14 +6,19 @@
 # DOCUMENTS="left cen right full"
 
 DOCUMENTS="dar-crpage2-left30" # left
-PPSCANMETHODS="hier full"
-# PPMEASURES="square deriv"
-PPMEASURES="willbederived"
+# PPSCANMETHODS="hier full"
+PPSCANMETHODS="full"
+PPMEASURES="square" # deriv"
+# PPMEASURES="willbederived"
 # VVPMETHODS="spacings margins"
 VVPMETHODS="spacings"
-NOISES=`seq -w 0 05 50`
+# NOISES=`seq -w 0 05 50`
+# NOISES=`seq -w 0 10 20`
+NOISES="0.2"
 # LINESTODO=`seq -w 30 -1 02`
-ANGLES=`seq -w 20 05 50`
+# ANGLES=`seq -w 20 05 50`
+# ANGLES=`seq -w 20 20 40`
+ANGLES="40"
 
 for DOCUMENT in $DOCUMENTS; do
 
@@ -25,13 +30,13 @@ for DOCUMENT in $DOCUMENTS; do
 
 			for VVPMETHOD in $VVPMETHODS; do
 
-				# Do measure inline with scan method
-				if test "$PPSCANMETHOD" = hier; then
-					PPMEASURE=deriv
-				else
-					PPMEASURE=deriv # actually keep the same cos square can't handle noise
-					# PPMEASURE=square
-				fi
+				# # Do measure inline with scan method
+				# if test "$PPSCANMETHOD" = hier; then
+					# PPMEASURE=deriv
+				# else
+					# PPMEASURE=deriv # actually keep the same cos square can't handle noise
+					# # PPMEASURE=square
+				# fi
 
 				PPPARAMS="
 					-res 180 -adapt 0.03 -maxpixels 2000
