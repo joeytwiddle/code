@@ -4,6 +4,9 @@ HFILE=".comp/$FILE.h"
 CFILE=".comp/$FILE.c"
 
 
+echo "Making $FILE.c  ->  $HFILE $CFILE"
+
+
 ( echo '#ifndef '"$FILE"'_H'
 	echo '  #define '"$FILE"'_H'
 	echo
@@ -29,4 +32,5 @@ jparse c "$FILE.c" "h:$HFILE" "c:$CFILE"
 	echo "#endif"
 ) >>	"$CFILE"
 
-sreplace "$CFILE" " ::" " "
+# sreplace "$CFILE" " ::" " "
+sedreplace " ::" " " "$CFILE"

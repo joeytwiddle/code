@@ -69,7 +69,6 @@ void main() {
 	#define PALSIZE 8
 	char *palette=" -=*O@@@@_";
 	
-	printf("Hello\n");
 	srand(time(NULL));
 	// Needed
 	initscr(); cbreak(); noecho();
