@@ -1,17 +1,18 @@
 #!/bin/sh
 
-DOC=$1;
-
 # export PATH="$PATH:."
 
 numlines=30
-# for numlines in `seq -w 30 01`; do
+for numlines in `seq -w 20 -2 01`; do
 
   echo
   echo "LINES: $numlines -----------------------------------------"
 
   SRCNAME="dar-crpage2-left$numlines"
+  # SRCNAME="doc-cen"
+  # SRCNAME="doc-cen-more"
   # SRCNAME="dar-crpage2"
+  SRCNAME="leaflet-cen"
   IFILE="$SRCNAME.bmp"
   RES="results.txt"
   FOCALRES="focalres.txt"
@@ -24,9 +25,9 @@ numlines=30
   rm -f "$FOCALRES"
   echo "" > "$FOCALRES"
 
-  STARTANG=20
-  ENDANG=80
-  ANGSTEP=30
+  STARTANG=05
+  ENDANG=85
+  ANGSTEP=20
   # STARTANG=0
   # ENDANG=90
   # ANGSTEP=5
@@ -76,6 +77,6 @@ numlines=30
 
   cp "$RES" "results-lines-$numlines.txt"
 
-# done
+done
 
 touch done
