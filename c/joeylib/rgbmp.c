@@ -1206,7 +1206,7 @@ public:
     printf("Got here!\n");
     
     if(!(fp=fopen(filename,"r"))){
-      // fprintf(stderr,"[readppm] error opening %s\n",filename);
+      fprintf(stderr,"[readppm] error opening %s\n",filename);
       return NULL;
     }
     

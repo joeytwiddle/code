@@ -1,3 +1,8 @@
+#ifndef joeylib_C
+  #define joeylib_C
+
+  #include <joeylib.h>
+
 // joeylib
 
 /* All my source code is freely distributable under the GNU public licence.
@@ -200,3 +205,5 @@ void helloworld() {
 #include <args.c>
 
 #include <fixers.c>
+
+#endif

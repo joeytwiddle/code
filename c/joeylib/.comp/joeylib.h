@@ -1,3 +1,6 @@
+#ifndef joeylib_H
+  #define joeylib_H
+
 // joeylib
 
 /* All my source code is freely distributable under the GNU public licence.
@@ -11,7 +14,7 @@
 
 // Which operating system are we under?
 
-#include <whichos.c>
+#include <whichos.h>
 // #define LINUX
 // #define DOS
 #define UNIX
@@ -80,123 +83,124 @@
   #include <dir.h>
 #endif
 
-void helloworld() {
-  printf("Hello world! =)\n");
-}
+void helloworld(); // Method
+
 
 // #include <query.c>
 
-#include <mem.c>
+#include <mem.h>
 
 // For throwing errors
-#include <error.c>
+#include <error.h>
 
 // Simple operations on strings (see also args.c and parser.c)
-#include <strings.c>
+#include <strings.h>
 
 // Not working yet
 #ifdef USINGCURSES
-  #include <jcurses.c>
+  #include <jcurses.h>
 #endif
 
 // Dynamic (slow to create) static (fast to access) list (template)
-#include <list.c>
+#include <list.h>
 // Binary ordered tree (template) for getting ordered data
-#include <ordtree.c>
-#include <list2.c>
+#include <ordtree.h>
+#include <list2.h>
 
-#include <strings2.c>
+#include <strings2.h>
 
-#include <progmon.c>
+#include <progmon.h>
 
 // Lots of lovely maths functions
-#include <maths.c>
+#include <maths.h>
 
 // For timing frame rates
-#include <timer.c>
+#include <timer.h>
 
 // Reading and writing (batches of) files
-#include <files.c>
+#include <files.h>
 
 // Creating and parsing HTML files
-#include <htmler.c>
+#include <htmler.h>
 
 // RGB colour
-#include <myrgb.c>
+#include <myrgb.h>
 
 // My abstraction over Allegro
 #ifdef ALLEGRO
-#include <myalleg.c>
+#include <myalleg.h>
 #endif
 
-#include <vnd.c>
+#include <vnd.h>
 // 2d vectors etc
-#include <v2d.c>
-#include <line2d.c>
-#include <polygon2d.c>
+#include <v2d.h>
+#include <line2d.h>
+#include <polygon2d.h>
 // 3d vectors, with many operations on them
-#include <matrix0.c>
-#include <v3d.c>
+#include <matrix0.h>
+#include <v3d.h>
 // 3d orientation (right,up,forward) with pitch,yaw,roll operations
-#include <ori.c>
-#include <v3dmore.c>
-#include <matrix.c>
+#include <ori.h>
+#include <v3dmore.h>
+#include <matrix.h>
 // #include <maths2.c>
-#include <viewpnt.c>
-#include <line3d.c>
-#include <plane.c>
-#include <rectangle3d.c>
+#include <viewpnt.h>
+#include <line3d.h>
+#include <plane.h>
+#include <rectangle3d.h>
 // #include <plane3d.c> silly!
-#include <polygon3d.c>
+#include <polygon3d.h>
 
-#include <writeable.c>
+#include <writeable.h>
 
 // Template maps (boxed grids).  2d allows filtering (for edges, derivatives),
 // smoothing, (adaptive) thresholding, combination of maps...
-#include <maps.c>
+#include <maps.h>
 // 2d region, a boolean mask map or list of pixels
-#include <region.c>
-#include <map2d2.c>
+#include <region.h>
+#include <map2d2.h>
 
 // A uchar bitmap for writing to a 256 colour screen quickly
-#include <jbmp.c>
+#include <jbmp.h>
 
 // Perspective projection functions (using V3ds)
-#include <pp.c>
-#include <frustrum.c>
+#include <pp.h>
+#include <frustrum.h>
 
 // Colour histogram
-#include <rgbhist.c>
+#include <rgbhist.h>
 // Colour bitmap
 // #include <writeppm.c>
-#include <rgbmp.c>
-#include <texturedrectangle3d.c>
-#include <maths2.c>
+#include <rgbmp.h>
+#include <texturedrectangle3d.h>
+#include <maths2.h>
 // 2D line of best fit with outliers
-#include <correlator2d.c>
+#include <correlator2d.h>
 // Bitmap read/write by Angus
-#include <angus.c>
+#include <angus.h>
 
 // My 2d fonts
-#include <jfont.c>
+#include <jfont.h>
 
 // Quadtree (template)
-#include <quadtree.c>
+#include <quadtree.h>
 
 // A quadrilateral
-#include <quad.c>
+#include <quad.h>
 
 // Renders an unknown 3d volume where many 3d points must be inspected
-#include <volrend.c>
+#include <volrend.h>
 
 // Octree (template) with may be clipped to a viewing frustrum
-#include <octree.c>
+#include <octree.h>
 #ifdef USINGJFONT
-#include <renderable.c>
-#include <renderer.c>
+#include <renderable.h>
+#include <renderer.h>
 #endif
 
 // For parsing command line arguments
-#include <args.c>
+#include <args.h>
 
-#include <fixers.c>
+#include <fixers.h>
+
+#endif

@@ -315,6 +315,7 @@ float floatrnd(float l,float r) {
   return l+myrnd2()*(r-l);
 }
 
+// Returns random integer from set {l,..,r}
 int intrnd(int l,int r) {
   int x=(int)(l+myrnd()*(r-l+1));
   if (x>r)
@@ -324,6 +325,11 @@ int intrnd(int l,int r) {
 
 int intrnd(int r) {
   return intrnd(0,r);
+}
+
+template<class Object>
+Object randbetween(Object oa,Object ob) {
+	return oa+myrnd()*(ob-oa);
 }
 
 float magrnd(float m) {

@@ -62,12 +62,15 @@ RGBmp *angusreadbmp8(char *fn_image) {
   /* Open file */
   // fp = openImageIStream(fn_image, &fp_type);
   fp = fopen(fn_image,"rb");
-
+  if (!fp) {
+    fprintf(stderr, "[readBMP8] error opening %s\n",fn_image);
+    return NULL;
+  }
 
   /* read the file type (first two bytes) */
   c = getc(fp);  c1 = getc(fp);
   if (c!='B' || c1!='M') {
-    // fprintf(stderr, "[readBMP8] file type != 'BM'\n");
+    fprintf(stderr, "[readBMP8] file type != 'BM'\n");
     return NULL;
   }
 
@@ -98,7 +101,7 @@ RGBmp *angusreadbmp8(char *fn_image) {
 
   /* error checking */
   if (biBitCount!= 8) {
-    // fprintf(stderr, "[readBMP8] BMP type(%d) not supported\n", biBitCount);
+    fprintf(stderr, "[readBMP8] BMP type(%d) not supported\n", biBitCount);
     return NULL;
   }
 
@@ -201,6 +204,10 @@ void anguswritebmp8(String fn_image,Map2d<Object> *map,float low,float scale) {
   int xdim, ydim;
 
   fp = fopen(fn_image,"wb");
+  if (!fp) {
+    fprintf(stderr, "[writeBMP8] error writing %s\n",fn_image);
+    return;
+  }
 
   xdim = map->width;
   ydim = map->height;
@@ -272,11 +279,15 @@ RGBmp *angusreadbmp24(char *fn_image) {
 
   // Open file //
   fp = fopen(fn_image, "rb");
+  if (!fp) {
+    fprintf(stderr, "[readBMP24] error opening %s\n",fn_image);
+    return NULL;
+  }
 
   // read the file type (first two bytes) //
   c = getc(fp);  c1 = getc(fp);
   if (c!='B' || c1!='M') {
-    // fprintf(stderr, "[readBMP24] file type != 'BM'\n");
+    fprintf(stderr, "[readBMP24] file type != 'BM'\n");
     return NULL;
   }
 
@@ -306,7 +317,7 @@ RGBmp *angusreadbmp24(char *fn_image) {
 
   // error checking //
   if (biBitCount!=24) {
-    // fprintf(stderr, "[readBMP24] BMP type(%d) not supported\n", biBitCount);
+    fprintf(stderr, "[readBMP24] BMP type(%d) not supported\n", biBitCount);
     return NULL;
   }
 
@@ -347,6 +358,10 @@ void anguswritebmp24(char *fn_image,RGBmp *byte_rgb_img) {
   int xdim, ydim;
 
   fp = fopen(fn_image,"wb");
+  if (!fp) {
+    fprintf(stderr, "[writeBMP24] error writing %s\n",fn_image);
+    return;
+  }
 
   xdim = byte_rgb_img->width;
   ydim = byte_rgb_img->height;
