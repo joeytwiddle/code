@@ -1,10 +1,7 @@
 package visualjava;
 
 import javax.swing.*;
-import java.lang.reflect.Method;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Member;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
@@ -31,38 +28,51 @@ public class MethodFrame extends JInternalFrame {
     public MethodFrame(Method _m, Object _obj) {
         super("" + _m,true,true,false,true);
         method = _m;
-        // value = _obj;
-        objTarget = new ParameterTarget(_m.getDeclaringClass(),_obj);
         constructor = null;
         member = method;
         parameterTypes = method.getParameterTypes();
-        init();
+        // @todo Now here I really want to find the top declaration of this method (including if it comes from an interface!).
+        // Because sometimes we cannot access the methods of inner classes
+        // even though the method is overriding a public interface.
+        try {
+            // if (!method.isAccessible())
+            method.setAccessible(true);
+            // Well =) this appears to do the trick for Arrays.ArrayList.get(int)
+        } catch (SecurityException e) {
+            System.out.println("Couldn't make method accessible: " + method);
+        }
+        // value = _obj;
+        // if (_obj == null)
+        init(_obj);
     }
 
     public MethodFrame(Constructor _con) {
         super("" + _con,false,true,false,true);
         method = null;
-        objTarget = null;
+        // objTarget = null;
         constructor = _con;
         member = constructor;
         parameterTypes = constructor.getParameterTypes();
-        init();
+        init(null);
     }
 
-    void init() {
+    void init(Object _obj) {
         // getContentPane().add(new JLabel(VisualJava.getSimpleClassName(method.getReturnType()) + " " + method.getName() + "(" + VisualJava.listParams(method.getParameterTypes()) + ")"));
         getContentPane().setLayout(new FlowLayout());
         if (member instanceof Method) {
             getContentPane().add(new JLabel(VisualJavaStatics.getSimpleClassName(method.getReturnType())));
+            if (Modifier.isStatic(method.getModifiers())) {
+                objTarget = null;
+                getContentPane().add(new JLabel(VisualJavaStatics.getSimpleClassName(member.getDeclaringClass())));
+            } else {
+                objTarget = new ParameterTarget(member.getDeclaringClass(),_obj);
+                getContentPane().add(objTarget);
+            }
+            getContentPane().add(new JLabel("."));
         } else {
             // getContentPane().add(new JLabel("new " + constructor.getDeclaringClass().getName()));
             getContentPane().add(new JLabel("new"));
-        }
-        if (objTarget != null) {
-            getContentPane().add(objTarget);
-            getContentPane().add(new JLabel("."));
-        // } else {
-            // getContentPane().add(new JLabel(VisualJavaStatics.getSimpleClassName(member.getDeclaringClass()) + "."));
+            objTarget = null;
         }
         JButton button = new JButton(member.getName());
         button.addActionListener(
