@@ -1,8 +1,5 @@
 package org.neuralyte.common.swing;
 
-import visualjava.HasObject;
-import visualjava.CanAcceptDroppedObject;
-
 import javax.swing.*;
 import javax.swing.plaf.ComponentUI;
 import java.awt.*;
@@ -30,8 +27,8 @@ public class DragAndDropManager {
         return dropTargetListener;
     }
 
-    public static void hasObjectCanBeDropped(Component component) { // Should also implement HasObject
-        org.neuralyte.common.Assertion.assertThat(component instanceof HasObject);
+    public static void hasObjectCanBeDropped(Component component) { // Should also implement HasDragDroppableObject
+        org.neuralyte.common.Assertion.assertThat(component instanceof HasDragDroppableObject);
         Moveability.allowUserToMove(component);
         component.addMouseListener(getDroppableObjectListener());
         component.addMouseMotionListener(getDroppableObjectListener());
@@ -56,7 +53,7 @@ class DroppableObjectListener extends MouseAdapter implements MouseMotionListene
             startPoint = e.getComponent().getLocation();
         }
         dragged = e.getComponent();
-        dragging = ((HasObject)e.getComponent()).getObject();
+        dragging = ((HasDragDroppableObject)e.getComponent()).getDraggedObject();
         /*
         if (DragAndDropManager.getDropTargetListener().overATarget()) {
             if (((CanAcceptDroppedObject)DragAndDropManager.getDropTargetListener().currentTarget).isAcceptable(dragging)) {
@@ -113,7 +110,7 @@ class DropTargetListener extends MouseAdapter {
             previousFgColor = currentTarget.getForeground();
             /** @todo Make this line look nicer and your Objects will be better! **/
             if (((CanAcceptDroppedObject)currentTarget).isAcceptable(
-                    ((HasObject)Moveability.moveabilityListener.componentBeingDragged).getObject()
+                    ((HasDragDroppableObject)Moveability.moveabilityListener.componentBeingDragged).getDraggedObject()
             )) {
                 currentTarget.setBackground(Color.green);
                 currentTarget.setForeground(Color.green);

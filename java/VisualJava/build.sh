@@ -3,7 +3,7 @@ del classes
 cd src
 
 find . -name "*.java" | notindir CVS | withalldo javac
-find . -name "*.java" | notindir CVS | withalldo jikes
+# find . -name "*.java" | notindir CVS | withalldo jikes
 
 find . -name "*.class" |
 while read CLASSFILE

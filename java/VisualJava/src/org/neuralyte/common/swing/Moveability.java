@@ -1,8 +1,5 @@
 package org.neuralyte.common.swing;
 
-import visualjava.HasObject;
-import visualjava.CanAcceptDroppedObject;
-
 import java.awt.*;
 import java.awt.event.*;
 

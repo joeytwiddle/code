@@ -49,7 +49,7 @@ public class ClassMenu extends SplittingJMenu {
             /*
             try {
                 JMenu item = new JMenu(c.substring(classPackage.length()+1));
-                ObjectIcon.addStaticsToMenu(item,Class.forName(c));
+                Variable.addStaticsToMenu(item,Class.forName(c));
                 // JMenu statics = new StaticsMenu(getLastInPath(c),Class.forName(c));
             } catch (Exception e) {
                 e.printStackTrace(System.err);

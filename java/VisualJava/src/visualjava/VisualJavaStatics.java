@@ -17,7 +17,7 @@ public class VisualJavaStatics {
         return s;
     }
 
-    static String getSimpleClassName(Class c) {
+    public static String getSimpleClassName(Class c) {
         if (c.isArray()) {
             return getSimpleClassName(c.getComponentType()) + "[]";
         } else {
@@ -30,7 +30,7 @@ public class VisualJavaStatics {
         }
     }
 
-    static BufferedReader getListOfAllClasses() {
+    public static BufferedReader getListOfAllClasses() {
         PipedOutputStream out = new PipedOutputStream();
         PipedInputStream in = null;
         try {
@@ -42,6 +42,7 @@ public class VisualJavaStatics {
 
         new Thread() {
             public void run() {
+                Thread.currentThread().setPriority(1);
                 String classPath = System.getProperty("java.class.path");
                 if (classPath.indexOf(File.separatorChar + "rt.jar") == -1) { // a bit dodgy
                     classPath += ":" + System.getProperty("java.home") + "/lib/rt.jar";
@@ -84,6 +85,7 @@ public class VisualJavaStatics {
 
     private static void printClassesInDirTo(File topDir, File dir, PrintWriter writer) {
         try {
+            Thread.yield();
             if (dir.isDirectory()) {
                 File[] list = dir.listFiles();
                 for (int i=0;i<list.length;i++) {
@@ -128,6 +130,7 @@ public class VisualJavaStatics {
             final Process process = Runtime.getRuntime().exec(cmdArray);
             final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
             while (true) {
+                Thread.yield();
                 String line = reader.readLine();
                 if (line == null)
                     break;

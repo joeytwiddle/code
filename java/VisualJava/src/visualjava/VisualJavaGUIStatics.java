@@ -37,7 +37,8 @@ public class VisualJavaGUIStatics {
         menu.add(menuItem);
         menuBar.add(menu);
 
-        menu = buildClassMenu();
+        menu = new ClassMenu("");
+        buildClassMenu((ClassMenu)menu);
         menuBar.add(menu);
 
         frame.setJMenuBar(menuBar);
@@ -119,11 +120,12 @@ public class VisualJavaGUIStatics {
 
 	}
 
-    static JMenu buildClassMenu() {
-        final ClassMenu menu = new ClassMenu("");
+    static JMenu buildClassMenu(final ClassMenu menu) {
         BufferedReader in = VisualJavaStatics.getListOfAllClasses();
         try {
+            Thread.currentThread().setPriority(1);
             while (true) {
+                Thread.yield();
                 String line = in.readLine();
                 if (line == null)
                     break;
@@ -169,7 +171,12 @@ public class VisualJavaGUIStatics {
             for (int i=0;i<c.getDeclaredFields().length;i++) {
                 Field f = c.getDeclaredFields()[i];
                 if (Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers())) {
-                    addFieldToMenu(f, statics, null);
+                    try {
+                        addFieldToMenu(f, statics, null);
+                    } catch (Exception e) {
+                        e.printStackTrace(System.err);
+                        // I once got: java.lang.IllegalAccessException: Class visualjava.VisualJavaGUIStatics can not access a member of class org.neuralyte.common.swing.MoveabilityListener with modifiers "public static final"
+                    }
                 }
             }
         } catch (Exception e) {
@@ -203,6 +210,7 @@ public class VisualJavaGUIStatics {
         menu.add(menuItem);
     }
 
+    /** Do not pass Variable, pass actual Object! **/
     public static void addFieldToMenu(final Field f, JMenu menu, final Object obj) throws IllegalAccessException {
         JMenuItem menuItem = new JMenuItem(VisualJavaStatics.getSimpleClassName(f.getType()) + " " + f.getName() + " = \"" + f.get(obj) + "\"");
         menuItem.addActionListener(

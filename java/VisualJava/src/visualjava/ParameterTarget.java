@@ -1,6 +1,8 @@
 package visualjava;
 
 import visualjava.objecteditingcomponents.BooleanChooser;
+import visualjava.objecteditingcomponents.DroppableJLabel;
+import visualjava.objecteditingcomponents.DroppableJTextField;
 
 import javax.swing.*;
 import java.awt.dnd.DropTarget;
@@ -11,19 +13,37 @@ import java.lang.reflect.InvocationTargetException;
 
 import org.neuralyte.common.swing.Moveability;
 import org.neuralyte.common.swing.DragAndDropManager;
+import org.neuralyte.common.swing.HasDragDroppableObject;
+import org.neuralyte.common.swing.CanAcceptDroppedObject;
 
 /**
  * @todo Consider how user might be able to pass null instead of a non-null Object.
  */
 
 /** joey Nov 2, 2004 12:36:40 AM */
-public class ParameterTarget extends JPanel {
+public class ParameterTarget extends JPanel implements CanAcceptDroppedObject {
 
     Class type;
+
+    Variable variable;
 
     JComponent component;
 
     public ParameterTarget(Class _type) {
+        this(_type,null);
+    }
+    // public ParameterTarget(Object object) {
+        // this(object.getClass(),object);
+    // }
+    // public ParameterTarget(Variable variable) {
+        // this(variable.value.getClass(),variable);
+    // }
+    public ParameterTarget(Class _type, Object object) {
+        // if (object instanceof Variable) {
+            // _type = ((Variable)object).type;
+            // System.out.println("Creating variable parametertarget for class " + _type + " object " + object);
+        // }
+        System.out.println("Creating parametertarget for class " + _type + " object " + object);
         type = _type;
         if (type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
             component = new BooleanChooser();
@@ -32,14 +52,18 @@ public class ParameterTarget extends JPanel {
             // System.out.println("type = " + type);
             // component = new JTextField("" + VisualJavaStatics.getSimpleClassName(type));
             component = new DroppableJTextField("" + VisualJavaStatics.getSimpleClassName(type),type);
-            DragAndDropManager.canAcceptDroppedObject(component);
         } else {
             // component = new JButton("" + VisualJava.getSimpleClassName(type));
             // component = new JLabel("" + VisualJavaStatics.getSimpleClassName(type));
             component = new DroppableJLabel(VisualJavaStatics.getSimpleClassName(type),type);
-            DragAndDropManager.canAcceptDroppedObject(component);
         }
-        component.addMouseListener(
+        if (object != null && component != null) {
+            // ((CanAcceptDroppedObject)component).acceptObject(object);
+            acceptObject(object);
+        }
+        DragAndDropManager.canAcceptDroppedObject(this);
+        // component.addMouseListener(
+        this.addMouseListener(
             new MouseAdapter() {
                 public void mouseClicked(MouseEvent e) {
                     if (e.getButton() == MouseEvent.BUTTON3) {
@@ -56,8 +80,8 @@ public class ParameterTarget extends JPanel {
     }
 
     public Object getObject() {
-        if (component instanceof HasObject) {
-            return ((HasObject)component).getObject();
+        if (component instanceof HasDragDroppableObject) {
+            return ((HasDragDroppableObject)component).getDraggedObject();
         }
         if (component instanceof JTextField) {
             String text = ((JTextField)component).getText();
@@ -67,45 +91,41 @@ public class ParameterTarget extends JPanel {
             }
             System.err.println("Could not instantiate a " + type.getName() + " from \"" + text + "\".");
         // } else if (component instanceof ObjectTarget) {
-            // return ((ObjectTarget)component).getObject();
+            // return ((ObjectTarget)component).getDraggedObject();
         }
         /* || @todo ... */
         return null;
     }
 
-    class DroppableJLabel extends JLabel implements HasObject, CanAcceptDroppedObject {
-        Object object;
-        Class type;
-        public DroppableJLabel(String text, Class _type) {
-            super(text);
-            type = _type;
-            object = null;
-        }
-        public boolean isAcceptable(Object o) {
-            return (type.isAssignableFrom(o.getClass()));
-        }
-        public boolean acceptObject(Object o) {
-            object = o;
-            setText(VisualJavaStatics.getSimpleClassName(type) + " \"" + o + "\"");
-            return true;
-        }
-        public Object getObject() {
-            return object;
+    public boolean isAcceptable(Object o) {
+        if (o instanceof Variable) {
+            Object contained = ((Variable)o).value;
+            return isAcceptable(contained);
+        } else {
+            return ((CanAcceptDroppedObject)component).isAcceptable(o);
         }
     }
 
-    class DroppableJTextField extends JTextField implements CanAcceptDroppedObject {
-        Class type;
-        public DroppableJTextField(String text, Class _type) {
-            super(text);
-            type = _type;
-        }
-        public boolean isAcceptable(Object o) {
-            return (type.isAssignableFrom(o.getClass()));
-        }
-        public boolean acceptObject(Object o) {
-            setText("" + o);
-            return true;
+    public boolean acceptObject(Object o) {
+        if (o instanceof Variable) {
+            Object contained = ((Variable)o).value;
+            boolean accepted = acceptObject(contained);
+            if (accepted) {
+                variable = (Variable)o;
+                if (component instanceof JLabel) {
+                    ((JLabel)component).setText(variable.name);
+                }
+            }
+            return accepted;
+        } else {
+            boolean accepted = ((CanAcceptDroppedObject)component).acceptObject(o);
+            if (accepted) {
+                variable = null;
+            }
+            if (component instanceof JLabel) {
+                ((JLabel)component).setText("I hope you dropped a variable, cos that's what I expect!");
+            }
+            return accepted;
         }
     }
 

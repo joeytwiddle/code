@@ -2,51 +2,56 @@
 <project version="3" relativePaths="false">
   <component name="FileEditorManager">
     <history>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJava.java" line="20" column="15" vertical-scroll-proportion="0.5488127" horizontal-scroll-proportion="0.18356644" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassPathEditor.java" line="17" column="9" vertical-scroll-proportion="0.5488127" horizontal-scroll-proportion="0.11013986" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="116" column="36" vertical-scroll-proportion="3.773087" horizontal-scroll-proportion="0.44055945" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ClassMenu.java" line="10" column="31" vertical-scroll-proportion="0.103174604" horizontal-scroll-proportion="0.37937063" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="69" column="30" vertical-scroll-proportion="1.6490765" horizontal-scroll-proportion="0.36713287" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="39" column="46" vertical-scroll-proportion="0.68601584" horizontal-scroll-proportion="0.5629371" />
-      <source-position-entry url="jar:///mnt/space/stuff/install/java/j2sdk1.4.2_05/src.zip!/java/awt/Component.java" line="4362" column="29" vertical-scroll-proportion="0.33333334" horizontal-scroll-proportion="0.3548951" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="51" column="36" vertical-scroll-proportion="0.6332454" horizontal-scroll-proportion="0.44055945" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="105" column="20" vertical-scroll-proportion="0.45118734" horizontal-scroll-proportion="0.24475524" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DragAndDropManager.java" line="110" column="13" vertical-scroll-proportion="0.5039578" horizontal-scroll-proportion="0.1590909" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/StaticsMenu.java" line="13" column="40" vertical-scroll-proportion="0.4459103" horizontal-scroll-proportion="0.48951048" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="160" column="28" vertical-scroll-proportion="0.3773087" horizontal-scroll-proportion="0.34265736" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="113" column="53" vertical-scroll-proportion="3.5329816" horizontal-scroll-proportion="0.6486014" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="32" column="18" vertical-scroll-proportion="0.61741424" horizontal-scroll-proportion="0.22027972" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VariableModel.java" line="25" column="15" vertical-scroll-proportion="0.6569921" horizontal-scroll-proportion="0.18356644" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/BooleanChooser.java" line="8" column="13" vertical-scroll-proportion="0.17150396" horizontal-scroll-proportion="0.13111888" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DragAndDropManager.java" line="111" column="59" vertical-scroll-proportion="1.1114923" horizontal-scroll-proportion="0.7763158" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VariableModel.java" line="3" column="14" vertical-scroll-proportion="0.09774436" horizontal-scroll-proportion="0.17132868" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="32" column="33" vertical-scroll-proportion="0.6689537" horizontal-scroll-proportion="0.43421054" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="41" column="13" vertical-scroll-proportion="0.37907377" horizontal-scroll-proportion="0.17105263" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Variable.java" line="177" column="16" vertical-scroll-proportion="3.7015438" horizontal-scroll-proportion="0.21052632" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="118" column="0" vertical-scroll-proportion="2.399657" horizontal-scroll-proportion="0.0">
+        <folding>
+          <element signature="imports" expanded="true" />
+        </folding>
+      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/DroppableJLabel.java" line="10" column="13" vertical-scroll-proportion="0.11149228" horizontal-scroll-proportion="0.17105263" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/DroppableJTextField.java" line="16" column="55" vertical-scroll-proportion="0.28987992" horizontal-scroll-proportion="0.7236842" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="42" column="44" vertical-scroll-proportion="0.7135506" horizontal-scroll-proportion="0.57894737" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="23" column="18" vertical-scroll-proportion="0.44596913" horizontal-scroll-proportion="0.23684211" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="23" column="30" vertical-scroll-proportion="0.31389365" horizontal-scroll-proportion="0.39473686" />
     </history>
     <open-files>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ObjectIcon.java" line="32" column="18" vertical-scroll-proportion="0.61741424" horizontal-scroll-proportion="0.22027972" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="113" column="53" vertical-scroll-proportion="3.5329816" horizontal-scroll-proportion="0.6486014" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VariableModel.java" line="25" column="15" vertical-scroll-proportion="0.6569921" horizontal-scroll-proportion="0.18356644" selected="true" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="39" column="46" vertical-scroll-proportion="0.68601584" horizontal-scroll-proportion="0.5629371" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DragAndDropManager.java" line="110" column="13" vertical-scroll-proportion="0.5039578" horizontal-scroll-proportion="0.1590909" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/StaticsMenu.java" line="13" column="40" vertical-scroll-proportion="0.4459103" horizontal-scroll-proportion="0.48951048" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="51" column="36" vertical-scroll-proportion="0.6332454" horizontal-scroll-proportion="0.44055945" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="105" column="20" vertical-scroll-proportion="0.45118734" horizontal-scroll-proportion="0.24475524" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="160" column="28" vertical-scroll-proportion="0.3773087" horizontal-scroll-proportion="0.34265736" />
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="69" column="30" vertical-scroll-proportion="1.6490765" horizontal-scroll-proportion="0.36713287" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Variable.java" line="177" column="16" vertical-scroll-proportion="3.7015438" horizontal-scroll-proportion="0.21052632" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="23" column="30" vertical-scroll-proportion="0.31389365" horizontal-scroll-proportion="0.39473686" selected="true" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="32" column="33" vertical-scroll-proportion="0.6689537" horizontal-scroll-proportion="0.43421054" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/Desktop.java" line="23" column="18" vertical-scroll-proportion="0.44596913" horizontal-scroll-proportion="0.23684211" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="42" column="44" vertical-scroll-proportion="0.7135506" horizontal-scroll-proportion="0.57894737" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DetachableJMenu.java" line="41" column="13" vertical-scroll-proportion="0.37907377" horizontal-scroll-proportion="0.17105263" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="118" column="0" vertical-scroll-proportion="2.399657" horizontal-scroll-proportion="0.0">
+        <folding>
+          <element signature="imports" expanded="true" />
+        </folding>
+      </source-position-entry>
+      <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/DragAndDropManager.java" line="111" column="59" vertical-scroll-proportion="1.1114923" horizontal-scroll-proportion="0.7763158" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/DroppableJLabel.java" line="10" column="13" vertical-scroll-proportion="0.11149228" horizontal-scroll-proportion="0.17105263" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/objecteditingcomponents/DroppableJTextField.java" line="16" column="55" vertical-scroll-proportion="0.28987992" horizontal-scroll-proportion="0.7236842" />
     </open-files>
   </component>
   <component name="ToolWindowManager">
-    <frame x="26" y="39" width="962" height="867" extended-state="1" />
-    <editor active="false" />
+    <frame x="26" y="49" width="904" height="820" extended-state="0" />
+    <editor active="true" />
     <layout>
       <window_info id="VIM" active="false" anchor="bottom" auto_hide="true" internal_type="sliding" type="sliding" visible="false" weight="0.33064517" order="7" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="1" />
       <window_info id="JavaSig" active="false" anchor="bottom" auto_hide="true" internal_type="sliding" type="sliding" visible="false" weight="0.33" order="8" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33064517" order="2" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33115184" order="2" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="2" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33" order="6" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="sliding" type="sliding" visible="false" weight="0.4" order="0" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="true" weight="0.29847494" order="0" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="true" weight="0.29767442" order="0" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.3252688" order="10" x="542" y="239" width="656" height="269" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="1" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33064517" order="1" />
-      <window_info id="Messages" active="true" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="true" weight="0.33064517" order="9" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33054394" order="9" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.4" order="5" />
       <window_info id="Web" active="false" anchor="left" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.25" order="2" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="docked" type="docked" visible="false" weight="0.33" order="0" />
@@ -56,7 +61,21 @@
   </component>
   <component name="Debugger">
     <line_breakpoints>
-      <breakpoint url="file://$PROJECT_DIR$/src/visualjava/VisualJavaGUIStatics.java" line="126">
+      <breakpoint url="file://$PROJECT_DIR$/src/visualjava/MethodFrame.java" line="107">
+        <option name="ENABLED" value="true" />
+        <option name="SUSPEND_VM" value="true" />
+        <option name="COUNT_FILTER_ENABLED" value="false" />
+        <option name="COUNT_FILTER" value="0" />
+        <option name="CONDITION_ENABLED" value="false" />
+        <option name="CONDITION" />
+        <option name="LOG_ENABLED" value="false" />
+        <option name="LOG_EXPRESSION_ENABLED" value="false" />
+        <option name="LOG_MESSAGE" />
+        <option name="CLASS_FILTERS_ENABLED" value="false" />
+        <option name="INVERSE_CLASS_FILLTERS" value="false" />
+        <option name="SUSPEND_POLICY" value="SuspendAll" />
+      </breakpoint>
+      <breakpoint url="file://$PROJECT_DIR$/src/visualjava/ParameterTarget.java" line="109">
         <option name="ENABLED" value="true" />
         <option name="SUSPEND_VM" value="true" />
         <option name="COUNT_FILTER_ENABLED" value="false" />
@@ -163,7 +182,7 @@
     <disable_hints />
   </component>
   <component name="StructureViewFactory">
-    <option name="SORT_MODE" value="0" />
+    <option name="SORT_MODE" value="1" />
     <option name="GROUP_OVERRIDINGS" value="true" />
     <option name="GROUP_IMPLEMENTINGS" value="true" />
     <option name="AUTOSCROLL_MODE" value="true" />
@@ -265,9 +284,7 @@
   <component name="ProjectViewSettings">
     <navigator currentView="ProjectPane" flattenPackages="false" showMembers="false" showStructure="true" autoscrollToSource="true" splitterProportion="0.5" />
     <view id="ProjectPane">
-      <expanded_node type="directory" url="file://$PROJECT_DIR$/src" />
       <expanded_node type="directory" url="file://$PROJECT_DIR$" />
-      <expanded_node type="directory" url="file://$PROJECT_DIR$/src/visualjava" />
     </view>
     <view id="SourcepathPane" />
     <view id="ClasspathPane" />

@@ -21,9 +21,11 @@ public class Desktop extends JDesktopPane {
         // JLabel anIcon = new JLabel(icon);
     }
 
-    public void showObject(Object object) {
+    public String showObject(Object object) {
+        String name = VisualJavaStatics.getSimpleClassName(object.getClass());
+        name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
         System.out.println("[Desktop] Showing " + VisualJavaStatics.getSimpleClassName(object.getClass()) + " \"" + object + "\"");
-        ObjectIcon anIcon = new ObjectIcon(this,object);
+        Variable anIcon = new Variable(this,name,object);
         // anIcon.setLocation(getWidth()/2,getHeight()/2);
         placeAnItem(anIcon);
         anIcon.setSize(anIcon.getPreferredSize());
@@ -36,6 +38,7 @@ public class Desktop extends JDesktopPane {
         // add(anotherIcon);
 //        JInternalFrame.JDesktopIcon dIcon = new JInternalFrame.JDesktopIcon(null);
         validate();
+        return anIcon.name;
     }
 
     public void placeAnItem(Component component) {
@@ -53,6 +56,7 @@ public class Desktop extends JDesktopPane {
     }
 
     public void displayMethod(Method m, Object obj) {
+        System.out.println("displayMethod("+m+","+obj+");");
         MethodFrame methodFrame = new MethodFrame(m,obj);
         initMethodFrame(methodFrame);
     }

@@ -15,18 +15,24 @@ import java.beans.PropertyVetoException;
 /** joey Nov 1, 2004 7:51:00 PM */
 public class MethodFrame extends JInternalFrame {
 
+    //// Defined:
+    // Object value; // Null if constructor, or if method is static
+    ParameterTarget objTarget; // (well actually generated!) Null if constructor, or if method is static
     Member member; // Will be either the method or the constructor, the other will be null.
+
+    //// Obtained:
     Method method;
     Constructor constructor;
-    Object obj; // Null if constructor, or if method is static
     Class[] parameterTypes;
 
+    //// Generated:
     ParameterTarget[] parameterTargets;
 
     public MethodFrame(Method _m, Object _obj) {
-        super("" + _m,false,true,false,false);
+        super("" + _m,true,true,false,true);
         method = _m;
-        obj = _obj;
+        // value = _obj;
+        objTarget = new ParameterTarget(_m.getDeclaringClass(),_obj);
         constructor = null;
         member = method;
         parameterTypes = method.getParameterTypes();
@@ -34,9 +40,9 @@ public class MethodFrame extends JInternalFrame {
     }
 
     public MethodFrame(Constructor _con) {
-        super("" + _con,false,true,false,false);
+        super("" + _con,false,true,false,true);
         method = null;
-        obj = null;
+        objTarget = null;
         constructor = _con;
         member = constructor;
         parameterTypes = constructor.getParameterTypes();
@@ -51,6 +57,12 @@ public class MethodFrame extends JInternalFrame {
         } else {
             // getContentPane().add(new JLabel("new " + constructor.getDeclaringClass().getName()));
             getContentPane().add(new JLabel("new"));
+        }
+        if (objTarget != null) {
+            getContentPane().add(objTarget);
+            getContentPane().add(new JLabel("."));
+        // } else {
+            // getContentPane().add(new JLabel(VisualJavaStatics.getSimpleClassName(member.getDeclaringClass()) + "."));
         }
         JButton button = new JButton(member.getName());
         button.addActionListener(
@@ -93,31 +105,70 @@ public class MethodFrame extends JInternalFrame {
     }
 
     void tryToInvoke() {
+        StringBuffer parameterCode = new StringBuffer();
         Object[] arguments = new Object[parameterTypes.length];
         for (int i=0;i<parameterTargets.length;i++) {
             ParameterTarget parameterTarget = parameterTargets[i];
             arguments[i] = parameterTarget.getObject();
+            Object toShow = (
+                parameterTarget.variable != null
+                ? parameterTarget.variable
+                : parameterTarget.getObject()
+            );
+            parameterCode.append(getTextForObject(toShow));
+            if (i < parameterTargets.length - 1) {
+                parameterCode.append(", ");
+            }
         }
         try {
             Object result;
+            StringBuffer code = new StringBuffer();
             if (member instanceof Method) {
-                result = method.invoke(obj,arguments);
+                Object on = (
+                    objTarget == null
+                    ? null
+                    : objTarget.variable == null
+                        ? objTarget.getObject()
+                        : objTarget.variable
+                );
+                code.append(
+                    on == null
+                    ? method.getDeclaringClass().getName()
+                    : getTextForObject(on)
+                );
+                code.append("." + method.getName()+ "(");
+                Object reallyOn = ( objTarget == null ? null : objTarget.getObject() );
+                result = method.invoke(reallyOn,arguments);
             } else {
+                code.append("new " + constructor.getDeclaringClass().getName() /*+ "." + constructor.getName()*/ + "(");
                 result = constructor.newInstance(arguments);
             }
+            code.append(parameterCode);
+            code.append(");");
             if (result == null) {
                 System.out.println("Result was null.");
             } else {
-                VisualJava.desktop.showObject(result);
+                String nameOfNewDesktopVariable = VisualJava.desktop.showObject(result);
+                Class returnType = ( member instanceof Method ? method.getReturnType() : constructor.getDeclaringClass() );
+                code.insert(0,returnType.getName() + " " + nameOfNewDesktopVariable + " = ");
             }
+            System.out.println("[CODE] " + code);
         } catch (InvocationTargetException e) {
             VisualJava.desktop.showObject(e.getCause());
         } catch (Exception e) {
-            // e.printStackTrace();
-            System.err.println(e);
+            e.printStackTrace();
+            // System.err.println(e);
             VisualJava.desktop.showObject(e);
         }
         setSize(this.getPreferredSize());
+    }
+
+    String getTextForObject(Object o) {
+        if (o instanceof Variable) {
+            return ((Variable)o).name;
+        } else {
+            return "<unknown " + o.getClass().getName()+">";
+        }
     }
 
 }

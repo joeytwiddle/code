@@ -1,9 +1,6 @@
 package visualjava;
 
-import org.neuralyte.common.swing.LargeCapacityJMenu;
-import org.neuralyte.common.swing.Moveability;
-import org.neuralyte.common.swing.SplittingJMenu;
-import org.neuralyte.common.swing.DragAndDropManager;
+import org.neuralyte.common.swing.*;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,27 +14,46 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Constructor;
 
 /** joey Nov 1, 2004 2:27:04 AM */
-public class ObjectIcon extends JLabel implements HasObject {
+public class Variable extends JLabel implements HasDragDroppableObject {
 
     Desktop desktop;
 
-    Object obj;
+    Class type;
+    String name;
+    Object value;
 
-    public ObjectIcon(Desktop _desktop, Object _obj) {
+    public Variable(Desktop _desktop, String name, Object _obj) {
+        this(_desktop,_obj.getClass(),name,_obj);
+    }
+    public Variable(Desktop _desktop, Class _type, String _name, Object _obj) {
         // super(_obj.getClass().getName() + " x = " + _obj);
-        super(VisualJavaStatics.getSimpleClassName(_obj.getClass()) + " x = \"" + _obj + "\"", new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj), JLabel.RIGHT);
+        super(VisualJavaStatics.getSimpleClassName(_obj.getClass()) + " " + _name + " = " + niceString(_obj), new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj), JLabel.RIGHT);
         desktop = _desktop;
-        obj = _obj;
+        type = _type;
+        name = _name;
+        value = _obj;
         // JMenu statics = new JMenu("Statics");
         // this.add(statics);
         // JMenuItem statics2 = new JMenuItem("Statics 2");
         // this.add(statics2);
         // VisualJava.addMenuBar(this);
         // Ne marche pas: setBackground(Color.GRAY);
-        addPopupMenuTo(this); // Note argument is also used as the Component/ObjectIcon to remove from the Desktop.
-        // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],obj);
+        final Variable thisVariable = this;
+        new Thread() { public void run() { addPopupMenuTo(thisVariable); // Note argument is also used as the Component/Variable to remove from the Desktop.
+        } }.start();
+        // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],value);
         // Moveability.allowUserToMove(this); // Implied by:
         DragAndDropManager.hasObjectCanBeDropped(this);
+    }
+    
+    public static String niceString(Object o) {
+        final int maxLength = 50;
+        String s = o.toString();
+        if (s.length() > maxLength) {
+            return '"' + s.substring(0,maxLength - 3) + '"' + "...";
+        } else {
+            return '"' + s + '"';
+        }
     }
 
 	void addPopupMenuTo(Component thing) {
@@ -63,19 +79,19 @@ public class ObjectIcon extends JLabel implements HasObject {
 		//Create the popup menu.
 
         // JMenu statics = new JMenu("Statics");
-        // VisualJavaGui.addStaticsToMenu(statics,obj.getClass());
+        // VisualJavaGui.addStaticsToMenu(statics,value.getClass());
         // popup.add(statics);
-        JMenu statics = new StaticsMenu("Statics",obj.getClass().getName());
+        JMenu statics = new StaticsMenu("Statics",value.getClass().getName());
         if (statics.getItemCount() > 1) // We do >1 rather than >0 because SplittingJMenu's are/were DetachableJMenu's, and hence always had the detach item.
             popup.add(statics);
 
         JMenu properties = new SplittingJMenu("Properties"); // all non-static properties from all superclasses
         try {
-            Class c = obj.getClass();
+            Class c = value.getClass();
             for (int i=0;i<c.getFields().length;i++) {
                 Field f = c.getFields()[i];                 // now including private properties!
                 if (!Modifier.isStatic(f.getModifiers())) { // && Modifier.isPublic(f.getModifiers())) {
-                    VisualJavaGUIStatics.addFieldToMenu(f,properties,obj);
+                    VisualJavaGUIStatics.addFieldToMenu(f,properties,value);
                 }
             }
         } catch (Exception e) {
@@ -86,12 +102,12 @@ public class ObjectIcon extends JLabel implements HasObject {
 
         JMenu getters = new SplittingJMenu("get"); // all non-static accessors from all superclasses
         try {
-            Class c = obj.getClass();
+            Class c = value.getClass();
             for (int i=0;i<c.getMethods().length;i++) {
                 Method m = c.getMethods()[i];
                 if (m.getName().startsWith("get") && m.getParameterTypes().length == 0
                     && !Modifier.isStatic(m.getModifiers())) { // && Modifier.isPublic(f.getModifiers())) {
-                    VisualJavaGUIStatics.addMethodToMenu(m,getters,obj);
+                    VisualJavaGUIStatics.addMethodToMenu(m,getters,this);
                 }
             }
         } catch (Exception e) {
@@ -102,12 +118,12 @@ public class ObjectIcon extends JLabel implements HasObject {
 
         JMenu setters = new SplittingJMenu("set"); // all non-static mutators from all superclasses
         try {
-            Class c = obj.getClass();
+            Class c = value.getClass();
             for (int i=0;i<c.getMethods().length;i++) {
                 Method m = c.getMethods()[i];
                 if (m.getName().startsWith("set") && m.getParameterTypes().length == 1
                     && !Modifier.isStatic(m.getModifiers())) { // && Modifier.isPublic(f.getModifiers())) {
-                    VisualJavaGUIStatics.addMethodToMenu(m,setters,obj);
+                    VisualJavaGUIStatics.addMethodToMenu(m,setters,this);
                 }
             }
         } catch (Exception e) {
@@ -117,11 +133,11 @@ public class ObjectIcon extends JLabel implements HasObject {
             popup.add(setters);
 
         SplittingJMenu allMethods = new SplittingJMenu("All methods");
-        addAllNonStaticMethodsToMenu(obj.getClass(),allMethods);
+        addAllNonStaticMethodsToMenu(value.getClass(),allMethods);
         if (allMethods.getItemCount() > 1)
             popup.add(allMethods);
 
-        forEachSuperclassAddAllNonStaticMethodsToMenu(obj.getClass(),popup);
+        forEachSuperclassAddAllNonStaticMethodsToMenu(value.getClass(),popup);
 
         final Component toRemove = thing;
         JMenuItem item = new JMenuItem("Dispose");
@@ -143,20 +159,20 @@ public class ObjectIcon extends JLabel implements HasObject {
 
 	}
 
+    private void addAllNonStaticMethodsToMenu(Class c, JMenu menu) {
+        for (int i=0;i<c.getMethods().length;i++) {
+            Method m = c.getMethods()[i];
+            if (!Modifier.isStatic(m.getModifiers())) {
+                VisualJavaGUIStatics.addMethodToMenu(m,menu,this);
+            }
+        }
+    }
     private void forEachSuperclassAddAllNonStaticMethodsToMenu(Class c, JPopupMenu mainMenu) {
         while (c != null) {
             SplittingJMenu menu = new SplittingJMenu(c.getName());
             addNonStaticMethodsToSplittingJMenu(c,menu,false);
             mainMenu.add(menu);
             c = c.getSuperclass();
-        }
-    }
-    private void addAllNonStaticMethodsToMenu(Class c, JMenu menu) {
-        for (int i=0;i<c.getMethods().length;i++) {
-            Method m = c.getMethods()[i];
-            if (!Modifier.isStatic(m.getModifiers())) {
-                VisualJavaGUIStatics.addMethodToMenu(m,menu,obj);
-            }
         }
     }
     private void addNonStaticMethodsToSplittingJMenu(Class c, SplittingJMenu methods, boolean andSuperClasses) {
@@ -171,8 +187,8 @@ public class ObjectIcon extends JLabel implements HasObject {
             }
             for (int i=0;i<c.getDeclaredMethods().length;i++) {
                 Method m = c.getDeclaredMethods()[i];
-                if (!Modifier.isStatic(m.getModifiers())) {
-                    VisualJavaGUIStatics.addMethodToMenu(m,methods,obj);
+                if (!Modifier.isStatic(m.getModifiers()) && !Modifier.isPrivate(m.getModifiers())) {
+                    VisualJavaGUIStatics.addMethodToMenu(m,methods,this);
                 }
             }
         } catch (Exception e) {
@@ -180,7 +196,9 @@ public class ObjectIcon extends JLabel implements HasObject {
         }
     }
 
-    public Object getObject() {
-        return obj;
+    public Object getDraggedObject() {
+        // return value;
+        return this;
     }
+
 }

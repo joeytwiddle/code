@@ -1,3 +1,19 @@
+OK I've made Variable have names and be passed around,
+but the implementation is dodgy because alternatively Objects can be passed around.
+The advantage is that it now prints out the "code" we have executed.  =)
+
+So we should probably fork until the nasty implementation is fixed.
+
+We either need to never pass around Variables,
+or we need to split Variable into:
+PassableObject = Variable | ObjectWithRepresentationOfHowToObtainItOrMaybeNotButWhichEssentiallyIsntADesktopVariable
+or just ditch the idea of the latter object.  (Later, would disallow us to copy a static property straight from a class to a method parameter; we would have to make it into a variable first!)
+SOLUTION!: That said, we could just make the variable's name field == the ObjectWithRepresentationOfHowToObtainItOrMaybeNotButWhichEssentiallyIsntADesktopVariable's representation.
+Solved =) kill object passing for now (maybe make an interface =)
+Yeah more interfaces!
+
+
+
 NOTE:
 
 It is a relevant issue at this point, whether we fork into one of the following:

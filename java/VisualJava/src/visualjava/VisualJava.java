@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.io.*;
 
 /** joey Jul 11, 2004 3:26:31 AM */
@@ -13,7 +15,7 @@ public class VisualJava {
 
 	public static void main(String[] args) {
 		// visualjava.VisualJavaGui.oldShowDeprecated(new String("hello test"));
-        JFrame f = new JFrame();
+        final JFrame f = new JFrame();
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setSize(600,400);
         desktop = new Desktop(f);
@@ -23,7 +25,9 @@ public class VisualJava {
         desktop.showObject("Hello");
         desktop.showObject(f);
         desktop.showObject(desktop);
-        VisualJavaGUIStatics.addMenuBar(f);
+        try { desktop.displayMethod(Arrays.class.getMethod("asList",new Class[]{ new Object[0].getClass() }),null); }
+        catch (Exception e) { }
+        new Thread() { public void run() { VisualJavaGUIStatics.addMenuBar(f); } }.start();
         f.validate();
 	}
 	
