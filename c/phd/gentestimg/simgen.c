@@ -1,4 +1,4 @@
-// I think simgen is a combination of the other two (gentestimg and simulatecorrel)
+// simgen is a combination of the other two (gentestimg and simulatecorrel)
 
 #include <joeylib.h>
 
@@ -20,14 +20,23 @@ Pixel proj(V3d v) {
 }
 
 int main(int argc,String *argv) {
+
+	String matlabcommand="matlab";
   
   ArgParser a=ArgParser(argc,argv);
   bool domatlab=a.argexists("-matlab","vvp estimation with Matlab");
+  bool dooctave=a.argexists("-octave","vvp estimation with octave (not)");
+	if (dooctave) {
+		domatlab=true;
+		matlabcommand="octave";
+	}
+	String whichmatlabfile=a.argafter("-mlfile","which matlab solution file?","sol1u.txt");
   bool showgraph=a.argexists("-graph","show graph in Matlab");
   bool genimage=a.argexists("-image","generate simulated image");
   bool overlay=a.argexists("-overlay","overlay info on simulated image");
   bool centralise=a.argexists("-centralise","centralise the document in the image");
   focallength=a.floatafter("-focal","focal length (prop to img width)",50.0);
+  bool usespacings=a.argexists("-spacings","use spacings (rather than pos)");
   a.comment("Orientation of plane in degrees:");
   float roll=deg2rad(a.floatafter("-roll","roll",0.0));
   float yaw=deg2rad(a.floatafter("-yaw","yaw",20.0));
@@ -87,7 +96,7 @@ int main(int argc,String *argv) {
     inputimg=RGBmp::readfile(inname);
     outputimg=RGBmp(imgwidth,imgheight,myRGB::white);
   
-    inputimg->writefile("test.bmp");
+    // inputimg->writefile("test.bmp");
     
     TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
     
@@ -161,8 +170,8 @@ int main(int argc,String *argv) {
 
 		float groundK1 = worldA.y;
 		float groundK2 = worldA.z;
-		float groundA = down.y;
-		float groundB = down.z;
+		float groundA = down.y/(float)numlines;
+		float groundB = down.z/(float)numlines;
 
 		float groundU = groundK1/groundK2;
 		float groundV = groundA/groundK1;
@@ -177,22 +186,52 @@ int main(int argc,String *argv) {
     if (domatlab) {
 			lines=noisylines;
 			FILE *sout=fopen("data.txt","w");
-      fprintf(sout,"Data=[");
-      for (int i=0;i<lines.len;i++) {
+
+      if (usespacings) {
+        fprintf(sout,"%% line position\n");
+        fprintf(sout,"t=[");
+        for (int i=0;i<lines.len-1;i++) {
+          Line2d l=lines.get(i);
+          Line2d nl=lines.get(i+1);
+	  fprintf(sout,"%f",(l.a.y+nl.a.y)/2.0);
+          if (i<lines.len-2)
+            fprintf(sout,", ");
+        }
+        fprintf(sout,"];\n");
+        fprintf(sout,"%% line spacings\n");
+        fprintf(sout,"Data=[");
+        for (int i=0;i<lines.len-1;i++) {
+          Line2d l=lines.get(i);
+          Line2d nl=lines.get(i+1);
+          fprintf(sout,"%f",nl.a.y-l.a.y);
+          if (i<lines.len-2)
+            fprintf(sout,", ");
+        }
+        fprintf(sout,"];\n");
+      } else {
+        fprintf(sout,"Data=[");
+        for (int i=0;i<lines.len;i++) {
         Line2d l=lines.get(i);
         // fprintf(sout,"%f",l.a.y);
-        fprintf(sout,"%f",V2d::dist(l.a,lines.get(0).a));
+        // fprintf(sout,"%f",V2d::dist(l.a,lines.get(0).a));
+				fprintf(sout,"%f",l.a.y);
         if (i<lines.len-1)
           fprintf(sout,", ");
+        }
+        fprintf(sout,"];\n");
       }
-      fprintf(sout,"];\n");
+
       fprintf(sout,"groundU = %f\n",groundU);
       fprintf(sout,"groundV = %f\n",groundV);
       fprintf(sout,"groundW = %f\n",groundW);
+      fprintf(sout,"groundK1 = %f\n",groundK1);
+      fprintf(sout,"groundK2 = %f\n",groundK2);
+      fprintf(sout,"groundA = %f\n",groundA);
+      fprintf(sout,"groundB = %f\n",groundB);
 			fclose(sout);
 
-			system("cat data.txt matlab/sol1u.txt > solve.txt");
-			system("cat solve.txt | matlab > matlab.out");
+			system(Sformat("cat data.txt matlab/%s > solve.txt",whichmatlabfile));
+			system(Sformat("cat solve.txt | %s > matlab.out",matlabcommand));
 			if (showgraph)
         system("infcat matlab.out | tail -2 | head -1 > matlab.ans");
       else
@@ -273,12 +312,6 @@ int main(int argc,String *argv) {
 
   // Output data to accompany
 //   List<String> data;
-//   data.add(Sformat("Eye:%s",eye.toString());
-//   data.add(Sformat("Eye:%s",eye.toString());
-//   data.add(Sformat("Eye:%s",eye.toString());
-//   data.add(Sformat("Eye:%s",eye.toString());
-//   data.add(Sformat("Eye:%s",eye.toString());
-//   data.add(Sformat("Eye:%s",eye.toString());
 //   data.add(Sformat("Eye:%s",eye.toString());
   
 //   Map2d<bool> *in=Map2d<float>::readfile(ifname)->threshold(0.5);

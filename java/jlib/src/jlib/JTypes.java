@@ -13,7 +13,7 @@ import java.io.InputStream;
 
 import java.net.*;
 
-import changetheworld.XDB;
+// import changetheworld.XDB;
 import jlib.Profile;
 import jlib.JNet;
 
@@ -160,7 +160,7 @@ public class JTypes {
           Profile.start("jtype reading inner node");
           Object o=null;
           // try {
-            o=XDB.readnode(s);
+            // o=XDB.readnode(s);
           // } catch (Exception e) {
             // Log.error("JTypes.fromString(\""+s+"\",\""+t+"\"): Failed to XDB.readnode: "+e);
           // }

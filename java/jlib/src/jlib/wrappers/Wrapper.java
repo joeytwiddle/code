@@ -84,14 +84,18 @@ public class Wrapper implements Serializable {
 	}
 
 	public final String getWrappedClassName() {
+		return getDePrimWrappedClassName();
+	}
+	
+	private final String getNormWrappedClassName() {
 		String s=JString.after(getClass().getName(),"jlib.wrappers.");
 		if (s.endsWith("Wrapper"))
 			s=JString.beforelast(s,"Wrapper");
 		return s;
 	}
 	
-	public final String getDePrimWrappedClassName() {
-		String n=getWrappedClassName();
+	private final String getDePrimWrappedClassName() {
+		String n=getNormWrappedClassName();
 		if (n.startsWith("prim_"))
 			return JString.after(n,"prim_");
 		else

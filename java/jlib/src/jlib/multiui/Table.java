@@ -20,6 +20,9 @@ public class Table extends Container {
 		width=w;
 		height=h;
 		tab=new Component[width][height];
+		// for (int i=0;i<width;i++)
+		// for (int j=0;j<height;j++)
+		  // tab[i][j]=null;
 	}
 
 	public void set(int i,int j,Component c) {

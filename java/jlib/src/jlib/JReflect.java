@@ -7,7 +7,11 @@ import java.lang.reflect.*;
 public class JReflect {
   public static void main(String[] argv) {
     try {
-      Class c=Class.forName(argv[0]);
+			ArgParser a=new ArgParser(argv);
+			String cls=a.get("class");
+			a.done();
+			
+      Class c=Class.forName(cls);
       Field[] fs=c.getFields();
       Constructor[] cs=c.getConstructors();
       Method[] ms=c.getDeclaredMethods();
