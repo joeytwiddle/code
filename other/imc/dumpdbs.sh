@@ -52,4 +52,4 @@ ls -lrtF "$DESTDIR/"
 # gzip -f "$PSQLDEST" "$MYSQLDEST"
 
 ) | tee /home/mike/db-backups/err.txt |
-    mail pclark@cs.bris.ac.uk
+    mail cron@hwi.ath.cx
