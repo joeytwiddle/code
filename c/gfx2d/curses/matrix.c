@@ -170,8 +170,7 @@ void matrix_set_process(int x,int y) {
 }
 
 #ifdef PROCESSING_WHITE_BITS
-// Consider: only allow write/clear processes on not sliding columns, and static processes on sliding columns.
-// Processes should not operate on empty parts of the matrix.  Eg. if over empty bit, die with prob(3).
+// Consider: choose type randomly (evenly), then find approriate place!
 void newProcess(int i) {
 	// processes[i] = ( (rand()%3) == 0 ? STATIC_PROCESS_EMPTY : WRITING_PROCESS );
 	// processes[i] = "EWC"[rand()%2];
