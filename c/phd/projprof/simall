@@ -8,7 +8,12 @@ del *.results
 
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
 # DOCUMENTS="left cen right full"
-DOCUMENTS="left" # test "dar-crpage2-left30" # left cen right full"
+# DOCUMENTS="dar-crpage2-left30" # test "dar-crpage2-left30" # left cen right full"
+DOCUMENTS="dummy" # when getting document from numlines
+
+LINESTODO=`seq -w 30 -1 02`
+# LINESTODO=30
+# LINESTODO=11
 
 PPSCANMETHODS="hier" # full"
 
@@ -24,16 +29,12 @@ VVPMETHODS="spacings simple margins"
 # NOISES=`seq -w 51 03 60`
 NOISES=0
 
-# LINESTODO=`seq -w 30 -1 02`
-# LINESTODO=30
-LINESTODO=11
-
 # ANGLES=`seq -w 20 03 50`
 # ANGLES="20 40 60 80"
 # ANGLES="60"
 # FOCALS=`seq -w 0.5 0.3 3.0`
 # FOCALS="0.5"
-ANGLES=`seq 10 10 80`
+ANGLES=`seq 5 20 80`
 # ANGLES="50"
 
 FOCALS="4.0"
@@ -94,6 +95,8 @@ for DOCUMENT in $DOCUMENTS; do
 				for NOISE in $NOISES; do
 
 					for numlines in $LINESTODO; do
+
+						SRCNAME="dar-crpage2-left$numlines"
 
 						echo
 						echo "LINES: $numlines -----------------------------------------"
