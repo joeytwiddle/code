@@ -62,6 +62,8 @@
 #define cap(x,b) ( (x) > (b) ? (b) : (x) )
 #define square(x) ( (x) * (x) )
 #define clip(x,a,b) ( (x)<(a) ? (a) : (x)>=(b) ? (b)-1 : (x) )
+#define sinpow(x,y) ( 2.0*(pow((qsin(x)+1.0)/2.0,y)-0.5) )
+#define sinsharp(x) ( 1.0-2.0*fabs((sin(x))) )
 
 // Warning: only supports truecolour palettes.
 #define SDLwrap_MapRGB(Rloss,Rshift,Gloss,Gshift,Bloss,Bshift,Amask,r,g,b) ( ((Uint8)(r) >> Rloss) << Rshift | ((Uint8)(g) >> Gloss) << Gshift | ((Uint8)(b) >> Bloss) << Bshift | Amask )
@@ -117,6 +119,19 @@ void setuplookups() {
     setupsqrtlookup();
 }
 
+/*
+void plotTri(SDL_Surface *screen,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int TR_x3, int TR_y3, Uint32 colour) {
+	#define TR_todo(x,y) {setPixel(screen,x,y,colour);}
+	// #define TR_todo(x,y) { if (x>=0 && x<screen_w && y>=0 && y<screen_h) {setPixel(screen,x,y,colour);} }
+	// #define TR_todo(x,y) printf("Hello %i %i\n",x,y); setPixel(screen,x,y,colour);
+	#include "tri.c"
+	#undef TR_todo
+	plotLine(screen,TR_x1,TR_y1,TR_x2,TR_y2,MapRGB(screen->format,255,255,255));
+	plotLine(screen,TR_x1,TR_y1,TR_x3,TR_y3,MapRGB(screen->format,255,255,255));
+	plotLine(screen,TR_x2,TR_y2,TR_x3,TR_y3,MapRGB(screen->format,255,255,255));
+}
+*/
+
 inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
 	Uint8 r,g,b;
 	Uint16 fr,fg,fb;
@@ -141,34 +156,39 @@ inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
 	screen_setPixel(x,y,p);
 }
 
-void plotLine(SDL_Surface *screen,int BR_x1,int BR_y1,int BR_x2,int BR_y2,Uint32 colour) {
-	// #define BR_todo(x,y)  ((int *)screen->pixels)[y*screen_w+x]=colour
-	// #define BR_todo(x,y)  setPixel(screen,x,y,colour);
-	#define BR_todo(x,y)  screen_setPixel(x,y,colour);
-	#include "bresenham.c"
-	#undef BR_todo(x,y)
-}
-
-/*
-void plotTri(SDL_Surface *screen,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int TR_x3, int TR_y3, Uint32 colour) {
-	#define TR_todo(x,y) {setPixel(screen,x,y,colour);}
-	// #define TR_todo(x,y) { if (x>=0 && x<screen_w && y>=0 && y<screen_h) {setPixel(screen,x,y,colour);} }
-	// #define TR_todo(x,y) printf("Hello %i %i\n",x,y); setPixel(screen,x,y,colour);
-	#include "tri.c"
-	#undef TR_todo
-	plotLine(screen,TR_x1,TR_y1,TR_x2,TR_y2,MapRGB(screen->format,255,255,255));
-	plotLine(screen,TR_x1,TR_y1,TR_x3,TR_y3,MapRGB(screen->format,255,255,255));
-	plotLine(screen,TR_x2,TR_y2,TR_x3,TR_y3,MapRGB(screen->format,255,255,255));
-}
-*/
+// #define halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY) { if (XA<LX) { YA = YA + (YB-YA)*(LX-XA)/(XB-XA); XA = LX; } if (XA>=HX) { YA = YA + (YB-YA)*(HX-XA)/(XB-XA); XA = HX-1; } if (YA<LY) { XA = XA + (XB-XA)*(LY-YA)/(YB-YA); YA = LY; } if (YA>=HY) { XA = XA + (XB-XA)*(HY-YA)/(YB-YA); YA = HY-1; } }
+#define halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY) { if ((*(XA))<LX) { (*(YA)) = (*(YA)) + ((*(YB))-(*(YA)))*(LX-(*(XA)))/((*(XB))-(*(XA))); (*(XA)) = LX; } if ((*(XA))>=HX) { (*(YA)) = (*(YA)) + ((*(YB))-(*(YA)))*(HX-(*(XA)))/((*(XB))-(*(XA))); (*(XA)) = HX-1; } if ((*(YA))<LY) { (*(XA)) = (*(XA)) + ((*(XB))-(*(XA)))*(LY-(*(YA)))/((*(YB))-(*(YA))); (*(YA)) = LY; } if ((*(YA))>=HY) { (*(XA)) = (*(XA)) + ((*(XB))-(*(XA)))*(HY-(*(YA)))/((*(YB))-(*(YA))); (*(YA)) = HY-1; } }
+// #define clipLine(XA,YA,XB,YB,LX,HX,LY,HY) { halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY); halfClipLine(XB,YB,XA,YA,LX,HX,LY,HY); }
+#define clipLine(XA,YA,XB,YB,LX,HX,LY,HY) { halfClipLine(XA,YA,XB,YB,LX,HX,LY,HY); halfClipLine(XB,YB,XA,YA,LX,HX,LY,HY); }
 
 void plotTriRGB(SDL_Surface *screen,int TR_x1,int TR_y1,int TR_x2,int TR_y2,int TR_x3, int TR_y3, Uint8 r,Uint8 g,Uint8 b) {
+    clipLine(&TR_x1,&TR_y1,&TR_x2,&TR_y2,0,SCRWID,0,SCRHEI);
+    clipLine(&TR_x3,&TR_y3,&TR_x2,&TR_y2,0,SCRWID,0,SCRHEI);
+    clipLine(&TR_x1,&TR_y1,&TR_x3,&TR_y3,0,SCRWID,0,SCRHEI);
 	#define TR_todo(x,y) merge(screen,x,y,r,g,b);
 	#include "tri.c"
 	#undef TR_todo
 	// plotLine(screen,TR_x1,TR_y1,TR_x2,TR_y2,screen_MapRGB(255,255,255));
 	// plotLine(screen,TR_x1,TR_y1,TR_x3,TR_y3,screen_MapRGB(255,255,255));
 	// plotLine(screen,TR_x2,TR_y2,TR_x3,TR_y3,screen_MapRGB(255,255,255));
+}
+
+void plotLine(SDL_Surface *screen,int BR_x1,int BR_y1,int BR_x2,int BR_y2,Uint32 colour) {
+	// #define BR_todo(x,y)  ((int *)screen->pixels)[y*screen_w+x]=colour
+	// #define BR_todo(x,y)  setPixel(screen,x,y,colour);
+    // printf("(%i,%i) - (%i,%i)\n",BR_x1,BR_y1,BR_x2,BR_y2);
+    clipLine(&BR_x1,&BR_y1,&BR_x2,&BR_y2,0,SCRWID,0,SCRHEI);
+    // printf(" (%i,%i) - (%i,%i)\n",BR_x1,BR_y1,BR_x2,BR_y2);
+    if (
+            BR_x1>=0 && BR_x1<SCRWID &&
+            BR_x2>=0 && BR_x2<SCRWID &&
+            BR_y1>=0 && BR_y1<SCRHEI &&
+            BR_y1>=0 && BR_y1<SCRHEI
+       ) {
+	    #define BR_todo(x,y)  screen_setPixel(x,y,colour);
+	    #include "bresenham.c"
+	    #undef BR_todo(x,y)
+    }
 }
 
 int main(int argc,char *argv[]) {
@@ -189,7 +209,7 @@ int main(int argc,char *argv[]) {
 		return 1;
 	}
 	atexit(SDL_Quit);
-    SDL_WM_SetCaption("trying | touching | transience",NULL);
+    SDL_WM_SetCaption("transience",NULL);
 	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE /* | SDL_FULLSCREEN */ );
 	if (screen==NULL) {
 		fprintf(stderr,"Couldn't initialise video.\n");
@@ -253,8 +273,7 @@ int main(int argc,char *argv[]) {
                 dstrect.y=0;
 			for (j=0;j<screen_h;j+=IMGSKIP, dstrect.y+=IMGSKIP) {
 				Uint8 r,g,b,br;
-				Uint8 r2,g2,b2;
-				Uint32 p,p2;
+				Uint32 p;
                 // todo: Optimise this!
                 Uint16 d=qsqrt(xpart+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
                 // Uint16 d=(abs(i-cylcenx)+abs(j-cylceny));
@@ -271,15 +290,19 @@ int main(int argc,char *argv[]) {
                 // br=clip((Uint16)D/3.0,0,255);
                 br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
                 #ifdef DOUBLEMERGEBG
-				p2=bgtexture2_getPixel( ((Uint16)(a+a2offset)%bgtexture2_w), ((Uint16)(D+D2offset)%bgtexture2_h) );
-                bgtexture2_GetRGB(p2,&r2,&g2,&b2);
-                // setPixel(screen,i,j,p);
-                // // screen_setPixel(i,j,p);
-				// Slow but necessary if the colorspaces are different
-                // br=clip(200.0/pow(0.01*d,8.0),0,256);
-                r=clip((int)r/2+(int)r2/2+(int)br,0,256);
-                g=clip((int)g/2+(int)g2/2+(int)br,0,256);
-                b=clip((int)b/2+(int)b2/2+(int)br,0,256);
+                {
+                    Uint8 r2,g2,b2;
+                    Uint32 p2;
+                    p2=bgtexture2_getPixel( ((Uint16)(a+a2offset)%bgtexture2_w), ((Uint16)(D+D2offset)%bgtexture2_h) );
+                    bgtexture2_GetRGB(p2,&r2,&g2,&b2);
+                    // setPixel(screen,i,j,p);
+                    // // screen_setPixel(i,j,p);
+                    // Slow but necessary if the colorspaces are different
+                    // br=clip(200.0/pow(0.01*d,8.0),0,256);
+                    r=clip((int)r/2+(int)r2/2+(int)br,0,256);
+                    g=clip((int)g/2+(int)g2/2+(int)br,0,256);
+                    b=clip((int)b/2+(int)b2/2+(int)br,0,256);
+                }
                 #else
                 r=clip((int)r+(int)br,0,256);
                 g=clip((int)g+(int)br,0,256);
@@ -311,12 +334,38 @@ int main(int argc,char *argv[]) {
 			}
 		}
 
-		#define brightness 11
+		#define brightness 30
+            #define STARX (2*SCRWID/3)
+            #define STARY (SCRHEI/2)
+            #define starPlotTri(xa,ya,xb,yb,xc,yc) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,brightness,brightness/2,brightness)
+            #define SCALE ( 500 )
+
+            #define starRad(a,b) ( (10.0)*(3.0+sinsharp((a)*2.1+frames*0.063)+sinsharp((b)*1.6+frames*0.05)) )
+            // #define starRad(a,b) ( 20 )
+            #define starRes 30
+            #include "starsurface.c"
+            #undef starRad(vx,vy,vz)
+            #undef starRad
+            #undef starRes
 		for (i=0;i<NUMTRIS;i++) {
-			// plotLine(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
-			// plotTri(screen,screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),screen_w*frand(),screen_h*frand(),MapRGB(screen->format,256*frand(),256*frand(),256*frand()));
-			plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
+			// plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
+            // #define starRad(vx,vy,vz) ( 40.0*qsin(vx+frames*0.024)+qsin(vy+frames*0.016)+qsin(vz+frames*0.0048) )
 		}
+
+            #define starPlotTri(xa,ya,xb,yb,xc,yc) plotTriRGB(screen,xa,ya,xb,yb,xc,yc,brightness/2,brightness/2,0)
+            #define STARX (SCRWID/3)
+            #define STARY (SCRHEI/2)
+            #define starRad(a,b) ( (12.0)*(2.0+sinsharp((-a)*3.5+frames*0.074)+sinsharp((b)*4.5+frames*0.03)) )
+            #define starRes 30
+            #include "starsurface.c"
+            #undef starRad(vx,vy,vz)
+            #undef starRad
+            #undef starRes
+		for (i=0;i<NUMTRIS;i++) {
+			// plotTriRGB(screen,screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),screen_w*nearhalf(),screen_h*nearhalf(),brightness*nearhalf(),brightness*nearhalf(),brightness*nearhalf());
+            // #define starRad(vx,vy,vz) ( 40.0*qsin(vx+frames*0.024)+qsin(vy+frames*0.016)+qsin(vz+frames*0.0048) )
+		}
+
 		}
 
 		frames++;
@@ -328,7 +377,7 @@ int main(int argc,char *argv[]) {
 		}
 		
         {
-		    int timetogo;
+		    // int timetogo;
             // sched_yield();
             // printf("%i %i\n",clock(),releasetime);
             // timetogo=(int)releasetime-(int)clock();

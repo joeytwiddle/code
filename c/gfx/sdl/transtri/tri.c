@@ -4,11 +4,17 @@
 // TR_x1,TR_y1,TR_x2,TR_y2,TR_x3,TR_y3
 // TR_todo(x,y)
 
+#define NOEDGES
+
 #define min(x,y) (x<y?x:y)
 #define max(x,y) (x>y?x:y)
 // #define swap(t,a,b); { t tmp; tmp=a; a=b; b=tmp; }
 #define swap(t,a,b); { t tmp; tmp=*(a); *(a)=*(b); *(b)=tmp; }
-#define forminmax(forminmax_i1,forminmax_i2,forminmax_do); { register Sint16 forminmax_a,forminmax_b,forminmax_i; if (forminmax_i1<forminmax_i2) { forminmax_a=forminmax_i1; forminmax_b=forminmax_i2; } else { forminmax_a=forminmax_i2; forminmax_b=forminmax_i1; } for (forminmax_i=forminmax_a;forminmax_i<=forminmax_b;forminmax_i++) { forminmax_do; } }
+#ifdef NOEDGES
+    #define forminmax(forminmax_i1,forminmax_i2,forminmax_do); { register Sint16 forminmax_a,forminmax_b,forminmax_i; if (forminmax_i1<forminmax_i2) { forminmax_a=forminmax_i1; forminmax_b=forminmax_i2; } else { forminmax_a=forminmax_i2; forminmax_b=forminmax_i1; } for (forminmax_i=forminmax_a+1;forminmax_i<=forminmax_b;forminmax_i++) { forminmax_do; } }
+#else
+    #define forminmax(forminmax_i1,forminmax_i2,forminmax_do); { register Sint16 forminmax_a,forminmax_b,forminmax_i; if (forminmax_i1<forminmax_i2) { forminmax_a=forminmax_i1; forminmax_b=forminmax_i2; } else { forminmax_a=forminmax_i2; forminmax_b=forminmax_i1; } for (forminmax_i=forminmax_a;forminmax_i<=forminmax_b;forminmax_i++) { forminmax_do; } }
+#endif
 
 	{
 		Sint16
@@ -74,7 +80,9 @@
 			}
 			}
 			if (x2==x3) {
-				forminmax(y2,y3,TR_todo(x,forminmax_i));
+                #ifndef NOEDGES
+				    forminmax(y2,y3,TR_todo(x,forminmax_i));
+                #endif
 			} else {
 			et=0; // Assertion?
 			yt=y2; // True except in case x1==x2
