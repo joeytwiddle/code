@@ -1,0 +1,58 @@
+\documentclass[a4paper]{article}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2mm}
+
+\begin{document}
+
+%% My favourite is number 2, currently uncommented.
+% \title{On Document Recovery from Real Scene Images}
+ \title{On the Recovery of Oriented Documents from Single Images}
+% \title{On the Recovery of Perspectively Skewed Documents from Single Images}
+%\title{Robust recovery of Perspectively Skewed text}
+\date{}
+% \date{\today}
+\author{}
+\maketitle
+
+
+In many workplaces both electronic and paper documents are read, edited and
+transferred. A point-and-click document capture system, avoiding the cumbersome
+use of a fixed desktop scanner is highly beneficial. The major problem is
+firstly to locate the text and then to correctly recover the perspective view of
+it, ready for OCR. We have dealt with the extraction of blocks of large text or
+paragraphs in images of real scenes [1] but only partially dealt with their
+perspective recovery [2,3].  This paper addresses this as-yet unsolved problem: the
+recovery of left, right or centrally justified paragraphs in a single
+image. Other benefits of full document/text capture and recovery include a
+translation tool for tourists and as an aid for the visually impaired, amongst
+others.
+
+Work related to perspective recovery has mainly been based on planar texture
+analysis [10,5]. For example, [10] found the affine distortion
+in the image power spectra along straight lines to determine first the
+orientation of the vanishing line and then its position. Most works on OCR-based
+document capture assume that the text is already
+fronto-parallel.  Other than our recent work in [3], the only other (soon to
+be published) work known to the authors on text-based perspective recovery is [9].  The author seeks visual clues in the image which correspond to
+horizontal and vertical features on the document plane.  However, the vertical
+vanishing point of the text plane cannot be robustly estimated when only one
+vertical clue is present.  Examples of this situation arise when the document is
+single-column or is not fully justified.  We present a novel approach to recover
+both horizontal and vertical vanishing points that can cope with all these
+situations, providing comparative experimental results as well as a full
+performance evaluation. We discuss limitations of the solution and possible
+improvements.
+
+
+Key words:
+Document recognition, Shape, Surface Geometry, Perspective Recovery, Planar Orientation, Vanishing Points, Document Structure
+
+
+% \bibliographystyle{plain}
+% \bibliography{jrefs}
+
+
+
+\end{document}
+
