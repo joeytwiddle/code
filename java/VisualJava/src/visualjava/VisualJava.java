@@ -26,5 +26,12 @@ public class VisualJava {
         VisualJavaGUIStatics.addMenuBar(f);
         f.validate();
 	}
+	
+	public static void showObject(Object obj) {
+	    if (desktop == null) {
+	        main(new String[0]);
+	    }
+	    desktop.showObject(obj);
+	}
 
 }

@@ -127,12 +127,14 @@ public class VisualJavaGUIStatics {
                 String line = in.readLine();
                 if (line == null)
                     break;
+                if (line.indexOf("WebResponse")>=0)
+                    System.out.println("< "+line);
                 menu.addClass(line);
             }
         } catch (IOException e) {
-            if (!e.getMessage().equals("Write end dead")) {
+            // if (!e.getMessage().equals("Write end dead")) {
                 e.printStackTrace(System.err);
-            }
+            // }
         }
         // A nice touch: starts to split/populate the menu in the background (because it is a slow operation!)
         // Strangely if I wrap the above population reading in this Thread, the menu still does not appear.
@@ -157,7 +159,7 @@ public class VisualJavaGUIStatics {
             statics.add(new JSeparator());
             for (int i=0;i<c.getDeclaredMethods().length;i++) {
                 Method m = c.getDeclaredMethods()[i];
-                if (Modifier.isStatic(m.getModifiers())) {
+                if (Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())) {
                     addMethodToMenu(m, statics, null);
                 }
             }
@@ -198,9 +200,22 @@ public class VisualJavaGUIStatics {
         );
         menu.add(menuItem);
     }
-
-    public static void addFieldToMenu(Field f, JMenu menu, final Object obj) throws IllegalAccessException {
+    
+    public static void addFieldToMenu(final Field f, JMenu menu, final Object obj) throws IllegalAccessException {
         JMenuItem menuItem = new JMenuItem(VisualJavaStatics.getSimpleClassName(f.getType()) + " " + f.getName() + " = \"" + f.get(obj) + "\"");
+        menuItem.addActionListener(
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            Object value = f.get(obj);
+                            VisualJava.desktop.showObject(value);
+                        } catch (Exception ex) {
+                            VisualJava.desktop.showObject(ex);
+                        }
+                    }
+                }
+        );
         menu.add(menuItem);
     }
+    
 }

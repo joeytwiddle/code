@@ -9,6 +9,10 @@ Or can we at least hope to preserve some common code?
 It should be documented in CVS when either of the forks starts.
 LOL, maybe we could make it a boolean option somewhere!
 
+Also to consider: alternative ways to do the GUI
+  - Foldable trees instead of menus (they would stay open until user chooses to close them :-)
+  - Tabbed frame(s) on the right showing information about the selected Desktop ObjectIcon (which we should rename Variable!).
+
 We shall probably add various nicities to do with context.  Eg. which methods are viable given their arguments and the items on the desktop; which icons fit the selected method?
 
 
@@ -31,11 +35,17 @@ The Boolean argument checkbox component is not yet drag-droppable like the other
 
 When icons are dropped into arguments, their variable name should be recorded (with the ParameterDropTarget?), so that when the method is called, it can be seen which of the desktop's variables were used to make the call.  (Eg. for code-generation.)
 
+VisualJava offers public methods of anonymous (inner) classes to the user, but I have not yet seen reflection succeed to call them!  However, if they are implementations or overrides of a parent class/interface's method, then the parent method can be called from VisualJava ok.
+
 
 
 TODO:
 
-Split up old VisualJava from new VisualJava.
+Start building a function library to encourage "function Java".  Eg. a map() function which takes an array/List and a method(*), and produces the list after each item has been passed through the function.
+(*)  How should we represent methods?  We could use java.lang.reflect.Method, but this might cause problems if we eg. want to perform currying.  Better to have our own method/"function" representation.
+How will GUI allow us to drag+drop methods?  (Doesn't at the moment.)
+
+Split up old VisualJava from new VisualJava.  (Ie. extract former from early CVS and put it somewhere else!)
 
 Different icon for each class type (can of course default to parent if no icon specified for that class)!
 

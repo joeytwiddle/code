@@ -87,7 +87,7 @@ public class SplittingJMenu extends DetachableJMenu {
 			// splitAt[0]=0;
 			// splitAt[preferedSplits-1]=items.size()+1;
 			for (int i=0;i<preferedSplits+1;i++) {
-				splitAt[i]=items.size()*i/(preferedSplits);
+				splitAt[i]=(items.size())*i/(preferedSplits);
 			}
 			Vector splits=new Vector();
 			for (int i=0;i<preferedSplits;i++) {

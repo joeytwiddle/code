@@ -46,7 +46,7 @@ public class VisualJavaStatics {
                 while (classPath.length() > 0) {
                     j = classPath.indexOf(":");
                     String jarOrDir;
-                    if (j>0) {
+                    if (j >= 0) {
                         jarOrDir = classPath.substring(0,j);
                         classPath = classPath.substring(j+1);
                     } else {
@@ -63,13 +63,40 @@ public class VisualJavaStatics {
                             // System.out.println("Skipping non rt.jar: " + jarOrDirFile);
                         // }
                     } else {
-                        System.out.println("Do not yet know how to parse class list from directory or non-jar: " + jarOrDirFile);
+                        System.out.println("Extracting class list from directory: " + jarOrDirFile);
+                        printClassesInDirTo(jarOrDirFile,jarOrDirFile, writer);
+                        // System.out.println("Do not yet know how to parse class list from directory or non-jar: " + jarOrDirFile);
                     }
                 }
+                writer.flush();
+                writer.close();
             }
         }.start();
 
         return new BufferedReader(new InputStreamReader(in));
+    }
+    
+    private static void printClassesInDirTo(File topDir, File dir, PrintWriter writer) {
+        try {
+            if (dir.isDirectory()) {
+                File[] list = dir.listFiles();
+                for (int i=0;i<list.length;i++) {
+                    File file = list[i];
+                    if (file.isDirectory()) {
+                        printClassesInDirTo(topDir, file, writer);
+                    } else if (file.isFile() && file.getName().endsWith(".class")) {
+                        String relative = file.getCanonicalPath();
+                        relative = relative.substring( topDir.getCanonicalPath().length() + 1);
+                        relative = fixString(relative);
+                        if (relative == null)
+                            continue;
+                        writer.println( relative );
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
     }
 
     private static void printClassesInJarTo(File jarFile, PrintWriter writer) {
@@ -88,35 +115,11 @@ public class VisualJavaStatics {
                 if (!line.endsWith(".class")) {
                     continue;
                 }
-                line = line.substring(0,line.length() - ".class".length());
-                // Convert path '/'s into package '.'s
-                int i;
-                while ((i = line.indexOf("/")) >= 0) {
-                    line = line.substring(0,i) + "." + line.substring(i+1);
-                }
-                while ((i = line.indexOf("\\")) >= 0) {
-                    line = line.substring(0,i) + "." + line.substring(i+1);
-                }
-                // Inner classes
-                i = line.indexOf("$");
-                if (i >= 0) {
+                line = fixString(line);
+                if (line == null)
                     continue;
-                    /** @todo It appears inner classes never have constructors
-                     *  We may need to access their fields at some point,
-                     *  but for the moment I have disabled them.
-                    **/
-                    /*
-                    String after = line.substring(i+1);
-                    try {
-                        Integer.parseInt(after);
-                        // Is an anonymous class: skip
-                        continue;
-                    } catch (NumberFormatException e) {
-                        // Is not anonymous =)
-                        line = line.substring(0,i) + "." + line.substring(i+1);
-                    }
-                    */
-                }
+                if (line.indexOf("WebResponse")>=0)
+                    System.out.println("> "+line);
                 writer.println(line);
             }
         } catch (IOException e) {
@@ -133,8 +136,46 @@ public class VisualJavaStatics {
         }
     }
 
+    static String fixString(String line) {
+        line = line.substring(0,line.length() - ".class".length());
+        // Convert path '/'s into package '.'s
+        int i;
+        while ((i = line.indexOf("/")) >= 0) {
+            line = line.substring(0,i) + "." + line.substring(i+1);
+        }
+        while ((i = line.indexOf("\\")) >= 0) {
+            line = line.substring(0,i) + "." + line.substring(i+1);
+        }
+        // Inner classes
+        i = line.indexOf("$");
+        if (i >= 0) {
+            return null;
+            /** @todo It appears inner classes never have constructors
+             *  We may need to access their fields at some point,
+             *  but for the moment I have disabled them.
+            **/
+            /*
+            String after = line.substring(i+1);
+            try {
+                Integer.parseInt(after);
+                // Is an anonymous class: skip
+                continue;
+            } catch (NumberFormatException e) {
+                // Is not anonymous =)
+                line = line.substring(0,i) + "." + line.substring(i+1);
+            }
+            */
+        }
+        return line;
+    }
+    
     public static String getPackageFromClass(String className) {
         int i = className.lastIndexOf(".");
-        return className.substring(0,i);
+        if (i>=0) {
+            return className.substring(0,i);
+        } else {
+            return "";
+        }
     }
+    
 }
