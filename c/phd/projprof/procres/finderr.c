@@ -144,7 +144,7 @@ main(int argc,String *argv) {
 			float rightang=180*asin(rightdiff)/pi;
 
 			// Bad:
-			float focal=500; // Just seems!
+			float focal=2560; // Just seems!
 			V3d eye=V3d(320,240,-focal);
 			V3d gtrightfromhvp=V3d(gthvp.x,gthvp.y,0)-eye;
 			V3d pprightfromhvp=V3d(pphvp.x,pphvp.y,0)-eye;

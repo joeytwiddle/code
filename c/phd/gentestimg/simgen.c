@@ -73,7 +73,7 @@ int main(int argc,String *argv) {
 	focallength=propfocallength*imgwidth;
 	float size=propsize*(float)imgwidth;
 	float depth=propdepth*imgwidth;
-	printf("focal length = %f",focallength);
+	printf("focal length = %f\n",focallength);
 	printf("size = %f\n",size);
 	printf("depth = %f\n",depth);
 	float width=size;

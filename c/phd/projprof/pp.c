@@ -970,7 +970,7 @@ void main(int argc,String *argv) {
 		if (fls>=0)
 			printf("\n*** failed estimation of focal length %f ***\n\n",fls);
 		float focallength=(
-			fls<0 ? sqrt(-fls) : binimg.width
+			fls<0 ? sqrt(-fls) : 2560 // binimg.width
 		);
 		printf("Got focal length %f\n",focallength);
 		RIGHT.z=focallength;
