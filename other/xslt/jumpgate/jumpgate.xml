@@ -3,6 +3,42 @@
 
 <JumpgateData>
 
+	<JumpgateEntry name="Wikipedia" contributor="joey">
+		<Category>General</Category>
+		<Description>Online community-written Encyclopedia - Look up knowledge or add your own.</Description>
+		<HowToAccess>
+			<Form action="http://wikipedia.org/w/wiki.phtml">
+				<HiddenParameters>
+				</HiddenParameters>
+				<ExposedParameters>
+					<INPUT type="text" name="search" size="25" value="Wikipedia" maxlength="256"/>
+				</ExposedParameters>
+			</Form>
+		</HowToAccess>
+	</JumpgateEntry>
+
+	<JumpgateEntry name="Google Search" contributor="joey">
+		<Description>Popular search engine</Description>
+		<HowToAccess>
+			<Form action="http://www.google.com/search">
+				<HiddenParameters>
+					<input type="hidden" name="hl" value="en" />
+					<input type="hidden" name="ie" value="ISO-8859-1" />
+					<!--
+					<input id="all" type="radio" name="meta" value="" checked="checked" />
+					<input id="cty" type="radio" name="meta" value="cr=countryUK|countryGB" />
+					-->
+					<input id="all" type="hidden" name="meta" value="" />
+				</HiddenParameters>
+				<ExposedParameters>
+					<input type="text" name="q" value="" size="20"/>
+					<input type="submit" value="Google Search" name="btnG" />
+					<input type="submit" value="I'm Feeling Lucky" name="btnI" />
+				</ExposedParameters>
+			</Form>
+		</HowToAccess>
+	</JumpgateEntry>
+
 	<CopyFormFromPage name="Google Search" page="http://www.google.com/"/>
 
 	<!--
