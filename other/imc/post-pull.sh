@@ -1,8 +1,10 @@
-if test ! $IMC_CONFIG_LOADED
+if test ! $1
 then
-	echo "No config loaded.  Please source your imc config file first."
+	echo "Usage: post-pull <imc_site_name>"
 	exit 1
 fi
+
+IMC_SITE_NAME="$1"
 
 echo
 echo "######## Post-pull operations"
@@ -14,7 +16,7 @@ DOBACKUPSB4DEV=
 # More notes:
 # The SQL log on tronic is linked outside the tree.  I couldn't be bothered to download it.  I created a similar directory+file outside the tree on buggy so the link works.
 
-export CITYPATH="/www/active-cvs/bristol"
+export CITYPATH="/www/active-cvs/$IMC_SITE_NAME"
 export NEARCITY="/www/" ## on same fs please, used temporarily
 
 ## This next line was left out but I suspect cron had it.  But check if a lone source works sometime...
@@ -25,24 +27,24 @@ echo 'Putting "Warning: mirror" notice on the site.'
 sedreplace -changes '.*Please refrain' '<font color="#ff8080" size="+2">Please note: You are viewing a mirror / backup of the main site.  <b>Any submissions made here WILL be LOST!</b></font><p><font color="#ffffff">Please refrain' "$CITYPATH/local/include/imcfront-header.inc"
 echo
 
-echo "Giving www-data owner privilege on all bristol imc files"
-chown www-data:imc $CITYPATH/ /www/uploads/bristol/ -R
+echo "Giving www-data owner privilege on all $IMC_SITE_NAME imc files"
+chown www-data:imc $CITYPATH/ /www/uploads/$IMC_SITE_NAME/ -R
 echo
 
 if test "$DOBACKUPB4DEV"
 then
 	echo "Making a backup of the live site before making development changes."
-	rm -rf /www/active-cvs/bristol-b4dev
+	rm -rf /www/active-cvs/$IMC_SITE_NAME-b4dev
 	# Hide heavy directories
 	mv $CITYPATH/webcast/logs $NEARCITY/logs.hiding
 	mv $CITYPATH/local/webcast/cache $NEARCITY/cache.hiding
-	cp -a $CITYPATH /www/active-cvs/bristol-b4dev
+	cp -a $CITYPATH /www/active-cvs/$IMC_SITE_NAME-b4dev
 	# Restore the heavy directories
 	mv $NEARCITY/logs.hiding $CITYPATH/webcast/logs
 	mv $NEARCITY/cache.hiding $CITYPATH/local/webcast/cache
 fi
 
-echo "Moving bristol_dev/.htaccess to /tmp cos it causes problems."
+echo "Moving $IMC_SITE_NAME/.htaccess to /tmp cos it causes problems."
 mv $CITYPATH/webcast/.htaccess /tmp
 echo
 
@@ -88,7 +90,7 @@ echo
 if test "$DOBACKUPB4DEV"
 then
 echo "Finally checksumming the result so you can easily see what files you have changed."
-cksum `find $CITYPATH/ -type f | notindir CVS cache log logs | grep -v '\.b4sr$'` > /www/bristolb4local.cksum
+cksum `find $CITYPATH/ -type f | notindir CVS cache log logs | grep -v '\.b4sr$'` > /www/"$IMC_SITE_NAME"b4local.cksum
 echo
 fi
 
@@ -110,7 +112,7 @@ sedreplace \
 echo
 
 # Re-create the MYSQL DB:
-/www/recreatemydb.sh
+/www/scripts/recreatemydb.sh
 
 # Ensure postgres is not busy so that we may destroy the DB:
 # Note: "su - root" used in case cron does not have full PATH setup.
@@ -119,6 +121,6 @@ sleep 15
 su - root /etc/init.d/postgresql start
 sleep 15
 # Replace the DB:
-su - postgres /www/recreatepgdb.sh
+su - postgres /www/scripts/recreatepgdb.sh
 
 echo "All done."
