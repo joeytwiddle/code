@@ -3,6 +3,7 @@
 **/
 
 /** TODO:
+ *  Factor our principal parameters (density, fps, whitebits, line spacing).
  *  Resizing: Use cached copies of COLS and LINES, and re-allocate array when they change.
  *  Block white things (processes?):
  *    A process can appear at the bottom end of a sliding block, and disappear, randomly.  (ie. sometimes when sliding, the front symbols turns white)
@@ -24,21 +25,29 @@
 #include <curses.h>
 
 #define BOTHER_CLOCKING ON
-#define WHITE_BITS ON
+#define WHITE_BITS      ON
+#define MORE_WHITE_BITS ON
+
 // For fast machines:
 // #define sparsenessLengthOn 1
 // #define sparsenessLengthOff 1
 // #define sparsenessMovementOn 1
 // #define sparsenessMovementOff 1
+// #define sparsenessSkipCols 1
+//
 // For slow machines (eg. 486): less faithful, but animation appears much clearer
 #define sparsenessLengthOn 1
 #define sparsenessLengthOff 1
 #define sparsenessMovementOn 1
-#define sparsenessMovementOff 4
-
-// For single/double line spacing:
-// #define sparsenessSkipCols 1
+#define sparsenessMovementOff 3
 #define sparsenessSkipCols 3
+//
+// Thick with data, looks like XMatrix defaults:
+// #define sparsenessLengthOn 0.25
+// #define sparsenessLengthOff 0.25
+// #define sparsenessMovementOn 1.5
+// #define sparsenessMovementOff 1
+// #define sparsenessSkipCols 1
 
 void homeAndWrefresh() {
 	move(0,0);
@@ -68,11 +77,10 @@ Type max(Type x,Type y) {
 	return ( x > y ? x : y );
 }
 
-/* // Thou needest this if sparseness is a float
+// Thou needest this if sparseness is a float
 int max(int x,double y) {
 	return max(x,(int)y);
 }
-*/
 
 #define mbit char
 
@@ -80,6 +88,7 @@ mbit* palette = "^~+zovq/\\*kAY}0&$%@#";
 int paletteSize = strlen(palette);
 mbit BLOCKHEAD_PROCESS    = 'B';
 mbit WRITING_PROCESS      = 'W';
+mbit CLEARING_PROCESS     = 'C';
 mbit STATIC_PROCESS_FULL  = 'S';
 mbit STATIC_PROCESS_EMPTY = 'E';
 
@@ -94,18 +103,6 @@ int newSlidingProcess;
 mbit **thematrix;
 bool *sliding;
 bool *adding;
-
-void setupProbabilities() {
-
-	// TODO: Base some on area instead of width?
-	averageLengthOfSlide       = max(2, LINES * 2/3 / sparsenessMovementOn );
-	averageLengthBetweenSlides = max(2, averageLengthOfSlide * 2 * sparsenessMovementOff );
-	averageLengthOfBlock       = max(2, LINES * 2/3 / sparsenessLengthOn );
-	averageLengthBetweenBlocks = max(2, averageLengthOfBlock * 3/2 * sparsenessLengthOff );
-	slidingProcessDies         = max(2, averageLengthOfSlide * 2/3 );
-	newSlidingProcess          = max(2, averageLengthOfSlide );
-
-}
 
 mbit randSymbol() {
 	return palette[ rand() % paletteSize ];
@@ -122,10 +119,54 @@ void matrix_set_process(int x,int y) {
 	// debug: catch oob?
 	mbit symbol = randSymbol();
 	attrset( COLOR_PAIR(7) | ( prob(2) ? A_BOLD : 0 ) );
+	// attrset( COLOR_PAIR(7) );
 	move(y,x);
 	addch(symbol);
 	thematrix[x][y] = BLOCKHEAD_PROCESS;
 	attrset(COLOR_PAIR(2));
+}
+
+#ifdef MORE_WHITE_BITS
+int processDies;
+
+int numProcesses;
+mbit *processes;
+int *processX,*processY;
+
+// Consider: only allow write/clear processes on not sliding columns, and static processes on sliding columns.
+// Processes should not operate on empty parts of the matrix.  Eg. if over empty bit, die with prob(3).
+void newProcess(int i) {
+	// processes[i] = ( (rand()%3) == 0 ? STATIC_PROCESS_EMPTY : WRITING_PROCESS );
+	processes[i] = "EWWWWWWCC"[rand()%9];
+	processX[i] = ( rand() % (COLS/sparsenessSkipCols) ) * sparsenessSkipCols;
+	processY[i] = rand() % LINES;
+	matrix_set_process(processX[i],processY[i]);
+	thematrix[processX[i]][processY[i]] = processes[i];
+}
+#endif
+
+void setupProbabilities() {
+
+	// TODO: Base some on area instead of width?
+	averageLengthOfSlide       = max(2, LINES * 2/3 / sparsenessMovementOn );
+	averageLengthBetweenSlides = max(2, averageLengthOfSlide * 2 * sparsenessMovementOff );
+	averageLengthOfBlock       = max(2, LINES * 2/3 / sparsenessLengthOn );
+	averageLengthBetweenBlocks = max(2, averageLengthOfBlock * 3/2 * sparsenessLengthOff );
+	slidingProcessDies         = max(2, averageLengthOfSlide * 2/3 );
+	newSlidingProcess          = max(2, averageLengthOfSlide );
+
+#ifdef MORE_WHITE_BITS
+	processDies  = max(2, LINES*2);
+	// numProcesses = COLS / sparsenessSkipCols / 12;
+	numProcesses = COLS / 3 / 12;
+	processes    = new mbit[numProcesses];
+	processX     = new int[numProcesses];
+	processY     = new int[numProcesses];
+	for (int i=0;i<numProcesses;i++) {
+		newProcess(i);
+	}
+#endif
+
 }
 
 void slideColumn(int x,bool lastSlide) {
@@ -143,6 +184,15 @@ void slideColumn(int x,bool lastSlide) {
 			} else {
 				matrix_set_process(x,y);
 			}
+#ifdef MORE_WHITE_BITS
+		} else if (src == STATIC_PROCESS_EMPTY) {
+			matrix_set(x,y,' ');
+		} else if (src == STATIC_PROCESS_FULL) {
+			matrix_set(x,y,randSymbol());
+		} else if (thematrix[x][y] == STATIC_PROCESS_EMPTY || thematrix[x][y] == STATIC_PROCESS_FULL) {
+			// Not working?
+			thematrix[x][y] = ( src == ' ' ? STATIC_PROCESS_EMPTY : STATIC_PROCESS_FULL );
+#endif
 		} else if (src != ' ' && last == ' ' && !lastSlide && prob(newSlidingProcess)) {
 			matrix_set_process(x,y);
 		} else {
@@ -254,6 +304,31 @@ void main() {
 			}
 		}
 		lastframe = thisframe;
+#endif
+
+#ifdef MORE_WHITE_BITS
+		for (int i=0;i<numProcesses;i++) {
+			if (processes[i] == STATIC_PROCESS_EMPTY || processes[i] == STATIC_PROCESS_FULL) {
+				processes[i] = thematrix[processX[i]][processY[i]];
+				matrix_set_process(processX[i],processY[i]);
+				thematrix[processX[i]][processY[i]] = processes[i];
+			} else if (processes[i] == WRITING_PROCESS || processes[i] == CLEARING_PROCESS) {
+				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
+				matrix_set(processX[i],processY[i],toWrite);
+				processY[i]++;
+				if (processY[i]>=LINES) {
+					newProcess(i);
+				} else {
+					matrix_set_process(processX[i],processY[i]);
+					thematrix[processX[i]][processY[i]] = WRITING_PROCESS; // nobody cares!
+				}
+			}
+			if (prob(processDies)) {
+				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
+				matrix_set(processX[i],processY[i],toWrite);
+				newProcess(i);
+			}
+		}
 #endif
 
 		wrefresh(stdscr);
