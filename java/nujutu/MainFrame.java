@@ -1,7 +1,7 @@
 package nujutu;
 
 // import java.applet.*;
-import java.awt.*;
+import java.awt.Container;
 import java.awt.event.*;
 import java.io.*;
 import java.lang.*;
@@ -14,14 +14,67 @@ import javax.swing.text.html.*;
 import nuju.*;
 import jlib.*;
 
-class PropertyBrowser extends SimpleTable {
+class MemberBrowser extends SimpleTable {
 
-	PropertyBrowser(Class c,Object o) {
-		super(4,4);
-		Field[] fs=c.getFields();
-		set(new Integer(1),0,2);
-		set("a string",1,1);
-		set(new JButton("hello"),2,0);
+	MemberBrowser(Class cls,Object o,
+		List members,
+		boolean stat,boolean notstat,
+		boolean priv,boolean notpriv,
+		boolean field,
+		boolean method,
+		boolean constructor
+	) {
+		super(2,2);
+		// set(new Integer(1),0,2);
+		// set(new JButton("hello"),2,0);
+		int row=0;
+		for (int i=0;i<members.size();i++) {
+			try {
+				Member member=(Member)members.get(i);
+				if ( ! (
+					( stat && ! Modifier.isStatic(member.getModifiers()) )
+						||
+					( notstat && Modifier.isStatic(member.getModifiers()) )
+						||
+					( priv && ! Modifier.isPrivate(member.getModifiers()) )
+						||
+					( notpriv && Modifier.isPrivate(member.getModifiers()) )
+						||
+					( field && ! (member instanceof Field) )
+						||
+					( method && ! (member instanceof Method) )
+						||
+					( constructor && ! (member instanceof Constructor) )
+				) ) {
+					int col=0;
+					if (member instanceof Field) {
+						set(((Field)member).getType().toString(),col++,row);
+					}
+					if (member instanceof Method) {
+						set(((Method)member).getReturnType().toString(),col++,row);
+					}
+					set(member.getName()+(member instanceof Field?"":"("),col++,row);
+					if (member instanceof Field) {
+						set("=",col++,row);
+						set(((Field)member).get(o).toString(),col++,row);
+					} else {
+						Class[] params=( member instanceof Method
+							? ((Method)member).getParameterTypes()
+							: ((Constructor)member).getParameterTypes()
+						);
+						for (int j=0;j<params.length;j++) {
+							set(params[j].getName(),col++,row);
+						}
+						set(")",col++,row);
+					}
+					members.remove(member);
+					i--;
+					row++;
+				}
+			} catch (Exception e) {
+				System.err.println(""+e);
+			}
+		}
 	}
 
 }
@@ -54,9 +107,20 @@ class InfoPane extends JTabbedPane {
 	}
 
 	void introspect(Class c,Object o) {
+		List members=new Vector();
+		jlib.JList.addArray(members,c.getFields());
+		jlib.JList.addArray(members,c.getConstructors());
+		jlib.JList.addArray(members,c.getMethods());
+		// tabs[0].add(new JButton("wicked"));
 		tabs[0].removeAll();
-		tabs[0].add(new JButton("wicked"));
-		tabs[0].add(new PropertyBrowser(c,o));
+		tabs[0].add(new JScrollPane(new MemberBrowser(c,o,members,true,false,false,true,true,false,false)));
+		tabs[1].add(new JScrollPane(new MemberBrowser(c,o,members,true,false,false,true,false,true,false)));
+		tabs[2].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,false,true,false,false,true)));
+		tabs[3].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,false,true,true,false,false)));
+		tabs[4].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,false,true,false,true,false)));
+		tabs[5].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,true,false,true,false,false)));
+		tabs[6].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,true,false,false,true,false)));
+		System.out.println(""+members.size());
 	}
 
 	void introspect(Class c) {
