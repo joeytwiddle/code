@@ -1,6 +1,0 @@
-#ifndef quad_H
-  #define quad_H
-
-  #include <quad-header.h>
-
-#endif

@@ -1,6 +1,0 @@
-#ifndef angus_H
-  #define angus_H
-
-  #include <angus-header.h>
-
-#endif

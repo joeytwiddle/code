@@ -1,6 +1,0 @@
-#ifndef files_H
-  #define files_H
-
-  #include <files-header.h>
-
-#endif

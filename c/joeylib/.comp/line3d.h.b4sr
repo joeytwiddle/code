@@ -1,6 +1,0 @@
-#ifndef line3d_H
-  #define line3d_H
-
-  #include <line3d-header.h>
-
-#endif

@@ -1,6 +1,0 @@
-#ifndef jbmp_H
-  #define jbmp_H
-
-  #include <jbmp-header.h>
-
-#endif

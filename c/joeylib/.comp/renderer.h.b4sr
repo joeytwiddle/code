@@ -1,6 +1,0 @@
-#ifndef renderer_H
-  #define renderer_H
-
-  #include <renderer-header.h>
-
-#endif

@@ -1,6 +1,0 @@
-#ifndef renderable_H
-  #define renderable_H
-
-  #include <renderable-header.h>
-
-#endif

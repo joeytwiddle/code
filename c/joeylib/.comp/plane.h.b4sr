@@ -1,6 +1,0 @@
-#ifndef plane_H
-  #define plane_H
-
-  #include <plane-header.h>
-
-#endif

@@ -1,6 +1,0 @@
-#ifndef maps_H
-  #define maps_H
-
-  #include <maps-header.h>
-
-#endif

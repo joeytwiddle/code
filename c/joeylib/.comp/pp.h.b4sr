@@ -1,6 +1,0 @@
-#ifndef pp_H
-  #define pp_H
-
-  #include <pp-header.h>
-
-#endif

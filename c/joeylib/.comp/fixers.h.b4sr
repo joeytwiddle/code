@@ -1,6 +1,0 @@
-#ifndef fixers_H
-  #define fixers_H
-
-  #include <fixers-header.h>
-
-#endif

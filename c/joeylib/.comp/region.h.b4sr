@@ -1,6 +1,0 @@
-#ifndef region_H
-  #define region_H
-
-  #include <region-header.h>
-
-#endif

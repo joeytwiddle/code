@@ -1,6 +1,0 @@
-#ifndef polygon3d_H
-  #define polygon3d_H
-
-  #include <polygon3d-header.h>
-
-#endif

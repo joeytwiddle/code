@@ -1,6 +1,0 @@
-#ifndef correlator2d_H
-  #define correlator2d_H
-
-  #include <correlator2d-header.h>
-
-#endif

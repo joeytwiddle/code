@@ -1,6 +1,0 @@
-#ifndef map2d2_H
-  #define map2d2_H
-
-  #include <map2d2-header.h>
-
-#endif

@@ -1,6 +1,0 @@
-#ifndef frustrum_H
-  #define frustrum_H
-
-  #include <frustrum-header.h>
-
-#endif
