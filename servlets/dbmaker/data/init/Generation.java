@@ -4,7 +4,15 @@ import java.lang.*;
 import java.util.*;
 
 public class Generation {
-	Person p; PersonWithKnownAge pwka; Philosopher ph; Publication pu; Authorship au;
+	// List of all objects types
+	Person p;
+	PersonWithKnownAge pwka;
+	Philosopher ph;
+	Publication pu;
+	Authorship au;
+	ExampleInterface ei;
+	ExampleImplementationA eia;
+	ExampleImplementationB eib;
 }
 
 class Person {
@@ -12,7 +20,7 @@ class Person {
 	String lastName;
 }
 
-class PersonWithKnownAge {
+class PersonWithKnownAge extends Person {
 	Date dateOfBirth;
 	Date dateOfDeath;
 }
@@ -28,6 +36,15 @@ class Publication {
 /* This allows multiple authors of one document */
 class Authorship {
 	Publication publication;
-	Person author;
+	Philosopher author;
+}
+
+interface /* or abstract class */ ExampleInterface {
+}
+
+class ExampleImplementationA implements ExampleInterface {
+}
+
+class ExampleImplementationB implements ExampleInterface {
 }
 

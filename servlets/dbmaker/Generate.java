@@ -12,9 +12,14 @@ import jlib.db.*;
 
 public class Generate extends Page {
 
+	public static final void main(String[] args) {
+		new nuju.Nuju(new Generate());
+	}
+
 	public static String classPath="/home/joey/j/code/java/servlets/";
 	public static String dbmakerPath=classPath+"/dbmaker/";
 	public static String dataPath=dbmakerPath+"/data/";
+
 	public static String file2classPath(String file) {
 		return JString.squeeze(JString.trim(JString.replace(JString.after(file,classPath),"/","."),"."),".");
 	}
@@ -38,7 +43,7 @@ public class Generate extends Page {
 
 	}
 
-  private Form loadInitForm() {
+  public Form loadInitForm() {
 			Form form=new Form() {
 			  public TextField nametxt=new TextField("Generation");
 				public Button newButton=new Button("Load Init Class") {
