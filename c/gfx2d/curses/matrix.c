@@ -29,11 +29,11 @@
 #define MORE_WHITE_BITS ON
 
 // For fast machines:
-// #define sparsenessLengthOn 1
-// #define sparsenessLengthOff 1
-// #define sparsenessMovementOn 1
-// #define sparsenessMovementOff 1
-// #define sparsenessSkipCols 1
+#define sparsenessLengthOn 1
+#define sparsenessLengthOff 1
+#define sparsenessMovementOn 1
+#define sparsenessMovementOff 1
+#define sparsenessSkipCols 1
 //
 // For slow machines (eg. 486): less faithful, but animation appears much clearer
 // #define sparsenessLengthOn 1
@@ -43,11 +43,11 @@
 // #define sparsenessSkipCols 3
 //
 // Thick with data, looks like XMatrix defaults:
-#define sparsenessLengthOn 0.25
-#define sparsenessLengthOff 0.25
-#define sparsenessMovementOn 1.5
-#define sparsenessMovementOff 1
-#define sparsenessSkipCols 1
+// #define sparsenessLengthOn 0.25
+// #define sparsenessLengthOff 0.25
+// #define sparsenessMovementOn 1.5
+// #define sparsenessMovementOff 1
+// #define sparsenessSkipCols 1
 
 void homeAndWrefresh() {
 	move(0,0);
@@ -128,6 +128,7 @@ void matrix_set_process(int x,int y) {
 
 #ifdef MORE_WHITE_BITS
 int processDies;
+int boredProcessDies;
 
 int numProcesses;
 mbit *processes;
@@ -137,9 +138,10 @@ int *processX,*processY;
 // Processes should not operate on empty parts of the matrix.  Eg. if over empty bit, die with prob(3).
 void newProcess(int i) {
 	// processes[i] = ( (rand()%3) == 0 ? STATIC_PROCESS_EMPTY : WRITING_PROCESS );
-	processes[i] = "EWWWWWWCC"[rand()%9];
+	// processes[i] = "EWC"[rand()%2];
 	processX[i] = ( rand() % (COLS/sparsenessSkipCols) ) * sparsenessSkipCols;
 	processY[i] = rand() % LINES;
+	processes[i] = ( sliding[processX[i]] ? 'E' : thematrix[processX[i]][processY[i]] == ' ' ? 'W' : 'C' );
 	matrix_set_process(processX[i],processY[i]);
 	thematrix[processX[i]][processY[i]] = processes[i];
 }
@@ -156,7 +158,8 @@ void setupProbabilities() {
 	newSlidingProcess          = max(2, averageLengthOfSlide );
 
 #ifdef MORE_WHITE_BITS
-	processDies  = max(2, LINES*2);
+	processDies  = max(2, LINES);
+	boredProcessDies = max(2, averageLengthOfBlock);
 	// numProcesses = COLS / sparsenessSkipCols / 12;
 	numProcesses = COLS / 3 / 12;
 	processes    = new mbit[numProcesses];
@@ -259,7 +262,7 @@ void main() {
 #ifdef BOTHER_CLOCKING
 	clock_t clocksPerFrame;
 	clock_t lastframe,thisframe;
- 	clocksPerFrame = CLOCKS_PER_SEC / ( LINES < 30 ? 30 : 60 );
+	clocksPerFrame = CLOCKS_PER_SEC / ( LINES < 30 ? 30 : 60 );
 	lastframe = clock();
 #endif
 
@@ -313,8 +316,11 @@ void main() {
 				processes[i] = thematrix[processX[i]][processY[i]];
 				matrix_set_process(processX[i],processY[i]);
 				thematrix[processX[i]][processY[i]] = processes[i];
-				if (processes[i] == STATIC_PROCESS_EMPTY && prob(6)) {
-					recycle = true;
+				if (
+					processes[i] == STATIC_PROCESS_EMPTY
+					|| !sliding[processX[i]]
+				) {
+					recycle = prob(boredProcessDies);
 				}
 			} else if (processes[i] == WRITING_PROCESS || processes[i] == CLEARING_PROCESS) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
@@ -323,8 +329,11 @@ void main() {
 				if (processY[i]>=LINES) {
 					newProcess(i);
 				} else {
-					if (processes[i] == CLEARING_PROCESS && thematrix[processX[i]][processY[i]] == ' ' && prob(6)) {
-						recycle = true;
+					if (
+						(processes[i] == CLEARING_PROCESS && thematrix[processX[i]][processY[i]] == ' ')
+						|| sliding[processX[i]]
+					) {
+						recycle = prob(boredProcessDies);
 					}
 					matrix_set_process(processX[i],processY[i]);
 					thematrix[processX[i]][processY[i]] = WRITING_PROCESS; // nobody cares!
