@@ -8,7 +8,15 @@ export JPATH=/home/joey/j
 . /home/joey/j/startj-simple
 
 SCRIPT="`getcgi script`"
-TMPDIR=`jgettmpdir compiling:$SCRIPT`.sh
+
+if [ ! -f "$JPATH/tools/$SCRIPT" ]
+then
+	simpleresponseheader
+	echo "The file you requested was not found at the expected location: $JPATH/tools/$SCRIPT"
+	exit 0
+fi
+
+TMPDIR=`jgettmpdir compiling:$SCRIPT`
 TMPSCRIPT="$TMPDIR/$SCRIPT.sh"
 
 echo "`date` [$$] compilejshscript: Compiling $SCRIPT" >&2

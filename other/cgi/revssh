@@ -34,6 +34,7 @@ then
 else
 
 	## Remote host has sent one line of it's stdout.  Cat it to local file.
+	## TODO: these strings are invariable CGI escaped (%xx) so they should be unescaped!
 
 	OUTPUT=`getcgi "output"`
 
