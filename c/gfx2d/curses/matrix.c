@@ -70,21 +70,26 @@ void main() {
 		}
 	}
 
+	int AVSLIDELEN = ( LINES>30 ? 5 : 2 );
+	int AVACTLEN = ( LINES>30 ? 10 : 5 );
+
 	while (true) {
 		
 		// doSummat(&lonewriteToPoint);
 
 		int action = rand() % 100;
 
-		if (action < 60) {
+		if (action < 50) {
 
 			// Alter
 
 			int x = rand() % COLS;
-			int y = rand() % LINES;
+			int y = rand() % (int)((double)LINES * 1.5);
+			if (y>=LINES)
+				y=0;
 			
 			attrset(COLOR_PAIR(2));
-			while ( (rand() % 12) != 0 && y < LINES ) {
+			while ( (rand() % AVACTLEN) != 0 && y < LINES ) {
 
 				move(y,x);
 				// attrset(COLOR_PAIR(7) | A_BOLD);
@@ -113,21 +118,27 @@ void main() {
 			
 		} else if (action < 100) {
 
-			// Slide
-			
-			int x = rand() % COLS;
+			// while ( (rand() % 10) != 0 ) {
 
-			attrset(COLOR_PAIR(2));
-			while ( (rand() % 3) != 0 ) {
+				// Slide
+				
+				int x = rand() % COLS;
 
-				for (int y=LINES-1;y>=0;y--) {
-					mbit src = ( y>0 ? thematrix[x][y-1] : ' ' );
-					thematrix[x][y] = src;
-					move(y,x);
-					addch(src);
+				attrset(COLOR_PAIR(2));
+				while ( (rand() % AVSLIDELEN) != 0 ) {
+
+					for (int y=LINES-1;y>0;y--) {
+						thematrix[x][y] = thematrix[x][y-1];
+						move(y,x);
+						addch(thematrix[x][y]);
+					}
+					thematrix[x][0]=' ';
+					move(0,x);
+					addch(' ');
+
 				}
 
-			}
+			// }
 
 		}
 
