@@ -20,7 +20,6 @@ V3d imgplaneFromPixel(V2d p) {
 // }
 
 V2d proj(V3d v) {
-  // return V2d(focallength*v.x/(v.z),imgheight-v.y/(v.z)+(float)imgheight/2.0);
   return V2d(focallength*v.x/scale/(v.z)+(float)imgwidth/2.0,imgheight-(focallength*v.y/scale/(v.z)+(float)imgheight/2.0));
 }
 
@@ -44,10 +43,8 @@ int main(int argc,String *argv) {
   if (dognuplot=a.argexists("-gnuplot","vvp estimation with gnuplot")) {
 		dofitting=true;
 		fittingcommand="gnuplot";
-		fittingcommand="less";
 	}
-	printf("%i\n",dognuplot);
-  String whichmatlabfile=a.argafter("-mlfile","which matlab solution file?","sol1u.txt");
+	String whichmatlabfile=a.argafter("-mlfile","which matlab solution file?","sol1u.txt");
   bool showgraph=a.argexists("-graph","show graph in Matlab");
   bool genimage=a.argexists("-image","generate simulated image");
   bool overlay=a.argexists("-overlay","overlay info on simulated image");
@@ -59,7 +56,7 @@ int main(int argc,String *argv) {
   float yaw=deg2rad(a.floatafter("-yaw","yaw",20.0));
   float pitch=deg2rad(a.floatafter("-pitch","pitch",-20.0));
   float depth=a.floatafter("-depth","depth",100.0);
-  scale=a.floatafter("-scale","scale (should change inv prop to width, hopefully input width indep)",1);
+  scale=a.floatafter("-scale","scale (should change inv prop to width, hopefully input width indep)",0.1);
   imgwidth=a.intafter("-width","output image width",640);
   imgheight=imgwidth*3/4;
 	float xoff=a.floatafter("-xoff","x offset",0.0);
@@ -188,16 +185,16 @@ int main(int argc,String *argv) {
       // printf("%s -> %s\n",line.b.toString(),intb.toString());
       // Line2d line2d=Line2d(V2d(inta.x,inta.y),V2d(intb.x,intb.y));
 
-			V2d pla=proj(line.a);
-			V2d plb=proj(line.b);
+			Pixel pla=proj(line.a);
+			Pixel plb=proj(line.b);
 			Line2d line2d=Line2d(pla,plb);
 							
       Line2d noisyline2d=Line2d(line2d.a+V2d::randomcircle()*noise,line2d.b+V2d::randomcircle()*noise);
       lines.add(line2d);
       noisylines.add(noisyline2d);
       if (genimage && overlay) {
-				V2d pa=proj(line.a);
-				V2d pb=proj(line.b);
+				Pixel pa=proj(line.a);
+				Pixel pb=proj(line.b);
         outputimg.thickline(pa,pb,myRGB::darkgreen,4);
 				printf("  %s - %s\n",pa.toString(),pb.toString());
 			}
@@ -289,19 +286,15 @@ int main(int argc,String *argv) {
 		float groundA = down.y/(float)numlines;
 		float groundB = down.z/(float)numlines;
 
-		float groundU = focallength * groundK1/groundK2;
+		float groundU = groundK1/groundK2;
 		float groundV = groundA/groundK1;
 		float groundW = groundB/groundK2;
-
-		float guessU = proj(worldA).y;
 		
 		printf("Ground truth:\n");
 		printf("  U = %f\n",groundU);
 		printf("  V = %f\n",groundV);
 		printf("  W = %f\n",groundW);
 		printf("  U*V/W = %f\n",groundU*groundV/groundW);
-		printf("\n");
-		printf("  guessU = %f\n",guessU);
 		
     if (dofitting) {
 			lines=noisylines;
@@ -344,22 +337,18 @@ int main(int argc,String *argv) {
           Line2d l=lines.get(i);
           // fprintf(sout,"%f",l.a.y);
           // fprintf(sout,"%f",V2d::dist(l.a,lines.get(0).a));
+				  fprintf(sout,"%f",l.a.y);
           if (domatlab || dooctave) {
-				  fprintf(sout,"%f",i,l.a.y);
 					  if (i<lines.len-1)
           	  fprintf(sout,", ");
 				  }
 				  if (dognuplot)
-				  	fprintf(sout,"%i %f\n",i,l.a.y);
+					  printf("\n");
         }
         if (domatlab || dooctave)
           fprintf(sout,"];\n");
       }
-      if (dognuplot) {
-        fclose(sout);
-        sout=fopen("moredata.txt","w");
-      }
-      
+
       fprintf(sout,"groundU = %f\n",groundU);
       fprintf(sout,"groundV = %f\n",groundV);
       fprintf(sout,"groundW = %f\n",groundW);
