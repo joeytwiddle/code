@@ -33,6 +33,9 @@ public class CodeCollect extends FullCollect {
     // Compiled code
     skipExts.put("class","Java bytecode classfile");
 
+		// PRCS project files
+    skipExts.put("prj","PRCS project files");
+
     // Human readable files
     skipExts.put("html","html file");
     skipExts.put("htm","html file");
