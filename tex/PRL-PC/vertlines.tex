@@ -102,6 +102,27 @@ In this case any odd lines will appear as isolated outliers with an incorrect li
 By substituing \refeqn{spacingsvweqn} into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of $Y$ in terms of $X$ may be written in two parts:
 }
 
+\begin{figure}[t]
+\begin{centering}
+  % \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/angerr-vvp-margins-full.eps,width=60mm}\label{vvpaccuracya}}
+  % \hspace{2mm}
+  % \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/angerr-vvp-spacings-left.eps,width=60mm}\label{vvpaccuracyc}}
+  % \hspace{2mm}
+  % \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/angerr-vvp-spacings-cen.eps,width=60mm}\label{vvpaccuracyd}}
+  % \hspace{2mm}
+  % \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/angerr-vvp-margins-left.eps,width=60mm}\label{vvpaccuracyb}}
+  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
+  \hspace{2mm}
+  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-cen.ps,width=60mm}\label{vvpaccuracyd}}
+  \hspace{2mm}
+  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyc}}
+  \hspace{2mm}
+  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
+\caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
+\label{vvpaccuracy}
+\end{centering}
+\end{figure}
+
 \begin{equation}
 Y(X) = U \frac{1+(n(X)+1)V}{1+(n(X)+1)W} - U \frac{1+n(X)V}{1+n(X)W}
 \label{fittingeqn}
@@ -124,31 +145,67 @@ Therefore, to refine the parameters, an initial fit is made with an approximatio
 Y(X) = \frac{ UV }{ 1+n(X)W }
 \end{equation}
 
-\begin{figure}[t]
-\begin{centering}
-  % \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/angerr-vvp-margins-full.eps,width=60mm}\label{vvpaccuracya}}
-  % \hspace{2mm}
-  % \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/angerr-vvp-spacings-left.eps,width=60mm}\label{vvpaccuracyc}}
-  % \hspace{2mm}
-  % \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/angerr-vvp-spacings-cen.eps,width=60mm}\label{vvpaccuracyd}}
-  % \hspace{2mm}
-  % \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/angerr-vvp-margins-left.eps,width=60mm}\label{vvpaccuracyb}}
-  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
-  \hspace{2mm}
-  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-cen.ps,width=60mm}\label{vvpaccuracyd}}
-  \hspace{2mm}
-  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyc}}
-  \hspace{2mm}
-  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
-\caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
-\label{vvpaccuracy}
-\end{centering}
-\end{figure}
-
 This ensures that parameters close to the desired minima are obtained before the final fitting.  Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
 % A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
 After reversing the transformation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
 % We therefore fit the measured positions against spacing $(y(n),y(n+1)-y(n))$ to the model:
+
+%% Joey's original table
+%\begin{table}[t]
+%  \begin{center}
+%    % \begin{tabular}{|p{2.5in}|l|l|}
+%    \begin{tabular}{|p{8cm}|r@{}l|r@{}l|}
+%      \hline
+%      {\bf Paragraph (pgh) types } & \multicolumn{2}{c|}{\bf VP} & \multicolumn{2}{c|}{\bf Angular} \\
+%      {\bf } & \multicolumn{2}{c|}{\bf error} & \multicolumn{2}{c|}{\bf error} \\  \hline \hline
+%      HVP using projection profiles & ~~~0&.129 & ~~~2&.16$^\circ$ \\  \hline
+%      VVP using margin intersection for fully formatted pghs & 0&.0785 & 2&.08$^\circ$ \\ \hline
+%      VVP using line spacings on what? left? & 0&.133 & 3&.30$^\circ$ \\ \hline
+%      VVP using margin intersection on left formatted pghs & 1&.23 & 24&.5$^\circ$ \\   \hline
+%      VVP using margin intersection on right formatted pghs & X & &  & XX$^\circ$ \\ \hline
+%      VVP using margin intersection on centre formatted pghs & X & & &  XX$^\circ$ \\ \hline  \hline
+%   \end{tabular}
+%  \end{center}
+%  % \vspace*{-5mm}
+%  \caption{Average error for the various methods over $10^\circ$ to $80^{\circ}$ in yaw and pitch.}
+%  \label{accuracytable}
+%\end{table}
+
+
+
+\begin{table}[t]
+  \begin{center}
+    % \begin{tabular}{|p{2.5in}|l|l|}
+    \begin{tabular}{|p{95mm}|c|c|}
+      \hline
+      {\bf Paragraph (pgh) types } & {\bf VP} & {\bf Angular} \\
+      {\bf } & {\bf error} & {\bf error} \\  \hline \hline
+      % HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
+      % VVP using margin intersection for fully formatted pghs & 0.0785 & 2.08$^\circ$ \\ \hline
+      % VVP using line spacings on what? left? & 0.133 & 3.30$^\circ$ \\ \hline
+      % VVP using margin intersection on left formatted pghs & 1.23 & 24.50$^\circ$ \\   \hline
+      % VVP using margin intersection on right formatted pghs & X &  XX$^\circ$ \\ \hline
+      % VVP using margin intersection on centre formatted pghs & X  &  XX$^\circ$ \\ \hline  \hline
+      % HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
+      % VVP using margin intersection for fully justified pghs & 0.105 & ...$^\circ$ \\ \hline
+      % VVP using line spacings for fully justified pghs & 0.211 & ...$^\circ$ \\ \hline
+      % VVP using line spacings for centrally justified pghs & 0.147 & ...$^\circ$ \\ \hline
+      % VVP using line spacings for left justified pghs & 0.233 & ...$^\circ$ \\ \hline
+      % VVP using margin intersection on left justified pghs & 0.209 & ...$^\circ$ \\   \hline
+      % VVP using margin intersection on centrally justified pghs & 0.283 & ...$^\circ$ \\ \hline  \hline
+      HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
+      VVP using margin intersection on fully justified pghs & 0.132 & 3.93$^\circ$ \\ \hline
+      VVP using line spacings on centrally justified pghs & 0.318 & 4.45$^\circ$ \\ \hline
+      VVP using line spacings on fully justified pghs & 0.333 & 4.65$^\circ$ \\ \hline
+      VVP using line spacings on left justified pghs & 0.383 & 4.66$^\circ$ \\ \hline
+      VVP using margin intersection on centrally justified pghs & 0.655 & 17.35$^\circ$ \\ \hline  \hline
+      VVP using margin intersection on left justified pghs & 0.589 & 19.1$^\circ$ \\   \hline
+   \end{tabular}
+  \end{center}
+  % \vspace*{-5mm}
+  \caption{The average error over $10^\circ$ to $80^{\circ}$ in yaw and pitch for the various methods described.}
+  \label{accuracytable}
+\end{table}
 
 % \begin{figure}[t]
 % \begin{centering}
@@ -213,63 +270,6 @@ As the last row of \reftab{accuracytable} shows, intersecting margins is not
 suitable for documents with jagged edges.
 
 
-%% Joey's original table
-%\begin{table}[t]
-%  \begin{center}
-%    % \begin{tabular}{|p{2.5in}|l|l|}
-%    \begin{tabular}{|p{8cm}|r@{}l|r@{}l|}
-%      \hline
-%      {\bf Paragraph (pgh) types } & \multicolumn{2}{c|}{\bf VP} & \multicolumn{2}{c|}{\bf Angular} \\
-%      {\bf } & \multicolumn{2}{c|}{\bf error} & \multicolumn{2}{c|}{\bf error} \\  \hline \hline
-%      HVP using projection profiles & ~~~0&.129 & ~~~2&.16$^\circ$ \\  \hline
-%      VVP using margin intersection for fully formatted pghs & 0&.0785 & 2&.08$^\circ$ \\ \hline
-%      VVP using line spacings on what? left? & 0&.133 & 3&.30$^\circ$ \\ \hline
-%      VVP using margin intersection on left formatted pghs & 1&.23 & 24&.5$^\circ$ \\   \hline
-%      VVP using margin intersection on right formatted pghs & X & &  & XX$^\circ$ \\ \hline
-%      VVP using margin intersection on centre formatted pghs & X & & &  XX$^\circ$ \\ \hline  \hline
-%   \end{tabular}
-%  \end{center}
-%  % \vspace*{-5mm}
-%  \caption{Average error for the various methods over $10^\circ$ to $80^{\circ}$ in yaw and pitch.}
-%  \label{accuracytable}
-%\end{table}
-
-
-
-\begin{table}[t]
-  \begin{center}
-    % \begin{tabular}{|p{2.5in}|l|l|}
-    \begin{tabular}{|p{95mm}|c|c|}
-      \hline
-      {\bf Paragraph (pgh) types } & {\bf VP} & {\bf Angular} \\
-      {\bf } & {\bf error} & {\bf error} \\  \hline \hline
-      % HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
-      % VVP using margin intersection for fully formatted pghs & 0.0785 & 2.08$^\circ$ \\ \hline
-      % VVP using line spacings on what? left? & 0.133 & 3.30$^\circ$ \\ \hline
-      % VVP using margin intersection on left formatted pghs & 1.23 & 24.50$^\circ$ \\   \hline
-      % VVP using margin intersection on right formatted pghs & X &  XX$^\circ$ \\ \hline
-      % VVP using margin intersection on centre formatted pghs & X  &  XX$^\circ$ \\ \hline  \hline
-      % HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
-      % VVP using margin intersection for fully justified pghs & 0.105 & ...$^\circ$ \\ \hline
-      % VVP using line spacings for fully justified pghs & 0.211 & ...$^\circ$ \\ \hline
-      % VVP using line spacings for centrally justified pghs & 0.147 & ...$^\circ$ \\ \hline
-      % VVP using line spacings for left justified pghs & 0.233 & ...$^\circ$ \\ \hline
-      % VVP using margin intersection on left justified pghs & 0.209 & ...$^\circ$ \\   \hline
-      % VVP using margin intersection on centrally justified pghs & 0.283 & ...$^\circ$ \\ \hline  \hline
-      HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
-      VVP using margin intersection on fully justified pghs & 0.132 & 3.93$^\circ$ \\ \hline
-      VVP using line spacings on centrally justified pghs & 0.318 & 4.45$^\circ$ \\ \hline
-      VVP using line spacings on fully justified pghs & 0.333 & 4.65$^\circ$ \\ \hline
-      VVP using line spacings on left justified pghs & 0.383 & 4.66$^\circ$ \\ \hline
-      VVP using margin intersection on centrally justified pghs & 0.655 & 17.35$^\circ$ \\ \hline  \hline
-      VVP using margin intersection on left justified pghs & 0.589 & 19.1$^\circ$ \\   \hline
-   \end{tabular}
-  \end{center}
-  % \vspace*{-5mm}
-  \caption{The average error over $10^\circ$ to $80^{\circ}$ in yaw and pitch for the various methods described.}
-  \label{accuracytable}
-\end{table}
-
 Having found the vanishing points of the plane, we may project two lines from each
 to describe the left and right margins and the top and bottom limits of the paragraph.
 These lines are intersected to form a quadrilateral enclosing the text,
@@ -291,6 +291,32 @@ of the paragraph of text.
 
 
 \section{Recovery of fronto-parallel view}
+
+\begin{figure}[t]
+\centering
+\begin{center}
+% \epsfig{figure=images/image29001recover.ps,width=60mm}
+% \epsfig{figure=images/chem002001recover.ps,height=54mm}
+% \hspace{2mm}
+% \epsfig{figure=images/chem010recover.ps,height=54mm}
+% \subfigure[Recovery of running example]{\epsfig{figure=images/chem002001recover.ps,height=52mm}}
+\subfigure[Recovery of running example]{\epsfig{figure=images/prlrunning/recover.eps,height=52mm}}
+\hspace{2mm}
+% \subfigure[Recovery of paragraph in \reffig{chem015overlay}, suitable for OCR.]{
+	% % \epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}
+	% \epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{chem015recover}
+% }
+\subfigure[Recovery of paragraph from \reffig{chem015overlay}, suitable for OCR.]{
+	\epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{chem015recover}
+}
+\subfigure[Recovery of second paragraph from \reffig{chem015overlay}.]{
+	\epsfig{figure=images/prlall/chem015/recover-other.eps,height=52mm}\label{chem015recoverother}
+}
+\end{center}
+%\vspace{-3mm}
+\caption{Fronto-parallel recovery of example documents in \reffig{summaryfig}.}
+\label{pprecover}
+\end{figure}
 
 % Given a partially calibrated camera for which only the focal length is unknown, a quadrilateral in the image which is known to correspond to some rectangle in the world is sufficient to determine the focal length.
 
@@ -323,38 +349,21 @@ However, bi-cubic interpolation between these points on the document plane would
 unless data is being extracted for superresolution.
 A simple perspective mapping with interpolation in the image plane is more efficient, and
 will give rise to the same performance in the final stage of optical character recognition.
+Therefore the pixel colour of the document at position $X \in [0,1]$, $Y \in [0,1]$ from the top-left is found by:
+
+\begin{equation}
+\mbox{\em doc}(X,Y) = \mbox{\em image}(\frac{f\myvec{S}_x}{\myvec{S}_z},\frac{f\myvec{S}_y}{\myvec{S}_z})
+\end{equation}
 
 
-\begin{figure}[t]
-\centering
-\begin{center}
-% \epsfig{figure=images/image29001recover.ps,width=60mm}
-% \epsfig{figure=images/chem002001recover.ps,height=54mm}
-% \hspace{2mm}
-% \epsfig{figure=images/chem010recover.ps,height=54mm}
-% \subfigure[Recovery of running example]{\epsfig{figure=images/chem002001recover.ps,height=52mm}}
-\subfigure[Recovery of running example]{\epsfig{figure=images/prlrunning/recover.eps,height=52mm}}
-\hspace{2mm}
-% \subfigure[Recovery of paragraph in \reffig{chem015overlay}, suitable for OCR.]{
-	% % \epsfig{figure=images/chem010recover.ps,height=52mm}\label{arthurcclarke}
-	% \epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{chem015recover}
-% }
-\subfigure[Recovery of paragraph from \reffig{chem015overlay}, suitable for OCR.]{
-	\epsfig{figure=images/prlall/chem015/recover.eps,height=52mm}\label{chem015recover}
-}
-\subfigure[Recovery of second paragraph from \reffig{chem015overlay}.]{
-	\epsfig{figure=images/prlall/chem015/recover-other.eps,height=52mm}\label{chem015recoverother}
-}
-\end{center}
-%\vspace{-3mm}
-\caption{Fronto-parallel recovery of example documents in \reffig{summaryfig}.}
-\label{pprecover}
-\end{figure}
-
-
-
-
+where
+$\myvec{S} = \myvec{A} + X ( \myvec{B}-\myvec{A} ) + Y ( \myvec{C}-\myvec{A} )$
+is the corresponding scene point on the document plane
+derived from the top-left, top-right and bottom-left corners of the
+quadrilateral in the scene $\myvec{A}$, $\myvec{B}$ and $\myvec{C}$
+respectively, and $\mbox{\em image}(x,y)$ is the interpolated pixel colour at point $(x,y)$ in the image.
 %% JOEY USE FIG6b as a new example in Figure 10.
+
 \reffig{pprecover} shows the rectified images of the examples in
 \reffig{linesegfig}. 
 Further examples in \reffig{againmoreppresults}
@@ -366,8 +375,16 @@ text of different sizes, and other image noise such as the specularity, the docu
 % In \reffig{empprc} a left justified document was correctly identified and recovered, despite occlusion of part of the paragraph.
 \reftab{ocrtable} shows that when we applied commercial OCR software to the image in \reffig{arthurcclarke},
 81\% of the characters and 84\% of the words were recognised correctly.
-Better performance can be expected from higher-resolution cameras, controlled lighting conditions, and advances in OCR.
-(One similar document in our test set achieved 100\% accuracy.)
+\reffig{chem005recover} is an image of a large paragraph captured with a low-resolution camera.
+Since the document recovered from this image is only just readable by the human eye,
+the poor result from the OCR module is not unexpected.
+% demonstrates the need for high resolution images.
+Better performance can be expected from higher-resolution cameras.
+% , controlled lighting conditions, and advances in OCR.
+This is demonstrated by the fact that the paragraph in Image {\tt chem017}, a
+closer view of a paragraph like those in \reffig{chem015overlay} (not
+included here) was recovered with 100\% accuracy.
+% (One similar document in our test set achieved 100\% accuracy.)
 
 
 \begin{table}[t]
@@ -382,6 +399,8 @@ Better performance can be expected from higher-resolution cameras, controlled li
       \reffig{arthurcclarke} & 81\% & 84\% \\
       \hline
       \reffig{chem005recover} & 50\% & 53\% \\
+		\hline
+      Image {\tt chem017} & 100\% & 100\% \\
 		\hline
    \end{tabular}
   \end{center}
