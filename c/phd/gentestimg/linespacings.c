@@ -39,7 +39,7 @@ float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 				testps.add(currentps);
 				testps.removenum(i+1);
 				float newErr=testASubSet(testps,usingspacings);
-				printf("Got error = %e\n",newErr);
+				// printf("Got error = %e\n",newErr);
 				if (newErr<bestErr) {
 					// printf("=)\n");
 					bestErr=newErr;
@@ -49,7 +49,7 @@ float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 				}
 			}
 		}
-		if (bestErr<currentErr*0.8) {
+		if (bestErr<currentErr) {
 			// printf("Hello\n");
 			printf("Improvement: %i %e\n",currentps.len-1,currentErr);
 			currentErr=bestErr;
