@@ -355,6 +355,10 @@ respectively, and $\mbox{\em image}(x,y)$ is the interpolated pixel colour at po
 \subfigure[Recovery of second paragraph from \reffig{chem015overlay}.]{
 	\epsfig{figure=images/prlall/chem015/recover-other.eps,height=52mm}\label{chem015recoverother}
 }
+\hspace{2mm}
+\subfigure[Recovery of paragraph from test image {\tt chem017}.]{
+	\epsfig{figure=images/prlall/chem017/recover.eps,height=52mm}\label{chem017recover}
+}
 \end{center}
 %\vspace{-3mm}
 \caption{Fronto-parallel recovery of example documents in \reffig{summaryfig}.}
@@ -376,11 +380,10 @@ text of different sizes, and other image noise such as the specularity, the docu
 Since the document recovered from this image is only just readable by the human eye,
 the poor result from the OCR module is not unwarranted.
 % demonstrates the need for high resolution images.
-Better performance can be expected from higher-resolution cameras.
-% , controlled lighting conditions, and advances in OCR.
-This is demonstrated by the fact that one of our test images, which is a
-closer view of the book in \reffig{chem015overlay} (not
-included here), achieved 100\% accuracy.
+Better performance can be expected from higher-resolution cameras, and controlled lighting conditions.
+This is demonstrated by the fact that one of our test images {\tt chem017},
+which is a closer view of the book in \reffig{chem015overlay} (not shown here),
+achieved 100\% accuracy.
 % (One similar document in our test set achieved 100\% accuracy.)
 
 
@@ -397,7 +400,7 @@ included here), achieved 100\% accuracy.
       \hline
       \reffig{chem005recover} & 50\% & 53\% \\
 		\hline
-      Test image 17 & 100\% & 100\% \\
+      Test image {\tt chem017} & 100\% & 100\% \\
 		\hline
    \end{tabular}
   \end{center}
