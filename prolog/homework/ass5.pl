@@ -1,5 +1,5 @@
-/ Assignment 5
-/ Paul Clark (PC5065).
+% Assignment 5
+% Paul Clark (PC5065).
 
 dist(p1, p2, 3).
 dist(p1, p3, 4).

@@ -19,6 +19,8 @@ job_type(j(_,T),T).
 
 % first_four(L1,L2,R) - returns the first four (or as many as
 % possible) elements of L1 in L2, and the rest in R.
+% The cut in line 2 ensures line 3 is not used if avoidable by line 2.
+% Line 1 seems to be redundant.
 first_four([],[],[]).
 first_four([E1,E2,E3,E4|R],[E1,E2,E3,E4],R) :- !.
 first_four(X,X,[]).
@@ -73,8 +75,8 @@ can_do(T, JobType):- can_do_list(T, L), member(JobType, L).
 
 % lib
 
-member(X, [X|_]).
-member(X, [_|Y]):- member(X,Y).
+% member(X, [X|_]).
+% member(X, [_|Y]):- member(X,Y).
 
 % top level ------- two test programs: go1/0 and go2/0
 

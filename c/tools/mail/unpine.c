@@ -1,4 +1,4 @@
-#include <joeylib.c>
+#include <joeylib.h>
 
 List<String> ls;
 
