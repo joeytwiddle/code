@@ -289,7 +289,7 @@ public:
       for (int j=0;j<h;j++) {
         if (binimg.getpos(i,j)) {
           if (myrnd()>prob) {
-            // binimg.setpos(i,j,false);
+            // binimg.setpos(i,j,false); no longer removing so all pixels _can_ be used once pps over
           } else {
             V2d pos=V2d(i,j);
 						VP *vp;
