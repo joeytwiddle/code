@@ -5,7 +5,8 @@
 
 <script type="text/javascript"> <!--
 
-// Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
+// Useful: :! onchange "powerbar.html.jpp" do 'jpp -- powerbar.html.jpp > ./powerbar.html'
+//   also: :! onchange "powerbar.html.jpp" do "env JPP_GCC_OPTS='-D BOOKMARKLET' jpp -- powerbar.html.jpp > ./powerbarframe.html"
 
 // TODO: make it easy to add javascripttester or whatever to new opened windows.
 
@@ -149,6 +150,15 @@ var todoList = "";
 
 //////////////////////// PowerBar initialisation ////////////////////////
 
+#ifdef BOOKMARKLET
+	init();
+	powerBarFrame = window.frames[0];
+	mainFrame = window.frames[1];
+	generatePowerBar();
+#else
+	init();
+#endif
+
 function createFrameset() {
 	var distrib = ( opt_powerBarPosition == "top" ? "20%,*" : "*,20%" );
 	var startFrameSet     = '<frameset rows="' + distrib + '">';
@@ -186,7 +196,7 @@ function generatePowerBar() {
 	}
 	powerBarHtml += '</FORM>';
 
-	powerBarHtml += '</td><td valign="top" align="center">';
+	// powerBarHtml += '</td><td valign="top" align="center">';
 
 	if (opt_ViewInnerHtmlButton) {
 		// BUG: in Konqueror works on initially-loaded page, but not on Google's page.
@@ -200,7 +210,7 @@ function generatePowerBar() {
 		powerBarHtml += '<BR>';
 	}
 
-	powerBarHtml += '</td><td valign="top" align="center">';
+	// powerBarHtml += '</td><td valign="top" align="center">';
 
 	// TODO factorise these forms with their actions duplicated in the buttons etc.
 
@@ -300,8 +310,6 @@ function init() {
 	);
 	updatePowerBar();
 }
-
-init();
 
 
 

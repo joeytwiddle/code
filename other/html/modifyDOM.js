@@ -46,12 +46,22 @@ function findPreviousTextNode(elem) {
 		// }
 		if (value) {
 			value = trim(value);
+			// if (value != "" && value != undefined ) {
+				// if ("" + elem.firstChild == "[object Text]") {
+					// return elem.firstChild;
+				// } else {
+					// return elem;
+				// }
+			// }
 			if (value != "" && value != undefined ) {
-				if (elem.hasChildNodes && "" + elem.firstChild == "[object Text]") {
-					return elem.firstChild;
-				} else {
-					return elem;
+				// while (elem.firstChild && elem.firstChild.value == elem.value) {
+					// elem = elem.firstChild;
+				// }
+				// while (elem.firstChild) { // Works but seems dodgy!
+				if (elem.firstChild) {
+					elem = elem.firstChild;
 				}
+				return elem;
 			}
 		}
 		// return findPreviousTextNode(elem);
