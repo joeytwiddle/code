@@ -1,9 +1,16 @@
 (
 
-CITY_NAME=bristol
+if test ! $1
+then
+	echo "Usage: dumpdbs <city_name>"
+	exit 1
+fi
+
+CITY_NAME="$1"
 
 # DESTDIR="/home/mike/db-backups"
 DESTDIR="/www/active-cvs/$CITY_NAME/webcast/db-backups"
+# DESTDIR="/www/db-backups"
 
 ## If it's a symlink, remove it.
 test -h "$DESTDIR" && rm -f "$DESTDIR"
