@@ -5,9 +5,14 @@
 
 int Correlator2dMethod=1; // 1 = over-exclusive, 2 = over-inclusive
 
+#define linearMode 0
+#define joeysMode 1
+#define perpMode 2
+
 // Starts of class Correlator2d
 
 
+	// Variable declared in .h file
   // Variable declared in .h file // Points from which to find a line of best fit
   // Variable declared in .h file // Weightings of the points
 
@@ -23,6 +28,8 @@ int Correlator2dMethod=1; // 1 = over-exclusive, 2 = over-inclusive
   // Variable declared in .h file
 
    Correlator2d::Correlator2d() {
+		mode=perpMode;
+		// mode=joeysMode;
     made=false;
   }
    Correlator2d::Correlator2d(List<V2d> pts) {
@@ -186,7 +193,7 @@ int Correlator2dMethod=1; // 1 = over-exclusive, 2 = over-inclusive
     return tryset(ps,centroidfor(ps),totalfor(ps));
   }
 
-  boolean Correlator2d::tryset(List<int> ps,V2d cen,float total) {
+  boolean Correlator2d::trysetJoeysMode(List<int> ps,V2d cen,float total) {
     float changed=false;
     // Try all angles
     float angstep=pi/500.0;
@@ -214,6 +221,67 @@ int Correlator2dMethod=1; // 1 = over-exclusive, 2 = over-inclusive
         }
     }
     return changed;
+	}
+
+  boolean Correlator2d::trysetPerpMode(List<int> ps,V2d cen,float total) {
+		float sumx=0;
+		float sumxsqd=0;
+		float sumy=0;
+		float sumysqd=0;
+		float sumxy=0;
+		for (int i=0;i<ps.len;i++) {
+			V2d *v=points.p2num(i+1);
+			sumx+=v->x;
+			sumxsqd+=v->x*v->x;
+			sumy+=v->y;
+			sumysqd+=v->y*v->y;
+			sumxy+=v->x*v->y;
+		}
+		float oneovrn=1.0/(float)ps.len;
+		float topleft=sumysqd-oneovrn*sumy*sumy;
+		float topright=sumxsqd-oneovrn*sumx*sumx;
+		float bottom=oneovrn*sumx*sumy-sumxy;
+		double B;
+		if (bottom*bottom<0.000001) {
+			B=1.0e100;
+		} else {
+			B=0.5*(topleft-topright)/bottom;
+		}
+		double b1=-B+sqrt(B*B+1.0);
+		double b2=-B-sqrt(B*B+1.0);
+		float a1=(sumy-b1*sumx)*oneovrn;
+		float a2=(sumy-b2*sumx)*oneovrn;
+		float err1=errPerpMode(ps,a1,b1);
+		float err2=errPerpMode(ps,a2,b2);
+		if (err2<err1) {
+			err1=err2;
+			a1=a2;
+			b1=b2;
+		}
+		if (err1<besterr) {
+			besterr=err1;
+			bestang=atan(1.0/b1);
+			return true;
+		}
+		return false;
+	}
+
+	float Correlator2d::errPerpMode(List<int> ps,float a,float b) {
+		float err=0;
+		for (int i=0;i<ps.len;i++) {
+			V2d *v=points.p2num(i+1);
+			err+=mysquare(v->y-(a+b*v->x));
+		}
+		err=err/(1+b*b);
+    err=err/mysquare(ps.len);
+		return err;
+	}
+
+  boolean Correlator2d::tryset(List<int> ps,V2d cen,float total) {
+		if (mode==joeysMode)
+			return trysetJoeysMode(ps,cen,total);
+		if (mode==perpMode)
+			return trysetPerpMode(ps,cen,total);
   }
 
   float Correlator2d::angle() {

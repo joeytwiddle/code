@@ -3,8 +3,13 @@
 
 extern int Correlator2dMethod; // Variable initialised in .c file // 1 = over-exclusive, 2 = over-inclusive
 
+#define linearMode 0
+#define joeysMode 1
+#define perpMode 2
+
 class Correlator2d {
 public:
+	int mode; // Exists
   List<V2d> points; // Exists // Points from which to find a line of best fit
   List<float> weights; // Exists // Weightings of the points
 
@@ -65,6 +70,15 @@ public:
 
 
   boolean tryset(List<int> ps); // Method
+
+
+  boolean trysetJoeysMode(List<int> ps,V2d cen,float total); // Method
+
+
+  boolean trysetPerpMode(List<int> ps,V2d cen,float total); // Method
+
+
+	float errPerpMode(List<int> ps,float a,float b); // Method
 
 
   boolean tryset(List<int> ps,V2d cen,float total); // Method
