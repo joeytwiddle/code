@@ -1,0 +1,4 @@
+u=15
+f(x) = u*(1+v*x)/(1+w*x)
+fit f(x) "gpldata.txt" via v,w
+plot 'gpldata.txt', f(x)
