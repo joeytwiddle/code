@@ -74,6 +74,34 @@ class MemberBrowser extends JPanel {
 		c.gridx++;
 	}
 
+	Component componentFor(Class c) {
+		return componentFor(c,NuJuTu.niceName(c));
+	}
+
+	Component componentFor(Object o) {
+		return componentFor(o.getClass(),o.toString());
+	}
+
+	Component componentFor(Class cls,String value) {
+		Constructor con=null;
+		try {
+			Class[] conPars={ "".getClass() };
+			con=cls.getConstructor(conPars);
+		} catch (Exception e) { }
+		if (
+				cls.isPrimitive()
+				|| cls.getName().equals("java.lang.String")
+				|| con != null
+				// || hasStringConstructor, eg. StringBuffer, Date, ...
+				// || isPrimClass (all fit above?)
+				// also some array types, eg. byte[] and char[]
+			) {
+			return new JTextField(value,4);
+		} else {
+			return new JButton(value);
+		}
+	}
+
 	MemberBrowser(Class cls,Object o,
 		List members,
 		boolean stat,boolean notstat,
@@ -111,59 +139,53 @@ class MemberBrowser extends JPanel {
 							||
 							( constructor && ! (member instanceof Constructor) )
 						 ) ) {
-					Box boxRow=Box.createHorizontalBox();
+					Box leftBox=Box.createHorizontalBox();
+					Box rightBox=Box.createHorizontalBox();
 					int col=0;
 					c.anchor = GridBagConstraints.EAST;
 					String s="";
 					if (member instanceof Field) {
-						s+=NuJuTu.niceName(((Field)member).getType())+" ";
-						s+=member.getName()+" = ";
-						boxRow.add(new JLabel(((Field)member).get(o).toString()));
+						leftBox.add(new JLabel(NuJuTu.niceName(((Field)member).getType())+" "));
+						leftBox.add(new JButton(member.getName()));
+						leftBox.add(new JLabel(" = "));
+						rightBox.add(componentFor(((Field)member).get(o)));
 					} else { // Method or Constructor
 						Class[] params;
 						if (member instanceof Method) {
-							s+=NuJuTu.niceName(((Method)member).getReturnType())+" ";
+							leftBox.add(new JLabel(NuJuTu.niceName(((Method)member).getReturnType())+" "));
+							leftBox.add(new JButton(member.getName()));
 							params=((Method)member).getParameterTypes();
-							s+=member.getName();
 						} else { // assert (member instanceof Constructor);
+							leftBox.add(new JButton("new"));
+							leftBox.add(new JLabel(" "+NuJuTu.niceNameString(member.getName())));
 							params=((Constructor)member).getParameterTypes();
-							s+="new "+NuJuTu.niceNameString(member.getName());
 						}
-						s+=" ( ";
+						leftBox.add(new JLabel(" ( "));
 						if (params.length==0) {
-							boxRow.add(new JLabel(" ) "));
-							boxRow.add(new JButton("Execute"));
+							leftBox.add(new JLabel(" ) "));
+							rightBox.add(new JButton("Execute"));
 						} else {
 							for (int j=0;j<params.length;j++) {
-								if (
-										params[j].isPrimitive()
-										|| params[j].getName().equals("java.lang.String")
-										// || hasStringConstructor, eg. StringBuffer, Date, ...
-										// also some array types, eg. byte[] and char[]
-									) {
-									boxRow.add(new JTextField(NuJuTu.niceName(params[j]),4));
-								} else {
-									boxRow.add(new JButton(NuJuTu.niceName(params[j])));
-								}
+								rightBox.add(componentFor(params[j]));
 								if (j<params.length-1)
-									boxRow.add(new JLabel(", "));
+									rightBox.add(new JLabel(", "));
 							}
 							// c.gridwidth = GridBagConstraints.REMAINDER;
-							boxRow.add(new JLabel(" )"));
+							rightBox.add(new JLabel(" )"));
 						}
 					}
 					c.anchor = GridBagConstraints.EAST;
 					c.fill = GridBagConstraints.NONE;
-					addComp(new JLabel(s));
+					addComp(leftBox);
 					c.anchor = GridBagConstraints.WEST;
 					c.fill = GridBagConstraints.BOTH;
-					addComp(boxRow);
+					addComp(rightBox);
 					// c.gridwidth = GridBagConstraints.RELATIVE;
 					members.remove(member);
 					i--;
-					// boxRow.add(leftBit);
-					// boxRow.add(rightBit);
-					// add(boxRow);
+					// leftBox.add(leftBit);
+					// leftBox.add(rightBit);
+					// add(leftBox);
 					c.gridy++;
 					c.gridx = 0;
 				}
