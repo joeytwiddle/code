@@ -1,864 +1,151 @@
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:145)
-	at Main.doGet(Main.java:79)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java)
-	at org.apache.tomcat.core.ServletWrapper.doService(ServletWrapper.java)
-	at org.apache.tomcat.core.Handler.service(Handler.java)
-	at org.apache.tomcat.core.ServletWrapper.service(ServletWrapper.java)
-	at org.apache.tomcat.core.ContextManager.internalService(ContextManager.java)
-	at org.apache.tomcat.core.ContextManager.service(ContextManager.java)
-	at org.apache.tomcat.service.http.HttpConnectionHandler.processConnection(HttpConnectionHandler.java)
-	at org.apache.tomcat.service.TcpWorkerThread.runIt(PoolTcpEndpoint.java)
-	at org.apache.tomcat.util.ThreadPool$ControlRunnable.run(ThreadPool.java)
-	at java.lang.Thread.run(Thread.java:484)
-
-writeBack started
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik' , dummy = 'discuss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-writeBack started
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-writeBack started
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik79' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik73' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1
-Got org.postgresql.jdbc1.Statement@7aba46 from jlib.db.DBLocation@4fce71
-Got org.postgresql.jdbc1.Statement@680842 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","***")
-Got org.postgresql.jdbc1.Statement@2bb7e0 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","***")
-Got org.postgresql.jdbc1.Statement@2c7568 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","***")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","***")
-Got org.postgresql.jdbc2.Statement@37697 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@750159 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@60420f from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@1b9fb1 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@3bb2b8 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@106082 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@651060 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@194a4e from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@6cd7d5 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@1106c7 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-A
-B
-Got org.postgresql.jdbc2.Statement@65855a from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@694e92 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc2.Statement@7bd9f2 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-A
-B
-Got org.postgresql.jdbc1.Statement@5ed0fd from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc1.Statement@2470b8 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc1.Statement@6fd552 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik73' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc1.Statement@505c81 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc1.Statement@415de6 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Got org.postgresql.jdbc1.Statement@3eca90 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-A
-B
-Got org.postgresql.jdbc1.Statement@764be1 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@108ca1 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@570d7a from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7c9944 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@6c6b2 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7cf0ce from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@65b723 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@6d084b from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@2c2f9c from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@6dc3a2 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@563e39 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@2d77a7 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@16a786 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-Need new statement
-Got org.postgresql.jdbc1.Statement@48aa23 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@125127 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@1121f6 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-Need new statement
-A
-B
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:142)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@1f2ee1 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@91cee from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@59fd51 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@2786c3 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@2bb514 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@c2ff5 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@2f1921 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7f7a1e from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@551f60 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik7' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@105738 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@587c94 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@543c88 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik79' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@6a5671 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@233d48 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:142)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:142)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:142)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:142)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:142)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@7e748f from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@1a64ed from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:143)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@e790c from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:143)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@34a7d8 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:143)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@3ad085 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:143)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@79717e from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@61d5ea from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@765a16 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@4247a0 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@5e9756 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@30ce8f from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@71bb78 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@19353f from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@189f84 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:160)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:160)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:160)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@506dc4 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:160)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at MainReal.go(MainReal.java:160)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Need new statement
-Got org.postgresql.jdbc1.Statement@57fb52 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@3c82e7 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@40c281 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@6f50a8 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@62dbb6 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@5f8b99 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@4ac00c from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7c268 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@25f739 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Could not find page cD9uH1 in []
-Could not find page cD9uH1 in []
-Need new statement
-Got org.postgresql.jdbc1.Statement@701a1e from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@41d05d from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@51e89e from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@299561 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@513cf0 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@44fe76 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@38c8e6 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@4980c9 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7ca8 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@2cb49d from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@49131c from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7b56b1 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7ddc31 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@262c31 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@687719 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@74f44a from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@2da3d from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@497934 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@40ec97 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7a1bb6 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@62cb55 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@19dc16 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@66afb3 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik790' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@110003 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@7a84e4 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@27734f from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@b66cc from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@e2b22 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@5d56d5 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@2bab88 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
+Main@18f375: New session
+--------------
+Main@18f375: Retrieved session Session@133796 :
+  QscufR
 Need new statement
 Got org.postgresql.jdbc1.Statement@1106c7 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@26d4f1 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@3753f8 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@316e52 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@786e64 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@385e3 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@122804 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@ab23 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-writeBack started
-0
-UPDATE Philosopher SET visits = '11' , rating = '12.4' , creationdate = '2001-12-12' , authorid = 'erik' , dummy = 'disc[Duss_data' , name = 'Karl Marx' , birthdate = '1880-01-01' , deathdate = '1930-01-01' WHERE id = 'philno1';
-1 Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Already got statement
-A
-B
-Need new statement
-Got org.postgresql.jdbc1.Statement@df503 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-Need new statement
-Got org.postgresql.jdbc1.Statement@6a9d42 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
-in java.lang.String : java.lang.ClassNotFoundException: dbmaker.SpecEditor
-java.lang.ClassNotFoundException: dbmaker.SpecEditor
+--------------
+Main@7934ad: New session
+in Session : Could not find page QscufR in []
+Got window QscufR
+Error! in java.lang.NullPointerException : Problem reading parameters into QscufR
+26/09/01 02:21:42 ----------- CLEAR -----------
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+Got window wPuEuT
+Error! java.io.FileNotFoundException: /home/joey/j/code/java/servlets/dbmaker/specs/untitled.spec (No such file or directory)
+26/09/01 02:21:48 ----------- CLEAR -----------
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+Got window wPuEuT
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+Got window wPuEuT
+Error! java.io.FileNotFoundException: /home/joey/j/code/java/servlets/dbmaker/specs/untitled.spec (No such file or directory)
+26/09/01 02:22:47 ----------- CLEAR -----------
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+Got window wPuEuT
+Error! java.io.FileNotFoundException: /home/joey/j/code/java/servlets/dbmaker/specs/untitled.spec (No such file or directory)
+26/09/01 02:23:21 ----------- CLEAR -----------
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+Got window wPuEuT
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+Got window wPuEuT
+in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
+[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+  qKvopu
+Got window qKvopu
+in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
+[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+  qKvopu
+  x6gY8l
+Got window x6gY8l
+Setting dbmaker.PropertyEditor$3@3753f8 to "appears to be selected"
+Setting dbmaker.PropertyEditor$4@69cb75 to "appears to be selected"
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+  qKvopu
+  x6gY8l
+Got window qKvopu
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  wPuEuT
+  x6gY8l
+  qKvopu
+Got window wPuEuT
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  qKvopu
+  wPuEuT
+Got window wPuEuT
+in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
+[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  qKvopu
+Got window qKvopu
+[obj1, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  qKvopu
+Got window qKvopu
+in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
+Error! java.lang.ClassNotFoundException: jlib.wrappers.int
+java.lang.ClassNotFoundException: jlib.wrappers.int
 	at org.apache.java.lang.AdaptiveClassLoader.loadClass(AdaptiveClassLoader.java:448)
 	at java.lang.ClassLoader.loadClass(ClassLoader.java:253)
 	at java.lang.ClassLoader.loadClassInternal(ClassLoader.java:313)
 	at java.lang.Class.forName0(Native Method)
 	at java.lang.Class.forName(Class.java:120)
-	at MainReal.go(MainReal.java:104)
-	at Main.doGet(Main.java:81)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:271)
-	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
-	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
-	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
-	at java.lang.Thread.run(Thread.java:484)
-
-Main@4dedfd: New session
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  q8uDO9
-Got window q8uDO9
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  q8uDO9
-Got window q8uDO9
-in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
-[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  q8uDO9
-  YWymdm
-Got window YWymdm
-in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
-[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  q8uDO9
-  YWymdm
-  zAzlkc
-Got window q8uDO9
-Trying to mkdir : false
-Error! java.io.FileNotFoundException: /home/joey/j/code/java/servlets/dbmaker/objs/untitled/name.java (Permission denied)
-java.io.FileNotFoundException: /home/joey/j/code/java/servlets/dbmaker/objs/untitled/name.java (Permission denied)
-	at java.io.FileOutputStream.open(Native Method)
-	at java.io.FileOutputStream.<init>(FileOutputStream.java:102)
-	at java.io.FileOutputStream.<init>(FileOutputStream.java:62)
-	at java.io.FileWriter.<init>(FileWriter.java:38)
-	at dbmaker.Spec.generate(Spec.java:73)
-	at dbmaker.SpecEditor$5.action(SpecEditor.java:104)
-	at MainReal.go(MainReal.java:182)
-	at Main.doGet(Main.java:85)
-	at Main.doPost(Main.java:113)
+	at dbmaker.BaseType.<init>(BaseType.java:21)
+	at dbmaker.Spec.getType(Spec.java:33)
+	at dbmaker.ObjEditor$4.destination(ObjEditor.java:62)
+	at jlib.multiui.PopupWindowButton.action(PopupWindowButton.java:38)
+	at MainReal.go(MainReal.java:208)
+	at Main.doGet(Main.java:86)
+	at Main.doPost(Main.java:114)
 	at javax.servlet.http.HttpServlet.service(HttpServlet.java:278)
 	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
 	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
 	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
 	at java.lang.Thread.run(Thread.java:484)
 
-22/08/01 22:29:29 ----------- CLEAR -----------
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  q8uDO9
-Got window q8uDO9
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  q8uDO9
-Got window q8uDO9
-Error! in java.lang.NullPointerException : Problem reading parameters into q8uDO9
-22/08/01 22:30:01 ----------- CLEAR -----------
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  q8uDO9
-Need new statement
-Got org.postgresql.jdbc1.Statement@6e3d60 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  q8uDO9
-  XfxDOr
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  q8uDO9
-  XfxDOr
-  zY5pi8
-Got window zY5pi8
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  q8uDO9
-  XfxDOr
-  zY5pi8
-Got window q8uDO9
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  XfxDOr
-  zY5pi8
-  q8uDO9
-Got window q8uDO9
-in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
-[name, dart, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+[obj1, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
   class java.lang.String
   class java.lang.String
   class java.lang.String
@@ -867,208 +154,202 @@ in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
   class java.lang.String
   class java.lang.String
   class java.lang.String
-  class java.lang.String
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  XfxDOr
-  zY5pi8
-  q8uDO9
-  OTaUDh
-Got window OTaUDh
-[poo, dart, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  XfxDOr
-  zY5pi8
-  q8uDO9
-  OTaUDh
-Got window q8uDO9
---------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  XfxDOr
-  zY5pi8
-  OTaUDh
-  q8uDO9
-Got window q8uDO9
-Trying to mkdir : false
-Error! java.io.FileNotFoundException: /home/joey/j/code/java/servlets/dbmaker/objs/untitled/poo.java (Permission denied)
-java.io.FileNotFoundException: /home/joey/j/code/java/servlets/dbmaker/objs/untitled/poo.java (Permission denied)
-	at java.io.FileOutputStream.open(Native Method)
-	at java.io.FileOutputStream.<init>(FileOutputStream.java:102)
-	at java.io.FileOutputStream.<init>(FileOutputStream.java:62)
-	at java.io.FileWriter.<init>(FileWriter.java:38)
-	at dbmaker.Spec.generate(Spec.java:73)
-	at dbmaker.SpecEditor$5.action(SpecEditor.java:104)
-	at MainReal.go(MainReal.java:182)
-	at Main.doGet(Main.java:85)
-	at Main.doPost(Main.java:113)
+java.lang.NullPointerException
+java.lang.NullPointerException
+	at dbmaker.BaseType.getName(BaseType.java:30)
+	at dbmaker.PropertyEditor.refresh(PropertyEditor.java:37)
+	at dbmaker.PropertyEditor.init(PropertyEditor.java:22)
+	at HtmlAppServer.moveToPage(MainReal.java:42)
+	at jlib.multiui.PopupWindowButton.action(PopupWindowButton.java:38)
+	at MainReal.go(MainReal.java:208)
+	at Main.doGet(Main.java:86)
+	at Main.doPost(Main.java:114)
 	at javax.servlet.http.HttpServlet.service(HttpServlet.java:278)
 	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
 	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
 	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
 	at java.lang.Thread.run(Thread.java:484)
 
-22/08/01 23:08:38 ----------- CLEAR -----------
+26/09/01 02:24:01 ----------- CLEAR -----------
 --------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  XfxDOr
-  zY5pi8
-  OTaUDh
-  q8uDO9
-Got window q8uDO9
-Trying to mkdir : false
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  qKvopu
+  NlnomD
+Got window qKvopu
 --------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  XfxDOr
-  zY5pi8
-  OTaUDh
-  q8uDO9
-Got window q8uDO9
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  qKvopu
+Got window qKvopu
 --------------
-Main@4dedfd: Retrieved session Session@175b59 :
-  YWymdm
-  zAzlkc
-  XfxDOr
-  zY5pi8
-  OTaUDh
-  q8uDO9
-Got window q8uDO9
---------------
-Main@20dda: New session
-Need new statement
-Got org.postgresql.jdbc1.Statement@f4cb from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
---------------
-Main@20dda: Retrieved session Session@37c71 :
-  9HtA9a
---------------
-Main@20dda: Retrieved session Session@37c71 :
-  9HtA9a
-  98hfSt
-Got window 98hfSt
---------------
-Main@20dda: Retrieved session Session@37c71 :
-  9HtA9a
-  98hfSt
-Got window 98hfSt
-in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
-[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
---------------
-Main@6672d6: New session
---------------
-Main@6672d6: Retrieved session Session@386000 :
---------------
-Main@6672d6: Retrieved session Session@386000 :
-  xkNol2
-Got window xkNol2
---------------
-Main@3eca90: New session
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
-  E97oSp
-Got window E97oSp
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
-  E97oSp
-Got window E97oSp
-in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
-[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
-  E97oSp
-  toKFFv
-Got window toKFFv
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
-  E97oSp
-  toKFFv
-Got window toKFFv
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
-  E97oSp
-  toKFFv
-Got window E97oSp
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
-  toKFFv
-  E97oSp
---------------
-Main@3eca90: Retrieved session Session@6f8cf3 :
-  toKFFv
-  E97oSp
-  uRnXdJ
-Got window E97oSp
---------------
-Main@69cb75: New session
-Need new statement
-Got org.postgresql.jdbc1.Statement@316e52 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
---------------
-Main@69cb75: Retrieved session Session@4413ee :
-  ThZtdU
---------------
-Main@69cb75: Retrieved session Session@4413ee :
-  ThZtdU
-  Xg2AJ0
-Got window Xg2AJ0
---------------
-Main@69cb75: Retrieved session Session@4413ee :
-  ThZtdU
-  Xg2AJ0
-Got window Xg2AJ0
-in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
-[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
-  class java.lang.String
---------------
-Main@69cb75: Retrieved session Session@4413ee :
-  ThZtdU
-  Xg2AJ0
-  cuYDex
-Got window cuYDex
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  qKvopu
+Got window qKvopu
 in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
-[name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+Error! java.lang.ClassNotFoundException: jlib.wrappers.int
+java.lang.ClassNotFoundException: jlib.wrappers.int
+	at org.apache.java.lang.AdaptiveClassLoader.loadClass(AdaptiveClassLoader.java:448)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:253)
+	at java.lang.ClassLoader.loadClassInternal(ClassLoader.java:313)
+	at java.lang.Class.forName0(Native Method)
+	at java.lang.Class.forName(Class.java:120)
+	at dbmaker.BaseType.<init>(BaseType.java:21)
+	at dbmaker.Spec.getType(Spec.java:33)
+	at dbmaker.ObjEditor$4.destination(ObjEditor.java:62)
+	at jlib.multiui.PopupWindowButton.action(PopupWindowButton.java:38)
+	at MainReal.go(MainReal.java:208)
+	at Main.doGet(Main.java:86)
+	at Main.doPost(Main.java:114)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:278)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
+	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
+	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
+	at java.lang.Thread.run(Thread.java:484)
+
+[obj1, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+java.lang.NullPointerException
+java.lang.NullPointerException
+	at dbmaker.BaseType.getName(BaseType.java:30)
+	at dbmaker.PropertyEditor.refresh(PropertyEditor.java:37)
+	at dbmaker.PropertyEditor.init(PropertyEditor.java:22)
+	at HtmlAppServer.moveToPage(MainReal.java:42)
+	at jlib.multiui.PopupWindowButton.action(PopupWindowButton.java:38)
+	at MainReal.go(MainReal.java:208)
+	at Main.doGet(Main.java:86)
+	at Main.doPost(Main.java:114)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:278)
+	at javax.servlet.http.HttpServlet.service(HttpServlet.java:311)
+	at org.apache.jserv.JServConnection.processRequest(JServConnection.java:314)
+	at org.apache.jserv.JServConnection.run(JServConnection.java:188)
+	at java.lang.Thread.run(Thread.java:484)
+
+26/09/01 02:25:37 ----------- CLEAR -----------
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  qKvopu
+  LtI94f
+Got window qKvopu
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+Got window qKvopu
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+Got window qKvopu
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+Got window qKvopu
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+Got window qKvopu
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+  z56R07
+Got window z56R07
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+  z56R07
+Got window z56R07
+Error! java.io.NotSerializableException: dbmaker.Spec
+26/09/01 04:22:04 ----------- CLEAR -----------
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+  z56R07
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+  z56R07
+  H2vqH6
+Got window H2vqH6
+Error! java.io.WriteAbortedException: Writing aborted by exception; java.io.NotSerializableException: dbmaker.Spec
+26/09/01 04:22:10 ----------- CLEAR -----------
+--------------
+Main@7934ad: Retrieved session Session@505c81 :
+  x6gY8l
+  wPuEuT
+  NlnomD
+  LtI94f
+  qKvopu
+  z56R07
+  H2vqH6
+Got window H2vqH6
+Error! java.io.WriteAbortedException: Writing aborted by exception; java.io.NotSerializableException: dbmaker.Spec
+26/09/01 04:22:24 ----------- CLEAR -----------
+--------------
+Main@3ca5f1: New session
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  317a8g
+Got window 317a8g
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  317a8g
+Got window 317a8g
+in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
+[simple, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
   class java.lang.String
   class java.lang.String
   class java.lang.String
@@ -1078,15 +359,57 @@ in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
   class java.lang.String
   class java.lang.String
 --------------
-Main@63b895: New session
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  317a8g
+  48Tqxj
+Got window 48Tqxj
+in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
+[simple, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
 --------------
-Main@63b895: Retrieved session Session@6b7920 :
-  reCLu7
-Got window reCLu7
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  317a8g
+  48Tqxj
+  z9Q6V7
+Got window 48Tqxj
 --------------
-Main@63b895: Retrieved session Session@6b7920 :
-  reCLu7
-Got window reCLu7
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  317a8g
+  z9Q6V7
+  48Tqxj
+Got window 48Tqxj
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  317a8g
+  z9Q6V7
+  48Tqxj
+Got window 317a8g
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  9bsWrk
+Got window 9bsWrk
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  9bsWrk
+Got window 9bsWrk
 in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
 [name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
   class java.lang.String
@@ -1098,11 +421,22 @@ in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
   class java.lang.String
   class java.lang.String
 --------------
-Main@63b895: Retrieved session Session@6b7920 :
-  reCLu7
-  Dtx6Jq
-Got window Dtx6Jq
-in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  9bsWrk
+  pSJ9eY
+Got window 9bsWrk
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  pSJ9eY
+  9bsWrk
+Got window 9bsWrk
+in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
 [name, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
   class java.lang.String
   class java.lang.String
@@ -1113,94 +447,106 @@ in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
   class java.lang.String
   class java.lang.String
 --------------
-Main@63b895: Retrieved session Session@6b7920 :
-  reCLu7
-  Dtx6Jq
-  PNE71n
-Got window PNE71n
-Error! in java.lang.NullPointerException : Problem reading parameters into PNE71n
-23/08/01 03:52:16 ----------- CLEAR -----------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  9bsWrk
+  pSJ9eY
+Got window pSJ9eY
+[simple, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
 --------------
-Main@326af3: New session
-in Session : Could not find page Dtx6Jq in []
-Got window Dtx6Jq
-Error! in java.lang.NullPointerException : Problem reading parameters into Dtx6Jq
-23/08/01 03:56:25 ----------- CLEAR -----------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  9bsWrk
+  pSJ9eY
+Got window pSJ9eY
+in dbmaker.ObjEditor$4 : Haven't decided how 2 do popup windows yet
+[simple, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
 --------------
-Main@326af3: Retrieved session Session@b819f :
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  9bsWrk
+  pSJ9eY
+  kiynKi
+Got window pSJ9eY
 --------------
-Main@79f9d8: New session
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  9bsWrk
+  kiynKi
+  pSJ9eY
+Got window 9bsWrk
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  kiynKi
+  pSJ9eY
+  9bsWrk
+Got window 9bsWrk
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  kiynKi
+  pSJ9eY
+  9bsWrk
+Got window 9bsWrk
+--------------
+Main@3ca5f1: Retrieved session Session@7471e0 :
+  z9Q6V7
+  48Tqxj
+  317a8g
+  kiynKi
+  pSJ9eY
+  9bsWrk
+Got window 9bsWrk
+in jlib.multiui.PopupWindowButton : Haven't decided how 2 do popup windows yet
+[simple, int, long, float, double, java.lang.String, java.util.Date, java.sql.Date]
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+  class java.lang.String
+--------------
+Main@dfef8: New session
+--------------
+Main@dfef8: Retrieved session Session@5e83f9 :
+  Q4m9zs
+Got window Q4m9zs
+--------------
+Main@5b7986: New session
 Need new statement
-Got org.postgresql.jdbc1.Statement@2679b7 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
+Got org.postgresql.jdbc1.Statement@4741d6 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
 --------------
-Main@79f9d8: Retrieved session Session@27734f :
-  NbOFOm
---------------
-SmartClassLoader.findClassFile(".class"): Not found in any of [Stars]
-Trying system ClassLoader
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at Slave.start(Slave.java:105)
-	at Slave.main(Slave.java:60)
-
-SmartClassLoader.findClassFile("Stars.class"): Not found in any of [gfx/stars]
-Trying system ClassLoader
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at Slave.start(Slave.java:105)
-	at Slave.main(Slave.java:60)
-
-SmartClassLoader.findClassFile("Stars.class"): Not found in any of [gfx.stars]
-Trying system ClassLoader
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at Slave.start(Slave.java:105)
-	at Slave.main(Slave.java:60)
-
-SmartClassLoader.findClassFile(".class"): Not found in any of [CyberPet]
-Trying system ClassLoader
-java.lang.NullPointerException
-java.lang.NullPointerException
-	at Slave.start(Slave.java:105)
-	at Slave.main(Slave.java:60)
-
-java.lang.NoSuchMethodException
-java.lang.NoSuchMethodException
-	at java.lang.Class.getMethod0(Native Method)
-	at java.lang.Class.getMethod(Class.java:888)
-	at Slave.start(Slave.java:105)
-	at Slave.main(Slave.java:60)
-
-Main@79f9d8: New session
-Need new statement
-Got org.postgresql.jdbc1.Statement@2679b7 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
---------------
-Main@79f9d8: Retrieved session Session@27734f :
-  cZsPBa
-Need new statement
-Got org.postgresql.jdbc1.Statement@5f073d from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
---------------
-Main@79f9d8: Retrieved session Session@27734f :
-  cZsPBa
-  hUYtpX
-Need new statement
-Got org.postgresql.jdbc1.Statement@73831b from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
---------------
-Main@79f9d8: New session
-Need new statement
-Got org.postgresql.jdbc1.Statement@2679b7 from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
---------------
-java.io.FileNotFoundException: /stuff/joey/phd/tex/bmvc01/.remper.tex.swp (No such file or directory)
-java.io.FileNotFoundException: /stuff/joey/phd/tex/bmvc01/.remper.tex.swp (No such file or directory)
-	at java.io.FileInputStream.open(Native Method)
-	at java.io.FileInputStream.<init>(FileInputStream.java:64)
-	at java.io.FileInputStream.<init>(FileInputStream.java:95)
-	at jlib.SuperSocket.writeFile(SuperSocket.java:127)
-	at SyncSession.engage(Server.java:227)
-	at Server.run(Server.java:430)
-	at Server.main(Server.java:349)
-
-Main@20dda: New session
-Need new statement
-Got org.postgresql.jdbc1.Statement@f4cb from Location("org.postgresql.Driver","jdbc:postgresql:generation","ctwdb","*******")
+Main@5b7986: Retrieved session Session@5f073d :
+  PMVwXh
 --------------
