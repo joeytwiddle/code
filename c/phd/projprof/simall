@@ -2,26 +2,18 @@
 
 # export PATH="$PATH:."
 
-# STARTANG=05
-# ENDANG=85
-# ANGSTEP=20
-STARTANG=19
-ANGSTEP=17
-ENDANG=70
-# STARTANG=0
-# ENDANG=90
-# ANGSTEP=5
-
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
 # DOCUMENTS="left cen right full"
 
 DOCUMENTS="left dar-crpage2-left30"
-PPSCANMETHODS="hier full"
+# PPSCANMETHODS="hier full"
+PPSCANMETHODS="hier"
 PPMEASURES="square deriv"
-VVPMETHODS="spacings margins"
-NOISES=`seq 0.0 0.2 1.0`
+# VVPMETHODS="spacings margins"
+VVPMETHODS="spacings"
+NOISES=`seq 0.0 0.1 0.35`
 # LINESTODO=`seq -w 30 -1 02`
-ANGLES=`seq $STARTANG $ANGSTEP $ENDSNG`
+ANGLES=`seq 20 30 50`
 
 for DOCUMENT in $DOCUMENTS; do
 
@@ -111,7 +103,7 @@ for DOCUMENT in $DOCUMENTS; do
 
 						# mv "$RES" "lines-$numlines.results"
 						# mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$VVPMETHOD.results"
-						mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$VVPMETHOD-$NOISE.results"
+						mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$PPMEASURE-$VVPMETHOD-l$LINES-n$NOISE.results"
 
 					# done lines
 

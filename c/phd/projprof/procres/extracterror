@@ -1,6 +1,12 @@
 IN="$1.results"
 OUT="$1.data"
 if test -f "$IN"; then
+	if test ! -f ./finderr; then
+		(
+		echo "Making finderr"
+		x finderr
+		) > making-finderr.txt
+	fi
 	./finderr $IN | grep -v "^Opening " | sed "s/nan/0.0/g" > $OUT
 else
 	echo "No such file: $IN"
