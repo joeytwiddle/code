@@ -177,7 +177,8 @@ function generatePowerBar() {
 
 	if (opt_ViewInnerHtmlButton) {
 		// BUG: in Konqueror works on initially-loaded page, but not on Google's page.
-		powerBarHtml += '<INPUT type="button" value="View innerHTML" onclick="try { top.writeToWindow(\'Inner HTML of some page at some point\',top.toHtml(top.mainFrame.document.documentElement.innerHTML)) } catch (e) { top.log(e); }">';
+		// powerBarHtml += '<INPUT type="button" value="View innerHTML" onclick="try { top.writeToWindow(\'Inner HTML of some page at some point\',top.toHtml(top.mainFrame.document.documentElement.innerHTML)) } catch (e) { top.log(e); }">';
+		powerBarHtml += '<INPUT type="button" value="View innerHTML" onclick="top.viewInnerHtml()">';
 		powerBarHtml += '<BR>';
 	}
 
@@ -553,6 +554,21 @@ function getXPath(node) {
 }
 
 
+
+//////////////////////////// Module: View inner HTML
+
+function viewInnerHtml() {
+	try {
+		var innerHTML = top.mainFrame.document.documentElement.innerHTML;
+		LOG("Got innerHTML length " + innerHTML);
+		var toHtml = top.toHtml(innerHTML);
+		LOG("Got toHtml length " + toHtml);
+		top.writeToWindow('Inner HTML of some page at some point',toHtml);
+		LOG("Wrote to window");
+	} catch (e) {
+		LOG(e);
+	}
+}
 
 
 
