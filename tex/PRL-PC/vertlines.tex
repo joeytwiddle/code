@@ -146,23 +146,24 @@ Due to its proximity, the point was not even rejected when RANSAC was used in
 \centering
 \begin{center}
 	% \subfigure[Line position gives poor fitting (red) relative to ground truth (dashed, green) due to the presence of an outlier.]{
-	\subfigure[Line position gives a poor fitting due to the presence of an outlier.]{
+	\subfigure[Line position gives a poor fitting due to the presence of an outlier. Ground truth shown dashed.]{
 		\epsfig{figure=images/fitting/fit-simple-outlier-with-got.eps,width=65mm}
 		\label{poorfitting}
 	}
-	\subfigure[Using line spacing, the outlier does not affect the remaining points.]{
+	\subfigure[Using line spacing, the outlier does not affect the remaining points. Fitting before RANSAC shown dashed.]{
 		\epsfig{figure=images/fitting/fit-spacings-outlier-with-got.eps,width=65mm}
 		\label{goodfitting}
 	}
-	\caption{The response of different fitting methods to outliers.
-		The ground truth is shown with a dashed green line, and the final fitting after RANSAC in blue.
+	\caption{
+		The response of different fitting methods to outliers.
+		% The ground truth is shown with a dashed green line, and the final fitting after RANSAC in blue.
 	% \caption{The response of different fitting methods to outliers.  Fine dashes
 		% represent the desired (ground truth) parameters, longer dashes the fit
 		% achieved using least-squares.
 		% using
 		% Marquardt-Levenberg
 		% least-squares
-		% fitting
+		% fitting.
 	}
 	\label{fittingexamples}
 \end{center}
@@ -230,8 +231,9 @@ affected two of the data points, but not the rest of the data.
 Since the line spacings exhibit more clearly the irregularities of the points observed in the image,
 RANSAC was able to easily reject these outliers, and produce a good fit close to the ground truth.
 % Unlike the fitting to $(n,y(n))$, fitting to $(y(n),Y(n))$ will give rise to the correct curve
-In fact, the fitting to line spacings is able to cope with situations
-when points are missing, irrelevant points are included, or a space between paragraphs causes a change
+In fact, the fitting using line spacings is able to cope with situations
+when points are missing, irrelevant points are included,
+or a space between paragraphs causes a change
 in the phase of the line positions.
 % % (However, it doesn't deal with adjacent paragraphs of different internal line spacing.)
 % However, since the fitting achieved is still not perfect, we employ RANSAC to
