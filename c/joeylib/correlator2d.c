@@ -267,7 +267,7 @@ public:
 			err+=mysquare(v->y-(a+b*v->x));
 		}
 		err=err/(1+b*b);
-    err=err/mysquare(ps.len);
+    err=err/mysquare(mysquare(ps.len));
 		return err;
 	}
 

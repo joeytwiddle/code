@@ -1,6 +1,6 @@
 #define QUIET
 
-#include <joeylib.c>
+#include <joeylib.h>
 
 bool simple,yesno,silent,difference=false;
 bool common,nolines,dodiff;
