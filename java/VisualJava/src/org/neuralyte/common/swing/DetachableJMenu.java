@@ -59,6 +59,9 @@ public class DetachableJMenu extends JMenu {
                     // frame.getContentPane().add(clonedMenu);
                     // frame.getContentPane().setSize(clonedMenu.getPreferredSize());
                     //  frame.setSize(clonedMenu.getPreferredSize());
+                    // setVisible(true);
+                    // frame.setLocation(getLocationOnScreen());
+                    // setVisible(false);
                     frame.setSize(frame.getPreferredSize());
                     frame.setVisible(true);
                     // clonedMenu.show(VisualJava.desktop,0,0);
