@@ -1,2 +1,0 @@
-forall -shell .src/*.c do "jparse c %w h > .comp/%s.h" > .comp/herr.txt 2>&1
-forall -shell .src/*.c do "jparse c %w c > .comp/%s.c" > .comp/cerr.txt 2>&1
