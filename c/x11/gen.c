@@ -1,6 +1,6 @@
 #define Region Banana
-// #include <joeylib.h>
-#include <joeylib.c>
+#include <joeylib.h>
+// #include <joeylib.c>
 #define Region Region
 
 // #include "xlib/xvvis.h"
@@ -44,10 +44,15 @@ int mitshm_handler (Display * d, XErrorEvent * ev)
 }
 
 /* The meaning of these are pretty much given */
-#define WIN_W	scrwid
-#define WIN_H	scrhei
+// #define WIN_W	640
+// #define WIN_H	480
+// #define scrwid 160
+// #define scrhei 100
+
+#define WIN_W	320
+#define WIN_H	200
 #define scrwid 320
-#define scrhei 280
+#define scrhei 200
 
   Display *d;
   XImage *ximg = NULL;
@@ -79,9 +84,9 @@ void wicked_blit(Window win) {
 #define uchar unsigned char
 
 #define fs 12
-#define palspeed 2
+#define palspeed 1
 #define colspeed (-1)
-#define framespermap 30
+#define framespermap 20
 
 //r = .5 + 2 * t / pi + .5 * SIN(1.5 * t)
 
@@ -233,7 +238,16 @@ void plotsomeshapes(int dummy) {
 
 void iterate_candy(Window win,XColor xrgb[]) {
 
+		int ka,kb,la,lb;
+		int nw,ne,se,sw;
+		int n,e,s,w;
+		int mix;
+		#define mixmax 256
+				
     moremap();
+
+		float xmapping=(float)(WIN_W)/(float)(scrwid);
+		float ymapping=(float)(WIN_H)/(float)(scrhei);
     
     // Animate
     for (x=0; x<scrwid; x++) {
@@ -244,15 +258,54 @@ void iterate_candy(Window win,XColor xrgb[]) {
             c=c+(amount[x][y][i][j][usingmap]*img.bmp[piy[x][y][usingmap]+j][pix[x][y][usingmap]+i]);
           }
         }
-        c=(c >> 8)-colspeed;
+        c=(c >> 8)+colspeed;
         if (c<0)
           c=0;
         img2.bmp[y][x]=c;
 
-				ximg->f.put_pixel(ximg,x,y,xrgb[(c+palspeed*frameno)%colors].pixel);
+				// if (x>0 && y>0) {
+					// nw=img2.bmp[y-1][x-1];
+					// ne=img2.bmp[y-1][x];
+					// se=img2.bmp[y][x];
+					// sw=img2.bmp[y][x-1];
+			    // ka=x*xmapping; la=y*ymapping;
+			    // kb=(x+1)*xmapping; lb=(y+1)*ymapping;
+					// for (i=ka;i<kb;i++)
+					// for (j=la;j<lb;j++) {
+						// e=mixmax*(i-ka)/(kb-ka);
+						// s=mixmax*(j-la)/(lb-la);
+						// w=mixmax-e;
+						// n=mixmax-s;
+						// mix= (se*s*e+sw*s*w+nw*n*w+ne*n*e) /mixmax/mixmax;
+						// // printf("%i\t%i\n",mix,nw);
+						// mix=(mix+palspeed*frameno)%colors;
+						// // mix=nw;
+						// ximg->f.put_pixel(ximg,i,j,xrgb[mix].pixel);
+					// }
+				// }
+
+				// Simple posterisation
+				// for (i=ka;i<kb;i++)
+				// for (j=la;j<lb;j++)
+					// ximg->f.put_pixel(ximg,i,j,xrgb[c].pixel);
+
+				c=(c+palspeed*frameno)%colors;
+				ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
+				
+				// Doesn't work even in 256-col mode:
+				// ximg->data[i+j*scrwid]=xrgb[c].pixel;
 				
       }
     }
+
+		// for (x=0;x<WIN_W;x++)
+			// for (y=0;y<WIN_H;y++) {
+				// i=x*scrwid/WIN_W;
+				// j=y*scrhei/WIN_H;
+				// c=(img2.bmp[j][i]+palspeed*frameno)%colors;
+				// ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
+			// }
+				
 
 	  wicked_blit(win);
   
@@ -608,7 +661,18 @@ int main (void)
 
   while (!should_quit) {
 
-	iterate_candy(win,xrgb);
+	  iterate_candy(win,xrgb);
+
+		bool ev_occ=XCheckMaskEvent(d,ExposureMask | KeyPressMask | ButtonPressMask | StructureNotifyMask,
+															&ev);
+		if (ev_occ) {
+			switch (ev.type) {
+				case Expose: 			break;
+				case ButtonPress: should_quit=true; break;
+				case KeyPress: 		break;
+				default: 					break;
+			}
+		}
 	
     // XNextEvent (d, &ev);
     // switch (ev.type) {
@@ -625,6 +689,8 @@ int main (void)
 			// break;
     // }
   }
+
+	displayframespersecond();
 
   if (get_xvisinfo_class(vis) % 2 == 1 || get_xvisinfo_class(vis) == TrueColor) {
     unsigned long color[COLORS];
