@@ -72,7 +72,13 @@ float V3d::distAbove(Plane p) { // -ve if below in terms of plane's normal
 }
 
 V3d Line3d::intersection(Plane p) {
-    float ad=a.distAbove(p);
+		// Both below methods equivalent.
+				
+		// float f=V3d::dot(b-a,p.nor);
+    // float ad=V3d::dot(p.pos-a,p.nor);
+		// return a+(b-a)*ad/f;
+    
+	  float ad=a.distAbove(p);
     float bd=b.distAbove(p);
     // 0 = ad + thru * (bd - ad)
     // thru = -ad / (bd-ad)

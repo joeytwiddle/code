@@ -121,7 +121,16 @@ public:
 
   Correlator *getcor(); // Method
 
-  //
+  /*
+  Line2d line() {
+    makecorrelator();
+    makelist();
+    float c=cor->A();
+    V2d v=V2d(1.0,c).norm()*cor->correlation()*(float)sqrt(list->len)*2.0;
+    return Line2d(centroid()-v,centroid()+v);
+//    return Line2d(centroid(),centroid()+V2d(1.0,c).norm());
+  }
+  */
 
   float error(float a); // Method
 
@@ -129,7 +138,22 @@ public:
   float angle(); // Method
 
 
-//
+/*  float angle() {
+    makelist();
+    V2d c=centroid();
+    float sumx=0;
+    float sumy=0;
+    float sum=0;
+    for (int i=1;i<=list->len;i++) {
+      Pixel p=list->num(i);
+      sumx+=(float)p.x-c.x;
+      sumy+=(float)p.y-c.y;
+      sum+=((float)p.x-c.x)/((float)p.y-c.y);
+    }
+    printf("%f %f ",sumx,sumy);
+//    return atanf(sum);
+    return atanf((float)sumx/(float)sumy);
+  }*/
 
   V2d ori(); // Method
 

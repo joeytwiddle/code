@@ -1,7 +1,11 @@
 #ifndef line2d_H
   #define line2d_H
 
-//
+/** Apparently intersection can be done like this:
+ *  Line1: La-Lb Line2: Ma-Mb
+ *  Intersection P = ( La X Lb ) X ( Ma X Mb )
+ *  where X is 2D cross product
+**/
 
 //class Line2d;
 //void flibble(Line2d,int);
@@ -33,7 +37,21 @@ public:
 
   float findintersectionnum(Line2d o); // Method
 
-//
+/*  float findintersectionnum(Line2d o) {
+//    printf("Looking for intersection\n");
+    // i=A+k(B-A)
+    // i=OA+l(OB-OA)
+    // Ax+k(Bx-Ax)=OAx+l(OBx-OAx)
+    // Ay+k(By-Ay)=OAy+l(OBy-OAy)
+    // k=(OAx+l(OBx-OAx)-Ax)/(Bx-Ax)
+    // Ay+(OAx+l(OBx-OAx)-Ax)/(Bx-Ax)*(By-Ay)=OAy+l(OBy-OAy)
+    // Ay+(By-Ay)/(Bx-Ax)*(OAx-Ax)+l*(By-Ay)/(Bx-Ax)*(OBx-OAx)=OAy+l(OBy-OAy)
+    // l*{ OAy-OBy + (By-Ay)/(Bx-Ax)*(OBx-OAx) } = OAy-Ay-(By-Ay)/(Bx-Ax)*(OAx-Ax)
+    float l=(o.a.y-a.y-(b.y-a.y)/(b.x-a.x)*(o.a.x-a.x))/(o.a.y-o.b.y+(b.y-a.y)/(b.x-a.x)*(o.b.x-o.a.x));
+//    return l;
+    float k=(o.a.x+l*(o.b.x-o.a.x)-a.x)/(b.x-a.x);
+    return k;
+  }*/
   V2d *findintersectionornull(Line2d o); // Method
 
   V2d findintersection(Line2d o); // Method

@@ -7,28 +7,42 @@ float focallength,scale;
 Plane imageplane;
 V3d eye=V3d(0,0,0);
 
-V3d imgplaneFromPixel(Pixel p) {
-  return V3d(((float)p.x-(float)imgwidth/2.0)*scale,((float)p.y-(float)imgheight/2.0)*scale,focallength);
-}
+// V3d imgplaneFromPixel(Pixel p) {
+  // return V3d(((float)p.x-(float)imgwidth/2.0)*scale,((float)p.y-(float)imgheight/2.0)*scale,focallength);
+// }
+// 
+// Pixel pixelFromImagePlane(V3d v) {
+  // return Pixel(v.x/scale+(float)imgwidth/2.0,imgheight-(v.y/scale+(float)imgheight/2.0));
+// }
 
-Pixel pixelFromImagePlane(V3d v) {
-  return Pixel(v.x/scale+(float)imgwidth/2.0,imgheight-(v.y/scale+(float)imgheight/2.0));
-}
+// Pixel proj(V3d v) {
+	// return pixelFromImagePlane(imageplane.intersect(Line3d(eye,v)));
+// }
 
 Pixel proj(V3d v) {
-	return pixelFromImagePlane(imageplane.intersect(Line3d(eye,v)));
+  return Pixel(focallength*v.x/scale/(v.z)+(float)imgwidth/2.0,imgheight-(focallength*v.y/scale/(v.z)+(float)imgheight/2.0));
 }
 
 int main(int argc,String *argv) {
 
-	String matlabcommand="matlab";
-  
+  boolean dofitting=false;
+	String fittingcommand="echo ERROR NO FITTING COMMAND PROVIDED";
+	bool domatlab=false;
+	bool dooctave=false;
+	bool dognuplot=false;
+
   ArgParser a=ArgParser(argc,argv);
-  bool domatlab=a.argexists("-matlab","vvp estimation with Matlab");
-  bool dooctave=a.argexists("-octave","vvp estimation with octave (not)");
-	if (dooctave) {
-		domatlab=true;
-		matlabcommand="octave";
+  if (domatlab=a.argexists("-matlab","vvp estimation with Matlab")) {
+		dofitting=true;
+		fittingcommand="matlab";
+	}
+  if (dooctave=a.argexists("-octave","vvp estimation with octave (not)")) {
+		dofitting=true;
+		fittingcommand="octave";
+	}
+  if (dognuplot=a.argexists("-gnuplot","vvp estimation with gnuplot")) {
+		dofitting=true;
+		fittingcommand="gnuplot";
 	}
 	String whichmatlabfile=a.argafter("-mlfile","which matlab solution file?","sol1u.txt");
   bool showgraph=a.argexists("-graph","show graph in Matlab");
@@ -49,6 +63,7 @@ int main(int argc,String *argv) {
 	float yoff=a.floatafter("-yoff","y offset",0.0);
   int numlines=a.intafter("-lines","number of lines in paragraph",10);
   float noise=a.floatafter("-noise","noise",0.0*640/imgwidth);
+	String overlayname=a.argafter("-overlayimage","name of overlay output file","overlay.bmp");
   String inname=a.argor("document image file","in.bmp");
   String outname=a.argor("output filename","out.bmp");
   a.done();
@@ -65,12 +80,19 @@ int main(int argc,String *argv) {
   // V3d down=V3d(0,-scale*(float)inputimg->height/(float)inputimg->width,0)*imgwidth;
   V3d right=V3d(width,0,0);
   V3d down=V3d(0,height,0); // Note not -height as in Maple
-  right=right.rotated(V3d::k,roll);
-  right=right.rotated(V3d::i,pitch);
+	// Maple:
+	// right=right.rotated(V3d::k,roll);
+  // right=right.rotated(V3d::i,pitch);
+  // right=right.rotated(V3d::j,-yaw);
+  // down=down.rotated(V3d::k,roll);
+  // down=down.rotated(V3d::i,pitch);
+  // down=down.rotated(V3d::j,-yaw);
   right=right.rotated(V3d::j,-yaw);
-  down=down.rotated(V3d::k,roll);
-  down=down.rotated(V3d::i,pitch);
+  right=right.rotated(V3d::i,pitch);
+  right=right.rotated(V3d::k,roll);
   down=down.rotated(V3d::j,-yaw);
+  down=down.rotated(V3d::i,pitch);
+  down=down.rotated(V3d::k,roll);
   down.y=-down.y; // Hack to sync with Maple
   // V3d worldA=V3d(imgwidth/2,imgheight/2,depth);
   V3d worldA=V3d(0,0,depth);
@@ -83,12 +105,14 @@ int main(int argc,String *argv) {
   V3d cen=(worldA+worldD)/2.0;
   printf("%s %s\n",right.toString(),down.toString());
 
-  printf("right = %s\n",right.toString());
-  printf("down = %s\n",down.toString());
+  printf("correlright = %s\n",right.toString());
+  printf("correldown = %s\n",down.toString());
   printf("A = %s\n",worldA.toString());
   printf("B = %s\n",worldB.toString());
   printf("C = %s\n",worldC.toString());
   printf("D = %s\n",worldD.toString());
+
+  imageplane=Plane(V3d(0,0,focallength),V3d(0,0,1));
 
   if (genimage) {
   
@@ -99,37 +123,50 @@ int main(int argc,String *argv) {
     // inputimg->writefile("test.bmp");
     
     TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
+  	printf("right = %s\n",rec.right.toString());
+  	printf("down = %s\n",rec.down.toString());
+		printf("planeA = %s\n",rec.pos.toString());
+		printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));
     
     // Generate image
-  
-    for (int i=0;i<imgwidth;i++) {
-      if ( (i % 30) == 0 )
-        printf("%i/%i\n",i,imgwidth);
-      for (int j=0;j<imgheight;j++) {
-      Pixel p=Pixel(i,imgheight-1-j);
-        V3d pixel=imgplaneFromPixel(p);
-        Line3d l=Line3d(eye,pixel);
-        V3d intersect=rec.intersect(l);
-      // printf("%f\n",intersect.z);
-        if (!rec.onplane(intersect))
-          printf("Error here %f\n",rec.distto(intersect));
-        // printf("%s %s %s %s\n",eye.toString(),pixel.toString(),l.toString(),intersect.toString());
-        if (rec.inimage(intersect)) {
-          // printf("*\n");
-          outputimg.setpos(i,j,rec.colAt(intersect));   
-        }
-      }
-    }
-
-		if (overlay) {
-			// outputimg.
+		
+		for (int i=0;i<inputimg->width;i++)
+		for (int j=0;j<inputimg->height;j++) {
+			V3d v=worldA+right*(float)i/(float)inputimg->width+down*(float)j/(float)inputimg->height;
+			Pixel p=proj(v);
+			outputimg.setpos(p.x,p.y,inputimg->getpos(i,j));
 		}
+  
+    // for (int i=0;i<imgwidth;i++) {
+      // if ( (i % 30) == 0 )
+        // printf("%i/%i\n",i,imgwidth);
+      // for (int j=0;j<imgheight;j++) {
+      // Pixel p=Pixel(i,imgheight-1-j);
+        // V3d pixel=imgplaneFromPixel(p);
+        // Line3d l=Line3d(eye,pixel);
+        // V3d intersect=rec.intersect(l);
+      // // printf("%f\n",intersect.z);
+        // if (!rec.onplane(intersect))
+          // printf("Error here %f\n",rec.distto(intersect));
+        // // printf("%s %s %s %s\n",eye.toString(),pixel.toString(),l.toString(),intersect.toString());
+        // if (rec.inimage(intersect)) {
+          // // printf("*\n");
+          // outputimg.setpos(i,j,rec.colAt(intersect));   
+        // }
+      // }
+    // }
+
+    if (genimage)
+      outputimg.writefile(outname);
+
+		// if (overlay) {
+			// // outputimg.
+		// }
 
   }
   
   // Do simulation
     
-    imageplane=Plane(V3d(0,0,focallength),V3d(0,0,1));
     List<Line2d> lines;
     List<Line2d> noisylines;
     for (int i=0;i<=numlines;i++) {
@@ -137,14 +174,20 @@ int main(int argc,String *argv) {
       Line3d line=Line3d(worldA+thru*down,worldA+right+thru*down);
       // Line3d line=Line3d(rec.pos+rec.down*thru,
                       // rec.pos+rec.right+rec.down*thru);
-      Line3d la=Line3d(eye,line.a);
-      V3d inta=imageplane.intersect(la);
-      printf("%s -> %s\n",line.a.toString(),inta.toString());
-      Line3d lb=Line3d(eye,line.b);
-      V3d intb=imageplane.intersect(lb);
-      printf("%s -> %s\n",line.b.toString(),intb.toString());
-      Line2d line2d=Line2d(V2d(inta.x,inta.y),V2d(intb.x,intb.y));
-      Line2d noisyline2d=Line2d(V2d(inta.x,inta.y)+V2d::randomcircle()*noise,V2d(intb.x,intb.y)+V2d::randomcircle()*noise);
+
+      // Line3d la=Line3d(eye,line.a);
+      // V3d inta=imageplane.intersect(la);
+      // printf("%s -> %s\n",line.a.toString(),inta.toString());
+      // Line3d lb=Line3d(eye,line.b);
+      // V3d intb=imageplane.intersect(lb);
+      // printf("%s -> %s\n",line.b.toString(),intb.toString());
+      // Line2d line2d=Line2d(V2d(inta.x,inta.y),V2d(intb.x,intb.y));
+
+			Pixel pla=proj(line.a);
+			Pixel plb=proj(line.b);
+			Line2d line2d=Line2d(pla,plb);
+							
+      Line2d noisyline2d=Line2d(line2d.a+V2d::randomcircle()*noise,line2d.b+V2d::randomcircle()*noise);
       lines.add(line2d);
       noisylines.add(noisyline2d);
       if (genimage && overlay) {
@@ -154,8 +197,17 @@ int main(int argc,String *argv) {
 				printf("  %s - %s\n",pa.toString(),pb.toString());
 			}
       printf("  %s\n",line2d.toString());
-      printf("  %f\n",inta.y);
+      // printf("  %f\n",inta.y);
     }
+
+		outputimg.line(proj(worldA),proj(worldB),myRGB::red);
+		outputimg.line(proj(worldB),proj(worldD),myRGB::red);
+		outputimg.line(proj(worldD),proj(worldC),myRGB::red);
+		outputimg.line(proj(worldC),proj(worldA),myRGB::red);
+
+		if (overlay)
+			outputimg.writefile(overlayname);
+		
     V2d hvp=lines.num(1).intersect(lines.num(2));
     Line2d baseline=Line2d(lines.num(1).a,lines.num(numlines).a);
     V2d vvpdir=(baseline.b-baseline.a).norm();
@@ -183,42 +235,57 @@ int main(int argc,String *argv) {
 		printf("  W = %f\n",groundW);
 		printf("  U*V/W = %f\n",groundU*groundV/groundW);
 		
-    if (domatlab) {
+    if (dofitting) {
 			lines=noisylines;
 			FILE *sout=fopen("data.txt","w");
 
       if (usespacings) {
-        fprintf(sout,"%% line position\n");
-        fprintf(sout,"t=[");
-        for (int i=0;i<lines.len-1;i++) {
-          Line2d l=lines.get(i);
-          Line2d nl=lines.get(i+1);
-	  fprintf(sout,"%f",(l.a.y+nl.a.y)/2.0);
-          if (i<lines.len-2)
-            fprintf(sout,", ");
-        }
-        fprintf(sout,"];\n");
-        fprintf(sout,"%% line spacings\n");
-        fprintf(sout,"Data=[");
-        for (int i=0;i<lines.len-1;i++) {
-          Line2d l=lines.get(i);
-          Line2d nl=lines.get(i+1);
-          fprintf(sout,"%f",nl.a.y-l.a.y);
-          if (i<lines.len-2)
-            fprintf(sout,", ");
-        }
-        fprintf(sout,"];\n");
+				if (domatlab || dooctave) {
+          fprintf(sout,"%% line position\n");
+          fprintf(sout,"t=[");
+          for (int i=0;i<lines.len-1;i++) {
+            Line2d l=lines.get(i);
+            Line2d nl=lines.get(i+1);
+	          fprintf(sout,"%f",(l.a.y+nl.a.y)/2.0);
+            if (i<lines.len-2)
+              fprintf(sout,", ");
+          }
+          fprintf(sout,"];\n");
+          fprintf(sout,"%% line spacings\n");
+          fprintf(sout,"Data=[");
+          for (int i=0;i<lines.len-1;i++) {
+            Line2d l=lines.get(i);
+            Line2d nl=lines.get(i+1);
+            fprintf(sout,"%f",nl.a.y-l.a.y);
+            if (i<lines.len-2)
+              fprintf(sout,", ");
+          }
+          fprintf(sout,"];\n");
+				}
+				if (dognuplot) {
+          for (int i=0;i<lines.len-1;i++) {
+            Line2d l=lines.get(i);
+            Line2d nl=lines.get(i+1);
+	          fprintf(sout,"%f %f\n",(l.a.y+nl.a.y)/2.0,nl.a.y-l.a.y);
+          }
+				}
       } else {
-        fprintf(sout,"Data=[");
+        if (domatlab || dooctave)
+					fprintf(sout,"Data=[");
         for (int i=0;i<lines.len;i++) {
-        Line2d l=lines.get(i);
-        // fprintf(sout,"%f",l.a.y);
-        // fprintf(sout,"%f",V2d::dist(l.a,lines.get(0).a));
-				fprintf(sout,"%f",l.a.y);
-        if (i<lines.len-1)
-          fprintf(sout,", ");
+          Line2d l=lines.get(i);
+          // fprintf(sout,"%f",l.a.y);
+          // fprintf(sout,"%f",V2d::dist(l.a,lines.get(0).a));
+				  fprintf(sout,"%f",l.a.y);
+          if (domatlab || dooctave) {
+					  if (i<lines.len-1)
+          	  fprintf(sout,", ");
+				  }
+				  if (dognuplot)
+					  printf("\n");
         }
-        fprintf(sout,"];\n");
+        if (domatlab || dooctave)
+          fprintf(sout,"];\n");
       }
 
       fprintf(sout,"groundU = %f\n",groundU);
@@ -231,7 +298,7 @@ int main(int argc,String *argv) {
 			fclose(sout);
 
 			system(Sformat("cat data.txt matlab/%s > solve.txt",whichmatlabfile));
-			system(Sformat("cat solve.txt | %s > matlab.out",matlabcommand));
+			system(Sformat("cat solve.txt | %s > matlab.out",fittingcommand));
 			if (showgraph)
         system("infcat matlab.out | tail -2 | head -1 > matlab.ans");
       else
@@ -306,9 +373,6 @@ int main(int argc,String *argv) {
     outputimg.line(vvpfromdata,lines.num(1).b,myRGB::red);  
 
   */
-
-  if (genimage)
-    outputimg.writefile(outname);
 
   // Output data to accompany
 //   List<String> data;

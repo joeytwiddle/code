@@ -25,11 +25,37 @@ public:
    Polygon2d(List<V2d> v); // Method
 
 
-//
+/*  static Polygon2d (Polygon2d *o,int numps, ... ) {
+    va_list ap;
+    va_start(ap, numps);
+    vs=List<V2d>();
+    for (int i = 0; i < numps; i++)
+      vs.add(o->vs.num(va_arg(ap, int)));
+    va_end(ap);
+  }*/
 
-//
+/*  Polygon2d(int numps, ... ) { // Doesn't work!
+    va_list ap;
+    va_start(ap, numps);
+    vs=List<V2d>();
+    for (int i = 0; i < numps; i++) {
+      V2d tmp=va_arg(ap,V2d);
+//      tmp.print();
+      vs.add(tmp);
+    }
+    va_end(ap);
+  }*/
 
-//
+/*  Polygon2d(Polygon2d *o,int a,int b) {
+    vs=List<V2d>();
+    bool finished=false;
+    for (int i=a;!finished;i=wrap(i+1,1,o->vs.len)) {
+//      printf("%i ",i);
+      vs.add(o->vs.num(i));
+      if (i==b)
+        finished=true;
+    }
+  }*/
 
   Polygon2d maketri(int a,int b,int c); // Method
 

@@ -94,8 +94,7 @@ RGBmp *angusreadbmp24(char *fn_image); // Method
 
 void anguswritebmp24(char *fn_image,RGBmp *r); // Method
 
-void writeppm(char *fn_image,RGBmp *r); // Method
-
+// void writeppm(char *fn_image,RGBmp *r);
 
 /*class PerpRecv {
 public:

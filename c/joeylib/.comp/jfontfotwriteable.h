@@ -50,7 +50,18 @@ public:
   template <class Colour>
   void writetojbmp(Writeable *j,int cx,int cy,float scale,Colour c); // Method
 
-//
+/*  void writetojbmp(Writeable *j,int cx,int cy,float scale,Colour c) {
+    bool first=true;
+    V2d p,l;
+    for (float a=aa;a<=ab;a+=pi/32.1) {
+      p=V2d(cx,cy)+scale*V2d(x+r*sin(a),-y-r*cos(a));
+      if (first)
+        first=false;
+      else
+        j->thickline(l,p,w*scale-2,c);
+      l=p;
+    }
+  }*/
 };
 
 List<FontChar> parsefontchars(String fname,float fwgiven); // Method

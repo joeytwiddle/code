@@ -2,7 +2,7 @@ package jlib;
 
 import java.lang.String;
 
-import LogWatcher;
+import jlib.LogWatcher;
 
 public class LogWatcherFile {
 

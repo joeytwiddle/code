@@ -6,19 +6,20 @@
 class myRGB {
 public:
   uchar r,g,b; // Exists
-  fillin myRGB white,grey,black; // Exists
-  fillin myRGB red,green,blue,yellow,magenta,cyan; // Exists
-  fillin myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan; // Exists
    myRGB(); // Method
 
   bool operator==(myRGB o); // Method
 
-  //
+  /*bool similar(myRGB o) {
+    return ( (v3d()-o.v3d()).mag()<0.1 );
+  }*/
    myRGB(int x,int y,int z); // Method
 
    myRGB(uchar x,uchar y,uchar z); // Method
 
-//
+/*  myRGB(float x,float y,float z) {
+    r=(uchar)(255*chop(x)); g=(uchar)(255*chop(y)); b=(uchar)(255*chop(z));
+  }*/
    myRGB(double x,double y,double z); // Method
 
   void print(); // Method
@@ -73,6 +74,28 @@ public:
 
   String toString(); // Method
 
+#ifdef DOFILLIN
+static myRGB white; // Exists
+static myRGB red  ; // Exists
+static myRGB green; // Exists
+static myRGB blue ; // Exists
+static myRGB yellow; // Exists
+static myRGB magenta; // Exists
+static myRGB cyan; // Exists
+static myRGB black; // Exists
+static myRGB grey; // Exists
+
+static myRGB darkred; // Exists
+static myRGB darkgreen; // Exists
+static myRGB darkblue; // Exists
+static myRGB darkyellow; // Exists
+static myRGB myRGB::darkmagenta; // Exists
+static myRGB myRGB::darkcyan; // Exists
+#else
+  fillin myRGB white,grey,black; // Exists
+  fillin myRGB red,green,blue,yellow,magenta,cyan; // Exists
+  fillin myRGB darkred,darkgreen,darkblue,darkyellow,darkmagenta,darkcyan; // Exists
+#endif
 };
 
 myRGB operator*(float a,myRGB r); // Method

@@ -74,7 +74,18 @@ Pixel newPixel(int x,int y); // Method
 Pixel operator*(float f,Pixel p); // Method
 
 
-//
+/*
+Pixel operator+(Pixel a,Pixel b) {
+  return newPixel(a.x+b.x,a.y+b.y);
+}
+
+Pixel operator/(Pixel a,float b) {
+  return newPixel((int)((float)a.x/b),(int)((float)a.y/b));
+}
+
+bool operator==(Pixel a,Pixel b) {
+  return ((a.x==b.x && a.y==b.y) || (a.x==b.y && a.y==b.x));
+}*/
 
 float dist(Pixel a,Pixel b); // Method
 
@@ -110,7 +121,10 @@ float floatmod(float a,float b); // Method
 float floatmod(float a,float b,float c); // Method
 
 
-//
+/* int intmod(int x,int a,int b) { // Don't know if this is valid
+  float f=((float)x-(float)a)/(float)(b-a);
+  return (int)(f*(b-a));
+} */
 
 int intmod(int x,int a,int b); // Method
 
@@ -426,9 +440,15 @@ float tofloat(float f); // Method
 float tofloat(int f); // Method
 
 
-//
+/* float tofloat(double f) {
+  return f;
+} */
 
-//
+/* Causes problems, eg. map2d<bool> only writes 0s!
+template<class Obj>
+float tofloat(Obj f) {
+  return 0.0;
+}*/
 
 float ramp(float f); // Method
 
@@ -583,7 +603,9 @@ float depower(float c,float a); // Method
 float invert(float f); // Method
 
 
-//
+/*float invert(bool b) {
+  return !b;
+}*/
 
 bool angleless(float a,float b); // Method
 

@@ -4,8 +4,12 @@
 #include <stdio.h>
 #include <math.h>
 
-//
-				//
+/* class V2d;
+   
+   V2d operator*(float d,V2d v);
+   V2d operator*(V2d v,float d);
+   V2d operator/(V2d v,float d);*/
+				/*: public Displayable*/
 
 class V2d {
 public:
@@ -93,7 +97,27 @@ public:
   V2d rotate(float ang); // Method
 
   
-  //
+  /* static V2d rotatelista(List<V2d> l,V2d axis,float ang) {
+       MATRIX_f m;
+       get_vector_rotation_matrix_f(&m,(fix)axis.x,(fix)axis.y,(fix)axis.z,(fix)(256*mymod(ang/2/pi)));
+       // fix x,y,z;
+       for (int i=1;i<=l.length();i++) {
+         V2d* v=l.p2num(i);
+         // apply_matrix(&m,(fix)v->x,(fix)v->y,(fix)v->z,&(x),&(y),&(z));
+         // v->x=x; v->y=y; v->z=z;
+         // v->changeto(V2d(x,y,z));
+         apply_matrix_f(&m,v->x,v->y,v->z,&v->x,&v->y,&v->z);
+       }
+     }
+     
+     static V2d rotatelist(List<V2d> l,V2d axis,float ang) {
+       Matrix m=Matrix();
+       m.makerotation(axis,ang);
+       for (int i=1;i<=l.length();i++) {
+         V2d* v=l.p2num(i);
+         v->changeto(m*(*v));
+       }
+     }*/
   
   static V2d random(); // Method
 

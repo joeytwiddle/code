@@ -4,6 +4,8 @@
   #include <whichos.h>
 
 #define LINUX
+// #define UNIX
+// #define DOS
 
 
 #endif

@@ -14,7 +14,12 @@
 // - All parameters given to Strings assume 1 is first character in string
 // - Warning: String a,b; declares a as char* and b as char !
 
-//
+/* String operator+(String x,double f) {
+     String t;
+     sprintf("%f",t,f)
+     return x+t;
+   }
+*/
 
 String Snew(int x); // Method
 
@@ -181,7 +186,18 @@ String Schr(int i); // Method
 String toString(char c); // Method
 
 
-//
+/*char toupper(char c) {
+  if (c>='a' && c<='z')
+    c=c+('A'-'a');
+  return c;
+}
+
+String toupper(String s) {
+  String n=Snew(Slen(s));
+  for (int i=0;i<Slen(s);i++)
+    n[i]=toupper(s[i]);
+  return n;
+}*/
 
 char Stoupper(char c); // Method
 

@@ -31,7 +31,23 @@ public:
   void add(Pixel p); // Method
 
 
-  //
+  /* float total() {
+    float total=0.0;
+    for (int i=0;i<weights.len;i++)
+      total+=weights.get(i);
+    return total;
+  }
+  V2d centroid() {
+    V2d cen=V2d(0,0);
+    for (int i=0;i<points.len;i++)
+      cen=cen+points.get(i);
+    return cen/total();
+  }
+  void normalise() { // Normalises all points around centroid
+    V2d cen=centroid();
+    for (int i=0;i<points.len;i++)
+      points.replace(i+1,points.get(i)-cen); // non-Java compensation
+  } */
 
   void make(); // Method
 
@@ -78,7 +94,42 @@ public:
 
 
 
-//
+/* RGBmp drawCorrelator2d(Correlator2d cc) {
+    Region r=Region(cc.points);
+    int left=r.listleftmost()-5;
+    int right=r.listrightmost()+5;
+    int top=r.listtopmost()-5;
+    int bottom=r.listbottommost()+5;
+    if (bottom<0 && top<0)
+        bottom=0;
+    if (top>0 && bottom>0)
+        top=0;
+    int wid=right-left;
+    int hei=bottom-top;
+    int mw = ( wid>hei ? 400 : 400*wid/hei );
+    int mh = ( wid>hei ? 400*hei/wid : 400 );
+  RGBmp m=RGBmp(mw,mh,myRGB::black);
+  float symbolsize=5.0*(float)cc.points.len/(float)cc.total;
+  printf("Plotting set %s\n",cc.pointskept.toString());
+  for (int i=1;i<=cc.points.len;i++) {
+    Pixel p=Pixel(m.width*(cc.points.num(i).x-left)/wid,
+              m.height*(cc.points.num(i).y-top)/hei);
+    p.y=m.height-1-p.y; // invert height so y goes up!
+    myRGB colour=myRGB::white;
+    if (!cc.pointskept.contains(i-1)) {
+      colour=myRGB::red;
+//   m.circle(p,symbolsize*cc.weights.num(i),myRGB::red);
+    }
+    m.cross(p,symbolsize*cc.weights.num(i),colour);
+  }
+  V2d c=cc.centroid;
+  V2d mc=V2d(m.width*(c.x-left)/wid,m.height*(c.y-top)/hei);
+  mc.y=m.height-1-mc.y;
+  V2d dir=V2d::angle(cc.bestang)*200;
+  dir.y=-dir.y;
+  m.line(mc-dir,mc+dir,myRGB::yellow);
+  return m;
+} */
 
 
 Map2d<bool> drawCorrelator2d(Correlator2d cc); // Method

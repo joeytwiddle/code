@@ -9,7 +9,10 @@ public:
 
   virtual void setpos(int i,int j,myRGB c); // Method
 
-//
+/*  template <class CT>
+  void setpos(int x,int y,CT c) {
+    error("Writeable::setpos(x,y,c) Must be overwritten!");
+  }*/
   template <class CT>
   void setpos(Pixel p,CT c); // Method
 
@@ -81,7 +84,23 @@ void opencircle(int x,int y,float r,CT c); // Method
 
 //  virtual void opencircle(Pixel p,int r,
 
-//
+/*  template <class CT>
+  virtual void filledcircle(int cx,int cy,float r,CT c) {
+    printf("Filling circle %i %i %f (%f) %i %i\n",cx,cy,r,c,width,height);
+    int x,h,y,px,py;
+    for (x=-r;x<=r;x++) {
+      h=(int)sqrt(mysquare(r)-mysquare(x));
+      for (y=-h;y<=h;y++) {
+        px=cx+x; py=cy+y;
+        if (px>=0 && px<width && py>=0 && py<height)
+          setpos(Pixel(px,py),c);
+      }
+    }
+  }
+  template <class CT>
+  virtual void filledcircle (V2d v, float f, CT c) {
+    this->filledcircle((int)v.x,(int)v.y,f,r);;
+  }*/
 
   virtual void arrow(Pixel a,Pixel b,myRGB c); // Method
 
@@ -98,7 +117,19 @@ void opencircle(int x,int y,float r,CT c); // Method
 
 };
 
-//
+/*
+void plotandfree(Writeable *w,List<Pixel> ps,int c) {
+    for (int i=1;i<=ps.len;i++)
+      w->setpos(ps.num(i),c);
+    ps.freedom();
+  }
+
+void plotandfree(Writeable *w,List<Pixel> ps,myRGB c) {
+    for (int i=1;i<=ps.len;i++)
+      w->setpos(ps.num(i),c);
+    ps.freedom();
+  }
+*/
 
 // Keep getting error setpos not cast before write!
 

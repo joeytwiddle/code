@@ -10,9 +10,6 @@
 
 
   // Variable declared in .h file
-  // Variable declared in .h file
-  // Variable declared in .h file
-  // Variable declared in .h file
    myRGB::myRGB() {
     myRGB(0,0,0);
   }
@@ -155,6 +152,28 @@
   String myRGB::toString() {
     return Sformat("r%i/g%i/b%i",r,g,b);
   }
+#ifdef DOFILLIN
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+// Variable declared in .h file
+#else
+  // Variable declared in .h file
+  // Variable declared in .h file
+  // Variable declared in .h file
+#endif
 // End class 
 
 

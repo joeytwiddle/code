@@ -41,7 +41,38 @@ List<String> mail2list(String fname); // Method
 List<String> readlinesfromfile(String fname); // Method
 
 
-//
+/* Inefficient due to Sconc
+List<String> readlinesfromfile(String fname) {
+  // printf("Opening %s\n",fname);
+  #ifdef DEBUG
+    printf("Reading lines from file...\n");
+  #endif
+  FILE *fp=fopen(fname,"r");
+  if (fp==NULL)
+    error("Problem reading %s\n",fname);
+  List<String> ls;
+  char c;
+  String s="";
+  int i;
+  while ((i=getc(fp))!=EOF) {
+    c=(char)i;
+    #ifdef DEBUG
+      printf("*");
+    #endif
+    if (c=='\n') {
+      ls.add(s);
+      // printf("* %s\n",s);
+      s="";
+    } else
+    s=Sconc(s,chtoString(c));
+  }
+  ls.add(s);
+  fclose(fp);
+  #ifdef DEBUG
+    printf("\n\n");
+  #endif
+  return ls;
+}*/
 
 void writelinestofile(List<String> ls,String fname,String sep); // Method
 
@@ -134,7 +165,12 @@ void deletefile(String fname); // Method
 void copyfile(String fname,String tname); // Method
 
 
-//
+/* Usage:
+bool zipped=unzipfile(fname);
+...
+if (zipped)
+  zipfile(fname);
+*/
 
 bool unzipfile(String s); // Method
 
@@ -145,7 +181,19 @@ void zipfile(String s); // Method
 bool fileexists(String fname); // Method
 
 
-//
+/*
+List<String> filesmatching(String s) {
+  String dir,pat;
+  if (Sinstrlast(s,"/")>0) {
+    dir=Sbeforelast(s,"/");
+    pat=Safterlast(s,"/");
+  } else {
+    dir=".";
+    pat=s;
+  }
+  DirRec dr=DirRec(dir);
+
+*/
 
 void writeinttofile(String fname, int i); // Method
 

@@ -25,7 +25,9 @@ public:
   String strafter(String pre,String fail); // Method
 
   
-  //
+  /* String strafter(String pre,String fail) {
+       return strafter(pre,"",fail);
+     }*/
   
   String getargafter(String pre,String fail); // Method
 

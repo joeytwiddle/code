@@ -8,7 +8,12 @@
 
 // - All parameters given to Strings assume 1 is first character in string
 
-//
+/* String operator+(String x,double f) {
+     String t;
+     sprintf("%f",t,f)
+     return x+t;
+   }
+*/
 
 String Snew(int x); // Method
 

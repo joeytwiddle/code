@@ -1,5 +1,3 @@
-
-
 #ifndef rgbmp_C
   #define rgbmp_C
 
@@ -136,8 +134,7 @@ int gimmezero() {
 
 /* Skipping declared method void anguswritebmp24(char *fn_image,RGBmp *r) */
 
-/* Skipping declared method void writeppm(char *fn_image,RGBmp *r) */
-
+// void writeppm(char *fn_image,RGBmp *r);
 
 /*class PerpRecv {
 public:
@@ -1309,8 +1306,8 @@ public:
     String ext=Sright(fname,4);
     if (Seq(ext,".bmp"))
       anguswritebmp24(fname,this);
-    if (Seq(ext,".ppm"))
-      writeppm(fname,this);
+    // if (Seq(ext,".ppm"))
+      // writeppm(fname,this);
     if (Seq(ext,".pgm"))
       getgreyscale()->writefile(fname);
     if (zip)
@@ -2344,6 +2341,3 @@ List<V3d> rectanglefromquadrilateralgroovy(List<V2d> v2ds,V3d eye) {
 }
 
 #endif
-
-
-Map2d<unsigned char> justneedtocreateone;

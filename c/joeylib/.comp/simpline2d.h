@@ -22,7 +22,17 @@ public:
 
    Polygon2d(Polygon2d *o,int numps, ... ); // Method
 
-//
+/*  Polygon2d(int numps, ... ) { // Doesn't work!
+    va_list ap;
+    va_start(ap, numps);
+    vs=List<V2d>();
+    for (int i = 0; i < numps; i++) {
+      V2d tmp=va_arg(ap,V2d);
+//      tmp.print();
+      vs.add(tmp);
+    }
+    va_end(ap);
+  }*/
    Polygon2d(Polygon2d *o,int a,int b); // Method
 
   Polygon2d maketri(int a,int b,int c); // Method
