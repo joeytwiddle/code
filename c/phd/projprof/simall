@@ -11,9 +11,9 @@ PPSCANMETHODS="hier full"
 PPMEASURES="willbederived"
 # VVPMETHODS="spacings margins"
 VVPMETHODS="spacings"
-NOISES=`seq -w 0.0 0.05 0.5001`
+NOISES=`seq -w 0 05 50`
 # LINESTODO=`seq -w 30 -1 02`
-ANGLES=`seq -w 20 10 50`
+ANGLES=`seq -w 20 05 50`
 
 for DOCUMENT in $DOCUMENTS; do
 
@@ -29,7 +29,8 @@ for DOCUMENT in $DOCUMENTS; do
 				if test "$PPSCANMETHOD" = hier; then
 					PPMEASURE=deriv
 				else
-					PPMEASURE=square
+					PPMEASURE=deriv # actually keep the same cos square can't handle noise
+					# PPMEASURE=square
 				fi
 
 				PPPARAMS="

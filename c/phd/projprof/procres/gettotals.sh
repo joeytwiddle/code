@@ -2,7 +2,10 @@ HEAD="$1"
 # N=2
 for X in `'ls' $HEAD*.totals | sed "s/$HEAD//;s/\(.*\)\..*/\1/;s/[^0123456789\.].*//" | sort -n`; do
 	N="$X"
+	# echo "grep hvpreldistave" "$HEAD$X.totals"
+	# grep hvpreldistave "$HEAD$X.totals"
 	HVPERR=-`grep "hvpreldistave = " "$HEAD$X.totals" | sed "s/.*= //;s/ .*//"`
+	# echo "$HVPERR"
 	echo "$N	$HVPERR" >&3
 	VVPERR=-`grep "vvpreldistave = " "$HEAD$X.totals" | sed "s/.*= //;s/ .*//"`
 	echo "$N	$VVPERR" >&2

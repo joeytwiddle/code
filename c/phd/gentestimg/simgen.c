@@ -87,7 +87,7 @@ int main(int argc,String *argv) {
 	a.comment("Output image");
 	bool genimage=a.argexists("-image","generate simulated image");
 	bool quickanddirty=a.argexists("-qnd","use quick and dirty image rendering");
-	float imgnoise=a.floatafter("-imgnoise","image noise for output image",0);
+	float imgnoise=a.floatafter("-imgnoise","%%age image noise for output image",0)/100.0;
 	bool overlay=a.argexists("-overlay","overlay info on simulated image");
 	String overlayname="overlay.bmp"; // a.argafter("-overlayimage","name of overlay output file","overlay.bmp");
 	String inname=a.argor("document image file","in.bmp");

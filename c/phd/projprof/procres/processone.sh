@@ -18,11 +18,15 @@ fi
 
 X="$1"
 
-./extracterror "$X" $WRITEDATA 2> /tmp/tmp.txt
+TMP=`jgettmp $$`
+
+./extracterror "$X" $WRITEDATA 2> "$TMP"
 
 if test $WRITETOTALS; then
-	cat /tmp/tmp.txt | grep "ave = " > "$X.totals"
+	cat "$TMP" | grep "ave = " > "$X.totals"
 fi
+
+sleep 1 && jdeltmp "$TMP"
 
 if test $PLOT; then
 
