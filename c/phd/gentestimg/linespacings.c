@@ -194,9 +194,12 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	}
 
 	if (needsSorting) {
-	guessU=(float)imgheight/2.0-endpoints.get(endpoints.len-1).y;
+		if (usingspacings)
+			guessU=(float)imgheight/2.0-endpoints.get(endpoints.len-1).y;
+		else
+			guessU=(float)imgheight/2.0-endpoints.get(0).y;
 	} else {
-	guessU=(float)imgheight/2.0-endpoints.get(0).y;
+		guessU=(float)imgheight/2.0-endpoints.get(0).y;
 	}
 	printf("Using guessU = %f\n",guessU);
 	printf("  from %s\n",endpoints.get(0).toString());
