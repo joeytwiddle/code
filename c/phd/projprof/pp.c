@@ -777,12 +777,12 @@ void main(int argc,String *argv) {
 			if (hderiv.getpos(i,j)<zero && hderiv.getpos(i+1,j)>=zero) {
 				zerocrossimg.setpos(i,j,true);
 				zerocrossimg.setpos(i+1,j,true);
-				// zerocrossimg.setpos(i-1,j,true); // yuk
+				zerocrossimg.setpos(i-1,j,true); // yuk
 			}
       if (vderiv.getpos(i,j)<zero && vderiv.getpos(i,j+1)>=zero) {
 				zerocrossimg.setpos(i,j,true);
 				zerocrossimg.setpos(i,j+1,true);
-				// zerocrossimg.setpos(i,j-1,true); // yuk
+				zerocrossimg.setpos(i,j-1,true); // yuk
 			}
 		}
 		zerocrossimg.writefile("5zerocross.bmp");
