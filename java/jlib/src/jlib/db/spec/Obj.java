@@ -15,9 +15,18 @@ public class Obj extends Type {
 	public List extendsObjs=new Vector();
 	public List properties;
 
+	public boolean implemented;
+
 	public Obj(String n) {
 		name=n;
 		properties=new Vector();
+		implemented=true;
+	}
+
+	public Obj(String n,boolean impl) {
+		name=n;
+		properties=new Vector();
+		implemented=impl;
 	}
 
 	public Property[] getFriends(DBSpec spec) {

@@ -13,8 +13,13 @@ import jlib.db.spec.*;
 public class DBSpec extends jlib.db.spec.DBSpec {
 
 	public static void main(String[] argv) {
+		ArgParser args=new ArgParser(argv);
+		String initClass=args.get("init class, eg. \"dbmaker.data.init.Generation\"");
+		String destPackage=args.get("destination package, eg. \"dbmaker.data.objs.generation\"");
+		args.done();
+
 		try {
-			Class c=Class.forName("dbmaker.data.init.Generation");
+			Class c=Class.forName(initClass);
 			System.out.println(""+c);
 			Field[] fs=c.getDeclaredFields();
 			System.out.println(""+fs.length);
@@ -22,7 +27,7 @@ public class DBSpec extends jlib.db.spec.DBSpec {
 			for (int i=0;i<fs.length;i++) {
 				cs.add(fs[i].getType());
 			}
-      jlib.db.spec.reflect.DBSpec d=new jlib.db.spec.reflect.DBSpec(cs,"dbmaker.data.objs.generation");
+      jlib.db.spec.reflect.DBSpec d=new jlib.db.spec.reflect.DBSpec(cs,destPackage);
 			new SpecGenerator(d).generateJava();
 		} catch (Exception e) {
 			Log.error(e);
@@ -43,7 +48,8 @@ public class DBSpec extends jlib.db.spec.DBSpec {
 		System.out.println(""+objs);
 		for (int i=0;i<classes.size();i++) {
 			Class c=(Class)classes.get(i);
-			Obj o=new Obj(c.getName());
+			Obj o=new Obj(c.getName(),!c.isInterface());
+			// Obj o=new Obj(c.getName(),!Modifier.isInterface(c.getModifiers()));
 			
 			// Existence
 			System.out.println("Putting "+o.getName());
@@ -65,7 +71,8 @@ public class DBSpec extends jlib.db.spec.DBSpec {
 				if (!sup.getName().equals("java.lang.Object"))
 				  o.extendsObjs.add(BaseType.getType(sup,this));
 			for (int j=0;j<inhs.length;j++)
-				o.extendsObjs.add(BaseType.getType(inhs[i],this));
+				o.extendsObjs.add(BaseType.getType(inhs[j],this));
+				// o.extendsObjs.add(BaseType.getType(inhs[i],this));
 
 			// Properties
 			Field[] fs=c.getDeclaredFields();
