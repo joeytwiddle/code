@@ -19,6 +19,7 @@ public class DBSpec extends jlib.db.spec.DBSpec {
 		args.done();
 
 		try {
+			// Go through fields in the provided class, adding each object type.
 			Class c=Class.forName(initClass);
 			System.out.println(""+c);
 			Field[] fs=c.getDeclaredFields();

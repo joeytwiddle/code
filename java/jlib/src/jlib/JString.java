@@ -409,6 +409,10 @@ public class JString {
     return after(s,e);
   }
 
+	public static boolean contains(String s,char c) {
+		return (s.indexOf(c)>=0);
+	}
+
   public static boolean containsAnyOf(String s,String cs) {
     for (int i=0;i<cs.length();i++)
       if (s.indexOf(cs.charAt(i))!=-1)

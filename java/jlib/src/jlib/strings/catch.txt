@@ -1,0 +1,52 @@
+
+Found 4 semantic errors compiling "StringParser.java":
+
+    22. 			String here=peek(s.length());
+                                            <-------------->
+*** Error: No method named "peek" was found in type "jlib/strings/StringParser". However, there is an accessible method "seek" whose name closely matches the name "peek".
+
+
+    25. 			advance();
+                                <------->
+*** Error: No method named "advance" was found in type "jlib/strings/StringParser".
+
+
+    32. 		int got=reader.read(cs,0,len);
+                                <------------------->
+*** Error: The method "int read(char[] $1, int $2, int $3);" can throw the checked exception "java/io/IOException", but its invocation is neither enclosed in a try statement that can catch that exception nor in the body of a method or constructor that "throws" that exception.
+
+
+    39. 		return (!reader.ready());
+                                 <------------>
+*** Error: The method "boolean ready();" can throw the checked exception "java/io/IOException", but its invocation is neither enclosed in a try statement that can catch that exception nor in the body of a method or constructor that "throws" that exception.
+
+Found 6 semantic errors compiling "/home/joey/j/code/java/jlib/bita/MyInputStream.java":
+
+     1. class MyInputStream extends InputStream{
+                                    <--------->
+*** Error: Type InputStream was not found.
+
+
+    16.     public void connect(PipedInputStream in)throws IOException{
+                                <-------------->
+*** Error: Type PipedInputStream was not found.
+
+
+    17.         out.connect(in);
+                <------------->
+*** Error: No method named "connect" was found in type "MyPipedOutputStream".
+
+
+    21.         out.close();
+                <--------->
+*** Error: No method named "close" was found in type "MyPipedOutputStream". However, there is an accessible method "clone" whose name closely matches the name "close".
+
+
+    28.  class MyPipedOutputStream extends PipedOutputStreamparse
+                                           <-------------------->
+*** Error: Type PipedOutputStreamparse was not found.
+
+
+    30.    public void write(byte[] b, int off, int len) throws IOException {
+                                                                <--------->
+*** Error: Type IOException was not found.

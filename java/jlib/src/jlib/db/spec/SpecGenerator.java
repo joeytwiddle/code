@@ -16,8 +16,11 @@ public class SpecGenerator {
   
 	boolean dataChangeAwareness=true;
 	boolean botherWithInterfaces=false;
+	boolean overwriteDeveloperFiles=false;
+	String basePrefix="";
+	// String basePrefix="Base";
 
- 	String theBaseObject=( dataChangeAwareness ? "jlib.db.DataChangeAwareDBObj" : "jlib.db.ADBObj" );
+ 	String theBaseObject=( dataChangeAwareness ? "jlib.db.DataChangeAwareDBObj" : "jlib.db.NewDBObj" );
 
   public static String classPath="/home/joey/j/code/java/servlets/";
 	public static String dbmakerPath=classPath+"/dbmaker/";
@@ -61,7 +64,7 @@ public class SpecGenerator {
 	}
 
 	public String getBase(Obj o) {
-		return o.getPackageName()+".base.Base"+o.getClassName();
+		return o.getPackageName()+".base."+basePrefix+o.getClassName();
 	}
 
 	public String getObj(Obj o) {
@@ -94,17 +97,20 @@ public class SpecGenerator {
 				base.append("\n");
 				devel.append("\n");
 
+				boolean firstImplementation=(o.getExtensions().length==0);
+				if (firstImplementation)
+					base.append("\t// First implementation!\n\n");
 				inte.append("public interface "+getInterfaceOnly(o)+" {\n\n");
 				// String s=" extends "+extendsWhat(o);
-				String s=extendsWhat(o);
 				// s+=(s.length()>0 ? ", " : " " )+o.getClassName()+"Interface";
-				if (s.length()>0)
-					s=" extends "+s;
-				else
-					s=" extends "+theBaseObject+" ";
+				String s= (
+					  firstImplementation
+					? " extends "+theBaseObject+" "
+					: " extends "+extendsWhat(o)
+				);
 				if (botherWithInterfaces)
 					s+=" implements "+getInterface(o);
-				base.append("public abstract class Base"+o.getClassName()+" "+s+" {\n\n");
+				base.append("public abstract class "+basePrefix+o.getClassName()+" "+s+" {\n\n");
 				String abs=( o.implemented ? " " : " abstract " );
 				devel.append("public"+abs+"class "+o.getClassName()+" extends "+getBase(o)+" {\n\n");
 
@@ -115,47 +121,76 @@ public class SpecGenerator {
 					Property[] ps=o.getProperties();
 					for (int j=0;j<ps.length;j++) {
 						Property p=ps[j];
-						inte.append("  public "+p.getJavaType()+" get"+JString.initCap(p.getName())+"();\n");
-						inte.append("  public void set"+JString.initCap(p.getName())+"("+p.getJavaType()+" newValue);\n");
+						inte.append("\tpublic "+p.getJavaType()+" get"+JString.initCap(p.getName())+"();\n");
+						inte.append("\tpublic void set"+JString.initCap(p.getName())+"("+p.getJavaType()+" newValue);\n");
 					}
 				}
 
 				// Base
-				base.append("  // New fields in this class\n");
+				base.append("\t// New fields in this class\n");
 				{
 					// Property[] ps=o.getAllProperties();
 					Property[] ps=o.getProperties();
 					for (int j=0;j<ps.length;j++) {
 						Property p=ps[j];
-						base.append("  private "+p.getJavaType()+" "+p.getName()+"=null;\n");
+						base.append("\tprivate "+p.getJavaType()+" "+p.getName()+"=null;\n");
 					}
 				}
 				base.append("\n");
 
-				base.append("  // Basic IO on new fields\n");
+				base.append("\t// Basic IO on new fields\n");
 				{
 					// Property[] ps=o.getAllProperties();
 					Property[] ps=o.getProperties();
 					for (int j=0;j<ps.length;j++) {
 						Property p=ps[j];
-						base.append("  public "+p.getJavaType()+" get"+JString.initCap(p.getName())+"() {\n    return "+p.getName()+";\n  }\n");
-						base.append("  public void set"+JString.initCap(p.getName())+"("+p.getJavaType()+" newValue) {\n    "+p.getName()+"=newValue;\n");
+						base.append("\tpublic "+p.getJavaType()+" get"+JString.initCap(p.getName())+"() {\n\t\treturn "+p.getName()+";\n\t}\n");
+						base.append("\tpublic void set"+JString.initCap(p.getName())+"("+p.getJavaType()+" newValue) {\n\t\t"+p.getName()+"=newValue;\n");
 						if (dataChangeAwareness)
-							base.append("    changed();\n");
-						base.append("  }\n");
+							base.append("\t\tchanged();\n");
+						base.append("\t}\n");
 					}
 				}
+				base.append("\n");
 
-				base.append("  // Friends\n");
+				base.append("\t// Database IO on all fields\n");
+				{
+					base.append("\tpublic void writeToStatement(jlib.db.statement.WriteStatement writeStatement) {\n");
+					if (!firstImplementation)
+						base.append("\t\tsuper.writeToStatement(writeStatement);\n");
+						// base.append("\t\t"+o.getExtensions()[0].getJavaType()+".writeToStatement(writeStatement);\n");
+					// Property[] ps=o.getAllProperties();
+					Property[] ps=o.getProperties();
+					for (int j=0;j<ps.length;j++) {
+						Property p=ps[j];
+						base.append("\t\twriteStatement.put(\""+p.getName()+"\","+p.getName()+");\n");
+					}
+					base.append("\t}\n");
+				}
+				{
+					base.append("\tpublic void readFromStatement(jlib.db.statement.ReadStatement readStatement) {\n");
+					if (!firstImplementation)
+						base.append("\t\tsuper.readFromStatement(readStatement);\n");
+					// Property[] ps=o.getAllProperties();
+					Property[] ps=o.getProperties();
+					for (int j=0;j<ps.length;j++) {
+						Property p=ps[j];
+						base.append("\t\t"+p.getName()+"=("+p.getJavaType()+")readStatement.get(\""+p.getName()+"\");\n");
+					}
+					base.append("\t}\n");
+				}
+				base.append("\n");
+
+				base.append("\t// Friends\n");
 				{
 					Property[] ps=o.getFriends(spec);
 					Log.report("Got "+ps.length+" friends for "+o+": "+JList.toList(ps));
 					for (int j=0;j<ps.length;j++) {
 						Property p=ps[j];
-						// base.append("  public "+p.getParentObj().getJavaType()+"[] get"+JString.initCap(p.getName())+p.getParentObj().getClassName()+"() {\n    return null; /* ... */\n  }\n");
-						base.append("  /** "+p.getParentObj().getJavaType()+"'s which refer to this "+p.getName()+". **/\n");
-						// base.append("  /** "+p.getParentObj().getJavaType()+"'s for this "+p.getName()+". **/\n");
-						base.append("  public "+p.getParentObj().getJavaType()+"[] "+p.getName()+p.getParentObj().getClassName()+"s() {\n    return null; /* ... */\n  }\n");
+						// base.append("\tpublic "+p.getParentObj().getJavaType()+"[] get"+JString.initCap(p.getName())+p.getParentObj().getClassName()+"() {\n\t\treturn null; /* ... */\n\t}\n");
+						base.append("\t/** "+p.getParentObj().getJavaType()+"'s which refer to this "+p.getName()+". **/\n");
+						// base.append("\t/** "+p.getParentObj().getJavaType()+"'s for this "+p.getName()+". **/\n");
+						base.append("\tpublic "+p.getParentObj().getJavaType()+"[] "+p.getName()+p.getParentObj().getClassName()+"s() {\n\t\treturn null; /* ... */\n\t}\n");
 					}
 				}
 				
@@ -171,13 +206,13 @@ public class SpecGenerator {
 				basef.getParentFile().mkdirs();
 				Files.writeStringtoFile(base.toString(),basef);
 
-			// if (develf.exists()) {
-				// echo(develf+" exists: not writing.");
-			// } else {
+			if (develf.exists() && !overwriteDeveloperFiles) {
+				echo(develf+" exists: not writing.");
+			} else {
 				echo("Writing "+o+" to "+develf+".");
 				develf.getParentFile().mkdirs();
 				Files.writeStringtoFile(devel.toString(),develf);
-			// }
+			}
 
 		}
 

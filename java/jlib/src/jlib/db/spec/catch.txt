@@ -1,0 +1,43 @@
+
+Found 2 semantic errors compiling "Property.java":
+
+    18. 	Property(Type t,String n) {
+                         <-->
+*** Error: The type "Type" was found in package "jlib/db/spec". However, that type is associated with another named package, "dbmaker".
+
+
+    25. 	String getJavaType() { return type.getJavaType(); }
+                                              <---------------->
+*** Error: No method named "getJavaType" was found in type "jlib/db/Type".
+
+Found 3 semantic errors compiling "SpecGenerator.java":
+
+    27. 			File f=o.classFile();
+                                       <----------->
+*** Error: No match was found for method "classFile()".
+
+
+    29. 				echo(f+"exists: not writing.");
+                                        <---------------------------->
+*** Error: No method named "echo" was found in type "jlib/db/spec/SpecGenerator".
+
+
+    32. 				echo("Writing "+o+" to "+f+".");
+                                        <----------------------------->
+*** Error: No method named "echo" was found in type "jlib/db/spec/SpecGenerator".
+
+Found 3 syntax errors in "Obj.java":
+
+    14. 	public String package;
+                              <----->
+*** Syntax Error: Invalid VariableDeclarators
+
+
+    47. 		return package+"."+name;
+                               ^
+*** Syntax Error: Unexpected symbol ignored
+
+
+    53. 			s=s+extendsObjs.get(i)).getJavaType();
+                                                      ^
+*** Syntax Error: Unexpected symbol ignored

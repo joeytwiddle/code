@@ -119,8 +119,6 @@ public class DB {
 	// Stupid!  You are getting strings out of DB and converting
 	// to types!
 	// Support SQLtype->Javatype without String middleman please!
-	// Worse than this, after reading into Java object we
-	// invariably render into String for user to interact with!
 
   DBObj objectFromResultSet(DBKey key,ResultSet rs) {
     // System.out.println(""+key.objPackage);

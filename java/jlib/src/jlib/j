@@ -1,0 +1,1 @@
+jikes `find . -name "*.java" | grep -v "unfinished/" | grep -v CVS | grep -v "/.ver" | grep -v "/.notready/" | grep -v "/old/"`

@@ -1,0 +1,2 @@
+cd ../..
+jikes `find jlib/wrappers -name "*.java" | grep -v "CVS"`
