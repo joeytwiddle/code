@@ -9,7 +9,8 @@ void doframe();
 #define DEBUGTOFILE
 #else
 #include <SDL.h>
-#include <sched.h>
+// Not in DOS
+// #include <sched.h>
 #endif
 
 #include <stdio.h>
@@ -172,7 +173,8 @@ int main(int argc,char *argv[]) {
 
 #ifdef KEEP_TO_FPS
 		while ((now=clock())<releasetime) {
-			sched_yield();
+			// Not in DOS
+			// sched_yield();
 			// SDL_Delay(12);
 		}
 #endif

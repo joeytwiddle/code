@@ -1,5 +1,5 @@
-// #define DOS
-// #define DO_FULLSCREEN
+#define DOS
+#define DO_FULLSCREEN
 #define SCRWID 640
 #define SCRHEI 400
 #define SCRBPS 32

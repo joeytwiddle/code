@@ -76,6 +76,9 @@ public  Map skipExts=new HashMap();
       skipExts.put("blg","Latex output");
       skipExts.put("bbl","Latex output");
       skipExts.put("log","Latex output");
+      skipExts.put("toc","Latex output");
+      skipExts.put("lof","Latex output");
+      skipExts.put("lot","Latex output");
       skipExts.put("ps","Latex output");
       skipExts.put("pdf","Latex output");
   }
