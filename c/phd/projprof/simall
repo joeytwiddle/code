@@ -40,7 +40,12 @@ NOISES=0
 # FOCALS=`seq -w 0.5 0.3 3.0`
 # FOCALS="0.5"
 # ANGLES=`seq 30 10 60`
-ANGLES=`seq 5 4 85`
+# ANGLES=`seq 5 5 85`
+# ANGLES=`seq 5 5 85`
+# ANGLES="50"
+# ANGLES=`seq 5 6 85`
+# ANGLES=`seq 30 10 60`
+ANGLES=`seq 5 6 85`
 # ANGLES="30"
 
 FOCALS="4.0"
