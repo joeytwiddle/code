@@ -3,7 +3,7 @@
 getcgi() {
 	TESTRES=`echo "$QUERY_STRING" | sed "s/.*\(^\|&\|'\)$1=\([^&']*\)\($\|&\|'\).*/\2/"`
 	if [ "$TESTRES" = "$QUERY_STRING" ]
-	then echo "cglib.getcgi(): Error finding var >$1<" > /dev/stderr
+	then echo "cglib.getcgi(): Error finding var >$1<" >&2
 	else echo "$TESTRES" | fromcgi
 	fi
 }
@@ -52,7 +52,7 @@ fromcgi () {
 # echo $CGICONV >&2
 sed '
 ## Ones I found, lots more needed here!
-# s/+/ /g;
+s/+/ /g;
 s/%20/ /g;
 s/%2[Ff]/\//g;
 s/%3[Aa]/:/g;

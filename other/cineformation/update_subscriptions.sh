@@ -1,4 +1,5 @@
-MAILTO=joey@hwi.ath.cx
+# MAILTO=joey@hwi.ath.cx
+MAILTO="pru@tribe.hn.org joey@hwi.ath.cx"
 
 TAB="	"
 WEIRD_CHAR=" "
@@ -45,7 +46,7 @@ grabAttachmentNamed () {
 	cat > $TMPFILE
 	if ! cat $TMPFILE | grep "^Content-Disposition: attachment; filename=\"$NAME\"$"
 	then
-		echo "Sorry cannot process.  Could not find any attachment named \"$NAME\" in your email."
+		echo "Sorry cannot process.  Could not find any attachment named \"$NAME\" in your email." >&2
 		exit 1
 	fi
 	cat $TMPFILE |
@@ -81,7 +82,7 @@ grep "^> " | sed 's+^..++' |
 cat > $IN_MAILMAN_BUT_NOT_IN_DB
 
 # env COLUMNS=80 diff -i --side-by-side $MAILMAN_LIST $EXCEL_LIST |
-diff -i --width=80 --side-by-side --expand-tabs $MAILMAN_LIST $EXCEL_LIST |
+diff -i --width=80 --side-by-side --expand-tabs $EXCEL_LIST $MAILMAN_LIST |
 cat > $SIDE_BY_SIDE_DIFF
 
 (
@@ -126,7 +127,7 @@ cat > $SIDE_BY_SIDE_DIFF
 	echo
 	echo "  Finally, for your convenience and comparison, the two lists side-by-side."
 	echo "  On the left: the members of the Mailman list.  On the right: emails from Excel."
-	echo "  '<' means only in Mailman, '>' means only in Excel, '|' means different."
+	echo "  '<' means only in Excel, '>' means only in Mailman, '|' means different."
 	echo
 	# echo "<TT>"
 	cat $SIDE_BY_SIDE_DIFF
@@ -134,10 +135,10 @@ cat > $SIDE_BY_SIDE_DIFF
 	echo
 ) > $REPORT
 
-cat $REPORT | mail "$MAILTO" -s "Hwi's cineformation Mailman update report"
+cat $REPORT | mail -s "Hwi's cineformation Mailman update report" $MAILTO
 
 (
-	echo "<HTML><BODY><FONT size='-3'><TT>"
+	echo "<HTML><BODY><FONT size='-1'><TT>"
 	cat $REPORT |
 	sed 's+$+<BR>+ ; s+ +\&nbsp\;+g'
 	echo "</TT></FONT></BODY></HTML>"
