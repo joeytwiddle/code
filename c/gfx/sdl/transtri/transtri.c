@@ -473,6 +473,8 @@ int main(int argc,char *argv[]) {
 								register screen_pixelType *startreg=&SDLwrap_regPixel(screen,screen_pixelType,screen_pitch,screen_BytesPerPixel,i-IMGSKIP,j-IMGSKIP);
 								for (J=0;J<IMGSKIP;J++) {
 									reg=startreg;
+									// todo: This loop should draw a quick line in bgtexture space
+									// rather than averaging compass multiples
 									for (I=0;I<IMGSKIP;I++) {
 										Uint16 ahere,Dhere;
 										// #define e ((I))
