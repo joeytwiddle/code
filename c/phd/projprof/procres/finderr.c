@@ -220,7 +220,7 @@ main(int argc,String *argv) {
 			float hvpreldist=hvpdist/gthvp.mag();
 			float vvpreldist=vvpdist/gtvvp.mag();
 			
-		  if (yaw>5 && yaw<85 && pitch>5 && pitch<85) {	
+		  if (yaw>10 && yaw<80 && pitch>10 && pitch<80) {	
 			  if (myabs(realrightangerr)<123456789.0) {
 			    realrightangerrsum+=myabs(realrightangerr);
 				  var769++;
@@ -232,13 +232,13 @@ main(int argc,String *argv) {
 			  if (hvpreldist<3.0) {
 				  hvpreldistcnt++;
 				  hvpreldistsum+=hvpreldist;
-			  } else
-					hvpreldist=0;
+			  } // else
+					// hvpreldist=0;
 			  if (vvpreldist<3.0) {
 				  vvpreldistcnt++;
 				  vvpreldistsum+=vvpreldist;
-			  } else
-					vvpreldist=0;
+			  } // else
+					// vvpreldist=0;
 		  }
 
 			if (realrightangerr>45)
@@ -283,8 +283,8 @@ main(int argc,String *argv) {
 	printf("# 31 realrightangacc0-1\n");
 	printf("# 32 realdownangacc0-1\n");
 	printf("# 33,34,35 gtU gtV gtW\n");
-	printf("# 33,34,35 ppU ppV ppW\n");
-	printf("# 33,34,35 diffU diffV diffW\n");
+	printf("# 36,37,38 ppU ppV ppW\n");
+	printf("# 39,40,40 diffU diffV diffW\n");
 
 	fprintf(stderr,"realrightangerrave = %f over %i\n",realrightangerrsum/(float)var769,var769);
 	fprintf(stderr,"realdownangerrave = %f over %i\n",realdownangerrsum/(float)var770,var770);

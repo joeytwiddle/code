@@ -236,7 +236,7 @@ float gaborabs(V2d v,V2d d,float size,float freq) {
 // infcirrad = res * log(planerad) / max
 				
 // Methods 1,2,3:
-float maxinfcir=1.0e3;
+float maxinfcir=1.0e2; // 3;
 // float maxinfcir=5.0; // takes us to 4.0e208 at res 50
 // float maxinfcir=20.0; // takes us to 4.0e208 at res 50
 

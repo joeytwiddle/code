@@ -103,10 +103,18 @@ public:
       f+=mysquare(getpos(i));
     return f;
   }
-  Object totalderiv() {
+  /* Object totalderiv() {
     Object f=0.0;
     for (int i=0;i<width-1;i++)
       f+=mysquare(getpos(i+1)-getpos(i));
+    return f;
+  } */
+  Object totalderiv() {
+    Object f=0.0;
+    Map1d<Object> tmp=smoothed(1);
+    for (int i=0;i<tmp.width-1;i++)
+      f+=mysquare(tmp.getpos(i+1)-tmp.getpos(i));
+    tmp.freedom();
     return f;
   }
   Object variance() {
