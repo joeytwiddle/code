@@ -105,6 +105,20 @@ Therefore, to refine the parameters, an initial fit is made with an approximatio
 Y(X) = \frac{ UV }{ 1+n(X)W }
 \end{equation}
 
+\begin{figure}[t]
+\begin{centering}
+  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
+  \hspace{2mm}
+  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
+  \hspace{2mm}
+  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyc}}
+  \hspace{2mm}
+  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyd}}
+\caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
+\label{vvpaccuracy}
+\end{centering}
+\end{figure}
+
 This ensures that parameters close to the desired minima are obtained before the final fitting.  Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
 % A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
 After reversing the transformation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
@@ -158,20 +172,6 @@ justified.
 % \end{centering}
 % \end{figure}
 
-\begin{figure}[t]
-\begin{centering}
-  \subfigure[VVP recovery on fully justified paragraphs by intersecting margins]{\epsfig{figure=images/accuracy-vvp-margins,width=60mm}\label{vvpaccuracya}}
-  \hspace{2mm}
-  \subfigure[Margin intersection fails on left justified paragraphs]{\epsfig{figure=images/accuracy-vvp-margins-jagged.ps,width=60mm}\label{vvpaccuracyb}}
-  \hspace{2mm}
-  \subfigure[VVP recovery on left justified paragraphs by fitting line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyc}}
-  \hspace{2mm}
-  \subfigure[VVP recovery on centrally justified paragraphs using line spacings]{\epsfig{figure=images/accuracy-vvp-spacings-jagged.ps,width=60mm}\label{vvpaccuracyd}}
-\caption{Accuracy of recovery of vertical vanishing point (VVP) on simulated paragraphs at various orientations.}
-\label{vvpaccuracy}
-\end{centering}
-\end{figure}
-
 The results for these experiments, and the location of the horizontal vanishing
 point in \refsect{locatehvpsect}, are shown numerically in
 \reftab{accuracytable}. 
@@ -183,6 +183,30 @@ It can be seen that the accuracy of location of the vertical vanishing point in
 reasonable for both the margin intersection and the line spacings method. 
 As the last row of \reftab{accuracytable} shows, intersecting margins is not
 suitable for documents with jagged edges.
+
+
+%% Joey's original table
+%\begin{table}[t]
+%  \begin{center}
+%    % \begin{tabular}{|p{2.5in}|l|l|}
+%    \begin{tabular}{|p{8cm}|r@{}l|r@{}l|}
+%      \hline
+%      {\bf Paragraph (pgh) types } & \multicolumn{2}{c|}{\bf VP} & \multicolumn{2}{c|}{\bf Angular} \\
+%      {\bf } & \multicolumn{2}{c|}{\bf error} & \multicolumn{2}{c|}{\bf error} \\  \hline \hline
+%      HVP using projection profiles & ~~~0&.129 & ~~~2&.16$^\circ$ \\  \hline
+%      VVP using margin intersection for fully formatted pghs & 0&.0785 & 2&.08$^\circ$ \\ \hline
+%      VVP using line spacings on what? left? & 0&.133 & 3&.30$^\circ$ \\ \hline
+%      VVP using margin intersection on left formatted pghs & 1&.23 & 24&.5$^\circ$ \\   \hline
+%      VVP using margin intersection on right formatted pghs & X & &  & XX$^\circ$ \\ \hline
+%      VVP using margin intersection on centre formatted pghs & X & & &  XX$^\circ$ \\ \hline  \hline
+%   \end{tabular}
+%  \end{center}
+%  % \vspace*{-5mm}
+%  \caption{Average error for the various methods over $10^\circ$ to $80^{\circ}$ in yaw and pitch.}
+%  \label{accuracytable}
+%\end{table}
+
+
 
 \begin{table}[t]
   \begin{center}
@@ -211,30 +235,6 @@ suitable for documents with jagged edges.
   \label{accuracytable}
 \end{table}
 
-
-%% Joey's original table
-%\begin{table}[t]
-%  \begin{center}
-%    % \begin{tabular}{|p{2.5in}|l|l|}
-%    \begin{tabular}{|p{8cm}|r@{}l|r@{}l|}
-%      \hline
-%      {\bf Paragraph (pgh) types } & \multicolumn{2}{c|}{\bf VP} & \multicolumn{2}{c|}{\bf Angular} \\
-%      {\bf } & \multicolumn{2}{c|}{\bf error} & \multicolumn{2}{c|}{\bf error} \\  \hline \hline
-%      HVP using projection profiles & ~~~0&.129 & ~~~2&.16$^\circ$ \\  \hline
-%      VVP using margin intersection for fully formatted pghs & 0&.0785 & 2&.08$^\circ$ \\ \hline
-%      VVP using line spacings on what? left? & 0&.133 & 3&.30$^\circ$ \\ \hline
-%      VVP using margin intersection on left formatted pghs & 1&.23 & 24&.5$^\circ$ \\   \hline
-%      VVP using margin intersection on right formatted pghs & X & &  & XX$^\circ$ \\ \hline
-%      VVP using margin intersection on centre formatted pghs & X & & &  XX$^\circ$ \\ \hline  \hline
-%   \end{tabular}
-%  \end{center}
-%  % \vspace*{-5mm}
-%  \caption{Average error for the various methods over $10^\circ$ to $80^{\circ}$ in yaw and pitch.}
-%  \label{accuracytable}
-%\end{table}
-
-
-
 Having found the vanishing points of the plane, we may project two lines from each
 to describe the left and right margins and the top and bottom limits of the paragraph.
 These lines are intersected to form a quadrilateral enclosing the text,
@@ -246,8 +246,32 @@ of the paragraph of text.
 
 
 
-\include{quadrecovery}
+\section{Recovery of fronto-parallel view}
 
+% Given a partially calibrated camera for which only the focal lengthis unknown, a quadrilateral in the image which is known to correspond to some rectangle in the world is sufficient to determine the focal length.
+
+In some applications we may not know the focal length of the camera used to capture the image.  However having a quadrilateral in the image which is known to map to a rectangle in the scene is sufficient to recovert the focal length of the camera.
+% We shall briefly demonstrate ...
+
+The vectors joining the focal point $O$ to the two vanishing points $\myvec{HVP}$ and $\myvec{VVP}$ in the image plane are parallel to the horizontal and vertical vectors of the document.  Since we expect these two vectors to be at right-angles in the scene, we can write:
+
+\begin{equation}
+( \myvec{HVP}_x , \myvec{HVP}_y , f ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y , f ) = 0
+\end{equation}
+
+This constraint expands to:
+
+\begin{equation}
+f = \sqrt{ - \myvec{HVP}_x \myvec{VVP}_x - \myvec{HVP}_y \myvec{VVP}_y }
+\end{equation}
+
+% \begin{equation}
+% ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 ~.
+% \end{equation}
+
+It is worth noting that no solution exists for $f$ if $ ( \myvec{HVP}_x , \myvec{HVP}_y ) \cdot ( \myvec{VVP}_x , \myvec{VVP}_y ) > 0 $.  This situation, where the angle between the two vanishing points on the image plane is acute, corresponds to a quadrilateral which cannot possibly be a rectangle in the scene.  If such a quadrilateral is encountered during processing, we could hypothesise that the document is in fact slanted on the text plane, or that the quadrilateral does not correspond to a document in the scene, and should be ignored.
+
+Having obtained the focal length of the camera, we may now recover a fronto-parallel view of the document.  The interpolation takes place in world space rather than image space.
 
 
 
