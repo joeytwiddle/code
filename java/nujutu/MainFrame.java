@@ -5,12 +5,15 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
+import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.lang.*;
 import java.lang.reflect.*;
 // import java.net.*;
 import java.util.*;
+import java.util.Map;
+import java.util.List;
 import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
@@ -18,9 +21,10 @@ import nuju.*;
 import jlib.*;
 import jlib.dnd.hack.*;
 
+
 class NuJuTu {
 
-	static String niceNameString(String n) { // Strip package path
+	static String trimPackagePath(String n) { // Strip package path
 		int i=n.lastIndexOf(".");
 		if (i>=0)
 			n=n.substring(i+1);
@@ -56,12 +60,11 @@ class NuJuTu {
 			// System.out.println("Array: "+c+"\n  "+c.getName());
 		}
 		if (trimPackagePath)
-			n=niceNameString(n);
+			n=trimPackagePath(n);
 		return n;
 	}
 
 }
-
 
 
 class MemberBrowser extends JPanel {
@@ -103,7 +106,11 @@ class MemberBrowser extends JPanel {
 				// || isPrimClass (all fit above?)
 				// also some array types, eg. byte[] and char[]
 			) {
-			c = new JTextField(""+o,4);
+			JTextField field = new JTextField(""+o,4);
+			if (field.getColumns()>=10) {
+				field.setColumns(10);
+			}
+			c = field;
 		} else {
 			c = new JButton(""+o);
 		}
@@ -186,7 +193,7 @@ class MemberBrowser extends JPanel {
 							params=((Method)member).getParameterTypes();
 						} else { // assert (member instanceof Constructor);
 							leftBox.add(new JButton("new"));
-							leftBox.add(new JLabel(" "+NuJuTu.niceNameString(member.getName())));
+							leftBox.add(new JLabel(" "+NuJuTu.trimPackagePath(member.getName())));
 							params=((Constructor)member).getParameterTypes();
 						}
 						rightBox.add(new JLabel(" ( "));
@@ -227,15 +234,55 @@ class MemberBrowser extends JPanel {
 }
 
 
-
-class Desktop extends JPanel {
-
-	Desktop() {
+class ClassChooser extends JComboBox {
+	JobBrowser parentBrowser;
+	ClassChooser(JobBrowser _parentBrowser, Object obj, Class classIn) {
+		parentBrowser = _parentBrowser;
+		Class c = ( obj == null ? classIn : obj.getClass() );
+		while (true) {
+			Object item = NuJuTu.niceName(c,false);
+			addItem(item);
+			if (obj != null && c.equals(classIn)) {
+				setSelectedItem(item);
+			}
+			if (c.equals(new Object().getClass())) {
+				break;
+			}
+			c = c.getSuperclass();
+		}
 	}
-
+	public void selectedItemChanged() {
+		Object item = getSelectedItem();
+		// if (item instanceof String) {
+			try {
+				parentBrowser.browse(Class.forName((String)item));
+			} catch (Exception e) {
+				parentBrowser.jobContext.log(e);
+			}
+		// }
+	}
+	/*
+	static Object[] classesFor(Object obj, Class c) {
+		if (obj != null) {
+			c = obj.getClass();
+		}
+		List classes = new java.util.Vector();
+		while (true) {
+			classes.add(NuJuTu.niceName(c,false));
+			if (c.equals(new Object().getClass())) {
+				break;
+			}
+			c = c.getSuperclass();
+		}
+		return classes.toArray();
+	}
+	*/
 }
 
-class InfoPane extends JPanel {
+
+class JobBrowser extends JPanel {
+
+	JobContext jobContext;
 
 	Box header=Box.createHorizontalBox();
 	JTabbedPane tabbedPane;
@@ -250,7 +297,8 @@ class InfoPane extends JPanel {
 	};
 	JPanel[] tabs;
 
-	InfoPane() {
+	JobBrowser(JobContext _jobContext) {
+		jobContext = _jobContext;
 
 		tabbedPane=new JTabbedPane();
 		tabs=new JPanel[tabNames.length];
@@ -267,13 +315,14 @@ class InfoPane extends JPanel {
 
 	}
 
-	void introspect(Class c,Object o) {
+	void browse(Class c,Object o) {
 
 		header.removeAll();
 		header.add(new JLabel("Browsing "+NuJuTu.niceName(o.getClass())+" "));
 		header.add(new JButton(o.toString()));
 		header.add(new JLabel(" as "));
-		header.add(new JButton(NuJuTu.niceName(c,false)));
+		// header.add(new JButton(NuJuTu.niceName(c,false)));
+		header.add(new ClassChooser(this,o,c));
 
 		List members=new Vector();
 		jlib.JList.addArray(members,c.getFields());
@@ -294,35 +343,161 @@ class InfoPane extends JPanel {
 		// tabs[5].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,true,false,true,false,false)));
 		// tabs[6].removeAll();
 		// tabs[6].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,true,false,false,true,false)));
-		System.out.println(""+members.size());
+		// System.out.println(""+members.size());
+		jobContext.mainFrame.repaint();
 
 	}
 
-	void introspect(Class c) {
-		introspect(c,null);
+	void browse(Class c) {
+		browse(c,null);
 	}
 
-	void introspect(Object o) {
-		introspect(o.getClass(),o);
+	void browse(Object o) {
+		browse(o.getClass(),o);
 	}
 
 }
 
-public class MainFrame extends JFrame {
 
-	Desktop desktop=new Desktop();
-	InfoPane infoPane=new InfoPane();
+class Variable {
+	JobContext jobContext;
+	String label;
+	Object value;
+	Variable(String _label, Object _value) {
+		label = _label;
+		value = _value;
+		// jobContext = JobContext.getContextFromThread();
+	}
+}
+
+
+class VariableView extends JButton {
+	JobContext jobContext;
+	Variable variable;
+	VariableView(JobContext _jobContext,Variable _variable) {
+		super(_variable.value.getClass()+" "+_variable.label);
+		variable = _variable;
+		jobContext = _jobContext;
+		enableEvents(MouseEvent.MOUSE_CLICKED);
+		DnDManager.setSource(this,variable);
+		DnDManager.setTarget(this,new jlib.simple.Code() {
+			public void execute() {
+				System.out.println("VariableView "+variable+" received: "+input);
+			}
+		} );
+}
+	protected void processMouseEvent(MouseEvent e) {
+		super.processMouseEvent(e);
+		if (e.getID() == MouseEvent.MOUSE_CLICKED) {
+			jobContext.browseVariable(variable);
+		}
+	}
+}
+
+
+class Workspace extends JPanel {
+
+	JobContext jobContext;
+
+	Workspace(JobContext _jobContext) {
+		jobContext = _jobContext;
+		setLayout(new FlowLayout());
+		for (int i=0;i<5;i++) {
+			Object obj = new String( "" + Math.random() );
+			String label = "" + (char)(((int)'a') + i);
+			VariableView variable = new VariableView(jobContext,new Variable(label,obj));
+			add(variable);
+		}
+	}
+
+}
+
+
+class JobConsole extends Panel {
+	StringBuffer contents = new StringBuffer();
+	JLabel contentsView = new JLabel();
+	public void log(String text) {
+		contents.append(text + '\n');
+		contentsView.setText(text);
+	}
+	public void log(Exception e) {
+		log(""+e);
+	}
+	public void log(Object o) {
+		log(""+o);
+	}
+}
+
+
+class JobContext {
+
+	MainFrame mainFrame;
+	Workspace workspace=new Workspace(this);
+	JobBrowser infoPane=new JobBrowser(this);
+	JobBrowser infoPane2=new JobBrowser(this);
+	JobConsole console = new JobConsole();
+
+	JobContext() {
+		// setContextForThread(this);
+	}
+
+	void browseVariable(Variable variable) {
+		infoPane.browse(variable.value);
+	}
+
+	/*
+	void browseVariableAs(Class c) {
+		infoPane.browse(c);
+	}
+	*/
+
+	void log(Object o) {
+		console.log(o);
+	}
+
+	/*
+
+	static Map threadMap = new HashMap();
+
+	static void setContextForThread(JobContext context) {
+		threadMap.put(Thread.currentThread(),context);
+	}
+
+	static JobContext getContextFromThread() {
+		try {
+			Thread thread = Thread.currentThread();
+			Object result = threadMap.get(thread);
+			if (result == null) {
+				System.err.println("No context found for "+thread);
+			}
+			return (JobContext)result;
+		} catch (Exception e) {
+			e.printStackTrace(System.err);
+			return null;
+		}
+	}
+
+	*/
+
+}
+
+
+
+public class MainFrame extends JFrame {
 
 	MainFrame() {
 		super("NuJuTu");
-		desktop=new Desktop();
-		infoPane=new InfoPane();
-		InfoPane infoPane2=new InfoPane();
+		addWindowListener( new WindowAdapter() {
+				public void windowClosing(WindowEvent e) { System.exit(0); }
+		} );
+		JobContext jobContext = new JobContext();
+		jobContext.mainFrame = this;
 		Container cp=getContentPane();
-		infoPane.introspect("hello");
-		infoPane2.introspect(new Integer(7));
-		// JSplitPane sp=new JSplitPane(JSplitPane.VERTICAL_SPLIT,desktop,new JScrollPane(infoPane));
-		JSplitPane sp=new JSplitPane(JSplitPane.VERTICAL_SPLIT,new JScrollPane(infoPane),new JScrollPane(infoPane2));
+		jobContext.infoPane.browse("hello");
+		jobContext.infoPane2.browse(new Integer(7));
+		// JSplitPane sp=new JSplitPane(JSplitPane.VERTICAL_SPLIT,workspace,new JScrollPane(jobContext.infoPane));
+		JSplitPane browserPanes=new JSplitPane(JSplitPane.VERTICAL_SPLIT,new JScrollPane(jobContext.infoPane),new JScrollPane(jobContext.infoPane2));
+		JSplitPane sp=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(jobContext.workspace),browserPanes);
 		cp.add(sp);
 	}
 
