@@ -23,8 +23,8 @@ class Particle {
   public void movement() {
     oria=hang(oria,V3d.o,0.99,0.0001);
     acc=hang(acc,V3d.o,0.99,0.0001);
-    oriv=oria.add(hang(oriv,V3d.o,0.999,0.0));
-    vel=acc.add(hang(vel,V3d.o,0.9999,0.0));
+    oriv=oria.add(hang(oriv,V3d.o,0.995,0.0));
+    vel=acc.add(hang(vel,V3d.o,0.9995,0.0));
     cen=cen.add(vel);
     ori.roll(oriv.x);
     ori.pitch(oriv.y);
@@ -76,9 +76,14 @@ class IfsTransform extends Particle {
         double s=(double)sd;
         if (s*(cen.var(d)+s*rad)>tol) {
 //          System.out.println(d+":"+s+": "+cen+" < "+rad);
+        final double dampbounce=0.5;
           cen.setvar(d,tol*s-s*rad);
-          vel.setvar(d,-s*Math.abs(vel.var(d)));
-          acc.setvar(d,-s*Math.abs(acc.var(d)));
+          vel.setvar(d,-dampbounce*s*Math.abs(vel.var(d)));
+          acc.setvar(d,-dampbounce*s*Math.abs(acc.var(d)));
+          oriv.setvar(d,dampbounce*oriv.var(d));
+          oria.setvar(d,dampbounce*oria.var(d));
+          scalev.setvar(d,dampbounce*scalev.var(d));
+          scalea.setvar(d,dampbounce*scalea.var(d));
 //          System.out.println("  set "+d+"="+(s-s*rad));
 //          System.out.println("  "+cen);
           for (int e=0;e<3;e++) {
@@ -158,6 +163,10 @@ public class Ifs3d extends Thread implements ComponentListener {
     return 2.0f-ctmp;
   }
 
+  public Color hue(float a,float depth) {
+    return new Color(depth*huefor(a,0),depth*huefor(a,(float)1/3),depth*huefor(a,(float)2/3));
+  }
+
   public Color hue(float a) {
     return new Color(huefor(a,0),huefor(a,(float)1/3),huefor(a,(float)2/3));
   }
@@ -232,7 +241,7 @@ public class Ifs3d extends Thread implements ComponentListener {
     Color colb=new Color(0.0f,0.6f,0.0f);
     while (true) {
 
-      rotang+=Math.PI/100.0;
+      rotang+=Math.PI/1000.0;
 
       frame.gfx.clearRect(0,0,frame.getSize().width,frame.getSize().height);
       m=new Matrix(V3d.j,rotang);
@@ -253,7 +262,13 @@ public class Ifs3d extends Thread implements ComponentListener {
         int j=dots[i];
         p=ts[j].apply(p);
 
-        Point q=pp.project(m.mult(p));
+				V3d rotatedp=m.mult(p);
+				float depth=0.5f+0.5f*(float)((1.0-rotatedp.z)/2.0);
+				if (depth<0) depth=0.0f;
+				if (depth>1) depth=1.0f;
+				// System.out.println(""+depth);
+        Point q=pp.project(rotatedp);
+        // Point q=pp.project(m.mult(p));
 /*        red=JMaths.crop(red+JMaths.rnd(-colspd,+colspd),0.0f,1.0f);
         green=JMaths.crop(green+JMaths.rnd(-colspd,+colspd),0.0f,1.0f);
         blue=JMaths.crop(blue+JMaths.rnd(-colspd,+colspd),0.0f,1.0f);*/
@@ -262,7 +277,7 @@ public class Ifs3d extends Thread implements ComponentListener {
           float t=(float)i/(float)(numps-1);
 //          frame.gfx.setColor(new Color((int)(t*cola.getRed()+(1.0-t)*colb.getRed()),(int)(t*cola.getGreen()+(1.0f-t)*colb.getGreen()),(int)(t*cola.getBlue()+(1.0f-t)*colb.getBlue())));
 //          frame.gfx.setColor(hue(t));
-          frame.gfx.setColor(hue((float)rs[rem]/(float)nts));
+          frame.gfx.setColor(hue((float)rs[rem]/(float)nts,depth));
           rs[rem]=j;
           rem=(rem+1)%nrs;
           frame.gfx.drawLine(q.x,q.y,q.x,q.y);
