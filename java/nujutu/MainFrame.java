@@ -160,9 +160,9 @@ class MemberBrowser extends JPanel {
 							leftBox.add(new JLabel(" "+NuJuTu.niceNameString(member.getName())));
 							params=((Constructor)member).getParameterTypes();
 						}
-						leftBox.add(new JLabel(" ( "));
+						rightBox.add(new JLabel(" ( "));
 						if (params.length==0) {
-							leftBox.add(new JLabel(" ) "));
+							rightBox.add(new JLabel(" ) "));
 							rightBox.add(new JButton("Execute"));
 						} else {
 							for (int j=0;j<params.length;j++) {
