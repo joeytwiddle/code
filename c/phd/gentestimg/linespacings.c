@@ -1,8 +1,12 @@
 V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usingspacings) {
 
+	FILE *log=fopen("vvpFromPoints.txt","w");
+
 	Line2d baseline=Line2d(bl.a,bl.b);
+	fprintf(log,"baseline = %s\n",baseline.toString());
 	List<V2d> endpoints;
 	endpoints.add(eps);
+	fprintf(log,"first %s\nlast  %s\n",endpoints.num(1).toString(),endpoints.num(endpoints.len).toString());
 
 	// Project the points down onto the line
 	for (int i=0;i<endpoints.len;i++) {
@@ -63,6 +67,8 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	float vvpdist=guessU*V/W;
 	V2d vvp=baseline.a-(baseline.b-baseline.a).norm()*vvpdist;
 	vvp=vvp.rotateabout(angle,V2d((float)imgwidth/2.0,(float)imgheight/2.0));
+
+	fclose(log);
 	
 	return vvp;
 
