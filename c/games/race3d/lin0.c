@@ -26,15 +26,18 @@ float change=1;
 float fogdepth=20.0;
 //float fogdepth=4.0;
 bool planar=false;
-int numps=500;
-float partrad=0.04;
-int tunnelps=1;
-float tunnelrad=0;
+int numps=300;
+float partrad=0.007;
+int tunnelps=40;
+float tunnelrad=0.4;
 
 float turnability=0.10;
 float forcevel=0.03;
 float markerrange=3.0;
-int taillen=800;
+int taillen=1200;
+
+int numWaves=15;
+int waveAmp=10.0;
 
 V3d pos;
 Ori ori;
@@ -56,7 +59,7 @@ public:
     if (planar)
       line.y=0;
     o=myrnd()*2.0*pi;
-    a=myrnd()*10.0;
+    a=myrnd()*waveAmp;
   }
   V3d contribution(float thru) {
     return a*line*mysin(((float)f)*(thru*2.0*pi-o));
@@ -75,7 +78,7 @@ void plotsphere(V3d cen,int c) {
   if (p) {
     float rad=partrad*p;
     PPgetscrposnoadd(&cen,&PPlefteye,&x,&y);
-    left.filledcircle(x,y,rad,c);
+    left.filledcircle(x,y,rad,16*c); // Fundamental change!
     PPgetscrposnoadd(&cen,&PPrighteye,&x,&y);
     right.filledcircle(x,y,rad,16*c);
     // b.filledcircle(x,y,,c);
@@ -85,7 +88,7 @@ void plotsphere(V3d cen,int c) {
 }
 
 void plotline(V3d a,V3d b,float i) {
-  PPlinenoadd(&left,PPlefteye,a,b,15*i);
+  PPlinenoadd(&left,PPlefteye,a,b,15*i*16);
   PPlinenoadd(&right,PPrighteye,a,b,(int)(15*i)*16);
 }
 
@@ -141,7 +144,7 @@ void writescreen() {
 		// if (left.bmp[j][i]!=0)
 			// printf("%i\n",left.bmp[j][i]);
 		// screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],intrnd(0,255)));
-		screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],0));
+		screen_setPixel(i,j,screen_MapRGB(left.bmp[j][i],right.bmp[j][i],left.bmp[j][i]));
     }
   }
   // b.writetoscreen();
@@ -149,6 +152,7 @@ void writescreen() {
 }
 
 void init() {
+	printf("WARNING: There are awful memory leaks so DON'T PLAY FOR TOO LONG!\n");
   setuptriglookup();
 
 #ifdef REDEFINE
@@ -176,30 +180,34 @@ void init() {
 
   // Set up track
   randomise();
-  for (int i=0;i<=15;i++) {
+  for (int i=0;i<=numWaves;i++) {
     waves+Wave();
     // waves.num(i).display();
   }
 
-  for (float thru=0;thru<1.0;thru+=1.0/(float)numps) {
+  for (float thru=0;thru<1.0;) {
+    for (int i=0;i<tunnelps;i++) {
     V3d here=getpos(thru);
     V3d forward=getpos(thru+0.00001)-here;
     V3d up=V3d::normcross(V3d::crazy,forward);
     V3d right=V3d::normcross(forward,up);
-    for (int i=0;i<tunnelps;i++) {
       float t=2*pi*(float)i/(float)tunnelps;
       float s=sin(t);
       float c=cos(t);
       V3d v=here+tunnelrad*(s*up+c*right);
       octree.add(v);
+		thru+=1.0/(float)numps/(float)tunnelps;
     }
   }
 
-  for (int i=1;i<500;i++) {
-    octree.add(8.0*V3d(floatrnd(-1,1),floatrnd(-1,1),floatrnd(-1,1)));
+  for (int i=1;i<2000;i++) {
+    octree.add(waveAmp*(float)numWaves/10.0*V3d(floatrnd(-1,1),floatrnd(-1,1),floatrnd(-1,1)));
   }
 
   ori=Ori(V3d(1,0,0),V3d(0,1,0));
+  pos=getpos(0);
+    float pd=2.5;
+    PPsetup(scrwid,scrhei,pd);
 
   SDL_Event event;
   // Display track
@@ -223,9 +231,6 @@ void init() {
 
   // Race
   starttimer();
-  pos=getpos(0);
-    float pd=2.5;
-    PPsetup(scrwid,scrhei,pd);
 }
 
   V3d vel=V3d(0,0,0);
@@ -268,8 +273,8 @@ void init() {
       if (PPgetscrposnoadd(m,PPlefteye,&x,&y))
       if (left.inimage(x,y)) {
         plot=true;
-        left.opencircle(x,y,rad,15);
-        left.opencircle(x,y,rad/2,15);
+        left.opencircle(x,y,rad,15*16);
+        left.opencircle(x,y,rad/2,15*16);
       }
       if (PPgetscrposnoadd(m,PPrighteye,&x,&y))
       if (right.inimage(x,y)) {
@@ -289,7 +294,7 @@ void init() {
         v=change*v;
       }
       v=v+V2d(scrwid/2,scrhei/2);
-      left.opencircle(v,5,15);
+      left.opencircle(v,5,15*16);
       right.opencircle(v,5,15*16);
     }
     
@@ -331,16 +336,16 @@ void init() {
 	 		observeEvent(event);
 			// printf("KEY: %i\n",event.key.keysym.sym);
 		 			if (event.type == SDL_QUIT) {
-						printf("Received SDL_QUIT event.\n");
+						// printf("Received SDL_QUIT event.\n");
 						keepLooping=false;
 					}
 		}
 
     if (F10pressed) {
-		printf("User pressed F10: exiting.\n");
+		// printf("User pressed F10: exiting.\n");
 		 keepLooping=false;
 	 }
-	if (zpressed) {
+	if (zpressed || LCTRLpressed) {
 		// printf("%s %f\n",ori.z().toString(),forcevel);
       vel=vel+ori.z()*forcevel;
 	}
@@ -351,12 +356,12 @@ void init() {
     if (DOWNpressed)
       dpitch=dpitch-angvel;
     if (LEFTpressed)
-      if (xpressed)
+      if (xpressed || ALTpressed)
       droll=droll-angvel;
     else
     dyaw=dyaw-angvel;
     if (RIGHTpressed)
-      if (xpressed)
+      if (xpressed || ALTpressed)
       droll=droll+angvel;
     else
     dyaw=dyaw+angvel;

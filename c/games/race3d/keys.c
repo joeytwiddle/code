@@ -40,139 +40,105 @@ bool observeEvent(SDL_Event event) {
 		bool position = ( event.type == SDL_KEYDOWN );
 		if ( event.key.keysym.sym == SDLK_UP ) {
 			UPpressed = position;
-			printf("UPpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_DOWN ) {
 			DOWNpressed = position;
-			printf("DOWNpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_LEFT ) {
 			LEFTpressed = position;
-			printf("LEFTpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_RIGHT ) {
 			RIGHTpressed = position;
-			printf("RIGHTpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_F10 ) {
 			F10pressed = position;
-			printf("F10pressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_SPACE ) {
 			SPACEpressed = position;
-			printf("SPACEpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_q ) {
 			qpressed = position;
-			printf("qpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_w ) {
 			wpressed = position;
-			printf("wpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_e ) {
 			epressed = position;
-			printf("epressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_r ) {
 			rpressed = position;
-			printf("rpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_t ) {
 			tpressed = position;
-			printf("tpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_y ) {
 			ypressed = position;
-			printf("ypressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_u ) {
 			upressed = position;
-			printf("upressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_i ) {
 			ipressed = position;
-			printf("ipressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_o ) {
 			opressed = position;
-			printf("opressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_p ) {
 			ppressed = position;
-			printf("ppressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_a ) {
 			apressed = position;
-			printf("apressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_s ) {
 			spressed = position;
-			printf("spressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_d ) {
 			dpressed = position;
-			printf("dpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_f ) {
 			fpressed = position;
-			printf("fpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_g ) {
 			gpressed = position;
-			printf("gpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_h ) {
 			hpressed = position;
-			printf("hpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_j ) {
 			jpressed = position;
-			printf("jpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_k ) {
 			kpressed = position;
-			printf("kpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_l ) {
 			lpressed = position;
-			printf("lpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_z ) {
 			zpressed = position;
-			printf("zpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_x ) {
 			xpressed = position;
-			printf("xpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_c ) {
 			cpressed = position;
-			printf("cpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_v ) {
 			vpressed = position;
-			printf("vpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_b ) {
 			bpressed = position;
-			printf("bpressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_n ) {
 			npressed = position;
-			printf("npressed = %i\n",position);
 		}
 		if ( event.key.keysym.sym == SDLK_m ) {
 			mpressed = position;
-			printf("mpressed = %i\n",position);
 		}
 		if ( event.key.keysym.mod == KMOD_LCTRL ) {
 			LCTRLpressed = position;
-			printf("LCTRLpressed = %i\n",position);
 		}
 		if ( event.key.keysym.mod == KMOD_ALT ) {
 			ALTpressed = position;
-			printf("ALTpressed = %i\n",position);
 		}
 		return true;
 	}
