@@ -5,72 +5,36 @@
 
 <script type="text/javascript"> <!--
 
-// Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
+var exploder = (navigator.appName == "Microsoft Internet Explorer");
+var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
+var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
+var browserCanWriteWithDocumentDotOpen = nutscrape;
 
-///////////////////////// Compile-time options /////////////////////////
+//** Constants:
 
-// ------------------------ Logging -----------------------
+var listOfOptions = [ "powerBarPosition", "moduleClockEnabled", "moduleJavaScriptTester", "moduleButtonsOnPowerBarForms" ];
 
-// The simplest demonstration of the usefulness of #define's pre-compile stripping.
+//** Options: (will be load/saveable using cookies...)
 
-#define LOGGING
+var powerBarPosition = "top";
+var moduleClockEnabled = true;
+var moduleJavaScriptTester = true;
+var moduleButtonsOnPowerBarForms = true;
 
-// You must add LOG_ELEMENT_HTML at some point to the powerBarFrame
-// You can then log to that element using LOG(report);
+//** Runtime constants:
 
-#ifdef LOGGING
-
-	#define LOG(str) log(str)
-	#define LOG_ELEMENT_ID "logElementId"
-	#define LOG_ELEMENT_HTML '<div id="' + LOG_ELEMENT_ID + '"></div>'
-	#define LOG_MAX_LINES 10
-	var logText = "";
-	function log(str) {
-		logText += toHtml(str + '\n');
-		while (countCharIn(logText,'\n')>LOG_MAX_LINES) {
-			logText = logText.substring(logText.indexOf('\n')+1);
-		}
-		var element = top.powerBarFrame.document.getElementById(LOG_ELEMENT_ID);
-		if (element) {
-			element.innerHTML = logText;
-		}
-	}
-
-#else
-
-	#define LOG(str) 
-	#define LOG_ELEMENT_HTML ""
-
-#endif
-
-/////////////////////////////// Constants ///////////////////////////////
-
-/////////// Options: (will be load/saveable using cookies...) ///////////
-
-var listOfOptions = [ "opt_powerBarPosition", "opt_ClockEnabled", "opt_JavaScriptTester", "opt_ButtonsOnPowerBarForms", "opt_ViewInnerHtmlButton" ];
-
-var opt_powerBarPosition = "top";
-var opt_ClockEnabled = true;
-var opt_JavaScriptTester = true;
-var opt_ButtonsOnPowerBarForms = true;
-var opt_ViewInnerHtmlButton = true;
-
-/////////////////////////// Runtime constants ///////////////////////////
-
-var defaultSubmitButton = ( opt_ButtonsOnPowerBarForms ? '<INPUT type="button" value="Go" onclick="submit()">' : "" );
+var defaultSubmitButton = ( moduleButtonsOnPowerBarForms ? '<INPUT type="button" value="Go" onclick="submit()">' : "" );
 var powerBarFrame; // == powerBarFrame
 var mainFrame;
 var powerBarLocationFormElement;
 var lastKnownLocation = "";
 
-var todoList = "";
+//** Runtime variables:
 
-/////////////////////////// Runtime variables ///////////////////////////
-
-//////////////////////// PowerBar initialisation ////////////////////////
+//** PowerBar initialisation:
 
 function createFrameset() {
-	var distrib = ( opt_powerBarPosition == "top" ? "20%,*" : "*,20%" );
+	var distrib = ( powerBarPosition == "top" ? "20%,*" : "*,20%" );
 	var startFrameSet     = '<frameset rows="'+distrib+'">';
 	var powerBarFrameHtml = '<frame src="about:blank">';
 	// var mainFrameHtml     = '<frame src="http://www.google.com/">';
@@ -78,12 +42,12 @@ function createFrameset() {
 	var endFrameSet       = '</frameset>';
 	var framesetHtml = "";
 	framesetHtml += startFrameSet;
-	framesetHtml += ( opt_powerBarPosition == "top" ?  powerBarFrameHtml : mainFrameHtml );
-	framesetHtml += ( opt_powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
+	framesetHtml += ( powerBarPosition == "top" ?  powerBarFrameHtml : mainFrameHtml );
+	framesetHtml += ( powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
 	framesetHtml += endFrameSet;
 	document.writeln(framesetHtml);
-	powerBarFrame  = window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
-	mainFrame = window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
+	powerBarFrame  = window.frames[ ( powerBarPosition == "top" ? 0 : 1 ) ];
+	mainFrame = window.frames[ ( powerBarPosition == "top" ? 1 : 0 ) ];
 }
 
 function generatePowerBar() {
@@ -91,70 +55,41 @@ function generatePowerBar() {
 	var powerBarHtml = "";
 	powerBarHtml += '<table width="100%"><tr><td align="center">';
 
-	powerBarHtml += '<INPUT type="button" value="wakeUp!" onclick="refreshTimer()">';
-
-	powerBarHtml += '</td><td align="center">';
-
 	//// Location URL textfield:
 	// powerBarHtml += '<FORM name="locationTextBox" action="javascript:top.changeLocation(top.mainFrame,this.location.value)">';
 	powerBarHtml += '<FORM onsubmit="top.changeLocation(top.mainFrame,location.value)" action="javascript:">';
 	powerBarHtml += 'Location:\n';
 	powerBarHtml += '<INPUT name="location" type="text" size="30" value="http://www.google.com/">';
 	// powerBarHtml += defaultSubmitButton;
-	if (opt_ButtonsOnPowerBarForms) {
-		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,location.value)">';
-	}
+	powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,location.value)">';
 	powerBarHtml += '</FORM>';
 
 	// Javascript tester textfield:
-	if (opt_JavaScriptTester) {
-		powerBarHtml += '</td><td align="center">';
+	if (moduleJavaScriptTester) {
+		powerBarHtml += '</td><td>';
 		// powerBarHtml += '<FORM action="javascript:top.processJs(code.value)">'; // worked fine for konq
 		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
 		powerBarHtml += 'JavaScript tester:\n';
 		powerBarHtml += '<INPUT id="codeToExecute" name="code" type="text" size="30" value="type some javascript here">';
 		// powerBarHtml += '<INPUT type="button" value="Go" onclick="submit()">'; // worked fine for konq
-		if (opt_ButtonsOnPowerBarForms) {
-			powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
-		}
+		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
 		// powerBarHtml += defaultSubmitButton;
 		powerBarHtml += '</FORM>';
 	}
 
 	// Options button:
-	powerBarHtml += '</td><td align="center">';
+	powerBarHtml += '</td><td>';
 	powerBarHtml += '<INPUT type="button" value="Options..." onclick="top.editOptions()">';
 
 	// Clock:
-	if (opt_ClockEnabled) {
-		powerBarHtml += '</td><td align="center">';
+	if (moduleClockEnabled) {
+		powerBarHtml += '</td><td>';
 		powerBarHtml += '<div id="clockHook">clock loading...</div>';
 	}
 
-	if (opt_ViewInnerHtmlButton) {
-		// TODO
-		// powerBarHtml += '</td><td align="center">'
-		// powerBarHtml += '<INPUT type="button" value="Check" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\'))">';
-	}
-
-	#ifdef LOGGING
-		powerBarHtml += '</td><td align="center">'
-		powerBarHtml += '<INPUT type="button" value="Show log" onclick="alert(document.getElementById(\''+LOG_ELEMENT_ID+'\'))">';
-	#endif
-
 	powerBarHtml += '</td></tr></table>';
-
-	#ifdef LOGGING
-		powerBarHtml += "<br>" + LOG_ELEMENT_HTML;
-	#endif
-
 	writeToFrame(powerBarFrame,powerBarHtml);
 	powerBarLocationFormElement = powerBarFrame.document.forms[0];
-
-	// alert("Getting: "+document.getElementById(LOG_ELEMENT_ID));
-
-	// LOG("generatePowerBar() finished.");
-
 }
 
 var timerId;
@@ -173,10 +108,9 @@ function init() {
 
 init();
 
-///////////////////////////// PowerBar calls /////////////////////////////
+//** PowerBar calls:
 
 function updatePowerBar() {
-	LOG("updatePowerBar() called.");
 	//// Watch for change of address in mainFrame from user following link, and update location textbox.
 	//// Disabled because too sensitive (on init, and even if user is typing!)
 	var urlOfMainFrame = mainFrame.location;
@@ -186,35 +120,11 @@ function updatePowerBar() {
 		// urlInTextBox.value = urlOfMainFrame;
 		// lastKnownLocation = urlOfMainFrame;
 	// }
-	if (opt_ClockEnabled) {
+	if (moduleClockEnabled) {
 		var clockElem = powerBarFrame.document.getElementById('clockHook');
 		clockElem.innerHTML = "" + new Date();
 	}
-	processTodoList();
 	refreshTimer();
-}
-
-function processTodoList() {
-	while (todoList != "") {
-		// powerBarFrame.document.body.innerHTML += "Trying to pop from list:\n" + todoList+"\n\n";
-		// alert("Trying to pop from list:\n" + todoList);
-		var i = todoList.indexOf("\n");
-		var line;
-		if (i>=0) {
-			line = todoList.substring(0,i);
-			todoList = todoList.substring(i+1);
-		} else {
-			line = todoList;
-			todoList = "";
-		}
-		var result;
-		try {
-			result = eval(line);
-		} catch (e) {
-			result = e;
-		}
-		alert("processTodoList(): Tried:\n<EVAL>" + line + "</EVAL>\nGot:\n<RESULT>"+result+"</RESULT>");
-	}
 }
 
 function changeLocation(frame,url) {
@@ -225,6 +135,7 @@ function changeLocation(frame,url) {
 }
 
 function processJs(codeToExecute) {
+	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
 	var result;
 	try {
 		result = eval(codeToExecute);
@@ -232,26 +143,22 @@ function processJs(codeToExecute) {
 		result = e;
 	}
 	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
-	var htmlReport = toHtml(report);
-	writeToFrame(mainFrame,htmlReport);
-	// todoList += "mainFrame.document.body.innerHTML = \""+report+"\";";
-	todoList += "mainFrame.document.body.innerHTML = \"" + escapeString(htmlReport) + "\";";
+	writeToFrame(mainFrame,toHtml(report));
 	// alert(report);
 	// refreshTimer();
 }
 
 function writeToFrame(frame,html) {
-	try {
+	if (browserCanWriteWithDocumentDotOpen) {
+		frame.document.open();
+		frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
+		frame.document.write(html);
+		frame.document.write("</body></html>"); // these tags seemed sensible to me
+		frame.document.close();
+	} else {
 		frame.location = "about:blank";
-	} catch (e) {
-		alert("Setting "+frame+".location to blank threw: "+e);
+		frame.document.body.innerHTML = html;
 	}
-	frame.document.body.innerHTML = html;
-	// frame.document.open();
-	// frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
-	// frame.document.write(html);
-	// frame.document.write("</body></html>"); // these tags seemed sensible to me
-	// frame.document.close();
 }
 
 function componentTypeForJSType(jsType) {
@@ -279,21 +186,7 @@ function editOptions() {
 	writeToFrame(mainFrame,html);
 }
 
-/////////////////////////// Library functions ///////////////////////////
-
-function escapeString(text) {
-	var map = new Array(); // TODO: more!
-	map['\n'] = "\\n";
-	map['\t'] = "\\t";
-	map['\"'] = "\\\"";
-	map['\\'] = "\\\\";
-	var str = "";
-	for (var i=0;i<text.length;i++) {
-		var c = text.charAt(i);
-		str += ( map[c] ? map[c] : c );
-	}
-	return str;
-}
+//** Library functions:
 
 function toHtml(text) {
 	var map = new Array(); // TODO: more!
@@ -310,17 +203,8 @@ function toHtml(text) {
 	return html;
 }
 
-function countCharIn(str,srch) {
-	var cnt = 0;
-	for (var i=0;i<str.len;i++) {
-		if (str.charAt(i) == srch)
-			cnt++;
-	}
-	return cnt;
-}
-
 // --> </script>
 
 </HEAD>
-<BODY>If you don't have Javascript, you're not getting in.</BODY>
+<BODY>If u don't have Javascript, you're not coming in.</BODY>
 </HTML>
