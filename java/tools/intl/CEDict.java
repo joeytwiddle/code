@@ -16,27 +16,22 @@ import nuju.*;
 import jlib.db.*;
 import jlib.multiui.*;
 
-public abstract class CEDict {
+class CEDictParser {
 
-	public abstract List lookup(String chars);
+	CEDict dict=new DirectCEDict("b");
+	// CEDict dict=new DoubleCEDict();
+	BufferedReader br;
+	StringBuffer sb=new StringBuffer();
 
-	public static void main(String[] args) {
+	CEDictParser(Reader r) {
+		br=new BufferedReader(r);
+	}
 
-		ArgParser a=new ArgParser(args);
-		File f=a.getFile("input page");
-		a.done();
+	void parse() {
 
 		try {
 
-			// CEDict dict=new DirectCEDict("b");
-			CEDict dict=new DoubleCEDict();
-
-			FileReader fr=new FileReader(f);
-			System.out.println("Encoding: "+fr.getEncoding());
-			BufferedReader br=new BufferedReader(fr);
-
 			boolean inBlock=false;
-			StringBuffer sb=new StringBuffer();
 
 			int i;
 
@@ -54,18 +49,24 @@ public abstract class CEDict {
 				} else {
 					if (inBlock) {
 						inBlock=false;
-						// processBlock(sb);
+						// Process this block:
 						// System.out.println(sb.toString());
-						String s=sb.toString();
-						// Pairs
-						for (int j=0;j<sb.length()-3;j+=2) {
-							List res=dict.lookup(s.substring(j,j+4));
+						while (sb.length()>0) {
+							// Try to translate 4 characters
+							if ( ! (
+										tryTrans(8) ||
+										tryTrans(6) ||
+										tryTrans(4) ||
+										tryTrans(2)
+									 ) ) {
+								output("<FONT color=\"red\">");
+								output(sb.charAt(0));
+								output("</FONT>");
+								sb.deleteCharAt(0);
+							}
 						}
-						for (int j=0;j<sb.length()-1;j+=2) {
-							List res=dict.lookup(s.substring(j,j+2));
-						}
-						sb.delete(0,sb.length());
 					}
+					output(c);
 				}
 
 				// System.out.println();
@@ -75,11 +76,79 @@ public abstract class CEDict {
 		} catch (Exception e) {
 			System.err.println(""+e);
 		}
+
 	}
 
-	// static void processBlock(StringBuffer sb) {
-	// }
+	void output(char c) {
+		System.out.print(c);
+	}
 
+	void output(String s) {
+		System.out.print(s);
+	}
+
+	boolean tryTrans(int howMany) {
+		if (sb.length()<howMany)
+			return false;
+		else {
+			List res=dict.lookup(sb.substring(0,howMany));
+			if (res.size()==0)
+				return false;
+			else {
+				// output("<FONT color=\"green\">");
+				output("<SPAN title=\"");
+				for (int i=0;i<res.size();i++) {
+					String s=(String)res.get(i);
+					// To appear under Galeon I need to strip Chinese chars
+					s=s.substring(s.indexOf(" ")+1);
+					output(s);
+					if (i<res.size()-1)
+						output(" -- ");
+				}
+				output("\">");
+				output(sb.substring(0,howMany));
+				output("</SPAN>");
+				// output("</FONT>");
+				sb.delete(0,howMany);
+				return true;
+			}
+		}
+	}
+
+}
+
+
+
+public abstract class CEDict {
+
+	public abstract List lookup(String chars);
+
+	public static void main(String[] args) {
+
+		try {
+
+			InputStreamReader r=null;
+
+			if (args.length==0) {
+
+				r=new InputStreamReader(System.in);
+
+			} else {
+				
+				File f=new File(args[0]);
+				r=new FileReader(f);
+
+			}
+
+			// System.out.println("Encoding: "+r.getEncoding());
+			CEDictParser p=new CEDictParser(r);
+			p.parse();
+
+		} catch (Exception e) {
+			System.err.println(""+e);
+		}
+
+	}
 
 }
 
@@ -121,7 +190,7 @@ class DirectCEDict extends CEDict {
 
 		try {
 
-			System.out.println("Initialising cedict...");
+			// System.out.println("Initialising cedict...");
 			dict=Runtime.getRuntime().exec("cedictlookup");
 			dictin=new BufferedReader(new InputStreamReader(dict.getInputStream()));
 			dictout=new PrintStream(dict.getOutputStream());
@@ -130,9 +199,9 @@ class DirectCEDict extends CEDict {
 			dictout.flush();
 			String l;
 			while ((l=readLine()).length()>0) {
-				System.out.println("Got "+l);
+				// System.out.println("Got "+l);
 			}
-			System.out.println("Ready to go.");
+			// System.out.println("Ready to go.");
 
 		} catch (Exception e) {
 			System.err.println(""+e);
@@ -157,7 +226,7 @@ class DirectCEDict extends CEDict {
 			String l;
 			while ((l=readLine()).length()>0) {
 				if (!l.equals("No match found.")) {
-					System.out.println("Got "+l);
+					// System.err.println("Got "+l);
 					res.add(l);
 				}
 			}
