@@ -11,5 +11,10 @@ s/%0D%0A/\
 }
 
 getcgi() {
-	echo "$QUERY_STRING" | sed "s/.*\(&\|'\)$1=\([^&']*\)\(&\|'\).*/\2/" | fromcgi
+	TESTRES=`echo "$QUERY_STRING" | sed "s/.*\(^\|&\|'\)$1=\([^&']*\)\($\|&\|'\).*/\2/"`
+	if test "$TESTRES" = "$QUERY_STRING"; then
+		echo "cglib.getcgi(): Error finding var >$1<" > /dev/stderr
+	else
+		echo "$TESTRES" | fromcgi
+	fi
 }

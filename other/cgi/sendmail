@@ -9,9 +9,10 @@ export JPATH=/home/joey/j
 
 # set | tohtml
 
-WHOTO=`echo "$QUERY_STRING" | sed "s/.*\(&\|'\)\([^_]*\)_submit=Send+email.*/\2/"`
+WHOTO=`echo "$QUERY_STRING" | sed "s/.*\(&\|'\)\([^_]*\)_submit=Send+email.*/\2/" | fromcgi`
 
-EMAILTO=`getcgi "$WHOTO"_to`
+# This line unfinished:
+EMAILTO=`getcgi "$WHOTO"_to | sed "s/^\([A:Z,a:z,.]*@[A:Z,a:z,.]*\)$/GOT:\1/"`
 EMAILSUBJECT=`getcgi "$WHOTO"_subject`
 EMAILBODY=`getcgi "$WHOTO"_body`
 
@@ -20,3 +21,12 @@ echo "<br>"
 echo "\"$EMAILSUBJECT\""
 echo "<br>"
 echo "\"$EMAILBODY\""
+
+exit 0
+
+(
+	echo "From: "`getcgi fromname`" <"`getcgi from`">"
+	echo "Address: "`getcgi address`
+	echo
+	echo "$EMAILBODY"
+) | mail -s "$EMAILSUBJECT" "$EMAILTO"

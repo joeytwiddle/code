@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "Content-type: text/html"
+echo
+
+. cgilib
+export JPATH=/home/joey/j
+. /home/joey/j/startj-simple
+
+OUTPUT=`getcgi "OUTPUT"`
+
+if test "$OUTPUT"; then
+	echo "$OUTPUT" >> /tmp/revssh-client-output.txt
+fi
+
+cat /tmp/revssh-client-input.txt
+rm /tmp/revssh-client-input.txt
