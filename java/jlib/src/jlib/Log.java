@@ -8,7 +8,7 @@ import jlib.strings.*;
 
 // import changetheworld.CTW;
 
-/** Keeps a static log (presumably within the runtime environment) of all reports and errors.
+/** Keeps a static log (from objects within the same JVM, grouped by thread) of all reports and errors.
    Stored in plain-text and HTML format.  Intended for debugging and access logging.
    If a new error has occurred, logiferror() will get the log and reset the error flag.
    For security reasons, confidential data should not be written to the log, since it is currently reported to the user if an error occurs
