@@ -46,6 +46,11 @@ public  Map skipExts=new HashMap();
     // skipbackups=true;
     // skipArchives();
     // skipImages();
+	 skipVimSwapFiles();
+  }
+
+  void skipVimSwapFiles() {
+    skipExts.put("swp","vim swap file");
   }
 
   void skipArchives() {
