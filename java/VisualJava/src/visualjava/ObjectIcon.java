@@ -58,33 +58,7 @@ public class ObjectIcon extends JLabel {
 		// menuItem.addActionListener(listener);
 
         JMenu statics = new JMenu("Statics");
-        try {
-            Class c = obj.getClass();
-            for (int i=0;i<c.getConstructors().length;i++) {
-                Constructor con = c.getConstructors()[i];
-                if (Modifier.isPublic(con.getModifiers())) {
-                    // menuItem = new JMenuItem("new " + con.getName() + "(" + listParams(con.getParameterTypes()) + ")");
-                    addConstructorToMenu(con, statics);
-                }
-            }
-            // statics.add(new JMenuItem("--------"));
-            statics.add(new JSeparator());
-            for (int i=0;i<c.getDeclaredMethods().length;i++) {
-                Method m = c.getDeclaredMethods()[i];
-                if (Modifier.isStatic(m.getModifiers())) {
-                    addMethodToMenu(m, statics);
-                }
-            }
-            statics.add(new JSeparator());
-            for (int i=0;i<c.getDeclaredFields().length;i++) {
-                Field f = c.getDeclaredFields()[i];
-                if (Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers())) {
-                    addFieldToMenu(f, statics);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace(System.err);
-        }
+        addStaticsToMenu(statics,obj.getClass());
         popup.add(statics);
 
         JMenu properties = new JMenu("Properties");
@@ -93,7 +67,7 @@ public class ObjectIcon extends JLabel {
             for (int i=0;i<c.getDeclaredFields().length;i++) {
                 Field f = c.getDeclaredFields()[i];
                 if (!Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers())) {
-                    addFieldToMenu(f,properties);
+                    addFieldToMenu(f,properties,obj);
                 }
             }
         } catch (Exception e) {
@@ -107,7 +81,7 @@ public class ObjectIcon extends JLabel {
             for (int i=0;i<c.getDeclaredMethods().length;i++) {
                 Method m = c.getDeclaredMethods()[i];
                 if (!Modifier.isStatic(m.getModifiers())) {
-                    addMethodToMenu(m,methods);
+                    addMethodToMenu(m,methods,obj);
                 }
             }
         } catch (Exception e) {
@@ -122,25 +96,54 @@ public class ObjectIcon extends JLabel {
 
 	}
 
-    private void addConstructorToMenu(Constructor con, JMenu menu) {
+    public static void addStaticsToMenu(JMenu statics, Class c) {
+        try {
+            for (int i=0;i<c.getConstructors().length;i++) {
+                Constructor con = c.getConstructors()[i];
+                if (Modifier.isPublic(con.getModifiers())) {
+                    // menuItem = new JMenuItem("new " + con.getName() + "(" + listParams(con.getParameterTypes()) + ")");
+                    addConstructorToMenu(con, statics);
+                }
+            }
+            // statics.add(new JMenuItem("--------"));
+            statics.add(new JSeparator());
+            for (int i=0;i<c.getDeclaredMethods().length;i++) {
+                Method m = c.getDeclaredMethods()[i];
+                if (Modifier.isStatic(m.getModifiers())) {
+                    addMethodToMenu(m, statics, null);
+                }
+            }
+            statics.add(new JSeparator());
+            for (int i=0;i<c.getDeclaredFields().length;i++) {
+                Field f = c.getDeclaredFields()[i];
+                if (Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers())) {
+                    addFieldToMenu(f, statics, null);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+    }
+
+    public static void addConstructorToMenu(Constructor con, JMenu menu) {
         Class c = con.getDeclaringClass();
         JMenuItem menuItem = new JMenuItem("new " + VisualJava.getSimpleClassName(c) + "(" + VisualJava.listParams(con.getParameterTypes()) + ")");
         menu.add(menuItem);
     }
 
-    private void addMethodToMenu(final Method m, JMenu menu) {
+    public static void addMethodToMenu(final Method m, JMenu menu, final Object obj) {
         JMenuItem menuItem = new JMenuItem(VisualJava.getSimpleClassName(m.getReturnType()) + " " + m.getName() + "(" + VisualJava.listParams(m.getParameterTypes()) + ")");
         menuItem.addActionListener(
                 new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
-                        desktop.displayMethod(m,obj);
+                        VisualJava.desktop.displayMethod(m,obj);
                     }
                 }
         );
         menu.add(menuItem);
     }
 
-    private void addFieldToMenu(Field f, JMenu menu) throws IllegalAccessException {
+    public static void addFieldToMenu(Field f, JMenu menu, final Object obj) throws IllegalAccessException {
         JMenuItem menuItem = new JMenuItem(VisualJava.getSimpleClassName(f.getType()) + " " + f.getName() + " = \"" + f.get(obj) + "\"");
         menu.add(menuItem);
     }

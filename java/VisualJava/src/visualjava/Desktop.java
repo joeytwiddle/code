@@ -15,7 +15,11 @@ public class Desktop extends JDesktopPane {
 //        setLayout(new FlowLayout());
         // ImageIcon icon = new ImageIcon("/usr/share/pixmaps/gnome-gmush.png","Mushroom");
         // JLabel anIcon = new JLabel(icon);
-        ObjectIcon anIcon = new ObjectIcon(this, "Hello");
+        showObject("Hello");
+    }
+
+    public void showObject(Object object) {
+        ObjectIcon anIcon = new ObjectIcon(this,object);
         anIcon.setLocation(getWidth()/2,getHeight()/2);
         anIcon.setSize(anIcon.getPreferredSize());
         add(anIcon,JLayeredPane.DEFAULT_LAYER);
