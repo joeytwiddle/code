@@ -65,7 +65,8 @@ int main(int argc,String *argv) {
 	float noise=a.floatafter("-noise","noise on line points",0.0*640/imgwidth);
 	int numinserts=a.intafter("-ins","number of noisy inserts",0);
 	int numrems=a.intafter("-rems","number of random removals",0);
-	a.comment("Test fitting of groundtruth data:");
+	a.comment("Test fitting of groundtruth data: (matlab now broken)");
+	bool showExpected=a.argexists("-showexp","show expected curve u,v,w");
 	if (dognuplot=a.argexists("-gnuplot","vvp estimation with gnuplot")) {
 		dofitting=true;
 		fittingcommand="gnuplot";
@@ -359,8 +360,14 @@ int main(int argc,String *argv) {
 	// float guessU = (float)imgheight/2.0-unrotabout(lines.get(0).a).y;
 
 	printf("U = %f\n",groundU);
+	if (showExpected)
+		linespacings_extraArgs=Sformat("%s %f",linespacings_extraArgs,groundU);
 	printf("V = %f\n",groundV);
 	printf("W = %f\n",groundW);
+	if (showExpected) {
+		linespacings_extraArgs=Sformat("%s %f",linespacings_extraArgs,groundV);
+		linespacings_extraArgs=Sformat("%s %f",linespacings_extraArgs,groundW);
+	}
 	// printf("	newguessU = %f\n",guessU);
 
 	if (genimage && overlay) {

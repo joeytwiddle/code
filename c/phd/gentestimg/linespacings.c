@@ -1,5 +1,7 @@
 bool linespacings_do_ransac=true;
 
+String linespacings_extraArgs="";
+
 float testASubSet(List<V2d> ps,bool usingspacings);
 
 bool equal(V2d u,V2d v) {
@@ -88,7 +90,7 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 	// system("grep '^w' gplans.txt | grep '=' | tail -1 | after '= ' | before ' ' > w.txt");
 	// system("grep '^WSSR' gplans.txt | tail -1 | between ':' | before 'delta' | sed 's/ //g' > wssr.txt");
 	String fitmethod = ( ! usingspacings ? Snew("simple") : Snew("spacings") );
-	String com = Sconc("../gentestimg/dogplfitting.sh ",fitmethod);
+	String com = Sconc("../gentestimg/dogplfitting.sh ",fitmethod," ",linespacings_extraArgs);
 	system(com);
 	// system("cat wssr.txt");
 	float V=readfloatfromfile("v.txt");

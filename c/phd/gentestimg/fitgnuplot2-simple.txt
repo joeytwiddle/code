@@ -18,9 +18,10 @@ set xlabel "observed line number n" "Times-Roman,26"
 set ylabel "observed line position y(n)" "Times-Roman,26"
 
 # Expected, with U,V,W known:
-U=0.001667
-V = -2396.83 # -2237.489990
-W = -0.0360439 # -0.033641
+# They must be provided for this to work.
+# U=0.001667
+# V = -2396.83 # -2237.489990
+# W = -0.0360439 # -0.033641
 e(x)=U*(1+V*x)/(1+W*x)
 
 # The actual fitting:

@@ -18,9 +18,10 @@ set xlabel "line position y(n)" "Times-Roman,26"
 set ylabel "line spacing Y(n)" "Times-Roman,26"
 
 # Expected, with U,V,W known:
-U=0.001667
-V=-2401.85
-W=-0.0359646
+# They must be provided for this to work.
+# U=0.001667
+# V=-2401.85
+# W=-0.0359646
 e(x)=U*(1+V*(((U-x)/(W*x-U*V)-0.5)+1))/(1+W*(((U-x)/(W*x-U*V)-0.5)+1))-U*(1+V*((U-x)/(W*x-U*V)-0.5))/(1+W*((U-x)/(W*x-U*V)-0.5))
 
 # The actual fitting:
