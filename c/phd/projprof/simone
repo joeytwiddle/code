@@ -17,8 +17,9 @@ fi
 
 # PARAMS="-focal 0.5 -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.4"
 # Strong focal perspective:
+# -qnd
 PARAMS="
--qnd -centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001
+-centralise -focal $FOCAL -noise 0.0 -lines 11 -yoff 0.001
 -roll $roll -yaw $yaw -pitch $pitch
 -overlay -image $IFILE $OFILE -size 0.4
 -spacings -gnuplot
@@ -26,6 +27,7 @@ PARAMS="
 # Weak focal perspective:
 # PARAMS="-qnd -centralise -noise 0.0 -lines 32 -yoff 0.001 -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-imgnoise 0.0 -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
+>>>>>>> 1.12.2.1
 # PARAMS="-imgnoise 0.3 -lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"
 # PARAMS="-lines 32 -yoff 0.001 -centralise -roll $roll -yaw $yaw -pitch $pitch -overlay -image $IFILE $OFILE -size 0.7"

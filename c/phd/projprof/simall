@@ -52,8 +52,8 @@ for DOCUMENT in $DOCUMENTS; do
 					# # PPMEASURE=square
 				# fi
 
+					# -hvpcheat
 				PPPARAMS="
-					-hvpcheat
 					-res 180 -adapt 0.03 -maxpixels 2000
 					-$PPMEASURE
 					-gamma 0.0 -recwid 200 -light -oth 12
