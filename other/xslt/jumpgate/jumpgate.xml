@@ -1,23 +1,9 @@
-<?xml version="1.0"?> 
-<?xml-stylesheet type="text/xsl" href="jumpgate.xsl"?> 
-
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="jumpgate.xsl"?>
 <JumpgateData>
-
-	<JumpgateEntry name="Wikipedia" contributor="joey">
-		<Category>General</Category>
-		<Description>Online community-written Encyclopedia - Look up knowledge or add your own.</Description>
-		<HowToAccess>
-			<Form action="http://wikipedia.org/w/wiki.phtml">
-				<HiddenParameters>
-				</HiddenParameters>
-				<ExposedParameters>
-					<INPUT type="text" name="search" size="25" value="Wikipedia" maxlength="256"/>
-				</ExposedParameters>
-			</Form>
-		</HowToAccess>
-	</JumpgateEntry>
-
 	<JumpgateEntry name="Google Search" contributor="joey">
+
+		<Category>General</Category>
 		<Description>Popular search engine</Description>
 		<HowToAccess>
 			<Form action="http://www.google.com/search">
@@ -25,26 +11,96 @@
 					<input type="hidden" name="hl" value="en" />
 					<input type="hidden" name="ie" value="ISO-8859-1" />
 					<!--
-					<input id="all" type="radio" name="meta" value="" checked="checked" />
-					<input id="cty" type="radio" name="meta" value="cr=countryUK|countryGB" />
-					-->
+																				<input id="all" type="radio" name="meta" value="" checked="checked" />
+																				<input id="cty" type="radio" name="meta" value="cr=countryUK|countryGB" />
+																				-->
 					<input id="all" type="hidden" name="meta" value="" />
 				</HiddenParameters>
 				<ExposedParameters>
-					<input type="text" name="q" value="" size="20"/>
+					<input type="text" name="q" value="" size="20" />
 					<input type="submit" value="Google Search" name="btnG" />
-					<input type="submit" value="I'm Feeling Lucky" name="btnI" />
+					<input type="submit" value="I'm Feeling Lucky"
+					name="btnI" />
+				</ExposedParameters>
+			</Form>
+		</HowToAccess>
+	</JumpgateEntry>
+	<JumpgateEntry name="Wikipedia" contributor="joey">
+		<Category>General</Category>
+		<Description>Online community-written Encyclopedia - Look up
+		knowledge or add your own.</Description>
+		<HowToAccess>
+			<Form action="http://wikipedia.org/w/wiki.phtml">
+				<HiddenParameters></HiddenParameters>
+				<ExposedParameters>
+					<INPUT type="text" name="search" size="25"
+					value="Wikipedia" maxlength="256" />
 				</ExposedParameters>
 			</Form>
 		</HowToAccess>
 	</JumpgateEntry>
 
-	<CopyFormFromPage name="Google Search" page="http://www.google.com/"/>
+<JumpgateEntry name="Packages.debian.org">
+<Description>descriptionTODO</Description>
+<Category>categoryTODO</Category>
+<HowToAccess>
+<Form action="http://packages.debian.org/cgi-bin/search_packages.pl">
+<HiddenParameters>
+<input xmlns="http://www.w3.org/1999/xhtml" type="radio" name="searchon" value="names" id="onlynames" checked="true">
+</input>
+<input xmlns="http://www.w3.org/1999/xhtml" type="radio" name="searchon" value="all" id="descs">
+</input>
+<input xmlns="http://www.w3.org/1999/xhtml" type="radio" name="searchon" value="sourcenames" id="src">
+</input>
+<input xmlns="http://www.w3.org/1999/xhtml" type="checkbox" name="subword" value="1" checked="true">
+</input>
+<input xmlns="http://www.w3.org/1999/xhtml" type="checkbox" name="case" value="sensitive">
+</input>
+<select xmlns="http://www.w3.org/1999/xhtml" name="version">
+<option value="unstable">unstable</option>
+<option value="testing">testing</option>
+<option value="stable" selected='true'>stable</option>
+<option value="all">any</option>
+</select>
+<select xmlns="http://www.w3.org/1999/xhtml" name="release">
+<option value="main">main</option>
+<option value="contrib">contrib</option>
+<option value="non-free">non-free</option>
+<option value="non-us">non-US</option>
+<option value="all" selected='true'>any</option>
+</select>
+</HiddenParameters>
+<ExposedParameters>
+<input xmlns="http://www.w3.org/1999/xhtml" type="text" size="30" name="keywords" id="kw">
+</input>
+</ExposedParameters>
+</Form>
+</HowToAccess>
+</JumpgateEntry>
 
+	<JumpgateEntry name="Dictionary.com" action="/search">
+
+		<Description>descriptionTODO</Description>
+		<Category>categoryTODO</Category>
+		<HowToAccess>
+			<Form action="http://www.dictionary.com/search">
+				<HiddenParameters>
+					<input xmlns="http://www.w3.org/1999/xhtml" type="radio"
+					name="db" value="*" id="d"></input>
+					<input xmlns="http://www.w3.org/1999/xhtml" type="radio"
+					name="db" value="web" id="w"></input>
+				</HiddenParameters>
+				<ExposedParameters>
+					<input xmlns="http://www.w3.org/1999/xhtml" type="text" name="q" value="" size="25" maxlength="256" style="font-size:12pt;"></input>
+				</ExposedParameters>
+			</Form>
+		</HowToAccess>
+	</JumpgateEntry>
+	<CopyFormFromPage name="Google Search"
+	page="http://www.google.com/" />
 	<!--
-	<CopyFormFromPage name="Joey's Jumpgate" page="http://hwi.ath.cx/jumpgate.html"/>
-	-->
-
-	<CopyFormFromPage name="FlyBe.com" page="http://www3.flybe.com/obs/booking-controller/"/>
-
+				<CopyFormFromPage name="Joey's Jumpgate" page="http://hwi.ath.cx/jumpgate.html"/>
+				-->
+	<CopyFormFromPage name="FlyBe.com"
+	page="http://www3.flybe.com/obs/booking-controller/" />
 </JumpgateData>

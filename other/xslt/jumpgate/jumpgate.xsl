@@ -1,19 +1,18 @@
-<?xml version="1.0"?>
+<?xml version="1.0"?> 
+<?xml-stylesheet type="text/xsl" href="jumpgate.xsl"?> 
 <xsl:stylesheet version="1.0"
 	extension-element-prefixes="yaslt"
 	xmlns:yaslt="http://www.mod-xslt2.com/ns/1.0"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-<xsl:import href="../xhtmlCommon.xsl" />
+<!--
+	TODO:
+	It should be possible to create a bookmarklet for each jumpentry,
+	so that the user can be browsing the web, then highlight some text, then run the bookmarklet to search on it.  =)
+-->
 
-<xsl:variable name="mode">
-	<xsl:choose>
-		<xsl:when test="element-available('yaslt:value-of')">
-			<yaslt:value-of select="$GET[mode]" />
-		</xsl:when>
-		<xsl:otherwise> addEntry </xsl:otherwise>
-	</xsl:choose>
-</xsl:variable>
+<xsl:import href="../xhtmlCommon.xsl" />
+<xsl:import href="formscraper.xsl" />
 
 <xsl:output method="html"/>
 
@@ -24,11 +23,14 @@
 	</xsl:template>
 
 	<xsl:template match="JumpgateData">
+
+		<A href="formscraper.xsl?mode=addEntry">Add a jumpgate entry</A>
+
 		<select name="categoryMenu">
 			<xsl:for-each select="//Category/.">
 				<option>
 					<xsl:attribute name="name"><xsl:value-of select="."/></xsl:attribute>
-					<xsl:attribute name="value"><xsl:value-of select="."/></xsl:attribute>
+					<xsl:value-of select="."/>
 				</option>
 			</xsl:for-each>
 		</select>
