@@ -9,8 +9,8 @@ DOC="simgs/test.bmp"
 # +ve pitch requires smaller size!
 # -centralise
 SIMCOM="./simgen
--yoff 0.01 -depth 0.5
--lines 11 -roll 180 -yaw 0 -pitch 30 -size 1.2
+-yoff -0.01 -depth 0.5
+-lines 11 -roll 0 -yaw 0 -pitch -30 -size 0.5
 -image -qnd -overlay
 $DOC tmp.bmp
 -nornd
@@ -41,7 +41,7 @@ getparam () {
 # for X in "" "-spacings"; do
 # for Y in "" "-noransac"; do
 # for F in `seq -w 0.5 0.3 4.0`; do
-for X in ""; do
+for X in "-spacings"; do
 for Y in "-noransac"; do
 for F in 0.5; do
 
@@ -50,7 +50,9 @@ for F in 0.5; do
 	echo `curseyellow`$SIMCOM`cursegrey`
 	$SIMCOM $X $Y -focal $F | tee simgen.out
 
-	cp gplfit.ps gplsim$X$Y$F.eps
+	cp gplfit.ps gplfit$X$Y$F-sim.eps
+	cp gplsolve.txt gplsolve-sim.txt
+	cp gpldata.txt gpldata-sim.dat
 
 	# U=`getparam U`
 	# V=`getparam V`
@@ -65,6 +67,10 @@ for F in 0.5; do
 	# Test pp
 	invert -i tmp.bmp -o tmp-inv.bmp
 	../projprof/pp $X $Y $PPPARAMS | tee pp.out
+
+	cp gplfit.ps gplfit$X$Y$F-pp.eps
+	cp gplsolve.txt gplsolve-pp.txt
+	cp gpldata.txt gpldata-pp.dat
 
 	# gv gplfit$X$Y.eps
 done

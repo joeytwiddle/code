@@ -21,7 +21,7 @@ SRCDIR="$JPATH/code/c/phd/gentestimg"
 		# Actually the one provided in gpldo.txt is better!
 		# to test
 		# aha proved untrue for spacings so kept.
-		echo "u=$U"
+		# echo "u=$U"
 		echo "U=$U"
 	fi
 	if test ! "$W" = ""; then

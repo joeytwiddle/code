@@ -102,8 +102,8 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 
 	float defaultV = ( usingspacings ? curveSgn : -slantSgn ) * 20.0 ;
 	float defaultW = ( usingspacings ? -slantSgn : slantSgn*curveSgn ) * 0.00001;
-	if (guessU>0)
-		defaultV = -defaultV;
+	// if (guessU>0)
+		// defaultV = -defaultV;
 
 	printf("%c %c\n",(curveSgn<0?'-':'+'),(slantSgn<0?'-':'+'));
 
@@ -222,21 +222,34 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 		// }
 	// }
 
-	if (needsSorting) {
-		if (usingspacings)
-			guessU=(float)imgheight/2.0-endpoints.get(endpoints.len-1).y;
-		else
-			guessU=-((float)imgheight/2.0-endpoints.get(0).y);
-	} else {
-		guessU=(float)imgheight/2.0-endpoints.get(0).y;
-	}
+	// if (ps.get(ps.len-1).x<0) {
+		// List<V2d> nps;
+		// for (int i=ps.len-1;i>=0;i--) {
+			// nps.add(V2d((float)ps.len+ps.get(i).x,ps.get(i).y));
+		// }
+		// ps=nps;
+	// }
+
+	// if (usingspacings) {
+		if ( ps.get(0).x < ps.get(ps.len-1).x ) {
+			guessU=ps.get(0).y;
+			printf("OP1: guessU = %f\n",guessU);
+		} else {
+			guessU=ps.get(ps.len-1).y;
+			printf("OP2: guessU = %f\n",guessU);
+		}
+	// } else {
+		// guessU=-((float)imgheight/2.0-ps.get(0).y);
+	// }
 	printf("Using guessU = %f\n",guessU);
-	printf("  from %s\n",endpoints.get(0).toString());
+	printf("  from %s\n",ps.get(0).toString());
 
 	float finalErr=doRansac(ps,usingspacings);
 	printf("final error = %e\n",finalErr);
 
 	float vvpdist=guessU*lastV/lastW;
+
+	vvpdist = -vvpdist;
 
 	V2d vvp=baseline.a-(baseline.b-baseline.a).norm()*vvpdist;
 	if (needsSorting)
@@ -250,7 +263,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	// printf("VVP = %s\n",vvp.toString());
 
 	fclose(log);
-	
+
 	return vvp;
 
 }
