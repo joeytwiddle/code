@@ -16,9 +16,9 @@ echo "" > "$FOCALRES"
 roll="90";
 # for roll in `listnums -6 6`; do
   pitch=15;
-  for pitch in `listnums 5 80 by 5`; do
+  for pitch in `listnums 0 90 by 2`; do
     yaw=15;
-    for yaw in `listnums 5 80 by 5`; do
+    for yaw in `listnums 0 90 by 2`; do
 			simone "$IFILE" $roll $yaw $pitch
       FOCALEST=`grep "Got focal length" ppres.txt | sed "s/Got focal length //"`
       echo "$yaw $pitch $FOCALEST" >> "$FOCALRES"
