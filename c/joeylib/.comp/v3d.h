@@ -247,6 +247,9 @@ public:
   V2d perpproj(); // Method
 
 
+	static float angBetween(V3d a,V3d b); // Method
+
+
   float distAbove(Plane p); // Method
  // -ve if below in terms of plane's normal
 

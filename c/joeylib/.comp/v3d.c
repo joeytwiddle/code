@@ -403,6 +403,12 @@
     return V2d(x/z,y/z);
   }
 
+	 float V3d::angBetween(V3d a,V3d b) {
+		// a . b = |a| |b| cos(t)
+		// a x b = |a| |b| sin(t) p
+		return acos(V3d::normdot(a,b));
+	}
+
   /* Skipping declared method float V3d::distAbove(Plane p) */
  // -ve if below in terms of plane's normal
 

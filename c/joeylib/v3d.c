@@ -383,6 +383,12 @@ public:
     return V2d(x/z,y/z);
   }
 
+	static float angBetween(V3d a,V3d b) {
+		// a . b = |a| |b| cos(t)
+		// a x b = |a| |b| sin(t) p
+		return acos(V3d::normdot(a,b));
+	}
+
   float distAbove(Plane p); // -ve if below in terms of plane's normal
 
 };
