@@ -1,6 +1,6 @@
-DIR="acivs02"
+NAME="acivs02"
 
-IMAGES=`dotexfindimgs | sed "s+^+$DIR/images/+"`
+IMAGES=`dotexfindimgs | sed "s+^+$NAME/images/+"`
 
 cd ..
-tarcfz tmp.tar.gz $DIR/dotex $DIR/*.tex $DIR/*.sty $DIR/*.bib $IMAGES
+tarcfz $NAME.tar.gz $NAME/dotex $NAME/*.tex $NAME/*.sty $NAME/*.bib $IMAGES
