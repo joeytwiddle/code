@@ -2,9 +2,9 @@
 List<V2d> Excled;
 
 myRGB pull(myRGB a,float t,myRGB b) {
-  int dr=t*(b.r-a.r);
-  int dg=t*(b.g-a.g);
-  int db=t*(b.b-a.b);
+  int dr=(int)(t*(b.r-a.r));
+  int dg=(int)(t*(b.g-a.g));
+  int db=(int)(t*(b.b-a.b));
   return myRGB(a.r+dr,a.g+dg,a.b+db);
 }
 

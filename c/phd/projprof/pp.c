@@ -202,7 +202,7 @@ public:
         if (binimg.getpos(i,j))
           info.setpos(i,j,myRGB::black); */
     }
-    scale=sqrt(mysquare(binimg.width)+mysquare(binimg.height))/2;
+    scale=(int)sqrt(mysquare(binimg.width)+mysquare(binimg.height))/2;
     #ifdef FIXPPRES
 //      #ifdef PROPORTIONAL
         ppres=scale*2;
