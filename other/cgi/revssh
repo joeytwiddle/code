@@ -1,8 +1,6 @@
 #!/bin/sh
 
 . cgilib
-# export JPATH=/home/joey/j
-# . /home/joey/j/startj-simple
 
 SESSID=`getcgi "sessid"`
 INIT=`getcgi "init"`
@@ -10,6 +8,8 @@ CHECKHOST=`getcgi "checkhost"`
 
 if [ "$CHECKHOST" ]
 then
+
+	## Tell remote host whether local user wants to start revssh session.
 
 	CHECKFILE="/tmp/revssh-host-$CHECKHOST"
 	if [ -f "$CHECKFILE".on ]
@@ -22,6 +22,8 @@ then
 elif [ "$INIT" = true ]
 then
 
+	## Start revssh connection, cat remote host's stdin from local file.
+
 	echo "" > /tmp/revssh-client-input-$SESSID.txt
 	echo "" > /tmp/revssh-client-output-$SESSID.txt
 	chmod ugo+w /tmp/revssh-client-input-$SESSID.txt
@@ -30,6 +32,8 @@ then
 	tail -f /tmp/revssh-client-input-$SESSID.txt
 
 else
+
+	## Remote host has sent one line of it's stdout.  Cat it to local file.
 
 	OUTPUT=`getcgi "output"`
 
