@@ -9,5 +9,5 @@ if test -f $FNAME.aux; then
 fi
 latex $FNAME.tex
 # xdvi $FNAME.dvi
-# dvips $FNAME.dvi -f > $FNAME.ps
+dvips $FNAME.dvi -f > $FNAME.ps
 # gv $FNAME.ps &
