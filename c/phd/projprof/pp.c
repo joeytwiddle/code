@@ -688,7 +688,7 @@ class ProjectionProfiler {
 				V2d v=baseline.intersect(l);
 				endpoints.add(v);
 			}
-			vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,uselinespacings,true);
+			vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,uselinespacings,false);
 
 			/* } else {
 

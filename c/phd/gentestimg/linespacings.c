@@ -20,7 +20,6 @@ float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 		printf("Doing ransac...\n");
 	}
 	float currentErr=testASubSet(ps,usingspacings);
-	system("cp gplfit.ps gplfit1.ps");
 	float bestV=lastV;
 	float bestW=lastW;
 	List<V2d> currentps;

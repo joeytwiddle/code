@@ -5,7 +5,7 @@
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
 # DOCUMENTS="left cen right full"
 
-DOCUMENTS="left" # test "dar-crpage2-left30" # left cen right full"
+DOCUMENTS="test" # test "dar-crpage2-left30" # left cen right full"
 PPSCANMETHODS="hier" # full"
 # PPMEASURES="square deriv"
 PPMEASURES="deriv"
@@ -52,8 +52,8 @@ for DOCUMENT in $DOCUMENTS; do
 					# # PPMEASURE=square
 				# fi
 
-					# -hvpcheat
 				PPPARAMS="
+					-hvpcheat
 					-res 180 -adapt 0.03 -maxpixels 2000
 					-$PPMEASURE
 					-gamma 0.0 -recwid 200 -light -oth 12
