@@ -140,15 +140,15 @@ SDL_Rect dstrect;
 int blackPixel;
 int whitePixel;
 
+float cen[TXTHEI];
+float mag[TXTHEI];
 float freq[TXTHEI];
 float off[TXTHEI];
-float mag[TXTHEI];
-float cen[TXTHEI];
 float speed[TXTHEI];
 float space[TXTHEI];
 
 void setSpeed(int i) {
-	float mess=(1.0+cos((float)frames*0.02))/2.0;
+	float mess=(1.0+cos((float)frames*0.004))/2.0;
 	// speed[i]=9.0+2.0*sin(freq[i]*M_PI*frames);
 	speed[i]=0.2*SCALECONST*square((cen[i]+mess*mag[i]*sin(off[i]+freq[i]*M_PI*(float)frames))/3.0);
 	space[i]=speed[i]*(float)cr/6.0;
@@ -161,14 +161,14 @@ void init() {
 		// speed[i]=12+(i%2);
 		// speed[i]=7.0+3.0*frand();
 		// space[i]=speed[i]*(float)cr/8.0;
+		// cen[i]=12.0+0.5*frand();
+		// mag[i]=5.0+20.0*sin(M_PI*(float)i/(float)TXTHEI);
+		cen[i]=50.0; // +2.0*frand();
+		mag[i]=35.0*frand();
+		off[i]=2.0*M_PI*frand();
+		freq[i]=0.002*frand();
 		// freq[i]=0.01*frand();
 		// freq[i]=(float)i/(float)TXTHEI/100.0;
-		off[i]=2.0*M_PI*frand();
-		freq[i]=0.02*frand();
-		mag[i]=25.0*frand();
-		// mag[i]=5.0+20.0*sin(M_PI*(float)i/(float)TXTHEI);
-		// cen[i]=12.0+0.5*frand();
-		cen[i]=30.0; // +2.0*frand();
 		setSpeed(i);
 	}
 	// dstrect.w=cr/2;
