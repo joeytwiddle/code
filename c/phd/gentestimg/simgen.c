@@ -74,9 +74,10 @@ int main(int argc,String *argv) {
 	float xoff=a.floatafter("-xoff","x offset",0.0);
 	float yoff=a.floatafter("-yoff","y offset",0.0);
 	int numlines=a.intafter("-lines","number of lines in paragraph",10);
-	float noise=a.floatafter("-noise","noise",0.0*640/imgwidth);
-	float imgnoise=a.floatafter("-imgnoise","imgnoise",0);
+	float noise=a.floatafter("-noise","noise on line points",0.0*640/imgwidth);
+	int numinserts=a.intafter("-ins","number of noisy inserts",0);
 	bool genimage=a.argexists("-image","generate simulated image");
+	float imgnoise=a.floatafter("-imgnoise","image noise for output image",0);
 	bool overlay=a.argexists("-overlay","overlay info on simulated image");
 	String overlayname="overlay.bmp"; // a.argafter("-overlayimage","name of overlay output file","overlay.bmp");
 	String inname=a.argor("document image file","in.bmp");
@@ -195,7 +196,7 @@ int main(int argc,String *argv) {
 	
 	List<Line2d> lines;
 	List<Line2d> noisylines;
-	for (int i=0;i<=numlines;i++) {
+	for (int i=0;i<numlines;i++) {
 		float thru=(float)i/(float)numlines;
 		Line3d line=Line3d(worldA+thru*down,worldA+right+thru*down);
 
@@ -203,8 +204,6 @@ int main(int argc,String *argv) {
 		V2d plb=proj(line.b);
 		Line2d line2d=Line2d(pla,plb);
 		lines.add(line2d);
-		Line2d noisyline2d=Line2d(line2d.a+V2d::randomcircle()*noise,line2d.b+V2d::randomcircle()*noise);
-		noisylines.add(noisyline2d);
 
 		if (genimage && overlay) {
 			Pixel pa=proj(line.a);
@@ -214,6 +213,33 @@ int main(int argc,String *argv) {
 		}
 		// printf("	%s\n",line2d.toString());
 		// printf("	%f\n",inta.y);
+	}
+
+	randomise();
+	for (int i=0;i<numinserts;i++) {
+		// int a = intrnd(0,lines.len-2);
+		// int a=lines.len/2+lines.len/3*floatrnd(-1.0,1.0);
+		int a=lines.len/2;
+		printf(">>>>>>>>>I chose %i <<<<<<<<<<<,\n",a);
+		int b = a+1;
+		Line2d la = lines.get(a);
+		Line2d lb = lines.get(b);
+		// Line2d ln = Line2d( randbetween(la.a,lb.a), randbetween(la.b,lb.b) );
+		Line2d ln = Line2d( (la.a+lb.a)/2.0, (la.b+lb.b)/2.0 );
+		lines.insert(a+1,ln);
+	}
+
+	// Note: not all numlines after here have been changes to lines.len, but
+	// these are only different if noisyinserts are requested.
+	// quickfix
+	// numlines=lines.len;
+	// or even
+#define numlines (lines.len)
+
+	for (int i=0;i<numlines;i++) {
+		Line2d line2d = lines.get(i);
+		Line2d noisyline2d=line2d; // Line2d(line2d.a+V2d::randomcircle()*noise,line2d.b+V2d::randomcircle()*noise);
+		noisylines.add(noisyline2d);
 	}
 
 	V2d hvp=lines.num(1).intersect(lines.num(lines.len));
@@ -326,7 +352,7 @@ int main(int argc,String *argv) {
 		
 		V2d v=vvpFromPoints(
 			Line2d(lines.get(0).a,lines.get(lines.len-1).a),
-			endpoints, imgwidth,imgheight, true
+			endpoints, imgwidth,imgheight, usespacings
 		);
 		printf("Got VVP = %s\n",v.toString());
 

@@ -1,3 +1,5 @@
+#define DONT_RANSAC
+
 bool equal(V2d u,V2d v) {
 	return V2d::equal(u,v);
 }
@@ -71,6 +73,7 @@ float doRansac(List<V2d> ps) { // returns error
 		// See if we can improve currentErr by removing a single point
 		float bestErr=currentErr;
 		List<V2d> bestps;  bestps.add(currentps);
+#ifndef DONT_RANSAC
 		// Try the current list with point number i removed, and keep the best one
 		for (int i=0;i<currentps.len;i++) {
 			// printf("Removing %i / %i\n",i,currentps.len);
@@ -87,6 +90,7 @@ float doRansac(List<V2d> ps) { // returns error
 				// printf("=)\n");
 			}
 		}
+#endif
 		if (bestErr<currentErr) {
 			// printf("Hello\n");
 			printf("Improvement: %i %f\n",currentps.len-1,currentErr);
