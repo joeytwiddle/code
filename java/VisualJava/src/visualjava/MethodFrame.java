@@ -38,6 +38,8 @@ public class MethodFrame extends JInternalFrame {
             // if (!method.isAccessible())
             method.setAccessible(true);
             // Well =) this appears to do the trick for Arrays.ArrayList.get(int)
+            // But still a proper search for a public ancestor (of a non-inner and hence accessible) class,
+            // might still be needed, if this setAccessible(true) doesn't work in Java Security restricted JVMs.
         } catch (SecurityException e) {
             System.out.println("Couldn't make method accessible: " + method);
         }
