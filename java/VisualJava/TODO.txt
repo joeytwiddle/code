@@ -1,4 +1,15 @@
+BUGS:
+
+Array ObjectIcons do not work.
+Maybe we should opt to make Vector's / Arrays transparantly equivalent to the user.
+Yeah!
+
+
+
 TODO:
+
+Methods do not display which Object they belong to (should probably group / remain grouped near it).
+Well, desktop variables do not exist yet either.
 
 Need to be able to drop objects onto Arguments.
 What sort of component should the Object Arguments be?
@@ -15,6 +26,12 @@ On the other hand, the current state of the software is more appropriate for a s
 
 
 DONE:
+
 Menu's are now nicely split and ordered alphabetically.
 However in the method listings, they should be arranged by the method name field (not the return type).
 I will now solve this by putting return type at the end!
+
+When a MethodFrame's method is invoked, it's TextFields sometimes resize.
+But the MethodFrame itself doesn't.
+When components grow they somtimes hide others.
+
