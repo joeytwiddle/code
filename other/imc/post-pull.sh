@@ -2,13 +2,18 @@ echo
 echo "######## Post-pull operations"
 echo
 
+## Set to true if you want to dev on this box and want to be able to check your changes
+DOBACKUPSB4DEV=
+
 # More notes:
 # The SQL log on tronic is linked outside the tree.  I couldn't be bothered to download it.  I created a similar directory+file outside the tree on buggy so the link works.
 
 export CITYPATH="/www/active-cvs/bristol"
 export NEARCITY="/www/" ## on same fs please, used temporarily
 
-source /root/j/startj simple
+## This next line was left out but I suspect cron had it.  But check if a lone source works sometime...
+export JPATH=/home/joey/j
+source /home/joey/j/startj-simple
 
 echo 'Putting "Warning: mirror" notice on the site.'
 sedreplace -changes '.*Please refrain' '<font color="#ff8080" size="+2">Please note: You are viewing a mirror / backup of the main site.  <b>Any submissions made here WILL be LOST!</b></font><p><font color="#ffffff">Please refrain' "$CITYPATH/local/include/imcfront-header.inc"
@@ -18,15 +23,18 @@ echo "Giving www-data owner privilege on all bristol imc files"
 chown www-data:imc $CITYPATH/ /www/uploads/bristol/ -R
 echo
 
-echo "Making a backup of the live site before making development changes."
-rm -rf /www/active-cvs/bristol-b4dev
-# Hide heavy directories
-mv $CITYPATH/webcast/logs $NEARCITY/logs.hiding
-mv $CITYPATH/local/webcast/cache $NEARCITY/cache.hiding
-cp -a $CITYPATH /www/active-cvs/bristol-b4dev
-# Restore the heavy directories
-mv $NEARCITY/logs.hiding $CITYPATH/webcast/logs
-mv $NEARCITY/cache.hiding $CITYPATH/local/webcast/cache
+if test "$DOBACKUPB4DEV"
+then
+	echo "Making a backup of the live site before making development changes."
+	rm -rf /www/active-cvs/bristol-b4dev
+	# Hide heavy directories
+	mv $CITYPATH/webcast/logs $NEARCITY/logs.hiding
+	mv $CITYPATH/local/webcast/cache $NEARCITY/cache.hiding
+	cp -a $CITYPATH /www/active-cvs/bristol-b4dev
+	# Restore the heavy directories
+	mv $NEARCITY/logs.hiding $CITYPATH/webcast/logs
+	mv $NEARCITY/cache.hiding $CITYPATH/local/webcast/cache
+fi
 
 echo "Moving bristol_dev/.htaccess to /tmp cos it causes problems."
 mv $CITYPATH/webcast/.htaccess /tmp
@@ -45,15 +53,15 @@ echo
 	# 'my $default_usr = "root"' \
 		# $CITYPATH/shared/modules/IMC/Database.pm
 
-echo "Buggy see itself fix"
-WC="$CITYPATH/webcast"
-sedreplace -changes \
-	'getenv("HTTP_HOST")' \
-	'"localhost:81"' \
-		`greplist "refresh=y" \`find $WC -name "*.php3"\``
-		# $WC/led-process.php3 $WC/front.php3 $WC/new_data-process.php3
-		# `find $CITYPATH/webcast/ -name *.php3`
-echo
+# echo "Buggy see itself fix"
+# WC="$CITYPATH/webcast"
+# sedreplace -changes \
+	# 'getenv("HTTP_HOST")' \
+	# '"localhost:81"' \
+		# `greplist "refresh=y" \`find $WC -name "*.php3"\``
+		# # $WC/led-process.php3 $WC/front.php3 $WC/new_data-process.php3
+		# # `find $CITYPATH/webcast/ -name *.php3`
+# echo
 
 cd $CITYPATH/
 echo "Applying other patches:"
@@ -63,9 +71,12 @@ done
 cd /www/
 echo
 
+if test "$DOBACKUPB4DEV"
+then
 echo "Finally checksumming the result so you can easily see what files you have changed."
 cksum `find $CITYPATH/ -type f | notindir CVS cache log logs | grep -v '\.b4sr$'` > /www/bristolb4local.cksum
 echo
+fi
 
 
 

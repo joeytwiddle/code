@@ -1,0 +1,48 @@
+OK setting up backup/mirror from tronic:
+apt-get install rsync mysql postgresql postgresql-client php3
+useradd imc; groupadd imc
+mkdir /www
+cd /www
+mkdir active-cvs uploads
+ln -s /home/joey/j/code/other/imc/backupscripts/ .
+ln -s backupscripts/* .
+ln -s active-cvs/bristol/webcast/ bristol
+chown www-data:imc bristol ## to get through apache's Options SymLinksIfOwnerMatch
+./getbristol.sh  -force
+cat >> /etc/apache/httpd.conf << !
+
+## Joey for bristolimc:
+
+DirectoryIndex index.html index.htm index.shtm index.shtml index.php index.php3 index.cgi
+
+# AddType application/x-httpd-php .php3 .php
+# AddType application/x-httpd-php-source .phps
+AddType application/x-httpd-php3 .php3 .php
+AddType application/x-httpd-php3-source .phps
+
+NameVirtualHost *
+
+<VirtualHost *>
+   ServerName bristolimc.dyndns.org
+   DocumentRoot /www/bristol
+   ServerAdmin webmaster@bristolimc.dyndns.org
+   ScriptAlias /cgi-bin/ /www/bristol/
+   ErrorLog /www/apache-bristol-error.log
+   CustomLog /www/apache-bristol-access.log common
+   AddHandler cgi-script .cgi
+   <Directory "/www/bristol">
+     Options Indexes MultiViews FollowSymLinks ExecCGI
+     AllowOverride None
+     Order allow,deny
+     Allow from all
+   </Directory>
+</VirtualHost>
+!
+
+# Nap, but wake occasionally to type in the passwd.  (Will setup auto-auth soon)
+# OK that should bring all the data down
+# Now we just need to get the databases working
+# Then get Apache serving the pages
+# (I need to look at post-install)
+# (We should setup auto-backups for now, for sitefiles + for dbs)
+# Then ... DNS!
