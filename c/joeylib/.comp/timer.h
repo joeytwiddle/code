@@ -1,6 +1,7 @@
-#ifndef timer_H
-  #define timer_H
-
+                        
+#ifndef timer_H       
+  #define timer_H     
+                       
 #include <time.h>
 #include <stdio.h>
 
@@ -9,10 +10,10 @@ extern int numframes; // Exists
 extern long endtime; // Exists
 extern long pausetime; // Exists
 
-#ifdef DOS
-	#define uclock clock
-	#define UCLOCKS_PER_SEC CLOCKS_PER_SEC
-#endif
+// #ifdef DOS
+//   #define clock uclock
+//   #define CLOCKS_PER_SEC UCLOCKS_PER_SEC
+// #endif
 
 void pausetimer(); // Method
 
@@ -37,5 +38,5 @@ void waituntil(float seconds); // Method
 
 float gettimer(); // Method
 
-
-#endif
+       
+#endif 

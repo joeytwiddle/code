@@ -6,10 +6,11 @@ int numframes;
 long endtime;
 long pausetime;
 
-#ifdef DOS
-	#define clock uclock
-	#define CLOCKS_PER_SEC UCLOCKS_PER_SEC
-#endif
+// utime seems to perform worse!
+// #ifdef DOS
+//   #define clock uclock
+//   #define CLOCKS_PER_SEC UCLOCKS_PER_SEC
+// #endif
 
 void pausetimer() {
   printf("Pausing timer.\n");

@@ -1,8 +1,7 @@
-#ifndef timer_C
-  #define timer_C
-
-  #include <timer.h>
-
+#ifndef timer_C        
+  #define timer_C     
+                       
+                       
 #include <time.h>
 #include <stdio.h>
 
@@ -11,10 +10,10 @@ int numframes;
 long endtime;
 long pausetime;
 
-#ifdef DOS
-	#define uclock clock
-	#define UCLOCKS_PER_SEC CLOCKS_PER_SEC
-#endif
+// #ifdef DOS
+//   #define clock uclock
+//   #define CLOCKS_PER_SEC UCLOCKS_PER_SEC
+// #endif
 
 void pausetimer() {
   printf("Pausing timer.\n");
@@ -60,5 +59,5 @@ float gettimer() {
   savetimer();
     return (float)(endtime-starttime)/(float)CLOCKS_PER_SEC;
 }
-
-#endif
+       
+#endif 

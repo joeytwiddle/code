@@ -56,7 +56,7 @@
 #endif
 
 
-float desiredFPS=3.0;
+float desiredFPS=10.0;
 
 
 int stylee;
@@ -240,8 +240,6 @@ int init_candy(void) {
   
   redocolors();
 
-  starttimer();
-
 }
   
 
@@ -270,15 +268,19 @@ void plotsomeshapes() {
 
 
 
-long lasttime=0; // uclock();
+long lasttime=0;
+// uclock performs significantly worse!
 
 void timesync() {
-  long thistime;
-	while ((thistime=clock())<lasttime+CLOCKS_PER_SEC/desiredFPS)
+  if (lasttime==0)
+    lasttime=clock();
+  // printf("%f\n",(float)lasttime/(float)CLOCKS_PER_SEC);
+  long watchtime;
+  while ((watchtime=clock())<lasttime+CLOCKS_PER_SEC/desiredFPS)
 		{
 			// Sould release the processor
 		}
-  lasttime=thistime;
+  lasttime=lasttime+CLOCKS_PER_SEC/desiredFPS;
 }
 	
 
@@ -361,8 +363,8 @@ void iterate_candy() {
 				// ximg->f.put_pixel(ximg,x,y,xrgb[c].pixel);
 			// }
 				
-		timesync();
     wicked_blit();
+		timesync();
   
     toff=toff-(float)palspeed/256;
     imgtmp=img;
@@ -586,6 +588,8 @@ void real_main() {
 
   bool should_quit = false;
 	
+  starttimer();
+
   while (!should_quit) {
 
     iterate_candy();
@@ -609,6 +613,8 @@ void real_main() {
     #endif
 	
   }
+
+  savetimer();
 
   #ifdef ALLEGRO
     allegro_exit();
