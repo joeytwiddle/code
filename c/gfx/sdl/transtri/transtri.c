@@ -43,6 +43,8 @@
 #define SCRBPS 32
 #define NUMTRIS 300
 #define desiredFramesPerSecond 50
+#define IMGSKIP (SCRWID/160)
+// #define IMGSKIP 1
 
 #include "define.c"
 #define CONST
@@ -58,31 +60,6 @@
 #define cap(x,b) ( (x) > (b) ? (b) : (x) )
 #define square(x) ( (x) * (x) )
 #define clip(x,a,b) ( (x)<(a) ? (a) : (x)>=(b) ? (b)-1 : (x) )
-
-// #define paletteChoice(p,a,b) a
-// #define paletteChoice(p,a,b) ( ( (p) == NULL ) ? (a) : (b) )
-// #define paletteChoice(p,a,b) { if ( (p) == NULL ) { (a) } else { (b) } }
-// #define paletteChoice(p,a,b) b
-// This does seem to speed it up a little
-// Macro/inline clones of SDL_MapRGB and SDL_GetRGB
-// #define MapRGB SDL_MapRGB
-// #define MapRGB(format,r,g,b) ( paletteChoice( (format)->palette , TrueMapRGB((format),(r),(g),(b)) , PalMapRGB((format),(r),(g),(b)) )
-// #define PalMapRGB(format,r,g,b) ( SDL_FindColor((format)->palette, (r), (g), (b)) )
-// #define TrueMapRGB(format,r,g,b) ( ((int)(r) >> (format)->Rloss) << (format)->Rshift | ((int)(g) >> (format)->Gloss) << (format)->Gshift | ((int)(b) >> (format)->Bloss) << (format)->Bshift | (format)->Amask )
-// The reading functions offer even greater improvement (due to being heavy!)
-// #define GetRGB SDL_GetRGB
-// #define GetRGB(pixel,fmt,r,g,b) paletteChoice( (fmt)->palette , TrueGetRGB((pixel),(fmt),(r),(g),(b)) , PalGetRGB((pixel),(fmt),(r),(g),(b)) )
-// #define PalGetRGB(pixel,fmt,red,green,blue) { *(red) = (fmt)->palette->colors[(pixel)].r; *(green) = (fmt)->palette->colors[(pixel)].g; *(blue) = (fmt)->palette->colors[(pixel)].b; }
-/* void inline TrueGetRGB(Uint32 pixel, SDL_PixelFormat *fmt, Uint8 *r,Uint8 *g,Uint8 *b) {
-                unsigned rv, gv, bv;
-                rv = (pixel & fmt->Rmask) >> fmt->Rshift;
-                *r = (rv << fmt->Rloss) + (rv >> (8 - fmt->Rloss));
-                gv = (pixel & fmt->Gmask) >> fmt->Gshift;
-                *g = (gv << fmt->Gloss) + (gv >> (8 - fmt->Gloss));
-                bv = (pixel & fmt->Bmask) >> fmt->Bshift;
-                *b = (bv << fmt->Bloss) + (bv >> (8 - fmt->Bloss));
-} */
-
 
 // Warning: only supports truecolour palettes.
 #define SDLwrap_MapRGB(Rloss,Rshift,Gloss,Gshift,Bloss,Bshift,Amask,r,g,b) ( ((Uint8)(r) >> Rloss) << Rshift | ((Uint8)(g) >> Gloss) << Gshift | ((Uint8)(b) >> Bloss) << Bshift | Amask )
@@ -103,19 +80,39 @@
 #define SDLwrap_regPixel(sdl_surface,pixelType,pitch,bytesperpixel,x,y) (*(pixelType *)((Uint8 *)((sdl_surface)->pixels)+(y)*(pitch)+(x)*(bytesperpixel)))
 // #define SDLwrap_regPixel(sdl_surface,pixelType,pitch,bytesperpixel,x,y) (*(Uint32 *)((Uint8 *)((sdl_surface)->pixels)+(y)*(pitch)+(x)*(bytesperpixel)))
 
-// Very slight increase?
-#define lookupmax 65536
-float coslookup[lookupmax];
-// float *coslookup;
-// float coslookup[lookupmax];
-#define qcos(x) (coslookup[abs(((x)*(int)(lookupmax/2.0/M_PI)))%lookupmax])
+#define triglookupmax 65536
+float coslookup[triglookupmax];
+#define qcos(x) (coslookup[abs(((x)*(int)(triglookupmax/2.0/M_PI)))%triglookupmax])
 // #define qcos(x) cos(x)
 #define qsin(x) (qcos(x-M_PI/2.0))
 void setuptriglookup() {
 	int i;
-	// coslookup=new(float,lookupmax);
-	for (i=0;i<lookupmax;i++)
-		coslookup[i]=cos((float)i*2.0*M_PI/(float)lookupmax);
+	// coslookup=new(float,triglookupmax);
+	for (i=0;i<triglookupmax;i++)
+		coslookup[i]=cos((float)i*2.0*M_PI/(float)triglookupmax);
+}
+
+#define sqrtlookupmax 65536
+#define sqrtlookupquant 8
+int sqrtlookup[sqrtlookupmax];
+void setupsqrtlookup() {
+    int i;
+    for (i=0;i<sqrtlookupmax;i++)
+        sqrtlookup[i]=sqrt(i*sqrtlookupquant);
+}
+// Shows you if your max/quant are too small
+// #define qsqrt(x) ( (x)<0 ? 0 : (x)>=sqrtlookupmax*sqrtlookupquant ? sqrtlookup[sqrtlookupmax-1] : sqrtlookup[(int)(x)/sqrtlookupquant] )
+// Safe version
+// #define qsqrt(x) ( (x)<0 ? 0 : (x)>=sqrtlookupmax*sqrtlookupquant ? sqrt(x) : sqrtlookup[(int)(x)/sqrtlookupquant] )
+// Unsafe version
+#define qsqrt(x) ( sqrtlookup[(x)/sqrtlookupquant] )
+// One of those funky visuals - notice the curvature
+// #define qsqrt(x) ( sqrtlookup[(Sint16)x] )
+// #define qsqrt(x) sqrt(x)
+
+void setuplookups() {
+    setuptriglookup();
+    setupsqrtlookup();
 }
 
 inline void merge(SDL_Surface *screen,int x,int y,Uint8 dr,Uint8 dg,Uint8 db) {
@@ -180,7 +177,7 @@ int main(int argc,char *argv[]) {
 	FILE *fp;
     int cylcenx=SCRWID/2,cylceny=SCRHEI/2;
 
-	setuptriglookup();
+	setuplookups();
 	// srand(time(NULL));
 
 	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
@@ -222,47 +219,60 @@ int main(int argc,char *argv[]) {
         cylcenx=SCRWID/2+SCRWID/2*sin(frames*0.017);
         cylceny=SCRHEI/2+SCRHEI/2*cos(frames*0.012);
 
-        #define IMGSKIP (SCRWID/160)
 		{
 		Uint16 i,j;
-		float qs=qsin((float)frames*3.141/45.0);
-        Uint8 qsi=128+127*qs;
-		float bounce=0.1+0.099*qcos(frames*M_PI/120.0);
-		float bounceB=2.0+1.5*qsin(frames*M_PI/120.0);
-		float bounceC=0.05-0.05*(pow((qcos(frames*M_PI/130.0)+1.0)/2.0,0.6)*2.0-1.0);
-        Sint16 Doffset=100000-frames*1.0;
+		// float qs=qsin((float)frames*3.141/45.0);
+        // Uint8 qsi=128+127*qs;
+		// float bounce=0.1+0.099*qcos(frames*M_PI/120.0);
+		// float bounceB=2.0+1.5*qsin(frames*M_PI/120.0);
+		Uint16 bounceC=2000*(0.05-0.05*(pow((qcos(frames*M_PI/115.0-2.5)+1.0)/2.0,0.6)*2.0-1.0));
+        Sint16 Doffset=100000+frames*10.0;
         Uint16 aoffset=2000+frames*2.0+sin(frames*0.03)*200.0;
+        Uint32 overd=20000*(1.0+1.0*qcos(frames*M_PI/120.0-1.0));
+        // Uint32 tmp=((Uint16)bgtexture_w << 8)/M_PI;
+        SDL_Rect dstrect;
+        dstrect.w=IMGSKIP;
+        dstrect.h=IMGSKIP;
 		for (i=0;i<screen_w;i+=IMGSKIP) {
-				Uint16 u,v;
                 // Uint8 thruwid=i*256/screen_w;
-			for (j=0;j<screen_h;j+=IMGSKIP) {
+                Uint32 xpart=(Uint32)square(i-cylcenx);
+                dstrect.x=i;
+                dstrect.y=0;
+			for (j=0;j<screen_h;j+=IMGSKIP, dstrect.y+=IMGSKIP) {
 				Uint8 r,g,b,br;
 				Uint32 p;
                 // todo: Optimise this!
-                Uint16 d=sqrt(square(i-cylcenx)+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
+                Uint16 d=qsqrt(xpart+square(j-cylceny)); //+bounceB*sqrt(square(i-SCRWID/2)+square(j-SCRHEI/2));
                 // Uint16 d=(abs(i-cylcenx)+abs(j-cylceny));
-                Uint16 D=1000.0/pow(d,bounce)+Doffset;
-                Uint16 a=(Uint16)((float)bgtexture_w/M_PI*(atan2(i-cylcenx,j-cylceny)+M_PI)+aoffset);
-                u=a%bgtexture_w;
-                v=D%bgtexture_h;
+                // Uint16 D=1000.0/pow(d,bounce)+Doffset;
+                // Uint16 D=(float)overd/d+Doffset;
+                // Uint16 D=( (d & 65534) == 0 ? 0 : overd/d+Doffset);
+                Uint16 D=(d<2 ? 0 : overd/d+Doffset);
+                // Uint16 a=(Uint16)((((Uint32)(tmp*(atan2(i-cylcenx,j-cylceny))) >> 8)+M_PI)+aoffset);
+                Uint16 a=(Uint16)(bgtexture_w*(atan2(i-cylcenx,j-cylceny)/M_PI+M_PI)+aoffset);
+                // dstrect.y=j;
 				// p=getPixel(bgtexture, u, v);
-				p=bgtexture_getPixel( u, v);
+				p=bgtexture_getPixel( (a%bgtexture_w), (D%bgtexture_h) );
 				// setPixel(screen,i,j,p);
 				// screen_setPixel(i,j,p);
 				// Slow but necessary if the colorspaces are different
 				bgtexture_GetRGB(p,&r,&g,&b);
                 // br=clip(200.0/pow(0.01*d,8.0),0,256);
-                br=clip(2000*(SCRWID*2-d)*bounceC/SCRWID,0,256);
+                br=clip((SCRWID*2-d)*bounceC/SCRWID,0,256);
                 r=clip((int)r+(int)br,0,256);
                 g=clip((int)g+(int)br,0,256);
                 b=clip((int)b+(int)br,0,256);
+                // r=max(r,br);
+                // g=max(g,br);
+                // b=max(b,br);
 				p=screen_MapRGB(r,g,b);
-                { int I,J;
-                    for (I=0;I<IMGSKIP;I++)
-                        for (J=0;J<IMGSKIP;J++) {
-                            screen_setPixel(i+I,j+J,p);
-                        }
-                }
+                SDL_FillRect(screen,&dstrect,p);
+                // { register int I,J;
+                    // for (I=0;I<IMGSKIP;I++)
+                        // for (J=0;J<IMGSKIP;J++) {
+                            // screen_setPixel(i+I,j+J,p);
+                        // }
+                // }
 				// SDL_GetRGB(p,bgtexture->format,&r,&g,&b);
 				// SDL_MapRGB(screen->format,r,g,b);
 				// float br=0.2*(2.0+2.0*qcos((double)j/12.0+3.0*qsin((double)frames*0.0039)))*qsin(10.0*qsin(4.0*qsin((double)frames/300.0)+(double)i/25.0))+(2.0+2.0*qcos((double)j/11.0+0.012*qsin((double)frames/17.0)))*qcos(2+(double)i*0.14+(double)j/7.0+4.0*qcos(((double)frames*0.29+j/15.0)/23.0));
