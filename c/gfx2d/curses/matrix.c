@@ -34,7 +34,6 @@ void main() {
 	mbit* palette = "^+oiumq/\\*0$%@#";
 	int paletteSize = strlen(palette);
 	
-	printf("hello\n");
 	srand(time(NULL));
 	// Needed
 	initscr(); cbreak(); noecho();
@@ -70,8 +69,8 @@ void main() {
 		}
 	}
 
-	int AVSLIDELEN = ( LINES>30 ? 5 : 2 );
-	int AVACTLEN = ( LINES>30 ? 10 : 5 );
+	int AVSLIDELEN = ( LINES>30 ? 6 : 3 );
+	int AVACTLEN = ( LINES>30 ? 12 : 6 );
 
 	while (true) {
 		
@@ -79,7 +78,7 @@ void main() {
 
 		int action = rand() % 100;
 
-		if (action < 10) {
+		if (action < 14) {
 
 			// Alter
 
