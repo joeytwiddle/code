@@ -9,6 +9,8 @@ Or can we at least hope to preserve some common code?
 It should be documented in CVS when either of the forks starts.
 LOL, maybe we could make it a boolean option somewhere!
 
+We shall probably add various nicities to do with context.  Eg. which methods are viable given their arguments and the items on the desktop; which icons fit the selected method?
+
 
 
 BUGS:
@@ -24,6 +26,10 @@ Only the last DropTarget created seem to notice mouseEntered and Exits.  All sho
 Ah no.  The problem is that InnerFrames which are not focused, do not pass mouse events to their children.
 This is also why we have trouble when we bring the moving icons to the front.
 Ah no it isn't.  But now that first is fixed with dodgy hack, only second needs fixing.
+
+The Boolean argument checkbox component is not yet drag-droppable like the others.
+
+When icons are dropped into arguments, their variable name should be recorded (with the ParameterDropTarget?), so that when the method is called, it can be seen which of the desktop's variables were used to make the call.  (Eg. for code-generation.)
 
 
 

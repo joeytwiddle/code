@@ -31,7 +31,7 @@ public class SplittingJMenu extends DetachableJMenu {
 	private boolean doneSorting = false;
 
 	public static final int maxItems = 40;
-	public static final int preferedSplits = 30;  // Actually prefered+1
+	public static final int preferedSplits = 30;
 
     public SplittingJMenu(String s) {
         super(s);
@@ -83,14 +83,14 @@ public class SplittingJMenu extends DetachableJMenu {
 
 	public void splitIfNeeded() {
 		if (items.size()>maxItems) {
-			int[] splitAt=new int[preferedSplits];
+			int[] splitAt=new int[preferedSplits+1];
 			// splitAt[0]=0;
 			// splitAt[preferedSplits-1]=items.size()+1;
-			for (int i=0;i<preferedSplits;i++) {
-				splitAt[i]=items.size()*i/(preferedSplits-1);
+			for (int i=0;i<preferedSplits+1;i++) {
+				splitAt[i]=items.size()*i/(preferedSplits);
 			}
 			Vector splits=new Vector();
-			for (int i=0;i<preferedSplits-1;i++) {
+			for (int i=0;i<preferedSplits;i++) {
 				Vector tmp=new Vector();
 				for (int j=splitAt[i];j<splitAt[i+1];j++) {
 					tmp.add(items.get(j));
