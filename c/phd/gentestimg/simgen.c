@@ -167,18 +167,22 @@ int main(int argc,String *argv) {
 				
 		// scry = ( k1 + l * A ) / ( l2 + l * B )
 		//   where k1 is y init, A is down.y, k2 is z init, B is down z
-
+		
+		// This eqn has a Z on the front of it
 		float groundK1 = worldA.y;
 		float groundK2 = worldA.z;
 		float groundA = down.y/(float)numlines;
 		float groundB = down.z/(float)numlines;
 
-		float groundU = groundK1/groundK2;
+		float groundU = focallength * groundK1/groundK2;
 		float groundV = groundA/groundK1;
 		float groundW = groundB/groundK2;
+
+		float guessU = lines.num(1).a.y;
 		
 		printf("Ground truth:\n");
 		printf("  U = %f\n",groundU);
+		printf("guesU=%f\n",groundU);
 		printf("  V = %f\n",groundV);
 		printf("  W = %f\n",groundW);
 		printf("  U*V/W = %f\n",groundU*groundV/groundW);
@@ -228,6 +232,7 @@ int main(int argc,String *argv) {
       fprintf(sout,"groundK2 = %f\n",groundK2);
       fprintf(sout,"groundA = %f\n",groundA);
       fprintf(sout,"groundB = %f\n",groundB);
+      fprintf(sout,"guessU = %f\n",guessU);
 			fclose(sout);
 
 			system(Sformat("cat data.txt matlab/%s > solve.txt",whichmatlabfile));

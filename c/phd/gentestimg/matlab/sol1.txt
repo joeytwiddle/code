@@ -1,0 +1,28 @@
+% t=0:2:10;t=t(:);
+% Data=40*exp(-.5*t)+randn(size(t));
+Data=[0, -4.55, -8.82, -12.8, -16.6, -20.2, -23.6, -26.8, -29.8, -32.7, -35.5];
+
+%Data=[0.000000, -4.552159, -8.829385, -12.855852, -16.652987, -20.239838, -23.633402, -26.848894, -29.899971, -32.798931, -35.556873];
+
+Data=Data(:);
+sz=max(size(Data));
+t=0:1:sz-1; t=t(:);
+
+% Starting=rand(1,4);
+Starting=[guessU,-5,0,5]
+% Starting=[0,5,0,5]
+options=optimset('Display','iter');
+Estimates=fminsearch('jfit',Starting,options,t,Data)
+
+plot(t,Data,'*')
+hold on
+% plot(t,(Estimates(1)+Estimates(2)*t)./(Estimates(3)+Estimates(4)*t),'r')
+p=0:.2:10; p=p(:);
+plot(p,(Estimates(1)+Estimates(2)*p)./(Estimates(3)+Estimates(4)*p),'r')
+% plot(t,Estimates(1)*exp(-Estimates(2)*t),'r')
+
+k1=Estimates(1)
+A=Estimates(2)
+k2=Estimates(3)
+B=Estimates(4)
+A/B
