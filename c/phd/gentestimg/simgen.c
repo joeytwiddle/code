@@ -75,6 +75,7 @@ int main(int argc,String *argv) {
 	float yoff=a.floatafter("-yoff","y offset",0.0);
 	int numlines=a.intafter("-lines","number of lines in paragraph",10);
 	float noise=a.floatafter("-noise","noise",0.0*640/imgwidth);
+	float imgnoise=a.floatafter("-imgnoise","imgnoise",0);
 	bool genimage=a.argexists("-image","generate simulated image");
 	bool overlay=a.argexists("-overlay","overlay info on simulated image");
 	String overlayname="overlay.bmp"; // a.argafter("-overlayimage","name of overlay output file","overlay.bmp");
@@ -175,6 +176,15 @@ int main(int argc,String *argv) {
 		// printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));
 
 		(progmon.*progmon.end)();
+
+	for (int i=0;i<outputimg.width;i++)
+		for (int j=0;j<outputimg.height;j++) {
+			if (myrnd()<imgnoise) {
+				// outputimg.setpos(i,j,myRGB(myrnd(),myrnd(),myrnd()));
+				int c = ( myrnd()<0.5 ? 0 : 255 );
+				outputimg.setpos(i,j,myRGB(c,c,c));
+			}
+		}
 
 		if (genimage)
 			outputimg.writefile(outname);
