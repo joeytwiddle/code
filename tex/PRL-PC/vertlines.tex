@@ -7,23 +7,23 @@ in the image will vary relative to their distance from the camera.  This is the
 same effect that causes the railway sleepers beneath a train track to appear
 closer together as they approach the horizon. This change in spacing can be used
 to determine the angle at which the document is tilted, and hence the vertical
-vanishing point \myvec{V} of the text plane.
+vanishing point $\myvec{V}$ of the text plane. 
 
 In \cite{planargrouping}, Schaffalitzky and Zisserman group repetitive elements
-in an image (such as railings) and use them to detect vanishing points and lines.
+in an image (such as railings in front of a building) and use them to detect 
+vanishing points and lines. 
 They fit a vanishing point model to a group of objects using maximum likelihood
 estimation, providing the image coordinates of all relevant pixels as data for
-the fitting. Our approach is similar to the latter, except that we have already
-performed recognition 
-of the paragraphs of text and may therefore extract more representative data for the fitting
+the fitting. Our approach is similar, except that for this application we have 
+already performed recognition of the paragraphs of text and may therefore 
+extract more representative data for the fitting
 (in the form of line position and line spacing pairs).
-We too employ
-Marquardt-Levenberg fitting
-% MLE
-and RANSAC, and will present the functions used. However, it is important to
+%We too employ Marquardt-Levenberg fitting %MLE
+%and RANSAC, and will present the functions used. However, 
+It is important to
 note that in \cite{planargrouping}, the objects used contain regularly spaced
 features in the real-world, whereas our text data is corrupted by irregular
-spacings between paragraph lines (as printed).
+spacings between paragraph lines and various font sizes.
 
 % He does not explain the details of his algorithm, but does say he uses
 % Marquardt-Levenberg fitting, as do we.  He uses the image coordinates of
@@ -32,19 +32,38 @@ spacings between paragraph lines (as printed).
 % measurements as data.  He does not report the fitting/RANSAC equation he
 % used.  (We do.)
 
-After first transforming the image to simplify the problem, we will extract observations of the altitude of each line in the image.  A model of the geometry will allow us to express these observations as a function of the paragraph's orientation.  By fitting the observations to the function, we will obtain the desired parameters of the orientation.  We show that a higher-order fitting function can assist in avoiding outliers.
+Our overall method is as follows. After first transforming the image to 
+simplify the problem, we will extract observations of the altitude of 
+each line in the image.  A model of the geometry will allow us to express 
+these observations as a function of the paragraph's orientation.  By 
+fitting the observations to the function, we will obtain the desired 
+parameters of the orientation.  We show that a higher-order fitting function 
+can assist in avoiding outliers. The whole process is now described in
+further detail.
 
 An appropriate rotation of the image plane about the z-axis will position the
-baseline (found in the previous section) vertically, as shown in
-\reffig{zyspacings}.  Henceforth, we may disregard the $x$-coordinates and deal
+baseline (found in the previous section - call it $\myvec{B}$) vertically, 
+(see \reffig{zyspacings}). This rotation is equivalent to:
+
+\begin{equation}
+\myvec{B_{v}} = \left(\begin{array}{cc}\cos(90-\theta) ~ ~ -\sin(90-\theta)\\\sin(90-\theta) ~  ~  ~ ~ ~ \cos(90-\theta)\end{array}\right) \myvec{B} \label{uprightbaseline}
+\end{equation}
+
+{\parindent 0mm
+where $\theta$ is the orientation of the $\myvec{B}$ with the horizontal.
+Henceforth, we may disregard the $x$-coordinates and deal
 solely in the $y,z$ plane. 
-In our geometrical model, the bottom of a single paragraph is positioned at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.  Therefore the $n$th line from the bottom of the paragraph will appear at:
+In our ideal geometrical model, the bottom of a single paragraph is positioned 
+at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.  
+Therefore the $n$th line from the bottom of the paragraph will appear at:
+}
 
 \begin{figure}[t]
 \centering
 \begin{center}
   % \epsfig{figure=kkkzyspacings7.eps,width=85mm} %% JOEY, copy this file to your images directory to overwrite the original
-  \epsfig{figure=images/zyspacings9.eps,width=110mm}
+%  \epsfig{figure=images/zyspacings9.eps,width=110mm}
+  \epsfig{figure=images/zyspacings7.eps,width=110mm}
 \caption{The geometry involved in line spacings.}
 \label{zyspacings}
 \end{center}
@@ -75,6 +94,7 @@ y(n) =  f \frac{ \myvec{P}_y + n \myvec{Q}_y }{ \myvec{P}_z + n\myvec{Q}_z } \la
 \end{eqnarray}
 
 {\parindent 0mm
+with $y(infty)$ giving the position of the vanishing line.
 Without losing the nature of the projection, we may scale the scene about the focal point in order to set $\myvec{P}_z$ to $f$, hence modelling the paragraph as if it touched the image plane.  In this case, $\myvec{P}_y=y(0)$,
 and we may rewrite \refeqn{spacingspq} as:
 }
@@ -92,15 +112,15 @@ To extract approximations of $y(n)$ from the image, we project the centroid of
 each detected line of text onto the baseline (y-axis), and obtain a set of
 observations $O(n)$. 
 % By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.  % for these points.
-A least-squares fit of $O(n)$ to the function $y(n)$ should now yield values for $V$ and $W$, and hence the orientation of the paragraph.
-However, since it is common for documents to also contain lines of text which are not part of an evenly spaced paragraph, and for extraneous elements to enter the data, the $n$th line observed in the image may lose correspondence with the $n$th line in the paragraph model.
+A least-squares fit of $O(n)$ to the function $y(n)$ should now yield values for $V$ and $W$, and hence the vertical vanishing point.
+However, since it is common for documents to also contain lines of text which are not part of an evenly spaced block of text, and for extraneous elements to enter the data, the $n$th line observed in the image may lose correspondence with the $n$th line in the paragraph model.
 % For example, an outlier at position $n=K$ would cause all successive
 % observations 
 % When fitting the curve of $y(n)$ against $n$, one such outlier at $n=K$ would cause all succesive observations ($n>K$) to have 
 In the presence of such outliers, fitting a set of points $(n,O(n))$ to the curve $(n,y(n))$ 
 is problematic, since any outlier will break the correspondence between the $x$
 and $y$ coordinates of successive points.
-For example, in \reffig{poorfitting}, data point 7 is an undesirable outlier
+For example, in \reffig{poorfitting}, data point (or line number) 7 is an undesirable outlier
 which has shifted all successive points one position along the horizontal $n$-axis,
 causing a poor fitting.
 \begin{figure}[t]
@@ -140,7 +160,8 @@ X_n = y(n) & \mbox{~~~~~~~~~~~~~~~ \it line position} \label{linepositiondefneqn
 \end{eqnarray}
 
 With this approach, any odd lines will appear as isolated outliers with an incorrect line spacing, but the error will not propagate through the remaining $X_n$. % points.
-By substituing \refeqn{spacingsvweqn} into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of $Y$ in terms of $X$ may be written in two parts:
+By substituing \refeqn{spacingsvweqn} into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of $Y$ in terms of $X$ may be written as: 
+%in two parts:
 }
 
 \begin{equation}
@@ -158,7 +179,8 @@ n(X) = \frac{X-U}{UV-XW}
 \end{equation}
 
 % Initial parameters $V$ and $W$ are chosen for line fitting using a simple estimate.
-Initial values for the parameters $V=2.0$ and $W=0.1$ were empyrically chosen as seed values for the fitting.
+Initial values for the parameters $V=2.0$ and $W=0.1$ were empirically chosen as 
+seed values for the fitting.
 % For thesis maybe:
 % These seed values remain constant in our experiments, although for each fitting their signs must be set to correpond to the ordering of the data points (increasing or decreasing $y(n)$) and the general trend of $Y(n)$ (increasing or decreasing).
 % for the error optimisation.
@@ -172,9 +194,15 @@ Y(X) = \frac{ UV }{ 1+n(X)W }
 This ensures that parameters close to the desired minima are obtained before the final fitting.
 \reffig{goodfitting} shows that the outlier from \reffig{poorfitting} has now affected two of the data points, but does not affect the rest of the data.
 However, since the fitting achieved is still not perfect, we employ RANSAC to actually exclude apparent outliers from the final parameter fit.
-Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the altitude of the horizon $y(\infty) = UV/W$.
+Once optimised, $V$ and $W$ are plugged into \refeqn{spacingsvweqn} to find the 
+altitude of the horizon:
+
+\begin{equation}
+y(\infty) = UV/W
+\end{equation}
+
 % A graph of the final fitting for the running example is shown in \reffig{fittinggraph}.
-After reversing the transformation made earlier to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
+After reversing the transformation made earlier in (\ref{uprightbaseline}) to bring the baseline upright, this point will correspond to the location of the vertical vanishing point in the original image.
 % We therefore fit the measured positions against spacing $(y(n),y(n+1)-y(n))$ to the model:
 
 % \begin{figure}[t]
@@ -212,9 +240,9 @@ After reversing the transformation made earlier to bring the baseline upright, t
 \reffig{vvpaccuracy} shows the accuracy of recovery of the vertical vanishing
 point for the whole range of $0$ to $90^\circ$ in yaw and pitch using the
 methods described.  In \reffig{vvpaccuracya} it can be seen that, as expected,
-intersecting the left and right margins of a fully justified paragraph gives a
+intersecting the left and right margins $F_L$ and $F_R$ of a fully-justified block of text gives a
 good estimate of the vertical vanishing point.  Also as expected and can be
-observed in \reffig{vvpaccuracyb}, when margins are used to estimate the
+observed in \reffig{vvpaccuracyb}, when such margins are used to estimate the
 vertical vanishing point of a non-fully formatted paragraph (in this example a
 left-justified one), performance is poor due to the paragraph's jagged edge.
 %As with the horizontal vanishing point, the method is not suited to situations
@@ -233,8 +261,8 @@ separated correctly, their proximity in the image means there is little accuracy
 in position and spacing for the curve fitting. In real world images, documents
 at such extreme angles cannot practically be read or used by OCR once recovered,
 hence this failure is not a great concern. The advantage of the line spacings
-method is that it provides consistent results for paragraphs which are not fully
-justified. Finally, \reffig{vvpaccuracyd} displays a further example of the
+method is that it provides consistent results for paragraphs which are not 
+fully-justified. Finally, \reffig{vvpaccuracyd} displays a further example of the
 accuracy of the line spacings method for a whole range of orientations of
 left-justified paragraphs.
 
@@ -245,8 +273,8 @@ left-justified paragraphs.
     % \begin{tabular}{|p{2.5in}|l|l|}
     \begin{tabular}{|p{95mm}|c|c|}
       \hline
-      {\bf Paragraph (pgh) types } & {\bf VP} & {\bf Angular} \\
-      {\bf } & {\bf error} & {\bf error} \\  \hline \hline
+      {\bf Method and Paragraph (pgh) type } & {\bf VP} & {\bf Angular} \\
+      {\bf {\small HVP = Horizontal VP, VVP = vertical VP} } & {\bf error} & {\bf error} \\  \hline \hline
       % HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
       % VVP using margin intersection for fully formatted pghs & 0.0785 & 2.08$^\circ$ \\ \hline
       % VVP using line spacings on what? left? & 0.133 & 3.30$^\circ$ \\ \hline
@@ -260,13 +288,14 @@ left-justified paragraphs.
       % VVP using line spacings for left justified pghs & 0.233 & ...$^\circ$ \\ \hline
       % VVP using margin intersection on left justified pghs & 0.209 & ...$^\circ$ \\   \hline
       % VVP using margin intersection on centrally justified pghs & 0.283 & ...$^\circ$ \\ \hline  \hline
-      HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline
-      VVP using margin intersection on fully justified pghs & 0.132 & 3.93$^\circ$ \\ \hline
-      VVP using line spacings on centrally justified pghs & 0.318 & 4.45$^\circ$ \\ \hline
-      VVP using line spacings on fully justified pghs & 0.333 & 4.65$^\circ$ \\ \hline
-      VVP using line spacings on left justified pghs & 0.383 & 4.66$^\circ$ \\ \hline
-      VVP using margin intersection on centrally justified pghs & 0.655 & 17.35$^\circ$ \\ \hline  
-      VVP using margin intersection on left justified pghs & 0.589 & 19.1$^\circ$ \\   \hline
+      HVP using projection profiles & 0.129 & 2.16$^\circ$ \\  \hline \hline
+      VVP using margin intersection on fully-justified pghs & 0.132 & 3.93$^\circ$ \\ \hline
+      VVP using margin intersection on centrally-justified pghs & 0.655 & 17.35$^\circ$ \\ \hline  
+      VVP using margin intersection on left-justified pghs & 0.589 & 19.1$^\circ$ \\   \hline \hline
+ 
+      VVP using line spacings on fully-justified pghs & 0.333 & 4.65$^\circ$ \\ \hline     
+      VVP using line spacings on centrally-justified pghs & 0.318 & 4.45$^\circ$ \\ \hline
+      VVP using line spacings on left-justified pghs & 0.383 & 4.66$^\circ$ \\ \hline 
    \end{tabular}
   \end{center}
   % \vspace*{-5mm}
@@ -310,13 +339,15 @@ The results for these experiments, and the location of the horizontal vanishing
 point in \refsect{locatehvpsect}, are shown numerically in
 \reftab{accuracytable}. 
 The vanishing point (VP) error is calculated as the relative distance of the
-vanishing point from its ground truth, as described in \refsect{locatehvpsect}. 
+vanishing point from its groundtruth, as described in \refsect{locatehvpsect} (see equation (\ref{Haccuracy})). 
 The angular error is derived from the final determined orientation of the
 horizontal and vertical vectors of the text plane. 
-It can be seen that the accuracy of location of the vertical vanishing point in
-reasonable for both the margin intersection and the line spacings method. 
+It can be seen that the accuracy of location of the vertical vanishing point is
+good for both the margin intersection and the line spacings method. 
 As the last two rows of \reftab{accuracytable} shows, intersecting margins is not
-suitable for documents with jagged edges.
+suitable for documents with jagged edges. We keep the  presentation of  our
+results simple by not showing any on right-justified paragraphs since their
+occurrance is very rare compared to other types.
 
 
 Having found the vanishing points of the plane, we may project two lines from each
@@ -347,7 +378,7 @@ of the document.
 In some applications we may not know the focal length of the camera used to capture the image.  However, having a quadrilateral in the image which is known to map to a rectangle in the scene is sufficient to recover the focal length of the camera.
 % We shall briefly demonstrate ...
 
-The vectors joining the focal point $O$ to the two vanishing points $\myvec{H}$ and $\myvec{V}$ in the image plane are parallel to the horizontal and vertical vectors of the document.  Since we expect these two vectors to be at right-angles in the scene, we can write:
+The vectors joining the focal point $O$ to the two vanishing points $\myvec{H}$ and $\myvec{V}$ in the image plane are parallel to the horizontal and vertical vectors of the document.  Since we expect these two vectors to be mutually perpendicular in the scene, their scalar product is:
 
 \begin{equation}
 ( \myvec{H}_x , \myvec{H}_y , f ) \cdot ( \myvec{V}_x , \myvec{V}_y , f ) = 0
@@ -385,7 +416,7 @@ $\myvec{S} = \myvec{A} + X ( \myvec{B}-\myvec{A} ) + Y ( \myvec{C}-\myvec{A} )$
 is the corresponding scene point on the document plane
 derived from $\myvec{A}$, $\myvec{B}$ and $\myvec{C}$, i.e. the top-left, top-right and bottom-left corners of the
 quadrilateral in the scene 
-respectively, and $\mbox{\em image}(x,y)$ is the interpolated pixel colour at point $(x,y)$ in the image.
+respectively, and $\mbox{\em image}(x,y)$ is the interpolated pixel value at point $(x,y)$ in the image.
 %% JOEY USE FIG6b as a new example in Figure 10.
 
 \begin{figure}[t]
@@ -419,19 +450,20 @@ respectively, and $\mbox{\em image}(x,y)$ is the interpolated pixel colour at po
 \reffig{pprecover} shows the rectified images of the examples in
 \reffig{linesegfig}. Further examples in \reffig{againmoreppresults} and 
 \reffig{evenmoreppresults} show the recovery of various paragraphs, sometimes
-multiple, sometimes single, and also multiple regions within a single image. 
+multiple, sometimes single, and also multiple regions of text within a single image. 
 % with left justified and centrally aligned text.
-For example, in \ref{arthurcclarke} a centrally justified document containing
+For example, in \ref{arthurcclarke} a centrally-justified document containing
 multiple paragraphs has been recovered at high resolution and is easily readable
 or \reffig{emppra} shows the recovery of a segmented region of a book cover
 which contains text of different sizes, and other image noise such as specularity.
 
 % In \reffig{empprc} a left justified document was correctly identified and recovered, despite occlusion of part of the paragraph.
 We put our rectified paragraphs through standard off-the-shelf OCR software,
-however the final character recognition is largely dependent on the quality of
-the camera resolution. In some recovered images, the OCR accuracy was below 50\%
-% while for others the accuracy was above 90\% and in some cases 100\%.
-while for others the accuracy was above 90\%.  The image recovered in
+however the final quality of character recognition is largely dependent on the quality of
+the camera resolution, the distance to the document and the OCR software used. 
+We captured our images using a variety of cameras at various distances. 
+In some recovered images, the OCR accuracy was below 50\%
+while for others it was above 90\%.  For example, the image recovered in
 \reffig{chem017recover} achieved 100\% accuracy.
 
 %\reftab{ocrtable} shows that when we applied commercial OCR software to the image in \reffig{arthurcclarke},

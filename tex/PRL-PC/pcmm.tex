@@ -1,4 +1,4 @@
-% Paper for submission to Pattern Recognition Letters
+% Paper for submission to Pattern Recognition
 
 \documentclass{elsart}   %%[10pt]
 %\usepackage[english]{babel}
@@ -15,7 +15,6 @@
 
 \begin{frontmatter}
 
-%%\title{Recognition of Text in 3D Scenes Using Vanishing Points}
 \title{Rectifying Perspective Views of Text in 3D Scenes Using Vanishing Points}
 
 \author{Paul Clark and Majid Mirmehdi}  %%% \corauthref{cor1}}
@@ -29,8 +28,8 @@ Department of Computer Science, University of Bristol, Bristol BS8 1UB, UK %\\
 
 \begin{abstract}
 Documents may be captured at any orientation when viewed with a handheld camera.
-Here, a method of recovering a fronto-parallel view of perspectively skewed text
-documents in single images is presented, useful for 'point and click' scanning
+Here, a method of recovering  fronto-parallel views of perspectively skewed text
+documents in single images is presented, useful for 'point-and-click' scanning
 or when generally seeking regions of text in a scene.  We introduce a novel
 extension to the commonly used 2D projection profiles in document recognition to
 locate the horizontal vanishing point of the text plane.  Following further
@@ -38,7 +37,7 @@ analysis, we segment the lines of text to determine the style of justification
 of the paragraphs.  The change in line spacings exhibited due to perspective is
 then used to locate the document's vertical vanishing point. No knowledge of the
 camera focal length is assumed. Using the vanishing points, a fronto-parallel
-view is recovered. This is then suitable for OCR or other high-level
+view is recovered which is then suitable for OCR or other high-level
 recognition.  We provide results demonstrating the algorithm's performance on
 documents over a wide range of orientations.
 \end{abstract}
@@ -51,11 +50,10 @@ Vanishing Point Detection \sep Document Analysis and Recognition
 \end{frontmatter}
 
 %\baselineskip 24pt
-%\small
 
 \section{Introduction}
 With the use of cheap and simple (digital) cameras becoming common-place in the
-home, the office, and in personal Digital Assistants (PDAs), the demand for
+home, the office, and in Personal Digital Assistants (PDAs), the demand for
 simple, instantaneous scanning of documents is rising. Pointing a camera at a
 document, clicking a button to capture the image and then using some software to
 interpret the text, as in OCR, has many advantages. For example, it is fast and
@@ -77,9 +75,8 @@ recovery of text in real scenes
 \cite{joey1,ClarkICPR2000,2001-clark,justin,clark-ijdar-2001}. As a result, we
 developed an approach for {\em estimating} the rectification of the perspective
 view of a document \cite{2001-clark,clark-ijdar-2001}. In this work, we address
-the issue in more depth and present a {\em robust} approach for determining the
-vanishing points of a perspectively viewed document to rectify the text plane
-into a fronto-parallel view. Our method is independent of the focal length of
+the issue in more depth and present a {\em robust} approach. 
+Our method is independent of the focal length of
 the camera and document font size. Additionally, we analyse and show the limits
 and range of orientations of the text documents to which our proposed method can
 be applied.
@@ -98,7 +95,7 @@ than our own previous work, the authors are aware of only two other groups
 involved in perspective skew recovery of documents \cite{pilucvpr1,dance02}. In 
 \cite{pilucvpr1}, a method is presented on extraction of linear illusory clues 
 in skewed documents. Horizontal clues are extracted from a binarised input image
-where the characters, words (partial or full) and lines are transformed into
+where the characters, words (partial or full), and lines are transformed into
 blobs. Association networks are then built based on the relationships between
 neighbouring compact or elongated blobs. Using a pool of horizontal clues, a
 partial rectification of the document is performed.  Vertical clues are then
@@ -114,11 +111,12 @@ varying only $20^\circ$ between the optical axis of the camera and the normal to
 the document. Furthermore, it only works on fully formatted (i.e. on both left
 and right side) paragraphs whereas the method proposed here will recognise
 different types of justifications in paragraphs of text and is applicable to a
-much wider range of orientations. A further important difference between our
-work and those of both \cite{pilucvpr1} and \cite{dance02} is that while their
-methods are applied to whole images of a document as the only object in the
-scene, we have the ability to locate and segment paragraphs in an image into
-separate entities amongst other clutter in the image.
+much wider range of orientations. 
+%A further important difference between our
+%work and those of both \cite{pilucvpr1} and \cite{dance02} is that while their
+%methods are applied to whole images of a document as the only object in the
+%scene, we have the ability to locate and segment paragraphs in an image into
+%separate entities amongst other clutter in the image.
 
 %%% Useful ref: Shu99 (see dance02) 
 
@@ -158,7 +156,7 @@ recover scene geometry from image points with known planar homologies.  All of
 these methods initially require selecting points in the image which are believed
 to have a certain relationship in the scene.  In our work, we first detect
 probable paragraphs and lines of text in the image.  We then attempt to minimise
-the error between the points and a model constructed from a-priori information
+the error between the points and a simple model constructed from a-priori information
 about documents.  The fitting equation itself detects the set of points which
 satisfy the constraints for a paragraph, and finds the parameters of the 3D
 model.
@@ -211,7 +209,7 @@ In Section \ref{sec-vertvanish} we demonstrate our method based on line spacings
 for precisely locating the vertical vanishing point. We evaluate the range of
 orientations our methods apply to for both vanishing points. Section
 \ref{sec-rectify} illustrates the process of rectification of a document into a
-fronto-parallel view and present further results. We conclude the paper in
+fronto-parallel view and presents further results. We conclude the paper in
 \refsect{conclusions}.
 
 \input{findtext.tex}
@@ -219,29 +217,27 @@ fronto-parallel view and present further results. We conclude the paper in
 \input{parags.tex}
 \input{vertlines.tex}
 
-
 \section{Conclusion} \label{conclusions}
-
 We have presented a novel approach to the fronto-parallel recovery of a complete
 range of  paragraph formats under perspective transformation in a
-single image, without knowledge of the focal length of the camera.  Projection
-profiles from hypothesised vanishing points are used to robustly recover the
+single image, without knowledge of the camera focal length.   Projection
+profiles from hypothesised vanishing points are used to  recover the
 horizontal vanishing point of the text plane, and to segment the paragraph into
 its constituent lines.  Line fitting on the margins and central line of the
 document is then applied to deduce the formatting style of the paragraphs.  To
-estimate the vertical vanishing point, for fully justified paragraphs the margin
-lines are intersected.  For other styles of paragraphs, the observed difference
+estimate the vertical vanishing point, for fully-justified paragraphs the margin
+lines are intersected.  For other types of paragraphs, the observed difference
 in the spacings of the lines of text are used to retrieve the tilt of the text
 plane, and hence the vertical vanishing point.  Using the two principal
-vanishing points we find the orientation of the text plane and recover a
+vanishing points we find the orientation of the document and recover a
 fronto-parallel view.  The algorithm performs well for all types of paragraphs,
-provided it has some type of formatting. Hence, as a by-product of our proposed
-method we have demonstrated how to understand the format of paragraphs which can 
-be of many uses in the Document Recognition field.
+provided there is some  formatting. As a by-product of the proposed
+method we have demonstrated how to understand the format of paragraphs which is
+ of many uses in the Document Recognition area.
 In total the process takes around 20 seconds to recover a document,
 demonstrating its potential and applicability 
 %to realtime systems, as well as its suitability
-for normal scanning tasks.
+for normal scanning.
 %An optimisation algorithm for the search for the horizontal vanishing point was presented.
 
 %Whilst the described method is suitable for documents or single paragraphs, due
@@ -271,6 +267,6 @@ environment, suitable for a wearable computer system.
 % The authors would like to thank HP Research Labs, UK for their support.
 
 \bibliographystyle{elsart-num}
-\bibliography{jrefs}
+\bibliography{pr-pcmm}
 
 \end{document}
