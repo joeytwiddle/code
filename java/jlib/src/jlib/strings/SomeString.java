@@ -14,8 +14,8 @@ public abstract class SomeString {
   public int indexOf(String x) { // self-ref
     return indexOf(x,0);
   }
-  public int indexOf(char c,int i); // eff-over forced
-  public int indexOf(String x,int i); // eff over forced
+  public abstract int indexOf(char c,int i); // eff-over forced
+  public abstract int indexOf(String x,int i); // eff over forced
   // public int indexOf(char c,int i) { // eff-over
     // return toString().indexOf(c,i);
   // }
@@ -40,7 +40,7 @@ public abstract class SomeString {
 
 	private boolean matchAt(int x,String s) {
 		try {
-			for (int i=0;i<s.length();i++) {
+			for (int i=0;i<s.length();i++)
 				if (charAt(x+i) != s.charAt(i))
 					return false;
 		} catch (Exception e) {
