@@ -4,6 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ActionEvent;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Field;
@@ -12,11 +14,14 @@ import java.lang.reflect.Constructor;
 /** joey Nov 1, 2004 2:27:04 AM */
 public class ObjectIcon extends JLabel {
 
+    Desktop desktop;
+
     Object obj;
 
-    public ObjectIcon(Object _obj) {
+    public ObjectIcon(Desktop _desktop, Object _obj) {
         // super(_obj.getClass().getName() + " x = " + _obj);
-        super(getSimpleClassName(_obj.getClass()) + " x = \"" + _obj + "\"", new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj), JLabel.RIGHT);
+        super(VisualJava.getSimpleClassName(_obj.getClass()) + " x = \"" + _obj + "\"", new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj), JLabel.RIGHT);
+        desktop = _desktop;
         obj = _obj;
         // JMenu statics = new JMenu("Statics");
         // this.add(statics);
@@ -24,6 +29,7 @@ public class ObjectIcon extends JLabel {
         // this.add(statics2);
         // VisualJava.addMenuBar(this);
         addPopupMenuTo(this);
+        // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],obj);
     }
 
 	void addPopupMenuTo(Component thing) {
@@ -49,12 +55,7 @@ public class ObjectIcon extends JLabel {
         //...where the GUI is constructed:
 		//Create the popup menu.
         JMenuItem menuItem;
-		menuItem = new JMenuItem("A popup menu item");
 		// menuItem.addActionListener(listener);
-		popup.add(menuItem);
-		menuItem = new JMenuItem("Another popup menu item");
-		// menuItem.addActionListener(listener);
-		popup.add(menuItem);
 
         JMenu statics = new JMenu("Statics");
         try {
@@ -123,42 +124,25 @@ public class ObjectIcon extends JLabel {
 
     private void addConstructorToMenu(Constructor con, JMenu menu) {
         Class c = con.getDeclaringClass();
-        JMenuItem menuItem = new JMenuItem("new " + getSimpleClassName(c) + "(" + listParams(con.getParameterTypes()) + ")");
+        JMenuItem menuItem = new JMenuItem("new " + VisualJava.getSimpleClassName(c) + "(" + VisualJava.listParams(con.getParameterTypes()) + ")");
         menu.add(menuItem);
     }
 
-    private void addMethodToMenu(Method m, JMenu menu) {
-        JMenuItem menuItem = new JMenuItem(getSimpleClassName(m.getReturnType()) + " " + m.getName() + "(" + listParams(m.getParameterTypes()) + ")");
+    private void addMethodToMenu(final Method m, JMenu menu) {
+        JMenuItem menuItem = new JMenuItem(VisualJava.getSimpleClassName(m.getReturnType()) + " " + m.getName() + "(" + VisualJava.listParams(m.getParameterTypes()) + ")");
+        menuItem.addActionListener(
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        desktop.displayMethod(m,obj);
+                    }
+                }
+        );
         menu.add(menuItem);
     }
 
     private void addFieldToMenu(Field f, JMenu menu) throws IllegalAccessException {
-        JMenuItem menuItem = new JMenuItem(getSimpleClassName(f.getType()) + " " + f.getName() + " = \"" + f.get(obj) + "\"");
+        JMenuItem menuItem = new JMenuItem(VisualJava.getSimpleClassName(f.getType()) + " " + f.getName() + " = \"" + f.get(obj) + "\"");
         menu.add(menuItem);
-    }
-
-    static String listParams(Class[] parameterTypes) {
-        String s = "";
-        for (int i=0;i<parameterTypes.length;i++) {
-            s += getSimpleClassName(parameterTypes[i]);
-            if (i < parameterTypes.length - 1) {
-                s += ", ";
-            }
-        }
-        return s;
-    }
-
-    static String getSimpleClassName(Class c) {
-        if (c.isArray()) {
-            return getSimpleClassName(c.getComponentType()) + "[]";
-        } else {
-            String full = c.getName();
-            int i = full.lastIndexOf('.');
-            if (i>=0) {
-                full = full.substring(i+1);
-            }
-            return full;
-        }
     }
 
 }

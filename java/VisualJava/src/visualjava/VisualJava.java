@@ -3,6 +3,7 @@ package visualjava;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.lang.reflect.Method;
 
 /** joey Jul 11, 2004 3:26:31 AM */
 public class VisualJava {
@@ -10,8 +11,10 @@ public class VisualJava {
 	public static void main(String[] args) {
 		// visualjava.VisualJavaGui.show(new String("hello test"));
         JFrame f = new JFrame();
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 //        addMenuBar(f);
-        f.setContentPane(new visualjava.Desktop());
+        f.setSize(600,400);
+        f.setContentPane(new visualjava.Desktop(f));
         f.setVisible(true);
 	}
 
@@ -144,5 +147,28 @@ public class VisualJava {
 
 	}
 
+    public static String listParams(Class[] parameterTypes) {
+        String s = "";
+        for (int i=0;i<parameterTypes.length;i++) {
+            s += getSimpleClassName(parameterTypes[i]);
+            if (i < parameterTypes.length - 1) {
+                s += ", ";
+            }
+        }
+        return s;
+    }
+
+    static String getSimpleClassName(Class c) {
+        if (c.isArray()) {
+            return getSimpleClassName(c.getComponentType()) + "[]";
+        } else {
+            String full = c.getName();
+            int i = full.lastIndexOf('.');
+            if (i>=0) {
+                full = full.substring(i+1);
+            }
+            return full;
+        }
+    }
 
 }
