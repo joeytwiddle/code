@@ -6,6 +6,7 @@ bool simple,yesno,silent,difference=false;
 bool common,nolines,dodiff;
 String diffstringa;
 String diffstringb;
+int cntainb,cntbina,cntina,cntinb;
 
 List<String> compare(List<String> als,List<String> bls,String aname,String bname) {
   List<String> diff;
@@ -27,6 +28,10 @@ List<String> compare(List<String> als,List<String> bls,String aname,String bname
       String bl=bls.num(j);
       found=Ssimilar(al,bl);
     }
+		cntina++;
+		if (found) {
+			cntainb++;
+		}
     if (dodiff) {
       if (found)
         diff.add(al);
@@ -70,6 +75,8 @@ int main(int argc,String *argv) {
   List<String> als=readlinesfromfile(aname,separators,true);
   List<String> bls=readlinesfromfile(bname,separators,true);
 
+	cntainb=cntbina=cntina=cntinb=0;
+
   List<String> diff=compare(als,bls,aname,bname);
   if (difference && dodiff)
     writelinestofile(diff,Sformat("%s.diff",aname));
@@ -81,6 +88,9 @@ int main(int argc,String *argv) {
     // Don't remove this or you might delete both redundant files!
     // Actually that's probably bollocks
   }
+
+	printf("# A's lines in B = %i / %i\n",cntainb,cntina);
+	printf("%%age A in B = %.2f\n",100.0*(float)cntainb/(float)cntina);
 
   if (!oneway) {
     if (!simple && !silent)
