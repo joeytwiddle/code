@@ -1,10 +1,10 @@
-(
-
 if test ! $1
 then
 	echo "Usage: dumpdbs <city_name>"
 	exit 1
 fi
+
+(
 
 CITY_NAME="$1"
 
