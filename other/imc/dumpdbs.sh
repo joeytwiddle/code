@@ -35,7 +35,7 @@ ls -lrtF "$DESTDIR/"
 echo
 echo "Postgresql before and after:"
 cksum "$PSQLDEST"
-su - postgres pg_dump -d "$PSQLDB" > "$PSQLDEST"
+su - postgres -- pg_dump -d "$PSQLDB" > "$PSQLDEST"
 # Tronic's postgres was too old for this:
 # /usr/local/pgsql/bin/pg_dump -F t "$PSQLDB" > "$PSQLDEST"
 cksum "$PSQLDEST"
