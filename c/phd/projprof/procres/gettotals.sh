@@ -1,13 +1,13 @@
 HEAD="$1"
 # N=2
-for X in $HEAD-*.totals; do
-	HVPERR=-`grep "hvpreldistave = " "$X" | sed "s/.*= //;s/ .*//"`
-	echo "$N	$HVPERR"
-	VVPERR=-`grep "vvpreldistave = " "$X" | sed "s/.*= //;s/ .*//"`
-	N=`echo "$X" | sed "s/$HEAD-//;s/\(.*\)\..*/\1/;s/[^0123456789\.].*//"`
+for X in `'ls' $HEAD-*.totals | sed "s/$HEAD-//;s/\(.*\)\..*/\1/;s/[^0123456789\.].*//" | sort -n`; do
+	N="$X"
+	HVPERR=-`grep "hvpreldistave = " "$HEAD-$X.totals" | sed "s/.*= //;s/ .*//"`
+	echo "$N	$HVPERR" >&3
+	VVPERR=-`grep "vvpreldistave = " "$HEAD-$X.totals" | sed "s/.*= //;s/ .*//"`
 	echo "$N	$VVPERR" >&2
 	# N=`expr $N + 1`
-done > "$HEAD-hvpchange.data" 2> "$HEAD-vvpchange.data"
+done 3> "$HEAD-hvpchange.data" 2> "$HEAD-vvpchange.data"
 
 gnuplot << !
 
