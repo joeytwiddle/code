@@ -1,34 +1,40 @@
+% Some shortened entries for ACIVS
+
 @other{blank1,
   title="Ommitted",
   author="A. Nonymous"
 }
 
-% Incomplete bibref for IJDAR - fill it out!
 @article{clark-ijdar-2001,
-    title = "Journal paper",
-    year = "2001"
+	author  = "P Clark and M Mirmehdi",
+	title   = "Recognising Text in Real Scenes",
+	journal = "International Journal on Document Analysis and Recognition",
+	volume  = "4",
+	number  = "4",
+	year    = "2002",
+	pages   = "243--257",
 }
+	% url     = "http://link.springer-ny.com/link/service/journals/10032/tocs/t2004004.htm",
+	% note =    "To appear in {\em International Journal on Document Analysis and Recognition}",
+	% publisher =    "IEEE",
+%%  note =    "To appear in {\em International Journal on Document Analysis and Recognition}, vol. 4, no. 4",
 
-@other{blank2,
-  title="Also ommitted",
-  author="A. Nonymous"
-}
-
-@other{blank3,
-  title="Another ommitted",
-  author="A. Nonymous"
+@misc{planargrouping,
+	author = "F Schaffalitzky and A Zisserman",
+	title = "Planar Grouping for Automatic Detection of Vanishing Lines and Points",
+	url = "http://citeseer.nj.nec.com/340408.html"
 }
 
 
 @inproceedings{joey1,
   title={Location and recovery of text on oriented surfaces},
   author={P Clark and M Mirmehdi},
-  Booktitle={SPIE conference on Document Recognition and Retrieval VII},
-  ISBN={0-8194-3585-6},
-  publisher={The International Society for Optical Engineering},
+  Booktitle={SPIE conference on Document Recognition and Retrieval VII, Vol. 3967},
   pages={267--277},
   month={January},
   year={2000},
+  ISBN={0-8194-3585-6},
+  publisher={The International Society for Optical Engineering},
   keywords={Computer_Vision,Image_Databases},
   abstract={We present a method for extracting text from images
 where the text plane is not necessarily fronto-parallel to the camera.
@@ -46,10 +52,30 @@ of the text). We illustrate the algorithm using various examples.
   pubtype={4}
 }
 
-% OWN - SWAP FOR ANON
-@inproceedings{clarkBMVC2000,
-  title={Conference paper},
-  year={2000}
+@article{Clark2000a,
+  year =         "2000",
+  month = "Jan",
+  institution =  "University of Bristol, UK. Computer Science",
+  title =        "Location and recovery of text on oriented surfaces",
+  url =          "ftp://ftp.cs.bris.ac.uk/pub/tech-reports/2000/joey1.ps.gz",
+  author =       "Paul Clark and Majid Mirmehdi",
+  abstract =     "We present a method for extracting text from images
+                 where the text plane is not necessarily fronto-parallel
+                 to the camera. Initially, we locate local image
+                 features such as borders and page edges. We then use
+                 perceptual grouping on these features to find
+                 rectangular regions in the scene. These regions are
+                 hypothesised to be pages or planes that may contain
+                 text. Edge distributions are then used for the
+                 assessment of these potential regions, providing a
+                 measure of confidence. It will be shown that the text
+                 may then be transformed to a fronto-parallel view
+                 suitable, for example, for an OCR system or other
+                 higher level recognition. The proposed method is scale
+                 independent (of the size of the text). We illustrate
+                 the algorithm using various examples.",
+  journal = "Proceedings of the SPIE Conference on Document Recognition and Retrieval VII",
+  pages = "267--277",
 }
 
 @inproceedings{clarkBMVC2000,
@@ -76,6 +102,22 @@ the text for optical character recognition. },
   pubtype={4}
 }
 
+% OWN - SWAP FOR ANON
+% @inproceedings{clarkBMVC2000,
+  % title={Conference paper},
+  % year={2000}
+% }
+
+% @other{blank2,
+  % title="Also ommitted",
+  % author="A. Nonymous"
+% }
+
+% @other{blank3,
+  % title="Another ommitted",
+  % author="A. Nonymous"
+% }
+
 @inproceedings{rother0,
   title={A New Approach for Vanishing Point Detection in Architectural Environments},
   author={C Rother},
@@ -88,15 +130,13 @@ the text for optical character recognition. },
 % NOTE: two identical papers follow: choose one!
 
 @InProceedings{clarkICPR2000,
-  title =        "Combining Statistical Measures to Find Image Text
-                 Regions",
+  title =        "Combining Statistical Measures to Find Image Text Regions",
   author =       "Paul Clark and Majid Mirmehdi",
-  booktitle =    "Proceedings of the 15th International Conference on
-                 Pattern Recognition",
+  booktitle =    "Proceedings of the 15th International Conference on Pattern Recognition",
   editor =       "A Sanfeliu and J J Villanueva and M Vanrell and R
                  Alquezar and J-O Eklundh and Y Aloimonos",
   ISBN =         "0796507506",
-  publisher =    "IEEE Computer Society",
+   publisher =    "IEEE Computer Society",
   pages =        "450--453",
   month =        sep,
   year =         "2000",
@@ -148,56 +188,20 @@ We demonstrate our results on typical images.},
     year = "1981"
 }
 
-@unpublished{,
-  note = "Accepted for SNRFAI'2001",
-  year = 2001
-}
 
-% OWN - SWAP FOR ANON
-@InProceedings{justin,
-  title = "Conference paper",
-  year={2001}
-}
 
 @InProceedings{justin,
   title = "Extracting Low Resolution Text with an Active Camera for {OCR}",
   author = "M. Mirmehdi and P. Clark and J. Lam",
-  booktitle =    "Proceedings of the 9th Spanish Symposium on Pattern
-  Recognition and Image Processing",
+  booktitle =    "Proceedings of the 9th Spanish Symposium on Pattern Recognition and Image Processing",
   pages =        "43--48",
   year =         "2001",
   keywords =     "Computer_Vision",
 }
 
-@article{Clark2000a,
-  year =         "2000",
-  month = "Jan",
-  institution =  "University of Bristol, UK. Computer Science",
-  title =        "Location and recovery of text on oriented surfaces",
-  url =          "ftp://ftp.cs.bris.ac.uk/pub/tech-reports/2000/joey1.ps.gz",
-  author =       "Paul Clark and Majid Mirmehdi",
-  abstract =     "We present a method for extracting text from images
-                 where the text plane is not necessarily fronto-parallel
-                 to the camera. Initially, we locate local image
-                 features such as borders and page edges. We then use
-                 perceptual grouping on these features to find
-                 rectangular regions in the scene. These regions are
-                 hypothesised to be pages or planes that may contain
-                 text. Edge distributions are then used for the
-                 assessment of these potential regions, providing a
-                 measure of confidence. It will be shown that the text
-                 may then be transformed to a fronto-parallel view
-                 suitable, for example, for an OCR system or other
-                 higher level recognition. The proposed method is scale
-                 independent (of the size of the text). We illustrate
-                 the algorithm using various examples.",
-  journal = "Proceedings of the SPIE Conference on Document Recognition and Retrieval VII",
-  pages = "267--277",
-}
-
 @TechReport{partialSums,
   type = "Technical Report",
-  number = "CUED/F-INFENG/TR.245",
+  number = "TR.245",
   institution = "Cambridge University",
   title = "Faster Spatial Image Processing using Partial Summation",
   author = "S. Hodges and R. J. Richards",
@@ -295,7 +299,6 @@ We demonstrate our results on typical images.},
   year = "2000"
 }
 
-
 @inproceedings{repetition,
     author = "F. Schaffalitzky and A. Zisserman",
     title = "Geometric Grouping of Repeated Elements within Images",
@@ -306,12 +309,32 @@ We demonstrate our results on typical images.},
 }
     % publisher = "Springer-Verlag",
 
-@inproceedings{ribeiro,
+@inproceedings{ribeiroBMVC,
   author = "E. Ribeiro and E. Hancock",
   title = "Detecting Multiple Texture Planes using Local Spectral Distortion",
-  booktitle = "Proceedings of the 11th British Machine Vision Conference",
+  booktitle = "Proc. 11th British Machine Vision Conference",
   pages = "102--111",
   year = "2000"
+}
+
+@article{ribeiro,
+  author = "E. Ribeiro and E. Hancock",
+  title = "Estimating the Perpective Pose of Texture Planes using Spectral Analysis on the Unit Sphere", 
+  journal = "To appear in Pattern Recogniton",
+  pages = {},
+  volume = {},
+  number = {},
+  year = 2002
+}
+
+
+@inproceedings{dance02,
+  author = "C. R. Dance",
+  title = "Perspective estimation for document images",
+  Booktitle={SPIE conference on Document Recognition and Retrieval IX, Vol. 4670},
+  pages={},
+  month={January},
+  year = "2002"
 }
 
 @Article{docsthrucams,
@@ -1180,6 +1203,27 @@ We demonstrate our results on typical images.},
   note =         "Also available at http://www.hsr.no/\~{ }tranden/",
 }
 
+@article{Yu96,
+        AUTHOR = "Yu, B. and Jain, A.K.",
+        TITLE = "A Robust and Fast Skew Detection Algorithm for Generic Documents",
+        JOURNAL = "Pattern Recognition",
+        VOLUME = "29",
+        YEAR = "1996",
+        NUMBER = "10",
+        PAGES = "1599-1629"
+}
+
+@article{Amin96,
+        AUTHOR = "Amin, A. and Fischer, S. and Parkinson, A.F. and Shiu, R.",
+        TITLE = "Comparative-Study of Skew Detection Algorithms",
+        JOURNAL = "Journal of Electronic Imaging",
+        VOLUME = "5",
+        YEAR = "1996",
+        NUMBER = "4",
+        PAGES = "443-451"}
+
+
+
 @Article{messelod1,
   author =       "S. Messelodi and C. M. Modena",
   title =        "Automatic identification and skew estimation of
@@ -1190,8 +1234,7 @@ We demonstrate our results on typical images.},
   year =         "1999",
   pages =        "791-810",
 }
-  % month =        Nov,
-
+ 
 @Article{YIP,
   author =       "R. Yip",
   title =        "A {Hough} transform technique for the detection of reflectional symmetry and skew-symmetry",
@@ -1229,9 +1272,7 @@ We demonstrate our results on typical images.},
   publisher =    "IEEE",
   year =         "1999",
 }
-  % author =       "Ki-Young Jeong and Keechul Jung and Eun Yi Kim and Hang Joon Kim",
-  % address =      "Los Alamitos, CA",
-  % month =        oct # " ~24--28",
+ 
 
 % A Video Text Extraction Method for Character Recognition
 % 
@@ -1243,16 +1284,14 @@ We demonstrate our results on typical images.},
 %  Keywords: Character recognition, Video text, Video analysis, Binarization, Histogram, Text extraction
 
 
-
-
-@unpublished{pilucvpr1,
+@InProceedings{pilucvpr1,
   author =       "M. Pilu",
   title =        "Extraction of illusory linear clues in perspectively skewed documents",
-  note =    "Accepted for the IEEE Conference on Computer Vision and Pattern Recognition",
-  publisher =    "IEEE",
   year =         "2001",
+ booktitle = "IEEE Conf on Computer Vision and Pattern Recognition",
+  pages = "363--368",
 }
-  % pages =        "319--323",
+ 
 
 
 @InProceedings{taylorrecons00,
@@ -1264,25 +1303,14 @@ We demonstrate our results on typical images.},
                  on Computer Vision and Pattern Recognition",
   year =         "1999",
 }
-  % booktitle =    "Proceedings of the {IEEE} Computer Science Conference
-  %                on Computer Vision and Pattern Recognition
-  %                ({CVPR}-99)",
-  % month =        jun # " ~23--25",
-  % address =      "Los Alamitos",
-  % publisher =    "IEEE",
-
-% OWN - SWAP FOR ANON
-@inproceedings{2001-clark,
-  title={Conference paper},
-  year={2001}
-}
+ 
 
 @inproceedings{2001-clark,
   title={Estimating the Orientation and Recovery of Text Planes in a Single Image},
   author={Paul Clark and Majid Mirmehdi},
   Booktitle={Proceedings of the 12th British Machine Vision Conference (BMVC2001)},
   editor={Tim Cootes and Chris Taylor},
-  publisher={BMVA},
+  publisher={BMVA Press},
   pages={421--430},
   month={September},
   year={2001},
