@@ -16,6 +16,7 @@ import javax.swing.text.*;
 import javax.swing.text.html.*;
 import nuju.*;
 import jlib.*;
+import jlib.dnd.hack.*;
 
 class NuJuTu {
 
@@ -79,15 +80,21 @@ class MemberBrowser extends JPanel {
 	}
 
 	Component componentFor(Object o) {
-		return componentFor(o.getClass(),o.toString());
+		return componentFor(o.getClass(),o);
 	}
 
-	Component componentFor(Class cls,String value) {
+	Component componentFor(Class cls,Object o) {
+
+		// First, check if it is possible to instantiate an
+		// object of type cls with a single string constructor.
 		Constructor con=null;
 		try {
 			Class[] conPars={ "".getClass() };
 			con=cls.getConstructor(conPars);
 		} catch (Exception e) { }
+		Component c=null;
+
+		// Decide what type of Component to use.
 		if (
 				cls.isPrimitive()
 				|| cls.getName().equals("java.lang.String")
@@ -96,10 +103,32 @@ class MemberBrowser extends JPanel {
 				// || isPrimClass (all fit above?)
 				// also some array types, eg. byte[] and char[]
 			) {
-			return new JTextField(value,4);
+			c = new JTextField(""+o,4);
 		} else {
-			return new JButton(value);
+			c = new JButton(""+o);
 		}
+
+		// Set default properties for Component:
+		// Background color:
+		c.setBackground(new java.awt.Color(0.6f,0.9f,0.6f));
+		// Draggable from:
+		DnDManager.setSource(c,o);
+		// Droppable on:
+		DnDManager.setTarget(c,new jlib.simple.Code() {
+			public void execute() {
+				System.out.println("Something received "+input);
+			}
+		} );
+		c.addInputMethodListener(new InputMethodListener() {
+			public void caretPositionChanged(InputMethodEvent e) {
+				System.out.println("Got caret moved event "+e);
+			}
+			public void inputMethodTextChanged(InputMethodEvent e) {
+				System.out.println("Got text changed event "+e);
+			}
+		} );
+
+		return c;
 	}
 
 	MemberBrowser(Class cls,Object o,

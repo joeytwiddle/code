@@ -22,9 +22,16 @@ import jlib.simple.*;
 
 public class DnDManager {
 
+	// The hack: instead of passing objects using Java's weird interface (which supports exo-Java d+d).
+	// we just keep a record of the last Object picked up (in JavaVM only - drags from outside jvm will
+	// register last pickup with this system.).
 	private static Object lastpickedup=null;
 
+	// Map of Component -> Code to run when it is dropped on.
 	private static Map code=new HashMap();
+
+	// Map of registered source Component -> MySource
+	private static Map registeredSrcs=new HashMap();
 
 	// Making a component drag/drop-able
 
@@ -32,9 +39,17 @@ public class DnDManager {
 	 * <P>
 	 * You must attach an Object which will be transferred to the target Component
 	 * at the end of a drag-drop.
+	 * <P>
+	 * If the state of the Component changes in such a way that it's attached Object
+	 * should change, setSource should be called again, and will attach the new Object.
 	 **/
 	public static void setSource(Component c,Object o) {
-		new MySource(c,o);
+		Object got=registeredSrcs.get(c);
+		if ( got == null ) {
+			registeredSrcs.put(c,new MySource(c,o));
+		} else {
+			((MySource)got).obj = o;
+		}
 	}
 
 	/** Register a ComponentAcceptingDrop as a drop target. **/
