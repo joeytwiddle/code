@@ -34,10 +34,10 @@ public:
 	}
 
 	void unixterm_end() {
-		fprintf(stderr,"\r ");
-		fprintf(stderr,Srep(" ",UNIXTERMWID));
-		fprintf(stderr," \r");
-		// fprintf(stderr,"\n");
+		// fprintf(stderr,"\r ");
+		// fprintf(stderr,Srep(" ",UNIXTERMWID));
+		// fprintf(stderr," \r");
+		fprintf(stderr,"\n");
 	}
 
 };
