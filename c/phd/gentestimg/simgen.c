@@ -158,7 +158,7 @@ int main(int argc,String *argv) {
 			// }
 		// }
 
-		 printf("right = %s\n",rec.right.toString());
+		 printf("\nright = %s\n",rec.right.toString());
 		 printf("down = %s\n",rec.down.toString());
 		// printf("planeA = %s\n",rec.pos.toString());
 		// printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));

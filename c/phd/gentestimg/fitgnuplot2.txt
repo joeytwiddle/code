@@ -5,5 +5,5 @@ w=0.001
 
 fit f(x) "gpldata.txt" via v,w
 
-plot "gpldata.txt",f(x)
+# plot "gpldata.txt",f(x)
 
