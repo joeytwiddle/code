@@ -31,7 +31,8 @@ float doRansac(List<V2d> ps,bool usingspacings) { // returns error
 		// See if we can improve currentErr by removing a single point
 		float bestErr=currentErr;
 		List<V2d> bestps;  bestps.add(currentps);
-		if (linespacings_do_ransac) {
+		// Cannot throw away more than half the points!
+		if (linespacings_do_ransac && currentps.len > ps.len/2 ) {
 			// Try the current list with point number i removed, and keep the best one
 			for (int i=0;i<currentps.len;i++) {
 				// printf("Removing %i / %i\n",i,currentps.len);
