@@ -152,8 +152,8 @@ int init_candy(void) {
   for (y=0;y<scrhei;y++) {
     for (x=0;x<scrwid;x++) {
       // img.bmp[y][x]=256*y/scrhei;
-      img.bmp[y][x]=0;
-      // img.bmp[y][x]=255;
+      // img.bmp[y][x]=0;
+      img.bmp[y][x]=255;
       if (x<scrwid-1 && y<scrhei-1) {
         pix[x][y][usingmap]=x;
         piy[x][y][usingmap]=y;
