@@ -3,20 +3,13 @@
 void init();
 void doframe();
 
-// #define DOS
-// #define DO_FULLSCREEN
-#define SCRWID 640
-#define SCRHEI 480
-#define SCRBPS 32
-#define desiredFramesPerSecond 50
-
 #ifdef DOS
 #define M_PI 3.14159265358979323846
 #include "SDL.h"
 #define DEBUGTOFILE
 #else
 #include <SDL.h>
-// #include <sched.h>
+#include <sched.h>
 #endif
 
 #include <stdio.h>
@@ -24,14 +17,6 @@ void doframe();
 #include <stdlib.h>
 #include <time.h>
 #include <SDL.h>
-
-#define REDEFINE
-#ifdef REDEFINE
-#include "define.c"
-#endif
-#define CONST
-#include "incl.c"
-#undef CONST
 
 #ifdef DEBUGTOFILE
 FILE *output;
@@ -108,14 +93,15 @@ void setuplookups() {
 
 SDL_Surface *screen;
 int frames=0;
+float framebits;
+
+FILE *fp;
 
 int main(int argc,char *argv[]) {
 
 	SDL_Event event;
 	int keepLooping=1;
-	float framebits;
 	clock_t starttime;
-	FILE *fp;
 	int start_clock;
 
 #ifdef DEBUGTOFILE
@@ -160,17 +146,13 @@ int main(int argc,char *argv[]) {
 	while (keepLooping) {
 
 		int releasetime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
+		// int releasetime = start_clock+frames*CLOCKS_PER_SEC/desiredFramesPerSecond;
 		framebits=((float)clock()-start_clock)*20.0/CLOCKS_PER_SEC;
 		if ((frames % 20) == 0) {
 			fprintf(output,"\rframes/second: %.2f",(float)CLOCKS_PER_SEC*(float)frames/(float)(releasetime-starttime));
 		}
 
-		// SDL_Flip(screen);
-		SDL_UpdateRect(screen,0,0,SCRWID,SCRHEI);
 
-
-
-		
 
 		doframe();
 
@@ -185,6 +167,17 @@ int main(int argc,char *argv[]) {
 				keepLooping=0;
 			}
 		}
+
+#ifdef KEEP_TO_FPS
+		while (clock()<releasetime) {
+			sched_yield();
+			// SDL_Delay(12);
+		}
+#endif
+
+		// SDL_Flip(screen);
+		SDL_UpdateRect(screen,0,0,SCRWID,SCRHEI);
+
 
 	}
 

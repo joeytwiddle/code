@@ -4,7 +4,7 @@
 #define SCRHEI 400
 #define SCRBPS 32
 #define desiredFramesPerSecond 50
-
+#define KEEP_TO_FPS
 #include "../stripped-useful.c"
 
 #define TXTWID (10*7)
@@ -39,6 +39,7 @@ char text[TXTHEI][TXTWID] =
 #define SCALECONST ((float)SCRWID/32.0/82.0)
 #define PADDING 2
 #define cr (SCRHEI/(TXTHEI+PADDING*2))
+#define useframes frames
 
 // SDL_Surface *screen;
 // int frames=0;
@@ -56,9 +57,9 @@ float speed[TXTHEI];
 float space[TXTHEI];
 
 void setSpeed(int i) {
-	float mess=(1.0+cos((float)frames*0.004))/2.0;
-	// speed[i]=9.0+2.0*sin(freq[i]*M_PI*frames);
-	speed[i]=0.2*SCALECONST*square((cen[i]+mess*mag[i]*sin(off[i]+freq[i]*M_PI*(float)frames))/3.0);
+	float mess=(1.0+cos((float)useframes*0.004))/2.0;
+	// speed[i]=9.0+2.0*sin(freq[i]*M_PI*useframes);
+	speed[i]=0.2*SCALECONST*square((cen[i]+mess*mag[i]*sin(off[i]+freq[i]*M_PI*(float)useframes))/3.0);
 	space[i]=speed[i]*(float)cr/19.0;
 }
 
@@ -112,7 +113,7 @@ void doframe() {
 	SDL_FillRect(screen,&screenrect,blackPixel);
 	for (row=0;row<TXTHEI;row++) {
 		int cy=(PADDING+row)*cr;
-		int leftat=speed[row]*frames-SCRWID/2;
+		int leftat=speed[row]*useframes-SCRWID/2;
 		int i0=leftat/space[row];
 		int diff=space[row]-(leftat-i0*space[row]);
 		int col;
