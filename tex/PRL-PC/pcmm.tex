@@ -150,16 +150,28 @@ small area of the image.
 % the orientation of the text does not directly apply to our problem.
 
 Rother \cite{rother0} found vanishing points  corresponding  to the three mutual
-orthogonal directions of the scene using parallel lines so commonly
-available in architectural environments.  Murino and
+orthogonal directions of the scene using the parallel lines commonly
+available in architectural environments.
+Murino and
 Foresti \cite{MURIN} used a 3D Hough transform to estimate the orientation of
-planar shapes with known rectilinear features. FIX THE GOOL REVIEW Gool et al. 
-\cite{GOOL} %and Yip\cite{yip} 
-found the skewed symmetry of 2D shapes which have an axis of
-symmetry in the plane, allowing for affine recovery.  We require recovery from
-perspective transformation and, as with these latter works, we will use a priori
-information about the 2D shape we are observing.
-%%% FIX THE GOOL REVIEW
+planar shapes with known rectilinear features.
+Gool et al. \cite{vangool98planar} have employed invariants to recover scene geometry
+from image points with known planar homologies.
+All of these methods initially require selecting points in the image which are
+believed to have a certain relationship in the scene.
+In our work, we first detect probable paragraphs and lines of text in the image.
+We then attempt to minimise the error between the points and a model constructed from
+a-priori information about documents.
+The fitting equation detects a set of points that satisfy the constraints
+and finds parameters for the 
+% However, the problem of choosing a set of points 
+% FIX THE GOOL REVIEW
+% Gool et al. 
+% \cite{GOOL} %and Yip\cite{yip} 
+% found the skewed symmetry of 2D shapes which have an axis of
+% symmetry in the plane, allowing for affine recovery.  We require recovery from
+% perspective transformation and, as with these latter works, we will use a priori
+% information about the 2D shape we are observing.
 
 Knowledge of the principal vanishing points of the plane on which text lies is
 sufficient to recover a fronto-parallel view. The text lines of a paragraph

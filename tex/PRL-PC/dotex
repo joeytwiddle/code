@@ -1,6 +1,6 @@
 # #!/usr/local/bin/zsh
 # TEXINPUTS="$PWD:$PWD/../majidstyles:$PWD/../shared"
-# export TEXINPUTS
+export TEXINPUTS
 
 FNAME=pcmm
 echo "----------------------------------------------------------------"
