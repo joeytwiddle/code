@@ -18,6 +18,75 @@ import jlib.multiui.*;
 
 public class CEDict {
 
+	Process dict;
+	BufferedReader dictin;
+	PrintStream dictout;
+
+	Map cache=new HashMap();
+
+	String readLine() {
+		try {
+			return dictin.readLine();
+		} catch (Exception e) {
+			System.err.println(""+e);
+			return null;
+		}
+	}
+
+	public CEDict(String charStyle) {
+
+		try {
+
+			System.out.println("Initialising cedict...");
+			dict=Runtime.getRuntime().exec("cedictlookup");
+			dictin=new BufferedReader(new InputStreamReader(dict.getInputStream()));
+			dictout=new PrintStream(dict.getOutputStream());
+			// Select dictionary file:
+			dictout.println(charStyle);
+			dictout.flush();
+			String l;
+			while ((l=readLine()).length()>0) {
+				System.out.println("Got "+l);
+			}
+			System.out.println("Ready to go.");
+
+		} catch (Exception e) {
+			System.err.println(""+e);
+		}
+
+	}
+
+	public List lookup(String chars) {
+
+		List res=(List)cache.get(chars);
+
+		if (res==null) {
+
+			res=new Vector();
+
+			dictout.println(chars);
+			dictout.flush();
+
+			for (int i=0;i<"Enter word (-h for help): ".length();i++)
+				try { dictin.read(); } catch (Exception e) { }
+
+			String l;
+			while ((l=readLine()).length()>0) {
+				if (!l.equals("No match found.")) {
+					System.out.println("Got "+l);
+					res.add(l);
+				}
+			}
+
+			cache.put(chars,res);
+
+		}
+
+		return res;
+
+	}
+
+
 	public static void main(String[] args) {
 
 		ArgParser a=new ArgParser(args);
@@ -26,14 +95,11 @@ public class CEDict {
 
 		try {
 
+			CEDict dict=new CEDict("b");
+
 			FileReader fr=new FileReader(f);
 			System.out.println("Encoding: "+fr.getEncoding());
 			BufferedReader br=new BufferedReader(fr);
-
-			Process dict=Runtime.getRuntime().exec("cedictlookup");
-			BufferedReader dictin=new BufferedReader(new InputStreamReader(dict.getInputStream()));
-			PrintStream dictout=new PrintStream(dict.getOutputStream());
-			dictout.println("g");
 
 			boolean inBlock=false;
 			StringBuffer sb=new StringBuffer();
@@ -58,16 +124,11 @@ public class CEDict {
 						// System.out.println(sb.toString());
 						String s=sb.toString();
 						// Pairs
-						for (int j=0;j<sb.length()-3;j+=4) {
-							dictout.println(s.substring(j,j+4));
-							dictout.flush();
-							String l;
-							while ((l=dictin.readLine()).length()>-1) {
-								System.out.println("Got "+l);
-							}
+						for (int j=0;j<sb.length()-3;j+=2) {
+							List res=dict.lookup(s.substring(j,j+4));
 						}
 						for (int j=0;j<sb.length()-1;j+=2) {
-							dictout.println(s.substring(j,j+2));
+							List res=dict.lookup(s.substring(j,j+2));
 						}
 						sb.delete(0,sb.length());
 					}
