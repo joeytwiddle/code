@@ -13,6 +13,8 @@
 	 Also note that:
 	   e's have only appeared inside s's
 		 .'. e's do not appear inside g's, which means we can generally do + instead of a whole new write
+
+	 If e can be seen as within s, s can continue afterwards with +" rather than a new print.
 */
 
 /*rgs*/

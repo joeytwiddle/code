@@ -1,0 +1,1 @@
+java tools.mason.Mason $*

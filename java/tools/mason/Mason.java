@@ -25,10 +25,10 @@ class Tag {
 		if (JString.contains(options,'s')) {
 			String escaped=JString.replace(JString.replace(JString.replace(s,"\\","\\\\"),"\"","\\\""),"\n","\\n");
 			if (escaped.length()>0)
-				generator.println("    staticOut.println(\""+escaped+"\");");
+				generator.println("    System.out.print(\""+escaped+"\");");
 		}
 		if (JString.contains(options,'e'))
-			generator.println("    staticOut.println("+s+");");
+			generator.println("    System.out.print("+s+");");
 			// generator.println("\"+"+s+"+\"");
 	}
 
@@ -55,8 +55,18 @@ public class Mason {
 			int j=s.indexOf("*/",i);
 			// if (j<0) someone hasn't closed their tags!
 			String options=s.substring(i+2,j);
-			if (validTag(options))
+
+			// if (validTag(options))
+				// return new Tag(options,i,j+2);
+
+			// A hack to neaten things
+			if (validTag(options)) {
+				if (j+2<s.length())
+					if (s.charAt(j+2)=='\n')
+						return new Tag(options,i,j+3);
 				return new Tag(options,i,j+2);
+			}
+
 			i=j+2;
 		}
 	}

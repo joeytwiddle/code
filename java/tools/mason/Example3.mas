@@ -1,0 +1,78 @@
+/**/
+/* r = realtime
+	 g = generator do
+	 e = generator evaluate
+	 s = generator write to static
+
+	 So far we only use:
+	   rgs : constant throughout
+		 rg : overseer code
+		 rs : code that does not change, but is not needed for generator
+		 r : realtime only
+		 s : static only
+		 e : evaluate
+	 Also note that:
+	   e's have only appeared inside s's
+		 .'. e's do not appear inside g's, which means we can generally do + instead of a whole new write
+
+	 If e can be seen as within s, s can continue afterwards with +" rather than a new print.
+*/
+
+/*rg*/
+import java.lang.*;
+import java.lang.reflect.*;
+import java.io.*;
+
+class Test {
+
+/*g*/	public static final void main(String[] args) {
+		new Test().showData(new jlib.Log());
+	}
+
+/*rg*/	public void showData(Object obj) {
+
+		try {
+
+			Class c = obj.getClass();
+
+/*s*/
+import java.lang.*;
+
+class /*e*/c.getName()/*s*/Printer {
+
+	public void showData(/*e*/c.getName()/*s*/ obj) {
+
+/*rs*/			System.out.println("Fields for "+obj);
+
+/*rg*/			Field[] fs = c.getFields();
+			for (int i=0;i<fs.length;i++)
+/*rgs*/			{
+				Field f=fs[i];
+		/*r*/		String value=""+fs.get(obj);
+		/*s*/		String value=""+obj./*e*/f.getName()/*s*/;
+			
+				// Print out field name and its contents.
+		/*r*/		System.out.println("  "+f.getName()+" = "+value);
+		/*s*/		System.out.println("  /*e*/f.getName()/*s*/ = "+value);
+
+/**/ /* Rats need to do s first! */
+/*s*/			}
+/*rg*/			}
+
+/*rg*/
+		} catch (Exception e) {
+			System.out.println(""+e);
+		}
+	
+/**/ /* Rats I have to duplicate below to get ouput ordering right.
+        Could be fixed with 'srg' ordering. */
+
+/*s*/
+	}
+
+}
+
+/*rg*/
+	}
+
+}
