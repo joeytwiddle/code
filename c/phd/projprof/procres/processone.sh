@@ -70,6 +70,16 @@ set zlabel "VVP\naccuracy" "Times-Roman,28"
 set output "$X-vvp.eps"
 splot [5:85] [5:85] [-3:0] "$X.data" using 1:2:28 w l
 
+# # set title "Accuracy of recovery of VVP" "Times-Roman,28"
+# set zlabel "Relative right err" "Times-Roman,28"
+# set output "$X-relrighterr.eps"
+# splot [5:85] [5:85] [-3:0] "$X.data" using 1:2:29 w l
+
+# # set title "Accuracy of recovery of VVP" "Times-Roman,28"
+# set zlabel "Relative down err" "Times-Roman,28"
+# set output "$X-reldownerr.eps"
+# splot [5:85] [5:85] [-3:0] "$X.data" using 1:2:31 w l
+
 !
 
 fi
