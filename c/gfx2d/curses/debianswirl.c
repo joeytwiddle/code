@@ -68,18 +68,19 @@ void main() {
 		for (int y = 0;y<LINES;y++) {
 			for (int x = 0;x<COLS;x++) {
 
-				float X = ((float)x-(float)cenx)/(float)COLS*1.3;
-				float Y = ((float)y-(float)ceny)/(float)LINES;
+				float X = 0.4*((float)x-(float)cenx)/(float)COLS*1.3;
+				float Y = 0.4*((float)y-(float)ceny)/(float)LINES;
 				float ang = atan2(Y,X)-swirlang;
 				if (y<0)
 					ang=ang+M_PI;
-				float rad = sqrt(X*X+Y*Y);
-				float swirlHeight = sin(0.8*M_PI*sin(rad*4.1)+rad/spacePerSwirl+ang-swirlang);
+				float rad = sqrt(X*X+Y*Y) + 0.02*sin(2.0*ang);
+				float swirlHeight = sin(2.8*M_PI*sin(123.45+(float)frames*0.00341+rad*4.1)+rad/spacePerSwirl+ang-swirlang);
 
-				#define EXTRA 0.4
-				if ( swirlHeight > - EXTRA ) {
+				// #define extra 0.4
+				float extra=0.0+0.8*sin(2.493+rad*5.2+(float)frames*0.002);
+				if ( swirlHeight > - extra ) {
 				// if ( swirlHeight > - 0.7 ) {
-					int c = (((int)((swirlHeight+EXTRA)/(1.0+EXTRA)*(float)PALSIZE)) % PALSIZE);
+					int c = (((int)((swirlHeight+extra)/(1.0+extra)*(float)PALSIZE)) % PALSIZE);
 					char ch = palette[c];
 					c=1;
 					attrset(COLOR_PAIR(c+1) | A_BOLD);
