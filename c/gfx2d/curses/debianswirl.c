@@ -6,7 +6,7 @@
  * - Use time instead of frame count.
  * - Could implement more efficient anti-aliasing:
  *   eg. - retain neighbouring heights
- *    or - work out distance to spiral edge
+ *    or - work out distance to spiral edge (ie. treat is as a 2D shape, not a thresholded heightmap)
 **/
 
 #include <math.h>
