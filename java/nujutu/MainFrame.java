@@ -67,7 +67,96 @@ class NuJuTu {
 }
 
 
+class ArgumentView implements ComponentAcceptingDrop {
+
+	JobContext context;
+	Class type;
+	Variable variable;
+	Component component;
+
+	ArgumentView(Class _type, Variable _variable) {
+		type = _type;
+		variable = _variable;
+	}
+	ArgumentView(Class _type, Object _object) {
+		this(_type, new Variable(null,_object));
+	}
+
+	void setJobContext(JobContext _context) {
+		context = _context;
+	}
+
+	void init() {
+		DnDManager.setSource(component,variable);
+		final ArgumentView x = this;
+		// DnDManager.setTarget(component);
+		DnDManager.setTarget(component,
+			new jlib.simple.Code() {
+				public void execute() {
+					// System.out.println("Something received "+input);
+					x.drop(input);
+				}
+			}
+		);
+	}
+
+	public void drop(Object received) {
+		if (received instanceof Variable) {
+			dropVar(variable);
+		} else {
+			dropVar(new Variable(null,received));
+		}
+	}
+	void dropVar(Variable var) {
+		if (type.isInstance(var.value)) {
+			variable = var;
+			init();
+			component.repaint();
+			JobContext.log("Dropped "+variable+" with value "+variable.value+" into "+type);
+		} else {
+			JobContext.log("Cannot drop object type "+var+" onto "+type);
+		}
+	}
+
+}
+
+
+class TextArgumentView extends ArgumentView {
+	TextArgumentView(Class _type, Variable _variable) {
+		super(_type,_variable);
+		init();
+	}
+	TextArgumentView(Class _type, Object _object) {
+		super(_type,_object);
+		init();
+	}
+	void init() {
+		component = new JTextField("" + variable.value);
+		super.init();
+	}
+}
+
+
+class NonTextArgumentView extends ArgumentView {
+	NonTextArgumentView(Class _type, Variable _variable) {
+		super(_type,_variable);
+		init();
+	}
+	NonTextArgumentView(Class _type, Object _object) {
+		super(_type,_object);
+		init();
+	}
+	void init() {
+		component = new JLabel("" + variable.value);
+		super.init();
+	}
+}
+
+
+
 class MemberBrowser extends JPanel {
+
+	JobContext context;
 
 	GridBagConstraints c = new GridBagConstraints();
 	GridBagLayout gridbag = new GridBagLayout();
@@ -88,6 +177,8 @@ class MemberBrowser extends JPanel {
 
 	Component componentFor(Class cls,Object o) {
 
+		System.err.println("Dealing with object "+o);
+
 		// First, check if it is possible to instantiate an
 		// object of type cls with a single string constructor.
 		Constructor con=null;
@@ -95,8 +186,9 @@ class MemberBrowser extends JPanel {
 			Class[] conPars={ "".getClass() };
 			con=cls.getConstructor(conPars);
 		} catch (Exception e) { }
-		Component c=null;
 
+		// Component c=null;
+		ArgumentView view;
 		// Decide what type of Component to use.
 		if (
 				cls.isPrimitive()
@@ -105,27 +197,24 @@ class MemberBrowser extends JPanel {
 				// || hasStringConstructor, eg. StringBuffer, Date, ...
 				// || isPrimClass (all fit above?)
 				// also some array types, eg. byte[] and char[]
-			) {
-			JTextField field = new JTextField(""+o,4);
-			if (field.getColumns()>=10) {
-				field.setColumns(10);
-			}
-			c = field;
+		) {
+			view = new TextArgumentView(cls,o);
+			// JTextField field = new JTextField(""+o,4);
+			// if (field.getColumns()>=10) {
+				// field.setColumns(10);
+			// }
+			// c = field;
 		} else {
-			c = new JButton(""+o);
+			view = new NonTextArgumentView(cls,o);
+			// c = new JButton(""+o);
 		}
 
+		view.setJobContext(context);
+		Component c = view.component;
 		// Set default properties for Component:
 		// Background color:
 		c.setBackground(new java.awt.Color(0.6f,0.9f,0.6f));
 		// Draggable from:
-		DnDManager.setSource(c,o);
-		// Droppable on:
-		DnDManager.setTarget(c,new jlib.simple.Code() {
-			public void execute() {
-				System.out.println("Something received "+input);
-			}
-		} );
 		c.addInputMethodListener(new InputMethodListener() {
 			public void caretPositionChanged(InputMethodEvent e) {
 				System.out.println("Got caret moved event "+e);
@@ -138,7 +227,7 @@ class MemberBrowser extends JPanel {
 		return c;
 	}
 
-	MemberBrowser(Class cls,Object o,
+	MemberBrowser(JobContext _context, Class cls, Object o,
 		List members,
 		boolean stat,boolean notstat,
 		boolean priv,boolean notpriv,
@@ -197,10 +286,10 @@ class MemberBrowser extends JPanel {
 							params=((Constructor)member).getParameterTypes();
 						}
 						rightBox.add(new JLabel(" ( "));
-						if (params.length==0) {
-							rightBox.add(new JLabel(" ) "));
+						// if (params.length==0) {
+							// rightBox.add(new JLabel(" ) "));
 							// rightBox.add(new JButton("Execute"));
-						} else {
+						// } else {
 							for (int j=0;j<params.length;j++) {
 								rightBox.add(componentFor(params[j]));
 								if (j<params.length-1)
@@ -208,7 +297,7 @@ class MemberBrowser extends JPanel {
 							}
 							// c.gridwidth = GridBagConstraints.REMAINDER;
 							rightBox.add(new JLabel(" )"));
-						}
+						// }
 					}
 					c.anchor = GridBagConstraints.EAST;
 					c.fill = GridBagConstraints.NONE;
@@ -330,19 +419,19 @@ class JobBrowser extends JPanel {
 		jlib.JList.addArray(members,c.getMethods());
 		// tabs[0].add(new JButton("wicked"));
 		tabs[0].removeAll();
-		tabs[0].add(new JScrollPane(new MemberBrowser(c,o,members,true,false,false,true,true,false,false)));
+		tabs[0].add(new JScrollPane(new MemberBrowser(jobContext,c,o,members,true,false,false,true,true,false,false)));
 		tabs[1].removeAll();
-		tabs[1].add(new JScrollPane(new MemberBrowser(c,o,members,true,false,false,true,false,true,false)));
+		tabs[1].add(new JScrollPane(new MemberBrowser(jobContext,c,o,members,true,false,false,true,false,true,false)));
 		tabs[2].removeAll();
-		tabs[2].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,false,true,false,false,true)));
+		tabs[2].add(new JScrollPane(new MemberBrowser(jobContext,c,o,members,false,false,false,true,false,false,true)));
 		tabs[3].removeAll();
-		tabs[3].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,false,true,true,false,false)));
+		tabs[3].add(new JScrollPane(new MemberBrowser(jobContext,c,o,members,false,false,false,true,true,false,false)));
 		tabs[4].removeAll();
-		tabs[4].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,false,true,false,true,false)));
+		tabs[4].add(new JScrollPane(new MemberBrowser(jobContext,c,o,members,false,false,false,true,false,true,false)));
 		// tabs[5].removeAll();
-		// tabs[5].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,true,false,true,false,false)));
+		// tabs[5].add(new JScrollPane(new MemberBrowser(jobContext,c,o,members,false,false,true,false,true,false,false)));
 		// tabs[6].removeAll();
-		// tabs[6].add(new JScrollPane(new MemberBrowser(c,o,members,false,false,true,false,false,true,false)));
+		// tabs[6].add(new JScrollPane(new MemberBrowser(jobContext,c,o,members,false,false,true,false,false,true,false)));
 		// System.out.println(""+members.size());
 		jobContext.mainFrame.repaint();
 
@@ -367,6 +456,9 @@ class Variable {
 		label = _label;
 		value = _value;
 		// jobContext = JobContext.getContextFromThread();
+	}
+	Class getType() {
+		return value.getClass();
 	}
 }
 
@@ -417,6 +509,7 @@ class JobConsole extends Panel {
 	StringBuffer contents = new StringBuffer();
 	JLabel contentsView = new JLabel();
 	public void log(String text) {
+		System.err.println(text);
 		contents.append(text + '\n');
 		contentsView.setText(text);
 	}
@@ -451,8 +544,13 @@ class JobContext {
 	}
 	*/
 
-	void log(Object o) {
-		console.log(o);
+	// void log(Object o) {
+		// console.log(o);
+	// }
+
+	public static void log(Object o) {
+		// console.log(o);
+		System.err.println("" + o);
 	}
 
 	/*
@@ -496,17 +594,19 @@ public class MainFrame extends JFrame {
 		jobContext.infoPane.browse("hello");
 		jobContext.infoPane2.browse(new Integer(7));
 		// JSplitPane sp=new JSplitPane(JSplitPane.VERTICAL_SPLIT,workspace,new JScrollPane(jobContext.infoPane));
-		JSplitPane browserPanes=new JSplitPane(JSplitPane.VERTICAL_SPLIT,new JScrollPane(jobContext.infoPane),new JScrollPane(jobContext.infoPane2));
-		JSplitPane sp=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(jobContext.workspace),browserPanes);
-		cp.add(sp);
+		JSplitPane browserPanes = new JSplitPane(JSplitPane.VERTICAL_SPLIT,new JScrollPane(jobContext.infoPane),new JScrollPane(jobContext.infoPane2));
+		JSplitPane mainSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(jobContext.workspace),browserPanes);
+		cp.add(mainSplit);
+		setSize(800,600);
+		setVisible(true);
+		browserPanes.setDividerLocation(0.5d);
+		mainSplit.setDividerLocation(0.5d);
 	}
 
 	public static void main(String[] args) {
 		ArgParser a=new ArgParser(args);
 		a.done();
-		MainFrame mf=new MainFrame();
-		mf.setSize(800,600);
-		mf.setVisible(true);
+		new MainFrame();
 	}
 
 }
