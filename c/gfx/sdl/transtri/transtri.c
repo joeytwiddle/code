@@ -30,22 +30,8 @@
 // todo: Store #define constants for a variety of video modes so that the
 //   user may choose at runtime.
 
-#define DOS
-#ifdef DOS
-#define M_PI 3.14159265358979323846
-#include "SDL.h"
-#define DEBUGTOFILE
-#else
-#include <SDL.h>
-// #include <sched.h>
-#endif
-
-#include <stdio.h>
-#include <math.h>
-#include <stdlib.h>
-#include <time.h>
-#include <SDL.h>
-
+// #define DOS
+// #define DO_FULLSCREEN
 #define SCRWID 320
 #define SCRHEI 200
 #define NUMTRIS 400
@@ -62,6 +48,21 @@
 #define DO_TRIANGLES
 // #define DO_STARS
 #define DO_WHITEOUT
+
+#ifdef DOS
+#define M_PI 3.14159265358979323846
+#include "SDL.h"
+#define DEBUGTOFILE
+#else
+#include <SDL.h>
+// #include <sched.h>
+#endif
+
+#include <stdio.h>
+#include <math.h>
+#include <stdlib.h>
+#include <time.h>
+#include <SDL.h>
 
 #include "define.c"
 #define CONST
@@ -267,7 +268,12 @@ int main(int argc,char *argv[]) {
 	}
 	atexit(SDL_Quit);
 	SDL_WM_SetCaption("transience",NULL);
-	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE | SDL_FULLSCREEN );
+#ifdef DO_FULLSCREEN
+    #define XTRASDLVMBITS | SDL_FULLSCREEN
+#else
+    #define XTRASDLVMBITS
+#endif
+	screen=SDL_SetVideoMode(SCRWID,SCRHEI,SCRBPS, SDL_HWPALETTE XTRASDLVMBITS );
 	if (screen==NULL) {
 		fprintf(stderr,"Couldn't initialise video.\n");
 		return 1;
