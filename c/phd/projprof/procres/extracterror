@@ -1,0 +1,1 @@
+./finderr ../results.txt | grep -v "^Opening " > data.txt

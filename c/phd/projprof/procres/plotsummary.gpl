@@ -1,0 +1,7 @@
+splot [0:90] [0:90] [0:1] 'errgrid.dat' using 1:2:4
+set surface
+set data style points
+set data style lines
+set contour surface
+set view 70,340,1,1
+set view 70,135,1,1
