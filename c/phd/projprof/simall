@@ -27,11 +27,11 @@ numlines=30
   roll="90";
   # for roll in `listnums -6 6`; do
     yaw=15;
-    # for yaw in `listnums 0 90 by 3`; do
-    for yaw in `listnums 20 70 by 10`; do
+    for yaw in `listnums 0 90 by 5`; do
+    # for yaw in `listnums 20 70 by 10`; do
       pitch=15;
-      # for pitch in `listnums 0 90 by 3`; do
-      for pitch in `listnums 20 70 by 10`; do
+      for pitch in `listnums 0 90 by 5`; do
+      # for pitch in `listnums 20 70 by 10`; do
 			  echo
 			  echo "::::::::::::::::::::: $roll $yaw $pitch :::::::::::::::::::::"
 			  echo
@@ -68,3 +68,5 @@ numlines=30
   cp "$RES" "results-lines-$numlines.txt"
 
 # done
+
+touch done
