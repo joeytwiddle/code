@@ -2,6 +2,8 @@
 
 # for X in hier-large entire-large large-noise50 large-noise30 centralised centralised2 tmp tmp2; do
 
+echo "Pass -plot through to processone..."
+
 echo *.results
 
 for Y in *.results; do
@@ -10,7 +12,7 @@ for Y in *.results; do
 
 	echo "$X"
 
-	./processone.sh "$X"
+	./processone.sh "$@" "$X"
 	# ./processone.sh -plot "$X"
 
 	# convert "$X-hvp.eps" jpgs/"$X-hvp.jpg"

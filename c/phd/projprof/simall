@@ -5,15 +5,14 @@
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
 # DOCUMENTS="left cen right full"
 
-DOCUMENTS="left dar-crpage2-left30"
-# PPSCANMETHODS="hier full"
-PPSCANMETHODS="hier"
+DOCUMENTS="dar-crpage2-left30" # left
+PPSCANMETHODS="hier full"
 PPMEASURES="square deriv"
 # VVPMETHODS="spacings margins"
 VVPMETHODS="spacings"
-NOISES=`seq 0.0 0.1 0.35`
+NOISES=`seq -w 0.0 0.05 0.5001`
 # LINESTODO=`seq -w 30 -1 02`
-ANGLES=`seq 20 30 50`
+ANGLES=`seq -w 20 10 50`
 
 for DOCUMENT in $DOCUMENTS; do
 
