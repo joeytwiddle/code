@@ -116,10 +116,10 @@ int main(int argc,String *argv) {
 	V3d cen=(worldA+worldD)/2.0;
 	printf("%s %s\n",right.toString(),down.toString());
 
-	// printf("correlright = %s\n",right.toString());
-	// printf("correldown = %s\n",down.toString());
-	printf("right = %s\n",right.toString());
-	printf("down = %s\n",down.toString());
+	printf("correlright = %s\n",right.toString());
+	printf("correldown = %s\n",down.toString());
+	// printf("right = %s\n",right.toString());
+	// printf("down = %s\n",down.toString());
 	printf("A = %s\n",worldA.toString());
 	printf("B = %s\n",worldB.toString());
 	printf("C = %s\n",worldC.toString());
@@ -144,7 +144,7 @@ int main(int argc,String *argv) {
 			}
 		}
 
-		// TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
+		 TexturedRectangle3d rec=TexturedRectangle3d(worldA,right,down,inputimg);
 		// for (int i=0;i<imgwidth;i++) {
 			// (progmon.*progmon.nowthrough)((float)i/(float)imgwidth);
 			// for (int j=0;j<imgheight;j++) {
@@ -158,8 +158,8 @@ int main(int argc,String *argv) {
 			// }
 		// }
 
-		// printf("right = %s\n",rec.right.toString());
-		// printf("down = %s\n",rec.down.toString());
+		 printf("right = %s\n",rec.right.toString());
+		 printf("down = %s\n",rec.down.toString());
 		// printf("planeA = %s\n",rec.pos.toString());
 		// printf("0 = %f %f ?\n",V3d::normdot(worldB-worldA,rec.nor),V3d::normdot(worldB-worldA,rec.nor));
 
