@@ -9,10 +9,10 @@
 #define COLORS	255
 #define colors COLORS
 
-#define WIN_W	320
-#define WIN_H	200
-#define scrwid 320
-#define scrhei 200
+#define WIN_W 320
+#define WIN_H 200
+#define scrwid WIN_W
+#define scrhei WIN_H
 // #define WIN_W	640
 // #define WIN_H	480
 // #define scrwid 160
@@ -56,7 +56,7 @@
 #endif
 
 
-float desiredFPS=10.0;
+float desiredFPS=3.0;
 
 
 int stylee;
@@ -251,20 +251,20 @@ int init_candy(void) {
 
 void plotsomeshapes() {
 
-	for (int i=0;i<1;i++) {
-		if (myrnd()<0.4) {
+  for (int i=0;i<2;i++)
+  	if (myrnd()<0.4) {
 			V2d cen=V2d((float)scrwid*myrnd(),(float)scrhei*myrnd());
 			V2d dir=V2d::random();
 			V2d a=cen-dir*(scrwid);			
 			V2d b=cen+dir*(scrwid);			
-			img.line(a.x,a.y,b.x,b.y,255);
+      img.line(a.x,a.y,b.x,b.y,255);
+      // img.thickline(a.x,a.y,b.x,b.y,1,255);
 			// float oth=sqrt(myrnd())*5.0;
 			// V2d perp=oth*dir.perp();
 			// img.filltri((a-perp).x,(a-perp).y,(a+perp).x,(a+perp).y,b.x,b.y,myrnd()*255);
 			
 			// img.line(a.x,a.y,b.x,b.y,255);
 		}
-	}
 			
 }
 
@@ -273,12 +273,12 @@ void plotsomeshapes() {
 long lasttime=0; // uclock();
 
 void timesync() {
-	long thistime;
+  long thistime;
 	while ((thistime=clock())<lasttime+CLOCKS_PER_SEC/desiredFPS)
 		{
 			// Sould release the processor
 		}
-	lasttime=thistime;
+  lasttime=thistime;
 }
 	
 
@@ -368,9 +368,7 @@ void iterate_candy() {
     imgtmp=img;
     img=img2;
     img2=imgtmp;
-    for (i=1;i<=2;i++) {
-      plotsomeshapes();
-    }
+    plotsomeshapes();
     framedone();
 		frameno++;
 
