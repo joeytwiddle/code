@@ -41,7 +41,7 @@ public class Atom implements Type {
     return s;
   }
   public Match match(SomeString s) {
-				Profile.start("Atom.match");
+				// Profile.start("Atom.match");
     if (Parser.DebuggingText)
       Parser.report(JString.indent(depth,"- "+this+": \""+Atom.strip(""+s)+"\"")+"\n");
     depth++;
@@ -86,12 +86,12 @@ public class Atom implements Type {
         if (Parser.DebuggingText)
           Parser.report(JString.indent(depth)+"Got "+rules+" on \""+strip(""+m.string)+"\" leaving \""+strip(""+left)+"\"\n");
         depth--;
-				Profile.stop("Atom.match");
+				// Profile.stop("Atom.match");
         return m;
       }
     }
     depth--;
-				Profile.stop("Atom.match");
+				// Profile.stop("Atom.match");
     return null;
   }
   public String toString() {
