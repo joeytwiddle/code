@@ -1,0 +1,22 @@
+FTP Software PC/TCP tar Version 2.2  02/25/93 18:05
+Copyright (c) 1986-1993 by FTP Software, Inc.  All rights reserved.
+usage: tar (t|x|c)[vfuazpobm0-9Zsk] [tar_file] [blocks] [realm] {files...}
+commands:	t        list contents of tar file
+		x        extract file(s) from tar file
+		c        create a tar file
+options:	v        verbose mode
+		f        take output file as argument
+		u        mark file as archived
+		a        translate newlines to <cr><lf>
+		z        compress/decompress tar image
+		p        don't overwrite files with more recent dates
+		o        ask permission to overwrite duplicate files
+		b        take blocking factor as an argument
+		m        don't preserve file creation date
+		0-9      dump level
+		Z        only try Kerberos kshell protocol for network transfer
+		s        only try rsh and rexec protocols for network transfer
+		k        take kerberos realm as an argument
+		(blocks) # of 512-byte blocks/write
+		(realm)  Kerberos Realm to use for Kerberos protocol
+		{files...}  files to be archived

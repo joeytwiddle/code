@@ -1,0 +1,1 @@
+@edit c:\joey\code\c\new.c

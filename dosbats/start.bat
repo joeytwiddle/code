@@ -1,0 +1,1 @@
+@command.com < %tools%\pull.pnc

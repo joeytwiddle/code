@@ -1,0 +1,1 @@
+@c:\progra~1\norton~1\ncompare %1 %2 %3 %4 %5 %6 %7 %8 %9

@@ -1,0 +1,1 @@
+@hwset /sbdma:1 /sbirq:5 /sba:220

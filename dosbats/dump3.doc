@@ -1,0 +1,403 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                              ==========================
+                               DUMP - File Dump Utility
+                                     User's Guide
+                                     Version 3.0
+                              ==========================
+
+
+
+
+
+
+                                  Copyright (C) 1985
+                                    Nick Richards
+                                     1124 S. Main
+                                 Burlington, NC 27215
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                         DUMP Version 3.00 (c) Copyright 1985 
+                         Argan Software; ALL RIGHTS RESERVED 
+                               Written by Nick Richards
+
+          DUMP  is  the  copyrighted  property  of Argan Software.  You are 
+          granted a limited license  to  use  DUMP,  and  to  copy  it  and 
+          distribute it, provided that the following conditions are met: 
+
+          1)  You may not charge a fee for such copying and distribution.
+          
+          2)  You must distribute DUMP as a complete set of all files.
+          
+          3) You may ONLY distribute DUMP in its original, unmodified state.  
+          
+          This  program  is  being  distributed  under the Freeware concept 
+          where users are urged to  distribute  this  program  in  original 
+          form,  not  modified in any way,  to their friends and other BBS.  
+          The  author  claims  no  responsibility  for  any  damage  either 
+          accidental or otherwise through use of this program.  The program 
+          is  provided  "AS  IS"  without  warranty  of  any  kind,  either 
+          expressed or implied.  The entire risk  as  to  the  quality  and 
+          compatibility of the program is with YOU.  
+          
+          If  you use this program and find it of value,  any contributions 
+          ($5 suggested) will be greatly appreciated and will  be  used  to 
+          further develop useful software.  Send any contributions to: 
+          
+                                    Nick Richards
+                                     1124 S. Main
+                                 Burlington, NC 27215
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                       -------
+                                       D U M P
+                                       -------
+
+    
+
+
+                   Program to Search, Examine, and Modify Any File
+
+
+          INTRODUCTION
+          
+          
+          
+          DUMP allows you to examine the contents of a file.  You can also 
+          search for data within a file, as well as modify the file's con- 
+          tents.
+          
+          Why  can't  you just TYPE the file?  Well,  to an extent you can.  
+          TYPE will show you what is  in  the  file.  What  it  shows  you, 
+          however,  is  often  unreadable to the human eye.  Files that are 
+          compressed and files that contain non-ASCII data will look like a 
+          stream of random characters.  And,  of course,  you can't  modify 
+          that stream of random characters, just look at it.  Not very use- 
+          ful.  
+          
+          What about text processors?  Can they do the job?  After all, you 
+          can modify files with a text processor, can't you?  Yes, you can.  
+          Again,  however,  you are often faced with a stream of characters 
+          that make no sense to you.  Trying to  decipher  a  file  is  not 
+          always easy.  Besides,  isn't that what computers are supposed to 
+          do for you?  
+          
+          Here comes DUMP to the rescue!  Not only will DUMP allow  you  to 
+          search  through the data,  not only will DUMP allow you to EASILY 
+          modify a file,  but DUMP will also present the data to you in  an 
+          easy-to-understand display.  In fact,  it will display the infor- 
+          mation two different ways,  so you can attack the data YOUR  way, 
+          not just the way somebody else thought you should do so.  
+          
+          Have  you  ever had a file corrupted?  Don't worry!  DUMP can fix 
+          it almost instantly.  Program not working right and  you  suspect 
+          the file has wrong data?  Relax!  DUMP will show you exactly what 
+          data is in your file.  No more guesswork.  
+          
+          DUMP is  easy to use and will prove itself invaluable as you work
+          with your computer.  
+
+
+
+
+
+          
+          
+          
+          
+          
+          
+          
+          
+          HOW TO USE DUMP
+
+          
+          
+          Format:   DUMP [d:]filename[.ext][ O=offset][ S=search][ EOF]
+          
+          Type:     Internal  External
+                                ****
+          
+          Remarks:  Specify the parameters:
+                      
+                    [d:]filename[.ext] to specify the file  to  be  DUMPed.  
+                    The  drive  specification  [d:]  is optional.  The ext- 
+                    ension [.ext] is optional,  but if the file has an ext- 
+                    ension,  you  must include it when you call DUMP.  DUMP 
+                    does not assume a specific extension.  
+                    
+                    [ O=offset] to specify the byte offset  into  the  file 
+                    where  DUMP is to begin.  If O= is not specified,  DUMP 
+                    starts from the beginning of the file.  offset can be a 
+                    number  from 0 up to the size of the file in bytes.  If 
+                    offset is not a multiple of 256,  it  will  be  rounded 
+                    down to the nearest multiple of 256.  
+                    
+                    [ S=search]  to  have  DUMP  search  for  the specified 
+                    string.  When the first occurence of that string in the 
+                    file is found,  DUMP stops searching and  displays  the 
+                    file  contents  at that point.  If S= is not specified, 
+                    DUMP will not search for a  particular  string.  search 
+                    can  be any string that does NOT contain a space.  DUMP 
+                    assumes that the first space  it  encounters  after  S= 
+                    marks the end of the search string.  
+                    
+                    [ EOF]  to  have  DUMP jump to the end of  the file and 
+                    display the file  contents  at  that  point.  EOF  will 
+                    override both O= and S=.  
+
+          Example:  The following example DUMPs the file TEST.DAT on drive 
+                    B.
+                    
+                    A>dump b:test.dat
+                    
+                    The following example DUMPs the file MYPROG.BAS  start- 
+                    ing with byte 2560.  
+                    
+                    A>dump myprog.bas o=2560
+                    
+                    The following example DUMPs the file DATA starting with 
+                    byte 1280 and searching for the first occurrence of the 
+                    string "filename".  
+                    
+                    A>dump data o=1280 s=filename
+                    
+                    The  following  example DUMPs the last part of the file 
+                    RANDOM.TXT.  
+                    
+                    A>dump random.txt eof
+                              
+
+
+          HOW TO USE DUMP (Continued)
+
+          DISPLAY FORMAT
+                    
+          When  DUMP  displays the file's contents,  it does so in two dif- 
+          ferent formats:  HEX and ASCII.  Each line on the screen displays 
+          16  bytes  from  the  file.  There  are 16 lines displayed on the 
+          screen at once, for a total of 256 bytes on each screen.  
+          
+          To make the screen easier to read,  the 16 lines are broken  into 
+          two  groups  of 8 lines.  Each line is divided into two groups of 
+          eight bytes.  On the HEX part of the screen,  the groups are div- 
+          ided  by a dot.  On the ASCII part of the screen,  the groups are 
+          divided by a double line at the top and bottom of the screen.  
+          
+          On the left side of the screen is a  column  marked  OFFSET.  The 
+          offset  numbers  tell  how  far  DUMP is into the file.  Thus the 
+          first line has an offset number of 0 because at the beginning  of 
+          that line,  there are 0 bytes that came before it.  The next line 
+          has an offset of 16 bytes because at the beginning of  that  line 
+          16  bytes have already been DUMPed (the first line).  At the beg- 
+          inning of the third line,  32  bytes  have  been  DUMPed  already 
+          (lines  one and two),  etc.  Each screen shows 256 bytes,  so the 
+          first offset number on a screen is a multiple of 256.  
+          
+          The HEX part of the screen shows the file bytes in hex format (00 
+          to FF).  The ASCII part of the screen shows the ASCII  equivalent 
+          of  each  HEX byte.  The only exceptions are ASCII characters 0 - 
+          31.  These are represented on the screen by a period since  their 
+          meanings  are  not clear visually.  However,  the HEX part of the 
+          screen tells you exactly which characters are being displayed, so 
+          you can always tell what it is.  
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          HOW TO USE DUMP (Continued)
+
+
+
+          ACTIVE KEYS
+          
+          Once DUMP is started, there are several keys you can use:
+          
+          
+                 HOME             SPACE             END
+                 UP ARROW         ESC               DOWN ARROW
+                 PG UP            INS               PG DOWN
+          
+          HOME will cause DUMP to display the beginning of the  file.  This 
+          is a fast way to return to the beginning.  
+          
+          UP ARROW  will  cause  DUMP  to display the previous screen  (the 
+          previous 256 bytes).  
+          
+          PG UP will cause DUMP to jump back 5 screens (1280 bytes).
+          
+          END will cause DUMP to display the end of the  file.  This  is  a 
+          fast way to jump to the end.  
+          
+          DOWN ARROW  will  cause DUMP to display the next screen (the next 
+          256 bytes).  
+          
+          PG DOWN will cause DUMP to jump forward 5 screens (1280 bytes).
+          
+          SPACE will start DUMP scrolling through  the  file  at  a  steady 
+          speed.  To  stop  the  scrolling,  hit the space bar again.  Once 
+          scrolling begins, the only keys that are active besides the space 
+          bar  are the numeral keys  1 - 9.  These cause the  scrolling  to 
+          speed  up  or  slow down with 1 being the slowest and 9 being the 
+          fastest.  The current speed is displayed at  the  bottom  of  the 
+          screen.  
+          
+          Please  note  that  the preceding keys are only active at certain 
+          times.  Thus if you are at the beginning of the file, UP ARROW or 
+          HOME or PG UP will not go any farther.  Similarly,  if you are at 
+          the end of the file,  DOWN ARROW,  END, and PG DOWN will take you 
+          no farther.  When a key is not currently active,  the key message 
+          will  disappear from the screen and hitting that key will have no 
+          effect.  
+          
+          In addition, the RIGHT ARROW and LEFT ARROW keys can also be used 
+          if  you  started  DUMP  with the S= option.  S= will show you the 
+          first occurrence of the search string.  Hitting the  RIGHT  ARROW 
+          key will show you the next occurrence,  if any.  Hitting the LEFT 
+          ARROW key will show you the previous occurrence,  if  any.  These 
+          keys  can  be used repeatedly until you come to the end or begin- 
+          ning of the file.  However,  if you did not specify  S=,  neither 
+          the RIGHT ARROW or LEFT ARROW key will have any effect.  
+          
+          ESC will exit from DUMP at any time except when scrolling or when 
+          in MODIFY mode (see below).  
+
+
+
+
+          HOW TO USE DUMP (Continued) 
+          
+          
+          
+          MODIFY MODE
+          
+          INS will cause DUMP to enter MODIFY mode.  The screen will change 
+          slightly as follows:  The only special keys that will  be  active 
+          are INS (to leave MODIFY mode) and F9 (to write any modifications 
+          to the file in order to permanently save them).  In addition, the 
+          cursor  will  appear  as  a  large blinking box in the upper left 
+          corner of the HEX part of the screen.  
+          
+          In MODIFY mode,  you can overwrite any of the 256  bytes  on  the 
+          screen by typing over them.  You can do this either by typing the 
+          hex codes if you are in the HEX part of the screen,  or by typing 
+          the ASCII characters if you are in the ASCII part of the  screen.  
+          To  move  from  one part of the screen to the other,  hit the TAB 
+          key.  
+          
+          As you begin typing, your modifications will appear on the screen 
+          highlighted.  This means that  your  modifications  are  not  yet 
+          being saved to the file itself.  To do this, hit F9.  Any changes 
+          you made will now be permanently stored  in  the  file  and  your 
+          changes  will  no longer appear highlighted.  If you leave MODIFY 
+          mode before you hit F9,  the changes will not be  saved  and  the 
+          screen will be restored to the previous values.  
+
+          When you are finished making modifications, hit F9 to save the 
+          changes (if you want them saved) and hit the INS key to return to 
+          normal DUMP mode.  You can then DUMP the next screen, hit INS to 
+          enter MODIFY mode and modify the next screen, if you want.
+
+
+985 ight     author.  CED IS INTENDED FOR YOUR PRIVATE, NONCOMMERCIAL USE
+          ONLY.  You may make copies of the ced program and documentation
+          files for your own use, and you may copy the files for others. 
+          You may not, however, charge for such copies, or in any other way
+          sell the program or otherwise attempt to make money from it or
+          any modified version of it.  Please.
+
+          An exception to the above is, however, granted to recognized
+      
