@@ -1,6 +1,7 @@
 package org.neuralyte.common.swing;
 
 import javax.swing.*;
+import java.awt.*;
 
 /**
  * This lazy JMenu does not need to generate its child menu items
@@ -42,16 +43,39 @@ public abstract class LazyJMenu extends LargeCapacityJMenu {
     }
 
     public void setSelected(boolean selected) {
-        if (selected && (!generated || dynamic)) {
-            if (dynamic) {
-                this.removeAll();
-            }
-            this.generateChildren();
-            generated = true;
+        if (selected) {
+            ensurePopulated();
         }
         super.setSelected(selected);
     }
 
+    private void ensurePopulated() {
+        if (!generated || dynamic) {
+            if (dynamic) {
+                this.removeAll();
+            }
+            generated = true;
+            this.generateChildren();
+        }
+    }
+
     public abstract void generateChildren();
+
+    /*
+    public int getItemCount() {
+        ensurePopulated();
+        return super.getItemCount();
+    }
+    */
+
+    public int getMenuComponentCount() {
+        ensurePopulated();
+        return super.getMenuComponentCount();
+    }
+
+    public Component[] getMenuComponents() {
+        ensurePopulated();
+        return super.getMenuComponents();
+    }
 
 }

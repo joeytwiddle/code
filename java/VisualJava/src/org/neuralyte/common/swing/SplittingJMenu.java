@@ -8,6 +8,7 @@ package org.neuralyte.common.swing;
 import java.lang.*;
 import java.lang.reflect.*;
 import java.util.*;
+import java.awt.*;
 import javax.swing.*;
 // import javax.swing.text.*;
 // import javax.swing.text.html.*;
@@ -46,11 +47,15 @@ public class SplittingJMenu extends DetachableJMenu {
     }
 
     public void setSelected(boolean b) {
+        ensurePopulated();
+        super.setSelected(b);
+    }
+
+    public void ensurePopulated() {
         if (!doneSorting) {
             arrange();
             doneSorting = true;
         }
-        super.setSelected(b);
     }
 
     /*
@@ -101,5 +106,22 @@ public class SplittingJMenu extends DetachableJMenu {
 				((SplittingJMenu)mi).arrange();
 		}
 	}
+
+    /*
+    public int getItemCount() {
+        ensurePopulated();
+        return super.getItemCount();
+    }
+    */
+
+    public int getMenuComponentCount() {
+        ensurePopulated();
+        return super.getMenuComponentCount();
+    }
+
+    public Component[] getMenuComponents() {
+        ensurePopulated();
+        return super.getMenuComponents();
+    }
 
 }

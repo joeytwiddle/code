@@ -120,7 +120,7 @@ public class VisualJavaGUIStatics {
 	}
 
     static JMenu buildClassMenu() {
-        ClassMenu menu = new ClassMenu("");
+        final ClassMenu menu = new ClassMenu("");
         BufferedReader in = VisualJavaStatics.getListOfAllClasses();
         try {
             while (true) {
@@ -134,6 +134,13 @@ public class VisualJavaGUIStatics {
                 e.printStackTrace(System.err);
             }
         }
+        // A nice touch: starts to split/populate the menu in the background (because it is a slow operation!)
+        // Strangely if I wrap the above population reading in this Thread, the menu still does not appear.
+        new Thread() {
+            public synchronized void start() {
+                menu.ensurePopulated();
+            }
+        }.start();
         return menu;
     }
 

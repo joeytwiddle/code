@@ -33,7 +33,7 @@
     <exclude_output enabled="yes" />
   </component>
   <component name="CompilerConfiguration">
-    <option name="DEFAULT_COMPILER" value="Javac" />
+    <option name="DEFAULT_COMPILER" value="Jikes" />
     <option name="SYNCHRONIZE_OUTPUT_DIRECTORY" value="false" />
     <option name="DEFAULT_OUTPUT_PATH" value="/stuff/joey/code/java/VisualJava/classes" />
     <option name="OUTPUT_MODE" value="single" />
@@ -50,7 +50,7 @@
     <option name="MAXIMUM_HEAP_SIZE" value="128" />
   </component>
   <component name="JikesSettings">
-    <option name="JIKES_PATH" value="" />
+    <option name="JIKES_PATH" value="/usr/bin/jikes" />
     <option name="DEBUGGING_INFO" value="true" />
     <option name="DEPRECATION" value="true" />
     <option name="GENERATE_NO_WARNINGS" value="false" />
