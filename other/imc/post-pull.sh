@@ -6,6 +6,7 @@ echo
 # The SQL log on tronic is linked outside the tree.  I couldn't be bothered to download it.  I created a similar directory+file outside the tree on buggy so the link works.
 
 export CITYPATH="/www/active-cvs/bristol"
+export NEARCITY="/www/" ## on same fs please, used temporarily
 
 source /root/j/startj simple
 
@@ -20,12 +21,12 @@ echo
 echo "Making a backup of the live site before making development changes."
 rm -rf /www/active-cvs/bristol-b4dev
 # Hide heavy directories
-mv $CITYPATH/webcast/logs /tmp/logs.temp
-mv $CITYPATH/local/webcast/cache /tmp/cache.temp
+mv $CITYPATH/webcast/logs $NEARCITY/logs.hiding
+mv $CITYPATH/local/webcast/cache $NEARCITY/cache.hiding
 cp -a $CITYPATH /www/active-cvs/bristol-b4dev
 # Restore the heavy directories
-mv /tmp/logs.temp $CITYPATH/webcast/logs
-mv /tmp/cache.temp $CITYPATH/local/webcast/cache
+mv $NEARCITY/logs.hiding $CITYPATH/webcast/logs
+mv $NEARCITY/cache.hiding $CITYPATH/local/webcast/cache
 
 echo "Moving bristol_dev/.htaccess to /tmp cos it causes problems."
 mv $CITYPATH/webcast/.htaccess /tmp

@@ -1,5 +1,9 @@
 #!/bin/sh
 
+## TODO: main problems with timeout
+##       propose: initially serve an HTML page showing the progress of the encoding
+##                then redirect and serve the mp3 as a second page
+
 export CGILIB_NO_CONTENT=true
 . cgilib
 export JPATH=/home/joey/j
@@ -7,6 +11,13 @@ export JPATH=/home/joey/j
 
 TEXT=`getcgi "text"`
 
-echo "$TEXT" | txt2speech -tomp3 > /tmp/text2speech.log 2>&1
+echo "$TEXT" > /tmp/text2speech.txt
+
+# echo "$TEXT" | txt2speech -tomp3 | tr "\r" "\n" | grep "done" | sed "s+.* \(.*\)%.*+\1+" | tohtml # > /tmp/text2speech.log 2>&1
+# echo "$TEXT" | txt2speech -tomp3 > /tmp/text2speech.log 2>&1
+## quick hack for timeout:
+echo "$TEXT" | txt2speech -tomp3 | tee /tmp/text2speech.log 2>&1 |
+tr "\r" "\n" |
+while read X; do echo "Irrelevent-header: ."; done
 
 serve /tmp/tts.mp3

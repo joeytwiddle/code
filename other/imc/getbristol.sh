@@ -10,6 +10,12 @@
 # files on tronic.  Not currently a problem though.  The errors are visible in
 # the output of this script (in the form "send_files failed to open "...).
 
+if test ! -x `which rsync`
+then
+	echo "Won't work without rsync!  Please install it."
+	exit 1
+fi
+
 if test ! -f /www/getbris-auto && test ! "$1" = "-force"; then
 	echo "/www/getbris-auto not present, aborting."
 	echo "Use -force from the command line to override."
@@ -57,14 +63,14 @@ COMMONPARAMS="-a --delete -z --partial -v --stats"
 
 cd /www
 
+## TODO: we really should get the up-to-date DBs, eg. by giving mike@tronic dump privileges
+
 echo
 echo "--- 1/4 --- Backup DBs on tronic -------------------------------------"
 echo
 
-# Sometimes these sudo's work automatically.  Maybe for a limited time after authentication by password?
-
-# Not really needed so much now that we are taking backups automatically elsewhere.
-
+# This sudo can be done manually, although the password appears onscreen!
+# Tronic's does work automatically for a few minutes after a successful sudo authentication.
 echo "Skipping: cannot sudo without user passwd, but cron@tronic should have dumped the DBs recently anyway."
 # $RSYNC_RSH mike@tronic.southspace.net sudo su postgres -c /home/mike/bin/dumpdbs.sh
 

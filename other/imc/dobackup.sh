@@ -1,4 +1,5 @@
-MAILONERROR="joey@hwi.ath.cx"
+# MAILONERROR="joey@hwi.ath.cx"
+MAILONERROR="cronjobs@hwi.ath.cx"
 
 SRCURL="http://bristol.indymedia.org/db-backups"
 
