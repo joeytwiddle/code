@@ -100,8 +100,8 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 	// for (int i=0;i<ps.len;i++)
 		// ave+=ps.get(i)/(float)ps.len;
 
-	float defaultV = curveSgn * 20.0;
-	float defaultW = -slantSgn * 0.00001;
+	float defaultV = ( usingspacings ? curveSgn : -slantSgn ) * 20.0 ;
+	float defaultW = ( usingspacings ? -slantSgn : slantSgn*curveSgn ) * 0.00001;
 	if (guessU>0)
 		defaultV = -defaultV;
 
