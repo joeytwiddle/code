@@ -1,6 +1,24 @@
-# export TEXINPUTS=".:../majidstyles:../shared:/usr/local/teTeX/share/texmf/tex";
-
 FNAME=thesis
+
+if test "$1" = "-pdf"; then
+
+  dvips $FNAME.dvi -f > $FNAME.ps
+  jdistill "$FNAME.ps"
+  # gv $FNAME.ps &
+
+else
+
+# export TEXINPUTS=".:../majidstyles:../shared:/usr/local/teTeX/share/texmf/tex";
+TEXINPUTS=".";
+test -d /usr/local/teTeX/share &&
+  HEAD=/usr/local/teTeX/share ||
+  HEAD=/usr/local/TeX/teTeX
+for X in $HEAD/texmf/tex/latex/*; do
+  TEXINPUTS="$TEXINPUTS:$X";
+done
+# echo "$TEXINPUTS"
+export TEXINPUTS;
+
 echo "----------------------------------------------------------------"
 "rm" $FNAME.dvi
 "rm" $FNAME.ps
@@ -9,5 +27,5 @@ if test -f $FNAME.aux; then
 fi
 latex $FNAME.tex
 # xdvi $FNAME.dvi
-# dvips $FNAME.dvi -f > $FNAME.ps
-# gv $FNAME.ps &
+
+fi
