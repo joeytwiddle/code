@@ -106,8 +106,10 @@ float testASubSet(List<V2d> ps,bool usingspacings) { // returns error
 		float fexp=Stofloat(exp);
 		float num=fpre*pow(10.0,fexp);
 		Wssr=num;
+		fprintf(stdout,"Got wssr: %s = %g\n",s,Wssr);
 	} else {
 		Wssr=Stofloat(s);
+		fprintf(stdout,"Got wssr: %f\n",Wssr);
 	}
 
 	lastV=V;
