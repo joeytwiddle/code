@@ -58,8 +58,8 @@
 #define blueambient 64
 #define bluedarken 158
 float fogdepth;
-float displayFogdepth=20.0;
-float playFogdepth=18.0;
+float displayFogdepth=40.0;
+float playFogdepth=30.0;
 float displayPPd=1.0;
 float playPPd=1.5;
 int taillen=1200;
