@@ -229,6 +229,12 @@ public:
       else
         error(Sformat("Tried to get index %i in list length %i",i,len));
     }
+    ListObject *getptr(int i) { // Java
+      if (i>=0 && i<len)
+        return &list[i];
+      else
+        error(Sformat("Tried to get index %i in list length %i",i,len));
+    }
     ListObject numwrap(int n) {
       n=intmod2(n,1,len);
       return list[n-1];
