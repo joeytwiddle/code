@@ -69,11 +69,11 @@ void main() {
 		}
 	}
 
-	int AVSLIDELEN = ( LINES>30 ? 6 : 3 );
-	int AVACTLEN = ( LINES>30 ? 12 : 6 );
+	int AVSLIDELEN = ( LINES>30 ? 5 : 3 );
+	int AVACTLEN = ( LINES>30 ? 8 : 4 );
 
 	while (true) {
-		
+
 		// doSummat(&lonewriteToPoint);
 
 		int action = rand() % 100;
@@ -83,10 +83,10 @@ void main() {
 			// Alter
 
 			int x = rand() % COLS;
-			int y = rand() % (int)((double)LINES * 1.5);
+			int y = rand() % (int)((double)LINES * 1000.5);
 			if (y>=LINES)
 				y=0;
-			
+
 			attrset(COLOR_PAIR(2));
 			while ( (rand() % AVACTLEN) != 0 && y < LINES ) {
 
