@@ -1,0 +1,38 @@
+ File format for input 
+-+-----------------------------+
+'
+The input file has three parts ::
+
+   o Rate definitions
+   o Agent definitions
+   o A composotition
+
+ -> Rates
+
+Format 
+
+   %rate_name=value;
+
+These should come at the top of the file.
+Symbolic rates that you want to use later
+should be defined here.
+
+ -> Agents
+
+Format
+
+   #agent_name = (action,rate,message).AGENT1 + AGENT2;
+
+Where message is optional, rate is previously defined
+and AGENT1 and AGENT2 are either defined already, or
+are later to be defined. '.' and '+' are the only
+operators currently supported.
+
+Messages are currently dealt with as plain text, i.e. not
+properly supported.
+
+ -> Composition
+
+  agnet ( "||" agent)*
+
+Named cooperation sets are not yet supported.

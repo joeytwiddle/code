@@ -1,0 +1,5 @@
+gzip -f images/$1.bmp
+gzip -f images/regs/$1.bmp
+gzip -f images/bin/$1.bmp
+gzip -f images/bin/regs$1/*
+gzip -f images/pp/$1*/*

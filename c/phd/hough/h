@@ -1,0 +1,1 @@
+hough /j/images/bin/$1.bmp /j/images/$1.bmp -ht .5

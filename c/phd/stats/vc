@@ -1,0 +1,5 @@
+li $1
+ed
+h
+vechange histvar.bmp myeadvis.bmp
+cp vechange.bmp ../results/vc$1.bmp

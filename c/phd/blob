@@ -1,0 +1,4 @@
+cd texture
+blob $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp $JPATH/images/blobs/$1.bmp -hue 0.67 -inv -dl 01.0 -g 1.0
+convert $JPATH/images/blobs/$1.bmp -geom 400 $JPATH/images/blobs/$1.jpg
+rm -f $JPATH/images/blobs/$1.bmp

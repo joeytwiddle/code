@@ -1,0 +1,5 @@
+gcc -I /usr/include -I /usr/local/include -L /usr/lib -L /usr/local/lib -R /usr/lib -R /usr/local/lib -O2  -c  ccsParser.c
+gcc -I /usr/include -I /usr/local/include -L /usr/lib -L /usr/local/lib -R /usr/lib -R /usr/local/lib -O2  -c  fileReader.c
+gcc -I /usr/include -I /usr/local/include -L /usr/lib -L /usr/local/lib -R /usr/lib -R /usr/local/lib -O2  -c  dependency.c
+gcc -I /usr/include -I /usr/local/include -L /usr/lib -L /usr/local/lib -R /usr/lib -R /usr/local/lib -O2 -o parser main.o ccsParser.o fileReader.o dependency.o -lm
+

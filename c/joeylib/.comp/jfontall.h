@@ -1,0 +1,102 @@
+#ifndef jfontall_H
+  #define jfontall_H
+
+#ifdef DOS
+  #define JFontDefault "c:\\joey\\code\\c\\joeylib\\cool.jf"
+#endif
+#ifdef UNIX
+  #define JFontDefault "~pclark/../code/joeylib/cool.jf"
+#endif
+#ifdef LINUX
+  #define JFontDefault "/j/c/joeylib/cool.jf"
+#endif
+
+// #define Image RGBmp
+// #define Colour myRGB
+ #define Image JBmp
+ #define Colour int
+
+class FontBit {
+public:
+  virtual void writetojbmp(Image *j,int x,int y,float scale,Colour c); // Method
+
+};
+
+class FontChar {
+public:
+  String name; // Exists
+  List<FontBit*> bs; // Exists
+   FontChar(); // Method
+
+   FontChar(String n); // Method
+
+  void writetojbmp(Image *j,int x,int y,float scale,Colour c); // Method
+
+};
+
+class FLine : public FontBit {
+public:
+  float w; // Exists
+  V2d a,b; // Exists
+  bool hor; // Exists
+  bool ver; // Exists
+  bool round; // Exists
+  bool lng; // Exists
+   FLine(float aa,float bb,float c,float d,float e,String t); // Method
+
+  void writetojbmp(Image *j,int x,int y,float scale,Colour c); // Method
+
+};
+
+class FArc : public FontBit {
+public:
+  float x,y,r,aa,ab,w; // Exists
+  bool rounded; // Exists
+   FArc(float a,float b,float c,float d); // Method
+
+   FArc(float a,float b,float c,float d,bool r); // Method
+
+  void writetojbmp(Image *j,int cx,int cy,float scale,Colour c); // Method
+
+//
+
+};
+
+List<FontChar> parsefontchars(String fname,float fwgiven); // Method
+
+
+List<FontChar> parsefontchars(String fname); // Method
+
+
+bool JFontfsamename(FontChar f,FontChar o); // Method
+
+
+bool JFontfcalled(FontChar *f,String s); // Method
+
+
+class JFont {
+  List<FontChar> fcs; // Exists
+public:
+   JFont(); // Method
+
+   JFont(String fname); // Method
+
+   JFont(String fname,float g); // Method
+
+   JFont(float g); // Method
+
+  static bool fcalled(FontChar *f,String s); // Method
+
+  bool fsamename(FontChar f,FontChar o); // Method
+
+  void writechar(String s,Image *j,int x,int y,float scale,Colour c); // Method
+
+  void writeString(String s,Image *j,int x,int y,float scale,Colour c); // Method
+
+  void centerString(String s,Image *j,int y,float scale,Colour c); // Method
+
+  void centerString(String s,Image *j,int cx,int y,float scale,Colour c); // Method
+
+};
+
+#endif

@@ -1,0 +1,152 @@
+
+From pollard@compsci.bristol.ac.uk Fri Nov  7 14:42:11 1997
+Date: Wed, 5 Nov 1997 17:40:54 +0000 (GMT)
+From: Neil Pollard <pollard@compsci.bristol.ac.uk>
+To: "PN. Clark" <pc5065@bristol.ac.uk>
+Subject: README
+
+/**************************************************************************/
+/*                                                                        */
+/*             BasicWindow:  A Simple Window Graphics Library             */
+/*            ------------------------------------------------            */
+/*                Neil Pollard, University of Bristol 1995                */
+/*                                                                        */
+/**************************************************************************/
+
+README: 11/12/95
+
+General Info
+------------
+
+The BasicWindow library provides some functions which allow programs to 
+easily open a window on an X Terminal and draw simple shapes. If you
+want to so anything more than this, use the Xlib library and one of the
+associated widget sets - BasicWindow will not be any use. See 
+http://www.x.org/ and good luck :-)
+
+While the standard Xlib library provides a very flexible interface to X, 
+it is not by any means easy to use, and makes writing will-structured 
+programs very difficult. This library removes many of the difficulties at 
+the expense of flexibility. However, very few programmers need the
+complex features of Xlib just to output a simple diagram.
+
+Below is a list of functions and data types provided. The example program 
+will probably give a better idea about how to use the library, though.
+(6/2/96 - Sorry no Makefile yet!)
+
+Functions and Data types provided:
+----------------------------------
+
+Display *BWConnectToServer();
+
+Connects to the default server (i.e. the X Terminal being used) and 
+returns a pointer to the display structure. This should be done once 
+only, at the start of the program, before attempting to open any windows.
+The pointer to the display is only used subsequently when opening a new 
+window.
+
+------
+
+BasicWin BWCreateNewWindow(Display* display, int argc, char** argv);
+
+Opens a new window. This function takes the command line arguments from 
+main(), and the pointer to the display structure returned by 
+BWConnectToServer. It returns a BasicWin structure, which can be thought 
+of as a handle to refer to the window. All subsequent functions require 
+this BasicWin strcuture to be passed to them.
+
+Note that more than one window may be opened at any one time, and 
+BWCreateNewWindow allocates a different BasicWin handle to refer to ech 
+window.
+
+------
+
+int BWCheckEvents(BasicWin window);
+
+This function is provided, on the whole, to detect an 'expose' event. 
+This means that the window is either ready to accept drawing requests 
+after being opened, or has been uncovered after being obscured by another 
+window. In the latter case it must be redrawn (see below). Other simple 
+events are also checked. Other than to wait for an initial expose event, 
+you can ignore this function, if you prefer.
+
+Calling the function polls for events and returns an integer, referring 
+to one of the following events:
+
+EV_UNDEF	undefined
+EV_EXPOSED	window exposed
+EV_BUTTON	mouse button pressed
+EV_KEY		key pressed
+
+Note that if a BasicWin window is covered, it is not automatically 
+redrawn when it is exposed again. This must be done by explicitly by the 
+application programmer, and requires regular polling using BWCheckEvents.
+
+------
+
+void BWCloseWindow(BasicWin window);
+
+This function closes the window whose handle is passed to it, taking care 
+of de-allocating memory.
+
+------
+
+void BWPrintText(BasicWin window, char* text, int x, int y);
+
+BWPrintText prints a text string (terminated by '\0'), in the window 
+starting from the co-ordinates (x,y). Note that (x,y) is measured from 
+the top left of the window and refers to the bottom-left of the first 
+text character to be printed.
+
+------
+
+void BWDrawLine(BasicWin window, int x, int y, int x1, int y1);
+
+BWDrawLine draws a line in the window from (x,y) to (x1,y1). Once again, 
+the origin of the co-ordinates is the top left of the window.
+
+------
+
+void BWDrawRectangle(BasicWin window, int x, int y, int width, int height);
+
+BWDrawRectangle draws a rectangle of a specified width and height, whose 
+top-leftmost point is at (x,y).
+
+------
+
+void BWDrawPoint(BasicWin window, int x, int y);
+
+BWDrawpoint plots a point in the window at (x,y).
+
+------
+
+void BWClearArea(BasicWin window, int x, int y, int width, int height);
+
+BWClearArea clears an area of a specified width and height, whose 
+top-leftmost point is at (x,y).
+
+------
+
+Using the library
+-----------------
+
+To use these funtions and datatypes in your own program, include the 
+header file:
+
+#include "BWlib.h"
+
+and compile using:
+
+gcc [options] yourprog.c BWlib.c -lX11 [-o executable]
+
+or, better still, create a Makefile.
+
+
+/-----------------------------------------------------------------------\
+| Neil Pollard                   |         mail: pollard@cs.bris.ac.uk  |
+| Computer Architecture Group    |   http://www.cs.bris.ac.uk/~pollard/ |
+| Department of Computer Science |         Telephone: +44 (0)966 499772 |
+| University of Bristol,  UK     |                                      |
+\-----------------------------------------------------------------------/
+
+

@@ -1,0 +1,2 @@
+# sreplace question.pat "NaN " "-1.234567"
+batchman -f askquestion.bat

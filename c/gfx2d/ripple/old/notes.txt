@@ -1,0 +1,3 @@
+"include <time.h>" gives you long clock() starting from 0 at beginning of
+program
+

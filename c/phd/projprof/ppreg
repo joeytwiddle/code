@@ -1,0 +1,6 @@
+pp -recwid 200 -maxpixels 2000 -spacings -gamma 0.0 -usetwolines -res 120 -lowres 30 -adapt 0.03 -square ../images/bin/regs$1/reg$2.bmp ../images/$1.bmp ../images/bin/regs$1/crop$2.dat $3 $4 $5 $6 $7 $8 $9 -oth 12
+
+# pp -gamma 0.0 -usetwolines -res 120 -lowres 30 -adapt 0.03 -square ../images/bin/regs$1/reg$2.bmp ../images/$1.bmp ../images/bin/regs$1/crop$2.dat $3 $4 $5 $6 $7 $8 $9 -quadonly -oth 12
+
+# pp -square ../images/bin/regs$1/reg$2.bmp ../images/bin/regs$1/crop$2.bmp $3 $4 $5 $6 $7 $8 $9
+# pp -res 120 -deriv ../images/bin/regs$1/reg$2.bmp ../images/$1.bmp ../images/bin/regs$1/crop$2.dat $3 $4 $5 $6 $7 $8 $9 -gamma 0.5

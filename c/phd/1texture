@@ -1,0 +1,4 @@
+cd texture
+jnn scan $1 -mr 1 -ms 2000
+# jnn scan $1 -mr 1 -ms 2000 -wskip 2
+mv textseg.bmp $JPATH/images/regs/$1.bmp

@@ -1,0 +1,12 @@
+%arse=33434432.000011;
+%pi=3.14147;
+%jj72=.534545;
+
+#A = (first,pi,[message]).B + C ;
+#B = (second,jj72).(fourth,arse).E;
+#C = (third,arse) ;
+#D = A;
+#E = B ;
+
+A || B
+

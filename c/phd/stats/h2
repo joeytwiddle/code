@@ -1,0 +1,14 @@
+./nthresh -i histvar.bmp -o hvtmp.bmp -r 2 -t 0.05
+invert -i histvar.bmp -o hvtmp2.bmp
+./nthresh -i hvtmp2.bmp -o hvtmp3.bmp -r 2 -t 0.01
+
+#band hvtmp.bmp hvtmp3.bmp
+#cp band.bmp s1hv.bmp
+
+cp hvtmp.bmp s1hv.bmp
+
+# ./nthresh -i histvar.bmp -o hvtmp.bmp -r 2 -t 0.1
+# #thresh -i histvar.bmp -o hvtmp.bmp -r 1 -t 0.1
+# invert -i histvar.bmp -o hvtmp2.bmp
+# ./thresh -i hvtmp2.bmp -o hvtmp3.bmp -r 2 -t 0.2
+

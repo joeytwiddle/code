@@ -1,0 +1,1 @@
+command < showall.txt

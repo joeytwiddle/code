@@ -1,0 +1,2 @@
+pp bin/$1.bmp
+xv ppmap.bmp result.bmp *.bmp &

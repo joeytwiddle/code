@@ -1,0 +1,1 @@
+gcc -I/usr/X11R6/include -lm -L/usr/X11R6/lib -lX11 current.c

@@ -1,0 +1,6 @@
+cp projprof/strict projprof/getregres
+sleep 2
+forall in $HOME/j/images/1just.txt do justpp %s %e
+cp projprof/norm projprof/getregres
+sleep 2
+forall in $HOME/j/images/2corrsens.txt do justpp %s %e

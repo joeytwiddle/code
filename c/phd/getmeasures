@@ -1,0 +1,5 @@
+gunzip $HOME/../images/$1.bmp.gz
+1texture $1
+mkdir measures
+mkdir measures/$1
+cp texture/*.bmp measures/$1

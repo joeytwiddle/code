@@ -1,0 +1,17 @@
+rm *.bmp
+ppreg $1 $2 -corinc -badx 80 -bady 40
+# ppreg $1 $2 -badx 80 -bady 40
+# -writepps
+# ppreg $1 $2 -res 30
+# ppreg $1 $2 -res 50
+
+mkdir ../images/pp/$1$2
+# mv *.bmp ../images/pp/$1$2/
+mv info.bmp ../images/pp/$1$2/
+mv bestpp.bmp bestppgaps.bmp badpp.bmp ../images/pp/$1$2/
+convert origover.bmp ../images/pp/$1$2/origover.jpg
+convert ppmap.bmp ../images/pp/$1$2/ppmap.jpg
+convert recover.bmp ../images/pp/$1$2/recover.jpg
+
+#xv ../images/pp/$1$2/recover.bmp ../images/pp/$1$2/*.bmp &
+

@@ -1,0 +1,6 @@
+Unable to get write access to sound device /dev/audio
+Unable to get write access to sound device /dev/audio
+Unable to get write access to sound device /dev/audio
+Unable to get write access to sound device /dev/audio
+Unable to get write access to sound device /dev/audio
+Unable to get write access to sound device /dev/audio

@@ -1,0 +1,2 @@
+g++ current.c -o g -w -fconserve-space -I $JPATH/joeylib -s
+chmod g+x g

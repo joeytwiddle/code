@@ -1,0 +1,2 @@
+canny -i image.pgm -g can.gf
+ht can.gf > ls.gf

@@ -1,0 +1,15 @@
+
+Lines in measures.c not present in ../oldtexture/measures.c:
+
+
+Lines in ../oldtexture/measures.c not present in measures.c:
+
+42 :   printf("H\n");
+49 :   printf("H1\n");
+53 :   printf("H%i\n",i);
+69 : printf("MEAC1\n");
+71 : printf("MEAC1\n");
+73 : printf("MEAC2\n");
+75 : printf("MEAC3\n");
+78 : printf("MEAC3\n");
+84 : printf("MEAC7\n");

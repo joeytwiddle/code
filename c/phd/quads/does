@@ -1,0 +1,10 @@
+# convert $JPATH/images/$1.bmp -geom 50%x50% tmp.pgm
+convert $JPATH/images/$1.bmp -geom 40%x40% tmp.pgm
+# convert $JPATH/images/$1.bmp tmp.pgm
+echo "Edges"
+es -w 15 -f x tmp.pgm > es.gf
+echo "Hough"
+ht -kt 20 -kr 0.6 es.gf > ls.gf
+echo "Grouping, analysis, recovery"
+g -ois 5 -oi $JPATH/images/$1.bmp
+xgf -G es.gf -G ls.gf -G quads.gf &

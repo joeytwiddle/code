@@ -1,0 +1,10 @@
+                                       Got [WSBit] on "\n" leaving "class JFont {\n  List...1033"
+                                      =) : WS
+                                      From "\nclass JFont {\n  Lis...1034" to "\n" ++ "class JFont {\n  List...1033"
+                                     Got [WSBit, WS] on "\n\n" leaving "class JFont {\n  List...1033"
+                                    =) : WS
+                                    From "\n\nclass JFont {\n  Li...1035" to "\n\n" ++ "class JFont {\n  List...1033"
+                                   Got [WS] on "\n\n" leaving "class JFont {\n  List...1033"
+                                  =) : OptWS
+                                  From "\n\nclass JFont {\n  Li...1035" to "\n\n" ++ "class JFont {\n  List...1033"
+                                  - Method: "class JFont {\n  List...1033"

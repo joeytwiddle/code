@@ -1,0 +1,244 @@
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+-i <GF lines filename> = gfs/image29.gf
+-ic <Intersection can creep in this much of the line> = 0.1
+-ml <Minimum length of a line> = 20
+nod : Don't display  ==  on
+-oi <Original image> = ../images/image29.bmp
+-ois <Scale to original image> = 2.5
+-ol : Overlay lines  ==  on
+-rqw <width of recovered quad images (pixels)> = 400
+=)
+=)
+=)
+>>>>>>>>>>>>>>>>>>..........................................................................................................Hello world! =)
+Finding quads
+106 lines
+Stripped small lines, now 74
+Building graph (74)
+..........................................................................
+Average connection of a line is 14.648648
+**************************************************************************
+df...Parsed /j/c/joeylib/cool.jf
+fd...
+Trying to read original file (../images/image29.bmp)...Generating new RGBmp size 720 576
+New RGBmp created.
+Writing greyscale file lines.bmp (0.000000-255.000000).
+Writing greyscale file quads.bmp (255.000000-255.000000).
+Doing edge detection
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file linesover.bmp.
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file overlay.bmp.
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file data.bmp.
+Removing overlapping quads (0) ...
+Done: now (0) quads.
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file overlay2.bmp.
+Writing greyscale file quads2.bmp (255.000000-255.000000).
+0 quadrilaterals found
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+mv: data.*: No such file or directory
+mv: line*.bmp: No such file or directory
+mv: quads*.bmp: No such file or directory
+mv: overlay*.bmp: No such file or directory
+rm: cannot remove `rec*.bmp': No such file or directory
+rm: cannot remove `data.txt': No such file or directory
+rm: cannot remove `data.bmp': No such file or directory
+rm: cannot remove `lines.bmp': No such file or directory
+rm: cannot remove `quads.bmp': No such file or directory
+rm: cannot remove `overlay*.bmp': No such file or directory
+-i <GF lines filename> = gfs/image32.gf
+-ic <Intersection can creep in this much of the line> = 0.1
+-ml <Minimum length of a line> = 20
+nod : Don't display  ==  on
+-oi <Original image> = ../images/image32.bmp
+-ois <Scale to original image> = 2.5
+-ol : Overlay lines  ==  on
+-rqw <width of recovered quad images (pixels)> = 400
+=)
+=)
+=)
+>>>>>>>>>>>>>>>>>>...............................................................................Hello world! =)
+Finding quads
+79 lines
+Stripped small lines, now 57
+Building graph (57)
+.........................................................
+Average connection of a line is 12.105263
+*********************************************************
+df...Parsed /j/c/joeylib/cool.jf
+fd...
+Trying to read original file (../images/image32.bmp)...Generating new RGBmp size 720 576
+New RGBmp created.
+Writing greyscale file lines.bmp (0.000000-255.000000).
+Writing greyscale file quads.bmp (255.000000-255.000000).
+Doing edge detection
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file linesover.bmp.
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file overlay.bmp.
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file data.bmp.
+Removing overlapping quads (0) ...
+Done: now (0) quads.
+Generating new RGBmp size 360 288
+New RGBmp created.
+Writing RGB file overlay2.bmp.
+Writing greyscale file quads2.bmp (255.000000-255.000000).
+0 quadrilaterals found
+mkdir: cannot make directory `results': File exists
+mv: rec*.bmp: No such file or directory
+-1/13- getres image10
+-2/13- getres image11
+-3/13- getres image15
+-4/13- getres image16
+-5/13- getres image17
+-6/13- getres image19
+-7/13- getres image2
+-8/13- getres image20
+-9/13- getres image27
+-10/13- getres image28
+-11/13- getres image29
+-12/13- getres image31
+-13/13- getres image32

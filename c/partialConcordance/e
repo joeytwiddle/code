@@ -1,0 +1,2 @@
+cp comp.c comp.bak
+pico -t comp.c

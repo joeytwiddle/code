@@ -1,0 +1,4 @@
+group ../images/$1.bmp
+mkdir results
+mkdir results/$1
+mv *.bmp results/$1

@@ -1,0 +1,25 @@
+rm *.bmp
+
+li $1
+
+getgs
+edges -i grey.bmp -mr 6
+
+# Theshold edge magnitudes
+nthresh -i emnorm.bmp -o s3etr0.bmp -r 0 -t 0.2
+
+# Threshold edge angle distribution
+smooth -i myeadv.bmp -o myeadvs.bmp -r 4
+invert -i myeadvs.bmp -o myeadvis.bmp
+nthresh -i myeadvis.bmp -o s5myeadv.bmp -t 0.2
+
+# Combine
+band s3etr0.bmp s5myeadv.bmp
+mv band.bmp segmentb.bmp
+clip -p image.bmp -b segmentb.bmp -o segment.bmp
+
+# xv segment*.bmp &
+
+mkdir resdonope
+mkdir resdonope/$1
+mv *.bmp resdonope/$1

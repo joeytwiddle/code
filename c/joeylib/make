@@ -1,0 +1,32 @@
+FILE="$*"
+
+HFILE=".comp/$FILE.h"
+CFILE=".comp/$FILE.c"
+
+
+( echo '#ifndef '"$FILE"'_H'
+	echo '  #define '"$FILE"'_H'
+	echo
+	# echo '  #include <joeylib.h>'
+) > "$HFILE"
+	
+( echo '#ifndef '"$FILE"'_C'
+	echo '  #define '"$FILE"'_C'
+	echo
+	echo '  #include <'"$FILE"'.h>'
+	echo
+) > "$CFILE"
+
+
+jparse c "$FILE.c" "h:$HFILE" "c:$CFILE"
+
+
+(	echo
+	echo "#endif"
+) >> "$HFILE"
+
+(	echo
+	echo "#endif"
+) >>	"$CFILE"
+
+sreplace "$CFILE" " ::" " "

@@ -1,0 +1,5 @@
+invert -i histdiff.bmp -o histdiffi.bmp
+# cluster histvar.bmp myeadvis.bmp -vc 
+cluster histvar.bmp myeadvis.bmp emsmooth.bmp histdiffi.bmp -vc 
+# eadvs.bmp
+# s3et.bmp

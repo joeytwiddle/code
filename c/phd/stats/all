@@ -1,0 +1,12 @@
+
+doed
+h
+docombine
+
+#cd ../regions
+#r
+#cd ../stats
+
+doclust
+
+vechange histvar.bmp myeadvis.bmp

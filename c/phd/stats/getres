@@ -1,0 +1,8 @@
+rm *.bmp
+li $1
+#all > log.txt
+all
+mkdir results
+mkdir results/$1
+mv *.bmp results/$1
+#mv cl*.bmp s*.bmp results/$1

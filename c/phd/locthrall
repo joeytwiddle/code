@@ -1,0 +1,1 @@
+forall /j/images/*.bmp do locthr/locthr %w : mv total.bmp locthred/%f

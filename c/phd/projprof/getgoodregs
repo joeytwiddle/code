@@ -1,0 +1,1 @@
+forall in goodregs.txt do getregres %s %e bin/regs%s/reg%e.bmp

@@ -1,0 +1,13 @@
+#invert -i s1hv.bmp -o s1hv.bmp
+#invert -i s2hd.bmp -o s2hd.bmp
+#band s1hv.bmp s2hd.bmp
+#invert -i band.bmp -o sh.bmp
+#band sh.bmp et1.bmp
+
+band s1hv.bmp s2hd.bmp s3et.bmp
+#band band.bmp s4eadv.bmp s5myeadv.bmp
+band band.bmp s5myeadv.bmp
+./conexp
+#alshow final.bmp
+./clip -a 0.3
+alshow clipped.bmp
