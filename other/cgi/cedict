@@ -1,0 +1,19 @@
+#!/bin/sh
+
+## TODO:
+## Automatic recognition of encoding by the browser fails, but haven't tracked the reason.
+## Should put it in a frame with link to original doc.
+## redirecting hrefs does not deal with frames or relative links.
+
+MYURL="http://hwi.ath.cx/cgi-bin/joey/cedict"
+
+# echo "Content-Language: zh"
+. cgilib
+
+export CLASSPATH=/home/joey/j/code/java
+
+URL=`getcgi "url"`
+
+wget -O - "$URL" |
+java tools.intl.CEDict |
+sed 's+\(href\|HREF\)=\"\([^\"]*\)\"+href=\"'"$MYURL"'?url=\2\"+g'

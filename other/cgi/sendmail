@@ -1,8 +1,5 @@
 #!/bin/sh
 
-echo "Content-type: text/html"
-echo
-
 . cgilib
 export JPATH=/home/joey/j
 . /home/joey/j/startj-simple

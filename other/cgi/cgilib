@@ -2,6 +2,8 @@ fromcgi () {
 sed '
 s/+/ /g;
 s/%20/ /g;
+s/%2F/\//g;
+s/%3A/:/g;
 s/%40/@/g;
 # Newlines:
 s/%0D%0A/\
@@ -19,3 +21,6 @@ getcgi() {
 		echo "$TESTRES" | fromcgi
 	fi
 }
+
+echo "Content-type: text/html"
+echo
