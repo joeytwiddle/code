@@ -116,8 +116,10 @@ int main(int argc,String *argv) {
 	V3d cen=(worldA+worldD)/2.0;
 	printf("%s %s\n",right.toString(),down.toString());
 
-	printf("correlright = %s\n",right.toString());
-	printf("correldown = %s\n",down.toString());
+	// printf("correlright = %s\n",right.toString());
+	// printf("correldown = %s\n",down.toString());
+	printf("right = %s\n",right.toString());
+	printf("down = %s\n",down.toString());
 	printf("A = %s\n",worldA.toString());
 	printf("B = %s\n",worldB.toString());
 	printf("C = %s\n",worldC.toString());
