@@ -638,20 +638,18 @@ public:
 
 		V2d vvp;
 
-		if (!useoldspacingsmethod) {
+		// if (!useoldspacingsmethod) {
 						
 		  // New vvp estimation from spacings
-	  	
 		  List<V2d> endpoints;
 		  for (int i=0;i<cens.len;i++) {
         Line2d l=Line2d(hvp,cens.get(i));
 			  V2d v=baseline.intersect(l);
 			  endpoints.add(v);
 		  }
-
 	  	vvp=vvpFromPoints(baseline,endpoints,binimg.width,binimg.height,true);
 
-		} else {
+		/* } else {
 
       // Now correlate line spacings along the central line
       // First, project all centres onto this line
@@ -705,6 +703,7 @@ public:
       // vvp=baseline.a+vvpdir*vpd;
       V2d oldvvp=baseline.a+vvpdir*vpd;
 			printf("Old method got VVP = %s\n",oldvvp.toString());
+			vvp=oldvvp;
       if (doinfo) {
         drawCorrelator2dInColour(csspacing).writefile("spacings.bmp");
         drawCorrelator2dInColour(cslength).writefile("lengths.bmp");
@@ -714,9 +713,9 @@ public:
         // info.line(right,vvp,myRGB::cyan);
       }
  
-		}
+		} */
 	
-		printf("New method got VVP = %s\n",vvp.toString());
+		// printf("New method got VVP = %s\n",vvp.toString());
 		
     return vvp;
   }
@@ -854,10 +853,10 @@ void main(int argc,String *argv) {
 	printf("HVP = %s *note* could wait for corner+diffscale*\n",hvp.toString());
 	useoldspacingsmethod=false;
   V2d vvp=pp.getvvp();
-	useoldspacingsmethod=true;
-  V2d oldvvp=pp.getvvp();
-  printf("Good old VVP estimate: %s\n",oldvvp.toString());
-  printf("     New VVP estimate: %s\n",vvp.toString());
+	// useoldspacingsmethod=true;
+  // V2d oldvvp=pp.getvvp();
+  printf(" -> Old VVP estimate: %s\n",summarybaseline.intersect(summarysecondline).toString());
+  printf(" -> New VVP estimate: %s\n",vvp.toString());
 
   VP vp=*pp.vps.getpos(pp.best);
   hvp=vp.pos;

@@ -1,4 +1,8 @@
-V2d vvpFromPoints(Line2d baseline,List<V2d> endpoints,int imgwidth,int imgheight,bool usingspacings) {
+V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usingspacings) {
+
+	Line2d baseline=Line2d(bl.a,bl.b);
+	List<V2d> endpoints;
+	endpoints.add(eps);
 
 	// Project the points down onto the line
 	for (int i=0;i<endpoints.len;i++) {

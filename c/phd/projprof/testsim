@@ -1,5 +1,5 @@
 echo "./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 $*"
-./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 $*
+			./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 -adapt 0.02 $*
 # ./pp -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 3 $*
 # ./pp -usezerocross -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -deriv -oth 12 -lowsmooth 6 $*
 # ./pp -usezerocross -recwid 200 -maxpixels 2000 -gamma 0.0 -usetwolines -res 180 -lowres 60 -deriv -oth 12 $*
