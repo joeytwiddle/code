@@ -4,7 +4,7 @@
 #define SCRWID 800
 #define SCRHEI 300
 #define SCRBPS 32
-#define desiredFramesPerSecond 50
+#define desiredFramesPerSecond 10
 
 #ifdef DOS
 #define M_PI 3.14159265358979323846
@@ -151,7 +151,7 @@ void setSpeed(int i) {
 	float mess=(1.0+cos((float)frames*0.004))/2.0;
 	// speed[i]=9.0+2.0*sin(freq[i]*M_PI*frames);
 	speed[i]=0.2*SCALECONST*square((cen[i]+mess*mag[i]*sin(off[i]+freq[i]*M_PI*(float)frames))/3.0);
-	space[i]=speed[i]*(float)cr/6.0;
+	space[i]=speed[i]*(float)cr/19.0;
 }
 
 void init() {
