@@ -232,7 +232,7 @@ V2d vvpFromPoints(Line2d bl,List<V2d> eps,int imgwidth,int imgheight,bool usings
 	// }
 
 	// if (usingspacings) {
-		if ( ps.get(0).x < ps.get(ps.len-1).x ) {
+		if ( myabs(ps.get(0).y) < myabs(ps.get(ps.len-1).y) ) {
 			guessU=ps.get(0).y;
 			printf("OP1: guessU = %f\n",guessU);
 		} else {

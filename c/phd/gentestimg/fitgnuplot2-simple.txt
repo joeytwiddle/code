@@ -16,8 +16,8 @@ w=-0.005
 
 # The simple fitting method ---------------------------------------
 
-set xlabel "observed line number n" "Times-Roman,26"
-set ylabel "observed line position y(n)" "Times-Roman,26"
+set xlabel "line number n" "Times-Roman,26"
+set ylabel "line position y(n)" "Times-Roman,26"
 
 # Expected, with U,V,W known:
 # They must be provided for this to work.

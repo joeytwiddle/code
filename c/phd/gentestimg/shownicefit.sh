@@ -1,6 +1,9 @@
 # killall ghostview
 
-rm *.eps
+rm gplfit-*.eps
+
+RND=$RANDOM && test "$RND" || RND=`getrandom` || RND=20
+# RND=16632
 
 # DOC="simgs/dar-crpage2.bmp"
 # DOC="simgs/left.bmp"
@@ -10,17 +13,17 @@ DOC="simgs/test.bmp"
 # -centralise
 SIMCOM="./simgen
 -yoff -0.01 -depth 0.5
--lines 11 -roll 0 -yaw 0 -pitch -30 -size 0.5
+-lines 15 -roll 180 -yaw 0 -pitch 30 -size 0.5
 -image -qnd -overlay
 $DOC tmp.bmp
--nornd
 -gnuplot
 -showexp
+-ins 2
+-rnd $RND
 $@";
 # -imgnoise 0.0
 # -noise 0.2
-# -ins 1
-# -rems 1
+# -rems 2
 # -focal 0.1
 
 PPPARAMS="
@@ -34,47 +37,47 @@ PPPARAMS="
 tmp-inv.bmp tmp.bmp
 "
 
-getparam () {
-	grep "^$1 = " simgen.out | sed "s/^$1 = //"
-}
-
+# for F in `seq -w 0.5 0.3 4.0`; do
 # for X in "" "-spacings"; do
 # for Y in "" "-noransac"; do
-# for F in `seq -w 0.5 0.3 4.0`; do
-for X in "-spacings"; do
-for Y in "-noransac"; do
+# for X in "-spacings"; do
 for F in 0.5; do
+for X in "" "-spacings"; do
+for Y in "-noransac" ""; do
 
-	echo "set title \"$X $Y, f.p. $F\" \"Times-Roman,26\"" > title.dogpl
+	# echo "set title \"$X $Y, f.p. $F\" \"Times-Roman,26\"" > title.dogpl
+	# echo "set title \"test\"" > title.dogpl
+	# rm title.dogpl
 
-	echo `curseyellow`$SIMCOM`cursegrey`
-	$SIMCOM $X $Y -focal $F | tee simgen.out
+	echo `curseyellow`$SIMCOM $X $Y -focal $F`cursegrey`
+	$SIMCOM $X $Y -focal $F | tee simgen.out | grep RANSAC
 
-	cp gplfit.ps gplfit$X$Y$F-sim.eps
-	cp gplsolve.txt gplsolve-sim.txt
-	cp gpldata.txt gpldata-sim.dat
-
-	# U=`getparam U`
-	# V=`getparam V`
-	# W=`getparam W`
-	# echo "u=$U"
-	# echo "v=$V"
-	# echo "w=$W"
+	mv gplfit.ps gplfit-$F$X$Y-sim.eps
+	mv gplsolve.txt gplsolve-$F$X$Y-sim.txt
+	mv gpldata.txt gpldata-$F$X$Y-sim.dat
 
 	# echo "Press a key"
 	# waitforkeypress
 
-	# Test pp
-	invert -i tmp.bmp -o tmp-inv.bmp
-	../projprof/pp $X $Y $PPPARAMS | tee pp.out
+	# # Test pp
+	# invert -i tmp.bmp -o tmp-inv.bmp
+	# ../projprof/pp $X $Y $PPPARAMS > pp.out
 
-	cp gplfit.ps gplfit$X$Y$F-pp.eps
-	cp gplsolve.txt gplsolve-pp.txt
-	cp gpldata.txt gpldata-pp.dat
+	# mv gplfit.ps gplfit-$F$X$Y-pp.eps
+	# mv gplsolve.txt gplsolve-$F$X$Y-pp.txt
+	# mv gpldata.txt gpldata-$F$X$Y-pp.dat
+
+	./showparamresults.sh
 
 	# gv gplfit$X$Y.eps
+
 done
+echo `curseyellow`./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat`cursegrey`
+./plot-ranvreal$X.sh gpldata-$F$X-sim.dat gpldata-$F$X-noransac-sim.dat > /dev/null 2>&1
+mv gplfit.ps gplfit-ranvreal-$F$X.eps
 done
 done
 
-convert -loop 0 -delay 100 -geom 400 gplfit*.eps anim.gif
+# convert -loop 0 -delay 100 -geometry 400 gplfit*.eps anim.gif
+
+echo "RND=$RND"

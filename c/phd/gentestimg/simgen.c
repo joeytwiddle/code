@@ -62,7 +62,8 @@ int main(int argc,String *argv) {
 	int numlines=a.intafter("-lines","number of lines in paragraph",10);
 	float propsize=a.floatafter("-size","size of page (prop to img width)",0.1);
 	a.comment("Noise on groundtruth data:");
-	bool dornd=!a.argexists("-nornd","don't randomise (for debug/comparison)");
+	bool dornd=!a.argexists("-nornd","don't randomise - deprecated by ...");
+	int rndseed=a.intafter("-rnd","random seed (for debug/comparison)",0);
 	float noise=a.floatafter("-noise","noise on line points",0.0*640/imgwidth);
 	int numinserts=a.intafter("-ins","number of noisy inserts",0);
 	int numrems=a.intafter("-rems","number of random removals",0);
@@ -237,19 +238,19 @@ int main(int argc,String *argv) {
 		// printf("	%f\n",inta.y);
 	}
 
-	if (dornd)
-		randomise();
+	// if (dornd)
+		randomise(rndseed);
 	for (int i=0;i<numinserts;i++) {
-		// int a = intrnd(0,lines.len-2);
+		int a = intrnd(0,lines.len-2);
 		// int a=lines.len/2+lines.len/3*floatrnd(-1.0,1.0);
-		int a=lines.len/2;
-		printf(">>>>>>>>>I chose %i <<<<<<<<<<<,\n",a);
+		// int a=lines.len/2;
+		// printf(">>>>>>>>>I chose %i <<<<<<<<<<<,\n",a);
 		int b = a+1;
 		Line2d la = lines.get(a);
 		Line2d lb = lines.get(b);
-		// Line2d ln = Line2d( randbetween(la.a,lb.a), randbetween(la.b,lb.b) );
-		Line2d ln = Line2d( (la.a+lb.a)/2.0, (la.b+lb.b)/2.0 );
-		lines.insert(a+1,ln);
+		Line2d ln = Line2d( randbetween(la.a,lb.a), randbetween(la.b,lb.b) );
+		// Line2d ln = Line2d( (la.a+lb.a)/2.0, (la.b+lb.b)/2.0 );
+		lines.insert(a+2,ln); // 2?!  I guess insert is done on index 0..n-1
 	}
 
 	for (int i=0;i<numrems;i++) {
