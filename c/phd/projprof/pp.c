@@ -638,7 +638,7 @@ public:
 
 		V2d vvp;
 
-		if (useoldspacingsmethod) {
+		if (!useoldspacingsmethod) {
 						
 		  // New vvp estimation from spacings
 	  	
