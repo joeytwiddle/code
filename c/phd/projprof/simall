@@ -57,5 +57,5 @@ for numlines in `seq -w 30 01`; do
   # htmlall )
   
   cp "$RES" "results-lines-$numlines.txt"
-exit 1  
+
 done
