@@ -1,7 +1,8 @@
 #ifndef jbmp_H
   #define jbmp_H
 
-  #include <globals.h>
+  #include <files.h>
+  #include <maps.h>
 
 // #define pi 3.1415926535897932385
 

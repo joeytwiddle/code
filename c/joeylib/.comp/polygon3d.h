@@ -1,7 +1,7 @@
 #ifndef polygon3d_H
   #define polygon3d_H
 
-  #include <globals.h>
+  #include <line3d.h>
 
 /*class Polygon3d {
 public:

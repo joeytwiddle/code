@@ -1,7 +1,7 @@
 #ifndef rgbhist_H
   #define rgbhist_H
 
-  #include <globals.h>
+  #include <v3d.h>
 
 class RGBHistogram {
 public:

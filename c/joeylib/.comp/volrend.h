@@ -1,12 +1,8 @@
 #ifndef volrend_H
   #define volrend_H
 
-  #include <maths.h>
-  #include <myrgb.h>
-  #include <polygon2d.h>
   #include <v3d.h>
-  #include <writeable.h>
-  #include <maps.h>
+  #include <jbmp.h>
 
 class VolRend {
 public:

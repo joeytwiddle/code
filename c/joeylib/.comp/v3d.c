@@ -175,13 +175,17 @@
     else
     return 0;
   }
-  
+
+   V3d V3d::dimscale(V3d u,V3d v) {
+    return V3d(u.x*v.x,u.y*v.y,u.z*v.z);
+  }
+
    float V3d::dot(V3d u,V3d v) {
     return u.x*v.x+u.y*v.y+u.z*v.z;
   }
-  
-   V3d V3d::dimscale(V3d u,V3d v) {
-    return V3d(u.x*v.x,u.y*v.y,u.z*v.z);
+
+   float V3d::dot(V3d *u,V3d *v) {
+    return u->x*v->x+u->y*v->y+u->z*v->z;
   }
   
    float V3d::normdot(V3d u,V3d v) {

@@ -1,10 +1,7 @@
 #ifndef quad_H
   #define quad_H
 
-  #include <maths.h>
-  #include <polygon2d.h>
-  #include <writeable.h>
-  #include <maps.h>
+  #include <jbmp.h>
 
 // A way of hierarchical interpolation, ineficcient if eval is not memo-ed
 

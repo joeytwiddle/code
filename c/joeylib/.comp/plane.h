@@ -1,7 +1,7 @@
 #ifndef plane_H
   #define plane_H
 
-  #include <globals.h>
+  #include <line3d.h>
 
 class Plane {
 public:

@@ -1,11 +1,8 @@
 #ifndef correlator2d_H
   #define correlator2d_H
 
-  #include <maths.h>
-  #include <polygon2d.h>
-  #include <writeable.h>
-  #include <maps.h>
   #include <region.h>
+  #include <rgbmp.h>
 
 extern int Correlator2dMethod; // Variable initialised in .c file // 1 = over-exclusive, 2 = over-inclusive
 

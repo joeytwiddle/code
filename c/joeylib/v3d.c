@@ -162,13 +162,17 @@ public:
     else
     return 0;
   }
-  
+
+  static V3d dimscale(V3d u,V3d v) {
+    return V3d(u.x*v.x,u.y*v.y,u.z*v.z);
+  }
+
   static float dot(V3d u,V3d v) {
     return u.x*v.x+u.y*v.y+u.z*v.z;
   }
-  
-  static V3d dimscale(V3d u,V3d v) {
-    return V3d(u.x*v.x,u.y*v.y,u.z*v.z);
+
+  static float dot(V3d *u,V3d *v) {
+    return u->x*v->x+u->y*v->y+u->z*v->z;
   }
   
   static float normdot(V3d u,V3d v) {

@@ -1,7 +1,7 @@
 #ifndef myrgb_H
   #define myrgb_H
 
-  #include <globals.h>
+  #include <maths.h>
 
  class V3d;
 

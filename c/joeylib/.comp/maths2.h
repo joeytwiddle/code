@@ -1,9 +1,7 @@
 #ifndef maths2_H
   #define maths2_H
 
-  #include <maths.h>
   #include <myrgb.h>
-  #include <v2d.h>
   #include <line2d.h>
 
 //RGBmp *OUTLIERIMAGE;

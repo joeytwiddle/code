@@ -2,6 +2,7 @@
   #define files_H
 
   #include <globals.h>
+  #include <list.h>
 
 #include <stddef.h>
 #include <stdio.h>

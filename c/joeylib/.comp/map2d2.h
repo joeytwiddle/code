@@ -1,7 +1,7 @@
 #ifndef map2d2_H
   #define map2d2_H
 
-  #include <globals.h>
+  #include <maps.h>
 
 /* Skipping later :: template <class Object>
 void Map2d<Object>::realsearch(Map2d<bool> *togo,Region *r,List<Pixel> *s); // Method

@@ -2,12 +2,6 @@
   #define octree_H
 
   #include <ordtree.h>
-  #include <maths.h>
-  #include <myrgb.h>
-  #include <v3d.h>
-  #include <ori.h>
-  #include <line3d.h>
-  #include <plane.h>
   #include <frustrum.h>
 
 extern int maxvosinoctree; // Variable initialised in .c file

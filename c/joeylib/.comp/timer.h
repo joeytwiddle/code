@@ -1,7 +1,6 @@
 #ifndef timer_H
   #define timer_H
 
-  #include <globals.h>
 
 #include <time.h>
 #include <stdio.h>

@@ -1,7 +1,8 @@
 #ifndef frustrum_H
   #define frustrum_H
 
-  #include <globals.h>
+  #include <plane.h>
+  #include <pp.h>
 
 class Frustrum {
 public:

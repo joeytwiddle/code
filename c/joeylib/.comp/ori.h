@@ -1,7 +1,7 @@
 #ifndef ori_H
   #define ori_H
 
-  #include <globals.h>
+  #include <v3d.h>
 
 class Ori { // Orientate pushes into real frame
             // Disorientate brings into local frame

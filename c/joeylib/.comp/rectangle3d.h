@@ -1,7 +1,7 @@
 #ifndef rectangle3d_H
   #define rectangle3d_H
 
-  #include <globals.h>
+  #include <plane.h>
 
 class Rectangle3d : public Plane {
 public:

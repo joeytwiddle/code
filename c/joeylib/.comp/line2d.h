@@ -1,7 +1,7 @@
 #ifndef line2d_H
   #define line2d_H
 
-  #include <globals.h>
+  #include <v2d.h>
 
 /** Apparently intersection can be done like this:
  *  Line1: La-Lb Line2: Ma-Mb

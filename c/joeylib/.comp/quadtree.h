@@ -1,7 +1,7 @@
 #ifndef quadtree_H
   #define quadtree_H
 
-  #include <globals.h>
+  #include <list.h>
 
 #define Quadtreemaxobjs 10
 

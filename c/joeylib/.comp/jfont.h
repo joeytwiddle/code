@@ -1,10 +1,8 @@
 #ifndef jfont_H
   #define jfont_H
 
-  #include <maths.h>
   #include <files.h>
-  #include <polygon2d.h>
-  #include <writeable.h>
+  #include <maps.h>
 
 #ifdef DOS
   #define JFontDefault "\\joey\\code\\c\\joeylib\\cool.jf"

@@ -1,7 +1,8 @@
 #ifndef texturedrectangle3d_H
   #define texturedrectangle3d_H
 
-  #include <globals.h>
+  #include <rectangle3d.h>
+  #include <rgbmp.h>
 
 class TexturedRectangle3d : public Rectangle3d {
 public:

@@ -1,7 +1,7 @@
 #ifndef vnd_H
   #define vnd_H
 
-  #include <globals.h>
+  #include <strings.h>
 
 // #define DEBUG
 

@@ -1,7 +1,6 @@
 #ifndef mem_H
   #define mem_H
 
-  #include <globals.h>
 
 /*#ifdef UNIX
 

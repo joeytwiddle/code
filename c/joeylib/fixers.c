@@ -18,4 +18,8 @@ void ______fixers() {
 	r.thickcross(V2d(),0,1.0f,myRGB());
 	Map2d<int> m2i;
 	m2i.collectregions();
+	{ int i,j;
+		swap(&i,&j);
+		equal(i,j);
+	}
 }

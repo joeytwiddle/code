@@ -2,6 +2,7 @@
   #define angus_H
 
   #include <progmon.h>
+  #include <rgbmp.h>
 
 // This was written by Angus Clark
 // Slight mods by Joey

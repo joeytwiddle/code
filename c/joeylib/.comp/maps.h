@@ -1,7 +1,8 @@
 #ifndef maps_H
   #define maps_H
 
-  #include <globals.h>
+  #include <polygon2d.h>
+  #include <writeable.h>
 
 #include <map1d.h>
 #include <ghist.h>

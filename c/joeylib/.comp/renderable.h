@@ -1,7 +1,6 @@
 #ifndef renderable_H
   #define renderable_H
 
-  #include <globals.h>
 
 // General interpolation interpolates on screen and in space and uses
 // texture call to evaluate colour at each pixel

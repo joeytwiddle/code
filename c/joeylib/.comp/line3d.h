@@ -1,7 +1,8 @@
 #ifndef line3d_H
   #define line3d_H
 
-  #include <globals.h>
+  #include <line2d.h>
+  #include <viewpnt.h>
 
 // a and b are absolute vectors
 // ie. b is not the direction of the line, it is the second end of the line

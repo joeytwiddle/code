@@ -1,14 +1,8 @@
 #ifndef rgbmp_H
   #define rgbmp_H
 
-  #include <maths.h>
   #include <files.h>
-  #include <myrgb.h>
-  #include <polygon2d.h>
-  #include <v3d.h>
-  #include <line3d.h>
   #include <plane.h>
-  #include <writeable.h>
   #include <maps.h>
   #include <rgbhist.h>
 

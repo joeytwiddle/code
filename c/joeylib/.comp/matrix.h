@@ -1,6 +1,7 @@
 #ifndef matrix_H
   #define matrix_H
 
+  #include <ori.h>
 
 /* Skipping later :: V3d Matrix::operator*(V3d u); // Method
 */

@@ -1,9 +1,7 @@
 #ifndef writeable_H
   #define writeable_H
 
-  #include <maths.h>
   #include <myrgb.h>
-  #include <v2d.h>
   #include <line2d.h>
 
 class Writeable {

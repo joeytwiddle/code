@@ -1,7 +1,7 @@
 #ifndef viewpnt_H
   #define viewpnt_H
 
-  #include <globals.h>
+  #include <ori.h>
 
 class Viewpoint {
 public:

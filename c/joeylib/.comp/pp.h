@@ -1,7 +1,8 @@
 #ifndef pp_H
   #define pp_H
 
-  #include <globals.h>
+  #include <viewpnt.h>
+  #include <jbmp.h>
 
 // Perspective projection
 // Optimised (not fully)
@@ -20,6 +21,11 @@ extern float PPaspect; // Exists
 
 extern float PPangx; // Variable initialised in .c file
 extern float PPangy; // Variable initialised in .c file
+
+// #ifndef PPclipdist
+// #define PPclipdist 200000
+// #endif
+extern float PPclipdist; // Variable initialised in .c file
 
 extern JBmp PPscr; // Exists
 

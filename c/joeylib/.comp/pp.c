@@ -21,6 +21,11 @@ float PPaspect;
 float PPangx=45;
 float PPangy=30;
 
+// #ifndef PPclipdist
+// #define PPclipdist 200000
+// #endif
+float PPclipdist=0.2;
+
 JBmp PPscr;
 
 Viewpoint PPvp;
@@ -56,7 +61,7 @@ void PPgetscrpos(V3d far,V3d eye,int *x,int *y) {
 
 bool PPgetscrposnoadd(V3d far,V3d eye,int *x,int *y) {
   // (y-eyey)/(plane-eyez)=(fary-eyey)/(farz-eyez)
-  if (V3d::normdot(far,V3d::k)>0.2) {
+  if (V3d::dot(far,V3d::k)>PPclipdist) {
     *x=(int)(PPhscrwid+PPhscrhei*(eye.x+PPplane*(far.x-eye.x)/(far.z-eye.z)));
     *y=(int)(PPhscrhei*(1-eye.y+PPplane*(far.y-eye.y)/(far.z-eye.z)));
     return true;
@@ -66,7 +71,7 @@ bool PPgetscrposnoadd(V3d far,V3d eye,int *x,int *y) {
 
 bool PPgetscrposnoadd(V3d *far,V3d *eye,int *x,int *y) {
   // (y-eyey)/(plane-eyez)=(fary-eyey)/(farz-eyez)
-  if (V3d::normdot(far,&V3d::k)>0.2) {
+  if (V3d::dot(far,&V3d::k)>PPclipdist) {
     *x=(int)(PPhscrwid+PPhscrhei*(eye->x+PPplane*(far->x-eye->x)/(far->z-eye->z)));
     *y=(int)(PPhscrhei*(1-eye->y+PPplane*(far->y-eye->y)/(far->z-eye->z)));
     return true;
@@ -77,7 +82,7 @@ bool PPgetscrposnoadd(V3d *far,V3d *eye,int *x,int *y) {
 bool PPgetscrpos(V3d far,int *x,int *y) { // eye assumed at (0,0,0)
   V3d tmp=far+V3d::k*PPindent;
   // float div=tmp.z; // div>tooclose
-  if (V3d::normdot(tmp,V3d::k)>0.2) {
+  if (V3d::dot(tmp,V3d::k)>PPclipdist) {
     *x=(int)(PPhscrwid+PPhscrhei*(PPplane*far.x/tmp.z));
     *y=(int)(PPhscrhei*(1-PPplane*far.y/tmp.z));
     return true;
@@ -88,7 +93,7 @@ bool PPgetscrpos(V3d far,int *x,int *y) { // eye assumed at (0,0,0)
 bool PPgetscrposnoadd(V3d far,int *x,int *y) { // eye assumed at (0,0,0)
   V3d tmp=far;
   // float div=tmp.z; // div>tooclose
-  if (V3d::normdot(tmp,V3d::k)>0.2) {
+  if (V3d::dot(tmp,V3d::k)>PPclipdist) {
     *x=(int)(PPhscrwid+PPhscrhei*(PPplane*far.x/tmp.z));
     *y=(int)(PPhscrhei*(1-PPplane*far.y/tmp.z));
     return true;
@@ -128,7 +133,7 @@ float PPgetunit(V3d far) {
 }
 
 float PPgetunitnoadd(V3d far) {
-  if (far.z>0.01 && V3d::normdot(V3d::k,far)>0.1)
+  if (far.z>0.01 && V3d::dot(V3d::k,far)>0.1)
     return PPhscrhei*PPplane*1.0/far.z;
   else
   return 0;

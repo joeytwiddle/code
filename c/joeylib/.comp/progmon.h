@@ -1,7 +1,6 @@
 #ifndef progmon_H
   #define progmon_H
 
-  #include <globals.h>
 
 // ProgressMonitor
 

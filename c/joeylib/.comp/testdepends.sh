@@ -3,6 +3,10 @@
 # Nah I think it's OK, because joeylib.c is ordered list
 # and it tried omitting modules from the bottom.
 
+# TODO: Binary search might improve efficiency!
+
+DEBUG=
+
 if test "$1" = ""; then
 	echo "testdepends <c_file_name> [ gcc options ]"
 	exit 1
@@ -27,8 +31,6 @@ MODULES=`
 	# decodeslashn
 `
 
-echo "$MODULES"
-
 testwith () {
 	(
 		echo "#define joeylib_H"
@@ -39,10 +41,10 @@ testwith () {
 			fi
 		done
 		echo "#include \"$MODULE.c\""
-		echo "void main() { }"
+		# echo "void main() { }"
 	) > test.c
 	INCLFILES=`echo "$1" | while read MOD; do if test -f "$MOD.o"; then echo "$MOD.o"; fi done`
-	g++ $GCCARGS -o "$MODULE.o" -w -I "$JPATH/code/c/joeylib/.comp/" test.c $INCLFILES > gcc.out 2>&1
+	g++ $GCCARGS -c -w -I "$JPATH/code/c/joeylib/.comp/" test.c $INCLFILES > gcc.out 2>&1
 }
 
 ORIGMODULES="$MODULES"
@@ -74,9 +76,11 @@ echo
 			testwith "$TESTMODULES"
 			if test "$?" = "0"; then
 				MODULES="$TESTMODULES"
-				echo "Succeeded ommiting "`curseyellow`$OMITMOD`cursegrey`"."
-				echo "Now using: "`echo "$MODULES" | tr "\n" " "`
-				echo
+				test "$DEBUG" &&
+				echo "Succeeded ommiting "`curseyellow`$OMITMOD`cursegrey`"." &&
+				echo "Now using: "`echo "$MODULES" | tr "\n" " "` &&
+				echo ||
+				printf `curseyellow`"$OMITMOD "`cursegrey`
 				 NOMORE=
 				 # break
 			else
@@ -94,7 +98,7 @@ cursecyan
 echo
 echo "$MODULE:"
 cursegrey
-echo "Stripped down to: "`echo "$MODULES" | tr "\n" " "`
+echo "Stripped down to: "`cursegreen; echo "$MODULES" | tr "\n" " "; cursegrey`
 echo "            from: "`echo "$ORIGMODULES" | tr "\n" " "`
 
 if test -d stubs; then

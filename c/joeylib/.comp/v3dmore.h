@@ -1,7 +1,7 @@
 #ifndef v3dmore_H
   #define v3dmore_H
 
-  #include <globals.h>
+  #include <ori.h>
 
 /* Skipping later :: // fillup V3d V3d::qorientate(V3d v,Ori ori); // Method
 */

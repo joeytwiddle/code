@@ -1,7 +1,7 @@
 #ifndef myalleg_H
   #define myalleg_H
 
-  #include <globals.h>
+  #include <myrgb.h>
 
 extern int allegrostarted; // Variable initialised in .c file
 

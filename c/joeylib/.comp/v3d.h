@@ -1,7 +1,9 @@
 #ifndef v3d_H
   #define v3d_H
 
-  #include <globals.h>
+  #include <myrgb.h>
+  #include <v2d.h>
+  #include <matrix0.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -129,11 +131,14 @@ public:
   
   static int equal(V3d u,V3d v); // Method
 
-  
+
+  static V3d dimscale(V3d u,V3d v); // Method
+
+
   static float dot(V3d u,V3d v); // Method
 
-  
-  static V3d dimscale(V3d u,V3d v); // Method
+
+  static float dot(V3d *u,V3d *v); // Method
 
   
   static float normdot(V3d u,V3d v); // Method

@@ -15,6 +15,8 @@ sedreplace " ::" " " "tmp.c.jparse"
 	echo "#ifndef $FILE""_H"
 	echo "  #define $FILE""_H"
 	echo
+	echo "  #include <joeylib.h>"
+	echo
 	echo "  #include <$FILE-header.h>"
 	echo
 	echo "#endif"
@@ -31,6 +33,6 @@ sedreplace " ::" " " "tmp.c.jparse"
 	echo "#endif"
 ) > "$OUTDIR/$FILE.c"
 
-cd "$OUTDIR"
-./testdepends.sh "$FILE" -w -c -I "$JPATH/code/c/joeylib/.comp/"
-cd ..
+# cd "$OUTDIR"
+# ./testdepends.sh "$FILE" -w -c -I "$JPATH/code/c/joeylib/.comp/"
+# cd ..

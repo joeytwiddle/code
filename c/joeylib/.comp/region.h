@@ -1,7 +1,7 @@
 #ifndef region_H
   #define region_H
 
-  #include <globals.h>
+  #include <maps.h>
 
 // make() functions use memoing
 // remake() will re-memo

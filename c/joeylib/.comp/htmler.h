@@ -1,7 +1,7 @@
 #ifndef htmler_H
   #define htmler_H
 
-  #include <globals.h>
+  #include <files.h>
 
 class Pos {
 public:

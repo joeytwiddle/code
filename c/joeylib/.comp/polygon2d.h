@@ -1,7 +1,7 @@
 #ifndef polygon2d_H
   #define polygon2d_H
 
-  #include <globals.h>
+  #include <line2d.h>
 
  class Region;
 

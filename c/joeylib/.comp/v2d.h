@@ -1,7 +1,7 @@
 #ifndef v2d_H
   #define v2d_H
 
-  #include <globals.h>
+  #include <maths.h>
 
 #include <stdio.h>
 #include <math.h>

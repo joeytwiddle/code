@@ -1,30 +1,6 @@
 #ifndef matrix0_H
   #define matrix0_H
 
-  #include <globals.h>
-  #include <stdlib.h>
-  #include <stdio.h>
-  #include <stdarg.h>
-  #include <math.h>
-  #include <time.h>
-  #include <mem.h>
-  #include <error.h>
-  #include <strings.h>
-  #include <list.h>
-  #include <ordtree.h>
-  #include <list2.h>
-  #include <strings2.h>
-  #include <progmon.h>
-  #include <maths.h>
-  #include <timer.h>
-  #include <files.h>
-  #include <htmler.h>
-  #include <myrgb.h>
-  #include <myalleg.h>
-  #include <vnd.h>
-  #include <v2d.h>
-  #include <line2d.h>
-  #include <polygon2d.h>
 
  class V3d;
  class Ori;

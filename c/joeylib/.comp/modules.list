@@ -1,5 +1,4 @@
 globals
-allegro
 stdlib
 stdio
 stdarg
@@ -8,7 +7,6 @@ time
 mem
 error
 strings
-jcurses
 list
 ordtree
 list2

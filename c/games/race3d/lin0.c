@@ -5,8 +5,8 @@
  * - When I made change to PP (normdot -> dot for near plane clipping) I think the glitching came back - gotta fix!!!
  */
 
-#define SCRWID 320
-#define SCRHEI 200
+#define SCRWID 640
+#define SCRHEI 480
 #define SCRBPS 24
 #define desiredFramesPerSecond 40
 // #define KEEP_TO_FPS
@@ -55,7 +55,7 @@
 #define redambient 0
 #define reddarken 84
 #define greenambient 0
-#define greendarken 168
+#define greendarken 150
 #define blueambient 0
 #define bluedarken 168
 float fogdepth;
@@ -63,7 +63,7 @@ float displayFogdepth=40.0;
 float playFogdepth=25.0;
 float displayPPd=1.0;
 float playPPd=1.5;
-int taillen=1200;
+int taillen=1800;
 
 // Track
 int numWaves=15;
