@@ -1,0 +1,45 @@
+Disclaimer: I don't think projprof actually works how it should.  :-(
+
+If you don't have much fun with these programs, it's probably better to start from scratch yourself.  You are welcome, if it is useful, to meet up with me and discuss some of the ideas.
+
+
+
+Be sure to look at the executable shellscripts, starting with "0all".  I used these to do batch processing and call the C programs, so they should give some insight into end-to-end process.
+
+
+
+## You can probably ignore these directories:
+
+hough/        My failed attempt at line detection using the Hough transform
+handlabel/
+group/
+voronoi/
+stats/
+keep/
+oldtexture/
+CVS/
+tom/
+
+
+
+## The following may be relevant / of interest:
+
+images/       The scripts (and sometimes the programs) may try to use this for input/output images.
+improc/       Generic stuff, some of which may still be neccessary.
+results/      The batch scripts drop stuff here.
+
+lines/        ?
+quads/        Used to find quadrilaterals in output of es and ht.
+regions/      ?
+
+gentestimg/   Generates test images for projprof to work on.
+
+
+
+## The following are what you are really after:
+
+texture/      Takes an image and outputs 4/5 images, each representing one texture measure's result over local areas of the image.
+nn/           Train and utilise the neural net.  It looks at the texture measures and decides which parts of the image are text and which are not.
+locthr/       Perform local thresholding to generate a binary image from colour/grayscale image.
+projprof/     Given a locally thresholded image of a paragraph of text, use projection profiles to estimate HVP, then split up the separate lines of text, then estimate VVP from end/center points of each line, then recover fronto-parallel view.
+

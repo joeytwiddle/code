@@ -10,4 +10,6 @@ In jsh, type:
 
 If all goes well, you will have compiled all the executables I used for testing.
 
+Running the programs may be a little harder!  I used to have some test images in the images/ directory, and I ran 0allall to batch process them.
+
 If you run into problems, please mail joey@hwi.ath.cx with a copy of the error output on your terminal.
