@@ -84,12 +84,16 @@ sedreplace \
 		/www/db-backups/active_bristol.psql
 echo
 
+# Re-create the MYSQL DB:
 /www/recreatemydb.sh
-# Ensure postgres is not busy so that we may destroy the DB
-/etc/init.d/postgresql stop
-sleep 15 # 5 was not long enough!
-/etc/init.d/postgresql start
+
+# Ensure postgres is not busy so that we may destroy the DB:
+# Note: "su - root" used in case cron does not have full PATH setup.
+su - root /etc/init.d/postgresql stop
 sleep 15
+su - root /etc/init.d/postgresql start
+sleep 15
+# Replace the DB:
 su - postgres /www/recreatepgdb.sh
 
 echo "All done."

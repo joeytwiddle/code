@@ -3,12 +3,14 @@
 # Informs maintainer if a site is inactive/broken.
 # Tries to download the front page and then check it contains a key string.
 
+TIME=`date`
 SITE="bristol.indymedia.org"
 KEYSTRING="B R I S T O L indymedia"
 MAILONERROR="pclark@cs.bris.ac.uk"
 
 LOGFILE="/tmp/checksite.log"
-DLFILE="/tmp/$SITE/index.html"
+DLDIR="/tmp/$SITE"
+DLFILE="$DLDIR/index.html"
 cd /tmp
 
 # Download copy of the front page
@@ -17,8 +19,9 @@ cd /tmp
 	echo
 	echo "----- wgetting $SITE"
 	echo
-	rm -rf "$DLFILE"
-	wget -x "http://$SITE/"
+	rm -f "$DLFILE"
+	mkdir -p "$DLDIR"
+	wget -x "http://$SITE/" -O "$DLFILE"
 ) > "$LOGFILE" 2>&1
 
 # Check it contains the key string
@@ -41,6 +44,8 @@ else
 
 	(
 
+		echo
+		echo "$TIME"
 		echo
 		echo "Hi this is $0 running as $USER on $HOSTNAME (aka $HOST)."
 		echo

@@ -63,7 +63,8 @@ echo
 
 # Not really needed so much now that we are taking backups automatically elsewhere.
 
-$RSYNC_RSH mike@bristol.indymedia.org sudo su postgres -c /home/mike/bin/dumpdbs.sh
+echo "Skipping: cannot sudo without user passwd, but cron@tronic should have dumped the DBs recently anyway."
+# $RSYNC_RSH mike@bristol.indymedia.org sudo su postgres -c /home/mike/bin/dumpdbs.sh
 
 echo
 echo "--- 2/4 --- Get local copy of DBs ------------------------------------"
