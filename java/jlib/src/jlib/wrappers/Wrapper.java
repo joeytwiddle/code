@@ -42,7 +42,7 @@ public class Wrapper implements Serializable {
 	public final static Class recommendClassFor(String javaType) {
 		try {
 			if (javaType.indexOf(".")>=0)
-				return Class.forName("jlib.wrappers."+javaType);
+				return Class.forName("jlib.wrappers."+javaType+"Wrapper");
 			else
 				return Class.forName("jlib.wrappers.prim_"+javaType);
 		} catch (Exception e) {
@@ -70,6 +70,10 @@ public class Wrapper implements Serializable {
 		}
 	}
 
+	public final String javaType() {
+		return getWrappedClassName();
+	}
+
 	public final Class getWrappedClass() {
 		try {
 			return Class.forName(getWrappedClassName());
@@ -80,7 +84,10 @@ public class Wrapper implements Serializable {
 	}
 
 	public final String getWrappedClassName() {
-		return JString.after(getClass().getName(),"jlib.wrappers.");
+		String s=JString.after(getClass().getName(),"jlib.wrappers.");
+		if (s.endsWith("Wrapper"))
+			s=JString.beforelast(s,"Wrapper");
+		return s;
 	}
 	
 	public final String getDePrimWrappedClassName() {
