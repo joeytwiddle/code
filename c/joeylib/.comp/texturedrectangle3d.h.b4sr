@@ -1,0 +1,6 @@
+#ifndef texturedrectangle3d_H
+  #define texturedrectangle3d_H
+
+  #include <texturedrectangle3d-header.h>
+
+#endif

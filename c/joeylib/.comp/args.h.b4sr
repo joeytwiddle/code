@@ -1,0 +1,6 @@
+#ifndef args_H
+  #define args_H
+
+  #include <args-header.h>
+
+#endif

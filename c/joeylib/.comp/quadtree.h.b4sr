@@ -1,0 +1,6 @@
+#ifndef quadtree_H
+  #define quadtree_H
+
+  #include <quadtree-header.h>
+
+#endif

@@ -1,0 +1,6 @@
+#ifndef matrix0_H
+  #define matrix0_H
+
+  #include <matrix0-header.h>
+
+#endif

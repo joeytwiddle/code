@@ -1,0 +1,22 @@
+In file included from test.c:1:
+fixers.c: In function `void ______fixers()':
+fixers.c:13: implicit declaration of function `int V2d(...)'
+fixers.c:13: implicit declaration of function `int randbetween(...)'
+fixers.c:14: `Map1d' undeclared (first use this function)
+fixers.c:14: (Each undeclared identifier is reported only once
+fixers.c:14: for each function it appears in.)
+fixers.c:14: parse error before `>'
+fixers.c:15: `m1f' undeclared (first use this function)
+fixers.c:16: `Map2d' undeclared (first use this function)
+fixers.c:16: parse error before `>'
+fixers.c:17: parse error before `char'
+fixers.c:18: `m2uc' undeclared (first use this function)
+fixers.c:20: `RGBmp' undeclared (first use this function)
+fixers.c:20: parse error before `;'
+fixers.c:21: `r' undeclared (first use this function)
+fixers.c:21: `m2f' undeclared (first use this function)
+fixers.c:23: implicit declaration of function `int myRGB(...)'
+fixers.c:24: parse error before `>'
+fixers.c:25: `m2i' undeclared (first use this function)
+fixers.c:27: implicit declaration of function `int swap(...)'
+fixers.c:28: implicit declaration of function `int equal(...)'

@@ -1,0 +1,6 @@
+#ifndef maths2_H
+  #define maths2_H
+
+  #include <maths2-header.h>
+
+#endif

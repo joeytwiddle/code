@@ -1,0 +1,6 @@
+#ifndef jfont_H
+  #define jfont_H
+
+  #include <jfont-header.h>
+
+#endif

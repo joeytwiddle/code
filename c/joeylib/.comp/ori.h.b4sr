@@ -1,0 +1,6 @@
+#ifndef ori_H
+  #define ori_H
+
+  #include <ori-header.h>
+
+#endif

@@ -1,0 +1,58 @@
+#ifndef frustrum_H
+  #define frustrum_H
+
+  #include <globals.h>
+  #include <stdlib.h>
+  #include <stdio.h>
+  #include <stdarg.h>
+  #include <math.h>
+  #include <time.h>
+  #include <mem.h>
+  #include <error.h>
+  #include <strings.h>
+  #include <list.h>
+  #include <ordtree.h>
+  #include <list2.h>
+  #include <strings2.h>
+  #include <progmon.h>
+  #include <maths.h>
+  #include <timer.h>
+  #include <files.h>
+  #include <htmler.h>
+  #include <myrgb.h>
+  #include <myalleg.h>
+  #include <vnd.h>
+  #include <v2d.h>
+  #include <line2d.h>
+  #include <polygon2d.h>
+  #include <matrix0.h>
+  #include <v3d.h>
+  #include <ori.h>
+  #include <v3dmore.h>
+  #include <matrix.h>
+  #include <viewpnt.h>
+  #include <line3d.h>
+  #include <plane.h>
+  #include <rectangle3d.h>
+  #include <polygon3d.h>
+  #include <writeable.h>
+  #include <maps.h>
+  #include <region.h>
+  #include <map2d2.h>
+  #include <jbmp.h>
+  #include <pp.h>
+
+class Frustrum {
+public:
+  V3d cen; // Exists
+  Ori ori; // Exists
+  Plane left,right,top,bottom; // Exists
+  float nearclip; // Exists
+  float farclip; // Exists
+   Frustrum(V3d a,Ori x,float c,float d); // Method
+
+  int include(V3d v,float size); // Method
+
+};
+
+#endif

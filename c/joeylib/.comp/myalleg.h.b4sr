@@ -1,0 +1,6 @@
+#ifndef myalleg_H
+  #define myalleg_H
+
+  #include <myalleg-header.h>
+
+#endif

@@ -1,0 +1,6 @@
+#ifndef octree_H
+  #define octree_H
+
+  #include <octree-header.h>
+
+#endif

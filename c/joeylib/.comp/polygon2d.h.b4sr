@@ -1,0 +1,6 @@
+#ifndef polygon2d_H
+  #define polygon2d_H
+
+  #include <polygon2d-header.h>
+
+#endif

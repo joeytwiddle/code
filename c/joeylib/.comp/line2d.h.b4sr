@@ -1,0 +1,6 @@
+#ifndef line2d_H
+  #define line2d_H
+
+  #include <line2d-header.h>
+
+#endif

@@ -1,0 +1,6 @@
+#ifndef rgbhist_H
+  #define rgbhist_H
+
+  #include <rgbhist-header.h>
+
+#endif

@@ -1,0 +1,6 @@
+#ifndef rectangle3d_H
+  #define rectangle3d_H
+
+  #include <rectangle3d-header.h>
+
+#endif

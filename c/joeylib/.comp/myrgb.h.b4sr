@@ -1,0 +1,6 @@
+#ifndef myrgb_H
+  #define myrgb_H
+
+  #include <myrgb-header.h>
+
+#endif

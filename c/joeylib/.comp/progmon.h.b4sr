@@ -1,0 +1,42 @@
+#ifndef progmon_H
+  #define progmon_H
+
+  #include <globals.h>
+  #include <stdlib.h>
+  #include <stdio.h>
+  #include <stdarg.h>
+  #include <math.h>
+  #include <time.h>
+  #include <mem.h>
+  #include <error.h>
+  #include <strings.h>
+  #include <stdio.h>
+  #include <list.h>
+  #include <ordtree.h>
+  #include <list2.h>
+  #include <strings2.h>
+
+// ProgressMonitor
+
+class ProgMon {
+
+	#define UNIXTERMWID 70
+
+public:
+	void (ProgMon::*nowthrough)(const float f); // Exists
+	void (ProgMon::*end)(); // Exists
+
+	int unixterm_lastprnt; // Exists
+
+	 ProgMon(); // Method
+
+
+	void unixterm_nowthrough(const float f); // Method
+
+
+	void unixterm_end(); // Method
+
+
+};
+
+#endif

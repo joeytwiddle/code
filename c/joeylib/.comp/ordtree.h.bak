@@ -1,0 +1,6 @@
+#ifndef ordtree_H
+  #define ordtree_H
+
+  #include <ordtree-header.h>
+
+#endif

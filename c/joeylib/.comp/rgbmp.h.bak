@@ -1,0 +1,6 @@
+#ifndef rgbmp_H
+  #define rgbmp_H
+
+  #include <rgbmp-header.h>
+
+#endif
