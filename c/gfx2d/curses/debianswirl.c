@@ -4,6 +4,7 @@
  * - Integer maths.
  * - Intercept boot messages and display.
  * - Use time instead of frame count.
+ * - Proper antialiasing (current method squishes!)
 **/
 
 #include <math.h>
@@ -21,6 +22,26 @@ void doSummat(void writeFn(int,int)) {
 	// ...
 }
 
+
+int frames;
+int cenx;
+int ceny;
+float spacePerSwirl;
+float swirlang;
+
+float getSwirlHeight(float x,float y) {
+
+	float X = ((float)x-(float)cenx)/(float)COLS*1.3;
+	float Y = ((float)y-(float)ceny)/(float)LINES;
+	float ang = atan2(Y,X)-swirlang;
+	if (y<0)
+		ang=ang+M_PI;
+	float wobblemag = 0.06+0.06*sin((float)frames*0.00315);
+	float rad = sqrt(X*X+Y*Y) * (1.0+ wobblemag*sin(2.0*ang));
+	return sin(rad/spacePerSwirl+ang-swirlang);
+
+}
+
 void cls() {
 	for (int x=0;x<COLS;x++) {
 		for (int y=0;y<LINES;y++) {
@@ -28,10 +49,11 @@ void cls() {
 		}
 	}
 }
+
 void main() {
 
 	#define PALSIZE 8
-	char *palette=" ::+O###_";
+	char *palette=" ::+O####_";
 	
 	printf("Hello\n");
 	srand(time(NULL));
@@ -53,7 +75,7 @@ void main() {
 		init_pair(7,COLOR_WHITE,COLOR_BLACK);
 	}
 
-	int frames=0;
+	frames=0;
 
 	cls();
 
@@ -61,37 +83,30 @@ void main() {
 		
 		// doSummat(&lonewriteToPoint);
 
-		int cenx = COLS / 2;
-		int ceny = LINES / 2;
-		float spacePerSwirl = 0.08+0.02*sin(0.001*(float)frames);
-		float swirlang = (float)frames * M_PI / 800.0;
+		cenx = COLS / 2;
+		ceny = LINES / 2;
+		spacePerSwirl = 0.08+0.02*sin(0.001*(float)frames);
+		swirlang = (float)frames * M_PI / 800.0;
 
 		move(0,0);
 
 		for (int y = 0;y<LINES;y++) {
 			for (int x = 0;x<COLS;x++) {
 
-				float X = ((float)x-(float)cenx)/(float)COLS*1.3;
-				float Y = ((float)y-(float)ceny)/(float)LINES;
-				float ang = atan2(Y,X)-swirlang;
-				if (y<0)
-					ang=ang+M_PI;
-				float wobblemag = 0.06+0.06*sin((float)frames*0.00315);
-				float rad = sqrt(X*X+Y*Y) * (1.0+ wobblemag*sin(2.0*ang));
-				float swirlHeight = sin(rad/spacePerSwirl+ang-swirlang);
-
-				float extra=-0.4+0.5*sin(2.493-rad*5.6+(float)frames*0.00184);
-				if ( swirlHeight > - extra ) {
-				// if ( swirlHeight > - 0.7 ) {
-					int c = (((int)((swirlHeight+extra)/(1.0+extra)*(float)PALSIZE)) % PALSIZE);
+				float swirlHeight=getSwirlHeight(x,y);
+				// float extra=-0.4+0.5*sin(2.493-rad*5.6+(float)frames*0.00184);
+				float extra=0;
+				{
+					int c=
+							( getSwirlHeight(x+1,y+1) > 0 ? 1 : 0 )
+						+	( getSwirlHeight(x,y+1) > 0 ? 1 : 0 )
+						+	( getSwirlHeight(x+1,y) > 0 ? 1 : 0 )
+						+	( getSwirlHeight(x,y) > 0 ? 1 : 0 )
+						+	( getSwirlHeight((float)x+0.5,(float)y+0.5) > 0 ? 1 : 0 );
 					char ch = palette[c];
-					c=1;
-					attrset(COLOR_PAIR(c+1) | A_BOLD);
-					// vaddch(y,x,ch);
-					addch(ch);
-				} else {
+					attrset(COLOR_PAIR(2) | A_BOLD);
 					// mvaddch(y,x,32);
-					addch(32);
+					addch(ch);
 				}
 
 			}
