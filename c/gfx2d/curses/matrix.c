@@ -126,8 +126,8 @@ int averageLengthBetweenBlocks;
 int slidingProcessDies;
 int newSlidingProcess;
 #ifdef PROCESSING_WHITE_BITS
-int processDies;
-int boredProcessDies;
+int staticProcessDies;
+int movingProcessDies;
 #endif
 
 
@@ -195,8 +195,8 @@ void setupEverything() {
 	newSlidingProcess          = max(2, averageLengthOfSlide );
 
 #ifdef PROCESSING_WHITE_BITS
-	processDies  = max(2, averageLengthOfBlock*2 );
-	boredProcessDies = max(2, averageLengthOfBlock*2 );
+	movingProcessDies = max(2, averageLengthOfBlock / 2 );
+	staticProcessDies = max(2, averageLengthOfBlock + averageLengthBetweenBlocks );
 	numProcesses = max(1, (int)sqrt(COLS * LINES / sparsenessSkipCols) / 16 );
 #endif
 
@@ -346,12 +346,16 @@ void main() {
 				processes[i] = thematrix[processX[i]][processY[i]];
 				matrix_set_process(processX[i],processY[i]);
 				thematrix[processX[i]][processY[i]] = processes[i];
+				// Die if bored
 				if (
 					processes[i] == STATIC_PROCESS_EMPTY
 					|| !sliding[processX[i]]
 				) {
-					recycle = prob(boredProcessDies);
+					recycle = prob(staticProcessDies);
 				}
+				// Die naturally
+				if (prob(staticProcessDies))
+					recycle = true;
 			} else if (processes[i] == WRITING_PROCESS || processes[i] == CLEARING_PROCESS) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS ? ' ': randSymbol() );
 				matrix_set(processX[i],processY[i],toWrite);
@@ -359,17 +363,21 @@ void main() {
 				if (processY[i]>=LINES) {
 					newProcess(i);
 				} else {
+					// Die if bored
 					if (
 						(processes[i] == CLEARING_PROCESS && thematrix[processX[i]][processY[i]] == ' ')
 						|| sliding[processX[i]]
 					) {
-						recycle = prob(boredProcessDies);
+						recycle = prob(movingProcessDies);
 					}
+					// Die naturally
+					if (prob(movingProcessDies))
+						recycle = true;
 					matrix_set_process(processX[i],processY[i]);
 					thematrix[processX[i]][processY[i]] = WRITING_PROCESS; // nobody cares!
 				}
 			}
-			if (recycle || prob(processDies)) {
+			if (recycle) {
 				mbit toWrite = ( processes[i] == CLEARING_PROCESS || processes[i] == STATIC_PROCESS_EMPTY ? ' ' : randSymbol() );
 				matrix_set(processX[i],processY[i],toWrite);
 				newProcess(i);
