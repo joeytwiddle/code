@@ -231,6 +231,7 @@ class ProjectionProfiler {
 			//        ppres=scale;
 			//      #endif
 #endif
+			printf("FWIW, ppres=%i and scale/width=%i\n",(int)ppres,(int)scale);
 			int hw=binimg.width/2;
 			int hh=binimg.height/2;
 			vps=Map2d<VP *>(res,res);
