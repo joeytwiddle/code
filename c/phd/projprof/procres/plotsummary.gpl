@@ -13,7 +13,8 @@ echo "$X"
 ./extracterror "$X" 2> /tmp/tmp.txt
 cat /tmp/tmp.txt | grep "ave = " > "$X.totals"
 
-gnuplot << !
+# gnuplot << !
+cat << !
 
 # splot [0:90] [0:90] [0:1] 'errgrid.dat' using 1:2:4
 # set data style points
@@ -54,14 +55,14 @@ splot [5:85] [5:85] [-5:0] "$X.data" using 1:2:28 w l
 
 !
 
-convert "$X-hvp.eps" jpgs/"$X-hvp.jpg"
-convert "$X-vvp.eps" jpgs/"$X-vvp.jpg"
+# convert "$X-hvp.eps" jpgs/"$X-hvp.jpg"
+# convert "$X-vvp.eps" jpgs/"$X-vvp.jpg"
 
 done
 
-convert "lines*hvp*.eps" -geometry 100 -delay 20 -loop 0 "alllines-hvp.gif"
-convert "lines*vvp*.eps" -geometry 100 -delay 20 -loop 0 "alllines-vvp.gif"
+# convert "lines*hvp*.eps" -geometry 100 -delay 20 -loop 0 "alllines-hvp.gif"
+# convert "lines*vvp*.eps" -geometry 100 -delay 20 -loop 0 "alllines-vvp.gif"
 
-convert "noise*hvp*.eps" -geometry 100 -delay 20 -loop 0 "allnoise-hvp.gif"
-convert "noise*vvp*.eps" -geometry 100 -delay 20 -loop 0 "allnoise-vvp.gif"
+# convert "noise*hvp*.eps" -geometry 100 -delay 20 -loop 0 "allnoise-hvp.gif"
+# convert "noise*vvp*.eps" -geometry 100 -delay 20 -loop 0 "allnoise-vvp.gif"
 

@@ -270,23 +270,40 @@ tryRoutesAndClip(Rts,BestCost,X,Y,R,C):-
 
 % Another attempt:
 
-write(A,B,C,D):-
-	writeList([A,B,C,D]).
-
-shortPath(X,Y,[Y],NewCost,L,[CurCost,CurRt],[BestCost,BestRt]):-
+shortPath(X,Y,[Y|[CurRt]],NewCost,L,[CurCost,CurRt],[BestCost,_],Ex):-
 	connected(X,Y,L),
+	\+member(Y,Ex),
 	move(L,L,MoveCost),
 	NewCost is CurCost+MoveCost,
 	NewCost < BestCost,
 	write('C=',NewCost,' Rt=',CurRt),nl.
-shortPath(X,Y,[Z|R],C,L,[CurCost,CurRt],[BestCost,BestRt]):-
+shortPath(X,Y,R,C,L,[CurCost,CurRt],[BestCost,BestRt],Ex):-
+	jprint(['Trying ',X,'->',Y,' with best so far ',BestCost]),
 	connected(X,Z,L2),
+	\+member(Z,Ex), !,
 	move(L,L2,MoveCost),
 	NewCost is CurCost+MoveCost,
-	shortPath(Z,Y,R,C,L2,[NewCost,[Z|CurRt]],[BestCost,BestRt]).
+	% Find best of search with Z
+	(
+		NewCost < BestCost, !,
+		shortPath(Z,Y,NBR,NBC,L2,[NewCost,[Z|CurRt]],[BestCost,BestRt],[])
+		;
+		NBC is BestCost, NBR = BestRt
+	),
+	writeList(['Maybe best from ',X,' to ',Y,' is ',NBC]),
+	% Find best of search with the rest
+	shortPath(X,Y,NBR2,NBC2,L,[CurCost,CurRt],[NBC,NBR],[Z|Ex]),
+	(
+		jprint(['>>> ',NBC,NBR,NBC2,NBR2]),
+		NBC < NBC2, !, R = NBR, C is NBC
+		;
+		R = NBR2, C is NBC2
+	),
+	writeList(['Best from ',X,' to ',Y,' is ',C]).
+shortPath(_,_,BR,BC,noLine,[_,_],[BC,BR],_).
 
 shortestPath3(X,Y,R,C):-
-	shortPath(X,Y,R,C,_,[0,[X]],[9999,[]]).
+	shortPath(X,Y,R,C,_,[0,[X]],[9999,[]],[]).
 
 test(R,C):-
 	shortestPath3(oxford_circus,paddington,R,C).
@@ -307,11 +324,25 @@ expandRouteTo(RouteSoFar,Y,FR,0):-
 
 % Just useful:
 	
-writeList(L):-
-	writeList(L,1).
+writePrettyList(L):-
+	writePrettyList(L,1).
 
-writeList([],_).
-writeList([H|T],N):-
+writePrettyList([],_).
+writePrettyList([H|T],N):-
 	write(N), write(': '), write(H), nl,
 	M is N+1,
-	writeList(T,M).
+	writePrettyList(T,M).
+
+write(A,B,C,D):-
+	writeList([A,B,C,D]).
+write(A,B,C,D,E):-
+	writeList([A,B,C,D,E]).
+write(A,B,C,D,E,F):-
+	writeList([A,B,C,D,E,F]).
+
+writeList([]):-nl.
+writeList([H|T]):-
+	write(H),
+	writeList(T).
+
+jprint(L):-writeList(L).
