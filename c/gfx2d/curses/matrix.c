@@ -181,7 +181,9 @@ void newProcess(int i) {
 }
 #endif
 
-void setupProbabilities() {
+void setupEverything() {
+
+	//// Probabilities:
 
 	// TODO: Base some on area instead of width?
 	averageLengthOfSlide       = max(2, LINES * 2/3 / sparsenessMovementOn );
@@ -192,9 +194,27 @@ void setupProbabilities() {
 	newSlidingProcess          = max(2, averageLengthOfSlide );
 
 #ifdef PROCESSING_WHITE_BITS
-	processDies  = max(2, averageLengthOfBlock);
-	boredProcessDies = max(2, averageLengthOfBlock);
-	numProcesses = COLS * LINES / sparsenessSkipCols / 240;
+	processDies  = max(2, averageLengthOfBlock );
+	boredProcessDies = max(2, averageLengthOfBlock );
+	numProcesses = max(1, (int)sqrt(COLS * LINES / sparsenessSkipCols) / 16 );
+#endif
+
+	//// Initialise matrix:
+
+	move(0,0);
+	for (int x=0;x<COLS;x++) {
+		sliding[x] = prob(averageLengthBetweenSlides);
+		adding[x] = prob(averageLengthBetweenBlocks);
+		for (int y=0;y<LINES;y++) {
+			thematrix[x][y] = ' ';
+			move(y,x);
+			addch(' ');
+		}
+	}
+
+	//// Initialise processes:
+
+#ifdef PROCESSING_WHITE_BITS
 	processes    = new mbit[numProcesses];
 	processX     = new int[numProcesses];
 	processY     = new int[numProcesses];
@@ -278,18 +298,7 @@ void main() {
 		thematrix[x] = new mbit[LINES];
 	}
 
-	setupProbabilities();
-
-	move(0,0);
-	for (int x=0;x<COLS;x++) {
-		sliding[x] = prob(averageLengthBetweenSlides);
-		adding[x] = prob(averageLengthBetweenBlocks);
-		for (int y=0;y<LINES;y++) {
-			thematrix[x][y] = ' ';
-			move(y,x);
-			addch(' ');
-		}
-	}
+	setupEverything();
 
 #ifdef BOTHER_CLOCKING
 	clock_t clocksPerFrame;
