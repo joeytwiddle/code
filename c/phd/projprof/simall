@@ -5,7 +5,7 @@
 # DOCUMENTS="doc-cen doc-cen-more dar-crpage2 leaflet-cen"
 # DOCUMENTS="left cen right full"
 
-DOCUMENTS="test" # "dar-crpage2-left30" # left cen right full"
+DOCUMENTS="left" # test "dar-crpage2-left30" # left cen right full"
 PPSCANMETHODS="hier" # full"
 # PPMEASURES="square deriv"
 PPMEASURES="deriv"
@@ -26,7 +26,8 @@ ANGLES="50"
 # ANGLES=`seq -w 20 03 50`
 # ANGLES="34"
 # FOCALS=`seq -w 0.5 0.3 3.0`
-FOCALS="0.5"
+# FOCALS="0.5"
+FOCALS="2.0"
 
 touch start
 
