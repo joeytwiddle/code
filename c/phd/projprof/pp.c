@@ -1087,24 +1087,25 @@ void main(int argc,String *argv) {
 		RGBmp n=*origimage.recoverquadrilateral(tl,tr,br,bl,600); */
 
 		V3d RIGHT,DOWN;
-		// New method using VPs to find focal length
-		// RIGHT=V3d(hvp.x-eye.x,hvp.y-eye.y,-1234);
-		// DOWN=V3d(vvp.x-eye.x,vvp.y-eye.y,-1234);
-		// printf("Know XY of right %s and down %s\n",RIGHT.dropz().toString(),DOWN.dropz().toString());
-		// float fls=(RIGHT.x)*(DOWN.x)+(RIGHT.y)*(DOWN.y);
-		// if (fls>=0)
-		// printf("\n*** failed estimation of focal length %f ***\n\n",fls);
-		// float focallength=(
-		// fls<0 ? sqrt(-fls) : 2560 // binimg.width
-		// );
-		// printf("Got focal length %f\n",focallength);
-		// RIGHT.z=focallength;
-		// DOWN.z=focallength;
-		// eye.z=-focallength;
-		// 	
-		// V3d tmpRIGHT=RIGHT; tmpRIGHT.y=-tmpRIGHT.y;
-		// printf("right = %s\n",tmpRIGHT.toString());
-		// printf("down = %s\n",DOWN.toString());
+		// Find focal length
+		RIGHT=V3d(hvp.x-eye.x,hvp.y-eye.y,-1234);
+		DOWN=V3d(vvp.x-eye.x,vvp.y-eye.y,-1234);
+		printf("eye: %s\n",eye.toString());
+		printf("Know XY of right %s and down %s\n",RIGHT.dropz().toString(),DOWN.dropz().toString());
+		float fls=(RIGHT.x)*(DOWN.x)+(RIGHT.y)*(DOWN.y);
+		if (fls>=0)
+		printf("\n*** failed estimation of focal length %f ***\n\n",fls);
+		float focallength=(
+		fls<0 ? sqrt(-fls) : 2560 // binimg.width
+		);
+		printf("Old Focallength method %f\n",focallength);
+		RIGHT.z=focallength;
+		DOWN.z=focallength;
+		eye.z=-focallength;
+			
+		V3d tmpRIGHT=RIGHT; tmpRIGHT.y=-tmpRIGHT.y;
+		printf("right = %s\n",tmpRIGHT.toString());
+		printf("down = %s\n",DOWN.toString());
 
 		// V3d A=V3d(tl.x,tl.y,0);
 		// V3d B=Line3d(eye,V3d(bl.x,bl.y,0)).intersect(Line3d(A,A+DOWN));
@@ -1121,6 +1122,19 @@ void main(int argc,String *argv) {
 		V3d B=ws.num(2);
 		V3d C=ws.num(3);
 		V3d D=ws.num(4);
+
+		// Testing if right and down correctly found.
+		// Seems to work fine, but not using cos works without!
+		RIGHT=RIGHT.normalised()*(B-A).mag();
+		if (V3d::dot(RIGHT,B-A)<0)
+			RIGHT=-RIGHT;
+		if (V3d::dot(DOWN,D-A)<0)
+			DOWN=-DOWN;
+		DOWN=DOWN.normalised()*(D-A).mag();
+		printf("Difference: %f %f\n",V3d::normdot(RIGHT,B-A),V3d::normdot(DOWN,D-A));
+		B=A+RIGHT;
+		C=B+DOWN;
+		D=A+DOWN;
 
 		// Multiple cross products!
 		// (OA x OB) x (OC x OD)
