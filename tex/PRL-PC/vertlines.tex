@@ -384,8 +384,8 @@ point in \refsect{locatehvpsect}, are shown numerically in
 \reftab{accuracytable}. 
 The vanishing point (VP) error is calculated as the relative distance of the
 vanishing point from its groundtruth, as described in \refsect{locatehvpsect} (see equation (\ref{Haccuracy})). 
-The angular error is derived from the final determined orientation of the
-horizontal and vertical vectors of the text plane. 
+The angular error is the difference in angle between the determined orientation of the
+vertical vector of the text plane and the same vector from the groundtruth.
 It can be seen that the accuracy of location of the vertical vanishing point is
 good for both the margin intersection and the line spacings method. 
 As the last two rows of \reftab{accuracytable} shows, intersecting margins is not
@@ -582,12 +582,13 @@ while for others it was above 90\%.  For example, the image recovered in
 	% \label{empprb}
 }
 \subfigure[]{ \begin{tabular}{c}
-	\epsfig{figure=images/chem011.ps,width=36mm}\label{banana} \\
+	\epsfig{figure=images/chem005001origover.ps,width=42mm} \\
 		$\downarrow$ \\
 		\vspace{-4.5mm}
 		\\
-		\epsfig{figure=images/chem011recover.ps,width=30mm}
-	\end{tabular}       \label{emppra}
+		\epsfig{figure=images/chem005001recover.ps,width=42mm}
+	\end{tabular}       \label{chem005recover}
+	% \label{empprb}
 }
 % \\ \vspace{-3mm}
 
@@ -601,41 +602,40 @@ while for others it was above 90\%.  For example, the image recovered in
 \centering
 \begin{center}
 \subfigure[]{ \begin{tabular}{c}
-	\includegraphics[width=36mm]{images/chem006oo.ps} \\
+	\includegraphics[width=42mm]{images/chem006oo.ps} \\
 		$\downarrow$ \\
 		\vspace{-4.5mm}
 		\\
-		\includegraphics[width=36mm]{images/chem006002recover.ps}
+		\includegraphics[width=42mm]{images/chem006002recover.ps}
 	\end{tabular}      \label{empprd}
 }
 \subfigure[]{ \begin{tabular}{c}
-	\includegraphics[width=36mm]{images/clut4allover.ps}       \\
+	\includegraphics[width=42mm]{images/clut4allover.ps}       \\
 		$\downarrow$ \\
 		\vspace{-4.5mm}
 		\\
-		\includegraphics[width=36mm]{images/clut4recover1.ps}    \\
-		\includegraphics[width=36mm]{images/clut4recover2.ps}
+		\includegraphics[width=42mm]{images/clut4recover1.ps}    \\
+		\includegraphics[width=42mm]{images/clut4recover2.ps}
 	\end{tabular} \label{empprf}
 }
 \subfigure[]{ \begin{tabular}{c}
-	\epsfig{figure=images/chem005001origover.ps,width=36mm} \\
+	\epsfig{figure=images/chem011.ps,width=42mm}\label{banana} \\
 		$\downarrow$ \\
 		\vspace{-4.5mm}
 		\\
-		\epsfig{figure=images/chem005001recover.ps,width=36mm}
-	\end{tabular}       \label{chem005recover}
-	% \label{empprb}
+		\epsfig{figure=images/chem011recover.ps,width=42mm}
+	\end{tabular}       \label{emppra}
 }
-% \subfigure[]{ \begin{tabular}{c}
-	% \epsfig{figure=images/dv5.ps,width=36mm} \\
-		% $\downarrow$ \\
-		% \\
-		% % \hspace{11mm}
-	% % \put(10,38){$\rightarrow$}
-	% % \hspace{11mm}
-	% \epsfig{figure=images/dv5recover.ps,width=24mm}
-	% \end{tabular}      \label{empprc}
-	% }
+\subfigure[]{ \begin{tabular}{c}
+	\epsfig{figure=images/dv5.ps,width=42mm} \\
+		$\downarrow$ \\
+		\\
+		% \hspace{11mm}
+	% \put(10,38){$\rightarrow$}
+	% \hspace{11mm}
+	\epsfig{figure=images/dv5recover.ps,width=42mm}
+	\end{tabular}      \label{empprc}
+}
 	% \subfigure[]{ \begin{tabular}{c}
 		% \epsfig{figure=images/dv5.ps,width=36mm} \\
 			% $\downarrow$ \\
