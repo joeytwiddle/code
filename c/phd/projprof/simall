@@ -24,6 +24,10 @@ ANGLES=`seq -w 20 20 80`
 # ANGLES="34"
 # ANGLES=`seq -w 20 03 50`
 # ANGLES="34"
+FOCALS=`seq -w 0.5 0.3 3.0`
+
+export FOCAL;
+for FOCAL in $FOCALS; do
 
 for DOCUMENT in $DOCUMENTS; do
 
@@ -133,7 +137,8 @@ for DOCUMENT in $DOCUMENTS; do
 
 						# mv "$RES" "lines-$numlines.results"
 						# mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$VVPMETHOD.results"
-						mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$PPMEASURE-$VVPMETHOD-l$LINES-n$NOISE.results"
+						# mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$PPMEASURE-$VVPMETHOD-l$LINES-n$NOISE.results"
+						mv "$RES" "$DOCUMENT-$PPSCANMETHOD-$PPMEASURE-$VVPMETHOD-l$LINES-n$NOISE-f$FOCAL.results"
 
 					# done lines
 
@@ -146,5 +151,7 @@ for DOCUMENT in $DOCUMENTS; do
 	done # hvp searchspace scan method
 
 done # document
+
+done # focal
 
 touch done

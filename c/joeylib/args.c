@@ -52,7 +52,7 @@ public:
     com=Sconc(com,"[",pre,"..] ");
     for (int i=0;i<argc-1;i++) {
       if (Seq(argv[i],pre)) {
-        opts.add(Sformat("  %s <%s> = %s\n",pre,why,argv[i+1]));
+        opts.add(Sformat("  %s <%s> = %s",pre,why,argv[i+1]));
         String r=Snew(argv[i+1]);
         remargs(i,2);
         return r;
@@ -188,10 +188,10 @@ public:
     if (argsleft()) {
       // printf("Think args left.\n");
       String t=getarg(w);
-      opts.add(Sformat("  <%s> = %s\n",w,t));
+      opts.add(Sformat("  <%s> = %s",w,t));
       return t;
     }
-    opts.add(Sformat("  <%s> = %s (default)\n",w,o));
+    opts.add(Sformat("  <%s> = %s (default)",w,o));
     return o;
   }
   
