@@ -1,7 +1,8 @@
-#ifndef timer_C        
-  #define timer_C     
-                       
-                       
+#ifndef timer_C
+  #define timer_C
+
+  #include <timer.h>
+
 #include <time.h>
 #include <stdio.h>
 
@@ -10,6 +11,7 @@ int numframes;
 long endtime;
 long pausetime;
 
+// utime seems to perform worse!
 // #ifdef DOS
 //   #define clock uclock
 //   #define CLOCKS_PER_SEC UCLOCKS_PER_SEC
@@ -59,5 +61,5 @@ float gettimer() {
   savetimer();
     return (float)(endtime-starttime)/(float)CLOCKS_PER_SEC;
 }
-       
-#endif 
+
+#endif

@@ -255,8 +255,8 @@ void plotsomeshapes() {
 			V2d dir=V2d::random();
 			V2d a=cen-dir*(scrwid);			
 			V2d b=cen+dir*(scrwid);			
-      img.line(a.x,a.y,b.x,b.y,255);
-      // img.thickline(a.x,a.y,b.x,b.y,1,255);
+      // img.line(a.x,a.y,b.x,b.y,255);
+      img.thickline(a.x,a.y,b.x,b.y,1,255);
 			// float oth=sqrt(myrnd())*5.0;
 			// V2d perp=oth*dir.perp();
 			// img.filltri((a-perp).x,(a-perp).y,(a+perp).x,(a+perp).y,b.x,b.y,myrnd()*255);
