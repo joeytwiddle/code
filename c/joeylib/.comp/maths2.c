@@ -223,24 +223,43 @@ float gaborabs(V2d v,V2d d,float size,float freq) {
 // A circle that maps to the whole R^2 plane.
 // Points at radius 1 on the circle map to infinity on the plane.
 
+// method 1 still favours infinity!
+// boundedinfcirrad = 1.0-1.0/(planerad/Z+1.0)
+// planerad = Z(1.0/(1.0-boundedinfcirrad)-1.0)
+
+// method 2
+// planerad = exp( original )
+// boundedinfcirrad = 1.0-1.0/(log(planerad)/Z+1.0)
+
+// method 3
+// planerad = exp( max * infcirrad/res ) ( where infcirrad/res \elem {0-1} )
+// infcirrad = res * log(planerad) / max
+				
+// Methods 1,2,3:
 float maxinfcir=1.0e3;
+// float maxinfcir=5.0; // takes us to 4.0e208 at res 50
+// float maxinfcir=20.0; // takes us to 4.0e208 at res 50
 
   V2d infcircletoplane(V2d v) {
     float r=v.mod();
     float a=v.angle();
     if (r>=1.0)
       printf("infcircletoplane: rad = %f > 1.0 !\n",r);
+		// Methods 1,2,3:
     float d=maxinfcir*(1.0/(1.0-r)-1.0);
-//    printf("%f %f %f\n",r,a,d);
+    // float d=exp(maxinfcir*(1.0/(1.0-r)-1.0));
+    // float d=exp(maxinfcir*r);
     V2d pol=V2d::polar(a,d);
-//    printf("pol = %s\n",pol.toString());
     return pol;
   }
 
   V2d planetoinfcircle(V2d v) {
     float d=v.mod();
     float a=v.angle();
-    float r=1.0-1.0/(d/maxinfcir+1.0);
+		// Methods 1,2,3:
+    float r=1.0-1.0/(d/maxinfcir+1.0); // I think
+    // float r=1.0-1.0/(log(d)/maxinfcir+1.0);
+    // float r=log(d)/maxinfcir;
     return V2d::polar(a,r);
   }
 

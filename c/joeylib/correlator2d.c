@@ -1,7 +1,12 @@
 int Correlator2dMethod=1; // 1 = over-exclusive, 2 = over-inclusive
 
+#define linearMode 0
+#define joeysMode 1
+#define perpMode 2
+
 class Correlator2d {
 public:
+	int mode;
   List<V2d> points; // Points from which to find a line of best fit
   List<float> weights; // Weightings of the points
 
@@ -17,6 +22,7 @@ public:
   float besterr;
 
   Correlator2d() {
+		mode=joeysMode;
     made=false;
   }
   Correlator2d(List<V2d> pts) {

@@ -85,7 +85,22 @@ float gaborabs(V2d v,V2d d,float size,float freq); // Method
 // A circle that maps to the whole R^2 plane.
 // Points at radius 1 on the circle map to infinity on the plane.
 
+// method 1 still favours infinity!
+// boundedinfcirrad = 1.0-1.0/(planerad/Z+1.0)
+// planerad = Z(1.0/(1.0-boundedinfcirrad)-1.0)
+
+// method 2
+// planerad = exp( original )
+// boundedinfcirrad = 1.0-1.0/(log(planerad)/Z+1.0)
+
+// method 3
+// planerad = exp( max * infcirrad/res ) ( where infcirrad/res \elem {0-1} )
+// infcirrad = res * log(planerad) / max
+				
+// Methods 1,2,3:
 extern float maxinfcir; // Variable initialised in .c file
+// float maxinfcir=5.0; // takes us to 4.0e208 at res 50
+// float maxinfcir=20.0; // takes us to 4.0e208 at res 50
 
   V2d infcircletoplane(V2d v); // Method
 
