@@ -7,7 +7,7 @@ rm *.eps
 DOC="simgs/test.bmp"
 
 # +ve pitch requires smaller size!
-COM="./simgen
+SIMCOM="./simgen
 -yoff 0.01 -depth 0.5
 -lines 11 -roll 0 -yaw 0 -pitch -30 -size 1.2
 -image -qnd -overlay
@@ -22,6 +22,16 @@ $@";
 # -rems 1
 # -focal 0.1
 
+PPPARAMS="
+-deriv
+-res 180 -adapt 0.03 -maxpixels 2000
+-dolowresscan -lowres 60 -lowsmooth 1
+-recwid 200
+-gamma 0.0 -light
+-oth 6 -badx 35 -bady 21
+tmp-inv.bmp tmp.bmp
+"
+
 getparam () {
 	grep "^$1 = " simgen.out | sed "s/^$1 = //"
 }
@@ -35,8 +45,8 @@ for F in 0.5; do
 
 	echo "set title \"$X $Y, f.p. $F\" \"Times-Roman,26\"" > title.dogpl
 
-	echo `curseyellow`$COM`cursegrey`
-	$COM $X $Y -focal $F > simgen.out
+	echo `curseyellow`$SIMCOM`cursegrey`
+	$SIMCOM $X $Y -focal $F > simgen.out
 
 	U=`getparam U`
 	V=`getparam V`
@@ -51,7 +61,7 @@ for F in 0.5; do
 
 	# Test pp
 	invert -i tmp.bmp -o tmp-inv.bmp
-	../projprof/pp $X $Y -res 180 -adapt 0.03 -maxpixels 2000 -deriv -gamma 0.0 -recwid 200 -light -oth 12 -badx 35 -bady 21 -dolowresscan -lowres 60 -lowsmooth 1 tmp-inv.bmp tmp.bmp
+	../projprof/pp $X $Y $PPPARAMS > pp.out
 
 	# gv gplfit$X$Y.eps
 done
