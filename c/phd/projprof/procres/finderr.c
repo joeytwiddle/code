@@ -5,50 +5,17 @@
 main(int argc,String *argv) {
 
   ArgParser a=ArgParser(argc,argv);
-  // bool recoverquad=true;
-  // int cirres=a.intafter("-res","resolution of final circle",120);
-  // int lowcirres=a.intafter("-lowres","resolution of initial circle",60);
-  // maxpixelsused=a.intafter("-maxpixels","max # pixels to collect",5000);
-  // recwid=a.intafter("-recwid","Width of recovered image",500);
-  // float adapthresh=a.floatafter("-adapt","adaptive threshold for clipping",0.1);
-  // int ppres=-1;
-  // #ifndef FIXPPRES
-    // ppres=a.intafter("-ppres","resolution of each projection profile",200);
-  // #endif
-  // bool writepps=a.argexists("-writepps","write the potential PPs");
-  // bool writebestpp=!a.argexists("-dontwritebestpp","don't write the best PP");
-  // bool doinfo=true; // Needed for summaries!  a.argexists("-doinfo","draw info image");
-  // bool usebaselineonly=!a.argexists("-usetwolines","use two best correlated lines instead of just baseline");
-  // bool usetwolines=!usebaselineonly;
-  // float gamma=a.floatafter("-gamma","take original image this far to white before summary",0.4);
-  // correlator=( a.argexists("-spacings","use line spacing not width")
-    // ? LineSpacing
-    // : LineWidth );
-  // if (a.argexists("-corinc","use over-inclusive RANSAC"))
-    // Correlator2dMethod=2;
-  // bool overlayquadonly=a.argexists("-quadonly","overlay quadrilateral only on summary image");
-  // int overlaythickness=a.intafter("-oth","overlay thickness",7);
-  // bool overlayinfquadonly=a.argexists("-infquadonly","overlay extended quadrilateral only on summary image");
-  // bool lightoverlay=a.argexists("-light","light overlay for dark image");
-// //  a.comment("Info image options:");
-  // a.comment("PP measure of correctness: (default = derivative)");
-  // measure=&measurederiv;
-  // if (a.argexists("-deriv","use derivative measure"))
-    // measure=&measurederiv;
-  // if (a.argexists("-square","use square measure"))
-    // measure=&measuresquare;
-  // if (a.argexists("-entropy","use entropy measure"))
-    // measure=&measureentropy;
-  // if (a.argexists("-variance","use variance measure"))
-    // measure=&measurevariance;
-// //  bool invert=a.argexists("-inv","invert input image to look for line spaces");
-  // showbadgenx=a.intafter("-badgenx","x pos of badgen PP to show",-1);
-  // showbadgeny=a.intafter("-badgeny","y pos of badgen PP to show",-1);
-  // String bname=a.getarg("binary image");
-  // String oname=a.argor("original image","*none*");
-  // String datafile=a.argor("crop data file","*none*");
   String filename=a.argor("results file","results.txt");
   a.done();
+
+	float realrightangerrsum=0;
+	float realdownangerrsum=0;
+	int var769=0;
+	int var770=0;
+	float hvpreldistsum=0;
+	float vvpreldistsum=0;
+	int hvpreldistcnt=0;
+	int vvpreldistcnt=0;
 
 	List<String> lines=readlinesfromfile(filename);
 	int lastyaw=-1;
@@ -194,6 +161,29 @@ main(int argc,String *argv) {
 
 			float hvpdist=gthvp.dist(pphvp);
 			float vvpdist=gtvvp.dist(ppvvp);
+			float hvpreldist=hvpdist/gthvp.mag();
+			float vvpreldist=vvpdist/gtvvp.mag();
+			
+		  if (yaw>5 && yaw<85 && pitch>5 && pitch<85) {	
+			  if (myabs(realrightangerr)<123456789.0) {
+			    realrightangerrsum+=myabs(realrightangerr);
+				  var769++;
+			  }
+			  if (myabs(realdownangerr)<123456789.0) {
+			    realdownangerrsum+=myabs(realdownangerr);
+				  var770++;
+			  }
+			  if (hvpreldist<3.0) {
+				  hvpreldistcnt++;
+				  hvpreldistsum+=hvpreldist;
+			  } else
+					hvpreldist=0;
+			  if (vvpreldist<3.0) {
+				  vvpreldistcnt++;
+				  vvpreldistsum+=vvpreldist;
+			  } else
+					vvpreldist=0;
+		  }
 			
 		  printf("%f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f %f\n",
 				yaw,pitch,acc,corra,corrb,
@@ -202,7 +192,7 @@ main(int argc,String *argv) {
 				altacc,faceonness,maxangle,rightdiff,rightang,
 				hvpcorr,vvpcorr, // 23,24
 				hvpdist,vvpdist, // 25,26
-				hvpdist/gthvp.mag(),vvpdist/gtvvp.mag(), // 27,28
+				hvpreldist,vvpreldist, // 27,28
 				realrightangerr,realdownangerr, // 29,30
 				realrightangerrzerone,realdownangerrzerone // 31,32
 			);
@@ -217,5 +207,10 @@ main(int argc,String *argv) {
 	printf("# 30 realdownangerr\n");
 	printf("# 31 realdownangacc0-1\n");
 	printf("# 32 realdownangacc0-1\n");
+
+	fprintf(stderr,"realrightangerrave = %f over %i\n",realrightangerrsum/(float)var769,var769);
+	fprintf(stderr,"realdownangerrave = %f over %i\n",realdownangerrsum/(float)var770,var770);
+	fprintf(stderr,"hvpreldistave = %f over %i\n",hvpreldistsum/(float)hvpreldistcnt,hvpreldistcnt);
+	fprintf(stderr,"vvpreldistave = %f over %i\n",vvpreldistsum/(float)vvpreldistcnt,vvpreldistcnt);
 	
 }
