@@ -1045,24 +1045,25 @@ void main(int argc,String *argv) {
 //    RGBmp n=*origimage.recoverquad(&qs,1,600);
     RGBmp n=*origimage.recoverquadrilateral(tl,tr,br,bl,600); */
 
+		V3d RIGHT,DOWN;
 		// New method using VPs to find focal length
-		V3d RIGHT=V3d(hvp.x-eye.x,hvp.y-eye.y,-1234);
-		V3d DOWN=V3d(vvp.x-eye.x,vvp.y-eye.y,-1234);
-		printf("Know XY of right %s and down %s\n",RIGHT.dropz().toString(),DOWN.dropz().toString());
-		float fls=(RIGHT.x)*(DOWN.x)+(RIGHT.y)*(DOWN.y);
-		if (fls>=0)
-			printf("\n*** failed estimation of focal length %f ***\n\n",fls);
-		float focallength=(
-			fls<0 ? sqrt(-fls) : 2560 // binimg.width
-		);
-		printf("Got focal length %f\n",focallength);
-		RIGHT.z=focallength;
-		DOWN.z=focallength;
-		eye.z=-focallength;
-		
-		V3d tmpRIGHT=RIGHT; tmpRIGHT.y=-tmpRIGHT.y;
-		printf("right = %s\n",tmpRIGHT.toString());
-		printf("down = %s\n",DOWN.toString());
+		// RIGHT=V3d(hvp.x-eye.x,hvp.y-eye.y,-1234);
+		// DOWN=V3d(vvp.x-eye.x,vvp.y-eye.y,-1234);
+		// printf("Know XY of right %s and down %s\n",RIGHT.dropz().toString(),DOWN.dropz().toString());
+		// float fls=(RIGHT.x)*(DOWN.x)+(RIGHT.y)*(DOWN.y);
+		// if (fls>=0)
+			// printf("\n*** failed estimation of focal length %f ***\n\n",fls);
+		// float focallength=(
+			// fls<0 ? sqrt(-fls) : 2560 // binimg.width
+		// );
+		// printf("Got focal length %f\n",focallength);
+		// RIGHT.z=focallength;
+		// DOWN.z=focallength;
+		// eye.z=-focallength;
+	// 	
+		// V3d tmpRIGHT=RIGHT; tmpRIGHT.y=-tmpRIGHT.y;
+		// printf("right = %s\n",tmpRIGHT.toString());
+		// printf("down = %s\n",DOWN.toString());
 		
 		// V3d A=V3d(tl.x,tl.y,0);
 		// V3d B=Line3d(eye,V3d(bl.x,bl.y,0)).intersect(Line3d(A,A+DOWN));
@@ -1079,6 +1080,43 @@ void main(int argc,String *argv) {
     V3d B=ws.num(2);
     V3d C=ws.num(3);
     V3d D=ws.num(4);
+
+		// Multiple cross products!
+		// (OA x OB) x (OC x OD)
+		//   .
+		// (OA x OC) x (OB x OD)
+		// =
+		// ( z(ax-bx)(cxdy-cydx)-z(cx-dx)(axby-aybx) )
+		//   x ( z(ax-cx)(bxdy-bydx) - z(bx-dx)(axcy-aycx) )
+		// +
+		// ( z(cy-dy)(axby-aybx) - z(ay-by)(cxdy-cydx) )
+		//   x ( z(by-dy)(axcy-aycx) - z(ay-cy)(bxdy-bydx) )
+		// +
+		// zz ( (ay-by)(cx-dx) - (ax-bx)(cy-dy) )
+		//   x ( (ay-cy)(bx-dx) - (ax-cx)(by-dy) )
+		// A = ( (ay-by)(cx-dx) - (ax-bx)(cy-dy) ) * ( (ay-cy)(bx-dx) - (ax-cx)(by-dy) )
+		// B =  ( (ax-bx)(cxdy-cydx)-(cx-dx)(axby-aybx) ) * ( (ax-cx)(bxdy-bydx) - (bx-dx)(axcy-aycx) ) + ( (cy-dy)(axby-aybx) - (ay-by)(cxdy-cydx) ) *  ( (by-dy)(axcy-aycx) - (ay-cy)(bxdy-bydx) )
+		tl=V2d(tl.x-(float)binimg.width/2.0,tl.y-(float)binimg.height/2.0);
+		bl=V2d(bl.x-(float)binimg.width/2.0,bl.y-(float)binimg.height/2.0);
+		tr=V2d(tr.x-(float)binimg.width/2.0,tr.y-(float)binimg.height/2.0);
+		br=V2d(br.x-(float)binimg.width/2.0,br.y-(float)binimg.height/2.0);
+		float solA = ( (tl.y-bl.y)*(tr.x-br.x) - (tl.x-bl.x)*(tr.y-br.y) ) * ( (tl.y-tr.y)*(bl.x-br.x) - (tl.x-tr.x)*(bl.y-br.y) );
+		float solB =  ( (tl.x-bl.x)*(tr.x*br.y-tr.y*br.x)-(tr.x-br.x)*(tl.x*bl.y-tl.y*bl.x) ) * ( (tl.x-tr.x)*(bl.x*br.y-bl.y*br.x) - (bl.x-br.x)*(tl.x*tr.y-tl.y*tr.x) ) + ( (tr.y-br.y)*(tl.x*bl.y-tl.y*bl.x) - (tl.y-bl.y)*(tr.x*br.y-tr.y*br.x) ) *  ( (bl.y-br.y)*(tl.x*tr.y-tl.y*tr.x) - (tl.y-tr.y)*(bl.x*br.y-bl.y*br.x) );
+		tl=V2d(tl.x+(float)binimg.width/2.0,tl.y+(float)binimg.height/2.0);
+		bl=V2d(bl.x+(float)binimg.width/2.0,bl.y+(float)binimg.height/2.0);
+		tr=V2d(tr.x+(float)binimg.width/2.0,tr.y+(float)binimg.height/2.0);
+		br=V2d(br.x+(float)binimg.width/2.0,br.y+(float)binimg.height/2.0);
+		float fsq=-solB/solA;
+		printf("f^2 = %f\n",fsq);
+		if (fsq>0) {
+			float focal=sqrt(fsq);
+			printf("Got focal length = %f\n",focal);
+			printf("^^___ using new method\n");
+			// A=V3d(tl.x,tl.y,focal);
+			// B=V3d(tr.x,tr.y,focal);
+			// C=V3d(br.x,br.y,focal);
+			// D=V3d(bl.x,bl.y,focal);
+		}
 
     float aspect=(V3d::dist(B,C)+V3d::dist(D,A))/(V3d::dist(A,B)+V3d::dist(C,D));
 		

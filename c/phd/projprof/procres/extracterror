@@ -1,5 +1,5 @@
-IN="$*res.txt"
-OUT="$*data.txt"
+IN="$*"
+OUT="data$*"
 if test -f "$IN"; then
 	./finderr $IN | grep -v "^Opening " | sed "s/nan/0.0/g" > $OUT
 else
