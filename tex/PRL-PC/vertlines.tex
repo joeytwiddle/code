@@ -2,15 +2,12 @@
 \section{Locating the Vertical Vanishing Point} \label{sec-vertvanish}
 
 
-In a perspective, non-fronto-parallel view, the spacings between adjacent lines
-of text in an image will vary relative to their distance from the camera.  These
-appear closer together as they approach the horizon, much like the sleepers
-beneath railway tracks. This change in spacing can be used to determine the angle
-at which the document is tilted, and hence the vertical vanishing point of the
-text plane.
+In a non-fronto-parallel view of a document under perspective, the spacing between adjacent lines of text in the image will vary relative to their distance from the camera.  This is the same effect that causes the railway sleepers beneath a train track to appear closer together as they approach the horizon. This change in spacing can be used to determine the angle at which the document is tilted, and hence the vertical vanishing point of the text plane.
 
-By rotating the image plane to place the baseline vertically, we may disregard the $x$-coordinates and deal solely in the $y,z$ plane, as shown in \reffig{zyspacings}.
-Here, the bottom of the paragraph is positioned at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.  Therefore the $n$th line from the bottom of the paragraph will appear at:
+After first transforming the image to simplify the problem, we will extract observations of the altitude of each line in the image.  A model of the geometry will allow us to express these observations as a function of the paragraph's orientation.  By fitting the observations to the function, we will obtain the desired parameters of the orientation.  We show that a higher-order fitting function can assist in avoiding outliers.
+
+An appropriate rotation of the image plane about the z-axis will position the baseline vertically, as shown in \reffig{zyspacings}.  Henceforth we may disregard the $x$-coordinates and deal solely in the $y,z$ plane.
+In the model, the bottom of the paragraph is positioned at $\myvec{P}$ with lines occurring at even spacings of distance $\myvec{Q}$.  Therefore the $n$th line from the bottom of the paragraph will appear at:
 
 \begin{figure}[t]
 \centering
@@ -57,22 +54,32 @@ y(n) = U \frac{ 1 + nV }{ 1 + nW } \label{spacingsvweqn}
 { \parindent 0mm
 with $U=y(0)$ and only two unknowns,
 $V = {\myvec{Q}_y}/{\myvec{P}_y}$ and $W = {\myvec{Q}_z}/{\myvec{P}_z}$.
-The cancelling of the focal length $f$ in this way means that the technique is
-applicable to images captured with any optical camera and the internal
-parameters of the original camera need not be known.
-By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.
-% for these points.
-However, since it is common for documents to also contain lines of text which are not part of an evenly spaced paragraph, and for extraneous elements to enter the data, the $n$th line found in the image may lose correspondence with the $n$th line in the paragraph model.
-To fit a curve of position $y(n)$ against line number $n$ would be unwise in this situation.
-It is therefore preferable to fit the curve of {\em line spacing} $Y_n$
-against {\em position} $X_n$, defined as:
+The cancelling of the focal length $f$ in this way means that the technique is applicable to images captured with any optical camera and the internal parameters of the original camera need not be known.
+
+To extract approximations of $y(n)$ from the image, we project the centroid of each detected line of text onto the baseline (y-axis), and obtain a set observations $O(n)$.
+% By projecting the centroids of the lines of text located in the image from the horizontal vanishing point onto the baseline, estimates for $y(n)$ may be obtained.  % for these points.
+A least-squares fit of $O(n)$ to the function $y(n)$ should now yield values for $V$ and $W$, and hence the orientation of the paragraph.
+However, since it is common for documents to also contain lines of text which are not part of an evenly spaced paragraph, and for extraneous elements to enter the data, the $n$th line observed in the image may lose correspondence with the $n$th line in the paragraph model.
+% For example, an outlier at position $n=K$ would cause all successive observations 
+% When fitting the curve of $y(n)$ against $n$, one such outlier at $n=K$ would cause all succesive observations ($n>K$) to have 
+In the presence of such outliers, fitting a set of points $(n,O(n))$ to the curve $y(n)$ 
+will be problematic, since any outlier will break the correspondence between the x and y coordinates of successive points.
+% in the presence of outliers is problematic, since we cannot guarantee the linkage of all the point's x and y coordinates.
+% To fit a curve of position $y(n)$ against line number $n$ would be unwise in this situation.
+% An alternative curve which may be taken from the data and remains unaffected by line number, is the ratio of 
+% Fortunately it is possible to derive two $n$-invariant observations from the image which
+% To prevent the progression of an outlier through successive observations, we must use 
+It is therefore preferable to fit the curve of
+{\em line spacing} $Y_n$ against {\em position} $X_n$, defined as:
 
 \begin{eqnarray}
-Y_n=y(n+1)-y(n) \label{linespacingsdefneqn} \\
-X_n=y(n) \label{linepositiondefneqn}
+Y_n = y(n+1)-y(n) & \mbox{~~~~~~~~~~~~~~~line spacing} \label{linespacingsdefneqn} \\
+X_n = y(n) & \mbox{~~~~~~~~~~~~~~~line position} \label{linepositiondefneqn}
 \end{eqnarray}
 
-In this case any odd lines will appear as isolated outliers in line spacing, but will not propagate through the remaining points.
+***** Not finished
+
+In this case any odd lines will appear as isolated outliers in line spacing, but will not propagate through the remaining $X_n$. % points.
 By substituing \refeqn{spacingsvweqn} into the definition of line spacing \refeqn{linespacingsdefneqn}, the curve of $Y$ in terms of $X$ may be written in two parts:
 }
 
