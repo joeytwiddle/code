@@ -1,0 +1,50 @@
+/* r = realtime
+	 g = generator do
+	 e = generator evaluate
+	 s = generator write to static
+
+	 So far we only use:
+	   rgs : constant throughout
+		 rg : overseer code
+		 rs : code that does not change, but is not needed for generator
+		 r : realtime only
+		 s : static only
+		 e : evaluate
+	 Also note that:
+	   e's have only appeared inside s's
+		 .'. e's do not appear inside g's, which means we can generally do + instead of a whole new write
+*/
+
+/*rgs*/
+
+class Test {
+
+/*rg*/
+	public void showData(Object obj ) {
+		try {
+			Class c = obj.getClass();
+
+/*s*/
+	public void showData(/*e*/c.getName()/*s*/ obj) {
+
+/*rs*/
+			System.out.println("Fields for "+obj);
+
+/*rg*/
+			Fields[] fs = c.getFields();
+			for (int i=0;i<fs.length;i++) {
+				Field f=fs[i];
+				String value=""+fs.get(o);
+			
+				// Print out field name and its contents.
+/*r*/		System.out.println("  "+f.getName()+" = "+value);
+/*s*/   System.out.println("  /*e*/f.getName()/*s*/ = "+obj./*e*/f.getName()/*s*/);
+
+/*rg*/
+			}
+		}
+	
+/*rgs*/
+	}
+
+}
