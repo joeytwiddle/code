@@ -13,7 +13,6 @@
  *  Turn it into a terminal locker.  Proposed method (security audit please!):
  *    Block SIGINT etc calls (for CTRL+C/Z), on keypress ask for password, check with "su - $USER /bin/true" before allowing exit.
  *  Timing: if machine does not approach our optimal FPS, then it will have its own based on how many columns are sliding.  This should be kept constant!  ATM it will vary wrt that #.  Probably better to cap max (and min) sliding columns.
- *  Static processes shouldn't die so quickly.
  *  Writing/clearing processes should be in proportion to desired density!
 **/
 
@@ -207,7 +206,8 @@ void setupEverything() {
 #ifdef PROCESSING_WHITE_BITS
 	movingProcessDies = max(2, averageLengthOfBlock / 2 );
 	staticProcessDies = max(2, averageLengthOfBlock + averageLengthBetweenBlocks );
-	numProcesses = max(1, (int)sqrt(COLS * LINES / sparsenessSkipCols) / 16 );
+	// Should really be based on area, not width, or maybe something inbetween.
+	numProcesses = max(1, (int)sqrt(COLS * LINES / sparsenessSkipCols / sparsenessSkipRows) / 16 );
 #endif
 
 	//// Initialise matrix:
@@ -324,36 +324,36 @@ void main() {
 
 	while (true) {
 
-		// Slide: slide a whole column down n spaces
+		// Move sliding columns, and update their state:
 
 		for (int x=0;x<COLS;x+=sparsenessSkipCols) {
 
 			// Consider changing state
 			int probadd = ( adding[x] ? averageLengthOfBlock : averageLengthBetweenBlocks );
-			if ( (rand() % probadd) == 0 ) {
+			if ( (rand() % probadd) == 0 )
 				adding[x] = ! adding[x];
-			}
 
 			// Act upon state
 			if ( sliding[x] ) {
-				if ( prob(averageLengthOfSlide) ) {
+				if ( prob(averageLengthOfSlide) )
 					sliding[x] = false;
-				}
 				slideColumn(x,!sliding[x]);
 				if (adding[x]) {
 					mbit symbol = palette[ rand() % paletteSize ];
 					matrix_set(x,0,symbol);
 				}
 			} else {
-				if ( prob(averageLengthBetweenSlides) ) {
+				if ( prob(averageLengthBetweenSlides) )
 					sliding[x] = true;
-				}
 			}
 
 
 		}
 
 #ifdef PROCESSING_WHITE_BITS
+
+		// Animate and change state of processes:
+
 		for (int i=0;i<numProcesses;i++) {
 			bool recycle = false;
 			if (processes[i] == STATIC_PROCESS_EMPTY || processes[i] == STATIC_PROCESS_FULL) {
@@ -397,16 +397,16 @@ void main() {
 				newProcess(i);
 			}
 		}
+
 #endif
 
 #ifdef BOTHER_CLOCKING
 		while (true) {
 			thisframe = clock();
-			if (thisframe < lastframe+clocksPerFrame) {
+			if (thisframe < lastframe+clocksPerFrame)
 				continue;
-			} else {
+			else
 				break;
-			}
 		}
 		lastframe = thisframe;
 #endif
