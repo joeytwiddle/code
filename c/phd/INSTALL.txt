@@ -1,0 +1,13 @@
+You are recommended to follow the following procedure to obtain a working copy of my research code.
+
+Visit http://hwi.ath.cx/twiki/bin/view/Neuralyte/ProjectJsh and install and run the jsh environment.
+
+In jsh, type:
+
+	cd $JPATH/code
+	hwicvs co c/phd c/joeylib
+	makephdbins
+
+If all goes well, you will have compiled all the executables I used for testing.
+
+If you run into problems, please mail joey@hwi.ath.cx with a copy of the error output on your terminal.
