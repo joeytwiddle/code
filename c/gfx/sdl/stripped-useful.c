@@ -27,7 +27,10 @@ unsigned char text[5][9*4] = { "00  000 0 0 00   0  0   000 000    ",
 #include <time.h>
 #include <SDL.h>
 
+#define REDEFINE
+#ifdef REDEFINE
 #include "define.c"
+#endif
 #define CONST
 #include "incl.c"
 #undef CONST
@@ -150,11 +153,13 @@ int main(int argc,char *argv[]) {
 		return 1;
 	}
 
+#ifdef REDEFINE
 	fp=fopen("incl.c","wa");
 	if (fp==NULL)
 		printf("Failed to open file incl.c\n");
 	printSurfaceDetails(fp,"screen",screen);
 	fclose(fp);
+#endif
 
 	starttime = clock()+CLOCKS_PER_SEC/desiredFramesPerSecond;
 
