@@ -1,6 +1,9 @@
-/** damnandblast.c
- *  by joey
- *  No interpolation!
+/** 
+ * TODO:
+ * - Framebuffer.
+ * - Integer maths.
+ * - Intercept boot messages and display.
+ * - Use time instead of frame count.
 **/
 
 #include <math.h>
