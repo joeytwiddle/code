@@ -1,10 +1,9 @@
 /** 
  * TODO:
  * - Framebuffer.
- * - Integer maths.
+ * - Integer maths, and other optimisation.
  * - Intercept boot messages and display.
  * - Use time instead of frame count.
- * - Proper antialiasing (current method squishes!)
 **/
 
 #include <math.h>
@@ -38,7 +37,8 @@ float getSwirlHeight(float x,float y) {
 		ang=ang+M_PI;
 	float wobblemag = 0.06+0.06*sin((float)frames*0.00315);
 	float rad = sqrt(X*X+Y*Y) * (1.0+ wobblemag*sin(2.0*ang));
-	return sin(rad/spacePerSwirl+ang-swirlang);
+	float extra=-0.4+0.5*sin(2.493-rad*5.6+(float)frames*0.00184);
+	return sin(rad/spacePerSwirl+ang-swirlang)+extra;
 
 }
 
@@ -94,8 +94,6 @@ void main() {
 			for (int x = 0;x<COLS;x++) {
 
 				float swirlHeight=getSwirlHeight(x,y);
-				// float extra=-0.4+0.5*sin(2.493-rad*5.6+(float)frames*0.00184);
-				float extra=0;
 				{
 					int c=
 							( getSwirlHeight(x+1,y+1) > 0 ? 1 : 0 )
