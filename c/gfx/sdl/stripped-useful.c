@@ -1,9 +1,7 @@
+// You are expected to provide:
 
-unsigned char text[5][9*4] = { "00  000 0 0 00   0  0   000 000    ",
-                            "0 0 0   0 0 0 0 0 0 0    0  0      ",
-								    "0 0 00  0 0 00  000 0    0  00     ",
-								    "0 0 0   0 0 0 0 0 0 0    0  0      ",
-								    "0 0 000 000 0 0 0 0 000  0  000    " };
+void init();
+void doframe();
 
 // #define DOS
 // #define DO_FULLSCREEN
@@ -111,12 +109,6 @@ void setuplookups() {
 SDL_Surface *screen;
 int frames=0;
 
-void init() {
-}
-
-void doframe() {
-}
-
 int main(int argc,char *argv[]) {
 
 	SDL_Event event;
@@ -131,10 +123,6 @@ int main(int argc,char *argv[]) {
 	if (output==NULL)
 		printf("Failed to open file debug.txt\n");
 #endif
-
-	setuplookups();
-	// srand(time(NULL));
-	init();
 
 	if ( SDL_Init(SDL_INIT_VIDEO) < 0 ) {
 		fprintf(stderr,"Couldn't initialise SDL: %s\n", SDL_GetError());
@@ -152,6 +140,10 @@ int main(int argc,char *argv[]) {
 		fprintf(stderr,"Couldn't initialise video.\n");
 		return 1;
 	}
+
+	setuplookups();
+	// srand(time(NULL));
+	init();
 
 #ifdef REDEFINE
 	fp=fopen("incl.c","wa");
