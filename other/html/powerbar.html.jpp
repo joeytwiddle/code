@@ -5,14 +5,14 @@
 
 <script type="text/javascript"> <!--
 
+// Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
+
 // BUGS:
 // Not yet ported to IE.  (Written against Mozilla, ported to Konqueror.)
 // Konqueror's log text freezes up and doesn't display until nudged.
 
 //// Yummy I found reflection:
 // for (var x in top.powerBarFrame) { log(""+x); }     
-
-// Useful: :! onchange "powerbar.html.jpp" do jpp -- powerbar.html.jpp
 
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
 var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
@@ -337,7 +337,7 @@ function editOptions() {
 }
 
 function jsReflectorInit() {
-	jsReflectorShow("top");
+	jsReflectorShow("top.powerBarFrame");
 }
 
 function strip(str) {
@@ -370,14 +370,20 @@ function jsReflectorShow(objName) {
 	try {
 		var html = "";
 		var obj = tryeval(objName);
-		LOG("D");
+		// LOG("D");
 		html += "<h3>Inspecting: " + trytypeof(obj) + " " + objName + " = " + obj + "</h3>";
 		html += "<blockquote>";
 		html += "<table>";
-		LOG("E");
+		// LOG("E");
+		// var i = 0;
 		for (var name in obj) {
+			// i++;
+			// if (i > 20) {
+				// break;
+			// }
 			// html += "Var " + x + " = " + eval("obj."+x) + "<BR>";
 			var globName = objName + "." + name;
+			// LOG(globName);
 			var type = "unknown";
 			var value = "unknown";
 			var exc = "";
@@ -386,7 +392,9 @@ function jsReflectorShow(objName) {
 				type = trytypeof(value);
 				// test to prove exc can get set: throw new Exception("poo");
 			} catch (e) {
-				exc = e; // haven't seen it happen =)
+				exc = "" + e;
+				value = "<unattainable> (" + exc + ")";
+				// type = "<unattainable> (" + exc + ")";
 			}
 			html += "<tr>";
 			html += "<td>"+type+"</td>";
@@ -395,13 +403,16 @@ function jsReflectorShow(objName) {
 			var link = 'javascript:top.jsReflectorShow("' + globName + '")';
 			html += "<td><a href='" + link + "'>" + name + "</a></td>";
 			html += "<td>=</td>";
-			LOG("F");
+			// LOG("F");
+			// Konqueror needs to check if value can be evaluated, or whether it breaks with "TypeError: no default value"
+			var valueOut;
 			try {
-				LOG(value);
+				// LOG(value); // too slow?
+				valueOut = "" + value;
 			} catch (e) {
-				value = "e="+e;
+				value = "<unattainable> (" + e + ")";
 			}
-			LOG("G");
+			// LOG("G");
 			html += "<td>" + toHtml(strip("" + value)) + "</td>";
 			html += "<td>" + toHtml(strip("" + exc)) + "</td>";
 			html += "</tr>";
