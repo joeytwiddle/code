@@ -18,8 +18,10 @@ mkdir -p "$DESTDIR"
 
 PSQLDB="active_"$CITY_NAME
 MYSQLDB="imc"
-MYSQLUSER="imc_backup"
-MYSQLPW="imc_backup"
+# MYSQLUSER="imc_backup"
+# MYSQLPW="imc_backup"
+MYSQLUSER="imc_user"
+MYSQLPW="lkjc925r42"
 
 PSQLDEST="$DESTDIR/$PSQLDB.psql"
 MYSQLDEST="$DESTDIR/$MYSQLDB.mysql"
@@ -33,7 +35,7 @@ ls -lrtF "$DESTDIR/"
 echo
 echo "Postgresql before and after:"
 cksum "$PSQLDEST"
-pg_dump -d "$PSQLDB" > "$PSQLDEST"
+su - postgres pg_dump -d "$PSQLDB" > "$PSQLDEST"
 # Tronic's postgres was too old for this:
 # /usr/local/pgsql/bin/pg_dump -F t "$PSQLDB" > "$PSQLDEST"
 cksum "$PSQLDEST"
