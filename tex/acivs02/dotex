@@ -1,0 +1,11 @@
+FNAME=acivs
+echo "----------------------------------------------------------------"
+"rm" $FNAME.dvi
+"rm" $FNAME.ps
+if test -f $FNAME.aux; then
+  bibtex $FNAME
+fi
+latex $FNAME.tex
+# xdvi $FNAME.dvi
+# dvips $FNAME.dvi -f > $FNAME.ps
+# gv $FNAME.ps &
