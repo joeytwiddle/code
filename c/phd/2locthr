@@ -1,7 +1,7 @@
 cd locthr
 locthr -all -f $JPATH/images/$1.bmp $JPATH/images/regs/$1.bmp
 
-mkdir -p $JPATH/images/bin
+mkdir -p $JPATH/images/bin/regs$1
 
 mv total.bmp $JPATH/images/bin/$1.bmp
 mkdir $JPATH/images/bin/regs$1
