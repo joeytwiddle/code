@@ -12,7 +12,7 @@ MYURL="http://hwi.ath.cx/cgi-bin/joey/cedict"
 
 export CLASSPATH=/home/joey/j/code/java
 
-URL=`getcgi "url"`
+URL="`getcgi url`"
 
 wget -O - "$URL" |
 java tools.intl.CEDict |

@@ -4,7 +4,7 @@
 # export JPATH=/home/joey/j
 # . /home/joey/j/startj-simple
 
-WORD=`getcgi "word"`
+WORD="`getcgi word`"
 
 echo "<HTML><HEAD><TITLE>Dict lookup for $WORD</TITLE></HEAD><BODY>"
 

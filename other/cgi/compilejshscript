@@ -1,0 +1,29 @@
+#!/bin/sh
+
+## LUCKY: that jsh puts itself before this script in the PATH, otherwise it'd call itself recursively!
+
+export CGILIB_NO_CONTENT=true
+. cgilib
+export JPATH=/home/joey/j
+. /home/joey/j/startj-simple
+
+SCRIPT="`getcgi script`"
+TMPSCRIPT=`jgettmp compiling:$SCRIPT`.sh
+
+echo "`date` [$$] compilejshscript: Compiling $SCRIPT" >&2
+
+export NON_INTERACTIVE=true
+compilejshscript "$SCRIPT" 2>&1 > $TMPSCRIPT |
+
+## Pretty print output to apache log:
+# trimempty | sed "s+^+`date` [$$] compilejshscript:   +" >&2
+
+## Send output to apache log (realtime):
+# cat >&2
+
+## Discard output:
+cat > /dev/null
+
+echo "`date` [$$] compilejshscript: Done" >&2
+
+serve $TMPSCRIPT

@@ -15,7 +15,7 @@ safetar() {
 	echo "Creating $DESTNAME from $*"
 	# cd $1
 	# /bin/tar cfz "$DESTDIR"/$2.tgz *
-	tar cfz "$DESTDIR/$DESTNAME.tgz" "$@" ||
+	tar $TAROPTS --create -z --file "$DESTDIR/$DESTNAME.tgz" "$@" ||
 	error "compressing $DESTDIR/$DESTNAME.tgz"
 }
 
@@ -55,9 +55,16 @@ error "Error copying private"
 ## I have no idea why I need to touch it!
 touch "$DESTDIR"/twiddle.tgz
 # tar cfz "$DESTDIR"/twiddle.tgz debian/.gnupg debian/.wine* debian/Mail debian/.vmware j/org j/music j/logs/debpkgs-list-today.log
-safetar twiddle debian/.gnupg debian/.wine* debian/Mail debian/.vmware \
-        debian/.*rc debian/.fetchmail* debian/.forward \
-        j/*.conf j/*.dummy j/org j/music j/logs/debpkgs-list-today.log
+export TAROPTS="--exclude=debian/Mail/Lists"
+safetar twiddle \
+        debian/.gnupg debian/.wine*/ debian/.vmware \
+        debian/.*rc debian/.fetchmail* debian/.forward* \
+        j/*.conf j/org j/music j/logs/debpkgs-list-today.log \
+        j/*.dummy
+        # debian/Mail 
+        ## The dummy is to prove thar tar will still work if any of the other files are working.
+        ## (Unless you want it to crash and inform you if they are missing!!)
+unset TAROPTS
 
 ## Now all in CVS.
 # Joeylib, JLib, C, Java sources
@@ -82,6 +89,9 @@ safetar cvsroot /stuff/cvsroot
 centralise "After"
 ls -l "$DESTDIR/"
 # dush "$DESTDIR/"
+
+crontab -l > "$DESTDIR"/root.crontab
+su - joey -- crontab -l > "$DESTDIR"/joey.crontab
 
 centralise Done
 ## echo Backup complete | wall
