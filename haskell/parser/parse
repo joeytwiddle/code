@@ -1,0 +1,9 @@
+#!/usr/bin/runhugs +l
+
+> module Main where
+> import Hlib
+> import System
+> import Parser
+> main = do
+>   args <- getArgs
+>   go

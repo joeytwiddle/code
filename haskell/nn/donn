@@ -1,0 +1,8 @@
+#!/usr/local/bin/runhugs +l
+
+> module Main where
+> import Nn
+> import System
+> main = do
+>   args <- getArgs
+>   go

@@ -1,0 +1,13 @@
+#!/usr/local/bin/runhugs +l
+
+> module Main where
+> import Hlib
+> import System
+> main = do
+>   args <- getArgs
+>   go args
+>
+> go args = do
+>           file <- readFile (head args)
+>           putStrLn (dewordwrap file)
+>   where dewordwrap x = sreplace (sreplace (sreplace x "\n\n" "!para!") "\n" " ") "!para!" "\n\n"

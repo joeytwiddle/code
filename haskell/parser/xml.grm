@@ -1,0 +1,8 @@
+XML = "<" <type> ">" Inside "</" <type> ">"
+    | "<" <type> Param ">" Inside "</" <type> ">"
+    | "<" <type> "/>"
+
+Param = " " <param> "=" <value>
+      | Param Param
+
+Inside = "" | XML Inside | <text>

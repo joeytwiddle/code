@@ -1,0 +1,25 @@
+CSrc = ""
+     | Comment CSrc
+     | Method CSrc
+     | Class CSrc
+     | Variabledecl CSrc
+     | Whitespace CSrc
+
+Whitespace = ' ' | '\n'
+
+Comment = "/*" <stuff> "*/"
+        | "//" <stuff> "\n"
+
+Method = MDecl '{' Code '}'
+hreplacement: MDecl ';'
+creplacement: MDecl<stuff> Class<name>::MDecl<name> "(" MDecl<args> ") {' Code '}'
+            | MDecl '{' Code '}'
+
+MDecl = <stuff> " " <name> "(" <args> ")"
+
+Code = <A> '{' <stuff> '}' Code
+     | <stuff>
+
+Class = <A> "class" <name> <B> '{' CSrc '};'
+hreplacement: <A> "class" <name> <B> ';'
+creplacement: "// start of class " <name>
