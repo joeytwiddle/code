@@ -20,6 +20,7 @@ public class Desktop extends JDesktopPane {
     }
 
     public void showObject(Object object) {
+        System.out.println("[Desktop] Showing " + VisualJavaStatics.getSimpleClassName(object.getClass()) + " \"" + object + "\"");
         ObjectIcon anIcon = new ObjectIcon(this,object);
         anIcon.setLocation(getWidth()/2,getHeight()/2);
         anIcon.setSize(anIcon.getPreferredSize());

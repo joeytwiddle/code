@@ -22,11 +22,8 @@ public class ParameterTarget extends JPanel {
         type = _type;
         if (type.equals(Boolean.class) || type.equals(Boolean.TYPE)) {
             component = new BooleanChooser();
-        } else if (type.isPrimitive()
-            || type.equals(String.class)
-            || type.equals(Double.class)
-            /* || @todo ... */
-        ) {
+        /* } else if (type.isPrimitive() || type.equals(String.class) || type.equals(Double.class) ... */
+        } else if (ReflectionHelper.isPrimitiveType(type) || type.equals(String.class)) {
             // System.out.println("type = " + type);
             component = new JTextField("" + VisualJavaStatics.getSimpleClassName(type));
         } else {
@@ -43,19 +40,9 @@ public class ParameterTarget extends JPanel {
         }
         if (component instanceof JTextField) {
             String text = ((JTextField)component).getText();
-            try {
-                if (type.isPrimitive()) {
-                    type = getClassTypeFromPrimitiveType(type);
-                }
-                Constructor con = type.getConstructor(new Class[]{String.class});
-                Object object = con.newInstance(new Object[]{text});
-                if (object != null) {
-                    return object;
-                }
-            } catch (NoSuchMethodException e) {
-                e.printStackTrace();
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
+            Object object = ReflectionHelper.createPrimitiveObjectFromText(text,type);
+            if (object != null) {
+                return object;
             }
             System.err.println("Could not instantiate a " + type.getName() + " from \"" + text + "\".");
         // } else if (component instanceof ObjectTarget) {
@@ -63,16 +50,6 @@ public class ParameterTarget extends JPanel {
         }
         /* || @todo ... */
         return null;
-    }
-
-    private Class getClassTypeFromPrimitiveType(Class type) {
-        if (type.equals(Boolean.TYPE))
-            return Boolean.class;
-        if (type.equals(Integer.TYPE))
-            return Integer.class;
-        /* || @todo ... */
-        System.err.println("ParameterTarget.getClassTypeFromPrimitiveType() needs more work for type: " + type);
-        return type;
     }
 
 }

@@ -58,6 +58,12 @@ public class VisualJavaStatics {
                             // Inner classes
                             i = line.indexOf("$");
                             if (i >= 0) {
+                                continue;
+                                /** @todo It appears inner classes never have constructors
+                                 *  We may need to access their fields at some point,
+                                 *  but for the moment I have disabled them.
+                                **/
+                                /*
                                 String after = line.substring(i+1);
                                 try {
                                     Integer.parseInt(after);
@@ -67,6 +73,7 @@ public class VisualJavaStatics {
                                     // Is not anonymous =)
                                     line = line.substring(0,i) + "." + line.substring(i+1);
                                 }
+                                */
                             }
                             writer.write(line + "\n");
                         }

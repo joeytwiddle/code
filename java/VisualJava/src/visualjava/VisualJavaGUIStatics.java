@@ -180,7 +180,8 @@ public class VisualJavaGUIStatics {
     }
 
     public static void addMethodToMenu(final Method m, JMenu menu, final Object obj) {
-        JMenuItem menuItem = new JMenuItem(VisualJavaStatics.getSimpleClassName(m.getReturnType()) + " " + m.getName() + "(" + VisualJavaStatics.listParams(m.getParameterTypes()) + ")");
+        // JMenuItem menuItem = new JMenuItem(VisualJavaStatics.getSimpleClassName(m.getReturnType()) + " " + m.getName() + "(" + VisualJavaStatics.listParams(m.getParameterTypes()) + ")");
+        JMenuItem menuItem = new JMenuItem(m.getName() + "(" + VisualJavaStatics.listParams(m.getParameterTypes()) + ") : " + VisualJavaStatics.getSimpleClassName(m.getReturnType()));
         menuItem.addActionListener(
                 new ActionListener() {
                     public void actionPerformed(ActionEvent e) {

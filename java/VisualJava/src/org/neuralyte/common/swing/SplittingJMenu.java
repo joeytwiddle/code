@@ -18,8 +18,8 @@ public class SplittingJMenu extends JMenu {
 	private Vector items=new Vector();
 	private boolean doneSorting=false;
 
-	public static final int maxItems=15;
-	public static final int preferedSplits=9;  // Actually prefered+1
+	public static final int maxItems=20;
+	public static final int preferedSplits=14;  // Actually prefered+1
 
     public SplittingJMenu(String s) {
         super(s);
@@ -40,10 +40,24 @@ public class SplittingJMenu extends JMenu {
 				i++;
 		}
 		items.insertElementAt(j,i);
+        // super.insert(j,i);
 		return j;
 	}
 
-	public void doClick(int pressTime) {
+    public JMenuItem addDontSplit(JMenuItem j) {
+        return super.add(j);
+    }
+
+    public void setSelected(boolean b) {
+        if (!doneSorting) {
+            arrange();
+            doneSorting = true;
+        }
+        super.setSelected(b);
+    }
+
+    /*
+    public void doClick(int pressTime) {
 		if (doneSorting) {
 			super.doClick(pressTime);
 		} else {
@@ -52,6 +66,7 @@ public class SplittingJMenu extends JMenu {
 			super.doClick(pressTime);
 		}
 	}
+    */
 
 	public void splitIfNeeded() {
 		if (items.size()>maxItems) {

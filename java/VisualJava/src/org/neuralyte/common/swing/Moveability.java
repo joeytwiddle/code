@@ -8,9 +8,8 @@ public class Moveability extends MouseAdapter implements MouseMotionListener {
 
     static Moveability moveabilityListener = null;
 
-    Component lastClickedComponent = null;
-    Point lastClicked = null;
-    Point mousePosition = null;
+    Component componentBeingDragged = null;
+    Point initialClickPoint = null;
 
     public static void allowUserToMove(Component component) {
         component.addMouseListener(getMoveabilityListener());
@@ -25,29 +24,29 @@ public class Moveability extends MouseAdapter implements MouseMotionListener {
     }
 
     public void mousePressed(MouseEvent e) {
-        lastClicked = e.getPoint();
-        lastClickedComponent = (Component)e.getSource();
-        System.out.println("lastClicked="+lastClicked);
+        initialClickPoint = e.getPoint();
+        componentBeingDragged = (Component)e.getSource();
+        System.out.println("initialClickPoint="+initialClickPoint);
     }
 
     public void mouseReleased(MouseEvent e) {
-        lastClicked = null;
-        System.out.println("lastClicked=null");
+        initialClickPoint = null;
+        // System.out.println("initialClickPoint=null");
     }
 
     public void mouseMoved(MouseEvent e) {
     }
 
     public void mouseDragged(MouseEvent e) {
-        mousePosition = e.getPoint();
-        double dx = mousePosition.getX() - lastClicked.getX();
-        double dy = mousePosition.getY() - lastClicked.getY();
-        Point at = lastClickedComponent.getLocation();
-        System.out.println("Mouse="+mousePosition + " Component=" + at + " ("+dx+","+dy+")");
+        Point mousePosition = e.getPoint();
+        double dx = mousePosition.getX() - initialClickPoint.getX();
+        double dy = mousePosition.getY() - initialClickPoint.getY();
+        Point at = componentBeingDragged.getLocation();
+        // System.out.println("Mouse="+mousePosition + " Component=" + at + " ("+dx+","+dy+")");
         // at.move((int)dx,(int)dy);
-        // lastClickedComponent.setLocation(at);
-        lastClickedComponent.setLocation((int)(at.getX() + dx), (int)(at.getY() + dy));
-        // lastClicked = mousePosition;
+        // componentBeingDragged.setLocation(at);
+        componentBeingDragged.setLocation((int)(at.getX() + dx), (int)(at.getY() + dy));
+        // initialClickPoint = mousePosition;
     }
 
 }

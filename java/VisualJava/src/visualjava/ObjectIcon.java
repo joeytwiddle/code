@@ -2,6 +2,7 @@ package visualjava;
 
 import org.neuralyte.common.swing.LargeCapacityJMenu;
 import org.neuralyte.common.swing.Moveability;
+import org.neuralyte.common.swing.SplittingJMenu;
 
 import javax.swing.*;
 import java.awt.*;
@@ -66,7 +67,7 @@ public class ObjectIcon extends JLabel {
         // popup.add(statics);
         popup.add(new StaticsMenu("Statics",obj.getClass().getName()));
 
-        JMenu properties = new LargeCapacityJMenu("Properties");
+        JMenu properties = new SplittingJMenu("Properties");
         try {
             Class c = obj.getClass();
             for (int i=0;i<c.getDeclaredFields().length;i++) {
@@ -80,9 +81,9 @@ public class ObjectIcon extends JLabel {
         }
         popup.add(properties);
 
-        JMenu methods = new LargeCapacityJMenu("Methods");
-        addNonStaticMethodsToMenu(obj.getClass(),methods,true);
-        // addNonStaticMethodsToMenu(methods);
+        SplittingJMenu methods = new SplittingJMenu("Methods");
+        addNonStaticMethodsToSplittingJMenu(obj.getClass(),methods,true);
+        // addNonStaticMethodsToSplittingJMenu(methods);
         popup.add(methods);
 
 		//Add listener to components that can bring up popup menus.
@@ -92,14 +93,14 @@ public class ObjectIcon extends JLabel {
 
 	}
 
-    private void addNonStaticMethodsToMenu(Class c, JMenu methods, boolean andSuperClasses) {
+    private void addNonStaticMethodsToSplittingJMenu(Class c, SplittingJMenu methods, boolean andSuperClasses) {
         try {
             if (andSuperClasses) {
                 Class superClass = c.getSuperclass();
                 if (superClass != null) {
-                    JMenu superClassMethodsMenu = new LargeCapacityJMenu(VisualJavaStatics.getSimpleClassName(superClass));
-                    addNonStaticMethodsToMenu(superClass,superClassMethodsMenu,andSuperClasses);
-                    methods.add(superClassMethodsMenu);
+                    SplittingJMenu superClassMethodsMenu = new SplittingJMenu(VisualJavaStatics.getSimpleClassName(superClass));
+                    addNonStaticMethodsToSplittingJMenu(superClass,superClassMethodsMenu,andSuperClasses);
+                    methods.addDontSplit(superClassMethodsMenu);
                 }
             }
             for (int i=0;i<c.getDeclaredMethods().length;i++) {
