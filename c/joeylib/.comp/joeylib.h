@@ -13,8 +13,8 @@
 // #include <whichos.c>
 // #include "/whatos"
 
-// #define LINUX
-#define DOS
+#define LINUX
+// #define DOS
 // #define UNIX
 
 // For SG machines, without time and difftime functions:
@@ -37,6 +37,11 @@
 // Are we using the Allegro library for DJGPP (graphics under DOS)?
 #ifdef DOS
  #define ALLEGRO
+#endif
+
+// Or X11?
+#ifndef DOS
+  #define X11GFX
 #endif
 
 #ifdef UNIX

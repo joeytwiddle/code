@@ -9,6 +9,11 @@ extern int numframes; // Exists
 extern long endtime; // Exists
 extern long pausetime; // Exists
 
+#ifdef DOS
+	#define uclock clock
+	#define UCLOCKS_PER_SEC CLOCKS_PER_SEC
+#endif
+
 void pausetimer(); // Method
 
 
