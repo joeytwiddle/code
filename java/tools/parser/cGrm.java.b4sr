@@ -78,11 +78,6 @@ public class grmGrm {
         rule.add(new Atom("NL"));
       ruleset.add(rule);
     // Replacements
-    rule=new Vector();
-        rule.add(new Text("//"));
-        rule.add(new Var("stuff"));
-        rule.add(new Atom("NL"));
-    ruleset.replacements.put("h",rule);
 
     // Hack for /* */ to deal with eg. " ... /* blah foo*bar */ ... "
     ruleset=new RuleSet("EndCom");
@@ -97,9 +92,6 @@ public class grmGrm {
         rule.add(new Atom("EndCom"));
       ruleset.add(rule);
     // Replacements
-    rule=new Vector();
-        rule.add(new Text(""));
-    ruleset.replacements.put("h",rule);
 
     // Although the repeated RHS are unaesthetic,
     // they are OK when parsing, since the RHS
@@ -978,7 +970,7 @@ public class grmGrm {
     ruleset=new RuleSet("NL");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Text("\n\r"));
+        rule.add(new Text("\r\n"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Text("\n"));

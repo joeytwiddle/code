@@ -26,12 +26,10 @@ CSrcBit = WS
 
 Comment = "/*" EndCom
         | "//" <stuff/"\n"> NL
-h: "//" <stuff> NL
 
 # Hack for /* */ to deal with eg. " ... /* blah foo*bar */ ... "
 EndCom = <stuff/"*"> "*/"
        | <stuff/"*"> "*" EndCom
-h: ""
 
 # Although the repeated RHS are unaesthetic,
 # they are OK when parsing, since the RHS
@@ -273,7 +271,7 @@ WS = NL OptWS
    | Comment OptWS
 	 | SpcBit OptWS
 
-NL = "\n\r"
+NL = "\r\n"
    | "\n"
 
 OptSpc = SpcBit OptSpc
