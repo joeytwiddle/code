@@ -30,7 +30,15 @@
 // todo: Store #define constants for a variety of video modes so that the
 //   user may choose at runtime.
 
-#include <sched.h>
+// #define DOS
+#ifdef DOS
+      #define M_PI 3.14159265358979323846
+      #include "SDL.h"
+#else
+      #include <SDL.h>
+      // #include <sched.h>
+#endif
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -110,7 +118,7 @@ void setupsqrtlookup() {
 // #define qsqrt(x) ( (x)<0 ? 0 : (x)>=sqrtlookupmax*sqrtlookupquant ? sqrt(x) : sqrtlookup[(int)(x)/sqrtlookupquant] )
 // Unsafe version
 #define qsqrt(x) ( sqrtlookup[(x)/sqrtlookupquant] )
-// One of those funky visuals - notice the curvature
+// One of those funky accidents - notice the curvature
 // #define qsqrt(x) ( sqrtlookup[(Sint16)x] )
 // #define qsqrt(x) sqrt(x)
 
