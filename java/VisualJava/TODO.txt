@@ -1,6 +1,18 @@
 TODO:
+
 Need to be able to drop objects onto Arguments.
 What sort of component should the Object Arguments be?
+We really want to be able to include (load or preferable pre-load) external jars.
+
+Support for setters and getters (eg. get()/accessor properties can be displayed automatically)
+
+Different icon for each class type (can of course default to parent if no icon specified for that class)!
+
+Before further progress, let us not forget that certain statics may need to be accessed, eg. from abstract classes.
+We have still left some bits of Java hidden from us.
+
+On the other hand, the current state of the software is more appropriate for a simplified "functional Java", so maybe further expansion will just complicate the project.  (In "functional Java", Java nasties could be hidden behind more appropriate functional wrappers.)
+
 
 DONE:
 Menu's are now nicely split and ordered alphabetically.

@@ -51,7 +51,7 @@
           <element signature="method#addConstructorToMenu#0;class#VisualJavaGUIStatics" expanded="false" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="64" column="34" vertical-scroll-proportion="0.5054348" horizontal-scroll-proportion="0.2902098" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="64" column="34" vertical-scroll-proportion="2.2608695" horizontal-scroll-proportion="0.4160839" />
     </history>
     <open-files>
       <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/SplittingJMenu.java" line="21" column="44" vertical-scroll-proportion="0.63586956" horizontal-scroll-proportion="0.53846157" />
@@ -77,7 +77,7 @@
           <element signature="method#addConstructorToMenu#0;class#VisualJavaGUIStatics" expanded="false" />
         </folding>
       </source-position-entry>
-      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="64" column="34" vertical-scroll-proportion="0.5054348" horizontal-scroll-proportion="0.2902098" selected="true" />
+      <source-position-entry url="file://$PROJECT_DIR$/src/visualjava/VisualJavaStatics.java" line="64" column="34" vertical-scroll-proportion="2.2608695" horizontal-scroll-proportion="0.4160839" selected="true" />
       <source-position-entry url="file://$PROJECT_DIR$/src/org/neuralyte/common/swing/Moveability.java" line="10" column="25" vertical-scroll-proportion="0.07065217" horizontal-scroll-proportion="0.30594406">
         <folding>
           <element signature="imports" expanded="true" />
@@ -91,7 +91,7 @@
     </open-files>
   </component>
   <component name="ToolWindowManager">
-    <frame x="18" y="43" width="962" height="867" extended-state="0" />
+    <frame x="18" y="43" width="962" height="867" extended-state="1" />
     <editor active="false" />
     <layout>
       <window_info id="VIM" active="false" anchor="bottom" auto_hide="true" internal_type="sliding" type="sliding" visible="false" weight="0.33064517" order="7" />
