@@ -29,64 +29,91 @@ public class VisualJavaStatics {
     }
 
     static BufferedReader getListOfAllClasses() {
+        PipedOutputStream out = new PipedOutputStream();
+        PipedInputStream in = null;
         try {
-            // final Process process = Runtime.getRuntime().exec("jar tf /usr/lib/j2se/1.4/jre/lib/rt.jar");
-            final Process process = Runtime.getRuntime().exec("/home/joey/j/jsh memo jar tf /usr/lib/j2se/1.4/jre/lib/rt.jar");
-            final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-            final PipedOutputStream out = new PipedOutputStream();
-            final PipedInputStream in = new PipedInputStream(out);
-            final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
-            new Thread() {
-                public void run() {
-                    try {
-                        while (true) {
-                            String line = reader.readLine();
-                            if (line == null)
-                                break;
-                            // Strip .class extension
-                            if (line.endsWith(".class")) {
-                                line = line.substring(0,line.length() - ".class".length());
-                            }
-                            // Convert path '/'s into package '.'s
-                            int i;
-                            while ((i = line.indexOf("/")) >= 0) {
-                                line = line.substring(0,i) + "." + line.substring(i+1);
-                            }
-                            while ((i = line.indexOf("\\")) >= 0) {
-                                line = line.substring(0,i) + "." + line.substring(i+1);
-                            }
-                            // Inner classes
-                            i = line.indexOf("$");
-                            if (i >= 0) {
-                                continue;
-                                /** @todo It appears inner classes never have constructors
-                                 *  We may need to access their fields at some point,
-                                 *  but for the moment I have disabled them.
-                                **/
-                                /*
-                                String after = line.substring(i+1);
-                                try {
-                                    Integer.parseInt(after);
-                                    // Is an anonymous class: skip
-                                    continue;
-                                } catch (NumberFormatException e) {
-                                    // Is not anonymous =)
-                                    line = line.substring(0,i) + "." + line.substring(i+1);
-                                }
-                                */
-                            }
-                            writer.write(line + "\n");
+            in = new PipedInputStream(out);
+        } catch (IOException e) {
+            e.printStackTrace(System.err); // If we can't create the PipedOutputStream (never happens)
+        }
+        final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(out));
+
+        new Thread() {
+            public void run() {
+                String classPath = System.getProperty("java.class.path");
+                System.out.println(classPath);
+                int j;
+                while (( j = classPath.indexOf(":")) >= 0) {
+                    String jarOrDir = classPath.substring(0,j);
+                    classPath = classPath.substring(j+1);
+                    String command;
+                    File jarOrDirFile = new File(jarOrDir);
+                    if (jarOrDirFile.isFile() && jarOrDirFile.getName().endsWith(".jar")) {
+                        if (jarOrDirFile.getName().equals("rt.jar")) {
+                            printClassesInJarTo(jarOrDirFile, writer);
+                        } else {
+                            System.out.println("Skipping non rt.jar: " + jarOrDirFile);
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace(System.err);
+                    } else {
+                        System.out.println("Do not yet know how to parse class list from directory or non-jar: " + jarOrDirFile);
                     }
                 }
-            }.start();
-            return new BufferedReader(new InputStreamReader(in));
+            }
+        }.start();
+
+        return new BufferedReader(new InputStreamReader(in));
+    }
+
+    private static void printClassesInJarTo(File jarFile, BufferedWriter writer) {
+        try {
+            // final Process process = Runtime.getRuntime().exec("jar tf /usr/lib/j2se/1.4/jre/lib/rt.jar");
+            // final Process process = Runtime.getRuntime().exec("/home/joey/j/jsh memo jar tf /usr/lib/j2se/1.4/jre/lib/rt.jar");
+            // final Process process = Runtime.getRuntime().exec("sh -c 'jar tf `locate rt.jar | grep \"/rt.jar$\" | head -1`'");
+            String[] cmdArray = { "jar", "tf", jarFile.getCanonicalPath() };
+            final Process process = Runtime.getRuntime().exec(cmdArray);
+            final BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while (true) {
+                String line = reader.readLine();
+                // System.out.println(line);
+                if (line == null)
+                    break;
+                // Strip .class extension
+                if (line.endsWith(".class")) {
+                    line = line.substring(0,line.length() - ".class".length());
+                }
+                // Convert path '/'s into package '.'s
+                int i;
+                while ((i = line.indexOf("/")) >= 0) {
+                    line = line.substring(0,i) + "." + line.substring(i+1);
+                }
+                while ((i = line.indexOf("\\")) >= 0) {
+                    line = line.substring(0,i) + "." + line.substring(i+1);
+                }
+                // Inner classes
+                i = line.indexOf("$");
+                if (i >= 0) {
+                    continue;
+                    /** @todo It appears inner classes never have constructors
+                     *  We may need to access their fields at some point,
+                     *  but for the moment I have disabled them.
+                    **/
+                    /*
+                    String after = line.substring(i+1);
+                    try {
+                        Integer.parseInt(after);
+                        // Is an anonymous class: skip
+                        continue;
+                    } catch (NumberFormatException e) {
+                        // Is not anonymous =)
+                        line = line.substring(0,i) + "." + line.substring(i+1);
+                    }
+                    */
+                }
+                writer.write(line + "\n");
+            }
         } catch (IOException e) {
             e.printStackTrace(System.err);
         }
-        return null;
     }
 
     public static String getLastInPath(String fullPackage) {

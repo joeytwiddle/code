@@ -21,6 +21,8 @@ Yeah!
 
 TODO:
 
+Split up old VisualJava from new VisualJava.
+
 Methods do not display which Object they belong to (should probably group / remain grouped near it).
 Well, desktop variables do not exist yet either.
 
