@@ -161,7 +161,7 @@ public:
     return V2d::rotate(*this,ang);
   }*/
 
-  void rotate(float ang) {
+  void rotate(float ang) { // changes the vector (find since void)
     changeto(V2d::rotate(*this,ang));
   }
 
@@ -241,7 +241,8 @@ public:
   }
   
   String toString() {
-    return Sformat("(%.2f,%.2f)",x,y);
+    // return Sformat("(%.2f,%.2f)",x,y);
+    return Sformat("(%.3f,%.3f)",x,y);
   }
 
   float getx() {

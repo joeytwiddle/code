@@ -9,6 +9,7 @@ FOCALRES="focalres.txt"
 
 rm -rf res
 mkdir -p res
+touch res/.nosync
 rm -f "$RES"
 echo "START" > "$RES"
 rm -f "$FOCALRES"
