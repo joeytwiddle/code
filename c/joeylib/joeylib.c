@@ -14,8 +14,8 @@
 // #include <whichos.c>
 // #include "/whatos"
 
-#define LINUX
-// #define DOS
+// #define LINUX
+#define DOS
 // #define UNIX
 
 // For SG machines, without time and difftime functions:
