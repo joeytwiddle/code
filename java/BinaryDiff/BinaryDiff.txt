@@ -1,0 +1,36 @@
+The goal:
+
+To compress a (set of) files into the minimum possible data, but only using direct copies of other parts of the data, or blocks of fresh raw data.
+
+We will likely want some threshold on the "width" of out search algorithm, to make the time computable.
+
+
+
+Possible output (just examples):
+
+A file which says:
+
+To recreate b.bin from a.bin, do:
+
+- Copy first 4096 bytes from a.bin.
+- Add this raw data: ... (a block of some bytes)
+- Copy last 37 bytes from a.bin
+- Close, done.
+
+Or a file which says:
+
+- Remember this block of data (call it block1): ... (binary data), and send it to output
+- Paste block1 4095 more times
+- Remember this block of data (call it block2): ...
+- Paste it 3 times
+- ...
+- Forget blockN.  ?
+
+
+
+Useful technology:
+
+We can build partial sums to make it fast+easy to compare two large blocks (with rare false-positives from hash collisions).
+If we are asked to build the sums of all blocks size 64 in the data, we can put the sums in a hashmap for easy retrieval/comparison (or maybe better an ArrayMap, depends how we are scanning+outputting).
+Let's say we do a short+quick scan to find matching blocks size 256.  When a match is found, we can attempt to expand it (left+right, but preferably scalable/recursive/fractal/binary/tree-like search), to encompass other regions of data which match.
+
