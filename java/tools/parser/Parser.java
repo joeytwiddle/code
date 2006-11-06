@@ -73,8 +73,6 @@ public class Parser implements ActionListener {
       // target=null; // ( argv.length<3 ? null : argv[2]);
     a.done();
 
-		Profile.clear();
-
 		try {
 
       Parser p=new Parser();
@@ -99,10 +97,17 @@ public class Parser implements ActionListener {
         dbdta.setSize(400,300);
       }
       Type t=new Atom("Main");
+		Profile.clear();
       Profile.start("parse");
       Match m=t.match(new SubString(toparse));
-      registerAllMatches(m);
       Profile.stop("parse");
+      Profile.start("register");
+      registerAllMatches(m);
+      Profile.stop("register");
+		String profReport=Profile.report();
+		PrintStream profOut=new PrintStream(new FileOutputStream(new File("/tmp/jparse_profile.html")));
+		profOut.print(profReport);
+		profOut.close();
       if (m==null)
         System.out.println("Failed to match.");
       else {
@@ -118,7 +123,7 @@ public class Parser implements ActionListener {
 						else {
 							String target=JString.before(targetcom,":");
 							String outfile=JString.after(targetcom,":");
-							PrintStream out=new PrintStream(new FileOutputStream(outfile,true));
+							PrintStream out=new PrintStream(new FileOutputStream(outfile));
 							m.render(null,target,out);
 							out.flush();
 							out.close();

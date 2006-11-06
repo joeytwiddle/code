@@ -35,7 +35,8 @@ public class DnDManager {
 
 	// Making a component drag/drop-able
 
-	/** Register any Component you wish to be a drag source here.
+	/** You must use the DnDManager to register any Component you wish to be part of
+	 *  DnD operation (either as a drag source or a drop destination).
 	 * <P>
 	 * You must attach an Object which will be transferred to the target Component
 	 * at the end of a drag-drop.
@@ -74,6 +75,7 @@ public class DnDManager {
 
 	/** Internal - ignore. **/
 	static void droppedOn(Component c) {
+		System.out.println("Dropping "+lastpickedup+" on "+c);
 		if (c instanceof ComponentAcceptingDrop)
 			((ComponentAcceptingDrop)c).drop(lastpickedup);
 		else {

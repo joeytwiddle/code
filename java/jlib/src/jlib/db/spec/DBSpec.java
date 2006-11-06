@@ -6,7 +6,7 @@ import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import jlib.*;
-import nuju.*;
+//import nuju.*;
 import jlib.multiui.*;
 import jlib.db.*;
 

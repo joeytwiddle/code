@@ -15,40 +15,54 @@ public class JReflect {
 
 	public static void main(String[] argv) {
 
-		try {
-			ArgParser a=new ArgParser(argv);
-			String cls=a.get("class");
-			a.done();
-
-			Class c=Class.forName(cls);
-			Field[] fs=c.getFields();
-			Constructor[] cs=c.getConstructors();
-			Method[] ms=c.getDeclaredMethods();
-			//      System.out.println(c+"\n"+fs+"\n"+ms);
-			String className = c.toString(); className = className.substring(className.indexOf(" ")+1);
-			System.out.println("> "+className);
-			System.out.println(""+c+" extends "+c.getSuperclass()+" implements "+JVector.toString(c.getInterfaces())+":");
-			System.out.println("  Fields:");
-			for (int i=0;i<fs.length;i++) {
-				System.out.println("    "+fs[i]);
-				// System.out.println("        ( "+fs[i].getType().getName()+" )");
-			}
-			System.out.println("  Constructors:");
-			for (int i=0;i<cs.length;i++)
-				System.out.println("    "+cs[i]);
-			System.out.println("  Methods:");
-			for (int i=0;i<ms.length;i++)
-				System.out.println("    "+replace(className+".","",ms[i].toString()));
-			try {
-				System.out.println("Trying to create instance...");
-				Object o=c.newInstance();
-				System.out.println("Got "+o);
-			} catch (java.lang.NoClassDefFoundError e) {
-				System.out.println("Could not create an instance :-(");
-			}
-		} catch (Exception e) {
-			System.out.println(""+e);
+		if (argv.length == 0) {
+			System.out.println("You should provide one or more absolute class names to be reflected.");
+			System.exit(1);
 		}
+
+		for (int j=0;j<argv.length;j++) {
+			String cls = argv[j];
+
+			try {
+
+				Class c=Class.forName(cls);
+				Field[] fs=c.getFields();
+				Constructor[] cs=c.getConstructors();
+				Method[] ms=c.getDeclaredMethods();
+				//      System.out.println(c+"\n"+fs+"\n"+ms);
+				String className = c.toString(); className = className.substring(className.indexOf(" ")+1);
+				System.out.println("> "+className);
+				System.out.print(""+c+" extends "+c.getSuperclass().getName());
+				if (c.getInterfaces().length>0) {
+					System.out.print(" implements "+JVector.toString(c.getInterfaces()));
+				}
+				System.out.println(" {");
+				System.out.println("  Fields:");
+				for (int i=0;i<fs.length;i++) {
+					System.out.println("    "+fs[i]);
+					// System.out.println("        ( "+fs[i].getType().getName()+" )");
+				}
+				System.out.println("  Constructors:");
+				for (int i=0;i<cs.length;i++)
+					System.out.println("    "+cs[i]);
+				System.out.println("  Methods:");
+				for (int i=0;i<ms.length;i++)
+					System.out.println("    "+replace(className+".","",ms[i].toString()));
+				System.out.println(" }");
+				try {
+					System.out.println("Trying to create instance...");
+					Object o=c.newInstance();
+					System.out.println("Got "+o);
+				} catch (java.lang.NoClassDefFoundError e) {
+					System.out.println("Could not create an instance :-(");
+				}
+
+			} catch (Throwable e) {
+				System.err.println(""+e);
+			}
+
+		}
+
 	}
 
 	public static Class classcalled(String type) {

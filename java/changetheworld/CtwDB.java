@@ -52,7 +52,7 @@ public class CtwDB {
         r=statement.executeQuery(q);
       else
         statement.execute(q);
-      Log.reportHtml("Succeeded in query: \""+q+"\"<br>\n");
+      //Log.reportHtml("Succeeded in query: \""+q+"\"<br>\n");
     } catch (Exception e) {
       if (e instanceof java.sql.SQLException) {
         Log.error("CtwDB.execute(\""+q+"\"): statement.execute() failed: "+e);

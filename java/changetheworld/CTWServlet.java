@@ -473,7 +473,7 @@ public class CTWServlet extends HttpServlet {
       if (x!=null) {
       x.setID(x.newID()); // will allow ID in form to override if it exists
       Field[] fs=x.openFields();
-      Log.reportHtml("<b>Updating fields "+fs+" in "+x.id+"</b><br>\n");
+      //Log.reportHtml("<b>Updating fields "+fs+" in "+x.id+"</b><br>\n");
       x.fieldsRead=true; // a bit premature!
       for (int i=0;i<fs.length;i++) {
 //        log+="Field: "+fs[i].getType().getName()+"\n";
@@ -493,9 +493,9 @@ public class CTWServlet extends HttpServlet {
             // Inherit fields from father
 //            updateXMLfromform((XML)fs[i].get(x),"");
             // Parse sub-form for sub-object
-            Log.reportHtml("<b>Updating "+f+"</b><br>\n");
+            //Log.reportHtml("<b>Updating "+f+"</b><br>\n");
             updateXMLfromform((XML)fs[i].get(x),f+".",map);
-            Log.reportHtml("<b>Got "+((XML)fs[i].get(x)).id+"</b><br>\n");
+            //Log.reportHtml("<b>Got "+((XML)fs[i].get(x)).id+"</b><br>\n");
             hit=true;
           } catch (Exception e) {
             log+="Error updating sub-object "+f+": "+e+"<br>\n";

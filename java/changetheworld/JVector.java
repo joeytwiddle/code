@@ -6,7 +6,7 @@ import changetheworld.XML;
 
 public class JVector {
 
-	public static Object getfirst(Satisfier s,List v) {
+	public static Object getfirst(Satisfier s, java.util.List v) {
     try {
     for (int i=0;i<v.size();i++) {
       boolean sat=false;

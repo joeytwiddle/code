@@ -36,7 +36,7 @@ public class XDB {
   public static boolean killoriginal=true; // temporary
 
   public static XML readnode(String path) {
-    Log.reportHtml("<br><center><b><i>Reading node at \""+path+"\"</i></b></center>\n");
+    //Log.reportHtml("<br><center><b><i>Reading node at \""+path+"\"</i></b></center>\n");
     if (readMode==DBstorage) {
       XML x=readfromDB(path);
       x.path=x.id;
@@ -143,7 +143,7 @@ public class XDB {
         String value="'";
         if (JReflect.canbe(o,"changetheworld.XML") && x.fieldsRead) {
           value+=((changetheworld.XML)o).id;
-          Log.reportHtml("<font color=\"#0000ff\">Writing field "+name+"="+value+"</font><br>\n");
+          //Log.reportHtml("<font color=\"#0000ff\">Writing field "+name+"="+value+"</font><br>\n");
           writetoDB((changetheworld.XML)o);
         } else {
           String ts=XML.Stringify(o); // .toString();
