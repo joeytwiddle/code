@@ -24,6 +24,11 @@ public class Desktop extends JDesktopPane {
     public String showObject(Object object) {
         String name = VisualJavaStatics.getSimpleClassName(object.getClass());
         name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
+        if (name.endsWith("[]")) {
+            name = name.substring(0,name.length()-2) + "Array";
+        }
+        // @todo Should check if an icon with this name already exists, and add a number until it's unique.
+
         System.out.println("[Desktop] Showing " + VisualJavaStatics.getSimpleClassName(object.getClass()) + " \"" + object + "\"");
         Variable anIcon = new Variable(this,name,object);
         // anIcon.setLocation(getWidth()/2,getHeight()/2);

@@ -13,6 +13,8 @@ import java.lang.reflect.Field;
 /** joey Nov 2, 2004 3:15:13 PM */
 public class VisualJavaGUIStatics {
 
+    static StatusBar statusBar = null;
+
     public static void addMenuBar(JFrame frame) {
         // public static void addMenuBar(JMenu myMenu) {
 
@@ -37,11 +39,16 @@ public class VisualJavaGUIStatics {
         menu.add(menuItem);
         menuBar.add(menu);
 
+        statusBar = new StatusBar();
+        frame.getContentPane().add(statusBar);
         menu = new ClassMenu("");
         buildClassMenu((ClassMenu)menu);
         menuBar.add(menu);
 
         frame.setJMenuBar(menuBar);
+        // One if not both needed:
+        frame.validate();
+        frame.repaint();
 
         /*
 
@@ -140,6 +147,9 @@ public class VisualJavaGUIStatics {
             // }
         }
         System.out.println("Class menu built.");
+        if (statusBar != null) {
+            statusBar.setStatus("Class menu built.");
+        }
         // A nice touch: starts to split/populate the menu in the background (because it is a slow operation!)
         // Strangely if I wrap the above population reading in this Thread, the menu still does not appear.
         new Thread() {
@@ -228,4 +238,14 @@ public class VisualJavaGUIStatics {
         menu.add(menuItem);
     }
 
+}
+
+class StatusBar extends JLabel {
+    public StatusBar() {
+        super();
+    }
+    public void setStatus(String newStatus) {
+        setText(newStatus);
+        // repaint();
+    }
 }

@@ -20,7 +20,9 @@ public class VisualJava {
         f.setSize(600,400);
         desktop = new Desktop(f);
         desktop.setSize(800,400);
-        f.setContentPane(desktop);
+        // f.setContentPane(desktop);
+        f.getContentPane().setLayout(new BoxLayout(f.getContentPane(),BoxLayout.Y_AXIS));
+        f.getContentPane().add(desktop);
         f.setVisible(true);
         desktop.showObject("Hello");
         desktop.showObject(f);

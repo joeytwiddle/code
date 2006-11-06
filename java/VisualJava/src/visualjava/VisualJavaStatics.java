@@ -59,6 +59,9 @@ public class VisualJavaStatics {
                         jarOrDir = classPath;
                         classPath = "";
                     }
+                    if (VisualJavaGUIStatics.statusBar != null) {
+                        VisualJavaGUIStatics.statusBar.setStatus("Parsing class names from "  + jarOrDir + " (" + classPath.split(":").length + " remaining on classpath) ...");
+                    }
                     String command;
                     File jarOrDirFile = new File(jarOrDir);
                     if (jarOrDirFile.isFile() && jarOrDirFile.getName().endsWith(".jar")) {

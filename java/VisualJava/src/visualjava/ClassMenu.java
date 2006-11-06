@@ -8,7 +8,8 @@ import java.util.Map;
 import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 
-/** joey Nov 2, 2004 1:18:49 AM */
+/** joey Nov 2, 2004 1:18:49 AM
+ * @todo Should rename this to PackageMenu */
 public class ClassMenu extends SplittingJMenu {
 
     final static ImageIcon packageIcon = new ImageIcon("/usr/share/pixmaps/gnome-default-dlg.png");
