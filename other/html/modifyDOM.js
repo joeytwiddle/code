@@ -1,3 +1,5 @@
+// TODO: I think we need to do new Image() or something.  In some (all?) browsers, the image gets re-requested on every mouseover!
+
 // TODO: make all open/close "buttons" links so that text-only browsers will let user focus!
 
 // Works for Mozilla
@@ -128,6 +130,51 @@ var rollup_image_mouseover = "http://hwi.ath.cx/images/minus-over.png";
 var unroll_image = "http://hwi.ath.cx/images/plus.png";
 var unroll_image_mouseover = "http://hwi.ath.cx/images/plus-over.png";
 
+
+
+//// Entry-level methods (call these)
+
+function addFoldsToBlockQuotes() { // TODO: also add the automatic clear on focus if default which are currently hard-wired. BUT ALSO: fork and retain link to non-javascript jumpgate
+	// return;
+	// plan (yuk!): re-start the list each time; and find the last one done (by id), then do the next, then loop!
+	// searchDomAndDo(window.document.body,top.isATextField,top.addClearButton);
+	// alert("" + nodes);
+	// for (node in nodes) {
+	// var lastId = null;
+	// while (true) {
+	// var nodes = window.document.body.getElementsByTagName("BLOCKQUOTE");
+	// var tagTypes = [ "ul", "blockquote" ];
+	var tagTypes = new Array( "ul", "blockquote" );
+	addFoldsToPage(tagTypes,true);
+}
+
+function addFoldsToPage(tagTypes,startClosed) {
+	for (var t in tagTypes ) {
+		var nodes = window.document.body.getElementsByTagName(tagTypes[t]);
+		debugData += tagTypes[t] + ": " + nodes.length + "\n";
+		for (var i=0;i<nodes.length;i++) {
+			//// TODO: This try/catch used to exist!
+			// try {
+			var node = nodes[i];
+			// if (node.type == "ul" || node.type == "blockquote") {
+				// alert("" + node);
+				try {
+					addFoldToBlockQuoteState(node,startClosed);
+				} catch (e) {
+					// ERROR
+					// alert("" + e);
+				}
+				if (i>999) { break; }
+				nodes = window.document.body.getElementsByTagName(tagTypes[t]);
+			// } catch (e) {
+				// debugData += "ERROR: " + e + "\n";
+			// }
+		}
+	}
+	// alert(debugData);
+}
+
+// Unused?
 function addFoldToBlockQuote(elemToFold) {
 	addFoldToBlockQuoteState(elemToFold,true);
 }
@@ -139,10 +186,14 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	var foldId = getUniqueId();
 	elemToFold.id = foldId + "Block";
 	// }
+
+	// Create the image element which displays the handle/toggle state:
 	var imgElem = document.createElement("IMG");
 	imgElem.setAttribute("src",rollup_image);
 	imgElem.id = foldId + "Image";
 	// alert("imgElem = " + imgElem);
+
+	//// Create a clickable span object to wrap the image:
 	var handleElem = document.createElement("SPAN");
 	handleElem.id = foldId + "Handle";
 
@@ -170,16 +221,25 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 
 	handleElem.style.cursor = "n-resize";
 
+	//// Wait; we are going to move the node, to put the handle in a suitable place.
+	//// This is a hack heuristic which served my purposes with blockQuotes:
 	// var labelElem = elemToFold.previousSibling;
 	var labelElem = findPreviousTextNode(elemToFold);
 	// try { labelElem = elemToFold.previousSibling.previousSibling.previousSibling.firstChild;
 	// labelElem = elemToFold.previousSibling.previousSibling.previousSibling.firstChild;
 	// showData("labelElem",labelElem);
+	// Although designed to do the opposite, this avoids folding some of the dodgy parts of the page for which a suitable label is not found.
+	// if (trim("" + labelElem.innerHTML) != "") {
+		// return;
+	// }
 	showData("parent",labelElem.parentNode);
 	// } catch (e) { }
 	// if (!labelElem) {
 		// labelElem = elemToFold.previousSibling;
 	// }
+
+	//// OK, now we add the new elements to the DOM:
+	// TODO: if labelElem is already a link, we should put the +/- image before the link (at the moment, it becomes part of it!)
 	// TODO: optionally, make labelElem a clickable link for folding/unfolding
 	if (labelElem) {
 		labelElem.parentNode.insertBefore(handleElem,labelElem);
@@ -212,50 +272,15 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 		elemToFold.parentNode.replaceChild(newElemToFold,elemToFold);
 		newElemToFold.id = foldId + "Block";
 	}
+
 	if (startClosed)
 		toggleFoldNamed(foldId);
 	// Ouch! alert("" + newElemToFold.innerHTML);
 }
 
-function addFoldsToBlockQuotes() { // TODO: also add the automatic clear on focus if default which are currently hard-wired. BUT ALSO: fork and retain link to non-javascript jumpgate
-	// return;
-	// plan (yuk!): re-start the list each time; and find the last one done (by id), then do the next, then loop!
-	// searchDomAndDo(window.document.body,top.isATextField,top.addClearButton);
-	// alert("" + nodes);
-	// for (node in nodes) {
-	// var lastId = null;
-	// while (true) {
-	// var nodes = window.document.body.getElementsByTagName("BLOCKQUOTE");
-	// var tagTypes = [ "ul", "blockquote" ];
-	var tagTypes = new Array( "ul", "blockquote" );
-	addFoldsToPage(tagTypes,true);
-}
+//// END Entry-level methods (call these)
 
-function addFoldsToPage(tagTypes,startClosed) {
-	for (var t in tagTypes ) {
-		var nodes = window.document.body.getElementsByTagName(tagTypes[t]);
-		debugData += tagTypes[t] + ": " + nodes.length + "\n";
-		for (var i=0;i<nodes.length;i++) {
-			//// TODO: This try/catch used to exist!
-			// try {
-			var node = nodes[i];
-			// if (node.type == "ul" || node.type == "blockquote") {
-				// alert("" + node);
-				// try {
-					addFoldToBlockQuoteState(node,startClosed);
-				// } catch (e) {
-					// ERROR
-					// alert("" + e);
-				// }
-				if (i>999) { break; }
-				nodes = window.document.body.getElementsByTagName(tagTypes[t]);
-			// } catch (e) {
-				// debugData += "ERROR: " + e + "\n";
-			// }
-		}
-	}
-	// alert(debugData);
-}
+
 
 // Works for Mozilla, Konqueror, Firebird, Galeon
 // BUGS: Konqueror sometimes doesn't toggle if mouse hasn't moved off and on since last click.
