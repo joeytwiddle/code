@@ -1,0 +1,51 @@
+<p>
+	This is a copy of <a href="http://programmer-art.org/dict">http://programmer-art.org/dict</a>
+</p>
+<h1>Dict.py</h1>
+<h3 style="font-style: italic; font-size: 80%; text-indent: 10%">XChat Scipt by Jens Taylor</h3>
+<h2>About</h2>
+<p>
+	This script allows <a href="http://xchat.org">XChat</a> to lookup word's definitions via <a href="http://dictionary.com">http://dictionary.com</a>. If successful, the definition is printed for everyone in the channel to see. Red error messages are printed if anything does not work, indicating the problem.
+</p>
+<h2>Download and Installation</h2>
+<p>
+	Download the lasted release, 0.3. <a href="http://programmer-art.org/files/xchat/dict.tar.bz2">Download now!</a>
+</p>
+<p>
+	To install, simply extract the file to any directory. If extracted to your ".xchat2/" directory, the script will load when XChat starts. Otherwise, you'll have to start it yourself.
+</p>
+<p class="code">
+tar -xjf dict.tar.bz2<br/>
+<span style="font-style: italic">Optionally, also move it to your ".xchat2/" directory.</span><br/>
+mv dict.py ~/.xchat2/
+</p>
+<h2>Usage</h2>
+<p>
+	First, the script needs to be loaded into XChat. This can be done in two ways: you can either restart XChat (with the dict.py file in the ".xchat2/" directory), or you can load it manually.
+</p>
+<p class="code">
+<span style="font-style: italic">In any XChat tab, simply type the following command</span><br/>
+/load <span style="font-style: italic">path/to/</span>dict.py<br/>
+<span style="font-style: italic">If you want to unload this module, simply type</span><br/>
+/unload dict.py
+</p>
+<p>
+	Note: "path/to/" is only necessary if the file is not in either your home directory or the ".xchat2/" directory.
+</p>
+<p>
+	Once loaded, the script can be used by typing "!define keyword". An example follows.
+</p>
+<p class="code">
+&lt;jens&gt; !define moo<br/>
+&lt;jens&gt; -<span style="color: #00EE00">moo</span>-<br/>
+&lt;jens&gt; n : the sound made by a cow or bull v : make a low noise, characteristic of bovines
+</p>
+<h2>Notes and Known Issues</h2>
+<p>
+	<ul>
+		<li>There is a sixty second timeout between each query to avoid abuse. It can easily be changed with the "/dict time &lt;x&gt;" command, where "x" is a time in seconds.</li>
+		<li><span style="color: #FF0000">*FIXED* </span><span style="text-decoration:line-through">XChat hangs for ~1-3 seconds while executing this script. This is because XChat does not continue to work while a script is running. The reason it takes this long is because the connection to download the source may take several seconds to establish. This issue will be worked out in the next release.</span></li>
+		<li><span style="color: #FF0000">*FIXED* </span><span style="text-decoration:line-through">When you use the script and query for a definition, the definition is printed to the channel before your original query, making it look very awkward. This will also be fixed in the next release.</span></li>
+		<li>This script was written and tested with <a href="http://xchat.org">XChat 2.4.1</a>. With some tweaking, it could be changed to work with any program.</li>
+	</ul>
+</p>

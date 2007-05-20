@@ -1,0 +1,9 @@
+if contains "$NICK" altgamer
+then exit 0
+fi
+
+[ "$1" ] && EXTRA=" $*"
+
+VERB="`filename "$0"`"s
+
+echo "/me $VERB$EXTRA!"

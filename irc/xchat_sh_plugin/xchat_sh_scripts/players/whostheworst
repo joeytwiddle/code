@@ -1,0 +1,8 @@
+# echo "$NICK"
+
+LAST_CALLER=`cat /tmp/whostheworst.last_caller`
+[ "$LAST_CALLER" = "" ] && LAST_CALLER="$NICK"
+
+echo "$NICK" > /tmp/whostheworst.last_caller
+
+echo "$LAST_CALLER"

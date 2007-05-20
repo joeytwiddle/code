@@ -1,0 +1,27 @@
+. irc.shlib
+. eventarr/eventarr.shlib
+
+## similar code to events, should be refactored:
+if [ "$2" ]
+then
+	export OUTPUT_TIMEZONE=`echo "$2" | touppercase | sed 's+[^[:alpha:][:digit:]]++g'`
+	if ! endswith "$OUTPUT_TIMEZONE" "T"
+	then output_error "Is \"$OUTPUT_TIMEZONE\" really a timezone?" | notice
+	fi
+fi
+
+if [ ! "$1" ]
+then echo "$COLDOCS""To see the details of an event, type: !event <event_number>""$COLRESET"
+else
+
+	$EVENTARR showevent "$1"
+	$EVENTARR listdates "$1"
+
+	if [ ! "$FINALISED" ] ## TODO: <-- pseudo code FINALISED not implemented!
+	then
+		# output_help "To suggest a new time for this event, use !addtime $1 <date+time>"
+		output_help "You can suggest a time like this: !addtime $1 tomorrow 6pm BST"
+		output_help "To register that a time is suitable for you, use !approve <event_num> <date_num>"
+	fi
+
+fi | notice

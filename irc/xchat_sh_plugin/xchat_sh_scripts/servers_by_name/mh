@@ -1,0 +1,5 @@
+# ./utp 213.230.209.203:7722 ## Truff now dead
+# ./utp "$@" 85.14.217.108
+
+[ "$1" ] && export NUMRESULTS="$1"
+ut_servers/searchserv MonsterHunt | grep -v "[^0-9]0/"

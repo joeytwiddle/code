@@ -1,0 +1,82 @@
+## Was aliased as top10, but this conflicted with ABot in #speedpug
+
+. irc.shlib
+
+## Now aka top10
+
+DATA_DIR="/home/utquery/utquery/data/"
+
+## refactor splitting to the library?
+
+if [ "$1" = "-fast-ips" ]
+then
+
+	## List all servers which were popultaed in the last scan:
+
+	find "$DATA_DIR" -name "*.players" |
+	afterlast / |
+	beforelast "\.players"
+	# grep . *.info | sed 's+:[^:]*:+\0 +' |  sort -n -k 2 |
+	# tail -n "$NUM"
+
+	# withalldo ./utp
+
+elif [ "$1" = -real ]
+then
+
+	shift
+
+	# (
+		# ./wh
+		# ./xol
+		# ./ec
+		# ./dc3
+		# # ./tits
+		# ./inz
+		# ./focr
+		# ./dutchnet
+		# ./truff
+		# ./boomtown
+		# ./insta
+		# ./ws
+		# ./utp `'ls' -Sr /home/utquery/utquery/data/ | grep .players"$" | tail -n 10 | sedreplace ".players" ""`
+		# (
+	# ) |
+
+	[ "$NUM" ] || NUM=10
+
+	[ "$1" ] && NUM="$1"
+
+	## Actually it would be better if the individual scripts we call each memo-ed themselves.
+	"$0" -fast-ips "$@" |
+
+	while read IP
+	do
+		cat "$DATA_DIR"/"$IP".info | prepend_each_line "$IP "
+	done |
+
+	grep -v " TO-" |
+	sort -n -k 2 -r |
+	head -n "$NUM"
+
+	# if [ "$1" = -real ]
+	# then
+		# beforefirst ".info" |
+		# withalldo ./utp
+	# else cat
+	# fi |
+
+else
+
+	memo -t "3 minutes" "$0" -real "$@" |
+	# columnise-clever -only "[^ ]* *[^ ]* *[^ ]* *[^ ]* *[^ ]*" |
+	columnise-clever -only "[^ ]* *[^ ]* *[^ ]*" |
+
+	# grep --line-buffered -v "0/" |
+	# grep -v "no response" |
+	# grep -v "\<DOWN\>" |
+	# sort -n -k 2 -r |
+	notice
+	# cat
+
+fi

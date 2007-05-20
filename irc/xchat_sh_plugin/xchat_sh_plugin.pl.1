@@ -1,0 +1,53 @@
+package IRC::Xchat::XChatShPlugin;
+
+IRC::register("xchat sh plugin", "0.1", "", "");
+
+$xchat_sh_exec = "/home/joey/j/code/other/irc/xchat/xchat_sh_handler.sh";
+
+$locked = 0;
+
+sub xchat_sh_plugin_handler {
+
+	my $line = $_[2];
+	my @temp = split /\ /, $line;
+	my $cmd  = @temp[0];
+	my $rest = join(" ", @temp[1..$#temp]);
+
+	# Xchat::print "line=$line";
+	# Xchat::print "cmd=$cmd rest=$rest";
+
+	if ($locked) {
+		return 0;
+		# Xchat::print "sorry i cannot i am busy"
+	}
+
+	if (( $cmd =~ /^[!.@-><]/ && !$locked )) {
+		$locked = 1;
+		$cmd =~ s/^.//;
+		# open SPOOLER, "sh $xchat_sh_exec $line |"
+		# open(SPOOLER, "sh $xchat_sh_exec $line |")
+		# # open SPOOLER, "sh \$xchat_sh_exec \$line |"
+		# open SPOOLER, "<", "sh", "$xchat_sh_exec", "$line", "|"
+		# open(SPOOLER, '-|', "sh", "$xchat_sh_exec", "$line")
+		open(SPOOLER, '-|', "sh", "$xchat_sh_exec", "$cmd", "$rest")
+		or print "open failed: $!\n";
+		while (<SPOOLER>) {
+			s/\n//g;      # Strip newline
+			IRC::command ("/say $_");
+			sleep 1; ## avoid flooding
+		}
+		close SPOOLER or print "close failed: $! $?\n";
+		$locked = 0;
+	}
+
+	return 0;
+}
+
+# IRC::add_command_handler("shscript", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+# IRC::add_message_handler("PRIVMSG", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Channel Msg Hilight", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Channel Message", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Private Message to Dialog", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Your Message", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+
+IRC::print('Loaded XChat sh plugin.');

@@ -1,0 +1,141 @@
+if [ "$CHANNEL" = "#xoldog" ]
+then
+	echo "Spam in #wordgame ;)"
+	exit 0
+fi
+
+. irc.shlib
+. irccols.shlib
+
+. wordgame/wordgame.shlib
+
+[ "$NICK" ] || NICK=nogginb0t
+
+remove_letter () {
+	LETTER_TO_REMOVE="$1"
+	NEW_LETTERS=""
+	DONE_REMOVE_ALREADY=
+	for L in $REMAINING_LETTERS
+	do
+		if [ ! "$DONE_REMOVE_ALREADY" ] && [ "$L" = "$LETTER_TO_REMOVE" ]
+		then DONE_REMOVE_ALREADY=true
+		else NEW_LETTERS="$NEW_LETTERS$L "
+		fi
+	done
+	# echo "$REMAINING_LETTERS - $LETTER_TO_REMOVE = $NEW_LETTERS"
+	REMAINING_LETTERS="$NEW_LETTERS"
+	[ "$DONE_REMOVE_ALREADY" ]
+}
+
+## First check that the guess can be made from the letters
+ALL_LETTERS=`cat "$LETTERS_FILE" | tr '\n' ' '`
+
+# GOT_ONE=
+FOUND_WORDS=""
+SCORE_SUM=""
+
+for WORD
+do
+
+	THIS_WORD_FAILED=
+
+	NUM_LETTERS=`echo -n "$WORD" | wc -m`
+	if [ "$NUM_LETTERS" -lt 4 ]
+	then
+		echo "I will only accept words of 4 or more letters."
+		THIS_WORD_FAILED=not_enough_letters
+	fi
+
+	WORD_SPACED=`echo "$WORD" | tolowercase | sed 's+.+\0 +g'`
+
+	REMAINING_LETTERS="$ALL_LETTERS"
+
+	for LETTER in $WORD_SPACED
+	do
+
+		if ! remove_letter "$LETTER"
+		then
+			# echo "There is no $LETTER (or not enough) in the letterset $ALL_LETTERS"":P"
+			# echo "$COLRED""There is no '$COLYELLOW$LETTER$COLRED' (or not enough) in $COLYELLOW$ALL_LETTERS$COLRED""for $COLYELLOW$WORD$COLRED :P"
+			echo "$COLRED""There are not enough '$COLYELLOW$LETTER$COLRED's in $COLYELLOW$ALL_LETTERS$COLRED""for $COLYELLOW$WORD$COLRED :P"
+			THIS_WORD_FAILED=wrong_letters
+			break ## To save spamming, don't check any more letters
+		fi
+
+	done
+
+	## Next check whether the word has already been guessed:
+	if [ ! "$THIS_WORD_FAILED" ]
+	then
+		if grep -i "^$WORD was already guessed by " "$GUESSED_FILE"
+		then THIS_WORD_FAILED=already_guessed
+		fi
+	fi
+
+	if [ ! "$THIS_WORD_FAILED" ]
+	then
+
+		## Check to see if the word exists!
+
+		DICT_RESULT=` dict -d wn "$WORD" `
+
+		# echo "dict -d wn \"$WORD\" returned error-code $?" >&2
+
+		if ! echo "$DICT_RESULT" | head -n 1 | grep "^No definition" >/dev/null
+		then
+			SHORT_DEFINITION=` echo "$DICT_RESULT" | takeline 6 | beforefirst ";" | sed 's+^[ 	]*++' `
+			# [ "$THIS_WORD_FAILED" ] && EXTRA= || EXTRA=" $COLGREY($NICK gets $COLGREEN$POINTS_FOR_WORD$COLGREY points!)"
+			FOUND_WORDS="$FOUND_WORDS$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD$SHORT_DEFINITION$COLRESET$EXTRA " # ($COLGREY!dict $WORD for more)"
+			# GOT_ONE=true
+			## THIS_WORD_FAILED == "" and TOSHOW definitely has something
+		else
+			## Mmmm maybe it's not in the dictionary, but is still a word
+			# if grep -i "^$WORD\$" $DICTIONARY_FILES >/dev/null
+			# if cat $DICTIONARY_FILES | extract_legal_words | grep -i "^$WORD$" >/dev/null
+			if list_answers | grep -i "^$WORD$" >/dev/null
+			then
+				FOUND_WORDS="$FOUND_WORDS$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD[No definition]$COLRESET "
+				# GOT_ONE=true
+				## THIS_WORD_FAILED == "" and TOSHOW definitely has something
+			else
+				# FOUND_WORDS="$FOUND_WORDS""Sorry, I don't have \"$WORD\" in my dictionary. "
+				echo "Sorry, I don't have \"$WORD\" in my dictionary." ## or allowed list
+				THIS_WORD_FAILED=not_a_word
+			fi
+		fi
+
+		if [ ! "$THIS_WORD_FAILED" ]
+		then
+			POINTS_FOR_WORD=$((NUM_LETTERS-3))
+			# echo "$COLGREEN$POINTS_FOR_WORD$COLGREY points for $COLRED$WORD$COLGREY: $COLBLUE$COLBOLD$SHORT_DEFINITION$COLGREY"
+			increase_score "$NICK" "$POINTS_FOR_WORD"
+			# echo "$COLGREY$NICK gets $COLGREEN$SCORE_TO_ADD$COLGREY points, for a total of $COLGREEN$CURRENT_SCORE$COLGREY!"
+			echo "$WORD was already guessed by $NICK :P" | tolowercase >> "$GUESSED_FILE"
+			# now done by increase_score: CURRENT_SCORE=$((CURRENT_SCORE+SCORE_TO_ADD))
+			SCORE_SUM="$SCORE_SUM $COLGREY+$COLGREEN$SCORE_TO_ADD"
+		fi
+
+	fi
+
+done
+
+if [ "$FOUND_WORDS" ]
+then
+
+	SO_FAR=`cat "$GUESSED_FILE" | wc -l`
+	# TOTAL=`./answers --force-list | wc -l`
+	TOTAL=`list_answers | wc -l`
+
+	if [ $((TOTAL-SO_FAR)) -lt 10 ]
+	then
+		# BONUS=$(((10-TOTAL+SO_FAR)*10))
+		BONUS=$(((10-TOTAL+SO_FAR)))
+		increase_score "$NICK" "$BONUS"
+		# now done by increase_score: CURRENT_SCORE=$((CURRENT_SCORE+BONUS))
+		SCORE_SUM="$SCORE_SUM $COLGREY+$COLYELLOW""bonus $BONUS"
+	fi
+
+	echo "$COLGREY($SO_FAR/$TOTAL) $FOUND_WORDS$COLPINK$NICK$COLGREY$SCORE_SUM $COLGREY=> $COLGREEN$CURRENT_SCORE$COLGREY!"
+
+fi
+

@@ -1,0 +1,11 @@
+list () {
+cat << !
+<kK^> get the bong out and UT untill u dropp imo
+<kK^szZ> when i rox i realy rox <kK^szZ> but when i sux <kK^szZ> i suxx
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

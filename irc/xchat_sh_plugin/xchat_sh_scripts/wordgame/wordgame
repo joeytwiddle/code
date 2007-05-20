@@ -1,0 +1,40 @@
+. irc.shlib
+. irccols.shlib
+
+. wordgame/wordgame.shlib
+
+# START_NEW_GAME=true
+
+randomvowel () {
+	echolines a e i o u | chooserandomline
+}
+
+randomconsonant () {
+	echolines b c d f g h j k l m n p q r s t v w x y z | chooserandomline
+}
+
+if [ "$1" = new ] || [ "$START_NEW_GAME" ]
+then make_new_letterset "$2"
+fi
+
+# else
+	# AGE_SECONDS=`datediff -secs -file "$LETTERS_FILE"`
+	# if [ "$AGE_SECONDS" -gt 60 ]
+	# then
+# 
+		# else : # echo "Type \"!wordgame new\" for a new set of letters."
+		# fi
+# 
+	# elif [ "$1" = new ] || [ "$START_NEW_GAME" ]
+	# then
+		# SECONDS_LEFT=$((60-AGE_SECONDS))
+		# echo "You cannot start a new round for another $SECONDS_LEFT seconds."
+	# fi
+
+LETTERS=`( cat "$LETTERS_FILE" | tr '\n' ' ' ; echo )`
+
+# NUM_ANSWERS=` ./answers --force-list | wc -l `
+NUM_ANSWERS=` list_answers | wc -l `
+# echo "Make words from the following letters: $COLYELLOW$LETTERS$COLGREY(!guess <word>)"
+echo "Guess the $NUM_ANSWERS words you can make from: $COLYELLOW$LETTERS$COLGREY(!guess <word>)"
+

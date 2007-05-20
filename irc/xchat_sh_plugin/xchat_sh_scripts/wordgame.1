@@ -1,0 +1,66 @@
+. irc.shlib
+. irccols.shlib
+
+ALWAYS_NEW_GAME=true
+
+LETTERS_FILE=/tmp/letters
+
+randomvowel () {
+	echolines a e i o u | chooserandomline
+}
+
+randomconsonant () {
+	echolines b c d f g h j k l m n p q r s t v w x y z | chooserandomline
+}
+
+make_new_letterset () {
+
+		## Random:
+		# (
+			# for X in `seq 1 5`
+			# do randomconsonant
+			# done
+			# for X in `seq 1 3`
+			# do randomvowel
+			# done
+			# ( randomvowel ; randomconsonant ) | chooserandomline
+		# ) | randomorder |
+
+		## From a real nine-letter word:
+		grep "^.........$" /usr/share/dict/words |
+		grep -v "^[A-Z]" |
+		grep -v "'" |
+		chooserandomline |
+		sed 's+.+\0 +g' | tr ' ' '\n' | grep -v "^$" | randomorder | tr '\n' ' ' |
+
+		cat > "$LETTERS_FILE"
+
+		printf "" > /tmp/guessed_words.list
+
+}
+
+if [ ! -f "$LETTERS_FILE" ]
+then make_new_letterset
+fi
+
+AGE_SECONDS=`datediff -secs -file "$LETTERS_FILE"`
+if [ "$AGE_SECONDS" -gt 60 ]
+then
+
+	if [ "$1" = new ] || [ "$ALWAYS_NEW_GAME" ]
+	then make_new_letterset
+	else echo "Type \"!wordgame new\" for a new set of letters."
+	fi
+
+elif [ "$1" = new ] || [ "$ALWAYS_NEW_GAME" ]
+then
+	SECONDS_LEFT=$((60-AGE_SECONDS))
+	echo "You cannot start a new round for another $SECONDS_LEFT seconds."
+fi
+
+LETTERS=`( cat "$LETTERS_FILE" | tr '\n' ' ' ; echo )`
+
+NUM_ANSWERS=` ./answers --force-list | wc -l `
+# echo "Make words from the following letters: $COLYELLOW$LETTERS$COLGREY(!guess <word>)"
+echo "Guess the $NUM_ANSWERS words you can make from: $COLYELLOW$LETTERS$COLGREY(!guess <word>)"
+

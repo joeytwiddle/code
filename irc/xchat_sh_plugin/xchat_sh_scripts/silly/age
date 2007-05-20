@@ -1,0 +1,2 @@
+NUMYEARS=`seq 2 20 | randomorder  | head -n 1`
+echo "$1 has been aged by $NUMYEARS years."

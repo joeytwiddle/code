@@ -1,0 +1,24 @@
+Dict.py README
+
+Commandlist:
+
+/dict on 		Turns on the dictionary
+/dict off		Turns off the dictionary
+/dict time x	Changes the timeout period to "x" seconds
+
+-----------------------------------------
+
+Usage:
+
+!define <word>	Prints the definition for that given word
+
+-----------------------------------------
+
+Errors (when a definition isn't returned):
+
+"Errors" occur when:
+	-No word is listed to be defined
+	-A connection to dictionary.com cannot be established
+	-No description is found
+
+Errors all take the form: "Sorry, " and then the error.

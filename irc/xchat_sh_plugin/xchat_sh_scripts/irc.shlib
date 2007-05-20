@@ -1,0 +1,50 @@
+notice () {
+
+	if [ "$CHANNEL" = "#whereisbot" ] || [ "$CHANNEL" = "#utb0t" ] || [ ! "$NICK" ]
+	then NOTICE_COMMAND="" ## forced for those channels, or outside of IRC
+	elif [ "$NOTICE_STYLE" = none ]
+	then NOTICE_COMMAND=""
+	elif [ "$NOTICE_STYLE" = notice ]
+	then NOTICE_COMMAND="/notice $NICK "
+	elif [ "$NOTICE_STYLE" = msg ]
+	then NOTICE_COMMAND="/msg $NICK "
+	else NOTICE_COMMAND="/msg $NICK " ## default
+	fi
+
+	## With parameters, sends the string to the user with a /notice
+	## Without parameters, sends the standard input to the user in a /notice
+	if [ "$*" ]
+	then echo "$*"
+	else cat
+	fi |
+
+	if [ "$NOTICE_COMMAND" ] ## msg or notice
+	then
+		sed "s+^[^/]+$NOTICE_COMMAND\0+"
+	else
+		# sed 's+^/[^/]+/\0+' ## destroys any existing notices/msgs (or in fact /me's :P )
+		cat ## Well since we are catting, we can actually just use the sed every time, with NOTICE_COMMAND=""
+	fi
+
+	# |
+	# dog ## Will this make it easier for me to separate overlapping I/O from utb0t?  No it didn't.
+}
+
+rainbow () {
+        # printf "%s" "$COLBOLD"
+        # COLNUM=1
+        # COLNUM=`seq -w 2 14 | randomorder | head -n 1`
+        # COLNUM=$(($$%13+1))
+        COLNUM=$((`date +"%s"`/5%12+2))
+        echo "$*" | # sed 's+.+\0\
+#+g' |
+        while IFS="" read -n 1 CHAR
+        do
+                # COLNUM=`seq -w 2 14 | randomorder | head -n 1`
+                [ "$COLNUM" -gt 14 ] && COLNUM=2
+                COL=""$COLNUM",99"
+                COLNUM=$(($COLNUM+1))
+                printf "%s" "$COL$COLBOLD$CHAR"
+        done
+        printf "%s\n" "$COLRESET"
+}

@@ -1,0 +1,18 @@
+. eventarr/eventarr.shlib
+
+## incognito asked me to disable the events script in #ut
+if [ "$CHANNEL" = "#ut" ] || [ "$CHANNEL" = "#UT" ]
+then exit 0
+fi
+
+if [ "$1" ]
+then
+	export OUTPUT_TIMEZONE=`echo "$1" | touppercase | sed 's+[^[:alpha:][:digit:]]++g'`
+	if ! endswith "$OUTPUT_TIMEZONE" "T"
+	then output_error "Is \"$OUTPUT_TIMEZONE\" really a timezone?" | notice
+	fi
+fi
+
+$EVENTARR listevents | notice
+output_help "To see proposed times for an event, type: !event <event_number>" | notice
+output_help "To create a new event, use: !newevent" | notice

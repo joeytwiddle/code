@@ -1,0 +1,17 @@
+list () {
+cat << !
+Beer!
+Weed!
+Beer!
+Weed!
+Beer!
+Weed!
+Boobs!
+Girls!
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

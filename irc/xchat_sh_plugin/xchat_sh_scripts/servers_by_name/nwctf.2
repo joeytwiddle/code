@@ -1,0 +1,14 @@
+export NOTICE_STYLE="none"
+
+# export NOPLAYERS=true
+
+(
+for SERVER in tacsu tits zoo pmp pwa f0x nogginzp smo relax bmb xol ffa focr terror dk fraggerspub be 85.236.100.43 82.192.78.54:7000 ## Multiplay CTF and -ev!L~eLves-
+do [ -x ./ut_servers/"$SERVER" ] && ./ut_servers/"$SERVER" "$@" || ./utp "$@" "$SERVER"
+done
+) |
+grep --line-buffered -v " 0/" |
+grep --line-buffered -v "\(DOWN\|no response\)" |
+# sort -n -r -k 2 | ## Not working for 10+
+# grep . || echo "None of the servers are populated right now.  Try !xol !ffa !focr or !terror :P"
+grep --line-buffered . || echo "No nwCTF servers have players right now.  (If I missed any, please PM me!)"

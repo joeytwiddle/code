@@ -1,0 +1,3 @@
+# ./utp "$@" 213.8.254.41
+# ./utp "$@" 80.179.149.101 # pug server from #ut.israel: #Multiplayer.ut UT Server by #Multi-Player
+./utp "$@" 213.8.254.34

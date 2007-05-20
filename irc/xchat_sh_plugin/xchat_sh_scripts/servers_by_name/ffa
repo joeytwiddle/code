@@ -1,0 +1,25 @@
+. irc.shlib
+
+(
+
+	##    inz             old friends
+	# ./utp "$@" 82.96.91.3:6100 82.96.91.13:6200
+	./ut_servers/inz "$@"
+	./ut_servers/of "$@"
+
+	## [-u-]
+	# ./utp "$@" 213.202.195.43:7777 # 82.96.91.7:6200
+	# ./utp "$@" 85.14.224.120
+	./ut_servers/u "$@"
+
+	## House of Honks:
+	# ./utp "$@" 85.14.236.47
+
+	## Fallen souls
+	# ./utp "$@" unreal://213.160.3.8:7800
+
+	# ./dnf2 "$@"
+
+) |
+
+notice

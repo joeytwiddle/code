@@ -1,0 +1,16 @@
+list () {
+cat << !
+F0X|Xena is a blonde genius!
+F0X|Xena is a blonde genius :-o
+F0X|Xena is as mad as trees!
+<xena\`UT> why can't everybody be not lame and play UT happily ever after
+Xena is a good liar.
+<xena\`> I said list ffs!!!
+!
+# F0X|Xena is as mad as trees!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

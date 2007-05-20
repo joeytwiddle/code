@@ -1,0 +1,78 @@
+. irc.shlib
+. irccols.shlib
+
+## TODO: chanlog 50 causes utb0t to ping timeout
+
+(
+
+	LOGDIR="$HOME/.xchat2/xchatlogs"
+	# LOGDIR="$HOME/.xchat2.nogginBasher/xchatlogs" ## TODO: auto-find this from xchat vars?!
+
+	LINES=5
+	# if [ "$1" = -n ]
+	# then
+		# shift
+		[ "$1" ] && [ "`getnumber "$1"`" ] && LINES="`getnumber "$1"`" && shift
+	# fi
+	# [ "$LINES" -gt 10 ] && LINES=10 && echo "Max 10 lines sorry. :P"
+	if [ "$LINES" -gt 10 ]
+	then LINES=10 ; echo "Max 10 lines sorry. :P"
+	fi
+
+	[ "$1" ] && startswith "$1" "#" && CHANNEL="$1" && shift
+
+	if [ "$CHANNEL" ] && contains "$CHANNEL" "priv"
+	then
+		echo "Refusing to repeat log for private channel [$CHANNEL]."
+		exit 0
+	fi
+
+	if [ "$CHANNEL" ] && ! startswith "$CHANNEL" "#"
+	then
+		echo "Refusing to repeat log for private message [$CHANNEL]."
+		exit 0
+	fi
+
+	GREP_EXPR="$*" ## or empty if no remaining args :)
+
+	FILES="`
+		for NICENET in NETWORK QuakeNet
+		do
+			POSSFILE="$LOGDIR/$NICENET-$CHANNEL.log"
+			[ -f "$POSSFILE" ] && echo "$POSSFILE"
+		done |
+		sortfilesbydate
+	`"
+
+	# NETWORK="QuakeNet"
+	# NETWORK="NETWORK"
+	# LOGFILE="$LOGDIR/$NETWORK-$CHANNEL.log"
+	# OTHERLOGFILE="$LOGDIR/NETWORK-$CHANNEL.log"
+	# [ -f "$LOGFILE" ] && [ -f "$OTHERLOGFILE" ] && newer "$OTHERLOGFILE" "$LOGFILE" && LOGFILE="$OTHERLOGFILE"
+	# [ -f "$LOGFILE" ] || LOGFILE="$OTHERLOGFILE"
+
+	if [ ! "$FILES" ]
+	then echo "$COLYELLOW""Sorry, I couldn't find any suitable logfiles.$COLRESET" # the logfile $NETWORK-$CHANNEL.log"
+	else
+		# echo "From file `filename "$LOGFILE"`:"
+		# cat "$LOGFILE" |
+		# echo "Here is last of $CHANNEL :"
+		ALSO=
+		[ "$GREP_EXPR" ] && ALSO="matching \"$GREP_EXPR\""
+		echo "Here is last of $FILES $ALSO:"
+		echo "$FILES" | withalldo cat |
+		grep -v "\---" |
+		grep -v "<--" |
+		grep -v "\-->" |
+		if [ "$GREP_EXPR" ]
+		then
+			grep -i "$GREP_EXPR" | ## had no quotes before, but feared that might let people grep my files
+			sed " s+^+$COLGREY+ ; s$GREP_EXPR$COLYELLOW""\0""$COLGREYig "
+		else
+			cat
+		fi |
+		tail -n "$LINES"
+	fi
+
+) | notice
+

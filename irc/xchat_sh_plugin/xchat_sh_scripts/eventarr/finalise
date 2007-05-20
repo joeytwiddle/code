@@ -1,0 +1,13 @@
+. eventarr/eventarr.shlib
+
+EVENTNUM="$1"
+DATENUM="$2"
+
+if [ "$DATENUM" ] && [ "$EVENTNUM" ]
+then
+	$EVENTARR finalise "$EVENTNUM" "$DATENUM" &&
+	output_confirm "Event date finalised." ||
+	output_error "Sorry there was an error."
+else
+	output_help "If you created the event, you can confirm the most popular time using: !finalise <event_number> <final_date_number>"
+fi | notice

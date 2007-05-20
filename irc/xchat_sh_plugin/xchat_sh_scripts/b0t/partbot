@@ -1,0 +1,12 @@
+CHANNEL_TO_PART="$1"
+
+if [ ! "$CHANNEL_TO_PART" ]
+then
+	echo "Usage: !partbot <channel_to_leave> [ <reason> ]"
+elif ! echo "$CHANNEL_TO_PART" | grep "^#" >/dev/null
+then
+	echo "Channel name should start with #"
+else
+	if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
+	echo "/part $*"
+fi

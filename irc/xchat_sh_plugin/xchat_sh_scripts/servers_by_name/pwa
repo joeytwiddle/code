@@ -1,0 +1,11 @@
+# ./utp pwa.b3ta.org:27040
+# ./utp "$@" 82.96.113.45
+# echo "unreal://82.96.113.45?password=pwa"
+
+# RESULT=`./utp "$@" 82.96.113.45`
+# if echo "$RESULT" | grep "no response" >/dev/null
+# then echo "unreal://82.96.113.45?password=pwa"
+# else echo "$RESULT"
+# fi
+
+./ut_servers/pwapriv

@@ -1,0 +1,23 @@
+LOGFILE=`echolines /tmp/ut.out.* | tail -n 1`
+if [ "$LOGFILE" ]
+then
+	AGE=`datediff -secs -file "$LOGFILE"`
+	if [ "$AGE" -lt 1800 ] ## 30 minutes
+	# if [ "$AGE" -gt 0 ] ## for testing
+	then
+		echo -n "I am playing on: "
+		grep "LoadMap: " "$LOGFILE" |
+		tail -n 1 |
+		sed 's+/\([^?]*\).*+/ \1+ ; s+^LoadMap: +unreal://+' |
+		tr -d '\n'
+		echo -n " ("
+		datediff -file "$LOGFILE" | tr -d '\n'
+		echo -n ")"
+	else
+		echo -n "I haven't played UT for "
+		datediff -file "$LOGFILE" | tr -d '\n'
+		echo -n "."
+	fi
+else
+	echo "I haven't played UT since I last booted."
+fi

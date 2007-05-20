@@ -1,0 +1,28 @@
+. irc.shlib
+. irccols.shlib
+
+if [ ! "$NICK" ] ## why?!
+then
+rainbow "$@"
+exit
+fi
+
+
+
+# printf "%s" "$COLBOLD"
+# COLNUM=1
+# COLNUM=`seq -w 2 14 | randomorder | head -n 1`
+# COLNUM=$(($$%13+1))
+COLNUM=$(((`date +"%s"`/5%12)+2))
+echo "$*" | # sed 's+.+\0\
+#+g' |
+while IFS="" read -n 1 CHAR
+do
+	# COLNUM=`seq -w 2 14 | randomorder | head -n 1`
+	[ "$COLNUM" -gt 14 ] && COLNUM=2
+	COL=""$COLNUM",99"
+	COLNUM=$(($COLNUM+1))
+	# printf "%s" "$COL$CHAR"
+	printf "%s" "$COL$COLBOLD$CHAR"
+done
+printf "%s\n" "$COLRESET"

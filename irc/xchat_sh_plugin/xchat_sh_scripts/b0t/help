@@ -1,0 +1,16 @@
+# if [ "$CHANNEL" = "#noobpug" ]
+# then
+	# ./pugbot/help
+	# exit 0
+# fi
+
+if [ "$CHANNEL" = "#utportal" ] || [ "$CHANNEL" = "#utb0t" ]
+then
+
+	./commands
+
+else
+
+	./pugbot/help
+
+fi

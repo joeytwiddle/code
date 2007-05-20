@@ -1,0 +1,28 @@
+. selfmemo -t "60" - "$0" "$@"; shift
+
+. irc.shlib
+. irccols.shlib
+
+(
+	echo " "
+	# echo "$COLBROWN""Some tools to help you find UT players:""$COLRESET"
+	echo "$COLBROWN$COLBOLD""Some tools to help you find UT players:""$COLRESET"
+	echo " "
+	echo "!whereis Darth noob Hugh qoou"
+	./whereisb0t/whereis Darth noob Hugh
+	echo " "
+	echo "!lastseen lone_wolf raincheck"
+	./whereisb0t/lastseen lone_wolf raincheck
+	echo " "
+	# echo "!searchserv wharthog"
+	# ./searchserv wharthog
+	echo "!searchserv xol"
+	ut_servers/searchserv xol
+	echo " "
+	echo "!utp 82.96.91.7:6100"
+	./utp 82.96.91.7:6100
+	echo " "
+) | notice
+# while read LINE
+# do echo "$LINE"; sleep 10
+# done

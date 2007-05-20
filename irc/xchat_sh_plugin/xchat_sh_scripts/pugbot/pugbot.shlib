@@ -1,0 +1,273 @@
+# ## DONE: instead of this, make commands !startpugging and !endpugging (or !enablepugbot and !disablepugbot)
+# if [ "$CHANNEL" != "#noobpug" ] || endswith "$SERVER" quakenet.org
+# then exit 0
+# fi
+
+TOTAL_SPACES=10
+
+PUG_CHANNELS_FILE=/tmp/pug_channels.list
+CHANNELREGEXP=`toregexp "$CHANNEL"`
+
+[ -f "$PUG_CHANNELS_FILE" ] || touch "$PUG_CHANNELS_FILE" ## to avoid an error if the file does not yet exist
+
+## Do we allow this command to be run?
+
+if [ "$ALLOW_FROM_ANY_CHANNEL" ] || cat "$PUG_CHANNELS_FILE" | grep -i "^$CHANNELREGEXP$" >/dev/null
+then :
+else exit 0
+fi
+
+## OK we do not exit.
+
+. irccols.shlib
+
+TOPIC_HEADER="Welcome to noobpug, where even the b0t is a n00b!"
+
+NUMBER_OF_PLAYERS_NEEDED=10
+
+PLAYER_LIST_FILE=/tmp/pug@"$SERVER"."$CHANNEL".player_list
+LAST_FILE=/tmp/pug@"$SERVER"."$CHANNEL".last
+RED_TEAM_FILE=/tmp/pug@"$SERVER"."$CHANNEL".red_team
+BLUE_TEAM_FILE=/tmp/pug@"$SERVER"."$CHANNEL".blue_team
+
+reset () {
+	printf "" > "$PLAYER_LIST_FILE"
+	rm -f "$RED_TEAM_FILE" "$BLUE_TEAM_FILE"
+	update_topic
+	echo "Pug has been reset."
+}
+
+get_num_players () {
+	NUMBER_OF_PLAYERS=`cat "$PLAYER_LIST_FILE" | wc -l`
+}
+
+## Note atm this is a pretty list of the players, for user.  For a nice list to use in code, use the listfile.  :P
+list_players () {
+	get_num_players
+	echo "[$CHANNEL] $COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | sed 's+ $++' ` $COLBLUE]$COLNORM"
+}
+
+show_last () {
+	if [ -f "$LAST_FILE" ]
+	then
+		cat "$LAST_FILE" | tr '\n' ' '
+		TIME_AGO=`datediff -file "$LAST_FILE"`
+		echo "$COLNORM""- $COLGREEN$TIME_AGO ago$COLNORM"
+	fi
+}
+
+list_team () {
+	# if [ "$1" = RED ]
+	# then echo -n "$COLRED$COLBOLD""RED: " ; cat "$RED_TEAM_FILE"
+	# elif [ "$1" = BLUE ]
+	# then echo -n "$COLBLUE$COLBOLD""BLUE: " ; cat "$BLUE_TEAM_FILE"
+	# fi |
+	# tr '\n' ',' | sed 's+,$++'
+	# echo
+	TEAM="$1"
+	TEAM_FILE=`eval echo '$'"$TEAM"_TEAM_FILE`
+	TEAMCOL=`eval echo '$COL'"$TEAM"`
+	echo "$TEAMCOL$COLBOLD$TEAM$COLGREY: "` cat "$TEAM_FILE" | tr '\n' ' ' | sed 's+ $++' `"$COLBOLD"
+}
+
+update_topic () {
+	PLAYER_LIST=`list_players`
+	echo "/topic $TOPIC_HEADER $PLAYER_LIST"
+}
+
+players_still_needed () {
+	get_num_players
+	[ "$NUMBER_OF_PLAYERS" -lt "$NUMBER_OF_PLAYERS_NEEDED" ] && [ ! -f "$RED_TEAM_FILE" ] && [ ! -f "$BLUE_TEAM_FILE" ]
+}
+
+join () {
+	addplayer "$NICK"
+}
+
+addplayer () {
+	# NICK_TO_ADD="$1"
+	for NICK_TO_ADD
+	do
+		if in_pickup_list "$NICK_TO_ADD"
+		then echo "$NICK_TO_ADD is already in the pug!"
+		else
+			if players_still_needed
+			then
+				(
+					cat "$PLAYER_LIST_FILE"
+					echo "$NICK_TO_ADD"
+				) |
+				# removeduplicatelines | ## No longer needed since we check beforehand
+				dog "$PLAYER_LIST_FILE"
+				echo "$NICK_TO_ADD has joined the pug."
+				get_num_players
+				if [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ]
+				# then echo "The pug is full!  Choose two captains, and use !pick (take it in turns please 1-2-2-2-1)."
+				then echo "The pug has started!  Type !captain to be a captain."
+				fi
+			else echo "Sorry the pug is full, please wait until teams are picked, and the pug will reset."
+			fi
+		fi
+	done
+	update_topic
+}
+
+leave () {
+	removeplayer "$NICK"
+}
+
+removeplayer () {
+	if [ "$1" = -quiet ]
+	then QUIET=true ; shift
+	fi
+	# NICK_TO_REMOVE="$1"
+	for NICK_TO_REMOVE
+	do
+		if in_pickup_list "$NICK_TO_REMOVE"
+		then
+			NICK_TO_REMOVE_REGEXP=`toregexp "$NICK_TO_REMOVE"`
+			cat "$PLAYER_LIST_FILE" |
+			grep -i -v "^$NICK_TO_REMOVE_REGEXP$" |
+			dog "$PLAYER_LIST_FILE"
+			if [ "$QUIET" ]
+			then :
+			else echo "$NICK_TO_REMOVE has been removed from the pug."
+			fi
+		else
+			echo "$NICK_TO_REMOVE is not in the pug.  :P"
+		fi
+	done
+	update_topic
+}
+
+add_player_to_team () {
+	PLAYER="$1"
+	TEAM="$2"
+	# echo "$PLAYER has been picked by $NICK."
+	removeplayer -quiet "$PLAYER"
+	TEAM_FILE=`eval echo '$'"$TEAM"_TEAM_FILE`
+	echo "$PLAYER" >> "$TEAM_FILE"
+}
+
+pick () {
+	get_team_to_pick_next
+	who_is_captain_of "$TEAM"
+	if [ "$NICK" = "$CAPTAIN" ]
+	then
+		PLAYER="$1"
+		if in_pickup_list "$1"
+		then
+			add_player_to_team "$PLAYER" "$TEAM"
+			list_team "$TEAM"
+			please_pick
+		else
+			echo "$PLAYER cannot be picked!"
+		fi
+	else
+		echo "It is $CAPTAIN's turn to pick."
+	fi
+}
+
+in_pickup_list () {
+	REGEXP=`toregexp "$1"`
+	grep -i "^$REGEXP$" "$PLAYER_LIST_FILE" >/dev/null
+}
+
+get_team_to_pick_next () {
+	if [ ! -f "$RED_TEAM_FILE" ] || [ ! -f "$BLUE_TEAM_FILE" ]
+	then
+		echo "Nobody can pick until there are two captains."
+		TEAM="NOT_YET"
+	else
+		get_num_players
+		case "$NUMBER_OF_PLAYERS" in
+			8|5|4)
+				TEAM="RED"
+			;;
+			7|6|3|2)
+				TEAM="BLUE"
+			;;
+			1)
+				TEAM="AUTO_RED"
+			;;
+			*)
+				TEAM="ERROR"
+			;;
+		esac
+	fi
+}
+
+who_is_captain_of () {
+	TEAM="$1"
+	if [ "$TEAM" = RED ] || [ "$TEAM" = BLUE ]
+	then
+		CAPTAIN=`eval head -n 1 '$'"$TEAM"_TEAM_FILE`
+	fi
+}
+
+please_pick () {
+	# 8 players => red picks
+	# 7/6 players => blue picks
+	# 5/4 players => red picks
+	# 3/2 players => blue picks
+	# 1 players => automatic
+	get_team_to_pick_next
+	if [ "$TEAM" = AUTO_RED ]
+	then
+		add_player_to_team "`cat "$PLAYER_LIST_FILE"`" RED
+		echo "Pickup is complete.  Decide on a game and TS server, and go play.  Have fun!"
+		list_team RED
+		list_team BLUE
+		(
+			list_team RED
+			list_team BLUE
+		) > "$LAST_FILE"
+		reset
+	else
+		who_is_captain_of "$TEAM"
+		# list_team RED
+		# list_team BLUE
+		# list_players
+		echo "$CAPTAIN, please !pick a player."
+	fi
+}
+
+captain () {
+	## TODO: doesn't appear to check if #players is (was) enough yet :P
+	get_num_players
+	if [ ! -f "$RED_TEAM_FILE" ] && in_pickup_list "$NICK" && [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ]
+	then
+		removeplayer -quiet "$NICK"
+		echo "$NICK" >> "$RED_TEAM_FILE"
+		echo "$COLRESET$NICK is captain of the $COLRED$COLBOLD""RED""$COLRESET team."
+	elif [ ! -f "$BLUE_TEAM_FILE" ] && in_pickup_list "$NICK"
+	then
+		removeplayer -quiet "$NICK"
+		echo "$NICK" >> "$BLUE_TEAM_FILE"
+		echo "$COLRESET$NICK is captain of the $COLBLUE$COLBOLD""BLUE""$COLRESET team."
+		please_pick
+		list_players ## Since we no longer list at every iteration, we should at least do a list at the start of the pickup.
+	else
+		echo "You can't be a captain!"
+	fi
+}
+
+help () {
+	echo "Type !add to join the pug, or !leave to leave."
+	# echo "The bot is kinda nooby, so please try not to confuse him!  If you change your nick, please !leave and !join."
+	echo "If you change your nick, please !leave and !join (or in emergencies use !removeplayer)."
+	# echo "Have fun, report any problems to an admin."
+	# echo "Rules: No pros, whiners or flamers.  Be friendly, spread the love!"
+	# echo "Piston-camping, telefragging, boosting and spawn-raping are encouraged."
+	# echo "Captains can pick the map and game mode, but should try to ensure it's something all players will enjoy."
+}
+
+promote () {
+	. restrict_repetitive_calls "5 minutes"
+	get_num_players
+	SPACES_LEFT=$((TOTAL_SPACES-NUMBER_OF_PLAYERS))
+	echo "/mode $CHANNEL -N"
+	echo "/notice $CHANNEL $SPACES_LEFT spots left in $CHANNEL, type !add to join"
+	echo "/mode $CHANNEL +N"
+}
+

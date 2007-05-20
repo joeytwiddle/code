@@ -1,0 +1,6 @@
+# ./utp 80.84.230.170:1111
+# ./utp 80.84.230.153:5555
+# ut_servers/searchserv dutchnet # | grep -v "0/"
+# ut_servers/searchserv "hydro"
+# ut_servers/searchserv "schmydro"
+./utp "$@" 80.84.230.170:1111

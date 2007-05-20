@@ -1,0 +1,5 @@
+[ "$1" ] && CHANNEL="$1" && ALLOW_FROM_ANY_CHANNEL=true
+
+. pugbot/pugbot.shlib
+
+list_players "$@"

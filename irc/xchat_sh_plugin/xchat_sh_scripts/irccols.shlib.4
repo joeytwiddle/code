@@ -1,0 +1,99 @@
+## For the Screen on my portal map, which couldn't handle my colours (although it says it should be able to).
+## Ah I can detect players who are using a Screen in UT, because their nick has a - appended to the end.  :)  No wait that's nonsense.  =/
+## OK but here's a thing: when i join through Screen, my nick gets truncated to 9 chars; that might be a way of sort-of detecting it.
+# if [ "$CHANNEL" = "#utportal" ]
+# then NOCOLS=true
+# fi
+if [ "$CHANNEL" = "#utportal" ] || [ "$CHANNEL" = "#utb0t" ]
+then
+	# if endswith "$NICK" "-"
+	# then NOCOLS=true
+	# fi
+	NOCOLS=true
+fi
+
+if [ ! "$NOCOLS" ]
+then
+	## Check if we are outputting to IRC or colour terminal.
+	## :E had to disable this; it was returning true when running as xchat plugin!
+	# if tty -s
+	# if false
+	# if [ "$CHANNEL" ] || [ "$NICK" ]
+	if [ "$CHANNEL" ] && [ "$NICK" ]
+	then IRCCOLS=true
+	else SHELLCOLS=true
+	fi
+fi
+
+if [ "$IRCCOLS" ]
+then
+
+	## I used to use ",99" for transparent background, but actually "" would do just as good; problem is, my colours then don't always look so good
+	## Added ",01" (black background) because otherwise a comma right after the colour gets gobbled (at least by ksirc)
+	export COLWHITE=`echo -e "01,99"`
+	export COLBLACK=`echo -e "01,99"`
+	export COLBLUE=`echo -e "02,99"` ## navy
+	export COLGREEN=`echo -e "03,99"`
+	export COLRED=`echo -e "04,99"`
+	export COLBROWN=`echo -e "05,99"` ## maroon
+	export COLPURPLE=`echo -e "06,99"`
+	# export COLORANGE=`echo -e "07,99"` ## olive
+	# export COLYELLOW=`echo -e "08,99"`
+	## I very lazily swapped yellow and orange for the benefit of Rednas who uses Opera and can't see yellow against his unchangeable white background.
+	export COLORANGE=`echo -e "08,99"`
+	export COLYELLOW=`echo -e "07,99"`
+	export COLLIME=`echo -e "09,99"` ## green
+	export COLTEAL=`echo -e "10,99"` ## a kinda green/blue cyan
+	export COLAQUA=`echo -e "11,99"` ## cyan
+	export COLROYAL=`echo -e "12,99"` ## blue
+	export COLPINK=`echo -e "13,99"` ## light purple, fuschia
+	export COLGREY=`echo -e "14,99"`
+	export COLSILVER=`echo -e "15,99"` ## light grey
+
+	export COLRESET=`echo -e ""`
+
+	export COLBOLD=`echo -e ""`
+
+	## Following untested:
+	export COLUNDERLINE=`echo -e ""`
+	export COLREVERSE=`echo -e ""`
+	export COLITALICS=`echo -e "	"`
+
+	## People don't like my script's yellow, so I changed to orange, then to green!  But really I should swap anyway, since orange+yellow are used for !searchserv
+	# COLYELLOW="$COLORANGE"
+	# COLYELLOW="$COLGREEN"
+
+	## OK now I made the bg dark, blue is too dark!
+	# COLBLUE="$COLROYAL"
+
+elif [ "$SHELLCOLS" ]
+then
+
+	## OMG we are in an xterm or something
+	## Better use xterm escape codes after all imo
+	export COLWHITE=`cursenorm`
+	export COLBLACK=`curseblack`
+	export COLBLUE=`curseblue`
+	export COLGREEN=`cursegreen`
+	export COLRED=`cursered;cursebold`
+	export COLBROWN=`cursered`
+	export COLPURPLE=`cursemagenta;cursebold`
+	export COLORANGE=`curseyellow`
+	export COLYELLOW=`curseyellow;cursebold`
+	export COLLIME=`cursegreen;cursebold`
+	export COLTEAL=`cursegreen`
+	export COLAQUA=`cursecyan;cursebold`
+	export COLROYAL=`curseblue;cursebold`
+	export COLPINK=`cursemagenta`
+	export COLGREY=`cursegrey`
+	export COLSILVER=`cursewhite`
+
+	export COLRESET=`cursenorm`
+
+	export COLBOLD=`cursebold`
+	export COLUNDERLINE="_"
+	export COLREVERSE="#"
+	export COLITALICS="/"
+
+fi
+

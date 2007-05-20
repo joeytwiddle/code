@@ -1,0 +1,27 @@
+LOGFILE=`echolines /tmp/ut.out.* | tail -n 1`
+if [ "$LOGFILE" ]
+then
+	AGE=`datediff -secs -file "$LOGFILE"`
+	# if [ "$AGE" -lt 1800 ] ## 30 minutes
+	if [ "$AGE" -lt 900 ] ## 15 minutes
+	# if [ "$AGE" -gt 0 ] ## for testing
+	then
+		## BUG TODO: I really should check there isn't a disconnect line after the last connect line!
+		# echo -n "I joined "
+		echo -n "I last joined "
+		grep "LoadMap: " "$LOGFILE" |
+		tail -n 1 |
+		sed 's+/\([^?]*\).*+/ \1+ ; s+^LoadMap: +unreal://+'
+		# echo -n " "
+		# datediff -file "$LOGFILE" | tr -d '\n'
+		# echo -n " ago"
+	else
+		# echo -n "I haven't played UT for "
+		# datediff -file "$LOGFILE" | tr -d '\n'
+		# echo -n "."
+		# echo -n "I'm practicing my micro off-line"
+		echo "UT status: I'm not playing right now."
+	fi
+else
+	echo "I haven't played UT since I last booted."
+fi

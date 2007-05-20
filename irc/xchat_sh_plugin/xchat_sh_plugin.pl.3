@@ -1,0 +1,117 @@
+package IRC::Xchat::XChatShPlugin;
+
+use Thread;
+
+IRC::register("xchat sh plugin", "0.1", "", "");
+
+my $confdir = IRC::get_info(4);
+
+$xchat_sh_exec = "/home/joey/j/code/other/irc/xchat/xchat_sh_handler.sh";
+$command_scripts_dir = "/home/joey/j/code/other/irc/xchat/xchat_sh_scripts";
+
+# $locked = 0;
+
+sub xchat_sh_plugin_handler {
+
+	## rainbow just does:
+	# $_=shift@_;
+
+	# Xchat::print "\$_=$_";
+	# Xchat::print "\$\_=$_";
+	# Xchat::print "\$_[1]=$_[1]";
+	# Xchat::print "\$_[2]=$_[2]";
+
+	my $line = $_[2];
+	my @temp = split /\ /, $line;
+	my $cmd  = @temp[0];
+	my $rest = join(" ", @temp[1..$#temp]);
+
+	my $version = IRC::get_info(0);
+	my $nick = IRC::get_info(1);
+	my $channel = IRC::get_info(2);
+	my $server = IRC::get_info(3);
+	my $var5 = IRC::get_info(5);
+	my $var6 = IRC::get_info(6);
+	my $simpleserver = IRC::get_info(7);
+	my $topic = IRC::get_info(8);
+	# Xchat::print "nick=$nick channel=$channel server=$server confdir=$confdir 5=$var5 6=$var6 simpleserver=$simpleserver topic=$topic";
+	# Xchat::print "line=$line";
+	# Xchat::print "cmd=$cmd rest=$rest";
+
+	# if ($locked) {
+		# return 0;
+		# # Xchat::print "sorry i cannot i am busy"
+	# }
+
+	if (( $cmd =~ /^[!.@-><]/ )) { # && !$locked )) {
+		$locked = 1;
+		$cmd =~ s/^.//;
+
+		## I want to start the process in a new shell, so that I can return,
+		## and the line which triggered me can be outputted in XChat before
+		## the output from this call!
+		## Also, this prevents XChat from freezing whilst the shellscript is running!
+
+		## TODO BUG!  In a detached thread, it might send it to the wrong channel.  :|
+		## It was sending some responses to #ut (presumably XChat focused it because there was chat there).
+		## But I think it happens even if I don't detach until after calling IRC::command.
+		## So maybe it just happens if other chat windows are busy.
+		## Maybe we can avoid it by not starting a new thread, or by passing the channel
+		## to the thread so it knows where to respond to.
+
+		# my @start_args = ( $cmd, $rest );
+		# my $t = Thread->new(\&call_shell, @start_args);
+		# my $result = t->join;
+		# # $t.detach;
+# 
+	# }
+# 
+	# # $locked = 0;
+# 
+	# return 0;
+# }
+# 
+# sub call_shell {
+# 
+	# my ( $cmd, $rest ) = @_;
+
+	# Xchat::print "Calling shell: $xchat_sh_exec \"$cmd\" \"$rest\"";
+	# open SPOOLER, "sh $xchat_sh_exec $line |"
+	# open(SPOOLER, "sh $xchat_sh_exec $line |")
+	# # open SPOOLER, "sh \$xchat_sh_exec \$line |"
+	# open SPOOLER, "<", "sh", "$xchat_sh_exec", "$line", "|"
+	open(SPOOLER, '-|', "env", "NICK=$nick", "sh", "$xchat_sh_exec", "$cmd", "$rest")
+	# open(SPOOLER, '-|', "sh", "$xchat_sh_exec", "$cmd", "$rest")
+	or print "open failed: $!\n";
+	while (<SPOOLER>) {
+		s/\n//g;      # Strip newline
+		IRC::command ("$_");
+		# sleep 1; ## avoid flooding
+	}
+	close SPOOLER or print "close failed: $! $?\n";
+
+	# Thread->self.detach;
+
+	}
+
+	return 0;
+}
+
+## Problem is, when the trigger is called, the actual command types is not passed down!
+# # open(SPOOLER, "-|", "find", "$command_scripts_dir", "-type", "f", "-maxdepth", "1", "|", "afterfirst", "$command_scripts_dir")
+# # open SPOOLER, "find $command_scripts_dir -type f -maxdepth 1 | afterfirst $command_scripts_dir/ |"
+# open SPOOLER, "$command_scripts_dir/commands | tr ' ' '\n' |"
+# or print "open failed: $!\n";
+# while (<SPOOLER>) {
+	# s/\n//g;      # Strip newline
+	# IRC::add_command_handler("$_", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+	# Xchat::print "Adding: $_";
+# }
+# close SPOOLER or print "close failed: $! $?\n";
+# IRC::add_message_handler("PRIVMSG", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Channel Msg Hilight", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Channel Message", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Private Message to Dialog", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+IRC::add_print_handler("Your Message", "IRC::Xchat::XChatShPlugin::xchat_sh_plugin_handler");
+
+IRC::print('Loaded XChat sh plugin.');

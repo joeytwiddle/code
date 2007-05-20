@@ -1,0 +1,11 @@
+list () {
+cat << !
+Rednas rocks.
+/me hugs [eC]>\\Rednas/<
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,15 @@
+list () {
+cat << !
+THE ZUMBA ZUMBA!
+#ut.soccer
+!
+# t3h zumba zumba!
+# t3h zumba zumba!
+# t3h zumba zumba!
+# let's play UT soccer!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

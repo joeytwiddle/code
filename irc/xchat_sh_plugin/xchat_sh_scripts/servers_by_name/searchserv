@@ -1,0 +1,49 @@
+. irc.shlib
+. irccols.shlib
+
+[ "$NUMRESULTS" ] || NUMRESULTS=10
+[ "$NUMRESULTS" -lt 25 ] || NUMRESULTS=25
+
+if [ "$*" = "" ]
+then
+
+	echo "$COLBROWN""To get a list of servers by name, type: !searchserv <part_of_server_name>""$COLRESET"
+
+else
+
+	# cd /home/utquery/utquery/data
+
+	REGEXP=`toregexp "$*"`
+	# grep -i -e "$REGEXP" *.info |
+	# grep -i -e "$REGEXP" /home/utquery/utquery/data/*.info | ## stopped working when i moved from ~3000 to ~5000 servers
+	find /home/utquery/utquery/data/ -maxdepth 1 -name "*.info" |
+	xargs grep -i -e "$REGEXP" |
+
+	# randomorder | ## See a random subset
+	# beforefirst "\.info" | afterlast / |
+
+	## See the most populated
+	sed 's+\.info:+ +' |
+	sort -n -r -k 2 |
+	# pipeboth |
+	beforefirst " " | afterlast / |
+
+	head -n "$NUMRESULTS" | ## prevent too many results
+
+	while read IP
+	# do "$COMMAND_SCRIPTS_DIR"/utp "$IP"
+	do ./utp -noplayers "$IP"
+	done |
+
+	sort -n -r -k 2 |
+
+	# sed "s+$REGEXP+$COLYELLOW""\0""$COLGREY+ig" |
+	# sed "s+$REGEXP+$COLORANGE$COLBOLD""\0""$COLRESET$COLYELLOW+ig" | ## chances are the match was in the server name, so "revert" to yellow (could be better; find previous colour and really revert)
+	# sed "s+\([[:digit:],]*\|\)\([^]*\)\($REGEXP\)+\1\2$COLGREEN$COLBOLD\3$COLRESET\1+ig" | ## find previous colour and really revert
+	# sed "s+\([[:digit:],]*\|\)\([^]*\)\($REGEXP\)+\1\2$COLGREEN\3\1+ig" | ## find previous colour and really revert
+	# sed "s+\([[:digit:],]*\|\)\([^]*\)\($REGEXP\)+\1\2$COLRED$COLBOLD\3$COLRESET\1+ig" |
+	sed "s+\([[:digit:],]*\|\)\([^]*\)\($REGEXP\)+\1\2$COLORANGE$COLBOLD\3$COLRESET\1+ig" | ## finds previous colour (or "" if none) and really reverts
+
+	grep . || echo "$COLRED""I could not find a server matching \"$*\"""$COLRESET"
+
+fi | notice

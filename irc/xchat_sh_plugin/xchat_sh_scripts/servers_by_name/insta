@@ -1,0 +1,17 @@
+. irc.shlib
+(
+##    CTM                        TUF           WarrionSouls WS2            jolt.co.uk          puste_recommends
+# ./utp unreal://64.34.47.131:7777 64.37.100.149 69.64.40.155 217.160.255.26 195.149.21.107:7990 62.75.246.167:7777 | notice
+## newer_jolt
+# ./utp 195.149.21.71:7817
+## HQ hiquality
+# ./utp  82.160.79.28
+## Seem to be down: CTM unreal://64.34.47.131:7777  MoC 205.138.195.108 WarrionSouls 69.64.40.155 
+##         jolt iCTF4         jolt_ig_LMS1       jolt_ig_DM         puste_recommends QuickNet            NOL-funcombo
+./utp "$@" 195.149.21.72:7000 195.149.21.71:7807 195.149.21.72:7500 62.75.246.167    213.73.255.134:7788 85.14.226.92
+./utp "$@" 66.151.7.64 ## DH:44oz turbo insta zp
+./utp "$@" 66.151.7.34 ## zp| -={HNC}=- LGIG 155/55 # 1
+./ut_servers/tammy "$@"
+) |
+grep -v "0/" |
+notice

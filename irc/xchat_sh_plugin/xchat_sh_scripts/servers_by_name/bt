@@ -1,0 +1,14 @@
+. irc.shlib
+# ./uca ## DOWN :O
+# echo "Don't do it!!!"
+# ./utp "$@" 153.19.48.14:6666 84.244.162.130
+# ./ut_servers/uca "$@" | notice
+# ./utp "$@" 64.192.171.225 | notice
+NUM_RESULTS=5 ./ut_servers/searchserv bt- | notice
+(
+echo "/me was incinerated"
+echo "/me left a small crater"
+echo "/me killed his own dumb self"
+) | chooserandomline
+## i4games 1 # 2 (they also have 3)
+# ./utp unreal://80.242.208.101:9777 # unreal://80.242.208.101:9877

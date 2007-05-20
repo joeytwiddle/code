@@ -1,0 +1,17 @@
+list () {
+cat << !
+NoXiC needs f0000d!
+NoXiC pwns noobs!
+Noobix imo
+Kowabunga!
+/me steals a slice of NoXiC's pizza
+<F0X|NoxiC> My X get's automatically big
+<F0X|NoXiC> IT'S STIL BIG FFS
+<F0X|NoxiC^study> Tired of reading <F0X|NoxiC^study> Me eyes just go left and right, up and down <F0X|NoxiC^study> While the brain thinks about something else
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

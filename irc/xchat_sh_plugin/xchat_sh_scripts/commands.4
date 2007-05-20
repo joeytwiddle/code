@@ -1,0 +1,105 @@
+## This has been used by a few of the scripts (to call other scripts):
+# COMMAND_SCRIPTS_DIR="/home/joey/.xchat2/plugin/xchat_sh_scripts"
+# export COMMAND_SCRIPTS_DIR="/home/joey/.xchat2/plugin/xchat_sh_scripts" ## ganymede
+# COMMAND_SCRIPTS_DIR="/home/joey/j/code/other/irc/xchat/xchat_sh_scripts" ## hwi
+## But it might be redundant because I made the handler cd to that dir.  Yeah idd, handler now exports this!
+
+[ "$COMMAND_SCRIPTS_DIR" ] || COMMAND_SCRIPTS_DIR="$PWD"
+
+list_dirs () {
+	cd "$COMMAND_SCRIPTS_DIR" &&
+	find -type d |
+	# grep -v "\.secret/" |
+	grep -v "/\." | ## strip hidden directories ^^
+	sed 's+^\./++'
+}
+
+list_commands () {
+	list_dirs |
+	randomorder |
+	while read DIR
+	do
+
+		[ "$PRETTY" ] && echo -n "$COLRED$DIR$COLNORM: $COLBLUE"
+
+		find "$DIR"/ -type f -or -type l -maxdepth 1 |
+		filter_list_with test -x |
+		afterlast / |
+		grep -v "^\." | ## hide hidden files ^^
+
+		## List of valid command names
+
+		if [ "$PRETTY" ]
+		then tr '\n' ' ' | sed "s+$+$COLPINK+" ; echo
+		else cat
+		fi
+
+	done | randomorder
+}
+
+list_commands_pretty () {
+	list_dirs |
+	# randomorder |
+	sort |
+	while read DIR
+	do
+
+		echo -n "$COLRED$DIR$COLNORM: $COLGREY"
+
+		find "$DIR"/ -type f -maxdepth 1 |
+		filter_list_with test -x |
+		afterlast / |
+		grep -v "^\." | ## hide hidden files ^^
+		sort |
+
+		while read COMMAND
+		do
+			echo -n "$COMMAND "
+			# find "$DIR"/ -type l -lname "$COMMAND" -or -lname "./$COMMAND" |
+			find "$DIR"/ -type l -lname "$COMMAND" -or -lname "*/$COMMAND" |
+			afterlast / |
+			grep -v "^\." | ## hide hidden files ^^
+			sort |
+			while read ALIAS_COMMAND
+			# do echo -n "$COLBLUE$ALIAS_COMMAND$COLGREY "
+			# done | sed 's+^+(+ ; s+ $+) +'
+			do echo -n "$ALIAS_COMMAND,"
+			done | sed "s+^+($COLBLUE+ ; s+,$+$COLGREY) +"
+		done
+
+		echo
+
+	done # | randomorder
+}
+
+list_commands_old () {
+	find "$COMMAND_SCRIPTS_DIR" -type f -or -type l -maxdepth 1 |
+	while read FILE
+	do [ -x "$FILE" ] && [ ! -d "$FILE" ] && echo "$FILE"
+	done |
+	after "$COMMAND_SCRIPTS_DIR/" |
+	grep -v "jsh" | ## that one's a secret
+	grep -v "wutmelater" |
+	sort
+}
+
+## This is needed for the perl handler, so it knows which '/' triggers/handlers to create.
+if [ "$1" = -l ]
+then PRETTY="" list_commands
+else
+
+	. irc.shlib
+	. irccols.shlib
+
+	## Is it better now I /notice ?
+	# echo -n "/notice $NICK $COLGREY""My commands are: "
+	(
+		echo "My commands are: "
+		# PRETTY=true
+		list_commands_pretty # | tr '\n' ' '
+		# echo
+	) | notice
+	# echo
+	# echo "$COLRESET"
+
+fi

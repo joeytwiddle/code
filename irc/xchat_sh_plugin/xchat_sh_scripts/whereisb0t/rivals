@@ -1,0 +1,38 @@
+. irc.shlib
+
+# if [ "$CHANNEL" = "#ec.ut" ] # || [ "$CHANNEL" = "#ut.pmp" ]
+# then
+	# ## This turns !rivals off entirely for those channels
+	# ## Because !rivals prints !whereis, so !whereis sends response straight back to utb0t!
+	# echo "rivals script is disabled in this channel; try #whereisbot or /MSG."
+	# exit 0
+# fi
+
+## [ec]DuncanMcCloud kept calling bot a liar, so I was lame and disabled him, but reenabled him and he never even tried to use it grrr!
+# if [ "$NICK" ] && ( contains "$NICK" Duncan || contains "$NICK" Dunco )
+# then
+	# echo "/me refuses to work for Dunco-bitches. Hahaha! :P"
+	# exit 0
+# fi
+
+# if [ "$1" = all ]
+# then echo "!whereis [eC] (rt) .::TEF::. Darth F0X| F0X[S =(.Y.)= nW/ }SO{ GLA {[X]} <)2xt(> [DC*3] {GC} [An1 {FuB} {Rip} w|s {FOCR} C']['M <as> JMD"
+# else echo "!whereis [eC] (rt) .::TEF::. Darth F0X| =(.Y.)= nW/ }SO{ GLA {[X]} <)2xt(> [DC*3]"
+# else echo "!whereis [eC] (rt) Darth F0X| F0X[S =(.Y.)= nW/ pWa PmP bmb GLA [DC*3] sahNe rlx relax [c] <as> JMD .d|_|b. (-:SMo:-)"
+# fi
+
+# MORE=""
+# [ "$1" ] && MORE="$*"
+MORE="$*"
+[ "$1" = all ] && MORE="[An1 {FuB} {Rip} w|s {FOCR} C']['M"
+# [ "$1" = mp3 ] && MORE="mp3"
+
+# RIVALS="[eC] (rt) Darth F0X| F0X[S f0x. =(.Y.)= nW/ [pWa] PmP| bmb GLA* [DC*3] sahNe rlx relax [c] <as> JMD .d|_|b. (-:SMo:-) [k] $MORE"
+## removed mp3 now :P
+RIVALS="[eC] (rt) Darth F0X| F0X[ f0x. f0x\` =(.Y.)= nW/ [pWa] pwa. .pwa PmP| bmb GLA* [DC*3] sahNe rlx relax [c] [crew] <as> JMD .d|_|b. (-:SMo:-) [k] $MORE [wmc] -|Ts|- {focr} [RNA] {DK} [NAW] {NAW} [iD] [iQ] nTo* [d4s] =[dH]= whore| sk| .phobia .dm' ~u. ~xD^ [iNs.D] ]PB[ 69\` MbX| frag. .frag beat.mox [*P*] THIS_HERE_GIRAFFE deathtoken ]v[isso (s) [wH] [bs] eVil^ eVil. eVil_" # e\`"
+
+if [ "$CHANNEL" = "#ec.ut" ] || [ "$CHANNEL" = "#ut994funpug" ] || [ "$CHANNEL" = "#ctfpug" ] || [ "$CHANNEL" = "#pwa.ut" ]
+then whereisb0t/whereis "$RIVALS" | notice
+else whereisb0t/whereis "$RIVALS"
+fi
+

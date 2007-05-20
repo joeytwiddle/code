@@ -1,0 +1,17 @@
+list () {
+cat << !
+/me hugs Duncan[eC]Mc
+/me hugs Duncan[eC]Mc
+Bitch.
+Bitch.
+I said bitch!
+<Duncan[eC]Mc> .duncan  <UTb0t> I said bitch!  <Duncan[eC]Mc> :EEE  <Duncan[eC]Mc> fucking UTb0t
+Pasta!!
+!
+# Duncan pwns noobs.  Only noobs.  Not all noobs.  But some noobs.  Sometimes.
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

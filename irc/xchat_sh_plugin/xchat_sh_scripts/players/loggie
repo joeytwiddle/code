@@ -1,0 +1,11 @@
+list () {
+cat << !
+The Loggie Effect: when your own rockets and shock balls hit you in the back.
+Loggie Style: take flak, hold primary fire, and jump about wildly.
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,10 @@
+list () {
+cat << !
+rt-st0rm: plz play 1v1 deck with me ;f
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

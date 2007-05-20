@@ -1,0 +1,8 @@
+/home/utquery/utquery/whereis "$@" |
+sed 's+^+unreal://+ ; s+ +/ + ; s+^\([^ ]*\) \([^ ]*\)+\2 \1+' |
+randomorder | head -10 | ## avoid flooding
+# takecols 1 2 4 | columnise |
+sed 's+^\([^ ]*\) *\([^ ]*\) *[[:digit:] ]*/[[:digit:] ]*\([^ ]*\) *.*+\1 \2 \3+' | columnise |
+grep . &&
+echo "  was/were seen playing `datediff -file /home/utquery/utquery/data` ago." ||
+echo "I could not find \"$*\""

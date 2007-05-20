@@ -1,0 +1,17 @@
+list () {
+cat << !
+Xenomorph is the best!
+Xenomorph pwns Proshee hard liek.
+Xenomorph uses a three dozer build.
+<\`Xenomorph> Damn youngsters
+Xenomorph has a female skin and a male voice ... in real life!
+!
+# Xenomorph has a female voice and a male skin ... in real life!
+# Xenomorph's liek using a three dozer build.
+# Xeno? ... Hmmm, he's ok.
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,82 @@
+if [ "$CHANNEL" != "#noobpug" ]
+then exit 0
+fi
+
+PLAYER_LIST_FILE=/tmp/pug_player_list."$CHANNEL"
+
+get_num_players () {
+	NUMBER_OF_PLAYERS=`cat "$PLAYER_LIST_FILE" | wc -l`
+}
+
+list_players () {
+	get_num_players
+	echo "($NUMBER_OF_PLAYERS/10) ` cat "$PLAYER_LIST_FILE" | tr '\n' ',' `" | sed 's+,$++'
+}
+
+update_topic () {
+	PLAYER_LIST=`list_players`
+	echo "/topic Welcome to n00bpug, where even the b0t is a n00b! $PLAYER_LIST"
+	if [ "$NUMBER_OF_PLAYERS" = 10 ]
+	then echo "The pug is full!  Choose two captains, and use !pick (take it in turns please 1-2-2-2-1)."
+	fi
+}
+
+join () {
+	addplayer "$NICK"
+}
+
+addplayer () {
+	NICK_TO_ADD="$1"
+	echo "$NICK_TO_ADD has joined the pug."
+	(
+		cat "$PLAYER_LIST_FILE"
+		echo "$NICK_TO_ADD"
+	) |
+	removeduplicatelines |
+	dog "$PLAYER_LIST_FILE"
+	update_topic
+}
+
+leave () {
+	removeplayer "$NICK"
+}
+
+removeplayer () {
+	if [ "$1" = -player ]
+	then IS_A_PLAYER=true ; shift
+	fi
+	NICK_TO_REMOVE="$1"
+	NICK_TO_REMOVE_REGEXP=`toregexp "$NICK_TO_REMOVE"`
+	cat "$PLAYER_LIST_FILE" |
+	grep -i -v "^$NICK_TO_REMOVE_REGEXP$" |
+	dog "$PLAYER_LIST_FILE"
+	if [ "$IS_A_PLAYER" ]
+	then :
+	else echo "$NICK_TO_REMOVE has been removed from the pug."
+	fi
+	update_topic
+}
+
+pick () {
+	echo "$1 has been picked by $NICK."
+	removeplayer -player "$1"
+}
+
+reset () {
+	printf "" > "$PLAYER_LIST_FILE"
+	echo "Pug has been reset."
+	update_topic
+}
+
+captain () {
+	echo "$NICK is captain.  (Choose your own colour you lazy bastard.)"
+	removeplayer -player "$NICK"
+}
+
+help () {
+	echo "Type !add to join the pug, and !leave to leave."
+	echo "The bot is kinda nooby, so please try not to confuse him!"
+	echo "Have fun, report any problems to an admin."
+	echo "Rules: No pros, whiners or flamers.  Be friendly, spread the love!"
+}
+

@@ -1,0 +1,53 @@
+## To check which are still up/down, I run: sh -x ./ut_servers/nwctf
+
+. irc.shlib
+
+if [ "$1" = -all ]
+then
+	shift
+	ALL=true
+	# JUSTSERVER="-justserver" ## hides number of players also =/
+	export NOPLAYERS=true
+	## Not in the list by default:
+	OTHERS="ec zoo pmp2 pwa pwapriv" # xol ffa
+fi
+
+# JUSTSERVER="-justserver"
+
+# export NOPLAYERS=true
+
+# (
+
+(
+	export NOTICE_STYLE="none"
+	# Now closed: Multiplay CTF 85.236.100.43 p 195.4.17.197 
+	for SERVER in tacsu f0x nogginzp noobpug $OTHERS focr terror kawa gla haleys xol of inz u ## (multiplay FFA DM+CTF)
+	## DOWN afaik: tits pmp bmb be sahne il whore relax dk fraggerspub
+	## now MH: smo
+	# 82.192.78.54:7000 ## -ev!L~eLves-
+	do [ -x ./ut_servers/"$SERVER" ] && ./ut_servers/"$SERVER" $JUSTSERVER "$@" || ./utp $JUSTSERVER "$@" "$SERVER"
+	done
+	## TODO: if we *always* grep for CTF- then we can include any servers which might or might not be in CTF mode
+	## TODO: could also grep -v CTF-Face and then include some mainly-Face servers
+) |
+
+if [ "$ALL" ]
+# then cat
+then NOTICE_STYLE="msg" notice
+else
+	grep --line-buffered "CTF-" |
+	grep --line-buffered -v " 0/" |
+	grep --line-buffered -v "\(DOWN\|no response\)"
+fi |
+# sort -n -r -k 2 | ## Not working for 10+
+# grep . || echo "None of the servers are populated right now.  Try !xol !ffa !focr or !terror :P"
+grep --line-buffered . ||
+# echo "No nwCTF servers have players right now.  (If I missed any, please PM me!)"
+echo "No European nwCTF servers have players right now (except maybe !xol !ffa or !ec).  (Use -all to see the full list, and if I missed any, please PM nogginBasher!)"
+
+# ) |
+# 
+# if [ "$ALL" ]
+# then notice
+# else cat
+# fi

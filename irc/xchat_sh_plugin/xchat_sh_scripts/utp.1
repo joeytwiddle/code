@@ -1,0 +1,23 @@
+for URL in "$*"
+do
+	IP=`echo "$URL" | sed 's+^unreal://++ ; s+/$++'`
+	qstat -default uns -P "$IP" |
+	drop 1 |
+	sed 's+^[[:digit:].:][^ 	]*[ 	]*++' |
+	tr -s ' ' |
+	(
+
+		read MAINLINE
+		echo -n "$MAINLINE [ "
+
+		# cat > /dev/null
+		takecols 5 |
+		sed 's+$+, +' |
+		tr '\n' ' ' |
+		tr -s ' ' |
+		sed 's+, $++'
+
+		echo " ]"
+
+	)
+done

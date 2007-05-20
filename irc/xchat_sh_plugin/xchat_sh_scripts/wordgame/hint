@@ -1,0 +1,18 @@
+. irc.shlib
+. irccols.shlib
+
+. wordgame/wordgame.shlib
+
+WORD=` list_unguessed_words | chooserandomline `
+
+RND_LETTERS=` echo "$WORD" | randomise_letters `
+
+# increase_score "$NICK" -1
+# echo "$NICK's score decreased by 1"
+
+NUM_LETTERS=` echolines $RND_LETTERS | wc -l `
+SCORE_PENALTY=$((NUM_LETTERS-4))
+increase_score "$NICK" -$SCORE_PENALTY
+echo "$COLRED$COLBOLD $NICK -- $SCORE_PENALTY"
+
+echo "There is a unguessed word which uses the letters: $RND_LETTERS"

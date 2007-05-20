@@ -1,0 +1,15 @@
+# Friends list for Flash-friend.pl auto-opper
+# Simple comma seperated lists, one per line, # denotes comment line
+# 
+# Format is "name,#channel"
+# For all channels, just use "ALL".
+#
+# Examples: "Flash_,#3am"  or "Pengbot,ALL"
+#
+#####################################################################
+veebl,#griblet
+Pengbot_,ALL
+AndyB,#griblet
+{-Obeah,#griblet
+Zd_T-Bird_,#3am
+Farbtopf,ALL

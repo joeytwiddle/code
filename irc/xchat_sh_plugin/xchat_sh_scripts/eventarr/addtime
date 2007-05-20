@@ -1,0 +1,14 @@
+. eventarr/eventarr.shlib
+
+EVENTNUM="$1"
+shift
+DATESTR="$*"
+# TIMEZONE="..."
+
+if [ "$DATESTR" ] && [ "$EVENTNUM" ]
+then
+	$EVENTARR adddate "$EVENTNUM" "$DATESTR" &&
+	$EVENTARR listdates "$EVENTNUM"
+else
+	output_help "Type: !addtime <event_number> <date+time> (e.g. \"Oct 12 12:30pm EST\")"
+fi | notice

@@ -1,0 +1,11 @@
+WHATSPLAYING="`whatsplaying`"
+if [ "$WHATSPLAYING" ]
+then
+	TRACKDESCR=`mp3info -p "%a (%l) \"%t\"\n" "$WHATSPLAYING" 2>&1`
+	if
+		echo "$TRACKDESCR" | grep "does not have a" >/dev/null ||
+		echo "$TRACKDESCR" | tr -d ' ()\"-' | grep "^$" >/dev/null
+	then TRACKDESCR=`echo "$WHATSPLAYING" | afterlast /`
+	fi
+	echo "/ME is listening to $TRACKDESCR"
+fi

@@ -1,0 +1,7 @@
+if [ "$1" = -nomsg ]
+then
+	shift
+	echo "$@"
+else
+	echo "/msg" "$@"
+fi

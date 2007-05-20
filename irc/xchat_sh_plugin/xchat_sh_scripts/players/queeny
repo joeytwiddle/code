@@ -1,0 +1,13 @@
+list () {
+cat << !
+[eC]\`KillerQueen is the prettiest, fastest, smartest UT player of all!
+All hail the Queen of Killers!
+"Off with his head!"
+!
+# =(.Y.)=KillerQueen has got balls.
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

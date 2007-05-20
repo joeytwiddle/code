@@ -1,0 +1,12 @@
+list () {
+cat << !
+<zbe> Basher thats not normal playin ut whole night every day ;P
+<zbe> I get so angry when i am waiting and filling myself with energy etc Then picking a belt and someone start shooting at me bitch
+<_tAiger> zbe dosnt want to impress the girl, he want to imopress their mothers :)
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

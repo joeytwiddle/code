@@ -1,0 +1,10 @@
+PUG_CHANNELS_FILE=/tmp/pug_channels.list
+
+CHANNELREGEXP=`toregexp "$CHANNEL"`
+
+cat "$PUG_CHANNELS_FILE" |
+grep -v "^$CHANNELREGEXP$" |
+dog "$PUG_CHANNELS_FILE"
+
+echo "Pugging disabled in $CHANNEL"
+

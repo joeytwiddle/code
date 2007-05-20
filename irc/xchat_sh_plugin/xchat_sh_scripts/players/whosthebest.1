@@ -1,0 +1,75 @@
+. irccols.shlib
+
+cat /home/utquery/utquery/query_all_servers.out |
+grep "^[ 	]" |
+sort -n -k 1 |
+tail -n 1 |
+takecols 1 5 |
+while read SCORE NAME
+do
+	SERVER=`
+		/home/utquery/utquery/lastseen "$NAME" |
+		sed 's+^.* \(.*\)+\1+'
+	`
+	# SERVER=` ./utp "$SERVER" `
+	SERVER="$COLBLUE$SERVER"
+	# echo "$COLRED$NAME$COLRESET has $COLGREEN$SCORE$COLRESET points on $SERVER$COLRESET"
+	echo "$COLRED$NAME$COLRESET leads with $COLGREEN$SCORE$COLRESET points on $SERVER$COLRESET"
+done
+
+exit 0
+
+
+
+## OLD:
+
+list () {
+# echo '=(.Y.)=Xena' ; return 0
+# echo '[eC]Puste' ; return 0
+# echo 'fox.s!ster' ; return 0
+# echo "=(F0X)=HuAtH" ; return 0
+# echo "F0X|nogginBasher" ; return 0
+# echo "[eC]Ormolu" ; return 0
+# echo "F0X|zbe of course!" ; return 0
+# echo ".::TEF::.Duffy"; return 0
+cat << !
+Darth_T0tt
+[eC]Proshee
+[eC]Prisma
+[eC]Xenomorph
+[eC]>\\\\Rednas/<
+[EC]Quante
+[eC]Urban{+_-}
+[eC]Puste
+[eC]Ormolu
+=(rt)=mr.jack
+=(rt)=Tyranny
+=(rt)=YuriGagarin
+]V[isso
+\\\\nW/NoXiC
+F0X|zbe
+F0X|_tAiger
+F0X|s!ster
+.::TEF::.Duffy
+.::TEF::.Chaosdrache
+TE^Rork
+=(.Y.)=KillerQueen
+=(.Y.)=Janne
+sest6
+{DnF2}FiX
+{FuB}Cryo
+LoneWolf
+RainCheck
+Arma|Away
+=(.Y.)=Xena
+!
+# .::TEF::.BunnyHopper
+# F0X|Tommo
+# F0X|sir_j
+# =(F0X)=HuAtH
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

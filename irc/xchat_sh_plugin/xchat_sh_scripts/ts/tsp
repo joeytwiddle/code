@@ -1,0 +1,11 @@
+. irccols.shlib
+
+NL="\\
+"
+
+for URL in $*
+do
+	# IP=`echo "$URL" | sed 's+^unreal://++ ; s+/$++'`
+	IP="$URL"
+	qstat ts2 -timeout 5 -P "$IP"
+done

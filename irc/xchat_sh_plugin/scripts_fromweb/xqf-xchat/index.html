@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta http-equiv="Content-Type" content=
+"text/html; charset=iso-8859-1">
+<title>XQF -&gt; XChat Page</title>
+</head>
+<body bgcolor="#FFFFFF">
+<p align="center"><img src="images/logo.jpg" alt=
+"XQF -&gt; XChat" width="591" height="141"></p>
+
+<p align="left"><font size="4">Based on the excellent mIRC
+script,</font> <a href="http://www.planetquake.com/gs2m/"><font
+size="4">Gamespy2mIRC</font></a><font size="4">. Thanks to Peter
+Reinhold, the author of the GSM script, for the original idea and
+his blessing on my porting the script to Linux-based
+software!</font></p>
+
+<p align="left"><font color="#DC0E46" size="5">Intro</font></p>
+
+<p align="left"><font size="4">Welcome to the XQF -&gt; XChat
+Perl script web page for Linux XQF and XChat. This script links the
+programs XQF, XChat and Licq (not required). When you start a game with XQF,
+this script notifies other chat channel users that you are playing a game
+and (optionally) changes your nick to reflect your gaming status.  Also,
+your Licq status can be changed (n/a, occupied, etc) and the autoresponse
+message will be changed to the stats of the server you are using. When
+gaming, other users in the room can request your gaming stats from the
+script. What mod you are playing, the server IP# and the elasped time since
+you started playing the game are available with a single request from other
+IRC channel chatters.  When you return from gaming, you type a command and
+your nick is changed back, Licq is reset and other channel users are notified
+of your return.</font></p>
+
+<p align="left"><font size="4">Also, XQF -&gt; XChat now has an optional
+feature of monitoring IRC channel traffic for a special command followed by
+a dotted-quad IP number.  The script will then ping the IP number and
+report back to the channel the latency from your computer to that server.
+This is a nice feature for a group of people to easily find a public server
+that is usable by everyone because one person can post an IP number and the
+rest of the channel users will ping it automatically.</font></p>
+
+<p align="left"><font color="#DC0E46" size="5">
+Requirements</font></p>
+
+<p align="left"><font size="4">This script requires the IRC client</font>
+<a href="http://www.xchat.org"><font size="4"> XChat</font></a><font
+size="4">, compiled with Perl scripting support and the game browser</font>
+<a href= "http://www.linuxgames.com/xqf/"><font size="4">
+XQF</font></a><font size="4">, version 0.9.5 or newer.  For optional ICQ
+integration, <a href= "http://www.licq.com"><font size="4">
+Licq</font></a><font size="4"> is required.</font></p>
+
+<p align="left"><font color="#DC0E46" size="5">
+Installation</font></p>
+
+<p align="left"><font size="4">First, in XQF, you have to turn on
+LaunchInfo.txt support via Preferences / Appearance. Then, just
+drop the script into .xchat/ in your home directory.</font></p>
+
+<p align="left"><font color="#DC0E46" size="5">Usage</font></p>
+
+<p align="left"><font size="4">Start XChat, and join the channels
+you wish. When you start a game with XQF, the script will
+automatically detect you have started gaming and will perform
+it's actions. When you are done gaming, make sure to type
+"/return" in a XChat window to tell the script you have
+returned.</font></p>
+
+<p align="left"><font color="#DC0E46" size="5">
+Customization</font></p>
+
+<p align="left"><font size="4">While the script was made to work without
+user modifications, customization of notification messages is possible and
+various script features can be enabled or disabled to suit the user.
+The script is fairly well documented, just load it into your favorite
+editor and go at it.</font></p>
+
+<p align="left"><font color="#DC0E46" size="5">
+Download</font></p>
+
+<p align="left"><font size="4">Here it is: 
+<a href="files/xqf-xchat-0.70.tar.gz"><font size="4">xqf-xchat-0.70.tar.gz</a>.
+</font></p>
+
+<p align="left"><font size="4">
+<p align="left"><font color="#DC0E46" size="5">Contact</font></p>
+
+<p align="left"><font size="4">Questions, enhancements,
+bug-reports and bug-fixes are all welcome. Send email to
+this</font> <a href="mailto:doug@sdf.lonestar.org"><font size=
+"4">address</font></a><font size="4">. Flames to
+/dev/null.</font></p>
+
+<p align="left"><font color="#DC0E46" size="5">
+Links</font></p>
+
+<table>
+<tr>
+<td><a href="http://www.xchat.org"><font size="4">
+XChat</font></a></td>
+<td width=75%><font size="4">A GTK IRC client. &nbsp; Checkout the 
+scripts page for more Perl scripts!</font></td> 
+</tr>
+<tr>
+<td><a href= "http://www.linuxgames.com/xqf/">
+<font size="4">XQF</font></a></td>
+<td><font size="4">A graphic game server browser
+for Quake, Unreal Tournment and other games.</font></td>
+</tr>
+<tr>
+<td><a href= "http://www.licq.com">
+<font size="4">Licq</font></a></td>
+<td><font size="4">A Linux ICQ client. </font></td>
+</tr>
+<tr>
+<td><a href= "http://woody.linif.org/xchat/">
+<font size="4">Woody's XChat Page</font></a></td>
+<td><font size="4">Another source of fine XChat Perl scripts.</font></td>
+</tr>
+</table>
+
+<br>
+<hr>
+<p align="left"><font color="#DC0E46" size="5">
+Revision History</font></p>
+
+<p align="left"><font size="4">06/28/03 - Changed a feature. Instead of
+"quiet channels" the script now uses "active channels".  So instead of
+adding channels that you don't wish XQF -&gt; XChat to monitor, you add the
+channels that it _will_ monitor. The script still defaults to using all
+open channels and you need to edit the script to add to the active channels
+list.</font></p>
+
+<p align="left"><font size="4"> A new command was added to ping servers.
+It allows someone in a channel to post the command plus a dotted-quad IP
+number and the script will automatically ping that server and post the
+results back to the channel. This allows a group of people to quickly and
+easily find a suitable public server with a minimal amount of cut and
+pasting of IP numbers. You need to edit the script to enable this feature.
+Thanks to NiTrO for another idea! (version 0.70) </font></p>
+
+<p align="left"><font size="4">10/02/02 - Added new feature!  Now you can
+add "quiet channels" to a list by editing the script. These channels
+will not receive the usual script gaming messages. Read the script
+for more instructions on how to use this. Thanks to NiTrO for the
+idea! (version 0.60) </font></p>
+
+<p align="left"><font size="4">9/02/02 - Fixed some problems causing server
+error messages and away message problems.  Thanks to Pol for the heads-up.
+(version 0.56) </font></p>
+
+<p align="left"><font size="4">7/07/02 - Added rudimentary online help via
+the command /xqf-xchathelp. Updated the home page link in the script
+to the new one. (version 0.55) </font></p>
+
+<p align="left"><font size="4">12/09/01 - Licq detection was starting to
+get dodgy again, so I changed the regular expression to be less strict.
+Ran the script through perltidy. Now including this webpage
+in the package tarball. (version 0.54) </font></p>
+
+<p align="left"><font size="4">8/03/01 - Ludwig Nussel sent in a patch to
+fix a bug where the XChat user would get a error message if someone
+requested server information and you never cycled the script.  Thanks
+Ludwig!  (version 0.53) </font></p>
+
+<p align="left"><font size="4">7/25/01 - Thanks to Ludwig Nussel, XQF -&gt;
+XChat now has some nice new features and bug fixes. Licq can be
+started at any time now (before Licq had to be running at script
+initialization for any Licq support).  You can choose what Licq
+status you wish the script to use, like N/A, Occupied, Away, etc. (edit the
+script for this) As an appeasement to the mIRC crowd, the XChat
+command "/wallchan" can be used for various notifications. Finally,
+some bug fixes to make XQF -&gt; XChat work correctly with XChat 1.8.1.
+Thanks Ludwig!  (version 0.52) 
+</font></p>
+
+<p align="left"><font size="4">6/15/01 - Now XQF -&gt; XChat can set
+your /away status. &nbsp; Made it easy to enable/disable many features
+of the script by setting variables in one central location to 1 or 0.
+&nbsp; Read the script for more information on this and customize as
+you wish. &nbsp; Made the default feature selection less annoying for
+mIRC users.  (version 0.51)
+</font></p>
+	
+<p align="left"><font size="4">3/16/01 - Continued making XQF -&gt; XChat a
+good Perl-script neighbor by using the Perl packaging system.  &nbsp; Also
+added a flag to defeat the "gaming" nick change. &nbsp;  For now, you 
+will have to edit the script to set this. (version 0.50)
+</font></p>
+
+<p align="left"><font size="4">2/12/01 - Updated XQF -&gt; XChat to
+work better with other XChat Perl scripts that are running concurrently
+with this script. (version 0.43)
+</font></p>
+
+<p align="left"><font size="4">12/19/00 - Licq detection was proving erratic
+causing the script to disable Licq support erroneously or just plain hang.
+I've changed the code for this to something that will (hopefully) work better.
+(version 0.41)
+</font></p>
+
+<p align="left"><font size="4">12/14/00 - Licq support added!  XQF -&gt; XChat
+can now optionally update your Licq away message with the stats of the game
+server your are using. (version 0.40) 
+</font></p>
+
+<p align="left"><font size="4">11/23/00 - Initial public release (version 0.30)
+</font></p>
+
+<hr>
+<p align="center">
+<img src="../Count.cgi?df=xqf-xchat.dat&dd=B&ft=0" alt="Count">
+</p>
+<p align="center"><a href="http://www.slashdot.org/" target= 
+"_parent"><img src="images/slashdot_button.gif" width="88"
+height="31" alt="Slashdot" border="0"></a> 
+<a href="http://promo.net/pg/"><img src="images/PG_Button_104x40DEF64.gif" 
+width="104" height="40" alt="Go To Project Gutenberg" border="0"></a>
+<a href= "http://www.vim.org/" target="_parent"><img src= 
+"images/vim.vialle.love.anim.gif" width="88" height="31" alt=
+"vim.org" border="0"></a>
+</p>
+</body>
+</html>
+

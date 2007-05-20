@@ -1,0 +1,91 @@
+# set -x
+
+. restrict_repetitive_calls "1 minute"
+
+if echo "$NICK" | tolowercase | grep n3cro >/dev/null
+then exit 0
+fi
+
+EYES=`
+echo "**
+oo
+OO
+Oo
+oO
+xx
+..
+~o
+o=
+~~
+><
+>>
+<<
+++
+##
+@@
+^^
+vv
+%%
+**" | chooserandomline
+`
+
+STATE=`
+echo "
+-g
+-b
+-p
+-d
+-s
+-t
+-w
+-y" | chooserandomline
+`
+
+MODE=`
+cowsay -l | drop 1 |
+tr ' ' '\n' |
+grep -v "^$" |
+chooserandomline
+`
+
+COMMAND=`
+echo "/usr/bin/cowsay
+/usr/bin/cowthink" |
+chooserandomline
+`
+
+. irc.shlib
+. irccols.shlib
+
+[ "$CHANNEL" ] || CHANNEL="$NICK"
+
+STRING="$*"
+
+[ "$STRING" ] || STRING=moo
+
+"$COMMAND" -e "$EYES" $STATE "$STRING" |
+# /usr/bin/cowsay $STATE "$STRING" |
+# /usr/bin/cowsay -f "$MODE" "$STRING" |
+pipeboth |
+# grep -v "^[ 	]*$" |
+# sed 's+^+. +' |
+# cat
+# exit
+
+# foreachdo rainbow
+# while read LINE
+# do
+	# # rainbow "$LINE"
+	# [ "$COLNUM" -gt 14 ] && COLNUM=2
+	# COLCODE=""$COLNUM",99"
+	# COLNUM=$((COLNUM+1))
+	# printf "%s\n" "$COLCODE$COLBOLD$LINE$COLRESET"
+# done |
+# # sed 's+^[^ ]* ++' |
+# sed 's+\. ++' |
+# # sed 's+^\([^\.]\)\.+\1+ ; s+ ++' |
+# # sed 's+\\+\\\\\\\\+g' |
+sed 's+\\+\\\\\\\\+g' |
+sed "s+^+/msg $CHANNEL +" |
+cat
+

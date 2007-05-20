@@ -1,0 +1,12 @@
+list () {
+cat << !
+Puste pwns.
+Puste like totally pwns.
+Puste like totally pwns.
+Puste like totally pwns, rite.
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0

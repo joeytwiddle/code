@@ -1,0 +1,13 @@
+NICK_TO_INVITE="$1"
+
+if [ ! "$NICK_TO_INVITE" ]
+then
+	echo "To invite someone to this channel: !invite <nick_to_invite> (utb0t requires ops)"
+else
+	# echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try my backup: /msg utbot !invitebot $CHANNEL_TO_IDLE_IN"
+	# # echo "/join $CHANNEL_TO_IDLE_IN"
+	# if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
+	# echo "/join $*"
+	echo "/invite $NICK_TO_INVITE $CHANNEL"
+	echo "I have attempted to invite $NICK_TO_INVITE to $CHANNEL"
+fi

@@ -1,0 +1,87 @@
+. irc.shlib
+. irccols.shlib
+
+# echo "Sorry !whereis facility is down for a couple of days, try again on Monday."
+# exit 0
+
+# echo "Sorry !whereis is unavailable atm; please try again later this week :P"
+# exit 0
+
+# echo "Sorry !whereis scans are temporarily disabled.  Will fix ETA 24hrs..."
+# exit 0
+
+# DBAGE=`datediff -file /home/utquery/utquery/data`
+# touch -d "2 minutes 30 second" /tmp/add2.5minutes.date
+touch -d "60 second" /tmp/add2.5minutes.date
+# DBAGE=`datediff -files /home/utquery/utquery/data /tmp/add2.5minutes.date`
+LAST_UPDATE_FINISHED_FILE=/home/utquery/utquery/stats.ini
+# LAST_UPDATE_FINISHED_FILE=/home/utquery/utquery/query_all_servers.out
+# LAST_UPDATE_FINISHED_FILE=/home/utquery/utquery/data
+DBAGE=`datediff -files "$LAST_UPDATE_FINISHED_FILE" /tmp/add2.5minutes.date`
+
+# if [ "$CHANNEL" = "#ec.ut" ] # || [ "$CHANNEL" = "#ut.pmp" ]
+# then
+	# ## This turns !rivals off entirely for those channels
+	# ## Because !rivals prints !whereis, so !whereis sends response straight back to utb0t!
+	# notice > /dev/null
+	# echo "whereis script is disabled in this channel; try #whereisbot or /MSG."
+	# exit 0
+# fi
+
+if [ "$*" = "" ]
+then
+
+	echo "Type !whereis <utnick/clantag> to find where they are playing UT."
+
+else
+
+	DBAGESECS=`datediff -secs -file /home/utquery/utquery/data`
+	if [ "$DBAGESECS" -gt 1800 ] ## 30 minutes
+	# then echo "Sorry, I cannot query the servers when my owner is playing."
+	# then echo "(Sorry, I cannot update the data until my owner stops playing.)"
+	# then echo "(Sorry, I cannot query the servers again until my owner stops playing!)"
+	then
+		# echo "Sorry I haven't been able to scan recently because this idiot is playing:"
+		# echo "Sorry I haven't been able to scan recently because of this idiot:"
+		# echo "!wut"
+		# ./wut
+		echo "Sorry I haven't performed a scan recently."
+		exit 0
+	fi
+
+	# for NAME in $*
+	# do /home/utquery/utquery/whereis "$NAME"
+	# done |
+	# removeduplicatelines |
+	/home/utquery/utquery/whereis $* |
+
+	## Hide TO servers:
+	grep -v "\(\<TO3[45]0\>\|s_SWATGame\)" |
+
+	removeduplicatelines |
+	sed 's+^+unreal://+ ; s+ +/ + ; s+^\([^ ]*\) \([^ ]*\)+\2 \1+' |
+	randomorder |
+	head -n 12 | # 20 # 10 | ## avoid flooding
+	sort -k 2 | ## sort by server address (group by server)
+	# takecols 1 2 4 | columnise |
+
+	## Highlight :
+	sed 's+^\([^ ]*\) *\([^ ]*\) *[[:digit:] ]*/[[:digit:] ]*\([^ ]*\) *.*+\1 \2 \3+' | columnise |
+	# sed "s+^+$COLRED+ ; s+\( *\)\([^ ]*\)\( *\)+$COLBLUE\1\2\3$COLGREY+ ; s+\$+$COLRESET+" |
+	sed "s+^\([^ ]*\)\( *\)\([^ ]*\)\( *\)\(.*\)+$COLRED\1\2$COLBLUE\3\4$COLGREY\5$COLRESET+" |
+
+	# grep -v "\<TO-[^ ]*$" | ## strip servers playing TO maps NOT WORKING!
+	# grep -v "TO-" | ## strip servers playing TO maps, but also players :S
+	# grep -v "TO-[^ ]*$" | ## compromise
+	## OK now i'm catching TO340 or TO350 gametype above
+
+	grep .
+
+	[ "$?" = 0 ] &&
+	# echo "  was/were seen playing $DBAGE ago." ||
+	# echo "$COLGREY""I saw them playing $DBAGE (+ 0-3 minutes) ago.""$COLRESET" ||
+	echo "$COLGREY""I saw them playing about $DBAGE ago.""$COLRESET" ||
+	echo "$COLGREY""I did not see \"$*\" playing ($DBAGE ago).""$COLRESET"
+	# echo "I did not see \"$*\" playing when I looked ($DBAGE ago)."
+
+fi

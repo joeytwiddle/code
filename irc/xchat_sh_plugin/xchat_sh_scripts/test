@@ -1,0 +1,10 @@
+list () {
+cat << !
+Test completed successfully.  Full marks, wp idd.
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

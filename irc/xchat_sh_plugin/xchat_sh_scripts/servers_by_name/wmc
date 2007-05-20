@@ -1,0 +1,4 @@
+# # ./utp 85.133.16.52:7797
+# echo "WMC server closed, try:  (!iq)"
+# ./iq
+echo "WMC server closed, try !nwctf"

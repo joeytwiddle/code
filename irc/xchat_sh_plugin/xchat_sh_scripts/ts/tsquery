@@ -1,0 +1,81 @@
+. irc.shlib
+. irccols.shlib
+
+# IP=ts2.multiplay.co.uk
+# MAIN_PORT=8767
+# QUERY_PORT=14540
+
+IP="$1"
+# MAIN_PORT=8767
+QUERY_PORT="$2"
+MAIN_PORT="$3"
+[ "$QUERY_PORT" ] || QUERY_PORT=51234
+[ "$MAIN_PORT" ] || MAIN_PORT=8767
+
+if [ ! "$IP" ] || [ ! "$QUERY_PORT" ]
+then
+	echo "Usage: tsquery <ts_server_ip> [<query_port>] [<main_port>]"
+	exit 0
+fi
+
+try () {
+	qstat -P -ts2,port="$MAIN_PORT" "$IP":"$QUERY_PORT" 2>&1 # -d -d -d 2>&1
+}
+
+for ATTEMPT in `seq 1 10`
+do
+
+	# echo "Querying TS attempt $ATTEMPT" >&2
+
+	RESULT=`try | trimempty`
+	echo "$RESULT" > /tmp/result.out
+
+	if [ "$RESULT" = "" ] || echo "$RESULT" | grep "Segmentation fault" >/dev/null
+	then
+		# echo "FAILURE:"
+		# echo "$RESULT"
+		sleep 1
+		continue
+	else
+		echo "$RESULT" | fromline -x "ADDRESS.*" |
+
+		striptermchars | ## This is for servers like Explosive with crazy chars in their title, which IRC refuses to accept.
+		tr -s ' ' |
+		(
+
+			read IP REST
+			# echo -n "$COLBLUE""teamspeak://$IP""?nick=$NICK""$COLGREY ""$REST " |
+			echo -n "$COLBLUE""teamspeak://$IP$COLGREY ""$REST " |
+			sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
+
+			# cat > /dev/null
+			dropcols 1 2 |
+			sed "s+^+$COLRED+" |
+			# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
+			# sed "s+^+$COLRED+" |
+			sed "s+$+$COLGREY, +" |
+			tr '\n' ' ' |
+			tr -s ' ' |
+			sed 's+, $++' |
+			# sed "s+^+[ + ; s+\$+ ]+"
+			sed "s+^+$COLGREY[ + ; s+\$+ $COLGREY]+"
+			# sed "s+^+ -\\\\- + ; s+\$+ -/-+"
+			# sed "s+^+ \\\\\\\\- + ; s+\$+ -//+"
+			# sed "s+^+ \\\\\\\\--( + ; s+\$+ )--//+"
+			# sed "s+^+ ~\\\\~ + ; s+\$+ ~/~+"
+			# sed "s+^+ \\\\\\\\ + ; s+\$+ //+"
+
+			## Why did I have COLRESET off?!
+			echo " ($ATTEMPT)$COLRESET"
+			# echo
+
+		) |
+		## No it's best not to break up the line here, they might be grepped outside of here.
+		# sed "s+\(.\{0,245\}[^ ]\)\(  *\|$\)+\0$NL +g" | grep -v "^ $"
+		cat
+
+		break
+	fi
+
+done
+

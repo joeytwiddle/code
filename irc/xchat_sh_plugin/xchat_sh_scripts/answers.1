@@ -1,0 +1,45 @@
+. irc.shlib
+. irccols.shlib
+
+. wordgame.shlib
+
+if [ "$1" = --force-list ]
+then
+
+	list_answers
+
+else
+
+	AGE_SECONDS=`datediff -secs -file "$LETTERS_FILE"`
+	if [ "$AGE_SECONDS" -lt 120 ] && [ ! "$FORCE" ]
+	then
+
+		SECONDS_LEFT=$((120-AGE_SECONDS))
+		echo "I won't give the answers for another $SECONDS_LEFT seconds."
+
+	else
+
+		WORDS=` list_answers | tr '\n' ' ' `
+
+		# echo "Answers: $COLYELLOW$WORDS$COLGREY"
+
+		echo -n "Answers:"
+		for WORD in $WORDS
+		do
+			if already_guessed "$WORD"
+			then WORDCOL="$COLBLUE" 
+			elif [ "`strlen "$WORD"`" = 9 ]
+			then WORDCOL="$COLYELLOW$COLBOLD"
+			else WORDCOL="$COLYELLOW"
+			fi
+			echo -n " $WORDCOL$WORD$COLRESET"
+		done
+		echo "$COLGREY"
+
+		## Force a new game to start (provided answers were not forced, for game-start):
+		[ "$FORCE" ] || ./wordgame
+
+	fi
+
+fi
+

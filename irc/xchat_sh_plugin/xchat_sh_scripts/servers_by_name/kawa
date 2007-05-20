@@ -1,0 +1,2 @@
+# ./utp "$@" unreal://195.117.131.105 unreal://kawa.servegame.org/
+./utp "$@" unreal://kawa.servegame.org/

@@ -1,0 +1,4 @@
+# ts/tsquery 69.64.58.71 51234 8767
+# ./ts/tsscrape "http://www.projekt-teamspeak.de/webpost2/listing.php?detail=62.75.219.86&detailport=9017&page=3&sort=server_name&direction=asc&showgroup=all" 9017
+# echo "teamspeak2://62.75.219.86:9018/"
+./ts/tsquery 62.75.219.86 17519 9017

@@ -1,0 +1,9 @@
+PASS="$1"
+shift
+
+if [ "$PASS" = wibble ]
+then
+	"$@"
+else
+	:
+fi

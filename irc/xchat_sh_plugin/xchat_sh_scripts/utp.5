@@ -1,0 +1,73 @@
+## OMG noob: use -raw to use a custom field-delimeter, to make parsing the output easier.
+##           or even -xml or "template mode" (see http://www.qstat.org/faq.html )
+
+. irccols.shlib
+
+if [ "$1" = -justserver ]
+then JUSTSERVER=true ; shift
+fi
+
+if [ "$1" = -noplayers ]
+then NOPLAYERS=true ; shift
+fi
+
+[ "$JUSTSERVER" ] && NOPLAYERS=true
+
+NL="\\
+"
+
+for URL in $*
+do
+	IP=`echo "$URL" | sed 's+^unreal://++ ; s+/$++'`
+	# qstat -default uns -timeout 10 -P "$IP" |
+	qstat -default uns -timeout 5 -P "$IP" |
+	# tee -a /tmp/qstats.out |
+	striptermchars | ## This is for servers like Explosive with crazy chars in their title, which IRC refuses to accept.
+	drop 1 |
+	# sed 's+^[[:digit:].:][^ 	]*[ 	]*++' |
+	tr -s ' ' |
+	(
+
+		[ "$JUSTSERVER" ] || KEEPINFO="\\2 "
+
+		read IP REST
+		# echo -n "$COLBLUE""unreal://$IP $COLGREY""$REST "
+		echo -n "$COLBLUE""unreal://$IP$COLGREY ""$REST " |
+		# sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
+		sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+"
+
+		# cat > /dev/null
+		sort -n -r -k 1 | ## highest frags first :)
+		# tee /tmp/utp.mid |
+		# takecols 5 |
+		takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
+		# sed "s+^+$COLRED+" |
+		sed "s+$+$COLGREY, +" |
+		tr '\n' ' ' |
+		tr -s ' ' |
+		sed 's+, $++' |
+		# sed "s+^+[ + ; s+\$+ ]+"
+		sed "s+^+$COLGREY[ + ; s+\$+ $COLGREY]+" |
+		# sed "s+^+ -\\\\- + ; s+\$+ -/-+"
+		# sed "s+^+ \\\\\\\\- + ; s+\$+ -//+"
+		# sed "s+^+ \\\\\\\\--( + ; s+\$+ )--//+"
+		# sed "s+^+ ~\\\\~ + ; s+\$+ ~/~+"
+		# sed "s+^+ \\\\\\\\ + ; s+\$+ //+"
+		if [ "$NOPLAYERS" ]
+		then cat > /dev/null
+		else cat
+		fi
+
+		## Why did I have COLRESET off?!
+		echo "$COLRESET"
+		# echo
+
+	) |
+	## No it's best not to break up the line here, they might be grepped outside of here.
+	# sed "s+\(.\{0,245\}[^ ]\)\(  *\|$\)+\0$NL +g" | grep -v "^ $"
+	cat
+done |
+## For some reason if I /say a line more than 80 chars long, none of the following lines are displayed.
+# sed "s+^.............................................................................+\0...$NL...+g" |
+# tee /tmp/out_overall.txt
+cat

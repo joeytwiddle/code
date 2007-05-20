@@ -1,0 +1,10 @@
+list () {
+cat << !
+<Golyat> i got alot stamina <Golyat> and sexapplea <Golyat> sex apple
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

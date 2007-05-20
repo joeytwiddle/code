@@ -1,0 +1,16 @@
+list () {
+cat << !
+"There is always a way to pwn." - The Masterer
+Mr. Spock says there are always alternatives.
+Mr. Spock rules - he's the coolest!
+Are wasps scary because they wear yellow+black stripes, or are yellow+black stripes scary because that's what wasps wear?
+Is the cold coming, or is the heat leaving?
+!
+# Mr. Spock says there is always an alternative.
+# I may have gone to Amsterdam!  Phone/txt me: +447791 944657
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,29 @@
+. irc.shlib
+. irccols.shlib
+
+## Note: in lowercase, proper nouns in the wordlist are ignored
+
+TOTAL=1
+
+EXAMPLE=""
+
+for LETTER in `
+	echo "$*" | tolowercase | sed 's+[^A-Za-z]++g' | sed 's+.+\0\
+	+g'
+`
+do
+	# echo "$LETTER"
+	NUMWORDS=`memo grep "^$LETTER" /usr/share/dict/words | wc -l`
+	# TOTAL=`expr "$TOTAL" '*' "$NUMWORDS"`
+	# TOTAL=$((TOTAL*NUMWORDS))
+	TOTAL=`./calc "$TOTAL * $NUMWORDS"`
+	## these both exceed limits if u !jargon jargon :S
+	# AWORD=`memo grep "^$LETTER" /usr/share/dict/words | chooserandomline`
+	## More efficient version:
+	LINE=`awk " BEGIN { srand("$RANDOM$RANDOM"); printf( int( $NUMWORDS * rand() ) ); } "`
+	AWORD=`memo grep "^$LETTER" /usr/share/dict/words | getline "$((LINE+1))"`
+	EXAMPLE="$EXAMPLE $AWORD"
+done
+
+echo "There are $TOTAL possible meanings of \"$*\"; one example is:$EXAMPLE"
+

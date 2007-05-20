@@ -1,0 +1,26 @@
+export NOTICE_STYLE="none"
+
+export NOPLAYERS=true
+
+(
+./tacsu "$@"
+./tits "$@"
+./zoo "$@"
+./pmp "$@"
+./pwa "$@"
+./f0x "$@"
+./nogginzp "$@"
+./smo "$@"
+./bmb "$@"
+./utp "$@" 85.236.100.43 ## Multiplay CTF
+./xol "$@"
+./ffa "$@"
+./focr "$@"
+./terror "$@"
+./dk "$@"
+./fraggerspub "$@"
+) |
+grep --line-buffered -v " 0/" |
+# sort -n -r -k 2 | ## Not working for 10+
+# grep . || echo "None of the servers are populated right now.  Try !xol !ffa !focr or !terror :P"
+grep --line-buffered . || echo "No nwCTF servers have players right now.  (If I missed any, please PM me!)"

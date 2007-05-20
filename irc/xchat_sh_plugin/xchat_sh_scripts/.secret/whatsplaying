@@ -1,0 +1,17 @@
+. irccols.shlib
+
+whatsplaying |
+while read WHATFILE
+do
+	TRACKDESCR=`mp3info -p "%a (%l) \"%t\"\n" "$WHATFILE" 2>&1`
+	if
+		## mp3info gave an error:
+		echo "$TRACKDESCR" | grep "does not have a" >/dev/null ||
+		## mp3info (minus those chars) gave nothing:
+		echo "$TRACKDESCR" | tr -d ' ()\"-' | grep "^$" >/dev/null
+	then TRACKDESCR=`echo "$WHATFILE" | afterlast /`
+	fi
+	# echo "/ME is listening to $TRACKDESCR"
+	echo "/ME is listening to $COLPINK$TRACKDESCR$COLNORM"
+	## or a program which is occupying the sound device also has that media file open
+done

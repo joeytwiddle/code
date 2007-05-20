@@ -1,0 +1,135 @@
+. irc.shlib
+. irccols.shlib
+
+filter_by_gametype () {
+	read SERVERLINE || return 1
+	while true
+	do
+		if echo "$SERVERLINE" | grep "\<\(CTFGame\|DeathMatchPlus\|TeamGamePlus\|SmartCTFGame\|Domination\|Assault\)\>" >/dev/null
+		then PRINT=true
+		else PRINT=
+		fi
+		[ "$PRINT" ] && echo "$SERVERLINE"
+		while true
+		do
+			IFS= read LINE || return 0
+			if echo "$LINE" | grep "^[ 	]" >/dev/null
+			then [ "$PRINT" ] && echo "$LINE"
+			else SERVERLINE="$LINE" ; break
+			fi
+		done
+	done
+}
+
+TOPNUM=3
+[ "$1" ] && TOPNUM="$1"
+[ "$TOPNUM" -gt 20 ] && TOPNUM=20 ## We don't want too many
+[ "$TOPNUM" -lt 21 ] || TOPNUM=5 ## I hope this checks that TOPNUM is a number ^^
+
+(
+
+# echo "Scanning, please be patient..."
+# echo "Filtering, please wait a moment..."
+AGE=`datediff -file /home/utquery/utquery/query_all_servers.out`
+echo "$COLRESET""The top $TOPNUM UT players ($AGE ago) were: $COLGREY(please wait)$COLRESET"
+
+. importshfn memo rememo
+
+## The memo was not caching filter_by_gametype because it was returning non-zero!
+# export DEBUG=true
+# export MEMO_SHOW_INFO=true
+# export DEBUG_MEMO=true
+
+# set -x
+
+COUNT=1
+
+export IKNOWIDONTHAVEATTY=true
+cat /home/utquery/utquery/query_all_servers.out |
+memo -t "5 minutes" filter_by_gametype |
+# tee /tmp/filter.out |
+grep "^[ 	]" |
+sort -n -r -k 1 |
+head -n "$TOPNUM" |
+takecols 1 5 |
+while read SCORE NAME
+do
+	# SERVER=`
+		# /home/utquery/utquery/lastseen "$NAME" |
+		# sed 's+^.* \(.*\)+\1+'
+	# `
+	SERVER=` memo -t "5 minutes" /home/utquery/utquery/lastseen -iponly "$NAME" | takecols 1`
+	# SERVER=` ./utp "$SERVER" `
+	# SERVER="$COLBLUE$SERVER"
+	# echo "$COLRED$NAME$COLRESET has $COLGREEN$SCORE$COLRESET points on $SERVER$COLRESET"
+	# echo "$COLRED$NAME$COLRESET leads with $COLGREEN$SCORE$COLRESET points on $SERVER$COLRESET"
+	SERVER=` memo -t "10 minutes" ./utp -justserver "$SERVER" `
+	# SERVER=` ./utp -noplayers "$SERVER" `
+	# [ "$COUNT" = 1 ] && SHOWNUM="was leading with" || SHOWNUM="was #$COUNT with"
+	# echo "$COLRED$NAME $COLRESET$SHOWNUM $COLGREEN$SCORE $COLRESET""points on $COLBLUE$SERVER$COLRESET"
+	echo "$COLGREY#$COLRESET$COUNT$COLGREY: $COLGREEN$SCORE $COLRED$NAME $COLBLUE$SERVER$COLRESET"
+	COUNT=$((COUNT+1))
+done
+
+) |
+
+if [ "$TOPNUM" -gt 5 ]
+then notice
+else cat
+fi
+
+exit 0
+
+
+
+## OLD:
+list () {
+# echo '=(.Y.)=Xena' ; return 0
+# echo '[eC]Puste' ; return 0
+# echo 'fox.s!ster' ; return 0
+# echo "=(F0X)=HuAtH" ; return 0
+# echo "F0X|nogginBasher" ; return 0
+# echo "[eC]Ormolu" ; return 0
+# echo "F0X|zbe of course!" ; return 0
+# echo ".::TEF::.Duffy"; return 0
+cat << !
+Darth_T0tt
+[eC]Proshee
+[eC]Prisma
+[eC]Xenomorph
+[eC]>\\\\Rednas/<
+[EC]Quante
+[eC]Urban{+_-}
+[eC]Puste
+[eC]Ormolu
+=(rt)=mr.jack
+=(rt)=Tyranny
+=(rt)=YuriGagarin
+]V[isso
+\\\\nW/NoXiC
+F0X|zbe
+F0X|_tAiger
+F0X|s!ster
+.::TEF::.Duffy
+.::TEF::.Chaosdrache
+TE^Rork
+=(.Y.)=KillerQueen
+=(.Y.)=Janne
+sest6
+{DnF2}FiX
+{FuB}Cryo
+LoneWolf
+RainCheck
+Arma|Away
+=(.Y.)=Xena
+!
+# .::TEF::.BunnyHopper
+# F0X|Tommo
+# F0X|sir_j
+# =(F0X)=HuAtH
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

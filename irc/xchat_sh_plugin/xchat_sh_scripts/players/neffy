@@ -1,0 +1,13 @@
+list () {
+cat << !
+Neffy is the mascot for ukip and eC.
+Neffy is the uber-duper furry mascot for ukip and eC.
+Neffy is the mascot for ukip and eC.  Shake her like a pom-pom!
+All hail t3h big little neffeh creature!  #neffy for worship asap imo
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

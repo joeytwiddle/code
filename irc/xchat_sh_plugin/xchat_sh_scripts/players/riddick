@@ -1,0 +1,11 @@
+list () {
+cat << !
+\NwB/Riddick is very intleigent
+!
+# \NwB/Riddick can't play in eC server becouse he needs the pachage"De"mistchmat
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

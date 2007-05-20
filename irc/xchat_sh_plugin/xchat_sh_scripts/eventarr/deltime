@@ -1,0 +1,9 @@
+. eventarr/eventarr.shlib
+
+EVENTNUM="$1"
+DATENUM="$2"
+
+if [ "$EVENTNUM" ] && [ "$DATENUM" ]
+then $EVENTARR deldate "$EVENTNUM" "$DATENUM"
+else output_help "If you suggested a date, but it was parsed wrong, you can delete it with: !deltime <event_number> <date_number>"
+fi | notice

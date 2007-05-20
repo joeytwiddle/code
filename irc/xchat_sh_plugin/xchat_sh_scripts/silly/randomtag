@@ -1,0 +1,23 @@
+. irccols.shlib
+
+NUMPRE=`seq 2 5 | chooserandomline`
+NUMPOST=`seq 0 3 | chooserandomline`
+
+NAME="$1"
+[ "$NAME" ] || NAME="$NICK"
+
+CHARS="[]{}():|.,></'@\`#=+-_^&\"!~\\"
+LETTERS="ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+LETTERS="abcdefghijklmnopqrstuvwxyz$LETTERS"
+PICK=`echo "$CHARS$CHARS$CHARS$CHARS$CHARS$CHARS$CHARS$CHARS$LETTERS" | sed 's+.+\0\n+g'`
+
+build () {
+	for X in `seq 1 "$1"`
+	do echo "$PICK" | chooserandomline | tr -d '\n'
+	done
+}
+
+PRE=`build "$NUMPRE"`
+POST=`build "$NUMPOST"`
+
+echo "$PRE$NAME$POST"

@@ -1,0 +1,26 @@
+# Trigger file. One trigger per line. Used by Flash-trigger.pl
+# 
+# Trigger|Channel|Action
+# Note: Use ALL for all channels
+#
+# Triggers and actions can contain codes: 
+#       %c = Current channel
+#       %n = Nick of person calling trigger
+#       %m = My nick
+#	%s = Current irc server
+#	%t = Current channel topic
+#
+# Note: Don't use "/" before an action| that's already implied. 
+#
+# Example:
+#       !spam|#3am|say Booooooooooooooooom!
+#       !kiss|ALL|me kisses %n
+#       slaps %m|ALL|say Oi! Oi! Stop %n somebody, they keep slapping me!
+# (Last one responds when somebody slaps you)
+#---------------------------------------
+!spam|ALL|say Boooooooooom!
+!wut|ALL|me stabs the wutter...
+!kiss|ALL|me snoggles up to %n in %c...
+!kickme|ALL|kick %n You asked for it, %n
+!example|ALL|say Me: %m, You: %n, Chan: %c, Server: %s, Topic: %t
+slaps %m|ALL|say Oi! Oi! Stop %n somebody, they keep slapping me!

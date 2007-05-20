@@ -1,0 +1,13 @@
+list () {
+cat << !
+Don't even go there.
+Please don't make me!
+Please don't make me!
+Kernhigh spams even more in IRC than he does in UT.
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

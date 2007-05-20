@@ -1,0 +1,14 @@
+./utp "$@" 82.96.91.3:6100
+
+# ut_servers/ffa "$@"
+# exit
+
+# . irc.shlib
+# 
+# ## Old idk: 213.131.244.240:9977
+# ## Has become Rookies pug: 85.14.226.111:7777
+# ## Has become Firedevils soccer: 85.14.224.229
+# ## now down: 82.96.91.7:6200
+# ##    inz             old friends      house-of-honk
+# ./utp 82.96.91.3:6100 82.96.91.13:6200 85.14.236.47 |
+# notice

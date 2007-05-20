@@ -1,0 +1,16 @@
+# ./utp `'ls' /home/utquery/utquery/data/ | grep .players"$" | chooserandomline | sedreplace ".players" ""`
+
+## The !random command is used by Rival, so:
+if [ "$CHANNEL" = "#ut994funpug" ] || [ "$CHANNEL" = "#ctfpug" ]
+then exit 0
+fi
+
+COUNT=1
+[ "$1" ] && COUNT="$1" && shift
+
+./utp "$@" `'ls' /home/utquery/utquery/data/ | grep .players"$" | randomorder | tail -n "$COUNT" | sedreplace ".players" ""`
+
+# 'ls' /home/utquery/utquery/data/ | grep .players"$" | randomorder | sedreplace ".players" "" |
+# foreachdo ./utp |
+# grep -v " TO-" |
+# head -n "$COUNT"

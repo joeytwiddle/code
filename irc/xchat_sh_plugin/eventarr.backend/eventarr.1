@@ -1,0 +1,178 @@
+# DATA_DIR="$HOME/eventarr/data"
+DATA_DIR="/home/utquery/eventarr/data"
+
+CATEGORY="ut"
+
+##
+
+[ "$USERNAME" ] || USERNAME="$USER"
+
+EVENTS_DIR="$DATA_DIR/$CATEGORY"
+
+ME=`realpath "$0"`
+
+errorexit () {
+	echo "Cannot process: $*"
+	exit 1
+}
+
+geteventdir () {
+	[ "$EVENTNUM" ] || errorexit "no event number"
+	EVENTDIR="$EVENTS_DIR/$EVENTNUM"
+	[ "$1" = -check ] && [ ! -d "$EVENTDIR" ] && errorexit "event number $EVENTNUM does not exist"
+}
+
+getdatedir () {
+	[ "$DATENUM" ] || errorexit "no date number"
+	DATEDIR="$EVENTDIR/$DATENUM"
+	[ "$1" = -check ] && [ ! -d "$DATEDIR" ] && errorexit "date number $DATENUM does not exist"
+}
+
+getuniversaldate () {
+	# TZ=GMT date -d "2005/09/04 03:02:00 CET"
+	UNIVERSALDATE=`TZ=GMT date -d "$DATE $TIMEZONE" +"%s"`
+}
+
+lastnumin () {
+	find "$1" -maxdepth 1 -type d -printf "%f\n" | tail -1
+}
+
+getnicedatefromseconds () {
+	DATESTRING="1 January 1970 GMT + $SECONDS seconds"
+	DATEDIFFSECS=`datediff -secs -eng now "$DATESTRING"`
+	if [ "$DATEDIFFSECS" -lt 86400 ] ## 24 hours
+	then NICEDATE="In "`datediff -eng now "$DATESTRING"`"!"
+	else NICEDATE=`date -d "$DATESTRING"`
+	fi
+}
+
+COMMAND="$1"
+shift
+
+case "$COMMAND" in
+
+	newevent)
+		NAME="$1"
+		# LASTEVENT=`find "$EVENTS_DIR" -maxdepth 1 -type d | afterfirst "$EVENTS_DIR/" | tail -1`
+		LASTEVENT=`lastnumin "$EVENTS_DIR"`
+		EVENTNUM="$((LASTEVENT+1))"
+		geteventdir
+		mkdir -p "$EVENTDIR"
+		printf "%s" "$NAME" > "$EVENTDIR"/name.txt
+		echo "$USERNAME" > "$EVENTDIR"/user.txt
+	;;
+
+	adddate)
+		EVENTNUM="$1"
+		DATE="$2"
+		TIMEZONE="$3"
+		geteventdir -check
+		LASTDATE=`lastnumin "$EVENTDIR"`
+		DATENUM="$((LASTDATE+1))"
+		getdatedir
+		if getuniversaldate 2>/dev/null
+		# echo "$?"
+		# if [ "$UNIVERSALDATE" ]
+		then
+			mkdir -p "$DATEDIR"
+			echo "$USERNAME" > "$DATEDIR"/user.txt
+			echo "$UNIVERSALDATE" > "$DATEDIR"/date.txt
+		else
+			echo "Sorry, I couldn't parse date \"$DATE\"."
+		fi
+	;;
+
+	listevents)
+		cd "$EVENTS_DIR"
+		for EVENTNUM in *
+		do "$ME" showevent "$EVENTNUM"
+		done
+	;;
+
+	showevent)
+		EVENTNUM="$1"
+		geteventdir -check
+		NAME=`cat "$EVENTDIR"/name.txt`
+		USERNAME=`cat "$EVENTDIR"/user.txt`
+		# echo "$EVENTNUM) $NAME [$USERNAME]"
+		if [ -e "$EVENTDIR"/finalised.date ]
+		then
+			DATEDIR="$EVENTDIR"/finalised.date
+			SECONDS=`cat "$DATEDIR"/date.txt`
+			getnicedatefromseconds "$SECONDS"
+			echo "$EVENTNUM) $NAME >> $NICEDATE"
+		else
+			echo "$EVENTNUM) $NAME >> ???"
+			# "$ME" listdates "$EVENTNUM" | sed 's+^+  +'
+		fi
+	;;
+
+	listdates)
+		EVENTNUM="$1"
+		geteventdir -check
+		if [ ! -e "$EVENTDIR"/finalised.date ]
+		then
+			# find "$EVENTDIR/" -type d -maxdepth 1 -printf "%f\n" |
+			find "$EVENTDIR"/* -type d -maxdepth 1 -printf "%f\n" |
+			while read DATENUM
+			do
+			# for DATENUM in */
+			# do
+				# jshinfo "DATENUM=$DATENUM"
+				# SECONDS=`echo "$DATENUM" | sed 's+/$++'`
+				getdatedir
+				SECONDS=`cat "$DATEDIR"/date.txt`
+				USERNAME=`cat "$DATEDIR"/user.txt`
+				# NICEDATE=`getnicedatefromseconds "$SECONDS"`
+				getnicedatefromseconds "$SECONDS"
+				# echo "$DATENUM) $NICEDATE [$USERNAME]"
+				echo "  $DATENUM) $NICEDATE"
+				SUBSCRIPTION_FILE="$DATEDIR"/subscribed.txt
+				if [ -f "$SUBSCRIPTION_FILE" ]
+				then
+					SUBSCRIBED_NUM=`cat "$SUBSCRIPTION_FILE" | wc -l `
+					SUBSCRIBED_LIST=`
+						cat "$SUBSCRIPTION_FILE" |
+						sed 's+$+, +' | tr -d '\n' | sed 's+, $++'
+					`
+					echo "    $SUBSCRIBED_NUM available: $SUBSCRIBED_LIST"
+				fi
+			done
+		fi
+	;;
+
+	subscribe)
+		EVENTNUM="$1"
+		DATENUM="$2"
+		geteventdir -check
+		getdatedir -check
+		SUBSCRIPTION_FILE="$DATEDIR"/subscribed.txt
+		REGEXP=`toregexp "$USERNAME"`
+		(
+			if [ -f "$SUBSCRIPTION_FILE" ]
+			then cat "$SUBSCRIPTION_FILE" | grep -v "$REGEXP"
+			fi
+			echo "$USERNAME"
+		) | dog "$SUBSCRIPTION_FILE"
+	;;
+
+	finalise)
+		EVENTNUM="$1"
+		DATENUM="$2"
+		geteventdir -check
+		getdatedir -check
+		ORIGINALUSERNAME=`cat "$EVENTDIR/user.txt"`
+		if [ ! "$ORIGINALUSERNAME" = "$USERNAME" ]
+		then
+			errorexit "Only $ORIGINALUSERNAME can finalise this event."
+		else
+			ln -s "$DATEDIR" "$EVENTDIR"/finalised.date
+		fi
+	;;
+
+	*)
+		error "I don't recognise: $COMMAND ($*)"
+		exit 1
+	;;
+
+esac

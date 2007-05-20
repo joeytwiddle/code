@@ -1,0 +1,95 @@
+LETTERS_FILE=/tmp/letters
+GUESSED_FILE=/tmp/guessed_words.list
+
+DICTIONARY_FILES="/usr/share/dict/words"
+
+LETTERS=`( cat "$LETTERS_FILE" | tr '\n' ' ' ; echo )`
+
+[ "$NICK" ] || NICK="$USER"
+
+extract_legal_words () {
+	grep -v "'" | ## no apostrophes
+	grep -v "^[A-Z]" | ## No Proper Nouns
+	grep "...." ## >= 4 letters
+}
+
+randomise_letters () {
+	sed 's+.+\0 +g' | tr ' ' '\n' | grep -v "^$" | randomorder | tr '\n' ' '
+}
+
+make_new_letterset () {
+
+	if [ "$1" ] && echo "$1" | grep "^[0-9][0-9]*$" >/dev/null && [ "$1" -gt 3 ] && [ "$1" -lt 21 ]
+	then NUM_LETTERS="$1"
+	else NUM_LETTERS=9
+	fi
+
+	## Random:
+	# (
+		# for X in `seq 1 5`
+		# do randomconsonant
+		# done
+		# for X in `seq 1 3`
+		# do randomvowel
+		# done
+		# ( randomvowel ; randomconsonant ) | chooserandomline
+	# ) | randomorder |
+
+	# ## From a real nine-letter word:
+	# grep "^.........$" /usr/share/dict/words |
+
+	REGEXP=""
+	for LETTERNUM in `seq 1 $NUM_LETTERS`
+	do REGEXP="$REGEXP".
+	done
+	cat $DICTIONARY_FILES |
+	grep "^$REGEXP$" |
+	# grep -v "^[A-Z]" |
+	# grep -v "'" |
+	extract_legal_words |
+	chooserandomline |
+	randomise_letters |
+
+	cat > "$LETTERS_FILE"
+
+	printf "" > "$GUESSED_FILE"
+
+}
+
+if [ ! -f "$LETTERS_FILE" ]
+then make_new_letterset
+fi
+
+list_answers () {
+	## May not contain all dictionary words (may be an underestimate of possible guessable words)
+	an -w "$LETTERS" |
+	# grep "...." |
+	# grep -v "'"
+	extract_legal_words
+}
+
+list_unguessed_words () {
+	list_answers |
+	while read WORD
+	do already_guessed "$WORD" || echo "$WORD"
+	done
+}
+
+already_guessed () {
+	WORD="$1"
+	grep "^$WORD was" "$GUESSED_FILE" >/dev/null
+}
+
+increase_score () {
+	NICK="$1"
+	SCORE_TO_ADD="$2"
+	SCORE_FILE=/tmp/wordgame."$NICK".score
+	if [ ! -f "$SCORE_FILE" ]
+	then CURRENT_SCORE=0
+	else CURRENT_SCORE=`cat "$SCORE_FILE"`
+	fi
+	CURRENT_SCORE=$((CURRENT_SCORE+SCORE_TO_ADD))
+	echo "$CURRENT_SCORE" > "$SCORE_FILE"
+	# echo "$NICK now has a score of $CURRENT_SCORE!"
+}
+

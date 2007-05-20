@@ -1,0 +1,36 @@
+list () {
+cat << !
+Proshee is super-duper!
+Proshee is super-duper!
+Proshee is super-duper!
+Proshee is the best!
+Proshee is the best!
+Proshee is the best!
+Proshee is the greatest!
+Proshee is the greatest!
+Proshee is the greatest!
+Proshee is wonderful!
+Proshee is wonderful!
+Proshee is wonderful!
+Proshee is a pro geek.
+Proshee is a pro geek.
+Proshee is a pro geek.
+Proshee is Pro at IRC.
+Proshee is Pro at IRC.
+Proshee is Pro at IRC.
+Proshee pwns.
+Proshee pwns.
+Proshee pwns.
+Proshee is very occasionally a bit n00bish imo.
+Proshee is Superwoman.
+!
+# Proshee is a n00b.  End of story.
+# Proshee is a n00b.
+# Proshee is a l33t g33k.
+# Proshee is an uber pro geek.
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,14 @@
+CHANNEL_TO_IDLE_IN="$1"
+
+if [ ! "$CHANNEL_TO_IDLE_IN" ]
+then
+	echo "Usage: !invitebot <channel_name> [ <channel_pass> ]"
+elif ! echo "$CHANNEL_TO_IDLE_IN" | grep "^#" >/dev/null
+then
+	echo "Channel name should start with #"
+else
+	echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try my backup: /msg utbot !invitebot $CHANNEL_TO_IDLE_IN"
+	# echo "/join $CHANNEL_TO_IDLE_IN"
+	if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
+	echo "/join $*"
+fi

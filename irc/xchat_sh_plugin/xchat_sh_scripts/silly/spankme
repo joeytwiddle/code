@@ -1,0 +1,13 @@
+[ "$1" ] && EXTRA=" $*"
+
+## 1st person to 3rd person
+EXTRA=`
+	echo "$EXTRA" |
+	sed "
+		s+\<I'm\>+he/she's+ig
+		s+\<I\>+he/she+ig
+		s+\<my\>+his/her+ig
+	"
+`
+
+echo "/me spanks $NICK$EXTRA"

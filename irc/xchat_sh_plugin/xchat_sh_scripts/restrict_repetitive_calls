@@ -1,0 +1,24 @@
+## This script should be sourced with a timelimit provided as the argument (e.g.: . restrict_repetitive_calls "2 minutes")
+
+CALLER="`filename "$0"`"
+
+DELAY_TIME="$1"
+
+LAST_CALLED_FILE=/tmp/"$CALLER".lastcalled
+
+if [ -f "$LAST_CALLED_FILE" ]
+then
+
+	touch -d "$DELAY_TIME ago" /tmp/delay_time
+
+	if newer "$LAST_CALLED_FILE" /tmp/delay_time
+	then
+		# echo "Sorry, you may not call $CALLER again for a while."
+		echo "Sorry, you may not use \!$CALLER again for a little while..."
+		exit 0
+	fi
+
+fi
+
+## We haven't exited; so command will be called.
+touch "$LAST_CALLED_FILE"

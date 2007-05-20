@@ -1,0 +1,21 @@
+## Pretends to give ops to caller, or to the given nick.
+
+. irccols.shlib
+
+TARGET="$1"
+[ "$TARGET" ] || TARGET="$NICK"
+
+if [ "$CHANNEL" = "#proshee" ]
+then echo "/op $TARGET"
+else
+
+	echo "/me gives channel operator status to $COLAQUA$TARGET$COLRESET"
+	CALLER_PUGBIT=`echo "$NICK" | grep "^[a-zA-Z]\-"`
+	CALLED_PUGBIT=`echo "$1" | grep "^[a-zA-Z]\-"`
+	if [ "$1" ] && [ "$CHANNEL" = "#noobpug" ] && [ ! "$NICK" = "$1" ] && [ "$CALLER_PUGBIT" ] && [ "$CALLED_PUGBIT" ]
+	then "/msg Q chanlev #noobpug $1 +aov"
+	fi
+	
+
+fi
+

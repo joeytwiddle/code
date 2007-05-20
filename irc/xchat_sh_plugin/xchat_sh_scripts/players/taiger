@@ -1,0 +1,17 @@
+exit 0
+
+list () {
+cat << !
+!
+# <_tAiger\`> btw, noggin can u remove that taiger command, pls ?
+# [18:02:39] [@xena\`] taiger I only love you !
+# _tAiger is leaving F0X =/
+# tiger's are spelt "tiger"
+# taiger is spelt "_tAiger"
+# _tAiger is returning to F0X :D
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

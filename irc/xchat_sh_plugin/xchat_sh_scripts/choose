@@ -1,0 +1,3 @@
+. restrict_repetitive_calls "1 minute"
+
+echolines "$@" | chooserandomline

@@ -1,0 +1,8 @@
+Flash's Trigger Script. 0.9 (Win/Lin)
+Easily modified trigger script responds to
+user triggers. Example "!Example". 
+Says/acts/kicks - your choice. 
+Single or multiple channels. 
+Easy button for editing textfile triggerlist (Windows)
+(Now triggers if trigger is in part of string, not exact
+match)

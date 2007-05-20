@@ -1,0 +1,130 @@
+if [ "$CHANNEL" = "#xoldog" ]
+then
+	echo "Spam in #wordgame ;)"
+	exit 0
+fi
+
+. irc.shlib
+. irccols.shlib
+
+[ "$NICK" ] || NICK=nogginb0t
+
+remove_letter () {
+	LETTER_TO_REMOVE="$1"
+	NEW_LETTERS=""
+	DONE_REMOVE_ALREADY=
+	for L in $LETTERS
+	do
+		if [ ! "$DONE_REMOVE_ALREADY" ] && [ "$L" = "$LETTER_TO_REMOVE" ]
+		then DONE_REMOVE_ALREADY=true
+		else NEW_LETTERS="$NEW_LETTERS$L "
+		fi
+	done
+	# echo "$LETTERS - $LETTER_TO_REMOVE = $NEW_LETTERS"
+	LETTERS="$NEW_LETTERS"
+	[ "$DONE_REMOVE_ALREADY" ]
+}
+
+increase_score () {
+	NICK="$1"
+	SCORE_TO_ADD="$2"
+	SCORE_FILE=/tmp/wordgame."$NICK".score
+	if [ ! -f "$SCORE_FILE" ]
+	then CURRENT_SCORE=0
+	else CURRENT_SCORE=`cat "$SCORE_FILE"`
+	fi
+	CURRENT_SCORE=$((CURRENT_SCORE+SCORE_TO_ADD))
+	echo "$CURRENT_SCORE" > "$SCORE_FILE"
+	# echo "$NICK now has a score of $CURRENT_SCORE!"
+}
+
+for WORD
+do
+
+	FAILED=
+
+	NUM_LETTERS=`echo -n "$WORD" | wc -m`
+	if [ "$NUM_LETTERS" -lt 4 ]
+	then
+		echo "I will only accept words of 4 or more letters."
+		FAILED=not_enough_letters
+	fi
+
+	## First check that the guess can be made from the letters
+	LETTERS=`cat /tmp/letters | tr '\n' ' '`
+	ALL_LETTERS="$LETTERS"
+
+	WORD_SPACED=`echo "$WORD" | tolowercase | sed 's+.+\0 +g'`
+
+	for LETTER in $WORD_SPACED
+	do
+
+		if ! remove_letter "$LETTER"
+		then
+			# echo "There is no $LETTER (or not enough) in the letterset $ALL_LETTERS"":P"
+			# echo "$COLRED""There is no '$COLYELLOW$LETTER$COLRED' (or not enough) in $COLYELLOW$ALL_LETTERS$COLRED""for $COLYELLOW$WORD$COLRED :P"
+			echo "$COLRED""There are not enough '$COLYELLOW$LETTER$COLRED's in $COLYELLOW$ALL_LETTERS$COLRED""for $COLYELLOW$WORD$COLRED :P"
+			FAILED=wrong_letters
+			break ## To save spamming, don't check any more letters
+		fi
+
+	done
+
+	## Next check whether the word has already been guessed:
+	if [ ! "$FAILED" ]
+	then
+		if grep -i "^$WORD was already guessed by " /tmp/guessed_words.list
+		then FAILED=already_guessed
+		fi
+	fi
+
+	## Check the word exists!
+	# if [ ! "$FAILED" = already_guessed ]
+	if [ ! "$FAILED" ]
+	then
+
+		DICT_RESULT=` dict -d wn "$WORD" `
+
+		# echo "dict -d wn \"$WORD\" returned error-code $?" >&2
+
+		if echo "$DICT_RESULT" | head -n 1 | grep "^No definition" >/dev/null
+		then
+			## Mmmm maybe it's not in the dictionary, but is still a word
+			if grep -i "^$WORD\$" /usr/share/dict/words >/dev/null
+			# then TO_SHOW="$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD[No definition but apparently a word]$COLGREY"
+			then TO_SHOW="$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD[No definition]$COLGREY"
+			else
+				TO_SHOW="Sorry, I don't have \"$WORD\" in my dictionary."
+				FAILED=true
+			fi
+		else
+			SHORT_DEFINITION=` echo "$DICT_RESULT" | takeline 6 | beforefirst ";" | sed 's+^[ 	]*++' `
+			# [ "$FAILED" ] && EXTRA= || EXTRA=" $COLGREY($NICK gets $COLGREEN$POINTS_FOR_WORD$COLGREY points!)"
+			# echo "$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD$SHORT_DEFINITION$COLGREY$EXTRA ($COLGREY!dict $WORD for more)"
+			TO_SHOW="$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD$SHORT_DEFINITION$COLGREY$EXTRA$COLGREY" # ($COLGREY!dict $WORD for more)"
+		fi
+
+		if [ ! "$FAILED" ]
+		then
+
+			if [ ! "$FAILED" ]
+			then
+				POINTS_FOR_WORD=$((NUM_LETTERS-3))
+				# echo "$COLGREEN$POINTS_FOR_WORD$COLGREY points for $COLRED$WORD$COLGREY: $COLBLUE$COLBOLD$SHORT_DEFINITION$COLGREY"
+				increase_score "$NICK" "$POINTS_FOR_WORD"
+				# echo "$COLGREY$NICK gets $COLGREEN$SCORE_TO_ADD$COLGREY points, for a total of $COLGREEN$CURRENT_SCORE$COLGREY!"
+				# TO_SHOW="$TO_SHOW $COLPINK$NICK$COLGREY + $COLGREEN$SCORE_TO_ADD$COLGREY => $COLGREEN$CURRENT_SCORE$COLGREY!"
+				TO_SHOW="$TO_SHOW $COLPINK$NICK$COLGREY+$COLGREEN$SCORE_TO_ADD$COLGREY => $COLGREEN$CURRENT_SCORE$COLGREY!"
+				echo "$WORD was already guessed by $NICK :P" | tolowercase >> /tmp/guessed_words.list
+				SO_FAR=`cat /tmp/guessed_words.list | wc -l`
+				TOTAL=`./answers --force-list | wc -l`
+				TO_SHOW="$COLGREY($SO_FAR/$TOTAL) $TO_SHOW"
+			fi
+
+		fi
+
+		echo "$TO_SHOW"
+
+	fi
+
+done

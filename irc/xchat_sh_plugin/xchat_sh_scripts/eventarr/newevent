@@ -1,0 +1,6 @@
+. eventarr/eventarr.shlib
+
+if [ "$1" ]
+then $EVENTARR newevent "$*"
+else output_help "To create a new event, type: !newevent <title/brief_description>"
+fi | notice

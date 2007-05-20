@@ -1,0 +1,27 @@
+## <puppeh> one of the bc/dc type programs has arbitrary precision, I think
+
+FACT="$1"
+SOFAR="$3"
+
+[ "$SOFAR" ] || SOFAR=1
+
+if [ "$FACT" = 0 ] || [ "$FACT" = 1 ]
+then echo "$SOFAR"
+elif [ "$FACT" -gt 0 ]
+then
+
+	# SOFAR=`expr "$SOFAR" '*' "$FACT"`
+	# FACT=`expr "$FACT" - 1`
+
+	SOFAR=$(($SOFAR*$FACT))
+	FACT=$(($FACT-1))
+
+	sleep 0.5
+
+	echo "!factorial $FACT X $SOFAR"
+
+else
+
+	echo "I can only calculate the factorial of a whole number >= 1 !"
+
+fi

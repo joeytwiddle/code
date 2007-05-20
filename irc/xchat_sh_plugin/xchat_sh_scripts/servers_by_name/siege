@@ -1,0 +1,5 @@
+. irc.shlib
+echo "Intros: http://ut.idefix4u.nl/wiki/SiegeXxl | http://www.flawless-victory.com/stu/siege.html | http://kraj.kilu.de/phpBB2/viewforum.php?f=4" | notice
+
+[ "$1" ] && export NUMRESULTS="$1"
+ut_servers/searchserv SiegeGI

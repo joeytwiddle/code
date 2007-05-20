@@ -1,0 +1,20 @@
+. irccols.shlib
+
+export PREALL="$COLGREY"
+export PRENICK="$COLRED"
+export POSTNICK="$COLGREY"
+export PRESERVER="$COLBLUE"
+export POSTALL="$COLRESET"
+
+if [ "$*" = "" ]
+then
+
+	echo "Type !lastseen <full_nick>s to find when+where I last saw them playing UT."
+
+else
+
+	for NAME in $*
+	do /home/utquery/utquery/lastseen "$NAME"
+	done
+
+fi

@@ -1,0 +1,22 @@
+. irc.shlib
+. irccols.shlib
+
+# EVENTARR=/home/utquery/eventarr/eventarr
+# EVENTARR=/home/joey/.xchat2/plugin/xchat_sh_scripts/eventarr.backend/eventarr
+EVENTARR=/home/joey/.xchat2/plugin/eventarr.backend/eventarr
+
+## Maybe these should go in irccols?
+
+## Or elsewhere?  Really this is an interface, and this is the implementation for IRC.  For HTML or cmdline, the implementation might differ.
+
+output_confirm () {
+	echo "$COLGREEN""$*""$COLRESET"
+}
+
+output_help () {
+	echo "$COLBROWN""$*""$COLRESET"
+}
+
+output_error () {
+	echo "$COLRED$COLBOLD""$*""$COLRESET"
+}

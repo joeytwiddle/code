@@ -1,0 +1,9 @@
+. irc.shlib
+
+(
+	dict -d wn "$@"
+	# dict -d jargon "$@"
+	# dict -d vera "$@"
+) |
+# cat
+notice

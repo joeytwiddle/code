@@ -1,0 +1,95 @@
+. irccols.shlib
+
+# UT Status - Server: ( unreal://82.96.91.3:6100 ) Details: (blobb^cl @ CTF-IncineratorLE-102)
+
+LOGFILE=`echolines /tmp/ut.out.* | tail -n 1`
+if [ "$LOGFILE" ]
+then
+	AGE=`datediff -secs -file "$LOGFILE"`
+	# if [ "$AGE" -lt 3600 ] ## 1 hour
+	if [ "$AGE" -lt 1800 ] ## 30 minutes
+	# if [ "$AGE" -lt 900 ] ## 15 minutes
+	# if [ "$AGE" -gt 0 ] ## for testing
+	then
+		## BUG TODO: I really should check there isn't a disconnect line after the last connect line!
+		# echo -n "I joined "
+		# echo -n "I last joined "
+		JOIN_REGEXP="LoadMap: "
+		# LEAVE_REGEXP="Close Tcp"
+		# LEAVE_REGEXP="Failed; returning to Entry"
+		LEAVE_REGEXP="\(Failed; returning to Entry\|Signal: \|Exiting\.$\)" ## first is a normal disconnect, second is a segfault (and hopefully a kill too)
+		# LEAVE_REGEXP="Browse: Index.unr" ## probably just as good as previous
+		NOT_A_SERVER_LOAD="^LoadMap: Entry"
+		LAST_LINE=`
+			grep "^\($JOIN_REGEXP\|$LEAVE_REGEXP\)" "$LOGFILE" |
+			grep -v "$NOT_A_SERVER_LOAD" |
+			tee /tmp/test.out |
+			tail -n 1
+		`
+		# if echo "$LAST_LINE" | grep "^$LEAVE_REGEXP" > /dev/null
+		if echo "$LAST_LINE" | grep "^$JOIN_REGEXP" > /dev/null
+		then
+			# echo -n "Come frag me on "
+			# echo -n "Need help pwning noobs on "
+			# echo -n "Pwn noobs with me on "
+			# echo -n "I'm pwning noobs on "
+			# echo -n "Join me pwning noobs on "
+			# echo -n "/ME is pwning noobs on "
+			# echo " and you're missing it!"
+			# echo " but you have 0 frags."
+			# URL_AND_MAP=`
+				# echo "$LAST_LINE" |
+				# sed 's+/\([^?]*\).*+/ \1+ ; s+^LoadMap: +unreal://+'
+			# `
+			IPPORT=`echo "$LAST_LINE" | afterfirst ' ' | beforefirst '/'`
+			MAP=`echo "$LAST_LINE" | afterfirst '/' | beforefirst '?'`
+			ALIAS=`echo "$LAST_LINE" | afterfirst 'Name=' | beforefirst '?'`
+			# echo -e "\00033Come and join me on \002$URL_AND_MAP\0002!"
+			# echo "$COLGREEN""Come and join me on $COLBOLD$URL_AND_MAP !$COLRESET"
+			# echo "$COLGREEN""UT Status: $COLBLUE$COLBOLD""unreal://$IPPORT/$COLRESET $COLRED$COLBOLD($COLRESET $COLYELLOW$ALIAS $COLGREY$COLBOLD@$COLRESET $COLYELLOW$MAP $COLRED$COLBOLD)$COLRESET"
+			echo "$COLGREEN""UT Status: $COLBLUE$COLBOLD""unreal://$IPPORT/$COLRESET $COLRED$COLBOLD($COLRESET$COLGREY$ALIAS$COLYELLOW@$COLGREY$MAP$COLRED$COLBOLD)$COLRESET"
+		else
+			# echo -n "I'm not playing online; UT has been idle for "
+			# datediff -file "$LOGFILE"
+			# echo "UT status: I'm not playing right now."
+			# echo "I was playing UT but I disconnected."
+			# echo "I got bored of pwning noobs so I disconnected."
+			# echo "I was running UT recently but I'm not pwning noobs right now."
+			# echo "UT status: I've just finished pwning some noobs."
+			# echo "UT status: I just finished pwning some noobs."
+			# echo "UT status: Taking a break from the pwnage."
+			# echo "/ME is taking a break from the pwnage."
+			# echo "/ME has just finished pwning noobs."
+			# echo "UT status: $COLGREY""I have just finished pwning some noobs.$COLRESET"
+			# echo "UT status: $COLORANGE""I just took a break from the pwnage.$COLCLEAR"
+			# echo "$COLGREY""UT status: $COLORANGE""I was playing recently, but I'm not right now.$COLCLEAR"
+			# echo "$COLGREY""UT status: $COLORANGE""I was playing recently, but I'm not right now.$COLCLEAR"
+			echo "/rb UT status: I was playing recently, but I'm not right now."
+		fi
+	else
+		# echo -n "I haven't played UT for "
+		# datediff -file "$LOGFILE" | tr -d '\n'
+		# echo -n "."
+		# echo -n "I'm practicing my micro off-line"
+		# echo "Logfile hasn't changed for 15 minutes."
+		# echo "UT status: I'm not playing right now."
+		# echo "UT status: I'm not pwning noobs right now."
+		# echo "/me $COLRED""is not pwning any noobs right now.$COLRESET"
+		# echo "/me $COLGREY""is not pwning any noobs right now.$COLRESET"
+		# echo "/me $COLGREY""is not playing UT right now.$COLRESET"
+		# echo "/say $COLGREY""UT Status:(Not Playing Right Now) (nogg-script)$COLRESET"
+		# echo "/me $COLGREY""is not playing UT right now.$COLRESET"
+		echo "/rb UT Status:(Not Playing Right Now) lucky 4 u"
+		# echo "$COLGREY""UT Status:$COLRED$COLBOLD($COLRESET$COLGREY""Not Playing Right Now$COLRED$COLBOLD)$COLRESET$COLGREY you are safe!$COLRESET"
+	fi
+else
+	# echo "I couldn't find a logfile."
+	# echo "I haven't played UT since I last booted."
+	# echo "I haven't pwned any noobs since I last booted."
+	# echo "/me has't pwned any noobs since he last booted."
+	# echo "/me $COLRED""is not pwning any noobs right now.$COLRESET"
+	# echo "/me $COLGREY""is not pwning any noobs right now.$COLRESET"
+	# echo "/me $COLGREY""is not playing UT right now.$COLRESET"
+	echo "/rb UT Status:(Not Playing Right Now) lucky 4 u"
+	# echo "$COLGREY""UT Status:$COLRED$COLBOLD($COLRESET$COLGREY""Not Playing Right Now$COLRED$COLBOLD)$COLRESET$COLGREY you are safe!$COLRESET"
+fi

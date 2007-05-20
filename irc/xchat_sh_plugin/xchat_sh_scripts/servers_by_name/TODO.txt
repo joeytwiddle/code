@@ -1,0 +1,3 @@
+commands should be sorted by last accessed, most recent first
+separate named server + gametypes + collections
+on !ctf !dm etc spam 3 poppulated servers to channel, but more as notice/MSG

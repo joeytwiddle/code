@@ -1,0 +1,8 @@
+## Pretends to give ops to caller, or to the given nick.
+
+. irccols.shlib
+
+TARGET="$1"
+[ "$TARGET" ] || TARGET="$NICK"
+
+echo "/me removes channel operator status from $COLAQUA$TARGET$COLRESET"

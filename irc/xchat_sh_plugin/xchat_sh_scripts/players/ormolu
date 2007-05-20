@@ -1,0 +1,19 @@
+list () {
+cat << !
+Looks, skill, style; Ormolu's got it all.
+Looks, skill, style; Ormolu's got it all.
+Looks, skill, style; Ormolu's got it all.
+Looks, skill, style; Ormolu's got it all.  Even rabies!
+Wear a helmet.
+[eC]\`Ormolu^ pwns all =D
+<[eC]\`Ormolu^> gg all idd rgr wp thnx imo kk thnx. o/   <-- isn't she sweet?!
+<[eC]\`Ormolu^> gg all cu laters hf gl idd wp imo rgr kk thnx bye \o/   <-- isn't she sweet?!
+!
+# Looks, skill, style; Ormolu's got it all.  Even flu.
+# Looks, skill, style; Ormolu's got it all.  She's even got rabies.
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

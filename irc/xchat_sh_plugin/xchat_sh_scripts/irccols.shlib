@@ -1,0 +1,149 @@
+## For the Screen on my portal map, which couldn't handle my colours (although it says it should be able to).
+## Ah I can detect players who are using a Screen in UT, because their nick has a - appended to the end.  :)  No wait that's nonsense.  =/
+## OK but here's a thing: when i join through Screen, my nick gets truncated to 9 chars; that might be a way of sort-of detecting it.
+# if [ "$CHANNEL" = "#utportal" ]
+# then NOCOLS=true
+# fi
+if [ "$CHANNEL" = "#utportal" ] || [ "$CHANNEL" = "#utb0t" ] # || [ "$NETWORK" = "irc.utchat.com" ]
+then
+	# if endswith "$NICK" "-"
+	# then NOCOLS=true
+	# fi
+	NOCOLS=true
+fi
+
+if [ "$NOCOLS" ]
+then
+	COLSTYLE=none
+else
+	## Check if we are outputting to IRC or colour terminal.
+	## :E had to disable this; it was returning true when running as xchat plugin!
+	# if tty -s
+	# if false
+	# if [ "$CHANNEL" ] || [ "$NICK" ]
+	if [ ! "$COLSTYLE" ]
+	then
+		if [ "$CHANNEL" ] && [ "$NICK" ]
+		then COLSTYLE=irc
+		else COLSTYLE=shell
+		fi
+	fi
+fi
+
+export COLSTYLE ## force jsh's curse* to use these colour vars
+[ "$COLSTYLE" ] || COLSTYLE=shell
+
+if [ "$COLSTYLE" = irc ]
+then
+
+	## I used to use ",99" for transparent background, but actually "" would do just as good; problem is, my colours then don't always look so good
+	## Added ",01" (black background) because otherwise a comma right after the colour gets gobbled (at least by ksirc)
+	export COLWHITE=`echo -e "01,99"`
+	export COLBLACK=`echo -e "01,99"`
+	export COLBLUE=`echo -e "02,99"` ## navy
+	export COLGREEN=`echo -e "03,99"`
+	export COLRED=`echo -e "04,99"`
+	export COLBROWN=`echo -e "05,99"` ## maroon
+	export COLPURPLE=`echo -e "06,99"`
+	# export COLORANGE=`echo -e "07,99"` ## olive
+	# export COLYELLOW=`echo -e "08,99"`
+	## I very lazily swapped yellow and orange for the benefit of Rednas who uses Opera and can't see yellow against his unchangeable white background.
+	export COLORANGE=`echo -e "08,99"`
+	export COLYELLOW=`echo -e "07,99"`
+	export COLLIME=`echo -e "09,99"` ## green
+	export COLTEAL=`echo -e "10,99"` ## a kinda green/blue cyan
+	export COLAQUA=`echo -e "11,99"` ## cyan
+	export COLROYAL=`echo -e "12,99"` ## blue
+	export COLPINK=`echo -e "13,99"` ## light purple, fuschia
+	export COLGREY=`echo -e "14,99"`
+	export COLSILVER=`echo -e "15,99"` ## light grey
+
+	export COLRESET=`echo -e ""`
+	export COLNORM="$COLGREY"
+
+	export COLBOLD=`echo -e ""`
+	export COLBOLDUNDO="$COLBOLD"
+
+	## Following untested:
+	export COLUNDERLINE=`echo -e ""`
+	export COLREVERSE=`echo -e ""`
+	export COLITALICS=`echo -e "	"`
+
+	## Some colors are hard to see:
+	COLGREEN="$COLBOLD$COLGREEN$COLBOLDUNDO"
+
+	## People don't like my script's yellow, so I changed to orange, then to green!  But really I should swap anyway, since orange+yellow are used for !searchserv
+	# COLYELLOW="$COLORANGE"
+	# COLYELLOW="$COLGREEN"
+
+	## OK now I made the bg dark, blue is too dark!
+	# COLBLUE="$COLROYAL"
+
+elif [ "$COLSTYLE" = shell ]
+then
+
+	COLSTYLE=
+
+	## OMG we are in an xterm or something
+	## Better use xterm escape codes after all imo
+	export COLWHITE=`cursenorm`
+	export COLBLACK=`curseblack`
+	export COLBLUE=`curseblue`
+	export COLGREEN=`cursegreen`
+	export COLRED=`cursered;cursebold`
+	export COLBROWN=`cursered`
+	export COLPURPLE=`cursemagenta;cursebold`
+	export COLORANGE=`curseyellow`
+	export COLYELLOW=`curseyellow;cursebold`
+	export COLLIME=`cursegreen;cursebold`
+	export COLTEAL=`cursegreen`
+	export COLAQUA=`cursecyan;cursebold`
+	export COLROYAL=`curseblue;cursebold`
+	export COLPINK=`cursemagenta`
+	export COLGREY=`cursegrey`
+	export COLSILVER=`cursewhite`
+
+	export COLRESET=`cursenorm`
+	export COLNORM="$COLGREY"
+
+	export COLBOLD=`cursebold`
+	export COLUNDERLINE="_"
+	export COLREVERSE="#"
+	export COLITALICS="/"
+
+	COLSTYLE=shell
+
+elif [ "$COLSTYLE" = html ]
+then
+
+	export COLWHITE='<FONT color="white">'
+	export COLBLACK='<FONT color="black">'
+	export COLBLUE='<FONT color="blue">'
+	export COLGREEN='<FONT color="green">'
+	export COLRED='<FONT color="red">'
+	export COLBROWN='<FONT color="brown">'
+	export COLPURPLE='<FONT color="purple">'
+	export COLORANGE='<FONT color="orange">'
+	export COLYELLOW='<FONT color="yellow">'
+	export COLLIME='<FONT color="lime">'
+	export COLTEAL='<FONT color="teal">'
+	export COLAQUA='<FONT color="aqua">'
+	export COLROYAL='<FONT color="royal">'
+	export COLPINK='<FONT color="pink">'
+	export COLGREY='<FONT color="grey">'
+	export COLSILVER='<FONT color="silver">'
+
+	export COLRESET='</FONT>'
+	export COLNORM="$COLGREY"
+
+	export COLBOLD='<B>'
+	export COLUNDERLINE='<U>'
+	export COLREVERSE="#"
+	export COLITALICS='<I>'
+
+elif [ "$COLSTYLE" = blank ]
+then
+
+	:
+
+fi

@@ -1,0 +1,38 @@
+INPUTDATE="$1"
+INPUT_TZ="$2"
+
+[ "$INPUT_TZ" ] || INPUT_TZ=CEST
+
+## Ok finally this seems to work
+## Input timezone should always be set, otherwise it will default to that of the system, which might be unknown.
+## You should use CEST for input in European summer, but CET for output.  idk why!
+
+[ "$INPUTDATE" ] || INPUTDATE=now
+# INPUTDATE="tomorrow 18:00 BST"
+
+# TZ=UTC date -d "$INPUTDATE $TIMEZONE" +"%s %Z"
+# SECONDS=`date -d "$INPUTDATE UTC" +"%s"`
+# INPUT_TZ="CET"
+
+# INPUT_TZ="BST"
+# SECONDS=`TZ=GMT date -d "$INPUTDATE $INPUT_TZ" +"%s"`
+
+# DATESTRING="1 January 1970 GMT + $SECONDS seconds"
+# DATESTRING="$INPUTDATE $INPUT_TZ"
+DATESTRING=`date -d "$INPUTDATE $INPUT_TZ"`
+echo "DATESTRING=$DATESTRING"
+
+output () {
+	OUTPUT_TZ="$1"
+	TZ=$OUTPUT_TZ date -d "$DATESTRING"
+	# date -d "$DATESTRING"
+}
+
+# # INPUT_TZ="CEST"
+# INPUT_TZ="BST"
+# DATESTRING=`TZ=UTC date -u -d "$INPUTDATE $INPUT_TZ"`
+# echo "DATESTRING=$DATESTRING"
+
+for zoner in UTC GMT BST CET CEST
+do output "$zoner"
+done

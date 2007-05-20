@@ -1,0 +1,10 @@
+PUG_CHANNELS_FILE=/tmp/pug_channels.list
+
+echo "$CHANNEL" >> "$PUG_CHANNELS_FILE"
+
+echo "Pugging enabled in $CHANNEL.  Type !join to join the pug, or !help for more info."
+
+. pugbot/pugbot.shlib
+
+list_players
+

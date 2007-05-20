@@ -1,0 +1,11 @@
+list () {
+cat << !
+Recruit sn0w or NcKrZ will join [c]rew! xP
+NcKrZ joined [c]rew so he can be with sn0w! :)
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

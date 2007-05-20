@@ -1,0 +1,33 @@
+## This has been used by a few of the scripts (to call other scripts):
+# COMMAND_SCRIPTS_DIR="/home/joey/.xchat2/plugin/xchat_sh_scripts"
+# export COMMAND_SCRIPTS_DIR="/home/joey/.xchat2/plugin/xchat_sh_scripts" ## ganymede
+# COMMAND_SCRIPTS_DIR="/home/joey/j/code/other/irc/xchat/xchat_sh_scripts" ## hwi
+## But it might be redundant because I made the handler cd to that dir.  Yeah idd, handler now exports this!
+
+[ "$COMMAND_SCRIPTS_DIR" ] || COMMAND_SCRIPTS_DIR="$PWD"
+
+list_commands () {
+	find "$COMMAND_SCRIPTS_DIR" -type f -or -type l -maxdepth 1 |
+	while read FILE
+	do [ -x "$FILE" ] && [ ! -d "$FILE" ] && echo "$FILE"
+	done |
+	after "$COMMAND_SCRIPTS_DIR/" |
+	grep -v "jsh" | ## that one's a secret
+	grep -v "wutmelater" |
+	sort
+}
+
+## This is needed for the perl handler, so it knows which '/' triggers/handlers to create.
+if [ "$1" = -l ]
+then list_commands
+else
+
+	. irc.shlib
+
+	## Is it better now I /notice ?
+	# echo -n "/notice $NICK $COLGREY""My commands are: "
+	( echo -n "My commands are: " ; list_commands | tr '\n' ' ' ; echo ) | notice
+	# echo
+	echo "$COLRESET"
+
+fi

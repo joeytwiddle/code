@@ -1,0 +1,19 @@
+. eventarr/eventarr.shlib
+
+EVENTNUM="$1"
+DATENUM="$2"
+
+if [ "$EVENTNUM" ] && [ "$DATENUM" ]
+then
+	$EVENTARR subscribe "$EVENTNUM" "$DATENUM" &&
+	(
+		output_confirm "You have registered that that time is suitable for you."
+		## This would be nice, except for the verbosity of the docs!
+		# echo "!event $EVENTNUM"
+		# ./event "$EVENTNUM"
+		$EVENTARR listdate "$EVENTNUM" "$DATENUM"
+	) ||
+	output_error "Sorry there was an error."
+else
+	output_help "To register that a particular date+time is suitable for you, type: !approve <event_number> <suggested_date_number>"
+fi | notice

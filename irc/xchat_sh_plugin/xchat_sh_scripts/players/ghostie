@@ -1,0 +1,13 @@
+list () {
+cat << !
+I think the bot hates me.
+The bot is lying!
+!
+# Oh my god i have been shot..some1 call a medic!
+# you know its not that funny becuase i actuaaly been shot twice :/
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

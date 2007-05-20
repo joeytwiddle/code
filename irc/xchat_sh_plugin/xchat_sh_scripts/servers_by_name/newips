@@ -1,0 +1,9 @@
+cat /home/utquery/utquery/new_server_ips.list |
+randomorder |
+head -n 5 |
+while IFS=: read IP PORT
+do
+	PORT=$((PORT-1))
+	./utp "$IP:$PORT"
+	# ./utp -justserver "$IP:$PORT"
+done

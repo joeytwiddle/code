@@ -1,0 +1,10 @@
+echo -n "My commands are: "
+COMMAND_SCRIPTS_DIR="/home/joey/j/code/other/irc/xchat/xchat_sh_scripts"
+find "$COMMAND_SCRIPTS_DIR" -type f -or -type l -maxdepth 1 |
+while read FILE
+do [ -x "$FILE" ] && [ ! -d "$FILE" ] && echo "$FILE"
+done |
+after "$COMMAND_SCRIPTS_DIR/" |
+sort |
+tr '\n' ' '
+echo

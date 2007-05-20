@@ -1,0 +1,51 @@
+. irc.shlib
+. irccols.shlib
+
+DBAGE=`datediff -file /home/utquery/utquery/data`
+
+if [ "$*" = "" ]
+then
+
+	echo "Type !whereis <utnick/clantag> to find where they are playing UT."
+
+else
+
+	# for NAME in $*
+	# do /home/utquery/utquery/whereis "$NAME"
+	# done |
+	# removeduplicatelines |
+	/home/utquery/utquery/whereis $* |
+	removeduplicatelines |
+	sed 's+^+unreal://+ ; s+ +/ + ; s+^\([^ ]*\) \([^ ]*\)+\2 \1+' |
+	randomorder |
+	head -n 20 | # -10 | ## avoid flooding
+	sort -k 2 | ## sort by server address (group by server)
+	# takecols 1 2 4 | columnise |
+
+	## Highlight :
+	sed 's+^\([^ ]*\) *\([^ ]*\) *[[:digit:] ]*/[[:digit:] ]*\([^ ]*\) *.*+\1 \2 \3+' | columnise |
+	# sed "s+^+$COLRED+ ; s+\( *\)\([^ ]*\)\( *\)+$COLBLUE\1\2\3$COLGREY+ ; s+\$+$COLRESET+" |
+	sed "s+^\([^ ]*\)\( *\)\([^ ]*\)\( *\)\(.*\)+$COLRED\1\2$COLBLUE\3\4$COLGREY\5$COLRESET+" |
+	grep .
+
+	[ "$?" = 0 ] &&
+	# echo "  was/were seen playing $DBAGE ago." ||
+	echo "$COLGREY""I saw them playing $DBAGE (+ 0-3 minutes) ago.""$COLRESET" ||
+	echo "$COLGREY""I did not see \"$*\" playing ($DBAGE ago).""$COLRESET"
+	# echo "I did not see \"$*\" playing when I looked ($DBAGE ago)."
+
+	DBAGESECS=`datediff -secs -file /home/utquery/utquery/data`
+	if [ "$DBAGESECS" -gt 1800 ] ## 30 minutes
+	# then echo "Sorry, I cannot query the servers when my owner is playing."
+	# then echo "(Sorry, I cannot update the data until my owner stops playing.)"
+	then echo "(Sorry, I cannot query the servers again until my owner stops playing!)"
+	fi
+
+fi |
+
+grep -v "\<TO-[^ ]*$" | ## strip servers playing TO maps NOT WORKING!
+
+if [ "$CHANNEL" = "#ec.ut" ]
+then notice
+else cat
+fi

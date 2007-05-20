@@ -1,0 +1,8 @@
+## No other scripts used this when I first wrote it!
+
+notice () {
+	if [ "$*" ]
+	then echo "/notice $NICK $*"
+	else sed -u 's+^[^/]+/notice '"$NICK"' \0+'
+	fi
+}

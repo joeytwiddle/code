@@ -1,0 +1,16 @@
+list () {
+cat << !
+Doh!
+Merlin Munroe imo :P
+I once heard that Merlin moves *backwards* through time.
+Merlin is pro at bad jokes imo :D
+Merlin competes with noggin for worst joke of the week, and usually wins!
+"RIGHT KIDS OFF TO BED!" (so Dad can play UT)
+(@_tAiger\`) idd, merlin is the only user of viagra spammails worldwide
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

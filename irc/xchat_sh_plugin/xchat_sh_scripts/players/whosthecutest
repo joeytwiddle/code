@@ -1,0 +1,61 @@
+list () {
+# echo '=(.Y.)=Xena' ; return 0
+# echo '[eC]Puste' ; return 0
+# echo 'fox.s!ster' ; return 0
+# echo "=(F0X)=HuAtH" ; return 0
+# echo "F0X|nogginBasher" ; return 0
+# echo "[eC]Ormolu" ; return 0
+# echo "F0X|zbe of course!" ; return 0
+# echo ".::TEF::.Duffy"; return 0
+cat << !
+\`iDeFiX
+[eC]Proshee
+[eC]Prisma
+\`Xenomorph
+[eC]>\\\\Rednas/<
+[EC]Quante
+[eC]Urban{+_-}
+[eC]Puste
+[eC]\`Ormolu^ of course!
+[eC]Queenz
+=(rt)=mr.jack
+=(rt)=Tyranny
+=(rt)=YuriGagarin
+=(rt)=st0rmtrooper
+]V[isso
+\\\\nW/NoXiC
+F0X|zbe
+F0X|\`Xena
+f0x\\\\_tAiger
+s!ster
+Rork
+=(.Y.)=Janne
+sest6
+Pyr0\`
+[wmc]Lightning
+PmP|SubZer0
+certainly not Duncan[eC]Mc anyway
+!
+# [iQ]^Option
+# \`Pyr0^mp3
+# TE^Rork
+# .::TEF::.Duffy
+# .::TEF::.Chaosdrache
+# Darth_T0tt
+# {DnF2}FiX
+# {FuB}Cryo
+# LoneWolf
+# RainCheck
+# Arma|Away
+# =(.Y.)=KillerQueen
+# =(.Y.)=Xena
+# .::TEF::.BunnyHopper
+# F0X|Tommo
+# F0X|sir_j
+# =(F0X)=HuAtH
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

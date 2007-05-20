@@ -1,0 +1,16 @@
+## No other scripts used this when I first wrote it!
+
+MSG=true ## no more notices!
+
+notice () {
+	## With parameters, sends the string to the user with a /notice
+	## Without parameters, sends the standard input to the user in a /notice
+	if [ "$*" ]
+	then echo "/notice $NICK $*"
+	else sed -u 's+^[^/]+/notice '"$NICK"' \0+'
+	fi |
+	if [ "$MSG" ]
+	then sed 's+^/notice +/msg +g'
+	else cat
+	fi
+}

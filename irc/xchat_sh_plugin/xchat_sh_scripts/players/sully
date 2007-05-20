@@ -1,0 +1,14 @@
+list () {
+cat << !
+Whiskey!
+Whiskey!
+Whiskey!
+Whiskey!
+<[SMo]Sully> my best friend is celebrating his 40 year birthday tomorrow and i bought him a nice whiskey i hope he will open :)
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,40 @@
+. irc.shlib
+
+## refactor splitting to the library?
+
+if [ "$1" = -real ]
+then
+
+(
+	# ./wh
+	# ./xol
+	# ./ec
+	# ./dc3
+	# # ./tits
+	# ./inz
+	# ./focr
+	# ./dutchnet
+	# ./truff
+	# ./boomtown
+	# ./insta
+	# ./ws
+	# ./utp `'ls' -Sr /home/utquery/utquery/data/ | grep .players"$" | tail -n 10 | sedreplace ".players" ""`
+	(
+		cd /home/utquery/utquery/data/
+		grep . *.info | sed 's+:[^:]*:+\0 +' |  sort -n -k 2 | grep -v " TO-" | tail -n 10 | beforefirst ".info"
+	) | withalldo ./utp
+) |
+grep --line-buffered -v "0/" |
+grep -v "no response" |
+grep -v "\<DOWN\>" |
+sort -n -k 2 -r |
+notice
+# cat
+
+else
+
+## Actually it would be better if the individual scripts we call each memo-ed themselves.
+# memo -t "1 minute" "$0" -real
+"$0" -real "$@"
+
+fi

@@ -1,0 +1,191 @@
+## OMG noob: use -raw to use a custom field-delimeter, to make parsing the output easier.
+##           or even -xml or "template mode" (see http://www.qstat.org/faq.html )
+
+[ "$COMMAND_SCRIPTS_DIR" ] || COMMAND_SCRIPTS_DIR=.
+
+. irccols.shlib
+
+if [ "$*" = "" ]
+then
+	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
+	echo "To query UT99 servers: !utp [-scores|-s] [-justserver|-noplayers] <ip_and_port>s..."
+	echo "  NOTE: to query a hostname, use !utp unreal://<hostname>[:<port>]"
+	exit 0
+fi
+
+if [ "$1" = -ping ] || [ "$1" = -p ]
+then SHOWPINGS=true ; shift
+fi
+
+if [ "$1" = -scores ] || [ "$1" = -s ]
+then SHOWSCORES=true ; shift
+fi
+
+SEARCH=
+if [ "$1" = -rules ] || [ "$1" = -r ]
+then SHOWRULES=true ; shift
+fi
+
+if [ "$1" = -justserver ]
+then JUSTSERVER=true ; shift
+fi
+
+if [ "$1" = -noplayers ]
+then NOPLAYERS=true ; shift
+fi
+
+[ "$JUSTSERVER" ] && NOPLAYERS=true
+
+NL="\\
+"
+
+for URL in $*
+do
+
+	IP=""
+
+	## Check that it is an IP (with optional :port at the end) or an unreal:// URL
+	if
+		echo "$URL" | grep '^unreal://' >/dev/null ||
+		echo "$URL" | grep "^[0-9]*\.[0-9]*\.[0-9]*\.[0-9]*\(:[0-9]*\|\)$" >/dev/null
+	then
+
+		IP=`echo "$URL" | sed 's+^unreal://++ ; s+/$++'`
+
+		if [ "$SHOWRULES" ]
+		then
+
+NL="\\
+"
+
+			echo -n "$COLBLUE$COLBOLD$URL$COLBOLD "
+
+			qstat -default uns -timeout 20 -R "$IP" |
+			drop 2 |
+
+			# sed "s+\([A-Za-z0-9_]*\)=+$NL$COLRED\1$COLYELLOW=$COLPINK+" |
+			sed "s+^[^A-Za-z0-9]*++" |
+			sed "s+[0-9][0-9]*+$COLGREEN\0$COLYELLOW+g" |
+			sed "s+\([^ ,]*\)=+$NL$COLNORM\1$COLRED=$COLYELLOW+g" |
+
+			if [ "$SEARCH" ]
+			then
+				# tr "," "\n" | grep -i "$SEARCH"
+				# sed "s+.*\($SEARCH\)+\1+" |
+				verbosely grep -i "$SEARCH" ||
+				echo "$COLNORM""Nothing found for $SEARCH"
+			else cat
+			fi |
+
+			# pipeboth |
+
+			# tr , '\n' |
+
+			sed "s+,[ 	]*$+$COLRESET,$COLRESET+" | ## Color ending commas
+
+			# sed "s+\(^\| ]\)\([0-9A-Za-z .]*\)\(=\|\)\([A-Za-z .]*\)\([0-9.]*[^,]*.*\)+$COLRED\2$COLYELLOW\3$COLPINK\4$COLGREEN\5$COLGREY +g" |
+			tr '\n' ' ' |
+
+			# verbosely sed "s$COLYELLOW,$COLPINK\$" ## Remove the last one!
+			sed "s+$COLRESET,$COLRESET[^,]*$++" ## Remove the last one!
+
+			echo "$COLRESET"
+
+		else
+
+			# qstat -default uns -timeout 10 -P "$IP" |
+			qstat -default uns -timeout 5 -P "$IP" |
+			# tee -a /tmp/qstats.out |
+			striptermchars | ## This is for servers like Explosive with crazy chars in their title, which IRC refuses to accept.
+			drop 1 |
+			# sed 's+^[[:digit:].:][^ 	]*[ 	]*++' |
+			tr -s ' ' |
+			(
+
+				[ "$JUSTSERVER" ] || KEEPINFO="\\2 " ## KEEPINFO is #players+ + ping
+
+				read IP REST
+				# echo -n "$COLBLUE""unreal://$IP $COLGREY""$REST "
+				# echo -n "unreal://$IP$COLNORM ""$REST " |
+				echo -n "$COLBLUE$COLBOLD""unreal://$IP$COLBOLD$COLNORM ""$REST " | ## i would have used COLRESET but that sets colour to White not Default :P
+				# sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
+				sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+"
+
+				# cat > /dev/null
+				sort -n -r -k 1 | ## highest frags first :)
+				# tee /tmp/utp.mid |
+				# takecols 5 |
+				while read SCORE dummy TEAM PING NICK
+				do
+
+					TEAMCOL="$COLNORM"
+					[ "$TEAM" = "team#0" ] && TEAMCOL="$COLRED"
+					[ "$TEAM" = "team#1" ] && TEAMCOL="$COLBLUE"
+					[ "$TEAM" = "team#2" ] && TEAMCOL="$COLGREEN"
+					[ "$TEAM" = "team#3" ] && TEAMCOL="$COLYELLOW"
+
+					if [ "$SHOWPINGS" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
+					then echo -n "($PING)"
+					fi
+
+					echo -n "$TEAMCOL""$NICK"
+
+					if [ "$SHOWSCORES" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
+					then
+						echo -n "$COLNORM($SCORE)"
+					fi
+
+					echo -n "$COLNORM, "
+
+				done |
+				# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
+				# # sed "s+^+$COLRED+" |
+				# sed "s+$+$COLGREY, +" |
+				# tr '\n' ' ' |
+				tr -s ' ' |
+				sed 's+, $++' |
+				# sed "s+^+[ + ; s+\$+ ]+"
+				sed "s+^+$COLGREY[ + ; s+\$+ $COLGREY]+" |
+				# sed "s+^+ -\\\\- + ; s+\$+ -/-+"
+				# sed "s+^+ \\\\\\\\- + ; s+\$+ -//+"
+				# sed "s+^+ \\\\\\\\--( + ; s+\$+ )--//+"
+				# sed "s+^+ ~\\\\~ + ; s+\$+ ~/~+"
+				# sed "s+^+ \\\\\\\\ + ; s+\$+ //+"
+				if [ "$NOPLAYERS" ]
+				then cat > /dev/null
+				else cat
+				fi
+
+				## Why did I have COLRESET off?!
+				echo "$COLRESET"
+				# echo
+
+			) |
+			## No it's best not to break up the line here, they might be grepped outside of here.
+			# sed "s+\(.\{0,245\}[^ ]\)\(  *\|$\)+\0$NL +g" | grep -v "^ $"
+			cat
+
+		fi
+
+	elif [ -x "$COMMAND_SCRIPTS_DIR/ut_servers/$URL" ]
+	# elif verbosely mytest [ -x "$COMMAND_SCRIPTS_DIR/ut_servers/$URL" ]
+	then
+
+		export SHOWSCORES
+		export SHOWPINGS
+		export SHOWRULES
+		export JUSTSERVER
+		export NOPLAYERS
+		export SEARCH
+		"$COMMAND_SCRIPTS_DIR/ut_servers/$URL" ## no options passed, but vars exported
+
+	elif [ "$SHOWRULES" ]
+	then SEARCH="$URL"
+	else echo "utp: ignoring non-IP \"$URL\"" >&2
+	fi
+
+done |
+## For some reason if I /say a line more than 80 chars long, none of the following lines are displayed.
+# sed "s+^.............................................................................+\0...$NL...+g" |
+# tee /tmp/out_overall.txt
+cat

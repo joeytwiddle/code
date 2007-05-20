@@ -1,0 +1,63 @@
+export COLSTYLE=blank
+
+. irccols.shlib
+
+IPA="$1"
+IPB="$2"
+
+FILEA=/tmp/ip1.settings
+FILEB=/tmp/ip2.settings
+
+# qstat -default uns -timeout 20 -R "$IPA" | drop 2 > "$FILEA"
+# qstat -default uns -timeout 20 -R "$IPB" | drop 2 > "$FILEB"
+
+NL="\
+"
+get_rules () {
+	# qstat -default uns -timeout 20 -R "$IPB" | drop 2 > "$FILEB"
+	# ./utp -r "$1" | striptermchars | tr ',' '\n' | sed 's+^ ++' ; echo
+
+	./utp -r "$1" |
+	striptermchars |
+	sed "s+^  *+$NL+" |
+	sed "s+mutators=++" | ## might be better to put mutator= at the start of each entry
+	tr ',' '\n' |
+	sed 's+^ ++' |
+	sort
+
+	echo
+}
+
+get_rules "$IPA" > "$FILEA"
+get_rules "$IPB" > "$FILEB"
+
+# sed "s+\([A-Za-z0-9_]*\)=+$NL$COLRED\1$COLYELLOW=$COLPINK+" |
+# sed "s+^[^A-Za-z0-9]*++" |
+
+(
+
+	jfcsh "$FILEA" "$FILEB" | tr '\n' ',' | sed 's+,$++' ; echo
+	echo ...
+	jfcsh "$FILEB" "$FILEA" | tr '\n' ',' | sed 's+,$++' ; echo
+
+) |
+
+sed "s+[, ]\([^=]*\)=\([^,]*\)+$COLGREY,$COLRED\1$COLYELLOW=$COLBLUE\2+g"
+
+exit
+
+# echo "---"
+
+# jdiffsimple -fine "$FILEA" "$FILEB" |
+
+# jdiffsimple "$FILEA" "$FILEB" |
+
+# cat ; exit
+
+## Strip all uncoloured lines
+while read LINE
+do
+	if [ ! "$LINE" = "`echo "$LINE" | striptermchars`" ]
+	then echo "$LINE"
+	fi
+done

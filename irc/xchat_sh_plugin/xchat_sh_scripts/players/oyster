@@ -1,0 +1,13 @@
+list () {
+cat << !
+#ctfpug asap
+2 needed in #ut994funpug
+8 needed in #spamcup - pug up!
+XChat users tired of oYst3r's AMSG spam? Try: http://hwi.ath.cx/tmp/suppress_amsg.py
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

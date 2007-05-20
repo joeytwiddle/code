@@ -1,0 +1,20 @@
+(
+	echo "Yes."
+	echo "No."
+	echo "Without a doubt."
+	echo "I doubt it."
+	echo "Probably."
+	echo "Unlikely."
+	echo "Obviously."
+	echo "In your dreams."
+	echo "Absolutely!"
+	echo "Not a chance."
+	echo "You can be sure."
+	echo "You must be kidding!"
+	echo "I'm afraid so."
+	echo "Fat chance mate!"
+	echo "Unfortunately, it's true."
+	echo "No, not yet."
+	# echo "As if."
+) |
+chooserandomline

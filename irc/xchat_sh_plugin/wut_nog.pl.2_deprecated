@@ -1,0 +1,105 @@
+package IRC::Xchat::WutNog;
+
+IRC::register("xchat wutnog", "0.1", "", "");
+
+$wut_exec = "/home/joey/j/code/other/irc/xchat/wut_exec.sh";
+$whereis_exec = "/home/utquery/utquery/whereis";
+
+sub wutnog {
+
+	# foreach $line (@_) {
+		# $line =~ m/\:(.*?)\!(.*?)\sPRIVMSG\s(.*?)\s\:(.*)?/;
+# 
+		# $m_nick = $1;
+		# $m_send = $2;
+		# $m_chan = $3;
+		# $m_line = $4;
+# 
+		# $m_line =~ s/^\s+//; # Remove trailing whitespace
+		# $m_line =~ s/\s+$//;
+	# }
+
+	# my ($nick, $rest)           =  ($_[0] =~ m/^(.*?)\s+(.*)\s+\(null\)\Z/);
+# 
+	# $nick                       =~ s/^\cC[0-9]{1,2}//;     # strip color off nick (xchat bug)
+# 
+	# my @temp                    =  split /\ /, $rest;
+	# my $cmd                     =  @temp[0];
+	   # $rest                    =  join(" ", @temp[1..$#temp]);
+
+	# Xchat::print "@=@_";
+	# Xchat::print "nick=$nick cmd=$cmd rest=$rest";
+	# Xchat::print "_=$_";
+	# Xchat::print "@[3]=" @_[3];
+	# Xchat::print "@[4]=" @_[4];
+
+	my $line = $_[2];
+	my @temp = split /\ /, $line;
+	my $cmd  = @temp[0];
+	my $rest = join(" ", @temp[1..$#temp]);
+
+	# Xchat::print "cmd=$cmd rest=$rest";
+
+	if ((lc $cmd eq "!wut")) {
+		my $out = `sh "$wut_exec"`;
+		if (($out ne "")) {
+			IRC::command ("/say $out");
+		}
+	}
+
+	if ((lc $cmd eq "!whereis")) {
+
+		# # my $out = `sh "$whereis_exec" "$rest"`;
+		# my $out = `sh "$whereis_exec" "$rest" | sed 's+^+unreal://+ ; s+ +/ +'`;
+		# if (($out eq "")) {
+			# $out = "No matches found."
+		# }
+		# IRC::command ("/say $out");
+
+		# exec sh "$whereis_exec" "$rest" |
+		# while read $out {
+			# IRC::command ("/say $out");
+			# sleep 1;
+		# }
+
+		# open SPOOLER, "sh $whereis_exec $rest | sed 's+^+unreal://+ ; s+ +/ +' |"
+		# open SPOOLER, "sh $whereis_exec $rest | sed 's+^+unreal://+ ; s+ +/ + ; s+^\\([^ ]*\\) \\([^ ]*\\)+\\2 \\1+' |"
+		# open SPOOLER, "sh $whereis_exec $rest | sed 's+^+unreal://+ ; s+ +/ + ; s+^\\([^ ]*\\) \\([^ ]*\\)+\\2 \\1+' | columnise-clever -only '[^ ]* [^ ]* [^ ]* [^ ]* [^ ]*' |"
+		# open SPOOLER, "sh $whereis_exec $rest | sed 's+^+unreal://+ ; s+ +/ + ; s+^\\([^ ]*\\) \\([^ ]*\\)+\\2 \\1+' | columnise-clever -only '[^ ]* [^ ]*' |"
+		# open SPOOLER, "sh $whereis_exec $rest | sed 's+^+unreal://+ ; s+ +/ + ; s+^\\([^ ]*\\) \\([^ ]*\\)+\\2 \\1+' | takecols 1 2 | columnise |"
+		open SPOOLER, "
+			sh \"$whereis_exec\" \"$rest\" |
+			sed 's+^+unreal://+ ; s+ +/ + ; s+^\\([^ ]*\\) \\([^ ]*\\)+\\2 \\1+' |
+			randomorder | head -10 | ## avoid flooding
+			takecols 1 2 | columnise |
+		"
+		or print "can't fork: $!\n";
+		my $found = 0;
+		# while ($out = <SPOOLER>) {
+		while (<SPOOLER>) {
+			# $out = `echo -n "$out"`;
+			# next if /^(tcp|udp)/;
+			# print;
+			# IRC::command ("/say $out");
+			s/\n//g;      # Strip newlines
+			IRC::command ("/say $_");
+			sleep 1; ## avoid flooding
+			$found = 1;
+		}
+		if (( ! $found )) {
+			# IRC::command ("/say No matches found for \"$rest\".");
+			IRC::command ("/say I could not find \"$rest\".");
+		}
+		close SPOOLER or print "bad netstat: $! $?\n";
+	}
+
+	return 0;
+}
+
+# IRC::add_command_handler("wut", "IRC::Xchat::WutNog::wutnog");
+IRC::add_message_handler("PRIVMSG", "IRC::Xchat::WutNog::wutnog");
+IRC::add_print_handler("Channel Msg Hilight", "IRC::Xchat::WutNog::wutnog");
+IRC::add_print_handler("Channel Message", "IRC::Xchat::WutNog::wutnog");
+IRC::add_print_handler("Private Message to Dialog", "IRC::Xchat::WutNog::wutnog");
+IRC::add_print_handler("Your Message", "IRC::Xchat::WutNog::wutnog");
+IRC::print('Loaded WUT script by nogginBasher.');

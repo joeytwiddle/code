@@ -1,0 +1,10 @@
+list () {
+cat << !
+Duncan :)
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+
