@@ -47,7 +47,9 @@ var string HelloBroadcast; // Don't want config; want to overwrite it
 var config bool bAutoBalanceTeams;
 // For updating player strength in-game:
 var config bool bUpdatePlayerStats;
-var config bool bUpdateStatsForCTFOnly;  // Stats were updating during other gametypes, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
+// var config bool bUpdateStatsForCTFOnly;  // Stats were updating during other gametypes, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
+var config string OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
+var config string OnlyBalanceTeamsIfGametypeIsA;
 // TODO: var config bool bUpdateStatsAtGameEndOnly;
 var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
@@ -90,7 +92,9 @@ defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta1) is attempting to balance the teams"
   bAutoBalanceTeams=True
   bUpdatePlayerStats=True
-  bUpdateStatsForCTFOnly=True
+  // bUpdateStatsForCTFOnly=True
+  OnlyUpdateStatsIfGametypeIsA="CTFGame"
+  OnlyBalanceTeamsIfGametypeIsA="TeamGamePlus"
   PollMinutes=2.4
   MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: recommended 4
@@ -161,7 +165,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
   // check if this is a team game and if InitTeams has been passed
   // Done: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStarted?  nooo, this check is that the game *has* started, because we don't need to switch the players when joining a new map, because InitTeams will do that.
-  if (!bAutoBalanceTeams || !gameStarted || !Level.Game.IsA('TeamGamePlus')) return;
+  if (!bAutoBalanceTeams || !gameStarted || (OnlyUpdateStatsIfGametypeIsA!="" && !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA))) return;
 
   Log("AutoTeamBalance.ModifyLogin()");
 
@@ -564,10 +568,11 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     // Presumably we have not checked that this is *really* a team-game we are getting stats from.
     // For now, have optionally limited stats to CTF games only:
     // TODO: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash
-    if (Level.Game.IsA('CTFGame') || !bUpdateStatsForCTFOnly) {
+    // if (Level.Game.IsA('CTFGame') || !bUpdateStatsForCTFOnly) {
+    if (OnlyUpdateStatsIfGametypeIsA == "" || Level.Game.IsA(OnlyUpdateStatsIfGametypeIsA)) {
       UpdateStatsFromCurrentGame();
     } else {
-      Log("AutoTeamBalance.Timer(): not running UpdateStatsFromCurrentGame() since Level.Game "$Level.Game$" != CTFGame and config has bUpdatePlayerStats=True.");
+      Log("AutoTeamBalance.Timer(): not running UpdateStatsFromCurrentGame() since Level.Game = "$Level.Game$" != "$OnlyUpdateStatsIfGametypeIsA$".");
     }
   }
   if (bDebugLogging) {
