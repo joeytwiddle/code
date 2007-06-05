@@ -38,7 +38,7 @@ var config bool bUpdatePlayerStats;
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
 var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed as their number of cookies
-var config bool bOnlyMoreCookies;
+var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
 
 var config int UnknownStrength;    // Default strength for unknown players
 var config int BotStrength;        // Default strength for bots
@@ -492,6 +492,7 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   avg_score[pos] = UnknownStrength;
   hours_played[pos] = 10/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
+  if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$", please have a cookie."); }
   // SaveConfig();
   return pos;
 }
@@ -518,7 +519,7 @@ function UpdateStatsFromCurrentGame() {
   }
 
   // Update stats for all players in game
-  if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance(alpha).Timer(): updating stats now - please report any lags"); }
+  if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance.Timer(): Updating stats now - Please report any lags"); }
   Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): updating stats");
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
