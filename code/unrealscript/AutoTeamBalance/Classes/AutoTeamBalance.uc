@@ -770,6 +770,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   local int gameDuration;
   local int timeInGame;
   local float weightScore;
+  local float previous_average;
 
   i = FindPlayerRecord(p);
 
@@ -792,6 +793,8 @@ function UpdateStatsForPlayer(PlayerPawn p) {
     return;
   }
   new_hours_played = hours_played[i] + (Float(timeInGame) / 60 / 60);
+
+  previous_average = avg_score[i];
 
   if (bDoWeightedUpdates) {
 
@@ -816,8 +819,8 @@ function UpdateStatsForPlayer(PlayerPawn p) {
 
   hours_played[i] = new_hours_played;
 
-  if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
-  if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
+  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average)) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " earned " $Int(avg_score[i])$ " cookies!"); }
+  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average)) { BroadcastMessage("" $ p.getHumanName() $ " earned " $Int(avg_score[i])$ " cookies!"); }
 }
 
 // Takes everything before the first ":" - you should almost always use this when getting PlayerPawn.GetPlayerNetworkAddress(); at least in my experience the client's port number changed frequently.
