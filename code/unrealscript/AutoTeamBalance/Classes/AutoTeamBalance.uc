@@ -495,9 +495,6 @@ function UpdateStatsFromCurrentGame() {
   local int countHumanPlayers;
 
   local Pawn p;
-  local int i;
-  local float current_score;
-  local float new_hours_played;
 
   // Do not update stats for games with <MinHumansForStats human players.
   countHumanPlayers = 0;
@@ -516,19 +513,7 @@ function UpdateStatsFromCurrentGame() {
   Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): updating stats");
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
-      i = FindPlayerRecord(PlayerPawn(p));
-      if (i == -1 || ip[i] != stripPort(PlayerPawn(p).GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
-        // This is not an exact player match, so we should not update its stats
-        // since we didn't find this actual ip+nick, we create a new entry
-        // TODO CONSIDER: should we base the new players stats on the default (below), or copy over the estimated player's stats?
-        i = CreateNewPlayerRecord(PlayerPawn(p)); // TODO BUG CONSIDER: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
-      }
-      current_score = p.PlayerReplicationInfo.Score;
-      new_hours_played = hours_played[i] + (PollMinutes / 60);
-      Log("AutoTeamBalance.UpdateStatsFromCurrentGame() Doing: avg_score["$i$"] = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
-      avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
-      hours_played[i] = new_hours_played;
-      if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
+      UpdateStatsForPlayer(PlayerPawn(p));
     }
   }
 
@@ -540,6 +525,26 @@ function UpdateStatsFromCurrentGame() {
 
   Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): done");
 
+}
+
+function UpdateStatsForPlayer(PlayerPawn p) {
+  local int i;
+  local float current_score;
+  local float new_hours_played;
+
+  i = FindPlayerRecord(p);
+  if (i == -1 || ip[i] != stripPort(p.GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
+    // This is not an exact player match, so we should not update its stats
+    // since we didn't find this actual ip+nick, we create a new entry
+    // TODO CONSIDER: should we base the new players stats on the default (below), or copy over the estimated player's stats?
+    i = CreateNewPlayerRecord(p); // OLD BUG FIXED: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
+  }
+  current_score = p.PlayerReplicationInfo.Score;
+  new_hours_played = hours_played[i] + (PollMinutes / 60);
+  Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") ["$i$"] "$p.getHumanName()$" avg_score["$i$"] = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
+  avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
+  hours_played[i] = new_hours_played;
+  if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
 }
 
 // Takes everything before the first ":" - you should almost always use this when getting PlayerPawn.GetPlayerNetworkAddress(); at least in my experience the client's port number changed frequently.
