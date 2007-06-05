@@ -2,6 +2,9 @@
 
 // A mutator that makes fair teams at the beginning of each teamgame, by recording the relative strengths of players on the server (linked to their nick/ip).
 // It also attempts to put a player joining the game on an appropriate team.
+// It can only build player stats for regular players.
+// It will also take a while after running to build up accurate stats of the players.
+// For the first week or so you may wish to collect stats but not attempt team-balancing: just set bAutoBalanceTeamsFor*=False but leave bUpdatePlayerStatsFor*=True.
 // by Daniel Mastersourcerer at Kitana's Castle and nogginBasher
 // (c)opyleft May 2007 under GNU Public Licence
 
@@ -9,9 +12,9 @@
 
 // The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
 
-// TODO: don't do any even-ing of teams if bTournament=True; also don't do any scanning (strength updating) either?
+// DONE: don't do any even-ing of teams if bTournament=True; NOT GOING TO DO: also don't do any scanning (strength updating) either?
 
-// TODO: catch the end-of-game event and collect scores then (check Level.Game.bGameEnded)
+// DONE but not perfect: catch the end-of-game event and collect scores then (check Level.Game.bGameEnded)
 
 // TODO when the playerData array gets full, old records are not recycled properly (atm the last is just overwritten repeatedly :| )
 
@@ -30,7 +33,7 @@
 // OLD rankings method:
 //
 // At the moment we are polling the game every PollMinutes minutes, and updating the players according to their current in-game score.
-// So we are basically measuring their average score during the whole (any,all) time they are on the server (playing CTF with 4+ players; and TODO: even teams?!).
+// So we are basically measuring their average score during the whole (any,all) time they are on the server (playing CTF with 4+ players; and even teams?!).
 //
 // We are currently taking player snapshots about 6 times during each 15 minute game, and storing the average score (usually SmartCTF score, not default frags).
 // This is NOT their average score at the end of the game, but their average score at "random" intervals during the game.
@@ -62,7 +65,6 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 //// These didn't work for me; maybe config vars can't be complex types like "name"
 // var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
 // var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
-// TODO: var config bool bUpdateStatsAtGameEndOnly;
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
@@ -92,7 +94,7 @@ var String nick[4096];
 var float avg_score[4096];
 var float hours_played[4096];
 // var int games_played[4096];
-// TODO: var int date_last_played[4096]; // would be good for recycling; otherwise recycle on lowest hours_played i guess, although if the server/playerData lasts 1billion years, it might be hard for the current generation of players to get into the ranking
+// TODO: var int date_last_played[4096]; // would be good for recycling old stats; otherwise recycle on lowest hours_played I guess, although if the server/playerData lasts 1billion years, it might be hard for the current generation of players to get into the ranking
 
 // For local state caching (not repeating when called by Tick's or Timer's):
 var bool initialized;              // Mutator initialized flag
@@ -154,7 +156,7 @@ function PostBeginPlay() {
 
   // Call Timer() every PollMinutes.
   // SetTimer(PollMinutes*60,True);
-  SetTimer(10,True); // Now checking once a minute to see if game has ended
+  SetTimer(10,True); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
 
   // Level.Game.RegisterMessageMutator( Self ); // TESTING Matt's MutatorBroadcastMessage hook below
   // deprecated because it was hiding server broadcasts (like adwvaad used to)
@@ -681,6 +683,8 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
     }
   } // TODO: If all full, could add somewhere randomly in the last 100 spots (rather than just 1 spot which keeps getting re-used)
   // or, find the oldest record and replace it
+  // TODO: find the record with lowest hours_played and replace that one
+  pos = FindShortestPlayerRecord();
   ip[pos] = stripPort(p.GetPlayerNetworkAddress());
   nick[pos] = p.getHumanName();
   // initialise each player as having played for UnknownMinutes (e.g. 10 or 0.1) minutes already, and already earned an average UnknownStrength (e.g. 40) frags
@@ -689,6 +693,23 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
   // if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   // SaveConfig();
+  return pos;
+}
+
+// Finds an old player record which we can replace.  Actually since we don't have a last_seen field, we'll just have to remove the "shortest" record.  (Player didn't spend long on server; their stats don't mean a lot)
+// Only problem, if the database really is saturated (but I think that's unlikely), this new player will probably be the next record to be replaced!  To keep his record in the database, the new player just has to play for longer than the now "shortest" record before another new player joins.
+// Actually one nice side-effect of the particular algorithm we're using below (<lowest instead of <=lowest): if a few records share the "shortest record" time (actually quite likely since currently our hours_played are incremented fixed-size steps - or are they?  maybe gameDuration will sometimes be a second out), it will be the first of them that gets replaced first.  :)
+function int FindShortestPlayerRecord() {
+  local int pos,found;
+  local float lowest;
+  found = 0;
+  lowest = hours_played[0];
+  for (pos=1;pos<MaxPlayerData;pos++) {
+    if (hours_played[pos] < lowest) {
+      lowest = hours_played[pos];
+      found = pos;
+    }
+  }
   return pos;
 }
 
