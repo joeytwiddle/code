@@ -761,7 +761,7 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
     Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") was called.");
   }
 
-  if ( InStr(Msg,"game has ended.")>=0 ) {
+  if ( InStr(Msg,"game has ended.") != -1 ) {
     Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected \"game has ended.\" - TODO run UpdateStatsAtEndOfGame() here.");
   }
 
@@ -769,8 +769,8 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
     Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
   }
 
-  if ( InStr(Msg,"entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
-  // if( InStr(Msg,"left the game.")>=0 ) {
+  if ( InStr(Msg,"entered the game.") != -1 ) { // Can we find the new player pawn, and report his #cookies ?
+  // if ( InStr(Msg,"left the game.") != -1 ) {
       // // If 'entered the game' or 'left the game' are seen,
       // // and the game has not ended, do:
       // CheckStatus(); // Matt suggested advwaad did the #players check and bot-forcing here.
