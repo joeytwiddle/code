@@ -10,13 +10,13 @@
 
 // The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
 
-// TODO: catch the end-of-game event and collect scores then
+// TODO: catch the end-of-game event and collect scores then (check Level.Game.bGameEnded)
 
 // TODO: catch a player saying "!teams"
 
 // Done now: i shouldn't be taking averages over time, but over #polls :S
 
-// TODO when the playerData array gets full, records are not recycled properly
+// TODO when the playerData array gets full, old records are not recycled properly (atm the last is just overwritten repeatedly :| )
 
 // CONSIDER: in cases of a standoff (e.g. all players are new and score UnknownStrength) choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
@@ -24,12 +24,18 @@
 
 // Current rankings:
 //
-// At the moment we are polling the game every PollMinutes seconds, and updating the players according to their present score.
-// So we are basically measuring their average score during the whole (any) time they are on the server.
+// At the moment we are polling the game every PollMinutes minutes, and updating the players according to their current in-game score.
+// So we are basically measuring their average score during the whole (any,all) time they are on the server (playing CTF with 4+ players; TODO: and even teams?!).
 //
 // We are currently taking player snapshots about 6 times during each 15 minute game, and storing the average score (usually SmartCTF score, not default frags).
 // This is NOT their average score at the end of the game, but their average score at "random" intervals during the game.
-// This might seem unfair to players who join the server only for a few minutes, and get a low average score.  Screw them, they might leave halfway through the next game.  Regular players get punished for their high scores though.  :)
+// This might seem unfair to players who join the server only for a few minutes, and get a low average score.  Screw them, they might leave halfway through the next game.  Regular players get rightly punished (and highly ranked!) for holding high scores during long games.  :)
+//
+// Thus recorded for each player is their average score over all the time they ever spent on the server (until they change nick or IP).
+// Players will be forever punished/catching up if they started playing with low scores on the server.
+// We could offer a MaxHoursPlayed or MaxPollsBeforeRecyclingStrength (or MaxGamesPlayed), after which their time_on_server does not increase, and their ranking becomes more oriented towards the players most recent scores (older scores get phased out).  E.g. with MaxPollsBeforeRecyclingStrength=99, new_score = ((old score * 99) + current_score) / 100 = .99*old_score + .01*current_score <-- This is still a very slow way of forgetting the past
+
+// TODO: throughout the code i have referred to strength,avg_score,ranking,rating which are all the same thing.  Daniel stuck to "Strength" so maybe I should consolidate around that name.
 
 //=============================================================================
 
@@ -38,12 +44,19 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 var string HelloBroadcast; // Don't want config; want to overwrite it
 
 var config bool bAutoBalanceTeams;
+// For updating player strength in-game:
 var config bool bUpdatePlayerStats;
+var config bool bUpdateStatsForCTFOnly;  // Stats were updating during other gametypes, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
+var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
+var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
+var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
+var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
 var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed as their number of cookies
 var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
 
+// Defaults (Daniel's):
 var config int UnknownStrength;    // Default strength for unknown players
 var config float UnknownMinutes;   // Initial virtual time spend on server by new players
 var config int BotStrength;        // Default strength for bots
@@ -52,10 +65,6 @@ var config bool bClanWar;          // Make teams by clan tag
 var config string clanTag;         // Clan tag of red team (all other players to blue)
 // var config String RedTeam[16];     // Players on red team (unreferenced)
 // var config String BlueTeam[16];    // Players on blue team (unreferenced)
-
-// For updating player strength in-game:
-var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
-var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 
 // For storing player strength data:
 var int MaxPlayerData; // The value 4096 is used in the following array declarations and the defaultproperties, but throughout the rest of the code, MaxPlayerData can be used to save duplication lol
@@ -74,10 +83,15 @@ var bool initialized;              // Mutator initialized flag
 var bool gameStarted;              // Teams initialized flag
 
 defaultproperties {
-  HelloBroadcast="~ AutoTeamBalance.ALPHA is attempting to balance the teams ~"
+  HelloBroadcast="AutoTeamBalance (beta1) is attempting to balance the teams"
   bAutoBalanceTeams=True
   bUpdatePlayerStats=True
+  bUpdateStatsForCTFOnly=True
+  PollMinutes=2.4
+  MaxPollsBeforeRecyclingStrength=100
+  MinHumansForStats=1     // TODO: recommended 4
   bBroadcastStuff=True
+  bDebugLogging=True      // TODO: recommended False
   bBroadcastCookies=True
   bOnlyMoreCookies=True
   UnknownStrength=40      // New player records start with an initial strength of avg_score 40
@@ -85,8 +99,6 @@ defaultproperties {
   BotStrength=20
   FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points
   bClanWar=False
-  PollMinutes=2.4
-  MinHumansForStats=1 // TODO: recommended 4
   MaxPlayerData=4096
   // bHidden=True // what is this?
 }
@@ -120,12 +132,12 @@ event Tick(float DeltaTime) {
   CheckGameStart();
 }
 
-// Send new players (just joining the server) to the correct team
+// If a new player joins a game which has already started, this will send him to the most appropriate team (based on summed strength of each team, plus capbonuses).
 function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
   local int selectedTeam;
   local int teamSize[2];
   local int teamSizeWithBots[2];
-  local int teamStr[2];
+  local int teamStr[2]; // each team's strength, only used if the #players on each team is equal
   local int teamnr;
   local String plname;
   local Pawn p;
@@ -137,7 +149,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
 
   // check if this is a team game and if InitTeams has been passed
-  // TODO: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStarted?
+  // Done: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStarted?  nooo, this check is that the game *has* started, because we don't need to switch the players when joining a new map, because InitTeams will do that.
   if (!bAutoBalanceTeams || !gameStarted || !Level.Game.IsA('TeamGamePlus')) return;
 
   Log("AutoTeamBalance.ModifyLogin()");
@@ -205,6 +217,13 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
     GRI.Teams[1].Size=teamSizeWithBots[1];
   }
 }
+
+// nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
+function bool HandleEndGame() {
+  Log("AutoTeamBalance.HandleEndGame() was CALLED!");
+}
+// Alternative, there is: event GameEnding() { ... } implemented in GameInfo.  Can we drop our own event catcher in here, without overriding the other?
+// or ofc we can use a timer and check Level.Game.bGameEnded but the timer mustn't do this twice at the end of one game. :P
 
 
 
@@ -371,8 +390,8 @@ function InitTeams() {
   g.bNoTeamChanges=oldbNoTeamChanges;
 
   // Show team strengths to all players
-  if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ " , blue team strength is " $ teamstr[1]); }
-  Log("AutoTeamBalance.InitTeams(): Red team strength is " $ teamstr[0] $ " , blue team strength is " $ teamstr[1]);
+  if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
+  Log("AutoTeamBalance.InitTeams(): Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ ".");
 
   // Little point doing this here; moved to timer.
   // CopyArraysIntoConfig();
@@ -393,7 +412,7 @@ function int GetPawnStrength(Pawn p) {
     st=BotStrength;
   }
 
-  Log("AutoTeamBalance.GetPawnStrength(" $ p $ "): " $ st $ "");  
+  Log("AutoTeamBalance.GetPawnStrength(" $ p $ "): " $ st $ "");
 
   return st;
 }
@@ -505,18 +524,35 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
 }
 
 event Timer() { // this may be a reasonably hard work process; i hope it's been given it's own thread!
-  local int c,n,e,l;
-  c = TeamGamePlus(Level.Game).countdown;
-  n = TeamGamePlus(Level.Game).NetWait;
-  e = TeamGamePlus(Level.Game).ElapsedTime;
-  l = TeamGamePlus(Level.Game).TimeLimit;
-  Log("AutoTeamBalance.Timer() Starting c="$c$" b="$n$" e="$e$" l="$l);
-  UpdateStatsFromCurrentGame();
-  c = TeamGamePlus(Level.Game).countdown;
-  n = TeamGamePlus(Level.Game).NetWait;
-  e = TeamGamePlus(Level.Game).ElapsedTime;
-  l = TeamGamePlus(Level.Game).TimeLimit;
-  Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l);
+  // TESTING these counters; really i want to know how far after the end of the game we are
+  local int c,n,e,l,t;
+  if (bDebugLogging) {
+    c = TeamGamePlus(Level.Game).countdown;
+    n = TeamGamePlus(Level.Game).NetWait;
+    e = TeamGamePlus(Level.Game).ElapsedTime;
+    l = TeamGamePlus(Level.Game).TimeLimit;
+    t = Level.TimeSeconds;
+    Log("AutoTeamBalance.Timer() Starting c="$c$" b="$n$" e="$e$" l="$l$" t="$t);
+  }
+  if (bUpdatePlayerStats) {
+    // Stats were updating during a game of DM ffa, 3 players, low scores.  This gives very different scores than CTF games.
+    // Presumably we have not checked that this is *really* a team-game we are getting stats from.
+    // For now, have optionally limited stats to CTF games only:
+    // TODO: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash
+    if (Level.Game.IsA('CTFGame') || !bUpdateStatsForCTFOnly) {
+      UpdateStatsFromCurrentGame();
+    } else {
+      Log("AutoTeamBalance.Timer(): not running since Level.Game "$Level.Game$" != CTFGame and config has bUpdatePlayerStats=True.");
+    }
+  }
+  if (bDebugLogging) {
+    c = TeamGamePlus(Level.Game).countdown;
+    n = TeamGamePlus(Level.Game).NetWait;
+    e = TeamGamePlus(Level.Game).ElapsedTime;
+    l = TeamGamePlus(Level.Game).TimeLimit;
+    t = Level.TimeSeconds;
+    Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t);
+  }
 }
 
 function UpdateStatsFromCurrentGame() {
@@ -573,6 +609,9 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   current_score = p.PlayerReplicationInfo.Score;
   new_hours_played = hours_played[i] + (PollMinutes / 60);
   previousPolls = hours_played[i] / (PollMinutes/60);
+  if (MaxPollsBeforeRecyclingStrength>0 && previousPolls > MaxPollsBeforeRecyclingStrength) {
+    previousPolls = MaxPollsBeforeRecyclingStrength - 1;
+  }
   // Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
   // avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
   Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$") / "$(previousPolls+1)$"");
