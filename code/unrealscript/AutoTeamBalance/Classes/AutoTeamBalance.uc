@@ -124,7 +124,7 @@ function PostBeginPlay() {
    SetTimer(PollMinutes*60,True);
    // Call Timer() every PollMinutes.
 
-  Log("AutoTeamBalance.PostBeginPlay(): Done.");  
+  Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for "$(PollMinutes*60)$" seconds.");
 }
 
 // Do something every tick
@@ -532,7 +532,7 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     e = TeamGamePlus(Level.Game).ElapsedTime;
     l = TeamGamePlus(Level.Game).TimeLimit;
     t = Level.TimeSeconds;
-    Log("AutoTeamBalance.Timer() Starting c="$c$" b="$n$" e="$e$" l="$l$" t="$t);
+    Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
   }
   if (bUpdatePlayerStats) {
     // Stats were updating during a game of DM ffa, 3 players, low scores.  This gives very different scores than CTF games.
@@ -551,7 +551,7 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     e = TeamGamePlus(Level.Game).ElapsedTime;
     l = TeamGamePlus(Level.Game).TimeLimit;
     t = Level.TimeSeconds;
-    Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t);
+    Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
   }
 }
 
