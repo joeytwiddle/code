@@ -678,7 +678,7 @@ function int FindPlayerRecord(PlayerPawn p) {
         Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick[i]$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")");
         found = i; // if not yet matching an ip, match the same nick on a different ip
       }
-      // TODO: if an uneven match, choose a match with more experience
+      // TODO: if an uneven match, choose a match with more experience (hours_played)
       // TODO: if we have little experience of a player, assume default score?
     }
   }
@@ -706,7 +706,8 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   avg_score[pos] = 0; // UnknownStrength;
   hours_played[pos] = 0; // UnknownMinutes/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$") ["$pos$"] "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
-  // if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
+  // if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$nick[pos]$"!  You have "$avg_score[pos]$" cookies."); }
+  if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome to the server "$nick[pos]$"!  Have a cookie.  :)"); }
   // SaveConfig();
   return pos;
 }
