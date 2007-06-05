@@ -315,6 +315,9 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   // nogginBasher: I don't understand this bit, but maybe it's because we modified the player's login
   // I was thinking of stripping teamSizeWithBots because i have adwvaad on my server,
   // but since it isn't used to make the decision of which team to join, it's fine to leave it in for this bugfix.
+  // Mmm when someone joins the server mid-game, the bot scores are used to balance the teams
+  // With advwaad, if there is a bot, he'll be on the smaller team, so i guess it's fine the player will take the bots place
+  // If there isn't a bot, the new player will go on the weaker team, and adwvaad will add a new bot to the stronger team
 }
 
 // nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
