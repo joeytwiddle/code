@@ -602,6 +602,7 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
 
 // New Timer which is just looking for the end of the game
 event Timer() {
+  /*
   local int c,n,e,l,t,s;
   if (bDebugLogging) {
     c = TeamGamePlus(Level.Game).countdown;
@@ -612,6 +613,7 @@ event Timer() {
     s = Level.Game.StartTime;
     Log("AutoTeamBalance.Timer() DEBUG c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" s="$s$" bGameEnded="$Level.Game.bGameEnded);
   }
+  */
   CheckGameEnd();
 }
 
