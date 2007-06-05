@@ -12,7 +12,7 @@
 
 // The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
 
-// DONE: don't do any even-ing of teams if bTournament=True; NOT GOING TO DO: also don't do any scanning (strength updating) either?
+// DONE: don't do any even-ing of teams if bTournament=True; but atm it will still do end-game player stats updates in tournament mode
 
 // DONE but not perfect: catch the end-of-game event and collect scores then (check Level.Game.bGameEnded)
 
@@ -217,9 +217,6 @@ function bool ShouldBalance(GameInfo game) {
 
 function bool ShouldUpdateStats(GameInfo game) {
   if (bDebugLogging) { Log("AutoTeamBalance.ShouldUpdateStats("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$""); }
-  // Never balance in tournament mode
-  // if (DeathMatchPlus(Level.Game).bTournament)
-    // return False;
   // We only build stats for CTF games if asked
   if (String(Level.Game.Class) == "Botpack.CTFGame")
     return bUpdatePlayerStatsForCTF;
@@ -785,6 +782,9 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   // For the moment, assume all players were on server the whole game:
   gameDuration = Level.TimeSeconds - timeGameStarted;
   timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
+  // I don't know if this will ever happen, but I was thinking in tournament mode, we don't want to calculate a player as having played for 24 minutes if they were waiting 4 minutes for the game to start :P
+  if (timeInGame>gameDuration)
+    timeInGame = gameDuration;
   if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) timeInGame="$timeInGame$" gameDuration="$gameDuration$" Level.Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$""); }
   // Well if this player was only in the server for 5 minutes, we could multiply his score up so that he gets a score proportional to the other players.  (Ofc if he was lucky or unlucky, that luck will be magnified.)
   if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
@@ -811,7 +811,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
 
     // Mmm we can forget all the weird weighting and just update the player's average_score_per_hour:
     if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$(new_hours_played)); }
-    avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
+    avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score/4) / new_hours_played; // I'm dividing by 4 here to make it score-per-quarter-hour, which should be close to actual end-game scores, at least on my 15minute game server.
     // We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
 
   }
