@@ -672,7 +672,7 @@ function int FindPlayerRecord(PlayerPawn p) {
       // Backups if we don't find the exact ip+nick
       if (stripPort(p.GetPlayerNetworkAddress()) == ip[i]) {
         found = i; // matching ip
-        Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $p.getHumanName()$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")");
+        Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $p.getHumanName()$ ","$stripPort(p.GetPlayerNetworkAddress())$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")");
       }
       if (p.getHumanName() == nick[i] && found == -1) {
         Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick[i]$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")");
