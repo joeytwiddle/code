@@ -14,7 +14,9 @@
 
 // TODO: catch a player saying "!teams"
 
-// TODO BUG: i shouldn't be taking averages over time, but over #polls :S
+// Done now: i shouldn't be taking averages over time, but over #polls :S
+
+// TODO when the playerData array gets full, records are not recycled properly
 
 // CONSIDER: in cases of a standoff (e.g. all players are new and score UnknownStrength) choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
@@ -23,7 +25,7 @@
 // Current rankings:
 //
 // At the moment we are polling the game every PollMinutes seconds, and updating the players according to their present score.
-// So we are basically measuring their average score during the time they are on the server.
+// So we are basically measuring their average score during the whole (any) time they are on the server.
 //
 // We are currently taking player snapshots about 6 times during each 15 minute game, and storing the average score (usually SmartCTF score, not default frags).
 // This is NOT their average score at the end of the game, but their average score at "random" intervals during the game.
@@ -51,31 +53,27 @@ var config string clanTag;         // Clan tag of red team (all other players to
 // var config String BlueTeam[16];    // Players on blue team (unreferenced)
 
 // For updating player strength in-game:
-
 var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
-
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 
 // For storing player strength data:
-
 var int MaxPlayerData; // The value 4096 is used in the following array declarations and the defaultproperties, but throughout the rest of the code, MaxPlayerData can be used to save duplication lol
-
 var config String playerData[4096]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
+// Internal (parsed) player data:
 var String ip[4096];
 var String nick[4096];
 var float avg_score[4096];
-// var int games_played[4096];
 var float hours_played[4096];
-// TODO: date_last_played
+// var int games_played[4096];
+// TODO: var int date_last_played[4096];
 
-// For local state caching
-
+// For local state caching:
 var bool initialized;              // Mutator initialized flag
 var bool gameStarted;              // Teams initialized flag
 
 defaultproperties {
-  HelloBroadcast=" ~ AutoTeamBalance.ALPHA is running ~ "
+  HelloBroadcast="~ AutoTeamBalance.ALPHA is attempting to balance the teams ~"
   bAutoBalanceTeams=True
   bUpdatePlayerStats=True
   bBroadcastStuff=True
@@ -132,7 +130,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   local TournamentGameReplicationInfo GRI;
 
   // (nogginBasher) as far as i can tell we don't actually have the pawn of the player we are moving
-  //                we need his nick+ip to get his own strength.
+  //                we need his nick+ip to get his own strength.  Since we can't at the moment we just assume his strength is >0 and put him on the weaker team.
 
   if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
 
@@ -231,6 +229,7 @@ function CheckGameStart() {
 
   // initialize teams 1 second before game is starting
   if (c<2) {
+    if (bBroadcastStuff) { Log("AutoTeamBalance.CheckGameStart() Broadcasting: "$HelloBroadcast); }
     if (bBroadcastStuff) { BroadcastMessage(HelloBroadcast); }
     InitTeams();
     gameStarted=True;
@@ -279,6 +278,7 @@ function InitTeams() {
       tg[pid]=st;
       // p.PlayerReplicationInfo.PlayerName
       Log("AutoTeamBalance.InitTeams(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
+      if (bBroadcastCookies && !bOnlyMoreCookies) { Log("AutoTeamBalance.InitTeams() Broadcasting: " $ p.getHumanName() $ " has " $st$ " cookies."); }
       if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessage("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   }
@@ -496,13 +496,25 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   avg_score[pos] = UnknownStrength;
   hours_played[pos] = 10/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
-  if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$", please have a cookie."); }
+  if (bBroadcastCookies) { Log("AutoTeamBalance.CreateNewPlayerRecord() Broadcasting: Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
+  if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   // SaveConfig();
   return pos;
 }
 
 event Timer() { // this may be a reasonably hard work process; i hope it's been given it's own thread!
+  local int c,n,e,l;
+  c = TeamGamePlus(Level.Game).countdown;
+  n = TeamGamePlus(Level.Game).NetWait;
+  e = TeamGamePlus(Level.Game).ElapsedTime;
+  l = TeamGamePlus(Level.Game).TimeLimit;
+  Log("AutoTeamBalance.Timer() Starting c="$c$" b="$n$" e="$e$" l="$l);
   UpdateStatsFromCurrentGame();
+  c = TeamGamePlus(Level.Game).countdown;
+  n = TeamGamePlus(Level.Game).NetWait;
+  e = TeamGamePlus(Level.Game).ElapsedTime;
+  l = TeamGamePlus(Level.Game).TimeLimit;
+  Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l);
 }
 
 function UpdateStatsFromCurrentGame() {
@@ -523,6 +535,7 @@ function UpdateStatsFromCurrentGame() {
   }
 
   // Update stats for all players in game
+  if (bBroadcastStuff) { Log("AutoTeamBalance.Timer() Broadcasting: Updating stats now - Please report any lags"); }
   if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance.Timer(): Updating stats now - Please report any lags"); }
   // TODO: TEST: make lag here on purpose and see how bad we can get it / how we can fix it.
   Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): updating stats");
@@ -563,6 +576,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$") / "$(previousPolls+1)$"");
   avg_score[i] = ( (avg_score[i] * previousPolls) + current_score) / (previousPolls+1);
   hours_played[i] = new_hours_played;
+  if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
 }
 
