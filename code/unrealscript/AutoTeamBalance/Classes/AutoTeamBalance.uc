@@ -704,7 +704,7 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   // initialise each player as having played for UnknownMinutes (e.g. 10 or 0.1) minutes already, and already earned an average UnknownStrength (e.g. 40) frags
   avg_score[pos] = 0; // UnknownStrength;
   hours_played[pos] = 0; // UnknownMinutes/60;
-  Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
+  Log("AutoTeamBalance.CreateNewPlayerRecord("$p$") ["$pos$"] "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
   // if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   // SaveConfig();
   return pos;
@@ -714,14 +714,14 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
 // Only problem, if the database really is saturated (but I think that's unlikely), this new player will probably be the next record to be replaced!  To keep his record in the database, the new player just has to play for longer than the now "shortest" record before another new player joins.
 // Actually one nice side-effect of the particular algorithm we're using below (<lowest instead of <=lowest): if a few records share the "shortest record" time (actually this was more likely when our hours_played were incremented in fixed-size steps), it will be the first of them that gets replaced first.  :)  Down-side: the new player now in that early position in the stats-table was not an early player on the server, so he breaks this very pattern.
 function int FindShortestPlayerRecord() {
-  local int pos,found;
+  local int i,found;
   local float lowest;
   found = 0;
   lowest = hours_played[0];
-  for (pos=1;pos<MaxPlayerData;pos++) {
-    if (hours_played[pos] < lowest) {
-      lowest = hours_played[pos];
-      found = pos;
+  for (i=1;i<MaxPlayerData;i++) {
+    if (hours_played[i] < lowest) {
+      lowest = hours_played[i];
+      found = i;
     }
   }
   return found;
@@ -791,28 +791,30 @@ function UpdateStatsForPlayer(PlayerPawn p) {
     Log("AutoTeamBalance.UpdateStatsForPlayer(p) Not updating this player since his timeInGame "$timeInGame$" < 60.");
     return;
   }
-  new_hours_played = hours_played[i] + (timeInGame / 60 / 60);
+  new_hours_played = hours_played[i] + (Float(timeInGame) / 60 / 60);
 
   if (bDoWeightedUpdates) {
 
-    weightScore = gameDuration / timeInGame;
+    weightScore = Float(gameDuration) / Float(timeInGame);
     // Let's weight the scores more, so that instead of becoming score-per-endgame it becomes score-per-hour (in case this was a short game with low frags, or overtime with many frags).
-    weightScore = weightScore * 60 * 60 / gameDuration / 4; // I'm dividing by 4 here to make it score-per-quarter-hour, which should be close to actual end-game scores, at least on my 15minute game server.
+    weightScore = weightScore * 60 * 60 / Float(gameDuration) / 4; // I'm dividing by 4 here to make it score-per-quarter-hour, which should be close to actual end-game scores, at least on my 15minute game server.
     previousPolls = hours_played[i] / 4;  // This is approx #times we've updated this player's stats before (since my server usually has 15 minute games).  But it's not too bad if your server is different.  It's just used to measure the significance of their current score relative to the number of scores we've seen before from this player.  Servers with longer game-times will make new scores slightly less significant.
     if (MaxPollsBeforeRecyclingStrength>0 && previousPolls > MaxPollsBeforeRecyclingStrength) {
       previousPolls = MaxPollsBeforeRecyclingStrength - 1;
     }
     Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$"*"$weightScore$") / "$(previousPolls+1));
     // avg_score[i] = ( (avg_score[i] * previousPolls) + current_score*weightScore) / (previousPolls+1);
-    hours_played[i] = new_hours_played;
 
   } else {
 
     // Mmm we can forget all the weird weighting and just update the player's average_score_per_hour:
+    Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$(new_hours_played));
     avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
     // We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
 
   }
+
+  hours_played[i] = new_hours_played;
 
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
