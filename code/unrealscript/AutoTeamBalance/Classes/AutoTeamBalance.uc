@@ -168,7 +168,7 @@ function bool ShouldBalance(GameInfo game) {
   // local string[20] gametypes;
   // local int n,i;
 
-  if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$""); }
+  // if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$""); }
   // Never balance in tournament mode
   if (DeathMatchPlus(Level.Game).bTournament)
     return False;
@@ -195,6 +195,7 @@ function bool ShouldBalance(GameInfo game) {
   // if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$"): Did not match any of the specified gametypes: "$BalanceTeamsForGameTypes); }
 
   // OK so it's an unknown teamgame
+  if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$" returning "$bAutoBalanceTeamsForOtherTeamGames); }
   return bAutoBalanceTeamsForOtherTeamGames;
 }
 
