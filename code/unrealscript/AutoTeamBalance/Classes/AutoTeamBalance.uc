@@ -163,10 +163,10 @@ function PostBeginPlay() {
   SetTimer(10,True); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
 
   // Level.Game.RegisterMessageMutator( Self ); // TESTING Matt's MutatorBroadcastMessage hook below
-  // deprecated because it was hiding server broadcasts (like adwvaad used to)
+  // deprecated because it was hiding server broadcasts (like adwvaad used to; might be fixed by making it a serveractor, although may or may not be possible for what we are doing with this mutator)
 
   // Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for "$(PollMinutes*60)$" seconds.");
-  Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for 10 seconds.");
+  if (bDebugLogging) { Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for 10 seconds."); }
 }
 
 // Do something every tick
@@ -255,7 +255,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
   if (!ShouldBalance(Level.Game)) return;
 
-  Log("AutoTeamBalance.ModifyLogin()");
+  if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin()"); }
 
   // read this player's selected team
   selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
@@ -378,8 +378,7 @@ function CheckGameStart() {
 
   // initialize teams 1 second before game is starting
   if (c<2) {
-    if (bBroadcastStuff) { Log("AutoTeamBalance.CheckGameStart() Broadcasting: "$HelloBroadcast); }
-    if (bBroadcastStuff) { BroadcastMessage(HelloBroadcast); }
+    if (bBroadcastStuff) { BroadcastMessageAndLog(HelloBroadcast); }
     InitTeams();
     gameStartDone=True;
   }
@@ -418,7 +417,7 @@ function InitTeams() {
 
   CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
 
-  Log("AutoTeamBalance.InitTeams(): Running...");  
+  if (bDebugLogging) { Log("AutoTeamBalance.InitTeams(): Running..."); }
 
   // rate all players
   for (p=Level.PawnList; p!=None; p=p.NextPawn)
@@ -438,7 +437,7 @@ function InitTeams() {
       tg[pid]=st;
       // p.PlayerReplicationInfo.PlayerName
       Log("AutoTeamBalance.InitTeams(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
-      if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessage("" $ p.getHumanName() $ " has " $st$ " cookies."); }
+      if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessageAndLog("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   }
 
@@ -550,7 +549,7 @@ function int GetPawnStrength(Pawn p) {
     st=BotStrength;
   }
 
-  Log("AutoTeamBalance.GetPawnStrength(" $ p $ "): " $ st $ "");
+  if (bDebugLogging) { Log("AutoTeamBalance.GetPawnStrength(" $ p $ "): " $ st $ ""); }
 
   return st;
 }
@@ -707,7 +706,7 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   avg_score[pos] = 0; // UnknownStrength;
   hours_played[pos] = 0; // UnknownMinutes/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$") ["$pos$"] "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
-  // if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
+  // if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   // SaveConfig();
   return pos;
 }
@@ -746,8 +745,8 @@ function UpdateStatsAtEndOfGame() {
   }
 
   // Update stats for all players in game
-  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats now.");
-  if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance is updating player stats now."); }
+  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats.");
+  if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is updating player stats."); }
   // TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
@@ -791,7 +790,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) timeInGame="$timeInGame$" gameDuration="$gameDuration$" Level.Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$""); }
   // Well if this player was only in the server for 5 minutes, we could multiply his score up so that he gets a score proportional to the other players.  (Ofc if he was lucky or unlucky, that luck will be magnified.)
   if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
-    Log("AutoTeamBalance.UpdateStatsForPlayer(p) Not updating this player since his timeInGame "$timeInGame$" < 60.");
+    Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60.");
     return;
   }
   new_hours_played = hours_played[i] + (Float(timeInGame) / 60 / 60);
@@ -807,13 +806,13 @@ function UpdateStatsForPlayer(PlayerPawn p) {
     if (MaxPollsBeforeRecyclingStrength>0 && previousPolls > MaxPollsBeforeRecyclingStrength) {
       previousPolls = MaxPollsBeforeRecyclingStrength - 1;
     }
-    Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$"*"$weightScore$") / "$(previousPolls+1));
+    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$"*"$weightScore$") / "$(previousPolls+1)); }
     // avg_score[i] = ( (avg_score[i] * previousPolls) + current_score*weightScore) / (previousPolls+1);
 
   } else {
 
     // Mmm we can forget all the weird weighting and just update the player's average_score_per_hour:
-    Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$(new_hours_played));
+    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$(new_hours_played)); }
     avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
     // We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
 
@@ -821,8 +820,13 @@ function UpdateStatsForPlayer(PlayerPawn p) {
 
   hours_played[i] = new_hours_played;
 
-  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average+1)) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " earned " $Int(avg_score[i]-previous_average)$ " cookies!"); }
-  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average+1)) { BroadcastMessage("" $ p.getHumanName() $ " earned " $Int(avg_score[i]-previous_average)$ " cookies!"); }
+  if (bBroadcastCookies) {
+    if (avg_score[i]>previous_average) {
+      BroadcastMessageAndLog("" $ p.getHumanName() $ " has earned " $Int(avg_score[i]-previous_average)$ " cookies!");
+    } else if (!bOnlyMoreCookies) {
+      BroadcastMessageAndLog("" $ p.getHumanName() $ " has lost " $Int(previous_average-avg_score[i]+1)$ " cookies.");
+    }
+  }
 }
 
 // Takes everything before the first ":" - you should almost always use this when getting PlayerPawn.GetPlayerNetworkAddress(); at least in my experience the client's port number changed frequently.
@@ -915,6 +919,12 @@ function PlayerJoinedShowInfo(string Msg) {
     return;
   }
   i = FindPlayerRecord(PlayerPawn(p));
-  if (bBroadcastCookies) { BroadcastMessage(nick$" has "$Int(avg_score[i])$" cookies after "$hours_played[i]$" hours on the server."); }
+  if (bBroadcastCookies) { BroadcastMessageAndLog(nick$" has "$Int(avg_score[i])$" cookies after "$hours_played[i]$" hours on the server."); }
 }
 */
+
+function BroadcastMessageAndLog(string Msg) {
+  Log("AutoTeamBalance Broadcasting: "$Msg);
+  BroadcastMessage(Msg);
+}
+
