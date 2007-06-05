@@ -6,12 +6,27 @@
 
 // vim: tabstop=2 shiftwidth=2 expandtab
 
+// At the moment we are polling the game every PollMinutes seconds, and updating the players according to their present score.
+// So we are basically measuring their average score during the time they are on the server.
+
+// At the moment we are doing mostly 
+
+// The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
+
+// TODO: catch the end-of-game event and collect scores then
+
+// TODO: catch a player saying "!teams"
+
 //=============================================================================
 
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 var bool initialized;              // Mutator initialized flag
 var bool gameStarted;              // Teams initialized flag
+
+var bool bAutoBalanceTeams;
+var bool bUpdatePlayerStats;
+var config bool bBroadcastStuff;   // Be noisy to in-game console
 
 var config int UnknownStrength;    // Default strength for unknown players
 var config int BotStrength;        // Default strength for bots
@@ -21,29 +36,38 @@ var config string clanTag;         // Clan tag of red team (all other players to
 // var config String RedTeam[16];     // Players on red team (unreferenced)
 // var config String BlueTeam[16];    // Players on blue team (unreferenced)
 
-var int MaxPlayerData; // The value 4096 is used in the declaration and the defaultproperties, but throughout the rest of the code, MaxPlayerData can be used to save duplication lol
+// For storing player strength data:
+
+var int MaxPlayerData; // The value 4096 is used in the following array declarations and the defaultproperties, but throughout the rest of the code, MaxPlayerData can be used to save duplication lol
 
 var config String playerData[4096]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
 var String ip[4096];
 var String nick[4096];
 var float avg_score[4096];
-var int games_played[4096];
+// var int games_played[4096];
 var float hours_played[4096];
 // TODO: date_last_played
 
+// For updating player strength in-game:
+
+var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
+
+var config int MinHumanPlayersForStatsUpdate; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
+
 defaultproperties {
-  bHidden=True
+  bAutoBalanceTeams=True
+  bUpdatePlayerStats=True
+  bHidden=True // what is this?
   bClanWar=False
   UnknownStrength=40
   BotStrength=20
-  FlagStrength=50
+  FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points
   MaxPlayerData=4096
+  PollMinutes=2.4
+  bBroadcastStuff=True
+  MinHumanPlayersForStatsUpdate=1 // TODO: recommended 4
 }
-
-// At the moment we are doing mostly 
-
-// The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
 
 
 
@@ -62,6 +86,10 @@ function PostBeginPlay() {
   // Before uncommenting, consider moving the initialized=true; to the line before.
   // Level.Game.BaseMutator.AddMutator(Self);
   initialized=true;
+
+   SetTimer(PollMinutes*60,True);
+   // Call Timer() every PollMinutes.
+
   Log("AutoTeamBalance.PostBeginPlay(): Done.");  
 }
 
@@ -70,7 +98,7 @@ event Tick(float DeltaTime) {
   CheckGameStart();
 }
 
-// Send new players to the correct team
+// Send new players (just joining the server) to the correct team
 function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
   local int selectedTeam;
   local int teamSize[2];
@@ -81,10 +109,13 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   local Pawn p;
   local TournamentGameReplicationInfo GRI;
 
+  // (nogginBasher) as far as i can tell we don't actually have the pawn of the player we are moving
+  //                we need his nick+ip to get his own strength.
+
   if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
 
   // check if this is a team game and if InitTeams has been passed
-  if (!gameStarted || !Level.Game.IsA('TeamGamePlus')) return;
+  if (!bAutoBalanceTeams || !gameStarted || !Level.Game.IsA('TeamGamePlus')) return;
 
   Log("AutoTeamBalance.ModifyLogin()");  
 
@@ -100,7 +131,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   teamSizeWithBots[0]=0;
   teamSizeWithBots[1]=0;
 
-  // check team balance
+  // check team balance (get combined sum of player strengths for each team (as well as the flagbonus above)
   for (p=Level.PawnList; p!=None; p=p.NextPawn)
   {
     // ignore non-player pawns
@@ -160,7 +191,7 @@ function CheckGameStart() {
   local int c,n,e;
 
   // only TeamGamePlus has the "countdown" variable and of course teams
-  if (gameStarted || !Level.Game.IsA('TeamGamePlus')) return;
+  if (gameStarted || !bAutoBalanceTeams || !Level.Game.IsA('TeamGamePlus')) return;
 
   // this mod works on team games only
   if (!Level.Game.GameReplicationInfo.bTeamGame) {
@@ -176,14 +207,16 @@ function CheckGameStart() {
 
   // initialize teams 1 second before game is starting
   if (c<2) {
-    BroadcastMessage("AutoTeamBalance.alpha");
+    if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance.alpha"); }
     InitTeams();
     gameStarted=True;
   }
+
   // Log("AutoTeamBalance.CheckGameStart(): Done.");  // Too noisy; gets called many times before the balancing+start
+
 }
 
-// Balance the teams
+// Balance the teams just before the start of a new game.  No need for FlagStrength here.
 function InitTeams() {
   local Pawn p;
   local int st;
@@ -214,13 +247,15 @@ function InitTeams() {
       st=GetPawnStrength(p);
       pid=p.PlayerReplicationInfo.PlayerID % 64;
       // Why does Sourceror store the players by this pid hash (which might possibly collide)?  Why not just add the players to a list?
+      // Worth noting, from GameInfo.uc:
+      // // Set the player's ID.
+      // NewPlayer.PlayerReplicationInfo.PlayerID = CurrentID++;
       pl[pid]=p;
       ps[pid]=st;
       tg[pid]=st;
-      // BroadcastMessage("Player " $ p.PlayerReplicationInfo.PlayerName $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
-      // BroadcastMessage("Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
-      Log("Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
-      BroadcastMessage("" $ p.getHumanName() $ " has " $st$ " cookies.");
+      // p.PlayerReplicationInfo.PlayerName
+      Log("Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
+      if (bBroadcastStuff) { BroadcastMessage("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   }
 
@@ -269,6 +304,7 @@ function InitTeams() {
     {
       pid=plorder[i];
       teamnr=0;
+      // NOTE: here we are using Playername, in other places we've used getHumanName.
       if (Instr(Caps(pl[pid].PlayerReplicationInfo.Playername),Caps(clanTag))==-1) teamnr=1;
       Level.Game.ChangeTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
@@ -306,10 +342,11 @@ function InitTeams() {
   g.bNoTeamChanges=oldbNoTeamChanges;
 
   // Show team strengths to all players
-  BroadcastMessage("Red team strength is " $ teamstr[0] $ " , blue team strength is " $ teamstr[1]);
+  if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ " , blue team strength is " $ teamstr[1]); }
 
-  CopyArraysIntoConfig();
-  SaveConfig();
+  // Little point doing this here; moved to timer.
+  // CopyArraysIntoConfig();
+  // SaveConfig();
 
 }
 
@@ -338,7 +375,7 @@ function int GetPlayerStrength(PlayerPawn p) {
   if (found == -1) {
     return UnknownStrength; // unknown player or player is too weak for list
   } else {
-    return avg_score[found]; // player's average score, or best estimate of player
+    return avg_score[found]; // player's average score (or best estimate of player)
   }
   // return UnknownStrength;
 }
@@ -384,20 +421,20 @@ function CopyArraysIntoConfig() {
   Log("AutoTeamBalance.CopyArraysIntoConfig() done");
 }
 
-// Returns the strength of a player or a bot
+// guaranteed to return index i into playerData[] and ip[]/nick[]/... arrays, but not always an exact player match!
 function int FindPlayerRecord(PlayerPawn p) {
   local int found;
   local int i;
   found = -1;
   for (i=0;i<MaxPlayerData;i++) {
     // Exact match! return the index immediately
-    if (p.getHumanName() == nick[i] && p.GetPlayerNetworkAddress() == ip[i]) {
+    if (p.getHumanName() == nick[i] && stripPort(p.GetPlayerNetworkAddress()) == ip[i]) {
       found = i;
       // Log("AutoTeamBalance.FindPlayerRecord(p) Exact match for " $nick$ ","$ip": " $ found);
       return found;
     } else {
       // Backups if we don't find the exact ip+nick
-      if (p.GetPlayerNetworkAddress() == ip[i]) {
+      if (stripPort(p.GetPlayerNetworkAddress()) == ip[i]) {
         found = i; // matching ip
         // Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $nick$ ","$ip": " $ found);
       }
@@ -405,8 +442,9 @@ function int FindPlayerRecord(PlayerPawn p) {
         // Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick$ ","$ip": " $ found);
         found = i; // if no matching ip yet, same nick on a different ip
       }
+      // TODO: if an uneven match, choose a match with more experience
+      // TODO: if we have little experience of a player, assume default score?
     }
-    // Log("Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
   }
   if (found == -1) {
     CreateNewPlayerRecord(p);
@@ -414,6 +452,7 @@ function int FindPlayerRecord(PlayerPawn p) {
   return found;
 }
 
+// Currently new players override the one at the bottom of the list.  At the moment you are guaranteed a valid record after calling FindPlayerRecord() or CreateNewPlayerRecord().
 function int CreateNewPlayerRecord(PlayerPawn p) {
   local int pos;
   // Find an empty slot:
@@ -423,12 +462,70 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
     }
   } // TODO: If all full, could add somewhere randomly in the last 100 spots (rather than just 1 spot which keeps getting re-used)
   // or, find the oldest record and replace it
-  ip[pos] = p.GetPlayerNetworkAddress();
+  ip[pos] = stripPort(p.GetPlayerNetworkAddress());
   nick[pos] = p.getHumanName();
-  avg_score[pos] = 0;
-  hours_played[pos] = 0;
+  avg_score[pos] = UnknownStrength;
+  hours_played[pos] = 0.01;
   // SaveConfig();
   return pos;
+}
+
+event Timer() { // this may be a reasonably hard work process; i hope it's been given it's own thread!
+  UpdateStatsFromCurrentGame();
+}
+
+function UpdateStatsFromCurrentGame() {
+  local int countHumanPlayers;
+
+  local Pawn p;
+  local int i;
+  local int current_score;
+  local float new_hours_played;
+
+  // Do not update stats for games with <MinHumanPlayersForStatsUpdate human players.
+  countHumanPlayers = 0;
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
+      countHumanPlayers++;
+    }
+  }
+  if (countHumanPlayers<MinHumanPlayersForStatsUpdate) {
+    Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): not running since countHumanPlayers "$countHumanPlayers$" < "$MinHumanPlayersForStatsUpdate$".");
+    return;
+  }
+
+  // Update stats for all players in game
+  if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance(alpha).Timer(): updating stats now - please report any lags"); }
+  Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): updating stats");
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
+      i = FindPlayerRecord(PlayerPawn(p));
+      if (i == -1 || ip[i] != stripPort(PlayerPawn(p).GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
+        // This is not an exact player match, so we should not update its stats
+        i = CreateNewPlayerRecord(PlayerPawn(p)); // TODO BUG CONSIDER: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
+      }
+      current_score = p.PlayerReplicationInfo.Score;
+      new_hours_played = hours_played[i] + PollMinutes / 60;
+      Log("AutoTeamBalance.UpdateStatsFromCurrentGame() Doing: avg_score["$i$"] = ( "$avg_score[i]$" * "$hours_played[i]$" + "$current_score$") / "$new_hours_played$"");
+      avg_score[i] = ( avg_score[i] * hours_played[i] + current_score) / new_hours_played;
+      hours_played[i] = new_hours_played;
+      if (bBroadcastStuff) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies."); }
+    }
+  }
+
+  // Save the new stats in the config/ini file:
+  // TODO: Instead of doing the calculations and a config-file save mid-game, we could try to do this only at the end of each game:
+  Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): saving stats to file");
+  CopyArraysIntoConfig();
+  SaveConfig(); // This is the only place this gets done ATM!
+
+  Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): done");
+
+}
+
+// Takes everything before the first ":" - you should almost always use this when getting PlayerPawn.GetPlayerNetworkAddress(); at least in my experience the client's port number changed frequently.
+function string stripPort(string ip_and_port) {
+  return Left(ip_and_port,InStr(ip_and_port,":"));
 }
 
 // Code snippet from advwaad, taken for interest:
