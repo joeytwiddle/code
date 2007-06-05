@@ -717,12 +717,9 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
 // Actually one nice side-effect of the particular algorithm we're using below (<lowest instead of <=lowest): if a few records share the "shortest record" time (actually this was more likely when our hours_played were incremented in fixed-size steps), it will be the first of them that gets replaced first.  :)  Down-side: the new player now in that early position in the stats-table was not an early player on the server, so he breaks this very pattern.
 function int FindShortestPlayerRecord() {
   local int i,found;
-  local float lowest;
   found = 0;
-  lowest = hours_played[0];
   for (i=1;i<MaxPlayerData;i++) {
-    if (hours_played[i] < lowest) {
-      lowest = hours_played[i];
+    if (hours_played[i] < hours_played[found]) {
       found = i;
     }
   }
