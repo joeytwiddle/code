@@ -26,6 +26,8 @@
 
 // TODO: config option bRankBots (might be interesting to see how Visse compares to the humans ^^ )
 
+// Done: I'm not so sure about averaging end-scores of each game.  For example, a game might be very short with low scores, doesn't mean all the players should be punished for that.  So I guess scores should be proportional to time.  So maybe we should use weightScore to calculate each player's average score-per-hour (I think XOL used SPH/FPH).
+
 // Current rankings method:
 // We wait until the end of the game, then we update the stats for each player.
 // Hence we collect each player's average endgame score.
@@ -68,6 +70,7 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
+var config bool bDoWeightedUpdates;
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
 var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
@@ -120,6 +123,7 @@ defaultproperties {
   // PollMinutes=2.4
   MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: recommended 4
+  bDoWeightedUpdates=False  // Experimental stats updating method
   bBroadcastStuff=True
   bDebugLogging=True      // TODO: recommended False
   bBroadcastCookies=True
@@ -162,7 +166,7 @@ function PostBeginPlay() {
   // deprecated because it was hiding server broadcasts (like adwvaad used to)
 
   // Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for "$(PollMinutes*60)$" seconds.");
-  Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for 60 seconds.");
+  Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for 10 seconds.");
 }
 
 // Do something every tick
@@ -576,8 +580,8 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     e = TeamGamePlus(Level.Game).ElapsedTime;
     l = TeamGamePlus(Level.Game).TimeLimit;
     t = Level.TimeSeconds;
-    s = Level.StartTime;
-    Log("AutoTeamBalance.Timer() DEBUG Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" s="$s$" bGameEnded="$Level.Game.bGameEnded);
+    s = Level.Game.StartTime;
+    Log("AutoTeamBalance.Timer() DEBUG c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" s="$s$" bGameEnded="$Level.Game.bGameEnded);
   }
   // if (bUpdatePlayerStats) {
     // Stats were updating during a game of DM ffa, 3 players, low scores.  This gives very different scores than CTF games.
@@ -598,6 +602,16 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
 
 // New Timer which is just looking for the end of the game
 event Timer() {
+  local int c,n,e,l,t,s;
+  if (bDebugLogging) {
+    c = TeamGamePlus(Level.Game).countdown;
+    n = TeamGamePlus(Level.Game).NetWait;
+    e = TeamGamePlus(Level.Game).ElapsedTime;
+    l = TeamGamePlus(Level.Game).TimeLimit;
+    t = Level.TimeSeconds;
+    s = Level.Game.StartTime;
+    Log("AutoTeamBalance.Timer() DEBUG c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" s="$s$" bGameEnded="$Level.Game.bGameEnded);
+  }
   CheckGameEnd();
 }
 
@@ -698,7 +712,7 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
 
 // Finds an old player record which we can replace.  Actually since we don't have a last_seen field, we'll just have to remove the "shortest" record.  (Player didn't spend long on server; their stats don't mean a lot)
 // Only problem, if the database really is saturated (but I think that's unlikely), this new player will probably be the next record to be replaced!  To keep his record in the database, the new player just has to play for longer than the now "shortest" record before another new player joins.
-// Actually one nice side-effect of the particular algorithm we're using below (<lowest instead of <=lowest): if a few records share the "shortest record" time (actually quite likely since currently our hours_played are incremented fixed-size steps - or are they?  maybe gameDuration will sometimes be a second out), it will be the first of them that gets replaced first.  :)
+// Actually one nice side-effect of the particular algorithm we're using below (<lowest instead of <=lowest): if a few records share the "shortest record" time (actually this was more likely when our hours_played were incremented in fixed-size steps), it will be the first of them that gets replaced first.  :)  Down-side: the new player now in that early position in the stats-table was not an early player on the server, so he breaks this very pattern.
 function int FindShortestPlayerRecord() {
   local int pos,found;
   local float lowest;
@@ -710,7 +724,7 @@ function int FindShortestPlayerRecord() {
       found = pos;
     }
   }
-  return pos;
+  return found;
 }
 
 function UpdateStatsAtEndOfGame() {
@@ -753,29 +767,53 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   local float current_score;
   local float new_hours_played;
   local int previousPolls;
-  local int gameDurationSeconds;
+  local int gameDuration;
+  local int timeInGame;
+  local float weightScore;
 
   i = FindPlayerRecord(p);
+
   if (i == -1 || ip[i] != stripPort(p.GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
     // This is not an exact player match, so we should not update its stats
     // since we didn't find this actual ip+nick, we create a new entry
     // TODO CONSIDER: should we base the new players stats on the default (below), or copy over the estimated player's stats?  (But maybe reset their time_on_server.)
     i = CreateNewPlayerRecord(p); // OLD BUG FIXED: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
   }
+
   current_score = p.PlayerReplicationInfo.Score;
-  // Ideally we would like to check how long this player has been on the server TODO i don't know how to get that yet ^^ I'm hoping it's somewhere in the code otherwise I have to remember the times that players joined
+  // Ideally we would like to check how long this player has been on the server TODO i don't know how to get that yet ^^ I'm hoping it's somewhere in the code otherwise I have to remember the times that players joined    Ahh got it from iDeFiX's code, ofc it's in PlayerReplicationInfo, like everything else I can't find in PlayerPawn :>
   // For the moment, assume all players were on server the whole game:
-  gameDurationSeconds = Level.TimeSeconds - timeGameStarted;
-  new_hours_played = hours_played[i] + (gameDurationSeconds / 60);
-  previousPolls = hours_played[i] / 4;  // This is approx #times we've updated this player's stats before.  It's just used to measure the significance of their current score relative to the number of scores we've seen before from this player.
-  if (MaxPollsBeforeRecyclingStrength>0 && previousPolls > MaxPollsBeforeRecyclingStrength) {
-    previousPolls = MaxPollsBeforeRecyclingStrength - 1;
+  gameDuration = Level.TimeSeconds - timeGameStarted;
+  timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
+  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) timeInGame="$timeInGame$" gameDuration="$gameDuration$" Level.Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$""); }
+  // Well if this player was only in the server for 5 minutes, we could multiply his score up so that he gets a score proportional to the other players.  (Ofc if he was lucky or unlucky, that luck will be magnified.)
+  if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
+    Log("AutoTeamBalance.UpdateStatsForPlayer(p) Not updating this player since his timeInGame "$timeInGame$" < 60.");
+    return;
   }
-  // Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
-  // avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
-  Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$") / "$(previousPolls+1)$"");
-  avg_score[i] = ( (avg_score[i] * previousPolls) + current_score) / (previousPolls+1);
-  hours_played[i] = new_hours_played;
+  new_hours_played = hours_played[i] + (timeInGame / 60 / 60);
+
+  if (bDoWeightedUpdates) {
+
+    weightScore = gameDuration / timeInGame;
+    // Let's weight the scores more, so that instead of becoming score-per-endgame it becomes score-per-hour (in case this was a short game with low frags, or overtime with many frags).
+    weightScore = weightScore * 60 * 60 / gameDuration / 4; // I'm dividing by 4 here to make it score-per-quarter-hour, which should be close to actual end-game scores, at least on my 15minute game server.
+    previousPolls = hours_played[i] / 4;  // This is approx #times we've updated this player's stats before (since my server usually has 15 minute games).  But it's not too bad if your server is different.  It's just used to measure the significance of their current score relative to the number of scores we've seen before from this player.  Servers with longer game-times will make new scores slightly less significant.
+    if (MaxPollsBeforeRecyclingStrength>0 && previousPolls > MaxPollsBeforeRecyclingStrength) {
+      previousPolls = MaxPollsBeforeRecyclingStrength - 1;
+    }
+    Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$"*"$weightScore$") / "$(previousPolls+1));
+    // avg_score[i] = ( (avg_score[i] * previousPolls) + current_score*weightScore) / (previousPolls+1);
+    hours_played[i] = new_hours_played;
+
+  } else {
+
+    // Mmm we can forget all the weird weighting and just update the player's average_score_per_hour:
+    avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
+    // We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
+
+  }
+
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
 }
