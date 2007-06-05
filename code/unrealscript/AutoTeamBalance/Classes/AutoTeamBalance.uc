@@ -203,7 +203,7 @@ function bool ShouldUpdateStats(GameInfo game) {
   // if (DeathMatchPlus(Level.Game).bTournament)
     // return False;
   // We only build stats for CTF games if asked
-  if (Level.Game.Name == 'CTFGame')
+  if (String(Level.Game.Class) == "Botpack.CTFGame")
     return bUpdatePlayerStatsForCTF;
   // We only build stats for TDM games if asked (NOTE: we don't use IsA here, because other teamgames might be a subclass of TeamGamePlus)
   if (Level.Game.Name == 'TeamGamePlus')
