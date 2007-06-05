@@ -2,25 +2,25 @@
 
 // A mutator that makes fair teams at the beginning of each teamgame, by recording the relative strengths of players on the server (linked to their nick/ip).
 // It also attempts to put a player joining the game on an appropriate team.
-// It can only build player stats for regular players.
+// It can only build player stats for regular players who stay until the end of the game.
 // It will also take a while after running to build up accurate stats of the players.
 // For the first week or so you may wish to collect stats but not attempt team-balancing: just set bAutoBalanceTeamsFor*=False but leave bUpdatePlayerStatsFor*=True.
-// by Daniel Mastersourcerer at Kitana's Castle and nogginBasher
+// by Daniel Mastersourcerer at Kitana's Castle and F0X|nogginBasher of no fixed abode.
 // (c)opyleft May 2007 under GNU Public Licence
 
 // vim: tabstop=2 shiftwidth=2 expandtab
 
 // The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
 
-// DONE: don't do any even-ing of teams if bTournament=True; but atm it will still do end-game player stats updates in tournament mode
+// DONE: don't do any evening of teams if bTournament=True; but atm it will still do end-game player stats updates in tournament mode; and why not?!
 
-// DONE but not perfect: catch the end-of-game event and collect scores then (check Level.Game.bGameEnded)
+// DONE: catch the end-of-game event and collect scores then (check Level.Game.bGameEnded)
 
 // HALF-DONE: when the playerData array gets full, old records are not recycled properly (atm the last is just overwritten repeatedly :| )   - ok now we recycle the record with shortest play hours.  TODO: It's not perfect because the new player's stats might get overwritten pretty soon.  We either need a little randomnity, or we could store date_last_played[]
 
 // TODO: catch a player saying "!teams", maybe write some custom code to balance the teams then (by swapping 1/2 players only, maybe slightly randomised so it can be repeated if unsatisfactory; noo that could get too spammy :E)
 
-// Done now: i shouldn't be taking averages over time, but over #polls :S
+// Done now: i shouldn't be taking averages over time, but over #polls :S  Actually either is fine, but I was doing it weirdly before.
 
 // CONSIDER: in cases of a standoff (e.g. none of the players are found in the DB so all have UnknownStrength), choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
@@ -32,7 +32,7 @@
 // We wait until the end of the game, then we update the stats for each player.
 // Hence we collect each player's average endgame score.
 
-// Half-Done: I'm not so sure about averaging end-scores of each game.  For example, a game might be very short with low scores, doesn't mean all the players should be punished for that.  So I guess scores should be proportional to time.  So maybe we should use weightScore to calculate each player's average score-per-hour (I think XOL used SPH/FPH).
+// Half-Done: I'm not so sure about averaging end-scores of each game.  For example, a game might be very short with low scores, doesn't mean all the players strengths should be punished for that.  So I guess scores should be proportional to time.  So maybe we should use weightScore to calculate each player's average score-per-hour (I think XOL used SPH/FPH).
 
 // OLD rankings method:
 //
@@ -65,14 +65,21 @@
 //        Ofc this would mean the best noobs get similar scores to the best el33ts, if they the noobs and leets never actually play at the same time, which kinda makes sense.  ^^
 
 // TODO: consider adding just a little randomnity.  If we have the same 8 players on the server for 4 games in a row, and their stats don't change enough to actually switch any of their positions in the ranking, won't Daniel's initial teambalance create identical teams for every game?  Can we find a way to avoid that?  Mix up the lower skilled players a bit, since that will have least impact?
+// looks like FRand() might returns a number between 0 and 1.
 
 // TODO: throughout the code and comments i have referred to strength,avg_score,ranking,rating,stats but often meant the same thing.  Daniel stuck to "Strength" so maybe I should consolidate around that name.
+
+// Note: at the moment no attempt is made to update the strengths of players who leave the server before the end of the game.
+// Only players on the server when the game ends will get their strenghts updated.
+// Maybe that's undesirable.  iDeFiX's teambalancer updates stats mid-game (but i think it caches the info and does more processesing at the end of the game).
+
+// CONSIDER: If players manage to make the teams unfair anyway, and then go and cap 10 flags 3v1, then the scores from that game will hardly be an accurate representation of what they should have been.  So should we be detecting whether teams were actually fair when we update the stats?  Well, maybe it's ok: the lamers who teamed up will get punished by unrealistically high stats, so next time they play they will get balanced with weak players on their team.  Mwuhahaha!  And the guy who got bullied will obviously need a break, so him losing some strength stats will just mean he gets some stronger team-mates in future.  :)  So I guess we don't really need to detect whether teams were fair when updating stats!
 
 //=============================================================================
 
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
-var string HelloBroadcast; // Don't want config; want to overwrite it
+var string HelloBroadcast; // TODO CONSIDER: make this configurable, and make it say nothing if ""
 
 var config bool bAutoBalanceTeamsForCTF;
 var config bool bAutoBalanceTeamsForTDM;
@@ -89,15 +96,15 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 // var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
 // var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
-var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
+var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // TODO: refactor this to MaxHoursOfOldStats, more tangible unit for admin to edit
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 var config bool bNormaliseScores;
 var config bool bDoWeightedUpdates;
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
 var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
-var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed as their number of cookies
-var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
+var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed at end of game as their number of cookies
+// Deprecated: var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
 
 // Defaults (Daniel's):
 var config int UnknownStrength;    // Default strength for unknown players
@@ -135,22 +142,22 @@ defaultproperties {
   bAutoBalanceTeamsForOtherTeamGames=True
   // BalanceTeamsForGameTypes="CTFGame,TeamGamePlus,JailBreak,*"
   bUpdatePlayerStatsForCTF=True
-  bUpdatePlayerStatsForTDM=False
+  bUpdatePlayerStatsForTDM=False // If you are normalising scores, then updating stats for all teamgames should be ok.  But if you are not normalising scores, then the different bonuses in CTF will make stats from the different gametypes incompatible.  (Basically TDMers will get lower strengths because they never get the bonus points from caps/covers/etc.)  So in this case you are recommended only to build stats for your server's most popular gametype.
   bUpdatePlayerStatsForOtherTeamGames=False
   bUpdatePlayerStatsForNonTeamGames=False
   // UpdateStatsForGameTypes="CTFGame"
   // bUpdateStatsForCTFOnly=True
-  // OnlyUpdateStatsIfGametypeIsA='CTFGame'
+  // OnlyUpdateStatsIfGametypeIsA='CTFGame' // Would have been nice to offer it this way, but I didn't get it working.
   // OnlyBalanceTeamsIfGametypeIsA='TeamGamePlus'
   // PollMinutes=2.4
   MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: recommended 4
-  bNormaliseScores=True     // normalise scores so that avg_score for EVERY game is 50.
+  bNormaliseScores=True     // Normalise scores so that the average score for every game is 50.  Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  TODO CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
   bDoWeightedUpdates=False  // Untested experimental stats updating method
   bBroadcastStuff=True
   bDebugLogging=True      // TODO: recommended False
   bBroadcastCookies=True
-  bOnlyMoreCookies=True
+  // Deprecated: bOnlyMoreCookies=True
   UnknownStrength=40      // New player records start with an initial strength of avg_score 40
   // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
   BotStrength=20
@@ -193,21 +200,28 @@ function PostBeginPlay() {
 
 }
 
-// Do something every tick
+// Check if game is about to start, and if so, balance the teams before it does.  (We want to do this as late as possible before the game starts, to give players time to join the server.)
 // DONE: Determine whether this check every Tickrate is more or less efficient than using SetTimer() and Timer(), then merge the two CheckGameStart() and UpdateStatsAtEndOfGame() into the more efficient method.
 //       We may not need to check more often than once every -2 + 270 seconds.
 //       If TickRate 20 means 20 calls to Tick per second, presumably Timer() is (an Engine (non UScript) event? and) more efficient.
 //       Ahhh but maybe Daniel used Tick() because it's before game start, too early to use a timer.  To look into...
 //       Yes that's the reason, can't use Timer().  But what about PreBeginPlay()?
-//       Anyway, I inlined the bool check into Tick so no extra function call is needed.
+//       Anyway, I inlined the bool check into Tick() so no extra function call is needed.  And UpdateStatsAtEndOfGame() is dealt with by Timer().
+//       TODO: well this bool check must be pretty fast, but consider overriding PreBeginPlay() and see if that can help us.
 event Tick(float DeltaTime) {
   if (!gameStartDone) CheckGameStart();
+}
+
+// TODO: just a TEST, remove it if it can't help us.
+function PreBeginPlay() {
+  if (bDebugLogging) { Log("AutoTeamBalance.PreBeginPlay() WAS CALLED NOW"); }
 }
 
 function bool ShouldBalance(GameInfo game) {
 
   // TODO: AS is a teamgame, so ok to balance, BUT ONLY on the first half-game.
   //       Teams should remain the same for the second half-game.  (I fear if it does the balancing for both half-games, the same ppl will be defending twice!)
+  // Also TODO: make AS a separate option in the booleans above; atm it's classified under Other.
 
   //// TESTING_List_desired_gametypes
   // local string[20] gametypes;
@@ -434,8 +448,8 @@ function InitTeams() {
   local int pid;
   local Pawn pl[64]; // list of pawns, with i = a hash of PlayerID
   local int ps[64]; // their strengths
-  // local int tg[64]; // their strengths, but they get removed during the player sorting/ranking
-  // local bool moved[64]; // now i've decided to use a bool to say whether a player has been moved
+  // local int tg[64]; // their strengths, but they get zeroed during the player sorting/ranking
+  // local bool moved[64]; // now i've decided to use a bool to say whether a player has been moved (because some players might actually have strength zero!)
   local int moved[64]; // dammit bool arrays are not allowed!  so 0=false 1=true :P
   local int plorder[32];
   local int i;
@@ -447,6 +461,7 @@ function InitTeams() {
   local int oldMaxTeamSize;
   local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
 
+  // LoadConfig(); // TODO CONSIDER: If possible, we could also LoadConfig() here.  Then this mutator would be the only one I know that lets you edit the ini file without needing to restart the server!  OK well apparently LoadConfig() doesn't exist.  :P
   CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
 
   if (bDebugLogging) { Log("AutoTeamBalance.InitTeams(): Running..."); }
@@ -500,7 +515,7 @@ function InitTeams() {
       moved[pid] = 1;
       n++;
       Log("AutoTeamBalance.InitTeams(): [Ranking] "$ps[pid]$" " $ ((pl[pid]).getHumanName()) $ "");
-      if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessageAndLog("" $ p.getHumanName() $ " has " $st$ " cookies."); }
+      if (bBroadcastCookies) { BroadcastMessageAndLog("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   } until (pid==-1);
 
@@ -861,8 +876,8 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   } else {
 
     // Mmm we can forget all the weird weighting and just update the player's average_score_per_hour:
-    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$(new_hours_played)); }
-    avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score/4) / new_hours_played; // I'm dividing by 4 here to make it score-per-quarter-hour, which should be close to actual end-game scores, at least on my 15minute game server.
+    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$"/4.0) / "$(new_hours_played)); }
+    avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score/4.0) / new_hours_played; // I'm dividing every score here by 4 so that the actual averages stored in the config will be score-per-quarter-hour, which should be close to actual end-game scores, at least on my 15minute game server.  Just makes it easier to read.
     // We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
 
   }
@@ -872,17 +887,22 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   if (bBroadcastCookies) {
     if (avg_score[i]>previous_average) {
       BroadcastMessageAndLog("" $ p.getHumanName() $ " has earned " $Int(avg_score[i]-previous_average)$ " cookies!");
-    } else if (!bOnlyMoreCookies) {
+    } else { // if (!bOnlyMoreCookies) {
       BroadcastMessageAndLog("" $ p.getHumanName() $ " has lost " $Int(previous_average-avg_score[i]+1)$ " cookies.");
     }
   }
 }
 
+// Normalises a player's score so that average of all scores on server will be 50.
+// This is to fix the problem that some games (e.g. 2v2 w00t or PureAction or iG) have much higher scores than others, which will confuse the stats.
+// Now your stats are changed by about the same amount for each map, regardless of your actual frags, but relative to the other players on the server.
 function float NormaliseScore(float score) {
   local Pawn p;
   local int playerCount;
   local float averageGameScore;
 
+  // Kinda inefficient to calculate the average once for every player, but who cares? :P
+  // Mmm well maybe it could cause some confusions if a player leaves during the updating, but that's unlikely.
   averageGameScore = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
@@ -899,7 +919,7 @@ function float NormaliseScore(float score) {
 
   if (bDebugLogging) { Log("Normalising from average "$averageGameScore$": "$score$""); }
 
-  return score * 50 / averageGameScore;
+  return score * 50 / averageGameScore; // TODO: i think this 50 should be scaled if the game was longer/shorter than usual  fewer points for shorter games?  remember their relative score will be scaled up by their time, so is the scale really needed?  :o  Mmm I conclude we don't need to scale the 50.
 
 }
 
@@ -934,7 +954,7 @@ function string stripPort(string ip_and_port) {
 // UT will look for this function, and then you can do whatever you want
 // After your stuff is done, then it has to pass on the message to
 // the next mutator in line, so that it can then do it's stuff too
-// nogginBasher: this seemed to be suppressing the broadcasts on the client's screens, so at the end I'm calling BroadcastMessage to send them out again.  Infinite loop?  We'll see... ^^
+// nogginBasher: this seemed to be suppressing the broadcasts on the client's screens (same as adwvaad), so at the end I'm calling BroadcastMessage to send them out again.  Infinite loop?  We'll see... ^^
 // Well that didn't work either.  :(
 // So I'm gonna take it out entirely
 /*
