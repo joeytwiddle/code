@@ -44,12 +44,20 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 var string HelloBroadcast; // Don't want config; want to overwrite it
 
-var config bool bAutoBalanceTeams;
+var config bool bAutoBalanceTeamsForCTF;
+var config bool bAutoBalanceTeamsForTDM;
+var config bool bAutoBalanceTeamsForOtherTeamGames;
+// var config string BalanceTeamsForGameTypes; // TESTING_List_desired_gametypes
 // For updating player strength in-game:
-var config bool bUpdatePlayerStats;
+var config bool bUpdatePlayerStatsForCTF;
+var config bool bUpdatePlayerStatsForTDM;
+var config bool bUpdatePlayerStatsForOtherTeamGames;
+var config bool bUpdatePlayerStatsForNonTeamGames;
+// var config string UpdateStatsForGameTypes; // TESTING_List_desired_gametypes
 // var config bool bUpdateStatsForCTFOnly;  // Stats were updating during other gametypes, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
-var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
-var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
+//// These didn't work for me; maybe config vars can't be complex types like "name"
+// var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
+// var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
 // TODO: var config bool bUpdateStatsAtGameEndOnly;
 var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
@@ -90,11 +98,18 @@ var bool gameEnded;
 
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta1) is attempting to balance the teams"
-  bAutoBalanceTeams=True
-  bUpdatePlayerStats=True
+  bAutoBalanceTeamsForCTF=True
+  bAutoBalanceTeamsForTDM=True
+  bAutoBalanceTeamsForOtherTeamGames=True
+  // BalanceTeamsForGameTypes="CTFGame,TeamGamePlus,JailBreak,*"
+  bUpdatePlayerStatsForCTF=True
+  bUpdatePlayerStatsForTDM=False
+  bUpdatePlayerStatsForOtherTeamGames=False
+  bUpdatePlayerStatsForNonTeamGames=False
+  // UpdateStatsForGameTypes="CTFGame"
   // bUpdateStatsForCTFOnly=True
-  OnlyUpdateStatsIfGametypeIsA='CTFGame'
-  OnlyBalanceTeamsIfGametypeIsA='TeamGamePlus'
+  // OnlyUpdateStatsIfGametypeIsA='CTFGame'
+  // OnlyBalanceTeamsIfGametypeIsA='TeamGamePlus'
   PollMinutes=2.4
   MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: recommended 4
@@ -147,6 +162,59 @@ event Tick(float DeltaTime) {
   CheckGameStart();
 }
 
+function bool ShouldBalance(GameInfo game) {
+
+  //// TESTING_List_desired_gametypes
+  // local string[20] gametypes;
+  // local int n,i;
+
+  if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$""); }
+  // Never balance in tournament mode
+  if (DeathMatchPlus(Level.Game).bTournament)
+    return False;
+  // We can't balance if it's not a teamgame
+  if (!Level.Game.GameReplicationInfo.bTeamGame)
+    return False;
+
+  // We only balance CTF games if asked
+  if (Level.Game.Name == 'CTFGame')
+    return bAutoBalanceTeamsForCTF;
+  // We only balance TDM games if asked (NOTE: we don't use IsA here, because other teamgames might be a subclass of TeamGamePlus)
+  if (Level.Game.Name == 'TeamGamePlus')
+    return bAutoBalanceTeamsForTDM;
+
+  //// TESTING_List_desired_gametypes
+  // n = Split(BalanceTeamsForGameTypes,",",gametypes);
+  // for (i=0;i<n;i++) {
+    // if (gametypes[i] == "*")
+      // return True;
+    // if (gametypes[i] == String(Level.Game.Name))
+      // return True;
+  // }
+  // if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$"): Did not match any of the specified gametypes: "$BalanceTeamsForGameTypes); }
+
+  // OK so it's an unknown teamgame
+  return bAutoBalanceTeamsForOtherTeamGames;
+}
+
+function bool ShouldUpdateStats(GameInfo game) {
+  if (bDebugLogging) { Log("AutoTeamBalance.ShouldUpdateStats("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$""); }
+  // Never balance in tournament mode
+  // if (DeathMatchPlus(Level.Game).bTournament)
+    // return False;
+  // We only build stats for CTF games if asked
+  if (Level.Game.Name == 'CTFGame')
+    return bUpdatePlayerStatsForCTF;
+  // We only build stats for TDM games if asked (NOTE: we don't use IsA here, because other teamgames might be a subclass of TeamGamePlus)
+  if (Level.Game.Name == 'TeamGamePlus')
+    return bUpdatePlayerStatsForTDM;
+  // OK so it's not CTF or TDM, but is it another type of team game?
+  if (Level.Game.GameReplicationInfo.bTeamGame)
+    return bUpdatePlayerStatsForOtherTeamGames;
+  // It's not a team game.  Build stats because it's a non teamgame?  (For admins more interested in player stats than balancing teams.)
+  return bUpdatePlayerStatsForNonTeamGames;
+}
+
 // If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
 function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
   local int selectedTeam;
@@ -165,7 +233,9 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
   // check if this is a team game and if InitTeams has been passed
   // Done: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStarted?  nooo, this check is that the game *has* started, because we don't need to switch the players when joining a new map, because InitTeams will do that.
-  if (!bAutoBalanceTeams || !gameStarted || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || DeathMatchPlus(Level.Game).bTournament) return;
+  if (!gameStarted) return;
+
+  if (!ShouldBalance(Level.Game)) return;
 
   Log("AutoTeamBalance.ModifyLogin()");
 
@@ -266,7 +336,8 @@ function CheckGameStart() {
   if (gameStarted) return;
 
   // this mod works on team games only
-  if (!bAutoBalanceTeams || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || !Level.Game.GameReplicationInfo.bTeamGame || DeathMatchPlus(Level.Game).bTournament) {
+  // if (!bAutoBalanceTeams || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || !Level.Game.GameReplicationInfo.bTeamGame || DeathMatchPlus(Level.Game).bTournament) {
+  if (!ShouldBalance(Level.Game)) {
     gameStarted=True;
     return;
   }
@@ -563,18 +634,20 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     t = Level.TimeSeconds;
     Log("AutoTeamBalance.Timer() DEBUG Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
   }
-  if (bUpdatePlayerStats) {
+  // if (bUpdatePlayerStats) {
     // Stats were updating during a game of DM ffa, 3 players, low scores.  This gives very different scores than CTF games.
     // Presumably we have not checked that this is *really* a team-game we are getting stats from.
     // For now, have optionally limited stats to CTF games only:
     // TODO: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash
     // if (Level.Game.IsA('CTFGame') || !bUpdateStatsForCTFOnly) {
-    if (Level.Game.IsA(OnlyUpdateStatsIfGametypeIsA)) {
+    // if (Level.Game.IsA(OnlyUpdateStatsIfGametypeIsA)) {
+    if (ShouldUpdateStats(Level.Game)) {
       UpdateStatsFromCurrentGame();
     } else {
-      Log("AutoTeamBalance.Timer(): not running UpdateStatsFromCurrentGame() since Level.Game = "$Level.Game$" != "$OnlyUpdateStatsIfGametypeIsA$".");
+      // Log("AutoTeamBalance.Timer(): not running UpdateStatsFromCurrentGame() since Level.Game = "$Level.Game$" != "$OnlyUpdateStatsIfGametypeIsA$".");
+      Log("AutoTeamBalance.Timer(): Refusing to run UpdateStatsFromCurrentGame().");
     }
-  }
+  // }
   if (bDebugLogging) {
     c = TeamGamePlus(Level.Game).countdown;
     n = TeamGamePlus(Level.Game).NetWait;
