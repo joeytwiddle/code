@@ -1,31 +1,32 @@
 //== AutoTeamBalance ==========================================================
 
-// A mod that makes teams by player strength
+// A mutator that makes fair teams at the beginning of each teamgame, by recording the relative strengths of players on the server (linked to their nick/ip).
+// It also attempts to put a player joining the game on an appropriate team.
 // by Daniel Mastersourcerer at Kitana's Castle and nogginBasher
-// (c)opyleft May 2007
+// (c)opyleft May 2007 under GNU Public Licence
 
 // vim: tabstop=2 shiftwidth=2 expandtab
 
-// At the moment we are doing mostly 
-
 // The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
+
+// TODO: don't do any even-ing of teams if bTournament=True; also don't do any scanning (strength updating) either?
 
 // TODO: catch the end-of-game event and collect scores then (check Level.Game.bGameEnded)
 
-// TODO: catch a player saying "!teams"
+// TODO when the playerData array gets full, old records are not recycled properly (atm the last is just overwritten repeatedly :| )
+
+// TODO: catch a player saying "!teams", maybe write some custom code to balance the teams then (by swapping 1/2 players only, maybe slightly randomised so it can be repeated if unsatisfactory; noo that could get too spammy :E)
 
 // Done now: i shouldn't be taking averages over time, but over #polls :S
 
-// TODO when the playerData array gets full, old records are not recycled properly (atm the last is just overwritten repeatedly :| )
+// CONSIDER: in cases of a standoff (e.g. none of the players are found in the DB so all have UnknownStrength), choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
-// CONSIDER: in cases of a standoff (e.g. all players are new and score UnknownStrength) choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
-
-// TODO: config option bRankBots
+// TODO: config option bRankBots (might be interesting to see how Visse compares to the humans ^^ )
 
 // Current rankings:
 //
 // At the moment we are polling the game every PollMinutes minutes, and updating the players according to their current in-game score.
-// So we are basically measuring their average score during the whole (any,all) time they are on the server (playing CTF with 4+ players; TODO: and even teams?!).
+// So we are basically measuring their average score during the whole (any,all) time they are on the server (playing CTF with 4+ players; and TODO: even teams?!).
 //
 // We are currently taking player snapshots about 6 times during each 15 minute game, and storing the average score (usually SmartCTF score, not default frags).
 // This is NOT their average score at the end of the game, but their average score at "random" intervals during the game.
@@ -35,7 +36,7 @@
 // Players will be forever punished/catching up if they started playing with low scores on the server.
 // We could offer a MaxHoursPlayed or MaxPollsBeforeRecyclingStrength (or MaxGamesPlayed), after which their time_on_server does not increase, and their ranking becomes more oriented towards the players most recent scores (older scores get phased out).  E.g. with MaxPollsBeforeRecyclingStrength=99, new_score = ((old score * 99) + current_score) / 100 = .99*old_score + .01*current_score <-- This is still a very slow way of forgetting the past
 
-// TODO: throughout the code i have referred to strength,avg_score,ranking,rating which are all the same thing.  Daniel stuck to "Strength" so maybe I should consolidate around that name.
+// TODO: throughout the code and comments i have referred to strength,avg_score,ranking,rating which are all the same thing.  Daniel stuck to "Strength" so maybe I should consolidate around that name.
 
 //=============================================================================
 
@@ -77,11 +78,13 @@ var String nick[4096];
 var float avg_score[4096];
 var float hours_played[4096];
 // var int games_played[4096];
-// TODO: var int date_last_played[4096];
+// TODO: var int date_last_played[4096]; // would be good for recycling; otherwise recycle on lowest hours_played i guess, although if the server/playerData lasts 1billion years, it might be hard for the current generation of players to get into the ranking
 
-// For local state caching:
+// For local state caching (not repeating when called by Tick's or Timer's):
 var bool initialized;              // Mutator initialized flag
 var bool gameStarted;              // Teams initialized flag
+
+var bool gameEnded;
 
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta1) is attempting to balance the teams"
@@ -120,15 +123,22 @@ function PostBeginPlay() {
   // Maybe this was designed for ServerActor
   // Before uncommenting, consider moving the initialized=true; to the line before.
   // Level.Game.BaseMutator.AddMutator(Self);
-  initialized=true;
+  initialized = true;
+  gameEnded = false;
 
-   SetTimer(PollMinutes*60,True);
-   // Call Timer() every PollMinutes.
+  // Call Timer() every PollMinutes.
+  SetTimer(PollMinutes*60,True);
+
+  Level.Game.RegisterMessageMutator( Self ); // TESTING Matt's MutatorBroadcastMessage hook below
 
   Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for "$(PollMinutes*60)$" seconds.");
 }
 
 // Do something every tick
+// TODO: Determine whether this check every Tickrate is more or less efficient than using SetTimer() and Timer(), then merge the two CheckGameStart() and UpdateStatsFromCurrentGame() into the more efficient method.
+//       We may not need to check more often than once every -2 + 270 seconds.
+//       If TickRate 20 means 20 calls to Tick per second, presumably Timer() is (an Engine (non UScript) event? and) more efficient.
+//       Ahhh but maybe Daniel used Tick() because it's before game start, too early to use a timer.  To look into...
 event Tick(float DeltaTime) {
   CheckGameStart();
 }
@@ -220,11 +230,25 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 }
 
 // nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
+// OK well it did get called! :)
+// BUT later mutators in the list have the right to force the game into overtime (we should pass the call onto them here I think), so it may not actually BE the end of the game!
+// Maybe better just to wait with a timer until bGameEnded == True.
+// Or start that timer here? ^^ (so it doesn't need to check during the game)
 function bool HandleEndGame() {
-  Log("AutoTeamBalance.HandleEndGame() was CALLED!");
+  local bool b;
+  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() was CALLED!  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+  if ( NextMutator != None ) {
+    b = NextMutator.HandleEndGame();
+    if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() NextMutator returned "$b$"  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+    return b;
+  }
+  return false;
 }
 // Alternative, there is: event GameEnding() { ... } implemented in GameInfo.  Can we drop our own event catcher in here, without overriding the other?
 // or ofc we can use a timer and check Level.Game.bGameEnded but the timer mustn't do this twice at the end of one game. :P
+event GameEnding() {
+  if (bDebugLogging) { Log("AutoTeamBalance.GameEnding() even was CALLED!  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+}
 
 
 
@@ -604,7 +628,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   if (i == -1 || ip[i] != stripPort(p.GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
     // This is not an exact player match, so we should not update its stats
     // since we didn't find this actual ip+nick, we create a new entry
-    // TODO CONSIDER: should we base the new players stats on the default (below), or copy over the estimated player's stats?
+    // TODO CONSIDER: should we base the new players stats on the default (below), or copy over the estimated player's stats?  (But maybe reset their time_on_server.)
     i = CreateNewPlayerRecord(p); // OLD BUG FIXED: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
   }
   current_score = p.PlayerReplicationInfo.Score;
@@ -645,4 +669,41 @@ function string stripPort(string ip_and_port) {
 // if (TGRI.Teams[0] < TGRI.Teams[1])
 // //Do something.......Blue Team > Red Team
 // }
+
+// MORE TESTING:
+
+// Matt's method of catch player joined / left game events:
+// Mutator broadcast message is called when the server broadcasts out
+// UT will look for this function, and then you can do whatever you want
+// After your stuff is done, then it has to pass on the message to
+// the next mutator in line, so that it can then do it's stuff too
+function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
+
+  if (bDebugLogging) { // TESTING I want to see if we can detect a player saying "!teams" this way...
+    Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") was called.");
+  }
+
+  if ( InStr(Msg,"game has ended.")>=0 ) {
+    Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected \"game has ended.\" - TODO run UpdateStatsAtEndOfGame() here.");
+  }
+
+  if (!Level.Game.bGameEnded) {
+    Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
+  }
+
+  if ( InStr(Msg,"entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
+  // if( InStr(Msg,"left the game.")>=0 ) {
+      // // If 'entered the game' or 'left the game' are seen,
+      // // and the game has not ended, do:
+      // CheckStatus(); // Matt suggested advwaad did the #players check and bot-forcing here.
+    // }
+  }
+
+  if ( NextMessageMutator != None ) {
+    return NextMessageMutator.MutatorBroadcastMessage( Sender, Receiver, Msg, bBeep, Type );
+  } else {
+    return false;
+  }
+
+}
 
