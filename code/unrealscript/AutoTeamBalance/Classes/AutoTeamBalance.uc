@@ -97,7 +97,7 @@ var bool gameStarted;              // Teams initialized flag
 var bool gameEnded;
 
 defaultproperties {
-  HelloBroadcast="AutoTeamBalance (beta1) is attempting to balance the teams"
+  HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
   bAutoBalanceTeamsForCTF=True
   bAutoBalanceTeamsForTDM=True
   bAutoBalanceTeamsForOtherTeamGames=True
@@ -123,7 +123,7 @@ defaultproperties {
   FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points
   bClanWar=False
   MaxPlayerData=4096
-  // bHidden=True // what is this?
+  // bHidden=True // what is this?  iDeFiX says it's only needed for ServerActors
 }
 
 
