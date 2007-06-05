@@ -14,6 +14,8 @@
 
 // TODO: catch a player saying "!teams"
 
+// TODO BUG: i shouldn't be taking averages over time, but over #polls :S
+
 // CONSIDER: in cases of a standoff (e.g. all players are new and score UnknownStrength) choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
 // Current rankings:
@@ -484,9 +486,9 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   // or, find the oldest record and replace it
   ip[pos] = stripPort(p.GetPlayerNetworkAddress());
   nick[pos] = p.getHumanName();
-  // initialise each player as having played for 20 minutes already, and got 40 frags
+  // initialise each player as having played for 10 minutes already, and got an average 40 frags
   avg_score[pos] = UnknownStrength;
-  hours_played[pos] = 20/60;
+  hours_played[pos] = 10/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
   // SaveConfig();
   return pos;
@@ -536,6 +538,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   local int i;
   local float current_score;
   local float new_hours_played;
+  local int previousPolls;
 
   i = FindPlayerRecord(p);
   if (i == -1 || ip[i] != stripPort(p.GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
@@ -546,8 +549,11 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   }
   current_score = p.PlayerReplicationInfo.Score;
   new_hours_played = hours_played[i] + (PollMinutes / 60);
-  Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
-  avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
+  previousPolls = hours_played[i] / (PollMinutes/60);
+  // Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
+  // avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
+  Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$") / "$(previousPolls-1)$"");
+  avg_score[i] = ( (avg_score[i] * previousPolls) + current_score) / (previousPolls+1);
   hours_played[i] = new_hours_played;
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
 }
