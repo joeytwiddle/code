@@ -62,6 +62,7 @@
 // - The actual scores might not be useful, but the distribution of those scores might be interesting.
 //   For example, the order of players on the scoreboard (imagine if both teams were merged into one) should give an idea of the relative skills of certain players.  e.g. top player gets 100 points, all other players get less, bottom player gets 10.
 //   TODO Or the relative scores could be considered.  E.g. the scores from the game could be scaled so that they always have a mean of say 50 points.  So we can still use the game scores, but the scaling will "normalise" those scores so that as much benefit comes from doing well in a low-scoring game as in a high-scoring game.
+//        Ofc this would mean the best noobs get similar scores to the best el33ts, if they the noobs and leets never actually play at the same time, which kinda makes sense.  ^^
 
 // TODO: consider adding just a little randomnity.  If we have the same 8 players on the server for 4 games in a row, and their stats don't change enough to actually switch any of their positions in the ranking, won't Daniel's initial teambalance create identical teams for every game?  Can we find a way to avoid that?  Mix up the lower skilled players a bit, since that will have least impact?
 
@@ -90,6 +91,7 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
+var config bool bNormaliseScores;
 var config bool bDoWeightedUpdates;
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
@@ -143,7 +145,8 @@ defaultproperties {
   // PollMinutes=2.4
   MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: recommended 4
-  bDoWeightedUpdates=False  // Experimental stats updating method
+  bNormaliseScores=True     // normalise scores so that avg_score for EVERY game is 50.
+  bDoWeightedUpdates=False  // Untested experimental stats updating method
   bBroadcastStuff=True
   bDebugLogging=True      // TODO: recommended False
   bBroadcastCookies=True
@@ -358,9 +361,11 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 // Hmm from tests I found this function gets called twice for overtime games, but both times bGameEnded=False
 function bool HandleEndGame() {
   local bool b;
-  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() was CALLED!  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+
   SetTimer(10,True); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
-  if (bDebugLogging) { Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for 10 seconds."); }
+  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds."); }
+
   if ( NextMutator != None ) {
     b = NextMutator.HandleEndGame();
     if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() NextMutator returned "$b$"  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
@@ -821,6 +826,9 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   }
 
   current_score = p.PlayerReplicationInfo.Score;
+  if (bNormaliseScores) {
+    current_score = NormaliseScore(current_score);
+  }
   // Ideally we would like to check how long this player has been on the server DONE i don't know how to get that yet ^^ I'm hoping it's somewhere in the code otherwise I have to remember the times that players joined    Ahh got it from iDeFiX's code, ofc it's in PlayerReplicationInfo, like everything else I can't find in PlayerPawn :>
   // For the moment, assume all players were on server the whole game:
   gameDuration = Level.TimeSeconds - timeGameStarted;
@@ -868,6 +876,31 @@ function UpdateStatsForPlayer(PlayerPawn p) {
       BroadcastMessageAndLog("" $ p.getHumanName() $ " has lost " $Int(previous_average-avg_score[i]+1)$ " cookies.");
     }
   }
+}
+
+function float NormaliseScore(float score) {
+  local Pawn p;
+  local int playerCount;
+  local float averageGameScore;
+
+  averageGameScore = 0.0;
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
+      averageGameScore += PlayerPawn(p).PlayerReplicationInfo.Score;
+      playerCount++;
+    }
+  }
+  averageGameScore = averageGameScore / Float(playerCount);
+
+  // Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to 50!
+  if (averageGameScore < 2.0) {
+    averageGameScore = 50;
+  }
+
+  if (bDebugLogging) { Log("Normalising from average "$averageGameScore$": "$score$""); }
+
+  return score * 50 / averageGameScore;
+
 }
 
 // Takes everything before the first ":" - you should almost always use this when getting PlayerPawn.GetPlayerNetworkAddress(); at least in my experience the client's port number changed frequently.
