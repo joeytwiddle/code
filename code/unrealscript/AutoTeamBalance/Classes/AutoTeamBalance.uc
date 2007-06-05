@@ -45,6 +45,7 @@ var config bool bBroadcastCookies; // Silly way to debug; each players strength 
 var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
 
 var config int UnknownStrength;    // Default strength for unknown players
+var config float UnknownMinutes;   // Initial virtual time spend on server by new players
 var config int BotStrength;        // Default strength for bots
 var config int FlagStrength;       // Strength modifier for captured flags
 var config bool bClanWar;          // Make teams by clan tag
@@ -79,7 +80,8 @@ defaultproperties {
   bBroadcastStuff=True
   bBroadcastCookies=True
   bOnlyMoreCookies=True
-  UnknownStrength=40
+  UnknownStrength=40      // New player records start with an initial strength of avg_score 40
+  UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
   BotStrength=20
   FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points
   bClanWar=False
@@ -458,16 +460,16 @@ function int FindPlayerRecord(PlayerPawn p) {
     // Exact match! return the index immediately
     if (p.getHumanName() == nick[i] && stripPort(p.GetPlayerNetworkAddress()) == ip[i]) {
       found = i;
-      Log("AutoTeamBalance.FindPlayerRecord(p) Exact match for " $nick[i]$ ","$ip[i]$": ["$found$"]");
+      Log("AutoTeamBalance.FindPlayerRecord(p) Exact match for " $nick[i]$ ","$ip[i]$": ["$found$"] ("$avg_score[i]$")");
       return found;
     } else {
       // Backups if we don't find the exact ip+nick
       if (stripPort(p.GetPlayerNetworkAddress()) == ip[i]) {
         found = i; // matching ip
-        Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $p.getHumanName()$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$nick[i]);
+        Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $p.getHumanName()$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")");
       }
       if (p.getHumanName() == nick[i] && found == -1) {
-        Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick[i]$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$ip[i]);
+        Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick[i]$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")");
         found = i; // if not yet matching an ip, match the same nick on a different ip
       }
       // TODO: if an uneven match, choose a match with more experience
@@ -492,9 +494,9 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   // or, find the oldest record and replace it
   ip[pos] = stripPort(p.GetPlayerNetworkAddress());
   nick[pos] = p.getHumanName();
-  // initialise each player as having played for 10 minutes already, and got an average 40 frags
+  // initialise each player as having played for UnknownMinutes (e.g. 10 or 0.1) minutes already, and already earned an average UnknownStrength (e.g. 40) frags
   avg_score[pos] = UnknownStrength;
-  hours_played[pos] = 10/60;
+  hours_played[pos] = UnknownMinutes/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
   if (bBroadcastCookies) { Log("AutoTeamBalance.CreateNewPlayerRecord() Broadcasting: Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
