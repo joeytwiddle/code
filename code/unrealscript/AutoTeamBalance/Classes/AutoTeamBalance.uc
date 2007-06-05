@@ -23,7 +23,11 @@
 
 // TODO: config option bRankBots (might be interesting to see how Visse compares to the humans ^^ )
 
-// Current rankings:
+// Current rankings method:
+// We wait until the end of the game, then we update the stats for each player.
+// Hence we collect each player's average endgame score.
+
+// OLD rankings method:
 //
 // At the moment we are polling the game every PollMinutes minutes, and updating the players according to their current in-game score.
 // So we are basically measuring their average score during the whole (any,all) time they are on the server (playing CTF with 4+ players; and TODO: even teams?!).
@@ -36,7 +40,7 @@
 // Players will be forever punished/catching up if they started playing with low scores on the server.
 // We could offer a MaxHoursPlayed or MaxPollsBeforeRecyclingStrength (or MaxGamesPlayed), after which their time_on_server does not increase, and their ranking becomes more oriented towards the players most recent scores (older scores get phased out).  E.g. with MaxPollsBeforeRecyclingStrength=99, new_score = ((old score * 99) + current_score) / 100 = .99*old_score + .01*current_score <-- This is still a very slow way of forgetting the past
 
-// TODO: throughout the code and comments i have referred to strength,avg_score,ranking,rating which are all the same thing.  Daniel stuck to "Strength" so maybe I should consolidate around that name.
+// TODO: throughout the code and comments i have referred to strength,avg_score,ranking,rating,stats but often meant the same thing.  Daniel stuck to "Strength" so maybe I should consolidate around that name.
 
 //=============================================================================
 
@@ -59,7 +63,7 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 // var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
 // var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
 // TODO: var config bool bUpdateStatsAtGameEndOnly;
-var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
+// var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 
@@ -92,9 +96,10 @@ var float hours_played[4096];
 
 // For local state caching (not repeating when called by Tick's or Timer's):
 var bool initialized;              // Mutator initialized flag
-var bool gameStarted;              // Teams initialized flag
+var bool gameStartDone;            // Teams initialized flag (we never initialise this to False, but I guess Unreal does that for us)
+var bool gameEndDone;
 
-var bool gameEnded;
+var int timeGameStarted;
 
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
@@ -110,7 +115,7 @@ defaultproperties {
   // bUpdateStatsForCTFOnly=True
   // OnlyUpdateStatsIfGametypeIsA='CTFGame'
   // OnlyBalanceTeamsIfGametypeIsA='TeamGamePlus'
-  PollMinutes=2.4
+  // PollMinutes=2.4
   MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: recommended 4
   bBroadcastStuff=True
@@ -143,23 +148,27 @@ function PostBeginPlay() {
   // Before uncommenting, consider moving the initialized=true; to the line before.
   // Level.Game.BaseMutator.AddMutator(Self);
   initialized = true;
-  gameEnded = false;
+  gameEndDone = false;
+
+  timeGameStarted = Level.TimeSeconds;
 
   // Call Timer() every PollMinutes.
-  SetTimer(PollMinutes*60,True);
+  // SetTimer(PollMinutes*60,True);
+  SetTimer(60,True); // Now checking once a minute to see if game has ended
 
   Level.Game.RegisterMessageMutator( Self ); // TESTING Matt's MutatorBroadcastMessage hook below
 
-  Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for "$(PollMinutes*60)$" seconds.");
+  // Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for "$(PollMinutes*60)$" seconds.");
+  Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for 60 seconds.");
 }
 
 // Do something every tick
-// TODO: Determine whether this check every Tickrate is more or less efficient than using SetTimer() and Timer(), then merge the two CheckGameStart() and UpdateStatsFromCurrentGame() into the more efficient method.
+// TODO: Determine whether this check every Tickrate is more or less efficient than using SetTimer() and Timer(), then merge the two CheckGameStart() and UpdateStatsAtEndOfGame() into the more efficient method.
 //       We may not need to check more often than once every -2 + 270 seconds.
 //       If TickRate 20 means 20 calls to Tick per second, presumably Timer() is (an Engine (non UScript) event? and) more efficient.
 //       Ahhh but maybe Daniel used Tick() because it's before game start, too early to use a timer.  To look into...
 event Tick(float DeltaTime) {
-  CheckGameStart();
+  if (!gameStartDone) CheckGameStart();
 }
 
 function bool ShouldBalance(GameInfo game) {
@@ -234,8 +243,8 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
 
   // check if this is a team game and if InitTeams has been passed
-  // Done: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStarted?  nooo, this check is that the game *has* started, because we don't need to switch the players when joining a new map, because InitTeams will do that.
-  if (!gameStarted) return;
+  // Done: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStartDone?  nooo, this check is that the game *has* started, because we don't need to switch the players when joining a new map, because InitTeams will do that.
+  if (!gameStartDone) return;
 
   if (!ShouldBalance(Level.Game)) return;
 
@@ -310,6 +319,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 // BUT later mutators in the list have the right to force the game into overtime (we should pass the call onto them here I think), so it may not actually BE the end of the game!
 // Maybe better just to wait with a timer until bGameEnded == True.
 // Or start that timer here? ^^ (so it doesn't need to check during the game)
+// Hmm from tests I found this function gets called twice for overtime games, but both times bGameEnded=False
 function bool HandleEndGame() {
   local bool b;
   if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() was CALLED!  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
@@ -320,8 +330,10 @@ function bool HandleEndGame() {
   }
   return false;
 }
-// Alternative, there is: event GameEnding() { ... } implemented in GameInfo.  Can we drop our own event catcher in here, without overriding the other?
+
+// TESTING Alternative, there is: event GameEnding() { ... } implemented in GameInfo.  Can we drop our own event catcher in here, without overriding the other?
 // or ofc we can use a timer and check Level.Game.bGameEnded but the timer mustn't do this twice at the end of one game. :P
+// From testing this: it never gets called!
 event GameEnding() {
   if (bDebugLogging) { Log("AutoTeamBalance.GameEnding() even was CALLED!  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
 }
@@ -334,13 +346,14 @@ event GameEnding() {
 function CheckGameStart() {
   local int c,n,e;
 
-  // only TeamGamePlus has the "countdown" variable and of course teams
-  if (gameStarted) return;
+  // if (gameStartDone) return; // This was moved up to Tick()
 
   // this mod works on team games only
+  // only TeamGamePlus has the "countdown" variable and of course teams
+  // we now check this in ShouldBalance
   // if (!bAutoBalanceTeams || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || !Level.Game.GameReplicationInfo.bTeamGame || DeathMatchPlus(Level.Game).bTournament) {
   if (!ShouldBalance(Level.Game)) {
-    gameStarted=True;
+    gameStartDone=True;
     return;
   }
 
@@ -355,11 +368,21 @@ function CheckGameStart() {
     if (bBroadcastStuff) { Log("AutoTeamBalance.CheckGameStart() Broadcasting: "$HelloBroadcast); }
     if (bBroadcastStuff) { BroadcastMessage(HelloBroadcast); }
     InitTeams();
-    gameStarted=True;
+    gameStartDone=True;
   }
 
   // Log("AutoTeamBalance.CheckGameStart(): Done.");  // Too noisy; gets called many times before the balancing+start
 
+}
+
+function CheckGameEnd() {
+  if (gameEndDone) return;
+  if (Level.Game.bGameEnded) {
+    gameEndDone = true;
+    if (ShouldUpdateStats(Level.Game)) {
+      UpdateStatsAtEndOfGame();
+    }
+  }
 }
 
 // Balance the teams just before the start of a new game.  No need for FlagStrength here.
@@ -533,6 +556,44 @@ function int GetPlayerStrength(PlayerPawn p) {
 
 
 
+/*
+// Old Timer which was updating stats during the game
+event Timer() { // this may be a reasonably hard work process; i hope it's been given it's own thread!
+  // TESTING these counters; really i want to know how far after the end of the game we are
+  local int c,n,e,l,t,s;
+  if (bDebugLogging) {
+    c = TeamGamePlus(Level.Game).countdown;
+    n = TeamGamePlus(Level.Game).NetWait;
+    e = TeamGamePlus(Level.Game).ElapsedTime;
+    l = TeamGamePlus(Level.Game).TimeLimit;
+    t = Level.TimeSeconds;
+    s = Level.StartTime;
+    Log("AutoTeamBalance.Timer() DEBUG Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" s="$s$" bGameEnded="$Level.Game.bGameEnded);
+  }
+  // if (bUpdatePlayerStats) {
+    // Stats were updating during a game of DM ffa, 3 players, low scores.  This gives very different scores than CTF games.
+    // Presumably we have not checked that this is *really* a team-game we are getting stats from.
+    // For now, have optionally limited stats to CTF games only:
+    // TODO: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash
+    // if (Level.Game.IsA('CTFGame') || !bUpdateStatsForCTFOnly) {
+    // if (Level.Game.IsA(OnlyUpdateStatsIfGametypeIsA)) {
+    if (ShouldUpdateStats(Level.Game)) {
+      UpdateStatsAtEndOfGame();
+    } else {
+      // Log("AutoTeamBalance.Timer(): not running UpdateStatsAtEndOfGame() since Level.Game = "$Level.Game$" != "$OnlyUpdateStatsIfGametypeIsA$".");
+      Log("AutoTeamBalance.Timer(): Refusing to run UpdateStatsAtEndOfGame().");
+    }
+  // }
+}
+*/
+
+// New Timer which is just looking for the end of the game
+event Timer() {
+  CheckGameEnd();
+}
+
+
+
 // ==== nogginBasher's player records back-end: ==== //
 
 // From playerData[] to ip[],nick[],avg_score[],... (should be done at the start)
@@ -620,47 +681,12 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   hours_played[pos] = UnknownMinutes/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
   if (bBroadcastCookies) { Log("AutoTeamBalance.CreateNewPlayerRecord() Broadcasting: Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
-  if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
+  // if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   // SaveConfig();
   return pos;
 }
 
-event Timer() { // this may be a reasonably hard work process; i hope it's been given it's own thread!
-  // TESTING these counters; really i want to know how far after the end of the game we are
-  local int c,n,e,l,t;
-  if (bDebugLogging) {
-    c = TeamGamePlus(Level.Game).countdown;
-    n = TeamGamePlus(Level.Game).NetWait;
-    e = TeamGamePlus(Level.Game).ElapsedTime;
-    l = TeamGamePlus(Level.Game).TimeLimit;
-    t = Level.TimeSeconds;
-    Log("AutoTeamBalance.Timer() DEBUG Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
-  }
-  // if (bUpdatePlayerStats) {
-    // Stats were updating during a game of DM ffa, 3 players, low scores.  This gives very different scores than CTF games.
-    // Presumably we have not checked that this is *really* a team-game we are getting stats from.
-    // For now, have optionally limited stats to CTF games only:
-    // TODO: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash
-    // if (Level.Game.IsA('CTFGame') || !bUpdateStatsForCTFOnly) {
-    // if (Level.Game.IsA(OnlyUpdateStatsIfGametypeIsA)) {
-    if (ShouldUpdateStats(Level.Game)) {
-      UpdateStatsFromCurrentGame();
-    } else {
-      // Log("AutoTeamBalance.Timer(): not running UpdateStatsFromCurrentGame() since Level.Game = "$Level.Game$" != "$OnlyUpdateStatsIfGametypeIsA$".");
-      Log("AutoTeamBalance.Timer(): Refusing to run UpdateStatsFromCurrentGame().");
-    }
-  // }
-  if (bDebugLogging) {
-    c = TeamGamePlus(Level.Game).countdown;
-    n = TeamGamePlus(Level.Game).NetWait;
-    e = TeamGamePlus(Level.Game).ElapsedTime;
-    l = TeamGamePlus(Level.Game).TimeLimit;
-    t = Level.TimeSeconds;
-    Log("AutoTeamBalance.Timer() DEBUG Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
-  }
-}
-
-function UpdateStatsFromCurrentGame() {
+function UpdateStatsAtEndOfGame() {
   local int countHumanPlayers;
 
   local Pawn p;
@@ -668,20 +694,22 @@ function UpdateStatsFromCurrentGame() {
   // Do not update stats for games with <MinHumansForStats human players.
   countHumanPlayers = 0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol; tbh the one below is probably enough
+    // if (p.bIsPlayer && !p.IsA('Spectator')) {
       countHumanPlayers++;
     }
   }
   if (countHumanPlayers<MinHumansForStats) {
-    Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): not running since countHumanPlayers "$countHumanPlayers$" < "$MinHumansForStats$".");
+    Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): not updating stats since countHumanPlayers "$countHumanPlayers$" < "$MinHumansForStats$".");
     return;
   }
 
   // Update stats for all players in game
-  if (bBroadcastStuff) { Log("AutoTeamBalance.Timer() Broadcasting: Updating stats now - Please report any lags"); }
-  if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance.Timer(): Updating stats now - Please report any lags"); }
+  // if (bBroadcastStuff) { Log("AutoTeamBalance.Timer() Broadcasting: Updating stats now - Please report any lags"); }
+  // if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance.Timer(): Updating stats now - Please report any lags"); }
+  if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance is updating player stats now."); }
   // TODO: TEST: make lag here on purpose and see how bad we can get it / how we can fix it.
-  Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): updating stats");
+  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): updating stats");
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
       UpdateStatsForPlayer(PlayerPawn(p));
@@ -690,11 +718,11 @@ function UpdateStatsFromCurrentGame() {
 
   // Save the new stats in the config/ini file:
   // TODO: Instead of doing the calculations and a config-file save mid-game, we could try to do this only at the end of each game:
-  Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): saving stats to file");
+  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): saving stats to file");
   CopyArraysIntoConfig();
   SaveConfig(); // This is the only place this gets done ATM!
 
-  Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): done");
+  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): done");
 
 }
 
@@ -703,6 +731,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   local float current_score;
   local float new_hours_played;
   local int previousPolls;
+  local int gameDurationSeconds;
 
   i = FindPlayerRecord(p);
   if (i == -1 || ip[i] != stripPort(p.GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
@@ -712,8 +741,11 @@ function UpdateStatsForPlayer(PlayerPawn p) {
     i = CreateNewPlayerRecord(p); // OLD BUG FIXED: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
   }
   current_score = p.PlayerReplicationInfo.Score;
-  new_hours_played = hours_played[i] + (PollMinutes / 60);
-  previousPolls = hours_played[i] / (PollMinutes/60);
+  // Ideally we would like to check how long this player has been on the server TODO i don't know how to get that yet ^^ I'm hoping it's somewhere in the code otherwise I have to remember the times that players joined
+  // For the moment, assume all players were on server the whole game:
+  gameDurationSeconds = Level.TimeSeconds - timeGameStarted;
+  new_hours_played = hours_played[i] + (gameDurationSeconds / 60);
+  previousPolls = hours_played[i] / 4;  // This is approx #times we've updated this player's stats before.  It's just used to measure the significance of their current score relative to the number of scores we've seen before from this player.
   if (MaxPollsBeforeRecyclingStrength>0 && previousPolls > MaxPollsBeforeRecyclingStrength) {
     previousPolls = MaxPollsBeforeRecyclingStrength - 1;
   }
@@ -759,25 +791,25 @@ function string stripPort(string ip_and_port) {
 // the next mutator in line, so that it can then do it's stuff too
 function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
 
-  if (bDebugLogging) { // TESTING I want to see if we can detect a player saying "!teams" this way...
+  CheckGameEnd(); // Does no harm to do this twice.  The broadcast from mapvote might make the stats parsing come sooner than waiting for the timer.
+
+  if (bDebugLogging) { // TESTING I want to see if we can detect a player saying "!teams" this way... Answer: no! For that we need a MessagingSpectator
     Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") was called.");
   }
 
-  if ( InStr(Msg,"game has ended.") != -1 ) {
-    Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected \"game has ended.\" - TODO run UpdateStatsAtEndOfGame() here.");
-  }
+  // Failed Test: Nope that was never broadcast :P
+  // if ( InStr(Msg,"game has ended.")>=0 ) {
+    // Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected \"game has ended.\" - TODO run UpdateStatsAtEndOfGame() here.");
+  // }
 
-  if (Level.Game.bGameEnded) {
-    Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
-  }
+  // if (Level.Game.bGameEnded) {
+    // Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
+  // }
 
-  if ( InStr(Msg,"entered the game.") != -1 ) { // Can we find the new player pawn, and report his #cookies ?
-  // if ( InStr(Msg,"left the game.") != -1 ) {
-      // // If 'entered the game' or 'left the game' are seen,
-      // // and the game has not ended, do:
-      // CheckStatus(); // Matt suggested advwaad did the #players check and bot-forcing here.
-    // }
+  if ( InStr(Msg," entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
+    PlayerJoinedShowInfo(Msg);
   }
+  // if ( InStr(Msg,"left the game.")>=0 ) {
 
   if ( NextMessageMutator != None ) {
     return NextMessageMutator.MutatorBroadcastMessage( Sender, Receiver, Msg, bBeep, Type );
@@ -785,5 +817,28 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
     return false;
   }
 
+}
+
+function PlayerJoinedShowInfo(string Msg) {
+  local int i;
+  local String nick;
+  local Pawn p;
+  // Extract player's nick from the game broadcast message, e.g.: "nogginBasher entered the game."
+  i = Instr(Msg," entered the game.");
+  nick = Left(Msg,i);
+  // Find player in current game list
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.bIsPlayer && !p.IsA('Spectator')) {
+      if (p.getHumanName() == nick) {
+        break; // Found him!
+      }
+    }
+  }
+  if (p == None) {
+    Log("AutoTeamBalance.PlayerJoinedShowInfo(): could not find "$nick$" in current game.");
+    return;
+  }
+  i = FindPlayerRecord(PlayerPawn(p));
+  if (bBroadcastCookies) { BroadcastMessage(nick$" has "$Int(avg_score[i])$" cookies after "$hours_played[i]$" hours on the server."); }
 }
 
