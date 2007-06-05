@@ -766,7 +766,7 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
     Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected \"game has ended.\" - TODO run UpdateStatsAtEndOfGame() here.");
   }
 
-  if (!Level.Game.bGameEnded) {
+  if (Level.Game.bGameEnded) {
     Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
   }
 
