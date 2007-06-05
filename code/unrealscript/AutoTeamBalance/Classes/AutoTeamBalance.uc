@@ -1,13 +1,10 @@
 //== AutoTeamBalance ==========================================================
 
 // A mod that makes teams by player strength
-// by Daniel Mastersourcerer at Kitana's Castle
-// modified by nogginBasher May 2007
+// by Daniel Mastersourcerer at Kitana's Castle and nogginBasher
+// (c)opyleft May 2007
 
 // vim: tabstop=2 shiftwidth=2 expandtab
-
-// At the moment we are polling the game every PollMinutes seconds, and updating the players according to their present score.
-// So we are basically measuring their average score during the time they are on the server.
 
 // At the moment we are doing mostly 
 
@@ -17,8 +14,13 @@
 
 // TODO: catch a player saying "!teams"
 
-// TODO: in cases of a standoff (e.g. all players are new and score UnknownStrength) choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
+// CONSIDER: in cases of a standoff (e.g. all players are new and score UnknownStrength) choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
+// Current rankings:
+//
+// At the moment we are polling the game every PollMinutes seconds, and updating the players according to their present score.
+// So we are basically measuring their average score during the time they are on the server.
+//
 // We are currently taking player snapshots about 6 times during each 15 minute game, and storing the average score (usually SmartCTF score, not default frags).
 // This is NOT their average score at the end of the game, but their average score at "random" intervals during the game.
 // This might seem unfair to players who join the server only for a few minutes, and get a low average score.  Screw them, they might leave halfway through the next game.  Regular players get punished for their high scores though.  :)
@@ -132,7 +134,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   // TODO: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStarted?
   if (!bAutoBalanceTeams || !gameStarted || !Level.Game.IsA('TeamGamePlus')) return;
 
-  Log("AutoTeamBalance.ModifyLogin()");  
+  Log("AutoTeamBalance.ModifyLogin()");
 
   // read this player's selected team
   selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
@@ -146,7 +148,8 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   teamSizeWithBots[0]=0;
   teamSizeWithBots[1]=0;
 
-  // check team balance (get combined sum of player strengths for each team (as well as the flagbonus above)
+  // Check team balance of current players in game
+  // Calculate sum of player strengths for each team (as well as the flagbonus above)
   for (p=Level.PawnList; p!=None; p=p.NextPawn)
   {
     // ignore non-player pawns
@@ -175,13 +178,13 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
     // if both teams have the same number of players send the new player to the weaker team
     if (teamSize[0]==teamSize[1])
     {
-      teamnr=0;
-      if (teamStr[0]>teamStr[1]) teamnr=1;
+      teamnr=0; if (teamStr[0]>teamStr[1]) teamnr=1;
+      Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to WEAKER team "$teamnr$".");
     } else {
       // send player to the team with fewer players
-      teamnr=0;
-      if (teamSize[0]>teamSize[1]) teamnr=1;
-    }  
+      teamnr=0; if (teamSize[0]>teamSize[1]) teamnr=1;
+      Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to SMALLER team "$teamnr$".");
+    }
 
   }
 
@@ -189,7 +192,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   if (teamnr!=selectedTeam) Options="?Team=" $ teamnr $ Options;
 
   // fix teamsize bug in Botpack.TeamGamePlus
-  if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
+  if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1]) // this looks like a check that there are humans playing :o
   {
     Log("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")");
     GRI.Teams[0].Size=teamSizeWithBots[0];
@@ -238,7 +241,7 @@ function InitTeams() {
   local int pid;
   local Pawn pl[64]; // list of pawns, with i = a hash of PlayerID
   local int ps[64]; // their strengths
-  local int tg[64]; // their ...
+  local int tg[64]; // their strengths, but they get removed during the player sorting/ranking
   local int plorder[32];
   local int i;
   local int n;
@@ -295,6 +298,7 @@ function InitTeams() {
       plorder[n]=pid;
       tg[pid]=0;
       n++;
+      Log("AutoTeamBalance.InitTeams(): [Ranking] "$tg[pid]$" " $ ((pl[pid]).getHumanName()) $ "");
     }
   } until (pid==-1);
 
@@ -336,6 +340,7 @@ function InitTeams() {
       teamnr=0;
       if ((i&3)==1 || (i&3)==2) teamnr=1;
       Level.Game.ChangeTeam(pl[pid],teamnr);
+      Log("AutoTeamBalance.InitTeams(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -343,8 +348,8 @@ function InitTeams() {
     if ((n&1)==1)
     {
       pid=plorder[i];
-      teamnr=0;
-      if (teamstr[0]>teamstr[1]) teamnr=1;
+      teamnr=0; if (teamstr[0]>teamstr[1]) teamnr=1;
+      Log("AutoTeamBalance.InitTeams(): "$n$" is odd so sending last player to WEAKER team "$teamnr$".");
       Level.Game.ChangeTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
@@ -541,7 +546,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   }
   current_score = p.PlayerReplicationInfo.Score;
   new_hours_played = hours_played[i] + (PollMinutes / 60);
-  Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") ["$i$"] "$p.getHumanName()$" avg_score["$i$"] = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
+  Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
   avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
   hours_played[i] = new_hours_played;
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
