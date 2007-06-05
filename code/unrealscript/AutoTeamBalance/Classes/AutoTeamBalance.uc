@@ -31,7 +31,7 @@
 
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
-var string HelloBroadcast;
+var string HelloBroadcast; // Don't want config; want to overwrite it
 
 var config bool bAutoBalanceTeams;
 var config bool bUpdatePlayerStats;
@@ -48,6 +48,12 @@ var config string clanTag;         // Clan tag of red team (all other players to
 // var config String RedTeam[16];     // Players on red team (unreferenced)
 // var config String BlueTeam[16];    // Players on blue team (unreferenced)
 
+// For updating player strength in-game:
+
+var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
+
+var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
+
 // For storing player strength data:
 
 var int MaxPlayerData; // The value 4096 is used in the following array declarations and the defaultproperties, but throughout the rest of the code, MaxPlayerData can be used to save duplication lol
@@ -61,30 +67,26 @@ var float avg_score[4096];
 var float hours_played[4096];
 // TODO: date_last_played
 
-// For updating player strength in-game:
-
-var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
-
-var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
+// For local state caching
 
 var bool initialized;              // Mutator initialized flag
 var bool gameStarted;              // Teams initialized flag
 
 defaultproperties {
+  HelloBroadcast=" ~ AutoTeamBalance.ALPHA is running ~ "
   bAutoBalanceTeams=True
   bUpdatePlayerStats=True
-  HelloBroadcast="AutoTeamBalance.alpha is running"
   bBroadcastStuff=True
   bBroadcastCookies=True
   bOnlyMoreCookies=True
-  bHidden=True // what is this?
-  bClanWar=False
   UnknownStrength=40
   BotStrength=20
   FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points
-  MaxPlayerData=4096
+  bClanWar=False
   PollMinutes=2.4
   MinHumansForStats=1 // TODO: recommended 4
+  MaxPlayerData=4096
+  // bHidden=True // what is this?
 }
 
 
