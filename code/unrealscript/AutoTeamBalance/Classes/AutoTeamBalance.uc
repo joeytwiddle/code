@@ -154,9 +154,10 @@ function PostBeginPlay() {
 
   // Call Timer() every PollMinutes.
   // SetTimer(PollMinutes*60,True);
-  SetTimer(60,True); // Now checking once a minute to see if game has ended
+  SetTimer(10,True); // Now checking once a minute to see if game has ended
 
-  Level.Game.RegisterMessageMutator( Self ); // TESTING Matt's MutatorBroadcastMessage hook below
+  // Level.Game.RegisterMessageMutator( Self ); // TESTING Matt's MutatorBroadcastMessage hook below
+  // deprecated because it was hiding server broadcasts (like adwvaad used to)
 
   // Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for "$(PollMinutes*60)$" seconds.");
   Log("AutoTeamBalance.PostBeginPlay(): Set Timer() for 60 seconds.");
@@ -790,6 +791,9 @@ function string stripPort(string ip_and_port) {
 // After your stuff is done, then it has to pass on the message to
 // the next mutator in line, so that it can then do it's stuff too
 // nogginBasher: this seemed to be suppressing the broadcasts on the client's screens, so at the end I'm calling BroadcastMessage to send them out again.  Infinite loop?  We'll see... ^^
+// Well that didn't work either.  :(
+// So I'm gonna take it out entirely
+/*
 function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
 
   CheckGameEnd(); // Does no harm to do this twice.  The broadcast from mapvote might make the stats parsing come sooner than waiting for the timer.
@@ -822,6 +826,7 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
   BroadcastMessage(Msg);
 
 }
+*/
 
 /*
 function PlayerJoinedShowInfo(string Msg) {
