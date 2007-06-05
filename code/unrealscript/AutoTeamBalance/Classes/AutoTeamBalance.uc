@@ -47,6 +47,7 @@ var config bool bAutoBalanceTeams;
 // For updating player strength in-game:
 var config bool bUpdatePlayerStats;
 var config bool bUpdateStatsForCTFOnly;  // Stats were updating during other gametypes, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
+// TODO: var config bool bUpdateStatsAtGameEndOnly;
 var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
@@ -88,7 +89,7 @@ defaultproperties {
   bUpdatePlayerStats=True
   bUpdateStatsForCTFOnly=True
   PollMinutes=2.4
-  MaxPollsBeforeRecyclingStrength=100
+  MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: recommended 4
   bBroadcastStuff=True
   bDebugLogging=True      // TODO: recommended False
@@ -532,7 +533,7 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     e = TeamGamePlus(Level.Game).ElapsedTime;
     l = TeamGamePlus(Level.Game).TimeLimit;
     t = Level.TimeSeconds;
-    Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
+    Log("AutoTeamBalance.Timer() DEBUG Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
   }
   if (bUpdatePlayerStats) {
     // Stats were updating during a game of DM ffa, 3 players, low scores.  This gives very different scores than CTF games.
@@ -542,7 +543,7 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     if (Level.Game.IsA('CTFGame') || !bUpdateStatsForCTFOnly) {
       UpdateStatsFromCurrentGame();
     } else {
-      Log("AutoTeamBalance.Timer(): not running since Level.Game "$Level.Game$" != CTFGame and config has bUpdatePlayerStats=True.");
+      Log("AutoTeamBalance.Timer(): not running UpdateStatsFromCurrentGame() since Level.Game "$Level.Game$" != CTFGame and config has bUpdatePlayerStats=True.");
     }
   }
   if (bDebugLogging) {
@@ -551,7 +552,7 @@ event Timer() { // this may be a reasonably hard work process; i hope it's been 
     e = TeamGamePlus(Level.Game).ElapsedTime;
     l = TeamGamePlus(Level.Game).TimeLimit;
     t = Level.TimeSeconds;
-    Log("AutoTeamBalance.Timer() Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
+    Log("AutoTeamBalance.Timer() DEBUG Ending   c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" bGameEnded="$Level.Game.bGameEnded);
   }
 }
 
