@@ -302,7 +302,7 @@ function InitTeams() {
       plorder[n]=pid;
       tg[pid]=0;
       n++;
-      Log("AutoTeamBalance.InitTeams(): [Ranking] "$tg[pid]$" " $ ((pl[pid]).getHumanName()) $ "");
+      Log("AutoTeamBalance.InitTeams(): [Ranking] "$ps[pid]$" " $ ((pl[pid]).getHumanName()) $ "");
     }
   } until (pid==-1);
 
@@ -335,7 +335,8 @@ function InitTeams() {
 
   } else {
 
-    // rebuild teams from strength order 1-2-2-1-1-2-2-1 ...
+    // Rebuild teams from strength order 1-2-2-1-1-2-2-1 ...
+    // (On the way we also calculate total team strengths)
     teamstr[0]=0;
     teamstr[1]=0;
     for (i=0; i<(n&254); i++)
@@ -343,8 +344,8 @@ function InitTeams() {
       pid=plorder[i];
       teamnr=0;
       if ((i&3)==1 || (i&3)==2) teamnr=1;
-      Level.Game.ChangeTeam(pl[pid],teamnr);
       Log("AutoTeamBalance.InitTeams(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
+      Level.Game.ChangeTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -520,6 +521,7 @@ function UpdateStatsFromCurrentGame() {
 
   // Update stats for all players in game
   if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance.Timer(): Updating stats now - Please report any lags"); }
+  // TODO: TEST: make lag here on purpose and see how bad we can get it / how we can fix it.
   Log("AutoTeamBalance.UpdateStatsFromCurrentGame(): updating stats");
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
@@ -555,7 +557,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   previousPolls = hours_played[i] / (PollMinutes/60);
   // Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$") / "$new_hours_played$"");
   // avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score) / new_hours_played;
-  Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$") / "$(previousPolls-1)$"");
+  Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$previousPolls$") + "$current_score$") / "$(previousPolls+1)$"");
   avg_score[i] = ( (avg_score[i] * previousPolls) + current_score) / (previousPolls+1);
   hours_played[i] = new_hours_played;
   if (bBroadcastCookies && ((!bOnlyMoreCookies) || current_score>avg_score[i])) { BroadcastMessage("" $ p.getHumanName() $ " has " $Int(avg_score[i])$ " cookies!"); }
