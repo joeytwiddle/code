@@ -177,10 +177,11 @@ function bool ShouldBalance(GameInfo game) {
     return False;
 
   // We only balance CTF games if asked
-  if (Level.Game.Name == 'CTFGame')
+  // if (Level.Game.Name == 'CTFGame')
+  if (String(Level.Game.Class) == "Botpack.CTFGame")
     return bAutoBalanceTeamsForCTF;
   // We only balance TDM games if asked (NOTE: we don't use IsA here, because other teamgames might be a subclass of TeamGamePlus)
-  if (Level.Game.Name == 'TeamGamePlus')
+  if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
     return bAutoBalanceTeamsForTDM;
 
   //// TESTING_List_desired_gametypes
@@ -206,7 +207,7 @@ function bool ShouldUpdateStats(GameInfo game) {
   if (String(Level.Game.Class) == "Botpack.CTFGame")
     return bUpdatePlayerStatsForCTF;
   // We only build stats for TDM games if asked (NOTE: we don't use IsA here, because other teamgames might be a subclass of TeamGamePlus)
-  if (Level.Game.Name == 'TeamGamePlus')
+  if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
     return bUpdatePlayerStatsForTDM;
   // OK so it's not CTF or TDM, but is it another type of team game?
   if (Level.Game.GameReplicationInfo.bTeamGame)
