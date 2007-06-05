@@ -821,8 +821,8 @@ function UpdateStatsForPlayer(PlayerPawn p) {
 
   hours_played[i] = new_hours_played;
 
-  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average)) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " earned " $Int(avg_score[i])$ " cookies!"); }
-  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average)) { BroadcastMessage("" $ p.getHumanName() $ " earned " $Int(avg_score[i])$ " cookies!"); }
+  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average+1)) { Log("AutoTeamBalance.UpdateStatsForPlayer() Broadcasting: " $ p.getHumanName() $ " earned " $Int(avg_score[i]-previous_average)$ " cookies!"); }
+  if (bBroadcastCookies && ((!bOnlyMoreCookies) || avg_score[i]>previous_average+1)) { BroadcastMessage("" $ p.getHumanName() $ " earned " $Int(avg_score[i]-previous_average)$ " cookies!"); }
 }
 
 // Takes everything before the first ":" - you should almost always use this when getting PlayerPawn.GetPlayerNetworkAddress(); at least in my experience the client's port number changed frequently.
