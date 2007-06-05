@@ -74,7 +74,7 @@ var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they
 
 // Defaults (Daniel's):
 var config int UnknownStrength;    // Default strength for unknown players
-var config float UnknownMinutes;   // Initial virtual time spend on server by new players
+// var config float UnknownMinutes;   // Initial virtual time spend on server by new players
 var config int BotStrength;        // Default strength for bots
 var config int FlagStrength;       // Strength modifier for captured flags
 var config bool bClanWar;          // Make teams by clan tag
@@ -123,7 +123,7 @@ defaultproperties {
   bBroadcastCookies=True
   bOnlyMoreCookies=True
   UnknownStrength=40      // New player records start with an initial strength of avg_score 40
-  UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
+  // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
   BotStrength=20
   FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points
   bClanWar=False
@@ -306,12 +306,15 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
   if (teamnr!=selectedTeam) Options="?Team=" $ teamnr $ Options;
 
   // fix teamsize bug in Botpack.TeamGamePlus
-  if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1]) // this looks like a check that there are humans playing :o
+  if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
   {
     Log("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")");
     GRI.Teams[0].Size=teamSizeWithBots[0];
     GRI.Teams[1].Size=teamSizeWithBots[1];
   }
+  // nogginBasher: I don't understand this bit, but maybe it's because we modified the player's login
+  // I was thinking of stripping teamSizeWithBots because i have adwvaad on my server,
+  // but since it isn't used to make the decision of which team to join, it's fine to leave it in for this bugfix.
 }
 
 // nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
@@ -403,7 +406,7 @@ function InitTeams() {
   local int oldMaxTeamSize;
   local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
 
-  CopyConfigIntoArrays();
+  CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
 
   Log("AutoTeamBalance.InitTeams(): Running...");  
 
@@ -419,12 +422,12 @@ function InitTeams() {
       // Worth noting, from GameInfo.uc:
       // // Set the player's ID.
       // NewPlayer.PlayerReplicationInfo.PlayerID = CurrentID++;
+      // So I guess hashing with modulus 64 might not be so dangerous.  :)
       pl[pid]=p;
       ps[pid]=st;
       tg[pid]=st;
       // p.PlayerReplicationInfo.PlayerName
       Log("AutoTeamBalance.InitTeams(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
-      if (bBroadcastCookies && !bOnlyMoreCookies) { Log("AutoTeamBalance.InitTeams() Broadcasting: " $ p.getHumanName() $ " has " $st$ " cookies."); }
       if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessage("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   }
@@ -515,8 +518,8 @@ function InitTeams() {
   g.bNoTeamChanges=oldbNoTeamChanges;
 
   // Show team strengths to all players
-  if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
   Log("AutoTeamBalance.InitTeams(): Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ ".");
+  if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 
   // Little point doing this here; moved to timer.
   // CopyArraysIntoConfig();
@@ -677,10 +680,9 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   ip[pos] = stripPort(p.GetPlayerNetworkAddress());
   nick[pos] = p.getHumanName();
   // initialise each player as having played for UnknownMinutes (e.g. 10 or 0.1) minutes already, and already earned an average UnknownStrength (e.g. 40) frags
-  avg_score[pos] = UnknownStrength;
-  hours_played[pos] = UnknownMinutes/60;
+  avg_score[pos] = 0; // UnknownStrength;
+  hours_played[pos] = 0; // UnknownMinutes/60;
   Log("AutoTeamBalance.CreateNewPlayerRecord("$p$"): "$nick[pos]$" "$ip[pos]$" "$avg_score[pos]$" "$hours_played[pos]$".");
-  if (bBroadcastCookies) { Log("AutoTeamBalance.CreateNewPlayerRecord() Broadcasting: Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   // if (bBroadcastCookies) { BroadcastMessage("Welcome "$nick[pos]$".  You have "$avg_score[pos]$" cookies."); }
   // SaveConfig();
   return pos;
@@ -688,14 +690,12 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
 
 function UpdateStatsAtEndOfGame() {
   local int countHumanPlayers;
-
   local Pawn p;
 
   // Do not update stats for games with <MinHumansForStats human players.
   countHumanPlayers = 0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol; tbh the one below is probably enough
-    // if (p.bIsPlayer && !p.IsA('Spectator')) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // maybe the last 2 are not needed
       countHumanPlayers++;
     }
   }
@@ -705,11 +705,9 @@ function UpdateStatsAtEndOfGame() {
   }
 
   // Update stats for all players in game
-  // if (bBroadcastStuff) { Log("AutoTeamBalance.Timer() Broadcasting: Updating stats now - Please report any lags"); }
-  // if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance.Timer(): Updating stats now - Please report any lags"); }
+  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats now.");
   if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance is updating player stats now."); }
-  // TODO: TEST: make lag here on purpose and see how bad we can get it / how we can fix it.
-  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): updating stats");
+  // TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
       UpdateStatsForPlayer(PlayerPawn(p));
@@ -717,10 +715,9 @@ function UpdateStatsAtEndOfGame() {
   }
 
   // Save the new stats in the config/ini file:
-  // TODO: Instead of doing the calculations and a config-file save mid-game, we could try to do this only at the end of each game:
   Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): saving stats to file");
   CopyArraysIntoConfig();
-  SaveConfig(); // This is the only place this gets done ATM!
+  SaveConfig(); // This is the only place this gets done atm!
 
   Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): done");
 
@@ -806,9 +803,10 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
     // Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
   // }
 
-  if ( InStr(Msg," entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
-    PlayerJoinedShowInfo(Msg);
-  }
+  // if ( InStr(Msg," entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
+    // PlayerJoinedShowInfo(Msg);
+    // OK well that didn't work, apparently the player didn't have an IP address when he first joined the server.  (Maybe he gets assigned one once this stack is returned.)
+  // }
   // if ( InStr(Msg,"left the game.")>=0 ) {
 
   if ( NextMessageMutator != None ) {
@@ -819,6 +817,7 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
 
 }
 
+/*
 function PlayerJoinedShowInfo(string Msg) {
   local int i;
   local String nick;
@@ -828,7 +827,7 @@ function PlayerJoinedShowInfo(string Msg) {
   nick = Left(Msg,i);
   // Find player in current game list
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator')) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) {
       if (p.getHumanName() == nick) {
         break; // Found him!
       }
@@ -841,4 +840,4 @@ function PlayerJoinedShowInfo(string Msg) {
   i = FindPlayerRecord(PlayerPawn(p));
   if (bBroadcastCookies) { BroadcastMessage(nick$" has "$Int(avg_score[i])$" cookies after "$hours_played[i]$" hours on the server."); }
 }
-
+*/
