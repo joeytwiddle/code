@@ -48,8 +48,8 @@ var config bool bAutoBalanceTeams;
 // For updating player strength in-game:
 var config bool bUpdatePlayerStats;
 // var config bool bUpdateStatsForCTFOnly;  // Stats were updating during other gametypes, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
-var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
-var config name OnlyBalanceTeamsIfGametypeIsA;
+var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
+var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
 // TODO: var config bool bUpdateStatsAtGameEndOnly;
 var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0
@@ -147,7 +147,7 @@ event Tick(float DeltaTime) {
   CheckGameStart();
 }
 
-// If a new player joins a game which has already started, this will send him to the most appropriate team (based on summed strength of each team, plus capbonuses).
+// If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
 function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
   local int selectedTeam;
   local int teamSize[2];
@@ -165,7 +165,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
   // check if this is a team game and if InitTeams has been passed
   // Done: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStarted?  nooo, this check is that the game *has* started, because we don't need to switch the players when joining a new map, because InitTeams will do that.
-  if (!bAutoBalanceTeams || !gameStarted || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA)) return;
+  if (!bAutoBalanceTeams || !gameStarted || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || DeathMatchPlus(Level.Game).bTournament) return;
 
   Log("AutoTeamBalance.ModifyLogin()");
 
@@ -266,7 +266,7 @@ function CheckGameStart() {
   if (gameStarted) return;
 
   // this mod works on team games only
-  if (!bAutoBalanceTeams || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || !Level.Game.GameReplicationInfo.bTeamGame) {
+  if (!bAutoBalanceTeams || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || !Level.Game.GameReplicationInfo.bTeamGame || DeathMatchPlus(Level.Game).bTournament) {
     gameStarted=True;
     return;
   }
