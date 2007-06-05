@@ -789,6 +789,7 @@ function string stripPort(string ip_and_port) {
 // UT will look for this function, and then you can do whatever you want
 // After your stuff is done, then it has to pass on the message to
 // the next mutator in line, so that it can then do it's stuff too
+// nogginBasher: this seemed to be suppressing the broadcasts on the client's screens, so at the end I'm calling BroadcastMessage to send them out again.  Infinite loop?  We'll see... ^^
 function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
 
   CheckGameEnd(); // Does no harm to do this twice.  The broadcast from mapvote might make the stats parsing come sooner than waiting for the timer.
@@ -817,6 +818,8 @@ function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce s
   } else {
     return false;
   }
+
+  BroadcastMessage(Msg);
 
 }
 
