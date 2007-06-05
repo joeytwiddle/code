@@ -18,6 +18,8 @@
 
 // CONSIDER: in cases of a standoff (e.g. all players are new and score UnknownStrength) choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
+// TODO: config option bRankBots
+
 // Current rankings:
 //
 // At the moment we are polling the game every PollMinutes seconds, and updating the players according to their present score.
@@ -368,6 +370,7 @@ function InitTeams() {
 
   // Show team strengths to all players
   if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ " , blue team strength is " $ teamstr[1]); }
+  Log("AutoTeamBalance.InitTeams(): Red team strength is " $ teamstr[0] $ " , blue team strength is " $ teamstr[1]);
 
   // Little point doing this here; moved to timer.
   // CopyArraysIntoConfig();
