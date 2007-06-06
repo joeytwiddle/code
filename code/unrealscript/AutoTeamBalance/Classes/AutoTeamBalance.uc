@@ -130,7 +130,8 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 // var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
 
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
-var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // TODO: refactor this to MaxHoursOfOldStats, more tangible unit for admin to edit
+var config float MaxHoursWhenCopyingOldRecord;     // If you have lots of fakenicklamers on your server, set this high.  If not, set it low, so that players who unluckily share the same IP or nick, don't get their stats confused.
+var config int MaxPollsBeforeRecyclingStrength;    // TODO later on this line! after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // TODO: refactor this to MaxHoursOfOldStats, more tangible unit for admin to edit
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 var config bool bNormaliseScores;
 // deprecated: var config bool bDoWeightedUpdates;
@@ -140,6 +141,7 @@ var config int UnknownStrength;    // Default strength for unknown players
 // var config float UnknownMinutes;   // Initial virtual time spend on server by new players
 var config int BotStrength;        // Default strength for bots
 var config int FlagStrength;       // Strength modifier for captured flags
+var config int WinningTeamBonus;   // Players on the winning team get these bonus points at the end of the game (they contribute to stats)
 var config bool bClanWar;          // Make teams by clan tag
 var config string clanTag;         // Clan tag of red team (all other players to blue)
 // var config String RedTeam[16];     // Players on red team (unreferenced)
@@ -188,6 +190,7 @@ defaultproperties {
   // OnlyUpdateStatsIfGametypeIsA='CTFGame' // Would have been nice to offer it this way, but I didn't get it working.
   // OnlyBalanceTeamsIfGametypeIsA='TeamGamePlus' // TODO: we CAN do it this way, e.g. using String(gametype.Class) == "Botpack.Assault"
   // PollMinutes=2.4
+  MaxHoursWhenCopyingOldRecord=2.0
   MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   MinHumansForStats=1     // TODO: for release, recommended 4
   bNormaliseScores=True     // Normalise scores so that the average score for every game is 50.  Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  TODO CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
@@ -196,6 +199,7 @@ defaultproperties {
   // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
   BotStrength=20
   FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points; used when new players join the game and number of players on each team are even
+  WinningTeamBonus=10
   bClanWar=False
   MaxPlayerData=4096
   // bHidden=True // what is this?  iDeFiX says it's only needed for ServerActors
@@ -442,14 +446,17 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 // Hmm from tests I found this function gets called twice for overtime games, but both times bGameEnded=False
 function bool HandleEndGame() {
   local bool b;
-  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+  // if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
 
+  // This isn't guaranteed to be the end of the game, since we may go into overtime now.
+  // But the Timer() is quite efficient (checking bGameEnded first) so shouldn't cause any lag during overtime.
+  // And we have to start the Timer() here, because I have no other way of detecting (getting called at) the end of the game!
   SetTimer(10,True); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
   if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds."); }
 
   if ( NextMutator != None ) {
     b = NextMutator.HandleEndGame();
-    if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() NextMutator returned "$b$"  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+    // if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() NextMutator returned "$b$"  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
     return b;
   }
   return false;
@@ -517,6 +524,7 @@ function InitTeams() {
 }
 
 // Balance the teams just before the start of a new game.  No need for FlagStrength here.
+// This was originally Daniel's InitTeams() method, but I have renamed it.
 function ForceFullTeamsRebalance() {
   // TODO: now that this can be run mid-game by saying "!teams", this function should again whether it's ok to balance (e.g. is this a team game?!)
   local Pawn p;
@@ -537,10 +545,13 @@ function ForceFullTeamsRebalance() {
   local int oldMaxTeamSize;
   local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
 
+  // We can't balance if it's not a teamgame
+  if (!Level.Game.GameReplicationInfo.bTeamGame) return;
+
   // LoadConfig(); // TODO CONSIDER: If possible, we could also LoadConfig() here.  Then this mutator would be the only one I know that lets you edit the ini file without needing to restart the server!  OK well apparently LoadConfig() doesn't exist.  :P
   CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
 
-  if (bDebugLogging) { Log("AutoTeamBalance.InitTeams(): Running..."); }
+  if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Running..."); }
 
   // rate all players
   for (p=Level.PawnList; p!=None; p=p.NextPawn)
@@ -560,7 +571,7 @@ function ForceFullTeamsRebalance() {
       // tg[pid]=st;
       moved[pid] = 0;
       // p.PlayerReplicationInfo.PlayerName
-      Log("AutoTeamBalance.InitTeams(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
+      Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
       // if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessageAndLog("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   }
@@ -590,7 +601,7 @@ function ForceFullTeamsRebalance() {
       // ps[pid]=0;
       moved[pid] = 1;
       n++;
-      Log("AutoTeamBalance.InitTeams(): [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $"");
+      Log("AutoTeamBalance.ForceFullTeamsRebalance(): [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $"");
       if (bBroadcastCookies) { BroadcastMessageAndLog(""$ pl[pid].getHumanName() $" has " $ps[pid]$ " cookies."); }
       // if (bBroadcastCookies) { pl[pid].ClientMessage("You have " $ps[pid]$ " cookies.", 'CriticalEvent', True); }
       // if (bBroadcastCookies) { SendClientMessage(pl[pid],"You have " $ps[pid]$ " cookies."); } // gets hidden by team switches below
@@ -635,7 +646,7 @@ function ForceFullTeamsRebalance() {
       pid=plorder[i];
       teamnr=0;
       if ((i&3)==1 || (i&3)==2) teamnr=1;
-      Log("AutoTeamBalance.InitTeams(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
+      Log("AutoTeamBalance.ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
       Level.Game.ChangeTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
@@ -645,7 +656,7 @@ function ForceFullTeamsRebalance() {
     {
       pid=plorder[i];
       teamnr=0; if (teamstr[0]>teamstr[1]) teamnr=1;
-      Log("AutoTeamBalance.InitTeams(): "$n$" is odd so sending last player to WEAKER team "$teamnr$".");
+      Log("AutoTeamBalance.ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$".");
       Level.Game.ChangeTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
@@ -658,7 +669,7 @@ function ForceFullTeamsRebalance() {
   g.bNoTeamChanges=oldbNoTeamChanges;
 
   // Show team strengths to all players
-  Log("AutoTeamBalance.InitTeams(): Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ ".");
+  Log("AutoTeamBalance.ForceFullTeamsRebalance(): Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ ".");
   if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 
   // Little point doing this here; wait until we update the player strengths.
@@ -843,6 +854,10 @@ function UpdateStatsAtEndOfGame() {
   local int countHumanPlayers;
   local Pawn p;
 
+  if (WinningTeamBonus != 0) {
+    GiveBonusToWinningTeamPlayers();
+  }
+
   // Do not update stats for games with <MinHumansForStats human players.
   countHumanPlayers = 0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
@@ -874,6 +889,48 @@ function UpdateStatsAtEndOfGame() {
 
 }
 
+function GiveBonusToWinningTeamPlayers() {
+  local TeamInfo WinningTeam;
+  local int i;
+  local Pawn p;
+  local TeamGamePlus thisTeamGame;
+
+  // We can't find a winning team if it's not a teamgame!
+  if (!Level.Game.GameReplicationInfo.bTeamGame) return;
+  // if (!Level.Game.IsA('TeamGamePlus')) return;
+
+  thisTeamGame = TeamGamePlus(Level.Game);
+
+  // Which team won?
+  // if (String(Level.Game.Class) == "Botpack.CTFGame") {
+  // }
+
+  // Copied from CTFGame.SetEndCams(), and looks functionally identical to the method in TeamGamePlus.
+  for ( i=0; i<thisTeamGame.MaxTeams; i++ )
+    if ( (WinningTeam == None) || (thisTeamGame.Teams[i].Score > WinningTeam.Score) )
+      WinningTeam = thisTeamGame.Teams[i];
+  // Check for tie:
+  for ( i=0; i<thisTeamGame.MaxTeams; i++ ) {
+    if ( (WinningTeam.TeamIndex != i) && (WinningTeam.Score == thisTeamGame.Teams[i].Score) ) {
+      WinningTeam = None;
+      break;
+    }
+  }
+
+  if (WinningTeam == None) return; // game ended in a tie
+
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && p.IsA('PlayerPawn')) {
+      if (p.PlayerReplicationInfo.Team == WinningTeam.TeamIndex) {
+        if (bDebugLogging) { Log("AutoTeamBalance.GiveBonusToWinningTeamPlayers(): giving bonus to p.getHumanName()."); }
+        p.PlayerReplicationInfo.Score += WinningTeamBonus;
+        SendClientMessage(p,"You got "$WinningTeamBonus$" bonus points for finishing on the winning team.");
+      }
+    }
+  }
+
+}
+
 function UpdateStatsForPlayer(PlayerPawn p) {
   local int i,j;
   local float current_score;
@@ -894,7 +951,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
       // Copy over strength from the partial-match player, but only make that strength last for 2 hours.
       // SO: changing nick will Not reset your avg_score immediately, but eventually
       avg_score[j] = avg_score[i]; // Copy score from partial record max
-      hours_played[j] = Min(2.0,hours_played[i]); // but in case this is a different player (or maybe the same player but in a different environment), give the new record max 2 hours
+      hours_played[j] = Min(MaxHoursWhenCopyingOldRecord,hours_played[i]); // but in case this is a different player (or maybe the same player but in a different environment), give the new record max 2 hours
     }
     i = j;
   }
@@ -967,7 +1024,7 @@ function float NormaliseScore(float score) {
   averageGameScore = averageGameScore / Float(playerCount);
 
   // Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to 50!
-  if (averageGameScore < 2.0) {
+  if (averageGameScore < 2.0) { // TODO: kinda nasty to have such a sharp cutoff though; average 3 frags will be scaled up
     averageGameScore = 50;
   }
 
@@ -1126,6 +1183,7 @@ function BroadcastMessageAndLog(string Msg) {
   BroadcastMessage(Msg);
 }
 
+// NOTE: in case you thought otherwise, this message gets displayed in the console, but not in the chatarea.  It is also displayed on the HUD, but can be hidden by the scoreboard, or a following HUD message.
 function SendClientMessage(Pawn pawn, string Msg) {
   Log("AutoTeamBalance Sending message to "$pawn.getHumanName()$": "$Msg);
   pawn.ClientMessage(Msg, 'CriticalEvent', True);
