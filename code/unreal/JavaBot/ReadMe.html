@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Gamebots Java Client &amp; ExampleBot</title>
+</head>
+ <body>
+ 
+<h1>Gamebots Java Client &amp; ExampleBot</h1>
+  
+<table width="100%" border="1">
+ <tbody>
+    <tr>
+      <th align="right">Release: &nbsp;&nbsp;</th>
+      <td>4 April 2001</td>
+      <td valign="top">Subsequent Releases<br>
+      </td>
+    </tr>
+ <tr>
+      <th align="right">Author: &nbsp;&nbsp;</th>
+      <td><a href="mailto:amarshal@isi.edu">Andrew n marshall</a></td>
+      <td valign="top">Sourceforge Project: utbot<br>
+      <ul>
+        <li><a href="mailto:rozich@tamu.edu">Ryan Rozich</a></li>
+        <li>Joeseph Sims</li>
+        <li>James Vaglia</li>
+      </ul>
+      </td>
+    </tr>
+ <tr>
+      <th align="right">URL: &nbsp;&nbsp;</th>
+      <td><a href="http://www.isi.edu/%7Eascholer/gamebots/">http://www.isi.edu/~ascholer/gamebots/</a></td>
+      <td valign="top">project summary: <a href="http://sourceforge.net/projects/utbot/">
+http://sourceforge.net/projects/utbot/</a><br>
+project website: <a href="http://utbot.sourceforge.net/">http://utbot.sourceforge.net/</a><br>
+      </td>
+    </tr>
+ 
+  </tbody>
+</table>
+<br>
+ 
+<hr>  
+<h2>Requirements</h2>
+ 
+<ul>
+ <li>Unreal Tournament (server edition at minimum)</li>
+ <li>Gamebots RemoteBot UT Module, 27 Sept 2000 release or later</li>
+ <li>Java 1.3.0 or higher (with the $JAVA_HOME/bin included on the path)</li>
+ 
+</ul>
+<h2>Optional</h2>
+<ul>
+  <li><a href="http://jakarta.apache.org/ant/index.html">Jakarta Ant</a>
+- If you are building from source</li>
+</ul>
+   
+<h2>Quick Start</h2>
+  
+<p> This will start the Java Client with the ability to run the  ExampleBot
+demo, which is good for checking out the environment. </p>
+  
+<ul>
+ <li>Get a release or cvs checkout from the <a href="https://sourceforge.net/projects/utbot/">
+utbot</a> project on SourceForge (www.sourceforge.net), you probably have
+already done this.</li>
+  <li>If you checked out the source only release (file: <code>JavaBot-source-xxxxxxxx.zip</code>
+), then build the jar file (see <a href="#Building_the_Source_Code">building
+sources</a> below) otherwise, you should have a file named JavaBots.jar already
+built in the directory where you unzipped the release to.<br>
+  </li>
+ <li>Open a command line to that directory. Run:<br>
+ 
+    <pre>  <code>java -jar JavaBots.jar</code></pre>
+ NOTE: On Windows systems with Sun's JDK 1.3, you should be able to just
+double click the JavaBot.jar file to get the same effect as this step.</li>
+ <li>Specify the server's address and port number in the "Server" and "Port"
+fields in the opening screen.  Don't forget to start the server if you haven't
+done so already.</li>
+ <li>From the menu, select "Team | Add Bot" to each Bot.  Accept the default
+options by selecting "Add Bot".</li>
+ <li>From the menu, select "Team | Connect All" to connect the bots to the
+server.</li>
+ 
+</ul>
+   
+<h2>Developing Bots</h2>
+ 
+<p> In order to run your own bots, you will also need to add your development
+classpath to the CLASSPATH environment variable.  (Actually, if you look
+at the BotRunnerApp source, you'll see I'm already attempting to fix this.) 
+</p>
+ 
+<p> All bots should extend the class <code>edu.isi.gamebots.client.Bot</code>
+. </p>
+ 
+<p> Load your by typing there class name (with dots, not slashes) in the
+"Name" field of the "Add Bot" dialog.</p>
+<h2><a name="Building_the_Source_Code"></a>Building the Source Code</h2>
+We use the ant tool to build our source code. If you have the ant tool installed,
+you can build the source using our build script (build.xml), specifying the
+directories that you want your files built to and running ant. Here are the
+steps:<br>
+<ol>
+  <li>If you do not already have the ant build tool - <a href="http://jakarta.apache.org/ant/index.html">
+Get Ant Here</a> - follow the instructions in the documentation to install
+ant on your system.</li>
+  <li>The ant build script looks for a file named build.properties to tell
+it where to build things like class files, jar files and documentation. Edit
+the file /src/build.properties.example with the directories that you want
+to build to and rename the file build.properties.<br>
+  </li>
+  <li>Open a command line shell in the src directory and type<br>
+    <code>&gt;ant &lt;targetname&gt;</code><br>
+where <code>&lt;targetname&gt;</code> is one of the build targets<br>
+    <code>&nbsp; &nbsp;compile </code>(default)<code><br>
+&nbsp; &nbsp;lib </code>(creates executable jar file)<code><br>
+&nbsp; &nbsp;doc </code>(builds javadoc)<code><br>
+&nbsp; &nbsp;clean </code>(cleans misc. files out of source and removes .class
+files)<code><br>
+&nbsp; &nbsp;source-release </code>(creates a zip file for a source release)<code><br>
+&nbsp; &nbsp;all-release </code>(creates a zip file for a release that includes 
+source and built jar file and docs)<code><br>
+&nbsp; &nbsp;release </code>(builds both source-release and all-release)<br>
+  </li>
+</ol>
+ 
+</body>
+</html>

@@ -1,0 +1,61 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>ToDo - Java Client &amp; ExampleBot - Gamebots</title>
+</head>
+  <body>
+     
+<h1>Java Client &amp; ExampleBot ToDo</h1>
+      
+<h2>Current Issues</h2>
+     
+<ul>
+   <li><code>ExampleBot</code> does not clear it's state when disconnected.
+  There are hints that this causes <code>ExampleBot</code>s to freeze upon
+ reconnect.  Needs further testing.</li>
+   <li><code>ExampleBot</code> does not use the new <code>UTMapUI</code>
+component.</li>
+  <li><code>ExampleVizTool </code>dies when trying to connect<br>
+  </li>
+     
+</ul>
+      
+<h2>Future Features</h2>
+      
+<h3>ExampleBot class</h3>
+     
+<ul>
+   <li>Add support for back-tracking (has a tendancy to get stuck in tight
+ dead-ends; see Flak ammo corner of Stalwart).</li>
+   <li>Add support for sound, bump, and wall messages.</li>
+   <li>Begin converting reachable data into usable floor tile data.</li>
+   <li>Add aggressiveness state and enemy avoidance/attack code.</li>
+     
+</ul>
+      
+<h3></h3>
+      
+<h3>BotRunnerApp Class</h3>
+     
+<ul>
+   <li>Add support for logging to a file.</li>
+   <li>Add per-<code>Bot</code>/<code>VizTool</code> commands (connect, disconnect,
+ and delete).</li>
+     <li>Add a most recently used list to the <code>Bot</code> and <code>
+VizTool</code>   add dialogs.</li>
+     
+</ul>
+ 
+<h2>General Tasks</h2>
+ 
+<ul>
+   <li>Go through edu.isi.gamebots code and write javadoc for very important 
+classes (i.e. BotRunnerApp and ExampleBot) first and then go through other 
+classes.<br>
+   </li>
+ 
+</ul>
+ <br>
+      
+</body>
+</html>

@@ -1,0 +1,11 @@
+# Where to find source files
+src=./
+#Where javadoc files are generated
+doc=../doc
+#Where jar libraries get built to
+jar=../
+#Where class files get built to
+build=e:/rtr7684/classpath/classes
+
+#Directory to build release zip files in
+release=../../

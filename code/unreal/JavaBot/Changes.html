@@ -1,0 +1,156 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <title>Changes - Java Client &amp; ExampleBot - Gamebots</title>
+              
+</head>
+  <body>
+           
+<h1>Java Client &amp; ExampleBot Changes</h1>
+     <br>
+         
+<h2>27 Feb. 2002 - Ryan Rozich</h2>
+         
+<ul>
+       <li>Created sourceforge project utbots</li>
+      <li>added ant build script <code>build.xml </code>with the following
+ build  targets. See the readme file for how to use our build script.</li>
+               
+  <ul>
+        <li><code>compile </code>(default)</li>
+        <li><code>lib </code>(creates executable jar file)</li>
+        <li><code>doc </code>(builds javadoc)</li>
+        <li><code>clean </code>(cleans misc. files out of source and removes
+  .class files)</li>
+        <li><code>source-release </code>(creates a zip file for a source
+release)</li>
+        <li><code>all-release </code>(creates a zip file for a release that 
+ includes source and built jar file and docs)</li>
+        <li><code>release </code>(builds both source-release and all-release<br>
+       </li>
+               
+  </ul>
+       <li>In BotRunnerApp - created editable JComboBoxes instead of a text field to the 'add bot' or 'add viz tool' 
+       dialog to make it less tedious to enter known bot types.</li>
+       <li>Removed packages matching the pattern <code>us/ca/la/anm/**/not-used/*</code> becuase these classes 
+       had dependancies that were not included therefore we could not compile. These classes are apparently 
+       never used so we saw no harm in this.</li>
+       <li>Wrote the javadoc for <a href="doc/edu/isi/gamebots/client/Bot.html"><code>
+       edu.tamu.gamebots</code>Bot</a> which is the class most people need a reference for</li>
+       <li>Created the package <code>edu.tamu.gamebots</code> for our source</li>
+       <li>Created a HumanBot class&nbsp;<a href="doc/edu/tamu/gamebots/humanbot/HumanBot.html"><code>
+edu.tamu.gamebots</code>HumanBot</a>   which is pretty much just
+a user interface that allows a human to read the   messages sent from the
+server and to send messages on behalf of his bot.  This was a first step
+in playing with and getting to know the javabot API  and the GameBot network
+protocal. This lets us test exactly when and how messages are recieved by
+our bots.<br>
+       </li>
+       <li>Moved the <a href="doc/edu/cmu/gamebots/CMU_JBot.html">
+CMU_JBot</a> class from the default package to one named     <code>    edu.cmu.gamebots</code>
+ for consistency</li>
+                   
+  <ul>
+         <li>This class simply copied the code from ExampleBot and made changes 
+  directly to the source. We thought a better design might have been to simply 
+  extend the ExampleBot class and even considered rewriting it to do so. We
+  decided not to take the time to do this though.<br>
+         </li>
+                   
+  </ul>
+       <li>Added more String constants to the <a href="doc/edu/isi/gamebots/client/GamebotsConstants.html"><code>
+edu.isi.gamebots.client.GamebotsConstants</code>      </a>interface for parsing
+and sending messages to UTServer<br>
+       </li>
+       <li>Added the several more convienience methods to <code><a href="doc/edu/isi/gamebots/client/Bot.html">
+edu.isi.gamebots.client.Bot</a>   class</code>, almost complete set of actions
+now available</li>
+       <li>Added <a href="doc/edu/isi/gamebots/client/GamebotsClient.html#sendMessage%28java.lang.String%29"><code>
+public void edu.isi.gamebots.client.GamebotsClient.sendMsg(String)</code></a>
+      method to send arbitrary messages to the gamebots server</li>
+       <li>Added <a href="doc/edu/isi/gamebots/client/MessageBlock.html#onlyNodeMessages%28%29"><code>
+public MessageBlock edu.isi.gamebots.client.MessageBlock   .onlyNodeMessages()</code></a>
+ to return a new mesasge block that only has Node   type messages. This was
+useful for our interface's table and we thought that  it may be useful in
+other ways so we included it as an instance method of  the class.</li>
+       <li>Added <code><a href="doc/edu/isi/gamebots/client/MessageBlock.html#getMessageAt%28int%29">
+public Message edu.isi.gamebots.client.MessageBlock.getMessageAt(int)</a>
+       </code>to get a particular message. Reasons same as previous.</li>
+       <li>Added <code><a href="doc/edu/isi/gamebots/client/MessageBlock.html#getNumMessages%28%29">
+public int edu.isi.gamebots.client.MessageBlock.getNumMessages()</a>    
+  </code>to get the number of messages in the block. Reasons same as previous.</li>
+           <li>Changed the name of the abstract inner class&nbsp;<code>edu.isi.gamebots.client. 
+  GamebotsConstants.Map</code> to <a href="doc/edu/isi/gamebots/client/GamebotsConstants.TeamColorMap.html"><code>
+edu.isi.gamebots.client.GamebotsConstants.TeamColorMap</code></a></li>
+                   
+  <ul>
+         <li>This was a big decision; we considered not making this change
+ because we thought that other peoples code may  use this class and changing
+ the name might break their build.  The problems that we were having were
+that we could not get the source to  compile (usuing sun javac 1.3.1_02)
+because in several places the code uses  the <code>java.util.Map</code> interface
+ and the compiler expected this abstract  inner class. We first went through
+ and wrote the full package name <code>java.util.Map</code>  for all references
+ to that interface interface. The code compiled, but we still made the name
+ change to avoid further confusion.<br>
+         </li>
+                   
+  </ul>
+       <li>Updated <a href="doc/edu/isi/gamebots/client/GamebotsConstants.TeamColorMap.html"><code>
+edu.isi.gamebots.client.BotRunnerApp</code> </a>to call       <code> edu.isi.gamebots.client.TeamColorMap</code>
+ instead of <code>  edu.isi.gamebots.client.  Map</code> where appropriate.<br>
+       </li>
+         
+</ul>
+            
+<h2>29 Sept. 2001</h2>
+           
+<ul>
+      <li>Added support for selecting selecting a team color for a bot from 
+ the  BotRunnerApp.</li>
+      <li>Included some new constants in the GamebotsConstants, thanks to 
+CMU.     </li>
+       <li>Included a copy of the CMU_JBot from the Spring tourneyment. </li>
+         
+</ul>
+            
+<h2>7 Sept. 2000</h2>
+           
+<ul>
+      <li>Added vizualization tool interface <a href="doc/edu/isi/gamebots/client/VizTool.html"><code>
+     VizTool</code></a>.</li>
+      <li>Moved example code to package <a href="doc/edu/isi/gamebots/examples/package-summary.html"><code>
+     edu.isi.gamebots.examples</code></a>.</li>
+      <li>Moved method <a href="doc/edu/isi/gamebots/examples/ExampleBot.html#updateSelf%28edu.isi.gamebots.client.Message%29"><code>
+     updateSelf(...)</code></a> and associated state varaibles from <a href="doc/edu/isi/gamebots/client/Bot.html"><code>
+     Bot</code></a> to <a href="doc/edu/isi/gamebots/examples/ExampleBot.html"><code>
+     ExampleBot</code></a> since some bots, like those based on rule engines, 
+  won't need this code.  Additionally, in moving to <a href="doc/edu/isi/gamebots/examples/UTMapUI.html"><code>
+     UTMapUI</code></a>, this code will need to change for <a href="doc/edu/isi/gamebots/examples/ExampleBot.html"><code>
+     ExampleBot</code></a>, and the <a href="doc/edu/isi/gamebots/client/Bot.html"><code>
+     Bot</code></a> class should be as stable as possible.</li>
+      <li>Built new <a href="doc/edu/isi/gamebots/examples/UTMapUI.html"><code>
+     UTMapUI</code></a> based on original <a href="doc/edu/isi/gamebots/examples/ExampleBot.html"><code>
+     ExampleBot</code></a> mapping interface. Includes several new spport 
+classes.    <a href="doc/edu/isi/gamebots/examples/ExampleBot.html"><code>
+    ExampleBot</code></a>  does not currently use this.</li>
+      <li>Built example <a href="doc/edu/isi/gamebots/client/VizTool.html"><code>
+     VizTool</code></a> <a href="doc/edu/isi/gamebots/examples/ExampleVizTool.html"><code>
+     ExampleVizTool</code></a>, using new <a href="doc/edu/isi/gamebots/examples/UTMapUI.html"><code>
+     UTMapUI</code></a>.</li>
+      <li>Fixed up most (all?) networking issues.</li>
+      <li>Added support for <code>PING</code> and <code>FIN</code> messages 
+ to      <a href="doc/edu/isi/gamebots/client/GamebotsClient.html"><code>
+     GamebotsClient</code></a> (untested).</li>
+      <li><code>ReadMe.txt</code> is now <a href="ReadMe.html">
+   ReadMe.html</a>  .</li>
+      <li>Added <a href="Changes.html">
+   Changes.html</a> and <a href="ToDo.html">
+     ToDo.html</a>.</li>
+      <li>Fixed a GUI deadlock issue (log updates to the JTextArea are now
+ done  in the AWT event thread).</li>
+           
+</ul>
+            
+</body>
+</html>

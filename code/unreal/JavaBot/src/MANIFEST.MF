@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Implementation-Title: Gamebots Java Client
+Implementation-Version: 27 Feb 2002
+Main-Class: edu.isi.gamebots.client.BotRunnerApp
+
