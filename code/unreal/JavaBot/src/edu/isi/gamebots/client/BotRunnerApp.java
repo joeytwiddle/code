@@ -95,11 +95,13 @@ public class BotRunnerApp implements GamebotsConstants {
 
   // Public Methods
   ///////////////////////////////////////////////////////////////////////////
-  public static void main( String[] args ) {
+  public static void main( String[] args ) throws Exception {
     new BotRunnerApp( args );
+
   }
 
   public BotRunnerApp( String[] args ) {
+
     buildGUI();
     log.setJTextArea( text );
 
@@ -111,6 +113,17 @@ public class BotRunnerApp implements GamebotsConstants {
     }
 
     frame.show();
+
+      try {
+          serverAddress = InetAddress.getByName("localhost");
+
+          Class botClass = edu.cmu.gamebots.CMU_JBot.class;
+          Bot bot = (Bot) botClass.newInstance();
+          new BotManager( bot, "CMU_JBot1", TEAM_ANY );
+      } catch (Exception e) {
+          e.printStackTrace(System.err);
+      }
+
   }
 
   //  Private Methods
@@ -171,7 +184,7 @@ public class BotRunnerApp implements GamebotsConstants {
                 gbc.anchor = gbc.SOUTHEAST;
               serverPanel.add( label, gbc );
 
-              serverField = new JTextField();
+              serverField = new JTextField("localhost");
                 serverField.addFocusListener( serverFocusListener );
 
                 gbc.gridx++;
@@ -518,11 +531,11 @@ public class BotRunnerApp implements GamebotsConstants {
       "edu.tamu.gamebots.humanbot.HumanBot",
       "edu.tamu.agents.CAST_PM.unreal.AgentUnrealTournamentAdapter"
     };
-    
+
     protected String[] knownVizTools ={
       "edu.isi.gamebots.examples.ExampleVizTool"
     };
-    
+
     protected String panelType;
 
     protected JCardStack cards;
@@ -638,7 +651,7 @@ public class BotRunnerApp implements GamebotsConstants {
               classField = new JComboBox( knownBots );
             else // assume VIZ
               classField = new JComboBox( knownVizTools );
-            
+
             classField.setEditable(true);
 
               gbc.gridx++;
