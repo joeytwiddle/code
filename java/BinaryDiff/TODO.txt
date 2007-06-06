@@ -1,0 +1,28 @@
+Have the expander produce multiple files (the same ones that were archived!)
+Provide useful options to command-line, especially desirable is -o -
+Likewise, expander should be able to accept input from stdin.
+Trim down all unwanted code
+Find and fix the goddam memory-leak
+Add a test-expansion-against-files option to verify the archive contents.
+Release? ^^
+
+Produce more informative output (e.g. compression ratio of current file)
+BUG: after 63% it started counting down from -62% :o
+
+Memory cost:
+past data for real checking
+hashmap of past data's checksums for fast checking
+Allow user to set size of both caches
+Split caches into recent data vs. most reused (useful) data
+Allow user to set ratio of recent/reused
+This will require more complex storage...
+
+Consider: is it possible/desirable to create 3 files? reused data, non-reused data, reuse links (what is reused where)  Would probably require some late-writing, but too late, i.e. mem problem?
+
+Since BinaryDiff is still alpha, make --verify_after the default, and allow option to switch it off
+
+
+
+Consider:
+if we find a small word which matches, and find all matches for it in the file, we can mark off the endpoints of all these matches.
+When searching for new matches, we can avoid all window-scans which whose boundaries cross the endpoints.  Not always optimal, but sometimes better?
