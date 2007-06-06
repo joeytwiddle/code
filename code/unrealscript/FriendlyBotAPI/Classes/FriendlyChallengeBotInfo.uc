@@ -1,0 +1,3 @@
+class FriendlyChallengeBotInfo extends ChallengeBotInfo;
+
+

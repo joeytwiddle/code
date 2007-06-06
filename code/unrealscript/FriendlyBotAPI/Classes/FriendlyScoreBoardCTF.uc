@@ -1,0 +1,1 @@
+class FriendlyScoreBoardCTF extends UnrealCTFScoreboard;

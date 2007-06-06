@@ -1,0 +1,3 @@
+class KillerMessageNew extends KillerMessagePlus;
+
+

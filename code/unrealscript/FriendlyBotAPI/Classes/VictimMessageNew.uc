@@ -1,0 +1,3 @@
+class VictimMessageNew extends VictimMessage;
+
+
