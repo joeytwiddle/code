@@ -1,34 +1,47 @@
 //=============================================================================
 // ArenaFallback.
 // This will make the game a weapons arena, if there are no weapons
-//   in the map by default.
+//   found in the map by default.
 // Useful if you don't know whether the map will contain weapons or not,
 //   and you want to avoid playing a game with just Hammer and Enforcer.
-// This is basically a modified version of the default InstaGibDM arena mutator.
+// Most of the time this mutator will do nothing.
+// But if a map without weapons is voted, it will force arena mode.
 //=============================================================================
 
-// Alternatively to expanding Arena,we could use the method from /mnt/big/ut/ut_stuff/gone/unrealwiki-offline/changing-the-enforcer-ut.html
+// TODO: unless we can actually make it configurable, there's no point trying to make this anything other than an instagib arena
+
+// TODO: compare against the method from /mnt/big/ut/ut_stuff/gone/unrealwiki-offline/changing-the-enforcer-ut.html
 
 // TODO: via config allow different arena weapons than the ig rifle
 //       allow an option for a random arena weapon chosen by the mutator at game-start
 
-// LOL FFS it replaces my enforcer with the DefaultWeapon below when there are weapons on the map
-// and when there aren't weapons on the map, it replaces my enforcer with nothing!
-// Ahh that was my fault, had a bool the wrong way round.  :P
+// TODO: we are no longer an Arena mutator, so other arena mutators may be added.  Check this works properly.
 
-class ArenaFallback expands Arena;
+// TODO: we want this to be like other Arena mutators.  So test if InstaGibDM and the other Arena muts let us have boots.
 
-var bool DoneCheck; // Thankfully UT defaults this to False.
-var bool FoundWeapon;
+// TODO: check /mnt/big/ut/ut_stuff/www.ut-files.com/Mods/mutteamweaponarena.zip and /mnt/big/stuff/software/games/unreal/server/mods/added_ok/weaponmage_gold.zip to see if they can replace weapons randomly, and how.
+
+class ArenaFallback expands Mutator;
+
+var bool bForceArena; // Whether this Mutator will do anything.
+
+var bool bAllowPickups; // In InstaGibDM (InstaGib Arena) we don't allow any pickups on the map (no health or shields or boots or weapon pickups).
+                        // Actually boots should be allowed.  Just health/amp/shield are irrelevant, so they should be removed.
+// This is largely irrelevant.  Very few maps will have pickups but not weapon pickups!
+
+var class WeaponType;
+// var name WeaponName, AmmoName; // The arena weapon and ammo types we will force.
 
 defaultproperties {
-	WeaponName=SuperShockRifle
-	DefaultWeapon=class'Botpack.SuperShockRifle'
-	AmmoName=SuperShockCore
+	WeaponType = class'Botpack.SuperShockRifle'
+	bAllowPickups = False
+	// WeaponName = SuperShockRifle
+	// AmmoName = SuperShockCore
+
+	// WeaponType=class'Botpack.PulseGun'
+	// bAllowPickups = True
 	// WeaponName=PulseGun
-	// DefaultWeapon=class'Botpack.PulseGun'
 	// AmmoName=PAmmo
-	// DoneCheck = False;
 }
 
 function PreBeginPlay() {
@@ -38,44 +51,91 @@ function PreBeginPlay() {
 function CheckForWeapons() {
 	local Weapon w;
 
-	if (DoneCheck)
+	foreach AllActors(class'Weapon', w) {
+		Log("ArenaFallback: I found a weapon in this map ("$w$"): doing nothing.");
+		bForceArena = False;
 		return;
-	DoneCheck=True;
+	}
 
-	FoundWeapon = False;
-	foreach AllActors( class 'Weapon', w ) {
-		FoundWeapon = True;
-		Log("ArenaFallback: I found a weapon in this map: "$w);
-		break;
-	}
-	if (FoundWeapon) {
-		// I don't understand how Self.DefaultWeapon was being accessed, but it was, so:
-		DefaultWeapon = Level.Game.DefaultWeapon;
-	}
-	if (!FoundWeapon) {
-		Log("ArenaFallback: I did not find any weapons in this map: forcing Arena game.");
-	}
+	Log("ArenaFallback: I did not find any weapons in this map: forcing Arena game.");
+	bForceArena = True;
+	Level.Game.DefaultWeapon = WeaponType;
+	// Level.Game.bCoopWeaponMode = False;
 }
 
+// Force game to always keep this actor, even if other mutators want to get rid of it.
 function bool AlwaysKeep(Actor Other) {
-	CheckForWeapons(); // in case PreBeginPlay() was not yet called
-	if (FoundWeapon)
-		return True;
-	else
+
+	if (bForceArena) {
+
+		if (!bAllowPickups) {
+			return False;
+		}
+
+		if (Other.IsA('Weapon')) {
+			Weapon(Other).PickupAmmoCount = Weapon(Other).AmmoName.Default.MaxAmmo;
+			return True;
+		}
+		if (Other.IsA('Ammo')) {
+			Ammo(Other).AmmoAmount = Ammo(Other).MaxAmmo;
+			return True;
+		}
+
+	} else {
+
+		// Pass to other mutators in the default way:
 		return Super.AlwaysKeep(Other);
+
+	}
+
 }
 
+// Allow mutators to remove actors.
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
-	CheckForWeapons(); // in case PreBeginPlay() was not yet called
-	if (FoundWeapon)
+
+	if (bForceArena) {
+
+		if (!bAllowPickups) {
+			return False;
+		}
+
+		if (Other.IsA('Weapon')) {
+			if (Other.IsA(WeaponName)) {
+				return True;
+			} else {
+				// It's a weapon, but not an arena weapon: replace it.
+				ReplaceWith(Other, WeaponString);
+				return False;
+			}
+		}
+		if (Other.IsA('Ammo')) {
+			if (Other.IsA(AmmoName)) {
+				return True;
+			} else {
+				// It's ammo, but not arena ammo: replace it.
+				ReplaceWith(Other, AmmoString);
+				return False;
+			}
+		}
+
+		// It wasn't a weapon or ammo, and pickups are allowed, so keep it.
+		bSuperRelevant = 0;
 		return True;
 
-	// TODO: only remove these powerups if it's an instagib arena; keep them for other weapons
-	if ( Other.IsA('TournamentHealth') || Other.IsA('UT_Shieldbelt')
-		|| Other.IsA('Armor2') || Other.IsA('ThighPads')
-		|| Other.IsA('UT_Invisibility') || Other.IsA('UDamage') )
-		return false;
+		/*
+		// TODO: although 
+		if ( Other.IsA('TournamentHealth') || Other.IsA('UT_Shieldbelt')
+			|| Other.IsA('Armor2') || Other.IsA('ThighPads')
+			|| Other.IsA('UT_Invisibility') || Other.IsA('UDamage') )
+			return False;
+		*/
 
-	return Super.CheckReplacement( Other, bSuperRelevant );
+	} else {
+
+		// Pass to other mutators in the default way:
+		return Super.CheckReplacement( Other, bSuperRelevant );
+
+	}
+
 }
 
