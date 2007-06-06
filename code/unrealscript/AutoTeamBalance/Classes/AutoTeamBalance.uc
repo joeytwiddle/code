@@ -7,6 +7,11 @@
 // // AutoTeamBalance logging level: 0=none, 1=hello etc, 2=details(show stats)
 // AutoTeamBalance detailed stats logging: 0=none, 1=to logfile, 2=broadcast in-game, 3=both
 // Cookies: 0=none, 1=console message to each player, 2=HUD message to each player, 3=broadcast message to all players
+// CONSIDER:
+// mm well we got 3 types of logging:
+//   developer logging, we don't want live, except for major debugging, and it can be removed in final version
+//   user(admin) friendly-logging
+//   user(admin) friendly-logging, but it's inefficient so should be disabled except when admin is debugging
 
 // TODO: we could now move to the list-of-gametype-strings method instead of all those bools
 
@@ -14,8 +19,30 @@
 //       try doing it without player stats lookup, just with in-game scores
 // CONSIDER doing this anyway :P
 
-// TODO: watch for somebody saying "!teams" or "teams" and do mid-game balancing (based on current scores in case some players aren't in the stats)
-// TODO: catch a player saying "!teams", maybe write some custom code to balance the teams then (by swapping 1/2 players only, maybe slightly randomised so it can be repeated if unsatisfactory; noo that could get too spammy :E)
+// DONE: watch for somebody saying "!teams" or "teams" and do mid-game balancing (TODO: based on current scores in case some players aren't in the stats)
+// HALF-DONE-HALF-TODO: catch a player saying "!teams", maybe write some custom code to balance the teams then (by swapping 1/2 players only, maybe slightly randomised so it can be repeated if unsatisfactory; noo that could get too spammy :E)
+
+// TODO: provide a few different algorithms for balancing teams, on different "!teams" commands, so they can be tested and evaluated
+
+// TODO: provide (semi-admin) commands to force players onto different teams, e.g. "mutate tored Tigz [<pass>]"
+//       if we do this, then make a "mutate teams [<pass>]" also
+
+// TODO: configure hours_copied (if ppl change nick alot, we may want to keep all their hours!)
+// TODO: add mid-game teambalance (on !teams, by scores plz)
+// TODO: fix on-join teambalance (do it by scores if it's less laggy)
+
+// TODO: let the option whether to use recorded stats or in-game scores for balancing be configurable mid-game, so admin can try both methods during play
+
+// TODO BUG: mid-game team balancing should NOT switch players who have the flag (this requires some adjustment of the teambalance algorithm)
+// TODO: mid-game team balancing should make as few switches as possible
+
+// TODO: mid-game rebalancing puts me (when just 1 player) on a different team from the one it gives me at startup (lol because there are bots and the bots atm have better rankings than me :P )
+
+// TODO: the balancing now says "X you have N cookies" which hides the message "You are on the Red team" which is kinda useful info, especially for mid-game balancing.
+
+// TODO: add configurable winningteambonus score (e.g. +10 frags/points) for every player on the winning team
+//       this will help ranking to demote non-CTF players, and balance teams for games with even caps, not just even scores
+// CONSIDER: instead of +10 for winning, -10 for losing?  what difference does that make to the stats anyway?
 
 // DONE: test doing Disable('Tick'); when Tick() is no longer needed
 
@@ -28,6 +55,8 @@
 // For the first week or so you may wish to collect stats but not attempt team-balancing: just set bAutoBalanceTeamsFor*=False but leave bUpdatePlayerStatsFor*=True.
 // by Daniel Mastersourcerer at Kitana's Castle and F0X|nogginBasher of no fixed abode.
 // (c)opyleft May 2007 under GNU Public Licence
+// Thanks to iDeFiX, unrealadmin, Matt and the author of adwvaad
+// Code snippets stolen from iDeFiX's team balancer, TeamBallancer, and the adwvaad thread
 
 // vim: tabstop=2 shiftwidth=2 expandtab
 
@@ -74,6 +103,15 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 var string HelloBroadcast; // TODO CONSIDER: make this configurable, and make it say nothing if ""
 
+var config bool bBroadcastStuff;   // Be noisy to in-game console
+var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
+var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed at end of game as their number of cookies
+// TODO: now we are doing p.ClientMessage() sometimes, we don't really need to BroadcastMessage as well (I only want it as a developer to see changes during the game.)
+// var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
+var config bool bBroadcastLostCookies;  // should we broadcast when someone has moved down the ranking?
+
+var config bool bAllowMidgameRebalancing;
+
 var config bool bAutoBalanceTeamsForCTF;
 var config bool bAutoBalanceTeamsForTDM;
 var config bool bAutoBalanceTeamsForAS;
@@ -90,18 +128,12 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 //// These didn't work for me; maybe config vars can't be complex types like "name"
 // var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
 // var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
+
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // TODO: refactor this to MaxHoursOfOldStats, more tangible unit for admin to edit
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 var config bool bNormaliseScores;
 // deprecated: var config bool bDoWeightedUpdates;
-
-var config bool bBroadcastStuff;   // Be noisy to in-game console
-var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
-var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed at end of game as their number of cookies
-// TODO: now we are doing p.ClientMessage() sometimes, we don't really need to BroadcastMessage as well (I only want it as a developer to see changes during the game.)
-// var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
-var config bool bBroadcastLostCookies;  // should we broadcast when someone has moved down the ranking?
 
 // Defaults (Daniel's):
 var config int UnknownStrength;    // Default strength for unknown players
@@ -118,6 +150,7 @@ var int MaxPlayerData; // The value 4096 is used in the following array declarat
 var config String playerData[4096]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
 // Internal (parsed) player data:
+var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
 var String ip[4096];
 var String nick[4096];
 var float avg_score[4096];
@@ -134,6 +167,12 @@ var int timeGameStarted;
 
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
+  bBroadcastStuff=True
+  bDebugLogging=False      // TODO: for release, recommended False (some logging is ok tho!)
+  bBroadcastCookies=True   // TODO: for release, recommended False (it's fun and useful for debugging, but not that great :P )
+  // bOnlyMoreCookies=False
+  bBroadcastLostCookies=True // TODO: for release, default to False (the poor guys who lost cookies don't need the whole world to know it!) But TODO: maybe we should leave this true, and change the code so that it tells *them* but not everyone.
+  bAllowMidgameRebalancing=True // TODO: default this to false for release? (nahhh, just false on XOL :P)
   bAutoBalanceTeamsForCTF=True
   bAutoBalanceTeamsForTDM=True
   bAutoBalanceTeamsForAS=True
@@ -153,11 +192,6 @@ defaultproperties {
   MinHumansForStats=1     // TODO: for release, recommended 4
   bNormaliseScores=True     // Normalise scores so that the average score for every game is 50.  Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  TODO CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
   // deprecated: bDoWeightedUpdates=False  // Untested experimental stats updating method
-  bBroadcastStuff=True
-  bDebugLogging=False      // TODO: for release, recommended False (some logging is ok tho!)
-  bBroadcastCookies=True
-  // bOnlyMoreCookies=False
-  bBroadcastLostCookies=True // TODO: for release, default to False
   UnknownStrength=50      // New player records start with an initial strength of 50 (when scores are normalised, this is the average)
   // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
   BotStrength=20
@@ -173,23 +207,68 @@ defaultproperties {
 
 // Initialize the system
 function PostBeginPlay() {
-  if (initialized) return;
 
   Super.PostBeginPlay();
 
-  // register as mutator
+  if (initialized) return;
+
+  Log("AutoTeamBalance ("$Self$") initialising");
+
+  // If AutoTeamBalance was included as a ServerActor, register it as a game mutator:
   // I was getting an infinite recursion error, so I removed this.
   // Maybe because I had already added the mutator
   // Maybe this was designed for ServerActor
   // Before uncommenting, consider moving the initialized=true; to the line before.
-  // Level.Game.BaseMutator.AddMutator(Self);
-  initialized = true;
+  // DONE: turn this into add-if-not-already-added, and we have ourself a mutator/serveractor
+
+  // Level.Game.BaseMutator.AddMutator(Self); // now made safe by our custom implementation of AddMutator below
+
+  // btw just interesting to note: if i have AutoTeamBalance as a ServerActor and a mutator on startup arguments, the mutator gets its PostBeginPlay called before the ServerActor's, and the ServerActor mut doesn't seem to get called at all.
+
+  // NOTE: If I move the "if (initialized) return;" down to here, then the ServerActor AutoTeamBalance0 destroys the mutator AutoTeamBalance1
+  //       I also get a couple of AddMutator Accessed None errors in the log.
+  // If I leave it high, then the Mutator effectively turns off the ServerActor, by setting initialized=true before the ServerActor gets called.
+  // Er no that's such a lie, the position of "if (initialized) return;" makes no difference!!
+
+  // NOTE: one big disadvantage of using ServerPackages, seems to be that the .u is sent to the client (maybe for simulation purposes),
+  //       and then successive releases get a version mismatch.  :f
+  // Or was that more related to the .u symlink included in my local client UT install?
+
+  // NOTE: When I had both ServerActor and mutator, it seems "!teams" was not working
+
+  //// TODO BUG: MutatorTeamMessage IS supressing broadcasts + chat, also it gets called 8 times for one message :P
+  if (bAllowMidgameRebalancing) {
+    Level.Game.RegisterMessageMutator(Self);
+  }
+
+  timeGameStarted = Level.TimeSeconds; // TODO BUG: game has not started, until players join!! :P  Maybe better to catch around CheckGameStart()
+
   gameEndDone = false;
 
-  timeGameStarted = Level.TimeSeconds;
+  initialized = true;
 
-  Log("AutoTeamBalance initialized");
+}
 
+// Implementation of AddMutator which prevents double or recursive adding:
+function AddMutator(Mutator mut) {
+  Log("AutoTeamBalance.AddMutator("$mut$") called.");
+  // DONE: sometimes gets called with mut == None, causing Accessed None in logs. fix this
+  if (mut != None && mut.Class == Class) {
+  // if (mut.Class == Class) { // TODO: i only removed this check because i was curious to see *where/when* the Accessed None was happening.
+  // Result: it happens after all the muts are added, and just before "Game engine initialized"  One of my other Muts, WhoPushedMe, also logs it.
+    // Someone (quite possibly me :P ) is trying to add this mutator a second time!
+    if (mut != Self) {
+      // This is a different instance of this mutator
+      // We won't add the second instance, so we may as well destroy it:
+      Log("AutoTeamBalance.AddMutator("$mut$"): destroying duplicate of me ("$Self$")");
+      mut.Destroy();
+    } else {
+      Log("AutoTeamBalance.AddMutator("$mut$" == Self): not adding mutator self again!");
+    }
+  } else {
+    // This is another mutator entirely, do what we would normally do
+    Super.AddMutator(mut);
+  }
 }
 
 // Check if game is about to start, and if so, balance the teams before it does.  (We want to do this as late as possible before the game starts, to give players time to join the server.)
@@ -433,8 +512,13 @@ function CheckGameEnd() {
   }
 }
 
-// Balance the teams just before the start of a new game.  No need for FlagStrength here.
 function InitTeams() {
+  ForceFullTeamsRebalance();
+}
+
+// Balance the teams just before the start of a new game.  No need for FlagStrength here.
+function ForceFullTeamsRebalance() {
+  // TODO: now that this can be run mid-game by saying "!teams", this function should again whether it's ok to balance (e.g. is this a team game?!)
   local Pawn p;
   local int st;
   local int pid;
@@ -647,6 +731,9 @@ function CopyConfigIntoArrays() {
   local int field;
   local int i;
   local String data;
+  if (CopyConfigDone) // Now that I'm calling this from MutatorTeamMessage as well as InitTeams via Tick, I cache whether or not it's already been done.
+    return;
+  CopyConfigDone=True;
   if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() running"); }
   for (i=0; i<MaxPlayerData; i++) {
     data = playerData[i];
@@ -924,40 +1011,89 @@ function string stripPort(string ip_and_port) {
 // nogginBasher: this seemed to be suppressing the broadcasts on the client's screens (same as adwvaad), so at the end I'm calling BroadcastMessage to send them out again.  Infinite loop?  We'll see... ^^
 // Well that didn't work either.  :(
 // So I'm gonna take it out entirely
-/*
-function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
+// After looking at TeamBallancer.uc, I changed this from MutatorBroadcastMessage to MutatorTeamMessage
+// function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 
-  CheckGameEnd(); // Does no harm to do this twice.  The broadcast from mapvote might make the stats parsing come sooner than waiting for the timer.
+  // TODO: probably best to try to replicate the MessagingSpectator method used by ChatLoggerPackage.
 
-  if (bDebugLogging) { // TESTING I want to see if we can detect a player saying "!teams" this way... Answer: no! For that we need a MessagingSpectator
-    Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") was called.");
+  // OK the 8 calls are because this gets called once per player, plus once for UTServerAdminSpectator, and once for ChatLogger
+  // Solution: only process it when Sender = Receiver ^^
+  // (Interestingly, despite having 2 bots on my team, TeamSay messages only get sent to myself!  (Maybe if there were other humans...))
+
+  if (Sender == Receiver) { // Only process the message once.
+
+    if (bDebugLogging) { // TESTING I want to see if we can detect a player saying "!teams" this way... Answer: no! For that we need a MessagingSpectator
+      Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(\""$Msg$"\") was called.");
+      // Log("AutoTeamBalance.MutatorTeamMessage("$Sender$","$Receiver$","$PRI$",\""$Msg$"\","$Type$","$bBeep$") was called.");
+    }
+
+    // CheckGameEnd(); // Does no harm to do this twice.  The broadcast from mapvote might make the stats parsing come sooner than waiting for the timer.
+
+    // Failed Test: Nope that was never broadcast :P
+    // if ( InStr(Msg,"game has ended.")>=0 ) {
+      // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(\""$Msg$"\") detected \"game has ended.\" - DONE elsewhere: run UpdateStatsAtEndOfGame() here.");
+    // }
+
+    // if (Level.Game.bGameEnded) {
+      // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
+    // }
+
+    // if ( InStr(Msg," entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
+      // PlayerJoinedShowInfo(Msg);
+      // OK well that didn't work, apparently the player didn't have an IP address when he first joined the server.  (Maybe he gets assigned one once this stack is returned.)
+    // }
+    // if ( InStr(Msg,"left the game.")>=0 ) {
+
+    if (bAllowMidgameRebalancing) {
+      // if(InStr(Msg,"!teams") >= 0) { // was using instr while testing the broadcast method, which gives us longer strings
+      if(Msg == "!teams") {
+        Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
+        ForceFullTeamsRebalance();
+        // TODO BUG IMPORTANT: check this is not called during bTournament games.  1) don't RegisterMessageMutator in the first place 2) ForceFullTeamsRebalance should check ShouldBalance (but could that check be less strict than the start-game check? :o )
+      }
+    }
+
   }
 
-  // Failed Test: Nope that was never broadcast :P
-  // if ( InStr(Msg,"game has ended.")>=0 ) {
-    // Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected \"game has ended.\" - DONE elsewhere: run UpdateStatsAtEndOfGame() here.");
+  // NOTE: read "8 times" below as "once per mutator".  NO don't!  It gets called 8 times even with only 4 muts!  :P
+
+  // Allows messages through, but this fn never gets called!
+  // if ( NextMessageMutator != None ) {
+    // return NextMessageMutator.MutatorBroadcastMessage( Sender, Receiver, Msg, bBeep, Type );
+  // } else {
+    // return false;
   // }
 
-  // if (Level.Game.bGameEnded) {
-    // Log("AutoTeamBalance.MutatorBroadcastMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
+  // As above, allows messages through, but this fn never gets called!
+  // if ( NextMessageMutator != None ) {
+    // return NextMessageMutator.MutatorBroadcastMessage( Sender, Receiver, Msg, bBeep, Type );
+  // } else {
+    // return true;
   // }
 
-  // if ( InStr(Msg," entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
-    // PlayerJoinedShowInfo(Msg);
-    // OK well that didn't work, apparently the player didn't have an IP address when he first joined the server.  (Maybe he gets assigned one once this stack is returned.)
+  //// Called 8 times, but never reaches game:
+  // if ( NextMessageMutator != None ) {
+    // return NextMessageMutator.MutatorTeamMessage( Sender, Receiver, PRI, Msg, Type, bBeep );
+  // } else {
+    // return false;
   // }
-  // if ( InStr(Msg,"left the game.")>=0 ) {
 
+  //// This gets called, and passed to chat, BUT still gets called 8 times!!
   if ( NextMessageMutator != None ) {
-    return NextMessageMutator.MutatorBroadcastMessage( Sender, Receiver, Msg, bBeep, Type );
+    return NextMessageMutator.MutatorTeamMessage( Sender, Receiver, PRI, Msg, Type, bBeep ); // commenting this out does not stop the 8 repeats
   } else {
-    return false;
+    return true; // this seems to be what's needed to ensure the message finally reaches the game (doesn't get swallowed)
   }
 
-  BroadcastMessage(Msg);
+  //// This allows messages through, but this method doesn't seem to get called.  (Didn't it used to though? :o )
+  // Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
+  //// This method does get called, but 8 times :E and the messages don't reach the game :f
+  // Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
+
+  // BroadcastMessage(Msg);
 
 }
-*/
 
 /*
 function PlayerJoinedShowInfo(string Msg) {
