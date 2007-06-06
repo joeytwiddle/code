@@ -35,6 +35,7 @@ import us.ca.la.anm.util.io.*;
 
 import edu.isi.gamebots.client.*;
 import edu.isi.gamebots.examples.*;
+import org.neuralyte.gamebots.TestBot1;
 
 
 /**
@@ -117,9 +118,11 @@ public class BotRunnerApp implements GamebotsConstants {
       try {
           serverAddress = InetAddress.getByName("localhost");
 
-          Class botClass = edu.cmu.gamebots.CMU_JBot.class;
+          // Class botClass = edu.cmu.gamebots.CMU_JBot.class;
+          // Class botClass = edu.tamu.gamebots.humanbot.HumanBot.class;
+          Class botClass = TestBot1.class;
           Bot bot = (Bot) botClass.newInstance();
-          new BotManager( bot, "CMU_JBot1", TEAM_ANY );
+          new BotManager( bot, "Bot1", TEAM_ANY );
       } catch (Exception e) {
           e.printStackTrace(System.err);
       }

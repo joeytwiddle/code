@@ -53,6 +53,7 @@ public class UnrealMessageTextArea extends javax.swing.JTextPane {
       
       //insert message
       try{
+        doc.remove(0,doc.getLength());
         doc.insertString(0,msg + "\n", attributes);
       }
       catch(BadLocationException e){
