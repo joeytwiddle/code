@@ -18,7 +18,21 @@ import java.util.*;
  * @author rtr7684
  */
 public class HumanBot extends edu.isi.gamebots.client.Bot{
-  
+
+    public void runForwards() {
+     Properties props = new Properties();
+        double[] location = parseVector(botState.locationField.getText());
+        double[] rotation = parseVector(botState.rotationField.getText());
+     // props.setProperty(ARG_AMOUNT, Double.toString(amount));
+        // Convert rotation to orientation:
+        double pitch = rotation[0] * 2 * Math.PI / 65535; // copied from elsewhere, but shouldn't that be 65536?
+        double yaw = rotation[1] * 2 * Math.PI / 65535;
+        double roll = rotation[2] * 2 * Math.PI /   65535;
+        double[] orientation = { Math.cos(yaw), Math.sin(yaw), Math.sin(pitch) };
+        double distance = 256;
+        runTo( location[0] + distance*orientation[0], location[1] + distance*orientation[1], location[2] + distance*orientation[2] );
+   }
+
   UnrealMessageTextArea textArea;
   UnrealMessageTextArea asyncMessageArea;
   CurrentBotStatePanel botState = null;

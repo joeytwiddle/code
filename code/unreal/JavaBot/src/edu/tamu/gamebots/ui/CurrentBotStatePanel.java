@@ -153,12 +153,12 @@ public class CurrentBotStatePanel extends javax.swing.JPanel {
   private javax.swing.JLabel armorLabel;
   private javax.swing.JLabel helathLabel;
   private javax.swing.JTextField velocityField;
-  private javax.swing.JTextField rotationField;
+  public javax.swing.JTextField rotationField;
   private javax.swing.JLabel velocityLabel;
   private javax.swing.JLabel rotationLabel;
   private javax.swing.JTextField ammoField;
   private javax.swing.JLabel ammoLabel;
-  private javax.swing.JTextField locationField;
+  public javax.swing.JTextField locationField;
   // End of variables declaration//GEN-END:variables
 
 }

@@ -65,6 +65,7 @@ public class HumanBotPanel extends javax.swing.JPanel {
     turnToButton = new javax.swing.JButton();
     rotateLeftButton = new javax.swing.JButton();
     rotateRightButton = new javax.swing.JButton();
+      runForwardsButton = new javax.swing.JButton();
     jPanel1 = new javax.swing.JPanel();
     jScrollPane2 = new javax.swing.JScrollPane();
     asyncMessagesField = new UnrealMessageTextArea();
@@ -139,7 +140,7 @@ public class HumanBotPanel extends javax.swing.JPanel {
 
     tableButtonPanel.add(turnToButton);
 
-    rotateLeftButton.setText("Rotate Left");
+    rotateLeftButton.setText("<-");
     rotateLeftButton.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
         rotateLeftButtonActionPerformed(evt);
@@ -148,7 +149,17 @@ public class HumanBotPanel extends javax.swing.JPanel {
 
     tableButtonPanel.add(rotateLeftButton);
 
-    rotateRightButton.setText("Rotate Right");
+      runForwardsButton.setText("^");
+      // runForwardsButton.setEnabled(false); // @todo we don't yet know our current location or rotation, so we can't set a location in front of us to run to!
+      runForwardsButton.addActionListener(new java.awt.event.ActionListener() {
+        public void actionPerformed(java.awt.event.ActionEvent evt) {
+          runForwardsButtonActionPerformed(evt);
+        }
+      });
+
+      tableButtonPanel.add(runForwardsButton);
+
+    rotateRightButton.setText("->");
     rotateRightButton.addActionListener(new java.awt.event.ActionListener() {
       public void actionPerformed(java.awt.event.ActionEvent evt) {
         rotateRightButtonActionPerformed(evt);
@@ -194,7 +205,11 @@ public class HumanBotPanel extends javax.swing.JPanel {
   private void rotateRightButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_rotateRightButtonActionPerformed
     bot.rotate(6000);
   }//GEN-LAST:event_rotateRightButtonActionPerformed
-  
+
+    private void runForwardsButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_runForwardsButtonActionPerformed
+      bot.runForwards();
+    }//GEN-LAST:event_runForwardsButtonActionPerformed
+
   private void turnToButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_turnToButtonActionPerformed
     int selectedRow = asyncMessagesTable.getSelectedRow();
     if(asyncMessagesTable.getSelectedRow() != -1){
@@ -246,6 +261,7 @@ public class HumanBotPanel extends javax.swing.JPanel {
   private javax.swing.JPanel messagesPanel;
   private javax.swing.JButton rotateLeftButton;
   private javax.swing.JButton rotateRightButton;
+    private javax.swing.JButton runForwardsButton;
   private javax.swing.JTabbedPane jTabbedPane1;
   private javax.swing.JTextPane serverMessagesField;
   private javax.swing.JPanel mainPanel;

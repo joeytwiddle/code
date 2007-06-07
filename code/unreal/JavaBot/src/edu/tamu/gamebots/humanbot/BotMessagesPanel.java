@@ -61,9 +61,27 @@ public class BotMessagesPanel extends javax.swing.JPanel {
     jPanel2.add(actionTypeComboBox);
 
     jLabel2.setText("Comma delimited arguments: ");
-    jPanel2.add(jLabel2);
 
-    jPanel2.add(argumentsTextField);
+      JButton clearButton = new JButton("X");
+      clearButton.addActionListener(
+              new java.awt.event.ActionListener() {
+                   public void actionPerformed(java.awt.event.ActionEvent evt) {
+                       argumentsTextField.setText("");
+                   }
+              }
+      );
+
+      // Can't put 3 components on this row since gridlayout is width 2, hack fix:
+      JPanel miniPanel = new JPanel();
+      miniPanel.add(jLabel2);
+      miniPanel.add(clearButton);
+      //// Trying to fix problem that adding this sub-panel added some empty space to the gui
+      // miniPanel.setBorder(null);
+      // miniPanel.setBorder(new javax.swing.border.EmptyBorder(0,0,0,0));
+      //// but neither of these worked
+
+      jPanel2.add(miniPanel);
+      jPanel2.add(argumentsTextField);
 
     jPanel1.add(jPanel2);
 
