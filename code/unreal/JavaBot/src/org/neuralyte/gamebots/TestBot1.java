@@ -1,11 +1,10 @@
 package org.neuralyte.gamebots;
 
 import edu.isi.gamebots.client.Bot;
-import edu.isi.gamebots.client.Message;
-import edu.isi.gamebots.client.MessageBlock;
 import edu.tamu.gamebots.humanbot.HumanBot;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 
 /** joey Jun 6, 2007 9:32:14 PM */
 // public class TestBot1 extends Bot {
@@ -13,10 +12,6 @@ public class TestBot1 extends HumanBot {
 
     public TestBot1() {
         super();
-    }
-
-    protected void connected() {
-        super.connected();
         new Thread() {
             public void run() {
                 doStuff();
@@ -24,9 +19,12 @@ public class TestBot1 extends HumanBot {
         }.start();
     }
 
+    protected void connected() {
+        super.connected();
+    }
+
     private void doStuff() {
 
-        /*
         while (true) {
             try { Thread.sleep(2000); } catch (Exception e) { }
             try {
@@ -36,7 +34,25 @@ public class TestBot1 extends HumanBot {
                 System.out.println("Connecting: "+e);
             }
         }
-        */
+
+        String[] goodMethodsArray = {
+            "changeWeapon",
+            // "checkReach",
+            // "getPath",
+            "jump",
+            "rotate",
+            "runTo",
+            "say",
+            "setName",
+            "setWalk",
+            "shoot",
+            // "stop",
+            "stopShoot",
+            "strafe",
+            "turnTo",
+            "turnToLoc",
+        };
+        java.util.List goodMethodsList = Arrays.asList(goodMethodsArray);
 
         while (true) {
 
@@ -48,8 +64,11 @@ public class TestBot1 extends HumanBot {
             int i = (int)(Math.random() * methods.length);
             Method method = methods[i];
             // Certain methods we do not wish to call:
-            if (method.getName().indexOf("destroy")>=0
-                || method.getName().indexOf("connect")>=0) {
+            // if (method.getName().indexOf("destroy")>=0
+                // || method.getName().indexOf("connect")>=0) {
+                // continue;
+            // }
+            if (!goodMethodsList.contains(method.getName())) {
                 continue;
             }
 
@@ -65,11 +84,14 @@ public class TestBot1 extends HumanBot {
 //                    System.out.println(""+e);
 //                }
                 if (paramType.getName().equals("integer")) {
-                    value = new Integer((int)(Math.random()*1024 - 512));
+                    value = new Integer((int)(Math.random()*65536 - 32768)/8);
+                    // value = new Integer((int)(Math.random()*1024 - 512));
                 } else if (paramType.getName().equals("float")) {
-                    value = new Float(Math.random()*1024 - 512);
+                    value = new Float((Math.random()*65536 - 32768)/8);
+                    // value = new Float((int)(Math.random()*1024 - 512));
                 } else if (paramType.getName().equals("double")) {
-                    value = new Float(Math.random()*1024 - 512);
+                    value = new Double((Math.random()*65536 - 32768)/8);
+                    // value = new Double((int)(Math.random()*1024 - 512));
                 } else if (paramType.getName().equals("boolean")) {
                     value = new Boolean(Math.random() >= 0.5);
                 } else if (paramType == String.class) {
@@ -90,7 +112,7 @@ public class TestBot1 extends HumanBot {
                 System.out.println(""+e);
             }
 
-            try { Thread.sleep(2000); } catch (Exception e) { }
+            try { Thread.sleep(500); } catch (Exception e) { }
         }
     }
 
