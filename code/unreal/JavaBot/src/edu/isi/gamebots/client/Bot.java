@@ -381,7 +381,7 @@ public void jump(){
     props.setProperty(ARG_AMOUNT, Double.toString(amount));
     client.sendMessage(ROTATE,props);
   }
-  
+
   /**
    * <p>
    * Agent shoots their current weapon (if they have one). Sometimes the agent will

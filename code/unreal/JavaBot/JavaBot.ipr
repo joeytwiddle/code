@@ -22,6 +22,7 @@
     <excludePath>
       <root type="composite">
         <root type="excludedOutput" />
+        <root type="simple" url="file://$PROJECT_DIR$/doc" />
       </root>
     </excludePath>
     <javadocPath>

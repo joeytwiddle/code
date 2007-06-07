@@ -122,7 +122,7 @@ public class BotRunnerApp implements GamebotsConstants {
           // Class botClass = edu.tamu.gamebots.humanbot.HumanBot.class;
           Class botClass = TestBot1.class;
           Bot bot = (Bot) botClass.newInstance();
-          new BotManager( bot, "Bot1", TEAM_ANY );
+          new BotManager( bot, "TestBot1", TEAM_ANY );
       } catch (Exception e) {
           e.printStackTrace(System.err);
       }
@@ -252,6 +252,7 @@ public class BotRunnerApp implements GamebotsConstants {
           scroll = new JScrollPane( text );
             scroll.setPreferredSize( new Dimension( 480, 360 ) );
           splitter.setBottomComponent( scroll );
+      splitter.setDividerLocation(0.9);
 
         panel.add( splitter, BorderLayout.CENTER );
 
@@ -270,6 +271,8 @@ public class BotRunnerApp implements GamebotsConstants {
           }
         } );
     frame.pack();
+      // frame.setSize(640,512);
+      frame.setSize(640,680);
   }
 
   protected void setStatus( String status ) {
@@ -529,10 +532,11 @@ public class BotRunnerApp implements GamebotsConstants {
 */
 
     protected String[] knownBots = {
+      "edu.tamu.gamebots.humanbot.HumanBot",
+      "org.neuralyte.gamebots.TestBot1",
       "edu.isi.gamebots.examples.ExampleBot",
       "edu.cmu.gamebots.CMU_JBot",
-      "edu.tamu.gamebots.humanbot.HumanBot",
-      "edu.tamu.agents.CAST_PM.unreal.AgentUnrealTournamentAdapter"
+      // "edu.tamu.agents.CAST_PM.unreal.AgentUnrealTournamentAdapter"
     };
 
     protected String[] knownVizTools ={

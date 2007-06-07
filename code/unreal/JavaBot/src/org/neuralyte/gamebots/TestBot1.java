@@ -1,6 +1,8 @@
 package org.neuralyte.gamebots;
 
 import edu.isi.gamebots.client.Bot;
+import edu.isi.gamebots.client.MessageBlock;
+import edu.isi.gamebots.client.Message;
 import edu.tamu.gamebots.humanbot.HumanBot;
 
 import java.lang.reflect.Method;
@@ -9,6 +11,14 @@ import java.util.Arrays;
 /** joey Jun 6, 2007 9:32:14 PM */
 // public class TestBot1 extends Bot {
 public class TestBot1 extends HumanBot {
+
+    java.util.List inventory = new java.util.Vector();
+    // Since we haven't yet detected respawn, our inventory gets filled with
+    // old weapons (some of which we can switch to, but then we get no mesh in game!)
+    // Maybe we could detect respawn by checking when we are given a Hammer or Translocator (won't work in IG games though)
+
+    double[] location = new double[3];
+    double[] rotation = new double[3]; // 360 degrees = 65536
 
     public TestBot1() {
         super();
@@ -21,12 +31,15 @@ public class TestBot1 extends HumanBot {
 
     protected void connected() {
         super.connected();
+        // inventory.clear(); // Happens too late?  I think it was clearing initial spawn weapons
     }
 
     private void doStuff() {
 
+        // Auto-connect at start
+        // @todo auto-reconnect when disconnected, and stop spamming instructions when disconnected, until reconnected
         while (true) {
-            try { Thread.sleep(2000); } catch (Exception e) { }
+            threadSleep(2000);
             try {
                 connect();
                 break;
@@ -96,6 +109,12 @@ public class TestBot1 extends HumanBot {
                     value = new Boolean(Math.random() >= 0.5);
                 } else if (paramType == String.class) {
                     value = "hello";
+                    // Choose a random String/item from our inventory
+                    if (inventory.size()>0) {
+                        int k = (int)(Math.random() * inventory.size());
+                        value = inventory.get(k);
+                    }
+                    // value = "CTF-BleakCE-100.translocator"+(int)(Math.random()*256);
                 } else {
                     System.err.println("TestBot1.doStuff(): do not know how to generate a random " + paramType.getPackage()+"."+paramType.getName());
                     // value = null;
@@ -105,25 +124,76 @@ public class TestBot1 extends HumanBot {
             }
 
             // Call the method
-            System.out.println("Calling "+method+"("+displayArgs+")");
+            // System.out.println("Calling "+method+"("+displayArgs+")");
             try {
                 method.invoke(this,args);
             } catch (Exception e) {
                 System.out.println(""+e);
             }
 
-            try { Thread.sleep(500); } catch (Exception e) { }
+            threadSleep(200); // keeping it at 200 until i work out the secret of how the bot can throw its TL
         }
     }
 
-    /*
     protected void receivedAsyncMessage(Message message) {
         super.receivedAsyncMessage(message);
+
+        if (!message.getType().equals(BEG)) {
+            System.out.println("AsyncMessage: "+message.getType()+" "+message.getPropertySet());
+        }
+
+        if (message.getType().equals(ITEM)) {
+            inventory.add(message.getProperty("Id"));
+            System.out.println("My inventory is now: "+inventory);
+        }
+
+        String newLocation = message.getProperty(LOCATION);
+        if (newLocation != null) {
+            System.out.println("Location: "+newLocation);
+            location = parseVector( newLocation );
+        }
+
+        String newRotation = message.getProperty(ROTATION);
+        if (newRotation != null) {
+            System.out.println("Rotation: "+newRotation);
+            rotation = parseVector( newRotation );
+        }
+
+        if (message.getType().equals(DAMAGE)) {
+            System.out.println("I lost "+message.getProperty("Damage")+"hp from "+message.getProperty("DamageType"));
+        }
+
+        if (message.getType().equals("VMS")) {
+            String msg = message.getProperty("String");
+            if (msg.endsWith(" entered the game.")) {
+                final String newPlayer = msg.substring(0,msg.indexOf(" entered the game."));
+                // say("Hello "+newPlayer,true); // needs to be delayed
+                new Thread() {
+                    public void run() {
+                        threadSleep(randint(2000,8000));
+                        if (newPlayer.equals("[eC]`Ormolu^"))
+                            say("zomg it's the uberest "+newPlayer+"!! \\o/ Hi and welcome imo! <3 <3 xxx",true);
+                        else
+                            say("Hello "+newPlayer,true);
+                    }
+                }.start();
+            }
+        }
     }
 
     protected void receivedSyncMessage(MessageBlock message) {
-        super.receivedAsyncMessage(message);
+        super.receivedSyncMessage(message);
+        if (!message.getType().equals(BEG)) {
+            System.out.println("SyncMessage: "+message.getType()+" "+message.getPropertySet());
+        }
     }
-    */
+
+    public static int randint(int lowest, int highest) {
+        return lowest + (int)( (highest-lowest+1)*Math.random() );
+    }
+
+    public static void threadSleep(int millis) {
+        try { Thread.sleep(millis); } catch (Exception e) { }
+    }
 
 }
