@@ -250,7 +250,8 @@ public class GamebotsClient implements GamebotsConstants {
   public boolean sendMessage(String msg){
     synchronized(outputLock){
       if(output == null) return false;
-      output.println( msg );
+      output.print( msg );
+        output.write("\r\n"); // fixes bug that arbitrary messages were not working
       if( output.checkError() )
         disconnect();
     }
