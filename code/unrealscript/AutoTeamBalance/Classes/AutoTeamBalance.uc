@@ -688,6 +688,93 @@ function ForceFullTeamsRebalance() {
 
 }
 
+function MidGameTeamBalance() {
+  local int redTeamCount,blueTeamCount;
+
+  if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
+    return;
+
+  // CONSIDER: team sizes are not so important as team strengths.
+  // we could always do MidGameTeamBalanceSwitchTwoPlayers, but with the option of one of those players being "None"
+  // in the case of 3 elites versus 4 noobs, this should swap the best elite for the worst noob
+
+  // TODO BUG: need count WITHOUT bots!
+  redTeamCount = TeamGamePlus(Level.Game).Teams[0].Size;
+  blueTeamCount = TeamGamePlus(Level.Game).Teams[1].Size;
+
+  if (redTeamCount < blueTeamCount) {
+    MidGameTeamBalanceSwitchOnePlayer(1,0);
+  } else if (blueTeamCount < redTeamCount) {
+    MidGameTeamBalanceSwitchOnePlayer(0,1);
+  } else {
+    MidGameTeamBalanceSwitchTwoPlayers();
+  }
+
+}
+
+function String TeamName(int teamNum) {
+  return TeamGamePlus(Level.Game).Teams[teamNum].TeamName;
+}
+
+function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
+  local float fromTeamStrength, toTeamStrength, difference, playerStrength;
+  local Pawn p;
+  local Pawn closestPlayer;
+  local float closest;
+  fromTeamStrength = GetTeamStrength(fromTeam);
+  toTeamStrength = GetTeamStrength(toTeam);
+  difference = fromTeamStrength - toTeamStrength;
+  if (difference<0) {
+    BroadcastMessageAndLog("AutoTeamBalance not adjusting teams because smaller team looks stronger.");
+    return False;
+  }
+  // closestPlayer = None; // not needed, i believe
+  // Find the player on fromTeam with strength closest to difference, and switch him/her
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot')
+        && p.PlayerReplicationInfo.Team==fromTeam && p.PlayerReplicationInfo.HasFlag==None) {
+      playerStrength = GetPawnStrength(p);
+      // Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
+      if (closestPlayer == None || Abs(playerStrength*2-difference) < closest) {
+        closestPlayer = p;
+        closest = Abs(playerStrength*2-difference);
+      }
+    }
+  }
+  if (closestPlayer == None) {
+    BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$TeamName(fromTeam)$" to switch.");
+    return False;
+  }
+  if (closest > (difference*2)) {
+    BroadcastMessageAndLog("AutoTeamBalance not switching "$p.getHumanName()$" because that would make "$TeamName(fromTeam)$" team too weak!");
+    return False;
+  } else {
+    Level.Game.ChangeTeam(closestPlayer,toTeam);
+    Level.Game.RestartPlayer(closestPlayer);
+    // SendClientMessage(closestPlayer,"You have been switched to "$TeamName(toTeam)$" team by AutoTeamBalance!");
+    SendClientMessage(closestPlayer,"You have been switched to the "$TeamName(toTeam)$" team for a fairer game!");
+    return True;
+  }
+}
+
+function MidGameTeamBalanceSwitchTwoPlayers() {
+  BroadcastMessageAndLog("AutoTeamBalance.MidGameTeamBalanceSwitchTwoPlayers() not yet implemented!");
+}
+
+function float GetTeamStrength(int teamNum) {
+  local Pawn p;
+  local float strength;
+  strength = 0;
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.PlayerReplicationInfo.Team == teamNum) {
+      strength += GetPawnStrength(p);
+    }
+  }
+  // if (bDebugLogging) { Log(TeamGamePlus.TeamColor[teamNum]$" team has strength "$strength); }
+  if (bDebugLogging) { BroadcastMessageAndLog(TeamName(teamNum)$" team has strength "$strength); }
+  return strength;
+}
+
 // Returns the strength of a player or a bot
 function int GetPawnStrength(Pawn p) {
   local int st;
@@ -711,6 +798,7 @@ function int GetPlayerStrength(PlayerPawn p) {
   local int found;
   found = FindPlayerRecord(p);
   if (found == -1) {
+    // TODO: if gameStartDone and/or gametime>1minute then guess the player's strength from their current score
     return UnknownStrength; // unknown player or player is too weak for list
   } else {
     return avg_score[found]; // player's average score (or best estimate of player)
@@ -1108,7 +1196,8 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
       // if(InStr(Msg,"!teams") >= 0) { // was using instr while testing the broadcast method, which gives us longer strings
       if(Msg ~= "!teams") {
         Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
-        ForceFullTeamsRebalance();
+        // ForceFullTeamsRebalance();
+        MidGameTeamBalance();
         // TODO BUG IMPORTANT: check this is not called during bTournament games.  1) don't RegisterMessageMutator in the first place 2) ForceFullTeamsRebalance should check ShouldBalance (but could that check be less strict than the start-game check? :o )
       }
     }
@@ -1156,7 +1245,8 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
 //// CONSIDER: we could add support for squeezing multiple delimiters into 1
 // function array<String> SplitString(String str, String divider) {
-function int SplitString(String str, String divider, out array<String> parts) {
+// function int SplitString(String str, String divider, out array<String> parts) {
+function int SplitString(String str, String divider, out String parts[255]) {
 	// local String parts[255];
 	// local array<String> parts;
 	local int i,nextSplit;
@@ -1164,10 +1254,12 @@ function int SplitString(String str, String divider, out array<String> parts) {
 	while (true) {
 		nextSplit = InStr(str,divider);
 		if (nextSplit >= 0) {
+			// parts.insert(i,1);
 			parts[i] = Left(str,nextSplit);
 			str = Mid(str,nextSplit+1);
 			i++;
 		} else {
+			// parts.insert(i,1);
 			parts[i] = str;
 			i++;
 			break;
@@ -1178,8 +1270,8 @@ function int SplitString(String str, String divider, out array<String> parts) {
 }
 
 function Mutate(String str, PlayerPawn Sender) {
-	// local String args[255];
-	local array<String> args;
+	local String args[255];
+	// local array<String> args;
 
 	if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
@@ -1192,7 +1284,8 @@ function Mutate(String str, PlayerPawn Sender) {
 	// TODO: if AdminPassword="", this command still won't work without the trailing " "; better to split str into mutate command + args
 	// if ( str ~= ("teams "$AdminPassword) ) {
 	if ( args[0]~="teams" && ( AdminPassword=="" || args[1]==AdminPassword ) ) {
-		ForceFullTeamsRebalance();
+		// ForceFullTeamsRebalance();
+		MidGameTeamBalance();
 	// } else if (str ~= "saveconfig") {
 	} else if (args[0]~="saveconfig") { // TODO: for developer; comment out in final build
 		SaveConfig();
