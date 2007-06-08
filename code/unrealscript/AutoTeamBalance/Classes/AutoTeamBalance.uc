@@ -1161,7 +1161,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		// AdminPassword = Level.Game.ConsoleCommand("get engine.gameinfo AdminPassword");
 		AdminPassword = ConsoleCommand("get engine.gameinfo AdminPassword"); // trying to access it directly did not work
 
-	// TODO: if AdminPassword="", this won't work because of the missing " "; better to split str into mutate command + args
+	// TODO: if AdminPassword="", this command still won't work without the trailing " "; better to split str into mutate command + args
 	if ( str ~= ("teams "$AdminPassword) ) {
 		ForceFullTeamsRebalance();
 	} else if (str ~= "saveconfig") { // TODO: for developer; comment out in final build
