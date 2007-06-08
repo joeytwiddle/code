@@ -1154,17 +1154,47 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
 }
 
+//// CONSIDER: we could add support for squeezing multiple delimiters into 1
+// function array<String> SplitString(String str, String divider) {
+function int SplitString(String str, String divider, out array<String> parts) {
+	// local String parts[255];
+	// local array<String> parts;
+	local int i,nextSplit;
+	i=0;
+	while (true) {
+		nextSplit = InStr(str,divider);
+		if (nextSplit >= 0) {
+			parts[i] = Left(str,nextSplit);
+			str = Mid(str,nextSplit+1);
+			i++;
+		} else {
+			parts[i] = str;
+			i++;
+			break;
+		}
+	}
+	// return parts;
+	return i;
+}
+
 function Mutate(String str, PlayerPawn Sender) {
+	// local String args[255];
+	local array<String> args;
+
 	if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
 	if (AdminPassword == "defaults_to_admin_pass")
 		// AdminPassword = Level.Game.ConsoleCommand("get engine.gameinfo AdminPassword");
 		AdminPassword = ConsoleCommand("get engine.gameinfo AdminPassword"); // trying to access it directly did not work
 
+	SplitString(str," ",args);
+
 	// TODO: if AdminPassword="", this command still won't work without the trailing " "; better to split str into mutate command + args
-	if ( str ~= ("teams "$AdminPassword) ) {
+	// if ( str ~= ("teams "$AdminPassword) ) {
+	if ( args[0]~="teams" && ( AdminPassword=="" || args[1]==AdminPassword ) ) {
 		ForceFullTeamsRebalance();
-	} else if (str ~= "saveconfig") { // TODO: for developer; comment out in final build
+	// } else if (str ~= "saveconfig") {
+	} else if (args[0]~="saveconfig") { // TODO: for developer; comment out in final build
 		SaveConfig();
 	} else {
 		Super.Mutate(str,Sender);
