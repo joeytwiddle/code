@@ -13,38 +13,38 @@
 //   user(admin) friendly-logging
 //   user(admin) friendly-logging, but it's inefficient so should be disabled except when admin is debugging
 
+// TODO BUG: mid-game team balancing should NOT switch players who have the flag (this requires some adjustment of the teambalance algorithm)  LOL atm if it does, the player keeps the flag, and the flag does not change colour :P
+// TODO: mid-game team balancing should make as few switches as possible: yeah let's just switch 1 or 2 players, based on their stats.  If a new player has just joined (no stats yet), we could update their stats, to judge whether they really pwn.  (This might cause a little error in their total_time_on_server when end-game stats are processed)
+
 // TODO: we could now move to the list-of-gametype-strings method instead of all those bools
 
 // TODO: if mid-game-player-join teambalance is still slow after my attempts to make it more efficient,
 //       try doing it without player stats lookup, just with in-game scores
 // CONSIDER doing this anyway :P
+// TODO: let the option whether to use recorded stats or in-game scores for balancing be configurable mid-game, so admin can try both methods during play
+// TODO: provide a few different algorithms for balancing teams, on different "!teams" commands, so they can be tested and evaluated
 
 // DONE: watch for somebody saying "!teams" or "teams" and do mid-game balancing (TODO: based on current scores in case some players aren't in the stats)
 // HALF-DONE-HALF-TODO: catch a player saying "!teams", maybe write some custom code to balance the teams then (by swapping 1/2 players only, maybe slightly randomised so it can be repeated if unsatisfactory; noo that could get too spammy :E)
 
-// TODO: provide a few different algorithms for balancing teams, on different "!teams" commands, so they can be tested and evaluated
-
 // TODO: provide (semi-admin) commands to force players onto different teams, e.g. "mutate tored Tigz [<pass>]"
-//       if we do this, then make a "mutate teams [<pass>]" also
+// DONE: if we do this, then make a "mutate teams [<pass>]" also
 
 // TODO: configure hours_copied (if ppl change nick alot, we may want to keep all their hours!)
 // TODO: add mid-game teambalance (on !teams, by scores plz)
 // TODO: fix on-join teambalance (do it by scores if it's less laggy)
 
-// TODO: let the option whether to use recorded stats or in-game scores for balancing be configurable mid-game, so admin can try both methods during play
-
-// TODO BUG: mid-game team balancing should NOT switch players who have the flag (this requires some adjustment of the teambalance algorithm)
-// TODO: mid-game team balancing should make as few switches as possible
-
-// TODO: mid-game rebalancing puts me (when just 1 player) on a different team from the one it gives me at startup (lol because there are bots and the bots atm have better rankings than me :P )
+// NOTE: mid-game rebalancing puts me (when just 1 player) on a different team from the one it gives me at startup (lol because there are bots and the bots atm have better rankings than me :P )
 
 // TODO: the balancing now says "X you have N cookies" which hides the message "You are on the Red team" which is kinda useful info, especially for mid-game balancing.
 
-// TODO: add configurable winningteambonus score (e.g. +10 frags/points) for every player on the winning team
+// DONE: add configurable winningteambonus score (e.g. +10 frags/points) for every player on the winning team
 //       this will help ranking to demote non-CTF players, and balance teams for games with even caps, not just even scores
 // CONSIDER: instead of +10 for winning, -10 for losing?  what difference does that make to the stats anyway?
+// TODO CONSIDER: WinningTeamBonus could be combined with FlagStrength into just one config var.  With their current values, the bonus would need to be divided by #players on team.
+// TODO: maybe the bonus should be hidden from the scoreboard.  DONE BUG it should definitely be disabled in tournament mode!
 
-// DONE: test doing Disable('Tick'); when Tick() is no longer needed
+// TODO: when seeking player records, should we do a case-insensitive match on player names?
 
 //== AutoTeamBalance ==========================================================
 
@@ -64,7 +64,7 @@
 
 // The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
 
-// HALF-DONE: when the playerData array gets full, old records are not recycled properly (atm the last is just overwritten repeatedly :| )   - ok now we recycle the record with shortest play hours.  TODO: It's not perfect because the new player's stats might get overwritten pretty soon.  We either need a little randomnity, or we could store date_last_played[]
+// HALF-DONE TODO: when the playerData array gets full, old records are not recycled properly (atm the last is just overwritten repeatedly :| )   - ok now we recycle the record with shortest play hours.  TODO: It's not perfect because the new player's stats might get overwritten pretty soon.  We either need a little randomnity, or we could store date_last_played[]
 
 // Done now: i shouldn't be taking averages over time, but over #polls :S  Actually either is fine, but I was doing it weirdly before.
 
@@ -80,7 +80,7 @@
 // Hence we collect each player's average (normalised) score per 15 minutes.
 
 // So what else could we try?
-// - TODO Team Cap Bonus: regardless of frags, the team which played the best CTF will get the most caps.  All players on the winning team could be rewarded for having done so, even if their actual score was pretty low.
+// - DONE Team Cap Bonus: regardless of frags, the team which played the best CTF will get the most caps.  All players on the winning team could be rewarded for having done so, even if their actual score was pretty low.
 // - The actual scores might not be useful, but the distribution of those scores might be interesting.
 //   For example, the order of players on the scoreboard (imagine if both teams were merged into one) should give an idea of the relative skills of certain players.  e.g. top player gets 100 points, all other players get less, bottom player gets 10.
 //   TODO Or the relative scores could be considered.  E.g. the scores from the game could be scaled so that they always have a mean of say 50 points.  So we can still use the game scores, but the scaling will "normalise" those scores so that as much benefit comes from doing well in a low-scoring game as in a high-scoring game.
@@ -111,6 +111,7 @@ var config bool bBroadcastCookies; // Silly way to debug; each players strength 
 var config bool bBroadcastLostCookies;  // should we broadcast when someone has moved down the ranking?
 
 var config bool bAllowMidgameRebalancing;
+var config String AdminPassword;   // Needed for mid-game rebalancing with: "mutate teams <pass>"
 
 var config bool bAutoBalanceTeamsForCTF;
 var config bool bAutoBalanceTeamsForTDM;
@@ -175,6 +176,7 @@ defaultproperties {
   // bOnlyMoreCookies=False
   bBroadcastLostCookies=True // TODO: for release, default to False (the poor guys who lost cookies don't need the whole world to know it!) But TODO: maybe we should leave this true, and change the code so that it tells *them* but not everyone.
   bAllowMidgameRebalancing=True // TODO: default this to false for release? (nahhh, just false on XOL :P)
+  AdminPassword="defaults_to_admin_pass"
   bAutoBalanceTeamsForCTF=True
   bAutoBalanceTeamsForTDM=True
   bAutoBalanceTeamsForAS=True
@@ -526,7 +528,6 @@ function InitTeams() {
 // Balance the teams just before the start of a new game.  No need for FlagStrength here.
 // This was originally Daniel's InitTeams() method, but I have renamed it.
 function ForceFullTeamsRebalance() {
-  // TODO: now that this can be run mid-game by saying "!teams", this function should again whether it's ok to balance (e.g. is this a team game?!)
   local Pawn p;
   local int st;
   local int pid;
@@ -545,6 +546,7 @@ function ForceFullTeamsRebalance() {
   local int oldMaxTeamSize;
   local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
 
+  // DONE: now that this can be run mid-game by saying "!teams", this fn should again check whether it's ok to balance (e.g. is this a team game?!)
   // We can't balance if it's not a teamgame
   if (!Level.Game.GameReplicationInfo.bTeamGame) return;
 
@@ -854,7 +856,7 @@ function UpdateStatsAtEndOfGame() {
   local int countHumanPlayers;
   local Pawn p;
 
-  if (WinningTeamBonus != 0) {
+  if (WinningTeamBonus != 0 && !DeathMatchPlus(Level.Game).bTournament) {
     GiveBonusToWinningTeamPlayers();
   }
 
@@ -1104,7 +1106,7 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
     if (bAllowMidgameRebalancing) {
       // if(InStr(Msg,"!teams") >= 0) { // was using instr while testing the broadcast method, which gives us longer strings
-      if(Msg == "!teams") {
+      if(Msg ~= "!teams") {
         Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
         ForceFullTeamsRebalance();
         // TODO BUG IMPORTANT: check this is not called during bTournament games.  1) don't RegisterMessageMutator in the first place 2) ForceFullTeamsRebalance should check ShouldBalance (but could that check be less strict than the start-game check? :o )
@@ -1151,6 +1153,24 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
   // BroadcastMessage(Msg);
 
 }
+
+function Mutate(String str, PlayerPawn Sender) {
+	if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
+
+	if (AdminPassword == "defaults_to_admin_pass")
+		// AdminPassword = Level.Game.ConsoleCommand("get engine.gameinfo AdminPassword");
+		AdminPassword = ConsoleCommand("get engine.gameinfo AdminPassword"); // trying to access it directly did not work
+
+	// TODO: if AdminPassword="", this won't work because of the missing " "; better to split str into mutate command + args
+	if ( str ~= ("teams "$AdminPassword) ) {
+		ForceFullTeamsRebalance();
+	} else if (str ~= "saveconfig") { // TODO: for developer; comment out in final build
+		SaveConfig();
+	} else {
+		Super.Mutate(str,Sender);
+	}
+}
+
 
 /*
 function PlayerJoinedShowInfo(string Msg) {
