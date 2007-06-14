@@ -2,6 +2,21 @@
 // pawn.Player.Console.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
 // pawn.myHUD.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
 
+// TODO: the defaults (for the XOL release at least) should be as close as possible to Sourceror's original XOL mod.  make options for other servers
+
+// TODO: consider: should we normalise player scores in terms of time before we normalise the scores around the average?
+
+// TODO: test: does this work ok as a ServerActor?
+
+// TODO: i had a report thata game was left running for a long time, then a player entered for the last minute and made 1 cap
+//       they got +3294724 points!  try to reproduce this problem, then fix it.
+
+// TODO: sourceror recommends updating stats for any player who leaves the game part-way through.  maybe idefix's code knows how to detect this
+
+// TODO: viking recommends averaging score and frags, to get a mix of a player's DM skill and CTF skill (make it a bool option imo)
+
+// TODO: use in-game scores for "!teams" and balancing when a new player joins, by doing a mid-game new-stats-calculation of the current players on the server (altho not an update)
+
 // TODO:
 // AutoTeamBalance logging: 0=none, 1=to logfile, 2=broadcast in-game, 3=both
 // // AutoTeamBalance logging level: 0=none, 1=hello etc, 2=details(show stats)
@@ -227,7 +242,8 @@ function PostBeginPlay() {
   // Before uncommenting, consider moving the initialized=true; to the line before.
   // DONE: turn this into add-if-not-already-added, and we have ourself a mutator/serveractor
 
-  // Level.Game.BaseMutator.AddMutator(Self); // now made safe by our custom implementation of AddMutator below
+  // If AutoTeamBalance was installed as a ServerActor, we need to register it as a mutator:
+  Level.Game.BaseMutator.AddMutator(Self); // now made safe by our custom implementation of AddMutator below
 
   // btw just interesting to note: if i have AutoTeamBalance as a ServerActor and a mutator on startup arguments, the mutator gets its PostBeginPlay called before the ServerActor's, and the ServerActor mut doesn't seem to get called at all.
 
@@ -235,45 +251,53 @@ function PostBeginPlay() {
   //       I also get a couple of AddMutator Accessed None errors in the log.
   // If I leave it high, then the Mutator effectively turns off the ServerActor, by setting initialized=true before the ServerActor gets called.
   // Er no that's such a lie, the position of "if (initialized) return;" makes no difference!!
+  // So presumably the Mutator does just switch off the ServerActor.
 
   // NOTE: one big disadvantage of using ServerPackages, seems to be that the .u is sent to the client (maybe for simulation purposes),
   //       and then successive releases get a version mismatch.  :f
-  // Or was that more related to the .u symlink included in my local client UT install?
+  //       Or was that more related to the .u symlink included in my local client UT install?
+  //       Anyway, I don't think it ever needs to be a ServerPackage, but some admins may prefer to install it as a ServerActor than a Mutator.
 
-  // NOTE: When I had both ServerActor and mutator, it seems "!teams" was not working
+  // TODO: When I was testing both ServerActor and mutator, it seemed "!teams" was not working
 
-  //// TODO BUG: MutatorTeamMessage IS supressing broadcasts + chat, also it gets called 8 times for one message :P
   if (bAllowMidgameRebalancing) {
     Level.Game.RegisterMessageMutator(Self);
   }
 
-  timeGameStarted = Level.TimeSeconds; // TODO BUG: game has not started, until players join!! :P  Maybe better to catch around CheckGameStart()
+  // timeGameStarted = Level.TimeSeconds; // the game does not actually start until players and DoGameStart() is called.  This has been moved down.
 
-  gameEndDone = false;
+  gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
 
   initialized = true;
 
 }
 
+// TODO CONSIDER: if we make the rollback of old scores very fast, and put more weight into having won, then everyone should get an even number of wins.
+//                if a player gets in 4 lost matches in a row, he will soon be placed on a strong team against a bunch of noobs who have been lucky enough to win some recent and are about to get their balance by getting pwned.  ^^
+//                however, this is not the final goal: players who have put effort into learning to play UT should be rewarded for their effort: their effort and hopefully therefore increased skill should pay off in their ability to win games (and frag, score highly).
+//                Thinking of the XOL ranking, it seemed that players who just spent tonnes of time on the server always got high in the rankings (i don't mean total score, i mean in-game scoreboards and FPH/SPH).  This seems reasonable, given that as well as skill, there was much to learn, with a rotation of a large set of large maps, with regular new maps which nobody had seen.
+//                Indeed one way to keep noobs on the server, is to reward them for playing for longer.  (Possibly simply by learning noobish things about the crazy maps, but 
+//                This could in fact be artificially encouraged, by using the teambalance to put players who have spent many hours on the server on the same team as strong players who would help them to win (and hence score highly).
+//                (This situation would actually mean that the longer a person plays, the worse their teambalance rating would become.)
+//                Maybe all these CTF reward bonuses (XOL's and SmartCTF's) actually only cause the team that win (own) to score even more highly than they deserve.  (This took random actions, but because of a slightly high overall skill, they managed to make covers and caps and all score well.)  <-- wtf does this mean?! i thought there was a valid point here! ;)
+
 // Implementation of AddMutator which prevents double or recursive adding:
-function AddMutator(Mutator mut) {
-  Log("AutoTeamBalance.AddMutator("$mut$") called.");
-  // DONE: sometimes gets called with mut == None, causing Accessed None in logs. fix this
-  if (mut != None && mut.Class == Class) {
-  // if (mut.Class == Class) { // TODO: i only removed this check because i was curious to see *where/when* the Accessed None was happening.
-  // Result: it happens after all the muts are added, and just before "Game engine initialized"  One of my other Muts, WhoPushedMe, also logs it.
-    // Someone (quite possibly me :P ) is trying to add this mutator a second time!
-    if (mut != Self) {
-      // This is a different instance of this mutator
-      // We won't add the second instance, so we may as well destroy it:
-      Log("AutoTeamBalance.AddMutator("$mut$"): destroying duplicate of me ("$Self$")");
-      mut.Destroy();
+function AddMutator(Mutator Other) {
+  if (bDebugLogging) { Log(Self$".AddMutator("$Other$") called."); }
+  if (Other != None && Other.Class == Self.Class) { // The check for None prevents some "Accessed: None" errors in the logs.
+    // Check whether this mutator has already been added.
+    if (Other == Self) {
+      // This exact instance has already been added.  (When does this happen?  When we've been included as a mutator rather than a server actor?)
+      if (bDebugLogging) { Log(Self$".AddMutator("$Other$"): not adding mutator self again!"); }
     } else {
-      Log("AutoTeamBalance.AddMutator("$mut$" == Self): not adding mutator self again!");
+      // This is a different instance of the same mutator.  (Maybe the admin made it a ServerActor *and* added it as a mutator.)
+      // We won't add the second instance, so we may as well destroy it:
+      if (bDebugLogging) { Log(Self$".AddMutator("$Other$"): destroying other instance with "$Other$".Destroy()"); }
+      Other.Destroy();
     }
   } else {
     // This is another mutator entirely, do what we would normally do
-    Super.AddMutator(mut);
+    Super.AddMutator(Other);
   }
 }
 
@@ -501,8 +525,7 @@ function CheckGameStart() {
   // initialize teams 1 second before game is starting
   if (c<2) {
   // if (Level.TimeSeconds >= 20) {
-    if (bBroadcastStuff) { BroadcastMessageAndLog(HelloBroadcast); }
-    InitTeams();
+    DoGameStart();
     gameStartDone=True;
     Disable('Tick');
   }
@@ -521,7 +544,9 @@ function CheckGameEnd() {
   }
 }
 
-function InitTeams() {
+function DoGameStart() {
+  if (bBroadcastStuff) { BroadcastMessageAndLog(HelloBroadcast); }
+  timeGameStarted = Level.TimeSeconds;
   ForceFullTeamsRebalance();
 }
 
@@ -1057,7 +1082,8 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   // I don't know if this will ever happen, but I was thinking in tournament mode, we don't want to calculate a player as having played for 24 minutes if they were waiting 4 minutes for the game to start :P
   if (timeInGame>gameDuration)
     timeInGame = gameDuration;
-  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) timeInGame="$timeInGame$" gameDuration="$gameDuration$" Level.Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$""); }
+  // if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) timeInGame="$timeInGame$" gameDuration="$gameDuration$" Level.Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$""); }
+  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p.getHumanName()$") timeGameStarted="$timeGameStarted$" Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$" Player.StartTime="$p.PlayerReplicationInfo.StartTime$" timeInGame="$timeInGame$" gameDuration="$gameDuration); }
   // Well if this player was only in the server for 5 minutes, we could multiply his score up so that he gets a score proportional to the other players.  (Ofc if he was lucky or unlucky, that luck will be magnified.)
   if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
     Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60s.");
