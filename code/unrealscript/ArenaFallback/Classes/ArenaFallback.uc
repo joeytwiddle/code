@@ -23,7 +23,22 @@
 // TODO: hey look we can create new actors from only their class name! BaseMutator.AddMutator(Spawn(MutatorClass));
 //       we can also use .Class to get the class of an actor
 
+// BUG: kinda messy, will sometimes add ammo for a weapon which ain't available!
+// TODO: is it possible to replace all X with randomY, to keep map's weapons symmetrical?
+
 class ArenaFallback expands Mutator;
+
+var bool bOnlyOnWeaponlessMaps;
+var String weaponTypes;
+var bool bMultipleWeapons;
+var bool bAllowAllPickups;
+
+defaultproperties {
+	bOnlyOnWeaponlessMaps=False // TODO: should be True as default
+	weaponTypes="Botpack.Translocator,Botpack.ChainSaw,Botpack.ImpactHammer,Botpack.enforcer,Botpack.doubleenforcer,Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
+	bMultipleWeapons=True // TODO should be False as default
+	bAllowAllPickups=True // TODO should be False for IG arena
+}
 
 var bool bForceArena; // Whether this Mutator will do anything.
 
@@ -34,15 +49,53 @@ function PreBeginPlay() {
 function CheckForWeapons() {
 	local Weapon w;
 
-	foreach AllActors(class'Weapon', w) {
-		Log("ArenaFallback: I found a weapon in this map ("$w$"): doing nothing.");
-		bForceArena = False;
-		return;
+	if (bOnlyOnWeaponlessMaps) {
+		foreach AllActors(class'Weapon', w) {
+			Log("ArenaFallback: I found a weapon in this map ("$w$"): doing nothing.");
+			bForceArena = False;
+			// TODO CONSIDER: for neatness, we could try Self.Destroy() here.
+			return;
+		}
+		Log("ArenaFallback: I did not find any weapons in this map: forcing Instagib Arena.");
 	}
 
-	Log("ArenaFallback: I did not find any weapons in this map: forcing Instagib Arena.");
 	bForceArena = True;
-	Level.Game.DefaultWeapon = class'Botpack.SuperShockRifle';
+	// Level.Game.DefaultWeapon = class'Botpack.SuperShockRifle';
+	Level.Game.DefaultWeapon = getRandomWeaponClass();
+}
+
+function class<weapon> getRandomWeaponClass() {
+	// return class'Botpack.SuperShockRifle';
+	local String weapons[255];
+	local int weaponsCount;
+	weaponsCount = SplitString(weaponTypes,",",weapons);
+	// C = class<ChallengeBotInfo>(DynamicLoadObject("Botpack.ChallengeBotInfo", class'Class'));
+	// return Class(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
+	Log("ArenaFallback.getRandomWeaponClass() returning: "$class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class')));
+	return class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
+}
+
+function int SplitString(String str, String divider, out String parts[255]) {
+   // local String parts[255];
+   // local array<String> parts;
+   local int i,nextSplit;
+   i=0;
+   while (true) {
+      nextSplit = InStr(str,divider);
+      if (nextSplit >= 0) {
+         // parts.insert(i,1);
+         parts[i] = Left(str,nextSplit);
+         str = Mid(str,nextSplit+1);
+         i++;
+      } else {
+         // parts.insert(i,1);
+         parts[i] = str;
+         i++;
+         break;
+      }
+   }
+   // return parts;
+   return i;
 }
 
 // Force game to always keep this actor, even if other mutators want to get rid of it.
@@ -64,11 +117,25 @@ function bool AlwaysKeep(Actor Other) {
 // Allow mutators to remove actors.
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 
+	Log(Self$".CheckReplacement("$Other$","$bSuperRelevant$")");
+
 	if (bForceArena) {
 
-		if (Other.IsA('SuperShockRifle') || Other.IsA('SuperShockCore')) {
-			return True;
-		}
+		if (Other.IsA('Weapon')) {
+			if (bMultipleWeapons) {
+				ReplaceWith(Other,String(getRandomWeaponClass().name));
+			} else {
+				ReplaceWith(Other,String(Level.Game.DefaultWeapon.name));
+			}
+		} else
+
+		if (Other.IsA('Ammo')) {
+			if (bMultipleWeapons) {
+				ReplaceWith(Other,String(Spawn(getRandomWeaponClass()).AmmoName));
+			} else {
+				ReplaceWith(Other,String(Spawn(Level.Game.DefaultWeapon).AmmoName));
+			}
+		} else
 
 		// This looks like most pickups, but boots are still allowed.  :)
 		if (
@@ -78,7 +145,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 			|| Other.IsA('UT_Invisibility') || Other.IsA('UDamage')
 		) {
 
-			return False;
+			return bAllowAllPickups;
 
 		}
 
