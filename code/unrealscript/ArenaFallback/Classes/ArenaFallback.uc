@@ -33,6 +33,8 @@ var String weaponTypes;
 var bool bMultipleWeapons;
 var bool bAllowAllPickups;
 
+var int depth; // used to prevent infinite recursion when replacing actors
+
 defaultproperties {
 	bOnlyOnWeaponlessMaps=False // TODO: should be True as default
 	weaponTypes="Botpack.Translocator,Botpack.ChainSaw,Botpack.ImpactHammer,Botpack.enforcer,Botpack.doubleenforcer,Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
@@ -56,23 +58,26 @@ function CheckForWeapons() {
 			// TODO CONSIDER: for neatness, we could try Self.Destroy() here.
 			return;
 		}
-		Log("ArenaFallback: I did not find any weapons in this map: forcing Instagib Arena.");
 	}
 
 	bForceArena = True;
 	// Level.Game.DefaultWeapon = class'Botpack.SuperShockRifle';
 	Level.Game.DefaultWeapon = getRandomWeaponClass();
+	Log("ArenaFallback: I did not find any weapons in this map: forcing "$Level.Game.DefaultWeapon$" arena.");
 }
 
 function class<weapon> getRandomWeaponClass() {
 	// return class'Botpack.SuperShockRifle';
 	local String weapons[255];
 	local int weaponsCount;
+	local class<weapon> w;
 	weaponsCount = SplitString(weaponTypes,",",weapons);
 	// C = class<ChallengeBotInfo>(DynamicLoadObject("Botpack.ChallengeBotInfo", class'Class'));
 	// return Class(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
-	Log("ArenaFallback.getRandomWeaponClass() returning: "$class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class')));
-	return class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
+	w = class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
+	// Log("ArenaFallback: getRandomWeaponClass() returning: "$w);
+	Log("["$depth$"] 2 ! "$w);
+	return w;
 }
 
 function int SplitString(String str, String divider, out String parts[255]) {
@@ -103,7 +108,7 @@ function bool AlwaysKeep(Actor Other) {
 
 	if (bForceArena) {
 
-		return False;
+		return False; // Why?  What about the other muts?
 
 	} else {
 
@@ -114,27 +119,61 @@ function bool AlwaysKeep(Actor Other) {
 
 }
 
+function MyReplaceWith(Actor Other,String str) {
+	if (str=="None") {
+		Log("["$depth$"] 5 Z "$ Other $ " ! -> ! " $ str);
+		return;
+	}
+	depth++;
+	Log("["$depth$"] 3 > "$ Other $ " -> " $ str);
+	ReplaceWith(Other,str);
+	depth--;
+}
+
 // Allow mutators to remove actors.
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 
-	Log(Self$".CheckReplacement("$Other$","$bSuperRelevant$")");
+	local Actor tmp;
+
+	if (depth>0) {
+		Log("("$depth$") 4 x " $ Other $ " ("$bSuperRelevant$")");
+		return True;
+	}
+
+	// Log("ArenaFallback: CheckReplacement("$Other$","$bSuperRelevant$")");
+	Log("["$depth$"] 1 ? " $ Other $ " ("$bSuperRelevant$")");
 
 	if (bForceArena) {
 
+		// Note: as well as weapon pickups, we are also replacing the player's default enforcer and translocator
+		// TODO: spawn-with weapons should probably have maxammo
+		// TODO: if weapon never runs out of ammo (e.g. ig rifle), ammo pickups should be removed from the map
 		if (Other.IsA('Weapon')) {
+			// Log("ArenaFallback: Replacing weapon "$Other);
 			if (bMultipleWeapons) {
-				ReplaceWith(Other,String(getRandomWeaponClass().name));
+				// MyReplaceWith(Other,String(getRandomWeaponClass().name));
+				// MyReplaceWith(Other,String(getRandomWeaponClass()));
+				MyReplaceWith(Other,""$getRandomWeaponClass());
 			} else {
-				ReplaceWith(Other,String(Level.Game.DefaultWeapon.name));
+				MyReplaceWith(Other,String(Level.Game.DefaultWeapon));
 			}
 		} else
 
 		if (Other.IsA('Ammo')) {
+			// Log("ArenaFallback: Replacing ammo "$Other);
+			depth++; // to prevent checking the item we spawn
 			if (bMultipleWeapons) {
-				ReplaceWith(Other,String(Spawn(getRandomWeaponClass()).AmmoName));
+				// TODO CONSIDER: rather than random ammo, make it ammo for the last weapon we replaced?
+				// MyReplaceWith(Other,String(Spawn(getRandomWeaponClass()).AmmoName));
+				tmp = Spawn(getRandomWeaponClass());
 			} else {
-				ReplaceWith(Other,String(Spawn(Level.Game.DefaultWeapon).AmmoName));
+				// MyReplaceWith(Other,String(Spawn(Level.Game.DefaultWeapon).AmmoName));
+				// MyReplaceWith(Other,String(Spawn(Level.Game.DefaultWeapon).AmmoName));
+				tmp = Spawn(Level.Game.DefaultWeapon);
 			}
+			depth--;
+			MyReplaceWith(Other,String(Weapon(tmp).AmmoName));
+			tmp.Destroy();
 		} else
 
 		// This looks like most pickups, but boots are still allowed.  :)
