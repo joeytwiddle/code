@@ -250,6 +250,7 @@ function PostBeginPlay() {
 
   // If AutoTeamBalance was installed as a ServerActor, we need to register it as a mutator:
   Level.Game.BaseMutator.AddMutator(Self); // now made safe by our custom implementation of AddMutator below
+  Log("AutoTeamBalance ("$Self$") added mutator done");
 
   // btw just interesting to note: if i have AutoTeamBalance as a ServerActor and a mutator on startup arguments, the mutator gets its PostBeginPlay called before the ServerActor's, and the ServerActor mut doesn't seem to get called at all.
 
@@ -269,10 +270,14 @@ function PostBeginPlay() {
   if (bAllowMidgameRebalancing) {
     Level.Game.RegisterMessageMutator(Self);
   }
+  Log("AutoTeamBalance ("$Self$") registered as messenger");
 
   // timeGameStarted = Level.TimeSeconds; // the game does not actually start until players and DoGameStart() is called.  This has been moved down.
 
   gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
+
+  // LoadConfig(); // TODO CONSIDER: If possible, we could also LoadConfig() here.  Then this mutator would be the only one I know that lets you edit the ini file without needing to restart the server!  OK well apparently LoadConfig() doesn't exist.  :P
+  CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
 
   initialized = true;
 
@@ -601,9 +606,6 @@ function ForceFullTeamsRebalance() {
   // We can't balance if it's not a teamgame
   if (!Level.Game.GameReplicationInfo.bTeamGame) return;
 
-  // LoadConfig(); // TODO CONSIDER: If possible, we could also LoadConfig() here.  Then this mutator would be the only one I know that lets you edit the ini file without needing to restart the server!  OK well apparently LoadConfig() doesn't exist.  :P
-  CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
-
   if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Running..."); }
 
   // rate all players, and put them in a temporary structure:
@@ -685,7 +687,7 @@ function ForceFullTeamsRebalance() {
       teamnr=0;
       // NOTE: here we are using Playername, in other places we've used getHumanName.
       if (Instr(Caps(pl[pid].PlayerReplicationInfo.Playername),Caps(clanTag))==-1) teamnr=1;
-      Level.Game.ChangeTeam(pl[pid],teamnr);
+      ChangePlayerToTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -701,14 +703,7 @@ function ForceFullTeamsRebalance() {
       teamnr=0;
       if ((i&3)==1 || (i&3)==2) teamnr=1;
       Log("AutoTeamBalance.ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
-      Level.Game.ChangeTeam(pl[pid],teamnr);
-      // Repeated below; could wrap all ChangeTeam and RestartPlayer and SendClientMessage into one fn.
-      // Since we now sometimes call ForceFullTeamsRebalance mid-game, we should restart the player, and inform them:
-      // (Note: there was no check for players holding flags; if the player was holding a flag, then hopefully this will cause it to drop or return.)
-      if (gameStartDone) {
-        Level.Game.RestartPlayer(pl[pid]);
-        SendClientMessage(pl[pid],"You are on the "$getTeamName(teamnr)$" team.");
-      }
+      ChangePlayerToTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -718,14 +713,7 @@ function ForceFullTeamsRebalance() {
       pid=plorder[i];
       teamnr=0; if (teamstr[0]>teamstr[1]) teamnr=1;
       Log("AutoTeamBalance.ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$".");
-      Level.Game.ChangeTeam(pl[pid],teamnr);
-      // Repeated below; could wrap all ChangeTeam and RestartPlayer and SendClientMessage into one fn.
-      // Since we now sometimes call ForceFullTeamsRebalance mid-game, we should restart the player, and inform them:
-      // (Note: there was no check for players holding flags; if the player was holding a flag, then hopefully this will cause it to drop or return.)
-      if (gameStartDone) {
-        Level.Game.RestartPlayer(pl[pid]);
-        SendClientMessage(pl[pid],"You are on the "$getTeamName(teamnr)$" team.");
-      }
+      ChangePlayerToTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -738,8 +726,8 @@ function ForceFullTeamsRebalance() {
 
   // Show team strengths to all players
   // Log("AutoTeamBalance.ForceFullTeamsRebalance(): Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ ".");
-  BroadcastMessageAndLog("Red team strength is now "$GetTeamStrengthWithoutBotsOrCaps(0)$", Blue team strength is "$GetTeamStrengthWithoutBotsOrCaps(1)$".");
-  if (bBroadcastStuff) { BroadcastMessage("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
+  BroadcastMessageAndLog("Red team strength is now "$GetTeamStrengthWithoutBotsOrCaps(0)$".  Blue team strength is "$GetTeamStrengthWithoutBotsOrCaps(1)$".");
+  if (bBroadcastStuff) { BroadcastMessage("Red team strength is now " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 
   // Little point doing this here; wait until we update the player strengths.
   // CopyArraysIntoConfig();
@@ -758,8 +746,20 @@ function ForceFullTeamsRebalance() {
 
 }
 
+function ChangePlayerToTeam(Pawn p, int team) {
+  Level.Game.ChangeTeam(p,team);
+  if (gameStartDone) {
+    Level.Game.RestartPlayer(p);
+    SendClientMessage(p,"You have been moved to the "$getTeamName(team)$" team.");
+    // SendClientMessage(p,"YOU have been MOVED to the >> "$getTeamName(teamnr)$" << team for a fairer game.");
+    p.ShakeView(2.0,8000.0,1000.0);
+  }
+}
+
 function MidGameTeamBalance() {
   local int redTeamCount,blueTeamCount;
+
+  if (bDebugLogging) { Log("MidGameTeamBalance() tgp="$Level.Game.IsA('TeamGamePlus')$" bTG="$Level.Game.bTeamGame); }
 
   // Surely ShouldBalance() has already been tested.
   if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
@@ -810,7 +810,6 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
   local Pawn p;
   local Pawn closestPlayer; // the most ideal potential player to switch
   local float closest; // the absolute strength difference between the two teams after the potential switch
-  /*
   fromTeamStrength = GetTeamStrengthWithoutBotsOrCaps(fromTeam);
   toTeamStrength = GetTeamStrengthWithoutBotsOrCaps(toTeam);
   difference = fromTeamStrength - toTeamStrength;
@@ -839,14 +838,10 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     BroadcastMessageAndLog("AutoTeamBalance not switching "$p.getHumanName()$" because that would make "$getTeamName(fromTeam)$" team too weak!");
     return False;
   } else {
-    Level.Game.ChangeTeam(closestPlayer,toTeam);
-    Level.Game.RestartPlayer(closestPlayer);
-    // SendClientMessage(closestPlayer,"You have been switched to "$getTeamName(toTeam)$" team by AutoTeamBalance!");
-    SendClientMessage(closestPlayer,"You have been switched to the "$getTeamName(toTeam)$" team for a fairer game!");
+    ChangePlayerToTeam(closestPlayer,toTeam);
     BroadcastMessageAndLog("Red team strength is now "$GetTeamStrengthWithoutBotsOrCaps(0)$", Blue team strength is "$GetTeamStrengthWithoutBotsOrCaps(1)$".");
     return True;
   }
-  */
 }
 
 function bool MidGameTeamBalanceSwitchTwoPlayers() {
@@ -859,7 +854,6 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
   // best found:
   local Pawn redPlayerToMove,bluePlayerToMove; // the best two players found so far
   local float newdifference; // the strength difference between the two teams after switching these players
-/*
 
   redTeamStrength = GetTeamStrengthWithoutBotsOrCaps(0);
   blueTeamStrength = GetTeamStrengthWithoutBotsOrCaps(1);
@@ -867,8 +861,8 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
   newdifference = difference;
 
   // These repeated calls to GetPawnStrength() are going to be inefficient, possibly causing some lag while the server calculates.
-  for (redP=Level.PawnList; redP!=None; redP=p.NextPawn) {
-    for (blueP=Level.PawnList; blueP!=None; blueP=p.NextPawn) {
+  for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
+    for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
       if (isHumanPlayer(redP) && isHumanPlayer(blueP) && redP != blueP
           && redP.PlayerReplicationInfo.HasFlag == None
           && blueP.PlayerReplicationInfo.HasFlag == None
@@ -886,22 +880,18 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
     }
   }
 
+/*
   if (redPlayerToMove != None) { // && implied bluePlayerToMove != None
-    Level.Game.ChangeTeam(redPlayerToMove,1);
-    Level.Game.RestartPlayer(redPlayerToMove);
-    SendClientMessage(redPlayerToMove,"You have been switched to the Blue team for a fairer game!");
-    Level.Game.ChangeTeam(bluePlayerToMove,0);
-    Level.Game.RestartPlayer(bluePlayerToMove);
-    SendClientMessage(bluePlayerToMove,"You have been switched to the Red team for a fairer game!");
+    ChangePlayerToTeam(redPlayerToMove,1);
+    ChangePlayerToTeam(bluePlayerToMove,0);
     BroadcastMessageAndLog("Red team strength is now "$GetTeamStrengthWithoutBotsOrCaps(0)$", Blue team strength is "$GetTeamStrengthWithoutBotsOrCaps(1)$".");
     return True;
   } else {
     BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
     return False;
   }
-*/
+  */
 }
-
 
 function float GetTeamStrengthWithoutBotsOrCaps(int teamNum) {
   local Pawn p;
@@ -958,11 +948,18 @@ function CopyConfigIntoArrays() {
   local int field;
   local int i;
   local String data;
-  if (CopyConfigDone) // Now that I'm calling this from MutatorTeamMessage as well as InitTeams via Tick, I cache whether or not it's already been done.
-    return;
+  local String args[255];
+
+  // Now that I'm calling this from MutatorTeamMessage as well as InitTeams via Tick, I cache whether or not it's already been done:
+  // if (CopyConfigDone)
+    // return;
+
   CopyConfigDone=True;
+
   if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() running"); }
   for (i=0; i<MaxPlayerData; i++) {
+
+    /*
     data = playerData[i];
     if (data == "")
       continue;
@@ -977,6 +974,15 @@ function CopyConfigIntoArrays() {
       avg_score[i] = Float(Left(data,field));
     data = Mid(data,field+1);
       hours_played[i] = Float(data);
+    */
+
+    if (playerData[i] == "") continue;
+    SplitString(playerData[i]," ",args);
+    ip[i] = args[0];
+    nick[i] = args[1];
+    avg_score[i] = Float(args[2]);
+    hours_played[i] = Float(args[3]);
+
   }
   if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() done"); }
 }
@@ -1297,8 +1303,6 @@ function string stripPort(string ip_and_port) {
 // function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 
-  // TODO: probably best to try to replicate the MessagingSpectator method used by ChatLoggerPackage.
-
   // OK the 8 calls are because this gets called once per player, plus once for UTServerAdminSpectator, and once for ChatLogger
   // Solution: only process it when Sender = Receiver ^^
   // (Interestingly, despite having 2 bots on my team, TeamSay messages only get sent to myself!  (Maybe if there were other humans...))
@@ -1328,8 +1332,8 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
     // if ( InStr(Msg,"left the game.")>=0 ) {
 
     if (bAllowMidgameRebalancing) {
-      // if(InStr(Msg,"!teams") >= 0) { // was using instr while testing the broadcast method, which gives us longer strings
-      if(Msg ~= "!teams") {
+      // if ( InStr(Msg,"!teams")>=0 ) { // was using instr while testing the broadcast method, which gives us longer strings
+      if (Msg ~= "teams" || Msg ~= "!teams") {
         Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
         // ForceFullTeamsRebalance();
         MidGameTeamBalance();
@@ -1370,12 +1374,75 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
   }
 
   //// This allows messages through, but this method doesn't seem to get called.  (Didn't it used to though? :o )
-  // Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
+  // return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
   //// This method does get called, but 8 times :E and the messages don't reach the game :f
-  // Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
+  // return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
 
   // BroadcastMessage(Msg);
 
+}
+
+// === THIS DOES NOT GET CALLED IF we have AutoTeamBalance as a ServerActor, even if we have it as a mutator as well.
+function Mutate(String str, PlayerPawn Sender) {
+  local String args[255];
+  // local array<String> args;
+
+  if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
+
+  if (AdminPassword == "defaults_to_admin_pass")
+    // AdminPassword = Level.Game.ConsoleCommand("get engine.gameinfo AdminPassword");
+    AdminPassword = ConsoleCommand("get engine.gameinfo AdminPassword"); // trying to access it directly did not work
+
+  SplitString(str," ",args);
+
+  if ( args[0]~="TEAMS" && ( AdminPassword=="" || args[1]~=AdminPassword ) ) {
+    if (!Level.Game.GameReplicationInfo.bTeamGame) {
+      BroadcastMessageAndLog("AutoTeamBalance cannot balance teams: this isn't a team game!");
+    } else {
+      // if (DeathMatchPlus(Level.Game).bTournament) {
+      if (args[2]~="FULL") {
+        CopyArraysIntoConfig();
+        UpdateStatsAtEndOfGame();
+        ForceFullTeamsRebalance();
+        CopyConfigIntoArrays();
+      } else {
+        MidGameTeamBalance();
+      }
+    }
+
+  } else if ( args[0]~="TORED" && ( AdminPassword=="" || args[2]~=AdminPassword ) ) {
+    ChangePlayerToTeam(FindPlayerNamed(args[1]),0);
+  } else if ( args[0]~="TOBLUE" && ( AdminPassword=="" || args[2]~=AdminPassword ) ) {
+    ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
+
+  // TODO: for developer; comment out in final build
+  } else if (args[0]~="GET") {
+    Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]));
+  } else if (args[0]~="SET") {
+    ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+    Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]));
+  } else if (args[0]~="SAVECONFIG") {
+    SaveConfig();
+
+  } else {
+    Super.Mutate(str,Sender);
+  }
+}
+
+function Pawn FindPlayerNamed(String name) {
+  local Pawn p;
+  local Pawn found;
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
+      if (p.getHumanName() ~= name) {
+        return p;
+      }
+      if (Instr(Caps(p.getHumanName()),Caps(name))>=0) {
+        found = p;
+      }
+    }
+  }
+  return found;
 }
 
 //// CONSIDER: we could add support for squeezing multiple delimiters into 1
@@ -1404,43 +1471,19 @@ function int SplitString(String str, String divider, out String parts[255]) {
 	return i;
 }
 
-function Mutate(String str, PlayerPawn Sender) {
-	local String args[255];
-	// local array<String> args;
 
-	if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
-
-	if (AdminPassword == "defaults_to_admin_pass")
-		// AdminPassword = Level.Game.ConsoleCommand("get engine.gameinfo AdminPassword");
-		AdminPassword = ConsoleCommand("get engine.gameinfo AdminPassword"); // trying to access it directly did not work
-
-	SplitString(str," ",args);
-
-	// TODO: if AdminPassword="", this command still won't work without the trailing " "; better to split str into mutate command + args
-	// if ( str ~= ("teams "$AdminPassword) ) {
-	if ( args[0]~="teams" && ( AdminPassword=="" || args[1]~=AdminPassword ) ) {
-		// ForceFullTeamsRebalance();
-    // Admin is using pass to balance teams, so we will even allow it during a tournament game.
-    // (But if they *do* do it during a tournament game, that's disruptive, so we may as well do a ForceFullTeamsRebalance.)
-    // NO: we do a full rebalance only if they say "full" as their 3rd arg, in or out of tournament mode.
-    if (!Level.Game.GameReplicationInfo.bTeamGame) {
-      BroadcastMessageAndLog("AutoTeamBalance cannot balance teams: this isn't a team game!");
-    } else {
-      // if (DeathMatchPlus(Level.Game).bTournament) {
-      if (args[2]~="full") {
-        ForceFullTeamsRebalance();
-      } else {
-        MidGameTeamBalance();
-      }
-    }
-	// } else if (str ~= "saveconfig") {
-	} else if (args[0]~="saveconfig") { // TODO: for developer; comment out in final build
-		SaveConfig();
-	} else {
-		Super.Mutate(str,Sender);
-	}
+// I want to Log all calls to BroadcastMessage() so that I can see without playing how much the players are getting spammed by broadcasts.
+function BroadcastMessageAndLog(string Msg) {
+  if (bDebugLogging) { Log("AutoTeamBalance Broadcasting: "$Msg); }
+  BroadcastMessage(Msg);
 }
 
+function SendClientMessage(Pawn p, string Msg) {
+  if (bDebugLogging) { Log("AutoTeamBalance Sending message to "$p.getHumanName()$": "$Msg); }
+  // NOTE: in case you thought otherwise, this message gets displayed in the console, but not in the chatarea.  It is also displayed on the HUD, but can be hidden by the scoreboard, or a following HUD message.
+  p.ClientMessage(Msg, 'CriticalEvent', True);
+  // To just message the player's chat and console, try skipping the last 2 arguments.
+}
 
 /*
 function PlayerJoinedShowInfo(string Msg) {
@@ -1467,16 +1510,13 @@ function PlayerJoinedShowInfo(string Msg) {
 }
 */
 
-// I want to Log all calls to BroadcastMessage() so that I can see without playing how much the players are getting spammed by broadcasts.
-function BroadcastMessageAndLog(string Msg) {
-  if (bDebugLogging) { Log("AutoTeamBalance Broadcasting: "$Msg); }
-  BroadcastMessage(Msg);
+/*
+function bool PreventDeath(Pawn Killed, Pawn Killer, name damageType, vector HitLocation) {
+  Log("AutoTeamBalance.Pr.ventDeath("$Killed$","$Killer$","$damageType$")");
 }
 
-function SendClientMessage(Pawn pawn, string Msg) {
-  if (bDebugLogging) { Log("AutoTeamBalance Sending message to "$pawn.getHumanName()$": "$Msg); }
-  // NOTE: in case you thought otherwise, this message gets displayed in the console, but not in the chatarea.  It is also displayed on the HUD, but can be hidden by the scoreboard, or a following HUD message.
-  pawn.ClientMessage(Msg, 'CriticalEvent', True);
-  // To just message the player's chat and console, try skipping the last 2 arguments.
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+  // Log("AutoTeamBalance.MutatorTakeDamage("$Victim$","$InstigatedBy$","$DamageType$")");
 }
+*/
 
