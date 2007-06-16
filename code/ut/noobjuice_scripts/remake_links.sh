@@ -10,9 +10,9 @@ export LINK_DIR="$PWD/restored_from_cache"
 
 . importshfn verbosely
 
-if [ ! "$MAP_DIRS" ]
+if [ ! "$MAP_DIRS" ] || [ ! "$FILE_DIRS" ]
 then
-	echo "Need MAP_DIRS"
+	echo "Need MAP_DIRS and FILE_DIRS"
 	exit 1
 fi
 
@@ -22,21 +22,21 @@ rmlinks () {
 	# foreachdo verbosely rm
 	# withalldo verbosely rm
 	# foreachdo verbosely rmlink
-	# catwithprogress |
+	catwithprogress |
 	# foreachdo rmlink
 	foreachdo rm
 }
 
 get_map_list () {
 	verbosely find $MAP_DIRS -type f -name "*.unr"
-	if [ -d "$LINK_DIR" ]
-	then
-		# find "$LINK_DIR" -type l |
-		# while read LINK
-		# do [ -e "$LINK" ] && verbosely ln -sf "$LINK" .
-		# done
-		verbosely find "$LINK_DIR" -name "*.unr"
-	fi
+	# if [ -d "$LINK_DIR" ]
+	# then
+		# # find "$LINK_DIR" -type l |
+		# # while read LINK
+		# # do [ -e "$LINK" ] && verbosely ln -sf "$LINK" .
+		# # done
+		# verbosely find "$LINK_DIR" -name "*.unr"
+	# fi
 }
 
 TODO="$1"
@@ -46,15 +46,18 @@ case "$TODO" in
 
 	cache)
 		mkdir -p "$LINK_DIR"
-		BEFORE="$PWD"
-		cd "$LINK_DIR"
-		rmlinks .
-		cd "$BEFORE"
+		# BEFORE="$PWD"
+		# cd "$LINK_DIR"
+		# rmlinks .
+		# cd "$BEFORE"
+		rmlinks "$LINK_DIR"/
 
+		jshinfo "Main files"
+		## Since cache is not mostly symlinks, we add the direct files first:
 		tty >/dev/null && TTY=true
 		## And now we also add any textures/sounds etc. from the map dirs.
 		## First incantation does maps too, but maybe second is better (less errorfull) if maps are there already!
-		verbosely find $MAP_DIRS -type f -name "*.u*" |
+		verbosely find $FILE_DIRS "$PWD"/ut-server/ -type f -name "*.u*" |
 		if [ "$TTY" ]
 		then catwithprogress
 		else cat
@@ -63,9 +66,10 @@ case "$TODO" in
 		# verbosely withalldo ln -s --- "$LINK_DIR"
 		while read FILE
 		# do verbosely ln -s "$FILE" "$LINK_DIR"
-		do ln -s "$FILE" "$LINK_DIR"
+		do [ ! -e "$LINK_DIR/`filename "$FILE"`" ] && ln -s "$FILE" "$LINK_DIR"
 		done
 
+		jshinfo "Cache files"
 		## Finally we actually add files from the cache: (now comes last because cachefiles are symlinks these days!)
 		# sh ./restore_names_from_cache.sh /mnt/big/unreal_cache "$LINK_DIR"
 		sh ./restore_names_from_cache.sh /home/joey/linux/.loki/ut/Cache "$LINK_DIR"
@@ -87,8 +91,9 @@ case "$TODO" in
 				do
 					REGEXP=`toregexp "$STRING"`
 					get_map_list | grep "\.unr" | grep -i "$REGEXP"
-					echo "Matching >$STRING<: "`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l` >&2
-				done
+					echo "Maps matching \"$STRING\": "`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l` >&2
+					# echo "\"$STRING\" maps: "`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l` >&2
+				done | randomorder
 			fi
 			get_map_list | grep "\.unr$" | randomorder
 		) | head -200 |
@@ -97,30 +102,31 @@ case "$TODO" in
 		cd ../..
 	;;
 
-	txandaudio)
-		cd ut-server/Textures &&
-		rmlinks .
-		ln -s "$LINK_DIR"/*.utx .
-		cd ../..
+	serverfiles)
+		rmlinks ut-server/
+		
+		find $FILE_DIRS -type f -name "*.utx" |
+		while read FILE
+		do ln -s "$FILE" ut-server/Textures/
+		done
 
-		cd ut-server/Sounds &&
-		rmlinks .
-		ln -s "$LINK_DIR"/*.umx .
-		ln -s "$LINK_DIR"/*.uax .
-		cd ../..
+		find $FILE_DIRS -type f -name "*.umx" -or -name "*.uax" |
+		while read FILE
+		do ln -s "$FILE" ut-server/Sounds/
+		done
 
-		cd ut-server/Music &&
-		rmlinks .
-		ln -s "$LINK_DIR"/*.umx .
-		cd ../..
-	;;
+		find $FILE_DIRS -type f -name "*.umx" |
+		while read FILE
+		do ln -s "$FILE" ut-server/Music/
+		done
 
-	system)
-		cd ut-server/System &&
-		rmlinks .
-		ln -s "$LINK_DIR"/*.u .
-		ln -s "$LINK_DIR"/*.unn . ## skeletalchars.unn!
-		cd ../..
+		# find $FILE_DIRS -type f -name "*.u" -or -name "*.unn" |
+		find $FILE_DIRS -type f -name "*.u" -or -name "*.unn" -or -name "*.int" -or -name "*.ini" |
+		while read FILE
+		do ln -s "$FILE" ut-server/System/
+		done
+
+		jshwarn "After serverfiles you should also do maps!!"
 	;;
 
 	http)
@@ -136,10 +142,13 @@ case "$TODO" in
 		rmlinks .
 		cd "$PREV"
 		## MAP_DIRS unneccessary, but better to reduce symlinks chains
-		verbosely find $MAP_DIRS "$LINK_DIR"/ "$PWD/ut-server"/ -name "*.u*" -not -type d |
+		# verbosely find $MAP_DIRS "$LINK_DIR"/ "$PWD/ut-server"/ -name "*.u*" -not -type d |
+		# verbosely find $MAP_DIRS "$PWD/ut-server"/ -name "*.u*" -type f -not -type d |
+		verbosely find "$PWD/ut-server"/ $FILE_DIRS -name "*.u*" -type f -not -type d |
 		# withalldo verbosely ln -s --- /var/www/tmp/ut_files/
 		# sort | ## That really mucks up order above!
 		# verbosely foreachdo -x ln -s '$X' /var/www/tmp/ut_files/
+		catwithprogress |
 		while read FILE
 		do ln -s "$FILE" /var/www/tmp/ut_files/
 		done
@@ -148,16 +157,18 @@ case "$TODO" in
 
 	mods)
 		## Patches are not in ut-server; used by asu not ucc.
-		cd Patches &&
-		rmlinks .
-		verbosely find /stuff/software/games/unreal/server/mods/ -type f |
-		# notindir added_ok windows_only might_work_not_tried | ## Strips these subdirs
-		withalldo verbosely ln -s --- .
-		cd ..
+		if cd Patches
+		then
+			rmlinks .
+			verbosely find /stuff/software/games/unreal/server/mods/ -type f |
+			# notindir added_ok windows_only might_work_not_tried | ## Strips these subdirs
+			withalldo verbosely ln -s --- .
+			cd ..
+		fi
 	;;
 
 	all)
-		for TODO in cache maps txandaudio system http mods
+		for TODO in cache serverfiles maps http mods
 		# for TODO in maps txandaudio system http mods cache
 		do verbosely sh "$0" "$TODO"
 		done
