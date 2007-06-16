@@ -8,6 +8,8 @@ export LINK_DIR="$PWD/restored_from_cache"
 
 . ut_server.config
 
+. importshfn verbosely
+
 if [ ! "$MAP_DIRS" ]
 then
 	echo "Need MAP_DIRS"
@@ -18,13 +20,14 @@ rmlinks () {
 	DIR="$1"
 	verbosely find "$DIR" -type l |
 	# foreachdo verbosely rm
-	withalldo verbosely rm
+	# withalldo verbosely rm
+	# foreachdo verbosely rmlink
+	# catwithprogress |
+	# foreachdo rmlink
+	foreachdo rm
 }
 
 get_map_list () {
-	# find /stuff/software/games/unreal/server/maps_defaults+some_i_found_on_web/ -type f
-	# find /stuff/software/games/unreal/server/maps/unzipped/ -type f
-	# find /stuff/software/games/unreal/server/maps_unzipped/ -type f -name "*.unr"
 	verbosely find $MAP_DIRS -type f -name "*.unr"
 	if [ -d "$LINK_DIR" ]
 	then
@@ -47,27 +50,50 @@ case "$TODO" in
 		cd "$LINK_DIR"
 		rmlinks .
 		cd "$BEFORE"
+
+		tty >/dev/null && TTY=true
+		## And now we also add any textures/sounds etc. from the map dirs.
+		## First incantation does maps too, but maybe second is better (less errorfull) if maps are there already!
+		verbosely find $MAP_DIRS -type f -name "*.u*" |
+		if [ "$TTY" ]
+		then catwithprogress
+		else cat
+		fi |
+		# verbosely find $MAP_DIRS -type f -name "*.u*" -not -name "*.unr" |
+		# verbosely withalldo ln -s --- "$LINK_DIR"
+		while read FILE
+		# do verbosely ln -s "$FILE" "$LINK_DIR"
+		do ln -s "$FILE" "$LINK_DIR"
+		done
+
+		## Finally we actually add files from the cache: (now comes last because cachefiles are symlinks these days!)
 		# sh ./restore_names_from_cache.sh /mnt/big/unreal_cache "$LINK_DIR"
 		sh ./restore_names_from_cache.sh /home/joey/linux/.loki/ut/Cache "$LINK_DIR"
-
-		## And now we also add any textures/sounds etc. from the map dirs.
-		# verbosely find $MAP_DIRS -type f -name "*.u*" |
-		verbosely find $MAP_DIRS -type f -name "*.u*" -not -name "*.unr" |
-		verbosely withalldo ln -s --- "$LINK_DIR"
 	;;
 
 	maps)
 		cd ut-server/Maps &&
 		rmlinks .
 
-		get_map_list | grep "\.unr$" | wc -l
+		echo "Total maps: "` get_map_list | grep "\.unr$" | wc -l `
 		# get_map_list | grep "\.unr$" | randomorder | head -200 |
 		(
-			[ "$1" ] && get_map_list | grep "\.unr" | grep -i "$1"
+			# [ "$1" ] && get_map_list | grep "\.unr" | grep -i "$1"
+			if [ "$*" ]
+			then
+				# REGEXP=`for X; do echo "$X"; done | list2regexp`
+				# get_map_list | grep "\.unr" | grep -i "$REGEXP"
+				for STRING
+				do
+					REGEXP=`toregexp "$STRING"`
+					get_map_list | grep "\.unr" | grep -i "$REGEXP"
+					echo "Matching >$STRING<: "`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l` >&2
+				done
+			fi
 			get_map_list | grep "\.unr$" | randomorder
 		) | head -200 |
-		withalldo verbosely ln -s --- .
-		verbosely find . -name "*.unr" | wc -l
+		withalldo verbosely ln -s --- . 2>/dev/null
+		echo "Loaded maps: "`verbosely find . -name "*.unr" | wc -l`
 		cd ../..
 	;;
 
@@ -124,7 +150,6 @@ case "$TODO" in
 		## Patches are not in ut-server; used by asu not ucc.
 		cd Patches &&
 		rmlinks .
-		# verbosely ln -s /stuff/software/games/unreal/server/mods/* .
 		verbosely find /stuff/software/games/unreal/server/mods/ -type f |
 		# notindir added_ok windows_only might_work_not_tried | ## Strips these subdirs
 		withalldo verbosely ln -s --- .
@@ -133,6 +158,7 @@ case "$TODO" in
 
 	all)
 		for TODO in cache maps txandaudio system http mods
+		# for TODO in maps txandaudio system http mods cache
 		do verbosely sh "$0" "$TODO"
 		done
 	;;
