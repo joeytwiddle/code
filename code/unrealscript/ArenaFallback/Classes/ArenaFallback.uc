@@ -76,7 +76,7 @@ function class<weapon> getRandomWeaponClass() {
 	// return Class(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
 	w = class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
 	// Log("ArenaFallback: getRandomWeaponClass() returning: "$w);
-	Log("["$depth$"] 2 ! "$w);
+	// Log("["$depth$"] 2 ! choosing "$w);
 	return w;
 }
 
@@ -121,11 +121,11 @@ function bool AlwaysKeep(Actor Other) {
 
 function MyReplaceWith(Actor Other,String str) {
 	if (str=="None") {
-		Log("["$depth$"] 5 Z "$ Other $ " ! -> ! " $ str);
+		Log("["$depth$"] 5 x skipping "$ Other $ " -> " $ str);
 		return;
 	}
 	depth++;
-	Log("["$depth$"] 3 > "$ Other $ " -> " $ str);
+	Log("["$depth$"] 3 > replacing "$ Other $ " -> " $ str);
 	ReplaceWith(Other,str);
 	depth--;
 }
@@ -136,12 +136,12 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 	local Actor tmp;
 
 	if (depth>0) {
-		Log("("$depth$") 4 x " $ Other $ " ("$bSuperRelevant$")");
+		Log("("$depth$") 4 < todeep " $ Other $ " ("$bSuperRelevant$")");
 		return True;
 	}
 
 	// Log("ArenaFallback: CheckReplacement("$Other$","$bSuperRelevant$")");
-	Log("["$depth$"] 1 ? " $ Other $ " ("$bSuperRelevant$")");
+	// Log("["$depth$"] 1 ? checking " $ Other $ " ("$bSuperRelevant$")");
 
 	if (bForceArena) {
 
