@@ -82,6 +82,17 @@ case "$TODO" in
 		echo "Total maps: "` get_map_list | grep "\.unr$" | wc -l `
 		# get_map_list | grep "\.unr$" | randomorder | head -200 |
 		(
+
+			## Top 100 from the ranking:
+			cd ../..
+			memo sh ./map_ranking.sh getranking | dropcols 1 | head -100 |
+			while read MAPNAME
+			do IKNOWIDONTHAVEATTY=1 memo find $MAP_DIRS -type f -iname "$MAPNAME.unr" | head -1
+			done # | pipeboth
+			echo -n "Top 100: " >&2
+			memo sh ./map_ranking.sh getranking | dropcols 1 | head -100 | wc -l >&2
+
+			## Any selected by user regexp:
 			# [ "$1" ] && get_map_list | grep "\.unr" | grep -i "$1"
 			if [ "$*" ]
 			then
@@ -90,21 +101,39 @@ case "$TODO" in
 				for STRING
 				do
 					REGEXP=`toregexp "$STRING"`
-					get_map_list | grep "\.unr" | grep -i "$REGEXP"
-					echo "Maps matching \"$STRING\": "`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l` >&2
+					## NOTE we apply the regexp to the list of file *paths* because the directory may be useful.
+					## BUG that means some queries will match all maps; we should only really grep the relative path from the maps topdir!
+					# get_map_list | grep "\.unr" | grep -i "$REGEXP"
+					MATCHING_MAPS=`get_map_list | grep "\.unr$" | grep -i "$REGEXP"`
+					echo "$MATCHING_MAPS"
+					# NUM_MAPS_MATCHING=`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l`
+					NUM_MAPS_MATCHING=`echo "$MATCHING_MAPS" | wc -l`
+					echo "Maps matching \"$STRING\": $NUM_MAPS_MATCHING" >&2
+					if [ "$NUM_MAPS_MATCHING" -lt 10 ]
+					then ( echo "$MATCHING_MAPS" | sed 's+.*/++;s+$+, +' | tr -d '\n' | sed 's+,$++' ; echo ) >&2
+					fi
 					# echo "\"$STRING\" maps: "`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l` >&2
 				done | randomorder
 			fi
+
+			## All the rest:
 			get_map_list | grep "\.unr$" | randomorder
-		) | head -200 |
+
+		) | head -200 | # pipeboth |
 		withalldo verbosely ln -s --- . 2>/dev/null
 		echo "Loaded maps: "`verbosely find . -name "*.unr" | wc -l`
 		cd ../..
+
+		## Now do the ranking:
+		## No cos the maps don't seem to load =/
+		## OK now trying with _ instead of .:
+		sh ./map_ranking.sh
+		echo "Applied ranking"
 	;;
 
 	serverfiles)
 		rmlinks ut-server/
-		
+
 		find $FILE_DIRS -type f -name "*.utx" |
 		while read FILE
 		do ln -s "$FILE" ut-server/Textures/
