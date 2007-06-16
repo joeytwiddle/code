@@ -82,17 +82,6 @@ case "$TODO" in
 		echo "Total maps: "` get_map_list | grep "\.unr$" | wc -l `
 		# get_map_list | grep "\.unr$" | randomorder | head -200 |
 		(
-
-			## Top 100 from the ranking:
-			cd ../..
-			memo sh ./map_ranking.sh getranking | dropcols 1 | head -100 |
-			while read MAPNAME
-			do IKNOWIDONTHAVEATTY=1 memo find $MAP_DIRS -type f -iname "$MAPNAME.unr" | head -1
-			done # | pipeboth
-			echo -n "Top 100: " >&2
-			memo sh ./map_ranking.sh getranking | dropcols 1 | head -100 | wc -l >&2
-
-			## Any selected by user regexp:
 			# [ "$1" ] && get_map_list | grep "\.unr" | grep -i "$1"
 			if [ "$*" ]
 			then
@@ -115,18 +104,13 @@ case "$TODO" in
 					# echo "\"$STRING\" maps: "`get_map_list | grep "\.unr" | grep -i "$REGEXP" | wc -l` >&2
 				done | randomorder
 			fi
-
-			## All the rest:
 			get_map_list | grep "\.unr$" | randomorder
-
-		) | head -200 | # pipeboth |
+		) | head -200 |
 		withalldo verbosely ln -s --- . 2>/dev/null
 		echo "Loaded maps: "`verbosely find . -name "*.unr" | wc -l`
 		cd ../..
 
 		## Now do the ranking:
-		## No cos the maps don't seem to load =/
-		## OK now trying with _ instead of .:
 		sh ./map_ranking.sh
 		echo "Applied ranking"
 	;;
