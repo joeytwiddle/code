@@ -250,7 +250,7 @@ function PostBeginPlay() {
 
   // If AutoTeamBalance was installed as a ServerActor, we need to register it as a mutator:
   Level.Game.BaseMutator.AddMutator(Self); // now made safe by our custom implementation of AddMutator below
-  Log("AutoTeamBalance ("$Self$") added mutator done");
+  Log("AutoTeamBalance ("$Self$") added mutator");
 
   // btw just interesting to note: if i have AutoTeamBalance as a ServerActor and a mutator on startup arguments, the mutator gets its PostBeginPlay called before the ServerActor's, and the ServerActor mut doesn't seem to get called at all.
 
@@ -269,8 +269,8 @@ function PostBeginPlay() {
 
   if (bAllowMidgameRebalancing) {
     Level.Game.RegisterMessageMutator(Self);
+    Log("AutoTeamBalance ("$Self$") registered as messenger");
   }
-  Log("AutoTeamBalance ("$Self$") registered as messenger");
 
   // timeGameStarted = Level.TimeSeconds; // the game does not actually start until players and DoGameStart() is called.  This has been moved down.
 
@@ -583,6 +583,9 @@ function DoGameStart() {
 
 // Balance the teams just before the start of a new game.  No need for FlagStrength here.
 // This was originally Daniel's InitTeams() method, but I have renamed it.
+// It can now be called mid-game using "mutate teams <pass> full"
+// In this case, it doesn't check which players are holding flags, but hopefully the flag will at least drop or return when the player is restarted.
+// BUG TODO: could be unfair if one team drops flag because their FC is switched, but the other team's FC keeps his.  :P
 function ForceFullTeamsRebalance() {
   local Pawn p;
   local int st;
@@ -726,8 +729,10 @@ function ForceFullTeamsRebalance() {
 
   // Show team strengths to all players
   // Log("AutoTeamBalance.ForceFullTeamsRebalance(): Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ ".");
-  BroadcastMessageAndLog("Red team strength is now "$GetTeamStrengthWithoutBotsOrCaps(0)$".  Blue team strength is "$GetTeamStrengthWithoutBotsOrCaps(1)$".");
-  if (bBroadcastStuff) { BroadcastMessage("Red team strength is now " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
+  // Human strength:
+  // if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrengthWithoutBotsOrCaps(0))$".  Blue team strength is "$Int(GetTeamStrengthWithoutBotsOrCaps(1))$"."); }
+  // Non-human strength: But then, this was non-human balancing!
+  if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 
   // Little point doing this here; wait until we update the player strengths.
   // CopyArraysIntoConfig();
@@ -747,19 +752,27 @@ function ForceFullTeamsRebalance() {
 }
 
 function ChangePlayerToTeam(Pawn p, int team) {
+  // Note: if ForceFullTeamsRebalance() is invoked mid-game; it's possible that this player is already on this team, in which case don't switch.
+  if (team == p.PlayerReplicationInfo.Team) {
+    if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$team$"): doing nothing since player is already on team "$team); }
+    return;
+  }
+  if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$team); }
   Level.Game.ChangeTeam(p,team);
+  Level.Game.RestartPlayer(p);
   if (gameStartDone) {
-    Level.Game.RestartPlayer(p);
-    SendClientMessage(p,"You have been moved to the "$getTeamName(team)$" team.");
+    // Level.Game.RestartPlayer(p);
+    // SendClientMessage(p,"You have been moved to the "$getTeamName(team)$" team.");
     // SendClientMessage(p,"YOU have been MOVED to the >> "$getTeamName(teamnr)$" << team for a fairer game.");
-    p.ShakeView(2.0,8000.0,1000.0);
+    SendClientMessage(p,"You are now on the "$getTeamName(team)$" team.");
+    p.ShakeView(2.0,2000.0,0.0);
   }
 }
 
 function MidGameTeamBalance() {
   local int redTeamCount,blueTeamCount;
 
-  if (bDebugLogging) { Log("MidGameTeamBalance() tgp="$Level.Game.IsA('TeamGamePlus')$" bTG="$Level.Game.bTeamGame); }
+  // if (bDebugLogging) { Log("MidGameTeamBalance() tgp="$Level.Game.IsA('TeamGamePlus')$" bTG="$Level.Game.bTeamGame); }
 
   // Surely ShouldBalance() has already been tested.
   if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
@@ -769,12 +782,14 @@ function MidGameTeamBalance() {
   // we could always do MidGameTeamBalanceSwitchTwoPlayers, but with the option of one of those players being "None"
   // in the case of 3 elites versus 4 noobs, this should swap the best elite for the worst noob
 
-  // TODO BUG: need count WITHOUT bots!
+  // DONE: need count WITHOUT bots!
   // redTeamCount = TeamGamePlus(Level.Game).Teams[0].Size;
   // blueTeamCount = TeamGamePlus(Level.Game).Teams[1].Size;
-  redTeamCount = CountHumansOnTeam(0,TeamGamePlus(Level.Game));
-  blueTeamCount = CountHumansOnTeam(1,TeamGamePlus(Level.Game));
+  redTeamCount = CountHumansOnTeam(0);
+  blueTeamCount = CountHumansOnTeam(1);
   // We assume bot skills are pretty much irrelevant, and the bots will auto-switch to balance teams after we move any players around.
+
+  if (bDebugLogging) { Log("MidGameTeamBalance() "$redTeamCount$" v "$blueTeamCount$""); }
 
   // TODO: what if redTeamCount << blueTeamCount ?
   if (redTeamCount < blueTeamCount) {
@@ -787,18 +802,18 @@ function MidGameTeamBalance() {
 
 }
 
-function int CountHumansOnTeam(int team, TeamGamePlus game) {
+function int CountHumansOnTeam(int team) {
   local int count;
   local Pawn p;
   count = 0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (isHumanPlayer(p)) count++;
+    if (isHumanPlayer(p) && p.PlayerReplicationInfo.Team == team) count++;
   }
   return count;
 }
 
 function bool isHumanPlayer(Pawn p) {
-  return p.bIsPlayer && p.bIsHuman && !p.IsA('Spectator'); // && !p.IsA('Bot')
+  return p.bIsPlayer && p.bIsHuman && !p.IsA('Spectator') && !p.IsA('Bot'); // seems this check for bot is needed!
 }
 
 function String getTeamName(int teamNum) {
@@ -839,7 +854,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     return False;
   } else {
     ChangePlayerToTeam(closestPlayer,toTeam);
-    BroadcastMessageAndLog("Red team strength is now "$GetTeamStrengthWithoutBotsOrCaps(0)$", Blue team strength is "$GetTeamStrengthWithoutBotsOrCaps(1)$".");
+    BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrengthWithoutBotsOrCaps(0))$", Blue team strength is "$Int(GetTeamStrengthWithoutBotsOrCaps(1))$".");
     return True;
   }
 }
@@ -880,17 +895,15 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
     }
   }
 
-/*
   if (redPlayerToMove != None) { // && implied bluePlayerToMove != None
     ChangePlayerToTeam(redPlayerToMove,1);
     ChangePlayerToTeam(bluePlayerToMove,0);
-    BroadcastMessageAndLog("Red team strength is now "$GetTeamStrengthWithoutBotsOrCaps(0)$", Blue team strength is "$GetTeamStrengthWithoutBotsOrCaps(1)$".");
+    BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrengthWithoutBotsOrCaps(0))$", Blue team strength is "$Int(GetTeamStrengthWithoutBotsOrCaps(1))$".");
     return True;
   } else {
     BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
     return False;
   }
-  */
 }
 
 function float GetTeamStrengthWithoutBotsOrCaps(int teamNum) {
@@ -902,8 +915,7 @@ function float GetTeamStrengthWithoutBotsOrCaps(int teamNum) {
       strength += GetPawnStrength(p);
     }
   }
-  // if (bDebugLogging) { Log(TeamGamePlus.TeamColor[teamNum]$" team has strength "$strength); }
-  if (bDebugLogging) { BroadcastMessageAndLog(getTeamName(teamNum)$" team has strength "$strength); }
+  // if (bDebugLogging) { Log(getTeamName(teamNum)$" team has human strength "$strength); }
   return strength;
 }
 
@@ -999,6 +1011,13 @@ function CopyArraysIntoConfig() {
   if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
 }
 
+// CONSIDER: a simple method of trying to squeeze some of the largest inefficiency out of this search:
+//           when a player's record is updated (or found?), move it one record up in the list (unless it's already at the top)
+//           this way, the most frequent, and regular players will be nearer the top of the list, so it will be faster to retrieve their records
+//           side-effect: the positions of the records will hold meta-info: each game a player plays, will move him 1 spot up on the ladder
+//           players near the bottom will be infrequent or not recent records, so they are good for recycling :)
+//           note A,B -> B,A -> A,B if swap order != ladder order; will moving 2 spots stop this? no
+//           the meta-info will ~ HoursPlayed
 // return index i into playerData[] and ip[]/nick[]/... arrays, but not always an exact player match!
 function int FindPlayerRecord(PlayerPawn p) {
   local int found;
@@ -1303,16 +1322,44 @@ function string stripPort(string ip_and_port) {
 // function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 
-  // OK the 8 calls are because this gets called once per player, plus once for UTServerAdminSpectator, and once for ChatLogger
-  // Solution: only process it when Sender = Receiver ^^
-  // (Interestingly, despite having 2 bots on my team, TeamSay messages only get sent to myself!  (Maybe if there were other humans...))
+  // TODO TESTING TO FIX BUG: After i switched team, and did a "mutate teams  full", I couldn't make say "!teams" work any more.
+  if (Sender != Receiver && bDebugLogging) {
+    Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Ignoring ("$Sender$" -> "$Receiver$") "$Msg$"");
+  }
+  // Mmm when the problem occurs, MutatorTeamMessage doesn't get called at all!
+  // I'm sometimes getting it at the start of the map too, before making any team changes.
 
   if (Sender == Receiver) { // Only process the message once.
 
-    if (bDebugLogging) { // TESTING I want to see if we can detect a player saying "!teams" this way... Answer: no! For that we need a MessagingSpectator
-      Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(\""$Msg$"\") was called.");
-      // Log("AutoTeamBalance.MutatorTeamMessage("$Sender$","$Receiver$","$PRI$",\""$Msg$"\","$Type$","$bBeep$") was called.");
+    if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcast/TeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+
+    if (bAllowMidgameRebalancing) {
+      if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
+        // TODO BUG IMPORTANT: check this is not called during bTournament games.  1) don't RegisterMessageMutator in the first place 2) MidGameTeamBalance() should check ShouldBalance (but could that check be less strict than the start-game check? :o )
+        // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
+        // ForceFullTeamsRebalance();
+        Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling MidGameTeamBalance().");
+        MidGameTeamBalance();
+      }
     }
+
+  }
+
+  //// This gets called, and passed to chat, BUT still gets called 8 times!!
+  // Isn't this the same as calling super?
+  if ( NextMessageMutator != None ) {
+    return NextMessageMutator.MutatorTeamMessage( Sender, Receiver, PRI, Msg, Type, bBeep ); // commenting this out does not stop the 8 repeats
+  } else {
+    return true; // this seems to be what's needed to ensure the message finally reaches the game (doesn't get swallowed)
+  }
+
+}
+
+/* Old comments from this method:
+
+  // OK the 8 calls are because this gets called once per player, plus once for UTServerAdminSpectator, and once for ChatLogger
+  // Solution: only process it when Sender = Receiver ^^
+  // (Interestingly, despite having 2 bots on my team, TeamSay messages only get sent to myself!  (Maybe if there were other humans...))
 
     // CheckGameEnd(); // Does no harm to do this twice.  The broadcast from mapvote might make the stats parsing come sooner than waiting for the timer.
 
@@ -1330,18 +1377,6 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
       // OK well that didn't work, apparently the player didn't have an IP address when he first joined the server.  (Maybe he gets assigned one once this stack is returned.)
     // }
     // if ( InStr(Msg,"left the game.")>=0 ) {
-
-    if (bAllowMidgameRebalancing) {
-      // if ( InStr(Msg,"!teams")>=0 ) { // was using instr while testing the broadcast method, which gives us longer strings
-      if (Msg ~= "teams" || Msg ~= "!teams") {
-        Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
-        // ForceFullTeamsRebalance();
-        MidGameTeamBalance();
-        // TODO BUG IMPORTANT: check this is not called during bTournament games.  1) don't RegisterMessageMutator in the first place 2) MidGameTeamBalance() should check ShouldBalance (but could that check be less strict than the start-game check? :o )
-      }
-    }
-
-  }
 
   // NOTE: read "8 times" below as "once per mutator".  NO don't!  It gets called 8 times even with only 4 muts!  :P
 
@@ -1366,13 +1401,6 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
     // return false;
   // }
 
-  //// This gets called, and passed to chat, BUT still gets called 8 times!!
-  if ( NextMessageMutator != None ) {
-    return NextMessageMutator.MutatorTeamMessage( Sender, Receiver, PRI, Msg, Type, bBeep ); // commenting this out does not stop the 8 repeats
-  } else {
-    return true; // this seems to be what's needed to ensure the message finally reaches the game (doesn't get swallowed)
-  }
-
   //// This allows messages through, but this method doesn't seem to get called.  (Didn't it used to though? :o )
   // return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
   //// This method does get called, but 8 times :E and the messages don't reach the game :f
@@ -1380,9 +1408,9 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
   // BroadcastMessage(Msg);
 
-}
+*/
 
-// === THIS DOES NOT GET CALLED IF we have AutoTeamBalance as a ServerActor, even if we have it as a mutator as well.
+// I thought I had a problem that this was not getting called if have AutoTeamBalance as a ServerActor, but that problem has either gone now, or I was getting this confused with MutatorTeamMessage().
 function Mutate(String str, PlayerPawn Sender) {
   local String args[255];
   // local array<String> args;
@@ -1473,6 +1501,7 @@ function int SplitString(String str, String divider, out String parts[255]) {
 
 
 // I want to Log all calls to BroadcastMessage() so that I can see without playing how much the players are getting spammed by broadcasts.
+// Eventually, they should be turned back to just BroadcastMessage() calls.
 function BroadcastMessageAndLog(string Msg) {
   if (bDebugLogging) { Log("AutoTeamBalance Broadcasting: "$Msg); }
   BroadcastMessage(Msg);
