@@ -1,3 +1,5 @@
+/*
+
 //// From PlayerPawn.ClientMessage():
 // pawn.Player.Console.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
 // pawn.myHUD.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
@@ -121,6 +123,8 @@
 
 // TODO CONSIDER: should we record lots of stats, like frags-per-hour, score-per-hour, normalised-score-per-hour, num-games-played, num-games-won, num-games-lost (diff = num-drawn or left before end)
 
+*/
+
 //=============================================================================
 
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
@@ -134,7 +138,8 @@ var config bool bDebugLogging;     // logs are more verbose/spammy than usual; r
 // var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
 
 var config bool bLetPlayersRebalance;
-var config bool bBalanceBots;
+var config bool bBalanceBots; // Include bots in the rebalancing
+var config bool bRankBots; // Record stats for bots!
 var config int MinSecondsBeforeRebalance;
 var config String AdminPassword;   // Needed for mid-game rebalancing with: "mutate teams <pass>"
 
@@ -155,7 +160,7 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 // var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
 // var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
 
-var config bool bLogEndStats;
+var config bool bLogEndStats;       // in case you want to analyze the end-game stats yourself, instead of leaving that to AutoTeamBalance
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config float MaxHoursWhenCopyingOldRecord;     // If you have lots of fakenicklamers on your server, set this high.  If not, set it low, so that players who unluckily share the same IP or nick, don't get their stats confused.
 // var config int MaxPollsBeforeRecyclingStrength;    // TODO later on this line! after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // TODO: refactor this to MaxHoursOfOldStats, more tangible unit for admin to edit
@@ -206,6 +211,8 @@ defaultproperties {
   bLetPlayersRebalance=True // TODO: default this to false for release? (nahhh, just false on XOL :P)
   MinSecondsBeforeRebalance=20 // must be at least 1, to avoid a bug with multiple calls to MutatorTeamMessage
   AdminPassword="defaults_to_admin_pass"
+  bBalanceBots=True
+  bRankBots=True
   bAutoBalanceTeamsForCTF=True
   bAutoBalanceTeamsForTDM=True
   bAutoBalanceTeamsForAS=True
@@ -312,6 +319,7 @@ event PostLogin(PlayerPawn newPlayer) {
   if (bDebugLogging) { Log("event "$Self$".PostLogin("$newPlayer$") was called."); }
 }
 
+/*
 // TODO CONSIDER: if we make the rollback of old scores very fast, and put more weight into having won, then everyone should get an even number of wins.
 //                if a player gets in 4 lost matches in a row, he will soon be placed on a strong team against a bunch of noobs who have been lucky enough to win some recent and are about to get their balance by getting pwned.  ^^
 //                however, this is not the final goal: players who have put effort into learning to play UT should be rewarded for their effort: their effort and hopefully therefore increased skill should pay off in their ability to win games (and frag, score highly).
@@ -320,6 +328,7 @@ event PostLogin(PlayerPawn newPlayer) {
 //                This could in fact be artificially encouraged, by using the teambalance to put players who have spent many hours on the server on the same team as strong players who would help them to win (and hence score highly).
 //                (This situation would actually mean that the longer a person plays, the worse their teambalance rating would become.)
 //                Maybe all these CTF reward bonuses (XOL's and SmartCTF's) actually only cause the team that win (own) to score even more highly than they deserve.  (This took random actions, but because of a slightly high overall skill, they managed to make covers and caps and all score well.)  <-- wtf does this mean?! i thought there was a valid point here! ;)
+*/
 
 // Implementation of AddMutator which prevents double or recursive adding:
 function AddMutator(Mutator Other) {
@@ -411,6 +420,13 @@ function DoGameStart() {
 function bool AllowedToBalance(Pawn b) {
   if (b.IsA('Bot'))
     return bBalanceBots;
+  else
+    return True;
+}
+
+function bool AllowedToRank(Pawn b) {
+  if (b.IsA('Bot'))
+    return bRankBots;
   else
     return True;
 }
@@ -630,7 +646,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
           teamSize[teamnr]++;
           teamStr[teamnr] += GetPawnStrength(p);
           // I changed this from Daniel's version, so that bot strengths are not considered.
-          // Since a player is joining, one of the bots is about to leave, so counting that bot's strength is inaccurate, and we don't know which bot it will be.  So let's just count player strengths.
+          // Since a player is joining, one of the bots will probably leave, so counting that bot's strength is inaccurate, and we don't know which bot it will be.  So let's just count player strengths.
         }
         teamSizeWithBots[teamnr]++;
       }
@@ -729,7 +745,8 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
   toTeamStrength = GetTeamStrength(toTeam);
   difference = fromTeamStrength - toTeamStrength;
   if (difference<0) {
-    if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not adjusting teams because smaller team looks stronger."); }
+    // if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not adjusting teams because smaller team looks stronger."); }
+    if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance refusing to help "$getTeamName(toTeam)$" because it is already stronger ("$toTeamStrength$">"$fromTeamStrength$")"); }
     // it says this when i'm the only player on the server, with 5 bots; embarassing
     return False;
   }
@@ -940,7 +957,7 @@ function float GetTeamStrength(int teamNum) {
 function int GetPawnStrength(Pawn p) {
   local int st;
 
-  if (p.IsA('PlayerPawn') && p.bIsHuman)
+  if (p.IsA('PlayerPawn') && AllowedToRank(p))
   {
     // a human player - get his strength
     st = GetPlayerStrength(PlayerPawn(p));
@@ -1027,6 +1044,7 @@ function CopyArraysIntoConfig() {
   if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
 }
 
+/*
 // CONSIDER: a simple method of trying to squeeze some of the largest inefficiency out of this search:
 //           when a player's record is updated (or found?), move it one record up in the list (unless it's already at the top)
 //           this way, the most frequent, and regular players will be nearer the top of the list, so it will be faster to retrieve their records
@@ -1035,6 +1053,7 @@ function CopyArraysIntoConfig() {
 //           note A,B -> B,A -> A,B if swap order != ladder order; will moving 2 spots stop this? no
 //           the meta-info will ~ HoursPlayed
 // return index i into playerData[] and ip[]/nick[]/... arrays, but not always an exact player match!
+*/
 function int FindPlayerRecord(PlayerPawn p) {
   local int found;
   local int i;
@@ -1093,9 +1112,11 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   return pos;
 }
 
+/*
 // Finds an old player record which we can replace.  Actually since we don't have a last_seen field, we'll just have to remove the "shortest" record.  (Player didn't spend long on server; their stats don't mean a lot)
 // Only problem, if the database really is saturated (but I think that's unlikely), this new player will probably be the next record to be replaced!  To keep his record in the database, the new player just has to play for longer than the now "shortest" record before another new player joins.
 // Actually one nice side-effect of the particular algorithm we're using below (<lowest instead of <=lowest): if a few records share the "shortest record" time (actually this was more likely when our hours_played were incremented in fixed-size steps), it will be the first of them that gets replaced first.  :)  Down-side: the new player now in that early position in the stats-table was not an early player on the server, so he breaks this very pattern.
+*/
 function int FindShortestPlayerRecord() {
   local int i,found;
   found = 0;
@@ -1107,6 +1128,7 @@ function int FindShortestPlayerRecord() {
   return found;
 }
 
+/*
 // nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
 // OK well it did get called! :)
 // BUT later mutators in the list have the right to force the game into overtime (we should pass the call onto them here I think), so it may not actually BE the end of the game!
@@ -1114,6 +1136,7 @@ function int FindShortestPlayerRecord() {
 // Or start that timer here? ^^ (so it doesn't need to check during the game)
 // Hmm from tests I found this function gets called twice for overtime games, but both times bGameEnded=False
 // I hope it doesn't matter that we call SetTimer() twice; I imagine it does not start a second timer.
+*/
 function bool HandleEndGame() {
   local bool b;
   // if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
@@ -1184,12 +1207,12 @@ function UpdateStatsAtEndOfGame() {
   // if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats."); }
   if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is updating player stats."); }
   // TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
-  if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: NAME IP PING SCORE FRAGS DEATHS"); }
+  if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: NAME IP TEAM PING SCORE FRAGS DEATHS TIME"); }
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
+    if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) { // lol
       UpdateStatsForPlayer(PlayerPawn(p));
+      if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" "$PlayerPawn(p).GetPlayerNetworkAddress()$" "$PlayerPawn(p).PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.Team$" "$PlayerPawn(p).PlayerReplicationInfo.Score$" ? "$PlayerPawn(p).PlayerReplicationInfo.Deaths$" "$(Level.TimeSeconds - PlayerPawn(p).PlayerReplicationInfo.StartTime)$""); }
     }
-    if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" "$PlayerPawn(p).GetPlayerNetworkAddress()$" "$PlayerPawn(p).PlayerReplicationInfo.Ping$" "$PlayerPawn(p).PlayerReplicationInfo.Score$" ? "$PlayerPawn(p).PlayerReplicationInfo.Deaths$""); }
   }
 
   // Save the new stats in the config/ini file:
@@ -1337,7 +1360,7 @@ function float NormaliseScore(float score) {
   // We ignore bots scores and count, so it is irrelevant whether the bots have scored nothing, or have pwned the humans, or have performed somewhere inbetween.  Only player's relative scores are taken into account.
   averageGameScore = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
+    if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) { // lol
       averageGameScore += PlayerPawn(p).PlayerReplicationInfo.Score;
       playerCount++;
     }
@@ -1360,9 +1383,14 @@ function float NormaliseScore(float score) {
 
 // Takes everything before the first ":" - you should almost always use this when getting PlayerPawn.GetPlayerNetworkAddress(); at least in my experience the client's port number changed frequently.
 function string stripPort(string ip_and_port) {
+  if ((""$ip_and_port)=="None" || ip_and_port=="") {
+    if (bDebugLogging) { Log("stripPort(); ip_and_port="$ip_and_port); }
+    return "0.0.0.0";
+  }
   return Left(ip_and_port,InStr(ip_and_port,":"));
 }
 
+/*
 // Code snippet from advwaad, taken for interest:
 // for(P=level.pawnlist; P!=none ; P=P.nextpawn)
 // if( P.IsA('TournamentPlayer') || P.IsA('Bot') )
@@ -1381,9 +1409,11 @@ function string stripPort(string ip_and_port) {
 // if (TGRI.Teams[0] < TGRI.Teams[1])
 // //Do something.......Blue Team > Red Team
 // }
+*/
 
 // MORE TESTING:
 
+/*
 // Matt's method of catch player joined / left game events:
 // Mutator broadcast message is called when the server broadcasts out
 // UT will look for this function, and then you can do whatever you want
@@ -1394,6 +1424,7 @@ function string stripPort(string ip_and_port) {
 // So I'm gonna take it out entirely
 // After looking at TeamBallancer.uc, I changed this from MutatorBroadcastMessage to MutatorTeamMessage
 // function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
+*/
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 
   // TODO TESTING TO FIX BUG: After i switched team, and did a "mutate teams  full", I couldn't make say "!teams" work any more.
@@ -1489,6 +1520,7 @@ function Mutate(String str, PlayerPawn Sender) {
   local String args[255];
   // local array<String> args;
   local String admin_pass;
+  local int argcount;
 
   if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
@@ -1501,53 +1533,61 @@ function Mutate(String str, PlayerPawn Sender) {
   else
     admin_pass = AdminPassword;
 
-  SplitString(str," ",args);
+  argcount = SplitString(str," ",args);
 
-  if ( args[0]~="TEAMS" && ( admin_pass=="" || args[1]~=admin_pass ) ) {
-    if (!Level.Game.GameReplicationInfo.bTeamGame) {
-      Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
-    } else {
-      // if (DeathMatchPlus(Level.Game).bTournament) {
-      // if (args[2]~="FULL" || args[2]~="FORCE") {
-      // } else {
-      // }
-      // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has requested teambalance."); }
-      MidGameRebalance();
+  if (admin_pass=="" || args[argcount-1]~=admin_pass) {
+
+    if ( args[0]~="TEAMS" ) {
+      if (!Level.Game.GameReplicationInfo.bTeamGame) {
+        Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
+      } else {
+        // if (DeathMatchPlus(Level.Game).bTournament) {
+        // if (args[2]~="FULL" || args[2]~="FORCE") {
+        // } else {
+        // }
+        // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has requested teambalance."); }
+        MidGameRebalance();
+      }
+
+    } else if ( args[0]~="FORCETEAMS" ) {
+      // Sender.ClientMessage("AutoTeamBalance performing full teams rebalance...");
+      if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has forced a full teams rebalance."); }
+      // To make this balance as accurate as possible, we update the stats now, so we can use the scores from this game so-far.
+      // But since this would mess up the end-game stats updating (counting this part of the game twice), we restore the stats from the config afterwards.
+      // CopyArraysIntoConfig(); // Not actually needed; they should be identical at this stage
+      UpdateStatsAtEndOfGame();
+      ForceFullTeamsRebalance();
+      CopyConfigIntoArrays();
+
+    } else if ( args[0]~="TORED" ) {
+      // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
+      ChangePlayerToTeam(FindPlayerNamed(args[1]),0);
+    } else if ( args[0]~="TOBLUE" ) {
+      // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
+      ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
+
+    } else if ( args[0]~="WARN" ) {
+      SendClientMessage(FindPlayerNamed(args[1]),args[2]);
+      FindPlayerNamed(args[1]).ShakeView(4.0,8000.0,12000.0);
+
+    // TODO: Experimental; comment out in final build
+    // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
+    } else if (args[0]~="GET" ) {
+      Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]));
+    /*
+    // Allows semiadmins to write to variables (probably equivalent to: admin set <package> <name> <value>)
+    } else if (args[0]~="SET" ) {
+      ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+      Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
+    */
+    } else if ( args[0]~="SAVECONFIG" ) {
+      UpdateStatsAtEndOfGame();
+      SaveConfig();
     }
 
-  } else if ( args[0]~="FORCETEAMS" && ( admin_pass=="" || args[1]~=admin_pass ) ) {
-    // Sender.ClientMessage("AutoTeamBalance performing full teams rebalance...");
-    if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has forced a full teams rebalance."); }
-    // To make this balance as accurate as possible, we update the stats now, so we can use the scores from this game so-far.
-    // But since this would mess up the end-game stats updating (counting this part of the game twice), we restore the stats from the config afterwards.
-    // CopyArraysIntoConfig(); // Not actually needed; they should be identical at this stage
-    UpdateStatsAtEndOfGame();
-    ForceFullTeamsRebalance();
-    CopyConfigIntoArrays();
-
-  } else if ( args[0]~="TORED" && ( admin_pass=="" || args[2]~=admin_pass ) ) {
-    // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-    ChangePlayerToTeam(FindPlayerNamed(args[1]),0);
-  } else if ( args[0]~="TOBLUE" && ( admin_pass=="" || args[2]~=admin_pass ) ) {
-    // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-    ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
-
-  // TODO: Experimental; comment out in final build
-  // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
-  } else if (args[0]~="GET" && ( admin_pass=="" || args[3]~=admin_pass ) ) {
-    Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]));
-  /*
-  // Allows semiadmins to write to variables (probably equivalent to: admin set <package> <name> <value>)
-  } else if (args[0]~="SET" && ( admin_pass=="" || args[4]~=admin_pass ) ) {
-    ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
-    Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
-  */
-  } else if ( args[0]~="SAVECONFIG" && ( admin_pass=="" || args[1]~=admin_pass ) ) {
-    SaveConfig();
-
-  } else {
-    Super.Mutate(str,Sender);
   }
+
+  Super.Mutate(str,Sender);
 }
 
 function Pawn FindPlayerNamed(String name) {
@@ -1566,9 +1606,11 @@ function Pawn FindPlayerNamed(String name) {
   return found;
 }
 
+/*
 //// CONSIDER: we could add support for squeezing multiple delimiters into 1
 // function array<String> SplitString(String str, String divider) {
 // function int SplitString(String str, String divider, out array<String> parts) {
+*/
 function int SplitString(String str, String divider, out String parts[255]) {
 	// local String parts[255];
 	// local array<String> parts;
