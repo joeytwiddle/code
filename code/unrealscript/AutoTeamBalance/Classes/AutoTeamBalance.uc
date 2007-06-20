@@ -2,6 +2,8 @@
 // pawn.Player.Console.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
 // pawn.myHUD.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
 
+// TODO: after a player has joined, we should message them to overwrite the default "you are on red" message, to tell them their team has not yet been assigned
+
 // TODO: the defaults (for the XOL release at least) should be as close as possible to Sourceror's original XOL mod.  make options for other servers
 
 // TODO: consider: should we normalise player scores in terms of time before we normalise the scores around the average?
@@ -62,6 +64,9 @@
 
 // TODO: when seeking player records, should we do a case-insensitive match on player names?
 
+// Some forms of stats building might tend to make it harder and harder for frequent players on the server.  (They will always been trying to regain points lost by earlier mistakes, until their MaxPollsBeforeRecyclingStrength is reached.)
+// Well not neccessarily frequent players, but players with good stats.
+
 //== AutoTeamBalance ==========================================================
 
 // A mutator that makes fair teams at the beginning of each teamgame, by recording the relative strengths of players on the server (linked to their nick/ip).
@@ -69,7 +74,7 @@
 // It can only build player stats for regular players who stay until the end of the game.
 // It will also take a while after running to build up accurate stats of the players.
 // For the first week or so you may wish to collect stats but not attempt team-balancing: just set bAutoBalanceTeamsFor*=False but leave bUpdatePlayerStatsFor*=True.
-// by Daniel Mastersourcerer at Kitana's Castle and F0X|nogginBasher of no fixed abode.
+// by Daniel Mastersourcerer at Kitana's Castle and F0X|nogginBasher.
 // (c)opyleft May 2007 under GNU Public Licence
 // Thanks to iDeFiX, unrealadmin, Matt and the author of adwvaad
 // Code snippets stolen from iDeFiX's team balancer, TeamBallancer, and the adwvaad thread
@@ -86,7 +91,7 @@
 
 // CONSIDER: in cases of a standoff (e.g. none of the players are found in the DB so all have UnknownStrength), choose something random!  What we are given may not be random enough (like bPlayersBalanceTeams).
 
-// TODO: config option bRankBots (might be interesting to see how Visse compares to the humans ^^ )
+// TODO: config option bRankBots or bIncludeBots (might be interesting to see how Visse compares to the humans ^^ )
 
 // Half-Done: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash
 
@@ -123,13 +128,13 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 var string HelloBroadcast; // TODO CONSIDER: make this configurable, and make it say nothing if ""
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
-var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
 var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed at end of game as their number of cookies
+var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
 // TODO: now we are doing p.ClientMessage() sometimes, we don't really need to BroadcastMessage as well (I only want it as a developer to see changes during the game.)
 // var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
-var config bool bBroadcastLostCookies;  // should we broadcast when someone has moved down the ranking?
 
-var config bool bAllowMidgameRebalancing;
+var config bool bLetPlayersRebalance;
+var config int MinSecondsBeforeRebalance;
 var config String AdminPassword;   // Needed for mid-game rebalancing with: "mutate teams <pass>"
 
 var config bool bAutoBalanceTeamsForCTF;
@@ -149,12 +154,14 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 // var config name OnlyBalanceTeamsIfGametypeIsA; // Defaults to 'TeamGamePlus' so it will try to balance teams for all team games.
 // var config name OnlyUpdateStatsIfGametypeIsA;  // Stats were updating during other gametypes than CTF, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  You can set this to your own server's favourite gametype, or to 'TeamGamePlus' if you only host one gametype, or player scores are comparable across all your gametypes.
 
+var config bool bLogEndStats;
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
 var config float MaxHoursWhenCopyingOldRecord;     // If you have lots of fakenicklamers on your server, set this high.  If not, set it low, so that players who unluckily share the same IP or nick, don't get their stats confused.
 // var config int MaxPollsBeforeRecyclingStrength;    // TODO later on this line! after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // TODO: refactor this to MaxHoursOfOldStats, more tangible unit for admin to edit
 var config float HoursBeforeRecyclingStrength;
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 var config bool bNormaliseScores;
+// var config bool bScalePlayerScoreToFullTime; // After much consideration, I got close to implementing this.  But my final argument is: Why should a player be punished because they didn't play the game from the start?  Answer: Because there was a 50:50 chance that they made teams uneven when they joined, becoming the extra man on a team which was closely matched to the opponent.  Therefore it is quite likely that they will score well, because their team will be slaughtering the opponents.
 // deprecated: var config bool bDoWeightedUpdates;
 
 // Defaults (Daniel's):
@@ -174,7 +181,7 @@ var config String playerData[4096]; // String-format of the player data stored i
 
 // Internal (parsed) player data:
 var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
-var String ip[4096];
+var String ip[4096]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
 var String nick[4096];
 var float avg_score[4096];
 var float hours_played[4096];
@@ -187,15 +194,16 @@ var bool gameStartDone;            // Teams initialized flag (we never initialis
 var bool gameEndDone;
 
 var int timeGameStarted;
+var int lastBalanceTime;
 
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
   bBroadcastStuff=True
-  bDebugLogging=False      // TODO: for release, recommended False (some logging is ok tho!)
-  bBroadcastCookies=True   // TODO: for release, recommended False (it's fun and useful for debugging, but not that great :P )
+  bDebugLogging=False      // DONE: for release, recommended False (some logging is ok tho!)
+  bBroadcastCookies=False   // DONE: for release, recommended False (it's fun and useful for debugging, but not that great :P )
   // bOnlyMoreCookies=False
-  bBroadcastLostCookies=True // TODO: for release, default to False (the poor guys who lost cookies don't need the whole world to know it!) But TODO: maybe we should leave this true, and change the code so that it tells *them* but not everyone.
-  bAllowMidgameRebalancing=True // TODO: default this to false for release? (nahhh, just false on XOL :P)
+  bLetPlayersRebalance=True // TODO: default this to false for release? (nahhh, just false on XOL :P)
+  MinSecondsBeforeRebalance=20 // must be at least 1, to avoid a bug with multiple calls to MutatorTeamMessage
   AdminPassword="defaults_to_admin_pass"
   bAutoBalanceTeamsForCTF=True
   bAutoBalanceTeamsForTDM=True
@@ -206,17 +214,19 @@ defaultproperties {
   bUpdatePlayerStatsForTDM=True // If you are normalising scores, then updating stats for TDM should be ok.  But if you are not normalising scores, then the different bonuses in CTF will make stats from the different gametypes incompatible.  (Basically TDMers will get lower strengths because they never get the bonus points from caps/covers/etc.)  So in this case you are recommended only to build stats for your server's most popular gametype.
   bUpdatePlayerStatsForAS=False  // Probably best left False (unless you are running an AS-only server) because AS scores are crazy (one guy gets 100 for the last objective, even though it was a team effort)
   bUpdatePlayerStatsForOtherTeamGames=False
-  bUpdatePlayerStatsForNonTeamGames=False
+  bUpdatePlayerStatsForNonTeamGames=False // TODO: could happily be true; DM scores are a good indication of a player's strength
   // UpdateStatsForGameTypes="CTFGame"
   // bUpdateStatsForCTFOnly=True
   // OnlyUpdateStatsIfGametypeIsA='CTFGame' // Would have been nice to offer it this way, but I didn't get it working.
   // OnlyBalanceTeamsIfGametypeIsA='TeamGamePlus' // TODO: we CAN do it this way, e.g. using String(gametype.Class) == "Botpack.Assault"
+  bLogEndStats=True
   // PollMinutes=2.4
   MaxHoursWhenCopyingOldRecord=2.0
   // MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
   HoursBeforeRecyclingStrength=12.0
   MinHumansForStats=4     // DONE: for release, recommended 4
   bNormaliseScores=True     // Normalise scores so that the average score for every game is 50.  Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  TODO CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
+  // bScalePlayerScoreToFullTime=True
   // deprecated: bDoWeightedUpdates=False  // Untested experimental stats updating method
   UnknownStrength=50      // New player records start with an initial strength of 50 (when scores are normalised, this is the average)
   // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
@@ -232,14 +242,20 @@ defaultproperties {
 
 // ==== Daniel's HOOKS / OVERRIDES ==== //
 
+// If AutoTeamBalance was added as both a ServerActor and a Mutator, we only want one to run.
+// The Mutator's PostBeginPlay() gets called first, so we force the ServerActor to disable itself.
+
 // Initialize the system
 function PostBeginPlay() {
 
   Super.PostBeginPlay();
 
-  if (initialized) return;
+  if (initialized) {
+    if (bDebugLogging) { Log(Self$".PostBeginPlay() called with initialized already true; quitting."); }
+    return;
+  }
 
-  Log("AutoTeamBalance ("$Self$") initialising");
+  if (bDebugLogging) { Log(Self$".PostBeginPlay() initialising"); }
 
   // If AutoTeamBalance was included as a ServerActor, register it as a game mutator:
   // I was getting an infinite recursion error, so I removed this.
@@ -249,8 +265,15 @@ function PostBeginPlay() {
   // DONE: turn this into add-if-not-already-added, and we have ourself a mutator/serveractor
 
   // If AutoTeamBalance was installed as a ServerActor, we need to register it as a mutator:
-  Level.Game.BaseMutator.AddMutator(Self); // now made safe by our custom implementation of AddMutator below
-  Log("AutoTeamBalance ("$Self$") added mutator");
+  // Made safe by our custom implementation of AddMutator below
+  Level.Game.BaseMutator.AddMutator(Self);
+  if (initialized) { // Another instance of the AutoTeamBalance mutator has notified me that I need/should not activate.
+    if (bDebugLogging) { Log(Self$".PostBeginPlay() disabling self on request"); }
+    gameStartDone=True;
+    Disable('Tick');
+    return;
+  }
+  if (bDebugLogging) { Log(Self$".PostBeginPlay() added self as mutator"); }
 
   // btw just interesting to note: if i have AutoTeamBalance as a ServerActor and a mutator on startup arguments, the mutator gets its PostBeginPlay called before the ServerActor's, and the ServerActor mut doesn't seem to get called at all.
 
@@ -267,9 +290,9 @@ function PostBeginPlay() {
 
   // TODO: When I was testing both ServerActor and mutator, it seemed "!teams" was not working
 
-  if (bAllowMidgameRebalancing) {
+  if (bLetPlayersRebalance) {
     Level.Game.RegisterMessageMutator(Self);
-    Log("AutoTeamBalance ("$Self$") registered as messenger");
+    if (bDebugLogging) { Log(Self$".PostBeginPlay() registered self as messenger"); }
   }
 
   // timeGameStarted = Level.TimeSeconds; // the game does not actually start until players and DoGameStart() is called.  This has been moved down.
@@ -281,6 +304,11 @@ function PostBeginPlay() {
 
   initialized = true;
 
+}
+
+// TESTING
+event PostLogin(PlayerPawn newPlayer) {
+  if (bDebugLogging) { Log("event "$Self$".PostLogin("$newPlayer$") was called."); }
 }
 
 // TODO CONSIDER: if we make the rollback of old scores very fast, and put more weight into having won, then everyone should get an even number of wins.
@@ -304,7 +332,8 @@ function AddMutator(Mutator Other) {
       // This is a different instance of the same mutator.  (Maybe the admin made it a ServerActor *and* added it as a mutator.)
       // We won't add the second instance, so we may as well destroy it:
       if (bDebugLogging) { Log(Self$".AddMutator("$Other$"): destroying other instance with "$Other$".Destroy()"); }
-      Other.Destroy();
+      AutoTeamBalance(Other).initialized = true; // tell the other mutator (probably the serveractor) it should not initialize
+      Other.Destroy(); // seems to do nothing useful; the mutator continues to run through PostBeginPlay().
     }
   } else {
     // This is another mutator entirely, do what we would normally do
@@ -315,48 +344,6 @@ function AddMutator(Mutator Other) {
 // Check if game is about to start, and if so, balance the teams before it does.  (We want to do this as late as possible before the game starts, to give players time to join the server.)
 event Tick(float DeltaTime) {
   if (!gameStartDone) CheckGameStart(); // this the boolean check should be efficient, and switched off before the game starts, but anyway we Disable('Tick()');
-}
-
-// nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
-// OK well it did get called! :)
-// BUT later mutators in the list have the right to force the game into overtime (we should pass the call onto them here I think), so it may not actually BE the end of the game!
-// Maybe better just to wait with a timer until bGameEnded == True.
-// Or start that timer here? ^^ (so it doesn't need to check during the game)
-// Hmm from tests I found this function gets called twice for overtime games, but both times bGameEnded=False
-// I hope it doesn't matter that we call SetTimer() twice; I imagine it does not start a second timer.
-function bool HandleEndGame() {
-  local bool b;
-  // if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
-
-  // This isn't guaranteed to be the end of the game, since we may go into overtime now.
-  // But the Timer() is quite efficient (checking bGameEnded first) so shouldn't cause any lag during overtime.
-  // And we have to start the Timer() here, because I have no other way of detecting (getting called at) the end of the game!
-  SetTimer(10,True); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
-  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds."); }
-
-  if ( NextMutator != None ) {
-    b = NextMutator.HandleEndGame();
-    // if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() NextMutator returned "$b$"  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
-    return b;
-  }
-  return false;
-}
-
-// New Timer which is just looking for the end of the game
-event Timer() {
-  /*
-  local int c,n,e,l,t,s;
-  if (bDebugLogging) {
-    c = TeamGamePlus(Level.Game).countdown;
-    n = TeamGamePlus(Level.Game).NetWait;
-    e = TeamGamePlus(Level.Game).ElapsedTime;
-    l = TeamGamePlus(Level.Game).TimeLimit;
-    t = Level.TimeSeconds;
-    s = Level.Game.StartTime;
-    Log("AutoTeamBalance.Timer() DEBUG c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" s="$s$" bGameEnded="$Level.Game.bGameEnded);
-  }
-  */
-  CheckGameEnd();
 }
 
 function bool ShouldBalance(GameInfo game) {
@@ -385,10 +372,11 @@ function bool ShouldBalance(GameInfo game) {
   if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
     return bAutoBalanceTeamsForTDM;
   if (String(Level.Game.Class) == "Botpack.Assault") {
-    // Do not balance AS game if we're not in the first half-game
+    // Do not balance AS game if we're in the second half of the game
     if (Assault(Level.Game).Part != 1)
       return False;
-    return bAutoBalanceTeamsForAS;
+    else
+      return bAutoBalanceTeamsForAS;
   }
 
   //// TESTING_List_desired_gametypes
@@ -402,12 +390,12 @@ function bool ShouldBalance(GameInfo game) {
   // if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$"): Did not match any of the specified gametypes: "$BalanceTeamsForGameTypes); }
 
   // OK so it's an unknown teamgame
-  if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$" returning "$bAutoBalanceTeamsForOtherTeamGames); }
+  // if (bDebugLogging) { Log("AutoTeamBalance.ShouldBalance("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$" returning "$bAutoBalanceTeamsForOtherTeamGames); }
   return bAutoBalanceTeamsForOtherTeamGames;
 }
 
 function bool ShouldUpdateStats(GameInfo game) {
-  if (bDebugLogging) { Log("AutoTeamBalance.ShouldUpdateStats("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$""); }
+  // if (bDebugLogging) { Log("AutoTeamBalance.ShouldUpdateStats("$game$") Game.Name="$Game.Name$" Game.Class="$Game.Class$""); }
   // We only build stats for CTF games if asked
   if (String(Level.Game.Class) == "Botpack.CTFGame")
     return bUpdatePlayerStatsForCTF;
@@ -419,103 +407,8 @@ function bool ShouldUpdateStats(GameInfo game) {
   // OK so it's not CTF or TDM or AS, but is it another type of team game?
   if (Level.Game.GameReplicationInfo.bTeamGame)
     return bUpdatePlayerStatsForOtherTeamGames;
-  // It's not a team game.  Build stats because it's a non teamgame?  (For admins more interested in player stats than balancing teams.)
+  // It's not a team game.  Build stats because it's a non teamgame?  (For admins more interested in player stats than balancing teams., or if you think stats from DM games are useful)
   return bUpdatePlayerStatsForNonTeamGames;
-}
-
-// If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
-function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
-  local int selectedTeam;
-  local int teamSize[2];
-  local int teamSizeWithBots[2];
-  local int teamStr[2]; // each team's strength, only used if the #players on each team is equal
-  local int teamnr;
-  local String plname;
-  local Pawn p;
-  local TournamentGameReplicationInfo GRI;
-
-  // (nogginBasher) as far as i can tell we don't actually have the pawn of the player we are moving
-  //                we need his nick+ip to get his own strength.  Since we can't at the moment we just assume his strength is >0 and put him on the weaker team.
-
-  if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
-
-  // check if this is a team game and if InitTeams has been passed
-  // Done: don't we want to put this new player on the right team even if InitTeams has been passed?  so should be ignore gameStartDone?  nooo, this check is that the game *has* started, because we don't need to switch the players when joining a new map, because InitTeams will do that.
-  if (!gameStartDone) return;
-
-  if (!ShouldBalance(Level.Game)) return;
-
-  if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin()"); }
-
-  // read this player's selected team
-  selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
-
-  // get team scores
-  GRI=TournamentGameReplicationInfo(Level.Game.GameReplicationInfo);
-  teamStr[0]=GRI.Teams[0].Score*FlagStrength;
-  teamStr[1]=GRI.Teams[1].Score*FlagStrength;
-  teamSize[0]=0;
-  teamSize[1]=0;
-  teamSizeWithBots[0]=0;
-  teamSizeWithBots[1]=0;
-
-  // Check team balance of current players in game
-  // Calculate sum of player strengths for each team (as well as the flagbonus above)
-  // TODO BUG: is it really fair to count bot strengths?  Once this player joins the server, one of the bots will probably leave.
-  for (p=Level.PawnList; p!=None; p=p.NextPawn)
-  {
-    // ignore non-player pawns
-    if (p.bIsPlayer && !p.IsA('Spectator'))
-    {
-      teamnr=p.PlayerReplicationInfo.Team;
-      if (teamnr<2)
-      {
-        if (!p.IsA('Bot')) teamSize[teamnr]+=1;
-        teamSizeWithBots[teamnr]+=1;
-        teamStr[teamnr]+=GetPawnStrength(p);
-      }
-    }
-  }
-
-  if (bClanWar)
-  {
-
-    // send player to his clan's team
-    teamnr=0;
-    plname=Level.Game.ParseOption(Options,"Name");
-    if (Instr(Caps(plname),Caps(clanTag))==-1) teamnr=1;
-
-  } else {
-
-    // if both teams have the same number of players send the new player to the weaker team
-    if (teamSize[0]==teamSize[1])
-    {
-      teamnr=0; if (teamStr[0]>teamStr[1]) teamnr=1;
-      if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to WEAKER team "$getTeamName(teamnr)$"."); }
-    } else {
-      // send player to the team with fewer players
-      teamnr=0; if (teamSize[0]>teamSize[1]) teamnr=1;
-      if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to SMALLER team "$getTeamName(teamnr)$"."); }
-    }
-
-  }
-
-  // if selected team does not equal forced team then modify login
-  if (teamnr!=selectedTeam) Options="?Team=" $ teamnr $ Options;
-
-  // fix teamsize bug in Botpack.TeamGamePlus
-  if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
-  {
-    if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")"); }
-    GRI.Teams[0].Size=teamSizeWithBots[0];
-    GRI.Teams[1].Size=teamSizeWithBots[1];
-  }
-  // nogginBasher: I don't understand this bit, but maybe it's because we modified the player's login
-  // I was thinking of stripping teamSizeWithBots because i have adwvaad on my server,
-  // but since it isn't used to make the decision of which team to join, it's fine to leave it in for this bugfix.
-  // Mmm when someone joins the server mid-game, the bot scores are used to balance the teams
-  // With advwaad, if there is a bot, he'll be on the smaller team, so i guess it's fine the player will take the bots place
-  // If there isn't a bot, the new player will go on the weaker team, and adwvaad will add a new bot to the stronger team
 }
 
 // TESTING Alternative, there is: event GameEnding() { ... } implemented in GameInfo.  Can we drop our own event catcher in here, without overriding the other?
@@ -524,10 +417,6 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 // event GameEnding() {
   // if (bDebugLogging) { Log("AutoTeamBalance.GameEnding() even was CALLED!  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
 // }
-
-
-
-// ==== Daniel's other functions: ==== //
 
 // Checks if the game has begun (CONSIDER/TEST: optimise this and move/inline the check right into Tick() above.  ATM it is called every tick, although exits fast.)
 function CheckGameStart() {
@@ -540,6 +429,7 @@ function CheckGameStart() {
   // but anyway we will only balance or rate on a teamgameplus
   // we now check this in ShouldBalance
   // if (!bAutoBalanceTeams || !Level.Game.IsA(OnlyBalanceTeamsIfGametypeIsA) || !Level.Game.GameReplicationInfo.bTeamGame || DeathMatchPlus(Level.Game).bTournament) {
+  // Previously we were only checking ShouldBalance, but since ShouldUpdateStats uses timeGameStarted, we still need to wait for the gamestart if we are updating stats but not balancing.  The check for balancing has been moved below.
   if (!ShouldBalance(Level.Game) && !ShouldUpdateStats(Level.Game)) { // We do this early, to check at the very least that this is a teamgame
     gameStartDone=True;
     Disable('Tick');
@@ -565,20 +455,12 @@ function CheckGameStart() {
 
 }
 
-function CheckGameEnd() {
-  if (gameEndDone) return;
-  if (Level.Game.bGameEnded) {
-    gameEndDone = true;
-    if (ShouldUpdateStats(Level.Game)) {
-      UpdateStatsAtEndOfGame();
-    }
-  }
-}
-
 function DoGameStart() {
-  if (bBroadcastStuff) { BroadcastMessageAndLog(HelloBroadcast); }
-  timeGameStarted = Level.TimeSeconds;
-  ForceFullTeamsRebalance();
+  timeGameStarted = Level.TimeSeconds+2; // (since we are called 2 seconds before starting countdown ends)
+  if (ShouldBalance(Level.Game)) {
+    if (bBroadcastStuff) { BroadcastMessageAndLog(HelloBroadcast); }
+    ForceFullTeamsRebalance();
+  }
 }
 
 // Balance the teams just before the start of a new game.  No need for FlagStrength here.
@@ -615,7 +497,7 @@ function ForceFullTeamsRebalance() {
   for (p=Level.PawnList; p!=None; p=p.NextPawn)
   {
     // ignore non-player pawns
-    if (p.bIsPlayer && !p.IsA('Spectator'))
+    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot'))
     {
       st=GetPawnStrength(p);
       pid=p.PlayerReplicationInfo.PlayerID % 64;
@@ -629,7 +511,7 @@ function ForceFullTeamsRebalance() {
       // tg[pid]=st;
       moved[pid] = 0;
       // p.PlayerReplicationInfo.PlayerName
-      Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
+      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ "."); }
       // if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessageAndLog("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   }
@@ -659,7 +541,7 @@ function ForceFullTeamsRebalance() {
       // ps[pid]=0;
       moved[pid] = 1;
       n++;
-      Log("AutoTeamBalance.ForceFullTeamsRebalance(): [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $"");
+      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $""); }
       // if (bBroadcastCookies) { BroadcastMessageAndLog(""$ pl[pid].getHumanName() $" has " $ps[pid]$ " cookies."); }
       // if (bBroadcastCookies) { SendClientMessage(pl[pid],"You have " $ps[pid]$ " cookies."); } // gets hidden by team switches below
     }
@@ -705,7 +587,7 @@ function ForceFullTeamsRebalance() {
       pid=plorder[i];
       teamnr=0;
       if ((i&3)==1 || (i&3)==2) teamnr=1;
-      Log("AutoTeamBalance.ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
+      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$"."); }
       ChangePlayerToTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
@@ -715,7 +597,7 @@ function ForceFullTeamsRebalance() {
     {
       pid=plorder[i];
       teamnr=0; if (teamstr[0]>teamstr[1]) teamnr=1;
-      Log("AutoTeamBalance.ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$".");
+      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$"."); }
       ChangePlayerToTeam(pl[pid],teamnr);
       teamstr[teamnr]+=ps[pid];
     }
@@ -743,40 +625,145 @@ function ForceFullTeamsRebalance() {
     // (This must come after the team switching, otherwise the default start-game "xxx is on Red" will overwrite this text.)
     // TODO CONSIDER BUG: isn't it more important that the player sees what team they were moved to?!
     for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-      if (p.bIsPlayer && !p.IsA('Spectator')) {
-        if (bBroadcastCookies) { SendClientMessage(p, p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies."); }
+      if (bBroadcastCookies && p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot')) {
+        SendClientMessage(p, p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.");
       }
     }
   }
 
 }
 
-function ChangePlayerToTeam(Pawn p, int team) {
+// If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
+// TODO: can cause lag on the server when a new player joins; consider using current game scores, or just caps, rather than looking up player stats
+function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
+  local int selectedTeam;
+  local int teamSize[2];
+  local int teamSizeWithBots[2];
+  local int teamStr[2]; // each team's strength, only used if the #players on each team is equal
+  local int teamnr;
+  local String plname;
+  local Pawn p;
+  local TournamentGameReplicationInfo GRI;
+
+  // (nogginBasher) as far as i can tell we don't actually have the pawn of the player we are moving
+  //                we need his nick+ip to get his own strength.  Since we can't at the moment we just assume his strength is >0 and put him on the weaker team.
+
+  if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
+
+  if (!gameStartDone) return;
+
+  if (!ShouldBalance(Level.Game)) return;
+
+  if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin()"); }
+
+  // read this player's selected team
+  selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
+
+  // get team scores
+  GRI=TournamentGameReplicationInfo(Level.Game.GameReplicationInfo);
+  teamStr[0]=GRI.Teams[0].Score*FlagStrength;
+  teamStr[1]=GRI.Teams[1].Score*FlagStrength;
+  teamSize[0]=0;
+  teamSize[1]=0;
+  teamSizeWithBots[0]=0;
+  teamSizeWithBots[1]=0;
+
+  // Check team balance of current players in game
+  // Calculate sum of player strengths for each team (as well as the flagbonus above)
+  // TODO BUG: is it really fair to count bot strengths?  Once this player joins the server, one of the bots will probably leave.
+  for (p=Level.PawnList; p!=None; p=p.NextPawn)
+  {
+    // ignore non-player pawns
+    if (p.bIsPlayer && !p.IsA('Spectator'))
+    {
+      teamnr=p.PlayerReplicationInfo.Team;
+      if (teamnr<2)
+      {
+        if (!p.IsA('Bot')) {
+          teamSize[teamnr]++;
+          teamStr[teamnr] += GetPawnStrength(p);
+          // I changed this from Daniel's version, so that bot strengths are not considered.  (Chances are one of the bots is going to leave anyway; we only really want to balance human players.)
+        }
+        teamSizeWithBots[teamnr]++;
+      }
+    }
+  }
+
+  if (bClanWar)
+  {
+
+    // send player to his clan's team
+    teamnr=0;
+    plname=Level.Game.ParseOption(Options,"Name");
+    if (Instr(Caps(plname),Caps(clanTag))==-1) teamnr=1;
+
+  } else {
+
+    // if both teams have the same number of players send the new player to the weaker team
+    if (teamSize[0]==teamSize[1])
+    {
+      teamnr=0; if (teamStr[0]>teamStr[1]) teamnr=1;
+      if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to WEAKER team "$getTeamName(teamnr)$"."); }
+    } else {
+      // send player to the team with fewer players
+      teamnr=0; if (teamSize[0]>teamSize[1]) teamnr=1;
+      if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to SMALLER team "$getTeamName(teamnr)$"."); }
+    }
+
+  }
+
+  // if selected team does not equal forced team then modify login
+  if (teamnr!=selectedTeam) Options="?Team=" $ teamnr $ Options;
+
+  // fix teamsize bug in Botpack.TeamGamePlus
+  if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
+  {
+    if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")"); }
+    GRI.Teams[0].Size=teamSizeWithBots[0];
+    GRI.Teams[1].Size=teamSizeWithBots[1];
+  }
+  // nogginBasher: I don't understand this bit, but maybe it's because we modified the player's login
+  // I was thinking of stripping teamSizeWithBots because i have adwvaad on my server,
+  // but since it isn't used to make the decision of which team to join, it's fine to leave it in for this bugfix.
+  // Mmm when someone joins the server mid-game, the bot scores are used to balance the teams
+  // With advwaad, if there is a bot, he'll be on the smaller team, so i guess it's fine the player will take the bots place
+  // If there isn't a bot, the new player will go on the weaker team, and adwvaad will add a new bot to the stronger team
+}
+
+function ChangePlayerToTeam(Pawn p, int teamnum) {
   // Note: if ForceFullTeamsRebalance() is invoked mid-game; it's possible that this player is already on this team, in which case don't switch.
-  if (team == p.PlayerReplicationInfo.Team) {
-    if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$team$"): doing nothing since player is already on team "$team); }
+  if (teamnum == p.PlayerReplicationInfo.Team) {
+    if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): doing nothing since player is already on team "$teamnum); }
     return;
   }
-  if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$team); }
-  Level.Game.ChangeTeam(p,team);
-  Level.Game.RestartPlayer(p);
+  if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum); }
+  Level.Game.ChangeTeam(p,teamnum);
+  Level.Game.RestartPlayer(p); // i thought by doing this even before the game had started, it might fix problems with the player's team getting confused by the server; i don't think it worked, but it didn't do any harm either
   if (gameStartDone) {
     // Level.Game.RestartPlayer(p);
-    // SendClientMessage(p,"You have been moved to the "$getTeamName(team)$" team.");
-    // SendClientMessage(p,"YOU have been MOVED to the >> "$getTeamName(teamnr)$" << team for a fairer game.");
-    SendClientMessage(p,"You are now on the "$getTeamName(team)$" team.");
+    // SendClientMessage(p,"You have been moved to the "$getTeamName(teamnum)$" team.");
+    // SendClientMessage(p,"YOU have been MOVED to the >> "$getTeamName(teamnum)$" << team for a fairer game.");
+    SendClientMessage(p,"You are now on the "$getTeamName(teamnum)$" team.");
     p.ShakeView(2.0,2000.0,0.0);
   }
 }
 
-function MidGameTeamBalance() {
+function MidGameRebalance() {
   local int redTeamCount,blueTeamCount;
 
-  // if (bDebugLogging) { Log("MidGameTeamBalance() tgp="$Level.Game.IsA('TeamGamePlus')$" bTG="$Level.Game.bTeamGame); }
+  // if (bDebugLogging) { Log("MidGameRebalance() tgp="$Level.Game.IsA('TeamGamePlus')$" bTG="$Level.Game.bTeamGame); }
 
-  // Surely ShouldBalance() has already been tested.
+  // Surely ShouldBalance() has already been tested.  No, because mid game teambalance is called by player or admin.
   if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
     return;
+
+  // Refuse to balance teams more than once every MinSecondsBeforeRebalance seconds:
+  // This also fixed the bug that if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
+  if (lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
+    if (bDebugLogging) { Log("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds); }
+    return;
+  }
+  lastBalanceTime = Level.TimeSeconds;
 
   // CONSIDER: team sizes are not so important as team strengths.
   // we could always do MidGameTeamBalanceSwitchTwoPlayers, but with the option of one of those players being "None"
@@ -789,9 +776,9 @@ function MidGameTeamBalance() {
   blueTeamCount = CountHumansOnTeam(1);
   // We assume bot skills are pretty much irrelevant, and the bots will auto-switch to balance teams after we move any players around.
 
-  if (bDebugLogging) { Log("MidGameTeamBalance() "$redTeamCount$" v "$blueTeamCount$""); }
+  if (bDebugLogging) { Log("MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$""); }
 
-  // TODO: what if redTeamCount << blueTeamCount ?
+  // TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move to players.  we could balance in a while loop if it's guaranteed to end
   if (redTeamCount < blueTeamCount) {
     MidGameTeamBalanceSwitchOnePlayer(1,0);
   } else if (blueTeamCount < redTeamCount) {
@@ -829,7 +816,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
   toTeamStrength = GetTeamStrengthWithoutBotsOrCaps(toTeam);
   difference = fromTeamStrength - toTeamStrength;
   if (difference<0) {
-    BroadcastMessageAndLog("AutoTeamBalance not adjusting teams because smaller team looks stronger.");
+    if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not adjusting teams because smaller team looks stronger."); }
     return False;
   }
   // closestPlayer = None; // not needed, i believe
@@ -846,15 +833,15 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     }
   }
   if (closestPlayer == None) {
-    BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch.");
+    if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch."); }
     return False;
   }
-  if (closest > (difference*2)) {
-    BroadcastMessageAndLog("AutoTeamBalance not switching "$p.getHumanName()$" because that would make "$getTeamName(fromTeam)$" team too weak!");
+  if (closest >= difference) {
+    if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(fromTeam)$" team too weak!"); }
     return False;
   } else {
     ChangePlayerToTeam(closestPlayer,toTeam);
-    BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrengthWithoutBotsOrCaps(0))$", Blue team strength is "$Int(GetTeamStrengthWithoutBotsOrCaps(1))$".");
+    if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrengthWithoutBotsOrCaps(0))$", Blue team strength is "$Int(GetTeamStrengthWithoutBotsOrCaps(1))$"."); }
     return True;
   }
 }
@@ -895,13 +882,13 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
     }
   }
 
-  if (redPlayerToMove != None) { // && implied bluePlayerToMove != None
+  if (redPlayerToMove != None && bluePlayerToMove != None) {
     ChangePlayerToTeam(redPlayerToMove,1);
     ChangePlayerToTeam(bluePlayerToMove,0);
-    BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrengthWithoutBotsOrCaps(0))$", Blue team strength is "$Int(GetTeamStrengthWithoutBotsOrCaps(1))$".");
+    if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrengthWithoutBotsOrCaps(0))$", Blue team strength is "$Int(GetTeamStrengthWithoutBotsOrCaps(1))$"."); }
     return True;
   } else {
-    BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
+    if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams."); }
     return False;
   }
 }
@@ -920,7 +907,7 @@ function float GetTeamStrengthWithoutBotsOrCaps(int teamNum) {
 }
 
 // Returns the strength of a player or a bot
-// Why do we ever want bot strengths?  Most of the time we intend to balance the players, then let the bots automatically fill the empty slot(s).  We assume they are not very dangerous bots.
+// Why do we ever want bot strengths?  Most of the time we intend to balance the players, then let rubbish bots automatically fill the empty slot(s).  We assume they are not very dangerous bots.
 function int GetPawnStrength(Pawn p) {
   local int st;
 
@@ -1091,13 +1078,62 @@ function int FindShortestPlayerRecord() {
   return found;
 }
 
+// nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
+// OK well it did get called! :)
+// BUT later mutators in the list have the right to force the game into overtime (we should pass the call onto them here I think), so it may not actually BE the end of the game!
+// Maybe better just to wait with a timer until bGameEnded == True.
+// Or start that timer here? ^^ (so it doesn't need to check during the game)
+// Hmm from tests I found this function gets called twice for overtime games, but both times bGameEnded=False
+// I hope it doesn't matter that we call SetTimer() twice; I imagine it does not start a second timer.
+function bool HandleEndGame() {
+  local bool b;
+  // if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+
+  // This isn't guaranteed to be the end of the game, since we may go into overtime now.
+  // But the Timer() is quite efficient (checking bGameEnded first) so shouldn't cause any lag during overtime.
+  // And we have to start the Timer() here, because I have no other way of detecting (getting called at) the end of the game!
+  SetTimer(10,True); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
+  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds."); }
+
+  if ( NextMutator != None ) {
+    b = NextMutator.HandleEndGame();
+    // if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame() NextMutator returned "$b$"  bOverTime="$Level.Game.bOvertime$" bGameEnded="$Level.Game.bGameEnded); }
+    return b;
+  }
+  return false;
+}
+
+// New Timer which is just looking for the end of the game
+event Timer() {
+  /*
+  local int c,n,e,l,t,s;
+  if (bDebugLogging) {
+    c = TeamGamePlus(Level.Game).countdown;
+    n = TeamGamePlus(Level.Game).NetWait;
+    e = TeamGamePlus(Level.Game).ElapsedTime;
+    l = TeamGamePlus(Level.Game).TimeLimit;
+    t = Level.TimeSeconds;
+    s = Level.Game.StartTime;
+    Log("AutoTeamBalance.Timer() DEBUG c="$c$" b="$n$" e="$e$" l="$l$" t="$t$" s="$s$" bGameEnded="$Level.Game.bGameEnded);
+  }
+  */
+  CheckGameEnd();
+}
+
+function CheckGameEnd() {
+  if (Level.Game.bGameEnded) {
+    if (gameEndDone) return;
+    gameEndDone = true;
+    if (ShouldUpdateStats(Level.Game)) {
+      UpdateStatsAtEndOfGame();
+    }
+  }
+}
+
+
 function UpdateStatsAtEndOfGame() {
   local int countHumanPlayers;
   local Pawn p;
-
-  if (WinningTeamBonus != 0 && !DeathMatchPlus(Level.Game).bTournament) {
-    GiveBonusToWinningTeamPlayers();
-  }
 
   // Do not update stats for games with <MinHumansForStats human players.
   countHumanPlayers = 0;
@@ -1107,18 +1143,24 @@ function UpdateStatsAtEndOfGame() {
     }
   }
   if (countHumanPlayers<MinHumansForStats) {
-    Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): not updating stats since countHumanPlayers "$countHumanPlayers$" < "$MinHumansForStats$".");
+    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): not updating stats since countHumanPlayers "$countHumanPlayers$" < "$MinHumansForStats$"."); }
     return;
   }
 
+  if (WinningTeamBonus != 0 && !DeathMatchPlus(Level.Game).bTournament) {
+    GiveBonusToWinningTeamPlayers();
+  }
+
   // Update stats for all players in game
-  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats.");
+  // if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats."); }
   if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is updating player stats."); }
   // TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
+  if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: NAME IP PING SCORE FRAGS DEATHS"); }
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // lol
       UpdateStatsForPlayer(PlayerPawn(p));
     }
+    if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" "$PlayerPawn(p).GetPlayerNetworkAddress()$" "$PlayerPawn(p).PlayerReplicationInfo.Ping$" "$PlayerPawn(p).PlayerReplicationInfo.Score$" ? "$PlayerPawn(p).PlayerReplicationInfo.Deaths$""); }
   }
 
   // Save the new stats in the config/ini file:
@@ -1175,6 +1217,7 @@ function GiveBonusToWinningTeamPlayers() {
 function UpdateStatsForPlayer(PlayerPawn p) {
   local int i,j;
   local float current_score;
+  local float old_hours_played;
   local float new_hours_played;
   local int previousPolls;
   local int gameDuration;
@@ -1192,7 +1235,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
       // Copy over strength from the partial-match player, but only make that strength last for 2 hours.
       // SO: changing nick will Not reset your avg_score immediately, but eventually
       avg_score[j] = avg_score[i]; // Copy score from partial record max
-      hours_played[j] = Min(MaxHoursWhenCopyingOldRecord,hours_played[i]); // but in case this is a different player (or maybe the same player but in a different environment), give the new record max 2 hours
+      hours_played[j] = Min(MaxHoursWhenCopyingOldRecord,hours_played[i]); // but in case this is a different player (or maybe the same player but in a different environment), give the new record max 2 hours, so it won't take long to get an accurate idea of this new player's strength
     }
     i = j;
   }
@@ -1206,15 +1249,18 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
   if (timeInGame>gameDuration)
     timeInGame = gameDuration;
-  // if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) timeInGame="$timeInGame$" gameDuration="$gameDuration$" Level.Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$""); }
   if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p.getHumanName()$") timeGameStarted="$timeGameStarted$" Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$" Player.StartTime="$p.PlayerReplicationInfo.StartTime$" timeInGame="$timeInGame$" gameDuration="$gameDuration); }
   // Well if this player was only in the server for 5 minutes, we could multiply his score up so that he gets a score proportional to the other players.  (Ofc if he was lucky or unlucky, that luck will be magnified.)
   if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
-    Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60s.");
+    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60s."); }
     return;
   }
 
-  new_hours_played = hours_played[i] + (Float(timeInGame) / 60 / 60);
+  old_hours_played = hours_played[i];
+  if (old_hours_played > HoursBeforeRecyclingStrength) {
+    old_hours_played = HoursBeforeRecyclingStrength;
+  }
+  new_hours_played = old_hours_played + (Float(timeInGame) / 60 / 60);
 
   previous_average = avg_score[i];
 
@@ -1223,13 +1269,12 @@ function UpdateStatsForPlayer(PlayerPawn p) {
   //                well that's unlikely, due to SmartCTFStats bonuses
 
   // Mmm we can forget all the weird weighting and just update the player's average_score_per_hour:
-  Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$hours_played[i]$") + "$current_score$"/4.0) / "$(new_hours_played));
-  avg_score[i] = ( (avg_score[i] * hours_played[i]) + current_score/4.0) / new_hours_played; // I'm dividing every score here by 4 so that the actual averages stored in the config will be score-per-quarter-hour, which should be close to actual end-game scores, at least on my 15minute game server.  Just makes them easier to read; average scores will be around normal.
+  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$old_hours_played$") + "$current_score$"/4.0) / "$(new_hours_played)); }
+  avg_score[i] = ( (avg_score[i] * old_hours_played) + current_score/4.0) / new_hours_played;
+  // I'm dividing every score here by 4 so that the actual averages stored in the config will be score-per-quarter-hour, which should be close to actual end-game scores (at least on my 15minute game server).  Just makes them easier to read; average scores in the stats will be around the normal.
   // We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
 
-  // }
-
-  hours_played[i] = new_hours_played;
+  hours_played[i] += (Float(timeInGame) / 60 / 60);
 
   if (bBroadcastCookies) {
     if (avg_score[i]>previous_average+1) {
@@ -1237,7 +1282,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
       // p.ClientMessage("You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.", 'CriticalEvent', True);
       SendClientMessage(p,"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game."); // BUG: hidden by scoreboard
     }
-    else if (previous_average>avg_score[i]+1 && bBroadcastLostCookies) {
+    else if (previous_average>avg_score[i]+1) {
       BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies.");
       // p.ClientMessage("You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.", 'CriticalEvent', True);
       SendClientMessage(p,"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game."); // BUG: hidden by scoreboard
@@ -1333,13 +1378,13 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
     if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcast/TeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
 
-    if (bAllowMidgameRebalancing) {
+    if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
       if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
-        // TODO BUG IMPORTANT: check this is not called during bTournament games.  1) don't RegisterMessageMutator in the first place 2) MidGameTeamBalance() should check ShouldBalance (but could that check be less strict than the start-game check? :o )
+        // DONE: check this is not called during bTournament games.
         // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
         // ForceFullTeamsRebalance();
-        Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling MidGameTeamBalance().");
-        MidGameTeamBalance();
+        if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling MidGameRebalance()."); }
+        MidGameRebalance();
       }
     }
 
@@ -1414,42 +1459,57 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 function Mutate(String str, PlayerPawn Sender) {
   local String args[255];
   // local array<String> args;
+  local String admin_pass;
 
   if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
-  if (AdminPassword == "defaults_to_admin_pass")
-    // AdminPassword = Level.Game.ConsoleCommand("get engine.gameinfo AdminPassword");
-    AdminPassword = ConsoleCommand("get engine.gameinfo AdminPassword"); // trying to access it directly did not work
+  if (Sender.bAdmin)
+    admin_pass = ""; // any or no pass is accepted
+  else if (AdminPassword == "defaults_to_admin_pass")
+    // admin_pass = Engine.GameInfo.AdminPassword // trying to access it directly did not work
+    // admin_pass = Level.Game.ConsoleCommand("get engine.gameinfo AdminPassword");
+    admin_pass = ConsoleCommand("get engine.gameinfo AdminPassword"); // local to this fn, no longer written to AutoTeamBalance.ini
+  else
+    admin_pass = AdminPassword;
 
   SplitString(str," ",args);
 
-  if ( args[0]~="TEAMS" && ( AdminPassword=="" || args[1]~=AdminPassword ) ) {
+  if ( args[0]~="TEAMS" && ( admin_pass=="" || args[1]~=admin_pass ) ) {
     if (!Level.Game.GameReplicationInfo.bTeamGame) {
-      BroadcastMessageAndLog("AutoTeamBalance cannot balance teams: this isn't a team game!");
+      Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
     } else {
       // if (DeathMatchPlus(Level.Game).bTournament) {
-      if (args[2]~="FULL") {
-        CopyArraysIntoConfig();
-        UpdateStatsAtEndOfGame();
-        ForceFullTeamsRebalance();
-        CopyConfigIntoArrays();
-      } else {
-        MidGameTeamBalance();
-      }
+      // if (args[2]~="FULL" || args[2]~="FORCE") {
+      // } else {
+      // }
+      MidGameRebalance();
     }
 
-  } else if ( args[0]~="TORED" && ( AdminPassword=="" || args[2]~=AdminPassword ) ) {
+  } else if ( args[0]~="FORCETEAMS" && ( admin_pass=="" || args[1]~=admin_pass ) ) {
+    Sender.ClientMessage("AutoTeamBalance performing full teams rebalance...");
+    // To make this balance as accurate as possible, we update the stats now, so we can use the scores from this game so-far.
+    // But since this would mess up the end-game stats updating (counting this part of the game twice), we restore the stats from the config afterwards.
+    // CopyArraysIntoConfig(); // Not actually needed; they should be identical at this stage
+    UpdateStatsAtEndOfGame();
+    ForceFullTeamsRebalance();
+    CopyConfigIntoArrays();
+
+  } else if ( args[0]~="TORED" && ( admin_pass=="" || args[2]~=admin_pass ) ) {
     ChangePlayerToTeam(FindPlayerNamed(args[1]),0);
-  } else if ( args[0]~="TOBLUE" && ( AdminPassword=="" || args[2]~=AdminPassword ) ) {
+  } else if ( args[0]~="TOBLUE" && ( admin_pass=="" || args[2]~=admin_pass ) ) {
     ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
 
-  // TODO: for developer; comment out in final build
-  } else if (args[0]~="GET") {
+  // TODO: Experimental; comment out in final build
+  // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
+  } else if (args[0]~="GET" && ( admin_pass=="" || args[3]~=admin_pass ) ) {
     Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]));
-  } else if (args[0]~="SET") {
+  /*
+  // Allows semiadmins to write to variables (probably equivalent to: admin set <package> <name> <value>)
+  } else if (args[0]~="SET" && ( admin_pass=="" || args[4]~=admin_pass ) ) {
     ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
-    Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]));
-  } else if (args[0]~="SAVECONFIG") {
+    Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
+  */
+  } else if ( args[0]~="SAVECONFIG" && ( admin_pass=="" || args[1]~=admin_pass ) ) {
     SaveConfig();
 
   } else {
