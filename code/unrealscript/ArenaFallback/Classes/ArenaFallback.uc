@@ -26,6 +26,11 @@
 // BUG: kinda messy, will sometimes add ammo for a weapon which ain't available!
 // TODO: is it possible to replace all X with randomY, to keep map's weapons symmetrical?
 
+// Current problems:
+//   if we add just random weapons and ammo, we sometimes find dropped weapon which we can pickup, but cannot use (maybe because they had ammo 0 when we picked them up)
+//   some of the default weapons (e.g. enforcer) report their ammotype as minigun2 :S  we need to build a table of real ammotypes for them, and hope that non-default weapons will have their set correctly
+//   
+
 class ArenaFallback expands Mutator;
 
 var bool bOnlyOnWeaponlessMaps;
@@ -33,16 +38,20 @@ var String weaponTypes;
 var bool bMultipleWeapons;
 var bool bAllowAllPickups;
 
-var int depth; // used to prevent infinite recursion when replacing actors
-
 defaultproperties {
-	bOnlyOnWeaponlessMaps=False // TODO: should be True as default
+	bOnlyOnWeaponlessMaps=True // TODO: False for testing, but should be True as default
 	weaponTypes="Botpack.Translocator,Botpack.ChainSaw,Botpack.ImpactHammer,Botpack.enforcer,Botpack.doubleenforcer,Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
-	bMultipleWeapons=True // TODO should be False as default
-	bAllowAllPickups=True // TODO should be False for IG arena
+	bMultipleWeapons=False // TODO should be False as default
+	bAllowAllPickups=True // TODO should be (forced to?) False for instagib arena; maybe we can check damageStrength of weapon, but some weapons like whart have large damage strength but there is large health to aquire ^^
 }
 
 var bool bForceArena; // Whether this Mutator will do anything.
+
+var int depth; // used to prevent infinite recursion when replacing actors
+
+// var String WeaponType;
+var String replaceWeaponType;
+var String replaceAmmoType;
 
 function PreBeginPlay() {
 	CheckForWeapons();
@@ -50,6 +59,7 @@ function PreBeginPlay() {
 
 function CheckForWeapons() {
 	local Weapon w;
+	local String ammoType;
 
 	if (bOnlyOnWeaponlessMaps) {
 		foreach AllActors(class'Weapon', w) {
@@ -62,8 +72,16 @@ function CheckForWeapons() {
 
 	bForceArena = True;
 	// Level.Game.DefaultWeapon = class'Botpack.SuperShockRifle';
-	Level.Game.DefaultWeapon = getRandomWeaponClass();
-	Log("ArenaFallback: I did not find any weapons in this map: forcing "$Level.Game.DefaultWeapon$" arena.");
+	while (true) {
+		Level.Game.DefaultWeapon = getRandomWeaponClass();
+		replaceWeaponType = ""$getRandomWeaponClass();
+		replaceAmmoType = ""$getAmmoClassForWeaponClass(Level.Game.DefaultWeapon);
+		// maybe None is good; maybe it means the weapon doesn't need ammo
+		// if (replaceAmmoType != "None" && replaceAmmoType != "minigun2")
+		if (replaceAmmoType != "minigun2")
+			break;
+	}
+	Log("ArenaFallback: I did not find any weapons in this map: forcing "$Level.Game.DefaultWeapon$" arena with replaceWeaponType="$replaceWeaponType$" and replaceAmmoType="$replaceAmmoType$".");
 }
 
 function class<weapon> getRandomWeaponClass() {
@@ -108,7 +126,7 @@ function bool AlwaysKeep(Actor Other) {
 
 	if (bForceArena) {
 
-		return False; // Why?  What about the other muts?
+		return False; // From Arena.uc, but why?  What about the other muts?  They get queried separately?  Or do we really want to keep all actors?
 
 	} else {
 
@@ -130,10 +148,8 @@ function MyReplaceWith(Actor Other,String str) {
 	depth--;
 }
 
-// Allow mutators to remove actors.
+// Allow mutators to remove actors (by returning false), or replace them.
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
-
-	local Actor tmp;
 
 	if (depth>0) {
 		Log("("$depth$") 4 < todeep " $ Other $ " ("$bSuperRelevant$")");
@@ -165,15 +181,17 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 			if (bMultipleWeapons) {
 				// TODO CONSIDER: rather than random ammo, make it ammo for the last weapon we replaced?
 				// MyReplaceWith(Other,String(Spawn(getRandomWeaponClass()).AmmoName));
-				tmp = Spawn(getRandomWeaponClass());
+				// tmp = Spawn(getRandomWeaponClass());
+				MyReplaceWith(Other,""$getAmmoClassForWeaponClass(getRandomWeaponClass())); // could only replace ammo from a generated list of ammo for those weapons we spawned so far
 			} else {
 				// MyReplaceWith(Other,String(Spawn(Level.Game.DefaultWeapon).AmmoName));
 				// MyReplaceWith(Other,String(Spawn(Level.Game.DefaultWeapon).AmmoName));
-				tmp = Spawn(Level.Game.DefaultWeapon);
+				// tmp = Spawn(Level.Game.DefaultWeapon);
+				MyReplaceWith(Other,replaceAmmoType);
 			}
 			depth--;
-			MyReplaceWith(Other,String(Weapon(tmp).AmmoName));
-			tmp.Destroy();
+			// MyReplaceWith(Other,String(Weapon(tmp).AmmoName));
+			// tmp.Destroy();
 		} else
 
 		// This looks like most pickups, but boots are still allowed.  :)
@@ -199,5 +217,14 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 
 	}
 
+}
+
+function class<ammo> getAmmoClassForWeaponClass(class<weapon> weaponClass) {
+	local Actor instance;
+	local class<ammo> ammoType;
+	instance = Spawn(weaponClass);
+	ammoType = Weapon(instance).AmmoName;
+	instance.Destroy();
+	return ammoType;
 }
 

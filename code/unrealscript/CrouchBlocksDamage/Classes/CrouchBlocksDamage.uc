@@ -1,10 +1,10 @@
 class CrouchBlocksDamage extends Mutator;
 
-var bool Initialized;
+var config float SavePercent;
+var config float SuperBoost;
+var config bool bInformVictim;
 
-var float SavePercent;
-var float SuperBoost;
-var bool bInformVictim;
+var bool Initialized;
 
 defaultproperties {
 SavePercent=50
@@ -61,6 +61,10 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			ActualDamage = ActualDamage*(1.0-SavePercent/100.0);
 		}
 
+	}
+
+	if (InstigatedBy.IsA('PlayerPawn') && PlayerPawn(InstigatedBy).bIsCrouching) {
+		Momentum = Momentum * SuperBoost;
 	}
 
 	if ( NextDamageMutator != None )
