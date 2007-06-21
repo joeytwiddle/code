@@ -19,6 +19,13 @@ var int depth; // used to prevent infinite recursion when replacing actors
 function PreBeginPlay() {
 }
 
+function DumpProperties( Object O ) {
+	local Actor P;
+	foreach AllActors(class'Actor', P)
+		if(P.Outer == O.Class)
+			Log( "[TYPE]" @ P.class.name @ "[NAME]" @ P.name @ "[VALUE]" @ O.GetPropertyText( string(P.name) ) );
+}
+
 // Force game to always keep this actor, even if other mutators want to get rid of it.
 function bool AlwaysKeep(Actor Other) {
 
@@ -75,9 +82,10 @@ function MyReplaceWith(Actor Other,String str) {
 	// Log("["$depth$"] > replacing "$ Other $ "" $ Other.Location $ " -> " $ str);
 	// Log("["$depth$"] > replacing "$ Other $ "" $ Other.Location $ " -> " $ str);
 	if ((""$Other.Class) != "PathNode") {
-		Log("["$depth$"] > replacing "$ Other $ "" $ Other.Location $ " -> " $ str);
+		Log("["$depth$"] > replacing "$ Other.Class $ "(" $ Other.Location $ ") -> " $ str);
 	}
 	depth++;
+	DumpProperties(Other);
 	ReplaceWith(Other,str);
 	depth--;
 	if (!bWorking) {

@@ -1,0 +1,54 @@
+We perform three different balancing algorithms, based on three different game events:
+
+  1) At the beginning of the game, all players are balanced
+
+  2) When a new player joins mid-game, he is assigned to the weaker team
+
+  3) When a player or admin requests mid-game teambalance, either the
+     1-player-switch or 2-player-switch rebalance algorithm will be called,
+     depending on the difference in the player count of the two teams.
+     Or admins may force a full teams rebalance like event 1.
+
+Players may request teambalancing during the game, by saying "teams" or "!teams", but only if bLetPlayersRebalance is set to True in the config.
+
+The Administrator and semi-admins can type the following commands in the console.  (You may wish to empty the admin password in the config file, so that all players can be semi-admins.)
+
+  mutate teams [password]
+
+    will switch one player to the other team, or will swap two players.
+    The same as saying "teams" when bLetPlayersRebalance is set in the config.
+    Refuses to balance again for MinSecondsBeforeRebalance.
+
+  mutate forceteams [password]
+
+    the same as the teambalance which occurs at the beginning of the map, if
+    bAutoBalanceTeamsForCTF is set, and this is a CTF game.
+    May switch a lot of players, including players holding the flag!
+
+  mutate tored <player_name> [password]
+
+    moves the player to the red team
+    player_name may be only a part of the player's nick
+
+  mutate toblue <player_name> [password]
+
+    moves the player to the blue team
+
+  mutate warn <player_name> <message> [password]
+
+    flashes the message/warning on the player's screen, and shakes his view
+
+  mutate saveconfig [password]
+
+    updates the stats and saves everthing to the config file
+    if the game ends after this then the this time period will be counted again
+
+The following commands are only available to the Server Admin when he is logged in:
+
+  mutate get <package> <var_name>
+    will display the gameengine's current value of the config variable
+  mutate getprop <var_name>
+  mutate setprop <var_name> <new_value>
+  mutate set <package> <var_name> <new_value>
+  mutate console <command>
+

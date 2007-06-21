@@ -1430,7 +1430,7 @@ function string stripPort(string ip_and_port) {
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 
   // TODO TESTING TO FIX BUG: After i switched team, and did a "mutate teams  full", I couldn't make say "!teams" work any more.
-  if (Sender != Receiver && bDebugLogging) {
+  if (bDebugLogging && Sender != Receiver && bDebugLogging) {
     Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Ignoring ("$Sender$" -> "$Receiver$") "$Msg$"");
   }
   // Mmm when the problem occurs, MutatorTeamMessage doesn't get called at all!
@@ -1440,8 +1440,8 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
     if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcast/TeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
 
-    if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
-      if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
+    if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
+      if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
         // DONE: check this is not called during bTournament games.
         // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
         // ForceFullTeamsRebalance();
@@ -1542,72 +1542,102 @@ function Mutate(String str, PlayerPawn Sender) {
 
   argcount = SplitString(str," ",args);
 
-  if (admin_pass=="" || args[argcount-1]~=admin_pass) {
+  if (admin_pass=="" || args[argcount-1]~=admin_pass) { // Semi-admin privilege commands:
 
-    if ( args[0]~="TEAMS" ) {
-      if (!Level.Game.GameReplicationInfo.bTeamGame) {
-        Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
-      } else {
-        // We let semiadmins override bTournament
-        // if (DeathMatchPlus(Level.Game).bTournament) {
-        // if (args[2]~="FULL" || args[2]~="FORCE") {
-        // } else {
-        // }
-        // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has requested teambalance."); }
-        MidGameRebalance();
-      }
+    switch ( Caps(args[0]) ) {
 
-    } else if ( args[0]~="FORCETEAMS" ) {
-      // Sender.ClientMessage("AutoTeamBalance performing full teams rebalance...");
-      if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has forced a full teams rebalance."); }
-      // To make this balance as accurate as possible, we update the stats now, so we can use the scores from this game so-far.
-      // But since this would mess up the end-game stats updating (counting this part of the game twice), we restore the stats from the config afterwards.
-      // CopyArraysIntoConfig(); // Not actually needed; they should be identical at this stage
-      UpdateStatsAtEndOfGame();
-      ForceFullTeamsRebalance();
-      CopyConfigIntoArrays();
+      case "TEAMS":
+        if (!Level.Game.GameReplicationInfo.bTeamGame) {
+          Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
+        } else {
+          // We let semiadmins override bTournament
+          // if (DeathMatchPlus(Level.Game).bTournament) {
+          // if (args[2]~="FULL" || args[2]~="FORCE") {
+          // } else {
+          // }
+          // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has requested teambalance."); }
+          MidGameRebalance();
+        }
+      break;
 
-    } else if ( args[0]~="TORED" ) {
-      // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-      ChangePlayerToTeam(FindPlayerNamed(args[1]),0);
-    } else if ( args[0]~="TOBLUE" ) {
-      // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-      ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
+      case "FORCETEAMS":
+        // Sender.ClientMessage("AutoTeamBalance performing full teams rebalance...");
+        if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has forced a full teams rebalance."); }
+        // To make this balance as accurate as possible, we update the stats now, so we can use the scores from this game so-far.
+        // But since this would mess up the end-game stats updating (counting this part of the game twice), we restore the stats from the config afterwards.
+        // CopyArraysIntoConfig(); // Not actually needed; they should be identical at this stage
+        UpdateStatsAtEndOfGame();
+        ForceFullTeamsRebalance();
+        CopyConfigIntoArrays();
+      break;
 
-    } else if (args[0]~="WARN") {
-      // SendClientMessage(FindPlayerNamed(args[1]),args[2]);
-      msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
-      SendClientMessage(FindPlayerNamed(args[1]),msg);
-      FindPlayerNamed(args[1]).ShakeView(4.0,8000.0,12000.0);
+      case "TORED":
+        // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
+        ChangePlayerToTeam(FindPlayerNamed(args[1]),0);
+      break;
 
-	} else if (Sender.bAdmin) {
+      case "TOBLUE":
+        // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
+        ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
+      break;
 
-		 // TODO: Experimental; comment out in final build
-		 // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
-		 if (args[0]~="GET" ) {
-			Sender.ClientMessage( args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
-		 } else if (args[0]~="GETPROP" ) {
-			Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
-		 // Allows semiadmins to run any console command on the server
-		 } else if (args[0]~="CONSOLE" ) {
-			msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
-			Sender.ClientMessage( "" $ ConsoleCommand(msg) );
-		 // Allows semiadmins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
-		 } else if (args[0]~="SET" ) {
-			ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
-		 // TODO TESTING: Allows semiadmins to write to in-game variables
-		 } else if (args[0]~="SETPROP" ) {
-			SetPropertyText(args[1],args[2]);
-			Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
-			Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
-		 } else if ( args[0]~="SAVECONFIG" ) {
-			UpdateStatsAtEndOfGame();
-			CopyArraysIntoConfig(); // Already done for us
-			SaveConfig();
-			// CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
-		 }
+      case "WARN":
+        // SendClientMessage(FindPlayerNamed(args[1]),args[2]);
+        msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+        SendClientMessage(FindPlayerNamed(args[1]),msg);
+        FindPlayerNamed(args[1]).ShakeView(4.0,8000.0,12000.0);
+      break;
 
-	}
+      Default:
+      break;
+
+    }
+
+  }
+
+  if (Sender.bAdmin) { // Admin only commands:
+
+    // TODO: Experimental; comment out in final build
+    switch ( Caps(args[0]) ) {
+
+      // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
+      case "GET":
+        Sender.ClientMessage( args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+      break;
+
+      // Allows semiadmins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
+      case "SET":
+        ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+      break;
+
+      case "GETPROP":
+        Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+      break;
+
+      // TODO TESTING: Allows semiadmins to write to in-game variables
+      case "SETPROP":
+        SetPropertyText(args[1],args[2]);
+        Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+        Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
+      break;
+
+      // Allows semiadmins to run any console command on the server
+      case "CONSOLE":
+        msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+        Sender.ClientMessage( "" $ ConsoleCommand(msg) );
+      break;
+
+      case "SAVECONFIG":
+        UpdateStatsAtEndOfGame();
+        CopyArraysIntoConfig(); // Already done for us
+        SaveConfig();
+        // CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
+      break;
+
+      Default:
+      break;
+
+    }
 
   }
 
