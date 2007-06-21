@@ -407,7 +407,7 @@ function CheckGameStart() {
 function DoGameStart() {
   timeGameStarted = Level.TimeSeconds+2; // (since we are called 2 seconds before starting countdown ends)
   if (ShouldBalance(Level.Game)) {
-    if (bBroadcastStuff) { BroadcastMessageAndLog(HelloBroadcast); }
+    // if (bBroadcastStuff) { BroadcastMessageAndLog(HelloBroadcast); }
     ForceFullTeamsRebalance();
   }
 }
@@ -1178,6 +1178,8 @@ function CheckGameEnd() {
     gameEndDone = true;
     if (ShouldUpdateStats(Level.Game)) {
       UpdateStatsAtEndOfGame();
+		CopyArraysIntoConfig();
+		SaveConfig();
     }
   }
 }
@@ -1216,9 +1218,9 @@ function UpdateStatsAtEndOfGame() {
   }
 
   // Save the new stats in the config/ini file:
-  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): saving stats to file");
-  CopyArraysIntoConfig();
-  SaveConfig(); // This is the only place this gets done atm!
+  // Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): saving stats to file");
+  // CopyArraysIntoConfig();
+  // SaveConfig(); // This is the only place this gets done atm!
 
   Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): done");
 
@@ -1517,10 +1519,15 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
 // I thought I had a problem that this was not getting called if have AutoTeamBalance as a ServerActor, but that problem has either gone now, or I was getting this confused with MutatorTeamMessage().
 function Mutate(String str, PlayerPawn Sender) {
+
   local String args[255];
   // local array<String> args;
-  local String admin_pass;
   local int argcount;
+
+  local String admin_pass;
+
+  local String msg;
+  local int i;
 
   if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
@@ -1541,6 +1548,7 @@ function Mutate(String str, PlayerPawn Sender) {
       if (!Level.Game.GameReplicationInfo.bTeamGame) {
         Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
       } else {
+        // We let semiadmins override bTournament
         // if (DeathMatchPlus(Level.Game).bTournament) {
         // if (args[2]~="FULL" || args[2]~="FORCE") {
         // } else {
@@ -1566,24 +1574,40 @@ function Mutate(String str, PlayerPawn Sender) {
       // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
       ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
 
-    } else if ( args[0]~="WARN" ) {
-      SendClientMessage(FindPlayerNamed(args[1]),args[2]);
+    } else if (args[0]~="WARN") {
+      // SendClientMessage(FindPlayerNamed(args[1]),args[2]);
+      msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+      SendClientMessage(FindPlayerNamed(args[1]),msg);
       FindPlayerNamed(args[1]).ShakeView(4.0,8000.0,12000.0);
 
-    // TODO: Experimental; comment out in final build
-    // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
-    } else if (args[0]~="GET" ) {
-      Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]));
-    /*
-    // Allows semiadmins to write to variables (probably equivalent to: admin set <package> <name> <value>)
-    } else if (args[0]~="SET" ) {
-      ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
-      Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
-    */
-    } else if ( args[0]~="SAVECONFIG" ) {
-      UpdateStatsAtEndOfGame();
-      SaveConfig();
-    }
+	} else if (Sender.bAdmin) {
+
+		 // TODO: Experimental; comment out in final build
+		 // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
+		 if (args[0]~="GET" ) {
+			Sender.ClientMessage( args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+		 } else if (args[0]~="GETPROP" ) {
+			Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+		 // Allows semiadmins to run any console command on the server
+		 } else if (args[0]~="CONSOLE" ) {
+			msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+			Sender.ClientMessage( "" $ ConsoleCommand(msg) );
+		 // Allows semiadmins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
+		 } else if (args[0]~="SET" ) {
+			ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+		 // TODO TESTING: Allows semiadmins to write to in-game variables
+		 } else if (args[0]~="SETPROP" ) {
+			SetPropertyText(args[1],args[2]);
+			Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+			Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
+		 } else if ( args[0]~="SAVECONFIG" ) {
+			UpdateStatsAtEndOfGame();
+			CopyArraysIntoConfig(); // Already done for us
+			SaveConfig();
+			// CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
+		 }
+
+	}
 
   }
 
@@ -1594,9 +1618,14 @@ function Mutate(String str, PlayerPawn Sender) {
     Sender.ClientMessage("    mutate tored <player> [password]");
     Sender.ClientMessage("    mutate toblue <player> [password]");
     Sender.ClientMessage("    mutate warn <player> <message> [password]");
-    Sender.ClientMessage("    mutate get <package> <variable> [password]");
-    // Sender.ClientMessage("    mutate set <package> <variable> <new_value> [password]");
-    Sender.ClientMessage("    mutate saveconfig [password]");
+    if (Sender.bAdmin) {
+      Sender.ClientMessage("    mutate saveconfig [password]");
+      Sender.ClientMessage("    mutate get <package> <variable> [password]");
+      Sender.ClientMessage("    mutate set <package> <variable> <new_value> [password]");
+      Sender.ClientMessage("    mutate getprop <variable> [password]");
+      Sender.ClientMessage("    mutate setprop <variable> <new_value> [password]");
+      Sender.ClientMessage("    mutate console <command> [password]");
+    }
   }
 
   Super.Mutate(str,Sender);

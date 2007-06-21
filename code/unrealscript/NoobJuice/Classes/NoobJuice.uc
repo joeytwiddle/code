@@ -1,16 +1,25 @@
 class NoobJuice expands Mutator;
 
 var String knownPlayers;
-var float nextCheck;
+// var float nextCheck;
 
 defaultproperties {
 	knownPlayers=
-	nextCheck=0
+	// nextCheck=0
 }
 
-function PostBeginPlay() {
+function Mutate(String str, PlayerPawn Sender) {
+  // a shortcut if your mapvote button is not working; just type: mutate mapvote
+	if (str ~= "mapvote") {
+		Level.Game.BaseMutator.Mutate("bdbmapvote votemenu",Sender);
+	}
+	Super.Mutate(str,Sender);
+}
+
+// function PostBeginPlay() {
+function PreBeginPlay() {
 	// Level.Game.BaseMutator.AddMutator(Self);
-  SetTimer(10,True);
+  SetTimer(50,True);
 }
 
 // event Tick(float DeltaTime) {
@@ -37,7 +46,7 @@ function CheckPlayerList() {
 }
 
 function HandleNewPlayer(PlayerPawn p) {
-	p.ClientMessage("Welcome to "$ Mid(""$Level.Game,InStr(""$Level.Game,".")+1) $" on noggin's noobJuice.");
+	p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $" on noggin's noobJuice.");
 }
 
 /*

@@ -44,7 +44,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 	if (Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
 
-		if (bInformVictim) {
+		if (bInformVictim && Victim.bIsHuman && !Victim.IsA('Bot')) {
 			// Victim.ClientMessage("Crouching has saved you "$Int(SavePercent)$"% ("$ Int(ActualDamage*SavePercent) $"hp) damage from "$ InstigatedBy.getHumanName() $"'s \""$ DamageType $"\".", 'CriticalEvent', True);
 			// Victim.ClientMessage("Crouching has saved you "$Int(SavePercent)$"% ("$ Int(ActualDamage*SavePercent) $"hp) damage from "$ InstigatedBy.getHumanName() $"'s \""$ DamageType $"\".");
 			// Victim.ClientMessage(Int(ActualDamage*SavePercent) $"hp) damage saved by crouching.");
@@ -63,7 +63,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 	}
 
-	if (InstigatedBy.IsA('PlayerPawn') && PlayerPawn(InstigatedBy).bIsCrouching) {
+	if (InstigatedBy!=None && InstigatedBy.IsA('PlayerPawn') && PlayerPawn(InstigatedBy).bIsCrouching) {
 		Momentum = Momentum * SuperBoost;
 	}
 

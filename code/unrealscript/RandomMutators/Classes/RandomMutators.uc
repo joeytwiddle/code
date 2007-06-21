@@ -9,12 +9,12 @@ defaultproperties {
 	numToAdd=3
 	chosenMutators=
 	knownPlayers=
-	nextCheck=0
+	// nextCheck=0
 }
 
 var String chosenMutators;
 var String knownPlayers;
-var float nextCheck;
+// var float nextCheck;
 
 function PreBeginPlay() {
 	local int i;
@@ -25,9 +25,18 @@ function PreBeginPlay() {
 		Log("RandomMutators: Spawning and adding a new "$mutName);
 		mut = Spawn( class<mutator>(DynamicLoadObject(mutName, class'Class')) );
 		Level.Game.BaseMutator.AddMutator(mut);
-		chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1) $ ",";
+		if (chosenMutators != "") chosenMutators = chosenMutators $ ", ";
+		// chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1);
+		// chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1,Len(""$mut)-Instr(""$mut,".")-2);
+		chosenMutators = chosenMutators $ mutName;
 	}
+	SetTimer(51,True);
 }
+
+// function PostBeginPlay() {
+	// Level.Game.BaseMutator.AddMutator(Self);
+  // SetTimer(55,True);
+// }
 
 function String getRandomMutator() {
 	// return class'Botpack.SuperShockRifle';
@@ -100,11 +109,6 @@ function int SplitString(String str, String divider, out String parts[255]) {
 }
 
 
-
-function PostBeginPlay() {
-	// Level.Game.BaseMutator.AddMutator(Self);
-  SetTimer(10,True);
-}
 
 event Timer() {
    CheckPlayerList();
