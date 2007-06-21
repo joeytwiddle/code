@@ -8,19 +8,24 @@ defaultproperties {
 	nextCheck=0
 }
 
-function PreBeginPlay() {
-	Level.Game.BaseMutator.AddMutator(Self);
+function PostBeginPlay() {
+	// Level.Game.BaseMutator.AddMutator(Self);
+  SetTimer(10,True);
 }
 
-function void Tick() {
-	if (nextCheck > Level.TimeSeconds)
-		return;
-	CheckPlayerList();
-	nextCheck = Level.TimeSeconds + 10;
+// event Tick(float DeltaTime) {
+	// if (nextCheck > Level.TimeSeconds)
+		// return;
+	// CheckPlayerList();
+	// nextCheck = Level.TimeSeconds + 10;
+// }
+
+event Timer() {
+   CheckPlayerList();
 }
 
-function void CheckPlayerList() {
-	Pawn p;
+function CheckPlayerList() {
+	local Pawn p;
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (p.bIsPlayer && !p.IsA('Bot')) {
 			if (InStr(knownPlayers," "$p.getHumanName()$" ")<0) {
@@ -31,10 +36,11 @@ function void CheckPlayerList() {
 	}
 }
 
-function void HandleNewPlayer(PlayerPawn p) {
-	p.SendClientMessage("Welcome to "$Level.Game$" on noggin's noobJuice.");
+function HandleNewPlayer(PlayerPawn p) {
+	p.ClientMessage("Welcome to "$ Mid(""$Level.Game,InStr(""$Level.Game,".")+1) $" on noggin's noobJuice.");
 }
 
+/*
 function int SplitString(String str, String divider, out String parts[255]) {
    // local String parts[255];
    // local array<String> parts;
@@ -57,4 +63,5 @@ function int SplitString(String str, String divider, out String parts[255]) {
    // return parts;
    return i;
 }
+*/
 

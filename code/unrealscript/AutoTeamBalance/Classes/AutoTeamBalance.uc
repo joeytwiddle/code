@@ -1587,6 +1587,18 @@ function Mutate(String str, PlayerPawn Sender) {
 
   }
 
+  if ( args[0]~="HELP" ) {
+    Sender.ClientMessage("AutoTeamBalance commands:");
+    Sender.ClientMessage("    mutate teams [password]");
+    Sender.ClientMessage("    mutate forceteams [password]");
+    Sender.ClientMessage("    mutate tored <player> [password]");
+    Sender.ClientMessage("    mutate toblue <player> [password]");
+    Sender.ClientMessage("    mutate warn <player> <message> [password]");
+    Sender.ClientMessage("    mutate get <package> <variable> [password]");
+    // Sender.ClientMessage("    mutate set <package> <variable> <new_value> [password]");
+    Sender.ClientMessage("    mutate saveconfig [password]");
+  }
+
   Super.Mutate(str,Sender);
 }
 

@@ -31,6 +31,8 @@
 //   some of the default weapons (e.g. enforcer) report their ammotype as minigun2 :S  we need to build a table of real ammotypes for them, and hope that non-default weapons will have their set correctly
 //   
 
+// TODO: if the only weapons you find on the map are Redeemers, then maybe switch to SLV Arena
+
 class ArenaFallback expands Mutator;
 
 var bool bOnlyOnWeaponlessMaps;
