@@ -151,7 +151,7 @@ case "$TODO" in
 
 		) |
 		# grep -v "$HIDE_MAPS_REGEXP" |
-		head -n 1024 | # pipeboth |
+		# head -n 1024 | # pipeboth |
 		# withalldo verbosely ln -s --- . # 2>/dev/null
 		while read MAP; do ln -s "$MAP" .; done 2>&1 | grep -v "File exists$"
 		echo "Loaded maps: "`verbosely find . -name "*.unr" | wc -l`
