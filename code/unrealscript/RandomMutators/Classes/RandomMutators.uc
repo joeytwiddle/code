@@ -1,12 +1,12 @@
-class RandomMutators expands Mutator;
+class RandomMutators expands Mutator config(RandomMutators);
 
 var config String mutatorList;
 var config int numToAdd;
 
 defaultproperties {
-	mutatorList="Botpack.LowGrav,FastCap.FC_Mutator,NevPack.AutoCannon,Radiated.Radiated,BotPack.FatBoy,CrouchBlocksDamage.CrouchBlocksDamage,WhoPushedMe.WhoPushedMe,BatThwap.BatThwap,ArenaFallback.ArenaFallback"
-	// mutatorList="Botpack.LowGrav,NevPack.AutoCannon,Radiated.Radiated,BotPack.FatBoy"
-	numToAdd=3
+	mutatorList="Botpack.LowGrav,Botpack.JumpMatch,Botpack.FlakArena,Botpack.BioArena,Botpack.MinigunArena"
+	// mutatorList="Botpack.LowGrav,FastCap.FC_Mutator,NevPack.AutoCannon,Radiated.Radiated,BotPack.FatBoy,CrouchBlocksDamage.CrouchBlocksDamage,WhoPushedMe.WhoPushedMe,BatThwap.BatThwap,ArenaFallback.ArenaFallback"
+	numToAdd=2
 	chosenMutators=
 	knownPlayers=
 	// nextCheck=0
@@ -23,14 +23,50 @@ function PreBeginPlay() {
 	for (i=0;i<numToAdd;i++) {
 		mutName = getRandomMutator();
 		Log("RandomMutators: Spawning and adding a new "$mutName);
+		if (CheckForMut1(mutName)) {
+			Log("RandomMutators: Refusing to add "$mut);
+			continue;
+		}
 		mut = Spawn( class<mutator>(DynamicLoadObject(mutName, class'Class')) );
+		if (mut == None) {
+			Log("RandomMutators:   x Failed.");
+			continue;
+		}
+		if (CheckForMut2(mut)) {
+			Log("RandomMutators: Refusing to add "$mut);
+			mut.Destroy();
+			continue;
+		}
 		Level.Game.BaseMutator.AddMutator(mut);
 		if (chosenMutators != "") chosenMutators = chosenMutators $ ", ";
 		// chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1);
-		// chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1,Len(""$mut)-Instr(""$mut,".")-2);
-		chosenMutators = chosenMutators $ mutName;
+		chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1,Len(""$mut)-Instr(""$mut,".")-2);
+		// chosenMutators = chosenMutators $ mutName;
+		// TODO CONSIDER: mut.PreBeginPlay();
 	}
 	SetTimer(51,True);
+}
+
+function bool CheckForMut1(String mutName) {
+	local Mutator m;
+	for (m=Level.Game.BaseMutator; m!=None; m=m.NextMutator) {
+		if ((""$mutName) == (""$m.Class.Name)) {
+			Log("RandomMutators.CheckForMut1(): Found already existing "$mutName$": "$m);
+			return True;
+		}
+	}
+	return False;
+}
+
+function bool CheckForMut2(Mutator mut) {
+	local Mutator m;
+	for (m=Level.Game.BaseMutator; m!=None; m=m.NextMutator) {
+		if (mut.Class.Name == m.Class.Name) {
+			Log("RandomMutators.CheckForMut2(): Found duplicate of "$mut$": "$m);
+			return True;
+		}
+	}
+	return False;
 }
 
 // function PostBeginPlay() {
@@ -128,5 +164,9 @@ function CheckPlayerList() {
 
 function HandleNewPlayer(PlayerPawn p) {
 	// p.ClientMessage("Welcome to "$Level.Game$" on noggin's noobJuice.");
-	p.ClientMessage("Current mutators are: " $ chosenMutators);
+	// p.ClientMessage("Current mutators are: " $ chosenMutators);
+	// p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $" on noggin's noobJuice.");
+	// p.ClientMessage("Currently playing " $ Left(""$Level.Game,InStr(""$Level.Game,".")) $ " with " $ chosenMutators $ ".");
+	p.ClientMessage( "(hwi.ath.cx) playing " $ Left(""$Level.Game,InStr(""$Level.Game,".")) );
+	p.ClientMessage( "with " $ chosenMutators $ "" );
 }

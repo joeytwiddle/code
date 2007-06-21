@@ -1,54 +1,74 @@
-We perform three different balancing algorithms, based on three different game events:
+AutoTeamBalance performs team balancing with three different algorithms:
 
-  1) At the beginning of the game, all players are balanced
+	1) At the beginning of the game, all players are balanced
+	(ForceFullTeamsRebalance)
 
-  2) When a new player joins mid-game, he is assigned to the weaker team
+	2) When a new player joins mid-game, he is assigned to the weaker team
+	(ModifyLogin)
 
-  3) When a player or admin requests mid-game teambalance, either the
-     1-player-switch or 2-player-switch rebalance algorithm will be called,
-     depending on the difference in the player count of the two teams.
-     Or admins may force a full teams rebalance like event 1.
+	3) When a player or admin requests MidGameTeamBalance, either the
+	1-player-switch or 2-player-switch rebalance algorithm will be called,
+	depending on the difference in the player count of the two teams.  Or
+	admins may ForceFullTeamsRebalance as in event 1.
 
-Players may request teambalancing during the game, by saying "teams" or "!teams", but only if bLetPlayersRebalance is set to True in the config.
+Players may request teambalancing during the game, by saying "teams" or
+"!teams", but only if bLetPlayersRebalance is set to True in the config.
 
-The Administrator and semi-admins can type the following commands in the console.  (You may wish to empty the admin password in the config file, so that all players can be semi-admins.)
+Commands available to players:
 
-  mutate teams [password]
+  Say "!teams" or "teams" to request MidGameTeamBalance.
 
-    will switch one player to the other team, or will swap two players.
-    The same as saying "teams" when bLetPlayersRebalance is set in the config.
-    Refuses to balance again for MinSecondsBeforeRebalance.
+  Say "!red" or "!blue" to get auto-switched to that team.
 
-  mutate forceteams [password]
+The Administrator and semi-admins can type the following commands in the
+console.  (You may wish to empty the admin password in the config file, so that
+all players can be semi-admins.)
 
-    the same as the teambalance which occurs at the beginning of the map, if
-    bAutoBalanceTeamsForCTF is set, and this is a CTF game.
-    May switch a lot of players, including players holding the flag!
+	mutate help
 
-  mutate tored <player_name> [password]
+	mutate teams [password]
 
-    moves the player to the red team
-    player_name may be only a part of the player's nick
+		will switch one player to the other team, or will swap two players.
+		The same as saying "teams" when bLetPlayersRebalance is set in the
+		config.  Refuses to balance again for MinSecondsBeforeRebalance.
 
-  mutate toblue <player_name> [password]
+	mutate forceteams [password]
 
-    moves the player to the blue team
+		the same as the teambalance which occurs at the beginning of the map,
+		if bAutoBalanceTeamsForCTF is set, and this is a CTF game.
+		May switch a lot of players, including players holding the flag!
 
-  mutate warn <player_name> <message> [password]
+	mutate tored <player_name> [password]
 
-    flashes the message/warning on the player's screen, and shakes his view
+		moves the player to the red team
+		player_name may be only a part of the player's nick
 
-  mutate saveconfig [password]
+	mutate toblue <player_name> [password]
 
-    updates the stats and saves everthing to the config file
-    if the game ends after this then the this time period will be counted again
+		moves the player to the blue team
+
+	mutate warn <player_name> <message> [password]
+
+		flashes the message/warning on the player's screen, and shakes his view
+
+	mutate kick <player_name> <message> [password]
+
+		flashes the message/warning on the player's screen, then kicks him from
+		the server
 
 The following commands are only available to the Server Admin when he is logged in:
 
-  mutate get <package> <var_name>
-    will display the gameengine's current value of the config variable
-  mutate getprop <var_name>
-  mutate setprop <var_name> <new_value>
-  mutate set <package> <var_name> <new_value>
-  mutate console <command>
+	mutate saveconfig [password]
+
+		updates the stats and saves everthing to the config file
+		if the game ends after this then the this time period will be counted again
+
+	mutate get <package> <var_name>
+
+		will display the gameengine's current value of the config variable
+
+	mutate set <package> <var_name> <new_value>
+	mutate getprop <var_name>
+	mutate setprop <var_name> <new_value>
+	mutate console <command>
 

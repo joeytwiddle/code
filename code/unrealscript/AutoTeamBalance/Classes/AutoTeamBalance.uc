@@ -239,7 +239,7 @@ defaultproperties {
   UnknownStrength=50      // New player records start with an initial strength of 50 (when scores are normalised, this is the average)
   // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
   BotStrength=10          // maybe 20 or 30 is better, if we increase normal score to 100
-  FlagStrength=50         // If it's 3:0, the winning team will get punished an extra 150 points; used when new players join the game and number of players on each team are even; TODO: could also be used when doing mid-game "!teams" balance
+  FlagStrength=20         // If it's 3:0, the winning team will get punished an extra 150 points; used when new players join the game and number of players on each team are even; TODO: could also be used when doing mid-game "!teams" balance
   WinningTeamBonus=10
   bClanWar=False
   MaxPlayerData=4096
@@ -428,7 +428,8 @@ function bool AllowedToRank(Pawn b) {
   if (b.IsA('Bot'))
     return bRankBots;
   else
-    return True;
+    return b.IsA('PlayerPawn');
+    // return True;
 }
 
 function ForceFullTeamsRebalance() {
@@ -535,7 +536,7 @@ function ForceFullTeamsRebalance() {
       teamnr=0;
       // NOTE: here we are using Playername, in other places we've used getHumanName.
       if (Instr(Caps(pl[pid].PlayerReplicationInfo.Playername),Caps(clanTag))==-1) teamnr=1;
-      ChangePlayerToTeam(pl[pid],teamnr);
+      ChangePlayerToTeam(pl[pid],teamnr,false);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -551,7 +552,7 @@ function ForceFullTeamsRebalance() {
       teamnr=0;
       if ((i&3)==1 || (i&3)==2) teamnr=1;
       if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$"."); }
-      ChangePlayerToTeam(pl[pid],teamnr);
+      ChangePlayerToTeam(pl[pid],teamnr,gameStartDone && !gameEndDone);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -561,7 +562,7 @@ function ForceFullTeamsRebalance() {
       pid=plorder[i];
       teamnr=0; if (teamstr[0]>teamstr[1]) teamnr=1;
       if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$"."); }
-      ChangePlayerToTeam(pl[pid],teamnr);
+      ChangePlayerToTeam(pl[pid],teamnr,gameStartDone && !gameEndDone);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -575,7 +576,7 @@ function ForceFullTeamsRebalance() {
   // Show team strengths to all players
   // Log("AutoTeamBalance.ForceFullTeamsRebalance(): Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ ".");
   // Human strength:
-  if (bBroadcastStuff && bDebugLogging) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrength(0))$".  Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+  // if (bBroadcastStuff && bDebugLogging) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrength(0))$".  Blue team strength is "$Int(GetTeamStrength(1))$"."); }
   // Non-human strength: But then, this was non-human balancing!
   if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 
@@ -771,7 +772,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(fromTeam)$" team too weak!"); }
     return False;
   } else {
-    ChangePlayerToTeam(closestPlayer,toTeam);
+    ChangePlayerToTeam(closestPlayer,toTeam,true);
     if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
     return True;
   }
@@ -822,8 +823,8 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
 
   // TODO: if one of the players is a bot, we should probably move him last, because bots tend to switch back to the other team, if UT.ini is configured that way.  Alternatively, we could copy Daniel's temporary-ut-balance-disable code into ChangePlayerToTeam.
   if (redPlayerToMove != None && bluePlayerToMove != None) {
-    ChangePlayerToTeam(redPlayerToMove,1);
-    ChangePlayerToTeam(bluePlayerToMove,0);
+    ChangePlayerToTeam(redPlayerToMove,1,true);
+    ChangePlayerToTeam(bluePlayerToMove,0,true);
     if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
     return True;
   } else {
@@ -897,16 +898,19 @@ function bool ShouldUpdateStats(GameInfo game) {
   return bUpdatePlayerStatsForNonTeamGames;
 }
 
-function ChangePlayerToTeam(Pawn p, int teamnum) {
+function ChangePlayerToTeam(Pawn p, int teamnum, bool bShake) {
   // Note: if ForceFullTeamsRebalance() is invoked mid-game; it's possible that this player is already on this team, in which case don't switch.
   if (teamnum == p.PlayerReplicationInfo.Team) {
     if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): doing nothing since player is already on team "$teamnum); }
     return;
   }
+  if (p.IsA('Bot')) {
+    Bot(p).ConsoleCommand("taunt wave");
+  }
   if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum); }
   Level.Game.ChangeTeam(p,teamnum);
   Level.Game.RestartPlayer(p); // i thought by doing this even before the game had started, it might fix problems with the player's team getting confused by the server; i don't think it worked, but it didn't do any harm either
-  if (gameStartDone) {
+  if (bShake) {
     // Level.Game.RestartPlayer(p);
     // SendClientMessage(p,"You have been moved to the "$getTeamName(teamnum)$" team.");
     // SendClientMessage(p,"YOU have been MOVED to the >> "$getTeamName(teamnum)$" << team for a fairer game.");
@@ -946,7 +950,7 @@ function float GetTeamStrength(int teamNum) {
       strength += GetPawnStrength(p);
     }
   }
-  if (bDebugLogging) { Log("AutoTeamBalance.GetTeamStrength(): "$getTeamName(teamNum)$" team has human strength "$strength); }
+  if (bDebugLogging) { Log("AutoTeamBalance.GetTeamStrength(): "$getTeamName(teamNum)$" team has strength "$strength); }
   // Add flagstrength:
   strength += TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[teamNum].Score*FlagStrength;
   return strength;
@@ -957,7 +961,7 @@ function float GetTeamStrength(int teamNum) {
 function int GetPawnStrength(Pawn p) {
   local int st;
 
-  if (p.IsA('PlayerPawn') && AllowedToRank(p))
+  if (AllowedToRank(p))
   {
     // a human player - get his strength
     st = GetPlayerStrength(PlayerPawn(p));
@@ -1081,6 +1085,7 @@ function int FindPlayerRecord(PlayerPawn p) {
     // TODO: if we have little experience (<10mins) of a player, assume default score?
   }
 
+  if (bDebugLogging && found == -1) { Log("AutoTeamBalance.FindPlayerRecord("$p$") failed to return a record."); }
   return found;
 }
 
@@ -1211,9 +1216,10 @@ function UpdateStatsAtEndOfGame() {
   // TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
   if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: NAME IP TEAM PING SCORE FRAGS DEATHS TIME"); }
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) { // lol
+    // if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) {
+    if (!p.IsA('Spectator') && AllowedToRank(p)) {
       UpdateStatsForPlayer(PlayerPawn(p));
-      if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" "$PlayerPawn(p).GetPlayerNetworkAddress()$" "$PlayerPawn(p).PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.Team$" "$PlayerPawn(p).PlayerReplicationInfo.Score$" ? "$PlayerPawn(p).PlayerReplicationInfo.Deaths$" "$(Level.TimeSeconds - PlayerPawn(p).PlayerReplicationInfo.StartTime)$""); }
+      if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" 0.0.0.0 0 "$p.PlayerReplicationInfo.Team$" "$p.PlayerReplicationInfo.Score$" ? "$p.PlayerReplicationInfo.Deaths$" "$(Level.TimeSeconds - PlayerPawn(p).PlayerReplicationInfo.StartTime)$""); }
     }
   }
 
@@ -1290,6 +1296,8 @@ function UpdateStatsForPlayer(PlayerPawn p) {
       // SO: changing nick will Not reset your avg_score immediately, but eventually
       avg_score[j] = avg_score[i]; // Copy score from partial record max
       hours_played[j] = Min(MaxHoursWhenCopyingOldRecord,hours_played[i]); // but in case this is a different player (or maybe the same player but in a different environment), give the new record max 2 hours, so it won't take long to get an accurate idea of this new player's strength
+      // if (bLogFakenickers) { Log("Fakenicker "$p.getHumanName()$" is "$nick[i]$" ip "$ip[i]); }
+      Log("Fakenicker "$p.getHumanName()$" is "$nick[i]$" ip "$ip[i]);
     }
     i = j;
   }
@@ -1362,7 +1370,7 @@ function float NormaliseScore(float score) {
   // We ignore bots scores and count, so it is irrelevant whether the bots have scored nothing, or have pwned the humans, or have performed somewhere inbetween.  Only player's relative scores are taken into account.
   averageGameScore = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) { // lol
+    if (!p.IsA('Spectator') && AllowedToRank(p)) { // lol
       averageGameScore += PlayerPawn(p).PlayerReplicationInfo.Score;
       playerCount++;
     }
@@ -1439,6 +1447,14 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
   if (Sender == Receiver) { // Only process the message once.
 
     if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcast/TeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+
+    if (Msg ~= "!RED") {
+      ChangePlayerToTeam(PlayerPawn(Sender),0,false);
+    }
+
+    if (Msg ~= "!BLUE") {
+      ChangePlayerToTeam(PlayerPawn(Sender),1,false);
+    }
 
     if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
       if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
@@ -1573,12 +1589,14 @@ function Mutate(String str, PlayerPawn Sender) {
 
       case "TORED":
         // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-        ChangePlayerToTeam(FindPlayerNamed(args[1]),0);
+        ChangePlayerToTeam(FindPlayerNamed(args[1]),0,true);
+        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
       break;
 
       case "TOBLUE":
         // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-        ChangePlayerToTeam(FindPlayerNamed(args[1]),1);
+        ChangePlayerToTeam(FindPlayerNamed(args[1]),1,true);
+        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
       break;
 
       case "WARN":
@@ -1586,6 +1604,13 @@ function Mutate(String str, PlayerPawn Sender) {
         msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
         SendClientMessage(FindPlayerNamed(args[1]),msg);
         FindPlayerNamed(args[1]).ShakeView(4.0,8000.0,12000.0);
+      break;
+
+      case "KICK":
+        msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+        SendClientMessage(FindPlayerNamed(args[1]),msg);
+        // Sender.Kick(FindPlayerNamed(args[1]),msg);
+        Sender.Kick(args[1]);
       break;
 
       Default:
@@ -1608,6 +1633,7 @@ function Mutate(String str, PlayerPawn Sender) {
       // Allows semiadmins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
       case "SET":
         ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+        Sender.ClientMessage( args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
       break;
 
       case "GETPROP":
@@ -1648,6 +1674,7 @@ function Mutate(String str, PlayerPawn Sender) {
     Sender.ClientMessage("    mutate tored <player> [password]");
     Sender.ClientMessage("    mutate toblue <player> [password]");
     Sender.ClientMessage("    mutate warn <player> <message> [password]");
+    Sender.ClientMessage("    mutate kick <player> <message> [password]");
     if (Sender.bAdmin) {
       Sender.ClientMessage("    mutate saveconfig [password]");
       Sender.ClientMessage("    mutate get <package> <variable> [password]");
