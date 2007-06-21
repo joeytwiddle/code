@@ -37,7 +37,7 @@ dog "$MAPLISTTEMP"
 	while read MAP
 	do
 		if [ -f ./ut-server/Maps/"$MAP".unr ]
-		then echo "$MAP"
+		then echo "$MAP 4"
 		else
 			jshwarn "XOL map $MAP is not in Maps/"
 			# locateonly "$MAP".unr | striptermchars | filesonly |
@@ -47,10 +47,18 @@ dog "$MAPLISTTEMP"
 			done
 		fi
 	done |
-	sed "s+^CTF-+XOL-+" |
+	sed "s+^CTF-+XOL-+"
+
+	sh ./map_ranking.sh getranking |
 	while read MAP
-	do echo "$MAP 4"
-	done
+	do
+		if [ -f ./ut-server/Maps/"$MAP".unr ]
+		then echo "$MAP 4"
+		else
+			jshwarn "rated map $MAP is not in Maps/"
+		fi
+	done |
+	sed "s+^[Cc][Tt][Ff]-+cTf-+"
 
 	find ./ut-server/Maps/ -name "*.unr" | afterlast / | beforelast .unr |
 	grep -i "^CTF-" |

@@ -182,8 +182,10 @@ apply_a_random_configuration () {
 	echo
 
 	echo "Installing init script..."
+	cp ./ut-server/ucc.init ./ut-server/ucc.init.`geekdate`
 	install_init_script >/dev/null
 	# cursecyan ; install_init_script ; cursenorm
+	diff ./ut-server/ucc.init ./ut-server/ucc.init.`geekdate` | diffhighlight
 	echo "Done."
 
 }

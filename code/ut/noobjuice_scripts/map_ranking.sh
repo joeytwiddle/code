@@ -1,15 +1,21 @@
+
 getvotes () {
-	# memo -t "1 day" eval 'jzcat ut-server/Logs/*.gz | grep \"voted for\"' |
-	memo -t "1 hour" eval 'jzcat ut-server/Logs/*.gz | grep \"voted for\"' |
-	takecols 5 |
-	## Undo the digits which were added to the name:
-	sed 's+\(CTF-\)\([[:digit:]]{3}[\._]\)\(.*\)+\1\3+' |
-	sort | uniq -c | sort -r
+	# # memo -t "1 day" eval 'jzcat ut-server/Logs/*.gz | grep \"voted for\"' |
+	# memo -t "1 hour" eval 'jzcat ut-server/Logs/*.gz | grep \"voted for\"' |
+	# takecols 5 |
+	# ## Undo the digits which were added to the name:
+	# sed 's+\(CTF-\)\([[:digit:]]{3}[\._]\)\(.*\)+\1\3+' |
+	# sort | uniq -c | sort -r
+	cat listen_simple.sh.out |
+	grep "\<rate\> " |
+	sed 's+\..*\<rate\> [^0-9]*+ +'
 }
 
 getranking () {
 	getvotes |
-	dropcols 1 2 | numbereachline
+	# dropcols 1 2 | numbereachline
+	# pipeboth |
+	sort -n -r -k 2 | takecols 1 | removeduplicatelinespo | head -n 32
 }
 
 case "$1" in
@@ -39,3 +45,4 @@ case "$1" in
 	;;
 
 esac
+
