@@ -37,7 +37,7 @@ function bool AlwaysKeep(Actor Other) {
 			LiftExit(Other).LiftTag = currentTag;
 		} else {
 			currentTag = LiftExit(Other).LiftTag;
-			Log(". Leaving "$Other$"("$currentTag$")");
+			// Log(". Leaving "$Other$"("$currentTag$")");
 		}
 	}
 	if (Other.IsA('LiftCenter')) {
@@ -48,7 +48,7 @@ function bool AlwaysKeep(Actor Other) {
 			LiftCenter(Other).LiftTag = currentTag;
 		} else {
 			currentTag = LiftCenter(Other).LiftTag;
-			Log(". Leaving "$Other$"("$currentTag$")");
+			// Log(". Leaving "$Other$"("$currentTag$")");
 		}
 	}
 
@@ -63,7 +63,7 @@ function refreshCurrentTag() {
 		// currentTag = 'POST_GEN_TAG_';
 		// currentTag = 'POST_GEN_TAG_' $ RandRange(1,100);
 		SetPropertyText("currentTag","Fresh_Tag" $ RandRange(1,100)); // workaround to build a new name variable from a string
-		Log("TranslocBots.refreshCurrentTag() NEW! SetPropertyText(\"currentTag\",\"" $ currentTag $ "\")");
+		// Log("TranslocBots.refreshCurrentTag() NEW! SetPropertyText(\"currentTag\",\"" $ currentTag $ "\")");
 	}
 }
 
@@ -72,7 +72,11 @@ function MyReplaceWith(Actor Other,String str) {
 		Log("["$depth$"] x skipping "$ Other $ " -> " $ str);
 		return;
 	}
-	Log("["$depth$"] > replacing "$ Other $ "" $ Other.Location $ " -> " $ str);
+	// Log("["$depth$"] > replacing "$ Other $ "" $ Other.Location $ " -> " $ str);
+	// Log("["$depth$"] > replacing "$ Other $ "" $ Other.Location $ " -> " $ str);
+	if ((""$Other.Class) != "PathNode") {
+		Log("["$depth$"] > replacing "$ Other $ "" $ Other.Location $ " -> " $ str);
+	}
 	depth++;
 	ReplaceWith(Other,str);
 	depth--;
@@ -87,7 +91,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 	local int i;
 
 	if (depth>0) {
-		Log("("$depth$") < checkreplacement ignoring " $ Other $ " ("$bSuperRelevant$")");
+		// Log("("$depth$") < checkreplacement ignoring " $ Other $ " ("$bSuperRelevant$")");
 		return True;
 	}
 
