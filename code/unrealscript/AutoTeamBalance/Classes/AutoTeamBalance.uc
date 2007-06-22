@@ -1048,6 +1048,14 @@ function CopyArraysIntoConfig() {
   if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
 }
 
+function String getIP(Pawn p) {
+	if (p.IsA('PlayerPawn')) {
+		return stripPort(PlayerPawn(p).GetPlayerNetworkAddress());
+	} else {
+		return "0.0.0.0";
+	}
+}
+
 /*
 // CONSIDER: a simple method of trying to squeeze some of the largest inefficiency out of this search:
 //           when a player's record is updated (or found?), move it one record up in the list (unless it's already at the top)
@@ -1058,14 +1066,14 @@ function CopyArraysIntoConfig() {
 //           the meta-info will ~ HoursPlayed
 // return index i into playerData[] and ip[]/nick[]/... arrays, but not always an exact player match!
 */
-function int FindPlayerRecord(PlayerPawn p) {
+function int FindPlayerRecord(Pawn p) {
   local int found;
   local int i;
   local string player_nick;
   local string player_ip;
 
   player_nick = p.getHumanName();
-  player_ip = stripPort(p.GetPlayerNetworkAddress());
+  player_ip = getIP(p);
 
   found = -1;
   for (i=0;i<MaxPlayerData;i++) {
@@ -1076,9 +1084,9 @@ function int FindPlayerRecord(PlayerPawn p) {
       return found;
     } else if (player_ip == ip[i]) {
       found = i; // matching ip
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $p.getHumanName()$ ","$stripPort(p.GetPlayerNetworkAddress())$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
+      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $p.getHumanName()$ ","$getIP(p)$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
     } else if (player_nick == nick[i] && found == -1) {
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick[i]$ ","$p.GetPlayerNetworkAddress()$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")"); }
+      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick[i]$ ","$getIP(p)$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")"); }
       found = i; // if not yet matching an ip, match the same nick on any ip
     }
     // TODO: if an uneven match, choose a match with more experience (hurs_played)
@@ -1089,7 +1097,7 @@ function int FindPlayerRecord(PlayerPawn p) {
   return found;
 }
 
-function int CreateNewPlayerRecord(PlayerPawn p) {
+function int CreateNewPlayerRecord(Pawn p) {
   local int pos;
   // Find an empty slot:
   for (pos=0;pos<MaxPlayerData;pos++) {
@@ -1103,7 +1111,7 @@ function int CreateNewPlayerRecord(PlayerPawn p) {
   if (pos == MaxPlayerData) { // all records were full
     pos = FindShortestPlayerRecord();
   }
-  ip[pos] = stripPort(p.GetPlayerNetworkAddress());
+  ip[pos] = getIP(p);
   nick[pos] = p.getHumanName();
   // initialise each player as having played for UnknownMinutes (e.g. 10 or 0.1) minutes already, and already earned an average UnknownStrength (e.g. 40) frags
   avg_score[pos] = UnknownStrength; // DO NOT set this to 0; it will screw with InitTeams()!
@@ -1274,7 +1282,7 @@ function GiveBonusToWinningTeamPlayers() {
 
 }
 
-function UpdateStatsForPlayer(PlayerPawn p) {
+function UpdateStatsForPlayer(Pawn p) {
   local int i,j;
   local float current_score;
   local float old_hours_played;
@@ -1287,7 +1295,7 @@ function UpdateStatsForPlayer(PlayerPawn p) {
 
   i = FindPlayerRecord(p);
 
-  if (i == -1 || ip[i] != stripPort(p.GetPlayerNetworkAddress()) || nick[i] != p.getHumanName()) {
+  if (i == -1 || ip[i] != getIP(p) || nick[i] != p.getHumanName()) {
     // This is not an exact player match, so we should not update its stats
     // since we didn't find this actual ip+nick, we create a new entry
     j = CreateNewPlayerRecord(p); // OLD BUG FIXED: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
@@ -1371,7 +1379,7 @@ function float NormaliseScore(float score) {
   averageGameScore = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) { // lol
-      averageGameScore += PlayerPawn(p).PlayerReplicationInfo.Score;
+      averageGameScore += p.PlayerReplicationInfo.Score;
       playerCount++;
     }
   }

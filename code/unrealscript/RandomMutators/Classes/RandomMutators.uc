@@ -22,11 +22,11 @@ function PreBeginPlay() {
 	local Mutator mut;
 	for (i=0;i<numToAdd;i++) {
 		mutName = getRandomMutator();
-		Log("RandomMutators: Spawning and adding a new "$mutName);
 		if (CheckForMut1(mutName)) {
-			Log("RandomMutators: Refusing to add "$mut);
+			Log("RandomMutators: Refusing to add "$mutName);
 			continue;
 		}
+		Log("RandomMutators: Spawning and adding a new "$mutName);
 		mut = Spawn( class<mutator>(DynamicLoadObject(mutName, class'Class')) );
 		if (mut == None) {
 			Log("RandomMutators:   x Failed.");
@@ -50,10 +50,11 @@ function PreBeginPlay() {
 function bool CheckForMut1(String mutName) {
 	local Mutator m;
 	for (m=Level.Game.BaseMutator; m!=None; m=m.NextMutator) {
-		if ((""$mutName) == (""$m.Class.Name)) {
+		if ((""$mutName) == (""$m.Class)) {
 			Log("RandomMutators.CheckForMut1(): Found already existing "$mutName$": "$m);
 			return True;
 		}
+		// Log("RandomMutators.CheckForMut1(): "$mutName$" != "$m.Class);
 	}
 	return False;
 }

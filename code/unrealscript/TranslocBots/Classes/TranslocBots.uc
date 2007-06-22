@@ -11,8 +11,6 @@ var bool bWorking;
 
 var String PropertiesToCheck;
 
-var Actor RandomFoundNavigationPoint;
-
 defaultproperties {
   bReplacePathNodes=False
   bForceBotsTransloc=True
@@ -26,15 +24,17 @@ var name currentTag;
 var int depth; // used to prevent infinite recursion when replacing actors
 
 var Actor lastPathNode;
+var Actor RandomFoundNavigationPoint;
 
 // function PreBeginPlay() {
 function PostBeginPlay() {
-  if (bForceBotsTransloc) SetTimer(5,True);
+  if (bForceBotsTransloc) SetTimer(2,True);
 }
 
 event Timer() {
   local Pawn p;
   local Actor dest;
+  local int method;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
   // foreach AllActors(class'Bot', p) {
     if (!p.IsA('Bot')) {
@@ -48,14 +48,20 @@ event Timer() {
       // continue;
     // }
     if (Bot(p).MyTranslocator == None) {
-      Log("TranslocBots.Timer(): xx Bot "$p$" has no translocator!");
+      Log("TranslocBots xx Bot "$p$" has no translocator!");
       continue;
     }
     if (Bot(p).MyTranslocator.TTarget != None) {
       // Log("TranslocBots.Timer(): !! Bot "$p$" already has a TTarget = " $ Bot(p).MyTranslocator.TTarget);
       Log("TranslocBots.Timer(): !! Bot "$p$" already has a TTarget = " $ Bot(p).MyTranslocator.TTarget.DesiredTarget $ "," $ Bot(p).MyTranslocator.TTarget.Master );
-      // continue;
+      if (RandRange(0,100)<90) {
+        continue;
+      }
+      Bot(p).MyTranslocator.TTarget.Destroy();
+      Bot(p).MyTranslocator.TTarget = None;
+      Bot(p).MyTranslocator.bTTargetOut = false;
     }
+
     // if (Bot(p).FindBestPathToward(Bot(p).Target,false)) {
       // if (Bot(p).LineOfSightTo(Bot(p).Destination)) {
         // Log("TranslocBots.Timer(): " $ Bot(p) $ ".TranslocateToTarget(" $ Bot(p).Destination $ ")");
@@ -63,39 +69,89 @@ event Timer() {
       // }
     // }
     // Log("TranslocBots.Timer(): "$p$" Target="$Bot(p).Target$", MoveTarget="$Bot(p).MoveTarget$"");
-    if (Bot(p).Target == None || (bGoForFlag && RandRange(1,100)<10)) {
-      Bot(p).Target = FindEnemyFlag(p);
-      Log("TranslocBots.Timer(): .. FindEnemyFlag returned " $ "p" $ ".Target = " $ Bot(p).Target);
-    }
-    if (Bot(p).Target == None) {
-      Log("TranslocBots.Timer(): xx p.Target == None");
-      continue;
-    }
-    Log("TranslocBots.Timer(): .. p.Target = "$Bot(p).Target);
-    Log("TranslocBots.Timer(): .. p.MoveTarget = "$Bot(p).MoveTarget);
-    Bot(p).FindBestPathToward(Bot(p).Target,false);
-    if (Bot(p).MoveTarget != None) {
-      // Log(Bot(p) $ ".TranslocateToTarget(" $ Bot(p).MoveTarget $ ")");
-      // Log("TranslocBots.Timer(): >>> p.MoveTarget = "$Bot(p).MoveTarget);
-      Log("TranslocBots.Timer(): >> MoveTarget >> TranslocateToTarget(" $ Bot(p).MoveTarget $ ")");
-      Bot(p).TranslocateToTarget(Bot(p).MoveTarget);
-    } else {
-      // dest = Bot(p).FindPathToward(Bot(p).Target);
-      Log("TranslocBots.Timer(): dest = "$dest);
+
+    dest = None;
+    // dest = Bot(p).Target;
+    // method = RandRange(0,3);
+    // method = RandRange(0,2);
+    // method = 1;
+    if (Bot(p).Target == None || RandRange(0,100)<25) {
+      // if (Bot(p).Target == None || (bGoForFlag && RandRange(1,100)<10)) {
+        // Bot(p).Target = FindEnemyFlag(p);
+        // Log("TranslocBots.Timer(): .. FindEnemyFlag returned " $ "p" $ ".Target = " $ Bot(p).Target);
+      // }
+      // if (Bot(p).Target == None) {
+        // Log("TranslocBots.Timer(): xx p.Target == None");
+        // continue;
+      // }
+      // dest = Bot(p).Target;
+      dest = FindEnemyFlag(p);
       if (dest != None) {
-        // Log(Bot(p) $ ".TranslocateToTarget(" $ dest $ ")");
-        Log("TranslocBots.Timer(): >> dest >> TranslocateToTarget(" $ dest $ ")");
-        Bot(p).TranslocateToTarget(dest);
+        // Log("TranslocBots Method 1: FindEnemyFlag = "$dest);
+        Log("TranslocBots ** NEW TARGET1 "$dest);
+        Bot(p).Target = dest;
+        // Bot(p).MoveTarget = dest;
       }
+      dest = None;
     }
-    foreach VisibleActors(class'Actor', dest) {
-      if (dest.IsA('NavigationPoint')) {
-        Log("TranslocBots.Timer(): >> visible >> TranslocateToTarget(" $ dest $ ")");
-        Bot(p).TranslocateToTarget(dest);
-        break;
+    // } else if (method == 1) {
+      if (Bot(p).Target == None || RandRange(0,100)<5) {
+        Bot(p).Target = getRandomNavigationPoint();
+        Log("TranslocBots ** NEW TARGET2 "$Bot(p).Target);
       }
+      // Log("TranslocBots.Timer(): .. p.Target = "$Bot(p).Target);
+      // Log("TranslocBots.Timer(): .. p.MoveTarget = "$Bot(p).MoveTarget);
+      // Bot(p).FindBestPathToward(Bot(p).Target,false);
+      Bot(p).FindBestPathToward(Bot(p).Target,true);
+      // Log("TranslocBots Method 2: FindBestPathToward = "$Bot(p).MoveTarget);
+      // Log("TranslocBots BESTPATH "$Bot(p).MoveTarget);
+      if (Bot(p).MoveTarget == None) {
+        Log("TranslocBots xx FindBestPathToward("$Bot(p).Target$") = "$Bot(p).MoveTarget);
+      } else {
+        // Log("TranslocBots ** NEW MoveTarget "$Bot(p).MoveTarget);
+        Log("TranslocBots -- "$Bot(p).MoveTarget$" -> "$Bot(p).Target$"");
+        // // Log(Bot(p) $ ".TranslocateToTarget(" $ Bot(p).MoveTarget $ ")");
+        // // Log("TranslocBots.Timer(): >>> p.MoveTarget = "$Bot(p).MoveTarget);
+        // Log("TranslocBots.Timer(): >> MoveTarget >> TranslocateToTarget(" $ Bot(p).MoveTarget $ ")");
+        // Bot(p).TranslocateToTarget(Bot(p).MoveTarget);
+        dest = Bot(p).MoveTarget;
+      }
+    // } else { // method == 2
+    /*
+      foreach VisibleActors(class'Actor', dest) {
+        if (dest.IsA('NavigationPoint')) {
+          // Log("TranslocBots.Timer(): >> visible >> TranslocateToTarget(" $ dest $ ")");
+          // Bot(p).TranslocateToTarget(dest);
+          if (RandomFoundNavigationPoint == None || RandRange(0,1000)<5) {
+            RandomFoundNavigationPoint = dest;
+            // break;
+          }
+        }
+      }
+      dest = RandomFoundNavigationPoint;
+      Log("TranslocBots Method 3: RandomFoundNavigationPoint = "$dest);
+    }
+    */
+    // dest = Bot(p).FindPathToward(Bot(p).Target);
+    if (dest == None) {
+      // Log("TranslocBots.Timer(): XX dest = "$dest);
+    } else {
+      // Log("TranslocBots.Timer(): dest = "$dest);
+      // Log(Bot(p) $ ".TranslocateToTarget(" $ dest $ ")");
+      Log("TranslocBots >> TranslocateToTarget(" $ dest $ ")");
+      Bot(p).TranslocateToTarget(dest);
     }
   }
+}
+
+function Actor getRandomNavigationPoint() {
+  local Actor Other;
+  foreach AllActors(class'Actor', Other) {
+    if (Other.IsA('NavigationPoint') && (RandomFoundNavigationPoint == None || RandRange(0,1000)<5)) {
+      RandomFoundNavigationPoint = Other;
+    }
+  }
+  return RandomFoundNavigationPoint;
 }
 
 function Actor FindEnemyFlag(Pawn player) {
@@ -120,7 +176,7 @@ function Actor FindEnemyFlag(Pawn player) {
     */
     if (Other != None && Other.IsA('FlagBase')) {
       // Log("FindEnemyFlag(): Other = "$Other$" Other.Team="$FlagBase(Other).Team$" player.Team="$PlayerPawn(player).PlayerReplicationInfo.Team$"");
-      Log("TranslocBots.FindEnemyFlag(): .. Checking "$Other$" Other.Team="$FlagBase(Other).Team$" player.Team="$team);
+      // Log("TranslocBots.FindEnemyFlag(): .. Checking "$Other$" Other.Team="$FlagBase(Other).Team$" player.Team="$team);
       if (FlagBase(Other) != None && FlagBase(Other).Team != team)
         return Other;
     } else if (Other != None && Other.IsA('NavigationPoint') && RandRange(0,1000) < 5) {
