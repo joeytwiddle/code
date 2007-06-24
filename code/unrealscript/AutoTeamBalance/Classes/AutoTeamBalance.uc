@@ -202,6 +202,8 @@ var bool gameEndDone;
 var int timeGameStarted;
 var int lastBalanceTime;
 
+var config bool bUndoTestDisabledLoopingTimer;  // Just allowing admins to undo this code change, in case it doesn't work as desired.  TODO: turn this back on if it doesn't work; remove it from code if it does
+
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
   bBroadcastStuff=True
@@ -244,6 +246,7 @@ defaultproperties {
   bClanWar=False
   MaxPlayerData=4096
   // bHidden=True // what is this?  iDeFiX says it's only needed for ServerActors
+  bUndoTestDisabledLoopingTimer=False
 }
 
 
@@ -424,6 +427,7 @@ function bool AllowedToBalance(Pawn b) {
     return True;
 }
 
+/* Checks that the player is a human, or a bot when bRankBots is set.  Does not check whether the human player is a spectator. */
 function bool AllowedToRank(Pawn b) {
   if (b.IsA('Bot'))
     return bRankBots;
@@ -451,7 +455,6 @@ function ForceFullTeamsRebalance() {
   local int oldMaxTeamSize;
   local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
 
-  // DONE: now that this can be run mid-game by saying "!teams", this fn should again check whether it's ok to balance (e.g. is this a team game?!)
   // We can't balance if it's not a teamgame
   if (!Level.Game.GameReplicationInfo.bTeamGame) return;
 
@@ -1142,13 +1145,9 @@ function int FindShortestPlayerRecord() {
 }
 
 /*
-// nogginBasher TESTING hook: HandleEndGame() is a Mutator function called by GameInfo.EndGame().
-// OK well it did get called! :)
-// BUT later mutators in the list have the right to force the game into overtime (we should pass the call onto them here I think), so it may not actually BE the end of the game!
-// Maybe better just to wait with a timer until bGameEnded == True.
-// Or start that timer here? ^^ (so it doesn't need to check during the game)
-// Hmm from tests I found this function gets called twice for overtime games, but both times bGameEnded=False
-// I hope it doesn't matter that we call SetTimer() twice; I imagine it does not start a second timer.
+HandleEndGame gets called when the game time limit expires, BUT the game may go into overtime without us knowing (one of the earlier mutators, or the gametype itself, might decide this).
+So at this point I set a Timer to check in 10 seconds whether the game really has ended or not.
+TODO CONSIDER: the timer could be disabled if it finds the game has gone into overtime, then we could wait for this function to get called again at the real game end.
 */
 function bool HandleEndGame() {
   local bool b;
@@ -1157,8 +1156,8 @@ function bool HandleEndGame() {
   // This isn't guaranteed to be the end of the game, since we may go into overtime now.
   // But the Timer() is quite efficient (checking bGameEnded first) so shouldn't cause any lag during overtime.
   // And we have to start the Timer() here, because I have no other way of detecting (getting called at) the end of the game!
-  SetTimer(10,True); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
-  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds."); }
+  SetTimer(10,bUndoTestDisabledLoopingTimer); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
+  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds. [bOverTime="$Level.Game.bOverTime$",bGameEnded="$Level.Game.bGameEnded$"]"); }
 
   if ( NextMutator != None ) {
     b = NextMutator.HandleEndGame();
@@ -1226,7 +1225,7 @@ function UpdateStatsAtEndOfGame() {
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     // if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) {
-      UpdateStatsForPlayer(PlayerPawn(p));
+      UpdateStatsForPlayer(p);
       if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" 0.0.0.0 0 "$p.PlayerReplicationInfo.Team$" "$p.PlayerReplicationInfo.Score$" ? "$p.PlayerReplicationInfo.Deaths$" "$(Level.TimeSeconds - PlayerPawn(p).PlayerReplicationInfo.StartTime)$""); }
     }
   }
@@ -1464,6 +1463,10 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
       ChangePlayerToTeam(PlayerPawn(Sender),1,false);
     }
 
+
+    /* TODO: !spec and !play */
+
+
     if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
       if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
         // DONE: check this is not called during bTournament games.
@@ -1635,13 +1638,13 @@ function Mutate(String str, PlayerPawn Sender) {
 
       // Allows semiadmins to read variables from the config files (and maybe some live variables too; untested)
       case "GET":
-        Sender.ClientMessage( args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+        Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
       break;
 
       // Allows semiadmins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
       case "SET":
         ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
-        Sender.ClientMessage( args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+        Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
       break;
 
       case "GETPROP":
@@ -1676,7 +1679,7 @@ function Mutate(String str, PlayerPawn Sender) {
   }
 
   if ( args[0]~="HELP" ) {
-    Sender.ClientMessage("AutoTeamBalance commands:");
+    Sender.ClientMessage("AutoTeamBalance semi-admin commands:");
     Sender.ClientMessage("    mutate teams [password]");
     Sender.ClientMessage("    mutate forceteams [password]");
     Sender.ClientMessage("    mutate tored <player> [password]");
@@ -1684,12 +1687,13 @@ function Mutate(String str, PlayerPawn Sender) {
     Sender.ClientMessage("    mutate warn <player> <message> [password]");
     Sender.ClientMessage("    mutate kick <player> <message> [password]");
     if (Sender.bAdmin) {
-      Sender.ClientMessage("    mutate saveconfig [password]");
-      Sender.ClientMessage("    mutate get <package> <variable> [password]");
-      Sender.ClientMessage("    mutate set <package> <variable> <new_value> [password]");
-      Sender.ClientMessage("    mutate getprop <variable> [password]");
-      Sender.ClientMessage("    mutate setprop <variable> <new_value> [password]");
-      Sender.ClientMessage("    mutate console <command> [password]");
+      Sender.ClientMessage("AutoTeamBalance admin-only commands:");
+      Sender.ClientMessage("    mutate saveconfig");
+      Sender.ClientMessage("    mutate get <package> <variable>");
+      Sender.ClientMessage("    mutate set <package> <variable> <new_value>");
+      Sender.ClientMessage("    mutate getprop <variable>");
+      Sender.ClientMessage("    mutate setprop <variable> <new_value>");
+      Sender.ClientMessage("    mutate console <command>");
     }
   }
 
