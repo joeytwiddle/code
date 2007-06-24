@@ -1,5 +1,10 @@
 /*
 
+// I don't think we are storing enough stats.
+// We are only storing enough stats to perform teambalance according to my algorithms.
+// Since we are storing stats, we may as well generate all interesting information.
+// e.g.: deaths, suicides, last_time_played, frags (as opposed to score), most_used_weapon, ...
+
 //// From PlayerPawn.ClientMessage():
 // pawn.Player.Console.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
 // pawn.myHUD.Message( pawn.PlayerReplicationInfo, "...", 'Event' );
@@ -167,7 +172,7 @@ var config float MaxHoursWhenCopyingOldRecord;     // If you have lots of fakeni
 var config float HoursBeforeRecyclingStrength;
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 var config bool bNormaliseScores;
-// var config bool bScalePlayerScoreToFullTime; // After much consideration, I got close to implementing this.  But my final argument is: Why should a player be punished because they didn't play the game from the start?  Answer: Because there was a 50:50 chance that they made teams uneven when they joined, becoming the extra man on a team which was closely matched to the opponent.  Therefore it is quite likely that they will score well, because their team will be slaughtering the opponents.
+var config bool bScalePlayerScoreToFullTime; // After much consideration, I got close to implementing this.  But my final argument is: Why should a player be punished because they didn't play the game from the start?  Answer: Because there was a 50:50 chance that they made teams uneven when they joined, becoming the extra man on a team which was closely matched to the opponent.  Therefore it is quite likely that they will score well, because their team will be slaughtering the opponents.  (Their whole team will score better though.)    OK so I implemented it, although a little untidily in two places; maybe it's good to punish those players who join a game and score well, by giving them a high ranking and putting them on a weak team in future.  Also, even if their score is magnified by their short time in the server, that score will only count towards their ranking relative to that size of time.  :)
 // deprecated: var config bool bDoWeightedUpdates;
 
 // Defaults (Daniel's):
@@ -202,7 +207,7 @@ var bool gameEndDone;
 var int timeGameStarted;
 var int lastBalanceTime;
 
-var config bool bUndoTestDisabledLoopingTimer;  // Just allowing admins to undo this code change, in case it doesn't work as desired.  TODO: turn this back on if it doesn't work; remove it from code if it does
+var config bool bUndoTestDisabledLoopingTimer;  // Just allowing admins to undo this code change, in case it doesn't work as desired.  TODO: finalise it in code once tested
 
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
@@ -236,12 +241,12 @@ defaultproperties {
   HoursBeforeRecyclingStrength=12.0
   MinHumansForStats=4     // DONE: for release, recommended 4
   bNormaliseScores=True     // Normalise scores so that the average score for every game is 50.  Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  TODO CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
-  // bScalePlayerScoreToFullTime=True
+  bScalePlayerScoreToFullTime=True
   // deprecated: bDoWeightedUpdates=False  // Untested experimental stats updating method
-  UnknownStrength=50      // New player records start with an initial strength of 50 (when scores are normalised, this is the average)
+  UnknownStrength=50      // New player records start with an initial strength of 50 (when scores are normalised, this is the average.  Otherwise it should be something around the average endgame-score-per-hour/4 of new players on your server.  Anyway it's only used briefly, if a new player stays until the end of the game then their stats will be generated, and this value forgotten.
   // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
   BotStrength=10          // maybe 20 or 30 is better, if we increase normal score to 100
-  FlagStrength=20         // If it's 3:0, the winning team will get punished an extra 150 points; used when new players join the game and number of players on each team are even; TODO: could also be used when doing mid-game "!teams" balance
+  FlagStrength=20         // If it's 3:0, the winning team will get punished an extra 60 points; used when new players join the game and number of players on each team are even; DONE: could also be used when doing mid-game "!teams" balance
   WinningTeamBonus=10
   bClanWar=False
   MaxPlayerData=4096
@@ -961,13 +966,15 @@ function float GetTeamStrength(int teamNum) {
 
 // Returns the strength of a player or a bot
 // Why do we ever want bot strengths?  Most of the time we intend to balance the players, then let rubbish bots automatically fill the empty slot(s).  We assume they are not very dangerous bots.
+// OK now we can include bots in ranking and balancing by setting bRankBots.  Without it, BotStrength is used for all bots (but only in situations where bot strengths are relevant).
 function int GetPawnStrength(Pawn p) {
   local int st;
 
   if (AllowedToRank(p))
   {
     // a human player - get his strength
-    st = GetPlayerStrength(PlayerPawn(p));
+    // st = GetPlayerStrength(PlayerPawn(p));
+    st = GetPlayerStrength(p);
   } else {
     // a bot - use default strength
     st = BotStrength;
@@ -979,7 +986,7 @@ function int GetPawnStrength(Pawn p) {
 }
 
 // Returns the strength of a player
-function int GetPlayerStrength(PlayerPawn p) {
+function int GetPlayerStrength(Pawn p) {
   local int found;
   found = FindPlayerRecord(p);
   if (found == -1) {
@@ -1310,6 +1317,10 @@ function UpdateStatsForPlayer(Pawn p) {
   }
 
   current_score = p.PlayerReplicationInfo.Score;
+  if (bScalePlayerScoreToFullTime) {
+    current_score = current_score * (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
+    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p.getHumanName()$") Scaled by time from "$p.PlayerReplicationInfo.Score$" to "$current_score$""); }
+  }
   if (bNormaliseScores) {
     current_score = NormaliseScore(current_score);
   }
@@ -1378,7 +1389,11 @@ function float NormaliseScore(float score) {
   averageGameScore = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) { // lol
-      averageGameScore += p.PlayerReplicationInfo.Score;
+      if (bScalePlayerScoreToFullTime) {
+        averageGameScore += p.PlayerReplicationInfo.Score * (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
+      } else {
+        averageGameScore += p.PlayerReplicationInfo.Score;
+      }
       playerCount++;
     }
   }
@@ -1461,6 +1476,10 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
     if (Msg ~= "!BLUE") {
       ChangePlayerToTeam(PlayerPawn(Sender),1,false);
+    }
+
+    if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
+      PlayerPawn(Sender).ConsoleCommand("reconnect");
     }
 
 
@@ -1598,6 +1617,10 @@ function Mutate(String str, PlayerPawn Sender) {
         CopyConfigIntoArrays();
       break;
 
+      case "STRENGTHS":
+        Sender.ClientMessage("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+      break;
+
       case "TORED":
         // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
         ChangePlayerToTeam(FindPlayerNamed(args[1]),0,true);
@@ -1612,13 +1635,13 @@ function Mutate(String str, PlayerPawn Sender) {
 
       case "WARN":
         // SendClientMessage(FindPlayerNamed(args[1]),args[2]);
-        msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
         SendClientMessage(FindPlayerNamed(args[1]),msg);
         FindPlayerNamed(args[1]).ShakeView(4.0,8000.0,12000.0);
       break;
 
       case "KICK":
-        msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
         SendClientMessage(FindPlayerNamed(args[1]),msg);
         // Sender.Kick(FindPlayerNamed(args[1]),msg);
         Sender.Kick(args[1]);
@@ -1660,7 +1683,7 @@ function Mutate(String str, PlayerPawn Sender) {
 
       // Allows semiadmins to run any console command on the server
       case "CONSOLE":
-        msg=""; for (i=2;i<argcount-1;i++) { msg = msg $ args[i] $ " "; }
+        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
         Sender.ClientMessage( "" $ ConsoleCommand(msg) );
       break;
 
@@ -1682,6 +1705,7 @@ function Mutate(String str, PlayerPawn Sender) {
     Sender.ClientMessage("AutoTeamBalance semi-admin commands:");
     Sender.ClientMessage("    mutate teams [password]");
     Sender.ClientMessage("    mutate forceteams [password]");
+    Sender.ClientMessage("    mutate strengths [password]");
     Sender.ClientMessage("    mutate tored <player> [password]");
     Sender.ClientMessage("    mutate toblue <player> [password]");
     Sender.ClientMessage("    mutate warn <player> <message> [password]");
