@@ -59,7 +59,14 @@ function CheckPlayerList() {
 }
 
 function HandleNewPlayer(PlayerPawn p) {
-  // p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $" on noggin's noobJuice.");
+	// p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $" on noggin's noobJuice.");
+	local String extra;
+	if (Level.Game.GameSpeed == 100) {
+		extra = "";
+	} else {
+		extra = " at " $ Level.Game.GameSpeed $ " speed";
+	}
+	p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $ extra $ " on noggin's noobJuice.");
 }
 
 /*
