@@ -207,8 +207,6 @@ var bool gameEndDone;
 var int timeGameStarted;
 var int lastBalanceTime;
 
-var config bool bUndoTestDisabledLoopingTimer;  // Just allowing admins to undo this code change, in case it doesn't work as desired.  TODO: finalise it in code once tested
-
 defaultproperties {
   HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
   bBroadcastStuff=True
@@ -251,7 +249,6 @@ defaultproperties {
   bClanWar=False
   MaxPlayerData=4096
   // bHidden=True // what is this?  iDeFiX says it's only needed for ServerActors
-  bUndoTestDisabledLoopingTimer=False
 }
 
 
@@ -1163,7 +1160,7 @@ function bool HandleEndGame() {
   // This isn't guaranteed to be the end of the game, since we may go into overtime now.
   // But the Timer() is quite efficient (checking bGameEnded first) so shouldn't cause any lag during overtime.
   // And we have to start the Timer() here, because I have no other way of detecting (getting called at) the end of the game!
-  SetTimer(10,bUndoTestDisabledLoopingTimer); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
+  SetTimer(10,False); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
   if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds. [bOverTime="$Level.Game.bOverTime$",bGameEnded="$Level.Game.bGameEnded$"]"); }
 
   if ( NextMutator != None ) {
