@@ -1,5 +1,11 @@
 /*
 
+// TODO: really we want (optional) automatic balancing, when 2 players from 1 team leave the game
+//       or maybe just flash a warning that teams need to be balanced
+//       yes, mid-game teambalance should always be instigated by a user
+
+// When mid-game balancing, we try to find the player whos strength will make the teams most even.  But we may wish to give priority to switching the player who most recently joined the server, if the strengths are not so relevant.
+
 // I don't think we are storing enough stats.
 // We are only storing enough stats to perform teambalance according to my algorithms.
 // Since we are storing stats, we may as well generate all interesting information.
@@ -88,7 +94,7 @@
 
 // vim: tabstop=2 shiftwidth=2 expandtab
 
-// NOTE: If your server has custom maps, it might be a good idea to increase NetWait to say 20 seconds, to give each player a better chance of downloading the map and joining the game before it starts, so that player can be included in the teambalancing.
+// NOTE: If your server has custom maps, it might be a good idea to increase NetWait to say 20 seconds, to give each player a better chance of downloading the map and joining the game before it starts, so that player can be included in the teambalancing.  BUG: Do not use NetWait<3; it may cause the teambalance to occur before anyone joins the server!
 
 // The field delimeter for playerData in the config files is a space " " since that can't appear in UT nicks (always _)
 
@@ -319,10 +325,10 @@ function PostBeginPlay() {
 
 }
 
-// TESTING
-event PostLogin(PlayerPawn newPlayer) {
-  if (bDebugLogging) { Log("event "$Self$".PostLogin("$newPlayer$") was called."); }
-}
+// TESTING: well this never got called
+// event PostLogin(PlayerPawn newPlayer) {
+  // if (bDebugLogging) { Log("event "$Self$".PostLogin("$newPlayer$") was called."); }
+// }
 
 /*
 // TODO CONSIDER: if we make the rollback of old scores very fast, and put more weight into having won, then everyone should get an even number of wins.
@@ -398,7 +404,7 @@ function CheckGameStart() {
   c = Min(c,n-e);
 
   // Initialize teams 2 seconds before the game starts:
-  if (c<2) {
+  if (c<2) { // NOTE: when i set NetWait to 1 for testing, I think this 2 caused the ForceFullTeamsRebalance to happen before any bots or players had entered the game.  With NetWait 5 it seems ok.
   // if (Level.TimeSeconds >= 20) {
     DoGameStart();
     gameStartDone=True;
@@ -466,7 +472,8 @@ function ForceFullTeamsRebalance() {
   for (p=Level.PawnList; p!=None; p=p.NextPawn)
   {
     // ignore non-player pawns
-    if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToBalance(p))
+    // if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToBalance(p))
+    if (!p.IsA('Spectator') && AllowedToBalance(p))
     {
       st=GetPawnStrength(p);
       pid=p.PlayerReplicationInfo.PlayerID % 64;
@@ -480,7 +487,7 @@ function ForceFullTeamsRebalance() {
       // tg[pid]=st;
       moved[pid] = 0;
       // p.PlayerReplicationInfo.PlayerName
-      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip+port " $ PlayerPawn(p).GetPlayerNetworkAddress() $ " and score " $ p.PlayerReplicationInfo.Score $ "."); }
+      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ getIP(p) $ " and score " $ p.PlayerReplicationInfo.Score $ "."); }
       // if (bBroadcastCookies && !bOnlyMoreCookies) { BroadcastMessageAndLog("" $ p.getHumanName() $ " has " $st$ " cookies."); }
     }
   }
@@ -623,10 +630,12 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
   if (!ShouldBalance(Level.Game)) return;
 
-  if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin()"); }
+  if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin("$SpawnClass$","$Portal$",\""$Options$"\")"); }
 
   // read this player's selected team
   selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
+
+  // TODO: shouldn't we just skip all this balancing if the player is logging in as a spectator?
 
   // get team scores
   GRI=TournamentGameReplicationInfo(Level.Game.GameReplicationInfo);
@@ -1230,7 +1239,7 @@ function UpdateStatsAtEndOfGame() {
     // if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) {
       UpdateStatsForPlayer(p);
-      if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" 0.0.0.0 0 "$p.PlayerReplicationInfo.Team$" "$p.PlayerReplicationInfo.Score$" ? "$p.PlayerReplicationInfo.Deaths$" "$(Level.TimeSeconds - PlayerPawn(p).PlayerReplicationInfo.StartTime)$""); }
+      if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.Team$" "$p.PlayerReplicationInfo.Score$" ? "$p.PlayerReplicationInfo.Deaths$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
     }
   }
 
@@ -1274,7 +1283,8 @@ function GiveBonusToWinningTeamPlayers() {
   if (WinningTeam == None) return; // game ended in a tie
 
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && p.IsA('PlayerPawn')) {
+    // if (p.bIsPlayer && !p.IsA('Spectator') && p.IsA('PlayerPawn')) {
+    if (!p.IsA('Spectator') && AllowedToRank(p)) {
       if (p.PlayerReplicationInfo.Team == WinningTeam.TeamIndex) {
         if (bDebugLogging) { Log("AutoTeamBalance.GiveBonusToWinningTeamPlayers(): giving bonus to p.getHumanName()."); }
         p.PlayerReplicationInfo.Score += WinningTeamBonus;
@@ -1475,13 +1485,11 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
       ChangePlayerToTeam(PlayerPawn(Sender),1,false);
     }
 
-    if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
-      PlayerPawn(Sender).ConsoleCommand("reconnect");
-    }
-
-
     /* TODO: !spec and !play */
 
+    // if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
+      // PlayerPawn(Sender).ConsoleCommand("reconnect"); // <-- this crashed the server!
+    // }
 
     if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
       if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
@@ -1572,6 +1580,8 @@ function Mutate(String str, PlayerPawn Sender) {
   local String msg;
   local int i;
 
+  local Pawn p;
+
   if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
   if (Sender.bAdmin)
@@ -1615,7 +1625,16 @@ function Mutate(String str, PlayerPawn Sender) {
       break;
 
       case "STRENGTHS":
+        for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+          if (AllowedToBalance(p) && !(p.IsA('Spectator'))) {
+            Sender.ClientMessage(p.getHumanName()$" has strength "$GetPawnStrength(p));
+          }
+        }
         Sender.ClientMessage("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+      break;
+
+      case "STRENGTH":
+        Sender.ClientMessage(FindPlayerNamed(args[1]).getHumanName()$" has strength "$GetPawnStrength(FindPlayerNamed(args[1])));
       break;
 
       case "TORED":
@@ -1640,8 +1659,15 @@ function Mutate(String str, PlayerPawn Sender) {
       case "KICK":
         msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
         SendClientMessage(FindPlayerNamed(args[1]),msg);
-        // Sender.Kick(FindPlayerNamed(args[1]),msg);
-        Sender.Kick(args[1]);
+        // Sender.Kick(args[1]);
+        Sender.Kick(FindPlayerNamed(args[1]).getHumanName());
+      break;
+
+      case "KICKBAN":
+        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
+        SendClientMessage(FindPlayerNamed(args[1]),msg);
+        // Sender.KickBan(args[1]);
+        Sender.KickBan(FindPlayerNamed(args[1]).getHumanName());
       break;
 
       Default:
@@ -1703,10 +1729,12 @@ function Mutate(String str, PlayerPawn Sender) {
     Sender.ClientMessage("    mutate teams [password]");
     Sender.ClientMessage("    mutate forceteams [password]");
     Sender.ClientMessage("    mutate strengths [password]");
+    Sender.ClientMessage("    mutate strength <player> [password]");
     Sender.ClientMessage("    mutate tored <player> [password]");
     Sender.ClientMessage("    mutate toblue <player> [password]");
     Sender.ClientMessage("    mutate warn <player> <message> [password]");
     Sender.ClientMessage("    mutate kick <player> <message> [password]");
+    Sender.ClientMessage("    mutate kickban <player> <message> [password]");
     if (Sender.bAdmin) {
       Sender.ClientMessage("AutoTeamBalance admin-only commands:");
       Sender.ClientMessage("    mutate saveconfig");
@@ -1752,7 +1780,7 @@ function int SplitString(String str, String divider, out String parts[255]) {
 		if (nextSplit >= 0) {
 			// parts.insert(i,1);
 			parts[i] = Left(str,nextSplit);
-			str = Mid(str,nextSplit+1);
+			str = Mid(str,nextSplit+Len(divider));
 			i++;
 		} else {
 			// parts.insert(i,1);
