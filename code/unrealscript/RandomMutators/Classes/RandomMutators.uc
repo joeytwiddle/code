@@ -83,13 +83,13 @@ function String getRandomMutator() {
 	// local class<weapon> w;
 	mutatorsCount = SplitString(mutatorList,",",mutators);
 	// C = class<ChallengeBotInfo>(DynamicLoadObject("Botpack.ChallengeBotInfo", class'Class'));
-	// return Class(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
-	// w = class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
+	// return Class(DynamicLoadObject(weapons[ Rand(weaponsCount) ], class'Class'));
+	// w = class<weapon>(DynamicLoadObject(weapons[ Rand(weaponsCount) ], class'Class'));
 	// Log("ArenaFallback: getRandomWeaponClass() returning: "$w);
 	// Log("["$depth$"] 2 ! choosing "$w);
 	// return w;
 	// C = class<ChallengeBotInfo>(DynamicLoadObject("Botpack.ChallengeBotInfo", class'Class'));
-	mut = mutators[ RandRange(0,mutatorsCount) ];
+	mut = mutators[ Rand(mutatorsCount) ];
    // mut = Left(mut,InStr(mut,"_")) $ "." $ Mid(mut,Instr(mut,"_")+1);
    return mut;
 }
@@ -108,7 +108,7 @@ function int SplitString(String str, String divider, out String parts[255]) {
          // parts.insert(i,1);
          parts[i] = Left(str,nextSplit);
          Log("parts["$i$"] = "$parts[i]);
-         str = Mid(str,nextSplit+1);
+         str = Mid(str,nextSplit+Len(divider));
          i++;
       } else {
          // parts.insert(i,1);
@@ -132,7 +132,7 @@ function int SplitString(String str, String divider, out String parts[255]) {
       if (nextSplit >= 0) {
          // parts.insert(i,1);
          parts[i] = Left(str,nextSplit);
-         str = Mid(str,nextSplit+1);
+         str = Mid(str,nextSplit+Len(divider));
          i++;
       } else {
          // parts.insert(i,1);
@@ -165,9 +165,19 @@ function CheckPlayerList() {
 
 function HandleNewPlayer(PlayerPawn p) {
 	// p.ClientMessage("Welcome to "$Level.Game$" on noggin's noobJuice.");
+	// p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $" on noggin's noobJuice.");
 	// p.ClientMessage("Current mutators are: " $ chosenMutators);
 	// p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $" on noggin's noobJuice.");
 	// p.ClientMessage("Currently playing " $ Left(""$Level.Game,InStr(""$Level.Game,".")) $ " with " $ chosenMutators $ ".");
-	p.ClientMessage( "(hwi.ath.cx) playing " $ Left(""$Level.Game,InStr(""$Level.Game,".")) );
-	p.ClientMessage( "with " $ chosenMutators $ "" );
+	local String extra;
+	if (Level.Game.GameSpeed == 100) {
+		extra = "";
+	} else {
+		extra = " at " $ Int(Level.Game.GameSpeed*100) $ " speed";
+	}
+	// p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $ extra $ " on noggin's noobJuice.");
+	// p.ClientMessage( "[hwi.ath.cx] playing " $ Left(""$Level.Game,InStr(""$Level.Game,".")) $ extra );
+	// p.ClientMessage( "with: " $ chosenMutators $ "" );
+	p.ClientMessage( "Mutators are: " $ chosenMutators $ "" );
 }
+

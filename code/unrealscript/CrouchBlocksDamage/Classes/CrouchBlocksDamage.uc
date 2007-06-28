@@ -45,11 +45,13 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	if (Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
 
 		if (bInformVictim && Victim.bIsHuman && !Victim.IsA('Bot')) {
-			// Victim.ClientMessage("Crouching has saved you "$Int(SavePercent)$"% ("$ Int(ActualDamage*SavePercent) $"hp) damage from "$ InstigatedBy.getHumanName() $"'s \""$ DamageType $"\".", 'CriticalEvent', True);
-			// Victim.ClientMessage("Crouching has saved you "$Int(SavePercent)$"% ("$ Int(ActualDamage*SavePercent) $"hp) damage from "$ InstigatedBy.getHumanName() $"'s \""$ DamageType $"\".");
-			// Victim.ClientMessage(Int(ActualDamage*SavePercent) $"hp) damage saved by crouching.");
-			// Victim.ClientMessage(Int(ActualDamage*SavePercent) $"hp damage saved by crouching from "$DamageType);
-			Victim.ClientMessage("Crouching blocked "$Int(ActualDamage*SavePercent) $" hp of "$DamageType$" damage.");
+			// Victim.ClientMessage("Crouching has saved you "$Int(SavePercent)$"% ("$ Int(ActualDamage*SavePercent/100) $"hp) damage from "$ InstigatedBy.getHumanName() $"'s \""$ DamageType $"\".", 'CriticalEvent', True);
+			// Victim.ClientMessage("Crouching has saved you "$Int(SavePercent)$"% ("$ Int(ActualDamage*SavePercent/100) $"hp) damage from "$ InstigatedBy.getHumanName() $"'s \""$ DamageType $"\".");
+			// Victim.ClientMessage(Int(ActualDamage*SavePercent/100) $"hp) damage saved by crouching.");
+			// Victim.ClientMessage(Int(ActualDamage*SavePercent/100) $"hp damage saved by crouching from "$DamageType);
+			Victim.ClientMessage("Crouching blocked "$Int(ActualDamage*SavePercent/100) $" hp of "$DamageType$" damage.");
+			// NOTE: watching this I found at that the Titan gun's secondary fire has 'Burned' type damage.
+			// I think Titan gun is overpowered, so I might sometime reduce that damage.
 		}
 		ActualDamage = ActualDamage*(1.0-SavePercent/100.0);
 
@@ -63,6 +65,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 	}
 
+	// SuperBoost is further increased if the aggressor is crouching:
 	if (InstigatedBy!=None && InstigatedBy.IsA('PlayerPawn') && PlayerPawn(InstigatedBy).bIsCrouching) {
 		Momentum = Momentum * SuperBoost;
 	}
