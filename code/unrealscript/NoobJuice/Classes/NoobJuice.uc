@@ -1,9 +1,14 @@
 class NoobJuice expands Mutator;
 
+var config bool bChangeLighting;
+var config bool bRandomSpeed;
+
 var String knownPlayers;
 // var float nextCheck;
 
 defaultproperties {
+  bChangeLighting=True // doesn't work
+  bRandomSpeed=False
   knownPlayers=
   // nextCheck=0
 }
@@ -17,21 +22,56 @@ function Mutate(String str, PlayerPawn Sender) {
 }
 
 // function PostBeginPlay() {
-function PreBeginPlay() {
+simulated function PreBeginPlay() {
   // local Pawn p;
   local Actor p;
   local Light l;
-  // for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-  foreach AllActors(class'Actor', p) {
-    if (p.IsA('Light')) {
-      l = Light(p);
-      l.LightHue = l.LightHue + 128;
-      // Log("Changed "$l$".LightHue to "$l.LightHue);
-      l.LightBrightness = l.LightBrightness * RandRange(25,175)/100;
-      l.LightRadius = l.LightRadius * RandRange(25,175)/100;
+  local int i;
+
+  if (bChangeLighting) {
+
+    // TESTING: change lighting (i don't think this is having any effect; maybe if we did it on the client?)
+    // for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    foreach AllActors(class'Actor', p) {
+      if (p.IsA('Light')) {
+        l = Light(p);
+        l.LightHue = l.LightHue + 128;
+        // Log("Changed "$l$".LightHue to "$l.LightHue);
+        l.LightBrightness = l.LightBrightness * RandRange(25,175)/100;
+        l.LightRadius = l.LightRadius * RandRange(25,175)/100;
+      }
     }
+
   }
+
+  if (bRandomSpeed) {
+
+    // Change gamespeed
+    // Level.Game.GameSpeed = 0.85 + Int(RandRange(0,2)) * (0.15 + 0.25*Int(RandRange(0,4)));
+    i = Rand(100);
+    if (i<5) {
+      Level.Game.GameSpeed = 0.85;
+    } else
+    if (i<10) {
+      Level.Game.GameSpeed = 0.9;
+    } else
+    if (i<15) {
+      Level.Game.GameSpeed = 1.4;
+    } else
+    if (i<20) {
+      Level.Game.GameSpeed = 1.5;
+    } else
+    if (i<40) {
+      Level.Game.GameSpeed = 1.25;
+    } else
+      Level.Game.GameSpeed = 1.0;
+    }
+
+  }
+
   // Level.Game.BaseMutator.AddMutator(Self);
+
+  // Start checker for new players:
   SetTimer(50,True);
 }
 
@@ -64,9 +104,10 @@ function HandleNewPlayer(PlayerPawn p) {
 	if (Level.Game.GameSpeed == 100) {
 		extra = "";
 	} else {
-		extra = " at " $ Level.Game.GameSpeed $ " speed";
+		extra = " at " $ Int(Level.Game.GameSpeed*100) $ " speed";
 	}
 	p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $ extra $ " on noggin's noobJuice.");
+	// p.ClientMessage( "[hwi.ath.cx] playing " $ Left(""$Level.Game,InStr(""$Level.Game,".")) $ extra );
 }
 
 /*
@@ -80,7 +121,7 @@ function int SplitString(String str, String divider, out String parts[255]) {
       if (nextSplit >= 0) {
          // parts.insert(i,1);
          parts[i] = Left(str,nextSplit);
-         str = Mid(str,nextSplit+1);
+         str = Mid(str,nextSplit+Len(divider));
          i++;
       } else {
          // parts.insert(i,1);
