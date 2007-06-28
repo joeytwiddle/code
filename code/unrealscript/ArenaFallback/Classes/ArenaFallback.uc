@@ -39,12 +39,14 @@ var bool bOnlyOnWeaponlessMaps;
 var String weaponTypes;
 var bool bMultipleWeapons;
 var bool bAllowAllPickups;
+var bool bLogging;
 
 defaultproperties {
 	bOnlyOnWeaponlessMaps=True // TODO: False for testing, but should be True as default
 	weaponTypes="Botpack.Translocator,Botpack.ChainSaw,Botpack.ImpactHammer,Botpack.enforcer,Botpack.doubleenforcer,Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
 	bMultipleWeapons=False // TODO should be False as default
 	bAllowAllPickups=True // TODO should be (forced to?) False for instagib arena; maybe we can check damageStrength of weapon, but some weapons like whart have large damage strength but there is large health to aquire ^^
+	bLogging=True
 }
 
 var bool bForceArena; // Whether this Mutator will do anything.
@@ -57,6 +59,7 @@ var String replaceAmmoType;
 
 function PreBeginPlay() {
 	CheckForWeapons();
+	Super.PreBeginPlay();
 }
 
 function CheckForWeapons() {
@@ -65,7 +68,7 @@ function CheckForWeapons() {
 
 	if (bOnlyOnWeaponlessMaps) {
 		foreach AllActors(class'Weapon', w) {
-			Log("ArenaFallback: I found a weapon in this map ("$w$"): doing nothing.");
+			if (bLogging) { Log("ArenaFallback: I found a weapon in this map ("$w$"): doing nothing."); }
 			bForceArena = False;
 			// TODO CONSIDER: for neatness, we could try Self.Destroy() here.
 			return;
@@ -83,7 +86,7 @@ function CheckForWeapons() {
 		if (replaceAmmoType != "minigun2")
 			break;
 	}
-	Log("ArenaFallback: I did not find any weapons in this map: forcing "$Level.Game.DefaultWeapon$" arena with replaceWeaponType="$replaceWeaponType$" and replaceAmmoType="$replaceAmmoType$".");
+	if (bLogging) { Log("ArenaFallback: I did not find any weapons in this map: forcing "$Level.Game.DefaultWeapon$" arena with replaceWeaponType="$replaceWeaponType$" and replaceAmmoType="$replaceAmmoType$"."); }
 }
 
 function class<weapon> getRandomWeaponClass() {
@@ -93,10 +96,10 @@ function class<weapon> getRandomWeaponClass() {
 	local class<weapon> w;
 	weaponsCount = SplitString(weaponTypes,",",weapons);
 	// C = class<ChallengeBotInfo>(DynamicLoadObject("Botpack.ChallengeBotInfo", class'Class'));
-	// return Class(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
-	w = class<weapon>(DynamicLoadObject(weapons[ RandRange(0,weaponsCount) ], class'Class'));
-	// Log("ArenaFallback: getRandomWeaponClass() returning: "$w);
-	// Log("["$depth$"] 2 ! choosing "$w);
+	// return Class(DynamicLoadObject(weapons[ Rand(weaponsCount) ], class'Class'));
+	w = class<weapon>(DynamicLoadObject(weapons[ Rand(weaponsCount) ], class'Class'));
+	// if (bLogging) { Log("ArenaFallback: getRandomWeaponClass() returning: "$w); }
+	// if (bLogging) { Log("["$depth$"] 2 ! choosing "$w); }
 	return w;
 }
 
@@ -110,7 +113,7 @@ function int SplitString(String str, String divider, out String parts[255]) {
       if (nextSplit >= 0) {
          // parts.insert(i,1);
          parts[i] = Left(str,nextSplit);
-         str = Mid(str,nextSplit+1);
+         str = Mid(str,nextSplit+Len(divider));
          i++;
       } else {
          // parts.insert(i,1);
@@ -141,11 +144,11 @@ function bool AlwaysKeep(Actor Other) {
 
 function MyReplaceWith(Actor Other,String str) {
 	if (str=="None") {
-		Log("["$depth$"] 5 x skipping "$ Other $ " -> " $ str);
+		if (bLogging) { Log("["$depth$"] 5 x skipping "$ Other $ " -> " $ str); }
 		return;
 	}
 	depth++;
-	Log("["$depth$"] 3 > replacing "$ Other $ " -> " $ str);
+	if (bLogging) { Log("["$depth$"] 3 > replacing "$ Other $ " -> " $ str); }
 	ReplaceWith(Other,str);
 	depth--;
 }
@@ -154,12 +157,12 @@ function MyReplaceWith(Actor Other,String str) {
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 
 	if (depth>0) {
-		Log("("$depth$") 4 < todeep " $ Other $ " ("$bSuperRelevant$")");
+		if (bLogging) { Log("("$depth$") 4 < todeep " $ Other $ " ("$bSuperRelevant$")"); }
 		return True;
 	}
 
-	// Log("ArenaFallback: CheckReplacement("$Other$","$bSuperRelevant$")");
-	// Log("["$depth$"] 1 ? checking " $ Other $ " ("$bSuperRelevant$")");
+	// if (bLogging) { Log("ArenaFallback: CheckReplacement("$Other$","$bSuperRelevant$")"); }
+	// if (bLogging) { Log("["$depth$"] 1 ? checking " $ Other $ " ("$bSuperRelevant$")"); }
 
 	if (bForceArena) {
 
@@ -167,7 +170,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 		// TODO: spawn-with weapons should probably have maxammo
 		// TODO: if weapon never runs out of ammo (e.g. ig rifle), ammo pickups should be removed from the map
 		if (Other.IsA('Weapon')) {
-			// Log("ArenaFallback: Replacing weapon "$Other);
+			// if (bLogging) { Log("ArenaFallback: Replacing weapon "$Other); }
 			if (bMultipleWeapons) {
 				// MyReplaceWith(Other,String(getRandomWeaponClass().name));
 				// MyReplaceWith(Other,String(getRandomWeaponClass()));
@@ -178,7 +181,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 		} else
 
 		if (Other.IsA('Ammo')) {
-			// Log("ArenaFallback: Replacing ammo "$Other);
+			// if (bLogging) { Log("ArenaFallback: Replacing ammo "$Other); }
 			depth++; // to prevent checking the item we spawn
 			if (bMultipleWeapons) {
 				// TODO CONSIDER: rather than random ammo, make it ammo for the last weapon we replaced?
