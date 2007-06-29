@@ -63,7 +63,7 @@ STRING="$*"
 
 [ "$STRING" ] || STRING=moo
 
-"$COMMAND" -e "$EYES" $STATE "$STRING" |
+"$COMMAND" -e "$EYES" $STATE -- "$STRING" |
 # /usr/bin/cowsay $STATE "$STRING" |
 # /usr/bin/cowsay -f "$MODE" "$STRING" |
 pipeboth |
