@@ -356,12 +356,31 @@ setlimit () {
 	get_num_players
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
 	then echo "/notice $NICK You can only change the player limit of an empty pug."
-	fi
-	if echo "$1" | grep "^\([468]\|10\)$" >/dev/null
-	then
-		echo "$1" > "$NUMBER_OF_PLAYERS_NEEDED_FILE"
 	else
-		echo "/notice $NICK I only support pugs of size 4,6,8 or 10."
+		if echo "$1" | grep "^\([468]\|10\)$" >/dev/null
+		then
+			echo "$1" > "$NUMBER_OF_PLAYERS_NEEDED_FILE"
+		else
+			echo "/notice $NICK I only support pugs of size 4,6,8 or 10."
+		fi
+	fi
+}
+
+enablemappool () {
+	get_num_players
+	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
+	then echo "/notice $NICK You can only change the settings of an empty pug."
+	else
+		[ -f "$MAP_POOL_FILE".disabled ] && mv -f "$MAP_POOL_FILE".disabled "$MAP_POOL_FILE"
+		touch "$MAP_POOL_FILE" && echo "Map pool is enabled in $CHANNEL.  You may: !propose <map_or_ip>"
+	fi
+}
+
+disablemappool () {
+	get_num_players
+	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
+	then echo "/notice $NICK You can only change the settings of an empty pug."
+	else mv -f "$MAP_POOL_FILE" "$MAP_POOL_FILE".disabled && echo "Map pool disabled in $CHANNEL."
 	fi
 }
 
