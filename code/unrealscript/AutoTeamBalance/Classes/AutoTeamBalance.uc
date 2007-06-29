@@ -734,13 +734,14 @@ function MidGameRebalance() {
   // DONE: need count WITHOUT bots!
   // redTeamCount = TeamGamePlus(Level.Game).Teams[0].Size;
   // blueTeamCount = TeamGamePlus(Level.Game).Teams[1].Size;
+  // CONSIDER: we could include bots in the count and the rebalancing, in case the server does not have bBotsBalanceTeams==True
   redTeamCount = CountHumansOnTeam(0);
   blueTeamCount = CountHumansOnTeam(1);
   // We assume bot skills are pretty much irrelevant, and the bots will auto-switch to balance teams after we move any players around.
 
   if (bDebugLogging) { Log("MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$""); }
 
-  // TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move to players.  we could balance in a while loop if it's guaranteed to end
+  // TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end
   if (redTeamCount < blueTeamCount) {
     MidGameTeamBalanceSwitchOnePlayer(1,0);
   } else if (blueTeamCount < redTeamCount) {
@@ -752,14 +753,14 @@ function MidGameRebalance() {
 }
 
 function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
-  local float fromTeamStrength, toTeamStrength, difference, playerStrength;
+  local float fromTeamStrength, toTeamStrength, currentDifference, playerStrength;
   local Pawn p;
   local Pawn closestPlayer; // the most ideal potential player to switch
-  local float closest; // the absolute strength difference between the two teams after the potential switch
+  local float newDifference; // the absolute strength difference between the two teams after the potential switch
   fromTeamStrength = GetTeamStrength(fromTeam);
   toTeamStrength = GetTeamStrength(toTeam);
-  difference = fromTeamStrength - toTeamStrength;
-  if (difference<0) {
+  currentDifference = fromTeamStrength - toTeamStrength;
+  if (currentDifference<0) {
     // if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not adjusting teams because smaller team looks stronger."); }
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance refusing to help "$getTeamName(toTeam)$" because it is already stronger ("$toTeamStrength$">"$fromTeamStrength$")"); }
     // it says this when i'm the only player on the server, with 5 bots; embarassing
@@ -772,9 +773,9 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
         && p.PlayerReplicationInfo.Team==fromTeam && p.PlayerReplicationInfo.HasFlag==None) {
       playerStrength = GetPawnStrength(p);
       // Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
-      if (closestPlayer == None || Abs(playerStrength*2-difference) < closest) {
+      if (closestPlayer == None || Abs(currentDifference-playerStrength*2) < newDifference) {
         closestPlayer = p;
-        closest = Abs(playerStrength*2-difference);
+        newDifference = Abs(currentDifference-playerStrength*2);
       }
     }
   }
@@ -782,7 +783,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch."); }
     return False;
   }
-  if (closest >= difference) {
+  if (newDifference >= currentDifference) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(fromTeam)$" team too weak!"); }
     return False;
   } else {
@@ -817,6 +818,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
           && blueP.PlayerReplicationInfo.Team==1
           && redP.bIsPlayer && !redP.IsA('Spectator')
           && blueP.bIsPlayer && !blueP.IsA('Spectator')
+      // bIsPlayer may be redundant, handled by AllowedToBalance
           && AllowedToBalance(redP)
           && AllowedToBalance(blueP)
           && redP.PlayerReplicationInfo.HasFlag == None
@@ -1234,12 +1236,13 @@ function UpdateStatsAtEndOfGame() {
   if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats."); }
   if (bBroadcastStuff) { BroadcastMessage("AutoTeamBalance is updating player stats."); }
   // TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
-  if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: NAME IP TEAM PING SCORE FRAGS DEATHS ITEMS SPREE SECRET TIME"); }
+  // if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: NAME IP TEAM PING PKTLOSS SCORE FRAGS DEATHS ITEMS SPREE SECRET TIME"); }
+  if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: Name IP Team Ping PktLoss Score Frags Deaths Items Spree Secret Time"); }
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     // if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) {
       UpdateStatsForPlayer(p);
-      if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.Team$" "$p.PlayerReplicationInfo.Score$" ? "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
+      if (bLogEndStats) { Log("AutoTeamBalance.LogEndStats: "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$p.PlayerReplicationInfo.Team$" "$p.PlayerReplicationInfo.Score$" ? "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
     }
   }
 
