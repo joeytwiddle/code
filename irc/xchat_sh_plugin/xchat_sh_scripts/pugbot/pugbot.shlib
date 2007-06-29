@@ -3,7 +3,7 @@
 # then exit 0
 # fi
 
-DO_MAP_POOL=true
+## DO_MAP_POOL became [ -f "$MAP_POOL_FILE" ]
 MAX_POOL_SIZE=20
 
 PUG_CHANNELS_FILE=/tmp/pug_channels.list
@@ -45,14 +45,15 @@ fi
 [ "$NUMBER_OF_PLAYERS_NEEDED" ] || NUMBER_OF_PLAYERS_NEEDED=10
 
 reset () {
-	if [ "$DO_MAP_POOL" ]
+	if [ -f "$MAP_POOL_FILE" ]
 	then
+		## Update the CURRENT_MAP_FILE randomly from the pool, but only if the last reset was > 1 minute ago:
 		touch -d "1 minute ago" /tmp/map_pool_last
 		if newer /tmp/map_pool_last "$CURRENT_MAP_FILE"
 		then
 			MAP1=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
 			MAP2=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
-			NEW_MAP="$MAP1+$MAP2"
+			NEW_MAP="$MAP1 + $MAP2"
 			[ "$MAP1" = "$MAP2" ] && NEW_MAP="$MAP1"
 			echo "$NEW_MAP" > "$CURRENT_MAP_FILE" &&
 			echo "New pug is: $NEW_MAP"
@@ -77,7 +78,7 @@ get_num_players () {
 ## Note atm this is a pretty list of the players, for user.  For a nice list to use in code, use the listfile.  :P
 list_players () {
 	get_num_players
-	[ "$DO_MAP_POOL" ] && [ -f "$CURRENT_MAP_FILE" ] && SHOW_CURRENT_MAP="{`cat "$CURRENT_MAP_FILE"`""} "
+	[ -f "$MAP_POOL_FILE" ] && [ -f "$CURRENT_MAP_FILE" ] && SHOW_CURRENT_MAP="{`cat "$CURRENT_MAP_FILE"`} "
 	echo "[$CHANNEL] $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | sed 's+ $++' ` $COLBLUE]$COLNORM"
 }
 
@@ -329,18 +330,25 @@ promote () {
 }
 
 propose () {
-	RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 minute"
-	IP_AND_OR_SERVER="$*"
-	echo "$IP_AND_OR_SERVER ($NICK)" >> "$MAP_POOL_FILE"
-	echo "/notice $NICK Your proposal for $IP_AND_OR_SERVER has entered the pool."
+	if [ -f "$MAP_POOL_FILE" ]
+	then
+		RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 minute"
+		IP_AND_OR_SERVER="$*"
+		echo "$IP_AND_OR_SERVER ($NICK)" >> "$MAP_POOL_FILE"
+		echo "/notice $NICK Your proposal for $IP_AND_OR_SERVER has entered the pool."
+	else
+		echo "/notice $NICK This channel has no map pool."
+	fi
 }
 
 pool () {
-	if [ "$DO_MAP_POOL" ]
+	if [ -f "$MAP_POOL_FILE" ]
 	then
 		SHOW_MAPS=` cat "$MAP_POOL_FILE" | sed 's+$+, +' | tr -d "\n" | sed 's+, $++' `
 		echo "/notice $NICK Maps: $SHOW_MAPS"
 		## TODO CONSIDER: is it better for longer map pools to echo | notice ?
+	else
+		echo "/notice $NICK This channel has no map pool."
 	fi
 }
 
