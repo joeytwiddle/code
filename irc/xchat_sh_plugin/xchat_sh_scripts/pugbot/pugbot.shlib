@@ -3,7 +3,8 @@
 # then exit 0
 # fi
 
-TOTAL_SPACES=10
+DO_MAP_POOL=true
+MAX_POOL_SIZE=20
 
 PUG_CHANNELS_FILE=/tmp/pug_channels.list
 CHANNELREGEXP=`toregexp "$CHANNEL"`
@@ -26,18 +27,47 @@ cat "$PUG_CHANNELS_FILE" | grep -i "^$CHANNELREGEXP$" >/dev/null || exit 0
 
 TOPIC_HEADER="Welcome to noobpug, where even the b0t is a n00b!"
 
-NUMBER_OF_PLAYERS_NEEDED=10
+# UPDATE_TOPIC=true
+UPDATE_TOPIC=
 
 PLAYER_LIST_FILE=/tmp/pug@"$SERVER"."$CHANNEL".player_list
 LAST_FILE=/tmp/pug@"$SERVER"."$CHANNEL".last
 RED_TEAM_FILE=/tmp/pug@"$SERVER"."$CHANNEL".red_team
 BLUE_TEAM_FILE=/tmp/pug@"$SERVER"."$CHANNEL".blue_team
+MAP_POOL_FILE=/tmp/pug@"$SERVER"."$CHANNEL".map_pool
+CURRENT_MAP_FILE=/tmp/pug@"$SERVER"."$CHANNEL".current_map
+SUB_FILE=/tmp/pug@"$SERVER"."$CHANNEL".sub
+NUMBER_OF_PLAYERS_NEEDED_FILE=/tmp/pug@"$SERVER"."$CHANNEL".total_players
+
+if [ -f "$NUMBER_OF_PLAYERS_NEEDED_FILE" ]
+then NUMBER_OF_PLAYERS_NEEDED="`cat "$NUMBER_OF_PLAYERS_NEEDED_FILE"`"
+fi
+[ "$NUMBER_OF_PLAYERS_NEEDED" ] || NUMBER_OF_PLAYERS_NEEDED=10
 
 reset () {
+	if [ "$DO_MAP_POOL" ]
+	then
+		touch -d "1 minute ago" /tmp/map_pool_last
+		if newer /tmp/map_pool_last "$CURRENT_MAP_FILE"
+		then
+			MAP1=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
+			MAP2=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
+			NEW_MAP="$MAP1+$MAP2"
+			[ "$MAP1" = "$MAP2" ] && NEW_MAP="$MAP1"
+			echo "$NEW_MAP" > "$CURRENT_MAP_FILE" &&
+			echo "New pug is: $NEW_MAP"
+		else
+			NOW=`date "+%s"`
+			THEN=`date -r "$CURRENT_MAP_FILE" "+%s"`
+			DIFF=$((THEN+60-NOW))
+			echo "/notice $NICK You may not reset the pug for $DIFF seconds."
+			return
+		fi
+	fi
 	printf "" > "$PLAYER_LIST_FILE"
 	rm -f "$RED_TEAM_FILE" "$BLUE_TEAM_FILE"
 	update_topic
-	echo "Pug has been reset."
+	[ -f "$PLAYER_LIST_FILE" ] && echo "Pug has been reset." || echo "/notice $NICK Error: Failed to reset pug."
 }
 
 get_num_players () {
@@ -47,7 +77,8 @@ get_num_players () {
 ## Note atm this is a pretty list of the players, for user.  For a nice list to use in code, use the listfile.  :P
 list_players () {
 	get_num_players
-	echo "[$CHANNEL] $COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | sed 's+ $++' ` $COLBLUE]$COLNORM"
+	[ "$DO_MAP_POOL" ] && [ -f "$CURRENT_MAP_FILE" ] && SHOW_CURRENT_MAP="{`cat "$CURRENT_MAP_FILE"`""} "
+	echo "[$CHANNEL] $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | sed 's+ $++' ` $COLBLUE]$COLNORM"
 }
 
 show_last () {
@@ -74,8 +105,11 @@ list_team () {
 }
 
 update_topic () {
-	PLAYER_LIST=`list_players`
-	# echo "/topic $TOPIC_HEADER $PLAYER_LIST" ## was a bit spammy, plus ppl might remove utb0t's ops!!
+	if [ "$UPDATE_TOPIC" ]
+	then
+		PLAYER_LIST=`list_players`
+		echo "/topic $TOPIC_HEADER $PLAYER_LIST"
+	fi
 }
 
 players_still_needed () {
@@ -116,7 +150,25 @@ addplayer () {
 }
 
 leave () {
-	removeplayer "$NICK"
+	if [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ] || [ -f "$RED_TEAM_FILE" ] || [ ! -f "$BLUE_TEAM_FILE" ]
+	then echo "You cannot leave the pug now that it has started."
+	else removeplayer "$NICK"
+	fi
+}
+
+needsub () {
+	FROM="$NICK"
+	[ "$1" ] && FROM="$*"
+	echo "$FROM" > "$SUB_FILE"
+	echo "[$CHANNEL] Sub needed for $FROM!  Type !sub if you can."
+}
+
+sub () {
+	if [ -f "$SUB_FILE" ]
+	then
+		echo "[$CHANNEL] $NICK is subbing `cat "$SUB_FILE"`"
+		rm -f "$SUB_FILE"
+	fi
 }
 
 removeplayer () {
@@ -241,13 +293,15 @@ captain () {
 	if [ ! -f "$RED_TEAM_FILE" ] && in_pickup_list "$NICK" && [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ]
 	then
 		removeplayer -quiet "$NICK"
-		echo "$NICK" >> "$RED_TEAM_FILE"
+		echo "$NICK" > "$RED_TEAM_FILE"
 		echo "$COLRESET$NICK is captain of the $COLRED$COLBOLD""RED""$COLRESET team."
-	elif [ ! -f "$BLUE_TEAM_FILE" ] && in_pickup_list "$NICK"
+		echo "/op $NICK"
+	elif [ -f "$RED_TEAM_FILE" ] && [ ! -f "$BLUE_TEAM_FILE" ] && in_pickup_list "$NICK"
 	then
 		removeplayer -quiet "$NICK"
-		echo "$NICK" >> "$BLUE_TEAM_FILE"
+		echo "$NICK" > "$BLUE_TEAM_FILE"
 		echo "$COLRESET$NICK is captain of the $COLBLUE$COLBOLD""BLUE""$COLRESET team."
+		echo "/op $NICK"
 		please_pick
 		list_players ## Since we no longer list at every iteration, we should at least do a list at the start of the pickup.
 	else
@@ -268,9 +322,42 @@ help () {
 promote () {
 	. restrict_repetitive_calls "5 minutes"
 	get_num_players
-	SPACES_LEFT=$((TOTAL_SPACES-NUMBER_OF_PLAYERS))
+	SPACES_LEFT=$((NUMBER_OF_PLAYERS_NEEDED-NUMBER_OF_PLAYERS))
 	echo "/mode $CHANNEL -N"
 	echo "/notice $CHANNEL $SPACES_LEFT spots left in $CHANNEL, type !add to join"
 	echo "/mode $CHANNEL +N"
 }
+
+propose () {
+	RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 minute"
+	IP_AND_OR_SERVER="$*"
+	echo "$IP_AND_OR_SERVER ($NICK)" >> "$MAP_POOL_FILE"
+	echo "/notice $NICK Your proposal for $IP_AND_OR_SERVER has entered the pool."
+}
+
+pool () {
+	if [ "$DO_MAP_POOL" ]
+	then
+		SHOW_MAPS=` cat "$MAP_POOL_FILE" | sed 's+$+, +' | tr -d "\n" | sed 's+, $++' `
+		echo "/notice $NICK Maps: $SHOW_MAPS"
+		## TODO CONSIDER: is it better for longer map pools to echo | notice ?
+	fi
+}
+
+setlimit () {
+	get_num_players
+	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
+	then echo "/notice $NICK You can only change the player limit of an empty pug."
+	fi
+	if echo "$1" | grep "^\([468]\|10\)$" >/dev/null
+	then
+		echo "$1" > "$NUMBER_OF_PLAYERS_NEEDED_FILE"
+	else
+		echo "/notice $NICK I only support pugs of size 4,6,8 or 10."
+	fi
+}
+
+if [ ! -f "$PLAYER_LIST_FILE" ]
+then reset
+fi
 

@@ -9,7 +9,8 @@
 list_dirs () {
 	cd "$COMMAND_SCRIPTS_DIR" &&
 	find -type d |
-	grep -v "/CVS/" | grep -v "/CVS$" |
+	# grep -v "/CVS/" | grep -v "/CVS$" |
+	grep -v "/CVS\(/\|$\)" |
 	# grep -v "\.secret/" |
 	grep -v "/\." | ## strip hidden directories ^^
 	sed 's+^\./++'

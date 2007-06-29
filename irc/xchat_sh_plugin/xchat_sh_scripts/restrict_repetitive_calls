@@ -4,7 +4,7 @@ CALLER="`filename "$0"`"
 
 DELAY_TIME="$1"
 
-LAST_CALLED_FILE=/tmp/"$CALLER".lastcalled
+LAST_CALLED_FILE=/tmp/"$CALLER""$RESTRICT_EXTRA".lastcalled
 
 if [ -f "$LAST_CALLED_FILE" ]
 then
