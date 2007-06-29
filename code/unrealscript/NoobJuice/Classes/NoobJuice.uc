@@ -2,6 +2,7 @@ class NoobJuice expands Mutator;
 
 var config bool bChangeLighting;
 var config bool bRandomSpeed;
+var config bool bRandomFriendlyFire;
 
 var String knownPlayers;
 // var float nextCheck;
@@ -9,6 +10,7 @@ var String knownPlayers;
 defaultproperties {
   bChangeLighting=True // doesn't work
   bRandomSpeed=False
+  bRandomFriendlyFire=False
   knownPlayers=
   // nextCheck=0
 }
@@ -63,8 +65,25 @@ simulated function PreBeginPlay() {
     } else
     if (i<40) {
       Level.Game.GameSpeed = 1.25;
-    } else
+    } else {
       Level.Game.GameSpeed = 1.0;
+    }
+
+  }
+
+  if (Level.Game.IsA('TeamGamePlus') && bRandomFriendlyFire) {
+
+    i = Rand(100);
+    if (i<50) {
+      TeamGamePlus(Level.Game).FriendlyFireScale = 0.0;
+    } else
+    if (i<80) {
+      TeamGamePlus(Level.Game).FriendlyFireScale = 0.1;
+    } else
+    if (i<90) {
+      TeamGamePlus(Level.Game).FriendlyFireScale = 0.25;
+    } else {
+      TeamGamePlus(Level.Game).FriendlyFireScale = 0.5;
     }
 
   }
