@@ -107,7 +107,8 @@ else
 
 fi |
 
-if [ "$CHANNEL" = "#ec.ut" ]
+if [ "$CHANNEL" = "#ec.ut" ] || (  [ "$NETWORK" = irc.utchat.com ] && [ "$CHANNEL" = "#ut" ] )
 then notice
 else cat
 fi
+

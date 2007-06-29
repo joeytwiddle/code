@@ -9,6 +9,7 @@
 list_dirs () {
 	cd "$COMMAND_SCRIPTS_DIR" &&
 	find -type d |
+	grep -v "/CVS/" | grep -v "/CVS$" |
 	# grep -v "\.secret/" |
 	grep -v "/\." | ## strip hidden directories ^^
 	sed 's+^\./++'
@@ -34,7 +35,8 @@ list_commands () {
 		else cat
 		fi
 
-	done | randomorder
+	done # | randomorder
+
 }
 
 list_commands_pretty () {
@@ -58,6 +60,7 @@ list_commands_pretty () {
 			echo -n "$COMMAND "
 			# find "$DIR"/ -type l -lname "$COMMAND" -or -lname "./$COMMAND" |
 			find "$DIR"/ -type l -lname "$COMMAND" -or -lname "*/$COMMAND" |
+			grep -v "/CVS/" |
 			afterlast / |
 			grep -v "^\." | ## hide hidden files ^^
 			sort |
@@ -75,6 +78,7 @@ list_commands_pretty () {
 
 list_commands_old () {
 	find "$COMMAND_SCRIPTS_DIR" -type f -or -type l -maxdepth 1 |
+	grep -v "/CVS/" |
 	while read FILE
 	do [ -x "$FILE" ] && [ ! -d "$FILE" ] && echo "$FILE"
 	done |

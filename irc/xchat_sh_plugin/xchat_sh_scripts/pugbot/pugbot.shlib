@@ -12,10 +12,13 @@ CHANNELREGEXP=`toregexp "$CHANNEL"`
 
 ## Do we allow this command to be run?
 
-if [ "$ALLOW_FROM_ANY_CHANNEL" ] || cat "$PUG_CHANNELS_FILE" | grep -i "^$CHANNELREGEXP$" >/dev/null
-then :
-else exit 0
-fi
+## Had a bug of spamming when not enabled (when ppl queried other pugbots in a public channel)
+# if [ "$ALLOW_FROM_ANY_CHANNEL" ] || cat "$PUG_CHANNELS_FILE" | grep -i "^$CHANNELREGEXP$" >/dev/null
+# then :
+# else exit 0
+# fi
+
+cat "$PUG_CHANNELS_FILE" | grep -i "^$CHANNELREGEXP$" >/dev/null || exit 0
 
 ## OK we do not exit.
 
@@ -72,7 +75,7 @@ list_team () {
 
 update_topic () {
 	PLAYER_LIST=`list_players`
-	echo "/topic $TOPIC_HEADER $PLAYER_LIST"
+	# echo "/topic $TOPIC_HEADER $PLAYER_LIST" ## was a bit spammy, plus ppl might remove utb0t's ops!!
 }
 
 players_still_needed () {

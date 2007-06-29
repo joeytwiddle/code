@@ -29,7 +29,7 @@ MORE="$*"
 
 # RIVALS="[eC] (rt) Darth F0X| F0X[S f0x. =(.Y.)= nW/ [pWa] PmP| bmb GLA* [DC*3] sahNe rlx relax [c] <as> JMD .d|_|b. (-:SMo:-) [k] $MORE"
 ## removed mp3 now :P
-RIVALS="[eC] (rt) Darth F0X| F0X[ f0x. f0x\` =(.Y.)= nW/ [pWa] pwa. .pwa PmP| bmb GLA* [DC*3] sahNe rlx relax [c] [crew] <as> JMD .d|_|b. (-:SMo:-) [k] $MORE [wmc] -|Ts|- {focr} [RNA] {DK} [NAW] {NAW} [iD] [iQ] nTo* [d4s] =[dH]= whore| sk| .phobia .dm' ~u. ~xD^ [iNs.D] ]PB[ 69\` MbX| frag. .frag beat.mox [*P*] THIS_HERE_GIRAFFE deathtoken ]v[isso (s) [wH] [bs] eVil^ eVil. eVil_" # e\`"
+RIVALS="[eC] (rt) Darth F0X| F0X[ f0x. f0x\` =(.Y.)= nW/ [pWa] pwa. .pwa PmP| bmb GLA* [DC*3] sahNe rlx relax [c] [crew] <as> JMD .d|_|b. (-:SMo:-) [k] $MORE [wmc] -|Ts|- {focr} [RNA] {DK} [NAW] {NAW} [iD] [iQ] nTo* [d4s] =[dH]= whore| sk| .phobia .dm' ~u. ~xD^ [iNs.D] ]PB[ 69\` MbX| frag. .frag beat.mox [*P*] THIS_HERE_GIRAFFE deathtoken ]v[isso (s) [wH] [bs] eVil^ eVil. eVil_ [4F]" # e\`"
 
 if [ "$CHANNEL" = "#ec.ut" ] || [ "$CHANNEL" = "#ut994funpug" ] || [ "$CHANNEL" = "#ctfpug" ] || [ "$CHANNEL" = "#pwa.ut" ]
 then whereisb0t/whereis "$RIVALS" | notice

@@ -2,12 +2,12 @@
 	# ./utp 205.218.66.82
 	# ./utp 69.90.113.252
 	./utp "$@" 66.151.7.44 # unreal://74.130.241.244:7777
-	./utp "$@" 69.28.220.141 | grep -v "0/" | grep -v "no response" | grep -v "\<DOWN\>" ## FOCR2
+	./utp "$@" 69.28.220.141 | grep -v "[^0-9]0/" | grep -v "no response" | grep -v "\<DOWN\>" ## FOCR2
 	# # if [ "$1" = friends ]
 	# # then
 		# ##    terror squad   {DK}Insane     NAW
 		# ./utp 209.246.170.92 205.138.192.47 63.209.32.55 |
-		# grep -v "0/" | grep -v "no response" | grep -v "\<DOWN\>"
+		# grep -v "[^0-9]0/" | grep -v "no response" | grep -v "\<DOWN\>"
 		# ## friends from focr forums, all down
 		# # 69.28.220.20 69.90.114.139 66.148.85.32 64.34.82.19 8.9.36.89 64.156.59.11 66.165.108.248 209.190.93.201 66.151.7.65
 	# # fi

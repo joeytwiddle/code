@@ -1,9 +1,6 @@
 list () {
 cat << !
-Spammer!
-Flak spammer!
-Flak spammer!
-Pro docker.
+<Badshooter2> suxx
 !
 }
 

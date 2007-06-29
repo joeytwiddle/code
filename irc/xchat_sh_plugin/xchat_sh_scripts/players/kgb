@@ -1,9 +1,6 @@
 list () {
 cat << !
-Spammer!
-Flak spammer!
-Flak spammer!
-Pro docker.
+KGB plays in #ut994funpug because he's got balls
 !
 }
 

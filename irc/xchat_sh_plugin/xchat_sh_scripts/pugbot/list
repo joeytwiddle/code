@@ -1,4 +1,5 @@
-[ "$1" ] && CHANNEL="$1" && ALLOW_FROM_ANY_CHANNEL=true
+## This was undesirable, answering for channels run by other bots!
+# [ "$1" ] && CHANNEL="$1" && ALLOW_FROM_ANY_CHANNEL=true
 
 . pugbot/pugbot.shlib
 

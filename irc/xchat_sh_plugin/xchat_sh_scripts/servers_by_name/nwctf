@@ -8,8 +8,8 @@ then
 	ALL=true
 	# JUSTSERVER="-justserver" ## hides number of players also =/
 	export NOPLAYERS=true
-	## Not in the list by default:
-	OTHERS="ec zoo pmp2 pwa pwapriv" # xol ffa
+	## Not in the list by default: (because usually set for private/pug)
+	OTHERS="ec pmp2 pwa pwapriv" # xol ffa
 fi
 
 # JUSTSERVER="-justserver"
@@ -21,8 +21,8 @@ fi
 (
 	export NOTICE_STYLE="none"
 	# Now closed: Multiplay CTF 85.236.100.43 p 195.4.17.197 
-	for SERVER in tacsu f0x nogginzp noobpug $OTHERS focr terror kawa gla haleys xol of inz u ## (multiplay FFA DM+CTF)
-	## DOWN afaik: tits pmp bmb be sahne il whore relax dk fraggerspub
+	for SERVER in zoo tacsu f0x nogginzp noobpug $OTHERS focr terror kawa gla haleys xol of inz u ## (multiplay FFA DM+CTF)
+	## DOWN afaik: tits oldpmp bmb be sahne il whore relax dk fraggerspub
 	## now MH: smo
 	# 82.192.78.54:7000 ## -ev!L~eLves-
 	do [ -x ./ut_servers/"$SERVER" ] && ./ut_servers/"$SERVER" $JUSTSERVER "$@" || ./utp $JUSTSERVER "$@" "$SERVER"

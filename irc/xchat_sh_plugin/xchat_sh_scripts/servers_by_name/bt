@@ -6,7 +6,9 @@
 # ./utp "$@" 64.192.171.225 | notice
 NUM_RESULTS=5 ./ut_servers/searchserv bt- | notice
 (
+echo "/me was crushed/burnt/slimed/frozen/drowned/depressurised/beheaded again"
 echo "/me was incinerated"
+echo "/me was slimed"
 echo "/me left a small crater"
 echo "/me killed his own dumb self"
 ) | chooserandomline
