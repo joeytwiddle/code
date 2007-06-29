@@ -281,8 +281,8 @@ please_pick () {
 	then
 		add_player_to_team "`cat "$PLAYER_LIST_FILE"`" RED
 		echo "Pickup is complete.  Decide on a game and TS server, and go play.  Have fun!"
-		if [ "`cat "$CURRENT_MAP_FILE"`" = "RANDOM + RANDOM" ]
-		then get_new_map ; echo "Random maps have been chosen: $NEW_MAP"
+		if [ "$MAP_POOL_FILE" ] && [ "`cat "$CURRENT_MAP_FILE"`" = "RANDOM + RANDOM" ]
+		then get_new_map ; echo "Random maps have been chosen: $COLYELLOW$NEW_MAP"
 		fi
 		list_team RED
 		list_team BLUE
