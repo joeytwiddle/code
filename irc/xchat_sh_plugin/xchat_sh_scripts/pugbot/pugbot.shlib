@@ -375,6 +375,7 @@ setlimit () {
 		if echo "$1" | grep "^\([468]\|10\)$" >/dev/null
 		then
 			echo "$1" > "$NUMBER_OF_PLAYERS_NEEDED_FILE"
+			echo "Pug set to $1 players."
 		else
 			echo "/notice $NICK I only support pugs of size 4,6,8 or 10."
 		fi
