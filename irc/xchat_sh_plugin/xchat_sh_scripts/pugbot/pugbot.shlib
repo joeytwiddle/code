@@ -44,6 +44,13 @@ then NUMBER_OF_PLAYERS_NEEDED="`cat "$NUMBER_OF_PLAYERS_NEEDED_FILE"`"
 fi
 [ "$NUMBER_OF_PLAYERS_NEEDED" ] || NUMBER_OF_PLAYERS_NEEDED=10
 
+get_new_map () {
+	MAP1=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
+	MAP2=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
+	NEW_MAP="$MAP1 + $MAP2"
+	[ "$MAP1" = "$MAP2" ] && NEW_MAP="$MAP1"
+}
+
 reset () {
 	if [ -f "$MAP_POOL_FILE" ]
 	then
@@ -51,12 +58,10 @@ reset () {
 		touch -d "1 minute ago" /tmp/map_pool_last
 		if newer /tmp/map_pool_last "$CURRENT_MAP_FILE"
 		then
-			MAP1=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
-			MAP2=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
-			NEW_MAP="$MAP1 + $MAP2"
-			[ "$MAP1" = "$MAP2" ] && NEW_MAP="$MAP1"
+			get_new_map
 			echo "$NEW_MAP" > "$CURRENT_MAP_FILE" &&
-			echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *You have 1 minute to join!*"
+			# echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *You have 1 minute to join!*"
+			echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *Maps will change in 1 minute!*"
 		else
 			NOW=`date "+%s"`
 			THEN=`date -r "$CURRENT_MAP_FILE" "+%s"`
@@ -143,7 +148,8 @@ addplayer () {
 				get_num_players
 				if [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ]
 				# then echo "The pug is full!  Choose two captains, and use !pick (take it in turns please 1-2-2-2-1)."
-				then echo "The pug has started!  Type !captain to be a captain."
+				then
+					echo "The pug has started!  Type !captain to be a captain."
 				fi
 			else echo "Sorry the pug is full, please wait until teams are picked, and the pug will reset."
 			fi
@@ -275,13 +281,16 @@ please_pick () {
 	then
 		add_player_to_team "`cat "$PLAYER_LIST_FILE"`" RED
 		echo "Pickup is complete.  Decide on a game and TS server, and go play.  Have fun!"
+		if [ "`cat "$CURRENT_MAP_FILE"`" = "RANDOM + RANDOM" ]
+		then get_new_map ; echo "Random maps have been chosen: $NEW_MAP"
+		fi
 		list_team RED
 		list_team BLUE
 		(
 			list_team RED
 			list_team BLUE
 		) > "$LAST_FILE"
-		reset
+		NICK="" reset
 	else
 		who_is_captain_of "$TEAM"
 		# list_team RED
@@ -370,7 +379,7 @@ pool () {
 setlimit () {
 	get_num_players
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
-	then echo "/notice $NICK You can only change the player limit of an empty pug."
+	then echo "/notice $NICK You can only change the settings of an empty pug."
 	else
 		if echo "$1" | grep "^\([468]\|10\)$" >/dev/null
 		then
@@ -397,6 +406,15 @@ disablemappool () {
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
 	then echo "/notice $NICK You can only change the settings of an empty pug."
 	else mv -f "$MAP_POOL_FILE" "$MAP_POOL_FILE".disabled && echo "Map pool disabled in $CHANNEL."
+	fi
+}
+
+setrandom () {
+	get_num_players
+	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
+	then echo "/notice $NICK You can only change the settings of an empty pug."
+	else echo "RANDOM + RANDOM" > "$CURRENT_MAP_FILE" ; list_players
+	# else echo "RANDOM + RANDOM" > "$CURRENT_MAP_FILE" ; NICK="" reset
 	fi
 }
 
