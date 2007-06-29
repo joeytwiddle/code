@@ -56,12 +56,12 @@ reset () {
 			NEW_MAP="$MAP1 + $MAP2"
 			[ "$MAP1" = "$MAP2" ] && NEW_MAP="$MAP1"
 			echo "$NEW_MAP" > "$CURRENT_MAP_FILE" &&
-			echo "New pug is: $NEW_MAP"
+			echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *You have 1 minute to join!*"
 		else
 			NOW=`date "+%s"`
 			THEN=`date -r "$CURRENT_MAP_FILE" "+%s"`
 			DIFF=$((THEN+60-NOW))
-			echo "/notice $NICK You may not reset the pug for $DIFF seconds."
+			[ "$NICK" ] && echo "/notice $NICK You may not reset the pug for $DIFF seconds."
 			return
 		fi
 	fi
@@ -78,7 +78,9 @@ get_num_players () {
 ## Note atm this is a pretty list of the players, for user.  For a nice list to use in code, use the listfile.  :P
 list_players () {
 	get_num_players
-	[ -f "$MAP_POOL_FILE" ] && [ -f "$CURRENT_MAP_FILE" ] && SHOW_CURRENT_MAP="{`cat "$CURRENT_MAP_FILE"`} "
+	## if pug is empty and we are in recycling mode, reset the map (and the pug) if over timelimit
+	[ "$NUMBER_OF_PLAYERS" = 0 ] && [ -f "$MAP_POOL_FILE" ] && NICK="" reset
+	[ -f "$MAP_POOL_FILE" ] && [ -f "$CURRENT_MAP_FILE" ] && SHOW_CURRENT_MAP="{$COLYELLOW`cat "$CURRENT_MAP_FILE"`$COLRESET} "
 	echo "[$CHANNEL] $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | sed 's+ $++' ` $COLBLUE]$COLNORM"
 }
 
@@ -151,7 +153,8 @@ addplayer () {
 }
 
 leave () {
-	if [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ] || [ -f "$RED_TEAM_FILE" ] || [ ! -f "$BLUE_TEAM_FILE" ]
+	get_num_players
+	if [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ] || [ -f "$RED_TEAM_FILE" ] || [ -f "$BLUE_TEAM_FILE" ]
 	then echo "You cannot leave the pug now that it has started."
 	else removeplayer "$NICK"
 	fi
@@ -318,6 +321,10 @@ help () {
 	# echo "Rules: No pros, whiners or flamers.  Be friendly, spread the love!"
 	# echo "Piston-camping, telefragging, boosting and spawn-raping are encouraged."
 	# echo "Captains can pick the map and game mode, but should try to ensure it's something all players will enjoy."
+	if [ -f "$MAP_POOL_FILE" ]
+	then
+		echo "The pool of maps can be seen by typing !maps.  Type !addmap <map_name> to propose your own."
+	fi
 }
 
 promote () {
@@ -329,13 +336,21 @@ promote () {
 	echo "/mode $CHANNEL +N"
 }
 
-propose () {
+propose () { ## AKA addmap
 	if [ -f "$MAP_POOL_FILE" ]
 	then
-		RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 minute"
+		# ## depends on size of pool:
+		# RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 hour"
+		RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "5 minutes"
+		# RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 minute"
 		IP_AND_OR_SERVER="$*"
-		echo "$IP_AND_OR_SERVER ($NICK)" >> "$MAP_POOL_FILE"
-		echo "/notice $NICK Your proposal for $IP_AND_OR_SERVER has entered the pool."
+		if [ "$IP_AND_OR_SERVER" ]
+		then
+			echo "$IP_AND_OR_SERVER ($NICK)" >> "$MAP_POOL_FILE"
+			echo "$NICK's proposal for $IP_AND_OR_SERVER has entered the !mappool"
+		else
+			echo "/notice $NICK To add your map to the pool: !addmap <map_name>"
+		fi
 	else
 		echo "/notice $NICK This channel has no map pool."
 	fi
@@ -345,7 +360,7 @@ pool () {
 	if [ -f "$MAP_POOL_FILE" ]
 	then
 		SHOW_MAPS=` cat "$MAP_POOL_FILE" | sed 's+$+, +' | tr -d "\n" | sed 's+, $++' `
-		echo "/notice $NICK Maps: $SHOW_MAPS"
+		echo "/notice $NICK Map pool is: $SHOW_MAPS"
 		## TODO CONSIDER: is it better for longer map pools to echo | notice ?
 	else
 		echo "/notice $NICK This channel has no map pool."
