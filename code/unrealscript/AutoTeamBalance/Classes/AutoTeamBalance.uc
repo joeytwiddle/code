@@ -257,7 +257,7 @@ defaultproperties {
   BotStrength=10          // maybe 20 or 30 is better, if we increase normal score to 100
   FlagStrength=20         // If it's 3:0, the winning team will get punished an extra 60 points; used when new players join the game and number of players on each team are even; DONE: could also be used when doing mid-game "!teams" balance
   StrengthThreshold=50    // If bWarnMidGameUnbalance and team strength difference is greater than this and stronger team has more player, warn those players of team inbalance.
-  WinningTeamBonus=10
+  WinningTeamBonus=0
   bClanWar=False
   MaxPlayerData=4096
   // bHidden=True // what is this?  iDeFiX says it's only needed for ServerActors
@@ -1300,13 +1300,16 @@ function CheckMidGameBalance() {
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
       if (p.PlayerReplicationInfo.Team == weakerTeam) {
-        p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them.",'CriticalEvent',True);
+        p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them.",'CriticalEvent',False);
         // p.ClientMessage("Teams look uneven!  ("$problem$")  Type !teams to fix them.");
       } else {
-        p.ClientMessage("Teams look uneven! "$problem$" Type !teams or !"$getTeamName(weakerTeam)$".",'CriticalEvent',True);
+        p.ClientMessage("Teams look uneven! "$problem$" Type !teams or !"$getTeamName(weakerTeam)$".",'CriticalEvent',False);
         p.ShakeView(1.0,2000.0,2000.0);
         // p.ClientMessage("Teams look uneven!  ("$problem$")  Type !teams or !"$getTeamName(weakerTeam)$".");
       }
+      // PlaySound ( sound Sound, optional ESoundSlot Slot, optional float Volume, optional bool bNoOverride, optional float Radius, optional float Pitch 
+      // 'NewBeep'
+      p.PlaySound(sound'Beep', SLOT_Interface, 2.5, True, 32, 32); // we play our own sound
     }
   }
 }
@@ -1601,11 +1604,19 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
       ChangePlayerToTeam(PlayerPawn(Sender),1,false);
     }
 
-    /* TODO: !spec and !play */
-
-    // if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
+    if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
       // PlayerPawn(Sender).ConsoleCommand("reconnect"); // <-- this crashed the server!
-    // }
+      // PlayerPawn(Sender).ClientTravel("Index.unr?Name="$Sender.getHumanName()$"?Class=BotPack.TMale1?Team=0?skin=CommandoSkins.daco?Face=CommandoSkins.Luthor?Voice=BotPack.VoiceMaleOne?OverrideClass=Botpack.CHSpectator?password=wibble?Checksum=646310efe2b4654a55a1af7ac31e1dc6");
+      // PlayerPawn(Sender).ClientTravel("Index.unr?Name="$Sender.getHumanName()$"?Team=255?OverrideClass=Botpack.CHSpectator",TRAVEL_Absolute, False);
+      // PlayerPawn(Sender).ClientTravel("?Restart?Name="$Sender.getHumanName()$"?Team=255?OverrideClass=Botpack.CHSpectator?",TRAVEL_Absolute, False);
+      // PlayerPawn(Sender).ClientTravel("?OverrideClass=Botpack.CHSpectator?",TRAVEL_Absolute, False);
+      // PlayerPawn(Sender).ClientTravel("?Restart?OverrideClass=Botpack.CHSpectator",TRAVEL_Absolute, False);
+      PlayerPawn(Sender).ClientTravel(Level.GetAddressUrl()$"?OverrideClass=Botpack.CHSpectator",TRAVEL_Absolute, False);
+    }
+
+    if (Msg ~= "!PLAY") {
+      PlayerPawn(Sender).ClientTravel("?Restart?OverrideClass=",TRAVEL_Absolute, False);
+    }
 
     if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
       if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
@@ -1691,7 +1702,8 @@ function Mutate(String str, PlayerPawn Sender) {
   // local array<String> args;
   local int argcount;
 
-  local String admin_pass;
+  local String admin_pass; // we might not offer exactly what is in the config file, this is what we will really offer
+  local String pass_if_needed; // for the help (to display whether pass is needed or not)
 
   local String msg;
   local int i;
@@ -1786,6 +1798,15 @@ function Mutate(String str, PlayerPawn Sender) {
         Sender.KickBan(FindPlayerNamed(args[1]).getHumanName());
       break;
 
+      case "FORCETRAVEL":
+        BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]);
+        for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+          if (p.IsA('PlayerPawn')) {
+            PlayerPawn(p).ClientTravel(args[1], TRAVEL_Absolute, False);
+          }
+        }
+      break;
+
       Default:
       break;
 
@@ -1841,16 +1862,21 @@ function Mutate(String str, PlayerPawn Sender) {
   }
 
   if ( args[0]~="HELP" ) {
+    if (admin_pass == "")
+      pass_if_needed = "";
+    else
+      pass_if_needed = " [password]";
     Sender.ClientMessage("AutoTeamBalance semi-admin commands:");
-    Sender.ClientMessage("    mutate teams [password]");
-    Sender.ClientMessage("    mutate forceteams [password]");
-    Sender.ClientMessage("    mutate strengths [password]");
-    Sender.ClientMessage("    mutate strength <player> [password]");
-    Sender.ClientMessage("    mutate tored <player> [password]");
-    Sender.ClientMessage("    mutate toblue <player> [password]");
-    Sender.ClientMessage("    mutate warn <player> <message> [password]");
-    Sender.ClientMessage("    mutate kick <player> <message> [password]");
-    Sender.ClientMessage("    mutate kickban <player> <message> [password]");
+    Sender.ClientMessage("    mutate teams" $ pass_if_needed);
+    Sender.ClientMessage("    mutate forceteams" $ pass_if_needed);
+    Sender.ClientMessage("    mutate strengths" $ pass_if_needed);
+    Sender.ClientMessage("    mutate strength <player>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate tored <player>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate toblue <player>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate warn <player> <message>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate kick <player> <message>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate kickban <player> <message>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate forcetravel <url>" $ pass_if_needed);
     if (Sender.bAdmin) {
       Sender.ClientMessage("AutoTeamBalance admin-only commands:");
       Sender.ClientMessage("    mutate saveconfig");
@@ -1920,10 +1946,18 @@ function BroadcastMessageAndLog(string Msg) {
 function FlashMessageToPlayer(Pawn p, string Msg) {
   if (bDebugLogging) { Log("AutoTeamBalance Sending message to "$p.getHumanName()$": "$Msg); }
   // NOTE: in case you thought otherwise, this message gets displayed in the console, but not in the chatarea.  It is also displayed on the HUD, but can be hidden by the scoreboard, or a following HUD message.
-  p.ClientMessage(Msg, 'CriticalEvent', True);
-  p.ClientMessage(Msg);
-  // To just message the player's chat and console, try skipping the last 2 arguments.
+  // p.ClientMessage(Msg); // goes to chat and console
+  // p.ClientMessage(Msg, 'Event', True); // TESTING (sends only to chat, or only to chat+console?)
+  // p.ClientMessage(Msg, 'CriticalEvent', True); // goes to HUD and console
+  p.ClientMessage(Msg, 'CriticalEvent', False); // goes to HUD and console, no beep
+  p.PlaySound(sound'Beep', SLOT_Interface, 2.5, True, 32, 32); // we play our own sound
 }
+/*
+In PlayerPawn, ClientMessage actually calls:
+  Player.Console.Message( PlayerReplicationInfo, S, Type );
+  PlayBeepSound();
+  myHUD.Message( PlayerReplicationInfo, S, Type );
+*/
 
 /*
 function PlayerJoinedShowInfo(string Msg) {
