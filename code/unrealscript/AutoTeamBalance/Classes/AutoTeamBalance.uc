@@ -150,6 +150,8 @@ var config bool bDebugLogging;     // logs are more verbose/spammy than usual; r
 
 var config bool bLetPlayersRebalance;
 var config bool bWarnMidGameUnbalance;
+var config bool bAllowSemiAdminKick;
+var config bool bAllowSemiAdminForceTravel;
 var config bool bBalanceBots; // Include bots in the rebalancing (CONSIDER: what happens if bBalanceBots is set but bRankBots is not?)
 var config bool bRankBots; // Record stats for bots as if they were players.
 var config int MinSecondsBeforeRebalance;
@@ -193,7 +195,7 @@ var config bool bClanWar;          // Make teams by clan tag
 var config string clanTag;         // Clan tag of red team (all other players to blue)
 // var config String RedTeam[16];     // Players on red team (unreferenced)
 // var config String BlueTeam[16];    // Players on blue team (unreferenced)
-var config bool bSpeedyLookups;
+var config bool bSpeedyLookups;    // AKA bMidGameBalancingUsesInGameScoresNotPlayerRecords
 var config bool bTesting;
 
 // For storing player strength data:
@@ -225,6 +227,8 @@ defaultproperties {
   // bOnlyMoreCookies=False
   bLetPlayersRebalance=True // TODO: default this to false for release? (nahhh, just false on XOL :P)
   bWarnMidGameUnbalance=True // TODO: default this to false for release? (nahhh, just false on XOL :P) (disabled in Tournament mode)
+  bAllowSemiAdminKick=True
+  bAllowSemiAdminForceTravel=True
   MinSecondsBeforeRebalance=20 // must be at least 1, to avoid a bug with multiple calls to MutatorTeamMessage
   AdminPassword="defaults_to_admin_pass"
   bBalanceBots=False
@@ -1308,8 +1312,8 @@ function CheckMidGameBalance() {
         // p.ClientMessage("Teams look uneven!  ("$problem$")  Type !teams or !"$getTeamName(weakerTeam)$".");
       }
       // PlaySound ( sound Sound, optional ESoundSlot Slot, optional float Volume, optional bool bNoOverride, optional float Radius, optional float Pitch 
-      // 'NewBeep'
-      p.PlaySound(sound'Beep', SLOT_Interface, 2.5, True, 32, 32); // we play our own sound
+      // sound'NewBeep'
+      p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 16); // we play our own sound
     }
   }
 }
@@ -1571,40 +1575,54 @@ function string stripPort(string ip_and_port) {
 
 // MORE TESTING:
 
-/*
-// Matt's method of catch player joined / left game events:
-// Mutator broadcast message is called when the server broadcasts out
-// UT will look for this function, and then you can do whatever you want
-// After your stuff is done, then it has to pass on the message to
-// the next mutator in line, so that it can then do it's stuff too
-// nogginBasher: this seemed to be suppressing the broadcasts on the client's screens (same as adwvaad), so at the end I'm calling BroadcastMessage to send them out again.  Infinite loop?  We'll see... ^^
-// Well that didn't work either.  :(
-// So I'm gonna take it out entirely
-// After looking at TeamBallancer.uc, I changed this from MutatorBroadcastMessage to MutatorTeamMessage
-// function bool MutatorBroadcastMessage( Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type ) {
-*/
-function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+// MutatorBroadcastMessage and MutatorTeamMessage can be used to catch messages said by players during the game (or messages broadcast by the server).
 
-  // TODO TESTING TO FIX BUG: After i switched team, and did a "mutate teams  full", I couldn't make say "!teams" work any more.  I think the timelimit has helped this.
-  if (bDebugLogging && Sender != Receiver && bDebugLogging) {
-    Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Ignoring ("$Sender$" -> "$Receiver$") "$Msg$"");
-  }
-  // Mmm when the problem occurs, MutatorTeamMessage doesn't get called at all!
-  // I'm sometimes getting it at the start of the map too, before making any team changes.
-
+// Catch messages from spectators:
+function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
   if (Sender == Receiver) { // Only process the message once.
+    if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcastMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+    CheckMessage(Msg, Sender);
+  // } else {
+    // if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcastMessage(): Ignoring ("$Sender$" -> "$Receiver$") "$Msg$""); }
+  }
+  return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
+}
 
-    if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcast/TeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+// Catch messages from players:
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+  if (Sender == Receiver) { // Only process the message once.
+    if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+    CheckMessage(Msg, Sender);
+  // } else {
+    // TODO TESTING TO FIX BUG: After i switched team, and did a "mutate teams  full", I couldn't make say "!teams" work any more.  I think the timelimit has helped this.
+    // if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage(): Ignoring ("$Sender$" -> "$Receiver$") "$Msg$""); }
+    // Mmm when the problem occurs, MutatorTeamMessage doesn't get called at all!
+    // I'm sometimes getting it at the start of the map too, before making any team changes.
+  }
+  return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
+}
+  /*
+  //// This gets called, and passed to chat, BUT still gets called 8 times!!
+  // Isn't this the same as calling super?
+  if ( NextMessageMutator != None ) {
+    return NextMessageMutator.MutatorTeamMessage( Sender, Receiver, PRI, Msg, Type, bBeep ); // commenting this out does not stop the 8 repeats
+  } else {
+    return true; // this seems to be what's needed to ensure the message finally reaches the game (doesn't get swallowed)
+  }
+  */
 
-    if (Msg ~= "!RED") {
-      ChangePlayerToTeam(PlayerPawn(Sender),0,false);
-    }
+function bool CheckMessage(String Msg, Actor Sender) {
 
-    if (Msg ~= "!BLUE") {
-      ChangePlayerToTeam(PlayerPawn(Sender),1,false);
-    }
+  if (Msg ~= "!RED") {
+    ChangePlayerToTeam(PlayerPawn(Sender),0,false);
+  }
 
-    if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
+  if (Msg ~= "!BLUE") {
+    ChangePlayerToTeam(PlayerPawn(Sender),1,false);
+  }
+
+  if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
+    if (!Sender.IsA('Spectator')) {
       // PlayerPawn(Sender).ConsoleCommand("reconnect"); // <-- this crashed the server!
       // PlayerPawn(Sender).ClientTravel("Index.unr?Name="$Sender.getHumanName()$"?Class=BotPack.TMale1?Team=0?skin=CommandoSkins.daco?Face=CommandoSkins.Luthor?Voice=BotPack.VoiceMaleOne?OverrideClass=Botpack.CHSpectator?password=wibble?Checksum=646310efe2b4654a55a1af7ac31e1dc6");
       // PlayerPawn(Sender).ClientTravel("Index.unr?Name="$Sender.getHumanName()$"?Team=255?OverrideClass=Botpack.CHSpectator",TRAVEL_Absolute, False);
@@ -1613,29 +1631,22 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
       // PlayerPawn(Sender).ClientTravel("?Restart?OverrideClass=Botpack.CHSpectator",TRAVEL_Absolute, False);
       PlayerPawn(Sender).ClientTravel(Level.GetAddressUrl()$"?OverrideClass=Botpack.CHSpectator",TRAVEL_Absolute, False);
     }
-
-    if (Msg ~= "!PLAY") {
-      PlayerPawn(Sender).ClientTravel("?Restart?OverrideClass=",TRAVEL_Absolute, False);
-    }
-
-    if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
-      if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
-        // DONE: check this is not called during bTournament games.
-        // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling ForceFullTeamsRebalance().");
-        // ForceFullTeamsRebalance();
-        if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(): Calling MidGameRebalance()."); }
-        MidGameRebalance();
-      }
-    }
-
   }
 
-  //// This gets called, and passed to chat, BUT still gets called 8 times!!
-  // Isn't this the same as calling super?
-  if ( NextMessageMutator != None ) {
-    return NextMessageMutator.MutatorTeamMessage( Sender, Receiver, PRI, Msg, Type, bBeep ); // commenting this out does not stop the 8 repeats
-  } else {
-    return true; // this seems to be what's needed to ensure the message finally reaches the game (doesn't get swallowed)
+  if (Msg ~= "!PLAY") {
+    if (Sender.IsA('Spectator')) {
+      PlayerPawn(Sender).ClientTravel(Level.GetAddressUrl()$"?OverrideClass=",TRAVEL_Absolute, False);
+    }
+  }
+
+  if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
+    if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
+      // DONE: check this is not called during bTournament games.
+      // Log("AutoTeamBalance.MutatorTeamMessage(): Calling ForceFullTeamsRebalance().");
+      // ForceFullTeamsRebalance();
+      if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage(): Calling MidGameRebalance()."); }
+      MidGameRebalance();
+    }
   }
 
 }
@@ -1650,11 +1661,11 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
     // Failed Test: Nope that was never broadcast :P
     // if ( InStr(Msg,"game has ended.")>=0 ) {
-      // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(\""$Msg$"\") detected \"game has ended.\" - DONE elsewhere: run UpdateStatsAtEndOfGame() here.");
+      // Log("AutoTeamBalance.MutatorTeamMessage(\""$Msg$"\") detected \"game has ended.\" - DONE elsewhere: run UpdateStatsAtEndOfGame() here.");
     // }
 
     // if (Level.Game.bGameEnded) {
-      // Log("AutoTeamBalance.MutatorBroadcast/TeamMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
+      // Log("AutoTeamBalance.MutatorTeamMessage(\""$Msg$"\") detected Level.Game.bEnded = True - could run UpdateStatsAtEndOfGame() here.");
     // }
 
     // if ( InStr(Msg," entered the game.")>=0 ) { // Can we find the new player pawn, and report his #cookies ?
@@ -1695,7 +1706,9 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
 */
 
-// I thought I had a problem that this was not getting called if have AutoTeamBalance as a ServerActor, but that problem has either gone now, or I was getting this confused with MutatorTeamMessage().
+// TODO: Allow semi-admins to log in with the password, and then be able to run commands without it for the rest of their stay in that game.
+// TODO BUG: I thought I had a problem that this was not getting called if have AutoTeamBalance as a ServerActor, but that problem has either gone now, or I was getting this confused with MutatorTeamMessage().
+// Mmmm sometimes it is not getting called.  Maybe it's the random other Mutators I have added.  Maybe it's a problem with player rejoining/swicthing teams, and getting lost wrt messaging.
 function Mutate(String str, PlayerPawn Sender) {
 
   local String args[255];
@@ -1785,24 +1798,30 @@ function Mutate(String str, PlayerPawn Sender) {
       break;
 
       case "KICK":
-        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
-        FlashMessageToPlayer(FindPlayerNamed(args[1]),msg);
-        // Sender.Kick(args[1]);
-        Sender.Kick(FindPlayerNamed(args[1]).getHumanName());
+        if (bAllowSemiAdminKick) {
+          msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
+          FlashMessageToPlayer(FindPlayerNamed(args[1]),msg);
+          // Sender.Kick(args[1]);
+          Sender.Kick(FindPlayerNamed(args[1]).getHumanName());
+        }
       break;
 
       case "KICKBAN":
-        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
-        FlashMessageToPlayer(FindPlayerNamed(args[1]),msg);
-        // Sender.KickBan(args[1]);
-        Sender.KickBan(FindPlayerNamed(args[1]).getHumanName());
+        if (bAllowSemiAdminKick) {
+          msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=admin_pass)) msg = msg $ args[i] $ " "; }
+          FlashMessageToPlayer(FindPlayerNamed(args[1]),msg);
+          // Sender.KickBan(args[1]);
+          Sender.KickBan(FindPlayerNamed(args[1]).getHumanName());
+        }
       break;
 
       case "FORCETRAVEL":
-        BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]);
-        for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-          if (p.IsA('PlayerPawn')) {
-            PlayerPawn(p).ClientTravel(args[1], TRAVEL_Absolute, False);
+        if (bAllowSemiAdminForceTravel) {
+          BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]);
+          for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+            if (p.IsA('PlayerPawn')) {
+              PlayerPawn(p).ClientTravel(args[1], TRAVEL_Absolute, False);
+            }
           }
         }
       break;
@@ -1870,13 +1889,17 @@ function Mutate(String str, PlayerPawn Sender) {
     Sender.ClientMessage("    mutate teams" $ pass_if_needed);
     Sender.ClientMessage("    mutate forceteams" $ pass_if_needed);
     Sender.ClientMessage("    mutate strengths" $ pass_if_needed);
-    Sender.ClientMessage("    mutate strength <player>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate strength <part_of_nick>" $ pass_if_needed);
     Sender.ClientMessage("    mutate tored <player>" $ pass_if_needed);
     Sender.ClientMessage("    mutate toblue <player>" $ pass_if_needed);
     Sender.ClientMessage("    mutate warn <player> <message>" $ pass_if_needed);
-    Sender.ClientMessage("    mutate kick <player> <message>" $ pass_if_needed);
-    Sender.ClientMessage("    mutate kickban <player> <message>" $ pass_if_needed);
-    Sender.ClientMessage("    mutate forcetravel <url>" $ pass_if_needed);
+    if (bAllowSemiAdminKick) {
+      Sender.ClientMessage("    mutate kick <player> [<reason>]" $ pass_if_needed);
+      Sender.ClientMessage("    mutate kickban <player> [<reason>]" $ pass_if_needed);
+    }
+    if (bAllowSemiAdminForceTravel) {
+      Sender.ClientMessage("    mutate forcetravel <url>" $ pass_if_needed);
+    }
     if (Sender.bAdmin) {
       Sender.ClientMessage("AutoTeamBalance admin-only commands:");
       Sender.ClientMessage("    mutate saveconfig");
@@ -1950,7 +1973,7 @@ function FlashMessageToPlayer(Pawn p, string Msg) {
   // p.ClientMessage(Msg, 'Event', True); // TESTING (sends only to chat, or only to chat+console?)
   // p.ClientMessage(Msg, 'CriticalEvent', True); // goes to HUD and console
   p.ClientMessage(Msg, 'CriticalEvent', False); // goes to HUD and console, no beep
-  p.PlaySound(sound'Beep', SLOT_Interface, 2.5, True, 32, 32); // we play our own sound
+  p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32); // we play our own sound
 }
 /*
 In PlayerPawn, ClientMessage actually calls:
