@@ -1,3 +1,7 @@
+. ./ut_server.config
+
+MAX_PER_COLUMN=60
+
 MAPLISTTEMP="ut-server/System/MapListTemp.ini"
 cp "$MAPLISTTEMP" "$MAPLISTTEMP".`geekdate -fine`
 
@@ -9,35 +13,22 @@ sed 's+^\(M\[[0-9]*\]=\).*+\1+' |
 trimempty |
 dog "$MAPLISTTEMP"
 
+list_maps () {
+	# memo -t "1 minute" find ./ut-server/Maps/ -name "*.unr" |
+	memo -t "1 minute" find $MAP_DIRS -name "*.unr" |
+	sed 's|/utgz/CTF-|/utgz/wHCTF-|g' |
+	sed 's|/wharthogs/CTF-|/wharthogs/wHCTF-|g' |
+	afterlast / | beforelast .unr
+}
+
 (
-
-	find ./ut-server/Maps/ -name "*.unr" | afterlast / | beforelast .unr |
-	grep -v "^CTF" |
-	while read MAP
-	do echo "$MAP 1"
-	done |
-	randomorder | head -n 128 | sort
-
-	find ./ut-server/Maps/ -name "*.unr" | afterlast / | beforelast .unr |
-	grep -i "^CTF-[A-Ma-m]" |
-	while read MAP
-	do echo "$MAP 2"
-	done |
-	randomorder | head -n 128 | sort
-
-	find ./ut-server/Maps/ -name "*.unr" | afterlast / | beforelast .unr |
-	grep -i "^CTF-[N-Z]" |
-	while read MAP
-	do echo "$MAP 3"
-	done |
-	randomorder | head -n 128 | sort
 
 	./list_proposed_maps_for_xol.sh |
 	removeduplicatelines |
 	while read MAP
 	do
 		if [ -f ./ut-server/Maps/"$MAP".unr ]
-		then echo "$MAP 4"
+		then echo "$MAP 1"
 		else
 			jshwarn "XOL map $MAP is not in Maps/"
 			# locateonly "$MAP".unr | striptermchars | filesonly |
@@ -49,27 +40,51 @@ dog "$MAPLISTTEMP"
 	done |
 	sed "s+^CTF-+XOL-+"
 
+	list_maps |
+	grep -v "^[^-]*CTF" |
+	while read MAP
+	do echo "$MAP 4"
+	done |
+	randomorder | head -n "$MAX_PER_COLUMN" | sort
+
+	list_maps |
+	grep -i "^[^-]*CTF-[A-Ma-m]" |
+	while read MAP
+	do echo "$MAP 2"
+	done |
+	randomorder | head -n "$MAX_PER_COLUMN" | sort
+
+	list_maps |
+	grep -i "^[^-]*CTF-[N-Z]" |
+	while read MAP
+	do echo "$MAP 3"
+	done |
+	randomorder | head -n "$MAX_PER_COLUMN" | sort
+
 	sh ./map_ranking.sh getranking |
 	while read MAP
 	do
 		if [ -f ./ut-server/Maps/"$MAP".unr ]
-		then echo "$MAP 4"
+		then echo "$MAP 1"
 		else
 			jshwarn "rated map $MAP is not in Maps/"
 		fi
 	done |
 	sed "s+^[Cc][Tt][Ff]-+cTf-+"
 
-	find ./ut-server/Maps/ -name "*.unr" | afterlast / | beforelast .unr |
-	grep -i "^CTF-" |
-	grep -i -v "^ctf-[A-Z]" |
+	list_maps |
+	grep -i "^[^-]*CTF-" |
+	grep -i -v "^[^-]*ctf-[A-Z]" |
 	sort |
 	while read MAP
-	do echo "$MAP 4"
+	do echo "$MAP 1"
 	done |
-	randomorder | head -n 128 | sort
+	randomorder | head -n "$MAX_PER_COLUMN" | sort
 
 ) |
+
+# removeduplicatelines |
+# randomorder | sort -k 1 |
 
 (
 
