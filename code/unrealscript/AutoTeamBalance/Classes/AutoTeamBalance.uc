@@ -1073,7 +1073,7 @@ function ForceFullTeamsRebalance() {
   local Pawn p;
   local int st;
   local int pid;
-  local Pawn pl[64]; // list of pawns, with i = a hash of PlayerID
+  local Pawn pl[64]; // hashmap of playerpawns, with i = PlayerID%64
   local int ps[64]; // their strengths
   // local int tg[64]; // their strengths, but they get zeroed during the player sorting/ranking
   // local bool moved[64]; // now i've decided to use a bool to say whether a player has been moved (because some players might actually have strength zero!)
@@ -1103,6 +1103,7 @@ function ForceFullTeamsRebalance() {
       st=GetPawnStrength(p);
       pid=p.PlayerReplicationInfo.PlayerID % 64;
       // Why does Sourceror store the players by this pid hash (which might possibly collide)?  Why not just add the players to a list?
+      // Ah well ofc the PlayerID is documented to be unique.
       // Worth noting, from GameInfo.uc:
       // // Set the player's ID.
       // NewPlayer.PlayerReplicationInfo.PlayerID = CurrentID++;
@@ -1723,8 +1724,62 @@ function String getIP(Pawn p) {
 //           the meta-info will ~ HoursPlayed
 // return index i into playerData[] and ip[]/nick[]/... arrays, but not always an exact player match!
 */
-// TODO: hash by player id, and swap into that position if neccessary
+// DONE: hash by player id, and swap into that position if neccessary
+//       this makes the initial search for each new player in the game linear, but all later searches immediate
 function int FindPlayerRecord(Pawn p) {
+  local int i;
+  local int found;
+  local string tmp_player_nick, tmp_player_ip;
+  local float tmp_avg_score, tmp_hours_played;
+
+  i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
+  if (p.getHumanName() == nick[i] && getIP(p) == ip[i]) {
+    if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): Fast lookup for "$p.getHumanName()$" @ "$getIP(p)$"."); }
+    return i;
+  }
+
+  found = FindPlayerRecordNoFastHash(p);
+
+  // If an exact record for the player was found, move it to index i for the rest of this game (by swapping it with whichever record is there)
+  if (found != -1 && p.getHumanName() == nick[found] && getIP(p) == ip[found]) {
+    if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): Optimising lookup ("$i$"<->"$found$") for "$p.getHumanName()$" @ "$getIP(p)$"."); }
+    tmp_player_nick = nick[i];
+    tmp_player_ip = ip[i];
+    tmp_avg_score = avg_score[i];
+    tmp_hours_played = hours_played[i];
+    nick[i] = nick[found];
+    ip[i] = ip[found];
+    avg_score[i] = avg_score[found];
+    hours_played[i] = hours_played[found];
+    nick[found] = tmp_player_nick;
+    ip[found] = tmp_player_ip;
+    avg_score[found] = tmp_avg_score;
+    hours_played[found] = tmp_hours_played;
+    return i;
+  }
+
+  // No exact record for the player was found; we have performed a full search of the database :|
+  if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): SLOW lookup for "$p.getHumanName()$" @ "$getIP(p)$"."); }
+
+  // return found;
+
+  // Let's create a new record for this player, to avoid doing that again.
+  i = CreateNewPlayerRecord(p); // i=random, but the new record will be optimally indexed once FindPlayerRecord() is called again.
+
+  if (found > -1) {
+    // Copy over strength from the partial-match player, but only make that strength last for 2 hours.
+    // SO: changing nick will Not reset your avg_score immediately, but eventually
+    avg_score[i] = avg_score[found]; // Copy score from partial record max
+    hours_played[i] = Min(MaxHoursWhenCopyingOldRecord,hours_played[found]); // but in case this is a different player (or maybe the same player but in a different environment), give the new record max 2 hours, so it won't take long to get an accurate idea of this new player's strength
+    // if (bLogFakenickers) { Log("Fakenicker "$p.getHumanName()$" is "$nick[i]$" ip "$ip[i]); }
+    Log("AutoTeamBalance: Fakenicker "$p.getHumanName()$" is "$nick[i]$" ip "$ip[i]);
+  }
+
+  return i; // if we didn't copy any stats over, he will have UnknownStrength, the same as if we return -1
+
+}
+
+function int FindPlayerRecordNoFastHash(Pawn p) {
   local int found;
   local int i;
   local string player_nick;
@@ -1738,20 +1793,20 @@ function int FindPlayerRecord(Pawn p) {
     // Exact match! return the index immediately
     if (player_nick == nick[i] && player_ip == ip[i]) {
       found = i;
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) Exact match for " $nick[i]$ ","$ip[i]$": ["$found$"] ("$avg_score[i]$")"); }
+      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) Exact match for " $nick[i]$ ","$ip[i]$": ["$found$"] ("$avg_score[i]$")"); }
       return found;
     } else if (player_ip == ip[i]) {
       found = i; // matching ip
-      // if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) IP match for " $p.getHumanName()$ ","$getIP(p)$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
+      // if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for " $p.getHumanName()$ ","$getIP(p)$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
     } else if (player_nick == nick[i] && found == -1) {
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) nick match for " $nick[i]$ ","$getIP(p)$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")"); }
+      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) nick match for " $nick[i]$ ","$getIP(p)$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")"); }
       found = i; // if not yet matching an ip, match the same nick on any ip
     }
     // TODO: if an uneven match, choose a match with more experience (hours_played)
     // TODO: if we have little experience (<10mins) of a player, assume default score?
   }
 
-  if (bDebugLogging && found == -1) { Log("AutoTeamBalance.FindPlayerRecord("$p$") failed to return a record."); }
+  if (bDebugLogging && found == -1) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash("$p$") failed to return a record."); }
   return found;
 }
 
@@ -1894,6 +1949,9 @@ function int UpdateStatsForPlayer(Pawn p) {
 
   i = FindPlayerRecord(p);
 
+  // For efficiency, FindPlayerRecord() is now guaranteed to return a record.
+  // The code below has moved in there.
+  /*
   if (i == -1 || ip[i] != getIP(p) || nick[i] != p.getHumanName()) {
     // This is not an exact player match, so we should not update its stats
     // since we didn't find this actual ip+nick, we create a new entry
@@ -1908,6 +1966,7 @@ function int UpdateStatsForPlayer(Pawn p) {
     }
     i = j;
   }
+  */
 
   current_score = p.PlayerReplicationInfo.Score;
   if (bScalePlayerScoreToFullTime) {
