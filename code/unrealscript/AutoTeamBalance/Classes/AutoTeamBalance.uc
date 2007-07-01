@@ -691,9 +691,10 @@ function Mutate(String str, PlayerPawn Sender) {
 
       case "FORCETRAVEL":
         if (bAllowSemiAdminForceTravel) {
-          BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]);
+          //// We may not want to publicise the password of the server we are forwarding to.  (e.g. server may have an irc reporter)
+          // if (bBroadcastStuff) { BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]); }
           for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-            if (p.IsA('PlayerPawn')) {
+            if (p.IsA('PlayerPawn')) { // yes we forward spectators too!
               PlayerPawn(p).PreClientTravel();
               PlayerPawn(p).ClientTravel(args[1], TRAVEL_Absolute, False);
             }
@@ -968,6 +969,10 @@ function CheckGameEnd() {
 
 
 function bool CheckMessage(String Msg, Actor Sender) {
+
+  if (Msg ~= "!HELP") {
+    PlayerPawn(Sender).ClientMessage("Commands are: !teams !red !blue !spec !play");
+  }
 
   if (Msg ~= "!RED") {
     ChangePlayerToTeam(PlayerPawn(Sender),0,false);
@@ -1724,8 +1729,10 @@ function String getIP(Pawn p) {
 //           the meta-info will ~ HoursPlayed
 // return index i into playerData[] and ip[]/nick[]/... arrays, but not always an exact player match!
 */
-// DONE: hash by player id, and swap into that position if neccessary
+// DONE: for more efficient searching: hash by player id, and swap into that position if neccessary
 //       this makes the initial search for each new player in the game linear, but all later searches immediate
+// side-affect: order in database is no longer by creation, but if time_last_seen field was added, you could see the last time that N people came through the server on one map
+// Will always return a valid exact record, creating a new record if neccessary.  (This is a requirement to avoid re-scanning the db repeatedly).
 function int FindPlayerRecord(Pawn p) {
   local int i;
   local int found;
@@ -1779,6 +1786,9 @@ function int FindPlayerRecord(Pawn p) {
 
 }
 
+// If an exact match for the player exists, return the index
+// If not, return the index of a record with matching nick, or (preferably) matching ip
+// If not, return -1
 function int FindPlayerRecordNoFastHash(Pawn p) {
   local int found;
   local int i;
