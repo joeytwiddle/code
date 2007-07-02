@@ -350,7 +350,9 @@ propose () { ## AKA addmap
 	then
 		# ## depends on size of pool:
 		# RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 hour"
-		RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "5 minutes"
+		if [ ! "$NICK" = utb0t ]
+		then RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "5 minutes"
+		fi
 		# RESTRICT_EXTRA=".$NICK" . restrict_repetitive_calls "1 minute"
 		IP_AND_OR_SERVER="$*"
 		if [ "$IP_AND_OR_SERVER" ]
