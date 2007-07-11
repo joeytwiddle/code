@@ -14,6 +14,9 @@
 // DONE: probably not our fault, but we were getting: ChatLogger CTF-Control.ChatLogger0 (Function Engine.PlayerPawn.ClientVoiceMessage:002C) Accessed None
 //       idd it happens when bForceArena=False
 
+// TODO: we are failing to remove the player's default weapons (translocator and enforcer), although we do try to replace them.
+//       impact-hammers are not appearing, but i don't see them being replaced either
+
 // TODO: compare against the method from /mnt/big/ut/ut_stuff/gone/unrealwiki-offline/changing-the-enforcer-ut.html
 
 // TODO: we are no longer an Arena mutator, so other arena mutators may be added.  Check this works properly.  Maybe we need to detect other Arena muts by overriding AddMutator().
@@ -43,7 +46,8 @@ var bool bLogging;
 
 defaultproperties {
 	bOnlyOnWeaponlessMaps=True // TODO: False for testing, but should be True as default
-	weaponTypes="Botpack.Translocator,Botpack.ChainSaw,Botpack.ImpactHammer,Botpack.enforcer,Botpack.doubleenforcer,Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
+	weaponTypes="Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
+	          // Botpack.Translocator,Botpack.enforcer,Botpack.ChainSaw,Botpack.ImpactHammer,Botpack.doubleenforcer,
 	bMultipleWeapons=False // TODO should be False as default
 	bAllowAllPickups=True // TODO should be (forced to?) False for instagib arena; maybe we can check damageStrength of weapon, but some weapons like whart have large damage strength but there is large health to aquire ^^
 	bLogging=True

@@ -37,7 +37,18 @@ function PreBeginPlay() {
 			mut.Destroy();
 			continue;
 		}
-		Level.Game.BaseMutator.AddMutator(mut);
+
+		// This will usually add the mutator at the end of the chain:
+		// Level.Game.BaseMutator.AddMutator(mut);
+
+		// Add at start (dirty hack!):
+		// mut.NextMutator = Level.Game.BaseMutator.NextMutator;
+		// Level.Game.BaseMutator.NextMutator = mut;
+
+		// Add after this mutator:
+		mut.NextMutator = Self.NextMutator;
+		Self.NextMutator = mut;
+
 		if (chosenMutators != "") chosenMutators = chosenMutators $ ", ";
 		// chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1);
 		chosenMutators = chosenMutators $ Mid(""$mut,InStr(""$mut,".")+1,Len(""$mut)-Instr(""$mut,".")-2);
@@ -45,6 +56,7 @@ function PreBeginPlay() {
 		// TODO CONSIDER: mut.PreBeginPlay();
 	}
 	SetTimer(51,True);
+	Super.PreBeginPlay();
 }
 
 function bool CheckForMut1(String mutName) {
@@ -164,6 +176,8 @@ function CheckPlayerList() {
 }
 
 function HandleNewPlayer(PlayerPawn p) {
+	local Mutator mut;
+	local String mutators;
 	// p.ClientMessage("Welcome to "$Level.Game$" on noggin's noobJuice.");
 	// p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $" on noggin's noobJuice.");
 	// p.ClientMessage("Current mutators are: " $ chosenMutators);
@@ -178,6 +192,20 @@ function HandleNewPlayer(PlayerPawn p) {
 	// p.ClientMessage("Welcome to "$ Left(""$Level.Game,InStr(""$Level.Game,".")) $ extra $ " on noggin's noobJuice.");
 	// p.ClientMessage( "[hwi.ath.cx] playing " $ Left(""$Level.Game,InStr(""$Level.Game,".")) $ extra );
 	// p.ClientMessage( "with: " $ chosenMutators $ "" );
+
 	p.ClientMessage( "Mutators are: " $ chosenMutators $ "" );
+
+	/*
+	// all mutators:
+	// It's just too many!
+	mutators = "";
+	for (mut=Level.Game.BaseMutator; mut!=None; mut=mut.NextMutator) {
+		if (mutators != "")
+			mutators = mutators $ ", ";
+		mutators = mutators $ mut.Name;
+	}
+	p.ClientMessage( "Mutators are: " $ mutators $ "" );
+	*/
+
 }
 

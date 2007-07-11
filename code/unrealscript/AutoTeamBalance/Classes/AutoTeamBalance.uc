@@ -1,5 +1,7 @@
 /*
 
+// TODO BUG: when i try to !play on f0x2, it tries to send me to 0.0.0.0
+
 // TODO: test if switching players fails when UT's MaxTeamSize is low enough.  Solve it if neccessary.
 
 // DONE: really we want (optional) automatic balancing, when 2 players from 1 team leave the game
@@ -259,6 +261,7 @@ defaultproperties {
   HoursBeforeRecyclingStrength=12.0
   MinHumansForStats=4     // DONE: for release, recommended 4
   bNormaliseScores=True     // Normalise scores so that the average score for every game is 50.  Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  TODO CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
+  NormalisedStrength=50
   bScalePlayerScoreToFullTime=True
   // deprecated: bDoWeightedUpdates=False  // Untested experimental stats updating method
   UnknownStrength=50      // New player records start with an initial strength of 50 (when scores are normalised, this is the average.  Otherwise it should be something around the average endgame-score-per-hour/4 of new players on your server.  Anyway it's only used briefly, if a new player stays until the end of the game then their stats will be generated, and this value forgotten.

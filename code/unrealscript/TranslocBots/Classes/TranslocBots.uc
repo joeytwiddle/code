@@ -12,6 +12,8 @@ var config bool bGoForFlag;
 var config bool bReplacePathNodes; // Will replace PathNode actors with FreshTranslocStart/Dest/FreshLiftCenter/Exits actors.
 var config bool bStopAtEndGame;
 var config bool bRenameBots;
+var config bool bTransToVisiblePoint;
+var config bool bRoamToEnemyFlag;
 
 var String PropertiesToCheck;
 
@@ -23,6 +25,8 @@ defaultproperties {
   PropertiesToCheck="From_NavigationPoint:,ownerTeam,taken,upstreamPaths,Paths,PrunedPaths,VisNoReachPaths,visitedWeight,routeCache,bestPathWeight,nextNavigationPoint,nextOrdered,prevOrdered,startPath,previousPath,cost,ExtraCost,bPlayerOnly,bEndPoint,bEndPointOnly,bSpecialCost,bOneWayPath,bNeverUseStrafing,bAutoBuilt,bTwoWay,From_Actor:,bStatic,bHidden,bNoDelete,bAnimFinished,bAnimLoop,bAnimNotify,bAnimByOwner,bDeleteMe,bAssimilated,bTicked,bLightChanged,bDynamicLight,bTimerLoop,bCanTeleport,bOwnerNoSee,bOnlyOwnerSee,bIsMover,bAlwaysRelevant,bAlwaysTick,bHighDetail,bStasis,bForceStasis,bIsPawn,bNetTemporary,bNetOptional,bReplicateInstigator,bTrailerSameRotation,bTrailerPrePivot,bClientAnim,bSimFall,Role,RemoteRole,NetTag,Owner,InitialState,Group,TimerRate,TimerCounter,LifeSpan,AnimSequence,AnimFrame,AnimRate,TweenRate,SkelAnim,LODBias,Level,XLevel,Tag,Event,Target,Instigator,AmbientSound,Inventory,Base,Region,AttachTag,StandingCount,MiscNumber,LatentByte,LatentInt,LatentFloat,LatentActor,Touching[4],Deleted,SpecialTag,Location,Rotation,OldLocation,ColLocation,Velocity,Acceleration,OddsOfAppearing,bHiddenEd,bDirectional,bSelected,bMemorized,bHighlighted,bEdLocked,bEdShouldSnap,bEdSnap,bTempEditor,bDifficulty0,bDifficulty1,bDifficulty2,bDifficulty3,bSinglePlayer,bNet,bNetSpecial,bScriptInitialized,HitActor,EDrawType,ERenderStyle,Sprite,Texture,Skin,Mesh,Brush,DrawScale,PrePivot,ScaleGlow,VisibilityRadius,VisibilityHeight,AmbientGlow,Fatness,SpriteProjForward,bUnlit,bNoSmooth,bParticles,bRandomFrame,bMeshEnviroMap,bMeshCurvy,bFilterByVolume,bShadowCast,bHurtEntry,bGameRelevant,bCarriedItem,bForcePhysicsUpdate,bIsSecretGoal,bIsKillGoal,bIsItemGoal,bCollideWhenPlacing,bTravel,bMovable,MultiSkins[8],SoundRadius,SoundVolume,SoundPitch,TransientSoundVolume,TransientSoundRadius,CollisionRadius,CollisionHeight,bCollideActors,bCollideWorld,bBlockActors,bBlockPlayers,bProjTarget,ELightType,ELightEffect,byte,bSpecialLit,bActorShadows,bCorona,bLensFlare,bBounce,bFixedRotationDir,bRotateToDesired,bInterpolating,bJustTeleported,EDodgeDir,Mass,Buoyancy,RotationRate,DesiredRotation,PhysAlpha,PhysRate,PendingTouch,AnimLast,AnimMinRate,OldAnimRate,SimAnim,NetPriority,NetUpdateFrequency,bNetInitial,bNetOwner,bNetRelevant,bNetSee,bNetHear,bNetFeel,bSimulatedPawn,bDemoRecording,bClientDemoRecording,bClientDemoNetFunc,RenderIteratorClass,RenderInterface"
   bStopAtEndGame=False // TODO: should default to True for sensible servers, but then check UpdateBotName() will be called before AutoTeamBalance updates stats.
   bRenameBots=False // interesting to watch bots change state
+  bTransToVisiblePoint=False
+  bRoamToEnemyFlag=False
 }
 
 var bool bWorking; // Whether or not we have succeeded in replacing some pathnodes
@@ -36,7 +40,7 @@ var Actor RandomFoundNavigationPoint;
 
 // function PreBeginPlay() {
 function PostBeginPlay() {
-  if (bForceBotsTransloc) SetTimer(2,True);
+  if (bForceBotsTransloc) SetTimer(1,True);
 }
 
 function MyLog(String msg) {
@@ -104,40 +108,46 @@ event Timer() {
       // }
     }
 
-    if (Rand(100)<10) {
+    if (bTransToVisiblePoint && Rand(100)<10) {
       DoTranslocateToTarget(b,getRandomVisiblePoint(b.Location),"Random");
       continue;
     }
 
-    // if (b.Destination != None) {
-    // if (Rand(100)<100) {
-      // // DoTranslocateToTarget(b,b.Destination);
-      // TranslocateToVector(b,b.Destination);
-    // } else
-    if (b.AlternatePath != None) {
-      DoTranslocateToTarget(b,b.AlternatePath,"AlternatePath");
-    } else
-    if (b.RoamTarget != None) {
-      DoTranslocateToTarget(b,b.RoamTarget,"RoamTarget");
-    } else
-    if (b.MoveTarget != None) {
-      DoTranslocateToTarget(b,b.MoveTarget,"MoveTarget");
-    } else
-    if (b.Target != None) {
-      DoTranslocateToTarget(b,b.Target,"Target");
-    } else {
-      // b.RoamTarget = FindEnemyFlag(b);
-      // b.GoToState('Roaming');
-      // if (bLogging) { MyLog(b.getHumanName()$" ** NEW FLAG TARGET (roam) "$b.RoamTarget); }
+    if (Rand(100)<50) {
+      // if (b.Destination != None) {
+      // if (Rand(100)<100) {
+        // // DoTranslocateToTarget(b,b.Destination);
+        // TranslocateToVector(b,b.Destination);
+      // } else
+      if (b.AlternatePath != None) {
+        DoTranslocateToTarget(b,b.AlternatePath,"AlternatePath");
+      } else
+      if (b.RoamTarget != None) {
+        DoTranslocateToTarget(b,b.RoamTarget,"RoamTarget");
+      } else
+      if (b.MoveTarget != None) {
+        DoTranslocateToTarget(b,b.MoveTarget,"MoveTarget");
+      } else
+      if (b.Target != None) {
+        DoTranslocateToTarget(b,b.Target,"Target");
+      } else {
+        // b.RoamTarget = FindEnemyFlag(b);
+        // b.GoToState('Roaming');
+        // if (bLogging) { MyLog(b.getHumanName()$" ** NEW FLAG TARGET (roam) "$b.RoamTarget); }
+      }
     }
 
-    if (Rand(100)<10) {
+    if (bRoamToEnemyFlag && Rand(100)<10) {
       // // b.Target = FindEnemyFlag(b);
       // b.MoveTarget = FindEnemyFlag(b);
       // b.GoToState('Attacking');
       // if (bLogging) { MyLog(b.getHumanName()$" ** NEW FLAG TARGET (move) "$b.MoveTarget); }
       b.RoamTarget = FindEnemyFlag(b);
       b.GoToState('Roaming');
+      //// This gets me a lot of: TranslocatorTarget CTF-Knot.TranslocatorTarget119 (Function Botpack.TranslocatorTarget.Pickup.Timer:013A) Accessed None
+      //// This might also be happening during DoTranslocateToTarget(getRandomNavigationPoint())
+      //// It happens a lot of StupidCowSpam or some other Cow map, when P(bTransToVisiblePoint) and/or P(bRoamToEnemyFlag) are enabled and not low.
+      // DoTranslocateToTarget(b,b.RoamTarget,"NewFlagRoamTarget");
       if (bLogging) { MyLog(b.getHumanName()$" ** NEW FLAG TARGET (roam) "$b.RoamTarget); }
     }
 
@@ -284,6 +294,8 @@ function bool DoTranslocateToTarget(Bot b, Actor Target, optional String where) 
   local float distance;
   local bool canSee;
   local Actor oldTarget;
+
+  if (Target == None) return False;
 
   if (where == "") where = "_target_";
 
