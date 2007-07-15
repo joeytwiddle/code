@@ -41,7 +41,7 @@
 
 // DONE: optionally, use in-game scores for "!teams" and balancing when a new player joins, by doing a mid-game new-stats-calculation of the current players on the server (altho not an update)
 
-// CONSIDER: (actually i think the boolean we have atm are just fine)
+// CONSIDER: (actually i think the boolean we have atm for broadcasting are just fine)
 // AutoTeamBalance logging: 0=none, 1=to logfile, 2=broadcast in-game, 3=both
 // // AutoTeamBalance logging level: 0=none, 1=hello etc, 2=details(show stats)
 // AutoTeamBalance detailed stats logging: 0=none, 1=to logfile, 2=broadcast in-game, 3=both
@@ -115,7 +115,7 @@
 
 // DONE: config options bRankBots and bBalanceBots (might be interesting to see how Visse compares to the humans ^^ )
 
-// Half-Done: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash
+// DONE: could also analyze TDM (DeathMatchPlus) scores, but without the CTF bonuses, these will be much lower (store in separate fields? e.g. avg_TDM_score TDM_hours_played)  What about a method to separate all teamgames?  OR Easier: make a separate player with nick+" "+ip+" "+gameType hash.  Mmm now that Normalising scores is the default, TDM and CTF stats can be recorded and should merge together nicely.
 
 // Current rankings method:
 // We wait until the end of the game, then we update the stats for each player.
@@ -130,7 +130,7 @@
 //        Ofc this would mean the best noobs get similar scores to the best el33ts, if they the noobs and leets never actually play at the same time, which kinda makes sense.  ^^
 
 // TODO: consider adding just a little randomnity.  If we have the same 8 players on the server for 4 games in a row, and their stats don't change enough to actually switch any of their positions in the ranking, won't Daniel's initial teambalance create identical teams for every game?  Can we find a way to avoid that?  Mix up the lower skilled players a bit, since that will have least impact?
-// looks like FRand() might returns a number between 0 and 1.
+// looks like FRand() might return a number between 0 and 1.
 
 // TODO: throughout the code and comments i have referred to strength,avg_score,ranking,rating,stats but often meant the same thing.  Daniel stuck to "Strength" so maybe I should consolidate around that name.
 // consider using a new word "judge" as the process of observing and maintaining user stats (as opposed to balancing or other features)
@@ -191,21 +191,21 @@ var config float MaxHoursWhenCopyingOldRecord;     // If you have lots of fakeni
 // var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // DONE: refactored this to HoursBeforeRecyclingStrength
 var config float HoursBeforeRecyclingStrength;
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
-var config bool bNormaliseScores;
+var config bool bNormaliseScores; // Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
 var config bool bScalePlayerScoreToFullTime; // After much consideration, I got close to implementing this.  But my final argument is: Why should a player be punished because they didn't play the game from the start?  Answer: Because there was a 50:50 chance that they made teams uneven when they joined, becoming the extra man on a team which was closely matched to the opponent.  Therefore it is quite likely that they will score well, because their team will be slaughtering the opponents.  (Their whole team will score better though.)    OK so I implemented it, although a little untidily in two places; maybe it's good to punish those players who join a game and score well, by giving them a high ranking and putting them on a weak team in future.  Also, even if their score is magnified by their short time in the server, that score will only count towards their ranking relative to that size of time.  :)
 // deprecated: var config bool bDoWeightedUpdates;
 
 // Defaults (Daniel's):
 var config int NormalisedStrength; // The average forced when normalising scores.
-var config int UnknownStrength;    // Default strength for unknown players
+var config int UnknownStrength;    // Default strength for unknown players.  It's only used briefly, if a new player stays until the end of the game then their stats will be generated, and this value forgotten.
 // var config float UnknownMinutes;   // Initial virtual time spend on server by new players
 var config int BotStrength;        // Default strength for bots
 var config int FlagStrength;       // Strength modifier for captured flags
 var config int StrengthThreshold;
 var config int WinningTeamBonus;   // Players on the winning team get these bonus points at the end of the game (they contribute to stats)
-var config bool bClanWar;          // On player login, or game start, make teams by clan tag
-var config string clanTag;         // Clan tag of red team (all other players to blue)
-var config bool bUseOnlyInGameScoresForRebalance;    // AKA bMidGameBalancingUsesInGameScoresNotPlayerRecords
+var config bool bClanWar;
+var config string clanTag;
+var config bool bUseOnlyInGameScoresForRebalance;    // AKA bMidGameBalancingUsesInGameScoresNotPlayerRecords.  Completely new players cause the most strain on the server, because the whole record DB must be searched before they are "not found", ofc this could be smaller if MaxPlayerData is smaller, or if our search was made more efficient
 var config bool bLogFakenickers;
 var config bool bBroadcastFakenickers;
 // var config bool bTesting;
@@ -232,57 +232,57 @@ var int timeGameStarted;
 var int lastBalanceTime;
 
 defaultproperties {
-  HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams"
-  bBroadcastStuff=True
-  bBroadcastCookies=False   // DONE: for release, recommended False (it's fun and useful for debugging, but not that great :P )
-  bDebugLogging=False      // DONE: for release, recommended False (some logging is ok tho!)
-  // bOnlyMoreCookies=False
-  bLetPlayersRebalance=True
-  bWarnMidGameUnbalance=False
-  bAllowSemiAdminKick=True
-  bAllowSemiAdminForceTravel=True
-  bBalanceBots=False
-  bRankBots=True
-  MinSecondsBeforeRebalance=20 // must be at least 1, to avoid a bug with multiple calls to MutatorTeamMessage (or at least that used to be the case)
-  SemiAdminPass="defaults_to_admin_pass"
+  HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams" // gets broadcast to all players at the beginning of the game
+  bBroadcastStuff=True      // whether or not to broadcast information to players
+  bBroadcastCookies=False   // when enabled, players will see changes in their strength as earning or losing cookies
+  bDebugLogging=False       // enable this only if you need to de-bug AutoTeamBalance
+  bLetPlayersRebalance=True    // allows players to fix teams mid-game by typing "teams" or "!teams"
+  bWarnMidGameUnbalance=False  // warns players if teams become uneven mid-game
+  bAllowSemiAdminKick=True     // you can prev.nt semi-admins from kicking players by switching this off
+  bAllowSemiAdminForceTravel=True  // you can prev.nt semi-admins from forcing a server move by switching this off
+  bBalanceBots=False        // whether or not to balance bots as if they were humans (recommended off, since it might create 2v0 if bots are as strong as humans)
+  bRankBots=False           // whether or not to record strengths for the bots (just for curiosity really)
+  MinSecondsBeforeRebalance=20  // prev.nts players from spamming "!teams"; should be at least 1, to avoid a bug with multiple calls to MutatorTeamMessage
+  SemiAdminPass="defaults_to_admin_pass"  // set this if you want semi-admins to use a different pass from the server admin pass
   bAutoBalanceTeamsForCTF=True
-  bAutoBalanceTeamsForTDM=True
+  bAutoBalanceTeamsForTDM=True  // you can select which game-modes will be balanced, and which will not
   bAutoBalanceTeamsForAS=True
   bAutoBalanceTeamsForOtherTeamGames=True
-  // BalanceTeamsForGameTypes="CTFGame,TeamGamePlus,JailBreak,*"
-  bUpdatePlayerStatsForCTF=True // BUG TODO:  Argh!  Won't this update scores from BT games too?!
-  bUpdatePlayerStatsForTDM=True // If you are normalising scores, then updating stats for TDM should be ok.  But if you are not normalising scores, then the different bonuses in CTF will make stats from the different gametypes incompatible.  (Basically TDMers will get lower strengths because they never get the bonus points from caps/covers/etc.)  So in this case you are recommended only to build stats for your server's most popular gametype.
+  bUpdatePlayerStatsForCTF=True  // BUG TODO:  Argh!  Won't this update scores from BT games too?!
+  bUpdatePlayerStatsForTDM=True  // If you are normalising scores, then updating stats for TDM should be ok.  But if you are not normalising scores, then the different bonuses in CTF will make stats from the different gametypes incompatible.  (Basically TDMers will get lower strengths because they never get the bonus points from caps/covers/etc.)  So in this case you are recommended only to build stats for your server's most popular gametype.
   bUpdatePlayerStatsForAS=False  // Probably best left False (unless you are running an AS-only server) because AS scores are crazy (one guy gets 100 for the last objective, even though it was a team effort)
   bUpdatePlayerStatsForOtherTeamGames=False
-  bUpdatePlayerStatsForNonTeamGames=False // TODO: could happily be true; DM scores are a good indication of a player's strength
+  bUpdatePlayerStatsForNonTeamGames=True  // DM scores are a good indication of a player's strength, even though it's not a team-game
+  bLogExtraStats=False      // records some extra player stats to the logfile at game-end, in case you are interested
+  MaxHoursWhenCopyingOldRecord=2.0    // when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this
+  HoursBeforeRecyclingStrength=12.0   // once a player has played for this long, his older scores start to fade away in favour of his more recent scores
+  MinHumansForStats=4       // It's probably not healthy to update stats for 1v1 games, scores can be a little extreme
+  bNormaliseScores=True     // Normalises scores so that the average score for every 15 minutes is 50, or whatever specified below.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they do actually meet.  Disable normalisation if your server has similar scores at the end of every game.
+  bScalePlayerScoreToFullTime=True  // Should be True to make normalisation (score comparison) work properly, when some players have joined the game late.  Players strength records will still only be updated relative to the time they spent playing.
+  NormalisedStrength=50
+  UnknownStrength=50      // New player records start with an initial strength of 50 (Should be the same as NormalisedStrength.  Otherwise it should be the average endgame-score-per-hour/4 of new players on your server.
+  BotStrength=10          // maybe 20 or 30 is better, if you disable normalisation, or increase NormaliseScore
+  FlagStrength=20         // If it's 3:0, the winning team will get an extra 60 points of strength; used for mid-game balancing
+  StrengthThreshold=100   // If bWarnMidGameUnbalance and team strength difference is greater than this and stronger team has more players, warns all players of team inbalance.  (Some threshold was needed, otherwise any player which switched to the smaller team would just make it look unbalanced the other way, causing never-ending team-unbalance warning!  In theory this might still happen with players of highly different streangths, in which case increase the threshold, or disable bWarnMidGameUnbalance)
+  WinningTeamBonus=0      // Maybe you scored low, but played good teamplay, so your team won, and you deserve higher strength for that.  Recommended values: 0/5/10
+  bClanWar=False          // For clan wars; on player login, or game start, make teams by clan tag
+  clanTag="XOL"           // Clan tag of red team (all other players are sent to blue)
+  bUseOnlyInGameScoresForRebalance=False     // Mid-game balancing usually looks up player records to see their strengths.  If you feel this causes lag on the server when a new player joins, or you only want to balance using current game scores anyway, then set this to True.
+  bLogFakenickers=False        // Write to log any players who had a previous record with a different nick or IP.
+  bBroadcastFakenickers=False  // Broadcast to game any players who had a previous record with a different nick or IP.
+  MaxPlayerData=4096
+  // bOnlyMoreCookies=False
+  // BalanceTeamsForGameTypes="CTFGame,TeamGamePlus,JailBreak,*"
   // UpdateStatsForGameTypes="CTFGame"
   // bUpdateStatsForCTFOnly=True
   // OnlyUpdateStatsIfGametypeIsA='CTFGame' // Would have been nice to offer it this way, but I didn't get it working.
   // OnlyBalanceTeamsIfGametypeIsA='TeamGamePlus' // TODO: we CAN do it this way, e.g. using String(gametype.Class) == "Botpack.Assault"
-  bLogExtraStats=False
   // PollMinutes=2.4
-  MaxHoursWhenCopyingOldRecord=2.0
   // MaxPollsBeforeRecyclingStrength=200 // I think for a returning player with a previous average of 100(!), and a new skill of around 50, and with 24 polls an hour and MaxPollsBeforeRecyclingStrength=100, after 100 more polls (4 more hours), the player's new average will look like 60.5.  That seems too quick for me, so I've gone for 200.  ^^  btw this maths is wrong :| but approx i guess
-  HoursBeforeRecyclingStrength=12.0
-  MinHumansForStats=4     // DONE: for release, recommended 4
-  bNormaliseScores=True     // Normalise scores so that the average score for every game is 50.  Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  TODO CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
-  bScalePlayerScoreToFullTime=True // This should be True to make normalisation (score comparison) work fairly, but still the player's strength record will only be changed relative to the time they spent playing
-  NormalisedStrength=50
   // deprecated: bDoWeightedUpdates=False  // Untested experimental stats updating method
-  UnknownStrength=50      // New player records start with an initial strength of 50 (when scores are normalised, this is the average.  Otherwise it should be something around the average endgame-score-per-hour/4 of new players on your server.  Anyway it's only used briefly, if a new player stays until the end of the game then their stats will be generated, and this value forgotten.
   // UnknownMinutes=10       // New player records start with a virtual 10 minutes of time played already
-  BotStrength=10          // maybe 20 or 30 is better, if we increase normal score to 100
-  FlagStrength=20         // If it's 3:0, the winning team will get punished an extra 60 points; used when new players join the game and number of players on each team are even; DONE: could also be used when doing mid-game "!teams" balance
-  StrengthThreshold=100   // If bWarnMidGameUnbalance and team strength difference is greater than this and stronger team has more players, warns all players of team inbalance.  (Some threshold was needed, otherwise any player which switched to the smaller team would just make it look unbalanced the other way, causing never-ending team-unbalance warning!  In theory this might still happen with players of highly different streangths, in which case increase the threshold.)
-  WinningTeamBonus=0      // Maybe you scored low, but played good teamplay, so your team won, and you deserve higher strength for that.  Recommended values: 0/5/10
-  bClanWar=False
-  clanTag="XOL"
   // bHidden=True // what is this?  iDeFiX says it's only needed for ServerActors
-  bUseOnlyInGameScoresForRebalance=False     // Mid-game balancing usually looks up player records to see their strengths.  If you feel this causes lag on the server, or you only want to balance using in-game scores, then set this to True.  Completely new players cause the most strain on the server, because the whole record DB must be searched before they are "not found", ofc this could be smaller if MaxPlayerData is smaller, or if our search was made more efficient
-  bLogFakenickers=False        // Write to log any players who had a previous record with a different nick, or IP
-  bBroadcastFakenickers=False  // Broadcast to game any players who had a previous record with a different nick, or IP
   // bTesting=False
-  MaxPlayerData=4096
 }
 
 
@@ -803,7 +803,7 @@ function Mutate(String str, PlayerPawn Sender) {
     Sender.ClientMessage("AutoTeamBalance semi-admin commands:");
     Sender.ClientMessage("    mutate teams" $ pass_if_needed);
     Sender.ClientMessage("    mutate forceteams" $ pass_if_needed);
-    Sender.ClientMessage("    mutate strength <part_of_nick>" $ pass_if_needed);
+    // was removed: Sender.ClientMessage("    mutate strength <part_of_nick>" $ pass_if_needed);
     Sender.ClientMessage("    mutate tored <player>" $ pass_if_needed);
     Sender.ClientMessage("    mutate toblue <player>" $ pass_if_needed);
     Sender.ClientMessage("    mutate warn <player> <message>" $ pass_if_needed);

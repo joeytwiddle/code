@@ -1,3 +1,4 @@
+
                        ==== AutoTeamBalance README ====
 
 
@@ -46,6 +47,8 @@ any player who has read this README can be a semi-admin.)
 
     mutate help
 
+        Displays a quick reminder of all these commands.
+
     mutate teams [password]
 
         Will switch one player to the other team, or will swap two players.
@@ -68,12 +71,12 @@ any player who has read this README can be a semi-admin.)
 
     mutate switch <player_name> <other_player_name> [password]
 
-        Swaps the two players (easier than using tored then toblue).
+        Swaps the two players (easier and neater than using tored then toblue).
 
     mutate warn <player_name> <warning_message> [password]
 
         Flashes the warning message on the player's screen, and shakes his/her
-        view.  You may wish to try it on yourself first.
+        view.  (You may like to try it on yourself first.)
 
     mutate kick <player_name> <reason_message> [password]
 
