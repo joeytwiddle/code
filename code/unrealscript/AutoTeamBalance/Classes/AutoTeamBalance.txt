@@ -3,27 +3,54 @@
 
 
 
-AutoTeamBalance performs team balancing with three different algorithms:
+Installation:
+
+    Drop the AutoTeamBalance.u file and the AutoTeamBalance.int file in your UT
+    server's System folder.
+
+    Then do one of the following:
+
+    * Add "ServerActors=AutoTeamBalance.AutoTeamBalance" to you
+      UnrealTournament.ini, in the Engine.GameEngine section.
+
+      OR
+
+    * Configure your server to use AutoTeamBalance as a mutator.
+
+    Don't worry, if you're an idiot and you manged to do both of the above,
+    AutoTeamBalance should detect this and recover gracefully.
+
+
+
+What does it do?
+
+AutoTeamBalance keeps a record of the skills of players on your server, and
+uses the information to balance the teams at the beginning of each game. In
+theory this should make games closer and fairer, or at the very least, better
+than just randomly picked teams.
+
+It actually performs team balancing with three different algorithms:
 
     1) At the beginning of the game, all players are balanced
-       (ForceFullTeamsRebalance) in a 1-1-1-1... pickup style.
+       [ForceFullTeamsRebalance] in a 1-1-1-1... pickup style.
 
     2) When a new player joins mid-game, he is assigned to the smaller team,
-       or if both teams are the same size, the weaker team (ModifyLogin).
+       or if both teams are the same size, the weaker team [ModifyLogin].
 
-    3) When a player or admin requests MidGameTeamBalance, either the
+    3) When a player or admin requests [MidGameTeamBalance], either the
        1-player-switch or 2-player-switch rebalance algorithm will be called,
        depending on whether one team has more players or not.  This will
        attempt to make the strengths of the two teams as close as possible.
 
 Usually one or two "!teams" rebalances should be sufficient to even the teams
-after players leave the server.  But in unbalance emergencies, semi-admins may
-also force a ForceFullTeamsRebalance mid-game, as in event 1, but in this case
-players holding flags may get switched too!
+if players have left the server mid-game.  But in unbalance emergencies,
+semi-admins may also force a ForceFullTeamsRebalance mid-game, as in event 1,
+but in this case players holding flags may get switched too!
 
-AutoTeamBalance updates player stats shortly after the end of the game.
-Players who leave before or immediately after the game ends, will not have
-their stats updated.
+AutoTeamBalance updates player stats shortly after the end of the game.  It
+records each player's average (normalised) score per 15 minutes.  Players who
+leave before or immediately after the game ends, will not have their stats
+updated.
 
 
 
@@ -178,6 +205,10 @@ Known bugs:
   in 2v1 situations.  If this happens too much, disable bWarnMidGameUnbalance,
   or increase the StrengthThreshold.
 
+  I never got around to recording a player's last_time_played, which might be
+  intersting info for admins, and also useful for recycling old player records
+  when the database becomes full.
+
 
 
 Feedback:
@@ -186,7 +217,7 @@ Feedback:
   http://www.unrealadmin.org/forums/showthread.php?t=23777
 
   If I get run over by a bus, I hope other coders can meet your requests for
-  imrpovements here.
+  improvements there.
 
 
 
@@ -204,4 +235,6 @@ Thanks to:
   And last but not least, my mum, for unleashing me upon you all.
 
 
+
+Good luck and have fun, F0X|nogginBasher aka (-:SMo:-)c00ki3Mnstr.
 
