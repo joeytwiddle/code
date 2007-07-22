@@ -153,7 +153,6 @@ one or two values to your needs.  For example, bWarnMidGameUnbalance is
 disabled by default because you might find it too annoying.  Here's an
 explanation of all the config variables:
 
-  HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams" // gets broadcast to all players at the beginning of the game
   bBroadcastStuff=True      // whether or not to broadcast information to players
   bBroadcastCookies=False   // when enabled, players will see changes in their strength as earning or losing cookies
   bDebugLogging=False       // enable this only if you need to de-bug AutoTeamBalance
