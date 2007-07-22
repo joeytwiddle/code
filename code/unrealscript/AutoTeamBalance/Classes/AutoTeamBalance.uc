@@ -1,12 +1,28 @@
 /*
 
+// TODO: allow admin to choose whether score or frags are used to build stats
+
+// TODO: record last_date_played for each player
+// This may be useful:
+function string GetDate() {
+    local string Date, Time;
+    Date = Level.Year$"-"$PrePad(Level.Month,"0",2)$"-"$PrePad(Level.Day,"0",2);
+    Time = PrePad(Level.Hour,"0",2)$":"$PrePad(Level.Minute,"0",2)$"."$PrePad(Level.Second,"0",2);
+    return Date$"-"$Time"-";
+}
+function string PrePad(coerce string s, string p, int i) {
+    while (Len(s) < i)
+        s = p$s;
+    return s;
+}
+
 // DONE: add command "mutate switch", faster than tored/toblue
 
 // DONE: when doing "mutate strengths", show also hoursPlayed, relevant stats.  make it non-passworded
 
 // FIXED: when i try to !play on f0x2, it tries to send me to 0.0.0.0
 
-// TODO: test if switching players fails when UT's MaxTeamSize is low enough.  Solve it if neccessary.
+// TODO: test if switching players fails when UT's MaxTeamSize is low enough.  Solve it if neccessary (by temporarily changing MaxTeamSize).
 
 // DONE: really we want (optional) automatic balancing, when 2 players from 1 team leave the game
 //       or maybe just flash a warning that teams need to be balanced
@@ -150,7 +166,7 @@
 
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
-var string HelloBroadcast; // CONSIDER: make this configurable, and make it say nothing if ""
+// var string HelloBroadcast; // CONSIDER: make this configurable, and make it say nothing if ""
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
 var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed at end of game as their number of cookies
@@ -232,7 +248,7 @@ var int timeGameStarted;
 var int lastBalanceTime;
 
 defaultproperties {
-  HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams" // gets broadcast to all players at the beginning of the game
+  // HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams" // gets broadcast to all players at the beginning of the game
   bBroadcastStuff=True      // whether or not to broadcast information to players
   bBroadcastCookies=False   // when enabled, players will see changes in their strength as earning or losing cookies
   bDebugLogging=False       // enable this only if you need to de-bug AutoTeamBalance
