@@ -1,5 +1,14 @@
 /*
 
+// DONE: switching team with !red when u have the flag, u keep the flag :E   Try doing the RestartPlayer before they switch teams!
+
+// DONE: mutate kick is not working!  try using Sender.ConsoleCommand("admin kick "$getHumanName());  mmm if sender isn't full admin, maybe we can't do it -- could still be useful for admin tho, because whole nick is not needed, and may contain weird chars
+
+// TODO: I'm beginning to think that the strength building is still not very accurate.
+//       For example, one pug Golyat scored 200 points on defence, from 40 frags (12 flagkills).
+//       After normalisation, his high score would push down the scores of all the other players on the server, reducing their strengths in the database, even if some of them also played very well.
+//       Maybe it would be better just to order the players on the server by score, and then award a strength between 10 and 100, so nobody can score too highly from one game.
+
 // TODO: allow admin to choose whether score or frags are used to build stats
 
 // TODO: record last_date_played for each player
@@ -20,7 +29,7 @@ function string PrePad(coerce string s, string p, int i) {
 
 // DONE: when doing "mutate strengths", show also hoursPlayed, relevant stats.  make it non-passworded
 
-// FIXED: when i try to !play on f0x2, it tries to send me to 0.0.0.0
+// FIXED: when i try to !play on f0x2, it tried to send me to 0.0.0.0
 
 // TODO: test if switching players fails when UT's MaxTeamSize is low enough.  Solve it if neccessary (by temporarily changing MaxTeamSize).
 
@@ -182,7 +191,7 @@ var config bool bAllowSemiAdminForceTravel;
 var config bool bBalanceBots; // Include bots in the rebalancing (CONSIDER: what happens if bBalanceBots is set but bRankBots is not?)
 var config bool bRankBots; // Record stats for bots as if they were players.
 var config int MinSecondsBeforeRebalance;
-var config String SemiAdminPass;   // Needed for mid-game rebalancing with: "mutate teams <pass>"
+var config String SemiAdminPass;
 
 var config bool bAutoBalanceTeamsForCTF;
 var config bool bAutoBalanceTeamsForTDM;
@@ -629,6 +638,8 @@ function Mutate(String str, PlayerPawn Sender) {
 
   local Pawn p;
 
+  local bool bTempBool;
+
   if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
   if (Sender.bAdmin)
@@ -724,8 +735,12 @@ function Mutate(String str, PlayerPawn Sender) {
         if (bAllowSemiAdminKick) {
           msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
           FlashMessageToPlayer(FindPlayerNamed(args[1]),msg);
+          // If the player is a semi-admin, but not admin, we must make him an admin temporarily, to run this command:
+          bTempBool = Sender.bAdmin;
+          Sender.bAdmin = True;
           // Sender.Kick(args[1]);
           Sender.Kick(FindPlayerNamed(args[1]).getHumanName());
+          Sender.bAdmin = bTempBool;
         }
       break;
 
@@ -733,8 +748,12 @@ function Mutate(String str, PlayerPawn Sender) {
         if (bAllowSemiAdminKick) {
           msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
           FlashMessageToPlayer(FindPlayerNamed(args[1]),msg);
+          // If the player is a semi-admin, but not admin, we must make him an admin temporarily, to run this command:
+          bTempBool = Sender.bAdmin;
+          Sender.bAdmin = True;
           // Sender.KickBan(args[1]);
           Sender.KickBan(FindPlayerNamed(args[1]).getHumanName());
+          Sender.bAdmin = bTempBool;
         }
       break;
 
@@ -814,7 +833,9 @@ function Mutate(String str, PlayerPawn Sender) {
       pass_if_needed = "";
     else
       pass_if_needed = " [password]";
-    Sender.ClientMessage("AutoTeamBalance any-user commands:");
+    Sender.ClientMessage("AutoTeamBalance say commands:");
+    Sender.ClientMessage("    !red !blue !spec !play");
+    Sender.ClientMessage("AutoTeamBalance console commands:");
     Sender.ClientMessage("    mutate strengths");
     Sender.ClientMessage("AutoTeamBalance semi-admin commands:");
     Sender.ClientMessage("    mutate teams" $ pass_if_needed);
@@ -822,6 +843,7 @@ function Mutate(String str, PlayerPawn Sender) {
     // was removed: Sender.ClientMessage("    mutate strength <part_of_nick>" $ pass_if_needed);
     Sender.ClientMessage("    mutate tored <player>" $ pass_if_needed);
     Sender.ClientMessage("    mutate toblue <player>" $ pass_if_needed);
+    Sender.ClientMessage("    mutate switch <player> <player>" $ pass_if_needed);
     Sender.ClientMessage("    mutate warn <player> <message>" $ pass_if_needed);
     if (bAllowSemiAdminKick) {
       Sender.ClientMessage("    mutate kick <player> [<reason>]" $ pass_if_needed);
@@ -1472,8 +1494,9 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bShake) {
     Bot(p).ConsoleCommand("taunt wave");
   }
   if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum); }
-  Level.Game.ChangeTeam(p,teamnum); // CONSIDER: there is also PlayerPawn.ClientChangeTeam(int)
-  Level.Game.RestartPlayer(p); // i thought by doing this even before the game had started, it might fix problems with the player's team getting confused by the server; i don't think it worked, but it didn't do any harm either
+  // Did not force player to drop flag: Level.Game.RestartPlayer(p); // i thought by doing this even before the game had started, it might fix problems with the player's team getting confused by the server; i don't think it worked, but it didn't do any harm either
+  Level.Game.ChangeTeam(p,teamnum); // CONSIDER: there is also PlayerPawn.ClientChangeTeam(int), but that's only good for players
+  p.Died(None, '', p.Location); // Kills the player, forcing them to drop flag if they have it
   if (bShake) {
     // Level.Game.RestartPlayer(p);
     // FlashMessageToPlayer(p,"You have been moved to the "$getTeamName(teamnum)$" team.");
