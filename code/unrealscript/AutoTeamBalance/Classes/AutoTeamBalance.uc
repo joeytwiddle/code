@@ -720,6 +720,16 @@ function Mutate(String str, PlayerPawn Sender) {
         Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
       break;
 
+      case "TOGREEN":
+        ChangePlayerToTeam(FindPlayerNamed(args[1]),2,true);
+        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+      break;
+
+      case "TOGOLD":
+        ChangePlayerToTeam(FindPlayerNamed(args[1]),3,true);
+        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+      break;
+
       case "SWITCH":
         SwitchTwoPlayers(Sender,args[1],args[2]);
       break;
@@ -1075,6 +1085,14 @@ function bool CheckMessage(String Msg, Actor Sender) {
 
   if (Msg ~= "!BLUE") {
     ChangePlayerToTeam(PlayerPawn(Sender),1,false);
+  }
+
+  if (Msg ~= "!GREEN") {
+    ChangePlayerToTeam(PlayerPawn(Sender),2,false);
+  }
+
+  if (Msg ~= "!GOLD" || Msg ~= "!YELLOW") {
+    ChangePlayerToTeam(PlayerPawn(Sender),3,false);
   }
 
   if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
