@@ -34,7 +34,7 @@ case "$COM" in
 	;;
 
 	restart)
-		verbosely memo -t "1 hour" sh ./rebuild_maplisttemp.sh | wc -l
+		memo -t "1 hour" verbosely sh ./rebuild_maplisttemp.sh | wc -l
 		rm -f ./ut-server/Logs/Unreal.ngLog.*.log ./ut-server/Logs/Unreal.ngLog.*.tmp
 		## This is now done with an option: :)
 		# rm ./ut-server/System/MapVoteHistory1.ini ## Lets us choose any map, even most recently played
