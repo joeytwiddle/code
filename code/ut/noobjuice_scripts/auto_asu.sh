@@ -181,11 +181,17 @@ apply_a_random_configuration () {
 	) | tee generated_config.last
 	echo
 
-	echo "Installing init script..."
-	cp ./ut-server/ucc.init ./ut-server/ucc.init.`geekdate`
-	install_init_script >/dev/null
-	# cursecyan ; install_init_script ; cursenorm
-	diff ./ut-server/ucc.init ./ut-server/ucc.init.`geekdate` | diffhighlight
+	# echo "Installing init script..."
+	# cp ./ut-server/ucc.init ./ut-server/ucc.init.`geekdate`
+	# install_init_script >/dev/null
+	# # cursecyan ; install_init_script ; cursenorm
+	# diff ./ut-server/ucc.init ./ut-server/ucc.init.`geekdate` | diffhighlight
+
+	jshinfo "export MYMAP=\"CTF-$START_MAP\""
+	jshinfo "export MYMODS=`echo "$MUTATORS" | tr '\n' ',' | sed 's+,*$++'`"
+	export MYMAP="CTF-$START_MAP"
+	export MYMODS=`echo "$MUTATORS" | tr '\n' ',' | sed 's+,*$++'`
+
 	echo "Done."
 
 }
@@ -245,7 +251,8 @@ try_random_configs_until_one_works () {
 		## Restart:
 		## This continue catches the case when ucc-bin does not start at all (because init script is broken, often due to funny unescaped map name).
 		# /usr/local/install/games/ut_server/ut-server/ucc.init restart || continue
-		/home/oddjob2/ut_server/ut-server/ucc.init restart || continue
+		# /home/oddjob2/ut_server/ut-server/ucc.init restart || continue
+		/home/oddjob2/ut_server/ut-server/ucc.init.mine restart || continue
 		## Soft doesn't bring any advantages I can see, and doesn't start infinity :(
 		# /usr/local/install/games/ut_server/ut-server/ucc.init soft-restart || continue
 		## What was it before soft-restart?  I'm not sure that starts infinity :(
