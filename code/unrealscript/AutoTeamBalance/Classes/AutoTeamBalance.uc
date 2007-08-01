@@ -1,15 +1,30 @@
 /*
 
+// DUNNO   : i get this with bots when bRankBots=True, and i think i may get it with players too
+//           when a new player joins the server for the first time, their strength mid-game appears to be 0, when it should be UnknownStrength.  the record says it gets created with strength UnknownStrength, but checking later it's 0
+//           mmmm now i can't reproduce it; maybe it was copying another bot's record which had score or time 0
+
+// CONSIDER TODO: (thinking of nzp where X=me) if X is an average skilled player who plays on the server a lot against weaker players, then X's ranking will be high
+//  maybe occasionally l33t players will join the server, but X will have a similar ranking to them - inaccurate!  :|
+//  if AutoTeamBalance was really clever, it would remember that there are l33t players out there who are stronger than X, and it would keep his (and all the noobs') ranking(s) lower, or the l33t players' ranking higher, to compensate
+//  well i guess at least X's ranking will go down a *little* bit when those l33t players do play, and the l33t players will be top, but the fact that X plays a lot more on the server than those l33t players will cause this information to be hidden
+//  maybe some sort of ladder system should be employed
+//  I wonder if I can work out the maths for this...
+
+// CONSIDER: i set UT's bBotsBalanceTeams=False, to see if ATB would balance the bots when they join, but it doesn't.  ModifyLogin() does not appear to get called for bots.
+
 // DONE: switching team with !red when u have the flag, u keep the flag :E   Try doing the RestartPlayer before they switch teams!
 
 // DONE: mutate kick is not working!  try using Sender.ConsoleCommand("admin kick "$getHumanName());  mmm if sender isn't full admin, maybe we can't do it -- could still be useful for admin tho, because whole nick is not needed, and may contain weird chars
 
-// TODO: I'm beginning to think that the strength building is still not very accurate.
+// DONE: Added ScoringMethod 3 which I hope will work nicely.
+//       I'm beginning to think that the strength building is still not very accurate.
 //       For example, one pug Golyat scored 200 points on defence, from 40 frags (12 flagkills).
 //       After normalisation, his high score would push down the scores of all the other players on the server, reducing their strengths in the database, even if some of them also played very well.
 //       Maybe it would be better just to order the players on the server by score, and then award a strength between 10 and 100, so nobody can score too highly from one game.
+// Also, after one 2v2 game of joust, all 4 players gained cookies.  I guess we all had low scores before, but since we were 4 noobs, now we all moved up closer to the average.  Is that desirable?
 
-// TODO: allow admin to choose whether score or frags are used to build stats
+// DONE: allow admin to choose whether score or frags are used to build stats
 
 // TODO: record last_date_played for each player
 // This may be useful:
@@ -212,10 +227,11 @@ var config bool bUpdatePlayerStatsForNonTeamGames;
 
 var config bool bLogExtraStats;       // in case you want to analyze the end-game stats yourself, instead of leaving that to AutoTeamBalance
 // var config float PollMinutes;    // e.g. every 2.4 minutes, update the player stats from the current game
-var config float MaxHoursWhenCopyingOldRecord;     // If you have lots of fakenicklamers on your server, set this high.  If not, set it low, so that players who unluckily share the same IP or nick, don't get their stats confused.
+var config float MaxHoursWhenCopyingOldRecord;     // If you have lots of fakenicklamers or ip-changers on your server, set this high.  If not, set it low, so that players who unluckily share the same IP or nick, don't get their stats confused.
 // var config int MaxPollsBeforeRecyclingStrength;    // after this many polls, player's older scores are slowly phased out.  This feature is disabled by setting MaxPollsBeforeRecyclingStrength=0 // DONE: refactored this to HoursBeforeRecyclingStrength
 var config float HoursBeforeRecyclingStrength;
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
+var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking
 var config bool bNormaliseScores; // Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
 var config bool bScalePlayerScoreToFullTime; // After much consideration, I got close to implementing this.  But my final argument is: Why should a player be punished because they didn't play the game from the start?  Answer: Because there was a 50:50 chance that they made teams uneven when they joined, becoming the extra man on a team which was closely matched to the opponent.  Therefore it is quite likely that they will score well, because their team will be slaughtering the opponents.  (Their whole team will score better though.)    OK so I implemented it, although a little untidily in two places; maybe it's good to punish those players who join a game and score well, by giving them a high ranking and putting them on a weak team in future.  Also, even if their score is magnified by their short time in the server, that score will only count towards their ranking relative to that size of time.  :)
 // deprecated: var config bool bDoWeightedUpdates;
@@ -282,6 +298,7 @@ defaultproperties {
   MaxHoursWhenCopyingOldRecord=2.0    // when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this
   HoursBeforeRecyclingStrength=12.0   // once a player has played for this long, his older scores start to fade away in favour of his more recent scores
   MinHumansForStats=4       // It's probably not healthy to update stats for 1v1 games, scores can be a little extreme
+  ScoringMethod=3
   bNormaliseScores=True     // Normalises scores so that the average score for every 15 minutes is 50, or whatever specified below.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they do actually meet.  Disable normalisation if your server has similar scores at the end of every game.
   bScalePlayerScoreToFullTime=True  // Should be True to make normalisation (score comparison) work properly, when some players have joined the game late.  Players strength records will still only be updated relative to the time they spent playing.
   NormalisedStrength=50
@@ -844,7 +861,7 @@ function Mutate(String str, PlayerPawn Sender) {
     else
       pass_if_needed = " [password]";
     Sender.ClientMessage("AutoTeamBalance say commands:");
-    Sender.ClientMessage("    !red !blue !spec !play");
+    Sender.ClientMessage("    teams !teams !red !blue !spec !play");
     Sender.ClientMessage("AutoTeamBalance console commands:");
     Sender.ClientMessage("    mutate strengths");
     Sender.ClientMessage("AutoTeamBalance semi-admin commands:");
@@ -970,10 +987,10 @@ function CheckGameStart() {
 
   // BUG: This can occasionally get called twice within one second (when the Timer was set to 1 second).
   // BUG: Also gets called at 0.
-  if (bBroadcastStuff && (n-e)<n && ((n-e)/10*10)==(n-e) && (n-e)>0) {
-    // BroadcastMessage((n-e)$" seconds until game starts...");
-    BroadcastMessage((n-e)$" seconds until game starts...",True,'CriticalEvent');
-  }
+  // if (bBroadcastStuff && (n-e)<n && ((n-e)/10*10)==(n-e) && (n-e)>0) {
+    // // BroadcastMessage((n-e)$" seconds until game starts...");
+    // BroadcastMessage((n-e)$" seconds until game starts...",True,'CriticalEvent');
+  // }
 
   // If we want to balance bots according to their stats at the start of the game, then we must wait for them to join (they seem to start joining at c=0).
   // if (bBalanceBots) { c += 8; } // wait an extra 8 seconds for bots.  BUG: doesn't work, since e stops increasing; we would have to compare the only changing value Level.TimeSeconds
@@ -1301,7 +1318,7 @@ function ForceFullTeamsRebalance() {
 
   } else {
 
-    // Rebuild teams from strength order 1-2-2-1-1-2-2-1 ...
+    // Rebuild teams by strength, assigning to teams: 0-1-1-0-0-1-1-0...
     // (On the way we also calculate total team strengths)
     teamstr[0]=0;
     teamstr[1]=0;
@@ -1942,14 +1959,14 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
     // Exact match! return the index immediately
     if (player_nick == nick[i] && player_ip == ip[i]) {
       found = i;
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) Exact match for " $nick[i]$ ","$ip[i]$": ["$found$"] ("$avg_score[i]$")"); }
+      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$")"); }
       return found;
     } else if (player_ip == ip[i]) {
       found = i; // matching ip
-      // if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for " $p.getHumanName()$ ","$getIP(p)$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
+      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
     } else if (player_nick == nick[i] && found == -1) {
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) nick match for " $nick[i]$ ","$getIP(p)$": ["$found$"] "$ip[i]$" ("$avg_score[i]$")"); }
       found = i; // if not yet matching an ip, match the same nick on any ip
+      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$")"); }
     }
     // TODO: if an uneven match, choose a match with more experience (hours_played)
     // TODO: if we have little experience (<10mins) of a player, assume default score?
@@ -2030,7 +2047,7 @@ function UpdateStatsAtEndOfGame() {
     // if (p.bIsPlayer && !p.IsA('Spectator') && AllowedToRank(p) && p.IsA('PlayerPawn')) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) {
       i = UpdateStatsForPlayer(p);
-      if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$p.PlayerReplicationInfo.Score$" ? "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
+      if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$p.PlayerReplicationInfo.Score$" "$p.KillCount$" "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
     }
   }
 
@@ -2086,6 +2103,60 @@ function GiveBonusToWinningTeamPlayers() {
 
 }
 
+function float ScaleToFullTime(Pawn p) {
+  // If a player joined the server for the last 15 seconds, and luckily got a double kill, this may produce a massive score, but I'm not going to worry about it, because that massive score won't count much to their ranking (it will only count towards 15 seconds of their ranking).  Anyway we actually refuse to update a player's stats if he played for less than 1 minute.  But his magnified score still might affect the normalised or ranked scores of other players.  Bah.
+  if (bScalePlayerScoreToFullTime) {
+    return (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
+  } else {
+    return 1.0;
+  }
+}
+
+// For ScoringMethod 3.  Returns a value between 0 and 100, depending on the player's position in the overall scoreboard.
+function float GetRankingPoints(Pawn other) {
+  local Pawn p;
+  local int playersAbove;
+  local int playersBelow;
+  playersAbove = 0;
+  playersBelow = 0;
+  // Find the position of this player in the overall scoreboard:
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (!p.IsA('Spectator') && AllowedToRank(p)) {
+      if ( (ScaleToFullTime(p)*p.PlayerReplicationInfo.Score) >= (ScaleToFullTime(other)*other.PlayerReplicationInfo.Score) ) {
+        playersAbove++;
+      } else {
+        playersBelow++;
+      }
+      // in the case of a tie between two players, we could do playersAbove+=0.5 and playersBelow+-0.5, but initially I rewarded them both by only increasing playersBelow
+      // mmm only problem: if two noobs get score 0, they both get points awarded!
+      // ok i switched the > to >= so if you tie with another player, you lose out!
+    }
+  }
+  // The player gains between 0 and 100 points, depending on their position in the scoreboard:
+  return 100 * playersBelow / (playersBelow + playersAbove);
+}
+
+// Returns the score the player will be awarded for this game, depending on the scoring method, and scaled up to full game time.  Note that score normalisation is done elsewhere.
+function float GetScoreForPlayer(Pawn p) {
+  local float award_score;
+  if (ScoringMethod == 0) {
+    award_score = p.PlayerReplicationInfo.Score * ScaleToFullTime(p);
+  } else if (ScoringMethod == 1) {
+    award_score = p.KillCount * ScaleToFullTime(p);
+  } else if (ScoringMethod == 2) {
+    award_score = ScaleToFullTime(p) * (p.KillCount + p.PlayerReplicationInfo.Score) / 2.0;
+  } else if (ScoringMethod == 3 || ScoringMethod > 3) { // > just in case admin sets ScoringMethod to currently non-existent method 4
+    award_score = GetRankingPoints(p);
+  }
+  // if (bScalePlayerScoreToFullTime) { // DONE: This should not be done for method 3, but it should be done *inside* method 3!
+    // if (bDebugLogging) { Log("AutoTeamBalance.GetScoreForPlayer("$p.getHumanName()$") Time-scaling: award_score = "$award_score$" * "$(Level.TimeSeconds-timeGameStarted)$" / "$(Level.TimeSeconds-p.PlayerReplicationInfo.StartTime)$""); }
+    // award_score = award_score * (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
+    // NOTE TODO small BUG: currently players who joined from the start seem to have spent 6 seconds longer in the game than the length of the game, and bots 4/3/2 seconds fewer; my NetWait is 5
+    // if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p.getHumanName()$") Scaled by time from "$p.PlayerReplicationInfo.Score$" to "$current_score$""); }
+  // }
+  return award_score;
+}
+
 function int UpdateStatsForPlayer(Pawn p) {
   local int i,j;
   local float current_score;
@@ -2097,33 +2168,11 @@ function int UpdateStatsForPlayer(Pawn p) {
   local float weightScore;
   local float previous_average;
 
+  // For efficiency, FindPlayerRecord() is now guaranteed to return a record.
   i = FindPlayerRecord(p);
 
-  // For efficiency, FindPlayerRecord() is now guaranteed to return a record.
-  // The code below has moved in there.
-  /*
-  if (i == -1 || ip[i] != getIP(p) || nick[i] != p.getHumanName()) {
-    // This is not an exact player match, so we should not update its stats
-    // since we didn't find this actual ip+nick, we create a new entry
-    j = CreateNewPlayerRecord(p); // OLD BUG FIXED: is it inefficient to repeatedly create a PlayerPawn from the same Pawn?
-    if (i > -1) {
-      // Copy over strength from the partial-match player, but only make that strength last for 2 hours.
-      // SO: changing nick will Not reset your avg_score immediately, but eventually
-      avg_score[j] = avg_score[i]; // Copy score from partial record max
-      hours_played[j] = Min(MaxHoursWhenCopyingOldRecord,hours_played[i]); // but in case this is a different player (or maybe the same player but in a different environment), give the new record max 2 hours, so it won't take long to get an accurate idea of this new player's strength
-      // if (bLogFakenickers) { Log("Fakenicker "$p.getHumanName()$" is "$nick[i]$" ip "$ip[i]); }
-      Log("Fakenicker "$p.getHumanName()$" is "$nick[i]$" ip "$ip[i]);
-    }
-    i = j;
-  }
-  */
-
-  current_score = p.PlayerReplicationInfo.Score;
-  if (bScalePlayerScoreToFullTime) {
-    current_score = current_score * (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
-    // if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p.getHumanName()$") Scaled by time from "$p.PlayerReplicationInfo.Score$" to "$current_score$""); }
-  }
-  if (bNormaliseScores) {
+  current_score = GetScoreForPlayer(p);
+  if (bNormaliseScores && (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2)) {
     current_score = NormaliseScore(current_score);
   }
   // Ideally we would like to check how long this player has been on the server DONE
@@ -2132,7 +2181,7 @@ function int UpdateStatsForPlayer(Pawn p) {
   if (timeInGame>gameDuration)
     timeInGame = gameDuration;
   // if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p.getHumanName()$") timeGameStarted="$timeGameStarted$" Game.StartTime="$Level.Game.StartTime$" Level.TimeSeconds="$Level.TimeSeconds$" Player.StartTime="$p.PlayerReplicationInfo.StartTime$" timeInGame="$timeInGame$" gameDuration="$gameDuration); }
-  // Well if this player was only in the server for 5 minutes, we could multiply his score up so that he gets a score proportional to the other players.  (Ofc if he was lucky or unlucky, that luck will be magnified.)
+  // DONE: Well if this player was only in the server for 5 minutes, we could multiply his score up so that he gets a score proportional to the other players.  (Ofc if he was lucky or unlucky, that luck will be magnified.)
   if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
     if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60s."); }
     return i;
@@ -2179,7 +2228,7 @@ function float NormaliseScore(float score) {
   local int playerCount;
   local float averageGameScore;
 
-  // TODO CONSIDER: to make normalisation fair, should a player who joined late's score be scaled up by his time to the full game before normalisation? otherwise he may increase the scores of say a noob who fought a bot for 30 minutes.
+  // DONE: to make normalisation fair, should a player who joined late's score be scaled up by his time to the full game before normalisation? otherwise he may increase the scores of say a noob who fought a bot for 30 minutes.
   // If a player has joined the game at the very end.
   // He will reduce the overall average score, hence increasing the normalised scores of other players, and making his bad.
   // If a player played 1/2 the game, ...
@@ -2189,12 +2238,8 @@ function float NormaliseScore(float score) {
   // We ignore bots scores and count, so it is irrelevant whether the bots have scored nothing, or have pwned the humans, or have performed somewhere inbetween.  Only player's relative scores are taken into account.
   averageGameScore = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (!p.IsA('Spectator') && AllowedToRank(p)) { // lol
-      if (bScalePlayerScoreToFullTime) {
-        averageGameScore += p.PlayerReplicationInfo.Score * (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
-      } else {
-        averageGameScore += p.PlayerReplicationInfo.Score;
-      }
+    if (!p.IsA('Spectator') && AllowedToRank(p)) {
+      averageGameScore += GetScoreForPlayer(p);
       playerCount++;
     }
   }
