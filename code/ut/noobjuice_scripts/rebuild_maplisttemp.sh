@@ -1,6 +1,9 @@
+[ "$1" ] && SEARCH="$1" && shift
+
 . ./ut_server.config
 
-MAX_PER_COLUMN=60
+# MAX_PER_COLUMN=60
+MAX_PER_COLUMN=$((1024/4)) ## MapVoteLA's max is 1024 maps
 
 MAPLISTTEMP="ut-server/System/MapListTemp.ini"
 cp "$MAPLISTTEMP" "$MAPLISTTEMP".`geekdate -fine`
@@ -21,25 +24,53 @@ list_maps () {
 	afterlast / | beforelast .unr
 }
 
+seek_map () {
+	MAP="$1"
+	# locateonly "$MAP".unr | striptermchars | filesonly |
+	locate /"$MAP".unr | grep "\.unr$" | striptermchars | filesonly |
+	while read TARGET
+	do jshinfo "Recommend: ln -s \"$TARGET\" \"$PWD/ut-server/Maps/$MAP.unr\""
+	done
+}
+
 (
 
-	./list_proposed_maps_for_xol.sh |
-	removeduplicatelines |
-	while read MAP
-	do
-		if [ -f ./ut-server/Maps/"$MAP".unr ]
-		then echo "$MAP 1"
-		else
-			jshwarn "XOL map $MAP is not in Maps/"
-			# locateonly "$MAP".unr | striptermchars | filesonly |
-			locate /"$MAP".unr | grep "\.unr$" | striptermchars | filesonly |
-			while read TARGET
-			do jshinfo "Recommend: ln -s \"$TARGET\" \"$PWD/ut-server/Maps/$MAP.unr\""
-			done
-		fi
-	done |
-	sed "s+^CTF-+XOL-+"
+	## Searched maps column 1
+	if [ "$SEARCH" ]
+	then
+		SEARCHREGEXP="`toregexp "$SEARCH"`"
+		## From renamefiles; glob -> regexp: SEARCHREGEXP=`echo "$SEARCH" | sed 's+\.+\\\\.+g ; s+\\?+\\\\(.\\\\)+g ; s+\*+\\\\(.*\\\\)+g'`
+		list_maps |
+		grep -i "$SEARCHREGEXP" |
+		while read MAP
+		do
+			if [ -f ./ut-server/Maps/"$MAP".unr ]
+			then echo "$MAP 1"
+			else
+				jshwarn "Searched map $MAP is not in Maps/"
+				# seek_map "$MAP"
+			fi
+		done |
+		randomorder | head -n "$((MAX_PER_COLUMN/3))" | sort
+	fi
 
+	#### Disabled now that rork and I have done the review.
+	# ## XOL maps column 1
+	# ./list_proposed_maps_for_xol.sh |
+	# removeduplicatelines |
+	# while read MAP
+	# do
+		# if [ -f ./ut-server/Maps/"$MAP".unr ]
+		# then echo "$MAP 1"
+		# else
+			# jshwarn "XOL map $MAP is not in Maps/"
+			# seek_map "$MAP"
+		# fi
+	# done |
+	# sed "s+^CTF-+XOL-+" |
+	# sort # randomorder | head -n "$((MAX_PER_COLUMN/4))" | sort
+
+	## Non-CTF maps column 4
 	list_maps |
 	grep -v "^[^-]*CTF" |
 	while read MAP
@@ -47,6 +78,7 @@ list_maps () {
 	done |
 	randomorder | head -n "$MAX_PER_COLUMN" | sort
 
+	## CTF maps A-M column 2
 	list_maps |
 	grep -i "^[^-]*CTF-[A-Ma-m]" |
 	while read MAP
@@ -54,6 +86,7 @@ list_maps () {
 	done |
 	randomorder | head -n "$MAX_PER_COLUMN" | sort
 
+	## CTF maps N-Z column 3
 	list_maps |
 	grep -i "^[^-]*CTF-[N-Z]" |
 	while read MAP
@@ -61,6 +94,7 @@ list_maps () {
 	done |
 	randomorder | head -n "$MAX_PER_COLUMN" | sort
 
+	## Ranked (cTf?) maps column 1
 	sh ./map_ranking.sh getranking |
 	while read MAP
 	do
@@ -68,10 +102,13 @@ list_maps () {
 		then echo "$MAP 1"
 		else
 			jshwarn "rated map $MAP is not in Maps/"
+			# seek_map "$MAP"
 		fi
 	done |
-	sed "s+^[Cc][Tt][Ff]-+cTf-+"
+	sed "s+^[Cc][Tt][Ff]-+cTf-+" |
+	randomorder | head -n "$((MAX_PER_COLUMN/3))" | sort
 
+	## Silly named CTF maps (name starts non-alpha) column 1
 	list_maps |
 	grep -i "^[^-]*CTF-" |
 	grep -i -v "^[^-]*ctf-[A-Z]" |
@@ -79,7 +116,7 @@ list_maps () {
 	while read MAP
 	do echo "$MAP 1"
 	done |
-	randomorder | head -n "$MAX_PER_COLUMN" | sort
+	randomorder | head -n "$((MAX_PER_COLUMN/3))" | sort
 
 ) |
 
