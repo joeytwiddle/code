@@ -1,34 +1,36 @@
-list () {
-cat << !
-zbe womanizes
-noggin is sexy
-_tAiger^ is handsome
-Yutairo is a love machine
-Merlin is old
-Nownex hugs trees
-Xena is cute
-iDeFiX is on fire!
-JT is a bloody wanker
-Palmaero rocks!
-!
-# Palmaero is on fire
-# iDeFiX breaks things
-# Batsu swings both ways
-# Palmaero is hot
-# Xena is the cutest
-# Palmaero is a rock-star
-# zbe is ugly
-# zbe works out
-# zbe lifts weights
-# Yutairo is hot
-# NoxiC is a noob
-}
-
-REPLACEMENT=`
-list | randomorder | head -n 1
-`
+# list () {
+# cat << !
+# zbe womanizes
+# noggin is sexy
+# _tAiger^ is handsome
+# Yutairo is a love machine
+# Merlin is old
+# Nownex hugs trees
+# Xena is cute
+# iDeFiX is on fire!
+# JT is a bloody wanker
+# Palmaero rocks!
+# !
+# # Palmaero is on fire
+# # iDeFiX breaks things
+# # Batsu swings both ways
+# # Palmaero is hot
+# # Xena is the cutest
+# # Palmaero is a rock-star
+# # zbe is ugly
+# # zbe works out
+# # zbe lifts weights
+# # Yutairo is hot
+# # NoxiC is a noob
+# }
+# 
+# REPLACEMENT=`
+# list | randomorder | head -n 1
+# `
 
 # ./utp "$@" 212.112.241.32:8177 | sed "s+iDeFiX+iDeFiX - $REPLACEMENT+"
-./utp "$@" 213.131.248.248
 
 # ./utp "$@" 85.131.187.70
+
+./utp "$@" 213.131.248.248
+
