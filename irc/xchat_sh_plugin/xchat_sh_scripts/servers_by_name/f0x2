@@ -28,6 +28,7 @@ REPLACEMENT=`
 list | randomorder | head -n 1
 `
 
-./utp "$@" 212.112.241.32:8177 | sed "s+iDeFiX+iDeFiX - $REPLACEMENT+"
+# ./utp "$@" 212.112.241.32:8177 | sed "s+iDeFiX+iDeFiX - $REPLACEMENT+"
+./utp "$@" 213.131.248.248
 
 # ./utp "$@" 85.131.187.70
