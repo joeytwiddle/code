@@ -1,0 +1,10 @@
+list () {
+cat << !
+<Majinx> when i started playing i sucked at face, i fucking hated the snipers. so i decided to devote my time to taking them out and making them miserable..somewhere along the way i became one of them :[
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

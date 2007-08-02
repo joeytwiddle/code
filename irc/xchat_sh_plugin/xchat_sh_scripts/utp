@@ -8,7 +8,7 @@
 if [ "$*" = "" ]
 then
 	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
-	echo "To query UT99 servers: !utp [-scores|-s] [-justserver|-noplayers] <ip_and_port>s..."
+	echo "To query UT99 servers: !utp [-ping|-p] [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
 	echo "  NOTE: to query a hostname, use !utp unreal://<hostname>[:<port>]"
 	exit 0
 fi

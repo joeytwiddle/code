@@ -1,0 +1,10 @@
+list () {
+cat << !
+she dances like an agile elephant
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

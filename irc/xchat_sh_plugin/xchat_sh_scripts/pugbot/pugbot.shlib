@@ -358,7 +358,7 @@ propose () { ## AKA addmap
 		if [ "$IP_AND_OR_SERVER" ]
 		then
 			echo "$IP_AND_OR_SERVER ($NICK)" >> "$MAP_POOL_FILE"
-			echo "$NICK's proposal for $IP_AND_OR_SERVER has entered the !mappool"
+			echo "$NICK's proposal for $IP_AND_OR_SERVER has entered the map pool"
 		else
 			echo "/notice $NICK To add your map to the pool: !addmap <map_name>"
 		fi

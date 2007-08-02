@@ -4,7 +4,7 @@
 # ./utp "$@" 153.19.48.14:6666 84.244.162.130
 # ./ut_servers/uca "$@" | notice
 # ./utp "$@" 64.192.171.225 | notice
-NUM_RESULTS=5 ./ut_servers/searchserv bt- | notice
+NUM_RESULTS=5 ./ut_servers/searchserv BT- | notice
 (
 echo "/me was crushed/burnt/slimed/frozen/drowned/depressurised/beheaded again"
 echo "/me was incinerated"

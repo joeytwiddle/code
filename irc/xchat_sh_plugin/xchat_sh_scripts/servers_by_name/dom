@@ -1,3 +1,3 @@
 # ./utp 213.230.204.49 213.230.204.49:8888 82.192.78.39:7120 213.202.216.73:7777 213.230.204.49:9999 | grep -v "0/" | grep -v "no response"
 # ut_servers/searchserv dfp
-ut_servers/searchserv DOM- | grep -v "[^0-9]0/"
+ut_servers/searchserv " DOM-" | grep -v "[^0-9]0/"
