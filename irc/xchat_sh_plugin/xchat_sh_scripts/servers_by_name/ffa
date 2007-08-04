@@ -22,7 +22,8 @@
 
 	./ut_servers/tt "$@"
 	(
-		./ut_servers/f0x "$@"
+		## f0x1 is never in ffa mode
+		# ./ut_servers/f0x "$@"
 		./ut_servers/f0x2 "$@"
 	) | grep -v "[^0-9]0/" | grep -v "\[PRIVATE"
 

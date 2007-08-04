@@ -1,6 +1,13 @@
 . irc.shlib
 . irccols.shlib
 
+. /home/utquery/utquery/stats.ini
+if [ "$LASTNUMPLAYERS" = 0 ]
+# then echo "Warning: utb0t failed to make the last scan - !whereis queries will not work."
+# then echo "Warning: utb0t's server scanning is failing - sorry, please wait until he is fixed."
+then echo "My server scanning is failing - sorry, please wait until I am fixed."
+fi
+
 DBAGE=`datediff -file /home/utquery/utquery/data`
 
 if [ "$*" = "" ]
