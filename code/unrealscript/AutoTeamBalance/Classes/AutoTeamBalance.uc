@@ -295,10 +295,10 @@ defaultproperties {
   bUpdatePlayerStatsForOtherTeamGames=False
   bUpdatePlayerStatsForNonTeamGames=True  // DM scores are a good indication of a player's strength, even though it's not a team-game
   bLogExtraStats=False      // records some extra player stats to the logfile at game-end, in case you are interested
-  MaxHoursWhenCopyingOldRecord=2.0    // when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this
+  MaxHoursWhenCopyingOldRecord=4.0    // when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this
   HoursBeforeRecyclingStrength=12.0   // once a player has played for this long, his older scores start to fade away in favour of his more recent scores
   MinHumansForStats=4       // It's probably not healthy to update stats for 1v1 games, scores can be a little extreme
-  ScoringMethod=3
+  ScoringMethod=2
   bNormaliseScores=True     // Normalises scores so that the average score for every 15 minutes is 50, or whatever specified below.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they do actually meet.  Disable normalisation if your server has similar scores at the end of every game.
   bScalePlayerScoreToFullTime=True  // Should be True to make normalisation (score comparison) work properly, when some players have joined the game late.  Players strength records will still only be updated relative to the time they spent playing.
   NormalisedStrength=50
@@ -680,7 +680,7 @@ function Mutate(String str, PlayerPawn Sender) {
           // Sender.ClientMessage(p.getHumanName()$" has strength "$GetPawnStrength(p));
           i = FindPlayerRecord(p);
           if (i > -1) {
-            Sender.ClientMessage(p.getHumanName()$" has strength "$avg_score[i]$" after "$Left(""$hours_played[i],3)$" hours.");
+            Sender.ClientMessage(p.getHumanName()$" has strength "$Int(avg_score[i])$" after "$Left(""$hours_played[i],5)$" hours.");
           }
         }
       }
@@ -748,6 +748,10 @@ function Mutate(String str, PlayerPawn Sender) {
       break;
 
       case "SWITCH":
+        SwitchTwoPlayers(Sender,args[1],args[2]);
+      break;
+
+      case "SWAP":
         SwitchTwoPlayers(Sender,args[1],args[2]);
       break;
 
@@ -839,7 +843,7 @@ function Mutate(String str, PlayerPawn Sender) {
 
       case "SAVECONFIG":
         UpdateStatsAtEndOfGame();
-        CopyArraysIntoConfig(); // Already done for us
+        CopyArraysIntoConfig(); // Already done for us - no I don't think it is any more
         SaveConfig();
         // CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
       break;
@@ -1043,9 +1047,12 @@ function CheckMidGameBalance() {
   if (redTeamCount<=blueTeamCount-2) {
     weakerTeam = 0; problem=""; // problem = " ("$redTeamCount$"v"$blueTeamCount$") ";
   }
-  // If that check didn't find uneven teams, check if the weaker team is down just 1 player:
+  // If that check didn't find uneven teams, calculate which team is weaker, and check if that team has fewer players:
   // DONE BUG: When not counting bots, and only 1 player on server, if their score is >Threshold then they will always get uneven teams warning!  FIXED by checking at least 3 players.  Still, if all combinations of those 3 scores make >Threshold difference, warning will be unstoppable.
   if (weakerTeam == -1 && redTeamCount+blueTeamCount>=3) {
+    // TODO CONSIDER: for efficiency, we needn't calculate team strengths at all, if number of players on the two teams are even.
+    // Although, maybe we could consider warning about uneven teams, even if num players are even, which would require strength calculation.
+    // E.g., if a l33t player joins the stronger team for 5v5, a swap might make the game more even.
     redTeamStrength = GetTeamStrength(0);
     blueTeamStrength = GetTeamStrength(1);
     if (redTeamCount>blueTeamCount && redTeamStrength>blueTeamStrength+StrengthThreshold) {
@@ -1065,7 +1072,7 @@ function CheckMidGameBalance() {
         p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them",'CriticalEvent',True);
       } else {
         // p.ClientMessage("Teams look uneven!  ("$problem$")  Say !teams or !"$Caps(getTeamName(weakerTeam))$"");
-        p.ClientMessage("Teams look uneven! "$problem$" Type !teams or !"$getTeamName(weakerTeam)$"",'CriticalEvent',False);
+        p.ClientMessage("Teams look uneven! "$problem$" Type !teams or !"$Locs(getTeamName(weakerTeam))$"",'CriticalEvent',False);
         p.ShakeView(1.0,2000.0,2000.0);
         // we play our own sound
         // PlaySound ( sound Sound, optional ESoundSlot Slot, optional float Volume, optional bool bNoOverride, optional float Radius, optional float Pitch 
@@ -1863,6 +1870,7 @@ function CopyArraysIntoConfig() {
   if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
 }
 
+// TODO CONSIDER: I noticed quite a few players change the last number of their IP quite frequently.  Maybe we should strip that number too, to get the "network/ISP" they are on.  Hmmm many of them actually change the last 2 numbers!  (Most ISPs have more than 256 customers.  :P)
 function String getIP(Pawn p) {
 	if (p.IsA('PlayerPawn')) {
 		return stripPort(PlayerPawn(p).GetPlayerNetworkAddress());
@@ -2121,13 +2129,13 @@ function float GetRankingPoints(Pawn other) {
   playersBelow = 0;
   // Find the position of this player in the overall scoreboard:
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (!p.IsA('Spectator') && AllowedToRank(p)) {
+    if (p!=other && !p.IsA('Spectator') && AllowedToRank(p)) {
       if ( (ScaleToFullTime(p)*p.PlayerReplicationInfo.Score) >= (ScaleToFullTime(other)*other.PlayerReplicationInfo.Score) ) {
         playersAbove++;
       } else {
         playersBelow++;
       }
-      // in the case of a tie between two players, we could do playersAbove+=0.5 and playersBelow+-0.5, but initially I rewarded them both by only increasing playersBelow
+      // in the case of a tie between two players, we could do playersAbove+=0.5 and playersBelow-=0.5, but initially I rewarded them both by only increasing playersBelow
       // mmm only problem: if two noobs get score 0, they both get points awarded!
       // ok i switched the > to >= so if you tie with another player, you lose out!
     }
@@ -2162,6 +2170,7 @@ function int UpdateStatsForPlayer(Pawn p) {
   local float current_score;
   local float old_hours_played;
   local float new_hours_played;
+  local float hours_played_this_game;
   local int previousPolls;
   local int gameDuration;
   local int timeInGame;
@@ -2172,9 +2181,6 @@ function int UpdateStatsForPlayer(Pawn p) {
   i = FindPlayerRecord(p);
 
   current_score = GetScoreForPlayer(p);
-  if (bNormaliseScores && (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2)) {
-    current_score = NormaliseScore(current_score);
-  }
   // Ideally we would like to check how long this player has been on the server DONE
   gameDuration = Level.TimeSeconds - timeGameStarted;
   timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
@@ -2186,26 +2192,45 @@ function int UpdateStatsForPlayer(Pawn p) {
     if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60s."); }
     return i;
   }
+  hours_played_this_game = Float(timeInGame)/60.0/60.0;
+
+  // Normalisation, or not:
+  // ScoringMethod 3 requires no normalisation.
+  if (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2) {
+    if (bNormaliseScores) {
+      current_score = NormaliseScore(current_score);
+    } else {
+      // If game was shorter or longer than the default (assumed 20 minutes),
+      // then this score will be smaller or larger than if the game had gone the usual 20 minutes.
+      // So we scale the score as if it had been a 20-minute game:
+      current_score = current_score * (1.0/3.0) / hours_played_this_game;
+    }
+  }
 
   old_hours_played = hours_played[i];
   if (old_hours_played > HoursBeforeRecyclingStrength) {
     old_hours_played = HoursBeforeRecyclingStrength;
   }
-  new_hours_played = old_hours_played + (Float(timeInGame) / 60 / 60);
+  new_hours_played = old_hours_played + hours_played_this_game;
 
   previous_average = avg_score[i];
 
-  // TODO CONSIDER: should we give bonus points for being on the winning team?
+  // DONE CONSIDER: should we give bonus points for being on the winning team?
   //                otherwise we might get a group of good team players who often have low scores but their team always wins.
   //                well that's unlikely, due to SmartCTFStats bonuses
 
   // Mmm we can forget all the weird weighting and just update the player's average_score_per_hour:
-  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$old_hours_played$") + "$current_score$"/4.0) / "$(new_hours_played)); }
-  avg_score[i] = ( (avg_score[i] * old_hours_played) + current_score/4.0) / new_hours_played;
-  // I'm dividing every score here by 4 so that the actual averages stored in the config will be score-per-quarter-hour, which should be close to actual end-game scores (at least on my 15minute game server).  Just makes them easier to read; average scores in the stats will be around the normal.
-  // We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
+  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$old_hours_played$") + "$current_score$"*"$hours_played_this_game$") / "$(new_hours_played)); }
+  avg_score[i] = ( (avg_score[i] * old_hours_played) + current_score*hours_played_this_game) / new_hours_played;
+  // here we are updating average end-score-per-(20-minute)-game, weighted by actual game duration
+  // but longer games have higher scores ... no problem, we normalise (or use ScoringMethod 3)
+  // DONE: if we didn't normalise, or use ScoringMethod 3, then yes we should divide score by game duration, then multiply it up to the length the game "should have" been
+  // but what about short spammy games with lots of frags (e.g. joust) - well, that's why you should use normalisation :P
 
-  hours_played[i] += (Float(timeInGame) / 60 / 60);
+  // OLD: I'm dividing every score here by 4 so that the actual averages stored in the config will be score-per-quarter-hour, which should be close to actual end-game scores (at least on my 15minute game server).  Just makes them easier to read; average scores in the stats will be around the normal.
+  // OLD: We don't need to worry about how long he spent on the server wrt other players, or how long the game was.
+
+  hours_played[i] += hours_played_this_game;
 
   if (bBroadcastCookies) {
     if (avg_score[i]>previous_average+1) {
@@ -2235,7 +2260,7 @@ function float NormaliseScore(float score) {
 
   // Kinda inefficient to calculate the average once for every player, but who cares? :P
   // Could it cause confusion if a player leaves during the updating, or is that unlikely?  (Maybe this thread is synchronized wrt players leaving the game.)
-  // We ignore bots scores and count, so it is irrelevant whether the bots have scored nothing, or have pwned the humans, or have performed somewhere inbetween.  Only player's relative scores are taken into account.
+  // We ignore bots scores and count, so it is irrelevant whether the bots have scored nothing, or have pwned the humans, or have performed somewhere inbetween.  Only player's relative scores are taken into account.  No longer true; now we do consider bots' scores when bRankBots=True.
   averageGameScore = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) {
@@ -2328,4 +2353,19 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 }
 */
 
+// Converts a string to lower-case.
+function String Locs(String in) {
+	local String out;
+	local int i;
+	local int c;
+	out = "";
+	for (i=0;i<Len(in);i++) {
+		c = Asc(Mid(in,i,1));
+		if (c>=65 && c<=90) {
+			c = c + 32;
+		}
+		out = out $ Chr(c);
+	}
+	return out;
+}
 
