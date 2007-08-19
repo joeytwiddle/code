@@ -1,6 +1,10 @@
 list () {
 cat << !
 she dances like an agile elephant
+she dances like an agile elephant
+\`Sh0ck3r- bakes some cookies
+(3:53:10 PM) e-shocker: You got no cookie anymore (3:53:12 PM) e-shocker: NEVER
+\`Sh0ck3r- is vogue's sister ... bwahahahahahahahahahahahahahahahaha!
 !
 }
 

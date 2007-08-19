@@ -100,12 +100,6 @@ abort_if_needed () {
 		# exit 0
 	# fi
 
-	## Avoid collision with W|S's t3h_bot:
-	# if [ "$CHANNEL" = "#{W|S}" ]
-	if [ "$CHANNEL" = "#}w|s{" ]
-	then exit 0
-	fi
-
 	## Reno was given a 24hr ban for abuse:
 	# if contains "$NICK" "Reno" || contains "$NICK" "reno"
 	# then exit 0
@@ -115,19 +109,52 @@ abort_if_needed () {
 	# exit 0
 
 	## Commands not wanted on irc.utchat.com/#ut:
-	if [ "$CHANNEL" = "#ut" ]
+	if [ "$NETWORK" = irc.utchat.com ] || [ "$NETWORK" = "irc.ChaoticNetworks.Com" ]
 	then
+
+		## Blacklist:
+		# u|op|deop|utp|rapid|spam|cowsay)
 		case "$COMMAND" in
-			u|op|utp|deop)
+			u|op|deop|invite|rapid)
 				exit 0
 			;;
 		esac
-		## VampyrCeil prefers /notice responses
-		export NOTICE_STYLE="notice"
-	fi
 
-	if [ "$CHANNEL" = "#uthelp" ]
-	then exit 0
+		## Avoid collision with W|S's t3h_bot:
+		# if [ "$CHANNEL" = "#{W|S}" ]
+		if [ "$CHANNEL" = "#}w|s{" ]
+		then exit 0
+		fi
+
+		if [ "$CHANNEL" = "#uthelp" ]
+		then exit 0
+		fi
+
+		if [ "$CHANNEL" = "#ut" ] || [ "$CHANNEL" = "#testing" ]
+		then
+
+			## Whitelist:
+			case "$COMMAND" in
+				whereis|lastseen|searchserv|xol|f0x|nzp|inz|of|smo|focr|terror|dm|ctf|jb|as|bt|face|lms|mh|siege)
+					: ## !invitebot was too spammy for #ut; consider /notice response
+				;;
+				*)
+					exit 0
+				;;
+			esac
+
+			## VampyrCeil prefers /notice responses
+			export NOTICE_STYLE="notice"
+
+		fi
+
+		## This nob exploits the bot in #ut whenever he can, to get it banned (succeeded twice)
+		case "$NICK" in
+			Taerom)
+				exit 0
+			;;
+		esac
+
 	fi
 
 }
@@ -152,9 +179,12 @@ fi
 cd "$COMMAND_SCRIPTS_DIR"
 # SCRIPT=`find -type f -or -type l -iname "$COMMAND" | grep -v "^\." | grep -v "/\." | head -n 1`
 # SCRIPT=`find -iname "$COMMAND" | grep -v "^\." | grep -v "/\." | head -n 1`
+ESCAPED_COMMAND=` printf "%s" "$COMMAND" | sed ' s+*+\\\*+g ; s+?+\\\\?+g ' `
 SCRIPT=`
 	# find "$PWD"/ -iname "$COMMAND" -type f -or -type l | ## for some reason i can't fathom, that didn't work!
-	find "$PWD"/ -iname "$COMMAND" -not -type d |
+	find "$PWD"/ -iname "$ESCAPED_COMMAND" -not -type d |
+	grep -v "/CVS/" |
+	grep -v "/disabled/" |
 	# grep -v "^\." |
 	# grep -v "/\." |
 	head -n 1
