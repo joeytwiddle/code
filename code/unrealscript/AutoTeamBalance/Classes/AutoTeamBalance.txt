@@ -29,6 +29,16 @@
     when the game starts.  Players who join after game-start (e.g. because they
     were downloading the map) cannot be balanced so well.
 
+    You should also ensure your server waits at least 10 seconds after the end
+    of each game, before switching map, otherwise AutoTeamBalance will not
+    have time to update the stats.  I think this is the RestartWait variable.
+
+    I think, if your server has any bots, you should ensure that bBalanceTeams
+    is set in your UnrealTournament.ini.  Since AutoTeamBalance does not affect
+    the team placement of bots when they join, or when a player switches teams,
+    this method should be enabled.  (AutoTeamBalance *will* change bots to
+    different teams during *mid-game* balancing, if bBalanceBots is set.)
+
 
 
 # What does it do?
@@ -169,7 +179,8 @@ disabled by default because you might find it too annoying - you may want to
 try enabling it.  Here's an explanation of all the config variables:
 
   bBroadcastStuff=True                      - Whether or not to broadcast information to players at game start, game end, and when rebalancing mid-game.
-  bBroadcastCookies=False                   - When enabled, players will see changes in their strength as earning or losing cookies.  For debugging, or for fun.
+  bBroadcastCookies=False                   - When enabled, at the end of the game, every player's strength change will be broadcast, represented as earning or losing cookies.  For debugging, or for fun.
+  bFlashCookies=False                       - When enabled, each player will see his number of cookies at the start of the game, and how many he gained or lost at the end of the game.  For debugging, or for fun.
   bDebugLogging=False                       - Enable this only if you need to debug AutoTeamBalance.
   bLetPlayersRebalance=True                 - Allows players to fix teams mid-game by typing "teams" or "!teams".
   bWarnMidGameUnbalance=False               - Warns players if teams become uneven mid-game.

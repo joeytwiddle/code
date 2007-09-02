@@ -1,0 +1,2 @@
+[Public]
+Object=(Name=PostBox.PostBox,Class=Class,MetaClass=Engine.Mutator,Description="Post Box")

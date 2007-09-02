@@ -1,1 +1,2 @@
-find . -name "*.uc" | grep -v "/CVS/" | xargs higrep "$@"
+find . -name "*.uc" | grep -v "/CVS/" | xargs higrep "$@" |
+more
