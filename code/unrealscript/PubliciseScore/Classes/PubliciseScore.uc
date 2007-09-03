@@ -4,10 +4,12 @@
 
 class PubliciseScore extends Mutator config(PubliciseScore);
 
+var config bool bShowTeamScore;
 var config bool bShowTime;
 var config int UpdateInterval;
 
 defaultproperties {
+  bShowTeamScore=True
   bShowTime=True
   UpdateInterval=19
   // UpdateInterval=9
@@ -24,7 +26,7 @@ function PostBeginPlay() {
  Initialized = True;
 
  titleDefault = ""; // seems title is not set at this time; so we will load it later
- if (Level.Game.IsA('TeamGamePlus')) {
+ if ((bShowTeamScore && Level.Game.IsA('TeamGamePlus')) || bShowTime) { // no point running if not needed
   SetTimer(UpdateInterval,True);
  } else {
   SetTitle("");
@@ -36,20 +38,22 @@ event Timer() {
  local int redScore, blueScore;
  // local int gameDuration;
  local int timeLeft;
- redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
- blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
- // text = " ["$redScore$":"$blueScore$"]";
- text = " ["$redScore$"-"$blueScore$"]";
+ if (bShowTeamScore && Level.Game.IsA('TeamGamePlus')) {
+  redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
+  blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
+  // text = " ["$redScore$":"$blueScore$"]";
+  text = " ["$redScore$"-"$blueScore$"]";
+ }
  // text = " [Red:"$redScore$" Blue:"$blueScore$"]";
- if (bShowTime && TeamGamePlus(Level.Game).TimeLimit>0) {
-  // Log("TimeSeconds="$Level.TimeSeconds$" TimeLimit="$TeamGamePlus(Level.Game).TimeLimit$" StartTime="$Level.Game.StartTime$" CountDown="$TeamGamePlus(Level.Game).CountDown$" NetWait="$TeamGamePlus(Level.Game).NetWait$" ElapsedTime="$TeamGamePlus(Level.Game).ElapsedTime);
-  // Log("TimeSeconds="$Level.TimeSeconds$" ElapsedTime="$TeamGamePlus(Level.Game).ElapsedTime$" GRI.RemainingTime="$Level.Game.GameReplicationInfo.RemainingTime$" GRI.ElapsedTime="$Level.Game.GameReplicationInfo.ElapsedTime$" GRI.RemainingMinute="$Level.Game.GameReplicationInfo.RemainingMinute$" GRI.SecondCount="$Level.Game.GameReplicationInfo.SecondCount);
+ if (bShowTime && DeathMatchPlus(Level.Game).TimeLimit>0) {
+  // Log("TimeSeconds="$Level.TimeSeconds$" TimeLimit="$DeathMatchPlus(Level.Game).TimeLimit$" StartTime="$Level.Game.StartTime$" CountDown="$DeathMatchPlus(Level.Game).CountDown$" NetWait="$DeathMatchPlus(Level.Game).NetWait$" ElapsedTime="$DeathMatchPlus(Level.Game).ElapsedTime);
+  // Log("TimeSeconds="$Level.TimeSeconds$" ElapsedTime="$DeathMatchPlus(Level.Game).ElapsedTime$" GRI.RemainingTime="$Level.Game.GameReplicationInfo.RemainingTime$" GRI.ElapsedTime="$Level.Game.GameReplicationInfo.ElapsedTime$" GRI.RemainingMinute="$Level.Game.GameReplicationInfo.RemainingMinute$" GRI.SecondCount="$Level.Game.GameReplicationInfo.SecondCount);
   // gameDuration = Level.TimeSeconds - Level.Game.StartTime;
-  // gameDuration = TeamGamePlus(Level.Game).ElapsedTime - TeamGamePlus(Level.Game).CountDown;
+  // gameDuration = DeathMatchPlus(Level.Game).ElapsedTime - DeathMatchPlus(Level.Game).CountDown;
   // gameDuration = Level.Game.GameReplicationInfo.ElapsedTime;
-  // timeLeft = TeamGamePlus(Level.Game).TimeLimit*60 - gameDuration;
+  // timeLeft = DeathMatchPlus(Level.Game).TimeLimit*60 - gameDuration;
   // Log("gameDuration="$gameDuration$" timeLeft="$timeLeft);
-  if (TeamGamePlus(Level.Game).ElapsedTime == 0) { // ElapsedTime goes from 0 to 9 during start-game countdown
+  if (DeathMatchPlus(Level.Game).ElapsedTime == 0) { // ElapsedTime goes from 0 to 9 during start-game countdown
    // waiting for players
    // text = text $ " Waiting for players...";
    text = ""; // no point showing 0-0 before the game has started!
@@ -63,7 +67,11 @@ event Timer() {
     //// Since our Timer is called infrequently, we don't show seconds
     // text = text $ (timeLeft%60) $ "s";
     // text = text $ " left";
-    text = text $ (timeLeft/60) $ " minutes left";
+    if ((timeLeft/60) == 1) {
+     text = text $ (timeLeft/60) $ " minute left";
+    } else {
+     text = text $ (timeLeft/60) $ " minutes left";
+    }
    } else {
     if (Level.Game.bGameEnded) {
      text = text $ " Game ended";
