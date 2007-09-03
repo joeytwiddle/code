@@ -1,0 +1,210 @@
+class ActorEditor expands Mutator config(ActorEditor);
+
+// Wizard may want to: replace a specific actor, replace all actors matching "...", change properties of one/more actors
+
+var config bool bAcceptSpokenCommands;
+var config bool bAcceptMutateCommands;
+var config bool bSwallowSpokenCommands;
+
+var config String UpdateActor[1024];
+var config String UpdateProperty[1024];
+var config String UpdateValue[1024];
+
+var config String SwapActor[1024];
+var config String SwapWith[1024];
+
+// var config String edits[1024];
+
+defaultproperties {
+  bAcceptSpokenCommands=True
+  bAcceptMutateCommands=True
+  bSwallowSpokenCommands=True
+}
+
+var Actor workingActor;
+
+function PostBeginPlay() {
+	// TODO: update all edits from config
+
+	// If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
+   // Level.Game.BaseMutator.AddMutator(Self);
+
+	// Register to receive spoken messages in MutatorTeamMessage() below:
+	if (bAcceptSpokenCommands) {
+		Level.Game.RegisterMessageMutator(Self);
+	}
+
+}
+
+// Catch messages from players:
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	local bool hideMessage;
+	hideMessage = False;
+	if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
+		hideMessage = CheckMessage(Mid(Msg,InStr(Msg,":")+1), PlayerPawn(Sender));
+	}
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage || !bSwallowSpokenCommands);
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+	if (bAcceptMutateCommands) {
+		CheckMessage(str, Sender);
+	}
+	Super.Mutate(str, Sender);
+}
+
+// Removed all non-alphanumeric characters from a string
+function String squishString(String str) {
+	local String newStr;
+	local int i,c;
+	str = Caps(str);
+	newStr = "";
+	for (i=0; i<Len(str); i++) {
+		c = Asc(Mid(str,i,1));
+		if ( (c>=Asc("A") && c<=Asc("Z")) || (c>=Asc("0") && c<=Asc("9")) ) {
+			newStr = newStr $ Chr(c);
+		}
+	}
+	return newStr;
+}
+
+// Returns True if the command was recognised.
+function bool CheckMessage(String line, PlayerPawn Sender) {
+	local int argCount;
+	local String args[256];
+	local Actor A;
+	local String result;
+	local int i,j;
+	local String squishedName;
+	local String url;
+
+	// Log("ActorEditor.CheckMessage() ("$Sender$"): "$Msg$"");
+	argcount = SplitString(line," ",args);
+	// TODO: strip leading "!" if any
+
+	if (StrStartsWith(args[0],"!")) {
+		args[0] = Mid(args[0],1);
+	}
+
+	if (args[0] ~= "HELP") {
+		Sender.ClientMessage("PostBox commands: HELP | MAIL/POST | MAIL/POST <recipient> <message> | LOOK | SEARCH/FIND | GET | SET | SETURL");
+		Sender.ClientMessage("  Note: for delivery, only letters+numbers in <recipient>'s nick will be used.");
+		return True;
+	}
+
+	if (args[0] ~= "LOOK") {
+		workingActor = FindClosestActor(Sender);
+		Sender.ClientMessage("Viewing: "$workingActor);
+		return True;
+	}
+
+	if (args[0] ~= "SEARCH" || args[0] ~= "FIND") {
+		foreach AllActors(class'Actor', A) {
+			if (StrContains(Caps(""$A),Caps(args[1]))) {
+				workingActor = A;
+				Sender.ClientMessage("Found: "$workingActor);
+				break;
+			}
+		}
+	}
+
+	if (args[0] ~= "GET") {
+		result = workingActor.GetPropertyText(args[1]);
+		Sender.ClientMessage(workingActor $ "." $ args[1] $ " = " $ result);
+		return True;
+	}
+
+	if (args[0] ~= "SET") {
+		workingActor.SetPropertyText(args[1],args[2]);
+		result = workingActor.GetPropertyText(args[1]);
+		Sender.ClientMessage(workingActor $ "." $ args[1] $ " -> " $ result);
+		return True;
+	}
+
+	if (args[0] ~= "SETURL") {
+		// foreach AllActors(class'Actor', a) {
+		// workingActor = FindClosestActor(Sender);
+			// if (isURL(args[1])) {
+				Sender.ClientMessage("Trying to add url to "$workingActor$" ...");
+				url = args[1];
+				if (workingActor.IsA('Teleporter')) {
+					Teleporter(workingActor).URL = url;
+					Sender.ClientMessage("Set "$workingActor$".URL = "$url);
+				}
+				if (workingActor.IsA('ScreenSlidePageWeb')) {
+					if (StrStartsWith(Caps(url),"HTTP://")) { // if (Left(url,7) ~= "http://") {
+						url = Mid(url,7);
+						ScreenSlidePageWeb(workingActor).AddressPath = StrAfter(url,"/");
+						url = StrBefore(url,"/");
+						if (StrContains(url,":")) {
+							ScreenSlidePageWeb(workingActor).AddressHost = StrBefore(url,":");
+							ScreenSlidePageWeb(workingActor).AddressPort = Int(StrAfter(url,":"));
+						} else {
+							ScreenSlidePageWeb(workingActor).AddressHost = url;
+							ScreenSlidePageWeb(workingActor).AddressPort = 80;
+						}
+						Sender.ClientMessage("Set "$workingActor$".AddressHost+Path+Port from "$args[1]);
+					}
+				}
+				if (workingActor.IsA('ScreenSlidePageServer')) {
+					if (Left(url,9) ~= "unreal://") {
+						Sender.ClientMessage("Setting "$workingActor$".AddressServer+Port from "$url);
+						url = Mid(url,9);
+						if (StrContains(url,":")) {
+							ScreenSlidePageServer(workingActor).AddressPort = Int(StrBefore(url,":"))+1;
+							url = StrAfter(url,":");
+						} else {
+							ScreenSlidePageServer(workingActor).AddressPort = 7778;
+						}
+						url = StrBeforeLast(url,"/");
+						ScreenSlidePageServer(workingActor).AddressServer = url;
+						Sender.ClientMessage("Set "$workingActor$".AddressServer+Port from "$url);
+					}
+				}
+				if (workingActor.IsA('ScreenSlidePage')) {
+					
+				}
+			// }
+		// }
+		return True;
+	}
+
+	return False;
+
+}
+
+function Actor FindClosestActor(Actor from) {
+	local Actor A;
+	local int distance;
+	local int deltaRotation;
+	local Actor bestActor;
+	local int bestDistance;
+	bestActor = None;
+	// foreach VisibleActors(class'Actor', A, 1024, from.Location) {
+	foreach AllActors(class'Actor', A) {
+		if (A == from) { // don't find self!
+			continue;
+		}
+		distance = VSize(A.Location - from.Location);
+		deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
+		// if (deltaRotation < 8192 || deltaRotation > 8192*7) {
+		if (deltaRotation > 8192*4) {
+			deltaRotation = 8192*8 - deltaRotation;
+		}
+		if (deltaRotation < 8192 && deltaRotation > -8192) {
+			if (bestActor == None || distance < bestDistance) {
+				bestActor = A;
+				bestDistance = distance;
+				// PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
+			}
+		}
+	}
+	return bestActor;
+}
+
+function bool isURL(String str) {
+	return (InStr(str,"://")>=0 && InStr(str,"://")<50);
+}
+
+#include "/mnt/big/ut/ut_win/JLib/jlib.uc.jpp"
+
