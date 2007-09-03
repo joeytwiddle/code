@@ -4,6 +4,10 @@
 
 class PostBox expands Mutator config(PostBox);
 
+var config bool bAnnounceOnJoin;
+var config bool bSuggestReply;
+var config bool bSendConfirmationMessage;
+
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
 var config bool bSwallowSpokenCommands;
@@ -13,10 +17,16 @@ var config String mailTo[1024];
 var config String mailDate[1024];
 var config String mailMessage[1024];
 
+var int lastPlayerChecked;
+
 defaultproperties {
+  bAnnounceOnJoin=True
+  bSuggestReply=True
+  bSendConfirmationMessage=True // TODO: default to False?
   bAcceptSpokenCommands=True
   bAcceptMutateCommands=True
   bSwallowSpokenCommands=True
+  lastPlayerChecked=0
 }
 
 function PostBeginPlay() {
@@ -28,6 +38,7 @@ function PostBeginPlay() {
   Level.Game.RegisterMessageMutator(Self);
  }
 
+ SetTimer(15,True);
 }
 
 // Catch messages from players:
@@ -54,44 +65,33 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
  local Actor A;
  local String result;
  local int i,j;
+ local String command;
  local String squishedName;
  local String url;
 
  // Log("PostBox.uc.CheckMessage() ("$Sender$"): "$Msg$"");
  argcount = SplitString(line," ",args);
- // TODO: strip leading "!" if any
-
- if (StrStartsWith(args[0],"!")) {
-  args[0] = Mid(args[0],1);
+ // DONE: strip leading "!" if any
+ command = args[0];
+ if (StrStartsWith(command,"!")) {
+  command = Mid(command,1);
  }
 
- if (args[0] ~= "HELP") {
-  Sender.ClientMessage("PostBox commands: HELP | MAIL/POST | MAIL/POST <recipient> <message>");
-  Sender.ClientMessage("  Note: for delivery, only the letters and numbers in <recipient>'s nick need to match.");
+ if (command ~= "HELP") {
+  Sender.ClientMessage("PostBox commands:");
+  Sender.ClientMessage("  !help | !read | !mail/!post <recipient> <message>");
+  // Sender.ClientMessage("  Note: for delivery, only the letters and numbers in <recipient>'s nick need to match.");
   return True;
  }
 
- if (args[0] ~= "MAIL" || args[0] ~= "POST") {
-  if (args[1] == "") {
-   // Check for mail for Sender
-   squishedName = squishString(Sender.GetHumanName());
-   for (i=0; i<1024; i++) {
-    j = -1;
-    if (squishString(mailTo[i])==squishedName) {
-     j = i;
-     Sender.ClientMessage("You have new mail:");
-     Sender.ClientMessage(mailFrom[i] $ " -> " $ mailTo[i] $ " @ " $ mailDate[i] $ ": " $ mailMessage[i]);
-     mailFrom[i] = "";
-     mailTo[i] = "";
-     mailDate[i] = "";
-     mailMessage[i] = "";
-     SaveConfig();
-     break;
-    }
-   }
-   if (j == -1) {
-    Sender.ClientMessage("You have no new mail.");
-   }
+ if (command ~= "READ") {
+  ReadMail(Sender);
+  return True;
+ }
+
+ if (command ~= "MAIL" || command ~= "POST") {
+  if (args[1] == "" || args[2] == "") {
+   Sender.ClientMessage("Usage: !mail <part_of_recipient_nick> <message>");
   } else {
    // Save message args[2..] for args[1] (from Sender)
    for (i=0; i<1024; i++) {
@@ -120,7 +120,8 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 function String squishString(String str) {
  local String newStr;
  local int i,c;
- str = Caps(str);
+ // str = Caps(str);
+ str = Locs(str);
  newStr = "";
  for (i=0; i<Len(str); i++) {
   c = Asc(Mid(str,i,1));
@@ -129,6 +130,87 @@ function String squishString(String str) {
   }
  }
  return newStr;
+}
+
+event Timer() {
+ CheckForNewPlayers();
+}
+
+function CheckForNewPlayers() {
+ local Pawn p;
+ while (Level.Game.CurrentID > lastPlayerChecked) {
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+   if (p.IsA('PlayerPawn') && p.PlayerReplicationInfo.PlayerID == lastPlayerChecked) {
+    ProcessNewPlayer(PlayerPawn(p));
+    break;
+   }
+  }
+  lastPlayerChecked++;
+ }
+}
+
+function ProcessNewPlayer(PlayerPawn p) {
+ if (bAnnounceOnJoin) {
+  p.ClientMessage("This server is running the PostBox mutator.");
+  p.ClientMessage("You can leave messages for other players with the !mail command.");
+ }
+ // Check for new mail for this player:
+ CheckMailFor(p);
+}
+
+function int FindMailFor(PlayerPawn p) {
+ local String squishedName;
+ local int i;
+ // Check for mail for Sender
+ squishedName = squishString(p.GetHumanName());
+ for (i=0; i<1024; i++) {
+  if (mailTo[i] != "" && StrContains(squishedName,squishString(mailTo[i]))) {
+   return i;
+  }
+ }
+ return -1;
+}
+
+function CheckMailFor(PlayerPawn p) {
+ local int i;
+ i = FindMailFor(p);
+ if (i >= 0) {
+  p.ClientMessage("Somebody has left you a message.  Type !read to read it.");
+ }
+}
+
+function ReadMail(PlayerPawn p) {
+ local int i;
+ i = FindMailFor(p);
+ if (i == -1) {
+  p.ClientMessage("You have no new mail.");
+ } else {
+  // Display message:
+  // p.ClientMessage(mailFrom[i] $ " -> " $ mailTo[i] $ " @ " $ mailDate[i] $ ": " $ mailMessage[i]);
+  p.ClientMessage("From " $ mailFrom[i] $ " to " $ mailTo[i] $ " at " $ mailDate[i] $ ": " $ mailMessage[i]);
+  if (bSuggestReply) {
+   p.ClientMessage("You can reply to this message using: !mail "$squishString(mailFrom[i])$" <your_message>...");
+  }
+
+  if (!bSendConfirmationMessage || mailFrom[i] ~= "PostMaster") {
+   // Clear message:
+   mailFrom[i] = "";
+   mailTo[i] = "";
+   mailDate[i] = "";
+   mailMessage[i] = "";
+   // TODO: If we don't shunt any later messages up to fill this gap at i, players may end up receiving messages in non-chronological order.
+  } else {
+   // Send a confirmation message back to the sender, saying their message was received (and by who).
+   mailTo[i] = mailFrom[i];
+   mailFrom[i] = "PostMaster";
+   mailDate[i] = GetDate();
+   mailMessage[i] = ""$p.GetHumanName()$" received your message \""$mailMessage[i]$"\"";
+  }
+  SaveConfig();
+
+  // Does this player have more messages?
+  CheckMailFor(p);
+ }
 }
 //===============//
 //               //
@@ -237,8 +319,18 @@ function int InStrLast(string haystack, string needle) {
   }
  }
 }
-/*
-
-
-
-*/
+// Converts a string to lower-case.
+function String Locs(String in) {
+ local String out;
+ local int i;
+ local int c;
+ out = "";
+ for (i=0;i<Len(in);i++) {
+  c = Asc(Mid(in,i,1));
+  if (c>=65 && c<=90) {
+   c = c + 32;
+  }
+  out = out $ Chr(c);
+ }
+ return out;
+}
