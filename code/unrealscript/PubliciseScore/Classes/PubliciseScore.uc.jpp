@@ -54,23 +54,23 @@ event Timer() {
 			// text = text $ " Waiting for players...";
 			text = ""; // no point showing 0-0 before the game has started!
 		} else {
-			timeLeft = Level.Game.GameReplicationInfo.RemainingTime;
-			if (timeLeft>0) {
-				text = text $ " ";
-				// if (timeLeft>=60) {
-					// text = text $ (timeLeft/60) $ "m";
-				// }
-				//// Since our Timer is called infrequently, we don't show seconds
-				// text = text $ (timeLeft%60) $ "s";
-				// text = text $ " left";
-				if ((timeLeft/60) == 1) {
-					text = text $ (timeLeft/60) $ " minute left";
-				} else {
-					text = text $ (timeLeft/60) $ " minutes left";
-				}
+			if (Level.Game.bGameEnded) {
+				text = text $ " Game ended";
 			} else {
-				if (Level.Game.bGameEnded) {
-					text = text $ " Game ended";
+				timeLeft = Level.Game.GameReplicationInfo.RemainingTime;
+				if (timeLeft>0) {
+					text = text $ " ";
+					// if (timeLeft>=60) {
+						// text = text $ (timeLeft/60) $ "m";
+					// }
+					//// Since our Timer is called infrequently, we don't show seconds
+					// text = text $ (timeLeft%60) $ "s";
+					// text = text $ " left";
+					if ((timeLeft/60) == 1) {
+						text = text $ (timeLeft/60) $ " minute left";
+					} else {
+						text = text $ (timeLeft/60) $ " minutes left";
+					}
 				} else {
 					text = text $ " Overtime!";
 				}
