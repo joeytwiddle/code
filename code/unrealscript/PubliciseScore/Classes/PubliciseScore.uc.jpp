@@ -1,6 +1,12 @@
-class PubliciseScore extends Mutator;
+class PubliciseScore extends Mutator config(PubliciseScore);
+
+var config bool bShowTime;
+var config int UpdateInterval;
 
 defaultproperties {
+  bShowTime=True
+  UpdateInterval=19
+  // UpdateInterval=9
 }
 
 var bool Initialized;
@@ -13,20 +19,57 @@ function PostBeginPlay() {
 	}
 	Initialized = True;
 
-	titleDefault = "";
+	titleDefault = ""; // seems title is not set at this time; so we will load it later
 	if (Level.Game.IsA('TeamGamePlus')) {
-		SetTimer(19,True);
+		SetTimer(UpdateInterval,True);
 	} else {
 		SetTitle("");
 	}
 }
 
 event Timer() {
+	local string text;
 	local int redScore, blueScore;
+	// local int gameDuration;
+	local int timeLeft;
 	redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
 	blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
-	// SetTitle(" ["$redScore$":"$blueScore$"]");
-	SetTitle(" [Red:"$redScore$" Blue:"$blueScore$"]");
+	// text = " ["$redScore$":"$blueScore$"]";
+	text = " ["$redScore$"-"$blueScore$"]";
+	// text = " [Red:"$redScore$" Blue:"$blueScore$"]";
+	if (bShowTime && TeamGamePlus(Level.Game).TimeLimit>0) {
+		// Log("TimeSeconds="$Level.TimeSeconds$" TimeLimit="$TeamGamePlus(Level.Game).TimeLimit$" StartTime="$Level.Game.StartTime$" CountDown="$TeamGamePlus(Level.Game).CountDown$" NetWait="$TeamGamePlus(Level.Game).NetWait$" ElapsedTime="$TeamGamePlus(Level.Game).ElapsedTime);
+		// Log("TimeSeconds="$Level.TimeSeconds$" ElapsedTime="$TeamGamePlus(Level.Game).ElapsedTime$" GRI.RemainingTime="$Level.Game.GameReplicationInfo.RemainingTime$" GRI.ElapsedTime="$Level.Game.GameReplicationInfo.ElapsedTime$" GRI.RemainingMinute="$Level.Game.GameReplicationInfo.RemainingMinute$" GRI.SecondCount="$Level.Game.GameReplicationInfo.SecondCount);
+		// gameDuration = Level.TimeSeconds - Level.Game.StartTime;
+		// gameDuration = TeamGamePlus(Level.Game).ElapsedTime - TeamGamePlus(Level.Game).CountDown;
+		// gameDuration = Level.Game.GameReplicationInfo.ElapsedTime;
+		// timeLeft = TeamGamePlus(Level.Game).TimeLimit*60 - gameDuration;
+		// Log("gameDuration="$gameDuration$" timeLeft="$timeLeft);
+		if (TeamGamePlus(Level.Game).ElapsedTime == 0) { // ElapsedTime goes from 0 to 9 during start-game countdown
+			// waiting for players
+			// text = text $ " Waiting for players...";
+			text = ""; // no point showing 0-0 before the game has started!
+		} else {
+			timeLeft = Level.Game.GameReplicationInfo.RemainingTime;
+			if (timeLeft>0) {
+				text = text $ " ";
+				// if (timeLeft>=60) {
+					// text = text $ (timeLeft/60) $ "m";
+				// }
+				//// Since our Timer is called infrequently, we don't show seconds
+				// text = text $ (timeLeft%60) $ "s";
+				// text = text $ " left";
+				text = text $ (timeLeft/60) $ " minutes left";
+			} else {
+				if (Level.Game.bGameEnded) {
+					text = text $ " Game ended";
+				} else {
+					text = text $ " Overtime!";
+				}
+			}
+		}
+	}
+	SetTitle(text);
 }
 
 function SetTitle(String newText) {
