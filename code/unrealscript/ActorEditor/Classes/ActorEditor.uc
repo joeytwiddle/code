@@ -6,29 +6,38 @@ class ActorEditor expands Mutator config(ActorEditor);
 
 // Wizard may want to: replace a specific actor, replace all actors matching "...", change properties of one/more actors
 
+// TODO CONSIDER: collect a list of (max 10?) favourite properties; use these for auto-searching, or display them all on "!examine"
+
+// TODO: to make the config easier to edit, put commands one-per-line, space-delimited (and execute them like normal messages? -- mmm the "SET" command currently requires "LOOK" or "SEARCH" first.)
+
+// DONE: make the FINDCLOSEST function, which matches Actor name, but takes the closest one
+
+// DONE: instead of mixing up SET and STORE commands, save all SETs, but don't SaveConfig() until "SAVEALL" is called.
+
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
 var config bool bSwallowSpokenCommands;
+var bool bOnlyAdmin; // TODO: config
 
 var config String UpdateActor[1024];
 var config String UpdateProperty[1024];
 var config String UpdateValue[1024];
 
-var config String SwapActor[1024];
-var config String SwapWith[1024];
-
-// var config String edits[1024];
+// var config String SwapActor[1024];
+// var config String SwapWith[1024];
 
 defaultproperties {
   bAcceptSpokenCommands=True
   bAcceptMutateCommands=True
   bSwallowSpokenCommands=True
+  bOnlyAdmin=True
 }
 
 var Actor workingActor;
 
 function PostBeginPlay() {
- // TODO: update all edits from config
+ local Actor A;
+ local int i;
 
  // If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
    // Level.Game.BaseMutator.AddMutator(Self);
@@ -36,6 +45,19 @@ function PostBeginPlay() {
  // Register to receive spoken messages in MutatorTeamMessage() below:
  if (bAcceptSpokenCommands) {
   Level.Game.RegisterMessageMutator(Self);
+ }
+
+ // Update all edits from config:
+ foreach AllActors(class'Actor', A) {
+  for (i=0;i<1024;i++) {
+   if (UpdateActor[i] == "") {
+    break; // TODO: this makes the updating faster, BUT we must that lower lines are moved up if any lines are cleared
+   }
+   if ( Caps(UpdateActor[i]) == Caps(""$A) ) {
+    Log("ActorEditor: Updating "$A$"."$UpdateProperty[i]$" -> "$UpdateValue[i]);
+    A.SetPropertyText(UpdateProperty[i],UpdateValue[i]);
+   }
+  }
  }
 
 }
@@ -72,7 +94,7 @@ function String squishString(String str) {
  return newStr;
 }
 
-// Returns True if the command was recognised.
+// Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
 function bool CheckMessage(String line, PlayerPawn Sender) {
  local int argCount;
  local String args[256];
@@ -81,102 +103,240 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
  local int i,j;
  local String squishedName;
  local String url;
+ local String rebuilt_string;
+ local String command;
+
+ if (bOnlyAdmin && !Sender.bAdmin) {
+  return False;
+ }
 
  // Log("ActorEditor.CheckMessage() ("$Sender$"): "$Msg$"");
  argcount = SplitString(line," ",args);
  // TODO: strip leading "!" if any
 
- if (StrStartsWith(args[0],"!")) {
-  args[0] = Mid(args[0],1);
+ command = args[0];
+
+ if (StrStartsWith(command,"!")) {
+  command = Mid(command,1);
  }
 
- if (args[0] ~= "HELP") {
-  Sender.ClientMessage("PostBox commands: HELP | MAIL/POST | MAIL/POST <recipient> <message> | LOOK | SEARCH/FIND | GET | SET | SETURL");
+ if (command ~= "HELP") {
+  Sender.ClientMessage("ActorEditor commands: help | look | search/find/seek <actor_name_part> | findclosest <actor_name_part> | searchprop/findprop/seekprop <property> <value_part> | ");
+  // Sender.ClientMessage("  get/check <property> | set/put <property> <value> | store/save <property> <value> | grab <property>");
+  Sender.ClientMessage("  get/check <property> | set/put/save/store <property> <value> | grab <property>");
+  Sender.ClientMessage("  setserver <server_address> <neuralyte_shortname> <full_name>");
+  Sender.ClientMessage("  saveall");
   Sender.ClientMessage("  Note: for delivery, only letters+numbers in <recipient>'s nick will be used.");
   return True;
  }
 
- if (args[0] ~= "LOOK") {
+ if (command ~= "LOOK") {
   workingActor = FindClosestActor(Sender);
   Sender.ClientMessage("Viewing: "$workingActor);
   return True;
  }
 
- if (args[0] ~= "SEARCH" || args[0] ~= "FIND") {
-  foreach AllActors(class'Actor', A) {
-   if (StrContains(Caps(""$A),Caps(args[1]))) {
-    workingActor = A;
-    Sender.ClientMessage("Found: "$workingActor);
-    break;
-   }
+ if (command ~= "SEARCH" || command ~= "FIND" || command ~= "SEEK") {
+  workingActor = FindMatchingActor(args[1]);
+  Sender.ClientMessage("Found: "$workingActor);
+  return True;
+ }
+
+ if (command ~= "FINDCLOSEST") {
+  workingActor = FindClosestActorMatching(Sender,args[1]);
+  Sender.ClientMessage("Found: "$workingActor);
+  return True;
+ }
+
+ if (command ~= "SEARCHPROP" || command ~= "FINDPROP" || command ~= "SEEKPROP") {
+  workingActor = FindActorWithMatchingProperty(args[1],args[2]);
+  Sender.ClientMessage("Found: "$workingActor$" with "$args[1]$": "$workingActor.GetPropertyText(args[1]));
+  return True;
+ }
+
+ if (command ~= "GET" || command ~= "CHECK" || command ~= "SHOW") {
+  result = workingActor.GetPropertyText(args[1]);
+  Sender.ClientMessage(workingActor $ "." $ args[1] $ ": " $ result);
+  return True;
+ }
+
+ /*
+
+	if (command ~= "SET" || command ~= "PUT") {
+
+		rebuilt_string = ""; for (i=2;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
+
+		workingActor.SetPropertyText(args[1],rebuilt_string);
+
+		result = workingActor.GetPropertyText(args[1]);
+
+		Sender.ClientMessage(workingActor $ "." $ args[1] $ " -> " $ result);
+
+		return True;
+
+	}
+
+	*/
+ if (command ~= "SET" || command ~= "PUT" || command ~= "STORE" || command ~= "SAVE") {
+  rebuilt_string = ""; for (i=2;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
+  SaveUpdate(workingActor,args[1],rebuilt_string);
+  result = workingActor.GetPropertyText(args[1]);
+  Sender.ClientMessage(workingActor $ "." $ args[1] $ " => " $ result);
+  return True;
+ }
+ if (command ~= "GRAB") {
+  result = workingActor.GetPropertyText(args[1]);
+  SaveUpdate(workingActor,args[1],result);
+  Sender.ClientMessage(workingActor $ "." $ args[1] $ " << " $ result);
+  return True;
+ }
+ if (command ~= "SAVEALL") {
+  SaveConfig();
+  return True;
+ }
+ // Specifically for Screen actors + teleporters.
+ // Actually specific for my setup, which is 1 Teleporter, 1 ScreenSlidePageServer (which doesn't work) and 1 ScreenSlidePageWeb (which does work).
+ if (command ~= "SETSERVER") {
+  rebuilt_string = ""; for (i=3;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
+  SetServer(Sender,args[1],args[2],rebuilt_string);
+  return True;
+ }
+ /*
+
+	if (command ~= "SETURL") {
+
+		// foreach AllActors(class'Actor', a) {
+
+		// workingActor = FindClosestActor(Sender);
+
+			// if (isURL(args[1])) {
+
+				Sender.ClientMessage("Trying to add url to "$workingActor$" ...");
+
+				url = args[1];
+
+				if (workingActor.IsA('Teleporter')) {
+
+					Teleporter(workingActor).URL = url;
+
+					Sender.ClientMessage("Set "$workingActor$".URL = "$url);
+
+				}
+
+				if (workingActor.IsA('ScreenSlidePageWeb')) {
+
+					if (StrStartsWith(Caps(url),"HTTP://")) { // if (Left(url,7) ~= "http://") {
+
+						url = Mid(url,7);
+
+						ScreenSlidePageWeb(workingActor).AddressPath = StrAfter(url,"/");
+
+						url = StrBefore(url,"/");
+
+						if (StrContains(url,":")) {
+
+							ScreenSlidePageWeb(workingActor).AddressHost = StrBefore(url,":");
+
+							ScreenSlidePageWeb(workingActor).AddressPort = Int(StrAfter(url,":"));
+
+						} else {
+
+							ScreenSlidePageWeb(workingActor).AddressHost = url;
+
+							ScreenSlidePageWeb(workingActor).AddressPort = 80;
+
+						}
+
+						Sender.ClientMessage("Set "$workingActor$".AddressHost+Path+Port from "$args[1]);
+
+					}
+
+				}
+
+				if (workingActor.IsA('ScreenSlidePageServer')) {
+
+					if (Left(url,9) ~= "unreal://") {
+
+						Sender.ClientMessage("Setting "$workingActor$".AddressServer+Port from "$url);
+
+						url = Mid(url,9);
+
+						if (StrContains(url,":")) {
+
+							ScreenSlidePageServer(workingActor).AddressPort = Int(StrBefore(url,":"))+1;
+
+							url = StrAfter(url,":");
+
+						} else {
+
+							ScreenSlidePageServer(workingActor).AddressPort = 7778;
+
+						}
+
+						url = StrBeforeLast(url,"/");
+
+						ScreenSlidePageServer(workingActor).AddressServer = url;
+
+						Sender.ClientMessage("Set "$workingActor$".AddressServer+Port from "$url);
+
+					}
+
+				}
+
+				if (workingActor.IsA('ScreenSlidePage')) {
+
+					
+
+				}
+
+			// }
+
+		// }
+
+		return True;
+
+	}
+
+	*/
+ return False;
+}
+function SaveUpdate(Actor A, String property, String newValue) {
+ local int i;
+ if (A == None) {
+  Log("ActorEditor.SaveUpdate(None,\""$property$"\",\""$newValue$"\") was called.");
+  return;
+ }
+ A.SetPropertyText(property,newValue);
+ for (i=0;i<1024;i++) {
+  // Find first empty record, or matching record to replace:
+  if (UpdateActor[i] == "" || (UpdateActor[i]~=(""$A) && UpdateProperty[i]~=property)) {
+   UpdateActor[i] = ""$A;
+   UpdateProperty[i] = property;
+   UpdateValue[i] = newValue;
+   // SaveConfig();
+   break;
   }
  }
-
- if (args[0] ~= "GET") {
-  result = workingActor.GetPropertyText(args[1]);
-  Sender.ClientMessage(workingActor $ "." $ args[1] $ " = " $ result);
-  return True;
- }
-
- if (args[0] ~= "SET") {
-  workingActor.SetPropertyText(args[1],args[2]);
-  result = workingActor.GetPropertyText(args[1]);
-  Sender.ClientMessage(workingActor $ "." $ args[1] $ " -> " $ result);
-  return True;
- }
-
- if (args[0] ~= "SETURL") {
-  // foreach AllActors(class'Actor', a) {
-  // workingActor = FindClosestActor(Sender);
-   // if (isURL(args[1])) {
-    Sender.ClientMessage("Trying to add url to "$workingActor$" ...");
-    url = args[1];
-    if (workingActor.IsA('Teleporter')) {
-     Teleporter(workingActor).URL = url;
-     Sender.ClientMessage("Set "$workingActor$".URL = "$url);
-    }
-    if (workingActor.IsA('ScreenSlidePageWeb')) {
-     if (StrStartsWith(Caps(url),"HTTP://")) { // if (Left(url,7) ~= "http://") {
-      url = Mid(url,7);
-      ScreenSlidePageWeb(workingActor).AddressPath = StrAfter(url,"/");
-      url = StrBefore(url,"/");
-      if (StrContains(url,":")) {
-       ScreenSlidePageWeb(workingActor).AddressHost = StrBefore(url,":");
-       ScreenSlidePageWeb(workingActor).AddressPort = Int(StrAfter(url,":"));
-      } else {
-       ScreenSlidePageWeb(workingActor).AddressHost = url;
-       ScreenSlidePageWeb(workingActor).AddressPort = 80;
-      }
-      Sender.ClientMessage("Set "$workingActor$".AddressHost+Path+Port from "$args[1]);
-     }
-    }
-    if (workingActor.IsA('ScreenSlidePageServer')) {
-     if (Left(url,9) ~= "unreal://") {
-      Sender.ClientMessage("Setting "$workingActor$".AddressServer+Port from "$url);
-      url = Mid(url,9);
-      if (StrContains(url,":")) {
-       ScreenSlidePageServer(workingActor).AddressPort = Int(StrBefore(url,":"))+1;
-       url = StrAfter(url,":");
-      } else {
-       ScreenSlidePageServer(workingActor).AddressPort = 7778;
-      }
-      url = StrBeforeLast(url,"/");
-      ScreenSlidePageServer(workingActor).AddressServer = url;
-      Sender.ClientMessage("Set "$workingActor$".AddressServer+Port from "$url);
-     }
-    }
-    if (workingActor.IsA('ScreenSlidePage')) {
-
-    }
-   // }
-  // }
-  return True;
- }
-
- return False;
-
 }
-
+function SetServer(Actor Sender, String server_ip, String shortWebName, String server_description) {
+ local Actor A;
+ A = FindClosestActorMatching(Sender,"Teleporter");
+ SaveUpdate(A,"URL","unreal://"$server_ip);
+ A = FindClosestActorMatching(Sender,"ScreenSlidePageServer");
+ if (StrContains(server_ip,":")) {
+  SaveUpdate(A,"AddressServer",StrBefore(server_ip,":"));
+  SaveUpdate(A,"AddressPort",StrAfter(server_ip,":"));
+ } else {
+  SaveUpdate(A,"AddressServer",server_ip);
+  SaveUpdate(A,"AddressPort","7777");
+ }
+ SaveUpdate(A,"Text","<p align=center><font color=gray size=+3>"$server_description$"</font></p>["$server_ip$"]");
+ A = FindClosestActorMatching(Sender,"ScreenSlidePageWeb");
+ SaveUpdate(A,"AddressHost","neuralyte.org");
+ SaveUpdate(A,"AddressPort","80");
+ SaveUpdate(A,"AddressPath","/~joey/utportal/"$shortWebName$".html");
+ SaveUpdate(A,"Text","<p align=center><font color=gray>[No "$shortWebName$".html from website]</font></p>["$server_ip$"]");
+}
 function Actor FindClosestActor(Actor from) {
  local Actor A;
  local int distance;
@@ -184,8 +344,8 @@ function Actor FindClosestActor(Actor from) {
  local Actor bestActor;
  local int bestDistance;
  bestActor = None;
- // foreach VisibleActors(class'Actor', A, 1024, from.Location) {
- foreach AllActors(class'Actor', A) {
+ foreach VisibleActors(class'Actor', A, 1024, from.Location) {
+ // foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
   if (A == from) { // don't find self!
    continue;
   }
@@ -205,7 +365,55 @@ function Actor FindClosestActor(Actor from) {
  }
  return bestActor;
 }
-
+function Actor FindMatchingActor(string str) {
+ local Actor A;
+ foreach AllActors(class'Actor', A) {
+  if (StrContains(Caps(""$A),Caps(str))) {
+   return A;
+  }
+ }
+ return None;
+}
+function Actor FindClosestActorMatching(Actor from, String str) {
+ local Actor A;
+ local int distance;
+ local int deltaRotation;
+ local Actor bestActor;
+ local int bestDistance;
+ bestActor = None;
+ // foreach VisibleActors(class'Actor', A, 1024, from.Location) {
+ foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
+  if (A == from) { // don't find self!
+   continue;
+  }
+  if (!StrContains(Caps(""$A),Caps(str))) {
+   continue;
+  }
+  distance = VSize(A.Location - from.Location);
+  deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
+  // if (deltaRotation < 8192 || deltaRotation > 8192*7) {
+  if (deltaRotation > 8192*4) {
+   deltaRotation = 8192*8 - deltaRotation;
+  }
+  if (deltaRotation < 8192 && deltaRotation > -8192) {
+   if (bestActor == None || distance < bestDistance) {
+    bestActor = A;
+    bestDistance = distance;
+    // PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
+   }
+  }
+ }
+ return bestActor;
+}
+function Actor FindActorWithMatchingProperty(string prop, string val) {
+ local Actor A;
+ foreach AllActors(class'Actor', A) {
+  if ( StrContains(Caps(A.GetPropertyText(prop)),Caps(val)) ) {
+   return A;
+  }
+ }
+ return None;
+}
 function bool isURL(String str) {
  return (InStr(str,"://")>=0 && InStr(str,"://")<50);
 }
