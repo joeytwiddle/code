@@ -4,26 +4,21 @@
 
 class PostBox expands Mutator config(PostBox);
 
-// DONE: forget about swallowing; it only swallows for Sender -> Sender, nobody else!  Suggest they use mutate instead.
-//       well, swallowing could work, but we must do it for *every* call to MutatorTeamMessage, not just the one we process :P
-
-// DONE: only process say commands if they start with '!'?
-// DONE: swallow *all* spoken "!mail" commands at the top level
-
-// DONE: I think InStr returns the last occurrence, not the first; hence StrAfter and the Mid in MutatorTeamMessage need fixing.
-//       at the moment, messages posted containing ":" do not get processed!
-//       Surely InStr is not doing that; that's what it "looks" like, but something else must be wrong.
-//       ohhh there just was no ":" to begin with, so no need to get the string after it :P
-//       that's only needed for MutatorBroadcastMessage()!
-
-// BUG TODO: if someone has a similar nick to you, and a passworded account, and a message waiting before your message
+// BUG TODO: if someone has a similar nick to you, and a passworded account, and a message waiting before your message,
 //           then you will be unable to clear their message, and unable to read the message intended for you!
+// This could even be exploited by a malicious user.  If they create an account for every letter of the alphabet, and post to each of them, nobody else will be able to receive posts!
+// Possible solutions: skip to the next message if you don't have the password for the first one; force account/recipient names to be at least 5 chars.
+
+// CONSIDER TODO: add a !search command, to list passworded accounts, so you can find your friend's account
 
 
 
 var config bool bAnnounceOnJoin;
 var config bool bSuggestReply;
 var config bool bSendConfirmationMessage;
+
+var config bool bRecommendPasswording;
+
 
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
@@ -43,8 +38,11 @@ var int lastPlayerChecked;
 
 defaultproperties {
   bAnnounceOnJoin=True
-  bSuggestReply=False // Too much!
-  bSendConfirmationMessage=False // Too much!
+  bSuggestReply=False // Can be a bit too spammy
+  bSendConfirmationMessage=False // Can be a bit too spammy
+
+  bRecommendPasswording=False // Can be a bit too spammy
+
   bAcceptSpokenCommands=True
   bAcceptMutateCommands=True
   // bSwallowSpokenCommands=True
@@ -68,10 +66,6 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
  local bool hideMessage;
  local string line;
  hideMessage = False;
- // line = Mid(Msg,InStr(Msg,":")+1);
- // line = StrAfter(Msg,":");
- // Log("PostBox.uc.MutatorTeamMessage() ("$Sender$"): Msg="$Msg$"");
- // Log("PostBox.uc.MutatorTeamMessage() ("$Sender$"): line="$line$"");
  if (StrStartsWith(Msg,"!")) {
   if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
    CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
@@ -104,17 +98,14 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
  command = args[0];
 
  if (command ~= "HELP") {
-  // Sender.ClientMessage("PostBox commands:");
-  // Sender.ClientMessage("  !help | !read | !mail/!post <recipient> <message>");
   Sender.ClientMessage("PostBox commands:");
   Sender.ClientMessage("  !help");
   Sender.ClientMessage("  !read");
-  Sender.ClientMessage("  !mail/!post <recipient> <message>");
+  Sender.ClientMessage("  !mail/!post <part_of_player's_nick> <message>");
 
   Sender.ClientMessage("  !setpass <account> <password>");
   Sender.ClientMessage("  !changepass <account> <old_pass> <new_pass>");
 
-  // Sender.ClientMessage("  Note: for delivery, only the letters and numbers in <recipient>'s nick need to match.");
   return True;
  }
 
@@ -125,7 +116,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
  if (command ~= "MAIL" || command ~= "POST") {
   if (args[1] == "" || args[2] == "") {
-   Sender.ClientMessage("Usage: !mail <part_of_recipient_nick> <message>");
+   Sender.ClientMessage("Usage: !mail <part_of_player's_nick> <message>");
   } else {
    // Save message args[2..] for args[1] (from Sender)
    PostMail(Sender,args[1],StrAfter(StrAfter(line," ")," "));
@@ -246,7 +237,7 @@ function CheckForNewPlayers() {
 function ProcessNewPlayer(PlayerPawn p) {
  // Check for new mail for this player:
  if ( ! CheckMailFor(p) ) {
-  // Only announce if they didn't have new mail:
+  // Only announce the mutator if they didn't have new mail:
   if (bAnnounceOnJoin) {
    p.ClientMessage("This server is running the PostBox mutator.");
    p.ClientMessage("You can leave messages for other players with the !mail command.");
@@ -303,12 +294,11 @@ function ReadMail(PlayerPawn p, String password) {
   p.ClientMessage("From " $ mailFrom[i] $ " to " $ mailTo[i] $ " at " $ mailDate[i] $ ":");
   p.ClientMessage("  " $ mailMessage[i]);
   if (bSuggestReply && !(mailFrom[i] ~= "PostMaster")) {
-   // p.ClientMessage("You can reply to this message using: !mail "$squishString(mailFrom[i])$" <your_message>...");
    p.ClientMessage("Reply with: !mail "$squishString(mailFrom[i])$" <your_message>");
   }
 
-  if (!isPassworded(mailTo[i])) {
-   p.ClientMessage("Password the "$mailTo[i]$" account with: !setpass "$mailTo[i]$" <password>");
+  if (!isPassworded(mailTo[i]) && bRecommendPasswording) {
+   p.ClientMessage("You can password the "$mailTo[i]$" account with: !setpass "$mailTo[i]$" <password>");
   }
 
 
@@ -325,7 +315,7 @@ function ReadMail(PlayerPawn p, String password) {
    mailTo[i] = "";
    mailDate[i] = "";
    mailMessage[i] = "";
-   // TODO: If we don't shunt any later messages up to fill this gap at i, players may end up receiving messages in non-chronological order.
+   // BUG TODO: If we don't shunt any later messages up to fill this gap at i, players may end up receiving messages in non-chronological order.
   }
   SaveConfig();
 
