@@ -1,0 +1,134 @@
+//===============//
+//               //
+//  JLib.uc.jpp  //
+//               //
+//===============//
+
+function int SplitString(String str, String divider, out String parts[256]) {
+	// local String parts[256];
+	// local array<String> parts;
+	local int i,nextSplit;
+	i=0;
+	while (true) {
+		nextSplit = InStr(str,divider);
+		if (nextSplit >= 0) {
+			// parts.insert(i,1);
+			parts[i] = Left(str,nextSplit);
+			str = Mid(str,nextSplit+Len(divider));
+			i++;
+		} else {
+			// parts.insert(i,1);
+			parts[i] = str;
+			i++;
+			break;
+		}
+	}
+	// return parts;
+	return i;
+}
+
+function string GetDate() {
+    local string Date, Time;
+    Date = Level.Year$"-"$PrePad(Level.Month,"0",2)$"-"$PrePad(Level.Day,"0",2);
+    Time = PrePad(Level.Hour,"0",2)$":"$PrePad(Level.Minute,"0",2)$"."$PrePad(Level.Second,"0",2);
+    return Date$"-"$Time;
+}
+function string PrePad(coerce string s, string p, int i) {
+    while (Len(s) < i)
+        s = p$s;
+    return s;
+}
+
+function bool StrStartsWith(string s, string x) {
+	return (InStr(s,x) == 0);
+	// return (Left(s,Len(x)) ~= x);
+}
+// function bool StrEndsWith(string s, string x) {
+	// return (Right(s,Len(x)) ~= x);
+// }
+
+function bool StrContains(String s, String x) {
+	return (InStr(s,x) > -1);
+}
+
+function String StrAfter(String s, String x) {
+	local int i;
+	i = Instr(s,x);
+	return Mid(s,i+Len(x));
+}
+
+function string StrAfterLast(string s, string x) {
+	local int i;
+	i = InStr(s,x);
+	if (i == -1) {
+		return s;
+	}
+	while (i != -1) {
+		s = Mid(s,i+Len(x));
+		i = InStr(s,x);
+	}
+	return s;
+}
+
+function string StrBefore(string s, string x) {
+	local int i;
+	i = InStr(s,x);
+	if (i == -1) {
+		return s;
+	} else {
+		return Left(s,i);
+	}
+}
+
+function string StrBeforeLast(string s, string x) {
+	local int i;
+	i = InStrLast(s,x);
+	if (i == -1) {
+		return s;
+	} else {
+		return Left(s,i);
+	}
+}
+
+function int InStrOff(string haystack, string needle, int offset) {
+	local int instrRest;
+	instrRest = InStr(Mid(haystack,offset),needle);
+	if (instrRest == -1) {
+		return instrRest;
+	} else {
+		return offset + instrRest;
+	}
+}
+
+function int InStrLast(string haystack, string needle) {
+	local int pos;
+	local int posRest;
+	pos = InStr(haystack,needle);
+	if (pos == -1) {
+		return -1;
+	} else {
+		posRest = InStrLast(Mid(haystack,pos+Len(needle)),needle);
+		if (posRest == -1) {
+			return pos;
+		} else {
+			return pos + Len(needle) + posRest;
+		}
+	}
+}
+
+// Converts a string to lower-case.
+function String Locs(String in) {
+	local String out;
+	local int i;
+	local int c;
+	out = "";
+	for (i=0;i<Len(in);i++) {
+		c = Asc(Mid(in,i,1));
+		if (c>=65 && c<=90) {
+			c = c + 32;
+		}
+		out = out $ Chr(c);
+	}
+	return out;
+}
+
