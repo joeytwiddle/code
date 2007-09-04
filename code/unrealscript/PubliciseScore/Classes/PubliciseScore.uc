@@ -71,9 +71,9 @@ event Timer() {
      // text = text $ (timeLeft%60) $ "s";
      // text = text $ " left";
      if ((timeLeft/60) == 1) {
-      text = text $ (timeLeft/60) $ " minute left";
+      text = text $ (timeLeft/60) $ " minute remaining";
      } else {
-      text = text $ (timeLeft/60) $ " minutes left";
+      text = text $ (timeLeft/60) $ " minutes remaining";
      }
     } else {
      text = text $ " Overtime!";
@@ -210,8 +210,18 @@ function int InStrLast(string haystack, string needle) {
   }
  }
 }
-/*
-
-
-
-*/
+// Converts a string to lower-case.
+function String Locs(String in) {
+ local String out;
+ local int i;
+ local int c;
+ out = "";
+ for (i=0;i<Len(in);i++) {
+  c = Asc(Mid(in,i,1));
+  if (c>=65 && c<=90) {
+   c = c + 32;
+  }
+  out = out $ Chr(c);
+ }
+ return out;
+}

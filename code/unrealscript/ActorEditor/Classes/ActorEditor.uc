@@ -18,11 +18,16 @@ class ActorEditor expands Mutator config(ActorEditor);
 //       therefore sometimes they start up displaying their OLD values, until their refresh comes around
 //       maybe taking action during CheckReplacement() or AlwaysKeep() could fix this.
 
+// Remove this to leave out Screen support (and Screen dependency).
+
+
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
-// var config bool bSwallowSpokenCommands;
+var config bool bSwallowSpokenCommands;
 var bool bOnlyAdmin; // TODO: config
+
 var bool bLetPlayersSetScreens; // TODO: config
+
 
 var config String UpdateActor[1024];
 var config String UpdateProperty[1024];
@@ -34,9 +39,11 @@ var config String UpdateValue[1024];
 defaultproperties {
   bAcceptSpokenCommands=True
   bAcceptMutateCommands=True
-  // bSwallowSpokenCommands=True
+  bSwallowSpokenCommands=True // Note: only hides the message for the calling player, not the other players.
   bOnlyAdmin=True
+
   bLetPlayersSetScreens=True
+
 }
 
 var Actor workingActor;
@@ -73,9 +80,11 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
  local bool hideMessage;
  hideMessage = False;
  if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
-  hideMessage = CheckMessage(Msg, PlayerPawn(Sender));
+  if (StrStartsWith(Msg,"!")) {
+   hideMessage = CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
+  }
  }
- return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep); // && (!hideMessage || !bSwallowSpokenCommands);
+ return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage || !bSwallowSpokenCommands);
 }
 
 function Mutate(String str, PlayerPawn Sender) {
@@ -94,7 +103,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
  local int i,j;
  local String squishedName;
  local String url;
- local String rebuilt_string;
+ local String rebuilt_string; // CONSIDER: instead of rebuilding the string, we could just use StrAfter(line," ") one or more times.
  local String command;
 
  // Log("ActorEditor.CheckMessage() ("$Sender$"): "$Msg$"");
@@ -102,10 +111,6 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
  command = args[0];
 
- // DONE: strip leading "!" if any
- if (StrStartsWith(command,"!")) {
-  command = Mid(command,1);
- }
 
  if (bLetPlayersSetScreens || Sender.bAdmin || (!bOnlyAdmin)) {
 
@@ -151,6 +156,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
  }
 
+
  if (bOnlyAdmin && !Sender.bAdmin) {
   return False;
  }
@@ -195,139 +201,33 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
   return True;
  }
 
- /*
-
-	if (command ~= "SET" || command ~= "PUT") {
-
-		rebuilt_string = ""; for (i=2;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
-
-		workingActor.SetPropertyText(args[1],rebuilt_string);
-
-		result = workingActor.GetPropertyText(args[1]);
-
-		Sender.ClientMessage(workingActor $ "." $ args[1] $ " -> " $ result);
-
-		return True;
-
-	}
-
-	*/
  if (command ~= "SET" || command ~= "PUT" || command ~= "STORE" || command ~= "SAVE") {
   rebuilt_string = ""; for (i=2;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
   SaveUpdate(workingActor,args[1],rebuilt_string);
   result = workingActor.GetPropertyText(args[1]);
   Sender.ClientMessage(workingActor $ "." $ args[1] $ " => " $ result);
+  // If STORE or SAVE, then we could: SaveConfig();
   return True;
  }
+
  if (command ~= "GRAB") {
+  // Copies the current value of the property into the config file, so it can be edited there.
   result = workingActor.GetPropertyText(args[1]);
   SaveUpdate(workingActor,args[1],result);
+  // We could: SaveConfig();
   Sender.ClientMessage(workingActor $ "." $ args[1] $ " << " $ result);
   return True;
  }
+
  if (command ~= "SAVEALL") {
   SaveConfig();
   return True;
  }
- /*
 
-	if (command ~= "SETURL") {
-
-		// foreach AllActors(class'Actor', a) {
-
-		// workingActor = FindClosestActor(Sender);
-
-			// if (isURL(args[1])) {
-
-				Sender.ClientMessage("Trying to add url to "$workingActor$" ...");
-
-				url = args[1];
-
-				if (workingActor.IsA('Teleporter')) {
-
-					Teleporter(workingActor).URL = url;
-
-					Sender.ClientMessage("Set "$workingActor$".URL = "$url);
-
-				}
-
-				if (workingActor.IsA('ScreenSlidePageWeb')) {
-
-					if (StrStartsWith(Caps(url),"HTTP://")) { // if (Left(url,7) ~= "http://") {
-
-						url = Mid(url,7);
-
-						ScreenSlidePageWeb(workingActor).AddressPath = StrAfter(url,"/");
-
-						url = StrBefore(url,"/");
-
-						if (StrContains(url,":")) {
-
-							ScreenSlidePageWeb(workingActor).AddressHost = StrBefore(url,":");
-
-							ScreenSlidePageWeb(workingActor).AddressPort = Int(StrAfter(url,":"));
-
-						} else {
-
-							ScreenSlidePageWeb(workingActor).AddressHost = url;
-
-							ScreenSlidePageWeb(workingActor).AddressPort = 80;
-
-						}
-
-						Sender.ClientMessage("Set "$workingActor$".AddressHost+Path+Port from "$args[1]);
-
-					}
-
-				}
-
-				if (workingActor.IsA('ScreenSlidePageServer')) {
-
-					if (Left(url,9) ~= "unreal://") {
-
-						Sender.ClientMessage("Setting "$workingActor$".AddressServer+Port from "$url);
-
-						url = Mid(url,9);
-
-						if (StrContains(url,":")) {
-
-							ScreenSlidePageServer(workingActor).AddressPort = Int(StrBefore(url,":"))+1;
-
-							url = StrAfter(url,":");
-
-						} else {
-
-							ScreenSlidePageServer(workingActor).AddressPort = 7778;
-
-						}
-
-						url = StrBeforeLast(url,"/");
-
-						ScreenSlidePageServer(workingActor).AddressServer = url;
-
-						Sender.ClientMessage("Set "$workingActor$".AddressServer+Port from "$url);
-
-					}
-
-				}
-
-				if (workingActor.IsA('ScreenSlidePage')) {
-
-					
-
-				}
-
-			// }
-
-		// }
-
-		return True;
-
-	}
-
-	*/
  return False;
+
 }
+
 function SaveUpdate(Actor A, String property, String newValue) {
  local int i;
  if (A == None) {
@@ -346,6 +246,8 @@ function SaveUpdate(Actor A, String property, String newValue) {
   }
  }
 }
+
+
 // Actually specific for my setup, which is 1 Teleporter, 1 ScreenSlidePageServer (which doesn't work) and 1 ScreenSlidePageWeb (which does work).
 function SetServer(Actor Sender, String server_ip, String server_description) {
  local Actor A;
@@ -368,6 +270,8 @@ function SetServer(Actor Sender, String server_ip, String server_description) {
  SaveUpdate(A,"AddressPath","/cgi-bin/utq?ip="$server_ip);
  SaveUpdate(A,"Text","<p align=center><font color=gray>[Waiting to access web CGI script...]</font></p>["$server_ip$"]");
 }
+
+
 function Actor FindClosestActor(Actor from) {
  local Actor A;
  local int distance;
@@ -396,6 +300,7 @@ function Actor FindClosestActor(Actor from) {
  }
  return bestActor;
 }
+
 function Actor FindMatchingActor(string str) {
  local Actor A;
  foreach AllActors(class'Actor', A) {
@@ -405,6 +310,7 @@ function Actor FindMatchingActor(string str) {
  }
  return None;
 }
+
 function Actor FindClosestActorMatching(Actor from, String str) {
  local Actor A;
  local int distance;
@@ -436,6 +342,7 @@ function Actor FindClosestActorMatching(Actor from, String str) {
  }
  return bestActor;
 }
+
 function Actor FindActorWithMatchingProperty(string prop, string val) {
  local Actor A;
  foreach AllActors(class'Actor', A) {
@@ -445,6 +352,7 @@ function Actor FindActorWithMatchingProperty(string prop, string val) {
  }
  return None;
 }
+
 function bool isURL(String str) {
  return (InStr(str,"://")>=0 && InStr(str,"://")<50);
 }

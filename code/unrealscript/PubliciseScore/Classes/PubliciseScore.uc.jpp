@@ -67,9 +67,9 @@ event Timer() {
 					// text = text $ (timeLeft%60) $ "s";
 					// text = text $ " left";
 					if ((timeLeft/60) == 1) {
-						text = text $ (timeLeft/60) $ " minute left";
+						text = text $ (timeLeft/60) $ " minute remaining";
 					} else {
-						text = text $ (timeLeft/60) $ " minutes left";
+						text = text $ (timeLeft/60) $ " minutes remaining";
 					}
 				} else {
 					text = text $ " Overtime!";
