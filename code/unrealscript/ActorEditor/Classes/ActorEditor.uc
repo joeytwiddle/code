@@ -14,10 +14,15 @@ class ActorEditor expands Mutator config(ActorEditor);
 
 // DONE: instead of mixing up SET and STORE commands, save all SETs, but don't SaveConfig() until "SAVEALL" is called.
 
+// TODO: it seems the screen actors get initialised before this mutator is called
+//       therefore sometimes they start up displaying their OLD values, until their refresh comes around
+//       maybe taking action during CheckReplacement() or AlwaysKeep() could fix this.
+
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
-var config bool bSwallowSpokenCommands;
+// var config bool bSwallowSpokenCommands;
 var bool bOnlyAdmin; // TODO: config
+var bool bLetPlayersSetScreens; // TODO: config
 
 var config String UpdateActor[1024];
 var config String UpdateProperty[1024];
@@ -29,8 +34,9 @@ var config String UpdateValue[1024];
 defaultproperties {
   bAcceptSpokenCommands=True
   bAcceptMutateCommands=True
-  bSwallowSpokenCommands=True
+  // bSwallowSpokenCommands=True
   bOnlyAdmin=True
+  bLetPlayersSetScreens=True
 }
 
 var Actor workingActor;
@@ -67,9 +73,9 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
  local bool hideMessage;
  hideMessage = False;
  if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
-  hideMessage = CheckMessage(Mid(Msg,InStr(Msg,":")+1), PlayerPawn(Sender));
+  hideMessage = CheckMessage(Msg, PlayerPawn(Sender));
  }
- return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage || !bSwallowSpokenCommands);
+ return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep); // && (!hideMessage || !bSwallowSpokenCommands);
 }
 
 function Mutate(String str, PlayerPawn Sender) {
@@ -77,21 +83,6 @@ function Mutate(String str, PlayerPawn Sender) {
   CheckMessage(str, Sender);
  }
  Super.Mutate(str, Sender);
-}
-
-// Removed all non-alphanumeric characters from a string
-function String squishString(String str) {
- local String newStr;
- local int i,c;
- str = Caps(str);
- newStr = "";
- for (i=0; i<Len(str); i++) {
-  c = Asc(Mid(str,i,1));
-  if ( (c>=Asc("A") && c<=Asc("Z")) || (c>=Asc("0") && c<=Asc("9")) ) {
-   newStr = newStr $ Chr(c);
-  }
- }
- return newStr;
 }
 
 // Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
@@ -106,27 +97,71 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
  local String rebuilt_string;
  local String command;
 
- if (bOnlyAdmin && !Sender.bAdmin) {
-  return False;
- }
-
  // Log("ActorEditor.CheckMessage() ("$Sender$"): "$Msg$"");
  argcount = SplitString(line," ",args);
- // TODO: strip leading "!" if any
 
  command = args[0];
 
+ // DONE: strip leading "!" if any
  if (StrStartsWith(command,"!")) {
   command = Mid(command,1);
  }
 
+ if (bLetPlayersSetScreens || Sender.bAdmin || (!bOnlyAdmin)) {
+
+  // Specifically for Screen actors + teleporters.
+  if (command ~= "SETSERVER") {
+   rebuilt_string = ""; for (i=2;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
+   if (args[1] == "" || rebuilt_string == "") {
+    Sender.ClientMessage("Usage: !setserver <server_ip> <server_title/description>");
+   } else {
+    SetServer(Sender,args[1],rebuilt_string);
+    Sender.ClientMessage("Screen server updated.");
+   }
+   return True;
+  }
+
+  if (command ~= "SETTEXT") {
+   rebuilt_string = ""; for (i=1;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
+   if (args[1] == "") {
+    Sender.ClientMessage("Usage: !settext <new_text>");
+   } else {
+    A = FindClosestActorMatching(Sender,"ScreenSlidePage");
+    SaveUpdate(A,"Text",rebuilt_string);
+    Sender.ClientMessage("Screen text updated.");
+   }
+   return True;
+  }
+
+  if (command ~= "SETURL") {
+   rebuilt_string = ""; for (i=1;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
+   if (!isURL(args[1])) {
+    Sender.ClientMessage("Usage: !seturl <url>");
+   } else {
+    A = FindClosestActorMatching(Sender,"Teleporter");
+    if (!StrContains(Teleporter(A).URL,"://")) {
+     Sender.ClientMessage("This local Teleporter may not be modified.");
+    } else {
+     SaveUpdate(A,"URL",rebuilt_string);
+     Sender.ClientMessage("Teleporter URL updated.");
+    }
+   }
+   return True;
+  }
+
+ }
+
+ if (bOnlyAdmin && !Sender.bAdmin) {
+  return False;
+ }
+
  if (command ~= "HELP") {
-  Sender.ClientMessage("ActorEditor commands: help | look | search/find/seek <actor_name_part> | findclosest <actor_name_part> | searchprop/findprop/seekprop <property> <value_part> | ");
+  Sender.ClientMessage("ActorEditor commands:");
+  Sender.ClientMessage("  help | look | search/find/seek <actor_name_part> | findclosest <actor_name_part> | searchprop/findprop/seekprop <property> <value_part> | ");
   // Sender.ClientMessage("  get/check <property> | set/put <property> <value> | store/save <property> <value> | grab <property>");
   Sender.ClientMessage("  get/check <property> | set/put/save/store <property> <value> | grab <property>");
-  Sender.ClientMessage("  setserver <server_address> <neuralyte_shortname> <full_name>");
+  Sender.ClientMessage("  setserver <server_address> <server_title/description> | settext <new_text_for_screen> | seturl <new_url_for_teleporter>");
   Sender.ClientMessage("  saveall");
-  Sender.ClientMessage("  Note: for delivery, only letters+numbers in <recipient>'s nick will be used.");
   return True;
  }
 
@@ -192,13 +227,6 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
  }
  if (command ~= "SAVEALL") {
   SaveConfig();
-  return True;
- }
- // Specifically for Screen actors + teleporters.
- // Actually specific for my setup, which is 1 Teleporter, 1 ScreenSlidePageServer (which doesn't work) and 1 ScreenSlidePageWeb (which does work).
- if (command ~= "SETSERVER") {
-  rebuilt_string = ""; for (i=3;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
-  SetServer(Sender,args[1],args[2],rebuilt_string);
   return True;
  }
  /*
@@ -318,7 +346,8 @@ function SaveUpdate(Actor A, String property, String newValue) {
   }
  }
 }
-function SetServer(Actor Sender, String server_ip, String shortWebName, String server_description) {
+// Actually specific for my setup, which is 1 Teleporter, 1 ScreenSlidePageServer (which doesn't work) and 1 ScreenSlidePageWeb (which does work).
+function SetServer(Actor Sender, String server_ip, String server_description) {
  local Actor A;
  A = FindClosestActorMatching(Sender,"Teleporter");
  SaveUpdate(A,"URL","unreal://"$server_ip);
@@ -334,8 +363,10 @@ function SetServer(Actor Sender, String server_ip, String shortWebName, String s
  A = FindClosestActorMatching(Sender,"ScreenSlidePageWeb");
  SaveUpdate(A,"AddressHost","neuralyte.org");
  SaveUpdate(A,"AddressPort","80");
- SaveUpdate(A,"AddressPath","/~joey/utportal/"$shortWebName$".html");
- SaveUpdate(A,"Text","<p align=center><font color=gray>[No "$shortWebName$".html from website]</font></p>["$server_ip$"]");
+ // SaveUpdate(A,"AddressPath","/~joey/utportal/"$shortWebName$".html");
+ // SaveUpdate(A,"Text","<p align=center><font color=gray>[No "$shortWebName$".html from website]</font></p>["$server_ip$"]");
+ SaveUpdate(A,"AddressPath","/cgi-bin/utq?ip="$server_ip);
+ SaveUpdate(A,"Text","<p align=center><font color=gray>[Waiting to access web CGI script...]</font></p>["$server_ip$"]");
 }
 function Actor FindClosestActor(Actor from) {
  local Actor A;
@@ -524,8 +555,18 @@ function int InStrLast(string haystack, string needle) {
   }
  }
 }
-/*
-
-
-
-*/
+// Converts a string to lower-case.
+function String Locs(String in) {
+ local String out;
+ local int i;
+ local int c;
+ out = "";
+ for (i=0;i<Len(in);i++) {
+  c = Asc(Mid(in,i,1));
+  if (c>=65 && c<=90) {
+   c = c + 32;
+  }
+  out = out $ Chr(c);
+ }
+ return out;
+}
