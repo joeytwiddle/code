@@ -182,7 +182,7 @@ function PostMail(PlayerPawn Sender, String to, String message) {
 			mailMessage[i] = message;
 			#ifdef ENABLE_PASSWORD_SUPPORT
 			if (isPassworded(to)) {
-				Sender.ClientMessage("Message for passworded account " $ to $ " has been saved.");
+				Sender.ClientMessage("Message for " $ to $ " (passworded account) has been saved.");
 			} else {
 				Sender.ClientMessage("Message for " $ to $ " has been saved.");
 			}
@@ -280,7 +280,7 @@ function ReadMail(PlayerPawn p, String password) {
 	} else {
 		#ifdef ENABLE_PASSWORD_SUPPORT
 		if (isPassworded(mailTo[i]) && !(getPassword(mailTo[i]) ~= password)) {
-			p.ClientMessage("Incorrect password for account "$mailTo[i]$".");
+			p.ClientMessage("Please provice correct password for account "$mailTo[i]$".");
 			return;
 		}
 		#endif
