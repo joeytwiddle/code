@@ -517,6 +517,7 @@ defaultproperties {
   bUseOnlyInGameScoresForRebalance=False // Mid-game balancing usually looks up player records to see their strengths.  If you feel this causes lag on the server when a new player joins, or you only want to balance using current game scores anyway, then set this to True.
   bLogFakenickers=False // Write to log any players who had a previous record with a different nick or IP.
   bBroadcastFakenickers=False // Broadcast to game any players who had a previous record with a different nick or IP.
+  bSeparateStatsByGamemode=False
   MaxPlayerData=4096
   // bOnlyMoreCookies=False
   // BalanceTeamsForGameTypes="CTFGame,TeamGamePlus,JailBreak,*"
@@ -1264,7 +1265,7 @@ function bool CheckMessage(String Msg, Actor Sender) {
     if (!Sender.IsA('Spectator')) {
       PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
       // PlayerPawn(Sender).ClientTravel(getServerIP()$"?OverrideClass=Botpack.CHSpectator",TRAVEL_Absolute, False);
-      PlayerPawn(Sender).ClientTravel("?OverrideClass=Botpack.CHSpectator",TRAVEL_Relative, False); // TESTING
+      PlayerPawn(Sender).ClientTravel("?OverrideClass=Botpack.CHSpectator",TRAVEL_Relative, False);
     }
   }
   if (Msg ~= "!PLAY") {
@@ -1272,7 +1273,7 @@ function bool CheckMessage(String Msg, Actor Sender) {
       // BroadcastMessageAndLog("Trying to reconnect "$Sender$" as a player...");
       PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
       // PlayerPawn(Sender).ClientTravel(getServerIP()$"?OverrideClass=",TRAVEL_Absolute, False);
-      PlayerPawn(Sender).ClientTravel("?OverrideClass=",TRAVEL_Relative, False); // TESTING
+      PlayerPawn(Sender).ClientTravel("?OverrideClass=",TRAVEL_Relative, False);
     }
   }
   if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {

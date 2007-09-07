@@ -341,6 +341,9 @@ defaultproperties {
   #ifdef ENABLE_USEISPNOTFULLIP
   bUseISPNotFullIP=False        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
   #endif
+  #ifdef ENABLE_MUTATOR_SIGNATURE
+  bSeparateStatsByGamemode=False
+  #endif
   MaxPlayerData=4096
   // bOnlyMoreCookies=False
   // BalanceTeamsForGameTypes="CTFGame,TeamGamePlus,JailBreak,*"

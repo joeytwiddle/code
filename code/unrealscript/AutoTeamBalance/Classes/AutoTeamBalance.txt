@@ -199,6 +199,7 @@ try enabling it.  Here's an explanation of all the config variables:
   bUpdatePlayerStatsForAS=True              - Now that the default scoring method is method 3, the huge AS bonuses are not a problem when updating player strengths.
   bUpdatePlayerStatsForOtherTeamGames=True  - This will record stats from JailBreak games, for example.
   bUpdatePlayerStatsForNonTeamGames=True    - DM scores are a good indication of a player's strength, even though it's not a team-game
+  bForceEvenTeams=True                      - Automatically switches a player when one team has 2 players more than the other team.
   bLogExtraStats=False                      - records some extra player stats to the logfile at game-end, in case you are interested
   MaxHoursWhenCopyingOldRecord=4.0          - when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this, just in case it was a false-match, to minimise inaccurate stats for the new player
   HoursBeforeRecyclingStrength=12.0         - once a player has played for this long, his older scores start to fade away in favour of his more recent scores (to follow the strengths of players who get better or worse over time)
@@ -217,6 +218,7 @@ try enabling it.  Here's an explanation of all the config variables:
   bUseOnlyInGameScoresForRebalance=False    - Mid-game balancing usually looks up player records to see their strengths.  If you feel this causes lag on the server when a new player joins or during mid-game rebalancing, or you only want to balance using current game scores anyway (ignoring player records), then set this to True.
   bLogFakenickers=False                     - Write to log any players who had a previous record with a different nick or IP.
   bBroadcastFakenickers=False               - Broadcast to game any players who had a previous record with a different nick or IP.
+  bSeparateStatsByGamemode=False            - Builds separate stats for different gametypes and different mutators.  Only use this if your server has a *few* different modes, and they require significantly different skills.  The number of records in your database will be multiplied by the number of different modes your server has.
 
 
 
