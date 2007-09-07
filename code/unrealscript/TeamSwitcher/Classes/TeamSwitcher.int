@@ -1,0 +1,2 @@
+[Public]
+Object=(Name=TeamSwitcher.TeamSwitcher,Class=Class,MetaClass=Engine.Mutator,Description="Team Switcher")
