@@ -1,5 +1,16 @@
 /*
 
+// TODO: guess weak players (score<50 or never been on server) and put them on
+// the *winning* team, in the hope that the next player to join will be
+// stronger.  Argh we can't look up players who are just joining the server,
+// because ModifyLogin has their nick but not their IP.
+
+// TODO: For SoNY_scarface, add option bSeparateRankingsForDifferentGametypes;
+// this could append the gametype to each players nick in the DB, in order to
+// store multiple databases.  Problem is, he might be playing all CTF gametype,
+// but just with different mutators!  Maybe I could take the mutator signature
+// too (e.g. compress/hash the list of mutators). bSeparateRankingsForDifferentMutators
+
 // DUNNO   : i get this with bots when bRankBots=True, and i think i may get it with players too
 //           when a new player joins the server for the first time, their strength mid-game appears to be 0, when it should be UnknownStrength.  the record says it gets created with strength UnknownStrength, but checking later it's 0
 //           mmmm now i can't reproduce it; maybe it was copying another bot's record which had score or time 0
@@ -193,7 +204,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 // var string HelloBroadcast; // CONSIDER: make this configurable, and make it say nothing if ""
 
 var config bool bBroadcastStuff;   // Be noisy to in-game console
-var config bool bBroadcastCookies; // Silly way to debug; each players strength is spammed at end of game as their number of cookies
+var config bool bBroadcastCookies; // Silly/fun way to debug; each players strength change is spammed at end of game as their number of cookies
+var config bool bFlashCookies;     // Silly/fun way to debug; each players has their cookies and cookie-change flashed on their screen at the beginning and end of each game.
 var config bool bDebugLogging;     // logs are more verbose/spammy than usual; recommended only for developers
 // bLogBalancing, bLogDatabase
 // TODO: now we are doing p.ClientMessage() sometimes, we don't really need to BroadcastMessage as well (I only want it as a developer to see changes during the game.)
@@ -249,6 +261,7 @@ var config string clanTag;
 var config bool bUseOnlyInGameScoresForRebalance;    // AKA bMidGameBalancingUsesInGameScoresNotPlayerRecords.  Completely new players cause the most strain on the server, because the whole record DB must be searched before they are "not found", ofc this could be smaller if MaxPlayerData is smaller, or if our search was made more efficient
 var config bool bLogFakenickers;
 var config bool bBroadcastFakenickers;
+var config bool bUseISPNotFullIP;
 // var config bool bTesting;
 
 // For storing player strength data:
@@ -269,13 +282,14 @@ var bool initialized;              // Mutator initialized flag
 var bool gameStartDone;            // Teams initialized flag (we never initialise this to False, but I guess Unreal does that for us)
 var bool gameEndDone;
 
-var int timeGameStarted;
+var int timeGameStarted; // Since Level.Game.StartTime doesn't work, we store it ourselves
 var int lastBalanceTime;
 
 defaultproperties {
   // HelloBroadcast="AutoTeamBalance (beta) is attempting to balance the teams" // gets broadcast to all players at the beginning of the game
   bBroadcastStuff=True      // whether or not to broadcast information to players
   bBroadcastCookies=False   // when enabled, players will see changes in their strength as earning or losing cookies
+  bFlashCookies=False       // when enabled, players will see changes in their strength as earning or losing cookies
   bDebugLogging=False       // enable this only if you need to de-bug AutoTeamBalance
   bLetPlayersRebalance=True    // allows players to fix teams mid-game by typing "teams" or "!teams"
   bWarnMidGameUnbalance=False  // warns players if teams become uneven mid-game
@@ -312,6 +326,7 @@ defaultproperties {
   bUseOnlyInGameScoresForRebalance=False     // Mid-game balancing usually looks up player records to see their strengths.  If you feel this causes lag on the server when a new player joins, or you only want to balance using current game scores anyway, then set this to True.
   bLogFakenickers=False        // Write to log any players who had a previous record with a different nick or IP.
   bBroadcastFakenickers=False  // Broadcast to game any players who had a previous record with a different nick or IP.
+  bUseISPNotFullIP=False        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
   MaxPlayerData=4096
   // bOnlyMoreCookies=False
   // BalanceTeamsForGameTypes="CTFGame,TeamGamePlus,JailBreak,*"
@@ -643,7 +658,7 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 // Maybe AutoCannon is the problem; it does not appear to be doing anything.
 function Mutate(String str, PlayerPawn Sender) {
 
-  local String args[255];
+  local String args[256];
   // local array<String> args;
   local int argcount;
 
@@ -982,12 +997,14 @@ function CheckGameStart() {
 
   // Read starting countdown
   // Level.TimeSeconds counts up from the moment the server becomes ready to serve the map
+  // TODO BUG: if bUpdatePlayerStatsForNonTeamGames is enabled, then on DM maps, we reach here and throw some Accessed None errors.
+  //           But we still want the game start-time.
   e = TeamGamePlus(Level.Game).ElapsedTime; // after the first player joins, appears to count up to NetWait, then game starts, and once all the bots join, it stops increasing
   n = TeamGamePlus(Level.Game).NetWait;
   c = TeamGamePlus(Level.Game).countdown; // appears to stay fixed at 10, but daniel checked it
   // should never get logged:
   if (gameStartDone && bDebugLogging) { Log("AutoTeamBalance.CheckGameStart(): c="$c$" n="$n$" e="$e$" t="$Level.TimeSeconds$""); }
-  c = Min(c,n-e);
+  c = Min(c,n-e); // My theory: ElapsedTime starts counting up from 0 as soon as a player enters the server (altho it stops on 9!), but the game won't start until NetWait and/or Countdown seconds have passed.
 
   // BUG: This can occasionally get called twice within one second (when the Timer was set to 1 second).
   // BUG: Also gets called at 0.
@@ -1372,7 +1389,7 @@ function ForceFullTeamsRebalance() {
     // (This must come after the team switching, otherwise the default start-game "xxx is on Red" will overwrite this text.)
     // TODO CONSIDER BUG: isn't it more important that the player sees what team they were moved to?!
     for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-      if (bBroadcastCookies && p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
+      if (bFlashCookies && p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
         FlashMessageToPlayer(p, p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.");
       }
     }
@@ -1598,6 +1615,7 @@ function bool ShouldBalance(GameInfo game) {
   // if (Level.Game.Name == 'CTFGame')
   if (String(Level.Game.Class) == "Botpack.CTFGame")
     return bAutoBalanceTeamsForCTF;
+  // Will this affect sub-types of CTF, e.g. CTFM, BT, ...?  It depends if they subclass GameInfo, or just use Mutators/ServerActors to produce the required environment without subclassing the Botpack.CTFGame gametype.
   // We only balance TDM games if asked (NOTE: we don't use IsA here, because other teamgames might be a subclass of TeamGamePlus)
   if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
     return bAutoBalanceTeamsForTDM;
@@ -1771,8 +1789,8 @@ function Pawn FindPlayerNamed(String name) {
 // function array<String> SplitString(String str, String divider) {
 // function int SplitString(String str, String divider, out array<String> parts) {
 */
-function int SplitString(String str, String divider, out String parts[255]) {
-	// local String parts[255];
+function int SplitString(String str, String divider, out String parts[256]) {
+	// local String parts[256];
 	// local array<String> parts;
 	local int i,nextSplit;
 	i=0;
@@ -1819,7 +1837,7 @@ function CopyConfigIntoArrays() {
   local int field;
   local int i;
   local String data;
-  local String args[255];
+  local String args[256];
 
   // Now that I'm calling this from MutatorTeamMessage as well as InitTeams via Tick, I cache whether or not it's already been done:
   // if (CopyConfigDone)
@@ -1873,10 +1891,29 @@ function CopyArraysIntoConfig() {
 // TODO CONSIDER: I noticed quite a few players change the last number of their IP quite frequently.  Maybe we should strip that number too, to get the "network/ISP" they are on.  Hmmm many of them actually change the last 2 numbers!  (Most ISPs have more than 256 customers.  :P)
 function String getIP(Pawn p) {
 	if (p.IsA('PlayerPawn')) {
-		return stripPort(PlayerPawn(p).GetPlayerNetworkAddress());
+		return getISP(stripPort(PlayerPawn(p).GetPlayerNetworkAddress()));
 	} else {
-		return "0.0.0.0";
+		return getISP("0.0.0.0");
 	}
+}
+
+function String getISP(String ip) {
+	local int i;
+	if (bUseISPNotFullIP) {
+		// i = Instr(ip,".");
+		// i = Instr(ip,".",i+1);
+		// return Mid(ip,i)$".x.x";
+		return StrAfter(StrAfter(ip,"."),".");
+	} else {
+		return ip;
+	}
+}
+
+function String StrAfter(String s, String x) {
+	local int i;
+	i = InStr(s,x);
+	// return Right(s,Len(s)-Len(x));
+	return Mid(s,i+Len(x));
 }
 
 /*
@@ -1908,7 +1945,7 @@ function int FindPlayerRecord(Pawn p) {
 
   found = FindPlayerRecordNoFastHash(p);
 
-  // If an exact record for the player was found, move it to index i for the rest of this game (by swapping it with whichever record is there)
+  // If an exact record for the player was found, move it to index i for the rest of this game (by swapping it with whichever record is there).  This will make lookups more efficient in future.
   if (found != -1 && p.getHumanName() == nick[found] && getIP(p) == ip[found]) {
     if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): Optimising lookup ("$i$"<->"$found$") for "$p.getHumanName()$" @ "$getIP(p)$"."); }
     tmp_player_nick = nick[i];
@@ -2232,15 +2269,13 @@ function int UpdateStatsForPlayer(Pawn p) {
 
   hours_played[i] += hours_played_this_game;
 
-  if (bBroadcastCookies) {
-    if (avg_score[i]>previous_average+1) {
-      if (bBroadcastStuff) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
-      FlashMessageToPlayer(p,"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game."); // BUG: hidden by scoreboard
-    }
-    else if (previous_average>avg_score[i]+1) {
-      if (bBroadcastStuff) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
-      FlashMessageToPlayer(p,"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game."); // BUG: hidden by scoreboard
-    }
+  if (avg_score[i]>previous_average+1) {
+    if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
+    if (bFlashCookies) { FlashMessageToPlayer(p,"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game."); } // BUG: hidden by scoreboard, but still appears in console
+  }
+  else if (previous_average>avg_score[i]+1) {
+    if (bBroadcastStuff) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
+    if (bFlashCookies) { FlashMessageToPlayer(p,"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game."); } // BUG: hidden by scoreboard, but still appears in console
   }
   return i;
 }
