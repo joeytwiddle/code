@@ -183,6 +183,7 @@ try enabling it.  Here's an explanation of all the config variables:
   bFlashCookies=False                       - When enabled, each player will see his number of cookies at the start of the game, and how many he gained or lost at the end of the game.  For debugging, or for fun.
   bDebugLogging=False                       - Enable this only if you need to debug AutoTeamBalance.
   bLetPlayersRebalance=True                 - Allows players to fix teams mid-game by typing "teams" or "!teams".
+  bForceEvenTeams=True                      - Automatically switches a player when one team has 2 players more than the other team.
   bWarnMidGameUnbalance=False               - Warns players if teams become uneven mid-game.
   bAllowSemiAdminKick=True                  - You can prevent semi-admins from kicking players by switching this off.
   bAllowSemiAdminForceTravel=True           - You can prevent semi-admins from forcing a server move by switching this off.
@@ -199,7 +200,6 @@ try enabling it.  Here's an explanation of all the config variables:
   bUpdatePlayerStatsForAS=True              - Now that the default scoring method is method 3, the huge AS bonuses are not a problem when updating player strengths.
   bUpdatePlayerStatsForOtherTeamGames=True  - This will record stats from JailBreak games, for example.
   bUpdatePlayerStatsForNonTeamGames=True    - DM scores are a good indication of a player's strength, even though it's not a team-game
-  bForceEvenTeams=True                      - Automatically switches a player when one team has 2 players more than the other team.
   bLogExtraStats=False                      - records some extra player stats to the logfile at game-end, in case you are interested
   MaxHoursWhenCopyingOldRecord=4.0          - when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this, just in case it was a false-match, to minimise inaccurate stats for the new player
   HoursBeforeRecyclingStrength=12.0         - once a player has played for this long, his older scores start to fade away in favour of his more recent scores (to follow the strengths of players who get better or worse over time)

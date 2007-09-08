@@ -6,6 +6,12 @@
 
 
 
+// TODO: when a player is switched by the mod, broadcast it, so that it is
+
+// clear what happened, in addition to the flash+shake in that player's HUD.
+
+
+
 // TODO: guess weak players (score<50 or never been on server) and put them on
 
 // the *winning* team, in the hope that the next player to join will be
@@ -16,7 +22,9 @@
 
 
 
-// TODO: For SoNY_scarface, add option bSeparateRankingsForDifferentGametypes;
+// DONE (bSeparateRankingsForDifferentGametypes):
+
+// For SoNY_scarface, add option bSeparateRankingsForDifferentGametypes;
 
 // this could append the gametype to each players nick in the DB, in order to
 
@@ -1192,7 +1200,7 @@ function CheckMidGameBalance() {
     weakerTeam = 0; problem=""; // problem = " ("$redTeamCount$"v"$blueTeamCount$") ";
   }
   if (bForceEvenTeams && weakerTeam != -1) {
-    MidGameRebalance(); // BUG: may fail to balance teams if the smaller team is so strong that nobody on the larger team can actually reduce the strength difference.
+    MidGameRebalance();
     return;
   }
   if (bWarnMidGameUnbalance) {
@@ -1613,7 +1621,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch."); }
     return False;
   }
-  if (newDifference >= currentDifference) {
+  if (newDifference >= currentDifference && !bForceEvenTeams) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(fromTeam)$" team too weak!"); }
     return False;
   } else {
@@ -1697,6 +1705,7 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bShake) {
     // FlashMessageToPlayer(p,"You are now on the "$getTeamName(teamnum)$" team.");
     FlashMessageToPlayer(p,"You have been moved to the "$getTeamName(teamnum)$" team for a fairer game.");
     p.ShakeView(2.0,2000.0,0.0);
+    BroadcastMessage(p.getHumanName()$" has been moved to the "$getTeamName(teamnum)$" team.");
   }
 }
 /* I want to Log all calls to BroadcastMessage() so that I can see without playing how much the players are getting spammed by broadcasts.

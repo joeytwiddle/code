@@ -1,11 +1,15 @@
 /*
 
+// DONE: when a player is switched by the mod, broadcast it, so that it is
+// clear what happened, in addition to the flash+shake in that player's HUD.
+
 // TODO: guess weak players (score<50 or never been on server) and put them on
 // the *winning* team, in the hope that the next player to join will be
 // stronger.  Argh we can't look up players who are just joining the server,
 // because ModifyLogin has their nick but not their IP.
 
-// TODO: For SoNY_scarface, add option bSeparateRankingsForDifferentGametypes;
+// DONE (bSeparateRankingsForDifferentGametypes):
+// For SoNY_scarface, add option bSeparateRankingsForDifferentGametypes;
 // this could append the gametype to each players nick in the DB, in order to
 // store multiple databases.  Problem is, he might be playing all CTF gametype,
 // but just with different mutators!  Maybe I could take the mutator signature
@@ -217,6 +221,7 @@ var config bool bDebugLogging;     // logs are more verbose/spammy than usual; r
 // var config bool bOnlyMoreCookies;  // only broadcast a players cookies when they have recently increased
 
 var config bool bLetPlayersRebalance;
+var config bool bForceEvenTeams;
 var config bool bWarnMidGameUnbalance;
 var config bool bAllowSemiAdminKick;
 var config bool bAllowSemiAdminForceTravel;
@@ -236,7 +241,6 @@ var config bool bUpdatePlayerStatsForTDM;
 var config bool bUpdatePlayerStatsForAS;
 var config bool bUpdatePlayerStatsForOtherTeamGames;
 var config bool bUpdatePlayerStatsForNonTeamGames;
-var config bool bForceEvenTeams;
 // var config string UpdateStatsForGameTypes; // TESTING_List_desired_gametypes
 // var config bool bUpdateStatsForCTFOnly;  // Stats were updating during other gametypes, which yield entirely different scores.  (Maybe stats for different gametypes should be handled separately.)  If your server runs only one team gametype, or gametypes with comparably scores, you can set this to False.
 //// These didn't work for me; maybe config vars can't be complex types like "name"
@@ -303,13 +307,13 @@ defaultproperties {
   bFlashCookies=False       // when enabled, players will see changes in their strength as earning or losing cookies
   bDebugLogging=False       // enable this only if you need to de-bug AutoTeamBalance
   bLetPlayersRebalance=True    // allows players to fix teams mid-game by typing "teams" or "!teams"
+  bForceEvenTeams=True
   bWarnMidGameUnbalance=False  // warns players if teams become uneven mid-game
   bAllowSemiAdminKick=True     // you can prev.nt semi-admins from kicking players by switching this off
   bAllowSemiAdminForceTravel=True  // you can prev.nt semi-admins from forcing a server move by switching this off
   bBalanceBots=False        // whether or not to balance bots as if they were humans (recommended off, since it might create 2v0 if bots are as strong as humans)
   bRankBots=False           // whether or not to record strengths for the bots (just for curiosity really)
   MinSecondsBeforeRebalance=20  // prev.nts players from spamming "!teams"; should be at least 1, to avoid a bug with multiple calls to MutatorTeamMessage
-  bForceEvenTeams=True
   SemiAdminPass="defaults_to_admin_pass"  // set this if you want semi-admins to use a different pass from the server admin pass
   bAutoBalanceTeamsForCTF=True
   bAutoBalanceTeamsForTDM=True  // you can select which game-modes will be balanced, and which will not
@@ -1092,7 +1096,7 @@ function CheckMidGameBalance() {
     weakerTeam = 0; problem=""; // problem = " ("$redTeamCount$"v"$blueTeamCount$") ";
   }
   if (bForceEvenTeams && weakerTeam != -1) {
-    MidGameRebalance(); // BUG: may fail to balance teams if the smaller team is so strong that nobody on the larger team can actually reduce the strength difference.
+    MidGameRebalance();
     return;
   }
   if (bWarnMidGameUnbalance) {
@@ -1508,7 +1512,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch."); }
     return False;
   }
-  if (newDifference >= currentDifference) {
+  if (newDifference >= currentDifference && !bForceEvenTeams) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(fromTeam)$" team too weak!"); }
     return False;
   } else {
@@ -1600,6 +1604,7 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bShake) {
     // FlashMessageToPlayer(p,"You are now on the "$getTeamName(teamnum)$" team.");
     FlashMessageToPlayer(p,"You have been moved to the "$getTeamName(teamnum)$" team for a fairer game.");
     p.ShakeView(2.0,2000.0,0.0);
+    BroadcastMessage(p.getHumanName()$" is now on the "$getTeamName(teamnum)$" team.");
   }
 }
 
