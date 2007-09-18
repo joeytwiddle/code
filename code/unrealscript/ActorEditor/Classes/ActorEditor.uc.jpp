@@ -1,10 +1,31 @@
-class ActorEditor expands Mutator config(ActorEditor);
+// ActorEditor
+//
+//   Lets the admin to change the properties of actors in a running game.
+//
+//   Lets the admin save the changes so that they are applied every time the
+//   map loads.  (This is currently done at PostBeginPlay() but maybe should
+//   also be applied at AlwaysKeep() or CheckReplacement().)
+//
+// Example uses:
+//
+//   Populating out-of-date ScreenPageSlide Actors with new URLs/servers/text
+//   (e.g. on a Portal map).
+//
+//   Changing ZoneInfo properties (e.g. making w00t a no-kill boost-only map ^^).
+//
+//   Changing the text on those scrolling ScriptedTextures.
 
-// Wizard may want to: replace a specific actor, replace all actors matching "...", change properties of one/more actors
+// TODO: The ActorEditor Wizard may also want to: replace a specific actor,
+//   replace all actors matching "...", change properties of one/more actors
+//   (e.g. by globbing map+actor names).
 
-// TODO CONSIDER: collect a list of (max 10?) favourite properties; use these for auto-searching, or display them all on "!examine"
+// TODO CONSIDER: inform players when ActorEditor is making changes to a map.
+//   Maybe allow the editor to explain the change in English, and store this
+//   message for the map.
 
-// TODO: to make the config easier to edit, put commands one-per-line, space-delimited (and execute them like normal messages? -- mmm the "SET" command currently requires "LOOK" or "SEARCH" first.)
+// TODO CONSIDER: collect a list of (max 10/100?) favourite properties; use these for auto-searching (finding actors by property value), or display all present favourite properties on "!examine"
+
+// TODO: to make the config easier to edit, make a meta instruction set, and put commands one-per-line, space-delimited (and execute them like normal messages? -- mmm the "SET" command currently requires "LOOK" or "SEARCH" first.)
 
 // DONE: make the FINDCLOSEST function, which matches Actor name, but takes the closest one
 
@@ -12,15 +33,18 @@ class ActorEditor expands Mutator config(ActorEditor);
 
 // TODO: it seems the screen actors get initialised before this mutator is called
 //       therefore sometimes they start up displaying their OLD values, until their refresh comes around
-//       maybe taking action during CheckReplacement() or AlwaysKeep() could fix this.
+//       maybe taking action during CheckReplacement() or AlwaysKeep() or PreBeginPlay() could fix this.
 
-// Remove this to leave out Screen support (and Screen dependency).
+// Remove this to leave out my specific Screen support (and Screen dependency).
 #define ENABLE_SCREEN_SUPPORT
+
+class ActorEditor expands Mutator config(ActorEditor);
 
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
 var config bool bSwallowSpokenCommands;
 var bool bOnlyAdmin; // TODO: config
+var bool bSaveUserChanges; // TODO: config
 #ifdef ENABLE_SCREEN_SUPPORT
 var bool bLetPlayersSetScreens; // TODO: config
 #endif
@@ -37,6 +61,7 @@ defaultproperties {
   bAcceptMutateCommands=True
   bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
   bOnlyAdmin=True
+  bSaveUserChanges=False        // Otherwise, only admin can save changes, with !saveall
   #ifdef ENABLE_SCREEN_SUPPORT
   bLetPlayersSetScreens=True
   #endif
@@ -110,7 +135,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	#ifdef ENABLE_SCREEN_SUPPORT
 	if (bLetPlayersSetScreens || Sender.bAdmin || (!bOnlyAdmin)) {
 
-		// Specifically for Screen actors + teleporters.
+		// Specifically for Screen actors next to teleporters.
 		if (command ~= "SETSERVER") {
 			rebuilt_string = ""; for (i=2;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
 			if (args[1] == "" || rebuilt_string == "") {
@@ -122,12 +147,17 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 			return True;
 		}
 
+		// TODO: what if a player has already put a message on this screen?  Ideally we would like the add this new message above or below the previous message (with a max limit?).
 		if (command ~= "SETTEXT") {
 			rebuilt_string = ""; for (i=1;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
 			if (args[1] == "") {
 				Sender.ClientMessage("Usage: !settext <new_text>");
 			} else {
 				A = FindClosestActorMatching(Sender,"ScreenSlidePage");
+				// Since the default screen font is rather small, if none is specified, we set a larger font:
+				if (!StrContains(Caps(rebuilt_string),"<FONT")) {
+					rebuilt_string = "<FONT size=+2>" $ rebuilt_string $ "</FONT>";
+				}
 				SaveUpdate(A,"Text",rebuilt_string);
 				Sender.ClientMessage("Screen text updated.");
 			}
@@ -237,14 +267,17 @@ function SaveUpdate(Actor A, String property, String newValue) {
 			UpdateActor[i] = ""$A;
 			UpdateProperty[i] = property;
 			UpdateValue[i] = newValue;
-			// SaveConfig();
+			if (bSaveUserChanges) {
+				SaveConfig();
+			}
 			break;
 		}
 	}
 }
 
 #ifdef ENABLE_SCREEN_SUPPORT
-// Actually specific for my setup, which is 1 Teleporter, 1 ScreenSlidePageServer (which doesn't work) and 1 ScreenSlidePageWeb (which does work).
+// Actually specific for the setup I have on my CTF-ThornsPortal, which is 1 Teleporter, next to 1 ScreenSlidePageServer (which doesn't work online) and 1 ScreenSlidePageWeb (which does work).
+// TODO TEST: If one of the Teleporter/ScreenSlidePageServer/ScreenSlidePageWeb is not present, will the function crash out (or will it just log Accessed None, and proceed to set the next actor)?  If so, which do we want to set first in the code?
 function SetServer(Actor Sender, String server_ip, String server_description) {
 	local Actor A;
 	A = FindClosestActorMatching(Sender,"Teleporter");
