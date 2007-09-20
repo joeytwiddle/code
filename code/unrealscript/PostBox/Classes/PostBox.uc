@@ -2,17 +2,48 @@
 
 
 
-class PostBox expands Mutator config(PostBox);
+// PostBox
+// Lets players on your server leave messages for each other.
 
-// BUG TODO: if someone has a similar nick to you, and a passworded account, and a message waiting before your message,
-//           then you will be unable to clear their message, and unable to read the message intended for you!
-// This could even be exploited by a malicious user.  If they create an account for every letter of the alphabet, and post to each of them, nobody else will be able to receive posts!
-// Possible solutions: skip to the next message if you don't have the password for the first one; force account/recipient names to be at least 5 chars.
+// TODO: feature requests on UnrealAdmin:
+//       longer time before welcome message DISappears - check how BDBMapVote does this   (and maybe make check-time configurable)
+// DONE: allow spectators to read their messages
+
+// TODO: let individual players turn PostBox on/off entirely.
+
+// CONSIDER TODO: let players leave messages at specific points on a map, so
+// they are displayed (to all players, or to specific friends?) when that part
+// of the map is visited.  (Could be nice for MH/BT maps.)
+
+// CONSIDER TODO: let players leave map-wide or server-wide messages for all
+// players - like a forum - maybe rotate after 5/10 messages.
+
+// DONE: if someone has a similar nick to you, and a passworded account, and a
+// message waiting before your message, then you will be unable to clear their
+// message, and unable to read the message intended for you!
+//
+// This could even be exploited by a malicious user.  If they create a
+// passworded account for every letter of the alphabet, and post to each of
+// them, nobody else will be able to receive posts!
+//
+// Possible solutions: skip to the next message if you don't have the
+// password for the first one (DONE); force account/recipient names to be at
+// least 5 chars.
+
+// CONSIDER: probably overkill, but could make it more like a real mail account, with !list, and !clear (don't delete messages immediately).
 
 // CONSIDER TODO: add a !search command, to list passworded accounts, so you can find your friend's account
 
+// DONE: As well as informing each user of new mail when they join the
+// server, we could also remind them at the end of the game (during warm-down
+// or mapvote).  Make both optional.
 
 
+
+class PostBox expands Mutator config(PostBox);
+
+var config bool bCheckMailOnPlayerJoin;
+var config bool bCheckMailAtEndOfGame;
 var config bool bAnnounceOnJoin;
 var config bool bSuggestReply;
 var config bool bSendConfirmationMessage;
@@ -22,21 +53,25 @@ var config bool bRecommendPasswording;
 
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
-// var config bool bSwallowSpokenCommands; // Now it is swallowing some commands automatically.
-
-var config String mailFrom[1024];
-var config String mailTo[1024];
-var config String mailDate[1024];
-var config String mailMessage[1024];
+// var config bool bSwallowSpokenCommands; // Now it is swallowing specific commands automatically.
 
 
-var config String accountName[1024];
-var config String accountPass[1024];
+var config String mailFrom[4096];
+var config String mailTo[4096];
+var config String mailDate[4096];
+var config String mailMessage[4096];
+
+
+
+var config String accountName[2048];
+var config String accountPass[2048];
 
 
 var int lastPlayerChecked;
 
 defaultproperties {
+  bCheckMailOnPlayerJoin=True
+  bCheckMailAtEndOfGame=True
   bAnnounceOnJoin=True
   bSuggestReply=False // Can be a bit too spammy
   bSendConfirmationMessage=False // Can be a bit too spammy
@@ -49,6 +84,11 @@ defaultproperties {
   lastPlayerChecked=0
 }
 
+// TODO: loop through all mails, when reading (show first), and when checking for new (count)
+
+
+// CONSIDER: immediate notification when new message is created for a player currently on server?  aka private message
+
 function PostBeginPlay() {
  // If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
    // Level.Game.BaseMutator.AddMutator(Self);
@@ -58,24 +98,36 @@ function PostBeginPlay() {
   Level.Game.RegisterMessageMutator(Self);
  }
 
- SetTimer(23,True); // 15 was too fast; appeared right after gamestart, along with the zp info
+ SetTimer(29,True); // 15 was too fast; appeared right after gamestart, along with the zp info
+}
+
+// Catch messages from spectators:
+function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
+ local bool hideMessage;
+ hideMessage = SuperCheckMessage(Sender,Receiver,Msg);
+ return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type) && (!hideMessage); // || !bSwallowSpokenCommands);
 }
 
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
  local bool hideMessage;
- local string line;
- hideMessage = False;
+ hideMessage = SuperCheckMessage(Sender,Receiver,Msg);
+ return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage); // || !bSwallowSpokenCommands);
+}
+
+// Returns True if this message should be swallowed / hidden from other players.
+function bool SuperCheckMessage(Actor Sender, Pawn Receiver, String Msg) {
  if (StrStartsWith(Msg,"!")) {
   if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
    CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
   }
-  if (StrStartsWith(Locs(Msg),"!mail") || StrStartsWith(Locs(Msg),"!read") || StrStartsWith(Locs(Msg),"!post") || StrStartsWith(Locs(Msg),"!setpass") || StrStartsWith(Locs(Msg),"!changepass")) {
-   // We hide the first two for privacy, and !read to save space in the player's chat area
-   hideMessage = True;
+  if (StrStartsWith(Locs(Msg),"!mail") || StrStartsWith(Locs(Msg),"!post") || StrStartsWith(Locs(Msg),"!read") || StrStartsWith(Locs(Msg),"!setpass") || StrStartsWith(Locs(Msg),"!changepass")) {
+   // We hide/swallow the first two and the last two for privacy, and we hide !read to save space in the player's chat area
+   // Note this is separate from the Sender == Receiver check, since we want to swallow/hide this message from ALL players!
+   return True;
   }
  }
- return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage); // || !bSwallowSpokenCommands);
+ return False;
 }
 
 function Mutate(String str, PlayerPawn Sender) {
@@ -133,7 +185,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
     if (isPassworded(args[1])) {
      Sender.ClientMessage("Account "$args[1]$" is already passworded.  Try: !changepass "$args[1]$" <old_pass> <new_pass>");
     } else {
-     for (i=0;i<1024;i++) {
+     for (i=0;i<2048;i++) {
       if (accountName[i]=="") {
        accountName[i] = squishString(args[1]);
        accountPass[i] = squishString(args[2]);
@@ -154,7 +206,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
   if (args[1] == "" || args[2] == "" || args[3] == "") {
    Sender.ClientMessage("Usage: !changepass <account_name> <old_pass> <new_pass>");
   } else {
-   for (i=0;i<1024;i++) {
+   for (i=0;i<2048;i++) {
     if (accountName[i] ~= args[1]) {
      if (accountPass[i] ~= args[2]) {
       accountPass[i] = args[3];
@@ -177,7 +229,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 function PostMail(PlayerPawn Sender, String to, String message) {
  local int i;
- for (i=0; i<1024; i++) {
+ for (i=0; i<4096; i++) {
   if (mailFrom[i] == "" && mailTo[i] == "" && mailDate[i] == "" && mailMessage[i] == "") {
    mailFrom[i] = Sender.GetHumanName();
    to = squishString(to);
@@ -186,7 +238,7 @@ function PostMail(PlayerPawn Sender, String to, String message) {
    mailMessage[i] = message;
 
    if (isPassworded(to)) {
-    Sender.ClientMessage("Message for passworded account " $ to $ " has been saved.");
+    Sender.ClientMessage("Message for " $ to $ " (passworded account) has been saved.");
    } else {
     Sender.ClientMessage("Message for " $ to $ " has been saved.");
    }
@@ -218,7 +270,24 @@ function String squishString(String str) {
 }
 
 event Timer() {
- CheckForNewPlayers();
+ local Pawn p;
+
+ if (bCheckMailAtEndOfGame && Level.Game.bGameEnded) {
+  // I want to check mail for all players, but i don't want to announce this time
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+   if (p.IsA('PlayerPawn')) {
+    CheckMailFor(PlayerPawn(p));
+   }
+  }
+  SetTimer(0,False); // CONSIDER: Alternatively, we could set bEndGameCheckDone, and continue checking for new players who join after the end of the game.
+  // Problem: now new players joining during this end-game period won't be checked :|
+  // But we'll need another bloody variable, to set whether we have done the all-players end-game mailcheck.  :P
+  return;
+ }
+
+ if (bCheckMailOnPlayerJoin) {
+  CheckForNewPlayers();
+ }
 }
 
 function CheckForNewPlayers() {
@@ -245,82 +314,105 @@ function ProcessNewPlayer(PlayerPawn p) {
  }
 }
 
+/*
+
 function int FindMailFor(PlayerPawn p) {
- local String squishedName;
- local int i;
- // Check for mail for Sender
- squishedName = squishString(p.GetHumanName());
- for (i=0; i<1024; i++) {
-  if (mailTo[i] != "" && StrContains(squishedName,squishString(mailTo[i]))) {
-   return i;
-  }
- }
- return -1;
+
+	local String squishedName;
+
+	local int i;
+
+	// Check for mail for Sender
+
+	squishedName = squishString(p.GetHumanName());
+
+	for (i=0; i<MAX_MAILS; i++) {
+
+		if (mailTo[i] != "" && StrContains(squishedName,squishString(mailTo[i]))) {
+
+			return i;
+
+		}
+
+	}
+
+	return -1;
+
 }
 
+*/
 function bool CheckMailFor(PlayerPawn p) {
+ local String squishedName;
  local int i;
- i = FindMailFor(p);
- if (i >= 0) {
-
-  if (isPassworded(mailTo[i])) {
-   p.ClientMessage(mailFrom[i]$" has left you a message.  Type !read <password> to read it.");
-  } else {
-   p.ClientMessage(mailFrom[i]$" has left you a message.  Type !read to read it.");
+ // local int count;
+ // count = 0;
+ squishedName = squishString(p.GetHumanName());
+ for (i=0;i<4096;i++) {
+  if (mailTo[i]!="" && StrContains(squishedName,squishString(mailTo[i]))) {
+   if (isPassworded(mailTo[i])) {
+    p.ClientMessage(mailFrom[i]$" has left you a message.  Type !read <password> to read it.");
+   } else {
+    p.ClientMessage(mailFrom[i]$" has left you a message.  Type !read to read it.");
+   }
+   // count++;
+   return True;
   }
-
-
-
-  return True;
  }
  return False;
 }
-
 function ReadMail(PlayerPawn p, String password) {
+ local String squishedName;
  local int i;
- i = FindMailFor(p);
- if (i == -1) {
-  p.ClientMessage("You have no new mail.");
- } else {
+ local int count;
+ squishedName = squishString(p.GetHumanName());
+ count = 0;
+ for (i=0;i<4096;i++) {
+  if (mailTo[i]!="" && StrContains(squishedName,squishString(mailTo[i]))) {
+   count++;
+   if (isPassworded(mailTo[i]) && !(getPassword(mailTo[i]) ~= password)) {
+    p.ClientMessage("Please provide correct password for account "$mailTo[i]$".");
+    continue;
+   }
+   // Display message:
+   // p.ClientMessage(mailFrom[i] $ " -> " $ mailTo[i] $ " @ " $ mailDate[i] $ ": " $ mailMessage[i]);
+   // p.ClientMessage("From " $ mailFrom[i] $ " to " $ mailTo[i] $ " at " $ mailDate[i] $ ": " $ mailMessage[i]);
+   p.ClientMessage("From " $ mailFrom[i] $ " to " $ mailTo[i] $ " at " $ mailDate[i] $ ":");
+   p.ClientMessage("  " $ mailMessage[i]);
 
-  if (isPassworded(mailTo[i]) && !(getPassword(mailTo[i]) ~= password)) {
-   p.ClientMessage("Incorrect password for account "$mailTo[i]$".");
+   if (bSuggestReply && !(mailFrom[i] ~= "PostMaster")) {
+    p.ClientMessage("Reply with: !mail "$squishString(mailFrom[i])$" <your_message>");
+   }
+
+
+   if (!isPassworded(mailTo[i]) && bRecommendPasswording) {
+    p.ClientMessage("You can password the "$mailTo[i]$" account with: !setpass "$mailTo[i]$" <password>");
+   }
+
+
+   if (bSendConfirmationMessage && !(mailFrom[i] ~= "PostMaster")) {
+    // Send a confirmation message back to the sender, saying their message was received (and by who).
+    mailTo[i] = mailFrom[i];
+    mailFrom[i] = "PostMaster";
+    mailDate[i] = GetDate();
+    // mailMessage[i] = ""$p.GetHumanName()$" received your message \""$mailMessage[i]$"\"";
+    mailMessage[i] = ""$p.GetHumanName()$" received your message.";
+   } else {
+    // Clear message:
+    mailFrom[i] = "";
+    mailTo[i] = "";
+    mailDate[i] = "";
+    mailMessage[i] = "";
+    // BUG TODO: If we don't shunt any later messages up to fill this gap at i, players may end up receiving messages in non-chronological order.
+   }
+   SaveConfig();
+   CheckMailFor(p);
    return;
+
   }
+ }
 
-  // Display message:
-  // p.ClientMessage(mailFrom[i] $ " -> " $ mailTo[i] $ " @ " $ mailDate[i] $ ": " $ mailMessage[i]);
-  // p.ClientMessage("From " $ mailFrom[i] $ " to " $ mailTo[i] $ " at " $ mailDate[i] $ ": " $ mailMessage[i]);
-  p.ClientMessage("From " $ mailFrom[i] $ " to " $ mailTo[i] $ " at " $ mailDate[i] $ ":");
-  p.ClientMessage("  " $ mailMessage[i]);
-  if (bSuggestReply && !(mailFrom[i] ~= "PostMaster")) {
-   p.ClientMessage("Reply with: !mail "$squishString(mailFrom[i])$" <your_message>");
-  }
-
-  if (!isPassworded(mailTo[i]) && bRecommendPasswording) {
-   p.ClientMessage("You can password the "$mailTo[i]$" account with: !setpass "$mailTo[i]$" <password>");
-  }
-
-
-  if (bSendConfirmationMessage && !(mailFrom[i] ~= "PostMaster")) {
-   // Send a confirmation message back to the sender, saying their message was received (and by who).
-   mailTo[i] = mailFrom[i];
-   mailFrom[i] = "PostMaster";
-   mailDate[i] = GetDate();
-   // mailMessage[i] = ""$p.GetHumanName()$" received your message \""$mailMessage[i]$"\"";
-   mailMessage[i] = ""$p.GetHumanName()$" received your message.";
-   // Clear message:
-  } else {
-   mailFrom[i] = "";
-   mailTo[i] = "";
-   mailDate[i] = "";
-   mailMessage[i] = "";
-   // BUG TODO: If we don't shunt any later messages up to fill this gap at i, players may end up receiving messages in non-chronological order.
-  }
-  SaveConfig();
-
-  // Does this player have more messages?
-  CheckMailFor(p);
+ if (count == 0) {
+  p.ClientMessage("You have no new mail.");
  }
 }
 
@@ -331,7 +423,7 @@ function bool isPassworded(String account) {
 
 function String getPassword(String account) {
  local int i;
- for (i=0;i<1024;i++) {
+ for (i=0;i<2048;i++) {
   if (accountName[i]~=account) {
    return accountPass[i];
   }
