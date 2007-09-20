@@ -23,6 +23,10 @@
     Don't worry, if you manged to do both of the above, AutoTeamBalance should
     detect that it is running twice, and recover gracefully.
 
+    [Special note for SoNY_scarface: do not add it as a ServerPackage; there
+    is no need, and it will only cause "Version mismatch" errors for your
+    players if you upgrade to a newer version.]
+
     You may also wish to increase your server's NetWait to 10 or 20 seconds.
     (This value can be found in the [Botpack.DeathMatchPlus] section.)
     Initial teambalance is more effective if all the players are on the server
@@ -202,13 +206,13 @@ try enabling it.  Here's an explanation of all the config variables:
   bUpdatePlayerStatsForNonTeamGames=True    - DM scores are a good indication of a player's strength, even though it's not a team-game
   bLogExtraStats=False                      - records some extra player stats to the logfile at game-end, in case you are interested
   MaxHoursWhenCopyingOldRecord=4.0          - when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this, just in case it was a false-match, to minimise inaccurate stats for the new player
-  HoursBeforeRecyclingStrength=12.0         - once a player has played for this long, his older scores start to fade away in favour of his more recent scores (to follow the strengths of players who get better or worse over time)
+  HoursBeforeRecyclingStrength=6.0         - once a player has played for this long, his older scores start to fade away in favour of his more recent scores (to follow the strengths of players who get better or worse over time)
   MinHumansForStats=4                       - It's probably not healthy to update stats for 1v1 games, scores can be a little extreme
   ScoringMethod=2                           - How do we update the player's stats?  0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking.  For CTF/TDM I recommend methods 0 or 2.  For Assault I recommend methods 2 or 3.
   bNormaliseScores=True                     - Normalises scores so that the average score for every game is 50, or whatever specified.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they actually meet each other.  Disable normalisation if your server has similar scores at the end of every game.  This does not affect ScoringMethod 3, which is itself a kind of normalisation.
   bScalePlayerScoreToFullTime=True          - Should be kept True to ensure that scores are comparable when some players have joined the game late.  Players strength records are still only updated relative to the time they spent playing.
   NormalisedStrength=50                     - This need not be changed.  When using bNormaliseScores, it will simply affect the size of the numbers recorded in the database.
-  UnknownStrength=50                        - New players are assumed to have strength 50 (Should be the same as NormalisedStrength, or if bNormaliseScores=False, it should be the average endgame-score-per-20-minute-game of new players on your server.  Only used for a new players during their first game; forgotten immediately afterwards.
+  UnknownStrength=45                        - New players are assumed to have strength 50 (Should be the same as NormalisedStrength, or if bNormaliseScores=False, it should be the average endgame-score-per-20-minute-game of new players on your server.  Only used for a new players during their first game; forgotten immediately afterwards.
   BotStrength=10                            - Maybe 20 or 30 is better, if you disable normalisation, or your bots are strong.  Of course this depends what difficulty the bots are set to on your server, and how effective they are on the maps you play, relative to the humans.
   FlagStrength=20                           - Affects the strength of each team, according to how many caps they have made.  If it's 3:0, the leading team will get an extra 3*FlagStrength = 60 points of strength.  This is used for balancing teams mid-game.
   StrengthThreshold=100                     - If bWarnMidGameUnbalance=True and team strength difference is greater than this, and the stronger team has more players, then all players are warned of team inbalance.  (Some threshold was needed, otherwise any player which switched to the smaller team would just make it look unbalanced the other way, causing never-ending team-unbalance warning!  In theory this might still happen with players of highly different strengths, in which case increase the threshold, or disable bWarnMidGameUnbalance)
