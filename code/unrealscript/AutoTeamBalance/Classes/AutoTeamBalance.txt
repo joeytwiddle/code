@@ -189,6 +189,9 @@ try enabling it.  Here's an explanation of all the config variables:
   bLetPlayersRebalance=True                 - Allows players to fix teams mid-game by typing "teams" or "!teams".
   bForceEvenTeams=True                      - Automatically switches a player when one team has 2 players more than the other team.
   bWarnMidGameUnbalance=False               - Warns players if teams become uneven mid-game.
+  bFlashOnWarning=True                      - The warning will flash across the HUD, instead of appearing in the chat area
+  bShakeOnWarning=False                     - The warning will shake the screens of players on the stronger team
+  bBuzzOnWarning=False                      - The warning will make the sound of buzzing flies for players on the stronger team
   bAllowSemiAdminKick=True                  - You can prevent semi-admins from kicking players by switching this off.
   bAllowSemiAdminForceTravel=True           - You can prevent semi-admins from forcing a server move by switching this off.
   bBalanceBots=False                        - Whether or not to balance bots as if they were humans (recommended off, since it might create 2v0 if bots are as strong as humans).
@@ -210,6 +213,7 @@ try enabling it.  Here's an explanation of all the config variables:
   MinHumansForStats=4                       - It's probably not healthy to update stats for 1v1 games, scores can be a little extreme
   ScoringMethod=2                           - How do we update the player's stats?  0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking.  For CTF/TDM I recommend methods 0 or 2.  For Assault I recommend methods 2 or 3.
   bNormaliseScores=True                     - Normalises scores so that the average score for every game is 50, or whatever specified.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they actually meet each other.  Disable normalisation if your server has similar scores at the end of every game.  This does not affect ScoringMethod 3, which is itself a kind of normalisation.
+  bRelativeNormalisation=True               - During normalisation, the target average will be relative to the current strengths of players in the game.  So if you played against strong players, the strength you gain/lose will reflect this.
   bScalePlayerScoreToFullTime=True          - Should be kept True to ensure that scores are comparable when some players have joined the game late.  Players strength records are still only updated relative to the time they spent playing.
   NormalisedStrength=50                     - This need not be changed.  When using bNormaliseScores, it will simply affect the size of the numbers recorded in the database.
   UnknownStrength=45                        - New players are assumed to have strength 50 (Should be the same as NormalisedStrength, or if bNormaliseScores=False, it should be the average endgame-score-per-20-minute-game of new players on your server.  Only used for a new players during their first game; forgotten immediately afterwards.

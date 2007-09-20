@@ -6,6 +6,10 @@
 
 
 
+// TODO: integrate with AKA?
+
+
+
 // TODO: refuse to perform mid-game rebalance if the resulting change in team strength difference will be below a threshold.
 
 
@@ -531,10 +535,10 @@ defaultproperties {
   bDebugLogging=False // enable this only if you need to de-bug AutoTeamBalance
   bLetPlayersRebalance=True // allows players to fix teams mid-game by typing "teams" or "!teams"
   bForceEvenTeams=False // Still testing this
-  bWarnMidGameUnbalance=False // warns players if teams become uneven mid-game
-  bFlashOnWarning=True // warning will flash across the HUD, instead of appearing in the chat area
-  bShakeOnWarning=False // warning will shake the screens of players on the stronger team
-  bBuzzOnWarning=False // warning will make the sound of buzzing flies for players on the stronger team
+  bWarnMidGameUnbalance=False // Warns players if teams become uneven mid-game
+  bFlashOnWarning=True // The warning will flash across the HUD, instead of appearing in the chat area
+  bShakeOnWarning=False // The warning will shake the screens of players on the stronger team
+  bBuzzOnWarning=False // The warning will make the sound of buzzing flies for players on the stronger team
   bAllowSemiAdminKick=True // you can prev.nt semi-admins from kicking players by switching this off
   bAllowSemiAdminForceTravel=True // you can prev.nt semi-admins from forcing a server move by switching this off
   bBalanceBots=False // whether or not to balance bots as if they were humans (recommended off, since it might create 2v0 if bots are as strong as humans)

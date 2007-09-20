@@ -1,5 +1,25 @@
 /*
 
+// TODO: integrate with AKA?
+
+// TODO: refuse to perform mid-game rebalance if the resulting change in team strength difference will be below a threshold.
+
+// TODO: players who join part-way through a game, will tend to make the teams a little uneven, and as a result that player may score higher than he really deserves, which then mucks up the balance for the next game.
+
+// TODO: pizzaman said it would sometimes refuse to balance a 2v0 ... that's either because a player has negative score, or because the 0-player team has more caps.  Assume FlagStrength==0 when balancing with only 2 players on the server?
+
+// TODO: kinda undesirable with the initial pug-balancing algorithm: if there are 5 players, the strongest will get 2 on his team (red) while blue only have 2!
+
+// TODO: request to refuse to rebalance, unless a minimum number of players say "!teams".
+
+// TODO: request to work on 4-team games
+
+// TODO: consider using lastBalanceTime to meet the request that bForceEvenTeams should not act more often than, say, 1 minute.
+
+// DONE: bRelativeNormalisation
+
+// DONE: Make the Shaking and Buzzing on bWarnMidGameUnbalance optional.  It's very annoying.  Somem servers might just prefer a broadcast message.  (bFlashOnWarning bShakeOnWarning bBuzzOnWarning)
+
 // DONE: when a player is switched by the mod, broadcast it, so that it is
 // clear what happened, in addition to the flash+shake in that player's HUD.
 
@@ -223,6 +243,9 @@ var config bool bDebugLogging;     // logs are more verbose/spammy than usual; r
 var config bool bLetPlayersRebalance;
 var config bool bForceEvenTeams;
 var config bool bWarnMidGameUnbalance;
+var config bool bFlashOnWarning;
+var config bool bShakeOnWarning;
+var config bool bBuzzOnWarning;
 var config bool bAllowSemiAdminKick;
 var config bool bAllowSemiAdminForceTravel;
 var config bool bBalanceBots; // Include bots in the rebalancing (CONSIDER: what happens if bBalanceBots is set but bRankBots is not?)
@@ -255,6 +278,7 @@ var config float HoursBeforeRecyclingStrength;
 var config int MinHumansForStats; // below this number of human players, stats will not be updated, i.e. current game scores will be ignored
 var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking
 var config bool bNormaliseScores; // Recommended for servers where some games end with very high scores and some not (e.g. if you have different styles of map and game-modes, like mixing normal weapons clanwar maps with instagib action maps).  You can turn this off if your server has a fixed mapcycle and always the same game-mode.  Normalising results in a *relative* ranking of players who play the same games.  Not normalising would be better for separating weak and strong players who never actually played together.  If you have 10 strong players getting high scores on one game, and 10 noobs getting low scores during a different game, normalising would actually put the strongest noob up with the strongest pwnzor.  CONSIDER: would it be a useful compromise to "half-normalise"?  And how would we do that?  I think some logarithmic maths might be required.
+var config bool bRelativeNormalisation; // During normalisation, the target average will be relative to the current strengths of players in the game.  So if you played against strong players, the strength you gain/lose will reflect this.
 var config bool bScalePlayerScoreToFullTime; // After much consideration, I got close to implementing this.  But my final argument is: Why should a player be punished because they didn't play the game from the start?  Answer: Because there was a 50:50 chance that they made teams uneven when they joined, becoming the extra man on a team which was closely matched to the opponent.  Therefore it is quite likely that they will score well, because their team will be slaughtering the opponents.  (Their whole team will score better though.)    OK so I implemented it, although a little untidily in two places; maybe it's good to punish those players who join a game and score well, by giving them a high ranking and putting them on a weak team in future.  Also, even if their score is magnified by their short time in the server, that score will only count towards their ranking relative to that size of time.  :)
 // deprecated: var config bool bDoWeightedUpdates;
 
@@ -307,8 +331,11 @@ defaultproperties {
   bFlashCookies=False       // when enabled, players will see changes in their strength as earning or losing cookies
   bDebugLogging=False       // enable this only if you need to de-bug AutoTeamBalance
   bLetPlayersRebalance=True    // allows players to fix teams mid-game by typing "teams" or "!teams"
-  bForceEvenTeams=True
-  bWarnMidGameUnbalance=False  // warns players if teams become uneven mid-game
+  bForceEvenTeams=False        // Still testing this
+  bWarnMidGameUnbalance=False  // Warns players if teams become uneven mid-game
+  bFlashOnWarning=True         // The warning will flash across the HUD, instead of appearing in the chat area
+  bShakeOnWarning=False        // The warning will shake the screens of players on the stronger team
+  bBuzzOnWarning=False         // The warning will make the sound of buzzing flies for players on the stronger team
   bAllowSemiAdminKick=True     // you can prev.nt semi-admins from kicking players by switching this off
   bAllowSemiAdminForceTravel=True  // you can prev.nt semi-admins from forcing a server move by switching this off
   bBalanceBots=False        // whether or not to balance bots as if they were humans (recommended off, since it might create 2v0 if bots are as strong as humans)
@@ -326,16 +353,17 @@ defaultproperties {
   bUpdatePlayerStatsForNonTeamGames=True  // DM scores are a good indication of a player's strength, even though it's not a team-game
   bLogExtraStats=False      // records some extra player stats to the logfile at game-end, in case you are interested
   MaxHoursWhenCopyingOldRecord=4.0    // when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this
-  HoursBeforeRecyclingStrength=12.0   // once a player has played for this long, his older scores start to fade away in favour of his more recent scores
+  HoursBeforeRecyclingStrength=6.0   // once a player has played for this long, his older scores start to fade away in favour of his more recent scores
   MinHumansForStats=4       // It's probably not healthy to update stats for 1v1 games, scores can be a little extreme
   ScoringMethod=2
-  bNormaliseScores=True     // Normalises scores so that the average score for every 15 minutes is 50, or whatever specified below.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they do actually meet.  Disable normalisation if your server has similar scores at the end of every game.
+  bNormaliseScores=True             // Normalises scores so that the average score for every 15 minutes is 50, or whatever specified below.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they do actually meet.  Disable normalisation if your server has similar scores at the end of every game.
+  bRelativeNormalisation=True       // During normalisation, the target average will be relative to the current strengths of players in the game.  So if you played against strong players, the strength you gain/lose will reflect this.
   bScalePlayerScoreToFullTime=True  // Should be True to make normalisation (score comparison) work properly, when some players have joined the game late.  Players strength records will still only be updated relative to the time they spent playing.
   NormalisedStrength=50
-  UnknownStrength=50      // New player records start with an initial strength of 50 (Should be the same as NormalisedStrength.  Otherwise it should be the average endgame-score-per-hour/4 of new players on your server.
+  UnknownStrength=45      // New player records start with an initial strength of 50 (Should be the same as NormalisedStrength.  Otherwise it should be the average endgame-score-per-hour/4 of new players on your server.  Actually maybe it should be the *mode*, which on my server tends to be around 45.
   BotStrength=10          // maybe 20 or 30 is better, if you disable normalisation, or increase NormaliseScore
-  FlagStrength=20         // If it's 3:0, the winning team will get an extra 60 points of strength; used for mid-game balancing
-  StrengthThreshold=100   // If bWarnMidGameUnbalance and team strength difference is greater than this and stronger team has more players, warns all players of team inbalance.  (Some threshold was needed, otherwise any player which switched to the smaller team would just make it look unbalanced the other way, causing never-ending team-unbalance warning!  In theory this might still happen with players of highly different streangths, in which case increase the threshold, or disable bWarnMidGameUnbalance)
+  FlagStrength=20         // If it's 3:0, the winning team will appear to have an extra 60 points of strength; used for mid-game balancing.  For servers hosting DOM games, this value should be more like 2.
+  StrengthThreshold=150   // If bWarnMidGameUnbalance and team strength difference is greater than this and stronger team has more players, warns all players of team inbalance.  (Some threshold was needed, otherwise any player which switched to the smaller team would just make it look unbalanced the other way, causing never-ending team-unbalance warning!  In theory this might still happen with players whose strength exceeds the threshold, in which case increase the threshold, or disable bWarnMidGameUnbalance)
   WinningTeamBonus=0      // Maybe you scored low, but played good teamplay, so your team won, and you deserve higher strength for that.  Recommended values: 0/5/10
   bClanWar=False          // For clan wars; on player login, or game start, make teams by clan tag
   clanTag="XOL"           // Clan tag of red team (all other players are sent to blue)
@@ -990,7 +1018,7 @@ function bool HandleEndGame() {
   // And we have to start the Timer() here, because I have no other way of detecting (getting called at) the end of the game!
   // SetTimer(10,False); // Now checking once a minute to see if game has ended; changed to 10 seconds since we lost our alternative MessageMutator hook
   // SetTimer(10,True); // Turned on now in case bWarnMidGameUnbalance is not set, but kept looping in case it is.
-  SetTimer(10,bWarnMidGameUnbalance); // only loop if we need to check team balance into overtime (probably was set like this already)
+  SetTimer(10,bWarnMidGameUnbalance || bForceEvenTeams); // only loop if we need to check team balance into overtime (probably was set like this already)
   // if (!bWarnMidGameUnbalance) {
     // SetTimer(10,False);
   // }
@@ -1070,7 +1098,7 @@ function DoGameStart() {
   Disable('Tick');
   // We disable the timer, unless it is needed to check mid-game teambalance.
   // HandleEndGame() will set it again, if it is needed for CheckGameEnd().
-  if (bWarnMidGameUnbalance) {
+  if (bWarnMidGameUnbalance || bForceEvenTeams) {
     SetTimer(10,True); // the frequency of the "uneven teams" bleep is 10 seconds
   } else {
     SetTimer(0,False);
@@ -1121,21 +1149,35 @@ function CheckMidGameBalance() {
     for (p=Level.PawnList; p!=None; p=p.NextPawn) {
       if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
         if (p.PlayerReplicationInfo.Team == weakerTeam) {
-          // p.ClientMessage("Teams look uneven!  ("$problem$")  Say !teams to fix them");
-          p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them",'CriticalEvent',True);
+          if (bLetPlayersRebalance) {
+            // p.ClientMessage("Teams look uneven!  ("$problem$")  Say !teams to fix them");
+            p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them",ConditionalName(bFlashOnWarning,'CriticalEvent','Event'),False);
+          }
         } else {
           // p.ClientMessage("Teams look uneven!  ("$problem$")  Say !teams or !"$Caps(getTeamName(weakerTeam))$"");
-          p.ClientMessage("Teams look uneven! "$problem$" Type !teams or !"$Locs(getTeamName(weakerTeam))$"",'CriticalEvent',False);
-          p.ShakeView(1.0,2000.0,2000.0);
-          // we play our own sound
-          // PlaySound ( sound Sound, optional ESoundSlot Slot, optional float Volume, optional bool bNoOverride, optional float Radius, optional float Pitch 
-          // sound'NewBeep'
-          // p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 16); // a squirgier beep, reminds me of jailbreak or respawning on dark camper-sniper servers
-          p.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16); // an annoying buzzing fly
+          p.ClientMessage("Teams look uneven! "$problem$" Type "$ConditionalString(bLetPlayersRebalance,"!teams or ","")$"!"$Locs(getTeamName(weakerTeam))$"",ConditionalName(bFlashOnWarning,'CriticalEvent','Event'),False);
+          if (bShakeOnWarning) {
+            p.ShakeView(1.0,2000.0,2000.0);
+          }
+          if (bBuzzOnWarning) {
+            // we play our own sound
+            // PlaySound ( sound Sound, optional ESoundSlot Slot, optional float Volume, optional bool bNoOverride, optional float Radius, optional float Pitch 
+            // sound'NewBeep'
+            // p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 16); // a squirgier beep, reminds me of jailbreak or respawning on dark camper-sniper servers
+            p.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16); // an annoying buzzing fly
+          }
         }
       }
     }
   }
+}
+
+function String ConditionalString(bool b, String yes, String no) {
+  if (b) { return yes; } else { return no; }
+}
+
+function name ConditionalName(bool b, name yes, name no) {
+  if (b) { return yes; } else { return no; }
 }
 
 function CheckGameEnd() {
@@ -1158,6 +1200,15 @@ function bool CheckMessage(String Msg, Actor Sender) {
   // }
 
   #ifdef ENABLE_USER_COMMANDS
+
+  if (Msg ~= "!STATS") { 
+    Level.Game.BaseMutator.Mutate("smartctf stats",PlayerPawn(Sender));
+  }
+
+  if (Msg ~= "!VOTE" || Msg ~= "!MAPVOTE") {
+    Level.Game.BaseMutator.Mutate("bdbmapvote votemenu",PlayerPawn(Sender));
+  }
+
 
   if (Msg ~= "!RED") {
     ChangePlayerToTeam(PlayerPawn(Sender),0,false);
@@ -1377,7 +1428,7 @@ function ForceFullTeamsRebalance() {
       teamnr=0;
       // NOTE: here we are using Playername, in other places we've used getHumanName.
       if (Instr(Caps(pl[pid].PlayerReplicationInfo.Playername),Caps(clanTag))==-1) teamnr=1;
-      ChangePlayerToTeam(pl[pid],teamnr,false);
+      ChangePlayerToTeam(pl[pid],teamnr,gameStartDone && !gameEndDone);
       teamstr[teamnr]+=ps[pid];
     }
 
@@ -1538,7 +1589,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
   difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
   newdifference = difference;
 
-  // These repeated calls to GetPawnStrength() are going to be inefficient, possibly causing some lag while the server calculates.
+  // FIXED by "hashing": These repeated calls to GetPawnStrength() are going to be inefficient, possibly causing some lag while the server calculates.
   for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
     for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
       // if (isHumanPlayer(redP) && isHumanPlayer(blueP) && redP != blueP
@@ -1604,7 +1655,7 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bShake) {
     // FlashMessageToPlayer(p,"You are now on the "$getTeamName(teamnum)$" team.");
     FlashMessageToPlayer(p,"You have been moved to the "$getTeamName(teamnum)$" team for a fairer game.");
     p.ShakeView(2.0,2000.0,0.0);
-    BroadcastMessage(p.getHumanName()$" is now on the "$getTeamName(teamnum)$" team.");
+    BroadcastMessage(p.getHumanName()$" has been moved to the "$getTeamName(teamnum)$" team.");
   }
 }
 
@@ -2061,6 +2112,7 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
       if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$")"); }
     }
     // TODO: if an uneven match, choose a match with more experience (hours_played)
+    // TODO: even better, average the strengths of all partial-matches (maybe the same nick many times on different IPs, or the same IP with many different nicks), weighted by hours_played
     // TODO: if we have little experience (<10mins) of a player, assume default score?
   }
 
@@ -2086,7 +2138,7 @@ function int CreateNewPlayerRecord(Pawn p) {
   nick[pos] = GetDBName(p);
   // initialise each player as having played for UnknownMinutes (e.g. 10 or 0.1) minutes already, and already earned an average UnknownStrength (e.g. 40) frags
   avg_score[pos] = UnknownStrength; // DO NOT set this to 0; it will screw with InitTeams()!
-  hours_played[pos] = 0; // UnknownMinutes/60;
+  hours_played[pos] = 0; // UnknownMinutes/60; // TODO CONSIDER: using some UnknownMinutes might be better, for players who play only for a short time and get an unrepresentative strength for the next game - with UnknownMinutes their strength will be closer to the average, hence balancing will concentrate more on players we know about.
   if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord("$p$") ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $"."); }
   // if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$ nick[pos] $"!  You have "$ avg_score[pos] $" cookies."); }
   // if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome to the server "$ nick[pos] $"!  Have a cookie.  :)"); }
@@ -2238,7 +2290,7 @@ function float GetScoreForPlayer(Pawn p) {
   } else if (ScoringMethod == 2) {
     award_score = ScaleToFullTime(p) * (p.KillCount + p.PlayerReplicationInfo.Score) / 2.0;
   } else if (ScoringMethod == 3 || ScoringMethod > 3) { // > just in case admin sets ScoringMethod to currently non-existent method 4
-    award_score = GetRankingPoints(p);
+    award_score = GetRankingPoints(p); // note no scaling to full time here, although maybe we should :P
   }
   // if (bScalePlayerScoreToFullTime) { // DONE: This should not be done for method 3, but it should be done *inside* method 3!
     // if (bDebugLogging) { Log("AutoTeamBalance.GetScoreForPlayer("$p.getHumanName()$") Time-scaling: award_score = "$award_score$" * "$(Level.TimeSeconds-timeGameStarted)$" / "$(Level.TimeSeconds-p.PlayerReplicationInfo.StartTime)$""); }
@@ -2264,7 +2316,6 @@ function int UpdateStatsForPlayer(Pawn p) {
   // For efficiency, FindPlayerRecord() is now guaranteed to return a record.
   i = FindPlayerRecord(p);
 
-  current_score = GetScoreForPlayer(p);
   // Ideally we would like to check how long this player has been on the server DONE
   gameDuration = Level.TimeSeconds - timeGameStarted;
   timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
@@ -2278,16 +2329,18 @@ function int UpdateStatsForPlayer(Pawn p) {
   }
   hours_played_this_game = Float(timeInGame)/60.0/60.0;
 
+  current_score = GetScoreForPlayer(p);
+
   // Normalisation, or not:
   // ScoringMethod 3 requires no normalisation.
   if (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2) {
     if (bNormaliseScores) {
-      current_score = NormaliseScore(current_score);
+      current_score = NormaliseScore(current_score); // to get an average score of 50 (different now that we bRelativeNormalisation)
     } else {
       // If game was shorter or longer than the default (assumed 20 minutes),
       // then this score will be smaller or larger than if the game had gone the usual 20 minutes.
       // So we scale the score as if it had been a 20-minute game:
-      current_score = current_score * (1.0/3.0) / hours_played_this_game;
+      current_score = current_score * (1.0/3.0) / hours_played_this_game; // to get the average score for a 20 minute game (around 50-100 on ranel, but possibly much less after a 2v2 on a large less fraggy map)
     }
   }
 
@@ -2334,6 +2387,7 @@ function float NormaliseScore(float score) {
   local Pawn p;
   local int playerCount;
   local float averageGameScore;
+  local float averagePlayerStrengthThisGame;
 
   // DONE: to make normalisation fair, should a player who joined late's score be scaled up by his time to the full game before normalisation? otherwise he may increase the scores of say a noob who fought a bot for 30 minutes.
   // If a player has joined the game at the very end.
@@ -2344,13 +2398,16 @@ function float NormaliseScore(float score) {
   // Could it cause confusion if a player leaves during the updating, or is that unlikely?  (Maybe this thread is synchronized wrt players leaving the game.)
   // We ignore bots scores and count, so it is irrelevant whether the bots have scored nothing, or have pwned the humans, or have performed somewhere inbetween.  Only player's relative scores are taken into account.  No longer true; now we do consider bots' scores when bRankBots=True.
   averageGameScore = 0.0;
+  averagePlayerStrengthThisGame = 0.0;
   for (p=Level.PawnList; p!=None; p=p.NextPawn) {
     if (!p.IsA('Spectator') && AllowedToRank(p)) {
       averageGameScore += GetScoreForPlayer(p);
+      averagePlayerStrengthThisGame += GetPawnStrength(p);
       playerCount++;
     }
   }
   averageGameScore = averageGameScore / Float(playerCount);
+  averagePlayerStrengthThisGame = averagePlayerStrengthThisGame / Float(playerCount);
 
   // Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to NormalisedStrength!
   if (averageGameScore < 2.0) { // TODO: kinda nasty to have such a sharp cutoff though; average 3 frags will be scaled up
@@ -2360,9 +2417,15 @@ function float NormaliseScore(float score) {
   // Well that suggests a short game, in which case the player's stats won't change much anyway.  But if it was a long game, and they still scored low, maybe these noobs will get rewarded more than they should.  Otoh scores may be low simply because it was 2v2 on a huge map, so reward is fair.
   // If the average is 100?  Wow high-scoring game!  Everyone's score will get scaled down.  But I guess it was a long game, so they will get the full time multiplier at least (more if it went into overtime).
 
-  // if (bDebugLogging) { Log("AutoTeamBalance.NormaliseScore("$score$"): Average is "$averageGameScore$""); }
+  if (bDebugLogging) { Log("AutoTeamBalance.NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$""); }
 
-  return score * NormalisedStrength / averageGameScore; // TODO: i think this NormalisedStrength should be scaled if the game was longer/shorter than usual  fewer points for shorter games?  remember their relative score will be scaled up by their time, so is the scale really needed?  :o  Mmm I conclude we don't need to scale the NormalisedStrength.
+  if (bRelativeNormalisation) {
+    return score * averagePlayerStrengthThisGame / averageGameScore;
+    // TODO CONSIDER: We really need to know which player we are normalising.  Because I think we should rank this player according to the strengths of other players in the game, but not his own strength.  Does it matter that much?
+    // BTW is this method inaccurate?  Will we get the situation that a good player loses strength simply because the players he is playing against have such low strenghts, and vice-versa?
+  } else {
+    return score * NormalisedStrength / averageGameScore;
+  }
 
 }
 
