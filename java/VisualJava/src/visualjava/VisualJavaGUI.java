@@ -413,10 +413,11 @@ public class VisualJavaGUI {
 
     			try {
     				printClassesTo(
-    						new PrintWriter(new File("/tmp.xyz")) {
+    						new PrintWriter(new File("/tmp/tmp.xyz")) {
     							public void println(String line) {
     								// org.neuralyte.Logger.log("Adding: "+line);
     								classMenu.addClass(line);
+    								super.println(line);
     							}
     						}
     				);

@@ -31,8 +31,12 @@ public class MethodFrame extends JInternalFrame {
     //// Generated:
     VariableHolder[] parameterTargets;
 
+    private static String getTitle(Method m, Object o) {
+        return m.getDeclaringClass().getName() + "." + m.getName() + "()";
+    }
+    
     public MethodFrame(Method _m, Object _obj) {
-        super("" + _m,true,true,false,true);
+        super(getTitle(_m,_obj),true,true,false,true);
         method = _m;
         constructor = null;
         member = method;

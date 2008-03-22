@@ -20,10 +20,11 @@ import org.neuralyte.common.swing.jmenus.SplittingJMenu;
 /** joey Nov 2, 2004 1:18:49 AM
  * @todo Should rename this to PackageMenu 
  * Mmmm well it's a mix of packages, expanding into Classes, and then into Methods. */
-// public class ClassMenu extends SplittingJMenu {
-public class ClassMenu extends SplittingJMenu {
+// public class ClassMenu extends SplittingJMenu { // DO NOT USE SplittingJMenu: it shows nothing!  Use LazyJMenu instead.
+public class ClassMenu extends LazyJMenu {
 
-    final static ImageIcon packageIcon = new ImageIcon("/usr/share/pixmaps/gnome-default-dlg.png");
+    // final static ImageIcon packageIcon = new ImageIcon("/usr/share/pixmaps/gnome-default-dlg.png");
+    final static ImageIcon packageIcon = new ImageIcon("src/visualjava/package-15x15.png");
 
     String packageName;
 
@@ -131,7 +132,7 @@ public class ClassMenu extends SplittingJMenu {
         ClassMenu subMenu;
         if (got == null) {
             subMenu = new ClassMenu(packageName + ( packageName.length() > 0 ? "." : "" ) + subPackage);
-            subMenu.setIcon(new ImageIcon("src/visualjava/package-15x15.png"));
+            // subMenu.setIcon(new ImageIcon("src/visualjava/package-15x15.png"));
             childMenus.put(subPackage,subMenu);
             add((Component)subMenu);
         } else {
@@ -200,7 +201,8 @@ public class ClassMenu extends SplittingJMenu {
 					}
 					String first=((JMenuItem)tmp.get(0)).getText();
 					String last=((JMenuItem)tmp.get(tmp.size()-1)).getText();
-					SplittingJMenu sm=new SplittingJMenu("[ "+first+" ... "+last+" ]");
+                    // SplittingJMenu sm=new SplittingJMenu("[ "+first+" ... "+last+" ]");
+                    SplittingJMenu sm=new SplittingJMenu(SplittingJMenu.getTitle(first,last));
 					for (int j=0;j<tmp.size();j++) {
 						// sm.add((JMenuItem)tmp.get(j)); // Performs its own sorting!
 						sm.add((Component)tmp.get(j)); // Keeps the sorting we already have.
@@ -218,7 +220,7 @@ public class ClassMenu extends SplittingJMenu {
 			
 		}
 	}
-    
+	
     public static void bubbleSortJMenuItems(Vector in) {
     	for (int i=in.size();i>=0;i--) {
     		for (int j=0;j<i-1;j++) {

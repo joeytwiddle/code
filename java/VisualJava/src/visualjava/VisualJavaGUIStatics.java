@@ -19,7 +19,7 @@ public class VisualJavaGUIStatics {
 		if (type == Method.class)
 			return "orange";
 		// if (type == Exception.class)
-		if (type.isAssignableFrom(Throwable.class))
+		if (Throwable.class.isAssignableFrom(type))
 			return "red";
 		// if (type.getSuperclass() == Object.class)
 			// return "green";
@@ -47,8 +47,13 @@ public class VisualJavaGUIStatics {
 
 	public static ImageIcon getSmallImageIconForClass(Class c) {
 		ImageIcon imageIcon = getImageIconForClass(c);
-		imageIcon.setImage(imageIcon.getImage().getScaledInstance(15,15,15));
+		scaleImage(imageIcon);
 		return imageIcon;
 	}
+
+    public static ImageIcon scaleImage(ImageIcon imageIcon) {
+        imageIcon.setImage(imageIcon.getImage().getScaledInstance(15,15,15));
+        return imageIcon;
+    }
 
 }
