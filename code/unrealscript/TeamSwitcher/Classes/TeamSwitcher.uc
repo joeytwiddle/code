@@ -26,10 +26,6 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
 function CheckMessage(String Msg, PlayerPawn Sender) {
 
-  if (Msg ~= "!VOTE" || Msg ~= "!MAPVOTE") {
-    Level.Game.BaseMutator.Mutate("bdbmapvote votemenu",Sender);
-  }
-
   if (Msg ~= "!RED") {
     ChangePlayerToTeam(Sender,0);
   }
@@ -58,6 +54,14 @@ function CheckMessage(String Msg, PlayerPawn Sender) {
       Sender.PreClientTravel(); // not sure if this is actually needed
       Sender.ClientTravel("?OverrideClass=",TRAVEL_Relative, False);
     }
+  }
+
+  if (Msg ~= "!VOTE" || Msg ~= "!MAPVOTE") {
+    Level.Game.BaseMutator.Mutate("bdbmapvote votemenu",Sender);
+  }
+
+  if (Msg ~= "!STATS") {
+      Level.Game.BaseMutator.Mutate("smartctf stats",Sender);
   }
 
 }

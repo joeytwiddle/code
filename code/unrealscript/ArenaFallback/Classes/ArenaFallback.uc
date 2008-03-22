@@ -38,16 +38,19 @@
 
 class ArenaFallback expands Mutator;
 
-var bool bOnlyOnWeaponlessMaps;
-var String weaponTypes;
-var bool bMultipleWeapons;
-var bool bAllowAllPickups;
-var bool bLogging;
+var config bool bOnlyOnWeaponlessMaps;
+var config String weaponTypes;
+var config bool bMultipleWeapons;
+var config bool bAllowAllPickups;
+var config bool bLogging;
 
 defaultproperties {
-	bOnlyOnWeaponlessMaps=True // TODO: False for testing, but should be True as default
-	weaponTypes="Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
+	bOnlyOnWeaponlessMaps=True // False will cause ArenaFallback to Always replace weapons.  For testing; should be True as default.
+	// weaponTypes="UnrealShare.NaliRabbit,Botpack.ShockRifle,Botpack.Rabit_FlakCannon"
+	// NaliRabbit,Cow,
+	// ,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
 	          // Botpack.Translocator,Botpack.enforcer,Botpack.ChainSaw,Botpack.ImpactHammer,Botpack.doubleenforcer,
+	weaponTypes="Botpack.ShockRifle,Botpack.ut_biorifle,Botpack.PulseGun,Botpack.SniperRifle,Botpack.ripper,Botpack.minigun2,Botpack.UT_FlakCannon,Botpack.UT_Eightball,Botpack.SuperShockRifle,Botpack.WarheadLauncher"
 	bMultipleWeapons=False // TODO should be False as default
 	bAllowAllPickups=True // TODO should be (forced to?) False for instagib arena; maybe we can check damageStrength of weapon, but some weapons like whart have large damage strength but there is large health to aquire ^^
 	bLogging=True
