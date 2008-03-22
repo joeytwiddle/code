@@ -7,7 +7,7 @@ public class Assertion {
             try {
                 throw new Exception("Assertion failed");
             } catch (Exception e) {
-                e.printStackTrace(System.err);
+            	org.neuralyte.Logger.error(e);
             }
             // Could throw an Error or even System.exit()!
         }

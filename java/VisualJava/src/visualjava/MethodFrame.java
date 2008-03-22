@@ -1,20 +1,26 @@
 package visualjava;
 
-import javax.swing.*;
-import java.lang.reflect.*;
-import java.awt.*;
-import java.awt.event.ActionListener;
+import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.beans.PropertyVetoException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Member;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+
+import javax.swing.JButton;
+import javax.swing.JInternalFrame;
+import javax.swing.JLabel;
 
 /** joey Nov 1, 2004 7:51:00 PM */
 public class MethodFrame extends JInternalFrame {
 
     //// Defined:
     // Object value; // Null if constructor, or if method is static
-    ParameterTarget objTarget; // (well actually generated!) Null if constructor, or if method is static
+    VariableHolder objTarget; // (well actually generated!) Null if constructor, or if method is static
     Member member; // Will be either the method or the constructor, the other will be null.
 
     //// Obtained:
@@ -23,7 +29,7 @@ public class MethodFrame extends JInternalFrame {
     Class[] parameterTypes;
 
     //// Generated:
-    ParameterTarget[] parameterTargets;
+    VariableHolder[] parameterTargets;
 
     public MethodFrame(Method _m, Object _obj) {
         super("" + _m,true,true,false,true);
@@ -41,7 +47,7 @@ public class MethodFrame extends JInternalFrame {
             // But still a proper search for a public ancestor (of a non-inner and hence accessible) class,
             // might still be needed, if this setAccessible(true) doesn't work in Java Security restricted JVMs.
         } catch (SecurityException e) {
-            System.out.println("Couldn't make method accessible: " + method);
+        	org.neuralyte.Logger.log("Couldn't make method accessible: " + method);
         }
         // value = _obj;
         // if (_obj == null)
@@ -67,7 +73,7 @@ public class MethodFrame extends JInternalFrame {
                 objTarget = null;
                 getContentPane().add(new JLabel(VisualJavaStatics.getSimpleClassName(member.getDeclaringClass())));
             } else {
-                objTarget = new ParameterTarget(member.getDeclaringClass(),_obj);
+                objTarget = new VariableHolder(member.getDeclaringClass(),_obj);
                 getContentPane().add(objTarget);
             }
             getContentPane().add(new JLabel("."));
@@ -86,10 +92,10 @@ public class MethodFrame extends JInternalFrame {
         );
         getContentPane().add(button);
         getContentPane().add(new JLabel("("));
-        parameterTargets = new ParameterTarget[parameterTypes.length];
+        parameterTargets = new VariableHolder[parameterTypes.length];
         for (int i=0;i<parameterTypes.length;i++) {
             Class type = parameterTypes[i];
-            ParameterTarget parameterTarget = new ParameterTarget(type);
+            VariableHolder parameterTarget = new VariableHolder(type);
             parameterTargets[i] = parameterTarget;
             getContentPane().add(parameterTarget);
             if (i < parameterTypes.length - 1) {
@@ -109,7 +115,7 @@ public class MethodFrame extends JInternalFrame {
                     try {
                         frame.setSelected(true);
                     } catch (PropertyVetoException e1) {
-                        e1.printStackTrace(System.err);
+                    	org.neuralyte.Logger.error(e1);
                     }
                 }
             }
@@ -117,70 +123,21 @@ public class MethodFrame extends JInternalFrame {
     }
 
     void tryToInvoke() {
-        StringBuffer parameterCode = new StringBuffer();
-        Object[] arguments = new Object[parameterTypes.length];
-        for (int i=0;i<parameterTargets.length;i++) {
-            ParameterTarget parameterTarget = parameterTargets[i];
-            arguments[i] = parameterTarget.getObject();
-            Object toShow = (
-                parameterTarget.variable != null
-                ? parameterTarget.variable
-                : parameterTarget.getObject()
-            );
-            parameterCode.append(getTextForObject(toShow));
-            if (i < parameterTargets.length - 1) {
-                parameterCode.append(", ");
-            }
-        }
-        try {
-            Object result;
-            StringBuffer code = new StringBuffer();
-            if (member instanceof Method) {
-                Object on = (
-                    objTarget == null
-                    ? null
-                    : objTarget.variable == null
-                        ? objTarget.getObject()
-                        : objTarget.variable
-                );
-                code.append(
-                    on == null
-                    ? method.getDeclaringClass().getName()
-                    : getTextForObject(on)
-                );
-                code.append("." + method.getName()+ "(");
-                Object reallyOn = ( objTarget == null ? null : objTarget.getObject() );
-                result = method.invoke(reallyOn,arguments);
-            } else {
-                code.append("new " + constructor.getDeclaringClass().getName() /*+ "." + constructor.getName()*/ + "(");
-                result = constructor.newInstance(arguments);
-            }
-            code.append(parameterCode);
-            code.append(");");
-            if (result == null) {
-                System.out.println("Result was null.");
-            } else {
-                String nameOfNewDesktopVariable = VisualJava.desktop.showObject(result);
-                Class returnType = ( member instanceof Method ? method.getReturnType() : constructor.getDeclaringClass() );
-                code.insert(0,returnType.getName() + " " + nameOfNewDesktopVariable + " = ");
-            }
-            System.out.println("[CODE] " + code);
-        } catch (InvocationTargetException e) {
-            VisualJava.desktop.showObject(e.getCause());
-        } catch (Exception e) {
-            e.printStackTrace();
-            // System.err.println(e);
-            VisualJava.desktop.showObject(e);
-        }
-        setSize(this.getPreferredSize());
+        VisualJava.executeMethodOrConstructor(objTarget, member, parameterTargets);
+		// TODO: this used to be called at the end of the invoke thread
+        // But really it should be called whenever a parameterTarget is modified.
+        setSize(getPreferredSize());
     }
 
-    String getTextForObject(Object o) {
-        if (o instanceof Variable) {
-            return ((Variable)o).name;
-        } else {
-            return "<unknown " + o.getClass().getName()+">";
-        }
-    }
+	/*
+	private Object getVariableNameFromPT(ParameterTarget parameterTarget) {
+		Object toShow = (
+		    parameterTarget.variable != null
+		    ? parameterTarget.variable
+		    : parameterTarget.getObject()
+		);
+		return toShow;
+	}
+	*/
 
 }

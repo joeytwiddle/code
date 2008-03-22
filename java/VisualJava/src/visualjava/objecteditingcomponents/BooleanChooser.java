@@ -1,9 +1,9 @@
 package visualjava.objecteditingcomponents;
 
-import org.neuralyte.common.swing.HasDragDroppableObject;
-import org.neuralyte.common.swing.CanAcceptDroppedObject;
+import javax.swing.JCheckBox;
 
-import javax.swing.*;
+import org.neuralyte.common.swing.draganddrop.CanAcceptDroppedObject;
+import org.neuralyte.common.swing.draganddrop.HasDragDroppableObject;
 
 /** joey Nov 2, 2004 3:53:53 PM */
 public class BooleanChooser extends JCheckBox implements HasDragDroppableObject, CanAcceptDroppedObject {

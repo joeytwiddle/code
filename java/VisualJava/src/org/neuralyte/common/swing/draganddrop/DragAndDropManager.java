@@ -1,11 +1,12 @@
-package org.neuralyte.common.swing;
+package org.neuralyte.common.swing.draganddrop;
 
-import javax.swing.*;
-import javax.swing.plaf.ComponentUI;
-import java.awt.*;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Point;
 import java.awt.event.MouseAdapter;
-import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
+
 
 /** joey Nov 3, 2004 5:15:30 PM */
 public class DragAndDropManager {
@@ -67,7 +68,7 @@ class DroppableObjectListener extends MouseAdapter implements MouseMotionListene
     public void mouseReleased(MouseEvent e) {
         // Assertion.assert(dragging != null);
         if (dragged == null) {
-            System.out.println("I don't appear to be carrying anything!");
+        	org.neuralyte.Logger.log("I don't appear to be carrying anything!");
         } else {
             if (DragAndDropManager.getDropTargetListener().overATarget()) {
                 DragAndDropManager.getDropTargetListener().tryToDrop(dragging);
@@ -89,10 +90,10 @@ class DropTargetListener extends MouseAdapter {
     Color previousFgColor = null;
     public void mouseEntered(MouseEvent e) {
         if (currentTarget != null) {
-            System.out.println("Has entered multiple droppable components!");
+        	org.neuralyte.Logger.log("Has entered multiple droppable components!");
         }
         currentTarget = e.getComponent();
-        System.out.println("Entered drop target " + currentTarget);
+        org.neuralyte.Logger.log("Entered drop target " + currentTarget);
         if (Moveability.moveabilityListener.componentBeingDragged != null) {
             /*
             Component toClean = currentTarget;
@@ -121,7 +122,7 @@ class DropTargetListener extends MouseAdapter {
         }
     }
     public void mouseExited(MouseEvent e) {
-        System.out.println("Exited drop target " + currentTarget);
+    	org.neuralyte.Logger.log("Exited drop target " + currentTarget);
         if (previousBgColor != null) {
             // I couldn't set the JLabel's background successfully,
             // until I had uninstalled its UI and its parent's UI.
@@ -137,10 +138,10 @@ class DropTargetListener extends MouseAdapter {
     public boolean tryToDrop(Object obj) {
         CanAcceptDroppedObject acceptor = (CanAcceptDroppedObject)currentTarget;
         if (acceptor.isAcceptable(obj)) {
-            System.out.println("Acceptable: " + obj);
+        	org.neuralyte.Logger.log("Acceptable: " + obj);
             return acceptor.acceptObject(obj);
         } else {
-            System.out.println("Not acceptable: " + obj);
+        	org.neuralyte.Logger.log("Not acceptable: " + obj);
             return false;
         }
     }

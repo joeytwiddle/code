@@ -1,9 +1,10 @@
 package visualjava.objecteditingcomponents;
 
-import org.neuralyte.common.swing.CanAcceptDroppedObject;
+import java.awt.Dimension;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JTextField;
+
+import org.neuralyte.common.swing.draganddrop.CanAcceptDroppedObject;
 
 /** joey Nov 5, 2004 4:55:17 PM */
 public class DroppableJTextField extends JTextField implements CanAcceptDroppedObject {
@@ -14,7 +15,7 @@ public class DroppableJTextField extends JTextField implements CanAcceptDroppedO
     }
     public boolean isAcceptable(Object o) {
         if (!type.isAssignableFrom(o.getClass()));
-            System.out.println("Reason for rejection: ! "+type+".isAssignableFrom("+o.getClass()+")");
+        org.neuralyte.Logger.log("Reason for rejection: ! "+type+".isAssignableFrom("+o.getClass()+")");
         return (type.isAssignableFrom(o.getClass()));
     }
     public boolean acceptObject(Object o) {

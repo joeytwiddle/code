@@ -1,11 +1,12 @@
-package org.neuralyte.common.swing;
+package org.neuralyte.common.swing.draganddrop;
 
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Component;
+import java.awt.Point;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 
-import org.neuralyte.common.Assertion;
-
-import javax.swing.*;
+import javax.swing.JLayeredPane;
 
 /** joey Nov 2, 2004 4:14:39 PM */
 public class Moveability {
@@ -38,7 +39,7 @@ class MoveabilityListener extends MouseAdapter implements MouseMotionListener {
         initialClickPoint = e.getPoint();
         // componentBeingDragged = (Component)e.getSource();
         componentBeingDragged = e.getComponent();
-        System.out.println("initialClickPoint="+initialClickPoint);
+        org.neuralyte.Logger.log("initialClickPoint="+initialClickPoint);
         if (bring_to_front && componentBeingDragged.getParent() instanceof JLayeredPane) {
             ((JLayeredPane)componentBeingDragged.getParent()).setLayer(componentBeingDragged,JLayeredPane.DRAG_LAYER.intValue());
         }
@@ -47,7 +48,7 @@ class MoveabilityListener extends MouseAdapter implements MouseMotionListener {
     public void mouseReleased(MouseEvent e) {
         initialClickPoint = null;
         componentBeingDragged = null;
-        // System.out.println("initialClickPoint=null");
+        // org.neuralyte.Logger.log("initialClickPoint=null");
         if (bring_to_front && componentBeingDragged.getParent() instanceof JLayeredPane) {
             ((JLayeredPane)componentBeingDragged.getParent()).setLayer(componentBeingDragged,JLayeredPane.DEFAULT_LAYER.intValue());
         }
@@ -61,7 +62,7 @@ class MoveabilityListener extends MouseAdapter implements MouseMotionListener {
         double dx = mousePosition.getX() - initialClickPoint.getX();
         double dy = mousePosition.getY() - initialClickPoint.getY();
         Point at = componentBeingDragged.getLocation();
-        // System.out.println("Mouse="+mousePosition + " Component=" + at + " ("+dx+","+dy+")");
+        // org.neuralyte.Logger.log("Mouse="+mousePosition + " Component=" + at + " ("+dx+","+dy+")");
         // at.move((int)dx,(int)dy);
         // componentBeingDragged.setLocation(at);
         componentBeingDragged.setLocation((int)(at.getX() + dx), (int)(at.getY() + dy));

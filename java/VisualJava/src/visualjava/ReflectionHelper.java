@@ -23,7 +23,7 @@ public class ReflectionHelper {
                 if (type.equals(primitiveAType))
                     return true;
             } catch (Exception e) {
-                e.printStackTrace(System.err);
+                org.neuralyte.Logger.error(e);
             }
         }
         return false;
@@ -45,11 +45,11 @@ public class ReflectionHelper {
                     return classType;
                 }
             } catch (Exception e) {
-                e.printStackTrace(System.err);
+                org.neuralyte.Logger.error(e);
             }
         }
         /* || @todo ... */
-        System.err.println("ParameterTarget.getClassTypeFromPrimitiveType() needs more work for type: " + type);
+    	org.neuralyte.Logger.error("ParameterTarget.getClassTypeFromPrimitiveType() needs more work for type: " + type);
         return type;
     }
 
@@ -78,7 +78,7 @@ public class ReflectionHelper {
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         } catch (Exception e) {
-            e.printStackTrace(System.err);
+            org.neuralyte.Logger.error(e);
         }
         return null;
     }

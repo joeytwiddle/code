@@ -1,6 +1,20 @@
+getFields() vs. getDeclaredFields()
+Which will give us all the accessible fields?
+Can we ever break field privacy?  If so, show the ones we can access, hide the rest.
+TODO: add a Filter to the ClassMenu - similarly add a Filter to method menus.
+Mmm sounds like we want a FilteredJMenu.  ^^
+
+But also, we should make JTree views of classes, objects and methods.
+I want a JTree a bit like Windows Explorer, which will show all children of the current node,
+but will hide the siblings of ancestors, to reduce the complexity of the tree view.
+
+TODO: VisualJava should let us SET fields also!
+
+
 OK I've made Variable have names and be passed around,
 but the implementation is dodgy because alternatively Objects can be passed around.
 The advantage is that it now prints out the "code" we have executed.  =)
+Some of the cases where an Object was passed, a VariableModel is now being passed.
 
 So we should probably fork until the nasty implementation is fixed.
 

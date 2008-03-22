@@ -1,4 +1,4 @@
-package org.neuralyte.common.swing;
+package org.neuralyte.common.swing.draganddrop;
 
 /** joey Nov 3, 2004 4:38:47 PM */
 public interface CanAcceptDroppedObject {

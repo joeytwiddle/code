@@ -1,11 +1,9 @@
 package visualjava.objecteditingcomponents;
 
-import org.neuralyte.common.swing.HasDragDroppableObject;
-import org.neuralyte.common.swing.CanAcceptDroppedObject;
+import javax.swing.JLabel;
 
-import javax.swing.*;
-
-import visualjava.VisualJavaStatics;
+import org.neuralyte.common.swing.draganddrop.CanAcceptDroppedObject;
+import org.neuralyte.common.swing.draganddrop.HasDragDroppableObject;
 
 /** joey Nov 5, 2004 4:54:30 PM */
 public class DroppableJLabel extends JLabel implements HasDragDroppableObject, CanAcceptDroppedObject {

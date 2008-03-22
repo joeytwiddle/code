@@ -1,4 +1,4 @@
-package org.neuralyte.common.swing;
+package org.neuralyte.common.swing.draganddrop;
 
 /** @todo How does this relate to CanAcceptObject? **/
 
