@@ -240,7 +240,8 @@ function CheckBoundaries() {
 					if (p.IsA('PlayerPawn'))
 						FlashMessageToPlayer(PlayerPawn(p),"Warning: you may not leave your base during the FastBuild!",colorYellow,0,2,False,False);
 					p.SetLocation(TeamOrigin[p.PlayerReplicationInfo.Team] + Normal(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team])*MaxAllowedRadius);
-					p.Velocity = Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location) * 4096 + vect(0,0,4096);
+					p.Velocity = Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location) * 1024;
+					p.Velocity.Z = 1024;
 					p.SetPhysics(PHYS_Falling);
 				}
 			}
