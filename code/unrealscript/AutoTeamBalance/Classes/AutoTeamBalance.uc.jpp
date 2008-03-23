@@ -1,3 +1,4 @@
+// vim: tabstop=2 shiftwidth=2 expandtab filetype=uc
 // == AutoTeamBalance ========================================================
 // A UT mutator that makes fair teams at the beginning of each teamgame,
 // Works by recording the relative strengths of players on the server (indexed
@@ -22,7 +23,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
-// vim: tabstop=2 shiftwidth=2 expandtab filetype=uc
 
 #define ATB_VERSION "1.3f"
 
@@ -31,8 +31,10 @@
 // Messages flashed to players now have different colours, position and timeout, but do not appear in the player's console.
 // Now always broadcasts any reason for not rebalancing, even if bBroadcastStuff=False.
 // More minor improvements to messaging.
-// bSuperBalance dangerous
-// COOL_CAMERA not working properly
+// Finally added a date_last_played entry for each player.
+// Added a new command: listmuts
+// Testing bSuperBalance, but it has some nasty side-effects.
+// Testing COOL_CAMERA, but replication is too slow.
 
 // Changes in 1.3 October 2007:
 // Added MinRequestsForRebalance.
@@ -84,6 +86,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
 #define ENABLE_MIN_REQUESTS_FOR_REBALANCE
+#define SUPERBALANCE
 #define COOL_CAMERA
 // #define MAP_RATING_SYSTEM
 
@@ -154,7 +157,9 @@ var config bool bUseISPNotFullIP;
 var config bool bSeparateStatsByGamemode;
 var config bool bSeparateStatsByMutators;
 #endif
+#ifdef SUPERBALANCE
 var config bool bSuperBalance; // BUG: Can cause problems by switching a player more than once too quickly.
+#endif
 
 // For storing player strength data:
 var config int MaxPlayerData;
@@ -174,9 +179,11 @@ var String date_last_played[MaxPlayerDataMax];
 var config bool bCoolCamera;
 var int LastCamChangeSeconds;
 var Actor CameraFocusActor;
-var float deltaYaw,deltaPitch,deltaFOV,deltaDist; // CONSIDER TODO: These variables are the same for all PlayerPawns - do we risk collisions?!
 var float currentDist;
+var float thru;
+var Vector CamPathStart,CamPathEnd;
 var float CoolCamYaw,CoolCamPitch; // Because player's ViewRotations have int angles which are too large for the small motions we use each tick.
+var float deltaYaw,deltaPitch,deltaFOV,deltaDist; // CONSIDER TODO: These variables are the same for all PlayerPawns - do we risk collisions?!
 #endif
 #ifdef MAP_RATING_SYSTEM
 var config String MapRatings[256];
@@ -252,9 +259,13 @@ defaultproperties {
 	bSeparateStatsByGamemode=False
 	bSeparateStatsByMutators=False
 	#endif
+	#ifdef SUPERBALANCE
 	bSuperBalance=True
-	MaxPlayerData=4096
+	#endif
+	#ifdef COOL_CAMERA
 	bCoolCamera=True
+	#endif
+	MaxPlayerData=4096
 	colorWhite=(R=255,G=255,B=255,A=32),
 	colorRed=(R=255,G=32,B=32,A=32),
 	colorBlue=(R=32,G=32,B=255,A=32),
@@ -471,6 +482,19 @@ function ShowStrengthsTo(PlayerPawn Sender) {
 	Sender.ClientMessage("Average strength is "$Left(""$averagePlayerStrengthThisGame,5)$", teamscore bonus is "$Left(""$GetFlagStrength(),5)$".");
 }
 
+function ListMutsTo(PlayerPawn Sender) {
+	local Mutator m;
+	local String s;
+	m = Level.Game.BaseMutator;
+	while (m != None) {
+		s = s $ m.Class.Name;
+		m = m.NextMutator;
+		if (m != None)
+			s = s $ ", ";
+	}
+	Sender.ClientMessage("Mutators are: "$s);
+}
+
 // Catch mutate messages (from players, semi-admins or admins)
 function Mutate(String str, PlayerPawn Sender) {
 
@@ -506,6 +530,12 @@ function Mutate(String str, PlayerPawn Sender) {
 	if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
 
 			ShowStrengthsTo(Sender);
+
+	}
+
+	if ( args[0]~="LISTMUTS" || args[0]~="LISTMUTATORS" ) {
+
+			ListMutsTo(Sender);
 
 	}
 
@@ -708,6 +738,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		}
 		Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" console commands:");
 		Sender.ClientMessage("    mutate strengths"); // also just "strength"
+		Sender.ClientMessage("    mutate listmuts"); // also just "strength"
 		Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" semi-admin console commands:");
 		Sender.ClientMessage("    mutate teams" $ pass_if_needed);
 		Sender.ClientMessage("    mutate forceteams" $ pass_if_needed);
@@ -838,12 +869,14 @@ function DoGameStart() {
 	if (ShouldBalance(Level.Game)) {
 		//// We could also do this once or twice *after* the ForceFullTeamsRebalance(), to make teams really even by strength (not pickup style).
 		ForceFullTeamsRebalance();
+		#ifdef SUPERBALANCE
 		//// TESTING: how well can we do by just switching 1 or 2 players?
 		if (bSuperBalance) {
 			lastBalanceTime=-100; MidGameRebalance(True);
 			lastBalanceTime=-100; MidGameRebalance(True);
 			lastBalanceTime=-100; MidGameRebalance(True);
 		}
+		#endif
 		// (This must come after the team switching, otherwise the default start-game "xxx is on Red" will overwrite this text.)
 		// TODO CONSIDER BUG: isn't it more important that the player sees which team they were moved to?!
 		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
@@ -1250,6 +1283,7 @@ simulated function bool isInteresting(Actor a) {
 		|| a.IsA('UT_ShieldBelt')
 		|| a.IsA('UDamage')
 		|| a.IsA('HealthPack')
+    /*
 		|| a.IsA('SuperShockRifle')
 		|| a.IsA('UT_Stealth')
 		|| a.IsA('WarheadLauncher')
@@ -1260,6 +1294,7 @@ simulated function bool isInteresting(Actor a) {
 		|| a.IsA('Armor')
 		|| a.IsA('ThighPads')
 		|| a.IsA('Kicker')
+    */
 	);
 }
 
@@ -1281,7 +1316,8 @@ simulated function Actor GetRandomActor() {
 	return a;
 }
 
-#define TimeToChange (Level.TimeSeconds > LastCamChangeSeconds + 5)
+#define CamSwitchSeconds 5
+#define TimeToChange (Level.TimeSeconds > LastCamChangeSeconds + CamSwitchSeconds)
 
 function int Sgn(float n) {
 	if (n>0)
@@ -1294,9 +1330,11 @@ function int Sgn(float n) {
 // simulated function CoolCamera(float DeltaTime) {
 function CoolCamera(float DeltaTime) {
 	local PlayerPawn p;
+	local Vector NewCamLocation;
 	if (TimeToChange) {
 		CameraFocusActor = GetRandomActor();
-		CoolCamYaw = 8192.0*8.0*(FRand()-0.5);
+		thru = 0;
+		CoolCamYaw = 65536*FRand();
 		CoolCamPitch = 8192*0.3*(FRand()-0.1);
 		// deltaYaw    = 20 * 100*(FRand()-0.5);
 		// deltaYaw    = 20 * Sgn(FRand()-0.5)*(30 + 30*FRand());
@@ -1306,7 +1344,10 @@ function CoolCamera(float DeltaTime) {
 		deltaFOV    = 200 * 0.8*(FRand()-0.3);
 		deltaDist   = 200 * (2+3*FRand());
 		currentDist = 128;
+		GetGoodCameraMove(CameraFocusActor.Location,CamPathStart,CamPathEnd);
 	}
+	thru += DeltaTime/Float(CamSwitchSeconds);
+	NewCamLocation = CamPathStart*thru + CamPathEnd*(1.0-thru);
 	foreach AllActors(class'PlayerPawn', p) {
 		if (gameStartDone) {
 			p.ViewTarget = None;
@@ -1320,11 +1361,11 @@ function CoolCamera(float DeltaTime) {
 			p.RotationRate.Roll = 0;
 			p.RotationRate.Pitch = 0;
 			p.RotationRate.Yaw = 0;
+      // TODO: looks strange changing fov and stopping movement but still looking at same item
+      //       reset the view to look at something new
 			continue;
 		}
 		if (TimeToChange) {
-			// p.ViewTarget = CameraFocusActor;
-			p.ViewTarget = None;
 			p.ViewRotation.Roll = 0;
 			p.ViewRotation.Yaw = CoolCamYaw;
 			p.ViewRotation.Pitch = CoolCamPitch;
@@ -1340,17 +1381,22 @@ function CoolCamera(float DeltaTime) {
 			if (bDebugLogging) { Log("CoolCamera: "$p$" => "$CameraFocusActor$" with ("$P.ViewRotation.yaw$","$P.ViewRotation.pitch$")"); }
 			// p.SetLocation( CameraFocusActor.Location );
 
-			p.ViewTarget = CameraFocusActor;
-			p.bBehindView = True;
+			p.ViewTarget = None;
+			p.bBehindView = False;
+			// p.ViewTarget = CameraFocusActor;
+			// p.bBehindView = True;
 		}
 		// if (bDebugLogging && FRand()<0.00001) {
 			// Log("CoolCamera: yaw "$p.ViewRotation.Yaw$" += "$(deltaYaw*DeltaTime));
 			// Log("CoolCamera: pitch "$p.ViewRotation.Pitch$" += "$(deltaPitch*DeltaTime));
 		// }
-		CoolCamYaw = CoolCamYaw + deltaYaw*DeltaTime;
-		CoolCamPitch = CoolCamPitch + deltaPitch*DeltaTime;
-		p.ViewRotation.Yaw = CoolCamYaw;
-		p.ViewRotation.Pitch = CoolCamPitch;
+		// CoolCamYaw = CoolCamYaw + deltaYaw*DeltaTime;
+		// CoolCamPitch = CoolCamPitch + deltaPitch*DeltaTime;
+		// p.ViewRotation.Yaw = CoolCamYaw;
+		// p.ViewRotation.Pitch = CoolCamPitch;
+		// p.ViewRotation.Pitch = p.ViewRotation.Pitch & 65535;
+		p.SetLocation(NewCamLocation);
+		p.ViewRotation = rotator(CameraFocusActor.Location - NewCamLocation);
 		/*
 		if (Abs(deltaYaw*DeltaTime)<1.0) {
 			if (FRand()<deltaYaw*DeltaTime) {
@@ -1392,6 +1438,7 @@ function CoolCamera(float DeltaTime) {
 			p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
 		// p.RotationRate.Yaw = 20 * deltaYaw;
 		// p.RotationRate.Pitch = 20 * deltaPitch;
+		// p.ClientSetLocation(NewCamLocation,p.ViewRotation);
 	}
 	// TODO: Hard to DeltaTime this:
 	deltaYaw = deltaYaw * 0.997;
@@ -1401,6 +1448,43 @@ function CoolCamera(float DeltaTime) {
 	currentDist += deltaDist*DeltaTime;
 	if (TimeToChange) {
 		LastCamChangeSeconds = Level.TimeSeconds;
+	}
+}
+
+function GetGoodCameraMove(Vector target, out Vector start, out Vector end) {
+	start = FindGoodCameraSpot(target,48+48*FRand(),-16+32*FRand());
+	while (true) {
+		end = FindGoodCameraSpot(target,64+64*FRand(),+64*FRand());
+		if (VSize(end-start)>4 && VSize(end-start)<512)
+			return;
+	}
+}
+
+function Vector FindGoodCameraSpot(Vector from, float radius, float height) {
+	local float yaw,elev;
+	local Vector to;
+	local Vector HitLocation,HitNormal;
+	local rotator rotation;
+	local int i;
+	// for (yaw=FRand()*8192/2;yaw<8192*8;yaw+=8192/2) {
+		// for (y=minZ;y<maxZ;y+=16) {
+	// }
+	for (i=0;i<20;i++) {
+		yaw = FRand()*8192*8;
+		// y = minZ + FRand()*(maxZ - minZ);
+			rotation.roll = 0;
+			// rotation.pitch = pitch;
+			rotation.pitch = 0;
+			rotation.yaw = yaw;
+			to = from + radius*Vector(rotation);
+			to.z = from.z + height;
+			HitActor = Trace(HitLocation,HitNormal,to,from,false);
+			// dist = VSize(HitLocation-from);
+			if (HitActor == None) // = LevelInfo if hit geometry
+				return to;
+			if (i==19)
+				return from + (HitLocation-from)*0.9;
+		// }
 	}
 }
 
