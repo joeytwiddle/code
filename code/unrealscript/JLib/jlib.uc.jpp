@@ -28,30 +28,37 @@ function int SplitString(String str, String divider, out String parts[256]) {
 }
 
 function string GetDate() {
-    local string Date, Time;
-    Date = Level.Year$"-"$PrePad(Level.Month,"0",2)$"-"$PrePad(Level.Day,"0",2);
-    Time = PrePad(Level.Hour,"0",2)$":"$PrePad(Level.Minute,"0",2)$"."$PrePad(Level.Second,"0",2);
-    return Date$"-"$Time;
+	local string Date, Time;
+	Date = Level.Year$"/"$PrePad(Level.Month,"0",2)$"/"$PrePad(Level.Day,"0",2);
+	Time = PrePad(Level.Hour,"0",2)$":"$PrePad(Level.Minute,"0",2)$":"$PrePad(Level.Second,"0",2);
+	return Date$"-"$Time;
 }
+
+// NOTE: may cause an infinite loop if p=""
 function string PrePad(coerce string s, string p, int i) {
-    while (Len(s) < i)
-        s = p$s;
-    return s;
+	while (Len(s) < i)
+		s = p$s;
+	return s;
 }
 
 function bool StrStartsWith(string s, string x) {
 	return (InStr(s,x) == 0);
 	// return (Left(s,Len(x)) ~= x);
 }
-// function bool StrEndsWith(string s, string x) {
-	// return (Right(s,Len(x)) ~= x);
-// }
+
+function bool StrEndsWith(string s, string x) {
+	return (Right(s,Len(x)) ~= x);
+}
 
 function bool StrContains(String s, String x) {
 	return (InStr(s,x) > -1);
 }
 
 function String StrAfter(String s, String x) {
+	return StrAfterFirst(s,x);
+}
+
+function String StrAfterFirst(String s, String x) {
 	local int i;
 	i = Instr(s,x);
 	return Mid(s,i+Len(x));
@@ -71,6 +78,10 @@ function string StrAfterLast(string s, string x) {
 }
 
 function string StrBefore(string s, string x) {
+	return StrBeforeFirst(s,x);
+}
+
+function string StrBeforeFirst(string s, string x) {
 	local int i;
 	i = InStr(s,x);
 	if (i == -1) {
@@ -128,6 +139,36 @@ function String Locs(String in) {
 			c = c + 32;
 		}
 		out = out $ Chr(c);
+	}
+	return out;
+}
+
+function String StrFilterNum(String in) {
+	local String out;
+	local int i;
+	local int c;
+	out = "";
+	for (i=0;i<Len(in);i++) {
+		c = Asc(Mid(in,i,1));
+		if (c>=Asc("0") && c<=Asc("9")) {
+			out = out $ Chr(c);
+		}
+	}
+	return out;
+}
+
+// UT2k4 had Repl(in,search,replace).
+function String StrReplace(String in, String search, String replace) {
+	local String out;
+	local int i;
+	out = "";
+	for (i=0;i<Len(in);i++) {
+		if (Mid(in,i,Len(search)) == search) {
+			in = Left(in,i) $ replace $ Mid(in,i+Len(search));
+			i = i - Len(search) + Len(replace);
+		} else {
+			out = out $ Mid(in,i,1);
+		}
 	}
 	return out;
 }
