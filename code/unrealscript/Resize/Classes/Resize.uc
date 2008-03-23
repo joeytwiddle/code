@@ -4,7 +4,7 @@ class Resize extends Mutator config(Resize);
 // BUG TODO: Splash damage needs to be scaled up/down, but HurtRadius() is sometimes called with a FIXED value. :S
 // FIXED: Sometimes projectiles move too slow (sometimes they look slow but are actually standing STILL!).
 // BUG TODO: Dodge is too high!  When I try to fix it, landing goes weird.
-// BUG TODO: When making player large, he bounces on the floor.  =(
+// FIXED: When making player large, he bounces on the floor.  =(
 // BUG TODO: The first flakslug thrown looks like it's going on the default trajectory, but explodes at correct point.
 // BUG TODO: Some shock balls seem to travel too fast: to reproduce, shoot secondary then primary then secondary - the latter will overtake the foremost!  or hold flak secondary fire to see the same problem there.
 // BUG TODO: Projectiles (well shock at least) do not come out of what looks like the correct point - shock balls appear higher than primaries, making flat moving combos harder.
@@ -12,8 +12,12 @@ class Resize extends Mutator config(Resize);
 // BUG TODO: Shock-balls seem harder to hit (well collision radius has been reduced, along with DrawScale and speed).
 // BUG TODO: No really, some stand-combos can fail!  try aiming down a little to reproduce this.
 // BUG TODO: Shock-combo explosions look a bit funny when scaled, because the 2D sprite is not scaled.
-// BUG TODO: Scaled-down players slide down slopes. :(
+// FIXED: Scaled-down players slide down slopes. :(
 // BUG TODO: Tested Deck-16][ single-player: player was always bouncing on the floor; bio primary fine but secondary fires too far; headshots fine; both ripper shots seemed fine; pulse primary fine, secondary is long and broken; minigun bullets look too fast imo.
+
+// TODO: Some actors don't start at their default DrawScale (e.g. the curtain meshes on Noggins2ndMap).
+//       Ideally we would scale things only ONCE when they are first created, and not relative to their default.DrawScale, but relative to their current scale.
+//       Maybe that's why bots appear a little smaller than my eye height suggests they should.
 
 // var config String AllowedSizes;
 var() config float NewSize;
@@ -84,11 +88,24 @@ simulated function Shrink(Actor a) {
 
   if (a.DrawScale == a.default.DrawScale) {
     bNew = true;
-    DebugLog("Scaling New: "$a$" [NetTag="$NetTag$"]");
+    DebugLog("New: "$a$" [NetTag="$NetTag$"]");
+  // } else {
+    // return;
   }
 
+  if (!bNew) {
+    // Some things we never want to act on twice:
+    if (a.IsA('PlayerPawn') || a.IsA('Bot')) {
+      return;
+    }
+  }
+
+  // TODO: We should not scale brush-style actors like BlockAll.
+
   // Change DrawScale:
-  a.DrawScale = a.default.DrawScale * NewSize;
+  // if (!a.IsA('Bot')) {
+    a.DrawScale = a.default.DrawScale * NewSize;
+  // }
   // a.SetPropertyText("DrawScale",""$(a.default.DrawScale * NewSize));
 
   // Change CollisionRadius/Height, and move up/down correspondingly
@@ -100,9 +117,11 @@ simulated function Shrink(Actor a) {
       a.SetLocation(a.Location + (-64 + 64*NewSize) * Vect(0,0,1)); // flags are actually 64 units above the floor - but their CollisionHeight is not 128!
     }
   } else {
-    a.SetLocation(a.Location - (a.CollisionHeight/2) * Vect(0,0,1));
-    a.SetCollisionSize(a.default.CollisionRadius * NewSize, a.default.CollisionHeight * NewSize);
-    a.SetLocation(a.Location + (a.CollisionHeight/2) * Vect(0,0,1));
+    if (a.IsA('Pickup')) { a.SetLocation(a.Location - (a.CollisionHeight/2) * Vect(0,0,1)); }
+    // if (!bNew || !a.IsA('PlayerPawn')) {
+      a.SetCollisionSize(a.default.CollisionRadius * NewSize, a.default.CollisionHeight * NewSize);
+    // }
+    if (a.IsA('Pickup')) { a.SetLocation(a.Location + (a.CollisionHeight/2) * Vect(0,0,1)); }
   }
 
   // Other Actor properties worth scaling:
@@ -130,7 +149,7 @@ simulated function Shrink(Actor a) {
     if (Projectile(a).Speed > Projectile(a).MaxSpeed) {
       Projectile(a).Speed = Projectile(a).MaxSpeed;
     }
-    if (bNew && Instr(""$a.Name,"Trans")<0) { // Don't slow down this projectile more than once!  And don't slow down Translocs, since changing TossForce seems to work fine.
+    if (bNew) { // Don't slow down this projectile more than once!  Only when it's first created.
       DebugLog("Slowing projectile "$a$" ("$a.NetTag$")");
       Projectile(a).Velocity = Projectile(a).Velocity * NewSize;
     }
@@ -155,25 +174,26 @@ simulated function ShrinkPlayerAndInventory(PlayerPawn p) {
   local Actor inv;
   local float DeltaTime;
   DeltaTime = 0.05;
-  for( inv=p.Inventory; inv!=None; inv=inv.Inventory ) {
-    if (inv.IsA('Weapon')) {
-      Weapon(inv).ProjectileSpeed = Weapon(inv).default.ProjectileSpeed * NewSize;
-      Weapon(inv).AltProjectileSpeed = Weapon(inv).default.AltProjectileSpeed * NewSize;
-    }
-    if (inv.IsA('Translocator')) {
-      Translocator(inv).TossForce = Translocator(inv).default.TossForce * NewSize;
-      Translocator(inv).MaxTossForce = Translocator(inv).default.MaxTossForce * NewSize;
-    }
-  }
-  // Fix the player's dodge height, because it's fixed at 160 in Epic's code!!
-  if (p.DodgeDir == DODGE_Active && p.Velocity.Z >= 140 && p.Velocity.Z <= 180) {
-    DebugLog("Fixing dodge for "$p$" (acc="$p.Acceleration$")");
-    // p.Location.Z = p.Location.Z - p.Velocity.Z * DeltaTime;
-    // if (Role == Role_Authority) {
-      p.SetLocation(p.Location - Vect(0,0,1) * p.Velocity.Z * DeltaTime); // undo the error caused by the tick before we could fix it
-      p.Velocity.Z = p.Velocity.Z * NewSize * NewSize;
+  //// Didn't seem to have any affect, so now we slow down projectiles when they are first created.
+  // for( inv=p.Inventory; inv!=None; inv=inv.Inventory ) {
+    // if (inv.IsA('Weapon')) {
+      // Weapon(inv).ProjectileSpeed = Weapon(inv).default.ProjectileSpeed * NewSize;
+      // Weapon(inv).AltProjectileSpeed = Weapon(inv).default.AltProjectileSpeed * NewSize;
     // }
-    // p.Velocity = p.Velocity * NewSize;
-  }
+    // if (inv.IsA('Translocator')) {
+      // Translocator(inv).TossForce = Translocator(inv).default.TossForce * NewSize;
+      // Translocator(inv).MaxTossForce = Translocator(inv).default.MaxTossForce * NewSize;
+    // }
+  // }
+  // Fix the player's dodge height, because it's fixed at 160 in Epic's code!!
+  // if (p.DodgeDir == DODGE_Active && p.Velocity.Z >= 140 && p.Velocity.Z <= 180) {
+    // DebugLog("Fixing dodge for "$p$" (acc="$p.Acceleration$")");
+    // // p.Location.Z = p.Location.Z - p.Velocity.Z * DeltaTime;
+    // // if (Role == Role_Authority) {
+      // p.SetLocation(p.Location - Vect(0,0,1) * p.Velocity.Z * DeltaTime); // undo the error caused by the tick before we could fix it
+      // p.Velocity.Z = p.Velocity.Z * NewSize * NewSize;
+    // // }
+    // // p.Velocity = p.Velocity * NewSize;
+  // }
 }
 
