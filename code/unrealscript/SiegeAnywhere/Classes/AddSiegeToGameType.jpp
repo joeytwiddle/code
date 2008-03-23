@@ -5,12 +5,23 @@
 // BUG TODO: HUD info, such as the flags, is overriden by sgHUD.  Recommend extendingsgHUD, and getting it to call the original HUD's render functions.
 // TODO: We will definitely need to block some things, e.g. Teleporters in CTF, Containers+ContainerXs on flagspots, Containers+ContainerXs at key points on AS maps.
 
+#ifndef SiegeAnywhereHUDType
+	#define SiegeAnywhereHUDType class'SiegeAnywhereHUD'
+#endif
+
 var class<HUD> OriginalHUDType;
+
+function PreBeginPlay() {
+	if (TeamGamePlus(Level.Game) != None) {
+		if (TeamGamePlus(Level.Game).GoalTeamScore < 15)
+			TeamGamePlus(Level.Game).GoalTeamScore = 20;
+	}
+}
 
 function PostBeginPlay() {
 	Super.PostBeginPlay();
 	OriginalHUDType = Level.Game.HUDType;
-	Level.Game.HUDType = class'sgHUD';
+	Level.Game.HUDType = SiegeAnywhereHUDType;
 	Log(Self$": Original HUD type "$OriginalHUDType$" overriden by "$Level.Game.HUDType);
 	// TODO CONSIDER: we could set GoalTeamScore to 0, so the game goes the full time.
 }
@@ -83,12 +94,13 @@ function ScoreKill(Pawn killer, Pawn other) {
 	BaseMutator.ScoreKill(Killer, Other);
 }
 
-
 function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn instigatedBy)
 {
 	local string sMessage;
 	local sgSpawnProt sgSP;
-	if (instigatedBy != None && injured.bIsPlayer && instigatedBy.bIsPlayer && injured.PlayerReplicationInfo.Team != instigatedBy.PlayerReplicationInfo.Team)
+
+	if (instigatedBy != None && injured != None && injured.bIsPlayer && instigatedBy.bIsPlayer
+			&& injured.PlayerReplicationInfo.Team != instigatedBy.PlayerReplicationInfo.Team)
 	{
 		if (injured != instigatedBy)
 		{
@@ -113,7 +125,16 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 		}
 	}
 
-	damage = Super.ReduceDamage(damage, damageType, injured, instigatedBy);
+	//// TODO: CTFGame was throwing Accessed Nones - maybe we should implement what DM.ReduceDamage() does.
+	// damage = Super.ReduceDamage(damage, damageType, injured, instigatedBy);
+
+	// Un-done - Self harm is quartered, so hammers are still possible under 20hp:
+	/*
+	if (instigatedBy == injured) {
+		damage = damage/4.0;
+		return damage;
+	}
+	*/
 
 	/*
 	if ( sgBaseCore(injured) != None )
@@ -129,14 +150,39 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 
 		}
 	}
-	else*/ if ( sgBuilding(injured) == None && damageType == 'sgSpecial' &&
-			injured.Health - damage <= 10 )
-	{
-		injured.Health = 10;
-		damage = 0;
+	else*/
+	if ( sgBuilding(injured) == None && damageType == 'sgSpecial' ) {
+		// This is from a Protector or SuperPro, it doesn't kill.
+		// Since the Siege pros are a bit strong, we go gentle:
+		damage = damage / 16;
+		if ( injured.Health - damage <= 20 ) {
+			injured.Health = 20;
+			damage = 0;
+		}
 	}
-	if (injured.PlayerReplicationInfo.Team != instigatedBy.PlayerReplicationInfo.Team)
+	if (injured != None && instigatedBy != None
+			&& injured.PlayerReplicationInfo != None
+			&& instigatedBy.PlayerReplicationInfo != None
+			&& injured.PlayerReplicationInfo.Team != instigatedBy.PlayerReplicationInfo.Team
+			&& sgPRI(instigatedBy.PlayerReplicationInfo) != None
+	)
 		sgPRI(instigatedBy.PlayerReplicationInfo).sgInfoBuildingHurt+=damage;
 	return damage;
 }
+
+// To stop Accessed Nones in CTF games:
+function bool FindSpecialAttractionFor(Bot aBot) {
+	return false;
+}
+function byte PriorityObjective(Bot aBot) {
+	return 0;
+}
+function Actor SetDefenseFor(Bot aBot) {
+	return None;
+}
+function byte AssesBotAttitude(Bot aBot, Pawn Other) {
+	return 0;
+}
+// event Timer() {
+// }
 
