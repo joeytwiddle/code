@@ -1,0 +1,51 @@
+// TODO BUGS (some now fixed!): SiegeAS is f**cked.  It calls itself CTF.  Sometimes it makes me play on the same team twice.  It does not seem to conclude after 2 assaults.  The timelimit on the first assault is sometimes very short, but usually ok on the second.
+// TESTING: Trying to fix this by copying the defaultproperties from Assault.uc.  If this works, we should do it for SiegeDOM and SiegeTDM etc.
+//          Yay that worked!
+// TODO BUGS: Leeching sometimes does not work (I was using pulse).
+// DONE: SiegeAssault is still displaying gamegoal "20 captures wins the match" O_o
+// TODO BUG: The message has now become "20 frags wins the match".  It appears even if I set GoalTeamScore and FragLimit = 0 (should have been done by InitGame()).
+
+class SiegeAssault extends Assault;
+
+// var config int SiegeAssaultTimeLimit;
+
+#include "AddSiegeToGameType.jpp"
+
+/*
+// It seems Assault always defaults to 10 minutes, so we override that behaviour here:
+// Nope this causes Assault lots of confusion.  It reset TimeLimit so we can't use that.
+event InitGame( string Options, out string Error ) {
+	Super.InitGame(Options,Error);
+	if (SavedTime <= 0) {
+		RemainingTime = SiegeAssaultTimeLimit * 60;
+	}
+}
+*/
+
+defaultproperties
+{
+     Defenses=3
+     AttackMessage="Take the enemy base!"
+     DefendMessage="Defend your base against the enemy!"
+     TieMessage="Tie!"
+     WinMessage="and wins!"
+     ObjectivesMessage="Press F3 for an objectives briefing."
+     DefenderSuccess="defended the base"
+     bSpawnInTeamArea=True
+     bScoreTeamKills=False
+     MaxAllowedTeams=2
+     StartUpMessage=""
+     GameEndedMessage="conquered the base in"
+     LadderTypeIndex=4
+     bCoopWeaponMode=True
+     ScoreBoardType=Class'Botpack.AssaultScoreboard'
+     RulesMenuType="UTMenu.UTAssaultRulesSC"
+     HUDType=Class'Botpack.AssaultHUD'
+     MapListType=Class'Botpack.ASMapList'
+     MapPrefix="AS"
+     BeaconName="ASLT"
+     GameName="Assault"
+
+     // SiegeAssaultTimeLimit=15 // Appears to have no effect
+}
+
