@@ -1,0 +1,648 @@
+#define LIST_ACTORS
+// #define NO_CHANGE_ANGLE
+
+//================================================================================
+// AutoSpectate.
+//================================================================================
+
+// class nBAutoSpectate extends Info;
+class nBAutoSpectate extends Mutator;
+
+var PlayerPawn P;
+var Rotator targRot;
+var Rotator myRot;
+var Rotator prevRot;
+var bool bfoundflag;
+var bool bviewingFC;
+var string blueFC;
+var string redFC;
+var bool bautoFC;
+var bool bAFCOFFmsg;
+var bool bAFCONmsg;
+// var private bool ;
+// var private int ;
+// var private int ;
+var int ydelta;
+var int pdelta;
+// var private int ;
+// var private int ;
+var int Offset;
+
+// nB:
+var config bool bCameraPanning;
+var config bool bSwitchCamera;
+var config float CameraSwitchSeconds;
+
+// var String LastList;
+var Actor LastNewActor;
+
+var float LastSwitchTime;
+var float deltaYaw, deltaPitch, deltaFOV, fov;
+var Actor FollowActor;
+
+var bool bCheckingForInterestingTarget;
+
+function int fun1 (int X, int Y, out int diff) {
+	local int newdiff;
+
+	diff = X - Y;
+	newdiff = diff;
+	if ( (newdiff > 20000) || (newdiff < -20000) )
+	{
+		newdiff = 20000;
+	}
+	return newdiff * newdiff / 500000;
+}
+
+function PlayerPawn GetRandomPlayer() {
+	local PlayerPawn p;
+	local int count;
+	foreach AllActors(class'PlayerPawn',p)
+		count++;
+	count = count * FRand();
+	foreach AllActors(class'PlayerPawn',p) {
+		count--;
+		if (count < 0)
+			return p;
+	}
+	return p;
+}
+
+function bool isInteresting(Actor a) {
+	if (a.IsA('Spectator'))
+		return false;
+	return (
+		// a.IsA('FlagBase')
+		// a.IsA('CTFFlag')
+		// a.IsA('Flag')
+		// || (a.IsA('UT_ShieldBelt') && !Pickup(a).bHeldItem)
+		// || (a.IsA('UT_Damage') && !Pickup(a).bHeldItem)
+		// || a.IsA('HealthPack')
+		// a.IsA('Projectile')
+		isAGoodProjectile(A)
+		|| a.IsA('PlayerPawn')
+		|| a.IsA('Bot')
+		// || a.IsA('Pawn')
+		|| (a.IsA('Weapon') && Inventory(a).bTossedOut)
+		// || a.IsA('NavigationPoint')
+		|| a.IsA('Effect')
+	);
+}
+
+function int CountInterestingActors() {
+	local int count;
+	local Actor a;
+	#ifdef LIST_ACTORS
+	local String list;
+	#endif
+	foreach AllActors(class'Actor',a) {
+		if (isInteresting(a)) {
+			count++;
+			#ifdef LIST_ACTORS
+			list = list $ a.Name $ " ";
+			#endif
+		}
+	}
+	#ifdef LIST_ACTORS
+	// if (count < 10)
+		// P.ClientMessage(count$" actors: "$list);
+	// else
+		// P.ClientMessage(count$" actors.");
+	#endif
+	return count;
+}
+
+function Actor GetRandomActor() {
+	local int count,chosen;
+	local Actor a;
+	count = CountInterestingActors();
+	chosen = count*FRand();
+	// Log("Chose "$chosen$" / "$count);
+	// P.ClientMessage("Chose "$Int(count*FRand())$" / "$count);
+	foreach AllActors(class'Actor',a) {
+		if (isInteresting(a)) {
+			chosen--;
+			if (chosen < 0)
+				return a;
+		}
+	}
+	return a;
+}
+
+// TODO: To get the most action, find a "busy" Actor to view.
+// one e.g.: find average location of all pawns; find actor closest to this, to get close into the action
+// or: a big lonely map, but 3 players are in the same room; detect that (k-means on distance)
+
+	/*
+	Target = GetRandomActor(class'FlagBase');
+	if (Target == None)
+		Target = GetRandomActor(class'PlayerPawn');
+	if (Target == None)
+		Target = GetRandomActor(class'ShockRifle');
+	if (Target == None)
+		Target = GetRandomActor(class'NavigationPoint');
+	*/
+
+function SetNewTarget(Actor a, optional Actor Follow) {
+	local String report;
+
+	LastSwitchTime = Level.TimeSeconds;
+	bCheckingForInterestingTarget = False;
+
+	if (p.ViewTarget != None) {
+		if (Pawn(p.ViewTarget) != None) {
+			if ( Pawn(P.ViewTarget).PlayerReplicationInfo.HasFlag != None ) {
+				// Never switch away from FC.
+				return;
+			}
+		}
+	}
+
+	report = "";
+
+	P.ViewTarget = a;
+
+	if (P.IsA('Spectator')) {
+		// Spectator(P).bChaseCam = (FRand() < 0.80);
+		// report = "(chase="$Spectator(P).bChaseCam$") " $ report;
+	}
+
+	// Shall we focus?
+	if (FRand()<0.5) {
+		FollowActor = None;
+	}
+	if (Follow != None) {
+		FollowActor = Follow;
+	}
+	if (FRand()<0.25) {
+		// FollowActor = FindClosestActor(P.ViewTarget);
+		// FollowActor = FindClosestActorMatching(P.ViewTarget,"PlayerPawn");
+		// if (FollowActor == None)
+			// FollowActor = FindClosestActorMatching(P.ViewTarget,"Bot");
+		// if (FollowActor == None)
+			// FollowActor = FindClosestActorMatching(P.ViewTarget,"Projectile");
+		// FollowActor = FindClosestActorClass(P.ViewTarget,class'Pawn');
+		// FollowActor = FindClosestActorClass(P.ViewTarget,class'Bot');
+		// FollowActor = FindClosestActorClass(P.ViewTarget,class'Projectile');
+		// FollowActor = FindClosestActorClass(P.ViewTarget,class'PlayerPawn');
+		FollowActor = FindClosestInterestingActor(P.ViewTarget);
+		if (!isInteresting(FollowActor)) {
+			report = "[Dropped uninteresting " $ FollowActor $ "] ";
+			FollowActor = None;
+		}
+	// } else {
+		// FollowActor = None;
+	}
+
+	if (FollowActor != None) {
+		// P.SetLocation(P.ViewTarget.Location - 96*Vector(P.ViewRotation) + vect(0,0,48.0));
+		P.ViewRotation = rotator(FollowActor.Location - P.Location);
+		P.SetLocation(FollowActor.Location - 96*Vector(P.ViewRotation) + vect(0,0,48.0));
+		P.ViewTarget = None;
+	}
+
+	NewCamera();
+
+	// In case the camera wants to detach:
+	// P.SetLocation(Target.Location);
+	// P.SetRotation(Target.Rotation); // not always facing upwards!
+
+	/*
+	if (FRand()<0.05) {
+		if (P.ViewTarget != None) {
+			P.SetLocation(P.ViewTarget.Location - 96*Vector(p.ViewRotation) + vect(0,0,48.0));
+			// P.SetLocation(P.ViewTarget.Location - 96 * Vector(p.ViewRotation));
+			P.ViewTarget = None;
+			report = "External camera! " $ report;
+		}
+	}
+	*/
+
+	if (P.ViewTarget != None)
+		report = report $ "Watching: " $ P.ViewTarget.Name $ " ";
+	if (FollowActor != None)
+		report = report $ "Following: " $ FollowActor.Name $ " ";
+
+	P.bBehindView = ( P.ViewTarget != None );
+	if (P.ViewTarget != None)
+		P.ViewTarget.BecomeViewTarget();
+
+	if (P.ViewTarget.IsA('PlayerPawn')) {
+		report = report $ PlayerPawn(P.ViewTarget).PlayerReplicationInfo.PlayerName;
+	}
+	if (P.ViewTarget.IsA('Bot')) {
+		report = report $ Bot(P.ViewTarget).getHumanName();
+	}
+	if (P.ViewTarget.IsA('Projectile')) {
+		// report = report $" ["$ Projectile(P.ViewTarget).Owner $"]";
+	}
+	// report = report $ " [/"$CountInterestingActors()$"]";
+	p.ClientMessage(report);
+	// Log(report);
+
+}
+
+function NewCamera() {
+
+	#ifndef NO_CHANGE_ANGLE
+	p.ViewRotation.Yaw=8192*4*FRand();
+	p.ViewRotation.Pitch=8192*1*(FRand()-0.5);
+	p.DesiredFOV=90 + 30 * FRand();
+	// p.ConsoleCommand("FOV "$p.DesiredFOV); // seems to be needed! NO it causes ini file writes!
+	#endif
+
+	deltaYaw = 400*(FRand()-0.5);
+	deltaPitch = -Sgn(p.ViewRotation.Pitch) * 50*FRand();
+	deltaFOV = 0.1*(FRand()-0.5);
+
+}
+
+function DeltaCamera(float Delta) {
+
+	local Actor HitOut;
+	local Vector HitLocation,HitNormal;
+
+	// if (p.ViewTarget != None) {
+	if (bCameraPanning) {
+		p.ViewRotation.Yaw += deltaYaw;
+		p.ViewRotation.Pitch += deltaPitch;
+		p.DesiredFOV = p.DesiredFOV + deltaFOV;
+		// p.ConsoleCommand("FOV "$p.DesiredFOV); // seems to be needed! NO it causes ini file writes!
+		deltaYaw = deltaYaw * 0.998;
+		deltaPitch = deltaPitch * 0.998;
+		deltaFOV = deltaFOV * 0.998;
+	}
+
+	if (FollowActor != None) {
+		P.ViewRotation = rotator(FollowActor.Location - P.Location);
+		// P.SetRotation(rotator(FollowActor.Location - P.Location));
+		HitActor = Trace(HitLocation,HitNormal,FollowActor.Location+128*Vector(p.ViewRotation),P.Location+16*Vector(p.ViewRotation),true);
+		if (HitActor != FollowActor) {
+			P.ClientMessage("Lost follow on "$FollowActor.Name$" got "$HitActor);
+			FollowActor = None;
+		}
+	}
+
+}
+
+/*
+function CheckForNewActors() {
+	local Actor A;
+	local String NewList;
+	NewList=" "; // BUG TODO: in online play actors will sometimes leave the list then return to it later; so we need an AllActorsEverList
+	foreach AllActors(class'Actor', A) {
+		NewList = NewList $ A.Name $ " ";
+		if (LastList != "") {
+			// BUG TODO: this becomes inefficient
+			if (InStr(LastList," "$A.Name$" ")<0) {
+				HandleNewActor(A);
+			}
+		}
+	}
+	LastList = NewList;
+}
+*/
+
+function CheckForNewActors() {
+	local Actor A;
+	local bool pastLast;
+	foreach AllActors(class'Actor', A) {
+		if (pastLast) {
+			HandleNewActor(A);
+		}
+		if (A == LastNewActor) {
+			pastLast = true;
+		}
+	}
+	LastNewActor = A;
+}
+
+function float Sgn(float num) {
+	if (num>0)
+		return +1;
+	if (num<0)
+		return -1;
+	return 0;
+}
+
+function bool isAGoodProjectile(Actor A) {
+	return (A.isA('flakslug') || A.isA('ShockProj') || A.isA('Rocket'));
+}
+
+function HandleNewActor(Actor A) {
+	if (bCheckingForInterestingTarget) {
+		// if (isInteresting(A)) {
+		// if (A.IsA('Projectile') && Instr(""$A.Name,"Trans")<0) {
+		if (isAGoodProjectile(A) && Instr(""$A.Name,"Trans")<0) {
+			// Log("New Actor: "$A);
+			P.ClientMessage("New Actor: "$A);
+			SetNewTarget(A,A.Owner);
+		}
+	}
+}
+
+/*
+function CheckForInterestingTarget() {
+	// local Actor A;
+	// local Actor LatestProjectile;
+	// New projectile or new damage will force camera-switch.
+	if (!bCheckingForInterestingTarget) {
+		bCheckingForInterestingTarget = True;
+		// LastList = "";
+	} else {
+		CheckForNewActors();
+		// LatestProjectile = None;
+		// foreach AllActors(class'Projectile', A) {
+			// LatestProjectile = A;
+		// }
+	}
+}
+*/
+
+event Tick (float Delta) {
+	local int diffout;
+
+	// if (FRand()<0.01) {
+		// Log("Tick delta="$Delta);
+	// }
+
+	// if (  !P.PlayerReplicationInfo.bIsSpectator )
+	if (!P.PlayerReplicationInfo.bIsSpectator && !P.bIsPlayer) {
+		return;
+	}
+
+	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds) {
+		// CheckForInterestingTarget();
+		bCheckingForInterestingTarget = True;
+	}
+	CheckForNewActors();
+
+	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds + 1) {
+		p.ConsoleCommand("ViewTeam"); // to keep fresh list of actors during online play
+		SetNewTarget(GetRandomActor());
+	}
+
+	DeltaCamera(Delta);
+
+	/*
+	// if ( P.ViewTarget != None ) {
+	// if ( P.ViewTarget == None ) {
+		// if ( Pawn(P.ViewTarget) != None ) {
+			// targRot = Pawn(P.ViewTarget).ViewRotation;
+			// targRot.Yaw = targRot.Yaw*0.999 + FRand();
+			// targRot.Pitch = targRot.Pitch*0.999 + FRand();
+			// myRot = P.ViewRotation;
+			// ydelta = fun1(targRot.Yaw,myRot.Yaw,diffout);
+			// pdelta = fun1(targRot.Pitch,myRot.Pitch,diffout);
+			// if (FRand()<0.01) {
+	*/
+
+			/*
+			if ( ydelta == -9999 )
+			{
+				SendErrMsg();
+				 // TODO: = True;
+			}
+			*/
+			/*
+			if ( Pawn(P.ViewTarget).Health > 0 )
+			{
+				if ( ( > 0) && ( < 33650) || ( < -33650) )
+				{
+					if ( ydelta + P.ViewRotation.Yaw > 65536 )
+					{
+						P.ViewRotation.Yaw = 0;
+						return;
+					}
+					P.ViewRotation.Yaw += ydelta;
+				} else {
+					if ( ( < 0) && ( > -33650) || ( > 33650) )
+					{
+						if ( P.ViewRotation.Yaw - ydelta < 0 )
+						{
+							P.ViewRotation.Yaw = 65536;
+							return;
+						}
+						P.ViewRotation.Yaw -= ydelta;
+					}
+				}
+				if ( ( > 0) && ( < 33650) || ( < -33650) )
+				{
+					P.ViewRotation.Pitch += pdelta;
+				} else {
+					if ( ( < 0) && ( > -33650) || ( > 33650) )
+					{
+						P.ViewRotation.Pitch -= pdelta;
+					}
+				}
+				if ( P.ViewRotation.Roll != 0 )
+				{
+					P.ViewRotation.Roll = 0;
+				}
+			}
+			*/
+
+	Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"mutate AFCOFF");
+	if ( (Offset != -1) &&  !bAFCOFFmsg )
+	{
+		bautoFC = False;
+		P.ClientMessage("Auto FC feature off");
+		bAFCOFFmsg = True;
+		bAFCONmsg = False;
+	}
+	Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"mutate AFCON");
+	if ( (Offset != -1) &&  !bAFCONmsg )
+	{
+		bautoFC = True;
+		P.ClientMessage("Auto FC feature on");
+		bAFCOFFmsg = False;
+		bAFCONmsg = True;
+	}
+	if ( bautoFC /* TODO: &&  ! */ )
+	{
+		Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"captured the red flag!");
+		if ( Offset != -1 )
+		{
+			return;
+		}
+		Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"captured the blue flag!");
+		if ( Offset != -1 )
+		{
+			return;
+		}
+		Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"has the red flag!");
+		if ( Offset != -1 )
+		{
+			redFC = Left(P.Player.Console.MsgText[P.Player.Console.TopLine],Offset - 1);
+		}
+		Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"has the blue flag!");
+		if ( Offset != -1 )
+		{
+			redFC = Left(P.Player.Console.MsgText[P.Player.Console.TopLine],Offset - 1);
+		}
+		Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"Failed to change view");
+		if ( Offset != -1 )
+		{
+			redFC = "";
+			blueFC = "";
+		}
+		if (  !bviewingFC )
+		{
+			if ( P.ViewTarget == None )
+			{
+				if ( redFC != "" )
+				{
+					ViewRedFC();
+				} else {
+					if ( blueFC != "" )
+					{
+						ViewBlueFC();
+					}
+				}
+			} else {
+				if ( Pawn(P.ViewTarget) == None )
+				{
+					if ( redFC != "" )
+					{
+						ViewRedFC();
+					} else {
+						if ( blueFC != "" )
+						{
+							ViewBlueFC();
+						}
+					}
+				} else {
+					if ( Pawn(P.ViewTarget).PlayerReplicationInfo.HasFlag == None )
+					{
+						if ( redFC == Pawn(P.ViewTarget).PlayerReplicationInfo.PlayerName )
+						{
+							redFC = "";
+						} else {
+							if ( FindPlayer(redFC) )
+							{
+								ViewRedFC();
+							} else {
+								if ( blueFC == Pawn(P.ViewTarget).PlayerReplicationInfo.PlayerName )
+								{
+									blueFC = "";
+								} else {
+									if ( FindPlayer(blueFC) )
+									{
+										ViewBlueFC();
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			SetTimer(0.31,False);
+			bviewingFC = True;
+		}
+	}
+}
+
+function bool FindPlayer(string S) {
+	local int i;
+	local TournamentGameReplicationInfo ptgri;
+
+	ptgri = TournamentGameReplicationInfo(P.GameReplicationInfo);
+	for (i=0;i<32;i++) {
+		if ( ptgri.PRIArray[i] == None ) {
+			continue;
+		}
+		if ( ptgri.PRIArray[i].bIsSpectator ) {
+			continue;
+		}
+		if ( ptgri.PRIArray[i].HasFlag != None ) {
+			if ( ptgri.PRIArray[i].PlayerName == S ) {
+				return True;
+			} else {
+				return False;
+			}
+		}
+	}
+	return False;
+}
+
+function ViewRedFC() {
+	P.ViewPlayer(redFC);
+	P.ViewRotation = Pawn(P.ViewTarget).ViewRotation;
+}
+
+function ViewBlueFC() {
+	P.ViewPlayer(blueFC);
+	P.ViewRotation = Pawn(P.ViewTarget).ViewRotation;
+}
+
+function SendErrMsg() {
+	P.ClientMessage("-----------------------------------------");
+	P.ClientMessage("MAC Addresses don't match.");
+	P.ClientMessage("AutoSpec will cease to function.");
+	P.ClientMessage("-----------------------------------------");
+}
+
+function Timer () {
+	bviewingFC = False;
+}
+
+function setpawn (PlayerPawn o) {
+	P = o;
+	AddSelfAsMutator();
+	// Level.Game.RegisterDamageMutator(Self);
+}
+
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+	if (bCheckingForInterestingTarget) {
+		P.ClientMessage("Damage "$InstigatedBy$" -> "$Victim$" ActualDamage="$ActualDamage); // DamageType="$DamageType$" 
+		if (FRand()<0.5)
+			SetNewTarget(InstigatedBy,Victim);
+		else
+			SetNewTarget(Victim,InstigatedBy);
+	}
+}
+
+function AddSelfAsMutator() {
+	Level.Game.BaseMutator.AddMutator(Self);
+}
+
+// TODO: buggy
+function AddMutator(Mutator Other) {
+	if (Other != None && Other.Class == Self.Class) {
+		Log("Not adding another nBAutoSpectate.");
+		if (Other == Self) {
+		} else {
+			nBAutoSpectate(Other).Destroy();
+		}
+	} else {
+		Log("Adding mutator: "$Other);
+		Super.AddMutator(Other);
+	}
+}
+
+function Actor FindClosestInterestingActor(Actor from) {
+	local Actor A,bestActor;
+	local int distance,bestDistance;
+	foreach VisibleActors(class'Actor', A, 1024, from.Location) {
+		if (A != from && isInteresting(A)) {
+			distance = VSize(A.Location - from.Location);
+			if (bestActor == None || distance < bestDistance) {
+				bestActor = A;
+				bestDistance = distance;
+			}
+		}
+	}
+	return bestActor;
+}
+
+defaultproperties {
+		bautoFC=True
+
+	bCameraPanning=True
+	bSwitchCamera=True
+	CameraSwitchSeconds=4
+}
+
+#include "../../JLib/findactor.uc.jpp"
+#include "../../JLib/jlib.uc.jpp"
+
