@@ -9,11 +9,17 @@
 // nBAutoSpectate.
 //================================================================================
 
-// Camera modes:
-// 0 - default following ViewTarget
-// 1 - custom following FollowActor
-// 2 - free standing camera, following
-// 3 - free standing camera, panning
+// CameraMode Camera modes:
+// 0 - default following ViewTarget, auto-panning
+// 1 * custom following FollowActor
+// 2 - free standing camera, looking at FollowActor
+// 3 * floating camera, panning / looking at centre of mass)
+// 4 * custom following FollowActor, but looking at LookActor
+// 5 - default following ViewTarget, but looking at LookActor
+//
+// * = camera floats towards a target
+
+// For AutoTeamBalance COOL_CAMERA, consider not moving the camera, but rotating it so that the powerup appears in the middle, halfway through the shot.
 
 // class nBAutoSpectate extends Info;
 class nBAutoSpectate extends Mutator;
@@ -50,11 +56,13 @@ var Actor LastNewActor;
 
 var float LastSwitchTime;
 var float deltaYaw, deltaPitch, deltaFOV, fov;
-var Actor FollowActor;
+var Actor FollowActor, LookActor;
 
 var bool bCheckingForInterestingTarget;
 
 var int CameraMode;
+
+var String RecommendedPlayerName;
 
 function int fun1 (int X, int Y, out int diff) {
 	local int newdiff;
@@ -130,6 +138,23 @@ function int CountInterestingActors() {
 function Actor GetRandomActor() {
 	local int count,chosen;
 	local Actor a;
+
+	foreach AllActors(class'Actor',a) {
+		if (isFC(a) && FRand()<0.5) {
+			return a;
+		}
+	}
+
+	if (RecommendedPlayerName != "" && FRand()<0.5) {
+		foreach AllActors(class'Actor',a) {
+			if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
+				DEBUG("Re-using "$NameActor(a));
+				return a;
+			}
+		}
+		RecommendedPlayerName = ""; // it failed me now, and we don't want it to last forever
+	}
+
 	count = CountInterestingActors();
 	chosen = count*FRand();
 	// Log("Chose "$chosen$" / "$count);
@@ -166,7 +191,7 @@ function bool isFC(Actor a) {
 		Target = GetRandomActor(class'NavigationPoint');
 	*/
 
-function SetNewTarget(Actor a, optional Actor Follow) {
+function SetNewTarget(Actor a, optional Actor b) {
 	local String report;
 
 	// if (Level.TimeSeconds < LastSwitchTime + CameraSwitchSeconds)
@@ -181,31 +206,68 @@ function SetNewTarget(Actor a, optional Actor Follow) {
 
 	report = "";
 
-	CameraMode = FRand()*4;
+	// CameraMode = FRand()*6;
+	CameraMode = CameraMode+1;
+	if (CameraMode>5)
+		CameraMode=0;
 
 	P.ViewTarget = None;
 	FollowActor = None;
+	LookActor = None;
 	NewCamera();
 	if (CameraMode == 0) {
 		P.ViewTarget = a;
-		report = "0 Viewing from "$a;
+		report = "0 Viewing from "$NameActor(a);
 	}
 	if (CameraMode == 1) {
 		FollowActor = a;
-		report = "1 Following "$a;
+		report = "1 Following "$NameActor(FollowActor);
 		P.ViewRotation.Pitch += 8192/2;
+		P.SetLocation( FollowActor.Location );
+		p.SetLocation( FollowActor.Location - 96*Normal(Vector(P.ViewRotation)) + vect(0,0,1)*(64.0+FRand()*64.0) );
 	}
 	if (CameraMode == 2) {
 		FollowActor = a;
 		deltaYaw /= 4;
 		deltaPitch /= 4;
-		P.SetLocation( FollowActor.Location - 128*Vector(P.ViewRotation) + vect(0,0,1)*(48.0+FRand()*48.0) );
-		report = "2 Camera following "$a;
+		P.SetLocation( FollowActor.Location );
+		P.SetLocation( FollowActor.Location - 96*Normal(Vector(P.ViewRotation)) + vect(0,0,1)*(64.0+FRand()*64.0) );
+		report = "2 Camera following "$NameActor(a);
 	}
 	if (CameraMode == 3) {
 		NiceCamera();
-		report = "3 Camera panning";
-		a = None;
+		deltaYaw /= 4;
+		deltaPitch /= 4;
+		deltaFOV *= 2;
+		// A = FindBusiestActor();
+		A = FindClosestInterestingActor(,CentreOfMass());
+		P.ViewTarget = None;
+		P.SetLocation( A.Location );
+		P.ViewRotation = rotator(CentreOfMass() - P.Location);
+		P.SetLocation( A.Location - 96*Normal(Vector(P.ViewRotation)) + vect(0,0,16) );
+		// FollowActor = FindClosestInterestingActor(A);
+		FollowActor = A;
+		// report = "3 Camera panning from "$NameActor(A)$" looking at "$NameActor(FollowActor);
+		report = "3 Camera panning from and looking at "$NameActor(FollowActor);
+	}
+	if (CameraMode == 4) {
+		FollowActor = a;
+		LookActor = b;
+		if (LookActor == None) {
+			LookActor = FindClosestInterestingActor(FollowActor);
+		}
+		P.ViewRotation = rotator(LookActor.Location - FollowActor.Location);
+		P.SetLocation( FollowActor.Location );
+		P.SetLocation( FollowActor.Location - 96*Normal(Vector(P.ViewRotation)) + vect(0,0,16) );
+		report = "4 Following "$NameActor(FollowActor)$" Facing "$NameActor(LookActor);
+	}
+	if (CameraMode == 5) {
+		P.ViewTarget = a;
+		LookActor = b;
+		if (LookActor == None) {
+			LookActor = FindClosestInterestingActor(P.ViewTarget);
+		}
+		report = "5 Viewing from "$NameActor(a)$" Looking at "$NameActor(LookActor);
 	}
 
 	P.bBehindView = ( P.ViewTarget != None );
@@ -226,8 +288,8 @@ function SetNewTarget(Actor a, optional Actor Follow) {
 		if (FRand()<0.5) {
 			FollowActor = None;
 		}
-		if (Follow != None) {
-			FollowActor = Follow;
+		if (b != None) {
+			FollowActor = b;
 		}
 		if (FRand()<0.25 || (FollowActor == None && FRand()<0.5)) {
 			// FollowActor = FindClosestActor(P.ViewTarget);
@@ -297,22 +359,30 @@ function SetNewTarget(Actor a, optional Actor Follow) {
 	// if (FollowActor != None)
 		// report = report $ "Following: " $ FollowActor.Name $ " ";
 
-	report = report $ " ";
+	// report = report $ " ";
 
-	if (A.IsA('PlayerPawn')) {
-		report = report $ PlayerPawn(A).PlayerReplicationInfo.PlayerName;
-	}
-	if (A.IsA('Bot')) {
-		report = report $ Bot(A).getHumanName();
-	}
-	if (A.IsA('Projectile')) {
-		// report = report $" ["$ Projectile(P.ViewTarget).Owner $"]";
-	}
 	// report = report $ " [/"$CountInterestingActors()$"]";
 	report = "[" $ CountInterestingActors() $ "] " $ report;
 	DEBUG(report);
 	// Log(report);
 
+}
+
+// TODO
+function Actor FindPlayerWithMostEnemiesNearby() {
+	return None;
+}
+
+function String NameActor(Actor a) {
+	if (A == None)
+		return "None";
+	if (A.IsA('PlayerPawn'))
+		return PlayerPawn(A).PlayerReplicationInfo.PlayerName;
+	if (A.IsA('Bot'))
+		return Bot(A).getHumanName();
+	if (A.IsA('Projectile'))
+		return A.Name$"("$Projectile(P.ViewTarget).Owner$")";
+	return ""$A.Name;
 }
 
 function Vector CentreOfMass() {
@@ -324,7 +394,7 @@ function Vector CentreOfMass() {
 	foreach AllActors(class'Actor',A) {
 		if (isInteresting(A)) {
 			count++;
-			centre = centre*(count-1)/count + A.Location/count;
+			centre = centre*(Float(count-1)/Float(count)) + A.Location*(1.0/Float(count));
 		}
 	}
 	return centre;
@@ -333,7 +403,7 @@ function Vector CentreOfMass() {
 function NewCamera() {
 
 	#ifndef NO_CHANGE_ANGLE
-	p.ViewRotation.Yaw = 8192*4*FRand();
+	p.ViewRotation.Yaw = 8192*8*(FRand()-0.5);
 	p.ViewRotation.Pitch = 8192*1*(FRand()-0.5);
 	p.DesiredFOV = 90 + 30 * FRand();
 	// p.ConsoleCommand("FOV "$p.DesiredFOV); // seems to be needed! NO it causes ini file writes!
@@ -341,7 +411,7 @@ function NewCamera() {
 
 	deltaYaw = 400*(FRand()-0.5);
 	// deltaPitch = -Sgn(p.ViewRotation.Pitch) * 50*FRand();
-	deltaPitch = 50*(FRand()-0.5);
+	deltaPitch = 50*(FRand()-0.4);
 	deltaFOV = 0.2*(FRand()-0.5);
 
 }
@@ -366,59 +436,141 @@ function Actor FindBusiestActor() {
 
 function NiceCamera() {
 	local Actor A;
-	NewCamera();
-	deltaYaw /= 4;
-	deltaPitch /= 4;
-	deltaFOV *= 2;
 
-	A = FindBusiestActor();
-	P.ViewTarget = None;
-	P.SetLocation( A.Location );
-	P.ViewRotation = rotator(CentreOfMass() - P.Location);
-	P.SetLocation( A.Location - 2*96*Vector(P.ViewRotation) + vect(0,0,1)*(64.0+FRand()*128.0) );
 }
+
+function PointTowardsActor(Pawn P, Actor Target) {
+	// RotateTowards(p.ViewRotation,rotator(Target.Location-P.Location));
+	PointTowardsLocation(p,Target.Location);
+}
+
+function PointTowardsLocation(Pawn P, Vector L) {
+	// RotateTowards(p.ViewRotation,rotator(L-P.Location));
+	local rotator RB;
+	RB = rotator(L-P.Location);
+	P.ViewRotation.yaw = RotateAngle(P.ViewRotation.yaw, RB.yaw);
+	P.ViewRotation.pitch = RotateAngle(P.ViewRotation.pitch, RB.pitch);
+}
+
+/*
+function RotateTowards(rotator RA, rotator RB) {
+	RA.yaw = RotateAngle(RA.yaw, RB.yaw);
+	RA.pitch = RotateAngle(RA.pitch, RB.pitch);
+}
+*/
+
+function float RotateAngle(float a, float b) {
+	while (a<0)
+		a+=65536.0;
+	while (a>=65536)
+		a-=65536.0;
+	while (b<0)
+		b+=65536.0;
+	while (b>=65536)
+		b-=65536.0;
+	if ( b-a > 65536/2) {
+		b -= 65536.0;
+	}
+	if ( a-b > 65536/2) {
+		a -= 65536.0;
+	}
+	return a * 0.95 + b * 0.05;
+}
+
+function bool LosingNetOn(Actor a) {
+	if (a == None)
+		return true;
+	if (a.Location == vect(0,0,0))
+		return true;
+	return false;
+}
+
+function GetRandomCameraNow() {
+	SetNewTarget(GetRandomActor());
+}
+
+// #define DontLose(X) if (X==None) { DEBUG("Lost X "$X); GetRandomCameraNow(); }
+#define DontLose(X); 
 
 function DeltaCamera(float Delta) {
 
 	local Actor HitOut;
 	local Vector HitLocation,HitNormal;
 	local Rotator followTarget;
+	local Vector TargetLocation,NewLocation;
 
 	local bool doNotPan;
 
-// Camera modes:
-// 0 - default following ViewTarget
-// 1 - custom following FollowActor
-// 2 - free standing camera, following
-// 3 - free standing camera, panning
-
 	if (CameraMode == 0) {
+		DontLose(P.ViewTarget);
 	}
 	if (CameraMode == 1) {
-		p.ViewRotation.yaw   = 8192*4 + (p.ViewRotation.yaw-8192*4)   * 0.991 + (followTarget.yaw-8192*4)   * 0.009;
-		P.SetLocation( FollowActor.Location - (96+FRand()*64)*Vector(P.ViewRotation) + vect(0,0,48.0+FRand()*64) );
+		PointTowardsActor(P,FollowActor);
+		// followTarget = rotator(FollowActor.Location - P.Location);
+		// // p.ViewRotation.yaw   = 8192*4 + (p.ViewRotation.yaw-8192*4)   * 0.99 + (followTarget.yaw-8192*4)   * 0.01;
+		// p.ViewRotation.yaw   = p.ViewRotation.yaw * 0.95 + followTarget.yaw * 0.05;
+		// P.SetLocation( FollowActor.Location - 128*Vector(P.ViewRotation) + vect(0,0,64) );
+		TargetLocation = FollowActor.Location - 128*Normal(Vector(P.ViewRotation));
+		TargetLocation.Z = FollowActor.Location.Z + 24;
+		NewLocation = p.Location * 0.0 + TargetLocation * 1.0;
+		p.SetLocation(NewLocation);
+		// p.ClientSetLocation(NewLocation,p.ViewRotation);
+		// doNotPan = true;
+		DontLose(FollowActor);
 	}
 	if (CameraMode == 2) {
-		followTarget = rotator(FollowActor.Location - P.Location);
-		// p.ViewRotation.yaw   = p.ViewRotation.yaw   * 0.991 + followTarget.yaw   * 0.009;
-		p.ViewRotation.yaw   = 8192*4 + (p.ViewRotation.yaw-8192*4)   * 0.991 + (followTarget.yaw-8192*4)   * 0.009;
+		PointTowardsActor(P,FollowActor);
+		// followTarget = rotator(FollowActor.Location - P.Location);
+		// p.ViewRotation.yaw   = p.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
 		// Always points down: p.ViewRotation.pitch = p.ViewRotation.pitch * 0.999 + followTarget.pitch * 0.001;
 		doNotPan = true;
+		DontLose(FollowActor);
 	}
 	if (CameraMode == 3) {
-		followTarget = rotator(CentreOfMass() - P.Location);
-		p.ViewRotation.yaw   = 8192*4 + (p.ViewRotation.yaw-8192*4)   * 0.991 + (followTarget.yaw-8192*4)   * 0.009;
+		// DONE: if this never works, try following FollowActor instead, just using the nice setup we have.
+		TargetLocation = FollowActor.Location - 128*Normal(Vector(P.ViewRotation));
+		TargetLocation.Z = FollowActor.Location.Z + 48;
+		NewLocation = p.Location * 0.0 + TargetLocation * 1.0;
+		p.SetLocation(NewLocation);
+		PointTowardsLocation(P,CentreOfMass());
+		// followTarget = rotator(CentreOfMass() - P.Location);
+		// p.ViewRotation.yaw   = p.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
 		doNotPan = true;
+		DontLose(FollowActor);
+	}
+	if (CameraMode == 4) {
+		// P.SetLocation( FollowActor.Location - 128*Vector(P.ViewRotation) + vect(0,0,64) );
+		TargetLocation = FollowActor.Location - 128*Normal(Vector(P.ViewRotation));
+		TargetLocation.Z = FollowActor.Location.Z + 64;
+		NewLocation = p.Location * 0.5 + TargetLocation * 0.5;
+		p.SetLocation(NewLocation);
+		// p.ClientSetLocation(NewLocation,p.ViewRotation);
+		PointTowardsActor(p,LookActor);
+		// followTarget = rotator(LookActor.Location - P.Location);
+		// p.ViewRotation.yaw   = p.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
+		doNotPan = true;
+		DontLose(FollowActor);
+		DontLose(LookActor);
+	}
+	if (CameraMode == 5) {
+		// PointTowardsActor(p,FollowActor);
+		PointTowardsActor(p,LookActor);
+		// followTarget = rotator(FollowActor.Location - P.ViewTarget.Location);
+		// p.ViewRotation.yaw   = p.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
+		doNotPan = true;
+		DontLose(P.ViewTarget);
 	}
 
 	// if (p.ViewTarget != None) {
 	if (bCameraPanning && !doNotPan) { // && FollowActor == None) {
 		p.ViewRotation.Yaw += deltaYaw;
 		p.ViewRotation.Pitch += deltaPitch;
-		p.DesiredFOV = p.DesiredFOV + deltaFOV;
 		// p.ConsoleCommand("FOV "$p.DesiredFOV); // seems to be needed! NO it causes ini file writes!
 		deltaYaw = deltaYaw * 0.998;
 		deltaPitch = deltaPitch * 0.998;
+	}
+	if (bCameraPanning) {
+		p.DesiredFOV = p.DesiredFOV + deltaFOV;
 		deltaFOV = deltaFOV * 0.998;
 	}
 
@@ -518,7 +670,7 @@ function CheckForInterestingTarget() {
 */
 
 event Tick (float Delta) {
-	local int diffout;
+	local int i,diffout;
 
 	// if (FRand()<0.01) {
 		// Log("Tick delta="$Delta);
@@ -536,12 +688,30 @@ event Tick (float Delta) {
 	CheckForNewActors();
 
 	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds + 1) {
-		// to keep fresh list of actors during online play
-		// p.ConsoleCommand("ViewTeam");
-		// P.ViewClass(class'Pawn');
+		// p.ConsoleCommand("ViewTeam"); // to keep fresh list of actors during online play
+		// P.ViewClass(class'Pawn'); // to keep fresh list of actors during online play
 
-		SetNewTarget(GetRandomActor()); // If we use the player selected by ViewTeam, 
+		// TODO: turned off because of "Now viewing" detection:
+		// P.ViewClass(class'Pawn'); // to keep fresh list of actors during online play
+		GetRandomCameraNow(); // If we use the player selected by ViewTeam, ... ?
 		// NewCamera();
+	}
+
+	if (CameraMode != 3) {
+		if (p.ViewTarget == None && FollowActor == None && LookActor == None) {
+			DEBUG("LOST ACTOR");
+			P.ViewClass(class'Pawn');
+			GetRandomCameraNow();
+		}
+	}
+	if (p.ViewTarget != None && LosingNetOn(p.ViewTarget)) {
+		DEBUG("Losing: "$NameActor(p.ViewTarget));
+	}
+	if (FollowActor != None && LosingNetOn(FollowActor)) {
+		DEBUG("Losing: "$NameActor(FollowActor));
+	}
+	if (LookActor != None && LosingNetOn(LookActor)) {
+		DEBUG("Losing: "$NameActor(LookActor));
 	}
 
 	// Maybe it's ok to have both == None (Spec free fly mode)
@@ -550,7 +720,7 @@ event Tick (float Delta) {
 			DEBUG("LOST ViewTarget and FollowActor!");
 			p.ConsoleCommand("ViewTeam");
 			// bCheckingForInterestingTarget = True; CheckForNewActors();
-			SetNewTarget(GetRandomActor());
+			GetRandomCameraNow();
 		}
 	} */
 
@@ -613,6 +783,25 @@ event Tick (float Delta) {
 				}
 			}
 			*/
+
+	// for (i=0;i<P.Player.Console.TopLine;i++) {
+		Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"Now viewing from ");
+		// Offset = InStr(P.Player.Console.MsgText[i],"Now viewing from ");
+		if (Offset != -1) {
+			RecommendedPlayerName = Mid(P.Player.Console.MsgText[P.Player.Console.TopLine],Len("Now viewing from "));
+			if (Mid(RecommendedPlayerName,0,1) == " ")
+				RecommendedPlayerName = Mid(RecommendedPlayerName,1);
+			// DEBUG("OK got >"$RecommendedPlayerName$"<");
+			Log("Got RecommendedPlayerName = >"$RecommendedPlayerName$"<");
+		}
+	// }
+
+	// for (i=0;i<P.Player.Console.TopLine;i++) {
+		Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine]," inflicted mortal damage upon ");
+		if (Offset != -1) {
+			Log("["$Level$"@"$Level.TimeSeconds$"] Frag: "$P.Player.Console.MsgText[P.Player.Console.TopLine]);
+		}
+	// }
 
 	Offset = InStr(P.Player.Console.MsgText[P.Player.Console.TopLine],"mutate AFCOFF");
 	if ( (Offset != -1) &&  !bAFCOFFmsg )
@@ -792,16 +981,20 @@ function AddMutator(Mutator Other) {
 	}
 }
 
-function Actor FindClosestInterestingActor(Actor from) {
+function Actor FindClosestInterestingActor(optional Actor from, optional Vector fromV) {
 	local Actor A,bestActor;
 	local int distance,bestDistance;
-	foreach VisibleActors(class'Actor', A, 16000, from.Location) {
+	if (from != None)
+		fromV = from.Location;
+	// foreach VisibleActors(class'Actor', A, 16000000, from.Location) {
+	foreach AllActors(class'Actor', A) {
 		// if (A != from && isInteresting(A)) {
 		if (A == from)
 			continue;
 		if (
-			isAGoodProjectile(A)
-			|| isFC(A)
+			// isAGoodProjectile(A)
+			// || isFC(A) ||
+			isInteresting(A)
 			// || A.IsA('CTFFlag')
 			// || A.IsA('Flag')
 			// || A.IsA('Carcass')
