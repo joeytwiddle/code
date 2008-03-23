@@ -176,6 +176,7 @@ var int LastCamChangeSeconds;
 var Actor CameraFocusActor;
 var float deltaYaw,deltaPitch,deltaFOV,deltaDist; // CONSIDER TODO: These variables are the same for all PlayerPawns - do we risk collisions?!
 var float currentDist;
+var float CoolCamYaw,CoolCamPitch; // Because player's ViewRotations have int angles which are too large for the small motions we use each tick.
 #endif
 #ifdef MAP_RATING_SYSTEM
 var config String MapRatings[256];
@@ -1295,13 +1296,15 @@ function CoolCamera(float DeltaTime) {
 	local PlayerPawn p;
 	if (TimeToChange) {
 		CameraFocusActor = GetRandomActor();
+		CoolCamYaw = 8192.0*8.0*(FRand()-0.5);
+		CoolCamPitch = 8192*0.3*(FRand()-0.1);
 		// deltaYaw    = 20 * 100*(FRand()-0.5);
 		// deltaYaw    = 20 * Sgn(FRand()-0.5)*(30 + 30*FRand());
 		// deltaYaw    = 20 * -(30 + 30*FRand());
-		deltaYaw    = 20.0 * (-30.0 + 60.0*FRand());
-		deltaPitch  = 20 * 0.4*(FRand()-0.5);
-		deltaFOV    = 20 * 0.3*(FRand()-0.3);
-		deltaDist   = 20 * (2+3*FRand());
+		deltaYaw    = 200.0 * (-30.0 + 60.0*FRand());
+		deltaPitch  = 200 * 3.0*(FRand()-0.4);
+		deltaFOV    = 200 * 0.8*(FRand()-0.3);
+		deltaDist   = 200 * (2+3*FRand());
 		currentDist = 128;
 	}
 	foreach AllActors(class'PlayerPawn', p) {
@@ -1322,11 +1325,9 @@ function CoolCamera(float DeltaTime) {
 		if (TimeToChange) {
 			// p.ViewTarget = CameraFocusActor;
 			p.ViewTarget = None;
-			// p.ViewRotation.Yaw = 8192*8*(FRand() - 0.5);
-			p.ViewRotation.Yaw = 8192.0*8.0*FRand();
-			// p.ViewRotation.Yaw = 8192*16*(FRand() - 0.5);
-			p.ViewRotation.Pitch = 8192*0.3*(FRand()-0.0);
 			p.ViewRotation.Roll = 0;
+			p.ViewRotation.Yaw = CoolCamYaw;
+			p.ViewRotation.Pitch = CoolCamPitch;
 			p.DesiredFOV = 100 + 30 * FRand();
 			p.ConsoleCommand("FOV "$p.DesiredFOV);
 			p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
@@ -1346,8 +1347,26 @@ function CoolCamera(float DeltaTime) {
 			// Log("CoolCamera: yaw "$p.ViewRotation.Yaw$" += "$(deltaYaw*DeltaTime));
 			// Log("CoolCamera: pitch "$p.ViewRotation.Pitch$" += "$(deltaPitch*DeltaTime));
 		// }
-		p.ViewRotation.Yaw = p.ViewRotation.Yaw + deltaYaw*DeltaTime;
-		p.ViewRotation.Pitch = p.ViewRotation.Pitch + deltaPitch*DeltaTime;
+		CoolCamYaw = CoolCamYaw + deltaYaw*DeltaTime;
+		CoolCamPitch = CoolCamPitch + deltaPitch*DeltaTime;
+		p.ViewRotation.Yaw = CoolCamYaw;
+		p.ViewRotation.Pitch = CoolCamPitch;
+		/*
+		if (Abs(deltaYaw*DeltaTime)<1.0) {
+			if (FRand()<deltaYaw*DeltaTime) {
+				p.ViewRotation.Yaw += Sgn(deltaYaw);
+			}
+		} else {
+			p.ViewRotation.Yaw = p.ViewRotation.Yaw + deltaYaw*DeltaTime;
+		}
+		if (Abs(deltaPitch*DeltaTime)<1.0) {
+			if (FRand()<deltaPitch*DeltaTime) {
+				p.ViewRotation.Pitch += Sgn(deltaPitch);
+			}
+		} else {
+			p.ViewRotation.Pitch = p.ViewRotation.Pitch + deltaPitch*DeltaTime;
+		}
+		*/
 		p.DesiredFOV = p.DesiredFOV + deltaFOV*DeltaTime;
 		// p.FOVAngle = p.DesiredFOV;
 		// p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
@@ -1369,7 +1388,8 @@ function CoolCamera(float DeltaTime) {
 		// ( p.Location - Normal(Vector(p.ViewRotation))*deltaDist  + vect(0,0,0.1)*deltaDist );
 		// p.ClientSetLocation(p.Location, p.ViewRotation);
 		// p.ClientSetLocation(CameraFocusActor.Location, p.ViewRotation);
-		p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
+		// BAD: if (FRand()<0.01)
+			p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
 		// p.RotationRate.Yaw = 20 * deltaYaw;
 		// p.RotationRate.Pitch = 20 * deltaPitch;
 	}
@@ -1564,9 +1584,15 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 	}
 	if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum); }
 	Level.Game.ChangeTeam(p,teamnum);
+
+	// Recompensate player for suicide/death points:
 	p.KillCount++;
 	p.PlayerReplicationInfo.Deaths-=1;
-	p.Died(None, '', p.Location); // Kills the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
+	// TODO CHECK: Do we really need both of these?  We can also fiddle with PRI.Score, and p.SecretCount.
+
+	// Kill the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
+	p.Died(None, '', p.Location);
+
 	if (bInform) {
 		switch (teamnum) {
 			case 0: msgColor = colorRed; break;
