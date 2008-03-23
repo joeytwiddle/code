@@ -2036,9 +2036,9 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
 }
 
 function float NumFromDateString(String str) {
-	str = StrReplace(str,"-","");
-	str = StrReplace(str,":","");
-	str = StrReplace(str,"/","");
+	// str = StrReplace(str,"-","");
+	// str = StrReplace(str,":","");
+	// str = StrReplace(str,"/","");
 	str = StrFilterNum(str);
 	if (bDebugLogging && FRand()<0.01) { Log("NumFromDateString(): "$str$" -> "$Float(str)); }
 	return Float(str);
