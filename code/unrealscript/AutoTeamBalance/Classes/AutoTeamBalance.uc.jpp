@@ -1,4 +1,4 @@
-// vim: tabstop=2 shiftwidth=2 expandtab filetype=uc
+// vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 // == AutoTeamBalance ========================================================
 // A UT mutator that makes fair teams at the beginning of each teamgame,
 // Works by recording the relative strengths of players on the server (indexed
@@ -24,7 +24,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.3f"
+#define ATB_VERSION "1.3h"
 
 // New changes:
 // As well as displaying the SmartCTF scoreboard, !stats now also shows all the player strengths.  (It's a shortcut for "mutate strengths".)
@@ -87,8 +87,10 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #define ENABLE_MUTATOR_SIGNATURE
 #define ENABLE_MIN_REQUESTS_FOR_REBALANCE
 #define SUPERBALANCE
-#define COOL_CAMERA
+// #define COOL_CAMERA
 // #define MAP_RATING_SYSTEM
+#define ENABLE_IDC
+#define TESTING
 
 // These config variables are documented in AutoTeamBalance.txt
 
@@ -184,6 +186,7 @@ var float thru;
 var Vector CamPathStart,CamPathEnd;
 var float CoolCamYaw,CoolCamPitch; // Because player's ViewRotations have int angles which are too large for the small motions we use each tick.
 var float deltaYaw,deltaPitch,deltaFOV,deltaDist; // CONSIDER TODO: These variables are the same for all PlayerPawns - do we risk collisions?!
+var float deltaOne;
 #endif
 #ifdef MAP_RATING_SYSTEM
 var config String MapRatings[256];
@@ -516,6 +519,7 @@ function Mutate(String str, PlayerPawn Sender) {
 
 	if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
+	// Decide now how we will handle the password later (if a password is even required):
 	if (Sender.bAdmin)
 		localPass = ""; // any or no pass is accepted
 	else if (SemiAdminPass == "defaults_to_admin_pass")
@@ -525,18 +529,20 @@ function Mutate(String str, PlayerPawn Sender) {
 
 	argcount = SplitString(str," ",args);
 
+	#ifdef ENABLE_IDC
+	if (args[0]=="IDC") {
+		Log("ATB caught IDC's: \""$str$"\"");
+	}
+	#endif
+
 	// Commands which do not require a password:
 
 	if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
-
 			ShowStrengthsTo(Sender);
-
 	}
 
 	if ( args[0]~="LISTMUTS" || args[0]~="LISTMUTATORS" ) {
-
 			ListMutsTo(Sender);
-
 	}
 
 	// Commands which do require the password:
@@ -1011,32 +1017,38 @@ function bool CheckMessage(String Msg, Actor Sender) {
 
 	if (bEnablePlayerCommands) {
 
-		if (Msg ~= "!RED") {
-			ChangePlayerToTeam(PlayerPawn(Sender),0,false);
+		if (!Sender.IsA('Spectator')) {
+
+			if (Msg ~= "!RED") {
+				ChangePlayerToTeam(PlayerPawn(Sender),0,false);
+			}
+
+			if (Msg ~= "!BLUE") {
+				ChangePlayerToTeam(PlayerPawn(Sender),1,false);
+			}
+
+			if (Msg ~= "!GREEN") {
+				ChangePlayerToTeam(PlayerPawn(Sender),2,false);
+			}
+
+			if (Msg ~= "!GOLD" || Msg ~= "!YELLOW") {
+				ChangePlayerToTeam(PlayerPawn(Sender),3,false);
+			}
+
 		}
 
-		if (Msg ~= "!BLUE") {
-			ChangePlayerToTeam(PlayerPawn(Sender),1,false);
-		}
+		// Somewhere around here, XOL was giving Accessed None.
 
-		if (Msg ~= "!GREEN") {
-			ChangePlayerToTeam(PlayerPawn(Sender),2,false);
-		}
-
-		if (Msg ~= "!GOLD" || Msg ~= "!YELLOW") {
-			ChangePlayerToTeam(PlayerPawn(Sender),3,false);
-		}
-
-		if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
-			if (!Sender.IsA('Spectator')) {
-				PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
+		if (!Sender.IsA('Spectator')) {
+			if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
+				// PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
 				PlayerPawn(Sender).ClientTravel("?OverrideClass=Botpack.CHSpectator",TRAVEL_Relative, False);
 			}
 		}
 
-		if (Msg ~= "!PLAY") {
-			if (Sender.IsA('Spectator')) {
-				PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
+		if (Sender.IsA('Spectator')) {
+			if (Msg ~= "!PLAY") {
+				// PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
 				PlayerPawn(Sender).ClientTravel("?OverrideClass=",TRAVEL_Relative, False);
 			}
 		}
@@ -1061,12 +1073,18 @@ function bool CheckMessage(String Msg, Actor Sender) {
 	}
 
 	#ifdef MAP_RATING_SYSTEM
-	if (StrContains(Locs(Msg),"bad map") || StrContains(Locs(Msg),"shit map") || StrContains(Locs(Msg),"crap map")) {
+	if (StrContains(Locs(Msg),"bad map") || StrContains(Locs(Msg),"shit map") || StrContains(Locs(Msg),"crap map") || Msg~="!badmap") {
 		RateMap(Level,Sender,0);
 	}
 
-	if (StrContains(Locs(Msg),"good map") || StrContains(Locs(Msg),"great map") || StrContains(Locs(Msg),"nice map")) {
+	if (StrContains(Locs(Msg),"good map") || StrContains(Locs(Msg),"great map") || StrContains(Locs(Msg),"nice map") || Msg~="!goodmap") {
 		RateMap(Level,Sender,10);
+	}
+	#endif
+
+	#ifdef TESTING
+	if (StrStartsWith(Locs(Msg),"!mutate ")) {
+		PlayerPawn(Sender).Mutate(StrAfter(Msg," "));
 	}
 	#endif
 
@@ -1213,6 +1231,7 @@ function ForceFullTeamsRebalance() {
 
 	// Show team strengths to all players
 	if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
+	// if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
 
 }
 
@@ -1301,13 +1320,15 @@ simulated function bool isInteresting(Actor a) {
 simulated function Actor GetRandomActor() {
 	local int count;
 	local Actor a;
+	// DONE: don't pick the same one as last time
+	// TODO: (ideally arrange a list in advance, and loop it)
 	foreach AllActors(class'Actor',a) {
-		if (isInteresting(a))
+		if (isInteresting(a) && a!=CameraFocusActor)
 			count++;
 	}
 	count = 1 + count * FRand();
 	foreach AllActors(class'Actor',a) {
-		if (isInteresting(a)) {
+		if (isInteresting(a) && a!=CameraFocusActor) {
 			count--;
 			if (count<=0)
 				return a;
@@ -1327,24 +1348,31 @@ function int Sgn(float n) {
 	return 0;
 }
 
-// simulated function CoolCamera(float DeltaTime) {
-function CoolCamera(float DeltaTime) {
+simulated function CoolCamera(float DeltaTime) {
+// function CoolCamera(float DeltaTime) {
 	local PlayerPawn p;
 	local Vector NewCamLocation;
+	#ifdef TESTING
+	local bool bPrint;
+	#endif
 	if (TimeToChange) {
 		CameraFocusActor = GetRandomActor();
+		// TODO: if we didn't find a flag or powerup, either pick something else,
+		//       or give up CoolCamera entirely.
 		thru = 0;
-		CoolCamYaw = 65536*FRand();
+		CoolCamYaw = 65536*FRand()-32768;
 		CoolCamPitch = 8192*0.3*(FRand()-0.1);
 		// deltaYaw    = 20 * 100*(FRand()-0.5);
 		// deltaYaw    = 20 * Sgn(FRand()-0.5)*(30 + 30*FRand());
 		// deltaYaw    = 20 * -(30 + 30*FRand());
 		deltaYaw    = 200.0 * (-30.0 + 60.0*FRand());
-		deltaPitch  = 200 * 3.0*(FRand()-0.4);
-		deltaFOV    = 200 * 0.8*(FRand()-0.3);
+		deltaPitch  = 200 * 20.0*(FRand()-0.4);
+		deltaFOV    = 200 * 8.0*(FRand()-0.3);
 		deltaDist   = 200 * (2+3*FRand());
 		currentDist = 128;
 		GetGoodCameraMove(CameraFocusActor.Location,CamPathStart,CamPathEnd);
+		// TODO: if powerup is low and floor all around,
+		//       camera may hit floor and go far too close to (inside) actor.
 	}
 	thru += DeltaTime/Float(CamSwitchSeconds);
 	NewCamLocation = CamPathStart*thru + CamPathEnd*(1.0-thru);
@@ -1356,13 +1384,17 @@ function CoolCamera(float DeltaTime) {
 			p.ViewRotation.Pitch = 0;
 			p.ViewRotation.Yaw = 0;
 			p.DesiredFOV = 90; // BUG: maybe the player joined the server with their own favourite FOV value.  Check p.FOVAngle now, or store their own value later.
-			p.FOVAngle = 90; // BUG: maybe the player joined the server with their own favourite FOV value.  Check p.FOVAngle now, or store their own value later.
-			p.ConsoleCommand("FOV 90");
+			// p.FOVAngle = 90; // BUG: maybe the player joined the server with their own favourite FOV value.  Check p.FOVAngle now, or store their own value later.
+			// p.ConsoleCommand("FOV 90");
 			p.RotationRate.Roll = 0;
 			p.RotationRate.Pitch = 0;
 			p.RotationRate.Yaw = 0;
-      // TODO: looks strange changing fov and stopping movement but still looking at same item
-      //       reset the view to look at something new
+			// p.bRotateToDesired = False;
+			p.bFixedRotationDir = False;
+			p.SetPhysics(PHYS_None);
+			// TODO: looks strange changing fov and stopping movement but still looking at same item
+			//       reset the view to look at something new
+			// TODO: consider using Velocity for smooth movement - also check MoveSmooth
 			continue;
 		}
 		if (TimeToChange) {
@@ -1370,22 +1402,97 @@ function CoolCamera(float DeltaTime) {
 			p.ViewRotation.Yaw = CoolCamYaw;
 			p.ViewRotation.Pitch = CoolCamPitch;
 			p.DesiredFOV = 100 + 30 * FRand();
-			p.ConsoleCommand("FOV "$p.DesiredFOV);
+			// p.ConsoleCommand("FOV "$p.DesiredFOV);
 			p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
 			// p.SetLocation( CameraFocusActor.Location - 64.0 * Normal(Vector(p.ViewRotation)) + (0.0+FRand())*vect(0,0,24.0) );
 			// p.SetLocation( CameraFocusActor.Location - currentDist*Normal(Vector(p.ViewRotation)) + 0.05*currentDist*vect(0,0,1.0) );
 			// p.bBehindView = True;
 			// p.ViewTarget.BecomeViewTarget();
 			p.bBehindView = False;
-			p.ClientMessage("=> "$CameraFocusActor);
-			if (bDebugLogging) { Log("CoolCamera: "$p$" => "$CameraFocusActor$" with ("$P.ViewRotation.yaw$","$P.ViewRotation.pitch$")"); }
 			// p.SetLocation( CameraFocusActor.Location );
 
-			p.ViewTarget = None;
-			p.bBehindView = False;
-			// p.ViewTarget = CameraFocusActor;
-			// p.bBehindView = True;
+			// p.ViewTarget = None;
+			// p.bBehindView = False;
+			p.ViewTarget = CameraFocusActor;
+			p.bBehindView = True;
+			// p.RotationRate.Roll = 0;
+			// p.RotationRate.Pitch = deltaPitch;
+			// p.RotationRate.Yaw = deltaYaw;
+			// // p.bRotateToDesired = True;
+			// p.bFixedRotationDir = True;
+			// p.SetPhysics(PHYS_Rotating);
+			// I just cannot get the Player to rotate - maybe because the game didn't start?
+			// Otherwise it's because the required variables are not getting replicated.
+
+			p.ClientMessage("=> "$CameraFocusActor$" "$p.RotationRate.Pitch$" "$p.RotationRate.Yaw);
+			if (bDebugLogging) { Log("CoolCamera: "$p$" => "$CameraFocusActor$" with ("$P.ViewRotation.yaw$","$P.ViewRotation.pitch$")"); }
+			bPrint = True;
 		}
+		// p.UpdateRotation(DeltaTime,1);
+		// p.UpdateRotation(1,1); // I was surprised that this didn't work!  Ahh it doesn't call ClientSetRotation().
+		//p.ViewRotation.Pitch += deltaPitch * DeltaTime;
+		//p.ViewRotation.Yaw += deltaYaw * DeltaTime;
+		//p.ViewRotation.Pitch += 128;
+		//p.ViewRotation.Yaw += 128;
+		// p.ViewRotation.Pitch += 1; // does nothing!
+		// p.ViewRotation.Yaw += 1; // does nothing!
+
+			/*
+			//// This approach works, performing the rotation, but I still need to use
+			//// p.ClientSetRotation() and then it's still discrete/jerky.  :F
+			//// Dunno why but pitch moves faster than when using CoolCamPitch.
+			// p.aBaseX = deltaYaw / 32.0;
+			p.aTurn = deltaYaw / 32.0;
+			// p.SmoothMouseY = deltaPitch;
+			// p.aBaseY = deltaPitch / 32.0;
+			p.aLookUp = deltaPitch / 32.0;
+			// p.PlayerMove(DeltaTime);
+			// p.PlayerInput(DeltaTime);
+			p.UpdateRotation(DeltaTime,32768);
+			*/
+
+		#ifdef TESTING
+		// if (FRand()<0.01)
+			// bPrint=True;
+		if (bPrint)
+			p.ClientMessage("["$p.ViewRotation.Yaw$","$p.ViewRotation.Pitch$"] "$p.aBaseX$":"$p.aTurn$" "$p.aBaseY$","$p.aLookUp);
+		#endif
+		/*
+		deltaOne += 0.3;
+		if (deltaOne>=1.0) {
+			p.ViewRotation.Pitch -= 1;
+			deltaOne -= 1.0;
+		}
+			yawRemainder -= 1.0;
+			p.ViewRotation.
+		p.ViewRotation.Yaw -= 1;
+		if (p.ViewRotation.Yaw>=32768)
+			p.ViewRotation.Yaw-=65536;
+		if (p.ViewRotation.Yaw<-32768)
+			p.ViewRotation.Yaw+=65536;
+		*/
+
+		CoolCamYaw += deltaYaw*DeltaTime;
+		CoolCamPitch += deltaPitch*DeltaTime;
+		p.ViewRotation.Yaw = CoolCamYaw;
+		p.ViewRotation.Pitch = CoolCamPitch;
+
+		// FFS I give up; i think we gotta settla for deltaYaw=1, deltaPitch=0 and that's all.
+
+		#ifdef TESTING
+		if (bPrint)
+			p.ClientMessage("["$p.ViewRotation.Yaw$","$p.ViewRotation.Pitch$"] "$p.aBaseX$":"$p.aTurn$" "$p.aBaseY$","$p.aLookUp);
+		#endif
+		// still seems a little jerky - are the variables replicated as ints?
+		// mmm nope it's an int on BOTH sides, so we only see rotation when yaw/pitch is -ve :S
+		// mm no that's not it; even when I +128, nothing changes!
+		// -1 works fine, +1 doesn't O_o
+		// TODO: debug it - watch the numbers - try subtracting 65535 ;)
+		// -1 is a little too fast for pitch
+		// TODO: rotation starts before player's camera has been set up!
+		// p.ClientSetRotation(Normalize(p.ViewRotation));
+		p.ClientSetRotation(p.ViewRotation);
+		if (false) {
 		// if (bDebugLogging && FRand()<0.00001) {
 			// Log("CoolCamera: yaw "$p.ViewRotation.Yaw$" += "$(deltaYaw*DeltaTime));
 			// Log("CoolCamera: pitch "$p.ViewRotation.Pitch$" += "$(deltaPitch*DeltaTime));
@@ -1395,6 +1502,7 @@ function CoolCamera(float DeltaTime) {
 		// p.ViewRotation.Yaw = CoolCamYaw;
 		// p.ViewRotation.Pitch = CoolCamPitch;
 		// p.ViewRotation.Pitch = p.ViewRotation.Pitch & 65535;
+		// NewCamLocation = CameraFocusActor.Location - currentDist * Vector(p.ViewRotation);
 		p.SetLocation(NewCamLocation);
 		p.ViewRotation = rotator(CameraFocusActor.Location - NewCamLocation);
 		/*
@@ -1413,7 +1521,6 @@ function CoolCamera(float DeltaTime) {
 			p.ViewRotation.Pitch = p.ViewRotation.Pitch + deltaPitch*DeltaTime;
 		}
 		*/
-		p.DesiredFOV = p.DesiredFOV + deltaFOV*DeltaTime;
 		// p.FOVAngle = p.DesiredFOV;
 		// p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
 		// p.SetLocation( p.ViewTarget.Location - 192 * Vector(p.ViewRotation) + vect(0,0,64.0) );
@@ -1439,9 +1546,11 @@ function CoolCamera(float DeltaTime) {
 		// p.RotationRate.Yaw = 20 * deltaYaw;
 		// p.RotationRate.Pitch = 20 * deltaPitch;
 		// p.ClientSetLocation(NewCamLocation,p.ViewRotation);
+		}
+		p.DesiredFOV = p.DesiredFOV + deltaFOV*DeltaTime;
 	}
 	// TODO: Hard to DeltaTime this:
-	deltaYaw = deltaYaw * 0.997;
+	deltaYaw = deltaYaw * 0.995;
 	deltaPitch = deltaPitch * 0.995;
 	deltaFOV = deltaFOV * 0.997;
 	deltaDist = deltaDist * 0.997;
@@ -2108,7 +2217,8 @@ function int CreateNewPlayerRecord(Pawn p) {
 
 	if (pos >= MaxPlayerData) { // all records were full
 		// DONE: find the record with lowest hours_played and replace that one
-		// TODO: better, find the oldest record and replace it (we need last_date_played for that)
+		// DONE: better, find the oldest record and replace it (we need last_date_played for that)
+		// TODO: first seek "oldest player record with min play-time", but if it fails, find "oldest player record"
 		pos = FindOldestPlayerRecord();
 	}
 
@@ -2152,6 +2262,7 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
 		if (NumFromDateString(date_last_played[i]) < NumFromDateString(date_last_played[found])) {
 			found = i;
 		}
+		// TODO: cache NumFromDateString_date_last_played_found throughout this fn
 	}
 	return found;
 }
@@ -2163,6 +2274,8 @@ function float NumFromDateString(String str) {
 	str = StrFilterNum(str);
 	if (bDebugLogging && FRand()<0.01) { Log("NumFromDateString(): "$str$" -> "$Float(str)); }
 	return Float(str);
+	// NOTE: float is not all that accurate; it cannot see the time-of-day:
+	// 200701010000 -> 200701018112.000000
 }
 
 
