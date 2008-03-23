@@ -24,12 +24,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.3i"
+#define ATB_VERSION "1.3j"
 
 // New changes:
 // As well as displaying the SmartCTF scoreboard, !stats now also shows all the player strengths.  (It's a shortcut for "mutate strengths".)
 // Messages flashed to players now have different colours, position and timeout, but do not appear in the player's console.
-// Now always broadcasts any reason for not rebalancing, even if bBroadcastStuff=False.
+// Now always broadcasts the reason if rebalancing was not possible, even if bBroadcastStuff=False.
 // More minor improvements to messaging.
 // Finally added a date_last_played entry for each player.
 // Added a new command: listmuts
@@ -95,12 +95,16 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 // #define MAP_RATING_SYSTEM
 // #define TESTING_PRINT_ANGLES
 // #define TESTING
+#define DETECT_PLAYERJOINS
 
 // These config variables are documented in AutoTeamBalance.txt
 
 var config bool bBroadcastStuff;
 var config bool bBroadcastCookies;
 var config bool bFlashCookies; // TODO BUG WARNING: Do not use bFlashCookies with IDC - it causes ATB to lookup the record before IDC has given us the player ID!  Actually that's not so bad - ATB will start using the right record later, once IDC has reported.  But it means the player gets the wrong strength message until then.  ;)
+#ifdef DETECT_PLAYERJOINS
+var config bool bFlashPlayerJoins;
+#endif
 var config bool bReportStrengthAsCookies;
 var config bool bDebugLogging;
 
@@ -148,7 +152,8 @@ var config float HoursBeforeRecyclingStrength;
 var config int MinHumansForStats;
 var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking
 var config bool bNormaliseScores;
-var config bool bRelativeNormalisation;
+// var config bool bRelativeNormalisation;
+var config float RelativeNormalisationProportion;
 var config bool bScalePlayerScoreToFullTime; // Leave this true, more accurate this way
 
 var config int NormalisedStrength;
@@ -223,6 +228,9 @@ defaultproperties {
 	bBroadcastStuff=True
 	bBroadcastCookies=False
 	bFlashCookies=False
+	#ifdef DETECT_PLAYERJOINS
+	bFlashPlayerJoins=True
+	#endif
 	bReportStrengthAsCookies=False
 	bDebugLogging=False
 	bEnablePlayerCommands=True
@@ -259,7 +267,8 @@ defaultproperties {
 	MinHumansForStats=4
 	ScoringMethod=2
 	bNormaliseScores=True
-	bRelativeNormalisation=True
+	// bRelativeNormalisation=True
+	RelativeNormalisationProportion=0.5 // 0.0 = no relative, scores always normalised around 50; 1.0 = scored normalised around average strength of players in game
 	bScalePlayerScoreToFullTime=True
 	NormalisedStrength=50
 	UnknownStrength=50
@@ -478,6 +487,16 @@ function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce st
 
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	#ifdef DETECT_PLAYERJOINS
+	if (bFlashPlayerJoins) {
+		if (StrContains(Msg," has joined ")) {
+			FlashToAllPlayers("Someone has joined the game!",colorYellow);
+		}
+		if (StrContains(Msg," has left ")) {
+			FlashToAllPlayers("Someone has left the game!",colorYellow);
+		}
+	}
+	#endif
 	if (Sender == Receiver) { // Only process the message once.
 		if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage() Checking ("$Sender.getHumanName()$") "$Msg$""); }
 		CheckMessage(Msg, Sender);
@@ -880,11 +899,12 @@ function CheckGameStart() {
 		DoGameStart();
 	} else {
 		// Override the line which says what team each player is on (since teams have not yet been decided!):
+		// Line 3 usually displays "You are on the Red/Blue team" before the game starts.
+		// But since we won't balance teams until 2 seconds before game start, we want to overwrite line 3.
 		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 			// The check for UTServer Avoids logging repeated calls to UTServerAdminSpectator before anyone has joined the server.
 			if (p.IsA('PlayerPawn') && InStr(String(p.class),"UTServer")==-1) {
-				// Line 3 usually displays "You are on the Red/Blue team" before the game starts.
-				// But since we won't balance teams until 2 seconds before game start, we want to overwrite line 3.
+				/*
 				// Only override the line, iff that line is currently displaying the player's team prematurely.  (Avoid conflicting with XOL's pre-game hiscore display.)
 				// Does not work!
 				if (StrContains(PlayerPawn(p).ProgressMessage[3],"You") ||
@@ -893,16 +913,24 @@ function CheckGameStart() {
 						StrContains(PlayerPawn(p).ProgressMessage[5],"You") ||
 						StrContains(PlayerPawn(p).ProgressMessage[4],"You")
 				) {
+				*/
+					// #ifdef XOL_SPECIFIC
+					// // #define LINENR_FOR_FLASH 5
+					// #define LINENR_FOR_FLASH Int(ConditionalString(level.timeseconds < 8, "3", "5"))
+					// #else
+					#define LINENR_FOR_FLASH 3
+					// #endif
 					if (bFlashCookies) {
 						if (bReportStrengthAsCookies)
-							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,3);
+							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,LINENR_FOR_FLASH);
 						else
-							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ GetPawnStrength(p) $"",colorOrange,3);
+							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ GetPawnStrength(p) $"",colorOrange,LINENR_FOR_FLASH);
 					} else {
-						FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,3); // colMagenta
+						FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,LINENR_FOR_FLASH); // colMagenta
 						// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
 					}
-				}
+					#undef LINENR_FOR_FLASH
+				// }
 			}
 	 }
 	}
@@ -938,11 +966,11 @@ function DoGameStart() {
 				}
 				// PlayerPawn(p).ClearProgressMessages();
 				// But on XOL, when the game does start, line 3 is used to display Highest # covers.  So on XOL, we use line 5.
-				#ifdef XOL_SPECIFIC
-				#define LINENR_FOR_FLASH 5
-				#else
+				// #ifdef XOL_SPECIFIC
+				// #define LINENR_FOR_FLASH 5
+				// #else
 				#define LINENR_FOR_FLASH 3
-				#endif
+				// #endif
 				FlashMessageToPlayer(PlayerPawn(p),"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,LINENR_FOR_FLASH);
 			}
 		}
@@ -1863,6 +1891,15 @@ function BroadcastMessageAndLog(string Msg) {
 	BroadcastMessage(Msg);
 }
 
+#ifdef XOL_SPECIFIC
+	function ReportProgressMessages(PlayerPawn p) {
+		local int i;
+		for (i=0;i<6;i++) {
+			Log("AutoTeamBalance.ReportProgressMessages("$p.getHumanName()$"): "$i$" "$(p.ProgressMessage[5])$"\"");
+		}
+	}
+#endif
+
 function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum) {
 	if (bDebugLogging) { Log("AutoTeamBalance Flashing message to "$p.getHumanName()$": "$Msg); }
 	// p.ClientMessage(Msg, 'CriticalEvent', False); // goes to HUD and console, no beep
@@ -1870,12 +1907,30 @@ function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional
 	if (linenum == 0) {
 		linenum = -2;
 	}
+	#ifdef XOL_SPECIFIC
+		// Don't overwrite XDScoringRules, but make sure we overwrite premature "You are on the Red team":
+		if (linenum == 3) {
+			if (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime >= 8) {
+				linenum = 5; // TODO: should probably be line 4, but using 5 for now to see if anything might appear in 4
+			}
+		}
+		if (bDebugLogging)
+			ReportProgressMessages(p);
+	#endif
 	// p.ClearProgressMessages();
 	p.SetProgressTime(4);
 	p.SetProgressColor(msgColor,linenum);
 	p.SetProgressMessage(Msg,linenum);
 	if (gameStartDone) { // Prevent multiple (and badly overlapping) beeps during the multiple Flashes at the start of the game
 		p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32); // we play our own sound
+	}
+}
+
+function FlashToAllPlayers(String Msg, Color msgColor, optional int linenum) {
+	local PlayerPawn P;
+	if (bDebugLogging) { Log("AutoTeamBalance.FlashMessageToPlayer(): Flashing \""$Msg$"\""); }
+	foreach AllActors(class'PlayerPawn',P) {
+		FlashMessageToPlayer(P,Msg,msgColor);
 	}
 }
 
@@ -2188,6 +2243,8 @@ function int FindPlayerRecord(Pawn p) {
 	local string tmp_date_last_played;
 
 	i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
+	// BUG TODO: When bRankBots=True (or bBalanceBots=True?), all the bots have i = 1635,
+	//           they all override that record and none of them optimise.
 
 	// Is the player's record already at i?
 	if (GetDBName(p) == nick[i] && getIP(p) == ip[i]) {
@@ -2200,7 +2257,7 @@ function int FindPlayerRecord(Pawn p) {
 
 	// If an exact record for the player was found, move it to index i for the rest of this game (by swapping it with whichever record is there).  This will make lookups more efficient during the rest of the game.
 	if (found != -1 && GetDBName(p) == nick[found] && getIP(p) == ip[found]) {
-		if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): Optimising lookup ("$i$"<->"$found$") for "$GetDBName(p)$" @ "$getIP(p)$"."); }
+		if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): Optimising exact match (lookup "$i$"<->"$found$") for "$GetDBName(p)$" @ "$getIP(p)$"."); }
 		tmp_player_nick = nick[i];
 		tmp_player_ip = ip[i];
 		tmp_avg_score = avg_score[i];
@@ -2315,7 +2372,8 @@ function int CreateNewPlayerRecord(Pawn p) {
 	avg_score[pos] = UnknownStrength;
 	hours_played[pos] = 0; // UnknownMinutes/60; // CONSIDER: using some UnknownMinutes might be better, for players who play only for a short time and get an unrepresentative strength for the next game - with UnknownMinutes their strength will be closer to the average, hence balancing will concentrate more on players we know about.
 	// date_last_played[pos] = GetDate();
-	date_last_played[pos] = "fresh_record";
+	// date_last_played[pos] = "fresh_record";
+	date_last_played[pos] = GetDate();
 	if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos]); }
 	// if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$ nick[pos] $"!  You have "$ avg_score[pos] $" cookies."); }
 	return pos;
@@ -2632,6 +2690,7 @@ function GetAveragesThisGame(out float averageGameScore, out float averagePlayer
 function float NormaliseScore(float score) {
 	local float averageGameScore;
 	local float averagePlayerStrengthThisGame;
+	#define floatWeUse ( averagePlayerStrengthThisGame * RelativeNormalisationProportion + NormalisedStrength * (1.0 - RelativeNormalisationProportion) )
 
 	GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
 
@@ -2642,11 +2701,14 @@ function float NormaliseScore(float score) {
 
 	if (bDebugLogging) { Log("AutoTeamBalance.NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$""); }
 
+	/*
 	if (bRelativeNormalisation) {
 		return score * averagePlayerStrengthThisGame / averageGameScore;
 	} else {
 		return score * NormalisedStrength / averageGameScore;
 	}
+	*/
+	return score * floatWeUse / averageGameScore;
 
 }
 
