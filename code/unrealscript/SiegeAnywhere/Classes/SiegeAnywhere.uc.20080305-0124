@@ -1,0 +1,34 @@
+class SiegeAnywhere extends Mutator;
+
+function PostBeginPlay() {
+	Log("SiegeAnywhere.PostBeginPlay(): Level.Game.HUDType = " $ Level.Game.HUDType);
+	Level.Game.HUDType = class'sgHUD';
+	Super.PostBeginPlay();
+}
+
+function ModifyPlayer(Pawn p) {
+	local sgConstructor cons;
+	cons = sgConstructor(p.FindInventoryType(class'sgConstructor'));
+	// Log("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") cons = " $ cons);
+	if (cons == None) {
+		cons = Spawn(class'sgConstructor',p,,,rot(0,0,0));
+		Log("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") Adding cons = " $ cons);
+		cons.GiveTo(p);
+		// p.AddInventory(cons);
+	}
+	if (sgPRI(p.PlayerReplicationInfo) == None) {
+		Log("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") Had to change PRI from " $ p.PlayerReplicationInfo.class $ " to " $ class'sgPRI');
+		// p.PlayerReplicationInfo = spawn(class'sgPRI',p,,,);
+	}
+	Super.ModifyPlayer(p);
+}
+
+function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
+	local class<PlayerReplicationInfo> priClass;
+	// Ugly hack to spawn the correct type of PRI
+	priClass = spawnClass.default.PlayerReplicationInfoClass;
+	spawnClass.default.PlayerReplicationInfoClass = class'SiegeXXL2dRC1.sgPRI';
+	Super.ModifyLogin(SpawnClass, Portal, Options);
+	spawnClass.default.PlayerReplicationInfoClass = priClass;
+}
+
