@@ -57,7 +57,11 @@ replication {
 
 simulated function DebugLog(String msg) {
   Log("<"$Role$"> "$msg);
-  // BroadcastMessage("<"$Role$"> "$msg);
+}
+
+simulated function DebugShout(String msg) {
+  DebugLog(msg);
+  BroadcastMessage("<"$Role$"> "$msg);
 }
 
 simulated function PreBeginPlay() {
@@ -72,7 +76,7 @@ simulated function PostBeginPlay() {
 }
 
 simulated function Tick(float DeltaTime) {
-  if (Role != Role_Authority) { DebugLog("[HOORAY NOT SERVER!] Tick()"); }
+  if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] Tick()"); }
   ShrinkAll(); // a freshly thrown translocator or weapon, or new projectile, should be rescaled ASAP, so we do some shrinking every tick!
   Super.Tick(DeltaTime);
 }
@@ -95,7 +99,7 @@ simulated function ShrinkAll() {
 simulated function Shrink(Actor a) {
   local bool bNew;
 
-  if (Role != Role_Authority) { DebugLog("[HOORAY NOT SERVER!] Shrink() START"); }
+  if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] Shrink() START"); }
 
   if (a.IsA('Brush') && a.IsA('Mover')) {
     return;
@@ -113,6 +117,7 @@ simulated function Shrink(Actor a) {
     if (a.IsA('PlayerPawn') || a.IsA('Bot')) {
       // TODO: add JumpZ and other essentials which reset here.
       PlayerPawn(a).JumpZ = 325*NewSize;
+      // ShrinkPawn(Pawn(a));
       CheckPlayerStateForDodge(PlayerPawn(a));
       return;
     }
@@ -132,7 +137,7 @@ simulated function Shrink(Actor a) {
   // Flags require some special changes
   if (a.IsA('FlagBase') || a.IsA('Flag') || a.IsA('CTFFlag') || a.IsA('CTFFlag0') || a.IsA('CTFFlag1') || a.IsA('RedFlag') || a.IsA('BlueFlag')) {
     if (bNew) { // don't do this more than once!
-      DebugLog("Fixing: "$a);
+      DebugShout("Fixing: "$a);
       a.SetCollisionSize(a.default.CollisionRadius * NewSize, a.default.CollisionHeight * NewSize);
       a.SetLocation(a.Location + (-64 + 64*NewSize) * Vect(0,0,1)); // flags are about 64 units above the floor - but their CollisionHeight is not 128!  I tried increasing to 72, but then the flag leaves the spot before the game starts!
     }
@@ -176,7 +181,7 @@ simulated function Shrink(Actor a) {
     // }
     // BUG TODO: somehow this fails to detect shock balls when secondary fire is held down (in online play at least)
     if (bNew) { // Don't slow down this projectile more than once!  Only when it's first created.
-      DebugLog("Slowing projectile "$a$" [NetTag="$a.NetTag$"]");
+      DebugShout("Slowing projectile "$a$" [NetTag="$a.NetTag$"]");
       Projectile(a).Velocity = Projectile(a).Velocity * NewSize;
     }
   }
@@ -185,7 +190,7 @@ simulated function Shrink(Actor a) {
     ZoneInfo(a).ZoneGravity = ZoneInfo(a).default.ZoneGravity * NewSize;
   }
 
-  if (Role != Role_Authority) { DebugLog("[HOORAY NOT SERVER!] Shrink() END"); }
+  if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] Shrink() END"); }
 
 }
 
@@ -220,7 +225,7 @@ simulated function ShrinkPlayerAndInventory(PlayerPawn p) {
   // }
   // Fix the player's dodge height, because it's fixed at 160 in Epic's code!!
   // if (p.DodgeDir == DODGE_Active && p.Velocity.Z >= 140 && p.Velocity.Z <= 180) {
-    // DebugLog("Fixing dodge for "$p$" (acc="$p.Acceleration$")");
+    // DebugShout("Fixing dodge for "$p$" (acc="$p.Acceleration$")");
     // // p.Location.Z = p.Location.Z - p.Velocity.Z * DeltaTime;
     // // if (Role == Role_Authority) {
       // p.SetLocation(p.Location - Vect(0,0,1) * p.Velocity.Z * DeltaTime); // undo the error caused by the tick before we could fix it
@@ -250,7 +255,7 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
   local float HitDistance;
   HitDistance = VSize(HitLocation - Victim.Location);
-  // BroadcastMessage("Damage "$DamageType$" @ "$HitDistance);
+  // DebugShout("Damage "$DamageType$" @ "$HitDistance);
   // BUG: both jolted and RocketDeath count for primary and secondary shots
   //      We could check the distance of the HitLocation from the Victim, to see if it is within his collision cylinder or not.
   // if (DamageType == 'jolted' || DamageType == 'RocketDeath' || DamageType=='FlakDeath' || DamageType=='GrenadeDeath' || DamageType=='RipperAltDeath') {
@@ -259,7 +264,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
     if (HitDistance > Victim.CollisionRadius /*&& HitDistance > Victim.CollisionHeight*/) {
       // Gets called sometimes even on a direct hit. :(
       // Seems to be outside the Victim, so it's splash damage, so scale it:
-      BroadcastMessage("Scaling splash damage "$DamageType$" on "$Victim.getHumanName()$" ("$HitDistance$")");
+      DebugShout("Scaling splash damage "$DamageType$" on "$Victim.getHumanName()$" ("$HitDistance$")");
       ActualDamage = ActualDamage / NewSize;
       Momentum = Momentum / NewSize;
       // Check with scale=2.0 that 1 primary shock deals correct damage (and does not kill)!
@@ -270,10 +275,15 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 }
 
 function CheckPlayerStateForDodge(PlayerPawn p) {
+  local float DeltaTime;
   // BUG TODO: fails in offline play with a lot of AccessedNone, due to PlayerReplicationInfo == None
   if ((""$p.DodgeDir) != LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]) {
     if (p.DodgeDir == DODGE_Active) {
-      BroadcastMessage("Scaling dodge Y for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$" -> "$p.DodgeDir$"]");
+      DebugShout("Scaling dodge Y for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$" -> "$p.DodgeDir$"]");
+      // Try to correct the changes from last tick:
+      DeltaTime = 0.05;
+      p.SetLocation(p.Location + (-p.Velocity.Z*DeltaTime + p.Velocity.Z*DeltaTime*NewSize) * Vect(0,0,1));
+      // Set correct upward velocity:
       p.Velocity.Z = p.Velocity.Z * NewSize;
     }
   }
