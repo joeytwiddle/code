@@ -50,7 +50,6 @@
 
 */
 
-// #define DEBUG(X); 
 // #define DEBUG(X); Log("nBAS] "$X);
 // #define DEBUG(X); if (bPrintDebugInfo) { Camera.ClientMessage(X); }
 // #define DEBUG(X); if (bPrintDebugInfo) { Camera.ClientMessage("[nBAS] "$(X)); Log("[nBAS] "$(X)); }
@@ -59,8 +58,14 @@
 // #define Log(X); 
 // #define Log(X); DEBUG(X);
 
+// #define DEBUG(X); 
 #define DEBUG(X); if (bPrintDebugInfo) { Log("[nBAS "$Int(Level.TimeSeconds)$"] "$(X)); }
-#define INFO(X); if (bPrintDebugInfo) { Camera.ClientMessage("> "$(X)); Log("[nBAS "$Int(Level.TimeSeconds)$"] "$(X)); }
+
+#define DEBUGQUIET(X); 
+
+// #define DEBUGLOUD(X); 
+#define DEBUGLOUD(X); if (bPrintDebugInfo) { Log("[nBAS "$Int(Level.TimeSeconds)$"] "$(X)); }
+// #define DEBUGLOUD(X); if (bPrintDebugInfo) { Camera.ClientMessage("> "$(X)); Log("[nBAS "$Int(Level.TimeSeconds)$"] "$(X)); }
 
 
 
@@ -111,7 +116,6 @@ var bool bDoneViewClass;
 var int CameraMode;
 
 var String RecommendedPlayerName;
-
 
 #ifdef ENABLE_EVENT_RECORD_REPLAY
 
@@ -741,7 +745,7 @@ function DontLose(Actor X,String Y) {
 	}
 }
 */
-#define DontLose(X,Y); if (LosingNetOn(X)) { DEBUG("Losing " $ Y); if (bSwitchCamera) { GetRandomCameraNow(); } return; }
+#define DontLose(X,Y); if (LosingNetOn(X)) { DEBUGQUIET("Losing(DontLose): " $ Y); if (bSwitchCamera) { GetRandomCameraNow(); } return; }
 
 function DeltaCamera(float Delta) {
 
@@ -1058,8 +1062,8 @@ function RecordEvents() {
 				ev.Line = line;
 
 				// DEBUG("[O] RECORD ("$ev.Primary$","$ev.Secondary$"): " $ line );
-				INFO("[O] RECORD ("$ev.Primary$","$ev.Secondary$")");
-				FlashMessageToPlayer(Camera,"[O] " $ ev.Primary$" v "$ev.Secondary,colRed,7,1.0);
+				DEBUGLOUD("[O] RECORD ("$ev.Primary$","$ev.Secondary$")");
+				FlashMessageToPlayer(Camera,"[O] " $ ev.Primary$" v "$ev.Secondary,colRed,8,1.0);
 
 				// Once database is full, it overwrites old events randomly
 				if (eventCount >= 4096) {
@@ -1069,10 +1073,10 @@ function RecordEvents() {
 					eventCount++;
 				}
 				if (FRand()<0.1) {
-					FlashMessageToPlayer(Camera,"[O] SAVING "$ev.Secondary,colRed,6,1.0);
+					FlashMessageToPlayer(Camera,"[O] SAVING "$ev.Secondary,colRed,5,1.0);
 					DEBUG("[O] SAVING ...");
 					SaveConfig();
-					INFO("[O] DONE");
+					DEBUG("[O] DONE");
 				}
 
 			}
@@ -1083,7 +1087,7 @@ function RecordEvents() {
 
 	// if (InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine]," killed ") >= 0) {
 		// if (!StrContains(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"FRAG!")) { // prevent infinite loop detecting its own output!
-			// INFO("Detected FRAG! " $ Camera.Player.Console.MsgText[Camera.Player.Console.TopLine] );
+			// DEBUGLOUD("Detected FRAG! " $ Camera.Player.Console.MsgText[Camera.Player.Console.TopLine] );
 		// }
 	// }
 
@@ -1110,7 +1114,7 @@ function RecordEvents() {
 		if (ch == None)
 			continue;
 		if (ch.CurrentMessage != LastProgressMessage[0]) {
-			INFO("Detected line: " $ ch.CurrentMessage);
+			DEBUGLOUD("Detected line: " $ ch.CurrentMessage);
 			LastProgressMessage[0] = ch.CurrentMessage;
 		}
 		*/
@@ -1118,7 +1122,7 @@ function RecordEvents() {
 		// There is no such thing P.Console or ch.Console
 		if (InStr(ch.Console.MsgText[ch.Console.TopLine]," killed ") >= 0) {
 			if (!StrContains(ch.Console.MsgText[ch.Console.TopLine],"FRAG!")) { // prevent infinite loop detecting its own output! (less likely here)
-				INFO("Detected FRAG! (from "$P.getHumanName()$"'s console) " $ ch.Console.MsgText[ch.Console.TopLine] );
+				DEBUGLOUD("Detected FRAG! (from "$P.getHumanName()$"'s console) " $ ch.Console.MsgText[ch.Console.TopLine] );
 			}
 		}
 		// ok screw this let's cheat
@@ -1126,7 +1130,7 @@ function RecordEvents() {
 		// for (i=0;i<8;i++) {
 			/*
 			if (P.ProgressMessage[i] != "" && P.ProgressMessage[i] != LastProgressMessage[i]) {
-				INFO("Detected line: " $ P.ProgressMessage[i]);
+				DEBUGLOUD("Detected line: " $ P.ProgressMessage[i]);
 			}
 			LastProgressMessage[i] = P.ProgressMessage[i];
 			*/
@@ -1138,14 +1142,14 @@ function RecordEvents() {
 		/*
 		for (i=0;i<10;i++) {
 			if (ChallengeHUD(P.myHUD).LocalMessages[i] != LastProgressMessage[i]) {
-				INFO("Detected line: " $ ChallengeHUD(P.myHUD).LocalMessages[i]);
+				DEBUGLOUD("Detected line: " $ ChallengeHUD(P.myHUD).LocalMessages[i]);
 			}
 			LastProgressMessage[i] = ChallengeHUD(P.myHUD).LocalMessages[i];
 		}
 		for (i=0;i<10;i++) {
 			comp = ch.LocalMessages[i];
 			if (comp != LastProgressMessage[i]) {
-				INFO("Detected line: " $ comp);
+				DEBUGLOUD("Detected line: " $ comp);
 			}
 			LastProgressMessage[i] = comp;
 		}
@@ -1188,7 +1192,7 @@ function ReplayEvents() {
 	/*
 	if (NextEventEndTime > Level.TimeSeconds) {
 		// We are waiting for the last event to finish
-		INFO("Waiting.");
+		DEBUGLOUD("Waiting.");
 		return;
 	}
 	*/
@@ -1206,6 +1210,7 @@ function FindNewEvent() {
 	local String mapname;
 	local int i;
 	local LoggedEvent ev;
+	local String report;
 	
 	mapname = StrBefore(""$Self,".");
 	for (i=CurrentEventi+1;i<eventCount;i++) {
@@ -1218,7 +1223,8 @@ function FindNewEvent() {
 			&& ev.Time < Level.TimeSeconds+15
 			&& ev.Secondary != ""
 		) {
-			INFO("[>] REPLAY (+"$Int(ev.Time - Level.TimeSeconds)$"): "$Int(ev.TimeSeconds)$" $ev.Primary$" v "$ev.Secondary /*$" | REPORT: "$report*/ );
+			// report = "[>] REPLAY (+"$Int(ev.Time - Level.TimeSeconds)$"): "$Int(ev.Time)$" $ev.Primary$" v "$ev.Secondary;
+			DEBUGLOUD(report);
 			CurrentEventi = i;
 			bRecordEvents = False; // auto_record
 			return; // don't look at any others
@@ -1229,8 +1235,8 @@ function FindNewEvent() {
 
 	bRecordEvents = True; // auto_record
 
-	if (FRand()<0.1)
-		INFO("Failed to find actor for replay");
+	if (FRand()<0.01)
+		DEBUGLOUD("Failed to find actor for replay");
 
 }
 
@@ -1260,7 +1266,7 @@ function ReplayEvent(LoggedEvent ev) {
 			FollowActor = FindPlayerNamed(ev.Secondary);
 			report = report $ "Got secondary "$FollowActor;
 			if (!CanSee(Camera.Location,FollowActor.Location)) {
-				INFO("Had to move camera to see "$FollowActor);
+				DEBUGLOUD("Had to move camera to see "$FollowActor);
 				if (FollowActor != None) {
 					Camera.SetLocation(FollowActor.Location);
 				}
@@ -1268,10 +1274,10 @@ function ReplayEvent(LoggedEvent ev) {
 		}
 		CameraMode = 6;
 		if (bFlashing && FRand()<0.1) {
-			if (ev.Time > Level.TimeSeconds)
+			// if (ev.Time > Level.TimeSeconds)
 				FlashMessageToPlayer(Camera,"[>] ("$Left(""$Level.TimeSeconds,4)$") " $ ev.Primary$" v "$ev.Secondary $ " (" $ Int(ev.Time-Level.TimeSeconds+1) $ ")",colGreen,7,1.0);
-			else
-				FlashMessageToPlayer(Camera,"[_] ("$Left(""$Level.TimeSeconds,4)$") " $ ev.Primary$" v "$ev.Secondary $ " (" $ Int(ev.Time-Level.TimeSeconds+1) $ ")",colRed,7,1.0);
+			// else
+				// FlashMessageToPlayer(Camera,"[_] ("$Left(""$Level.TimeSeconds,4)$") " $ ev.Primary$" v "$ev.Secondary $ " (" $ Int(ev.Time-Level.TimeSeconds+1) $ ")",colRed,7,1.0);
 		}
 	}
 
@@ -1348,18 +1354,18 @@ function CheckSwitchCamera() {
 		}
 	} else {
 		if (Camera.ViewTarget != None && LosingNetOn(Camera.ViewTarget)) {
-			INFO("Losing: "$NameActor(Camera.ViewTarget));
+			DEBUGQUIET("Losing: "$NameActor(Camera.ViewTarget));
 		}
 		if (FollowActor != None && LosingNetOn(FollowActor)) {
-			INFO("Losing: "$NameActor(FollowActor));
+			DEBUGQUIET("Losing: "$NameActor(FollowActor));
 		}
 		if (LookActor != None && LosingNetOn(LookActor)) {
-			INFO("Losing: "$NameActor(LookActor));
+			DEBUGQUIET("Losing: "$NameActor(LookActor));
 		}
 	}
 
 	if (report != "") {
-		INFO(report);
+		DEBUGLOUD(report);
 	}
 
 }
@@ -1369,7 +1375,7 @@ event Tick (float Delta) {
 	// local int diffout;
 
 	// if (FRand()<0.01) {
-		// INFO("Tick delta="$Delta);
+		// DEBUGLOUD("Tick delta="$Delta);
 	// }
 
 	// if (  !Camera.PlayerReplicationInfo.bIsSpectator )
@@ -1399,7 +1405,7 @@ event Tick (float Delta) {
 	// Maybe it's ok to have both == None (Spec free fly mode)
 	/* if (Camera.ViewTarget == None && FollowActor == None) {
 		if (FRand()<0.05) {
-			INFO("LOST ViewTarget and FollowActor!");
+			DEBUGLOUD("LOST ViewTarget and FollowActor!");
 			Camera.ConsoleCommand("ViewTeam");
 			// bCheckingForInterestingTarget = True; CheckForNewActors();
 			GetRandomCameraNow();
@@ -1473,8 +1479,8 @@ event Tick (float Delta) {
 			RecommendedPlayerName = Mid(Camera.Player.Console.MsgText[i],Len("Now viewing from "));
 			if (Mid(RecommendedPlayerName,0,1) == " ") // sometimes (always?) there is an extra space
 				RecommendedPlayerName = Mid(RecommendedPlayerName,1);
-			// INFO("OK got >"$RecommendedPlayerName$"<");
-			// INFO("Got RecommendedPlayerName = >"$RecommendedPlayerName$"<");
+			// DEBUGLOUD("OK got >"$RecommendedPlayerName$"<");
+			// DEBUGLOUD("Got RecommendedPlayerName = >"$RecommendedPlayerName$"<");
 			// Force a switch now:
 			if (CameraMode != 0 && CameraMode != 5) {
 				// We don't do it in mode 0 or 5 since they both *cause* "Now viewing from"
@@ -1489,7 +1495,7 @@ event Tick (float Delta) {
 		Offset = InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine]," inflicted mortal damage upon ");
 		if (Offset != -1) {
 			if (!StrContains(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"FRAG!")) { // prevent infinite loop detecting its own output!
-				INFO("["$Level$"@"$Level.TimeSeconds$"] FRAG! "$Camera.Player.Console.MsgText[Camera.Player.Console.TopLine]);
+				DEBUGLOUD("["$Level$"@"$Level.TimeSeconds$"] FRAG! "$Camera.Player.Console.MsgText[Camera.Player.Console.TopLine]);
 			}
 		}
 	// }
@@ -1645,7 +1651,7 @@ function Pawn FindPlayerNamed(String str) {
 	local Pawn p;
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
-			INFO("nBAutoSpectate.FindPlayerNamed(\""$str$"\"): comparing to \""$p.getHumanName()$"\"");
+			DEBUGLOUD("nBAutoSpectate.FindPlayerNamed(\""$str$"\"): comparing to \""$p.getHumanName()$"\"");
 			if (p.getHumanName() == str) {
 				return p;
 			}
@@ -1667,7 +1673,7 @@ function PlayerPawn FindPlayerNamed(string S) {
 		if ( ptgri.PRIArray[i].bIsSpectator ) {
 			continue;
 		}
-		// INFO("nBAutoSpectate.FindPlayerNamed(\""$S$"\"): comparing to \""$ptgri.PRIArray[i].PlayerName$"\"");
+		// DEBUGLOUD("nBAutoSpectate.FindPlayerNamed(\""$S$"\"): comparing to \""$ptgri.PRIArray[i].PlayerName$"\"");
 		if ( ptgri.PRIArray[i].PlayerName == S ) {
 			return PlayerPawn(ptgri.PRIArray[i].Owner);
 		}
@@ -1705,7 +1711,7 @@ function setpawn (PlayerPawn o) {
 	AddSelfAsMutator();
 	Level.Game.RegisterDamageMutator(Self);
 	#ifdef ENABLE_EVENT_RECORD_REPLAY
-	INFO("nBAutoSpectate cam="$bSwitchCamera$" rec="$bRecordEvents$" replay="$bReplayEvents);
+	DEBUGLOUD("nBAutoSpectate cam="$bSwitchCamera$" rec="$bRecordEvents$" replay="$bReplayEvents);
 	#endif
 }
 
@@ -1716,13 +1722,13 @@ function AddSelfAsMutator() {
 // TODO: buggy ... how tho?!
 function AddMutator(Mutator Other) {
 	if (Other != None && Other.Class == Self.Class) {
-		INFO("Not adding another nBAutoSpectate.");
+		DEBUGLOUD("Not adding another nBAutoSpectate.");
 		if (Other == Self) {
 		} else {
 			nBAutoSpectate(Other).Destroy();
 		}
 	} else {
-		INFO("Adding mutator: "$Other);
+		DEBUGLOUD("Adding mutator: "$Other);
 		Super.AddMutator(Other);
 	}
 }
@@ -1731,7 +1737,8 @@ function AddMutator(Mutator Other) {
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 	if (bCheckingForInterestingTarget) {
 		// TODO: never happens =/
-		INFO("Damage "$InstigatedBy$" -> "$Victim$" ActualDamage="$ActualDamage); // DamageType="$DamageType$" 
+		DEBUGLOUD("Damage "$InstigatedBy$" -> "$Victim$" ActualDamage="$ActualDamage);
+		// DamageType="$DamageType$" 
 		if (FRand()<0.5)
 			CreateNewCamera(InstigatedBy,Victim);
 		else
