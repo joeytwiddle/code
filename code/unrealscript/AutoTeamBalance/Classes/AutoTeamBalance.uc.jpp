@@ -24,9 +24,11 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.4d"
+#define ATB_VERSION "1.4e"
 
 // TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
+// TODO: Swap 2 or 3 players when it's 4 strong vs 5 weak.
+// TODO: Swap latest player to join with last player to join, if it improves teams.
 
 // Changes since 1.4:
 // - When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
@@ -411,8 +413,10 @@ function PostBeginPlay() {
 	Level.Game.RegisterMessageMutator(Self);
 	DebugLog(Self$".PostBeginPlay() registered self as messenger");
 
-	if (TeamGamePlus(Level.Game) != None && bEnablePlayerCommands) {
-		TeamGamePlus(Level.Game).TeamChangeMessage = "Type !red or !blue to change team.";
+	// if (TeamGamePlus(Level.Game) != None && bEnablePlayerCommands) {
+	if (TeamGamePlus(Level.Game) != None && bLetPlayersRebalance) {
+		// TeamGamePlus(Level.Game).TeamChangeMessage = "Type !red or !blue to change team.";
+		TeamGamePlus(Level.Game).TeamChangeMessage = "Type !teams if teams become uneven.";
 	}
 
 	// This is how we detect the moment just before game-start (in CheckGameStart()), to do a final team balance:
@@ -1099,12 +1103,13 @@ function FlashPreGameLines() {
 			) {
 			*/
 
-				// Different game types use a different line to display which team you are "on":
+				// We want to override the line which usually says which team you are "on".
+				// But different game types use a different line.
 				// So far I have only checked CTF and Assault.
-				targetLine = 5;
-				if (String(Level.Game.Class) == "Botpack.CTFGame")
+				targetLine = 3;
+				if (Level.Game.Class.IsA('CTFGame'))
 					targetLine = 3;
-				if (String(Level.Game.Class) == "Botpack.Assault")
+				if (Level.Game.Class.IsA('Assault'))
 					targetLine = 2;
 
 				#ifdef XOL_SPECIFIC
@@ -1129,11 +1134,12 @@ function FlashPreGameLines() {
 					FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
 					// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
 				}
-				if (String(Level.Game.Class) == "Botpack.CTFGame" || String(Level.Game.Class) == "Botpack.Assault") {
+				// if (String(Level.Game.Class) == "Botpack.CTFGame" || String(Level.Game.Class) == "Botpack.Assault") {
 					// This clears the line which says "Use Options -> Player Setup to change team."
+					// This has moved to PostBeginPlay(), where it is fixed by changing TeamChangeMessage.
 					// FlashMessageToPlayer(PlayerPawn(p),"Type !teams if they become uneven.",colorWhite,(targetLine+1)); // colMagenta
-					FlashMessageToPlayer(PlayerPawn(p),"",colorWhite,(targetLine+1)); // colMagenta
-				}
+					// FlashMessageToPlayer(PlayerPawn(p),"",colorWhite,(targetLine+1)); // colMagenta
+				// }
 				// #undef LINENR_FOR_FLASH
 			// }
 		}
@@ -1177,6 +1183,7 @@ function DoGameStart() {
 				// #undef LINENR_FOR_FLASH
 				// #define LINENR_FOR_FLASH -1
 				// TODO CONSIDER: PlayerPawn(p).ClearProgressMessages();
+				// TODO: For Assault, we need to move 1 line up.
 				FlashMessageToPlayer(PlayerPawn(p),"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,LINENR_FOR_FLASH);
 			}
 		}
@@ -1568,8 +1575,8 @@ function ForceFullTeamsRebalance() {
 
 function BroadcastTeamStrengths() {
 //@TODO! LastTeamDifference
-	// if (bBroadcastTeamStrengths) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
-	if (bBroadcastTeamStrengths) { BroadcastMessageAndLog("Red = "$Int(GetTeamStrength(0))$", Blue = "$Int(GetTeamStrength(1))$"."); }
+	if (bBroadcastTeamStrengths) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+	// if (bBroadcastTeamStrengths) { BroadcastMessageAndLog("Red = "$Int(GetTeamStrength(0))$", Blue = "$Int(GetTeamStrength(1))$"."); }
 	if (bFlashTeamStrengths) { FlashToAllPlayers("red: " $ Int(GetTeamStrength(0))$" v "$Int(GetTeamStrength(1)) $ " :blue",colorRed,7); }
 }
 
@@ -2250,11 +2257,11 @@ function bool ShouldBalance(GameInfo game) {
 	if (!Level.Game.GameReplicationInfo.bTeamGame)
 		return False;
 
-	if (String(Level.Game.Class) == "Botpack.CTFGame")
+	if (Level.Game.IsA('CTFGame'))
 		return bAutoBalanceTeamsForCTF;
 	if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
 		return bAutoBalanceTeamsForTDM;
-	if (String(Level.Game.Class) == "Botpack.Assault") {
+	if (Level.Game.IsA('Assault')) {
 		// Do not balance AS game if we're in the second half of the game
 		if (Assault(Level.Game).Part != 1)
 			return False;
@@ -2267,11 +2274,11 @@ function bool ShouldBalance(GameInfo game) {
 }
 
 function bool ShouldUpdateStats(GameInfo game) {
-	if (String(Level.Game.Class) == "Botpack.CTFGame")
+	if (Level.Game.IsA('CTFGame'))
 		return bUpdatePlayerStatsForCTF;
 	if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
 		return bUpdatePlayerStatsForTDM;
-	if (String(Level.Game.Class) == "Botpack.Assault")
+	if (Level.Game.Class.IsA('Assault'))
 		return bUpdatePlayerStatsForAS;
 	// OK so it's not CTF or TDM or AS, but is it another type of team game?
 	if (Level.Game.GameReplicationInfo.bTeamGame)
@@ -2348,13 +2355,13 @@ function float GetTeamStrengthNoFlagStrength(int teamNum) {
 function float GetFlagStrength() {
 	if (CountHumanPlayers() < 3)
 		return 0; // Hopefully fixes the bug that in a 2v0, it was refusing to move either player to the "stronger" team!
-	if (String(Level.Game.Class) == "Botpack.CTFGame")
+	if (Level.Game.IsA('CTFGame'))
 		return FlagStrength;
 	if (String(Level.Game.Class) == "Botpack.TeamGamePlus") // TDM
 		return Float(FlagStrength)/14.0;
-	if (String(Level.Game.Class) == "Botpack.Domination")
+	if (Level.Game.IsA('Domination'))
 		return Float(FlagStrength)/14.0;
-	if (String(Level.Game.Class) == "Botpack.Assault")
+	if (Level.Game.IsA('Assault'))
 		return 0;
 	if (StrAfter(String(Level.Game.Class),".") == "SiegeGI")
 		return Float(FlagStrength)/4.0;
