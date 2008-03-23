@@ -1,0 +1,53 @@
+class MarioPups extends Mutator;
+
+#define MaxSize 1.5
+#define MinSize 0.6
+
+function Tick(float DeltaTime) {
+	local PlayerPawn P;
+	foreach AllActors(class'PlayerPawn', P) {
+		CheckPlayer(P);
+	}
+}
+
+function CheckPlayer(Pawn P) {
+	local float health,armor,show,NewSize;
+	if (P.DamageScaling > 1.0) {
+		ScalePawnTo(P, MinSize);
+		return;
+	}
+
+	health = P.Health;
+	armor = P.ReducedDamagePct;
+	if (P.FindInventoryType(class'UT_Shieldbelt') != None) {
+		armor = P.FindInventoryType(class'UT_Shieldbelt').Charge;
+	}
+
+	show = Max(health-100, armor-100);
+	NewSize = 1.0 + Show * (MaxSize-1.0) / 100;
+	if (NewSize>1.0) {
+		ScalePawnTo(P, NewSize);
+		return;
+	}
+
+	ScalePawnTo(P,1.0);
+
+}
+
+function ScalePawnTo(Pawn P, float NewSize) {
+	if (NewSize == 1.0 && P.DrawScale == P.default.DrawScale) {
+		return; // Nothing to do, best to do nothing.
+	}
+	if (P.DrawScale == P.default.DrawScale * NewSize) {
+		return; // Nothing to do, best to do nothing.
+	}
+	P.DrawScale = p.default.DrawScale * NewSize;
+	if (NewSize <= 1.0) {
+		P.JumpZ = P.default.JumpZ * NewSize;
+		P.GroundSpeed = P.default.GroundSpeed * NewSize;
+	}
+	P.SetCollisionSize(P.default.CollisionRadius * NewSize, P.default.CollisionHeight * NewSize);
+	P.BaseEyeHeight = P.default.BaseEyeHeight * NewSize;
+	P.EyeHeight = P.default.EyeHeight * NewSize;
+}
+
