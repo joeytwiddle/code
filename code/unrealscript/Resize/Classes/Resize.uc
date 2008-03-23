@@ -150,7 +150,7 @@ simulated function Shrink(Actor a) {
       Projectile(a).Speed = Projectile(a).MaxSpeed;
     }
     if (bNew) { // Don't slow down this projectile more than once!  Only when it's first created.
-      DebugLog("Slowing projectile "$a$" ("$a.NetTag$")");
+      DebugLog("Slowing projectile "$a$" [NetTag="$a.NetTag$"]");
       Projectile(a).Velocity = Projectile(a).Velocity * NewSize;
     }
   }
@@ -196,4 +196,23 @@ simulated function ShrinkPlayerAndInventory(PlayerPawn p) {
     // // p.Velocity = p.Velocity * NewSize;
   // }
 }
+
+// It seems all Actors go through all 3 of these when they are spawned, except for Projectiles and Effects.
+
+/*
+function bool AlwaysKeep(Actor Other) {
+  DebugLog("AlwaysKeep("$Other$") [NetTag="$NetTag$"]");
+	return Super.AlwaysKeep(Other);
+}
+
+function bool IsRelevant(Actor Other, out byte bSuperRelevant) {
+  DebugLog("IsRelevant("$Other$") [NetTag="$NetTag$"]");
+	return Super.IsRelevant(Other,bSuperRelevant);
+}
+
+function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
+  DebugLog("CheckReplacement("$Other$") [NetTag="$NetTag$"]");
+	return Super.CheckReplacement(Other,bSuperRelevant);
+}
+*/
 
