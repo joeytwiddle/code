@@ -883,15 +883,16 @@ function CheckGameStart() {
 		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 			// The check for UTServer Avoids logging repeated calls to UTServerAdminSpectator before anyone has joined the server.
 			if (p.IsA('PlayerPawn') && InStr(String(p.class),"UTServer")==-1) {
-				// Line 3 usually contains "You are on the Red/Blue team" before the game starts.
-				// Since we won't balance teams until 2 seconds before game start, then we want to overwrite line 3.
-				/*
+				// Line 3 usually displays "You are on the Red/Blue team" before the game starts.
+				// But since we won't balance teams until 2 seconds before game start, we want to overwrite line 3.
 				// Only override the line, iff that line is currently displaying the player's team prematurely.  (Avoid conflicting with XOL's pre-game hiscore display.)
 				// Does not work!
-				if (StrContains(PlayerPawn(p).ProgressMessage[3],"You are on ") ||
-						StrContains(PlayerPawn(p).ProgressMessage[2],"You are on ") ||
-						StrContains(PlayerPawn(p).ProgressMessage[4],"You are on ")) {
-				*/
+				if (StrContains(PlayerPawn(p).ProgressMessage[3],"You") ||
+						StrContains(PlayerPawn(p).ProgressMessage[2],"You") ||
+						StrContains(PlayerPawn(p).ProgressMessage[1],"You are on ") ||
+						StrContains(PlayerPawn(p).ProgressMessage[5],"You") ||
+						StrContains(PlayerPawn(p).ProgressMessage[4],"You")
+				) {
 					if (bFlashCookies) {
 						if (bReportStrengthAsCookies)
 							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,3);
@@ -901,7 +902,7 @@ function CheckGameStart() {
 						FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,3); // colMagenta
 						// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
 					}
-				/* } */
+				}
 			}
 	 }
 	}
