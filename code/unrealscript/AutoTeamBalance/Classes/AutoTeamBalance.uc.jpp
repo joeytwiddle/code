@@ -111,6 +111,10 @@ var int lastRebalanceRequestTime;
 var config bool bFlashRebalanceRequest;
 var config bool bShowProposedSwitch;
 
+#idef ENABLE_IDC
+var String idc[64];
+#endif
+
 var config bool bWarnMidGameUnbalance;
 var config bool bFlashOnWarning;
 var config bool bShakeOnWarning;
@@ -531,7 +535,10 @@ function Mutate(String str, PlayerPawn Sender) {
 
 	#ifdef ENABLE_IDC
 	if (args[0]=="IDC") {
-		Log("ATB caught IDC's: \""$str$"\"");
+		if (idc[Sender.PlayerReplicationInfo.PlayerID%64] == 0)
+			idc[Sender.PlayerReplicationInfo.PlayerID%64] = args[1];
+		}
+		Log("ATB caught IDC for "$Sender.getHumanName()$"["$(Sender.PlayerReplicationInfo.PlayerID%64)$"]: \""$str$"\"");
 	}
 	#endif
 
@@ -1651,7 +1658,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	toTeamStrength = GetTeamStrength(toTeam);
 	currentDifference = fromTeamStrength - toTeamStrength;
 	if (currentDifference<0) {
-		BroadcastMessageAndLog("AutoTeamBalance refusing to help "$getTeamName(toTeam)$" because it is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
+		BroadcastMessageAndLog(""$getTeamName(toTeam)$" is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
 		return False;
 	}
 	// Find the player on fromTeam with strength closest to difference, and switch him/her
@@ -1667,12 +1674,13 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 		}
 	}
 	if (closestPlayer == None) {
-		BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch.");
+		BroadcastMessageAndLog("Could not find any player on "$getTeamName(fromTeam)$" to switch");
 		return False;
 	}
 	if (newDifference >= currentDifference && !bForceEvenTeams && CountHumanPlayers()>3) {
 		// We only decline to switch if #players>3 and we aren't "forcing" even teams
-		BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
+		// BroadcastMessageAndLog("Not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
+		BroadcastMessageAndLog(""$getTeamName(toTeam)$" team would be too strong with "$closestPlayer.getHumanName()$"");
 		return False;
 	} else {
 		if (bDo) {
@@ -2027,13 +2035,15 @@ function CopyArraysIntoConfig() {
 #ifndef ENABLE_USEISPNOTFULLIP
 #define getISP(X) X
 #endif
-function String getIP(Pawn p) {
+
+function String getIPAddress(Pawn p) {
 	if (p.IsA('PlayerPawn')) {
 		return getISP(stripPort(PlayerPawn(p).GetPlayerNetworkAddress()));
 	} else {
 		return getISP("0.0.0.0");
 	}
 }
+#define getIP getIPAddress
 
 #ifdef ENABLE_USEISPNOTFULLIP
 function String getISP(String ip) {
@@ -2047,6 +2057,18 @@ function String getISP(String ip) {
 #endif
 // The big disadvantage os using bUseISPNotFullIP, if that if a player changes nick, they may get matched to the record of another player on the same ISP, not their old record!
 // But if they have changed nick *and* part-ip, without bUseISPNotFullIP, they won't get any matches.  :P
+
+#ifdef ENABLE_IDC
+#define getIP getIDCorIPAddress
+function String getIDCorIPAddress(Pawn p) {
+	if (idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64] == 0) {
+		return getIPAddress(p);
+	} else {
+		Log("ATB Player "$p.getHumanName()$" is IDC#"$idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64]);
+		return "IDC#"$idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64];
+	}
+}
+#endif
 
 #ifdef ENABLE_MUTATOR_SIGNATURE
 // Returns player name, with gametype and/or mutator signature appended
