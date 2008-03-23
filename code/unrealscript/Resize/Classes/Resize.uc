@@ -20,13 +20,21 @@ defaultproperties {
   // NewSize=2.00
   // NewSize=2.0
   NewSize=0.5
+    // Attempt to get simulation working:
+    bAlwaysRelevant=true
+    // bNoDelete=True // stops mutator from spawning
+    // bStasis=True // stops mutator from spawning
+    bStatic=False
+    NetPriority=3.0
+    NetUpdateFrequency=10
+    RemoteRole=ROLE_SimulatedProxy
 }
 
 replication {
-  reliable if (Role == Role_Authority || Role != Role_Authority) ShrinkAll, Shrink, ShrinkPawn, ShrinkPlayerAndInventory;
+  reliable if (Role == Role_Authority || Role != Role_Authority) ShrinkAll, Shrink, ShrinkPawn, ShrinkPlayerAndInventory, DebugLog;
 }
 
-function DebugLog(String msg) {
+simulated function DebugLog(String msg) {
   Log("<"$Role$"> "$msg);
   BroadcastMessage("<"$Role$"> "$msg);
 }
@@ -42,12 +50,13 @@ simulated function PostBeginPlay() {
 }
 
 simulated function Tick(float DeltaTime) {
+  if (Role != Role_Authority) { DebugLog("[NOT SERVER!] Tick()"); }
   ShrinkAll(DeltaTime); // a freshly thrown translocator or weapon, or new projectile, should be rescaled ASAP, so we do some shrinking every tick!
   Super.Tick(DeltaTime);
 }
 
 function ModifyPlayer(Pawn p) {
-  if (p.PlayerReplicationInfo.Deaths == 0) {
+  if (p.PlayerReplicationInfo.Deaths == 0 && p.IsA('PlayerPawn')) {
     p.ClientMessage("Your size is "$Int(NewSize*100)$"%");
     p.ClientMessage("Map size is "$Int((1.0/NewSize)*100)$"%");
   }
@@ -63,6 +72,8 @@ simulated function ShrinkAll(float DeltaTime) {
 
 simulated function Shrink(Actor a, float DeltaTime) {
   local bool bNew;
+
+  if (Role != Role_Authority) { DebugLog("[NOT SERVER!] Shrink() START"); }
 
   if (a.IsA('Brush') && a.IsA('Mover')) {
     return;
@@ -125,6 +136,8 @@ simulated function Shrink(Actor a, float DeltaTime) {
   // if (a.IsA('ZoneInfo') || a.IsA('LevelInfo') || a.IsA('LevelProperties') || a.IsA('BananaSoupMonkeyMonster')) {
     // ZoneInfo(a).ZoneGravity = ZoneInfo(a).default.ZoneGravity * NewSize;
   // }
+
+  if (Role != Role_Authority) { DebugLog("[NOT SERVER!] Shrink() END"); }
 
 }
 
