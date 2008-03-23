@@ -24,7 +24,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.3y"
+#define ATB_VERSION "1.3z"
 
 // New changes for 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
@@ -109,6 +109,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #define FAST_DATE_COMPARISON
 #define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data.
 #define ENABLE_SHOW_STATS
+#define ENABLE_USE_INGAME_SCORES
 //// Testing:
 #define DETECT_PLAYERJOINS
 // #define MAP_RATING_SYSTEM
@@ -182,6 +183,7 @@ var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=
 var config bool bNormaliseScores;
 // var config bool bRelativeNormalisation;
 var config float RelativeNormalisationProportion;
+var config float StrengthProportionFromCurrentGame;
 var config bool bScalePlayerScoreToFullTime; // Leave this true, more accurate this way
 
 var config int NormalisedStrength;
@@ -301,6 +303,7 @@ defaultproperties {
 	bNormaliseScores=True
 	// bRelativeNormalisation=True
 	RelativeNormalisationProportion=0.5 // 0.0 = no relative, scores always normalised around NormalisedStrength (50); 1.0 = scores normalised around average strength of players in game
+	StrengthProportionFromCurrentGame=0.25
 	bScalePlayerScoreToFullTime=True
 	NormalisedStrength=50
 	UnknownStrength=50
@@ -465,7 +468,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 				// Since a player is joining, one of the bots may leave, or switch team, so counting that bot's strength is inaccurate, and we don't know which bot it will be.  So let's just count player strengths.
 				if (!p.IsA('Bot')) {
 					teamSize[teamnr]++;
-					teamStr[teamnr] += GetPawnStrength(p);
+					teamStr[teamnr] += GetPlayerStrength(p);
 				}
 				teamSizeWithBots[teamnr]++;
 			}
@@ -571,7 +574,7 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 function ShowStatsTo(PlayerPawn Sender) {
 	local int i;
 	local Pawn p;
-	Sender.ClientMessage("Team | Name | IP | Ping | PktLoss | Rank | Hours | Last | Score | Frags | Deaths | Items | Spree | Secret | Time");
+	Sender.ClientMessage("Team | Name | IP | Ping | PktLoss | Strength | Hours | Last | Score | Frags | Deaths | Items | Spree | Secret | Time");
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (!p.IsA('Spectator') && AllowedToRank(p)) {
 			i = FindPlayerRecord(p);
@@ -591,7 +594,7 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 	local string redBonus,blueBonus;
 	#ifdef ENABLE_STRENGTHS_EXTRA
 	if (bExtra)
-		deltaStrengthStr = "(+/-) GameStrength ";
+		deltaStrengthStr = "(+/-) GameStrength UsedStrength ";
 	#endif
 	Sender.ClientMessage("[Team] Strength "$deltaStrengthStr$"| Name | Time");
 	GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
@@ -609,7 +612,7 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 						deltaStrengthStr = ""$Int(deltaStrength+0.5);
 						if (deltaStrength>0)
 							deltaStrengthStr = "+"$deltaStrengthStr;
-						deltaStrengthStr = "(" $ deltaStrengthStr $ ") " $ Int(avg_score[i]+deltaStrength) $ " ";
+						deltaStrengthStr = "(" $ deltaStrengthStr $ ") " $ Int(playerGameStrength) $ " " $ Int(GetPlayerStrength(p)) $ " ";
 					}
 					#endif
 					Sender.ClientMessage("["$getTeamName(p.PlayerReplicationInfo.Team)$"] "$Int(avg_score[i])$" "$deltaStrengthStr$"| "$p.getHumanName()$" | "$Left(""$hours_played[i],4)$" hours");
@@ -1076,9 +1079,9 @@ function FlashPreGameLines() {
 				// #endif
 				if (bFlashCookies) {
 					if (bReportStrengthAsCookies)
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,targetLine);
+						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetRecordedPlayerStrength(p) $" cookies.",colorOrange,targetLine);
 					else
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ GetPawnStrength(p) $"",colorOrange,targetLine);
+						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ GetRecordedPlayerStrength(p) $"",colorOrange,targetLine);
 				} else {
 					FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
 					// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
@@ -1406,7 +1409,7 @@ function ForceFullTeamsRebalance() {
 	{
 		if (AllowedToBalance(p))
 		{
-			st=GetPawnStrength(p);
+			st=GetPlayerStrength(p);
 			pid=p.PlayerReplicationInfo.PlayerID % 64;
 			pl[pid]=p;
 			ps[pid]=st;
@@ -1942,7 +1945,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (AllowedToBalance(p)
 				&& p.PlayerReplicationInfo.Team==fromTeam && p.PlayerReplicationInfo.HasFlag==None) {
-			playerStrength = GetPawnStrength(p);
+			playerStrength = GetPlayerStrength(p);
 			if (closestPlayer == None || Abs(currentDifference-playerStrength*2) < newDifference) {
 				closestPlayer = p;
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
@@ -1985,7 +1988,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
 	newdifference = difference;
 
-	// FIXED by "hashing": These repeated calls to GetPawnStrength() are going to be inefficient, possibly causing some lag while the server calculates.
+	// FIXED by "hashing": These repeated calls to GetPlayerStrength() are going to be inefficient, possibly causing some lag while the server calculates.
 	for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
 		for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
 			if (redP != blueP
@@ -1996,8 +1999,8 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 					&& redP.PlayerReplicationInfo.HasFlag == None
 					&& blueP.PlayerReplicationInfo.HasFlag == None
 			) {
-				redPStrength = GetPawnStrength(redP);
-				bluePStrength = GetPawnStrength(blueP);
+				redPStrength = GetPlayerStrength(redP);
+				bluePStrength = GetPlayerStrength(blueP);
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
 				potentialNewDifference = blueTeamStrength + redPStrength*2 - redTeamStrength - bluePStrength*2;
 				if (Abs(potentialNewDifference) < Abs(newdifference)) {
@@ -2256,7 +2259,7 @@ function float GetTeamStrengthNoFlagStrength(int teamNum) {
 	strength = 0;
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (p.bIsPlayer && !p.IsA('Spectator') && p.PlayerReplicationInfo.Team == teamNum) {
-			strength += GetPawnStrength(p);
+			strength += GetPlayerStrength(p);
 		}
 	}
 	return strength;
@@ -2281,26 +2284,31 @@ function float GetFlagStrength() {
 	return Float(FlagStrength)/21.0;
 }
 
-// Returns the strength of a player or a bot
-// Bots can be included in ranking and balancing by setting bRankBots.  Without it, BotStrength is used for all bots.
-function int GetPawnStrength(Pawn p) {
-	if (AllowedToRank(p) || AllowedToBalance(p)) {
-		return GetPlayerStrength(p);
-	} else {
-		return BotStrength;
-	}
-}
-
 // Returns the strength of a player
-function int GetPlayerStrength(Pawn p) {
-	local int found;
+function float GetPlayerStrength(Pawn p) {
+	// DONE: if gameStartDone and/or gametime>1minute then guess the player's strength from their current score
+	local float timeInGame;
 	if (bUseOnlyInGameScoresForRebalance && gameStartDone && !gameEndDone) {
 		return p.PlayerReplicationInfo.Score;
 	}
+	if (StrengthProportionFromCurrentGame>0 && gameStartDone) {
+		timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
+		if (timeInGame > 180) {
+			return NormaliseScore(GetScoreForPlayer(p)) * StrengthProportionFromCurrentGame + GetRecordedPlayerStrength(p) * (1.0 - StrengthProportionFromCurrentGame);
+		}
+	}
+	return GetRecordedPlayerStrength(p);
+}
+
+// Returns the recorded strength of a player
+function float GetRecordedPlayerStrength(Pawn p) {
+	local int found;
+	if (!AllowedToRank(p) && !AllowedToBalance(p)) {
+		return BotStrength;
+	}
 	found = FindPlayerRecord(p);
 	if (found == -1) {
-		// CONSIDER: if gameStartDone and/or gametime>1minute then guess the player's strength from their current score
-		return UnknownStrength; // unknown player or player is too weak for list
+		return UnknownStrength; // unknown player or player is too weak for list (should never happen)
 	} else {
 		return avg_score[found]; // player's recorded strength
 	}
@@ -2487,7 +2495,7 @@ function int FindPlayerRecord(Pawn p) {
 
 	// If an exact record for the player was found, move it to index i for the rest of this game (by swapping it with whichever record is there).  This will make lookups more efficient during the rest of the game.
 	if (found != -1 && GetDBName(p) == nick[found] && getIP(p) == ip[found]) {
-		NormalLog("AutoTeamBalance.FindPlayerRecord(): Optimising exact match (lookup "$i$"<->"$found$") for "$nick[found]$" "$ip[found]);
+		DebugLog("AutoTeamBalance.FindPlayerRecord(): Optimising exact match (lookup "$i$"<->"$found$") for "$nick[found]$" "$ip[found]);
 		// Swap record [i] for record [found]:
 		tmp_player_nick = nick[i];
 		tmp_player_ip = ip[i];
@@ -2918,7 +2926,7 @@ function GetAveragesThisGame(out float averageGameScore, out float averagePlayer
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (!p.IsA('Spectator') && AllowedToRank(p)) {
 			averageGameScore += GetScoreForPlayer(p);
-			averagePlayerStrengthThisGame += GetPawnStrength(p);
+			averagePlayerStrengthThisGame += GetRecordedPlayerStrength(p);
 			playerCount++;
 		}
 	}
