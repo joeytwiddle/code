@@ -10,8 +10,9 @@
 //================================================================================
 
 // Camera modes:
-// 0 - following ViewTarget
-// 1 - floating with FollowActor
+// 0 - default following ViewTarget
+// 1 - custom following FollowActor
+// 2 - free standing camera, following
 // 3 - free standing camera, panning
 
 // class nBAutoSpectate extends Info;
@@ -52,6 +53,8 @@ var float deltaYaw, deltaPitch, deltaFOV, fov;
 var Actor FollowActor;
 
 var bool bCheckingForInterestingTarget;
+
+var int CameraMode;
 
 function int fun1 (int X, int Y, out int diff) {
 	local int newdiff;
@@ -166,6 +169,9 @@ function bool isFC(Actor a) {
 function SetNewTarget(Actor a, optional Actor Follow) {
 	local String report;
 
+	// if (Level.TimeSeconds < LastSwitchTime + CameraSwitchSeconds)
+		// return;
+
 	LastSwitchTime = Level.TimeSeconds;
 	bCheckingForInterestingTarget = False;
 
@@ -175,69 +181,105 @@ function SetNewTarget(Actor a, optional Actor Follow) {
 
 	report = "";
 
-	P.ViewTarget = a;
+	CameraMode = FRand()*4;
 
-	if (P.IsA('Spectator')) {
-		// Spectator(P).bChaseCam = (FRand() < 0.80);
-		// report = "(chase="$Spectator(P).bChaseCam$") " $ report;
+	P.ViewTarget = None;
+	FollowActor = None;
+	NewCamera();
+	if (CameraMode == 0) {
+		P.ViewTarget = a;
+		report = "0 Viewing from "$a;
+	}
+	if (CameraMode == 1) {
+		FollowActor = a;
+		report = "1 Following "$a;
+		P.ViewRotation.Pitch += 8192/2;
+	}
+	if (CameraMode == 2) {
+		FollowActor = a;
+		deltaYaw /= 4;
+		deltaPitch /= 4;
+		P.SetLocation( FollowActor.Location - 128*Vector(P.ViewRotation) + vect(0,0,1)*(48.0+FRand()*48.0) );
+		report = "2 Camera following "$a;
+	}
+	if (CameraMode == 3) {
+		NiceCamera();
+		report = "3 Camera panning";
+		a = None;
 	}
 
-	// Shall we focus?
-	if (FRand()<0.5) {
-		FollowActor = None;
+	P.bBehindView = ( P.ViewTarget != None );
+	if (P.ViewTarget != None) {
+		P.ViewTarget.BecomeViewTarget();
 	}
-	if (Follow != None) {
-		FollowActor = Follow;
-	}
-	if (FRand()<0.25 || (FollowActor == None && FRand()<0.5)) {
-		// FollowActor = FindClosestActor(P.ViewTarget);
-		// FollowActor = FindClosestActorMatching(P.ViewTarget,"PlayerPawn");
-		// if (FollowActor == None)
-			// FollowActor = FindClosestActorMatching(P.ViewTarget,"Bot");
-		// if (FollowActor == None)
-			// FollowActor = FindClosestActorMatching(P.ViewTarget,"Projectile");
-		// FollowActor = FindClosestActorClass(P.ViewTarget,class'Pawn');
-		// FollowActor = FindClosestActorClass(P.ViewTarget,class'Bot');
-		// FollowActor = FindClosestActorClass(P.ViewTarget,class'Projectile');
-		// FollowActor = FindClosestActorClass(P.ViewTarget,class'PlayerPawn');
-		FollowActor = FindClosestInterestingActor(P.ViewTarget);
-		if (FollowActor == None) {
-			report = "[FindClosestInterestingActor gave "$FollowActor$"] ";
-		// } else if (!isInteresting(FollowActor)) {
-			// report = "[Dropped uninteresting " $ FollowActor $ "] ";
+
+		/*
+
+		// Old methods:
+
+		if (P.IsA('Spectator')) {
+			// Spectator(P).bChaseCam = (FRand() < 0.80);
+			// report = "(chase="$Spectator(P).bChaseCam$") " $ report;
+		}
+
+		// Shall we focus?
+		if (FRand()<0.5) {
+			FollowActor = None;
+		}
+		if (Follow != None) {
+			FollowActor = Follow;
+		}
+		if (FRand()<0.25 || (FollowActor == None && FRand()<0.5)) {
+			// FollowActor = FindClosestActor(P.ViewTarget);
+			// FollowActor = FindClosestActorMatching(P.ViewTarget,"PlayerPawn");
+			// if (FollowActor == None)
+				// FollowActor = FindClosestActorMatching(P.ViewTarget,"Bot");
+			// if (FollowActor == None)
+				// FollowActor = FindClosestActorMatching(P.ViewTarget,"Projectile");
+			// FollowActor = FindClosestActorClass(P.ViewTarget,class'Pawn');
+			// FollowActor = FindClosestActorClass(P.ViewTarget,class'Bot');
+			// FollowActor = FindClosestActorClass(P.ViewTarget,class'Projectile');
+			// FollowActor = FindClosestActorClass(P.ViewTarget,class'PlayerPawn');
+			FollowActor = FindClosestInterestingActor(P.ViewTarget);
+			if (FollowActor == None) {
+				report = "[FindClosestInterestingActor gave "$FollowActor$"] ";
+			// } else if (!isInteresting(FollowActor)) {
+				// report = "[Dropped uninteresting " $ FollowActor $ "] ";
+				// FollowActor = None;
+			}
+		// } else {
 			// FollowActor = None;
 		}
-	// } else {
-		// FollowActor = None;
-	}
-	if (FRand()<0.25) {
-		FollowActor = p.ViewTarget;
-		p.ViewTarget = None;
-	}
-
-	NewCamera();
-
-	if (FollowActor != None) {
-		// P.SetLocation(P.ViewTarget.Location - 96*Vector(P.ViewRotation) + vect(0,0,48.0));
-		P.ViewRotation = rotator(FollowActor.Location - P.Location);
-		P.SetLocation(FollowActor.Location - 96*Vector(P.ViewRotation) + FRand()*vect(0,0,48.0));
 		if (FRand()<0.25) {
-			P.ViewTarget = None;
+			FollowActor = p.ViewTarget;
+			p.ViewTarget = None;
 		}
-	} else {
-		// I think the ViewTarget will set our location/camera-point later,
-		// but our position can be used to set a good initial rotation now.
-		P.SetLocation(P.ViewTarget.Location - 96*Vector(P.ViewRotation) + FRand()*vect(0,0,48.0));
-	}
 
-	// Set a good initial rotation:
-	if (FRand()<0.5) {
-		p.ViewRotation = rotator(CentreOfMass() - P.Location);
-	}
+		NewCamera();
 
-	// In case the camera wants to detach:
-	// P.SetLocation(Target.Location);
-	// P.SetRotation(Target.Rotation); // not always facing upwards!
+		if (FollowActor != None) {
+			// P.SetLocation(P.ViewTarget.Location - 96*Vector(P.ViewRotation) + vect(0,0,48.0));
+			P.ViewRotation = rotator(FollowActor.Location - P.Location);
+			P.SetLocation(FollowActor.Location - 96*Vector(P.ViewRotation) + FRand()*vect(0,0,48.0));
+			if (FRand()<0.25) {
+				P.ViewTarget = None;
+			}
+		} else {
+			// I think the ViewTarget will set our location/camera-point later,
+			// but our position can be used to set a good initial rotation now.
+			P.SetLocation(P.ViewTarget.Location - 96*Vector(P.ViewRotation) + FRand()*vect(0,0,48.0));
+		}
+
+		// Set a good initial rotation:
+		if (FRand()<0.5) {
+			p.ViewRotation = rotator(CentreOfMass() - P.Location);
+		}
+
+		// In case the camera wants to detach:
+		// P.SetLocation(Target.Location);
+		// P.SetRotation(Target.Rotation); // not always facing upwards!
+
+		*/
 
 	/*
 	if (FRand()<0.05) {
@@ -250,22 +292,20 @@ function SetNewTarget(Actor a, optional Actor Follow) {
 	}
 	*/
 
-	if (P.ViewTarget != None)
-		report = report $ "Watching: " $ P.ViewTarget.Name $ " ";
-	if (FollowActor != None)
-		report = report $ "Following: " $ FollowActor.Name $ " ";
+	// if (P.ViewTarget != None)
+		// report = report $ "Watching: " $ P.ViewTarget.Name $ " ";
+	// if (FollowActor != None)
+		// report = report $ "Following: " $ FollowActor.Name $ " ";
 
-	P.bBehindView = ( P.ViewTarget != None );
-	if (P.ViewTarget != None)
-		P.ViewTarget.BecomeViewTarget();
+	report = report $ " ";
 
-	if (P.ViewTarget.IsA('PlayerPawn')) {
-		report = report $ PlayerPawn(P.ViewTarget).PlayerReplicationInfo.PlayerName;
+	if (A.IsA('PlayerPawn')) {
+		report = report $ PlayerPawn(A).PlayerReplicationInfo.PlayerName;
 	}
-	if (P.ViewTarget.IsA('Bot')) {
-		report = report $ Bot(P.ViewTarget).getHumanName();
+	if (A.IsA('Bot')) {
+		report = report $ Bot(A).getHumanName();
 	}
-	if (P.ViewTarget.IsA('Projectile')) {
+	if (A.IsA('Projectile')) {
 		// report = report $" ["$ Projectile(P.ViewTarget).Owner $"]";
 	}
 	// report = report $ " [/"$CountInterestingActors()$"]";
@@ -281,10 +321,10 @@ function Vector CentreOfMass() {
 	local Actor A;
 	count = 0;
 	centre = vect(0,0,0);
-	foreach AllActors(class'Actor',a) {
-		if (isInteresting(a)) {
+	foreach AllActors(class'Actor',A) {
+		if (isInteresting(A)) {
 			count++;
-			centre = centre*(count-1)/count + a.Location/count;
+			centre = centre*(count-1)/count + A.Location/count;
 		}
 	}
 	return centre;
@@ -302,17 +342,77 @@ function NewCamera() {
 	deltaYaw = 400*(FRand()-0.5);
 	// deltaPitch = -Sgn(p.ViewRotation.Pitch) * 50*FRand();
 	deltaPitch = 50*(FRand()-0.5);
-	deltaFOV = 0.3*(FRand()-0.5);
+	deltaFOV = 0.2*(FRand()-0.5);
 
+}
+
+function Actor FindBusiestActor() {
+	local Actor A,B,bestActor;
+	local float distance,bestDistance;
+	foreach AllActors(class'Actor',A) {
+		if (isInteresting(A)) {
+			distance = 0;
+			foreach AllActors(class'Actor', B) {
+				distance = distance + VSize(A.Location-B.Location);
+			}
+			if (bestActor == None || distance<bestDistance) {
+				bestActor = A;
+				bestDistance = distance;
+			}
+		}
+	}
+	return bestActor;
+}
+
+function NiceCamera() {
+	local Actor A;
+	NewCamera();
+	deltaYaw /= 4;
+	deltaPitch /= 4;
+	deltaFOV *= 2;
+
+	A = FindBusiestActor();
+	P.ViewTarget = None;
+	P.SetLocation( A.Location );
+	P.ViewRotation = rotator(CentreOfMass() - P.Location);
+	P.SetLocation( A.Location - 2*96*Vector(P.ViewRotation) + vect(0,0,1)*(64.0+FRand()*128.0) );
 }
 
 function DeltaCamera(float Delta) {
 
 	local Actor HitOut;
 	local Vector HitLocation,HitNormal;
+	local Rotator followTarget;
+
+	local bool doNotPan;
+
+// Camera modes:
+// 0 - default following ViewTarget
+// 1 - custom following FollowActor
+// 2 - free standing camera, following
+// 3 - free standing camera, panning
+
+	if (CameraMode == 0) {
+	}
+	if (CameraMode == 1) {
+		p.ViewRotation.yaw   = 8192*4 + (p.ViewRotation.yaw-8192*4)   * 0.991 + (followTarget.yaw-8192*4)   * 0.009;
+		P.SetLocation( FollowActor.Location - (96+FRand()*64)*Vector(P.ViewRotation) + vect(0,0,48.0+FRand()*64) );
+	}
+	if (CameraMode == 2) {
+		followTarget = rotator(FollowActor.Location - P.Location);
+		// p.ViewRotation.yaw   = p.ViewRotation.yaw   * 0.991 + followTarget.yaw   * 0.009;
+		p.ViewRotation.yaw   = 8192*4 + (p.ViewRotation.yaw-8192*4)   * 0.991 + (followTarget.yaw-8192*4)   * 0.009;
+		// Always points down: p.ViewRotation.pitch = p.ViewRotation.pitch * 0.999 + followTarget.pitch * 0.001;
+		doNotPan = true;
+	}
+	if (CameraMode == 3) {
+		followTarget = rotator(CentreOfMass() - P.Location);
+		p.ViewRotation.yaw   = 8192*4 + (p.ViewRotation.yaw-8192*4)   * 0.991 + (followTarget.yaw-8192*4)   * 0.009;
+		doNotPan = true;
+	}
 
 	// if (p.ViewTarget != None) {
-	if (bCameraPanning) { // && FollowActor == None) {
+	if (bCameraPanning && !doNotPan) { // && FollowActor == None) {
 		p.ViewRotation.Yaw += deltaYaw;
 		p.ViewRotation.Pitch += deltaPitch;
 		p.DesiredFOV = p.DesiredFOV + deltaFOV;
@@ -322,9 +422,9 @@ function DeltaCamera(float Delta) {
 		deltaFOV = deltaFOV * 0.998;
 	}
 
-	if (FollowActor != None) {
-		P.ViewRotation = rotator(FollowActor.Location - P.Location);
-		// P.SetRotation(rotator(FollowActor.Location - P.Location));
+	// if (FollowActor != None) {
+		// P.ViewRotation = rotator(FollowActor.Location - P.Location);
+		// // P.SetRotation(rotator(FollowActor.Location - P.Location));
 		/*
 		HitActor = Trace(HitLocation,HitNormal,FollowActor.Location+128*Vector(p.ViewRotation),P.Location+16*Vector(p.ViewRotation),true);
 		if (HitActor != FollowActor) {
@@ -332,7 +432,7 @@ function DeltaCamera(float Delta) {
 			FollowActor = None;
 		}
 		*/
-	}
+	// }
 
 }
 
@@ -436,21 +536,23 @@ event Tick (float Delta) {
 	CheckForNewActors();
 
 	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds + 1) {
-		p.ConsoleCommand("ViewTeam"); // to keep fresh list of actors during online play
-		SetNewTarget(GetRandomActor());
+		// to keep fresh list of actors during online play
+		// p.ConsoleCommand("ViewTeam");
+		// P.ViewClass(class'Pawn');
+
+		SetNewTarget(GetRandomActor()); // If we use the player selected by ViewTeam, 
+		// NewCamera();
 	}
 
-	if (p.ViewTarget == None && FollowActor == None) {
-		// Maybe it's ok to have both == None (Spec free fly mode)
-		/*
+	// Maybe it's ok to have both == None (Spec free fly mode)
+	/* if (p.ViewTarget == None && FollowActor == None) {
 		if (FRand()<0.05) {
 			DEBUG("LOST ViewTarget and FollowActor!");
 			p.ConsoleCommand("ViewTeam");
 			// bCheckingForInterestingTarget = True; CheckForNewActors();
 			SetNewTarget(GetRandomActor());
 		}
-		*/
-	}
+	} */
 
 	DeltaCamera(Delta);
 
@@ -659,7 +761,7 @@ function Timer () {
 function setpawn (PlayerPawn o) {
 	P = o;
 	AddSelfAsMutator();
-	// Level.Game.RegisterDamageMutator(Self);
+	Level.Game.RegisterDamageMutator(Self);
 }
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
@@ -721,6 +823,7 @@ defaultproperties {
 	bSwitchCamera=True
 	CameraSwitchSeconds=4
 	bStickWithFC=False
+	bPrintDebugInfo=True
 }
 
 #include "../../JLib/findactor.uc.jpp"
