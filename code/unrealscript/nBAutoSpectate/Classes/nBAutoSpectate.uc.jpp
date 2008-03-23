@@ -2,6 +2,15 @@
 // nBAutoSpectate.
 //================================================================================
 
+// TODO: nBAutoSpectate Online will record events even if we are not recording a demo!
+
+// TODO: a different CameraMode 6 which just moves from last position to next position smoothly, so less moving about in general
+
+// TODO: follow non frag events too
+
+// This might make for some nice following of CTF runs
+// (Especially if we decide to focus on FC whilst following frags!)
+
 // #define LIST_ACTORS
 // #define NO_CHANGE_ANGLE
 #define ENABLE_EVENT_RECORD_REPLAY
@@ -55,18 +64,18 @@
 */
 
 // #define LogFlash(X); if (bLogging) { Camera.ClientMessage("> "$(X)); }
-#define LogFlash(X); if (bLogging && bFlashing) { FlashMessageToPlayer(Camera,"> "$(X),colGrey,1,1.0); }
+#define LogFlash(X) if (bLogging && bFlashing) { FlashMessageToPlayer(Camera,"> "$(X),colGrey,4,1.0); }
 
-// #define LogDebug2(X); 
-#define LogDebug2(X); if (bDebugLogging) { Log("[nBAS DEBUG2 "$Int(Level.TimeSeconds)$"] "$(X)); }
+#define LogDebug2(X) 
+// #define LogDebug2(X); if (bDebugLogging) { Log("[nBAS DEBUG2 "$Int(Level.TimeSeconds)$"] "$(X)); }
 
 // #define LogDebug(X); 
-#define LogDebug(X); if (bLogging) { Log("[nBAS DEBUG "$Int(Level.TimeSeconds)$"] "$(X)); }
+#define LogDebug(X) if (bLogging) { Log("[nBAS DEBUG "$Int(Level.TimeSeconds)$"] "$(X)); }
 
 // #define LogInfo(X); if (bLogging) { Log("[nBAS INFO "$Int(Level.TimeSeconds)$"] "$(X)); }
-#define LogInfo(X); if (bLogging) { Log("[nBAS INFO "$Int(Level.TimeSeconds)$"] "$(X)); } if (bLogging && bFlashing) { FlashMessageToPlayer(Camera,"> "$(X),colWhite,3,0.5); }
+#define LogInfo(X) if (bLogging) { Log("[nBAS INFO "$Int(Level.TimeSeconds)$"] "$(X)); } if (bLogging && bFlashing) { FlashMessageToPlayer(Camera,"> "$(X),colWhite,3,0.5); }
 
-#define LogWarn(X); if (bLogging) { Log("[nBAS WARN "$Int(Level.TimeSeconds)$"] > "$(X)); Camera.ClientMessage("> "$(X)); }
+#define LogWarn(X) if (bLogging) { Log("[nBAS WARN "$Int(Level.TimeSeconds)$"] > "$(X)); Camera.ClientMessage("> "$(X)); }
 
 // #define LogError(X); 
 // #define LogError(X); if (bLogging) { Log("[nBAS "$Int(Level.TimeSeconds)$"] "$(X)); }
@@ -146,6 +155,7 @@ var config bool bReplayEvents; // auto replay, and switch all the other autos
 var config bool bAutoRecord;
 var config bool bAutoSwitch;
 var config bool bAutoSpeed;
+var config bool bAutoSave;
 
 var String LastProgressMessage[10];
 
@@ -165,7 +175,7 @@ struct LoggedEvent {
 
 #ifdef STRUCTS_DB
 
-	// Using the LoggedEvent structure, I could save 80 events, but sometimes on loading, every record beyond 37 would be empty.
+	// Using the LoggedEvent structure, I could save 80 events np, but on loading, every record beyond 37 would be empty.
 
 	// var config String ConsoleLog[4096];
 	// var config String EventLog[MaxEvents];
@@ -184,21 +194,23 @@ struct LoggedEvent {
 	// Using this method, EventTime gets blanked on reading from 256 onwards.
 	// Meanwhile EventPrimaryLocation is blanked from 86, but EventMap and EventPrimary reach 500 without trouble.
 	// Solution: use Strings?
+	// Yes that solved it.  :)
+	// But I don't like this structure.  So we could try structs again, but this time with Strings only, or we could make one big space-delimited record array, like ATB's.
 
 	var config string EventMap[MaxEvents];
-	var config float EventTime[MaxEvents];
+	var config string EventTime[MaxEvents];
 	var config string EventPrimary[MaxEvents];
 	var config string EventSecondary[MaxEvents];
-	var config vector EventPrimaryLocation[MaxEvents];
-	var config vector EventSecondaryLocation[MaxEvents];
+	var config string EventPrimaryLocation[MaxEvents];
+	var config string EventSecondaryLocation[MaxEvents];
 	var config string EventLine[MaxEvents];
 
 	#define GetMap(i) EventMap[i]
-	#define GetTime(i) EventTime[i]
+	#define GetTime(i) Float(EventTime[i])
 	#define GetPrimary(i) EventPrimary[i]
 	#define GetSecondary(i) EventSecondary[i]
-	#define GetPrimaryLocation(i) EventPrimaryLocation[i]
-	#define GetSecondaryLocation(i) EventSecondaryLocation[i]
+	#define GetPrimaryLocation(i) Vector(EventPrimaryLocation[i])
+	#define GetSecondaryLocation(i) Vector(EventSecondaryLocation[i])
 	#define GetLine(i) EventLine[i]
 
 #endif
@@ -311,7 +323,7 @@ function Actor GetLastViewClass() {
 	local Actor a;
 
 	foreach AllActors(class'Actor',a) {
-		if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
+		if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo != None && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
 			// LogDebug("Re-using "$NameActor(a));
 			if (FRand()<0.2)
 				RecommendedPlayerName = ""; // i think i'll only use it once, then discard it.
@@ -343,10 +355,11 @@ function Actor GetRandomActorReal() {
 
 	if (RecommendedPlayerName != ""/* && FRand()<0.2*/) {
 		foreach AllActors(class'Actor',a) {
-			if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
+			if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo != None && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
 				// LogDebug("Re-using "$NameActor(a));
+				// Occasionally we discard the last viewed player; there may be other actors worth viewing!
 				if (FRand()<0.2)
-					RecommendedPlayerName = ""; // i think i'll only use it once, then discard it.
+					RecommendedPlayerName = "";
 				return a;
 			}
 		}
@@ -657,7 +670,8 @@ function String NameActor(Actor a) {
 	if (A.IsA('Projectile'))
 		// return A.Name$"("$Projectile(Camera.ViewTarget).Owner$")";
 		return A.Name$"("$Projectile(A).Owner$")";
-	return ""$A.Name;
+	// return String(A.Name);
+	return A.Name $ "[" $ A.Class $ "]";
 }
 
 function Vector CentreOfMass() {
@@ -783,6 +797,12 @@ function bool LosingNetOn(Actor a) {
 	if (a.Location == vect(0,0,0))
 		return true;
 	return false;
+	// TODO: Sometimes the pawn we are viewing disappears, and the camera just stays looking
+	//       at his last known location.
+	//       This is what LosingNetOn() was meant to detect, but it doesn't!
+	//       We could check bVisible, or the mesh or smth.
+	//       Or maybe we should compare his current position against his last position, and
+	//       see if he has not moved.  (That would give a false positive on campers though.)
 }
 
 function MovePawnTowardsLocation(Pawn p, Vector NewLocation, float amount) {
@@ -891,22 +911,27 @@ function DeltaCamera(float Delta) {
 	}
 	if (CameraMode == 6) {
 		DontLose(FollowActor,"FollowActor");
-		DontLose(LookActor,"LookActor");
+		DontLose(LookActor,"LookActor"); // Was happening in a nasty loop on demo playback - maybe fixed now i don't set mode 6 so often
+		// if (LosingNetOn(LookActor)) {
+			// LogFlash("[6] LosingNetOn LookActor="$LookActor);
+		// }
 		// PointTowardsLocation(Camera, (LookActor.Location + FollowActor.Location) / 2.0 );
 		#ifdef ENABLE_EVENT_RECORD_REPLAY
 		if (bReplayEvents) {
 			// Look=Primary, Follow=Secondary
-			#define thru Chop(0.0, 1.0, 1.0 - (GetTime(CurrentEventi) - Level.TimeSeconds) / 4.0)
+			// The extra - 1 just makes the camera arrive 1 second early at the FinalTarget.
+			#define thru Chop(0.0, 1.0, 1.0 - (GetTime(CurrentEventi) - 1 - Level.TimeSeconds) / 4.0)
 			// #define panPos Camera.Location * (1.0 - thru) + (GetSecondaryLocation(CurrentEventi)-64*Normal(Vector(Camera.ViewRotation))) * thru;
 			// TargetLocation = panPos;
-			#define InitialTarget (LookActor.Location - 160*Normal(Vector(Camera.ViewRotation)) + 64*vect(0,0,1))
+			#define InitialTarget (LookActor.Location - 160*Normal(Vector(Camera.ViewRotation)) + 48*vect(0,0,1))
 			// #define FinalTarget (GetSecondaryLocation(CurrentEventi) - 160*Normal(Vector(Camera.ViewRotation)) + 32*vect(0,0,1))   // This was running off somewhere unwanted (maybe location recorded after death/respawn?)
-			#define FinalTarget (FollowActor.Location - 160*Normal(Vector(Camera.ViewRotation)) + 32*vect(0,0,1))
-			// TargetLocation = FinalTarget * thru + LookActor.Location * (1.0 - thru);
+			// #define FinalTarget (FollowActor.Location - 96*Normal(Vector(Camera.ViewRotation)) + 16*vect(0,0,1))
+			// #define FinalTarget (FollowActor.Location - Normal(LookActor.Location-FollowActor.Location)*128 + vect(0,0,1)*8)
+			#define FinalTarget (GetSecondaryLocation(CurrentEventi) - Normal(LookActor.Location-FollowActor.Location)*140 + vect(0,0,1)*12)
 			TargetLocation = FinalTarget * thru + InitialTarget * (1.0 - thru);
 			// MovePawnTowardsLocation(Camera,TargetLocation,thru);
 			// Camera.SetLocation(TargetLocation);
-			MovePawnTowardsLocation(Camera,TargetLocation,0.1);
+			MovePawnTowardsLocation(Camera,TargetLocation,0.1+0.4*thru);
 			#define TargetLookLocation (LookActor.Location * thru + FollowActor.Location * (1.0 - thru))
 		} else {
 		#else
@@ -925,7 +950,7 @@ function DeltaCamera(float Delta) {
 			Camera.SetLocation( LookActor.Location );
 			Camera.SetLocation( TargetLocation + vect(16,0,16) );
 			if (FRand()<0.1)
-				LogInfo("Had to move camera to see "$TargetLocation);
+				LogFlash("Had to move camera to see "$TargetLocation);
 			// Problem is, sometimes we still can't see it!  TargetLocation may be inside a wall!  :P
 			// Camera.SetRotation( rotator(LookActor.Location - Camera.Location) );
 		}
@@ -1088,7 +1113,7 @@ function CheckForInterestingTarget() {
 
 #ifdef ENABLE_EVENT_RECORD_REPLAY
 
-function RecordEvents() {
+function CheckConsole() {
 	// local int i;
 	// local PlayerPawn P;
 	// local string comp;
@@ -1096,12 +1121,6 @@ function RecordEvents() {
 	// local Actor A;
 	// local Console C;
 	local String line;
-	local int wordCount,i;
-	local String words[256];
-	local String word;
-	local LoggedEvent ev;
-	local Color msgCol;
-	local Pawn p;
 
 		// TODO CONSIDER BUG: Sometimes events occur with a player that we cannot find in the current Actor list (using FindPlayerNamed()).  (e.g. someone captures a flag beyond our view)
 		// Is it worthwhile recording these events?  There may not be much to see at their location.
@@ -1109,104 +1128,142 @@ function RecordEvents() {
 	line = Camera.Player.Console.MsgText[Camera.Player.Console.TopLine];
 
 	if (line != LastConsoleLine) {
-		// new console line
+		// New console line!
 
-		FlashMessageToPlayer(Camera,"[o] ? " $ CountInterestingActors() $ "/" $ CountAllActors(),colYellow,6,1.0);
-
-		if (bFlashConsole)
-			FlashMessageToPlayer(Camera,line,colBlue,0,1.0);
 		if (bLogConsole)
 			Log("[CONSOLE] ("$Int(Level.TimeSeconds)$") "$line);
+		if (bFlashConsole)
+			FlashMessageToPlayer(Camera,line,colBlue,0,1.0);
 
+		#ifdef ENABLE_EVENT_RECORD_REPLAY
 		if (!StrStartsWith(line,"> ")) { // prevent infinite loop detecting its own output!
-
-			// Can we find players in the line?  If so, fill ev.Primary and ev.Secondary:
-			wordCount = SplitString(line," ",words);
-			for (i=0;i<wordCount;i++) {
-				word = words[i];
-				// if (StrEndsWith(word,"\'s"))
-				if (Right(word,2) == "\'s")
-					word = StrBeforeLast(word,"\'s");
-				// if (StrEndsWith(word,"."))
-					// word = StrBeforeLast(word,".");
-				// if (StrEndsWith(word,"!"))
-					// word = StrBeforeLast(word,"!");
-				// Log("Seeking \""$word$"\"");
-				p = FindPlayerNamed(word);
-				// LogDebug("Got player: "$p);
-				if (p != None) { // player can currently be seen in the game
-					if (ev.Primary == "") {
-						ev.Primary = word;
-						ev.PrimaryLocation = p.Location;
-					} else {
-						ev.Secondary = word;
-						ev.SecondaryLocation = p.Location;
-						// We could break now that we have primary and secondary, or keep searching words for other secondaries...
-						// break;
-
-						// Different death messages for various weapons display the player names in different orders.
-						// We just randomly switch the two players.
-						// if (FRand()<0.5) {
-						// Until we properly detect, we swap - this puts victim at the end of shock kills
-						if (true) {
-							ev.Secondary = ev.Primary;
-							ev.SecondaryLocation = ev.PrimaryLocation;
-							ev.Primary = word;
-							ev.PrimaryLocation = p.Location;
-						}
-
-					}
-				}
+			if (bRecordEvents) {
+				CheckLineForEvent(line);
 			}
-
-			// Done: We might want to accept only Primary.
-			// if (ev.Primary != "" && ev.Secondary != "") {
-			if (ev.Primary != "") {
-
-				// NOTE BUG: We should not loop this, or ev might start non-empty!
-				ev.Map = GetDemoID();
-				ev.Time = Level.TimeSeconds;
-				ev.Line = line;
-
-				// LogDebug("[o] RECORD ("$ev.Primary$","$ev.Secondary$"): " $ line );
-				LogDebug("["$Int(Level.TimeSeconds)$"] [o] RECORD "$ev.Primary$" > "$ev.Secondary$" #"$eventCount);
-				FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [o] REC #" $ eventCount $ " " $ ev.Primary$" > "$ev.Secondary,colRed,6,1.0);
-
-				// Once database is full, it overwrites old events randomly
-				if (eventCount >= MaxEvents) {
-					// EventLog[i] = ev;
-					i = Int(FRand()*MaxEvents);
-				} else {
-					// EventLog[eventCount] = ev;
-					i = eventCount;
-					eventCount++;
-				}
-				GetMap(i) = ev.Map;
-				GetTime(i) = ev.Time;
-				GetPrimary(i) = ev.Primary;
-				GetSecondary(i) = ev.Secondary;
-				GetPrimaryLocation(i) = ev.PrimaryLocation;
-				GetSecondaryLocation(i) = ev.SecondaryLocation;
-				GetLine(i) = ev.Line;
-
-				// if (FRand()<0.1) {
-				// if ((eventCount % 8) == 0) {
-				// if (true) {
-				if (false) {
-					// LogWarn("SAVING "$eventCount$" ...");
-					// LogInfo("[o] SAVING ...");
-					FlashMessageToPlayer(Camera,"[o] SAVING "$eventCount$" ...",colRed,5,3.0);
-					// FlashMessageToPlayer(Camera,"[o] SAVING ...",colRed,7,3.0);
-					LogInfo("[o] SAVING...");
-					SaveConfig();
-					LogInfo("[o] DONE");
-				}
-
-			}
-
 		}
+		#endif
+
+		// This allows us to catch when our user gives commands to nBAS.
+		// However, it will also accept commands from any player in the game!!
+		if (StrStartsWith(line,"!")) {
+			CheckMessage(line,None);
+		}
+
 		LastConsoleLine = line;
 	}
+
+}
+
+function CheckLineForEvent(String line) {
+	local int wordCount,i;
+	local String words[256];
+	local String word;
+	local LoggedEvent ev;
+	local Color msgCol;
+	local Pawn p;
+
+	FlashMessageToPlayer(Camera,"[o] ("$Int(Level.TimeSeconds)$") ? " $ CountInterestingActors() $ "/" $ CountAllActors(),colYellow,6,1.0);
+
+	// Can we find players in the line?  If so, fill ev.Primary and ev.Secondary:
+	wordCount = SplitString(line," ",words);
+	for (i=0;i<wordCount;i++) {
+		word = words[i];
+		// if (StrEndsWith(word,"\'s"))
+		if (Right(word,2) == "\'s")
+			word = StrBeforeLast(word,"\'s");
+		// if (StrEndsWith(word,"."))
+			// word = StrBeforeLast(word,".");
+		// if (StrEndsWith(word,"!"))
+			// word = StrBeforeLast(word,"!");
+		// Log("Seeking \""$word$"\"");
+		p = FindPlayerNamed(word);
+		// LogDebug("Got player: "$p);
+		if (p != None) { // player can currently be seen in the game
+			if (ev.Primary == "") {
+				ev.Primary = word;
+				ev.PrimaryLocation = p.Location;
+			} else {
+				ev.Secondary = word;
+				ev.SecondaryLocation = p.Location;
+				// We could break now that we have primary and secondary, or keep searching words for other secondaries...
+				// break;
+
+				// Different death messages for various weapons display the player names in different orders.
+				// We just randomly switch the two players.
+				// if (FRand()<0.5) {
+				// if (true) {
+				// if (false) { // Until we properly detect, we don't swap - this puts victim at the end of shock kills
+				if (
+						StrContains(line," inflicted mortal damage upon ")
+					|| StrContains(line," put a bullet through ")
+					|| StrContains(line," into a leaky piece of meat.")
+					|| StrContains(line," took a bloody chunk out of ")
+					|| StrContains(line," with a blood soaked ")
+					|| StrContains(line," telefragged ")
+					|| StrContains(line," full of holes with the ")
+					|| StrContains(line," ripped a chunk of meat out of ")
+					|| StrContains(line," electrified ")
+				) {
+					// Do nothing.  Primary > Secondary
+				} else {
+					// Due to the type of death message, swap the order, so that Primary > Secondary
+					ev.Secondary = ev.Primary;
+					ev.SecondaryLocation = ev.PrimaryLocation;
+					ev.Primary = word;
+					ev.PrimaryLocation = p.Location;
+				}
+
+			}
+		}
+	}
+
+	// Done: We might want to accept only Primary.
+	// if (ev.Primary != "" && ev.Secondary != "") {
+	if (ev.Primary != "") {
+
+		// NOTE BUG: We should not loop this, or ev might start non-empty!
+		ev.Map = GetDemoID();
+		ev.Time = Level.TimeSeconds;
+		ev.Line = line;
+
+		// LogDebug("[o] RECORD ("$ev.Primary$","$ev.Secondary$"): " $ line );
+		LogDebug("["$Int(Level.TimeSeconds)$"] [o] RECORD "$ev.Primary$" > "$ev.Secondary$" #"$eventCount);
+		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [o] REC #" $ eventCount $ " " $ ev.Primary$" > "$ev.Secondary,colRed,7,1.0);
+
+		// Once database is full, it overwrites old events randomly
+		if (eventCount >= MaxEvents) {
+			// EventLog[i] = ev;
+			i = Int(FRand()*MaxEvents);
+		} else {
+			// EventLog[eventCount] = ev;
+			i = eventCount;
+			eventCount++;
+		}
+		EventMap[i] = ev.Map;
+		EventTime[i] = String(ev.Time);
+		EventPrimary[i] = ev.Primary;
+		EventSecondary[i] = ev.Secondary;
+		EventPrimaryLocation[i] = String(ev.PrimaryLocation);
+		EventSecondaryLocation[i] = String(ev.SecondaryLocation);
+		EventLine[i] = ev.Line;
+
+		// if (FRand()<0.1) {
+		// if ((eventCount % 8) == 0) {
+		// if (true) {
+		// if (false) {
+		if (bAutoSave && FRand()<0.1) {
+			// LogWarn("SAVING "$eventCount$" ...");
+			// LogInfo("[o] SAVING ...");
+			FlashMessageToPlayer(Camera,"[o] SAVING "$eventCount$" ...",colRed,6,3.0);
+			// FlashMessageToPlayer(Camera,"[o] SAVING ...",colRed,7,3.0);
+			LogInfo("[o] SAVING...");
+			SaveConfig();
+			LogInfo("[o] DONE");
+		}
+
+	}
+
+}
 
 	// if (InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine]," killed ") >= 0) {
 		// if (!StrContains(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"FRAG!")) { // prevent infinite loop detecting its own output!
@@ -1279,8 +1336,6 @@ function RecordEvents() {
 		*/
 	// }
 
-}
-
 function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum, optional float duration) {
 	if (!bFlashing)
 		return; // blocked
@@ -1337,10 +1392,8 @@ function ReplayEvents() {
 function String GetDemoID() {
 	local String mapName;
 	mapName = StrBefore(""$Self,".");
-	// These characters confuse the .ini file (at least they do when we are using structs):
-	// NOTE: maybe the problem losing records beyond 37 was because of structs, not characters
-	// mapName = StrReplace(mapName,"[","");
-	// mapName = StrReplace(mapName,"]","");
+	LogInfo("Instead of \"" $ mapName $ "\" we could use \"" $ Level.GetLocalURL() $ "\".");
+	// PlayerOwner().Level.GetLocalURL()
 	return mapName;
 }
 
@@ -1375,16 +1428,19 @@ function FindNextEvent() {
 			CurrentEventi = i;
 			report = "[>] REPLAY #"$i$" (+" $ Int(GetTime(i) - Level.TimeSeconds) $ "): " $ Int(GetTime(i)) $ " " $ GetPrimary(i) $ " > " $ GetSecondary(i);
 			LogInfo(report);
+			/*
 			// if (FRand()<0.5) {
-			if (false) {
+			// if (false) {
+			if (true) {
 				// Swap the primary and seconday - oh boy this swaps them in the DB!
-				tmpName = GetPrimary(i);
-				tmpLocation = GetPrimaryLocation(i);
-				GetPrimary(i) = GetSecondary(i);
-				GetPrimaryLocation(i) = GetSecondaryLocation(i);
-				GetSecondary(i) = tmpName;
-				GetSecondaryLocation(i) = tmpLocation;
+				tmpName = EventPrimary[i];
+				tmpLocation = Vector(EventPrimaryLocation[i]);
+				EventPrimary[i] = EventSecondary[i];
+				EventPrimaryLocation[i] = EventSecondaryLocation[i];
+				EventSecondary[i] = tmpName;
+				EventSecondaryLocation[i] = String(tmpLocation);
 			}
+			*/
 			if (bAutoRecord && bRecordEvents) {
 				LogInfo("Auto turning recording off.");
 				bRecordEvents = False; // auto_record // TODO BUG: this is getting called a lot!
@@ -1404,10 +1460,13 @@ function FindNextEvent() {
 		}
 	}
 
+	// TODO CONSIDER: Set CurrentEventi == 0 ?
+
 	// LogInfo("Failed to find actor for replay");
-	// if (FRand()<0.02) {
+	if (FRand()<0.02) {
 		// LogFlash("Failed to find actor for replay");
-	// }
+		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] No ev3nt",colYellow,7,0.9);
+	}
 
 	if (bAutoRecord && !bRecordEvents) {
 		LogInfo("Auto turning recording on.");
@@ -1460,15 +1519,14 @@ function ReplayEvent(int i) {
 				// Camera.SetLocation(FollowActor.Location);
 			// }
 		}
-		CameraMode = 6;
+		if (FollowActor != None && LookActor != None) {
+			CameraMode = 6;
+		}
 		if (bFlashing && FRand()<0.1) {
-			FlashMessageToPlayer(Camera,"",colWhite,4,1.0);
-			FlashMessageToPlayer(Camera,"",colWhite,5,1.0);
-			FlashMessageToPlayer(Camera,"",colWhite,6,1.0);
-			if (Level.TimeSeconds < GetTime(i))
+			if (Level.TimeSeconds < GetTime(i)+5)
 				FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [>] #"$CurrentEventi$" " $ GetPrimary(i) $ " > " $ GetSecondary(i) $ " (" $ Int(GetTime(i)-Level.TimeSeconds+1) $ ") "$report,colGreen,7,1.0);
 			// else
-				// FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] #"$CurrentEventi$" " $ ev.Primary $ " > " $ ev.Secondary $ " (" $ Int(ev.Time-Level.TimeSeconds+1) $ ")",colGreen,7,1.0);
+				// FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] #"$CurrentEventi$" " $ GetPrimary(i) $ " > " $ GetSecondary(i) $ " (" $ Int(GetTime(i)-Level.TimeSeconds+1) $ ")",colGreen,7,1.0);
 		}
 	}
 
@@ -1483,6 +1541,12 @@ function ReplayEvent(int i) {
 
 	#undef ev
 
+}
+
+function ClearFlashedMessages() {
+	local int i;
+	for (i=0;i<8;i++)
+		FlashMessageToPlayer(Camera,"",colWhite,i,0.1);
 }
 
 #endif
@@ -1548,13 +1612,13 @@ function CheckSwitchCamera() {
 		}
 	} else {
 		if (Camera.ViewTarget != None && LosingNetOn(Camera.ViewTarget)) {
-			LogDebug2("Losing: "$NameActor(Camera.ViewTarget));
+			LogDebug("Losing: "$NameActor(Camera.ViewTarget));
 		}
 		if (FollowActor != None && LosingNetOn(FollowActor)) {
-			LogDebug2("Losing: "$NameActor(FollowActor));
+			LogDebug("Losing: "$NameActor(FollowActor));
 		}
 		if (LookActor != None && LosingNetOn(LookActor)) {
-			LogDebug2("Losing: "$NameActor(LookActor));
+			LogDebug("Losing: "$NameActor(LookActor));
 		}
 	}
 
@@ -1577,6 +1641,9 @@ event Tick (float Delta) {
 	}
 	#endif
 
+	if (FRand()<0.01)
+		ClearFlashedMessages();
+
 	// if (FRand()<0.01) {
 		// LogInfo("Tick delta="$Delta);
 	// }
@@ -1586,11 +1653,13 @@ event Tick (float Delta) {
 		// return;
 	// }
 
-	#ifdef ENABLE_EVENT_RECORD_REPLAY
-	if (bRecordEvents) {
-		RecordEvents();
-	}
-	#endif
+	CheckConsole();
+
+	// #ifdef ENABLE_EVENT_RECORD_REPLAY
+	// if (bRecordEvents) {
+		// RecordEvents();
+	// }
+	// #endif
 
 	CheckForNewActors();
 	if (bSwitchCamera) {
@@ -1907,15 +1976,6 @@ function ViewBlueFC() {
 	Camera.ViewRotation = Pawn(Camera.ViewTarget).ViewRotation;
 }
 
-function SendErrMsg() {
-	Camera.ClientMessage("-----------------------------------------");
-	Camera.ClientMessage("MAC Addresses don't match.");
-	Camera.ClientMessage("AutoSpec will cease to function.");
-	Camera.ClientMessage("-----------------------------------------");
-}
-
-
-
 
 
 function Timer () {
@@ -1940,6 +2000,9 @@ function int CountNonEmptyEvents() {
 	}
 	return count;
 }
+
+// Adding as mutator only works in certain situations (when playing offline?).
+// Best to use another method where possible.
 
 function AddSelfAsMutator() {
 	if (Level.Game == None) {
@@ -2009,27 +2072,45 @@ function CheckMessage(String str, Actor Sender) {
 	LogDebug("Got message: >"$str$"< from "$Sender);
 	if (Left(str,1) == "!") {
 		str = Mid(str,1);
-		if (str ~= "followfc")
+		if (str ~= "FOLLOWFC")
 			bStickWithFC = True;
-		if (str ~= "nofollowfc")
+		if (str ~= "NOFOLLOWFC")
 			bStickWithFC = False;
-		if (str ~= "doviewclass")
+		if (str ~= "DOVIEWCLASS")
 			bDoViewClass = True;
-		if (str ~= "nodoviewclass")
+		if (str ~= "NODOVIEWCLASS")
 			bDoViewClass = False;
-		if (Left(str,7)~="follow ")
+		if (Left(str,7)~="FOLLOW ")
 			RecommendedPlayerName = Mid(str,7);
-		if (Left(str,7)~="resize " && Camera.ViewTarget != None)
-			Camera.ViewTarget.DrawScale = 0.3+1.5*FRand();
-		if (Left(str,7)~="roll ") {
+		if (Left(str,7)~="RESIZE " && Camera.ViewTarget != None)
+			// Camera.ViewTarget.DrawScale = 0.3+1.5*FRand();
+			Camera.ViewTarget.DrawScale = Camera.ViewTarget.default.DrawScale * Float(Mid(str,7));
+		if (Left(str,7)~="ROLL ") {
 			// Camera.Rotation.roll = -8192 + 8192*2*FRand();
 			Camera.ViewRotation = Pawn(Camera.ViewTarget).ViewRotation;
+		}
+		if (str ~= "RECORD") { // Could make this a toggle
+			bRecordEvents = True;
+			LogWarn("Disabled recording.");
+		}
+		if (str ~= "NORECORD") {
+			bRecordEvents = False;
+			bAutoRecord = False;
+			LogWarn("Enabled recording.");
+		}
+		if (str ~= "SAVE") {
+			SaveData();
 		}
 	}
 }
 
-simulated function Destroyed() {
+function SaveData() {
+	LogWarn("nBAutoSpectate saving "$eventCount$" events ("$CountNonEmptyEvents()$" non-empty)");
 	SaveConfig();
+}
+
+simulated function Destroyed() {
+	SaveData();
 	if (Camera != None) {
 		Camera.ViewTarget = None;
 		Camera.bBehindView = False;
@@ -2117,7 +2198,8 @@ defaultproperties {
 	bReplayEvents=True
 	bAutoRecord=True // Turns recording on or off, depending whether previously recorded events were found.
 	bAutoSwitch=True // Turns camera switching on or off, depending whether previously recorded events were found.
-	bAutoSpeed=True
+	bAutoSpeed=False // This can cause some desync on TimeSeconds, but maybe that was 'cos i was AutoSaving.
+	bAutoSave=False
 
 	colGreen=(R=0,G=255,B=0,A=16);
 	colRed=(R=255,G=0,B=0,A=16);
