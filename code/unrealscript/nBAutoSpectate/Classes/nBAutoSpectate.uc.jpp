@@ -1,6 +1,10 @@
 #define LIST_ACTORS
 // #define NO_CHANGE_ANGLE
 
+// TODO: check messages for events
+//       Camera.ProgressMessage[0] - [7]     or maybe playeerPawn.ProgressMessage[0-7]
+//       Keep LastProgressMessage[0] - [7] to make checking easier
+
 // TODO:
 // I keep losing actors like the one I am looking at, or his weapon.
 // Solution:
@@ -16,8 +20,13 @@
 //          we need to detect or avoid these
 // maybe we can trust actors that have recently (re-)entered the pawnlist to be fresh
 
+// #define DEBUG(X); 
+// #define DEBUG(X); Log("nBAS] "$X);
+// #define DEBUG(X); if (bPrintDebugInfo) { Camera.ClientMessage(X); }
+// #define DEBUG(X); if (bPrintDebugInfo) { Camera.ClientMessage("[nBAS] "$(X)); Log("[nBAS] "$(X)); }
+#define DEBUG(X); if (bPrintDebugInfo) { Camera.ClientMessage(""$(X)); Log("[nBAS] "$(X)); }
 // #define Log(X); 
-#define DEBUG(X); if (bPrintDebugInfo) { Camera.ClientMessage(X); }
+// #define Log(X); DEBUG(X);
 
 //================================================================================
 // nBAutoSpectate.
@@ -28,7 +37,8 @@
 // 1 * custom following FollowActor
 // 2 - free standing camera, looking at FollowActor
 // 3 * floating camera, panning / looking at centre of mass)
-// 4 * custom following FollowActor, but looking at LookActor
+// // 4 * custom following FollowActor, but looking at LookActor
+// 4 * custom following FollowActor, and looking at LookActor
 // 5 - default following ViewTarget, but looking at LookActor
 //
 // * = camera floats towards a target
@@ -157,7 +167,7 @@ function Actor GetLastViewClass() {
 
 	foreach AllActors(class'Actor',a) {
 		if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
-			DEBUG("Re-using "$NameActor(a));
+			// DEBUG("Re-using "$NameActor(a));
 			// RecommendedPlayerName = ""; // i think i'll only use it once, then discard it.
 			return a;
 		}
@@ -236,7 +246,7 @@ function bool isCameraModeAllowed() {
 	return (CameraMode>=0 && CameraMode<=5);
 }
 
-function SetNewTarget(Actor a, optional Actor b) {
+function CreateNewCamera(Actor a, optional Actor b) {
 	local String report;
 
 	// if (Level.TimeSeconds < LastSwitchTime + CameraSwitchSeconds)
@@ -272,11 +282,11 @@ function SetNewTarget(Actor a, optional Actor b) {
 	NewCamera();
 	if (CameraMode == 0) {
 		Camera.ViewTarget = a;
-		report = "0 Viewing from "$NameActor(a);
+		report = "[0] Viewing from "$NameActor(a);
 	}
 	if (CameraMode == 1) {
 		FollowActor = a;
-		report = "1 Following "$NameActor(FollowActor);
+		report = "[1] Following "$NameActor(FollowActor);
 		Camera.ViewRotation.Pitch += 8192/2;
 		Camera.SetLocation( FollowActor.Location );
 		Camera.SetLocation( FollowActor.Location - 96*Normal(Vector(Camera.ViewRotation)) + vect(0,0,1)*(64.0+FRand()*64.0) );
@@ -284,16 +294,16 @@ function SetNewTarget(Actor a, optional Actor b) {
 	if (CameraMode == 2) {
 		FollowActor = a;
 		deltaYaw /= 4;
-		deltaPitch /= 4;
+		deltaPitch /= 3;
 		Camera.SetLocation( FollowActor.Location );
 		Camera.SetLocation( Camera.Location - 96*Normal(Vector(Camera.ViewRotation)) + vect(0,0,1)*(64.0+FRand()*64.0) );
 		Camera.ViewRotation = rotator(FollowActor.Location-Camera.Location);
-		report = "2 Camera following "$NameActor(a);
+		report = "[2] Camera following "$NameActor(a);
 	}
 	if (CameraMode == 3) {
 		NiceCamera();
 		deltaYaw /= 4;
-		deltaPitch /= 4;
+		deltaPitch /= 3;
 		deltaFOV *= 2;
 		// A = FindBusiestActor();
 		A = FindClosestInterestingActor(,CentreOfMass());
@@ -304,8 +314,8 @@ function SetNewTarget(Actor a, optional Actor b) {
 		Camera.SetLocation( FindGoodCameraSpot(A.Location,96,-8+FRand()*96) );
 		// FollowActor = FindClosestInterestingActor(A);
 		FollowActor = A;
-		// report = "3 Camera panning from "$NameActor(A)$" looking at "$NameActor(FollowActor);
-		report = "3 Camera panning on "$NameActor(FollowActor);
+		// report = "[3] Camera panning from "$NameActor(A)$" looking at "$NameActor(FollowActor);
+		report = "[3] Camera panning on "$NameActor(FollowActor);
 	}
 	if (CameraMode == 4) {
 		FollowActor = a;
@@ -316,7 +326,8 @@ function SetNewTarget(Actor a, optional Actor b) {
 		Camera.ViewRotation = rotator(LookActor.Location - FollowActor.Location);
 		Camera.SetLocation( FollowActor.Location );
 		Camera.SetLocation( FollowActor.Location - 96*Normal(Vector(Camera.ViewRotation)) + vect(0,0,16) );
-		report = "4 Following "$NameActor(FollowActor)$" Facing "$NameActor(LookActor);
+		// report = "[4] Following "$NameActor(FollowActor)$" Facing "$NameActor(LookActor);
+		report = "[4] Following "$NameActor(FollowActor)$"";
 	}
 	if (CameraMode == 5) {
 		Camera.ViewTarget = a;
@@ -324,7 +335,7 @@ function SetNewTarget(Actor a, optional Actor b) {
 		if (LookActor == None) {
 			LookActor = FindClosestInterestingActor(Camera.ViewTarget);
 		}
-		report = "5 Viewing from "$NameActor(a)$" Looking at "$NameActor(LookActor);
+		report = "[5] Viewing from "$NameActor(a)$" Looking at "$NameActor(LookActor);
 	}
 
 	Camera.bBehindView = ( Camera.ViewTarget != None );
@@ -422,7 +433,8 @@ function SetNewTarget(Actor a, optional Actor b) {
 	// report = "[" $ CountInterestingActors() $ "] " $ report;
 
 	// report = "[" $ getTeamCounts() $ "] " $ report;
-	report = "[" $ getTeamCounts() $ "/" $ CountInterestingActors() $ "] " $ report;
+	// report = "[" $ getTeamCounts() $ "/" $ CountInterestingActors() $ "] " $ report;
+	report = report;
 
 	DEBUG(report);
 	// Log(report);
@@ -484,18 +496,34 @@ function Vector CentreOfMass() {
 	return centre;
 }
 
+function float FFRand() { // returns a number between 0.5 and 1.0
+	return 0.5 + 0.5 * FRand();
+}
+
+function float SgnRand() { // returns -1.0 or +1.0 randomly
+	if (FRand()<0.5) {
+		return 1.0;
+	} else {
+		return -1.0;
+	}
+}
+
 function NewCamera() {
 
 	#ifndef NO_CHANGE_ANGLE
-	Camera.ViewRotation.Yaw = 8192*8*(FRand()-0.5);
-	Camera.ViewRotation.Pitch = 8192*1*(FRand()-0.5);
+	// Camera.ViewRotation.Yaw = 8192*8*(FRand()-0.5);
+	// // Camera.ViewRotation.Pitch = 8192*0.5*(FRand()-0.3);
+	// Camera.ViewRotation.Pitch = 8192*0.5*(FRand()-0.7);
+	Camera.ViewRotation.Yaw = 8192*8*FFRand()*SgnRand();
+	Camera.ViewRotation.Pitch = 8192*0.8*FFRand()*SgnRand();
 	Camera.DesiredFOV = 90 + 30 * FRand();
 	// Camera.ConsoleCommand("FOV "$Camera.DesiredFOV); // seems to be needed! NO it causes ini file writes!
 	#endif
 
+	// deltaYaw = 400*FFRand()*SgnRand();
 	deltaYaw = 400*(FRand()-0.5);
-	// deltaPitch = -Sgn(Camera.ViewRotation.Pitch) * 50*FRand();
-	deltaPitch = 50*(FRand()-0.4);
+	deltaPitch = -Sgn(Camera.ViewRotation.Pitch) * 40*FRand();
+	// deltaPitch = 30*(FRand()-0.7);
 	deltaFOV = 0.2*(FRand()-0.5);
 
 }
@@ -534,6 +562,7 @@ function PointTowardsLocation(Pawn P, Vector L) {
 	RB = rotator(L-P.Location);
 	P.ViewRotation.yaw = RotateAngle(P.ViewRotation.yaw, RB.yaw);
 	P.ViewRotation.pitch = RotateAngle(P.ViewRotation.pitch, RB.pitch);
+	P.ViewRotation.roll = (P.ViewRotation.yaw-RB.yaw) + (P.ViewRotation.pitch-RB.pitch);
 }
 
 /*
@@ -558,7 +587,7 @@ function float RotateAngle(float a, float b) {
 	if ( a-b > 65536/2) {
 		a -= 65536.0;
 	}
-	return a * 0.95 + b * 0.05;
+	return a * 0.92 + b * 0.08;
 }
 
 function bool LosingNetOn(Actor a) {
@@ -570,7 +599,7 @@ function bool LosingNetOn(Actor a) {
 }
 
 function GetRandomCameraNow() {
-	SetNewTarget(GetRandomActor());
+	CreateNewCamera(GetRandomActor());
 }
 
 function MovePawnTowardsLocation(Pawn p, Vector NewLocation, float amount) {
@@ -636,6 +665,10 @@ function DeltaCamera(float Delta) {
 		// followTarget = rotator(CentreOfMass() - Camera.Location);
 		// Camera.ViewRotation.yaw   = Camera.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
 		doNotPan = true;
+		if (!CanSee(CentreOfMass(),Camera.Location)) {
+			DEBUG("CanSee failed - Forcing FollowActor=None");
+			FollowActor = None;
+		}
 		DontLose(FollowActor,FollowActor);
 	}
 	if (CameraMode == 4) {
@@ -643,10 +676,11 @@ function DeltaCamera(float Delta) {
 		TargetLocation = FollowActor.Location - 128*Normal(Vector(Camera.ViewRotation));
 		TargetLocation.Z = FollowActor.Location.Z + 64;
 		// NewLocation = Camera.Location * 0.9 + TargetLocation * 0.1;
-		MovePawnTowardsLocation(Camera,TargetLocation,0.1);
+		MovePawnTowardsLocation(Camera,TargetLocation,0.02);
 		// Camera.SetLocation(NewLocation);
 		// Camera.ClientSetLocation(NewLocation,Camera.ViewRotation);
-		PointTowardsActor(Camera,LookActor);
+		// PointTowardsActor(Camera,LookActor);
+		PointTowardsActor(Camera,FollowActor);
 		// followTarget = rotator(LookActor.Location - Camera.Location);
 		// Camera.ViewRotation.yaw   = Camera.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
 		doNotPan = true;
@@ -687,6 +721,18 @@ function DeltaCamera(float Delta) {
 		*/
 	// }
 
+}
+
+function bool CanSee(Vector from, Vector to) {
+	local Vector HitLocation, HitNormal;
+	// CollisionRadius=1;
+	// CollisionHeight=1;
+	SetCollisionSize(1,1);
+	HitActor = Trace(HitLocation,HitNormal,to,from,false);
+	if (HitActor == None)
+		return true;
+	else
+		return false;
 }
 
 /*
@@ -747,7 +793,7 @@ function HandleNewActor(Actor A) {
 		) {
 			// Log("New Actor: "$A);
 			DEBUG("New Actor: "$A);
-			SetNewTarget(A,A.Owner);
+			CreateNewCamera(A,A.Owner);
 		}
 	}
 }
@@ -771,7 +817,9 @@ function CheckForInterestingTarget() {
 */
 
 event Tick (float Delta) {
-	local int i,diffout;
+	local int i,j;
+	// local int diffout;
+	local string report;
 
 	// if (FRand()<0.01) {
 		// Log("Tick delta="$Delta);
@@ -796,8 +844,10 @@ event Tick (float Delta) {
 		//       and back on again ;)
 		// BUG: when online, this takes a little time to get back, *after* we switch cam :S
 		// maybe we should detect "now viewing from" and *then* switch cam
-		if (bDoViewClass && !bDoneViewClass) {
+		if (bDoViewClass && !bDoneViewClass && FRand()<0.2) {
+			report = report $ "[From "$CountInterestingActors();
 			// To keep a fresh list of actors during online play, we call ViewClass:
+			/*
 			Camera.ViewClass(class'Pawn');
 			Camera.ViewClass(class'Actor');
 			Camera.ViewClass(class'Pawn');
@@ -805,6 +855,14 @@ event Tick (float Delta) {
 			Camera.ViewClass(class'Actor');
 			Camera.ViewClass(class'Pawn');
 			Camera.ViewClass(class'Pawn');
+			*/
+			j = FRand()*12;
+			for (i=0;i<j;i++) {
+				if (Frand()<0.5)
+					Camera.ViewClass(class'Pawn');
+				else
+					Camera.ViewClass(class'Actor');
+			}
 			bDoneViewClass = True;
 		}
 	}
@@ -812,25 +870,34 @@ event Tick (float Delta) {
 	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds + 1) {
 		GetRandomCameraNow(); // If we use the player selected by ViewTeam, ... ?
 		// NewCamera();
+			// I want to report this later, after some time for the info to come and go:
+			if (bDoneViewClass) {
+				report = report $ " to "$CountInterestingActors()$"] ";
+			}
 	}
 
 	if (CameraMode != 3) {
 		if (Camera.ViewTarget == None && FollowActor == None && LookActor == None) {
-			DEBUG("LOST ACTOR");
+			report = report $ "LOST EVERYTHING! ";
 			if (bDoViewClass) {
 				Camera.ViewClass(class'Pawn');
 			}
 			GetRandomCameraNow();
 		}
+	} else {
+		if (Camera.ViewTarget != None && LosingNetOn(Camera.ViewTarget)) {
+			DEBUG("Losing: "$NameActor(Camera.ViewTarget));
+		}
+		if (FollowActor != None && LosingNetOn(FollowActor)) {
+			DEBUG("Losing: "$NameActor(FollowActor));
+		}
+		if (LookActor != None && LosingNetOn(LookActor)) {
+			DEBUG("Losing: "$NameActor(LookActor));
+		}
 	}
-	if (Camera.ViewTarget != None && LosingNetOn(Camera.ViewTarget)) {
-		DEBUG("Losing: "$NameActor(Camera.ViewTarget));
-	}
-	if (FollowActor != None && LosingNetOn(FollowActor)) {
-		DEBUG("Losing: "$NameActor(FollowActor));
-	}
-	if (LookActor != None && LosingNetOn(LookActor)) {
-		DEBUG("Losing: "$NameActor(LookActor));
+
+	if (report != "") {
+		DEBUG(report);
 	}
 
 	// Maybe it's ok to have both == None (Spec free fly mode)
@@ -944,6 +1011,10 @@ event Tick (float Delta) {
 		bAFCOFFmsg = False;
 		bAFCONmsg = True;
 	}
+		// TODO!
+		// Offset = InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"dropped the red flag!");
+		// Offset = InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"returns the red flag!");
+		// Offset = InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"You killed ");
 	if ( bautoFC /* TODO: &&  ! */ )
 	{
 		Offset = InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"captured the red flag!");
@@ -967,6 +1038,8 @@ event Tick (float Delta) {
 			redFC = Left(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],Offset - 1);
 		}
 		Offset = InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"Failed to change view");
+
+		/*
 		if ( Offset != -1 )
 		{
 			redFC = "";
@@ -1025,8 +1098,13 @@ event Tick (float Delta) {
 			SetTimer(0.31,False);
 			bviewingFC = True;
 		}
+		*/
 	}
 }
+
+
+
+
 
 function bool FindPlayer(string S) {
 	local int i;
@@ -1068,6 +1146,10 @@ function SendErrMsg() {
 	Camera.ClientMessage("-----------------------------------------");
 }
 
+
+
+
+
 function Timer () {
 	bviewingFC = False;
 }
@@ -1076,17 +1158,6 @@ function setpawn (PlayerPawn o) {
 	Camera = o;
 	AddSelfAsMutator();
 	Level.Game.RegisterDamageMutator(Self);
-}
-
-function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
-	if (bCheckingForInterestingTarget) {
-		// TODO: never happens =/
-		DEBUG("Damage "$InstigatedBy$" -> "$Victim$" ActualDamage="$ActualDamage); // DamageType="$DamageType$" 
-		if (FRand()<0.5)
-			SetNewTarget(InstigatedBy,Victim);
-		else
-			SetNewTarget(Victim,InstigatedBy);
-	}
 }
 
 function AddSelfAsMutator() {
@@ -1107,11 +1178,25 @@ function AddMutator(Mutator Other) {
 	}
 }
 
+// I have not seen this hit, online or during demos:
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+	if (bCheckingForInterestingTarget) {
+		// TODO: never happens =/
+		DEBUG("Damage "$InstigatedBy$" -> "$Victim$" ActualDamage="$ActualDamage); // DamageType="$DamageType$" 
+		if (FRand()<0.5)
+			CreateNewCamera(InstigatedBy,Victim);
+		else
+			CreateNewCamera(Victim,InstigatedBy);
+	}
+}
+
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
 	if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
 		CheckMessage(Mid(Msg,InStr(Msg,":")+1), Sender);
 	}
+	if (StrContains(Msg,"ow viewing from "))
+		Msg="~~ "$StrAfterLast(Msg," ")$" ~~";
 	return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
 }
 
@@ -1120,28 +1205,37 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 	if (Sender == Receiver) { // Only process the message once.
 		CheckMessage(Msg, Sender);
 	}
+	if (StrContains(Msg,"ow viewing from "))
+		Msg="~~ "$StrAfterLast(Msg," ")$" ~~";
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
 }
 
 function Mutate(String str, PlayerPawn Sender) {
-	if (Left(str,1) == "!") {
-		CheckMessage(Mid(str,2), Sender);
-	}
+	CheckMessage("!"$str, Sender);
 	Super.Mutate(str,Sender);
 }
 
 function CheckMessage(String str, Actor Sender) {
 	DEBUG("Got message: >"$str$"< from "$Sender);
-	if (str ~= "followfc")
-		bStickWithFC = True;
-	if (str ~= "nofollowfc")
-		bStickWithFC = False;
-	if (str ~= "doviewclass")
-		bDoViewClass = True;
-	if (str ~= "nodoviewclass")
-		bDoViewClass = False;
-	if (StrStartsWith(Locs(str),"follow"))
-		RecommendedPlayerName = StrAfter(str," ");
+	if (Left(str,1) == "!") {
+		str = Mid(str,1);
+		if (str ~= "followfc")
+			bStickWithFC = True;
+		if (str ~= "nofollowfc")
+			bStickWithFC = False;
+		if (str ~= "doviewclass")
+			bDoViewClass = True;
+		if (str ~= "nodoviewclass")
+			bDoViewClass = False;
+		if (Left(str,7)~="follow ")
+			RecommendedPlayerName = Mid(str,7);
+		if (Left(str,7)~="resize " && Camera.ViewTarget != None)
+			Camera.ViewTarget.DrawScale = 0.3+1.5*FRand();
+		if (Left(str,7)~="roll ") {
+			// Camera.Rotation.roll = -8192 + 8192*2*FRand();
+			Camera.ViewRotation = Pawn(Camera.ViewTarget).ViewRotation;
+		}
+	}
 }
 
 simulated function Destroyed() {
@@ -1213,9 +1307,9 @@ defaultproperties {
 
 	bCameraPanning=True
 	bSwitchCamera=True
-	CameraSwitchSeconds=4
+	CameraSwitchSeconds=6
 	bStickWithFC=True
-	bDoViewClass=False
+	bDoViewClass=True
 	bPrintDebugInfo=True
 }
 
