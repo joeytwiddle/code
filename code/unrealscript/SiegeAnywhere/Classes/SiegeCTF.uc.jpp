@@ -1,0 +1,8 @@
+class SiegeCTF extends CTFGame;
+
+// BUG TODO: You can telefrag containers.  Presumably the same for SiegeDomination.
+
+#define SiegeAnywhereHUDType class'SiegeCTFHud'
+
+#include "AddSiegeToGameType.jpp"
+
