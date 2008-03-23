@@ -55,6 +55,8 @@ class Resize extends Mutator config(Resize);
 // Auto-jump on respawn is too high (wait a bit before respawning to see this).
 // Flagslugs fly too far, because we changed the gravity.  We need to change their initial Y velocity.
 
+// BUG TODO: EVERYTHING at Scale=2 is wrong!! :P
+
 // var config String AllowedSizes;
 var() config float Scale;
 
@@ -65,7 +67,7 @@ var String LastDodgeState[64];
 
 var String ProjectilesAlreadyHandled;
 
-var String LastNewActor; // considered using Actor instead of String, but would it become None if Actor is Destroy()ed?
+var String LastNewActor; // I considered using Actor instead of String, but would it become None if Actor is Destroy()ed?
 
 defaultproperties {
   // AllowedSizes="0.5,0.75,1.25,1.5,2.0"
@@ -102,18 +104,20 @@ simulated function DebugShout(String msg) {
 simulated function PreBeginPlay() {
 
   // DEBUGGING info:
-  DebugLog("At start of play, ProjectilesAlreadyHandled = "$ProjectilesAlreadyHandled);
-  DebugLog("At start of play, default.ProjectilesAlreadyHandled = "$default.ProjectilesAlreadyHandled);
-  DebugLog("At start of play, ShockProj properties Speed="$(class'ShockProj'.default.Speed)$" MaxSpeed="$(class'ShockProj'.default.MaxSpeed)$".");
+  DebugShout("At start of play, ProjectilesAlreadyHandled = "$ProjectilesAlreadyHandled);
+  DebugShout("At start of play, default.ProjectilesAlreadyHandled = "$default.ProjectilesAlreadyHandled);
+  DebugShout("At start of play, ShockProj properties Speed="$(class'ShockProj'.default.Speed)$" MaxSpeed="$(class'ShockProj'.default.MaxSpeed)$".");
 
   // TODO: remove this for official release
-  // for development, auto-set scale
+  // for development, auto-set scale on my test maps
+  // Regardless of whether I put it in PreBeginPlay() or PostBeginPlay(), the new value of Scale became overwritten until I did SaveConfig().
   if (InStr(""$Self,"HalfSize")>=0) {
-    Scale = 0.5;
+    Scale = 0.5; SaveConfig();
   }
   if (InStr(""$Self,"DoubleSize")>=0) {
-    Scale = 2.0;
+    Scale = 2.0; SaveConfig();
   }
+  DebugShout(Self$".PreBeginPlay() Scale="$Scale);
 
   Enable('Tick');
   Level.Game.RegisterDamageMutator(Self);
@@ -129,6 +133,9 @@ simulated function Tick(float DeltaTime) {
   if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] Tick()"); }
   ScaleAll(); // a freshly thrown translocator or weapon, or new projectile, should be rescaled ASAP, so we do some shrinking every tick!
   Super.Tick(DeltaTime);
+  if (FRand()>0.99) {
+    DebugLog("Tick() DeltaTime="$DeltaTime);
+  }
 }
 
 function ModifyPlayer(Pawn p) {
@@ -160,9 +167,102 @@ simulated function ScaleAll() {
       pastLast = True;
     }
     LastActorInList = a;
+
   }
   LastNewActor = ""$LastActorInList;
   
+}
+
+simulated function ScaleActor(Actor a) {
+  local bool bNew;
+
+  if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] ScaleActor() START"); }
+
+  if (a.IsA('Brush') && a.IsA('Mover')) {
+    return;
+  }
+
+  if (a.DrawScale == a.default.DrawScale) {
+    bNew = true;
+    // DebugLog("New: "$a$" [NetTag="$a.NetTag$"]");
+    // No longer applies, since we are no longer changing DrawScale of all actors.
+  // } else {
+    // return;
+  }
+
+  if (a.IsA('Pawn')) {
+    CheckPlayerStateForDodge(Pawn(a));
+    Pawn(a).JumpZ = 325*Scale; // If we do this in HandleNewActor(), it doesn't work.
+  }
+
+  /*
+  if (!bNew) {
+    // Some things we never want to act on twice:
+    if (a.IsA('PlayerPawn') || a.IsA('Bot')) {
+      // TODO: add JumpZ and other essentials which reset here.
+      Pawn(a).JumpZ = 325*Scale;
+      // ScalePawn(Pawn(a));
+      // CheckPlayerStateForDodge(Pawn(a));
+      // if (a.IsA('PlayerPawn')) {
+        // CheckPlayerStateForDodge(PlayerPawn(a));
+      // }
+      return;
+    }
+    // If we don't return, the player flickers (kinda bounces up and down on the floor).
+    // What causes the flickering?  We could try to track it down.  afaik it's changing a property, not calling Set___().
+  }
+  */
+
+  // TODO: We should not scale brush-style actors like BlockAll.
+
+  // Change DrawScale:
+  // if (!a.IsA('Bot')) {
+    // a.DrawScale = a.default.DrawScale * Scale;
+  // }
+  // a.SetPropertyText("DrawScale",""$(a.default.DrawScale * Scale));
+
+  if (a.IsA('Inventory')) {
+    // a.DrawScale = a.default.DrawScale * Scale;
+    Inventory(a).ThirdPersonScale = Inventory(a).default.ThirdPersonScale * Scale;
+    Inventory(a).PickupViewScale = Inventory(a).default.PickupViewScale * Scale;
+    Inventory(a).PlayerViewScale = Inventory(a).default.PlayerViewScale / Scale;
+  }
+
+  if ((a.IsA('CTFFlag') || a.IsA('FlagBase')) && a.DrawScale == a.default.DrawScale) {
+    // These changes were in FlagBase, but did not affect dropped flags.
+    DebugLog("Scaling flag: "$a);
+    ScaleCollisionCylinder(a);
+    a.DrawScale = a.default.DrawScale * Scale;
+  }
+
+  // if (a.IsA('PlayerPawn')) {
+    // PlayerPawn(a).SetPropertyText("JumpZ",""$(325*Scale));
+  // }
+
+  if (a.IsA('Projectile')) {
+    //// It's too late now to change the initialisation settings.
+    // Projectile(a).Speed = Projectile(a).default.Speed * Scale;
+    // Projectile(a).MaxSpeed = Projectile(a).default.MaxSpeed * Scale;
+    // Projectile(a).MomentumTransfer = Projectile(a).default.MomentumTransfer * Scale;
+    // if (Projectile(a).Speed > Projectile(a).MaxSpeed) {
+      // Projectile(a).Speed = Projectile(a).MaxSpeed;
+    // }
+    // BUG TODO: somehow this fails to detect shock balls when secondary fire is held down (in online play at least)
+    //           When it works, NetTag=0, when it fails, NetTag>0, so I guess the projectile has already been replicated, before we could slow it, which is why the client sees it moving too fast/slow.
+    // OK so now we set each weapon's projectile's default speeds, so we no longer need to detect and slow new projectiles.
+    // We could however check here that the projectiles aren't moving too fast.  (Some custom weapons might have their initial speed hard-coded.)
+    /*
+    if (bNew) { // Don't slow down this projectile more than once!  Only when it's first created.
+      DebugShout("Slowing new projectile "$a$" [NetTag="$a.NetTag$"]");
+      Projectile(a).Velocity = Projectile(a).Velocity * Scale;
+      a.DrawScale = a.DrawScale * Scale;
+      a.SetCollisionSize(a.default.CollisionRadius * Scale, a.default.CollisionHeight * Scale);
+    }
+    */
+  }
+
+  if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] ScaleActor() END"); }
+
 }
 
 simulated function HandleNewActor(Actor a) {
@@ -196,103 +296,12 @@ simulated function HandleNewActor(Actor a) {
     // Conclusion: it's definitely not needed, but I don't know why.
     // If we do scale the collision cylinder, shock balls become much harder to hit.
     DebugLog("Projectile "$a$" has CC ("$a.CollisionRadius$","$a.CollisionHeight$")");
-  }
-
-}
-
-simulated function ScaleActor(Actor a) {
-  local bool bNew;
-
-  if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] ScaleActor() START"); }
-
-  if (a.IsA('Brush') && a.IsA('Mover')) {
-    return;
-  }
-
-  if (a.DrawScale == a.default.DrawScale) {
-    bNew = true;
-    // DebugLog("New: "$a$" [NetTag="$a.NetTag$"]");
-    // No longer applies, since we are no longer changing DrawScale of all actors.
-  // } else {
-    // return;
+    a.DrawScale = a.default.DrawScale * Scale;
   }
 
   if (a.IsA('Pawn')) {
-    CheckPlayerStateForDodge(Pawn(a));
+    ScalePawn(Pawn(a)); // If we do this in ScaleActor() then projectiles leave the weapon at the wrong height.
   }
-
-  /*
-  if (!bNew) {
-    // Some things we never want to act on twice:
-    if (a.IsA('PlayerPawn') || a.IsA('Bot')) {
-      // TODO: add JumpZ and other essentials which reset here.
-      Pawn(a).JumpZ = 325*Scale;
-      // ScalePawn(Pawn(a));
-      // CheckPlayerStateForDodge(Pawn(a));
-      // if (a.IsA('PlayerPawn')) {
-        // CheckPlayerStateForDodge(PlayerPawn(a));
-      // }
-      return;
-    }
-    // If we don't return, the player flickers (kinda bounces up and down on the floor).
-    // What causes the flickering?  We could try to track it down.  afaik it's changing a property, not calling Set___().
-  }
-  */
-
-  // TODO: We should not scale brush-style actors like BlockAll.
-
-  // Change DrawScale:
-  // if (!a.IsA('Bot')) {
-    // a.DrawScale = a.default.DrawScale * Scale;
-  // }
-  // a.SetPropertyText("DrawScale",""$(a.default.DrawScale * Scale));
-
-  if (a.IsA('Pawn')) {
-    ScalePawn(Pawn(a));
-    ScalePlayerAndInventory(Pawn(a));
-  }
-
-  if (a.IsA('Inventory')) {
-    // a.DrawScale = a.default.DrawScale * Scale;
-    Inventory(a).ThirdPersonScale = Inventory(a).default.ThirdPersonScale * Scale;
-    Inventory(a).PickupViewScale = Inventory(a).default.PickupViewScale * Scale;
-    Inventory(a).PlayerViewScale = Inventory(a).default.PlayerViewScale / Scale;
-  }
-
-  /*
-  if (a.IsA('FlagBase') || a.IsA('Flag') || a.IsA('CTFFlag') || a.IsA('CTFFlag0') || a.IsA('CTFFlag1') || a.IsA('RedFlag') || a.IsA('BlueFlag')) {
-    a.SetCollisionSize(a.default.CollisionRadius * Scale, a.default.CollisionHeight * Scale);
-    a.SetLocation(a.default.Location + (-64 + 64*Scale) * Vect(0,0,1)); // flags are about 64 units above the floor - but their CollisionHeight is not 128!  I tried increasing to 72, but then the flag leaves the spot before the game starts!
-  }
-  */
-
-  // if (a.IsA('PlayerPawn')) {
-    // PlayerPawn(a).SetPropertyText("JumpZ",""$(325*Scale));
-  // }
-
-  if (a.IsA('Projectile')) {
-    //// It's too late now to change the initialisation settings.
-    // Projectile(a).Speed = Projectile(a).default.Speed * Scale;
-    // Projectile(a).MaxSpeed = Projectile(a).default.MaxSpeed * Scale;
-    // Projectile(a).MomentumTransfer = Projectile(a).default.MomentumTransfer * Scale;
-    // if (Projectile(a).Speed > Projectile(a).MaxSpeed) {
-      // Projectile(a).Speed = Projectile(a).MaxSpeed;
-    // }
-    // BUG TODO: somehow this fails to detect shock balls when secondary fire is held down (in online play at least)
-    //           When it works, NetTag=0, when it fails, NetTag>0, so I guess the projectile has already been replicated, before we could slow it, which is why the client sees it moving too fast/slow.
-    // OK so now we set each weapon's projectile's default speeds, so we no longer need to detect and slow new projectiles.
-    // We could however check here that the projectiles aren't moving too fast.  (Some custom weapons might have their initial speed hard-coded.)
-    /*
-    if (bNew) { // Don't slow down this projectile more than once!  Only when it's first created.
-      DebugShout("Slowing new projectile "$a$" [NetTag="$a.NetTag$"]");
-      Projectile(a).Velocity = Projectile(a).Velocity * Scale;
-      a.DrawScale = a.DrawScale * Scale;
-      a.SetCollisionSize(a.default.CollisionRadius * Scale, a.default.CollisionHeight * Scale);
-    }
-    */
-  }
-
-  if (Role != Role_Authority) { DebugShout("[HOORAY NOT SERVER!] ScaleActor() END"); }
 
 }
 
@@ -301,7 +310,6 @@ simulated function ScalePawn(Pawn p) {
   p.BaseEyeHeight = p.default.BaseEyeHeight * Scale;
   p.EyeHeight = p.default.EyeHeight * Scale;
   p.GroundSpeed = p.default.GroundSpeed * Scale;
-  p.JumpZ = 325*Scale;
   ScaleCollisionCylinder(p);
 }
 
@@ -397,14 +405,11 @@ function bool AlwaysKeep(Actor Other) {
   // Flags require some special changes
   // TODO: this isn't scaling the flags, move back into Tick().
   if (Other.IsA('FlagBase')) { // || Other.IsA('CTFFlag')) {
-    Other.SetLocation(Other.Location + (-64 + 64*Scale) * Vect(0,0,1)); // flags are about 64 units above the floor - but their CollisionHeight is not 128!  I tried increasing to 72, but then the flag leaves the spot before the game starts!
-    doneSomething = True;
-  }
-  if (Other.IsA('CTFFlag')) {
-    // These changes were in FlagBase, but did not affect dropped flags.
-    DebugLog("Scaling flag: "$Other);
+    DebugLog("Scaling FlagBase with DrawScale="$Other.DrawScale$" and default.DrawScale="$Other.default.DrawScale);
+    // The default flag has DrawScale 1.3 and centre at about 80 units above the floor, so we move its centre to compensate for its new DrawScale.
+    Other.SetLocation(Other.Location + (-80 + 80*Scale) * Other.DrawScale/1.3 * Vect(0,0,1));
     ScaleCollisionCylinder(Other);
-    Other.DrawScale = Other.default.DrawScale * Scale;
+    // Other.DrawScale = Other.default.DrawScale * Scale;
     doneSomething = True;
   }
 
@@ -555,14 +560,14 @@ function ScaleProjectileClass(class<Projectile> ProjectileClass) {
   if (InStr(default.ProjectilesAlreadyHandled," "$ProjectileClass$" ") != -1) {
     return; // We already scaled these default properties earlier.
   }
-  DebugLog("Scaling projectile type: "$ProjectileClass);
+  DebugShout("Scaling projectile type: "$ProjectileClass);
   // BUG TODO: UTChunk and flakslug report 2 x "Accessed null" here.
-  ProjectileClass.default.DrawScale = ProjectileClass.default.DrawScale * Scale;
+  // ProjectileClass.default.DrawScale = ProjectileClass.default.DrawScale * Scale; // This does not seem to work, so doing it in HandleNewActor() instead.
   ProjectileClass.default.Speed = ProjectileClass.default.Speed * Scale;
   ProjectileClass.default.MaxSpeed = ProjectileClass.default.MaxSpeed * Scale;
   ProjectileClass.default.MomentumTransfer = ProjectileClass.default.MomentumTransfer * Scale;
   ProjectileClass.default.ExplosionDecal.default.DrawScale = ProjectileClass.default.ExplosionDecal.default.DrawScale * Scale;
-  DebugLog("New properties for "$ProjectileClass$": Speed="$ProjectileClass.default.Speed$" MaxSpeed="$ProjectileClass.default.MaxSpeed$".");
+  DebugShout("New properties for "$ProjectileClass$": Speed="$ProjectileClass.default.Speed$" MaxSpeed="$ProjectileClass.default.MaxSpeed$".");
   // We cannot scale default CollisionSize here, so we do it later.  Oh well strangely we didn't need to!
   // Add this Projectile type to the list, so that we don't scale its defaults again later:
   default.ProjectilesAlreadyHandled = default.ProjectilesAlreadyHandled $ " " $ ProjectileClass $ " ";
