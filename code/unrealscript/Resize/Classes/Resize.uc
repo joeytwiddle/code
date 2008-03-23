@@ -3,7 +3,7 @@ class Resize extends Mutator config(Resize);
 // BUG TODO: replication/simulation/running-code-on-client is not working at all. =(
 // BUG TODO: Splash damage needs to be scaled up/down, but HurtRadius() is sometimes called with a FIXED value. :S
 // FIXED: Sometimes projectiles move too slow (sometimes they look slow but are actually standing STILL!).
-// BUG TODO: Dodge is too high!  When I try to fix it, landing goes weird.
+// BUG TODO: Dodge is too high and long, jump is too high!
 // FIXED: When making player large, he bounces on the floor.  =(
 // BUG TODO: The first flakslug thrown looks like it's going on the default trajectory, but explodes at correct point.
 // BUG TODO: Some shock balls seem to travel too fast: to reproduce, shoot secondary then primary then secondary - the latter will overtake the foremost!  or hold flak secondary fire to see the same problem there.
@@ -18,6 +18,11 @@ class Resize extends Mutator config(Resize);
 // TODO: Some actors don't start at their default DrawScale (e.g. the curtain meshes on Noggins2ndMap).
 //       Ideally we would scale things only ONCE when they are first created, and not relative to their default.DrawScale, but relative to their current scale.
 //       Maybe that's why bots appear a little smaller than my eye height suggests they should.
+// TODO: Weapons in other player's hands look the default size; weapons in your hand are over-exaggerated!
+
+// FIXED (I was using bNew on PlayerPawns): JumpZ always ends up at 357.5 - I can't set my own value!  But I can do it with ActorEditor.  :o
+// TODO: We changed JumpZ so that the player goes higher (or lower) when scaled up (or down).
+//       But now we must change gravity, so they spend the correct amount of time in the air ... and this will change everything else, e.g. flakslugs.
 
 // var config String AllowedSizes;
 var() config float NewSize;
@@ -25,8 +30,8 @@ var() config float NewSize;
 defaultproperties {
   // AllowedSizes="0.5,0.75,1.25,1.5,2.0"
   // NewSize=2.00
-  // NewSize=2.0
-  NewSize=0.5
+  NewSize=2.0
+  // NewSize=0.5
     // Attempt to get simulation working:
     bAlwaysRelevant=true
     // bNoDelete=True // Stopped mutator from spawning
@@ -43,11 +48,12 @@ replication {
 
 simulated function DebugLog(String msg) {
   Log("<"$Role$"> "$msg);
-  BroadcastMessage("<"$Role$"> "$msg);
+  // BroadcastMessage("<"$Role$"> "$msg);
 }
 
 simulated function PreBeginPlay() {
   Enable('Tick');
+  Level.Game.RegisterDamageMutator(Self);
   ShrinkAll();
 }
 
@@ -96,8 +102,12 @@ simulated function Shrink(Actor a) {
   if (!bNew) {
     // Some things we never want to act on twice:
     if (a.IsA('PlayerPawn') || a.IsA('Bot')) {
+      // TODO: add JumpZ and other essentials which reset here.
       return;
     }
+    // TODO: disabling this fixed JumpZ from resetting, but now the player flickers.
+    // Turn it back on to stop the flickering, but set JumpZ here also!
+    // What causes the flickering?  We could try to track it down.  afaik it's changing a property, not calling Set___().
   }
 
   // TODO: We should not scale brush-style actors like BlockAll.
@@ -114,11 +124,13 @@ simulated function Shrink(Actor a) {
     if (bNew) { // don't do this more than once!
       DebugLog("Fixing: "$a);
       a.SetCollisionSize(a.default.CollisionRadius * NewSize, a.default.CollisionHeight * NewSize);
-      a.SetLocation(a.Location + (-64 + 64*NewSize) * Vect(0,0,1)); // flags are actually 64 units above the floor - but their CollisionHeight is not 128!
+      a.SetLocation(a.Location + (-64 + 64*NewSize) * Vect(0,0,1)); // flags are about 64 units above the floor - but their CollisionHeight is not 128!  I tried increasing to 72, but then the flag leaves the spot before the game starts!
     }
   } else {
     if (a.IsA('Pickup')) { a.SetLocation(a.Location - (a.CollisionHeight/2) * Vect(0,0,1)); }
-    // if (!bNew || !a.IsA('PlayerPawn')) {
+    // if (bNew && a.IsA('PlayerPawn')) {
+      // // Attempt to stop the flickering, failed.
+    // } else {
       a.SetCollisionSize(a.default.CollisionRadius * NewSize, a.default.CollisionHeight * NewSize);
     // }
     if (a.IsA('Pickup')) { a.SetLocation(a.Location + (a.CollisionHeight/2) * Vect(0,0,1)); }
@@ -140,15 +152,18 @@ simulated function Shrink(Actor a) {
 
   if (a.IsA('PlayerPawn')) {
     ShrinkPlayerAndInventory(PlayerPawn(a));
+    // PlayerPawn(a).JumpZ = 325*NewSize;
+    PlayerPawn(a).SetPropertyText("JumpZ",""$(325*NewSize));
   }
 
   if (a.IsA('Projectile')) {
-    Projectile(a).Speed = Projectile(a).default.Speed * NewSize;
-    Projectile(a).MaxSpeed = Projectile(a).default.MaxSpeed * NewSize;
-    Projectile(a).MomentumTransfer = Projectile(a).default.MomentumTransfer * NewSize;
-    if (Projectile(a).Speed > Projectile(a).MaxSpeed) {
-      Projectile(a).Speed = Projectile(a).MaxSpeed;
-    }
+    //// It's too late now to change the initialisation settings.
+    // Projectile(a).Speed = Projectile(a).default.Speed * NewSize;
+    // Projectile(a).MaxSpeed = Projectile(a).default.MaxSpeed * NewSize;
+    // Projectile(a).MomentumTransfer = Projectile(a).default.MomentumTransfer * NewSize;
+    // if (Projectile(a).Speed > Projectile(a).MaxSpeed) {
+      // Projectile(a).Speed = Projectile(a).MaxSpeed;
+    // }
     if (bNew) { // Don't slow down this projectile more than once!  Only when it's first created.
       DebugLog("Slowing projectile "$a$" [NetTag="$a.NetTag$"]");
       Projectile(a).Velocity = Projectile(a).Velocity * NewSize;
@@ -167,7 +182,10 @@ simulated function ShrinkPawn(Pawn p) {
   p.BaseEyeHeight = p.default.BaseEyeHeight * NewSize;
   p.EyeHeight = p.default.EyeHeight * NewSize;
   p.GroundSpeed = p.default.GroundSpeed * NewSize;
-  p.JumpZ = p.default.JumpZ*NewSize;
+  // p.JumpZ = p.default.JumpZ*NewSize;
+  // p.JumpZ = 325*NewSize;
+  // p.SetPropertyText("JumpZ",""$(p.default.JumpZ*NewSize));
+  p.SetPropertyText("JumpZ",""$(325*NewSize));
 }
 
 simulated function ShrinkPlayerAndInventory(PlayerPawn p) {
@@ -199,7 +217,6 @@ simulated function ShrinkPlayerAndInventory(PlayerPawn p) {
 
 // It seems all Actors go through all 3 of these when they are spawned, except for Projectiles and Effects.
 
-/*
 function bool AlwaysKeep(Actor Other) {
   DebugLog("AlwaysKeep("$Other$") [NetTag="$NetTag$"]");
 	return Super.AlwaysKeep(Other);
@@ -214,5 +231,24 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
   DebugLog("CheckReplacement("$Other$") [NetTag="$NetTag$"]");
 	return Super.CheckReplacement(Other,bSuperRelevant);
 }
-*/
+
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+  local float HitDistance;
+  HitDistance = VSize(HitLocation - Victim.Location);
+  // BroadcastMessage("Damage "$DamageType$" @ "$HitDistance);
+  // BUG: both jolted and RocketDeath count for primary and secondary shots
+  //      We could check the distance of the HitLocation from the Victim, to see if it is within his collision cylinder or not.
+  // if (DamageType == 'jolted' || DamageType == 'RocketDeath' || DamageType=='FlakDeath' || DamageType=='GrenadeDeath' || DamageType=='RipperAltDeath') {
+    if (HitDistance > Victim.CollisionRadius /*&& HitDistance > Victim.CollisionHeight*/) {
+      // Gets called sometimes even on a direct hit. :(
+      // Seems to be outside the Victim, so it's splash damage, so scale it:
+      BroadcastMessage("Scaling splash damage "$DamageType$" on "$Victim.getHumanName()$" ("$HitDistance$")");
+      ActualDamage = ActualDamage / NewSize;
+      Momentum = Momentum / NewSize;
+      // Check with scale=2.0 that 1 primary shock deals correct damage (and does not kill)!
+    }
+  // }
+  // BUG: ofc if the engine already thinks the damage was out of range, we can't scale that damage up.
+  Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
+}
 
