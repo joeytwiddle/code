@@ -1,0 +1,54 @@
+class SiegeDM extends DeathMatchPlus;
+
+#include "AddSiegeToGameType.jpp"
+
+defaultproperties
+{
+     AirControl=0.350000
+     bChangeLevels=True
+     bHardCoreMode=True
+     bMultiWeaponStay=True
+     NetWait=10
+     RestartWait=15
+     CountDown=10
+     TourneyMessage="Waiting for other players."
+     WaitingMessage1="Waiting for ready signals."
+     WaitingMessage2="(Use your fire button to toggle ready!)"
+     ReadyMessage="You are READY!"
+     NotReadyMessage="You are NOT READY!"
+     CountDownMessage=" seconds until play starts!"
+     StartMessage="The match has begun!"
+     GameEndedMessage="wins the match!"
+     SingleWaitingMessage="Press Fire to start."
+     gamegoal="frags wins the match."
+     InitialBots=4
+     NoNameChange=" is already in use."
+     OvertimeMessage="Score tied at the end of regulation. Sudden Death Overtime!!!"
+     BotConfigType=Class'Botpack.ChallengeBotInfo'
+     LadderTypeIndex=1
+     bNoMonsters=True
+     bRestartLevel=False
+     bPauseable=False
+     bDeathMatch=True
+     ScoreBoardType=Class'Botpack.TournamentScoreBoard'
+     BotMenuType="UTMenu.UTBotConfigSClient"
+     RulesMenuType="UTMenu.UTRulesSClient"
+     SettingsMenuType="UTMenu.UTSettingsSClient"
+     GameUMenuType="UTMenu.UTGameMenu"
+     MultiplayerUMenuType="UTMenu.UTMultiplayerMenu"
+     GameOptionsMenuType="UTMenu.UTOptionsMenu"
+     HUDType=Class'Botpack.ChallengeHUD'
+     MapListType=Class'Botpack.TDMmaplist'
+     MapPrefix="DM"
+     BeaconName="DM"
+     GameName="Tournament DeathMatch"
+     DeathMessageClass=Class'Botpack.DeathMessagePlus'
+     DMMessageClass=Class'Botpack.DeathMatchMessage'
+     MutatorClass=Class'Botpack.DMMutator'
+     GameReplicationInfoClass=Class'Botpack.TournamentGameReplicationInfo'
+     bLoggingGame=True
+
+     FragLimit=50
+     TimeLimit=30
+}
+
