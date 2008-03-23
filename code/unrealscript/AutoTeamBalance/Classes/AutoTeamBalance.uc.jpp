@@ -24,6 +24,9 @@
 
 // TODO: integrate with AKA
 
+// TODO: Display the proposed player switch when asking a player to type !teams
+//       e.g.: "Type !teams to swap X and Y"
+
 // CONSIDER: could add last_date_played, so that we can recycle old records suitably.
 // This may be useful:
 /*
@@ -173,8 +176,8 @@ defaultproperties {
   bUpdatePlayerStatsForOtherTeamGames=True
   bUpdatePlayerStatsForNonTeamGames=True
   bLogExtraStats=False
-  MaxHoursWhenCopyingOldRecord=4.0
-  HoursBeforeRecyclingStrength=6.0
+  MaxHoursWhenCopyingOldRecord=3.0
+  HoursBeforeRecyclingStrength=3.0
   MinHumansForStats=4
   ScoringMethod=2
   bNormaliseScores=True
@@ -309,7 +312,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
       if (teamnr<2)
       {
         // I changed this from Daniel's version, so that bot strengths are not considered.
-        // Since a player is joining, one of the bots will probably leave, so counting that bot's strength is inaccurate, and we don't know which bot it will be.  So let's just count player strengths.
+        // Since a player is joining, one of the bots may leave, or switch team, so counting that bot's strength is inaccurate, and we don't know which bot it will be.  So let's just count player strengths.
         if (!p.IsA('Bot')) {
           teamSize[teamnr]++;
           teamStr[teamnr] += GetPawnStrength(p);
@@ -437,7 +440,7 @@ function Mutate(String str, PlayerPawn Sender) {
         if (!Level.Game.GameReplicationInfo.bTeamGame) {
           Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
         } else {
-          MidGameRebalance();
+          MidGameRebalance(True);
         }
       break;
 
@@ -720,9 +723,9 @@ function DoGameStart() {
   timeGameStarted = Level.TimeSeconds+1.5; // (since we are called on average 1.5 seconds before starting countdown ends)
   if (ShouldBalance(Level.Game)) {
     //// TESTING: how well can we do by just switching 1 or 2 players?
-    // if (bTesting) { lastBalanceTime=-100; MidGameRebalance(); }
-    // if (bTesting) { lastBalanceTime=-100; MidGameRebalance(); }
-    // if (bTesting) { lastBalanceTime=-100; MidGameRebalance(); }
+    // if (bTesting) { lastBalanceTime=-100; MidGameRebalance(True); }
+    // if (bTesting) { lastBalanceTime=-100; MidGameRebalance(True); }
+    // if (bTesting) { lastBalanceTime=-100; MidGameRebalance(True); }
     //// We could also do this once or twice *after* the ForceFullTeamsRebalance(), to make teams really even by strength (not pickup style).
     ForceFullTeamsRebalance();
   }
@@ -758,7 +761,7 @@ function CheckMidGameBalance() {
 
   // If so, and bForceEvenTeams is set, then take action!
   if (bForceEvenTeams && weakerTeam != -1) {
-    MidGameRebalance();
+    MidGameRebalance(True);
     return;
     // DONE: bForceEvenTeams does *not* take action if the teams differ by less than 2 players.  But maybe it should, if they are really unfair by strength! -- Nee leave that for bWarnMidGameUnbalance
   }
@@ -784,21 +787,25 @@ function CheckMidGameBalance() {
     }
 
     // Send all players the team inbalance warning:
-    for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-      if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
-	// Players on different teams get slightly different messages:
-        if (p.PlayerReplicationInfo.Team == weakerTeam) {
-          if (bLetPlayersRebalance) {
-            p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them",ConditionalName(bFlashOnWarning,'CriticalEvent','Event'),False);
-          }
-        } else {
-          p.ClientMessage("Teams look uneven! "$problem$" Type "$ConditionalString(bLetPlayersRebalance,"!teams or ","")$"!"$Locs(getTeamName(weakerTeam))$"",ConditionalName(bFlashOnWarning,'CriticalEvent','Event'),False);
-	  // We may "punish" the stronger team, by shaking their view, or sending them a buzzing sound:
-          if (bShakeOnWarning) {
-            p.ShakeView(1.0,2000.0,2000.0);
-          }
-          if (bBuzzOnWarning) {
-            p.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16); // an annoying buzzing fly sound
+    if (bLetPlayersRebalance) {
+      MidGameRebalance(False);
+    } else {
+      for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+        if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
+        // Players on different teams get slightly different messages:
+          if (p.PlayerReplicationInfo.Team == weakerTeam) {
+            if (bLetPlayersRebalance) {
+              p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them",ConditionalName(bFlashOnWarning,'CriticalEvent','Event'),False);
+            }
+          } else {
+            p.ClientMessage("Teams look uneven! "$problem$" Type "$ConditionalString(bLetPlayersRebalance,"!teams or ","")$"!"$Locs(getTeamName(weakerTeam))$"",ConditionalName(bFlashOnWarning,'CriticalEvent','Event'),False);
+            // We may "punish" the stronger team, by shaking their view, or sending them a buzzing sound:
+            if (bShakeOnWarning) {
+              p.ShakeView(1.0,2000.0,2000.0);
+            }
+            if (bBuzzOnWarning) {
+              p.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16); // an annoying buzzing fly sound
+            }
           }
         }
       }
@@ -1029,7 +1036,7 @@ function ForceFullTeamsRebalance() {
 // TODO: This whole system could be re-arranged a bit.
 // There's little point asking for additional "!teams" requests, if the algorithm will refuse to move any players anyway!
 // Also, it asks for additional requests, when bWarnMidGameUnbalance is flashing - it shouldn't!
-function RequestMidGameRebalance(PlayerPawn p) {
+function RequestMidGameRebalance(PlayerPawn Sender) {
 #ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
   local int i;
   local int countRequests;
@@ -1041,7 +1048,7 @@ function RequestMidGameRebalance(PlayerPawn p) {
     }
   }
   // Set that this player is requesting balance
-  pidsRequestingRebalance[p.PlayerReplicationInfo.PlayerID] = 1;
+  pidsRequestingRebalance[Sender.PlayerReplicationInfo.PlayerID] = 1;
   // Count the number of requests at this time
   countRequests = 0;
   for (i=0;i<64;i++) {
@@ -1058,19 +1065,40 @@ function RequestMidGameRebalance(PlayerPawn p) {
   }
   // Decide what to do
   if (additionalRequiredRequests <= 0) {
-    MidGameRebalance();
+    MidGameRebalance(True);
     lastRebalanceRequestTime = -60; // Will force a reset the next time we are called
   } else {
     // BroadcastMessageAndLog("I require "$additionalRequiredRequests$" more requests before I will rebalance the teams.  Say \"!teams\" if you agree.");
-    BroadcastMessageAndLog("Say \"!teams\" to rebalance the teams ("$additionalRequiredRequests$" more requests required).");
+    // BroadcastMessageAndLog("Say \"!teams\" to rebalance the teams ("$additionalRequiredRequests$" more requests required).");
+    // for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+      // if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && !p.IsA('Bot')) {
+        // FlashMessageToPlayer(p,"Type !teams to rebalance ["$additionalRequiredRequests$"]");
+      // }
+    // } 
+    MidGameRebalance(False);
     lastRebalanceRequestTime = Level.TimeSeconds;
   }
 #else
-  MidGameRebalance();
+  MidGameRebalance(True);
 #endif
 }
 
-function MidGameRebalance() {
+function ProposeChange(Pawn one, Pawn two) {
+  local Pawn p;
+  local String msg;
+  if (two == None) {
+    msg = "Type !teams to move "$one.getHumanName();
+  } else {
+    msg = "Type !teams to swap "$one.getHumanName()$" and "$two.getHumanName();
+  }
+  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+    if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && !p.IsA('Bot')) {
+      FlashMessageToPlayer(p,msg);
+    }
+  }
+}
+
+function MidGameRebalance(bool bDo) {
   local int redTeamCount,blueTeamCount;
 
   if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
@@ -1078,12 +1106,14 @@ function MidGameRebalance() {
 
   // Refuse to balance teams more than once every MinSecondsBeforeRebalance seconds:
   // This also fixed the bug that (I think) if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
-  if (lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
-    // if (bDebugLogging) { Log("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds); }
-    if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon."); }
-    return;
+  if (bDo) {
+    if (MinRequestsForRebalance<2 && lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
+      // if (bDebugLogging) { Log("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds); }
+      if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon."); }
+      return;
+    }
+    lastBalanceTime = Level.TimeSeconds;
   }
-  lastBalanceTime = Level.TimeSeconds;
 
   redTeamCount = GetTeamSize(0);
   blueTeamCount = GetTeamSize(1);
@@ -1093,16 +1123,16 @@ function MidGameRebalance() {
 
   // TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end - although the system should really be changed entirely, since it tries to balance strengths on the first switch, it will be harder to keep them balanced on the second switch.
   if (redTeamCount < blueTeamCount) {
-    MidGameTeamBalanceSwitchOnePlayer(1,0);
+    MidGameTeamBalanceSwitchOnePlayer(bDo,1,0);
   } else if (blueTeamCount < redTeamCount) {
-    MidGameTeamBalanceSwitchOnePlayer(0,1);
+    MidGameTeamBalanceSwitchOnePlayer(bDo,0,1);
   } else {
-    MidGameTeamBalanceSwitchTwoPlayers();
+    MidGameTeamBalanceSwitchTwoPlayers(bDo);
   }
 
 }
 
-function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
+function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTeam) {
   local float fromTeamStrength, toTeamStrength, currentDifference, playerStrength;
   local Pawn p;
   local Pawn closestPlayer; // the most ideal potential player to switch
@@ -1135,13 +1165,17 @@ function bool MidGameTeamBalanceSwitchOnePlayer(int fromTeam, int toTeam) {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!"); }
     return False;
   } else {
-    ChangePlayerToTeam(closestPlayer,toTeam,true);
-    if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+    if (bDo) {
+      ChangePlayerToTeam(closestPlayer,toTeam,true);
+    } else {
+      ProposeChange(closestPlayer,None);
+    }
+    if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
     return True;
   }
 }
 
-function bool MidGameTeamBalanceSwitchTwoPlayers() {
+function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
   // initial:
   local float redTeamStrength, blueTeamStrength, difference;
   // during loop:
@@ -1183,9 +1217,13 @@ function bool MidGameTeamBalanceSwitchTwoPlayers() {
 
   // CONSIDER: if one of the players is a bot, we should probably move him last, because bots tend to switch back to the other team, if UT.ini is configured that way.  Alternatively, we could copy Daniel's temporary-ut-balance-disable code into ChangePlayerToTeam.  Hmm probably nobody uses bBalanceBots anyway.
   if (redPlayerToMove != None && bluePlayerToMove != None) {
-    ChangePlayerToTeam(redPlayerToMove,1,true);
-    ChangePlayerToTeam(bluePlayerToMove,0,true);
-    if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+    if (bDo) {
+      ChangePlayerToTeam(redPlayerToMove,1,true);
+      ChangePlayerToTeam(bluePlayerToMove,0,true);
+    } else {
+      ProposeChange(redPlayerToMove,bluePlayerToMove);
+    }
+    if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
     return True;
   } else {
     if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams."); }
@@ -1799,11 +1837,11 @@ function int UpdateStatsForPlayer(Pawn p) {
 
   hours_played[i] += hours_played_this_game;
 
-  if (avg_score[i]>previous_average+1) {
+  if (avg_score[i]>previous_average+5) {
     if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
     if (bFlashCookies) { FlashMessageToPlayer(p,"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game."); } // BUG: unfortunately hidden by scoreboard, but still appears in console
   }
-  else if (previous_average>avg_score[i]+1) {
+  else if (previous_average>avg_score[i]+5) {
     if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
     if (bFlashCookies) { FlashMessageToPlayer(p,"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game."); } // BUG: unfortunately hidden by scoreboard, but still appears in console
   }
