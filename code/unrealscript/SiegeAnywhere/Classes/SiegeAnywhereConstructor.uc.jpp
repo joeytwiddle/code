@@ -1,3 +1,6 @@
+// Modifies the default sgConstructor, so that it will refuse to build anywhere nearby an important Actor.
+// This should prevent people from blocking objectives in Assault, or building things right next to flagspots in CTF.
+
 class SiegeAnywhereConstructor extends sgConstructor;
 
 function PlaceIt()
@@ -105,32 +108,50 @@ function PlaceIt()
 
 function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
 	local Actor p;
+	local String OwnerName;
 	foreach AllActors(class'Actor',p) {
 		if (
 				!
-				( // these actors do not block:
+				( // these actors can never block:
 					p.IsA('PlayerPawn')
 					|| p.IsA('Bot')
 					|| p.IsA('PathNode')
 					|| p.IsA('SoundEvent')
+					|| p.IsA('Light')
+					|| p.IsA('locationid')
+					|| p.IsA('sgBuilding') // presumably dealt with elsewhere
+					|| (p.IsA('Weapon') && (Owner==p.Owner || Weapon(p).bHeldItem)) // my weapon, or a held weapon
+					|| p.IsA('Projectile') // my weapon, or a held weapon
 				)
 			&&
 				( // these actors block building when near:
-					p.isa('Trigger')
-					|| p.isa('PlayerStart')
-					|| p.isa('FlagBase')
-					|| (p.isa('Weapon') && Owner!=p.Owner) // pickup point, and not my weapon!
-					|| (p.isa('Inventory') && Owner!=p.Owner) // pickup point, and not my weapon!
-					|| (p.isa('Pickup') && Owner!=p.Owner) // pickup point, and not my weapon!
-					|| true // blacklist atm - see above
+					p.IsA('Trigger')
+					|| p.IsA('FlagBase')
+					|| p.IsA('CTFFlag')
+					|| p.IsA('PlayerStart')
+					|| (p.IsA('Weapon') && Owner!=p.Owner && !Weapon(p).bHeldItem) // pickup point, and not my weapon!
+					|| (p.IsA('Inventory') && Owner!=p.Owner && !Inventory(p).bHeldItem) // pickup point, and not my weapon!
+					|| (p.IsA('Pickup') && Owner!=p.Owner && !Pickup(p).bHeldItem) // pickup point, and not my weapon!
+					|| true // whitelist atm - see above
 				)
 			&&
-				VSize(p.Location - Location) < 32
+				VSize(p.Location - Location) < 96 // 128
 		) {
-			Owner.ClientMessage("The " $ p.class $ " blocks you from placing a " $ type $ " here.");
+			// if (p.IsA('Weapon') && (p.Owner == Owner) || Weapon(p).bHeld)
+				// continue; // Somehow this was not caught above.
+			OwnerName = p.Owner.getHumanName();
+			if (OwnerName == "")
+				OwnerName = String(p.Owner);
+			if (OwnerName == "")
+				OwnerName = "The";
+			else
+				OwnerName = OwnerName $ "'s";
+			// Owner.ClientMessage("The " $ p.class $ " blocks you from placing a " $ type $ " here.");
+			Owner.ClientMessage(OwnerName $ " " $ p.class.name $ " blocks you from placing a " $ type $ " here.");
 			// p.bvisible=true; p.drawscale=1.0+0.5*(FRand());
-			return false;
+			return true;
 		}
 	}
+	return false;
 }
 
