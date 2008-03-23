@@ -3,6 +3,12 @@
 
 class SiegeAnywhereConstructor extends sgConstructor;
 
+var config bool bBlockBuildingOnKeypoints;
+
+defaultproperties {
+	bBlockBuildingOnKeypoints=True
+}
+
 function PlaceIt()
 {
     local sgPRI     ownerPRI;
@@ -76,7 +82,7 @@ function PlaceIt()
 	TargetLocation = Owner.Location - vect(0,0,8) +
 		vector(Pawn(Owner).ViewRotation) * 45;
 
-	if (ShouldNotBuild(type,TargetLocation,Pawn(Owner))) {
+	if (bBlockBuildingOnKeypoints && ShouldNotBuild(type,TargetLocation,Pawn(Owner))) {
 		test = None;
 	} else {
 		test = Spawn(type, Owner,, TargetLocation, Pawn(Owner).ViewRotation);
@@ -121,33 +127,38 @@ function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
 					|| p.IsA('locationid')
 					|| p.IsA('sgBuilding') // presumably dealt with elsewhere
 					|| (p.IsA('Weapon') && (Owner==p.Owner || Weapon(p).bHeldItem)) // my weapon, or a held weapon
-					|| p.IsA('Projectile') // my weapon, or a held weapon
+					|| p.IsA('Projectile')
+					|| p.IsA('Mover') // TODO CONSIDER: the jury is still out on this one
 				)
 			&&
-				( // these actors block building when near:
+				( // these actors always block building when near:
 					p.IsA('Trigger')
 					|| p.IsA('FlagBase')
-					|| p.IsA('CTFFlag')
+					// || p.IsA('CTFFlag')
+					|| p.IsA('FortStandard')
 					|| p.IsA('PlayerStart')
-					|| (p.IsA('Weapon') && Owner!=p.Owner && !Weapon(p).bHeldItem) // pickup point, and not my weapon!
-					|| (p.IsA('Inventory') && Owner!=p.Owner && !Inventory(p).bHeldItem) // pickup point, and not my weapon!
-					|| (p.IsA('Pickup') && Owner!=p.Owner && !Pickup(p).bHeldItem) // pickup point, and not my weapon!
-					|| true // whitelist atm - see above
+					|| (p.IsA('Weapon') && Owner!=p.Owner && !Weapon(p).bHeldItem) // pickup point, and not my weapon, or held by another
+					|| (p.IsA('Inventory') && Owner!=p.Owner && !Inventory(p).bHeldItem) // pickup point, and not my weapon, or held by another
+					|| (p.IsA('Pickup') && Owner!=p.Owner && !Pickup(p).bHeldItem) // pickup point, and not my weapon, or held by another
+					|| true // So we can collect the names of relevant actors.  Add ones we wish to whitelist above.
 				)
 			&&
-				VSize(p.Location - Location) < 96 // 128
+				VSize(p.Location - Location) < 128
+				// 96 seemed a little too close to me; mines could still reach a player grabbing the flag.
+				// I wouldn't mind expanding it even more.  Although it could end up blocking too much of the map.
 		) {
 			// if (p.IsA('Weapon') && (p.Owner == Owner) || Weapon(p).bHeld)
 				// continue; // Somehow this was not caught above.
 			OwnerName = p.Owner.getHumanName();
 			if (OwnerName == "")
 				OwnerName = String(p.Owner);
-			if (OwnerName == "")
+			if (OwnerName == "" || OwnerName == "None")
 				OwnerName = "The";
 			else
 				OwnerName = OwnerName $ "'s";
 			// Owner.ClientMessage("The " $ p.class $ " blocks you from placing a " $ type $ " here.");
-			Owner.ClientMessage(OwnerName $ " " $ p.class.name $ " blocks you from placing a " $ type $ " here.");
+			// Owner.ClientMessage(OwnerName $ " " $ p.class.name $ " blocks you from placing a " $ type $ " here.");
+			Owner.ClientMessage(OwnerName $ " " $ p.class.name $ " blocks you from building here.");
 			// p.bvisible=true; p.drawscale=1.0+0.5*(FRand());
 			return true;
 		}
