@@ -11,15 +11,16 @@
 // vim: tabstop=2 shiftwidth=2 expandtab filetype=uc
 
 // Changes in 1.3 October 2007:
-// I stripped out a lot of comments.  If you don't understand the reasons for certain bits of code, you may wish to refer to the comments in version 1.2.
-// Added MinRequestsForRebalance
-// Added bSeparateStatsByMutators (sony_scarface, or anyone who had bSeparateStatsByGamemode in earlier versions, should set this to True to keep your database as it was)
+// Added MinRequestsForRebalance.
 // Fixed the "X has lost N cookies" appearing when it shouldn't bug
 // Scaled FlagStrength for non-CTF gametypes, so it is not disproportional.
 // Also reduced the default to 10, to give less of a disadvantage to the leading team.
 // Force FlagStrength to 0 when #players <2, hoping to fix pizzaman's bug.
+// Made MaxPlayerData configurable - max is 4096, but reduced the default to 1000.
+// Added bSeparateStatsByMutators (sony_scarface, or anyone who had bSeparateStatsByGamemode in earlier versions, should set this to True to keep your database as it was)
 // We only broadcast fakenickers when nick changes, not IP :P
 // Some minor improvements to messages.
+// Stripped out a lot of comments.
 
 // TODO: integrate with AKA
 
@@ -119,17 +120,18 @@ var config bool bSeparateStatsByMutators;
 #endif
 
 // For storing player strength data:
-#define MaxPlayerData 4096
-var config String playerData[MaxPlayerData]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
+var config int MaxPlayerData;
+#define MaxPlayerDataMax 4096
+var config String playerData[MaxPlayerDataMax]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
 // Internal (parsed) player data:
 var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
-var String ip[MaxPlayerData]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
-var String nick[MaxPlayerData];
-var float avg_score[MaxPlayerData];
-var float hours_played[MaxPlayerData];
-// var int date_last_played[MaxPlayerData];
-// var int games_played[MaxPlayerData];
+var String ip[MaxPlayerDataMax]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
+var String nick[MaxPlayerDataMax];
+var float avg_score[MaxPlayerDataMax];
+var float hours_played[MaxPlayerDataMax];
+// var int date_last_played[MaxPlayerDataMax];
+// var int games_played[MaxPlayerDataMax];
 
 // For local state caching (not repeating when called by Tick's or Timer's):
 var bool initialized;              // Mutator initialized flag
@@ -147,7 +149,7 @@ defaultproperties {
   bEnablePlayerCommands=True
   bLetPlayersRebalance=True
   #ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
-  MinRequestsForRebalance=2
+  MinRequestsForRebalance=1
   // MinRequestsForRebalancePercent=25    // or 25% of players request it.
   #endif
   bForceEvenTeams=False
@@ -196,6 +198,7 @@ defaultproperties {
   bSeparateStatsByGamemode=False
   bSeparateStatsByMutators=False
   #endif
+  MaxPlayerData=1000
 }
 
 
