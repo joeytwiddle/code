@@ -6,7 +6,8 @@
 // DONE: We will definitely need to block some things, e.g. Teleporters in CTF, Containers+ContainerXs on flagspots, Containers+ContainerXs at key points on AS maps.
 // DONE: Currently MaxRU does not grow.  Although there is code for it in ScoreKill.  =/
 // DONE: Teamkilling was on, because I wasn't calling Super.ReduceDamage().
-// TODO (trying fix now): You can exceed your MaxRU by leeching.
+// DONE: You can exceed your MaxRU by leeching.  Hack fixed in Tick().
+// CONSIDER TODO: Suppliers will not give you any new weapons.  If we want it to, we could do like SiegeGI, and give each player every weapon with 0 ammo when they spawn.
 
 #ifndef SiegeAnywhereHUDType
 	#define SiegeAnywhereHUDType class'SiegeAnywhereHUD'
@@ -19,10 +20,14 @@ var config float FriendlyFireScale;
 
 function PreBeginPlay() {
 	Super.PreBeginPlay();
+	/*
+	// This was causing unwanted gamegoal messages to appear in SiegeAssault.
+	// Better to let admins set default values in the config, or individual gametypes can set it in their defaultproperties.
 	if (TeamGamePlus(Level.Game) != None) {
 		if (TeamGamePlus(Level.Game).GoalTeamScore < 15)
 			TeamGamePlus(Level.Game).GoalTeamScore = 20; // I don't think this works.  If we do get it working, we should also set TimeLimit a bit higher.  ;)  But maybe better if the admin just sets it in the GameType config.
 	}
+	*/
 }
 
 function PostBeginPlay() {
@@ -69,6 +74,7 @@ function AddDefaultInventory(Pawn p) {
 	}
 
 	// If player has a Translocator, replace it with an sgTranslocator, which prevents players from telefragging buildings.
+	// TODO: This should really be done in CheckReplacement() or something, in the rare case of a player obtained a translocator not from respawning.
 	t = Translocator(p.FindInventoryType(class'Botpack.Translocator'));
 	if (t != None) {
 		t.Destroy();
@@ -245,6 +251,7 @@ function int DMPReduceDamage(int Damage, name DamageType, pawn injured, pawn ins
 }
 
 // To stop Accessed Nones in CTF games:
+// TODO CONSIDER: move this to SiegeCTF.uc.jpp, and see if other gametypes are ok.  Also, would be good to work out why Accessed Nones are being logged.
 function bool FindSpecialAttractionFor(Bot aBot) {
 	return false;
 }
@@ -261,42 +268,15 @@ function float GameThreatAdd(Bot aBot, Pawn Other) {
 	return 0;
 }
 
-// event Timer() {
-// }
-
 /*
-// Example defaults from CTFGame:
-defaultproperties {
-	// CaptureSound(0)=Sound'Botpack.CTF.CaptureSound2'
-	// CaptureSound(1)=Sound'Botpack.CTF.CaptureSound3'
-	// CaptureSound(2)=Sound'Botpack.CTF.CaptureSound2'
-	// CaptureSound(3)=Sound'Botpack.CTF.CaptureSound3'
-	// ReturnSound=Sound'Botpack.CTF.ReturnSound'
-	// bSpawnInTeamArea=True
-	// bScoreTeamKills=False
-	// MaxAllowedTeams=2
-	// GoalTeamScore=3.000000
-	// CurrentOrders(0)=Freelance
-	// CurrentOrders(1)=Freelance
-	// CurrentOrders(2)=Freelance
-	// CurrentOrders(3)=Freelance
-	// FragLimit=0
-	// bUseTranslocator=True
-	// bRatedTranslocator=True
-	// StartUpMessage=""
-	gamegoal="captures wins the match!"
-	// MaxCommanders=0
-	// LadderTypeIndex=2
-	// bCoopWeaponMode=True
-	ScoreBoardType=Class'Botpack.UnrealCTFScoreboard'
-	HUDType=Class'Botpack.ChallengeCTFHUD'
-	MapListType=Class'Botpack.CTFMapList'
-	MapPrefix="CTF"
-	BeaconName="CTF"
-	GameName="Capture the Flag"
-	GameReplicationInfoClass=Class'Botpack.CTFReplicationInfo'
+// DIDN'T WORK!  To avoid the error of Assault displaying "20 frags wins the match":
+event InitGame( string Options, out string Error ) {
+	Super.InitGame(Options,Error);
 }
 */
+
+// event Timer() {
+// }
 
 defaultproperties {
 	StartingMaxRU=100
