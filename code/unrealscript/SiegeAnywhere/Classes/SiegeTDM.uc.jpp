@@ -1,0 +1,41 @@
+class SiegeTDM extends TeamGamePlus;
+
+#include "AddSiegeToGameType.jpp"
+
+defaultproperties
+{
+     bScoreTeamKills=True
+     bBalanceTeams=True
+     bPlayersBalanceTeams=True
+     MaxTeams=2
+     MaxAllowedTeams=4
+     MaxTeamSize=16
+     StartUpTeamMessage="You are on"
+     TeamChangeMessage="Use Options->Player Setup to change teams."
+     TeamColor(0)="Red"
+     TeamColor(1)="Blue"
+     TeamColor(2)="Green"
+     TeamColor(3)="Gold"
+     TEAM_Blue=1
+     TEAM_Green=2
+     TEAM_Gold=3
+     CurrentOrders(0)=Defend
+     CurrentOrders(1)=Defend
+     CurrentOrders(2)=Defend
+     CurrentOrders(3)=Defend
+     StartupTeamTralier="."
+     StartUpMessage="Work with your teammates against the other teams."
+     MaxCommanders=2
+     bCanChangeSkin=False
+     bTeamGame=True
+     ScoreBoardType=Class'Botpack.TeamScoreBoard'
+     RulesMenuType="UTMenu.UTTeamRSClient"
+     SettingsMenuType="UTMenu.UTTeamSSClient"
+     HUDType=Class'Botpack.ChallengeTeamHUD'
+     BeaconName="TTeam"
+     GameName="Tournament Team Game"
+
+     GoalTeamScore=60.000000
+     TimeLimit=30
+}
+
