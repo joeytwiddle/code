@@ -1,19 +1,22 @@
 class Resize extends Mutator config(Resize);
 
-// TODO: Splash damage needs to be scaled up/down, but HurtRadius() is sometimes called with a FIXED value :S
-// FIXED: Sometimes projectiles move too slow (sometimes they look slow but are actually standing STILL!)
-// TODO: Dodge is too high!  When I try to fix it, landing goes weird.
-// TODO: When making player large, he bounces on the floor.  =(
-// TODO: The first flakslug thrown looks like it's going on the default trajectory, but explodes at correct point.
-// TODO: some shock balls seem to travel too fast: to reproduce, shoot secondary then primary then secondary - the latter will overtake the foremost!  or hold flak secondary fire to see the same problem there
-// TODO: projectiles (well shock at least) do not come out of what looks like the correct point - shock balls appear higher than primaries, making flat moving combos harder.
-// TODO: Grenades don't look like they have changed size (or do they?); grenades seem to explode not where they appear to be!
-// TODO: shock-balls seem harder to hit (well collision radius has been reduced, along with DrawScale and speed)
-// TODO: shock-combo explosions look a bit funny when scaled, because the 2D sprite is not scaled
-// TODO: scaled-down players slide down slopes :(
+// BUG TODO: replication/simulation/running-code-on-client is not working at all. =(
+// BUG TODO: Splash damage needs to be scaled up/down, but HurtRadius() is sometimes called with a FIXED value. :S
+// FIXED: Sometimes projectiles move too slow (sometimes they look slow but are actually standing STILL!).
+// BUG TODO: Dodge is too high!  When I try to fix it, landing goes weird.
+// BUG TODO: When making player large, he bounces on the floor.  =(
+// BUG TODO: The first flakslug thrown looks like it's going on the default trajectory, but explodes at correct point.
+// BUG TODO: Some shock balls seem to travel too fast: to reproduce, shoot secondary then primary then secondary - the latter will overtake the foremost!  or hold flak secondary fire to see the same problem there.
+// BUG TODO: Projectiles (well shock at least) do not come out of what looks like the correct point - shock balls appear higher than primaries, making flat moving combos harder.
+// BUG TODO: Grenades don't look like they have changed size (or do they?); grenades seem to explode not where they appear to be!
+// BUG TODO: Shock-balls seem harder to hit (well collision radius has been reduced, along with DrawScale and speed).
+// BUG TODO: No really, some stand-combos can fail!  try aiming down a little to reproduce this.
+// BUG TODO: Shock-combo explosions look a bit funny when scaled, because the 2D sprite is not scaled.
+// BUG TODO: Scaled-down players slide down slopes. :(
+// BUG TODO: Tested Deck-16][ single-player: player was always bouncing on the floor; bio primary fine but secondary fires too far; headshots fine; both ripper shots seemed fine; pulse primary fine, secondary is long and broken; minigun bullets look too fast imo.
 
 // var config String AllowedSizes;
-var config float NewSize;
+var() config float NewSize;
 
 defaultproperties {
   // AllowedSizes="0.5,0.75,1.25,1.5,2.0"
@@ -22,8 +25,8 @@ defaultproperties {
   NewSize=0.5
     // Attempt to get simulation working:
     bAlwaysRelevant=true
-    // bNoDelete=True // stops mutator from spawning
-    // bStasis=True // stops mutator from spawning
+    // bNoDelete=True // Stopped mutator from spawning
+    // bStasis=True // Stopped mutator from spawning
     bStatic=False
     NetPriority=3.0
     NetUpdateFrequency=10
@@ -40,18 +43,18 @@ simulated function DebugLog(String msg) {
 }
 
 simulated function PreBeginPlay() {
-  ShrinkAll(0);
   Enable('Tick');
+  ShrinkAll();
 }
 
 simulated function PostBeginPlay() {
-  ShrinkAll(0);
   Enable('Tick');
+  ShrinkAll();
 }
 
 simulated function Tick(float DeltaTime) {
-  if (Role != Role_Authority) { DebugLog("[NOT SERVER!] Tick()"); }
-  ShrinkAll(DeltaTime); // a freshly thrown translocator or weapon, or new projectile, should be rescaled ASAP, so we do some shrinking every tick!
+  if (Role != Role_Authority) { DebugLog("[HOORAY NOT SERVER!] Tick()"); }
+  ShrinkAll(); // a freshly thrown translocator or weapon, or new projectile, should be rescaled ASAP, so we do some shrinking every tick!
   Super.Tick(DeltaTime);
 }
 
@@ -63,17 +66,17 @@ function ModifyPlayer(Pawn p) {
   Super.ModifyPlayer(p);
 }
 
-simulated function ShrinkAll(float DeltaTime) {
+simulated function ShrinkAll() {
   local Actor a;
   foreach AllActors(class'Actor',a) {
-    Shrink(a,DeltaTime);
+    Shrink(a);
   }
 }
 
-simulated function Shrink(Actor a, float DeltaTime) {
+simulated function Shrink(Actor a) {
   local bool bNew;
 
-  if (Role != Role_Authority) { DebugLog("[NOT SERVER!] Shrink() START"); }
+  if (Role != Role_Authority) { DebugLog("[HOORAY NOT SERVER!] Shrink() START"); }
 
   if (a.IsA('Brush') && a.IsA('Mover')) {
     return;
@@ -117,7 +120,7 @@ simulated function Shrink(Actor a, float DeltaTime) {
   }
 
   if (a.IsA('PlayerPawn')) {
-    ShrinkPlayerAndInventory(PlayerPawn(a),DeltaTime);
+    ShrinkPlayerAndInventory(PlayerPawn(a));
   }
 
   if (a.IsA('Projectile')) {
@@ -127,7 +130,7 @@ simulated function Shrink(Actor a, float DeltaTime) {
     if (Projectile(a).Speed > Projectile(a).MaxSpeed) {
       Projectile(a).Speed = Projectile(a).MaxSpeed;
     }
-    if (bNew && Instr(""$a.Name,"Trans")<0) { // don't do this more than once!
+    if (bNew && Instr(""$a.Name,"Trans")<0) { // Don't slow down this projectile more than once!  And don't slow down Translocs, since changing TossForce seems to work fine.
       DebugLog("Slowing projectile "$a$" ("$a.NetTag$")");
       Projectile(a).Velocity = Projectile(a).Velocity * NewSize;
     }
@@ -137,7 +140,7 @@ simulated function Shrink(Actor a, float DeltaTime) {
     // ZoneInfo(a).ZoneGravity = ZoneInfo(a).default.ZoneGravity * NewSize;
   // }
 
-  if (Role != Role_Authority) { DebugLog("[NOT SERVER!] Shrink() END"); }
+  if (Role != Role_Authority) { DebugLog("[HOORAY NOT SERVER!] Shrink() END"); }
 
 }
 
@@ -148,8 +151,10 @@ simulated function ShrinkPawn(Pawn p) {
   p.JumpZ = p.default.JumpZ*NewSize;
 }
 
-simulated function ShrinkPlayerAndInventory(PlayerPawn p, float DeltaTime) {
+simulated function ShrinkPlayerAndInventory(PlayerPawn p) {
   local Actor inv;
+  local float DeltaTime;
+  DeltaTime = 0.05;
   for( inv=p.Inventory; inv!=None; inv=inv.Inventory ) {
     if (inv.IsA('Weapon')) {
       Weapon(inv).ProjectileSpeed = Weapon(inv).default.ProjectileSpeed * NewSize;
