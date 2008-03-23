@@ -1299,7 +1299,7 @@ function CoolCamera(float DeltaTime) {
 		// deltaYaw    = 20 * Sgn(FRand()-0.5)*(30 + 30*FRand());
 		// deltaYaw    = 20 * -(30 + 30*FRand());
 		deltaYaw    = 20.0 * (-30.0 + 60.0*FRand());
-		deltaPitch  = 20 * 1.0*(FRand()-0.5);
+		deltaPitch  = 20 * 0.4*(FRand()-0.5);
 		deltaFOV    = 20 * 0.3*(FRand()-0.3);
 		deltaDist   = 20 * (2+3*FRand());
 		currentDist = 128;
@@ -1327,7 +1327,7 @@ function CoolCamera(float DeltaTime) {
 			// p.ViewRotation.Yaw = 8192*16*(FRand() - 0.5);
 			p.ViewRotation.Pitch = 8192*0.3*(FRand()-0.0);
 			p.ViewRotation.Roll = 0;
-			p.DesiredFOV = 90 + 30 * FRand();
+			p.DesiredFOV = 100 + 30 * FRand();
 			p.ConsoleCommand("FOV "$p.DesiredFOV);
 			p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
 			// p.SetLocation( CameraFocusActor.Location - 64.0 * Normal(Vector(p.ViewRotation)) + (0.0+FRand())*vect(0,0,24.0) );
@@ -1336,9 +1336,16 @@ function CoolCamera(float DeltaTime) {
 			// p.ViewTarget.BecomeViewTarget();
 			p.bBehindView = False;
 			p.ClientMessage("=> "$CameraFocusActor);
-			if (bDebugLogging) { Log("CoolCamera: "$p$" => "$CameraFocusActor); }
-			p.SetLocation( CameraFocusActor.Location );
+			if (bDebugLogging) { Log("CoolCamera: "$p$" => "$CameraFocusActor$" with ("$P.ViewRotation.yaw$","$P.ViewRotation.pitch$")"); }
+			// p.SetLocation( CameraFocusActor.Location );
+
+			p.ViewTarget = CameraFocusActor;
+			p.bBehindView = True;
 		}
+		// if (bDebugLogging && FRand()<0.00001) {
+			// Log("CoolCamera: yaw "$p.ViewRotation.Yaw$" += "$(deltaYaw*DeltaTime));
+			// Log("CoolCamera: pitch "$p.ViewRotation.Pitch$" += "$(deltaPitch*DeltaTime));
+		// }
 		p.ViewRotation.Yaw = p.ViewRotation.Yaw + deltaYaw*DeltaTime;
 		p.ViewRotation.Pitch = p.ViewRotation.Pitch + deltaPitch*DeltaTime;
 		p.DesiredFOV = p.DesiredFOV + deltaFOV*DeltaTime;
@@ -1351,9 +1358,13 @@ function CoolCamera(float DeltaTime) {
 		// p.ViewRotation = rotator(Normal(CameraFocusActor.Location - p.Location));
 		// p.SetLocation( p.Location - Normal(Vector(p.ViewRotation))*deltaDist  + vect(0,0,0.1)*deltaDist );
 		// p.SetLocation( CameraFocusActor.Location - currentDist*Normal(Vector(p.ViewRotation)) + 0.6*currentDist*vect(0,0,1.0) );
+
+		/*
 		if (!p.SetLocation( CameraFocusActor.Location - currentDist*Normal(Vector(p.ViewRotation)) + 0.6*currentDist*vect(0,0,1.0) )) {
 			deltaDist = 0.0;
 		}
+		*/
+
 		// p.ViewRotation += rotator(0,deltaYaw,deltaPitch);
 		// ( p.Location - Normal(Vector(p.ViewRotation))*deltaDist  + vect(0,0,0.1)*deltaDist );
 		// p.ClientSetLocation(p.Location, p.ViewRotation);
@@ -1364,7 +1375,7 @@ function CoolCamera(float DeltaTime) {
 	}
 	// TODO: Hard to DeltaTime this:
 	deltaYaw = deltaYaw * 0.997;
-	deltaPitch = deltaPitch * 0.997;
+	deltaPitch = deltaPitch * 0.995;
 	deltaFOV = deltaFOV * 0.997;
 	deltaDist = deltaDist * 0.997;
 	currentDist += deltaDist*DeltaTime;
