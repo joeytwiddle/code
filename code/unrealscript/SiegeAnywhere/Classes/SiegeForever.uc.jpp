@@ -1,0 +1,265 @@
+class SiegeForever extends Mutator config(SiegeForever);
+
+#define MAX_ALL 1024
+
+#define MaxTeams 2
+#define MaxMaps 32
+#define MaxTypes 16
+// config var int MaxMaps;
+// config var int MaxTypes;
+
+var config bool bAutoLoad,bAutoSave,bRememberOld;
+
+var config String Maps[MaxMaps]; // 0-MaxMaps
+var config String Types[MaxTypes]; // 0-MaxTypes
+var config String BuildingsData[1024]; // 0-(MaxTeams*MaxTypes*MaxMaps)
+
+var bool bDoneLoad; // 0-(MaxTeams*MaxTypes*MaxMaps)
+
+// var String SavedTypes;
+// var String LoadedTypes;
+
+defaultproperties {
+	// MaxMaps=16
+	// MaxTypes=8
+	bAutoLoad=True
+	bAutoSave=True
+	bRememberOld=False
+}
+
+function String GetMap() {
+	local int i;
+	i = Instr(""$Self,".");
+	return Left(""$Self,i);
+}
+
+function PostBeginPlay() {
+	Super.PostBeginPlay();
+	SetTimer(20,True);
+}
+
+event Timer() {
+	if (!bDoneLoad) {
+		TryToLoadBuildings();
+		return;
+	}
+	if (bDoneLoad && bAutoSave)
+		SaveBuildings();
+}
+
+function TryToLoadBuildings() {
+	local Pawn redOwner,blueOwner;
+	local Pawn p;
+	if (bDoneLoad)
+		return;
+	redOwner = None;
+	blueOwner = None;
+	// We must find a PlayerPawn for every building.
+	// In the end, I don't care if he's on the wrong team!
+	for (p=Level.PawnList;p!=None;p=p.NextPawn) {
+		// if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
+		if (p.IsA('PlayerPawn') && p.PlayerReplicationInfo != None) {
+			if (p.PlayerReplicationInfo.team == 0 || redOwner == None) {
+				redOwner = p;
+			}
+			if (p.PlayerReplicationInfo.team == 1 || blueOwner == None) {
+				blueOwner = p;
+			}
+		}
+	}
+	if (redOwner != None && blueOwner != None) {
+		if (bAutoLoad)
+			LoadBuildings(redOwner,blueOwner);
+		bDoneLoad=True;
+		SetTimer(60,True);
+	}
+}
+
+function TrimRecord(int j) {
+	local int i;
+	if (len(BuildingsData[j]) > 36*32) {
+		// BuildingsData[j] = Right(BuildingsData[j],36*32);
+		i = InstrOff(BuildingsData[j],":",len(BuildingsData[j])/4);
+		BuildingsData[j] = Mid(BuildingsData[j],i+1);
+	}
+}
+
+function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
+	local int i,j,k,l,team;
+	local string type,buildingLocation,map;
+	local class<sgBuilding> typeClass;
+	local int countSpawned[2];
+	local Actor sgB;
+	local Pawn pOwner;
+	map = GetMap();
+	// local string LoadedTypes;
+	for (i=0;i<MaxTypes;i++) {
+		type = Types[i];
+		if (type == "")
+			break;
+		// typeClass = Class(type);
+		// typeClass = class<sgBuilding>(DynamicLoadObject("SiegeXXL2dRC1.sgBuilding", class'Class'));
+		typeClass = class<sgBuilding>(DynamicLoadObject(type, class'Class'));
+		for (team=0;team<MaxTeams;team++) {
+			countSpawned[team]=0;
+			j = GetBuildingsI(map,type,team);
+			TrimRecord(j);
+			Log("SiegeForever.LoadBuildings(): "$type$" "$team$" BuildingsData["$j$"] = \""$BuildingsData[j]$"\"");
+			k = 0;
+			while (true) {
+				l = InstrOff(BuildingsData[j],":",k);
+				if (l>-1) {
+					buildingLocation = Mid(BuildingsData[j],k,l-k);
+					if (buildingLocation != "") { // could also check for 2 ","s and 3 "."s
+						if (team == 0)
+							pOwner = redOwner;
+						if (team == 1)
+							pOwner = blueOwner;
+						sgB = Spawn(typeClass,pOwner,,Vector(buildingLocation));
+						if (sgB == None) {
+							Log("SiegeForever.LoadBuildings(): Failed to spawn "$type$" "$typeClass$" at ("$buildingLocation$")");
+						} else {
+							sgBuilding(sgB).Team = team;
+							sgBuilding(sgB).Grade = 2;
+							if (FRand() < 0.5)
+								sgBuilding(sgB).Grade = 3;
+							// sgBuilding(sgB).BuildTime = FRand()*10.0;
+							// sgBuilding(sgB).Energy = 75.0;
+							sgBuilding(sgB).Energy = sgBuilding(sgB).MaxEnergy;
+							// sgBuilding(sgB).Health = 75.0;
+							// sgBuilding(sgB).DoneBuilding = True;
+							// Log("SiegeForever.LoadBuildings(): Spawned "$sgB$" ("$Pawn(sgB.Owner).PlayerReplicationInfo.Team$")");
+							countSpawned[team]++;
+						}
+					}
+					k = l+1;
+				} else {
+					break;
+				}
+			}
+		}
+		if (countSpawned[0]>0 || countSpawned[1]>0) {
+			Log("Spawned "$countSpawned[0]$" "$type$"s for Red, and "$countSpawned[1]$" for Blue.");
+			BroadcastMessage("Spawned "$countSpawned[0]$" x "$StrAfterLast(type,".")$" for Red, and "$countSpawned[1]$" for Blue.");
+		}
+		// LoadedTypes = LoadedTypes $ ":" $ type $ ":";
+	}
+}
+
+function SaveBuildings() {
+	local int i,Typei,team,count;
+	local string SavedTypes,type,map;
+	local sgBuilding A;
+	map = GetMap();
+	// i = FRand()*MaxRecords;
+	SavedTypes="";
+	foreach AllActors(class'sgBuilding',A) {
+		type = String(A.class);
+		TypeI = GetTypeI(type);
+		if (TypeI==-1) {
+			continue;
+		}
+		if (Instr(SavedTypes,":"$type$":")==-1) {
+			// New type:
+			for (team=0;team<MaxTeams;team++) {
+				i = GetBuildingsI(map,type,team);
+				if (!bRememberOld)
+					BuildingsData[i] = "";
+				foreach AllActors(class'sgBuilding',A) {
+					// if (String(A.class) == type && Pawn(A.Owner).PlayerReplicationInfo.Team == team) {
+					if (String(A.class) == type && A.Team == team) {
+						if (Instr(BuildingsData[i],A.Location $ ":") == -1) {
+							TrimRecord(i);
+							BuildingsData[i] = BuildingsData[i] $ A.Location $ ":";
+							count++;
+						}
+					}
+				}
+			}
+			SavedTypes = SavedTypes $ ":" $ type $ ":";
+		}
+	}
+	SaveConfig();
+	Log("Saved "$(Typei+1)$" types of building, "$count$" new.");
+	BroadcastMessage("Saved "$(Typei+1)$" types of building, "$count$" new.");
+}
+
+function int GetBuildingsI(String map, String type, int team) {
+	local int i,j,k;
+	local String key;
+	i = (team % 2); // 0 or 1
+	j = (GetTypeI(type) % MaxTypes);
+	k = (GetMapI(map) % MaxMaps);
+	// key = map $ ":" $ type $ ":" $ team $ ":";
+	// return i + (j * 2) + (k * MaxTypes*2);
+	return i + j*2 + k*2*MaxTypes;
+}
+
+function int GetMapI(String map) {
+	local int i;
+	for (i=0;i<MaxMaps;i++) {
+		if (Maps[i] ~= map) {
+			return i;
+		}
+		// End of list:
+		if (Maps[i] ~= "") {
+			break;
+		}
+	}
+	// End of array (or end of list):
+	if ((i==MaxMaps)) {
+		// if ((MaxMaps*2)*MaxMaps <= MAX_ALL) {
+			// MaxMaps = MaxMaps * 2;
+		// } else {
+			// i=0;
+		// }
+		i = MaxMaps*FRand();
+	}
+	Maps[i] = map;
+	return i;
+}
+
+function int GetTypeI(String type) {
+	local int i;
+	for (i=0;i<MaxTypes;i++) {
+		if (Types[i] ~= type) {
+			return i;
+		}
+		// End of list:
+		if (Types[i] ~= "") {
+			break;
+		}
+	}
+	// End of array:
+	if ((i==MaxTypes)) {
+		// if ((MaxTypes*2)*MaxMaps <= MAX_ALL) {
+			// MaxTypes = MaxTypes * 2;
+		// } else {
+			// i=0;
+		// }
+		i = MaxTypes*FRand();
+	}
+	Types[i] = type;
+	return i;
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+	if (str ~= "save" || str ~= "savebuildings") {
+		SaveBuildings();
+	}
+}
+
+/*
+function int InStrOff(string haystack, string needle, int offset) {
+        local int instrRest;
+        instrRest = InStr(Mid(haystack,offset),needle);
+        if (instrRest == -1) {
+                return instrRest;
+        } else {
+                return offset + instrRest;
+        }
+}
+*/
+
+#include "../../JLib/jlib.uc.jpp"
+
