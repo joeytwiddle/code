@@ -2064,7 +2064,7 @@ function String getIDCorIPAddress(Pawn p) {
 	if (idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64] == 0) {
 		return getIPAddress(p);
 	} else {
-		Log("ATB Player "$p.getHumanName()$" is IDC#"$idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64]);
+		Log("[ATB] Player "$p.getHumanName()$" is IDC#"$idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64]);
 		return "IDC#"$idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64];
 	}
 }
