@@ -1,0 +1,24 @@
+class SiegeDomination extends Domination;
+
+#include "AddSiegeToGameType.jpp"
+
+defaultproperties
+{
+     bDumbDown=True
+     bScoreTeamKills=False
+     bUseTranslocator=True
+     bRatedTranslocator=True
+     StartUpMessage="Capture and hold control points to win."
+     gamegoal="points wins the match!"
+     LadderTypeIndex=3
+     bCoopWeaponMode=True
+     ScoreBoardType=Class'Botpack.DominationScoreboard'
+     HUDType=Class'Botpack.ChallengeDominationHUD'
+     MapListType=Class'Botpack.DOMMapList'
+     MapPrefix="DOM"
+     BeaconName="DOM"
+     GameName="Domination"
+
+     GoalTeamScore=200.000000
+}
+
