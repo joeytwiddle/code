@@ -66,6 +66,8 @@
 // Some minor improvements to messages.
 // Stripped out a lot of comments.
 
+// DONE: we cache the averageGameScore and averagePlayerStrengthThisGame for 3 seconds, to avoid recalculating it unneccessarily.
+
 // DONE: longer lasting, better coloured flashing messages
 
 // TODO: make the bonus for winning team hidden from scoreboard, and then it might get used more often :)
@@ -101,7 +103,7 @@
 
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
-#define XOL_SPECIFIC
+// #define XOL_SPECIFIC
 // #define ENABLE_USEISPNOTFULLIP
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
@@ -252,6 +254,10 @@ var bool gameEndDone;
 
 var int timeGameStarted;
 var int lastBalanceTime;
+
+var float averageGameScore;
+var float averagePlayerStrengthThisGame;
+var float LastCalculatedAverages;
 
 var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorOrange,colorGray,colorBlack;
 var config Color warnColor;
@@ -588,7 +594,6 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 	local Pawn p;
 	local int team;
 	local int i;
-	local float averageGameScore,averagePlayerStrengthThisGame;
 	local float playerGameStrength,deltaStrength;
 	local string deltaStrengthStr;
 	local string redBonus,blueBonus;
@@ -597,7 +602,7 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 		deltaStrengthStr = "(+/-) GameStrength UsedStrength ";
 	#endif
 	Sender.ClientMessage("[Team] Strength "$deltaStrengthStr$"| Name | Time");
-	GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
+	GetAveragesThisGame();
 	for (team=0;team<2;team++) {
 		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 			if (AllowedToBalance(p) && p.PlayerReplicationInfo.Team == team) {
@@ -625,7 +630,7 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 	if (GetFlagStrengthForTeam(1) > 0)
 		blueBonus = " + " $ Int(GetFlagStrengthForTeam(1));
 	Sender.ClientMessage("| Red team strength is "$Int(GetTeamStrengthNoFlagStrength(0))$redBonus$", Blue team strength is "$Int(GetTeamStrengthNoFlagStrength(1))$blueBonus$" (difference "$Int(GetTeamStrength(1)-GetTeamStrength(0))$").");
-	Sender.ClientMessage("| Average strength is "$Left(""$averagePlayerStrengthThisGame,4)$" ("$Left(""$FloatWeUseForAverageGameStrength(averageGameScore,averagePlayerStrengthThisGame),4)$"), teamscore bonus is "$Int(GetFlagStrength())$".");
+	Sender.ClientMessage("| Average strength is "$Left(""$averagePlayerStrengthThisGame,4)$" ("$Left(""$FloatWeUseForAverageGameStrength(),4)$"), teamscore bonus is "$Int(GetFlagStrength())$".");
 }
 
 function ListMutsTo(PlayerPawn Sender) {
@@ -661,7 +666,6 @@ function Mutate(String str, PlayerPawn Sender) {
 	// temporary utility vars
 	local String msg;
 	local int i;
-	local float averageGameScore, averagePlayerStrengthThisGame;
 
 	local Pawn p;
 
@@ -1079,9 +1083,9 @@ function FlashPreGameLines() {
 				// #endif
 				if (bFlashCookies) {
 					if (bReportStrengthAsCookies)
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetRecordedPlayerStrength(p) $" cookies.",colorOrange,targetLine);
+						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ Int(GetRecordedPlayerStrength(p)) $" cookies.",colorOrange,targetLine);
 					else
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ GetRecordedPlayerStrength(p) $"",colorOrange,targetLine);
+						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ Int(GetRecordedPlayerStrength(p)) $"",colorOrange,targetLine);
 				} else {
 					FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
 					// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
@@ -2566,7 +2570,7 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 			return found;
 		} else if (player_ip == ip[i]) {
 			found = i; // matching ip
-			DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$","$hours_played[found]$","$date_last_played[found]$")");
+			DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
 		} else if (player_nick == nick[i] && found == -1) {
 			found = i; // if not yet matching an ip, match the same nick on any ip
 			DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[found]$"");
@@ -2917,9 +2921,11 @@ function int UpdateStatsForPlayer(Pawn p) {
 	return i;
 }
 
-function GetAveragesThisGame(out float averageGameScore, out float averagePlayerStrengthThisGame) {
+function GetAveragesThisGame() {
 	local Pawn p;
 	local int playerCount;
+	if (LastCalculatedAverages + 5 >= Level.TimeSeconds)
+		return;
 	playerCount = 0;
 	averageGameScore = 0.0;
 	averagePlayerStrengthThisGame = 0.0;
@@ -2932,19 +2938,17 @@ function GetAveragesThisGame(out float averageGameScore, out float averagePlayer
 	}
 	averageGameScore = averageGameScore / Float(playerCount);
 	averagePlayerStrengthThisGame = averagePlayerStrengthThisGame / Float(playerCount);
+	LastCalculatedAverages = Level.TimeSeconds;
 }
 
 // Normalises a player's score so that the average output score will be NormalisedStrength (or with bRelativeNormalisation, the average strength of current players on the server).
 // This is to fix the problem that some games (e.g. 2v2 w00t or PureAction or iG) have much higher scores than others, which will confuse the stats.
 function float NormaliseScore(float score) {
-	local float averageGameScore;
-	local float averagePlayerStrengthThisGame;
-	GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
+	GetAveragesThisGame();
 	// Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to NormalisedStrength!
 	if (averageGameScore < 2.0) {
 		averageGameScore = NormalisedStrength; // CONSIDER: maybe just better not to update
 	} // BT games will tend to have a lot of -ve scores.
-
 	DebugLog("AutoTeamBalance.NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$"");
 
 	/*
@@ -2954,11 +2958,11 @@ function float NormaliseScore(float score) {
 		return score * NormalisedStrength / averageGameScore;
 	}
 	*/
-	return score * FloatWeUseForAverageGameStrength(averageGameScore,averagePlayerStrengthThisGame) / averageGameScore;
+	return score * FloatWeUseForAverageGameStrength() / averageGameScore;
 
 }
 
-function float FloatWeUseForAverageGameStrength(float averageGameScore, float averagePlayerStrengthThisGame) {
+function float FloatWeUseForAverageGameStrength() {
 	return averagePlayerStrengthThisGame * RelativeNormalisationProportion + NormalisedStrength * (1.0 - RelativeNormalisationProportion);
 }
 
