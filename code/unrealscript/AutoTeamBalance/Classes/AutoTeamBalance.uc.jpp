@@ -24,7 +24,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.3h"
+#define ATB_VERSION "1.3i"
 
 // New changes:
 // As well as displaying the SmartCTF scoreboard, !stats now also shows all the player strengths.  (It's a shortcut for "mutate strengths".)
@@ -538,7 +538,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		if (idc[Sender.PlayerReplicationInfo.PlayerID%64] == 0)
 			idc[Sender.PlayerReplicationInfo.PlayerID%64] = args[1];
 		}
-		Log("ATB caught IDC for "$Sender.getHumanName()$"["$(Sender.PlayerReplicationInfo.PlayerID%64)$"]: \""$str$"\"");
+		Log("[ATB] caught IDC for "$Sender.getHumanName()$"["$(Sender.PlayerReplicationInfo.PlayerID%64)$"]: \""$str$"\"");
 	}
 	#endif
 
