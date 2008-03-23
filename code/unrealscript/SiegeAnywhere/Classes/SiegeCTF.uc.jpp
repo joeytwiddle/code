@@ -1,8 +1,43 @@
 class SiegeCTF extends CTFGame;
 
-// BUG TODO: You can telefrag containers.  Presumably the same for SiegeDomination.
+// FIXED: You can telefrag containers.  Presumably the same for SiegeDomination.
+// BUG: I changed team, and was able to kill my teammates!
 
 #define SiegeAnywhereHUDType class'SiegeCTFHud'
 
 #include "AddSiegeToGameType.jpp"
+
+defaultproperties
+{
+     CaptureSound(0)=Sound'Botpack.CTF.CaptureSound2'
+     CaptureSound(1)=Sound'Botpack.CTF.CaptureSound3'
+     CaptureSound(2)=Sound'Botpack.CTF.CaptureSound2'
+     CaptureSound(3)=Sound'Botpack.CTF.CaptureSound3'
+     ReturnSound=Sound'Botpack.CTF.ReturnSound'
+     bSpawnInTeamArea=True
+     bScoreTeamKills=False
+     MaxAllowedTeams=2
+     CurrentOrders(0)=Freelance
+     CurrentOrders(1)=Freelance
+     CurrentOrders(2)=Freelance
+     CurrentOrders(3)=Freelance
+     FragLimit=0
+     bUseTranslocator=True
+     bRatedTranslocator=True
+     StartUpMessage=""
+     gamegoal="captures wins the match!"
+     MaxCommanders=0
+     LadderTypeIndex=2
+     bCoopWeaponMode=True
+     ScoreBoardType=Class'Botpack.UnrealCTFScoreboard'
+     HUDType=Class'Botpack.ChallengeCTFHUD'
+     MapListType=Class'Botpack.CTFMapList'
+     MapPrefix="CTF"
+     BeaconName="CTF"
+     GameName="Capture the Flag"
+     GameReplicationInfoClass=Class'Botpack.CTFReplicationInfo'
+
+     TimeLimit=30
+     GoalTeamScore=30.000000
+}
 
