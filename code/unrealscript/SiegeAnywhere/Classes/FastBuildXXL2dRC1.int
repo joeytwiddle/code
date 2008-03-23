@@ -1,0 +1,4 @@
+[Public]
+Object=(Name=FastBuildXXL2dRC1.FastBuildMut,Class=Class,MetaClass=Engine.Mutator,Description="FastBuild")
+Object=(Name=FastBuildXXL2dRC1.FastBuildGI,Class=Class,MetaClass=Botpack.TournamentGameInfo)
+Preferences=(Caption="FastBuildXXL2dRC1",Parent="Game Types",Class=FastBuildXXL2dRC1.FastBuildGI,Immediate=True)

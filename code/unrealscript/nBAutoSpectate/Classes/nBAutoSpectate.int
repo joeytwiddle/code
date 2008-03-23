@@ -1,0 +1,4 @@
+[Public]
+Object=(Name=nBAutoSpectate.nBAutoSpectateMMI,Class=Class,MetaClass=UMenu.UMenuModMenuItem,description="nBAuto Spectate")
+Object=(Name=nBAutoSpectate.nBAutoSpectateOnlineMMI,Class=Class,MetaClass=UMenu.UMenuModMenuItem,description="nBAuto Spectate (Online)")
+Object=(Name=nBAutoSpectate.nBAutoSpectate,Class=Class,MetaClass=Engine.Console)
