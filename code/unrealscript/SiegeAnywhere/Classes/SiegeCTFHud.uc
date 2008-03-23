@@ -1,31 +1,8 @@
 class SiegeCTFHud extends sgHUD;
 
-
-
-// From ChallengeCTFHUD:
-
-// class ChallengeCTFHUD extends ChallengeTeamHUD;
-
-// Blue
-/*
-#exec TEXTURE IMPORT NAME=I_Capt FILE=TEXTURES\HUD\I_Capt.PCX GROUP="Icons" FLAGS=2 MIPS=OFF
-#exec TEXTURE IMPORT NAME=I_Down FILE=TEXTURES\HUD\I_Down.PCX GROUP="Icons" FLAGS=2 MIPS=OFF
-#exec TEXTURE IMPORT NAME=I_Home FILE=TEXTURES\HUD\I_Home.PCX GROUP="Icons" FLAGS=2 MIPS=OFF
-*/
-
 var CTFFlag MyFlag;
 
-var ChallengeCTFHUD cch;
-
-// Clock:
-var AssaultHUD clock;
-
-
-
-// From ChallengeCTFHUD:
-
-function Timer()
-{
+function Timer() { // From ChallengeCTFHUD
 	Super.Timer();
 
 	if ( (PlayerOwner == None) || (PawnOwner == None) )
@@ -36,39 +13,19 @@ function Timer()
 		PlayerOwner.ReceiveLocalizedMessage( class'CTFMessage2', 1 );
 }
 
-simulated function PostRender( canvas Canvas )
-{
+simulated function PostRender( canvas Canvas ) { // From ChallengeCTFHUD, modified
 	local int X, Y, i;
 	local CTFFlag Flag;
 	local bool bAlt;
+	local float clockX,clockY;
 
-	// if (cch == None)
-		// cch = spawn(class'challengectfhud',,,,);
+	// if (FRand()<0.01)
+		// Log("PlayerOwner="$ PlayerOwner $" PawnOwner="$ PawnOwner $" PlayerOwner.GRI="$ PlayerOwner.GameReplicationInfo $" PawnOwner.PRI="$ PawnOwner.PlayerReplicationInfo $" bShowMenu="$ PlayerOwner.bShowMenu $" bShowScores="$ PlayerOwner.bShowScores);
 
-	// Clock:
-	/*
-	local float clockY;
-	if (clock == None) {
-		clock = spawn(class'AssaultHUD',PlayerOwner);
-		// clock.Owner = Owner; // Cannot assign const
-		clock.PlayerOwner = PlayerOwner;
-	}
-	if ( bHideAllWeapons || (HudScale * WeaponScale * Canvas.ClipX <= Canvas.ClipX - 256 * Scale) )
-		clockY = Canvas.ClipY - 128 * Scale;
-	else
-		clockY = Canvas.ClipY - 192 * Scale;
-	//// TODO: gives me Accessed None - maybe the GameReplicationInfo is the problem.
-	clock.DrawTimeAt(Canvas, 2, clockY);
-	*/
-
-	/*
-	if ( (PlayerOwner == None) || (PawnOwner == None) || (PlayerOwner.GameReplicationInfo == None)
-		|| (PawnOwner.PlayerReplicationInfo == None)
-		|| ((PlayerOwner.bShowMenu || PlayerOwner.bShowScores) && (Canvas.ClipX < 640)) )
-		return;
-	*/
+	Super.PostRender( Canvas );
 
 	Canvas.Style = Style;
+
 	if( !bHideHUD && !bHideTeamInfo )
 	{
 		X = Canvas.ClipX - 70 * Scale;
@@ -104,18 +61,31 @@ simulated function PostRender( canvas Canvas )
 		}
 	}
 
-	if (FRand()<0.01)
-		Log(Self$": PawnOwner="$PawnOwner$" PlayerOwner="$PlayerOwner$" Flag="$Flag);
+	if (PawnOwner == None || PlayerOwner == None || PawnOwner.PlayerReplicationInfo == None || PlayerOwner.PlayerReplicationInfo == None || PlayerOwner.bShowMenu || PlayerOwner.bShowScores || bForceScores || bShowInfo || PlayerOwner.Scoring != None || PawnOwner.PlayerReplicationInfo.bIsSpectator)
+		return; // it was one of the last two that finally stopped the clock for appearing before gamestart
+
+	if (!bHideHUD && !bHideAllWeapons && !bHideTeamInfo) { // I decided to hide it if weapons are hidden, and therefore there is nothing else in the top-right.  Alternatively, we could put the clock somewhere else.
+		if (bHideStatus)
+			clockX = Canvas.ClipX - 128*Scale;
+		else
+			clockX = Canvas.ClipX - 256*Scale;
+		if (bHideAllWeapons)
+			clockY = 32*Scale;
+		else
+			clockY = 142*Scale;
+		DrawTimeAt(Canvas, clockX, clockY);
+	}
+
+	// if (FRand()<0.01)
+		// Log(Self$": PawnOwner="$PawnOwner$" PlayerOwner="$PlayerOwner$" Flag="$Flag);
 
 	//// Can we get away with disabling it?  (Was throwing Accessed None since sgPRI(Owner) == None!
 	//// No we need it for RU display, crosshair, etc.
 	//// We could copy the method from sgHUD and fix the Accessed Nones.
-	Super.PostRender( Canvas );
 
 }
 
-simulated function DrawGameSynopsis(Canvas Canvas) // From ChallengeTeamHUD
-{
+simulated function DrawGameSynopsis(Canvas Canvas) { // From ChallengeTeamHUD
 	local TournamentGameReplicationInfo GRI;
 	local int i;
 
@@ -127,8 +97,7 @@ simulated function DrawGameSynopsis(Canvas Canvas) // From ChallengeTeamHUD
 			DrawTeam(Canvas, GRI.Teams[i]);
 }
 
-simulated function DrawTeam(Canvas Canvas, TeamInfo TI) // From ChallengeCTFHUD
-{
+simulated function DrawTeam(Canvas Canvas, TeamInfo TI) { // From ChallengeCTFHUD
 	local float XL, YL;
 
 	if ( (TI != None) && (TI.Size > 0) )
@@ -138,11 +107,68 @@ simulated function DrawTeam(Canvas Canvas, TeamInfo TI) // From ChallengeCTFHUD
 	}
 }
 
+simulated function DrawTimeAt(Canvas Canvas, float X, float Y) { // Modified
+	local int Minutes, Seconds, d;
+	local float ClockScale;
 
+	if ( PlayerOwner.GameReplicationInfo == None )
+		return;
 
-// From ChallengeTeamHUD:
+	ClockScale = Scale * 0.75;
+
+	Canvas.DrawColor = WhiteColor;
+	Canvas.CurX = X;
+	Canvas.CurY = Y;
+	Canvas.Style = Style;
+
+	if ( PlayerOwner.GameReplicationInfo.RemainingTime > 0 )
+	{
+		Minutes = PlayerOwner.GameReplicationInfo.RemainingTime/60;
+		Seconds = PlayerOwner.GameReplicationInfo.RemainingTime % 60;
+	}
+	else
+	{
+		Minutes = 0;
+		Seconds = 0;
+	}
+	
+	if ( Minutes > 0 )
+	{
+		if ( Minutes >= 10 )
+		{
+			d = Minutes/10;
+			Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, d*25, 0, 25.0, 64.0);
+			Canvas.CurX += 7*ClockScale;
+			Minutes= Minutes - 10 * d;
+		}
+		else
+		{
+			Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 0, 0, 25.0, 64.0);
+			Canvas.CurX += 7*ClockScale;
+		}
+
+		Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, Minutes*25, 0, 25.0, 64.0);
+		Canvas.CurX += 7*ClockScale;
+	} else {
+		Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 0, 0, 25.0, 64.0);
+		Canvas.CurX += 7*ClockScale;
+	}
+	Canvas.CurX -= 4 * ClockScale;
+	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 32, 64, 25.0, 64.0);
+	Canvas.CurX += 3 * ClockScale;
+
+	d = Seconds/10;
+	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 25*d, 0, 25.0, 64.0);
+	Canvas.CurX += 7*ClockScale;
+
+	Seconds = Seconds - 10 * d;
+	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 25*Seconds, 0, 25.0, 64.0);
+	Canvas.CurX += 7*ClockScale;
+}
 
 /*
+
+// From ChallengeTeamHUD:
 
 simulated function HUDSetup(canvas canvas)
 {
@@ -331,8 +357,7 @@ defaultproperties
 }
 */
 
-defaultproperties
-{
+defaultproperties {
      ServerInfoClass=Class'Botpack.ServerInfoCTF'
 }
 
