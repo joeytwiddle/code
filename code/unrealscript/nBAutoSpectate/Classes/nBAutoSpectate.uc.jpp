@@ -16,6 +16,7 @@
 //          we need to detect or avoid these
 // maybe we can trust actors that have recently (re-)entered the pawnlist to be fresh
 
+// #define Log(X); 
 #define DEBUG(X); if (bPrintDebugInfo) { Camera.ClientMessage(X); }
 
 //================================================================================
@@ -63,6 +64,7 @@ var config bool bCameraPanning;
 var config bool bSwitchCamera;
 var config float CameraSwitchSeconds;
 var config bool bStickWithFC;
+var config bool bDoViewClass;
 
 // var String LastList;
 var Actor LastNewActor;
@@ -149,7 +151,31 @@ function int CountInterestingActors() {
 	return count;
 }
 
+function Actor GetLastViewClass() {
+	local int count,chosen;
+	local Actor a;
+
+	foreach AllActors(class'Actor',a) {
+		if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
+			DEBUG("Re-using "$NameActor(a));
+			// RecommendedPlayerName = ""; // i think i'll only use it once, then discard it.
+			return a;
+		}
+	}
+	return None;
+}
+
+// #define GetRandomActor GetRandomActorReal
+// #define GetRandomActor GetLastViewClass
 function Actor GetRandomActor() {
+	local Actor a;
+	a = GetLastViewClass();
+	if (a == None)
+		a = GetRandomActorReal();
+	return a;
+}
+
+function Actor GetRandomActorReal() {
 	local int count,chosen;
 	local Actor a;
 
@@ -159,15 +185,15 @@ function Actor GetRandomActor() {
 		}
 	}
 
-	if (RecommendedPlayerName != "" && FRand()<0.2) {
+	if (RecommendedPlayerName != ""/* && FRand()<0.2*/) {
 		foreach AllActors(class'Actor',a) {
 			if (a.IsA('PlayerPawn') && PlayerPawn(a).PlayerReplicationInfo.PlayerName == RecommendedPlayerName) {
 				DEBUG("Re-using "$NameActor(a));
-				RecommendedPlayerName = ""; // i think i'll only use it once, then discard it.
+				// RecommendedPlayerName = ""; // i think i'll only use it once, then discard it.
 				return a;
 			}
 		}
-		RecommendedPlayerName = ""; // it has failed me now, and we don't want it to last forever anyway
+		// RecommendedPlayerName = ""; // it has failed me now, and we don't want it to last forever anyway
 	}
 
 	count = CountInterestingActors();
@@ -220,8 +246,13 @@ function SetNewTarget(Actor a, optional Actor b) {
 	bCheckingForInterestingTarget = False;
 	bDoneViewClass = False;
 
+	if (GetLastViewClass() != None) {
+		a = GetLastViewClass();
+	}
+
 	if (isFC(Camera.ViewTarget) && bStickWithFC) {
-		return;
+		// return;
+		a = Camera.ViewTarget;
 	}
 
 	report = "";
@@ -765,7 +796,7 @@ event Tick (float Delta) {
 		//       and back on again ;)
 		// BUG: when online, this takes a little time to get back, *after* we switch cam :S
 		// maybe we should detect "now viewing from" and *then* switch cam
-		if (!bDoneViewClass) {
+		if (bDoViewClass && !bDoneViewClass) {
 			// To keep a fresh list of actors during online play, we call ViewClass:
 			Camera.ViewClass(class'Pawn');
 			Camera.ViewClass(class'Actor');
@@ -786,7 +817,9 @@ event Tick (float Delta) {
 	if (CameraMode != 3) {
 		if (Camera.ViewTarget == None && FollowActor == None && LookActor == None) {
 			DEBUG("LOST ACTOR");
-			Camera.ViewClass(class'Pawn');
+			if (bDoViewClass) {
+				Camera.ViewClass(class'Pawn');
+			}
 			GetRandomCameraNow();
 		}
 	}
@@ -1047,6 +1080,7 @@ function setpawn (PlayerPawn o) {
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 	if (bCheckingForInterestingTarget) {
+		// TODO: never happens =/
 		DEBUG("Damage "$InstigatedBy$" -> "$Victim$" ActualDamage="$ActualDamage); // DamageType="$DamageType$" 
 		if (FRand()<0.5)
 			SetNewTarget(InstigatedBy,Victim);
@@ -1059,7 +1093,7 @@ function AddSelfAsMutator() {
 	Level.Game.BaseMutator.AddMutator(Self);
 }
 
-// TODO: buggy
+// TODO: buggy ... how tho?!
 function AddMutator(Mutator Other) {
 	if (Other != None && Other.Class == Self.Class) {
 		Log("Not adding another nBAutoSpectate.");
@@ -1071,6 +1105,43 @@ function AddMutator(Mutator Other) {
 		Log("Adding mutator: "$Other);
 		Super.AddMutator(Other);
 	}
+}
+
+// Catch messages from spectators:
+function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
+	if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
+		CheckMessage(Mid(Msg,InStr(Msg,":")+1), Sender);
+	}
+	return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
+}
+
+// Catch messages from players:
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	if (Sender == Receiver) { // Only process the message once.
+		CheckMessage(Msg, Sender);
+	}
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+	if (Left(str,1) == "!") {
+		CheckMessage(Mid(str,2), Sender);
+	}
+	Super.Mutate(str,Sender);
+}
+
+function CheckMessage(String str, Actor Sender) {
+	DEBUG("Got message: >"$str$"< from "$Sender);
+	if (str ~= "followfc")
+		bStickWithFC = True;
+	if (str ~= "nofollowfc")
+		bStickWithFC = False;
+	if (str ~= "doviewclass")
+		bDoViewClass = True;
+	if (str ~= "nodoviewclass")
+		bDoViewClass = False;
+	if (StrStartsWith(Locs(str),"follow"))
+		RecommendedPlayerName = StrAfter(str," ");
 }
 
 simulated function Destroyed() {
@@ -1143,7 +1214,8 @@ defaultproperties {
 	bCameraPanning=True
 	bSwitchCamera=True
 	CameraSwitchSeconds=4
-	bStickWithFC=False
+	bStickWithFC=True
+	bDoViewClass=False
 	bPrintDebugInfo=True
 }
 
