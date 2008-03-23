@@ -1,4 +1,6 @@
-class SiegeCTFHud extends sgHUD;
+// BUG TODO: sgHUD.PostRender() throws Accessed None
+
+class SiegeCTFHud extends SiegeAnywhereHUD;
 
 var CTFFlag MyFlag;
 
@@ -61,6 +63,7 @@ simulated function PostRender( canvas Canvas ) { // From ChallengeCTFHUD, modifi
 		}
 	}
 
+	/*
 	if (PawnOwner == None || PlayerOwner == None || PawnOwner.PlayerReplicationInfo == None || PlayerOwner.PlayerReplicationInfo == None || PlayerOwner.bShowMenu || PlayerOwner.bShowScores || bForceScores || bShowInfo || PlayerOwner.Scoring != None || PawnOwner.PlayerReplicationInfo.bIsSpectator)
 		return; // it was one of the last two that finally stopped the clock for appearing before gamestart
 
@@ -75,11 +78,12 @@ simulated function PostRender( canvas Canvas ) { // From ChallengeCTFHUD, modifi
 			clockY = 142*Scale;
 		DrawTimeAt(Canvas, clockX, clockY);
 	}
+	*/
 
 	// if (FRand()<0.01)
 		// Log(Self$": PawnOwner="$PawnOwner$" PlayerOwner="$PlayerOwner$" Flag="$Flag);
 
-	//// Can we get away with disabling it?  (Was throwing Accessed None since sgPRI(Owner) == None!
+	//// Can we get away with disabling Super?  (Was throwing Accessed None since sgPRI(Owner) == None!
 	//// No we need it for RU display, crosshair, etc.
 	//// We could copy the method from sgHUD and fix the Accessed Nones.
 
@@ -105,65 +109,6 @@ simulated function DrawTeam(Canvas Canvas, TeamInfo TI) { // From ChallengeCTFHU
 		Canvas.DrawColor = TeamColor[TI.TeamIndex];
 		DrawBigNum(Canvas, int(TI.Score), Canvas.ClipX - 144 * Scale, Canvas.ClipY - 336 * Scale - (150 * Scale * TI.TeamIndex), 1);
 	}
-}
-
-simulated function DrawTimeAt(Canvas Canvas, float X, float Y) { // Modified
-	local int Minutes, Seconds, d;
-	local float ClockScale;
-
-	if ( PlayerOwner.GameReplicationInfo == None )
-		return;
-
-	ClockScale = Scale * 0.75;
-
-	Canvas.DrawColor = WhiteColor;
-	Canvas.CurX = X;
-	Canvas.CurY = Y;
-	Canvas.Style = Style;
-
-	if ( PlayerOwner.GameReplicationInfo.RemainingTime > 0 )
-	{
-		Minutes = PlayerOwner.GameReplicationInfo.RemainingTime/60;
-		Seconds = PlayerOwner.GameReplicationInfo.RemainingTime % 60;
-	}
-	else
-	{
-		Minutes = 0;
-		Seconds = 0;
-	}
-	
-	if ( Minutes > 0 )
-	{
-		if ( Minutes >= 10 )
-		{
-			d = Minutes/10;
-			Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, d*25, 0, 25.0, 64.0);
-			Canvas.CurX += 7*ClockScale;
-			Minutes= Minutes - 10 * d;
-		}
-		else
-		{
-			Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 0, 0, 25.0, 64.0);
-			Canvas.CurX += 7*ClockScale;
-		}
-
-		Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, Minutes*25, 0, 25.0, 64.0);
-		Canvas.CurX += 7*ClockScale;
-	} else {
-		Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 0, 0, 25.0, 64.0);
-		Canvas.CurX += 7*ClockScale;
-	}
-	Canvas.CurX -= 4 * ClockScale;
-	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 32, 64, 25.0, 64.0);
-	Canvas.CurX += 3 * ClockScale;
-
-	d = Seconds/10;
-	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 25*d, 0, 25.0, 64.0);
-	Canvas.CurX += 7*ClockScale;
-
-	Seconds = Seconds - 10 * d;
-	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 25*Seconds, 0, 25.0, 64.0);
-	Canvas.CurX += 7*ClockScale;
 }
 
 /*
