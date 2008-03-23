@@ -15,7 +15,9 @@
 // Provide FastBuild to the first 3 minutes of any SiegeGame by adding this mutator.
 // TODO: Allow non Siege gametypes, where players still have a sgPRI.  (You mean SiegeAnywhere?)
 
-// TODO: +RU from kills/leeching can exceed MaxRU!
+// DONE: +RU from kills/leeching can exceed MaxRU!  That was only happening with SiegeAnywhere - fixed there.
+
+// TODO: Do not allow players into enemy base during the FastBuild.
 
 class FastBuildMut extends Mutator;
 
@@ -24,9 +26,13 @@ var config float FastBuildMinutes;
 var config int FastBuildRUPerSecond;
 var config int FastBuildMaxRU;
 // var config int PostbuildMaxRU;
+var config bool bConfineToBase;
 
 // Config vars but not yet committed to config, because I might rename or remove them, so I don't yet want them written in the .ini file.
 var /*config*/ bool bMoreFlashing;
+
+var Vector TeamOrigin[2];
+var float MaxAllowedRadius;
 
 var bool bGameStarted;
 var bool bFastBuildOver;
@@ -38,6 +44,7 @@ defaultproperties {
 	FastBuildRUPerSecond=15
 	FastBuildMaxRU=400 // We could just use SiegeGI.StartingMaxRU, unless we want a *different* setting for FastBuild + normal Siege.
 	// PostbuildMaxRU=1000
+	bConfineToBase=True
 
 	bMoreFlashing=True
 
@@ -70,8 +77,31 @@ function PostBeginPlay() {
 
 	bGameStarted = False;
 
+	FindBoundaries();
+
 	SetTimer(1,True);
 
+}
+
+function FindBoundaries() {
+	local FlagBase Flag;
+	foreach AllActors(class'FlagBase', Flag) {
+		TeamOrigin[Flag.Team] = Flag.Location;
+	}
+	if (VSize(TeamOrigin[0]) == 0 || VSize(TeamOrigin[1]) == 0) { // This test is not really good - one of the FlagSpots really might be at (0,0,0).  Better to save the FlagBases rather than their Locations.
+		// TODO: calculate TeamOrigin from PlayerStarts
+		// If team PlayerStarts are not grouped, ensure MaxAllowedRadius at least encompasses all PlayerStarts (or make it huge).
+		Log("FastBuild could not find both FlagBases - setting bConfineToBase=False.");
+		bConfineToBase = False;
+		return;
+	}
+	MaxAllowedRadius = VSize(TeamOrigin[0] - TeamOrigin[1]) / 2.0;
+	if (MaxAllowedRadius < 2048)
+		MaxAllowedRadius = 1024 * 256;
+	// Some maps, e.g. CTF-Burning, have the flags quite close to each other, but the map expands away from them.
+	// Good sanity check.  We could try to detect this, e.g. by looking at PlayerStarts, PathNodes, InventorySpots...
+	// DONE: Or maybe we shouldn't use radius at all - just look for players crossing the plane which divides the to bases.
+	// TODO: Even then, on some maps, you might cross that boundary without actually leaving your base.  E.g. Joust maps, where every PlayerStart will be *beyond* the boundary!
 }
 
 /* // Not working, possibly Siege fails to call ModifyPlayer().
@@ -183,11 +213,38 @@ event Timer() {
 			SecondsToGo--;
 			// SetTimer(1,True);
 		}
+		CheckBoundaries();
 	}
 	if (bFastBuildOver) {
 		// AddRUGlobally(FastBuildRUPerSecond/4.0); // global trickle in case no core is feeding
 		// DONE: This should really be moved to SiegeAnywhere.
 		// It's only needed when we can't find an sgBaseCore.
+	}
+}
+
+function CheckBoundaries() {
+	local Pawn p;
+	local Vector origin;
+	if (!bConfineToBase)
+		return;
+	origin = (TeamOrigin[0] + TeamOrigin[1]) / 2.0;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p.bIsPlayer && !p.IsA('Spectator')) {
+			// if (VSize(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team]) > MaxAllowedRadius) {
+			if ((p.Location - origin) Dot (TeamOrigin[p.PlayerReplicationInfo.Team]-origin) < 0) {
+				p.ClientMessage("Warning: you may not leave your base during the FastBuild!");
+				if (FRand()<0.2) {
+					BroadcastMessage(p.getHumanName()$" tried to violate FastBuild boundaries!");
+					p.Died(None, '', p.Location);
+				} else {
+					if (p.IsA('PlayerPawn'))
+						FlashMessageToPlayer(PlayerPawn(p),"Warning: you may not leave your base during the FastBuild!",colorYellow,0,2,False,False);
+					p.SetLocation(TeamOrigin[p.PlayerReplicationInfo.Team] + Normal(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team])*MaxAllowedRadius);
+					p.Velocity = Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location) * 4096 + vect(0,0,4096);
+					p.SetPhysics(PHYS_Falling);
+				}
+			}
+		}
 	}
 }
 
