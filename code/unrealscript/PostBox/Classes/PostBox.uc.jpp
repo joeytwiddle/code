@@ -1,5 +1,9 @@
 // PostBox
 // Lets players on your server leave messages for each other.
+// vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
+
+// Changes:
+// Added ENABLE_PRIVATE_MESSAGES.
 
 // TODO: feature requests on UnrealAdmin:
 //       longer time before welcome message DISappears - check how BDBMapVote does this   (and maybe make check-time configurable)
@@ -35,6 +39,7 @@
 // or mapvote).  Make both optional.
 
 #define ENABLE_PASSWORD_SUPPORT
+#define ENABLE_PRIVATE_MESSAGES
 
 class PostBox expands Mutator config(PostBox);
 
@@ -100,7 +105,7 @@ function PostBeginPlay() {
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
 	local bool hideMessage;
-	hideMessage = SuperCheckMessage(Sender,Receiver,Msg);
+	hideMessage = SuperCheckMessage(Sender,Receiver,Mid(Msg,InStr(Msg,":")+1));
 	return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type) && (!hideMessage); // || !bSwallowSpokenCommands);
 }
 
@@ -113,11 +118,11 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 
 // Returns True if this message should be swallowed / hidden from other players.
 function bool SuperCheckMessage(Actor Sender, Pawn Receiver, String Msg) {
-	if (StrStartsWith(Msg,"!")) {
+	if (StrStartsWith(Msg,"!") || StrStartsWith(Caps(Msg),"/MSG")) {
 		if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
 			CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
 		}
-		if (StrStartsWith(Locs(Msg),"!mail") || StrStartsWith(Locs(Msg),"!post") || StrStartsWith(Locs(Msg),"!read") || StrStartsWith(Locs(Msg),"!setpass") || StrStartsWith(Locs(Msg),"!changepass")) {
+		if (StrStartsWith(Locs(Msg),"!mail") || StrStartsWith(Locs(Msg),"!post") || StrStartsWith(Locs(Msg),"!read") || StrStartsWith(Locs(Msg),"!setpass") || StrStartsWith(Locs(Msg),"!changepass") || StrStartsWith(Locs(Msg),"!msg") || StrStartsWith(Locs(Msg),"/msg")) {
 			// We hide/swallow the first two and the last two for privacy, and we hide !read to save space in the player's chat area
 			// Note this is separate from the Sender == Receiver check, since we want to swallow/hide this message from ALL players!
 			return True;
@@ -146,10 +151,11 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	command = args[0];
 
 	if (command ~= "HELP") {
-		Sender.ClientMessage("PostBox commands:");
-		Sender.ClientMessage("  !help");
-		Sender.ClientMessage("  !read");
+		Sender.ClientMessage("PostBox commands: !help !read");
 		Sender.ClientMessage("  !mail/!post <part_of_player's_nick> <message>");
+		#ifdef ENABLE_PRIVATE_MESSAGES
+		Sender.ClientMessage("  !msg <nick> <message>");
+		#endif
 		#ifdef ENABLE_PASSWORD_SUPPORT
 		Sender.ClientMessage("  !setpass <account> <password>");
 		Sender.ClientMessage("  !changepass <account> <old_pass> <new_pass>");
@@ -172,28 +178,19 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		return True;
 	}
 
+	#ifdef ENABLE_PRIVATE_MESSAGES
+		if (command ~= "MSG") {
+			SendPrivateMessage(Sender,args[1],args[2]);
+		}
+	#endif
+
 	#ifdef ENABLE_PASSWORD_SUPPORT
 	if (command ~= "SETPASS") {
 		if (args[1] == "" || args[2] == "") {
 			Sender.ClientMessage("Usage: !setpass <account_name> <password>");
 		} else {
-			if (StrContains(squishString(Sender.GetHumanName()),squishString(args[1]))) {
-				if (isPassworded(args[1])) {
-					Sender.ClientMessage("Account "$args[1]$" is already passworded.  Try: !changepass "$args[1]$" <old_pass> <new_pass>");
-				} else {
-					for (i=0;i<MAX_ACCOUNTS;i++) {
-						if (accountName[i]=="") {
-							accountName[i] = squishString(args[1]);
-							accountPass[i] = squishString(args[2]);
-							Sender.ClientMessage("Your account "$accountName[i]$" has been passworded.");
-							break;
-						}
-					}
-					// BUG: no handling if account database is full
-				}
-			} else {
-				Sender.ClientMessage("You may not password account "$args[1]$" but you may password account "$squishString(Sender.GetHumanName())$".");
-			}
+			SetPass(Sender,args[1],args[2]);
+
 		}
 		return True;
 	}
@@ -225,10 +222,13 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 function PostMail(PlayerPawn Sender, String to, String message) {
 	local int i;
+	to = squishString(to);
+	if (Len(to) < 5) {
+		Sender.ClientMessage("I'm sorry, the target nick must contain at least 5 letters.");
+	}
 	for (i=0; i<MAX_MAILS; i++) {
 		if (mailFrom[i] == "" && mailTo[i] == "" && mailDate[i] == "" && mailMessage[i] == "") {
 			mailFrom[i] = Sender.GetHumanName();
-			to = squishString(to);
 			mailTo[i] = to;
 			mailDate[i] = GetDate();
 			mailMessage[i] = message;
@@ -245,7 +245,9 @@ function PostMail(PlayerPawn Sender, String to, String message) {
 			break;
 		}
 	}
-	// BUG: no handling if message database was full
+	if (i == MAX_MAILS) {
+		Sender.ClientMessage("I'm sorry, the mailbox is full!  Please contact the server admin.");
+	}
 }
 
 // Removes all non-alphanumeric characters from a string
@@ -426,7 +428,69 @@ function String getPassword(String account) {
 	}
 	return "";
 }
+
+function SetPass(PlayerPawn Sender, String account, String pass) {
+	local String squishedNick;
+	local int i;
+	squishedNick = squishString(Sender.GetHumanName());
+	account = squishString(account);
+	if (Len(account) < 5) {
+		Sender.ClientMessage("Accounts must contain at least 5 alphanumeric characters.");
+	}
+	if (StrContains(squishedNick,account)) {
+		if (isPassworded(account)) {
+			Sender.ClientMessage("Account "$account$" is already passworded.  Try: !changepass "$account$" <old_pass> <new_pass>");
+		} else {
+			for (i=0;i<MAX_ACCOUNTS;i++) {
+				if (accountName[i]=="") {
+					accountName[i] = account;
+					accountPass[i] = pass;
+					Sender.ClientMessage("Your account "$accountName[i]$" has been passworded.");
+					break;
+				}
+			}
+			// BUG: no handling if account database is full
+			if (i == MAX_ACCOUNTS) {
+				Sender.ClientMessage("I'm sorry, there is no room for new accounts; please contact the server admin.");
+			}
+		}
+	} else {
+		Sender.ClientMessage("You may not password account "$account$" but you may password account "$squishedNick$".");
+	}
+}
 #endif
 
-#include "/mnt/big/ut/ut_win/JLib/jlib.uc.jpp"
+#ifdef ENABLE_PRIVATE_MESSAGES
+function SendPrivateMessage(PlayerPawn Sender, String toNick, String message) {
+	local PlayerPawn p;
+	p = FindPlayerNamed(toNick);
+	if (p == None) {
+		Sender.ClientMessage("I could not find a player named "$toNick);
+	} else {
+		p.ClientMessage("Message from "$Sender.getHumanName()$": "$message);
+		Sender.ClientMessage("Message sent to "$p.getHumanName());
+		Sender.ClientMessage("To reply, say: !msg "$Sender.getHumanName()$" <your_message>");
+	}
+}
+
+function PlayerPawn FindPlayerNamed(String name) {
+	local PlayerPawn p;
+	local PlayerPawn found;
+	// for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+	foreach AllActors(class'PlayerPawn', p) {
+		// if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
+			if (p.getHumanName() ~= name) { // exact case insensitive match, return player
+				return p;
+			}
+			if (Instr(Caps(p.getHumanName()),Caps(name))>=0) { // partial match, remember it but keep searching for exact match
+				found = p;
+			}
+		// }
+	}
+	return found; // return partial match, or None
+}
+#endif
+
+// #include "/mnt/big/ut/ut_win/JLib/jlib.uc.jpp"
+#include "../../JLib/jlib.uc.jpp"
 

@@ -1,18 +1,24 @@
 class PubliciseScore extends Mutator config(PubliciseScore);
 
+// Title:
 var config bool bShowTeamScore;
+var config bool bShowTeamNames;
 var config bool bShowTime;
 var config int UpdateInterval;
 
-defaultproperties {
-  bShowTeamScore=True
-  bShowTime=True
-  UpdateInterval=19
-  // UpdateInterval=9
-}
+// To Player on entry:
+var config bool bInformSpeed;
 
 var bool Initialized;
 var string titleDefault;
+
+defaultproperties {
+	bShowTeamScore=True
+	bShowTeamNames=False
+	bShowTime=True
+	UpdateInterval=16
+	bInformSpeed=True
+}
 
 function PostBeginPlay() {
 	if (Initialized) {
@@ -29,75 +35,82 @@ function PostBeginPlay() {
 	}
 }
 
-event Timer() {
-	local string text;
-	local int redScore, blueScore;
-	// local int gameDuration;
-	local int timeLeft;
-	if (bShowTeamScore && Level.Game.IsA('TeamGamePlus')) {
-		redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
-		blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
-		// text = " ["$redScore$":"$blueScore$"]";
-		text = " ["$redScore$"-"$blueScore$"]";
-	}
-	// text = " [Red:"$redScore$" Blue:"$blueScore$"]";
-	if (bShowTime && DeathMatchPlus(Level.Game).TimeLimit>0) {
-		// Log("TimeSeconds="$Level.TimeSeconds$" TimeLimit="$DeathMatchPlus(Level.Game).TimeLimit$" StartTime="$Level.Game.StartTime$" CountDown="$DeathMatchPlus(Level.Game).CountDown$" NetWait="$DeathMatchPlus(Level.Game).NetWait$" ElapsedTime="$DeathMatchPlus(Level.Game).ElapsedTime);
-		// Log("TimeSeconds="$Level.TimeSeconds$" ElapsedTime="$DeathMatchPlus(Level.Game).ElapsedTime$" GRI.RemainingTime="$Level.Game.GameReplicationInfo.RemainingTime$" GRI.ElapsedTime="$Level.Game.GameReplicationInfo.ElapsedTime$" GRI.RemainingMinute="$Level.Game.GameReplicationInfo.RemainingMinute$" GRI.SecondCount="$Level.Game.GameReplicationInfo.SecondCount);
-		// gameDuration = Level.TimeSeconds - Level.Game.StartTime;
-		// gameDuration = DeathMatchPlus(Level.Game).ElapsedTime - DeathMatchPlus(Level.Game).CountDown;
-		// gameDuration = Level.Game.GameReplicationInfo.ElapsedTime;
-		// timeLeft = DeathMatchPlus(Level.Game).TimeLimit*60 - gameDuration;
-		// Log("gameDuration="$gameDuration$" timeLeft="$timeLeft);
-		if (DeathMatchPlus(Level.Game).ElapsedTime == 0) { // ElapsedTime goes from 0 to 9 during start-game countdown
-			// waiting for players
-			// text = text $ " Waiting for players...";
-			text = ""; // no point showing 0-0 before the game has started!
-		} else {
-			if (Level.Game.bGameEnded) {
-				text = text $ " Game ended";
-			} else {
-				timeLeft = Level.Game.GameReplicationInfo.RemainingTime;
-				if (timeLeft>0) {
-					text = text $ " ";
-					// if (timeLeft>=60) {
-						// text = text $ (timeLeft/60) $ "m";
-					// }
-					//// Since our Timer is called infrequently, we don't show seconds
-					// text = text $ (timeLeft%60) $ "s";
-					// text = text $ " left";
-					if ((timeLeft/60) == 1) {
-						text = text $ (timeLeft/60) $ " minute remaining";
-					} else {
-						text = text $ (timeLeft/60) $ " minutes remaining";
-					}
-				} else {
-					text = text $ " Overtime!";
-				}
-			}
+// This is not currently working because ModifyPlayer is only called on mutators :P
+function ModifyPlayer(Pawn p) {
+	// local String s;
+	// local int max;
+	if (p.PlayerReplicationInfo.Deaths == 0) {
+		if (bInformSpeed && Level.Game.GameSpeed != 1.0) {
+			// p.ClientMessage( titleDefault$" at "$Int(Level.Game.GameSpeed*100)$" speed" );
+			p.ClientMessage( "Gamespeed is "$Int(Level.Game.GameSpeed*100)$"%");
+		}
+
+		// TODO: I am doing this here, so that if the server does fill,
+		// it can expand maxplayers by 2 ^^
+                // ?? That seems daft :P
+		if (bSetPlayersFromMap) {
+			// TODO:
+			// Get numbers from the map's idealplayercount
+			// If there are two numbers, take the largest
+			// Set maxplayers to that value!
+			// s = InStrLast(""Level.GameInfo.IdealPlayerCount,
 		}
 	}
-	SetTitle(text);
 }
 
-function SetTitle(String newText) {
-	// local String serverName;
-	// serverName = Level.Game.GameReplicationInfo.ServerName;
-	// // serverName = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).ServerName;
-	// Log("PubliciseScore.SetTitle(): current title is \"" $ serverName $ "\".");
-	// if (StrEndsWith(serverName,"] ")) {
-		// serverName = StrBeforeLast(serverName," [");
-	// }
-	// if (newText != "") {
-		// serverName = serverName $ " [" $ newText $ "] ";
-	// }
-	// Log("PubliciseScore.SetTitle(): new title is \"" $ serverName $ "\".");
-	// Level.Game.GameReplicationInfo.ServerName = serverName;
-	if (titleDefault == "") {
-		titleDefault = Level.Game.GameReplicationInfo.ServerName;
-	}
-	// Log("PubliciseScore.SetTitle(): setting server title to \"" $ titleDefault $ newText $ "\".");
-	Level.Game.GameReplicationInfo.ServerName = titleDefault $ newText;
+event Timer() {
+ local string text;
+ local int redScore, blueScore;
+ // local int gameDuration;
+ local int timeLeft;
+ if (bShowTeamScore && Level.Game.IsA('TeamGamePlus')) {
+  redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
+  blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
+  // text = " ["$redScore$":"$blueScore$"]";
+  if (bShowTeamNames) {
+    text = " [Red:"$redScore$" Blue:"$blueScore$"]";
+  } else {
+    text = " ["$redScore$"-"$blueScore$"]";
+  }
+ }
+ // text = " [Red:"$redScore$" Blue:"$blueScore$"]";
+ if (bShowTime && DeathMatchPlus(Level.Game).TimeLimit>0) {
+  // Log("TimeSeconds="$Level.TimeSeconds$" TimeLimit="$DeathMatchPlus(Level.Game).TimeLimit$" StartTime="$Level.Game.StartTime$" CountDown="$DeathMatchPlus(Level.Game).CountDown$" NetWait="$DeathMatchPlus(Level.Game).NetWait$" ElapsedTime="$DeathMatchPlus(Level.Game).ElapsedTime);
+  // Log("TimeSeconds="$Level.TimeSeconds$" ElapsedTime="$DeathMatchPlus(Level.Game).ElapsedTime$" GRI.RemainingTime="$Level.Game.GameReplicationInfo.RemainingTime$" GRI.ElapsedTime="$Level.Game.GameReplicationInfo.ElapsedTime$" GRI.RemainingMinute="$Level.Game.GameReplicationInfo.RemainingMinute$" GRI.SecondCount="$Level.Game.GameReplicationInfo.SecondCount);
+  // gameDuration = Level.TimeSeconds - Level.Game.StartTime;
+  // gameDuration = DeathMatchPlus(Level.Game).ElapsedTime - DeathMatchPlus(Level.Game).CountDown;
+  // gameDuration = Level.Game.GameReplicationInfo.ElapsedTime;
+  // timeLeft = DeathMatchPlus(Level.Game).TimeLimit*60 - gameDuration;
+  // Log("gameDuration="$gameDuration$" timeLeft="$timeLeft);
+  if (DeathMatchPlus(Level.Game).ElapsedTime == 0) { // ElapsedTime goes from 0 to 9 during start-game countdown
+   // waiting for players
+   // text = text $ " Waiting for players...";
+   text = ""; // no point showing 0-0 before the game has started!
+  } else {
+   if (Level.Game.bGameEnded) {
+    text = text $ " Game ended";
+   } else {
+    timeLeft = Level.Game.GameReplicationInfo.RemainingTime;
+    if (timeLeft>0) {
+     text = text $ " ";
+     // if (timeLeft>=60) {
+      // text = text $ (timeLeft/60) $ "m";
+     // }
+     //// Since our Timer is called infrequently, we don't show seconds
+     // text = text $ (timeLeft%60) $ "s";
+     // text = text $ " left";
+     if ((timeLeft/60) == 1) {
+      text = text $ (timeLeft/60) $ " minute remaining";
+     } else {
+      text = text $ (timeLeft/60) $ " minutes remaining";
+     }
+    } else {
+     text = text $ " Overtime!";
+    }
+   }
+  }
+ }
+ SetTitle(text);
 }
 
 #include "/mnt/big/ut/ut_win/JLib/jlib.uc.jpp"

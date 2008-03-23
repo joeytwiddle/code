@@ -4,19 +4,27 @@
 
 class PubliciseScore extends Mutator config(PubliciseScore);
 
+// Title:
 var config bool bShowTeamScore;
+var config bool bShowTeamNames;
 var config bool bShowTime;
 var config int UpdateInterval;
 
-defaultproperties {
-  bShowTeamScore=True
-  bShowTime=True
-  UpdateInterval=19
-  // UpdateInterval=9
-}
+// To Player on entry:
+var config bool bInformSpeed;
+var config bool bSetPlayersFromMap;
 
 var bool Initialized;
 var string titleDefault;
+
+defaultproperties {
+	bShowTeamScore=True
+	bShowTeamNames=False
+	bShowTime=True
+	UpdateInterval=31
+	bInformSpeed=True
+	bSetPlayersFromMap=True
+}
 
 function PostBeginPlay() {
  if (Initialized) {
@@ -33,6 +41,29 @@ function PostBeginPlay() {
  }
 }
 
+// This is not currently working because ModifyPlayer is only called on mutators :P
+function ModifyPlayer(Pawn p) {
+	// local String s;
+	// local int max;
+	if (p.PlayerReplicationInfo.Deaths == 0) {
+		if (bInformSpeed && Level.Game.GameSpeed != 1.0) {
+			// p.ClientMessage( titleDefault$" at "$Int(Level.Game.GameSpeed*100)$" speed" );
+			p.ClientMessage( "Gamespeed is "$Int(Level.Game.GameSpeed*100)$"%");
+		}
+
+		// TODO: I am doing this here, so that if the server does fill,
+		// it can expand maxplayers by 2 ^^
+                // ?? That seems daft :P
+		if (bSetPlayersFromMap) {
+			// TODO:
+			// Get numbers from the map's idealplayercount
+			// If there are two numbers, take the largest
+			// Set maxplayers to that value!
+			// s = InStrLast(""Level.GameInfo.IdealPlayerCount,
+		}
+	}
+}
+
 event Timer() {
  local string text;
  local int redScore, blueScore;
@@ -42,7 +73,11 @@ event Timer() {
   redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
   blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
   // text = " ["$redScore$":"$blueScore$"]";
-  text = " ["$redScore$"-"$blueScore$"]";
+  if (bShowTeamNames) {
+    text = " [Red:"$redScore$" Blue:"$blueScore$"]";
+  } else {
+    text = " ["$redScore$"-"$blueScore$"]";
+  }
  }
  // text = " [Red:"$redScore$" Blue:"$blueScore$"]";
  if (bShowTime && DeathMatchPlus(Level.Game).TimeLimit>0) {
