@@ -22,15 +22,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
+// vim: tabstop=2 shiftwidth=2 expandtab filetype=uc
 
-#define ATB_VERSION "1.3e"
+#define ATB_VERSION "1.3f"
 
 // New changes:
 // As well as displaying the SmartCTF scoreboard, !stats now also shows all the player strengths.  (It's a shortcut for "mutate strengths".)
 // Messages flashed to players now have different colours, position and timeout, but do not appear in the player's console.
 // Now always broadcasts any reason for not rebalancing, even if bBroadcastStuff=False.
 // More minor improvements to messaging.
-// bSuperBalance
+// bSuperBalance dangerous
+// COOL_CAMERA not working properly
 
 // Changes in 1.3 October 2007:
 // Added MinRequestsForRebalance.
@@ -48,6 +50,8 @@
 // Stripped out a lot of comments.
 
 // DONE: longer lasting, better coloured flashing messages
+
+// TODO: when switching players, avoid players whos strength is less known (they have played less time on server)
 
 // TODO: when joining unstarted game, u get msg saying u r on Red or Blue team, but we change it later :S - overwrite or empty that message!
 
@@ -70,15 +74,15 @@
 // This may be useful:
 /*
 function string GetDate() {
-    local string Date, Time;
-    Date = Level.Year$"-"$PrePad(Level.Month,"0",2)$"-"$PrePad(Level.Day,"0",2);
-    Time = PrePad(Level.Hour,"0",2)$":"$PrePad(Level.Minute,"0",2)$"."$PrePad(Level.Second,"0",2);
-    return Date$"-"$Time"-";
+		local string Date, Time;
+		Date = Level.Year$"-"$PrePad(Level.Month,"0",2)$"-"$PrePad(Level.Day,"0",2);
+		Time = PrePad(Level.Hour,"0",2)$":"$PrePad(Level.Minute,"0",2)$"."$PrePad(Level.Second,"0",2);
+		return Date$"-"$Time"-";
 }
 function string PrePad(coerce string s, string p, int i) {
-    while (Len(s) < i)
-        s = p$s;
-    return s;
+		while (Len(s) < i)
+				s = p$s;
+		return s;
 }
 */
 
@@ -88,14 +92,14 @@ function string PrePad(coerce string s, string p, int i) {
 // TEST: When I was testing both ServerActor *and* mutator (not actually desirable), it seemed "!teams" was not working - is this fixed now?
 // BUG: Do not use NetWait<3; it may cause the teambalance to occur before anyone joins the server!
 
-// vim: tabstop=2 shiftwidth=2 expandtab filetype=uc
-
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 // #define ENABLE_USEISPNOTFULLIP
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
 #define ENABLE_MIN_REQUESTS_FOR_REBALANCE
+#define COOL_CAMERA
+// #define MAP_RATING_SYSTEM
 
 // These config variables are documented in AutoTeamBalance.txt
 
@@ -164,7 +168,7 @@ var config bool bUseISPNotFullIP;
 var config bool bSeparateStatsByGamemode;
 var config bool bSeparateStatsByMutators;
 #endif
-var config bool bSuperBalance;
+var config bool bSuperBalance; // BUG: Can cause problems by switching a player more than once too quickly.
 
 // For storing player strength data:
 var config int MaxPlayerData;
@@ -180,6 +184,17 @@ var float hours_played[MaxPlayerDataMax];
 // var int date_last_played[MaxPlayerDataMax];
 // var int games_played[MaxPlayerDataMax];
 
+#ifdef COOL_CAMERA
+var config bool bCoolCamera;
+var int LastCamChangeSeconds;
+var Actor CameraFocusActor;
+var float deltaYaw,deltaPitch,deltaFOV;
+#endif
+#ifdef MAP_RATING_SYSTEM
+var config String MapRatings[256];
+var int bHasAlreadyRated[64];
+#endif
+
 // For local state caching (not repeating when called by Tick's or Timer's):
 var bool initialized;              // Mutator initialized flag
 var bool gameStartDone;            // Teams initialized flag (we never initialise this to False, but I guess Unreal does that for us)
@@ -191,76 +206,77 @@ var int lastBalanceTime;
 var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorOrange,colorGray,colorBlack;
 
 defaultproperties {
-  bBroadcastStuff=True
-  bBroadcastCookies=False
-  bFlashCookies=False
-  bDebugLogging=False
-  bEnablePlayerCommands=True
-  bForceEvenTeams=False
-  bLetPlayersRebalance=True
-  #ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
-  MinRequestsForRebalance=1
-  // MinRequestsForRebalancePercent=25    // or 25% of players request it.
-  #endif
-  bFlashRebalanceRequest=True
-  bShowProposedSwitch=False
-  bWarnMidGameUnbalance=False
-  bFlashOnWarning=True
-  bShakeOnWarning=False
-  bBuzzOnWarning=False
-  bAllowSemiAdminKick=True
-  bAllowSemiAdminForceTravel=True
-  bBalanceBots=False
-  bRankBots=False
-  MinSecondsBeforeRebalance=20
-  SemiAdminPass="defaults_to_admin_pass"
-  bAutoBalanceTeamsForCTF=True
-  bAutoBalanceTeamsForTDM=True
-  bAutoBalanceTeamsForAS=True
-  bAutoBalanceTeamsForOtherTeamGames=True
-  bUpdatePlayerStatsForCTF=True
-  bUpdatePlayerStatsForTDM=True
-  bUpdatePlayerStatsForAS=True
-  bUpdatePlayerStatsForOtherTeamGames=True
-  bUpdatePlayerStatsForNonTeamGames=True
-  bLogExtraStats=False
-  MaxHoursWhenCopyingOldRecord=2.0
-  HoursBeforeRecyclingStrength=4.0
-  MinHumansForStats=4
-  ScoringMethod=2
-  bNormaliseScores=True
-  bRelativeNormalisation=True
-  bScalePlayerScoreToFullTime=True
-  NormalisedStrength=50
-  UnknownStrength=50
-  BotStrength=10
-  FlagStrength=10
-  StrengthThreshold=100
-  WinningTeamBonus=0
-  bClanWar=False
-  clanTag="XOL"
-  bUseOnlyInGameScoresForRebalance=False
-  bLogFakenickers=False
-  bBroadcastFakenickers=False
-  #ifdef ENABLE_USEISPNOTFULLIP
-  bUseISPNotFullIP=False        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
-  #endif
-  #ifdef ENABLE_MUTATOR_SIGNATURE
-  bSeparateStatsByGamemode=False
-  bSeparateStatsByMutators=False
-  #endif
-  bSuperBalance=True
-  MaxPlayerData=4096
-  colorWhite=(R=255,G=255,B=255,A=32),
-  colorRed=(R=255,G=32,B=32,A=32),
-  colorBlue=(R=32,G=32,B=255,A=32),
-  colorGreen=(R=32,G=255,B=32,A=32),
-  colorYellow=(R=255,G=255,B=32,A=32),
-  colorCyan=(R=32,G=255,B=255,A=32),
-  colorMagenta=(R=255,G=32,B=255,A=32),
-  colorOrange=(R=255,G=144,B=32,A=32),
-  colorGray=(R=192,G=192,B=192,A=32),
-  colorBlack=(R=0,G=0,B=0,A=32),
+	bBroadcastStuff=True
+	bBroadcastCookies=False
+	bFlashCookies=False
+	bDebugLogging=False
+	bEnablePlayerCommands=True
+	bForceEvenTeams=False
+	bLetPlayersRebalance=True
+	#ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
+	MinRequestsForRebalance=1
+	// MinRequestsForRebalancePercent=25    // or 25% of players request it.
+	#endif
+	bFlashRebalanceRequest=True
+	bShowProposedSwitch=False
+	bWarnMidGameUnbalance=False
+	bFlashOnWarning=True
+	bShakeOnWarning=False
+	bBuzzOnWarning=False
+	bAllowSemiAdminKick=True
+	bAllowSemiAdminForceTravel=True
+	bBalanceBots=False
+	bRankBots=False
+	MinSecondsBeforeRebalance=20
+	SemiAdminPass="defaults_to_admin_pass"
+	bAutoBalanceTeamsForCTF=True
+	bAutoBalanceTeamsForTDM=True
+	bAutoBalanceTeamsForAS=True
+	bAutoBalanceTeamsForOtherTeamGames=True
+	bUpdatePlayerStatsForCTF=True
+	bUpdatePlayerStatsForTDM=True
+	bUpdatePlayerStatsForAS=True
+	bUpdatePlayerStatsForOtherTeamGames=True
+	bUpdatePlayerStatsForNonTeamGames=True
+	bLogExtraStats=False
+	MaxHoursWhenCopyingOldRecord=2.0
+	HoursBeforeRecyclingStrength=4.0
+	MinHumansForStats=4
+	ScoringMethod=2
+	bNormaliseScores=True
+	bRelativeNormalisation=True
+	bScalePlayerScoreToFullTime=True
+	NormalisedStrength=50
+	UnknownStrength=50
+	BotStrength=10
+	FlagStrength=10
+	StrengthThreshold=100
+	WinningTeamBonus=0
+	bClanWar=False
+	clanTag="XOL"
+	bUseOnlyInGameScoresForRebalance=False
+	bLogFakenickers=False
+	bBroadcastFakenickers=False
+	#ifdef ENABLE_USEISPNOTFULLIP
+	bUseISPNotFullIP=False        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
+	#endif
+	#ifdef ENABLE_MUTATOR_SIGNATURE
+	bSeparateStatsByGamemode=False
+	bSeparateStatsByMutators=False
+	#endif
+	bSuperBalance=True
+	MaxPlayerData=4096
+	bCoolCamera=True
+	colorWhite=(R=255,G=255,B=255,A=32),
+	colorRed=(R=255,G=32,B=32,A=32),
+	colorBlue=(R=32,G=32,B=255,A=32),
+	colorGreen=(R=32,G=255,B=32,A=32),
+	colorYellow=(R=255,G=255,B=32,A=32),
+	colorCyan=(R=32,G=255,B=255,A=32),
+	colorMagenta=(R=255,G=32,B=255,A=32),
+	colorOrange=(R=255,G=144,B=32,A=32),
+	colorGray=(R=192,G=192,B=192,A=32),
+	colorBlack=(R=0,G=0,B=0,A=32),
 }
 
 
@@ -270,152 +286,159 @@ defaultproperties {
 // Initialize the system
 function PostBeginPlay() {
 
-  Super.PostBeginPlay();
+	Super.PostBeginPlay();
 
-  if (initialized) {
-    if (bDebugLogging) { Log(Self$".PostBeginPlay() called with initialized already true; quitting."); }
-    return;
-  }
+	if (initialized) {
+		if (bDebugLogging) { Log(Self$".PostBeginPlay() called with initialized already true; quitting."); }
+		return;
+	}
 
-  if (bDebugLogging) { Log(Self$".PostBeginPlay() initialising"); }
+	if (bDebugLogging) { Log(Self$".PostBeginPlay() initialising"); }
 
-  // If AutoTeamBalance was installed as a ServerActor, we need to register it as a mutator:
-  // AddMutator() will check that it is not already in the mutator chain.
-  Level.Game.BaseMutator.AddMutator(Self);
-  if (initialized) {
-    if (bDebugLogging) { Log(Self$".PostBeginPlay() disabling self on request"); }
-    gameStartDone=True;
-    Disable('Tick');
-    return;
-  }
-  if (bDebugLogging) { Log(Self$".PostBeginPlay() added self as mutator"); }
+	// If AutoTeamBalance was installed as a ServerActor, we need to register it as a mutator:
+	// AddMutator() will check that it is not already in the mutator chain.
+	Level.Game.BaseMutator.AddMutator(Self);
+	if (initialized) {
+		if (bDebugLogging) { Log(Self$".PostBeginPlay() disabling self on request"); }
+		gameStartDone=True;
+		// Disable('Tick');
+		return;
+	}
+	if (bDebugLogging) { Log(Self$".PostBeginPlay() added self as mutator"); }
 
-  // We always want to register as a messenger, so that players may type "!red" or "!blue"
-  Level.Game.RegisterMessageMutator(Self);
-  if (bDebugLogging) { Log(Self$".PostBeginPlay() registered self as messenger"); }
+	// We always want to register as a messenger, so that players may type "!red" or "!blue"
+	Level.Game.RegisterMessageMutator(Self);
+	if (bDebugLogging) { Log(Self$".PostBeginPlay() registered self as messenger"); }
 
-  // This is how we detect the moment just before game-start (in CheckGameStart()), to do a final team balance:
-  SetTimer(1,True);
+	// This is how we detect the moment just before game-start (in CheckGameStart()), to do a final team balance:
+	SetTimer(1,True);
 
-  gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
+	gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
 
-  CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
+	CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
 
-  initialized = true;
+	#ifdef COOL_CAMERA
+	if (bCoolCamera) {
+		Enable('Tick');
+		// Log("Enabled Tick() for bCoolCamera.");
+	}
+	#endif
+
+	initialized = true;
 
 }
 
 // Implementation of AddMutator which prevents double or recursive adding:
 function AddMutator(Mutator Other) {
-  if (bDebugLogging) { Log(Self$".AddMutator("$Other$") called."); }
-  if (Other != None && Other.Class == Self.Class) {
-    if (Other == Self) {
-      if (bDebugLogging) { Log(Self$".AddMutator("$Other$"): not adding mutator self again!"); }
-    } else {
-      if (bDebugLogging) { Log(Self$".AddMutator("$Other$"): destroying other instance with "$Other$".Destroy()"); }
-      AutoTeamBalance(Other).initialized = true; // tell the other copy it should not initialize
-      Other.Destroy(); // seems to do nothing useful; the mutator continues to run through PostBeginPlay().
-    }
-  } else {
-    Super.AddMutator(Other);
-  }
+	if (bDebugLogging) { Log(Self$".AddMutator("$Other$") called."); }
+	if (Other != None && Other.Class == Self.Class) {
+		if (Other == Self) {
+			if (bDebugLogging) { Log(Self$".AddMutator("$Other$"): not adding mutator self again!"); }
+		} else {
+			if (bDebugLogging) { Log(Self$".AddMutator("$Other$"): destroying other instance with "$Other$".Destroy()"); }
+			AutoTeamBalance(Other).initialized = true; // tell the other copy it should not initialize
+			Other.Destroy(); // seems to do nothing useful; the mutator continues to run through PostBeginPlay().
+		}
+	} else {
+		Super.AddMutator(Other);
+	}
 }
 
 // Timer is initially set at 1 second to detect the moment before game-start for ForceFullTeamsRebalance().
 // Then it is set to 10 seconds during play, to detect mid-game unbalance, if bWarnMidGameUnbalance or bForceEvenTeams is set.
 // Also (after HandleEndGame() is called), it detects the real game end, and calls UpdateStatsAtEndOfGame().
 event Timer() {
-  if (!gameStartDone) CheckGameStart();
-  if (gameStartDone) CheckGameEnd();
-  if ((bWarnMidGameUnbalance || bForceEvenTeams) && gameStartDone && !gameEndDone && Level.Game.IsA('TeamGamePlus') && !DeathMatchPlus(Level.Game).bTournament) CheckMidGameBalance();
+	if (!gameStartDone) CheckGameStart();
+	if (gameStartDone) CheckGameEnd();
+	if ((bWarnMidGameUnbalance || bForceEvenTeams) && gameStartDone && !gameEndDone && Level.Game.IsA('TeamGamePlus') && !DeathMatchPlus(Level.Game).bTournament) CheckMidGameBalance();
 }
 
 // If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
 // This may cause a little lag on slow CPU servers when a new player joins, because it will search the whole database to find his record; if this is a problem, set bUseOnlyInGameScoresForRebalance.
 function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out string Options) {
-  local int selectedTeam;
-  local int teamSize[2];
-  local int teamSizeWithBots[2];
-  local int teamStr[2]; // each team's strength, only used if the #players on each team is equal
-  local int teamnr;
-  local String plname;
-  local Pawn p;
-  local TournamentGameReplicationInfo GRI;
+	local int selectedTeam;
+	local int teamSize[2];
+	local int teamSizeWithBots[2];
+	local int teamStr[2]; // each team's strength, only used if the #players on each team is equal
+	local int teamnr;
+	local String plname;
+	local Pawn p;
+	local TournamentGameReplicationInfo GRI;
 
-  if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
+	if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
 
-  if (!ShouldBalance(Level.Game)) return;
+	if (!ShouldBalance(Level.Game)) return;
 
-  if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin("$SpawnClass$","$Portal$",\""$Options$"\")"); }
+	if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin("$SpawnClass$","$Portal$",\""$Options$"\")"); }
 
-  // read this player's selected team
-  selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
+	// read this player's selected team
+	selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
 
-  // get team scores
-  GRI=TournamentGameReplicationInfo(Level.Game.GameReplicationInfo);
-  teamStr[0]=GRI.Teams[0].Score*GetFlagStrength();
-  teamStr[1]=GRI.Teams[1].Score*GetFlagStrength();
-  teamSize[0]=0;
-  teamSize[1]=0;
-  teamSizeWithBots[0]=0;
-  teamSizeWithBots[1]=0;
+	// get team scores
+	GRI=TournamentGameReplicationInfo(Level.Game.GameReplicationInfo);
+	teamStr[0]=GRI.Teams[0].Score*GetFlagStrength();
+	teamStr[1]=GRI.Teams[1].Score*GetFlagStrength();
+	teamSize[0]=0;
+	teamSize[1]=0;
+	teamSizeWithBots[0]=0;
+	teamSizeWithBots[1]=0;
 
-  // Check team balance of current players in game
-  // Calculate sum of player strengths for each team (as well as the flagbonus above)
-  for (p=Level.PawnList; p!=None; p=p.NextPawn)
-  {
-    // ignore non-player pawns
-    if (p.bIsPlayer && !p.IsA('Spectator'))
-    {
-      teamnr=p.PlayerReplicationInfo.Team;
-      if (teamnr<2)
-      {
-        // I changed this from Daniel's version, so that bot strengths are not considered.
-        // Since a player is joining, one of the bots may leave, or switch team, so counting that bot's strength is inaccurate, and we don't know which bot it will be.  So let's just count player strengths.
-        if (!p.IsA('Bot')) {
-          teamSize[teamnr]++;
-          teamStr[teamnr] += GetPawnStrength(p);
-        }
-        teamSizeWithBots[teamnr]++;
-      }
-    }
-  }
+	// Check team balance of current players in game
+	// Calculate sum of player strengths for each team (as well as the flagbonus above)
+	for (p=Level.PawnList; p!=None; p=p.NextPawn)
+	{
+		// ignore non-player pawns
+		if (p.bIsPlayer && !p.IsA('Spectator'))
+		{
+			teamnr=p.PlayerReplicationInfo.Team;
+			if (teamnr<2)
+			{
+				// I changed this from Daniel's version, so that bot strengths are not considered.
+				// Since a player is joining, one of the bots may leave, or switch team, so counting that bot's strength is inaccurate, and we don't know which bot it will be.  So let's just count player strengths.
+				if (!p.IsA('Bot')) {
+					teamSize[teamnr]++;
+					teamStr[teamnr] += GetPawnStrength(p);
+				}
+				teamSizeWithBots[teamnr]++;
+			}
+		}
+	}
 
-  if (bClanWar)
-  {
+	if (bClanWar)
+	{
 
-    // send player to his clan's team
-    teamnr=0;
-    plname=Level.Game.ParseOption(Options,"Name");
-    if (Instr(Caps(plname),Caps(clanTag))==-1) teamnr=1;
+		// send player to his clan's team
+		teamnr=0;
+		plname=Level.Game.ParseOption(Options,"Name");
+		if (Instr(Caps(plname),Caps(clanTag))==-1) teamnr=1;
 
-  } else {
+	} else {
 
-    // if both teams have the same number of players send the new player to the weaker team
-    if (teamSize[0]==teamSize[1])
-    {
-      // teamnr=0; if (teamStr[0]>teamStr[1]) teamnr=1;
-      teamnr=0; if (teamStr[0]>=teamStr[1]+Rand(2)) teamnr=1;
-      if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" and "$teamStr[0]$"v"$teamStr[1]$" so sending new player to WEAKER team "$getTeamName(teamnr)$"."); }
-    } else {
-      // send player to the team with fewer players
-      // teamnr=0; if (teamSize[0]>teamSize[1]) teamnr=1;
-      teamnr=0; if (teamSize[0]>=teamSize[1]+Rand(2)) teamnr=1;
-      if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to SMALLER team "$getTeamName(teamnr)$"."); }
-    }
+		// if both teams have the same number of players send the new player to the weaker team
+		if (teamSize[0]==teamSize[1])
+		{
+			// teamnr=0; if (teamStr[0]>teamStr[1]) teamnr=1;
+			teamnr=0; if (teamStr[0]>=teamStr[1]+Rand(2)) teamnr=1;
+			if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" and "$teamStr[0]$"v"$teamStr[1]$" so sending new player to WEAKER team "$getTeamName(teamnr)$"."); }
+		} else {
+			// send player to the team with fewer players
+			// teamnr=0; if (teamSize[0]>teamSize[1]) teamnr=1;
+			teamnr=0; if (teamSize[0]>=teamSize[1]+Rand(2)) teamnr=1;
+			if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to SMALLER team "$getTeamName(teamnr)$"."); }
+		}
 
-  }
+	}
 
-  // if selected team does not equal forced team then modify login
-  if (teamnr!=selectedTeam) Options="?Team=" $ teamnr $ Options;
+	// if selected team does not equal forced team then modify login
+	if (teamnr!=selectedTeam) Options="?Team=" $ teamnr $ Options;
 
-  // fix teamsize bug in Botpack.TeamGamePlus
-  if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
-  {
-    if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")"); }
-    GRI.Teams[0].Size=teamSizeWithBots[0];
-    GRI.Teams[1].Size=teamSizeWithBots[1];
-  }
+	// fix teamsize bug in Botpack.TeamGamePlus
+	if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
+	{
+		if (bDebugLogging) { Log("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")"); }
+		GRI.Teams[0].Size=teamSizeWithBots[0];
+		GRI.Teams[1].Size=teamSizeWithBots[1];
+	}
 
 }
 
@@ -423,357 +446,357 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
-  if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
-    if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcastMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
-    // Spectator messages start with the extra "<nick>:".  We remove this.
-    CheckMessage(Mid(Msg,InStr(Msg,":")+1), Sender);
-  }
-  return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
+	if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
+		if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcastMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+		// Spectator messages start with the extra "<nick>:".  We remove this.
+		CheckMessage(Mid(Msg,InStr(Msg,":")+1), Sender);
+	}
+	return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
 }
 
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
-  if (Sender == Receiver) { // Only process the message once.
-    if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
-    CheckMessage(Msg, Sender);
-  }
-  return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
+	if (Sender == Receiver) { // Only process the message once.
+		if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+		CheckMessage(Msg, Sender);
+	}
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
 }
 
 function ShowStrengthsTo(PlayerPawn Sender) {
-  local Pawn p;
-  local int team;
-  local int i;
-  local float averageGameScore,averagePlayerStrengthThisGame;
-  for (team=0;team<2;team++) {
-    for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-      if (AllowedToBalance(p) && PlayerPawn(p).PlayerReplicationInfo.Team == team) {
-        i = FindPlayerRecord(p);
-        if (i > -1) { // actually it's guaranteed to be > -1
-          Sender.ClientMessage("["$getTeamName(PlayerPawn(p).PlayerReplicationInfo.Team)$"] "$p.getHumanName()$" has strength "$Int(avg_score[i])$" after "$Left(""$hours_played[i],5)$" hours.");
-        }
-      }
-    }
-  }
-  Sender.ClientMessage("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
-  GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
-  Sender.ClientMessage("Average strength is "$Left(""$averagePlayerStrengthThisGame,5)$", teamscore bonus is "$Left(""$GetFlagStrength(),5)$".");
+	local Pawn p;
+	local int team;
+	local int i;
+	local float averageGameScore,averagePlayerStrengthThisGame;
+	for (team=0;team<2;team++) {
+		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+			if (AllowedToBalance(p) && PlayerPawn(p).PlayerReplicationInfo.Team == team) {
+				i = FindPlayerRecord(p);
+				if (i > -1) { // actually it's guaranteed to be > -1
+					Sender.ClientMessage("["$getTeamName(PlayerPawn(p).PlayerReplicationInfo.Team)$"] "$p.getHumanName()$" has strength "$Int(avg_score[i])$" after "$Left(""$hours_played[i],5)$" hours.");
+				}
+			}
+		}
+	}
+	Sender.ClientMessage("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+	GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
+	Sender.ClientMessage("Average strength is "$Left(""$averagePlayerStrengthThisGame,5)$", teamscore bonus is "$Left(""$GetFlagStrength(),5)$".");
 }
 
 // Catch mutate messages (from players, semi-admins or admins)
 function Mutate(String str, PlayerPawn Sender) {
 
-  local String args[256];
-  // local array<String> args;
-  local int argcount;
+	local String args[256];
+	// local array<String> args;
+	local int argcount;
 
-  local String localPass; // the password we will require for semi-admin commands
-  local String pass_if_needed; // for the help (to display whether pass is needed or not)
+	local String localPass; // the password we will require for semi-admin commands
+	local String pass_if_needed; // for the help (to display whether pass is needed or not)
 
-  // temporary utility vars
-  local String msg;
-  local int i;
-  local float averageGameScore, averagePlayerStrengthThisGame;
+	// temporary utility vars
+	local String msg;
+	local int i;
+	local float averageGameScore, averagePlayerStrengthThisGame;
 
-  local Pawn p;
+	local Pawn p;
 
-  local bool bTempBool;
+	local bool bTempBool;
 
-  if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
+	if (bDebugLogging) { Log("AutoTeamBalance.Mutate("$str$","$sender$") was called."); }
 
-  if (Sender.bAdmin)
-    localPass = ""; // any or no pass is accepted
-  else if (SemiAdminPass == "defaults_to_admin_pass")
-    localPass = ConsoleCommand("get engine.gameinfo AdminPassword");
-  else
-    localPass = SemiAdminPass;
+	if (Sender.bAdmin)
+		localPass = ""; // any or no pass is accepted
+	else if (SemiAdminPass == "defaults_to_admin_pass")
+		localPass = ConsoleCommand("get engine.gameinfo AdminPassword");
+	else
+		localPass = SemiAdminPass;
 
-  argcount = SplitString(str," ",args);
+	argcount = SplitString(str," ",args);
 
-  // Commands which do not require a password:
+	// Commands which do not require a password:
 
-  if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
+	if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
 
-      ShowStrengthsTo(Sender);
+			ShowStrengthsTo(Sender);
 
-  }
+	}
 
-  // Commands which do require the password:
+	// Commands which do require the password:
 
-  if (localPass=="" || args[argcount-1]~=localPass) { // Semi-admin privilege commands:
+	if (localPass=="" || args[argcount-1]~=localPass) { // Semi-admin privilege commands:
 
-    switch ( Caps(args[0]) ) {
+		switch ( Caps(args[0]) ) {
 
-      case "TEAMS":
-        if (!Level.Game.GameReplicationInfo.bTeamGame) {
-          Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
-        } else {
-          MidGameRebalance(True);
-        }
-      break;
+			case "TEAMS":
+				if (!Level.Game.GameReplicationInfo.bTeamGame) {
+					Sender.ClientMessage("AutoTeamBalance cannot balance teams: this isn't a team game!");
+				} else {
+					MidGameRebalance(True);
+				}
+			break;
 
-      case "FORCETEAMS":
-        // Sender.ClientMessage("AutoTeamBalance performing full teams rebalance...");
-        // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has forced a full teams rebalance."); }
-        // To make this balance as accurate as possible, we update the stats now, so we can use the scores from this game so-far.
-        // But since this would mess up the end-game stats updating (counting this part of the game twice), we restore the stats from the config afterwards.
-        UpdateStatsAtEndOfGame();
-        ForceFullTeamsRebalance();
-        CopyConfigIntoArrays();
-      break;
+			case "FORCETEAMS":
+				// Sender.ClientMessage("AutoTeamBalance performing full teams rebalance...");
+				// if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" has forced a full teams rebalance."); }
+				// To make this balance as accurate as possible, we update the stats now, so we can use the scores from this game so-far.
+				// But since this would mess up the end-game stats updating (counting this part of the game twice), we restore the stats from the config afterwards.
+				UpdateStatsAtEndOfGame();
+				ForceFullTeamsRebalance();
+				CopyConfigIntoArrays();
+			break;
 
-      case "TORED":
-        // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-        ChangePlayerToTeam(FindPlayerNamed(args[1]),0,true);
-        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
-      break;
+			case "TORED":
+				// if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
+				ChangePlayerToTeam(FindPlayerNamed(args[1]),0,true);
+				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+			break;
 
-      case "TOBLUE":
-        // if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
-        ChangePlayerToTeam(FindPlayerNamed(args[1]),1,true);
-        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
-      break;
+			case "TOBLUE":
+				// if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
+				ChangePlayerToTeam(FindPlayerNamed(args[1]),1,true);
+				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+			break;
 
-      case "TOGREEN":
-        ChangePlayerToTeam(FindPlayerNamed(args[1]),2,true);
-        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
-      break;
+			case "TOGREEN":
+				ChangePlayerToTeam(FindPlayerNamed(args[1]),2,true);
+				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+			break;
 
-      case "TOGOLD":
-        ChangePlayerToTeam(FindPlayerNamed(args[1]),3,true);
-        Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
-      break;
+			case "TOGOLD":
+				ChangePlayerToTeam(FindPlayerNamed(args[1]),3,true);
+				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+			break;
 
-      case "SWITCH":
-        SwitchTwoPlayers(Sender,args[1],args[2]);
-      break;
+			case "SWITCH":
+				SwitchTwoPlayers(Sender,args[1],args[2]);
+			break;
 
-      case "SWAP":
-        SwitchTwoPlayers(Sender,args[1],args[2]);
-      break;
+			case "SWAP":
+				SwitchTwoPlayers(Sender,args[1],args[2]);
+			break;
 
-      case "WARN":
-        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+			case "WARN":
+				msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
 	p = FindPlayerNamed(args[1]);
 	if (p == None) {
-	  Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+		Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
 	} else {
-          FlashMessageToPlayer(PlayerPawn(p),msg,colorYellow);
-          p.ShakeView(3.0,8000.0,12000.0);
-          Sender.ClientMessage(p.getHumanName()$" was sent the message \""$msg$"\".");
+					FlashMessageToPlayer(PlayerPawn(p),msg,colorYellow);
+					p.ShakeView(3.0,8000.0,12000.0);
+					Sender.ClientMessage(p.getHumanName()$" was sent the message \""$msg$"\".");
 	}
-      break;
+			break;
 
-      case "KICK":
-        if (bAllowSemiAdminKick) {
-          msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
-	  p = FindPlayerNamed(args[1]);
-	  if (p == None) {
-	    Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
-	  } else {
-            FlashMessageToPlayer(PlayerPawn(p),msg,colorYellow);
-            // If the player is a semi-admin, but not admin, we must temporarily make him an admin, for this to run successfully:
-            bTempBool = Sender.bAdmin;
-            Sender.bAdmin = True;
-            Sender.Kick(p.getHumanName());
-            Sender.bAdmin = bTempBool;
-            Sender.ClientMessage(p.getHumanName()$" was warned and kicked.");
-	  }
-        }
-      break;
+			case "KICK":
+				if (bAllowSemiAdminKick) {
+					msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+		p = FindPlayerNamed(args[1]);
+		if (p == None) {
+			Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+		} else {
+						FlashMessageToPlayer(PlayerPawn(p),msg,colorYellow);
+						// If the player is a semi-admin, but not admin, we must temporarily make him an admin, for this to run successfully:
+						bTempBool = Sender.bAdmin;
+						Sender.bAdmin = True;
+						Sender.Kick(p.getHumanName());
+						Sender.bAdmin = bTempBool;
+						Sender.ClientMessage(p.getHumanName()$" was warned and kicked.");
+		}
+				}
+			break;
 
-      case "KICKBAN":
-        if (bAllowSemiAdminKick) {
-          msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
-	  p = FindPlayerNamed(args[1]);
-	  if (p == None) {
-	    Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
-	  } else {
-            FlashMessageToPlayer(PlayerPawn(p),msg,colorYellow);
-            // If the player is a semi-admin, but not admin, we must temporarily make him an admin, for this to run successfully:
-            bTempBool = Sender.bAdmin;
-            Sender.bAdmin = True;
-            Sender.KickBan(p.getHumanName());
-            Sender.bAdmin = bTempBool;
-            Sender.ClientMessage(p.getHumanName()$" was warned and banned.");
-	  }
-        }
-      break;
+			case "KICKBAN":
+				if (bAllowSemiAdminKick) {
+					msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+		p = FindPlayerNamed(args[1]);
+		if (p == None) {
+			Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+		} else {
+						FlashMessageToPlayer(PlayerPawn(p),msg,colorYellow);
+						// If the player is a semi-admin, but not admin, we must temporarily make him an admin, for this to run successfully:
+						bTempBool = Sender.bAdmin;
+						Sender.bAdmin = True;
+						Sender.KickBan(p.getHumanName());
+						Sender.bAdmin = bTempBool;
+						Sender.ClientMessage(p.getHumanName()$" was warned and banned.");
+		}
+				}
+			break;
 
-      case "FORCETRAVEL":
-        if (bAllowSemiAdminForceTravel) {
-          //// We may not want to publicise the password of the server we are forwarding to.  (e.g. server may have an irc reporter)
-          // if (bBroadcastStuff) { BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]); }
-          if (bBroadcastStuff) { BroadcastMessageAndLog("Admin is forcing a server switch!"); }
-          for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-            if (p.IsA('PlayerPawn')) { // yes we forward spectators too!
-              PlayerPawn(p).PreClientTravel();
-              PlayerPawn(p).ClientTravel(args[1], TRAVEL_Absolute, False);
-            }
-          }
-        }
-      break;
+			case "FORCETRAVEL":
+				if (bAllowSemiAdminForceTravel) {
+					//// We may not want to publicise the password of the server we are forwarding to.  (e.g. server may have an irc reporter)
+					// if (bBroadcastStuff) { BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]); }
+					if (bBroadcastStuff) { BroadcastMessageAndLog("Admin is forcing a server switch!"); }
+					for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+						if (p.IsA('PlayerPawn')) { // yes we forward spectators too!
+							PlayerPawn(p).PreClientTravel();
+							PlayerPawn(p).ClientTravel(args[1], TRAVEL_Absolute, False);
+						}
+					}
+				}
+			break;
 
-      Default:
-      break;
+			Default:
+			break;
 
-    }
+		}
 
-  }
+	}
 
-  #ifdef ENABLE_ADMIN_COMMANDS
+	#ifdef ENABLE_ADMIN_COMMANDS
 
-  // Admin only commands:
-  // These are not really needed for AutoTeamBalance, but useful commands nonetheless.
-  // I especially like to use "mutate set" instead of "admin set", since it provides feedback on whether or not the variable existed, and was successfully written!  "mutate get" can be used beforehard, to check the value of the variable.
-  if (Sender.bAdmin) {
+	// Admin only commands:
+	// These are not really needed for AutoTeamBalance, but useful commands nonetheless.
+	// I especially like to use "mutate set" instead of "admin set", since it provides feedback on whether or not the variable existed, and was successfully written!  "mutate get" can be used beforehard, to check the value of the variable.
+	if (Sender.bAdmin) {
 
-    switch ( Caps(args[0]) ) {
+		switch ( Caps(args[0]) ) {
 
-      // Allows admins to read variables from the config files (and maybe some live variables too; untested)
-      case "GET":
-        Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
-      break;
+			// Allows admins to read variables from the config files (and maybe some live variables too; untested)
+			case "GET":
+				Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+			break;
 
-      // Allows admins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
-      case "SET":
-        ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
-        Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
-      break;
+			// Allows admins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
+			case "SET":
+				ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+				Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+			break;
 
-      case "GETPROP":
-        Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
-      break;
+			case "GETPROP":
+				Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+			break;
 
-      // Allows admins to write to in-game variables
-      case "SETPROP":
-        SetPropertyText(args[1],args[2]);
-        Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
-        Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
-      break;
+			// Allows admins to write to in-game variables
+			case "SETPROP":
+				SetPropertyText(args[1],args[2]);
+				Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+				Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
+			break;
 
-      // Allows admins to run any console command on the server
-      case "CONSOLE":
-        msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
-        Sender.ClientMessage( "" $ ConsoleCommand(msg) );
-      break;
+			// Allows admins to run any console command on the server
+			case "CONSOLE":
+				msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+				Sender.ClientMessage( "" $ ConsoleCommand(msg) );
+			break;
 
-      case "SAVECONFIG":
-        UpdateStatsAtEndOfGame();
-        CopyArraysIntoConfig();
-        SaveConfig();
-        // CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
-      break;
+			case "SAVECONFIG":
+				UpdateStatsAtEndOfGame();
+				CopyArraysIntoConfig();
+				SaveConfig();
+				// CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
+			break;
 
-      case "GRANTADMIN":
-        p = FindPlayerNamed(args[1]);
+			case "GRANTADMIN":
+				p = FindPlayerNamed(args[1]);
 	if (p == None) {
-	  Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+		Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
 	} else {
-          ToggleAdminOnPlayer(p);
-          Sender.ClientMessage("Admin toggled on "$p.getHumanName()$".");
+					ToggleAdminOnPlayer(p);
+					Sender.ClientMessage("Admin toggled on "$p.getHumanName()$".");
 	}
-      break;
+			break;
 
-      Default:
-      break;
+			Default:
+			break;
 
-    }
+		}
 
-  }
+	}
 
-  #endif
+	#endif
 
-  if ( args[0]~="HELP" ) {
-    if (localPass == "")
-      pass_if_needed = "";
-    else
-      pass_if_needed = " [password]";
-    Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" say commands:");
-    if (bEnablePlayerCommands) {
-      Sender.ClientMessage("    teams !teams !red !blue !spec !play !vote !stats");
-    } else {
-      Sender.ClientMessage("    teams !teams");
-    }
-    Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" console commands:");
-    Sender.ClientMessage("    mutate strengths"); // also just "strength"
-    Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" semi-admin console commands:");
-    Sender.ClientMessage("    mutate teams" $ pass_if_needed);
-    Sender.ClientMessage("    mutate forceteams" $ pass_if_needed);
-    Sender.ClientMessage("    mutate tored <player>" $ pass_if_needed);
-    Sender.ClientMessage("    mutate toblue <player>" $ pass_if_needed);
-    Sender.ClientMessage("    mutate switch <player> <player>" $ pass_if_needed);
-    Sender.ClientMessage("    mutate warn <player> <message>" $ pass_if_needed);
-    if (bAllowSemiAdminKick) {
-      Sender.ClientMessage("    mutate kick <player> [<reason>]" $ pass_if_needed);
-      Sender.ClientMessage("    mutate kickban <player> [<reason>]" $ pass_if_needed);
-    }
-    if (bAllowSemiAdminForceTravel) {
-      Sender.ClientMessage("    mutate forcetravel <url>" $ pass_if_needed);
-    }
-    #ifdef ENABLE_ADMIN_COMMANDS
-    if (Sender.bAdmin) {
-      Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" admin-only console commands:");
-      Sender.ClientMessage("    mutate saveconfig");
-      Sender.ClientMessage("    mutate grantadmin <player>");
-      Sender.ClientMessage("    mutate get <package> <variable>");
-      Sender.ClientMessage("    mutate set <package> <variable> <new_value>");
-      Sender.ClientMessage("    mutate getprop <variable>");
-      Sender.ClientMessage("    mutate setprop <variable> <new_value>");
-      Sender.ClientMessage("    mutate console <command>");
-    }
-    #endif
-  }
+	if ( args[0]~="HELP" ) {
+		if (localPass == "")
+			pass_if_needed = "";
+		else
+			pass_if_needed = " [password]";
+		Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" say commands:");
+		if (bEnablePlayerCommands) {
+			Sender.ClientMessage("    teams !teams !red !blue !spec !play !vote !stats");
+		} else {
+			Sender.ClientMessage("    teams !teams");
+		}
+		Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" console commands:");
+		Sender.ClientMessage("    mutate strengths"); // also just "strength"
+		Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" semi-admin console commands:");
+		Sender.ClientMessage("    mutate teams" $ pass_if_needed);
+		Sender.ClientMessage("    mutate forceteams" $ pass_if_needed);
+		Sender.ClientMessage("    mutate tored <player>" $ pass_if_needed);
+		Sender.ClientMessage("    mutate toblue <player>" $ pass_if_needed);
+		Sender.ClientMessage("    mutate switch <player> <player>" $ pass_if_needed);
+		Sender.ClientMessage("    mutate warn <player> <message>" $ pass_if_needed);
+		if (bAllowSemiAdminKick) {
+			Sender.ClientMessage("    mutate kick <player> [<reason>]" $ pass_if_needed);
+			Sender.ClientMessage("    mutate kickban <player> [<reason>]" $ pass_if_needed);
+		}
+		if (bAllowSemiAdminForceTravel) {
+			Sender.ClientMessage("    mutate forcetravel <url>" $ pass_if_needed);
+		}
+		#ifdef ENABLE_ADMIN_COMMANDS
+		if (Sender.bAdmin) {
+			Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" admin-only console commands:");
+			Sender.ClientMessage("    mutate saveconfig");
+			Sender.ClientMessage("    mutate grantadmin <player>");
+			Sender.ClientMessage("    mutate get <package> <variable>");
+			Sender.ClientMessage("    mutate set <package> <variable> <new_value>");
+			Sender.ClientMessage("    mutate getprop <variable>");
+			Sender.ClientMessage("    mutate setprop <variable> <new_value>");
+			Sender.ClientMessage("    mutate console <command>");
+		}
+		#endif
+	}
 
-  Super.Mutate(str,Sender);
+	Super.Mutate(str,Sender);
 }
 
 function SwitchTwoPlayers(PlayerPawn sender, String name1, String name2) {
-  local Pawn player1, player2;
-  local int newteam1, newteam2;
-  player1 = FindPlayerNamed(name1);
-  player2 = FindPlayerNamed(name2);
-  if (player1 == None) {
-    Sender.ClientMessage("Could not find player matching \""$name1$"\".");
-    return;
-  }
-  if (player2 == None) {
-    Sender.ClientMessage("Could not find player matching \""$name2$"\".");
-    return;
-  }
-  if (player1.PlayerReplicationInfo.Team == player2.PlayerReplicationInfo.Team) {
-    Sender.ClientMessage("Players \""$player1.getHumanName()$"\" and \""$player2.getHumanName()$"\" are on the same team!");
-    return;
-  }
-  newteam1 = player2.PlayerReplicationInfo.Team;
-  newteam2 = player1.PlayerReplicationInfo.Team;
-  ChangePlayerToTeam(player1,newteam1,true);
-  ChangePlayerToTeam(player2,newteam2,true);
+	local Pawn player1, player2;
+	local int newteam1, newteam2;
+	player1 = FindPlayerNamed(name1);
+	player2 = FindPlayerNamed(name2);
+	if (player1 == None) {
+		Sender.ClientMessage("Could not find player matching \""$name1$"\".");
+		return;
+	}
+	if (player2 == None) {
+		Sender.ClientMessage("Could not find player matching \""$name2$"\".");
+		return;
+	}
+	if (player1.PlayerReplicationInfo.Team == player2.PlayerReplicationInfo.Team) {
+		Sender.ClientMessage("Players \""$player1.getHumanName()$"\" and \""$player2.getHumanName()$"\" are on the same team!");
+		return;
+	}
+	newteam1 = player2.PlayerReplicationInfo.Team;
+	newteam2 = player1.PlayerReplicationInfo.Team;
+	ChangePlayerToTeam(player1,newteam1,true);
+	ChangePlayerToTeam(player2,newteam2,true);
 }
 
 function ToggleAdminOnPlayer(Pawn p) {
-  local PlayerPawn player;
-  if (p!=None && p.IsA('PlayerPawn')) {
-    player = PlayerPawn(p);
-    player.bAdmin = !player.bAdmin;
-    player.PlayerReplicationInfo.bAdmin = player.bAdmin;
-  }
+	local PlayerPawn player;
+	if (p!=None && p.IsA('PlayerPawn')) {
+		player = PlayerPawn(p);
+		player.bAdmin = !player.bAdmin;
+		player.PlayerReplicationInfo.bAdmin = player.bAdmin;
+	}
 }
 
 // HandleEndGame gets called when the game time limit expires, BUT the game may go into overtime without us knowing (one of the earlier mutators, or the gametype itself, might decide this).
 // So at this point I set a Timer to check in 10 seconds whether the game really has ended or not.
 // DONE: if not needed for bWarnMidGameUnbalance or bForceEvenTeams, the timer is disabled after one check, then we wait for this function to get called again before it is started again.
 function bool HandleEndGame() {
-  local bool b;
+	local bool b;
 
-  SetTimer(10,bWarnMidGameUnbalance || bForceEvenTeams); // only loop if we need to check team balance during overtime; if we are only looking for the real end-game, then we only need to use the timer once more
-  if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds. [bOverTime="$Level.Game.bOverTime$",bGameEnded="$Level.Game.bGameEnded$"]"); }
+	SetTimer(10,bWarnMidGameUnbalance || bForceEvenTeams); // only loop if we need to check team balance during overtime; if we are only looking for the real end-game, then we only need to use the timer once more
+	if (bDebugLogging) { Log("AutoTeamBalance.HandleEndGame(): Set Timer() for 10 seconds. [bOverTime="$Level.Game.bOverTime$",bGameEnded="$Level.Game.bGameEnded$"]"); }
 
-  if ( NextMutator != None ) {
-    b = NextMutator.HandleEndGame();
-    return b;
-  }
-  return false;
+	if ( NextMutator != None ) {
+		b = NextMutator.HandleEndGame();
+		return b;
+	}
+	return false;
 }
 
 
@@ -782,243 +805,262 @@ function bool HandleEndGame() {
 
 // Checks if the game has begun.
 function CheckGameStart() {
-  local int c,n,e;
-  local Pawn p;
+	local int c,n,e;
+	local Pawn p;
 
-  // We can disable the timer immediately, if AutoTeamBalance is not needed for this game.
-  // If we are going to balance, then the timer waits until 2 seconds before the game starts.
-  // If we are going to update stats, we need to record the time the game actually started at, so we wait the same way.
-  if (!ShouldBalance(Level.Game) && !ShouldUpdateStats(Level.Game)) { // We do this early, to check at the very least that this is a teamgame, to avoid accessed none's below
-    DoGameStart();
-    return;
-  }
+	// We can disable the timer immediately, if AutoTeamBalance is not needed for this game.
+	// If we are going to balance, then the timer waits until 2 seconds before the game starts.
+	// If we are going to update stats, we need to record the time the game actually started at, so we wait the same way.
+	if (!ShouldBalance(Level.Game) && !ShouldUpdateStats(Level.Game)) { // We do this early, to check at the very least that this is a teamgame, to avoid accessed none's below
+		DoGameStart();
+		return;
+	}
 
-  // TODO BUG: if bUpdatePlayerStatsForNonTeamGames is enabled, then on DM maps, we reach here and throw some Accessed None errors.
-  //           But we still want the game start-time.
-  e = TeamGamePlus(Level.Game).ElapsedTime;
-  n = TeamGamePlus(Level.Game).NetWait;
-  c = TeamGamePlus(Level.Game).countdown;
-  c = Min(c,n-e);
+	// TODO BUG: if bUpdatePlayerStatsForNonTeamGames is enabled, then on DM maps, we reach here and throw some Accessed None errors.
+	//           But we still want the game start-time.
+	e = TeamGamePlus(Level.Game).ElapsedTime;
+	n = TeamGamePlus(Level.Game).NetWait;
+	c = TeamGamePlus(Level.Game).countdown;
+	c = Min(c,n-e);
 
-  // Initialize teams 1 or 2 seconds before the game starts:
-  if (c<2) {
-    DoGameStart();
-  } else {
-    for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-      if (p.IsA('PlayerPawn')) {
-        if (bDebugLogging) { Log("Considering flashing message to "$p$" \""$p.getHumanName()$"\" ("$p.class.Name$")"); }
-        if (p.class == class'PlayerPawn') { // Avoid flashing or logging to the virtual player UTDC adds before anyone has even joined the server.
-          if (bFlashCookies) {
-            FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,3);
-          } else {
-            FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,3); // colMagenta
-            // FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
-          }
-        }
-      }
-   }
-  }
+	// Initialize teams 1 or 2 seconds before the game starts:
+	if (c<2) {
+		DoGameStart();
+	} else {
+		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+			// Log("c="$c$" n-e="$(n-e)$" e="$e$" n="$n$" p="$p);
+			// if (p.class == class'PlayerPawn') { // Avoids logging repeated calls to UTServerAdminSpectator before anyone has joined the server.
+			if (p.IsA('PlayerPawn') && InStr(String(p.class),"UTServer")==-1) {
+				if (bFlashCookies) {
+					FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,3);
+				} else {
+					FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,3); // colMagenta
+					// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
+				}
+			}
+	 }
+	}
 
 }
 
 function DoGameStart() {
-  local Pawn p;
-  local Color msgColor;
-  timeGameStarted = Level.TimeSeconds+1.5; // (since we are called on average 1.5 seconds before starting countdown ends)
-  if (ShouldBalance(Level.Game)) {
-    //// We could also do this once or twice *after* the ForceFullTeamsRebalance(), to make teams really even by strength (not pickup style).
-    ForceFullTeamsRebalance();
-    //// TESTING: how well can we do by just switching 1 or 2 players?
-    if (bSuperBalance) {
-      lastBalanceTime=-100; MidGameRebalance(True);
-      lastBalanceTime=-100; MidGameRebalance(True);
-      lastBalanceTime=-100; MidGameRebalance(True);
-    }
-    // (This must come after the team switching, otherwise the default start-game "xxx is on Red" will overwrite this text.)
-    // TODO CONSIDER BUG: isn't it more important that the player sees which team they were moved to?!
-    for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-      if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
-        // PlayerPawn(p).ClearProgressMessages(); // Clear the pre-game messages before showing new team and cookies.
-        switch (p.PlayerReplicationInfo.Team) {
-          case 0: msgColor = colorRed; break;
-          case 1: msgColor = colorBlue; break;
-          case 2: msgColor = colorGreen; break;
-          case 3: msgColor = colorYellow; break;
-          default: msgColor = colorWhite; break;
-        }
-        // PlayerPawn(p).ClearProgressMessages();
-        FlashMessageToPlayer(PlayerPawn(p),"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,3);
-      }
-    }
-  }
-  gameStartDone=True; // Should ensure CheckGameStart() is never called again.
-  Disable('Tick');
-  // We disable the timer, if it is not needed to check mid-game teambalance.
-  // HandleEndGame() will set it again, if it is needed for CheckGameEnd().
-  if (bWarnMidGameUnbalance || bForceEvenTeams) {
-    SetTimer(10,True);
-  } else {
-    SetTimer(0,False);
-  }
+	local Pawn p;
+	local Color msgColor;
+	timeGameStarted = Level.TimeSeconds+1.5; // (since we are called on average 1.5 seconds before starting countdown ends)
+	if (ShouldBalance(Level.Game)) {
+		//// We could also do this once or twice *after* the ForceFullTeamsRebalance(), to make teams really even by strength (not pickup style).
+		ForceFullTeamsRebalance();
+		//// TESTING: how well can we do by just switching 1 or 2 players?
+		if (bSuperBalance) {
+			lastBalanceTime=-100; MidGameRebalance(True);
+			lastBalanceTime=-100; MidGameRebalance(True);
+			lastBalanceTime=-100; MidGameRebalance(True);
+		}
+		// (This must come after the team switching, otherwise the default start-game "xxx is on Red" will overwrite this text.)
+		// TODO CONSIDER BUG: isn't it more important that the player sees which team they were moved to?!
+		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+			if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
+				// PlayerPawn(p).ClearProgressMessages(); // Clear the pre-game messages before showing new team and cookies.
+				switch (p.PlayerReplicationInfo.Team) {
+					case 0: msgColor = colorRed; break;
+					case 1: msgColor = colorBlue; break;
+					case 2: msgColor = colorGreen; break;
+					case 3: msgColor = colorYellow; break;
+					default: msgColor = colorWhite; break;
+				}
+				// PlayerPawn(p).ClearProgressMessages();
+				FlashMessageToPlayer(PlayerPawn(p),"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,3);
+			}
+		}
+	}
+	gameStartDone=True; // Should ensure CheckGameStart() is never called again.
+	// Disable('Tick');
+	// We disable the timer, if it is not needed to check mid-game teambalance.
+	// HandleEndGame() will set it again, if it is needed for CheckGameEnd().
+	if (bWarnMidGameUnbalance || bForceEvenTeams) {
+		SetTimer(10,True);
+	} else {
+		SetTimer(0,False);
+	}
 }
 
 // Deals with mid-game team unbalance, only called if bForceEvenTeams and/or bWarnMidGameUnbalance are set.
 function CheckMidGameBalance() {
-  local int redTeamCount,blueTeamCount;
-  local int redTeamStrength,blueTeamStrength;
-  local int weakerTeam;
-  local String problem; // human-readable explanation of the team unbalance
-  local Pawn p;
-  weakerTeam = -1;
-  redTeamCount = GetTeamSize(0);
-  blueTeamCount = GetTeamSize(1);
+	local int redTeamCount,blueTeamCount;
+	local int redTeamStrength,blueTeamStrength;
+	local int weakerTeam;
+	local String problem; // human-readable explanation of the team unbalance
+	local Pawn p;
+	weakerTeam = -1;
+	redTeamCount = GetTeamSize(0);
+	blueTeamCount = GetTeamSize(1);
 
-  // Is one of the teams down 2 or more players?
-  if (redTeamCount>=blueTeamCount+2) {
-    weakerTeam = 1; problem=""; // problem = " ("$redTeamCount$"v"$blueTeamCount$") ";
-  }
-  if (redTeamCount<=blueTeamCount-2) {
-    weakerTeam = 0; problem=""; // problem = " ("$redTeamCount$"v"$blueTeamCount$") ";
-  }
+	// Is one of the teams down 2 or more players?
+	if (redTeamCount>=blueTeamCount+2) {
+		weakerTeam = 1; problem=""; // problem = " ("$redTeamCount$"v"$blueTeamCount$") ";
+	}
+	if (redTeamCount<=blueTeamCount-2) {
+		weakerTeam = 0; problem=""; // problem = " ("$redTeamCount$"v"$blueTeamCount$") ";
+	}
 
-  // If so, and bForceEvenTeams is set, then take action!
-  if (bForceEvenTeams && weakerTeam != -1) {
-    MidGameRebalance(True);
-    return;
-    // DONE: bForceEvenTeams does *not* take action if the teams differ by less than 2 players.  But maybe it should, if they are really unfair by strength! -- Nee leave that for bWarnMidGameUnbalance
-  }
+	// If so, and bForceEvenTeams is set, then take action!
+	if (bForceEvenTeams && weakerTeam != -1) {
+		MidGameRebalance(True);
+		return;
+		// DONE: bForceEvenTeams does *not* take action if the teams differ by less than 2 players.  But maybe it should, if they are really unfair by strength! -- Nee leave that for bWarnMidGameUnbalance
+	}
 
-  // Do we want to warn players of any inbalance?
-  if (bWarnMidGameUnbalance) {
+	// Do we want to warn players of any inbalance?
+	if (bWarnMidGameUnbalance) {
 
-    if (weakerTeam == -1 && redTeamCount+blueTeamCount>=3) { // no point checking this on a 1v1 ;)
-      // So teams differ by <2 players.  Now calculate which team is weaker, and check if that team has fewer players:
-      redTeamStrength = GetTeamStrength(0);
-      blueTeamStrength = GetTeamStrength(1);
-      if (redTeamCount>=blueTeamCount && redTeamStrength>blueTeamStrength+StrengthThreshold) {
-        weakerTeam = 1; problem = " (strength "$redTeamStrength$" v "$blueTeamStrength$") ";
-      }
-      if (redTeamCount<=blueTeamCount && blueTeamStrength>redTeamStrength+StrengthThreshold) {
-        weakerTeam = 0; problem = " (strength "$redTeamStrength$" v "$blueTeamStrength$") ";
-      }
-    }
-    // DONE: So note, we never warn of strength inbalance if #players is the same - maybe we should :P
+		if (weakerTeam == -1 && redTeamCount+blueTeamCount>=3) { // no point checking this on a 1v1 ;)
+			// So teams differ by <2 players.  Now calculate which team is weaker, and check if that team has fewer players:
+			redTeamStrength = GetTeamStrength(0);
+			blueTeamStrength = GetTeamStrength(1);
+			if (redTeamCount>=blueTeamCount && redTeamStrength>blueTeamStrength+StrengthThreshold) {
+				weakerTeam = 1; problem = " (strength "$redTeamStrength$" v "$blueTeamStrength$") ";
+			}
+			if (redTeamCount<=blueTeamCount && blueTeamStrength>redTeamStrength+StrengthThreshold) {
+				weakerTeam = 0; problem = " (strength "$redTeamStrength$" v "$blueTeamStrength$") ";
+			}
+		}
+		// DONE: So note, we never warn of strength inbalance if #players is the same - maybe we should :P
 
-    if (weakerTeam == -1) {
-      return;
-    }
+		if (weakerTeam == -1) {
+			return;
+		}
 
-    // Send all players the team inbalance warning:
-    if (bLetPlayersRebalance && bShowProposedSwitch) {
-      MidGameRebalance(False);
-    } else {
-      for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-        if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
-          // Players on different teams get slightly different messages:
-          if (p.PlayerReplicationInfo.Team == weakerTeam) {
-            if (bLetPlayersRebalance) {
-	      if (bFlashOnWarning) {
-                FlashMessageToPlayer(PlayerPawn(p),"Teams look uneven! "$problem$" Type !teams to fix them",colorCyan);
-	      } else {
-                p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them",'Event',False);
-	      }
-            }
-          } else {
-	    if (bFlashOnWarning) {
-              FlashMessageToPlayer(PlayerPawn(p),"Teams look uneven! "$problem$" Type "$ConditionalString(bLetPlayersRebalance,"!teams or ","")$"!"$Locs(getTeamName(weakerTeam))$"",colorCyan);
-	    } else {
-              p.ClientMessage("Teams look uneven! "$problem$" Type "$ConditionalString(bLetPlayersRebalance,"!teams or ","")$"!"$Locs(getTeamName(weakerTeam))$"",'Event',False);
-	    }
-            // We may "punish" the stronger team, by shaking their view, or sending them a buzzing sound:
-            if (bShakeOnWarning) {
-              p.ShakeView(1.0,2000.0,2000.0);
-            }
-            if (bBuzzOnWarning) {
-              p.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16); // an annoying buzzing fly sound
-            }
-          }
-        }
-      }
-    }
-  }
+		// Send all players the team inbalance warning:
+		if (bLetPlayersRebalance && bShowProposedSwitch) {
+			MidGameRebalance(False);
+		} else {
+			for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+				if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
+					// Players on different teams get slightly different messages:
+					if (p.PlayerReplicationInfo.Team == weakerTeam) {
+						if (bLetPlayersRebalance) {
+				if (bFlashOnWarning) {
+								FlashMessageToPlayer(PlayerPawn(p),"Teams look uneven! "$problem$" Type !teams to fix them",colorCyan);
+				} else {
+								p.ClientMessage("Teams look uneven! "$problem$" Type !teams to fix them",'Event',False);
+				}
+						}
+					} else {
+			if (bFlashOnWarning) {
+							FlashMessageToPlayer(PlayerPawn(p),"Teams look uneven! "$problem$" Type "$ConditionalString(bLetPlayersRebalance,"!teams or ","")$"!"$Locs(getTeamName(weakerTeam))$"",colorCyan);
+			} else {
+							p.ClientMessage("Teams look uneven! "$problem$" Type "$ConditionalString(bLetPlayersRebalance,"!teams or ","")$"!"$Locs(getTeamName(weakerTeam))$"",'Event',False);
+			}
+						// We may "punish" the stronger team, by shaking their view, or sending them a buzzing sound:
+						if (bShakeOnWarning) {
+							p.ShakeView(1.0,2000.0,2000.0);
+						}
+						if (bBuzzOnWarning) {
+							p.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16); // an annoying buzzing fly sound
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 function String ConditionalString(bool b, String yes, String no) {
-  if (b) { return yes; } else { return no; }
+	if (b) { return yes; } else { return no; }
 }
 
 function name ConditionalName(bool b, name yes, name no) {
-  if (b) { return yes; } else { return no; }
+	if (b) { return yes; } else { return no; }
 }
 
 function CheckGameEnd() {
-  if (Level.Game.bGameEnded) {
-    if (gameEndDone) return;
-    gameEndDone = true;
-    // We could (but don't) turn the Timer off now
-    if (ShouldUpdateStats(Level.Game)) {
-      UpdateStatsAtEndOfGame();
-      CopyArraysIntoConfig();
-      SaveConfig();
-    }
-  }
+	if (Level.Game.bGameEnded) {
+		if (gameEndDone) return;
+		gameEndDone = true;
+		// We could (but don't) turn the Timer off now
+		if (ShouldUpdateStats(Level.Game)) {
+			UpdateStatsAtEndOfGame();
+			CopyArraysIntoConfig();
+			SaveConfig();
+		}
+	}
 }
 
 function bool CheckMessage(String Msg, Actor Sender) {
 
-  if (bEnablePlayerCommands) {
+	if (bEnablePlayerCommands) {
 
-    if (Msg ~= "!RED") {
-      ChangePlayerToTeam(PlayerPawn(Sender),0,false);
-    }
+		if (Msg ~= "!RED") {
+			ChangePlayerToTeam(PlayerPawn(Sender),0,false);
+		}
 
-    if (Msg ~= "!BLUE") {
-      ChangePlayerToTeam(PlayerPawn(Sender),1,false);
-    }
+		if (Msg ~= "!BLUE") {
+			ChangePlayerToTeam(PlayerPawn(Sender),1,false);
+		}
 
-    if (Msg ~= "!GREEN") {
-      ChangePlayerToTeam(PlayerPawn(Sender),2,false);
-    }
+		if (Msg ~= "!GREEN") {
+			ChangePlayerToTeam(PlayerPawn(Sender),2,false);
+		}
 
-    if (Msg ~= "!GOLD" || Msg ~= "!YELLOW") {
-      ChangePlayerToTeam(PlayerPawn(Sender),3,false);
-    }
+		if (Msg ~= "!GOLD" || Msg ~= "!YELLOW") {
+			ChangePlayerToTeam(PlayerPawn(Sender),3,false);
+		}
 
-    if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
-      if (!Sender.IsA('Spectator')) {
-        PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
-        PlayerPawn(Sender).ClientTravel("?OverrideClass=Botpack.CHSpectator",TRAVEL_Relative, False);
-      }
-    }
+		if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
+			if (!Sender.IsA('Spectator')) {
+				PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
+				PlayerPawn(Sender).ClientTravel("?OverrideClass=Botpack.CHSpectator",TRAVEL_Relative, False);
+			}
+		}
 
-    if (Msg ~= "!PLAY") {
-      if (Sender.IsA('Spectator')) {
-        PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
-        PlayerPawn(Sender).ClientTravel("?OverrideClass=",TRAVEL_Relative, False);
-      }
-    }
+		if (Msg ~= "!PLAY") {
+			if (Sender.IsA('Spectator')) {
+				PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
+				PlayerPawn(Sender).ClientTravel("?OverrideClass=",TRAVEL_Relative, False);
+			}
+		}
 
-    if (Msg ~= "!VOTE" || Msg ~= "!MAPVOTE") {
-      Level.Game.BaseMutator.Mutate("bdbmapvote votemenu",PlayerPawn(Sender));
-    }
+		if (Msg ~= "!VOTE" || Msg ~= "!MAPVOTE") {
+			Level.Game.BaseMutator.Mutate("bdbmapvote votemenu",PlayerPawn(Sender));
+		}
 
-    if (Msg ~= "!STATS") { 
-      Level.Game.BaseMutator.Mutate("smartctf stats",PlayerPawn(Sender));
-      ShowStrengthsTo(PlayerPawn(Sender));
-    }
+		if (Msg ~= "!STATS") { 
+			Level.Game.BaseMutator.Mutate("smartctf stats",PlayerPawn(Sender));
+			// TODO: Turn on console (toggle console if not on)?
+			ShowStrengthsTo(PlayerPawn(Sender));
+		}
 
-  }
+	}
 
-  if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
-    if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
-      if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage(): Calling RequestMidGameRebalance()."); }
-      RequestMidGameRebalance(PlayerPawn(Sender));
-    }
-  }
+	if (Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
+		if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
+			if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage(): Calling RequestMidGameRebalance()."); }
+			RequestMidGameRebalance(PlayerPawn(Sender));
+		}
+	}
+
+	#ifdef MAP_RATING_SYSTEM
+	if (StrContains(Locs(Msg),"bad map") || StrContains(Locs(Msg),"shit map") || StrContains(Locs(Msg),"crap map")) {
+		RateMap(Level,Sender,0);
+	}
+
+	if (StrContains(Locs(Msg),"good map") || StrContains(Locs(Msg),"great map") || StrContains(Locs(Msg),"nice map")) {
+		RateMap(Level,Sender,10);
+	}
+	#endif
 
 }
 
-
+#ifdef MAP_RATING_SYSTEM
+function RateMap(String map, PlayerPawn p, float newrating) {
+	if (bHasAlreadyRated[p.PlayerReplicationInfo.PlayerID]==1) {
+		Sender.ClientMessage("You have already rated this map.");
+	} else {
+		bHasAlreadyRated[p.PlayerReplicationInfo.PlayerID]=1;
+		// TODO
+	}
+}
+#endif
 
 // =========== Balancing Algorithms =========== //
 
@@ -1028,128 +1070,128 @@ function bool CheckMessage(String Msg, Actor Sender) {
 // It can also be forced by a semi-admin mid-game, using "mutate forceteams".
 // In this case, it doesn't check which players are holding flags.
 function ForceFullTeamsRebalance() {
-  local Pawn p;
-  local int st;
-  local int pid;
-  local Pawn pl[64]; // hashmap of playerpawns, with i = PlayerID%64
-  local int ps[64]; // their strengths
-  local int moved[64]; // so 0=false 1=true :P
-  local int plorder[32];
-  local int i;
-  local int n;
-  local int mx;
-  local int teamnr;
-  local int teamstr[2];
-  local TeamGamePlus g; // my linux ucc make had trouble with TeamGamePlus :|
-  local int oldMaxTeamSize;
-  local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
+	local Pawn p;
+	local int st;
+	local int pid;
+	local Pawn pl[64]; // hashmap of playerpawns, with i = PlayerID%64
+	local int ps[64]; // their strengths
+	local int moved[64]; // so 0=false 1=true :P
+	local int plorder[32];
+	local int i;
+	local int n;
+	local int mx;
+	local int teamnr;
+	local int teamstr[2];
+	local TeamGamePlus g; // my linux ucc make had trouble with TeamGamePlus :|
+	local int oldMaxTeamSize;
+	local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
 
-  // We can't balance if it's not a teamgame
-  if (!Level.Game.GameReplicationInfo.bTeamGame) return;
+	// We can't balance if it's not a teamgame
+	if (!Level.Game.GameReplicationInfo.bTeamGame) return;
 
-  if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Running..."); }
-  if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is attempting to balance the teams..."); }
+	if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Running..."); }
+	if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is attempting to balance the teams..."); }
 
-  // rate all players, and put them in a temporary structure:
-  for (p=Level.PawnList; p!=None; p=p.NextPawn)
-  {
-    if (AllowedToBalance(p))
-    {
-      st=GetPawnStrength(p);
-      pid=p.PlayerReplicationInfo.PlayerID % 64;
-      pl[pid]=p;
-      ps[pid]=st;
-      moved[pid] = 0;
-      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ getIP(p) $ " and score " $ p.PlayerReplicationInfo.Score $ "."); }
-    }
-  }
+	// rate all players, and put them in a temporary structure:
+	for (p=Level.PawnList; p!=None; p=p.NextPawn)
+	{
+		if (AllowedToBalance(p))
+		{
+			st=GetPawnStrength(p);
+			pid=p.PlayerReplicationInfo.PlayerID % 64;
+			pl[pid]=p;
+			ps[pid]=st;
+			moved[pid] = 0;
+			if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ getIP(p) $ " and score " $ p.PlayerReplicationInfo.Score $ "."); }
+		}
+	}
 
-  // sort players by strength (move them out of the structure, into plorder[])
-  n=0;
-  do
-  {
-    pid=-1;
-    mx=0;
-    // find pid=i with max tg[i]
-    for (i=0; i<64; i++)
-    {
-      // Is this the strongest not-yet-moved player in this cycle?
-      if ( pl[i] != None && moved[i]==0 && (pid == -1 || ps[i]>mx) ) {
-        pid=i;
-        mx=ps[i];
-      }
-    }
-    // If we found one, add him as the next player in the list
-    if (pid != -1) {
-      plorder[n]=pid;
-      // ps[pid]=0;
-      moved[pid] = 1;
-      n++;
-      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $""); }
-    }
-  } until (pid==-1);
+	// sort players by strength (move them out of the structure, into plorder[])
+	n=0;
+	do
+	{
+		pid=-1;
+		mx=0;
+		// find pid=i with max tg[i]
+		for (i=0; i<64; i++)
+		{
+			// Is this the strongest not-yet-moved player in this cycle?
+			if ( pl[i] != None && moved[i]==0 && (pid == -1 || ps[i]>mx) ) {
+				pid=i;
+				mx=ps[i];
+			}
+		}
+		// If we found one, add him as the next player in the list
+		if (pid != -1) {
+			plorder[n]=pid;
+			// ps[pid]=0;
+			moved[pid] = 1;
+			n++;
+			if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $""); }
+		}
+	} until (pid==-1);
 
-  // save team changing rules before we override them
-  g=TeamGamePlus(Level.Game);
-  oldMaxTeamSize=g.MaxTeamSize;
-  oldbPlayersBalanceTeams=g.bPlayersBalanceTeams;
-  oldbNoTeamChanges=g.bNoTeamChanges;
+	// save team changing rules before we override them
+	g=TeamGamePlus(Level.Game);
+	oldMaxTeamSize=g.MaxTeamSize;
+	oldbPlayersBalanceTeams=g.bPlayersBalanceTeams;
+	oldbNoTeamChanges=g.bNoTeamChanges;
 
-  // deactivate team changing rules
-  g.MaxTeamSize=32;
-  g.bPlayersBalanceTeams=False;
-  g.bNoTeamChanges=False;
+	// deactivate team changing rules
+	g.MaxTeamSize=32;
+	g.bPlayersBalanceTeams=False;
+	g.bNoTeamChanges=False;
 
-  if (bClanWar)
-  {
+	if (bClanWar)
+	{
 
-    // rebuild teams by clan tags
-    teamstr[0]=0;
-    teamstr[1]=0;
-    for (i=0; i<n; i++)
-    {
-      pid=plorder[i];
-      teamnr=0;
-      if (Instr(Caps(pl[pid].PlayerReplicationInfo.Playername),Caps(clanTag))==-1) teamnr=1;
-      ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
-      teamstr[teamnr]+=ps[pid];
-    }
+		// rebuild teams by clan tags
+		teamstr[0]=0;
+		teamstr[1]=0;
+		for (i=0; i<n; i++)
+		{
+			pid=plorder[i];
+			teamnr=0;
+			if (Instr(Caps(pl[pid].PlayerReplicationInfo.Playername),Caps(clanTag))==-1) teamnr=1;
+			ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
+			teamstr[teamnr]+=ps[pid];
+		}
 
-  } else {
+	} else {
 
-    // Rebuild teams by strength, assigning in order: red-blue-blue-red-red-blue-blue-...
-    // (On the way we also calculate total team strengths)
-    teamstr[0]=0;
-    teamstr[1]=0;
-    for (i=0; i<(n&254); i++)
-    {
-      pid=plorder[i];
-      teamnr=0;
-      if ((i&3)==1 || (i&3)==2) teamnr=1;
-      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$"."); }
-      ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
-      teamstr[teamnr]+=ps[pid];
-    }
+		// Rebuild teams by strength, assigning in order: red-blue-blue-red-red-blue-blue-...
+		// (On the way we also calculate total team strengths)
+		teamstr[0]=0;
+		teamstr[1]=0;
+		for (i=0; i<(n&254); i++)
+		{
+			pid=plorder[i];
+			teamnr=0;
+			if ((i&3)==1 || (i&3)==2) teamnr=1;
+			if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$"."); }
+			ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
+			teamstr[teamnr]+=ps[pid];
+		}
 
-    // if there is an odd number of players put the last player in the weaker team
-    if ((n&1)==1)
-    {
-      pid=plorder[i];
-      teamnr=0; if (teamstr[0]>=teamstr[1]+Rand(2)) teamnr=1;
-      if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$"."); }
-      ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
-      teamstr[teamnr]+=ps[pid];
-    }
+		// if there is an odd number of players put the last player in the weaker team
+		if ((n&1)==1)
+		{
+			pid=plorder[i];
+			teamnr=0; if (teamstr[0]>=teamstr[1]+Rand(2)) teamnr=1;
+			if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$"."); }
+			ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
+			teamstr[teamnr]+=ps[pid];
+		}
 
-  }
+	}
 
-  // restore team changing rules
-  g.MaxTeamSize=oldMaxTeamSize;
-  g.bPlayersBalanceTeams=oldbPlayersBalanceTeams;
-  g.bNoTeamChanges=oldbNoTeamChanges;
+	// restore team changing rules
+	g.MaxTeamSize=oldMaxTeamSize;
+	g.bPlayersBalanceTeams=oldbPlayersBalanceTeams;
+	g.bNoTeamChanges=oldbNoTeamChanges;
 
-  // Show team strengths to all players
-  if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
+	// Show team strengths to all players
+	if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 
 }
 
@@ -1157,190 +1199,292 @@ function ForceFullTeamsRebalance() {
 // TODO/DONE?: Also, it asks for additional requests, when bWarnMidGameUnbalance is flashing - it shouldn't!
 function RequestMidGameRebalance(PlayerPawn Sender) {
 #ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
-  local int i;
-  local int countRequests;
-  local int additionalRequiredRequests;
-  local Pawn p;
-  // If the last request was a long time ago (>1 minute), reset the request list
-  if (lastRebalanceRequestTime < Level.TimeSeconds - 60) {
-    for (i=0;i<64;i++) {
-      pidsRequestingRebalance[i] = 0;
-    }
-  }
-  // Set that this player is requesting balance
-  pidsRequestingRebalance[Sender.PlayerReplicationInfo.PlayerID] = 1;
-  // Count the number of requests at this time
-  countRequests = 0;
-  for (i=0;i<64;i++) {
-    if (pidsRequestingRebalance[i] != 0) {
-      countRequests++;
-    }
-  }
-  // Work out how many more requests are needed
-  additionalRequiredRequests = MinRequestsForRebalance - countRequests;
-  // But if teams differ in size by 2 or more players, only one request to rebalance is needed:
-  // TODO: we could also require only 1 request if the stronger team has more players
-  if (Abs(GetTeamSize(0)-GetTeamSize(1))>=2) {
-    additionalRequiredRequests = 0;
-  }
-  // Decide what to do
-  if (additionalRequiredRequests <= 0) {
-    MidGameRebalance(True);
-    lastRebalanceRequestTime = -60; // Will force a reset the next time we are called
-  } else {
-    if (bShowProposedSwitch) {
-      MidGameRebalance(False);
-    } else {
-      if (bFlashRebalanceRequest) {
-        for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-          if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && !p.IsA('Bot')) {
-            FlashMessageToPlayer(PlayerPawn(p),"Type !teams to rebalance ("$additionalRequiredRequests$" needed)",colorGreen);
-          }
-        } 
-      } else {
-        // BroadcastMessageAndLog("I require "$additionalRequiredRequests$" more requests before I will rebalance the teams.  Say \"!teams\" if you agree.");
-        BroadcastMessageAndLog("Type !teams to rebalance the teams ("$additionalRequiredRequests$" needed).");
-      }
-    }
-    lastRebalanceRequestTime = Level.TimeSeconds;
-  }
+	local int i;
+	local int countRequests;
+	local int additionalRequiredRequests;
+	local Pawn p;
+	local string s;
+	// If the last request was a long time ago (>1 minute), reset the request list
+	if (lastRebalanceRequestTime < Level.TimeSeconds - 60) {
+		for (i=0;i<64;i++) {
+			pidsRequestingRebalance[i] = 0;
+		}
+	}
+	// Set that this player is requesting balance
+	pidsRequestingRebalance[Sender.PlayerReplicationInfo.PlayerID] = 1;
+	// Count the number of requests at this time
+	countRequests = 0;
+	for (i=0;i<64;i++) {
+		if (pidsRequestingRebalance[i] != 0) {
+			countRequests++;
+		}
+	}
+	// Work out how many more requests are needed
+	additionalRequiredRequests = MinRequestsForRebalance - countRequests;
+	// But if teams differ in size by 2 or more players, only one request to rebalance is needed:
+	// TODO: we could also require only 1 request if the stronger team has more players
+	if (Abs(GetTeamSize(0)-GetTeamSize(1))>=2) {
+		additionalRequiredRequests = 0;
+	}
+	// Decide what to do
+	if (additionalRequiredRequests <= 0) {
+		MidGameRebalance(True);
+		lastRebalanceRequestTime = -60; // Will force a reset the next time we are called
+	} else {
+		if (bShowProposedSwitch) {
+			MidGameRebalance(False);
+		} else {
+			if (additionalRequiredRequests==1) { s=""; } else { s="s"; }
+			if (bFlashRebalanceRequest) {
+				for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+					if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && !p.IsA('Bot')) {
+						FlashMessageToPlayer(PlayerPawn(p),""$additionalRequiredRequests$" more player"$s$" must type !teams for rebalance.",colorGreen);
+					}
+				} 
+			} else {
+				// BroadcastMessageAndLog("I require "$additionalRequiredRequests$" more requests before I will rebalance the teams.  Say \"!teams\" if you agree.");
+				BroadcastMessageAndLog(""$additionalRequiredRequests$" more player"$s$" must type !teams for rebalance.");
+			}
+		}
+		lastRebalanceRequestTime = Level.TimeSeconds;
+	}
 #else
-  MidGameRebalance(True);
+	MidGameRebalance(True);
 #endif
-  // After a request for rebalance, whether changes were made or not, show current team strengths to all players.
-  if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+	// After a request for rebalance, whether changes were made or not, show current team strengths to all players.
+	if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
 }
+
+#ifdef COOL_CAMERA
+simulated function bool isInteresting(Actor a) {
+	return (
+		a.IsA('FlagBase')
+		|| a.IsA('UT_ShieldBelt')
+		|| a.IsA('UDamage')
+		|| a.IsA('HealthPack')
+		|| a.IsA('SuperShockRifle')
+		|| a.IsA('UT_Stealth')
+		|| a.IsA('WarheadLauncher')
+		// || a.IsA('Projectile')
+		// || a.IsA('PlayerPawn')
+		// || a.IsA('Weapon')
+		// || a.IsA('NavigationPoint')
+		// || a.IsA('Armor')
+		// || a.IsA('ThighPads')
+	);
+}
+
+simulated function Actor GetRandomActor() {
+	local int count;
+	local Actor a;
+	foreach AllActors(class'Actor',a) {
+		if (isInteresting(a))
+			count++;
+	}
+	count = 1 + count * FRand();
+	foreach AllActors(class'Actor',a) {
+		if (isInteresting(a)) {
+			count--;
+			if (count<=0)
+				return a;
+		}
+	}
+	return a;
+}
+
+#define TimeToChange (Level.TimeSeconds > LastCamChangeSeconds + 2)
+
+simulated function CoolCamera() {
+	local PlayerPawn p;
+	if (TimeToChange) {
+		CameraFocusActor = GetRandomActor();
+		deltaYaw = 200*(FRand()-0.5);
+		deltaPitch = 1*(FRand()-0.3);
+		deltaFOV = 0.2*(FRand()-0.5);
+	}
+	foreach AllActors(class'PlayerPawn', p) {
+		if (gameStartDone) {
+			p.ViewTarget = None;
+			p.bBehindView = False;
+			p.RotationRate.Roll = 0;
+			p.RotationRate.Pitch = 0;
+			p.RotationRate.Yaw = 0;
+			p.DesiredFOV = 90; // BUG: maybe the player joined the server with their own favourite FOV value.  Check p.FOVAngle now, or store their own value later.
+			p.FOVAngle = 90; // BUG: maybe the player joined the server with their own favourite FOV value.  Check p.FOVAngle now, or store their own value later.
+			continue;
+		}
+		if (TimeToChange) {
+			// p.ViewTarget = CameraFocusActor;
+			p.ViewRotation.Yaw = 8192*8*(FRand() - 0.5);
+			p.ViewRotation.Pitch = 8192*0.5*(FRand()-0.0);
+			p.DesiredFOV = 90 + 30 * FRand();
+			p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
+			p.SetLocation( p.ViewTarget.Location - 192.0 * Vector(p.ViewRotation) + vect(0,0,32.0) );
+			// p.bBehindView = True;
+			// p.ViewTarget.BecomeViewTarget();
+			p.bBehindView = False;
+			p.ClientMessage("=> "$CameraFocusActor);
+			if (bDebugLogging) { Log("CoolCamera: "$p$" => "$CameraFocusActor); }
+		}
+		p.ViewRotation.Yaw += deltaYaw;
+		p.ViewRotation.Pitch += deltaPitch;
+		p.DesiredFOV = p.DesiredFOV + deltaFOV;
+		p.FOVAngle = p.DesiredFOV;
+		// p.ClientSetRotation(p.ViewRotation); // to force the variable to replicate
+		// p.SetLocation( p.ViewTarget.Location - 192 * Vector(p.ViewRotation) + vect(0,0,64.0) );
+		// p.SetLocation( CameraFocusActor.Location - 192 * Vector(p.ViewRotation) + vect(0,0,64.0) );
+		p.ClientSetLocation( CameraFocusActor.Location - 192.0 * Vector(p.ViewRotation) + vect(0,0,32.0), p.ViewRotation);
+		// p.RotationRate.Yaw = 20 * deltaYaw;
+		// p.RotationRate.Pitch = 20 * deltaPitch;
+	}
+	deltaYaw = deltaYaw * 0.998;
+	deltaPitch = deltaPitch * 0.998;
+	deltaFOV = deltaFOV * 0.998;
+	if (TimeToChange) {
+		LastCamChangeSeconds = Level.TimeSeconds;
+	}
+}
+
+simulated event Tick(float DeltaTime) {
+	if (bCoolCamera)
+		CoolCamera();
+	if (gameStartDone) {
+		Disable('Tick');
+		// Log("Disabled Tick() in Tick().");
+	}
+}
+#endif
 
 // If bDo=False, then instead of performing the change, it will instead call ProposeChange() which will message all players to suggest they type "!teams" to make the change happen.
 function MidGameRebalance(bool bDo) {
-  local int redTeamCount,blueTeamCount;
+	local int redTeamCount,blueTeamCount;
 
-  if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
-    return;
+	if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
+		return;
 
-  // Refuse to balance teams more than once every MinSecondsBeforeRebalance seconds:
-  // This also fixed the bug that (I think) if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
-  if (bDo) {
-    if (MinRequestsForRebalance<2 && lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
-      // if (bDebugLogging) { Log("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds); }
-      BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
-      return;
-    }
-    lastBalanceTime = Level.TimeSeconds;
-  }
+	// Refuse to balance teams more than once every MinSecondsBeforeRebalance seconds:
+	// This also fixed the bug that (I think) if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
+	if (bDo) {
+		if (MinRequestsForRebalance<2 && lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
+			// if (bDebugLogging) { Log("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds); }
+			BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
+			return;
+		}
+		lastBalanceTime = Level.TimeSeconds;
+	}
 
-  redTeamCount = GetTeamSize(0);
-  blueTeamCount = GetTeamSize(1);
-  // We assume bot skills are pretty much irrelevant, and the bots will auto-switch to balance teams after we move any players around.
+	redTeamCount = GetTeamSize(0);
+	blueTeamCount = GetTeamSize(1);
+	// We assume bot skills are pretty much irrelevant, and the bots will auto-switch to balance teams after we move any players around.
 
-  if (bDebugLogging) { Log("MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$""); }
+	if (bDebugLogging) { Log("MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$""); }
 
-  // TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end - although the system should really be changed entirely, since it tries to balance strengths on the first switch, it will be harder to keep them balanced on the second switch.
-  if (redTeamCount < blueTeamCount) {
-    MidGameTeamBalanceSwitchOnePlayer(bDo,1,0);
-  } else if (blueTeamCount < redTeamCount) {
-    MidGameTeamBalanceSwitchOnePlayer(bDo,0,1);
-  } else {
-    MidGameTeamBalanceSwitchTwoPlayers(bDo);
-  }
+	// TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end - although the system should really be changed entirely, since it tries to balance strengths on the first switch, it will be harder to keep them balanced on the second switch.
+	if (redTeamCount < blueTeamCount) {
+		MidGameTeamBalanceSwitchOnePlayer(bDo,1,0);
+	} else if (blueTeamCount < redTeamCount) {
+		MidGameTeamBalanceSwitchOnePlayer(bDo,0,1);
+	} else {
+		MidGameTeamBalanceSwitchTwoPlayers(bDo);
+	}
 
 }
 
 function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTeam) {
-  local float fromTeamStrength, toTeamStrength, currentDifference, playerStrength;
-  local Pawn p;
-  local Pawn closestPlayer; // the most ideal potential player to switch
-  local float newDifference; // the absolute strength difference between the two teams after the potential switch
-  fromTeamStrength = GetTeamStrength(fromTeam);
-  toTeamStrength = GetTeamStrength(toTeam);
-  currentDifference = fromTeamStrength - toTeamStrength;
-  if (currentDifference<0) {
-    BroadcastMessageAndLog("AutoTeamBalance refusing to help "$getTeamName(toTeam)$" because it is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
-    return False;
-  }
-  // Find the player on fromTeam with strength closest to difference, and switch him/her
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (AllowedToBalance(p)
-        && p.PlayerReplicationInfo.Team==fromTeam && p.PlayerReplicationInfo.HasFlag==None) {
-      playerStrength = GetPawnStrength(p);
-      if (closestPlayer == None || Abs(currentDifference-playerStrength*2) < newDifference) {
-        closestPlayer = p;
-        // Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
-        newDifference = Abs(currentDifference-playerStrength*2);
-      }
-    }
-  }
-  if (closestPlayer == None) {
-    BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch.");
-    return False;
-  }
-  if (newDifference >= currentDifference && !bForceEvenTeams && CountHumanPlayers()>3) {
-    // We only decline to switch if #players>3 and we aren't "forcing" even teams
-    BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
-    return False;
-  } else {
-    if (bDo) {
-      ChangePlayerToTeam(closestPlayer,toTeam,gameStartDone);
-    } else {
-      ProposeChange(closestPlayer,None);
-    }
-    return True;
-  }
+	local float fromTeamStrength, toTeamStrength, currentDifference, playerStrength;
+	local Pawn p;
+	local Pawn closestPlayer; // the most ideal potential player to switch
+	local float newDifference; // the absolute strength difference between the two teams after the potential switch
+	fromTeamStrength = GetTeamStrength(fromTeam);
+	toTeamStrength = GetTeamStrength(toTeam);
+	currentDifference = fromTeamStrength - toTeamStrength;
+	if (currentDifference<0) {
+		BroadcastMessageAndLog("AutoTeamBalance refusing to help "$getTeamName(toTeam)$" because it is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
+		return False;
+	}
+	// Find the player on fromTeam with strength closest to difference, and switch him/her
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (AllowedToBalance(p)
+				&& p.PlayerReplicationInfo.Team==fromTeam && p.PlayerReplicationInfo.HasFlag==None) {
+			playerStrength = GetPawnStrength(p);
+			if (closestPlayer == None || Abs(currentDifference-playerStrength*2) < newDifference) {
+				closestPlayer = p;
+				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
+				newDifference = Abs(currentDifference-playerStrength*2);
+			}
+		}
+	}
+	if (closestPlayer == None) {
+		BroadcastMessageAndLog("AutoTeamBalance could not find any player on "$getTeamName(fromTeam)$" to switch.");
+		return False;
+	}
+	if (newDifference >= currentDifference && !bForceEvenTeams && CountHumanPlayers()>3) {
+		// We only decline to switch if #players>3 and we aren't "forcing" even teams
+		BroadcastMessageAndLog("AutoTeamBalance not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
+		return False;
+	} else {
+		if (bDo) {
+			ChangePlayerToTeam(closestPlayer,toTeam,gameStartDone);
+		} else {
+			ProposeChange(closestPlayer,None);
+		}
+		return True;
+	}
 }
 
 function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
-  // initial:
-  local float redTeamStrength, blueTeamStrength, difference;
-  // during loop:
-  local Pawn redP,blueP;
-  local float redPStrength, bluePStrength;
-  local float potentialNewDifference; // the strength difference between the two teams after switching these two players
-  // best found:
-  local Pawn redPlayerToMove,bluePlayerToMove; // the best two players found so far
-  local float newdifference; // the strength difference between the two teams after switching these players
+	// initial:
+	local float redTeamStrength, blueTeamStrength, difference;
+	// during loop:
+	local Pawn redP,blueP;
+	local float redPStrength, bluePStrength;
+	local float potentialNewDifference; // the strength difference between the two teams after switching these two players
+	// best found:
+	local Pawn redPlayerToMove,bluePlayerToMove; // the best two players found so far
+	local float newdifference; // the strength difference between the two teams after switching these players
 
-  redTeamStrength = GetTeamStrength(0);
-  blueTeamStrength = GetTeamStrength(1);
-  difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
-  newdifference = difference;
+	redTeamStrength = GetTeamStrength(0);
+	blueTeamStrength = GetTeamStrength(1);
+	difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
+	newdifference = difference;
 
-  // FIXED by "hashing": These repeated calls to GetPawnStrength() are going to be inefficient, possibly causing some lag while the server calculates.
-  for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
-    for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
-      if (redP != blueP
-          && redP.PlayerReplicationInfo.Team==0
-          && blueP.PlayerReplicationInfo.Team==1
-          && AllowedToBalance(redP)
-          && AllowedToBalance(blueP)
-          && redP.PlayerReplicationInfo.HasFlag == None
-          && blueP.PlayerReplicationInfo.HasFlag == None
-      ) {
-        redPStrength = GetPawnStrength(redP);
-        bluePStrength = GetPawnStrength(blueP);
-        // Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
-        potentialNewDifference = blueTeamStrength + redPStrength*2 - redTeamStrength - bluePStrength*2;
-        if (Abs(potentialNewDifference) < Abs(newdifference)) {
-          newdifference = potentialNewDifference;
-          redPlayerToMove = redP;
-          bluePlayerToMove = blueP;
-        }
-      }
-    }
-  }
+	// FIXED by "hashing": These repeated calls to GetPawnStrength() are going to be inefficient, possibly causing some lag while the server calculates.
+	for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
+		for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
+			if (redP != blueP
+					&& redP.PlayerReplicationInfo.Team==0
+					&& blueP.PlayerReplicationInfo.Team==1
+					&& AllowedToBalance(redP)
+					&& AllowedToBalance(blueP)
+					&& redP.PlayerReplicationInfo.HasFlag == None
+					&& blueP.PlayerReplicationInfo.HasFlag == None
+			) {
+				redPStrength = GetPawnStrength(redP);
+				bluePStrength = GetPawnStrength(blueP);
+				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
+				potentialNewDifference = blueTeamStrength + redPStrength*2 - redTeamStrength - bluePStrength*2;
+				if (Abs(potentialNewDifference) < Abs(newdifference)) {
+					newdifference = potentialNewDifference;
+					redPlayerToMove = redP;
+					bluePlayerToMove = blueP;
+				}
+			}
+		}
+	}
 
-  // CONSIDER: if one of the players is a bot, we should probably move him last, because bots tend to switch back to the other team, if UT.ini is configured that way.  Alternatively, we could copy Daniel's temporary-ut-balance-disable code into ChangePlayerToTeam.  Hmm probably nobody uses bBalanceBots anyway.
-  if (redPlayerToMove != None && bluePlayerToMove != None) {
-    if (bDo) {
-      ChangePlayerToTeam(redPlayerToMove,1,gameStartDone);
-      ChangePlayerToTeam(bluePlayerToMove,0,gameStartDone);
-    } else {
-      ProposeChange(redPlayerToMove,bluePlayerToMove);
-    }
-    return True;
-  } else {
-    BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
-    return False;
-  }
+	// CONSIDER: if one of the players is a bot, we should probably move him last, because bots tend to switch back to the other team, if UT.ini is configured that way.  Alternatively, we could copy Daniel's temporary-ut-balance-disable code into ChangePlayerToTeam.  Hmm probably nobody uses bBalanceBots anyway.
+	if (redPlayerToMove != None && bluePlayerToMove != None) {
+		if (bDo) {
+			ChangePlayerToTeam(redPlayerToMove,1,gameStartDone);
+			ChangePlayerToTeam(bluePlayerToMove,0,gameStartDone);
+		} else {
+			ProposeChange(redPlayerToMove,bluePlayerToMove);
+		}
+		return True;
+	} else {
+		BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
+		return False;
+	}
 }
 
 // Shows all players the request to rebalance with "!teams", and the player(s) who will be moved.
@@ -1348,22 +1492,22 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 // Can be caused by a player typing "!teams", or by bWarnMidGameUnbalance.
 // one must be a valid player, but two can be None.
 function ProposeChange(Pawn one, Pawn two) {
-  local Pawn p;
-  local String msg;
-  if (two == None) {
-    msg = "Type !teams to move "$one.getHumanName();
-  } else {
-    msg = "Type !teams to swap "$one.getHumanName()$" with "$two.getHumanName();
-  }
-  if (bFlashRebalanceRequest) {
-    for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-      if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && !p.IsA('Bot')) {
-        FlashMessageToPlayer(PlayerPawn(p),msg,colorGreen);
-      }
-    }
-  } else {
-    BroadcastMessageAndLog(msg);
-  }
+	local Pawn p;
+	local String msg;
+	if (two == None) {
+		msg = "Type !teams to move "$one.getHumanName();
+	} else {
+		msg = "Type !teams to swap "$one.getHumanName()$" with "$two.getHumanName();
+	}
+	if (bFlashRebalanceRequest) {
+		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+			if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && !p.IsA('Bot')) {
+				FlashMessageToPlayer(PlayerPawn(p),msg,colorGreen);
+			}
+		}
+	} else {
+		BroadcastMessageAndLog(msg);
+	}
 }
 
 
@@ -1371,55 +1515,55 @@ function ProposeChange(Pawn one, Pawn two) {
 // ======== Change game or message players: ======== //
 
 function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
-  local Color msgColor;
-  if (teamnum == p.PlayerReplicationInfo.Team) {
-    if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): doing nothing since player is already on team "$teamnum); }
-    return;
-  }
-  if (p.IsA('Bot')) {
-    Bot(p).ConsoleCommand("taunt wave");
-  }
-  if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum); }
-  Level.Game.ChangeTeam(p,teamnum);
-  p.KillCount++;
-  p.PlayerReplicationInfo.Deaths-=1;
-  p.Died(None, '', p.Location); // Kills the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
-  if (bInform) {
-    switch (teamnum) {
-      case 0: msgColor = colorRed; break;
-      case 1: msgColor = colorBlue; break;
-      case 2: msgColor = colorGreen; break;
-      case 3: msgColor = colorYellow; break;
-      default: msgColor = colorWhite; break;
-    }
-    BroadcastMessage(p.getHumanName()$" has been moved to the "$getTeamName(teamnum)$" team.");
-    FlashMessageToPlayer(PlayerPawn(p),"You have been moved to the "$Caps(getTeamName(teamnum))$" team!",msgColor,3);
-    // BUG: Unfortunately this message is soon hidden by the scoreboard, because the player was killed.
-    p.ShakeView(2.0,2000.0,0.0);
-  }
+	local Color msgColor;
+	if (teamnum == p.PlayerReplicationInfo.Team) {
+		if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): doing nothing since player is already on team "$teamnum); }
+		return;
+	}
+	if (p.IsA('Bot')) {
+		Bot(p).ConsoleCommand("taunt wave");
+	}
+	if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum); }
+	Level.Game.ChangeTeam(p,teamnum);
+	p.KillCount++;
+	p.PlayerReplicationInfo.Deaths-=1;
+	p.Died(None, '', p.Location); // Kills the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
+	if (bInform) {
+		switch (teamnum) {
+			case 0: msgColor = colorRed; break;
+			case 1: msgColor = colorBlue; break;
+			case 2: msgColor = colorGreen; break;
+			case 3: msgColor = colorYellow; break;
+			default: msgColor = colorWhite; break;
+		}
+		BroadcastMessage(p.getHumanName()$" has been moved to the "$getTeamName(teamnum)$" team.");
+		FlashMessageToPlayer(PlayerPawn(p),"You have been moved to the "$Caps(getTeamName(teamnum))$" team!",msgColor,3);
+		// BUG: Unfortunately this message is soon hidden by the scoreboard, because the player was killed.
+		p.ShakeView(2.0,2000.0,0.0);
+	}
 }
 
 // I want to Log all calls to BroadcastMessage() so that I can see without playing how much the players are getting spammed by broadcasts.
 // Eventually, calls to BroadcastMessageAndLog could be turned back to just BroadcastMessage() calls.
 function BroadcastMessageAndLog(string Msg) {
-  if (bDebugLogging) { Log("AutoTeamBalance Broadcasting: "$Msg); }
-  BroadcastMessage(Msg);
+	if (bDebugLogging) { Log("AutoTeamBalance Broadcasting: "$Msg); }
+	BroadcastMessage(Msg);
 }
 
 function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum) {
-  if (bDebugLogging) { Log("AutoTeamBalance Flashing message to "$p.getHumanName()$": "$Msg); }
-  // p.ClientMessage(Msg, 'CriticalEvent', False); // goes to HUD and console, no beep
-  // Coloured messages, with our own choice of colour and timeout:
-  if (linenum == 0) {
-    linenum = -2;
-  }
-  // p.ClearProgressMessages();
-  p.SetProgressTime(4);
-  p.SetProgressColor(msgColor,linenum);
-  p.SetProgressMessage(Msg,linenum);
-  if (gameStartDone) { // Prevent multiple (and badly overlapping) beeps during the multiple Flashes at the start of the game
-    p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32); // we play our own sound
-  }
+	if (bDebugLogging) { Log("AutoTeamBalance Flashing message to "$p.getHumanName()$": "$Msg); }
+	// p.ClientMessage(Msg, 'CriticalEvent', False); // goes to HUD and console, no beep
+	// Coloured messages, with our own choice of colour and timeout:
+	if (linenum == 0) {
+		linenum = -2;
+	}
+	// p.ClearProgressMessages();
+	p.SetProgressTime(4);
+	p.SetProgressColor(msgColor,linenum);
+	p.SetProgressMessage(Msg,linenum);
+	if (gameStartDone) { // Prevent multiple (and badly overlapping) beeps during the multiple Flashes at the start of the game
+		p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32); // we play our own sound
+	}
 }
 
 
@@ -1428,158 +1572,158 @@ function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional
 
 function bool ShouldBalance(GameInfo game) {
 
-  // Never balance in tournament mode
-  if (DeathMatchPlus(Level.Game).bTournament)
-    return False;
-  // We can't balance if it's not a teamgame
-  if (!Level.Game.GameReplicationInfo.bTeamGame)
-    return False;
+	// Never balance in tournament mode
+	if (DeathMatchPlus(Level.Game).bTournament)
+		return False;
+	// We can't balance if it's not a teamgame
+	if (!Level.Game.GameReplicationInfo.bTeamGame)
+		return False;
 
-  if (String(Level.Game.Class) == "Botpack.CTFGame")
-    return bAutoBalanceTeamsForCTF;
-  if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
-    return bAutoBalanceTeamsForTDM;
-  if (String(Level.Game.Class) == "Botpack.Assault") {
-    // Do not balance AS game if we're in the second half of the game
-    if (Assault(Level.Game).Part != 1)
-      return False;
-    else
-      return bAutoBalanceTeamsForAS;
-  }
+	if (String(Level.Game.Class) == "Botpack.CTFGame")
+		return bAutoBalanceTeamsForCTF;
+	if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
+		return bAutoBalanceTeamsForTDM;
+	if (String(Level.Game.Class) == "Botpack.Assault") {
+		// Do not balance AS game if we're in the second half of the game
+		if (Assault(Level.Game).Part != 1)
+			return False;
+		else
+			return bAutoBalanceTeamsForAS;
+	}
 
-  // OK so it's an unknown teamgame
-  return bAutoBalanceTeamsForOtherTeamGames;
+	// OK so it's an unknown teamgame
+	return bAutoBalanceTeamsForOtherTeamGames;
 }
 
 function bool ShouldUpdateStats(GameInfo game) {
-  if (String(Level.Game.Class) == "Botpack.CTFGame")
-    return bUpdatePlayerStatsForCTF;
-  if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
-    return bUpdatePlayerStatsForTDM;
-  if (String(Level.Game.Class) == "Botpack.Assault")
-    return bUpdatePlayerStatsForAS;
-  // OK so it's not CTF or TDM or AS, but is it another type of team game?
-  if (Level.Game.GameReplicationInfo.bTeamGame)
-    return bUpdatePlayerStatsForOtherTeamGames;
-  return bUpdatePlayerStatsForNonTeamGames;
+	if (String(Level.Game.Class) == "Botpack.CTFGame")
+		return bUpdatePlayerStatsForCTF;
+	if (String(Level.Game.Class) == "Botpack.TeamGamePlus")
+		return bUpdatePlayerStatsForTDM;
+	if (String(Level.Game.Class) == "Botpack.Assault")
+		return bUpdatePlayerStatsForAS;
+	// OK so it's not CTF or TDM or AS, but is it another type of team game?
+	if (Level.Game.GameReplicationInfo.bTeamGame)
+		return bUpdatePlayerStatsForOtherTeamGames;
+	return bUpdatePlayerStatsForNonTeamGames;
 }
 
 function bool AllowedToBalance(Pawn b) {
-  if (b.IsA('Bot'))
-    return bBalanceBots;
-  else
-    return b.IsA('PlayerPawn') && !b.IsA('Spectator');
+	if (b.IsA('Bot'))
+		return bBalanceBots;
+	else
+		return b.IsA('PlayerPawn') && !b.IsA('Spectator');
 }
 
 // Checks that the player is a human, or a bot when bRankBots is set.  Does not check whether the human player is a spectator.
 function bool AllowedToRank(Pawn b) {
-  if (b.IsA('Bot'))
-    return bRankBots;
-  else
-    return b.IsA('PlayerPawn');
+	if (b.IsA('Bot'))
+		return bRankBots;
+	else
+		return b.IsA('PlayerPawn');
 }
 
 // This is used for checking and performing mid-game teambalance.  It counts bots if bBalanceBots is set to True.
 function int GetTeamSize(int team) {
-  local int count;
-  local Pawn p;
-  count = 0;
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (AllowedToBalance(p) && p.PlayerReplicationInfo.Team == team) count++;
-  }
-  return count;
+	local int count;
+	local Pawn p;
+	count = 0;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (AllowedToBalance(p) && p.PlayerReplicationInfo.Team == team) count++;
+	}
+	return count;
 }
 
 function int CountHumanPlayers() {
-  local Pawn p;
-  local int countHumanPlayers;
-  countHumanPlayers = 0;
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // maybe the last 2 are not needed
-      countHumanPlayers++;
-    }
-  }
-  return countHumanPlayers;
+	local Pawn p;
+	local int countHumanPlayers;
+	countHumanPlayers = 0;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // maybe the last 2 are not needed
+			countHumanPlayers++;
+		}
+	}
+	return countHumanPlayers;
 }
 
 function String getTeamName(int teamNum) {
-  return TeamGamePlus(Level.Game).Teams[teamNum].TeamName;
+	return TeamGamePlus(Level.Game).Teams[teamNum].TeamName;
 }
 
 // Team strength is the sum of all player and bot strengths on that team, plus caps*FlagStrength (or other teamscore).
 function float GetTeamStrength(int teamNum) {
-  local Pawn p;
-  local float strength;
-  strength = 0;
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.bIsPlayer && !p.IsA('Spectator') && p.PlayerReplicationInfo.Team == teamNum) {
-      strength += GetPawnStrength(p);
-    }
-  }
-  // Add flagstrength:
-  strength += TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[teamNum].Score*GetFlagStrength();
-  return strength;
+	local Pawn p;
+	local float strength;
+	strength = 0;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p.bIsPlayer && !p.IsA('Spectator') && p.PlayerReplicationInfo.Team == teamNum) {
+			strength += GetPawnStrength(p);
+		}
+	}
+	// Add flagstrength:
+	strength += TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[teamNum].Score*GetFlagStrength();
+	return strength;
 }
 
 // Scale FlagStrength, so it is appropriate for non-CTF gametypes:
 // Some common GoalTeamScores are: CTF 7 | (DM 30) | TDM 100 | DOM 100 | Siege 20/30 | Unknown 150
 function float GetFlagStrength() {
-  if (CountHumanPlayers() < 3)
-    return 0; // Hopefully fixes the bug that in a 2v0, it was refusing to move either player to the "stronger" team!
-  if (String(Level.Game.Class) == "Botpack.CTFGame")
-    return FlagStrength;
-  if (String(Level.Game.Class) == "Botpack.TeamGamePlus") // TDM
-    return Float(FlagStrength)/14.0;
-  if (String(Level.Game.Class) == "Botpack.Domination")
-    return Float(FlagStrength)/14.0;
-  if (String(Level.Game.Class) == "Botpack.Assault")
-    return 0;
-  if (StrAfter(String(Level.Game.Class),".") == "SiegeGI")
-    return Float(FlagStrength)/4.0;
-  // Unknown gametype; assume GoalTeamScore 150
-  return Float(FlagStrength)/21.0;
+	if (CountHumanPlayers() < 3)
+		return 0; // Hopefully fixes the bug that in a 2v0, it was refusing to move either player to the "stronger" team!
+	if (String(Level.Game.Class) == "Botpack.CTFGame")
+		return FlagStrength;
+	if (String(Level.Game.Class) == "Botpack.TeamGamePlus") // TDM
+		return Float(FlagStrength)/14.0;
+	if (String(Level.Game.Class) == "Botpack.Domination")
+		return Float(FlagStrength)/14.0;
+	if (String(Level.Game.Class) == "Botpack.Assault")
+		return 0;
+	if (StrAfter(String(Level.Game.Class),".") == "SiegeGI")
+		return Float(FlagStrength)/4.0;
+	// Unknown gametype; assume GoalTeamScore 150
+	return Float(FlagStrength)/21.0;
 }
 
 // Returns the strength of a player or a bot
 // Bots can be included in ranking and balancing by setting bRankBots.  Without it, BotStrength is used for all bots.
 function int GetPawnStrength(Pawn p) {
-  if (AllowedToRank(p) || AllowedToBalance(p)) {
-    return GetPlayerStrength(p);
-  } else {
-    return BotStrength;
-  }
+	if (AllowedToRank(p) || AllowedToBalance(p)) {
+		return GetPlayerStrength(p);
+	} else {
+		return BotStrength;
+	}
 }
 
 // Returns the strength of a player
 function int GetPlayerStrength(Pawn p) {
-  local int found;
-  if (bUseOnlyInGameScoresForRebalance && gameStartDone && !gameEndDone) {
-    return p.PlayerReplicationInfo.Score;
-  }
-  found = FindPlayerRecord(p);
-  if (found == -1) {
-    // CONSIDER: if gameStartDone and/or gametime>1minute then guess the player's strength from their current score
-    return UnknownStrength; // unknown player or player is too weak for list
-  } else {
-    return avg_score[found]; // player's recorded strength
-  }
+	local int found;
+	if (bUseOnlyInGameScoresForRebalance && gameStartDone && !gameEndDone) {
+		return p.PlayerReplicationInfo.Score;
+	}
+	found = FindPlayerRecord(p);
+	if (found == -1) {
+		// CONSIDER: if gameStartDone and/or gametime>1minute then guess the player's strength from their current score
+		return UnknownStrength; // unknown player or player is too weak for list
+	} else {
+		return avg_score[found]; // player's recorded strength
+	}
 }
 
 // Find player by name, or partial name
 function Pawn FindPlayerNamed(String name) {
-  local Pawn p;
-  local Pawn found;
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
-      if (p.getHumanName() ~= name) { // exact case insensitive match, return player
-        return p;
-      }
-      if (Instr(Caps(p.getHumanName()),Caps(name))>=0) { // partial match, remember it but keep searching for exact match
-        found = p;
-      }
-    }
-  }
-  return found; // return partial match, or None
+	local Pawn p;
+	local Pawn found;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
+			if (p.getHumanName() ~= name) { // exact case insensitive match, return player
+				return p;
+			}
+			if (Instr(Caps(p.getHumanName()),Caps(name))>=0) { // partial match, remember it but keep searching for exact match
+				found = p;
+			}
+		}
+	}
+	return found; // return partial match, or None
 }
 
 
@@ -1588,37 +1732,37 @@ function Pawn FindPlayerNamed(String name) {
 
 // Copies from playerData[] to ip[],nick[],avg_score[],... (should be done at the start)
 function CopyConfigIntoArrays() {
-  local int field;
-  local int i;
-  local String data;
-  local String args[256];
+	local int field;
+	local int i;
+	local String data;
+	local String args[256];
 
-  CopyConfigDone=True;
+	CopyConfigDone=True;
 
-  if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() running"); }
-  for (i=0; i<MaxPlayerData; i++) {
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() running"); }
+	for (i=0; i<MaxPlayerData; i++) {
 
-    if (playerData[i] == "") continue;
-    SplitString(playerData[i]," ",args);
-    ip[i] = args[0];
-    nick[i] = args[1];
-    avg_score[i] = Float(args[2]);
-    hours_played[i] = Float(args[3]);
+		if (playerData[i] == "") continue;
+		SplitString(playerData[i]," ",args);
+		ip[i] = args[0];
+		nick[i] = args[1];
+		avg_score[i] = Float(args[2]);
+		hours_played[i] = Float(args[3]);
 
-  }
-  if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() done"); }
+	}
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() done"); }
 }
 
 // Copies from ip[],nick[],avg_score[],... to playerData[] (should be done before SaveConfig())
 function CopyArraysIntoConfig() {
-  local int i;
-  if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() running"); }
-  for (i=0; i<MaxPlayerData; i++) {
-     if (ip[i] != "") {
-       playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i];
-    }
-  }
-  if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
+	local int i;
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() running"); }
+	for (i=0; i<MaxPlayerData; i++) {
+		 if (ip[i] != "") {
+			 playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i];
+		}
+	}
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
 }
 
 #ifndef ENABLE_USEISPNOTFULLIP
@@ -1649,42 +1793,42 @@ function String getISP(String ip) {
 // Returns player name, with gametype and/or mutator signature appended
 // e.g.: nogginBasher@CTFGame:NR+WPM+IA (NoRedeemer,WhoPushedMe,InstagibArena)
 function String GetDBName(Pawn p) {
-  local String str;
-  local String tmpstr;
-  local int i;
-  local int c;
-  local Mutator m;
-  str = p.getHumanName();
-  if (bSeparateStatsByGamemode) {
-    str = str $ "@" $ StrAfter(String(Level.Game.Class),".");
-  }
-  if (bSeparateStatsByMutators) {
-    str = str $ ":";
-    m = Level.Game.BaseMutator;
-    while (m != None) {
-      // Build signature of mutator:
+	local String str;
+	local String tmpstr;
+	local int i;
+	local int c;
+	local Mutator m;
+	str = p.getHumanName();
+	if (bSeparateStatsByGamemode) {
+		str = str $ "@" $ StrAfter(String(Level.Game.Class),".");
+	}
+	if (bSeparateStatsByMutators) {
+		str = str $ ":";
+		m = Level.Game.BaseMutator;
+		while (m != None) {
+			// Build signature of mutator:
 
-      // OLD METHOD: Select first char of package and first char of the class name: e.g. Botpack.Noredeemer => BN
-      // str = str $ Left(String(m.Class),1) $ Left(StrAfter(String(m.Class),"."),1);
+			// OLD METHOD: Select first char of package and first char of the class name: e.g. Botpack.Noredeemer => BN
+			// str = str $ Left(String(m.Class),1) $ Left(StrAfter(String(m.Class),"."),1);
 
-      // NEW METHOD: Select only capitalised parts of the class name: e.g. WhoPushedMe.WhoPushedMe => WPM
-      // Possible BUG: People *may* write mutators that are not capitalised, in which case those mutators will generate no signature.
-      //               However, we can't change the signature now, without breaking the nicks for admins upgrading from earlier versions of ATB (although some player strengths might be retained via ip-matching)
-      tmpstr = StrAfter(String(m.Class),".");
-      for (i=0;i<Len(tmpstr);i++) {
-        c = Asc(Mid(tmpstr,i,1));
-        if (c>=Asc("A") && c<=Asc("Z")) {
-          str = str $ Chr(c);
-        }
-      }
-      m = m.NextMutator;
-      if (m != None) {
-        str = str $ "+";
-      }
+			// NEW METHOD: Select only capitalised parts of the class name: e.g. WhoPushedMe.WhoPushedMe => WPM
+			// Possible BUG: People *may* write mutators that are not capitalised, in which case those mutators will generate no signature.
+			//               However, we can't change the signature now, without breaking the nicks for admins upgrading from earlier versions of ATB (although some player strengths might be retained via ip-matching)
+			tmpstr = StrAfter(String(m.Class),".");
+			for (i=0;i<Len(tmpstr);i++) {
+				c = Asc(Mid(tmpstr,i,1));
+				if (c>=Asc("A") && c<=Asc("Z")) {
+					str = str $ Chr(c);
+				}
+			}
+			m = m.NextMutator;
+			if (m != None) {
+				str = str $ "+";
+			}
 
-    }
-  }
-  return str;
+		}
+	}
+	return str;
 }
 #else
 #define GetDBName(p) p.getHumanName()
@@ -1692,59 +1836,59 @@ function String GetDBName(Pawn p) {
 
 // Will always return a valid exact record index, creating a new record if neccessary.
 function int FindPlayerRecord(Pawn p) {
-  local int i;
-  local int found;
-  local string tmp_player_nick, tmp_player_ip;
-  local float tmp_avg_score, tmp_hours_played;
+	local int i;
+	local int found;
+	local string tmp_player_nick, tmp_player_ip;
+	local float tmp_avg_score, tmp_hours_played;
 
-  i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
+	i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
 
-  // Is the player's record already at i?
-  if (GetDBName(p) == nick[i] && getIP(p) == ip[i]) {
-    return i;
-  }
+	// Is the player's record already at i?
+	if (GetDBName(p) == nick[i] && getIP(p) == ip[i]) {
+		return i;
+	}
 
-  // Is there an exact or partial match for this player in the database?
-  found = FindPlayerRecordNoFastHash(p);
+	// Is there an exact or partial match for this player in the database?
+	found = FindPlayerRecordNoFastHash(p);
 
-  // If an exact record for the player was found, move it to index i for the rest of this game (by swapping it with whichever record is there).  This will make lookups more efficient during the rest of the game.
-  if (found != -1 && GetDBName(p) == nick[found] && getIP(p) == ip[found]) {
-    if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): Optimising lookup ("$i$"<->"$found$") for "$GetDBName(p)$" @ "$getIP(p)$"."); }
-    tmp_player_nick = nick[i];
-    tmp_player_ip = ip[i];
-    tmp_avg_score = avg_score[i];
-    tmp_hours_played = hours_played[i];
-    nick[i] = nick[found];
-    ip[i] = ip[found];
-    avg_score[i] = avg_score[found];
-    hours_played[i] = hours_played[found];
-    nick[found] = tmp_player_nick;
-    ip[found] = tmp_player_ip;
-    avg_score[found] = tmp_avg_score;
-    hours_played[found] = tmp_hours_played;
-    return i;
-  }
+	// If an exact record for the player was found, move it to index i for the rest of this game (by swapping it with whichever record is there).  This will make lookups more efficient during the rest of the game.
+	if (found != -1 && GetDBName(p) == nick[found] && getIP(p) == ip[found]) {
+		if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): Optimising lookup ("$i$"<->"$found$") for "$GetDBName(p)$" @ "$getIP(p)$"."); }
+		tmp_player_nick = nick[i];
+		tmp_player_ip = ip[i];
+		tmp_avg_score = avg_score[i];
+		tmp_hours_played = hours_played[i];
+		nick[i] = nick[found];
+		ip[i] = ip[found];
+		avg_score[i] = avg_score[found];
+		hours_played[i] = hours_played[found];
+		nick[found] = tmp_player_nick;
+		ip[found] = tmp_player_ip;
+		avg_score[found] = tmp_avg_score;
+		hours_played[found] = tmp_hours_played;
+		return i;
+	}
 
-  // No exact record for the player was found; we have performed a full search of the database :|
-  if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): FAILED lookup for "$GetDBName(p)$" @ "$getIP(p)$"."); }
+	// No exact record for the player was found; we have performed a full search of the database :|
+	if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): FAILED lookup for "$GetDBName(p)$" @ "$getIP(p)$"."); }
 
-  // Let's create a new record for this player+ip, to avoid doing that again.
-  i = CreateNewPlayerRecord(p); // i=unknown, but the new record will be optimally indexed the next time FindPlayerRecord() is called.
+	// Let's create a new record for this player+ip, to avoid doing that again.
+	i = CreateNewPlayerRecord(p); // i=unknown, but the new record will be optimally indexed the next time FindPlayerRecord() is called.
 
-  if (found > -1) {
-    // Copy over strength from the partial-match player, but partially reset their time, to make their old strength last for max MaxHoursWhenCopyingOldRecord hours.
-    avg_score[i] = avg_score[found]; // Copy score from partial match record
-    hours_played[i] = Min(MaxHoursWhenCopyingOldRecord,hours_played[found]);
-    // SO: changing nick or IP will NOT reset your avg_score immediately, but after some hours of play your old record will only count for 50%.  This helps to protect players who were matched incorrectly.  (Different members of a family playing from the same IP, or different players using the same nick.)
+	if (found > -1) {
+		// Copy over strength from the partial-match player, but partially reset their time, to make their old strength last for max MaxHoursWhenCopyingOldRecord hours.
+		avg_score[i] = avg_score[found]; // Copy score from partial match record
+		hours_played[i] = Min(MaxHoursWhenCopyingOldRecord,hours_played[found]);
+		// SO: changing nick or IP will NOT reset your avg_score immediately, but after some hours of play your old record will only count for 50%.  This helps to protect players who were matched incorrectly.  (Different members of a family playing from the same IP, or different players using the same nick.)
 
-    // Optionally log/broadcast the fakenicker, now only if IP was matched but nick is different.
-    if (!(GetDBName(p) ~= nick[i])) {
-      if (bLogFakenickers) { Log("AutoTeamBalance: Fakenicker "$p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }
-      if (bBroadcastFakenickers) { BroadcastMessage(p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }
-    }
-  }
+		// Optionally log/broadcast the fakenicker, now only if IP was matched but nick is different.
+		if (!(GetDBName(p) ~= nick[i])) {
+			if (bLogFakenickers) { Log("AutoTeamBalance: Fakenicker "$p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }
+			if (bBroadcastFakenickers) { BroadcastMessage(p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }
+		}
+	}
 
-  return i; // if we didn't copy any stats over, he will have UnknownStrength, the same as when we returned -1
+	return i; // if we didn't copy any stats over, he will have UnknownStrength, the same as when we returned -1
 
 }
 
@@ -1752,101 +1896,101 @@ function int FindPlayerRecord(Pawn p) {
 // If not, return the index of a record with matching nick, or (preferably) matching ip
 // If not, return -1
 function int FindPlayerRecordNoFastHash(Pawn p) {
-  local int found;
-  local int i;
-  local string player_nick;
-  local string player_ip;
+	local int found;
+	local int i;
+	local string player_nick;
+	local string player_ip;
 
-  player_nick = GetDBName(p);
-  player_ip = getIP(p);
+	player_nick = GetDBName(p);
+	player_ip = getIP(p);
 
-  found = -1;
-  for (i=0;i<MaxPlayerData;i++) {
-    // Exact match! return the index immediately
-    if (player_nick == nick[i] && player_ip == ip[i]) {
-      found = i;
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$")"); }
-      return found;
-    } else if (player_ip == ip[i]) {
-      found = i; // matching ip
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
-    } else if (player_nick == nick[i] && found == -1) {
-      found = i; // if not yet matching an ip, match the same nick on any ip
-      if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$")"); }
-    }
-    // CONSIDER: if an uneven match, choose a match with more experience (hours_played)
-    // CONSIDER: even better, average the strengths of all partial-matches (maybe the same nick many times on different IPs, or the same IP with many different nicks), weighted by hours_played
-    // CONSIDER (elsewhere): if we have little experience (<10mins) of a player, return UnknownStrength anyway?
-  }
+	found = -1;
+	for (i=0;i<MaxPlayerData;i++) {
+		// Exact match! return the index immediately
+		if (player_nick == nick[i] && player_ip == ip[i]) {
+			found = i;
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$")"); }
+			return found;
+		} else if (player_ip == ip[i]) {
+			found = i; // matching ip
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
+		} else if (player_nick == nick[i] && found == -1) {
+			found = i; // if not yet matching an ip, match the same nick on any ip
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$")"); }
+		}
+		// CONSIDER: if an uneven match, choose a match with more experience (hours_played)
+		// CONSIDER: even better, average the strengths of all partial-matches (maybe the same nick many times on different IPs, or the same IP with many different nicks), weighted by hours_played
+		// CONSIDER (elsewhere): if we have little experience (<10mins) of a player, return UnknownStrength anyway?
+	}
 
-  if (bDebugLogging && found == -1) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash("$p$") failed to return a record."); }
-  return found;
+	if (bDebugLogging && found == -1) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash("$p$") failed to return a record."); }
+	return found;
 }
 
 #define BatchSize 128
 
 function int CreateNewPlayerRecord(Pawn p) {
-  local int pos;
-  local int returned;
+	local int pos;
+	local int returned;
 
-  // TODO CONSIDER: if we are still get problems with "runaway loop", consider looking for ShortestPlayerRecord at the
-  //                same time as searching for an empty slot.
+	// TODO CONSIDER: if we are still get problems with "runaway loop", consider looking for ShortestPlayerRecord at the
+	//                same time as searching for an empty slot.
 
-  // Find an empty slot:
-  for (pos=0;pos<MaxPlayerData;pos+=BatchSize) {
-    returned = CreateNewPlayerRecordInnerBatch(pos);
-    if (returned != -1) {
-      pos = returned;
-      break;
-    }
-  }
+	// Find an empty slot:
+	for (pos=0;pos<MaxPlayerData;pos+=BatchSize) {
+		returned = CreateNewPlayerRecordInnerBatch(pos);
+		if (returned != -1) {
+			pos = returned;
+			break;
+		}
+	}
 
-  if (pos >= MaxPlayerData) { // all records were full
-    // DONE: find the record with lowest hours_played and replace that one
-    // TODO: better, find the oldest record and replace it (we need last_date_played for that)
-    pos = FindShortestPlayerRecord();
-  }
+	if (pos >= MaxPlayerData) { // all records were full
+		// DONE: find the record with lowest hours_played and replace that one
+		// TODO: better, find the oldest record and replace it (we need last_date_played for that)
+		pos = FindShortestPlayerRecord();
+	}
 
-  if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) DEL ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos]); }
-  ip[pos] = getIP(p);
-  nick[pos] = GetDBName(p);
-  avg_score[pos] = UnknownStrength;
-  hours_played[pos] = 0; // UnknownMinutes/60; // CONSIDER: using some UnknownMinutes might be better, for players who play only for a short time and get an unrepresentative strength for the next game - with UnknownMinutes their strength will be closer to the average, hence balancing will concentrate more on players we know about.
-  if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos]); }
-  // if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$ nick[pos] $"!  You have "$ avg_score[pos] $" cookies."); }
-  return pos;
+	if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) DEL ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos]); }
+	ip[pos] = getIP(p);
+	nick[pos] = GetDBName(p);
+	avg_score[pos] = UnknownStrength;
+	hours_played[pos] = 0; // UnknownMinutes/60; // CONSIDER: using some UnknownMinutes might be better, for players who play only for a short time and get an unrepresentative strength for the next game - with UnknownMinutes their strength will be closer to the average, hence balancing will concentrate more on players we know about.
+	if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos]); }
+	// if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$ nick[pos] $"!  You have "$ avg_score[pos] $" cookies."); }
+	return pos;
 }
 
 function int CreateNewPlayerRecordInnerBatch(int posStart) {
-  local int pos;
-  // Find an empty slot:
-  for (pos=posStart;pos<MaxPlayerData && pos<posStart+BatchSize;pos++) {
-    if (ip[pos] == "" && nick[pos] == "") {
-      return pos;
-    }
-  }
-  return -1;
+	local int pos;
+	// Find an empty slot:
+	for (pos=posStart;pos<MaxPlayerData && pos<posStart+BatchSize;pos++) {
+		if (ip[pos] == "" && nick[pos] == "") {
+			return pos;
+		}
+	}
+	return -1;
 }
 
 // Finds an old player record which we can replace.  Actually since we don't have a last_date_played field, we look for the record with least hours_played.  (Player didn't spend long on server; their stats don't mean a lot)
 // TODO: One problem, this new player will probably be the next record to be replaced!  To keep his record in the database, the new player will have to play for longer than the now "shortest" record before another new record is created.
 function int FindShortestPlayerRecord() {
-  local int i,found;
-  found = 0;
-  for (i=1;i<MaxPlayerData;i+=BatchSize) {
-    found = FindShortestPlayerRecordInnerBatch(found,i);
-  }
-  return found;
+	local int i,found;
+	found = 0;
+	for (i=1;i<MaxPlayerData;i+=BatchSize) {
+		found = FindShortestPlayerRecordInnerBatch(found,i);
+	}
+	return found;
 }
 
 function int FindShortestPlayerRecordInnerBatch(int found, int iStart) {
-  local int i;
-  for (i=iStart;i<MaxPlayerData && i<iStart+BatchSize;i++) {
-    if (hours_played[i] < hours_played[found]) {
-      found = i;
-    }
-  }
-  return found;
+	local int i;
+	for (i=iStart;i<MaxPlayerData && i<iStart+BatchSize;i++) {
+		if (hours_played[i] < hours_played[found]) {
+			found = i;
+		}
+	}
+	return found;
 }
 
 
@@ -1854,229 +1998,229 @@ function int FindShortestPlayerRecordInnerBatch(int found, int iStart) {
 // =========== Updating Stats on player database: =========== //
 
 function UpdateStatsAtEndOfGame() {
-  local Pawn p;
-  local int i;
+	local Pawn p;
+	local int i;
 
-  // Do not update stats for games with <MinHumansForStats human players.
-  if (CountHumanPlayers() < MinHumansForStats) {
-    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): not updating stats since CountHumanPlayers "$CountHumanPlayers()$" < "$MinHumansForStats$"."); }
-    return;
-  }
+	// Do not update stats for games with <MinHumansForStats human players.
+	if (CountHumanPlayers() < MinHumansForStats) {
+		if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): not updating stats since CountHumanPlayers "$CountHumanPlayers()$" < "$MinHumansForStats$"."); }
+		return;
+	}
 
-  if (WinningTeamBonus != 0 && !DeathMatchPlus(Level.Game).bTournament) {
-    GiveBonusToWinningTeamPlayers();
-  }
+	if (WinningTeamBonus != 0 && !DeathMatchPlus(Level.Game).bTournament) {
+		GiveBonusToWinningTeamPlayers();
+	}
 
-  // Update stats for all players in game
-  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats."); }
-  if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is updating player stats."); }
-  // TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
-  if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: Team Name IP Ping PktLoss Rank Hours Score Frags Deaths Items Spree Secret Time"); }
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (!p.IsA('Spectator') && AllowedToRank(p)) {
-      i = UpdateStatsForPlayer(p);
-      if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$p.PlayerReplicationInfo.Score$" "$p.KillCount$" "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
-    }
-  }
+	// Update stats for all players in game
+	if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats."); }
+	if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is updating player stats."); }
+	// TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
+	if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: Team Name IP Ping PktLoss Rank Hours Score Frags Deaths Items Spree Secret Time"); }
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (!p.IsA('Spectator') && AllowedToRank(p)) {
+			i = UpdateStatsForPlayer(p);
+			if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$p.PlayerReplicationInfo.Score$" "$p.KillCount$" "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
+		}
+	}
 
-  Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): done");
+	Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): done");
 
 }
 
 function GiveBonusToWinningTeamPlayers() {
-  local TeamInfo WinningTeam;
-  local int i;
-  local Pawn p;
-  local TeamGamePlus thisTeamGame;
+	local TeamInfo WinningTeam;
+	local int i;
+	local Pawn p;
+	local TeamGamePlus thisTeamGame;
 
-  // We can't find a winning team if it's not a teamgame!
-  if (!Level.Game.GameReplicationInfo.bTeamGame) return;
+	// We can't find a winning team if it's not a teamgame!
+	if (!Level.Game.GameReplicationInfo.bTeamGame) return;
 
-  thisTeamGame = TeamGamePlus(Level.Game);
+	thisTeamGame = TeamGamePlus(Level.Game);
 
-  // Which team won?
+	// Which team won?
 
-  // Copied from CTFGame.SetEndCams(), and looks functionally identical to the method in TeamGamePlus.
-  for ( i=0; i<thisTeamGame.MaxTeams; i++ )
-    if ( (WinningTeam == None) || (thisTeamGame.Teams[i].Score > WinningTeam.Score) )
-      WinningTeam = thisTeamGame.Teams[i];
-  // Check for tie:
-  for ( i=0; i<thisTeamGame.MaxTeams; i++ ) {
-    if ( (WinningTeam.TeamIndex != i) && (WinningTeam.Score == thisTeamGame.Teams[i].Score) ) {
-      WinningTeam = None;
-      break;
-    }
-  }
+	// Copied from CTFGame.SetEndCams(), and looks functionally identical to the method in TeamGamePlus.
+	for ( i=0; i<thisTeamGame.MaxTeams; i++ )
+		if ( (WinningTeam == None) || (thisTeamGame.Teams[i].Score > WinningTeam.Score) )
+			WinningTeam = thisTeamGame.Teams[i];
+	// Check for tie:
+	for ( i=0; i<thisTeamGame.MaxTeams; i++ ) {
+		if ( (WinningTeam.TeamIndex != i) && (WinningTeam.Score == thisTeamGame.Teams[i].Score) ) {
+			WinningTeam = None;
+			break;
+		}
+	}
 
-  if (WinningTeam == None) return; // game ended in a tie
+	if (WinningTeam == None) return; // game ended in a tie
 
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (!p.IsA('Spectator') && AllowedToRank(p)) {
-      if (p.PlayerReplicationInfo.Team == WinningTeam.TeamIndex) {
-        if (bDebugLogging) { Log("AutoTeamBalance.GiveBonusToWinningTeamPlayers(): giving bonus to "$p.getHumanName()$"."); }
-        p.PlayerReplicationInfo.Score += WinningTeamBonus;
-        p.ClientMessage("You got "$WinningTeamBonus$" bonus points for finishing on the winning team.",'Pickup',False);
-      }
-    }
-  }
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (!p.IsA('Spectator') && AllowedToRank(p)) {
+			if (p.PlayerReplicationInfo.Team == WinningTeam.TeamIndex) {
+				if (bDebugLogging) { Log("AutoTeamBalance.GiveBonusToWinningTeamPlayers(): giving bonus to "$p.getHumanName()$"."); }
+				p.PlayerReplicationInfo.Score += WinningTeamBonus;
+				p.ClientMessage("You got "$WinningTeamBonus$" bonus points for finishing on the winning team.",'Pickup',False);
+			}
+		}
+	}
 
 }
 
 // Returns the multiplier required to increase this player's score to what it might have been if he had played for the whole game.
 function float ScaleToFullTime(Pawn p) {
-  if (bScalePlayerScoreToFullTime) {
-    return (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
-  } else {
-    return 1.0;
-  }
+	if (bScalePlayerScoreToFullTime) {
+		return (Level.TimeSeconds - timeGameStarted) / (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime);
+	} else {
+		return 1.0;
+	}
 }
 
 // For ScoringMethod 3.  Returns a value between 0 and 100, depending on the player's position in the overall scoreboard.
 function float GetRankingPoints(Pawn other) {
-  local Pawn p;
-  local int playersAbove;
-  local int playersBelow;
-  playersAbove = 0;
-  playersBelow = 0;
-  // Find the position of this player in the overall scoreboard:
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (p!=other && !p.IsA('Spectator') && AllowedToRank(p)) {
-      // i switched the > to >= so if you tie with another player, you lose out!
-      if ( (ScaleToFullTime(p)*p.PlayerReplicationInfo.Score) >= (ScaleToFullTime(other)*other.PlayerReplicationInfo.Score) ) {
-        playersAbove++;
-      } else {
-        playersBelow++;
-      }
-    }
-  }
-  return 100 * playersBelow / (playersBelow + playersAbove);
+	local Pawn p;
+	local int playersAbove;
+	local int playersBelow;
+	playersAbove = 0;
+	playersBelow = 0;
+	// Find the position of this player in the overall scoreboard:
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p!=other && !p.IsA('Spectator') && AllowedToRank(p)) {
+			// i switched the > to >= so if you tie with another player, you lose out!
+			if ( (ScaleToFullTime(p)*p.PlayerReplicationInfo.Score) >= (ScaleToFullTime(other)*other.PlayerReplicationInfo.Score) ) {
+				playersAbove++;
+			} else {
+				playersBelow++;
+			}
+		}
+	}
+	return 100 * playersBelow / (playersBelow + playersAbove);
 }
 
 // Returns the score the player will be awarded for this game, depending on the scoring method, and scaled up to full game time.  Note that score normalisation is done elsewhere.
 function float GetScoreForPlayer(Pawn p) {
-  local float award_score;
-  if (ScoringMethod == 0) {
-    award_score = p.PlayerReplicationInfo.Score * ScaleToFullTime(p);
-  } else if (ScoringMethod == 1) {
-    award_score = p.KillCount * ScaleToFullTime(p);
-  } else if (ScoringMethod == 2) {
-    award_score = ScaleToFullTime(p) * (p.KillCount + p.PlayerReplicationInfo.Score) / 2.0;
-  } else if (ScoringMethod == 3 || ScoringMethod > 3) {
-    award_score = GetRankingPoints(p); // Note that for this method, scaling score to full time is done *inside* GetRankingPoints()
-  }
-  return award_score;
+	local float award_score;
+	if (ScoringMethod == 0) {
+		award_score = p.PlayerReplicationInfo.Score * ScaleToFullTime(p);
+	} else if (ScoringMethod == 1) {
+		award_score = p.KillCount * ScaleToFullTime(p);
+	} else if (ScoringMethod == 2) {
+		award_score = ScaleToFullTime(p) * (p.KillCount + p.PlayerReplicationInfo.Score) / 2.0;
+	} else if (ScoringMethod == 3 || ScoringMethod > 3) {
+		award_score = GetRankingPoints(p); // Note that for this method, scaling score to full time is done *inside* GetRankingPoints()
+	}
+	return award_score;
 }
 
 function int UpdateStatsForPlayer(Pawn p) {
-  local int i,j;
-  local float current_score;
-  local float old_hours_played;
-  local float new_hours_played;
-  local float hours_played_this_game;
-  local int previousPolls;
-  local int gameDuration;
-  local int timeInGame;
-  local float weightScore;
-  local float previous_average;
+	local int i,j;
+	local float current_score;
+	local float old_hours_played;
+	local float new_hours_played;
+	local float hours_played_this_game;
+	local int previousPolls;
+	local int gameDuration;
+	local int timeInGame;
+	local float weightScore;
+	local float previous_average;
 
-  i = FindPlayerRecord(p); // guaranteed to return a record.
+	i = FindPlayerRecord(p); // guaranteed to return a record.
 
-  gameDuration = Level.TimeSeconds - timeGameStarted;
-  timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
-  if (timeInGame>gameDuration)
-    timeInGame = gameDuration;
-  if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
-    if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60s."); }
-    return i;
-  }
-  hours_played_this_game = Float(timeInGame)/60.0/60.0;
+	gameDuration = Level.TimeSeconds - timeGameStarted;
+	timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
+	if (timeInGame>gameDuration)
+		timeInGame = gameDuration;
+	if (timeInGame < 60) { // The player has been in the game for less than 1 minute.
+		if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer("$p$") Not updating this player since his timeInGame "$timeInGame$" < 60s."); }
+		return i;
+	}
+	hours_played_this_game = Float(timeInGame)/60.0/60.0;
 
-  current_score = GetScoreForPlayer(p);
+	current_score = GetScoreForPlayer(p);
 
-  // Normalisation, or not:
-  // ScoringMethod 3 requires no normalisation.
-  if (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2) {
-    if (bNormaliseScores) {
-      current_score = NormaliseScore(current_score); // to get an average score of 50 (different now that we use bRelativeNormalisation)
-    } else {
-      // We are not normalising the scores relative to other players, we are just recording end-game scores.
-      // But if this was a short game, scores will probably be lower, so we
-      // scale the scores up to what they might have been if the game had gone the full (assumed) 20 minutes.
-      current_score = current_score * (1.0/3.0) / hours_played_this_game;
-    }
-  }
+	// Normalisation, or not:
+	// ScoringMethod 3 requires no normalisation.
+	if (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2) {
+		if (bNormaliseScores) {
+			current_score = NormaliseScore(current_score); // to get an average score of 50 (different now that we use bRelativeNormalisation)
+		} else {
+			// We are not normalising the scores relative to other players, we are just recording end-game scores.
+			// But if this was a short game, scores will probably be lower, so we
+			// scale the scores up to what they might have been if the game had gone the full (assumed) 20 minutes.
+			current_score = current_score * (1.0/3.0) / hours_played_this_game;
+		}
+	}
 
-  old_hours_played = hours_played[i];
-  if (old_hours_played > HoursBeforeRecyclingStrength) {
-    old_hours_played = HoursBeforeRecyclingStrength;
-  }
-  new_hours_played = old_hours_played + hours_played_this_game;
+	old_hours_played = hours_played[i];
+	if (old_hours_played > HoursBeforeRecyclingStrength) {
+		old_hours_played = HoursBeforeRecyclingStrength;
+	}
+	new_hours_played = old_hours_played + hours_played_this_game;
 
-  previous_average = avg_score[i];
+	previous_average = avg_score[i];
 
-  if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$old_hours_played$") + "$current_score$"*"$hours_played_this_game$") / "$(new_hours_played)); }
-  avg_score[i] = ( (avg_score[i] * old_hours_played) + current_score*hours_played_this_game) / new_hours_played;
+	if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsForPlayer(p) ["$i$"] "$p.getHumanName()$" avg_score = ( ("$avg_score[i]$" * "$old_hours_played$") + "$current_score$"*"$hours_played_this_game$") / "$(new_hours_played)); }
+	avg_score[i] = ( (avg_score[i] * old_hours_played) + current_score*hours_played_this_game) / new_hours_played;
 
-  hours_played[i] += hours_played_this_game;
+	hours_played[i] += hours_played_this_game;
 
-  if (avg_score[i]>previous_average+2) {
-    if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
-    if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
-  }
-  else if (previous_average>avg_score[i]+2) {
-    if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
-    if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
-  }
-  return i;
+	if (avg_score[i]>previous_average+2) {
+		if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
+		if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+	}
+	else if (previous_average>avg_score[i]+2) {
+		if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
+		if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+	}
+	return i;
 }
 
 function GetAveragesThisGame(out float averageGameScore, out float averagePlayerStrengthThisGame) {
-  local Pawn p;
-  local int playerCount;
-  playerCount = 0;
-  averageGameScore = 0.0;
-  averagePlayerStrengthThisGame = 0.0;
-  for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-    if (!p.IsA('Spectator') && AllowedToRank(p)) {
-      averageGameScore += GetScoreForPlayer(p);
-      averagePlayerStrengthThisGame += GetPawnStrength(p);
-      playerCount++;
-    }
-  }
-  averageGameScore = averageGameScore / Float(playerCount);
-  averagePlayerStrengthThisGame = averagePlayerStrengthThisGame / Float(playerCount);
+	local Pawn p;
+	local int playerCount;
+	playerCount = 0;
+	averageGameScore = 0.0;
+	averagePlayerStrengthThisGame = 0.0;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (!p.IsA('Spectator') && AllowedToRank(p)) {
+			averageGameScore += GetScoreForPlayer(p);
+			averagePlayerStrengthThisGame += GetPawnStrength(p);
+			playerCount++;
+		}
+	}
+	averageGameScore = averageGameScore / Float(playerCount);
+	averagePlayerStrengthThisGame = averagePlayerStrengthThisGame / Float(playerCount);
 }
 
 // Normalises a player's score so that the average output score will be NormalisedStrength (or with bRelativeNormalisation, the average strength of current players on the server).
 // This is to fix the problem that some games (e.g. 2v2 w00t or PureAction or iG) have much higher scores than others, which will confuse the stats.
 function float NormaliseScore(float score) {
-  local float averageGameScore;
-  local float averagePlayerStrengthThisGame;
+	local float averageGameScore;
+	local float averagePlayerStrengthThisGame;
 
-  GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
+	GetAveragesThisGame(averageGameScore,averagePlayerStrengthThisGame);
 
-  // Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to NormalisedStrength!
-  if (averageGameScore < 2.0) {
-    averageGameScore = NormalisedStrength; // CONSIDER: maybe just better not to update
-  } // BT games will tend to have a lot of -ve scores.
+	// Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to NormalisedStrength!
+	if (averageGameScore < 2.0) {
+		averageGameScore = NormalisedStrength; // CONSIDER: maybe just better not to update
+	} // BT games will tend to have a lot of -ve scores.
 
-  if (bDebugLogging) { Log("AutoTeamBalance.NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$""); }
+	if (bDebugLogging) { Log("AutoTeamBalance.NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$""); }
 
-  if (bRelativeNormalisation) {
-    return score * averagePlayerStrengthThisGame / averageGameScore;
-  } else {
-    return score * NormalisedStrength / averageGameScore;
-  }
+	if (bRelativeNormalisation) {
+		return score * averagePlayerStrengthThisGame / averageGameScore;
+	} else {
+		return score * NormalisedStrength / averageGameScore;
+	}
 
 }
 
 // Takes everything before the first ":" - used when getting the IP from PlayerPawn.GetPlayerNetworkAddress(); since the client's port number changes frequently.
 function string stripPort(string ip_and_port) {
-  if ((""$ip_and_port)=="None" || ip_and_port=="") {
-    // if (bDebugLogging) { Log("stripPort(): ip_and_port="$ip_and_port); }
-    return "0.0.0.0";
-  }
-  return Left(ip_and_port,InStr(ip_and_port,":"));
+	if ((""$ip_and_port)=="None" || ip_and_port=="") {
+		// if (bDebugLogging) { Log("stripPort(): ip_and_port="$ip_and_port); }
+		return "0.0.0.0";
+	}
+	return Left(ip_and_port,InStr(ip_and_port,":"));
 }
 
 
