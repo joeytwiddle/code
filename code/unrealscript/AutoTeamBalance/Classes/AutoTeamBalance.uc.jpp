@@ -24,9 +24,14 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.3z"
+#define ATB_VERSION "1.4d"
 
-// New changes for 1.4:
+// TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
+
+// Changes since 1.4:
+// - When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
+
+// Changes in 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
 // Finally added a date_last_played entry for each player.  Now old records can be recycled better.
 // As well as displaying the SmartCTF scoreboard, !stats now also shows all the player strengths.  (It's a shortcut for "mutate strengths".)
@@ -39,6 +44,7 @@
 // Also added "mutate stats" which shows various game stats for each player in the console (e.g. frags, deaths, item pickups).
 // Added RelativeNormalisationProportion with a default of 0.5, to stop player strengths from shooting off too high.
 // If a semi-admin accidentally types the semi-admin pass in chat instead of the console, their message is swallowed.
+// If team sizes differ by 2 or more players, someone will be switched, even if the smaller team had greater strength, but immediate rebalancing will be made possible, and recommended to all players.
 
 // Stripped at compile-time:
 // Testing bSuperBalance, but it has some nasty side-effects.
@@ -76,22 +82,24 @@
 
 // DONE: when joining unstarted game, u get msg saying u r on Red or Blue team, but we change it later :S - overwrite or empty that message!
 
-// TODO: what should we do when it's 3v5 but red team has strong players, so team strengths are similar?
+// DONE: what should we do when it's 3v5 but red team has strong players, so team strengths are similar?
 
-// TODO: integrate with AKA - no apparently AKA is no better than ATB's current system; make an IDC-like add-on instead
+// CONSIDER: integrate with AKA - no apparently AKA is no better than ATB's current system; make an IDC-like add-on instead
 
-// TODO: when a player joins with a new IP, and we copy their old stats over to
+// CONSIDER: when a player joins with a new IP, and we copy their old stats over to
 // a new record, we should really delete their old stats record, so that any
 // future copies will use the new (latest) strength.
+// Hmm but maybe he isn't really the same player.  Better to leave the clearing up to the date-based algorithm.
 
 // TODO CHECK: maybe an admin wants disable players from switching team
 // entirely; if he does that, can ATB still do the switching it needs to?!
+// try enabling bNoTeamChanges in UnrealTournament.ini
 
-// TODO: maybe we *can* update stats mid-game; if we rename timeGameStarted to lastTimeUpdated, and change that when we do an update.
+// CONSIDER: maybe we *can* update stats mid-game; if we rename timeGameStarted to lastTimeUpdated, and change that when we do an update.
 //       Since we scale player scores to "full-time", this should also work for scaling down.
-//       However, the current algorithm will still not count the score/frags earned since the last update, but since the player joined.
+//       However, the current algorithm will still not count the score/frags earned since the last update, but since the player joined.  We would need to do what iDeFiX's mod does, and store their each player's score/frags from the last update.
 
-// TODO: what has IDC support done to bLogFakenickers and bBroadcastFakenickers?
+// CONSIDER: what has IDC support done to bLogFakenickers and bBroadcastFakenickers?
 
 // CONSIDER: could add last_date_played, so that we can recycle old records suitably.
 
@@ -101,7 +109,9 @@
 // TEST: When I was testing both ServerActor *and* mutator (not actually desirable), it seemed "!teams" was not working - is this fixed now?
 // BUG: Do not use NetWait<3; it may cause the teambalance to occur before anyone joins the server!
 
+#ifndef XOL_SPECIFIC
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
+#endif
 
 // #define XOL_SPECIFIC
 // #define ENABLE_USEISPNOTFULLIP
@@ -123,18 +133,22 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #define ENABLE_IDC
 #endif
 
+#define bLogDuplicateRecords True
 
 
 // These config variables are documented in AutoTeamBalance.txt
 
+var config bool bDebugLogging;
+var config bool bLogDeletedRecords; // #define bLogDeletedRecords True
 var config bool bBroadcastStuff;
+var config bool bBroadcastTeamStrengths;
+var config bool bFlashTeamStrengths;
 var config bool bBroadcastCookies;
 var config bool bFlashCookies;
 #ifdef DETECT_PLAYERJOINS
 var config bool bFlashPlayerJoins;
 #endif
 var config bool bReportStrengthAsCookies;
-var config bool bDebugLogging;
 
 var config bool bEnablePlayerCommands;
 
@@ -144,6 +158,7 @@ var config bool bLetPlayersRebalance;
 var config int MinRequestsForRebalance;
 var int pidsRequestingRebalance[64];
 var int lastRebalanceRequestTime;
+var config bool bOverrideMinRequests;
 #endif
 var config bool bFlashRebalanceRequest;
 var config bool bShowProposedSwitch;
@@ -175,7 +190,9 @@ var config bool bShowReason;
 var config bool bFlashOnWarning;
 var config bool bShakeOnWarning;
 var config bool bBuzzOnWarning;
+var config bool bShakeWhenMoved;
 var config int MinSecondsBeforeRebalance;
+var config bool bNeverRebalanceWhenTeamsAreEven;
 
 var config bool bLogExtraStats;
 var config float MaxHoursWhenCopyingOldRecord;
@@ -196,7 +213,7 @@ var config int StrengthThreshold;
 var config int WinningTeamBonus;
 var config bool bClanWar;
 var config string clanTag;
-var config bool bUseOnlyInGameScoresForRebalance;
+// var config bool bUseOnlyInGameScoresForRebalance;
 var config bool bLogFakenickers;
 var config bool bBroadcastFakenickers;
 #ifdef ENABLE_IDC
@@ -259,23 +276,27 @@ var float averageGameScore;
 var float averagePlayerStrengthThisGame;
 var float LastCalculatedAverages;
 
-var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorOrange,colorGray,colorBlack;
-var config Color warnColor;
+var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
+var config Color strengthColor,warnColor;
 
 defaultproperties {
+	bDebugLogging=False
+	bLogDeletedRecords=True
 	bBroadcastStuff=True
+	bBroadcastTeamStrengths=True //@unfinished TODO TESTING !!!
+	bFlashTeamStrengths=False //@unfinished TODO TESTING !!!
 	bBroadcastCookies=False
 	bFlashCookies=False
 	#ifdef DETECT_PLAYERJOINS
 	bFlashPlayerJoins=True
 	#endif
 	bReportStrengthAsCookies=False
-	bDebugLogging=False
 	bEnablePlayerCommands=True
 	bForceEvenTeams=False
 	bLetPlayersRebalance=True
 	#ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
 	MinRequestsForRebalance=1
+	bOverrideMinRequests=True
 	// MinRequestsForRebalancePercent=25    // or 25% of players request it.
 	#endif
 	bFlashRebalanceRequest=True
@@ -286,11 +307,13 @@ defaultproperties {
 	bFlashOnWarning=True
 	bShakeOnWarning=False
 	bBuzzOnWarning=False
+	bShakeWhenMoved=False
 	bAllowSemiAdminKick=True
 	bAllowSemiAdminForceTravel=True
 	bBalanceBots=False
 	bRankBots=False
 	MinSecondsBeforeRebalance=20
+	bNeverRebalanceWhenTeamsAreEven=False
 	SemiAdminPass="defaults_to_admin_pass"
 	bAutoBalanceTeamsForCTF=True
 	bAutoBalanceTeamsForTDM=True
@@ -309,7 +332,7 @@ defaultproperties {
 	bNormaliseScores=True
 	// bRelativeNormalisation=True
 	RelativeNormalisationProportion=0.5 // 0.0 = no relative, scores always normalised around NormalisedStrength (50); 1.0 = scores normalised around average strength of players in game
-	StrengthProportionFromCurrentGame=0.25
+	StrengthProportionFromCurrentGame=0.5
 	bScalePlayerScoreToFullTime=True
 	NormalisedStrength=50
 	UnknownStrength=50
@@ -319,7 +342,7 @@ defaultproperties {
 	WinningTeamBonus=0
 	bClanWar=False
 	clanTag="XOL"
-	bUseOnlyInGameScoresForRebalance=False
+	// bUseOnlyInGameScoresForRebalance=False
 	bLogFakenickers=False
 	bBroadcastFakenickers=False
 	#ifdef ENABLE_IDC
@@ -346,15 +369,16 @@ defaultproperties {
 	colorYellow=(R=255,G=255,B=32,A=32),
 	colorCyan=(R=32,G=255,B=255,A=32),
 	colorMagenta=(R=255,G=32,B=255,A=32),
-	colorOrange=(R=255,G=144,B=32,A=32),
 	colorGray=(R=192,G=192,B=192,A=32),
 	colorBlack=(R=0,G=0,B=0,A=32),
-	warnColor=(R=200,G=160,B=0,A=24),
+	strengthColor=(R=255,G=32,B=255,A=32),
+	warnColor=(R=255,G=144,B=32,A=32),
 }
 
 #define DebugLog(X) if (bDebugLogging) { Log(X); }
 // #define NormalLog(X); if (bLogging) { Log(X); }
-#define NormalLog(X) Log(X);
+// #define NormalLog(X) Log(X);
+#define NormalLog(X) if (bDebugLogging) { Log(X); }
 
 
 
@@ -375,7 +399,7 @@ function PostBeginPlay() {
 	// If AutoTeamBalance was installed as a ServerActor, we need to register it as a mutator:
 	// AddMutator() will check that it is not already in the mutator chain.
 	Level.Game.BaseMutator.AddMutator(Self);
-	if (initialized) {
+	if (initialized) { // Another copy of ATB may disable us by setting initialized.
 		DebugLog(Self$".PostBeginPlay() disabling self on request");
 		gameStartDone=True;
 		// Disable('Tick');
@@ -386,6 +410,10 @@ function PostBeginPlay() {
 	// We always want to register as a messenger, so that players may type "!red" or "!blue"
 	Level.Game.RegisterMessageMutator(Self);
 	DebugLog(Self$".PostBeginPlay() registered self as messenger");
+
+	if (TeamGamePlus(Level.Game) != None && bEnablePlayerCommands) {
+		TeamGamePlus(Level.Game).TeamChangeMessage = "Type !red or !blue to change team.";
+	}
 
 	// This is how we detect the moment just before game-start (in CheckGameStart()), to do a final team balance:
 	SetTimer(1,True);
@@ -740,23 +768,27 @@ function Mutate(String str, PlayerPawn Sender) {
 			case "TORED":
 				// if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
 				ChangePlayerToTeam(FindPlayerNamed(args[1]),0,true);
-				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				// Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				BroadcastTeamStrengths();
 			break;
 
 			case "TOBLUE":
 				// if (bBroadcastStuff) { BroadcastMessageAndLog(Sender.getHumanName()$" is trying to fix the teams."); }
 				ChangePlayerToTeam(FindPlayerNamed(args[1]),1,true);
-				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				// Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				BroadcastTeamStrengths();
 			break;
 
 			case "TOGREEN":
 				ChangePlayerToTeam(FindPlayerNamed(args[1]),2,true);
-				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				// Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				BroadcastTeamStrengths();
 			break;
 
 			case "TOGOLD":
 				ChangePlayerToTeam(FindPlayerNamed(args[1]),3,true);
-				Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				// Sender.ClientMessage("Red team strength is now "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$".");
+				BroadcastTeamStrengths();
 			break;
 
 			case "SWITCH":
@@ -774,10 +806,15 @@ function Mutate(String str, PlayerPawn Sender) {
 					Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
 				} else {
 					PlayerPawn(p).ClearProgressMessages();
-					FlashMessageToPlayer(PlayerPawn(p),msg,colorYellow);
+					FlashMessageToPlayer(PlayerPawn(p),msg,colorCyan);
 					p.ShakeView(3.0,8000.0,12000.0);
 					Sender.ClientMessage(p.getHumanName()$" was sent the message \""$msg$"\".");
 				}
+			break;
+
+			case "FLASH":
+				msg=""; for (i=1;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+				FlashToAllPlayers(msg,colorCyan);
 			break;
 
 			case "KICK":
@@ -909,7 +946,7 @@ function Mutate(String str, PlayerPawn Sender) {
 			pass_if_needed = " [password]";
 		Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" say commands:");
 		if (bEnablePlayerCommands) {
-			Sender.ClientMessage("    teams !teams !red !blue !spec !play !vote !stats");
+			Sender.ClientMessage("    teams !teams !red !blue !spec !play !vote !strengths !stats");
 		} else {
 			Sender.ClientMessage("    teams !teams");
 		}
@@ -927,6 +964,7 @@ function Mutate(String str, PlayerPawn Sender) {
 			Sender.ClientMessage("    mutate tored <player>" $ pass_if_needed);
 			Sender.ClientMessage("    mutate toblue <player>" $ pass_if_needed);
 			Sender.ClientMessage("    mutate switch <player> <player>" $ pass_if_needed);
+			Sender.ClientMessage("    mutate flash <message>" $ pass_if_needed);
 			Sender.ClientMessage("    mutate warn <player> <message>" $ pass_if_needed);
 		} else {
 			Sender.ClientMessage("    mutate help [<password>]");
@@ -976,6 +1014,7 @@ function SwitchTwoPlayers(PlayerPawn sender, String name1, String name2) {
 	newteam2 = player1.PlayerReplicationInfo.Team;
 	ChangePlayerToTeam(player1,newteam1,true);
 	ChangePlayerToTeam(player2,newteam2,true);
+	BroadcastTeamStrengths();
 }
 
 function ToggleAdminOnPlayer(Pawn p) {
@@ -1083,9 +1122,9 @@ function FlashPreGameLines() {
 				// #endif
 				if (bFlashCookies) {
 					if (bReportStrengthAsCookies)
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ Int(GetRecordedPlayerStrength(p)) $" cookies.",colorOrange,targetLine);
+						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ Int(GetRecordedPlayerStrength(p)) $" cookies.",strengthColor,targetLine);
 					else
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ Int(GetRecordedPlayerStrength(p)) $"",colorOrange,targetLine);
+						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ Int(GetRecordedPlayerStrength(p)) $"",strengthColor,targetLine);
 				} else {
 					FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
 					// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
@@ -1186,6 +1225,9 @@ function CheckMidGameBalance() {
 	if (bWarnMidGameUnbalance) {
 
 		if (weakerTeam == -1 && redTeamCount+blueTeamCount>=3) { // no point checking this on a 1v1 ;)
+			if (redTeamCount == blueTeamCount && bNeverRebalanceWhenTeamsAreEven) {
+				return;
+			}
 			// So teams differ by <2 players.  Now calculate which team is weaker, and check if that team has fewer players:
 			redTeamStrength = GetTeamStrength(0);
 			blueTeamStrength = GetTeamStrength(1);
@@ -1298,18 +1340,22 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 
 			if (Msg ~= "!RED") {
 				ChangePlayerToTeam(PlayerPawn(Sender),0,false);
+				BroadcastTeamStrengths();
 			}
 
 			if (Msg ~= "!BLUE") {
 				ChangePlayerToTeam(PlayerPawn(Sender),1,false);
+				BroadcastTeamStrengths();
 			}
 
 			if (Msg ~= "!GREEN") {
 				ChangePlayerToTeam(PlayerPawn(Sender),2,false);
+				BroadcastTeamStrengths();
 			}
 
 			if (Msg ~= "!GOLD" || Msg ~= "!YELLOW") {
 				ChangePlayerToTeam(PlayerPawn(Sender),3,false);
+				BroadcastTeamStrengths();
 			}
 
 		}
@@ -1318,14 +1364,14 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 
 		if (Sender.IsA('PlayerPawn') && !Sender.IsA('Spectator')) {
 			if (Msg ~= "!SPEC" || Msg ~= "!SPECTATE") {
-				// PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
+				PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
 				PlayerPawn(Sender).ClientTravel("?OverrideClass=Botpack.CHSpectator",TRAVEL_Relative, False);
 			}
 		}
 
 		if (Sender.IsA('Spectator')) {
 			if (Msg ~= "!PLAY") {
-				// PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
+				PlayerPawn(Sender).PreClientTravel(); // not sure if this is actually needed
 				PlayerPawn(Sender).ClientTravel("?OverrideClass=",TRAVEL_Relative, False);
 			}
 		}
@@ -1336,6 +1382,11 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 
 		if (Msg ~= "!STATS") { 
 			Level.Game.BaseMutator.Mutate("smartctf stats",PlayerPawn(Sender));
+			// TODO: Turn on console (toggle console if not on)?
+			// ShowStrengthsTo(PlayerPawn(Sender),False);
+		}
+
+		if (Msg ~= "!STRENGTHS") { 
 			// TODO: Turn on console (toggle console if not on)?
 			ShowStrengthsTo(PlayerPawn(Sender),False);
 		}
@@ -1507,11 +1558,19 @@ function ForceFullTeamsRebalance() {
 	g.bNoTeamChanges=oldbNoTeamChanges;
 
 	// Show team strengths to all players
-	if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
+	// if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 	// if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+	BroadcastTeamStrengths();
 
 	FixTeamsizeBug();
 
+}
+
+function BroadcastTeamStrengths() {
+//@TODO! LastTeamDifference
+	// if (bBroadcastTeamStrengths) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+	if (bBroadcastTeamStrengths) { BroadcastMessageAndLog("Red = "$Int(GetTeamStrength(0))$", Blue = "$Int(GetTeamStrength(1))$"."); }
+	if (bFlashTeamStrengths) { FlashToAllPlayers("red: " $ Int(GetTeamStrength(0))$" v "$Int(GetTeamStrength(1)) $ " :blue",colorRed,7); }
 }
 
 // TODO: There's little point asking for additional "!teams" requests, if the algorithm will refuse to move any players anyway!  (Well, this is DONE if bShowProposedSwitch=True.)
@@ -1551,7 +1610,7 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
 	additionalRequiredRequests = MinRequestsForRebalance - countRequests;
 	// But if teams differ in size by 2 or more players, only one request to rebalance is needed:
 	// TODO: we could also require only 1 request if the stronger team has more players
-	if (Abs(GetTeamSize(0)-GetTeamSize(1))>=2) {
+	if (bOverrideMinRequests && Abs(GetTeamSize(0)-GetTeamSize(1))>=2) {
 		additionalRequiredRequests = 0;
 	}
 	// Decide what to do
@@ -1567,7 +1626,7 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
 				for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 					if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && !p.IsA('Bot')) {
 						PlayerPawn(p).ClearProgressMessages();
-						FlashMessageToPlayer(PlayerPawn(p),""$additionalRequiredRequests$" more player"$s$" must type !teams for rebalance.",warnColor,7);
+						FlashMessageToPlayer(PlayerPawn(p),""$additionalRequiredRequests$" more player"$s$" must type !teams for rebalance.",warnColor,6);
 					}
 				} 
 			} else {
@@ -1582,7 +1641,8 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
 #endif
 
 	// After a request for rebalance, whether changes were made or not, show current team strengths to all players.
-	if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+	// if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+	BroadcastTeamStrengths();
 
 }
 
@@ -1927,7 +1987,7 @@ function MidGameRebalance(bool bDo) {
 		MidGameTeamBalanceSwitchOnePlayer(bDo,1,0);
 	} else if (blueTeamCount < redTeamCount) {
 		MidGameTeamBalanceSwitchOnePlayer(bDo,0,1);
-	} else {
+	} else if (!bNeverRebalanceWhenTeamsAreEven) {
 		MidGameTeamBalanceSwitchTwoPlayers(bDo);
 	}
 
@@ -1938,10 +1998,12 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	local Pawn p;
 	local Pawn closestPlayer; // the most ideal potential player to switch
 	local float newDifference; // the absolute strength difference between the two teams after the potential switch
+	local int playerCountDifference;
 	fromTeamStrength = GetTeamStrength(fromTeam);
 	toTeamStrength = GetTeamStrength(toTeam);
 	currentDifference = fromTeamStrength - toTeamStrength;
-	if (currentDifference<0) {
+	playerCountDifference = GetTeamSize(fromTeam) - GetTeamSize(toTeam);
+	if (currentDifference<0 && playerCountDifference<2) {
 		BroadcastMessageAndLog(""$getTeamName(toTeam)$" is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
 		return False;
 	}
@@ -1962,18 +2024,23 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 		return False;
 	}
 	if (newDifference >= currentDifference && !bForceEvenTeams && CountHumanPlayers()>3) {
-		// We only decline to switch if #players>3 and we aren't "forcing" even teams
-		// BroadcastMessageAndLog("Not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
-		BroadcastMessageAndLog(""$getTeamName(toTeam)$" team would be too strong with "$closestPlayer.getHumanName()$"");
-		return False;
-	} else {
-		if (bDo) {
-			ChangePlayerToTeam(closestPlayer,toTeam,gameStartDone);
+		// We only decline to switch if #players>3 and we aren't "forcing" even teams and if teams sizes only differ by 1 player.
+		if (playerCountDifference>=2) {
+			BroadcastMessageAndLog(""$getTeamName(toTeam)$" looks stronger than "$getTeamName(fromTeam)$".  Please consider rebalancing again!");
+			lastBalanceTime = Level.TimeSeconds - MinSecondsBeforeRebalance; // Make immediate rebalance possible
 		} else {
-			ProposeChange(closestPlayer,None);
+			// BroadcastMessageAndLog("Not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
+			BroadcastMessageAndLog(""$getTeamName(toTeam)$" team would be too strong with "$closestPlayer.getHumanName()$"");
+			return False;
 		}
-		return True;
 	}
+	if (bDo) {
+		ChangePlayerToTeam(closestPlayer,toTeam,gameStartDone);
+		// BroadcastTeamStrengths();
+	} else {
+		ProposeChange(closestPlayer,None);
+	}
+	return True;
 }
 
 function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
@@ -2021,6 +2088,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 		if (bDo) {
 			ChangePlayerToTeam(redPlayerToMove,1,gameStartDone);
 			ChangePlayerToTeam(bluePlayerToMove,0,gameStartDone);
+			// BroadcastTeamStrengths();
 		} else {
 			ProposeChange(redPlayerToMove,bluePlayerToMove);
 		}
@@ -2076,9 +2144,11 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 	Level.Game.ChangeTeam(p,teamnum); // TODO: suppress the BroadcastMessage() made by TeamGame.AddToTeam() when we are flashing team to player elsewhere anyway
 
 	// Recompensate player for suicide/death points:
-	// p.KillCount++; // Did not work
-	p.PlayerReplicationInfo.Score += 1.0;
-	p.PlayerReplicationInfo.Deaths -= 1;
+	if (gameStartDone) {
+		// p.KillCount++; // Did not work
+		p.PlayerReplicationInfo.Score += 1.0;
+		p.PlayerReplicationInfo.Deaths -= 1;
+	}
 
 	// Kill the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
 	p.Died(None, '', p.Location);
@@ -2093,9 +2163,11 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 		}
 		BroadcastMessage(p.getHumanName()$" has been moved to the "$getTeamName(teamnum)$" team.");
 		PlayerPawn(p).ClearProgressMessages();
-		FlashMessageToPlayer(PlayerPawn(p),"You have been moved to the "$Caps(getTeamName(teamnum))$" team!",msgColor,3);
-		// BUG: Unfortunately this message is soon hidden by the scoreboard, which is displayed automatically when a player dies.
-		p.ShakeView(2.0,2000.0,0.0);
+		FlashMessageToPlayer(PlayerPawn(p),"You have been moved to the "$Caps(getTeamName(teamnum))$" team!",msgColor,3); // BUG: Unfortunately this message is soon hidden by the scoreboard, which is displayed automatically when a player dies, so we also send a message to their console:
+		PlayerPawn(p).ClientMessage("You have been moved to the "$Caps(getTeamName(teamnum))$" team!");
+		if (bShakeWhenMoved) {
+			p.ShakeView(2.0,2000.0,0.0);
+		}
 	}
 
 	if (gameStartDone) {
@@ -2145,7 +2217,9 @@ function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional
 	*/
 	#endif
 	// p.ClearProgressMessages();
-	p.SetProgressTime(4);
+	// p.SetProgressTime(4);
+	#define MessageDuration 5
+	p.SetProgressTime(MessageDuration);
 	p.SetProgressColor(msgColor,linenum);
 	p.SetProgressMessage(Msg,linenum);
 	if (gameStartDone) { // Prevent multiple (and badly overlapping) beeps during the multiple Flashes at the start of the game
@@ -2220,13 +2294,13 @@ function bool AllowedToRank(Pawn b) {
 		return b.IsA('PlayerPawn');
 }
 
-// This is used for checking and performing mid-game teambalance.  It counts bots if bBalanceBots is set to True.
+// This is used for checking and performing mid-game teambalance.  It never counts bots.
 function int GetTeamSize(int team) {
 	local int count;
 	local Pawn p;
 	count = 0;
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-		if (AllowedToBalance(p) && p.PlayerReplicationInfo.Team == team) count++;
+		if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && p.PlayerReplicationInfo.Team == team) count++;
 	}
 	return count;
 }
@@ -2247,7 +2321,7 @@ function String getTeamName(int teamNum) {
 	return TeamGamePlus(Level.Game).Teams[teamNum].TeamName;
 }
 
-// Team strength is the sum of all player and bot strengths on that team, plus caps*FlagStrength (or other teamscore).
+// Team strength is the sum of all players on that team, plus caps*FlagStrength (or other teamscore).
 function float GetTeamStrength(int teamNum) {
 	// Add flagstrength:
 	return GetTeamStrengthNoFlagStrength(teamNum) + GetFlagStrengthForTeam(teamNum);
@@ -2292,9 +2366,9 @@ function float GetFlagStrength() {
 function float GetPlayerStrength(Pawn p) {
 	// DONE: if gameStartDone and/or gametime>1minute then guess the player's strength from their current score
 	local float timeInGame;
-	if (bUseOnlyInGameScoresForRebalance && gameStartDone && !gameEndDone) {
-		return p.PlayerReplicationInfo.Score;
-	}
+	// if (bUseOnlyInGameScoresForRebalance && gameStartDone && !gameEndDone) {
+		// return p.PlayerReplicationInfo.Score;
+	// }
 	if (StrengthProportionFromCurrentGame>0 && gameStartDone) {
 		timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
 		if (timeInGame > 180) {
@@ -2569,11 +2643,25 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 			DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
 			return found;
 		} else if (player_ip == ip[i]) {
-			found = i; // matching ip
-			DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
-		} else if (player_nick == nick[i] && found == -1) {
-			found = i; // if not yet matching an ip, match the same nick on any ip
-			DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[found]$"");
+			if (found >= 0) {
+				if (bLogDuplicateRecords) {
+					Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
+				}
+			}
+			if (found == -1 || NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])) { // take this record only if the last one found is older
+				found = i; // matching ip
+				DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
+			}
+		} else if (player_nick == nick[i] /* && found == -1 */ ) { // the part commented out was to prefer matching_ip+different_nick over matching_nick+different_ip
+			if (found >= 0) {
+				if (bLogDuplicateRecords) {
+					Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE NICK match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
+				}
+			}
+			if (found == -1 || NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])) { // take this record only if the last one found is older
+				found = i;
+				DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[found]$"");
+			}
 		}
 		// CONSIDER: if an uneven match, choose a match with more experience (hours_played)
 		// CONSIDER: even better, average the strengths of all partial-matches (maybe the same nick many times on different IPs, or the same IP with many different nicks), weighted by hours_played
@@ -2609,7 +2697,9 @@ function int CreateNewPlayerRecord(Pawn p) {
 		pos = FindOldestPlayerRecord();
 	}
 
-	NormalLog("AutoTeamBalance.CreateNewPlayerRecord(p) DEL ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos]);
+	if (bLogDeletedRecords) {
+		Log("AutoTeamBalance.CreateNewPlayerRecord(p) DEL ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos]);
+	}
 	ip[pos] = getIP(p);
 	nick[pos] = GetDBName(p);
 	avg_score[pos] = UnknownStrength;
@@ -2903,19 +2993,19 @@ function int UpdateStatsForPlayer(Pawn p) {
 	if (avg_score[i]>previous_average+2) {
 		if (bReportStrengthAsCookies) {
 			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
 		} else {
 			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has gained "$ Int(avg_score[i]-previous_average) $" points of strength!"); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength increased by "$ Int(avg_score[i]-previous_average) $" points this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength increased by "$ Int(avg_score[i]-previous_average) $" points this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
 		}
 	}
 	else if (previous_average>avg_score[i]+2) {
 		if (bReportStrengthAsCookies) {
 			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
 		} else {
 			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" points of strength."); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength decreased by "$ Int(previous_average-avg_score[i]) $" points this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength decreased by "$ Int(previous_average-avg_score[i]) $" points this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
 		}
 	}
 	return i;
