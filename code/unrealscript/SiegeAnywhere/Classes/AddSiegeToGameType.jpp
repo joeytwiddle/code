@@ -1,0 +1,142 @@
+// This is an attempt to add the Siege constructor to any gametype.
+// But I think we will need a custom constructor and HUD, since e.g. SiegeGI(Level.Game).MaxRU is not available!
+// Ah actually we get away with that.  But I did manage to get negative RU, and then DOWNgraded one of my buildings!  >.<
+// DONE: sgProtectors KILL players!  Fixed this by copying over ReduceDamage().
+// BUG TODO: HUD info, such as the flags, is overriden by sgHUD.  Recommend extendingsgHUD, and getting it to call the original HUD's render functions.
+// TODO: We will definitely need to block some things, e.g. Teleporters in CTF, Containers+ContainerXs on flagspots, Containers+ContainerXs at key points on AS maps.
+
+var class<HUD> OriginalHUDType;
+
+function PostBeginPlay() {
+	Super.PostBeginPlay();
+	OriginalHUDType = Level.Game.HUDType;
+	Level.Game.HUDType = class'sgHUD';
+	Log(Self$": Original HUD type "$OriginalHUDType$" overriden by "$Level.Game.HUDType);
+	// TODO CONSIDER: we could set GoalTeamScore to 0, so the game goes the full time.
+}
+
+event PlayerPawn Login(string portal, string options, out string error, class<PlayerPawn> spawnClass) {
+	local PlayerPawn newPlayer;
+	local class<PlayerReplicationInfo> priClass;
+
+	// Ugly hack to spawn the correct type of PRI
+	priClass = spawnClass.default.PlayerReplicationInfoClass;
+	spawnClass.default.PlayerReplicationInfoClass = class'sgPRI';
+	newPlayer = Super.Login(portal, options, error, spawnClass);
+	spawnClass.default.PlayerReplicationInfoClass = priClass;
+
+	sgPRI(newPlayer.PlayerReplicationInfo).MaxRU = 100;
+	// sgPRI(newPlayer.PlayerReplicationInfo).addRU(50);
+
+	// FOR TESTING:
+	// sgPRI(newPlayer.PlayerReplicationInfo).MaxRU = 500;
+	// sgPRI(newPlayer.PlayerReplicationInfo).addRU(500);
+
+	return newPlayer;
+}
+
+function AddDefaultInventory(Pawn p) {
+	local sgConstructor cons;
+	Super.AddDefaultInventory(p);
+	cons = sgConstructor(p.FindInventoryType(class'sgConstructor'));
+	if (cons == None) {
+		cons = Spawn(class'sgConstructor',p,,,rot(0,0,0));
+		// Log("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") Adding cons = " $ cons);
+		cons.GiveTo(p);
+	}
+}
+
+function ScoreKill(Pawn killer, Pawn other) {
+
+	if ( killer == other || killer == None ) {
+		if ( other.PlayerReplicationInfo != None )
+			other.PlayerReplicationInfo.Score -= 1;
+		if ( sgPRI(other.PlayerReplicationInfo) != None ) {
+			sgPRI(other.PlayerReplicationInfo).AddRU(-50);
+			if (sgPRI(other.PlayerReplicationInfo).RU < 0)
+				sgPRI(other.PlayerReplicationInfo).RU = 0;
+		}
+	} else if ( killer != None ) {
+		sgPRI(killer.PlayerReplicationInfo).sgInfoKiller++;
+		killer.KillCount++;
+		if ( killer.bIsPlayer && other.bIsPlayer &&
+				killer.PlayerReplicationInfo.Team !=
+				other.PlayerReplicationInfo.Team )
+		{
+			killer.PlayerReplicationInfo.Score += 1;
+			if ( sgPRI(killer.PlayerReplicationInfo) != None ) {
+				sgPRI(killer.playerreplicationinfo).AddRU(50);
+				if (sgPRI(killer.PlayerReplicationInfo).RU > sgPRI(killer.PlayerReplicationInfo).MaxRU) {
+					sgPRI(killer.PlayerReplicationInfo).MaxRU += 25;
+					sgPRI(killer.PlayerReplicationInfo).RU = sgPRI(killer.PlayerReplicationInfo).MaxRU;
+				}
+			}
+		}
+		if ( sgPRI(other.PlayerReplicationInfo) != None ) {
+			sgPRI(other.PlayerReplicationInfo).AddRU(-10);
+			if (sgPRI(other.PlayerReplicationInfo).RU < 0)
+				sgPRI(other.PlayerReplicationInfo).RU = 0;
+		}
+	}
+	other.DieCount++;
+
+	BaseMutator.ScoreKill(Killer, Other);
+}
+
+
+function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn instigatedBy)
+{
+	local string sMessage;
+	local sgSpawnProt sgSP;
+	if (instigatedBy != None && injured.bIsPlayer && instigatedBy.bIsPlayer && injured.PlayerReplicationInfo.Team != instigatedBy.PlayerReplicationInfo.Team)
+	{
+		if (injured != instigatedBy)
+		{
+			sgSP=sgSpawnProt(injured.FindInventoryType(class'SiegeXXL2dRC1.sgSpawnProt'));
+			if (sgSP != None )
+			{
+				//instigatedBy.TakeDamage(damage, instigatedBy, instigatedBy.Location, vect(0,0,0), 'exploded');
+				sMessage="Player "@injured.PlayerReplicationInfo.PlayerName@" is spawn protected.";
+
+				if (instigatedBy.PlayerReplicationInfo != None)
+					instigatedBy.ClientMessage(sMessage);
+
+				damage=0;
+				return damage;
+			}
+		}
+		else
+		{
+			sgSP=sgSpawnProt(instigatedBy.FindInventoryType(class'SiegeXXL2dRC1.sgSpawnProt'));
+			if ( sgSP != None )
+				sgSP.DisableProt();
+		}
+	}
+
+	damage = Super.ReduceDamage(damage, damageType, injured, instigatedBy);
+
+	/*
+	if ( sgBaseCore(injured) != None )
+	{
+		if ( instigatedBy != None &&
+				(SniperRifle(instigatedBy.Weapon) != None ||
+				 Ripper(instigatedBy.Weapon) != None) &&
+				VSize(injured.Location - instigatedBy.Location) >
+				MaxCoreSnipeDistance ) {
+			damage /= 10;
+			sgPRI(instigatedBy.PlayerReplicationInfo).sgInfoCoreKiller+=damage;
+			return damage;
+
+		}
+	}
+	else*/ if ( sgBuilding(injured) == None && damageType == 'sgSpecial' &&
+			injured.Health - damage <= 10 )
+	{
+		injured.Health = 10;
+		damage = 0;
+	}
+	if (injured.PlayerReplicationInfo.Team != instigatedBy.PlayerReplicationInfo.Team)
+		sgPRI(instigatedBy.PlayerReplicationInfo).sgInfoBuildingHurt+=damage;
+	return damage;
+}
+
