@@ -71,20 +71,6 @@
 //       However, the current algorithm will still not count the score/frags earned since the last update, but since the player joined.
 
 // CONSIDER: could add last_date_played, so that we can recycle old records suitably.
-// This may be useful:
-/*
-function string GetDate() {
-		local string Date, Time;
-		Date = Level.Year$"-"$PrePad(Level.Month,"0",2)$"-"$PrePad(Level.Day,"0",2);
-		Time = PrePad(Level.Hour,"0",2)$":"$PrePad(Level.Minute,"0",2)$"."$PrePad(Level.Second,"0",2);
-		return Date$"-"$Time"-";
-}
-function string PrePad(coerce string s, string p, int i) {
-		while (Len(s) < i)
-				s = p$s;
-		return s;
-}
-*/
 
 // CONSIDER: make 2-player balancing optional
 // CONSIDER: increase mintimewhenipchanges, *especially* if first two digits remain the same
@@ -181,7 +167,7 @@ var String ip[MaxPlayerDataMax]; // We could consider using instead the default 
 var String nick[MaxPlayerDataMax];
 var float avg_score[MaxPlayerDataMax];
 var float hours_played[MaxPlayerDataMax];
-// var int date_last_played[MaxPlayerDataMax];
+var String date_last_played[MaxPlayerDataMax];
 // var int games_played[MaxPlayerDataMax];
 
 #ifdef COOL_CAMERA
@@ -1294,7 +1280,7 @@ simulated function Actor GetRandomActor() {
 	return a;
 }
 
-#define TimeToChange (Level.TimeSeconds > LastCamChangeSeconds + 4)
+#define TimeToChange (Level.TimeSeconds > LastCamChangeSeconds + 5)
 
 function int Sgn(float n) {
 	if (n>0)
@@ -1312,7 +1298,7 @@ function CoolCamera(float DeltaTime) {
 		// deltaYaw    = 20 * 100*(FRand()-0.5);
 		// deltaYaw    = 20 * Sgn(FRand()-0.5)*(30 + 30*FRand());
 		// deltaYaw    = 20 * -(30 + 30*FRand());
-		deltaYaw    = 20 * (-30 + 60*FRand());
+		deltaYaw    = 20.0 * (-30.0 + 60.0*FRand());
 		deltaPitch  = 20 * 1.0*(FRand()-0.5);
 		deltaFOV    = 20 * 0.3*(FRand()-0.3);
 		deltaDist   = 20 * (2+3*FRand());
@@ -1364,7 +1350,10 @@ function CoolCamera(float DeltaTime) {
 		// p.SetLocation( CameraFocusActor.Location - (VSize(p.Location-CameraFocusActor.Location)+deltaDist) * Normal(Vector(p.ViewRotation)) + vect(0,0,2.0)*deltaDist );
 		// p.ViewRotation = rotator(Normal(CameraFocusActor.Location - p.Location));
 		// p.SetLocation( p.Location - Normal(Vector(p.ViewRotation))*deltaDist  + vect(0,0,0.1)*deltaDist );
-		p.SetLocation( CameraFocusActor.Location - currentDist*Normal(Vector(p.ViewRotation)) + 0.6*currentDist*vect(0,0,1.0) );
+		// p.SetLocation( CameraFocusActor.Location - currentDist*Normal(Vector(p.ViewRotation)) + 0.6*currentDist*vect(0,0,1.0) );
+		if (!p.SetLocation( CameraFocusActor.Location - currentDist*Normal(Vector(p.ViewRotation)) + 0.6*currentDist*vect(0,0,1.0) )) {
+			deltaDist = 0.0;
+		}
 		// p.ViewRotation += rotator(0,deltaYaw,deltaPitch);
 		// ( p.Location - Normal(Vector(p.ViewRotation))*deltaDist  + vect(0,0,0.1)*deltaDist );
 		// p.ClientSetLocation(p.Location, p.ViewRotation);
@@ -1374,10 +1363,10 @@ function CoolCamera(float DeltaTime) {
 		// p.RotationRate.Pitch = 20 * deltaPitch;
 	}
 	// TODO: Hard to DeltaTime this:
-	deltaYaw = deltaYaw * 0.998;
-	deltaPitch = deltaPitch * 0.998;
-	deltaFOV = deltaFOV * 0.998;
-	deltaDist = deltaDist * 0.998;
+	deltaYaw = deltaYaw * 0.997;
+	deltaPitch = deltaPitch * 0.997;
+	deltaFOV = deltaFOV * 0.997;
+	deltaDist = deltaDist * 0.997;
 	currentDist += deltaDist*DeltaTime;
 	if (TimeToChange) {
 		LastCamChangeSeconds = Level.TimeSeconds;
@@ -1787,6 +1776,7 @@ function CopyConfigIntoArrays() {
 		nick[i] = args[1];
 		avg_score[i] = Float(args[2]);
 		hours_played[i] = Float(args[3]);
+		date_last_played[i] = args[4];
 
 	}
 	if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() done"); }
@@ -1798,7 +1788,7 @@ function CopyArraysIntoConfig() {
 	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() running"); }
 	for (i=0; i<MaxPlayerData; i++) {
 		 if (ip[i] != "") {
-			 playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i];
+			 playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i] $ " " $ date_last_played[i];
 		}
 	}
 	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
@@ -1879,6 +1869,7 @@ function int FindPlayerRecord(Pawn p) {
 	local int found;
 	local string tmp_player_nick, tmp_player_ip;
 	local float tmp_avg_score, tmp_hours_played;
+	local string tmp_date_last_played;
 
 	i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
 
@@ -1897,27 +1888,37 @@ function int FindPlayerRecord(Pawn p) {
 		tmp_player_ip = ip[i];
 		tmp_avg_score = avg_score[i];
 		tmp_hours_played = hours_played[i];
+		tmp_date_last_played = date_last_played[i];
 		nick[i] = nick[found];
 		ip[i] = ip[found];
 		avg_score[i] = avg_score[found];
 		hours_played[i] = hours_played[found];
+		date_last_played[i] = date_last_played[found];
 		nick[found] = tmp_player_nick;
 		ip[found] = tmp_player_ip;
 		avg_score[found] = tmp_avg_score;
 		hours_played[found] = tmp_hours_played;
+		date_last_played[found] = tmp_date_last_played;
 		return i;
 	}
 
 	// No exact record for the player was found; we have performed a full search of the database :|
-	if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(): FAILED lookup for "$GetDBName(p)$" @ "$getIP(p)$"."); }
+	if (bDebugLogging) {
+		if (found > -1)
+			Log("AutoTeamBalance.FindPlayerRecord(): PARTIAL match for "$GetDBName(p)$" @ "$getIP(p)$".");
+		else
+			Log("AutoTeamBalance.FindPlayerRecord(): FAILED match for "$GetDBName(p)$" @ "$getIP(p)$".");
+	}
 
 	// Let's create a new record for this player+ip, to avoid doing that again.
 	i = CreateNewPlayerRecord(p); // i=unknown, but the new record will be optimally indexed the next time FindPlayerRecord() is called.
 
 	if (found > -1) {
+		if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) COPY ["$i$"] <- ["$found$"]"); }
 		// Copy over strength from the partial-match player, but partially reset their time, to make their old strength last for max MaxHoursWhenCopyingOldRecord hours.
 		avg_score[i] = avg_score[found]; // Copy score from partial match record
 		hours_played[i] = Min(MaxHoursWhenCopyingOldRecord,hours_played[found]);
+		date_last_played[i] = "copied_from_"$nick[found]$":"$ip[found]; // should get set before being written
 		// SO: changing nick or IP will NOT reset your avg_score immediately, but after some hours of play your old record will only count for 50%.  This helps to protect players who were matched incorrectly.  (Different members of a family playing from the same IP, or different players using the same nick.)
 
 		// Optionally log/broadcast the fakenicker, now only if IP was matched but nick is different.
@@ -1948,14 +1949,14 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 		// Exact match! return the index immediately
 		if (player_nick == nick[i] && player_ip == ip[i]) {
 			found = i;
-			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$")"); }
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[i]$")"); }
 			return found;
 		} else if (player_ip == ip[i]) {
 			found = i; // matching ip
-			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$")"); }
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$","$hours_played[found]$","$date_last_played[i]$")"); }
 		} else if (player_nick == nick[i] && found == -1) {
 			found = i; // if not yet matching an ip, match the same nick on any ip
-			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$")"); }
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[i]$""); }
 		}
 		// CONSIDER: if an uneven match, choose a match with more experience (hours_played)
 		// CONSIDER: even better, average the strengths of all partial-matches (maybe the same nick many times on different IPs, or the same IP with many different nicks), weighted by hours_played
@@ -1972,7 +1973,7 @@ function int CreateNewPlayerRecord(Pawn p) {
 	local int pos;
 	local int returned;
 
-	// TODO CONSIDER: if we are still get problems with "runaway loop", consider looking for ShortestPlayerRecord at the
+	// TODO CONSIDER: if we are still get problems with "runaway loop", consider looking for OldestPlayerRecord at the
 	//                same time as searching for an empty slot.
 
 	// Find an empty slot:
@@ -1987,15 +1988,17 @@ function int CreateNewPlayerRecord(Pawn p) {
 	if (pos >= MaxPlayerData) { // all records were full
 		// DONE: find the record with lowest hours_played and replace that one
 		// TODO: better, find the oldest record and replace it (we need last_date_played for that)
-		pos = FindShortestPlayerRecord();
+		pos = FindOldestPlayerRecord();
 	}
 
-	if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) DEL ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos]); }
+	if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) DEL ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos]); }
 	ip[pos] = getIP(p);
 	nick[pos] = GetDBName(p);
 	avg_score[pos] = UnknownStrength;
 	hours_played[pos] = 0; // UnknownMinutes/60; // CONSIDER: using some UnknownMinutes might be better, for players who play only for a short time and get an unrepresentative strength for the next game - with UnknownMinutes their strength will be closer to the average, hence balancing will concentrate more on players we know about.
-	if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos]); }
+	// date_last_played[pos] = GetDate();
+	date_last_played[pos] = "fresh_record";
+	if (bDebugLogging) { Log("AutoTeamBalance.CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos]); }
 	// if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$ nick[pos] $"!  You have "$ avg_score[pos] $" cookies."); }
 	return pos;
 }
@@ -2011,25 +2014,34 @@ function int CreateNewPlayerRecordInnerBatch(int posStart) {
 	return -1;
 }
 
-// Finds an old player record which we can replace.  Actually since we don't have a last_date_played field, we look for the record with least hours_played.  (Player didn't spend long on server; their stats don't mean a lot)
-// TODO: One problem, this new player will probably be the next record to be replaced!  To keep his record in the database, the new player will have to play for longer than the now "shortest" record before another new record is created.
-function int FindShortestPlayerRecord() {
+// Finds an old player record which we can replace.
+function int FindOldestPlayerRecord() {
 	local int i,found;
 	found = 0;
 	for (i=1;i<MaxPlayerData;i+=BatchSize) {
-		found = FindShortestPlayerRecordInnerBatch(found,i);
+		found = FindOldestPlayerRecordInnerBatch(found,i);
 	}
 	return found;
 }
 
-function int FindShortestPlayerRecordInnerBatch(int found, int iStart) {
+function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
 	local int i;
 	for (i=iStart;i<MaxPlayerData && i<iStart+BatchSize;i++) {
-		if (hours_played[i] < hours_played[found]) {
+		// if (hours_played[i] < hours_played[found]) {
+		if (NumFromDateString(date_last_played[i]) < NumFromDateString(date_last_played[found])) {
 			found = i;
 		}
 	}
 	return found;
+}
+
+function float NumFromDateString(String str) {
+	str = StrReplace(str,"-","");
+	str = StrReplace(str,":","");
+	str = StrReplace(str,"/","");
+	str = StrFilterNum(str);
+	if (bDebugLogging && FRand()<0.01) { Log("NumFromDateString(): "$str$" -> "$Float(str)); }
+	return Float(str);
 }
 
 
@@ -2054,11 +2066,11 @@ function UpdateStatsAtEndOfGame() {
 	if (bDebugLogging) { Log("AutoTeamBalance.UpdateStatsAtEndOfGame(): Updating player stats."); }
 	if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is updating player stats."); }
 	// TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
-	if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: Team Name IP Ping PktLoss Rank Hours Score Frags Deaths Items Spree Secret Time"); }
+	if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: Team Name IP Ping PktLoss Rank Hours Last Score Frags Deaths Items Spree Secret Time"); }
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (!p.IsA('Spectator') && AllowedToRank(p)) {
 			i = UpdateStatsForPlayer(p);
-			if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$p.PlayerReplicationInfo.Score$" "$p.KillCount$" "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
+			if (bLogExtraStats) { Log("AutoTeamBalance.LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$date_last_played[i]$" "$p.PlayerReplicationInfo.Score$" "$p.KillCount$" "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
 		}
 	}
 
@@ -2201,6 +2213,7 @@ function int UpdateStatsForPlayer(Pawn p) {
 	avg_score[i] = ( (avg_score[i] * old_hours_played) + current_score*hours_played_this_game) / new_hours_played;
 
 	hours_played[i] += hours_played_this_game;
+	date_last_played[i] = GetDate();
 
 	if (avg_score[i]>previous_average+2) {
 		if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
