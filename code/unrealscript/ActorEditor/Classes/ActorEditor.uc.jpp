@@ -1,31 +1,15 @@
-// ActorEditor
-//
-//   Lets the admin to change the properties of actors in a running game.
-//
-//   Lets the admin save the changes so that they are applied every time the
-//   map loads.  (This is currently done at PostBeginPlay() but maybe should
-//   also be applied at AlwaysKeep() or CheckReplacement().)
-//
-// Example uses:
-//
-//   Populating out-of-date ScreenPageSlide Actors with new URLs/servers/text
-//   (e.g. on a Portal map).
-//
-//   Changing ZoneInfo properties (e.g. making w00t a no-kill boost-only map ^^).
-//
-//   Changing the text on those scrolling ScriptedTextures.
+// vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
-// TODO: The ActorEditor Wizard may also want to: replace a specific actor,
-//   replace all actors matching "...", change properties of one/more actors
-//   (e.g. by globbing map+actor names).
+// TODO: things to match (logical combinations of (map-regexp) or (game-variable)
+//       things to change: add mutator, change setting of class, change setting of map, spawn object at position
 
-// TODO CONSIDER: inform players when ActorEditor is making changes to a map.
-//   Maybe allow the editor to explain the change in English, and store this
-//   message for the map.
+class ActorEditor expands Mutator config(ActorEditor);
 
-// TODO CONSIDER: collect a list of (max 10/100?) favourite properties; use these for auto-searching (finding actors by property value), or display all present favourite properties on "!examine"
+// Wizard may want to: replace a specific actor, replace all actors matching "...", change properties of one/more actors
 
-// TODO: to make the config easier to edit, make a meta instruction set, and put commands one-per-line, space-delimited (and execute them like normal messages? -- mmm the "SET" command currently requires "LOOK" or "SEARCH" first.)
+// TODO CONSIDER: collect a list of (max 10?) favourite properties; use these for auto-searching, or display them all on "!examine"
+
+// TODO: to make the config easier to edit, put commands one-per-line, space-delimited (and execute them like normal messages? -- mmm the "SET" command currently requires "LOOK" or "SEARCH" first.)
 
 // DONE: make the FINDCLOSEST function, which matches Actor name, but takes the closest one
 
@@ -33,18 +17,18 @@
 
 // TODO: it seems the screen actors get initialised before this mutator is called
 //       therefore sometimes they start up displaying their OLD values, until their refresh comes around
-//       maybe taking action during CheckReplacement() or AlwaysKeep() or PreBeginPlay() could fix this.
+//       maybe taking action during CheckReplacement() or AlwaysKeep() could fix this.
 
-// Remove this to leave out my specific Screen support (and Screen dependency).
+// TODO: Screen support should not look for the closest ScreenSlidePage actor.
+//       It should find the screen in front of the player, and then check which slide that is pointing at.
+
+// Remove this to leave out Screen support (and Screen dependency).
 #define ENABLE_SCREEN_SUPPORT
-
-class ActorEditor expands Mutator config(ActorEditor);
 
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
 var config bool bSwallowSpokenCommands;
 var bool bOnlyAdmin; // TODO: config
-var bool bSaveUserChanges; // TODO: config
 #ifdef ENABLE_SCREEN_SUPPORT
 var bool bLetPlayersSetScreens; // TODO: config
 #endif
@@ -61,7 +45,6 @@ defaultproperties {
   bAcceptMutateCommands=True
   bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
   bOnlyAdmin=True
-  bSaveUserChanges=False        // Otherwise, only admin can save changes, with !saveall
   #ifdef ENABLE_SCREEN_SUPPORT
   bLetPlayersSetScreens=True
   #endif
@@ -135,7 +118,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	#ifdef ENABLE_SCREEN_SUPPORT
 	if (bLetPlayersSetScreens || Sender.bAdmin || (!bOnlyAdmin)) {
 
-		// Specifically for Screen actors next to teleporters.
+		// Specifically for Screen actors + teleporters.
 		if (command ~= "SETSERVER") {
 			rebuilt_string = ""; for (i=2;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
 			if (args[1] == "" || rebuilt_string == "") {
@@ -147,17 +130,12 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 			return True;
 		}
 
-		// TODO: what if a player has already put a message on this screen?  Ideally we would like the add this new message above or below the previous message (with a max limit?).
 		if (command ~= "SETTEXT") {
 			rebuilt_string = ""; for (i=1;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
 			if (args[1] == "") {
 				Sender.ClientMessage("Usage: !settext <new_text>");
 			} else {
 				A = FindClosestActorMatching(Sender,"ScreenSlidePage");
-				// Since the default screen font is rather small, if none is specified, we set a larger font:
-				if (!StrContains(Caps(rebuilt_string),"<FONT")) {
-					rebuilt_string = "<FONT size=+2>" $ rebuilt_string $ "</FONT>";
-				}
 				SaveUpdate(A,"Text",rebuilt_string);
 				Sender.ClientMessage("Screen text updated.");
 			}
@@ -166,15 +144,26 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 		if (command ~= "SETURL") {
 			rebuilt_string = ""; for (i=1;i<argCount;i++) { rebuilt_string = rebuilt_string $ args[i]; if (i<argCount-1) { rebuilt_string = rebuilt_string $ " "; } }
-			if (!isURL(args[1])) {
+			url = rebuilt_string;
+			if (!StrContains(url,"://"))
+				args[1] = "http://" $ args[1];
+			if (!isURL(url)) {
 				Sender.ClientMessage("Usage: !seturl <url>");
 			} else {
 				A = FindClosestActorMatching(Sender,"Teleporter");
 				if (!StrContains(Teleporter(A).URL,"://")) {
-					Sender.ClientMessage("This local Teleporter may not be modified.");
+					Sender.ClientMessage("This local "$A$" may not be modified.");
 				} else {
-					SaveUpdate(A,"URL",rebuilt_string);
-					Sender.ClientMessage("Teleporter URL updated.");
+					SaveUpdate(A,"URL",url);
+					Sender.ClientMessage(A$" updated.");
+				}
+				A = FindClosestActorMatching(Sender,"ScreenSlidePageWeb");
+				if (A != None) {
+					SaveUpdate(A, "AddressHost", StrBeforeFirst(StrBeforeFirst(StrAfterFirst(url,"://"),":"),"/") );
+					SaveUpdate(A, "AddressPort", "80");
+					SaveUpdate(A, "AddressPath", "/" $ StrAfterFirst(StrAfterFirst(url,"://"),"/") );
+					SaveUpdate(A, "Text", "<p align=center><font color=gray>[Loading "$url$" ...]</font></p>");
+					Sender.ClientMessage(A$" updated.");
 				}
 			}
 			return True;
@@ -247,6 +236,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 	if (command ~= "SAVEALL") {
 		SaveConfig();
+		Sender.ClientMessage("Your changes have been saved.");
 		return True;
 	}
 
@@ -256,8 +246,8 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 function SaveUpdate(Actor A, String property, String newValue) {
 	local int i;
+	Log("ActorEditor.SaveUpdate("$A$",\""$property$"\",\""$newValue$"\") was called.");
 	if (A == None) {
-		Log("ActorEditor.SaveUpdate(None,\""$property$"\",\""$newValue$"\") was called.");
 		return;
 	}
 	A.SetPropertyText(property,newValue);
@@ -267,17 +257,14 @@ function SaveUpdate(Actor A, String property, String newValue) {
 			UpdateActor[i] = ""$A;
 			UpdateProperty[i] = property;
 			UpdateValue[i] = newValue;
-			if (bSaveUserChanges) {
-				SaveConfig();
-			}
+			// SaveConfig();
 			break;
 		}
 	}
 }
 
 #ifdef ENABLE_SCREEN_SUPPORT
-// Actually specific for the setup I have on my CTF-ThornsPortal, which is 1 Teleporter, next to 1 ScreenSlidePageServer (which doesn't work online) and 1 ScreenSlidePageWeb (which does work).
-// TODO TEST: If one of the Teleporter/ScreenSlidePageServer/ScreenSlidePageWeb is not present, will the function crash out (or will it just log Accessed None, and proceed to set the next actor)?  If so, which do we want to set first in the code?
+// Actually specific for my setup, which is 1 Teleporter, 1 ScreenSlidePageServer (which doesn't work) and 1 ScreenSlidePageWeb (which does work).
 function SetServer(Actor Sender, String server_ip, String server_description) {
 	local Actor A;
 	A = FindClosestActorMatching(Sender,"Teleporter");
@@ -285,10 +272,10 @@ function SetServer(Actor Sender, String server_ip, String server_description) {
 	A = FindClosestActorMatching(Sender,"ScreenSlidePageServer");
 	if (StrContains(server_ip,":")) {
 		SaveUpdate(A,"AddressServer",StrBefore(server_ip,":"));
-		SaveUpdate(A,"AddressPort",StrAfter(server_ip,":"));
+		SaveUpdate(A,"AddressPort",""$(Int(StrAfter(server_ip,":"))+1));
 	} else {
 		SaveUpdate(A,"AddressServer",server_ip);
-		SaveUpdate(A,"AddressPort","7777");
+		SaveUpdate(A,"AddressPort","7778");
 	}
 	SaveUpdate(A,"Text","<p align=center><font color=gray size=+3>"$server_description$"</font></p>["$server_ip$"]");
 	A = FindClosestActorMatching(Sender,"ScreenSlidePageWeb");
@@ -301,90 +288,11 @@ function SetServer(Actor Sender, String server_ip, String server_description) {
 }
 #endif
 
-function Actor FindClosestActor(Actor from) {
-	local Actor A;
-	local int distance;
-	local int deltaRotation;
-	local Actor bestActor;
-	local int bestDistance;
-	bestActor = None;
-	foreach VisibleActors(class'Actor', A, 1024, from.Location) {
-	// foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
-		if (A == from) { // don't find self!
-			continue;
-		}
-		distance = VSize(A.Location - from.Location);
-		deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
-		// if (deltaRotation < 8192 || deltaRotation > 8192*7) {
-		if (deltaRotation > 8192*4) {
-			deltaRotation = 8192*8 - deltaRotation;
-		}
-		if (deltaRotation < 8192 && deltaRotation > -8192) {
-			if (bestActor == None || distance < bestDistance) {
-				bestActor = A;
-				bestDistance = distance;
-				// PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
-			}
-		}
-	}
-	return bestActor;
-}
-
-function Actor FindMatchingActor(string str) {
-	local Actor A;
-	foreach AllActors(class'Actor', A) {
-		if (StrContains(Caps(""$A),Caps(str))) {
-			return A;
-		}
-	}
-	return None;
-}
-
-function Actor FindClosestActorMatching(Actor from, String str) {
-	local Actor A;
-	local int distance;
-	local int deltaRotation;
-	local Actor bestActor;
-	local int bestDistance;
-	bestActor = None;
-	// foreach VisibleActors(class'Actor', A, 1024, from.Location) {
-	foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
-		if (A == from) { // don't find self!
-			continue;
-		}
-		if (!StrContains(Caps(""$A),Caps(str))) {
-			continue;
-		}
-		distance = VSize(A.Location - from.Location);
-		deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
-		// if (deltaRotation < 8192 || deltaRotation > 8192*7) {
-		if (deltaRotation > 8192*4) {
-			deltaRotation = 8192*8 - deltaRotation;
-		}
-		if (deltaRotation < 8192 && deltaRotation > -8192) {
-			if (bestActor == None || distance < bestDistance) {
-				bestActor = A;
-				bestDistance = distance;
-				// PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
-			}
-		}
-	}
-	return bestActor;
-}
-
-function Actor FindActorWithMatchingProperty(string prop, string val) {
-	local Actor A;
-	foreach AllActors(class'Actor', A) {
-		if ( StrContains(Caps(A.GetPropertyText(prop)),Caps(val)) ) {
-			return A;
-		}
-	}
-	return None;
-}
-
 function bool isURL(String str) {
 	return (InStr(str,"://")>=0 && InStr(str,"://")<50);
 }
 
-#include "/mnt/big/ut/ut_win/JLib/jlib.uc.jpp"
+#include "../../JLib/findactor.uc.jpp"
+
+#include "../../JLib/jlib.uc.jpp"
 
