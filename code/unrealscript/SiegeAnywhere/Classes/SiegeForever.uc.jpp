@@ -1,20 +1,25 @@
 class SiegeForever extends Mutator config(SiegeForever);
 
-#define MAX_ALL 1024
+// BUG: Sometimes spawned buildings of one colour, have an inner glow of the other colour.  I think that's because there was only 1 player to use as owner, and that causes the glow!
+// TODO: TryToLoadBuildings() should use random players as owners, if more than 1 are available.
+// TODO: Detect EndGame and auto-save then.
+// TODO: When a new Type or Map overwrites an old one, we should really clear all relevant recorded building locations for that type/map!
+// TODO: If the gametype is Assault, then red/blue is not enough - we end up with buildings swapping side!  We should say 0=Attackers and 1=Defenders, and map from that to/from Red/Blue, according to Team Assault(Level.Game).Attacker and Defender.
+// CONSIDER: Could be really clever, and detect whether the map is symmetrical, using some distance-minimisation search on the PlayerStarts, and if so, spawn exactly the same sets of buildings for both teams.
 
 #define MaxTeams 2
 #define MaxMaps 32
 #define MaxTypes 16
-// config var int MaxMaps;
-// config var int MaxTypes;
+#define MAX_ALL 1024
+// MAX_ALL must be the multiple of the other 3.
 
-var config bool bAutoLoad,bAutoSave,bRememberOld;
+var config bool bAutoLoad,bAutoSave,bRememberOld,bSpawnFairly;
 
 var config String Maps[MaxMaps]; // 0-MaxMaps
 var config String Types[MaxTypes]; // 0-MaxTypes
-var config String BuildingsData[1024]; // 0-(MaxTeams*MaxTypes*MaxMaps)
+var config String BuildingsData[MAX_ALL]; // 0-(MaxTeams*MaxTypes*MaxMaps)
 
-var bool bDoneLoad; // 0-(MaxTeams*MaxTypes*MaxMaps)
+var bool bDoneLoad;
 
 // var String SavedTypes;
 // var String LoadedTypes;
@@ -22,15 +27,10 @@ var bool bDoneLoad; // 0-(MaxTeams*MaxTypes*MaxMaps)
 defaultproperties {
 	// MaxMaps=16
 	// MaxTypes=8
-	bAutoLoad=True
-	bAutoSave=True
-	bRememberOld=False
-}
-
-function String GetMap() {
-	local int i;
-	i = Instr(""$Self,".");
-	return Left(""$Self,i);
+	bAutoLoad=True       // When set, stored buildings will be loaded at the start of the game.  (Otherwise only accessible through "mutate load".)
+	bAutoSave=True       // When set, buildings in the game will be saved at regular intervals (CAUSES LAG!).  (Otherwise only accessible through "mutate save".)
+	bRememberOld=False   // When set, will keep records of old buildings which have been destroyed.
+	bSpawnFairly=True    // When set, on loading buildings, will only spawn an equal number of buildings of each type for each team.
 }
 
 function PostBeginPlay() {
@@ -45,6 +45,17 @@ event Timer() {
 	}
 	if (bDoneLoad && bAutoSave)
 		SaveBuildings();
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+	if (Sender.bAdmin) {
+		if (str ~= "save" || str ~= "savebuildings") {
+			SaveBuildings();
+		}
+		if (str ~= "load" || str ~= "loadbuildings") {
+			TryToLoadBuildings(); // Note: Refuses to load if a load has already occurred!  I suspect that is desirable.
+		}
+	}
 }
 
 function TryToLoadBuildings() {
@@ -88,7 +99,11 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 	local int i,j,k,l,team;
 	local string type,buildingLocation,map;
 	local class<sgBuilding> typeClass;
-	local int countSpawned[2];
+	local int countStored[MaxTeams];
+	local int maxToSpawn;
+	local int countSpawned[MaxTeams];
+	// local float chanceOfSpawning;
+	local int numToSkip;
 	local Actor sgB;
 	local Pawn pOwner;
 	map = GetMap();
@@ -100,7 +115,28 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 		// typeClass = Class(type);
 		// typeClass = class<sgBuilding>(DynamicLoadObject("SiegeXXL2dRC1.sgBuilding", class'Class'));
 		typeClass = class<sgBuilding>(DynamicLoadObject(type, class'Class'));
+		// Count how many buildings of this type each team has stored:
+		maxToSpawn = 9999;
 		for (team=0;team<MaxTeams;team++) {
+			j = GetBuildingsI(map,type,team);
+			countStored[team] = 0;
+			k = 0;
+			while (true) {
+				l = InstrOff(BuildingsData[j],":",k);
+				if (l>-1) {
+					countStored[team]++;
+					k = l+1;
+				} else {
+					break;
+				}
+			}
+			if (countStored[team] < maxToSpawn)
+				maxToSpawn = countStored[team];
+		}
+		// Go ahead and spawn buildings of this type:
+		for (team=0;team<MaxTeams;team++) {
+			if (bSpawnFairly)
+				numToSkip = countStored[team] - maxToSpawn;
 			countSpawned[team]=0;
 			j = GetBuildingsI(map,type,team);
 			TrimRecord(j);
@@ -111,26 +147,30 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 				if (l>-1) {
 					buildingLocation = Mid(BuildingsData[j],k,l-k);
 					if (buildingLocation != "") { // could also check for 2 ","s and 3 "."s
-						if (team == 0)
-							pOwner = redOwner;
-						if (team == 1)
-							pOwner = blueOwner;
-						sgB = Spawn(typeClass,pOwner,,Vector(buildingLocation));
-						if (sgB == None) {
-							Log("SiegeForever.LoadBuildings(): Failed to spawn "$type$" "$typeClass$" at ("$buildingLocation$")");
+						if (bSpawnFairly && numToSkip>0) {
+							numToSkip--;
 						} else {
-							sgBuilding(sgB).Team = team;
-							sgBuilding(sgB).Grade = 2;
-							if (FRand() < 0.5)
-								sgBuilding(sgB).Grade = 3;
-							// sgBuilding(sgB).BuildTime = FRand()*10.0;
-							// sgBuilding(sgB).Energy = 75.0;
-							sgBuilding(sgB).Energy = sgBuilding(sgB).MaxEnergy;
-							// sgBuilding(sgB).Health = 75.0;
-							// sgBuilding(sgB).DoneBuilding = True;
-							// Log("SiegeForever.LoadBuildings(): Spawned "$sgB$" ("$Pawn(sgB.Owner).PlayerReplicationInfo.Team$")");
-							countSpawned[team]++;
-						}
+							if (team == 0)
+								pOwner = redOwner;
+							if (team == 1)
+								pOwner = blueOwner;
+							sgB = Spawn(typeClass,pOwner,,Vector(buildingLocation));
+							if (sgB == None) {
+								Log("SiegeForever.LoadBuildings(): Failed to spawn "$type$" "$typeClass$" at ("$buildingLocation$")");
+							} else {
+								sgBuilding(sgB).Team = team;
+								sgBuilding(sgB).Grade = 2;
+								if (FRand() < 0.5)
+									sgBuilding(sgB).Grade = 3;
+								// sgBuilding(sgB).BuildTime = FRand()*10.0;
+								// sgBuilding(sgB).Energy = 75.0;
+								sgBuilding(sgB).Energy = sgBuilding(sgB).MaxEnergy;
+								// sgBuilding(sgB).Health = 75.0;
+								// sgBuilding(sgB).DoneBuilding = True;
+								// Log("SiegeForever.LoadBuildings(): Spawned "$sgB$" ("$Pawn(sgB.Owner).PlayerReplicationInfo.Team$")");
+								countSpawned[team]++;
+							}
+						} // else don't spawn it, for fairness!
 					}
 					k = l+1;
 				} else {
@@ -139,8 +179,8 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 			}
 		}
 		if (countSpawned[0]>0 || countSpawned[1]>0) {
-			Log("Spawned "$countSpawned[0]$" "$type$"s for Red, and "$countSpawned[1]$" for Blue.");
 			BroadcastMessage("Spawned "$countSpawned[0]$" x "$StrAfterLast(type,".")$" for Red, and "$countSpawned[1]$" for Blue.");
+			Log("Spawned "$countSpawned[0]$" "$type$"s for Red, and "$countSpawned[1]$" for Blue.");
 		}
 		// LoadedTypes = LoadedTypes $ ":" $ type $ ":";
 	}
@@ -180,13 +220,14 @@ function SaveBuildings() {
 		}
 	}
 	SaveConfig();
-	Log("Saved "$(Typei+1)$" types of building, "$count$" new.");
 	BroadcastMessage("Saved "$(Typei+1)$" types of building, "$count$" new.");
+	Log("Saved "$(Typei+1)$" types of building, "$count$" new.");
 }
 
 function int GetBuildingsI(String map, String type, int team) {
 	local int i,j,k;
 	local String key;
+	team = FixTeamForAssault(team);
 	i = (team % 2); // 0 or 1
 	j = (GetTypeI(type) % MaxTypes);
 	k = (GetMapI(map) % MaxMaps);
@@ -206,14 +247,10 @@ function int GetMapI(String map) {
 			break;
 		}
 	}
-	// End of array (or end of list):
-	if ((i==MaxMaps)) {
-		// if ((MaxMaps*2)*MaxMaps <= MAX_ALL) {
-			// MaxMaps = MaxMaps * 2;
-		// } else {
-			// i=0;
-		// }
+	if (i==MaxMaps) {
 		i = MaxMaps*FRand();
+		BroadcastMessage("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
+		Log("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
 	}
 	Maps[i] = map;
 	return i;
@@ -230,36 +267,31 @@ function int GetTypeI(String type) {
 			break;
 		}
 	}
-	// End of array:
-	if ((i==MaxTypes)) {
-		// if ((MaxTypes*2)*MaxMaps <= MAX_ALL) {
-			// MaxTypes = MaxTypes * 2;
-		// } else {
-			// i=0;
-		// }
+	if (i==MaxTypes) {
 		i = MaxTypes*FRand();
+		BroadcastMessage("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
+		Log("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
 	}
 	Types[i] = type;
 	return i;
 }
 
-function Mutate(String str, PlayerPawn Sender) {
-	if (str ~= "save" || str ~= "savebuildings") {
-		SaveBuildings();
-	}
+function String GetMap() {
+	local int i;
+	i = Instr(""$Self,".");
+	return Left(""$Self,i);
 }
 
-/*
-function int InStrOff(string haystack, string needle, int offset) {
-        local int instrRest;
-        instrRest = InStr(Mid(haystack,offset),needle);
-        if (instrRest == -1) {
-                return instrRest;
-        } else {
-                return offset + instrRest;
-        }
+function int FixTeamForAssault(int team) {
+	if (!Level.Game.IsA('Assault')) {
+		return team;
+	} else {
+		if (Assault(Level.Game).Attacker.TeamIndex == 0)
+			return team;
+		else
+			return 1 - team;
+	}
 }
-*/
 
 #include "../../JLib/jlib.uc.jpp"
 
