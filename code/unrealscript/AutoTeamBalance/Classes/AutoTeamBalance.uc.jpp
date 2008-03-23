@@ -53,9 +53,11 @@
 
 // DONE: longer lasting, better coloured flashing messages
 
+// TODO: make the bonus for winning team hidden from scoreboard, and then i will use it :)
+
 // TODO: when switching players, avoid players whos strength is less known (they have played less time on server)
 
-// TODO: when joining unstarted game, u get msg saying u r on Red or Blue team, but we change it later :S - overwrite or empty that message!
+// DONE: when joining unstarted game, u get msg saying u r on Red or Blue team, but we change it later :S - overwrite or empty that message!
 
 // TODO: what should we do when it's 3v5 but red team has strong players, so team strengths are similar?
 
@@ -86,17 +88,20 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
 #define ENABLE_MIN_REQUESTS_FOR_REBALANCE
-#define SUPERBALANCE
+#define ENABLE_IDC
+#define XOL_SPECIFIC
+// #define SUPERBALANCE
 // #define COOL_CAMERA
 // #define MAP_RATING_SYSTEM
-#define ENABLE_IDC
-#define TESTING
+// #define TESTING_PRINT_ANGLES
+// #define TESTING
 
 // These config variables are documented in AutoTeamBalance.txt
 
 var config bool bBroadcastStuff;
 var config bool bBroadcastCookies;
-var config bool bFlashCookies;
+var config bool bFlashCookies; // TODO BUG WARNING: Do not use bFlashCookies with IDC - it causes ATB to lookup the record before IDC has given us the player ID!  Actually that's not so bad - ATB will start using the right record later, once IDC has reported.  But it means the player gets the wrong strength message until then.  ;)
+var config bool bReportStrengthAsCookies;
 var config bool bDebugLogging;
 
 var config bool bEnablePlayerCommands;
@@ -111,8 +116,9 @@ var int lastRebalanceRequestTime;
 var config bool bFlashRebalanceRequest;
 var config bool bShowProposedSwitch;
 
-#idef ENABLE_IDC
-var String idc[64];
+#ifdef ENABLE_IDC
+var int idc[64];
+#define IDCfor(X) idc[X.PlayerReplicationInfo.PlayerID%64]
 #endif
 
 var config bool bWarnMidGameUnbalance;
@@ -156,6 +162,9 @@ var config string clanTag;
 var config bool bUseOnlyInGameScoresForRebalance;
 var config bool bLogFakenickers;
 var config bool bBroadcastFakenickers;
+#ifdef ENABLE_IDC
+var config bool bIDCOverridesNick;
+#endif
 #ifdef ENABLE_USEISPNOTFULLIP
 var config bool bUseISPNotFullIP;
 #endif
@@ -192,10 +201,13 @@ var float CoolCamYaw,CoolCamPitch; // Because player's ViewRotations have int an
 var float deltaYaw,deltaPitch,deltaFOV,deltaDist; // CONSIDER TODO: These variables are the same for all PlayerPawns - do we risk collisions?!
 var float deltaOne;
 #endif
+
 #ifdef MAP_RATING_SYSTEM
 var config String MapRatings[256];
 var int bHasAlreadyRated[64];
 #endif
+
+var float currentDateDays; // Used by FindOldestPlayerRecordMeasure().
 
 // For local state caching (not repeating when called by Tick's or Timer's):
 var bool initialized;              // Mutator initialized flag
@@ -211,6 +223,7 @@ defaultproperties {
 	bBroadcastStuff=True
 	bBroadcastCookies=False
 	bFlashCookies=False
+	bReportStrengthAsCookies=False
 	bDebugLogging=False
 	bEnablePlayerCommands=True
 	bForceEvenTeams=False
@@ -259,6 +272,9 @@ defaultproperties {
 	bUseOnlyInGameScoresForRebalance=False
 	bLogFakenickers=False
 	bBroadcastFakenickers=False
+	#ifdef ENABLE_IDC
+	bIDCOverridesNick=False
+	#endif
 	#ifdef ENABLE_USEISPNOTFULLIP
 	bUseISPNotFullIP=False        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
 	#endif
@@ -453,7 +469,7 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
 	if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
-		if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcastMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+		if (bDebugLogging) { Log("AutoTeamBalance.MutatorBroadcastMessage() Checking ("$Sender.getHumanName()$") "$Msg$""); }
 		// Spectator messages start with the extra "<nick>:".  We remove this.
 		CheckMessage(Mid(Msg,InStr(Msg,":")+1), Sender);
 	}
@@ -463,7 +479,7 @@ function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce st
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	if (Sender == Receiver) { // Only process the message once.
-		if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage() Checking ("$Sender$" -> "$Receiver$") "$Msg$""); }
+		if (bDebugLogging) { Log("AutoTeamBalance.MutatorTeamMessage() Checking ("$Sender.getHumanName()$") "$Msg$""); }
 		CheckMessage(Msg, Sender);
 	}
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
@@ -535,10 +551,13 @@ function Mutate(String str, PlayerPawn Sender) {
 
 	#ifdef ENABLE_IDC
 	if (args[0]=="IDC") {
-		if (idc[Sender.PlayerReplicationInfo.PlayerID%64] == 0)
-			idc[Sender.PlayerReplicationInfo.PlayerID%64] = args[1];
+		if (IDCfor(Sender) == 0) {
+			IDCfor(Sender) = Int(args[1]);
+			if (bDebugLogging) { Log("[ATB "$GetDate()$"] Caught IDC for "$Sender.getHumanName()$"["$Int(Sender.PlayerReplicationInfo.PlayerID%64)$"]: "$str$""); }
+		} else {
+			// Trying to prevent a malicious player from typing "mutate IDC 302498" themselves :P
+			if (bDebugLogging) { Log("[ATB "$GetDate()$"] WARNING! Ignored second IDC for "$Sender.getHumanName()$"["$Int(Sender.PlayerReplicationInfo.PlayerID%64)$"]: "$str$""); }
 		}
-		Log("[ATB] caught IDC for "$Sender.getHumanName()$"["$(Sender.PlayerReplicationInfo.PlayerID%64)$"]: \""$str$"\"");
 	}
 	#endif
 
@@ -854,21 +873,35 @@ function CheckGameStart() {
 	n = TeamGamePlus(Level.Game).NetWait;
 	c = TeamGamePlus(Level.Game).countdown;
 	c = Min(c,n-e);
+	// Log("c="$c$" n-e="$(n-e)$" e="$e$" n="$n$" p="$p);
 
 	// Initialize teams 1 or 2 seconds before the game starts:
 	if (c<2) {
 		DoGameStart();
 	} else {
+		// Override the line which says what team each player is on (since teams have not yet been decided!):
 		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-			// Log("c="$c$" n-e="$(n-e)$" e="$e$" n="$n$" p="$p);
-			// if (p.class == class'PlayerPawn') { // Avoids logging repeated calls to UTServerAdminSpectator before anyone has joined the server.
+			// The check for UTServer Avoids logging repeated calls to UTServerAdminSpectator before anyone has joined the server.
 			if (p.IsA('PlayerPawn') && InStr(String(p.class),"UTServer")==-1) {
-				if (bFlashCookies) {
-					FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,3);
-				} else {
-					FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,3); // colMagenta
-					// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
-				}
+				// Line 3 usually contains "You are on the Red/Blue team" before the game starts.
+				// Since we won't balance teams until 2 seconds before game start, then we want to overwrite line 3.
+				/*
+				// Only override the line, iff that line is currently displaying the player's team prematurely.  (Avoid conflicting with XOL's pre-game hiscore display.)
+				// Does not work!
+				if (StrContains(PlayerPawn(p).ProgressMessage[3],"You are on ") ||
+						StrContains(PlayerPawn(p).ProgressMessage[2],"You are on ") ||
+						StrContains(PlayerPawn(p).ProgressMessage[4],"You are on ")) {
+				*/
+					if (bFlashCookies) {
+						if (bReportStrengthAsCookies)
+							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ GetPawnStrength(p) $" cookies.",colorOrange,3);
+						else
+							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ GetPawnStrength(p) $"",colorOrange,3);
+					} else {
+						FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,3); // colMagenta
+						// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
+					}
+				/* } */
 			}
 	 }
 	}
@@ -903,7 +936,13 @@ function DoGameStart() {
 					default: msgColor = colorWhite; break;
 				}
 				// PlayerPawn(p).ClearProgressMessages();
-				FlashMessageToPlayer(PlayerPawn(p),"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,3);
+				// But on XOL, when the game does start, line 3 is used to display Highest # covers.  So on XOL, we use line 5.
+				#ifdef XOL_SPECIFIC
+				#define LINENR_FOR_FLASH 5
+				#else
+				#define LINENR_FOR_FLASH 3
+				#endif
+				FlashMessageToPlayer(PlayerPawn(p),"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,LINENR_FOR_FLASH);
 			}
 		}
 	}
@@ -1089,11 +1128,11 @@ function bool CheckMessage(String Msg, Actor Sender) {
 	}
 	#endif
 
-	#ifdef TESTING
-	if (StrStartsWith(Locs(Msg),"!mutate ")) {
+	// #ifdef TESTING
+	if (StrStartsWith(Locs(Msg),"!MUTATE ")) {
 		PlayerPawn(Sender).Mutate(StrAfter(Msg," "));
 	}
-	#endif
+	// #endif
 
 }
 
@@ -1138,7 +1177,7 @@ function ForceFullTeamsRebalance() {
 	if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Running..."); }
 	if (bBroadcastStuff) { BroadcastMessageAndLog("AutoTeamBalance is attempting to balance the teams..."); }
 
-	// rate all players, and put them in a temporary structure:
+	// rate all players, and put them in a temporary structure (pl[],ps[]):
 	for (p=Level.PawnList; p!=None; p=p.NextPawn)
 	{
 		if (AllowedToBalance(p))
@@ -1148,7 +1187,7 @@ function ForceFullTeamsRebalance() {
 			pl[pid]=p;
 			ps[pid]=st;
 			moved[pid] = 0;
-			if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has ip " $ getIP(p) $ " and score " $ p.PlayerReplicationInfo.Score $ "."); }
+			if (bDebugLogging) { Log("AutoTeamBalance.ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has db-key " $ GetDBName(p) $ " and score " $ p.PlayerReplicationInfo.Score $ "."); }
 		}
 	}
 
@@ -1359,7 +1398,7 @@ simulated function CoolCamera(float DeltaTime) {
 // function CoolCamera(float DeltaTime) {
 	local PlayerPawn p;
 	local Vector NewCamLocation;
-	#ifdef TESTING
+	#ifdef TESTING_PRINT_ANGLES
 	local bool bPrint;
 	#endif
 	if (TimeToChange) {
@@ -1385,6 +1424,7 @@ simulated function CoolCamera(float DeltaTime) {
 	NewCamLocation = CamPathStart*thru + CamPathEnd*(1.0-thru);
 	foreach AllActors(class'PlayerPawn', p) {
 		if (gameStartDone) {
+			// Time to reset the player's settings to defaults:
 			p.ViewTarget = None;
 			p.bBehindView = False;
 			p.ViewRotation.Roll = 0;
@@ -1433,7 +1473,9 @@ simulated function CoolCamera(float DeltaTime) {
 
 			p.ClientMessage("=> "$CameraFocusActor$" "$p.RotationRate.Pitch$" "$p.RotationRate.Yaw);
 			if (bDebugLogging) { Log("CoolCamera: "$p$" => "$CameraFocusActor$" with ("$P.ViewRotation.yaw$","$P.ViewRotation.pitch$")"); }
+			#ifdef TESTING_PRINT_ANGLES
 			bPrint = True;
+			#endif
 		}
 		// p.UpdateRotation(DeltaTime,1);
 		// p.UpdateRotation(1,1); // I was surprised that this didn't work!  Ahh it doesn't call ClientSetRotation().
@@ -1458,7 +1500,7 @@ simulated function CoolCamera(float DeltaTime) {
 			p.UpdateRotation(DeltaTime,32768);
 			*/
 
-		#ifdef TESTING
+		#ifdef TESTING_PRINT_ANGLES
 		// if (FRand()<0.01)
 			// bPrint=True;
 		if (bPrint)
@@ -1486,7 +1528,7 @@ simulated function CoolCamera(float DeltaTime) {
 
 		// FFS I give up; i think we gotta settla for deltaYaw=1, deltaPitch=0 and that's all.
 
-		#ifdef TESTING
+		#ifdef TESTING_PRINT_ANGLES
 		if (bPrint)
 			p.ClientMessage("["$p.ViewRotation.Yaw$","$p.ViewRotation.Pitch$"] "$p.aBaseX$":"$p.aTurn$" "$p.aBaseY$","$p.aLookUp);
 		#endif
@@ -1780,6 +1822,10 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 		if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): doing nothing since player is already on team "$teamnum); }
 		return;
 	}
+	if (teamnum<0 || teamnum>=TeamGamePlus(Level.Game).MaxTeams) {
+		if (bDebugLogging) { Log("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): teamnum must be in range 0-" $ (TeamGamePlus(Level.Game).MaxTeams - 1) $ "."); }
+		return;
+	}
 	if (p.IsA('Bot')) {
 		Bot(p).ConsoleCommand("taunt wave");
 	}
@@ -1789,7 +1835,7 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 	// Recompensate player for suicide/death points:
 	p.KillCount++;
 	p.PlayerReplicationInfo.Deaths-=1;
-	// TODO CHECK: Do we really need both of these?  We can also fiddle with PRI.Score, and p.SecretCount.
+	// TODO CHECK: Do we really need BOTH of these?  We can also fiddle with PRI.Score, and p.SecretCount.
 
 	// Kill the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
 	p.Died(None, '', p.Location);
@@ -2005,7 +2051,7 @@ function CopyConfigIntoArrays() {
 
 	CopyConfigDone=True;
 
-	if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() running"); }
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() "$GetDate()$" running"); }
 	for (i=0; i<MaxPlayerData; i++) {
 
 		if (playerData[i] == "") continue;
@@ -2017,33 +2063,40 @@ function CopyConfigIntoArrays() {
 		date_last_played[i] = args[4];
 
 	}
-	if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() done"); }
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyConfigIntoArrays() "$GetDate()$" done"); }
 }
 
 // Copies from ip[],nick[],avg_score[],... to playerData[] (should be done before SaveConfig())
 function CopyArraysIntoConfig() {
 	local int i;
-	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() running"); }
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() "$GetDate()$" running"); }
 	for (i=0; i<MaxPlayerData; i++) {
 		 if (ip[i] != "") {
 			 playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i] $ " " $ date_last_played[i];
 		}
 	}
-	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() done"); }
+	if (bDebugLogging) { Log("AutoTeamBalance.CopyArraysIntoConfig() "$GetDate()$" done"); }
 }
 
 #ifndef ENABLE_USEISPNOTFULLIP
 #define getISP(X) X
 #endif
 
-function String getIPAddress(Pawn p) {
+function String getIP(Pawn p) {
+
+	#ifdef ENABLE_IDC
+		if (p.IsA('PlayerPawn') && IDCfor(PlayerPawn(p)) != 0) {
+			return "IDC#"$(IDCfor(PlayerPawn(p)));
+		}
+	#endif
+
 	if (p.IsA('PlayerPawn')) {
 		return getISP(stripPort(PlayerPawn(p).GetPlayerNetworkAddress()));
 	} else {
 		return getISP("0.0.0.0");
 	}
+
 }
-#define getIP getIPAddress
 
 #ifdef ENABLE_USEISPNOTFULLIP
 function String getISP(String ip) {
@@ -2058,17 +2111,19 @@ function String getISP(String ip) {
 // The big disadvantage os using bUseISPNotFullIP, if that if a player changes nick, they may get matched to the record of another player on the same ISP, not their old record!
 // But if they have changed nick *and* part-ip, without bUseISPNotFullIP, they won't get any matches.  :P
 
+#define getNick(p) p.getHumanName()
 #ifdef ENABLE_IDC
-#define getIP getIDCorIPAddress
-function String getIDCorIPAddress(Pawn p) {
-	if (idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64] == 0) {
-		return getIPAddress(p);
-	} else {
-		Log("[ATB] Player "$p.getHumanName()$" is IDC#"$idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64]);
-		return "IDC#"$idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64];
-	}
+#undef getNick
+#define getNick(p) getIDCOrNick(p)
+function String getIDCOrNick(Pawn p) {
+	if (bIDCOverridesNick && p.IsA('PlayerPawn') && IDCfor(PlayerPawn(p)) != 0)
+		return "IDC#"$(IDCfor(PlayerPawn(p)));
+	else
+		return p.getHumanName();
 }
 #endif
+/*
+*/
 
 #ifdef ENABLE_MUTATOR_SIGNATURE
 // Returns player name, with gametype and/or mutator signature appended
@@ -2079,7 +2134,7 @@ function String GetDBName(Pawn p) {
 	local int i;
 	local int c;
 	local Mutator m;
-	str = p.getHumanName();
+	str = getNick(p);
 	if (bSeparateStatsByGamemode) {
 		str = str $ "@" $ StrAfter(String(Level.Game.Class),".");
 	}
@@ -2112,10 +2167,18 @@ function String GetDBName(Pawn p) {
 	return str;
 }
 #else
-#define GetDBName(p) p.getHumanName()
+#define GetDBName(p) getNick(p)
 #endif
 
+// function int FindPlayerRecord(Pawn p)
+//
 // Will always return a valid exact record index, creating a new record if neccessary.
+//
+// For speed, this implementation keeps the record at position
+// p.PlayerReplicationInfo.PlayerID in the database, switching with another
+// record in that spot if necessary.  It calls FindPlayerRecordNoFastHash() to
+// do the actual lookup.  This makes it possible to call FindPlayerRecord(p)
+// frequently and efficiently.
 function int FindPlayerRecord(Pawn p) {
 	local int i;
 	local int found;
@@ -2127,6 +2190,7 @@ function int FindPlayerRecord(Pawn p) {
 
 	// Is the player's record already at i?
 	if (GetDBName(p) == nick[i] && getIP(p) == ip[i]) {
+		// if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecord(p) FAST EXACT match for "$nick[i]$","$ip[i]$": ["$i$"] ("$avg_score[i]$","$hours_played[i]$","$date_last_played[i]$")"); }
 		return i;
 	}
 
@@ -2201,14 +2265,14 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 		// Exact match! return the index immediately
 		if (player_nick == nick[i] && player_ip == ip[i]) {
 			found = i;
-			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[i]$")"); }
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); }
 			return found;
 		} else if (player_ip == ip[i]) {
 			found = i; // matching ip
-			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$","$hours_played[found]$","$date_last_played[i]$")"); }
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[i]$","$hours_played[found]$","$date_last_played[found]$")"); }
 		} else if (player_nick == nick[i] && found == -1) {
 			found = i; // if not yet matching an ip, match the same nick on any ip
-			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[i]$""); }
+			if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[found]$""); }
 		}
 		// CONSIDER: if an uneven match, choose a match with more experience (hours_played)
 		// CONSIDER: even better, average the strengths of all partial-matches (maybe the same nick many times on different IPs, or the same IP with many different nicks), weighted by hours_played
@@ -2270,23 +2334,43 @@ function int CreateNewPlayerRecordInnerBatch(int posStart) {
 // Finds an old player record which we can replace.
 function int FindOldestPlayerRecord() {
 	local int i,found;
+	if (bDebugLogging) { Log("[ATB "$GetDate()$"] FindOldestPlayerRecord(): Looking for an old record to replace..."); }
+	currentDateDays = DaysFromDateString(GetDate());
 	found = 0;
 	for (i=1;i<MaxPlayerData;i+=BatchSize) {
 		found = FindOldestPlayerRecordInnerBatch(found,i);
 	}
+	if (bDebugLogging) { Log("[ATB "$GetDate()$"] FindOldestPlayerRecord(): Oldest/smallest record was "$nick[found]$" with "$found$" with "$hours_played[found]$" hours and age "$DaysFromDateString(date_last_played[found])$" days ("$date_last_played[found]$", strength "$avg_score[found]$")."); }
 	return found;
 }
 
 function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
 	local int i;
+	local float best;
+	best = FindOldestPlayerRecordMeasure(found);
+	// if (bDebugLogging) { Log("ATB "$GetDate()$"] FindOldestPlayerRecordInnerBatch("$iStart$"): Trying to beat "$found$" with "$best); }
 	for (i=iStart;i<MaxPlayerData && i<iStart+BatchSize;i++) {
 		// if (hours_played[i] < hours_played[found]) {
-		if (NumFromDateString(date_last_played[i]) < NumFromDateString(date_last_played[found])) {
+		// if (NumFromDateString(date_last_played[i]) < NumFromDateString(date_last_played[found])) {
+		if (FindOldestPlayerRecordMeasure(i) < best) {
 			found = i;
+			best = FindOldestPlayerRecordMeasure(found);
 		}
 		// TODO: cache NumFromDateString_date_last_played_found throughout this fn
 	}
 	return found;
+}
+
+function float FindOldestPlayerRecordMeasure(int i) {
+	// return NumFromDateString(i);
+	// Old is not our own priority; we don't want to reclaim records with lots of hours_played, before very small records which have aged.
+	// #define age (Float(GetDate()) - NumFromDateString(date_last_played[i]))
+	// #define age (DaysFromDateString(GetDate()) - DaysFromDateString(date_last_played[i]))
+	local float age;
+	age = currentDateDays - DaysFromDateString(date_last_played[i]);
+	return -age/(hours_played[i]+1.0); // 1.0 avoids division by 0
+	// Alternatively:
+	// return DaysFromDateString(date_last_played[i]) * hours_played[i];
 }
 
 function float NumFromDateString(String str) {
@@ -2294,11 +2378,44 @@ function float NumFromDateString(String str) {
 	// str = StrReplace(str,":","");
 	// str = StrReplace(str,"/","");
 	str = StrFilterNum(str);
-	if (bDebugLogging && FRand()<0.01) { Log("NumFromDateString(): "$str$" -> "$Float(str)); }
+	if (bDebugLogging && FRand()<0.001) { Log("NumFromDateString(): "$str$" -> "$Float(str)); }
 	return Float(str);
 	// NOTE: float is not all that accurate; it cannot see the time-of-day:
 	// 200701010000 -> 200701018112.000000
 }
+
+// Returns days since 1st/Jan/1970 from a string like: 2008/01/19-13:17.08
+function float DaysFromDateString(String datestr) {
+	local int year,month,day,hour,minute;
+	local float days;
+	local String str;
+	str = StrFilterNum(datestr);
+	if (str == "")
+		return 0; // No date => 1st/Jan/1970
+	year   = Int(Mid(str, 0,4));
+	month  = Int(Mid(str, 4,2));
+	day    = Int(Mid(str, 6,2));
+	hour   = Int(Mid(str, 8,2));
+	minute = Int(Mid(str,10,2));
+	days = day + 365.25*month/12 + 365.25*(year - 1977);
+	days = days + hour/24 + minute/24/60;
+	if (bDebugLogging && FRand()<0.001) { Log("DaysFromDateString(): "$datestr$" -> "$days); }
+	return days;
+}
+
+/*
+// Int is not large enough; I get: NumFromDateString(): 200701010000 -> -1162452912
+function int NumFromDateString(String str) {
+	// str = StrReplace(str,"-","");
+	// str = StrReplace(str,":","");
+	// str = StrReplace(str,"/","");
+	str = StrFilterNum(str);
+	if (bDebugLogging && FRand()<0.01) { Log("NumFromDateString(): "$str$" -> "$Int(str)); }
+	return Int(str);
+	// NOTE: float is not all that accurate; it cannot see the time-of-day:
+	// 200701010000 -> 200701018112.000000
+}
+*/
 
 
 
@@ -2472,12 +2589,22 @@ function int UpdateStatsForPlayer(Pawn p) {
 	date_last_played[i] = GetDate();
 
 	if (avg_score[i]>previous_average+2) {
-		if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
-		if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+		if (bReportStrengthAsCookies) {
+			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+		} else {
+			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has gained "$ Int(avg_score[i]-previous_average) $" points of strength!"); }
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength increased by "$ Int(avg_score[i]-previous_average) $" points this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+		}
 	}
 	else if (previous_average>avg_score[i]+2) {
-		if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
-		if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+		if (bReportStrengthAsCookies) {
+			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+		} else {
+			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" points of strength."); }
+			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength decreased by "$ Int(previous_average-avg_score[i]) $" points this game.",colorOrange,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+		}
 	}
 	return i;
 }
