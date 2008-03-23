@@ -24,13 +24,13 @@ function ModifyPlayer(Pawn p) {
 	// Log("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") cons = " $ cons);
 	if (cons == None) {
 		cons = Spawn(class'SiegeAnywhereConstructor',p,,,rot(0,0,0));
-		cons.SiegeAnywhere = Self;
+		// cons.SiegeAnywhere = Self;
 		Log("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") Adding cons = " $ cons);
 		cons.GiveTo(p);
 		// p.AddInventory(cons);
 		if (PlayerPawn(p) != None) {
 			if (SiegeAnywhereHUD(PlayerPawn(p).myHUD) != None) {
-				SiegeAnywhereHUD(PlayerPawn(p).myHUD).SiegeAnywhere = Self;
+				// SiegeAnywhereHUD(PlayerPawn(p).myHUD).SiegeAnywhere = Self;
 			}
 		}
 	}
