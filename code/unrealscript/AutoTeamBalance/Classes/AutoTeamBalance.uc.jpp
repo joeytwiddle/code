@@ -24,7 +24,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.3t"
+#define ATB_VERSION "1.3v"
 
 /*
 <off|noggin> i wanted to ask you
@@ -60,6 +60,7 @@
 // Now always broadcasts the reason if rebalancing was not possible, even if bBroadcastStuff=False.
 // Added a new command: mutate listmuts
 // Also added "mutate strengths extra" - use with care, it may require too much processing with large numbers of players!
+// Also added "mutate stats" which shows various game stats for each player in the console (e.g. frags, deaths, item pickups).
 // Added RelativeNormalisationProportion with a default of 0.5, to stop player strengths from shooting off too high.
 
 // Stripped at compile-time:
@@ -123,21 +124,24 @@
 
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
+// #define XOL_SPECIFIC
 // #define ENABLE_USEISPNOTFULLIP
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
 #define ENABLE_MIN_REQUESTS_FOR_REBALANCE
-#define ENABLE_IDC
 #define FAST_DATE_COMPARISON
-#define XOL_SPECIFIC
-#define DETECT_PLAYERJOINS
-#define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data, but this has been known to cause so much server lag that players disconnect!
+#define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data.
 #define ENABLE_SHOW_STATS
+//// Testing:
+#define DETECT_PLAYERJOINS
 // #define MAP_RATING_SYSTEM
 // #define SUPERBALANCE
 // #define COOL_CAMERA
 // #define TESTING_PRINT_ANGLES
 // #define TESTING
+#ifdef XOL_SPECIFIC
+	#define ENABLE_IDC
+#endif
 
 
 
@@ -145,7 +149,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 var config bool bBroadcastStuff;
 var config bool bBroadcastCookies;
-var config bool bFlashCookies; // TODO BUG WARNING: Do not use bFlashCookies with IDC - it causes ATB to lookup the record before IDC has given us the player ID!  Actually that's not so bad - ATB will start using the right record later, once IDC has reported.  But it means the player gets the wrong strength message until then.  ;)
+var config bool bFlashCookies;
 #ifdef DETECT_PLAYERJOINS
 var config bool bFlashPlayerJoins;
 #endif
@@ -538,8 +542,7 @@ function FixTeamsizeBug() {
 	// Fix teamsize bug in Botpack.TeamGamePlus
 	if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
 	{
-		// DebugLog("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")");
-		NormalLog("AutoTeamBalance.ModifyLogin(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")");
+		NormalLog("AutoTeamBalance.FixTeamsizeBug(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")");
 		GRI.Teams[0].Size=teamSizeWithBots[0];
 		GRI.Teams[1].Size=teamSizeWithBots[1];
 	}
@@ -1028,7 +1031,10 @@ function CheckGameStart() {
 	if (c<2) {
 		DoGameStart();
 	} else {
-		FlashPreGameLines();
+		if (!DeathMatchPlus(Level.Game).bTournament) {
+			// We don't flash during tournament mode, because it flashes all the way through warmup!
+			FlashPreGameLines();
+		}
 	}
 }
 
@@ -1041,7 +1047,7 @@ function FlashPreGameLines() {
 	// We also overwrite line 4, which usually displays "Use Options -> Player Setup to change teams".
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		// The check for UTServer Avoids logging repeated calls to UTServerAdminSpectator before anyone has joined the server.
-		if (p.IsA('PlayerPawn') && InStr(String(p.class),"UTServer")==-1) {
+		if (p.IsA('PlayerPawn') && !p.IsA('Spectator') && InStr(String(p.class),"UTServer")==-1) {
 			/*
 			// Only override the line, iff that line is currently displaying the player's team prematurely.  (Avoid conflicting with XOL's pre-game hiscore display.)
 			// Does not work!
@@ -1480,6 +1486,8 @@ function ForceFullTeamsRebalance() {
 	// Show team strengths to all players
 	if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is " $ teamstr[0] $ ".  Blue team strength is " $ teamstr[1] $ "."); }
 	// if (bBroadcastStuff) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
+
+	FixTeamsizeBug();
 
 }
 
@@ -2032,7 +2040,7 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 	if (p.IsA('Bot')) {
 		Bot(p).ConsoleCommand("taunt wave");
 	}
-	DebugLog("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum);
+	NormalLog("AutoTeamBalance.ChangePlayerToTeam("$p.getHumanName()$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum);
 	Level.Game.ChangeTeam(p,teamnum); // TODO: suppress the BroadcastMessage() made by TeamGame.AddToTeam() when we are flashing team to player elsewhere anyway
 
 	// Recompensate player for suicide/death points:
@@ -2056,6 +2064,11 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 		// BUG: Unfortunately this message is soon hidden by the scoreboard, which is displayed automatically when a player dies.
 		p.ShakeView(2.0,2000.0,0.0);
 	}
+
+	if (gameStartDone) {
+		FixTeamsizeBug();
+	}
+
 }
 
 // I want to Log all calls to BroadcastMessage() so that I can see without playing how much the players are getting spammed by broadcasts.
@@ -2529,7 +2542,7 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 		// CONSIDER (elsewhere): if we have little experience (<10mins) of a player, return UnknownStrength anyway?
 	}
 
-	if (found == -1) { NormalLog("AutoTeamBalance.FindPlayerRecordNoFastHash("$p$") failed to return a record."); }
+	if (found == -1) { NormalLog("AutoTeamBalance.FindPlayerRecordNoFastHash("$player_nick$","$player_ip$") failed to return a record."); }
 	return found;
 }
 
@@ -2565,7 +2578,7 @@ function int CreateNewPlayerRecord(Pawn p) {
 	hours_played[pos] = 0; // UnknownMinutes/60; // CONSIDER: using some UnknownMinutes might be better, for players who play only for a short time and get an unrepresentative strength for the next game - with UnknownMinutes their strength will be closer to the average, hence balancing will concentrate more on players we know about.
 	// date_last_played[pos] = "fresh_record";
 	date_last_played[pos] = GetDate();
-	DebugLog("AutoTeamBalance.CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos]);
+	NormalLog("AutoTeamBalance.CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos]);
 	// if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$ nick[pos] $"!  You have "$ avg_score[pos] $" cookies."); }
 	return pos;
 }
