@@ -5,7 +5,7 @@
 class nBAutoSpectateOnlineMMI extends UMenuModMenuItem;
 
 var PlayerPawn P;
-var nbAutoSpectate AS;
+var nBAutoSpectate AS;
 
 function Execute ()
 {

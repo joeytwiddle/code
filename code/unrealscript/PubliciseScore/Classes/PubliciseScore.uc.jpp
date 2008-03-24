@@ -48,13 +48,13 @@ function ModifyPlayer(Pawn p) {
 		// TODO: I am doing this here, so that if the server does fill,
 		// it can expand maxplayers by 2 ^^
                 // ?? That seems daft :P
-		if (bSetPlayersFromMap) {
+		// if (bSetPlayersFromMap) {
 			// TODO:
 			// Get numbers from the map's idealplayercount
 			// If there are two numbers, take the largest
 			// Set maxplayers to that value!
 			// s = InStrLast(""Level.GameInfo.IdealPlayerCount,
-		}
+		// }
 	}
 }
 

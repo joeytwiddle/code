@@ -11,7 +11,7 @@ do
 	JPPFILE="`basename "$JPPFILE"`"
 	TARGETFILE="`echo "$JPPFILE" | sed 's+\.jpp$++'`"
 	# if [ ! -e "$TARGETFILE" ] || ( [ -f "$TARGETFILE" ] && newer "$JPPFILE" "$TARGETFILE" )
-	if [ ! -e "$TARGETFILE" ] || find . -name "*.jpp" -newer "$TARGETFILE" | grep . >/dev/null
+	if [ ! -e "$TARGETFILE" ] || find . -name "*.jpp" -newer "$TARGETFILE" | grep . >/dev/null ## ANY new jpp file in this folder.
 	then
 		[ "$JPP_MAKE_BACKUPS" ] && [ -f "$TARGETFILE" ] && mv "$TARGETFILE" "$TARGETFILE".`geekdate -fine`
 		# verbosely jpp -- "$JPPFILE" | verbosely dog "$TARGETFILE"
@@ -20,6 +20,8 @@ do
 	fi
 done
 cd "$TOPDIR"
+
+
 
 
 
@@ -43,5 +45,32 @@ cd "$TOPDIR"
 
 
 
+
+
 cmd /c make
+
+
+
+
+
+cat System/compiling.ini |
+dos2unix |
+grep "^EditPackages=" |
+afterfirst = |
+# pipeboth |
+
+while read PKGNAME
+do
+	if [ ! -f System/$PKGNAME.u ]
+	then jshinfo "$PKGNAME.u is pending..."
+	elif find . -name "$PKGNAME".uc -newer System/$PKGNAME.u | grep . >/dev/null
+	then
+		jshinfo "$PKGNAME.u needs a rebuild..."
+		# verbosely del System/$PKGNAME.u
+		verbosely mv -f System/$PKGNAME.u System/$PKGNAME.u.last
+	fi
+done 2>&1 | grep . || jshwarn "No .u files out-of-date or missing."
+
+cd System
+verbosely wine ucc make ini=../compiling.ini
 
