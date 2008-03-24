@@ -1,15 +1,19 @@
+// CrouchBlocksDamage
+// Reduces damage by SavePercent if the player is crouching when hit.
+// Will also multiply the boost by BoostMultiplier if they are crouching.
+
 class CrouchBlocksDamage extends Mutator;
 
 var config float SavePercent;
-var config float SuperBoost;
+var config float BoostMultiplier;
 var config bool bInformVictim;
 
 var bool Initialized;
 
 defaultproperties {
-SavePercent=50
-SuperBoost=2
-bInformVictim=True
+  SavePercent=50 // How much damage is saved by crouching when hit
+  BoostMultiplier=0.5 // The boost from hits received when crouching can be reduced
+  bInformVictim=False
 }
 
 function PostBeginPlay() {
@@ -19,28 +23,25 @@ function PostBeginPlay() {
 
 	Level.Game.RegisterDamageMutator( Self );
 
-	// TODO: really we want this to be displayed in the user's chat area when they join the server (like ZPPure does)
+	// DONE: really we want this to be displayed in the user's chat area when they join the server (like ZPPure does)
 	Log("CrouchBlocksDamage mutator is running.  Crouch when hit to reduce damage by "$SavePercent$"%!");
 	BroadcastMessage("CrouchBlocksDamage mutator is running.  Crouch when hit to reduce damage by "$SavePercent$"%!");
-	if (SuperBoost != 1.0) {
-		Log("SuperBoost at "$SuperBoost$"!");
-		BroadcastMessage("SuperBoost at "$SuperBoost$"!");
+}
+
+function ModifyPlayer(Pawn Other) {
+	if (Other.IsA('PlayerPawn') && Other.PlayerReplicationInfo.Deaths==0) {
+		PlayerPawn(Other).ClientMessage("Crouching will block damage by "$SavePercent$"%");
+	}
+	// Super.ModifyPlayer(Other);
+	if (NextMutator != None) {
+		NextMutator.ModifyPlayer(Other);
 	}
 }
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 
-	/* Originally from Vampire
-	if (InstigatedBy.IsA('Bot') || InstigatedBy.IsA('PlayerPawn'))
-	{
-		InstigatedBy.Health += ActualDamage;
-		if (InstigatedBy.Health > 199)
-			InstigatedBy.Health = 199;
-	}
-	*/
-
 	// SuperBoost:
-	Momentum = Momentum * SuperBoost;
+	// Momentum = Momentum * SuperBoost;
 
 	if (Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
 
@@ -55,22 +56,11 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		}
 		ActualDamage = ActualDamage*(1.0-SavePercent/100.0);
 
-		// SuperBoost is further increased when crouching:
-		Momentum = Momentum * SuperBoost;
-
-		// Crouch blocking is further increased when damaging self:
-		if (InstigatedBy == Victim) {
-			ActualDamage = ActualDamage*(1.0-SavePercent/100.0);
-		}
+		Momentum = Momentum * BoostMultiplier;
 
 	}
 
-	// SuperBoost is further increased if the aggressor is crouching:
-	if (InstigatedBy!=None && InstigatedBy.IsA('PlayerPawn') && PlayerPawn(InstigatedBy).bIsCrouching) {
-		Momentum = Momentum * SuperBoost;
-	}
-
-	if ( NextDamageMutator != None )
+	if (NextDamageMutator != None)
 		NextDamageMutator.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
 
 }
