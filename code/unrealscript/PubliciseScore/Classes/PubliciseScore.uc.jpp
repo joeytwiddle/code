@@ -133,5 +133,5 @@ function SetTitle(String newText) {
  Level.Game.GameReplicationInfo.ServerName = titleDefault $ newText;
 }
 
-#include "/mnt/big/ut/ut_win/JLib/jlib.uc.jpp"
+#include "../../JLib/jlib.uc.jpp"
 
