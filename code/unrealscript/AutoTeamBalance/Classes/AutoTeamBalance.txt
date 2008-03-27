@@ -23,9 +23,9 @@
     Don't worry, if you manged to do both of the above, AutoTeamBalance should
     detect that it is running twice, and recover gracefully.
 
-    [Special note for SoNY_scarface: do not add it as a ServerPackage; there
-    is no need, and it will only cause "Version mismatch" errors for your
-    players if you upgrade to a newer version.]
+    [ Do not add it as a ServerPackage; there is no need, and it will only
+    cause "Version mismatch" errors for your players if you upgrade to a newer
+    version. ]
 
     You may also wish to increase your server's NetWait to 10 or 20 seconds.
     (This value can be found in the [Botpack.DeathMatchPlus] section.)
@@ -35,13 +35,18 @@
 
     You should also ensure your server waits at least 10 seconds after the end
     of each game, before switching map, otherwise AutoTeamBalance will not
-    have time to update the stats.  I think this is the RestartWait variable.
+    have time to update the stats.  This *might* be the RestartWait variable.
 
     I think, if your server has any bots, you should ensure that bBalanceTeams
     is set in your UnrealTournament.ini.  Since AutoTeamBalance does not affect
     the team placement of bots when they join, or when a player switches teams,
     this method should be enabled.  (AutoTeamBalance *will* change bots to
     different teams during *mid-game* balancing, if bBalanceBots is set.)
+
+    It should be safe to leave AutoTeamBalance on during tournament games; most
+    of the features are automatically disabled, but players can use the "!red"
+    and "!blue" shortcuts, and see the team strengths, and semi-admins can
+    force teamchanges if they wish.
 
 
 
@@ -71,11 +76,12 @@ if players have left the server mid-game.  But in unbalance emergencies,
 semi-admins may also force a ForceFullTeamsRebalance mid-game, as in event 1,
 but in this case players holding flags may get switched too!
 
-AutoTeamBalance updates player stats shortly after the end of the game.  It can
-record each player's average (normalised) score per 15 minutes, but the current
-default setting is to award players with a score between 0 and 100, depending
-on their position on the overall scoreboard.  Players who leave before or
-immediately after the game ends will not have their stats updated.
+AutoTeamBalance updates player stats shortly after the end of the game.
+Players who leave before or immediately after the game ends will not have their
+stats updated.  The default settings record the average of of each player's
+score-and-frags, normalised relative to the other players on the server.
+Since unknown players start with a score of 50, this will be the average
+player strength.
 
 
 
@@ -88,8 +94,16 @@ immediately after the game ends will not have their stats updated.
 
     Say "!spec" or "!play" to switch between spectator and player.
 
-    Type "mutate strengths" in the console, to see the strengths of current
-    players on the server.
+    Say "!vote" to bring up MapVote (BDB and derivatives).
+    Say "!stats" to bring up SmartCTFStats.
+
+    Type "mutate strengths" in the console, or say "!strengths", to see the
+    strengths of current players on the server.  Type "mutate strengths extra"
+    for more detailed info (probably more than you care to know).  Type "mutate
+    stats" for in-game stats unrelated to AutoTeamBalance.
+
+    Type "mutate listmuts" or "mutate listmutators" in the console, to see the
+    current mutator list.
 
 
 
@@ -107,7 +121,7 @@ subject to abuse.)
     mutate teams [password]
 
         Will switch one player to the other team, or will swap two players.
-        The same as saying "teams" when bLetPlayersRebalance is set in the
+        The same as saying "!teams" when bLetPlayersRebalance is set in the
         config.  Refuses to balance again for MinSecondsBeforeRebalance.
 
     mutate forceteams [password]
@@ -133,15 +147,28 @@ subject to abuse.)
         Flashes the warning message on the player's screen, and shakes his/her
         view.  (You may like to try it on yourself first.)
 
-    mutate kick <player_name> <reason_message> [password]
+    mutate flash <warning_message> [password]
 
-        Flashes the message on the player's screen, then kicks him/her from the
-        server.
+        Flashes a message to all players.  (E.g. if you want to inform players
+        that you will be restarting the server at the end of this map.)
 
-    mutate kickban <player_name> <reason_message> [password]
+    mutate kick <player_name> [<reason_message>] [password]
 
-        Flashes the message on the player's screen, then kicks and bans him/her
-        from the server.
+        Flashes the (optional) message on the player's screen, then kicks
+        him/her from the server.
+
+    mutate kickban <player_name> [<reason_message>] [password]
+
+        Flashes the (optional) message on the player's screen, then kicks and
+        bans him/her from the server.
+
+    mutate forcetravel <url> [password]
+
+        If <url> is "unreal://my.server.ip:port?password=..." then all players
+        will be sent to another server.  This can be useful during a war, pug,
+        or server-testing, if you want to move all the players to another
+        server.  Untested: If <url> is "http://..." it may cause every player's
+        web-browser to open on that page!
 
 
 
@@ -150,9 +177,9 @@ in:
 
     mutate saveconfig
 
-        Updates the stats and saves everthing to the config file.  Note: if the
-        game ends after this then the this time period passed will be counted
-        again!
+        Updates the stats for the game so far, and saves everthing to the
+        config file.  (If the game ends after this then the this time period
+        passed will be counted again.)
 
     mutate grantadmin <player_name>
 
@@ -162,6 +189,7 @@ in:
     mutate get <package> <var_name>
 
         Will display the gameengine's current value of the config variable.
+        (So actually the guy you gave admin to *can* find your admin pass!)
 
     mutate set <package> <var_name> <new_value>
 
@@ -178,72 +206,108 @@ in:
 
 
 The default config should be fine for most servers.  But you may wish to tweak
-one or two values to your needs.  For example, bWarnMidGameUnbalance is
-disabled by default because you might find it too annoying - you may want to
-try enabling it.  Here's an explanation of all the config variables:
+one or two values to your needs.  Two useful features, bWarnMidGameUnbalance
+and bForceEvenTeams, are disabled by default because they require extra
+mid-game processing (aka lag on slow servers), and you may not want any
+messages flashing mid-game.  But many admins actually like to enable them.
+Here's an explanation of all the config variables:
 
-  bBroadcastStuff=True                      - Whether or not to broadcast information to players at game start, game end, and when rebalancing mid-game.
+  bBroadcastStuff=True                      - Whether or not to broadcast AutoTeamBalance's activity at the start and end of each game, and report the team strengths when players are moved.
   bBroadcastCookies=False                   - When enabled, at the end of the game, every player's strength change will be broadcast, represented as earning or losing cookies.  For debugging, or for fun.
   bFlashCookies=False                       - When enabled, each player will see his number of cookies at the start of the game, and how many he gained or lost at the end of the game.  For debugging, or for fun.
+  bReportStrengthAsCookies=False            - *NEW* Until this is enabled, instead of describing player strength as cookies, it describes it as strength.  Enable for "cookie fun".
   bDebugLogging=False                       - Enable this only if you need to debug AutoTeamBalance.
+  bEnablePlayerCommands=True                - Allows players to use !red !blue !spec !play !vote !stats (you might want to disable this if, for example, you are already using ASC to do this.)
+  bForceEvenTeams=False                     - Automatically switches a player when one team has 2 players more than the other team.
   bLetPlayersRebalance=True                 - Allows players to fix teams mid-game by typing "teams" or "!teams".
-  bForceEvenTeams=True                      - Automatically switches a player when one team has 2 players more than the other team.
+  MinRequestsForRebalance=1                 - Will not rebalance until this many players request it (unless teams differ by 2 or more players and bOverrideMinRequests=True).  If you set this to 2 or more, you may wish to reduce MinSecondsBeforeRebalance to 1 (but do not set it to 0!).
+  bOverrideMinRequests=True                 - *NEW* If set, will only require 1 request when teams are uneven by 2 or more players.
+  bFlashRebalanceRequest=True               - Whether the "!teams" request is flashed to all players, or just shown in chat area.
+  bShowProposedSwitch=True                  - *NEW* On "!teams" request, or mid-game inbalance warning, shows the proposed player(s) that could be switched, otherwise just shows the request.
   bWarnMidGameUnbalance=False               - Warns players if teams become uneven mid-game.
-  bFlashOnWarning=True                      - The warning will flash across the HUD, instead of appearing in the chat area
-  bShakeOnWarning=False                     - The warning will shake the screens of players on the stronger team
-  bBuzzOnWarning=False                      - The warning will make the sound of buzzing flies for players on the stronger team
+  CheckFrequency=15                         - *NEW* How often to check for (and flash the warning about) mid-game imbalance (when bWarnMidGameUnbalance or bForceEvenTeams is set).  Also how often ATB checks whether the game has ended, so do not set larger than the the time it takes for your server to switch map, or it will never notice the end of the game, and it will fail to update the player stats!
+  bShowReason=True                          - *NEW* Displays the reason why it thinks teams are uneven (e.g. "3v5" or "Strength 407 vs 286").
+  bFlashOnWarning=True                      - The warning will flash across the HUD, instead of appearing in the chat area.  Recommended to grab attention.
+  bShakeOnWarning=False                     - The warning will shake the screens of players on the stronger team (annoying, but maybe they deserve it!).
+  bBuzzOnWarning=False                      - The warning will make the sound of buzzing flies for players on the stronger team (annoying, but maybe they deserve it!).
+  bShakeWhenMoved=False                     - *NEW* When set, player's screen shakes when they are changed to another team.  (Used to default to True to get the player's attention, but appeared to cause annoyance.)
   bAllowSemiAdminKick=True                  - You can prevent semi-admins from kicking players by switching this off.
   bAllowSemiAdminForceTravel=True           - You can prevent semi-admins from forcing a server move by switching this off.
   bBalanceBots=False                        - Whether or not to balance bots as if they were humans (recommended off, since it might create 2v0 if bots are as strong as humans).
   bRankBots=False                           - Whether or not to record strengths for the bots (just for curiosity really).
   MinSecondsBeforeRebalance=20              - Prevents players from spamming "!teams"; should be at least 1, to avoid a bug with multiple calls to MutatorTeamMessage().
-  SemiAdminPass=defaults_to_admin_pass      - Set this if you want semi-admins to use a different pass from the server admin pass.
+  bNeverRebalanceWhenTeamsAreEven=False     - *NEW* If set, will refuse to swap 2 players to balance teams better by strength (e.g. during a 5v5 when one team has stronger players).
+  SemiAdminPass=defaults_to_admin_pass      - Change this if you want semi-admins to use a different pass from the server admin pass.
   bAutoBalanceTeamsForCTF=True
   bAutoBalanceTeamsForTDM=True              - You can select which game-modes will be balanced, and which will not.
   bAutoBalanceTeamsForAS=True
   bAutoBalanceTeamsForOtherTeamGames=True
-  bUpdatePlayerStatsForCTF=True             - BUG TODO:  Argh!  Won't this update scores from BT games too?!
-  bUpdatePlayerStatsForTDM=True             - If you are normalising scores, then updating stats for TDM should be ok.  But if you are not normalising scores, then the different bonuses in CTF will make stats from the different gametypes incompatible.  (Basically TDMers will get lower strengths because they never get the bonus points from caps/covers/etc.)  So in this case you are recommended only to build stats for your server's most popular gametype.  Actually, now that we are using ScoringMethod 3, stats can be safely updated for all gametypes.
-  bUpdatePlayerStatsForAS=True              - Now that the default scoring method is method 3, the huge AS bonuses are not a problem when updating player strengths.
-  bUpdatePlayerStatsForOtherTeamGames=True  - This will record stats from JailBreak games, for example.
-  bUpdatePlayerStatsForNonTeamGames=True    - DM scores are a good indication of a player's strength, even though it's not a team-game
-  bLogExtraStats=False                      - records some extra player stats to the logfile at game-end, in case you are interested
-  MaxHoursWhenCopyingOldRecord=4.0          - when a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this, just in case it was a false-match, to minimise inaccurate stats for the new player
-  HoursBeforeRecyclingStrength=6.0         - once a player has played for this long, his older scores start to fade away in favour of his more recent scores (to follow the strengths of players who get better or worse over time)
-  MinHumansForStats=4                       - It's probably not healthy to update stats for 1v1 games, scores can be a little extreme
-  ScoringMethod=2                           - How do we update the player's stats?  0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking.  For CTF/TDM I recommend methods 0 or 2.  For Assault I recommend methods 2 or 3.
-  bNormaliseScores=True                     - Normalises scores so that the average score for every game is 50, or whatever specified.  This is useful if scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  Disadvantage: if strong and weak players play at different times on the server, they will get similar strengths, until they actually meet each other.  Disable normalisation if your server has similar scores at the end of every game.  This does not affect ScoringMethod 3, which is itself a kind of normalisation.
-  bRelativeNormalisation=True               - During normalisation, the target average will be relative to the current strengths of players in the game.  So if you played against strong players, the strength you gain/lose will reflect this.
+  bUpdatePlayerStatsForCTF=True             - This may update scores from BT games too, since BT is a form of CTF.
+  bUpdatePlayerStatsForTDM=True
+  bUpdatePlayerStatsForAS=True              - If your server is running only Assault (which has a huge bonus for the player who completed the final objective), then I would recommend trying ScoringMethod 3.  But if you are running multiple gametypes, then you may wish to stick with the default ScoringMethod 2, and hope AS strengths even out over time.
+  bUpdatePlayerStatsForOtherTeamGames=True  - This will record stats from JailBreak and Siege games, for example.
+  bUpdatePlayerStatsForNonTeamGames=True    - DM scores are a good indication of a player's strength, even though it's not a team-game.
+  bLogExtraStats=False                      - Records some extra player stats to the logfile at game-end, in case you are interested.
+  MaxHoursWhenCopyingOldRecord=2.0          - When a player changes nick or IP, his hours_played with the new nick or ip will be reduced to this, just in case it was a false-match, to minimise inaccurate stats for the new player.
+  HoursBeforeRecyclingStrength=4.0          - Once a player has played for this long, his older scores start to fade away in favour of his more recent scores (to follow the strengths of players who get better or worse over time).
+  MinHumansForStats=4                       - It's probably not accurate to update stats for 1v1 games, scores can be a little extreme.
+  ScoringMethod=2                           - How do we judge a player's strength?  0=score, 1=frags, 2=average_of_frags_and_score, 3=0-100_ordered_ranking.  For CTF/TDM I recommend methods 0 or 2.  For Assault I recommend methods 2 or 3.
+  bNormaliseScores=True                     - Normalises scores so that the average strength for every game is 50, or whatever specified.  This is useful since scores from different games can be very different.  E.g. small spammy games get higher scores than large 2v2 games, and CTF has bonuses which you don't get in TDM.  You should only disable normalisation if your are running a BT server (where scores are often negative), or if your server has similar scores at the end of every game.
+  RelativeNormalisationProportion=0.5       - *NEW* When updating stats relative to the average strength of players on the server, dampens this average towards the NormalisedStrength.  This stops player strengths from escalating too far above the pre-defined average (50).
+  StrengthProportionFromCurrentGame=0.5     - *NEW* During mid-game rebalancing, player strengths are estimated from a mixture of their stored player record and their score so far this game.  This allows ATB to estimate whether a player is having a good or bad day, and rebalance accordingly.
   bScalePlayerScoreToFullTime=True          - Should be kept True to ensure that scores are comparable when some players have joined the game late.  Players strength records are still only updated relative to the time they spent playing.
   NormalisedStrength=50                     - This need not be changed.  When using bNormaliseScores, it will simply affect the size of the numbers recorded in the database.
-  UnknownStrength=45                        - New players are assumed to have strength 50 (Should be the same as NormalisedStrength, or if bNormaliseScores=False, it should be the average endgame-score-per-20-minute-game of new players on your server.  Only used for a new players during their first game; forgotten immediately afterwards.
-  BotStrength=10                            - Maybe 20 or 30 is better, if you disable normalisation, or your bots are strong.  Of course this depends what difficulty the bots are set to on your server, and how effective they are on the maps you play, relative to the humans.
-  FlagStrength=20                           - Affects the strength of each team, according to how many caps they have made.  If it's 3:0, the leading team will get an extra 3*FlagStrength = 60 points of strength.  This is used for balancing teams mid-game.
-  StrengthThreshold=100                     - If bWarnMidGameUnbalance=True and team strength difference is greater than this, and the stronger team has more players, then all players are warned of team inbalance.  (Some threshold was needed, otherwise any player which switched to the smaller team would just make it look unbalanced the other way, causing never-ending team-unbalance warning!  In theory this might still happen with players of highly different strengths, in which case increase the threshold, or disable bWarnMidGameUnbalance)
-  WinningTeamBonus=0                        - Maybe you scored low, but played good teamplay, so your team won, and you deserve higher strength for that.  Recommended values: 0/5/10.
-  bClanWar=False                            - For clan wars; on player login or game start, moves players to the appropriate team by clan tag.
-  clanTag=XOL                               - Clan tag of red team (all other players are sent to blue).
-  bUseOnlyInGameScoresForRebalance=False    - Mid-game balancing usually looks up player records to see their strengths.  If you feel this causes lag on the server when a new player joins or during mid-game rebalancing, or you only want to balance using current game scores anyway (ignoring player records), then set this to True.
-  bLogFakenickers=False                     - Write to log any players who had a previous record with a different nick or IP.
-  bBroadcastFakenickers=False               - Broadcast to game any players who had a previous record with a different nick or IP.
-  bSeparateStatsByGamemode=False            - Builds separate stats for different gametypes and different mutators.  Only use this if your server has a *few* different modes, and they require significantly different skills.  The number of records in your database will be multiplied by the number of different modes your server has.
+  UnknownStrength=50                        - New players are assumed to have strength 50 (Should be the same as NormalisedStrength, or if bNormaliseScores=False, it should be the average endgame-score-per-20-minute-game of new players on your server.  Only used for a new players during their first game; forgotten immediately afterwards.  Once your server has established stats for regular players, you may wish to reduce this value for the "newbie" players who join, although it will also apply to regulars who have changed their nick and their IP address, until that first game is over.
+  BotStrength=10                            - Maybe 20 or 30 is better, if you disable normalisation, or your bots are strong.
+  FlagStrength=10                           - Affects the strength of each team, according to how many captures they have made.  E.g. if it's 3:0, the leading team will appear to have an extra 3*FlagStrength = 30 points of strength.  This is used for balancing teams mid-game.  Now auto-adjusts for non-CTF gametypes.  20 is a reasonably strong setting, 0 of course has no effect.
+  StrengthThreshold=100                     - If bWarnMidGameUnbalance=True and team strength difference is greater than this, then all players are warned of team inbalance.  (Some threshold was needed, otherwise any player which switched to the smaller team would just make it look unbalanced the other way, causing never-ending team-unbalance warning!  In theory this might still happen with players of highly different strengths, in which case increase the threshold, or disable bWarnMidGameUnbalance.)
+  WinningTeamBonus=0                        - Maybe you scored low, but played good teamplay, so your team won, and you deserve higher strength for that.  Recommended values: 0/5/10.  Disadvantage at present: these phantom points appear on the endgame scores and therefore any screenshots which are taken.
+  bClanWar=False                            - For clan wars: on player join or at game start, moves players to the appropriate team, depending on their clan tag.
+  clanTag=XOL                               - When bClanWar is set, this is the clan tag of the red team, and players without that tag in their nick are sent to blue.
+  bLogFakenickers=False                     - Write to the logfile any players who had a previous record with a different nick or IP.
+  bBroadcastFakenickers=False               - Broadcast in-game any players who had a previous record with a different nick or IP.
+  bSeparateStatsByGamemode=False            - Builds separate stats in the database for different gametypes.  Only use this if your server has a *few* different gametypes, and they require significantly different skills.  The number of records in your database will be multiplied by the number of different modes your server has.
+  bSeparateStatsByMutators=False            - Builds separate stats in the database, according to which mutators are running (by adding a short mutator signature to each player's nick).  Could differentiate between instagib and normal weapons games, or games with/without the translocator.  Not recommended if you change mutators regularly, or have very many game modes with different mutators.
+  MaxPlayerData=4096                        - To avoid bugs related to the database being too large.  Do not set above the static limit 4096.  Reduce this value if you are getting problems.  (Records in the database beyond MaxPlayerData will be lost.)
+  warnColor=(R=200,G=160,B=0,A=24)          - *NEW* The colour of the warning message sent to players when teams are uneven.
+
+The following config variables have been removed since the previous release:
+
+  bRelativeNormalisation is no longer used; see RelativeNormalisationProportion instead.
+  bUseOnlyInGameScoresForRebalance is no longer used; see StrengthProportionFromCurrentGame instead.
 
 
 
 # Known bugs:
 
-  Well it hasn't been tested on BT games.  If the average score ends up below
-  0, and score normalisation is enabled, then probably the players who died
-  most will be given the highest strengths!  I recommend setting
+  ATB has not been tested on BT games.  If the average score ends up below 0,
+  and score normalisation is enabled, then probably the players who died most
+  will be given the highest strengths!  I recommend setting
   bNormaliseScores=False on BT servers.
 
-  The mid-game teambalance warning can sometimes be a bit over-sensitive, e.g.
-  in 2v1 situations.  If this happens too much, disable bWarnMidGameUnbalance,
-  or increase the StrengthThreshold.
+  Rebalancing when 3 very strong players are opposite 5 very weak players is
+  hard to achieve without moving at least 3 players around, which is quite
+  disruptive!  The current solution is to move the weakest player to the
+  smaller team to achieve an imbalanced 4v4, but then suggest to the players
+  that they rebalance again, which would cause 2 players to swap.  I hope that
+  will work ok.  However, there is currently no way to deal with 4 very strong
+  players versus 5 very weak players - in this situation ATB will simply refuse
+  to move anybody.
 
-  I never got around to recording a player's last_time_played, which might be
-  interesting info for admins, and also useful for recycling old player records
-  when the database becomes full.
+  I have heard reports of players abusing ATB by switching team to make the
+  teams uneven, and then typing "!teams" which causes a player to get moved
+  (sometimes not the player who moved initially).  With sensible players, that
+  might be a feature, creating better teambalance when they see that it is
+  needed.  But if someone is abusing it, you could try increasing
+  MinRequestsForRebalance, and setting bOverrideMinRequests=False, so that they
+  cannot force the switch without the consent of other players, and you can
+  increase MinSecondsBeforeRebalance, so they cannot do it repeatedly to
+  disrupt the game.  You may also be able to prevent players from switching
+  teams by setting bEnablePlayerCommands=False, and setting bNoTeamChanges=True
+  in the server's UnrealTournament.ini.
+
+  The bug where a spectator could type "!blue" and then pick up the red flag
+  and fly around with it has been fixed.
 
 
 
@@ -266,11 +330,12 @@ try enabling it.  Here's an explanation of all the config variables:
   Rork and _tAiger for testing.
   The author of TeamBallancer, because I lifted a tiny bit of his code.
   Adrian and Matt for some useful info in the Adwvaad thread.
-  Debian GNU/Linux package maintainers, otherwise dammit I wouldn't have an OS
-  to code on!
-  And last but not least, my mum, for unleashing me upon you all.
+  The unrealwiki and unrealadmin websites in general.
+  Debian GNU/Linux and Cygwin package maintainers, otherwise dammit I wouldn't
+  have an environment to code in!
+  And last but not least, my mum and dad, for unleashing me upon you all.
 
 
 
-Good luck and have fun, F0X|nogginBasher aka (-:SMo:-)c00ki3Mnstr.
+Good luck and have fun, F0X|nogginBasher aka :)sMo(:c00ki3Mnstr.
 
