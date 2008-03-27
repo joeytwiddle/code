@@ -25,7 +25,10 @@ cd "$TOPDIR"
 
 
 
+## TODO: What's really nasty is when we compile a script, then try to load it as a lib when recompiling other things.  On hwi atm, it's causing ucc to stick on that package.
+
 ## Problem: comments out required packages!  also adds some packages (e.g. Screen) which we don't actually want to recompile
+##    TODO: But it doesn't have to.  As long as it checks that it is really a custom package.
 # cat compiling.ini | grep EditPackages= |
 # afterlast = |
 # while read PKG
@@ -53,7 +56,9 @@ cmd /c make
 
 
 
-cat System/compiling.ini |
+# REBUILD=true
+
+cat compiling.ini |
 dos2unix |
 grep "^EditPackages=" |
 afterfirst = |
@@ -61,13 +66,16 @@ afterfirst = |
 
 while read PKGNAME
 do
-	if [ ! -f System/$PKGNAME.u ]
+	if [ ! -f "System/$PKGNAME.u" ]
 	then jshinfo "$PKGNAME.u is pending..."
-	elif find . -name "$PKGNAME".uc -newer System/$PKGNAME.u | grep . >/dev/null
+	elif [ ! -d "$PKGNAME" ]
+	then : # error "Source folder $PKGNAME/ does not exist!"
+	elif [ "$REBUILD" ] || find "$PKGNAME"/Classes -maxdepth 1 '(' -iname "*.uc" -or -iname "*.jpp" ')' -and -newer "System/$PKGNAME.u" | grep . >/dev/null
 	then
 		jshinfo "$PKGNAME.u needs a rebuild..."
-		# verbosely del System/$PKGNAME.u
-		verbosely mv -f System/$PKGNAME.u System/$PKGNAME.u.last
+		# ls -l "System/$PKGNAME.u"
+		## verbosely del System/$PKGNAME.u
+		mv -f System/$PKGNAME.u System/$PKGNAME.u.last
 	fi
 done 2>&1 | grep . || jshwarn "No .u files out-of-date or missing."
 

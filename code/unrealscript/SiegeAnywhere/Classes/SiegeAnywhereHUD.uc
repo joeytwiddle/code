@@ -17,7 +17,7 @@ simulated function PostRender( canvas Canvas ) {
 	Canvas.Style = Style;
 
 	if (PawnOwner == None || PlayerOwner == None || PawnOwner.PlayerReplicationInfo == None || PlayerOwner.PlayerReplicationInfo == None || PlayerOwner.bShowMenu || PlayerOwner.bShowScores || bForceScores || bShowInfo || PlayerOwner.Scoring != None || PawnOwner.PlayerReplicationInfo.bIsSpectator)
-		return; // it was one of the last two that finally stopped the clock for appearing before gamestart
+		return; // it was one of the last two that finally stopped the clock from appearing before gamestart
 
 	if (bDrawClock && !bHideHUD && !bHideAllWeapons) { // I decided to hide it if weapons are hidden, and therefore there is nothing else in the top-right.
 		if (bHideStatus)

@@ -295,6 +295,116 @@ function SetServer(Actor Sender, String server_ip, String server_description) {
 function bool isURL(String str) {
  return (InStr(str,"://")>=0 && InStr(str,"://")<50);
 }
+function Actor FindClosestActor(Actor from) {
+ local Actor A;
+ local int distance;
+ local int deltaRotation;
+ local Actor bestActor;
+ local int bestDistance;
+ bestActor = None;
+ foreach VisibleActors(class'Actor', A, 1024, from.Location) {
+ // foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
+  if (A == from) { // don't find self!
+   continue;
+  }
+  distance = VSize(A.Location - from.Location);
+  deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
+  // if (deltaRotation < 8192 || deltaRotation > 8192*7) {
+  if (deltaRotation > 8192*4) {
+   deltaRotation = 8192*8 - deltaRotation;
+  }
+  if (deltaRotation < 8192 && deltaRotation > -8192) {
+   if (bestActor == None || distance < bestDistance) {
+    bestActor = A;
+    bestDistance = distance;
+    // PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
+   }
+  }
+ }
+ return bestActor;
+}
+function Actor FindMatchingActor(string str) {
+ local Actor A;
+ foreach AllActors(class'Actor', A) {
+  if (StrContains(Caps(""$A),Caps(str))) {
+   return A;
+  }
+ }
+ return None;
+}
+function Actor FindClosestActorMatching(Actor from, String str) {
+ local Actor A;
+ local int distance;
+ local int deltaRotation;
+ local Actor bestActor;
+ local int bestDistance;
+ bestActor = None;
+ // foreach VisibleActors(class'Actor', A, 1024, from.Location) {
+ foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
+  if (A == from) { // don't find self!
+   continue;
+  }
+  if (!StrContains(Caps(""$A),Caps(str))) {
+   continue;
+  }
+  distance = VSize(A.Location - from.Location);
+  deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
+  // if (deltaRotation < 8192 || deltaRotation > 8192*7) {
+  if (deltaRotation > 8192*4) {
+   deltaRotation = 8192*8 - deltaRotation;
+  }
+  if (deltaRotation < 8192 && deltaRotation > -8192) {
+   if (bestActor == None || distance < bestDistance) {
+    bestActor = A;
+    bestDistance = distance;
+    // PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
+   }
+  }
+ }
+ return bestActor;
+}
+function Actor FindClosestActorClass(Actor from, class<Actor> cls) {
+ local Actor A;
+ local int distance;
+ local int deltaRotation;
+ local Actor bestActor;
+ local int bestDistance;
+ bestActor = None;
+ // foreach VisibleActors(class'Actor', A, 1024, from.Location) {
+ // foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
+ foreach AllActors(cls, A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
+  if (A == from) { // don't find self!
+   continue;
+  }
+  if (A.class != cls) {
+  // if (!A.IsA(cls)) {
+   continue;
+  }
+  distance = VSize(A.Location - from.Location);
+  deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
+  // if (deltaRotation < 8192 || deltaRotation > 8192*7) {
+  if (deltaRotation > 8192*4) {
+   deltaRotation = 8192*8 - deltaRotation;
+  }
+  if (deltaRotation < 8192 && deltaRotation > -8192) {
+   if (bestActor == None || distance < bestDistance) {
+    bestActor = A;
+    bestDistance = distance;
+    // PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
+   }
+  }
+ }
+ return bestActor;
+}
+function Actor FindActorWithMatchingProperty(string prop, string val) {
+ local Actor A;
+ foreach AllActors(class'Actor', A) {
+  if ( StrContains(Caps(A.GetPropertyText(prop)),Caps(val)) ) {
+   return A;
+  }
+ }
+ return None;
+}
 //===============//
 //               //
 //  JLib.uc.jpp  //
