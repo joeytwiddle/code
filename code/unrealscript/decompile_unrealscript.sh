@@ -1,0 +1,53 @@
+USCRIPTFILE="$1"
+
+CURRENT="$1.current"
+
+PKGDIR="Decompiled/` echo "$USCRIPTFILE" | afterlast / | beforelast "\.u" `/Classes"
+mkdir -p "$PKGDIR"
+
+cat "$USCRIPTFILE" |
+
+## Encode all the real newlines:
+sed "s+$+\\\\r\\\\n+" |
+
+## Delete all the existing newlines:
+tr -d '\r\n' |
+
+## Delete all the non-printable characters:
+sed "s+[^[:print:][:space:]]+\n+g" |
+# dog "$USCRIPTFILE".decompiled.0
+tr -s '\r\n' |
+
+## Select large blocks, which contain "\nclass ____" near their start:
+trimempty |
+grep "^...................." |
+grep "\<[n]*class\>" |
+
+# while read BLOCK
+# do : ## TODO: Extract and "perform" classname
+# done |
+
+## Reformat for output:
+sed 's+$+\n+' |
+sed 's+\(\\r\|\)\\n+\n+g' |
+# sed 's+^}$+}\n+' |
+
+tee "$USCRIPTFILE".decompiled.1 |
+
+cat > "$CURRENT"
+
+while true
+do
+	# NEXT_CLASS=` cat "$CURRENT" | fromline "^class " | head -n 1 `
+	NEXT_LINE=` grep "^class " "$CURRENT" | head -n 1 `
+	NEXT_CLASS=` echo "$NEXT_LINE" | sed 's+^class \([^ ]*\).*+\1+' `
+	echo "Writing: $NEXT_CLASS to $PKGDIR/$NEXT_CLASS.uc" >&2
+	[ ! "$NEXT_CLASS" ] && break
+	(
+		echo "$NEXT_LINE"
+		cat "$CURRENT" | fromline -x "^class " | toline -x "^class "
+	) > "$PKGDIR/$NEXT_CLASS.uc"
+	cat "$CURRENT" | fromline -x "^class " | fromline "^class " | dog "$CURRENT"
+	echo "[Filesize: `filesize "$PKGDIR/$NEXT_CLASS.uc"`/`filesize "$CURRENT"`]" >&2
+done
+
