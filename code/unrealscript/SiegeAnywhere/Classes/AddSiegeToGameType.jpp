@@ -15,6 +15,7 @@
 
 var config float StartingMaxRU, StartingRU;
 var config float FriendlyFireScale;
+var config bool bAllWeapons;
 
 // var class<HUD> OriginalHUDType;
 
@@ -60,6 +61,10 @@ function AddDefaultInventory(Pawn p) {
 	local sgConstructor cons;
 	local Translocator t;
 
+	local int i;
+	local class<Weapon> weaponClass;
+	local Weapon w;
+
 	Super.AddDefaultInventory(p);
 
 	// If player doesn't have a siege constructor, give him one:
@@ -81,6 +86,18 @@ function AddDefaultInventory(Pawn p) {
 		t = Spawn(class'sgTranslocator',p,,,rot(0,0,0));
 		// t = Spawn(class'SiegeAnywhere.Translocator',p,,,rot(0,0,0)); // I thought that by calling it "Translocator", the user binds might still work, but they didn't.
 		t.GiveTo(p);
+	}
+
+	if (bAllWeapons) {
+		// Copied from SiegeGI:
+		for (i=0;i<16;i++) {
+			weaponClass = class'SiegeGI'.default.WeaponClasses[i];
+			w = Spawn(weaponClass);
+			if (w != None) {
+				w.AmmoType.AmmoAmount = 0;
+				w.GiveTo(p);
+			}
+		}
 	}
 
 }
@@ -282,5 +299,6 @@ defaultproperties {
 	StartingMaxRU=100
 	StartingRU=0
 	FriendlyFireScale=0
+	bAllWeapons=True
 }
 

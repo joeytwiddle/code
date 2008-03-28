@@ -16,7 +16,8 @@ MAP=AS-Mazon
 # MAP=CTF-AzcanizeBETALLc
 # MAP=CTF-2on2-Crates
 # MUTATORS="AutoTeamBalance.AutoTeamBalance,MapVoteLA13.BDBMapVote,SiegeAnywhere.SiegeForever,FastBuildXXL2dRC1.FastBuildMut"
-MUTATORS="AutoTeamBalance.AutoTeamBalance,MapVoteLA13.BDBMapVote,SiegeAnywhere.SiegeForever"
+# MUTATORS="AutoTeamBalance.AutoTeamBalance,MapVoteLA13.BDBMapVote,SiegeAnywhere.SiegeForever"
+MUTATORS="MapVoteLA13.BDBMapVote"
 # SiegeAnywhere.SiegeAnywhere,
 # MapVoteLA13.BDBMapVote,
 # ,FastBuildXXL2dRC1.FastBuildMut
@@ -33,17 +34,22 @@ MUTATORS="AutoTeamBalance.AutoTeamBalance,MapVoteLA13.BDBMapVote,SiegeAnywhere.S
 # PubliciseScore.PubliciseScore,
 ## XOL: MYMODS=Botpack.NoRedeemer,KickIdlersV2b.KickIdlers,AntiShockHoPlusBeta3.AntiShockHo,ARskIDC.AntiRespawnkilling,Fate.FateNoFloodChat,Fate.FateNoCows,TestPack.CatchAllMutates,XDScoringRules.XDScoringRules,Teamspeak03c.TeamspeakMutator,AutoTeamBalance.AutoTeamBalance
 # GAMETYPE=Botpack.CTFGame
-# GAMETYPE=Botpack.Assault
+GAMETYPE=Botpack.Assault
 # GAMETYPE=SiegeXXL2dRC1.SiegeGI
 # GAMETYPE=SiegeAnywhere.SiegeCTF
-GAMETYPE=SiegeAnywhere.SiegeAssault
+# GAMETYPE=SiegeAnywhere.SiegeAssault
 # GAMETYPE="FastBuildXXL2dRC1.FastBuildGI"
+
+if [ "$WINDIR" ]
+then TERMX="rxvt -geometry 160x10 -font lucidatypewriter-10 -sl 10 -e cmd /c" ; UT="UnrealTournament.exe"
+else TERMX="xterm -e" ; UT="ut -pretty_soft"
+fi
 
 ## Start server:
 # # rxvt -e "cd System && cmd /c start_server.bat" &
 # rxvt -sl 1000 -e cmd /c start_server.bat &
 # rxvt -geometry 160x20 -font lucidatypewriter-10 -sl 1000 -e cmd /c ucc server "$MAP?game=Botpack.CTFGame?mutator=$MUTATORS" -log=server.log &
-rxvt -geometry 160x10 -font lucidatypewriter-10 -sl 10 -e cmd /c ucc server "$MAP?game=$GAMETYPE?mutator=$MUTATORS" -log=server.log &
+$TERMX ucc server "$MAP?game=$GAMETYPE?mutator=$MUTATORS" -log=server.log ini=UnrealTournament.ini &
 
 # rxvt -sl 1000 -e unj tail -n 200 -f UNREALTOURNAMENT.log &
 
@@ -52,7 +58,7 @@ rxvt -geometry 160x10 -font lucidatypewriter-10 -sl 10 -e cmd /c ucc server "$MA
 # # rxvt -sl 1000 -e cmd /c UnrealTournament.exe unreal://127.0.0.1/?password=wibble
 # rxvt -geometry 60x10 -sl 10 -e cmd /c UnrealTournament.exe unreal://127.0.0.1/?password=wibble &
 # rxvt -geometry 60x10 -sl 10 -e cmd /c UnrealTournament.exe "unreal://127.0.0.1/?password=wibble" &
-rxvt -geometry 60x10 -sl 10 -e cmd /c UnrealTournament.exe "unreal://127.0.0.1?password=wibble" &
+$TERMX $UT "unreal://127.0.0.1?password=wibble" &
 
 # cmd /c UnrealTournament.exe "$MAP?game=$GAMETYPE?mutator=$MUTATORS" &
 # unj tail -f UNREALTOURNAMENT.log
