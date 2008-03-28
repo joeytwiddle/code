@@ -41,13 +41,15 @@ do
 	# NEXT_CLASS=` cat "$CURRENT" | fromline "^class " | head -n 1 `
 	NEXT_LINE=` grep "^class " "$CURRENT" | head -n 1 `
 	NEXT_CLASS=` echo "$NEXT_LINE" | sed 's+^class \([^ ]*\).*+\1+' `
-	echo "Writing: $NEXT_CLASS to $PKGDIR/$NEXT_CLASS.uc" >&2
 	[ ! "$NEXT_CLASS" ] && break
+	echo "Writing: $NEXT_CLASS to $PKGDIR/$NEXT_CLASS.uc" >&2
 	(
 		echo "$NEXT_LINE"
 		cat "$CURRENT" | fromline -x "^class " | toline -x "^class "
 	) > "$PKGDIR/$NEXT_CLASS.uc"
 	cat "$CURRENT" | fromline -x "^class " | fromline "^class " | dog "$CURRENT"
-	echo "[Filesize: `filesize "$PKGDIR/$NEXT_CLASS.uc"`/`filesize "$CURRENT"`]" >&2
+	echo "Filesize was `filesize "$PKGDIR/$NEXT_CLASS.uc"`; remaining is `filesize "$CURRENT"`]" >&2
 done
+
+echo "Please check that $CURRENT is now empty." >&2
 
