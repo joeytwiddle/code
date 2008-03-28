@@ -29,32 +29,33 @@ cd "$TOPDIR"
 
 ## Problem: comments out required packages!  also adds some packages (e.g. Screen) which we don't actually want to recompile
 ##    TODO: But it doesn't have to.  As long as it checks that it is really a custom package.
-# cat compiling.ini | grep EditPackages= |
-# afterlast = |
-# while read PKG
-# do
-	# if [[ -d "$PKG/Classes" ]]
-	# then
-		# if [[ ! -f "System/$PKG.u" ]] || find "$PKG/Classes" -newer "System/$PKG.u" | grep . >/dev/null
-		# then
-			# echo "Needs rebuild: $PKG"
-			# cat compiling.ini | sed "s+^[; ]*EditPackages=$PKG$+EditPackages=$PKG+" | dog compiling.ini
-		# else
-			# echo "Nothing new: $PKG"
-			# cat compiling.ini | sed "s+^[; ]*EditPackages=$PKG$+; EditPackages=$PKG+" | dog compiling.ini
-		# fi
-	# fi
-# done
+cat compiling.ini | dos2unix | grep EditPackages= |
+afterlast = |
+while read PKG
+do
+	if [[ -d "$PKG/Classes" ]]
+	then
+		if [[ ! -f "System/$PKG.u" ]] || find "$PKG/Classes" -newer "System/$PKG.u" | grep . >/dev/null
+		then
+			echo "Needs rebuild: $PKG"
+			cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+EditPackages=$PKG+" | dog compiling.ini
+			[[ -f "System/$PKG.u" ]] && verbosely mv "System/$PKG.u" "System/$PKG.u.last"
+		else
+			echo "Nothing new: $PKG"
+			cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+; EditPackages=$PKG+" | dog compiling.ini
+		fi
+	fi
+done
 
 
 
 
 
-cmd /c make
-
-
-
-
+if [ "$WINDIR" ] # cygwin
+then
+	cmd /c make
+	exit
+fi
 
 # REBUILD=true
 
@@ -75,7 +76,7 @@ do
 		jshinfo "$PKGNAME.u needs a rebuild..."
 		# ls -l "System/$PKGNAME.u"
 		## verbosely del System/$PKGNAME.u
-		mv -f System/$PKGNAME.u System/$PKGNAME.u.last
+		verbosely mv -f System/$PKGNAME.u System/$PKGNAME.u.last
 	fi
 done 2>&1 | grep . || jshwarn "No .u files out-of-date or missing."
 
