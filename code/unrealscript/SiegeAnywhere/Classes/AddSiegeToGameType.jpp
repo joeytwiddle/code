@@ -165,7 +165,7 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 			&& injured.PlayerReplicationInfo.Team != instigatedBy.PlayerReplicationInfo.Team)
 	{
 		if (injured != instigatedBy) {
-			sgSP=sgSpawnProt(injured.FindInventoryType(class'SiegeXXL2dRC1.sgSpawnProt'));
+			sgSP=sgSpawnProt(injured.FindInventoryType(class'sgSpawnProt'));
 			if (sgSP != None ) {
 				//instigatedBy.TakeDamage(damage, instigatedBy, instigatedBy.Location, vect(0,0,0), 'exploded');
 				sMessage="Player "@injured.PlayerReplicationInfo.PlayerName@" is spawn protected.";
@@ -177,7 +177,7 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 				return damage;
 			}
 		} else {
-			sgSP=sgSpawnProt(instigatedBy.FindInventoryType(class'SiegeXXL2dRC1.sgSpawnProt'));
+			sgSP=sgSpawnProt(instigatedBy.FindInventoryType(class'sgSpawnProt'));
 			if ( sgSP != None )
 				sgSP.DisableProt();
 		}
