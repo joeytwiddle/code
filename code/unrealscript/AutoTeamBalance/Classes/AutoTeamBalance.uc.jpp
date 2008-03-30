@@ -24,7 +24,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.4e"
+#define ATB_VERSION "1.4f"
+
+// Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
 
 // TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
 // TODO: Swap 2 or 3 players when it's 4 strong vs 5 weak.
@@ -416,7 +418,7 @@ function PostBeginPlay() {
 	// if (TeamGamePlus(Level.Game) != None && bEnablePlayerCommands) {
 	if (TeamGamePlus(Level.Game) != None && bLetPlayersRebalance) {
 		// TeamGamePlus(Level.Game).TeamChangeMessage = "Type !red or !blue to change team.";
-		TeamGamePlus(Level.Game).TeamChangeMessage = "Type !teams if teams become uneven.";
+		TeamGamePlus(Level.Game).TeamChangeMessage = "Type !teams if they become uneven.";
 	}
 
 	// This is how we detect the moment just before game-start (in CheckGameStart()), to do a final team balance:

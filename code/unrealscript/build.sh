@@ -35,7 +35,7 @@ while read PKG
 do
 	if [[ -d "$PKG/Classes" ]]
 	then
-		if [[ ! -f "System/$PKG.u" ]] || find "$PKG/Classes" -newer "System/$PKG.u" | grep . >/dev/null
+		if [[ ! -f "System/$PKG.u" ]] || find "$PKG/Classes" -type f -newer "System/$PKG.u" | grep -v "/CVS/" | grep . >/dev/null
 		then
 			echo "Needs rebuild: $PKG"
 			cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+EditPackages=$PKG+" | dog compiling.ini
@@ -71,7 +71,7 @@ do
 	then jshinfo "$PKGNAME.u is pending..."
 	elif [ ! -d "$PKGNAME" ]
 	then : # error "Source folder $PKGNAME/ does not exist!"
-	elif [ "$REBUILD" ] || find "$PKGNAME"/Classes -maxdepth 1 '(' -iname "*.uc" -or -iname "*.jpp" ')' -and -newer "System/$PKGNAME.u" | grep . >/dev/null
+	elif [ "$REBUILD" ] || find "$PKGNAME"/Classes -maxdepth 1 -type f '(' -iname "*.uc" -or -iname "*.jpp" ')' -and -newer "System/$PKGNAME.u" | grep . >/dev/null
 	then
 		jshinfo "$PKGNAME.u needs a rebuild..."
 		# ls -l "System/$PKGNAME.u"

@@ -80,28 +80,49 @@ function PostBeginPlay() {
 	FindBoundaries();
 
 	SetTimer(1,True);
+	Enable('Tick');
 
 }
 
 function FindBoundaries() {
-	local FlagBase Flag;
-	foreach AllActors(class'FlagBase', Flag) {
-		TeamOrigin[Flag.Team] = Flag.Location;
-	}
+	FindCTFBoundaries();
 	if (VSize(TeamOrigin[0]) == 0 || VSize(TeamOrigin[1]) == 0) { // This test is not really good - one of the FlagSpots really might be at (0,0,0).  Better to save the FlagBases rather than their Locations.
-		// TODO: calculate TeamOrigin from PlayerStarts
-		// If team PlayerStarts are not grouped, ensure MaxAllowedRadius at least encompasses all PlayerStarts (or make it huge).
 		Log("FastBuild could not find both FlagBases - setting bConfineToBase=False.");
-		bConfineToBase = False;
-		return;
+		FindNonCTFBoundaries();
+		//// TODO: this is desirable for assault, but maybe not TDM and *definitely* not DOM!
+		// bConfineToBase = False;
+		// return;
 	}
+	// MaxAllowedRadius is now deprecated, dotproduct is used instead.
 	MaxAllowedRadius = VSize(TeamOrigin[0] - TeamOrigin[1]) / 2.0;
-	if (MaxAllowedRadius < 2048)
+	if (MaxAllowedRadius < 2048) {
+		Log("FastBuildMut: TeamOrigins look a little close! MaxAllowedRadius="$MaxAllowedRadius);
 		MaxAllowedRadius = 1024 * 256;
+	}
 	// Some maps, e.g. CTF-Burning, have the flags quite close to each other, but the map expands away from them.
 	// Good sanity check.  We could try to detect this, e.g. by looking at PlayerStarts, PathNodes, InventorySpots...
 	// DONE: Or maybe we shouldn't use radius at all - just look for players crossing the plane which divides the to bases.
 	// TODO: Even then, on some maps, you might cross that boundary without actually leaving your base.  E.g. Joust maps, where every PlayerStart will be *beyond* the boundary!
+}
+
+function FindCTFBoundaries() {
+	local FlagBase Flag;
+	foreach AllActors(class'FlagBase', Flag) {
+		TeamOrigin[Flag.Team] = Flag.Location;
+	}
+}
+
+function FindNonCTFBoundaries() {
+	local PlayerStart ps;
+	local int TeamCount[4];
+	TeamCount[0] = 0;
+	TeamCount[1] = 0;
+	TeamOrigin[0] = vect(0,0,0);
+	TeamOrigin[1] = vect(0,0,0);
+	foreach AllActors(class'PlayerStart', ps) {
+		TeamOrigin[ps.Team] = ( TeamOrigin[ps.Team] * TeamCount[ps.Team] + ps.Location * 1 ) / (TeamCount[ps.Team]+1);
+		TeamCount[ps.team]++;
+	}
 }
 
 /* // Not working, possibly Siege fails to call ModifyPlayer().
@@ -213,13 +234,16 @@ event Timer() {
 			SecondsToGo--;
 			// SetTimer(1,True);
 		}
-		CheckBoundaries();
 	}
 	if (bFastBuildOver) {
 		// AddRUGlobally(FastBuildRUPerSecond/4.0); // global trickle in case no core is feeding
 		// DONE: This should really be moved to SiegeAnywhere.
 		// It's only needed when we can't find an sgBaseCore.
 	}
+}
+
+event Tick(float DeltaTime) {
+	CheckBoundaries();
 }
 
 function CheckBoundaries() {
