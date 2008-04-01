@@ -6,11 +6,12 @@ class SiegeForever extends Mutator config(SiegeForever);
 // DONE: When a new Type or Map overwrites an old one, we should really clear all relevant recorded building locations for that type/map!
 // DONE: If the gametype is Assault, then red/blue is not enough - we end up with buildings swapping side!  We should say 0=Attackers and 1=Defenders, and map from that to/from Red/Blue, according to Team Assault(Level.Game).Attacker and Defender.
 // CONSIDER: Could be really clever, and detect whether the map is symmetrical, using some distance-minimisation search on the PlayerStarts, and if so, spawn exactly the same sets of buildings for both teams.
+// DONE: do not load or save sgBaseCore!
 
-#define MaxTeams 2
-#define MaxMaps 32
-#define MaxTypes 16
-#define MAX_ALL 1024
+#define MaxTeams 4
+#define MaxMaps 48
+#define MaxTypes 20
+#define MAX_ALL 3840
 // MAX_ALL must be the multiple of the other 3.
 
 var config bool bAutoLoad,bSaveAtEnd,bAutoSave,bRememberOld,bSpawnFairly;
@@ -237,10 +238,12 @@ function SaveBuildings() {
 	// i = FRand()*MaxRecords;
 	SavedTypes="";
 	foreach AllActors(class'sgBuilding',A) {
+		if (A.IsA('sgBaseCore')) // Buildings we don't save
+			continue;
 		type = String(A.class);
 		TypeI = GetTypeI(type);
 		if (TypeI==-1) {
-			continue;
+			continue; // For some reason we couldn't get a type index for this building.  (Never actually happens!)
 		}
 		if (Instr(SavedTypes,":"$type$":")==-1) {
 			// New type:
