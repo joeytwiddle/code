@@ -275,6 +275,7 @@ function CheckBoundaries() {
 		if (p.bIsPlayer && !p.IsA('Spectator')) {
 			// if (VSize(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team]) > MaxAllowedRadius) {
 			if ((p.Location - origin) Dot (TeamOrigin[p.PlayerReplicationInfo.Team]-origin) < 0) {
+				// Player has passed the invisible boundary wall
 				/*
 				if (FRand()<0.2) {
 					BroadcastMessage(p.getHumanName()$" tried to violate FastBuild boundaries!");
@@ -294,8 +295,10 @@ function CheckBoundaries() {
 					if (VSize(p.Velocity) < 128)
 						p.Velocity = vect(128,0,0);
 					p.Velocity = VSize(p.Velocity) * Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location);
-					p.Velocity.Z = 12;
+					// p.Velocity.Z = 12;
+					p.Velocity.Z += 6;
 					p.SetPhysics(PHYS_Falling);
+					p.PlaySound(class'Shield'.default.EffectSound1);
 				}
 			}
 		}
@@ -315,10 +318,12 @@ function AddRUGlobally(float amount) {
 				if (SiegeGI(Level.Game) == None && sgPRI(a).MaxRU < FastBuildMaxRU) {
 					// If we're not playing siege, and players MaxRU is below what the Max *should* be, then OK let's expand MaxRU...
 					// After that, they can only score by fragging/leeching.
-					sgPRI(a).MaxRU = (sgPRI(a).MaxRU + sgPRI(a).RU) / 2;
+					sgPRI(a).MaxRU = (sgPRI(a).MaxRU + sgPRI(a).RU) / 2; // grow max at half the speed
+					/*
 					if (sgPRI(a).MaxRU > FastBuildMaxRU) {
 						sgPRI(a).MaxRU = FastBuildMaxRU;
 					}
+					*/
 					sgPRI(a).RU = sgPRI(a).MaxRU;
 				} else {
 					sgPRI(a).RU = sgPRI(a).MaxRU;
