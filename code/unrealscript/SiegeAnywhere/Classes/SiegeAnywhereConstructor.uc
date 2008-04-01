@@ -4,9 +4,11 @@
 class SiegeAnywhereConstructor extends sgConstructor;
 
 var config bool bBlockBuildingOnKeypoints;
+var config float HealthBasedRUPerSec;
 
 defaultproperties {
 	bBlockBuildingOnKeypoints=True
+	HealthBasedRUPerSec=1.0 // How much RU to give a player each second (if they have 100 health).
 }
 
 function PlaceIt()
@@ -129,21 +131,26 @@ function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
 					|| (p.IsA('Weapon') && (Owner==p.Owner || Weapon(p).bHeldItem)) // my weapon, or a held weapon
 					|| p.IsA('Projectile')
 					|| p.IsA('Mover') // TODO CONSIDER: the jury is still out on this one
+					|| p.IsA('Decal') // TODO CONSIDER: the jury is still out on this one
+					|| p.IsA('Decoration') // TODO CONSIDER: the jury is still out on this one
+					|| p.IsA('Effect') // TODO CONSIDER: the jury is still out on this one
 				)
 			&&
 				( // these actors always block building when near:
-					p.IsA('Trigger')
+					true // So we can collect the names of relevant actors.  Add ones we wish to whitelist above.
+					|| p.IsA('Trigger')
 					|| p.IsA('FlagBase')
 					// || p.IsA('CTFFlag')
 					|| p.IsA('FortStandard')
 					|| p.IsA('PlayerStart')
+					|| p.IsA('InventorySpot')
 					|| (p.IsA('Weapon') && Owner!=p.Owner && !Weapon(p).bHeldItem) // pickup point, and not my weapon, or held by another
 					|| (p.IsA('Inventory') && Owner!=p.Owner && !Inventory(p).bHeldItem) // pickup point, and not my weapon, or held by another
 					|| (p.IsA('Pickup') && Owner!=p.Owner && !Pickup(p).bHeldItem) // pickup point, and not my weapon, or held by another
-					|| true // So we can collect the names of relevant actors.  Add ones we wish to whitelist above.
 				)
 			&&
-				VSize(p.Location - Location) < 128
+				VSize(p.Location - Location) < 96
+				// 128
 				// 96 seemed a little too close to me; mines could still reach a player grabbing the flag.
 				// I wouldn't mind expanding it even more.  Although it could end up blocking too much of the map.
 		) {
@@ -164,5 +171,29 @@ function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
 		}
 	}
 	return false;
+}
+
+
+
+function PostBeginPlay() {
+	SetTimer(1,True);
+}
+
+event Timer() {
+	local PlayerPawn p;
+	local sgPRI pri;
+	p = PlayerPawn(Owner);
+	if (p == None)
+		return;
+	pri = sgPRI(p.PlayerReplicationInfo);
+	if (pri == None)
+		return;
+	if (HealthBasedRUPerSec > 0) {
+		pri.AddRU( HealthBasedRUPerSec * p.Health / 100.0 );
+		if (pri.RU > pri.MaxRU) {
+			pri.MaxRU = (pri.MaxRU + pri.RU) / 2; // grow max at half the speed
+			pri.RU = pri.MaxRU;
+		}
+	}
 }
 
