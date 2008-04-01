@@ -21,9 +21,9 @@ simulated function PostRender( canvas Canvas ) {
 
 	if (bDrawClock && !bHideHUD && !bHideAllWeapons) { // I decided to hide it if weapons are hidden, and therefore there is nothing else in the top-right.
 		if (bHideStatus)
-			clockX = Canvas.ClipX - 128*Scale;
+			clockX = Canvas.ClipX - (128-4)*Scale;
 		else
-			clockX = Canvas.ClipX - 256*Scale;
+			clockX = Canvas.ClipX - (256-4)*Scale;
 		if (bHideAllWeapons)
 			clockY = 32*Scale;
 		else
@@ -81,7 +81,8 @@ simulated function DrawTimeAt(Canvas Canvas, float X, float Y) { // Modified
 	}
 	Canvas.CurX -= 4 * ClockScale;
 	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 32, 64, 25.0, 64.0);
-	Canvas.CurX += 3 * ClockScale;
+	// Canvas.CurX += 3 * ClockScale;
+	Canvas.CurX += 1 * ClockScale;
 
 	d = Seconds/10;
 	Canvas.DrawTile(Texture'BotPack.HudElements1', ClockScale*25, 64*ClockScale, 25*d, 0, 25.0, 64.0);

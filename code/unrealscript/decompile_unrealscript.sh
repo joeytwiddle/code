@@ -13,8 +13,14 @@ sed "s+$+\\\\r\\\\n+" |
 ## Delete all the existing newlines:
 tr -d '\r\n' |
 
+tee /tmp/decompile_unrealscript.debug.1 |
+
 ## Delete all the non-printable characters:
-sed "s+[^[:print:][:space:]]+\n+g" |
+sed "s+[^[:print:][:space:]]+\n+g" | ## Works with sed 4.1.2 - takes forever with sed 4.1.5
+# sed -u "s+[^[:print:][:space:]][^[:print:][:space:]]*+\n+g" | ## Works with sed 4.1.2 - takes forever with sed 4.1.5
+# striptermchars |
+tee /tmp/decompile_unrealscript.debug.2 |
+
 # dog "$USCRIPTFILE".decompiled.0
 tr -s '\r\n' |
 
@@ -51,5 +57,6 @@ do
 	echo "Filesize was `filesize "$PKGDIR/$NEXT_CLASS.uc"`; remaining is `filesize "$CURRENT"`]" >&2
 done
 
-echo "Please check that $CURRENT is now empty." >&2
+# echo "Please check that $CURRENT is now empty." >&2
+[ 0 = "`filesize "$CURRENT"`" ] || jshwarn "$CURRENT should be empty but it is not!"
 

@@ -83,8 +83,8 @@ function AddDefaultInventory(Pawn p) {
 	t = Translocator(p.FindInventoryType(class'Botpack.Translocator'));
 	if (t != None) {
 		t.Destroy();
-		t = Spawn(class'sgTranslocator',p,,,rot(0,0,0));
-		// t = Spawn(class'SiegeAnywhere.Translocator',p,,,rot(0,0,0)); // I thought that by calling it "Translocator", the user binds might still work, but they didn't.
+		// t = Spawn(class'sgTranslocator',p,,,rot(0,0,0));
+		t = Spawn(class'SiegeAnywhere.SiegeAnywhereTranslocator',p,,,rot(0,0,0)); // I thought that by calling it "Translocator", the user binds might still work, but they didn't.
 		t.GiveTo(p);
 	}
 
@@ -94,6 +94,7 @@ function AddDefaultInventory(Pawn p) {
 			weaponClass = class'SiegeGI'.default.WeaponClasses[i];
 			w = Spawn(weaponClass);
 			if (w != None) {
+				Log(Self$".AddDefaultInventory(): Spawned "$w$" giving it to "$p);
 				w.AmmoType.AmmoAmount = 0;
 				w.GiveTo(p);
 			}

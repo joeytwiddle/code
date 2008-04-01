@@ -5,6 +5,7 @@ Object=(Name=SiegeAnywhere.SiegeTDM,Class=Class,MetaClass=Botpack.TournamentGame
 Object=(Name=SiegeAnywhere.SiegeDM,Class=Class,MetaClass=Botpack.TournamentGameInfo)
 Object=(Name=SiegeAnywhere.SiegeDomination,Class=Class,MetaClass=Botpack.TournamentGameInfo)
 Object=(Name=SiegeAnywhere.FastBuildMut,Class=Class,MetaClass=Engine.Mutator,Description="FastBuild")
+Object=(Name=SiegeAnywhere.SiegeForever,Class=Class,MetaClass=Engine.Mutator,Description="SiegeForever")
 Preferences=(Caption="FastBuildGI",Parent="Game Types",Class=SiegeAnywhere.FastBuildGI,Immediate=True)
 Preferences=(Caption="SiegeCTF",Parent="Game Types",Class=SiegeAnywhere.SiegeCTF,Immediate=True)
 Preferences=(Caption="SiegeAssault",Parent="Game Types",Class=SiegeAnywhere.SiegeAssault,Immediate=True)

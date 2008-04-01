@@ -1,5 +1,11 @@
 // For convenience, FastBuildMut can be invoked by selecting the FastBuildGI gametype.  But adding the mutator to a classic Siege game has the same effect.
 
+// TODO: colours are shite
+// TODO: damage protection should be optional - if you shoot you lose it
+// TODO: Problem with: sgTDM and sgDOM - sometimes spawnpoints are outside the safe area!  Ideally they wouldn't have one.
+
+// DONE: no selfharm during the fastbuild is ok, but fall harm and zone harm should be ON!  ok now only harm from other players is blocked
+
 // Note FastBuild is only really for classic Siege, not for SiegeAnywhere.
 // E.g. in SiegeCTF and SiegeAssault, players can make flagruns, or complete AS objectives, during the 3 minute period when weapons cannot harm them!
 
@@ -26,6 +32,7 @@ var config float FastBuildMinutes;
 var config int FastBuildRUPerSecond;
 var config int FastBuildMaxRU;
 // var config int PostbuildMaxRU;
+var config bool bNoDamage;
 var config bool bConfineToBase;
 
 // Config vars but not yet committed to config, because I might rename or remove them, so I don't yet want them written in the .ini file.
@@ -44,6 +51,7 @@ defaultproperties {
 	FastBuildRUPerSecond=15
 	FastBuildMaxRU=400 // We could just use SiegeGI.StartingMaxRU, unless we want a *different* setting for FastBuild + normal Siege.
 	// PostbuildMaxRU=1000
+	bNoDamage=True
 	bConfineToBase=True
 
 	bMoreFlashing=True
@@ -87,17 +95,22 @@ function PostBeginPlay() {
 function FindBoundaries() {
 	FindCTFBoundaries();
 	if (VSize(TeamOrigin[0]) == 0 || VSize(TeamOrigin[1]) == 0) { // This test is not really good - one of the FlagSpots really might be at (0,0,0).  Better to save the FlagBases rather than their Locations.
-		Log("FastBuild could not find both FlagBases - setting bConfineToBase=False.");
+		Log("FastBuildMut.FindBoundaries(): Could not find both FlagBases.");
 		FindNonCTFBoundaries();
 		//// TODO: this is desirable for assault, but maybe not TDM and *definitely* not DOM!
 		// bConfineToBase = False;
 		// return;
 	}
 	// MaxAllowedRadius is now deprecated, dotproduct is used instead.
+	Log("FastBuildMut.FindBoundaries(): MaxAllowedRadius="$MaxAllowedRadius);
 	MaxAllowedRadius = VSize(TeamOrigin[0] - TeamOrigin[1]) / 2.0;
-	if (MaxAllowedRadius < 2048) {
-		Log("FastBuildMut: TeamOrigins look a little close! MaxAllowedRadius="$MaxAllowedRadius);
-		MaxAllowedRadius = 1024 * 256;
+	if (MaxAllowedRadius < 4096) { // DM-Richocet was 409
+		// MaxAllowedRadius = 1024 * 256;
+		Log("FastBuildMut.FindBoundaries(): TeamOrigins look a little close!");
+		if (bConfineToBase) {
+			Log("Disabling bConfineToBase");
+		}
+		bConfineToBase = False;
 	}
 	// Some maps, e.g. CTF-Burning, have the flags quite close to each other, but the map expands away from them.
 	// Good sanity check.  We could try to detect this, e.g. by looking at PlayerStarts, PathNodes, InventorySpots...
@@ -120,9 +133,10 @@ function FindNonCTFBoundaries() {
 	TeamOrigin[0] = vect(0,0,0);
 	TeamOrigin[1] = vect(0,0,0);
 	foreach AllActors(class'PlayerStart', ps) {
-		TeamOrigin[ps.Team] = ( TeamOrigin[ps.Team] * TeamCount[ps.Team] + ps.Location * 1 ) / (TeamCount[ps.Team]+1);
-		TeamCount[ps.team]++;
+		TeamOrigin[ps.TeamNumber] = ( TeamOrigin[ps.TeamNumber] * TeamCount[ps.TeamNumber] + ps.Location * 1 ) / (TeamCount[ps.TeamNumber]+1);
+		TeamCount[ps.TeamNumber]++;
 	}
+	Log("FastBuildMut.FindNonCTFBoundaries(): Found "$TeamCount[0]$" PlayerStarts for Red, and "$TeamCount[1]$" for blue.");
 }
 
 /* // Not working, possibly Siege fails to call ModifyPlayer().
@@ -194,7 +208,11 @@ event Timer() {
 			ClearAllProgressMessages();
 			DoGameStart();
 		} else {
-			FlashToAllPlayers("Weapons will not work during the FastBuild",colorWhite,3,0,True,False);
+			if (bConfineToBase) {
+				FlashToAllPlayers("You may not leave your base during the FastBuild",colorWhite,3,0,True,False);
+			} else {
+				FlashToAllPlayers("Weapons will not work during the FastBuild",colorWhite,3,0,True,False);
+			}
 			FlashToAllPlayers("Resource rate = "$FastBuildRUPerSecond$" RU/sec",colorWhite,4,0,True,False);
 			CheckForGameStart();
 			return;
@@ -202,14 +220,14 @@ event Timer() {
 	}
 	if (!bFastBuildOver) {
 		if (SecondsToGo <= 0) {
-			Log("FastBuildMut.Timer() FastBuild Over");
+			bFastBuildOver = True;
+			Log("FastBuildMut.Timer() FastBuild ended");
 			// FlashToAllPlayers("Weapons are Live - Assault the Base!",colorRed,4);
-			FlashToAllPlayers("FastBuild Over",colorGreen,2,0,False,True);
+			FlashToAllPlayers("FastBuild is over",colorGreen,2,0,False,True);
 			if (bMoreFlashing) {
 				FlashToAllPlayers("Weapons are LIVE!",colorRed,3,0,True,False);
 				FlashToAllPlayers("Assault the Base!",colorYellow,4,0,True,False);
 			}
-			bFastBuildOver = True;
 			// SecondsToGo = 330;
 			// SetStage();
 			// SetTimer(0,False);
@@ -228,7 +246,7 @@ event Timer() {
 				FlashToAllPlayers("Weapons go Live in 30 seconds...",colorWhite,2,0,False,True);
 			}
 			if (SecondsToGo <= 10) {
-				FlashToAllPlayers(SecondsToGo $ " ...",colorWhite,2,0,False,True);
+				FlashToAllPlayers(SecondsToGo $ " ...",colorWhite,2,0,False, (SecondsToGo==10) );
 			}
 
 			SecondsToGo--;
@@ -243,7 +261,8 @@ event Timer() {
 }
 
 event Tick(float DeltaTime) {
-	CheckBoundaries();
+	if (bGameStarted && !bFastBuildOver)
+		CheckBoundaries();
 }
 
 function CheckBoundaries() {
@@ -256,16 +275,26 @@ function CheckBoundaries() {
 		if (p.bIsPlayer && !p.IsA('Spectator')) {
 			// if (VSize(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team]) > MaxAllowedRadius) {
 			if ((p.Location - origin) Dot (TeamOrigin[p.PlayerReplicationInfo.Team]-origin) < 0) {
-				p.ClientMessage("Warning: you may not leave your base during the FastBuild!");
+				/*
 				if (FRand()<0.2) {
 					BroadcastMessage(p.getHumanName()$" tried to violate FastBuild boundaries!");
 					p.Died(None, '', p.Location);
 				} else {
+					*/
+				if (FRand()<0.25) {
+					p.TakeDamage(10*FRand(),p,p.Location,vect(0,0,0),'sgSpecial'); // self-damage
+					p.ClientMessage("Warning: you may not leave your base during the FastBuild!");
+				}
+				if (true) {
 					if (p.IsA('PlayerPawn'))
 						FlashMessageToPlayer(PlayerPawn(p),"Warning: you may not leave your base during the FastBuild!",colorYellow,0,2,False,False);
-					p.SetLocation(TeamOrigin[p.PlayerReplicationInfo.Team] + Normal(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team])*MaxAllowedRadius);
-					p.Velocity = Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location) * 1024;
-					p.Velocity.Z = 1024;
+					// TODO: this result is according to the spheres and not the wall - but we are detecting using the wall!
+					// p.SetLocation(TeamOrigin[p.PlayerReplicationInfo.Team] + Normal(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team])*MaxAllowedRadius);
+					// p.Velocity = Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location) * 128;
+					if (VSize(p.Velocity) < 128)
+						p.Velocity = vect(128,0,0);
+					p.Velocity = VSize(p.Velocity) * Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location);
+					p.Velocity.Z = 12;
 					p.SetPhysics(PHYS_Falling);
 				}
 			}
@@ -278,10 +307,22 @@ function AddRUGlobally(float amount) {
 	foreach AllActors(class'Actor', a) {
 		if (sgPRI(a) != None) {
 			sgPRI(a).AddRU(amount);
-			// We should not affect MaxRU.  FastBuild is meant to run with classic Siege, it does not apply in SiegeCTF or SiegeAssault.
-			// Ah but we must at least check MaxRU, otherwise we tend to exceed it, in SiegeCTF at least.
+
+			// FastBuild is meant to run with classic Siege, where MaxRU is dealt with at game start and then by the cores.
+			// Although it wasn't designed for SiegeAnywhere, it can work in *some* of those types.
 			if (sgPRI(a).RU >= sgPRI(a).MaxRU) {
-				sgPRI(a).RU = sgPRI(a).MaxRU;
+				// If SiegeCTF starts with MaxRU 100, we should expand it as they score.
+				if (SiegeGI(Level.Game) == None && sgPRI(a).MaxRU < FastBuildMaxRU) {
+					// If we're not playing siege, and players MaxRU is below what the Max *should* be, then OK let's expand MaxRU...
+					// After that, they can only score by fragging/leeching.
+					sgPRI(a).MaxRU = (sgPRI(a).MaxRU + sgPRI(a).RU) / 2;
+					if (sgPRI(a).MaxRU > FastBuildMaxRU) {
+						sgPRI(a).MaxRU = FastBuildMaxRU;
+					}
+					sgPRI(a).RU = sgPRI(a).MaxRU;
+				} else {
+					sgPRI(a).RU = sgPRI(a).MaxRU;
+				}
 			}
 			/*
 			if (sgPRI(a).RU >= sgPRI(a).MaxRU) { // at max
@@ -302,11 +343,14 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	// if (!bGameStarted) { // FALLBACK in case DoGameStart() is not called from FastBuildGI.
 		// DoGameStart();
 	// }
-	if (bGameStarted && !bFastBuildOver) {
-		ActualDamage = 0;
-		// DamageType = None;
-		// Momentum = Momentum * 2.0;
-		// Momentum = Momentum * 0.0;
+	if (bGameStarted && !bFastBuildOver && bNoDamage) {
+		// Only block if damage was caused by another player or an enemy building
+		if (/*PlayerPawn(InstigatedBy) != None*/ InstigatedBy != None && DamageType != 'Fell' && DamageType != 'Suicided') {
+			ActualDamage=0;
+			// DamageType = None;
+			// Momentum = Momentum * 2.0;
+			// Momentum = Momentum * 0.0;
+		}
 	}
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
 }
@@ -325,7 +369,7 @@ function ClearAllProgressMessages() {
 }
 
 function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum, optional int Duration, optional bool bAdditional, optional bool bBeep) {
-	Log("FastBuildMut.FlashMessageToPlayer("$p.getHumanName()$"): "$Msg);
+	// Log("FastBuildMut.FlashMessageToPlayer("$p.getHumanName()$"): "$Msg);
 	if (Duration == 0)
 		Duration = 5;
 	if (!bAdditional)

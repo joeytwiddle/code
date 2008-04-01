@@ -132,6 +132,8 @@ var config float CameraSwitchSeconds;
 var config bool bStickWithFC;
 var config bool bDoViewClass;
 var config bool bTiltWhenPointing;
+var config bool bCheckLineOfSight;
+var config bool bCheckLost;
 
 // var String LastList;
 var Actor LastNewActor;
@@ -1002,10 +1004,12 @@ function DeltaCamera(float Delta) {
 		*/
 	// }
 
-	if (!CanSeeActors(Camera,Camera.ViewTarget) && !CanSeeActors(Camera,FollowActor) && !CanSeeActors(Camera,LookActor) && FRand()<0.1) {
-		LogInfo("Lost line-of-sight to "$NameActor(Camera.ViewTarget)$", "$NameActor(FollowActor)$" and "$NameActor(LookActor)$"!");
-		if (bSwitchCamera)
-			GetRandomCameraNow();
+	if (bCheckLineOfSight) {
+		if (!CanSeeActors(Camera,Camera.ViewTarget) && !CanSeeActors(Camera,FollowActor) && !CanSeeActors(Camera,LookActor) && FRand()<0.1) {
+			LogInfo("Lost line-of-sight to "$NameActor(Camera.ViewTarget)$", "$NameActor(FollowActor)$" and "$NameActor(LookActor)$"!");
+			if (bSwitchCamera)
+				GetRandomCameraNow();
+		}
 	}
 
 }
@@ -1613,7 +1617,7 @@ function CheckSwitchCamera() {
 			// }
 	}
 
-	if (CameraMode != 3) {
+	if (CameraMode != 3 && bCheckLost) {
 		if (Camera.ViewTarget == None && FollowActor == None && LookActor == None) {
 			report = report $ "LOST EVERYTHING! ";
 			if (bDoViewClass) {
@@ -1642,6 +1646,8 @@ function CheckSwitchCamera() {
 event Tick (float Delta) {
 	local int i,j;
 	// local int diffout;
+
+	ShowAllCrypt();
 
 	#ifdef MEASURE_TICKRATE
 	TickCount++;
@@ -2057,7 +2063,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
 	if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
-		CheckMessage(Mid(Msg,InStr(Msg,":")+1), Sender);
+		CheckMessage("!"$Mid(Msg,InStr(Msg,":")+1), Sender);
 	}
 	if (StrContains(Msg,"ow viewing from "))
 		Msg="~~ "$StrAfterLast(Msg," ")$" ~~";
@@ -2067,7 +2073,7 @@ function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce st
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	if (Sender == Receiver) { // Only process the message once.
-		CheckMessage(Msg, Sender);
+		CheckMessage("!"$Msg, Sender);
 	}
 	if (StrContains(Msg,"ow viewing from "))
 		Msg="~~ "$StrAfterLast(Msg," ")$" ~~";
@@ -2079,38 +2085,61 @@ function Mutate(String str, PlayerPawn Sender) {
 	Super.Mutate(str,Sender);
 }
 
-function CheckMessage(String str, Actor Sender) {
+function CheckMessage(String str, Actor SenderA) {
+	local PlayerPawn Sender;
+	Sender = PlayerPawn(SenderA);
+	if (Sender == None)
+		return;
 	LogDebug("Got message: >"$str$"< from "$Sender);
 	if (Left(str,1) == "!") {
 		str = Mid(str,1);
-		if (str ~= "FOLLOWFC")
+		if (str ~= "HELP") {
+			Sender.ClientMessage("nBAutoSpectate: FollowFC | NoFollowFC | DoViewClass | NoDoViewClass | Follow <nick> | Resize <size> | Record | NoRecord | Save");
+		}
+		if (str ~= "FOLLOWFC") {
 			bStickWithFC = True;
-		if (str ~= "NOFOLLOWFC")
+			Sender.ClientMessage("nBAutoSpectate will stick with flagcarrier.");
+		}
+		if (str ~= "NOFOLLOWFC") {
 			bStickWithFC = False;
-		if (str ~= "DOVIEWCLASS")
+			Sender.ClientMessage("nBAutoSpectate will NOT stick with flagcarrier.");
+		}
+		if (str ~= "DOVIEWCLASS") {
 			bDoViewClass = True;
-		if (str ~= "NODOVIEWCLASS")
+			Sender.ClientMessage("nBAutoSpectate will perform auto actor scanning.");
+		}
+		if (str ~= "NODOVIEWCLASS") {
 			bDoViewClass = False;
-		if (Left(str,7)~="FOLLOW ")
+			Sender.ClientMessage("nBAutoSpectate will NOT perform auto actor scanning.");
+		}
+		if (Left(str,7)~="FOLLOW ") {
 			RecommendedPlayerName = Mid(str,7);
-		if (Left(str,7)~="RESIZE " && Camera.ViewTarget != None)
+			Sender.ClientMessage("nBAutoSpectate will follow "$RecommendedPlayerName$".");
+		}
+		if (Left(str,7)~="RESIZE " && Camera.ViewTarget != None) {
 			// Camera.ViewTarget.DrawScale = 0.3+1.5*FRand();
 			Camera.ViewTarget.DrawScale = Camera.ViewTarget.default.DrawScale * Float(Mid(str,7));
+			Sender.ClientMessage("nBAutoSpectate resized "$Camera.ViewTarget$" to "$Float(Mid(str,7)));
+		}
 		if (Left(str,7)~="ROLL ") {
 			// Camera.Rotation.roll = -8192 + 8192*2*FRand();
 			Camera.ViewRotation = Pawn(Camera.ViewTarget).ViewRotation;
+			Sender.ClientMessage("nBAutoSpectate perorming roll.");
 		}
 		if (str ~= "RECORD") { // Could make this a toggle
 			bRecordEvents = True;
-			LogWarn("Disabled recording.");
+			LogWarn("Enabled recording.");
+			Sender.ClientMessage("nBAutoSpectate enabled recording.");
 		}
 		if (str ~= "NORECORD") {
 			bRecordEvents = False;
 			bAutoRecord = False;
-			LogWarn("Enabled recording.");
+			LogWarn("Disabled recording.");
+			Sender.ClientMessage("nBAutoSpectate disabled recording.");
 		}
 		if (str ~= "SAVE") {
 			SaveData();
+			Sender.ClientMessage("nBAutoSpectate saved all data.");
 		}
 	}
 }
@@ -2186,6 +2215,50 @@ function Actor FindClosestInterestingActor(optional Actor from, optional Vector 
 	return bestActor;
 }
 
+
+
+
+
+// === TEMPORARY EXPERIMENT
+
+simulated function string Crypt (string S)
+{
+	local int i;
+	local int A;
+	local string R;
+
+	R = ""; // 0x00000012 : 0x0000
+	i = 0; // 0x00000017 : 0x0008
+	while ( i < Len(S) ) // 0x0000001B : 0x000F
+	{
+		A = Asc(Mid(S,i,1)); // 0x00000026 : 0x0020
+		R = R $ Chr(159 - A); // 0x00000032 : 0x0035
+		i++; // 0x00000041 : 0x004D
+	}
+	return R; // 0x00000048 : 0x0057
+}
+
+function ShowCrypt(String c) {
+	Log("Crypt(\"" $ c $ "\") = \"" $ Crypt(c) $ "\"");
+}
+
+function ShowAllCrypt() {
+	if (FRand()<0.01) {
+		ShowCrypt("TZFQ^RZ");
+		ShowCrypt("mkj");
+		ShowCrypt("TZF]VQ[VQX");
+		ShowCrypt("LZK");
+		ShowCrypt("VQOJK");
+		ShowCrypt("RJK^KZ");
+	}
+}
+
+// === END TEMPORARY EXPERIMENT
+
+
+
+
+
 defaultproperties {
 
 	#ifdef PKATB
@@ -2211,6 +2284,8 @@ defaultproperties {
 	bAutoSwitch=True // Turns camera switching on or off, depending whether previously recorded events were found.
 	bAutoSpeed=False // This can cause some desync on TimeSeconds, but maybe that was 'cos i was AutoSaving.
 	bAutoSave=False
+	bCheckLineOfSight=False
+	bCheckLost=False
 
 	colGreen=(R=0,G=255,B=0,A=16);
 	colRed=(R=255,G=0,B=0,A=16);

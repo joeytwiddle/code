@@ -30,7 +30,7 @@ defaultproperties {
 	bAutoLoad=True       // When set, stored buildings will be loaded at the start of the game.  (Otherwise only accessible through "mutate load".)
 	bSaveAtEnd=True      // When set, at the end of the game the remaining buildings will be saved.  (May cause lag at 0:00 if game goes into overtime.)
 	bAutoSave=False      // When set, buildings in the game will be saved at regular intervals (CAUSES LAG!).
-	bRememberOld=False   // When set, will keep records of old buildings which have been destroyed.  (Will only remember buildings built and destroyed mid-game, if bAutoSave=True.)
+	bRememberOld=False   // When set, will keep records of old buildings which have been destroyed.  (Will only remember buildings destroyed mid-game if bAutoSave=True.)
 	bSpawnFairly=True    // When set, on loading buildings, will only spawn an equal number of buildings of each type for each team.
 }
 
@@ -50,20 +50,29 @@ event Timer() {
 
 function Mutate(String str, PlayerPawn Sender) {
 	if (Sender.bAdmin) {
-		if (str ~= "save" || str ~= "savebuildings") {
+		// You do not need to be an admin to save the buildings:
+		if (str ~= "SAVE" || str ~= "SAVEBUILDINGS") {
 			SaveBuildings();
 		}
-		if (str ~= "load" || str ~= "loadbuildings") {
-			TryToLoadBuildings(); // Note: Refuses to load if a load has already occurred!  I suspect that is desirable.
+		// Only an admin can run these commands, or any player in the first 10 seconds of the game.
+		if (Sender.bAdmin || Level.TimeSeconds < 10) {
+			if (str ~= "LOAD" || str ~= "LOADBUILDINGS") {
+				TryToLoadBuildings();
+				BroadcastMessage(Sender.getHumanName()$" has loaded some buildings.  Type mutate save to save them..");
+			}
+			if (str ~= "CLEAR" || str ~= "CLEARBUILDINGS" || str ~= "KILLBUILDINGS" || str ~= "RESET") {
+				KillAllBuildings(); // Admin could also try: admin killall sgBuilding
+				// BroadcastMessage(Sender.getHumanName()" cleared all the buildings.");
+				BroadcastMessage(Sender.getHumanName()$" cleared all the buildings.  Type mutate load to re-load them.");
+			}
 		}
 	}
+	Super.Mutate(str,Sender);
 }
 
 function TryToLoadBuildings() {
 	local Pawn redOwner,blueOwner;
 	local Pawn p;
-	if (bDoneLoad)
-		return;
 	redOwner = None;
 	blueOwner = None;
 	// We must find a PlayerPawn for every building.
@@ -80,10 +89,19 @@ function TryToLoadBuildings() {
 		}
 	}
 	if (redOwner != None && blueOwner != None) {
-		if (bAutoLoad)
+		if (bAutoLoad) {
 			LoadBuildings(redOwner,blueOwner);
+			BroadcastMessage("Buildings were auto-loaded.  Type mutate clear to remove them.");
+		}
 		bDoneLoad=True;
 		SetTimer(60,True);
+	}
+}
+
+function KillAllBuildings() {
+	local sgBuilding b;
+	foreach AllActors(class'sgBuilding',b) {
+		b.Destroy();
 	}
 }
 
