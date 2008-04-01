@@ -8,7 +8,7 @@ var config float HealthBasedRUPerSec;
 
 defaultproperties {
 	bBlockBuildingOnKeypoints=True
-	HealthBasedRUPerSec=1.0 // How much RU to give a player each second (if they have 100 health).
+	HealthBasedRUPerSec=1.0 // For non Siege games, how much RU to give a player each second (if they have 100 health).
 }
 
 function PlaceIt()
@@ -188,7 +188,7 @@ event Timer() {
 	pri = sgPRI(p.PlayerReplicationInfo);
 	if (pri == None)
 		return;
-	if (HealthBasedRUPerSec > 0) {
+	if (HealthBasedRUPerSec > 0 && SiegeGI(Level.Game)==None) {
 		pri.AddRU( HealthBasedRUPerSec * p.Health / 100.0 );
 		if (pri.RU > pri.MaxRU) {
 			pri.MaxRU = (pri.MaxRU + pri.RU) / 2; // grow max at half the speed
