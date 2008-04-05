@@ -30,6 +30,12 @@
 
 
 
+// Changes since last release:
+// QuickSort
+// Reduced MinSecondsBeforeRebalance to 2 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
+
+// Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
+
 // TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
 // TODO: Swap 2 or 3 players when it's 4 strong vs 5 weak.
 // TODO: Swap latest player to join with last player to join, if it improves teams.
@@ -264,7 +270,7 @@ var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMa
 var config Color strengthColor,warnColor;
 defaultproperties {
  bDebugLogging=False
- bLogDeletedRecords=True
+ bLogDeletedRecords=False
  bBroadcastStuff=True
  bBroadcastTeamStrengths=True //@unfinished TODO TESTING !!!
  bFlashTeamStrengths=False //@unfinished TODO TESTING !!!
@@ -291,7 +297,7 @@ defaultproperties {
  bAllowSemiAdminForceTravel=True
  bBalanceBots=False
  bRankBots=False
- MinSecondsBeforeRebalance=20
+ MinSecondsBeforeRebalance=2
  bNeverRebalanceWhenTeamsAreEven=False
  SemiAdminPass="defaults_to_admin_pass"
  bAutoBalanceTeamsForCTF=True
@@ -366,7 +372,7 @@ function PostBeginPlay() {
  // if (TeamGamePlus(Level.Game) != None && bEnablePlayerCommands) {
  if (TeamGamePlus(Level.Game) != None && bLetPlayersRebalance) {
   // TeamGamePlus(Level.Game).TeamChangeMessage = "Type !red or !blue to change team.";
-  TeamGamePlus(Level.Game).TeamChangeMessage = "Type !teams if teams become uneven.";
+  TeamGamePlus(Level.Game).TeamChangeMessage = "Type !teams if they become uneven.";
  }
  // This is how we detect the moment just before game-start (in CheckGameStart()), to do a final team balance:
  SetTimer(1,True);
@@ -984,7 +990,7 @@ function DoGameStart() {
     // But on XOL, when the game does start, line 3 is used to display Highest # covers.  So on XOL, we use line 5.
     // #undef LINENR_FOR_FLASH
     // #define LINENR_FOR_FLASH -1
-    // TODO CONSIDER: PlayerPawn(p).ClearProgressMessages();
+    // CONSIDER: PlayerPawn(p).ClearProgressMessages();
     // TODO: For Assault, we need to move 1 line up.
     FlashMessageToPlayer(PlayerPawn(p),"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,3);
    }
@@ -1909,31 +1915,27 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
  local int i;
  local string player_nick;
  local string player_ip;
+ local bool bNickMatches;
+ local bool bIPMatches;
  player_nick = GetDBName(p);
  player_ip = getIP(p);
  found = -1;
  for (i=0;i<MaxPlayerData;i++) {
+  bNickMatches = ( player_nick == nick[i] );
+  bIPMatches = ( player_ip == ip[i] );
   // Exact match! return the index immediately
-  if (player_nick == nick[i] && player_ip == ip[i]) {
+  if (bNickMatches && bIPMatches) {
    found = i;
    if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); };
    return found;
-  } else if (player_ip == ip[i]) {
-   if (found >= 0) {
-    if (True) {
-     Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
-    }
-   }
+  } else if (bIPMatches) {
+   if (False && found >= 0) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); }
    if (found == -1 || NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])) { // take this record only if the last one found is older
     found = i; // matching ip
     if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); };
    }
-  } else if (player_nick == nick[i] /* && found == -1 */ ) { // the part commented out was to prefer matching_ip+different_nick over matching_nick+different_ip
-   if (found >= 0) {
-    if (True) {
-     Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE NICK match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
-    }
-   }
+  } else if (bNickMatches /* && found == -1 */ ) { // the part commented out was to prefer matching_ip+different_nick over matching_nick+different_ip
+   if (False && found >= 0) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE NICK match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); }
    if (found == -1 || NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])) { // take this record only if the last one found is older
     found = i;
     if (bDebugLogging) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[found]$""); };

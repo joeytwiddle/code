@@ -2,6 +2,8 @@
 // nBAutoSpectate.
 //================================================================================
 
+// TODO: mutate listfakers
+
 // BUG: under linux at least, if you watch a demo with ?3rdperson, console messages are not displayed, so nBAS cannot record events.
 // It may appear in top-left during 1stperson, but if it doesn't appear in the console, nBAutoSpectate won't pick it up!
 
@@ -1647,8 +1649,6 @@ event Tick (float Delta) {
 	local int i,j;
 	// local int diffout;
 
-	ShowAllCrypt();
-
 	#ifdef MEASURE_TICKRATE
 	TickCount++;
 	if (Level.TimeSeconds >= TickSecond+1.0) {
@@ -2214,50 +2214,6 @@ function Actor FindClosestInterestingActor(optional Actor from, optional Vector 
 	}
 	return bestActor;
 }
-
-
-
-
-
-// === TEMPORARY EXPERIMENT
-
-simulated function string Crypt (string S)
-{
-	local int i;
-	local int A;
-	local string R;
-
-	R = ""; // 0x00000012 : 0x0000
-	i = 0; // 0x00000017 : 0x0008
-	while ( i < Len(S) ) // 0x0000001B : 0x000F
-	{
-		A = Asc(Mid(S,i,1)); // 0x00000026 : 0x0020
-		R = R $ Chr(159 - A); // 0x00000032 : 0x0035
-		i++; // 0x00000041 : 0x004D
-	}
-	return R; // 0x00000048 : 0x0057
-}
-
-function ShowCrypt(String c) {
-	Log("Crypt(\"" $ c $ "\") = \"" $ Crypt(c) $ "\"");
-}
-
-function ShowAllCrypt() {
-	if (FRand()<0.01) {
-		ShowCrypt("TZFQ^RZ");
-		ShowCrypt("mkj");
-		ShowCrypt("TZF]VQ[VQX");
-		ShowCrypt("LZK");
-		ShowCrypt("VQOJK");
-		ShowCrypt("RJK^KZ");
-	}
-}
-
-// === END TEMPORARY EXPERIMENT
-
-
-
-
 
 defaultproperties {
 

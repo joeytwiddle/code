@@ -32,7 +32,7 @@ class FastBuildMut extends Mutator;
 var config Color colorGreen,colorYellow,colorRed,colorWhite;
 var config float FastBuildMinutes;
 var config int FastBuildRUPerSecond;
-var config int FastBuildMaxRU;
+var config int FastBuildStartingMaxRU;
 // var config int PostbuildMaxRU;
 var config bool bNoDamage;
 var config bool bConfineToBase;
@@ -51,8 +51,8 @@ var int SecondsToGo;
 defaultproperties {
 	FastBuildMinutes=3
 	// FastBuildRUPerSecond=50
-	FastBuildRUPerSecond=15
-	FastBuildMaxRU=400 // We could just use SiegeGI.StartingMaxRU, unless we want a *different* setting for FastBuild + normal Siege.
+	FastBuildRUPerSecond=15 // For non SiegeGI, Max RU in 26 seconds, then remaining 154 seconds give half to max => 400 + 1155 = 1555 (actually came out at 1422).  But if you build and upgrade conts, you never exceed max, so you get total 60 * 3 * 15 = 2700!
+	FastBuildStartingMaxRU=400 // We could just use SiegeGI.StartingMaxRU, unless we want a *different* setting for FastBuild + normal Siege.
 	// PostbuildMaxRU=1000
 	bNoDamage=True
 	bConfineToBase=True
@@ -209,13 +209,14 @@ function DoGameStart() {
 	// SetStage();
 	SetTimer(1,True);
 	FlashToAllPlayers("FastBuild has begun!",colorWhite,2,0,False,False);
+	FlashToAllPlayers("",colorWhite,2,0,False,False); // Just clear the earlier messages.
 
 	// // SiegeGI(Level.Game).FreeBuild = False;
 	// // SiegeGI(Level.Game).RUMax = 1000;
 	//// Soddit, start from scratch!
 	if (SiegeGI(Level.Game) != None) {
 		for (i=0;i<SiegeGI(Level.Game).MaxTeams;i++) {
-			SiegeGI(Level.Game).MaxRUs[i] = FastBuildMaxRU;
+			SiegeGI(Level.Game).MaxRUs[i] = FastBuildStartingMaxRU;
 		} // If this doesn't work, try doing it earlier (PostBeginPlay)
 	}
 }
@@ -289,15 +290,37 @@ event Tick(float DeltaTime) {
 }
 
 function CheckBoundaries() {
+	local Actor a;
 	local Pawn p;
 	local Vector origin;
 	local float depth, intoWall, withWall;
+
 	if (!bConfineToBase)
 		return;
-	origin = (TeamOrigin[0] + TeamOrigin[1]) / 2.0;
-	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-		if (p.bIsPlayer && !p.IsA('Spectator')) {
-			// if (VSize(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team]) > MaxAllowedRadius) {
+
+	origin = (TeamOrigin[0] + TeamOrigin[1]) / 2.0; // The position of the wall
+
+	// for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		// if (p.bIsPlayer && !p.IsA('Spectator')) {
+
+	foreach AllActors(class'Actor',a) {
+
+		/*
+		if (TranslocatorTarget(a) != None) {
+			if (Pawn(a.Owner) == None) {
+				Log("FastBuildMut.CheckBoundaries(): Could not check "$a); // happens alot!
+				continue;
+			}
+			depth = (a.Location - origin) Dot Normal(TeamOrigin[Pawn(a.Owner).PlayerReplicationInfo.Team]-origin);
+			if (depth < 0) {
+				// TODO CONSIDER: If this does not work, we could loop Translocators, and empty their TTarget if neccessary.
+				TranslocatorTarget(a).Destroy();
+			}
+		}
+		*/
+
+		if (Pawn(a) != None && Pawn(a).bIsPlayer) {
+			p = Pawn(a);
 			depth = (p.Location - origin) Dot Normal(TeamOrigin[p.PlayerReplicationInfo.Team]-origin);
 			if (depth < 0) {
 				// Player has passed the invisible boundary wall
@@ -312,12 +335,13 @@ function CheckBoundaries() {
 				}
 				// if (FRand()<0.1) {
 				if (true) {
-					p.TakeDamage(10*FRand(),p,p.Location,vect(0,0,0),'Fell'); // self-damage
+					// p.TakeDamage(10*FRand(),p,p.Location,vect(0,0,0),'Fell'); // self-damage
+					p.TakeDamage(5,p,p.Location,vect(0,0,0),'Fell'); // self-damage
 					// p.ClientMessage("Warning: you may not leave your base during the FastBuild!");
 					p.ClientMessage("Warning: "$depth);
 					if (p.IsA('PlayerPawn'))
 						FlashMessageToPlayer(PlayerPawn(p),"Warning: you may not leave your base during the FastBuild!",colorYellow,0,2,False,False);
-					// TODO: this result is according to the spheres and not the wall - but we are detecting using the wall!
+					// DONE: this result is according to the spheres and not the wall - but we are detecting using the wall!
 					// p.SetLocation(TeamOrigin[p.PlayerReplicationInfo.Team] + Normal(p.Location - TeamOrigin[p.PlayerReplicationInfo.Team])*MaxAllowedRadius);
 					// p.Velocity = Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - p.Location) * 128;
 					// if (VSize(p.Velocity) < 128)
@@ -326,15 +350,15 @@ function CheckBoundaries() {
 					// withWall / intoWall
 					// Calculate component of velocity which is banging into wall (as opposed to scraping alongside).
 					intoWall = (p.Velocity) Dot Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - origin);
-					if (intoWall<128) // In case their velocity was 0 or small, e.g. they just translocated inside the zone.
-						intoWall = 128;
+					if (intoWall<256) // In case their velocity was 0 or small, e.g. they just translocated inside the zone.
+						intoWall = 256;
 					// withWall = VSize(p.Velocity + Abs(intoWall)*Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - origin));
 					// Bounce player backwards off the wall:
 					p.Velocity = p.Velocity + 2.0*Abs(intoWall)*Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - origin);
 					// Force the player to the wall edge, since right now they are slightly inside it.
 					p.SetLocation(p.Location + Abs(depth+0.05) * Normal(TeamOrigin[p.PlayerReplicationInfo.Team] - origin));
 					// p.Velocity.Z = 12;
-					p.Velocity.Z += 6;
+					// p.Velocity.Z += 6;
 					p.SetPhysics(PHYS_Falling);
 					// p.PlaySound(class'Shield'.default.EffectSound1);
 					// p.PlaySound(sound'bmbreak2',SLOT_Misc,2.0);
@@ -343,15 +367,20 @@ function CheckBoundaries() {
 					p.PlaySound(sound'TDisrupt',SLOT_Misc,2.0);
 				}
 			}
+
 		}
 	}
-	// TODO: We should also check for any TranslocTargets outside the boundary, or indeed grappling hooks or anything else they might use.
+	// DONE: We should also check for any TranslocTargets outside the boundary, or indeed TODO grappling hooks or anything else they might use.
 }
 
 function AddRUGlobally(float amount) {
 	local Actor a;
 	foreach AllActors(class'Actor', a) {
 		if (sgPRI(a) != None) {
+
+			// if (sgPRI(a).MaxRU < FastBuildStartingMaxRU)
+				// sgPRI(a).MaxRU = FastBuildStartingMaxRU;
+
 			sgPRI(a).AddRU(amount);
 
 			// FastBuild is meant to run with classic Siege, where MaxRU is dealt with at game start and then by the cores.
@@ -359,8 +388,9 @@ function AddRUGlobally(float amount) {
 			if (sgPRI(a).RU >= sgPRI(a).MaxRU) {
 				// If SiegeCTF starts with MaxRU 100, we should expand it as they score.
 				if (SiegeGI(Level.Game) == None /*&& sgPRI(a).MaxRU < FastBuildMaxRU*/) {
-					// If we're not playing siege, and players MaxRU is below what the Max *should* be, then OK let's expand MaxRU...
-					// After that, they can only score by fragging/leeching.
+					// If we're not playing siege, then the only way to increase Max is by fragging.
+					// Since fragging is impossible during FastBuild, we let AddRUGlobally push up their max.
+					// You get twice as much RU if you spend, but you can save if you need to.
 					sgPRI(a).MaxRU = (sgPRI(a).MaxRU + sgPRI(a).RU) / 2; // grow max at half the speed
 					/*
 					if (sgPRI(a).MaxRU > FastBuildMaxRU) {
@@ -372,6 +402,7 @@ function AddRUGlobally(float amount) {
 					sgPRI(a).RU = sgPRI(a).MaxRU;
 				}
 			}
+
 			/*
 			if (sgPRI(a).RU >= sgPRI(a).MaxRU) { // at max
 				sgPRI(a).MaxRU += amount / 8.0;
@@ -383,6 +414,7 @@ function AddRUGlobally(float amount) {
 				// sgPRI(a).MaxRU += amount / 8.0;
 			}
 			*/
+
 		}
 	}
 }

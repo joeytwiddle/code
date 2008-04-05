@@ -131,9 +131,11 @@ function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
 					|| (p.IsA('Weapon') && (Owner==p.Owner || Weapon(p).bHeldItem)) // my weapon, or a held weapon
 					|| p.IsA('Projectile')
 					|| p.IsA('Mover') // TODO CONSIDER: the jury is still out on this one
-					|| p.IsA('Decal') // TODO CONSIDER: the jury is still out on this one
-					|| p.IsA('Decoration') // TODO CONSIDER: the jury is still out on this one
-					|| p.IsA('Effect') // TODO CONSIDER: the jury is still out on this one
+					|| p.IsA('Decal')
+					|| p.IsA('Decoration')
+					|| p.IsA('Effect')
+					|| p.IsA('RocketTrail')
+					|| p.IsA('DefensePoint')
 				)
 			&&
 				( // these actors always block building when near:
