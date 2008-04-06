@@ -24,20 +24,24 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.4e"
+#define ATB_VERSION "1.4g"
 
-// Changes since last release:
-// QuickSort
-// Reduced MinSecondsBeforeRebalance to 2 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
-
-// Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
-
+// TODO: I wanted to do a QuickSort and QuickSearch, but since we must search by IP or by Nick, I might try BuildHash and SearchHash.  But really better would be a sorted index, or even a binary tree.  Whatever we do, we need two, one for IP and one for nicks.
 // TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
 // TODO: Swap 2 or 3 players when it's 4 strong vs 5 weak.
 // TODO: Swap latest player to join with last player to join, if it improves teams.
+// TODO: BroadcastTeamStrengths() was occasionally being called twice.  Check that it is not called if it cannot do anything (or at least not called twice!).
+// TODO: mutate listfakers
+
+// Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
 
 // Changes since 1.4:
-// - When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
+// When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
+// Slight reduction in comparisons made, using booleans.
+// Changed the default number of player records to 2048, to reduce lag on general servers.
+// Reduced MinSecondsBeforeRebalance to 2 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
+// Added bBroadcastTeamStrengths and bFlashTeamStrengths.
+// Moved "Type !teams" message from Flash to the GameInfo.TeamChangeMessage.
 
 // Changes in 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
@@ -107,7 +111,7 @@
 //       Since we scale player scores to "full-time", this should also work for scaling down.
 //       However, the current algorithm will still not count the score/frags earned since the last update, but since the player joined.  We would need to do what iDeFiX's mod does, and store their each player's score/frags from the last update.
 
-// CONSIDER: what has IDC support done to bLogFakenickers and bBroadcastFakenickers?
+// What has IDC support done to bLogFakenickers and bBroadcastFakenickers?  1) It will log if they change/remove their IDC or IP.  2) It might spam an unrecorded IP when a player joins, although we might get an IDC later, and have a record for that.  The IP will eventually be reclaimed, since players end the game with an IDC, so they will be logged as a fakenicker again.  ;)
 
 // CONSIDER: could add last_date_played, so that we can recycle old records suitably.
 
@@ -117,175 +121,192 @@
 // TEST: When I was testing both ServerActor *and* mutator (not actually desirable), it seemed "!teams" was not working - is this fixed now?
 // BUG: Do not use NetWait<3; it may cause the teambalance to occur before anyone joins the server!
 
+
+
+// Preprocessing definitions:
+
 #ifndef XOL_SPECIFIC
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #endif
 
-// #define XOL_SPECIFIC
-// #define ENABLE_USEISPNOTFULLIP
-#define ENABLE_ADMIN_COMMANDS
-#define ENABLE_MUTATOR_SIGNATURE
-#define ENABLE_MIN_REQUESTS_FOR_REBALANCE
-#define FAST_DATE_COMPARISON
-#define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data.
-#define ENABLE_SHOW_STATS
-#define ENABLE_USE_INGAME_SCORES
-//// Testing:
-#define DETECT_PLAYERJOINS
-// #define MAP_RATING_SYSTEM
-// #define SUPERBALANCE
-// #define COOL_CAMERA
-// #define TESTING_PRINT_ANGLES
-// #define TESTING
-#ifdef XOL_SPECIFIC
-#define ENABLE_IDC
-#endif
+	// #define XOL_SPECIFIC
+	// #define ENABLE_USEISPNOTFULLIP
+	#define ENABLE_ADMIN_COMMANDS
+	#define ENABLE_MUTATOR_SIGNATURE
+	#define ENABLE_MIN_REQUESTS_FOR_REBALANCE
+	#define FAST_DATE_COMPARISON
+	#define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data.
+	#define ENABLE_SHOW_STATS
+	#define ENABLE_USE_INGAME_SCORES
+	#ifdef XOL_SPECIFIC
+	#define ENABLE_IDC
+	#endif
 
-#define bLogDuplicateRecords False
+	//// Testing:
+	#define DETECT_PLAYERJOINS
+	// #define MAP_RATING_SYSTEM
+	// #define SUPERBALANCE
+	// #define COOL_CAMERA
+	// #define TESTING_PRINT_ANGLES
+	// #define TESTING
+	#define bLogDuplicateRecords False
+	// #define TAKE_MOST_RECENT_DUPLICATE
+	// TODO: If we do take the duplicate, the older useless one should be removed.
+	#define LOG_LAG
 
 
-// These config variables are documented in AutoTeamBalance.txt
 
-var config bool bDebugLogging;
-var config bool bLogDeletedRecords; // #define bLogDeletedRecords True
-var config bool bBroadcastStuff;
-var config bool bBroadcastTeamStrengths;
-var config bool bFlashTeamStrengths;
-var config bool bBroadcastCookies;
-var config bool bFlashCookies;
-#ifdef DETECT_PLAYERJOINS
-var config bool bFlashPlayerJoins;
-#endif
-var config bool bReportStrengthAsCookies;
+// Config variables (documented in AutoTeamBalance.txt):
 
-var config bool bEnablePlayerCommands;
+	var config bool bDebugLogging;
+	var config bool bLogging;
+	var config bool bLogDeletedRecords; // #define bLogDeletedRecords True
+	var config bool bBroadcastStuff;
+	var config bool bBroadcastTeamStrengths;
+	var config bool bFlashTeamStrengths;
+	var config bool bBroadcastCookies;
+	var config bool bFlashCookies;
+	#ifdef DETECT_PLAYERJOINS
+	var config bool bFlashPlayerJoins;
+	#endif
+	var config bool bReportStrengthAsCookies;
 
-var config bool bForceEvenTeams;
-var config bool bLetPlayersRebalance;
-#ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
-var config int MinRequestsForRebalance;
-var int pidsRequestingRebalance[64];
-var int lastRebalanceRequestTime;
-var config bool bOverrideMinRequests;
-#endif
-var config bool bFlashRebalanceRequest;
-var config bool bShowProposedSwitch;
+	var config bool bEnablePlayerCommands;
 
-#ifdef ENABLE_IDC
-var int idc[64];
-#define IDCfor(X) idc[X.PlayerReplicationInfo.PlayerID%64]
-#endif
+	var config bool bForceEvenTeams;
+	var config bool bLetPlayersRebalance;
+	#ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
+	var config int MinRequestsForRebalance;
+	var int pidsRequestingRebalance[64];
+	var int lastRebalanceRequestTime;
+	var config bool bOverrideMinRequests;
+	#endif
+	var config bool bFlashRebalanceRequest;
+	var config bool bShowProposedSwitch;
 
-var config bool bAutoBalanceTeamsForCTF;
-var config bool bAutoBalanceTeamsForTDM;
-var config bool bAutoBalanceTeamsForAS;
-var config bool bAutoBalanceTeamsForOtherTeamGames;
-var config bool bUpdatePlayerStatsForCTF;
-var config bool bUpdatePlayerStatsForTDM;
-var config bool bUpdatePlayerStatsForAS;
-var config bool bUpdatePlayerStatsForOtherTeamGames;
-var config bool bUpdatePlayerStatsForNonTeamGames;
-var config bool bBalanceBots;
-var config bool bRankBots;
+	#ifdef ENABLE_IDC
+	var int idc[64];
+	#define IDCfor(X) idc[X.PlayerReplicationInfo.PlayerID%64]
+	#endif
 
-var config bool bAllowSemiAdminKick;
-var config bool bAllowSemiAdminForceTravel;
-var config String SemiAdminPass;
+	var config bool bAutoBalanceTeamsForCTF;
+	var config bool bAutoBalanceTeamsForTDM;
+	var config bool bAutoBalanceTeamsForAS;
+	var config bool bAutoBalanceTeamsForOtherTeamGames;
+	var config bool bUpdatePlayerStatsForCTF;
+	var config bool bUpdatePlayerStatsForTDM;
+	var config bool bUpdatePlayerStatsForAS;
+	var config bool bUpdatePlayerStatsForOtherTeamGames;
+	var config bool bUpdatePlayerStatsForNonTeamGames;
+	var config bool bBalanceBots;
+	var config bool bRankBots;
 
-var config bool bWarnMidGameUnbalance;
-var config int CheckFrequency;
-var config bool bShowReason;
-var config bool bFlashOnWarning;
-var config bool bShakeOnWarning;
-var config bool bBuzzOnWarning;
-var config bool bShakeWhenMoved;
-var config int MinSecondsBeforeRebalance;
-var config bool bNeverRebalanceWhenTeamsAreEven;
+	var config bool bAllowSemiAdminKick;
+	var config bool bAllowSemiAdminForceTravel;
+	var config String SemiAdminPass;
 
-var config bool bLogExtraStats;
-var config float MaxHoursWhenCopyingOldRecord;
-var config float HoursBeforeRecyclingStrength;
-var config int MinHumansForStats;
-var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking
-var config bool bNormaliseScores;
-// var config bool bRelativeNormalisation;
-var config float RelativeNormalisationProportion;
-var config float StrengthProportionFromCurrentGame;
-var config bool bScalePlayerScoreToFullTime; // Leave this true, more accurate this way
+	var config bool bWarnMidGameUnbalance;
+	var config int CheckFrequency;
+	var config bool bShowReason;
+	var config bool bFlashOnWarning;
+	var config bool bShakeOnWarning;
+	var config bool bBuzzOnWarning;
+	var config bool bShakeWhenMoved;
+	var config int MinSecondsBeforeRebalance;
+	var config bool bNeverRebalanceWhenTeamsAreEven;
 
-var config int NormalisedStrength;
-var config int UnknownStrength;
-var config int BotStrength;
-var config int FlagStrength;
-var config int StrengthThreshold;
-var config int WinningTeamBonus;
-var config bool bClanWar;
-var config string clanTag;
-// var config bool bUseOnlyInGameScoresForRebalance;
-var config bool bLogFakenickers;
-var config bool bBroadcastFakenickers;
-#ifdef ENABLE_IDC
-var config bool bIDCOverridesNick;
-#endif
-#ifdef ENABLE_USEISPNOTFULLIP
-var config bool bUseISPNotFullIP;
-#endif
-#ifdef ENABLE_MUTATOR_SIGNATURE
-var config bool bSeparateStatsByGamemode;
-var config bool bSeparateStatsByMutators;
-#endif
-#ifdef SUPERBALANCE
-var config bool bSuperBalance; // BUG: Can cause problems by switching a player more than once too quickly.
-#endif
-var config string LastUpdate;
+	var config bool bLogExtraStats;
+	var config float MaxHoursWhenCopyingOldRecord;
+	var config float HoursBeforeRecyclingStrength;
+	var config int MinHumansForStats;
+	var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking
+	var config bool bNormaliseScores;
+	// var config bool bRelativeNormalisation;
+	var config float RelativeNormalisationProportion;
+	var config float StrengthProportionFromCurrentGame;
+	var config bool bScalePlayerScoreToFullTime; // Leave this true, more accurate this way
 
-// For storing player strength data:
-var config int MaxPlayerData;
-#define MaxPlayerDataMax 4096
-var config String playerData[MaxPlayerDataMax]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
+	var config int NormalisedStrength;
+	var config int UnknownStrength;
+	var config int BotStrength;
+	var config int FlagStrength;
+	var config int StrengthThreshold;
+	var config int WinningTeamBonus;
+	var config bool bClanWar;
+	var config string clanTag;
+	// var config bool bUseOnlyInGameScoresForRebalance;
+	var config bool bLogFakenickers;
+	var config bool bBroadcastFakenickers;
+	#ifdef ENABLE_IDC
+	var config bool bIDCOverridesNick;
+	#endif
+	#ifdef ENABLE_USEISPNOTFULLIP
+	var config bool bUseISPNotFullIP;
+	#endif
+	#ifdef ENABLE_MUTATOR_SIGNATURE
+	var config bool bSeparateStatsByGamemode;
+	var config bool bSeparateStatsByMutators;
+	#endif
+	#ifdef SUPERBALANCE
+	var config bool bSuperBalance; // BUG: Can cause problems by switching a player more than once too quickly.
+	#endif
+	var config string LastUpdate;
 
-// Internal (parsed) player data:
-var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
-var String ip[MaxPlayerDataMax]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
-var String nick[MaxPlayerDataMax];
-var float avg_score[MaxPlayerDataMax];
-var float hours_played[MaxPlayerDataMax];
-var String date_last_played[MaxPlayerDataMax];
-// var int games_played[MaxPlayerDataMax];
+	// For storing player strength data:
+	var config int MaxPlayerData;
+	#define MaxPlayerDataMax 4096
+	var config String playerData[MaxPlayerDataMax]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
-#ifdef COOL_CAMERA
-var config bool bCoolCamera;
-var int LastCamChangeSeconds;
-var Actor CameraFocusActor;
-var float currentDist;
-var float thru;
-var Vector CamPathStart,CamPathEnd;
-var float CoolCamYaw,CoolCamPitch; // Because player's ViewRotations have int angles which are too large for the small motions we use each tick.
-var float deltaYaw,deltaPitch,deltaFOV,deltaDist; // CONSIDER TODO: These variables are the same for all PlayerPawns - do we risk collisions?!
-var float deltaOne;
-#endif
+	// Internal (parsed) player data:
+	var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
+	var String ip[MaxPlayerDataMax]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
+	var String nick[MaxPlayerDataMax];
+	var float avg_score[MaxPlayerDataMax];
+	var float hours_played[MaxPlayerDataMax];
+	var String date_last_played[MaxPlayerDataMax];
+	// var int games_played[MaxPlayerDataMax];
 
-#ifdef MAP_RATING_SYSTEM
-var config String MapRatings[256];
-var int bHasAlreadyRated[64];
-#endif
+	#ifdef COOL_CAMERA
+	var config bool bCoolCamera;
+	var int LastCamChangeSeconds;
+	var Actor CameraFocusActor;
+	var float currentDist;
+	var float thru;
+	var Vector CamPathStart,CamPathEnd;
+	var float CoolCamYaw,CoolCamPitch; // Because player's ViewRotations have int angles which are too large for the small motions we use each tick.
+	var float deltaYaw,deltaPitch,deltaFOV,deltaDist; // CONSIDER TODO: These variables are the same for all PlayerPawns - do we risk collisions?!
+	var float deltaOne;
+	#endif
 
-var float currentDateDays; // Used by FindOldestPlayerRecordMeasure().
+	#ifdef MAP_RATING_SYSTEM
+	var config String MapRatings[256];
+	var int bHasAlreadyRated[64];
+	#endif
 
-// For local state caching (not repeating when called by Tick's or Timer's):
-var bool initialized;              // Mutator initialized flag
-var bool gameStartDone;            // Teams initialized flag (we never initialise this to False, but I guess Unreal does that for us)
-var bool gameEndDone;
 
-var int timeGameStarted;
-var int lastBalanceTime;
 
-var float averageGameScore;
-var float averagePlayerStrengthThisGame;
-var float LastCalculatedAverages;
+// Temporary state:
 
-var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
-var config Color strengthColor,warnColor;
+	var float currentDateDays; // Used by FindOldestPlayerRecordMeasure().
+
+	// For local state caching (not repeating when called by Tick's or Timer's):
+	var bool initialized;              // Mutator initialized flag
+	var bool gameStartDone;            // Teams initialized flag (we never initialise this to False, but I guess Unreal does that for us)
+	var bool gameEndDone;
+
+	var int timeGameStarted;
+	var int lastBalanceTime;
+
+	var float averageGameScore;
+	var float averagePlayerStrengthThisGame;
+	var float LastCalculatedAverages;
+
+	var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
+	var config Color strengthColor,warnColor;
+
+
+
+// Default values:
 
 defaultproperties {
 	bDebugLogging=False
@@ -369,7 +390,8 @@ defaultproperties {
 	#ifdef COOL_CAMERA
 	bCoolCamera=True
 	#endif
-	MaxPlayerData=4096
+	// MaxPlayerData=4096
+	MaxPlayerData=1024
 	colorWhite=(R=255,G=255,B=255,A=32),
 	colorRed=(R=255,G=32,B=32,A=32),
 	colorBlue=(R=32,G=32,B=255,A=32),
@@ -382,6 +404,8 @@ defaultproperties {
 	strengthColor=(R=255,G=32,B=255,A=32),
 	warnColor=(R=255,G=144,B=32,A=32),
 }
+
+
 
 #define DebugLog(X) if (bDebugLogging) { Log(X); }
 // #define NormalLog(X); if (bLogging) { Log(X); }
@@ -463,9 +487,30 @@ function AddMutator(Mutator Other) {
 // Then it is set to CheckFrequency seconds during play, to detect mid-game unbalance, if bWarnMidGameUnbalance or bForceEvenTeams is set.
 // Also (after HandleEndGame() is called), it detects the real game end, and calls UpdateStatsAtEndOfGame().
 event Timer() {
+	#ifdef LOG_LAG
+		local Pawn p;
+		local float startTime;
+		startTime = Level.TimeSeconds;
+	#endif
 	if (!gameStartDone) CheckGameStart();
 	if (gameStartDone) CheckGameEnd();
-	if ((bWarnMidGameUnbalance || bForceEvenTeams) && gameStartDone && !gameEndDone && Level.Game.IsA('TeamGamePlus') && !DeathMatchPlus(Level.Game).bTournament) CheckMidGameBalance();
+	if ((bWarnMidGameUnbalance || bForceEvenTeams)
+			&& gameStartDone && !gameEndDone
+			&& Level.Game.IsA('TeamGamePlus') && !DeathMatchPlus(Level.Game).bTournament
+	) {
+		CheckMidGameBalance();
+	}
+	#ifdef LOG_LAG
+		if (bLogging) {
+			// if (Level.TimeSeconds > startTime + 0.1) { // 2 ticks at TR 20
+				// Log("AutoTeamBalance.Timer() took " $ (Level.TimeSeconds - startTime) $ " seconds (at "$Level.TimeSeconds$")."); // ofc this adds to lag! TODO: we could instead build an average and log it at the end of the game
+				p = FindPlayerNamed("nogginBasher");
+				if (p != None) p.ClientMessage("AutoTeamBalance.Timer() took " $ Left(String(Level.TimeSeconds - startTime),5) $ " seconds (at "$Left(String(Level.TimeSeconds),5)$").");
+				p = FindPlayerNamed("F0X|Rork");
+				if (p != None) p.ClientMessage("AutoTeamBalance.Timer() took " $ Left(String(Level.TimeSeconds - startTime),5) $ " seconds (at "$Left(String(Level.TimeSeconds),5)$").");
+			// }
+		}
+	#endif
 }
 
 // If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
@@ -1215,6 +1260,7 @@ function CheckMidGameBalance() {
 	local String problem; // human-readable explanation of the team unbalance
 	local Pawn p;
 	local int i;
+
 	weakerTeam = -1;
 	redTeamCount = GetTeamSize(0);
 	blueTeamCount = GetTeamSize(1);
@@ -1305,6 +1351,7 @@ function CheckMidGameBalance() {
 			}
 		}
 	}
+
 }
 
 // Before we flash new progress messages, we need to clear what was there before.
@@ -2287,7 +2334,7 @@ function bool ShouldUpdateStats(GameInfo game) {
 	if (Level.Game.Class.IsA('Assault'))
 		return bUpdatePlayerStatsForAS;
 	// OK so it's not CTF or TDM or AS, but is it another type of team game?
-	if (Level.Game.GameReplicationInfo.bTeamGame)
+	if (Level.Game.GameReplicationInfo.bTeamGame) // it's probably a subclass of TeamGamePlus
 		return bUpdatePlayerStatsForOtherTeamGames;
 	return bUpdatePlayerStatsForNonTeamGames;
 }
@@ -2650,6 +2697,14 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 	player_nick = GetDBName(p);
 	player_ip = getIP(p);
 
+	#ifdef TAKE_MOST_RECENT_DUPLICATE
+		// Take a duplicate record only if the last one found is older
+		#define BetterThanCurrent || NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])
+	#else
+		// Or don't (more efficient):
+		#define BetterThanCurrent 
+	#endif
+
 	found = -1;
 	for (i=0;i<MaxPlayerData;i++) {
 		bNickMatches = ( player_nick == nick[i] );
@@ -2661,13 +2716,13 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 			return found;
 		} else if (bIPMatches) {
 			if (bLogDuplicateRecords && found >= 0) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); }
-			if (found == -1 || NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])) { // take this record only if the last one found is older
+			if (found == -1 BetterThanCurrent) {
 				found = i; // matching ip
 				DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
 			}
 		} else if (bNickMatches /* && found == -1 */ ) { // the part commented out was to prefer matching_ip+different_nick over matching_nick+different_ip
 			if (bLogDuplicateRecords && found >= 0) { Log("AutoTeamBalance.FindPlayerRecordNoFastHash(p) DUPLICATE NICK match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); }
-			if (found == -1 || NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])) { // take this record only if the last one found is older
+			if (found == -1 BetterThanCurrent) {
 				found = i;
 				DebugLog("AutoTeamBalance.FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[found]$"");
 			}

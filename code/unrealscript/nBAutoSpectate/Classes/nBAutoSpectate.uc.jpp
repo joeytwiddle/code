@@ -2,7 +2,9 @@
 // nBAutoSpectate.
 //================================================================================
 
-// TODO: mutate listfakers
+// TODO: If a the location of the player we are viewing hasn't changed in 0.5-1.0 seconds, he may be standing still, but more often during online spectating, we've lost his info, and the display has become boring.  That's the time to do a GetRandomCameraNow()!
+
+// TODO: Flashed messages should last long enough to read!  But it should also be possible to turn them off entirely.
 
 // BUG: under linux at least, if you watch a demo with ?3rdperson, console messages are not displayed, so nBAS cannot record events.
 // It may appear in top-left during 1stperson, but if it doesn't appear in the console, nBAutoSpectate won't pick it up!
@@ -1630,10 +1632,10 @@ function CheckSwitchCamera() {
 	} else {
 		if (Camera.ViewTarget != None && LosingNetOn(Camera.ViewTarget)) {
 			LogDebug("Losing: "$NameActor(Camera.ViewTarget));
-		}
+		} else
 		if (FollowActor != None && LosingNetOn(FollowActor)) {
 			LogDebug("Losing: "$NameActor(FollowActor));
-		}
+		} else
 		if (LookActor != None && LosingNetOn(LookActor)) {
 			LogDebug("Losing: "$NameActor(LookActor));
 		}
@@ -1658,7 +1660,8 @@ event Tick (float Delta) {
 	}
 	#endif
 
-	if (FRand()<0.01)
+	// if (FRand()<0.01)
+	if (FRand()<0.004)
 		ClearFlashedMessages();
 
 	// if (FRand()<0.01) {
@@ -2063,20 +2066,20 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
 	if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
-		CheckMessage("!"$Mid(Msg,InStr(Msg,":")+1), Sender);
+		CheckMessage(Mid(Msg,InStr(Msg,":")+1), Sender);
 	}
 	if (StrContains(Msg,"ow viewing from "))
-		Msg="~~ "$StrAfterLast(Msg," ")$" ~~";
+		Msg="~~ "$StrAfterLast(Msg," ")$" ~~"; // Is this to prevent it getting picked up by something else?
 	return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
 }
 
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	if (Sender == Receiver) { // Only process the message once.
-		CheckMessage("!"$Msg, Sender);
+		CheckMessage(Msg, Sender);
 	}
 	if (StrContains(Msg,"ow viewing from "))
-		Msg="~~ "$StrAfterLast(Msg," ")$" ~~";
+		Msg="~~ "$StrAfterLast(Msg," ")$" ~~"; // Is this to prevent it getting picked up by something else?
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
 }
 
@@ -2089,7 +2092,7 @@ function CheckMessage(String str, Actor SenderA) {
 	local PlayerPawn Sender;
 	Sender = PlayerPawn(SenderA);
 	if (Sender == None)
-		return;
+		Sender = Camera;
 	LogDebug("Got message: >"$str$"< from "$Sender);
 	if (Left(str,1) == "!") {
 		str = Mid(str,1);
