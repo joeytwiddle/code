@@ -2043,6 +2043,7 @@ function MidGameRebalance(bool bDo) {
 	DebugLog("MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$"");
 
 	// TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end - although the system should really be changed entirely, since it tries to balance strengths on the first switch, it will be harder to keep them balanced on the second switch.
+	/*
 	if (redTeamCount < blueTeamCount) {
 		MidGameTeamBalanceSwitchOnePlayer(bDo,1,0);
 	} else if (blueTeamCount < redTeamCount) {
@@ -2050,6 +2051,8 @@ function MidGameRebalance(bool bDo) {
 	} else if (!bNeverRebalanceWhenTeamsAreEven) {
 		MidGameTeamBalanceSwitchTwoPlayers(bDo);
 	}
+	*/
+	MidGameTeamBalanceSwitchTwoPlayers(bDo);
 
 }
 
@@ -2120,18 +2123,24 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	newdifference = difference;
 
 	// FIXED by "hashing": These repeated calls to GetPlayerStrength() are going to be inefficient, possibly causing some lag while the server calculates.
-	for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
-		for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
+	for (redP=Level.PawnList; true; redP=redP.NextPawn) {
+		for (blueP=Level.PawnList; true; blueP=blueP.NextPawn) {
 			if (redP != blueP
-					&& redP.PlayerReplicationInfo.Team==0
-					&& blueP.PlayerReplicationInfo.Team==1
-					&& AllowedToBalance(redP)
-					&& AllowedToBalance(blueP)
-					&& redP.PlayerReplicationInfo.HasFlag == None
-					&& blueP.PlayerReplicationInfo.HasFlag == None
+					&& (redP == None || redP.PlayerReplicationInfo.Team==0)
+					&& (blueP == None || blueP.PlayerReplicationInfo.Team==1)
+					&& (redP == None || AllowedToBalance(redP))
+					&& (blueP == None || AllowedToBalance(blueP))
+					&& (redP == None || redP.PlayerReplicationInfo.HasFlag == None)
+					&& (blueP == None || blueP.PlayerReplicationInfo.HasFlag == None)
 			) {
-				redPStrength = GetPlayerStrength(redP);
-				bluePStrength = GetPlayerStrength(blueP);
+				if (redP == None)
+					redPStrength = 0;
+				else
+					redPStrength = GetPlayerStrength(redP);
+				if (blueP == None)
+					bluePStrength = 0;
+				else
+					bluePStrength = GetPlayerStrength(blueP);
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
 				potentialNewDifference = blueTeamStrength + redPStrength*2 - redTeamStrength - bluePStrength*2;
 				if (Abs(potentialNewDifference) < Abs(newdifference)) {
@@ -2140,22 +2149,28 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 					bluePlayerToMove = blueP;
 				}
 			}
+			if (blueP == None)
+				break;
 		}
+		if (redP == None)
+			break;
 	}
 
 	// CONSIDER: if one of the players is a bot, we should probably move him last, because bots tend to switch back to the other team, if UT.ini is configured that way.  Alternatively, we could copy Daniel's temporary-ut-balance-disable code into ChangePlayerToTeam.  Hmm probably nobody uses bBalanceBots anyway.
-	if (redPlayerToMove != None && bluePlayerToMove != None) {
+	if (redPlayerToMove == None && bluePlayerToMove == None) {
+		BroadcastMessageAndLog("AutoTeamBalance could not find any switches to improve the teams.");
+		return False;
+	} else {
 		if (bDo) {
-			ChangePlayerToTeam(redPlayerToMove,1,gameStartDone);
-			ChangePlayerToTeam(bluePlayerToMove,0,gameStartDone);
+			if (redPlayerToMove != None)
+				ChangePlayerToTeam(redPlayerToMove,1,gameStartDone);
+			if (bluePlayerToMove != None)
+				ChangePlayerToTeam(bluePlayerToMove,0,gameStartDone);
 			// BroadcastTeamStrengths();
 		} else {
 			ProposeChange(redPlayerToMove,bluePlayerToMove);
 		}
 		return True;
-	} else {
-		BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
-		return False;
 	}
 }
 
@@ -2169,6 +2184,8 @@ function ProposeChange(Pawn one, Pawn two) {
 	if (two == None) {
 		// msg = "Type !teams to move "$one.getHumanName();
 		msg = "Type !teams to move "$one.getHumanName()$" to "$getTeamName(1-one.PlayerReplicationInfo.Team);
+	} else if (one == None) {
+		msg = "Type !teams to move "$two.getHumanName()$" to "$getTeamName(1-two.PlayerReplicationInfo.Team);
 	} else {
 		msg = "Type !teams to swap "$one.getHumanName()$" with "$two.getHumanName();
 	}
