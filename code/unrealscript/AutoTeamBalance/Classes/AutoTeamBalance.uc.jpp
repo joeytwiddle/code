@@ -24,8 +24,9 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.4g"
+#define ATB_VERSION "1.4h"
 
+// TODO: I think mid-game rebalance should not use FlagStrength, but mid game player joins should.
 // TODO: we may have a record cached, but we still have to check it each time.  It would be nice to have a faster check for whether we have it cached or not.
 // TODO: I wanted to do a QuickSort and QuickSearch, but since we must search by IP or by Nick, I might try BuildHash and SearchHash.  But really better would be a sorted index, or even a binary tree.  Whatever we do, we need two, one for IP and one for nicks.
 // TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
@@ -125,6 +126,32 @@
 
 
 
+#ifdef NOTYET
+struct HashTable {
+	var String Refs[256]
+}
+
+var HashTable nickIndex,ipIndex;
+
+function HTPut(HashTable table, string value, string index) {
+	local String hash;
+	hash = hash(value);
+	table.Refs[hash] = table.Refs[hash] $ index $ ":";
+}
+
+
+
+
+// Nah better to do a tree?
+struct Node {
+	var string value;
+	var Node before,after;
+}
+#endif
+
+
+
+
 // Preprocessing definitions:
 
 #ifndef XOL_SPECIFIC
@@ -145,7 +172,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#endif
 
 	//// Testing:
-	#define DETECT_PLAYERJOINS
+	// #define DETECT_PLAYERJOINS
 	// #define MAP_RATING_SYSTEM
 	// #define SUPERBALANCE
 	// #define COOL_CAMERA
@@ -259,6 +286,10 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#define MaxPlayerDataMax 4096
 	var config String playerData[MaxPlayerDataMax]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
+
+
+// Temporary state:
+
 	// Internal (parsed) player data:
 	var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
 	var String ip[MaxPlayerDataMax]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
@@ -267,6 +298,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var float hours_played[MaxPlayerDataMax];
 	var String date_last_played[MaxPlayerDataMax];
 	// var int games_played[MaxPlayerDataMax];
+
+	var int bCached[64];
 
 	#ifdef COOL_CAMERA
 	var config bool bCoolCamera;
@@ -284,10 +317,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var config String MapRatings[256];
 	var int bHasAlreadyRated[64];
 	#endif
-
-
-
-// Temporary state:
 
 	var float currentDateDays; // Used by FindOldestPlayerRecordMeasure().
 
@@ -623,21 +652,22 @@ function FixTeamsizeBug() {
 
 // We use MutatorTeamMessage and MutatorBroadcastMessage to catch messages said by players and spectators respectively.
 
+#ifdef DETECT_PLAYERJOINS
+// TODO: this only detects player joins.  I fear to detect players leaving, we must 
+function ModifyPlayer(Pawn p) {
+	if (p.PlayerReplicationInfo.Deaths == 0) {
+		if (bFlashPlayerJoins) {
+			FlashToAllPlayers(p.getHumanName()$" has joined the game!",colorGreen,2);
+			// TODO CONSIDER: do we want to clear progress messages at this point?
+		}
+		BroadcastTeamStrengths(); // He should be on the right team by now.
+	}
+	Super.ModifyPlayer(p);
+}
+#endif
+
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
-	#ifdef DETECT_PLAYERJOINS
-	// Not working here.
-	if (bFlashPlayerJoins) {
-		if (StrContains(Msg," has joined ")) {
-			ClearAllProgressMessages();
-			FlashToAllPlayers("Someone has joined the game!",warnColor,2);
-		}
-		if (StrContains(Msg," has left ")) {
-			ClearAllProgressMessages();
-			FlashToAllPlayers("Someone has left the game!",warnColor,2);
-		}
-	}
-	#endif
 	// Swallow lines containing the semi-admin pass:
 	if (StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
 		return False;
@@ -2116,36 +2146,67 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	local float redTeamStrength, blueTeamStrength, difference;
 	// during loop:
 	local Pawn redP,blueP;
-	local float redPStrength, bluePStrength;
+	local float redPStrength, bluePStrength,redPTimeInGame,bluePTimeInGame;
 	local float potentialNewDifference; // the strength difference between the two teams after switching these two players
 	// best found:
 	local Pawn redPlayerToMove,bluePlayerToMove; // the best two players found so far
-	local float newdifference; // the strength difference between the two teams after switching these players
+	local float bestDifference; // the strength difference between the two teams after switching these players
+	local float bothTimeInGame,bestTimeInGame; // the strength difference between the two teams after switching these players
 
 	redTeamStrength = GetTeamStrength(0);
 	blueTeamStrength = GetTeamStrength(1);
 	difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
-	newdifference = difference;
+	bestDifference = difference;
+	bestTimeInGame = 60*60*24;
 
 	// FIXED by "hashing": These repeated calls to GetPlayerStrength() are going to be inefficient, possibly causing some lag while the server calculates.
 	for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
-		for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
-			if (redP != blueP
-					&& redP.PlayerReplicationInfo.Team==0
-					&& blueP.PlayerReplicationInfo.Team==1
-					&& AllowedToBalance(redP)
-					&& AllowedToBalance(blueP)
-					&& redP.PlayerReplicationInfo.HasFlag == None
-					&& blueP.PlayerReplicationInfo.HasFlag == None
-			) {
-				redPStrength = GetPlayerStrength(redP);
-				bluePStrength = GetPlayerStrength(blueP);
-				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
-				potentialNewDifference = blueTeamStrength + redPStrength*2 - redTeamStrength - bluePStrength*2;
-				if (Abs(potentialNewDifference) < Abs(newdifference)) {
-					newdifference = potentialNewDifference;
-					redPlayerToMove = redP;
-					bluePlayerToMove = blueP;
+		if (redP.PlayerReplicationInfo.Team==0 && AllowedToBalance(redP) && redP.PlayerReplicationInfo.HasFlag == None) {
+			redPStrength = GetPlayerStrength(redP);
+			redPTimeInGame = Level.TimeSeconds - blueP.PlayerReplicationInfo.StartTime;
+			for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
+				if (redP != blueP
+						&& blueP.PlayerReplicationInfo.Team==1
+						&& AllowedToBalance(blueP)
+						&& blueP.PlayerReplicationInfo.HasFlag == None
+				) {
+					bluePStrength = GetPlayerStrength(blueP);
+					bluePTimeInGame = Level.TimeSeconds - blueP.PlayerReplicationInfo.StartTime;
+					// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
+					potentialNewDifference = blueTeamStrength + redPStrength*2 - redTeamStrength - bluePStrength*2;
+
+					#ifdef FIND_BEST_PAIR
+
+					// Find pair who make the teams most balanced.
+					if (Abs(potentialNewDifference) < Abs(bestDifference)) {
+						bestDifference = potentialNewDifference;
+						redPlayerToMove = redP;
+						bluePlayerToMove = blueP;
+					}
+
+					#else
+
+					// Find pair with least time in game:
+					// DONE: To encourage swapping recently joined players, we could increase the size of potentialNewDifference wrt the length of time the players have played.
+					//       Problem: This might mean we failed to find a potentialNewDifference < difference !
+					// OK now finds, of all pairs which improve the balance, the pair which have the lowest max (no longer combined) time on server.
+					if (Abs(potentialNewDifference) < Abs(difference)) {
+						// This is an improvement on the current situation.
+						// bothTimeInGame = redPTimeInGame + bluePTimeInGame;
+						bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
+						if (bothTimeInGame < bestTimeInGame) {
+							bestTimeInGame = bothTimeInGame;
+							bestDifference = potentialNewDifference;
+							redPlayerToMove = redP;
+							bluePlayerToMove = blueP;
+						}
+						// This will always swap the last two if the last two swapping would improve the teams.
+						// TODO: It does not swap another pair even if that would make teams nicely even.
+						// But maybe that should have be done automatically anyway, when one of those 2 joined.
+					}
+
+					#endif
+
 				}
 			}
 		}
@@ -2503,6 +2564,10 @@ function CopyConfigIntoArrays() {
 		if (date_last_played[i] == "") // Old record from ATB<1.4; give them a default date.
 			date_last_played[i] = "2008/01/01-00:00:00";
 	}
+
+	for (i=0;i<64;i++) {
+		bCached[i] = 0;
+	}
 	DebugLog("AutoTeamBalance.CopyConfigIntoArrays() "$GetDate()$" done");
 }
 
@@ -2626,12 +2691,14 @@ function int FindPlayerRecord(Pawn p) {
 	local float tmp_avg_score, tmp_hours_played;
 	local string tmp_date_last_played;
 
-	i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
+	// i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
+	i = p.PlayerReplicationInfo.PlayerID % 64;
 	// BUG TODO: When bRankBots=True (or bBalanceBots=True?), all the bots have i = 1635,
 	//           they all override that record and none of them optimise.
 
 	// Is the player's record already at i?
-	if (GetDBName(p) == nick[i] && getIP(p) == ip[i]) {
+	if (bCached[i] > 0) {
+	// if (GetDBName(p) == nick[i] && getIP(p) == ip[i]) {
 		// DebugLog("AutoTeamBalance.FindPlayerRecord(p) FAST EXACT match for "$nick[i]$","$ip[i]$": ["$i$"] ("$avg_score[i]$","$hours_played[i]$","$date_last_played[i]$")");
 		return i;
 	}
@@ -2658,6 +2725,7 @@ function int FindPlayerRecord(Pawn p) {
 		avg_score[found] = tmp_avg_score;
 		hours_played[found] = tmp_hours_played;
 		date_last_played[found] = tmp_date_last_played;
+		bCached[i] = 1;
 		return i;
 	}
 
@@ -3086,7 +3154,7 @@ function int UpdateStatsForPlayer(Pawn p) {
 function GetAveragesThisGame() {
 	local Pawn p;
 	local int playerCount;
-	if (LastCalculatedAverages + 5 >= Level.TimeSeconds)
+	if (Level.TimeSeconds <= LastCalculatedAverages + 5)
 		return;
 	playerCount = 0;
 	averageGameScore = 0.0;
