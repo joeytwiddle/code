@@ -26,12 +26,14 @@
 
 #define ATB_VERSION "1.4g"
 
+// TODO: we may have a record cached, but we still have to check it each time.  It would be nice to have a faster check for whether we have it cached or not.
 // TODO: I wanted to do a QuickSort and QuickSearch, but since we must search by IP or by Nick, I might try BuildHash and SearchHash.  But really better would be a sorted index, or even a binary tree.  Whatever we do, we need two, one for IP and one for nicks.
 // TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
-// TODO: Swap 2 or 3 players when it's 4 strong vs 5 weak.
 // TODO: Swap latest player to join with last player to join, if it improves teams.
 // TODO: BroadcastTeamStrengths() was occasionally being called twice.  Check that it is not called if it cannot do anything (or at least not called twice!).
 // TODO: mutate listfakers
+
+// DONE: Swap 2 or 3 players when it's 4 strong vs 5 weak.
 
 // Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
 
@@ -489,8 +491,8 @@ function AddMutator(Mutator Other) {
 event Timer() {
 	#ifdef LOG_LAG
 		local Pawn p;
-		local float startTime;
-		startTime = Level.TimeSeconds;
+		local float timerStartedAt;
+		timerStartedAt = Level.TimeSeconds;
 	#endif
 	if (!gameStartDone) CheckGameStart();
 	if (gameStartDone) CheckGameEnd();
@@ -502,13 +504,13 @@ event Timer() {
 	}
 	#ifdef LOG_LAG
 		if (bLogging) {
-			// if (Level.TimeSeconds > startTime + 0.1) { // 2 ticks at TR 20
-				// Log("AutoTeamBalance.Timer() took " $ (Level.TimeSeconds - startTime) $ " seconds (at "$Level.TimeSeconds$")."); // ofc this adds to lag! TODO: we could instead build an average and log it at the end of the game
+			if (Level.TimeSeconds > timerStartedAt + 0.1) { // 2 ticks at TR 20
+				// Log("AutoTeamBalance.Timer() took " $ (Level.TimeSeconds - timerStartedAt) $ " seconds (at "$Level.TimeSeconds$")."); // ofc this adds to lag! TODO: we could instead build an average and log it at the end of the game
 				p = FindPlayerNamed("nogginBasher");
-				if (p != None) p.ClientMessage("AutoTeamBalance.Timer() took " $ Left(String(Level.TimeSeconds - startTime),5) $ " seconds (at "$Left(String(Level.TimeSeconds),5)$").");
+				if (p != None) p.ClientMessage("AutoTeamBalance.Timer() took " $ Left(String(Level.TimeSeconds - timerStartedAt),5) $ " seconds (at "$Left(String(Level.TimeSeconds),5)$").");
 				p = FindPlayerNamed("F0X|Rork");
-				if (p != None) p.ClientMessage("AutoTeamBalance.Timer() took " $ Left(String(Level.TimeSeconds - startTime),5) $ " seconds (at "$Left(String(Level.TimeSeconds),5)$").");
-			// }
+				if (p != None) p.ClientMessage("AutoTeamBalance.Timer() took " $ Left(String(Level.TimeSeconds - timerStartedAt),5) $ " seconds (at "$Left(String(Level.TimeSeconds),5)$").");
+			}
 		}
 	#endif
 }
@@ -2024,6 +2026,7 @@ simulated event Tick(float DeltaTime) {
 // If bDo=False, then instead of performing the change, it will instead call ProposeChange() which will message all players to suggest they type "!teams" to make the change happen.
 function MidGameRebalance(bool bDo) {
 	local int redTeamCount,blueTeamCount;
+	local bool success;
 
 	if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
 		return;
@@ -2043,16 +2046,17 @@ function MidGameRebalance(bool bDo) {
 	DebugLog("MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$"");
 
 	// TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end - although the system should really be changed entirely, since it tries to balance strengths on the first switch, it will be harder to keep them balanced on the second switch.
-	/*
+	success = True; // will become false only if MidGameTeamBalanceSwitchOnePlayer() is tried and failed.
 	if (redTeamCount < blueTeamCount) {
-		MidGameTeamBalanceSwitchOnePlayer(bDo,1,0);
+		success = MidGameTeamBalanceSwitchOnePlayer(bDo,1,0);
 	} else if (blueTeamCount < redTeamCount) {
-		MidGameTeamBalanceSwitchOnePlayer(bDo,0,1);
-	} else if (!bNeverRebalanceWhenTeamsAreEven) {
+		success = MidGameTeamBalanceSwitchOnePlayer(bDo,0,1);
+	}
+	
+	// Mmm could initialise success = True, then if it == False, we know switch1 failed, so we should do switch2, otherwise do the old check
+	if ((redTeamCount == blueTeamCount && !bNeverRebalanceWhenTeamsAreEven) || !success) {
 		MidGameTeamBalanceSwitchTwoPlayers(bDo);
 	}
-	*/
-	MidGameTeamBalanceSwitchTwoPlayers(bDo);
 
 }
 
@@ -2093,7 +2097,8 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 			lastBalanceTime = Level.TimeSeconds - MinSecondsBeforeRebalance; // Make immediate rebalance possible
 		} else {
 			// BroadcastMessageAndLog("Not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
-			BroadcastMessageAndLog(""$getTeamName(toTeam)$" team would be too strong with "$closestPlayer.getHumanName()$"");
+			// BroadcastMessageAndLog(""$getTeamName(toTeam)$" team would be too strong with "$closestPlayer.getHumanName()$"");
+			BroadcastMessageAndLog(""$getTeamName(toTeam)$" team looks too strong.  Considering switching two players...");
 			return False;
 		}
 	}
@@ -2123,24 +2128,18 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	newdifference = difference;
 
 	// FIXED by "hashing": These repeated calls to GetPlayerStrength() are going to be inefficient, possibly causing some lag while the server calculates.
-	for (redP=Level.PawnList; true; redP=redP.NextPawn) {
-		for (blueP=Level.PawnList; true; blueP=blueP.NextPawn) {
+	for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
+		for (blueP=Level.PawnList; blueP!=None; blueP=blueP.NextPawn) {
 			if (redP != blueP
-					&& (redP == None || redP.PlayerReplicationInfo.Team==0)
-					&& (blueP == None || blueP.PlayerReplicationInfo.Team==1)
-					&& (redP == None || AllowedToBalance(redP))
-					&& (blueP == None || AllowedToBalance(blueP))
-					&& (redP == None || redP.PlayerReplicationInfo.HasFlag == None)
-					&& (blueP == None || blueP.PlayerReplicationInfo.HasFlag == None)
+					&& redP.PlayerReplicationInfo.Team==0
+					&& blueP.PlayerReplicationInfo.Team==1
+					&& AllowedToBalance(redP)
+					&& AllowedToBalance(blueP)
+					&& redP.PlayerReplicationInfo.HasFlag == None
+					&& blueP.PlayerReplicationInfo.HasFlag == None
 			) {
-				if (redP == None)
-					redPStrength = 0;
-				else
-					redPStrength = GetPlayerStrength(redP);
-				if (blueP == None)
-					bluePStrength = 0;
-				else
-					bluePStrength = GetPlayerStrength(blueP);
+				redPStrength = GetPlayerStrength(redP);
+				bluePStrength = GetPlayerStrength(blueP);
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
 				potentialNewDifference = blueTeamStrength + redPStrength*2 - redTeamStrength - bluePStrength*2;
 				if (Abs(potentialNewDifference) < Abs(newdifference)) {
@@ -2149,28 +2148,22 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 					bluePlayerToMove = blueP;
 				}
 			}
-			if (blueP == None)
-				break;
 		}
-		if (redP == None)
-			break;
 	}
 
 	// CONSIDER: if one of the players is a bot, we should probably move him last, because bots tend to switch back to the other team, if UT.ini is configured that way.  Alternatively, we could copy Daniel's temporary-ut-balance-disable code into ChangePlayerToTeam.  Hmm probably nobody uses bBalanceBots anyway.
-	if (redPlayerToMove == None && bluePlayerToMove == None) {
-		BroadcastMessageAndLog("AutoTeamBalance could not find any switches to improve the teams.");
-		return False;
-	} else {
+	if (redPlayerToMove != None && bluePlayerToMove != None) {
 		if (bDo) {
-			if (redPlayerToMove != None)
-				ChangePlayerToTeam(redPlayerToMove,1,gameStartDone);
-			if (bluePlayerToMove != None)
-				ChangePlayerToTeam(bluePlayerToMove,0,gameStartDone);
+			ChangePlayerToTeam(redPlayerToMove,1,gameStartDone);
+			ChangePlayerToTeam(bluePlayerToMove,0,gameStartDone);
 			// BroadcastTeamStrengths();
 		} else {
 			ProposeChange(redPlayerToMove,bluePlayerToMove);
 		}
 		return True;
+	} else {
+		BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
+		return False;
 	}
 }
 
@@ -2184,8 +2177,6 @@ function ProposeChange(Pawn one, Pawn two) {
 	if (two == None) {
 		// msg = "Type !teams to move "$one.getHumanName();
 		msg = "Type !teams to move "$one.getHumanName()$" to "$getTeamName(1-one.PlayerReplicationInfo.Team);
-	} else if (one == None) {
-		msg = "Type !teams to move "$two.getHumanName()$" to "$getTeamName(1-two.PlayerReplicationInfo.Team);
 	} else {
 		msg = "Type !teams to swap "$one.getHumanName()$" with "$two.getHumanName();
 	}
