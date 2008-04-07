@@ -24,17 +24,18 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-#define ATB_VERSION "1.4h"
+#define ATB_VERSION "1.4i"
 
 // TODO: I think mid-game rebalance should not use FlagStrength, but mid game player joins should.
 // TODO: we may have a record cached, but we still have to check it each time.  It would be nice to have a faster check for whether we have it cached or not.
 // TODO: I wanted to do a QuickSort and QuickSearch, but since we must search by IP or by Nick, I might try BuildHash and SearchHash.  But really better would be a sorted index, or even a binary tree.  Whatever we do, we need two, one for IP and one for nicks.
-// TODO: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.
-// TODO: Swap latest player to join with last player to join, if it improves teams.
 // TODO: BroadcastTeamStrengths() was occasionally being called twice.  Check that it is not called if it cannot do anything (or at least not called twice!).
 // TODO: mutate listfakers
+// TODO: Swap latest player to join with last player to join, if it improves teams.  We now prefer to swap players shortest on the server, but we don't do it automatically for the last 2.
 
 // DONE: Swap 2 or 3 players when it's 4 strong vs 5 weak.
+// DONE: bCached - a faster check on whether we have player #i's record at index i in the arrays.
+// DONE: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.  OK we check 3v5 and we check strength difference.
 
 // Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
 
@@ -1703,6 +1704,10 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
 	// But if teams differ in size by 2 or more players, only one request to rebalance is needed:
 	// TODO: we could also require only 1 request if the stronger team has more players
 	if (bOverrideMinRequests && Abs(GetTeamSize(0)-GetTeamSize(1))>=2) {
+		additionalRequiredRequests = 0;
+	}
+	// Could bt part of bOverrideMinRequests, since it does, but it isn't atm:
+	if ((GetTeamStrength(0) - GetTeamStrength(1)) > StrengthThreshold) {
 		additionalRequiredRequests = 0;
 	}
 	// Decide what to do
