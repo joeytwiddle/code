@@ -2095,6 +2095,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	local Pawn p;
 	local Pawn closestPlayer; // the most ideal potential player to switch
 	local float newDifference; // the absolute strength difference between the two teams after the potential switch
+	local float timeInGame,bestScore;
 	local int playerCountDifference;
 	fromTeamStrength = GetTeamStrength(fromTeam);
 	toTeamStrength = GetTeamStrength(toTeam);
@@ -2109,10 +2110,14 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 		if (AllowedToBalance(p)
 				&& p.PlayerReplicationInfo.Team==fromTeam && p.PlayerReplicationInfo.HasFlag==None) {
 			playerStrength = GetPlayerStrength(p);
-			if (closestPlayer == None || Abs(currentDifference-playerStrength*2) < newDifference) {
+			timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
+			if (closestPlayer == None
+					|| ( Abs(currentDifference-playerStrength*2) < currentDifference && Abs(currentDifference-playerStrength*2)*timeInGame < bestScore )
+			) {
 				closestPlayer = p;
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
 				newDifference = Abs(currentDifference-playerStrength*2);
+				bestScore = newDifference*timeInGame;
 			}
 		}
 	}
@@ -2123,8 +2128,11 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	if (newDifference >= currentDifference && !bForceEvenTeams && CountHumanPlayers()>3) {
 		// We only decline to switch if #players>3 and we aren't "forcing" even teams and if teams sizes only differ by 1 player.
 		if (playerCountDifference>=2) {
-			BroadcastMessageAndLog(""$getTeamName(toTeam)$" looks stronger than "$getTeamName(fromTeam)$".  Please consider rebalancing again!");
-			lastBalanceTime = Level.TimeSeconds - MinSecondsBeforeRebalance; // Make immediate rebalance possible
+			if (bDo) {
+				BroadcastMessageAndLog(""$getTeamName(toTeam)$" looks stronger than "$getTeamName(fromTeam)$".  Please consider rebalancing again!");
+				lastBalanceTime = Level.TimeSeconds - MinSecondsBeforeRebalance; // Make immediate rebalance possible
+			}
+			// Proceed to switch.
 		} else {
 			// BroadcastMessageAndLog("Not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
 			// BroadcastMessageAndLog(""$getTeamName(toTeam)$" team would be too strong with "$closestPlayer.getHumanName()$"");
@@ -2151,13 +2159,14 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	// best found:
 	local Pawn redPlayerToMove,bluePlayerToMove; // the best two players found so far
 	local float bestDifference; // the strength difference between the two teams after switching these players
-	local float bothTimeInGame,bestTimeInGame; // the strength difference between the two teams after switching these players
+	local float bothTimeInGame;
+	local float bestScore;
 
 	redTeamStrength = GetTeamStrength(0);
 	blueTeamStrength = GetTeamStrength(1);
 	difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
 	bestDifference = difference;
-	bestTimeInGame = 60*60*24;
+	bestScore = 60*60*24 * difference;
 
 	// FIXED by "hashing": These repeated calls to GetPlayerStrength() are going to be inefficient, possibly causing some lag while the server calculates.
 	for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
@@ -2189,20 +2198,18 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 					// Find pair with least time in game:
 					// DONE: To encourage swapping recently joined players, we could increase the size of potentialNewDifference wrt the length of time the players have played.
 					//       Problem: This might mean we failed to find a potentialNewDifference < difference !
-					// OK now finds, of all pairs which improve the balance, the pair which have the lowest max (no longer combined) time on server.
+					// OK now finds, of all pairs which improve the balance, the pair which have the best score, where score is new different * max time in server of the players.
+					// So if one pair have been in for 1 minute and create new difference 40, they score 2400, and if another pair have been in for 3 minutes but create difference 10, they score 1800, and are swapped.
 					if (Abs(potentialNewDifference) < Abs(difference)) {
 						// This is an improvement on the current situation.
 						// bothTimeInGame = redPTimeInGame + bluePTimeInGame;
 						bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
-						if (bothTimeInGame < bestTimeInGame) {
-							bestTimeInGame = bothTimeInGame;
+						if (bothTimeInGame*Abs(potentialNewDifference) < bestScore) {
+							bestScore = bothTimeInGame*Abs(potentialNewDifference);
 							bestDifference = potentialNewDifference;
 							redPlayerToMove = redP;
 							bluePlayerToMove = blueP;
 						}
-						// This will always swap the last two if the last two swapping would improve the teams.
-						// TODO: It does not swap another pair even if that would make teams nicely even.
-						// But maybe that should have be done automatically anyway, when one of those 2 joined.
 					}
 
 					#endif
