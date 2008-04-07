@@ -2107,7 +2107,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	currentDifference = fromTeamStrength - toTeamStrength;
 	playerCountDifference = GetTeamSize(fromTeam) - GetTeamSize(toTeam);
 	if (currentDifference<0 && playerCountDifference<2) {
-		BroadcastMessageAndLog(""$getTeamName(toTeam)$" is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
+		DebugLog(""$getTeamName(toTeam)$" is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
 		return False;
 	}
 	// Find the player on fromTeam with strength closest to difference, and switch him/her
@@ -2128,7 +2128,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 		}
 	}
 	if (closestPlayer == None) {
-		BroadcastMessageAndLog("Could not find any player on "$getTeamName(fromTeam)$" to switch");
+		DebugLog("Could not find any player on "$getTeamName(fromTeam)$" to switch");
 		return False;
 	}
 	if (newDifference >= currentDifference && !bForceEvenTeams && CountHumanPlayers()>3) {
@@ -2142,7 +2142,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 		} else {
 			// BroadcastMessageAndLog("Not switching "$closestPlayer.getHumanName()$" because that would make "$getTeamName(toTeam)$" team too strong!");
 			// BroadcastMessageAndLog(""$getTeamName(toTeam)$" team would be too strong with "$closestPlayer.getHumanName()$"");
-			BroadcastMessageAndLog(""$getTeamName(toTeam)$" team looks too strong.  Considering switching two players...");
+			DebugLog(""$getTeamName(toTeam)$" team looks too strong.  Considering switching two players...");
 			return False;
 		}
 	}
