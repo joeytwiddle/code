@@ -2095,7 +2095,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	local Pawn p;
 	local Pawn closestPlayer; // the most ideal potential player to switch
 	local float newDifference; // the absolute strength difference between the two teams after the potential switch
-	local float timeInGame,bestScore;
+	local float timeInGame,bestScore,potentialNewDifference;
 	local int playerCountDifference;
 	fromTeamStrength = GetTeamStrength(fromTeam);
 	toTeamStrength = GetTeamStrength(toTeam);
@@ -2111,13 +2111,14 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 				&& p.PlayerReplicationInfo.Team==fromTeam && p.PlayerReplicationInfo.HasFlag==None) {
 			playerStrength = GetPlayerStrength(p);
 			timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
+			potentialNewDifference = currentDifference-playerStrength*2;
 			if (closestPlayer == None
-					|| ( Abs(currentDifference-playerStrength*2) < currentDifference && Abs(currentDifference-playerStrength*2)*timeInGame < bestScore )
+					|| ( Abs(potentialNewDifference) < currentDifference && potentialNewDifference*potentialNewDifference*timeInGame < bestScore )
 			) {
 				closestPlayer = p;
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
-				newDifference = Abs(currentDifference-playerStrength*2);
-				bestScore = newDifference*timeInGame;
+				newDifference = Abs(potentialNewDifference);
+				bestScore = newDifference*newDifference*timeInGame;
 			}
 		}
 	}
@@ -2204,8 +2205,8 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 						// This is an improvement on the current situation.
 						// bothTimeInGame = redPTimeInGame + bluePTimeInGame;
 						bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
-						if (bothTimeInGame*Abs(potentialNewDifference) < bestScore) {
-							bestScore = bothTimeInGame*Abs(potentialNewDifference);
+						if (bothTimeInGame*potentialNewDifference*potentialNewDifference < bestScore) {
+							bestScore = bothTimeInGame*potentialNewDifference*potentialNewDifference;
 							bestDifference = potentialNewDifference;
 							redPlayerToMove = redP;
 							bluePlayerToMove = blueP;
