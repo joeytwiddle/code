@@ -231,12 +231,13 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 }
 
 function SaveBuildings() {
-	local int i,Typei,team,count;
+	local int i,TypeI,team,count;
 	local string SavedTypes,type,map;
 	local sgBuilding A;
 	map = GetMap();
 	// i = FRand()*MaxRecords;
 	SavedTypes="";
+	TypeI=-1; // just for the logging at the end
 	foreach AllActors(class'sgBuilding',A) {
 		if (A.IsA('sgBaseCore')) // Buildings we don't save
 			continue;
@@ -247,6 +248,7 @@ function SaveBuildings() {
 		}
 		if (Instr(SavedTypes,":"$type$":")==-1) {
 			// New type:
+			SavedTypes = SavedTypes $ ":"$type$":";
 			for (team=0;team<MaxTeams;team++) {
 				i = GetBuildingsI(map,type,team);
 				if (!bRememberOld)
@@ -262,12 +264,12 @@ function SaveBuildings() {
 					}
 				}
 			}
-			SavedTypes = SavedTypes $ ":" $ type $ ":";
 		}
 	}
 	SaveConfig();
-	BroadcastMessage("Saved "$(Typei+1)$" types of building, "$count$" new.");
-	Log("Saved "$(Typei+1)$" types of building, "$count$" new.");
+	// I'm not sure (TypeI+1) is a good estimate, probably CountOfStr(SavedTypes,":")/2 is better ^^
+	BroadcastMessage("Saved "$(TypeI+1)$" types of building, "$count$" new.");
+	Log("Saved "$(TypeI+1)$" types of building, "$count$" new.");
 }
 
 function int GetBuildingsI(String map, String type, int team) {

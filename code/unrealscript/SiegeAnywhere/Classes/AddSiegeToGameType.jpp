@@ -9,6 +9,8 @@
 // DONE: You can exceed your MaxRU by leeching.  Hack fixed in Tick().
 // CONSIDER TODO: Suppliers will not give you any new weapons.  If we want it to, we could do like SiegeGI, and give each player every weapon with 0 ammo when they spawn.
 
+// TODO: SiegeDM has a problem with damage on players of the same colour.  Either let them damage each other, or make sure everyone who joins goes on a smaller team ( = 5 team TDM).
+
 #ifndef SiegeAnywhereHUDType
 	#define SiegeAnywhereHUDType class'SiegeAnywhereHUD'
 #endif

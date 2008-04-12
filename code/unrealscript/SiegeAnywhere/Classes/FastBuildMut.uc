@@ -25,7 +25,9 @@
 
 // DONE: +RU from kills/leeching can exceed MaxRU!  That was only happening with SiegeAnywhere - fixed there.
 
-// TODO: Do not allow players into enemy base during the FastBuild.
+// DONE: Do not allow players into enemy base during the FastBuild.
+// TODO: They can get in for a moment (long enough to take a pickup!) using their translocator.  Translocators should not be allowed into the enemy volume either.
+// Consider: kill players who are too far inside enemy base (more than just walking or dodging into the wall).
 
 class FastBuildMut extends Mutator;
 
@@ -190,6 +192,7 @@ function CheckForGameStart() {
 	foreach AllActors(class'PlayerPawn', p) {
 		// We could in fact check for any weapon type which we know will be a default, e.g. enforcer/piston.
 		// if (p.FindInventoryType(class'sgConstructor') != None || p.FindInventoryType(class'SiegeAnywhereConstructor') != None) { // This was firing early - I blame AddSiegeToGameType.AddDefaultInventory()!
+		// TODO: This is no good in SiegeCTF in tournament mode (at least when Pure is present)!
 		if (p.FindInventoryType(class'ImpactHammer') != None) {
 			Log("FastBuildMut.CheckForGameStart() Detected player " $ p.getHumanName() $ " who is holding a weapon - doing GameStart!");
 			DoGameStart();
