@@ -1,0 +1,238 @@
+// vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
+
+// TrackPlayers:
+
+// !follow <player> or !track <player> will give you updates of the location of that player in your chat window, provided bAllowTracking and bTrackOppositeTeam or isTeamMate().
+// Useful if someone in a pug is not talking. ;)
+
+// !trackfc will always give updates of the location of your flag-carrier.
+
+// Could also give health and status updates, like Pure does with teamsay.
+
+// !ignore ?
+
+class TrackPlayers expands Mutator config(TrackMuts);
+
+struct PlayerSettings {
+	var String trackWords;
+	var bool bTrackTFC;
+	var bool bTrackEFC;
+};
+
+var config bool bAllowEnemyTracking;
+var config bool bAcceptSpokenCommands;
+var config bool bAcceptMutateCommands;
+var config bool bSwallowSpokenCommands;
+var bool bOnlyAdmin; // TODO: config
+var config int CheckTime;
+
+defaultproperties {
+  bAllowEnemyTracking=False
+  bAcceptSpokenCommands=True
+  bAcceptMutateCommands=True
+  bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
+  bOnlyAdmin=False
+  CheckTime=3
+}
+
+var PlayerSettings settings[64];
+var String LastSeenZone[64];
+
+function PostBeginPlay() {
+	local Actor A;
+	local int i;
+
+	// TODO:
+	// If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
+   // Level.Game.BaseMutator.AddMutator(Self);
+
+	// Register to receive spoken messages in MutatorTeamMessage() below:
+	if (bAcceptSpokenCommands) {
+		Level.Game.RegisterMessageMutator(Self);
+	}
+
+	SetTimer(CheckTime,true);
+
+}
+
+// Catch messages from players:
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	local bool hideMessage;
+	hideMessage = False;
+	if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
+		if (StrStartsWith(Msg,"!")) {
+			hideMessage = CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
+		}
+	}
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage || !bSwallowSpokenCommands);
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+	if (bAcceptMutateCommands) {
+		CheckMessage(str, Sender);
+	}
+	Super.Mutate(str, Sender);
+}
+
+// function int GetI(Pawn P) {
+	// return P.PlayerReplicationInfo.PlayerID % 64;
+// }
+#define GetI(P) (P.PlayerReplicationInfo.PlayerID % 64)
+
+function PlayerSettings GetPlayerSettingsFor(Pawn P) {
+	return settings[P.PlayerReplicationInfo.PlayerID % 64];
+}
+// #define GetPlayerSettingsFor(P) settings[GetI(P)]
+
+#define LastSeenZoneFor(checkP) LastSeenZone[checkP.PlayerReplicationInfo.PlayerID % 64]
+
+// Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
+function bool CheckMessage(String line, PlayerPawn Sender) {
+	local int argCount;
+	local String args[256];
+	local Actor A;
+	local String result;
+	local int i,j;
+	local String squishedName;
+	local String url;
+	local String rebuilt_string; // CONSIDER: instead of rebuilding the string, we could just use StrAfter(line," ") one or more times.
+	local String command;
+	// local PlayerSettings ps;
+	local String stateStr;
+
+	if (bOnlyAdmin && !Sender.bAdmin) {
+		return False;
+	}
+
+	// ps = GetPlayerSettingsFor(Sender);
+	// #define ps GetPlayerSettingsFor(Sender)
+
+	// Log("TrackPlayers.CheckMessage() ("$Sender$"): "$Msg$"");
+	argcount = SplitString(line," ",args);
+
+	command = args[0];
+
+	#define GetPlayerSettingsFor(Sender) settings[Sender.PlayerReplicationInfo.PlayerID % 64]
+	// #define GetPlayerSettingsFor(Sender) settings[GetI(Sender)]
+
+	if (command ~= "TRACK") {
+		for (i=1;i<argcount;i++) {
+			GetPlayerSettingsFor(Sender).trackWords = GetPlayerSettingsFor(Sender).trackWords $ " " $ args[i];
+			// Sender.ClientMessage("Now tracking \""$args[i]$"\"");
+			// Sender.ClientMessage("To turn tracking off, type: !tracknone");
+			SetTimer(CheckTime,true);
+		}
+		Sender.ClientMessage("Now tracking:"$GetPlayerSettingsFor(Sender).trackWords);
+		Sender.ClientMessage("To turn tracking off, type: !tracknone");
+		return True;
+	}
+
+	if (command ~= "TRACKFLAGS") {
+		GetPlayerSettingsFor(Sender).bTrackTFC = True;
+		GetPlayerSettingsFor(Sender).bTrackEFC = True;
+		Sender.ClientMessage("Now tracking flags");
+		SetTimer(CheckTime,true);
+		return True;
+	}
+
+	if (command ~= "TRACKNONE" || command ~= "NOTRACK") {
+		GetPlayerSettingsFor(Sender).trackWords = "";
+		GetPlayerSettingsFor(Sender).bTrackTFC = False;
+		GetPlayerSettingsFor(Sender).bTrackEFC = False;
+		Sender.ClientMessage("Tracking stopped");
+		return True;
+	}
+
+	if (command ~= "HELP") {
+		Sender.ClientMessage("TrackPlayers commands: track <player_name> | trackflags | tracknone");
+		return True;
+	}
+
+	return False;
+
+}
+
+function String GetZoneFor(Pawn p) {
+	if (p.PlayerReplicationInfo.PlayerZone != None) {
+		return p.PlayerReplicationInfo.PlayerZone.ZoneName;
+	} else if (p.PlayerReplicationInfo.PlayerLocation != None) {
+		return p.PlayerReplicationInfo.PlayerLocation.LocationName;
+	}
+	return "Unknown " $ p.Location;
+}
+
+event Timer() {
+	// local PlayerPawn checkP,p;
+	local Pawn checkP;
+	// local PlayerPawn p;
+	local Pawn p;
+	local String zone;
+	local PlayerSettings ps;
+	local int argCount;
+	local String args[256];
+	local int i;
+	local String last;
+	// foreach AllActors(class'Pawn', checkP) {
+	for (checkP=Level.PawnList; checkP!=None; checkP=checkP.NextPawn) {
+		if (Bot(checkP)==None && PlayerPawn(checkP)==None)
+			continue;
+		zone = GetZoneFor(checkP);
+		if ( zone != LastSeenZoneFor(checkP) ) {
+
+			last = LastSeenZoneFor(checkP);
+			Log("TeackPlayers.Timer(): Zone change for "$checkP.GetHumanName()$": "$last$" -> "$zone);
+			LastSeenZoneFor(checkP) = zone;
+
+			// Zone has changed!
+
+			// Inform all others:
+
+			// foreach AllActors(class'PlayerPawn', p) {
+			for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+				if (PlayerPawn(p) == None) continue;
+				if (p == checkP) continue;
+
+				ps = GetPlayerSettingsFor(p);
+
+				// #undef ps
+				// #define ps GetPlayerSettingsFor(p)
+
+	// #undef GetPlayerSettingsFor(p)
+	// #define GetPlayerSettingsFor(p) settings[GetI(p)]
+	// #define ps settings[GetI(p)]
+	#define ps settings[GetI(p)]
+
+				// Is p tracking checkP?
+				argcount = SplitString(ps.trackWords," ",args);
+				for (i=0;i<argcount;i++) {
+					if (Len(args[i])>0 && StrContains(Caps(checkP.GetHumanName()), Caps(args[i]))) {
+						if (p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team || bAllowEnemyTracking)
+							p.ClientMessage(checkP.GetHumanName() $" -> "$ zone);
+					}
+				}
+				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackTFC && p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team) {
+					p.ClientMessage(checkP.GetHumanName() $" has the enemy flag at "$ zone);
+				}
+				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackEFC && p.PlayerReplicationInfo.Team != checkP.PlayerReplicationInfo.Team && bAllowEnemyTracking) {
+					p.ClientMessage(checkP.GetHumanName() $" has your flag at "$ zone);
+				}
+
+			}
+
+		}
+		SetTimer(CheckTime,true);
+	}
+}
+
+function ModifyPlayer(Pawn Other) {
+	if (PlayerPawn(Other) != None && Other.PlayerReplicationInfo.Deaths == 0) {
+		GetPlayerSettingsFor(Other).bTrackTFC = True;
+		GetPlayerSettingsFor(Other).bTrackEFC = True;
+	}
+	Super.ModifyPlayer(Other);
+}
+
+#include "../../JLib/findactor.uc.jpp"
+
+#include "../../JLib/jlib.uc.jpp"
+

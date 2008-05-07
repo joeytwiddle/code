@@ -1,0 +1,182 @@
+// vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
+
+class TrackDamage expands Mutator config(TrackMuts);
+
+struct PlayerSettings {
+	var bool bFlash;         // Flash damage updates instead of putting them in chatlog/console
+	var bool bSeeMyDamage;   // Show damage this player causes
+	var bool bSeeAllDamage;  // Show damage this player receives
+};
+
+var config bool bAcceptSpokenCommands;
+var config bool bAcceptMutateCommands;
+var config bool bSwallowSpokenCommands;
+var bool bOnlyAdmin; // TODO: config
+var config Color SentPainColor,ReceivedPainColor;
+
+var PlayerSettings settings[64];
+
+
+
+defaultproperties {
+  bAcceptSpokenCommands=True
+  bAcceptMutateCommands=True
+  bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
+  bOnlyAdmin=False
+	SentPainColor=(R=222,G=111,B=0,A=8)
+	ReceivedPainColor=(R=222,G=222,B=0,A=8)
+}
+
+// function PlayerSettings GetPlayerSettingsFor(PlayerPawn P) {
+	// return settings[P.PlayerReplicationInfo.PlayerID % 64];
+// }
+
+#define GetPlayerSettingsFor(X) settings[X.PlayerReplicationInfo.PlayerID % 64]
+
+function PostBeginPlay() {
+	local Actor A;
+	local int i;
+
+	Level.Game.RegisterDamageMutator(Self);
+
+	// TODO:
+	// If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
+   // Level.Game.BaseMutator.AddMutator(Self);
+
+	// Register to receive spoken messages in MutatorTeamMessage() below:
+	if (bAcceptSpokenCommands) {
+		Level.Game.RegisterMessageMutator(Self);
+	}
+
+}
+
+// Catch messages from players:
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	local bool hideMessage;
+	hideMessage = False;
+	if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
+		if (StrStartsWith(Msg,"!")) {
+			hideMessage = CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
+		}
+	}
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage || !bSwallowSpokenCommands);
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+	if (bAcceptMutateCommands) {
+		CheckMessage(str, Sender);
+	}
+	Super.Mutate(str, Sender);
+}
+
+// Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
+function bool CheckMessage(String line, PlayerPawn Sender) {
+	local int argCount;
+	local String args[256];
+	local Actor A;
+	local String result;
+	local int i,j;
+	local String squishedName;
+	local String url;
+	local String rebuilt_string; // CONSIDER: instead of rebuilding the string, we could just use StrAfter(line," ") one or more times.
+	local String command;
+	// local PlayerSettings ps;
+	local String stateStr;
+
+	if (bOnlyAdmin && !Sender.bAdmin) {
+		return False;
+	}
+
+	// ps = GetPlayerSettingsFor(Sender);
+	#define ps GetPlayerSettingsFor(Sender)
+
+	// Log("ActorEditor.CheckMessage() ("$Sender$"): "$Msg$"");
+	argcount = SplitString(line," ",args);
+
+	command = args[0];
+
+	if (line ~= "flash") {
+		ps.bFlash = !ps.bFlash;
+		stateStr = "off";
+		if (ps.bFlash)
+			stateStr = "on";
+		if (ps.bFlash) FlashMessageToPlayer(Sender,"Your flash is "$stateStr,ReceivedPainColor,1,4);
+		Sender.ClientMessage("Your flash is "$stateStr);
+		return True;
+	}
+
+	if (line ~= "damage") {
+		ps.bSeeMyDamage = !ps.bSeeMyDamage;
+		stateStr = "off";
+		if (ps.bSeeMyDamage)
+			stateStr = "on";
+		Sender.ClientMessage("Your showdamage is "$stateStr);
+		return True;
+	}
+
+	if (line ~= "alldamage") {
+		ps.bSeeAllDamage = !ps.bSeeAllDamage;
+		stateStr = "off";
+		if (ps.bSeeAllDamage)
+			stateStr = "on";
+		Sender.ClientMessage("Your showalldamage is "$stateStr);
+		return True;
+	}
+
+	if (command ~= "HELP") {
+		Sender.ClientMessage("TrackDamage commands: damage alldamage");
+		return True;
+	}
+
+	return False;
+
+}
+
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+	local PlayerSettings instigatorSettings;
+	local PlayerSettings victimSettings;
+	local String boost;
+	if (PlayerPawn(InstigatedBy) != None) {
+		instigatorSettings = GetPlayerSettingsFor(PlayerPawn(InstigatedBy));
+		if (instigatorSettings.bSeeMyDamage) {
+			// TODO: damage on multiple players at one moment in time should appear on different lines
+			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),Victim.GetHumanName()$" -"$ActualDamage,SentPainColor,2,1);
+			else PlayerPawn(InstigatedBy).ClientMessage("[ -"$ ActualDamage $" ] "$ Victim.GetHumanName());
+		}
+	}
+	if (PlayerPawn(Victim) != None) {
+		victimSettings = GetPlayerSettingsFor(PlayerPawn(Victim));
+			boost = "";
+			if (VSize(Momentum) > 0.1) boost = "boost";
+			if (VSize(Momentum) > 100) boost = "boost!";
+			if (VSize(Momentum) > 500.1) boost = "BOOST";
+			if (VSize(Momentum) > 1000.1) boost = "BOOST!";
+			if (boost != "")
+				boost = boost $ " ("$ Int(VSize(Momentum)) $")";
+		if (victimSettings.bSeeAllDamage)
+			if (victimSettings.bFlash) FlashMessageToPlayer(PlayerPawn(Victim),"You -"$ActualDamage,ReceivedPainColor,6,1);
+			// else PlayerPawn(Victim).ClientMessage("*HIT* -"$ ActualDamage $" "$boost$" from "$ InstigatedBy.GetHumanName() $"'s type "$ DamageType);
+			else PlayerPawn(Victim).ClientMessage("-"$ ActualDamage $" from "$ InstigatedBy.GetHumanName() $"'s "$ DamageType$" "$boost);
+	}
+	Log("TrackDamage.MutatorTakeDamage(): [-"$ ActualDamage $"] "$ InstigatedBy.GetHumanName() $" -> "$ Victim.GetHumanName() $" ("$ DamageType $")");
+	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
+}
+
+function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum, optional int duration, optional bool bAdditional, optional bool bBeep) {
+	if (linenum == 0)
+		linenum = 4;
+	if (duration == 0)
+		duration = 2;
+	if (!bAdditional)
+		p.ClearProgressMessages();
+	p.SetProgressTime(duration);
+	p.SetProgressColor(msgColor,linenum);
+	p.SetProgressMessage(Msg,linenum);
+	if (bBeep)
+		p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32);
+}
+
+#include "../../JLib/findactor.uc.jpp"
+
+#include "../../JLib/jlib.uc.jpp"
+
