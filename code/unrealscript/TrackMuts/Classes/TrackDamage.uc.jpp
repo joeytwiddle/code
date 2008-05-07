@@ -4,15 +4,16 @@ class TrackDamage expands Mutator config(TrackMuts);
 
 struct PlayerSettings {
 	var bool bFlash;         // Flash damage updates instead of putting them in chatlog/console
-	var bool bSeeMyDamage;   // Show damage this player causes
-	var bool bSeeAllDamage;  // Show damage this player receives
+	var bool bSeeDamageGiven;   // Show damage this player causes
+	var bool bSeeDamageReceived;  // Show damage this player receives
+	var bool bSeeAllDamage;  // Show all damage that occurs!  (Not yet added)
 };
 
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
 var config bool bSwallowSpokenCommands;
 var bool bOnlyAdmin; // TODO: config
-var config Color SentPainColor,ReceivedPainColor;
+var config Color SentPainColor,ReceivedPainColor,InfoColor;
 
 var PlayerSettings settings[64];
 
@@ -23,8 +24,9 @@ defaultproperties {
   bAcceptMutateCommands=True
   bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
   bOnlyAdmin=False
-	SentPainColor=(R=222,G=111,B=0,A=8)
-	ReceivedPainColor=(R=222,G=222,B=0,A=8)
+	InfoColor=(R=255,G=255,B=255,A=32)
+	SentPainColor=(R=222,G=111,B=0,A=111)
+	ReceivedPainColor=(R=222,G=0,B=0,A=63)
 }
 
 // function PlayerSettings GetPlayerSettingsFor(PlayerPawn P) {
@@ -95,36 +97,51 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 	command = args[0];
 
-	if (line ~= "flash") {
+	if (command ~= "flash") {
 		ps.bFlash = !ps.bFlash;
 		stateStr = "off";
 		if (ps.bFlash)
 			stateStr = "on";
-		if (ps.bFlash) FlashMessageToPlayer(Sender,"Your flash is "$stateStr,ReceivedPainColor,1,4);
-		Sender.ClientMessage("Your flash is "$stateStr);
+		// if (ps.bFlash)
+		FlashMessageToPlayer(Sender,"damage flash = "$stateStr,InfoColor,0,2,true);
+		// else Sender.ClearProgressMessages();
+		Sender.ClientMessage("Your damage flash is "$stateStr);
 		return True;
 	}
 
-	if (line ~= "damage") {
-		ps.bSeeMyDamage = !ps.bSeeMyDamage;
+	if (command ~= "damage") {
+		ps.bSeeDamageGiven = !ps.bSeeDamageGiven;
 		stateStr = "off";
-		if (ps.bSeeMyDamage)
+		if (ps.bSeeDamageGiven)
 			stateStr = "on";
 		Sender.ClientMessage("Your showdamage is "$stateStr);
+		// if (ps.bFlash) 
+		FlashMessageToPlayer(Sender,"show damage = "$stateStr,SentPainColor,1,2,True);
 		return True;
 	}
 
-	if (line ~= "alldamage") {
+	if (command ~= "pain" || command ~="mydamage") {
+		ps.bSeeDamageReceived = !ps.bSeeDamageReceived;
+		stateStr = "off";
+		if (ps.bSeeDamageReceived)
+			stateStr = "on";
+		Sender.ClientMessage("Your show pain is "$stateStr);
+		FlashMessageToPlayer(Sender,"show pain = "$stateStr,ReceivedPainColor,7,2,True);
+		return True;
+	}
+
+	if (command ~= "alldamage") {
 		ps.bSeeAllDamage = !ps.bSeeAllDamage;
 		stateStr = "off";
 		if (ps.bSeeAllDamage)
 			stateStr = "on";
-		Sender.ClientMessage("Your showalldamage is "$stateStr);
+		Sender.ClientMessage("show alldamage = "$stateStr);
+		FlashMessageToPlayer(Sender,"Your show all damage is "$stateStr,InfoColor,3,2,True);
 		return True;
 	}
 
 	if (command ~= "HELP") {
-		Sender.ClientMessage("TrackDamage commands: damage alldamage");
+		Sender.ClientMessage("TrackDamage commands: flash damage pain alldamage");
 		return True;
 	}
 
@@ -136,12 +153,19 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	local PlayerSettings instigatorSettings;
 	local PlayerSettings victimSettings;
 	local String boost;
+	local String actualDamageStr;
+	if (ActualDamage == 0 && Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team)
+		actualDamageStr = "[SHIELDED]"; // shield or armor (or some other reason) caused this to give 0 damage to enemy
+	else
+		actualDamageStr = ""$ActualDamage;
+	if (Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
+		actualDamageStr = actualDamageStr $ " team";
 	if (PlayerPawn(InstigatedBy) != None) {
 		instigatorSettings = GetPlayerSettingsFor(PlayerPawn(InstigatedBy));
-		if (instigatorSettings.bSeeMyDamage) {
+		if (instigatorSettings.bSeeDamageGiven) {
 			// TODO: damage on multiple players at one moment in time should appear on different lines
-			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),Victim.GetHumanName()$" -"$ActualDamage,SentPainColor,2,1);
-			else PlayerPawn(InstigatedBy).ClientMessage("[ -"$ ActualDamage $" ] "$ Victim.GetHumanName());
+			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),Victim.getHumanName()$" -"$actualDamageStr,SentPainColor,1,2);
+			else PlayerPawn(InstigatedBy).ClientMessage("[ -"$ actualDamageStr $" ] "$ Victim.getHumanName());
 		}
 	}
 	if (PlayerPawn(Victim) != None) {
@@ -153,12 +177,12 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			if (VSize(Momentum) > 1000.1) boost = "BOOST!";
 			if (boost != "")
 				boost = boost $ " ("$ Int(VSize(Momentum)) $")";
-		if (victimSettings.bSeeAllDamage)
-			if (victimSettings.bFlash) FlashMessageToPlayer(PlayerPawn(Victim),"You -"$ActualDamage,ReceivedPainColor,6,1);
-			// else PlayerPawn(Victim).ClientMessage("*HIT* -"$ ActualDamage $" "$boost$" from "$ InstigatedBy.GetHumanName() $"'s type "$ DamageType);
-			else PlayerPawn(Victim).ClientMessage("-"$ ActualDamage $" from "$ InstigatedBy.GetHumanName() $"'s "$ DamageType$" "$boost);
+		if (victimSettings.bSeeDamageReceived)
+			if (victimSettings.bFlash) FlashMessageToPlayer(PlayerPawn(Victim),"You -"$actualDamageStr,ReceivedPainColor,7,2);
+			// else PlayerPawn(Victim).ClientMessage("*HIT* -"$ actualDamageStr $" "$boost$" from "$ InstigatedBy.getHumanName() $"'s type "$ DamageType);
+			else PlayerPawn(Victim).ClientMessage("-"$ actualDamageStr $" from "$ InstigatedBy.getHumanName() $"'s "$ DamageType$" "$boost);
 	}
-	Log("TrackDamage.MutatorTakeDamage(): [-"$ ActualDamage $"] "$ InstigatedBy.GetHumanName() $" -> "$ Victim.GetHumanName() $" ("$ DamageType $")");
+	// Log("TrackDamage.MutatorTakeDamage(): [-"$ actualDamageStr $"] "$ InstigatedBy.getHumanName() $" -> "$ Victim.getHumanName() $" ("$ DamageType $")");
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
 }
 

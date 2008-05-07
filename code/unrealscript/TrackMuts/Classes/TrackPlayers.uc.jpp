@@ -11,6 +11,8 @@
 
 // !ignore ?
 
+#define FC_COVER
+
 class TrackPlayers expands Mutator config(TrackMuts);
 
 struct PlayerSettings {
@@ -180,7 +182,7 @@ event Timer() {
 		if ( zone != LastSeenZoneFor(checkP) ) {
 
 			last = LastSeenZoneFor(checkP);
-			Log("TeackPlayers.Timer(): Zone change for "$checkP.GetHumanName()$": "$last$" -> "$zone);
+			Log("TrackPlayers.Timer(): Zone change for "$checkP.GetHumanName()$": "$last$" -> "$zone);
 			LastSeenZoneFor(checkP) = zone;
 
 			// Zone has changed!
@@ -202,19 +204,27 @@ event Timer() {
 	// #define ps settings[GetI(p)]
 	#define ps settings[GetI(p)]
 
-				// Is p tracking checkP?
+				//// Is p tracking checkP?
+				// Check flag-carriers:
+				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackTFC && p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team) {
+					#ifdef FC_COVER
+					ShowFC(PlayerPawn(p),checkP,zone);
+					#else
+					p.ClientMessage(checkP.GetHumanName() $" has the enemy flag at "$ zone);
+					#endif
+					continue;
+				}
+				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackEFC && p.PlayerReplicationInfo.Team != checkP.PlayerReplicationInfo.Team && bAllowEnemyTracking) {
+					p.ClientMessage(checkP.GetHumanName() $" has your flag at "$ zone);
+					continue;
+				}
+				// No flag-carriers?  Check tracked words:
 				argcount = SplitString(ps.trackWords," ",args);
 				for (i=0;i<argcount;i++) {
 					if (Len(args[i])>0 && StrContains(Caps(checkP.GetHumanName()), Caps(args[i]))) {
 						if (p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team || bAllowEnemyTracking)
 							p.ClientMessage(checkP.GetHumanName() $" -> "$ zone);
 					}
-				}
-				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackTFC && p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team) {
-					p.ClientMessage(checkP.GetHumanName() $" has the enemy flag at "$ zone);
-				}
-				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackEFC && p.PlayerReplicationInfo.Team != checkP.PlayerReplicationInfo.Team && bAllowEnemyTracking) {
-					p.ClientMessage(checkP.GetHumanName() $" has your flag at "$ zone);
 				}
 
 			}
@@ -223,6 +233,44 @@ event Timer() {
 		SetTimer(CheckTime,true);
 	}
 }
+
+#ifdef FC_COVER
+function ShowFC(PlayerPawn to, Pawn fc, String zone) {
+	local Pawn p;
+	local float teamCount, enemyCount;
+	local float teamCloseness, enemyCloseness;
+	local float distance;
+	local String coverType;
+	// local String danger;
+	foreach AllActors(class'Pawn', P) {
+		if (P == fc || P == to)
+			continue;
+		if (PlayerPawn(p) == None && Bot(P) == None)
+			continue;
+		//! This caused: Error, Use [] for arrays, not ()
+		// #define distance VSize(P.Location - fc.Location)
+		distance = VSize(P.Location - fc.Location);
+		if (P.PlayerReplicationInfo.Team == fc.PlayerReplicationInfo.Team) {
+			teamCloseness += distance*distance;
+			teamCount += 1.0;
+		} else {
+			enemyCloseness += distance*distance;
+			enemyCount += 1.0;
+		}
+	}
+	teamCloseness = teamCloseness / teamCount;
+	enemyCloseness = enemyCloseness / enemyCount;
+	if (teamCloseness < enemyCloseness) {
+		coverType = "good cover";
+		// danger = "";
+	} else {
+		coverType = "poor cover";
+		// danger = "IN DANGER ";
+	}
+	to.ClientMessage("Your flag carrier is at "$ zone $" with "$ coverType $".");
+	// to.ClientMessage("Your flag carrier is "$danger$"at "$ zone $"");
+}
+#endif
 
 function ModifyPlayer(Pawn Other) {
 	if (PlayerPawn(Other) != None && Other.PlayerReplicationInfo.Deaths == 0) {
