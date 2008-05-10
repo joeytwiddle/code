@@ -1,0 +1,2 @@
+[Public]
+Object=(Name=TranslocBots.TranslocBots,Class=Class,MetaClass=Engine.Mutator,Description="TranslocBots")

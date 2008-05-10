@@ -107,7 +107,8 @@ function FindBoundary() {
 
 	FindBoundaryFromFlags();
 
-	if (MaxAllowedRadius < 2048) {
+	// if (MaxAllowedRadius < 2048) { // failed on Panels, PureAction and ShockBlock, but worked on 2on2Crates.
+	if (MaxAllowedRadius < 1024) { // TODO: The REAL check we want to make, is whether all PlayerStarts are within the boundary.
 		// Log("FastBuildMut.FindBoundary(): Could not find both FlagBases, or they were too close.  Now averaging PlayerStarts...");
 		FindBoundaryFromSpawnPoints();
 		//// TODO: this is desirable for assault, but maybe not TDM and *definitely* not DOM!
@@ -117,12 +118,17 @@ function FindBoundary() {
 
 	// MaxAllowedRadius is now deprecated, dotproduct is used instead.
 	// Log("FastBuildMut.FindBoundary(): MaxAllowedRadius="$MaxAllowedRadius);
-	if (MaxAllowedRadius < 2048) { // DM-Richocet was 409, bleak was 3117.
+	if (MaxAllowedRadius < 256) { // DM-Richocet was 409, bleak was 3117.
 		// MaxAllowedRadius = 1024 * 256;
-		Log("FastBuildMut.FindBoundary(): TeamOrigins look a little close!");
+		Log("FastBuildMut.FindBoundary(): TeamOrigins are too close together to build a wall!");
 		if (bConfineToBase) {
 			Log("FastBuildMut.FindBoundary(): Disabling bConfineToBase");
 		}
+		bConfineToBase = False;
+	}
+
+	if ( String(Level.Game.Class)~="Botpack.TeamGamePlusDeathMatchPlus" || String(Level.Game.Class)~="Botpack.DeathMatchPlus") {
+		Log("FastBuildMut.FindBoundary(): Disabling because DM/TDM map");
 		bConfineToBase = False;
 	}
 
@@ -341,7 +347,7 @@ function CheckBoundaries() {
 					// p.TakeDamage(10*FRand(),p,p.Location,vect(0,0,0),'Fell'); // self-damage
 					p.TakeDamage(5,p,p.Location,vect(0,0,0),'Fell'); // self-damage
 					// p.ClientMessage("Warning: you may not leave your base during the FastBuild!");
-					p.ClientMessage("Warning: "$depth);
+					// p.ClientMessage("Warning: "$depth);
 					if (p.IsA('PlayerPawn'))
 						FlashMessageToPlayer(PlayerPawn(p),"Warning: you may not leave your base during the FastBuild!",colorYellow,0,2,False,False);
 					// DONE: this result is according to the spheres and not the wall - but we are detecting using the wall!
@@ -432,7 +438,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			ActualDamage=0;
 			// DamageType = None;
 			// Momentum = Momentum * 2.0;
-			// Momentum = Momentum * 0.0;
+			if (InstigatedBy.PlayerReplicationInfo.Team != Victim.PlayerReplicationInfo.Team)
+				Momentum = Momentum * 0.0;
 		}
 	}
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);

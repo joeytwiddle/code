@@ -24,9 +24,9 @@ defaultproperties {
   bAcceptMutateCommands=True
   bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
   bOnlyAdmin=False
-	InfoColor=(R=255,G=255,B=255,A=32)
-	SentPainColor=(R=222,G=111,B=0,A=111)
-	ReceivedPainColor=(R=222,G=0,B=0,A=63)
+	InfoColor=(R=255,G=255,B=255,A=4)
+	SentPainColor=(R=222,G=111,B=0,A=8)
+	ReceivedPainColor=(R=222,G=0,B=0,A=16)
 }
 
 // function PlayerSettings GetPlayerSettingsFor(PlayerPawn P) {
@@ -152,37 +152,59 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 	local PlayerSettings instigatorSettings;
 	local PlayerSettings victimSettings;
+	local PlayerPawn pl;
 	local String boost;
 	local String actualDamageStr;
+
 	if (ActualDamage == 0 && Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team)
-		actualDamageStr = "[SHIELDED]"; // shield or armor (or some other reason) caused this to give 0 damage to enemy
+		actualDamageStr = "(absorbed)"; // shield or armor (or some other reason) caused this to give 0 damage to enemy
 	else
 		actualDamageStr = ""$ActualDamage;
-	if (Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
-		actualDamageStr = actualDamageStr $ " team";
+	if (Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
+		actualDamageStr = actualDamageStr $ " TEAM";
+
+	boost = "";
+	if (VSize(Momentum) > 0.1) boost = "boost";
+	if (VSize(Momentum) > 100) boost = "boost!";
+	if (VSize(Momentum) > 500.1) boost = "BOOST";
+	if (VSize(Momentum) > 1000.1) boost = "BOOST!";
+	if (boost != "")
+		boost = boost $ " ("$ Int(VSize(Momentum)) $")";
+	// if (boost != "" && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
+		// boost = "TEAM " $ boost;
+
 	if (PlayerPawn(InstigatedBy) != None) {
 		instigatorSettings = GetPlayerSettingsFor(PlayerPawn(InstigatedBy));
 		if (instigatorSettings.bSeeDamageGiven) {
 			// TODO: damage on multiple players at one moment in time should appear on different lines
-			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),Victim.getHumanName()$" -"$actualDamageStr,SentPainColor,1,2);
-			else PlayerPawn(InstigatedBy).ClientMessage("[ -"$ actualDamageStr $" ] "$ Victim.getHumanName());
+			#undef FlashMessage
+			#undef SayMessage
+			#define FlashMessage Victim.getHumanName()$" -"$actualDamageStr
+			#define SayMessage "Damage "$ actualDamageStr $" on "$ Victim.getHumanName() $" type "$ DamageType $" "$ boost
+			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),FlashMessage,SentPainColor,1,2);
+			else PlayerPawn(InstigatedBy).ClientMessage(SayMessage);
 		}
 	}
+
 	if (PlayerPawn(Victim) != None) {
 		victimSettings = GetPlayerSettingsFor(PlayerPawn(Victim));
-			boost = "";
-			if (VSize(Momentum) > 0.1) boost = "boost";
-			if (VSize(Momentum) > 100) boost = "boost!";
-			if (VSize(Momentum) > 500.1) boost = "BOOST";
-			if (VSize(Momentum) > 1000.1) boost = "BOOST!";
-			if (boost != "")
-				boost = boost $ " ("$ Int(VSize(Momentum)) $")";
 		if (victimSettings.bSeeDamageReceived)
-			if (victimSettings.bFlash) FlashMessageToPlayer(PlayerPawn(Victim),"You -"$actualDamageStr,ReceivedPainColor,7,2);
+			#undef FlashMessage
+			#undef SayMessage
+			#define FlashMessage "You -"$actualDamageStr
+			#define SayMessage "Pain "$ actualDamageStr $" from "$ InstigatedBy.getHumanName() $"'s "$ DamageType$" "$boost
+			if (victimSettings.bFlash) FlashMessageToPlayer(PlayerPawn(Victim),FlashMessage,ReceivedPainColor,7,2);
 			// else PlayerPawn(Victim).ClientMessage("*HIT* -"$ actualDamageStr $" "$boost$" from "$ InstigatedBy.getHumanName() $"'s type "$ DamageType);
-			else PlayerPawn(Victim).ClientMessage("-"$ actualDamageStr $" from "$ InstigatedBy.getHumanName() $"'s "$ DamageType$" "$boost);
+			else PlayerPawn(Victim).ClientMessage(SayMessage);
 	}
+
 	// Log("TrackDamage.MutatorTakeDamage(): [-"$ actualDamageStr $"] "$ InstigatedBy.getHumanName() $" -> "$ Victim.getHumanName() $" ("$ DamageType $")");
+	foreach AllActors(class'PlayerPawn', pl) {
+		if (GetPlayerSettingsFor(pl).bSeeAllDamage) {
+			pl.ClientMessage(InstigatedBy.getHumanName() $" caused -"$ actualDamageStr $" on "$ Victim.getHumanName() $" with "$ DamageType $".");
+		}
+	}
+
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
 }
 

@@ -27,6 +27,7 @@ var config bool bAcceptMutateCommands;
 var config bool bSwallowSpokenCommands;
 var bool bOnlyAdmin; // TODO: config
 var config int CheckTime;
+var config bool bLogging;
 
 defaultproperties {
   bAllowEnemyTracking=False
@@ -35,6 +36,7 @@ defaultproperties {
   bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
   bOnlyAdmin=False
   CheckTime=3
+  bLogging=False
 }
 
 var PlayerSettings settings[64];
@@ -182,7 +184,7 @@ event Timer() {
 		if ( zone != LastSeenZoneFor(checkP) ) {
 
 			last = LastSeenZoneFor(checkP);
-			Log("TrackPlayers.Timer(): Zone change for "$checkP.GetHumanName()$": "$last$" -> "$zone);
+			// Log("TrackPlayers.Timer(): Zone change for "$checkP.GetHumanName()$": "$last$" -> "$zone);
 			LastSeenZoneFor(checkP) = zone;
 
 			// Zone has changed!
@@ -207,6 +209,7 @@ event Timer() {
 				//// Is p tracking checkP?
 				// Check flag-carriers:
 				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackTFC && p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team) {
+					if (bLogging) Log("TrackPlayers.Timer(): Show FC to "$p.GetHumanName()$": "$checkP.GetHumanName() $" has the enemy flag at "$ zone);
 					#ifdef FC_COVER
 					ShowFC(PlayerPawn(p),checkP,zone);
 					#else
@@ -215,6 +218,7 @@ event Timer() {
 					continue;
 				}
 				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackEFC && p.PlayerReplicationInfo.Team != checkP.PlayerReplicationInfo.Team && bAllowEnemyTracking) {
+					if (bLogging) Log("TrackPlayers.Timer(): Show EFC to "$p.GetHumanName()$": "$checkP.GetHumanName() $" has your flag at "$ zone);
 					p.ClientMessage(checkP.GetHumanName() $" has your flag at "$ zone);
 					continue;
 				}

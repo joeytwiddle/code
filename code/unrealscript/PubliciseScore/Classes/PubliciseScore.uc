@@ -87,10 +87,12 @@ event Timer() {
   if (bShowTeamScore) {
    redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
    blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
-   if (bShowTeamNames) {
-    text = text $ "[Red:"$redScore$" Blue:"$blueScore$"] ";
-   } else {
-    text = text $ "["$redScore$"-"$blueScore$"] ";
+   if (redScore>0 || blueScore>0) {
+    if (bShowTeamNames) {
+     text = text $ "[Red:"$redScore$" Blue:"$blueScore$"] ";
+    } else {
+     text = text $ "["$redScore$"-"$blueScore$"] ";
+    }
    }
   }
  }
@@ -281,17 +283,28 @@ function String Locs(String in) {
  }
  return out;
 }
-function String StrFilterNum(String in) {
+function String StrFilterNum(String in, optional out String rest) {
  local String out;
  local int i;
  local int c;
+ local bool onNum;
  out = "";
+ onNum = false;
  for (i=0;i<Len(in);i++) {
   c = Asc(Mid(in,i,1));
-  if (c>=Asc("0") && c<=Asc("9")) {
+  if ( (c>=Asc("0") && c<=Asc("9")) || c==Asc(".") ) {
    out = out $ Chr(c);
+   onNum = true;
+  } else {
+   if (onNum) {
+    // onNum = false;
+    // out = out $ " ";
+    rest = Mid(in,i);
+    return out;
+   }
   }
  }
+ rest = "";
  return out;
 }
 // UT2k4 had Repl(in,search,replace).

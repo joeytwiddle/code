@@ -1,0 +1,2 @@
+[Public]
+Object=(Name=AutoTeamBalance.AutoTeamBalance,Class=Class,MetaClass=Engine.Mutator,Description="Auto Team Balance")

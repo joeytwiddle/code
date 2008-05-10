@@ -1,3 +1,5 @@
+## This was very slow on XConsole.u, possibly because it contained no newlines.
+
 USCRIPTFILE="$1"
 
 CURRENT="$1.current"
@@ -5,13 +7,15 @@ CURRENT="$1.current"
 PKGDIR="Decompiled/` echo "$USCRIPTFILE" | afterlast / | beforelast "\.u" `/Classes"
 mkdir -p "$PKGDIR"
 
+echo "Decompiling $USCRIPTFILE into $PKGDIR/ via $CURRENT ..."
+
 cat "$USCRIPTFILE" |
 
 ## Encode all the real newlines:
 sed "s+$+\\\\r\\\\n+" |
 
-## Delete all the existing newlines:
-tr -d '\r\n' |
+## Delete all the existing newlines: NO this really slows it down!
+# tr -d '\r\n' |
 
 tee /tmp/decompile_unrealscript.debug.1 |
 
@@ -22,7 +26,9 @@ sed "s+[^[:print:][:space:]]+\n+g" | ## Works with sed 4.1.2 - takes forever wit
 tee /tmp/decompile_unrealscript.debug.2 |
 
 # dog "$USCRIPTFILE".decompiled.0
-tr -s '\r\n' |
+dos2unix |
+tr -d '\r' |
+tr -s '\n' |
 
 ## Select large blocks, which contain "\nclass ____" near their start:
 trimempty |
@@ -34,7 +40,7 @@ grep "\<[n]*class\>" |
 # done |
 
 ## Reformat for output:
-sed 's+$+\n+' |
+# sed 's+$+\n+' |
 sed 's+\(\\r\|\)\\n+\n+g' |
 # sed 's+^}$+}\n+' |
 

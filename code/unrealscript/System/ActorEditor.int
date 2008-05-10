@@ -1,0 +1,2 @@
+[Public]
+Object=(Name=ActorEditor.ActorEditor,Class=Class,MetaClass=Engine.Mutator,Description="Actor Editor")

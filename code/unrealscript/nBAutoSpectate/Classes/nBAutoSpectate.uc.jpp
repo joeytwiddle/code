@@ -2,6 +2,12 @@
 // nBAutoSpectate.
 //================================================================================
 
+// TODO: Allow a mode that records the spectator's camera position every few seconds, and a mode that replays those positions, interpolating smoothly.  (That may be what w1z4! did for the #scrofulous movie.)
+
+// TODO: to detect areas of action, detect weapons being fired!
+
+// TODO: some way to turn stuff on and off mid-game
+
 // TODO: If a the location of the player we are viewing hasn't changed in 0.5-1.0 seconds, he may be standing still, but more often during online spectating, we've lost his info, and the display has become boring.  That's the time to do a GetRandomCameraNow()!
 
 // TODO: Flashed messages should last long enough to read!  But it should also be possible to turn them off entirely.
@@ -106,11 +112,6 @@
 class nBAutoSpectate extends Mutator config(nBAutoSpectate);
 
 var PlayerPawn Camera;
-var Rotator targRot;
-var Rotator myRot;
-var Rotator prevRot;
-var bool bfoundflag;
-var bool bviewingFC;
 var string blueFC;
 var string redFC;
 #ifdef PKATB
@@ -238,18 +239,6 @@ var int NextEventEndTime;
 var int CurrentEventi;
 
 #endif
-
-function int fun1 (int X, int Y, out int diff) {
-	local int newdiff;
-
-	diff = X - Y;
-	newdiff = diff;
-	if ( (newdiff > 20000) || (newdiff < -20000) )
-	{
-		newdiff = 20000;
-	}
-	return newdiff * newdiff / 500000;
-}
 
 function PlayerPawn GetRandomPlayer() {
 	local PlayerPawn p;
@@ -805,6 +794,8 @@ function float RotateAngle(float a, float b) {
 }
 
 function bool LosingNetOn(Actor a) {
+	// These do not work.
+	// TODO: check his location has CHANGED!  If he stays still >0.5s then switch.
 	if (a == None)
 		return true;
 	if (a.Location == vect(0,0,0))
@@ -836,7 +827,7 @@ function MovePawnTowardsLocation(Pawn p, Vector NewLocation, float amount) {
 // TODO: since X==None, Y should be a stored string that described X.
 function DontLose(Actor X,String Y) {
 	if (LosingNetOn(X)) {
-		LogWarn("LosingNetOn " $ Y $ " - Calling GetRandomCameraNow() ...");
+		LogDebug("LosingNetOn " $ Y $ " - Calling GetRandomCameraNow() ...");
 		if (bSwitchCamera)
 			GetRandomCameraNow();
 	}
@@ -856,6 +847,7 @@ function DeltaCamera(float Delta) {
 
 	if (CameraMode == 0) {
 		DontLose(Camera.ViewTarget,"Camera.ViewTarget");
+		Camera.SetLocation(Camera.ViewTarget.Location); // not seen but if we do move with the target we are more likely to keep nearby object in our feed
 	}
 	if (CameraMode == 1) {
 		DontLose(FollowActor,"FollowActor");
@@ -921,6 +913,7 @@ function DeltaCamera(float Delta) {
 		// followTarget = rotator(FollowActor.Location - Camera.ViewTarget.Location);
 		// Camera.ViewRotation.yaw   = Camera.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
 		doNotPan = true;
+		Camera.SetLocation(Camera.ViewTarget.Location); // not seen but if we do move with the target we are more likely to keep nearby object in our feed
 	}
 	if (CameraMode == 6) {
 		DontLose(FollowActor,"FollowActor");
@@ -1125,6 +1118,10 @@ function CheckForInterestingTarget() {
 	}
 }
 */
+
+simulated exec function SPEC() {
+	Log("nBAutoSpectate.SPEC()!");
+}
 
 #ifdef ENABLE_EVENT_RECORD_REPLAY
 
@@ -1704,19 +1701,6 @@ event Tick (float Delta) {
 		}
 	} */
 
-	/*
-	// if ( Camera.ViewTarget != None ) {
-	// if ( Camera.ViewTarget == None ) {
-		// if ( Pawn(Camera.ViewTarget) != None ) {
-			// targRot = Pawn(Camera.ViewTarget).ViewRotation;
-			// targRot.Yaw = targRot.Yaw*0.999 + FRand();
-			// targRot.Pitch = targRot.Pitch*0.999 + FRand();
-			// myRot = Camera.ViewRotation;
-			// ydelta = fun1(targRot.Yaw,myRot.Yaw,diffout);
-			// pdelta = fun1(targRot.Pitch,myRot.Pitch,diffout);
-			// if (FRand()<0.01) {
-	*/
-
 			/*
 			if ( ydelta == -9999 )
 			{
@@ -1839,68 +1823,6 @@ event Tick (float Delta) {
 		}
 		Offset = InStr(Camera.Player.Console.MsgText[Camera.Player.Console.TopLine],"Failed to change view");
 
-		/*
-		if ( Offset != -1 )
-		{
-			redFC = "";
-			blueFC = "";
-		}
-		if (  !bviewingFC )
-		{
-			if ( Camera.ViewTarget == None )
-			{
-				if ( redFC != "" )
-				{
-					ViewRedFC();
-				} else {
-					if ( blueFC != "" )
-					{
-						ViewBlueFC();
-					}
-				}
-			} else {
-				if ( Pawn(Camera.ViewTarget) == None )
-				{
-					if ( redFC != "" )
-					{
-						ViewRedFC();
-					} else {
-						if ( blueFC != "" )
-						{
-							ViewBlueFC();
-						}
-					}
-				} else {
-					if ( Pawn(Camera.ViewTarget).PlayerReplicationInfo.HasFlag == None )
-					{
-						if ( redFC == Pawn(Camera.ViewTarget).PlayerReplicationInfo.PlayerName )
-						{
-							redFC = "";
-						} else {
-							if ( FindPlayer(redFC) )
-							{
-								ViewRedFC();
-							} else {
-								if ( blueFC == Pawn(Camera.ViewTarget).PlayerReplicationInfo.PlayerName )
-								{
-									blueFC = "";
-								} else {
-									if ( FindPlayer(blueFC) )
-									{
-										ViewBlueFC();
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-			SetTimer(0.31,False);
-			bviewingFC = True;
-		}
-		*/
-	}
-
 	#endif
 
 }
@@ -1999,7 +1921,6 @@ function ViewBlueFC() {
 
 
 function Timer () {
-	bviewingFC = False;
 }
 
 function setpawn (PlayerPawn o) {

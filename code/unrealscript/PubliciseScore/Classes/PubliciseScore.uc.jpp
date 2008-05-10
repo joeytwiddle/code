@@ -83,10 +83,12 @@ event Timer() {
 		if (bShowTeamScore) {
 			redScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[0].Score;
 			blueScore = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).Teams[1].Score;
-			if (bShowTeamNames) {
-				text = text $ "[Red:"$redScore$" Blue:"$blueScore$"] ";
-			} else {
-				text = text $ "["$redScore$"-"$blueScore$"] ";
+			if (redScore>0 || blueScore>0) {
+				if (bShowTeamNames) {
+					text = text $ "[Red:"$redScore$" Blue:"$blueScore$"] ";
+				} else {
+					text = text $ "["$redScore$"-"$blueScore$"] ";
+				}
 			}
 		}
 	}

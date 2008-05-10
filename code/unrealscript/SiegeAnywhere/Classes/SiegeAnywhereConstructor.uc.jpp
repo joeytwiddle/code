@@ -133,7 +133,7 @@ function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
 					|| p.IsA('Mover') // TODO CONSIDER: the jury is still out on this one
 					|| p.IsA('Decal')
 					|| p.IsA('Decoration')
-					|| p.IsA('Effect')
+					|| p.IsA('Effects') // NOT Effect - it's Effects!
 					|| p.IsA('RocketTrail')
 					|| p.IsA('DefensePoint')
 				)

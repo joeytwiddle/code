@@ -13,12 +13,13 @@ var config bool bReplacePathNodes; // Will replace PathNode actors with FreshTra
 var config bool bStopAtEndGame;
 var config bool bRenameBots;
 var config bool bTransToVisiblePoint;
+var config bool bTransToRandomActor;
 var config bool bRoamToEnemyFlag;
 
 var String PropertiesToCheck;
 
 defaultproperties {
-  bLogging=False
+  bLogging=True
   bForceBotsTransloc=True
   bGoForFlag=True
   bReplacePathNodes=False
@@ -26,6 +27,7 @@ defaultproperties {
   bStopAtEndGame=False // TODO: should default to True for sensible servers, but then check UpdateBotName() will be called before AutoTeamBalance updates stats.
   bRenameBots=False // interesting to watch bots change state
   bTransToVisiblePoint=False
+  bTransToRandomActor=True
   bRoamToEnemyFlag=False
 }
 
@@ -40,7 +42,7 @@ var Actor RandomFoundNavigationPoint;
 
 // function PreBeginPlay() {
 function PostBeginPlay() {
-  if (bForceBotsTransloc) SetTimer(1,True);
+  if (bForceBotsTransloc) SetTimer(1.0,True);
 }
 
 function MyLog(String msg) {
@@ -72,14 +74,15 @@ event Timer() {
     if (!p.IsA('Bot')) {
       continue;
     }
-    if (Rand(100)>80) {
+    if (Rand(100)>20) {
       continue;
     }
 
     b = Bot(p);
 
     if (bRenameBots) {
-      UpdateBotName(b);
+      // UpdateBotName(b);
+      UpdateBotName(b,""$b.GetStateName());
     }
 
     // if (bLogging) { MyLog(p.getHumanName() $ " :: " $ p.GetStateName() $ " RoamTarget="$b.RoamTarget$" MoveTarget="$b.MoveTarget$ " Target="$b.Target$""); }
@@ -106,6 +109,11 @@ event Timer() {
         b.MyTranslocator.TTarget = None;
         b.MyTranslocator.bTTargetOut = false;
       // }
+    }
+
+    if (bTransToRandomActor && Rand(100)<50) {
+      DoTranslocateToTarget(b,getRandomActor(b),"RandomActor");
+      continue;
     }
 
     if (bTransToVisiblePoint && Rand(100)<10) {
@@ -278,16 +286,16 @@ event Timer() {
   }
 }
 
-function UpdateBotName(Bot b) {
-  local String name;
-  name = b.PlayerReplicationInfo.PlayerName;
-  if (InStr(name,"^") >= 0) {
-    name = Left(name,InStr(name,"^"));
+function UpdateBotName(Bot b, String newState) {
+  local String newName;
+  newName = b.PlayerReplicationInfo.PlayerName;
+  if (InStr(newName,"^") >= 0) {
+    newName = Left(newName,InStr(newName,"^"));
   }
   if (!Level.Game.bGameEnded) {
-    name = name $ "^" $ b.GetStateName();
+    newName = newName $ "^" $ newState;
   }
-  b.PlayerReplicationInfo.PlayerName = name;
+  b.PlayerReplicationInfo.PlayerName = newName;
 }
 
 function bool DoTranslocateToTarget(Bot b, Actor Target, optional String where) {
@@ -312,6 +320,7 @@ function bool DoTranslocateToTarget(Bot b, Actor Target, optional String where) 
   if (bLogging) { MyLog(b.getHumanName()$" >> TranslocateToTarget(" $ Target $ ") "$where$" ("$VSize(Target.Location-b.Location)$","$b.LineOfSightTo(Target)$")"); }
 
   // If distance to target is too great, or there is no LineOfSightTo, then use FindBestPathToward(Target) to find a closer node
+  /*
   if (distance>32768 || !canSee) { // target it too far, or not in line-of-sight; try to find a waypoint to it
     oldTarget = b.MoveTarget; // since we are changing the bot's MoveTarget, let's remember it and reset it afterwards
     b.FindBestPathToward(Target,true);
@@ -323,12 +332,20 @@ function bool DoTranslocateToTarget(Bot b, Actor Target, optional String where) 
     }
     b.MoveTarget = oldTarget;
   }
+  */
 
   if ( (Target.IsA('PlayerPawn') || Target.IsA('Bot')) && Pawn(Target).PlayerReplicationInfo.Team == b.PlayerReplicationInfo.Team) {
     return false; // try to avoid telefragging your team-mates!
   }
 
+  if (bRenameBots) {
+    // UpdateBotName(b,where$"->"$Target.Name$"."$canSee);
+    UpdateBotName(b,"@"$Target.Name$"");
+  }
+
   b.TranslocateToTarget(Target);
+
+  return true;
 }
 
 // So far, this throws the TL, but the bot doesn't translocate to it.
@@ -353,6 +370,30 @@ function TranslocateToVector(Bot b, vector dest) {
     b.MyTranslocator.TTarget.SetCollisionSize(0,0);
     b.MyTranslocator.TTarget.Throw(b,b.MyTranslocator.MaxTossForce,dest);
   }
+}
+
+function Actor GetRandomActor(Actor from) {
+	local float bestDistance;
+	local Actor bestActor;
+	local float distance;
+	local Actor a;
+	foreach AllActors(class'Actor', A) {
+		if (A.IsA('PathNode') || A.IsA('Inventory') || A.IsA('Pickup')) {
+			distance = VSize(a.Location - from.Location);
+			if (Vector(PlayerPawn(from).ViewRotation) Dot (a.Location-from.Location) < 0)
+				continue;
+			if (distance < 4096) {
+			// if (distance < bestDistance) {
+				bestDistance = distance;
+				bestActor = a;
+				if (bestDistance>256 && bestDistance<2048 && FRand()<0.5)
+					return bestActor;
+				if (FRand()<0.5)
+					return bestActor;
+			}
+		}
+	}
+	return bestActor;
 }
 
 // Inefficient, but fairly distributed:

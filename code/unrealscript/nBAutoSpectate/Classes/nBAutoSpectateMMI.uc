@@ -12,17 +12,16 @@ function Execute ()
   local string IP;
 
   P = MenuItem.Owner.GetPlayerOwner();
-  // if (  !P.PlayerReplicationInfo.bIsSpectator )
-  // {
-    // P.ClientMessage("nBAuto spectate can only be run in spectate mode");
+  if ( !P.PlayerReplicationInfo.bIsSpectator ) {
+    P.ClientMessage("Warning: nBAutoSpectate running in-eyes mode may cause camera trouble!");
     // MenuItem.Owner.Root.EscClose();
     // return;
-  // }
+  }
   if ( FindOldAS() == True )
   {
     P.ClientMessage("nBAutoSpectate turned off");
   } else {
-    P.ClientMessage("nBAutoSpectate by {pIn}Kev on");
+    P.ClientMessage("nBAutoSpectate on - by {pIn}Kev + f0x|noggieB");
     AS = P.Spawn(Class'nBAutoSpectate');
     AS.setpawn(P);
   }
@@ -41,5 +40,9 @@ function bool FindOldAS ()
     bFound = True;
   }
   return bFound;
+}
+
+exec function yo() {
+	P.ClientMessage("yo");
 }
 
