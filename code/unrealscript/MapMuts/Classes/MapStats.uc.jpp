@@ -4,10 +4,25 @@
 
 class MapStats expands Mutator config(MapStats);
 
+#define MapScale 280
+
+#define NumberOfSpawnPointsScaled (currentMap.NumberOfSpawnPoints*0.75)
+#define FallbackValue (NumberOfSpawnPointsScaled*MapScale)
+
+#define CATCH_LEVEL_SWITCH
+
 var config bool bLogging;
-var config bool bAutoSwitchMap;
+var config bool bEndGameSwitchMap;
+var config int EndGameSwitchSeconds;
+var config bool bEmptyServerSwitchMap;
+var config int EmptyServerSwitchSeconds;
+var config bool bSetMaxPlayers;
+var config bool bAutoExpandMaxPlayers;
+var config int ServerMinPlayers;
+var config int ServerMaxPlayers;
 
 struct MapInfo {
+	var bool Crashes;
 	var String MapName;
 	var float PreferredPlayers;
 	var String PreferredPlayersSource;
@@ -16,13 +31,13 @@ struct MapInfo {
 	var int TotalDeaths;
 	var float TotalHoursPlayed;
 	var float TotalDamageDone;
-	var int NumberOfSpawnPoints;
-	var int NumberOfWeaponPickups;
-	var int NumberOfPathNodes;
 	var float DateLastPlayed;
 	var float AverageFlow;
 	var float AverageNumPlayers;
-	var float AverageActorDistance;
+	var int NumberOfSpawnPoints;
+	var int NumberOfWeaponPickups;
+	var int NumberOfPathNodes;
+	var float ActorDistance;
 };
 
 var config MapInfo MapStats[MaxData];
@@ -34,55 +49,44 @@ var float StartTime;
 var int PlayerCountAtStart;
 var bool bDoneGameEnd;
 var bool bExpectSwitch;
+var bool bCanChooseUnsizedMaps;
 
 var String ConsideredMaps;
 
 defaultproperties {
 bLogging=True
-bAutoSwitchMap=False
+bEndGameSwitchMap=False
+EndGameSwitchSeconds=30
+bEmptyServerSwitchMap=True
+EmptyServerSwitchSeconds=10
+bSetMaxPlayers=True
+bAutoExpandMaxPlayers=True
+ServerMinPlayers=6
+ServerMaxPlayers=24
 }
 
-#define MyLog(X); if (bLogging) DebugLog(X); 
+// #define MyLog(X); 
+#define MyLog(X); if (bLogging) { Log(Self $ "." $ X); }
 // #define MyLog(X); DebugLog(X);
 // function DebugLog(String y) {
 	// if (bLogging) { Log(y); }
 // }
 
+#define BroadcastAndLog(X); BroadcastMessage(X); MyLog(X);
+
 #define CountPlayers() ( CountActors(class'PlayerPawn') - CountActors(class'Spectator') )
 
-#define AverageActorDistance() AverageActorDistanceType(class'PlayerStart')
+// #define MaxActorDistance() MaxActorDistanceType(class'PlayerStart')
 
-function float AverageActorDistanceType(class<Actor> type) {
-	local Actor A,B;
-	local float totalDistance;
-	local int totalCount,realTotalCount;
-	local float distance;
-	totalCount=0;
-	foreach AllActors(type, A) {
-		totalCount++;
-	}
-	realTotalCount=0;
-	totalDistance=0;
-	foreach AllActors(type, A) {
-		if (FRand()<16/totalCount) {
-			foreach AllActors(type, B) {
-				if (FRand()<16/totalCount) {
-					distance = VSize(A.Location-B.Location);
-					totalDistance += distance*distance;
-					realTotalCount++;
-				}
-			}
-		}
-	}
-	totalDistance = totalDistance / realTotalCount;
-	return Sqrt(totalDistance); // this is actually average squared-distance, we should square-root it.
-}
+#define currentMap MapStats[mapI]
+
+#define MapRecord(X) MapStats[MapIndex(X)]
 
 function int HashStr(String str, optional int max) {
 	local int hash;
 	local int ch;
 	local int i;
-	if (max == 0) max = 256;
+	if (max == 0) max = MaxData;
 	for (i=0;i<Len(str);i++) {
 		ch = Asc(Mid(str,i,1));
 		hash += ch;
@@ -94,10 +98,6 @@ function int HashStr(String str, optional int max) {
 		}
 	}
 	return hash;
-}
-
-function float DaysSince1970() {
-	return Level.Year*365.25 + Level.Month*30.0 + Level.Day + Level.Hour/24.0 + Level.Minute/24.0/60.0 + Level.Second/24.0/60.0/60.0;
 }
 
 function int MapIndex(String mapName) {
@@ -112,16 +112,76 @@ function int MapIndex(String mapName) {
 			return i;
 		}
 		// collision, try next slot
+		// MyLog("MapIndex("$mapName$"): collision "$ mapName $" with "$MapStats[i].MapName);
 		i++;
 		if (i>=MaxData) {
-			MyLog("MapStats.MapIndex("$mapName$"): hash + collision offset = "$i$" - we are either full or unlucky; returning i=0");
+			Log(Self$".MapIndex("$mapName$"): hash + collision offset = "$i$" - we are either full or unlucky; returning i=0");
 			return 0;
 		}
 	}
 	// never reached: return 0;
 }
 
-#define MapRecord(X) MapStats[MapIndex(X)]
+function float AverageActorDistanceType(class<Actor> type) {
+	local Actor A,B;
+	local float totalDistance;
+	local int totalCount,realTotalCount;
+	local float distance;
+	totalCount=0;
+	foreach AllActors(type, A) {
+		totalCount++;
+	}
+	realTotalCount=0;
+	totalDistance=0;
+	foreach AllActors(type, A) {
+		if (FRand()<5.0/totalCount) {
+			foreach AllActors(type, B) {
+				if (FRand()<5.0/totalCount) {
+					distance = VSize(A.Location-B.Location);
+					totalDistance += distance;
+					// totalDistance += distance*distance;
+					realTotalCount++;
+				}
+			}
+		}
+	}
+	if (realTotalCount < 2)
+		return FallbackValue;
+	totalDistance = totalDistance / realTotalCount;
+	MyLog("AverageActorDistanceType("$type$"): AverageActorDistance="$ totalDistance $" over "$ realTotalCount);
+	return totalDistance;
+	// return Sqrt(totalDistance); // this is actually average squared-distance, we should square-root it.
+}
+
+function float MaxActorDistanceType(class<Actor> type) {
+	local Actor A,B;
+	local int totalCount;
+	local float bestDistance,distance;
+	totalCount=0;
+	foreach AllActors(type, A) {
+		totalCount++;
+	}
+	if (totalCount < 2)
+		return FallbackValue;
+	foreach AllActors(type, A) {
+		if (FRand()<5.0/totalCount) {
+			foreach AllActors(type, B) {
+				if (FRand()<5.0/totalCount) {
+					distance = VSize(A.Location-B.Location);
+					if (distance > bestDistance)
+						bestDistance = distance;
+				}
+			}
+		}
+	}
+	MyLog("MaxActorDistanceType("$type$"): MaxActorDistance="$ bestDistance $" over "$ totalCount);
+	return bestDistance; // this is actually average squared-distance, we should square-root it.
+	// return Sqrt(totalDistance); // this is actually average squared-distance, we should square-root it.
+}
+
+function float DaysSince1970() {
+	return (Level.Year-1970.0)*365.25 + Level.Month*30.0 + Level.Day + Level.Hour/24.0 + Level.Minute/24.0/60.0 + Level.Second/24.0/60.0/60.0;
+}
 
 function PostBeginPlay() {
 
@@ -150,46 +210,72 @@ function DoStart() {
 	local int count;
 	local float avg,num;
 
-	MapStats[mapI].TotalGamesStarted++;
-	MapStats[mapI].DateLastPlayed = DaysSince1970();
-	MapStats[mapI].AverageActorDistance = AverageActorDistance();
-	MapStats[mapI].NumberOfSpawnPoints = CountActors(class'PlayerStart');
-	MapStats[mapI].NumberOfWeaponPickups = CountActors(class'Weapon');
-	MapStats[mapI].NumberOfPathNodes = CountActors(class'PathNode');
+	IterateMaps();
 
-	idealPlayerCount = Level.IdealPlayerCount;
-	restStr = idealPlayerCount;
-	avg = 0.0;
-	count = 0;
-	do {
-		gotNum = StrFilterNum(restStr,restStr);
-		if (gotNum!="") {
-			num = Float(gotNum);
-			// MyLog("MapStats: Got "$num$" from \""$gotNum$"\" with rest="$restStr);
-			if (num>0) {
-				avg = (count*avg + num) / (count+1);
-				count++;
+	currentMap.TotalGamesStarted++;
+	currentMap.DateLastPlayed = DaysSince1970();
+	currentMap.Crashes = False;
+	// currentMap.ActorDistance = (MaxActorDistanceType(class'PlayerStart') + AverageActorDistanceType(class'PlayerStart') + AverageActorDistanceType(class'PathNode')) / 3.0;
+	currentMap.ActorDistance = ( MaxActorDistanceType(class'FlagBase') + MaxActorDistanceType(class'Weapon') + AverageActorDistanceType(class'PlayerStart') + AverageActorDistanceType(class'PathNode') ) / 4.0 / Float(MapScale);
+	if (currentMap.ActorDistance < 2)
+		currentMap.ActorDistance = 2;
+	if (currentMap.ActorDistance > 32)
+		currentMap.ActorDistance = 32;
+	currentMap.NumberOfSpawnPoints = CountActors(class'PlayerStart');
+	currentMap.NumberOfWeaponPickups = CountActors(class'Weapon');
+	currentMap.NumberOfPathNodes = CountActors(class'PathNode');
+
+	if (currentMap.PreferredPlayers == 0 || StrStartsWith(currentMap.PreferredPlayersSource,"Estimate") || StrStartsWith(currentMap.PreferredPlayersSource,"Generated:") /* legacy: || StrStartsWith(currentMap.PreferredPlayersSource,"Ideal") || StrStartsWith(currentMap.PreferredPlayersSource,"Level.Ideal") */ ) {
+		// We are allowed to modify the PreferredPlayers count for this map, and should now do out best
+
+		// Get map author's suggested IdealPlayerCount:
+		idealPlayerCount = Level.IdealPlayerCount;
+		restStr = idealPlayerCount;
+		avg = 0.0;
+		count = 0;
+		do {
+			gotNum = StrFilterNum(restStr,restStr);
+			if (gotNum!="") {
+				num = Float(gotNum);
+				// MyLog("MapStats: Got "$num$" from \""$gotNum$"\" with rest="$restStr);
+				if (num>0) {
+					// avg = (count*avg + num) / (count+1);
+					avg += num;
+					count++;
+				}
+				if (StrStartsWith(restStr,"-"))
+					restStr = Mid(restStr,1);
 			}
-			if (StrStartsWith(restStr,"-"))
-				restStr = Mid(restStr,1);
+		} until (gotNum == "");
+		if (count>0) avg = avg / count;
+
+		// Build estimated PreferredPlayers from avg, NumberOfSpawnPoints and ActorDistance:
+		if ( count>0 ) {
+			MyLog("DoStart(): Got IdealPlayerCount "$avg$" from \""$idealPlayerCount$"\".");
+			if (avg>20) avg=20;
+			currentMap.PreferredPlayers = avg;
+			// Mix it with NumberOfSpawnPoints and ActorDistance:
+			currentMap.PreferredPlayers = 0.4*avg + 0.4*NumberOfSpawnPointsScaled + 0.2*currentMap.ActorDistance;
+			currentMap.PreferredPlayersSource = "Estimate from Ideal("$ idealPlayerCount $"=>"$avg$") and PlayerStarts("$ NumberOfSpawnPointsScaled $") and ActorDistance("$ currentMap.ActorDistance $")";
+		} else {
+			// Mix just NumberOfSpawnPoints and ActorDistance:
+			currentMap.PreferredPlayers = 0.8*NumberOfSpawnPointsScaled + 0.2*currentMap.ActorDistance;
+			currentMap.PreferredPlayersSource = "Estimate from PlayerStarts("$ NumberOfSpawnPointsScaled $") and ActorDistance("$ currentMap.ActorDistance $")";
 		}
-	} until (gotNum == "");
-	if ( count>0 && ( MapStats[mapI].PreferredPlayersSource=="" || StrStartsWith(MapStats[mapI].PreferredPlayersSource,"Level.") ) ) {
-		MyLog("MapStats.DoStart(): Got idealPlayerCount "$avg$" from \""$idealPlayerCount$"\".");
-		if (avg>20) avg=20;
-		MapStats[mapI].PreferredPlayers = avg;
-		MapStats[mapI].PreferredPlayersSource = "Ideal="$ avg $"("$ idealPlayerCount $")";
-		if (MapStats[mapI].NumberOfSpawnPoints > 0) {
-			MapStats[mapI].PreferredPlayers = avg*0.75 + MapStats[mapI].NumberOfSpawnPoints*0.25;
-			MapStats[mapI].PreferredPlayersSource = MapStats[mapI].PreferredPlayersSource $ " PlayerStarts="$ MapStats[mapI].NumberOfSpawnPoints;
-			MyLog("MapStats.DoStart(): "$ MapStats[mapI].PreferredPlayersSource $" PreferredPlayers="$ MapStats[mapI].PreferredPlayers $".");
-		}
-	}
-	if (count == 0 && MapStats[mapI].PreferredPlayers == 0) {
-		MapStats[mapI].PreferredPlayers = MapStats[mapI].NumberOfSpawnPoints;
+		MyLog("DoStart(): "$ currentMap.PreferredPlayersSource $" => "$ currentMap.PreferredPlayers $"");
+
 	}
 
-	// MyLog("MapStats.DoStart(): Saving "$ MapStats[mapI]);
+	if (bSetMaxPlayers) {
+		Level.Game.MaxPlayers = 2*Int( (currentMap.PreferredPlayers+1.0)/2.0 );
+		if (Level.Game.MaxPlayers < ServerMinPlayers)
+			Level.Game.MaxPlayers = ServerMinPlayers;
+		if (Level.Game.MaxPlayers > ServerMaxPlayers)
+			Level.Game.MaxPlayers = ServerMaxPlayers;
+		MyLog("DoStart(): MaxPlayers set to "$ Level.Game.MaxPlayers);
+	}
+
+	// MyLog("DoStart(): Saving "$ MapStats[mapI]);
 	SaveConfig();
 
 }
@@ -197,6 +283,8 @@ function DoStart() {
 function ModifyPlayer(Pawn Other) {
 	if (PlayerPawn(Other) != None) {
 		if (Other.PlayerReplicationInfo.Deaths == 0) {
+			// Latest player join!
+			currentMap.DateLastPlayed = DaysSince1970();
 			if (StartTime == 0) {
 				// First ever spawn
 				StartTime = Level.TimeSeconds;
@@ -204,72 +292,105 @@ function ModifyPlayer(Pawn Other) {
 			}
 		} else {
 			// A frag / someone died
-			MapStats[mapI].TotalDeaths++;
+			currentMap.TotalDeaths++;
 		}
 	}
 	Super.ModifyPlayer(Other);
 }
 
 event Timer() {
-	local string NextMap;
-	if (CountActors(class'PlayerPawn')==CountActors(class'UTServerAdminSpectator') && FRand() < 0.1) Level.Game.bGameEnded = True;
+	// MyLog("CountPlayers = "$ CountPlayers());
+	if (bEmptyServerSwitchMap && CountPlayers()==0 /* CountActors(class'PlayerPawn')==CountActors(class'UTServerAdminSpectator') */ && Level.TimeSeconds>EmptyServerSwitchSeconds && FRand() < 0.2) {
+		Log(Self$".Timer(): Level is empty - auto switching.");
+		// Level.Game.bGameEnded = True;
+		// bDoneGameEnd = True; // This prevents DoEnd() from being called, which is good since it's an idle server switch, not a real end-game.
+		bCanChooseUnsizedMaps = True;
+		DoLevelSwitch();
+	}
+	if (bAutoExpandMaxPlayers) {
+		if (CountPlayers()+1 > Level.Game.MaxPlayers && Level.Game.MaxPlayers < ServerMaxPlayers) {
+			Level.Game.MaxPlayers += 2;
+			MyLog("Timer(): MaxPlayers set to "$ Level.Game.MaxPlayers);
+		}
+		if (CountPlayers() < ServerMinPlayers && Level.Game.MaxPlayers>ServerMinPlayers && FRand()<0.01) {
+			Level.Game.MaxPlayers -= 2;
+			MyLog("Timer(): MaxPlayers set to "$ Level.Game.MaxPlayers);
+		}
+		// Level.Game.MaxPlayers = 2*Int( (CountActors(class'PlayerPawn')+1.0)/2.0 );
+	}
 	if (Level.Game.bGameEnded && !bDoneGameEnd) {
 		DoEnd();
 		bDoneGameEnd = True;
-		if (bAutoSwitchMap) {
-			BroadcastMessage("Considered maps: "$ConsideredMaps);
-			BroadcastMessage("Switching to "$ ChooseNextMap() $" in 10 seconds.");
-			SetTimer(10,False);
+		if (bEndGameSwitchMap) {
+			BroadcastAndLog("Considered maps: "$ConsideredMaps);
+			BroadcastAndLog("Switching to "$ ChooseNextMap() $" in "$EndGameSwitchSeconds$" seconds.");
+			SetTimer(EndGameSwitchSeconds,False);
 		}
 		return;
 	}
-	if (Level.Game.bGameEnded && bDoneGameEnd && bAutoSwitchMap) {
-		BroadcastMessage("Considered maps: "$ConsideredMaps);
-		BroadcastMessage("Switching to "$ ChooseNextMap() $" now.");
-		bExpectSwitch = True;
-		// Enable('Tick');
-		// Level.NextURL = ChooseNextMap();
-		NextMap = ChooseNextMap();
-		if (!StrEndsWith(Caps(NextMap),".UNR"))
-			NextMap = NextMap $ ".unr";
-		// UTServerAdmin(GetAny(class'UTServerAdmin')).ConsoleCommand("admin servertravel "$ ChooseNextMap() );
-		Level.Game.ProcessServerTravel(NextMap,false);
-		// bDoneGameEnd = False;
-		// MyLog("Maps: "$Maps);
+	if (Level.Game.bGameEnded && bDoneGameEnd && bEndGameSwitchMap) {
+		DoLevelSwitch();
 	}
+}
+
+function DoLevelSwitch() {
+	local string NextMap;
+	NextMap = ChooseNextMap();
+
+	// MapRecord(NextMap).DateLastPlayed = DaysSince1970();
+	MapRecord(NextMap).Crashes = True;
+	SaveConfig(); // in case server crashes, this stops it from being chosen again!
+
+	BroadcastAndLog("Considered maps: "$ NextMap);
+	BroadcastAndLog("Switching to "$ NextMap $" now.");
+	#ifdef CATCH_LEVEL_SWITCH
+	bExpectSwitch = True;
+	Enable('Tick');
+	Level.NextURL = NextMap;
+	#endif
+	if (!StrEndsWith(Caps(NextMap),".UNR"))
+		NextMap = NextMap $ ".unr";
+	// UTServerAdmin(GetAny(class'UTServerAdmin')).ConsoleCommand("admin servertravel "$ ChooseNextMap() );
+	Level.Game.ProcessServerTravel(NextMap,false);
+	// bDoneGameEnd = False;
+	// MyLog("Maps: "$Maps);
+	SetTimer(0,False); // repeat calls should (may) be cancelled already
 }
 
 function DoEnd() {
 	local float playerChangeThisMap,averageNumPlayersThisMap;
 	local float totalHours,deltaHours,newTotalHours;
 
-	MapStats[mapI].TotalGamesEnded++;
-	MapStats[mapI].DateLastPlayed = DaysSince1970();
+	currentMap.TotalGamesEnded++;
+	// currentMap.DateLastPlayed = DaysSince1970();
 
-	totalHours = MapStats[mapI].TotalHoursPlayed;
+	totalHours = currentMap.TotalHoursPlayed;
 	deltaHours = (Level.TimeSeconds - StartTime) / 60.0 / 60.0;
-	newTotalHours = MapStats[mapI].TotalHoursPlayed + deltaHours;
+	newTotalHours = currentMap.TotalHoursPlayed + deltaHours;
 
 	playerChangeThisMap = CountPlayers() - PlayerCountAtStart;
-	MapStats[mapI].AverageFlow = (totalHours*MapStats[mapI].AverageFlow + deltaHours*playerChangeThisMap) / newTotalHours;
+	currentMap.AverageFlow = (totalHours*currentMap.AverageFlow + deltaHours*playerChangeThisMap) / newTotalHours;
 
 	averageNumPlayersThisMap = (CountPlayers() + PlayerCountAtStart) / 2.0;
-	MapStats[mapI].AverageNumPlayers = (totalHours*MapStats[mapI].AverageNumPlayers + deltaHours*averageNumPlayersThisMap) / newTotalHours;
+	currentMap.AverageNumPlayers = (totalHours*currentMap.AverageNumPlayers + deltaHours*averageNumPlayersThisMap) / newTotalHours;
 
-	MapStats[mapI].TotalHoursPlayed = newTotalHours;
+	currentMap.TotalHoursPlayed = newTotalHours;
 
 	SaveConfig();
 }
 
 function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	local float age, playerDiff;
+	if (MapStats[nextI].DateLastPlayed>719540) MapStats[nextI].DateLastPlayed = MapStats[nextI].DateLastPlayed - 719540; // legacy: when i changed my date calculation :P
 	age = DaysSince1970() - MapStats[nextI].DateLastPlayed;
+	// if (age>719050) age = age - 719050; // legacy: when i changed my date calculation :P
+	if (age<0) age = -age; // legacy: when i changed my date calculation :P
 	playerDiff = Abs(currentNumPlayers - MapStats[nextI].PreferredPlayers);
-	return (age+0.25) / (playerDiff+1);
+	return (age+0.1) / (playerDiff+2.0);
 }
 
 function bool ExistsOnDisk(String mapName) {
-	return true;
+	return IterateMaps(mapName);
 }
 
 function String ChooseNextMap() {
@@ -279,20 +400,32 @@ function String ChooseNextMap() {
 	local float mapScore;
 	// MyLog("CountActors(UTServerAdmin) = "$CountActors(class'UTServerAdmin'));
 	// MyLog("CountActors(PlayerPawn) = "$CountActors(class'PlayerPawn'));
+	if (CountPlayers() == 0)
+		bCanChooseUnsizedMaps = True;
 	ConsideredMaps="";
-	currentNumPlayers = CountActors(class'PlayerPawn'); // TODO: should be - spectators :E
+	currentNumPlayers = CountPlayers();
 	for (i=0;i<MaxData;i++) {
-		if (MapStats[i].PreferredPlayers > 0) {
+		if (MapStats[i].PreferredPlayers > 0 || (bCanChooseUnsizedMaps && MapStats[i].MapName!="")) {
 			mapScore = ScoreForNextMap(i,currentNumPlayers);
 			if (bestMap == "" || mapScore > bestScore && ExistsOnDisk(MapStats[i].MapName)) {
-				MyLog("MapStats.ChooseNextMap(): "$MapStats[i].MapName$" with score "$mapScore$" beats "$bestMap$" with score "$bestScore);
+				if (i>MaxData/4 && FRand()>0.5) {
+					ConsideredMaps = ConsideredMaps $ bestMap $" ";
+					MyLog("ChooseNextMap(): "$MapStats[i].MapName$" (score "$mapScore$", age "$ (DaysSince1970() - MapStats[i].DateLastPlayed) $") beats "$bestMap$" (score "$bestScore$", age "$ (DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $")");
+				}
+				if (MapStats[i].Crashes && FRand()<0.9) {
+					MyLog("ChooseNextMap(): Skipping "$ MapStats[i].MapName $" because it crashes!");
+					continue;
+				}
+				if (!ExistsOnDisk(MapStats[i].MapName)) {
+					MyLog("ChooseNextMap(): Skipping "$ MapStats[i].MapName $" because server no longer has it!");
+					continue;
+				}
 				bestMap = MapStats[i].MapName;
 				bestScore = mapScore;
-				if (i>MaxData/4 && FRand()>0.5) ConsideredMaps = ConsideredMaps $ bestMap $" ";
 			}
 		}
 	}
-	MyLog("MapStats.ChooseNextMap(): Best map was "$bestMap$" with score "$bestScore);
+	MyLog("ChooseNextMap(): Best map was "$ bestMap $" with score "$ bestScore $" (age "$ (DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $" and "$ MapRecord(bestMap).PreferredPlayers $" preferred players, vs. current "$ currentNumPlayers $")");
 	return bestMap;
 }
 
@@ -312,19 +445,20 @@ function int CountActors(class<Actor> type) {
 		c++;
 		// lA=A;
 	}
-	// MyLog(Self$".CountActors("$type$") "$c$" first="$GetAny(type)$" last="$lA);
+	// MyLog("CountActors("$type$") "$c$" first="$GetAny(type)$" last="$lA);
 	return c;
 }
 
 function Mutate(String str, PlayerPawn Sender) {
 	if (str ~= "nextmap") {
-		Level.Game.bGameEnded = True; // bDoneGameEnd = True;
-		Sender.ClientMessage("MapStats has set bGameEnded=True, will probably switch to "$ ChooseNextMap());
+		Sender.ClientMessage("Next map = "$ ChooseNextMap() $", switch = "$ Level.Game.bGameEnded);
+		Level.Game.bGameEnded = !Level.Game.bGameEnded; // bDoneGameEnd = True;
 	}
 	// CheckMessage(str, Sender);
 	Super.Mutate(str, Sender);
 }
 
+#ifdef CATCH_LEVEL_SWITCH
 event Tick(float DeltaTime) {
 	local string NextMap;
 
@@ -344,9 +478,49 @@ event Tick(float DeltaTime) {
 		bExpectSwitch = False;
 	}
 }
+#endif
 
-// Catch messages from players:
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
+	if (Victim!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy!=None && InstigatedBy.PlayerReplicationInfo!=None && (Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team || TeamGame(Level.Game)==None)) {
+		currentMap.TotalDamageDone += ActualDamage;
+	}
+}
+
+function bool IterateMaps(optional String search) {
+	local string FirstMap, NextMap, TestMap, MapName;
+	local int count;
+	local String prefix;
+	// prefix = Botmatch.Parent.Default.MapPrefix;
+	// prefix = Botpack.CTFGame.Default.MapPrefix;
+	prefix = Level.Game.Default.MapPrefix;
+	FirstMap = GetMapName(prefix, "", 0);
+	NextMap = FirstMap;
+	while (!(FirstMap ~= TestMap)) {
+		// Add the map.
+		if(!(Left(NextMap, Len(NextMap) - 4) ~= (prefix$"-tutorial"))) {
+			// MyLog("IterateMaps(): "$NextMap);
+			count++;
+			if (StrEndsWith(NextMap,".unr")) MapName = StrBeforeLast(NextMap,".unr"); else MapName = NextMap;
+			// Ensure a record exists for the map:
+			MapIndex(MapName);
+			if (search != "") {
+				if (MapName ~= search) {
+					return True;
+				}
+			}
+		}
+		// Get the map.
+		NextMap = GetMapName(prefix, NextMap, 1);
+		// Text to see if this is the last.
+		TestMap = NextMap;
+	}
+	MyLog("IterateMaps(): Found "$ count $" maps in Maps folder for "$ prefix $".");
+	return False;
+}
+
 /*
+// Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	local bool hideMessage;
 	hideMessage = False;
@@ -433,21 +607,6 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	}
 
 	return False;
-
-}
-
-function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
-	local PlayerSettings instigatorSettings;
-	local PlayerSettings victimSettings;
-	local PlayerPawn pl;
-	local String boost;
-	local String actualDamageStr;
-
-	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
-
-	if (Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team) {
-		MapStats[mapI].TotalDamageDone += ActualDamage;
-	}
 
 }
 
