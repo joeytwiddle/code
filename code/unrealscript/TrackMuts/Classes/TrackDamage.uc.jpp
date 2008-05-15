@@ -116,7 +116,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 			stateStr = "on";
 		Sender.ClientMessage("Your showdamage is "$stateStr);
 		// if (ps.bFlash) 
-		FlashMessageToPlayer(Sender,"show damage = "$stateStr,SentPainColor,1,2,True);
+		FlashMessageToPlayer(Sender,"show damage = "$stateStr,SentPainColor,1,4,True);
 		return True;
 	}
 
@@ -181,7 +181,9 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			#undef SayMessage
 			#define FlashMessage Victim.getHumanName()$" -"$actualDamageStr
 			#define SayMessage "Damage "$ actualDamageStr $" on "$ Victim.getHumanName() $" type "$ DamageType $" "$ boost
-			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),FlashMessage,SentPainColor,1,2);
+			// Line 0-1 is "You killed"
+			// Line ~2 is "Double Kill"
+			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),FlashMessage,SentPainColor,1,4);
 			else PlayerPawn(InstigatedBy).ClientMessage(SayMessage);
 		}
 	}

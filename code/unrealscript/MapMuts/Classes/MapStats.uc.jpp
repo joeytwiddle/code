@@ -1,5 +1,7 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// All XOL's info is stored in Fate.BestFitMapList
+
 #define MaxData 3000
 
 class MapStats expands Mutator config(MapStats);
@@ -29,6 +31,7 @@ var config bool bDoMapScan;
 struct MapInfo {
 	var bool bOnDisk;
 	var bool bCrashes;
+	var bool bDisabled;
 	var String MapName;
 	var float PreferredPlayers;
 	var String PreferredPlayersSource;
@@ -50,6 +53,7 @@ var config MapInfo MapStats[MaxData];
 
 var String mapName; // Current map's name, generated at start.
 var int mapI; // Current map's index, generated at start.
+#define currentMap MapStats[mapI]
 var float NumberOfSpawnPoints; // Globalised for FallbackValue
 
 var float StartTime;
@@ -78,8 +82,12 @@ ServerMaxPlayers=24
 bDoMapScan=True
 }
 
+#define MapRecord(X) MapStats[MapIndex(X)]
+
+#define CountPlayers() ( CountActors(class'PlayerPawn') - CountActors(class'Spectator') )
+
 // #define DebugLog(Y); 
-#define DebugLog(Y); if (bDebugLogging) { Log("(MapStats)." $ Y); }
+#define DebugLog(Y); if (bDebugLogging) { Log(".MapStats. " $ Y); }
 // #define NormalLog(Y); 
 #define NormalLog(Y); if (bLogging) { Super.Log("[MapStats] " $ Y); }
 // Fails: // function NormalLog(String Y) { if (bLogging) { Super.Log(Y); } }
@@ -87,19 +95,26 @@ bDoMapScan=True
 
 #define BroadcastAndLog(Y); BroadcastMessage(Y); if (bLogging) { Log("[MapStats] Broadcasted: " $ Y); }
 
-#define CountPlayers() ( CountActors(class'PlayerPawn') - CountActors(class'Spectator') )
-
-// #define MaxActorDistance() MaxActorDistanceType(class'PlayerStart')
-
-#define currentMap MapStats[mapI]
-
-#define MapRecord(X) MapStats[MapIndex(X)]
+#define NiceAge(X) Int(X*24)$"h"
+#define NiceFloat FloatToString
+function String FloatToString(float f) {
+	local String s;
+	local int i;
+	s = String(f);
+	i = InStr(s,".");
+	if (i>=4) return StrBeforeLast(s,".");
+	s = StrBeforeFirst(s,".") $ "." $ Left( StrAfterFirst(s,"."), 4-i ); // may not be accurate enough for 0.000001
+	return s;
+}
 
 function PostBeginPlay() {
 
 	//// Pushing out new default configs during a temporary release:
-	// EmptyServerSwitchSeconds=300;
-	// bDebugLogging=True;
+	EmptyServerSwitchSeconds=5*60; // XOL is still learning about the maps
+	// EmptyServerSwitchSeconds=60*60;
+	bDebugLogging=True;
+	if (FRand()<0.01)
+		bDoMapScan=True;
 
 	mapName = StrBeforeFirst(""$Self,".");
 	mapI = MapIndex(mapName);
@@ -139,8 +154,8 @@ function DoStart() {
 	}
 
 	if (bCollectMapStats) {
-		NormalLog("Collecting stats ...");
-		// if (currentMap.bCrashes) { NormalLog("Map "$ currentMap.MapName$" was previously crashing, but now works!"); } // duh this is often set to true inaccurately by DoLevelSwitch :P
+		// NormalLog("Collecting stats ...");
+		// if (currentMap.bCrashes) { NormalLog("Map "$ currentMap.MapName $" was previously crashing, but now works!"); } // duh this is often set to true inaccurately by DoLevelSwitch :P
 		// currentMap.ActorDistance = (MaxActorDistanceType(class'PlayerStart') + AverageActorDistanceType(class'PlayerStart') + AverageActorDistanceType(class'PathNode')) / 3.0;
 		NumberOfSpawnPoints = CountActors(class'PlayerStart');
 		// currentMap.NumberOfWeaponPickups = CountActors(class'Weapon');
@@ -159,7 +174,8 @@ function DoStart() {
 		) {
 			// We are allowed to modify the PreferredPlayers count for this map, and should now do our best
 
-			NormalLog("Re-calculating PreferredPlayers, old value = "$ currentMap.PreferredPlayers);
+			DebugLog("Re-calculating PreferredPlayers, old value = "$ NiceFloat(currentMap.PreferredPlayers));
+			DebugLog("Old PreferredPlayersSource = "$ currentMap.PreferredPlayersSource);
 
 			// DebugLog("Collecting ActorDistance for "$mapName$"...");
 			ActorDistance = ( MaxActorDistanceType(class'FlagBase') + MaxActorDistanceType(class'Weapon') + AverageActorDistanceType(class'PlayerStart') + AverageActorDistanceType(class'PathNode') ) / 4.0 / Float(MapScale);
@@ -197,24 +213,28 @@ function DoStart() {
 				currentMap.PreferredPlayers = avg;
 				// Mix it with NumberOfSpawnPoints and ActorDistance:
 				currentMap.PreferredPlayers = 0.4*avg + 0.3*NumberOfSpawnPointsScaled + 0.3*ActorDistance;
-				currentMap.PreferredPlayersSource = "Estimate from Ideal("$ idealPlayerCount $"=>"$avg$") and PlayerStarts("$ NumberOfSpawnPointsScaled $") and ActorDistance("$ ActorDistance $")";
+				currentMap.PreferredPlayersSource = "Estimate from Ideal("$ idealPlayerCount $"=>"$ NiceFloat(avg) $") and PlayerStarts("$ NiceFloat(NumberOfSpawnPointsScaled) $") and ActorDistance("$ NiceFloat(ActorDistance) $")";
 			} else {
 				// Mix just NumberOfSpawnPoints and ActorDistance:
 				currentMap.PreferredPlayers = 0.5*NumberOfSpawnPointsScaled + 0.5*ActorDistance;
-				currentMap.PreferredPlayersSource = "Estimate from PlayerStarts("$ NumberOfSpawnPointsScaled $") and ActorDistance("$ ActorDistance $")";
+				currentMap.PreferredPlayersSource = "Estimate from PlayerStarts("$ NiceFloat(NumberOfSpawnPointsScaled) $") and ActorDistance("$ NiceFloat(ActorDistance) $")";
 			}
 			NormalLog(""$ currentMap.PreferredPlayersSource $"");
-			NormalLog("PreferredPlayers = "$ currentMap.PreferredPlayers);
+			NormalLog("PreferredPlayers = "$ NiceFloat(currentMap.PreferredPlayers));
 		}
+
+	} else {
+
+		NormalLog(mapName$" has PreferredPlayers = "$ NiceFloat(currentMap.PreferredPlayers));
 
 	}
 
 	// If it was marked as crashed or not on-disk, We MUST mark this map as working!
 	if (currentMap.bCrashes || !currentMap.bOnDisk) bMustSave=True;
 	currentMap.TotalGamesStarted++;
-	currentMap.DateLastPlayed = DaysSince1970();
-	currentMap.bCrashes = False;
-	currentMap.bOnDisk = True;
+	// currentMap.DateLastPlayed = DaysSince1970();
+	currentMap.bCrashes = False; // Was most likely set just before the server switched to this map.  We prove non-crash here.
+	currentMap.bOnDisk = True; // Also proved here (but should be already known from ScanMaps()).
 
 	#define bSaveEarly False
 	if (bSaveEarly && (bCollectMapStats || bEstimatePreferredPlayers)) bMustSave=True;
@@ -237,23 +257,34 @@ function DoStart() {
 function ModifyPlayer(Pawn Other) {
 	// if (PlayerPawn(Other) != None) {
 	if (Other!=None && Other.PlayerReplicationInfo != None) {
-		if (/*PlayerPawn(Other)!=None &&*/ Other.PlayerReplicationInfo.Deaths == 0) {
+		// DebugLog("ModifyPlayer("$ Other.getHumanName() $") was called.");
+		if (/*PlayerPawn(Other)!=None && Spectator(Other)==None &&*/ Other.PlayerReplicationInfo.Deaths == 0) {
+			DebugLog("ModifyPlayer("$ Other$"): "$ Other.getHumanName() $" joined at "$ Level.TimeSeconds);
 			// Latest player join!
-			currentMap.DateLastPlayed = DaysSince1970(); // hope that a SaveConfig happens later (should happen in DoEnd())
 			if (StartTime == 0) {
-				// First ever spawn
+				// First ever spawn!
 				// StartTime = Level.TimeSeconds;
 				// PlayerCountAtStart = CountPlayers();
 				// DebugLog("ModifyPlayer("$Other$"): setting StartTime="$Level.TimeSeconds$" and PlayerCountAtStart="$ CountPlayers() );
+				StartTime = Level.TimeSeconds;
+				DebugLog("ModifyPlayer("$Other.getHumanName()$"): setting StartTime="$Level.TimeSeconds);
+				currentMap.DateLastPlayed = DaysSince1970(); // yeah we really want the last date a human played, although this might mess with ChooseNextMap() if no humans are around.  otoh that now has random stuff built in :)
+				// We can't set the PlayerCountAtStart here, because other players might join later this second.
+				// Although we can detect the last of them, if bots start joining too.  But bots may not always be around.
+				// Instead we wait for the first frag below, before grabbing PlayerCountAtStart.
 			}
+			// currentMap.DateLastPlayed = DaysSince1970(); // hope that a SaveConfig happens later (should happen in DoEnd())
 		} else {
 			// A frag / someone/thing died
 			currentMap.TotalDeaths++;
 			if (StartTime == 0) {
-				// First ever frag
-				StartTime = Level.TimeSeconds;
+				// First ever frag!
+				// StartTime = Level.TimeSeconds;
+				// DebugLog("ModifyPlayer("$Other.getHumanName()$"): setting StartTime="$Level.TimeSeconds);
+			}
+			if (PlayerCountAtStart == 0 && Level.TimeSeconds>=30) { // give them 30 seconds to download the map / join the server
 				PlayerCountAtStart = CountPlayers();
-				DebugLog("ModifyPlayer("$Other$"): setting StartTime="$Level.TimeSeconds$" and PlayerCountAtStart="$ CountPlayers() );
+				DebugLog("ModifyPlayer("$Other.getHumanName()$"): setting PlayerCountAtStart="$ CountPlayers() $" at "$ Level.TimeSeconds);
 			}
 		}
 	}
@@ -270,14 +301,21 @@ event Timer() {
 		bCanChooseUnsizedMaps = True;
 		DoLevelSwitch();
 	}
+	#define bIgnoreMapSizeWhenChangingServerMax False
 	if (bAutoExpandMaxPlayers) {
-		if (CountPlayers()+1 > Level.Game.MaxPlayers && Level.Game.MaxPlayers < ServerMaxPlayers) {
-			Level.Game.MaxPlayers += 2;
-			NormalLog("bAutoExpandMaxPlayers: "$ CountPlayers() $" players => MaxPlayers increased to "$ Level.Game.MaxPlayers);
+		// Need to expand?
+		if (CountPlayers()+1 > Level.Game.MaxPlayers && Level.Game.MaxPlayers+2 <= ServerMaxPlayers) {
+			if (bIgnoreMapSizeWhenChangingServerMax || Level.Game.MaxPlayers < currentMap.PreferredPlayers*2) {
+				Level.Game.MaxPlayers += 2;
+				NormalLog("bAutoExpandMaxPlayers: "$ CountPlayers() $" players => MaxPlayers increased to "$ Level.Game.MaxPlayers);
+			}
 		}
-		if (CountPlayers() < ServerMinPlayers && Level.Game.MaxPlayers > ServerMinPlayers && FRand()<0.01) {
-			Level.Game.MaxPlayers -= 2;
-			NormalLog("bAutoExpandMaxPlayers: "$ CountPlayers() $" players => MaxPlayers reduced to "$ Level.Game.MaxPlayers);
+		// Need to shrink?
+		if (CountPlayers() < ServerMinPlayers && Level.Game.MaxPlayers-2 >= ServerMinPlayers && FRand()<0.01) {
+			if (bIgnoreMapSizeWhenChangingServerMax || Level.Game.MaxPlayers > currentMap.PreferredPlayers) {
+				Level.Game.MaxPlayers -= 2;
+				NormalLog("bAutoExpandMaxPlayers: "$ CountPlayers() $" players => MaxPlayers reduced to "$ Level.Game.MaxPlayers);
+			}
 		}
 		// Level.Game.MaxPlayers = 2*Int( (CountActors(class'PlayerPawn')+1.0)/2.0 );
 	}
@@ -336,20 +374,33 @@ function DoEnd() {
 
 	if (bCollectMapStats) {
 
-		currentMap.TotalGamesEnded++;
-		// currentMap.DateLastPlayed = DaysSince1970();
-
 		totalHours = currentMap.TotalHoursPlayed;
 		deltaHours = (Level.TimeSeconds - StartTime) / 60.0 / 60.0;
-		newTotalHours = currentMap.TotalHoursPlayed + deltaHours;
 
-		playerChangeThisMap = CountPlayers() - PlayerCountAtStart;
-		currentMap.AverageFlow = (totalHours*currentMap.AverageFlow + deltaHours*playerChangeThisMap) / newTotalHours;
+		// if ( (PlayerCountAtStart == 0 && CountPlayers() == 0)
+			// || (deltaHours>0.5 && (PlayerCountAtStart == 0 || CountPlayers() == 0))
+		// ) {
+			// DebugLog("Not updating any stats for this game on "$mapName$", since it took "$(deltaHours*60)$" minutes, and either started or ended with only bots.");
+			// // return;
+			// // Maybe we should do currentMap.TotalGamesStarted--;  Chances are that stat has already been saved.
+			// currentMap.TotalGamesStarted--;
+			// // Problem: map's TotalDamageDone and TotalDeaths have increased, and we can't recover the old values!
+		// } else {
 
-		averageNumPlayersThisMap = (CountPlayers() + PlayerCountAtStart) / 2.0;
-		currentMap.AverageNumPlayers = (totalHours*currentMap.AverageNumPlayers + deltaHours*averageNumPlayersThisMap) / newTotalHours;
+			currentMap.TotalGamesEnded++;
+			// currentMap.DateLastPlayed = DaysSince1970();
 
-		currentMap.TotalHoursPlayed = newTotalHours;
+			newTotalHours = currentMap.TotalHoursPlayed + deltaHours;
+
+			playerChangeThisMap = CountPlayers() - PlayerCountAtStart;
+			currentMap.AverageFlow = (totalHours*currentMap.AverageFlow + deltaHours*playerChangeThisMap) / newTotalHours;
+
+			averageNumPlayersThisMap = (CountPlayers() + PlayerCountAtStart) / 2.0;
+			currentMap.AverageNumPlayers = (totalHours*currentMap.AverageNumPlayers + deltaHours*averageNumPlayersThisMap) / newTotalHours;
+
+			currentMap.TotalHoursPlayed = newTotalHours;
+
+		// }
 
 	}
 
@@ -428,8 +479,7 @@ function float AverageActorDistanceType(class<Actor> type) {
 	if (realTotalCount < 2)
 		return FallbackValue;
 	totalDistance = totalDistance / realTotalCount;
-	// NormalLog("Average distance of " $ realTotalCount $ " " $ type $ " actors = " $ totalDistance);
-	NormalLog("Average distance of " $ realTotalCount $ " x " $ type $ " = " $ totalDistance);
+	DebugLog("Average distance of " $ realTotalCount $ " x " $ type $ " = " $ NiceFloat(totalDistance));
 	return totalDistance;
 	// return Sqrt(totalDistance); // this is actually average squared-distance, we should square-root it.
 }
@@ -456,8 +506,7 @@ function float MaxActorDistanceType(class<Actor> type) {
 			}
 		}
 	}
-	// NormalLog("Max distance between " $ totalCount $ " " $ type $ " actors = " $ bestDistance);
-	NormalLog("Max distance between " $ totalCount $ " x " $ type $ " = " $ bestDistance);
+	DebugLog("Max distance between " $ totalCount $ " x " $ type $ " = " $ NiceFloat(bestDistance));
 	return bestDistance; // this is actually average squared-distance, we should square-root it.
 	// return Sqrt(totalDistance); // this is actually average squared-distance, we should square-root it.
 }
@@ -466,34 +515,30 @@ function float DaysSince1970() {
 	return (Level.Year-1970.0)*365.25 + Level.Month*30.0 + Level.Day + Level.Hour/24.0 + Level.Minute/24.0/60.0 + Level.Second/24.0/60.0/60.0;
 }
 
-function String FloatToString(float f) {
-	local String s;
-	local int i;
-	s = String(f);
-	i = InStr(s,".");
-	if (i>4) return StrBeforeLast(s,".");
-	s = StrBeforeFirst(s,".") $ "." $ Left( StrAfterFirst(s,"."), 6-i ); // may not be accurate enough for 0.000001
-	return s;
-}
-
 function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	local float ageInDays, playerDiff, result;
 	// if (MapStats[nextI].DateLastPlayed>719540) MapStats[nextI].DateLastPlayed = MapStats[nextI].DateLastPlayed - 719540; // legacy: when i changed my date calculation :P
 	ageInDays = DaysSince1970() - MapStats[nextI].DateLastPlayed;
 	// if (ageInDays>719050) ageInDays = ageInDays - 719050; // legacy: when i changed my date calculation :P
 	// if (ageInDays<0) ageInDays = -ageInDays; // legacy: when i changed my date calculation :P
-	playerDiff = Abs(currentNumPlayers + 0.5 - MapStats[nextI].PreferredPlayers);
+	// Originally I gave +0.5 to encourage another player to join.
+	// Now I give +/-0.5random in order to be fair on currentNumPlayers==Int and PreferredPlayers==Float.
+	// #define deltaPlayers ( FRand() - 0.5 )
+	#define deltaPlayers (FRand()*0.5)
+	playerDiff = Abs(currentNumPlayers + deltaPlayers - MapStats[nextI].PreferredPlayers);
 	playerDiff += 2.0;
 	// if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
 	ageInDays += 0.01;
-	#define flowTweak (MapStats[nextI].AverageFlow*0.125)
-	#define playerTweak (MapStats[nextI].AverageNumPlayers*0.05)
+	// TODO: tweaks zeroed until stats are fixed:
+	#define flowTweak (0.0*MapStats[nextI].AverageFlow*0.125)
+	#define playerTweak (0.0*MapStats[nextI].AverageNumPlayers*0.05)
+	// TODO: anyway playerTweak should work wrt currentNumPlayers!
 	// if (currentNumPlayers==0 && MapStats[nextI].PreferredPlayers==0) // When the server is empty
 		// ageInDays += 5.0; // boost the score of maps whose size is unknown
 	result = 384.0 * ( ageInDays + flowTweak + playerTweak ) / playerDiff;
-	if (bDebugLogging && FRand()<0.01) {
-		DebugLog("Score for "$ MapStats[nextI].MapName $" [pp="$ MapStats[nextI].PreferredPlayers $"] is: "$ result);
-		DebugLog(" age "$ ageInDays $" + tweaks "$ flowTweak $" + "$ playerTweak $" ) / playerDiff "$ playerDiff);
+	if (bDebugLogging && FRand()<0.05) {
+		DebugLog("Score for "$ MapStats[nextI].MapName $" PreferredPlayers="$ NiceFloat(MapStats[nextI].PreferredPlayers) $"] is: "$ NiceFloat(result));
+		DebugLog("( age "$ NiceFloat(ageInDays) $"d + tweaks "$ NiceFloat(flowTweak) $" + "$ NiceFloat(playerTweak) $" ) / playerDiff "$ NiceFloat(playerDiff));
 	}
 	return result;
 }
@@ -520,11 +565,12 @@ function String ChooseNextMap() {
 		}
 		bMapScanDone = True;
 	}
-	if (CountPlayers() == 0)
-		bCanChooseUnsizedMaps = True;
 	ConsideredMaps="";
 	currentNumPlayers = CountPlayers();
-	if (currentNumPlayers==0) currentNumPlayers = (ServerMaxPlayers+1)*FRand();
+	if (currentNumPlayers == 0) {
+		bCanChooseUnsizedMaps = True;
+		currentNumPlayers = (ServerMaxPlayers+1)*FRand();
+	}
 	for (i=0;i<MaxData;i++) {
 		if (MapStats[i].PreferredPlayers > 0 || (bCanChooseUnsizedMaps && MapStats[i].MapName!="")) {
 			mapScore = ScoreForNextMap(i,currentNumPlayers);
@@ -536,6 +582,8 @@ function String ChooseNextMap() {
 					// MapStats[i].bCrashes = True;
 					continue;
 				}
+				if (MapStats[i].bDisabled && !bCanChooseUnsizedMaps)
+					continue;
 				if (MapStats[i].bCrashes) {
 					#define bRetryCrashedMaps True
 					if (bRetryCrashedMaps && FRand()<0.01) {
@@ -545,18 +593,19 @@ function String ChooseNextMap() {
 						continue;
 					}
 				}
-				if (bestMap!="" && FRand()>0.6) {
+				if (bestMap!="" && FRand()>0.2) {
 					ConsideredMaps = ConsideredMaps $ bestMap $"("$Left(String(mapScore),4)$")"$ " ";
-					NormalLog("Best  "$MapStats[i].MapName$" (score "$mapScore$", age "$ (DaysSince1970() - MapStats[i].DateLastPlayed) $")");
-					NormalLog("beats "$bestMap$" (score "$bestScore$", age "$ (DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $")");
+					// NormalLog("Dropped: "$bestMap$" (score "$ NiceFloat(bestScore) $", age "$ NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $")");
+					NormalLog("Considering: "$MapStats[i].MapName$" (score "$ NiceFloat(mapScore) $", age "$ NiceAge(DaysSince1970() - MapStats[i].DateLastPlayed) $")");
 				}
 				bestMap = MapStats[i].MapName;
 				bestScore = mapScore;
 			}
 		}
 	}
-	NormalLog("Best map was "$ bestMap $" with score "$ bestScore $" (age "$ (DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $")");
-	NormalLog("Current players = "$ currentNumPlayers $", map's PreferredPlayers = "$ MapRecord(bestMap).PreferredPlayers $".  Other considered maps were: "$ ConsideredMaps);
+	NormalLog("Best map was "$ bestMap $" with score "$ NiceFloat(bestScore) $" (age "$ NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $")");
+	NormalLog("Current players = "$ currentNumPlayers $", map's PreferredPlayers = "$ NiceFloat(MapRecord(bestMap).PreferredPlayers) $".");
+	NormalLog("Other considered maps were: "$ ConsideredMaps);
 	return bestMap;
 }
 
@@ -587,7 +636,7 @@ function Mutate(String str, PlayerPawn Sender) {
 	if (bAllowMutateSwitch) {
 		if (str~="suggest") {
 			ChooseNextMap();
-			Sender.ClientMessage("Recommended map: "$ ChooseNextMap() $" last played "$ (DaysSince1970() - MapRecord(ChooseNextMap()).DateLastPlayed) $" days ago [Beaten: "$ConsideredMaps$"]");
+			Sender.ClientMessage("Recommended map: "$ ChooseNextMap() $" last played "$ NiceAge(DaysSince1970() - MapRecord(ChooseNextMap()).DateLastPlayed) $" ago [Beaten: "$ConsideredMaps$"]");
 		}
 		if (
 			(str~="nextmap" && (Sender.bAdmin || CountPlayers()==1))
@@ -650,8 +699,9 @@ function bool ScanMaps(optional String search) {
 	local String prefix;
 	// prefix = Botmatch.Parent.Default.MapPrefix;
 	// prefix = Botpack.CTFGame.Default.MapPrefix;
-	// DebugLog("ScanMaps(): Starting new scan...");
-	NormalLog("Iterate maps running...");
+	// NormalLog("ScanMaps(): Starting new scan...");
+	// NormalLog("Iterate maps running...");
+	local int blocked;
 
 	count = 0;
 	// Reset bOnDisk info, because we are about to regenerate it:
@@ -662,9 +712,12 @@ function bool ScanMaps(optional String search) {
 			}
 			MapStats[i].bOnDisk = False;
 			count++;
+			if (i<MaxData-1 && MapStats[i+1].MapName != "") {
+				blocked++;
+			}
 		}
 	}
-	NormalLog("Total maps in database: "$count);
+	NormalLog("ScanMaps() Total maps in database: "$count$" with "$ 100*blocked/count $"% congestion.");
 
 	prefix = Level.Game.Default.MapPrefix;
 	FirstMap = GetMapName(prefix, "", 0);
