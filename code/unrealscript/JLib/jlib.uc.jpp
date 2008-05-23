@@ -143,7 +143,10 @@ function String Locs(String in) {
 	return out;
 }
 
-function String StrFilterNum(String in, optional out String rest) {
+// Will get all numbers from string.
+// If breakAtFirst is set, will get first number, and place the remainder of the string in rest.
+// Will accept all '.'s only leading '-'s
+function String StrFilterNum(String in, optional bool breakAtFirst, optional out String rest) {
 	local String out;
 	local int i;
 	local int c;
@@ -156,7 +159,7 @@ function String StrFilterNum(String in, optional out String rest) {
 			out = out $ Chr(c);
 			onNum = true;
 		} else {
-			if (onNum) {
+			if (onNum && breakAtFirst) {
 				// onNum = false;
 				// out = out $ " ";
 				rest = Mid(in,i);

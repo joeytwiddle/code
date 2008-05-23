@@ -176,6 +176,9 @@ event Timer() {
 	local String args[256];
 	local int i;
 	local String last;
+	#ifdef FC_COVER
+	local String fcStatus;
+	#endif
 	// foreach AllActors(class'Pawn', checkP) {
 	for (checkP=Level.PawnList; checkP!=None; checkP=checkP.NextPawn) {
 		if (Bot(checkP)==None && PlayerPawn(checkP)==None)
@@ -187,9 +190,11 @@ event Timer() {
 			// Log("TrackPlayers.Timer(): Zone change for "$checkP.GetHumanName()$": "$last$" -> "$zone);
 			LastSeenZoneFor(checkP) = zone;
 
-			// Zone has changed!
+			// Zone has changed!  Inform all others:
 
-			// Inform all others:
+			#ifdef FC_COVER
+			fcStatus = getFCMessage(checkP,zone);
+			#endif
 
 			// foreach AllActors(class'PlayerPawn', p) {
 			for (p=Level.PawnList; p!=None; p=p.NextPawn) {
@@ -211,7 +216,8 @@ event Timer() {
 				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackTFC && p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team) {
 					if (bLogging) Log("TrackPlayers.Timer(): Show FC to "$p.GetHumanName()$": "$checkP.GetHumanName() $" has the enemy flag at "$ zone);
 					#ifdef FC_COVER
-					ShowFC(PlayerPawn(p),checkP,zone);
+					// ShowFC(PlayerPawn(p),checkP,zone);
+					PlayerPawn(p).ClientMessage(fcStatus);
 					#else
 					p.ClientMessage(checkP.GetHumanName() $" has the enemy flag at "$ zone);
 					#endif
@@ -239,7 +245,7 @@ event Timer() {
 }
 
 #ifdef FC_COVER
-function ShowFC(PlayerPawn to, Pawn fc, String zone) {
+function String getFCMessage(Pawn fc, String zone) {
 	local Pawn p;
 	local float teamCount, enemyCount;
 	local float teamCloseness, enemyCloseness;
@@ -247,7 +253,7 @@ function ShowFC(PlayerPawn to, Pawn fc, String zone) {
 	local String coverType;
 	// local String danger;
 	foreach AllActors(class'Pawn', P) {
-		if (P == fc || P == to)
+		if (P == fc)
 			continue;
 		if (PlayerPawn(p) == None && Bot(P) == None)
 			continue;
@@ -271,8 +277,9 @@ function ShowFC(PlayerPawn to, Pawn fc, String zone) {
 		coverType = "poor cover";
 		// danger = "IN DANGER ";
 	}
-	to.ClientMessage("Your flag carrier is at "$ zone $" with "$ coverType $".");
+	// to.ClientMessage("Your flag carrier is at "$ zone $" with "$ coverType $".");
 	// to.ClientMessage("Your flag carrier is "$danger$"at "$ zone $"");
+	return "Your flag carrier is at "$ zone $" with "$ coverType $".";
 }
 #endif
 

@@ -16,6 +16,7 @@ class MapStats expands Mutator config(MapStats);
 var config bool bLogging;
 var config bool bDebugLogging;
 var config bool bCollectMapStats;
+var config bool bCollectDamage;
 var config bool bEstimatePreferredPlayers;
 var config bool bEndGameSwitchMap;
 var config int EndGameSwitchSeconds;
@@ -69,6 +70,7 @@ defaultproperties {
 bLogging=True
 bDebugLogging=False
 bCollectMapStats=True
+bCollectDamage=False
 bEstimatePreferredPlayers=True
 bEndGameSwitchMap=False
 EndGameSwitchSeconds=30
@@ -119,7 +121,8 @@ function PostBeginPlay() {
 	mapName = StrBeforeFirst(""$Self,".");
 	mapI = MapIndex(mapName);
 
-	Level.Game.RegisterDamageMutator(Self);
+	if (bCollectDamage)
+		Level.Game.RegisterDamageMutator(Self);
 
 	// TODO:
 	// If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
@@ -191,7 +194,7 @@ function DoStart() {
 			avg = 0.0;
 			count = 0;
 			do {
-				gotNum = StrFilterNum(restStr,restStr);
+				gotNum = StrFilterNum(restStr,true,restStr);
 				if (gotNum!="") {
 					num = Float(gotNum);
 					// DebugLog("MapStats: Got "$num$" from \""$gotNum$"\" with rest="$restStr);
@@ -687,8 +690,10 @@ event Tick(float DeltaTime) {
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
-	if (Victim!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy!=None && InstigatedBy.PlayerReplicationInfo!=None && (Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team || TeamGame(Level.Game)==None)) {
-		currentMap.TotalDamageDone += ActualDamage;
+	if (bCollectDamage) {
+		if (Victim!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy!=None && InstigatedBy.PlayerReplicationInfo!=None && (Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team || TeamGame(Level.Game)==None)) {
+			currentMap.TotalDamageDone += ActualDamage;
+		}
 	}
 }
 
