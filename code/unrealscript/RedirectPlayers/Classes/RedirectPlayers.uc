@@ -28,23 +28,26 @@ function PostBeginPlay() {
 // function ModifyPlayer(Pawn p) {
 // }
 
+function CheckRedirect(PlayerPawn p) {
+	if (bEnabled) {
+		if (!p.bAdmin) {
+			if (bTellPlayers)
+				p.ClientMessage("You are being redirected to "$ TargetURL);
+			if (bLog)
+				Log("Redirecting "$ p.getHumanName() $" to "$ TargetURL);
+			p.PreClientTravel();
+			p.ClientTravel(TargetURL, TRAVEL_Absolute, False);
+			// Consider: Just curious, can we also do this with p.ConsoleCommand("open "$ TargetURL); ?
+		}
+	}
+}
+
 event Timer() {
 	local PlayerPawn p;
 	foreach AllActors(class'PlayerPawn', p) {
 		if (UTServerAdminSpectator(p) != None)
 			continue;
-		if (bEnabled) {
-			if (!p.bAdmin) {
-				if (bTellPlayers)
-					p.ClientMessage("You are being redirected to "$ TargetURL);
-				if (bLog)
-					Log("Redirecting "$ p.getHumanName() $" to "$ TargetURL);
-				p.PreClientTravel();
-				p.ClientTravel(TargetURL, TRAVEL_Absolute, False);
-				// Consider: Just curious, can we also do this with p.ConsoleCommand("open "$ TargetURL); ?
-			}
-		}
-	}
+		CheckRedirect(p);
 	Super.Timer();
 }
 
