@@ -521,7 +521,7 @@ function PostBeginPlay() {
 
 	// Forcing some defaults for XOL:
 	bFlashPlayerJoins=False;
-	bAutoSwitchNewPlayers=False; // TODO XOL BUG: Because it happens before we get their IDC - bad!
+	bAutoSwitchNewPlayers=True; // TODO XOL BUG: Because it happens before we get their IDC - bad!
 	bFlashOnWarning=true;
 	bFlashRebalanceRequest=true;
 	FlashLine=0;
@@ -618,8 +618,15 @@ function Destroyed() {
 	local AutoTeamBalance newATB;
 	local int i;
 	NormalLog(Self$" was destroyed at "$Level.TimeSeconds);
+	#ifdef LOG_LAG
+	if (debugTimerReason != "") {
+		NormalLog(Self$" whilst performing: "$ debugTimerReason);
+	}
+	if (debugTimerReason != "")
+		NormalLog("If above reason is empty, then beware macros and ifs without {}s!");
+	#endif
 	#ifdef DESTROY_RECOVERY
-		if (FRand()<0.15) {
+		if (FRand()<0.20) {
 			NormalLog(Self$" Not trying recovery this time.  ATB will remain off.");
 		} else {
 			// return;
@@ -631,7 +638,10 @@ function Destroyed() {
 			for (i=0;i<64;i++) {
 				newATB.SetIDC(i,idc[i]);
 			}
+			#endif
 			newATB.gameStartDone = gameStartDone; // This should pr.vent a full teams rebalance because the newATB thinks it is the start of the game!
+			// It always seems to initialize ok:
+			/*
 			if (newATB.initialized) {
 				NormalLog(Self$" newATB appears to be initialized already.");
 			} else {
@@ -639,11 +649,11 @@ function Destroyed() {
 				// We run PostBeginPlay() to set up the important stuff:
 				// Note CopyConfigIntoArrays will be called, but it probably need to be.
 				newATB.PostBeginPlay();
-				newATB.SetTimer(CheckFrequency,bWarnMidGameUnbalance || bForceEvenTeams); // Since PostBeginPlay() sets it to 1.
 			}
+			*/
+			newATB.SetTimer(CheckFrequency,bWarnMidGameUnbalance || bForceEvenTeams); // Since PostBeginPlay() sets it to 1.
 			newATB.gameEndDone = gameEndDone;
-			#endif
-			Level.Game.BaseMutator.AddMutator(newATB); // Not actually needed since PostBeginPlay() does this.
+			// Level.Game.BaseMutator.AddMutator(newATB); // Not actually needed since PostBeginPlay() does this.
 		}
 	#endif
 	Super.Destroyed();
@@ -823,9 +833,11 @@ function ModifyPlayer(Pawn paw) {
 
 }
 
+// A joined recently.  B is joining now and is spawning.
 function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 	local float strengthA,strengthB,redTeamStrength,blueTeamStrength;
 	local float oldDifference,newDifference,delta;
+	local float timeInGame;
 	if (A == None)
 		return;
 	if (A.PlayerReplicationInfo.Team == b.PlayerReplicationInfo.Team)
@@ -841,7 +853,8 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 	if (A.PlayerReplicationInfo.Team == 1)
 		delta = -delta;
 	newDifference = blueTeamStrength - redTeamStrength + delta*2.0;
-	if (Abs(newDifference) < 0.6*Abs(oldDifference)) {
+	timeInGame = Level.TimeSeconds - A.PlayerReplicationInfo.StartTime;
+	if (Abs(newDifference) < 0.5*Abs(oldDifference) && timeInGame<180) { // definite improvement in balance, and older player has been on server for less than 3 minutes
 		// NormalLog("CheckTwoNewPlayers(): "$A.getHumanName()$" joined earlier but is now being switched with "$B.getHumanName()$" who just joined.  This changes team difference from "$ oldDifference $" to "$ newDifference $".");
 		NormalLog("CheckTwoNewPlayers(): Auto switching "$A.getHumanName()$" with "$B.getHumanName()$".  Team difference changed from "$ oldDifference $" to "$ newDifference $".");
 		#define newTeamStr getTeamName(B.PlayerReplicationInfo.Team)
@@ -965,6 +978,7 @@ function ListMutsTo(PlayerPawn Sender) {
 
 function ListFakesTo(PlayerPawn Sender) {
 	local PlayerPawn p;
+	local String nickList;
 	#ifdef LOG_LAG
 	debugTimerReason = "ListFakesTo("$Sender.getHumanName()$")";
 	debugTimerStart = Level.TimeSeconds;
@@ -972,7 +986,9 @@ function ListFakesTo(PlayerPawn Sender) {
 	foreach AllActors(class'PlayerPawn',p) {
 		// We do list spectators, but not the UTServerAdminSpectator that some servers have.
 		if (InStr(String(p.class),"UTServer")==-1) {
-			Sender.ClientMessage(p.getHumanName() $" has other nicks: "$ GetNicksFor(p));
+			nickList = GetNicksFor(p);
+			if (nickList != "")
+				Sender.ClientMessage(p.getHumanName() $" has other nicks: "$ nickList);
 		}
 	}
 }
@@ -1604,7 +1620,7 @@ function DoGameStart() {
 	}
 }
 
-// Deals with mid-game team unbalance, only called if bForceEvenTeams and/or bWarnMidGameUnbalance are set.
+// Deals with mid-game team imbalance, only called if bForceEvenTeams and/or bWarnMidGameUnbalance are set.
 function CheckMidGameBalance() {
 	local int redTeamCount,blueTeamCount;
 	local int redTeamStrength,blueTeamStrength;
@@ -1635,12 +1651,10 @@ function CheckMidGameBalance() {
 	// Do we want to warn players of any imbalance?
 	if (bWarnMidGameUnbalance) {
 
-		#ifdef LOG_LAG
-		if (debugTimerReason == "") {
+			#ifdef LOG_LAG
 			debugTimerStart = Level.TimeSeconds;
-			debugTimerReason = "CheckMidGameBalance("$redTeamCount$"v"$blueTeamCount$"): "$redTeamStrength$"v"$blueTeamStrength$" => "$weakerTeam$" "$problem;
-		}
-		#endif
+			debugTimerReason = "CheckMidGameBalance("$redTeamCount$"v"$blueTeamCount$"): checking warning (weaker="$weakerTeam$")";
+			#endif
 
 		if (weakerTeam == -1 /*&& redTeamCount+blueTeamCount>=3*/) { // no point checking this on a 1v1 ;) - true but i want to check during development; and baiter's bug was weird, hopefully it shouldn't appear too often.
 			if (redTeamCount == blueTeamCount && bNeverRebalanceWhenTeamsAreEven) {
@@ -1660,6 +1674,13 @@ function CheckMidGameBalance() {
 		if (weakerTeam == -1) {
 			return;
 		}
+
+		#ifdef LOG_LAG
+		debugTimerStart = Level.TimeSeconds;
+		debugTimerReason = "CheckMidGameBalance("$redTeamCount$"v"$blueTeamCount$"): doing warning "$redTeamStrength$"v"$blueTeamStrength$" => weaker="$weakerTeam$" problem="$problem;
+		#endif
+
+		NormalLog("CheckMidGameBalance("$redTeamCount$"v"$blueTeamCount$"): doing warning "$redTeamStrength$"v"$blueTeamStrength$" => weaker="$weakerTeam$" problem="$problem);
 
 		if (!bShowReason)
 			problem = "";
@@ -2462,6 +2483,11 @@ function MidGameRebalance(bool bDo) {
 
 	DebugLog("MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$"");
 
+	#ifdef LOG_LAG
+	debugTimerReason = debugTimerReason $ "+MidGameRebalance() "$redTeamCount$" v "$blueTeamCount;
+	debugTimerStart = Level.TimeSeconds;
+	#endif
+
 	// TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end - although the system should really be changed entirely, since it tries to balance strengths on the first switch, it will be harder to keep them balanced on the second switch.
 	success = True; // will become false only if MidGameTeamBalanceSwitchOnePlayer() is tried and failed.
 	if (redTeamCount < blueTeamCount) {
@@ -2484,6 +2510,12 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	local float newDifference; // the absolute strength difference between the two teams after the potential switch
 	local float timeInGame,bestScore,potentialNewDifference;
 	local int playerCountDifference;
+
+	#ifdef LOG_LAG
+	debugTimerReason = debugTimerReason $ "+MidGameTeamBalanceSwitchOnePlayer()";
+	debugTimerStart = Level.TimeSeconds;
+	#endif
+
 	fromTeamStrength = GetTeamStrength(fromTeam);
 	toTeamStrength = GetTeamStrength(toTeam);
 	currentDifference = fromTeamStrength - toTeamStrength;
@@ -2571,6 +2603,11 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	local float bestDifference; // the strength difference between the two teams after switching these players
 	local float bothTimeInGame;
 	local float bestScore;
+
+	#ifdef LOG_LAG
+	debugTimerReason = debugTimerReason $ "+MidGameTeamBalanceSwitchTwoPlayers()";
+	debugTimerStart = Level.TimeSeconds;
+	#endif
 
 	redTeamStrength = GetTeamStrength(0);
 	blueTeamStrength = GetTeamStrength(1);
@@ -3526,6 +3563,14 @@ function int NumFromDateString(String str) {
 function UpdateStatsAtEndOfGame() {
 	local Pawn p;
 	local int i;
+
+	// We know this is going to lag, and we don't care because it's the end of the game.  But it prev.nts other things from getting logged as lag, when really we know it is this.  :)
+	#ifdef LOG_LAG
+	if (debugTimerReason == "") {
+		debugTimerReason = "UpdateStatsAtEndOfGame()";
+		debugTimerStart = Level.TimeSeconds;
+	}
+	#endif
 
 	// Do not update stats for games with <MinHumansForStats human players.
 	if (CountHumanPlayers() < MinHumansForStats) {
