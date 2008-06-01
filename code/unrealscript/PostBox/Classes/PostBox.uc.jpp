@@ -73,7 +73,7 @@ var int lastPlayerChecked;
 defaultproperties {
   bCheckMailOnPlayerJoin=True
   bCheckMailAtEndOfGame=True
-  bAnnounceOnJoin=True
+  bAnnounceOnJoin=False
   bSuggestReply=False // Can be a bit too spammy
   bSendConfirmationMessage=False // Can be a bit too spammy
   #ifdef ENABLE_PASSWORD_SUPPORT
@@ -100,6 +100,8 @@ function PostBeginPlay() {
 	}
 
 	SetTimer(29,True); // 15 was too fast; appeared right after gamestart, along with the zp info
+
+	Super.PostBeginPlay();
 }
 
 // Catch messages from spectators:

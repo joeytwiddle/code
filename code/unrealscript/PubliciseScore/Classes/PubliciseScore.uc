@@ -12,7 +12,16 @@ var config bool bShowTime;
 var config int UpdateInterval;
 
 // To Player on entry:
+var config bool bInformEnterText;
 var config bool bInformSpeed;
+
+
+
+
+var config bool bCycleServerName;
+var config String CycledServerName[20];
+var int CycleNum;
+
 
 var bool Initialized;
 var string titleDefault;
@@ -23,7 +32,17 @@ defaultproperties {
  bShowTeamNames=False
  bShowTime=True
  UpdateInterval=16
+ bInformEnterText=True
  bInformSpeed=True
+
+ bCycleServerName=False
+ CycledServerName(0)="default"
+ CycledServerName(1)="[running PubliciseScore with bCycleServerName enabled]"
+ CycledServerName(2)="[server admin should edit CycledServerName[0-20] in PubliciseScore.ini]"
+ // CycledServerName(0)="default"
+ // CycledServerName(1)="No Downloads we miss your grapple!"
+ // CTF/DM/MapVote
+
 }
 
 function PostBeginPlay() {
@@ -46,6 +65,11 @@ function ModifyPlayer(Pawn p) {
  // local String s;
  // local int max;
  if (p.PlayerReplicationInfo.Deaths == 0) {
+
+  if (bInformEnterText && Level.LevelEnterText != "") {
+   p.ClientMessage(Level.LevelEnterText);
+  }
+
   if (bInformSpeed && Level.Game.GameSpeed != 1.0) {
    // p.ClientMessage( titleDefault$" at "$Int(Level.Game.GameSpeed*100)$" speed" );
    p.ClientMessage( "Gamespeed is "$Int(Level.Game.GameSpeed*100)$"%");
@@ -62,6 +86,7 @@ function ModifyPlayer(Pawn p) {
   // s = InStrLast(""Level.GameInfo.IdealPlayerCount,
   // }
  }
+ Super.ModifyPlayer(p);
 }
 
 event Timer() {
@@ -136,6 +161,8 @@ event Timer() {
 }
 
 function SetTitle(String newText) {
+ local String localTitle;
+
  // local String serverName;
  // serverName = Level.Game.GameReplicationInfo.ServerName;
  // // serverName = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).ServerName;
@@ -148,11 +175,28 @@ function SetTitle(String newText) {
  // }
  // Log("PubliciseScore.SetTitle(): new title is \"" $ serverName $ "\".");
  // Level.Game.GameReplicationInfo.ServerName = serverName;
+
  if (titleDefault == "") {
   titleDefault = Level.Game.GameReplicationInfo.ServerName;
  }
+
  // Log("PubliciseScore.SetTitle(): setting server title to \"" $ titleDefault $ newText $ "\".");
  Level.Game.GameReplicationInfo.ServerName = titleDefault $ newText;
+
+
+ if (bCycleServerName) {
+  if (CycleNum>=20 || CycledServerName[CycleNum] == "")
+   CycleNum = 0;
+  localTitle = CycledServerName[CycleNum];
+  if (localTitle == "default" || localTitle == "")
+   localTitle = titleDefault;
+  Level.Game.GameReplicationInfo.ServerName = localTitle $ newText;
+  CycleNum++;
+ } else {
+  Level.Game.GameReplicationInfo.ServerName = titleDefault $ newText;
+ }
+
+
 }
 //===============//
 //               //
@@ -283,7 +327,10 @@ function String Locs(String in) {
  }
  return out;
 }
-function String StrFilterNum(String in, optional out String rest) {
+// Will get all numbers from string.
+// If breakAtFirst is set, will get first number, and place the remainder of the string in rest.
+// Will accept all '.'s only leading '-'s
+function String StrFilterNum(String in, optional bool breakAtFirst, optional out String rest) {
  local String out;
  local int i;
  local int c;
@@ -292,11 +339,11 @@ function String StrFilterNum(String in, optional out String rest) {
  onNum = false;
  for (i=0;i<Len(in);i++) {
   c = Asc(Mid(in,i,1));
-  if ( (c>=Asc("0") && c<=Asc("9")) || c==Asc(".") ) {
+  if ( (c>=Asc("0") && c<=Asc("9")) || c==Asc(".") || (c==Asc("-") && !onNum) ) {
    out = out $ Chr(c);
    onNum = true;
   } else {
-   if (onNum) {
+   if (onNum && breakAtFirst) {
     // onNum = false;
     // out = out $ " ";
     rest = Mid(in,i);

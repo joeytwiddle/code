@@ -89,7 +89,7 @@ bDoMapScan=True
 #define CountPlayers() ( CountActors(class'PlayerPawn') - CountActors(class'Spectator') )
 
 // #define DebugLog(Y); 
-#define DebugLog(Y); if (bDebugLogging) { Log(".MapStats. " $ Y); }
+#define DebugLog(Y); if (bDebugLogging) { Log("-MapStats- " $ Y); }
 // #define NormalLog(Y); 
 #define NormalLog(Y); if (bLogging) { Super.Log("[MapStats] " $ Y); }
 // Fails: // function NormalLog(String Y) { if (bLogging) { Super.Log(Y); } }
@@ -112,11 +112,11 @@ function String FloatToString(float f) {
 function PostBeginPlay() {
 
 	//// Pushing out new default configs during a temporary release:
-	EmptyServerSwitchSeconds=5*60; // XOL is still learning about the maps
+	// EmptyServerSwitchSeconds=5*60; // XOL is still learning about the maps
 	// EmptyServerSwitchSeconds=60*60;
-	bDebugLogging=True;
-	if (FRand()<0.01)
-		bDoMapScan=True;
+	// bDebugLogging=True;
+	// if (FRand()<0.01)
+		// bDoMapScan=True;
 
 	mapName = StrBeforeFirst(""$Self,".");
 	mapI = MapIndex(mapName);
@@ -148,13 +148,6 @@ function DoStart() {
 	local float ActorDistance;
 
 	// ScanMaps();
-
-	num = (DaysSince1970() - currentMap.DateLastPlayed);
-	if (num<2.0) {
-		NormalLog(mapName$" was last played "$ Int(24*num+0.5) $" hours ago.");
-	} else {
-		NormalLog(mapName$" was last played "$ Int(num+0.5) $" days ago.");
-	}
 
 	if (bCollectMapStats) {
 		// NormalLog("Collecting stats ...");
@@ -235,7 +228,7 @@ function DoStart() {
 	// If it was marked as crashed or not on-disk, We MUST mark this map as working!
 	if (currentMap.bCrashes || !currentMap.bOnDisk) bMustSave=True;
 	currentMap.TotalGamesStarted++;
-	// currentMap.DateLastPlayed = DaysSince1970();
+	// currentMap.DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Nice might be to set 
 	currentMap.bCrashes = False; // Was most likely set just before the server switched to this map.  We prove non-crash here.
 	currentMap.bOnDisk = True; // Also proved here (but should be already known from ScanMaps()).
 
@@ -346,9 +339,11 @@ event Timer() {
 }
 
 function DoLevelSwitch() {
+	local float num;
+
 	NextMap = ChooseNextMap();
 
-	// MapRecord(NextMap).DateLastPlayed = DaysSince1970();
+	MapRecord(NextMap).DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Might be nicer to set date = 1 day ago, unless a player joins and makes it more recent.  But that's still not ideal.  What is?)
 	MapRecord(NextMap).bCrashes = True;
 	// In case server crashes, this stops it from being chosen again!  (Combined with bCrashes or DateLastPlayed.)
 	// NO OLD: It's also desirable to mark maps which we found weren't on the disk, so we don't have to scan them again.
@@ -357,7 +352,17 @@ function DoLevelSwitch() {
 	SaveConfig();
 
 	BroadcastAndLog("Considered maps: "$ ConsideredMaps);
-	BroadcastAndLog("Switching to "$ NextMap $" now.");
+	// BroadcastAndLog("Switching to "$ NextMap $" now.");
+
+	num = (DaysSince1970() - MapRecord(NextMap).DateLastPlayed);
+	if (num<2.0) {
+		// NormalLog(mapName$" was last played "$ Int(24*num+0.5) $" hours ago.");
+		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(24*num+0.5) $" hours ago.");
+	} else {
+		// NormalLog(mapName$" was last played "$ Int(num+0.5) $" days ago.");
+		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(num+0.5) $" days ago.");
+	}
+
 	#ifdef CATCH_LEVEL_SWITCH
 	bInterceptTravel = True;
 	Enable('Tick');
@@ -643,7 +648,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		}
 		if (
 			(str~="nextmap" && (Sender.bAdmin || CountPlayers()==1))
-			|| str ~= "nextmap..."
+			|| str ~= "nextmap..." // TODO WARNING BUG: This little backdoor allows any player to force a mapswitch, but I am currently using it for TESTING.
 			// || str ~= "nextmap "$Level.Game.AdminPassword
 		) {
 			if (Level.Game.bGameEnded) {

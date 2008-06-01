@@ -8,7 +8,16 @@ var config bool bShowTime;
 var config int UpdateInterval;
 
 // To Player on entry:
+var config bool bInformEnterText;
 var config bool bInformSpeed;
+
+#define CYCLE_SERVERNAME
+
+#ifdef CYCLE_SERVERNAME
+var config bool bCycleServerName;
+var config String CycledServerName[20];
+var int CycleNum;
+#endif
 
 var bool Initialized;
 var string titleDefault;
@@ -19,7 +28,17 @@ defaultproperties {
 	bShowTeamNames=False
 	bShowTime=True
 	UpdateInterval=16
+	bInformEnterText=True
 	bInformSpeed=True
+	#ifdef CYCLE_SERVERNAME
+	bCycleServerName=False
+	CycledServerName(0)="default"
+	CycledServerName(1)="[running PubliciseScore with bCycleServerName enabled]"
+	CycledServerName(2)="[server admin should edit CycledServerName[0-20] in PubliciseScore.ini]"
+	// CycledServerName(0)="default"
+	// CycledServerName(1)="No Downloads we miss your grapple!"
+	// CTF/DM/MapVote
+	#endif
 }
 
 function PostBeginPlay() {
@@ -42,6 +61,11 @@ function ModifyPlayer(Pawn p) {
 	// local String s;
 	// local int max;
 	if (p.PlayerReplicationInfo.Deaths == 0) {
+
+		if (bInformEnterText && Level.LevelEnterText != "") {
+			p.ClientMessage(Level.LevelEnterText);
+		}
+
 		if (bInformSpeed && Level.Game.GameSpeed != 1.0) {
 			// p.ClientMessage( titleDefault$" at "$Int(Level.Game.GameSpeed*100)$" speed" );
 			p.ClientMessage( "Gamespeed is "$Int(Level.Game.GameSpeed*100)$"%");
@@ -58,6 +82,7 @@ function ModifyPlayer(Pawn p) {
 		// s = InStrLast(""Level.GameInfo.IdealPlayerCount,
 		// }
 	}
+	Super.ModifyPlayer(p);
 }
 
 event Timer() {
@@ -132,6 +157,8 @@ event Timer() {
 }
 
 function SetTitle(String newText) {
+	local String localTitle;
+
 	// local String serverName;
 	// serverName = Level.Game.GameReplicationInfo.ServerName;
 	// // serverName = TournamentGameReplicationInfo(Level.Game.GameReplicationInfo).ServerName;
@@ -144,11 +171,28 @@ function SetTitle(String newText) {
 	// }
 	// Log("PubliciseScore.SetTitle(): new title is \"" $ serverName $ "\".");
 	// Level.Game.GameReplicationInfo.ServerName = serverName;
+
 	if (titleDefault == "") {
 		titleDefault = Level.Game.GameReplicationInfo.ServerName;
 	}
+
 	// Log("PubliciseScore.SetTitle(): setting server title to \"" $ titleDefault $ newText $ "\".");
 	Level.Game.GameReplicationInfo.ServerName = titleDefault $ newText;
+
+	#ifdef CYCLE_SERVERNAME
+	if (bCycleServerName) {
+		if (CycleNum>=20 || CycledServerName[CycleNum] == "")
+			CycleNum = 0;
+		localTitle = CycledServerName[CycleNum];
+		if (localTitle == "default" || localTitle == "")
+			localTitle = titleDefault;
+		Level.Game.GameReplicationInfo.ServerName = localTitle $ newText;
+		CycleNum++;
+	} else {
+		Level.Game.GameReplicationInfo.ServerName = titleDefault $ newText;
+	}
+	#endif
+
 }
 
 #include "../../JLib/jlib.uc.jpp"

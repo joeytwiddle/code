@@ -1,8 +1,11 @@
 class SiegeAnywhere extends Mutator;
 
+// NOT WORKING!
+
 // This was an attempt to add the Siege constructor to any game.
 // It requires SiegeAnywhereConstructor and SiegeAnywhereHUD.
 // But I only got it working in offline play.
+// Well it's sort-of working.  But I cannot see my constructor mesh (sgMedia not loaded for client).
 
 var sgPRI sgPRIs[64];
 

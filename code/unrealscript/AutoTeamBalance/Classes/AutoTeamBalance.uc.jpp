@@ -63,7 +63,7 @@
 // DONE: Holding the flag will prevent you from being switched to the other team, now only if there is no better switch that can be made!
 // DONE: bAutoSwitchNewPlayers: Swaps latest player to join with last player to join, if it improves teams.  We also now prefer to swap players shortest on the server, when performing mid-game rebalance.
 // DONE: mutate listfakers
-// DONE: WinningTeamBonus is now given in secret.
+// DONE: WinningTeamBonus is now given in secret.  Reduced default to 5 points.
 
 // Changes in 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
@@ -178,8 +178,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #endif
 
 	// Still compiling ATB for XOL, until it's working ok as ATBXOL.
-	#define XOL_SPECIFIC
-	#define ORIGION
+	// #define XOL_SPECIFIC
+	// #define ORIGION
 	// #define ENABLE_USEISPNOTFULLIP
 	#define ENABLE_ADMIN_COMMANDS
 	#define ENABLE_MUTATOR_SIGNATURE
@@ -195,6 +195,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#ifdef XOL_SPECIFIC
 	#define ENABLE_IDC
 	#endif
+	#define STAGGER_LOOKUPS
 
 	//// Testing:
 	// #define TESTING
@@ -311,6 +312,7 @@ var Trie NickTrie;
 	var config bool bAllowUsersToListFakes;
 	#ifdef ENABLE_IDC
 	var config bool bIDCOverridesNick;
+	var config bool bIDCDeletesIPRecords;
 	#endif
 	#ifdef ENABLE_USEISPNOTFULLIP
 	var config bool bUseISPNotFullIP;
@@ -397,6 +399,10 @@ var Trie NickTrie;
 	var float TickCountResetTime;
 	#endif
 
+	#ifdef STAGGER_LOOKUPS
+	var float LastLookupTime;
+	#endif
+
 
 // Default values:
 
@@ -408,7 +414,7 @@ defaultproperties {
 	bBroadcastTeamStrengthDifference=True
 	bFlashTeamStrengths=False //@unfinished TODO TESTING !!!
 	bBroadcastCookies=False
-	bFlashCookies=False
+	bFlashCookies=False // I think this gets hidden by the endgame scoreboard, and is therefore useless.
 	#ifdef DETECT_PLAYERJOINS
 	bFlashPlayerJoins=False
 	bAutoSwitchNewPlayers=True
@@ -426,7 +432,7 @@ defaultproperties {
 	bFlashRebalanceRequest=True
 	bShowProposedSwitch=True
 	bWarnMidGameUnbalance=False
-	CheckFrequency=15       // How often to check for mid-game imbalance, and flash the warning if neccessary, in seconds.  Note: This is also how often ATB checks for the end of the game, so it must be less than the time your servers takes to move to the next map after the game ends, otherwise the stats will not be updated!
+	CheckFrequency=15       // How often to check for mid-game imbalance, and flash the warning if neccessary, in seconds.
 	bShowReason=True
 	bFlashOnWarning=True
 	bShakeOnWarning=False
@@ -472,6 +478,7 @@ defaultproperties {
 	bAllowUsersToListFakes=True
 	#ifdef ENABLE_IDC
 	bIDCOverridesNick=False
+	bIDCDeletesIPRecords=False
 	#endif
 	#ifdef ENABLE_USEISPNOTFULLIP
 	bUseISPNotFullIP=False        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
@@ -523,12 +530,13 @@ function PostBeginPlay() {
 	Super.PostBeginPlay();
 
 	// Forcing some defaults for XOL:
-	bFlashPlayerJoins=False;
-	bAutoSwitchNewPlayers=True; // TODO XOL BUG: Because it happens before we get their IDC - bad!
-	bFlashOnWarning=true;
-	bFlashRebalanceRequest=true;
-	FlashLine=0;
-	WinningTeamBonus=5;
+	// bFlashPlayerJoins=False;
+	// bAutoSwitchNewPlayers=True; // TODO XOL BUG: Because it happens before we get their IDC - bad!
+	// bFlashOnWarning=true;
+	// bFlashRebalanceRequest=true;
+	// FlashLine=0;
+	// WinningTeamBonus=5;
+	bLogDeletedRecords=True;
 
 	if (initialized) {
 		DebugLog(Self$".PostBeginPlay() called with initialized already true; quitting.");
@@ -579,7 +587,7 @@ function PostBeginPlay() {
 	// Some testing:
 	#ifdef TESTING
 	if (bDebugLogging) {
-		DefaultLog("PostBeginPlay(): Testing! CreateNewPlayerRecord() x 4");
+		DefaultLog("PostBeginPlay() Testing! CreateNewPlayerRecord() x 4");
 		// We only actually want to empty records, if there are too few empty.
 		// Otherwise we will empty records every map, and if we don't get that many new player each map, we'll remove all our data!
 		CreateNewPlayerRecord(None);
@@ -598,7 +606,7 @@ function AddMutator(Mutator Other) {
 	// DebugLog(Self$".AddMutator("$Other$") called.");
 	if (Other != None && Other.Class == Self.Class) {
 		if (Other == Self) {
-			NormalLog(Self$".AddMutator("$Other$") No need to add mutator self again.");
+			DebugLog(Self$".AddMutator("$Other$") No need to add mutator self again.");
 		} else {
 			NormalLog(Self$".AddMutator("$Other$") Destroying other instance with "$Other$".Destroy()");
 			AutoTeamBalance(Other).initialized = true; // tell the other copy it should not initialize
@@ -628,8 +636,9 @@ function Destroyed() {
 	}
 	#endif
 	#ifdef DESTROY_RECOVERY
-		if (FRand()<0.20) {
+		if (FRand()<0.4) {
 			NormalLog(Self$" Not trying recovery this time.  ATB will remain off.");
+			BroadcastMessageAndLog("AutoTeamBalance encountered problems, and is disabled for the rest of this game.");
 		} else {
 			// return;
 			// If that does not work, we can try adding ourself as a mutator again, or better, spawning a new AutoTeamBalance and adding that.
@@ -674,7 +683,9 @@ event Timer() {
 		CheckMidGameBalance();
 	}
 	// Reset frequency.  (Was not really needed until we set it low in HandleEndGame().)
-	SetTimer(CheckFrequency,!gameEndDone && (bWarnMidGameUnbalance || bForceEvenTeams));
+	if (gameStartDone)
+		SetTimer(CheckFrequency,!gameEndDone && (bWarnMidGameUnbalance || bForceEvenTeams));
+	// Before gameStartDone, it should continue checking every 1 second.
 }
 
 // If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
@@ -743,12 +754,12 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 		{
 			// teamnr=0; if (teamStr[0]>teamStr[1]) teamnr=1;
 			teamnr=0; if (teamStr[0]>=teamStr[1]+Rand(2)) teamnr=1;
-			DebugLog("ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" and "$teamStr[0]$"v"$teamStr[1]$" so sending new player to WEAKER team "$getTeamName(teamnr)$".");
+			DebugLog("ModifyLogin() "$teamSize[0]$"v"$teamSize[1]$" and "$teamStr[0]$"v"$teamStr[1]$" so sending new player to WEAKER team "$getTeamName(teamnr)$".");
 		} else {
 			// send player to the team with fewer players
 			// teamnr=0; if (teamSize[0]>teamSize[1]) teamnr=1;
 			teamnr=0; if (teamSize[0]>=teamSize[1]+Rand(2)) teamnr=1;
-			DebugLog("ModifyLogin(): "$teamSize[0]$"v"$teamSize[1]$" so sending new player to SMALLER team "$getTeamName(teamnr)$".");
+			DebugLog("ModifyLogin() "$teamSize[0]$"v"$teamSize[1]$" so sending new player to SMALLER team "$getTeamName(teamnr)$".");
 		}
 
 	}
@@ -777,7 +788,7 @@ function FixTeamsizeBug() {
 	// Fix teamsize bug in Botpack.TeamGamePlus
 	if (GRI.Teams[0].Size!=teamSizeWithBots[0] || GRI.Teams[1].Size!=teamSizeWithBots[1])
 	{
-		NormalLog("FixTeamsizeBug(): Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")");
+		NormalLog("FixTeamsizeBug() Fixing team size (" $ GRI.Teams[0].Size $ "," $ GRI.Teams[1].Size $ ") should be (" $ teamSizeWithBots[0] $ "," $ teamSizeWithBots[1] $ ")");
 		GRI.Teams[0].Size=teamSizeWithBots[0];
 		GRI.Teams[1].Size=teamSizeWithBots[1];
 	}
@@ -796,7 +807,7 @@ function ModifyPlayer(Pawn paw) {
 	if (p!=None && p.PlayerReplicationInfo.Deaths == 0 && Spectator(p)==None) {
 		if (gameStartDone && Level.TimeSeconds >= timeGameStarted+10) {
 
-			NormalLog("ModifyPlayer(): Player join detected: "$p.getHumanName()$" ("$getTeamName(p.PlayerReplicationInfo.Team)$")");
+			NormalLog("ModifyPlayer() Player join detected: "$p.getHumanName()$" ("$getTeamName(p.PlayerReplicationInfo.Team)$")");
 
 			if (bFlashPlayerJoins) {
 				ClearAllProgressMessages();
@@ -808,10 +819,10 @@ function ModifyPlayer(Pawn paw) {
 				if ( (CountHumanPlayers() % 2) > 0 ) {
 					// This player has made the teams uneven by playercount!
 					LastBadPlayer = p;
-					NormalLog("ModifyPlayer(): Setting "$p.getHumanName()$" as LastBadPlayer.");
+					NormalLog("ModifyPlayer() Setting "$p.getHumanName()$" as LastBadPlayer.");
 					strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
 					if (Abs(strengthSwing)>75 /*&& Abs(strengthSwing)>GetPlayerStrength(p)*0.5*/) {
-						NormalLog("ModifyPlayer(): And warned him because strengthSwing "$strengthSwing$" > 75 !");
+						NormalLog("ModifyPlayer() And warned him because strengthSwing "$strengthSwing$" > 75 !");
 						p.ClientMessage("You have unbalanced an even game! You may be switched to a different team later.");
 					}
 				} else {
@@ -859,7 +870,7 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 	newDifference = blueTeamStrength - redTeamStrength + delta*2.0;
 	timeInGame = Level.TimeSeconds - A.PlayerReplicationInfo.StartTime;
 	if (Abs(newDifference) < 0.5*Abs(oldDifference) && timeInGame<180) { // definite improvement in balance, and older player has been on server for less than 3 minutes
-		NormalLog("CheckTwoNewPlayers(): Auto switching "$B.getHumanName()$" with "$A.getHumanName()$".  Team difference changed from "$ oldDifference $" to "$ newDifference $".");
+		NormalLog("CheckTwoNewPlayers() Auto switching "$B.getHumanName()$" with "$A.getHumanName()$".  Team difference changed from "$ oldDifference $" to "$ newDifference $".");
 		#define newTeamStr getTeamName(B.PlayerReplicationInfo.Team)
 		ChangePlayerToTeam(A, 1-A.PlayerReplicationInfo.Team, true);  // had it coming
 		ChangePlayerToTeam(B, 1-B.PlayerReplicationInfo.Team, false); // only just got here
@@ -897,18 +908,23 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 function ShowStatsTo(PlayerPawn Sender) {
 	local int i;
 	local Pawn p;
-	Sender.ClientMessage("Team | Name | IP | Ping | PktLoss | Strength | Hours | Last | Score | Frags | Deaths | Items | Spree | Secret | Time");
+	ShowLineTo(Sender,"Team | Name | IP | Ping | PktLoss | Strength | Hours | Last | Score | Frags | Deaths | Items | Spree | Secret | Time");
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (!p.IsA('Spectator') && AllowedToRank(p)) {
 			i = FindPlayerRecord(p);
-			Sender.ClientMessage(""$p.PlayerReplicationInfo.Team$" | "$p.getHumanName()$" | "$getIP(p)$" | "$p.PlayerReplicationInfo.Ping$" | "$p.PlayerReplicationInfo.PacketLoss$" | "$Int(avg_score[i])$" | "$Int(hours_played[i])$" | "$date_last_played[i]$" | "$Int(p.PlayerReplicationInfo.Score)$" | "$p.KillCount$" | "$Int(p.PlayerReplicationInfo.Deaths)$" | "$p.ItemCount$" | "$p.Spree$" | "$p.SecretCount$" | "$Int(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$"");
+			if (i>-1) {
+				ShowLineTo(Sender,""$p.PlayerReplicationInfo.Team$" | "$p.getHumanName()$" | "$getIP(p)$" | "$p.PlayerReplicationInfo.Ping$" | "$p.PlayerReplicationInfo.PacketLoss$" | "$Int(avg_score[i])$" | "$Int(hours_played[i])$" | "$date_last_played[i]$" | "$Int(p.PlayerReplicationInfo.Score)$" | "$p.KillCount$" | "$Int(p.PlayerReplicationInfo.Deaths)$" | "$p.ItemCount$" | "$p.Spree$" | "$p.SecretCount$" | "$Int(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$"");
+			}
 		}
 	}
 }
 #endif
 
-function LogStrengths() {
+function LogSituation() {
 	ShowStrengthsTo(None,true);
+	#ifdef ENABLE_SHOW_STATS
+	ShowStatsTo(None);
+	#endif
 }
 
 function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
@@ -969,14 +985,25 @@ function ShowLineTo(PlayerPawn p, String line) {
 function ListMutsTo(PlayerPawn Sender) {
 	local Mutator m;
 	local String s;
+	local String package,nom;
 	m = Level.Game.BaseMutator;
 	while (m != None) {
-		s = s $ m.Class.Name;
+		// s = s $ m.Class.Name;
+		package = StrBeforeFirst(String(m.Class),".");
+		nom = StrAfterFirst(String(m.Class),".");
 		m = m.NextMutator;
+		if (package==nom || package~="botpack")
+			s = s $ nom;
+		else
+			s = s $ package $"."$ nom;
 		if (m != None)
 			s = s $ ", ";
 	}
-	Sender.ClientMessage("Mutators are: "$s);
+	if (Sender == None) {
+		DefaultLog("Mutators are: "$s);
+	} else {
+		Sender.ClientMessage("Mutators are: "$s);
+	}
 }
 
 function ListFakesTo(PlayerPawn Sender) {
@@ -1070,7 +1097,7 @@ function Mutate(String str, PlayerPawn Sender) {
 	if (args[0]=="IDC") {
 		if (IDCfor(Sender) == 0) {
 			IDCfor(Sender) = Int(args[1]);
-			NormalLog("Mutate() Caught IDC for "$Sender.getHumanName()$"["$Int(Sender.PlayerReplicationInfo.PlayerID%64)$"]: "$str$"");
+			NormalLog("Mutate() Caught IDC for ["$Int(Sender.PlayerReplicationInfo.PlayerID%64)$"] "$Sender.getHumanName()$": "$str$"");
 			i = Sender.PlayerReplicationInfo.PlayerID % 64;
 			// ATB on XOL sometimes creates records for players with their ip, before the players IDC is obtained.
 			if (bCached[i] > 0) {
@@ -1083,12 +1110,13 @@ function Mutate(String str, PlayerPawn Sender) {
 				//// No, overriding IP is bad because if they have a record elsewhere in the DB, then this one becomes a duplicate!
 				//// Better instead to clear this record, and allow the nick+idc record to be found/created later.
 				// if ( ip[i] != ("IDC#" $ IDCfor(Sender)) ) {
-					// if (bLogDeletedRecords) {
-						// DefaultLog("Mutate() CLEAR ["$i$"] "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");
-					// }
-					// ClearRecord(i);
-					// bCached[i] = 0;
-				// }
+				if (bIDCDeletesIPRecords && Left(ip[i],4) != "IDC#") {
+					if (bLogDeletedRecords) {
+						DefaultLog("Mutate() CLEAR ["$i$"] "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");
+					}
+					ClearRecord(i);
+					bCached[i] = 0;
+				}
 				//// This creates an empty record, and removes the IP record.
 				//// This is bad, because next time the IP record needs to be looked up, it will be created and deleted again.
 				//// That is a little worse than being able to find an exact match.
@@ -1336,8 +1364,6 @@ function Mutate(String str, PlayerPawn Sender) {
 
 			case "SAVECONFIG":
 				UpdateStatsAtEndOfGame();
-				CopyArraysIntoConfig();
-				SaveConfig();
 				// CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
 			break;
 
@@ -1457,7 +1483,7 @@ function ToggleAdminOnPlayer(Pawn p) {
 // DONE: if not needed for bWarnMidGameUnbalance or bForceEvenTeams, the timer is disabled after one check, then we wait for this function to get called again before it is started again.
 function bool HandleEndGame() {
 	SetTimer(2,bWarnMidGameUnbalance || bForceEvenTeams); // only loop if we need to check team balance during overtime; if we are only looking for the real end-game, then we only need to use the timer once more
-	DebugLog("HandleEndGame(): Set Timer() for 2 seconds. [bOverTime="$Level.Game.bOverTime$",bGameEnded="$Level.Game.bGameEnded$"]");
+	DebugLog("HandleEndGame() Set Timer() for 2 seconds. [bOverTime="$Level.Game.bOverTime$",bGameEnded="$Level.Game.bGameEnded$"]");
 	return Super.HandleEndGame();
 }
 
@@ -1490,16 +1516,14 @@ function CheckGameStart() {
 	if (c<2) {
 		DoGameStart();
 	} else {
-		if (!DeathMatchPlus(Level.Game).bTournament) {
-			// We don't flash during tournament mode, because it flashes all the way through warmup!
-			FlashPreGameLines();
-		}
+		FlashPreGameLines();
 	}
 }
 
 function FlashPreGameLines() {
 	local int targetLine;
 	local Pawn p;
+	local float strength;
 	// Override the line which says what team each player is on (since teams have not yet been decided!):
 	// Line 3 usually displays "You are on the Red/Blue team" before the game starts.
 	// But since we won't balance teams until 2 seconds before game start, we want to overwrite line 3.
@@ -1527,6 +1551,9 @@ function FlashPreGameLines() {
 				if (Level.Game.Class.IsA('Assault'))
 					targetLine = 2;
 
+				// We do this even if not needed, to force lookups when staggering at the start of the map
+				strength = GetRecordedPlayerStrength(p);
+
 				#ifdef XOL_SPECIFIC
 				// On XOL, highscores are displayed to each player 8 seconds after they join.
 				// At that point, we just stop flashing.
@@ -1535,28 +1562,18 @@ function FlashPreGameLines() {
 				}
 				#endif
 
-				// // #define LINENR_FOR_FLASH 5
-				// #define LINENR_FOR_FLASH Int(ConditionalString(level.timeseconds < 8, "3", "5"))
-				// #else
-				// #define LINENR_FOR_FLASH 3
-				// #endif
-				if (bFlashCookies) {
-					if (bReportStrengthAsCookies)
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ Int(GetRecordedPlayerStrength(p)) $" cookies.",strengthColor,targetLine);
-					else
-						FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ Int(GetRecordedPlayerStrength(p)) $"",strengthColor,targetLine);
-				} else {
-					FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
-					// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
+				// We don't flash in tournament mode, because it flashes all the way through warmup!
+				if (!DeathMatchPlus(Level.Game).bTournament) {
+					if (bFlashCookies) {
+						if (bReportStrengthAsCookies)
+							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $", you have "$ Int(strength) $" cookies.",strengthColor,targetLine);
+						else
+							FlashMessageToPlayer(PlayerPawn(p), p.getHumanName() $" you have strength "$ Int(strength) $"",strengthColor,targetLine);
+					} else {
+						FlashMessageToPlayer(PlayerPawn(p),"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
+						// FlashMessageToPlayer(PlayerPawn(p),"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
+					}
 				}
-				// if (String(Level.Game.Class) == "Botpack.CTFGame" || String(Level.Game.Class) == "Botpack.Assault") {
-					// This clears the line which says "Use Options -> Player Setup to change team."
-					// This has moved to PostBeginPlay(), where it is fixed by changing TeamChangeMessage.
-					// FlashMessageToPlayer(PlayerPawn(p),"Type !teams if they become uneven.",colorWhite,(targetLine+1)); // colMagenta
-					// FlashMessageToPlayer(PlayerPawn(p),"",colorWhite,(targetLine+1)); // colMagenta
-				// }
-				// #undef LINENR_FOR_FLASH
-			// }
 		}
 	}
 }
@@ -1766,8 +1783,6 @@ function CheckGameEnd() {
 		// We could (but don't) turn the Timer off now
 		if (ShouldUpdateStats(Level.Game)) {
 			UpdateStatsAtEndOfGame();
-			CopyArraysIntoConfig();
-			SaveConfig();
 		}
 	}
 }
@@ -1835,7 +1850,7 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 
 	if (PlayerPawn(Sender)!=None && Spectator(Sender)==None && Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
 		if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
-			DebugLog("MutatorTeamMessage(): Calling RequestMidGameRebalance().");
+			DebugLog("MutatorTeamMessage() Calling RequestMidGameRebalance().");
 			if (FRand()<0.4) LastBadPlayer = PlayerPawn(Sender);
 			RequestMidGameRebalance(PlayerPawn(Sender));
 		}
@@ -1902,7 +1917,7 @@ function ForceFullTeamsRebalance() {
 	// We can't balance if it's not a teamgame
 	if (!Level.Game.GameReplicationInfo.bTeamGame) return;
 
-	DebugLog("ForceFullTeamsRebalance(): Running...");
+	DebugLog("ForceFullTeamsRebalance() Running...");
 	if (bBroadcastHelloGoodbye) { BroadcastMessageAndLog("AutoTeamBalance is attempting to balance the teams..."); }
 
 	// rate all players, and put them in a temporary structure (pl[],ps[]):
@@ -1915,7 +1930,7 @@ function ForceFullTeamsRebalance() {
 			pl[pid]=p;
 			ps[pid]=st;
 			moved[pid] = 0;
-			DebugLog("ForceFullTeamsRebalance(): Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has db-key " $ GetDBName(p) $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
+			DebugLog("ForceFullTeamsRebalance() Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has db-key " $ GetDBName(p) $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
 		}
 	}
 
@@ -1940,7 +1955,7 @@ function ForceFullTeamsRebalance() {
 			// ps[pid]=0;
 			moved[pid] = 1;
 			n++;
-			DebugLog("ForceFullTeamsRebalance(): [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $"");
+			DebugLog("ForceFullTeamsRebalance() [Ranking] "$ps[pid]$" "$ pl[pid].getHumanName() $"");
 		}
 	} until (pid==-1);
 
@@ -1981,7 +1996,7 @@ function ForceFullTeamsRebalance() {
 			pid=plorder[i];
 			teamnr=0;
 			if ((i&3)==1 || (i&3)==2) teamnr=1;
-			DebugLog("ForceFullTeamsRebalance(): i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
+			DebugLog("ForceFullTeamsRebalance() i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
 			ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
 			teamstr[teamnr]+=ps[pid];
 		}
@@ -1991,7 +2006,7 @@ function ForceFullTeamsRebalance() {
 		{
 			pid=plorder[i];
 			teamnr=0; if (teamstr[0]>=teamstr[1]+Rand(2)) teamnr=1;
-			DebugLog("ForceFullTeamsRebalance(): "$n$" is odd so sending last player to WEAKER team "$teamnr$".");
+			DebugLog("ForceFullTeamsRebalance() "$n$" is odd so sending last player to WEAKER team "$teamnr$".");
 			ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
 			teamstr[teamnr]+=ps[pid];
 		}
@@ -2111,7 +2126,7 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
 
 	// After a request for rebalance, whether changes were made or not, show current team strengths to all players.
 	// if (bBroadcastHelloGoodbye) { BroadcastMessageAndLog("Red team strength is "$Int(GetTeamStrength(0))$", Blue team strength is "$Int(GetTeamStrength(1))$"."); }
-	broadcastTeamStrengths();
+	BroadcastTeamStrengths();
 
 }
 
@@ -2496,8 +2511,13 @@ function MidGameRebalance(bool bDo) {
 	
 	// Mmm could initialise success = True, then if it == False, we know switch1 failed, so we should do switch2, otherwise do the old check
 	if ((redTeamCount == blueTeamCount && !bNeverRebalanceWhenTeamsAreEven) || !success) {
-		MidGameTeamBalanceSwitchTwoPlayers(bDo);
+		success = MidGameTeamBalanceSwitchTwoPlayers(bDo);
 	}
+
+	//// Currently done in RequestMidGameRebalance() or not done if called automatically.
+	// if (bDo && success) {
+		// BroadcastTeamStrengths();
+	// }
 
 }
 
@@ -2516,7 +2536,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 
 	fromTeamStrength = GetTeamStrength(fromTeam);
 	toTeamStrength = GetTeamStrength(toTeam);
-	currentDifference = fromTeamStrength - toTeamStrength;
+	currentDifference = fromTeamStrength - toTeamStrength; // Should usually be positive.  ;)
 	playerCountDifference = GetTeamSize(fromTeam) - GetTeamSize(toTeam);
 	if (currentDifference<0 && playerCountDifference<2) {
 		BroadcastMessageAndLog(""$getTeamName(toTeam)$" is already stronger ("$Int(toTeamStrength)$">"$Int(fromTeamStrength)$")");
@@ -2534,15 +2554,17 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 			// We want a linear scale; i.e. players in for 10 minutes are 2x less likely to be switched than players in for 5.
 			// BUT, if timeInGame==0 then the player who joined 1 second ago will be switched, regardless of whether he's a good swap or not!  So we add a little.
 			// Actually we add a little more than a little, because I decided timeInGame is really not as important as new difference.
-			timeInGame += 120.0;
-			potentialNewDifference = currentDifference-playerStrength*2;
-			if (closestPlayer == None
-					// It's better than current,       and it has a better score than best so far.
-					|| ( Abs(potentialNewDifference) < currentDifference && potentialNewDifference*potentialNewDifference*timeInGame < bestScore )
+			timeInGame += 240.0;
+			potentialNewDifference = Abs(currentDifference-playerStrength*2);
+			if (
+					closestPlayer == None
+					// We no longer check that it is actually less difference here, that is done at the end.
+					// Best score so far:
+					|| ( potentialNewDifference*potentialNewDifference*timeInGame < bestScore )
 			) {
 				closestPlayer = p;
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
-				newDifference = Abs(potentialNewDifference);
+				newDifference = potentialNewDifference;
 				bestScore = newDifference*newDifference*timeInGame;
 			}
 		}
@@ -2552,7 +2574,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 			BroadcastMessageAndLog("Could not find any player on "$getTeamName(fromTeam)$" to switch");
 		}
 		NormalLog("MidGameTeamBalanceSwitchOnePlayer("$ bDo $") failed while "$ GetTeamSize(0) $"v"$ GetTeamSize(1) $" "$ GetTeamStrength(0) $"v"$ GetTeamStrength(1) $" "$ GetTeamScore(0) $"-"$ GetTeamScore(1) $" diff="$ currentDifference $" bestDiff="$ newDifference $" bestP="$ closestPlayer $" bestScore="$ bestScore $"");
-		LogStrengths();
+		LogSituation();
 		return False;
 	}
 	/*
@@ -2572,13 +2594,21 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 		}
 	}
 	*/
-	if (newDifference >= currentDifference /*&& CountHumanPlayers()>3*/) {
-		if (bDo) {
-			BroadcastMessageAndLog(""$getTeamName(toTeam)$" team looks too strong.  Considering switching two players...");
+	// We check that the best potential switch is better than current situation.
+	if (newDifference >= Abs(currentDifference) /*&& CountHumanPlayers()>3*/) {
+		// But if the #players differs by 2 or more.
+		if (Abs(playerCountDifference)>=2) {
+			// We will do this switch anyway, and then do a 2-player switch.
+			BroadcastMessageAndLog(""$getTeamName(toTeam)$" team looks too strong.  Considering switching three players...");
+			// Don't return False yet - do the switch and then return False.
+		} else {
+			if (bDo) {
+				BroadcastMessageAndLog(""$getTeamName(toTeam)$" team looks too strong.  Considering switching two players...");
+			}
+			// NormalLog("MidGameTeamBalanceSwitchOnePlayer("$ bDo $") failed while "$ GetTeamSize(0) $"v"$ GetTeamSize(1) $" "$ Int(fromTeamStrength) $"v"$ Int(toTeamStrength) $" "$ GetTeamScore(0) $"-"$ GetTeamScore(1) $" diff="$ currentDifference $" bestDiff="$ newDifference $" bestP="$ closestPlayer $" bestScore="$ bestScore $"");
+			// LogSituation();
+			return False;
 		}
-		NormalLog("MidGameTeamBalanceSwitchOnePlayer("$ bDo $") failed while "$ GetTeamSize(0) $"v"$ GetTeamSize(1) $" "$ Int(fromTeamStrength) $"v"$ Int(toTeamStrength) $" "$ GetTeamScore(0) $"-"$ GetTeamScore(1) $" diff="$ currentDifference $" bestDiff="$ newDifference $" bestP="$ closestPlayer $" bestScore="$ bestScore $"");
-		LogStrengths();
-		return False;
 	}
 	if (bDo) {
 		ChangePlayerToTeam(closestPlayer,toTeam,gameStartDone);
@@ -2586,7 +2616,9 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	} else {
 		ProposeChange(closestPlayer,None);
 	}
-	return True;
+	// return True;
+	// If we actually made strengths worse, but #players better, do a 2-player rebalance now:
+	return (newDifference <= Abs(currentDifference));
 }
 
 function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
@@ -2601,6 +2633,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	local float bestDifference; // the strength difference between the two teams after switching these players
 	local float bothTimeInGame;
 	local float bestScore;
+	local float playerCountDifference;
 
 	#ifdef LOG_LAG
 	debugTimerReason = debugTimerReason $ "+MidGameTeamBalanceSwitchTwoPlayers()";
@@ -2611,7 +2644,9 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	blueTeamStrength = GetTeamStrength(1);
 	difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
 	bestDifference = difference;
-	bestScore = 60*60 * difference * difference;
+	bestScore = (60*60) * difference * difference; // 60 minutes, should be large enough.
+	playerCountDifference = Abs(GetTeamSize(1) - GetTeamSize(0));
+	#define messedTeamsEmergency (playerCountDifference>=2)
 
 	// FIXED by "hashing": These repeated calls to GetPlayerStrength() are going to be inefficient, possibly causing some lag while the server calculates.
 	for (redP=Level.PawnList; redP!=None; redP=redP.NextPawn) {
@@ -2644,14 +2679,15 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 					// DONE: To encourage swapping recently joined players, we could increase the size of potentialNewDifference wrt the length of time the players have played.
 					//       Problem: This might mean we failed to find a potentialNewDifference < difference !
 					// OK now finds, of all pairs which improve the balance, the pair which have the best score, where score is new different * max time in server of the players.
-					// So if one pair have been in for 1 minute and create new difference 40, they score 2400, and if another pair have been in for 3 minutes but create difference 10, they score 1800, and are swapped.
-					if (Abs(potentialNewDifference) < Abs(difference)) {
+					// [These numbers have changed since writing] So if one pair have been in for 1 minute and create new difference 40, they score 2400, and if another pair have been in for 3 minutes but create difference 10, they score 1800, and are swapped.
+					// We only want switches which improve the overall balance (unless teams are messed!)
+					if (Abs(potentialNewDifference) < Abs(difference) || messedTeamsEmergency) {
 						// This is an improvement on the current situation.
 						// bothTimeInGame = redPTimeInGame + bluePTimeInGame;
 						bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
 						if (redP == LastBadPlayer || blueP == LastBadPlayer)
 							bothTimeInGame = bothTimeInGame * 0.5;
-						bothTimeInGame += 120.0;
+						bothTimeInGame += 240.0;
 						if (bothTimeInGame*potentialNewDifference*potentialNewDifference < bestScore) {
 							bestScore = bothTimeInGame*potentialNewDifference*potentialNewDifference;
 							bestDifference = potentialNewDifference;
@@ -2681,7 +2717,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 		BroadcastMessageAndLog("AutoTeamBalance could not find two switches to improve the teams.");
 		// DONE: Should really log the state now, so we can check the values to debug if neccessary!
 		NormalLog("MidGameTeamBalanceSwitchTwoPlayers("$ bDo $") failed while "$ GetTeamSize(0) $"v"$ GetTeamSize(1) $" "$ Int(redTeamStrength) $"v"$ Int(blueTeamStrength) $" "$ GetTeamScore(0) $"-"$ GetTeamScore(1) $" diff="$ difference $" bestDiff="$ bestDifference $" bestScore="$ bestScore $" redP="$ redPlayerToMove $" blueP="$ bluePlayerToMove $"");
-		LogStrengths();
+		LogSituation();
 		// Assassin was 1v3 the other night, but it refused to switch anyone.  Maybe the noobie it needed to switch was holding the flag.  :P
 		// I also saw it 2v0.
 		return False;
@@ -2828,7 +2864,7 @@ function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional
 function FlashToAllPlayers(String Msg, Color msgColor, optional int linenum) {
 	local PlayerPawn P;
 	NormalLog("FlashToAllPlayers("$linenum$"): Flashing \""$Msg$"\"");
-	foreach AllActors(class'PlayerPawn',P) {
+	foreach AllActors(class'PlayerPawn',P) { // TODO: should use Level.PawnList
 		if (!P.IsA('Spectator')) {
 			FlashMessageToPlayer(P,Msg,msgColor,linenum);
 		}
@@ -2988,7 +3024,7 @@ function float GetRecordedPlayerStrength(Pawn p) {
 	}
 	found = FindPlayerRecord(p);
 	if (found == -1) {
-		return UnknownStrength; // unknown player or player is too weak for list (should never happen)
+		return UnknownStrength; // unknown player or player is too weak for list (should never happen - ok with STAGGER_LOOKUPS now it can happen!)
 	} else {
 		// If the amount of time we have observed the player for is quite short, then their strength can be innaccurate.
 		// (This can cause problems e.g. with a player who played for 3 minutes and got a good score - next game his strength will be 150!)
@@ -3108,7 +3144,7 @@ function CopyArraysIntoConfig() {
 	DebugLog("CopyArraysIntoConfig() "$GetDate()$" running");
 	for (i=0; i<MaxPlayerData; i++) {
 		 if (ip[i] != "") {
-			 playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i] $ " " $ date_last_played[i];
+			playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i] $ " " $ date_last_played[i];
 		}
 	}
 	DebugLog("CopyArraysIntoConfig() "$GetDate()$" done");
@@ -3121,8 +3157,16 @@ function CopyArraysIntoConfig() {
 function String getIP(Pawn p) {
 
 	#ifdef ENABLE_IDC
-		if (p.IsA('PlayerPawn') && IDCfor(PlayerPawn(p)) != 0) {
-			return "IDC#"$(IDCfor(PlayerPawn(p)));
+		if (p.IsA('PlayerPawn')) {
+			if (IDCfor(PlayerPawn(p)) != 0) {
+				return "IDC#"$(IDCfor(PlayerPawn(p)));
+			}
+			//// If we aren't gonna keep IPs, may as well not even start with them.
+			//// Disabled for now though, because I want to see old IP records getting picked up then cleared.  ;)
+			//// TODO: Uncomment this!
+			// if (bIDCDeletesIPRecords) {
+				// return "AN_IP";
+			// }
 		}
 	#endif
 
@@ -3148,6 +3192,7 @@ function String getISP(String ip) {
 // But if they have changed nick *and* part-ip, without bUseISPNotFullIP, they won't get any matches.  :P
 
 #define getNick(p) p.getHumanName()
+
 #ifdef ENABLE_IDC
 #undef getNick
 #define getNick(p) getIDCOrNick(p)
@@ -3238,6 +3283,15 @@ function int FindPlayerRecord(Pawn p) {
 		return pid;
 	}
 
+	#ifdef STAGGER_LOOKUPS
+	// TODO CONSIDER: instead of staggering lookups, stagger cleanups by a larger duration - they are the real problem (sometimes taking 0.4s!)
+	if (LastLookupTime > Level.TimeSeconds-1.5) {
+		if (FRand()<0.2) { DebugLog("FindPlayerRecord() Delaying lookup of "$ p.getHumanName() $" "$ getIP(p)); }
+		return -1;
+	}
+	LastLookupTime = Level.TimeSeconds;
+	#endif
+
 	// Is there an exact or partial match for this player in the database?
 	found = FindPlayerRecordNoFastHash(p);
 
@@ -3250,9 +3304,9 @@ function int FindPlayerRecord(Pawn p) {
 
 	// No exact record for the player was found; we have performed a full search of the database :|
 	if (found > -1) {
-		DebugLog("FindPlayerRecord(): PARTIAL match for "$GetDBName(p)$" @ "$getIP(p)$": "$nick[found]);
+		DebugLog("FindPlayerRecord() PARTIAL match for "$GetDBName(p)$" @ "$getIP(p)$": "$nick[found]);
 	} else {
-		DebugLog("FindPlayerRecord(): FAILED match for "$GetDBName(p)$" @ "$getIP(p)$".");
+		DebugLog("FindPlayerRecord() FAILED match for "$GetDBName(p)$" @ "$getIP(p)$".");
 	}
 
 	// Let's create a new record for this player+ip, to avoid doing that again.
@@ -3293,7 +3347,7 @@ function SwapPlayerRecords(int i,int j) {
 	debugTimerReason = "did lookup and optimisation swap this tick, for "$ nick[j];
 	debugTimerStart = Level.TimeSeconds;
 	#endif
-	NormalLog("SwapPlayerRecords(): Swapping records "$ j $" <-> "$ i $" ("$ nick[j] $":"$ ip[j] $" <-> "$ nick[i] $":"$ ip[i] $")");
+	NormalLog("SwapPlayerRecords() Swapping records "$ j $" <-> "$ i $" ("$ nick[j] $":"$ ip[j] $"("$ Int(avg_score[j]) $") <-> "$ nick[i] $":"$ ip[i] $"("$ Int(avg_score[i]) $"))");
 	// Swap record [i] for record [j]:
 	tmp_player_nick = nick[i];
 	tmp_player_ip = ip[i];
@@ -3384,6 +3438,7 @@ function int FindOldPlayerRecordFast() {
 	return bestI;
 }
 
+// Creates a new record in the DB for the player provided, returning its index.  If p == None, then returns the index of an empty record.  Should not be called without first checking whether the player in already in the DB!
 function int CreateNewPlayerRecord(Pawn p) {
 	local int pos;
 	local int returned;
@@ -3431,7 +3486,7 @@ function int CreateNewPlayerRecord(Pawn p) {
 		date_last_played[pos] = GetDate();
 	}
 
-	NormalLog("CreateNewPlayerRecord(p) NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos] $" (score "$ FindOldestPlayerRecordMeasure(pos) $")");
+	DebugLog("CreateNewPlayerRecord() NEW ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos] $" (score "$ FindOldestPlayerRecordMeasure(pos) $")");
 	// if (bBroadcastCookies) { BroadcastMessageAndLog("Welcome "$ nick[pos] $"!  You have "$ avg_score[pos] $" cookies."); }
 	return pos;
 }
@@ -3458,13 +3513,13 @@ function int CreateNewPlayerRecordInnerBatch(int posStart) {
 // Finds an old player record which we can replace.
 function int FindOldestPlayerRecord() {
 	local int i,found;
-	DebugLog("FindOldestPlayerRecord(): Looking for an old record to replace...");
+	DebugLog("FindOldestPlayerRecord() Looking for an old record to replace...");
 	// currentDateDays = DaysFromDateString(GetDate()); // Now doing this earlier, in CreateNewPlayerRecord().
 	found = 0;
 	for (i=1;i<MaxPlayerData;i+=BatchSize) {
 		found = FindOldestPlayerRecordInnerBatch(found,i);
 	}
-	DebugLog("FindOldestPlayerRecord(): Oldest/smallest record was "$nick[found]$" with "$hours_played[found]$" hours and age "$DaysFromDateString(date_last_played[found])$" days ("$date_last_played[found]$", strength "$avg_score[found]$").");
+	DebugLog("FindOldestPlayerRecord() Oldest/smallest record was "$nick[found]$" with "$hours_played[found]$" hours and age "$DaysFromDateString(date_last_played[found])$" days ("$date_last_played[found]$", strength "$avg_score[found]$").");
 	return found;
 }
 
@@ -3516,7 +3571,7 @@ function float NumFromDateString(String str) {
 	// str = StrReplace(str,":","");
 	// str = StrReplace(str,"/","");
 	str = StrFilterNum(str);
-	if (FRand()<0.001) { DebugLog("NumFromDateString(): "$str$" -> "$Float(str)); }
+	if (FRand()<0.001) { DebugLog("NumFromDateString() "$str$" -> "$Float(str)); }
 	return Float(str);
 	// NOTE: float is not all that accurate; it cannot see the time-of-day:
 	// 200701010000 -> 200701018112.000000
@@ -3542,19 +3597,19 @@ function float DaysFromDateString(String datestr) {
 		days = days + hour/24 + minute/24/60 + second/24/60/60;
 	#endif
 	// #ifdef DebugLog
-	// if (bDebugLogging && FRand()<0.002) { DebugLog("DaysFromDateString(): "$str$" -> "$year$"/"$month$"/"$day$"-"$hour$":"$minute$":"$second$" -> "$days); }
+	// if (bDebugLogging && FRand()<0.002) { DebugLog("DaysFromDateString() "$str$" -> "$year$"/"$month$"/"$day$"-"$hour$":"$minute$":"$second$" -> "$days); }
 	// #endif
 	return days;
 }
 
 /*
-// Int is not large enough; I get: NumFromDateString(): 200701010000 -> -1162452912
+// Int is not large enough; I get: NumFromDateString() 200701010000 -> -1162452912
 function int NumFromDateString(String str) {
 	// str = StrReplace(str,"-","");
 	// str = StrReplace(str,":","");
 	// str = StrReplace(str,"/","");
 	str = StrFilterNum(str);
-	if (FRand()<0.01) { DebugLog("NumFromDateString(): "$str$" -> "$Int(str)); }
+	if (FRand()<0.01) { DebugLog("NumFromDateString() "$str$" -> "$Int(str)); }
 	return Int(str);
 	// NOTE: float is not all that accurate; it cannot see the time-of-day:
 	// 200701010000 -> 200701018112.000000
@@ -3579,7 +3634,7 @@ function UpdateStatsAtEndOfGame() {
 
 	// Do not update stats for games with <MinHumansForStats human players.
 	if (CountHumanPlayers() < MinHumansForStats) {
-		NormalLog("UpdateStatsAtEndOfGame(): not updating stats since CountHumanPlayers "$CountHumanPlayers()$" < "$MinHumansForStats$".");
+		NormalLog("UpdateStatsAtEndOfGame() not updating stats since CountHumanPlayers "$CountHumanPlayers()$" < "$MinHumansForStats$".");
 		if (bBroadcastHelloGoodbye) { BroadcastMessage("AutoTeamBalance cannot update stats with fewer than 4 players."); }
 		return;
 	}
@@ -3590,19 +3645,23 @@ function UpdateStatsAtEndOfGame() {
 	// }
 
 	// Update stats for all players in game
-	NormalLog("UpdateStatsAtEndOfGame(): Updating player stats.");
+	NormalLog("UpdateStatsAtEndOfGame() Updating stats for "$ CountHumanPlayers() $" players.");
 	if (bBroadcastHelloGoodbye) { BroadcastMessageAndLog("AutoTeamBalance is updating player stats."); }
 	// TEST considered when stats were being updated mid-game: make lag here on purpose and see how bad we can get it / how we can fix it.
 	if (bLogExtraStats) { DefaultLog("LogEndStats: Team Name IP Ping PktLoss Rank Hours Last Score Frags Deaths Items Spree Secret Time"); }
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (!p.IsA('Spectator') && AllowedToRank(p)) {
 			i = UpdateStatsForPlayer(p);
-			if (bLogExtraStats) { DefaultLog("LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$date_last_played[i]$" "$p.PlayerReplicationInfo.Score$" "$p.KillCount$" "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
+			if (i>-1 && bLogExtraStats) { DefaultLog("LogEndStats: "$p.PlayerReplicationInfo.Team$" "$p.getHumanName()$" "$getIP(p)$" "$p.PlayerReplicationInfo.Ping$" "$p.PlayerReplicationInfo.PacketLoss$" "$avg_score[i]$" "$hours_played[i]$" "$date_last_played[i]$" "$p.PlayerReplicationInfo.Score$" "$p.KillCount$" "$p.PlayerReplicationInfo.Deaths$" "$p.ItemCount$" "$p.Spree$" "$p.SecretCount$" "$(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$""); }
 		}
 	}
 
 	LastUpdate = GetDate() $ " on " $ StrBefore(""$Level.Game,".");
-	DebugLog("UpdateStatsAtEndOfGame(): done");
+
+	CopyArraysIntoConfig();
+	SaveConfig();
+
+	DebugLog("UpdateStatsAtEndOfGame() done");
 
 	// Cancel the log_lag.  We know this will lag and we don't care.
 	#ifdef LOG_LAG
@@ -3705,6 +3764,11 @@ function int UpdateStatsForPlayer(Pawn p) {
 
 	i = FindPlayerRecord(p); // guaranteed to return a record.
 
+	if (i == -1) {
+		NormalLog("Staggering pr.vented lookup for "$ p.getHumanName());
+		return -1;
+	}
+
 	gameDuration = Level.TimeSeconds - timeGameStarted;
 	timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
 	if (timeInGame>gameDuration)
@@ -3720,7 +3784,7 @@ function int UpdateStatsForPlayer(Pawn p) {
 	if (!DeathMatchPlus(Level.Game).bTournament && WinningTeamBonus!=0
 		&& timeInGame>180 && IsOnWinningTeam(p)
 	) {
-		DebugLog("UpdateStatsForPlayer(): giving bonus "$ WinningTeamBonus $" to "$p.getHumanName()$".");
+		DebugLog("UpdateStatsForPlayer() giving bonus "$ WinningTeamBonus $" to "$p.getHumanName()$".");
 		// p.PlayerReplicationInfo.Score += WinningTeamBonus;
 		// p.ClientMessage("You got "$WinningTeamBonus$" bonus points for finishing on the winning team.",'Pickup',False);
 		current_score += WinningTeamBonus;
@@ -3729,14 +3793,16 @@ function int UpdateStatsForPlayer(Pawn p) {
 	// Normalisation, or not:
 	// ScoringMethod 3 requires no normalisation.
 	if (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2) {
+		// GetScoreForPlayer() has already scaled players scores up to the full length of this game.
 		if (bNormaliseScores) {
 			current_score = NormaliseScore(current_score); // to get an average score of 50 (different now that we use bRelativeNormalisation)
 		} else {
-			// We are not normalising the scores relative to other players, we are just recording end-game scores.
+			// If we are not normalising the scores, then we have something like the end-game scores.
 			// But if this was a short game, scores will probably be lower, so we
 			// scale the scores up to what they might have been if the game had gone the full (assumed) 20 minutes.
-			current_score = current_score * (1.0/3.0) / hours_played_this_game;
+			current_score = current_score * 20.0/60.0 / (Level.TimeSeconds-timeGameStarted);
 		}
+		// In fact we could just scale to 20 minutes in ScaleToFullTime(), and avoid doing it here, since normalisation doesn't care about that scalar.
 	}
 
 	old_hours_played = hours_played[i];
@@ -3753,22 +3819,24 @@ function int UpdateStatsForPlayer(Pawn p) {
 	hours_played[i] += hours_played_this_game;
 	date_last_played[i] = GetDate();
 
-	if (avg_score[i]>previous_average+2) {
-		if (bReportStrengthAsCookies) {
-			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
-		} else {
-			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has gained "$ Int(avg_score[i]-previous_average) $" points of strength!"); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength increased by "$ Int(avg_score[i]-previous_average) $" points this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+	if (hours_played[i] > hours_played_this_game+0.5) { // Too spammy if we have little data on a player.
+		if (avg_score[i]>previous_average+2) {
+			if (bReportStrengthAsCookies) {
+				if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has earned "$ Int(avg_score[i]-previous_average) $" cookies!"); }
+				if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You earned "$ Int(avg_score[i]-previous_average) $" cookies this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			} else {
+				if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has gained "$ Int(avg_score[i]-previous_average) $" points of strength!"); }
+				if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength increased by "$ Int(avg_score[i]-previous_average) $" points this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			}
 		}
-	}
-	else if (previous_average>avg_score[i]+2) {
-		if (bReportStrengthAsCookies) {
-			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
-		} else {
-			if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" points of strength."); }
-			if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength decreased by "$ Int(previous_average-avg_score[i]) $" points this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+		else if (previous_average>avg_score[i]+2) {
+			if (bReportStrengthAsCookies) {
+				if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" cookies."); }
+				if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"You lost "$ Int(previous_average-avg_score[i]) $" cookies this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			} else {
+				if (bBroadcastCookies) { BroadcastMessageAndLog(""$ p.getHumanName() $" has lost "$ Int(previous_average-avg_score[i]) $" points of strength."); }
+				if (bFlashCookies) { FlashMessageToPlayer(PlayerPawn(p),"Your strength decreased by "$ Int(previous_average-avg_score[i]) $" points this game.",strengthColor,3); } // BUG: unfortunately hidden by scoreboard, but still appears in console
+			}
 		}
 	}
 	return i;
@@ -3825,7 +3893,7 @@ function float FloatWeUseForAverageGameStrength() {
 // Takes everything before the first ":" - used when getting the IP from PlayerPawn.GetPlayerNetworkAddress(); since the client's port number changes frequently.
 function string stripPort(string ip_and_port) {
 	if ((""$ip_and_port)=="None" || ip_and_port=="") {
-		// DebugLog("stripPort(): ip_and_port="$ip_and_port);
+		// DebugLog("stripPort() ip_and_port="$ip_and_port);
 		return "0.0.0.0";
 	}
 	return Left(ip_and_port,InStr(ip_and_port,":"));
