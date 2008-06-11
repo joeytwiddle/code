@@ -1,12 +1,12 @@
-export COMMAND_SCRIPTS_DIR="/home/joey/.xchat2/plugin/xchat_sh_scripts"
+export COMMAND_SCRIPTS_DIR="/home/joey/linux/.xchat2.utb0t/plugin/xchat_sh_scripts"
 # export COMMAND_SCRIPTS_DIR="/home/joey/j/code/other/irc/xchat/xchat_sh_scripts" ## hwi
 
 ## TODO: Logs to /tmp
 
 log () {
 	# printf "%s\n" "`geekdate -fine` $*" >> /tmp/xchat_sh_handler.log
-	# printf "%s\n" "`geekdate -fine` $SERVER/$CHANNEL ($NICK) $*" >> /tmp/xchat_sh_handler.log
-	printf "%s\n" "`geekdate -fine` $SERVER/$CHANNEL ($NICK) $*" >&2
+	# printf "%s\n" "`geekdate -fine` $NETWORK/$CHANNEL ($NICK) $*" >> /tmp/xchat_sh_handler.log
+	printf "%s\n" "`geekdate -fine` $NETWORK/$CHANNEL ($NICK) $*" >&2
 }
 
 # log "Shell received: $*"
@@ -79,7 +79,7 @@ split_long_lines_retaining_notice_or_msg () {
 
 abort_if_needed () {
 
-	CHANNEL=`echo "$CHANNEL" | tolowercase`
+	CHANNEL=`echo "$CHANNEL" | tolowercase` ## TODO: since we are in a function, this will get kept forever!
 
 	## My filters: testing only responds to whereis, and only testing responds to whereis
 	# if startswith "$LASTCMD" xchat-test && [ ! "$COMMAND" = "whereis" ]
@@ -94,9 +94,9 @@ abort_if_needed () {
 	# fi
 
 	## No bots allowed in irc.utchat.com/#ut (turned this off 07/03/2007)
-	# if [ "$CHANNEL" = "#ut" ] && [ ! "$SERVER" = "irc.xyxyx.org" ]
+	# if [ "$CHANNEL" = "#ut" ] && [ ! "$NETWORK" = "irc.xyxyx.org" ]
 	# then
-		# # jshinfo "Refusing to spam on $SERVER $CHANNEL"
+		# # jshinfo "Refusing to spam on $NETWORK $CHANNEL"
 		# exit 0
 	# fi
 
@@ -108,8 +108,13 @@ abort_if_needed () {
 	## For emergencies:
 	# exit 0
 
+	## Disable all scripts on freenode network:
+	if [ "$NETWORK" = freenode.net ] || [ "$NETWORK" = irc.freenode.net ] || [ "$NETWORK" = irc.freenode.com ] || [ "$NETWORK" = irc.freenode.org ]
+	then exit 0
+	fi
+
 	## Commands not wanted on irc.utchat.com/#ut:
-	if [ "$NETWORK" = irc.utchat.com ] || [ "$NETWORK" = "irc.ChaoticNetworks.Com" ]
+	if [ "$SERVER" = irc.utchat.com ] || [ "$NETWORK" = "ChaoticNetworks.Com" ]
 	then
 
 		## Blacklist:
@@ -159,6 +164,10 @@ abort_if_needed () {
 
 }
 
+## Drop the first part of the hostname, to determine which network we are on:
+NETWORK=`echo "$NETWORK" | sed 's+.*\.\([^\.]*\.[^\.]*\)$+\1+'` ## trim server to the last two words
+## TODO: need to globally swap NETWORK and SERVER!
+
 abort_if_needed
 
 ## Dodgy hack to strip IRC colour-codes off the front of the nick:
@@ -203,6 +212,7 @@ then
 
 	export NICK
 	export CHANNEL
+	export NETWORK ## actually it seeems this was already done
 
 	## nice added for my own convenience ;p
 	# nice -n 15 sh "$SCRIPT" $* |
@@ -225,7 +235,7 @@ then
 	### Disabled 07/03/2007:
 	# ## If we are in certain channels, then respond with /notice instead of /say.
 	# ## Note this doesn't work if the script returns a /command, only if it returns text to say (or notice).
-	# if [ "$CHANNEL" = "#ut" ] && [ ! "$SERVER" = "irc.xyxyx.org" ] # || [ "$CHANNEL" = "#test" ] # || [ "$CHANNEL" = "#whereisbot" ]
+	# if [ "$CHANNEL" = "#ut" ] && [ ! "$NETWORK" = "irc.xyxyx.org" ] # || [ "$CHANNEL" = "#test" ] # || [ "$CHANNEL" = "#whereisbot" ]
 	# then sed "s+^[^/]+/notice $NICK \0+"
 	# ## Doesn't work: "Cannot send to channel"
 	# # else sed "s+^[^/]+/notice $CHANNEL \0+" ## note CHANNEL actualy == $respond_to i.e. it might be a nick
