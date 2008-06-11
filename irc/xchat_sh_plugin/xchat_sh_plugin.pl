@@ -13,8 +13,8 @@ IRC::register("xchat sh plugin", "0.1", "", "");
 
 my $confdir = IRC::get_info(4);
 
-my $IRC::Xchat::XChatShPlugin::xchat_sh_exec = "/home/joey/.xchat2/plugin/xchat_sh_handler.sh";
-my $IRC::Xchat::XChatShPlugin::command_scripts_dir = "/home/joey/.xchat2/plugin/xchat_sh_scripts";
+my $IRC::Xchat::XChatShPlugin::xchat_sh_exec = "/home/joey/linux/.xchat2.utb0t/plugin/xchat_sh_handler.sh";
+my $IRC::Xchat::XChatShPlugin::command_scripts_dir = "/home/joey/linux/.xchat2.utb0t/plugin/xchat_sh_scripts";
 # my $IRC::Xchat::XChatShPlugin::xchat_sh_exec = "/home/joey/j/code/other/irc/xchat/xchat_sh_handler.sh";
 # my $IRC::Xchat::XChatShPlugin::command_scripts_dir = "/home/joey/j/code/other/irc/xchat/xchat_sh_scripts";
 
@@ -128,10 +128,10 @@ sub exec_shell_command {
 	my $version = IRC::get_info(0);
 	my $mynick = IRC::get_info(1);
 	my $channel = IRC::get_info(2);
-	my $server = IRC::get_info(3);
+	my $network = IRC::get_info(3);
 	my $var5 = IRC::get_info(5);
 	my $var6 = IRC::get_info(6);
-	my $network = IRC::get_info(7); ## TODO: this is actually better known as "network"
+	my $server = IRC::get_info(7);
 	my $topic = IRC::get_info(8);
 	# Xchat::print "nick=$nick channel=$channel server=$server confdir=$confdir 5=$var5 6=$var6 network=$network topic=$topic";
 	# Xchat::print "cmd=$cmd rest=$rest";

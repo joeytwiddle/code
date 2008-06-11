@@ -1,0 +1,10 @@
+list () {
+cat << !
+<[ADL]AJnA> and i love gays 
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

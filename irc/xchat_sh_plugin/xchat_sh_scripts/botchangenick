@@ -1,0 +1,4 @@
+if [ "$1" = wibble ]
+then [ "$2" ] && echo "/nick $2"
+else echo "Incorrect password (!botchangenick <pass> <new_nick>)"
+fi

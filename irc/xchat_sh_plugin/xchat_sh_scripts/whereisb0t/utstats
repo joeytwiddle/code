@@ -5,3 +5,23 @@
 # highlight "[0-9][0-9]*" green ## doh that's shell only :S
 sedreplace "[0-9][0-9]*" "$COLGREEN""\0""$COLRESET" |
 sedreplace "^" "$COLRESET" ## since reset seem to be white, but my fg col gray
+
+## Check for running scan:
+WORKING=`find /home/utquery/utquery/ -maxdepth 1 -name "data.working.*" | tail -n 1`
+if [ "$WORKING" ]
+then
+	# FIRST=`sortfilesbydate "$WORKING"/*`
+	FIRST="$WORKING"/`cd "$WORKING" && sortfilesbydate .`
+	if [ -e "$FIRST" ]
+	then
+		FIRST="$FIRST"
+		START_TIME="`datediff -file "$FIRST"` ago"
+		echo "A scan started $START_TIME and is still in progress."
+	fi
+fi
+
+## Check disk-space
+FREEK=`df | grep utquery | takecols 4`
+if [ "$FREEK" ] && [ "$FREEK" -lt 10240 ]
+then echo "$COLRED$COLBOLD""I have $FREEK""k < 10Meg of free space!$COLUNBOLD$COLRESET"
+fi

@@ -1,0 +1,1 @@
+echo "$NICK, I am in $CHANNEL on $SERVER (network $NETWORK)"

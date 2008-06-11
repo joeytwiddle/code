@@ -1,0 +1,2 @@
+QUERY=`echo "$@" | tr ' ' '+'`
+echo "http://www.google.co.uk/search?q=$QUERY"

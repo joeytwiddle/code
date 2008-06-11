@@ -1,0 +1,3 @@
+if [ "$NETWORK" = "quakenet.org" ] && ( [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#siegepug" ] )
+then echo "!promote"
+fi

@@ -14,7 +14,8 @@ then
 	if newer "$LAST_CALLED_FILE" /tmp/delay_time
 	then
 		# echo "Sorry, you may not call $CALLER again for a while."
-		echo "Sorry, you may not use \!$CALLER again for a little while..."
+		# echo "Sorry, you may not use \!$CALLER again for a little while..."
+		echo "/notice $NICK Sorry, you may not use \!$CALLER again for a little while..."
 		exit 0
 	fi
 

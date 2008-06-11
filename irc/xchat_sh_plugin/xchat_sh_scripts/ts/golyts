@@ -1,0 +1,3 @@
+# echo "teamspeak2://speak-orange.de:1063/"
+./ts/tsscrape2 "http://webinterface.speak-orange.de/ts-viewer.php?id=719" 88.198.48.148:1063
+echo "Click here to make more slots: http://webinterface.speak-orange.de/refresh-slots.php?id=719"

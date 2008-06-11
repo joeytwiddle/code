@@ -1,9 +1,11 @@
-## OMG noob: use -raw to use a custom field-delimeter, to make parsing the output easier.
+## OMG noob: You should have used -raw to use a custom field-delimeter, to make parsing the output easier.
 ##           or even -xml or "template mode" (see http://www.qstat.org/faq.html )
 
 [ "$COMMAND_SCRIPTS_DIR" ] || COMMAND_SCRIPTS_DIR=.
 
 . irccols.shlib
+
+IRCNICK="$NICK"
 
 if [ "$*" = "" ]
 then
@@ -60,14 +62,17 @@ NL="\\
 
 			echo -n "$COLBLUE$COLBOLD$URL$COLBOLD "
 
-			qstat -default uns -timeout 20 -R "$IP" |
-			drop 2 |
+			QSTAT_OUTPUT=`
+				qstat -default uns -timeout 20 -R "$IP" 2>&1 | drop 2
+			`
+
+			echo "$QSTAT_OUTPUT" |
 
 			# sed "s+\([A-Za-z0-9_]*\)=+$NL$COLRED\1$COLYELLOW=$COLPINK+" |
 			sed "s+^[^A-Za-z0-9]*++" |
-			sed "s+[0-9][0-9]*+$COLGREEN\0$COLYELLOW+g" |
-			sed "s+\([^ ,]*\)=+$NL$COLNORM\1$COLRED=$COLYELLOW+g" |
+			# tee utp.debug1 |
 
+			tr ',' '\n' |
 			if [ "$SEARCH" ]
 			then
 				# tr "," "\n" | grep -i "$SEARCH"
@@ -76,15 +81,33 @@ NL="\\
 				echo "$COLNORM""Nothing found for $SEARCH"
 			else cat
 			fi |
+			tr '\n' ',' |
+
+			# sed "s+mutators=\([^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL""mutators=\1$NL\2=+" |
+			# sed "s+[0-9][0-9]*+$COLGREEN\0$COLYELLOW+g" |
+			# sed "s+\([^ ,]*\)=+$NL$COLNORM\1$COLYELLOW$COLBOLD=$COLBLUE+g" |
+			# # tr -d '\n' | sed "s+mutators+$NL""mutators+" |
+
+			sed "s+\([^ ,=]*\)=+\1=+g" |
+			# sed "s+\([^ ,=]*\)=+$COLBLUE\1$COLYELLOW=$COLAQUA+g" | ## colours are broken here somehow
+			sed 's+,\([^ ]\)+, \1+g' |
+
+			sed "s+[0-9][0-9]*+$COLGREEN\0$COLBLUE+g" | ## Must do this one before others!
+			# sed "s+,+$COLGREY\0$COLBLUE+g" |
+			sed "s+=+$COLYELLOW\0$COLAQUA+g" |
+
+			# sed 's/, /+/g' |
+			# sed "s+[ ]*mutators\([^=]*=[^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL$COLPINK""Mutators\1$NL$COLBLUE\2=+" |
+			# sed 's/+/, /g' |
 
 			# pipeboth |
 
 			# tr , '\n' |
 
-			sed "s+,[ 	]*$+$COLRESET,$COLRESET+" | ## Color ending commas
+			# sed "s+,[ 	]*$+$COLRESET,$COLRESET+" | ## Color ending commas
 
 			# sed "s+\(^\| ]\)\([0-9A-Za-z .]*\)\(=\|\)\([A-Za-z .]*\)\([0-9.]*[^,]*.*\)+$COLRED\2$COLYELLOW\3$COLPINK\4$COLGREEN\5$COLGREY +g" |
-			tr '\n' ' ' |
+			# tr '\n' ' ' |
 
 			# verbosely sed "s$COLYELLOW,$COLPINK\$" ## Remove the last one!
 			sed "s+$COLRESET,$COLRESET[^,]*$++" ## Remove the last one!
@@ -93,11 +116,41 @@ NL="\\
 
 		else
 
+			QSTAT_OUTPUT=` qstat -default uns -timeout 5 -P "$IP" 2>&1 | dos2unix | drop 1 `
+
+			# echo ">$QSTAT_OUTPUT<" >&2
+
+			# if echo "$QSTAT_OUTPUT" | head -n 1 | grep "\(no response\|^$\|^DOWN$\)" >/dev/null
+			if echo "$QSTAT_OUTPUT" | head -n 1 | grep "\( no response$\|^$\|^DOWN *$\)$" >/dev/null
+			then
+				## Query failed
+				### TODO: wait, then retry
+				## Ask utquery's scanner data:
+				if ! echo "$IP" | grep ":" > /dev/null
+				then IP="$IP:7777"
+				fi
+				UTQUERY_FILE=/home/utquery/utquery/data/"$IP".info
+				if [ -f "$UTQUERY_FILE" ]
+				then
+					# ls -l "$UTQUERY_FILE" >&2
+					SERVER_STATUS=`cat "$UTQUERY_FILE"`
+					WHEN=`datediff -file "$UTQUERY_FILE"`" ago"
+					# if echo "$SERVER_STATUS" | head -n 1 | grep "^DOWN$" >/dev/null || echo "$SERVER_STATUS" | head -n 1 | grep "^no response$" >/dev/null
+					if echo "$SERVER_STATUS" | head -n 1 | grep "^ *\(no response\|\|DOWN\) *$" >/dev/null
+					then echo "unreal://$IP/ = $SERVER_STATUS" | sed 's+\<DOWN\>+did not respond+g'
+					else echo "Last seen $WHEN: unreal://$IP/ $SERVER_STATUS"
+					fi
+				else
+					echo ">$QSTAT_OUTPUT< no record"
+				fi
+				exit 5
+			fi
 			# qstat -default uns -timeout 10 -P "$IP" |
-			qstat -default uns -timeout 5 -P "$IP" |
+
+			echo "$QSTAT_OUTPUT" |
 			# tee -a /tmp/qstats.out |
 			striptermchars | ## This is for servers like Explosive with crazy chars in their title, which IRC refuses to accept.
-			drop 1 |
+			# drop 1 |
 			# sed 's+^[[:digit:].:][^ 	]*[ 	]*++' |
 			tr -s ' ' |
 			(
@@ -181,7 +234,7 @@ NL="\\
 
 	elif [ "$SHOWRULES" ]
 	then SEARCH="$URL"
-	else echo "utp: ignoring non-IP \"$URL\"" >&2
+	else echo "/notice $IRCNICK utp: ignoring non-IP \"$URL\""
 	fi
 
 done |

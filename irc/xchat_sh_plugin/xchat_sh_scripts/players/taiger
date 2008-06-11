@@ -1,8 +1,14 @@
-exit 0
+# exit 0
 
 list () {
 cat << !
+jaegermeister
+jaegermeister
+the jaegermeister
+der jaegermeister
+the jaegermonster
 !
+# jaegermonster
 # <_tAiger\`> btw, noggin can u remove that taiger command, pls ?
 # [18:02:39] [@xena\`] taiger I only love you !
 # _tAiger is leaving F0X =/

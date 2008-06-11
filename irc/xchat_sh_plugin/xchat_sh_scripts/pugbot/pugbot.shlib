@@ -1,12 +1,16 @@
+PUGBOTDIR="$HOME/.pugbot" ; mkdir -p "$PUGBOTDIR"
+
+# DONE: !vote and !randcapt, but no !setcapt
+
 # ## DONE: instead of this, make commands !startpugging and !endpugging (or !enablepugbot and !disablepugbot)
-# if [ "$CHANNEL" != "#noobpug" ] || endswith "$SERVER" quakenet.org
+# if [ "$CHANNEL" != "#noobpug" ] || [ "$NETWORK" = quakenet.org ]
 # then exit 0
 # fi
 
 ## DO_MAP_POOL became [ -f "$MAP_POOL_FILE" ]
 MAX_POOL_SIZE=20
 
-PUG_CHANNELS_FILE=/tmp/pug_channels.list
+PUG_CHANNELS_FILE="$PUGBOTDIR"/pug_channels.list
 CHANNELREGEXP=`toregexp "$CHANNEL"`
 
 [ -f "$PUG_CHANNELS_FILE" ] || touch "$PUG_CHANNELS_FILE" ## to avoid an error if the file does not yet exist
@@ -30,19 +34,23 @@ TOPIC_HEADER="Welcome to noobpug, where even the b0t is a n00b!"
 # UPDATE_TOPIC=true
 UPDATE_TOPIC=
 
-PLAYER_LIST_FILE=/tmp/pug@"$SERVER"."$CHANNEL".player_list
-LAST_FILE=/tmp/pug@"$SERVER"."$CHANNEL".last
-RED_TEAM_FILE=/tmp/pug@"$SERVER"."$CHANNEL".red_team
-BLUE_TEAM_FILE=/tmp/pug@"$SERVER"."$CHANNEL".blue_team
-MAP_POOL_FILE=/tmp/pug@"$SERVER"."$CHANNEL".map_pool
-CURRENT_MAP_FILE=/tmp/pug@"$SERVER"."$CHANNEL".current_map
-SUB_FILE=/tmp/pug@"$SERVER"."$CHANNEL".sub
-NUMBER_OF_PLAYERS_NEEDED_FILE=/tmp/pug@"$SERVER"."$CHANNEL".total_players
+PLAYER_LIST_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".player_list
+LAST_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".last
+RED_TEAM_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".red_team
+BLUE_TEAM_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".blue_team
+MAP_POOL_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".map_pool
+CURRENT_MAP_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".current_map
+SUB_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".sub
+NUMBER_OF_PLAYERS_NEEDED_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".total_players
 
 if [ -f "$NUMBER_OF_PLAYERS_NEEDED_FILE" ]
 then NUMBER_OF_PLAYERS_NEEDED="`cat "$NUMBER_OF_PLAYERS_NEEDED_FILE"`"
 fi
 [ "$NUMBER_OF_PLAYERS_NEEDED" ] || NUMBER_OF_PLAYERS_NEEDED=10
+
+## double_escape_slashes used to be a function, but then it didn't work :o
+alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
+# alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "
 
 get_new_map () {
 	MAP1=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
@@ -55,25 +63,28 @@ reset () {
 	if [ -f "$MAP_POOL_FILE" ]
 	then
 		## Update the CURRENT_MAP_FILE randomly from the pool, but only if the last reset was > 1 minute ago:
-		touch -d "1 minute ago" /tmp/map_pool_last
+		get_num_players
+		touch -d "$((NUMBER_OF_PLAYERS+1)) minute ago" /tmp/map_pool_last
 		if newer /tmp/map_pool_last "$CURRENT_MAP_FILE"
 		then
 			get_new_map
 			echo "$NEW_MAP" > "$CURRENT_MAP_FILE" &&
 			# echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *You have 1 minute to join!*"
-			echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *Maps will change in 1 minute!*"
+			echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *Maps will change in 1 minute!*" | double_escape_slashes
 		else
 			NOW=`date "+%s"`
 			THEN=`date -r "$CURRENT_MAP_FILE" "+%s"`
-			DIFF=$((THEN+60-NOW))
-			[ "$NICK" ] && echo "/notice $NICK You may not reset the pug for $DIFF seconds."
+			DIFF=$((THEN+60*NUMBER_OF_PLAYERS+60-NOW))
+			# [ "$NICK" ] && echo "/notice $NICK You may not reset the pug for $DIFF seconds." | double_escape_slashes
+			echo "You may not reset the pug for $DIFF seconds."
 			return
 		fi
 	fi
 	printf "" > "$PLAYER_LIST_FILE"
 	rm -f "$RED_TEAM_FILE" "$BLUE_TEAM_FILE"
 	update_topic
-	[ -f "$PLAYER_LIST_FILE" ] && echo "Pug has been reset." || echo "/notice $NICK Error: Failed to reset pug."
+	# [ -f "$PLAYER_LIST_FILE" ] && echo "Pug has been reset." || echo "/notice $NICK Error: Failed to reset pug." | double_escape_slashes
+	[ -f "$PLAYER_LIST_FILE" ] && echo "Pug has been reset." || echo "Error: Failed to reset pug."
 }
 
 get_num_players () {
@@ -86,7 +97,8 @@ list_players () {
 	## if pug is empty and we are in recycling mode, reset the map (and the pug) if over timelimit
 	[ "$NUMBER_OF_PLAYERS" = 0 ] && [ -f "$MAP_POOL_FILE" ] && NICK="" reset
 	[ -f "$MAP_POOL_FILE" ] && [ -f "$CURRENT_MAP_FILE" ] && SHOW_CURRENT_MAP="{$COLYELLOW`cat "$CURRENT_MAP_FILE"`$COLRESET} "
-	echo "[$CHANNEL] $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | sed 's+ $++' ` $COLBLUE]$COLNORM"
+	## DONE: was not displaying \s in a players nick, making it rather hard to pick them :>
+	echo "[$CHANNEL] $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | double_escape_slashes | sed 's+ $++' ` $COLBLUE]$COLNORM"
 }
 
 show_last () {
@@ -94,7 +106,7 @@ show_last () {
 	then
 		cat "$LAST_FILE" | tr '\n' ' '
 		TIME_AGO=`datediff -file "$LAST_FILE"`
-		echo "$COLNORM""- $COLGREEN$TIME_AGO ago$COLNORM"
+		echo "$COLNORM""- $COLGREEN$TIME_AGO ago$COLNORM" | double_escape_slashes
 	fi
 }
 
@@ -109,14 +121,14 @@ list_team () {
 	TEAM="$1"
 	TEAM_FILE=`eval echo '$'"$TEAM"_TEAM_FILE`
 	TEAMCOL=`eval echo '$COL'"$TEAM"`
-	echo "$TEAMCOL$COLBOLD$TEAM$COLGREY: "` cat "$TEAM_FILE" | tr '\n' ' ' | sed 's+ $++' `"$COLBOLD"
+	echo "$COLGREY$COLBOLD""[$TEAMCOL$TEAM$COLGREY] "` cat "$TEAM_FILE" | tr '\n' ' ' | sed 's+ $++' `"$COLBOLD"
 }
 
 update_topic () {
 	if [ "$UPDATE_TOPIC" ]
 	then
 		PLAYER_LIST=`list_players`
-		echo "/topic $TOPIC_HEADER $PLAYER_LIST"
+		echo "/topic $TOPIC_HEADER $PLAYER_LIST" | double_escape_slashes
 	fi
 }
 
@@ -134,7 +146,7 @@ addplayer () {
 	for NICK_TO_ADD
 	do
 		if in_pickup_list "$NICK_TO_ADD"
-		then echo "$NICK_TO_ADD is already in the pug!"
+		then echo "$NICK_TO_ADD is already in the pug!" | double_escape_slashes
 		else
 			if players_still_needed
 			then
@@ -144,7 +156,7 @@ addplayer () {
 				) |
 				# removeduplicatelines | ## No longer needed since we check beforehand
 				dog "$PLAYER_LIST_FILE"
-				echo "$NICK_TO_ADD has joined the pug."
+				echo "$NICK_TO_ADD has joined the pug." | double_escape_slashes
 				get_num_players
 				if [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ]
 				# then echo "The pug is full!  Choose two captains, and use !pick (take it in turns please 1-2-2-2-1)."
@@ -170,13 +182,13 @@ needsub () {
 	FROM="$NICK"
 	[ "$1" ] && FROM="$*"
 	echo "$FROM" > "$SUB_FILE"
-	echo "[$CHANNEL] Sub needed for $FROM!  Type !sub if you can."
+	echo "[$CHANNEL] Sub needed for $FROM!  Type !sub if you can." | double_escape_slashes
 }
 
 sub () {
 	if [ -f "$SUB_FILE" ]
 	then
-		echo "[$CHANNEL] $NICK is subbing `cat "$SUB_FILE"`"
+		echo "[$CHANNEL] $NICK is subbing `cat "$SUB_FILE"`" | double_escape_slashes
 		rm -f "$SUB_FILE"
 	fi
 }
@@ -196,10 +208,10 @@ removeplayer () {
 			dog "$PLAYER_LIST_FILE"
 			if [ "$QUIET" ]
 			then :
-			else echo "$NICK_TO_REMOVE has been removed from the pug."
+			else echo "$NICK_TO_REMOVE has been removed from the pug." | double_escape_slashes
 			fi
 		else
-			echo "$NICK_TO_REMOVE is not in the pug.  :P"
+			echo "$NICK_TO_REMOVE is not in the pug.  :P" | double_escape_slashes
 		fi
 	done
 	update_topic
@@ -223,13 +235,13 @@ pick () {
 		if in_pickup_list "$1"
 		then
 			add_player_to_team "$PLAYER" "$TEAM"
-			list_team "$TEAM"
+			list_team "$TEAM" | double_escape_slashes
 			please_pick
 		else
-			echo "$PLAYER cannot be picked!"
+			echo "$PLAYER cannot be picked!" | double_escape_slashes
 		fi
 	else
-		echo "It is $CAPTAIN's turn to pick."
+		echo "It is $CAPTAIN's turn to pick." | double_escape_slashes
 	fi
 }
 
@@ -243,8 +255,9 @@ get_team_to_pick_next () {
 	then
 		echo "Nobody can pick until there are two captains."
 		TEAM="NOT_YET"
+		exit
 	else
-		get_num_players
+		get_num_players ## left to pick
 		case "$NUMBER_OF_PLAYERS" in
 			8|5|4)
 				TEAM="RED"
@@ -281,12 +294,13 @@ please_pick () {
 	then
 		add_player_to_team "`cat "$PLAYER_LIST_FILE"`" RED
 		echo "Pickup is complete.  Decide on a game and TS server, and go play.  Have fun!"
-		if [ "$MAP_POOL_FILE" ] && [ "`cat "$CURRENT_MAP_FILE"`" = "RANDOM + RANDOM" ]
-		then get_new_map ; echo "Random maps have been chosen: $COLYELLOW$NEW_MAP"
+		if [ -f "$MAP_POOL_FILE" ] && [ "`cat "$CURRENT_MAP_FILE"`" = "RANDOM + RANDOM" ]
+		then get_new_map ; echo "Random maps have been chosen: $COLYELLOW$NEW_MAP" | double_escape_slashes
 		fi
-		list_team RED
-		list_team BLUE
+		list_team RED | double_escape_slashes
+		list_team BLUE | double_escape_slashes
 		(
+			[ -f "$CURRENT_MAP_FILE" ] && cat "$CURRENT_MAP_FILE"
 			list_team RED
 			list_team BLUE
 		) > "$LAST_FILE"
@@ -296,7 +310,7 @@ please_pick () {
 		# list_team RED
 		# list_team BLUE
 		# list_players
-		echo "$CAPTAIN, please !pick a player."
+		echo "$CAPTAIN, please !pick a player." | double_escape_slashes
 	fi
 }
 
@@ -307,14 +321,14 @@ captain () {
 	then
 		removeplayer -quiet "$NICK"
 		echo "$NICK" > "$RED_TEAM_FILE"
-		echo "$COLRESET$NICK is captain of the $COLRED$COLBOLD""RED""$COLRESET team."
-		echo "/op $NICK"
+		echo "$COLRESET$NICK is captain of the $COLRED$COLBOLD""RED""$COLRESET team." | double_escape_slashes
+		# echo "/op $NICK"
 	elif [ -f "$RED_TEAM_FILE" ] && [ ! -f "$BLUE_TEAM_FILE" ] && in_pickup_list "$NICK"
 	then
 		removeplayer -quiet "$NICK"
 		echo "$NICK" > "$BLUE_TEAM_FILE"
-		echo "$COLRESET$NICK is captain of the $COLBLUE$COLBOLD""BLUE""$COLRESET team."
-		echo "/op $NICK"
+		echo "$COLRESET$NICK is captain of the $COLBLUE$COLBOLD""BLUE""$COLRESET team." | double_escape_slashes
+		# echo "/op $NICK" ## was opping paeutalik in #ut994funpug !
 		please_pick
 		list_players ## Since we no longer list at every iteration, we should at least do a list at the start of the pickup.
 	else
@@ -358,37 +372,48 @@ propose () { ## AKA addmap
 		if [ "$IP_AND_OR_SERVER" ]
 		then
 			echo "$IP_AND_OR_SERVER ($NICK)" >> "$MAP_POOL_FILE"
-			echo "$NICK's proposal for $IP_AND_OR_SERVER has entered the map pool"
+			echo "$NICK's proposal for $IP_AND_OR_SERVER has entered the map pool" | double_escape_slashes
 		else
-			echo "/notice $NICK To add your map to the pool: !addmap <map_name>"
+			# echo "/notice $NICK To add your map to the pool: !addmap <map_name>"
+			echo "To add your map to the pool: !addmap <map_name>"
 		fi
 	else
-		echo "/notice $NICK This channel has no map pool."
+		# echo "/notice $NICK This channel has no map pool."
+		echo "This channel has no map pool."
 	fi
 }
 
 pool () {
 	if [ -f "$MAP_POOL_FILE" ]
 	then
-		SHOW_MAPS=` cat "$MAP_POOL_FILE" | sed 's+$+, +' | tr -d "\n" | sed 's+, $++' `
-		echo "/notice $NICK Map pool is: $SHOW_MAPS"
+		SHOW_MAPS=`
+			cat "$MAP_POOL_FILE" |
+			# takecols 1 |
+			beforelast " (" |
+			sort |
+			sed 's+$+, +' | tr -d "\n" | sed 's+, $++'
+		`
+		echo "/notice $NICK Map pool is: $SHOW_MAPS" | double_escape_slashes
 		## TODO CONSIDER: is it better for longer map pools to echo | notice ?
 	else
-		echo "/notice $NICK This channel has no map pool."
+		# echo "/notice $NICK This channel has no map pool." | double_escape_slashes
+		echo "This channel has no map pool." | double_escape_slashes
 	fi
 }
 
 setlimit () {
 	get_num_players
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
-	then echo "/notice $NICK You can only change the settings of an empty pug."
+	# then echo "/notice $NICK You can only change the settings of an empty pug." | double_escape_slashes
+	then echo "You can only change the settings of an empty pug." | double_escape_slashes
 	else
 		if echo "$1" | grep "^\([468]\|10\)$" >/dev/null
 		then
 			echo "$1" > "$NUMBER_OF_PLAYERS_NEEDED_FILE"
 			echo "Pug set to $1 players."
 		else
-			echo "/notice $NICK I only support pugs of size 4,6,8 or 10."
+			# echo "/notice $NICK I only support pugs of size 4,6,8 or 10." | double_escape_slashes
+			echo "I only support pugs of size 4,6,8 or 10."
 		fi
 	fi
 }
@@ -396,7 +421,8 @@ setlimit () {
 enablemappool () {
 	get_num_players
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
-	then echo "/notice $NICK You can only change the settings of an empty pug."
+	# then echo "/notice $NICK You can only change the settings of an empty pug." | double_escape_slashes
+	then echo "You can only change the settings of an empty pug."
 	else
 		[ -f "$MAP_POOL_FILE".disabled ] && mv -f "$MAP_POOL_FILE".disabled "$MAP_POOL_FILE"
 		touch "$MAP_POOL_FILE" && echo "Map pool is enabled in $CHANNEL.  You may: !propose <map_or_ip>"
@@ -406,7 +432,8 @@ enablemappool () {
 disablemappool () {
 	get_num_players
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
-	then echo "/notice $NICK You can only change the settings of an empty pug."
+	# then echo "/notice $NICK You can only change the settings of an empty pug." | double_escape_slashes
+	then echo "You can only change the settings of an empty pug." | double_escape_slashes
 	else mv -f "$MAP_POOL_FILE" "$MAP_POOL_FILE".disabled && echo "Map pool disabled in $CHANNEL."
 	fi
 }
@@ -414,13 +441,48 @@ disablemappool () {
 setrandom () {
 	get_num_players
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
-	then echo "/notice $NICK You can only change the settings of an empty pug."
+	# then echo "/notice $NICK You can only change the settings of an empty pug." | double_escape_slashes
+	then echo "You can only change the settings of an empty pug." | double_escape_slashes
 	else echo "RANDOM + RANDOM" > "$CURRENT_MAP_FILE" ; list_players
 	# else echo "RANDOM + RANDOM" > "$CURRENT_MAP_FILE" ; NICK="" reset
+	fi
+}
+
+setmaps () {
+	get_num_players
+	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
+	then echo "You can only change the settings of an empty pug." ; return
+	fi
+	if [ -f "$MAP_POOL_FILE" ]
+	then
+		echo "$*" > "$CURRENT_MAP_FILE"
+		echo "Pug is currently: $*"
+	else
+		echo "You need to !enablemappool first"
 	fi
 }
 
 if [ ! -f "$PLAYER_LIST_FILE" ]
 then reset
 fi
+
+vote () {
+	if in_pickup_list "$NICK"
+	then
+		## TODO (but can survive): check waiting_for_captains
+		RESTRICT_EXTRA="$NICK" . restrict_repetitive_calls "30 seconds"
+		if [ "`seq 1 5 | chooserandomline`" = "1" ]
+		then NICK="$1" captain
+		else echo "/notice $NICK Your vote for $1 has been ignored.  Welcome to Florida."
+		fi
+	fi
+}
+
+randcapt () {
+	if in_pickup_list "$NICK"
+	then
+		## TODO (but can survive): check waiting_for_captains
+		NICK=` cat "$PLAYER_LIST_FILE" | chooserandomline ` captain
+	fi
+}
 

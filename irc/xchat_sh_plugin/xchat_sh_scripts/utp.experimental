@@ -1,12 +1,20 @@
-## OMG noob: use -raw to use a custom field-delimeter, to make parsing the output easier.
+## OMG noob: You should have used -raw to use a custom field-delimeter, to make parsing the output easier.
 ##           or even -xml or "template mode" (see http://www.qstat.org/faq.html )
+
+[ "$COMMAND_SCRIPTS_DIR" ] || COMMAND_SCRIPTS_DIR=.
 
 . irccols.shlib
 
 if [ "$*" = "" ]
 then
-	echo "To query UT99 servers: !utp [-scores|-s] [-justserver|-noplayers] <ip_and_port>s..."
+	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
+	echo "To query UT99 servers: !utp [-ping|-p] [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
+	echo "  NOTE: to query a hostname, use !utp unreal://<hostname>[:<port>]"
 	exit 0
+fi
+
+if [ "$1" = -ping ] || [ "$1" = -p ]
+then SHOWPINGS=true ; shift
 fi
 
 if [ "$1" = -scores ] || [ "$1" = -s ]
@@ -34,6 +42,8 @@ NL="\\
 for URL in $*
 do
 
+	IP=""
+
 	## Check that it is an IP (with optional :port at the end) or an unreal:// URL
 	if
 		echo "$URL" | grep '^unreal://' >/dev/null ||
@@ -48,33 +58,51 @@ do
 NL="\\
 "
 
-			echo -n "$COLBLUE$URL "
+			echo -n "$COLBLUE$COLBOLD$URL$COLBOLD "
 
-			qstat -default uns -timeout 20 -R "$IP" |
-			drop 2 |
+			QSTAT_OUTPUT=`
+				qstat -default uns -timeout 20 -R "$IP" 2>&1 | drop 2
+			`
+
+			echo "$QSTAT_OUTPUT" |
 
 			# sed "s+\([A-Za-z0-9_]*\)=+$NL$COLRED\1$COLYELLOW=$COLPINK+" |
 			sed "s+^[^A-Za-z0-9]*++" |
-			sed "s+[0-9][0-9]*+$COLGREEN\0$COLYELLOW+g" |
-			sed "s+\([^ ,]*\)=+$NL$COLNORM\1$COLRED=$COLYELLOW+g" |
+			# tee utp.debug1 |
 
+			tr ',' '\n' |
 			if [ "$SEARCH" ]
 			then
 				# tr "," "\n" | grep -i "$SEARCH"
 				# sed "s+.*\($SEARCH\)+\1+" |
-				grep -i "$SEARCH" ||
+				verbosely grep -i "$SEARCH" ||
 				echo "$COLNORM""Nothing found for $SEARCH"
 			else cat
 			fi |
+			tr '\n' ',' |
+
+			sed 's/, /+/g' |
+			sed "s+mutators=+\r\n""Mutators=+" |
+			sed 's+^Mutators=\([^=]*\),\([A-Za-z][A-Za-z]*\)=+Mutators=\1\r\n\2=+' |
+			sed 's/+/, /g' |
+
+			# sed "s+mutators=\([^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL""mutators=\1$NL\2=+" |
+			# sed "s+[0-9][0-9]*+$COLGREEN\0$COLYELLOW+g" |
+			# sed "s+\([^ ,]*\)=+$NL$COLNORM\1$COLYELLOW$COLBOLD=$COLBLUE+g" |
+			# # tr -d '\n' | sed "s+mutators+$NL""mutators+" |
+
+			sed "s+\([^ ,=]*\)=+\1=+g" |
+			# sed "s+\([^ ,=]*\)=+$COLBLUE\1$COLYELLOW=$COLAQUA+g" | ## colours are broken here somehow
+			sed 's+,\([^ ]\)+, \1+g' |
 
 			# pipeboth |
 
 			# tr , '\n' |
 
-			sed "s+,[ 	]*$+$COLRESET,$COLRESET+" | ## Color ending commas
+			# sed "s+,[ 	]*$+$COLRESET,$COLRESET+" | ## Color ending commas
 
 			# sed "s+\(^\| ]\)\([0-9A-Za-z .]*\)\(=\|\)\([A-Za-z .]*\)\([0-9.]*[^,]*.*\)+$COLRED\2$COLYELLOW\3$COLPINK\4$COLGREEN\5$COLGREY +g" |
-			tr '\n' ' ' |
+			# tr '\n' ' ' |
 
 			# verbosely sed "s$COLYELLOW,$COLPINK\$" ## Remove the last one!
 			sed "s+$COLRESET,$COLRESET[^,]*$++" ## Remove the last one!
@@ -83,11 +111,41 @@ NL="\\
 
 		else
 
+			QSTAT_OUTPUT=` qstat -default uns -timeout 5 -P "$IP" 2>&1 | dos2unix | drop 1 `
+
+			echo ">$QSTAT_OUTPUT<" >&2
+
+			# if echo "$QSTAT_OUTPUT" | head -n 1 | grep "\(no response\|^$\|^DOWN$\)" >/dev/null
+			if echo "$QSTAT_OUTPUT" | head -n 1 | grep "\( no response$\|^$\|^DOWN *$\)$" >/dev/null
+			then
+				## Query failed
+				### TODO: wait, then retry
+				## Ask utquery's scanner data:
+				if ! echo "$IP" | grep ":" > /dev/null
+				then IP="$IP:7777"
+				fi
+				UTQUERY_FILE=/home/utquery/utquery/data/"$IP".info
+				if [ -f "$UTQUERY_FILE" ]
+				then
+					ls -l "$UTQUERY_FILE"
+					SERVER_STATUS=`cat "$UTQUERY_FILE"`
+					WHEN=`datediff -file "$UTQUERY_FILE"`" ago"
+					# if echo "$SERVER_STATUS" | head -n 1 | grep "^DOWN$" >/dev/null || echo "$SERVER_STATUS" | head -n 1 | grep "^no response$" >/dev/null
+					if echo "$SERVER_STATUS" | head -n 1 | grep "^ *\(no response\|\|DOWN\) *$" >/dev/null
+					then echo "unreal://$IP/ = $SERVER_STATUS"
+					else echo "Last seen $WHEN: $SERVER_STATUS"
+					fi
+				else
+					echo ">$QSTAT_OUTPUT< no record"
+				fi
+				exit 5
+			fi
 			# qstat -default uns -timeout 10 -P "$IP" |
-			qstat -default uns -timeout 5 -P "$IP" |
+
+			echo "$QSTAT_OUTPUT" |
 			# tee -a /tmp/qstats.out |
 			striptermchars | ## This is for servers like Explosive with crazy chars in their title, which IRC refuses to accept.
-			drop 1 |
+			# drop 1 |
 			# sed 's+^[[:digit:].:][^ 	]*[ 	]*++' |
 			tr -s ' ' |
 			(
@@ -95,70 +153,52 @@ NL="\\
 				[ "$JUSTSERVER" ] || KEEPINFO="\\2 " ## KEEPINFO is #players+ + ping
 
 				read IP REST
-
-				# jshinfo "$REST"
-
-				NUMPLAYERS=
-				if [ "$REST" = "no response" ] || [ "$REST" = DOWN ]
-				then :
-				else
-					NUMPLAYERS=`echo "$REST" | beforefirst /`
-				fi
-				[ "$NUMPLAYERS" ] || NUMPLAYERS=0
-
 				# echo -n "$COLBLUE""unreal://$IP $COLGREY""$REST "
-				echo -n "unreal://$IP$COLNORM ""$REST $COLNORM]" |
+				# echo -n "unreal://$IP$COLNORM ""$REST " |
+				echo -n "$COLBLUE$COLBOLD""unreal://$IP$COLBOLD$COLNORM ""$REST " | ## i would have used COLRESET but that sets colour to White not Default :P
 				# sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
-				sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +=#=[ \1$COLBLUE $KEEPINFO$COLYELLOW+"
+				sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+"
 
-				(
+				# cat > /dev/null
+				sort -n -r -k 1 | ## highest frags first :)
+				# tee /tmp/utp.mid |
+				# takecols 5 |
+				while read SCORE dummy TEAM PING NICK
+				do
 
-					# [ "$NUMPLAYERS" -gt 0 ] && echo && echo -n "$COLGREY[ "
+					TEAMCOL="$COLNORM"
+					[ "$TEAM" = "team#0" ] && TEAMCOL="$COLRED"
+					[ "$TEAM" = "team#1" ] && TEAMCOL="$COLBLUE"
+					[ "$TEAM" = "team#2" ] && TEAMCOL="$COLGREEN"
+					[ "$TEAM" = "team#3" ] && TEAMCOL="$COLYELLOW"
 
-					# cat > /dev/null
-					sort -n -r -k 1 | ## highest frags first :)
-					# tee /tmp/utp.mid |
-					# takecols 5 |
-					while read SCORE dummy TEAM PING NICK
-					do
-						TEAMCOL="$COLNORM"
-						[ "$TEAM" = "team#0" ] && TEAMCOL="$COLRED"
-						[ "$TEAM" = "team#1" ] && TEAMCOL="$COLBLUE"
-						[ "$TEAM" = "team#2" ] && TEAMCOL="$COLGREEN"
-						[ "$TEAM" = "team#3" ] && TEAMCOL="$COLYELLOW"
-						if [ ! "$TEAM" = "$LASTTEAM" ]
-						then
-							echo
-							LASTTEAM="$TEAM"
-						fi
-						if [ "$SHOWSCORES" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
-						then
-							echo -n "$TEAMCOL""$NICK"" $COLNORM($SCORE), "
-						else
-							echo -n "$TEAMCOL""$NICK""$COLNORM, "
-						fi
-							
-					done |
-					# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
-					# # sed "s+^+$COLRED+" |
-					# sed "s+$+$COLGREY, +" |
-					# tr '\n' ' ' |
-					tr -s ' ' |
-					sed 's+, $++' |
-					# sed 's+^+   +'
-					sed 's+^+ |- +'
-					# sed "s+^+[ + ; s+\$+ ]+"
-					# sed "s+^+$COLGREY[ + ; s+\$+ $COLGREY]+" |
-					# sed "s+^+ -\\\\- + ; s+\$+ -/-+"
-					# sed "s+^+ \\\\\\\\- + ; s+\$+ -//+"
-					# sed "s+^+ \\\\\\\\--( + ; s+\$+ )--//+"
-					# sed "s+^+ ~\\\\~ + ; s+\$+ ~/~+"
-					# sed "s+^+ \\\\\\\\ + ; s+\$+ //+"
+					if [ "$SHOWPINGS" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
+					then echo -n "($PING)"
+					fi
 
-					[ "$NUMPLAYERS" -gt 0 ] && echo
-					# [ "$NUMPLAYERS" -gt 0 ] && echo -n "$COLGREY]"
+					echo -n "$TEAMCOL""$NICK"
 
-				) |
+					if [ "$SHOWSCORES" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
+					then
+						echo -n "$COLNORM($SCORE)"
+					fi
+
+					echo -n "$COLNORM, "
+
+				done |
+				# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
+				# # sed "s+^+$COLRED+" |
+				# sed "s+$+$COLGREY, +" |
+				# tr '\n' ' ' |
+				tr -s ' ' |
+				sed 's+, $++' |
+				# sed "s+^+[ + ; s+\$+ ]+"
+				sed "s+^+$COLGREY[ + ; s+\$+ $COLGREY]+" |
+				# sed "s+^+ -\\\\- + ; s+\$+ -/-+"
+				# sed "s+^+ \\\\\\\\- + ; s+\$+ -//+"
+				# sed "s+^+ \\\\\\\\--( + ; s+\$+ )--//+"
+				# sed "s+^+ ~\\\\~ + ; s+\$+ ~/~+"
+				# sed "s+^+ \\\\\\\\ + ; s+\$+ //+"
 				if [ "$NOPLAYERS" ]
 				then cat > /dev/null
 				else cat
@@ -175,11 +215,21 @@ NL="\\
 
 		fi
 
-	else
-		if [ "$SHOWRULES" ]
-		then SEARCH="$URL"
-		else echo "utp: ignoring non-IP \"$URL\"" >&2
-		fi
+	elif [ -x "$COMMAND_SCRIPTS_DIR/ut_servers/$URL" ]
+	# elif verbosely mytest [ -x "$COMMAND_SCRIPTS_DIR/ut_servers/$URL" ]
+	then
+
+		export SHOWSCORES
+		export SHOWPINGS
+		export SHOWRULES
+		export JUSTSERVER
+		export NOPLAYERS
+		export SEARCH
+		"$COMMAND_SCRIPTS_DIR/ut_servers/$URL" ## no options passed, but vars exported
+
+	elif [ "$SHOWRULES" ]
+	then SEARCH="$URL"
+	else echo "utp: ignoring non-IP \"$URL\"" >&2
 	fi
 
 done |

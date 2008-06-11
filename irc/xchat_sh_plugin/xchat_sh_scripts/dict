@@ -4,6 +4,6 @@
 	dict -d wn "$@"
 	# dict -d jargon "$@"
 	# dict -d vera "$@"
-) |
+) 2>&1 |
 # cat
 notice

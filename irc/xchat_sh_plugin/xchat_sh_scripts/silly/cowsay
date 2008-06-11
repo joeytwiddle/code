@@ -49,10 +49,13 @@ chooserandomline
 `
 
 COMMAND=`
-echo "/usr/bin/cowsay
-/usr/bin/cowthink" |
+echo "/usr/games/cowsay
+/usr/games/cowthink" |
 chooserandomline
 `
+
+STYLE=` echolines moose sodomized head-in sheep small small default default default default default default | chooserandomline `
+EXTRA="-f $STYLE"
 
 . irc.shlib
 . irccols.shlib
@@ -63,7 +66,7 @@ STRING="$*"
 
 [ "$STRING" ] || STRING=moo
 
-"$COMMAND" -e "$EYES" $STATE -- "$STRING" |
+"$COMMAND" -e "$EYES" $STATE $EXTRA -- "$STRING" |
 # /usr/bin/cowsay $STATE "$STRING" |
 # /usr/bin/cowsay -f "$MODE" "$STRING" |
 pipeboth |

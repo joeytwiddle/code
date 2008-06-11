@@ -1,0 +1,23 @@
+. irccols.shlib
+
+# echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug (or leet players go to #ctfpug).  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
+# echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug.  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
+
+# . restrict_repetitive_calls "1 minute"
+
+EXPLAIN_TO="$1"
+
+if [ "$1" = "" ]
+then echo "/msg $NICK You need to give me the nick of the person you want me to explain PUG to :P"
+else
+	echo "/notice $NICK Explanation sent to $EXPLAIN_TO"
+	echo "/msg $EXPLAIN_TO $NICK asked me to tell you..."
+	echo "/msg $EXPLAIN_TO In order to keep unwanted people out, #ut.pug is now an invite-only channel."
+	echo "/msg $EXPLAIN_TO If you are authed and have +v (auto-voice) or +k (trial) on the channel, you need to type the following:"
+	echo "/msg $EXPLAIN_TO /msg Q invite #ut.pug"
+	echo "/msg $EXPLAIN_TO /join #ut.pug"
+	echo "/msg $EXPLAIN_TO Alternatively, you can set your own +j flag on the channel, which will cause you to be auto-invited whenever you auth: /msg Q chanlev #ut.pug <your_nick> +j"
+	echo "/msg $EXPLAIN_TO If you need an auth account, then you need to type: /msg Q HELLO <your_email> <your_email>"
+	echo "/msg $EXPLAIN_TO If you do not have +v or +k then you can contact one of the admins for an invite: LiquidFire, _tAiger, [SMo]Vader, Kxmpen, Majinx, R^"
+fi
+

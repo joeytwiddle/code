@@ -1,10 +1,18 @@
 list () {
 cat << !
+(15:35:24) [+Ghostness] imo i have no opinions
 I think the bot hates me.
 The bot is lying!
+(@[SMo]Vader) \`Shockey 'n' hugs ^^  (+GLA|Tomlord) Ghostness n fucks  (+Ghostness) i like tomfuck  (+Ghostness) to fuck*  :|
 !
 # Oh my god i have been shot..some1 call a medic!
 # you know its not that funny becuase i actuaaly been shot twice :/
+# (@[SMo]Vader) \`Shockey 'n' hugs ^^
+# (+GLA|Tomlord) Ghostness n fucks
+# (@[SMo]Vader) :|
+# (+Ghostness) i like tomfuck
+# (+Ghostness) to fuck*
+# (+Ghostness) :/
 }
 
 list | randomorder | head -n 1

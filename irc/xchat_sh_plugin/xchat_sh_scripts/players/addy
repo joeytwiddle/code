@@ -1,0 +1,14 @@
+list () {
+cat << !
+<addyr0x> doors that dont open for you means youre on the coutryside
+<jm-addy> thought vader was mental handicapped. that's why ive always been so nice to him
+"dirty german"
+"only in poland"
+<addy> i think i had 4 rampages >_< over both maps  <addy> my epenis is deffo bigger than yours
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

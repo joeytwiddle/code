@@ -1,0 +1,10 @@
+list () {
+cat << !
+rates himself as one of the top 15 UT players
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

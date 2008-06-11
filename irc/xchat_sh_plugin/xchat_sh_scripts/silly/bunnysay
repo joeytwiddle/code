@@ -1,0 +1,41 @@
+# set -x
+
+. restrict_repetitive_calls "1 minute"
+
+COMMAND="/usr/bin/cowsay"
+
+. irc.shlib
+. irccols.shlib
+
+[ "$CHANNEL" ] || CHANNEL="$NICK"
+
+STRING="$*"
+
+[ "$STRING" ] || STRING=moo
+
+"$COMMAND" -f bunny -- "$STRING" |
+# /usr/bin/cowsay $STATE "$STRING" |
+# /usr/bin/cowsay -f "$MODE" "$STRING" |
+pipeboth |
+# grep -v "^[ 	]*$" |
+# sed 's+^+. +' |
+# cat
+# exit
+
+# foreachdo rainbow
+# while read LINE
+# do
+	# # rainbow "$LINE"
+	# [ "$COLNUM" -gt 14 ] && COLNUM=2
+	# COLCODE=""$COLNUM",99"
+	# COLNUM=$((COLNUM+1))
+	# printf "%s\n" "$COLCODE$COLBOLD$LINE$COLRESET"
+# done |
+# # sed 's+^[^ ]* ++' |
+# sed 's+\. ++' |
+# # sed 's+^\([^\.]\)\.+\1+ ; s+ ++' |
+# # sed 's+\\+\\\\\\\\+g' |
+sed 's+\\+\\\\\\\\+g' |
+sed "s+^+/msg $CHANNEL +" |
+cat
+

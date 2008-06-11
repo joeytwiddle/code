@@ -3,8 +3,10 @@ cat << !
 #ctfpug asap
 2 needed in #ut994funpug
 8 needed in #spamcup - pug up!
-XChat users tired of oYst3r's AMSG spam? Try: http://hwi.ath.cx/tmp/suppress_amsg.py
+[17:58:38] <oYst3r> long time no cheaters on xol, gets boring for the admins imo
 !
+# XChat users tired of oYst3r's AMSG spam? Try: http://hwi.ath.cx/tmp/suppress_amsg.py
+# XChat users can suppress AMSGs with: http://hwi.ath.cx/tmp/suppress_amsg.py
 }
 
 list | randomorder | head -n 1

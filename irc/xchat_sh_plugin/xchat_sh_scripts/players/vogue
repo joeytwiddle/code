@@ -1,0 +1,10 @@
+list () {
+cat << !
+vogue's is \`Sh0ck3y^'s sister ... bwahahahahahahahahaha!
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,10 @@
+list () {
+cat << !
+<[ADL]Jonas> Èpá deixem-me em paz s.f.f xó tenhu 14 anos..e na tenhu pintelhos ainda!!!
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

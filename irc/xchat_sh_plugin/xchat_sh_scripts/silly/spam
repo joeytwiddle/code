@@ -16,7 +16,7 @@ fi
 # then exit 0
 # fi
 
-if [ `strlen "$*"` -gt 200 ]
+if [ `strlen "$*"` -gt 50 ]
 then
 	echo "Sorry, your spam is too long!"
 	exit 0

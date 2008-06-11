@@ -1,0 +1,11 @@
+list () {
+cat << !
+<zombix> fear me <zombix> I need brains urgently <WG-Vader\`noob> none here <WG-Vader\`noob> :(
+!
+# go fuck the dog of your ass
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

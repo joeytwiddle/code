@@ -44,8 +44,8 @@ do
 		(
 
 			read IP REST
-			# echo -n "$COLBLUE""teamspeak://$IP""?nick=$NICK""$COLGREY ""$REST " |
-			echo -n "$COLBLUE""teamspeak://$IP$COLGREY ""$REST " |
+			# echo -n "$COLBLUE""teamspeak2://$IP""?nick=$NICK""$COLGREY ""$REST " |
+			echo -n "$COLBLUE""teamspeak2://$IP$COLGREY ""$REST " |
 			sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
 
 			# cat > /dev/null

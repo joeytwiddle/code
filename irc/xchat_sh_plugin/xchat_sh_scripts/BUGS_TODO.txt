@@ -1,0 +1,6 @@
+If m\Tal types !ffa, it fails to message him back, because the \ gets lost, presumably by an echo.
+
+We *could* double-escape '\'s in the env var NICK, but this might cause problems:
+  where "$NICK" is used without an echo, e.g. when writing to a file related to that NICK.
+  in pugbot.shlib, where problems with '\'s have already been fixed.
+

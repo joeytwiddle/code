@@ -1,0 +1,30 @@
+. irccols.shlib
+. wordgame/wordgame.shlib
+
+COUNT=5
+if [ "$1" = more ]
+then shift ; COUNT=50
+fi
+
+echo -n "Wordgame high scores: "
+POS=1
+
+grep . "$WORDGAME_DATA_DIR"/*.score |
+afterlast / |
+sed 's+^wordgame\.++;s+\.score:+ +' |
+sort -n -k 2 |
+tail -n "$COUNT" |
+reverse |
+
+while read PLAYER SCORE
+do
+	echo -n "$COLYELLOW[$POS] $COLRED$COLBOLD$PLAYER $COLRESET$COLGREEN($SCORE) "
+	POS=$((POS+1))
+done
+
+echo
+
+# if [ -f "$WORDGAME_DATA_DIR"/wordgame."$NICK".score ]
+# then echo "$NICK, your current score is: "`cat "$WORDGAME_DATA_DIR"/wordgame."$NICK".score`
+# fi
+

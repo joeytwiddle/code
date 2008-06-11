@@ -1,0 +1,11 @@
+./ts/tsquery 78.159.108.11 51234 1337 |
+
+sed 's+SOuLReaveR+\0_the_batty+ig' |
+sed 's+KGB+\0_el_caralho+ig' |
+sed 's+SUPA+\0NOOB+ig' |
+sed 's+raz+\0mataz+ig' |
+sed 's+infra+\0_banana+ig' |
+sed 's+ractius+ractibutt+ig' |
+
+sed 's+jamz+the-jam-meister+ig'
+

@@ -1,0 +1,11 @@
+list () {
+cat << !
+<Dralex> Senta e gira .!.
+!
+# <[ADL]SOulReaver> <Dralex> I´m the Rammestein dude!!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

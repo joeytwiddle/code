@@ -3,6 +3,10 @@
 
 . wordgame/wordgame.shlib
 
+if [ "`seq 1 10 | chooserandomline`" = 1 ]
+then ./wordgame/wordgamehiscores
+fi
+
 # START_NEW_GAME=true
 
 randomvowel () {

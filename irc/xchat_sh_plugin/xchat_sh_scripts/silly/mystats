@@ -1,0 +1,42 @@
+if [[ ! "$CHANNEL" = "#ut.pug" ]]
+then exit 0
+fi
+
+list () {
+cat << !
+prat
+plonker
+u = nubcake
+less sexy than vader
+you suck
+flatulence
+biggest noobstick
+top flopper
+you think you have the flag when you don't
+you reach the enemy base and are surprised to find their flag is ALREADY TAKEN!
+you often kill yourself with your last rocket
+pro whiner
+hardskinner
+ownage quota 3%
+ownage quota 5%
+ownage quota 2%
+suckage quota 95%
+suckage quota 98%
+suckage quota 99%
+average suicides per map = 17
+you can't even frag yourself
+when you 1v1 KGB, he uses only one hand
+the walls get nervous when you join the server
+when you take amp, you suicide more often than you frag an enemy
+!
+# in soviet russia, combo makes you
+# you need more rocket ammo - you kill yourself with your last rocket, every time
+# Bran Flakes
+}
+
+STATS=` list | randomorder | head -n 1 `
+
+echo "$NICK: $STATS"
+
+exit 0
+

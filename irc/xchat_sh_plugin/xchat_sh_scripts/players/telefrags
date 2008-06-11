@@ -1,0 +1,17 @@
+if [ ! "$*" ]
+then
+	echo "Usage: !telefrags <part_of_nick>"
+	exit
+fi
+
+
+cd $HOME/.xchat2/xchatlogs/
+
+
+memo -t "7 days" sh ./scrape_telefrag_returns.sh >/dev/null
+
+
+for X
+do sh ./telefrags.sh "$X"
+done
+

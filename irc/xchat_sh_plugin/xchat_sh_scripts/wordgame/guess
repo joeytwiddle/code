@@ -27,8 +27,10 @@ remove_letter () {
 	[ "$DONE_REMOVE_ALREADY" ]
 }
 
-## First check that the guess can be made from the letters
 ALL_LETTERS=`cat "$LETTERS_FILE" | tr '\n' ' '`
+# TOTAL=`./answers --force-list | wc -l`
+TOTAL=`list_answers | wc -l`
+SO_FAR=`cat "$GUESSED_FILE" | wc -l`
 
 # GOT_ONE=
 FOUND_WORDS=""
@@ -46,6 +48,7 @@ do
 		THIS_WORD_FAILED=not_enough_letters
 	fi
 
+	## First check that the guess can be made from the letters
 	WORD_SPACED=`echo "$WORD" | tolowercase | sed 's+.+\0 +g'`
 
 	REMAINING_LETTERS="$ALL_LETTERS"
@@ -77,7 +80,7 @@ do
 
 		## Check to see if the word exists!
 
-		DICT_RESULT=` dict -d wn "$WORD" `
+		DICT_RESULT=` dict -d wn "$WORD" 2>&1 `
 
 		# echo "dict -d wn \"$WORD\" returned error-code $?" >&2
 
@@ -113,6 +116,23 @@ do
 			echo "$WORD was already guessed by $NICK :P" | tolowercase >> "$GUESSED_FILE"
 			# now done by increase_score: CURRENT_SCORE=$((CURRENT_SCORE+SCORE_TO_ADD))
 			SCORE_SUM="$SCORE_SUM $COLGREY+$COLGREEN$SCORE_TO_ADD"
+
+			if [ "$NUM_LETTERS" = `cat "$LETTERS_FILE" | tr ' ' '\n' | wc -l` ] && [ "$NUM_LETTERS" -gt 8 ] ## only for 9-letter words or longer
+			then
+				increase_score "$NICK" "10"
+				SCORE_SUM="$SCORE_SUM $COLGREY+$COLORANGE""10 for using all the letters!"
+			fi
+
+			SO_FAR=$((SO_FAR+1))
+
+			if [ $((TOTAL-SO_FAR)) -lt 10 ]
+			then
+				# BONUS=$(((10-TOTAL+SO_FAR)*10))
+				BONUS=$((10-TOTAL+SO_FAR))
+				increase_score "$NICK" "$BONUS"
+				SCORE_SUM="$SCORE_SUM $COLGREY+$COLORANGE"" bonus $BONUS"
+			fi
+
 		fi
 
 	fi
@@ -121,19 +141,6 @@ done
 
 if [ "$FOUND_WORDS" ]
 then
-
-	SO_FAR=`cat "$GUESSED_FILE" | wc -l`
-	# TOTAL=`./answers --force-list | wc -l`
-	TOTAL=`list_answers | wc -l`
-
-	if [ $((TOTAL-SO_FAR)) -lt 10 ]
-	then
-		# BONUS=$(((10-TOTAL+SO_FAR)*10))
-		BONUS=$(((10-TOTAL+SO_FAR)))
-		increase_score "$NICK" "$BONUS"
-		# now done by increase_score: CURRENT_SCORE=$((CURRENT_SCORE+BONUS))
-		SCORE_SUM="$SCORE_SUM $COLGREY+$COLYELLOW""bonus $BONUS"
-	fi
 
 	echo "$COLGREY($SO_FAR/$TOTAL) $FOUND_WORDS$COLPINK$NICK$COLGREY$SCORE_SUM $COLGREY=> $COLGREEN$CURRENT_SCORE$COLGREY!"
 

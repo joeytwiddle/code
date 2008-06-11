@@ -1,2 +1,2 @@
-## Atm only Haleys 2, the one with mapvote, since I believe the other two are Face only
-./utp "$@" 82.165.146.54
+./utp "$@" 216.246.109.101
+# HH2: ./utp "$@" 208.71.112.190

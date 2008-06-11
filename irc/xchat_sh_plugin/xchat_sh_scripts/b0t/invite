@@ -1,13 +1,71 @@
-NICK_TO_INVITE="$1"
+# if [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#ut" ]
+# then exit 0
+# fi
 
-if [ ! "$NICK_TO_INVITE" ]
+if [ "$CHANNEL" = "#ut.pug" ] && [[ "$NETWORK" =~ ".*\.Quakenet\.\(org\|net\)" ]]
 then
-	echo "To invite someone to this channel: !invite <nick_to_invite> (utb0t requires ops)"
+	if [ "$*" ]
+	then
+		echo "/msg #ut.admins [$NICK is requesting an invite for $*]"
+		echo "/msg LiquidFire [$NICK is requesting an invite for $* to #ut.pug]"
+		echo "/msg Majinx [$NICK is requesting an invite for $* to #ut.pug]"
+		echo "/msg nogginBasher [$NICK is requesting an invite for $* to #ut.pug]"
+		echo "/msg off|noggin [$NICK is requesting an invite for $* to #ut.pug]"
+		echo "[Your request to invite $* has been forwarded to #ut.admins]"
+		exit
+	else
+		echo "Usage: !invite <nick>"
+	fi
+fi
+
+if [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#adl.pvt" ] || echo "$NICK" | grep -i "^goly" >/dev/null || echo "$NICK" | grep -i "^mox" >/dev/null || echo "$NICK" | grep -i "mox$" >/dev/null || echo "$NICK" | grep -i "^[|]*sandwich[|]*$" >/dev/null || echo "$NICK" | grep -i "^[|]*xaz[|]*$" >/dev/null
+then
+	echo "/invite $NICK #ut.pug"
+	# if [ "$1" ]
+	# then echo "/invite $1 #ut.pug"
+	# fi
+	exit 0
+fi
+
+if [ "$CHANNEL" = "#ut.admins" ]
+then
+	echo "/invite $1 #ut.pug"
+	# echo "/msg Q chanlev #ut $1 +av"
+	# echo "I have invited $1 to #ut and also attempted to give him +v"
+	echo "I have invited $1 to #ut.pug"
+	# echo "!explaininviteto $1"
+	exit
+fi
+
+# if [ ! "$CHANNEL" = "#noobpug" ]
+# then
+	# # echo "My !invite command only works in #noobpug ... BLAME LIQUIDFIRE!"
+	# echo "My !invite command only works in #noobpug ... BLAME \`Shock3y-!"
+	# exit 0
+# fi
+
+if [ "$CHANNEL" = "#noobpug" ] # || [ "$CHANNEL" = "#ut" ]
+then
+
+	NICK_TO_INVITE="$1"
+
+	if [ ! "$NICK_TO_INVITE" ]
+	then
+		echo "To invite someone to this channel: !invite <nick_to_invite> (utb0t requires ops)"
+	else
+		# echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try my backup: /msg utbot !invitebot $CHANNEL_TO_IDLE_IN"
+		# # echo "/join $CHANNEL_TO_IDLE_IN"
+		# if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
+		# echo "/join $*"
+		echo "/invite $NICK_TO_INVITE $CHANNEL"
+		echo "I have attempted to invite $NICK_TO_INVITE to $CHANNEL"
+		# if [ "$CHANNEL" = "#ut" ]
+		# then echo "/msg LiquidFire [invite] I have just invited $1 to #ut (at the request of $NICK) - you may wish to +v them."
+		# fi
+	fi
+
 else
-	# echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try my backup: /msg utbot !invitebot $CHANNEL_TO_IDLE_IN"
-	# # echo "/join $CHANNEL_TO_IDLE_IN"
-	# if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
-	# echo "/join $*"
-	echo "/invite $NICK_TO_INVITE $CHANNEL"
-	echo "I have attempted to invite $NICK_TO_INVITE to $CHANNEL"
+
+	echo "/notice $NICK My !invite command is not enabled in this channel.  Perhaps you wanted: !invitebot #your_channel"
+
 fi

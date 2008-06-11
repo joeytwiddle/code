@@ -1,0 +1,14 @@
+list () {
+cat << !
+bloddy noobs
+wtf? sixpack in the face and he didn't die
+wtf?  chocolate chips in his cereal and he didn't die
+wtf?   cyanide in his toothpaste and he didn't die
+I hardly suck today
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

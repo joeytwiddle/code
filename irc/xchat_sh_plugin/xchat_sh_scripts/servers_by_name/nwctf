@@ -21,7 +21,7 @@ fi
 (
 	export NOTICE_STYLE="none"
 	# Now closed: Multiplay CTF 85.236.100.43 p 195.4.17.197 
-	for SERVER in zoo tacsu f0x nogginzp noobpug $OTHERS focr terror kawa gla haleys xol of inz u f0x2 ## (multiplay FFA DM+CTF)
+	for SERVER in zoo tacsu f0x nogginzp noobpug $OTHERS focr zooz terror kawa gla haleys xol of inz u f0x2 ## (multiplay FFA DM+CTF)
 	## DOWN afaik: tits oldpmp bmb be sahne il whore relax dk fraggerspub
 	## now MH: smo
 	# 82.192.78.54:7000 ## -ev!L~eLves-

@@ -1,0 +1,11 @@
+list () {
+cat << !
+<[ADL]Tuga> I'm dreaming of my imaginary girlfriend
+<Infra\`> Tuga your aim is so good that most of the time you are mistaken for an aim botter
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

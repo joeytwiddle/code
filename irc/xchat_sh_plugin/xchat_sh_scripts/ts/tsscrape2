@@ -1,0 +1,27 @@
+. irc.shlib
+. irccols.shlib
+
+# IP=ts2.multiplay.co.uk
+# MAIN_PORT=8767
+# QUERY_PORT=14540
+
+URL="$1"
+IP_AND_PORT="$2"
+
+if [ ! "$URL" ] || [ ! "$IP_AND_PORT" ]
+then
+	echo "Usage: tsscrape <speak-orange.de_listing_url> <ts_ip_and_port>"
+	exit 0
+fi
+
+echo -n "$COLBLUE""teamspeak2://$IP_AND_PORT/$COLGREY [ "
+
+wget -t 3 -T 5 -O - "$URL" 2>/dev/null |
+grep "<td nowrap>\&nbsp;" |
+afterfirst ";" | beforefirst " (" |
+while read NAME
+do echo -n "$COLRED$NAME$COLGREY, "
+done |
+sed "s+, $++"
+
+echo " ]"

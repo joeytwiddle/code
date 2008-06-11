@@ -4,7 +4,7 @@
 # if [ "$CHANNEL" = "#utportal" ]
 # then NOCOLS=true
 # fi
-if [ "$CHANNEL" = "#utportal" ] || [ "$CHANNEL" = "#utb0t" ] # || [ "$NETWORK" = "irc.utchat.com" ]
+if [ "$CHANNEL" = "#utportal" ] || [ "$CHANNEL" = "#utb0t" ] # || [ "$SERVER" = "irc.utchat.com" ]
 then
 	# if endswith "$NICK" "-"
 	# then NOCOLS=true

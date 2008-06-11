@@ -1,0 +1,14 @@
+R="`seq 1 25 | chooserandomline`"
+if [ "$R" = 5 ]
+then echo "[ $NICK, your vote for George W. Bush has been cast. ]"
+fi
+if [ "$R" = 6 ]
+then echo "[ Thank you $NICK, George W. Bush appreciates your vote. ]"
+fi
+if [ "$R" = 7 ]
+then echo "[ Robert Mugabe appreciates your vote, $NICK, and will represent your views. ]"
+fi
+
+. pugbot/pugbot.shlib
+
+vote "$@"

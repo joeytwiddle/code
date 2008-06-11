@@ -5,7 +5,7 @@
 TARGET="$1"
 [ "$TARGET" ] || TARGET="$NICK"
 
-if [ "$CHANNEL" = "#proshee" ]
+if [ "$CHANNEL" = "#proshee" ] # || [[ "$CHANNEL" = "#ut" && "$NICK" = Maxiu ]]
 then echo "/op $TARGET"
 else
 

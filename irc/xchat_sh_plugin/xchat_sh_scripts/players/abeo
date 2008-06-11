@@ -1,0 +1,12 @@
+list () {
+cat << !
+It's vials ffs!
+in soviet russia, you do not cap flag, flag caps you
+<tn-w4b> which server?  <abeo> unreal://Zoreds mom  <abeo> no pw, ffa  <tn-mox> query says its full
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

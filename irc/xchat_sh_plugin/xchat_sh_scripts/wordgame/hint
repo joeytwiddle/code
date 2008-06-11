@@ -13,6 +13,6 @@ RND_LETTERS=` echo "$WORD" | randomise_letters `
 NUM_LETTERS=` echolines $RND_LETTERS | wc -l `
 SCORE_PENALTY=$((NUM_LETTERS-4))
 increase_score "$NICK" -$SCORE_PENALTY
-echo "$COLRED$COLBOLD $NICK -- $SCORE_PENALTY"
+echo "$COLRED$COLBOLD $NICK -$SCORE_PENALTY"
 
 echo "There is a unguessed word which uses the letters: $RND_LETTERS"

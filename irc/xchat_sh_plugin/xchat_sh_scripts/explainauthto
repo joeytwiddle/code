@@ -1,0 +1,20 @@
+. irccols.shlib
+
+# echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug (or leet players go to #ctfpug).  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
+# echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug.  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
+
+# . restrict_repetitive_calls "1 minute"
+
+EXPLAIN_TO="$1"
+
+if [ "$1" = "" ]
+then echo "/msg $NICK You need to give me the nick of the person you want me to explain PUG to :P"
+else
+	echo "/notice $NICK Explanation sent to $EXPLAIN_TO"
+	echo "/msg $EXPLAIN_TO $NICK asked me to tell you..."
+	echo "/msg $EXPLAIN_TO You can check that you are authed by typing: /whois $EXPLAIN_TO"
+	echo "/msg $EXPLAIN_TO If you are authed, the response (probably in the server window) will say \"is authed as ...\""
+	echo "/msg $EXPLAIN_TO If you are not authed, then you need to type: /msg Q HELLO <your_email> <your_email>"
+	echo "/msg $EXPLAIN_TO and check your email for further instructions."
+fi
+

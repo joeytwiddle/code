@@ -1,0 +1,11 @@
+list () {
+cat << !
+okey i'm ready to cover on shockets!
+1-eyed lady
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

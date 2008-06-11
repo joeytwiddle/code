@@ -1,0 +1,10 @@
+list () {
+cat << !
+<abobo> if you take any clan and add stilgar they're div3
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

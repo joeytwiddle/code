@@ -1,0 +1,10 @@
+list () {
+cat << !
+I <3 U =D
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

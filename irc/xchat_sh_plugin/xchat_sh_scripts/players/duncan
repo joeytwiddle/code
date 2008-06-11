@@ -1,14 +1,15 @@
 list () {
 cat << !
+<Duncan[eC]McCloud> I play ut99 since 99. I am actually the most known and the skillest ut player ever. So i say f0x rox and this is the Truth.
 /me hugs Duncan[eC]Mc
-/me hugs Duncan[eC]Mc
-Bitch.
-Bitch.
-I said bitch!
-<Duncan[eC]Mc> .duncan  <UTb0t> I said bitch!  <Duncan[eC]Mc> :EEE  <Duncan[eC]Mc> fucking UTb0t
-Pasta!!
 !
+# Duncan pwns noobs.
 # Duncan pwns noobs.  Only noobs.  Not all noobs.  But some noobs.  Sometimes.
+# Bitch.
+# Bitch.
+# I said bitch!
+# <Duncan[eC]Mc> .duncan  <UTb0t> I said bitch!  <Duncan[eC]Mc> :EEE  <Duncan[eC]Mc> fucking UTb0t
+# Pasta!!
 }
 
 list | randomorder | head -n 1

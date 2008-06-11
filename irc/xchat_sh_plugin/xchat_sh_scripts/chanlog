@@ -13,6 +13,10 @@ if [ "$1" = -all ]
 then CHANLOG_SHOW_ALL=true; shift
 fi
 
+if [ "$1" = -random ]
+then CHANLOG_RANDOM=true; shift
+fi
+
 (
 
 	LOGDIR="$HOME/.xchat2/xchatlogs"
@@ -25,7 +29,7 @@ fi
 	if [ "$1" ] ## we must not run getnumber "", it blocks!!
 	then LINES=`getnumber "$1" | sed 's+\..*$++'`
 	fi
-	[ "$LINES" ] && shift || LINES=5
+	[ "$LINES" ] && shift || LINES=10
 	# fi
 	# [ "$LINES" -gt 10 ] && LINES=10 && echo "Max 10 lines sorry. :P"
 	if [ "$LINES" -gt 25 ]
@@ -94,7 +98,7 @@ fi
 		ALSO=
 		[ "$GREP_EXPR" ] && ALSO=" matching \"$GREP_EXPR\""
 		SHOWFILES=`echo "$FILES" | afterlast / | tr '\n' ' ' | sed 's+ $++'`
-		echo "Here is last of $SHOWFILES$ALSO:"
+		[ ! "$CHANLOG_RANDOM" ] && echo "Here is last of $SHOWFILES$ALSO:"
 		echo "$FILES" | withalldo cat |
 		## Strip joins, parts, and operations:
 		if [ "$CHANLOG_SHOW_ALL" ]
@@ -112,9 +116,18 @@ fi
 		else
 			cat
 		fi |
+		if [ "$CHANLOG_RANDOM" ]
+		then tail -n 10000 | chooserandomline
+		else cat
+		fi |
 		tail -n "$LINES" |
 		grep . || echo "No matching lines found."
 	fi
 
-) | NOTICE_STYLE=notice notice
+) |
+
+if [ "$CHANLOG_RANDOM" ]
+then cat
+else NOTICE_STYLE=notice notice
+fi
 

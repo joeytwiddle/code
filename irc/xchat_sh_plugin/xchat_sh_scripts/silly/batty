@@ -1,0 +1,6 @@
+if seq 1 5 | chooserandomline | grep "^1$" >/dev/null
+then echo "batty my botty"
+else
+	[ "$1" ] && WHO="$*" || WHO="$NICK"
+	echo "/me batties $WHO"
+fi
