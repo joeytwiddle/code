@@ -2,5 +2,5 @@
 . includepath $HOME/myroots/cowsay
 . includepath $HOME/myroots/figlet
 
-java -cp bin:lib/pircbot.jar org.neuralyte.irc.IRCBot
+java -cp bin:lib/pircbot.jar org.neuralyte.irc.IRCBot | tee ircbot.log
 

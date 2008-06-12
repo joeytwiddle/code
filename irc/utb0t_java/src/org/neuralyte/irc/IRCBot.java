@@ -6,62 +6,92 @@ import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.util.Vector;
 
+import org.jibble.pircbot.Colors;
 import org.jibble.pircbot.PircBot;
 
-import com.sun.java_cup.internal.emit;
-
-public class IRCBot extends PircBot {
+public class IRCBot extends LogBot {
 
     // final File userHome = new File(java.util.prefs.Preferences.userRoot().absolutePath());
-    final File userHome = new File(System.getProperty("user.home"));
+    public final static File userHome = new File(System.getProperty("user.home"));
 
-    public File prefsDir = new File(userHome+"/.ircbot");
+    public static File prefsDir = new File(userHome+"/.ircbot");
+    public static File logDir = new File(userHome+"/.xchat2.utb0t/logs");
+
     public String pluginDir = userHome+"/.xchat2.utb0t/plugin";
     
     public String server = "pictor.vm.bytemark.co.uk";
     // public String server = "irc.quakenet.org";
 
+    File configDir;
+    
     public static void main(String[] args) {
         
+        /*
         IRCBot bot = new IRCBot("utb0t");
         bot.connect();
+        */
         
+        /*
         IRCBot bot2 = new IRCBot("utbot");
         bot2.connect();
         
         IRCBot bot3 = new IRCBot("ut99bot");
         bot3.connect();
+        */
 
         //// TODO PROBLEM: bot4 will try to use the same channels file as bot1
         // IRCBot bot4 = new IRCBot("utb0t");
         // bot4.server = "irc.utchat.com";
         // bot4.connect();
+    
+        for (File file : prefsDir.listFiles()) {
+            if (file.isDirectory() && file.getName().contains("-")) {
+                loadBot(file);
+            }
+        }
         
     }
+    
+    static void loadBot(File configDir) {
+        String server = configDir.getName().replaceAll("-.*", "");
+        String botName = configDir.getName().replaceAll("^[^-]*-", "");
+        IRCBot bot = new IRCBot(configDir,botName,server);
+        bot.doConnect();
+    }
 
+    /*
     public IRCBot() {
-        setName("IRCBot");
+        this("IRCBot",defaultServer);
     }
+    */
     
-    public IRCBot(String name) {
+    public IRCBot(File configDir, String name, String server) {
+        super(name, logDir, "");
         setName(name);
+        setAutoNickChange(true);
+        this.configDir = configDir;
+        this.server = server;
     }
     
-    private void connect() {
+    private void doConnect() {
         setVerbose(true);
+        int sleepTime = 30;
         while (true) {
             try {
                 connect(server);
                 break;
             } catch (Exception e) {
                 e.printStackTrace(System.err);
-                mylog("Sleeping for 30 seconds.");
-                try { Thread.currentThread().sleep(30); } catch (Exception e2) { }
+                mylog("Sleeping for "+sleepTime+" seconds.");
+                justSleep((double)sleepTime);
+                sleepTime = sleepTime * 2;
+                /*
                 if (e instanceof org.jibble.pircbot.NickAlreadyInUseException) {
                     String[] alternativeNames = { "utb0t", "utb1t", "ut99bot", "ut100bot", "ut1bot" };
                     String newName = alternativeNames[ (int)(Math.random()*alternativeNames.length) ];
                     setName(newName);
                 }
+                */
             }
         }
         // joinChannel("#testing");
@@ -71,7 +101,7 @@ public class IRCBot extends PircBot {
     }
     
     void doDefaultPerform() {
-        File performFile = new File(prefsDir+"/"+getName()+".perform");
+        File performFile = new File(configDir+"/perform");
         if (performFile.exists()) {
             String[] commands = readLinesFromFile(performFile);
             for (int i=0;i<commands.length;i++) {
@@ -81,6 +111,7 @@ public class IRCBot extends PircBot {
                 // sendRawLineViaQueue(command);
                 sendSlashAction("", "/"+command);
                 // floodProtect();
+                justSleep(3.0);
             }
         } else {
             mylog("No perform file: "+performFile);
@@ -88,7 +119,7 @@ public class IRCBot extends PircBot {
     }
     
     void joinDefaultChannels() {
-        File channelsFile = new File(prefsDir+"/"+getName()+".channels");
+        File channelsFile = new File(configDir+"/channels");
         if (channelsFile.exists()) {
             String[] channels = readLinesFromFile(channelsFile);
             for (int i=0;i<channels.length;i++) {
@@ -119,10 +150,12 @@ public class IRCBot extends PircBot {
     }
     
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
+        super.onMessage(channel, sender, login, hostname, message);
         checkMessage(channel, sender, message);
     }
 
-    protected void onPrivateMessage(String sender, String login, String hostname, String message) {
+    public void onPrivateMessage(String sender, String login, String hostname, String message) {
+        super.onPrivateMessage(sender, login, hostname, message);
         checkMessage(sender, sender, message);
     }
 
@@ -141,9 +174,10 @@ public class IRCBot extends PircBot {
 
                 String command = "/bin/bash /home/joey/j/jsh "+pluginDir+"/xchat_sh_handler.sh "+message.substring(1);
                 command = "env NETWORK="+server+" env SERVER="+server+" env NICK="+ sender + " env CHANNEL="+source+" " + command;
+                // @todo Instead of server, we could try getServer().
                 File topDirFile = new File(pluginDir);
                 
-                mylog("Calling: "+command);
+                // mylog("-sh- Calling: "+command);
                 
                 final Process process = Runtime.getRuntime().exec(command, null, topDirFile);
 
@@ -168,7 +202,7 @@ public class IRCBot extends PircBot {
                             if (line.startsWith("/")) {
                                 sendSlashAction(source, line);
                             } else {
-                                mylog("  >> "+source+" >> "+line);
+                                mylog(">>>> "+source+" :: "+line);
                                 sendMessage(source, line);
                             }
                             floodProtect();
@@ -193,7 +227,7 @@ public class IRCBot extends PircBot {
                                 line = inErr.readLine();
                                 if (line == null)
                                     break;
-                                mylog((n>0?" [!!!] ":"")+line);
+                                mylog(""+(n>0?"!!!!":"....")+" "+line); // @todo Consider sending this to stderr
                                 n++;
                             }
 
@@ -221,15 +255,16 @@ public class IRCBot extends PircBot {
         }
     }
     
-    protected void onDisconnect() {
+    public void onDisconnect() {
+        // super.onDisconnect();
         mylog("Disconnected!  Sleeping for 60 seconds.");
-        try { Thread.currentThread().sleep(60); } catch (Exception e2) { }
-        connect();
+        justSleep(60.0);
+        doConnect();
     }
     
 
     private void sendSlashAction(String source, String line) {
-        mylog("  :: "+line);
+        mylog(":::: "+line);
         String com = line.replaceAll(" .*","").toLowerCase();
         String rest = line.replaceAll("^[^ ]* ",""); 
         String firstArg = rest.replaceAll(" .*","");
@@ -237,6 +272,12 @@ public class IRCBot extends PircBot {
         if (com.equals("/mode")) {
             String channel= firstArg; String mode = rest;
             setMode(channel, mode);
+        } else if (com.equals("/join")) {
+            String channel= firstArg; String key = rest;
+            if (key == "")
+                joinChannel(channel);
+            else
+                joinChannel(channel,key);
         } else if (com.equals("/notice")) {
             String target = firstArg; String message = rest;
             sendNotice(target,message);
@@ -246,8 +287,11 @@ public class IRCBot extends PircBot {
         } else if (com.equals("/me")) {
             String message = firstArg + " " + rest;
             sendAction(source,message);
+        } else if (com.equals("/invite")) { // Maybe worked before anyway
+            String nick = firstArg; String channel = rest;
+            sendInvite(nick, channel);
         } else {
-            mylog(" [XXX] Trying unknown: "+line);
+            mylog("XXXX "+line);
             sendRawLineViaQueue(line.substring(1));
         }
     }
@@ -261,34 +305,41 @@ public class IRCBot extends PircBot {
             floodCount=0;
         if (floodCount>3) {
             // mylog("[flood protection!] sleeping 5 seconds");
-            try { Thread.currentThread().sleep(4000); } catch (Exception e) { } // todo: test 3.5 and 3.0 on quakenet
+            justSleep(5.0);
         }
         floodCount++;
         lastFloodTime = time;
     }
     
-    public static int longestWhereStr = 0; 
     public void mylog(String txt) {
-//        StackTraceElement where = new Throwable().getStackTrace()[1];
-//        String whereStr = where.getClassName().replaceAll(".*\\.","")+"."+where.getMethodName()+"("+ /* where.getFileName()+":"+where.getLineNumber()+ */ ")";
+        txt = Colors.removeFormattingAndColors(txt);
+        String whereStr = ( getWhereStr().equals("log") ? "." : "#" ); // getWhereStr();
+        String dateStr = new java.text.SimpleDateFormat("kk:mm:ss").format(new java.util.Date());;
+        String output = dateStr+" ["+getName()+"] "+ whereStr+" "+ txt;
+        System.out.println(output);
+    }
+
+    public static int longestWhereStr = 0; 
+    private String getWhereStr() {
+        StackTraceElement where = new Throwable().getStackTrace()[2];
+        // String whereStr = where.getClassName().replaceAll(".*\\.","")+"."+where.getMethodName()+"("+ /* where.getFileName()+":"+where.getLineNumber()+ */ ")";
+        String whereStr = where.getMethodName();
 //        if (whereStr.length() > longestWhereStr)
 //            longestWhereStr = whereStr.length();
 //        whereStr = padLeft(whereStr,longestWhereStr);
-        String dateStr = new java.text.SimpleDateFormat("kk:mm").format(new java.util.Date());;
-        String output = dateStr+" ["+getName()+"] "+ /* whereStr+" "+ */ txt;
-        System.out.println(output);
+        return whereStr;
     }
     
-    public static String padLeft(String str, int desiredLength) {
-        if (desiredLength > str.length()) {
-            StringBuffer left = new StringBuffer();
-            for (int i=0;i<desiredLength - str.length();i++) {
-                left.append(' ');
-            }
-            return left + str;
-        } else {
-            return str;
-        }
+    public void log(String line) {
+        if (getChannels().length>0) // Stop Pirc's normal logging once we are actually connected
+            return;
+        if (line.startsWith("PING") || line.startsWith(">>>PONG") || line.startsWith(">>>PING") || line.contains(" PONG "))
+            return;
+        mylog(line);
+    }
+    
+    public void justSleep(double seconds) {
+        try { Thread.sleep( (int)(1000*seconds) ); } catch (Exception e) { }
     }
 
 }
