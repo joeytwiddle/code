@@ -1,7 +1,6 @@
 package org.neuralyte.irc;
 
 import java.util.*;
-import java.util.regex.*;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import org.jibble.pircbot.*;
@@ -46,44 +45,46 @@ public class LogBot extends PircBot {
 
         // Right justify nicks:
         if (line.startsWith("<")) {
-            String nick = line.substring(0, line.indexOf(" "));
+            final String nick = line.substring(0, line.indexOf(" "));
             if (nick.endsWith(">")) {
-                String rest = line.substring(line.indexOf(" ")+1);
+                final String rest = line.substring(line.indexOf(" ")+1);
                 line = rightJustifyNick(nick) + " " + rest;
             }
         }
         
-        Date now = new Date();
-        String date = DATE_FORMAT.format(now);
-        String time = TIME_FORMAT.format(now);
+        final Date now = new Date();
+        final String date = DATE_FORMAT.format(now);
+        final String time = TIME_FORMAT.format(now);
 
         if (logToStdOut)
             System.out.println(date+" "+time+" ["+channel+"] "+line);
 
         // File file = new File(outDir, date + ".log");
-        String fileName = getServer()+ "-" + channel + ".log";
-        File file = new File(outDir, fileName);
+        final String fileName = getServer()+ "-" + channel + ".log";
+        final File file = new File(outDir, fileName);
         try {
             // BufferedWriter writer = getWriterForChannel(channel); 
-            BufferedWriter writer = new BufferedWriter(new FileWriter(file, true));
+            final BufferedWriter writer = new BufferedWriter(new FileWriter(file, true));
             // String entry = "<span class=\"irc-date\">[" + time + "]</span> <span class=\"" + color + "\">" + line + "</span><br />";
             // String entry = "[" + time + "] ["+ channel +"] " + line;
 
-            String entry = date + " " + time + " : "+ line;
+            final String entry = date + " " + time + " : "+ line;
             writer.write(entry);
             writer.newLine();
             writer.flush();
             writer.close();
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             System.out.println("Could not write to log: " + e);
         }
     }
     
+    @Override
     public void onAction(String sender, String login, String hostname, String target, String action) {
         append(BRICK, target, "* " + sender + " " + action);
     }
     
+    @Override
     public void onJoin(String channel, String sender, String login, String hostname) {
         append(GREEN, channel, "* " + sender + " (" + login + "@" + hostname + ") has joined " + channel);
         /*
@@ -96,6 +97,7 @@ public class LogBot extends PircBot {
         */
     }
     
+    @Override
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
         append(BLACK, channel, "<" + sender + "> " + message);
         
@@ -108,38 +110,47 @@ public class LogBot extends PircBot {
         }
     }
     
+    @Override
     public void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
         append(GREEN, channel, "* " + sourceNick + " sets mode " + mode);
     }
     
+    @Override
     public void onNickChange(String oldNick, String login, String hostname, String newNick) {
         append(GREEN, DEFAULT_TARGET, "* " + oldNick + " is now known as " + newNick);
     }
     
+    @Override
     public void onNotice(String sourceNick, String sourceLogin, String sourceHostname, String target, String notice) {
         append(BROWN, target, "-" + sourceNick + "- " + notice);
     }
     
+    @Override
     public void onPart(String channel, String sender, String login, String hostname) {
         append(GREEN, channel, "* " + sender + " (" + login + "@" + hostname + ") has left " + channel);
     }
     
+    @Override
     public void onPing(String sourceNick, String sourceLogin, String sourceHostname, String target, String pingValue) {
         append(RED, target, "[" + sourceNick + " PING]");
     }
     
+    @Override
     public void onPrivateMessage(String sender, String login, String hostname, String message) {
          append(BLACK, sender, "<- *" + sender + "* " + message);
     }
     
+    @Override
     public void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
         append(NAVY, DEFAULT_TARGET, "* " + sourceNick + " (" + sourceLogin + "@" + sourceHostname + ") Quit (" + reason + ")");
     }
     
+    @Override
     public void onTime(String sourceNick, String sourceLogin, String sourceHostname, String target) {
         append(RED, target, "[" + sourceNick + " TIME]");
     }
     
+    @Override
     public void onTopic(String channel, String topic, String setBy, long date, boolean changed) {
         if (changed) {
             append(GREEN, channel, "* " + setBy + " changes topic to '" + topic + "'");
@@ -150,10 +161,12 @@ public class LogBot extends PircBot {
         }
     }
     
+    @Override
     public void onVersion(String sourceNick, String sourceLogin, String sourceHostname, String target) {
         append(RED, target, "[" + sourceNick + " VERSION]");
     }
     
+    @Override
     public void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname, String recipientNick, String reason) {
         append(GREEN, channel, "* " + recipientNick + " was kicked from " + channel + " by " + kickerNick);
         /*
@@ -163,6 +176,7 @@ public class LogBot extends PircBot {
         */
     }
     
+    @Override
     public void onDisconnect() {
         append(NAVY, DEFAULT_TARGET, "* Disconnected.");
         /*
@@ -197,8 +211,8 @@ public class LogBot extends PircBot {
     }
     */
     
-    private File outDir;
-    private String joinMessage;
+    private final File outDir;
+    private final String joinMessage;
 
     public static int longestNick = 0; 
     private String rightJustifyNick(String nick) {
@@ -209,7 +223,7 @@ public class LogBot extends PircBot {
     
     public static String padLeft(String str, int desiredLength) {
         if (desiredLength > str.length()) {
-            StringBuffer left = new StringBuffer();
+            final StringBuffer left = new StringBuffer();
             for (int i=0;i<desiredLength - str.length();i++) {
                 left.append(' ');
             }

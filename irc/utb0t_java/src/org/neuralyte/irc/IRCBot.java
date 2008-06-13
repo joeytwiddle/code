@@ -7,7 +7,6 @@ import java.io.InputStreamReader;
 import java.util.Vector;
 
 import org.jibble.pircbot.Colors;
-import org.jibble.pircbot.PircBot;
 
 public class IRCBot extends LogBot {
 
@@ -44,7 +43,7 @@ public class IRCBot extends LogBot {
         // bot4.server = "irc.utchat.com";
         // bot4.connect();
     
-        for (File file : prefsDir.listFiles()) {
+        for (final File file : prefsDir.listFiles()) {
             if (file.isDirectory() && file.getName().contains("-")) {
                 loadBot(file);
             }
@@ -53,9 +52,9 @@ public class IRCBot extends LogBot {
     }
     
     static void loadBot(File configDir) {
-        String server = configDir.getName().replaceAll("-.*", "");
-        String botName = configDir.getName().replaceAll("^[^-]*-", "");
-        IRCBot bot = new IRCBot(configDir,botName,server);
+        final String server = configDir.getName().replaceAll("-.*", "");
+        final String botName = configDir.getName().replaceAll("^[^-]*-", "");
+        final IRCBot bot = new IRCBot(configDir,botName,server);
         bot.doConnect();
     }
 
@@ -80,10 +79,10 @@ public class IRCBot extends LogBot {
             try {
                 connect(server);
                 break;
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 e.printStackTrace(System.err);
                 mylog("Sleeping for "+sleepTime+" seconds.");
-                justSleep((double)sleepTime);
+                justSleep(sleepTime);
                 sleepTime = sleepTime * 2;
                 /*
                 if (e instanceof org.jibble.pircbot.NickAlreadyInUseException) {
@@ -101,9 +100,9 @@ public class IRCBot extends LogBot {
     }
     
     void doDefaultPerform() {
-        File performFile = new File(configDir+"/perform");
+        final File performFile = new File(configDir+"/perform");
         if (performFile.exists()) {
-            String[] commands = readLinesFromFile(performFile);
+            final String[] commands = readLinesFromFile(performFile);
             for (int i=0;i<commands.length;i++) {
                 String command = commands[i];
                 if (command.startsWith("/"))
@@ -120,9 +119,9 @@ public class IRCBot extends LogBot {
     }
     
     void joinDefaultChannels() {
-        File channelsFile = new File(configDir+"/channels");
+        final File channelsFile = new File(configDir+"/channels");
         if (channelsFile.exists()) {
-            String[] channels = readLinesFromFile(channelsFile);
+            final String[] channels = readLinesFromFile(channelsFile);
             for (int i=0;i<channels.length;i++) {
                 joinChannel(channels[i]);
                 // floodProtect();
@@ -134,8 +133,8 @@ public class IRCBot extends LogBot {
     
     public static String[] readLinesFromFile(File file) {
         try {
-            Vector<String> result = new Vector<String>();
-            BufferedReader in = new BufferedReader(new FileReader(file));
+            final Vector<String> result = new Vector<String>();
+            final BufferedReader in = new BufferedReader(new FileReader(file));
             String line;
             while (true) {
                 line = in.readLine();
@@ -143,18 +142,20 @@ public class IRCBot extends LogBot {
                     break;
                 result.add(line);
             }
-            return (String[])result.toArray(new String[0]);
-        } catch (Exception e) {
+            return result.toArray(new String[0]);
+        } catch (final Exception e) {
             e.printStackTrace(System.err);
             return null;
         }
     }
     
+    @Override
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
         super.onMessage(channel, sender, login, hostname, message);
         checkMessage(channel, sender, message);
     }
 
+    @Override
     public void onPrivateMessage(String sender, String login, String hostname, String message) {
         super.onPrivateMessage(sender, login, hostname, message);
         checkMessage(sender, sender, message);
@@ -176,7 +177,7 @@ public class IRCBot extends LogBot {
                 String command = "/bin/bash /home/joey/j/jsh "+pluginDir+"/xchat_sh_handler.sh "+message.substring(1);
                 command = "env NETWORK="+server+" env SERVER="+server+" env NICK="+ sender + " env CHANNEL="+channel+" " + command;
                 // @todo Instead of server, we could try getServer().
-                File topDirFile = new File(pluginDir);
+                final File topDirFile = new File(pluginDir);
                 
                 // mylog("-sh- Calling: "+command);
                 
@@ -191,7 +192,8 @@ public class IRCBot extends LogBot {
 
                 final LogBot me = this;
                 
-                Thread stdoutThread = new Thread() {
+                final Thread stdoutThread = new Thread() {
+                    @Override
                     public void run() {
 
                         try {
@@ -220,7 +222,8 @@ public class IRCBot extends LogBot {
                     }
                 };
                 
-                Thread stderrThread = new Thread() {
+                final Thread stderrThread = new Thread() {
+                    @Override
                     public void run() {
 
                         try {
@@ -250,7 +253,7 @@ public class IRCBot extends LogBot {
                 // stderrThread.wait();
                 //// We could try process.wait();
 
-            } catch (Exception e) {
+            } catch (final Exception e) {
                 e.printStackTrace(System.err);
             }
             
@@ -260,6 +263,7 @@ public class IRCBot extends LogBot {
         }
     }
     
+    @Override
     public void onDisconnect() {
         // super.onDisconnect();
         mylog("Disconnected!  Sleeping for 60 seconds.");
@@ -270,39 +274,39 @@ public class IRCBot extends LogBot {
 
     private void sendSlashAction(String source, String line) {
         mylog(":::: "+line);
-        String com = line.replaceAll(" .*","").toLowerCase();
+        final String com = line.replaceAll(" .*","").toLowerCase();
         String rest = line.replaceAll("^[^ ]* ",""); 
-        String firstArg = rest.replaceAll(" .*","");
+        final String firstArg = rest.replaceAll(" .*","");
         rest = rest.replaceAll("^[^ ]* ",""); 
         if (com.equals("/mode")) {
-            String channel= firstArg;
-            String mode = rest;
+            final String channel= firstArg;
+            final String mode = rest;
             setMode(channel, mode);
         } else if (com.equals("/join")) {
-            String channel= firstArg;
-            String key = rest;
+            final String channel= firstArg;
+            final String key = rest;
             if (key == "")
                 joinChannel(channel);
             else
                 joinChannel(channel,key);
         } else if (com.equals("/notice")) {
-            String target = firstArg;
-            String message = rest;
+            final String target = firstArg;
+            final String message = rest;
             super.onNotice(getNick(), getLogin(), "hostname123", target, message); // For LogBot
             sendNotice(target,message);
         } else if (com.equals("/msg")) {
-            String target = firstArg;
-            String message = rest;
+            final String target = firstArg;
+            final String message = rest;
             super.onMessage(target, getNick(), getLogin(), "hostname123", message); // For LogBot 
             sendMessage(target,message);
         } else if (com.equals("/me")) {
-            String target = source;
-            String message = firstArg + " " + rest;
+            final String target = source;
+            final String message = firstArg + " " + rest;
             super.onAction(getNick(), getLogin(), "hostname123", target, message); // For LogBot 
             sendAction(target,message);
         } else if (com.equals("/invite")) { // Maybe worked before anyway
-            String nick = firstArg;
-            String channel = rest;
+            final String nick = firstArg;
+            final String channel = rest;
             super.onInvite(nick, getNick(), getLogin(), "hostname123", channel); // For LogBot
             sendInvite(nick, channel);
         } else {
@@ -316,7 +320,7 @@ public class IRCBot extends LogBot {
     static int floodCount = 0;
     static long lastFloodTime = 0;
     void floodProtect() {
-        long time = new java.util.Date().getTime();
+        final long time = new java.util.Date().getTime();
         if (time > lastFloodTime + 10000)
             floodCount=0;
         if (floodCount>3) {
@@ -329,23 +333,24 @@ public class IRCBot extends LogBot {
     
     public void mylog(String txt) {
         txt = Colors.removeFormattingAndColors(txt);
-        String whereStr = ( getWhereStr().equals("log") ? "." : "#" ); // getWhereStr();
-        String dateStr = new java.text.SimpleDateFormat("kk:mm:ss").format(new java.util.Date());;
-        String output = dateStr+" ["+getName()+"] "+ whereStr+" "+ txt;
+        final String whereStr = ( getWhereStr().equals("log") ? "." : "#" ); // getWhereStr();
+        final String dateStr = new java.text.SimpleDateFormat("kk:mm:ss").format(new java.util.Date());;
+        final String output = dateStr+" ["+getName()+"] "+ whereStr+" "+ txt;
         System.out.println(output);
     }
 
     public static int longestWhereStr = 0; 
     private String getWhereStr() {
-        StackTraceElement where = new Throwable().getStackTrace()[2];
+        final StackTraceElement where = new Throwable().getStackTrace()[2];
         // String whereStr = where.getClassName().replaceAll(".*\\.","")+"."+where.getMethodName()+"("+ /* where.getFileName()+":"+where.getLineNumber()+ */ ")";
-        String whereStr = where.getMethodName();
+        final String whereStr = where.getMethodName();
 //        if (whereStr.length() > longestWhereStr)
 //            longestWhereStr = whereStr.length();
 //        whereStr = padLeft(whereStr,longestWhereStr);
         return whereStr;
     }
     
+    @Override
     public void log(String line) {
         if (getChannels().length>0) // Stop Pirc's normal logging once we are actually connected
             return;
@@ -355,7 +360,7 @@ public class IRCBot extends LogBot {
     }
     
     public void justSleep(double seconds) {
-        try { Thread.sleep( (int)(1000*seconds) ); } catch (Exception e) { }
+        try { Thread.sleep( (int)(1000*seconds) ); } catch (final Exception e) { }
     }
 
 }
