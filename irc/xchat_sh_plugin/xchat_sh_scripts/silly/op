@@ -5,17 +5,58 @@
 TARGET="$1"
 [ "$TARGET" ] || TARGET="$NICK"
 
+function doop () {
+	LINE="$1" ; shift
+	echo "[silly/op] `date +'%Y-%m-%d-%H%M%S'` -- <$NICK> .op $LINE -- Doing: $*" >> ~/.utb0t_silly.log
+	echo "$*"
+}
+
+## In pug channels, the !op command actually has a small chance of doing something!
+if echo "$CHANNEL" | grep "^#.*pug$" >/dev/null && ## pug channel
+   # echo "$NICK" | grep "^[a-zA-Z][a-zA-Z]*-" >/dev/null && ## caller is pugger
+   [ "`seq 1 10 | chooserandomline`" -lt 3 ] ## 1/5th of the time
+then
+
+	RESTRICT_EXTRA="$NICK" . restrict_repetitive_calls "1 minutes"
+
+	PRIVILEGED="\<\(noggin\|urban\|xenomorph\|rednas\|mox\|amok\|moxness\|golyat\|zbe\|taiger\|kgb\|vader\|max\|nin\|marco\|sully\|zombix\|kx\|addy\|MF\|abeo\|piglet\|majinx\)\>"
+
+	if [ "$TARGET" ] && [ ! "$TARGET" = "$NICK" ] ## A user other than the caller was recommended.
+	then
+		## If caller is privileged, op target:
+		if [ "$NICK" != "$TARGET" ] && echo "$NICK" | grep -i "$PRIVILEGED" >/dev/null
+		then doop "$*" "/op $TARGET" ; exit
+		fi
+		## If target is privileged, op target:
+		if [ "$NICK" != "$TARGET" ] && echo "$TARGET" | grep -i "$PRIVILEGED" >/dev/null
+		then doop "$*" "/op $TARGET" ; exit
+		fi
+		## If random, op target (consider auto-op):
+		if [ "$NICK" != "$TARGET" ] && [ "`seq 1 10 | chooserandomline`" -lt 3 ]
+		then
+			# doop "$*" "/msg Q chanlev $CHANNEL $TARGET +aov"
+			# sleep 5
+			doop "$*" "/op $TARGET" ; exit
+		fi
+	else
+		## Caller asked for ops.  If very random, op him/her:
+		if [ "`seq 1 100 | chooserandomline`" -lt 3 ]
+		then doop "$*" "/op $CALLER" ; exit
+		fi
+	fi
+
+fi
+
 if [ "$CHANNEL" = "#proshee" ] # || [[ "$CHANNEL" = "#ut" && "$NICK" = Maxiu ]]
-then echo "/op $TARGET"
+then doop "$*" "/op $TARGET"
 else
 
 	echo "/me gives channel operator status to $COLAQUA$TARGET$COLRESET"
-	CALLER_PUGBIT=`echo "$NICK" | grep "^[a-zA-Z]\-"`
-	CALLED_PUGBIT=`echo "$1" | grep "^[a-zA-Z]\-"`
-	if [ "$1" ] && [ "$CHANNEL" = "#noobpug" ] && [ ! "$NICK" = "$1" ] && [ "$CALLER_PUGBIT" ] && [ "$CALLED_PUGBIT" ]
-	then "/msg Q chanlev #noobpug $1 +aov"
+	CALLER_PUGBIT=`echo "$NICK" | grep "^[a-zA-Z][a-zA-Z]*\-"`
+	CALLED_PUGBIT=`echo "$TARGET" | grep "^[a-zA-Z][a-zA-Z]*\-"`
+	if [ "$CHANNEL" = "#noobpug" ] && [ "$TARGET" ] && [ ! "$NICK" = "$TARGET" ] && ( [ "$CALLER_PUGBIT" ] || [ "$CALLED_PUGBIT" ] )
+	then doop "$*" "/msg Q chanlev #noobpug $TARGET +aok" # ; sleep 5 ; doop "$*" "/op $TARGET"
 	fi
-	
 
 fi
 

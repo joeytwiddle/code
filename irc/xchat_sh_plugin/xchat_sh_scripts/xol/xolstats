@@ -1,0 +1,22 @@
+. irccols.shlib
+
+PLAYER="$1"
+
+if [ "$PLAYER" = "" ]
+then
+  echo "To see a XOL player's stats: !xolstats <nick_of_player>"
+  exit 1
+fi
+
+wget "http://www.rork.nl/fox/xol/ranking.php?nick=$PLAYER" -O - 2>/dev/null |
+
+fromhtml |
+
+fromline -x "This months stats" |
+
+tr '\n' ' ' | tr -s ' ' |
+
+sed "s+\<[0-9][0-9]*\>+$COLGREEN\0$COLRESET+g"
+
+echo
+

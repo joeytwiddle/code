@@ -14,8 +14,11 @@ then
 	echo "Channel name should start with #"
 else
 	# echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try my backup: /msg utbot !invitebot $CHANNEL_TO_IDLE_IN"
-	echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try one of my clones: utb0t utbot ut99bot"
+	echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try one of my clones: utb0t utbot UT"
 	# echo "/join $CHANNEL_TO_IDLE_IN"
 	if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
 	echo "/join $*"
 fi
+
+[ "$CHANNEL" = "$NICK" ] && X="" || X="[$CHANNEL] "
+echo "`geekdate` ($SERVER)$X $NICK invited me ($MYNICK) to $*" >> ~/ircbot/invites.log

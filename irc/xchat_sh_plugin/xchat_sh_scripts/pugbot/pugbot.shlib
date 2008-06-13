@@ -42,6 +42,7 @@ MAP_POOL_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".map_pool
 CURRENT_MAP_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".current_map
 SUB_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".sub
 NUMBER_OF_PLAYERS_NEEDED_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".total_players
+LAST_RESET_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".last_reset
 
 if [ -f "$NUMBER_OF_PLAYERS_NEEDED_FILE" ]
 then NUMBER_OF_PLAYERS_NEEDED="`cat "$NUMBER_OF_PLAYERS_NEEDED_FILE"`"
@@ -53,8 +54,8 @@ alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
 # alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "
 
 get_new_map () {
-	MAP1=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
-	MAP2=`cat "$MAP_POOL_FILE" | beforelast " (" | trimempty | randomorder | head -n 1`
+	MAP1=`cat "$MAP_POOL_FILE" | grep -v "^#" | beforelast " (" | trimempty | randomorder | randomorder | randomorder | head -n 1`
+	MAP2=`cat "$MAP_POOL_FILE" | grep -v "^#" | beforelast " (" | trimempty | randomorder | randomorder | randomorder | head -n 1`
 	NEW_MAP="$MAP1 + $MAP2"
 	[ "$MAP1" = "$MAP2" ] && NEW_MAP="$MAP1"
 }
@@ -64,8 +65,8 @@ reset () {
 	then
 		## Update the CURRENT_MAP_FILE randomly from the pool, but only if the last reset was > 1 minute ago:
 		get_num_players
-		touch -d "$((NUMBER_OF_PLAYERS+1)) minute ago" /tmp/map_pool_last
-		if newer /tmp/map_pool_last "$CURRENT_MAP_FILE"
+		touch -d "$((NUMBER_OF_PLAYERS+1)) minute ago" "$LAST_RESET_FILE"
+		if newer "$LAST_RESET_FILE" "$CURRENT_MAP_FILE"
 		then
 			get_new_map
 			echo "$NEW_MAP" > "$CURRENT_MAP_FILE" &&
@@ -331,6 +332,12 @@ captain () {
 		# echo "/op $NICK" ## was opping paeutalik in #ut994funpug !
 		please_pick
 		list_players ## Since we no longer list at every iteration, we should at least do a list at the start of the pickup.
+		if [ "$CHANNEL" = "#crazypug" ]
+		then
+			MAPS="`cat "$CURRENT_MAP_FILE"`"
+			sh ./pugbot/setserver -pug $MAPS || echo "/notice nogginBasher Failed to set server."
+			# && echo "!kx"
+		fi
 	else
 		echo "You can't be a captain!"
 	fi
@@ -388,6 +395,7 @@ pool () {
 	then
 		SHOW_MAPS=`
 			cat "$MAP_POOL_FILE" |
+			grep -v "^#" |
 			# takecols 1 |
 			beforelast " (" |
 			sort |
@@ -425,7 +433,9 @@ enablemappool () {
 	then echo "You can only change the settings of an empty pug."
 	else
 		[ -f "$MAP_POOL_FILE".disabled ] && mv -f "$MAP_POOL_FILE".disabled "$MAP_POOL_FILE"
-		touch "$MAP_POOL_FILE" && echo "Map pool is enabled in $CHANNEL.  You may: !propose <map_or_ip>"
+		touch "$MAP_POOL_FILE" && MAPCOUNT=`cat "$MAP_POOL_FILE" | grep -v "^#" | wc -l`
+		[ "$MAPCOUNT" -gt 1 ] && WITHMAPS=" with $MAPCOUNT maps" || WITHMAPS=
+		echo "Map pool is enabled in $CHANNEL$WITHMAPS.  You may: !addmap <map_or_ip>"
 	fi
 }
 

@@ -1,0 +1,8 @@
+. irccols.shlib
+
+if [ ! "$CHANNEL" = "#xoldog" ]
+then exit 0
+fi
+
+./xol/xolstats "$@"
+

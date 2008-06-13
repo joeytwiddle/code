@@ -1,9 +1,64 @@
-if contains "$NICK" altgamer
+if [ "$NICK" = altgamer ]
 then exit 0
 fi
 
 [ "$1" ] && EXTRA=" $*"
 
-VERB="`filename "$0"`"s
+VERB="`filename "$0"`"
 
-echo "/me $VERB$EXTRA!"
+## In pug channels, the !kick and !ban actions have a small chance of actually doing something!
+if ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
+   [ "$*" ] && echo "$CHANNEL" | grep "pug" >/dev/null
+   true # echo "$NICK" | grep "^[A-Za-z][A-Za-z]*-" >/dev/null ## Caller is pugged up - nice extra probability changer, but often justifiable angry people won't be pugged up again.
+then
+
+	function doop () {
+		LINE="$1" ; shift
+		echo "[silly/$VERB] `date +'%Y-%m-%d-%H%M%S'` -- <$NICK> .$VERB $LINE -- Doing: $*" >> ~/.utb0t_silly.log
+		echo "$*"
+	}
+
+	TARGET="$*"
+
+	PRIVILEGED="\<\(kgb\|max\|mox\|golyat\|marco\|vader\|nin\|addy\|MF\|abeo\|piglet\|majinx\|zbe\)\>"
+
+	R="`seq 0 99 | chooserandomline`" 
+	if [ $R -lt 50 ] ## 50% do nothing
+	then
+
+		RESTRICT_EXTRA="$NICK" . restrict_repetitive_calls "5 minutes"
+
+		## If both are privileged (arguers), and ban was called, then ban both!
+		if [ "$VERB" = ban ] &&
+		   echo "$TARGET" | grep "$PRIVILEGED" >/dev/null &&
+		   echo "$NICK" | grep "$PRIVILEGED" >/dev/null
+		then
+			doop "$*" "/kickban $TARGET"
+			doop "$*" "/kick $TARGET"
+			if [ "$R" -lt 25 ]
+			then
+				doop "$*" "/kickban $NICK"
+				doop "$*" "/kick $NICK"
+			fi
+			exit 0
+		fi
+
+		if [ $R -lt 25 ] ## 25% kick target if privileged
+		then
+			if echo "$NICK $TARGET" | grep "$PRIVILEGED" >/dev/null || [ $R -lt 12 ] ## 12% kick target anyway
+			then
+				doop "$*" "/kick $TARGET"
+				sleep 15
+				if [ $R -lt 6 ] ## 6% kick caller!
+				then doop "$*" "/kick $NICK"
+				fi
+				exit 0
+			fi
+		fi
+
+	fi
+
+fi
+
+echo "/me $VERB"s"$EXTRA!"
+

@@ -1,7 +1,8 @@
 . irc.shlib
 . irccols.shlib
 
-## DONE: ping timeouts fixed; getnumber previously only accepted streams, but now it accepts arguments too
+## OLD: ping timeouts fixed; getnumber previously only accepted streams, but now it accepts arguments too
+## DONE: NO, it only accepts streams, so only streaming it here.
 
 if [ "$1" = --help ]
 then
@@ -19,15 +20,15 @@ fi
 
 (
 
-	LOGDIR="$HOME/.xchat2/xchatlogs"
+	LOGDIRS="$HOME/.xchat2.*/*logs/"
 	# LOGDIR="$HOME/.xchat2.nogginBasher/xchatlogs" ## TODO: auto-find this from xchat vars?!
 
 	# LINES=5
 	# if [ "$1" = -n ]
 	# then
 		# shift
-	if [ "$1" ] ## we must not run getnumber "", it blocks!!
-	then LINES=`getnumber "$1" | sed 's+\..*$++'`
+	if [ "$1" ] ## we must not run getnumber "", it blocks!!  ok fixed
+	then LINES=`echo "$1" | getnumber | sed 's+\..*$++'`
 	fi
 	[ "$LINES" ] && shift || LINES=10
 	# fi
@@ -78,7 +79,8 @@ fi
 		# done |
 		# sortfilesbydate
 	# `"
-	FILES=` echolines "$LOGDIR"/*-"$SEARCH_CHANNEL".log | sortfilesbydate | cat `
+	# FILES=` echolines "$LOGDIR"/*-"$SEARCH_CHANNEL".log | sortfilesbydate | cat `
+	FILES=` verbosely find $LOGDIRS -iname "*-$SEARCH_CHANNEL.log" | sortfilesbydate | cat `
 
 	# jshinfo "FILES = $FILES"
 
@@ -90,7 +92,7 @@ fi
 	# [ -f "$LOGFILE" ] || LOGFILE="$OTHERLOGFILE"
 
 	if [ ! "$FILES" ] || [ "$FILES" = . ] ## the check for . is to deal with a bug from sortfilesbydate
-	then echo "$COLYELLOW""Sorry, I couldn't find any suitable logfiles matching \"$SEARCH_CHANNEL\".$COLRESET" # the logfile $NETWORK-$SEARCH_CHANNEL.log"
+	then echo "$COLYELLOW""Sorry, I couldn't find the logfile for \"$SEARCH_CHANNEL\".$COLRESET" # the logfile $NETWORK-$SEARCH_CHANNEL.log"
 	else
 		# echo "From file `filename "$LOGFILE"`:"
 		# cat "$LOGFILE" |
