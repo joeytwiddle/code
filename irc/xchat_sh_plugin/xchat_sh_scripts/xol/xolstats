@@ -8,6 +8,9 @@ then
   exit 1
 fi
 
+NL='\
+'
+
 wget "http://www.rork.nl/fox/xol/ranking.php?nick=$PLAYER" -O - 2>/dev/null |
 
 fromhtml |
@@ -16,7 +19,35 @@ fromline -x "This months stats" |
 
 tr '\n' ' ' | tr -s ' ' |
 
-sed "s+\<[0-9][0-9]*\>+$COLGREEN\0$COLRESET+g"
+# sed 's+^Name: \[[0-9]*\]++' | ## remove the "[5]" link indicator from lynx html dump
+sed 's+\[[0-9]*\]++' | ## remove ALL "[n]" link indicators from lynx html dump
+
+sed "s+\<[0-9][0-9]*\([hm]\|\)\>+$COLGREEN\0$COLRESET+g" |
+
+sed 's+: +:+g' |
+
+sed "s+^Name:\([^ ]*\)+$COLRED$COLBOLD\1$COLRESET:+" |
+
+sed 's+Records[ ]*$++' |
+
+# sed "s+Records+$NL$COLYELLOW""Records$COLRESET:+" |
+sed "s+Records+$COLYELLOW""Records$COLRESET:+" |
+
+sed "s+CTF-[^ ]*+$COLGREY\0$COLRESET+g"
+
+LOWERNAME="`echo "$PLAYER" | tolowercase`"
+if [ "$LOWERNAME" = "zbe|f0x" ]
+then echo "$COLAQUA$COLBOLD<<Smelly award!>>$COLRESET"
+fi
+if [ "$LOWERNAME" = "(-:smo:-)vader" ]
+then echo "$COLPINK$COLBOLD<<Fairy award!>>$COLRESET"
+fi
+if [ "$LOWERNAME" = "rork" ] || [ "$LOWERNAME" = "f0x|rork" ]
+then echo "$COLORANGE$COLBOLD<<Uber admin award!>>$COLRESET"
+fi
+if [ "$LOWERNAME" = "beat.mox" ] || [ "$LOWERNAME" = "frag.mox" ]
+then echo "$COLPINK$COLBOLD<<Ultrabatty award!>>$COLRESET"
+fi
 
 echo
 
