@@ -4,14 +4,17 @@ CALLER="`filename "$0"`"
 
 DELAY_TIME="$1"
 
-LAST_CALLED_FILE=/tmp/"$CALLER""$RESTRICT_EXTRA".lastcalled
+mkdir -p "$HOME"/.tmp
+## NOTE that RESTRICT_EXTRA actually makes it harder to get a restriction, e.g. per user nick, but that allow you to increase the delay time.
+LAST_CALLED_FILE="$HOME"/.tmp/"$CALLER""$RESTRICT_EXTRA".lastcalled
+DELAY_TIME_FILE="$HOME"/.tmp/restrict_repetitive_calls.delay
 
 if [ -f "$LAST_CALLED_FILE" ]
 then
 
-	touch -d "$DELAY_TIME ago" /tmp/delay_time
+	touch -d "$DELAY_TIME ago" "$DELAY_TIME_FILE"
 
-	if newer "$LAST_CALLED_FILE" /tmp/delay_time
+	if newer "$LAST_CALLED_FILE" "$DELAY_TIME_FILE"
 	then
 		# echo "Sorry, you may not call $CALLER again for a while."
 		# echo "Sorry, you may not use \!$CALLER again for a little while..."
@@ -23,3 +26,4 @@ fi
 
 ## We haven't exited; so command will be called.
 touch "$LAST_CALLED_FILE"
+
