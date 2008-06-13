@@ -311,7 +311,7 @@ public class IRCBot extends LogBot {
             sendInvite(nick, channel);
         } else {
             mylog("XXXX "+line);
-            super.append(BRICK, source, "! " + getNick()+ " does "+line); // For LogBot
+            super.append(BRICK, source, "--- " + getNick()+ " does "+line); // For LogBot
             sendRawLineViaQueue(line.substring(1));
         }
     }

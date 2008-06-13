@@ -39,7 +39,7 @@ public class LogBot extends PircBot {
         }
         this.joinMessage = joinMessage;
     }
-    
+
     public void append(String color, String channel, String line) {
         line = Colors.removeFormattingAndColors(line);
 
@@ -51,7 +51,7 @@ public class LogBot extends PircBot {
                 line = rightJustifyNick(nick) + " " + rest;
             }
         }
-        
+
         final Date now = new Date();
         final String date = DATE_FORMAT.format(now);
         final String time = TIME_FORMAT.format(now);
@@ -60,7 +60,7 @@ public class LogBot extends PircBot {
             System.out.println(date+" "+time+" ["+channel+"] "+line);
 
         // File file = new File(outDir, date + ".log");
-        final String fileName = getServer()+ "-" + channel + ".log";
+        final String fileName = getServer()+ "-" + channel + ".log"; // Could send to lower case, but I don't see much need.
         final File file = new File(outDir, fileName);
         try {
             // BufferedWriter writer = getWriterForChannel(channel); 
@@ -68,7 +68,7 @@ public class LogBot extends PircBot {
             // String entry = "<span class=\"irc-date\">[" + time + "]</span> <span class=\"" + color + "\">" + line + "</span><br />";
             // String entry = "[" + time + "] ["+ channel +"] " + line;
 
-            final String entry = date + " " + time + " : "+ line;
+            final String entry = date + " " + time + " ["+channel+"] "+ line;
             writer.write(entry);
             writer.newLine();
             writer.flush();
@@ -78,7 +78,7 @@ public class LogBot extends PircBot {
             System.out.println("Could not write to log: " + e);
         }
     }
-    
+
     @Override
     public void onAction(String sender, String login, String hostname, String target, String action) {
         append(BRICK, target, "* " + sender + " " + action);
@@ -86,7 +86,7 @@ public class LogBot extends PircBot {
     
     @Override
     public void onJoin(String channel, String sender, String login, String hostname) {
-        append(GREEN, channel, "* " + sender + " (" + login + "@" + hostname + ") has joined " + channel);
+        append(GREEN, channel, "--> " + sender + " (" + login + "@" + hostname + ") has joined " + channel);
         /*
         if (sender.equals(getNick())) {
             sendNotice(channel, joinMessage);
@@ -112,22 +112,22 @@ public class LogBot extends PircBot {
     
     @Override
     public void onMode(String channel, String sourceNick, String sourceLogin, String sourceHostname, String mode) {
-        append(GREEN, channel, "* " + sourceNick + " sets mode " + mode);
+        append(GREEN, channel, "--- " + sourceNick + " sets mode " + mode);
     }
     
     @Override
     public void onNickChange(String oldNick, String login, String hostname, String newNick) {
-        append(GREEN, DEFAULT_TARGET, "* " + oldNick + " is now known as " + newNick);
+        append(GREEN, DEFAULT_TARGET, "--- " + oldNick + " is now known as " + newNick);
     }
     
     @Override
     public void onNotice(String sourceNick, String sourceLogin, String sourceHostname, String target, String notice) {
-        append(BROWN, target, "-" + sourceNick + "- " + notice);
+        append(BROWN, target, ">" + sourceNick + "< " + notice);
     }
     
     @Override
     public void onPart(String channel, String sender, String login, String hostname) {
-        append(GREEN, channel, "* " + sender + " (" + login + "@" + hostname + ") has left " + channel);
+        append(GREEN, channel, "<-- " + sender + " (" + login + "@" + hostname + ") has left " + channel);
     }
     
     @Override
@@ -142,7 +142,7 @@ public class LogBot extends PircBot {
     
     @Override
     public void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
-        append(NAVY, DEFAULT_TARGET, "* " + sourceNick + " (" + sourceLogin + "@" + sourceHostname + ") Quit (" + reason + ")");
+        append(NAVY, DEFAULT_TARGET, "<-- " + sourceNick + " (" + sourceLogin + "@" + sourceHostname + ") Quit (" + reason + ")");
     }
     
     @Override
@@ -153,11 +153,11 @@ public class LogBot extends PircBot {
     @Override
     public void onTopic(String channel, String topic, String setBy, long date, boolean changed) {
         if (changed) {
-            append(GREEN, channel, "* " + setBy + " changes topic to '" + topic + "'");
+            append(GREEN, channel, "--- " + setBy + " changes topic to '" + topic + "'");
         }
         else {
-            append(GREEN, channel, "* Topic is '" + topic + "'");
-            append(GREEN, channel, "* Set by " + setBy + " on " + new Date(date));
+            append(GREEN, channel, "--- Topic is '" + topic + "'");
+            append(GREEN, channel, "--- Set by " + setBy + " on " + new Date(date));
         }
     }
     
@@ -168,7 +168,7 @@ public class LogBot extends PircBot {
     
     @Override
     public void onKick(String channel, String kickerNick, String kickerLogin, String kickerHostname, String recipientNick, String reason) {
-        append(GREEN, channel, "* " + recipientNick + " was kicked from " + channel + " by " + kickerNick);
+        append(GREEN, channel, "<-- " + recipientNick + " was kicked from " + channel + " by " + kickerNick);
         /*
         if (recipientNick.equalsIgnoreCase(getNick())) {
             joinChannel(channel);
@@ -178,7 +178,7 @@ public class LogBot extends PircBot {
     
     @Override
     public void onDisconnect() {
-        append(NAVY, DEFAULT_TARGET, "* Disconnected.");
+        append(NAVY, DEFAULT_TARGET, "--- Disconnected.");
         /*
         while (!isConnected()) {
             try {
