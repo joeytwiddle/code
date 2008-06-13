@@ -9,14 +9,14 @@ import org.jibble.pircbot.*;
 /**
  * BUGS:
  * - global events, such as nick changes, and players leaving the network, are not logged to all channels where they are present, as might be expected
- * - events sent by any subclasses of this class cannot be logged, since we cannot override sendMessage() etc. 
+ * - events sent by any subclasses of this class cannot be logged, since we cannot override sendMessage() etc.  Attempted fixes with calls to super.OnXyz() in subclass IRCBot.
  * @author joey
  *
  */
 
 public class LogBot extends PircBot {
 
-    private static final Pattern urlPattern = Pattern.compile("(?i:\\b((http|https|ftp|irc)://[^\\s]+))");
+    // private static final Pattern urlPattern = Pattern.compile("(?i:\\b((http|https|ftp|irc)://[^\\s]+))");
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
     

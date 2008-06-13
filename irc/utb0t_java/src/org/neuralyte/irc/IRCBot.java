@@ -108,10 +108,11 @@ public class IRCBot extends LogBot {
                 String command = commands[i];
                 if (command.startsWith("/"))
                     command = command.substring(1);
+                command = command.replaceAll("\\$me", getNick());
                 // sendRawLineViaQueue(command);
                 sendSlashAction("", "/"+command);
-                // floodProtect();
                 justSleep(3.0);
+                floodProtect();
             }
         } else {
             mylog("No perform file: "+performFile);
@@ -159,8 +160,8 @@ public class IRCBot extends LogBot {
         checkMessage(sender, sender, message);
     }
 
-    /** @param source may be a channel or a nick **/
-    private void checkMessage(final String source, String sender, String message) {
+    /** @param channel may be a channel or a nick **/
+    private void checkMessage(final String channel, String sender, String message) {
         
         char firstChar = ' ';
         if (message.length()>0)
@@ -168,12 +169,12 @@ public class IRCBot extends LogBot {
         
         if (firstChar=='!' || firstChar=='.') {
 
-            mylog("Caught: ["+source+"] <"+sender+"> "+message);
+            mylog("Caught: ["+channel+"] <"+sender+"> "+message);
 
             try {
 
                 String command = "/bin/bash /home/joey/j/jsh "+pluginDir+"/xchat_sh_handler.sh "+message.substring(1);
-                command = "env NETWORK="+server+" env SERVER="+server+" env NICK="+ sender + " env CHANNEL="+source+" " + command;
+                command = "env NETWORK="+server+" env SERVER="+server+" env NICK="+ sender + " env CHANNEL="+channel+" " + command;
                 // @todo Instead of server, we could try getServer().
                 File topDirFile = new File(pluginDir);
                 
@@ -187,6 +188,8 @@ public class IRCBot extends LogBot {
                  * In this case, nothing will ever come through stdout, and we won't reach the end of stdout either, we'll be stuck here (and won't even see the errors from stderr).
                  * The solution is to read each of the response streams in a separate thread.
                  */
+
+                final LogBot me = this;
                 
                 Thread stdoutThread = new Thread() {
                     public void run() {
@@ -200,10 +203,12 @@ public class IRCBot extends LogBot {
                             if (line == null)
                                 break;
                             if (line.startsWith("/")) {
-                                sendSlashAction(source, line);
+                                sendSlashAction(channel, line);
                             } else {
-                                mylog(">>>> "+source+" :: "+line);
-                                sendMessage(source, line);
+                                mylog(">>>> "+channel+" :: "+line);
+                                // We want to call our LogBot.onMessage(), not our IRCBot.onMessage(), and we are inside an anonymous class!
+                                IRCBot.super.onMessage(channel, getNick(), getLogin(), "hostname123", line);
+                                sendMessage(channel, line);
                             }
                             floodProtect();
                         }
@@ -270,28 +275,39 @@ public class IRCBot extends LogBot {
         String firstArg = rest.replaceAll(" .*","");
         rest = rest.replaceAll("^[^ ]* ",""); 
         if (com.equals("/mode")) {
-            String channel= firstArg; String mode = rest;
+            String channel= firstArg;
+            String mode = rest;
             setMode(channel, mode);
         } else if (com.equals("/join")) {
-            String channel= firstArg; String key = rest;
+            String channel= firstArg;
+            String key = rest;
             if (key == "")
                 joinChannel(channel);
             else
                 joinChannel(channel,key);
         } else if (com.equals("/notice")) {
-            String target = firstArg; String message = rest;
+            String target = firstArg;
+            String message = rest;
+            super.onNotice(getNick(), getLogin(), "hostname123", target, message); // For LogBot
             sendNotice(target,message);
         } else if (com.equals("/msg")) {
-            String target = firstArg; String message = rest;
+            String target = firstArg;
+            String message = rest;
+            super.onMessage(target, getNick(), getLogin(), "hostname123", message); // For LogBot 
             sendMessage(target,message);
         } else if (com.equals("/me")) {
+            String target = source;
             String message = firstArg + " " + rest;
-            sendAction(source,message);
+            super.onAction(getNick(), getLogin(), "hostname123", target, message); // For LogBot 
+            sendAction(target,message);
         } else if (com.equals("/invite")) { // Maybe worked before anyway
-            String nick = firstArg; String channel = rest;
+            String nick = firstArg;
+            String channel = rest;
+            super.onInvite(nick, getNick(), getLogin(), "hostname123", channel); // For LogBot
             sendInvite(nick, channel);
         } else {
             mylog("XXXX "+line);
+            super.append(BRICK, source, "! " + getNick()+ " does "+line); // For LogBot
             sendRawLineViaQueue(line.substring(1));
         }
     }
