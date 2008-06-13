@@ -2,10 +2,11 @@
 
 // TrackPlayers:
 
-// !follow <player> or !track <player> will give you updates of the location of that player in your chat window, provided bAllowTracking and bTrackOppositeTeam or isTeamMate().
+// !follow <player> or !track <player> will give you updates of the location of that player in your chat window, provided bAllowTracking, and bTrackOppositeTeam or isTeamMate().
 // Useful if someone in a pug is not talking. ;)
 
-// !trackfc will always give updates of the location of your flag-carrier.
+// !trackfc will give updates of the location of your flag-carrier, when he changes zone.
+// With FC_COVER defined, will also show whether your flag-carrier has good or poor cover.
 
 // Could also give health and status updates, like Pure does with teamsay.
 
@@ -25,7 +26,6 @@ var config bool bAllowEnemyTracking;
 var config bool bAcceptSpokenCommands;
 var config bool bAcceptMutateCommands;
 var config bool bSwallowSpokenCommands;
-var bool bOnlyAdmin; // TODO: config
 var config int CheckTime;
 var config bool bLogging;
 
@@ -34,7 +34,6 @@ defaultproperties {
   bAcceptSpokenCommands=True
   bAcceptMutateCommands=True
   bSwallowSpokenCommands=True   // Note: only hides the message for the calling player, not the other players.
-  bOnlyAdmin=False
   CheckTime=3
   bLogging=False
 }
@@ -103,10 +102,6 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	local String command;
 	// local PlayerSettings ps;
 	local String stateStr;
-
-	if (bOnlyAdmin && !Sender.bAdmin) {
-		return False;
-	}
 
 	// ps = GetPlayerSettingsFor(Sender);
 	// #define ps GetPlayerSettingsFor(Sender)
@@ -252,7 +247,8 @@ function String getFCMessage(Pawn fc, String zone) {
 	local float distance;
 	local String coverType;
 	// local String danger;
-	foreach AllActors(class'Pawn', P) {
+	// foreach AllActors(class'Pawn', P) {
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (P == fc)
 			continue;
 		if (PlayerPawn(p) == None && Bot(P) == None)

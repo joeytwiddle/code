@@ -1,5 +1,8 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// BUG TODO: If a player joins and leaves before SecondsBeforeRedirection, they will not get redirected, and NextPlayerToDo may get stuck on that players PlayerID, and will fail to redirect any more players.
+// TODO CONSIDER: If the redirection fails (e.g. because the map on the target server switches before they join) then redirection should ideally be retried.  But we don't want to retry every say 30 seconds, in case the map download takes 40 seconds.  Can we actually tell if the player is in the process of connecting to another server?
+
 class RedirectPlayers expands Mutator config(RedirectPlayers);
 
 var config bool bEnabled;
@@ -14,7 +17,7 @@ defaultproperties {
 	bEnabled=True
 	TargetURL="unreal://85.131.247.65:6666/"
 	SecondsBeforeRedirection=5
-	bTellPlayers=True;
+	bTellPlayers=True
 	bLog=True
 }
 

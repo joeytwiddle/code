@@ -240,6 +240,10 @@ var int CurrentEventi;
 
 #endif
 
+function bool WeAreOnline() {
+	return False;
+}
+
 function PlayerPawn GetRandomPlayer() {
 	local PlayerPawn p;
 	local int count;
@@ -1484,7 +1488,7 @@ function FindNextEvent() {
 		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] No ev3nt",colYellow,7,0.9);
 	}
 
-	if (bAutoRecord && !bRecordEvents) {
+	if (bAutoRecord && !bRecordEvents /*&& !WeAreOnline()*/) { // TODO: Actually we want to check whether we are recording or playing a demo - if so then autorecord/replay is good!
 		LogInfo("Auto turning recording on.");
 		bRecordEvents = True; // auto_record
 		if (bAutoSpeed && bReplayEvents) {
@@ -1525,6 +1529,8 @@ function ReplayEvent(int i) {
 		if (FindPlayerNamed(GetPrimary(i)) != None) {
 			LookActor = FindPlayerNamed(GetPrimary(i));
 			report = report $ "1"; // ="$LookActor;
+		} else {
+			report = report $ "?";
 		}
 		report = report $ "+";
 		if (FindPlayerNamed(GetSecondary(i)) != None) {
@@ -1534,6 +1540,8 @@ function ReplayEvent(int i) {
 				// LogInfo("Had to move camera to see "$FollowActor);
 				// Camera.SetLocation(FollowActor.Location);
 			// }
+		} else {
+			report = report $ "?";
 		}
 		if (FollowActor != None && LookActor != None) {
 			CameraMode = 6;

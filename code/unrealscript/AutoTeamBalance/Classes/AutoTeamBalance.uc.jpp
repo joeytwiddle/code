@@ -32,7 +32,7 @@
 // When parsing, we can check duplicates and remove the older.
 // Do we need the third combined record?  It does mean we only have to lookup one.
 
-#define ATB_VERSION "1.4w"
+#define ATB_VERSION "1.4x"
 
 // DONE: By using bCached[], the record is not re-checked if the nick changes, or if IP changes.  On XOL this is a problem because the initial IP often does change to IDC after a little bit of time.  OK hacking this into the IDC catch code.
 //       This solution means the empty record of their IP will be created.  An alternative would be, at the end of the game, to overwrite whatever is in the DB with the players current nick and idc.
@@ -179,7 +179,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 	// Still compiling ATB for XOL, until it's working ok as ATBXOL.
 	#define XOL_SPECIFIC
-	#define ORIGION
 	// #define ENABLE_USEISPNOTFULLIP
 	#define ENABLE_ADMIN_COMMANDS
 	#define ENABLE_MUTATOR_SIGNATURE
@@ -199,6 +198,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 		// OK only doing staggering at game start.
 		#define WAIT_FOR_IDC
 		// WAIT_FOR_IDC screws with bAutoSwitchNewPlayers
+		#define ORIGION
 	#endif
 	// #define TAKE_MOST_RECENT_DUPLICATE
 
@@ -1621,6 +1621,7 @@ function DoGameStart() {
 			lastBalanceTime=-100; MidGameRebalance(True);
 			lastBalanceTime=-100; MidGameRebalance(True);
 			lastBalanceTime=-100; MidGameRebalance(True);
+			// this causes some problems i don't remember what exactly
 		}
 		#endif
 		// (This must come after the team switching, otherwise the default start-game "xxx is on Red" will overwrite this text.)
@@ -3929,14 +3930,19 @@ function GetAveragesThisGame() {
 	averageGameScore = 0.0;
 	averagePlayerStrengthThisGame = 0.0;
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
-		if (!p.IsA('Spectator') && AllowedToRank(p)) {
+		if (!p.IsA('Spectator') && (AllowedToRank(p) || AllowedToBalance(p))) {
 			averageGameScore += GetScoreForPlayer(p);
 			averagePlayerStrengthThisGame += GetRecordedPlayerStrength(p);
 			playerCount++;
 		}
 	}
-	averageGameScore = averageGameScore / Float(playerCount);
-	averagePlayerStrengthThisGame = averagePlayerStrengthThisGame / Float(playerCount);
+	if (playerCount == 0) {
+		averageGameScore = 45.678;
+		averagePlayerStrengthThisGame = UnknownStrength;
+	} else {
+		averageGameScore = averageGameScore / Float(playerCount);
+		averagePlayerStrengthThisGame = averagePlayerStrengthThisGame / Float(playerCount);
+	}
 	LastCalculatedAverages = Level.TimeSeconds;
 }
 

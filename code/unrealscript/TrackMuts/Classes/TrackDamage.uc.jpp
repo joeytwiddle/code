@@ -3,7 +3,7 @@
 class TrackDamage expands Mutator config(TrackMuts);
 
 struct PlayerSettings {
-	var bool bFlash;         // Flash damage updates instead of putting them in chatlog/console
+	var bool bNoFlash;         // Flash damage updates instead of putting them in chatlog/console
 	var bool bSeeDamageGiven;   // Show damage this player causes
 	var bool bSeeDamageReceived;  // Show damage this player receives
 	var bool bSeeAllDamage;  // Show all damage that occurs!  (Not yet added)
@@ -98,14 +98,14 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	command = args[0];
 
 	if (command ~= "flash") {
-		ps.bFlash = !ps.bFlash;
-		stateStr = "off";
-		if (ps.bFlash)
-			stateStr = "on";
-		// if (ps.bFlash)
-		FlashMessageToPlayer(Sender,"damage flash = "$stateStr,InfoColor,0,2,true);
+		ps.bNoFlash = !ps.bNoFlash;
+		stateStr = "on";
+		if (ps.bNoFlash)
+			stateStr = "off";
+		// if (!ps.bNoFlash)
+		FlashMessageToPlayer(Sender,"flash = "$stateStr,InfoColor,0,2,true);
 		// else Sender.ClearProgressMessages();
-		Sender.ClientMessage("Your damage flash is "$stateStr);
+		Sender.ClientMessage("Your flash is "$stateStr);
 		return True;
 	}
 
@@ -114,8 +114,8 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		stateStr = "off";
 		if (ps.bSeeDamageGiven)
 			stateStr = "on";
-		Sender.ClientMessage("Your showdamage is "$stateStr);
-		// if (ps.bFlash) 
+		Sender.ClientMessage("Your show damage is "$stateStr);
+		// if (!ps.bNoFlash) 
 		FlashMessageToPlayer(Sender,"show damage = "$stateStr,SentPainColor,1,4,True);
 		return True;
 	}
@@ -160,7 +160,9 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		actualDamageStr = "(absorbed)"; // shield or armor (or some other reason) caused this to give 0 damage to enemy
 	else
 		actualDamageStr = ""$ActualDamage;
-	if (Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
+	if (Victim == InstigatedBy)
+		actualDamageStr = actualDamageStr $ " SELF";
+	else if (Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
 		actualDamageStr = actualDamageStr $ " TEAM";
 
 	boost = "";
@@ -183,7 +185,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			#define SayMessage "Damage "$ actualDamageStr $" on "$ Victim.getHumanName() $" type "$ DamageType $" "$ boost
 			// Line 0-1 is "You killed"
 			// Line ~2 is "Double Kill"
-			if (instigatorSettings.bFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),FlashMessage,SentPainColor,1,4);
+			if (!instigatorSettings.bNoFlash) FlashMessageToPlayer(PlayerPawn(InstigatedBy),FlashMessage,SentPainColor,1,4);
 			else PlayerPawn(InstigatedBy).ClientMessage(SayMessage);
 		}
 	}
@@ -193,9 +195,9 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		if (victimSettings.bSeeDamageReceived)
 			#undef FlashMessage
 			#undef SayMessage
-			#define FlashMessage "You -"$actualDamageStr
+			#define FlashMessage "You -"$actualDamageStr$" ("$InstigatedBy.getHumanName()$")"
 			#define SayMessage "Pain "$ actualDamageStr $" from "$ InstigatedBy.getHumanName() $"'s "$ DamageType$" "$boost
-			if (victimSettings.bFlash) FlashMessageToPlayer(PlayerPawn(Victim),FlashMessage,ReceivedPainColor,7,2);
+			if (!victimSettings.bNoFlash) FlashMessageToPlayer(PlayerPawn(Victim),FlashMessage,ReceivedPainColor,7,2);
 			// else PlayerPawn(Victim).ClientMessage("*HIT* -"$ actualDamageStr $" "$boost$" from "$ InstigatedBy.getHumanName() $"'s type "$ DamageType);
 			else PlayerPawn(Victim).ClientMessage(SayMessage);
 	}

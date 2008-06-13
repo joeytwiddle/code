@@ -1,4 +1,8 @@
-class nBAutoSpectateOnline extends nBAutoSpectate;
+class nBAutoSpectateOnline extends nBAutoSpectate config(nBAutoSpectate);
+
+function bool WeAreOnline() {
+	return True;
+}
 
 function bool isCameraModeAllowed() {
 	if (CameraMode == 0)
