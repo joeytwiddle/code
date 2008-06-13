@@ -28,7 +28,7 @@ public class LogBot extends PircBot {
     
     public static final String DEFAULT_TARGET = "NETWORK";
     
-    public static boolean logToStdOut = false;
+    public static boolean logToStdOut = false; // Whether to also send the lines we are logging to channel logfiles, to stdout.
     
     public LogBot(String name, File outDir, String joinMessage) {
         setName(name);
@@ -56,9 +56,6 @@ public class LogBot extends PircBot {
         final String date = DATE_FORMAT.format(now);
         final String time = TIME_FORMAT.format(now);
 
-        if (logToStdOut)
-            System.out.println(date+" "+time+" ["+channel+"] "+line);
-
         // File file = new File(outDir, date + ".log");
         final String fileName = getServer()+ "-" + channel + ".log"; // Could send to lower case, but I don't see much need.
         final File file = new File(outDir, fileName);
@@ -68,7 +65,11 @@ public class LogBot extends PircBot {
             // String entry = "<span class=\"irc-date\">[" + time + "]</span> <span class=\"" + color + "\">" + line + "</span><br />";
             // String entry = "[" + time + "] ["+ channel +"] " + line;
 
+            // XChat's format uses 3 fields for dates, but we can use our 3rd field for something else.
+            // (Originally it was ":" but i think "[#channel]" could be more useful.
             final String entry = date + " " + time + " ["+channel+"] "+ line;
+            if (logToStdOut)
+                System.out.println("-LOG- " + entry);
             writer.write(entry);
             writer.newLine();
             writer.flush();
@@ -101,8 +102,10 @@ public class LogBot extends PircBot {
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
         append(BLACK, channel, "<" + sender + "> " + message);
         
-        if (message.equals("!togglestdout"))
+        if (message.equals("!stdout")) {
             logToStdOut = ! logToStdOut;
+            sendNotice(sender, "logToStdOut = "+logToStdOut);
+        }
         
         message = message.toLowerCase();
         if (message.startsWith(getNick().toLowerCase()) && message.indexOf("help") > 0) {
@@ -218,14 +221,14 @@ public class LogBot extends PircBot {
     private String rightJustifyNick(String nick) {
         if (nick.length() > longestNick)
             longestNick = nick.length();
-        return padLeft(nick,longestNick);
+        return padLeft(nick,' ',longestNick);
     }
     
-    public static String padLeft(String str, int desiredLength) {
+    public static String padLeft(String str, char padder, int desiredLength) {
         if (desiredLength > str.length()) {
             final StringBuffer left = new StringBuffer();
             for (int i=0;i<desiredLength - str.length();i++) {
-                left.append(' ');
+                left.append(padder);
             }
             return left + str;
         } else {
