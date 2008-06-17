@@ -15,9 +15,14 @@ import org.jibble.pircbot.Colors;
 import org.omg.CORBA.ShortSeqHelper;
 
 /**
- * Commands accepted by IRCBot:
- * !stdout - Toggle channel logfile logging to standard out.
- * !logall - Toggle Pirc default logging.
+ * Commands accepted by IRCBot (but only by private message):
+ * !stdout - Globally toggle LogBot logging to standard out.
+ * !logall - Globally toggle Pirc default logging.
+ * !status - Sends back a summary of ALL the bots.
+ */
+
+/**
+ * TODO: support for joining alternative servers if the main one is not reachable.
  */
 
 public class IRCBot extends LogBot {
@@ -28,13 +33,17 @@ public class IRCBot extends LogBot {
     public static File prefsDir = new File(userHome+"/.ircbot");
     public static File logDir = new File(userHome+"/.xchat2.utb0t/logs");
 
+    public static boolean logAll = false;
+    
+    public static java.util.List<IRCBot> allBots = new Vector();
+
     public String pluginDir = userHome+"/.xchat2.utb0t/plugin";
+
+    // Per bot:
     
     public String server = "pictor.vm.bytemark.co.uk";
     // public String server = "irc.quakenet.org";
     
-    public static boolean logAll = false;
-
     File configDir;
     
     public static void main(String[] args) {
@@ -59,9 +68,9 @@ public class IRCBot extends LogBot {
     
         for (final File file : prefsDir.listFiles()) {
             if (file.isDirectory() && file.getName().contains("-")) {
-                // If the first bot cannot connect (e.g. server down or "Your username is invalid",
+                // During startup, if the first bot cannot connect (e.g. server down or "Your username is invalid",
                 // then loadBot() never returns.  So to ensure the later bots will definitely also be started,
-                // we call loadBot() in a separate thread.
+                // we call loadBot() in a separate thread (but wait 10 seconds before going on to start the next bot).
                 new Thread() {
                     public void run() {
                         loadBot(file);
@@ -77,6 +86,7 @@ public class IRCBot extends LogBot {
         final String server = configDir.getName().replaceAll("-.*", "");
         final String botName = configDir.getName().replaceAll("^[^-]*-", "");
         final IRCBot bot = new IRCBot(configDir,botName,server);
+        allBots.add(bot);
         bot.doConnect();
     }
 
@@ -87,9 +97,10 @@ public class IRCBot extends LogBot {
     */
     
     public IRCBot(File configDir, String name, String server) {
-        super(name, logDir, "");
+        super(name, logDir);
         setName(name);
-        setFinger("UTB0t");
+        setFinger("whoAreYou");
+        setVersion("utb0t-O.o");
         setLogin(""+(char)((int)'a' + 26*Math.random())+(int)(Math.random()*10000));
         setAutoNickChange(true);
         this.configDir = configDir;
@@ -133,9 +144,9 @@ public class IRCBot extends LogBot {
                     command = command.substring(1);
                 command = command.replaceAll("\\$me", getNick());
                 // sendRawLineViaQueue(command);
+                floodProtect();
                 sendSlashAction("", "/"+command);
                 justSleep(3.0);
-                floodProtect();
             }
         } else {
             mylog("No perform file: "+performFile);
@@ -147,8 +158,8 @@ public class IRCBot extends LogBot {
         if (channelsFile.exists()) {
             final String[] channels = readLinesFromFile(channelsFile);
             for (int i=0;i<channels.length;i++) {
-                joinChannel(channels[i]);
                 // floodProtect();
+                joinChannel(channels[i]);
             }
         } else {
             mylog("No channels file: "+channelsFile);
@@ -181,17 +192,26 @@ public class IRCBot extends LogBot {
 
     @Override
     public void onPrivateMessage(String sender, String login, String hostname, String message) {
+
+        if (message.equals("!logall")) {
+            logAll = !logAll;
+            sendNotice(sender, "logAll = "+logAll);
+        }
+        
+        if (message.equals("!status")) {
+            for (IRCBot b : allBots) {
+                String botReport = b.getBotReport();
+                floodProtect();
+                sendNotice(sender, botReport);
+            }
+        }
+        
         super.onPrivateMessage(sender, login, hostname, message);
         checkMessage(sender, sender, message, login, hostname);
     }
 
     /** @param channel may be a channel or a nick **/
     private void checkMessage(final String channel, String sender, String message, String login, String hostname) {
-        
-        if (message.equals("!logall")) {
-            logAll = !logAll;
-            sendNotice(sender, "logAll = "+logAll);
-        }
         
         char firstChar = ' ';
         if (message.length()>0)
@@ -255,6 +275,7 @@ public class IRCBot extends LogBot {
                             line = in.readLine();
                             if (line == null)
                                 break;
+                            floodProtect();
                             if (line.startsWith("/")) {
                                 sendSlashAction(channel, line);
                             } else {
@@ -263,7 +284,6 @@ public class IRCBot extends LogBot {
                                 IRCBot.super.onMessage(channel, getNick(), getLogin(), "hostname123", line);
                                 sendMessage(channel, line);
                             }
-                            floodProtect();
                         }
                         
                         mylog("Completed: "+command);
@@ -314,6 +334,15 @@ public class IRCBot extends LogBot {
             // Ignore this line
             // mylog("Ignoring: ["+source+"] <"+sender+"> "+message);
         }
+    }
+
+    public String getBotReport() {
+        String channelReport = getChannels().length + " channels on " + getServer() + ": ";
+        for (String c : getChannels()) {
+            channelReport += "[" + c +"] "+getUsers(c).length+" users :: ";
+        }
+        channelReport = channelReport.substring(0,channelReport.length() - 4);
+        return "{"+getName()+"} " + channelReport;
     }
     
     @Override
@@ -376,7 +405,11 @@ public class IRCBot extends LogBot {
         }
     }
 
-    // statics make it work across all bots at once
+    // statics make it work across all bots at once (maybe not desirable),
+    // but also (more importantly) across different threads of one bot.
+    // TODO: however, it doesn't check the *first* response it sends, so if the bot is
+    // flooded with requests, it may still flood responses!
+    // One easy way to solve this, is to put all flood checking just before instead of just after the call to send each message.
     static int floodCount = 0;
     static long lastFloodTime = 0;
     void floodProtect() {

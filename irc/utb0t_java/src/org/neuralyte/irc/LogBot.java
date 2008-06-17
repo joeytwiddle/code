@@ -30,31 +30,36 @@ public class LogBot extends PircBot {
     
     public static boolean logToStdOut = false; // Whether to also send the lines we are logging to channel logfiles, to stdout.
     
-    public LogBot(String name, File outDir, String joinMessage) {
+    public LogBot(String name, File outDir) {
         setName(name);
         setVerbose(true);
         this.outDir = outDir;
         if (!outDir.exists()) {
             outDir.mkdirs();
         }
-        this.joinMessage = joinMessage;
     }
 
     public void append(String color, String channel, String line) {
         line = Colors.removeFormattingAndColors(line);
 
-        // Right justify nicks:
-        if (line.startsWith("<")) {
+        // We were right justifying nicks.
+        /* if (line.startsWith("<")) {
             final String nick = line.substring(0, line.indexOf(" "));
             if (nick.endsWith(">")) {
                 final String rest = line.substring(line.indexOf(" ")+1);
                 line = rightJustifyNick(nick) + " " + rest;
             }
-        }
+        } */
+        // But now like XChat, we just add a tab.
+        line = line.replaceFirst(" ", "\t");
 
         final Date now = new Date();
         final String date = DATE_FORMAT.format(now);
         final String time = TIME_FORMAT.format(now);
+
+        final String entry = date + " " + time + " ["+channel+"] "+ line;
+        if (logToStdOut)
+            System.out.println("-LOG- " + entry);
 
         // File file = new File(outDir, date + ".log");
         final String fileName = getServer()+ "-" + channel + ".log"; // Could send to lower case, but I don't see much need.
@@ -67,9 +72,6 @@ public class LogBot extends PircBot {
 
             // XChat's format uses 3 fields for dates, but we can use our 3rd field for something else.
             // (Originally it was ":" but i think "[#channel]" could be more useful.
-            final String entry = date + " " + time + " ["+channel+"] "+ line;
-            if (logToStdOut)
-                System.out.println("-LOG- " + entry);
             writer.write(entry);
             writer.newLine();
             writer.flush();
@@ -88,29 +90,11 @@ public class LogBot extends PircBot {
     @Override
     public void onJoin(String channel, String sender, String login, String hostname) {
         append(GREEN, channel, "--> " + sender + " (" + login + "@" + hostname + ") has joined " + channel);
-        /*
-        if (sender.equals(getNick())) {
-            sendNotice(channel, joinMessage);
-        }
-        else {
-            sendNotice(sender, joinMessage);
-        }
-        */
     }
     
     @Override
     public void onMessage(String channel, String sender, String login, String hostname, String message) {
         append(BLACK, channel, "<" + sender + "> " + message);
-        
-        if (message.equals("!stdout")) {
-            logToStdOut = ! logToStdOut;
-            sendNotice(sender, "logToStdOut = "+logToStdOut);
-        }
-        
-        message = message.toLowerCase();
-        if (message.startsWith(getNick().toLowerCase()) && message.indexOf("help") > 0) {
-            sendMessage(channel, joinMessage);
-        }
     }
     
     @Override
@@ -141,6 +125,12 @@ public class LogBot extends PircBot {
     @Override
     public void onPrivateMessage(String sender, String login, String hostname, String message) {
          append(BLACK, sender, "<- *" + sender + "* " + message);
+
+         if (message.equals("!stdout")) {
+             logToStdOut = ! logToStdOut;
+             sendNotice(sender, "logToStdOut = "+logToStdOut);
+         }
+
     }
     
     @Override
@@ -215,7 +205,6 @@ public class LogBot extends PircBot {
     */
     
     private final File outDir;
-    private final String joinMessage;
 
     public static int longestNick = 0; 
     private String rightJustifyNick(String nick) {
