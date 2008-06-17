@@ -4,6 +4,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -44,7 +46,7 @@ public class IRCBot extends LogBot {
     public String server = "pictor.vm.bytemark.co.uk";
     // public String server = "irc.quakenet.org";
     
-    File configDir;
+    final File configDir,channelsFile,performFile;
     
     public static void main(String[] args) {
         
@@ -104,6 +106,8 @@ public class IRCBot extends LogBot {
         setLogin(""+(char)((int)'a' + 26*Math.random())+(int)(Math.random()*10000));
         setAutoNickChange(true);
         this.configDir = configDir;
+        this.channelsFile = new File(configDir+"/channels");
+        this.performFile = new File(configDir+"/perform");
         this.server = server;
     }
     
@@ -135,7 +139,6 @@ public class IRCBot extends LogBot {
     }
     
     void doDefaultPerform() {
-        final File performFile = new File(configDir+"/perform");
         if (performFile.exists()) {
             final String[] commands = readLinesFromFile(performFile);
             for (int i=0;i<commands.length;i++) {
@@ -154,7 +157,6 @@ public class IRCBot extends LogBot {
     }
     
     void joinDefaultChannels() {
-        final File channelsFile = new File(configDir+"/channels");
         if (channelsFile.exists()) {
             final String[] channels = readLinesFromFile(channelsFile);
             for (int i=0;i<channels.length;i++) {
@@ -342,6 +344,18 @@ public class IRCBot extends LogBot {
             channelReport += "[" + c +"] "+getUsers(c).length+" users :: ";
         }
         channelReport = channelReport.substring(0,channelReport.length() - 4);
+
+        java.util.List<String> newChannels = new java.util.Vector<String>();
+        newChannels.addAll(Arrays.asList(getChannels()));
+        String[] configChannels = readLinesFromFile(channelsFile);
+        newChannels.removeAll(Arrays.asList(configChannels));
+        for (String l : readLinesFromFile(performFile)) {
+            String[] words = l.split(" ");
+            newChannels.removeAll(Arrays.asList(words));
+        }
+        if (newChannels.size()>0)
+            channelReport += " // New channels are: "+newChannels;
+
         return "{"+getName()+"} " + channelReport;
     }
     
