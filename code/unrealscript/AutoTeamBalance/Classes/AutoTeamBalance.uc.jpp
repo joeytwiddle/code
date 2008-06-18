@@ -32,7 +32,7 @@
 // When parsing, we can check duplicates and remove the older.
 // Do we need the third combined record?  It does mean we only have to lookup one.
 
-#define ATB_VERSION "1.4x"
+#define ATB_VERSION "1.4y"
 
 // DONE: By using bCached[], the record is not re-checked if the nick changes, or if IP changes.  On XOL this is a problem because the initial IP often does change to IDC after a little bit of time.  OK hacking this into the IDC catch code.
 //       This solution means the empty record of their IP will be created.  An alternative would be, at the end of the game, to overwrite whatever is in the DB with the players current nick and idc.
@@ -843,26 +843,9 @@ function ModifyPlayer(Pawn paw) {
 			}
 
 			// Do LastBadPlayer balancing:
-			if (bAutoSwitchNewPlayers && gameStartDone && CountHumanPlayers()>2 && !DeathMatchPlus(Level.Game).bTournament) {
-				#ifndef WAIT_FOR_IDC
-				if ( (CountHumanPlayers() % 2) > 0 ) {
-					// This player has made the teams uneven by playercount!
-					LastBadPlayer = p;
-					// NormalLog("ModifyPlayer() Setting "$p.getHumanName()$" as LastBadPlayer.");
-					strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
-					// if (Abs(strengthSwing)>75 /*&& Abs(strengthSwing)>GetPlayerStrength(p)*0.5*/) {
-						// NormalLog("ModifyPlayer() And warned him because strengthSwing "$strengthSwing$" > 75 !");
-						// p.ClientMessage("You have unbalanced an even game! You may be switched to a different team later.");
-					// }
-				} else {
-					// This player has made the teams even by playercount.
-					// But teams might be better if he switched with the LastBadPlayer ...
-					CheckTwoNewPlayers(LastBadPlayer, p);
-					// LastBadPlayer = None;
-					LastBadPlayer = p;
-				}
-				#endif
-			}
+			#ifndef WAIT_FOR_IDC
+				CheckNewPlayer(p);
+			#endif
 
 			//// TODO XOL BUG: We don't have accurate strengths until we have their Idc record!
 			// strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
@@ -878,11 +861,32 @@ function ModifyPlayer(Pawn paw) {
 
 }
 
+function CheckNewPlayer(PlayerPawn p) {
+	if (bAutoSwitchNewPlayers && gameStartDone && CountHumanPlayers()>2 && !DeathMatchPlus(Level.Game).bTournament) {
+		if ( (CountHumanPlayers() % 2) > 0 ) {
+			// This player has made the teams uneven by playercount!
+			LastBadPlayer = p;
+			// NormalLog("ModifyPlayer() Setting "$p.getHumanName()$" as LastBadPlayer.");
+			// strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
+			// if (Abs(strengthSwing)>70 && GetPlayerStrength(p)>70) {
+				// NormalLog("ModifyPlayer() And warned him because strengthSwing "$strengthSwing$" > 70 and playerStrength > 70 !");
+				// p.ClientMessage("You may be switched with the next player who joins.");
+			// }
+		} else {
+			// This player has made the teams even by playercount.
+			// But teams might be better if he switched with the LastBadPlayer ...
+			CheckTwoNewPlayers(LastBadPlayer, p);
+			// LastBadPlayer = None;
+			LastBadPlayer = p;
+		}
+	}
+}
+
 // A joined recently.  B is joining now and is spawning.
 function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 	local float strengthA,strengthB,redTeamStrength,blueTeamStrength;
 	local float oldDifference,newDifference,delta;
-	local float timeInGame;
+	local float timeInGameA,timeInGameB;
 	if (A == None)
 		return;
 	if (A.PlayerReplicationInfo.Team == B.PlayerReplicationInfo.Team)
@@ -898,13 +902,15 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 	if (A.PlayerReplicationInfo.Team == 1)
 		delta = -delta;
 	newDifference = blueTeamStrength - redTeamStrength + delta*2.0;
-	timeInGame = Level.TimeSeconds - A.PlayerReplicationInfo.StartTime;
-	if (Abs(newDifference) < 0.5*Abs(oldDifference) && timeInGame<180) { // definite improvement in balance, and older player has been on server for less than 3 minutes
-		NormalLog("CheckTwoNewPlayers() Auto switching "$B.getHumanName()$" with "$A.getHumanName()$".  Team difference changed from "$ oldDifference $" to "$ newDifference $".");
+	timeInGameA = Level.TimeSeconds - A.PlayerReplicationInfo.StartTime;
+	timeInGameB = Level.TimeSeconds - B.PlayerReplicationInfo.StartTime; // Only needed since we moved CheckNewPlayer() into WAIT_FOR_IDC.
+	if (Abs(newDifference) < 0.5*Abs(oldDifference) && timeInGameA<180 && timeInGameB<7) { // definite improvement in balance, and older player has been on server for less than 3 minutes
+		NormalLog("CheckTwoNewPlayers() Auto switching "$B.getHumanName()$" with "$A.getHumanName()$".  Team difference should change from "$ oldDifference $" to "$ newDifference $".");
 		#define newTeamStr getTeamName(B.PlayerReplicationInfo.Team)
 		ChangePlayerToTeam(A, 1-A.PlayerReplicationInfo.Team, true);  // had it coming
 		ChangePlayerToTeam(B, 1-B.PlayerReplicationInfo.Team, false); // only just got here
-		A.ClientMessage("Teams are fairer with you on "$ newTeamStr $".  You will not be switched again.");
+		// A.ClientMessage("Teams are fairer with you on "$ newTeamStr $".  You will not be switched again.");
+		A.ClientMessage("You have been moved to the "$ Caps(newTeamStr) $" for a fairer game.  You will not be switched again.");
 	}
 }
 #endif
@@ -1153,6 +1159,9 @@ function Mutate(String str, PlayerPawn Sender) {
 				//// Well it should at least mean fewer useless IP records in the DB.  (If for some reason certain players don't get IDCs, IP will be happily used.)
 				//// It does however mean that IP will no longer be used to retain strengths from older records.
 			}
+			#ifdef WAIT_FOR_IDC
+				CheckNewPlayer(Sender);
+			#endif
 		} else {
 			// Trying to prevent a malicious player from typing "mutate IDC 302498" themselves :P
 			NormalLog("Mutate() WARNING! Ignored second IDC from "$Sender.getHumanName()$"["$Int(Sender.PlayerReplicationInfo.PlayerID%64)$"]: "$str$"");
@@ -1886,7 +1895,7 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 
 	if (PlayerPawn(Sender)!=None && Spectator(Sender)==None && Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
 		if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
-			DebugLog("MutatorTeamMessage() Calling RequestMidGameRebalance().");
+			NormalLog("MutatorTeamMessage() "$ Sender.getHumanName() $" requested rebalance with \""$ Msg $"\".");
 			if (FRand()<0.4) LastBadPlayer = PlayerPawn(Sender);
 			RequestMidGameRebalance(PlayerPawn(Sender));
 		}
@@ -2852,9 +2861,10 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 		}
 	}
 
-	if (gameStartDone) {
-		FixTeamsizeBug();
-	}
+	//// I'm going to try NOT doing this, and see if now switching two players always works ok.  ATB was sometimes switching two players, but one of them was not getting switched.
+	// if (gameStartDone) {
+		// FixTeamsizeBug();
+	// }
 
 }
 
