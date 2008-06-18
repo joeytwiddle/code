@@ -203,7 +203,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 	//// Testing:
 	// #define TESTING
-	// #define MAP_RATING_SYSTEM
 	// #define SUPERBALANCE
 	// #define COOL_CAMERA
 	// #define TESTING_PRINT_ANGLES
@@ -375,11 +374,6 @@ var Trie NickTrie;
 	#ifdef ENABLE_IDC
 	var int idc[64];
 	#define IDCfor(X) idc[X.PlayerReplicationInfo.PlayerID%64]
-	#endif
-
-	#ifdef MAP_RATING_SYSTEM
-	var config String MapRatings[256];
-	var int bHasAlreadyRated[64];
 	#endif
 
 	#ifdef LOG_LAG
@@ -1878,16 +1872,6 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 		}
 	}
 
-	#ifdef MAP_RATING_SYSTEM
-	if (StrContains(Locs(Msg),"bad map") || StrContains(Locs(Msg),"shit map") || StrContains(Locs(Msg),"crap map") || Msg~="!badmap") {
-		RateMap(Level,Sender,0);
-	}
-
-	if (StrContains(Locs(Msg),"good map") || StrContains(Locs(Msg),"great map") || StrContains(Locs(Msg),"nice map") || Msg~="!goodmap") {
-		RateMap(Level,Sender,10);
-	}
-	#endif
-
 	// #ifdef TESTING
 	if (StrStartsWith(Locs(Msg),"!MUTATE ")) {
 		PlayerPawn(Sender).Mutate(StrAfter(Msg," "));
@@ -1895,17 +1879,6 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 	// #endif
 
 }
-
-#ifdef MAP_RATING_SYSTEM
-function RateMap(String map, PlayerPawn p, float newrating) {
-	if (bHasAlreadyRated[p.PlayerReplicationInfo.PlayerID]==1) {
-		Sender.ClientMessage("You have already rated this map.");
-	} else {
-		bHasAlreadyRated[p.PlayerReplicationInfo.PlayerID]=1;
-		// TODO
-	}
-}
-#endif
 
 // =========== Balancing Algorithms =========== //
 
