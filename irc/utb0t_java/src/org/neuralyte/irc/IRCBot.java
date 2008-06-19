@@ -262,7 +262,7 @@ public class IRCBot extends LogBot {
             envMap.put("LOGIN",login);
             envMap.put("HOST",hostname);
             envMap.put("MYNICK",getNick());
-            envMap.put("AUTH",getAuth(server,sender,login,hostname));
+            envMap.put("AUTH",getAuth(server,sender /*,login,hostname*/));
             // Iterator<Entry<String, String>> envVars = ;
             Vector<String> outList = new Vector<String>();
             for (Entry<String,String> entry : envMap.entrySet()) {
@@ -510,11 +510,17 @@ public class IRCBot extends LogBot {
     }
 
     private boolean removeOneOldAuthRecord() {
+        // We want to remove out-of-date auths for security.
+        // Although hopefully these will be caught by onNickChange() onQuit() and onPart().
+        // But we also need to remove old cached auths, just to cleanup space.
         long timeNow = new java.util.Date().getTime();
         for (String key : authDateDB.keySet()) {
-            Long recordDate = authDateDB.get(key);
-            long age = timeNow - recordDate;
-            if (age > 1000 * 5 * 60) { // Auth data remains with nick for max 5 minutes.
+            Long recordedDate = authDateDB.get(key);
+            String recordedAuth = authDB.get(key);
+            long age = timeNow - recordedDate;
+            if (age > 1000 * 60 * 5 // Auth data remains associated with nick for max 5 minutes.
+                || ( recordedAuth.equals("") && age > 1000 * 60 * 2) // User having no auth is cached for max 2 minutes.
+            ) {
                 authDB.remove(key);
                 authDateDB.remove(key);
                 return true; // We go to the top of the while loop; this should avoid any problems with removing whilst iterating.
@@ -523,7 +529,7 @@ public class IRCBot extends LogBot {
         return false; // No more need to be removed.
     }
 
-    public String getAuth(String server, String sender, String login, String hostname) {
+    public String getAuth(String server, String sender /*, String login, String hostname*/) {
         clearOldAuthData();
         // String key = server + ":" + login + "@" + hostname;
         String key = server + ":" + sender;
@@ -551,6 +557,24 @@ public class IRCBot extends LogBot {
     }
     
     @Override
+    public void onQuit(String sourceNick, String sourceLogin, String sourceHostname, String reason) {
+        super.onQuit(sourceNick, sourceLogin, sourceHostname, reason);
+        String key = server + ":" + sourceNick;
+        authDB.remove(key);
+        authDateDB.remove(key);
+    }
+
+    @Override
+    public void onPart(String channel, String sender, String login, String hostname) {
+        super.onPart(channel, sender, login, hostname);
+        // If this is the last channel we know them on, then we will probably lose track of them now,
+        // so we should remove their cached auth data.
+        String key = server + ":" + sender;
+        authDB.remove(key);
+        authDateDB.remove(key);
+    }
+
+    @Override
     protected void onServerResponse(int code, String response) {
         super.onServerResponse(code, response);
         if (code == 330 && response.endsWith(" :is authed as")) {
@@ -561,6 +585,17 @@ public class IRCBot extends LogBot {
             authDB.put(key,auth);
             authDateDB.put(key,new java.util.Date().getTime());
             mylog("Received auth for "+nick+": "+auth);
+        } else if (code == 318 && response.endsWith(" :End of /WHOIS list.")) {
+            // We have reached end of whois list.
+            String[] split = response.split(" ");
+            String nick = split[1];
+            String key = server + ":" + nick;
+            if (authDB.get(key) == null) {
+                // And we still don't have their auth, so they must be not authed.
+                // We give them AUTH="", so that getAuth() will stop waiting for their auth.
+                authDB.put(key, "");
+                authDateDB.put(key,new java.util.Date().getTime());
+            }
         }
     }
 
