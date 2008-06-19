@@ -1,0 +1,56 @@
+. irc.shlib
+. irccols.shlib
+. voting/voting.shlib
+
+expireoldvotes
+
+(
+
+	if [ "$1" ]
+	then
+
+		VOTENUM="`echo "$1" | sed 's+^#++'`"
+
+		if [ ! -f "$VOTINGDIR"/"$VOTENUM".votes ]
+		then
+			echo "There is no poll #$VOTENUM"
+			exit 2
+		fi
+
+		# echo "Comments for #$VOTENUM `cat "$VOTINGDIR"/"$VOTENUM".words`:"
+		echo "Comments for poll #$VOTENUM:"
+		# cat "$VOTINGDIR"/"$VOTENUM".votes | dropcols 1 2 3 4 5 6 | grep -v "^[ ]*$" | randomorder | head -n 10
+		NONWS="[^ 	][^ 	]*"
+		cat "$VOTINGDIR"/"$VOTENUM".votes | grep "$NONWS $NONWS $NONWS $NONWS $NONWS $NONWS $NONWS.*" | randomorder | head -n 10 |
+		dropcols 1 3 4 5
+
+		exit
+	fi
+
+	# TOTAL_AUTHS=` cat "$VOTINGDIR"/*.votes | takecols 1 | removeduplicatelines | countlines `
+	# echo "I hold voting records for $TOTAL_AUTHS unique voters."
+
+	RUNNING_VOTES=` find "$VOTINGDIR/" -name "*.running" | afterlast / | beforelast "\." | sort -n | tail -n 5 `
+	COMPLETED_VOTES=` find "$VOTINGDIR/" -name "*.completed" | afterlast / | beforelast "\." | sort -n | tail -n 5 `
+	COUNT_RUNNING_VOTES=` echo -n "$RUNNING_VOTES" | countlines `
+
+	if [ "$COMPLETED_VOTES" ]
+	then
+		echo "Recently completed polls:"
+		for VOTENUM in $COMPLETED_VOTES
+		do showvote "$VOTENUM"
+		done
+	fi
+
+	if [ "$RUNNING_VOTES" ]
+	then
+		echo "$COUNT_RUNNING_VOTES running polls:"
+		for VOTENUM in $RUNNING_VOTES
+		do showvote "$VOTENUM"
+		done
+		# echo "Cast your vote with: !vote #<pollnum> <your_choice>"
+		echo "Type !votes #<pollnum> to list public votes and comments."
+	fi
+
+) | notice
+

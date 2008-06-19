@@ -1,0 +1,73 @@
+. irc.shlib
+. irccols.shlib
+. voting/voting.shlib
+
+MSG="$*"
+
+## Yes/no votes should never contain the word "\<or\>" and should always end in "?".
+
+if matchesre "$1" "^#"
+then VOTENUM="`echo "$1" | sed 's+^#++'`" ; shift
+else VOTENUM=`getchannelvote`
+fi
+
+YOURVOTE="$1" ; shift ; YOURCOMMENTS="$*"
+
+if [[ ! "$VOTENUM" ]] || [[ ! "$YOURVOTE" ]]
+then
+	echo "/msg $NICK Vote anonymously with: !vote #<pollnum> <your_vote>"
+	echo "/msg $NICK      or publicly with: !vote #<pollnum> <your_vote> <comments>"
+	[[ "$VOTENUM" ]] && echo "/msg $NICK You are currently voting on vote number #$VOTENUM"
+	[[ "$VOTENUM" ]] && setchannelvote "$NICK" "$VOTENUM"
+	exit
+fi
+
+if [[ ! -f "$VOTINGDIR/$VOTENUM.running" ]]
+then
+	if [[ -f "$VOTINGDIR/$VOTENUM.completed" ]]
+	then
+		echo "/msg $NICK Poll number $VOTENUM completed with the results: `getresult "$VOTENUM"`"
+		exit 5
+	else
+		echo "/msg $NICK There is no poll #$VOTENUM running!"
+		exit 4
+	fi
+fi
+
+if [[ ! "$AUTH" ]]
+then
+	echo "/msg $NICK You must be authed to vote, and you must also: /mode $NICK +x"
+	## TODO: For debugging purposes:
+	. ./.secret/saveenv
+	exit
+fi
+
+VOTECHOICES=`cat "$VOTINGDIR"/"$VOTENUM".choices`
+VOTECHOICESRE="\\(`toregexp "$VOTECHOICES" | sed 's+/+\\\|+g'`\\)"
+if ! echo "$YOURVOTE" | grep "$VOTECHOICESRE" >/dev/null
+then
+	echo "/msg $NICK Your vote \"$YOURVOTE\" did not match any of the choices: $VOTECHOICES"
+	exit 5
+fi
+
+VOTEWORDS=`cat "$VOTINGDIR"/"$VOTENUM".words`
+
+VOTEFILE="$VOTINGDIR"/"$VOTENUM".votes
+
+AUTHRE=`toregexp "$AUTH"`
+YOURLASTVOTE=` [ -f "$VOTEFILE" ] && cat "$VOTEFILE" | grep "^$AUTHRE " | tail -n 1 | takecols 2 `
+
+if [[ "$YOURLASTVOTE" = "$YOURVOTE" ]]
+then echo "/msg $NICK You have already voted \"$YOURVOTE\" on \"$VOTEWORDS\"!"
+else
+
+	cat "$VOTEFILE" | grep -v "^$AUTHRE " | dog "$VOTEFILE"
+	echo "$AUTH $YOURVOTE `geekdate -fine` [$CHANNEL] ($LOGIN@$HOST) <$NICK> $YOURCOMMENTS" >> "$VOTEFILE"
+
+	## TODO: check vote really has entered, otherwise report error with system
+
+	[ "$YOURLASTVOTE" ] && echo "/msg $NICK Your previous vote \"$YOURLASTVOTE\" has been removed."
+	echo "/msg $NICK Thank you $NICK, your vote \"$YOURVOTE\" has been registered for \"$VOTEWORDS\"."
+
+fi
+

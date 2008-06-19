@@ -1,0 +1,46 @@
+VOTINGDIR="$HOME/.voting"
+mkdir -p "$VOTINGDIR"
+
+matchesre () {
+	echo "$1" | grep "$2" >/dev/null
+}
+
+getchannelvote () {
+	if [ -f "$VOTINGDIR"/"$CHANNEL".currentvote ]
+	then cat "$VOTINGDIR"/"$CHANNEL".currentvote
+	fi
+}
+
+setchannelvote () {
+	echo "$2" >> "$VOTINGDIR"/"$1".currentvote
+}
+
+expireoldvotes () {
+	touch /tmp/now
+	find "$VOTINGDIR/" -name "*.running" | afterlast / | beforelast "\." |
+	while read VOTENUM
+	do
+		if newer /tmp/now "$VOTINGDIR"/"$VOTENUM".running
+		then mv "$VOTINGDIR"/"$VOTENUM".running "$VOTINGDIR"/"$VOTENUM".completed
+		fi
+	done
+}
+
+function getresult () {
+	VOTENUM="$1"
+	CHOICES=` cat "$VOTINGDIR"/"$VOTENUM".choices | tr '/' ' ' `
+	for CHOICE in $CHOICES
+	do
+		CHOICERE=`toregexp "$CHOICE"`
+		COUNT=`cat "$VOTINGDIR"/"$VOTENUM".votes | takecols 2 | grep "^$CHOICERE$" | wc -l`
+		echo "$CHOICE $COUNT"
+	done | sort -n -k 2 -r | tr ' ' ':' | tr '\n' ' ' | sed 's+ $++'
+}
+
+function showvote () {
+	VOTENUM="$1"
+	VOTEWORDS="`cat "$VOTINGDIR"/"$VOTENUM".words | beforelast "\["`"
+	RESULT=`getresult "$VOTENUM"`
+	echo "$COLRESET#$VOTENUM - $COLYELLOW$VOTEWORDS""$COLRESET""- Results: $COLAQUA$RESULT"
+}
+

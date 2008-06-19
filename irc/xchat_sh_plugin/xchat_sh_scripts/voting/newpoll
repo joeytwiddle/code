@@ -1,0 +1,61 @@
+. irc.shlib
+. irccols.shlib
+. voting/voting.shlib
+
+VOTEDURATION="$1 $2" ; shift ; shift
+if [[ "$1" =~ "/" ]]
+then VOTECHOICES="$1" ; shift
+	# if [[ ! "$VOTECHOICES" =~ "/" ]] || [[ "$VOTECHOICES" =~ " " ]]
+	if ! matchesre "$VOTECHOICES" "[0-9a-zA-Z/]*" && ! matchesre "$VOTECHOICES" "//"
+	then
+		echo "Vote choices should be of the form: option1/option2/option3" | notice
+		exit 2
+	fi
+else VOTECHOICES="yes/no"
+fi
+VOTEWORDS="$*"
+
+# if [[ ! "$VOTEWORDS" =~ "\?.$" ]] || [[ "$VOTEWORDS" =~ " \<or\> " ]]
+if ! echo "$VOTEWORDS" | grep "\?$" >/dev/null || [[ "$VOTEWORDS" =~ " \<or\> " ]]
+then
+	echo "!newvote [ option1/option2/... ] <duration> <question>"
+	# echo "To create a new vote, ask a question with a yes/no answer, which ends in a \? and does not contain the word \"or\"."
+	echo "For example: !newvote 1 week Does this voting system rock?" | notice
+	exit 0
+fi
+
+# if [[ ! "$VOTEDURATION" =~ "[0-9][0-9]* \(hour\|day\|week\|month\)\(s\|\)" ]]
+if ! echo "$VOTEDURATION" | grep "^[0-9][0-9]* \(hour\|day\|week\|month\)\(s\|\)$" >/dev/null
+then
+	echo "The vote duration \"$VOTEDURATION\" should look like: 1 minute, 2 hours, 3 days, 4 weeks or 5 months" | notice
+	exit 1
+fi
+
+RUNNINGVOTES=`find "$VOTINGDIR" -name "*.running" | wc -l`
+if [[ "$RUNNINGVOTES" -gt 9 ]]
+then
+	echo "I'm afraid there are too many open polls at the moment.  Please wait until one completes."
+	exit 2
+fi
+
+## OK we are going to create a new vote:
+# VOTEWORDS="$VOTEWORDS [$VOTECHOICES] ($NICK)"
+VOTEWORDS="$VOTEWORDS [$VOTECHOICES]" ## who cares who started it?  impartiality ^^
+
+VOTENUM=1
+while [[ -f "$VOTINGDIR"/"$VOTENUM".running ]] || [[ -f "$VOTINGDIR"/"$VOTENUM".completed ]]
+do VOTENUM="$((VOTENUM+1))"
+done
+
+echo "$VOTEDURATION from `date`" > "$VOTINGDIR"/"$VOTENUM".running
+touch -d "$VOTEDURATION" "$VOTINGDIR"/"$VOTENUM".running
+echo "$VOTEWORDS" > "$VOTINGDIR"/"$VOTENUM".words
+echo "$VOTECHOICES" > "$VOTINGDIR"/"$VOTENUM".choices
+
+echo "New vote #$VOTENUM: $VOTEWORDS"
+echo "Cast your vote with: !vote #$VOTENUM <your_choice>"
+
+if [[ "$CHANNEL" =~ "^#" ]]
+then setchannelvote "$CHANNEL" "$VOTENUM"
+fi
+
