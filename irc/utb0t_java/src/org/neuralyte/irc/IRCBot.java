@@ -5,8 +5,10 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Array;
+import java.sql.Date;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.StringTokenizer;
@@ -15,6 +17,7 @@ import java.util.Map.Entry;
 
 import org.jibble.pircbot.Colors;
 import org.omg.CORBA.ShortSeqHelper;
+import org.omg.PortableServer.Servant;
 
 /**
  * Commands accepted by IRCBot (but only by private message):
@@ -213,7 +216,7 @@ public class IRCBot extends LogBot {
     }
 
     /** @param channel may be a channel or a nick **/
-    private void checkMessage(final String channel, String sender, String message, String login, String hostname) {
+    private void checkMessage(final String channel, final String sender, final String message, final String login, final String hostname) {
         
         char firstChar = ' ';
         if (message.length()>0)
@@ -223,118 +226,128 @@ public class IRCBot extends LogBot {
 
             mylog("Caught: ["+channel+"] <"+sender+"> "+message);
 
-            try {
-
-                final String command = "/bin/bash /home/joey/j/jsh "+pluginDir+"/xchat_sh_handler.sh "+message.substring(1);
-                // @todo Instead of server, we could try getServer().
-                final File topDirFile = new File(pluginDir);
-                
-                // mylog("-sh- Calling: "+command);
-
-                //// Pass environment variables in one big String:
-                // command = "env NETWORK="+server+" env SERVER="+server+" env NICK="+ sender + " env CHANNEL="+channel+" " + command;
-                // final Process process = Runtime.getRuntime().exec(command, null, topDirFile);
-                
-                //// Add environment variables to map, then collect as String[].
-                // //We cannot modify System.getEnv(), so we create a new map.
-                Map<String, String> envMap = new HashMap<String, String>( System.getenv() ); 
-                envMap.put("NETWORK",server);
-                envMap.put("SERVER",server);
-                envMap.put("NICK",sender);
-                envMap.put("CHANNEL",channel);
-                envMap.put("LOGIN",login);
-                envMap.put("HOST",hostname);
-                envMap.put("MYNICK",getNick());
-                // Iterator<Entry<String, String>> envVars = ;
-                Vector outList = new Vector();
-                for (Entry entry : envMap.entrySet()) {
-                    outList.add(entry.getKey() + "=" + entry.getValue());
+            // We do this in a new thread because if we wait for an auth, then we must unblock, or we won't get it!
+            new Thread() {
+                public void run() {
+                    runShellCommand(channel, sender, message, login, hostname);
                 }
-                String[] env = (String[])outList.toArray(new String[0]);
-                
-                mylog("Calling: " + command);
-
-                final Process process = Runtime.getRuntime().exec(command, env, topDirFile);
-
-                /** @todo WARNING possible BUG:
-                 * I seem to remember having to fix this for FuseJshFS.
-                 * If the process sends alot to stderr, the stderr buffer can fill, and the process will block.
-                 * In this case, nothing will ever come through stdout, and we won't reach the end of stdout either, we'll be stuck here (and won't even see the errors from stderr).
-                 * The solution is to read each of the response streams in a separate thread.
-                 */
-
-                final LogBot me = this;
-                
-                final Thread stdoutThread = new Thread() {
-                    @Override
-                    public void run() {
-
-                        try {
-
-                        BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
-                        String line;
-                        while (true) {
-                            line = in.readLine();
-                            if (line == null)
-                                break;
-                            floodProtect();
-                            if (line.startsWith("/")) {
-                                sendSlashAction(channel, line);
-                            } else {
-                                mylog(">>>> "+channel+" :: "+line);
-                                // We want to call our LogBot.onMessage(), not our IRCBot.onMessage(), and we are inside an anonymous class!
-                                IRCBot.super.onMessage(channel, getNick(), getLogin(), "hostname123", line);
-                                sendMessage(channel, line);
-                            }
-                        }
-                        
-                        mylog("Completed: "+command);
-                        
-                        } catch (Exception e) {
-                            e.printStackTrace(System.err);
-                        }
-
-                    }
-                };
-                
-                final Thread stderrThread = new Thread() {
-                    @Override
-                    public void run() {
-
-                        try {
-
-                            BufferedReader inErr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                            String line;
-                            int n = 0;
-                            while (true) {
-                                line = inErr.readLine();
-                                if (line == null)
-                                    break;
-                                mylog(""+(n>0?"!!!!":"....")+" "+line); // @todo Consider sending this to stderr
-                                n++;
-                            }
-
-                        } catch (Exception e) {
-                            e.printStackTrace(System.err);
-                        }
-
-                    }
-                };
-                
-                stdoutThread.start();
-                stderrThread.start();
-                
-                // stdoutThread.wait();
-                // stderrThread.wait();
-                //// We could try process.wait();
-
-            } catch (final Exception e) {
-                e.printStackTrace(System.err);
-            }
+            }.start();
             
         } else {
             // Ignore this line
             // mylog("Ignoring: ["+source+"] <"+sender+"> "+message);
+        }
+    }
+
+    private void runShellCommand(final String channel, String sender, String message, String login, String hostname) {
+        try {
+
+            final String command = "/bin/bash /home/joey/j/jsh "+pluginDir+"/xchat_sh_handler.sh "+message.substring(1);
+            // @todo Instead of server, we could try getServer().
+            final File topDirFile = new File(pluginDir);
+            
+            // mylog("-sh- Calling: "+command);
+
+            //// Pass environment variables in one big String:
+            // command = "env NETWORK="+server+" env SERVER="+server+" env NICK="+ sender + " env CHANNEL="+channel+" " + command;
+            // final Process process = Runtime.getRuntime().exec(command, null, topDirFile);
+            
+            //// Add environment variables to map, then collect as String[].
+            // //We cannot modify System.getEnv(), so we create a new map.
+            Map<String, String> envMap = new HashMap<String, String>( System.getenv() ); 
+            envMap.put("NETWORK",server);
+            envMap.put("SERVER",server);
+            envMap.put("NICK",sender);
+            envMap.put("CHANNEL",channel);
+            envMap.put("LOGIN",login);
+            envMap.put("HOST",hostname);
+            envMap.put("MYNICK",getNick());
+            envMap.put("AUTH",getAuth(server,sender,login,hostname));
+            // Iterator<Entry<String, String>> envVars = ;
+            Vector<String> outList = new Vector<String>();
+            for (Entry<String,String> entry : envMap.entrySet()) {
+                outList.add(entry.getKey() + "=" + entry.getValue());
+            }
+            String[] env = (String[])outList.toArray(new String[0]);
+            
+            mylog("Calling: " + command);
+
+            final Process process = Runtime.getRuntime().exec(command, env, topDirFile);
+
+            /** @todo WARNING possible BUG:
+             * I seem to remember having to fix this for FuseJshFS.
+             * If the process sends alot to stderr, the stderr buffer can fill, and the process will block.
+             * In this case, nothing will ever come through stdout, and we won't reach the end of stdout either, we'll be stuck here (and won't even see the errors from stderr).
+             * The solution is to read each of the response streams in a separate thread.
+             */
+
+            final LogBot me = this;
+            
+            final Thread stdoutThread = new Thread() {
+                @Override
+                public void run() {
+
+                    try {
+
+                    BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
+                    String line;
+                    while (true) {
+                        line = in.readLine();
+                        if (line == null)
+                            break;
+                        floodProtect();
+                        if (line.startsWith("/")) {
+                            sendSlashAction(channel, line);
+                        } else {
+                            mylog(">>>> "+channel+" :: "+line);
+                            // We want to call our LogBot.onMessage(), not our IRCBot.onMessage(), and we are inside an anonymous class!
+                            IRCBot.super.onMessage(channel, getNick(), getLogin(), "hostname123", line);
+                            sendMessage(channel, line);
+                        }
+                    }
+                    
+                    mylog("Completed: "+command);
+                    
+                    } catch (Exception e) {
+                        e.printStackTrace(System.err);
+                    }
+
+                }
+            };
+            
+            final Thread stderrThread = new Thread() {
+                @Override
+                public void run() {
+
+                    try {
+
+                        BufferedReader inErr = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                        String line;
+                        int n = 0;
+                        while (true) {
+                            line = inErr.readLine();
+                            if (line == null)
+                                break;
+                            mylog(""+(n>0?"!!!!":"....")+" "+line); // @todo Consider sending this to stderr
+                            n++;
+                        }
+
+                    } catch (Exception e) {
+                        e.printStackTrace(System.err);
+                    }
+
+                }
+            };
+            
+            stdoutThread.start();
+            stderrThread.start();
+            
+            // stdoutThread.wait();
+            // stderrThread.wait();
+            //// We could try process.wait();
+
+        } catch (final Exception e) {
+            e.printStackTrace(System.err);
         }
     }
 
@@ -367,7 +380,6 @@ public class IRCBot extends LogBot {
         doConnect();
     }
     
-
     private void sendSlashAction(String source, String line) {
         mylog(":::: "+line);
         final String com = line.replaceAll(" .*","").toLowerCase();
@@ -419,6 +431,8 @@ public class IRCBot extends LogBot {
         }
     }
 
+    
+    
     // statics make it work across all bots at once (maybe not desirable),
     // but also (more importantly) across different threads of one bot.
     // TODO: however, it doesn't check the *first* response it sends, so if the bot is
@@ -432,11 +446,13 @@ public class IRCBot extends LogBot {
             floodCount=0;
         if (floodCount>3) {
             // mylog("[flood protection!] sleeping 5 seconds");
-            justSleep(5.0);
+            justSleep(4.5); // 5.0 was fine, testing 4.5 now
         }
         floodCount++;
         lastFloodTime = time;
     }
+
+    
     
     public void mylog(String txt) {
         txt = Colors.removeFormattingAndColors(txt);
@@ -477,8 +493,75 @@ public class IRCBot extends LogBot {
         mylog(line);
     }
     
+    
+    
     public static void justSleep(double seconds) {
         try { Thread.sleep( (int)(1000*seconds) ); } catch (final Exception e) { }
+    }
+
+    
+    
+    static final Map<String,String> authDB = new Hashtable();
+    static final Map<String,Long> authDateDB = new Hashtable();
+    
+    public void clearOldAuthData() {
+        while ( removeOneOldAuthRecord() ) {
+        }
+    }
+
+    private boolean removeOneOldAuthRecord() {
+        long timeNow = new java.util.Date().getTime();
+        for (String key : authDateDB.keySet()) {
+            Long recordDate = authDateDB.get(key);
+            long age = timeNow - recordDate;
+            if (age > 1000 * 5 * 60) { // Auth data remains with nick for max 5 minutes.
+                authDB.remove(key);
+                authDateDB.remove(key);
+                return true; // We go to the top of the while loop; this should avoid any problems with removing whilst iterating.
+            }
+        }
+        return false; // No more need to be removed.
+    }
+
+    public String getAuth(String server, String sender, String login, String hostname) {
+        clearOldAuthData();
+        // String key = server + ":" + login + "@" + hostname;
+        String key = server + ":" + sender;
+        String result = authDB.get(key);
+        if (result == null) {
+            sendSlashAction("", "/whois "+sender);
+            mylog("Waiting for auth for "+sender);
+            for (int i=0;i<10 && result==null;i++) {
+                justSleep(1.0);
+                result = authDB.get(key);
+            }
+            mylog("Got auth for "+sender+": "+result);
+        }
+        if (result == null)
+            result = "";
+        return result;
+    }
+
+    @Override
+    public void onNickChange(String oldNick, String login, String hostname, String newNick) {
+        super.onNickChange(oldNick, login, hostname, newNick);
+        String key = server + ":" + oldNick;
+        authDB.remove(key);
+        authDateDB.remove(key);
+    }
+    
+    @Override
+    protected void onServerResponse(int code, String response) {
+        super.onServerResponse(code, response);
+        if (code == 330 && response.endsWith(" :is authed as")) {
+            String[] split = response.split(" ");
+            String nick = split[1];
+            String auth = split[2];
+            String key = server + ":" + nick;
+            authDB.put(key,auth);
+            authDateDB.put(key,new java.util.Date().getTime());
+            mylog("Received auth for "+nick+": "+auth);
+        }
     }
 
 }
