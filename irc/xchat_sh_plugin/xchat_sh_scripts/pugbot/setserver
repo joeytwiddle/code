@@ -1,0 +1,78 @@
+if [ ! "$*" ]
+then
+	echo "!setserver <map>" >&2
+	exit 0
+fi
+
+. restrict_repetitive_calls "1 minute"
+
+if which qstat >/dev/null 2>&1
+then :
+else . includepath "$HOME"/myroots/qstat
+fi
+
+function do_qstat () {
+  which qstat >/dev/null || return 4
+  (
+	  qstat -default uns -timeout 5 -retry 6     "$SERVER_ADDRESS" | grep -v "\<DOWN\>$" | grep     "^$SERVER_ADDRESS" ||
+	  qstat -default uns -timeout 5 -retry 6 "$ALT_SERVER_ADDRESS" | grep -v "\<DOWN\>$" | grep "^$ALT_SERVER_ADDRESS"
+  ) | head -n 1
+}
+
+function do_switch () {
+  MAPS="$*"
+  RESPONSE=` do_qstat "$SERVER_ADDRESS" `
+  PLAYERCOUNT=`echo "$RESPONSE" | takecols 2`
+  ## If server is empty:
+  if [ "$FORCE" ] || echo "$PLAYERCOUNT" | grep "^0/[0-9]*$" >/dev/null
+  then
+	echo "[setserver] Server is empty ($PLAYERCOUNT) - requesting map switch: $MAPS" >&2
+  	verbosely ssh "$SERVER_CONNECT" j/jsh sh ut/switch_map.sh $MAPS > setserver_switch_map.out 2>&1 &
+
+	echo "[setserver] Done ssh, waiting for outcome..." >&2
+	sleep 5
+	for X in `seq 1 5`
+	do
+		if cat setserver_switch_map.out | grep "Bringing Level .* up for play" >/dev/null &&
+		   do_qstat "$SERVER_ADDRESS" | grep -v "\<DOWN\>" | grep . >/dev/null
+		then ./utp kx | prepend_each_line "Server is set: " ; exit 0
+		fi
+		sleep 5
+	done
+  	# echo "[setserver] Tried to switch to \"$MAPS\" but server didn't come back up!" >&2
+  	echo "[setserver] Failed to get verification from both log and query." >&2
+	./utp kx | prepend_each_line "[setserver] Server status is: " >&2
+  else
+  	echo "[setserver] Server is not empty: $RESPONSE" >&2
+  fi
+}
+
+# . pugbot/pugbot.shlib
+# cat "$CURRENT_MAP_FILE"
+
+SERVER_ADDRESS="85.131.247.65:6666"
+ALT_SERVER_ADDRESS="85.131.247.65:6669"
+SERVER_CONNECT="k1210@85.131.247.65"
+
+if [ "$1" = -f ]
+then FORCE=true ; shift   ## Forces map switch even if server is "not-empty".
+fi
+
+do_switch "$@" && exit 0
+
+# for MAP
+# do
+	# # MAP="`echo "$MAP" | sed 's+\.unr$++'`" ## Didn't enable because I feared losing '\'s in \]\[ which very rarely appear in filenames anyway ;p
+	# cat $HOME/.pugbot/*.map_pool | grep "^+" | sed 's|^+||' |
+	# while read MAPNAME
+	# do
+		# if [ "$MAPNAME" = "$MAP" ]
+		# then
+			# echo "[setserver] $MAP is marked playable (+) in pug pool"
+			# do_switch -pug "$MAP"
+			# exit
+		# fi
+	# done
+# done
+# echo "[setserver] None of $* are known to the server" >&2
+

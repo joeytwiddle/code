@@ -1,5 +1,9 @@
 # set -x
 
+. includepath "$HOME/myroots/cowsay"
+COWBINDIR="$HOME/myroots/cowsay/usr/games"
+export COWPATH="/usr/share/cowsay/cows:$HOME/myroots/cowsay/usr/share/cowsay/cows"
+
 . restrict_repetitive_calls "1 minute"
 
 if echo "$NICK" | tolowercase | grep n3cro >/dev/null
@@ -42,15 +46,16 @@ echo "
 `
 
 MODE=`
-cowsay -l | drop 1 |
+$COWBINDIR/cowsay -l | drop 1 |
 tr ' ' '\n' |
 grep -v "^$" |
 chooserandomline
 `
 
+## WARNING: It's important that this script "cowsay" does not appear on the path before the binary cowsay, or this script will call itself repeatedly.
 COMMAND=`
-echo "/usr/games/cowsay
-/usr/games/cowthink" |
+echo "$COWBINDIR/cowsay
+$COWBINDIR/cowthink" |
 chooserandomline
 `
 

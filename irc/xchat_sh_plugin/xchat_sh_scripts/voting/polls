@@ -30,26 +30,28 @@ expireoldvotes
 	# TOTAL_AUTHS=` cat "$VOTINGDIR"/*.votes | takecols 1 | removeduplicatelines | countlines `
 	# echo "I hold voting records for $TOTAL_AUTHS unique voters."
 
-	RUNNING_VOTES=` find "$VOTINGDIR/" -name "*.running" | afterlast / | beforelast "\." | sort -n | tail -n 5 `
-	COMPLETED_VOTES=` find "$VOTINGDIR/" -name "*.completed" | afterlast / | beforelast "\." | sort -n | tail -n 5 `
-	COUNT_RUNNING_VOTES=` echo -n "$RUNNING_VOTES" | countlines `
+	RUNNING_POLLS=` find "$VOTINGDIR/" -name "*.running" | afterlast / | beforelast "\." | sort -n | tail -n 5 `
+	COMPLETED_POLLS=` find "$VOTINGDIR/" -name "*.completed" | sortfilesbydate | afterlast / | beforelast "\." | tail -n 5 `
+	COUNT_RUNNING_POLLS=` echo -n "$RUNNING_POLLS" | countlines `
 
-	if [ "$COMPLETED_VOTES" ]
+	if [ "$COMPLETED_POLLS" ]
 	then
 		echo "Recently completed polls:"
-		for VOTENUM in $COMPLETED_VOTES
+		for VOTENUM in $COMPLETED_POLLS
 		do showvote "$VOTENUM"
 		done
 	fi
 
-	if [ "$RUNNING_VOTES" ]
+	if [ "$RUNNING_POLLS" ]
 	then
-		echo "$COUNT_RUNNING_VOTES running polls:"
-		for VOTENUM in $RUNNING_VOTES
+		# echo "$COUNT_RUNNING_POLLS running polls:"
+		# echo "Active polls:"
+		echo "There are $COUNT_RUNNING_POLLS active polls:"
+		for VOTENUM in $RUNNING_POLLS
 		do showvote "$VOTENUM"
 		done
-		# echo "Cast your vote with: !vote #<pollnum> <your_choice>"
-		echo "Type !votes #<pollnum> to list public votes and comments."
+		echo "List public votes and comments with: !votes #<pollnum>"
+		echo "Cast your vote with: !vote #<pollnum> <your_choice>"
 	fi
 
 ) | notice

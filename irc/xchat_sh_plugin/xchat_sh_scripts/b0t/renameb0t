@@ -1,0 +1,6 @@
+NEW_NICK="$1"
+
+if [ "$NEW_NICK" ]
+then echo "/nick $NEW_NICK"
+else echo "You need to give me a new nick to use.  :P"
+fi

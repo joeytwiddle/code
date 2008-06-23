@@ -1,6 +1,8 @@
 ## OMG noob: You should have used -raw to use a custom field-delimeter, to make parsing the output easier.
 ##           or even -xml or "template mode" (see http://www.qstat.org/faq.html )
 
+[ -d "$HOME/myroots/qstat" ] && . includepath "$HOME/myroots/qstat"
+
 [ "$COMMAND_SCRIPTS_DIR" ] || COMMAND_SCRIPTS_DIR=.
 
 . irccols.shlib

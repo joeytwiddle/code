@@ -1,5 +1,5 @@
 PUGBOTDIR="$HOME/.pugbot" ; mkdir -p "$PUGBOTDIR"
-PUG_CHANNELS_FILE="$PUGBOTDIR"/pug_channels.list
+PUG_CHANNELS_FILE="$PUGBOTDIR"/pug_channels@"$NETWORK".list
 
 CHANNELREGEXP=`toregexp "$CHANNEL"`
 

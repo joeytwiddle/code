@@ -18,14 +18,14 @@ VOTEWORDS="$*"
 # if [[ ! "$VOTEWORDS" =~ "\?.$" ]] || [[ "$VOTEWORDS" =~ " \<or\> " ]]
 if ! echo "$VOTEWORDS" | grep "\?$" >/dev/null || [[ "$VOTEWORDS" =~ " \<or\> " ]]
 then
-	echo "!newvote [ option1/option2/... ] <duration> <question>"
+	echo "!newvote <duration> [ option1/option2/... ] <question>"
 	# echo "To create a new vote, ask a question with a yes/no answer, which ends in a \? and does not contain the word \"or\"."
 	echo "For example: !newvote 1 week Does this voting system rock?" | notice
 	exit 0
 fi
 
-# if [[ ! "$VOTEDURATION" =~ "[0-9][0-9]* \(hour\|day\|week\|month\)\(s\|\)" ]]
-if ! echo "$VOTEDURATION" | grep "^[0-9][0-9]* \(hour\|day\|week\|month\)\(s\|\)$" >/dev/null
+# if [[ ! "$VOTEDURATION" =~ "[0-9][0-9]* \(minute\|hour\|day\|week\|month\)\(s\|\)" ]]
+if ! echo "$VOTEDURATION" | grep "^[0-9][0-9]* \(minute\|hour\|day\|week\|month\)\(s\|\)$" >/dev/null
 then
 	echo "The vote duration \"$VOTEDURATION\" should look like: 1 minute, 2 hours, 3 days, 4 weeks or 5 months" | notice
 	exit 1

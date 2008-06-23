@@ -1,5 +1,7 @@
 # set -x
 
+. includepath $HOME/myroots/figlet
+
 . irc.shlib
 . irccols.shlib
 

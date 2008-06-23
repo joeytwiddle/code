@@ -1,0 +1,4 @@
+if [ "$1" = wibble ]
+then shift; echo "$*"
+else echo "!do <password> <action>   -- requires password"
+fi

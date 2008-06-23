@@ -51,7 +51,8 @@ if [ "$CHANNEL" = "#proshee" ] # || [[ "$CHANNEL" = "#ut" && "$NICK" = Maxiu ]]
 then doop "$*" "/op $TARGET"
 else
 
-	echo "/me gives channel operator status to $COLAQUA$TARGET$COLRESET"
+	# echo "/me gives channel operator status to $COLAQUA$TARGET$COLRESET"
+	echo "/me sets mode +o $TARGET"
 	CALLER_PUGBIT=`echo "$NICK" | grep "^[a-zA-Z][a-zA-Z]*\-"`
 	CALLED_PUGBIT=`echo "$TARGET" | grep "^[a-zA-Z][a-zA-Z]*\-"`
 	if [ "$CHANNEL" = "#noobpug" ] && [ "$TARGET" ] && [ ! "$NICK" = "$TARGET" ] && ( [ "$CALLER_PUGBIT" ] || [ "$CALLED_PUGBIT" ] )
