@@ -12,7 +12,7 @@ getchannelvote () {
 }
 
 setchannelvote () {
-	echo "$2" >> "$VOTINGDIR"/"$1".currentvote
+	echo "$2" > "$VOTINGDIR"/"$1".currentvote
 }
 
 expireoldvotes () {
@@ -38,9 +38,14 @@ function getresult () {
 }
 
 function showvote () {
+	touch /tmp/now
 	VOTENUM="$1"
 	VOTEWORDS="`cat "$VOTINGDIR"/"$VOTENUM".words | beforelast "\["`"
+	if [ -f "$VOTINGDIR"/"$VOTENUM".running ]
+	then REMAINING="(`datediff -files /tmp/now "$VOTINGDIR"/"$VOTENUM".running | beforefirst ","`) "
+	else REMAINING="[ran for `cat "$VOTINGDIR"/"$VOTENUM".completed | takecols 1 2`] "
+	fi
 	RESULT=`getresult "$VOTENUM"`
-	echo "$COLRESET#$VOTENUM - $COLYELLOW$VOTEWORDS""$COLRESET""- Results: $COLAQUA$RESULT"
+	echo "$COLRESET#$VOTENUM - $COLYELLOW$VOTEWORDS""$COLRESET""$REMAINING""- Results: $COLAQUA$RESULT"
 }
 
