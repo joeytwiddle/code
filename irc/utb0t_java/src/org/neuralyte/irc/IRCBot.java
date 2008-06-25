@@ -39,6 +39,7 @@ public class IRCBot extends LogBot {
     public static File logDir = new File(userHome+"/.xchat2.utb0t/logs");
 
     public static boolean logAll = false;
+    public static float floodDelay = 4.5f;
     
     public static java.util.List<IRCBot> allBots = new Vector();
 
@@ -209,6 +210,10 @@ public class IRCBot extends LogBot {
                 floodProtect();
                 sendNotice(sender, botReport);
             }
+        }
+        
+        if (message.startsWith("!flooddelay ")) {
+            floodDelay = new Float(message.substring(message.indexOf(" ")+1));
         }
         
         super.onPrivateMessage(sender, login, hostname, message);
@@ -446,7 +451,7 @@ public class IRCBot extends LogBot {
             floodCount=0;
         if (floodCount>3) {
             // mylog("[flood protection!] sleeping 5 seconds");
-            justSleep(4.5); // 5.0 was fine, testing 4.5 now
+            justSleep(floodDelay); // 5.0 was fine, testing 4.5 now
         }
         floodCount++;
         lastFloodTime = time;
