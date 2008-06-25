@@ -1,3 +1,5 @@
 if [ "$NETWORK" = "quakenet.org" ] && ( [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#siegepug" ] )
 then echo "!promote"
 fi
+## And since in the Java environment the bot can't read messages from himself:
+./pugbot/promote
