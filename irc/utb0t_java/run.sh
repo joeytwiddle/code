@@ -1,6 +1,6 @@
-. includepath /home/joey/public_html/utportal/qstat
-. includepath $HOME/myroots/cowsay
-. includepath $HOME/myroots/figlet
+# . includepath /home/joey/public_html/utportal/qstat
+# . includepath $HOME/myroots/cowsay
+# . includepath $HOME/myroots/figlet
 
 function teegz () {
 	## I got output to stdout, but the file was always empty.

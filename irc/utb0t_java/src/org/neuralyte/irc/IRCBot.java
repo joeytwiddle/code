@@ -512,7 +512,7 @@ public class IRCBot extends LogBot {
     private boolean removeOneOldAuthRecord() {
         // We want to remove out-of-date auths for security.
         // Although hopefully these will be caught by onNickChange() onQuit() and onPart().
-        // But we also need to remove old cached auths, just to cleanup space.
+        // But we also need to remove old cached auths now and then, just to free up memory.
         long timeNow = new java.util.Date().getTime();
         for (String key : authDateDB.keySet()) {
             Long recordedDate = authDateDB.get(key);
@@ -554,6 +554,7 @@ public class IRCBot extends LogBot {
         String key = server + ":" + oldNick;
         authDB.remove(key);
         authDateDB.remove(key);
+        // @todo: If they did have an auth with the old nick, add it to the DB with their new nick.
     }
     
     @Override
