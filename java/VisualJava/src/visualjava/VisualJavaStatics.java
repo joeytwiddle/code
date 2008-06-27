@@ -53,19 +53,18 @@ public class VisualJavaStatics {
 	*/
 	
     public static String getShortClassName(Object obj) {
-		if (obj == null)
-			return null;
-			try {
-				Class theClass = obj.getClass();
-				String name = theClass.getName();
-				int i = name.lastIndexOf(".");
-				if (i>=0) {
-					name = name.substring(i+1);
-				}
-				return name;
-			} catch (Exception e3) { }
-			return ""+obj;
-		// }
+    	if (obj == null)
+    		return null;
+    	try {
+    		Class theClass = obj.getClass();
+    		String name = theClass.getName();
+    		int i = name.lastIndexOf(".");
+    		if (i>=0) {
+    			name = name.substring(i+1);
+    		}
+    		return name;
+    	} catch (Exception e3) { }
+    	return ""+obj;
 	}
 
 }
