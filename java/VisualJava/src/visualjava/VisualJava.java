@@ -24,6 +24,7 @@ import org.neuralyte.dyno.javawrappers.DynoJavaMethod;
 */
 
 import com.thoughtworks.xstream.XStream;
+import com.thoughtworks.xstream.io.xml.DomDriver;
 
 /** joey Jul 11, 2004 3:26:31 AM */
 public class VisualJava {
@@ -52,7 +53,7 @@ public class VisualJava {
 		desktop.showObject(new DynoInterpreter());
 		*/
 		// TODO: take out these dependencies unless we really want to ship them too
-		desktop.showObject(new XStream());
+		desktop.showObject(new XStream(new com.thoughtworks.xstream.io.xml.DomDriver()));
 		// desktop.showObject(new com.thoughtworks.xstream.io.xml.DomDriver());
 		try {
 			Class[] argTypes;
