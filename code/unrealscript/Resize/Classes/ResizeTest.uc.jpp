@@ -1,3 +1,7 @@
+// The real solution to getting Resize to work properly, is of course to send it client side.
+
+// vim: tabstop=2 shiftwidth=2 expandtab filetype=uc
+
 #ifndef CLASS_NAME
 #define CLASS_NAME ResizeTest
 #endif
@@ -80,9 +84,20 @@ class CLASS_NAME extends Mutator config(Resize);
 // Dropped + pickup up weapons appear too large in 1st person view.
 // Test at wider ranges e.g. 0.1 and 3.0, to see how they feel.  Testing only 0.5 and 2.0 might not be helping.  :P
 
+// TODO: flak projectiles are scaling fine, but rockets projectiles are not.
+//       mmm very occasionally rocket projectiles do
+//       RocketMk2 and UT_Grenade have default DrawScale=0.02 O_o, as well as AnimSequences.
+//       flakslug has bNetTemporary=True
+
+// TODO: air control feels weak when players are scaled up
+
+// TODO: first flak primary projectiles are sometimes slow
+
+// TODO: eye height does not match when we look at bots.
+
 // === START pre-compile config ===
 #define DEBUG
-#define CHECK_DODGE
+// #define CHECK_DODGE
 // #define CHANGE_GRAVITY
 // ==== END pre-compile config ====
 
@@ -93,10 +108,12 @@ class CLASS_NAME extends Mutator config(Resize);
 // #ifdef CHANGE_GRAVITY
 // #define JumpScale (Sqrt(Scale))
 // #else
-#define JumpScale (Scale)
+// #define JumpScale (Scale)
+#define JumpScale 1
 // #endif
 
 // var config String AllowedSizes;
+var() config bool bResizeEnabled;
 var() config float Scale;
 
 #ifdef CHECK_DODGE
@@ -123,7 +140,8 @@ var config String StoredPropValue[64];
 defaultproperties {
   // AllowedSizes="0.5,0.75,1.25,1.5,2.0"
   // Scale=2.00
-  Scale=2.0
+  bResizeEnabled=False
+  Scale=1.0
   // Scale=0.5
   /*
     // Attempt to get simulation working:
@@ -151,6 +169,9 @@ function DebugShout(msg) { }
 #endif
 
 function PreBeginPlay() {
+  Super.PreBeginPlay();
+  if (!bResizeEnabled)
+    return;
 
   // DEBUGGING info:
   DebugShout("At start of play, ProjectilesAlreadyHandled = "$ProjectilesAlreadyHandled);
@@ -169,16 +190,23 @@ function PreBeginPlay() {
   DebugShout(Self$".PreBeginPlay() Scale="$Scale);
 
   Enable('Tick');
+  Level.Game.RegisterMessageMutator(Self);
   Level.Game.RegisterDamageMutator(Self);
   ScaleAll();
 }
 
 function PostBeginPlay() {
+  Super.PreBeginPlay();
+  if (!bResizeEnabled)
+    return;
   Enable('Tick');
   ScaleAll();
 }
 
 function Tick(float DeltaTimeLoc) {
+  // Super.Tick(DeltaTimeLoc);
+  if (!bResizeEnabled)
+    return;
   #ifdef GLOBAL_DELTATIME
   DeltaTime = DeltaTimeLoc;
   #endif
@@ -190,12 +218,18 @@ function Tick(float DeltaTimeLoc) {
 }
 
 function ModifyPlayer(Pawn p) {
+  Super.ModifyPlayer(p);
+  if (PlayerPawn(p) != None && PlayerPawn(p).bAdmin) {
+    PlayerPawn(p).ClientMessage("You can type: !resize 75");
+  }
+  if (!bResizeEnabled)
+    return;
   if (p.PlayerReplicationInfo.Deaths == 0 && p.IsA('PlayerPawn')) {
     p.ClientMessage("Your size is "$Int(Scale*100)$"%");
     p.ClientMessage("Map size is "$Int((1.0/Scale)*100)$"%");
+    p.ClientMessage("To restore defaults, type: mutate resize 100");
   }
   p.JumpZ = 325*JumpScale; // I hope this will stop me jumping too high when I spawn, and prevent the JUMP-BUG reports.
-  Super.ModifyPlayer(p);
 }
 
 function ScaleAll() {
@@ -269,9 +303,13 @@ function ScaleActor(Actor a) {
 }
 
 function HandleNewActor(Actor a) {
+  if (!bResizeEnabled)
+    return;
   // We try to avoid using this method as much as possible.
   // Since sometimes the new Actor has already been replicated before we can get to it (NetTag > 0).
   // In which case, the client will not see the changes we make here until later (or not at all - e.g. projectile speeds).
+
+  // Also, it's not guaranteed to see new actors, due to the dodgy detection algorithm.
 
   // But if the Actor never gets passed through AlwaysKeep(),
   // and setting its default values fails,
@@ -307,8 +345,15 @@ function HandleNewActor(Actor a) {
     // Conclusion: it's definitely not needed, but I don't know why.
     // If we do scale the collision cylinder, shock balls become much harder to hit.
     // DebugLog("Projectile "$a$" has CC ("$a.CollisionRadius$","$a.CollisionHeight$")");
+    DebugShout("Scaling projectile: "$a);
     ScaleCollisionCylinder(a);
+    // We failed to scale DrawScale in ScaleProjectileClass().
     a.DrawScale = a.DrawScale * Scale;
+    // if (a.IsA('RocketMk2') || a.IsA('UT_Grenade')) {
+      // a.DrawScale = a.default.DrawScale * Scale;
+      // // a.bNetTemporary = True; // Can't assign Const variables
+    // }
+    // a.ReplicateEverythingNowFFS()! ;)
   }
 
   //// Sometimes this doesn't get called!  So better not to do it at all.
@@ -343,13 +388,15 @@ function CloserToFloor(Actor Other) {
   Other.SetPhysics(PHYS_Falling);
 }
 
-// It seems all Actors go through all 3 of these when they are spawned, except for Projectiles and Effects, and TranslocatorTarget.
+// It seems all Actors go through all 3 of these when they are spawned, except for Projectiles and Effects.
 
 function bool AlwaysKeep(Actor Other) {
 
   // TODO: we don't have to use default any more, since this method should only be called once for each new actor :)
 
   local bool doneSomething;
+
+  if (bResizeEnabled) {
 
   // DebugLog("AlwaysKeep("$Other$") "$Other.Location$" [NetTag="$Other.NetTag$"]");
 
@@ -457,7 +504,9 @@ function bool AlwaysKeep(Actor Other) {
 
   // DebugLog("AlwaysKeep("$Other$") ENDED");
 
-	return Super.AlwaysKeep(Other);
+  }
+  return Super.AlwaysKeep(Other);
+
 }
 
 // function bool IsRelevant(Actor Other, out byte bSuperRelevant) {
@@ -472,96 +521,101 @@ function bool AlwaysKeep(Actor Other) {
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
   local float HitDistance, HitRadius, HitHeight;
-  HitDistance = VSize(HitLocation - Victim.Location);
-  DebugLog("Damage "$DamageType$" @ "$HitDistance$" ["$Victim.CollisionRadius$","$Victim.CollisionHeight$"]");
-  if (DamageType == 'impact') {
-    // DebugShout("Scaling "$DamageType$" boost @ "$HitDistance);
-    // if (Scale>1) {
-      Momentum = Momentum * Scale; // to compensate for splash difference
-    // }
-    // Do nothing
-    DebugShout("IMPACT damage "$ActualDamage$" at ("$ ((HitLocation.X-Victim.Location.X)**2+(HitLocation.Y-Victim.Location.Y)**2)**0.5 $","$ HitLocation.Z-Victim.Location.Z $")");
-  } else if (DamageType == 'Fell') {
-    // Since we change gravity, we must change fall damage also.
-    #ifdef CHANGE_GRAVITY
-    ActualDamage = ActualDamage / Scale;
-    DebugShout("FALL damage "$ActualDamage);
-    #endif
-  } else {
-  // if (DamageType == 'jolted' || DamageType == 'RocketDeath' || DamageType=='FlakDeath' || DamageType=='GrenadeDeath' || DamageType=='RipperAltDeath') {
-    // BUG TODO: still haven't properly detected whether damage is splash or not
-    // both jolted and RocketDeath count for primary and secondary shots
-    // impact *damage* should never be scaled
-    // We could check the distance of the HitLocation from the Victim, to see if it is within his collision cylinder or not.  But I'm not sure this is entirely accurate.
-    // NOTE:
-    // When scaled at 0.5:
-    //   shock-primary had HitDistance ~9
-    //   shock-secondary had HitDistance ~14
-    //   bot's collision radius was ~8
-    // SO: i check HitDistance < Victim.CollisionRadius * 1.25 which seems to work :P
-    // But, when scaled at 2.0:
-    //   bot's radius is 34, height 78
-    //   shooting him with sniper was registerings hits at HitDistance 26.34 and 50.50
-    // if (HitDistance > Victim.CollisionRadius*1.25 /*&& HitDistance > Victim.CollisionHeight*/) {
-    HitRadius = ((HitLocation.X-Victim.Location.X)**2+(HitLocation.Y-Victim.Location.Y)**2)**0.5;
-    HitHeight = HitLocation.Z-Victim.Location.Z;
-    // DebugShout("("$HitRadius$","$HitHeight$") ["$Victim.CollisionRadius$","$Victim.CollisionHeight$"]");
-    if (Abs(HitHeight) > Victim.CollisionHeight || HitRadius > Victim.CollisionRadius) {
-      // Gets called sometimes even on a direct hit. :(
-      // Seems to be outside the Victim, so it's splash damage, so scale it:
-      // DebugShout("Scaling splash damage "$DamageType$" on "$Victim.getHumanName()$" ("$HitDistance$")");
-      ActualDamage = ActualDamage * Scale;
-      // Check with scale=2.0 that 1 primary shock deals correct damage (and does not kill)!
-      Momentum = Momentum * Scale; // to compensate for splash reduction
-      DebugShout("SPLASH damage "$DamageType$" "$InstigatedBy.getHumanName()$"->"$Victim.getHumanName()$" "$ActualDamage$" ("$Int(HitRadius)$","$Int(HitHeight)$") > ["$Int(Victim.CollisionRadius)$","$Int(Victim.CollisionHeight)$"]");
+  if (bResizeEnabled) {
+    HitDistance = VSize(HitLocation - Victim.Location);
+    DebugLog("Damage "$DamageType$" @ "$HitDistance$" ["$Victim.CollisionRadius$","$Victim.CollisionHeight$"]");
+    if (DamageType == 'impact') {
+      // DebugShout("Scaling "$DamageType$" boost @ "$HitDistance);
+      // if (Scale>1) {
+        Momentum = Momentum * Scale; // to compensate for splash difference
+      // }
+      // Do nothing
+      DebugShout("IMPACT damage "$ActualDamage$" at ("$ ((HitLocation.X-Victim.Location.X)**2+(HitLocation.Y-Victim.Location.Y)**2)**0.5 $","$ HitLocation.Z-Victim.Location.Z $")");
+    } else if (DamageType == 'Fell') {
+      // Since we change gravity, we must change fall damage also.
+      #ifdef CHANGE_GRAVITY
+      ActualDamage = ActualDamage / Scale;
+      DebugShout("FALL damage "$ActualDamage);
+      #endif
     } else {
-      DebugShout("DIRECT hit "$DamageType$" "$InstigatedBy.getHumanName()$"->"$Victim.getHumanName()$" "$ActualDamage$" ("$Int(HitRadius)$","$Int(HitHeight)$") <= ["$Int(Victim.CollisionRadius)$","$Int(Victim.CollisionHeight)$"]");
+    // if (DamageType == 'jolted' || DamageType == 'RocketDeath' || DamageType=='FlakDeath' || DamageType=='GrenadeDeath' || DamageType=='RipperAltDeath') {
+      // BUG TODO: still haven't properly detected whether damage is splash or not
+      // both jolted and RocketDeath count for primary and secondary shots
+      // impact *damage* should never be scaled
+      // We could check the distance of the HitLocation from the Victim, to see if it is within his collision cylinder or not.  But I'm not sure this is entirely accurate.
+      // NOTE:
+      // When scaled at 0.5:
+      //   shock-primary had HitDistance ~9
+      //   shock-secondary had HitDistance ~14
+      //   bot's collision radius was ~8
+      // SO: i check HitDistance < Victim.CollisionRadius * 1.25 which seems to work :P
+      // But, when scaled at 2.0:
+      //   bot's radius is 34, height 78
+      //   shooting him with sniper was registerings hits at HitDistance 26.34 and 50.50
+      // if (HitDistance > Victim.CollisionRadius*1.25 /*&& HitDistance > Victim.CollisionHeight*/) {
+      HitRadius = ((HitLocation.X-Victim.Location.X)**2+(HitLocation.Y-Victim.Location.Y)**2)**0.5;
+      HitHeight = HitLocation.Z-Victim.Location.Z;
+      // DebugShout("("$HitRadius$","$HitHeight$") ["$Victim.CollisionRadius$","$Victim.CollisionHeight$"]");
+      if (Abs(HitHeight) > Victim.CollisionHeight || HitRadius > Victim.CollisionRadius) {
+        // Gets called sometimes even on a direct hit. :(
+        // Seems to be outside the Victim, so it's splash damage, so scale it:
+        // DebugShout("Scaling splash damage "$DamageType$" on "$Victim.getHumanName()$" ("$HitDistance$")");
+        ActualDamage = ActualDamage * Scale;
+        // Check with scale=2.0 that 1 primary shock deals correct damage (and does not kill)!
+        Momentum = Momentum * Scale; // to compensate for splash reduction
+        DebugShout("SPLASH damage "$DamageType$" "$InstigatedBy.getHumanName()$"->"$Victim.getHumanName()$" "$ActualDamage$" ("$Int(HitRadius)$","$Int(HitHeight)$") > ["$Int(Victim.CollisionRadius)$","$Int(Victim.CollisionHeight)$"]");
+      } else {
+        DebugShout("DIRECT hit "$DamageType$" "$InstigatedBy.getHumanName()$"->"$Victim.getHumanName()$" "$ActualDamage$" ("$Int(HitRadius)$","$Int(HitHeight)$") <= ["$Int(Victim.CollisionRadius)$","$Int(Victim.CollisionHeight)$"]");
+      }
+      Momentum = Momentum * Scale; // to compensate for scale change
+      #ifdef CHANGE_GRAVITY
+      // Momentum.Z = Momentum.Z * Scale; // to compensate for gravity change :: TODO: we should do this for everything which spawns or is thrown, i.e. flag when dropped, weapon when thrown
+      #endif
+    // }
+    // BUG UNFIXABLE: ofc if the engine already thinks the damage was out of range, we can't scale that damage up. (When scaling up.) =/
+    // conversely, when scaling down, if the player runs forward and hits his own combo, the engine says that he *is* in range, and gets hurt by it (even though we scale that damage down, he still gets hurt!)
     }
-    Momentum = Momentum * Scale; // to compensate for scale change
-    #ifdef CHANGE_GRAVITY
-    // Momentum.Z = Momentum.Z * Scale; // to compensate for gravity change :: TODO: we should do this for everything which spawns or is thrown, i.e. flag when dropped, weapon when thrown
-    #endif
-  // }
-  // BUG UNFIXABLE: ofc if the engine already thinks the damage was out of range, we can't scale that damage up. (When scaling up.) =/
-  // conversely, when scaling down, if the player runs forward and hits his own combo, the engine says that he *is* in range, and gets hurt by it (even though we scale that damage down, he still gets hurt!)
   }
+
+  #ifdef CHECK_DODGE
+  // We need to check when a player (or other pawn) starts to dodge, so that we can fix (change) their velocity,
+  // since the dodge height (y velocity) is hard-coded in Epic's code, so we can't set it in advance.
+  function CheckPlayerStateForDodge(Pawn p) {
+    // TODO: how we scale dodge should be different if we have CHANGE_GRAVITY switched on or off.
+    // TODO: if we don't change gravity, fixed y should be no problem, since x is scaled ideally
+    //       to make the jump *look* better, we could increase y and decrease x.
+    if ((""$p.DodgeDir) != LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]) {
+      if (p.DodgeDir == DODGE_Active) {
+        // DebugShout("Scaling dodge z="$p.Location.Z$" + "$p.Velocity.Z$" for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
+        DebugShout("Scaling dodge ("$Int(p.Location.X)$","$Int(p.Location.Y)$","$Int(p.Location.Z)$") + ("$Int(p.Velocity.X)$","$Int(p.Velocity.Y)$","$Int(p.Velocity.Z)$") for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
+        #ifdef CHANGE_GRAVITY
+        // Try to correct the changes from last tick:
+        // DeltaTime = 0.05; // BUG: Assumes tickrate 20, but we could arrange for the real DeltaTime to be passed down to us.
+        #define gravity 0 // Should be -ve.  BUG: should get it from the right place
+        p.Velocity.Z = p.Velocity.Z - gravity*DeltaTime;
+        p.SetLocation(p.Location + (-p.Velocity.Z*DeltaTime + p.Velocity.Z*Scale*DeltaTime) * Vect(0,0,1));
+        // Set correct upward velocity:
+        p.Velocity.Z = p.Velocity.Z * Scale;
+        p.Velocity.Z = p.Velocity.Z + gravity*DeltaTime;
+        #else
+        // p.Velocity.X = p.Velocity.X * Scale;
+        // p.Velocity.Y = p.Velocity.Y * Scale;
+        // p.Velocity.X = p.Velocity.X * Sqrt(Scale);
+        // p.Velocity.Y = p.Velocity.Y * Sqrt(Scale);
+        // p.Velocity.Z = p.Velocity.Z * Sqrt(Scale);
+        // p.Velocity.Z = p.Velocity.Z * Sqrt(Sqrt(Scale));
+        #endif
+      }
+    }
+    LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64] = ""$p.DodgeDir;
+    // CONSIDER: When scaling up, the dodge seems a little low, but distance reached seems ok.
+    //           Maybe this is because Velocity.Z has already changed by 1 tick before we get to it.
+    // DebugLog("CheckPlayerStateForDodge [END]");
+  }
+  #endif
+
   Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
 }
-
-#ifdef CHECK_DODGE
-// We need to check when a player (or other pawn) starts to dodge, so that we can fix (change) their velocity,
-// since the dodge height (y velocity) is hard-coded in Epic's code, so we can't set it in advance.
-function CheckPlayerStateForDodge(Pawn p) {
-  // TODO: how we scale dodge should be different if we have CHANGE_GRAVITY switched on or off.
-  if ((""$p.DodgeDir) != LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]) {
-    if (p.DodgeDir == DODGE_Active) {
-      // DebugShout("Scaling dodge z="$p.Location.Z$" + "$p.Velocity.Z$" for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
-      DebugShout("Scaling dodge ("$Int(p.Location.X)$","$Int(p.Location.Y)$","$Int(p.Location.Z)$") + ("$Int(p.Velocity.X)$","$Int(p.Velocity.Y)$","$Int(p.Velocity.Z)$") for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
-      #ifdef CHANGE_GRAVITY
-      // Try to correct the changes from last tick:
-      // DeltaTime = 0.05; // BUG: Assumes tickrate 20, but we could arrange for the real DeltaTime to be passed down to us.
-      #define gravity 0 // Should be -ve.  BUG: should get it from the right place
-      p.Velocity.Z = p.Velocity.Z - gravity*DeltaTime;
-      p.SetLocation(p.Location + (-p.Velocity.Z*DeltaTime + p.Velocity.Z*Scale*DeltaTime) * Vect(0,0,1));
-      // Set correct upward velocity:
-      p.Velocity.Z = p.Velocity.Z * Scale;
-      p.Velocity.Z = p.Velocity.Z + gravity*DeltaTime;
-      #else
-      // p.Velocity.X = p.Velocity.X * Scale;
-      // p.Velocity.Y = p.Velocity.Y * Scale;
-      // p.Velocity.X = p.Velocity.X * Sqrt(Scale);
-      // p.Velocity.Y = p.Velocity.Y * Sqrt(Scale);
-      // p.Velocity.Z = p.Velocity.Z * Sqrt(Scale);
-      // p.Velocity.Z = p.Velocity.Z * Sqrt(Sqrt(Scale));
-      #endif
-    }
-  }
-  LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64] = ""$p.DodgeDir;
-  // CONSIDER: When scaling up, the dodge seems a little low, but distance reached seems ok.
-  //           Maybe this is because Velocity.Z has already changed by 1 tick before we get to it.
-  // DebugLog("CheckPlayerStateForDodge [END]");
-}
-#endif
 
 // PROBLEM TODO: When we change the default values of projectiles, they stay changed next map!!  And hence get scaled again, becoming over-scaled (too slow/fast).
 // Maybe we can get around this by caching things already been scaled
@@ -575,7 +629,7 @@ function ScaleProjectileClass(class<Projectile> ProjectileClass) {
     return; // We already scaled these default properties earlier.
   }
   DebugShout("Scaling projectile type: "$ProjectileClass);
-  // BUG TODO: UTChunk and flakslug report 2 x "Accessed null" here.
+  // BUG TODO: UTChunk and flakslug report 2 x "Accessed None" here.
   // ProjectileClass.default.DrawScale = ProjectileClass.default.DrawScale * Scale; // This does not seem to work, so doing it in HandleNewActor() instead.
   ProjectileClass.default.Speed = ScaleOnceOnly(ProjectileClass$".default.Speed", ProjectileClass.default.Speed);
   ProjectileClass.default.MaxSpeed = ScaleOnceOnly(ProjectileClass$".default.MaxSpeed", ProjectileClass.default.MaxSpeed);
@@ -625,5 +679,81 @@ function PutStoredProp(String prop, String value) {
 
 function ScaleCollisionCylinder(Actor Other) {
   Other.SetCollisionSize(Other.default.CollisionRadius * Scale, Other.default.CollisionHeight * Scale);
+}
+
+
+
+// Catch messages from spectators:
+function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
+  SuperCheckMessage(Sender,Receiver,Mid(Msg,InStr(Msg,":")+1));
+  return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
+}
+
+// Catch messages from players:
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+  SuperCheckMessage(Sender,Receiver,Msg);
+  return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
+}
+
+// Returns True if this message should be swallowed / hidden from other players.
+function SuperCheckMessage(Actor Sender, Pawn Receiver, String Msg) {
+  if (Left(Msg,1) == "!") {
+    if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
+      CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
+    }
+  }
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+  CheckMessage(str, Sender);
+  Super.Mutate(str, Sender);
+}
+
+// Returns True if the command was recognised.
+function CheckMessage(String line, PlayerPawn Sender) {
+  local Actor a;
+  local float NewScale;
+
+  // Still doesn't work very well, but at least it sets the size easily for the next map.
+  if (Left(line,7) ~= "RESIZE ") {
+    NewScale = Int( Mid(line,7) );
+    if (!Sender.bAdmin && NewScale != 100) {
+      Sender.ClientMessage("You can only force default size with: !resize 100");
+      return;
+    }
+    if (NewScale == 100) {
+      BroadcastMessage("Game is now at default size.");
+    } else {
+      if (Sender.bAdmin || Scale != 100) {
+        if (NewScale >= 20) // assume they meant percent
+          NewScale = NewScale / 100;
+        if (NewScale<0.1)
+          NewScale=0.1;
+        if (NewScale>4)
+          NewScale=4;
+        // BroadcastMessage("You have been resized to " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
+        BroadcastMessage("Game has been resized to " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
+      }
+    }
+    if (Scale == 100 && NewScale == 100)
+      bResizeEnabled=False;
+    if (Scale == NewScale) {
+      BroadcastMessage("Game has been fixed on " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
+      SaveConfig();
+    } else {
+      BroadcastMessage("Game has been resized from " $ Int(Scale*100) $ "% to " $ Int(NewScale*100) $ "% by " $ Sender.getHumanName());
+      bResizeEnabled = True;
+    }
+    Scale = NewScale;
+
+    // Try to force a refresh of everything:
+    foreach AllActors(class'Actor',a) {
+      AlwaysKeep(A); // kill transloc
+      HandleNewActor(a);
+      ScaleActor(a);
+      // A number of things do not change from the client's point of view.
+    }
+  }
+
 }
 
