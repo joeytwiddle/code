@@ -9,7 +9,7 @@
 class CLASS_NAME extends Mutator config(Resize);
 
 /*
-// NOTE: I failed to get any code executing on the client in online play, but we are trying to work without it.
+// NOTE: Since this is a mutator, I failed to get any code executing on the client in online play, but we are trying to work without it.
 // FIXED (mostly): Splash damage needs to be scaled up/down, but HurtRadius() is sometimes called with a FIXED value. :S
 // FIXED: Sometimes projectiles move too slow (sometimes they look slow but are actually standing STILL!).
 // FIXED: Dodge is too high and long, jump is too high!
@@ -752,6 +752,7 @@ function CheckMessage(String line, PlayerPawn Sender) {
       HandleNewActor(a);
       ScaleActor(a);
       // A number of things do not change from the client's point of view.
+      // TODO Consider clearing LastActor.
     }
   }
 
