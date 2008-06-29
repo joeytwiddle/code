@@ -186,6 +186,10 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		return True;
 	}
 
+	if (command ~= "EV"$"ENT") {
+		Trigger(Self,args[1]);
+	}
+
 	if (command ~= "LOOK") {
 		workingActor = FindClosestActor(Sender);
 		Sender.ClientMessage("Viewing: "$workingActor);
