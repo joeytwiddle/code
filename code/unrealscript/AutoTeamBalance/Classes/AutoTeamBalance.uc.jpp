@@ -24,8 +24,8 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
-// New database policy:
-// Each player has 3 records - one for nick, one for ip, and one for nick+ip.
+// Considering new database policy using hashtable:
+// Each player has 3 records - one for nick, one for ip, and one for nick+ip.  (They can all live in same hashtable.)
 // All three get updated.  His strength is calculated from all 3.
 // If his nick or IP changes, one or more of the old records can be used to make his new records.
 // Records automatically cleanup according to age.
@@ -36,7 +36,7 @@
 
 // DONE: By using bCached[], the record is not re-checked if the nick changes, or if IP changes.  On XOL this is a problem because the initial IP often does change to IDC after a little bit of time.  OK hacking this into the IDC catch code.
 //       This solution means the empty record of their IP will be created.  An alternative would be, at the end of the game, to overwrite whatever is in the DB with the players current nick and idc.
-// TODO: !listfakes should become !whois <part_of_nick>
+// TODO: !listfakes could become !whois <part_of_nick>
 // TODO: Should there be a !grey/!gray, for DM?
 // TODO: I think mid-game rebalance should not use FlagStrength, but mid game player joins should.
 // TODO: we may have a record cached, but we still have to check it each time.  It would be nice to have a faster check for whether we have it cached or not.
@@ -62,8 +62,9 @@
 // DONE: When deciding which player to switch mid-game, ATB now prefers players who have not been in the game for long.
 // DONE: Holding the flag will prevent you from being switched to the other team, now only if there is no better switch that can be made!
 // DONE: bAutoSwitchNewPlayers: Swaps latest player to join with last player to join, if it improves teams.  We also now prefer to swap players shortest on the server, when performing mid-game rebalance.
-// DONE: mutate listfakers
+// DONE: mutate listfakers aka mutate listfakes aka mutate listnick
 // DONE: WinningTeamBonus is now given in secret.  Reduced default to 5 points.
+// DONE: Foolish SemiAdmins can no longer switch Spectators onto a playing team.  [Thanks AdminThis for the bugreport.]
 
 // Changes in 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
@@ -642,6 +643,7 @@ event Destroyed() {
 			// return;
 			// If that does not work, we can try adding ourself as a mutator again, or better, spawning a new AutoTeamBalance and adding that.
 			newATB = Spawn(class'AutoTeamBalance');
+			// The PostBeginPlay() has now been run on newATB.
 			NormalLog(Self$" Trying recovery with new "$ newATB);
 			#ifdef ENABLE_IDC
 			// We must copy over the obtained IDCs at the very least, since they are only provided once per map!
@@ -664,6 +666,9 @@ event Destroyed() {
 			newATB.SetTimer(CheckFrequency,bWarnMidGameUnbalance || bForceEvenTeams); // Since PostBeginPlay() sets it to 1.
 			newATB.gameEndDone = gameEndDone;
 			// Level.Game.BaseMutator.AddMutator(newATB); // Not actually needed since PostBeginPlay() does this.
+			// Pr.vent XOL crashes from causing an initial teambalance after the match has started!
+			if (Level.TimeSeconds>30)
+				newATB.gameStartDone = True;
 		}
 	#endif
 	Super.Destroyed();
@@ -1162,7 +1167,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		ListMutsTo(Sender);
 	}
 
-	if ( args[0]~="LISTFAKES" || args[0]~="LISTFAKERS" && (bAllowUsersToListFakes || Sender.bAdmin)) {
+	if ( (args[0]~="LISTNICKS" || args[0]~="LISTFAKES" || args[0]~="LISTFAKERS") && (bAllowUsersToListFakes || Sender.bAdmin) ) {
 		ListFakesTo(Sender);
 	}
 
@@ -2414,6 +2419,10 @@ function ProposeChange(Pawn one, Pawn two) {
 
 function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 	local Color msgColor;
+	if (p.IsA('Spectator')) {
+		NormalLog("ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): refusing to change the team of a spectator!");
+		return;
+	}
 	if (teamnum == p.PlayerReplicationInfo.Team) {
 		// NormalLog("ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): (strength "$GetPlayerStrength(p)$") doing nothing since player is already on team "$teamnum);
 		NormalLog("ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): doing nothing since player is already on team "$teamnum);
