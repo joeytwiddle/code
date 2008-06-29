@@ -1,4 +1,6 @@
+#ifndef CLASS_NAME
 #define CLASS_NAME ResizeTest
+#endif
 
 class CLASS_NAME extends Mutator config(Resize);
 
@@ -73,15 +75,21 @@ class CLASS_NAME extends Mutator config(Resize);
 
 // TODO: In PreBeginPlay(), check if Mutator is in chain, and add it if not.
 
+// MAIN TODO:
+// Gravity still doesn't feel right.
+// Dropped + pickup up weapons appear too large in 1st person view.
+// Test at wider ranges e.g. 0.1 and 3.0, to see how they feel.  Testing only 0.5 and 2.0 might not be helping.  :P
+
 // === START pre-compile config ===
 #define DEBUG
 #define CHECK_DODGE
-#define CHANGE_GRAVITY
+// #define CHANGE_GRAVITY
 // ==== END pre-compile config ====
 
 #ifdef CHECK_DODGE
 #define GLOBAL_DELTATIME
 #endif
+//// Despite my maths saying it should, this didn't seem more realistic:
 // #ifdef CHANGE_GRAVITY
 // #define JumpScale (Sqrt(Scale))
 // #else
@@ -207,7 +215,11 @@ function ScaleAll() {
     }
     LastActorInList = a;
   }
-  LastNewActor = ""$LastActorInList;
+  LastNewActor = ""$LastActorInList; // BUG TODO: What if this actor gets destroyed?
+
+  // Maybe it's like a stack of actors.
+  // Anyway, any number of them might get destroyed by the time we next check.
+  // Maybe new ones will always appear on the top though.
 
   foreach AllActors(class'Actor',a) {
     ScaleActor(a);
@@ -392,7 +404,11 @@ function bool AlwaysKeep(Actor Other) {
 
   if (Other.IsA('ZoneInfo') || Other.IsA('LevelInfo')) {
     #ifdef CHANGE_GRAVITY
-    ZoneInfo(Other).ZoneGravity = ZoneInfo(Other).ZoneGravity * Scale;
+    if (Scale>1) {
+      ZoneInfo(Other).ZoneGravity = ZoneInfo(Other).ZoneGravity * Sqrt(Scale); // Sqrt feels much better when scaling up, but not when scaling down.  Well ok it still feels a *little* lowgrav... somewhere between Sqrt and 1* might be best.
+    } else {
+      ZoneInfo(Other).ZoneGravity = ZoneInfo(Other).ZoneGravity * Scale; // Feels about right, except dodges are too short.
+    }
     #endif
     doneSomething = True;
   }
@@ -531,8 +547,12 @@ function CheckPlayerStateForDodge(Pawn p) {
       p.Velocity.Z = p.Velocity.Z * Scale;
       p.Velocity.Z = p.Velocity.Z + gravity*DeltaTime;
       #else
-      p.Velocity.X = p.Velocity.X * Scale;
-      p.Velocity.Y = p.Velocity.Y * Scale;
+      // p.Velocity.X = p.Velocity.X * Scale;
+      // p.Velocity.Y = p.Velocity.Y * Scale;
+      // p.Velocity.X = p.Velocity.X * Sqrt(Scale);
+      // p.Velocity.Y = p.Velocity.Y * Sqrt(Scale);
+      // p.Velocity.Z = p.Velocity.Z * Sqrt(Scale);
+      // p.Velocity.Z = p.Velocity.Z * Sqrt(Sqrt(Scale));
       #endif
     }
   }
