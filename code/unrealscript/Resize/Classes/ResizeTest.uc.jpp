@@ -95,26 +95,33 @@ class CLASS_NAME extends Mutator config(Resize);
 
 // TODO: eye height does not match when we look at bots.
 
+// BUG TODO: when I switched size to 100 (twice to save it) and then back to 200, I found I had lost my tlx, until I respawned.
+
+// BUG: If we keep doing !resize 1 and !resize 2 then the flag moves upwards off the ground
+// BUG: Weapons do not re-size mid-game
+
 // === START pre-compile config ===
 #define DEBUG
-// #define CHECK_DODGE
-// #define CHANGE_GRAVITY
+#define CHECK_DODGE
+#define CHANGE_GRAVITY
+// #define LOG_TICKS
 // ==== END pre-compile config ====
 
 #ifdef CHECK_DODGE
 #define GLOBAL_DELTATIME
 #endif
 //// Despite my maths saying it should, this didn't seem more realistic:
-// #ifdef CHANGE_GRAVITY
-// #define JumpScale (Sqrt(Scale))
-// #else
-// #define JumpScale (Scale)
-#define JumpScale 1
-// #endif
+#ifdef CHANGE_GRAVITY
+#define JumpScale (Sqrt(Scale))
+#else
+#define JumpScale (Scale)
+#endif
+// #define JumpScale 1
 
 // var config String AllowedSizes;
-var() config bool bResizeEnabled;
+var() config bool bAllowPlayersToResize;
 var() config float Scale;
+var() config bool bResizeEnabled; // This changes depending on whether Scale=100.  It is not an admin option!  Admins should see bAllowPlayersToResize.
 
 #ifdef CHECK_DODGE
 // var EDodgeDir LastDodgeState[64];
@@ -142,6 +149,7 @@ defaultproperties {
   // Scale=2.00
   bResizeEnabled=False
   Scale=1.0
+  bAllowPlayersToResize=True
   // Scale=0.5
   /*
     // Attempt to get simulation working:
@@ -157,21 +165,25 @@ defaultproperties {
 
 #ifdef DEBUG
 function DebugLog(String msg) {
-  Log("<"$Role$"> "$msg);
+  // Log("<"$Role$"> "$msg);
+  Log("[ResizeTest] "$msg);
 }
 function DebugShout(String msg) {
   DebugLog(msg);
-  BroadcastMessage("<"$Role$"> "$msg);
+  BroadcastMessage("[ResizeTest] "$msg);
+}
+function BroadcastMessageAndLog(string Msg) {
+   DebugLog("BroadcastMessage(\""$Msg$"\")");
+   BroadcastMessage(Msg);
 }
 #else
 function DebugLog(msg) { }
 function DebugShout(msg) { }
+#define BroadcastMessageAndLog(X) BroadcastMessage(X)
 #endif
 
 function PreBeginPlay() {
   Super.PreBeginPlay();
-  if (!bResizeEnabled)
-    return;
 
   // DEBUGGING info:
   DebugShout("At start of play, ProjectilesAlreadyHandled = "$ProjectilesAlreadyHandled);
@@ -181,17 +193,27 @@ function PreBeginPlay() {
   // TODO: remove this for official release
   // for development, auto-set scale on my test maps
   // Regardless of whether I put it in PreBeginPlay() or PostBeginPlay(), the new value of Scale became overwritten until I did SaveConfig().
+  if (InStr(""$Self,"CTF-PureAction")>=0) {
+    Scale = 1.0; bResizeEnabled=False; SaveConfig();
+  }
+  if (InStr(""$Self,"CTF-Bleak")>=0) {
+    Scale = 1.0; bResizeEnabled=False; SaveConfig();
+  }
   if (InStr(""$Self,"HalfSize")>=0) {
-    Scale = 0.5; SaveConfig();
+    Scale = 0.5; bResizeEnabled=True; SaveConfig();
   }
   if (InStr(""$Self,"DoubleSize")>=0) {
-    Scale = 2.0; SaveConfig();
+    Scale = 2.0; bResizeEnabled=True; SaveConfig();
   }
   DebugShout(Self$".PreBeginPlay() Scale="$Scale);
 
   Enable('Tick');
   Level.Game.RegisterMessageMutator(Self);
   Level.Game.RegisterDamageMutator(Self);
+  if (Scale == 100)
+    bResizeEnabled=False;
+  if (!bResizeEnabled)
+    return;
   ScaleAll();
 }
 
@@ -212,22 +234,24 @@ function Tick(float DeltaTimeLoc) {
   #endif
   ScaleAll(); // a freshly thrown translocator or weapon, or new projectile, should be rescaled ASAP, so we do some shrinking every tick!
   Super.Tick(DeltaTimeLoc);
+  #ifdef LOG_TICKS
   if (FRand()>0.99) {
     DebugLog("Tick() DeltaTime="$DeltaTimeLoc);
   }
+  #endif
 }
 
 function ModifyPlayer(Pawn p) {
   Super.ModifyPlayer(p);
-  if (PlayerPawn(p) != None && PlayerPawn(p).bAdmin) {
-    PlayerPawn(p).ClientMessage("You can type: !resize 75");
-  }
   if (!bResizeEnabled)
     return;
-  if (p.PlayerReplicationInfo.Deaths == 0 && p.IsA('PlayerPawn')) {
+  if (PlayerPawn(p)!=None && p.PlayerReplicationInfo.Deaths == 0) {
     p.ClientMessage("Your size is "$Int(Scale*100)$"%");
     p.ClientMessage("Map size is "$Int((1.0/Scale)*100)$"%");
-    p.ClientMessage("To restore defaults, type: mutate resize 100");
+    p.ClientMessage("To restore defaults, type: !resize 100");
+    // if (PlayerPawn(p).bAdmin) {
+      // PlayerPawn(p).ClientMessage("You can type: !resize 75");
+    // }
   }
   p.JumpZ = 325*JumpScale; // I hope this will stop me jumping too high when I spawn, and prevent the JUMP-BUG reports.
 }
@@ -236,6 +260,9 @@ function ScaleAll() {
   local Actor a;
   local bool pastLast;
   local Actor LastActorInList;
+
+  if (!bResizeEnabled)
+    return;
 
   // Let's do a test.  Are new Actors always added to the end of the list?
   // Nice, it seems so!  We can use this to fiddle with only newly spawned Actors!
@@ -264,6 +291,11 @@ function ScaleAll() {
 function ScaleActor(Actor a) {
   // local bool bNew;
 
+  if (!bResizeEnabled)
+    return;
+
+  // DONE: We should not scale brush-style actors like BlockAll.
+
   // TODO: We could try moving these calls into HandleNewActor().
 
   if (a.IsA('Brush') && a.IsA('Mover')) {
@@ -278,15 +310,21 @@ function ScaleActor(Actor a) {
     #ifdef CHECK_DODGE
     CheckPlayerStateForDodge(Pawn(a));
     #endif
+
+    // TODO! This bit goes mad if we re-scale mid-game!
+    // TODO: If we change the scale mid-game, something here causes a nasty runaway CPU loop!
+    // We get CTF-Bleak-DoubleSize.PlayerStart16 Player start not useable!!!
+
     // ScalePawn(Pawn(a)); // Calling this repeatedly is what causes projectiles to leave the weapon at the wrong height.
     ScaleCollisionCylinder(a); // But we must call this, or Player can sometimes end up running around with feet in the floor.  (If HandleNewActor() was not successfully called on that player.)
+
     if (Pawn(a).JumpZ != 325*JumpScale) {
       DebugShout("JUMP-BUG: "$a.getHumanName()$".JumpZ != "$325*JumpScale);
     }
-    Pawn(a).JumpZ = 325*JumpScale; // Best to do it here!  If we do this in HandleNewActor(), it doesn't work.
-  }
 
-  // TODO: We should not scale brush-style actors like BlockAll.
+    Pawn(a).JumpZ = 325*JumpScale; // Best to do it here!  If we do this in HandleNewActor(), it doesn't work.
+
+  }
 
   if (a.IsA('Inventory')) {
     // a.DrawScale = a.default.DrawScale * Scale;
@@ -345,7 +383,7 @@ function HandleNewActor(Actor a) {
     // Conclusion: it's definitely not needed, but I don't know why.
     // If we do scale the collision cylinder, shock balls become much harder to hit.
     // DebugLog("Projectile "$a$" has CC ("$a.CollisionRadius$","$a.CollisionHeight$")");
-    DebugShout("Scaling projectile: "$a);
+    // DebugShout("Scaling projectile: "$a);
     ScaleCollisionCylinder(a);
     // We failed to scale DrawScale in ScaleProjectileClass().
     a.DrawScale = a.DrawScale * Scale;
@@ -363,6 +401,7 @@ function HandleNewActor(Actor a) {
   if (a.IsA('Pawn')) {
     // ScalePawn(Pawn(a)); // If we do this in ScaleActor() then projectiles leave the weapon at the wrong height.
     // ScaleCollisionCylinder(a);
+    DebugLog("HandleNewActor() New Pawn "$a);
   }
 
   if ((a.IsA('CTFFlag') /*|| a.IsA('FlagBase') <-- never happens */) /*&& a.DrawScale == a.default.DrawScale <-- unreliable! */) {
@@ -371,6 +410,8 @@ function HandleNewActor(Actor a) {
     // a.SetLocation(a.Location + (-84 + 84*Scale) * Vect(0,0,1));
     ScaleCollisionCylinder(a);
     a.DrawScale = a.DrawScale * Scale; // Otherwise it looks too big when held by player.
+    // a.DrawScale = a.default.DrawScale * Scale; // Need default if we scale down then up mid-game.
+    // DebuLog("HandleNewActor() Scaled "$a$" to "$Scale);
   }
 
 }
@@ -395,114 +436,122 @@ function bool AlwaysKeep(Actor Other) {
   // TODO: we don't have to use default any more, since this method should only be called once for each new actor :)
 
   local bool doneSomething;
+  local bool ignore;
 
   if (bResizeEnabled) {
 
-  // DebugLog("AlwaysKeep("$Other$") "$Other.Location$" [NetTag="$Other.NetTag$"]");
+    // DebugLog("AlwaysKeep("$Other$") "$Other.Location$" [NetTag="$Other.NetTag$"]");
 
-  if (Other.DrawScale != 1.0) {
-    DebugShout("Interesting: "$Other$" spawned with DrawScale="$Other.DrawScale);
-  }
+    if (Other.DrawScale != 1.0) {
+      DebugLog("Interesting: "$Other$" spawned with DrawScale="$Other.DrawScale);
+    }
 
-  // Other Actor properties worth scaling:
-  Other.PrePivot = Other.PrePivot * Scale;
-  Other.VisibilityRadius = Other.VisibilityRadius * Scale;
-  Other.VisibilityHeight = Other.VisibilityHeight * Scale;
-  Other.SpriteProjForward = Other.SpriteProjForward * Scale;
-  // TODO: sound changes are good for weapons, but should not apply to environment (map) sounds
-  Other.SoundRadius = Other.SoundRadius * Scale;
-  Other.SoundVolume = Other.SoundVolume / Scale; // don't make the sound quieter, just more localised!
-  Other.TransientSoundRadius = Other.TransientSoundRadius * Scale;
-  Other.TransientSoundVolume = Other.TransientSoundVolume / Scale; // don't make the sound quieter, just more localised!
-  // BUG: I noticed when I picked up a dropped enemy flag, the sirens sound was too quiet,
-  // presumably because this is a non-localised sound with no position.
+    // Other Actor properties worth scaling:
+    Other.PrePivot = Other.PrePivot * Scale;
+    Other.VisibilityRadius = Other.VisibilityRadius * Scale;
+    Other.VisibilityHeight = Other.VisibilityHeight * Scale;
+    Other.SpriteProjForward = Other.SpriteProjForward * Scale;
+    // TODO: sound changes are good for weapons, but should not apply to environment (map) sounds
+    Other.SoundRadius = Other.SoundRadius * Scale;
+    Other.SoundVolume = Other.SoundVolume / Scale; // don't make the sound quieter, just more localised!
+    Other.TransientSoundRadius = Other.TransientSoundRadius * Scale;
+    Other.TransientSoundVolume = Other.TransientSoundVolume / Scale; // don't make the sound quieter, just more localised!
+    // BUG: I noticed when I picked up a dropped enemy flag, the sirens sound was too quiet,
+    // presumably because this is a non-localised sound with no position.
 
-  if (Other.IsA('Pawn')) {
-    ScalePawn(Pawn(Other));
-    Pawn(Other).JumpZ = 325*JumpScale;
-    doneSomething = True;
-  }
+    if (Other.IsA('Pawn')) {
+      ScalePawn(Pawn(Other));
+      Pawn(Other).JumpZ = 325*JumpScale;
+      doneSomething = True;
+    }
 
-  if (Other.IsA('Inventory')) { // || Other.IsA('Pickup') || Other.IsA('Weapon')
-    //// These didn't work here, so moved to Tick().
-    // Inventory(Other).ThirdPersonScale = Inventory(Other).default.ThirdPersonScale * Scale;
-    // Inventory(Other).PickupViewScale = Inventory(Other).default.PickupViewScale * Scale;
-    // Other.default.DrawScale = Scale;
-    // Other.DrawScale = Scale;
-    // Inventory(Other).DrawScale = Inventory(Other).default.DrawScale * Scale;
-    // Inventory(Other).PlayerViewScale = Inventory(Other).default.PlayerViewScale;
-    ScaleCollisionCylinder(Other);
-    CloserToFloor(Other);
-    doneSomething = True;
-  }
+    if (Other.IsA('Inventory')) { // || Other.IsA('Pickup') || Other.IsA('Weapon')
+      //// These didn't work here, so moved to Tick().
+      // Inventory(Other).ThirdPersonScale = Inventory(Other).default.ThirdPersonScale * Scale;
+      // Inventory(Other).PickupViewScale = Inventory(Other).default.PickupViewScale * Scale;
+      // Other.default.DrawScale = Scale;
+      // Other.DrawScale = Scale;
+      // Inventory(Other).DrawScale = Inventory(Other).default.DrawScale * Scale;
+      // Inventory(Other).PlayerViewScale = Inventory(Other).default.PlayerViewScale;
+      ScaleCollisionCylinder(Other);
+      CloserToFloor(Other);
+      doneSomething = True;
+    }
 
-  // Change CollisionRadius/Height, and move up/down correspondingly
-  // Flags require some special changes
-  // TODO: this isn't scaling the flags, move back into Tick().
-  if (Other.IsA('FlagBase') /*|| Other.IsA('CTFFlag')*/) {
-    DebugLog("Scaling FlagBase @"$Other.Location$" DrawScale="$Other.DrawScale$" default.DrawScale="$Other.default.DrawScale); // this log showed us that default.DrawScale == Epic's default, not the map's default
-    // The default flag has DrawScale 1.3 and centre at about 84 units above the floor, so we move its centre to compensate for its new DrawScale.
-    ScaleCollisionCylinder(Other); // We must scale the collision cylinder before we move it!
-    Other.SetLocation(Other.Location + (-84 + 84*Scale) * Other.DrawScale/1.3 * Vect(0,0,1)); // makes no difference
-    Other.DrawScale = Other.DrawScale * Scale;
-    DebugLog("FlagBase now @"$Other.Location$" DrawScale="$Other.DrawScale);
-    doneSomething = True;
-  }
+    // Change CollisionRadius/Height, and move up/down correspondingly
+    // Flags require some special changes
+    // TODO: this isn't scaling the flags, move back into Tick().
+    if (Other.IsA('FlagBase') /*|| Other.IsA('CTFFlag')*/) {
+      DebugLog("Scaling FlagBase @"$Other.Location$" DrawScale="$Other.DrawScale$" default.DrawScale="$Other.default.DrawScale); // this log showed us that default.DrawScale == Epic's default, not the map's default
+      // The default flag has DrawScale 1.3 and centre at about 84 units above the floor, so we move its centre to compensate for its new DrawScale.
+      ScaleCollisionCylinder(Other); // We must scale the collision cylinder before we move it!
+      Other.SetLocation(Other.Location + (-84 + 84*Scale) * Other.DrawScale/1.3 * Vect(0,0,1)); // makes no difference
+      // Other.DrawScale = Other.DrawScale * Scale;
+      Other.DrawScale = Other.default.DrawScale * Scale;
+      DebugLog("FlagBase now @"$Other.Location$" DrawScale="$Other.DrawScale);
+      doneSomething = True;
+    }
 
-  if (Other.IsA('ZoneInfo') || Other.IsA('LevelInfo')) {
-    #ifdef CHANGE_GRAVITY
-    if (Scale>1) {
-      ZoneInfo(Other).ZoneGravity = ZoneInfo(Other).ZoneGravity * Sqrt(Scale); // Sqrt feels much better when scaling up, but not when scaling down.  Well ok it still feels a *little* lowgrav... somewhere between Sqrt and 1* might be best.
+    if (Other.IsA('ZoneInfo') || Other.IsA('LevelInfo')) {
+      #ifdef CHANGE_GRAVITY
+      if (Scale>1) {
+        ZoneInfo(Other).ZoneGravity = ZoneInfo(Other).ZoneGravity * Sqrt(Scale); // Sqrt feels much better when scaling up, but not when scaling down.  Well ok it still feels a *little* lowgrav... somewhere between Sqrt and 1* might be best.
+      } else {
+        ZoneInfo(Other).ZoneGravity = ZoneInfo(Other).ZoneGravity * Scale; // Feels about right, except dodges are too short.
+      }
+      #endif
+      doneSomething = True;
+    }
+
+    if (Other.IsA('PlayerStart')) {
+      CloserToFloor(Other);
+      doneSomething = True;
+    }
+
+    if (Other.IsA('PathNode') || Other.IsA('LiftExit')) {
+      // CloserToFloor(Other);
+      // doneSomething = True;
+      ignore = True;
+    }
+
+    if (Other.IsA('InventorySpot')) {
+      Other.DrawScale = Other.DrawScale * Scale;
+      CloserToFloor(Other);
+      doneSomething = True;
+    }
+
+    if (Other.IsA('Weapon')) {
+
+      ScaleProjectileClass(Weapon(Other).ProjectileClass);
+      ScaleProjectileClass(Weapon(Other).AltProjectileClass);
+
+      // Which setting really affects the speed?  The speed in the weapon or in the projectile?
+      Weapon(Other).ProjectileSpeed = Weapon(Other).ProjectileSpeed * Scale;
+      Weapon(Other).AltProjectileSpeed = Weapon(Other).AltProjectileSpeed * Scale;
+
+      if (Other.IsA('Translocator')) {
+        DebugLog("Fixing tossforce of "$Other);
+        Translocator(Other).TossForce = Translocator(Other).TossForce * Scale;
+        Translocator(Other).MaxTossForce = Translocator(Other).MaxTossForce * Scale;
+      }
+
+      doneSomething = True;
+    }
+
+    if (Other.IsA('Light') || Other.IsA('locationid') || Other.IsA('BlockAll')
+        || Other.IsA('Mover') || Other.IsA('LightBox')) {
+      ignore = True; // Just to quieten the reporter
+    }
+
+    if (ignore) {
+      // DebugLog("Ignored "$Other);
+    } else if (doneSomething) {
+      // DebugLog("Scaled "$Other);
     } else {
-      ZoneInfo(Other).ZoneGravity = ZoneInfo(Other).ZoneGravity * Scale; // Feels about right, except dodges are too short.
-    }
-    #endif
-    doneSomething = True;
-  }
-
-  if (Other.IsA('PathNode')) {
-    CloserToFloor(Other);
-    doneSomething = True;
-  }
-
-  if (Other.IsA('PlayerStart')) {
-    CloserToFloor(Other);
-    doneSomething = True;
-  }
-
-  if (Other.IsA('InventorySpot')) {
-    Other.DrawScale = Other.DrawScale * Scale;
-    CloserToFloor(Other);
-    doneSomething = True;
-  }
-
-  if (Other.IsA('Weapon')) {
-
-    ScaleProjectileClass(Weapon(Other).ProjectileClass);
-    ScaleProjectileClass(Weapon(Other).AltProjectileClass);
-
-    // Which setting really affects the speed?  The speed in the weapon or in the projectile?
-    Weapon(Other).ProjectileSpeed = Weapon(Other).ProjectileSpeed * Scale;
-    Weapon(Other).AltProjectileSpeed = Weapon(Other).AltProjectileSpeed * Scale;
-
-    if (Other.IsA('Translocator')) {
-      DebugLog("Fixing tossforce of "$Other);
-      Translocator(Other).TossForce = Translocator(Other).TossForce * Scale;
-      Translocator(Other).MaxTossForce = Translocator(Other).MaxTossForce * Scale;
+      DebugShout("AlwaysKeep() DID NOTHING FOR "$Other);
     }
 
-    doneSomething = True;
-  }
-
-  if (Other.IsA('Light') || Other.IsA('locationid')) {
-    doneSomething = True; // Just to quieten the reporter
-  }
-
-  if (!doneSomething) {
-    DebugShout("AlwaysKeep() DID NOTHING FOR "$Other);
-  }
-
-  // DebugLog("AlwaysKeep("$Other$") ENDED");
+    // DebugLog("AlwaysKeep("$Other$") ENDED");
 
   }
   return Super.AlwaysKeep(Other);
@@ -536,6 +585,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
       #ifdef CHANGE_GRAVITY
       ActualDamage = ActualDamage / Scale;
       DebugShout("FALL damage "$ActualDamage);
+      // At Scale 2.0 on Bleak, I get damage 10/11 (after division) for dropping one level - I should get 0.
       #endif
     } else {
     // if (DamageType == 'jolted' || DamageType == 'RocketDeath' || DamageType=='FlakDeath' || DamageType=='GrenadeDeath' || DamageType=='RipperAltDeath') {
@@ -577,18 +627,24 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
     }
   }
 
-  #ifdef CHECK_DODGE
-  // We need to check when a player (or other pawn) starts to dodge, so that we can fix (change) their velocity,
-  // since the dodge height (y velocity) is hard-coded in Epic's code, so we can't set it in advance.
-  function CheckPlayerStateForDodge(Pawn p) {
-    // TODO: how we scale dodge should be different if we have CHANGE_GRAVITY switched on or off.
-    // TODO: if we don't change gravity, fixed y should be no problem, since x is scaled ideally
-    //       to make the jump *look* better, we could increase y and decrease x.
-    if ((""$p.DodgeDir) != LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]) {
-      if (p.DodgeDir == DODGE_Active) {
-        // DebugShout("Scaling dodge z="$p.Location.Z$" + "$p.Velocity.Z$" for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
-        DebugShout("Scaling dodge ("$Int(p.Location.X)$","$Int(p.Location.Y)$","$Int(p.Location.Z)$") + ("$Int(p.Velocity.X)$","$Int(p.Velocity.Y)$","$Int(p.Velocity.Z)$") for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
-        #ifdef CHANGE_GRAVITY
+  Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
+}
+
+#ifdef CHECK_DODGE
+// We need to check when a player (or other pawn) starts to dodge, so that we can fix (change) their velocity,
+// since the dodge height (y velocity) is hard-coded in Epic's code, so we can't set it in advance.
+function CheckPlayerStateForDodge(Pawn p) {
+  // TODO: how we scale dodge should be different if we have CHANGE_GRAVITY switched on or off.
+  // TODO: if we don't change gravity, fixed y should be no problem, since x is scaled ideally
+  //       to make the jump *look* better, we could increase y and decrease x.
+  if (p.PlayerReplicationInfo == None || (PlayerPawn(p)==None && Bot(p)==None) || UTServerAdminSpectator(p)!=None)
+    return;
+  if ((""$p.DodgeDir) != LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]) {
+    // DebugShout(p.getHumanName()$"[id="$p.PlayerReplicationInfo.PlayerID$",DodgeDir="$p.DodgeDir$",Phys="$p.Physics$"]"); //// Appears to change between 0 and 5 DURING the player's flight.  I'm sure this didn't used to be the case.  Now this is causing a player's single dodge to be scaled multiple times!
+    if (p.DodgeDir == DODGE_Active) {
+      // DebugShout("Scaling dodge z="$p.Location.Z$" + "$p.Velocity.Z$" for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
+      DebugShout("Scaling dodge ("$Int(p.Location.X)$","$Int(p.Location.Y)$","$Int(p.Location.Z)$") + ("$Int(p.Velocity.X)$","$Int(p.Velocity.Y)$","$Int(p.Velocity.Z)$") for "$p.getHumanName()$" ["$LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64]$"->"$p.DodgeDir$"] ("$DeltaTime$"ms)");
+      #ifdef CHANGE_GRAVITY
         // Try to correct the changes from last tick:
         // DeltaTime = 0.05; // BUG: Assumes tickrate 20, but we could arrange for the real DeltaTime to be passed down to us.
         #define gravity 0 // Should be -ve.  BUG: should get it from the right place
@@ -597,25 +653,22 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
         // Set correct upward velocity:
         p.Velocity.Z = p.Velocity.Z * Scale;
         p.Velocity.Z = p.Velocity.Z + gravity*DeltaTime;
-        #else
+      #else
         // p.Velocity.X = p.Velocity.X * Scale;
         // p.Velocity.Y = p.Velocity.Y * Scale;
         // p.Velocity.X = p.Velocity.X * Sqrt(Scale);
         // p.Velocity.Y = p.Velocity.Y * Sqrt(Scale);
         // p.Velocity.Z = p.Velocity.Z * Sqrt(Scale);
         // p.Velocity.Z = p.Velocity.Z * Sqrt(Sqrt(Scale));
-        #endif
-      }
+      #endif
     }
-    LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64] = ""$p.DodgeDir;
-    // CONSIDER: When scaling up, the dodge seems a little low, but distance reached seems ok.
-    //           Maybe this is because Velocity.Z has already changed by 1 tick before we get to it.
-    // DebugLog("CheckPlayerStateForDodge [END]");
   }
-  #endif
-
-  Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
+  LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64] = ""$p.DodgeDir;
+  // CONSIDER: When scaling up, the dodge seems a little low, but distance reached seems ok.
+  //           Maybe this is because Velocity.Z has already changed by 1 tick before we get to it.
+  // DebugLog("CheckPlayerStateForDodge [END]");
 }
+#endif
 
 // PROBLEM TODO: When we change the default values of projectiles, they stay changed next map!!  And hence get scaled again, becoming over-scaled (too slow/fast).
 // Maybe we can get around this by caching things already been scaled
@@ -714,46 +767,74 @@ function CheckMessage(String line, PlayerPawn Sender) {
   local Actor a;
   local float NewScale;
 
+  if (Left(line,4) ~= "HELP") {
+    if (Sender.bAdmin || bAllowPlayersToResize || Scale != 1.0) {
+      Sender.ClientMessage("ResizeTest commands: !resize <newscale>");
+    }
+  }
+
   // Still doesn't work very well, but at least it sets the size easily for the next map.
   if (Left(line,7) ~= "RESIZE ") {
-    NewScale = Int( Mid(line,7) );
-    if (!Sender.bAdmin && NewScale != 100) {
+    NewScale = Float( Mid(line,7) );
+
+    if (!Sender.bAdmin && !bAllowPlayersToResize && NewScale != 100) {
       Sender.ClientMessage("You can only force default size with: !resize 100");
       return;
     }
+
+    // We are going to do the resize...
+
     if (NewScale == 100) {
-      BroadcastMessage("Game is now at default size.");
+      BroadcastMessageAndLog("Game is now at default size.");
+      NewScale = 1.0;
     } else {
-      if (Sender.bAdmin || Scale != 100) {
-        if (NewScale >= 20) // assume they meant percent
-          NewScale = NewScale / 100;
-        if (NewScale<0.1)
-          NewScale=0.1;
-        if (NewScale>4)
-          NewScale=4;
-        // BroadcastMessage("You have been resized to " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
-        BroadcastMessage("Game has been resized to " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
-      }
+     // if (NewScale >= 20) // assume they meant percent
+     if (NewScale >= 5 && InStr(Mid(line,7),".")==-1) // assume they meant percent
+       NewScale = NewScale / 100;
+     if (NewScale<0.1)
+       NewScale=0.1;
+     if (NewScale>4)
+       NewScale=4;
+     // BroadcastMessageAndLog("You have been resized to " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
+     BroadcastMessageAndLog("Game has been resized to " $ Int(NewScale*100) $ "% by " $ Sender.getHumanName());
     }
+
     if (Scale == 100 && NewScale == 100)
       bResizeEnabled=False;
+
     if (Scale == NewScale) {
-      BroadcastMessage("Game has been fixed on " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
+      BroadcastMessageAndLog("Game has been fixed on " $ Int(Scale*100) $ "% by " $ Sender.getHumanName());
       SaveConfig();
     } else {
-      BroadcastMessage("Game has been resized from " $ Int(Scale*100) $ "% to " $ Int(NewScale*100) $ "% by " $ Sender.getHumanName());
+      BroadcastMessageAndLog("Game has been resized from " $ Int(Scale*100) $ "% to " $ Int(NewScale*100) $ "% by " $ Sender.getHumanName());
       bResizeEnabled = True;
     }
-    Scale = NewScale;
 
+    // DONE: As a precaution, we should scale the inverse of OldScale, to reset all the UT actors we have already scaled to their original 1.0, and then set up our new scale.
+    Scale = 1.0/Scale;
     // Try to force a refresh of everything:
     foreach AllActors(class'Actor',a) {
+      // TODO: Refactor this AlwaysKeep() into MyAlwaysKeep() so that we don't keep calling the later mutators in the chain.
       AlwaysKeep(A); // kill transloc
       HandleNewActor(a);
       ScaleActor(a);
       // A number of things do not change from the client's point of view.
       // TODO Consider clearing LastActor.
     }
+
+    DebugLog("Scale="$NewScale);
+    Scale = NewScale;
+
+    // Try to force a refresh of everything:
+    foreach AllActors(class'Actor',a) {
+      // TODO: Refactor this AlwaysKeep() into MyAlwaysKeep() so that we don't keep calling the later mutators in the chain.
+      AlwaysKeep(A); // kill transloc
+      HandleNewActor(a);
+      ScaleActor(a);
+      // A number of things do not change from the client's point of view.
+      // TODO Consider clearing LastActor.
+    }
+
   }
 
 }
