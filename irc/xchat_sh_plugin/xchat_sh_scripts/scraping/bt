@@ -1,0 +1,9 @@
+SEARCH="\(BT\|CTF-BT\)-" sh ./scraping/scrapegt "$@"
+sleep 5
+(
+echo "/me was crushed/burnt/slimed/frozen/drowned/depressurised/beheaded again"
+echo "/me was incinerated"
+echo "/me was slimed"
+echo "/me left a small crater"
+echo "/me killed his own dumb self"
+) | chooserandomline

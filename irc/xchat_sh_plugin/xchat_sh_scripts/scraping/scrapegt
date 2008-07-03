@@ -1,0 +1,49 @@
+. irc.shlib
+. irccols.shlib
+
+## Accepts regexps SEARCH and IGNORE.
+
+if [ "$1" ]
+then COUNT="$1"
+fi
+if [ "$COUNT" ] && [ "$COUNT" -lt 50000 ]
+then :
+else COUNT=10
+fi
+
+if [ "$NOCOLS" ]
+then COLBLUE=""; COLBOLD=""; COLRESET=""; COLYELLOW=""
+fi
+
+for URLEXTRA in "" # '?page=2' '?page=3' '?page=4'
+do
+	# sleep 4
+
+	OPTIONS="--load-cookies cookies.txt --save-cookies cookies.txt --keep-session-cookies"
+	memo -t "4 minutes" wget $OPTIONS -nv -O - "http://www.gametracker.com/search/ut/?sort=players.desc&per_page=50$URLEXTRA" |
+	fromhtml |
+	tr "\n" " " |
+	sed 's+ [0-9][0-9]*\. +\n+g' |
+	sed 's+\[\([0-9]*\|[^]]*\.gif\)\]++g' |
+	sed 's+Launch with GSC++g' |
+	grep "^UT " |
+	dropcols 1 |
+	sed 's+Rank Gm Server Name .*++' | ## Remove all the crap after the last result
+	cat
+
+done |
+
+if [ "$IGNORE" ]
+then grep -v "$IGNORE"
+else cat
+fi |
+if [ "$SEARCH" ]
+then grep "$SEARCH"
+else cat
+fi |
+## Title Playercount Address Map
+sed "s+^\(.*\) \([0-9][0-9]*/[0-9][0-9]*\)  *\([^ ]*\)  *\(.*\)+$COLBLUE$COLBOLD\3 $COLRESET\2 \4 $COLYELLOW\1 +" |
+
+head -n 10 |
+notice
+

@@ -1,0 +1,1 @@
+SEARCH="\<DM-" sh ./scraping/scrapegt "$@"

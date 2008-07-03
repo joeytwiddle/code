@@ -1,0 +1,1 @@
+SEARCH="\<DOM-" sh ./scraping/scrapegt "$@"

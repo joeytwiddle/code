@@ -1,0 +1,1 @@
+SEARCH="\<CTF-" IGNORE="\<CTF-BT-" sh ./scraping/scrapegt "$@"
