@@ -32,7 +32,7 @@
 // When parsing, we can check duplicates and remove the older.
 // Do we need the third combined record?  It does mean we only have to lookup one.
 
-#define ATB_VERSION "1.4y"
+#define ATB_VERSION "1.4.dev02"
 
 // DONE: By using bCached[], the record is not re-checked if the nick changes, or if IP changes.  On XOL this is a problem because the initial IP often does change to IDC after a little bit of time.  OK hacking this into the IDC catch code.
 //       This solution means the empty record of their IP will be created.  An alternative would be, at the end of the game, to overwrite whatever is in the DB with the players current nick and idc.
@@ -44,19 +44,20 @@
 // TODO: BroadcastTeamStrengths() was occasionally being called twice.  Check that it is not called if it cannot do anything (or at least not called twice!).  Seems OK atm (I did remove some).
 // TODO: Prevent players from switching team when teams are already even.  (Admin optional imo.)
 // TODO: My recent attempt to perform 2-player-rebalance if 1-player-rebalance fails, does not work in the situation where it's 3v5 and team strengths are even.  In that situation, it cannot find anything better, because it is looking at balancing strength, not players.
+// TODO: mutate suggest - Like bProposeSwitch but only messages Sender.
+// TODO: ATB may decide to switch 3 players, but it only flashes that it will switch two, and this looks wrong to players!
 
 // Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
 
 // Changes since 1.4:
 // When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
-// Slight reduction in comparisons made, using booleans.
 // Changed the default number of player records to 2048, to reduce lag on general servers.
 // Reduced MinSecondsBeforeRebalance to 2 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
 // Added bBroadcastTeamStrengths and bFlashTeamStrengths.
 // Moved "Type !teams" message from Flash to the GameInfo.TeamChangeMessage.
 // DONE: Added ADDMUT and DELMUT.
 // DONE: Swap 2 or 3 players when swapping 1 or 2 won't work, e.g. 4 strong vs 5 weak.
-// DONE: bCached - a faster check on whether we have player #i's record at index i in the arrays.
+// DONE: added bCached - a faster check on whether we have already cached (looked up and swapped) a player's record
 // DONE: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.  OK we check 3v5 and we check strength difference.
 // DONE: Compile time option LOG_LAG, to help debugging/development.
 // DONE: When deciding which player to switch mid-game, ATB now prefers players who have not been in the game for long.
@@ -65,6 +66,7 @@
 // DONE: mutate listfakers aka mutate listfakes aka mutate listnick
 // DONE: WinningTeamBonus is now given in secret.  Reduced default to 5 points.
 // DONE: Foolish SemiAdmins can no longer switch Spectators onto a playing team.  [Thanks AdminThis for the bugreport.]
+// DONE: I set the default StrengthProportionFromCurrentGame to 1.0, which in v1.5 will minimise mid-game lag (there will be no costly database lookups).  The disadvantage is that the performance of players in previous games will not be taken into account.  Admins can turn it on and decide if their server can handle the processing or not.
 
 // Changes in 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
@@ -209,8 +211,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	// #define TESTING_PRINT_ANGLES
 	#define bLogDuplicateRecords False
 	// TODO: If we do take the duplicate, the older useless one should be removed.
-	// #define LOG_LAG
-	// #define LOG_LAG_KEEP_LAST_ACTION
+	#define LOG_LAG
+	#define LOG_LAG_KEEP_LAST_ACTION
 	// #define LOG_TICKRATE
 	// #define WARN_TICKRATE_CHANGE
 
@@ -457,7 +459,8 @@ defaultproperties {
 	bNormaliseScores=True
 	// bRelativeNormalisation=True
 	RelativeNormalisationProportion=0.5 // 0.0 = no relative, scores always normalised around NormalisedStrength (50); 1.0 = scores normalised around average strength of players in game
-	StrengthProportionFromCurrentGame=0.25 // On XOL 0.5 seemed to be way too variable.
+	// StrengthProportionFromCurrentGame=0.25 // On XOL 0.5 seemed to be way too variable.
+	StrengthProportionFromCurrentGame=1.0 // Whilst this is a desirable feature, db lookups are costly, so this may be preferable mid-game to ensure minimal lag
 	bScalePlayerScoreToFullTime=True
 	NormalisedStrength=50
 	UnknownStrength=50
@@ -614,6 +617,7 @@ function SetIDC(int i, int j) {
 
 // There was a problem whereby it was getting destroyed (due to taking 3 seconds to process CheckMidGameBalance), and then the new one was perform ForceFullTeamsRebalance!  I think this is fixed now, but disabling this code until I have time to watch it a bit.  ;)  OR ... make it an option ... OR ... somehow make it auto-fix (aka disable) when that happens.  :P
 #define DESTROY_RECOVERY
+// Disabled cos it might be causing lag on XOL, and sometimes it rebalances just after play started.  :f
 event Destroyed() {
 	local AutoTeamBalance newATB;
 	local int i;
@@ -633,12 +637,16 @@ event Destroyed() {
 	}
 	#endif
 	#ifdef DESTROY_RECOVERY
-		if (FRand()<0.4) {
+		// if (FRand()<0.4) {
+		if (true) {
 		// if (Level.TimeSeconds-Int(Level.TimeSeconds)<0.4) {
 		// if (FRand()+Level.TimeSeconds-Float(Int(Level.TimeSeconds))<0.8) {
 			NormalLog(Self$" Not trying recovery this time.  ATB will remain off.");
 			// BroadcastMessageAndLog("AutoTeamBalance encountered problems, and is disabled for the rest of this game.");
-			BroadcastMessageAndLog("AutoTeamBalance is disabled.");
+			// BroadcastMessageAndLog("AutoTeamBalance is disabled.");
+			// BroadcastMessageAndLog("Sorry, AutoTeamBalance was destroyed.");
+			BroadcastMessageAndLog("AutoTeamBalance was destroyed.");
+			BroadcastMessageAndLog("You can balance teams by typing NextTeam in the console.");
 		} else {
 			// return;
 			// If that does not work, we can try adding ourself as a mutator again, or better, spawning a new AutoTeamBalance and adding that.
@@ -2674,18 +2682,22 @@ function float GetFlagStrength() {
 }
 
 // Returns the strength of a player
+// If we are using proportional strength estimation (from current game and from player record) then mix the values.
 function float GetPlayerStrength(Pawn p) {
-	// DONE: if gameStartDone and/or gametime>1minute then guess the player's strength from their current score
 	local float timeInGame;
-	// if (bUseOnlyInGameScoresForRebalance && gameStartDone && !gameEndDone) {
-		// return p.PlayerReplicationInfo.Score;
-	// }
-	if (StrengthProportionFromCurrentGame>0 && gameStartDone) {
+	if (StrengthProportionFromCurrentGame >= 1.0) {
+		return NormaliseScore(GetScoreForPlayer(p));
+	}
+	if (StrengthProportionFromCurrentGame <= 0.0) {
+		return GetRecordedPlayerStrength(p);
+	}
+	if (gameStartDone) {
 		timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
 		if (timeInGame > 180) {
 			return NormaliseScore(GetScoreForPlayer(p)) * StrengthProportionFromCurrentGame + GetRecordedPlayerStrength(p) * (1.0 - StrengthProportionFromCurrentGame);
 		}
 	}
+	// We can't mix the values yet because the game hasn't started or the player has only just joined, so we must:
 	return GetRecordedPlayerStrength(p);
 }
 
