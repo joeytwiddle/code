@@ -2,23 +2,24 @@
 # then exit 0
 # fi
 
-if [ "$CHANNEL" = "#ut.pug" ] && [[ "$NETWORK" =~ ".*\.Quakenet\.\(org\|net\)" ]]
+if [ "$CHANNEL" = "#ut.pug" ] # && [[ "$NETWORK" =~ ".*[Qq]uakenet\.\(org\|net\)" ]]
 then
 	if [ "$*" ]
 	then
+		echo "[Your request to invite $* has been forwarded to #ut.admins (probably)]"
 		echo "/msg #ut.admins [$NICK is requesting an invite for $*]"
 		echo "/msg LiquidFire [$NICK is requesting an invite for $* to #ut.pug]"
 		echo "/msg Majinx [$NICK is requesting an invite for $* to #ut.pug]"
+		echo "/msg [SMo]Vader [$NICK is requesting an invite for $* to #ut.pug]"
 		echo "/msg nogginBasher [$NICK is requesting an invite for $* to #ut.pug]"
 		echo "/msg off|noggin [$NICK is requesting an invite for $* to #ut.pug]"
-		echo "[Your request to invite $* has been forwarded to #ut.admins]"
-		exit
 	else
 		echo "Usage: !invite <nick>"
 	fi
+	exit
 fi
 
-if [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#adl.pvt" ] || echo "$NICK" | grep -i "^goly" >/dev/null || echo "$NICK" | grep -i "^mox" >/dev/null || echo "$NICK" | grep -i "mox$" >/dev/null || echo "$NICK" | grep -i "^[|]*sandwich[|]*$" >/dev/null || echo "$NICK" | grep -i "^[|]*xaz[|]*$" >/dev/null
+if [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#adl.pvt" ] || echo "$NICK" | grep -i "^goly" >/dev/null || echo "$NICK" | grep -i "^mox" >/dev/null || echo "$NICK" | grep -i "mox$" >/dev/null || echo "$NICK" | grep -i "^[|]*sandwich[|]*$" >/dev/null || echo "$NICK" | grep -i "^[|]*xaz[|]*$" >/dev/null || echo "$NICK" | grep -i "^evi" >/dev/null
 then
 	echo "/invite $NICK #ut.pug"
 	# if [ "$1" ]
