@@ -1,0 +1,13 @@
+. irccols.shlib
+
+PETALCOL=`echolines "$COLRED" "$COLBLUE" "$COLPINK" "$COLYELLOW" "$COLORANGE" "$COLAQUA" | chooserandomline`
+CENTRECOL=`echolines "$COLRED" "$COLBLUE" "$COLPINK" "$COLYELLOW" "$COLORANGE" "$COLAQUA" | chooserandomline`
+
+NUM=`echolines 2 3 | chooserandomline`
+case "$NUM" in
+	# 1) LEFT="]"; RIGHT="["; ;;
+	2) LEFT="{"; RIGHT="}"; ;;
+	3) LEFT="("; RIGHT=")"; ;;
+esac
+
+echo "$COLGREEN""--<-<-""$COLBOLD""$PETALCOL""$LEFT""$CENTRECOL""@""$PETALCOL""$RIGHT $COLBOLD$COLRESET""$* $COLBOLD$PETALCOL$LEFT$CENTRECOL""@""$PETALCOL$RIGHT$COLBOLD$COLGREEN""->->--$COLRESET"
