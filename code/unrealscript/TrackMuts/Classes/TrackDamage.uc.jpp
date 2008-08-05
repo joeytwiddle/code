@@ -141,7 +141,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	}
 
 	if (command ~= "HELP") {
-		Sender.ClientMessage("TrackDamage commands: flash damage pain alldamage");
+		Sender.ClientMessage("TrackDamage commands: ! or mutate flash|damage|pain|alldamage - shows you damage caused during play");
 		return True;
 	}
 
@@ -155,14 +155,16 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	local PlayerPawn pl;
 	local String boost;
 	local String actualDamageStr;
+	local bool bSameTeam;
 
-	if (ActualDamage == 0 && Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team)
+	bSameTeam = (Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team);
+	if (ActualDamage == 0 && !bSameTeam)
 		actualDamageStr = "(absorbed)"; // shield or armor (or some other reason) caused this to give 0 damage to enemy
 	else
 		actualDamageStr = ""$ActualDamage;
 	if (Victim == InstigatedBy)
 		actualDamageStr = actualDamageStr $ " SELF";
-	else if (Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
+	else if (bSameTeam)
 		actualDamageStr = actualDamageStr $ " TEAM";
 
 	boost = "";
@@ -172,8 +174,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	if (VSize(Momentum) > 1000.1) boost = "BOOST!";
 	if (boost != "")
 		boost = boost $ " ("$ Int(VSize(Momentum)) $")";
-	// if (boost != "" && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team)
-		// boost = "TEAM " $ boost;
+	if (boost != "" && bSameTeam)
+		boost = "TEAM " $ boost;
 
 	if (PlayerPawn(InstigatedBy) != None) {
 		instigatorSettings = GetPlayerSettingsFor(PlayerPawn(InstigatedBy));
