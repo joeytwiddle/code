@@ -25,7 +25,7 @@ function PostBeginPlay() {
 	// If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
 	// Level.Game.BaseMutator.AddMutator(Self);
 	if (bEnabled) {
-		Log("RedirectPlayers will send players to: "$ TargetURL);
+		Log("[RedirectPlayers] Will send players to: "$ TargetURL);
 		// SetTimer(10,True); // BUG DONE: When I had SetTimer(1) my UT crashed.  But there's a 1 in 10 chance of hitting the timer right when you join, so this may still happen to some players.  We should check their time-in-game.
 		SetTimer(1,True);
 		// BUG DONE: Also this will call repeatedly and if a player has to download packages, it may restart their download every 10 seconds.  =/
@@ -45,13 +45,13 @@ function CheckRedirect(Pawn p) {
 					if (bTellPlayers)
 						PlayerPawn(p).ClientMessage("You are being redirected to "$ TargetURL);
 					if (bLog)
-						Log("Redirecting "$ p.getHumanName() $" to "$ TargetURL);
+						Log("[RedirectPlayers] Redirecting "$ p.getHumanName() $" to "$ TargetURL);
 					PlayerPawn(p).PreClientTravel();
 					PlayerPawn(p).ClientTravel(TargetURL, TRAVEL_Absolute, False);
 					// Consider: Just curious, can we also do this with p.ConsoleCommand("open "$ TargetURL); ?
 				}
 			}
-			Log("RedirectPlayers dealt with ["$NextPlayerToDo$"] "$ p.getHumanName());
+			Log("[RedirectPlayers] Dealt with ["$NextPlayerToDo$"] "$ p.getHumanName());
 			NextPlayerToDo++;
 		}
 	}
@@ -75,7 +75,7 @@ function ModifyPlayer(Pawn p) {
 		CheckRedirect(PlayerPawn(p));
 	}
 */
-	Log(p.getHumanName()$" is ["$p.PlayerReplicationInfo.PlayerID$"]");
+	Log("[RedirectPlayers] "$p.getHumanName()$" is ["$p.PlayerReplicationInfo.PlayerID$"]");
 	Super.ModifyPlayer(p);
 }
 
