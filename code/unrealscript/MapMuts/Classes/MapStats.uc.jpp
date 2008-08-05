@@ -12,6 +12,7 @@ class MapStats expands Mutator config(MapStats);
 
 // I thought this was needed for immediate switch to work 100%, but I'm not 100% sure.
 // #define CATCH_LEVEL_SWITCH
+#define PLAYERS_CAN_VETO
 
 var config bool bLogging;
 var config bool bDebugLogging;
@@ -65,6 +66,10 @@ var bool bCanChooseUnsizedMaps;
 var String ConsideredMaps;
 var bool bInterceptTravel;
 var String NextMap;
+var String RejectedMaps;
+#ifdef PLAYERS_CAN_VETO
+var int NoCount;
+#endif
 
 defaultproperties {
 bLogging=True
@@ -129,7 +134,7 @@ function PostBeginPlay() {
    // Level.Game.BaseMutator.AddMutator(Self);
 
 	// Register to receive spoken messages in MutatorTeamMessage() below:
-	// Level.Game.RegisterMessageMutator(Self);
+	Level.Game.RegisterMessageMutator(Self);
 
 	DoStart();
 
@@ -321,8 +326,14 @@ event Timer() {
 		DoEnd();
 		bDoneGameEnd = True;
 		if (bEndGameSwitchMap) {
-			BroadcastAndLog("Map will not be: "$ ConsideredMaps);
-			BroadcastAndLog("Map may switch to "$ ChooseNextMap() $" in "$EndGameSwitchSeconds$" seconds.");
+			NextMap = ChooseNextMap();
+			// BroadcastAndLog("Map will change to "$ NextMap $" in "$EndGameSwitchSeconds$" seconds.");
+			#ifdef PLAYERS_CAN_VETO
+			BroadcastAndLog("Next map will be "$ NextMap $"... say no to reject.");
+			#else
+			BroadcastAndLog("Next map will be "$ NextMap $".");
+			#endif
+			BroadcastAndLog("(Other maps: "$ ConsideredMaps $")");
 			// We do the switch in the if clause below, when Timer is next called.
 			SetTimer(EndGameSwitchSeconds,False);
 		} else {
@@ -341,7 +352,9 @@ event Timer() {
 function DoLevelSwitch() {
 	local float num;
 
-	NextMap = ChooseNextMap();
+	if (NextMap == "") {
+		NextMap = ChooseNextMap();
+	}
 
 	MapRecord(NextMap).DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Might be nicer to set date = 1 day ago, unless a player joins and makes it more recent.  But that's still not ideal.  What is?)
 	MapRecord(NextMap).bCrashes = True;
@@ -582,7 +595,7 @@ function String ChooseNextMap() {
 	for (i=0;i<MaxData;i++) {
 		if (MapStats[i].PreferredPlayers > 0 || (bCanChooseUnsizedMaps && MapStats[i].MapName!="")) {
 			mapScore = ScoreForNextMap(i,currentNumPlayers);
-			if (bestMap == "" || mapScore > bestScore) {
+			if (bestMap == "" || mapScore > bestScore && !StrContains(RejectedMaps,MapStats[i].MapName)) {
 				if (!MapStats[i].bOnDisk) {
 					if (bDebugLogging && FRand()<0.01) {
 						DebugLog("ChooseNextMap(): Skipping "$ MapStats[i].MapName $" because server no longer has it!");
@@ -776,19 +789,32 @@ function bool ScanMaps(optional String search) {
 	return False;
 }
 
-/*
+#ifdef PLAYERS_CAN_VETO
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	local bool hideMessage;
 	hideMessage = False;
 	if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
-		if (StrStartsWith(Msg,"!")) {
-			hideMessage = CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
+		// if (StrStartsWith(Msg,"!")) {
+			// hideMessage = CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
+		// }
+		if (Level.Game.bGameEnded && bEndGameSwitchMap) {
+			if (Msg ~= "NO") {
+				NoCount++;
+				if (NoCount >= 3) {
+					NoCount = 0;
+					RejectedMaps = RejectedMaps $ " " $ NextMap;
+					NextMap = ChooseNextMap();
+					BroadcastAndLog("Map will switch to "$ NextMap $".");
+				}
+			}
 		}
 	}
-	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage || !bSwallowSpokenCommands);
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage /* || !bSwallowSpokenCommands */ );
 }
+#endif
 
+/*
 // Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
 function bool CheckMessage(String line, PlayerPawn Sender) {
 	local int argCount;
