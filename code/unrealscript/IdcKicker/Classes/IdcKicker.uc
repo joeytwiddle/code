@@ -1,5 +1,8 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// TESTING: We can now leave optional comments/reason in the config files after each player's IDC number.
+// TODO: Add mutate ban <adminpass> <player_name> [<reason>]...   which would add the player's IDC.
+
 class IdcKicker expands Mutator config(IdcKicker);
 
 var config bool bEnabled;
@@ -16,8 +19,15 @@ function PostBeginPlay() {
 	Super.PostBeginPlay();
 }
 
+function String FirstArg(String s) {
+	local int j;
+	j = InStr(s," ");
+	if (j>=0) return Left(s,j);
+	else return s;
+}
+
 function Mutate(String str, PlayerPawn Sender) {
-	local string idc;
+	local string idc,criminal;
 	local int i;
 
 	if (str ~= "IDCKICKER DISABLE" && Sender.bAdmin) {
@@ -37,12 +47,14 @@ function Mutate(String str, PlayerPawn Sender) {
 		idc = Mid(str,4);
 
 		for (i=0;i<256;i++) {
-			if (IdcToKick[i]!="" && IdcToKick[i]~=idc) {
-				Log("IdcKicker: "$ Sender.getHumanName() $" has IDC "$ idc $" - kicking him/her.");
+			criminal = FirstArg(IdcToKick[i]);
+			if (criminal!="" && criminal~=idc) {
+				Log("IdcKicker: "$ Sender.getHumanName() $" has IDC "$ idc $" - KICKING him/her.");
 				DoKick(Sender);
 			}
-			if (IdcToBan[i]!="" && IdcToBan[i]~=idc) {
-				Log("IdcKicker: "$ Sender.getHumanName() $" has IDC "$ idc $" - kick-banning him/her.");
+			criminal = FirstArg(IdcToBan[i]);
+			if (criminal!="" && criminal~=idc) {
+				Log("IdcKicker: "$ Sender.getHumanName() $" has IDC "$ idc $" - BANNING him/her.");
 				DoBan(Sender);
 			}
 		}
@@ -62,15 +74,23 @@ function DoBan(PlayerPawn Victim) {
 	IP = Victim.GetPlayerNetworkAddress();
 	if (Level.Game.CheckIPPolicy(IP)) {
 		IP = Left(IP, InStr(IP, ":"));
-		for (j=0;j<50;j++)
-			if (Level.Game.IPPolicies[j] == "")
-				break;
-		if (j < 50) {
-			Level.Game.IPPolicies[j] = "DENY,"$IP;
-			Log("IdcKicker: Added IP Ban for "$ Victim.getHumanName() $" ("$ IP $") at slot "$ j);
-		} else {
-			Log("IdcKicker: Could not add IP ban for "$ Victim.getHumanName() $" ("$ IP $") - IPPolicies[] is full!");
-		}
+
+		//// Find an empty record:
+		// for (j=0;j<50;j++)
+			// if (Level.Game.IPPolicies[j] == "")
+				// break;
+		// if (j < 50) {
+			// Level.Game.IPPolicies[j] = "DENY,"$IP;
+			// Log("IdcKicker: Added IP Ban for "$ Victim.getHumanName() $" ("$ IP $") at slot "$ j);
+		// } else {
+			// Log("IdcKicker: Could not add IP ban for "$ Victim.getHumanName() $" ("$ IP $") - IPPolicies[] is full!");
+		// }
+
+		//// Choose a random record:
+		// TODO: what if list is not yet full, is it ok to leave earlier IPPolicies empty?
+		j = FRand()*50;
+		Level.Game.IPPolicies[j] = "DENY,"$IP;
+
 		Level.Game.SaveConfig();
 	}
 	Victim.Destroy();
