@@ -33,10 +33,11 @@ defaultproperties {
 	bAutoSave=False      // When set, buildings in the game will be saved at regular intervals (CAUSES LAG!).
 	bRememberOld=False   // When set, will keep records of old buildings which have been destroyed.  (Will only remember buildings destroyed mid-game if bAutoSave=True.)
 	bSpawnFairly=True    // When set, on loading buildings, will only spawn an equal number of buildings of each type for each team.
+	// DONE: bAutoSave already does this O_o // bKeepDestroyed=True  // When set, buildings will be scanned every 3 minutes, but SaveConfig() will not be run, to avoid lag.  LIES the lag is in the processing!
 }
 
-function PostBeginPlay() {
-	Super.PostBeginPlay();
+function PreBeginPlay() {
+	Super.PreBeginPlay();
 	SetTimer(20,True);
 }
 

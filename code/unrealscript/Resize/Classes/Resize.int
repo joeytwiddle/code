@@ -1,2 +1,5 @@
 [Public]
 Object=(Name=Resize.Resize,Class=Class,MetaClass=Engine.Mutator,Description="Resize")
+Object=(Name=Resize.ResizeTest,Class=Class,MetaClass=Engine.Mutator,Description="ResizeTest")
+Object=(Name=Resize.MarioPups,Class=Class,MetaClass=Engine.Mutator,Description="MarioPups")
+

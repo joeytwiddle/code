@@ -17,5 +17,6 @@ function StartMatch() {
 			m.DoGameStart();
 		}
 	}
+	Super.StartMatch();
 }
 

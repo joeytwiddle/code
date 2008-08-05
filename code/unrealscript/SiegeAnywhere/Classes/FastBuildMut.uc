@@ -108,7 +108,7 @@ function FindBoundary() {
 	FindBoundaryFromFlags();
 
 	// if (MaxAllowedRadius < 2048) { // failed on Panels, PureAction and ShockBlock, but worked on 2on2Crates.
-	if (MaxAllowedRadius < 1024) { // TODO: The REAL check we want to make, is whether all PlayerStarts are within the boundary.
+	if (MaxAllowedRadius < 256) { // TODO: The REAL check we want to make, is whether all PlayerStarts are within the boundary.
 		// Log("FastBuildMut.FindBoundary(): Could not find both FlagBases, or they were too close.  Now averaging PlayerStarts...");
 		FindBoundaryFromSpawnPoints();
 		//// TODO: this is desirable for assault, but maybe not TDM and *definitely* not DOM!
@@ -118,7 +118,7 @@ function FindBoundary() {
 
 	// MaxAllowedRadius is now deprecated, dotproduct is used instead.
 	// Log("FastBuildMut.FindBoundary(): MaxAllowedRadius="$MaxAllowedRadius);
-	if (MaxAllowedRadius < 256) { // DM-Richocet was 409, bleak was 3117.
+	if (MaxAllowedRadius < 64) { // DM-Richocet was 409, bleak was 3117.
 		// MaxAllowedRadius = 1024 * 256;
 		Log("FastBuildMut.FindBoundary(): TeamOrigins are too close together to build a wall!");
 		if (bConfineToBase) {
@@ -136,6 +136,7 @@ function FindBoundary() {
 	// Good sanity check.  We could try to detect this, e.g. by looking at PlayerStarts, PathNodes, InventorySpots...
 	// DONE: Or maybe we shouldn't use radius at all - just look for players crossing the plane which divides the to bases.
 	// TODO: Even then, on some maps, you might cross that boundary without actually leaving your base.  E.g. Joust maps, where every PlayerStart will be *beyond* the boundary!
+	// TODO: Therefore, we should check that all (or at least one) PlayerStarts from each team are/is on the right side of the boundary wall.
 
 }
 

@@ -2,6 +2,10 @@
 // nBAutoSpectate.
 //================================================================================
 
+// TODO: Sometimes during first playback (3rdperson) we are confronted with No Event and a picture of a wall.  THAT is the time to call ViewClass!  If I press F5 then I see other players.  If I don't press F5 is usually am following myself.
+
+// TODO: Probably what we should be doing is calling ViewClass until UT gives us the player we want info for.
+
 // TODO: Allow a mode that records the spectator's camera position every few seconds, and a mode that replays those positions, interpolating smoothly.  (That may be what w1z4! did for the #scrofulous movie.)
 
 // TODO: to detect areas of action, detect weapons being fired!
@@ -240,8 +244,16 @@ var int CurrentEventi;
 
 #endif
 
+// function void PostBeginPlay() {
+	// Super.PostBeginPlay();
+// }
+
 function bool WeAreOnline() {
 	return False;
+}
+
+function bool IsDemo() {
+	return (GetDemoID() != "");
 }
 
 function PlayerPawn GetRandomPlayer() {
@@ -1890,7 +1902,9 @@ function PlayerPawn FindPlayerNamed(string playerName) {
 	if (playerName == "")
 		return None;
 
+	if (Camera.GameReplicationInfo == None) return None;
 	ptgri = TournamentGameReplicationInfo(Camera.GameReplicationInfo);
+	if (ptgri == None) return None;
 	for (i=0;i<32;i++) {
 		if ( ptgri.PRIArray[i] == None ) {
 			continue;
@@ -1931,6 +1945,7 @@ function ViewBlueFC() {
 function Timer () {
 }
 
+// This is the initialisation function
 function setpawn (PlayerPawn o) {
 	Camera = o;
 	AddSelfAsMutator();
@@ -1938,6 +1953,7 @@ function setpawn (PlayerPawn o) {
 	#ifdef ENABLE_EVENT_RECORD_REPLAY
 	LogWarn("nBAutoSpectate cam="$bSwitchCamera$" rec="$bRecordEvents$" replay="$bReplayEvents$" eventCount="$eventCount$" (ne="$CountNonEmptyEvents()$")");
 	#endif
+	bAutoRecord = IsDemo();
 }
 
 function int CountNonEmptyEvents() {
