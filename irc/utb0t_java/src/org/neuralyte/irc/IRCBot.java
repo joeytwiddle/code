@@ -16,6 +16,7 @@ import java.util.Vector;
 import java.util.Map.Entry;
 
 import org.jibble.pircbot.Colors;
+import org.jibble.pircbot.User;
 import org.omg.CORBA.ShortSeqHelper;
 import org.omg.PortableServer.Servant;
 
@@ -39,7 +40,7 @@ public class IRCBot extends LogBot {
     public static File logDir = new File(userHome+"/.xchat2.utb0t/logs");
 
     public static boolean logAll = false;
-    public static float floodDelay = 4.5f;
+    public static float floodDelay = 3.0f; // 4.5f;
     
     public static java.util.List<IRCBot> allBots = new Vector();
 
@@ -212,8 +213,12 @@ public class IRCBot extends LogBot {
             }
         }
         
+        if (message.equals("!flooddelay")) {
+            sendNotice(sender, "Current flood delay = " + floodDelay);
+        }
         if (message.startsWith("!flooddelay ")) {
             floodDelay = new Float(message.substring(message.indexOf(" ")+1));
+            sendNotice(sender, "New flood delay = " + floodDelay);
         }
         
         super.onPrivateMessage(sender, login, hostname, message);
@@ -268,6 +273,11 @@ public class IRCBot extends LogBot {
             envMap.put("HOST",hostname);
             envMap.put("MYNICK",getNick());
             envMap.put("AUTH",getAuth(server,sender /*,login,hostname*/));
+            envMap.put("USERS",getUsersString(channel,false));
+            envMap.put("USERMODES",getUsersString(channel,true));
+            User senderU = getUser(channel,sender);
+            envMap.put("HASOP",(senderU != null && senderU.isOp()?"@":""));
+            envMap.put("HASVOICE",(senderU != null && senderU.hasVoice()?"+":""));
             // Iterator<Entry<String, String>> envVars = ;
             Vector<String> outList = new Vector<String>();
             for (Entry<String,String> entry : envMap.entrySet()) {
@@ -355,11 +365,46 @@ public class IRCBot extends LogBot {
             e.printStackTrace(System.err);
         }
     }
+    
+    public String getUsersString(String channel, boolean withModes) {
+        if (!channel.startsWith(""))
+            return "";
+        User[] users = getUsers(channel);
+        String out = "";
+        for (int i=0;i<users.length;i++) {
+            String toAdd = users[i].getNick();
+            if (withModes) {
+              if (users[i].isOp())
+                  toAdd = "@"+toAdd;
+              else if (users[i].hasVoice())
+                  toAdd = "+"+toAdd;
+            }
+            out += toAdd;
+            if (i < users.length-1)
+                out += " ";
+        }
+        return out;
+    }
+
+    public User getUser(String channel, String nick) {
+        if (!channel.startsWith(""))
+            return null;
+        User[] users = getUsers(channel);
+        for (int i=0;i<users.length;i++) {
+            if (users[i].getNick().equalsIgnoreCase(nick))
+                return users[i];
+        }
+        return null;
+    }
 
     public String getBotReport() {
         String channelReport = getChannels().length + " channels on " + getServer() + ": ";
+        boolean first = true;
         for (String c : getChannels()) {
-            channelReport += "[" + c +"] "+getUsers(c).length+" users :: ";
+            if (!first)
+                channelReport += " :: ";
+            first = false;
+            channelReport += "[" + c +"] "+getUsers(c).length+" users";
         }
         channelReport = channelReport.substring(0,channelReport.length() - 4);
 
@@ -390,9 +435,13 @@ public class IRCBot extends LogBot {
         final String com = line.replaceAll(" .*","").toLowerCase();
         String rest = line.replaceAll("^[^ ]* ",""); 
         final String firstArg = rest.replaceAll(" .*","");
-        rest = rest.replaceAll("^[^ ]* ",""); 
+        if (rest.indexOf(' ')>=0) {
+            rest = rest.replaceAll("^[^ ]* ","");
+        } else {
+            rest = "";
+        }
         if (com.equals("/mode")) {
-            final String channel= firstArg;
+            final String channel = firstArg;
             final String mode = rest;
             setMode(channel, mode);
         } else if (com.equals("/join")) {
@@ -443,18 +492,30 @@ public class IRCBot extends LogBot {
     // TODO: however, it doesn't check the *first* response it sends, so if the bot is
     // flooded with requests, it may still flood responses!
     // One easy way to solve this, is to put all flood checking just before instead of just after the call to send each message.
-    static int floodCount = 0;
-    static long lastFloodTime = 0;
+    static volatile int floodCount = 0;
+    static volatile long lastFloodTime = 0;
+    final static String FLOOD_LOCK = "FLOOD_LOCK";
+    /** floodProtect() should be called once before every message is sent. **/
     void floodProtect() {
-        final long time = new java.util.Date().getTime();
-        if (time > lastFloodTime + 10000)
+        if (new java.util.Date().getTime() > lastFloodTime + 10000) // we guess we are marked as non-flooding now, so can go fast again
             floodCount=0;
-        if (floodCount>3) {
+        /* if (floodCount>3) {
             // mylog("[flood protection!] sleeping 5 seconds");
             justSleep(floodDelay); // 5.0 was fine, testing 4.5 now
+        }*/
+        while (true) {
+            synchronized (FLOOD_LOCK) {
+                // mylog("Count = "+floodCount+" and Time since last action = " + (new java.util.Date().getTime() - lastFloodTime)/1000f + "s");
+                // if (floodCount<3 || new java.util.Date().getTime() >= lastFloodTime+floodDelay*1000) { // For some reason this always succeeded! O_o
+                if (floodCount<3 || (new java.util.Date().getTime() - lastFloodTime)/1000f > floodDelay) {
+                    floodCount++;
+                    lastFloodTime = new java.util.Date().getTime();
+                    // mylog("Unblocking!");
+                    break;
+                }
+            }
+            justSleep(0.5);
         }
-        floodCount++;
-        lastFloodTime = time;
     }
 
     
@@ -523,7 +584,7 @@ public class IRCBot extends LogBot {
             Long recordedDate = authDateDB.get(key);
             String recordedAuth = authDB.get(key);
             long age = timeNow - recordedDate;
-            if (age > 1000 * 60 * 5 // Auth data remains associated with nick for max 5 minutes.
+            if (age > 1000 * 60 * 50 // Auth data remains associated with nick for max 50 minutes.  This should be secure, since we intercept messages about the user changing nick or leaving.
                 || ( recordedAuth.equals("") && age > 1000 * 60 * 2) // User having no auth is cached for max 2 minutes.
             ) {
                 authDB.remove(key);
@@ -570,6 +631,8 @@ public class IRCBot extends LogBot {
         authDateDB.remove(key);
     }
 
+    
+    
     @Override
     public void onPart(String channel, String sender, String login, String hostname) {
         super.onPart(channel, sender, login, hostname);
@@ -602,6 +665,7 @@ public class IRCBot extends LogBot {
                 authDB.put(key, "");
                 authDateDB.put(key,new java.util.Date().getTime());
             }
+            mylog("Received response: "+nick+" is not authed.");
         }
     }
 
