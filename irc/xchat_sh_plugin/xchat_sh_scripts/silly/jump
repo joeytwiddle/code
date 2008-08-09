@@ -2,13 +2,14 @@ if [ "$NICK" = altgamer ]
 then exit 0
 fi
 
+EXTRA=""
 [ "$1" ] && EXTRA=" $*"
 
 VERB="`filename "$0"`"
 
 ## In pug channels, the !kick and !ban actions have a small chance of actually doing something!
 if ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
-   [ "$*" ] && echo "$CHANNEL" | grep "pug" >/dev/null
+   [ "$*" ] && echo "$CHANNEL" | grep "pug" >/dev/null &&
    true # echo "$NICK" | grep "^[A-Za-z][A-Za-z]*-" >/dev/null ## Caller is pugged up - nice extra probability changer, but often justifiable angry people won't be pugged up again.
 then
 

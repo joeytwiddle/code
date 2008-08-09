@@ -32,7 +32,7 @@ function getresult () {
 	for CHOICE in $CHOICES
 	do
 		CHOICERE=`toregexp "$CHOICE"`
-		COUNT=`cat "$VOTINGDIR"/"$VOTENUM".votes | takecols 2 | grep "^$CHOICERE$" | wc -l`
+		COUNT=`cat "$VOTINGDIR"/"$VOTENUM".votes | takecols 2 | grep -i "^$CHOICERE$" | wc -l`
 		echo "$CHOICE $COUNT"
 	done | sort -n -k 2 -r | tr ' ' ':' | tr '\n' ' ' | sed 's+ $++'
 }
@@ -43,7 +43,7 @@ function showvote () {
 	VOTEWORDS="`cat "$VOTINGDIR"/"$VOTENUM".words | beforelast "\["`"
 	if [ -f "$VOTINGDIR"/"$VOTENUM".running ]
 	then REMAINING="(`datediff -files /tmp/now "$VOTINGDIR"/"$VOTENUM".running | beforefirst ","`) "
-	else REMAINING="[ran for `cat "$VOTINGDIR"/"$VOTENUM".completed | takecols 1 2`] "
+	else REMAINING="[ran for `cat "$VOTINGDIR"/"$VOTENUM".completed | sed 's+.* to last \([^ ]* [^ ]*\) from + \1 +' | takecols 1 2`] "
 	fi
 	RESULT=`getresult "$VOTENUM"`
 	echo "$COLRESET#$VOTENUM - $COLYELLOW$VOTEWORDS""$COLRESET""$REMAINING""- Results: $COLAQUA$RESULT"

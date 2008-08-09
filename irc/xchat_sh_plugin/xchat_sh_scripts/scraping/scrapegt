@@ -34,11 +34,11 @@ do
 done |
 
 if [ "$IGNORE" ]
-then grep -v "$IGNORE"
+then grep -v -i "$IGNORE"
 else cat
 fi |
 if [ "$SEARCH" ]
-then grep "$SEARCH"
+then grep -i "$SEARCH"
 else cat
 fi |
 ## Title Playercount Address Map

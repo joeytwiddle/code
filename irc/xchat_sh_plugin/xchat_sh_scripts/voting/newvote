@@ -6,7 +6,7 @@ VOTEDURATION="$1 $2" ; shift ; shift
 if [[ "$1" =~ "/" ]]
 then VOTECHOICES="$1" ; shift
 	# if [[ ! "$VOTECHOICES" =~ "/" ]] || [[ "$VOTECHOICES" =~ " " ]]
-	if ! matchesre "$VOTECHOICES" "[0-9a-zA-Z/]*" && ! matchesre "$VOTECHOICES" "//"
+	if ! matchesre "$VOTECHOICES" "[0-9a-zA-Z_/]*" && ! matchesre "$VOTECHOICES" "//"
 	then
 		echo "Vote choices should be of the form: option1/option2/option3" | notice
 		exit 2
@@ -31,7 +31,7 @@ then
 	exit 1
 fi
 
-RUNNINGVOTES=`find "$VOTINGDIR" -name "*.running" | wc -l`
+RUNNINGVOTES=`find "$VOTINGDIR" -maxdepth 1 -name "*.running" | wc -l`
 if [[ "$RUNNINGVOTES" -gt 9 ]]
 then
 	echo "I'm afraid there are too many open polls at the moment.  Please wait until one completes."
@@ -47,12 +47,16 @@ while [[ -f "$VOTINGDIR"/"$VOTENUM".running ]] || [[ -f "$VOTINGDIR"/"$VOTENUM".
 do VOTENUM="$((VOTENUM+1))"
 done
 
-echo "$VOTEDURATION from `date`" > "$VOTINGDIR"/"$VOTENUM".running
+echo "$NICK started poll \"$VOTEWORDS\" ($VOTECHOICES) to last $VOTEDURATION from `date`" > "$VOTINGDIR"/"$VOTENUM".running
 touch -d "$VOTEDURATION" "$VOTINGDIR"/"$VOTENUM".running
 echo "$VOTEWORDS" > "$VOTINGDIR"/"$VOTENUM".words
 echo "$VOTECHOICES" > "$VOTINGDIR"/"$VOTENUM".choices
 
-echo "New vote #$VOTENUM: $VOTEWORDS"
+# If op:
+#echo "/mode $CHANNEL -N"
+#echo "/notice $CHANNEL New poll #$VOTENUM: $VOTEWORDS"
+#echo "/mode $CHANNEL +N"
+echo "New poll #$VOTENUM: $VOTEWORDS"
 echo "Cast your vote with: !vote #$VOTENUM <your_choice>"
 
 if [[ "$CHANNEL" =~ "^#" ]]

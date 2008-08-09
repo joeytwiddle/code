@@ -17,8 +17,10 @@ expireoldvotes
 			exit 2
 		fi
 
+		## TODO: this and only this, should not be |notice d
 		# echo "Comments for #$VOTENUM `cat "$VOTINGDIR"/"$VOTENUM".words`:"
-		echo "Comments for poll #$VOTENUM:"
+		showvote "$VOTENUM"
+		# echo "Comments for poll #$VOTENUM:"
 		# cat "$VOTINGDIR"/"$VOTENUM".votes | dropcols 1 2 3 4 5 6 | grep -v "^[ ]*$" | randomorder | head -n 10
 		NONWS="[^ 	][^ 	]*"
 		cat "$VOTINGDIR"/"$VOTENUM".votes | grep "$NONWS $NONWS $NONWS $NONWS $NONWS $NONWS $NONWS.*" | randomorder | head -n 10 |
@@ -30,8 +32,8 @@ expireoldvotes
 	# TOTAL_AUTHS=` cat "$VOTINGDIR"/*.votes | takecols 1 | removeduplicatelines | countlines `
 	# echo "I hold voting records for $TOTAL_AUTHS unique voters."
 
-	RUNNING_POLLS=` find "$VOTINGDIR/" -name "*.running" | afterlast / | beforelast "\." | sort -n | tail -n 5 `
-	COMPLETED_POLLS=` find "$VOTINGDIR/" -name "*.completed" | sortfilesbydate | afterlast / | beforelast "\." | tail -n 5 `
+	RUNNING_POLLS=` find "$VOTINGDIR/" -maxdepth 1 -name "*.running" | afterlast / | beforelast "\." | sort -n | tail -n 5 `
+	COMPLETED_POLLS=` find "$VOTINGDIR/" -maxdepth 1 -name "*.completed" | sortfilesbydate | afterlast / | beforelast "\." | tail -n 5 `
 	COUNT_RUNNING_POLLS=` echo -n "$RUNNING_POLLS" | countlines `
 
 	if [ "$COMPLETED_POLLS" ]
@@ -50,7 +52,7 @@ expireoldvotes
 		for VOTENUM in $RUNNING_POLLS
 		do showvote "$VOTENUM"
 		done
-		echo "List public votes and comments with: !votes #<pollnum>"
+		# echo "List public votes and comments with: !votes #<pollnum>"
 		echo "Cast your vote with: !vote #<pollnum> <your_choice>"
 	fi
 

@@ -1,0 +1,10 @@
+list () {
+cat << !
+<Zored> free pics of Ophie\` and calm in spoon, pm me
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

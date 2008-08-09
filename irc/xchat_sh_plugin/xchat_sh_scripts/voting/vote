@@ -10,6 +10,13 @@ if matchesre "$1" "^[A-Za-z][A-Za-z]*-"
 then exit 0 ## Looks like they were trying to vote a captain in a pug.
 fi
 
+if [ "$*" = "" ]
+then
+	echo "/msg $NICK Vote anonymously with: !vote #<pollnum> <your_vote>"
+	echo "/msg $NICK      or publicly with: !vote #<pollnum> <your_vote> <comments>"
+	exit
+fi
+
 if matchesre "$1" "^#"
 then VOTENUM="`echo "$1" | sed 's+^#++'`" ; shift
 else VOTENUM=`getchannelvote`
@@ -17,14 +24,13 @@ fi
 
 YOURVOTE="$1" ; shift ; YOURCOMMENTS="$*"
 
-if [[ ! "$VOTENUM" ]] || [[ ! "$YOURVOTE" ]]
-then
-	echo "/msg $NICK Vote anonymously with: !vote #<pollnum> <your_vote>"
-	echo "/msg $NICK      or publicly with: !vote #<pollnum> <your_vote> <comments>"
-	[[ "$VOTENUM" ]] && echo "/msg $NICK You are currently voting on vote number #$VOTENUM"
-	[[ "$VOTENUM" ]] && setchannelvote "$NICK" "$VOTENUM"
-	exit
-fi
+## Try again and modify:
+# if [[ ! "$VOTENUM" ]] || [[ ! "$YOURVOTE" ]]
+# then
+	# [[ "$VOTENUM" ]] && echo "/msg $NICK You are currently voting on vote number #$VOTENUM"
+	# [[ "$VOTENUM" ]] && setchannelvote "$NICK" "$VOTENUM"
+	# exit
+# fi
 
 if [[ ! -f "$VOTINGDIR/$VOTENUM.running" ]]
 then
@@ -49,9 +55,9 @@ fi
 
 VOTECHOICES=`cat "$VOTINGDIR"/"$VOTENUM".choices`
 VOTECHOICESRE="\\(`toregexp "$VOTECHOICES" | sed 's+/+\\\|+g'`\\)"
-if ! echo "$YOURVOTE" | grep "$VOTECHOICESRE" >/dev/null
+if ! echo "$YOURVOTE" | grep -i "$VOTECHOICESRE" >/dev/null
 then
-	echo "/msg $NICK Your vote \"$YOURVOTE\" did not match any of the choices: $VOTECHOICES"
+	echo "/msg $NICK Your vote \"$YOURVOTE\" did not match any of the choices for #$VOTENUM: $VOTECHOICES"
 	exit 5
 fi
 

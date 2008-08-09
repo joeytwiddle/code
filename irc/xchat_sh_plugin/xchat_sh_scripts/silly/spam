@@ -26,6 +26,8 @@ fi
 
 . restrict_repetitive_calls "1 minute"
 
+export FIGLET_FONT_DIRS="/home/joey/myroots/figlet/usr/share/figlet/"
+
 export COLNUM=$((`date +"%s"`%13+2))
 
 export COLUMNS=60

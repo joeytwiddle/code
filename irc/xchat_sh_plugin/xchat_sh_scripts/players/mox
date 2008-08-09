@@ -1,0 +1,10 @@
+list () {
+cat << !
+<ia-mox> ofc why should i die in ur batty wank hands
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

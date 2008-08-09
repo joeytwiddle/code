@@ -1,0 +1,10 @@
+list () {
+cat << !
+<PO-PDsL33p`> english is easy too learn   <PO-PDsL33p`> i think if somebody try to learn italian   <PO-PDsL33p`> not will be that
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

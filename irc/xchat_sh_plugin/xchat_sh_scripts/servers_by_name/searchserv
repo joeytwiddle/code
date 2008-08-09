@@ -14,10 +14,12 @@ else
 	# cd /home/utquery/utquery/data
 
 	REGEXP=`toregexp "$*"`
-	# grep -i -e "$REGEXP" *.info |
-	# grep -i -e "$REGEXP" /home/utquery/utquery/data/*.info | ## stopped working when i moved from ~3000 to ~5000 servers
-	find /home/utquery/utquery/data/ -maxdepth 1 -name "*.info" |
-	xargs grep -i -e "$REGEXP" |
+	# # grep -i -e "$REGEXP" *.info |
+	# # grep -i -e "$REGEXP" /home/utquery/utquery/data/*.info | ## stopped working when i moved from ~3000 to ~5000 servers
+	# find /home/utquery/utquery/data/ -maxdepth 1 -name "*.info" |
+	# xargs grep -i -e "$REGEXP" |
+
+	NOCOLS=1 SEARCH="$REGEXP" NICK="" sh ./scraping/scrapegt 9000 | striptermchars | grep "$REGEXP" |
 
 	# randomorder | ## See a random subset
 	# beforefirst "\.info" | afterlast / |

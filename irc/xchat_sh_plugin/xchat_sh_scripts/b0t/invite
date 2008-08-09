@@ -45,6 +45,10 @@ fi
 	# exit 0
 # fi
 
+if [ ! "$CHANNEL" = "#noobpug" ] && [ "$*" ]
+then echo "/invite $1 #noobpug"
+fi
+
 if [ "$CHANNEL" = "#noobpug" ] # || [ "$CHANNEL" = "#ut" ]
 then
 
@@ -70,3 +74,4 @@ else
 	echo "/notice $NICK My !invite command is not enabled in this channel.  Perhaps you wanted: !invitebot #your_channel"
 
 fi
+
