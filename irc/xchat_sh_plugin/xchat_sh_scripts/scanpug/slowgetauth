@@ -1,0 +1,88 @@
+## All memoing seems to break on nicks containing '`'
+# . selfmemo -nodir - "$0" "$NICK" ; shift
+if [ "$1" = -real ]
+then shift
+else
+	export IKNOWIDONTHAVEATTY=true
+	NICK="`echo "$*" | sed 's+\`+\\\\\`+g'`"
+	memo sh ./scanpug/slowgetauth -real "$NICK" ; exit
+	# sh ./scanpug/slowgetauth -real "$NICK" ; exit
+fi
+
+# [ "$LOGDIR" ] || LOGDIR="$HOME/.xchat2.utb0t/logs/"
+
+NICKREGEXP=`toregexp "$1"`
+
+jshinfo "NICKREGEXP=$NICKREGEXP"
+
+COUNT=0
+
+function beforetime () {
+	if [ "$LASTNICKCHANGETIME" = "" ]
+	then cat
+	else
+		LASTTIMERE="`toregexp "$LASTNICKCHANGETIME"`"
+		grep -B999999 "$LASTTIMERE" | grep -v "$LASTTIMERE"
+	fi
+}
+
+## Saves me specifying when testing:
+if [ ! "$CHANNEL" ]
+then CHANNEL="#ut.pug"
+fi
+
+# if [ "$NETWORK" ]
+# then NETWORK="irc.$NETWORK"
+# else NETWORK="irc.quakenet.org"
+# fi
+
+while [[ "$COUNT" -lt 40 ]]
+do
+
+	LINE=`
+		(
+			cat "$LOGDIR/$SERVER-NETWORK.log" | beforetime "$LASTNICKCHANGETIME"
+			cat "$LOGDIR/$SERVER-$CHANNEL.log" # | beforetime "$LASTNICKCHANGETIME"
+		) |
+		grep "\(is now known as $NICKREGEXP\|-->.*$NICKREGEXP .* has joined \)" | tail -n 1
+	`
+	# jshinfo "LINE=$LINE"
+	if echo "$LINE" | grep "is now known as" >/dev/null
+	then
+		# jshinfo "LINE=$LINE"
+		NEWNICKREGEXP=`echo "$LINE" | afterfirst --- | takecols 1 | toregexp`
+		# if [ "$NEWNICKREGEXP" = "$NICKREGEXP" ]
+		# # then echo "slowgetauth: ERROR NEWNICKREGEXP==NICKREGEXP ($NICKREGEXP) so aborting" >&2 ; exit 1
+		# # then jshwarn "slowgetauth: ERROR stuck on cyclic link at line: $LINE" ; exit 1
+		# then echo -n CYC ; jshinfo "slowgetauth: detected cyclic link at line: $LINE" ; exit 1
+		# fi
+		LASTNICKCHANGETIME="`echo "$LINE" | takecols 1 2 3`"
+		# jshinfo "$LASTNICKCHANGETIME -*- $NICKREGEXP -> $NEWNICKREGEXP"
+		NICKREGEXP="$NEWNICKREGEXP"
+	else
+		jshinfo "LINE=$LINE"
+		# echo "Got join: $LINE" ; exit 0
+		# AUTH=`echo "$LINE" | sed "s+.*-->.*$NICKREGEXP (.*@\([^.]*\).users.quakenet.org) has joined .*+\1+"`
+		AUTH=`echo "$LINE" | sed "s+.*-->.*$NICKREGEXP (\([^)]*\)) has joined .*+\1+"`
+		if [ "$AUTH" ]
+		then
+			echo "$AUTH" |
+			sed 's+.*@\([^.]*\)\.users\.quakenet\.org$+\1+' | ## We try to get their quakenet auth
+			sed 's+@.*++' ## If not, we use their chosen name; this is often unique.  The rest of the hostname is liable to change often.
+			# break
+			exit 0
+		else
+			jshwarn "Could not find auth from join line: $LINE"
+			echo "DUNNO_AUTH"
+			exit 1
+		fi
+	fi
+
+	COUNT=$((COUNT+1))
+
+done
+
+[[ "$COUNT" = 40 ]] && echo "DUNNO" && jshwarn "slowgetauth: ERROR aborted $NICKREGEXP since COUNT=$COUNT" && exit 1
+
+## BUG: Unfortunately "is now known as" events are currently getting logged in NETWORK not in channel.
+

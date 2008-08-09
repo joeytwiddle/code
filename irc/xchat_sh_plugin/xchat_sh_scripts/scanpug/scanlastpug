@@ -1,0 +1,27 @@
+if [ "$CHANNEL" = "#ut.pug" ]
+then
+
+	(
+
+	sleep 3
+
+	mkdir -p ~/.scanpug
+	LASTDATA=`cat ~/.scanpug/$CHANNEL-last.picks`
+	DATA=`sh scanpug/lastrivalpicks`
+	# echo "$DATA" | grep -v "\.users\.quakenet\.org" | takecols 3 |
+	# while read NOTAUTHED
+	# do echo "/whois $NOTAUTHED"
+	# done | grep .
+	if [ "$?" = 0 ] && [ ! "$DATA" = "$LASTDATA" ]
+	then
+		echo "$DATA" > ~/.scanpug/"$CHANNEL-last.picks"
+		echo "$DATA" > ~/.scanpug/"$CHANNEL-`geekdate -fine`.picks"
+		# echo "Stats updated."
+		echo "/notice nB^ $CHANNEL pug stats updated."
+	else
+		jshinfo "We have already scanned this pug."
+	fi
+
+	) # & ## disabled cos nicer for cmdline testing; but reenable because it allows other scripts to run
+
+fi

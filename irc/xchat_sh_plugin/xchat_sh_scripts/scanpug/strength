@@ -1,0 +1,32 @@
+if [ ! "$CHANNEL" = "#ut.pug" ]
+then exit
+fi
+
+if [ "$1" ]
+then WHO="$1"
+else WHO="$NICK"
+fi
+
+AUTH=`sh scanpug/slowgetauth "$WHO"`
+
+if [ "$AUTH" ]
+then
+	# echo "/notice $NICK I know $WHO as $AUTH"
+	# echo "/notice $NICK I have seen him in `cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l` pugs."
+	EXTRA=""
+	COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+	if [ "$COUNT" -gt 0 ]
+	then
+		SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
+		# STRENGTH=$((SUM/COUNT))
+		STRENGTH=$((10*SUM/COUNT))
+		STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
+		# echo "/notice $NICK He/she was picked $STRENGTH on average [scale 1-8]"
+		EXTRA="  He/she was picked #$STRENGTH on average [scale 1-8]."
+	fi
+	# echo "I have seen $AUTH play $COUNT pugs.$EXTRA"
+	echo "I have seen $AUTH picked $COUNT times.$EXTRA"
+else
+	echo "I do not know $WHO"
+fi
+

@@ -35,6 +35,7 @@
 		) | grep -u -v "\[PRIVATE" | grep -u -v "\[war" | grep -u -v "\[pug"
 		./ut_servers/dutchnet "$@"
 		# ./ut_servers/focr "$@"
+		./ut_servers/syn "$@"
 		./ut_servers/ae "$@"
 	) | grep -u -v "[^0-9]0/" | grep -u -v "no response" | grep -u -v "unreal: //" | grep -u -v "no record" | grep -u -v " did not respond"
 

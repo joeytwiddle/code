@@ -1,0 +1,71 @@
+if [ ! "$CHANNEL" = "#ut.pug" ]
+then exit 0
+fi
+
+# if [ "$NETWORK" ]
+# then NETWORK="irc.$NETWORK"
+# else NETWORK="irc.quakenet.org"
+# fi
+
+# echo "!list"
+# echo "Please be patient... I am slow..."
+# sleep 15 ## 5 and 8 were TOO SLOW! (utb0t was lagging a bit).  Maybe the buffer does not get flushed :|
+LIST_LINE=`
+	tail -n 20 "$LOGDIR"/"$SERVER-$CHANNEL".log |
+	grep "<Rival>.*? 10/10 ? " |
+	tail -n 1 |
+	afterfirst "? 10/10 ? " |
+	sed 's+? + +g ; s+ ?$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n'
+`
+jshinfo "LIST_LINE=$LIST_LINE"
+
+COUNT=`echo "$LIST_LINE" | wc -l`
+
+if [ "$COUNT" = 10 ]
+then :
+else
+	# echo "Sorry, I could not see 10 players so I cannot set captains."
+	echo "I need to see the 10/10 !list first, then please retry."
+	echo "!list"
+	exit 0
+fi
+
+# echo "On my way, hang in there..."
+
+ORDERED_LIST=$(
+	echo "$LIST_LINE" |
+	while read PLAYER
+	do
+		AUTH=`sh scanpug/slowgetauth "$PLAYER"`
+		COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+		if [ "$COUNT" -gt 0 ]
+		then
+			SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
+			STRENGTH=$((10*SUM/COUNT))
+			STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
+			echo "$STRENGTH $PLAYER"
+		else
+			echo "4.52963ish? $PLAYER"
+		fi
+	done |
+	sort -n -k 1
+)
+jshinfo "ORDERED_LIST=$ORDERED_LIST"
+
+TOSKIP=`seq 0 8 | chooserandomline`
+# TOSKIP=`seq 0 6 | chooserandomline` ## we skip the last 2 noobies - they will never be set as captain :P
+CAPTS=` echo "$ORDERED_LIST" | drop "$TOSKIP" | head -n 2 | randomorder `
+
+### This failed dunno why!!
+COUNT=`echo "$CAPTS" | wc -l`
+if [ ! "$COUNT" = 2 ]
+# then echo "/me FAIL!  Blame noggin." ; exit 1
+# then echo "/me FAIL!  Maybe I don't know any of you." ; exit 1
+then error "FAIL: COUNT=$COUNT CAPTS=$CAPTS" ; echo "/me FAIL! ffs KGB" ; exit 1
+fi
+
+echo "$CAPTS" |
+while read STRENGTH CAPT
+do echo "!setcapt $CAPT (avgpick #$STRENGTH)"
+done
+

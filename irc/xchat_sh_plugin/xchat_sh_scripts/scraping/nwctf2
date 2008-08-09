@@ -1,0 +1,3 @@
+## Attempts to locate all normal weapons (or otherwise non-boring) CTF servers by excluding the ones which are boring by title:
+## Problem is, it fails because scrapegt only gets the first page :P
+SEARCH="\<CTF-" IGNORE="\(\<CTF-BT-\|Face\|Sniper\|rocket\|strangelove\|slv\|lgig\|\<ig\>\|insta\|tammy\|wharthog\|mlig\|zark\|instagib\|nstagib\)" sh ./scraping/scrapegt "$@"

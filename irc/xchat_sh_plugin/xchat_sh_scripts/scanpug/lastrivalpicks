@@ -1,0 +1,41 @@
+## BUG: Rival does not list blue's last pick on a line with ~> but it does list red's!
+## Get indivual players as they were picked:
+# grep "~>" /home/joey/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pug.log | tail -n 6
+## This is useless anyway, unless we actually have the auths of the puggers.
+
+## Get the last !last:
+# grep ".*<Rival>.*?.*,.*,.*,.*,.*,.*,.*,.*,.*,.*?.*" /home/joey/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pug.log | tail -n 1
+
+[ "$CHANNEL" = "" ] && CHANNEL="#ut.pug"
+
+## Get last two filled teams lines:
+LASTLINES=`
+cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
+# grep ".*<Rival>.*?.*,.*,.*,.*,.*?.*" | grep -v " ago " | grep -v " Specs: " | tail -n 2
+grep "<Rival>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1
+`
+
+# echo "$LASTLINES" | afterfirst ", " | beforelast " ?" | sed 's+, *+\n+g' |
+# (
+	# read A; echo "1 $A"
+	# read A; echo "3 $A"
+	# read A; echo "3 $A"
+	# read A; echo "5 $A"
+	# read A; echo "2 $A"
+	# read A; echo "2 $A"
+	# read A; echo "4 $A"
+	# read A; echo "4 $A"
+# )
+
+echo "$LASTLINES" | afterfirst ", " | beforelast " ?" | sed 's+, *+\n+g' |
+(
+	read A; echo "1 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "4 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "5 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "8 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "2 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "3 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "6 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "7 `sh scanpug/slowgetauth "$A"` $A"
+)
+

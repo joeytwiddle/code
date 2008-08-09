@@ -1,0 +1,70 @@
+if [ ! "$CHANNEL" = "#ut.pug" ]
+then exit
+fi
+
+. irc.shlib
+. irccols.shlib
+
+sleep 3 ## Give Rival time to show his list.
+
+if [ ! "$BACKCHECK" ]
+then BACKCHECK="200"
+fi
+
+## Get last two filled teams lines:
+## No, now we are going for the line Rival prints after "please .pick from the .list", which is the same as mid-picking !list, but different from pre-pickup !list
+LASTLIST=`
+
+# cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
+# grep "<Rival>" |
+# grep nwCTF |
+# grep "/10 " |
+# grep -v " 0/10 " | ## TODO: for testing, pug is currently empty
+# grep -v " Specs: " | ## server query also matches regexp, remove it!
+
+tail -n "$BACKCHECK" "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
+grep "<Rival>[ 	]*?" |
+grep -A1 "please .pick from the .list" |
+afterfirst "<Rival>[ 	]*" |
+tail -n 1 |
+afterfirst "/10 " |
+# sed 's+? .)+ +g'
+sed 's+? + +g ; s+ ?$++'
+`
+
+if [ ! "$LASTLIST" ]
+then
+	jshinfo "No recent list found."
+	exit 0
+fi
+
+jshinfo "LASTLIST=$LASTLIST"
+
+NEWLIST=""
+for WORD in $LASTLIST
+do
+	NEWLIST="$NEWLIST""$WORD"
+	if echo "$WORD" | grep "\\-" >/dev/null
+	then
+		AUTH=`sh scanpug/slowgetauth "$WORD"`
+		COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+		if [ "$COUNT" -gt 0 ]
+		then
+			SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
+			STRENGTH=$((10*SUM/COUNT))
+			STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
+			NEWLIST="$NEWLIST""[$COLGREEN$STRENGTH$COLRESET]"
+		else
+			NEWLIST="$NEWLIST""[?]"
+		fi
+	fi
+	NEWLIST="$NEWLIST"" "
+done
+
+jshinfo "NEWLIST=$NEWLIST"
+
+DECORATIONA="â¡"
+# echo "$COLBLUE$DECORATIONA$COLRESET Average picks: $NEWLIST$COLBLUE$DECORATIONA$COLRESET"
+
+echo "$COLBLUE""Average picks:$COLRESET $NEWLIST"
+
