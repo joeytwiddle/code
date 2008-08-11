@@ -471,6 +471,10 @@ public class IRCBot extends LogBot {
             final String channel = rest;
             super.onInvite(nick, getNick(), getLogin(), "hostname123", channel); // For LogBot
             sendInvite(nick, channel);
+        } else if (com.equals("/voice")) {
+            // Actually I found if I tried to voice more than one person at a time, I would end up changing various channel modes (depending on the chars in the nicks being "voiced").  So now I voice users one on each line.  ;p
+            super.onVoice(source, getNick(), getLogin(), "hostname123", firstArg+" "+rest);
+            voice(source, firstArg + " " + rest);
         } else {
             // We warn that this command might not work raw:
             mylog("XXXX "+line);
@@ -664,8 +668,8 @@ public class IRCBot extends LogBot {
                 // We give them AUTH="", so that getAuth() will stop waiting for their auth.
                 authDB.put(key, "");
                 authDateDB.put(key,new java.util.Date().getTime());
+                mylog("Received response: "+nick+" is not authed.");
             }
-            mylog("Received response: "+nick+" is not authed.");
         }
     }
 
