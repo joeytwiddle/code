@@ -406,7 +406,7 @@ public class IRCBot extends LogBot {
             first = false;
             channelReport += "[" + c +"] "+getUsers(c).length+" users";
         }
-        channelReport = channelReport.substring(0,channelReport.length() - 4);
+        channelReport = channelReport.substring(0,channelReport.length());
 
         java.util.List<String> newChannels = new java.util.Vector<String>();
         newChannels.addAll(Arrays.asList(getChannels()));
