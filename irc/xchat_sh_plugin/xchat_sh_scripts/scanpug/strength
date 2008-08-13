@@ -2,6 +2,9 @@ if [ ! "$CHANNEL" = "#ut.pug" ]
 then exit
 fi
 
+echo "No such command: !strength"
+exit 0
+
 if [ "$1" ]
 then WHO="$1"
 else WHO="$NICK"
@@ -11,6 +14,10 @@ AUTH=`sh scanpug/slowgetauth "$WHO"`
 
 if [ "$AUTH" ]
 then
+
+	# echo "I have seen $WHO picked $((RANDOM%20)) times.  He/she was picked #8.0 on average [scale 1-8]."
+	# exit 0
+
 	# echo "/notice $NICK I know $WHO as $AUTH"
 	# echo "/notice $NICK I have seen him in `cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l` pugs."
 	EXTRA=""

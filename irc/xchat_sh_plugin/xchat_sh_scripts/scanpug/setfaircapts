@@ -30,7 +30,7 @@ else
 	exit 0
 fi
 
-# echo "On my way, hang in there..."
+echo "On my way, hang in there..."
 
 ORDERED_LIST=$(
 	echo "$LIST_LINE" |
@@ -45,18 +45,21 @@ ORDERED_LIST=$(
 			STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
 			echo "$STRENGTH $PLAYER"
 		else
-			echo "4.52963ish? $PLAYER"
+			: # echo "4.52963ish? $PLAYER"
 		fi
 	done |
 	sort -n -k 1
 )
 jshinfo "ORDERED_LIST=$ORDERED_LIST"
 
-TOSKIP=`seq 0 8 | chooserandomline`
+COUNT=`echo "$ORDERED_LIST" | wc -l`
+COUNT=$((COUNT-2))
+
+TOSKIP=`seq 0 $COUNT | chooserandomline`
 # TOSKIP=`seq 0 6 | chooserandomline` ## we skip the last 2 noobies - they will never be set as captain :P
 CAPTS=` echo "$ORDERED_LIST" | drop "$TOSKIP" | head -n 2 | randomorder `
 
-### This failed dunno why!!
+### This failed dunno why!!  OK it was cos list had 7, and dropped 6.  ;p
 COUNT=`echo "$CAPTS" | wc -l`
 if [ ! "$COUNT" = 2 ]
 # then echo "/me FAIL!  Blame noggin." ; exit 1

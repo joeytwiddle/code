@@ -1,6 +1,8 @@
 . irc.shlib
 . irccols.shlib
 
+[ -d "$HOME/myroots/qstat" ] && . includepath "$HOME/myroots/qstat"
+
 # IP=ts2.multiplay.co.uk
 # MAIN_PORT=8767
 # QUERY_PORT=14540

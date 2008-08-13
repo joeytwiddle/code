@@ -1,6 +1,7 @@
 list () {
 cat << !
 rates himself as one of the top 15 UT players
+[20:00] {TG}Sparton\`nec: spartan is a counrty in greece
 !
 }
 

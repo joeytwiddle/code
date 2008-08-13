@@ -1,13 +1,15 @@
-## All memoing seems to break on nicks containing '`'
-# . selfmemo -nodir - "$0" "$NICK" ; shift
-if [ "$1" = -real ]
-then shift
-else
-	export IKNOWIDONTHAVEATTY=true
-	NICK="`echo "$*" | sed 's+\`+\\\\\`+g'`"
-	memo sh ./scanpug/slowgetauth -real "$NICK" ; exit
-	# sh ./scanpug/slowgetauth -real "$NICK" ; exit
-fi
+# ## All memoing seems to break on nicks containing '`'
+# # . selfmemo -nodir - "$0" "$NICK" ; shift
+
+## This method fixes problems with ` in memoing:
+# if [ "$1" = -real ]
+# then shift
+# else
+	# export IKNOWIDONTHAVEATTY=true
+	# NICK="`echo "$*" | sed 's+\`+\\\\\`+g'`"
+	# memo sh ./scanpug/slowgetauth -real "$NICK" ; exit
+	# # sh ./scanpug/slowgetauth -real "$NICK" ; exit
+# fi
 
 # [ "$LOGDIR" ] || LOGDIR="$HOME/.xchat2.utb0t/logs/"
 
@@ -41,8 +43,8 @@ do
 
 	LINE=`
 		(
-			cat "$LOGDIR/$SERVER-NETWORK.log" | beforetime "$LASTNICKCHANGETIME"
-			cat "$LOGDIR/$SERVER-$CHANNEL.log" # | beforetime "$LASTNICKCHANGETIME"
+			tail -n 50000 "$LOGDIR/$SERVER-NETWORK.log" | beforetime "$LASTNICKCHANGETIME"
+			tail -n 50000 "$LOGDIR/$SERVER-$CHANNEL.log" # | beforetime "$LASTNICKCHANGETIME"
 		) |
 		grep "\(is now known as $NICKREGEXP\|-->.*$NICKREGEXP .* has joined \)" | tail -n 1
 	`
