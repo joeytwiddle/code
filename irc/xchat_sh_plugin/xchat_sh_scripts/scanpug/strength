@@ -1,9 +1,19 @@
-if [ ! "$CHANNEL" = "#ut.pug" ]
-then exit
+# if [ ! "$CHANNEL" = "#ut.pug" ]
+# then exit
+# fi
+
+if echo "$CHANNEL" | grep "^#" >/dev/null
+then
+	if [ "$CHANNEL" = "#ut.pug" ]
+	then echo "My !strength command only works if you PM me."
+	fi ## does nothing outside of #ut.pug
+	exit 0
 fi
 
-echo "No such command: !strength"
-exit 0
+export CHANNEL="#ut.pug" ## So that slowgetauth looks in that log
+
+# echo "No such command: !strength"
+# exit 0
 
 if [ "$1" ]
 then WHO="$1"

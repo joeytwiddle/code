@@ -1,6 +1,6 @@
 ## This script should be sourced with a timelimit provided as the argument (e.g.: . restrict_repetitive_calls "2 minutes")
 
-CALLER="`filename "$0"`"
+[ "$CALLER" ] || CALLER="`filename "$0"`"
 
 DELAY_TIME="$1"
 

@@ -11,8 +11,10 @@ then
 		echo "/msg LiquidFire [$NICK is requesting an invite for $* to #ut.pug]"
 		echo "/msg Majinx [$NICK is requesting an invite for $* to #ut.pug]"
 		echo "/msg [SMo]Vader [$NICK is requesting an invite for $* to #ut.pug]"
+		echo "/msg BADMF [$NICK is requesting an invite for $* to #ut.pug]"
 		echo "/msg nogginBasher [$NICK is requesting an invite for $* to #ut.pug]"
 		echo "/msg off|noggin [$NICK is requesting an invite for $* to #ut.pug]"
+		echo "/msg nB^ [$NICK is requesting an invite for $* to #ut.pug]"
 	else
 		echo "Usage: !invite <nick>"
 	fi

@@ -1,1 +1,1 @@
-BACKCHECK="10" sh ./scanpug/strengths
+BACKCHECK="15" sh ./scanpug/strengths

@@ -11,7 +11,7 @@
 	# # sh ./scanpug/slowgetauth -real "$NICK" ; exit
 # fi
 
-# [ "$LOGDIR" ] || LOGDIR="$HOME/.xchat2.utb0t/logs/"
+[ "$LOGDIR" ] || LOGDIR="$HOME/.xchat2.utb0t/logs/" ## For testing from shell
 
 NICKREGEXP=`toregexp "$1"`
 

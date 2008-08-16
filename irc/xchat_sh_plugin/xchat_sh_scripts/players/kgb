@@ -1,3 +1,6 @@
+echo cock
+exit 0
+
 list () {
 cat << !
 KGB plays in #ut994funpug because he's got balls
