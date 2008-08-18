@@ -2,6 +2,12 @@
 
 // All XOL's info is stored in Fate.BestFitMapList
 
+// TODO: mutate search <part_of_mapname>   so we can see what maps are installed even if they aren't in mapvote
+// TODO: add "good map" "bad map" detection (copy it from ATB!)
+
+// TODO CONSIDER: on the one hand, people voting a map means it's a good map
+//                on the other hand, we want to offer maps people don't play much, until it is rated
+
 #define MaxData 3000
 
 class MapStats expands Mutator config(MapStats);
@@ -12,6 +18,7 @@ class MapStats expands Mutator config(MapStats);
 
 // I thought this was needed for immediate switch to work 100%, but I'm not 100% sure.
 // #define CATCH_LEVEL_SWITCH
+#define MAP_RATING
 #define PLAYERS_CAN_VETO
 
 var config bool bLogging;
@@ -49,6 +56,12 @@ struct MapInfo {
 	// var int NumberOfWeaponPickups;
 	// var int NumberOfPathNodes;
 	// var float ActorDistance;
+	#ifdef MAP_RATING
+	var int GoodVoteCount;
+	var int BadVoteCount;
+	var String RatedUpBy;
+	var String RatedDownBy;
+	#endif
 };
 
 var config MapInfo MapStats[MaxData];
@@ -69,6 +82,8 @@ var String NextMap;
 var String RejectedMaps;
 #ifdef PLAYERS_CAN_VETO
 var int NoCount;
+#endif
+#ifdef MAP_RATING
 #endif
 
 defaultproperties {
@@ -678,6 +693,9 @@ function Mutate(String str, PlayerPawn Sender) {
 			bMapScanDone=False;
 			ScanMaps();
 		}
+		if (str~="help") {
+			Sender.ClientMessage("MapStats commands: mutate [ help | suggest | nextmap | scanmaps ]");
+		}
 	}
 	// CheckMessage(str, Sender);
 	Super.Mutate(str, Sender);
@@ -789,12 +807,32 @@ function bool ScanMaps(optional String search) {
 	return False;
 }
 
-#ifdef PLAYERS_CAN_VETO
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	local bool hideMessage;
 	hideMessage = False;
 	if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
+
+		#ifdef MAP_RATING
+		if (Caps(Msg)=="GOOD MAP") {
+			currentMap.GoodVoteCount++;
+			PlayerPawn(Sender).ClientMessage("You have rated this map +1");
+			BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
+			if (!StrContains(currentMap.RatedUpBy,Sender.getHumanName()$" ")) {
+				currentMap.RatedUpBy = currentMap.RatedUpBy $ Sender.getHumanName() $ " ";
+			}
+		}
+		if (Caps(Msg)=="BAD MAP") {
+			currentMap.BadVoteCount++;
+			PlayerPawn(Sender).ClientMessage("You have rated this map -1");
+			BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
+			if (!StrContains(currentMap.RatedDownBy,Sender.getHumanName()$" ")) {
+				currentMap.RatedDownBy = currentMap.RatedDownBy $ Sender.getHumanName() $ " ";
+			}
+		}
+		#endif
+
+		#ifdef PLAYERS_CAN_VETO
 		// if (StrStartsWith(Msg,"!")) {
 			// hideMessage = CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
 		// }
@@ -809,10 +847,11 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 				}
 			}
 		}
+		#endif
+
 	}
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage /* || !bSwallowSpokenCommands */ );
 }
-#endif
 
 /*
 // Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
