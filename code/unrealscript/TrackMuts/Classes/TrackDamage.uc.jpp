@@ -1,5 +1,9 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// TODO: damage absorbed by armor is not reported =/
+// TODO: allow enabling of non-playerpawn damage display (so u can see damage to Siege buildings for example)
+// TODO: perform accumulation of damage-made-recently in the display, so if he gets hit by 3 rockets in close succession, it displays 60 ... 120 ... 180!
+
 class TrackDamage expands Mutator config(TrackMuts);
 
 struct PlayerSettings {
