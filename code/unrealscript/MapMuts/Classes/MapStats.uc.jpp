@@ -19,6 +19,7 @@ class MapStats expands Mutator config(MapStats);
 // I thought this was needed for immediate switch to work 100%, but I'm not 100% sure.
 // #define CATCH_LEVEL_SWITCH
 #define MAP_RATING
+#define MAP_TAGS
 #define PLAYERS_CAN_VETO
 
 var config bool bLogging;
@@ -36,6 +37,7 @@ var config bool bAutoExpandMaxPlayers;
 var config int ServerMinPlayers;
 var config int ServerMaxPlayers;
 var config bool bDoMapScan;
+var config bool bShowLevelEnterText;
 
 struct MapInfo {
 	var bool bOnDisk;
@@ -61,6 +63,9 @@ struct MapInfo {
 	var int BadVoteCount;
 	var String RatedUpBy;
 	var String RatedDownBy;
+	#endif
+	#ifdef MAP_TAGS
+	var String Tags; // Comma separated list.  If user inputs commas then they are inputting multiple tags.
 	#endif
 };
 
@@ -102,6 +107,7 @@ bAutoExpandMaxPlayers=False
 ServerMinPlayers=6
 ServerMaxPlayers=24
 bDoMapScan=True
+bShowLevelEnterText=True
 }
 
 #define MapRecord(X) MapStats[MapIndex(X)]
@@ -276,6 +282,7 @@ function ModifyPlayer(Pawn Other) {
 		// DebugLog("ModifyPlayer("$ Other.getHumanName() $") was called.");
 		if (/*PlayerPawn(Other)!=None && Spectator(Other)==None &&*/ Other.PlayerReplicationInfo.Deaths == 0) {
 			DebugLog("ModifyPlayer("$ Other$"): "$ Other.getHumanName() $" joined at "$ Level.TimeSeconds);
+
 			// Latest player join!
 			if (StartTime == 0) {
 				// First ever spawn!
@@ -303,6 +310,11 @@ function ModifyPlayer(Pawn Other) {
 				DebugLog("ModifyPlayer("$Other.getHumanName()$"): setting PlayerCountAtStart="$ CountPlayers() $" at "$ Level.TimeSeconds);
 			}
 		}
+
+		if (bShowLevelEnterText && Level.LevelEnterText != "") {
+			PlayerPawn(Other).ClientMessage(Level.Title $ " : " $ Level.LevelEnterText);
+		}
+
 	}
 	Super.ModifyPlayer(Other);
 }
@@ -478,10 +490,11 @@ function int MapIndex(String mapName) {
 		if (bDebugLogging && FRand()<0.01) { DebugLog("MapIndex("$mapName$"): collision "$ mapName $" with "$MapStats[i].MapName$" at "$i); }
 		i++;
 		if (i>=MaxData) {
-			Log("[MapStats] Warning! MapIndex(\"" $ mapName $ "\") hash + collision offset = " $ i $ " >= MaxData - we are either unlucky, or the map database is full; forcing overwrite of hash.");
 			// i = FRand()*MaxData;
 			i = HashStr(mapName,MaxData);
+			Log("[MapStats] Warning! MapIndex(\"" $ mapName $ "\") hash + collision offset >= MaxData - we are either unlucky, or the map database is full; forcing overwrite of ["$i$"] "$MapStats[i].MapName$" !");
 			MapStats[i].MapName = mapName;
+			// TODO: we should also clear [i]'s stats!
 			return i;
 		}
 	}
@@ -668,6 +681,21 @@ function int CountActors(class<Actor> type) {
 	return c;
 }
 
+function ListMapsTo(PlayerPawn p, String str) {
+	local int i;
+	local bool hit;
+	str = Caps(str);
+	for (i=0;i<MaxData;i++) {
+		if (MapStats[i].MapName != "" && StrContains(Caps(MapStats[i].MapName),str)) {
+			p.ClientMessage("["$i$"] "$MapStats[i].MapName$" playcount="$((MapStats[i].TotalGamesStarted+MapStats[i].TotalGamesEnded)/2)$" prefplayers="$Left(""$MapStats[i].PreferredPlayers,4)$" +"$MapStats[i].GoodVoteCount$" -"$MapStats[i].BadVoteCount);
+			hit = true;
+		}
+	}
+	if (hit == false) {
+		p.ClientMessage("I could not find any map matching "$Locs(str)$" - use mutate scanmaps to rescan at next mapswitch.");
+	}
+}
+
 function Mutate(String str, PlayerPawn Sender) {
 	if (bAllowMutateSwitch) {
 		if (str~="suggest") {
@@ -694,7 +722,15 @@ function Mutate(String str, PlayerPawn Sender) {
 			ScanMaps();
 		}
 		if (str~="help") {
-			Sender.ClientMessage("MapStats commands: mutate [ help | suggest | nextmap | scanmaps ]");
+			Sender.ClientMessage("MapStats mutate commands: help | suggest | nextmap | scanmaps");
+			Sender.ClientMessage("MapStats say commands: list <part_of_mapname>");
+		}
+		if (StrStartsWith(Caps(str),"LIST") || StrStartsWith(Caps(Str),"LISTMAPS")) { // aka SHOWINFO
+			if (StrContains(str," ")) {
+				ListMapsTo(Sender,StrAfterFirst(str," "));
+			} else {
+				ListMapsTo(Sender,"");
+			}
 		}
 	}
 	// CheckMessage(str, Sender);
@@ -807,6 +843,10 @@ function bool ScanMaps(optional String search) {
 	return False;
 }
 
+function AddTags(String tags) {
+	currentMap.Tags = currentMap.Tags $ tags $ ",";
+}
+
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	local bool hideMessage;
@@ -823,6 +863,7 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 				BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
 				currentMap.RatedUpBy = currentMap.RatedUpBy $ Sender.getHumanName() $ " ";
 			}
+			SaveConfig();
 		}
 		if (Caps(Msg)=="BAD MAP") { // CONSIDER: crap map, shit map
 			if (StrContains(currentMap.RatedDownBy,Sender.getHumanName()$" ")) {
@@ -833,6 +874,14 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 				BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
 				currentMap.RatedDownBy = currentMap.RatedDownBy $ Sender.getHumanName() $ " ";
 			}
+			SaveConfig();
+		}
+		#endif
+
+		#ifdef MAP_TAGS
+		if (Left(Msg,8)~="!tagmap ") {
+			AddTags(Right(Msg,8));
+			SaveConfig();
 		}
 		#endif
 
