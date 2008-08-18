@@ -38,6 +38,7 @@ var config int FastBuildStartingMaxRU;
 // var config int PostbuildMaxRU;
 var config bool bNoDamage;
 var config bool bConfineToBase;
+var config bool bRUGetsMaxxedOut;
 
 // Config vars but not yet committed to config, because I might rename or remove them, so I don't yet want them written in the .ini file.
 var /*config*/ bool bMoreFlashing;
@@ -63,6 +64,8 @@ defaultproperties {
 
 	bFastBuildOver=False
 	// SecondsToGo=180
+
+	bRUGetsMaxxedOut=False
 
 	colorGreen=(R=0,G=255,B=0,A=0)
 	colorYellow=(R=255,G=255,B=0,A=0)
@@ -397,7 +400,7 @@ function AddRUGlobally(float amount) {
 			// Although it wasn't designed for SiegeAnywhere, it can work in *some* of those types.
 			if (sgPRI(a).RU >= sgPRI(a).MaxRU) {
 				// If SiegeCTF starts with MaxRU 100, we should expand it as they score.
-				if (SiegeGI(Level.Game) == None /*&& sgPRI(a).MaxRU < FastBuildMaxRU*/) {
+				if (SiegeGI(Level.Game) == None || (!bRUGetsMaxxedOut) /*&& sgPRI(a).MaxRU < FastBuildMaxRU*/) {
 					// If we're not playing siege, then the only way to increase Max is by fragging.
 					// Since fragging is impossible during FastBuild, we let AddRUGlobally push up their max.
 					// You get twice as much RU if you spend, but you can save if you need to.
