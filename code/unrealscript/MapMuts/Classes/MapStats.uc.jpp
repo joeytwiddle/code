@@ -814,19 +814,23 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 	if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
 
 		#ifdef MAP_RATING
-		if (Caps(Msg)=="GOOD MAP") {
-			currentMap.GoodVoteCount++;
-			PlayerPawn(Sender).ClientMessage("You have rated this map +1");
-			BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
-			if (!StrContains(currentMap.RatedUpBy,Sender.getHumanName()$" ")) {
+		if (Caps(Msg)=="GOOD MAP") { // CONSIDER: nice map, great map
+			if (StrContains(currentMap.RatedUpBy,Sender.getHumanName()$" ")) {
+				PlayerPawn(Sender).ClientMessage("You have ALREADY rated this map up!");
+			} else {
+				currentMap.GoodVoteCount++;
+				PlayerPawn(Sender).ClientMessage("You have rated this map +1");
+				BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
 				currentMap.RatedUpBy = currentMap.RatedUpBy $ Sender.getHumanName() $ " ";
 			}
 		}
-		if (Caps(Msg)=="BAD MAP") {
-			currentMap.BadVoteCount++;
-			PlayerPawn(Sender).ClientMessage("You have rated this map -1");
-			BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
-			if (!StrContains(currentMap.RatedDownBy,Sender.getHumanName()$" ")) {
+		if (Caps(Msg)=="BAD MAP") { // CONSIDER: crap map, shit map
+			if (StrContains(currentMap.RatedDownBy,Sender.getHumanName()$" ")) {
+				PlayerPawn(Sender).ClientMessage("You have ALREADY rated this map down!");
+			} else {
+				currentMap.BadVoteCount++;
+				PlayerPawn(Sender).ClientMessage("You have rated this map -1");
+				BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVoteCount $" up -"$ currentMap.BadVoteCount $" down.");
 				currentMap.RatedDownBy = currentMap.RatedDownBy $ Sender.getHumanName() $ " ";
 			}
 		}
