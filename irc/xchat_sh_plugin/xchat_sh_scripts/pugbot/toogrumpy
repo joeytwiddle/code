@@ -1,0 +1,43 @@
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#crazypug" ] || [ "$CHANNEL" = "#noobpug" ]
+then :
+else exit 0
+fi
+
+[ "$PROBLEM" ] || PROBLEM="too grumpy"
+
+TARGET="$1"
+if [ ! "$TARGET" ]
+then
+	echo "$NICK, stop being $PROBLEM!"
+	exit
+fi
+
+CALLER="kickvote" RESTRICT_EXTRA="$NICK" . restrict_repetitive_calls "5 minutes"
+
+mkdir -p "$HOME/.toogrumpy"
+FILE="$HOME/.toogrumpy/$TARGET.count"
+
+if [ -f "$FILE" ]
+then
+	LAST_SECONDS=`datediff -secs -file "$FILE"`
+	if [ "$LAST_SECONDS" -gt 300 ] ## 5 minutes
+	then echo 0 > "$FILE"
+	fi
+	COUNT=`cat "$FILE"`
+	COUNT=$((COUNT+1))
+	echo "$COUNT" > "$FILE"
+	if [ "$COUNT" -gt 3 ] ## TODO: Raise to 3 or 4 once people understand the command.
+	then
+		echo "!kickban $TARGET"
+		# echo "/ban $TARGET" ## TODO: I guess we need to find/generate a hostmask here.
+		echo "/kick $TARGET $PROBLEM for this channel - come back some another day!"
+		rm -f "$FILE"
+		exit 0
+	fi
+fi
+
+# echo "$TARGET is $PROBLEM for this channel.  I might have to ban him."
+echo ":|  $TARGET is $PROBLEM for this channel.  Please try to make this pug fun for everybody!  |:"
+
+echo 0 > "$FILE"
+

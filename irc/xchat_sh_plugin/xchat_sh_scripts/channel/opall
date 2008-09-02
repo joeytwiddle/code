@@ -1,0 +1,8 @@
+if [ "$HASOP" ] && [ "$CHANNEL" = "#" ]
+then
+	for NICK in $USERS
+	do
+		echo "$USERS" | grep "@`toregexp "$NICK"`" >/dev/null || ## already opped
+		echo "/op $NICK"
+	done
+fi

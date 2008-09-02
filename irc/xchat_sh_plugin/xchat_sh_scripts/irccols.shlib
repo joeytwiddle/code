@@ -36,27 +36,29 @@ export COLSTYLE ## force jsh's curse* to use these colour vars
 if [ "$COLSTYLE" = irc ]
 then
 
+	[[ "$IRC_BGCOL" ]] || IRC_BGCOL=99
+
 	## I used to use ",99" for transparent background, but actually "" would do just as good; problem is, my colours then don't always look so good
 	## Added ",01" (black background) because otherwise a comma right after the colour gets gobbled (at least by ksirc)
-	export COLWHITE=`echo -e "01,99"`
-	export COLBLACK=`echo -e "01,99"`
-	export COLBLUE=`echo -e "02,99"` ## navy
-	export COLGREEN=`echo -e "03,99"`
-	export COLRED=`echo -e "04,99"`
-	export COLBROWN=`echo -e "05,99"` ## maroon
-	export COLPURPLE=`echo -e "06,99"`
-	# export COLORANGE=`echo -e "07,99"` ## olive
-	# export COLYELLOW=`echo -e "08,99"`
+	export COLWHITE=`echo -e "00,$IRC_BGCOL"`
+	export COLBLACK=`echo -e "01,$IRC_BGCOL"`
+	export COLBLUE=`echo -e "02,$IRC_BGCOL"` ## navy
+	export COLGREEN=`echo -e "03,$IRC_BGCOL"`
+	export COLRED=`echo -e "04,$IRC_BGCOL"`
+	export COLBROWN=`echo -e "05,$IRC_BGCOL"` ## maroon
+	export COLPURPLE=`echo -e "06,$IRC_BGCOL"`
+	# export COLORANGE=`echo -e "07,$IRC_BGCOL"` ## olive
+	# export COLYELLOW=`echo -e "08,$IRC_BGCOL"`
 	## I very lazily swapped yellow and orange for the benefit of Rednas who uses Opera and can't see yellow against his unchangeable white background.
-	export COLORANGE=`echo -e "08,99"`
-	export COLYELLOW=`echo -e "07,99"`
-	export COLLIME=`echo -e "09,99"` ## green
-	export COLTEAL=`echo -e "10,99"` ## a kinda green/blue cyan
-	export COLAQUA=`echo -e "11,99"` ## cyan
-	export COLROYAL=`echo -e "12,99"` ## blue
-	export COLPINK=`echo -e "13,99"` ## light purple, fuschia
-	export COLGREY=`echo -e "14,99"`
-	export COLSILVER=`echo -e "15,99"` ## light grey
+	export COLORANGE=`echo -e "08,$IRC_BGCOL"`
+	export COLYELLOW=`echo -e "07,$IRC_BGCOL"`
+	export COLLIME=`echo -e "09,$IRC_BGCOL"` ## green
+	export COLTEAL=`echo -e "10,$IRC_BGCOL"` ## a kinda green/blue cyan
+	export COLAQUA=`echo -e "11,$IRC_BGCOL"` ## cyan
+	export COLROYAL=`echo -e "12,$IRC_BGCOL"` ## blue
+	export COLPINK=`echo -e "13,$IRC_BGCOL"` ## light purple, fuschia
+	export COLGREY=`echo -e "14,$IRC_BGCOL"`
+	export COLSILVER=`echo -e "15,$IRC_BGCOL"` ## light grey
 
 	export COLRESET=`echo -e ""`
 	export COLNORM="$COLGREY"

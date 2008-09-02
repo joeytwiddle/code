@@ -27,6 +27,7 @@ cat "$PUG_CHANNELS_FILE" | grep -i "^$CHANNELREGEXP$" >/dev/null || exit 0
 
 ## OK we do not exit.
 
+IRC_BGCOL=01
 . irccols.shlib
 
 TOPIC_HEADER="Welcome to noobpug, where even the b0t is a n00b!"
@@ -75,7 +76,7 @@ reset () {
 		else
 			NOW=`date "+%s"`
 			THEN=`date -r "$CURRENT_MAP_FILE" "+%s"`
-			DIFF=$((THEN+60*NUMBER_OF_PLAYERS+60-NOW))
+			DIFF=$((THEN+60*NUMBER_OF_PLAYERS+5-NOW)) ## used to be 60 min instead of 5 ## used to be 60 min instead of 5
 			# [ "$NICK" ] && echo "/notice $NICK You may not reset the pug for $DIFF seconds." | double_escape_slashes
 			echo "You may not reset the pug for $DIFF seconds."
 			return

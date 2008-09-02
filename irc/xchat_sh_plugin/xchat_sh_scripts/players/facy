@@ -1,8 +1,11 @@
 list () {
 cat << !
 okey i'm ready to cover on shockets!
-1-eyed lady
+one eyed lady
 !
+## 1-eyed lady
+## xenomorph ;)
+## "You should have picked Facy, so at least we could have a good time losing" -- Anonymous
 }
 
 list | randomorder | head -n 1

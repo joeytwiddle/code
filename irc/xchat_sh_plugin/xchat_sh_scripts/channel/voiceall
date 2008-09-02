@@ -1,0 +1,7 @@
+if [ "$HASOP" ]
+then
+	for NICK in $USERS
+	do echo "/voice $NICK"
+	done
+	# echo "/voice $USERS"
+fi

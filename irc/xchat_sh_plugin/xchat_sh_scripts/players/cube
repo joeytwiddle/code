@@ -1,0 +1,10 @@
+list () {
+cat << !
+yall got nothing on cube
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

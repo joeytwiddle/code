@@ -1,4 +1,5 @@
 ## This script should be sourced with a timelimit provided as the argument (e.g.: . restrict_repetitive_calls "2 minutes")
+## TODO: cleanup old .lastcalled files in "$HOME"/.tmp
 
 [ "$CALLER" ] || CALLER="`filename "$0"`"
 
@@ -6,6 +7,7 @@ DELAY_TIME="$1"
 
 mkdir -p "$HOME"/.tmp
 ## NOTE that RESTRICT_EXTRA actually makes it harder to get a restriction, e.g. per user nick, but that allow you to increase the delay time.
+[ "$RESTRICT_EXTRA" ] && RESTRICT_EXTRA="-$RESTRICT_EXTRA"
 LAST_CALLED_FILE="$HOME"/.tmp/"$CALLER""$RESTRICT_EXTRA".lastcalled
 DELAY_TIME_FILE="$HOME"/.tmp/restrict_repetitive_calls.delay
 
@@ -19,6 +21,8 @@ then
 		# echo "Sorry, you may not call $CALLER again for a while."
 		# echo "Sorry, you may not use \!$CALLER again for a little while..."
 		echo "/notice $NICK Sorry, you may not use \!$CALLER again for a little while..."
+		# jshinfo "$LAST_CALLED_FILE is "`datediff -secs -file "$LAST_CALLED_FILE"`" seconds old."
+		# jshinfo "$DELAY_TIME_FILE is "`datediff -secs -file "$DELAY_TIME_FILE"`" seconds old."
 		exit 0
 	fi
 
