@@ -21,7 +21,7 @@ fi
 (
 	export NOTICE_STYLE="none"
 	# Now closed: Multiplay CTF 85.236.100.43 p 195.4.17.197 
-	for SERVER in kx tacsu f0x nogginzp noobpug $OTHERS focr zooz terror kawa gla hh2 xol of inz u f0x2 synapse ## (multiplay FFA DM+CTF)
+	for SERVER in kx tacsu f0x nogginzp $OTHERS focr zooz terror kawa gla hh2 xol of inz u f0x2 84.31.200.198:443 # ndgctf # noobpug synapse(currently in focr) ## (multiplay FFA DM+CTF)
 	## DOWN afaik: tits oldpmp bmb be sahne il whore relax dk fraggerspub
 	## now MH: smo
 	# 82.192.78.54:7000 ## -ev!L~eLves-
@@ -43,7 +43,8 @@ fi |
 # grep . || echo "None of the servers are populated right now.  Try !xol !ffa !focr or !terror :P"
 grep --line-buffered . ||
 # echo "No nwCTF servers have players right now.  (If I missed any, please PM me!)"
-echo "No European nwCTF servers have players right now (except maybe !xol !ffa or !ec).  (Use -all to see the full list, and if I missed any, please PM nogginBasher!)"
+# echo "No nwCTF servers have players right now (except maybe !xol !ffa or !ec).  (Use -all to see the full list, and if I missed any, please PM nogginBasher!)"
+echo "I searched all the normal weapons CTF servers I know and found none.  List empty servers with -all, or try !ctf or !nwctf2.  /msg nB^ if you find a new ip!"
 
 # ) |
 # 
