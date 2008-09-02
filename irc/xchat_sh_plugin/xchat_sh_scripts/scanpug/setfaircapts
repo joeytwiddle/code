@@ -7,11 +7,14 @@ fi
 # else NETWORK="irc.quakenet.org"
 # fi
 
+## Since MF now calls !setfaircapts automatically, we should wait a bit for Rival to respond to his !list...
+sleep 3
+
 # echo "!list"
 # echo "Please be patient... I am slow..."
 # sleep 15 ## 5 and 8 were TOO SLOW! (utb0t was lagging a bit).  Maybe the buffer does not get flushed :|
 LIST_LINE=`
-	tail -n 20 "$LOGDIR"/"$SERVER-$CHANNEL".log |
+	tail -n 20 "$LOGDIR"/"$NETWORK-$CHANNEL".log |
 	grep "<Rival>.*? 10/10 ? " |
 	tail -n 1 |
 	afterfirst "? 10/10 ? " |
@@ -30,6 +33,8 @@ else
 	exit 0
 fi
 
+NICK="nB^" . restrict_repetitive_calls "30 seconds"
+
 echo "On my way, hang in there..."
 
 ORDERED_LIST=$(
@@ -37,16 +42,18 @@ ORDERED_LIST=$(
 	while read PLAYER
 	do
 		AUTH=`sh scanpug/slowgetauth "$PLAYER"`
-		COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
-		if [ "$COUNT" -gt 0 ]
-		then
-			SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
-			STRENGTH=$((10*SUM/COUNT))
-			STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
-			echo "$STRENGTH $PLAYER"
-		else
-			: # echo "4.52963ish? $PLAYER"
-		fi
+		# COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+		# if [ "$COUNT" -gt 0 ]
+		# then
+			# SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
+			# STRENGTH=$((10*SUM/COUNT))
+			# STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
+			# echo "$STRENGTH $PLAYER"
+		# else
+			# : # echo "4.52963ish? $PLAYER"
+		# fi
+		STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
+		[ "$STRENGTH" = "?.?" ] || echo "$STRENGTH $PLAYER"
 	done |
 	sort -n -k 1
 )
@@ -55,9 +62,22 @@ jshinfo "ORDERED_LIST=$ORDERED_LIST"
 COUNT=`echo "$ORDERED_LIST" | wc -l`
 COUNT=$((COUNT-2))
 
-TOSKIP=`seq 0 $COUNT | chooserandomline`
-# TOSKIP=`seq 0 6 | chooserandomline` ## we skip the last 2 noobies - they will never be set as captain :P
-CAPTS=` echo "$ORDERED_LIST" | drop "$TOSKIP" | head -n 2 | randomorder `
+for X in 1 2 3 4 5
+do
+	TOSKIP=`seq 0 $COUNT | chooserandomline`
+	# TOSKIP=`seq 0 6 | chooserandomline` ## we skip the last 2 noobies - they will never be set as captain :P
+	CAPTS=` echo "$ORDERED_LIST" | drop "$TOSKIP" | head -n 2 | randomorder `
+
+	## Check if difference > 1.5, and if so, retry.
+	STRENGTHS=` echo "$CAPTS" | takecols 1 | sed 's+\.++' `
+	# echo "sqrt((3.1 - 4.2)^2)*10" | bc -l
+	SUM=`echo "$STRENGTHS" | tr '\n' '-' | sed 's+-$++'`
+	DIFFINT=` verbosely echo "sqrt(($SUM)^2)" | bc -l | sed 's+\..*++' `
+	if [ "$DIFFINT" -lt 13 ]
+	then break
+	else jshinfo "Captains differ by 1.3 or more, retrying. ($DIFFINT) [$CAPTS]"
+	fi
+done
 
 ### This failed dunno why!!  OK it was cos list had 7, and dropped 6.  ;p
 COUNT=`echo "$CAPTS" | wc -l`
@@ -71,4 +91,7 @@ echo "$CAPTS" |
 while read STRENGTH CAPT
 do echo "!setcapt $CAPT (avgpick #$STRENGTH)"
 done
+
+sleep 10 ## Rival should now print his "Please pick from the list:" line.  5 was too short once.  Plus it's good to be slow, then we appear *after* _StalkeR_ ;)
+BACKCHECK=20 sh ./scanpug/strengths
 

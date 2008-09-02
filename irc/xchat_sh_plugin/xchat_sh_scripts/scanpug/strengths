@@ -1,28 +1,33 @@
+if [ "$AUTH" = nogginBasher ]
+then CHANNEL="#ut.pug"
+fi
+
 if [ ! "$CHANNEL" = "#ut.pug" ]
 then exit
 fi
 
+IRC_BGCOL=01
 . irc.shlib
 . irccols.shlib
 
-sleep 3 ## Give Rival time to show his list.
+# sleep 3 ## Give Rival time to show his list.
 
 if [ ! "$BACKCHECK" ]
-then BACKCHECK="200"
+then BACKCHECK="500"
 fi
 
 ## Get last two filled teams lines:
 ## No, now we are going for the line Rival prints after "please .pick from the .list", which is the same as mid-picking !list, but different from pre-pickup !list
 LASTLIST=`
 
-# cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
+# cat "/home/joey/.xchat2.utb0t/logs/$NETWORK-$CHANNEL.log" |
 # grep "<Rival>" |
 # grep nwCTF |
 # grep "/10 " |
 # grep -v " 0/10 " | ## TODO: for testing, pug is currently empty
 # grep -v " Specs: " | ## server query also matches regexp, remove it!
 
-tail -n "$BACKCHECK" "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
+tail -n "$BACKCHECK" "/home/joey/.xchat2.utb0t/logs/$NETWORK-$CHANNEL.log" |
 grep "<Rival>[ 	]*?" |
 grep -A1 "please .pick from the .list" |
 afterfirst "<Rival>[ 	]*" |
@@ -34,37 +39,72 @@ sed 's+? + +g ; s+ ?$++'
 
 if [ ! "$LASTLIST" ]
 then
-	jshinfo "No recent list found."
+	jshinfo "No recent list found for !strengths."
 	exit 0
 fi
+
+jshinfo "!strengths is trying to run (in $CHANNEL for $NICK) ..."
+
+## OK we've decided to show the list, but let's not show it more than once!
+NICK="nB^" . restrict_repetitive_calls "2 minutes"
 
 jshinfo "LASTLIST=$LASTLIST"
 
 NEWLIST=""
 for WORD in $LASTLIST
 do
-	NEWLIST="$NEWLIST""$WORD"
 	if echo "$WORD" | grep "\\-" >/dev/null
 	then
+		NEWLIST="$NEWLIST""$COLGREY$WORD"
 		AUTH=`sh scanpug/slowgetauth "$WORD"`
-		COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
-		if [ "$COUNT" -gt 0 ]
-		then
-			SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
-			STRENGTH=$((10*SUM/COUNT))
-			STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
-			NEWLIST="$NEWLIST""[$COLGREEN$STRENGTH$COLRESET]"
-		else
-			NEWLIST="$NEWLIST""[?]"
+		# COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+		# if [ "$COUNT" -gt 0 ]
+		# then
+			# SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
+			# STRENGTH=$((10*SUM/COUNT))
+			# STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
+			# NEWLIST="$NEWLIST""$COLAQUA[$COLGREEN$STRENGTH$COLAQUA]"
+			# echo "$WORD $STRENGTH"
+		# else
+			# NEWLIST="$NEWLIST""$COLYELLOW""[?]"
+			# echo "$WORD ?"
+		# fi
+		STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
+		[[ "$COUNTPUGS" ]] && STRENGTH=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+		if [ "$STRENGTH" = "?.?" ]
+		then echo "$WORD ?"
+		else echo "$WORD $STRENGTH"
 		fi
+	else
+		NEWLIST="$NEWLIST""$COLGREY$COLBOLD$WORD$COLBOLD"
+		echo -n "$WORD "
 	fi
 	NEWLIST="$NEWLIST"" "
+done > /tmp/pugstrengths.list
+
+# BRACKETCOL="$COLAQUA"
+# STRENGTHCOL="$COLGREEN"
+BRACKETCOL="$COLGREY"
+STRENGTHCOL="$COLSILVER"
+
+TITLE="Avgpicks"
+[[ "$COUNTPUGS" ]] && TITLE="Pugcounts" && SORTREV="-r"
+
+echo -n "$COLPINK\$ $COLBLUE$COLBOLD""$TITLE$COLBOLD $COLPINK:: "
+cat /tmp/pugstrengths.list |
+sort -n -k 3 $SORTREV |
+while read NUM NICK STRENGTH
+do
+	[[ "$STRENGTH" = "?" ]] && STRENGTH="$COLYELLOW$STRENGTH""?"
+	echo -n "$COLWHITE$NUM $COLGREY$NICK $BRACKETCOL""[$STRENGTHCOL""$STRENGTH$BRACKETCOL""] "
 done
+echo "$COLPINK\$"
+exit
 
 jshinfo "NEWLIST=$NEWLIST"
 
-DECORATIONA="â¡"
+# DECORATIONA="â¡"
 # echo "$COLBLUE$DECORATIONA$COLRESET Average picks: $NEWLIST$COLBLUE$DECORATIONA$COLRESET"
 
-echo "$COLBLUE""Average picks:$COLRESET $NEWLIST"
+echo "$COLPINK\$ $COLBLUE$COLBOLD""$TITLE:$COLBOLD $NEWLIST$COLPINK\$"
 

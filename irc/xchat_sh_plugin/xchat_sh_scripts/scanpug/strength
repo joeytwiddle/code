@@ -20,7 +20,10 @@ then WHO="$1"
 else WHO="$NICK"
 fi
 
-AUTH=`sh scanpug/slowgetauth "$WHO"`
+if echo "$WHO" | grep "^#" >/dev/null
+then AUTH="`echo "$WHO" | sed 's+^#++'`"
+else AUTH=`sh scanpug/slowgetauth "$WHO"`
+fi
 
 if [ "$AUTH" ]
 then
@@ -32,15 +35,16 @@ then
 	# echo "/notice $NICK I have seen him in `cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l` pugs."
 	EXTRA=""
 	COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
-	if [ "$COUNT" -gt 0 ]
-	then
-		SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
-		# STRENGTH=$((SUM/COUNT))
-		STRENGTH=$((10*SUM/COUNT))
-		STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
-		# echo "/notice $NICK He/she was picked $STRENGTH on average [scale 1-8]"
-		EXTRA="  He/she was picked #$STRENGTH on average [scale 1-8]."
-	fi
+	# if [ "$COUNT" -gt 0 ]
+	# then
+		# SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
+		# # STRENGTH=$((SUM/COUNT))
+		# STRENGTH=$((10*SUM/COUNT))
+		# STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
+		# # echo "/notice $NICK He/she was picked $STRENGTH on average [scale 1-8]"
+	# fi
+	STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
+	[[ ! "$STRENGTH" = "?.?" ]] && EXTRA="  He/she was picked #$STRENGTH on average [scale 1-8]."
 	# echo "I have seen $AUTH play $COUNT pugs.$EXTRA"
 	echo "I have seen $AUTH picked $COUNT times.$EXTRA"
 else

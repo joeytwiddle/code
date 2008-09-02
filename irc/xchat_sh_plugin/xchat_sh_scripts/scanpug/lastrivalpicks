@@ -1,3 +1,5 @@
+## If -lines argument is given, doesn't do the auth conversion.
+#
 ## BUG: Rival does not list blue's last pick on a line with ~> but it does list red's!
 ## Get indivual players as they were picked:
 # grep "~>" /home/joey/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pug.log | tail -n 6
@@ -14,6 +16,12 @@ cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 # grep ".*<Rival>.*?.*,.*,.*,.*,.*?.*" | grep -v " ago " | grep -v " Specs: " | tail -n 2
 grep "<Rival>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1
 `
+
+if [ "$1" = -lines ]
+then
+	echo "$LASTLINES"
+	exit 0
+fi
 
 # echo "$LASTLINES" | afterfirst ", " | beforelast " ?" | sed 's+, *+\n+g' |
 # (

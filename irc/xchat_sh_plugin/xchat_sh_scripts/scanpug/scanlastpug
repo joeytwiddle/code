@@ -1,3 +1,6 @@
+## TODO: This has to do a lot of work scanning auths whenever someone does !list
+##       It would be better just to check whether the most recent list == the last scanned list, *before* doing the auth scanning.  :P
+
 if [ "$CHANNEL" = "#ut.pug" ]
 then
 
@@ -6,7 +9,14 @@ then
 	sleep 3
 
 	mkdir -p ~/.scanpug
+	LASTLINES=`cat ~/.scanpug/$CHANNEL-last.lines`
 	LASTDATA=`cat ~/.scanpug/$CHANNEL-last.picks`
+	LINES=`sh scanpug/lastrivalpicks -lines`
+	if [ "$LINES" = "$LASTLINES" ]
+	then ## This is the efficient way to skip repeat scanning
+		jshinfo "We have already scanned this pug."
+		exit 0
+	fi
 	DATA=`sh scanpug/lastrivalpicks`
 	# echo "$DATA" | grep -v "\.users\.quakenet\.org" | takecols 3 |
 	# while read NOTAUTHED
@@ -14,12 +24,17 @@ then
 	# done | grep .
 	if [ "$?" = 0 ] && [ ! "$DATA" = "$LASTDATA" ]
 	then
+		echo "$LINES" > ~/.scanpug/"$CHANNEL-last.lines"
 		echo "$DATA" > ~/.scanpug/"$CHANNEL-last.picks"
 		echo "$DATA" > ~/.scanpug/"$CHANNEL-`geekdate -fine`.picks"
 		# echo "Stats updated."
-		echo "/notice nB^ $CHANNEL pug stats updated."
+		# echo "/notice nB^ $CHANNEL pickup stats updated."
+		# echo "/msg #ut.pug-bottalk $CHANNEL pickup stats updated."
+		MINIREPORT="`echo "$DATA" | takecols 1 2 | tr '\n' ' '`"
+		echo "/msg #ut.pug-bottalk $CHANNEL pickup stats updated: $MINIREPORT"
+		# echo "/msg nB^ $CHANNEL pickup stats updated: $MINIREPORT"
 	else
-		jshinfo "We have already scanned this pug."
+		jshinfo "We have already scanned this pug but we didn't know until latest test!"
 	fi
 
 	) # & ## disabled cos nicer for cmdline testing; but reenable because it allows other scripts to run

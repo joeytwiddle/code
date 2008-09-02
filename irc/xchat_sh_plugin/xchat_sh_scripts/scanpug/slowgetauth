@@ -43,8 +43,8 @@ do
 
 	LINE=`
 		(
-			tail -n 50000 "$LOGDIR/$SERVER-NETWORK.log" | beforetime "$LASTNICKCHANGETIME"
-			tail -n 50000 "$LOGDIR/$SERVER-$CHANNEL.log" # | beforetime "$LASTNICKCHANGETIME"
+			tail -n 50000 "$LOGDIR/$NETWORK-NETWORK.log" | beforetime "$LASTNICKCHANGETIME"
+			tail -n 50000 "$LOGDIR/$NETWORK-$CHANNEL.log" # | beforetime "$LASTNICKCHANGETIME"
 		) |
 		grep "\(is now known as $NICKREGEXP\|-->.*$NICKREGEXP .* has joined \)" | tail -n 1
 	`
@@ -71,6 +71,7 @@ do
 			echo "$AUTH" |
 			sed 's+.*@\([^.]*\)\.users\.quakenet\.org$+\1+' | ## We try to get their quakenet auth
 			sed 's+@.*++' ## If not, we use their chosen name; this is often unique.  The rest of the hostname is liable to change often.
+			[[ "$COUNT" -gt 19 ]] && jshwarn "Took $COUNT iterations!"
 			# break
 			exit 0
 		else
