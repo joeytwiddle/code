@@ -11,7 +11,7 @@ IRCNICK="$NICK"
 
 if [ "$*" = "" ]
 then
-	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
+	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r|-i [property]] [-justserver|-noplayers] <ip_and_port>s..."
 	echo "To query UT99 servers: !utp [-ping|-p] [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
 	echo "  NOTE: to query a hostname, use !utp unreal://<hostname>[:<port>]"
 	exit 0
@@ -26,7 +26,7 @@ then SHOWSCORES=true ; shift
 fi
 
 SEARCH=
-if [ "$1" = -rules ] || [ "$1" = -r ]
+if [ "$1" = -rules ] || [ "$1" = -r ] || [ "$1" = -i ]
 then SHOWRULES=true ; shift
 fi
 
@@ -71,19 +71,22 @@ NL="\\
 			echo "$QSTAT_OUTPUT" |
 
 			# sed "s+\([A-Za-z0-9_]*\)=+$NL$COLRED\1$COLYELLOW=$COLPINK+" |
-			sed "s+^[^A-Za-z0-9]*++" |
-			# tee utp.debug1 |
+			sed "s+^[^A-Za-z0-9]*++" | ## stripping some crap?
+			tee /tmp/utp.debug1 |
 
-			tr ',' '\n' |
+			# tr -d '\n' |
+			# sed 's+[ ]\<[A-Za-z0_-9]*\>=[^ ]*
+			sed 's+,\([^ ]\)+\n\1+g' |
+			# tr ',' '\n' |
 			if [ "$SEARCH" ]
 			then
 				# tr "," "\n" | grep -i "$SEARCH"
 				# sed "s+.*\($SEARCH\)+\1+" |
 				verbosely grep -i "$SEARCH" ||
-				echo "$COLNORM""Nothing found for $SEARCH"
+				echo "$COLRESET""Nothing found for \"$SEARCH\""
 			else cat
 			fi |
-			tr '\n' ',' |
+			tr '\n' ' ' |
 
 			# sed "s+mutators=\([^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL""mutators=\1$NL\2=+" |
 			# sed "s+[0-9][0-9]*+$COLGREEN\0$COLYELLOW+g" |
@@ -94,9 +97,10 @@ NL="\\
 			# sed "s+\([^ ,=]*\)=+$COLBLUE\1$COLYELLOW=$COLAQUA+g" | ## colours are broken here somehow
 			sed 's+,\([^ ]\)+, \1+g' |
 
-			sed "s+[0-9][0-9]*+$COLGREEN\0$COLBLUE+g" | ## Must do this one before others!
+			# sed "s+[0-9][0-9]*+$COLGREEN\0$COLAQUA+g" | ## Must do this one before others!
+			sed "s+=\([0-9][0-9.]*\)+=$COLGREEN\1$COLAQUA+g" | ## Must do this one before others!
 			# sed "s+,+$COLGREY\0$COLBLUE+g" |
-			sed "s+=+$COLYELLOW\0$COLAQUA+g" |
+			sed "s+\([^ ]*\)=+$COLBLUE\1$COLORANGE=$COLAQUA+g" |
 
 			# sed 's/, /+/g' |
 			# sed "s+[ ]*mutators\([^=]*=[^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL$COLPINK""Mutators\1$NL$COLBLUE\2=+" |
@@ -110,6 +114,9 @@ NL="\\
 
 			# sed "s+\(^\| ]\)\([0-9A-Za-z .]*\)\(=\|\)\([A-Za-z .]*\)\([0-9.]*[^,]*.*\)+$COLRED\2$COLYELLOW\3$COLPINK\4$COLGREEN\5$COLGREY +g" |
 			# tr '\n' ' ' |
+
+			## All the clever stuff i tried to do with the mutator list broke, so now I just do:
+			sed "s+\<[Mm]utators\>+$COLMAGENTA""\0+g" |
 
 			# verbosely sed "s$COLYELLOW,$COLPINK\$" ## Remove the last one!
 			sed "s+$COLRESET,$COLRESET[^,]*$++" ## Remove the last one!
@@ -164,7 +171,17 @@ NL="\\
 				# echo -n "unreal://$IP$COLNORM ""$REST " |
 				echo -n "$COLBLUE$COLBOLD""unreal://$IP$COLBOLD$COLNORM ""$REST " | ## i would have used COLRESET but that sets colour to White not Default :P
 				# sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
-				sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+"
+				sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+" |
+
+				## Colour any team-related PubliciseScore info in the title with approriate team colour:
+				# sed "s+(\([0-9]*\)v\([0-9]*\))+($COLRED\1$COLYELLOW""v$COLBLUE\2$COLYELLOW)+" |
+				# sed "s+\[\([0-9]*\)-\([0-9]*\)\]+[$COLRED\1$COLYELLOW-$COLBLUE\2$COLYELLOW]+" |
+				sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD($COLBOLD$COLYELLOW\1v\2$COLBLUE$COLBOLD)$COLBOLD$COLYELLOW+" |
+				sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[$COLBOLD$COLYELLOW\1-\2$COLBLUE$COLBOLD]$COLBOLD$COLYELLOW+" |
+				# sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD(\1$COLBOLD$COLYELLOW""v""$COLBLUE$COLBOLD\2)$COLBOLD$COLYELLOW+" |
+				# sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[\1$COLBOLD$COLYELLOW""-""$COLBLUE$COLBOLD\2]$COLBOLD$COLYELLOW+" |
+
+				cat
 
 				# cat > /dev/null
 				sort -n -r -k 1 | ## highest frags first :)
