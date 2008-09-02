@@ -2,7 +2,7 @@
 . irccols.shlib
 
 ## Accepts regexps SEARCH and IGNORE.
-SEARCH="$*"
+[ "$SEARCH" ] || SEARCH="$*"
 
 if [ "$NOCOLS" ]
 then COLBLUE=""; COLBOLD=""; COLRESET=""; COLYELLOW=""
@@ -21,7 +21,7 @@ do
 	sed 's+Launch with GSC++g' |
 	grep "^UT " |
 	dropcols 1 |
-	sed 's+Rank Gm Server Name .*++' | ## Remove all the crap after the last result
+	sed 's+Rank.*Gm.*Server.*Name.*++' | ## Remove all the crap after the last result
 	# tee /tmp/result.out |
 	cat
 

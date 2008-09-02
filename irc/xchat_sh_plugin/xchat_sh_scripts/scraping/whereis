@@ -33,6 +33,8 @@ fromhtml -old |
 
 # cat
 
+sed 's+:7777++' |
+
 # sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+`cursered;cursebold`\1 `curseblue`\2 `curseyellow`\3+"
-sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+$COLBOLD$COLRED\1 $COLBLUE\2 $COLYELLOW\3+" | grep . || echo "I could not find \"$SEARCH\" playing right now."
+sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+" | grep . || echo "I could not find \"$SEARCH\" playing right now."
 

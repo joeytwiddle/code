@@ -1,1 +1,1 @@
-# SEARCH="CTF" sh ./scraping/scrapegt "$@"
+sh ./scraping/searchserv siege "$@"

@@ -1,3 +1,5 @@
+## See also: http://search.hlsw.org/
+
 . irc.shlib
 . irccols.shlib
 
@@ -28,7 +30,7 @@ do
 	sed 's+Launch with GSC++g' |
 	grep "^UT " |
 	dropcols 1 |
-	sed 's+Rank Gm Server Name .*++' | ## Remove all the crap after the last result
+	sed 's+Rank.*Gm.*Server.*Name.*++' | ## Remove all the crap after the last result
 	cat
 
 done |
@@ -42,7 +44,8 @@ then grep -i "$SEARCH"
 else cat
 fi |
 ## Title Playercount Address Map
-sed "s+^\(.*\) \([0-9][0-9]*/[0-9][0-9]*\)  *\([^ ]*\)  *\(.*\)+$COLBLUE$COLBOLD\3 $COLRESET\2 \4 $COLYELLOW\1 +" |
+sed "s+^\(.*\) \([0-9][0-9]*/[0-9][0-9]*\)  *\([^ ]*\)  *\(.*\)+$COLBLUE$COLBOLD""unreal://\3 $COLRESET\2 \4 $COLYELLOW\1 +" |
+sed 's+:7777++' |
 
 head -n 10 |
 notice
