@@ -1,4 +1,10 @@
 if [ "$1" = wibble ]
 then shift; echo "$*"
-else echo "!do <password> <action>   -- requires password"
+else
+	# AUTH=`sh ./scanpug/slowgetauth "$NICK"` ## Doesn't work in PMs, anyway java exports his auth dummy!
+	jshinfo "Auth for $NICK is $AUTH; he requested !do $*"
+	if [ "$AUTH" = "nogginBasher" ] ## TODO SECRET BUG: someone with IDENT nogginBasher could circumvent this security!
+	then echo "$*"
+	else : # echo "Usage: !do <password> <action>   -- requires password"
+	fi
 fi
