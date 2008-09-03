@@ -1,1 +1,1 @@
-COUNTPUGS=true sh ./scanpug/strengths
+CALLER=pugcounts COUNTPUGS=true sh ./scanpug/strengths

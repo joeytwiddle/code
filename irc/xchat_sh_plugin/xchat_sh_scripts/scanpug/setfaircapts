@@ -35,7 +35,8 @@ fi
 
 NICK="nB^" . restrict_repetitive_calls "30 seconds"
 
-echo "On my way, hang in there..."
+# echo "On my way, hang in there..."
+echo "Setting fair captains..."
 
 ORDERED_LIST=$(
 	echo "$LIST_LINE" |
