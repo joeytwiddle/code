@@ -24,7 +24,7 @@ list_commands () {
 
 		[ "$PRETTY" ] && echo -n "$COLRED$DIR$COLNORM: $COLBLUE"
 
-		find "$DIR"/ -type f -or -type l -maxdepth 1 |
+		find "$DIR"/ -maxdepth 1 -type f -or -type l |
 		filter_list_with test -x |
 		afterlast / |
 		grep -v "^\." | ## hide hidden files ^^
@@ -50,7 +50,7 @@ list_commands_pretty () {
 		# echo -n "$COLRED$DIR$COLNORM: $COLGREY"
 		echo -n "$COLBLUE[$COLRED$DIR$COLBLUE] $COLGREY"
 
-		find "$DIR"/ -type f -maxdepth 1 |
+		find "$DIR"/ -maxdepth 1 -type f |
 		filter_list_with test -x |
 		afterlast / |
 		grep -v "^\." | ## hide hidden files ^^
@@ -78,7 +78,7 @@ list_commands_pretty () {
 }
 
 list_commands_old () {
-	find "$COMMAND_SCRIPTS_DIR" -type f -or -type l -maxdepth 1 |
+	find "$COMMAND_SCRIPTS_DIR" -maxdepth 1 -type f -or -type l |
 	grep -v "/CVS/" |
 	while read FILE
 	do [ -x "$FILE" ] && [ ! -d "$FILE" ] && echo "$FILE"
@@ -89,6 +89,54 @@ list_commands_old () {
 	sort
 }
 
+list_categories () {
+	echo -n "Pick a category: "
+	list_dirs |
+	while read DIR
+	do echo -n "[$COLRED$DIR$COLRESET] "
+	done
+	echo
+}
+
+list_commands_in_category () {
+	DIR="$1"
+	if [ -d "$DIR" ]
+	then
+
+		echo -n "[$COLRED$DIR$COLRESET]: "
+
+		find "$DIR"/ -maxdepth 1 -type f |
+		filter_list_with test -x |
+		afterlast / |
+		grep -v "^\." | ## hide hidden files ^^
+		sort |
+		while read COMMAND
+		do
+			echo -n "!$COMMAND "
+
+			## Aliases:  TODO: NOT WORKING!
+			# find "$DIR"/ -type l -lname "$COMMAND" -or -lname "./$COMMAND" |
+			find "$DIR"/ -type l -lname "$COMMAND" -or -lname "*/$COMMAND" |
+			grep -v "/CVS/" |
+			afterlast / |
+			grep -v "^\." | ## hide hidden files ^^
+			sort |
+			while read ALIAS_COMMAND
+			# do echo -n "$COLBLUE$ALIAS_COMMAND$COLGREY "
+			# done | sed 's+^+(+ ; s+ $+) +'
+			do echo -n "!$ALIAS_COMMAND,"
+			done | sed "s+^+($COLBLUE+ ; s+,$+$COLRESET) +"
+
+		done
+
+		echo
+
+	else
+		echo -n "$DIR is not a category!  "
+		list_categories
+	fi
+}
+
 ## This is needed for the perl handler, so it knows which '/' triggers/handlers to create.
 if [ "$1" = -l ]
 then PRETTY="" list_commands
@@ -97,15 +145,26 @@ else
 	. irc.shlib
 	. irccols.shlib
 
-	## Is it better now I /notice ?
-	# echo -n "/notice $NICK $COLGREY""My commands are: "
-	(
-		# echo "My commands are: "
-		# PRETTY=true
-		list_commands_pretty # | tr '\n' ' '
+	if [ "$1" = "-old" ]
+	then
+		shift
+		## Is it better now I /notice ?
+		# echo -n "/notice $NICK $COLGREY""My commands are: "
+		(
+			# echo "My commands are: "
+			# PRETTY=true
+			list_commands_pretty # | tr '\n' ' '
+			# echo
+		) | notice
 		# echo
-	) | notice
-	# echo
-	# echo "$COLRESET"
+		# echo "$COLRESET"
+		exit
+	fi
+
+	CATEGORY="$1"
+	if [[ "$CATEGORY" != "" ]]
+	then list_commands_in_category "$CATEGORY" | notice
+	else list_categories | notice
+	fi
 
 fi
