@@ -3,38 +3,42 @@
 ## Try; http://www.gametracker.com/search/ut/1500/?search_by=online_player&query=max&sort=name.asc
 ## memo -t "4 minutes" wget -nv -O - "http://www.gametracker.com/search/ut/1500/?search_by=online_player&query=mo&sort=name.asc" | tr '\n\t' '  ' | tr -s ' ' | sed 's+<div class=.results_op_c2[^ ]* +\n+g'
 
-SEARCH="$1"
-
-if [ ! "$SEARCH" ]
+if [ ! "$1" ]
 then
 	echo "Usage: !whereis <part_of_nick>   [ Sponsored by www.gametracker.com ]"
 	exit 0
 fi
 
-memo -t "4 minutes" wget -nv -O - "http://www.gametracker.com/search/ut/1500/?search_by=online_player&query=$SEARCH&sort=name.asc" |
-tr '\n\t' '  ' |
-tr -s ' ' |
-sed 's+<div class=.results_op_c2[^ ]* +\n+g' |
-sed 's+<a href="http://www.gametracker.com/server/\([^/]*\)/[^"]*">+X +g' |
-grep "^X " |
-sed 's+</a>.*<a href=./server_info/\([^/]*\)/.>+ \1 +' |
-sed 's+</a>.*++' |
-dropcols 1 |
-sed 's+$+<BR>+' |
+for SEARCH
+do
 
-randomorder | head -n 8 | sort -n -k 1 |
+	memo -t "4 minutes" wget -nv -O - "http://www.gametracker.com/search/ut/1500/?search_by=online_player&query=$SEARCH&sort=name.asc" |
+	tr '\n\t' '  ' |
+	tr -s ' ' |
+	sed 's+<div class=.results_op_c2[^ ]* +\n+g' |
+	sed 's+<a href="http://www.gametracker.com/server/\([^/]*\)/[^"]*">+X +g' |
+	grep "^X " |
+	sed 's+</a>.*<a href=./server_info/\([^/]*\)/.>+ \1 +' |
+	sed 's+</a>.*++' |
+	dropcols 1 |
+	sed 's+$+<BR>+' |
 
-fromhtml -old |
-## For some reason fromhtml (lynx -dump) was adding extra unwanted newlines.  So to fix that, here we process each line separately, removing the added newlines.
-## Oh I fixed that with -width=65535 (COLUMNS is ignored!)
-# while read LINE
-# do echo "$LINE" | fromhtml | tr -d '\n' ; echo
-# done |
+	# fromhtml -old ## This was failing to convert a lot of &...; codes
+	fromhtml | ## Seems to work
+	## For some reason fromhtml (lynx -dump) was adding extra unwanted newlines.  So to fix that, here we process each line separately, removing the added newlines.
+	## Oh I fixed that with -width=65535 (COLUMNS is ignored!)
+	# while read LINE
+	# do echo "$LINE" | fromhtml | tr -d '\n' ; echo
+	# done |
 
-# cat
+	# cat
 
-sed 's+:7777++' |
+	sed 's+:7777++' |
 
-# sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+`cursered;cursebold`\1 `curseblue`\2 `curseyellow`\3+"
-sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+" | grep . || echo "I could not find \"$SEARCH\" playing right now."
+	# sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+`cursered;cursebold`\1 `curseblue`\2 `curseyellow`\3+"
+	sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+" | grep . || echo "I could not find \"$SEARCH\" playing right now."
+
+done |
+
+randomorder | head -n 8 | sort -n -k 1
 
