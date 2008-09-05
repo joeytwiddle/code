@@ -1,26 +1,37 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// TODO: Instead of players vetoing maps with "no" we could give them a list of 3,4,5 need-to-be-played maps and let them pick one.
+
+// TODO: Allow automatically add muts to certain maps.  (e.g. instagib for the no weapon ctf maps)
+
 // All XOL's info is stored in Fate.BestFitMapList
 
-// TODO: mutate search <part_of_mapname>   so we can see what maps are installed even if they aren't in mapvote
-// TODO: add "good map" "bad map" detection (copy it from ATB!)
+// DONE: mutate search <part_of_mapname>   so we can see what maps are installed even if they aren't in mapvote
+// DONE: add "good map" "bad map" detection (copy it from ATB!)
 
-// TODO CONSIDER: on the one hand, people voting a map means it's a good map
-//                on the other hand, we want to offer maps people don't play much, until it is rated
+// Is it bad HCI to call it "good map"/"bad map" when the actual effect is to "see the map more/less often"?
+
+// CONSIDER: on the one hand, people voting a map means it's a good map
+//           on the other hand, we want to offer maps people don't play much, until it is rated
 
 #define MaxData 3000
 
 class MapStats expands Mutator config(MapStats);
 
+// MapScale is an estimate of the universal constant for ideal player count estimation wrt actor distance.  (Higher values bring actors closer together, making it think maps are smaller, so it will make us play larger maps?)
 #define MapScale 400
 #define NumberOfSpawnPointsScaled (NumberOfSpawnPoints*0.6)
 #define FallbackValue (NumberOfSpawnPointsScaled*MapScale)
 
 // I thought this was needed for immediate switch to work 100%, but I'm not 100% sure.
+// With or without this, *sometimes* it didn't change to NextMap at all, but to the next map in UT's cycle I think (Gauntlet/Command/...).
 // #define CATCH_LEVEL_SWITCH
 #define MAP_RATING
 #define MAP_TAGS
+// PLAYERS_CAN_VETO affects bEndGameSwitchMap
 #define PLAYERS_CAN_VETO
+#define LIST_RECENTLY_PLAYED
+#define MinimumNosForVeto 1
 
 var config bool bLogging;
 var config bool bDebugLogging;
@@ -38,6 +49,11 @@ var config int ServerMinPlayers;
 var config int ServerMaxPlayers;
 var config bool bDoMapScan;
 var config bool bShowLevelEnterText;
+var config bool bStickWithCurrentMode; // turn it on to keep server playable (no CTF on DM maps etc.!) - turn it off to scan all map-sizes
+// TODO: determine required level switch gametype from prefix or from map itself, thus allowing switching to other gametypes
+#ifdef LIST_RECENTLY_PLAYED
+var config bool bListRecentlyPlayed;
+#endif
 
 struct MapInfo {
 	var bool bOnDisk;
@@ -90,6 +106,9 @@ var int NoCount;
 #endif
 #ifdef MAP_RATING
 #endif
+#ifdef LIST_RECENTLY_PLAYED
+var String RecentlyPlayedMaps;
+#endif
 
 defaultproperties {
 bLogging=True
@@ -108,6 +127,10 @@ ServerMinPlayers=6
 ServerMaxPlayers=24
 bDoMapScan=True
 bShowLevelEnterText=True
+bStickWithCurrentMode=True
+#ifdef LIST_RECENTLY_PLAYED
+bListRecentlyPlayed=True
+#endif
 }
 
 #define MapRecord(X) MapStats[MapIndex(X)]
@@ -123,7 +146,7 @@ bShowLevelEnterText=True
 
 #define BroadcastAndLog(Y); BroadcastMessage(Y); if (bLogging) { Log("[MapStats] Broadcasted: " $ Y); }
 
-#define NiceAge(X) Int(X*24)$"h"
+#define NiceAge(X) Int((X)*24)$"h"
 #define NiceFloat FloatToString
 function String FloatToString(float f) {
 	local String s;
@@ -175,6 +198,13 @@ function DoStart() {
 
 	// ScanMaps();
 
+	#ifdef LIST_RECENTLY_PLAYED
+	RecentlyPlayedMaps = StrReplace(RecentlyPlayedMaps,mapName$" ","") $ mapName $ " ";
+	if (Len(RecentlyPlayedMaps)>40) {
+		RecentlyPlayedMaps = StrAfterFirst(RecentlyPlayedMaps," ");
+	}
+	#endif
+
 	if (bCollectMapStats) {
 		// NormalLog("Collecting stats ...");
 		// if (currentMap.bCrashes) { NormalLog("Map "$ currentMap.MapName $" was previously crashing, but now works!"); } // duh this is often set to true inaccurately by DoLevelSwitch :P
@@ -182,6 +212,7 @@ function DoStart() {
 		NumberOfSpawnPoints = CountActors(class'PlayerStart');
 		// currentMap.NumberOfWeaponPickups = CountActors(class'Weapon');
 		// currentMap.NumberOfPathNodes = CountActors(class'PathNode');
+		bMustSave = True;
 	}
 
 	if (bEstimatePreferredPlayers) {
@@ -209,6 +240,7 @@ function DoStart() {
 			// Get map author's suggested IdealPlayerCount:
 			idealPlayerCount = Level.IdealPlayerCount;
 			// DebugLog("Getting map author's IdealPlayerCount from \""$idealPlayerCount$"\"...");
+			NormalLog(""$ MapName $" previous PreferredPlayers = "$ currentMap.PreferredPlayers);
 			restStr = idealPlayerCount;
 			avg = 0.0;
 			count = 0;
@@ -243,6 +275,9 @@ function DoStart() {
 			}
 			NormalLog(""$ currentMap.PreferredPlayersSource $"");
 			NormalLog("PreferredPlayers = "$ NiceFloat(currentMap.PreferredPlayers));
+
+			bMustSave = True;
+
 		}
 
 	} else {
@@ -254,12 +289,13 @@ function DoStart() {
 	// If it was marked as crashed or not on-disk, We MUST mark this map as working!
 	if (currentMap.bCrashes || !currentMap.bOnDisk) bMustSave=True;
 	currentMap.TotalGamesStarted++;
-	// currentMap.DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Nice might be to set 
+	// currentMap.DateLastPlayed = DaysSince1970(); // We need this to stop empty-switching to the same map every time.  But if we only want to record when a player actually plays the map, remove this line.
+	currentMap.DateLastPlayed = (currentMap.DateLastPlayed + DaysSince1970()) / 2.0; // Compromise: we mix the two values (it becomes half as old).
 	currentMap.bCrashes = False; // Was most likely set just before the server switched to this map.  We prove non-crash here.
 	currentMap.bOnDisk = True; // Also proved here (but should be already known from ScanMaps()).
 
-	#define bSaveEarly False
-	if (bSaveEarly && (bCollectMapStats || bEstimatePreferredPlayers)) bMustSave=True;
+	// #define bSaveEarly False
+	// if (bSaveEarly && (bCollectMapStats || bEstimatePreferredPlayers)) bMustSave=True;
 	if ( bMustSave ) {
 		DebugLog("DoStart(): Calling SaveConfig()");
 		SaveConfig();
@@ -311,7 +347,7 @@ function ModifyPlayer(Pawn Other) {
 			}
 		}
 
-		if (bShowLevelEnterText && Level.LevelEnterText != "") {
+		if (Other.PlayerReplicationInfo.Deaths == 0 && bShowLevelEnterText && Level.LevelEnterText != "") {
 			PlayerPawn(Other).ClientMessage(Level.Title $ " : " $ Level.LevelEnterText);
 		}
 
@@ -323,7 +359,7 @@ event Timer() {
 
 	// Mid-game checks:
 	if (bEmptyServerSwitchMap && CountPlayers()==0 /* CountActors(class'PlayerPawn')==CountActors(class'UTServerAdminSpectator') */ && Level.TimeSeconds>EmptyServerSwitchSeconds && FRand() < 0.2) {
-		Log("[MapStats] Timer(): Level is empty and bEmptyServerSwitchMap=True - auto switching.");
+		NormalLog("Timer(): bEmptyServerSwitchMap=True - auto switching at "$Level.TimeSeconds$"");
 		// Level.Game.bGameEnded = True;
 		// bDoneGameEnd = True; // This prevents DoEnd() from being called, which is good since it's an idle server switch, not a real end-game.
 		bCanChooseUnsizedMaps = True;
@@ -355,12 +391,13 @@ event Timer() {
 		if (bEndGameSwitchMap) {
 			NextMap = ChooseNextMap();
 			// BroadcastAndLog("Map will change to "$ NextMap $" in "$EndGameSwitchSeconds$" seconds.");
-			#ifdef PLAYERS_CAN_VETO
-			BroadcastAndLog("Next map will be "$ NextMap $"... say no to reject.");
-			#else
-			BroadcastAndLog("Next map will be "$ NextMap $".");
-			#endif
-			BroadcastAndLog("(Other maps: "$ ConsideredMaps $")");
+			// #ifdef PLAYERS_CAN_VETO
+			// BroadcastAndLog("Next map will be "$ NextMap $"... say no to reject.");
+			// #else
+			// BroadcastAndLog("Next map will be "$ NextMap $".");
+			// #endif
+			// BroadcastAndLog("(Other maps: "$ ConsideredMaps $")");
+			BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
 			// We do the switch in the if clause below, when Timer is next called.
 			SetTimer(EndGameSwitchSeconds,False);
 		} else {
@@ -378,12 +415,13 @@ event Timer() {
 
 function DoLevelSwitch() {
 	local float num;
+	local PlayerPawn p;
 
 	if (NextMap == "") {
 		NextMap = ChooseNextMap();
 	}
 
-	MapRecord(NextMap).DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Might be nicer to set date = 1 day ago, unless a player joins and makes it more recent.  But that's still not ideal.  What is?)
+	// MapRecord(NextMap).DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Might be nicer to set date = 1 day ago, unless a player joins and makes it more recent.  But that's still not ideal.  What is?)  OK moved to DoStart(), where we move the time half-way.
 	MapRecord(NextMap).bCrashes = True;
 	// In case server crashes, this stops it from being chosen again!  (Combined with bCrashes or DateLastPlayed.)
 	// NO OLD: It's also desirable to mark maps which we found weren't on the disk, so we don't have to scan them again.
@@ -397,7 +435,7 @@ function DoLevelSwitch() {
 	num = (DaysSince1970() - MapRecord(NextMap).DateLastPlayed);
 	if (num<2.0) {
 		// NormalLog(mapName$" was last played "$ Int(24*num+0.5) $" hours ago.");
-		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(24*num+0.5) $" hours ago.");
+		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(24.0*num+0.5) $" hours ago.");
 	} else {
 		// NormalLog(mapName$" was last played "$ Int(num+0.5) $" days ago.");
 		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(num+0.5) $" days ago.");
@@ -407,11 +445,29 @@ function DoLevelSwitch() {
 	bInterceptTravel = True;
 	Enable('Tick');
 	#endif
-	if (!StrEndsWith(Caps(NextMap),".UNR"))
-		NextMap = NextMap $ ".unr";
-	// UTServerAdmin(GetAny(class'UTServerAdmin')).ConsoleCommand("admin servertravel "$ ChooseNextMap() );
-	Level.NextURL = NextMap;
-	Level.Game.ProcessServerTravel(NextMap,false);
+	// if (!StrEndsWith(Caps(NextMap),".UNR"))
+		// NextMap = NextMap $ ".unr";
+	// UTServerAdmin(GetAny(class'UTServerAdmin')).ConsoleCommand("admin servertravel "$ NextMap );
+	// Log("MapStats.DoLevelSwitch() Switching to map: "$ NextMap);
+
+	// New method, call anyAdminPlayer.ConsoleCommand().  This solves the problems with Level.ServerTravel() "kicking" players out and Level.Game.ProcessServerTravel() changing to the wrong map.
+	foreach AllActors(class'PlayerPawn',p) {
+		// break; // Get the last one - The first one is useless!
+	}
+	if (p != None) {
+		p.bAdmin = True;
+		NormalLog("DoLevelSwitch() Calling "$p.getHumanName()$".ConsoleCommand(\"admin servertravel "$NextMap$"\")");
+		p.ConsoleCommand("admin servertravel "$NextMap);
+		p.bAdmin = False;
+	} else {
+		//// Fallback method.
+		NormalLog("DoLevelSwitch() No pawn available for consolecommand, trying Level.ServerTravel(\""$ NextMap $"\")");
+		// Did not work:
+		// Level.NextURL = NextMap;
+		Level.ServerTravel(NextMap,false); // This works for the server.  I think it might cause trouble for joined clients though.
+		// Level.Game.ProcessServerTravel(NextMap,false); // This did not work
+	}
+
 	// bDoneGameEnd = False;
 	SetTimer(0,False); // repeat calls should (may) be cancelled already
 }
@@ -575,19 +631,22 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	// #define deltaPlayers ( FRand() - 0.5 )
 	#define deltaPlayers (FRand()*0.5)
 	playerDiff = Abs(currentNumPlayers + deltaPlayers - MapStats[nextI].PreferredPlayers);
-	playerDiff += 2.0;
+	playerDiff += 2.0; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
 	// if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
 	ageInDays += 0.01;
 	// TODO: tweaks zeroed until stats are fixed:
 	#define flowTweak (0.0*MapStats[nextI].AverageFlow*0.125)
+	// playerTweak encourages maps with larger playercount.
 	#define playerTweak (0.0*MapStats[nextI].AverageNumPlayers*0.05)
-	// TODO: anyway playerTweak should work wrt currentNumPlayers!
+	// ratingTweak makes a map 1 hour older * number of good ratings (-bad).
+	#define ratingTweak (2.0/24.0*(MapStats[nextI].GoodVoteCount - 2*MapStats[nextI].BadVoteCount))
+	// TODO: anyway playerTweak should work wrt currentNumPlayers!  playerTweak tends towards slightly larger maps, in order to encourage players to join? :o
 	// if (currentNumPlayers==0 && MapStats[nextI].PreferredPlayers==0) // When the server is empty
 		// ageInDays += 5.0; // boost the score of maps whose size is unknown
-	result = 384.0 * ( ageInDays + flowTweak + playerTweak ) / playerDiff;
+	result = 384.0 * ( ageInDays + flowTweak + playerTweak + ratingTweak) / playerDiff;
 	if (bDebugLogging && FRand()<0.05) {
 		DebugLog("Score for "$ MapStats[nextI].MapName $" PreferredPlayers="$ NiceFloat(MapStats[nextI].PreferredPlayers) $"] is: "$ NiceFloat(result));
-		DebugLog("( age "$ NiceFloat(ageInDays) $"d + tweaks "$ NiceFloat(flowTweak) $" + "$ NiceFloat(playerTweak) $" ) / playerDiff "$ NiceFloat(playerDiff));
+		DebugLog("  ( age "$ NiceFloat(ageInDays) $"d + tweaks "$ NiceFloat(flowTweak) $" + "$ NiceFloat(playerTweak) $" + "$ NiceFloat(ratingTweak) $" ) / playerDiff "$ NiceFloat(playerDiff));
 	}
 	return result;
 }
@@ -623,7 +682,12 @@ function String ChooseNextMap() {
 	for (i=0;i<MaxData;i++) {
 		if (MapStats[i].PreferredPlayers > 0 || (bCanChooseUnsizedMaps && MapStats[i].MapName!="")) {
 			mapScore = ScoreForNextMap(i,currentNumPlayers);
-			if (bestMap == "" || mapScore > bestScore && !StrContains(RejectedMaps,MapStats[i].MapName)) {
+			if (bestMap == "" || mapScore > bestScore) {
+				if (MapStats[i].bDisabled) // && !bCanChooseUnsizedMaps)
+					continue;
+				if (StrContains(" "$RejectedMaps$" "," "$MapStats[i].MapName$" ")) {
+					continue;
+				}
 				if (!MapStats[i].bOnDisk) {
 					if (bDebugLogging && FRand()<0.01) {
 						DebugLog("ChooseNextMap(): Skipping "$ MapStats[i].MapName $" because server no longer has it!");
@@ -631,21 +695,29 @@ function String ChooseNextMap() {
 					// MapStats[i].bCrashes = True;
 					continue;
 				}
-				if (MapStats[i].bDisabled && !bCanChooseUnsizedMaps)
-					continue;
 				if (MapStats[i].bCrashes) {
 					#define bRetryCrashedMaps True
 					if (bRetryCrashedMaps && FRand()<0.01) {
-						NormalLog("ChooseNextMap(): "$ MapStats[i].MapName $" crashes but letting it through to see if it has been fixed.");
+						NormalLog("ChooseNextMap(): "$ MapStats[i].MapName $" previously crashed but considering it, to see if it has been fixed.");
 					} else {
 						// Too frequent here, but get reported occasionally above: NormalLog("ChooseNextMap(): Skipping "$ MapStats[i].MapName $" because it crashes!");
 						continue;
 					}
 				}
-				if (bestMap!="" && FRand()>0.2) {
-					ConsideredMaps = ConsideredMaps $ bestMap $"("$Left(String(mapScore),4)$")"$ " ";
+				if ( bStickWithCurrentMode && !( StrBefore(MapStats[i].MapName,"-") ~= StrBefore(currentMap.MapName,"-") ) ) {
+					// Prefix does not match current map, rejecting.
+					continue;
+					// TODO: Otherwise if we do select a map with a different gametype/prefix, we should also change gametype when we switch level!
+				}
+				// This is our new best map!
+				// if (bestMap!="" && FRand()>0.2) {
+				if (bestMap!="") {
+					// ConsideredMaps = ConsideredMaps $ bestMap $"("$Left(String(mapScore),5)$")"$ " ";
+					ConsideredMaps = ConsideredMaps $ bestMap $"("$ NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $","$Left(String(MapRecord(bestMap).PreferredPlayers),4)$")"$ " ";
+					if (Len(ConsideredMaps)>60)
+						ConsideredMaps = StrAfterFirst(ConsideredMaps," ");
 					// NormalLog("Dropped: "$bestMap$" (score "$ NiceFloat(bestScore) $", age "$ NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $")");
-					NormalLog("Considering: "$MapStats[i].MapName$" (score "$ NiceFloat(mapScore) $", age "$ NiceAge(DaysSince1970() - MapStats[i].DateLastPlayed) $")");
+					NormalLog("Considering: "$MapStats[i].MapName$" (score "$ NiceFloat(mapScore) $", age "$ NiceAge(DaysSince1970() - MapStats[i].DateLastPlayed) $", players "$ NiceFloat(MapStats[i].PreferredPlayers) $")");
 				}
 				bestMap = MapStats[i].MapName;
 				bestScore = mapScore;
@@ -679,62 +751,6 @@ function int CountActors(class<Actor> type) {
 	// DebugLog("CountActors("$type$") = "$c$" [first="$GetAny(type)$" last="$lA$"]");
 	if (bDebugLogging && type != class'PlayerPawn' && type != class'Spectator') { DebugLog("CountActors("$type$") = "$c); }
 	return c;
-}
-
-function ListMapsTo(PlayerPawn p, String str) {
-	local int i;
-	local bool hit;
-	str = Caps(str);
-	for (i=0;i<MaxData;i++) {
-		if (MapStats[i].MapName != "" && StrContains(Caps(MapStats[i].MapName),str)) {
-			p.ClientMessage("["$i$"] "$MapStats[i].MapName$" playcount="$((MapStats[i].TotalGamesStarted+MapStats[i].TotalGamesEnded)/2)$" prefplayers="$Left(""$MapStats[i].PreferredPlayers,4)$" +"$MapStats[i].GoodVoteCount$" -"$MapStats[i].BadVoteCount);
-			hit = true;
-		}
-	}
-	if (hit == false) {
-		p.ClientMessage("I could not find any map matching "$Locs(str)$" - use mutate scanmaps to rescan at next mapswitch.");
-	}
-}
-
-function Mutate(String str, PlayerPawn Sender) {
-	if (bAllowMutateSwitch) {
-		if (str~="suggest") {
-			ChooseNextMap();
-			Sender.ClientMessage("Recommended map: "$ ChooseNextMap() $" last played "$ NiceAge(DaysSince1970() - MapRecord(ChooseNextMap()).DateLastPlayed) $" ago [Beaten: "$ConsideredMaps$"]");
-		}
-		if (
-			(str~="nextmap" && (Sender.bAdmin || CountPlayers()==1))
-			|| str ~= "nextmap..." // TODO WARNING BUG: This little backdoor allows any player to force a mapswitch, but I am currently using it for TESTING.
-			// || str ~= "nextmap "$Level.Game.AdminPassword
-		) {
-			if (Level.Game.bGameEnded) {
-				DoLevelSwitch();
-			}
-			Level.Game.bGameEnded = (FRand()<0.3);
-			Sender.ClientMessage("Repeat call to switch map to "$ ChooseNextMap() $" (state= "$ Level.Game.bGameEnded $")");
-		}
-		if (
-			(str~="scanmaps" && (Sender.bAdmin || CountPlayers()==1))
-			|| str ~= "scanmaps..."
-		) {
-			bDoMapScan=True;
-			bMapScanDone=False;
-			ScanMaps();
-		}
-		if (str~="help") {
-			Sender.ClientMessage("MapStats mutate commands: help | suggest | nextmap | scanmaps");
-			Sender.ClientMessage("MapStats say commands: list <part_of_mapname>");
-		}
-		if (StrStartsWith(Caps(str),"LIST") || StrStartsWith(Caps(Str),"LISTMAPS")) { // aka SHOWINFO
-			if (StrContains(str," ")) {
-				ListMapsTo(Sender,StrAfterFirst(str," "));
-			} else {
-				ListMapsTo(Sender,"");
-			}
-		}
-	}
-	// CheckMessage(str, Sender);
-	Super.Mutate(str, Sender);
 }
 
 #ifdef CATCH_LEVEL_SWITCH
@@ -843,10 +859,6 @@ function bool ScanMaps(optional String search) {
 	return False;
 }
 
-function AddTags(String tags) {
-	currentMap.Tags = currentMap.Tags $ tags $ ",";
-}
-
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	local bool hideMessage;
@@ -889,22 +901,113 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 		// if (StrStartsWith(Msg,"!")) {
 			// hideMessage = CheckMessage(Mid(Msg,1), PlayerPawn(Sender));
 		// }
-		if (Level.Game.bGameEnded && bEndGameSwitchMap) {
-			if (Msg ~= "NO") {
-				NoCount++;
-				if (NoCount >= 3) {
+		// if (Level.Game.bGameEnded && bEndGameSwitchMap) {
+		if (NextMap != "") {
+			if (Msg ~= "NO" || Msg ~= "!NO") {
+				NoCount++; // TODO BUG: can't 1 player just say NO twice and override MinimumNosForVeto?  At least UT chat will usually limit that to some extent.
+				if (NoCount >= MinimumNosForVeto) {
 					NoCount = 0;
 					RejectedMaps = RejectedMaps $ " " $ NextMap;
 					NextMap = ChooseNextMap();
-					BroadcastAndLog("Map will switch to "$ NextMap $".");
+					BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
 				}
 			}
 		}
+		// }
 		#endif
 
 	}
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage /* || !bSwallowSpokenCommands */ );
 }
+
+// Catch mutate messages:
+function Mutate(String str, PlayerPawn Sender) {
+	local PlayerPawn p;
+	if (bAllowMutateSwitch) {
+		if (str~="suggest") {
+			// Current NextMap is discarded
+			// In fact, current NextMap is vetoed:
+			if (NextMap != "")
+				RejectedMaps = RejectedMaps $ " " $ NextMap;
+			NextMap = ChooseNextMap();
+			Sender.ClientMessage("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+			// BroadcastMessage("Next map will be "$NextMap);
+		}
+		if (
+			(str~="nextmap" && (Sender.bAdmin || CountPlayers()==1))
+			|| str ~= "nextmap..." || str ~= "next..." // TODO WARNING BUG: This little backdoor allows any player to force a mapswitch, but I am currently using it for TESTING.
+			// || str ~= "nextmap "$Level.Game.AdminPassword
+		) {
+			// if (Level.Game.bGameEnded) {
+			if (FRand()<0.25) {
+				DoLevelSwitch();
+			}
+			// Level.Game.bGameEnded = (FRand()<0.3);
+			// if (Level.Game.bGameEnded) {
+				// foreach AllActors(class'PlayerPawn',p) {
+					// p.PreClientTravel(); // We need this when doing Level.ServerTravel()!  Otherwise clients get "Connection failed" when server switches map.
+					// // p.ClientTravel("?reconnect", TRAVEL_Relative, False);
+				// }
+			// }
+			if (NextMap=="")
+				NextMap = ChooseNextMap();
+			// Sender.ClientMessage("Repeat call to switch map to "$ NextMap $" (state= "$ Level.Game.bGameEnded $")");
+			Sender.ClientMessage("Repeat call to switch map to "$ NextMap $"");
+		}
+		if (
+			(str~="scanmaps" && (Sender.bAdmin || CountPlayers()==1))
+			|| str ~= "scanmaps..."
+		) {
+			bDoMapScan=True;
+			bMapScanDone=False;
+			ScanMaps();
+		}
+		if (str~="help") {
+			Sender.ClientMessage("MapStats mutate commands: help | suggest | nextmap | scanmaps | list <part_of_mapname>");
+			Sender.ClientMessage("MapStats say commands: good map | bad map | !tagmap <tag1,tag2,...>");
+		}
+		if (StrStartsWith(Caps(str),"LIST ") || StrStartsWith(Caps(Str),"LISTMAPS")) { // aka SHOWINFO
+			if (StrContains(str," ")) {
+				ListMapsTo(Sender,StrAfterFirst(str," "));
+			} else {
+				ListMapsTo(Sender,"");
+			}
+		}
+		#ifdef LIST_RECENTLY_PLAYED
+		if (str~="LISTRECENT" || str~="LASTMAPS") {
+			BroadcastAndLog("Recently played maps: "$ RecentlyPlayedMaps);
+		}
+		#endif
+	}
+	// CheckMessage(str, Sender);
+	Super.Mutate(str, Sender);
+}
+
+function ListMapsTo(PlayerPawn p, String str) {
+	local int i;
+	local bool hit;
+	str = Caps(str);
+	for (i=0;i<MaxData;i++) {
+		if (MapStats[i].MapName != "" && StrContains(Caps(MapStats[i].MapName),str)) {
+			#ifdef MAP_TAGS
+			p.ClientMessage("["$i$"] "$MapStats[i].MapName$" playcount="$((MapStats[i].TotalGamesStarted+MapStats[i].TotalGamesEnded)/2)$" prefplayers="$Left(""$MapStats[i].PreferredPlayers,4)$" +"$MapStats[i].GoodVoteCount$" -"$MapStats[i].BadVoteCount$" tags="$MapStats[i].Tags);
+			#else
+			p.ClientMessage("["$i$"] "$MapStats[i].MapName$" playcount="$((MapStats[i].TotalGamesStarted+MapStats[i].TotalGamesEnded)/2)$" prefplayers="$Left(""$MapStats[i].PreferredPlayers,4)$" +"$MapStats[i].GoodVoteCount$" -"$MapStats[i].BadVoteCount$"");
+			#endif
+			hit = true;
+		}
+	}
+	if (hit == false) {
+		p.ClientMessage("I could not find any map matching "$Locs(str)$" - use mutate scanmaps to rescan at next mapswitch.");
+	}
+}
+
+#ifdef MAP_TAGS
+function AddTags(String tags) {
+	currentMap.Tags = currentMap.Tags $ tags $ ",";
+	// done outside atm: SaveConfig();
+}
+#endif
 
 /*
 // Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
