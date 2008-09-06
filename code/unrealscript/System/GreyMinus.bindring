@@ -1,0 +1,4 @@
+disconnect | onrelease teamsay < XOL | set input GreyPlus connect 81.169.188.18
+disconnect | onrelease teamsay < kX | set input GreyPlus connect 85.131.247.65:6666
+disconnect | onrelease teamsay < pmp2 | set input GreyPlus connect unreal://82.96.91.12:6200?password=welcome
+disconnect | onrelease teamsay < pmp2 | set input GreyPlus connect unreal://82.96.91.12:6200?password=welcome

@@ -1,0 +1,9 @@
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW1
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW2
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW3
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW4
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW5
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW6
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW7
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW8
+netspeed 20000 | showserverinfo | onrelease showserverinfo | mutate logdamage | demorec NEW9

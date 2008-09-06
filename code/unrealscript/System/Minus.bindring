@@ -1,0 +1,9 @@
+echo -> localhost test server               | set input Equals open 127.0.0.1
+echo -> XOL nw CTF 81.169.188.18            | set input Equals open 81.169.188.18
+echo -> kx nw zp 85.131.247.65:6666         | set input Equals open 85.131.247.65:6666?password=start
+echo -> PmP2 pug 82.96.91.12:6200           | set input Equals open 82.96.91.12:6200?password=welcome
+echo -> eLMS twist! 84.31.200.198:666       | set input Equals open 84.31.200.198:666
+; echo -> [-u-] FFA 85.14.224.120           | set input Equals open 85.14.224.120
+; echo -> iNz FFA 82.96.91.3:6100           | set input Equals open 82.96.91.3:6100
+; echo -> oF FFA 82.96.91.13:6200           | set input Equals open 82.96.91.13:6200
+echo -> [A] 125 EUT zp 64.22.125.230        | set input Equals open 64.22.125.230
