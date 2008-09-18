@@ -1,0 +1,39 @@
+. irccols.shlib
+
+if [[ "$1" = "" ]]
+then
+	echo "Type !lastseen <full_nick>s to find when+where I last saw them playing UT."
+	exit 0
+fi
+
+for PLAYER_NAME
+do
+
+	LOWER_NAME="`echo "$PLAYER_NAME" | tolowercase | sed ' s+:+%3A+g '`"
+
+	## All games:
+	# PAGE_RESULT=` memo -t "2 minutes" wget -nv -O - "http://www.gametracker.com/player/$LOWER_NAME/?per_page=10&sort=last_seen&order=desc" `
+	## Just UT:
+	PAGE_RESULT=` memo -t "2 minutes" wget -nv -O - "http://www.gametracker.com/player/$LOWER_NAME/?game=ut&loc=_all&min_score=&min_minutes=&x=23&y=9&per_page=10&page=1&sort=last_seen&order=desc" `
+
+	FIRST_RESULT=`
+	echo "$PAGE_RESULT" |
+	fromline -x "<div class='results_row'>" | toline "<div class='results_row'>"
+	`
+
+	WHEN=` echo "$FIRST_RESULT" | grep -A1 "<div class='results_playerlist_c6'>" | tail -n 1 | sed 's+^[ 	]*++;s+[ 	]*$++' `
+	WHERE=` echo "$FIRST_RESULT" | grep -A2 "<div class='results_playerlist_c3'>" | tail -n 1 | sed "s+[ 	]*<a href='/server_info/\([^/]*\)/'>\([^<]*\)</a>[ 	]*+$COLBLUE$COLBOLD""\1$COLBOLD $COLYELLOW\2+" `
+
+	# jshinfo "WHEN=$WHEN"
+	# jshinfo "WHERE=$WHERE"
+
+	if [ "$WHEN" ]
+	then
+		# echo "$COLAQUA""gametracker$COLRESET last saw $COLRED$1$COLRESET on $COLGREEN$WHEN$COLRESET at $WHERE"
+		# echo "/me last saw $COLRED$1$COLRESET playing on $COLGREEN$WHEN$COLRESET at $WHERE"
+		echo "$COLRED$PLAYER_NAME$COLRESET $COLGREEN$WHEN$COLRESET $WHERE$COLRESET"
+	else echo "/me has not seen $PLAYER_NAME playing recently."
+	fi
+
+done
+
