@@ -16,10 +16,11 @@ function Execute() {
 
 	if (logger == None) {
 		logger = P.Spawn(Class'ClientConsoleLogger');
+		P.ClientMessage("ClientConsoleLogger Enabled.");
 		logger.Init(P);
-		P.ClientMessage("ClientConsoleLogger turned on");
 	} else {
-		P.ClientMessage("ClientConsoleLogger turned off");
+		logger.Destroy();
+		P.ClientMessage("ClientConsoleLogger Disabled.");
 	}
 
 	MenuItem.Owner.Root.EscClose();
