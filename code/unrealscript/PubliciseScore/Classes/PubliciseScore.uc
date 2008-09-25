@@ -32,8 +32,8 @@ defaultproperties {
  bShowTeamNames=False
  bShowTime=True
  UpdateInterval=16
- bInformEnterText=True
- bInformSpeed=True
+ bInformEnterText=False
+ bInformSpeed=False
 
  bCycleServerName=False
  CycledServerName(0)="default"
@@ -356,6 +356,9 @@ function String StrFilterNum(String in, optional bool breakAtFirst, optional out
 }
 // UT2k4 had Repl(in,search,replace).
 function String StrReplace(String in, String search, String replace) {
+ return StrReplaceAll(in,search,replace);
+}
+function String StrReplaceAll(String in, String search, String replace) {
  local String out;
  local int i;
  out = "";

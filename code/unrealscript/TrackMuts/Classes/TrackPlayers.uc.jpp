@@ -12,7 +12,11 @@
 
 // !ignore ?
 
+// FC_COVER tells how well covered your flagcarrier is, as well as his location.
 #define FC_COVER
+#define FC_COVER_ONLY_WHEN_NEEDED
+// EFC_SIGHT only tells location of EFC, if your teammate can see him.
+#define EFC_SIGHT
 
 class TrackPlayers expands Mutator config(TrackMuts);
 
@@ -269,9 +273,15 @@ function String getFCMessage(Pawn fc, String zone) {
 	if (teamCloseness < enemyCloseness) {
 		coverType = "good cover";
 		// danger = "";
+		#ifdef FC_COVER_ONLY_WHEN_NEEDED
+		return "";
+		#endif
 	} else {
 		coverType = "poor cover";
 		// danger = "IN DANGER ";
+		#ifdef FC_COVER_ONLY_WHEN_NEEDED
+		return "Your flag carrier needs help at "$ zone $"!";
+		#endif
 	}
 	// to.ClientMessage("Your flag carrier is at "$ zone $" with "$ coverType $".");
 	// to.ClientMessage("Your flag carrier is "$danger$"at "$ zone $"");

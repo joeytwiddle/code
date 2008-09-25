@@ -4,7 +4,10 @@
 // TODO: allow enabling of non-playerpawn damage display (so u can see damage to Siege buildings for example)
 // TODO: perform accumulation of damage-made-recently in the display, so if he gets hit by 3 rockets in close succession, it displays 60 ... 120 ... 180!
 
-class TrackDamage expands Mutator config(TrackMuts);
+class TrackDamage expands Mutator config(TrackDamage);
+
+// #define bDebugLogging False
+#define bDebugLogging True
 
 struct PlayerSettings {
 	var bool bNoFlash;         // Flash damage updates instead of putting them in chatlog/console
@@ -160,6 +163,9 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	local String boost;
 	local String actualDamageStr;
 	local bool bSameTeam;
+
+	if (bDebugLogging && PlayerPawn(Victim)==None && Bot(Victim)==None)
+		Log("TrackDamage.MutatorTakeDamage(): "$InstigatedBy.getHumanName()$" -> "$ActualDamage$" -> "$Victim$" is not a PlayerPawn or a Bot.");
 
 	bSameTeam = (Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team);
 	if (ActualDamage == 0 && !bSameTeam)

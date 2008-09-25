@@ -28,8 +28,8 @@ defaultproperties {
 	bShowTeamNames=False
 	bShowTime=True
 	UpdateInterval=16
-	bInformEnterText=True
-	bInformSpeed=True
+	bInformEnterText=False
+	bInformSpeed=False
 	#ifdef CYCLE_SERVERNAME
 	bCycleServerName=False
 	CycledServerName(0)="default"

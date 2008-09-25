@@ -244,9 +244,16 @@ var int CurrentEventi;
 
 #endif
 
-// function void PostBeginPlay() {
-	// Super.PostBeginPlay();
-// }
+function PostBeginPlay() { // In case spawned rather than selected from menu
+	Super.PostBeginPlay();
+
+	// This allows us to "spawn nBAutoSpectate" in a local game:
+	if (Camera==None && PlayerPawn(Owner)!=None) {
+		Log("nBAutoSpectate.PostBeginPlay(): setting up for "$ Owner.getHumanName());
+		setpawn(PlayerPawn(Owner));
+	}
+
+}
 
 function bool WeAreOnline() {
 	return False;
@@ -254,6 +261,10 @@ function bool WeAreOnline() {
 
 function bool IsDemo() {
 	return (GetDemoID() != "");
+}
+
+function bool IsOnline() {
+	return WeAreOnline();
 }
 
 function PlayerPawn GetRandomPlayer() {
@@ -1512,6 +1523,9 @@ function FindNextEvent() {
 		LogInfo("Auto enabling camera switching.");
 		bSwitchCamera = True;
 	}
+	if (!IsDemo()) {
+		bRecordEvents = False;
+	}
 
 	#undef ev
 
@@ -1942,6 +1956,7 @@ function ViewBlueFC() {
 
 
 
+// TODO: event?!  and start it?!?!
 function Timer () {
 }
 
@@ -1953,7 +1968,7 @@ function setpawn (PlayerPawn o) {
 	#ifdef ENABLE_EVENT_RECORD_REPLAY
 	LogWarn("nBAutoSpectate cam="$bSwitchCamera$" rec="$bRecordEvents$" replay="$bReplayEvents$" eventCount="$eventCount$" (ne="$CountNonEmptyEvents()$")");
 	#endif
-	bAutoRecord = IsDemo();
+	bAutoRecord = IsDemo() && !isOnline();
 }
 
 function int CountNonEmptyEvents() {
