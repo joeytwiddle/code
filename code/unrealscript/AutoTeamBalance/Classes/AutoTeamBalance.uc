@@ -38,6 +38,9 @@
 
 
 
+
+
+// TODO: teamspeak needs to remove/fix weird chars in nickname
 // DONE: By using bCached[], the record is not re-checked if the nick changes, or if IP changes.  On XOL this is a problem because the initial IP often does change to IDC after a little bit of time.  OK hacking this into the IDC catch code.
 //       This solution means the empty record of their IP will be created.  An alternative would be, at the end of the game, to overwrite whatever is in the DB with the players current nick and idc.
 // TODO: !listfakes could become !whois <part_of_nick>
@@ -51,14 +54,16 @@
 // TODO: mutate suggest - Like bProposeSwitch but only messages Sender.
 // TODO: ATB may decide to switch 3 players, but it only flashes that it will switch two, and this looks wrong to players!
 
-// TODO: If ATB is used in pug mode, it could also switch players teamspeak channel.  We could invoke "MUTATE REDTS" if the TeamSpeak mutator is available, or we could try to execute a URL on the client directly.
+// TESTING: If ATB is used in pug mode, it could also switch players teamspeak channel.  We could invoke "MUTATE REDTS" if the TeamSpeak mutator is available, or we could try to execute a URL on the client directly.
+
+// TODO: delmut may not be working 100% ideally; I think I broke mapvote when I did "mutate addmut WeirdMuts.ForceBehindView" and then delmut on it.
 
 // Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
 
 // Changes since 1.4:
 // When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
 // Changed the default number of player records to 2048, to reduce lag on general servers.
-// Reduced MinSecondsBeforeRebalance to 2 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
+// Reduced MinSecondsBeforeRebalance to 3 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
 // Added bBroadcastTeamStrengths and bFlashTeamStrengths.
 // Moved "Type !teams" message from Flash to the GameInfo.TeamChangeMessage.
 // DONE: Added ADDMUT and DELMUT.
@@ -67,12 +72,13 @@
 // DONE: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.  OK we check 3v5 and we check strength difference.
 // DONE: Compile time option LOG_LAG, to help debugging/development.
 // DONE: When deciding which player to switch mid-game, ATB now prefers players who have not been in the game for long.
-// DONE: Holding the flag will prevent you from being switched to the other team, now only if there is no better switch that can be made!
+// DONE: Holding the flag will only prevent you from being switched if there is no better switch that can be made.
 // DONE: bAutoSwitchNewPlayers: Swaps latest player to join with last player to join, if it improves teams.  We also now prefer to swap players shortest on the server, when performing mid-game rebalance.
 // DONE: mutate listfakers aka mutate listfakes aka mutate listnick
 // DONE: WinningTeamBonus is now given in secret.  Reduced default to 5 points.
 // DONE: Foolish SemiAdmins can no longer switch Spectators onto a playing team.  [Thanks AdminThis for the bugreport.]
 // DONE: I set the default StrengthProportionFromCurrentGame to 1.0, which in v1.5 will minimise mid-game lag (there will be no costly database lookups).  The disadvantage is that the performance of players in previous games will not be taken into account.  Admins can turn it on and decide if their server can handle the processing or not.
+// DONE: Server passwords can no longer be read using "mutate get" after "mutate grantadmin".
 
 // Changes in 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
@@ -243,6 +249,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  // For storing player strength data:
  var config int MaxPlayerData;
  var config String playerData[4096]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
+ var config String TeamspeakChannel[4];
+ var config String TeamspeakChannelOther;
 // Temporary state:
  // Internal (parsed) player data:
  var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
@@ -265,11 +273,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var float LastCalculatedAverages;
  var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
  var PlayerPawn LastBadPlayer; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
- var config bool bLogLag;
- var float debugTimerStart;
- var String debugTimerReason;
- var float debugTimerLastStart;
- var String debugTimerLastReason;
 // Default values:
 defaultproperties {
  bDebugLogging=False
@@ -303,7 +306,7 @@ defaultproperties {
  bAllowSemiAdminForceTravel=True
  bBalanceBots=False
  bRankBots=False
- MinSecondsBeforeRebalance=2
+ MinSecondsBeforeRebalance=3
  bNeverRebalanceWhenTeamsAreEven=False
  SemiAdminPass="defaults_to_admin_pass"
  bAutoBalanceTeamsForCTF=True
@@ -316,8 +319,8 @@ defaultproperties {
  bUpdatePlayerStatsForOtherTeamGames=True
  bUpdatePlayerStatsForNonTeamGames=True
  bLogExtraStats=False
- MaxHoursWhenCopyingOldRecord=2.0
- HoursBeforeRecyclingStrength=4.0
+ MaxHoursWhenCopyingOldRecord=1.0
+ HoursBeforeRecyclingStrength=2.0
  MinHumansForStats=4
  ScoringMethod=2
  bNormaliseScores=True
@@ -340,7 +343,6 @@ defaultproperties {
  bAllowUsersToListFakes=True
  bSeparateStatsByGamemode=False
  bSeparateStatsByMutators=False
- bLogLag=True
  // MaxPlayerData=4096
  MaxPlayerData=1024
  colorWhite=(R=255,G=255,B=255,A=32)
@@ -354,6 +356,9 @@ defaultproperties {
  colorBlack=(R=0,G=0,B=0,A=32)
  strengthColor=(R=255,G=32,B=255,A=32)
  warnColor=(R=255,G=144,B=32,A=32)
+ TeamspeakChannel(0)="teamspeak://ekiebox.org:8767?channel=NoNamePug?subchannel=Red-Team"
+ TeamspeakChannel(1)="teamspeak://ekiebox.org:8767?channel=NoNamePug?subchannel=Blue-Team"
+ TeamspeakChannelOther="http://www.unrealadmin.org/forums/showthread.php?t=23777"
 }
 // #define DebugLog(X); 
 // #define NormalLog(X); Log(X);
@@ -399,7 +404,6 @@ function PostBeginPlay() {
  SetTimer(1,True);
  gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
  CopyConfigIntoArrays(); // First time the data is needed, we must convert it.
- if (bLogLag) { Enable('Tick'); }
  // Some testing:
  initialized = true;
 }
@@ -420,6 +424,7 @@ function AddMutator(Mutator Other) {
  }
 }
 // There was a problem whereby it was getting destroyed (due to taking 3 seconds to process CheckMidGameBalance), and then the new one was perform ForceFullTeamsRebalance!  I think this is fixed now, but disabling this code until I have time to watch it a bit.  ;)  OR ... make it an option ... OR ... somehow make it auto-fix (aka disable) when that happens.  :P
+// #define DESTROY_RECOVERY
 // Disabled cos it might be causing lag on XOL, and sometimes it rebalances just after play started.  :f
 event Destroyed() {
  local AutoTeamBalance newATB;
@@ -427,47 +432,6 @@ event Destroyed() {
  Log(Self$".Destroyed() I was destroyed at "$Level.TimeSeconds);
  // Find out why:
  // assert(false);
- if (debugTimerLastReason != "") {
-  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ Self$" Last action was \""$ debugTimerLastReason $"\" "$ (Level.TimeSeconds-debugTimerLastStart) $" seconds ago."); };
- }
- if (debugTimerReason != "") {
-  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ Self$" whilst performing: "$ debugTimerReason); };
- }
-  // if (FRand()<0.4) {
-  if (true) {
-  // if (Level.TimeSeconds-Int(Level.TimeSeconds)<0.4) {
-  // if (FRand()+Level.TimeSeconds-Float(Int(Level.TimeSeconds))<0.8) {
-   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ Self$" Not trying recovery this time.  ATB will remain off."); };
-   // BroadcastMessageAndLog("AutoTeamBalance encountered problems, and is disabled for the rest of this game.");
-   // BroadcastMessageAndLog("AutoTeamBalance is disabled.");
-   // BroadcastMessageAndLog("Sorry, AutoTeamBalance was destroyed.");
-   BroadcastMessageAndLog("AutoTeamBalance was destroyed.");
-   BroadcastMessageAndLog("You can balance teams by typing NextTeam in the console.");
-  } else {
-   // return;
-   // If that does not work, we can try adding ourself as a mutator again, or better, spawning a new AutoTeamBalance and adding that.
-   newATB = Spawn(class'AutoTeamBalance');
-   // The PostBeginPlay() has now been run on newATB.
-   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ Self$" Trying recovery with new "$ newATB); };
-   newATB.gameStartDone = gameStartDone; // This should pr.vent a full teams rebalance because the newATB thinks it is the start of the game!
-   // It always seems to initialize ok:
-   /*
-			if (newATB.initialized) {
-				NormalLog(Self$" newATB appears to be initialized already.");
-			} else {
-				NormalLog(Self$" Calling newATB.PostBeginPlay() since its initialized=false");
-				// We run PostBeginPlay() to set up the important stuff:
-				// Note CopyConfigIntoArrays will be called, but it probably need to be.
-				newATB.PostBeginPlay();
-			}
-			*/
-   newATB.SetTimer(CheckFrequency,bWarnMidGameUnbalance || bForceEvenTeams); // Since PostBeginPlay() sets it to 1.
-   newATB.gameEndDone = gameEndDone;
-   // Level.Game.BaseMutator.AddMutator(newATB); // Not actually needed since PostBeginPlay() does this.
-   // Pr.vent XOL crashes from causing an initial teambalance after the match has started!
-   if (Level.TimeSeconds>30)
-    newATB.gameStartDone = True;
-  }
  Super.Destroyed();
 }
 // Timer is initially set at 1 second to detect the moment before game-start for ForceFullTeamsRebalance().
@@ -700,8 +664,6 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
  local float playerGameStrength,deltaStrength;
  local string deltaStrengthStr;
  local string redBonus,blueBonus;
- debugTimerStart = Level.TimeSeconds;
- debugTimerReason = "ShowStrengthsTo("$ Sender $")";
  if (bExtra)
   deltaStrengthStr = "(+/-) GameStrength UsedStrength ";
  ShowLineTo(Sender,"[Team] Strength "$deltaStrengthStr$"| Name | Time");
@@ -766,8 +728,6 @@ function ListMutsTo(PlayerPawn Sender) {
 function ListFakesTo(PlayerPawn Sender) {
  local PlayerPawn p;
  local String nickList;
- debugTimerReason = "ListFakesTo("$Sender.getHumanName()$")";
- debugTimerStart = Level.TimeSeconds;
  foreach AllActors(class'PlayerPawn',p) {
   // We do list spectators, but not the UTServerAdminSpectator that some servers have.
   if (InStr(String(p.class),"UTServer")==-1) {
@@ -829,10 +789,10 @@ function Mutate(String str, PlayerPawn Sender) {
  // debugTimerReason = "ATB caught \"mutate "$str$"\" from "$sender.getHumanName();
  // debugTimerStart = Level.TimeSeconds;
  // #endif
+ // What password must they supply to perform semi-admin commands?  ("" = doesn't need to provide a password)
  localPass = GetEffectiveSemiAdminPass();
- // Decide now how we will handle the password later (if a password is even required):
  if (Sender.bAdmin)
-  localPass = ""; // any or no pass is accepted
+  localPass = ""; // no pass is required
  argcount = SplitString(str," ",args);
  // Commands which do not require a password:
  if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
@@ -999,44 +959,64 @@ function Mutate(String str, PlayerPawn Sender) {
  }
  // Admin only commands:
  // These are not really needed for AutoTeamBalance, but useful commands nonetheless.
- // I especially like to use "mutate set" instead of "admin set", since it provides feedback on whether or not the variable existed, and was successfully written!  "mutate get" can be used beforehard, to check the value of the variable.
+ // You can use "mutate set" instead of "admin set".  It provides confirmation of the new value, or the existing value if a change could not be made.
  if (Sender.bAdmin) {
   switch ( Caps(args[0]) ) {
    // Allows admins to read variables from the config files (and maybe some live variables too; untested)
    case "GET":
-    Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+    // Prev_nt reading of password records (so that granting someone you trust temp admin is "safer"):
+    if (StrContains(Caps(args[2]),"PASSWORD")) { // "PASS" or "PASS "?
+     BroadcastMessageAndLog("[WARNING] Temporary admin "$Sender.getHumanName()$" tried to perform: mutate "$msg);
+     Sender.bAdmin = False;
+     // KickBan(Sender);
+    } else {
+     Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+    }
    break;
-   // Allows admins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
    case "SET":
-    ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+    // Always worth logging:
+    // Log("AutoTeamBalance: "$Sender.getHumanName()$" performed mutate "$str$" (previous value was " $ ConsoleCommand("get " $ args[1] $ " "$ args[2]));
+    msg=""; for (i=3;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+    ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ msg);
     Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+    // CONSIDER DONE: It might be useful to explain to all players what happened, so the admin need not. (Maybe also log for tournament admins.)
+    if (!False) {
+     BroadcastMessageAndLog(Sender.getHumanName() $" changed "$ args[1] $"."$ args[2]$" to "$msg);
+    }
    break;
    case "GETPROP":
-    Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+    Sender.ClientMessage( args[1] $ " = " $ Self.GetPropertyText(args[1]) );
    break;
    // Allows admins to write to in-game variables
    case "SETPROP":
-    SetPropertyText(args[1],args[2]);
-    Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
-    Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
+    msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+    Self.SetPropertyText(args[1],msg); // is self relevant?
+    Sender.ClientMessage( args[1] $ " = " $ Self.GetPropertyText(args[1]) );
+    // CONSIDER DONE: It might be useful to explain to all players what happened, so the admin need not. (Maybe also log for tournament admins.)
+    if (!False) {
+     BroadcastMessageAndLog(Sender.getHumanName() $" changed "$ args[1] $" to "$msg);
+    }
    break;
    // Allows admins to run any console command on the server
    case "CONSOLE":
     msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
-    Sender.ClientMessage( "" $ ConsoleCommand(msg) );
+    Sender.ClientMessage( "" $ Self.ConsoleCommand(msg) ); // Does it do anything?  Or only works on PlayerPawns?
    break;
    case "SAVECONFIG":
     UpdateStatsAtEndOfGame();
     // CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
    break;
+   case "SAVEALL":
+    // TODO CONSIDER: For every mutator (object?!), call Mut.SaveConfig();
+   break;
    case "GRANTADMIN":
     p = FindPlayerNamed(args[1]);
- if (p == None) {
-  Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
- } else {
+    if (p == None) {
+     Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+    } else {
      ToggleAdminOnPlayer(p);
      Sender.ClientMessage("Admin toggled on "$p.getHumanName()$".");
- }
+    }
    break;
    Default:
    break;
@@ -1049,16 +1029,16 @@ function Mutate(String str, PlayerPawn Sender) {
    pass_if_needed = " [password]";
   if (bEnablePlayerCommands) {
    // Sender.ClientMessage("    teams !teams !red !blue !spec !play !vote !strengths !stats");
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.dev33" $" commands: teams !teams !red !blue !spec !play !vote !stats");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9" $" commands: teams !teams !red !blue !spec !play !vote !stats");
   } else {
    // Sender.ClientMessage("    teams !teams");
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.dev33" $" commands: teams !teams");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9" $" commands: teams !teams");
   }
   // Sender.ClientMessage("    mutate strengths [extra]"); // also just "strength"
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.dev33" $" mutate commands: strengths [extra] | listmuts | listfakes");
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9" $" mutate commands: strengths [extra] | listmuts | listfakes");
   // Sender.ClientMessage("    mutate listmuts"); // also "listmutators"
   // Sender.ClientMessage("    mutate listfakes"); // also "listfakers"
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.dev33" $" semi-admin console commands:");
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9" $" semi-admin console commands:");
   if (localPass == "") {
    Sender.ClientMessage("    mutate teams" $ pass_if_needed);
    Sender.ClientMessage("    mutate forceteams" $ pass_if_needed);
@@ -1080,7 +1060,7 @@ function Mutate(String str, PlayerPawn Sender) {
    Sender.ClientMessage("    mutate help [<password>]");
   }
   if (Sender.bAdmin) {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.dev33" $" admin-only console commands:");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9" $" admin-only console commands:");
    Sender.ClientMessage("    mutate saveconfig");
    Sender.ClientMessage("    mutate grantadmin <player>");
    Sender.ClientMessage("    mutate get <package> <variable>");
@@ -1252,8 +1232,6 @@ function CheckMidGameBalance() {
  local String problem; // human-readable explanation of the team unbalance
  local Pawn p;
  local int i;
- debugTimerStart = Level.TimeSeconds;
- debugTimerReason = "CheckMidGameBalance(): counting players";
  weakerTeam = -1;
  redTeamCount = GetTeamSize(0);
  blueTeamCount = GetTeamSize(1);
@@ -1272,8 +1250,6 @@ function CheckMidGameBalance() {
  }
  // Do we want to warn players of any imbalance?
  if (bWarnMidGameUnbalance) {
-  debugTimerStart = Level.TimeSeconds;
-  debugTimerReason = "CheckMidGameBalance("$redTeamCount$"v"$blueTeamCount$"): checking teams (weaker="$weakerTeam$")";
   if (weakerTeam == -1 /*&& redTeamCount+blueTeamCount>=3*/) { // no point checking this on a 1v1 ;) - true but i want to check during development; and baiter's bug was weird, hopefully it shouldn't appear too often.
    if (redTeamCount == blueTeamCount && bNeverRebalanceWhenTeamsAreEven) { // TODO: Could instead be !bWarnMidGameStrengthImbalance
     return;
@@ -1292,8 +1268,6 @@ function CheckMidGameBalance() {
   if (weakerTeam == -1) {
    return;
   }
-  debugTimerStart = Level.TimeSeconds;
-  debugTimerReason = "CheckMidGameBalance("$redTeamCount$"v"$blueTeamCount$"): doing warning "$redTeamStrength$"v"$blueTeamStrength$" => weaker="$weakerTeam$" problem="$problem;
   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CheckMidGameBalance("$redTeamCount$"v"$blueTeamCount$"): doing warning "$redTeamStrength$"v"$blueTeamStrength$" => weaker="$weakerTeam$" problem="$problem); };
   if (!bShowReason)
    problem = "";
@@ -1422,6 +1396,11 @@ function bool CheckMessage(String Msg, Pawn Sender) {
    // TODO: Turn on console (toggle console if not on)?
    ShowStrengthsTo(PlayerPawn(Sender),False);
   }
+  if (Sender.IsA('PlayerPawn')) {
+   if (Msg ~= "!TS" || Msg ~= "!TEAMSPEAK") {
+    SendPlayerToTeamspeak(PlayerPawn(Sender));
+   }
+  }
  }
  if (PlayerPawn(Sender)!=None && Spectator(Sender)==None && Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
   if (bLetPlayersRebalance && !DeathMatchPlus(Level.Game).bTournament) {
@@ -1435,6 +1414,52 @@ function bool CheckMessage(String Msg, Pawn Sender) {
   PlayerPawn(Sender).Mutate(StrAfter(Msg," "));
  }
  // #endif
+}
+function SendPlayerToTeamspeak(PlayerPawn Sender) {
+ local int teamNum;
+ local string url,nickname;
+ teamNum = Sender.PlayerReplicationInfo.Team;
+ if (!Level.Game.GameReplicationInfo.bTeamGame)
+  teamNum = -1;
+ if (teamNum>=0 && teamNum<4) {
+  url = TeamspeakChannel[teamNum];
+ } else {
+  url = TeamspeakChannelOther;
+ }
+ if (url == "") {
+  Sender.ClientMessage("No TeamSpeak URL has been configured for this server.");
+ } else {
+  // DebugLog("SendPlayerToTeamspeak("$Sender.getHumanName()$"): target url "$url);
+  // For teamspeak urls, append player name:
+  if (StrContains(url,"teamspeak://") && StrContains(url,"?")) {
+   nickname = StrFilterBadChars(Sender.getHumanName());
+   url = StrBeforeFirst(url,"?") $ "?nickname=" $ nickname $ "?" $ StrAfterFirst(url,"?");
+   // CONSIDER: We could also add a random number on the end, in case someone else is using the same nick.
+  }
+  Sender.ClientMessage(">> "$url);
+  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Sending "$Sender.getHumanName()$" to "$url); };
+  //// Did not work:
+  // Sender.ConsoleCommand("open "$url);
+  //// Works:
+  Sender.PreClientTravel();
+  Sender.ClientTravel(url, TRAVEL_Absolute, False);
+  //// Testing:
+  // Sender.ConsoleCommand("START "$url);
+ }
+}
+// Teamspeak will fail if the player's nickname contains certain chars, so we strip them here.  Even better would be encoding them!
+function String StrFilterBadChars(String in) {
+ local String out;
+ local int i,c;
+ for (i=0;i<Len(in);i++) {
+  c = Asc(Mid(in,i,1));
+  if ( (c>=Asc("A") && c<=Asc("Z")) || (c>=Asc("a") && c<=Asc("z")) || (c>=Asc("0") && c<=Asc("9")) || c==Asc("_") || c==Asc("+") || c==Asc("-") ) {
+   out = out $ Chr(c);
+  } else {
+   out = out $ "_";
+  }
+ }
+ return out;
 }
 // =========== Balancing Algorithms =========== //
 // Also see ModifyLogin() above, for the decision of which team to send a player to when they join a running game.
@@ -1457,8 +1482,6 @@ function ForceFullTeamsRebalance() {
  local TeamGamePlus g; // my linux ucc make had trouble with TeamGamePlus :|
  local int oldMaxTeamSize;
  local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
- debugTimerStart = Level.TimeSeconds;
- debugTimerReason = "ForceFullTeamsRebalance() with "$ CountHumanPlayers() $" players";
  // We can't balance if it's not a teamgame
  if (!Level.Game.GameReplicationInfo.bTeamGame) return;
  ; if (bDebugLogging) { Log("-AutoTeamBalance- "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "ForceFullTeamsRebalance() Running..."); };
@@ -1595,7 +1618,8 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
  // This also fixed the bug that (I think) if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
  if (/*MinRequestsForRebalance<2 &&*/ lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
   // DebugLog("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds);
-  BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
+  //// Don't both broadcasting, just mute.
+  // BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
   return;
  }
  if (lastRebalanceRequestTime < Level.TimeSeconds - 60) {
@@ -1672,8 +1696,6 @@ function MidGameRebalance(bool bDo) {
  blueTeamCount = GetTeamSize(1);
  // We assume bot skills are pretty much irrelevant, and the bots will auto-switch to balance teams after we move any players around.
  ; if (bDebugLogging) { Log("-AutoTeamBalance- "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "MidGameRebalance() "$redTeamCount$" v "$blueTeamCount$""); };
- debugTimerReason = debugTimerReason $ "+MidGameRebalance() "$redTeamCount$" v "$blueTeamCount;
- debugTimerStart = Level.TimeSeconds;
  // TODO: what if redTeamCount << blueTeamCount ?  e.g. it's 6v2 so we need to move two players.  we could balance in a while loop if it's guaranteed to end - although the system should really be changed entirely, since it tries to balance strengths on the first switch, it will be harder to keep them balanced on the second switch.
  success = True; // will become false only if MidGameTeamBalanceSwitchOnePlayer() is tried and failed.
  if (redTeamCount < blueTeamCount) {
@@ -1697,8 +1719,6 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
  local float newDifference; // the absolute strength difference between the two teams after the potential switch
  local float timeInGame,bestScore,potentialNewDifference;
  local int playerCountDifference;
- debugTimerReason = debugTimerReason $ "+MidGameTeamBalanceSwitchOnePlayer()";
- debugTimerStart = Level.TimeSeconds;
  fromTeamStrength = GetTeamStrength(fromTeam);
  toTeamStrength = GetTeamStrength(toTeam);
  currentDifference = fromTeamStrength - toTeamStrength; // Should usually be positive.  ;)
@@ -1798,8 +1818,6 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
  local float bothTimeInGame;
  local float bestScore;
  local float playerCountDifference;
- debugTimerReason = debugTimerReason $ "+MidGameTeamBalanceSwitchTwoPlayers()";
- debugTimerStart = Level.TimeSeconds;
  redTeamStrength = GetTeamStrength(0);
  blueTeamStrength = GetTeamStrength(1);
  difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
@@ -2148,8 +2166,6 @@ function CopyConfigIntoArrays() {
  local int i;
  local String data;
  local String args[256];
- debugTimerReason = "CopyConfigIntoArrays()";
- debugTimerStart = Level.TimeSeconds;
  CopyConfigDone=True;
  ; if (bDebugLogging) { Log("-AutoTeamBalance- "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CopyConfigIntoArrays() "$GetDate()$" running"); };
  for (i=0; i<MaxPlayerData; i++) {
@@ -2239,10 +2255,6 @@ function String GetDBName(Pawn p) {
 function int FindPlayerRecord(Pawn p) {
  local int pid,i;
  local int found;
- if (debugTimerReason == "") {
-  debugTimerReason = "FindPlayerRecord("$p.getHumanName()$")";
-  debugTimerStart = Level.TimeSeconds;
- }
  // i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
  pid = p.PlayerReplicationInfo.PlayerID % 64;
  // BUG TODO: When bRankBots=True (or bBalanceBots=True?), all the bots have i = 1635,
@@ -2294,9 +2306,6 @@ function SwapPlayerRecords(int i,int j) {
  local string tmp_player_nick, tmp_player_ip;
  local float tmp_avg_score, tmp_hours_played;
  local string tmp_date_last_played;
- // debugTimerReason = "SwapPlayerRecords(\""$nick[i]$"\",\""$nick[j]$"\")";
- debugTimerReason = "did lookup and optimisation swap this tick, for "$ nick[j];
- debugTimerStart = Level.TimeSeconds;
  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "SwapPlayerRecords() Swapping records "$ j $" <-> "$ i $" ("$ nick[j] $":"$ ip[j] $"("$ Int(avg_score[j]) $") <-> "$ nick[i] $":"$ ip[i] $"("$ Int(avg_score[i]) $"))"); };
  // Swap record [i] for record [j]:
  tmp_player_nick = nick[i];
@@ -2544,10 +2553,6 @@ function UpdateStatsAtEndOfGame() {
  local Pawn p;
  local int i;
  // We know this is going to lag, and we don't care because it's the end of the game.  But it prev.nts other things from getting logged as lag, when really we know it is this.  :)
- if (debugTimerReason == "") {
-  debugTimerReason = "UpdateStatsAtEndOfGame()";
-  debugTimerStart = Level.TimeSeconds;
- }
  // Do not update stats for games with <MinHumansForStats human players.
  if (CountHumanPlayers() < MinHumansForStats) {
   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "UpdateStatsAtEndOfGame() not updating stats since CountHumanPlayers "$CountHumanPlayers()$" < "$MinHumansForStats$"."); };
@@ -2574,8 +2579,6 @@ function UpdateStatsAtEndOfGame() {
  SaveConfig();
  ; if (bDebugLogging) { Log("-AutoTeamBalance- "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "UpdateStatsAtEndOfGame() done"); };
  // Cancel the log_lag.  We know this will lag and we don't care.
- debugTimerReason = "";
- debugTimerStart = 0;
 }
 function TeamInfo GetWinningTeam() {
  local int i;
@@ -2731,10 +2734,6 @@ function GetAveragesThisGame() {
  local int playerCount;
  if (Level.TimeSeconds <= LastCalculatedAverages + 5)
   return;
- if (debugTimerReason == "") {
-  debugTimerStart = Level.TimeSeconds;
-  debugTimerReason = "GetAveragesThisGame()";
- }
  playerCount = 0;
  averageGameScore = 0.0;
  averagePlayerStrengthThisGame = 0.0;
@@ -2760,9 +2759,9 @@ function float NormaliseScore(float score) {
  GetAveragesThisGame();
  // Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to NormalisedStrength!
  if (averageGameScore < 2.0) {
-  averageGameScore = NormalisedStrength; // CONSIDER: maybe just better not to update
+  averageGameScore = 2.0; // CONSIDER: maybe just better not to update
  } // BT games will tend to have a lot of -ve scores.
- ; if (bDebugLogging) { Log("-AutoTeamBalance- "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$""); };
+ // DebugLog("NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$"");
  /*
 	if (bRelativeNormalisation) {
 		return score * averagePlayerStrengthThisGame / averageGameScore;
@@ -2942,6 +2941,9 @@ function String StrFilterNum(String in, optional bool breakAtFirst, optional out
 }
 // UT2k4 had Repl(in,search,replace).
 function String StrReplace(String in, String search, String replace) {
+ return StrReplaceAll(in,search,replace);
+}
+function String StrReplaceAll(String in, String search, String replace) {
  local String out;
  local int i;
  out = "";

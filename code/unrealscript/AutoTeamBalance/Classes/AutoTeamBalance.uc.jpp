@@ -6,7 +6,7 @@
 // It also attempts to put a player joining the game on the weaker team, and
 // can perform mid-game rebalance when players type "!teams".
 // by F0X|nogginBasher and Daniel Mastersourcerer at Kitana's Castle.
-// Copyright Paul Clark 2007, released under the LGPL.
+// Copyright Paul Clark 2007-8, released under the LGPL.
 // Thanks to: Daniel, iDeFiX, unrealadmin, Matt, the author of adwvaad, and
 // #unrealscript at EnterTheGame.
 // Code snippets lifted from iDeFiX's team balancer, TeamBallancer, and the
@@ -32,8 +32,13 @@
 // When parsing, we can check duplicates and remove the older.
 // Do we need the third combined record?  It does mean we only have to lookup one.
 
-#define ATB_VERSION "1.4.dev31"
+// TODO: If we can't do better lookups, at least organise the db to have lost records later in the list.  We can do this slowly over time, by swapping 3 records instead of swapping 2.  Move the new guy 70% towards the top, and he will be sort-of cached for the next few hours.
 
+#define ATB_VERSION "1.4.9"
+
+#define bHideAdminActivity False
+
+// TODO: teamspeak needs to remove/fix weird chars in nickname
 // DONE: By using bCached[], the record is not re-checked if the nick changes, or if IP changes.  On XOL this is a problem because the initial IP often does change to IDC after a little bit of time.  OK hacking this into the IDC catch code.
 //       This solution means the empty record of their IP will be created.  An alternative would be, at the end of the game, to overwrite whatever is in the DB with the players current nick and idc.
 // TODO: !listfakes could become !whois <part_of_nick>
@@ -47,12 +52,16 @@
 // TODO: mutate suggest - Like bProposeSwitch but only messages Sender.
 // TODO: ATB may decide to switch 3 players, but it only flashes that it will switch two, and this looks wrong to players!
 
+// TESTING: If ATB is used in pug mode, it could also switch players teamspeak channel.  We could invoke "MUTATE REDTS" if the TeamSpeak mutator is available, or we could try to execute a URL on the client directly.
+
+// TODO: delmut may not be working 100% ideally; I think I broke mapvote when I did "mutate addmut WeirdMuts.ForceBehindView" and then delmut on it.
+
 // Another possibility for the future: If teams become uneven, find the two most suitable players to switch, and let the BETTER of the two players decide whether they switch teams or not.  Is this a nice way to do it?
 
 // Changes since 1.4:
 // When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
 // Changed the default number of player records to 2048, to reduce lag on general servers.
-// Reduced MinSecondsBeforeRebalance to 2 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
+// Reduced MinSecondsBeforeRebalance to 3 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
 // Added bBroadcastTeamStrengths and bFlashTeamStrengths.
 // Moved "Type !teams" message from Flash to the GameInfo.TeamChangeMessage.
 // DONE: Added ADDMUT and DELMUT.
@@ -61,12 +70,14 @@
 // DONE: If ATB detects uneven teams, that should count as MinRequestsForRebalance-1 votes, so that only 1 request is needed to fix the teams.  OK we check 3v5 and we check strength difference.
 // DONE: Compile time option LOG_LAG, to help debugging/development.
 // DONE: When deciding which player to switch mid-game, ATB now prefers players who have not been in the game for long.
-// DONE: Holding the flag will prevent you from being switched to the other team, now only if there is no better switch that can be made!
+// DONE: Holding the flag will only prevent you from being switched if there is no better switch that can be made.
 // DONE: bAutoSwitchNewPlayers: Swaps latest player to join with last player to join, if it improves teams.  We also now prefer to swap players shortest on the server, when performing mid-game rebalance.
 // DONE: mutate listfakers aka mutate listfakes aka mutate listnick
 // DONE: WinningTeamBonus is now given in secret.  Reduced default to 5 points.
 // DONE: Foolish SemiAdmins can no longer switch Spectators onto a playing team.  [Thanks AdminThis for the bugreport.]
 // DONE: I set the default StrengthProportionFromCurrentGame to 1.0, which in v1.5 will minimise mid-game lag (there will be no costly database lookups).  The disadvantage is that the performance of players in previous games will not be taken into account.  Admins can turn it on and decide if their server can handle the processing or not.
+// DONE: Server passwords can no longer be read using "mutate get" after "mutate grantadmin".
+// Added "!ts" commands to connect a player to their team's Teamspeak channel, if the admin wishes to configure it.
 
 // Changes in 1.4:
 // Fixed the bug that a spectator could type "!red" and pick up the blue flag!
@@ -180,7 +191,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #endif
 
 	// Still compiling ATB for XOL, until it's working ok as ATBXOL.
-	#define XOL_SPECIFIC
+	// #define XOL_SPECIFIC
 	// #define ENABLE_USEISPNOTFULLIP
 	#define ENABLE_ADMIN_COMMANDS
 	#define ENABLE_MUTATOR_SIGNATURE
@@ -189,10 +200,12 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	// #define FAST_DATE_COMPARISON
 	#define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data.
 	#define ENABLE_SHOW_STATS
-	#define ENABLE_USE_INGAME_SCORES
 	#define DETECT_PLAYERJOINS
 	// #define FAST_TREE
 	// #define FAST_HASH
+	// #define TAKE_MOST_RECENT_DUPLICATE
+	#define TEAMSPEAK
+
 	#ifdef XOL_SPECIFIC
 		#define ENABLE_IDC
 		#define STAGGER_LOOKUPS
@@ -202,7 +215,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 		// WAIT_FOR_IDC screws with bAutoSwitchNewPlayers
 		#define ORIGION
 	#endif
-	// #define TAKE_MOST_RECENT_DUPLICATE
 
 	//// Testing:
 	// #define TESTING
@@ -211,8 +223,10 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	// #define TESTING_PRINT_ANGLES
 	#define bLogDuplicateRecords False
 	// TODO: If we do take the duplicate, the older useless one should be removed.
-	#define LOG_LAG
-	#define LOG_LAG_KEEP_LAST_ACTION
+	#ifdef TESTING
+		#define LOG_LAG
+		#define LOG_LAG_KEEP_LAST_ACTION
+	#endif
 	// #define LOG_TICKRATE
 	// #define WARN_TICKRATE_CHANGE
 
@@ -339,6 +353,14 @@ var Trie NickTrie;
 	#define MaxPlayerDataMax 4096
 	var config String playerData[MaxPlayerDataMax]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
+	#ifdef NEW_HASHTABLE
+	var config int DBVersion;
+	#endif
+
+	#ifdef TEAMSPEAK
+	var config String TeamspeakChannel[4];
+	var config String TeamspeakChannelOther;
+	#endif
 
 
 // Temporary state:
@@ -422,7 +444,7 @@ defaultproperties {
 	bForceEvenTeams=False
 	bLetPlayersRebalance=True
 	#ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
-	MinRequestsForRebalance=1
+	MinRequestsForRebalance=2
 	bOverrideMinRequests=True
 	// MinRequestsForRebalancePercent=25    // or 25% of players request it.
 	#endif
@@ -439,7 +461,7 @@ defaultproperties {
 	bAllowSemiAdminForceTravel=True
 	bBalanceBots=False
 	bRankBots=False
-	MinSecondsBeforeRebalance=2
+	MinSecondsBeforeRebalance=3
 	bNeverRebalanceWhenTeamsAreEven=False
 	SemiAdminPass="defaults_to_admin_pass"
 	bAutoBalanceTeamsForCTF=True
@@ -452,8 +474,8 @@ defaultproperties {
 	bUpdatePlayerStatsForOtherTeamGames=True
 	bUpdatePlayerStatsForNonTeamGames=True
 	bLogExtraStats=False
-	MaxHoursWhenCopyingOldRecord=2.0
-	HoursBeforeRecyclingStrength=4.0
+	MaxHoursWhenCopyingOldRecord=1.0
+	HoursBeforeRecyclingStrength=2.0
 	MinHumansForStats=4
 	ScoringMethod=2
 	bNormaliseScores=True
@@ -493,6 +515,9 @@ defaultproperties {
 	#endif
 	// MaxPlayerData=4096
 	MaxPlayerData=1024
+	#ifdef NEW_HASHTABLE
+	DBVersion=1
+	#endif
 	colorWhite=(R=255,G=255,B=255,A=32)
 	colorRed=(R=255,G=32,B=32,A=32)
 	colorBlue=(R=32,G=32,B=255,A=32)
@@ -504,6 +529,11 @@ defaultproperties {
 	colorBlack=(R=0,G=0,B=0,A=32)
 	strengthColor=(R=255,G=32,B=255,A=32)
 	warnColor=(R=255,G=144,B=32,A=32)
+	#ifdef TEAMSPEAK
+	TeamspeakChannel(0)="teamspeak://ekiebox.org:8767?channel=NoNamePug?subchannel=Red-Team"
+	TeamspeakChannel(1)="teamspeak://ekiebox.org:8767?channel=NoNamePug?subchannel=Blue-Team"
+	TeamspeakChannelOther="http://www.unrealadmin.org/forums/showthread.php?t=23777"
+	#endif
 }
 
 
@@ -532,7 +562,7 @@ function PostBeginPlay() {
 	// FlashLine=0;
 	// WinningTeamBonus=5;
 	// bLogDeletedRecords=True;
-	bWarnMidGameUnbalance=True; // Test to see if this stops ATB from being destroyed at 32 seconds.
+	// bWarnMidGameUnbalance=True; // Test to see if this stops ATB from being destroyed at 32 seconds.
 
 	if (initialized) {
 		DebugLog(Self$".PostBeginPlay() called with initialized already true; quitting.");
@@ -570,6 +600,11 @@ function PostBeginPlay() {
 	gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
 
 	CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
+
+#ifdef NEW_HASHTABLE
+      if (DBVersion == 1)
+              ConvertDBToVersionTwo();
+#endif
 
 	#ifdef LOG_LAG
 	if (bLogLag) { Enable('Tick'); }
@@ -616,12 +651,12 @@ function SetIDC(int i, int j) {
 #endif
 
 // There was a problem whereby it was getting destroyed (due to taking 3 seconds to process CheckMidGameBalance), and then the new one was perform ForceFullTeamsRebalance!  I think this is fixed now, but disabling this code until I have time to watch it a bit.  ;)  OR ... make it an option ... OR ... somehow make it auto-fix (aka disable) when that happens.  :P
-#define DESTROY_RECOVERY
+// #define DESTROY_RECOVERY
 // Disabled cos it might be causing lag on XOL, and sometimes it rebalances just after play started.  :f
 event Destroyed() {
 	local AutoTeamBalance newATB;
 	local int i;
-	NormalLog(Self$" was destroyed at "$Level.TimeSeconds);
+	Log(Self$".Destroyed() I was destroyed at "$Level.TimeSeconds);
 
 	// Find out why:
 	// assert(false);
@@ -1105,11 +1140,10 @@ function Mutate(String str, PlayerPawn Sender) {
 	// debugTimerStart = Level.TimeSeconds;
 	// #endif
 
+	// What password must they supply to perform semi-admin commands?  ("" = doesn't need to provide a password)
 	localPass = GetEffectiveSemiAdminPass();
-
-	// Decide now how we will handle the password later (if a password is even required):
 	if (Sender.bAdmin)
-		localPass = ""; // any or no pass is accepted
+		localPass = ""; // no pass is required
 
 	argcount = SplitString(str," ",args);
 
@@ -1352,37 +1386,54 @@ function Mutate(String str, PlayerPawn Sender) {
 
 	// Admin only commands:
 	// These are not really needed for AutoTeamBalance, but useful commands nonetheless.
-	// I especially like to use "mutate set" instead of "admin set", since it provides feedback on whether or not the variable existed, and was successfully written!  "mutate get" can be used beforehard, to check the value of the variable.
+	// You can use "mutate set" instead of "admin set".  It provides confirmation of the new value, or the existing value if a change could not be made.
 	if (Sender.bAdmin) {
 
 		switch ( Caps(args[0]) ) {
 
 			// Allows admins to read variables from the config files (and maybe some live variables too; untested)
 			case "GET":
-				Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+				// Prev_nt reading of password records (so that granting someone you trust temp admin is "safer"):
+				if (StrContains(Caps(args[2]),"PASSWORD")) { // "PASS" or "PASS "?
+					BroadcastMessageAndLog("[WARNING] Temporary admin "$Sender.getHumanName()$" tried to perform: mutate "$msg);
+					Sender.bAdmin = False;
+					// KickBan(Sender);
+				} else {
+					Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+				}
 			break;
 
-			// Allows admins to write to config variables (probably equivalent to: admin set <package> <name> <value>)
 			case "SET":
-				ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ args[3]);
+				// Always worth logging:
+				// Log("AutoTeamBalance: "$Sender.getHumanName()$" performed mutate "$str$" (previous value was " $ ConsoleCommand("get " $ args[1] $ " "$ args[2]));
+				msg=""; for (i=3;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+				ConsoleCommand("set " $ args[1] $ " " $ args[2] $ " " $ msg);
 				Sender.ClientMessage( args[1] $ ":" $ args[2] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2]) );
+				// CONSIDER DONE: It might be useful to explain to all players what happened, so the admin need not. (Maybe also log for tournament admins.)
+				if (!bHideAdminActivity) {
+					BroadcastMessageAndLog(Sender.getHumanName() $" changed "$ args[1] $"."$ args[2]$" to "$msg);
+				}
 			break;
 
 			case "GETPROP":
-				Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
+				Sender.ClientMessage( args[1] $ " = " $ Self.GetPropertyText(args[1]) );
 			break;
 
 			// Allows admins to write to in-game variables
 			case "SETPROP":
-				SetPropertyText(args[1],args[2]);
-				Sender.ClientMessage( args[1] $ " = " $ GetPropertyText(args[1]) );
-				Sender.ClientMessage(args[1] $ " = " $ ConsoleCommand("get " $ args[1] $ " " $ args[2])); // read it back to the user, to check it worked
+				msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+				Self.SetPropertyText(args[1],msg); // is self relevant?
+				Sender.ClientMessage( args[1] $ " = " $ Self.GetPropertyText(args[1]) );
+				// CONSIDER DONE: It might be useful to explain to all players what happened, so the admin need not. (Maybe also log for tournament admins.)
+				if (!bHideAdminActivity) {
+					BroadcastMessageAndLog(Sender.getHumanName() $" changed "$ args[1] $" to "$msg);
+				}
 			break;
 
 			// Allows admins to run any console command on the server
 			case "CONSOLE":
 				msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
-				Sender.ClientMessage( "" $ ConsoleCommand(msg) );
+				Sender.ClientMessage( "" $ Self.ConsoleCommand(msg) ); // Does it do anything?  Or only works on PlayerPawns?
 			break;
 
 			case "SAVECONFIG":
@@ -1390,14 +1441,18 @@ function Mutate(String str, PlayerPawn Sender) {
 				// CopyConfigIntoArrays(); // If the game ends after this, we will re-do this time period, but damn we can't copy back now
 			break;
 
+			case "SAVEALL":
+				// TODO CONSIDER: For every mutator (object?!), call Mut.SaveConfig();
+			break;
+
 			case "GRANTADMIN":
 				p = FindPlayerNamed(args[1]);
-	if (p == None) {
-		Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
-	} else {
+				if (p == None) {
+					Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+				} else {
 					ToggleAdminOnPlayer(p);
 					Sender.ClientMessage("Admin toggled on "$p.getHumanName()$".");
-	}
+				}
 			break;
 
 			Default:
@@ -1699,7 +1754,7 @@ function CheckMidGameBalance() {
 		#endif
 
 		if (weakerTeam == -1 /*&& redTeamCount+blueTeamCount>=3*/) { // no point checking this on a 1v1 ;) - true but i want to check during development; and baiter's bug was weird, hopefully it shouldn't appear too often.
-			if (redTeamCount == blueTeamCount && bNeverRebalanceWhenTeamsAreEven) {
+			if (redTeamCount == blueTeamCount && bNeverRebalanceWhenTeamsAreEven) { // TODO: Could instead be !bWarnMidGameStrengthImbalance
 				return;
 			}
 			// So teams differ by <2 players.  Now calculate which team is weaker, and check if that team has fewer players:
@@ -1875,6 +1930,14 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 			ShowStrengthsTo(PlayerPawn(Sender),False);
 		}
 
+		#ifdef TEAMSPEAK
+		if (Sender.IsA('PlayerPawn')) {
+			if (Msg ~= "!TS" || Msg ~= "!TEAMSPEAK") {
+				SendPlayerToTeamspeak(PlayerPawn(Sender));
+			}
+		}
+		#endif
+
 	}
 
 	if (PlayerPawn(Sender)!=None && Spectator(Sender)==None && Msg ~= "TEAMS" || Msg ~= "!TEAMS") {
@@ -1892,6 +1955,58 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 	// #endif
 
 }
+
+#ifdef TEAMSPEAK
+
+function SendPlayerToTeamspeak(PlayerPawn Sender) {
+	local int teamNum;
+	local string url,nickname;
+	teamNum = Sender.PlayerReplicationInfo.Team;
+	if (!Level.Game.GameReplicationInfo.bTeamGame)
+		teamNum = -1;
+	if (teamNum>=0 && teamNum<4) {
+		url = TeamspeakChannel[teamNum];
+	} else {
+		url = TeamspeakChannelOther;
+	}
+	if (url == "") {
+		Sender.ClientMessage("No TeamSpeak URL has been configured for this server.");
+	} else {
+		// DebugLog("SendPlayerToTeamspeak("$Sender.getHumanName()$"): target url "$url);
+		// For teamspeak urls, append player name:
+		if (StrContains(url,"teamspeak://") && StrContains(url,"?")) {
+			nickname = StrFilterBadChars(Sender.getHumanName());
+			url = StrBeforeFirst(url,"?") $ "?nickname=" $ nickname $ "?" $ StrAfterFirst(url,"?");
+			// CONSIDER: We could also add a random number on the end, in case someone else is using the same nick.
+		}
+		Sender.ClientMessage(">> "$url);
+		NormalLog("Sending "$Sender.getHumanName()$" to "$url);
+		//// Did not work:
+		// Sender.ConsoleCommand("open "$url);
+		//// Works:
+		Sender.PreClientTravel();
+		Sender.ClientTravel(url, TRAVEL_Absolute, False);
+		//// Testing:
+		// Sender.ConsoleCommand("START "$url);
+	}
+}
+
+// Teamspeak will fail if the player's nickname contains certain chars, so we strip them here.  Even better would be encoding them!
+function String StrFilterBadChars(String in) {
+	local String out;
+	local int i,c;
+	for (i=0;i<Len(in);i++) {
+		c = Asc(Mid(in,i,1));
+		if ( (c>=Asc("A") && c<=Asc("Z")) || (c>=Asc("a") && c<=Asc("z")) || (c>=Asc("0") && c<=Asc("9")) || c==Asc("_") || c==Asc("+") || c==Asc("-") ) {
+			out = out $ Chr(c);
+		} else {
+			out = out $ "_";
+		}
+	}
+	return out;
+}
+
+#endif
 
 // =========== Balancing Algorithms =========== //
 
@@ -2076,7 +2191,8 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
 	// This also fixed the bug that (I think) if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
 	if (/*MinRequestsForRebalance<2 &&*/ lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
 		// DebugLog("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds);
-		BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
+		//// Don't both broadcasting, just mute.
+		// BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
 		return;
 	}
 
@@ -2222,22 +2338,22 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 			playerStrength = GetPlayerStrength(p);
 			timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
 			if (p == LastBadPlayer)
-				timeInGame = timeInGame * 0.2;
+				timeInGame = timeInGame * 0.4;
 			// We want a linear scale; i.e. players in for 10 minutes are 2x less likely to be switched than players in for 5.
 			// BUT, if timeInGame==0 then the player who joined 1 second ago will be switched, regardless of whether he's a good swap or not!  So we add a little.
 			// Actually we add a little more than a little, because I decided timeInGame is really not as important as new difference.
-			timeInGame += 240.0;
+			timeInGame += 480.0;
 			potentialNewDifference = Abs(currentDifference-playerStrength*2);
 			if (
 					closestPlayer == None
 					// We no longer check that it is actually less difference here, that is done at the end.
 					// Best score so far:
-					|| ( potentialNewDifference*potentialNewDifference*timeInGame < bestScore )
+					|| ( (5+potentialNewDifference)*(5+potentialNewDifference)*timeInGame < bestScore )
 			) {
 				closestPlayer = p;
 				// Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
 				newDifference = potentialNewDifference;
-				bestScore = newDifference*newDifference*timeInGame;
+				bestScore = (5+newDifference)*(5+newDifference*timeInGame);
 			}
 		}
 	}
@@ -2316,7 +2432,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 	blueTeamStrength = GetTeamStrength(1);
 	difference = blueTeamStrength - redTeamStrength; // positive implies Team 1 is stronger than Team 0
 	bestDifference = difference;
-	bestScore = (60*60) * difference * difference; // 60 minutes, should be large enough.
+	bestScore = (60*60) * (3+abs(difference)) * (3+abs(difference)); // 60 minutes, should be large enough.
 	playerCountDifference = Abs(GetTeamSize(1) - GetTeamSize(0));
 	#define messedTeamsEmergency (playerCountDifference>=2)
 
@@ -2352,16 +2468,16 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 					//       Problem: This might mean we failed to find a potentialNewDifference < difference !
 					// OK now finds, of all pairs which improve the balance, the pair which have the best score, where score is new different * max time in server of the players.
 					// [These numbers have changed since writing] So if one pair have been in for 1 minute and create new difference 40, they score 2400, and if another pair have been in for 3 minutes but create difference 10, they score 1800, and are swapped.
-					// We only want switches which improve the overall balance (unless teams are messed!)
+					// We only want switches which improve the overall balance unless teams are so messed we need to switch one and then two players!
 					if (Abs(potentialNewDifference) < Abs(difference) || messedTeamsEmergency) {
 						// This is an improvement on the current situation.
 						// bothTimeInGame = redPTimeInGame + bluePTimeInGame;
 						bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
 						if (redP == LastBadPlayer || blueP == LastBadPlayer)
-							bothTimeInGame = bothTimeInGame * 0.5;
-						bothTimeInGame += 240.0;
-						if (bothTimeInGame*potentialNewDifference*potentialNewDifference < bestScore) {
-							bestScore = bothTimeInGame*potentialNewDifference*potentialNewDifference;
+							bothTimeInGame = bothTimeInGame * 0.8;
+						bothTimeInGame += 480.0;
+						if (bothTimeInGame*(5+potentialNewDifference)*(5+potentialNewDifference) < bestScore) {
+							bestScore = bothTimeInGame*(5+potentialNewDifference)*(5+potentialNewDifference);
 							bestDifference = potentialNewDifference;
 							redPlayerToMove = redP;
 							bluePlayerToMove = blueP;
@@ -3195,8 +3311,18 @@ function int FindOldPlayerRecordFast() {
 	local float age,bestAge,bestHours,now;
 	local float bestScore,newScore;
 	// now = DaysFromDateString(GetDate());
+	// We take advantage of the fact the database is already shuffled, so we don't need to use a random number generator to choose which records to examine.
+	#define DB_IS_SHUFFLED
+	#ifdef DB_IS_SHUFFLED
+		local int startI;
+		startI = 64 + FRand() * (MaxPlayerData - 16 - 64); // We do not reclaim any of the first 64 records - they might be playing now!
+	#endif
 	for (j=0;j<16;j++) {
-		i = MaxPlayerData * FRand();
+		#ifdef DB_IS_SHUFFLED
+			i = startI + j;
+		#else
+			i = MaxPlayerData * FRand();
+		#endif
 		if (ip[i] == "" || nick[i] == "")
 			return i;
 		age = currentDateDays - DaysFromDateString(date_last_played[i]);
@@ -3319,6 +3445,11 @@ function int NumFromDateString(String str) {
 }
 */
 
+#ifdef NEW_HASHTABLE
+function ConvertDBToVersionTwo() {
+	NormalLog("ConvertDBToVersionTwo() - not yet implemented!");
+}
+#endif
 
 
 // =========== Updating Stats on player database: =========== //
@@ -3582,9 +3713,9 @@ function float NormaliseScore(float score) {
 	GetAveragesThisGame();
 	// Avoid division-by-zero error here.  You guys got average <2 frags?  Screw you I'm not scaling that up to NormalisedStrength!
 	if (averageGameScore < 2.0) {
-		averageGameScore = NormalisedStrength; // CONSIDER: maybe just better not to update
+		averageGameScore = 2.0; // CONSIDER: maybe just better not to update
 	} // BT games will tend to have a lot of -ve scores.
-	DebugLog("NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$"");
+	// DebugLog("NormaliseScore("$score$"): Average game score was "$averageGameScore$", average player strength was "$averagePlayerStrengthThisGame$"");
 
 	/*
 	if (bRelativeNormalisation) {
