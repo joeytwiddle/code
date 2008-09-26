@@ -8,32 +8,48 @@ then
   exit 1
 fi
 
+(
+
 NL='\
 '
 
-wget "http://www.rork.nl/fox/xol/ranking.php?nick=$PLAYER" -O - 2>/dev/null |
+# wget "http://www.rork.nl/fox/xol/ranking.php?nick=$PLAYER" -O - 2>/dev/null |
+wget -nv "http://www.rork.nl/fox/xol/player.pl?nick=$PLAYER" -O - 2>/dev/null |
 
 fromhtml |
 
-fromline -x "This months stats" |
+# fromline "Records" |
+fromline -x "^Country:" |
+# toline -x "Last matches" |
+toline -x "All time stats" |
 
 tr '\n' ' ' | tr -s ' ' |
 
 # sed 's+^Name: \[[0-9]*\]++' | ## remove the "[5]" link indicator from lynx html dump
 sed 's+\[[0-9]*\]++' | ## remove ALL "[n]" link indicators from lynx html dump
 
-sed "s+\<[0-9][0-9]*\([hm]\|\)\>+$COLGREEN\0$COLRESET+g" |
+sed 's+This month['"'"']*s stats+\n\0+' |
 
 sed 's+: +:+g' |
 
-sed "s+^Name:\([^ ]*\)+$COLRED$COLBOLD\1$COLRESET:+" |
-
 sed 's+Records[ ]*$++' |
+
+sed 's+ seconds+s+g' |
+
+sed "s+\<[0-9][0-9]*\([hms]\|\)\>+$COLGREEN\0$COLRESET+g" |
 
 # sed "s+Records+$NL$COLYELLOW""Records$COLRESET:+" |
 sed "s+Records+$COLYELLOW""Records$COLRESET:+" |
+# sed "s+This month[']*s stats+$COLYELLOW\0$COLRESET:+" |
+sed "s+This month[']*s stats ++" |
 
-sed "s+CTF-[^ ]*+$COLGREY\0$COLRESET+g"
+sed "s+CTF-[^ ]*+$COLGREY\0$COLRESET+g" |
+
+sed "s+^Nickname:\([^ ]*\)+$COLRED$COLBOLD\1$COLRESET:+"
+
+# reverse
+
+
 
 LOWERNAME="`echo "$PLAYER" | tolowercase`"
 if [ "$LOWERNAME" = "zbe|f0x" ]
@@ -51,3 +67,6 @@ fi
 
 echo
 
+) |
+
+reverse
