@@ -1,3 +1,5 @@
+## TODO: This and nwctf should be the same thing, but with different options.
+
 . irc.shlib
 
 (
@@ -32,7 +34,7 @@
 			# ./ut_servers/f0x2 "$@"
 			# ./ut_servers/nzp "$@"
 			./ut_servers/kx "$@"
-		) | grep -u -v "\[PRIVATE" | grep -u -v "\[war" | grep -u -v "\[pug"
+		) | grep -i -u -v "\<PRIVATE\>" | grep -i -u -v "\<war\>" | grep -i -u -v "\<pug\>"
 		./ut_servers/dutchnet "$@"
 		# ./ut_servers/focr "$@"
 		./ut_servers/syn "$@"
