@@ -111,6 +111,8 @@
 // #define Log(X); LogDebug(X);
 
 
+#define GetActorCount() ( "("$ CountInterestingActors() $"/"$ CountAllActors() $")" )
+
 
 // class nBAutoSpectate extends Info;
 class nBAutoSpectate extends Mutator config(nBAutoSpectate);
@@ -1201,7 +1203,7 @@ function CheckLineForEvent(String line) {
 	local Color msgCol;
 	local Pawn p;
 
-	FlashMessageToPlayer(Camera,"[o] ("$Int(Level.TimeSeconds)$") ? " $ CountInterestingActors() $ "/" $ CountAllActors(),colYellow,6,1.0);
+	// FlashMessageToPlayer(Camera,"[o] ("$ Int(Level.TimeSeconds) $") ? "$ GetActorCount(),colYellow,6,1.0);
 
 	// Can we find players in the line?  If so, fill ev.Primary and ev.Secondary:
 	wordCount = SplitString(line," ",words);
@@ -1267,7 +1269,7 @@ function CheckLineForEvent(String line) {
 
 		// LogDebug("[o] RECORD ("$ev.Primary$","$ev.Secondary$"): " $ line );
 		LogDebug("["$Int(Level.TimeSeconds)$"] [o] RECORD "$ev.Primary$" > "$ev.Secondary$" #"$eventCount);
-		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [o] REC #" $ eventCount $ " " $ ev.Primary$" > "$ev.Secondary,colRed,7,1.0);
+		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [o] REC #" $ eventCount $ " " $ ev.Primary$" > "$ev.Secondary$ GetActorCount(),colRed,7,1.0);
 
 		// Once database is full, it overwrites old events randomly
 		if (eventCount >= MaxEvents) {
@@ -1508,7 +1510,7 @@ function FindNextEvent() {
 	// LogInfo("Failed to find actor for replay");
 	if (FRand()<0.02) {
 		// LogFlash("Failed to find actor for replay");
-		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] No ev3nt",colYellow,7,0.9);
+		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] No ev3nt "$ GetActorCount(),colYellow,7,0.9);
 	}
 
 	if (bAutoRecord && !bRecordEvents /*&& !WeAreOnline()*/) { // TODO: Actually we want to check whether we are recording or playing a demo - if so then autorecord/replay is good!
