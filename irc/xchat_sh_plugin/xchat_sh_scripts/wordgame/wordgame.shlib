@@ -1,3 +1,5 @@
+[ -d "$HOME"/myroots/an ] && . includepath "$HOME"/myroots/an
+
 WORDGAME_DATA_DIR="$HOME/.wordgame_data"
 
 mkdir -p "$WORDGAME_DATA_DIR"
