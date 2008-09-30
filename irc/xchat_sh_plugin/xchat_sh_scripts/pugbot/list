@@ -3,4 +3,5 @@
 
 . pugbot/pugbot.shlib
 
+do_pre_checks
 list_players "$@"

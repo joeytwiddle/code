@@ -93,7 +93,24 @@ get_num_players () {
 	NUMBER_OF_PLAYERS=`cat "$PLAYER_LIST_FILE" | wc -l`
 }
 
+do_pre_checks () {
+	get_num_players
+	if [ "$USERS" ] && [ ! "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ] && [ ! -f "$RED_TEAM_FILE" ] ## pug has not filled and pickup is not in progress
+	then
+		cat "$PLAYER_LIST_FILE" |
+		while read PLAYER
+		do
+			PLAYER_REGEXP=`toregexp "$PLAYER"`
+			if echo "$USERS" | grep -i "\(^\| \)$PLAYER_REGEXP\( \|$\)" >/dev/null
+			then :
+			else removeplayer "$PLAYER"
+			fi
+		done
+	fi
+}
+
 ## Note atm this is a pretty list of the players, for user.  For a nice list to use in code, use the listfile.  :P
+### TODO: If it is less than 50mins since the last pug started, make a countdown of how long until the next pug (i.e. the last pug ended)!
 list_players () {
 	get_num_players
 	## if pug is empty and we are in recycling mode, reset the map (and the pug) if over timelimit
