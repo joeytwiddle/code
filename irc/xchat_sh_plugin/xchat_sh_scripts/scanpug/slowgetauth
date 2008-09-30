@@ -41,12 +41,15 @@ fi
 while [[ "$COUNT" -lt 40 ]]
 do
 
+	NONWS="[^ 	][^ 	]*"
+	WS="[ 	][ 	]*"
+
 	LINE=`
 		(
 			tail -n 50000 "$LOGDIR/$NETWORK-NETWORK.log" | beforetime "$LASTNICKCHANGETIME"
 			tail -n 50000 "$LOGDIR/$NETWORK-$CHANNEL.log" # | beforetime "$LASTNICKCHANGETIME"
 		) |
-		grep "\(is now known as $NICKREGEXP\|-->.*$NICKREGEXP .* has joined \)" | tail -n 1
+		grep "\(^$NONWS$WS$NONWS$WS$NONWS$WS---$WS$NONWS$WS""is now known as $NICKREGEXP$\|^$NONWS$WS$NONWS$WS$NONWS$WS-->$WS$NICKREGEXP .* has joined \)" | tail -n 1
 	`
 	# jshinfo "LINE=$LINE"
 	if echo "$LINE" | grep "is now known as" >/dev/null
