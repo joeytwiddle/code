@@ -1,3 +1,9 @@
+# . irc.shlib
+. irccols.shlib
+echo "$COLWHITE white $COLGREY grey $COLSILVER silver $COLBLACK black $COLNORM norm $COLRESET reset"
+# echo "$COLWHITE hello $COLGREY hello"
+# echo "$COLGREY hello $COLWHITE hello"
+
 list () {
 cat << !
 Test completed successfully.  Full marks, wp idd.
