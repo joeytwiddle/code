@@ -16,13 +16,15 @@ do
 	## Just UT:
 	PAGE_RESULT=` memo -t "2 minutes" wget -nv -O - "http://www.gametracker.com/player/$LOWER_NAME/?game=ut&loc=_all&min_score=&min_minutes=&x=23&y=9&per_page=10&page=1&sort=last_seen&order=desc" `
 
+	echo "$PAGE_RESULT" >> /tmp/page_result.tmp
+
 	FIRST_RESULT=`
 	echo "$PAGE_RESULT" |
-	fromline -x "<div class='results_row'>" | toline "<div class='results_row'>"
+	fromline -x "<div class=['\"]results_row['\"]>" | toline "<div class=['\"]results_row['\"]>"
 	`
 
-	WHEN=` echo "$FIRST_RESULT" | grep -A1 "<div class='results_playerlist_c6'>" | tail -n 1 | sed 's+^[ 	]*++;s+[ 	]*$++' `
-	WHERE=` echo "$FIRST_RESULT" | grep -A2 "<div class='results_playerlist_c3'>" | tail -n 1 | sed "s+[ 	]*<a href='/server_info/\([^/]*\)/'>\([^<]*\)</a>[ 	]*+$COLBLUE$COLBOLD""\1$COLBOLD $COLYELLOW\2+" `
+	WHEN=` echo "$FIRST_RESULT" | grep -A1 "<div class=['\"]results_playerlist_c6['\"]>" | tail -n 1 | sed 's+^[ 	]*++;s+[ 	]*$++' `
+	WHERE=` echo "$FIRST_RESULT" | grep -A2 "<div class=['\"]results_playerlist_c3['\"]>" | tail -n 1 | sed "s+[ 	]*<a href=['\"]/server_info/\([^/]*\)/['\"]>\([^<]*\)</a>[ 	]*+$COLBLUE$COLBOLD""\1$COLBOLD $COLYELLOW\2+" `
 
 	# jshinfo "WHEN=$WHEN"
 	# jshinfo "WHERE=$WHERE"

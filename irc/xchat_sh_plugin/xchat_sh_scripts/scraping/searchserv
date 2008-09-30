@@ -8,6 +8,8 @@ if [ "$NOCOLS" ]
 then COLBLUE=""; COLBOLD=""; COLRESET=""; COLYELLOW=""
 fi
 
+(
+
 for URLEXTRA in "" # '?page=2' '?page=3' '?page=4'
 do
 	# sleep 4
@@ -37,7 +39,11 @@ else cat
 fi |
 ## Title Playercount Address Map
 sed "s+^\(.*\) \([0-9][0-9]*/[0-9][0-9]*\)  *\([^ ]*\)  *\(.*\)+$COLBLUE$COLBOLD\3 $COLRESET\2 \4 $COLYELLOW\1 +" |
-
 head -n 10 |
+
+grep . || echo "No servers found matching \"$SEARCH\""
+
+) |
+
 notice
 
