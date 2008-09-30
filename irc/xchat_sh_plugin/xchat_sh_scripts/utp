@@ -174,12 +174,12 @@ NL="\\
 				sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+" |
 
 				## Colour any team-related PubliciseScore info in the title with approriate team colour:
-				# sed "s+(\([0-9]*\)v\([0-9]*\))+($COLRED\1$COLYELLOW""v$COLBLUE\2$COLYELLOW)+" |
-				# sed "s+\[\([0-9]*\)-\([0-9]*\)\]+[$COLRED\1$COLYELLOW-$COLBLUE\2$COLYELLOW]+" |
-				sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD($COLBOLD$COLYELLOW\1v\2$COLBLUE$COLBOLD)$COLBOLD$COLYELLOW+" |
-				sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[$COLBOLD$COLYELLOW\1-\2$COLBLUE$COLBOLD]$COLBOLD$COLYELLOW+" |
-				# sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD(\1$COLBOLD$COLYELLOW""v""$COLBLUE$COLBOLD\2)$COLBOLD$COLYELLOW+" |
-				# sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[\1$COLBOLD$COLYELLOW""-""$COLBLUE$COLBOLD\2]$COLBOLD$COLYELLOW+" |
+				# # sed "s+(\([0-9]*\)v\([0-9]*\))+($COLRED\1$COLYELLOW""v$COLBLUE\2$COLYELLOW)+" |
+				# # sed "s+\[\([0-9]*\)-\([0-9]*\)\]+[$COLRED\1$COLYELLOW-$COLBLUE\2$COLYELLOW]+" |
+				# sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD($COLBOLD$COLYELLOW\1v\2$COLBLUE$COLBOLD)$COLBOLD$COLYELLOW+" |
+				# sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[$COLBOLD$COLYELLOW\1-\2$COLBLUE$COLBOLD]$COLBOLD$COLYELLOW+" |
+				# # sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD(\1$COLBOLD$COLYELLOW""v""$COLBLUE$COLBOLD\2)$COLBOLD$COLYELLOW+" |
+				# # sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[\1$COLBOLD$COLYELLOW""-""$COLBLUE$COLBOLD\2]$COLBOLD$COLYELLOW+" |
 
 				cat
 
