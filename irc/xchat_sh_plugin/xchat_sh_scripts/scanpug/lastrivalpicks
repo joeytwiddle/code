@@ -6,7 +6,7 @@
 ## This is useless anyway, unless we actually have the auths of the puggers.
 
 ## Get the last !last:
-# grep ".*<Rival>.*?.*,.*,.*,.*,.*,.*,.*,.*,.*,.*?.*" /home/joey/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pug.log | tail -n 1
+# grep ".*<Rival>.*..*,.*,.*,.*,.*,.*,.*,.*,.*,.*..*" /home/joey/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pug.log | tail -n 1
 
 [ "$CHANNEL" = "" ] && CHANNEL="#ut.pug"
 
@@ -35,7 +35,7 @@ fi
 	# read A; echo "4 $A"
 # )
 
-echo "$LASTLINES" | afterfirst ", " | beforelast " ?" | sed 's+, *+\n+g' |
+echo "$LASTLINES" | afterfirst ", " | beforelast " .$" | sed 's+, *+\n+g' |
 (
 	read A; echo "1 `sh scanpug/slowgetauth "$A"` $A"
 	read A; echo "4 `sh scanpug/slowgetauth "$A"` $A"

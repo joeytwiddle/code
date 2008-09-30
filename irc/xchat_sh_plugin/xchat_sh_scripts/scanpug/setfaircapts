@@ -15,10 +15,10 @@ sleep 3
 # sleep 15 ## 5 and 8 were TOO SLOW! (utb0t was lagging a bit).  Maybe the buffer does not get flushed :|
 LIST_LINE=`
 	tail -n 20 "$LOGDIR"/"$NETWORK-$CHANNEL".log |
-	grep "<Rival>.*? 10/10 ? " |
+	grep "<Rival>.*. 10/10 . " |
 	tail -n 1 |
-	afterfirst "? 10/10 ? " |
-	sed 's+? + +g ; s+ ?$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n'
+	afterfirst ". 10/10 . " |
+	sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n'
 `
 jshinfo "LIST_LINE=$LIST_LINE"
 
