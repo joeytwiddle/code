@@ -7,6 +7,7 @@
 // TODO: sometimes trying to hook when we are right next to the walls fails - we need an audio indicator of that (sometimes we hear the ThrowSound twice)
 // TODO: Wall hit sound could be a bit better / should be clear + distinct from throw sound.
 // TODO: Removes Translocator ok, but seems to remove ImpactHammer too!
+// TODO: When I switch to this weapon I must wait a moment before I can primary fire, unlike the Translocator.
 // DONE: Clicking with both fire buttons should return to previous weapon, as with Translocator.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
@@ -138,6 +139,15 @@ auto state Flying
   
 }
 
+function OnPull(float DeltaTime) {
+  CheckFlagDrop();
+  TotalTime += DeltaTime;
+  // After 2 seconds on the grappling line, if we have switched weapon away from grapple, then Jump will un-grapple us!
+  if (PlayerPawn(Master.Owner)!=None && PlayerPawn(Master.Owner).bPressedJump && TotalTime>=2.0 && kx_GrappleLauncher(PlayerPawn(Master.Owner).Weapon) == None) {
+    Destroy();
+  }
+}
+
 function CheckFlagDrop() {
   if (bDropFlag && Instigator.PlayerReplicationInfo.HasFlag != None) {
     CTFFlag(Instigator.PlayerReplicationInfo.HasFlag).Drop(vect(0,0,0));
@@ -151,7 +161,7 @@ state() PullTowardStatic
     local float length,outwardPull,linePull,power;
     local Vector Inward;
 
-    CheckFlagDrop();
+    OnPull(DeltaTime);
     if ( bLineOfSight && !Instigator.LineOfSightTo(self) ) // 0x00000022 : 0x0016
     {
       // TODO: For more realism, we could reposition the grapple at the new point the line swung around.
@@ -262,11 +272,14 @@ state() PullTowardStatic
 
 state() PullTowardDynamic
 {
-  ignores  Tick;
-  
+  // ignores  Tick;
+
+  simulated function Tick(float DeltaTime) {
+    OnPull(DeltaTime);
+  }
+
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
   {
-    CheckFlagDrop();
     Instigator.AmbientSound = None; // 0x00000014 : 0x0000
     AmbientSound = None; // 0x0000001E : 0x0010
     Destroy(); // 0x00000022 : 0x0017
