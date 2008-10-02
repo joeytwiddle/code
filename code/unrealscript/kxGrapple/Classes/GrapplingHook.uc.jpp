@@ -11,7 +11,8 @@
 // TODO: When I switch to this weapon I must wait a moment before I can primary fire, unlike the Translocator.
 // DONE: jump to un-grapple (only when holding another weapon)
 // TODO: jump to un-grapple sometimes fails because the tick didn't notice bPressedJump if the player only tapped jump quickly.
-// TODO: now that we have lineLength, we should make it a function of grappleSpeed.
+// DONE: now that we have lineLength, we should make it a function of grappleSpeed.
+// TODO: you can get into very fast swings on the ceiling which never stop, presumably because we are always >MinRetract so the dampening never takes effect.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -25,7 +26,7 @@ var() config bool bDropFlag;
 var() config bool bSwingPhysics;
 var() config bool bFiddlePhysics1;
 var() config bool bFiddlePhysics2;
-var() config bool bFiddlePhysics3;
+var() config bool bLinePhysics;
 var() config bool bExtraPower;
 var() config float MinRetract;
 var() config float ThrowAngle;
@@ -45,7 +46,6 @@ var bool bRight;
 var bool bCenter;
 var() config float grappleSpeed;
 var() config float hitdamage;
-var bool bPlaySound;
 var bool bAttachedToThing;
 var() config bool bDoAttachPawn;
 var() config bool bLineOfSight;
@@ -63,39 +63,39 @@ replication
 
 simulated function Destroyed ()
 {
-  Master.kxGrapple = None; // 0x00000013 : 0x0000
-  AmbientSound = None; // 0x0000001D : 0x0010
-  Master.AmbientSound = None; // 0x00000021 : 0x0017
-  // PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0); // 0x0000002B : 0x0027
-  // Master.PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0); // 0x00000037 : 0x0036
-  // PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0); // 0x0000002B : 0x0027
-  // Master.PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0); // 0x00000037 : 0x0036
-  PlaySound(RetractSound,SLOT_Interface,2.0,,,240); // 0x0000002B : 0x0027
-  Master.PlaySound(RetractSound,SLOT_Interface,2.0,,,240); // 0x00000037 : 0x0036
+  Master.kxGrapple = None;
+  AmbientSound = None;
+  Master.AmbientSound = None;
+  // PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
+  // Master.PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
+  // PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0);
+  // Master.PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0);
+  PlaySound(RetractSound,SLOT_Interface,2.0,,,240);
+  Master.PlaySound(RetractSound,SLOT_Interface,2.0,,,240);
   // Master.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16);
-  Instigator.SetPhysics(PHYS_Falling); // 0x00000049 : 0x004E
-  Super.Destroyed(); // 0x00000054 : 0x005C
+  Instigator.SetPhysics(PHYS_Falling);
+  Super.Destroyed();
 }
 
 simulated function SetMaster (kx_GrappleLauncher W)
 {
-  Master = W; // 0x00000013 : 0x0000
-  Instigator = Pawn(W.Owner); // 0x00000018 : 0x000B
+  Master = W;
+  Instigator = Pawn(W.Owner);
 }
 
 auto state Flying
 {
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
   {
-    Log("kxGrapple.ProcessTouch() I've never been here before"); // 0x00000012 : 0x0000
-    if ( Inventory(Other) != None ) // 0x00000047 : 0x0035
+    Log("kxGrapple.ProcessTouch() I've never been here before");
+    if ( Inventory(Other) != None )
     {
-      Inventory(Other).GiveTo(Instigator); // 0x00000051 : 0x0045
+      Inventory(Other).GiveTo(Instigator);
     }
-    Instigator.AmbientSound = None; // 0x0000005E : 0x005E
-    AmbientSound = None; // 0x00000068 : 0x006E
-    Destroy(); // 0x0000006C : 0x0075
-    return; // 0x0000006F : 0x0078
+    Instigator.AmbientSound = None;
+    AmbientSound = None;
+    Destroy();
+    return;
   }
   
   simulated function HitWall (Vector HitNormal, Actor Wall)
@@ -110,26 +110,26 @@ auto state Flying
     }
     PlaySound(HitSound,SLOT_None,10.0);
     Master.PlaySound(HitSound,SLOT_None,10.0);
-    pullDest = Location; // 0x00000026 : 0x001F
-    hNormal = HitNormal; // 0x0000002B : 0x002A
-    SetPhysics(PHYS_None); // 0x00000032 : 0x0035
+    pullDest = Location;
+    hNormal = HitNormal;
+    SetPhysics(PHYS_None);
     lineLength = VSize( Instigator.Location - Location);
-    if ( Wall.IsA('Pawn') || Wall.IsA('Mover') ) // 0x00000037 : 0x003A
+    if ( Wall.IsA('Pawn') || Wall.IsA('Mover') )
     {
-      if (  !bDoAttachPawn &&  !Wall.IsA('Mover') ) // 0x00000055 : 0x0064
+      if (  !bDoAttachPawn &&  !Wall.IsA('Mover') )
       {
-        Destroy(); // 0x00000070 : 0x0087
-        return; // 0x00000073 : 0x008A
+        Destroy();
+        return;
       }
-      bAttachedToThing = True; // 0x00000075 : 0x008C
-      thing = Wall; // 0x0000007B : 0x0094
-      if ( Wall.IsA('Pawn') ) // 0x00000080 : 0x009F
+      bAttachedToThing = True;
+      thing = Wall;
+      if ( Wall.IsA('Pawn') )
       {
-        bThingPawn = True; // 0x0000008E : 0x00B3
+        bThingPawn = True;
       }
-      GotoState('PullTowardDynamic'); // 0x00000093 : 0x00BB
-    } else { // 0x00000097 : 0x00C2
-      GotoState('PullTowardStatic'); // 0x0000009A : 0x00C5
+      GotoState('PullTowardDynamic');
+    } else {
+      GotoState('PullTowardStatic');
     }
     CheckFlagDrop();
   }
@@ -139,7 +139,7 @@ auto state Flying
     local rotator outRot;
     outRot = Rotation;
     outRot.Pitch += ThrowAngle*8192/45;
-    Velocity = vector(outRot) * speed; // 0x00000013 : 0x0000
+    Velocity = vector(outRot) * speed;
   }
   
 }
@@ -167,81 +167,57 @@ state() PullTowardStatic
     local Vector Inward;
 
     OnPull(DeltaTime);
-    if ( bLineOfSight && !Instigator.LineOfSightTo(self) ) // 0x00000022 : 0x0016
-    {
-      // TODO: For more realism, we could reposition the grapple at the new point the line swung around.
-      Destroy(); // 0x0000003A : 0x0033
-      return; // 0x0000003D : 0x0036
+    if ( bLineOfSight && !Instigator.LineOfSightTo(self) ) {
+      // TODO: For more realism, we could reposition the grapple at the new point the line must now swing around.
+      Destroy();
+      return;
     }
+
     length = VSize(Instigator.Location - pullDest);
-    // Dampening when we reach the top:
-    if ( length <= (MinRetract+8.0) && bSwingPhysics) {
-      Instigator.Velocity = Instigator.Velocity*0.99;
+
+    if ( length <= MinRetract ) {
+        AmbientSound = None;
+        Master.AmbientSound = None;
     }
-    if ( length <= MinRetract && !bSwingPhysics ) // 0x0000003F : 0x0038
-    {
-      // if (bSwingPhysics) {
-        // // Instigator.ClientMessage("Your velocity="$ VSize(Instigator.Velocity));
-        // // Instigator.SetPhysics(PHYS_Falling);
-        // // Stop the line whirring:
-        // AmbientSound = None; // 0x00000060 : 0x0065
-        // Master.AmbientSound = None; // 0x00000064 : 0x006C
-        // // Dampen:
-        // // Instigator.AddVelocity( Instigator.Velocity*-0.02 );
-      // } else {
-        // Stick on arrival.
-        Instigator.SetPhysics(PHYS_None); // 0x00000055 : 0x0057
-        AmbientSound = None; // 0x00000060 : 0x0065
-        Master.AmbientSound = None; // 0x00000064 : 0x006C
-        Instigator.AddVelocity(Instigator.Velocity * -1); // 0x0000006E : 0x007C
-        bPlaySound = False; // 0x00000087 : 0x00A1
+
+    if (bSwingPhysics) {
+
+      // Dampening when we reach the top:
+      // if ( length <= (MinRetract+8.0) /*|| Abs(length-lineLength)<8.0*/ ) {
+        Instigator.Velocity = Instigator.Velocity*0.99;
       // }
-    } else { // 0x0000008C : 0x00A9
+      // Now always dampening.
 
-      if (bSwingPhysics) {
+      // if (/*length > 4*MinRetract &&*/ Instigator.Velocity.Z<0) {
+        // Instigator.Velocity.Z *= 0.99;
+      // }
 
-        // if (/*length > 4*MinRetract &&*/ Instigator.Velocity.Z<0) {
-          // Instigator.Velocity.Z *= 0.99;
-        // }
+      // Deal with any outward velocity (against the line):
+      outwardPull = Instigator.Velocity Dot Normal(Instigator.Location-pullDest);
+      if (outwardPull<0 || length <= MinRetract) outwardPull=0;
+      // if (outwardPull<1.0) outwardPull=1.0*outwardPull*outwardPull; // Smooth the last inch
+      Inward = Normal(pullDest-Instigator.Location);
+      // This makes the line weak and stretchy:
+      // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime;
+      // This completely cancels outward momentum - the line length should not increase!
+      // Instigator.AddVelocity( 2.0 * outwardPull * Inward ); // equilibrium (line stretches very very slowly)
+      // Instigator.AddVelocity( 1.0 * outwardPull * Inward ); // keep the line the same length.  The 0.1 prev.nts slow sinking
+      Instigator.AddVelocity( 1.0 * outwardPull * Inward ); // keep the line the same length.  The 0.1 prev.nts slow sinking
 
-        outwardPull = Instigator.Velocity Dot Normal(Instigator.Location-pullDest);
-
-        if (outwardPull<0 || length <= MinRetract) outwardPull=0;
-        // if (outwardPull<1.0) outwardPull=1.0*outwardPull*outwardPull; // Smooth the last inch
-        Inward = Normal(pullDest-Instigator.Location);
-
-        // This makes the line weak and stretchy:
-        // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime;
-
-        // This completely cancels outward momentum - the line length should not increase!
-        // Instigator.AddVelocity( 2.0 * outwardPull * Inward ); // equilibrium (line stretches very very slowly)
-        // Instigator.AddVelocity( 1.0 * outwardPull * Inward ); // keep the line the same length.  The 0.1 prev.nts slow sinking
-        Instigator.AddVelocity( 1.0 * outwardPull * Inward ); // keep the line the same length.  The 0.1 prev.nts slow sinking
-
-        // Stop slow gentle sinking by removing half of gravity pre-emptively:
-        if (bFiddlePhysics1) {
-          Instigator.AddVelocity( 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
-          // This is unrealistic because if they swing outwards, they still get this anti-grav effect.
-          // But it but plays well!  It lets you gain and keep height with wide swings.
-        } else {
-          // It should only act in Inward direction:
-          // Instigator.AddVelocity( - 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
-          Instigator.AddVelocity( - (Inward Dot Vect(0,0,1)) * 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
-        }
-
-        power = 1.0;
-        if (bExtraPower) {
-          power += 1.0 + 1.5 * FMin(1.0, length / 1024.0 );
-        }
-        linePull = power*grappleSpeed;
-        if (length <= MinRetract) {
-          linePull = 0;
-        }
-        if (length > lineLength && bFiddlePhysics3) {
+      // Deal with grapple pull:
+      if (bLinePhysics) {
+        lineLength = lineLength - 0.3 * grappleSpeed*DeltaTime;
+        if (lineLength<MinRetract) lineLength=MinRetract;
+        if (length > lineLength) {
+          // Line has elongated!  This is not allowed!
           // Instigator.ClientMessage("Elongation = "$ (length - lineLength) $" Velocity = "$ VSize(Instigator.Velocity));
           // Elasticity if the line was lengthened by the player swinging.
           // linePull += (length - lineLength)*100.0; // Provide velocity to cancel the change in 0.01 seconds.
           Instigator.AddVelocity( (length - lineLength) * Inward * 1.0 );
+          // Instigator.AddVelocity( grappleSpeed * Inward * DeltaTime );
+          // TODO BUG: because it is not pre-emptive, we get pulled up in jerks.
+          // TODO BUG: this method is always jerky unless we also do the below.
+          //           but the below can cause unrealistic swinging around on the ceiling!
           // Instigator.AddVelocity( (length - lineLength) * Inward * 5.0 );
           // TODO: This new approach could replace all the gravity tweaks we made.
           // TODO: But it just doesn't work; it doesn't allow us to swing.
@@ -250,47 +226,74 @@ state() PullTowardStatic
             Instigator.AddVelocity( (length - lineLength) * Vect(0,0,1) * 1.5 );
             // 2.0 was too strong, allowed u to almost pr.vent swingback entirely!
             // But 1.0 was too weak, you couldn't add enough swing to be useful.
+            // Well this does add some extra swinging power, but not really enough.
           }
-          // Well this does add some extra swinging power, but not really enough.
         } else if (length < lineLength && length>=MinRetract) {
           // Line has shortened.
-          lineLength = length;
+          // lineLength = length;
+        }
+     } else {
+        power = 1.0;
+        if (bExtraPower) {
+          power += 1.0 + 1.5 * FMin(1.0, length / 1024.0 );
+        }
+        linePull = power*grappleSpeed;
+        if (length <= MinRetract) {
+          linePull = 0;
         }
         Instigator.AddVelocity( linePull * Inward * DeltaTime ); // This completely cancels outward momentum - the line length will not increase!
+      }
 
-        // Dampen gravity (for long pulls)
-        if (bFiddlePhysics2 && Instigator.Velocity.Z<0) {
-          // We want to turn whatever velocity we lost into forward velocity.
-          Instigator.AddVelocity( Normal(Instigator.Velocity) * 0.1*Abs(Instigator.Velocity.Z) );
-          Instigator.Velocity.Z *= 0.9;
-        }
-        // Dampen velocity:
-        // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
-
+      // Stop slow gentle sinking (due to iterative gravity) by removing half of gravity pre-emptively:
+      if (bFiddlePhysics1) {
+        Instigator.AddVelocity( 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
+        // This is unrealistic because if they swing outwards, they still get this anti-grav effect.
+        // But it but plays well!  It lets you gain and keep height with wide swings.
       } else {
+        // It should only act in Inward direction:
+        // Instigator.AddVelocity( - 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
+        Instigator.AddVelocity( - (Inward Dot Vect(0,0,1)) * 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
+      }
 
-        // Original pull no gravity physics:
-        Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed; // 0x0000008F : 0x00AC
+      // Dampen gravity (useful for swinging outwards on long pulls)
+      if (bFiddlePhysics2 && Instigator.Velocity.Z<0) {
+        // We want to turn whatever velocity we lost into forward velocity.
+        Instigator.AddVelocity( Normal(Instigator.Velocity) * 0.1*Abs(Instigator.Velocity.Z) );
+        Instigator.Velocity.Z *= 0.9;
+      }
+      // Dampen velocity:
+      // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
 
+    } else {
+
+      // Original grapple
+      if ( length <= MinRetract ) {
+        // When we reach destination, we just stop
+        Instigator.SetPhysics(PHYS_None);
+        Instigator.AddVelocity(Instigator.Velocity * -1);
+      } else {
+        // No gravity or swinging
+        Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed;
       }
 
     }
+
   }
   
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
   {
-    Instigator.AmbientSound = None; // 0x00000014 : 0x0000
-    AmbientSound = None; // 0x0000001E : 0x0010
-    Destroy(); // 0x00000022 : 0x0017
+    Instigator.AmbientSound = None;
+    AmbientSound = None;
+    Destroy();
   }
   
   simulated function BeginState ()
   {
     if (!bSwingPhysics) {
-      Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed; // 0x00000013 : 0x0000
+      Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed;
     }
-    Instigator.SetPhysics(PHYS_Falling); // 0x0000002F : 0x002E
-    TotalTime = 0.0; // 0x0000003A : 0x003C
+    Instigator.SetPhysics(PHYS_Falling);
+    TotalTime = 0.0;
   }
   
 }
@@ -305,23 +308,23 @@ state() PullTowardDynamic
 
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
   {
-    Instigator.AmbientSound = None; // 0x00000014 : 0x0000
-    AmbientSound = None; // 0x0000001E : 0x0010
-    Destroy(); // 0x00000022 : 0x0017
+    Instigator.AmbientSound = None;
+    AmbientSound = None;
+    Destroy();
   }
   
   simulated function BeginState ()
   {
-    Instigator.SetPhysics(PHYS_Flying); // 0x00000013 : 0x0000
-    TotalTime = 0.0; // 0x0000001E : 0x000E
+    Instigator.SetPhysics(PHYS_Flying);
+    TotalTime = 0.0;
   }
   
 }
 
 defaultproperties
 {
-    // grappleSpeed=600 // 600 was good for old Expert100, and is adjusted to work with new code also.
-    grappleSpeed=0
+    grappleSpeed=600 // 600 was good for old Expert100, and is adjusted to work with new code also.
+    // grappleSpeed=0
     // grappleSpeed=100 // Almost nothing, slight pull upwards
     // grappleSpeed=800
     hitdamage=20.00
@@ -334,7 +337,8 @@ defaultproperties
     LifeSpan=60.00
     Texture=Texture'UMenu.Icons.Bg41'
     Mesh=LodMesh'UnrealShare.GrenadeM'
-    bUnlit=True
+    // bUnlit=True
+    bUnlit=False
     bMeshEnviroMap=True
     bBlockActors=True
     bBlockPlayers=True
@@ -351,9 +355,9 @@ defaultproperties
     bDropFlag=True
     bSwingPhysics=True
     //// These two are cheats in terms of real physics, but may be useful for large maps without handy ceilings.
-    bFiddlePhysics1=False
-    bFiddlePhysics2=False
-    bFiddlePhysics3=True
+    bFiddlePhysics1=False // An alternative method for counteracting gravity, which unrealistically helps swing.
+    bFiddlePhysics2=False // Try to help swing by turning downward momentum into forward momentum.
+    bLinePhysics=False // This attempts to deal with grapple pull in terms of line length, but it still needs some work.
     bExtraPower=False
     ThrowSound=sound'Botpack.Translocator.ThrowTarget'
     // HitSound=sound'UnrealI.GasBag.hit1g'
