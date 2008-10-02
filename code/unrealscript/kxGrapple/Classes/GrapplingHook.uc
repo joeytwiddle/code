@@ -165,7 +165,7 @@ defaultproperties
     hitdamage=20.00
     bDoAttachPawn=True
     bLineOfSight=True
-    speed=3500.00
+    speed=4000.00
     MaxSpeed=4000.00
     MyDamageType=eviscerated
     bNetTemporary=False
