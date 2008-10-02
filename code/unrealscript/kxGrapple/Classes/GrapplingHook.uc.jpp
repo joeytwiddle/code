@@ -7,8 +7,10 @@
 // TODO: sometimes trying to hook when we are right next to the walls fails - we need an audio indicator of that (sometimes we hear the ThrowSound twice)
 // TODO: Wall hit sound could be a bit better / should be clear + distinct from throw sound.
 // TODO: Removes Translocator ok, but seems to remove ImpactHammer too!
-// TODO: When I switch to this weapon I must wait a moment before I can primary fire, unlike the Translocator.
 // DONE: Clicking with both fire buttons should return to previous weapon, as with Translocator.
+// TODO: When I switch to this weapon I must wait a moment before I can primary fire, unlike the Translocator.
+// DONE: jump to un-grapple (only when holding another weapon)
+// TODO: jump to un-grapple sometimes fails because the tick didn't notice bPressedJump if the player only tapped jump quickly.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -143,7 +145,7 @@ function OnPull(float DeltaTime) {
   CheckFlagDrop();
   TotalTime += DeltaTime;
   // After 2 seconds on the grappling line, if we have switched weapon away from grapple, then Jump will un-grapple us!
-  if (PlayerPawn(Master.Owner)!=None && PlayerPawn(Master.Owner).bPressedJump && TotalTime>=2.0 && kx_GrappleLauncher(PlayerPawn(Master.Owner).Weapon) == None) {
+  if (PlayerPawn(Master.Owner)!=None && PlayerPawn(Master.Owner).bPressedJump /*&& TotalTime>=2.0*/ && kx_GrappleLauncher(PlayerPawn(Master.Owner).Weapon) == None) {
     Destroy();
   }
 }
