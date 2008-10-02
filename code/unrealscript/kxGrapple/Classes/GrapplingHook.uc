@@ -22,6 +22,9 @@ var XP_GrappleLauncher Master;
 var bool bThingPawn;
 */
 
+var() config bool bSwingPhysics;
+var() config float MinRetract;
+
 /*
 replication
 {
@@ -96,29 +99,58 @@ auto state Flying
   }
   
 }
+*/
 
 state() PullTowardStatic
 {
   simulated function Tick (float DeltaTime)
   {
-    local float speed;
-    local Vector V;
-  
-    speed = VSize(Instigator.Velocity); // 0x00000014 : 0x0000
+    local float speed,outwardPull;
+    local Vector V,Inward;
+
     if ( bLineOfSight &&  !Instigator.LineOfSightTo(self) ) // 0x00000022 : 0x0016
     {
       Destroy(); // 0x0000003A : 0x0033
       return; // 0x0000003D : 0x0036
     }
-    if ( VSize(Instigator.Location - pullDest) <= 50 ) // 0x0000003F : 0x0038
+    if ( VSize(Instigator.Location - pullDest) <= MinRetract ) // 0x0000003F : 0x0038
     {
-      Instigator.SetPhysics(PHYS_None); // 0x00000055 : 0x0057
-      AmbientSound = None; // 0x00000060 : 0x0065
-      Master.AmbientSound = None; // 0x00000064 : 0x006C
-      Instigator.AddVelocity(Instigator.Velocity * -1); // 0x0000006E : 0x007C
-      bPlaySound = False; // 0x00000087 : 0x00A1
+      if (bSwingPhysics) {
+        // Instigator.ClientMessage("Your velocity="$ VSize(Instigator.Velocity));
+        Instigator.SetPhysics(PHYS_Falling);
+        // Dampen:
+        Instigator.AddVelocity( Instigator.Velocity*-0.01 );
+        // Instigator.Velocity = Instigator.Velocity*0.99;
+      } else {
+        // Arrival!
+        Instigator.SetPhysics(PHYS_None); // 0x00000055 : 0x0057
+        AmbientSound = None; // 0x00000060 : 0x0065
+        Master.AmbientSound = None; // 0x00000064 : 0x006C
+        Instigator.AddVelocity(Instigator.Velocity * -1); // 0x0000006E : 0x007C
+        bPlaySound = False; // 0x00000087 : 0x00A1
+      }
     } else { // 0x0000008C : 0x00A9
-      Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed; // 0x0000008F : 0x00AC
+
+      if (bSwingPhysics) {
+
+        outwardPull = Instigator.Velocity Dot Normal(Instigator.Location-pullDest);
+        outwardPull += 3.0*grappleSpeed;
+        if (outwardPull<0) outwardPull=0;
+        // if (outwardPull<1.0) outwardPull=1.0*outwardPull*outwardPull; // Smooth the last inch
+        Inward = Normal(pullDest-Instigator.Location) * outwardPull;
+        // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime;
+        Instigator.AddVelocity( Inward*DeltaTime );
+        // Dampen:
+        // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
+        // DONE elsewhere: gravity
+
+      } else {
+
+        // Original pull no gravity physics:
+        Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed; // 0x0000008F : 0x00AC
+
+      }
+
     }
   }
   
@@ -131,13 +163,16 @@ state() PullTowardStatic
   
   simulated function BeginState ()
   {
-    Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed; // 0x00000013 : 0x0000
+    if (!bSwingPhysics) {
+      Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed; // 0x00000013 : 0x0000
+    }
     Instigator.SetPhysics(PHYS_Falling); // 0x0000002F : 0x002E
     TotalTime = 0.0; // 0x0000003A : 0x003C
   }
   
 }
 
+/*
 state() PullTowardDynamic
 {
   ignores  Tick;
@@ -164,7 +199,7 @@ defaultproperties
     timeBetweenHit=0.50
     hitdamage=20.00
     bDoAttachPawn=True
-    bLineOfSight=True
+    bLineOfSight=False
     speed=4000.00
     MaxSpeed=4000.00
     MyDamageType=eviscerated
@@ -176,5 +211,10 @@ defaultproperties
     bMeshEnviroMap=True
     bBlockActors=True
     bBlockPlayers=True
+    // MinRetract=50
+    MinRetract=150
+    // MinRetract=250
+    bSwingPhysics=True
+    DrawScale=2.0
 }
 

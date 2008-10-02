@@ -14,9 +14,11 @@ class kx_GrappleLauncher expands XP_GrappleLauncher Config(kxGrapple);
 
 var config bool bAutoDrop;
 
+/*
 function Fire(float Value) {
   Super.AltFire(Value);
 }
+*/
 
 function AltFire(float Value) {
   /*
@@ -30,7 +32,8 @@ function AltFire(float Value) {
     }
   }
   */
-  Super.Fire(Value);
+  // Super.Fire(Value);
+  Super.AltFire(Value);
 }
 
 
