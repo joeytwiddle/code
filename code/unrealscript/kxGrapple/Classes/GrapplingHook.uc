@@ -11,6 +11,7 @@
 // TODO: When I switch to this weapon I must wait a moment before I can primary fire, unlike the Translocator.
 // DONE: jump to un-grapple (only when holding another weapon)
 // TODO: jump to un-grapple sometimes fails because the tick didn't notice bPressedJump if the player only tapped jump quickly.
+// TODO: now that we have lineLength, we should make it a function of grappleSpeed.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -24,6 +25,7 @@ var() config bool bDropFlag;
 var() config bool bSwingPhysics;
 var() config bool bFiddlePhysics1;
 var() config bool bFiddlePhysics2;
+var() config bool bFiddlePhysics3;
 var() config bool bExtraPower;
 var() config float MinRetract;
 var() config float ThrowAngle;
@@ -42,7 +44,6 @@ var Vector hNormal;
 var bool bRight;
 var bool bCenter;
 var() config float grappleSpeed;
-var() config float timeBetweenHit;
 var() config float hitdamage;
 var bool bPlaySound;
 var bool bAttachedToThing;
@@ -52,6 +53,7 @@ var Actor thing;
 var float TotalTime;
 var kx_GrappleLauncher Master;
 var bool bThingPawn;
+var float lineLength;
 
 replication
 {
@@ -111,6 +113,7 @@ auto state Flying
     pullDest = Location; // 0x00000026 : 0x001F
     hNormal = HitNormal; // 0x0000002B : 0x002A
     SetPhysics(PHYS_None); // 0x00000032 : 0x0035
+    lineLength = VSize( Instigator.Location - Location);
     if ( Wall.IsA('Pawn') || Wall.IsA('Mover') ) // 0x00000037 : 0x003A
     {
       if (  !bDoAttachPawn &&  !Wall.IsA('Mover') ) // 0x00000055 : 0x0064
@@ -171,6 +174,7 @@ state() PullTowardStatic
       return; // 0x0000003D : 0x0036
     }
     length = VSize(Instigator.Location - pullDest);
+    // Dampening when we reach the top:
     if ( length <= (MinRetract+8.0) && bSwingPhysics) {
       Instigator.Velocity = Instigator.Velocity*0.99;
     }
@@ -232,6 +236,25 @@ state() PullTowardStatic
         linePull = power*grappleSpeed;
         if (length <= MinRetract) {
           linePull = 0;
+        }
+        if (length > lineLength && bFiddlePhysics3) {
+          // Instigator.ClientMessage("Elongation = "$ (length - lineLength) $" Velocity = "$ VSize(Instigator.Velocity));
+          // Elasticity if the line was lengthened by the player swinging.
+          // linePull += (length - lineLength)*100.0; // Provide velocity to cancel the change in 0.01 seconds.
+          Instigator.AddVelocity( (length - lineLength) * Inward * 1.0 );
+          // Instigator.AddVelocity( (length - lineLength) * Inward * 5.0 );
+          // TODO: This new approach could replace all the gravity tweaks we made.
+          // TODO: But it just doesn't work; it doesn't allow us to swing.
+          // Respond with upward pull:  (This must be *as well as* and *less than* inward pull, otherwise we can just float up and up, and elongation increases!)
+          if (Location.Z > Instigator.Location.Z) {
+            Instigator.AddVelocity( (length - lineLength) * Vect(0,0,1) * 1.5 );
+            // 2.0 was too strong, allowed u to almost pr.vent swingback entirely!
+            // But 1.0 was too weak, you couldn't add enough swing to be useful.
+          }
+          // Well this does add some extra swinging power, but not really enough.
+        } else if (length < lineLength && length>=MinRetract) {
+          // Line has shortened.
+          lineLength = length;
         }
         Instigator.AddVelocity( linePull * Inward * DeltaTime ); // This completely cancels outward momentum - the line length will not increase!
 
@@ -297,11 +320,10 @@ state() PullTowardDynamic
 
 defaultproperties
 {
-    grappleSpeed=600 // 600 was good for old Expert100, but is quite weak with new code
-    // grappleSpeed=0
+    // grappleSpeed=600 // 600 was good for old Expert100, and is adjusted to work with new code also.
+    grappleSpeed=0
     // grappleSpeed=100 // Almost nothing, slight pull upwards
     // grappleSpeed=800
-    timeBetweenHit=0.50
     hitdamage=20.00
     bDoAttachPawn=True
     bLineOfSight=False
@@ -331,6 +353,7 @@ defaultproperties
     //// These two are cheats in terms of real physics, but may be useful for large maps without handy ceilings.
     bFiddlePhysics1=False
     bFiddlePhysics2=False
+    bFiddlePhysics3=True
     bExtraPower=False
     ThrowSound=sound'Botpack.Translocator.ThrowTarget'
     // HitSound=sound'UnrealI.GasBag.hit1g'
