@@ -136,6 +136,7 @@ exec function DoubleJump ()
   local PlayerPawn P;
   local float forwardness,rightness;
   local Rotator right;
+  local name newMesh;
 
   if ( PlayerPawn(Owner) == None )
   {
@@ -162,52 +163,40 @@ exec function DoubleJump ()
         break;
         default:
       }
+      P.Velocity.Z = P.Velocity.Z + 0.5 * P.JumpZ * jumpHeight;
       if (P.Velocity.Z < P.JumpZ * jumpHeight) {
         P.Velocity.Z = P.JumpZ * jumpHeight;
       }
       nofJumps++;
       P.PlaySound(P.JumpSound,SLOT_Interface,1.5,True,1200.0,1.0);
-      if ( (Level.Game != None) && (Level.Game.Difficulty > 0) )
-      {
+      if ( (Level.Game != None) && (Level.Game.Difficulty > 0) ) {
         P.MakeNoise(0.1 * Level.Game.Difficulty);
       }
-      if ( nofJumps == maxJumps )
-      {
+      if ( nofJumps == maxJumps ) {
+        newMesh = '';
         forwardness = Normal(P.Velocity) Dot Normal(Vector(P.Rotation));
         right = P.Rotation;
         right.Yaw += 8192;
         rightness = Normal(P.Velocity) Dot Normal(Vector(right));
-        // if ( (P.AnimSequence == 'DodgeR') && P.HasAnim('ROLLRIGHT') ) {
-        // if ( (P.AnimSequence == 'DodgeL') && P.HasAnim('ROLLLEFT') ) {
-        if ( rightness>Abs(forwardness) && P.HasAnim('ROLLRIGHT') ) {
-          P.PlayAnim('ROLLRIGHT',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          if ( Level.NetMode != 0 ) {
-            ClientPlayAnim('ROLLRIGHT',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          }
+        if ( VSize(P.Velocity)<50.0 && P.HasAnim('Flip')) {
+          newMesh = 'Flip';
+        } else if ( rightness>Abs(forwardness) && P.HasAnim('ROLLRIGHT') ) {
+          newMesh = 'ROLLRIGHT';
         } else if ( rightness>Abs(forwardness) && P.HasAnim('DodgeL') ) {
-          P.PlayAnim('DodgeL',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          if ( Level.NetMode != 0 ) {
-            ClientPlayAnim('DodgeL',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          }
+          newMesh = 'DodgeL';
         } else if ( rightness < (-Abs(forwardness)) && P.HasAnim('ROLLLEFT') ) {
-          P.PlayAnim('ROLLLEFT',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          if ( Level.NetMode != 0 ) {
-            ClientPlayAnim('ROLLLEFT',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          }
+          newMesh = 'ROLLLEFT';
         } else if ( rightness < (-Abs(forwardness)) && P.HasAnim('DodgeR') ) {
-          P.PlayAnim('DodgeR',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          if ( Level.NetMode != 0 ) {
-            ClientPlayAnim('DodgeR',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          }
+          newMesh = 'DodgeR';
         } else if ( forwardness < (-Abs(rightness)) && P.HasAnim('DodgeB') ) {
-          P.PlayAnim('DodgeB',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          if ( Level.NetMode != 0 ) {
-            ClientPlayAnim('DodgeB',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
-          }
+          newMesh = 'DodgeB';
         } else if ( P.HasAnim('Flip') ) { /*forwardness>Abs(rightness) &&*/
-          P.PlayAnim('Flip',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
+          newMesh = 'Flip';
+        }
+        if (newMesh != '' && P.HasAnim(newMesh)) {
+          P.PlayAnim(newMesh,1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
           if ( Level.NetMode != 0 ) {
-            ClientPlayAnim('Flip',1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
+            ClientPlayAnim(newMesh,1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
           }
         }
       }
