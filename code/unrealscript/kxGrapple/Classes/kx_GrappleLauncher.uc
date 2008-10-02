@@ -12,6 +12,14 @@ class kx_GrappleLauncher expands XP_GrappleLauncher Config(kxGrapple);
 // var() config bool bUseExtra0;
 // var() config bool bUseExtra1;
 
+function Fire(float Value) {
+  Super.AltFire(Value);
+}
+
+function AltFire(float Value) {
+  Super.Fire(Value);
+}
+
 defaultproperties
 {
     bCanThrow=False

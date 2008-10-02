@@ -118,7 +118,7 @@ function ModifyPlayer (Pawn Other)
 {
   Other.Health = InitialHealth; // 0x00000014 : 0x0000
   GiveWeaponsTo(Other); // 0x00000020 : 0x0014
-  Other.ClientMessage("kxGrapple.kxMutator"); // 0x00000025 : 0x001F
+  // Other.ClientMessage("kxGrapple.kxMutator"); // 0x00000025 : 0x001F
   if ( NextMutator != None ) // 0x0000003D : 0x003D
   {
     NextMutator.ModifyPlayer(Other); // 0x00000045 : 0x0048
@@ -169,7 +169,7 @@ function GiveWeaponsTo (Pawn P)
   if ( UseBuiltinGrapple == True ) // 0x00000013 : 0x0000
   {
     P.AddInventory(Spawn(Class'kx_GrappleLauncher')); // 0x0000001C : 0x000C
-    P.ClientMessage("You have a Grappling Hook.");
+    if (P.PlayerReplicationInfo.Deaths==0) P.ClientMessage("You have a Grappling Hook.");
   }
   DM = DeathMatchPlus(Level.Game); // 0x0000002B : 0x0023
   if ( DM == None ) // 0x0000003A : 0x003C

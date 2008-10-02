@@ -160,12 +160,12 @@ state() PullTowardDynamic
 
 defaultproperties
 {
-    grappleSpeed=800
+    grappleSpeed=600
     timeBetweenHit=0.50
     hitdamage=20.00
     bDoAttachPawn=True
     bLineOfSight=True
-    speed=3000.00
+    speed=3500.00
     MaxSpeed=4000.00
     MyDamageType=eviscerated
     bNetTemporary=False
