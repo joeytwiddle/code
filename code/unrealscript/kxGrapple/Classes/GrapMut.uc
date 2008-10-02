@@ -10,15 +10,10 @@ var config bool EnableMiniGun;
 var config bool EnableSniperGun;
 var config bool EnableBioRifle;
 var config bool EnableHammer;
-var config int InitialHealth;
-var config int InitialArmor;
 var config bool UseBuiltinGrapple;
-var config bool bGiveAllWeapons;
 var config bool ExtraJumpBoots;
 var config int RJBoost;
 var float RJBoostFactor;
-var bool GiveArmor;
-var bool GiveThighPads;
 var() name WeaponName;
 var() name AmmoName;
 var() string WeaponString;
@@ -40,27 +35,6 @@ function PostBeginPlay ()
   DefaultWeapon = Class'enforcer'; // 0x00000020 : 0x0013
   Level.Game.RegisterDamageMutator(self); // 0x00000027 : 0x001E
   RJBoostFactor = RJBoost / 100.0; // 0x0000003A : 0x0037
-  switch (InitialHealth) // 0x00000048 : 0x004A
-  {
-    case 0: // 0x0000004C : 0x0051
-    GiveThighPads = False; // 0x00000050 : 0x0055
-    GiveArmor = False; // 0x00000055 : 0x005D
-    break; // 0x0000005A : 0x0065
-    case 50: // 0x0000005D : 0x0068
-    GiveThighPads = True; // 0x00000062 : 0x006D
-    GiveArmor = False; // 0x00000067 : 0x0075
-    break; // 0x0000006C : 0x007D
-    case 100: // 0x0000006F : 0x0080
-    GiveThighPads = False; // 0x00000074 : 0x0085
-    GiveArmor = True; // 0x00000079 : 0x008D
-    break; // 0x0000007E : 0x0095
-    case 150: // 0x00000081 : 0x0098
-    GiveThighPads = False; // 0x00000086 : 0x009D
-    GiveArmor = True; // 0x0000008B : 0x00A5
-    break; // 0x00000090 : 0x00AD
-    default: // 0x00000093 : 0x00B0
-    break; // 0x00000096 : 0x00B3
-  }
 }
 
 // function string GetInventoryClassOverride(string InventoryClassName) {
@@ -94,12 +68,39 @@ function bool CheckReplacement (Actor Other, out byte bSuperRelevant)
 
 function ModifyPlayer (Pawn Other)
 {
-  Other.Health = InitialHealth; // 0x00000014 : 0x0000
   GiveWeaponsTo(Other); // 0x00000020 : 0x0014
-  // Other.ClientMessage("kxGrapple.kxMutator"); // 0x00000025 : 0x001F
+  // if (UseBuiltinGrapple && Other.IsA('PlayerPawn') && Other.PlayerReplicationInfo.Deaths == 0) {
+    // CheckPlayerBinds(PlayerPawn(Other));
+  // }
   if ( NextMutator != None ) // 0x0000003D : 0x003D
   {
     NextMutator.ModifyPlayer(Other); // 0x00000045 : 0x0048
+  }
+}
+
+function GiveWeaponsTo (Pawn P)
+{
+  local Inventory Inv;
+  if (UseBuiltinGrapple) {
+    // // P.AddInventory(Spawn(class'kxGrapple.Translocator'));
+    // P.AddInventory(Spawn(class'kxGrapple.kx_GrappleLauncher'));
+    Inv = P.FindInventoryType(class'kxGrapple.kx_GrappleLauncher');
+    if (Inv != None) {
+      Log("[kxMutator] "$P.getHumanName()$" already has a "$Inv$"!");
+      if (kx_GrappleLauncher(Inv).kxGrapple != None) {
+        Log("[kxMutator] Retracted "$P.getHumanName()$"'s grapple.");
+        kx_GrappleLauncher(Inv).kxGrapple.Destroy();
+      }
+    } else {
+      DeathMatchPlus(Level.Game).GiveWeapon(P,"kxGrapple.kx_GrappleLauncher");
+    }
+    // if (P.PlayerReplicationInfo.Deaths==0) P.ClientMessage("You have a Grappling Hook.");
+    // Remove any Translocator they might have:
+    Inv = P.FindInventoryType(class'Botpack.Translocator');
+    if (Inv != None && !Inv.IsA('kx_GrappleLauncher')) {
+      Log("[kxMutator] Removing "$Inv$" from "$P.getHumanName());
+      Inv.Destroy();
+    }
   }
 }
 
@@ -139,21 +140,6 @@ function MutatorTakeDamage (out int actualDamage, Pawn Victim, Pawn instigatedBy
   }
 }
 
-function GiveWeaponsTo (Pawn P)
-{
-  local Inventory Inv;
-  if (UseBuiltinGrapple) {
-    // Replace the default Translocator:
-    Inv = P.FindInventoryType(class'Botpack.Translocator');
-    if (Inv != None) {
-      Inv.Destroy();
-    }
-    // P.AddInventory(Spawn(class'kxGrapple.Translocator'));
-    P.AddInventory(Spawn(class'kxGrapple.kx_GrappleLauncher'));
-    if (P.PlayerReplicationInfo.Deaths==0) P.ClientMessage("You have a Grappling Hook.");
-  }
-}
-
 function kx_GrappleLauncher GetGrappleLauncher (Actor Other)
 {
   local kx_GrappleLauncher thelauncher;
@@ -189,10 +175,7 @@ defaultproperties
 {
     EnableSniperGun=True
     EnableHammer=True
-    InitialHealth=120
-    InitialArmor=100
     RJBoost=200
-    GiveArmor=True
     WeaponName=kx_GrappleLauncher
     // WeaponName=Translocator
     AmmoName=DefaultAmmo
@@ -202,5 +185,4 @@ defaultproperties
     DefaultWeapon=Class'kx_GrappleLauncher'
     // DefaultWeapon=Class'kxGrapple.Translocator'
     UseBuiltinGrapple=True
-    bGiveAllWeapons=False
 }

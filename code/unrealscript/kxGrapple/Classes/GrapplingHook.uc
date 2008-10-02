@@ -8,11 +8,13 @@ class kxGrapple extends Projectile Config(kxGrapple);
 // #exec AUDIO IMPORT FILE="Sounds\Pull.wav" NAME="Pull"
 #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
+var() config bool bDropFlag;
 var() config bool bSwingPhysics;
 var() config bool bFiddlePhysics;
 var() config bool bExtraPower;
 var() config float MinRetract;
 var() config float UpRotation;
+var() config sound RetractSound;
 
 /*
 replication
@@ -26,7 +28,7 @@ var Vector pullDest;
 var Vector hNormal;
 var bool bRight;
 var bool bCenter;
-var() config int grappleSpeed;
+var() config float grappleSpeed;
 var() config float timeBetweenHit;
 var() config float hitdamage;
 var bool bPlaySound;
@@ -53,8 +55,8 @@ simulated function Destroyed ()
   // Master.PlaySound(sound'hit1g',SLOT_Interface,10.0); // 0x00000037 : 0x0036
   // PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0); // 0x0000002B : 0x0027
   // Master.PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0); // 0x00000037 : 0x0036
-  PlaySound(sound'Slurp',SLOT_Interface,1.0); // 0x0000002B : 0x0027
-  Master.PlaySound(sound'Slurp',SLOT_Interface,1.0); // 0x00000037 : 0x0036
+  PlaySound(RetractSound,SLOT_Interface,1.0); // 0x0000002B : 0x0027
+  Master.PlaySound(RetractSound,SLOT_Interface,1.0); // 0x00000037 : 0x0036
   // Master.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16);
   Instigator.SetPhysics(PHYS_Falling); // 0x00000049 : 0x004E
   Super.Destroyed(); // 0x00000054 : 0x005C
@@ -127,6 +129,10 @@ state() PullTowardStatic
     local float length,outwardPull,power;
     local Vector Inward;
 
+    if (bDropFlag && Instigator.PlayerReplicationInfo.HasFlag != None) {
+      CTFFlag(Instigator.PlayerReplicationInfo.HasFlag).Drop(vect(0,0,0));
+    }
+
     if ( bLineOfSight && !Instigator.LineOfSightTo(self) ) // 0x00000022 : 0x0016
     {
       Destroy(); // 0x0000003A : 0x0033
@@ -171,14 +177,15 @@ state() PullTowardStatic
         } else {
           power = 3.0;
         }
-        outwardPull += power*grappleSpeed;
+        outwardPull += 0.075*power*grappleSpeed;
         if (outwardPull<0) outwardPull=0;
         // if (outwardPull<1.0) outwardPull=1.0*outwardPull*outwardPull; // Smooth the last inch
         Inward = Normal(pullDest-Instigator.Location) * outwardPull;
-        // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime;
-        Instigator.AddVelocity( Inward*DeltaTime );
+        Instigator.AddVelocity( Inward ); // This completely cancels outward momentum - the line length will not increase!
+        // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime; // This makes the line weak and stretchy
         // Dampen gravity (for long pulls)
         if (bFiddlePhysics && Instigator.Velocity.Z<0) {
+          // Actually we try to turn it into horizontal motion:
           Instigator.AddVelocity( Normal(Instigator.Velocity) * 0.1*Abs(Instigator.Velocity.Z) );
           Instigator.Velocity.Z *= 0.9;
         }
@@ -219,6 +226,9 @@ state() PullTowardDynamic
   
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
   {
+    if (bDropFlag && Instigator.PlayerReplicationInfo.HasFlag != None) {
+      CTFFlag(Instigator.PlayerReplicationInfo.HasFlag).Drop(vect(0,0,0));
+    }
     Instigator.AmbientSound = None; // 0x00000014 : 0x0000
     AmbientSound = None; // 0x0000001E : 0x0010
     Destroy(); // 0x00000022 : 0x0017
@@ -254,15 +264,17 @@ defaultproperties
     MinRetract=150
     // MinRetract=200
     // MinRetract=250
-    bSwingPhysics=True
     DrawScale=2.0
     RemoteRole=ROLE_SimulatedProxy
     Physics=PHYS_Projectile
     UpRotation=0
     // Physics=PHYS_Falling
     // UpRotation=1536
+    bDropFlag=True
+    bSwingPhysics=True
     //// These two are cheats in terms of real physics, but may be useful for large maps without handy ceilings.
-    bFiddlePhysics=True
+    bFiddlePhysics=False
     bExtraPower=False
+    RetractSound=sound'Slurp'
 }
 

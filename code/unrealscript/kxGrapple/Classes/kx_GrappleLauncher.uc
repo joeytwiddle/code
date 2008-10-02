@@ -293,6 +293,51 @@ function SetHand (float hand)
   Super.SetHand(hand); // 0x00000075 : 0x007B
 }
 
+simulated function PreBeginPlay() {
+  local PlayerPawn P;
+  Super.PreBeginPlay();
+  if ( Level.NetMode == 1 ) {
+    return;
+  }
+  foreach AllActors(Class'PlayerPawn',P) {
+    if ( Viewport(P.Player) != None ) {
+      break;
+    } else {
+      P = None;
+    }
+  }
+  if ( P == None ) {
+    Log("kx_GrappleLauncher.PreBeginPlay() NO LOCAL PLAYERPAWN!");
+    return;
+  }
+  // Caused Access None: if (p.PlayerReplicationInfo.Deaths == 0) // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game.
+  CheckPlayerBinds(P);
+}
+
+simulated function CheckPlayerBinds(PlayerPawn P) {
+  local int i;
+  local string toAdd;
+  local string keyName,keyVal,keyValCaps;
+  toAdd = "GetWeapon kx_GrappleLauncher";
+  for (i=0;i<256;i++) {
+    keyName = p.ConsoleCommand("keyname "$i);
+    keyVal = p.ConsoleCommand("keybinding "$keyName);
+    keyValCaps = Caps(keyVal);
+    if (InStr(keyValCaps,Caps(toAdd))>=0) {
+      Log("kxMutator.CheckPlayerBinds() Stopped searching at "$i$" on "$p.getHumanName());
+      return; // We have found an existing key bound to this weapon.  To save time, stop searching!
+    }
+    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || InStr(keyValCaps,"SWITCHWEAPON 0")>=0) {
+      // Add a binding to this key!
+      p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$" | "$toAdd);
+      p.ClientMessage("Grappling hook bound to your ["$keyName$"] key.");
+      Log("kxMutator.CheckPlayerBinds() Changed "$p.getHumanName()$"'s keybind for "$keyName$"="$keyVal$" | "$toAdd);
+      // Continue to search for other binds we could attach to.
+    }
+  }
+  Log("kxMutator.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
+}
+
 defaultproperties
 {
     bCanThrow=False
