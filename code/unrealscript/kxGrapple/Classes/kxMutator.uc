@@ -6,14 +6,8 @@ class kxMutator extends Mutator Config(kxGrapple);
 
 var bool Initialized;
 var DeathMatchPlus DM;
-var config bool EnableMiniGun;
-var config bool EnableSniperGun;
-var config bool EnableBioRifle;
-var config bool EnableHammer;
 var config bool UseBuiltinGrapple;
 var config bool ExtraJumpBoots;
-var config int RJBoost;
-var float RJBoostFactor;
 var() name WeaponName;
 var() name AmmoName;
 var() string WeaponString;
@@ -32,9 +26,8 @@ function PostBeginPlay ()
     return; // 0x00000019 : 0x0009
   }
   Initialized = True; // 0x0000001B : 0x000B
-  DefaultWeapon = Class'enforcer'; // 0x00000020 : 0x0013
-  Level.Game.RegisterDamageMutator(self); // 0x00000027 : 0x001E
-  RJBoostFactor = RJBoost / 100.0; // 0x0000003A : 0x0037
+  // DefaultWeapon = Class'enforcer'; // 0x00000020 : 0x0013
+  // Level.Game.RegisterDamageMutator(self); // 0x00000027 : 0x001E
 }
 
 // function string GetInventoryClassOverride(string InventoryClassName) {
@@ -90,6 +83,7 @@ function GiveWeaponsTo (Pawn P)
       if (kx_GrappleLauncher(Inv).kxGrapple != None) {
         Log("[kxMutator] Retracted "$P.getHumanName()$"'s grapple.");
         kx_GrappleLauncher(Inv).kxGrapple.Destroy();
+        kx_GrappleLauncher(Inv).kxGrapple = None;
       }
     } else {
       DeathMatchPlus(Level.Game).GiveWeapon(P,"kxGrapple.kx_GrappleLauncher");
@@ -108,36 +102,6 @@ function bool PreventDeath (Pawn Killed, Pawn Killer, name DamageType, Vector Hi
 {
   Killed.Weapon = None; // 0x00000016 : 0x0000
   Super.PreventDeath(Killed,Killer,DamageType,HitLocation); // 0x00000022 : 0x0010
-}
-
-function MutatorTakeDamage (out int actualDamage, Pawn Victim, Pawn instigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType)
-{
-  if ( (instigatedBy == Victim) && (DamageType == 'RocketDeath') ) // 0x00000014 : 0x0000
-  {
-    Momentum.Z *= RJBoostFactor; // 0x0000002B : 0x0020
-    Momentum.X /= 2; // 0x00000035 : 0x0031
-    Momentum.Y /= 2; // 0x0000003E : 0x0040
-    actualDamage = 4; // 0x00000048 : 0x004F
-  } else { // 0x0000004D : 0x0057
-    if ( DamageType == 'jolted' ) // 0x00000050 : 0x005A
-    {
-      actualDamage = 95; // 0x0000005A : 0x0069
-    } else { // 0x0000005F : 0x0071
-      if ( DamageType == 'Fell' ) // 0x00000062 : 0x0074
-      {
-        actualDamage = 4; // 0x0000006C : 0x0083
-      } else { // 0x00000071 : 0x008B
-        actualDamage = Min(actualDamage,90); // 0x00000074 : 0x008E
-      }
-    }
-    Momentum.Z /= 2; // 0x0000007D : 0x009D
-    Momentum.X /= 2; // 0x00000087 : 0x00AC
-    Momentum.Y /= 2; // 0x00000090 : 0x00BB
-  }
-  if ( NextDamageMutator != None ) // 0x0000009A : 0x00CA
-  {
-    NextDamageMutator.MutatorTakeDamage(actualDamage,Victim,instigatedBy,HitLocation,Momentum,DamageType); // 0x000000A3 : 0x00D5
-  }
 }
 
 function kx_GrappleLauncher GetGrappleLauncher (Actor Other)
@@ -173,9 +137,6 @@ function Mutate (string MutateString, PlayerPawn Sender)
 
 defaultproperties
 {
-    EnableSniperGun=True
-    EnableHammer=True
-    RJBoost=200
     WeaponName=kx_GrappleLauncher
     // WeaponName=Translocator
     AmmoName=DefaultAmmo

@@ -5,7 +5,7 @@
 // class kx_GrappleLauncher expands Translocator Config(kxGrapple); // Tried doing this so that the player's translocator bind would work automatically, but it didn't!
 class kx_GrappleLauncher expands TournamentWeapon Config(kxGrapple);
 
-#exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
+// #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
 var config bool bAutoDrop;
 
@@ -13,8 +13,6 @@ var Weapon PreviousWeapon;
 var kxGrapple kxGrapple;
 var bool bManualShot;
 var bool bShooting;
-var() config bool bUseExtra0;
-var() config bool bUseExtra1;
 
 exec function AttachHook ()
 {
@@ -102,8 +100,10 @@ function Fire (optional float Value)
     }
     bPointing = True; // 0x00000040 : 0x0045
     PlayFiring(); // 0x00000046 : 0x004D
+    PlaySound(class'kxGrapple'.default.ThrowSound,SLOT_Interface,2.0);
+    // AmbientSound = class'kxGrapple'.default.ThrowSound;
     // AmbientSound = Sound'Hidraul2'; // 0x0000004A : 0x0053
-    AmbientSound = Sound'Slurp'; // 0x0000004A : 0x0053
+    // AmbientSound = Sound'Slurp'; // 0x0000004A : 0x0053
     kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget)); // 0x00000050 : 0x005E
     kxGrapple.SetMaster(self); // 0x00000065 : 0x007F
   }
@@ -310,8 +310,8 @@ simulated function PreBeginPlay() {
     Log("kx_GrappleLauncher.PreBeginPlay() NO LOCAL PLAYERPAWN!");
     return;
   }
-  // Caused Access None: if (p.PlayerReplicationInfo.Deaths == 0) // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game.
-  CheckPlayerBinds(P);
+  if (p.PlayerReplicationInfo.Deaths == 0) // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game.
+    CheckPlayerBinds(P);
 }
 
 simulated function CheckPlayerBinds(PlayerPawn P) {
@@ -350,7 +350,7 @@ defaultproperties
     PlayerViewOffset=(X=5.00,Y=-4.00,Z=-7.00),
     StatusIcon=Texture'Botpack.Icons.UseTrans'
     Mass=10.00
-    bUseExtra1=True
     bAutoDrop=False
+    SelectSound=sound'UnrealI.flak.load1'
 }
 
