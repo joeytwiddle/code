@@ -2,12 +2,12 @@
 // kxGrapple.
 //================================================================================
 
-// BUGS TODO:
-// fires on spawn :f
-// makes amp sounds when used with amp
-// sometimes trying to hook when we are right next to the walls fails - we need an audio indicator of that (sometimes we hear the ThrowSound twice)
-// Wall hit sound could be a bit better / should be clear + distinct from throw sound.
-// DONE: Removes Translocator ok, but seems to remove ImpactHammer too!
+// TODO: fires on spawn :f
+// TODO: makes amp sounds when used with amp
+// TODO: sometimes trying to hook when we are right next to the walls fails - we need an audio indicator of that (sometimes we hear the ThrowSound twice)
+// TODO: Wall hit sound could be a bit better / should be clear + distinct from throw sound.
+// TODO: Removes Translocator ok, but seems to remove ImpactHammer too!
+// DONE: Clicking with both fire buttons should return to previous weapon, as with Translocator.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);

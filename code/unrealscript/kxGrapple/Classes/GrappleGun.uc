@@ -16,112 +16,123 @@ var bool bShooting;
 
 exec function AttachHook ()
 {
-  PlayerPawn(Owner).ClientMessage("Trying to attachHook"); // 0x00000013 : 0x0000
-  if ( kxGrapple == None ) // 0x00000034 : 0x002A
+  PlayerPawn(Owner).ClientMessage("Trying to attachHook");
+  if ( kxGrapple == None )
   {
-    FireHook(); // 0x0000003C : 0x0035
+    FireHook();
   }
 }
 
 exec function ReleaseHook ()
 {
-  PlayerPawn(Owner).ClientMessage("Trying to releaseHook"); // 0x00000014 : 0x0000
-  if ( kxGrapple != None ) // 0x00000036 : 0x002B
+  PlayerPawn(Owner).ClientMessage("Trying to releaseHook");
+  if ( kxGrapple != None )
   {
-    kxGrapple.Destroy(); // 0x0000003E : 0x0036
+    kxGrapple.Destroy();
   }
 }
 
 simulated function ClientFireHook ()
 {
-  return; // 0x00000013 : 0x0000
+  return;
 }
 
 exec function FireHook ()
 {
-  if ( kxGrapple != None ) // 0x00000013 : 0x0000
+  if ( kxGrapple != None )
   {
-    return; // 0x0000001B : 0x000B
+    return;
   }
-  if ( Role < 4 ) // 0x0000001D : 0x000D
+  if ( Role < 4 )
   {
-    ClientFireHook(); // 0x00000029 : 0x001B
-    return; // 0x0000002C : 0x0021
+    ClientFireHook();
+    return;
   }
-  Fire(); // 0x0000002E : 0x0023
-  GotoState('NormalFire'); // 0x00000031 : 0x0029
+  Fire();
+  GotoState('NormalFire');
 }
 
 function Destroyed ()
 {
-  if ( kxGrapple != None ) // 0x00000014 : 0x0000
+  if ( kxGrapple != None )
   {
-    kxGrapple.Destroy(); // 0x0000001C : 0x000B
-    kxGrapple = None; // 0x00000025 : 0x0017
+    kxGrapple.Destroy();
+    kxGrapple = None;
   }
-  Super.Destroyed(); // 0x00000029 : 0x001E
+  Super.Destroyed();
 }
 
 function DropFrom (Vector StartLocation)
 {
-  if ( kxGrapple != None ) // 0x00000016 : 0x0000
+  if ( kxGrapple != None )
   {
-    kxGrapple.Destroy(); // 0x0000001E : 0x000B
-    kxGrapple = None; // 0x00000027 : 0x0017
+    kxGrapple.Destroy();
+    kxGrapple = None;
   }
-  Super.DropFrom(StartLocation); // 0x0000002B : 0x001E
+  Super.DropFrom(StartLocation);
 }
 
-function BringUp ()
-{
-  PreviousWeapon = None; // 0x00000014 : 0x0000
-  Super.BringUp(); // 0x00000018 : 0x0007
+function BringUp () {
+  PreviousWeapon = None;
+  Super.BringUp();
 }
 
-function RaiseUp (Weapon OldWeapon)
-{
-  if ( OldWeapon == self ) // 0x00000015 : 0x0000
-  {
-    PreviousWeapon = None; // 0x0000001D : 0x000B
-  } else { // 0x00000021 : 0x0012
-    PreviousWeapon = OldWeapon; // 0x00000024 : 0x0015
+function RaiseUp (Weapon OldWeapon) {
+  if ( OldWeapon == self ) {
+    PreviousWeapon = None;
+  } else {
+    PreviousWeapon = OldWeapon;
+    // Log("kx_GrappleLauncher.RaiseUp() Set PreviousWeapon = "$PreviousWeapon);
   }
-  BringUp(); // 0x00000029 : 0x0020
+  Super.BringUp();
+}
+
+function ReturnToPreviousWeapon() {
+  if ( (PreviousWeapon == None) ||
+       ((PreviousWeapon.AmmoType != None) && (PreviousWeapon.AmmoType.AmmoAmount <=0))
+  ) {
+    // Log("kx_GrappleLauncher.ReturnToPreviousWeapon() Switching to best weapon");
+    Pawn(Owner).SwitchToBestWeapon();
+  } else {
+    // Log("kx_GrappleLauncher.ReturnToPreviousWeapon() Switching to "$PreviousWeapon);
+    Pawn(Owner).PendingWeapon = PreviousWeapon;
+    PutDown();
+  }
 }
 
 function Fire (optional float Value)
 {
-  GotoState('NormalFire'); // 0x00000015 : 0x0000
-  if ( kxGrapple == None ) // 0x00000019 : 0x0007
+  GotoState('NormalFire');
+  if ( kxGrapple == None )
   {
-    if ( PlayerPawn(Owner) != None ) // 0x00000021 : 0x0012
+    if ( PlayerPawn(Owner) != None )
     {
-      PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert); // 0x0000002B : 0x0022
+      PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
     }
-    bPointing = True; // 0x00000040 : 0x0045
-    PlayFiring(); // 0x00000046 : 0x004D
+    bPointing = True;
+    PlayFiring();
     PlaySound(class'kxGrapple'.default.ThrowSound,SLOT_Interface,2.0);
     // AmbientSound = class'kxGrapple'.default.ThrowSound;
-    // AmbientSound = Sound'Hidraul2'; // 0x0000004A : 0x0053
-    // AmbientSound = Sound'Slurp'; // 0x0000004A : 0x0053
-    kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget)); // 0x00000050 : 0x005E
-    kxGrapple.SetMaster(self); // 0x00000065 : 0x007F
+    // AmbientSound = Sound'Hidraul2';
+    // AmbientSound = Sound'Slurp';
+    kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
+    kxGrapple.SetMaster(self);
   }
-  if ( Owner.bHidden ) // 0x0000006F : 0x008F
+  if ( Owner.bHidden )
   {
-    CheckVisibility(); // 0x0000007C : 0x00A1
+    CheckVisibility();
   }
 }
 
 function AltFire (float Value)
 {
-  if ( kxGrapple != None ) // 0x00000015 : 0x0000
+  if ( kxGrapple != None )
   {
-    AmbientSound = None; // 0x0000001D : 0x000B
-    kxGrapple.Destroy(); // 0x00000021 : 0x0012
-    kxGrapple = None; // 0x0000002A : 0x001E
+    AmbientSound = None;
+    kxGrapple.Destroy();
+    kxGrapple = None;
   }
-  GotoState('AltFiring'); // 0x0000002E : 0x0025
+  GotoState('AltFiring');
 }
 
 // Had to hide states - it doesn't like overriding them.
@@ -141,9 +152,14 @@ state NormalFire
   }
   
   Begin:
-    FinishAnim(); // 0x00000014 : 0x0000
-    Sleep(0.1); // 0x00000017 : 0x0003
-    Finish(); // 0x0000001F : 0x000B
+    FinishAnim();
+    Sleep(0.1);
+    // From Botpack.Translocator:
+    if ( (Pawn(Owner).bFire != 0) && (Pawn(Owner).bAltFire != 0) ) {
+      ReturnToPreviousWeapon();
+    }
+    //
+    Finish();
 }
 
 state AltFiring
@@ -161,34 +177,39 @@ state AltFiring
   }
   
   Begin:
-    if ( kxGrapple != None ) // 0x00000014 : 0x0000
+    if ( kxGrapple != None )
     {
-      AmbientSound = None; // 0x0000001C : 0x000B
-      kxGrapple.Destroy(); // 0x00000020 : 0x0012
-      kxGrapple = None; // 0x00000029 : 0x001E
+      AmbientSound = None;
+      kxGrapple.Destroy();
+      kxGrapple = None;
     }
-    FinishAnim(); // 0x0000002D : 0x0025
-    Sleep(0.1); // 0x00000030 : 0x0028
-    Finish(); // 0x00000038 : 0x0030
+    FinishAnim();
+    Sleep(0.1);
+    // From Botpack.Translocator:
+    if ( (Pawn(Owner).bFire != 0) && (Pawn(Owner).bAltFire != 0) ) {
+      ReturnToPreviousWeapon();
+    }
+    //
+    Finish();
 }
 
 state Idle
 {
   function AnimEnd ()
   {
-    PlayIdleAnim(); // 0x00000013 : 0x0000
+    PlayIdleAnim();
   }
   
   function bool PutDown ()
   {
-    GotoState('DownWeapon'); // 0x00000016 : 0x0000
-    return True; // 0x0000001A : 0x0007
+    GotoState('DownWeapon');
+    return True;
   }
   
   Begin:
-    bPointing = False; // 0x00000014 : 0x0000
-    Disable('AnimEnd'); // 0x0000001A : 0x0008
-    PlayIdleAnim(); // 0x0000001E : 0x000F
+    bPointing = False;
+    Disable('AnimEnd');
+    PlayIdleAnim();
 }
 
 
@@ -201,11 +222,11 @@ function Fire(float Value) {
 
   /*
   if (!bAutoDrop) { // If you fire when it is already out, retract it:
-    if ( kxGrapple != None ) // 0x0000009C : 0x00C2
+    if ( kxGrapple != None )
     {
-      AmbientSound = None; // 0x000000A4 : 0x00CD
-      kxGrapple.Destroy(); // 0x000000A8 : 0x00D4
-      kxGrapple = None; // 0x000000B1 : 0x00E0
+      AmbientSound = None;
+      kxGrapple.Destroy();
+      kxGrapple = None;
       return;
     }
   }
@@ -223,37 +244,37 @@ function Finish ()
 {
   local Pawn PawnOwner;
 
-  if ( bChangeWeapon ) // 0x00000014 : 0x0000
+  if ( bChangeWeapon )
   {
-    GotoState('DownWeapon'); // 0x0000001B : 0x0009
-    return; // 0x0000001F : 0x0010
+    GotoState('DownWeapon');
+    return;
   }
-  PawnOwner = Pawn(Owner); // 0x00000021 : 0x0012
-  if ( PlayerPawn(Owner) == None ) // 0x00000028 : 0x0022
+  PawnOwner = Pawn(Owner);
+  if ( PlayerPawn(Owner) == None )
   {
-    PawnOwner.StopFiring(); // 0x00000032 : 0x0032
-    GotoState('Idle'); // 0x0000003C : 0x0041
-    return; // 0x00000040 : 0x0048
-  } else { // 0x00000042 : 0x004A
-    if ( PlayerPawn(Owner).bExtra1 != 0 ) // 0x00000045 : 0x004D
+    PawnOwner.StopFiring();
+    GotoState('Idle');
+    return;
+  } else {
+    if ( PlayerPawn(Owner).bExtra1 != 0 )
     {
-      Global.Fire(0.0); // 0x00000057 : 0x0067
-    } else { // 0x0000005F : 0x0072
-      if ( PawnOwner.bFire != 0 ) // 0x00000062 : 0x0075
+      Global.Fire(0.0);
+    } else {
+      if ( PawnOwner.bFire != 0 )
       {
-        Global.Fire(0.0); // 0x00000072 : 0x008A
-      } else { // 0x0000007A : 0x0095
-        if ( PawnOwner.bAltFire != 0 ) // 0x0000007D : 0x0098
+        Global.Fire(0.0);
+      } else {
+        if ( PawnOwner.bAltFire != 0 )
         {
-          Global.AltFire(0.0); // 0x0000008D : 0x00AD
-        } else { // 0x00000095 : 0x00B8
-          GotoState('Idle'); // 0x00000098 : 0x00BB
+          Global.AltFire(0.0);
+        } else {
+          GotoState('Idle');
           if (bAutoDrop) { // If you release primary fire, your grapple retracts
-            if ( kxGrapple != None ) // 0x0000009C : 0x00C2
+            if ( kxGrapple != None )
             {
-              AmbientSound = None; // 0x000000A4 : 0x00CD
-              kxGrapple.Destroy(); // 0x000000A8 : 0x00D4
-              kxGrapple = None; // 0x000000B1 : 0x00E0
+              AmbientSound = None;
+              kxGrapple.Destroy();
+              kxGrapple = None;
             }
           } else {
             // Hook continues to fly until you force it to release and retract.
@@ -275,22 +296,22 @@ function SetHand (float hand) {
 
 function SetHand (float hand)
 {
-  if ( hand != 2 ) // 0x00000015 : 0x0000
+  if ( hand != 2 )
   {
-  if ( hand == 0 ) // 0x0000001F : 0x000D
+  if ( hand == 0 )
   {
-    hand = 1.0; // 0x00000028 : 0x0019
-  } else { // 0x00000030 : 0x0024
-    hand *= -1; // 0x00000033 : 0x0027
+    hand = 1.0;
+  } else {
+    hand *= -1;
   }
-  if ( hand == -1 ) // 0x0000003D : 0x0034
+  if ( hand == -1 )
   {
-    Mesh = Mesh(DynamicLoadObject("Botpack.TranslocR",Class'Mesh')); // 0x0000004A : 0x0044
-  } else { // 0x0000006B : 0x006D
-    Mesh = LodMesh'Transloc'; // 0x0000006E : 0x0070
+    Mesh = Mesh(DynamicLoadObject("Botpack.TranslocR",Class'Mesh'));
+  } else {
+    Mesh = LodMesh'Transloc';
     }
   }
-  Super.SetHand(hand); // 0x00000075 : 0x007B
+  Super.SetHand(hand);
 }
 
 simulated function PreBeginPlay() {

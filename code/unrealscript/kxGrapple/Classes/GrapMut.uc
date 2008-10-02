@@ -43,7 +43,7 @@ function bool CheckReplacement (Actor Other, out byte bSuperRelevant)
   if (UseBuiltinGrapple && Other.IsA('Translocator') && !Other.IsA('kx_GrappleLauncher')) {
     ReplaceWith(Other,"kxGrapple.kx_GrappleLauncher");
     // ReplaceWith(Other,"kxGrapple.Translocator");
-    Log("[kxGrapple.kxMutator] CheckReplacement("$Other$") -> kx_GrappleLauncher");
+    // Log("[kxGrapple.kxMutator] CheckReplacement("$Other$") -> kx_GrappleLauncher");
     return False;
   }
   return Super.CheckReplacement(Other,bSuperRelevant);
@@ -79,7 +79,7 @@ function GiveWeaponsTo (Pawn P)
     // P.AddInventory(Spawn(class'kxGrapple.kx_GrappleLauncher'));
     Inv = P.FindInventoryType(class'kxGrapple.kx_GrappleLauncher');
     if (Inv != None) {
-      Log("[kxMutator] "$P.getHumanName()$" already has a "$Inv$"!");
+      // Log("[kxMutator] "$P.getHumanName()$" already has a "$Inv$"!"); // I've seen this, so I guess CheckReplacement() is working.
       if (kx_GrappleLauncher(Inv).kxGrapple != None) {
         Log("[kxMutator] Retracted "$P.getHumanName()$"'s grapple.");
         kx_GrappleLauncher(Inv).kxGrapple.Destroy();
