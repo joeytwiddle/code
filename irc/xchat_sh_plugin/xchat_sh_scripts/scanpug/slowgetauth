@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # ## All memoing seems to break on nicks containing '`'
 # # . selfmemo -nodir - "$0" "$NICK" ; shift
 
@@ -65,7 +67,7 @@ do
 		# jshinfo "$LASTNICKCHANGETIME -*- $NICKREGEXP -> $NEWNICKREGEXP"
 		NICKREGEXP="$NEWNICKREGEXP"
 	else
-		jshinfo "LINE=$LINE"
+		jshinfo "COUNT=$COUNT LINE=$LINE"
 		# echo "Got join: $LINE" ; exit 0
 		# AUTH=`echo "$LINE" | sed "s+.*-->.*$NICKREGEXP (.*@\([^.]*\).users.quakenet.org) has joined .*+\1+"`
 		AUTH=`echo "$LINE" | sed "s+.*-->.*$NICKREGEXP (\([^)]*\)) has joined .*+\1+"`

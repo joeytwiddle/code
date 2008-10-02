@@ -28,13 +28,13 @@ LASTLIST=`
 # grep -v " Specs: " | ## server query also matches regexp, remove it!
 
 tail -n "$BACKCHECK" "/home/joey/.xchat2.utb0t/logs/$NETWORK-$CHANNEL.log" |
-grep "<Rival>[ 	]*?" |
+grep "<Rival>[ 	]*" |
 grep -A1 "please .pick from the .list" |
 afterfirst "<Rival>[ 	]*" |
 tail -n 1 |
 afterfirst "/10 " |
 # sed 's+? .)+ +g'
-sed 's+? + +g ; s+ ?$++'
+sed 's+^. + +g ; s+ .$++'
 `
 
 if [ ! "$LASTLIST" ]
@@ -69,8 +69,14 @@ do
 			# NEWLIST="$NEWLIST""$COLYELLOW""[?]"
 			# echo "$WORD ?"
 		# fi
-		STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
-		[[ "$COUNTPUGS" ]] && STRENGTH=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+		if [ "$AUTH" = "DUNNO_AUTH" ]
+		then STRENGTH="?.?"
+		else
+			if [ "$COUNTPUGS" ]
+			then STRENGTH=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+			else STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
+			fi
+		fi
 		if [ "$STRENGTH" = "?.?" ]
 		then echo "$WORD ?"
 		else echo "$WORD $STRENGTH"

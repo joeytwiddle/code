@@ -18,7 +18,7 @@ LIST_LINE=`
 	grep "<Rival>.*. 10/10 . " |
 	tail -n 1 |
 	afterfirst ". 10/10 . " |
-	sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n'
+	sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' '
 `
 jshinfo "LIST_LINE=$LIST_LINE"
 
@@ -61,6 +61,14 @@ ORDERED_LIST=$(
 jshinfo "ORDERED_LIST=$ORDERED_LIST"
 
 COUNT=`echo "$ORDERED_LIST" | wc -l`
+
+## We must catch problems here, otherwise drop gets caught on them later.
+if [ ! "$COUNT" -gt 0 ] || [ "$COUNT" -lt 2 ]
+then
+	echo "I know fewer than 2 players in this pug, so I cannot set captains."
+	exit 1
+fi
+
 COUNT=$((COUNT-2))
 
 for X in 1 2 3 4 5
