@@ -1,5 +1,10 @@
-export COMMAND_SCRIPTS_DIR="/home/joey/linux/.xchat2.utb0t/plugin/xchat_sh_scripts"
+export COMMAND_SCRIPTS_DIR="/home/joey/.xchat2.utb0t/plugin/xchat_sh_scripts"
+# export COMMAND_SCRIPTS_DIR="/home/joey/linux/.xchat2.utb0t/plugin/xchat_sh_scripts"
 # export COMMAND_SCRIPTS_DIR="/home/joey/j/code/other/irc/xchat/xchat_sh_scripts" ## hwi
+
+export LOGDIR="$HOME/.xchat2.utb0t/logs"
+
+SPLIT_LONG_LINES=true
 
 ## TODO: Logs to /tmp
 
@@ -49,7 +54,7 @@ break_long_lines_but_retain_color () {
 	# sed "s+\(^/notice [^ ]* \|\)\(\(\([[:digit:],]\{5\}\)*\)[^]\)\{0,245\}\(  *\|$\)+\0$NL\1 \4+g" | grep -v "^\(/notice [^ ]* *\|\)\([[:digit:],]\{5\}\| \)*$" |
 	# sed "s+\(\(\([[:digit:],]\{5\}\)*\)[^]\)\{0,245\}\(  *\|$\)+\0$NL \3+g" | grep -v "^\([[:digit:],]\{5\}\| \)*$"
 	## For some unknown reason, it was splitting my not-playing !wut response at *every* space!  So...
-	sed "s+\(\(\([[:digit:],]\{5\}\)*\)[^]\)\{100,220\}\(  *\|$\)+\0$NL \3+g" | grep -v "^\([[:digit:],]\{5\}\| \)*$"
+	sed -u "s+\(\(\([[:digit:],]\{5\}\)*\)[^]\)\{100,220\}\(  *\|$\)+\0$NL \3+g" | grep --line-buffered -v "^\([[:digit:],]\{5\}\| \)*$"
 	## Small bug: each block of colour codes is treated as exactly 1 character; it should probably be 0.
 	## BUG: now empty lines (or lines containing just one " ") are stripped, even if they were intended.  :|
 
@@ -60,7 +65,7 @@ split_long_lines_retaining_notice_or_msg () {
 	while IFS="" read LINE
 	do
 		# if printf "%s" "$LINE" | grep -i "^/notice" >/dev/null
-		if printf "%s" "$LINE" | grep -i "^/\(notice\|msg\)" >/dev/null
+		if printf "%s" "$LINE" | grep --line-buffered -i "^/\(notice\|msg\)" >/dev/null
 		then
 			NOTICE=`printf "%s" "$LINE" | sed 's+^\([^ ]* *[^ ]* *\).*+\1+'`
 			TOBREAK=`printf "%s" "$LINE" | sed 's+^[^ ]* *[^ ]* *++'`
@@ -165,7 +170,8 @@ abort_if_needed () {
 }
 
 ## Drop the first part of the hostname, to determine which network we are on:
-NETWORK=`echo "$NETWORK" | sed 's+.*\.\([^\.]*\.[^\.]*\)$+\1+'` ## trim server to the last two words
+# NETWORK=`echo "$NETWORK" | sed 's+.*\.\([^\.]*\.[^\.]*\)$+\1+'` ## trim server to the last two words
+NETWORK=`echo "$NETWORK" | sed 's+^irc\.\([^.]*\)\.\([^.]*\)\.org+irc.\2.org+'`
 ## TODO: need to globally swap NETWORK and SERVER!
 
 abort_if_needed
@@ -189,62 +195,82 @@ cd "$COMMAND_SCRIPTS_DIR"
 # SCRIPT=`find -type f -or -type l -iname "$COMMAND" | grep -v "^\." | grep -v "/\." | head -n 1`
 # SCRIPT=`find -iname "$COMMAND" | grep -v "^\." | grep -v "/\." | head -n 1`
 ESCAPED_COMMAND=` printf "%s" "$COMMAND" | sed ' s+*+\\\*+g ; s+?+\\\\?+g ' `
-SCRIPT=`
+SCRIPTS=`
 	# find "$PWD"/ -iname "$COMMAND" -type f -or -type l | ## for some reason i can't fathom, that didn't work!
 	find "$PWD"/ -iname "$ESCAPED_COMMAND" -not -type d |
 	grep -v "/CVS/" |
 	grep -v "/disabled/" |
 	# grep -v "^\." |
 	# grep -v "/\." |
-	head -n 1
+	head -n 5
 `
 
 NL="\\
 "
 
-if [ -f "$SCRIPT" ] && [ -x "$SCRIPT" ]
+for SCRIPT in $SCRIPTS
+do
+
+	if [ -f "$SCRIPT" ] && [ -x "$SCRIPT" ]
+	then
+		log "Calling: sh \"$SCRIPT\" \"$*\""
+
+
+		## Decided this was nicer for the scripts:
+		# cd "$COMMAND_SCRIPTS_DIR/" ## already done
+
+		export NICK
+		export CHANNEL
+		export NETWORK ## actually it seeems this was already done
+
+		## This doesn't work if user has not set mode +x themself.  Auths now checked in Java using /whois.
+		# if echo "$HOST" | grep "\.users\.quakenet\.org$" >/dev/null
+		# then export AUTH="`echo "$HOST" | sed 's+\..*++'`"
+		# fi
+
+		# set -x
+
+		## nice added for my own convenience ;p
+		# nice -n 15 sh "$SCRIPT" $* |
+		# nice -n 15 sh "$SCRIPT" "$@" |
+		## We don't want to quote "$*" because we want to provide each word as a separate argument, so...
+		set -f ## This turns off globbing so * and ? won't be expanded
+		# nice -n 17 sh "$SCRIPT" $* |
+		sh "$SCRIPT" $* |
+		# sed "s+'+_+g" |
+		# sed "s+^................................................................................+\0$NL+g" |
+		# tr -d "'" | ## don't know why this was on
+		# tee /tmp/xchat_sh_handler.mid | ## For debugging
+		# head -100 | ## Dirty hack to reduce danger of accidental flooding!  ## But I had to remove this because it was the cause of the buffering :|
+
+		if [ "$SPLIT_LONG_LINES" ]
+		then split_long_lines_retaining_notice_or_msg
+		else cat
+		fi |
+
+		## Unless a / irc command is provided, we just respond with /say:
+		## But this is now handled by parent perl plugin.
+		# sed 's+^[^/]+/say \0+'
+
+		### Disabled 07/03/2007:
+		# ## If we are in certain channels, then respond with /notice instead of /say.
+		# ## Note this doesn't work if the script returns a /command, only if it returns text to say (or notice).
+		# if [ "$CHANNEL" = "#ut" ] && [ ! "$NETWORK" = "irc.xyxyx.org" ] # || [ "$CHANNEL" = "#test" ] # || [ "$CHANNEL" = "#whereisbot" ]
+		# then sed "s+^[^/]+/notice $NICK \0+"
+		# ## Doesn't work: "Cannot send to channel"
+		# # else sed "s+^[^/]+/notice $CHANNEL \0+" ## note CHANNEL actualy == $respond_to i.e. it might be a nick
+		# else cat
+		# fi # | tee -a /tmp/xchat_sh_handler.later ## For debugging
+		cat
+
+	fi
+
+done
+
+if [[ ! "$SCRIPTS" ]]
 then
-	log "Calling: sh \"$SCRIPT\" \"$*\""
-
-
-	## Decided this was nicer for the scripts:
-	# cd "$COMMAND_SCRIPTS_DIR/" ## already done
-
-	export NICK
-	export CHANNEL
-	export NETWORK ## actually it seeems this was already done
-
-	## nice added for my own convenience ;p
-	# nice -n 15 sh "$SCRIPT" $* |
-	# nice -n 15 sh "$SCRIPT" "$@" |
-	## We don't want to quote "$*" because we want to provide each word as a separate argument, so...
-	set -f ## This turns off globbing so * and ? won't be expanded
-	nice -n 17 sh "$SCRIPT" $* |
-	# sed "s+'+_+g" |
-	# sed "s+^................................................................................+\0$NL+g" |
-	# tr -d "'" | ## don't know why this was on
-	# tee /tmp/xchat_sh_handler.mid | ## For debugging
-	head -100 | ## Dirty hack to reduce danger of accidental flooding!
-
-	split_long_lines_retaining_notice_or_msg |
-
-	## Unless a / irc command is provided, we just respond with /say:
-	## But this is now handled by parent perl plugin.
-	# sed 's+^[^/]+/say \0+'
-
-	### Disabled 07/03/2007:
-	# ## If we are in certain channels, then respond with /notice instead of /say.
-	# ## Note this doesn't work if the script returns a /command, only if it returns text to say (or notice).
-	# if [ "$CHANNEL" = "#ut" ] && [ ! "$NETWORK" = "irc.xyxyx.org" ] # || [ "$CHANNEL" = "#test" ] # || [ "$CHANNEL" = "#whereisbot" ]
-	# then sed "s+^[^/]+/notice $NICK \0+"
-	# ## Doesn't work: "Cannot send to channel"
-	# # else sed "s+^[^/]+/notice $CHANNEL \0+" ## note CHANNEL actualy == $respond_to i.e. it might be a nick
-	# else cat
-	# fi # | tee -a /tmp/xchat_sh_handler.later ## For debugging
-	cat
-
-else
-	log "Ignoring: $COMMAND"
-	:
-	# echo "No such command: $COMMAND"
+		log "Ignoring: $COMMAND"
+		:
+		# echo "No such command: $COMMAND"
 fi
+
