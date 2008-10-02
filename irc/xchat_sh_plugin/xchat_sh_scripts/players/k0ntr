@@ -1,0 +1,11 @@
+list () {
+cat << !
+<k0ntr> IM GO TO THE BASE AND I KILL ALL,AND NOTHING GRABS <k0ntr> 600 FLAGKILLS
+<EddieBouncer> kontr u would rape div2 - that wouldnt be fair
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

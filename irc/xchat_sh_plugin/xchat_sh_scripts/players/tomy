@@ -1,0 +1,10 @@
+list () {
+cat << !
+<gy-tOmgy> so many couples were playing this game... majinx and marv, lordness and dralex, abeo and his hardskin
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

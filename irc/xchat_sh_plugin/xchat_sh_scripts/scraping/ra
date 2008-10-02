@@ -1,0 +1,1 @@
+SEARCH="\<RA-" sh ./scraping/scrapegt "$@"

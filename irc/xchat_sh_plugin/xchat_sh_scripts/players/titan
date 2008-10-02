@@ -1,0 +1,10 @@
+list () {
+cat << !
+<T1T4N> .coysay haha fucking gool  <T1T4N> .coysay haha fucking fool  <T1T4N> .coysay wez haha fucking fool  * rLx|KnoW has quit (Ping timeout)
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+
