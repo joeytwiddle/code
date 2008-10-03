@@ -4,11 +4,11 @@
 
 class DoubleJumpUT extends Mutator;
 
-var config bool bRestrictFC;
-var config int MaxJumps;
-var config int JumpType;
-var config float JumpHeight;
-var config float RechargeRate;
+// var config bool bRestrictFC;
+// var config int MaxJumps;
+// var config int JumpType;
+// var config float JumpHeight;
+// var config float RechargeRate;
 
 function ModifyPlayer (Pawn Other)
 {
@@ -25,11 +25,11 @@ function ModifyPlayer (Pawn Other)
   if ( DJ_Inv != None ) {
     DJ_Inv.RespawnTime = 0.0; // 0x00000082 : 0x009B
     DJ_Inv.GiveTo(Other); // 0x00000091 : 0x00AF
-    DJ_Inv.MaxJumps = MaxJumps; // 0x0000009C : 0x00C3
-    DJ_Inv.JumpType = JumpType; // 0x000000A7 : 0x00D7
-    DJ_Inv.JumpHeight = JumpHeight; // 0x000000B2 : 0x00EB
-    DJ_Inv.RechargeRate = RechargeRate; // 0x000000B2 : 0x00EB
-    // TODO parts missing!
+    // DJ_Inv.MaxJumps = MaxJumps; // 0x0000009C : 0x00C3
+    // DJ_Inv.JumpType = JumpType; // 0x000000A7 : 0x00D7
+    // DJ_Inv.JumpHeight = JumpHeight; // 0x000000B2 : 0x00EB
+    // DJ_Inv.RechargeRate = RechargeRate; // 0x000000B2 : 0x00EB
+    // TODO parts missing from decompile?
   }
 }
 
@@ -51,7 +51,7 @@ function Mutate (string MutateString, PlayerPawn Sender)
         tempMaxJumps = int(Mid(MyMutateString,9)); // 0x00000077 : 0x0082
         if ( tempMaxJumps != 0 ) // 0x00000081 : 0x0092
         {
-          MaxJumps = tempMaxJumps; // 0x00000089 : 0x009D
+          class'DJ_InventoryItem'.default.MaxJumps = tempMaxJumps; // 0x00000089 : 0x009D
           SendMessage(Sender,"Maximum number of jumps is now: " $ string(MaxJumps)); // 0x0000008E : 0x00A8
         } else { // 0x000000BA : 0x00DD
           SendMessage(Sender,"MaxJumps should be 1 or higher."); // 0x000000BD : 0x00E0
@@ -63,15 +63,15 @@ function Mutate (string MutateString, PlayerPawn Sender)
           switch (tempJumpType) // 0x00000105 : 0x0137
           {
             case 0: // 0x00000109 : 0x013E
-            JumpType = 0; // 0x0000010D : 0x0142
+            class'DJ_InventoryItem'.default.JumpType = 0; // 0x0000010D : 0x0142
             SendMessage(Sender,"Jumptype is now \"At apex\""); // 0x00000111 : 0x0149
             break; // 0x00000131 : 0x016F
             case 1: // 0x00000134 : 0x0172
-            JumpType = 1; // 0x00000138 : 0x0176
+            class'DJ_InventoryItem'.default.JumpType = 1; // 0x00000138 : 0x0176
             SendMessage(Sender,"Jumptype is now \"Going up and apex\""); // 0x0000013C : 0x017D
             break; // 0x00000166 : 0x01AD
             case 2: // 0x00000169 : 0x01B0
-            JumpType = 2; // 0x0000016E : 0x01B5
+            class'DJ_InventoryItem'.default.JumpType = 2; // 0x0000016E : 0x01B5
             SendMessage(Sender,"Jumptype is now \"Always\""); // 0x00000173 : 0x01BD
             break; // 0x00000192 : 0x01E2
             default: // 0x00000195 : 0x01E5
@@ -84,7 +84,7 @@ function Mutate (string MutateString, PlayerPawn Sender)
             tempJumpHeight = float(Mid(MyMutateString,11)); // 0x000001D9 : 0x0232
             if ( tempJumpHeight >= 100 ) // 0x000001E4 : 0x0242
             {
-              JumpHeight = tempJumpHeight / 100; // 0x000001EF : 0x024F
+              class'DJ_InventoryItem'.default.JumpHeight = tempJumpHeight / 100; // 0x000001EF : 0x024F
             // TODO
             // File ended here!
 
@@ -116,9 +116,4 @@ JL0014:
 
 defaultproperties
 {
-    bRestrictFC=False
-    MaxJumps=3
-    JumpType=1
-    JumpHeight=2.00
-    RechargeRate=5.0
 }

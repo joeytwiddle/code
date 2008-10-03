@@ -4,10 +4,11 @@
 
 class DJ_InventoryItem extends TournamentPickup;
 
-var() int MaxJumps;
-var() float JumpHeight;
-var() int JumpType;
-var() float RechargeRate;
+var() config int MaxJumps;
+var() config float JumpHeight;
+var() config int JumpType;
+var() config float RechargeRate;
+var() config bool bRestrictFC;
 var int nofJumps;
 var int nofJumpKeys;
 var float LastJumpTime;
