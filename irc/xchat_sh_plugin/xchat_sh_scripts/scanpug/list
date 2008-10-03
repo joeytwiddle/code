@@ -2,8 +2,10 @@ sh ./scanpug/consider_showing_strengths
 
 ## Has pug just filled?  Was this a call to !list from _StalkeR_?
 ## Consider setting fair captains.
-if [ "$CHANNEL" = "#ut.pug" ] && tail -n 10 "$LOGDIR/$NETWORK-$CHANNEL.log" | grep "<Rival>.*Random captains will be selected" >/dev/null
-then sleep 5 ; BANIDLECAPTAINS=1 sh ./scanpug/setfaircapts
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ]
+	if tail -n 10 "$LOGDIR/$NETWORK-$CHANNEL.log" | grep "<Rival>.*Random captains will be selected" >/dev/null
+	then sleep 5 ; BANIDLECAPTAINS=1 sh ./scanpug/setfaircapts
+	fi
 fi
 
 sh ./scanpug/scanlastpug

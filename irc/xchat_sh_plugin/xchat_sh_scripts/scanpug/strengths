@@ -1,8 +1,10 @@
+## TODO BUG: on the new machine, the auto !strengths at the start of a pug reads and repeats the wrong line!
+
 if [ "$AUTH" = nogginBasher ]
 then CHANNEL="#ut.pug"
 fi
 
-if [ ! "$CHANNEL" = "#ut.pug" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ]
 then exit
 fi
 
