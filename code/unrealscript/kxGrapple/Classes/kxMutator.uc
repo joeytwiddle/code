@@ -171,8 +171,9 @@ function OnSelect(kx_GrappleLauncher gl) {
     p.ConsoleCommand("BehindView 1");
   }
   if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
-    PreviousFOV[p.PlayerReplicationInfo.PlayerID%64] = p.FOVAngle;
-    p.ConsoleCommand("FOV 110");
+    PreviousFOV[p.PlayerReplicationInfo.PlayerID%64] = p.DesiredFOV;
+    if (p.FOVAngle<110)
+      p.DesiredFOV = 110;
   }
 }
 
@@ -185,7 +186,7 @@ function OnDeselect(kx_GrappleLauncher gl) {
     p.ConsoleCommand("BehindView 0");
   }
   if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
-    p.ConsoleCommand("FOV "$ PreviousFOV[p.PlayerReplicationInfo.PlayerID%64] );
+    p.DesiredFOV = PreviousFOV[p.PlayerReplicationInfo.PlayerID%64];
   }
 }
 

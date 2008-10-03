@@ -434,7 +434,7 @@ defaultproperties
     RetractSound=sound'Slurp'
     bFiddlePhysics1=False // An alternative method for counteracting gravity, which unrealistically helps swing.
     bFiddlePhysics2=False // Try to help swing by turning downward momentum into forward momentum.
-    bPrimaryWinch=False
+    bPrimaryWinch=False // Grapple only winds in while player is holding primary fire.
     bShowLine=False
 }
 

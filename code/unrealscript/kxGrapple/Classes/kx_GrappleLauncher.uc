@@ -334,15 +334,13 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
 }
 
 simulated function PlaySelect() {
-  if (GetKXMutator()!=None)
-    GetKXMutator().OnSelect(Self);
+  GetKXMutator().OnSelect(Self);
   Super.PlaySelect();
 }
 
 state DownWeapon {
   function BeginState() {
-    if (GetKXMutator()!=None)
-      GetKXMutator().OnDeselect(Self);
+    GetKXMutator().OnDeselect(Self);
     Super.BeginState();
   }
 }
@@ -353,6 +351,8 @@ function kxMutator GetKXMutator() {
   foreach AllActors(class'kxMutator',kxMutator) {
     break;
   }
+  if (kxMutator==None)
+    kxMutator = Spawn(class'kxMutator');
   return kxMutator;
 }
 
