@@ -8,11 +8,13 @@ class kx_GrappleLauncher expands TournamentWeapon Config(kxGrapple);
 // #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
 var config bool bAutoDrop;
+var config bool bIdenticalButtons;
 
 var Weapon PreviousWeapon;
 var kxGrapple kxGrapple;
 var bool bManualShot;
 var bool bShooting;
+var kxMutator kxMutator;
 
 exec function AttachHook ()
 {
@@ -91,10 +93,8 @@ function ReturnToPreviousWeapon() {
   if ( (PreviousWeapon == None) ||
        ((PreviousWeapon.AmmoType != None) && (PreviousWeapon.AmmoType.AmmoAmount <=0))
   ) {
-    // Log("kx_GrappleLauncher.ReturnToPreviousWeapon() Switching to best weapon");
     Pawn(Owner).SwitchToBestWeapon();
   } else {
-    // Log("kx_GrappleLauncher.ReturnToPreviousWeapon() Switching to "$PreviousWeapon);
     Pawn(Owner).PendingWeapon = PreviousWeapon;
     PutDown();
   }
@@ -117,6 +117,8 @@ function Fire (optional float Value)
     // AmbientSound = Sound'Slurp';
     kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
     kxGrapple.SetMaster(self);
+  } else if (bIdenticalButtons) {
+    AltFire(Value);
   }
   if ( Owner.bHidden )
   {
@@ -131,6 +133,8 @@ function AltFire (float Value)
     AmbientSound = None;
     kxGrapple.Destroy();
     kxGrapple = None;
+  } else if (bIdenticalButtons) {
+    Fire(Value);
   }
   GotoState('AltFiring');
 }
@@ -211,34 +215,6 @@ state Idle
     Disable('AnimEnd');
     PlayIdleAnim();
 }
-
-
-
-/*
-function Fire(float Value) {
-  Super.AltFire(Value);
-}
-*/
-
-  /*
-  if (!bAutoDrop) { // If you fire when it is already out, retract it:
-    if ( kxGrapple != None )
-    {
-      AmbientSound = None;
-      kxGrapple.Destroy();
-      kxGrapple = None;
-      return;
-    }
-  }
-  */
-
-/*
-function AltFire(float Value) {
-  // Super.Fire(Value);
-  Super.AltFire(Value);
-}
-*/
-
 
 function Finish ()
 {
@@ -331,7 +307,7 @@ simulated function PreBeginPlay() {
     Log("kx_GrappleLauncher.PreBeginPlay() NO LOCAL PLAYERPAWN!");
     return;
   }
-  if (p.PlayerReplicationInfo.Deaths == 0) // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game.
+  if (p.PlayerReplicationInfo.Deaths == 0) // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like bDoneCheck.
     CheckPlayerBinds(P);
 }
 
@@ -345,18 +321,39 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
     keyVal = p.ConsoleCommand("keybinding "$keyName);
     keyValCaps = Caps(keyVal);
     if (InStr(keyValCaps,Caps(toAdd))>=0) {
-      Log("kxMutator.CheckPlayerBinds() Stopped searching at "$i$" on "$p.getHumanName());
       return; // We have found an existing key bound to this weapon.  To save time, stop searching!
     }
-    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || InStr(keyValCaps,"SWITCHWEAPON 0")>=0) {
+    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || (InStr(keyValCaps,"SWITCHWEAPON 1")>=0 && InStr(keyValCaps,"SWITCHWEAPON 10")<0)) {
       // Add a binding to this key!
       p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$" | "$toAdd);
-      p.ClientMessage("Grappling hook bound to your ["$keyName$"] key.");
-      Log("kxMutator.CheckPlayerBinds() Changed "$p.getHumanName()$"'s keybind for "$keyName$"="$keyVal$" | "$toAdd);
+      p.ClientMessage("Grappling hook now available on your ["$keyName$"] key.");
       // Continue to search for other binds we could attach to.
     }
   }
-  Log("kxMutator.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
+  Log("kx_GrappleLauncher.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
+}
+
+simulated function PlaySelect() {
+  if (GetKXMutator()!=None)
+    GetKXMutator().OnSelect(Self);
+  Super.PlaySelect();
+}
+
+state DownWeapon {
+  function BeginState() {
+    if (GetKXMutator()!=None)
+      GetKXMutator().OnDeselect(Self);
+    Super.BeginState();
+  }
+}
+
+function kxMutator GetKXMutator() {
+  if (kxMutator!=None)
+    return kxMutator;
+  foreach AllActors(class'kxMutator',kxMutator) {
+    break;
+  }
+  return kxMutator;
 }
 
 defaultproperties
@@ -373,5 +370,6 @@ defaultproperties
     Mass=10.00
     bAutoDrop=False
     SelectSound=sound'UnrealI.flak.load1'
+    bIdenticalButtons=False // TODO: test this!
 }
 

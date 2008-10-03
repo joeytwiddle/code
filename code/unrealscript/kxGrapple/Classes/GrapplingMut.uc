@@ -8,11 +8,16 @@ var bool Initialized;
 var DeathMatchPlus DM;
 var config bool UseBuiltinGrapple;
 var config bool ExtraJumpBoots;
+var config bool bDefaultBehindView,bDefaultChangeFOV;
 var() name WeaponName;
 var() name AmmoName;
 var() string WeaponString;
 var() string AmmoString;
 var kx_GrappleLauncher cl;
+
+var int bBehindView[64];
+var int bChangeFOV[64];
+var float PreviousFOV[64];
 
 replication
 {
@@ -21,6 +26,7 @@ replication
 
 function PostBeginPlay ()
 {
+  local int i;
   if ( Initialized ) // 0x00000013 : 0x0000
   {
     return; // 0x00000019 : 0x0009
@@ -28,6 +34,13 @@ function PostBeginPlay ()
   Initialized = True; // 0x0000001B : 0x000B
   // DefaultWeapon = Class'enforcer'; // 0x00000020 : 0x0013
   // Level.Game.RegisterDamageMutator(self); // 0x00000027 : 0x001E
+  for (i=0;i<64;i++) {
+    if (bDefaultBehindView)
+      bBehindView[i] = 1;
+    if (bDefaultChangeFOV)
+      bChangeFOV[i] = 1;
+    PreviousFOV[i] = 90;
+  }
 }
 
 // function string GetInventoryClassOverride(string InventoryClassName) {
@@ -89,6 +102,9 @@ function GiveWeaponsTo (Pawn P)
       DeathMatchPlus(Level.Game).GiveWeapon(P,"kxGrapple.kx_GrappleLauncher");
     }
     // if (P.PlayerReplicationInfo.Deaths==0) P.ClientMessage("You have a Grappling Hook.");
+    if (bDefaultBehindView || bDefaultChangeFOV) {
+      P.ClientMessage("To disable auto behindview: mutate BV off");
+    }
     // Remove any Translocator they might have:
     Inv = P.FindInventoryType(class'Botpack.Translocator');
     if (Inv != None && !Inv.IsA('kx_GrappleLauncher')) {
@@ -129,9 +145,47 @@ function Mutate (string MutateString, PlayerPawn Sender)
       cl.kxGrapple.Destroy(); // 0x00000037 : 0x0030
     }
   }
+  if (MutateString ~= "HELP") {
+    Sender.ClientMessage("kxGrapple commands: mutate BV off | mutate BV on");
+  }
+  if (MutateString ~= "BV off") {
+    bBehindView[Sender.PlayerReplicationInfo.PlayerID%64]=0;
+    bChangeFOV[Sender.PlayerReplicationInfo.PlayerID%64]=0;
+  }
+  if (MutateString ~= "BV on") {
+    bBehindView[Sender.PlayerReplicationInfo.PlayerID%64]=1;
+    bChangeFOV[Sender.PlayerReplicationInfo.PlayerID%64]=1;
+  }
   if ( NextMutator != None ) // 0x00000046 : 0x0045
   {
     NextMutator.Mutate(MutateString,Sender); // 0x0000004E : 0x0050
+  }
+}
+
+function OnSelect(kx_GrappleLauncher gl) {
+  local PlayerPawn p;
+  p = PlayerPawn(gl.Owner);
+  if (p == None)
+    return;
+  if (bBehindView[p.PlayerReplicationInfo.PlayerID%64]>0) {
+    p.ConsoleCommand("BehindView 1");
+  }
+  if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
+    PreviousFOV[p.PlayerReplicationInfo.PlayerID%64] = p.FOVAngle;
+    p.ConsoleCommand("FOV 110");
+  }
+}
+
+function OnDeselect(kx_GrappleLauncher gl) {
+  local PlayerPawn p;
+  p = PlayerPawn(gl.Owner);
+  if (p == None)
+    return;
+  if (bBehindView[p.PlayerReplicationInfo.PlayerID%64]>0) {
+    p.ConsoleCommand("BehindView 0");
+  }
+  if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
+    p.ConsoleCommand("FOV "$ PreviousFOV[p.PlayerReplicationInfo.PlayerID%64] );
   }
 }
 
@@ -146,4 +200,7 @@ defaultproperties
     DefaultWeapon=Class'kx_GrappleLauncher'
     // DefaultWeapon=Class'kxGrapple.Translocator'
     UseBuiltinGrapple=True
+    bDefaultBehindView=True
+    bDefaultChangeFOV=True
 }
+
