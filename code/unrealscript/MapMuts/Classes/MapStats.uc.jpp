@@ -1,17 +1,29 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// DONE: determine required level switch gametype from prefix or from map itself, thus allowing switching to other gametypes
+
+// TODO: Record nice stats for the admin, such as number of spawnpoints, whether the map has weapons or not, ...
+
+// TODO: Allow automatically add muts to certain maps.  (e.g. instagib for the no weapon ctf maps)
+
 // TODO: if the map does not exist, the log shows "Failed to load"... but MapStats does not retry with another map.  How can we fix this?  Maybe Tick() can catch it...
 
 // TODO: Should we avoid updating "play" stats when no players are around? e.g. TotalDamage,FragCount,HoursPlayed.
 
-// TODO: bDetectCrashingMaps - the crashed map detection might sometimes automatically mark a map as crashed innaccurately (e.g. if this mod switches the map, but the server is restarted before it actually loads).  Also, auto recovery attempt for fixed crashed maps might be undesirable, if there is a risk of crashing the server.  Therefore until one of these features is perfect, the admin might prefer to disable them.  See bRetryCrashedMaps.
+// TODO: bDetectCrashingMaps - the crashed map detection might sometimes automatically mark a map as crashed innaccurately (e.g. if this mod switches the map, but the server is restarted before it actually loads).  There is auto recovery with bRetryCrashedMaps, but that might be undesirable if causing a full server crash is hard to recover from.  Therefore until one of these features is perfect, the admin may with to disable them both.
 
 // TODO NASTY BUG: it tried to switch to a previously crashed map which was no longer on disk - we got Failed to load 'CTF-Lucius-EBTC125': Can't find file 'CTF-Lucius-EBTC125' but the map didn't switch and there was no retry by the Timer.  When I tried to join the server, my UT went blank, and the log repeated: RPC bunch overflowed
 //      maybe tick can catch nasty situations like this and switch to a different map
+// I thought this was working a little while ago, but I can't get it to work now.
 
 // TODO: Instead of players vetoing maps with "no" we could give them a list of 3,4,5 need-to-be-played maps and let them pick one.
 
-// TODO: Allow automatically add muts to certain maps.  (e.g. instagib for the no weapon ctf maps)
+// BUG: AnthCheck1.38 causes a segfault on Linux servers when MapStats tries to do an empty server level switch.  I think MapVoteLA does not have this problem when switching maps (but it does have the port number shifting problem).
+
+// TODO: Got empty server mapswitch working again, but with Anth1.8 I get the "Unhooking DLO" crash if crashed map is detected and we re-switch.
+//       Also sometimes getting just plain segfault *after* 2nd map comes up, if change went fine, after Ip2Country starts.
+// Update: Right now I only seem to be getting the first problem.
+//       The DLO actually succeeds on the first mapswitch attempt, so maybe we should prevent it from running the second time around.
 
 // All XOL's info is stored in Fate.BestFitMapList
 
@@ -37,8 +49,9 @@ class MapStats expands Mutator config(MapStats);
 
 // I thought this was needed for immediate switch to work 100%, but I'm not 100% sure.
 // With or without this, *sometimes* it didn't change to NextMap at all, but to the next map in UT's cycle I think (Gauntlet/Command/...).  OK I think I fixed that.
-// #define CATCH_LEVEL_SWITCH
+#define CATCH_LEVEL_SWITCH
 // CATCH_LEVEL_SWITCH works!  But it changes the map we had chosen.  Well we did set NextMap="" (for other reasons).
+// And now I can't get it working.  :P
 #define MAP_RATING
 #define MAP_TAGS
 // PLAYERS_CAN_VETO affects bEndGameSwitchMap
@@ -64,11 +77,9 @@ var config bool bCollectDamage;
 var config bool bDoMapScan;
 var config bool bEstimatePreferredPlayers;
 var config bool bDetectCrashingMaps;
-// TODO: determine required level switch gametype from prefix or from map itself, thus allowing switching to other gametypes
+var config bool bRetryCrashedMaps;
 #ifdef LIST_RECENTLY_PLAYED
 var config bool bListRecentlyPlayed;
-#endif
-#ifdef LIST_RECENTLY_PLAYED
 var config String RecentlyPlayedMaps;
 #endif
 var config String KnownGameTypes;
@@ -114,7 +125,7 @@ var int PlayerCountAtStart;
 var bool bMapScanDone;
 var bool bDoneGameEnd;
 var String ConsideredMaps;
-var bool bInterceptTravel;
+var String TryingMap;
 var String NextMap;
 var String RejectedMaps;
 #ifdef PLAYERS_CAN_VETO
@@ -127,7 +138,8 @@ var String VetoersList;
 defaultproperties {
 bLogging=True
 bDebugLogging=False
-bDetectCrashingMaps=True
+bDetectCrashingMaps=False
+bRetryCrashedMaps=False
 bLogStats=False
 bCollectDamage=False
 bEstimatePreferredPlayers=True
@@ -157,6 +169,7 @@ KnownGameTypes="CTF:botpack.CTFGame|DM:botpack.DeathMatchPlus:botpack.TeamGamePl
 #define DebugLog(Y); if (bDebugLogging) { Log("-MapStats- " $ Y); }
 // #define NormalLog(Y); 
 #define NormalLog(Y); if (bLogging) { Super.Log("[MapStats] " $ Y); }
+#define WarnLog(Y); Super.Log("Warning! [MapStats] " $ Y);
 // Fails: // function NormalLog(String Y) { if (bLogging) { Super.Log(Y); } }
 // Fails: // #define Log(Y); NormalLog(Y);
 
@@ -304,7 +317,8 @@ function DoStart() {
 	// #ifdef TESTING
 	// currentMap.DateLastPlayed = DaysSince1970(); // We need this to stop empty-switching to the same map every time.  But if we only want to record when a player actually plays the map, remove this line.
 	// #else
-	currentMap.DateLastPlayed = (currentMap.DateLastPlayed + DaysSince1970()) / 2.0; // Compromise: we mix the two values (it becomes half as old).
+	// currentMap.DateLastPlayed = (currentMap.DateLastPlayed + DaysSince1970()) / 2.0; // Compromise: we mix the two values (it becomes half as old).
+	currentMap.DateLastPlayed = (currentMap.DateLastPlayed*0.7 + DaysSince1970()*0.3); // Compromise: we pull its date forward by 30%, so other maps with similar age/score will now have their chance.
 	// #endif
 	// if (currentMap.bCrashes) { NormalLog("FIXED! Map "$ mapName $" was previously crashing, but now works!"); } // Can't do, this is usually set to true by DoLevelSwitch :P
 	currentMap.bCrashes = False; // Was most likely set just before the server switched to this map.  We reset it here, to prove this is a non-crashing map.
@@ -385,8 +399,19 @@ function ModifyPlayer(Pawn Other) {
 
 event Timer() {
 
+	/*
+	// This works but I doubt Tick() will fail.
+	#ifdef CATCH_LEVEL_SWITCH
+	if (TryingMap!="") {
+		WarnLog("Timer() caught TryingMap!");
+		Tick(0.05);
+		return;
+	}
+	#endif
+	*/
+
 	// Mid-game checks:
-	if (bEmptyServerSwitchMap && CountPlayers()==0 /* CountActors(class'PlayerPawn')==CountActors(class'UTServerAdminSpectator') */ && Level.TimeSeconds>EmptyServerSwitchSeconds && FRand() < 0.2) {
+	if (bEmptyServerSwitchMap && CountPlayers()==0 && Level.TimeSeconds>EmptyServerSwitchSeconds) {
 		NormalLog("Timer(): bEmptyServerSwitchMap=True - auto switching at "$Level.TimeSeconds$"");
 		// Level.Game.bGameEnded = True;
 		// bDoneGameEnd = True; // This prevents DoEnd() from being called, which is good since it's an idle server switch, not a real end-game.
@@ -503,6 +528,7 @@ function DoLevelSwitch() {
 	if (bDetectCrashingMaps) {
 		// We mark the map as crashed - it will be unmarked if it loads successfully.
 		MapRecord(NextMap).bCrashes = True;
+		// TODO: if Tick() interception is working well, DON'T mark it here, then we can trust bCrashes to be more accurate.  :)
 	}
 	DebugLog("DoLevelSwitch() calling SaveConfig()");
 
@@ -521,10 +547,6 @@ function DoLevelSwitch() {
 		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(num+0.5) $" days ago.");
 	}
 
-	#ifdef CATCH_LEVEL_SWITCH
-	bInterceptTravel = True;
-	Enable('Tick');
-	#endif
 	// if (!StrEndsWith(Caps(NextMap),".UNR"))
 		// NextMap = NextMap $ ".unr";
 	// UTServerAdmin(GetAny(class'UTServerAdmin')).ConsoleCommand("admin servertravel "$ NextMap );
@@ -534,15 +556,17 @@ function DoLevelSwitch() {
 	foreach AllActors(class'PlayerPawn',p) {
 		// break; // Get the last one - The first one is useless!
 		P.PreClientTravel(); // Maybe doing this makes it ok to use Level.ServerTravel later :o
+		// Is this what crashed with AnthChecker1.8?
 	}
 	url = NextMap;
 	gametype = GetGameTypeFromPrefix(NextMap);
 	if (gametype == "") {
-		NormalLog("DoLevelSwitch() Warning! Unrecognised gametype "$ StrBeforeFirst(NextMap,"-") $" - please update KnownGameTypes.");
+		WarnLog("DoLevelSwitch() Warning! Unrecognised gametype "$ StrBeforeFirst(NextMap,"-") $" - please update KnownGameTypes.");
 		// TODO CONSIDER: Would it be better to do "game=" here, rather than leaving the server on the current mode - it may use the gametype in the map's LevelProperties.
 	} else {
 		url = url $"?game="$ gametype;
 	}
+	// TODO: We didn't handle mutators yet ... well leaving them empty will keep them the same as last map.
 	// url = url $"?mutator=...";
 	if (p != None) {
 		p.bAdmin = True;
@@ -550,21 +574,37 @@ function DoLevelSwitch() {
 		p.ConsoleCommand("admin servertravel "$url);
 		p.bAdmin = False;
 	} else {
-		//// Fallback method.
-		NormalLog("DoLevelSwitch() No pawn available for consolecommand, trying Level.ServerTravel(\""$ url $"\",false)");
-		// Did not work:
-		// Level.NextURL = NextMap;
-		Level.ServerTravel(url,false); // This works for the server.  I think it might cause trouble for joined clients though.
-		// Level.Game.ProcessServerTravel(NextMap,false); // This did not work
+		//// Fallback methods...
+		//// Not the desired method with players present, well at least one of the below caused client disconnect. =/
+		NormalLog("DoLevelSwitch() No PlayerPawn available.");
+		if (TryingMap == "") {
+			//// Works now, best so far:
+			NormalLog("DoLevelSwitch() Doing: Level.NextURL = "$url);
+			Level.NextURL = url;
+		} else {
+			//// This was crashing with AnthChecker1.38!
+			// NormalLog("DoLevelSwitch() Doing: Level.ServerTravel(\""$url$"\",false)");
+			// Level.ServerTravel(url,false); // This works for the server.  I think it might cause trouble for joined clients though.
+			//// Could try this instead:
+			NormalLog("DoLevelSwitch() Doing: "$Self$".ConsoleCommand(\"admin servertravel "$url$"\")");
+			ConsoleCommand("admin servertravel "$url); // Almost works ;p
+			// NormalLog("DoLevelSwitch() Doing: Level.Game.ProcessServerTravel(\""$url$"\",false)");
+			// Level.Game.ProcessServerTravel(url,false); // This did not work
+		}
+		//// Even if I turn all these off, it seems a level change is made anyway.  Mmm dunno maybe that was with PreClientTravel().
 	}
 
-	// bDoneGameEnd = False;
+	#ifdef CATCH_LEVEL_SWITCH
+	TryingMap = NextMap;
+	Enable('Tick');
+	#endif
+
+	// bDoneGameEnd = False; // Might cause a retry in Timer().
 	// SetTimer(0,False); // repeat calls should (may) be cancelled already
 
-	// We can recover from "Failed to load 'CTF-MazonSieged-006': Can't find file 'CTF-MazonSieged-006'" with:
+	// I am trying to recover from "Failed to load 'CTF-MazonSieged-006': Can't find file 'CTF-MazonSieged-006'" with:
 	NextMap = "";
-	SetTimer(5,False);
-	// However (TODO) this may break bInterceptTravel.
+	// SetTimer(5,False); // TryingMap was not working with Enable('Tick') so trying timer instead...
 }
 
 function String GetGameTypeFromPrefix(String map) {
@@ -617,7 +657,7 @@ function int MapIndex(String mapName) {
 		if (i>=MaxData) {
 			// i = FRand()*MaxData;
 			i = HashStr(mapName,MaxData);
-			Log("[MapStats] Warning! MapIndex(\"" $ mapName $ "\") hash + collision offset >= MaxData - we are either unlucky, or the map database is full; forcing overwrite of ["$i$"] "$MapStats[i].MapName$" !");
+			WarnLog("MapIndex(\"" $ mapName $ "\") hash + collision offset >= MaxData - we are either unlucky, or the map database is full; forcing overwrite of ["$i$"] "$MapStats[i].MapName$" !");
 			MapStats[i].MapName = mapName;
 			// TODO: we should also clear [i]'s stats!
 			return i;
@@ -767,7 +807,6 @@ function String ChooseNextMap() {
 					continue;
 				}
 				if (MapStats[i].bCrashes) {
-					#define bRetryCrashedMaps True
 					if (bRetryCrashedMaps && FRand()<0.01) {
 						NormalLog("ChooseNextMap(): "$ MapStats[i].MapName $" previously crashed but considering it, to see if it has been fixed.");
 					} else {
@@ -793,8 +832,7 @@ function String ChooseNextMap() {
 					}
 					if (Len(ConsideredMaps)>60)
 						ConsideredMaps = StrAfterFirst(ConsideredMaps," ");
-					// NormalLog("  Dropped: "$bestMap$" (score "$ NiceFloat(bestScore) $", age "$ NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $")");
-					NormalLog("  "$MapStats[i].MapName$" (score "$ NiceFloat(mapScore) $", age "$ NiceAge(DaysSince1970() - MapStats[i].DateLastPlayed) $", players "$ NiceFloat(MapStats[i].PreferredPlayers) $")");
+					NormalLog("  - "$MapStats[i].MapName$" (score "$ NiceFloat(mapScore) $", age "$ NiceAge(DaysSince1970() - MapStats[i].DateLastPlayed) $", players "$ NiceFloat(MapStats[i].PreferredPlayers) $")");
 				}
 
 				bestMap = MapStats[i].MapName;
@@ -832,23 +870,16 @@ function int CountActors(class<Actor> type) {
 
 #ifdef CATCH_LEVEL_SWITCH
 event Tick(float DeltaTime) {
-
-	if (!bInterceptTravel) return;
-
-	// bInterceptTravel = False;
-
-	// check for levelchange
-	if (Level.NextURL != "") {
-		// NextMap = left(Level.NextURL, instr(Level.NextURL,"."));
-		// if (NextMap == "") return;  // maybe a ?restart, Serverpackages remain
-		NormalLog("Tick() intercepted LevelChange to: "$ Level.NextURL);
-		// NextMap = ChooseNextMap(); // Should be already chosen!
-		if (NextMap == "")
-			NextMap = ChooseNextMap(); // BUG TODO: Should be full URL in case map requires a different gametype.
-		NormalLog("Tick() is attempting to force: "$NextMap);
-		Level.NextURL = NextMap;
-		// TODO CONSIDER: Level.ProcessServerTravel(...);
-		bInterceptTravel = False;
+	if (TryingMap!="") {
+		// We have tried to switch map, but here we are still running.
+		// Most likely the log is saying something like: Failed to load 'Level None.MyLevel': Can't find file 'CTF-Audacity'
+		// We will try again, switching to a different map.
+		NormalLog("CRASHED MAP: "$TryingMap);
+		// We should have already saved the map marked as crashed in the last DoLevelSwitch().
+		// MapRecord(TryingMap).bCrashes = True;
+		// SaveConfig();
+		NextMap = "";
+		DoLevelSwitch();
 	}
 }
 #endif
