@@ -2,7 +2,7 @@
 // DJ_InventoryItem.
 //================================================================================
 
-class DJ_InventoryItem extends TournamentPickup;
+class DJ_InventoryItem extends TournamentPickup config(DoubleJumpUT);
 
 var() config int MaxJumps;
 var() config float JumpHeight;
@@ -85,7 +85,7 @@ exec function DoubleJump ()
   if (RechargeRate>0 && (Level.TimeSeconds-LastJumpTime)>=RechargeRate && nofJumps>1) {
     nofJumps = 1;
   }
-  if (class'DoubleJumpUT'.default.bRestrictFC && P.PlayerReplicationInfo.HasFlag != None && nofJumps<MaxJumps) {
+  if (bRestrictFC && P.PlayerReplicationInfo.HasFlag != None && nofJumps<MaxJumps) {
     nofJumps = MaxJumps-1;
   }
   if ( P.Physics == 2 )
@@ -177,7 +177,14 @@ defaultproperties {
     ExpireMessage="ExpireMessage"
     PickupMessage="PickupMessage"
     ItemName="DoubleJumpUT"
+    // TODO: ItemName="DoubleJumpItem"
     Mesh=LodMesh'Botpack.jboot'
     AmbientGlow=0
+
+    MaxJumps=3
+    JumpType=1
+    JumpHeight=2.00
+    RechargeRate=5.0
+    bRestrictFC=True
 }
 
