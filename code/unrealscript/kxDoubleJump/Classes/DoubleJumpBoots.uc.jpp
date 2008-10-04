@@ -2,11 +2,14 @@
 // DJ_InventoryItem.
 //================================================================================
 
-class DJ_InventoryItem extends TournamentPickup config(DoubleJumpUT);
+// TODO: If we have normal jump boots, our in-air doublejumps also jump with their strength.  I think this is wrong - we should ideally prevent the jump boots from being used in-air, but keep their charge.
+
+class DJ_InventoryItem extends TournamentPickup config(kxDoubleJump);
 
 var() config int MaxJumps;
 var() config float JumpHeight;
 var() config int JumpType;
+var() config float VelocityLimit;
 var() config float RechargeRate;
 var() config bool bRestrictFC;
 var int nofJumps;
@@ -95,32 +98,34 @@ exec function DoubleJump ()
       switch (JumpType)
       {
         case 0:
-        if (  !(P.Physics == 2) && (Abs(P.Velocity.Z) < 100.0) )
-        {
-          return;
-        }
+          if (Abs(P.Velocity.Z) > VelocityLimit) {
+            return;
+          }
         break;
         case 1:
-        if (  !(P.Physics == 2) && (P.Velocity.Z > -100.0) )
-        {
-          return;
-        }
+          if (P.Velocity.Z < -VelocityLimit) {
+            return;
+          }
         break;
         default:
       }
-      // // If we are already goin up fast, give us only half a jump extra
+
+      //// If we are already goin up fast, give us only half a jump extra
       // P.Velocity.Z = P.Velocity.Z + 0.5 * P.JumpZ * JumpHeight;
-      // // If we are not going up at jump speed, make us go up at jump speed!
+      //// If we are not going up at jump speed, make us go up at jump speed!
       // if (P.Velocity.Z < P.JumpZ * JumpHeight) {
         // P.Velocity.Z = P.JumpZ * JumpHeight;
       // }
-      // // Add extra jump to current upward velocity
-      // P.Velocity.Z += P.JumpZ * JumpHeight;
-      // Add extra jump to current velocity (half up, half "with" our sideways velocity)
-      P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
-      P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+      //// Add extra jump to current upward velocity.  This takes you very high if tapped quickly, so in this case use on-apex.
+      P.Velocity.Z += P.JumpZ * JumpHeight;
+      //// Let the player choose whether to go for height or distance on the secondary jumps:
+      //// Add extra jump to current velocity (half up, half "with" our sideways velocity)
+      // P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
+      // P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+
       nofJumps++;
       LastJumpTime = Level.TimeSeconds;
+
       P.PlaySound(P.JumpSound,SLOT_Interface,1.5,True,1200.0,1.0);
       if ( (Level.Game != None) && (Level.Game.Difficulty > 0) ) {
         P.MakeNoise(0.1 * Level.Game.Difficulty);
@@ -145,8 +150,11 @@ simulated function SetFinalMesh(PlayerPawn P) {
   right = P.Rotation;
   right.Yaw += 16384;
   rightness = Normal(P.Velocity) Dot Normal(Vector(right));
-  if ( sqrt(forwardness*forwardness+rightness*rightness)<0.1 && P.HasAnim('Flip')) {
-    newMesh = 'Flip';
+  // if ( sqrt(forwardness*forwardness+rightness*rightness)<0.2 && P.HasAnim('Flip')) {
+    // newMesh = 'Flip';
+  if ( sqrt(P.Velocity.X*P.Velocity.X+P.Velocity.Y*P.Velocity.Y)<200) { // && P.HasAnim('Flip')) {
+    //// Do not change mesh.
+    // newMesh = 'Flip';
   } else if ( rightness > Abs(forwardness) && P.HasAnim('ROLLRIGHT') ) {
     newMesh = 'ROLLRIGHT';
   } else if ( rightness > Abs(forwardness) && P.HasAnim('DodgeL') ) {
@@ -182,8 +190,10 @@ defaultproperties {
     AmbientGlow=0
 
     MaxJumps=3
-    JumpType=1
-    JumpHeight=2.00
+    JumpHeight=1.20
+    JumpType=0
+    VelocityLimit=100
+    // VelocityLimit=80 // slightly harder because we use additional velocity - actually 100 seems hard enough ;p
     RechargeRate=5.0
     bRestrictFC=True
 }

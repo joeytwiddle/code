@@ -4,7 +4,7 @@
 
 // TODO: rename DoubleJumpBoots or kxBoots
 
-class Boots extends DJ_InventoryItem;
+class Boots extends DJ_InventoryItem config (kxDoubleJump);
 
 simulated function PreBeginPlay ()
 {
