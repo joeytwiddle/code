@@ -56,6 +56,7 @@ exec function FireHook ()
 
 function Destroyed ()
 {
+  GetKXMutator().OnDeselect(PlayerPawn(Owner));
   if ( kxGrapple != None )
   {
     kxGrapple.Destroy();
@@ -334,13 +335,13 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
 }
 
 simulated function PlaySelect() {
-  GetKXMutator().OnSelect(Self);
+  GetKXMutator().OnSelect(PlayerPawn(Owner));
   Super.PlaySelect();
 }
 
 state DownWeapon {
   function BeginState() {
-    GetKXMutator().OnDeselect(Self);
+    GetKXMutator().OnDeselect(PlayerPawn(Owner));
     Super.BeginState();
   }
 }

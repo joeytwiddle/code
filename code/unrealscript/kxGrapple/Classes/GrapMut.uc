@@ -74,6 +74,8 @@ function bool CheckReplacement (Actor Other, out byte bSuperRelevant)
 
 function ModifyPlayer (Pawn Other)
 {
+  if (PlayerPawn(Other) != None)
+    OnDeselect(PlayerPawn(Other));
   GiveWeaponsTo(Other); // 0x00000020 : 0x0014
   // if (UseBuiltinGrapple && Other.IsA('PlayerPawn') && Other.PlayerReplicationInfo.Deaths == 0) {
     // CheckPlayerBinds(PlayerPawn(Other));
@@ -101,9 +103,11 @@ function GiveWeaponsTo (Pawn P)
     } else {
       DeathMatchPlus(Level.Game).GiveWeapon(P,"kxGrapple.kx_GrappleLauncher");
     }
-    // if (P.PlayerReplicationInfo.Deaths==0) P.ClientMessage("You have a Grappling Hook.");
-    if (bDefaultBehindView || bDefaultChangeFOV) {
-      P.ClientMessage("To disable auto behindview: mutate BV off");
+    if (P.PlayerReplicationInfo.Deaths==0) {
+      // P.ClientMessage("You have a Grappling Hook.");
+      if (bDefaultBehindView || bDefaultChangeFOV) {
+        P.ClientMessage("Disable auto-behindview with: mutate BV off");
+      }
     }
     // Remove any Translocator they might have:
     Inv = P.FindInventoryType(class'Botpack.Translocator');
@@ -114,10 +118,11 @@ function GiveWeaponsTo (Pawn P)
   }
 }
 
+// TODO: I don't know what this is for!
 function bool PreventDeath (Pawn Killed, Pawn Killer, name DamageType, Vector HitLocation)
 {
   Killed.Weapon = None; // 0x00000016 : 0x0000
-  Super.PreventDeath(Killed,Killer,DamageType,HitLocation); // 0x00000022 : 0x0010
+  return Super.PreventDeath(Killed,Killer,DamageType,HitLocation); // 0x00000022 : 0x0010
 }
 
 function kx_GrappleLauncher GetGrappleLauncher (Actor Other)
@@ -162,9 +167,7 @@ function Mutate (string MutateString, PlayerPawn Sender)
   }
 }
 
-function OnSelect(kx_GrappleLauncher gl) {
-  local PlayerPawn p;
-  p = PlayerPawn(gl.Owner);
+function OnSelect(PlayerPawn p) {
   if (p == None)
     return;
   if (bBehindView[p.PlayerReplicationInfo.PlayerID%64]>0) {
@@ -172,21 +175,26 @@ function OnSelect(kx_GrappleLauncher gl) {
   }
   if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
     PreviousFOV[p.PlayerReplicationInfo.PlayerID%64] = p.DesiredFOV;
-    if (p.FOVAngle<110)
-      p.DesiredFOV = 110;
+    if (p.FOVAngle<110) {
+      p.ConsoleCommand("FOV 110");
+      //// This method didn't work even when I made the calling functi0ns "simulated":
+      // p.DefaultFOV = 110;
+      // p.DesiredFOV = 110;
+    }
   }
 }
 
-function OnDeselect(kx_GrappleLauncher gl) {
-  local PlayerPawn p;
-  p = PlayerPawn(gl.Owner);
+function OnDeselect(PlayerPawn p) {
   if (p == None)
     return;
   if (bBehindView[p.PlayerReplicationInfo.PlayerID%64]>0) {
     p.ConsoleCommand("BehindView 0");
   }
   if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
-    p.DesiredFOV = PreviousFOV[p.PlayerReplicationInfo.PlayerID%64];
+    p.ConsoleCommand("FOV "$PreviousFOV[p.PlayerReplicationInfo.PlayerID%64]);
+    //// This method didn't work even when I made the calling functi0ns "simulated":
+    // p.DesiredFOV = PreviousFOV[p.PlayerReplicationInfo.PlayerID%64];
+    // p.DefaultFOV = PreviousFOV[p.PlayerReplicationInfo.PlayerID%64];
   }
 }
 
