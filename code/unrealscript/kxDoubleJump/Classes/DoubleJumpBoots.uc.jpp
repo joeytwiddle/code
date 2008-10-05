@@ -8,8 +8,9 @@ class DJ_InventoryItem extends TournamentPickup config(kxDoubleJump);
 
 var() config int MaxJumps;
 var() config float JumpHeight;
-var() config int JumpType;
 var() config float VelocityLimit;
+var() config int JumpType;
+var() config int JumpStyle;
 var() config float RechargeRate;
 var() config bool bRestrictFC;
 var int nofJumps;
@@ -98,30 +99,42 @@ exec function DoubleJump ()
       switch (JumpType)
       {
         case 0:
-          if (Abs(P.Velocity.Z) > VelocityLimit) {
+          if (Abs(P.Velocity.Z) > VelocityLimit) { // Not at apex
             return;
           }
         break;
         case 1:
-          if (P.Velocity.Z < -VelocityLimit) {
+          if (P.Velocity.Z < -VelocityLimit) { // Falling fast
             return;
           }
         break;
         default:
       }
 
-      //// If we are already goin up fast, give us only half a jump extra
-      // P.Velocity.Z = P.Velocity.Z + 0.5 * P.JumpZ * JumpHeight;
-      //// If we are not going up at jump speed, make us go up at jump speed!
-      // if (P.Velocity.Z < P.JumpZ * JumpHeight) {
-        // P.Velocity.Z = P.JumpZ * JumpHeight;
-      // }
-      //// Add extra jump to current upward velocity.  This takes you very high if tapped quickly, so in this case use on-apex.
-      P.Velocity.Z += P.JumpZ * JumpHeight;
-      //// Let the player choose whether to go for height or distance on the secondary jumps:
-      //// Add extra jump to current velocity (half up, half "with" our sideways velocity)
-      // P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
-      // P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+      switch (JumpStyle) {
+        case 0:
+        default:
+          P.Velocity.Z = P.JumpZ * JumpHeight;
+        break;
+        case 1:
+          //// If we are already goin up fast, give us only half a jump extra
+          P.Velocity.Z = P.Velocity.Z + 0.5 * P.JumpZ * JumpHeight;
+          //// If we are not going up at jump speed, make us go up at jump speed!
+          if (P.Velocity.Z < P.JumpZ * JumpHeight) {
+            P.Velocity.Z = P.JumpZ * JumpHeight;
+          }
+        break;
+        case 2:
+          //// Add extra jump to current upward velocity.  This can take you very high if tapped quickly, so in this case JumpType=on-apex is recommended.
+          P.Velocity.Z += P.JumpZ * JumpHeight;
+        break;
+        case 3:
+          //// Let the player choose whether to go for height or distance on the secondary jumps:
+          //// Add extra jump to current velocity (half up, half "with" our sideways velocity)
+          // P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
+          // P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+        break;
+      }
 
       nofJumps++;
       LastJumpTime = Level.TimeSeconds;
@@ -152,7 +165,7 @@ simulated function SetFinalMesh(PlayerPawn P) {
   rightness = Normal(P.Velocity) Dot Normal(Vector(right));
   // if ( sqrt(forwardness*forwardness+rightness*rightness)<0.2 && P.HasAnim('Flip')) {
     // newMesh = 'Flip';
-  if ( sqrt(P.Velocity.X*P.Velocity.X+P.Velocity.Y*P.Velocity.Y)<200) { // && P.HasAnim('Flip')) {
+  if ( sqrt(P.Velocity.X*P.Velocity.X+P.Velocity.Y*P.Velocity.Y)<120) { // && P.HasAnim('Flip')) {
     //// Do not change mesh.
     // newMesh = 'Flip';
   } else if ( rightness > Abs(forwardness) && P.HasAnim('ROLLRIGHT') ) {
@@ -190,10 +203,21 @@ defaultproperties {
     AmbientGlow=0
 
     MaxJumps=3
+
+    // DJ:
     JumpHeight=1.20
-    JumpType=0
     VelocityLimit=100
+    JumpType=1
+    JumpStyle=0
+
+    // kx:
+    // JumpHeight=1.20
+    // VelocityLimit=120
+    // JumpType=0
+    // JumpStyle=2
+
     // VelocityLimit=80 // slightly harder because we use additional velocity - actually 100 seems hard enough ;p
+
     RechargeRate=5.0
     bRestrictFC=True
 }
