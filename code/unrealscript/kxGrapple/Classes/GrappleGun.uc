@@ -117,7 +117,15 @@ function Fire (optional float Value)
     // AmbientSound = Sound'Hidraul2';
     // AmbientSound = Sound'Slurp';
     kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
-    kxGrapple.SetMaster(self);
+    if (kxGrapple == None) {
+      Log(Self$".Fire() Failed to create kxGrapple!");
+      // TODO: denied sound
+    } else {
+      kxGrapple.SetMaster(self);
+      // TODO BUG: These sounds are not working.  It would be nice to hear the line flying out.
+      kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
+      AmbientSound = class'kxGrapple'.default.ReleaseSound;
+    }
   } else if (bIdenticalButtons) {
     AltFire(Value);
   }
@@ -139,8 +147,6 @@ function AltFire (float Value)
   }
   GotoState('AltFiring');
 }
-
-// Had to hide states - it doesn't like overriding them.
 
 state NormalFire
 {
@@ -317,6 +323,7 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
   local int i;
   local string toAdd;
   local string keyName,keyVal,keyValCaps;
+  local bool bBindExists;
   toAdd = "GetWeapon kx_GrappleLauncher";
   for (i=0;i<256;i++) {
     keyName = p.ConsoleCommand("keyname "$i);
@@ -325,14 +332,22 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
     if (InStr(keyValCaps,Caps(toAdd))>=0) {
       return; // We have found an existing key bound to this weapon.  To save time, stop searching!
     }
-    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || (InStr(keyValCaps,"SWITCHWEAPON 1")>=0 && InStr(keyValCaps,"SWITCHWEAPON 10")<0)) {
+    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || (Right(keyValCaps,14)=="SWITCHWEAPON 1" || InStr(keyValCaps,"SWITCHWEAPON 1 ")>=0 && InStr(keyValCaps,"SWITCHWEAPON 1|")>=0)) {
       // Add a binding to this key!
       p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$" | "$toAdd);
       p.ClientMessage("Grappling hook now available on your ["$keyName$"] key.");
       // Continue to search for other binds we could attach to.
+      bBindExists = True;
     }
   }
   Log("kx_GrappleLauncher.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
+  if (!bBindExists) {
+    // P.ClientMessage("You should make a keybind for the Translocator and Grappling Hook weapons using your console.");
+    // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon kx_GrapplingHook");
+    P.ClientMessage("You could make a keybind for your Translocator using the console, then reconnect.");
+    P.ClientMessage("For example: SET INPUT Q SwitchWeapon 1");
+  }
+  return;
 }
 
 simulated function PlaySelect() {
@@ -353,8 +368,11 @@ function kxMutator GetKXMutator() {
   foreach AllActors(class'kxMutator',kxMutator) {
     break;
   }
-  if (kxMutator==None)
+  if (kxMutator==None) {
+    Log("kx_GrappleLauncher is spawning one kxMutator to allow players to configure the weapon.");
     kxMutator = Spawn(class'kxMutator');
+    Level.Game.BaseMutator.AddMutator(kxMutator);
+  }
   return kxMutator;
 }
 
@@ -372,6 +390,7 @@ defaultproperties
     Mass=10.00
     bAutoDrop=False
     SelectSound=sound'UnrealI.flak.load1'
+    // SelectSound=sound'kxGrapple.Slurp'
     bIdenticalButtons=False // TODO: test this!
 }
 

@@ -27,13 +27,14 @@ replication
 function PostBeginPlay ()
 {
   local int i;
-  if ( Initialized ) // 0x00000013 : 0x0000
+  if ( Initialized )
   {
-    return; // 0x00000019 : 0x0009
+    return;
   }
-  Initialized = True; // 0x0000001B : 0x000B
-  // DefaultWeapon = Class'enforcer'; // 0x00000020 : 0x0013
-  // Level.Game.RegisterDamageMutator(self); // 0x00000027 : 0x001E
+  Initialized = True;
+  // DefaultWeapon = Class'enforcer';
+  // DefaultWeapon = Class'ImpactHammer';
+  // Level.Game.RegisterDamageMutator(self);
   for (i=0;i<64;i++) {
     if (bDefaultBehindView)
       bBehindView[i] = 1;
@@ -43,15 +44,7 @@ function PostBeginPlay ()
   }
 }
 
-// function string GetInventoryClassOverride(string InventoryClassName) {
-  // if (UseBuiltinGrapple && InventoryClassName ~= "Botpack.Translocator") {
-    // return "kxGrapple.Translocator";
-  // }
-  // return Super.GetInventoryClassOverride(InventoryClassName);
-// }
-
-function bool CheckReplacement (Actor Other, out byte bSuperRelevant)
-{
+function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
   if (UseBuiltinGrapple && Other.IsA('Translocator') && !Other.IsA('kx_GrappleLauncher')) {
     ReplaceWith(Other,"kxGrapple.kx_GrappleLauncher");
@@ -60,30 +53,26 @@ function bool CheckReplacement (Actor Other, out byte bSuperRelevant)
     return False;
   }
   return Super.CheckReplacement(Other,bSuperRelevant);
-  /*
-  if ( Other.IsA('Inventory') ) // 0x00000015 : 0x0000
-  {
-    if ( Inventory(Other).myMarker == None ) // 0x00000023 : 0x0014
-    {
-      return True; // 0x00000034 : 0x002D
-    }
-  }
-  return True; // 0x00000202 : 0x027E
-  */
+  // if ( Other.IsA('Inventory') ) {
+    // if ( Inventory(Other).myMarker == None ) {
+      // return True;
+    // }
+  // }
+  // return True;
 }
 
 function ModifyPlayer (Pawn Other)
 {
   if (PlayerPawn(Other) != None)
     OnDeselect(PlayerPawn(Other));
-  GiveWeaponsTo(Other); // 0x00000020 : 0x0014
-  // if (UseBuiltinGrapple && Other.IsA('PlayerPawn') && Other.PlayerReplicationInfo.Deaths == 0) {
-    // CheckPlayerBinds(PlayerPawn(Other));
-  // }
-  if ( NextMutator != None ) // 0x0000003D : 0x003D
-  {
-    NextMutator.ModifyPlayer(Other); // 0x00000045 : 0x0048
+  GiveWeaponsTo(Other);
+  // This player/pawn has respawned, so any grapples which were hooked on it should now be dropped.
+  foreach AllActors(class'kx_GrappleLauncher',cl) {
+    if (cl.kxGrapple!=None && cl.kxGrapple.thing == Other) {
+      cl.kxGrapple.Destroy();
+    }
   }
+  Super.ModifyPlayer(Other);
 }
 
 function GiveWeaponsTo (Pawn P)
@@ -121,33 +110,44 @@ function GiveWeaponsTo (Pawn P)
 // TODO: I don't know what this is for!
 function bool PreventDeath (Pawn Killed, Pawn Killer, name DamageType, Vector HitLocation)
 {
-  Killed.Weapon = None; // 0x00000016 : 0x0000
-  return Super.PreventDeath(Killed,Killer,DamageType,HitLocation); // 0x00000022 : 0x0010
+  Killed.Weapon = None;
+  return Super.PreventDeath(Killed,Killer,DamageType,HitLocation);
 }
 
 function kx_GrappleLauncher GetGrappleLauncher (Actor Other)
 {
   local kx_GrappleLauncher thelauncher;
 
-  foreach AllActors(Class'kx_GrappleLauncher',thelauncher) // 0x00000014 : 0x0000
-  // foreach AllActors(Class'kxGrapple.Translocator',thelauncher) // 0x00000014 : 0x0000
+  foreach AllActors(Class'kx_GrappleLauncher',thelauncher)
+  // foreach AllActors(Class'kxGrapple.Translocator',thelauncher)
   {
-    if ( thelauncher.Owner == Other ) // 0x0000001E : 0x0010
+    if ( thelauncher.Owner == Other )
     {
-      return thelauncher; // 0x0000002F : 0x0029
+      return thelauncher;
     }
-  } // 0x00000033 : 0x0030
-  return None; // 0x00000034 : 0x0031
+  }
+  return None;
 }
 
 function Mutate (string MutateString, PlayerPawn Sender)
 {
-  if ( MutateString == "KillHook" ) // 0x00000015 : 0x0000
-  {
-    cl = GetGrappleLauncher(Sender); // 0x00000027 : 0x0014
-    if ( cl != None ) // 0x0000002F : 0x0025
-    {
-      cl.kxGrapple.Destroy(); // 0x00000037 : 0x0030
+  // We allow players to fire or retract their grappling hook without having it selected as a weapon!
+  if ( MutateString ~= "FireGrapple" ) {
+    cl = GetGrappleLauncher(Sender);
+    if ( cl != None && cl.kxGrapple == None ) {
+      // TODO: This is unfinished / not working properly:
+      PlaySound(class'kxGrapple'.default.ThrowSound,SLOT_Interface,2.0);
+      cl.kxGrapple = Spawn(class'kxGrapple',Sender,,Sender.Location+64*Vector(Sender.Rotation),Sender.Rotation);
+      cl.kxGrapple.SetMaster(cl);
+      cl.Instigator = Sender;
+      cl.kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
+      cl.AmbientSound = class'kxGrapple'.default.ReleaseSound;
+    }
+  }
+  if ( MutateString ~= "KillHook" ) {
+    cl = GetGrappleLauncher(Sender);
+    if ( cl != None ) {
+      cl.kxGrapple.Destroy();
     }
   }
   if (MutateString ~= "HELP") {
@@ -161,10 +161,7 @@ function Mutate (string MutateString, PlayerPawn Sender)
     bBehindView[Sender.PlayerReplicationInfo.PlayerID%64]=1;
     bChangeFOV[Sender.PlayerReplicationInfo.PlayerID%64]=1;
   }
-  if ( NextMutator != None ) // 0x00000046 : 0x0045
-  {
-    NextMutator.Mutate(MutateString,Sender); // 0x0000004E : 0x0050
-  }
+  Super.Mutate(MutateString,Sender);
 }
 
 function OnSelect(PlayerPawn p) {
@@ -204,10 +201,9 @@ defaultproperties
     // WeaponName=Translocator
     AmmoName=DefaultAmmo
     WeaponString="kxGrapple.kx_GrappleLauncher"
-    // WeaponString="kxGrapple.Translocator"
     AmmoString="none"
-    DefaultWeapon=Class'kx_GrappleLauncher'
-    // DefaultWeapon=Class'kxGrapple.Translocator'
+    // Doing this causes the ImpactHammer to be replaced:
+    // DefaultWeapon=Class'kx_GrappleLauncher'
     UseBuiltinGrapple=True
     bDefaultBehindView=True
     bDefaultChangeFOV=True
