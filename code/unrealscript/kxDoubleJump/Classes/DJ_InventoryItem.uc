@@ -113,7 +113,6 @@ exec function DoubleJump ()
 
       switch (JumpStyle) {
         case 0:
-        default:
           P.Velocity.Z = P.JumpZ * JumpHeight;
         break;
         case 1:
@@ -133,6 +132,9 @@ exec function DoubleJump ()
           //// Add extra jump to current velocity (half up, half "with" our sideways velocity)
           // P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
           // P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+        break;
+        default:
+          P.Velocity.Z = P.JumpZ * JumpHeight;
         break;
       }
 
