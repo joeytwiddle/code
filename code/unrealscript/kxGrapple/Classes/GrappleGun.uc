@@ -246,9 +246,10 @@ function Finish ()
           Global.AltFire(0.0);
         } else {
           GotoState('Idle');
-          if (bAutoDrop) { // If you release primary fire, your grapple retracts
-            if ( kxGrapple != None )
-            {
+          // I guess this was primary-fire release-button ev_nt.
+          if (bAutoDrop) {
+            // If you release primary fire, your grapple retracts
+            if ( kxGrapple != None ) {
               AmbientSound = None;
               kxGrapple.Destroy();
               kxGrapple = None;

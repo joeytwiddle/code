@@ -63,7 +63,9 @@ var kxLine LineSprite;
 replication {
   unreliable if ( Role == ROLE_Authority )
     // pullDest,hNormal,thing,TotalTime,Master,bThingPawn,lineLength,LineSprite;
-    pullDest,lineLength,thing,Master,LineSprite;
+    pullDest,lineLength,thing,Master;
+  reliable if ( Role == ROLE_Authority )
+    LineSprite;
 }
 
 auto state Flying
@@ -149,6 +151,13 @@ simulated function Destroyed ()
   Master.kxGrapple = None;
   AmbientSound = None;
   Master.AmbientSound = None;
+  if (LineSprite!=None) {
+    LineSprite.GrappleParent = None;
+    LineSprite.LifeSpan = 0;
+    LineSprite.Destroy();
+    LineSprite = None;
+    // lol it's still there
+  }
   // PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
   // Master.PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
   // PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0);
@@ -158,8 +167,6 @@ simulated function Destroyed ()
   // Master.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16);
   Instigator.SetPhysics(PHYS_Falling);
   // if (Role == ROLE_Authority) {
-    if (LineSprite!=None)
-      LineSprite.Destroy();
   // }
   Super.Destroyed();
 }
@@ -184,11 +191,12 @@ simulated function InitLineSprite() { // simulated needed?
     // LineSprite = Spawn(class'Effects',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     // LineSprite = Spawn(class'rocketmk2',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     LineSprite = Spawn(class'kxLine',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
-    LineSprite.SetFromTo(Instigator,Self);
+    // LineSprite.SetFromTo(Instigator,Self);
+    LineSprite.GrappleParent = Self;
     // LineSprite.Mesh = 'botpack.shockbm';
     LineSprite.Mesh = mesh'Botpack.bolt1';
     LineSprite.DrawType = DT_Mesh;
-    LineSprite.Style = STY_Translucent;
+    // LineSprite.Style = STY_Translucent;
     LineSprite.RemoteRole = ROLE_SimulatedProxy;
     LineSprite.LifeSpan = 60;
     // LineSprite.RemoteRole = ROLE_None;
@@ -199,7 +207,7 @@ simulated function InitLineSprite() { // simulated needed?
     // LineSprite.bNetTemporary = True;
     // LineSprite.bGameRelevant = True;
     // LineSprite.bReplicateInstigator = True;
-    LineSprite.NetPriority = 0.2;
+    LineSprite.NetPriority = 2.5;
   }
 }
 
@@ -225,10 +233,12 @@ simulated function UpdateLineSprite() {
     // LineSprite.NumPuffs = 0;
     // LineSprite.DrawScale = 0.04*numPoints;
     */
+    /*
     LineSprite.SetLocation((Instigator.Location+pullDest)/2);
     LineSprite.SetRotation(rotator(pullDest-Instigator.Location));
     LineSprite.DrawScale = VSize(Instigator.Location-pullDest) / 64.0;
     LineSprite.Velocity = Instigator.Velocity * 0.5;
+    */
   }
 }
 
@@ -268,8 +278,9 @@ state() PullTowardStatic
           if (bLinePhysics) {
             lineLength = VSize(Instigator.Location - pullDest);
           }
-          PlaySound(HitSound,SLOT_None,10.0);
-          Master.PlaySound(HitSound,SLOT_None,10.0);
+          // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
+          PlaySound(HitSound,SLOT_Interface,10.0);
+          Master.PlaySound(HitSound,SLOT_Interface,10.0);
           // Instigator.ClientMessage("Hook slipped! Hit "$A);
           // return; // Don't return, we gotta render this new style!
         }
@@ -517,7 +528,7 @@ defaultproperties
     MinRetract=150
     // MinRetract=200
     // MinRetract=250
-    DrawScale=1.5
+    DrawScale=1.75
     CollisionRadius=1.0
     CollisionHeight=0.5
     RemoteRole=ROLE_SimulatedProxy
