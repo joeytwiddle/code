@@ -118,7 +118,7 @@ function Fire (optional float Value)
     // AmbientSound = Sound'Slurp';
     kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
     if (kxGrapple == None) {
-      Log(Self$".Fire() Failed to create kxGrapple!");
+      if (class'kxGrapple'.default.bDebugLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
       // TODO: denied sound
     } else {
       kxGrapple.SetMaster(self);
@@ -143,7 +143,7 @@ function AltFire (float Value)
     kxGrapple.Destroy();
     kxGrapple = None;
   } else if (bIdenticalButtons) {
-    Fire(Value);
+    Fire(Value); return;
   }
   GotoState('AltFiring');
 }

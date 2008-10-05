@@ -18,6 +18,9 @@
 // TODO BUG: if there is lag (on the server) the physics breaks and the player sometimes gets tugged up in the air unrealistically!  Maybe bLinePhysics can help with this...
 // TODO: I have not yet put real physics into PullTowardDynamic.
 // TODO: At time of writing, bLinePhysics=False appears to have become a bit broken!
+// TODO: autowind but don't hear winding in unless i click!
+// TODO: shieldbelt behind character (by 1 tick?  can this be fixed with velocity or ordering of processing?)
+// TODO: unwind drops back in steps
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -46,7 +49,9 @@ var() config bool bFiddlePhysics1;
 var() config bool bFiddlePhysics2;
 var() config bool bShowLine;
 var() config sound ThrowSound,HitSound,PullSound,ReleaseSound,RetractSound;
-var() config mesh LineMesh;
+var() config Mesh LineMesh;
+var() config Texture LineTexture;
+var() config bool bDebugLogging;
 
 var kx_GrappleLauncher Master;
 var Vector pullDest;
@@ -69,11 +74,9 @@ replication {
     LineSprite;
 }
 
-auto state Flying
-{
+auto state Flying {
 
-  simulated function BeginState ()
-  {
+  simulated function BeginState () {
     local rotator outRot;
     // Set outgoing Velocity of the grapple, adjusting for ThrowAngle:
     outRot = Rotation;
@@ -88,11 +91,15 @@ auto state Flying
     SetRotation(outRot);
   }
 
-  simulated function ProcessTouch (Actor Other, Vector HitLocation)
-  {
-    Log(Level.TimeSeconds$" "$"kxGrapple.ProcessTouch() I've never been here before");
-    if ( Inventory(Other) != None )
-    {
+  simulated function Tick(float DeltaTime) {
+    UpdateLineSprite();
+    pullDest = Location;
+  }
+
+  // Is this pickup handling?
+  simulated function ProcessTouch (Actor Other, Vector HitLocation) {
+    Log(Level.TimeSeconds$" "$Self$".ProcessTouch() I've never been here before");
+    if ( Inventory(Other) != None ) {
       Inventory(Other).GiveTo(Instigator);
     }
     Instigator.AmbientSound = None;
@@ -101,20 +108,19 @@ auto state Flying
     return;
   }
 
-  simulated function HitWall (Vector HitNormal, Actor Wall)
-  {
-    pullDest = Location;
+  simulated function HitWall (Vector HitNormal, Actor Wall) {
+    pullDest = Location + 10.0*DrawScale*Vector(Rotation);
     hNormal = HitNormal;
     SetPhysics(PHYS_None);
     lineLength = VSize(Instigator.Location - pullDest);
-    if ( Wall.IsA('Pawn') || Wall.IsA('Mover') ) {
-      if (  !bDoAttachPawn &&  !Wall.IsA('Mover') ) {
+    if (Wall.IsA('Pawn') || Wall.IsA('Mover')) {
+      if (!bDoAttachPawn && !Wall.IsA('Mover')) {
         Destroy();
         return;
       }
       bAttachedToThing = True;
       thing = Wall;
-      if ( Wall.IsA('Pawn') ) {
+      if (Wall.IsA('Pawn')) {
         bThingPawn = True;
       }
       GotoState('PullTowardDynamic');
@@ -134,10 +140,6 @@ auto state Flying
     }
   }
 
-  simulated function Tick(float DeltaTime) {
-    UpdateLineSprite();
-  }
-
 }
 
 simulated function SetMaster (kx_GrappleLauncher W)
@@ -154,13 +156,13 @@ simulated event Destroyed ()
   foreach AllActors(class'kxGrapple',G) {
     i++;
   }
-  Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$i$" kxGrapples on the level.");
+  if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$i$" kxGrapples on the level."); }
   Master.kxGrapple = None;
   AmbientSound = None;
   Master.AmbientSound = None;
   // if (Role==ROLE_Authority && LineSprite!=None) {
   if (LineSprite!=None) {
-    Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite "$LineSprite);
+    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite "$LineSprite); }
     LineSprite.GrappleParent = None;
     LineSprite.LifeSpan = 0;
     LineSprite.Destroy();
@@ -169,8 +171,9 @@ simulated event Destroyed ()
   } else {
     // Log(Level.TimeSeconds$" "$Self$".Destroyed() Not destroying my LineSprite "$LineSprite);
     // Log(Level.TimeSeconds$" "$Self$".Destroyed() Not destroying my LineSprite "$LineSprite$" since it should be None!");
-    Log(Level.TimeSeconds$" "$Self$".Destroyed() Cannot destroy LineSprite="$LineSprite$"!");
+    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Cannot destroy LineSprite="$LineSprite$"!"); }
   }
+  bDestroyed = True; // This is what actually cleans up the LineSprite!
   // PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
   // Master.PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
   // PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0);
@@ -179,7 +182,6 @@ simulated event Destroyed ()
   Master.PlaySound(RetractSound,SLOT_Interface,2.0,,,240);
   // Master.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16);
   Instigator.SetPhysics(PHYS_Falling);
-  bDestroyed = True;
   Super.Destroyed();
 }
 
@@ -188,7 +190,7 @@ simulated function InitLineSprite() { // simulated needed?
   if (bShowLine) {
     // if (Role != ROLE_Authority) { // spawns it on server only
     // if (Role == ROLE_Authority) {
-      // Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end.");
+      // if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end."); }
       // return;
     // }
     // if (Level.NetMode ==1)
@@ -210,39 +212,41 @@ simulated function InitLineSprite() { // simulated needed?
     // LineSprite = Spawn(class'Effects',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     // LineSprite = Spawn(class'rocketmk2',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     if (Instigator==None) {
-      Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning Instigator="$Instigator$" so expect Accessed None errors!");
+      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning Instigator="$Instigator$" so expect Accessed None errors!"); }
     }
     if (LineSprite == None) {
       LineSprite = Spawn(class'kxLine',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
-      Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Spawned "$LineSprite);
+      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Spawned "$LineSprite); }
     } else {
-      Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Re-using old UNCLEANED LineSprite "$LineSprite$"!");
+      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Re-using old UNCLEANED LineSprite "$LineSprite$"!"); }
       LineSprite.DrawType = DT_Mesh;
       LineSprite.SetLocation((Instigator.Location+pullDest)/2);
       LineSprite.SetRotation(rotator(pullDest-Instigator.Location));
     }
     if (LineSprite == None) {
-      Log(Level.TimeSeconds$" "$Self$".InitLineSprite() failed to spawn child kxLine!");
+      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() failed to spawn child kxLine!"); }
       return;
     }
     // LineSprite.SetFromTo(Instigator,Self);
     LineSprite.GrappleParent = Self;
     // LineSprite.Mesh = 'botpack.shockbm';
     // LineSprite.Mesh = mesh'Botpack.bolt1';
+    LineSprite.SetPhysics(PHYS_Rotating);
+    LineSprite.Style = STY_Translucent;
     LineSprite.Mesh = LineMesh;
+    LineSprite.Texture = LineTexture;
     LineSprite.DrawType = DT_Mesh;
-    // LineSprite.Style = STY_Translucent;
     LineSprite.RemoteRole = ROLE_SimulatedProxy;
-    LineSprite.LifeSpan = 60;
+    LineSprite.NetPriority = 2.5;
+    // LineSprite.Texture = Texture'UMenu.Icons.Bg41';
+    // LineSprite.LifeSpan = 60;
     // LineSprite.RemoteRole = ROLE_None;
     // LineSprite.bParticles = True;
-    // LineSprite.SetPhysics(PHYS_Rotating);
     // LineSprite.SetPhysics(PHYS_Projectile);
-    LineSprite.SetPhysics(PHYS_Flying);
+    // LineSprite.SetPhysics(PHYS_Flying);
     // LineSprite.bNetTemporary = True;
     // LineSprite.bGameRelevant = True;
     // LineSprite.bReplicateInstigator = True;
-    LineSprite.NetPriority = 2.5;
   }
 }
 
@@ -299,7 +303,7 @@ state() PullTowardStatic
   simulated function Tick (float DeltaTime)
   {
     local float length,outwardPull,linePull,power;
-    local Vector Inward;
+    local Vector Inward,NewPivot;
     local Actor A;
     local bool doInwardPull;
 
@@ -308,11 +312,11 @@ state() PullTowardStatic
     // TODO, for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
     if ( bLineOfSight ) {
       if (bLetHookSlip) {
-        A = Trace(Inward,hNormal,pullDest,Instigator.Location,false);
-        if (A != None && VSize(Inward-pullDest)>5) {
+        A = Trace(NewPivot,hNormal,pullDest,Instigator.Location,false);
+        if (A != None && VSize(NewPivot-pullDest)>5) {
           Self.DrawType = DT_None;
-          // Self.SetLocation(Inward);
-          pullDest = Inward;
+          // Self.SetLocation(NewPivot);
+          pullDest = NewPivot;
           // if (bLinePhysics) {
             lineLength = VSize(Instigator.Location - pullDest);
           // }
@@ -519,8 +523,6 @@ state() PullTowardDynamic
 {
   // ignores  Tick;
 
-  // TODO: cause hitdamage!
-
   simulated function Tick(float DeltaTime) {
     if (Thing==None)
      Self.Destroy();
@@ -534,6 +536,10 @@ state() PullTowardDynamic
     AmbientSound = PullSound;
     OnPull(DeltaTime);
     UpdateLineSprite();
+    // DONE: cause hitdamage!
+    if (FRand()<DeltaTime*2) { // Avg twice a second
+      Thing.TakeDamage(HitDamage/2,Instigator,pullDest,vect(0,0,0),'');
+    }
   }
 
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
@@ -591,7 +597,7 @@ defaultproperties
     //// These two are cheats in terms of real physics, but may be useful for large maps without handy ceilings.
     bLinePhysics=True // This attempts to deal with grapple pull in terms of line length, but it still needs some work.
     bExtraPower=False
-    bFiddlePhysics0=False // May be needed if bLinePhysics=False
+    bFiddlePhysics0=False // May be needed if bSwingPhysics=True but bLinePhysics=False
     bFiddlePhysics1=False // An alternative method for counteracting gravity, which unrealistically helps swing.
     bFiddlePhysics2=False // Try to help swing by turning downward momentum into forward momentum.
     bShowLine=False
@@ -607,5 +613,8 @@ defaultproperties
     // LineMesh=mesh'botpack.plasmaM'
     LineMesh=mesh'Botpack.bolt1'
     // LineMesh=mesh'Botpack.TracerM'
+    // LineTexture=Texture'UMenu.Icons.Bg41'
+    LineTexture=Texture'Botpack.ammocount'
+    bDebugLogging=False
 }
 
