@@ -51,17 +51,19 @@ simulated event DoUpdate(float DeltaTime) {
 		Destroy();
 		return;
 	}
-	// OK good this is only running on the client.
-	// if (FRand()<0.01)
-		// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Called whilst GrappleParent="$GrappleParent); }
+
 	if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self && !bStopped) {
 		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() GrappleParent has a new LineSprite "$GrappleParent.LineSprite$" - setting Self.bStopped."); }
 		bStopped = True;
 	}
+
 	// if (class'kxGrapple'.default.bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Render="$(Role!=ROLE_Authority)$" bStopped="$bStopped$" LineSprite="$GrappleParent.LineSprite$" Pivot="$Pivot$" Reached="$Reached); }
 	// OK good we are now running on the client with variables replicated.
+
 	if (Role == ROLE_Authority)
 		return;
+	// The rest is *only* done on the client.
+
 	// Update position of line:
 	// if (GrappleParent.LineSprite != Self) {
 	if (bStopped) {

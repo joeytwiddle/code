@@ -32,7 +32,7 @@ function PostBeginPlay ()
     return;
   }
   Initialized = True;
-  // DefaultWeapon = Class'enforcer';
+  DefaultWeapon = Class'enforcer';
   // DefaultWeapon = Class'ImpactHammer';
   // Level.Game.RegisterDamageMutator(self);
   for (i=0;i<64;i++) {

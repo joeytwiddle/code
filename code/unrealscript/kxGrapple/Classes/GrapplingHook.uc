@@ -26,6 +26,8 @@
 // CONSIDER: Instead of bPrimaryWinch, bPrimaryFirePausesWinching or bWalkPausesWinching ?
 // DONE: Line wrapping around corners magic.  Now kxLines must be created if bLineFolding=True even if bShowLine=False.
 // TODO: We should keep bBehindView preference client side.
+// TODO: kx_GrappleLauncher is always the first weapon when we spawn.  It should be enforcer.
+// TODO: If we fire to respawn, sometimes we will immediately fire our grapple.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -239,7 +241,8 @@ simulated function InitLineSprite() { // simulated needed?
     }
     // Instigator = InstigatorRep; // For client
     if (LineSprite == None) {
-      LineSprite = Spawn(class'kxLine',,,(InstigatorRep.Location+pullDest)/2,rotator(pullDest-InstigatorRep.Location));
+      // LineSprite = Spawn(class'kxLine',,,(InstigatorRep.Location+pullDest)/2,rotator(pullDest-InstigatorRep.Location));
+      LineSprite = Spawn(class'kxLine',,,,);
       if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Spawned "$LineSprite); }
     } else {
       if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Re-using old UNCLEANED LineSprite "$LineSprite$"!"); }
@@ -349,6 +352,7 @@ simulated function DoLineOfSightChecks() {
 
   // TESTING: for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
   // BUG: a further harder part, is to have the line slip over the corner where it folds, as the player swings below.
+  // BUG: we sometimes re-merge the line although we have slipped under a bridge, so it would not actually be possible due to topology.
   if ( bLineOfSight ) {
     if (bLineFolding) {
 
@@ -356,9 +360,6 @@ simulated function DoLineOfSightChecks() {
       if (LineSprite != None) {
         LastLine = LineSprite.ParentLine;
         if (LastLine != None) {
-          // BUG: We don't actually have the pivot point of inbetween lines, so we just go straight for the grappling hook.
-          // TODO: On second thought, we could just go for LastLine.Location :P
-          // LastLine.Pivot = LastLine.GrappleParent.Location; // TODO: undo this cheat
           A = Trace(NewPivot,hNormal,LastLine.Pivot,Instigator.Location,false);
           if (A == None || A==LastLine) {
             // We can see the grapple again!
@@ -393,24 +394,32 @@ simulated function DoLineOfSightChecks() {
         // if (pullDest != LineSprite.Pivot) {
           // BroadcastMessage("Warning! pullDest "$pullDest$" != Pivot "$LineSprite.Pivot$"");
         // }
-        LineSprite.Pivot = pullDest;
-        LineSprite.Reached = NewPivot;
-        pullDest = NewPivot;
-        lineLength = VSize(Instigator.Location - pullDest);
         // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
         // PlaySound(HitSound,SLOT_Interface,10.0);
         // Master.PlaySound(HitSound,SLOT_Interface,10.0);
         // No joy.
         // Leave the old line part hanging, and create a new part:
         if (LineSprite != None) {
+          LineSprite.Pivot = pullDest;
+          LineSprite.Reached = NewPivot;
           LineSprite.bStopped = True;
           LineSprite.SetPhysics(PHYS_None);
           LineSprite.Velocity = vect(0,0,0);
           LastLine = LineSprite;
           LineSprite = None;
           InitLineSprite();
+          if (LineSprite == None) {
+            // Oh no! Sometimes we do get "failed to spawn child kxLine!", often when the wall is quite close, and the child line will not spawn because it is inside the wall?
+            // Re-enable the line we just failed to split:
+            LineSprite = LastLine;
+            NewPivot = LastLine.Pivot;
+            LastLine.bStopped = False;
+            LastLine.SetPhysics(PHYS_Rotating);
+          } else
           LineSprite.ParentLine = LastLine;
         }
+        pullDest = NewPivot;
+        lineLength = VSize(Instigator.Location - pullDest);
         // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
         if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
         // return; // Don't return, we gotta render this new style!
@@ -636,10 +645,10 @@ state() PullTowardDynamic
 
   simulated function Tick(float DeltaTime) {
     if (Thing==None)
-     Self.Destroy();
+      Self.Destroy();
     pullDest = Thing.Location;
     if (LineSprite != None)
-      LineSprite.Pivot = Thing.Location;
+      LineSprite.Pivot = Thing.Location; // This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
     if (VSize(Thing.Location-Location)>10) {
       Self.SetLocation( Location*0.1 + Thing.Location*0.9);
       Self.Velocity = Thing.Velocity;
@@ -651,7 +660,12 @@ state() PullTowardDynamic
     UpdateLineSprite();
     // DONE: cause hitdamage!
     if (FRand()<DeltaTime*2) { // Avg twice a second
-      Thing.TakeDamage(HitDamage/2,Instigator,pullDest,vect(0,0,0),'');
+      Thing.TakeDamage(HitDamage/4+FRand()*HitDamage/2,Instigator,pullDest,vect(0,0,0),'');
+      if (VSize(Thing.Velocity) > 1.2*VSize(Instigator.Velocity)) {
+        // Thing managed to shake the hook off (special move = moving faster than opponent when check comes around)
+        Self.Destroy();
+        return;
+      }
     }
   }
 
@@ -671,14 +685,6 @@ state() PullTowardDynamic
 
 defaultproperties
 {
-    grappleSpeed=600 // 600 was good for old Expert100, and is adjusted to work with new code also.
-    // grappleSpeed=0
-    // grappleSpeed=100 // Almost nothing, slight pull upwards
-    // grappleSpeed=800
-    hitdamage=20.00
-    bDoAttachPawn=True
-    bLineOfSight=False
-    bLineFolding=True
     speed=4000.00
     MaxSpeed=4000.00
     MyDamageType=eviscerated
@@ -692,14 +698,23 @@ defaultproperties
     bMeshEnviroMap=True
     bBlockActors=True
     bBlockPlayers=True
+    DrawScale=1.2
+    // CollisionRadius=0.1
+    // CollisionHeight=0.2
+    RemoteRole=ROLE_SimulatedProxy
+
+    grappleSpeed=600 // 600 was good for old Expert100, and is adjusted to work with new code also.
+    // grappleSpeed=0
+    // grappleSpeed=100 // Almost nothing, slight pull upwards
+    // grappleSpeed=800
+    hitdamage=20.00
+    bDoAttachPawn=True
+    bLineOfSight=True
+    bLineFolding=True
     // MinRetract=50
-    MinRetract=150
+    MinRetract=125
     // MinRetract=200
     // MinRetract=250
-    DrawScale=1.2
-    CollisionRadius=0.1
-    CollisionHeight=0.2
-    RemoteRole=ROLE_SimulatedProxy
     Physics=PHYS_Projectile
     ThrowAngle=0
     // Physics=PHYS_Falling
@@ -714,7 +729,7 @@ defaultproperties
     bFiddlePhysics0=False // May be needed if bSwingPhysics=True but bLinePhysics=False
     bFiddlePhysics1=False // An alternative method for counteracting gravity, which unrealistically helps swing.
     bFiddlePhysics2=False // Try to help swing by turning downward momentum into forward momentum.
-    bShowLine=False
+    bShowLine=True
     ThrowSound=sound'Botpack.Translocator.ThrowTarget'
     // HitSound=sound'UnrealI.GasBag.hit1g'
     // HitSound=sound'KrrChink'
@@ -727,8 +742,8 @@ defaultproperties
     // LineMesh=mesh'botpack.plasmaM'
     LineMesh=mesh'Botpack.bolt1'
     // LineMesh=mesh'Botpack.TracerM'
-    // LineTexture=Texture'UMenu.Icons.Bg41'
-    LineTexture=Texture'Botpack.ammocount'
+    LineTexture=Texture'UMenu.Icons.Bg41'
+    // LineTexture=Texture'Botpack.ammocount'
     bDebugLogging=True // Since kxLine accesses this as a default, sometimes this setting is more relevant than the server setting.
 }
 
