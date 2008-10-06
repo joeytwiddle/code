@@ -6,10 +6,11 @@ var kxGrapple GrappleParent;
 var kxLine ParentLine;
 var bool bStopped;
 var Vector Pivot;
+var Vector Reached; // BUG: Never gets updated!
 
 replication {
-  unreliable if ( Role == ROLE_Authority )
-    GrappleParent,Pivot,ParentLine,bStopped;
+  reliable if ( Role == ROLE_Authority )
+    GrappleParent,Pivot,Reached,ParentLine,bStopped;
 }
 
 // simulated function SetFromTo(Actor f, Actor t) {
@@ -40,43 +41,51 @@ simulated event DoUpdate(float DeltaTime) {
 	*/
 	// I was unable to destroy this actor by calling its .Destroy() but this mechanism for it to destroy itself works ok:
 	if (GrappleParent.bDestroyed) {
-		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent "$GrappleParent$" is marked as bDestroyed - suiciding."); }
+		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): "$GrappleParent$".bDestroyed set (LineSprite="$GrappleParent.LineSprite$") - suiciding."); }
 		Destroy();
 		return;
 	}
 	if (GrappleParent == None && FRand()<0.01) {
-		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent == None!"); }
+		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent == None! I may be a memory leak!"); }
 	}
 	// OK good this is only running on the client.
 	// if (FRand()<0.01)
 		// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Called whilst GrappleParent="$GrappleParent); }
-	if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self) {
+	if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self && !bStopped) {
 		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() GrappleParent has a new LineSprite, setting bStopped myself."); }
 		bStopped = True;
 	}
+	if (class'kxGrapple'.default.bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Render="$(Role!=ROLE_Authority)$" bStopped="$bStopped$" LineSprite="$GrappleParent.LineSprite$" Pivot="$Pivot$" Reached="$Reached); }
 	if (Role == ROLE_Authority)
 		return;
-	if (!bStopped) {
-		// Update position of line:
+	// Update position of line:
+	// if (GrappleParent.LineSprite != Self) {
+	if (bStopped) {
+		// from = Reached;
+		// to = Pivot;
+		from = GrappleParent.Location;
+		to = GrappleParent.pullDest;
+		Velocity = vect(0,0,0);
+	} else {
+		from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
+		to = GrappleParent.pullDest;
+		Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
+	}
 		// if (GrappleParent.LineSprite != Self) {
 			// from = ChildLine.Pivot; // :P
 		// } else {
 			// from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
 		// }
-		from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
-		to = GrappleParent.pullDest;
-		// to = Pivot; // Is not getting replicated as well as pullDest.
+		// }
 		// Velocity = GrappleParent.Instigator.Velocity * 0.5;
-		Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
 		// if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self) {
 			// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent has a new LineSprite="$GrappleParent.LineSprite$" - failing."); }
 			// from = GrappleParent.LineSprite.Pivot;
-			// Velocity = vect(0,0,0);
 		// }
 		SetLocation((from+to)/2);
-		SetRotation(rotator(to-from));
+		SetRotation(rotator(from-to));
 		DrawScale = VSize(from-to) / 64.0;
-	}
+	// }
 }
 
 simulated event Tick(float DeltaTime) {
@@ -91,7 +100,7 @@ simulated event Tick(float DeltaTime) {
 	// Tick(0.1);
 // }
 
-simulated function Destroyed() {
+simulated event Destroyed() {
 	local int i;
 	local kxLine L;
 	foreach AllActors(class'kxLine',L) {

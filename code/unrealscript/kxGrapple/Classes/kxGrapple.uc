@@ -70,13 +70,14 @@ var bool bDestroyed;
 var Vector hNormal; // Never actually used, just a temporary variable for Trace().
 
 replication {
-  unreliable if ( Role == ROLE_Authority )
-    // pullDest,hNormal,thing,Master,bThingPawn,lineLength,LineSprite;
-    pullDest,lineLength,thing,Master;
+  // I changed this to "reliable" and nothing changed :P
+  reliable if ( Role == ROLE_Authority )
+    pullDest,lineLength,thing,Master,LineSprite,bDestroyed,bThingPawn,hNormal;
   // reliable if ( Role == ROLE_Authority )
     // LineSprite;
-  reliable if ( Role == ROLE_Authority )
-    LineSprite,bDestroyed;
+  // I changed this to "unreliable" and nothing changed :P
+  // reliable if ( Role == ROLE_Authority )
+    // LineSprite,bDestroyed;
 }
 
 auto state Flying {
@@ -512,6 +513,8 @@ state() PullTowardStatic
               pullDest = LastLine.Pivot;
               lineLength = VSize(Instigator.Location - pullDest);
 
+              if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
+
               LineSprite.bStopped = True;
               LineSprite.DrawType = DT_None;
               LineSprite.SetPhysics(PHYS_None);
@@ -522,7 +525,7 @@ state() PullTowardStatic
               LastLine.bStopped = False;
               LastLine.SetPhysics(PHYS_Rotating);
               // CONSIDER: If this revival of old kxLine fails, we could destroy it and just spawn a fresh one.
-              Instigator.ClientMessage("Your grappling line has straightened "$A);
+              // Instigator.ClientMessage("Your grappling line has straightened "$A);
             }
           }
         }
@@ -536,6 +539,7 @@ state() PullTowardStatic
             // BroadcastMessage("Warning! pullDest "$pullDest$" != Pivot "$LineSprite.Pivot$"");
           // }
           LineSprite.Pivot = pullDest;
+          LineSprite.Reached = NewPivot;
           pullDest = NewPivot;
           lineLength = VSize(Instigator.Location - pullDest);
           // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
@@ -552,7 +556,8 @@ state() PullTowardStatic
             InitLineSprite();
             LineSprite.ParentLine = LastLine;
           }
-          Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
+          // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
+          if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
           // return; // Don't return, we gotta render this new style!
         }
 
@@ -680,6 +685,6 @@ defaultproperties
     // LineMesh=mesh'Botpack.TracerM'
     // LineTexture=Texture'UMenu.Icons.Bg41'
     LineTexture=Texture'Botpack.ammocount'
-    bDebugLogging=False
+    bDebugLogging=True
 }
 

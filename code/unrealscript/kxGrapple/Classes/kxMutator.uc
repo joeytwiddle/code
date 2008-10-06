@@ -95,7 +95,7 @@ function GiveWeaponsTo (Pawn P)
     if (P.PlayerReplicationInfo.Deaths==0) {
       // P.ClientMessage("You have a Grappling Hook.");
       if (bDefaultBehindView || bDefaultChangeFOV) {
-        P.ClientMessage("Disable auto-behindview with: mutate BV off");
+        P.ClientMessage("To disable the grapple's behind-view switching: mutate BV off");
       }
     }
     // Remove any Translocator they might have:
