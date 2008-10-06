@@ -8,18 +8,13 @@ class kx_GrappleLauncher expands TournamentWeapon Config(kxGrapple);
 // #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
 var config bool bAutoDrop;
-var config bool bIdenticalButtons;
+var config bool bIdenticalButtons; // TODO: Not working!
 
 var Weapon PreviousWeapon;
 var kxGrapple kxGrapple;
 var bool bManualShot;
 var bool bShooting;
 var kxMutator kxMutator;
-
-replication {
-  reliable if (Role == ROLE_Authority)
-    bAutoDrop,bIdenticalButtons;
-}
 
 exec function AttachHook ()
 {
@@ -106,12 +101,13 @@ function ReturnToPreviousWeapon() {
   }
 }
 
-function Fire (optional float Value) {
+function Fire (optional float Value)
+{
   GotoState('NormalFire');
-
-  /*
-  if ( kxGrapple == None ) {
-    if ( PlayerPawn(Owner) != None ) {
+  if ( kxGrapple == None )
+  {
+    if ( PlayerPawn(Owner) != None )
+    {
       PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
     }
     bPointing = True;
@@ -133,76 +129,24 @@ function Fire (optional float Value) {
   } else if (bIdenticalButtons) {
     AltFire(Value);
   }
-  */
-
-  if (bIdenticalButtons) {
-    DoOneOrOther();
-  } else {
-    TryThrow();
-  }
-
-  if ( Owner.bHidden ) {
+  if ( Owner.bHidden )
+  {
     CheckVisibility();
   }
 }
 
-function AltFire (float Value) {
-  /*
-  if ( kxGrapple != None ) {
+function AltFire (float Value)
+{
+  if ( kxGrapple != None )
+  {
     AmbientSound = None;
     kxGrapple.Destroy();
     kxGrapple = None;
   } else if (bIdenticalButtons) {
     Fire(Value);
+    // return; // BAD locks up all weapons till respawn :P
   }
-  */
   GotoState('AltFiring');
-
-  if (bIdenticalButtons) {
-    DoOneOrOther();
-  } else {
-    TryRetrieve();
-  }
-}
-
-function DoOneOrOther() {
-  if (kxGrapple==None) {
-    TryThrow();
-  } else {
-    TryRetrieve();
-  }
-}
-
-function TryThrow() {
-  if ( kxGrapple == None ) {
-    if ( PlayerPawn(Owner) != None ) {
-      PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
-    }
-    bPointing = True;
-    PlayFiring();
-    PlaySound(class'kxGrapple'.default.ThrowSound,SLOT_Interface,2.0);
-    // AmbientSound = class'kxGrapple'.default.ThrowSound;
-    // AmbientSound = Sound'Hidraul2';
-    // AmbientSound = Sound'Slurp';
-    kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
-    if (kxGrapple == None) {
-      if (class'kxGrapple'.default.bDebugLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
-      // TODO: denied sound
-    } else {
-      kxGrapple.SetMaster(self);
-      // TODO BUG: These sounds are not working.  It would be nice to hear the line flying out.
-      kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
-      AmbientSound = class'kxGrapple'.default.ReleaseSound;
-    }
-  }
-}
-
-function TryRetrieve() {
-  if ( kxGrapple != None ) {
-    AmbientSound = None;
-    kxGrapple.Destroy();
-    kxGrapple = None;
-  }
 }
 
 state NormalFire
@@ -401,8 +345,9 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
   if (!bBindExists) {
     // P.ClientMessage("You should make a keybind for the Translocator and Grappling Hook weapons using your console.");
     // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon kx_GrapplingHook");
-    P.ClientMessage("You could make a keybind for your Translocator using the console, then reconnect.");
-    P.ClientMessage("For example: SET INPUT Q SwitchWeapon 1");
+    // P.ClientMessage("You could make a keybind for your Translocator using the console, then reconnect.");
+    P.ClientMessage("You should make a keybind for your Grappling Hook.");
+    P.ClientMessage("Type in the console: SET INPUT Q SwitchWeapon 1");
   }
   return;
 }
@@ -448,6 +393,6 @@ defaultproperties
     bAutoDrop=False
     SelectSound=sound'UnrealI.flak.load1'
     // SelectSound=sound'kxGrapple.Slurp'
-    bIdenticalButtons=False // TODO: test this!
+    bIdenticalButtons=False // TODO: NOT working!
 }
 

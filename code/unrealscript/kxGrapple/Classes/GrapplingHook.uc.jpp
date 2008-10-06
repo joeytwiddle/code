@@ -22,6 +22,7 @@
 // TODO: unwind drops back in steps
 // TODO: bCrouchReleases makes a noise when bSwingPhysics=False, but does not act :P  If bPrimaryWinch is disabled, we still only get the noise is we primary fire :P (autowind but don't hear winding in unless i click!)
 // TODO: Still the issue of primary fire while swinging but switched to another weapon.  Consider preventing winching but allowing it by some other mechanism.
+//       The problem appears to be when the server setting is bPrimaryWinch=False but the class default setting is True (so the client does not think the sound needs to be played?).
 // CONSIDER: Instead of bPrimaryWinch, bPrimaryFirePausesWinching or bWalkPausesWinching ?
 // DONE: Line wrapping around corners magic.  Now kxLines must be created if bLineFolding=True even if bShowLine=False.
 // TODO: We should keep bBehindView preference client side.
@@ -428,30 +429,34 @@ state() PullTowardStatic
 {
 
   simulated function Tick (float DeltaTime) {
-    local float length,outwardPull,linePull,power;
+    local float currentLength,outwardPull,linePull,power;
     local Vector Inward;
-    local bool doInwardPull;
+    local bool doInwardPull,bSingleLine;
 
     OnPull(DeltaTime);
 
     DoLineOfSightChecks();
 
-    length = VSize(Instigator.Location - pullDest);
+    currentLength = VSize(Instigator.Location - pullDest);
 
-    if ( length <= MinRetract ) {
+    if ( currentLength <= MinRetract ) {
         AmbientSound = None;
         Master.AmbientSound = None;
     }
 
+    // This is used to decide whether to stop at MinRetract.
+    // If we are below a fold, we should continue to winch upward.
+    bSingleLine = !(LineSprite!=None && LineSprite.ParentLine!=None);
+
     if (bSwingPhysics) {
 
       // Dampening when we reach the top:
-      // if ( length <= (MinRetract+8.0) /*|| Abs(length-lineLength)<8.0*/ ) {
+      // if ( currentLength <= (MinRetract+8.0) /*|| Abs(currentLength-lineLength)<8.0*/ ) {
         Instigator.Velocity = Instigator.Velocity*0.998;
       // }
       // Now always dampening.
 
-      // if (/*length > 4*MinRetract &&*/ Instigator.Velocity.Z<0) {
+      // if (/*currentLength > 4*MinRetract &&*/ Instigator.Velocity.Z<0) {
         // Instigator.Velocity.Z *= 0.99;
       // }
 
@@ -462,14 +467,16 @@ state() PullTowardStatic
       // Deal with grapple pull:
       if (bLinePhysics) {
         if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
-          lineLength = lineLength + 0.3 * grappleSpeed*DeltaTime;
+          doInwardPull = False;
+          lineLength = currentLength;
+          // lineLength = lineLength + 2 * 0.3 * grappleSpeed*DeltaTime;
           // Force correct length:
           // Instigator.SetLocation( pullDest + lineLength*-Inward );
           // Instigator.SetLocation( pullDest + Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,1) );
           // Undo the "keep the same length" from earlier:
           Master.AmbientSound = ReleaseSound;
           AmbientSound = ReleaseSound;
-        } else if (lineLength<=MinRetract || (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0)) { // TODO: right now this applies even if weapon is switched, and we primary fire with that :f
+        } else if ((lineLength<=MinRetract && bSingleLine) || (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0)) { // TODO: right now this applies even if weapon is switched, and we primary fire with that :f
           Master.AmbientSound = None;
           AmbientSound = None;
         } else {
@@ -478,24 +485,24 @@ state() PullTowardStatic
           Master.AmbientSound = PullSound;
           AmbientSound = PullSound;
         }
-        if (lineLength<MinRetract) lineLength=MinRetract;
-        if (length > lineLength) {
+        if (lineLength<MinRetract && bSingleLine) lineLength=MinRetract;
+        if (currentLength > lineLength) {
         /*
           // Line has elongated!  This is not allowed!
-          // Instigator.ClientMessage("Elongation = "$ (length - lineLength) $" Velocity = "$ VSize(Instigator.Velocity));
+          // Instigator.ClientMessage("Elongation = "$ (currentLength - lineLength) $" Velocity = "$ VSize(Instigator.Velocity));
           // Elasticity if the line was lengthened by the player swinging.
-          // linePull += (length - lineLength)*100.0; // Provide velocity to cancel the change in 0.01 seconds.
-          Instigator.AddVelocity( (length - lineLength) * Inward * 1.0 );
+          // linePull += (currentLength - lineLength)*100.0; // Provide velocity to cancel the change in 0.01 seconds.
+          Instigator.AddVelocity( (currentLength - lineLength) * Inward * 1.0 );
           // Instigator.AddVelocity( grappleSpeed * Inward * DeltaTime );
           // TODO BUG: because it is not pre-emptive, we get pulled up in jerks.
           // TODO BUG: this method is always jerky unless we also do the below.
           //           but the below can cause unrealistic swinging around on the ceiling!
-          // Instigator.AddVelocity( (length - lineLength) * Inward * 5.0 );
+          // Instigator.AddVelocity( (currentLength - lineLength) * Inward * 5.0 );
           // TODO: This new approach could replace all the gravity tweaks we made.
           // TODO: But it just doesn't work; it doesn't allow us to swing.
           // Respond with upward pull:  (This must be *as well as* and *less than* inward pull, otherwise we can just float up and up, and elongation increases!)
           if (pullDest.Z > Instigator.Location.Z) {
-            Instigator.AddVelocity( (length - lineLength) * Vect(0,0,1) * 1.5 );
+            Instigator.AddVelocity( (currentLength - lineLength) * Vect(0,0,1) * 1.5 );
             // 2.0 was too strong, allowed u to almost pr.vent swingback entirely!
             // But 1.0 was too weak, you couldn't add enough swing to be useful.
             // Well this does add some extra swinging power, but not really enough.
@@ -504,12 +511,12 @@ state() PullTowardStatic
           // Force correct length:
           Instigator.SetLocation( pullDest + lineLength*-Inward );
           // BUG: If bLineOfSight=False, this can pull us through walls!
-        } else if (length < lineLength /*&& length>=MinRetract*/) {
+        } else if (currentLength < lineLength /*&& currentLength>=MinRetract*/) {
           // Line is shorter than it should be.
           // Undo the inward pull effect:
           doInwardPull = False;
           // Alternatively, shorten the line to the new length!
-          // lineLength = length;
+          // lineLength = currentLength;
         }
      } else {
         if (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0) {
@@ -519,13 +526,14 @@ state() PullTowardStatic
         } else {
           power = 1.0;
           if (bExtraPower) {
-            power += 1.0 + 1.5 * FMin(1.0, length / 1024.0 );
+            power += 1.0 + 1.5 * FMin(1.0, currentLength / 1024.0 );
           }
           Master.AmbientSound = PullSound;
           AmbientSound = PullSound;
         }
         if (bCrouchReleases) {
           if (PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
+             // We make no pull with the line at all, gravity affects us and we get our new line length.
              power = 0.0;
              // Instigator.AddVelocity( Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * -Inward );
              // Instigator.AddVelocity( Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
@@ -535,7 +543,7 @@ state() PullTowardStatic
              AmbientSound = ReleaseSound;
            }
         }
-        if (length <= MinRetract) {
+        if (currentLength <= MinRetract && bSingleLine) {
           power = 0.0;
           Master.AmbientSound = None;
           AmbientSound = None;
@@ -550,7 +558,7 @@ state() PullTowardStatic
       if (doInwardPull) {
         // Deal with any outward velocity (against the line):
         outwardPull = Instigator.Velocity Dot Normal(Instigator.Location-pullDest);
-        if (outwardPull<0 || length <= MinRetract) outwardPull=0;
+        if (outwardPull<0 || (currentLength <= MinRetract && bSingleLine)) outwardPull=0;
         // if (outwardPull<1.0) outwardPull=1.0*outwardPull*outwardPull; // Smooth the last inch
         // This makes the line weak and stretchy:
         // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime;
@@ -590,7 +598,7 @@ state() PullTowardStatic
     } else {
 
       // Original grapple
-      if ( length <= MinRetract ) {
+      if ( currentLength <= MinRetract && bSingleLine ) {
         // When we reach destination, we just stop
         Instigator.SetPhysics(PHYS_None);
         Instigator.AddVelocity(Instigator.Velocity * -1);

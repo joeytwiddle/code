@@ -95,7 +95,7 @@ function GiveWeaponsTo (Pawn P)
     if (P.PlayerReplicationInfo.Deaths==0) {
       // P.ClientMessage("You have a Grappling Hook.");
       if (bDefaultBehindView || bDefaultChangeFOV) {
-        P.ClientMessage("To disable the grapple's behind-view switching: mutate BV off");
+        P.ClientMessage("To disable the grapple's BehindView switching: mutate BV off");
       }
     }
     // Remove any Translocator they might have:
@@ -156,6 +156,9 @@ function Mutate (string MutateString, PlayerPawn Sender)
   if (MutateString ~= "BV off") {
     bBehindView[Sender.PlayerReplicationInfo.PlayerID%64]=0;
     bChangeFOV[Sender.PlayerReplicationInfo.PlayerID%64]=0;
+    // Reset their settings.  BUG: Eek if they type this *before* using the grapple, their FOV will be changed to default 90.  And maybe they wanted to be in behindview, just not switching!
+    Sender.ConsoleCommand("BehindView 0");
+    Sender.ConsoleCommand("FOV "$PreviousFOV[Sender.PlayerReplicationInfo.PlayerID%64]);
   }
   if (MutateString ~= "BV on") {
     bBehindView[Sender.PlayerReplicationInfo.PlayerID%64]=1;
@@ -177,6 +180,7 @@ function OnSelect(PlayerPawn p) {
       //// This method didn't work even when I made the calling functi0ns "simulated":
       // p.DefaultFOV = 110;
       // p.DesiredFOV = 110;
+      //// Well of course, we are in the mutator, although we were called by the weapon.
     }
   }
 }
