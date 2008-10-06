@@ -1,10 +1,14 @@
 kxGrapplingHook
 
+
+
 Install:
 
 Drop the .u .int .ini files into System folder.
 Add ServerPackages=kxGrapple to UnrealTournament.ini.
 Use the kxGrapple.kxMutator mutator in a new game.
+
+
 
 Overview:
 
@@ -18,15 +22,40 @@ I found behindview very useful when using this weapon, so I have included automa
 
 By default flag-carriers will drop the flag if they try to use the grappling weapon (bDropFlag).
 
-Other options: You may wish to increase GrappleSpeed, or set bExtraPower to make it faster at *distance* (eh not yet with bLinePhysics).
+The default controls are designed to feel like the Translocator: PrimaryFire to throw, SecondaryFire to retrieve, click with both buttons to return to previous weapon.
+
+
+
+Other options:
+
+You may wish to increase GrappleSpeed, or set bExtraPower to make it faster at *distance* (eh not yet with bLinePhysics).  Making the winch faster makes the grapple easier to use, but I think it makes players too fast.  Instead, don't rely on the winch to pull you up - aim the hook *above* you and swing up, before aiming the next hook ahead.
+
+DO NOT set bIdenticalButtons, it is BUGGY!  It was supposed to make both fire buttons act the same, simply firing and retracting the hook alternately.
+
+
 
 Tips:
 
-Aim your grapple at the ceiling and dodge/run forwards to swing upwards.  For fast swings without losing height, aim at the ceiling halfway to your destination, and make a fast wide swing outwards.  (I practiced those on Bleak.)
+Aim your grapple directly at the ceiling and dodge or run and jump to swing upwards.  For fast swings without losing height, aim at the ceiling halfway to your destination, and dodge outwards to make a wide swing.  (I practiced those on Bleak.)
 
 To scale the outside of the tower in Face, aim your grapple at the wall and swing sideways, when you reach the top of your swing, throw the grapple at the wall again, this time a little higher.  To quickly cross the map in Face, you can aim at the distant sky above, and make a long swing.  To get back up from below the Asteroid on Face, just get your hook into one of the towers, and winch up.
+
+
 
 History:
 
 adminthis from No Downloads released a nice update of the Expert 100 grappling hook, and increased the speed so it started to become as powerful as a translocator.  With nicely planned routes you could make use of air control and get some extra speed, so I found the weapon very nice to learn.  But the unrealistic physics just bugged me no end, so I just had to implement this feature.  Thanks also to Newton and my mechanics teacher Mr. O'Boyle.
+
+
+
+Bugs:
+
+I fixed a fair few damn bugs with the line splitting, but I would not be surprised if there are more waiting to appear...
+
+bIdenticalButtons does not work.
+
+Weapon is default spawn weapon although it should not be, and it often fires on click-to-spawn!
+
+Makes amp sound when used with amp.  Translocator does not do this.
+
 
