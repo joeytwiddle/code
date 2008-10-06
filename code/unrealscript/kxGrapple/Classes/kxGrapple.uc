@@ -21,6 +21,9 @@
 // TODO: autowind but don't hear winding in unless i click!
 // TODO: shieldbelt behind character (by 1 tick?  can this be fixed with velocity or ordering of processing?)
 // TODO: unwind drops back in steps
+// TODO: bCrouchReleases makes a noise when bSwingPhysics=False, but does not act :P  If bPrimaryWinch is disabled, we still only get the noise is we primary fire :P
+// TODO: Still the issue of primary fire while swinging but switched to another weapon.  Consider preventing winching but allowing it by some other mechanism.
+// CONSIDER: Instead of bPrimaryWinch, bPrimaryFirePausesWinching or bWalkPausesWinching ?
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -35,7 +38,7 @@ var() config float grappleSpeed;
 var() config float hitdamage;
 var() config bool bDoAttachPawn;
 var() config bool bLineOfSight;
-var() config bool bLetHookSlip;
+var() config bool bLineFolding;
 var() config bool bDropFlag;
 var() config bool bSwingPhysics;
 var() config bool bLinePhysics;
@@ -55,7 +58,6 @@ var() config bool bDebugLogging;
 
 var kx_GrappleLauncher Master;
 var Vector pullDest;
-var Vector hNormal;
 var bool bAttachedToThing;
 var Actor thing;
 var bool bThingPawn;
@@ -65,13 +67,16 @@ var float lineLength;
 // var rocketmk2 LineSprite;
 var kxLine LineSprite;
 var bool bDestroyed;
+var Vector hNormal; // Never actually used, just a temporary variable for Trace().
 
 replication {
   unreliable if ( Role == ROLE_Authority )
     // pullDest,hNormal,thing,Master,bThingPawn,lineLength,LineSprite;
     pullDest,lineLength,thing,Master;
+  // reliable if ( Role == ROLE_Authority )
+    // LineSprite;
   reliable if ( Role == ROLE_Authority )
-    LineSprite;
+    LineSprite,bDestroyed;
 }
 
 auto state Flying {
@@ -83,17 +88,18 @@ auto state Flying {
     outRot.Pitch += ThrowAngle*8192/45;
     Velocity = vector(outRot) * speed;
     pullDest = Location;
-    InitLineSprite();
     // Let's point the mesh in the opposite direction:
-    // outRot.Roll = -Rotation.Roll;
     outRot.Yaw = Rotation.Yaw + 32768;
     outRot.Pitch = -Rotation.Pitch;
     SetRotation(outRot);
+    // InitLineSprite();
   }
 
   simulated function Tick(float DeltaTime) {
-    UpdateLineSprite();
     pullDest = Location;
+    // if (LineSprite != None)
+      // LineSprite.Pivot = Location;
+    UpdateLineSprite();
   }
 
   // Is this pickup handling?
@@ -110,6 +116,9 @@ auto state Flying {
 
   simulated function HitWall (Vector HitNormal, Actor Wall) {
     pullDest = Location + 10.0*DrawScale*Vector(Rotation);
+    InitLineSprite();
+    if (LineSprite != None)
+      LineSprite.Pivot = pullDest;
     hNormal = HitNormal;
     SetPhysics(PHYS_None);
     lineLength = VSize(Instigator.Location - pullDest);
@@ -229,6 +238,7 @@ simulated function InitLineSprite() { // simulated needed?
     }
     // LineSprite.SetFromTo(Instigator,Self);
     LineSprite.GrappleParent = Self;
+    LineSprite.Pivot = pullDest; // Actually this is too early, since the grapple itself is moving.  We set it again later.
     // LineSprite.Mesh = 'botpack.shockbm';
     // LineSprite.Mesh = mesh'Botpack.bolt1';
     LineSprite.SetPhysics(PHYS_Rotating);
@@ -300,38 +310,15 @@ function CheckFlagDrop() {
 
 state() PullTowardStatic
 {
-  simulated function Tick (float DeltaTime)
-  {
+
+  simulated function Tick (float DeltaTime) {
     local float length,outwardPull,linePull,power;
-    local Vector Inward,NewPivot;
-    local Actor A;
+    local Vector Inward;
     local bool doInwardPull;
 
     OnPull(DeltaTime);
 
-    // TODO, for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
-    if ( bLineOfSight ) {
-      if (bLetHookSlip) {
-        A = Trace(NewPivot,hNormal,pullDest,Instigator.Location,false);
-        if (A != None && VSize(NewPivot-pullDest)>5) {
-          Self.DrawType = DT_None;
-          // Self.SetLocation(NewPivot);
-          pullDest = NewPivot;
-          // if (bLinePhysics) {
-            lineLength = VSize(Instigator.Location - pullDest);
-          // }
-          // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
-          PlaySound(HitSound,SLOT_Interface,10.0);
-          Master.PlaySound(HitSound,SLOT_Interface,10.0);
-          // Instigator.ClientMessage("Hook slipped! Hit "$A);
-          // return; // Don't return, we gotta render this new style!
-        }
-      } else {
-        if (!Instigator.LineOfSightTo(self)) {
-          Destroy();
-        }
-      }
-    }
+    DoLineOfSightChecks();
 
     length = VSize(Instigator.Location - pullDest);
 
@@ -501,7 +488,83 @@ state() PullTowardStatic
     UpdateLineSprite();
 
   }
-  
+
+  simulated function DoLineOfSightChecks() {
+    local Actor A;
+    local Vector NewPivot;
+    local kxLine LastLine;
+
+    // TESTING: for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
+    // BUG: a further harder part, is to have the line slip over the corner where it folds, as the player swings below.
+    if ( bLineOfSight ) {
+      if (bLineFolding) {
+
+        // Check if we have swung back, and the line will become one again:
+        if (LineSprite != None) {
+          LastLine = LineSprite.ParentLine;
+          if (LastLine != None) {
+            // BUG: We don't actually have the pivot point of inbetween lines, so we just go straight for the grappling hook.
+            // TODO: On second thought, we could just go for LastLine.Location :P
+            // LastLine.Pivot = LastLine.GrappleParent.Location; // TODO: undo this cheat
+            A = Trace(NewPivot,hNormal,LastLine.Pivot,Instigator.Location,false);
+            if (A == None || A==LastLine) {
+              // We can see the grapple again!
+              pullDest = LastLine.Pivot;
+              lineLength = VSize(Instigator.Location - pullDest);
+
+              LineSprite.bStopped = True;
+              LineSprite.DrawType = DT_None;
+              LineSprite.SetPhysics(PHYS_None);
+              LineSprite.Destroy(); // Fail as expected :P
+
+              LineSprite = LastLine;
+
+              LastLine.bStopped = False;
+              LastLine.SetPhysics(PHYS_Rotating);
+              // CONSIDER: If this revival of old kxLine fails, we could destroy it and just spawn a fresh one.
+              Instigator.ClientMessage("Your grappling line has straightened "$A);
+            }
+          }
+        }
+
+        // Check if the line has swung around a corner:
+        A = Trace(NewPivot,hNormal,pullDest,Instigator.Location,false);
+        if (A != None && VSize(NewPivot-pullDest)>5) {
+          // Self.DrawType = DT_None;
+          // Self.SetLocation(NewPivot);
+          // if (pullDest != LineSprite.Pivot) {
+            // BroadcastMessage("Warning! pullDest "$pullDest$" != Pivot "$LineSprite.Pivot$"");
+          // }
+          LineSprite.Pivot = pullDest;
+          pullDest = NewPivot;
+          lineLength = VSize(Instigator.Location - pullDest);
+          // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
+          // PlaySound(HitSound,SLOT_Interface,10.0);
+          // Master.PlaySound(HitSound,SLOT_Interface,10.0);
+          // No joy.
+          // Leave the old line part hanging, and create a new part:
+          if (LineSprite != None) {
+            LineSprite.bStopped = True;
+            // LineSprite.SetPhysics(PHYS_None);
+            LineSprite.Velocity = vect(0,0,0);
+            LastLine = LineSprite;
+            LineSprite = None;
+            InitLineSprite();
+            LineSprite.ParentLine = LastLine;
+          }
+          Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
+          // return; // Don't return, we gotta render this new style!
+        }
+
+      } else {
+        if (!Instigator.LineOfSightTo(self)) {
+          Destroy();
+        }
+      }
+    }
+
+  }
+
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
   {
     Instigator.AmbientSound = None;
@@ -527,6 +590,8 @@ state() PullTowardDynamic
     if (Thing==None)
      Self.Destroy();
     pullDest = Thing.Location;
+    if (LineSprite != None)
+      LineSprite.Pivot = Thing.Location;
     if (VSize(Thing.Location-Location)>10) {
       Self.SetLocation( Location*0.1 + Thing.Location*0.9);
       Self.Velocity = Thing.Velocity;
@@ -565,7 +630,7 @@ defaultproperties
     hitdamage=20.00
     bDoAttachPawn=True
     bLineOfSight=False
-    bLetHookSlip=True
+    bLineFolding=True
     speed=4000.00
     MaxSpeed=4000.00
     MyDamageType=eviscerated

@@ -104,10 +104,8 @@ function ReturnToPreviousWeapon() {
 function Fire (optional float Value)
 {
   GotoState('NormalFire');
-  if ( kxGrapple == None )
-  {
-    if ( PlayerPawn(Owner) != None )
-    {
+  if ( kxGrapple == None ) {
+    if ( PlayerPawn(Owner) != None ) {
       PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
     }
     bPointing = True;
@@ -129,21 +127,19 @@ function Fire (optional float Value)
   } else if (bIdenticalButtons) {
     AltFire(Value);
   }
-  if ( Owner.bHidden )
-  {
+  if ( Owner.bHidden ) {
     CheckVisibility();
   }
 }
 
 function AltFire (float Value)
 {
-  if ( kxGrapple != None )
-  {
+  if ( kxGrapple != None ) {
     AmbientSound = None;
     kxGrapple.Destroy();
     kxGrapple = None;
   } else if (bIdenticalButtons) {
-    Fire(Value); return;
+    Fire(Value);
   }
   GotoState('AltFiring');
 }
