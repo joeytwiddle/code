@@ -71,10 +71,12 @@ var Vector hNormal; // Never actually used, just a temporary variable for Trace(
 
 replication {
   // I changed this to "reliable" and nothing changed :P
-  reliable if ( Role == ROLE_Authority )
-    pullDest,lineLength,thing,Master,LineSprite,bDestroyed,bThingPawn,hNormal;
-  // reliable if ( Role == ROLE_Authority )
-    // LineSprite;
+  reliable if (Role == ROLE_Authority)
+    pullDest,lineLength,thing,Master,LineSprite,bDestroyed; // ,bThingPawn,hNormal;
+  reliable if (Role == ROLE_Authority)
+    InitLineSprite,DoLineOfSightChecks; // ,bThingPawn,hNormal;
+  unreliable if (Role == ROLE_Authority)
+    UpdateLineSprite;
   // I changed this to "unreliable" and nothing changed :P
   // reliable if ( Role == ROLE_Authority )
     // LineSprite,bDestroyed;
@@ -93,13 +95,15 @@ auto state Flying {
     outRot.Yaw = Rotation.Yaw + 32768;
     outRot.Pitch = -Rotation.Pitch;
     SetRotation(outRot);
-    // InitLineSprite();
+    InitLineSprite();
   }
 
   simulated function Tick(float DeltaTime) {
     pullDest = Location;
     // if (LineSprite != None)
       // LineSprite.Pivot = Location;
+    // if (LineSprite==None)
+      // InitLineSprite();
     UpdateLineSprite();
   }
 
@@ -116,8 +120,8 @@ auto state Flying {
   }
 
   simulated function HitWall (Vector HitNormal, Actor Wall) {
-    pullDest = Location + 10.0*DrawScale*Vector(Rotation);
-    InitLineSprite();
+    pullDest = Location + 11.0*DrawScale*Vector(Rotation);
+    // InitLineSprite();
     if (LineSprite != None)
       LineSprite.Pivot = pullDest;
     hNormal = HitNormal;
@@ -174,7 +178,7 @@ simulated event Destroyed ()
   if (LineSprite!=None) {
     if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite "$LineSprite); }
     LineSprite.GrappleParent = None;
-    LineSprite.LifeSpan = 0;
+    LineSprite.LifeSpan = 1;
     LineSprite.Destroy();
     LineSprite = None;
     // lol it's still there
@@ -198,8 +202,9 @@ simulated event Destroyed ()
 simulated function InitLineSprite() { // simulated needed?
   local float numPoints;
   if (bShowLine) {
+    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
     // if (Role != ROLE_Authority) { // spawns it on server only
-    // if (Role == ROLE_Authority) {
+    // if (Role == ROLE_Authority) { // don't spawn it on server but maybe on client
       // if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end."); }
       // return;
     // }
@@ -242,13 +247,13 @@ simulated function InitLineSprite() { // simulated needed?
     LineSprite.Pivot = pullDest; // Actually this is too early, since the grapple itself is moving.  We set it again later.
     // LineSprite.Mesh = 'botpack.shockbm';
     // LineSprite.Mesh = mesh'Botpack.bolt1';
-    LineSprite.SetPhysics(PHYS_Rotating);
-    LineSprite.Style = STY_Translucent;
     LineSprite.Mesh = LineMesh;
     LineSprite.Texture = LineTexture;
-    LineSprite.DrawType = DT_Mesh;
-    LineSprite.RemoteRole = ROLE_SimulatedProxy;
-    LineSprite.NetPriority = 2.5;
+    // LineSprite.SetPhysics(PHYS_Rotating);
+    // LineSprite.Style = STY_Translucent;
+    // LineSprite.DrawType = DT_Mesh;
+    // LineSprite.RemoteRole = ROLE_SimulatedProxy;
+    // LineSprite.NetPriority = 2.6;
     // LineSprite.Texture = Texture'UMenu.Icons.Bg41';
     // LineSprite.LifeSpan = 60;
     // LineSprite.RemoteRole = ROLE_None;
@@ -264,6 +269,7 @@ simulated function InitLineSprite() { // simulated needed?
 simulated function UpdateLineSprite() {
   local float numPoints;
   if (bShowLine) {
+    if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
     if (Role != ROLE_Authority) {
       return;
     }
@@ -307,6 +313,92 @@ function CheckFlagDrop() {
   if (bDropFlag && Instigator.PlayerReplicationInfo.HasFlag != None) {
     CTFFlag(Instigator.PlayerReplicationInfo.HasFlag).Drop(vect(0,0,0));
   }
+}
+
+simulated function DoLineOfSightChecks() {
+  local Actor A;
+  local Vector NewPivot;
+  local kxLine LastLine;
+
+  if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Running with Role="$Role$" LineSprite="$LineSprite); }
+  // This established that it was running on the client but never doing any of the below.
+
+  // TESTING: for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
+  // BUG: a further harder part, is to have the line slip over the corner where it folds, as the player swings below.
+  if ( bLineOfSight ) {
+    if (bLineFolding) {
+
+      // Check if we have swung back, and the line will become one again:
+      if (LineSprite != None) {
+        LastLine = LineSprite.ParentLine;
+        if (LastLine != None) {
+          // BUG: We don't actually have the pivot point of inbetween lines, so we just go straight for the grappling hook.
+          // TODO: On second thought, we could just go for LastLine.Location :P
+          // LastLine.Pivot = LastLine.GrappleParent.Location; // TODO: undo this cheat
+          A = Trace(NewPivot,hNormal,LastLine.Pivot,Instigator.Location,false);
+          if (A == None || A==LastLine) {
+            // We can see the grapple again!
+            pullDest = LastLine.Pivot;
+            lineLength = VSize(Instigator.Location - pullDest);
+
+            if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
+
+            LineSprite.bStopped = True;
+            LineSprite.DrawType = DT_None;
+            LineSprite.SetPhysics(PHYS_None);
+            // LineSprite.Disable('Tick');
+            LineSprite.Destroy(); // Fail as expected :P
+
+            LineSprite = LastLine;
+
+            LastLine.bStopped = False;
+            LastLine.SetPhysics(PHYS_Rotating);
+            // LastLine.Enable('Tick');
+            // LastLine.Reached = vect(0,0,0); // we could use it as a marker like bStopped
+            // CONSIDER: If this revival of old kxLine fails, we could just destroy it and spawn a fresh one.
+            // Instigator.ClientMessage("Your grappling line has straightened "$A);
+          }
+        }
+      }
+
+      // Check if the line has swung around a corner:
+      A = Trace(NewPivot,hNormal,pullDest,Instigator.Location,false);
+      if (A != None && VSize(NewPivot-pullDest)>5) {
+        // Self.DrawType = DT_None;
+        // Self.SetLocation(NewPivot);
+        // if (pullDest != LineSprite.Pivot) {
+          // BroadcastMessage("Warning! pullDest "$pullDest$" != Pivot "$LineSprite.Pivot$"");
+        // }
+        LineSprite.Pivot = pullDest;
+        LineSprite.Reached = NewPivot;
+        pullDest = NewPivot;
+        lineLength = VSize(Instigator.Location - pullDest);
+        // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
+        // PlaySound(HitSound,SLOT_Interface,10.0);
+        // Master.PlaySound(HitSound,SLOT_Interface,10.0);
+        // No joy.
+        // Leave the old line part hanging, and create a new part:
+        if (LineSprite != None) {
+          LineSprite.bStopped = True;
+          LineSprite.SetPhysics(PHYS_None);
+          LineSprite.Velocity = vect(0,0,0);
+          LastLine = LineSprite;
+          LineSprite = None;
+          InitLineSprite();
+          LineSprite.ParentLine = LastLine;
+        }
+        // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
+        if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
+        // return; // Don't return, we gotta render this new style!
+      }
+
+    } else {
+      if (!Instigator.LineOfSightTo(self)) {
+        Destroy();
+      }
+    }
+  }
+
 }
 
 state() PullTowardStatic
@@ -490,86 +582,6 @@ state() PullTowardStatic
 
   }
 
-  simulated function DoLineOfSightChecks() {
-    local Actor A;
-    local Vector NewPivot;
-    local kxLine LastLine;
-
-    // TESTING: for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
-    // BUG: a further harder part, is to have the line slip over the corner where it folds, as the player swings below.
-    if ( bLineOfSight ) {
-      if (bLineFolding) {
-
-        // Check if we have swung back, and the line will become one again:
-        if (LineSprite != None) {
-          LastLine = LineSprite.ParentLine;
-          if (LastLine != None) {
-            // BUG: We don't actually have the pivot point of inbetween lines, so we just go straight for the grappling hook.
-            // TODO: On second thought, we could just go for LastLine.Location :P
-            // LastLine.Pivot = LastLine.GrappleParent.Location; // TODO: undo this cheat
-            A = Trace(NewPivot,hNormal,LastLine.Pivot,Instigator.Location,false);
-            if (A == None || A==LastLine) {
-              // We can see the grapple again!
-              pullDest = LastLine.Pivot;
-              lineLength = VSize(Instigator.Location - pullDest);
-
-              if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
-
-              LineSprite.bStopped = True;
-              LineSprite.DrawType = DT_None;
-              LineSprite.SetPhysics(PHYS_None);
-              LineSprite.Destroy(); // Fail as expected :P
-
-              LineSprite = LastLine;
-
-              LastLine.bStopped = False;
-              LastLine.SetPhysics(PHYS_Rotating);
-              // CONSIDER: If this revival of old kxLine fails, we could destroy it and just spawn a fresh one.
-              // Instigator.ClientMessage("Your grappling line has straightened "$A);
-            }
-          }
-        }
-
-        // Check if the line has swung around a corner:
-        A = Trace(NewPivot,hNormal,pullDest,Instigator.Location,false);
-        if (A != None && VSize(NewPivot-pullDest)>5) {
-          // Self.DrawType = DT_None;
-          // Self.SetLocation(NewPivot);
-          // if (pullDest != LineSprite.Pivot) {
-            // BroadcastMessage("Warning! pullDest "$pullDest$" != Pivot "$LineSprite.Pivot$"");
-          // }
-          LineSprite.Pivot = pullDest;
-          LineSprite.Reached = NewPivot;
-          pullDest = NewPivot;
-          lineLength = VSize(Instigator.Location - pullDest);
-          // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
-          // PlaySound(HitSound,SLOT_Interface,10.0);
-          // Master.PlaySound(HitSound,SLOT_Interface,10.0);
-          // No joy.
-          // Leave the old line part hanging, and create a new part:
-          if (LineSprite != None) {
-            LineSprite.bStopped = True;
-            // LineSprite.SetPhysics(PHYS_None);
-            LineSprite.Velocity = vect(0,0,0);
-            LastLine = LineSprite;
-            LineSprite = None;
-            InitLineSprite();
-            LineSprite.ParentLine = LastLine;
-          }
-          // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
-          if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
-          // return; // Don't return, we gotta render this new style!
-        }
-
-      } else {
-        if (!Instigator.LineOfSightTo(self)) {
-          Destroy();
-        }
-      }
-    }
-
-  }
-
   simulated function ProcessTouch (Actor Other, Vector HitLocation)
   {
     Instigator.AmbientSound = None;
@@ -640,6 +652,7 @@ defaultproperties
     MaxSpeed=4000.00
     MyDamageType=eviscerated
     bNetTemporary=False
+    NetPriority=2.6
     LifeSpan=60.00
     Texture=Texture'UMenu.Icons.Bg41'
     Mesh=LodMesh'UnrealShare.GrenadeM'
@@ -652,7 +665,7 @@ defaultproperties
     MinRetract=150
     // MinRetract=200
     // MinRetract=250
-    DrawScale=2.0
+    DrawScale=1.75
     CollisionRadius=0.2
     CollisionHeight=0.1
     RemoteRole=ROLE_SimulatedProxy
