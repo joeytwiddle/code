@@ -16,6 +16,11 @@ var bool bManualShot;
 var bool bShooting;
 var kxMutator kxMutator;
 
+replication {
+  reliable if (Role == ROLE_Authority)
+    bAutoDrop,bIdenticalButtons;
+}
+
 exec function AttachHook ()
 {
   PlayerPawn(Owner).ClientMessage("Trying to attachHook");
@@ -101,9 +106,10 @@ function ReturnToPreviousWeapon() {
   }
 }
 
-function Fire (optional float Value)
-{
+function Fire (optional float Value) {
   GotoState('NormalFire');
+
+  /*
   if ( kxGrapple == None ) {
     if ( PlayerPawn(Owner) != None ) {
       PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
@@ -127,13 +133,21 @@ function Fire (optional float Value)
   } else if (bIdenticalButtons) {
     AltFire(Value);
   }
+  */
+
+  if (bIdenticalButtons) {
+    DoOneOrOther();
+  } else {
+    TryThrow();
+  }
+
   if ( Owner.bHidden ) {
     CheckVisibility();
   }
 }
 
-function AltFire (float Value)
-{
+function AltFire (float Value) {
+  /*
   if ( kxGrapple != None ) {
     AmbientSound = None;
     kxGrapple.Destroy();
@@ -141,7 +155,54 @@ function AltFire (float Value)
   } else if (bIdenticalButtons) {
     Fire(Value);
   }
+  */
   GotoState('AltFiring');
+
+  if (bIdenticalButtons) {
+    DoOneOrOther();
+  } else {
+    TryRetrieve();
+  }
+}
+
+function DoOneOrOther() {
+  if (kxGrapple==None) {
+    TryThrow();
+  } else {
+    TryRetrieve();
+  }
+}
+
+function TryThrow() {
+  if ( kxGrapple == None ) {
+    if ( PlayerPawn(Owner) != None ) {
+      PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
+    }
+    bPointing = True;
+    PlayFiring();
+    PlaySound(class'kxGrapple'.default.ThrowSound,SLOT_Interface,2.0);
+    // AmbientSound = class'kxGrapple'.default.ThrowSound;
+    // AmbientSound = Sound'Hidraul2';
+    // AmbientSound = Sound'Slurp';
+    kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
+    if (kxGrapple == None) {
+      if (class'kxGrapple'.default.bDebugLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
+      // TODO: denied sound
+    } else {
+      kxGrapple.SetMaster(self);
+      // TODO BUG: These sounds are not working.  It would be nice to hear the line flying out.
+      kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
+      AmbientSound = class'kxGrapple'.default.ReleaseSound;
+    }
+  }
+}
+
+function TryRetrieve() {
+  if ( kxGrapple != None ) {
+    AmbientSound = None;
+    kxGrapple.Destroy();
+    kxGrapple = None;
+  }
 }
 
 state NormalFire

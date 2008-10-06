@@ -69,16 +69,18 @@ var float lineLength;
 var kxLine LineSprite;
 var bool bDestroyed;
 var Vector hNormal; // Never actually used, just a temporary variable for Trace().
+var Pawn InstigatorRep;
 
 replication {
   // I changed this to "reliable" and nothing changed :P
+  // reliable if (Role == ROLE_Authority)
+    // grappleSpeed,hitdamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bPrimaryWinch,bCrouchReleases,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,ThrowSound,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bDebugLogging; // Replicating all config vars in case server setting differs from class default.  Does this solve the winching sound problem?
   reliable if (Role == ROLE_Authority)
-    bPrimaryWinch; // Does this solve the winching sound problem?
-  reliable if (Role == ROLE_Authority)
-    pullDest,lineLength,thing,Master,LineSprite,bDestroyed; // ,bThingPawn,hNormal;
+    pullDest,lineLength,thing,Master,bDestroyed,InstigatorRep; // ,bThingPawn,hNormal;
+  reliable if (Role == ROLE_Authority) LineSprite; // We don't want the client and server to have different LineSprites, or they will turn themselves off :P
   reliable if (Role == ROLE_Authority)
     InitLineSprite,DoLineOfSightChecks; // This was what was needed to get the variables replicated into the lines.
-  unreliable if (Role == ROLE_Authority)
+  reliable if (Role == ROLE_Authority)
     UpdateLineSprite;
   // I changed this to "unreliable" and nothing changed :P
   // reliable if ( Role == ROLE_Authority )
@@ -98,6 +100,9 @@ auto state Flying {
     outRot.Yaw = Rotation.Yaw + 32768;
     outRot.Pitch = -Rotation.Pitch;
     SetRotation(outRot);
+    if (Role == ROLE_Authority) {
+      InstigatorRep = Instigator;
+    }
     InitLineSprite();
   }
 
@@ -105,8 +110,6 @@ auto state Flying {
     pullDest = Location;
     // if (LineSprite != None)
       // LineSprite.Pivot = Location;
-    // if (LineSprite==None)
-      // InitLineSprite();
     UpdateLineSprite();
   }
 
@@ -205,12 +208,12 @@ simulated event Destroyed ()
 simulated function InitLineSprite() { // simulated needed?
   local float numPoints;
   if (bShowLine || bLineFolding) {
-    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
-    // if (Role != ROLE_Authority) { // spawns it on server only
+    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" Inst="$Instigator$" InstRep="$InstigatorRep); }
+    if (Role != ROLE_Authority) { // spawns it on server only
     // if (Role == ROLE_Authority) { // don't spawn it on server but maybe on client
-      // if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end."); }
-      // return;
-    // }
+      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end."); }
+      return;
+    }
     // if (Level.NetMode ==1)
       // return;
     /*
@@ -229,23 +232,25 @@ simulated function InitLineSprite() { // simulated needed?
 
     // LineSprite = Spawn(class'Effects',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     // LineSprite = Spawn(class'rocketmk2',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
-    if (Instigator==None) {
-      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning Instigator="$Instigator$" so NOT spawning LineSprite now."); }
+    if (InstigatorRep==None) {
+      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning! InstigatorRep="$InstigatorRep$" so NOT spawning LineSprite now!"); }
+      return;
     }
+    // Instigator = InstigatorRep; // For client
     if (LineSprite == None) {
-      LineSprite = Spawn(class'kxLine',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
+      LineSprite = Spawn(class'kxLine',,,(InstigatorRep.Location+pullDest)/2,rotator(pullDest-InstigatorRep.Location));
       if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Spawned "$LineSprite); }
     } else {
       if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Re-using old UNCLEANED LineSprite "$LineSprite$"!"); }
       LineSprite.DrawType = DT_Mesh;
-      LineSprite.SetLocation((Instigator.Location+pullDest)/2);
-      LineSprite.SetRotation(rotator(pullDest-Instigator.Location));
+      LineSprite.SetLocation((InstigatorRep.Location+pullDest)/2);
+      LineSprite.SetRotation(rotator(pullDest-InstigatorRep.Location));
     }
     if (LineSprite == None) {
       if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() failed to spawn child kxLine!"); }
       return;
     }
-    // LineSprite.SetFromTo(Instigator,Self);
+    // LineSprite.SetFromTo(InstigatorRep,Self);
     LineSprite.GrappleParent = Self;
     LineSprite.Pivot = pullDest; // Actually this is too early, since the grapple itself is moving.  We set it again later.
     if (!bShowLine) {
@@ -280,6 +285,11 @@ simulated function InitLineSprite() { // simulated needed?
 
 simulated function UpdateLineSprite() {
   local float numPoints;
+
+  // This is here because occasionally the first InitLineSprite() was getting called with Instigator=None.  We try again now, in case that variable has been replicated.
+  if (LineSprite==None)
+    InitLineSprite();
+
   if (bShowLine) {
     // if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
     // LineSprite.Reached = Instigator.Location;
@@ -711,6 +721,6 @@ defaultproperties
     // LineMesh=mesh'Botpack.TracerM'
     // LineTexture=Texture'UMenu.Icons.Bg41'
     LineTexture=Texture'Botpack.ammocount'
-    bDebugLogging=True
+    bDebugLogging=True // Since kxLine accesses this as a default, sometimes this setting is more relevant than the server setting.
 }
 
