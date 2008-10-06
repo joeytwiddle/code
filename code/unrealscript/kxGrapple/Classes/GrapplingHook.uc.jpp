@@ -12,18 +12,19 @@
 // DONE: jump to un-grapple (only when holding another weapon)
 // TODO: jump to un-grapple sometimes fails because the tick didn't notice bPressedJump if the player only tapped jump quickly.
 // DONE: now that we have lineLength, we should make it a function of grappleSpeed.
-// TODO: you can get into very fast swings on the ceiling which never stop, presumably because we are always >MinRetract so the dampening never takes effect.
-// TODO: it would be nice to have a second mesh - the line between us and the grapple
+// TEST maybe fixed: you can get into very fast swings on the ceiling which never stop, presumably because we are always >MinRetract so the dampening never takes effect.
+// DONE: it would be nice to have a second mesh - the line between us and the grapple
 // TODO BUG: sometimes doublejump intercepts bJumping and clears it, or at any rate we don't see it.
 // TODO BUG: if there is lag (on the server) the physics breaks and the player sometimes gets tugged up in the air unrealistically!  Maybe bLinePhysics can help with this...
 // TODO: I have not yet put real physics into PullTowardDynamic.
 // TODO: At time of writing, bLinePhysics=False appears to have become a bit broken!
-// TODO: autowind but don't hear winding in unless i click!
 // TODO: shieldbelt behind character (by 1 tick?  can this be fixed with velocity or ordering of processing?)
 // TODO: unwind drops back in steps
-// TODO: bCrouchReleases makes a noise when bSwingPhysics=False, but does not act :P  If bPrimaryWinch is disabled, we still only get the noise is we primary fire :P
+// TODO: bCrouchReleases makes a noise when bSwingPhysics=False, but does not act :P  If bPrimaryWinch is disabled, we still only get the noise is we primary fire :P (autowind but don't hear winding in unless i click!)
 // TODO: Still the issue of primary fire while swinging but switched to another weapon.  Consider preventing winching but allowing it by some other mechanism.
 // CONSIDER: Instead of bPrimaryWinch, bPrimaryFirePausesWinching or bWalkPausesWinching ?
+// DONE: Line wrapping around corners magic.  Now kxLines must be created if bLineFolding=True even if bShowLine=False.
+// TODO: We should keep bBehindView preference client side.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -72,9 +73,11 @@ var Vector hNormal; // Never actually used, just a temporary variable for Trace(
 replication {
   // I changed this to "reliable" and nothing changed :P
   reliable if (Role == ROLE_Authority)
+    bPrimaryWinch; // Does this solve the winching sound problem?
+  reliable if (Role == ROLE_Authority)
     pullDest,lineLength,thing,Master,LineSprite,bDestroyed; // ,bThingPawn,hNormal;
   reliable if (Role == ROLE_Authority)
-    InitLineSprite,DoLineOfSightChecks; // ,bThingPawn,hNormal;
+    InitLineSprite,DoLineOfSightChecks; // This was what was needed to get the variables replicated into the lines.
   unreliable if (Role == ROLE_Authority)
     UpdateLineSprite;
   // I changed this to "unreliable" and nothing changed :P
@@ -201,7 +204,7 @@ simulated event Destroyed ()
 
 simulated function InitLineSprite() { // simulated needed?
   local float numPoints;
-  if (bShowLine) {
+  if (bShowLine || bLineFolding) {
     if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
     // if (Role != ROLE_Authority) { // spawns it on server only
     // if (Role == ROLE_Authority) { // don't spawn it on server but maybe on client
@@ -227,7 +230,7 @@ simulated function InitLineSprite() { // simulated needed?
     // LineSprite = Spawn(class'Effects',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     // LineSprite = Spawn(class'rocketmk2',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     if (Instigator==None) {
-      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning Instigator="$Instigator$" so expect Accessed None errors!"); }
+      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning Instigator="$Instigator$" so NOT spawning LineSprite now."); }
     }
     if (LineSprite == None) {
       LineSprite = Spawn(class'kxLine',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
@@ -245,31 +248,41 @@ simulated function InitLineSprite() { // simulated needed?
     // LineSprite.SetFromTo(Instigator,Self);
     LineSprite.GrappleParent = Self;
     LineSprite.Pivot = pullDest; // Actually this is too early, since the grapple itself is moving.  We set it again later.
-    // LineSprite.Mesh = 'botpack.shockbm';
-    // LineSprite.Mesh = mesh'Botpack.bolt1';
-    LineSprite.Mesh = LineMesh;
-    LineSprite.Texture = LineTexture;
-    // LineSprite.SetPhysics(PHYS_Rotating);
-    // LineSprite.Style = STY_Translucent;
-    // LineSprite.DrawType = DT_Mesh;
-    // LineSprite.RemoteRole = ROLE_SimulatedProxy;
-    // LineSprite.NetPriority = 2.6;
-    // LineSprite.Texture = Texture'UMenu.Icons.Bg41';
-    // LineSprite.LifeSpan = 60;
-    // LineSprite.RemoteRole = ROLE_None;
-    // LineSprite.bParticles = True;
-    // LineSprite.SetPhysics(PHYS_Projectile);
-    // LineSprite.SetPhysics(PHYS_Flying);
-    // LineSprite.bNetTemporary = True;
-    // LineSprite.bGameRelevant = True;
-    // LineSprite.bReplicateInstigator = True;
+    if (!bShowLine) {
+      LineSprite.bStopped = True;
+      LineSprite.DrawType = DT_None;
+    } else {
+      // LineSprite.Mesh = 'botpack.shockbm';
+      // LineSprite.Mesh = mesh'Botpack.bolt1';
+      LineSprite.Mesh = LineMesh;
+      LineSprite.Texture = LineTexture;
+      //// Made it look a bit of jelly.  Consider trying again but non-translucent.
+      // if (Level.bHighDetailMode) {
+        // LineSprite.bMeshEnviroMap = True;
+      // }
+      // LineSprite.SetPhysics(PHYS_Rotating);
+      // LineSprite.Style = STY_Translucent;
+      // LineSprite.DrawType = DT_Mesh;
+      // LineSprite.RemoteRole = ROLE_SimulatedProxy;
+      // LineSprite.NetPriority = 2.6;
+      // LineSprite.Texture = Texture'UMenu.Icons.Bg41';
+      // LineSprite.LifeSpan = 60;
+      // LineSprite.RemoteRole = ROLE_None;
+      // LineSprite.bParticles = True;
+      // LineSprite.SetPhysics(PHYS_Projectile);
+      // LineSprite.SetPhysics(PHYS_Flying);
+      // LineSprite.bNetTemporary = True;
+      // LineSprite.bGameRelevant = True;
+      // LineSprite.bReplicateInstigator = True;
+    }
   }
 }
 
 simulated function UpdateLineSprite() {
   local float numPoints;
   if (bShowLine) {
-    if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
+    // if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
+    // LineSprite.Reached = Instigator.Location;
     if (Role != ROLE_Authority) {
       return;
     }
@@ -320,8 +333,8 @@ simulated function DoLineOfSightChecks() {
   local Vector NewPivot;
   local kxLine LastLine;
 
-  if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Running with Role="$Role$" LineSprite="$LineSprite); }
-  // This established that it was running on the client but never doing any of the below.
+  // if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Running with Role="$Role$" LineSprite="$LineSprite); }
+  // OK good now got it running on the client too.
 
   // TESTING: for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
   // BUG: a further harder part, is to have the line slip over the corner where it folds, as the player swings below.
@@ -665,9 +678,9 @@ defaultproperties
     MinRetract=150
     // MinRetract=200
     // MinRetract=250
-    DrawScale=1.75
-    CollisionRadius=0.2
-    CollisionHeight=0.1
+    DrawScale=1.2
+    CollisionRadius=0.1
+    CollisionHeight=0.2
     RemoteRole=ROLE_SimulatedProxy
     Physics=PHYS_Projectile
     ThrowAngle=0
