@@ -1,0 +1,2 @@
+Object=(Name=kxGrapple.kx_GrappleLauncher,Class=Class,MetaClass=Botpack.TournamentWeapon,Description="kx Grappling Hook")
+Object=(Name=kxGrapple.kxMutator,Class=Class,MetaClass=Engine.Mutator,Description="Grappling Hook Game")
