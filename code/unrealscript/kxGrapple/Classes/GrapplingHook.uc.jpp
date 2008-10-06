@@ -58,7 +58,7 @@ var() config bool bShowLine;
 var() config sound ThrowSound,HitSound,PullSound,ReleaseSound,RetractSound;
 var() config Mesh LineMesh;
 var() config Texture LineTexture;
-var() config bool bDebugLogging;
+var() config bool bLogging;
 
 var kx_GrappleLauncher Master;
 var Vector pullDest;
@@ -77,7 +77,7 @@ var Pawn InstigatorRep;
 replication {
   // I changed this to "reliable" and nothing changed :P
   // reliable if (Role == ROLE_Authority)
-    // grappleSpeed,hitdamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bPrimaryWinch,bCrouchReleases,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,ThrowSound,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bDebugLogging; // Replicating all config vars in case server setting differs from class default.  Does this solve the winching sound problem?
+    // grappleSpeed,hitdamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bPrimaryWinch,bCrouchReleases,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,ThrowSound,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bLogging; // Replicating all config vars in case server setting differs from class default.  Does this solve the winching sound problem?
   reliable if (Role == ROLE_Authority)
     pullDest,lineLength,thing,Master,bDestroyed,InstigatorRep; // ,bThingPawn,hNormal;
   reliable if (Role == ROLE_Authority) LineSprite; // We don't want the client and server to have different LineSprites, or they will turn themselves off :P
@@ -165,27 +165,25 @@ auto state Flying {
 
 }
 
-simulated function SetMaster (kx_GrappleLauncher W)
-{
+simulated function SetMaster (kx_GrappleLauncher W) {
   Master = W;
   Instigator = Pawn(W.Owner);
   // InitLineSprite();
 }
 
-simulated event Destroyed ()
-{
+simulated event Destroyed () {
   local int i;
   local kxGrapple G;
   foreach AllActors(class'kxGrapple',G) {
     i++;
   }
-  if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$i$" kxGrapples on the level."); }
+  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$i$" kxGrapples on the level."); }
   Master.kxGrapple = None;
   AmbientSound = None;
   Master.AmbientSound = None;
   // if (Role==ROLE_Authority && LineSprite!=None) {
   if (LineSprite!=None) {
-    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite "$LineSprite); }
+    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite "$LineSprite); }
     LineSprite.GrappleParent = None;
     LineSprite.LifeSpan = 1;
     LineSprite.Destroy();
@@ -194,7 +192,7 @@ simulated event Destroyed ()
   } else {
     // Log(Level.TimeSeconds$" "$Self$".Destroyed() Not destroying my LineSprite "$LineSprite);
     // Log(Level.TimeSeconds$" "$Self$".Destroyed() Not destroying my LineSprite "$LineSprite$" since it should be None!");
-    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Cannot destroy LineSprite="$LineSprite$"!"); }
+    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Cannot destroy LineSprite="$LineSprite$"!"); }
   }
   bDestroyed = True; // This is what actually cleans up the LineSprite!
   // PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
@@ -211,10 +209,10 @@ simulated event Destroyed ()
 simulated function InitLineSprite() { // simulated needed?
   local float numPoints;
   if (bShowLine || bLineFolding) {
-    if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" Inst="$Instigator$" InstRep="$InstigatorRep); }
+    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" Inst="$Instigator$" InstRep="$InstigatorRep); }
     if (Role != ROLE_Authority) { // spawns it on server only
     // if (Role == ROLE_Authority) { // don't spawn it on server but maybe on client
-      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end."); }
+      if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end."); }
       return;
     }
     // if (Level.NetMode ==1)
@@ -236,22 +234,22 @@ simulated function InitLineSprite() { // simulated needed?
     // LineSprite = Spawn(class'Effects',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     // LineSprite = Spawn(class'rocketmk2',,,(Instigator.Location+pullDest)/2,rotator(pullDest-Instigator.Location));
     if (InstigatorRep==None) {
-      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning! InstigatorRep="$InstigatorRep$" so NOT spawning LineSprite now!"); }
+      if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Warning! InstigatorRep="$InstigatorRep$" so NOT spawning LineSprite now!"); }
       return;
     }
     // Instigator = InstigatorRep; // For client
     if (LineSprite == None) {
       // LineSprite = Spawn(class'kxLine',,,(InstigatorRep.Location+pullDest)/2,rotator(pullDest-InstigatorRep.Location));
       LineSprite = Spawn(class'kxLine',,,,);
-      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Spawned "$LineSprite); }
+      if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Spawned "$LineSprite); }
     } else {
-      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Re-using old UNCLEANED LineSprite "$LineSprite$"!"); }
+      if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Re-using old UNCLEANED LineSprite "$LineSprite$"!"); }
       LineSprite.DrawType = DT_Mesh;
       LineSprite.SetLocation((InstigatorRep.Location+pullDest)/2);
       LineSprite.SetRotation(rotator(pullDest-InstigatorRep.Location));
     }
     if (LineSprite == None) {
-      if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() failed to spawn child kxLine!"); }
+      if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() failed to spawn child kxLine!"); }
       return;
     }
     // LineSprite.SetFromTo(InstigatorRep,Self);
@@ -260,6 +258,7 @@ simulated function InitLineSprite() { // simulated needed?
     if (!bShowLine) {
       LineSprite.bStopped = True;
       LineSprite.DrawType = DT_None;
+      // LineSprite.Disable('Tick'); // Ah no it needs to know when to destroy itself.  Anyway bStopped is set, so Tick() is not doing so much work.
     } else {
       // LineSprite.Mesh = 'botpack.shockbm';
       // LineSprite.Mesh = mesh'Botpack.bolt1';
@@ -295,7 +294,7 @@ simulated function UpdateLineSprite() {
     InitLineSprite();
 
   if (bShowLine) {
-    // if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
+    // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
     // LineSprite.Reached = Instigator.Location;
     if (Role != ROLE_Authority) {
       return;
@@ -347,7 +346,7 @@ simulated function DoLineOfSightChecks() {
   local Vector NewPivot;
   local kxLine LastLine;
 
-  // if (bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Running with Role="$Role$" LineSprite="$LineSprite); }
+  // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Running with Role="$Role$" LineSprite="$LineSprite); }
   // OK good now got it running on the client too.
 
   // TESTING: for ultra realism, keep a list of points our line has pulled around, and if we swing back to visibility to the previous point, relocate!
@@ -366,7 +365,7 @@ simulated function DoLineOfSightChecks() {
             pullDest = LastLine.Pivot;
             lineLength = VSize(Instigator.Location - pullDest);
 
-            if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
+            if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
 
             LineSprite.bStopped = True;
             LineSprite.DrawType = DT_None;
@@ -410,6 +409,7 @@ simulated function DoLineOfSightChecks() {
           InitLineSprite();
           if (LineSprite == None) {
             // Oh no! Sometimes we do get "failed to spawn child kxLine!", often when the wall is quite close, and the child line will not spawn because it is inside the wall?
+            // This may happen less now that I've set kxLine.bCollideWorld=False.
             // Re-enable the line we just failed to split:
             LineSprite = LastLine;
             NewPivot = LastLine.Pivot;
@@ -421,7 +421,7 @@ simulated function DoLineOfSightChecks() {
         pullDest = NewPivot;
         lineLength = VSize(Instigator.Location - pullDest);
         // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
-        if (bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
+        if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
         // return; // Don't return, we gotta render this new style!
       }
 
@@ -434,8 +434,7 @@ simulated function DoLineOfSightChecks() {
 
 }
 
-state() PullTowardStatic
-{
+state() PullTowardStatic {
 
   simulated function Tick (float DeltaTime) {
     local float currentLength,outwardPull,linePull,power;
@@ -622,25 +621,22 @@ state() PullTowardStatic
 
   }
 
-  simulated function ProcessTouch (Actor Other, Vector HitLocation)
-  {
+  simulated function ProcessTouch (Actor Other, Vector HitLocation) {
     Instigator.AmbientSound = None;
     AmbientSound = None;
     Destroy();
   }
-  
-  simulated function BeginState ()
-  {
+
+  simulated function BeginState () {
     if (!bSwingPhysics) {
       Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed;
     }
     Instigator.SetPhysics(PHYS_Falling);
   }
-  
+
 }
 
-state() PullTowardDynamic
-{
+state() PullTowardDynamic {
   // ignores  Tick;
 
   simulated function Tick(float DeltaTime) {
@@ -669,39 +665,36 @@ state() PullTowardDynamic
     }
   }
 
-  simulated function ProcessTouch (Actor Other, Vector HitLocation)
-  {
+  simulated function ProcessTouch (Actor Other, Vector HitLocation) {
     Instigator.AmbientSound = None;
     AmbientSound = None;
     Destroy();
   }
-  
-  simulated function BeginState ()
-  {
+
+  simulated function BeginState () {
     Instigator.SetPhysics(PHYS_Flying);
   }
-  
+
 }
 
-defaultproperties
-{
+defaultproperties {
     speed=4000.00
     MaxSpeed=4000.00
     MyDamageType=eviscerated
-    bNetTemporary=False
-    NetPriority=2.6
     LifeSpan=60.00
-    Texture=Texture'UMenu.Icons.Bg41'
-    Mesh=LodMesh'UnrealShare.GrenadeM'
     // bUnlit=True
     bUnlit=False
-    bMeshEnviroMap=True
     bBlockActors=True
     bBlockPlayers=True
     DrawScale=1.2
-    // CollisionRadius=0.1
-    // CollisionHeight=0.2
+    // CollisionRadius=0.05
+    // CollisionHeight=0.1
+    bNetTemporary=False
+    NetPriority=2.6
     RemoteRole=ROLE_SimulatedProxy
+    bMeshEnviroMap=True
+    Texture=Texture'UMenu.Icons.Bg41'
+    Mesh=LodMesh'UnrealShare.GrenadeM'
 
     grappleSpeed=600 // 600 was good for old Expert100, and is adjusted to work with new code also.
     // grappleSpeed=0
@@ -744,6 +737,7 @@ defaultproperties
     // LineMesh=mesh'Botpack.TracerM'
     LineTexture=Texture'UMenu.Icons.Bg41'
     // LineTexture=Texture'Botpack.ammocount'
-    bDebugLogging=True // Since kxLine accesses this as a default, sometimes this setting is more relevant than the server setting.
+    // bLogging=False // FIXED: Since kxLine accesses this as a default, sometimes this setting is more relevant than the server setting.  OK now we have one config var per class.
+    // Hey would we have got the config default if we hadn't set a default here? :o
 }
 

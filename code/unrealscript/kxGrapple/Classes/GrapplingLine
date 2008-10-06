@@ -2,6 +2,8 @@ class kxLine extends Projectile;
 
 // TODO: try rewriting this class with just from,to (modified externally) and bSuicide.
 
+var config bool bLogging;
+
 var kxGrapple GrappleParent;
 var kxLine ParentLine;
 var bool bStopped;
@@ -22,12 +24,13 @@ replication {
 
 simulated event DoUpdate(float DeltaTime) {
 	local Vector from,to;
+	local Vector X,Y,Z;
 	/*
 	// Never worked when needed, sometimes worked when unwanted!
 	if (GrappleParent == None || GrappleParent.Instigator == None) {
-		// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Lost my GrappleParent - suiciding."); }
+		// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Lost my GrappleParent - suiciding."); }
 		// Destroy();
-		// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Lost my GrappleParent - waiting for it ..."); }
+		// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Lost my GrappleParent - waiting for it ..."); }
 		BroadcastMessage(Level.TimeSeconds$" "$Self$".DoUpdate(): Lost my GrappleParent - waiting for it ...");
 		// This was NOT cleaning up when we needed it to.
 		// I've disabled it because very occasionally on firing my grapple, the line would not appear, and I think here is the problem.
@@ -35,29 +38,29 @@ simulated event DoUpdate(float DeltaTime) {
 	}
 	// No longer needed since bDestroyed works better, and with folding, we need multiple lines per grapple.
 	if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self) {
-		// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent.LineSprite="$GrappleParent.LineSprite$" - not ME "$Self$"!"); }
-		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent has a new LineSprite="$GrappleParent.LineSprite$" - suiciding."); }
+		// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent.LineSprite="$GrappleParent.LineSprite$" - not ME "$Self$"!"); }
+		if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent has a new LineSprite="$GrappleParent.LineSprite$" - suiciding."); }
 		Destroy();
 		return;
 	}
 	*/
 	if (GrappleParent == None) {
-		if (class'kxGrapple'.default.bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent == None! I may be a memory leak!"); }
+		if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent == None! I may be a memory leak!"); }
 		return;
 	}
 	// I was unable to destroy this actor by calling its .Destroy() but this mechanism for it to destroy itself works ok:
 	if (GrappleParent.bDestroyed) {
-		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): "$GrappleParent$".bDestroyed set (LineSprite="$GrappleParent.LineSprite$") - suiciding."); }
+		if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): "$GrappleParent$".bDestroyed set (LineSprite="$GrappleParent.LineSprite$") - suiciding."); }
 		Destroy();
 		return;
 	}
 
 	if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self && !bStopped) {
-		if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() GrappleParent has a new LineSprite "$GrappleParent.LineSprite$" - setting Self.bStopped."); }
+		if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() GrappleParent has a new LineSprite "$GrappleParent.LineSprite$" - setting Self.bStopped."); }
 		bStopped = True;
 	}
 
-	// if (class'kxGrapple'.default.bDebugLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Render="$(Role!=ROLE_Authority)$" bStopped="$bStopped$" LineSprite="$GrappleParent.LineSprite$" Pivot="$Pivot$" Reached="$Reached); }
+	// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Render="$(Role!=ROLE_Authority)$" bStopped="$bStopped$" LineSprite="$GrappleParent.LineSprite$" Pivot="$Pivot$" Reached="$Reached); }
 	// OK good we are now running on the client with variables replicated.
 
 	if (Role == ROLE_Authority)
@@ -73,7 +76,11 @@ simulated event DoUpdate(float DeltaTime) {
 		// to = GrappleParent.pullDest;
 		Velocity = vect(0,0,0);
 	} else {
-		from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
+		// from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
+		// from = GrappleParent.Instigator.Location + GrappleParent.Instigator.Rotation * Vect(-3.0,+5.0,GrappleParent.Instigator.BaseEyeHeight);
+		GetAxes(GrappleParent.Instigator.Rotation,X,Y,Z);
+		// from = GrappleParent.Instigator.Location + 50.0*X - 0.0*Y + 0.25*GrappleParent.Instigator.BaseEyeHeight*vect(0,0,1); // Z
+		from = GrappleParent.Instigator.Location + 1.0*X - 6.0*Y + 0.3*GrappleParent.Instigator.BaseEyeHeight*Z;
 		to = GrappleParent.pullDest;
 		Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
 	}
@@ -85,7 +92,7 @@ simulated event DoUpdate(float DeltaTime) {
 		// }
 		// Velocity = GrappleParent.Instigator.Velocity * 0.5;
 		// if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self) {
-			// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent has a new LineSprite="$GrappleParent.LineSprite$" - failing."); }
+			// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent has a new LineSprite="$GrappleParent.LineSprite$" - failing."); }
 			// from = GrappleParent.LineSprite.Pivot;
 		// }
 		SetLocation((from+to)/2);
@@ -93,7 +100,7 @@ simulated event DoUpdate(float DeltaTime) {
 		DrawScale = VSize(from-to) / 64.0;
 	// }
 	// if (bStopped) {
-		// if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Disabling my Tick() now that I am bStopped."); }
+		// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Disabling my Tick() now that I am bStopped."); }
 		// Disable('Tick');
 	// }
 }
@@ -116,7 +123,7 @@ simulated event Destroyed() {
 	foreach AllActors(class'kxLine',L) {
 		i++;
 	}
-	if (class'kxGrapple'.default.bDebugLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Destructing with "$i$" kxLines on the level."); }
+	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Destructing with "$i$" kxLines on the level."); }
 	Super.Destroyed();
 }
 
@@ -132,5 +139,9 @@ defaultproperties {
 	RemoteRole=ROLE_SimulatedProxy
 	Style=STY_Translucent
 	Physics=PHYS_Rotating
+	bCollideWorld=False
+	bCollideActors=False
+	bBlockActors=False
+	bBlockPlayers=False
 }
 

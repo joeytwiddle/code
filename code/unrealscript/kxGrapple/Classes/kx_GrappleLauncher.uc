@@ -9,6 +9,7 @@ class kx_GrappleLauncher expands TournamentWeapon Config(kxGrapple);
 
 var config bool bAutoDrop;
 var config bool bIdenticalButtons; // TODO: Not working!
+var config bool bLogging;
 
 var Weapon PreviousWeapon;
 var kxGrapple kxGrapple;
@@ -16,37 +17,29 @@ var bool bManualShot;
 var bool bShooting;
 var kxMutator kxMutator;
 
-exec function AttachHook ()
-{
+exec function AttachHook () {
   PlayerPawn(Owner).ClientMessage("Trying to attachHook");
-  if ( kxGrapple == None )
-  {
+  if ( kxGrapple == None ) {
     FireHook();
   }
 }
 
-exec function ReleaseHook ()
-{
+exec function ReleaseHook () {
   PlayerPawn(Owner).ClientMessage("Trying to releaseHook");
-  if ( kxGrapple != None )
-  {
+  if ( kxGrapple != None ) {
     kxGrapple.Destroy();
   }
 }
 
-simulated function ClientFireHook ()
-{
+simulated function ClientFireHook () {
   return;
 }
 
-exec function FireHook ()
-{
-  if ( kxGrapple != None )
-  {
+exec function FireHook () {
+  if ( kxGrapple != None ) {
     return;
   }
-  if ( Role < 4 )
-  {
+  if ( Role < 4 ) {
     ClientFireHook();
     return;
   }
@@ -54,21 +47,17 @@ exec function FireHook ()
   GotoState('NormalFire');
 }
 
-function Destroyed ()
-{
+function Destroyed () {
   GetKXMutator().OnDeselect(PlayerPawn(Owner));
-  if ( kxGrapple != None )
-  {
+  if ( kxGrapple != None ) {
     kxGrapple.Destroy();
     kxGrapple = None;
   }
   Super.Destroyed();
 }
 
-function DropFrom (Vector StartLocation)
-{
-  if ( kxGrapple != None )
-  {
+function DropFrom (Vector StartLocation) {
+  if ( kxGrapple != None ) {
     kxGrapple.Destroy();
     kxGrapple = None;
   }
@@ -101,13 +90,10 @@ function ReturnToPreviousWeapon() {
   }
 }
 
-function Fire (optional float Value)
-{
+function Fire (optional float Value) {
   GotoState('NormalFire');
-  if ( kxGrapple == None )
-  {
-    if ( PlayerPawn(Owner) != None )
-    {
+  if ( kxGrapple == None ) {
+    if ( PlayerPawn(Owner) != None ) {
       PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
     }
     bPointing = True;
@@ -118,7 +104,7 @@ function Fire (optional float Value)
     // AmbientSound = Sound'Slurp';
     kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
     if (kxGrapple == None) {
-      if (class'kxGrapple'.default.bDebugLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
+      if (bLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
       // TODO: denied sound
     } else {
       kxGrapple.SetMaster(self);
@@ -129,16 +115,13 @@ function Fire (optional float Value)
   } else if (bIdenticalButtons) {
     AltFire(Value);
   }
-  if ( Owner.bHidden )
-  {
+  if ( Owner.bHidden ) {
     CheckVisibility();
   }
 }
 
-function AltFire (float Value)
-{
-  if ( kxGrapple != None )
-  {
+function AltFire (float Value) {
+  if ( kxGrapple != None ) {
     AmbientSound = None;
     kxGrapple.Destroy();
     kxGrapple = None;
@@ -149,20 +132,16 @@ function AltFire (float Value)
   GotoState('AltFiring');
 }
 
-state NormalFire
-{
-  function Fire (float F)
-  {
+state NormalFire {
+  function Fire (float F) {
   }
-  
-  function AltFire (float F)
-  {
+
+  function AltFire (float F) {
   }
-  
-  function EndState ()
-  {
+
+  function EndState () {
   }
-  
+
   Begin:
     FinishAnim();
     Sleep(0.1);
@@ -174,20 +153,16 @@ state NormalFire
     Finish();
 }
 
-state AltFiring
-{
-  function Fire (float F)
-  {
+state AltFiring {
+  function Fire (float F) {
   }
-  
-  function AltFire (float F)
-  {
+
+  function AltFire (float F) {
   }
-  
-  function EndState ()
-  {
+
+  function EndState () {
   }
-  
+
   Begin:
     if ( kxGrapple != None )
     {
@@ -205,51 +180,42 @@ state AltFiring
     Finish();
 }
 
-state Idle
-{
-  function AnimEnd ()
-  {
+state Idle {
+  function AnimEnd () {
     PlayIdleAnim();
   }
-  
-  function bool PutDown ()
-  {
+
+  function bool PutDown () {
     GotoState('DownWeapon');
     return True;
   }
-  
+
   Begin:
     bPointing = False;
     Disable('AnimEnd');
     PlayIdleAnim();
 }
 
-function Finish ()
-{
+function Finish () {
   local Pawn PawnOwner;
 
-  if ( bChangeWeapon )
-  {
+  if ( bChangeWeapon ) {
     GotoState('DownWeapon');
     return;
   }
   PawnOwner = Pawn(Owner);
-  if ( PlayerPawn(Owner) == None )
-  {
+  if ( PlayerPawn(Owner) == None ) {
     PawnOwner.StopFiring();
     GotoState('Idle');
     return;
   } else {
-    if ( PlayerPawn(Owner).bExtra1 != 0 )
-    {
+    if ( PlayerPawn(Owner).bExtra1 != 0 ) {
       Global.Fire(0.0);
     } else {
-      if ( PawnOwner.bFire != 0 )
-      {
+      if ( PawnOwner.bFire != 0 ) {
         Global.Fire(0.0);
       } else {
-        if ( PawnOwner.bAltFire != 0 )
-        {
+        if ( PawnOwner.bAltFire != 0 ) {
           Global.AltFire(0.0);
         } else {
           GotoState('Idle');
@@ -279,21 +245,17 @@ function SetHand (float hand) {
 }
 */
 
-function SetHand (float hand)
-{
-  if ( hand != 2 )
-  {
-  if ( hand == 0 )
-  {
-    hand = 1.0;
-  } else {
-    hand *= -1;
-  }
-  if ( hand == -1 )
-  {
-    Mesh = Mesh(DynamicLoadObject("Botpack.TranslocR",Class'Mesh'));
-  } else {
-    Mesh = LodMesh'Transloc';
+function SetHand (float hand) {
+  if ( hand != 2 ) {
+    if ( hand == 0 ) {
+      hand = 1.0;
+    } else {
+      hand *= -1;
+    }
+    if ( hand == -1 ) {
+      Mesh = Mesh(DynamicLoadObject("Botpack.TranslocR",Class'Mesh'));
+    } else {
+      Mesh = LodMesh'Transloc';
     }
   }
   Super.SetHand(hand);
@@ -354,7 +316,7 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
 
 simulated function PlaySelect() {
   GetKXMutator().OnSelect(PlayerPawn(Owner));
-  Super.PlaySelect();
+  // Super.PlaySelect(); // Avoids errors thrown by missing meshes.
 }
 
 state DownWeapon {
@@ -378,8 +340,7 @@ function kxMutator GetKXMutator() {
   return kxMutator;
 }
 
-defaultproperties
-{
+defaultproperties {
     bCanThrow=False
     FireOffset=(X=115.00,Y=15.00,Z=2.00),
     ProjectileClass=Class'kxGrapple'
