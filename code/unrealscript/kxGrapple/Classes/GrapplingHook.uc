@@ -82,12 +82,12 @@ replication {
     GrappleSpeed,HitDamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bPrimaryWinch,bCrouchReleases,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bLogging;
   reliable if (Role == ROLE_Authority)
     pullDest,bDestroyed,lineLength,Thing,Master,InstigatorRep; // ,bThingPawn,hNormal;
-  reliable if (Role == ROLE_Authority)
-    LineSprite; // We don't want the client and server to have different LineSprites, or they will stop themselves!
-  reliable if (Role == ROLE_Authority)
-    InitLineSprite,DoLineOfSightChecks; // This was what was needed to get the variables replicated into the lines.
-  reliable if (Role == ROLE_Authority)
-    UpdateLineSprite; // needed to make it reliable since InitLineSprite was sometimes called from there?
+  // reliable if (Role == ROLE_Authority)
+    // LineSprite; // We don't want the client and server to have different LineSprites, or they will stop themselves!
+  // reliable if (Role == ROLE_Authority)
+    // InitLineSprite,DoLineOfSightChecks; // This was what was needed to get the variables replicated into the lines.
+  // reliable if (Role == ROLE_Authority)
+    // UpdateLineSprite; // needed to make it reliable since InitLineSprite was sometimes called from there?
 }
 
 auto state Flying {
@@ -111,8 +111,8 @@ auto state Flying {
 
   simulated function Tick(float DeltaTime) {
     pullDest = Location;
-    // if (LineSprite != None)
-      // LineSprite.Pivot = Location;
+    if (LineSprite != None)
+      LineSprite.Pivot = Location;
     UpdateLineSprite();
   }
 
@@ -182,19 +182,17 @@ simulated event Destroyed () {
   AmbientSound = None;
   Master.AmbientSound = None;
   // if (Role==ROLE_Authority && LineSprite!=None) {
-  if (LineSprite!=None) {
-    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite "$LineSprite); }
+  if (bLogging && LineSprite==None) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Cannot destroy LineSprite="$LineSprite$"!"); }
+  while (LineSprite!=None) {
+    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite chain: "$LineSprite); }
     LineSprite.GrappleParent = None;
     LineSprite.LifeSpan = 1;
     LineSprite.Destroy();
-    LineSprite = None;
+    // LineSprite = None;
+    LineSprite = LineSprite.ParentLine;
     // lol it's still there
-  } else {
-    // Log(Level.TimeSeconds$" "$Self$".Destroyed() Not destroying my LineSprite "$LineSprite);
-    // Log(Level.TimeSeconds$" "$Self$".Destroyed() Not destroying my LineSprite "$LineSprite$" since it should be None!");
-    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Cannot destroy LineSprite="$LineSprite$"!"); }
   }
-  bDestroyed = True; // This is what actually cleans up the LineSprite!
+  bDestroyed = True; // At one stage this marker was how we got child lines to self-destruct.
   // PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
   // Master.PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
   // PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0);
@@ -254,7 +252,8 @@ simulated function InitLineSprite() { // simulated needed?
     }
     // LineSprite.SetFromTo(InstigatorRep,Self);
     LineSprite.GrappleParent = Self;
-    LineSprite.Pivot = pullDest; // Actually this is too early, since the grapple itself is moving.  We set it again later.
+    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Setting Pivot of new LineSprite to "$pullDest); }
+    LineSprite.Pivot = pullDest; // Actually this may be too early, since the grapple itself is moving.  We set it again later.
     if (!bShowLine) {
       LineSprite.bStopped = True;
       LineSprite.DrawType = DT_None;
@@ -342,10 +341,14 @@ function CheckFlagDrop() {
   }
 }
 
-simulated function DoLineOfSightChecks() {
+/*simulated*/ function DoLineOfSightChecks() {
   local Actor A;
   local Vector NewPivot;
   local kxLine LastLine;
+
+  if (bLogging && LineSprite!=None && VSize(pullDest-LineSprite.Pivot)>1.0) {
+    Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Warning! pullDest "$pullDest$" != LS.Pivot "$LineSprite.Pivot$" !!");
+  }
 
   // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Running with Role="$Role$" LineSprite="$LineSprite); }
   // OK good now got it running on the client too.
@@ -407,6 +410,7 @@ simulated function DoLineOfSightChecks() {
           LineSprite.Velocity = vect(0,0,0);
           LastLine = LineSprite;
           LineSprite = None;
+          pullDest = NewPivot;
           InitLineSprite();
 
           if (LineSprite == None) {
@@ -415,16 +419,17 @@ simulated function DoLineOfSightChecks() {
             // Re-enable the line we just failed to split:
             LineSprite = LastLine;
             NewPivot = LastLine.Pivot;
+            pullDest = NewPivot;
             LastLine.bStopped = False;
             LastLine.SetPhysics(PHYS_Rotating);
             if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() FAILED to spawn kxLine to split "$LastLine); }
           } else {
             LineSprite.ParentLine = LastLine;
+            LineSprite.Pivot = NewPivot;
             if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
           }
 
         }
-        pullDest = NewPivot;
         lineLength = VSize(Instigator.Location - pullDest);
         // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
         // return; // Don't return, we gotta render this new style!
@@ -488,7 +493,8 @@ state() PullTowardStatic {
 
       doInwardPull = True;
 
-      if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() bLinePhysics="$bLinePhysics); }
+      //// Testing replication of this option:
+      // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() bLinePhysics="$bLinePhysics); }
 
       // Deal with grapple pull:
       if (bLinePhysics) {

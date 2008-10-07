@@ -15,8 +15,13 @@ replication {
     bLogging;
   reliable if (Role == ROLE_Authority)
     GrappleParent,ParentLine,bStopped,Pivot,Reached;
-  unreliable if (Role == ROLE_Authority)
+  reliable if (Role == ROLE_Authority)
     DoUpdate;
+}
+
+simulated event PostBeginPlay() {
+	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PostBeginPlay() New GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" Pivot="$Pivot); }
+	Super.PostBeginPlay();
 }
 
 // simulated function SetFromTo(Actor f, Actor t) {
@@ -74,6 +79,7 @@ simulated event DoUpdate(float DeltaTime) {
 	if (bStopped) {
 		from = Reached;
 		to = Pivot;
+		if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$Reached$" <-> high "$Pivot); }
 		// from = GrappleParent.Location;
 		// to = GrappleParent.pullDest;
 		Velocity = vect(0,0,0);
@@ -82,13 +88,15 @@ simulated event DoUpdate(float DeltaTime) {
 			if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent.Instigator == None so I can't update!  My GrappleParent.InstigatorRep="$GrappleParent.InstigatorRep); }
 			return;
 		}
+		if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$GrappleParent$" <-> high "$GrappleParent.pullDest$" (Pivot="$Pivot$")"); }
 		// from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
 		// from = GrappleParent.Instigator.Location + GrappleParent.Instigator.Rotation * Vect(-3.0,+5.0,GrappleParent.Instigator.BaseEyeHeight);
 		GetAxes(GrappleParent.Instigator.Rotation,X,Y,Z);
 		// from = GrappleParent.Instigator.Location + 50.0*X - 0.0*Y + 0.25*GrappleParent.Instigator.BaseEyeHeight*vect(0,0,1); // Z
 		// Translocator has PlayerViewOffset=(X=5.000000,Y=-4.200000,Z=-7.000000)
 		from = GrappleParent.Instigator.Location + 1.0*X - 6.0*Y + 0.3*GrappleParent.Instigator.BaseEyeHeight*Z;
-		to = GrappleParent.pullDest;
+		// to = GrappleParent.pullDest;
+		to = Pivot; // better replicated than GrappleParent.pullDest!
 		Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
 	}
 		// if (GrappleParent.LineSprite != Self) {
@@ -130,8 +138,14 @@ simulated event Destroyed() {
 	foreach AllActors(class'kxLine',L) {
 		i++;
 	}
-	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Destructing with "$i$" kxLines on the level."); }
+	// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Destructing with "$i$" kxLines on the level."); }
+	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Bye! (1/"$i$") GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" Pivot="$Pivot$" Reached="$Reached$""); }
 	Super.Destroyed();
+	//// No we don't always want to do this, we might only be moving up a line!
+	// if (ParentLine!=None) {
+		// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Now destroying ParentLine "$ParentLine$" ..."); }
+		// ParentLine.Destroy();
+	// }
 }
 
 defaultproperties {
@@ -150,5 +164,6 @@ defaultproperties {
 	bCollideActors=False
 	bBlockActors=False
 	bBlockPlayers=False
+	bLogging=True // Wasn't getting replicated from server =/
 }
 
