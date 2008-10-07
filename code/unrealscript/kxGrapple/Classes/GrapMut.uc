@@ -34,8 +34,8 @@ function PostBeginPlay () {
 function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
   if (bRemoveTranslocator && Other.IsA('Translocator') && !Other.IsA('kx_GrappleLauncher')) {
-    ReplaceWith(Other,"kxGrapple.kx_GrappleLauncher"); // This was supposed to replace the translocator but it only removes it!
-    // ReplaceWith(Other,"kxGrapple.Translocator");
+    // ReplaceWith(Other,"kxGrapple.kx_GrappleLauncher"); // This was supposed to replace the translocator but it only removes it!
+    ReplaceWith(Other,"kx_GrappleLauncher"); // This was supposed to replace the translocator but it only removes it!
     // Log("[kxGrapple.kxMutator] CheckReplacement("$Other$") -> kx_GrappleLauncher");
     return False;
   }
@@ -54,7 +54,7 @@ function ModifyPlayer (Pawn Other) {
   if (PlayerPawn(Other) != None) {
     // OnDeselect(PlayerPawn(Other));
     // TODO CONSIDER: Isn't this just GetGrappleLauncher(Other).OnDeselect() ?
-    Inv = PlayerPawn(Other).FindInventoryType(class'kxGrapple.kx_GrappleLauncher');
+    Inv = PlayerPawn(Other).FindInventoryType(class'kx_GrappleLauncher');
     if (kx_GrappleLauncher(Inv)!=None) {
       kx_GrappleLauncher(Inv).OnDeselect();
     }
@@ -77,7 +77,7 @@ function GiveWeaponsTo (Pawn P) {
     // DeathMatchPlus(Level.Game).GiveWeapon(P,"Botpack.Enforcer");
     // // P.AddInventory(Spawn(class'kxGrapple.Translocator'));
     // P.AddInventory(Spawn(class'kxGrapple.kx_GrappleLauncher'));
-    Inv = P.FindInventoryType(class'kxGrapple.kx_GrappleLauncher');
+    Inv = P.FindInventoryType(class'kx_GrappleLauncher');
     if (Inv != None) {
       // Log("[kxMutator] "$P.getHumanName()$" already has a "$Inv$"!"); // I've seen this, so I guess CheckReplacement() is working.
       if (kx_GrappleLauncher(Inv).kxGrapple != None) {
@@ -86,7 +86,7 @@ function GiveWeaponsTo (Pawn P) {
         kx_GrappleLauncher(Inv).kxGrapple = None;
       }
     } else {
-      DeathMatchPlus(Level.Game).GiveWeapon(P,"kxGrapple.kx_GrappleLauncher");
+      DeathMatchPlus(Level.Game).GiveWeapon(P,"kx_GrappleLauncher");
     }
     if (P.PlayerReplicationInfo.Deaths==0) {
       // P.ClientMessage("You have a Grappling Hook.");
@@ -114,7 +114,6 @@ function bool PreventDeath (Pawn Killed, Pawn Killer, name DamageType, Vector Hi
 function kx_GrappleLauncher GetGrappleLauncher (Actor Other) {
   local kx_GrappleLauncher thelauncher;
   foreach AllActors(Class'kx_GrappleLauncher',thelauncher) {
-  // foreach AllActors(Class'kxGrapple.Translocator',thelauncher) {
     if ( thelauncher.Owner == Other ) {
       return thelauncher;
     }
@@ -170,7 +169,7 @@ defaultproperties {
     WeaponName=kx_GrappleLauncher
     // WeaponName=Translocator
     AmmoName=DefaultAmmo
-    WeaponString="kxGrapple.kx_GrappleLauncher"
+    WeaponString="kx_GrappleLauncher"
     AmmoString="none"
     // Doing this causes the ImpactHammer to be replaced:
     // DefaultWeapon=Class'kx_GrappleLauncher'
