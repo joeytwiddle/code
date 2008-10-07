@@ -18,7 +18,7 @@ Allows you shorten or lengthen the line to gain or lose height (bPrimaryWinch,bC
 
 The line can now be shown in the game (bShowLine).  The current mesh is not very realistic, I need to find a simple straight rope mesh!  But the line does do semi-realistic wrapping around corners (bLineOfSight,bLineFolding)!  :)
 
-I found behindview very useful when using this weapon, so I have included automatic behindview and FOV switching when switching to and from the weapon.  This can be disabled by the admin (bDefaultBehindView,bDefaultChangeFOV), or by the player during the game with "mutate BV off".
+I found behindview very useful when using this weapon, so I have included automatic behindview and FOV switching when switching to and from the weapon.  This can be disabled by the admin (bDefaultBehindView,bDefaultChangeFOV), or toggled by the player during the game with the console command "AutoBehindView" (or set with "AutoBehindView off" or "AutoBehindView on").
 
 By default flag-carriers will drop the flag if they try to use the grappling weapon (bDropFlag).
 
@@ -50,7 +50,7 @@ adminthis from No Downloads released a nice update of the Expert 100 grappling h
 
 Bugs:
 
-I fixed a fair few damn bugs with the line splitting, but I would not be surprised if there are more waiting to appear...
+I fixed a fair few damn bugs with the line wrapping, but I would not be surprised if there are more waiting to appear...
 
 bIdenticalButtons does not work.
 
@@ -58,4 +58,5 @@ Weapon is default spawn weapon although it should not be, and it often fires on 
 
 Makes amp sound when used with amp.  Translocator does not do this.
 
+The realism stops at line wrapping.  A bent line should really slip along the edge it is bent around.
 

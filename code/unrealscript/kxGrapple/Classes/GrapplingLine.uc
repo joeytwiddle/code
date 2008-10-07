@@ -19,10 +19,10 @@ replication {
     DoUpdate;
 }
 
-simulated event PostBeginPlay() {
-	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PostBeginPlay() New GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" Pivot="$Pivot); }
-	Super.PostBeginPlay();
-}
+// simulated event PostBeginPlay() {
+	// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PostBeginPlay() New GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" Pivot="$Pivot); }
+	// Super.PostBeginPlay();
+// }
 
 // simulated function SetFromTo(Actor f, Actor t) {
 	// from = f;
@@ -79,7 +79,7 @@ simulated event DoUpdate(float DeltaTime) {
 	if (bStopped) {
 		from = Reached;
 		to = Pivot;
-		if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$Reached$" <-> high "$Pivot); }
+		// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$Reached$" <-> high "$Pivot); }
 		// from = GrappleParent.Location;
 		// to = GrappleParent.pullDest;
 		Velocity = vect(0,0,0);
@@ -88,7 +88,7 @@ simulated event DoUpdate(float DeltaTime) {
 			if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent.Instigator == None so I can't update!  My GrappleParent.InstigatorRep="$GrappleParent.InstigatorRep); }
 			return;
 		}
-		if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$GrappleParent$" <-> high "$GrappleParent.pullDest$" (Pivot="$Pivot$")"); }
+		// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$GrappleParent$" <-> high "$GrappleParent.pullDest$" (Pivot="$Pivot$")"); }
 		// from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
 		// from = GrappleParent.Instigator.Location + GrappleParent.Instigator.Rotation * Vect(-3.0,+5.0,GrappleParent.Instigator.BaseEyeHeight);
 		GetAxes(GrappleParent.Instigator.Rotation,X,Y,Z);

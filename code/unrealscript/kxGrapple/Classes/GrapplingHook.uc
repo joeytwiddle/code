@@ -25,11 +25,13 @@
 //       The problem appears to be when the server setting is bPrimaryWinch=False but the class default setting is True (so the client does not think the sound needs to be played?).
 // CONSIDER: Instead of bPrimaryWinch, bPrimaryFirePausesWinching or bWalkPausesWinching ?
 // DONE: Line wrapping around corners magic.  Now kxLines must be created if bLineFolding=True even if bShowLine=False.
-// TODO: We should keep bBehindView preference client side.
+// DONE: We should keep bBehindView preference client side.
 // TODO: kx_GrappleLauncher is always the first weapon when we spawn.  It should be enforcer.
 // TODO: If we fire to respawn, sometimes we will immediately fire our grapple.
 // CONSIDER: Instead of InstigatorRep, shouldn't we just use Master.Owner?  I wonder if the simulated SetMaster() fn guarantees the replication of the variable.
 // DONE: GrappleSpeed is scaled down when used for bSwingPhysics, but this is reasonable since swinging can add a lot of speed on top of the winching.
+// TODO: We have described one concept as "folding","wrapping" and "splitting" - pick one term and stick with it.
+// TODO: bCrouchReleases is nice now that it just reels out according to gravity.  But for extra realism we could set a max unreel speed.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -174,6 +176,7 @@ simulated function SetMaster (kx_GrappleLauncher W) {
 simulated event Destroyed () {
   local int i;
   local kxGrapple G;
+  local kxLine NextLine;
   foreach AllActors(class'kxGrapple',G) {
     i++;
   }
@@ -184,13 +187,14 @@ simulated event Destroyed () {
   // if (Role==ROLE_Authority && LineSprite!=None) {
   if (bLogging && LineSprite==None) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Cannot destroy LineSprite="$LineSprite$"!"); }
   while (LineSprite!=None) {
-    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying my LineSprite chain: "$LineSprite); }
+    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destroying LineSprite chain: "$LineSprite); }
+    NextLine = LineSprite.ParentLine;
     LineSprite.GrappleParent = None;
     LineSprite.LifeSpan = 1;
     LineSprite.Destroy();
     // LineSprite = None;
-    LineSprite = LineSprite.ParentLine;
     // lol it's still there
+    LineSprite = NextLine;
   }
   bDestroyed = True; // At one stage this marker was how we got child lines to self-destruct.
   // PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
