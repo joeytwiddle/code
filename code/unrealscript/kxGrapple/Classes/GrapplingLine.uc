@@ -83,6 +83,9 @@ simulated event DoUpdate(float DeltaTime) {
 		// from = GrappleParent.Location;
 		// to = GrappleParent.pullDest;
 		Velocity = vect(0,0,0);
+		// TODO: Inefficiency. We keep setting the location etc. of this line, although it is at the moment static
+		//       We just need to make sure all the variables have been replicated when we switch off.
+		// In fact in *this* case, the server could calculate our Location, and we could do nothing but wait for it to be replicated.
 	} else {
 		if (GrappleParent.Instigator == None) {
 			if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent.Instigator == None so I can't update!  My GrappleParent.InstigatorRep="$GrappleParent.InstigatorRep); }
@@ -97,7 +100,8 @@ simulated event DoUpdate(float DeltaTime) {
 		from = GrappleParent.Instigator.Location + 1.0*X - 6.0*Y + 0.3*GrappleParent.Instigator.BaseEyeHeight*Z;
 		// to = GrappleParent.pullDest;
 		to = Pivot; // better replicated than GrappleParent.pullDest!
-		Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
+		// Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
+		Velocity = GrappleParent.Velocity; // Nicer for firstperson when thrown, maybe not so good for swinging.
 	}
 		// if (GrappleParent.LineSprite != Self) {
 			// from = ChildLine.Pivot; // :P
@@ -164,6 +168,6 @@ defaultproperties {
 	bCollideActors=False
 	bBlockActors=False
 	bBlockPlayers=False
-	bLogging=True // Wasn't getting replicated from server =/
+	// bLogging=True // Wasn't getting replicated from server =/
 }
 

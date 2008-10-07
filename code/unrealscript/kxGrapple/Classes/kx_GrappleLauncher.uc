@@ -65,6 +65,14 @@ simulated function PreBeginPlay() {
   }
 }
 
+// Failed attempts to make it not the spawn weapon:
+function float RateSelf(out int bUseAltMode) {
+  return -2.0;
+}
+function SetSwitchPriority(Pawn Other) {
+  AutoSwitchPriority=0;
+}
+
 simulated exec function AttachHook () {
   PlayerPawn(Owner).ClientMessage("Trying to attachHook");
   if ( kxGrapple == None ) {
@@ -151,7 +159,7 @@ function Fire (optional float Value) {
       // TODO: bug - the sounds play rapidy repeating until the button is released - just once, or once a second would be enough
       //       this is really a problem with the fire mechanism retrying, instead of waiting for release and then a second press
       PlaySound(ThrowSound,SLOT_None,0.8); // quiet failed throw
-      PlaySound(FailSound,SLOT_Interface,2.0);
+      PlaySound(FailSound,SLOT_Interface,3.0);
     } else {
       kxGrapple.SetMaster(self);
       if ( PlayerPawn(Owner) != None ) {
@@ -159,7 +167,7 @@ function Fire (optional float Value) {
       }
       bPointing = True;
       PlayFiring();
-      PlaySound(ThrowSound,SLOT_Interface,1.5);
+      PlaySound(ThrowSound,SLOT_Interface,1.6);
       // TODO BUG: These sounds are not working.  It would be nice to hear the line flying out.
       kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
       AmbientSound = class'kxGrapple'.default.ReleaseSound;
@@ -359,22 +367,6 @@ state DownWeapon {
   }
 }
 
-/*
-simulated function kxMutator GetKXMutator() {
-  Log("kx_GrappleLauncher.GetKXMutator() called - kxMutator="$kxMutator$" Owner="$Owner);
-  if (kxMutator!=None)
-    return kxMutator;
-  foreach AllActors(class'kxMutator',kxMutator) {
-    break;
-  }
-  if (kxMutator==None) {
-    Log("kx_GrappleLauncher is spawning one kxMutator to allow players to configure the weapon.");
-    kxMutator = Spawn(class'kxMutator');
-    Level.Game.BaseMutator.AddMutator(kxMutator);
-  }
-  return kxMutator;
-}
-*/
 
 
 // AutoBehindView
@@ -464,12 +456,16 @@ defaultproperties {
     FireOffset=(X=115.00,Y=15.00,Z=2.00),
     ProjectileClass=Class'kxGrapple'
     AltProjectileClass=Class'kxGrapple'
-    DeathMessage="%k removed %o's skeleton with a rusty hook."
+    // DeathMessage="%k removed %o's skeleton with a rusty hook."
+    // DeathMessage="%k ripped %o into chunks with a grappling hook!"
+    // DeathMessage="%k tore %o into chunks with a grappling hook!"
+    // DeathMessage="%k tried to climb %o but tore him into chunks!"
+    DeathMessage="%k chopped %o into chunks with a grappling hook!"
     bRotatingPickup=False
     ItemName="kx Grappling Hook"
     PlayerViewOffset=(X=5.00,Y=-4.00,Z=-7.00),
     StatusIcon=Texture'Botpack.Icons.UseTrans'
-    Mass=10.00
+    Mass=25.00
     bAutoDrop=False
     SelectSound=Sound'UnrealI.flak.load1'
     // These should really be FireSound and AltFireSound:
@@ -479,10 +475,13 @@ defaultproperties {
     // bIdenticalButtons=True // TODO: NOT working!
     NetPriority=2.95 // I was hoping here to make replication of NextCommand as fast as possible.
 
-    InventoryGroup=1
     // From Translocator.uc:
-    // AutoSwitchPriority=0 // did not help
-    DeathMessage="%k tore %o into chunks with his grappling hook!"
+    AutoSwitchPriority=0
+    InventoryGroup=0
+    // AutoSwitchPriority=0
+    // InventoryGroup=0
+    FiringSpeed=1.0
+    PickupAmmoCount=1
     PlayerViewMesh=Mesh'Botpack.TranslocR'
     PickupViewMesh=Mesh'Botpack.Trans3loc'
     ThirdPersonMesh=Mesh'Botpack.Trans3loc'

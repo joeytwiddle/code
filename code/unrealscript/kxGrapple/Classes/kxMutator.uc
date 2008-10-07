@@ -26,7 +26,7 @@ function PostBeginPlay () {
     return;
   }
   bDoneInit = True;
-  // DefaultWeapon = Class'enforcer'; // I set this but I still spawned with the GrappleLauncher selected.
+  // DefaultWeapon = Class'Enforcer'; // I set this but I still spawned with the GrappleLauncher selected.
   // DefaultWeapon = Class'ImpactHammer';
   // Level.Game.RegisterDamageMutator(self);
 }
@@ -72,6 +72,9 @@ function ModifyPlayer (Pawn Other) {
 function GiveWeaponsTo (Pawn P) {
   local Inventory Inv;
   if (bGiveToPlayers) {
+    //// Adding these did not change weapon priority.
+    // DeathMatchPlus(Level.Game).GiveWeapon(P,"Botpack.ImpactHammer");
+    // DeathMatchPlus(Level.Game).GiveWeapon(P,"Botpack.Enforcer");
     // // P.AddInventory(Spawn(class'kxGrapple.Translocator'));
     // P.AddInventory(Spawn(class'kxGrapple.kx_GrappleLauncher'));
     Inv = P.FindInventoryType(class'kxGrapple.kx_GrappleLauncher');

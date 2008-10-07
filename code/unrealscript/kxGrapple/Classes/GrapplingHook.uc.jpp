@@ -32,6 +32,9 @@
 // DONE: GrappleSpeed is scaled down when used for bSwingPhysics, but this is reasonable since swinging can add a lot of speed on top of the winching.
 // TODO: We have described one concept as "folding","wrapping" and "splitting" - pick one term and stick with it.
 // TODO: bCrouchReleases is nice now that it just reels out according to gravity.  But for extra realism we could set a max unreel speed.
+// TODO: PullTowardDynamic - you can currently grapple onto team-mates :f
+// TODO: PullTowardDynamic - quite buggy, the hook stays suspended in the air, while the opponent warps around and the line points somewhere odd
+// TODO: line does not appear to come out of weapon in firstperson view.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -455,11 +458,9 @@ state() PullTowardStatic {
     local Vector Inward;
     local bool doInwardPull,bSingleLine;
 
-    OnPull(DeltaTime);
-
     if (Instigator==None || Master==None) {
       if (Role == ROLE_Authority) {
-        if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
       } else {
         // We are client side.  Don't make a fuss.
         if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Client can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
@@ -467,6 +468,8 @@ state() PullTowardStatic {
       return; // Proceeding will just throw Accessed Nones.
       // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
     }
+
+    OnPull(DeltaTime);
 
     DoLineOfSightChecks();
 
@@ -667,6 +670,8 @@ state() PullTowardStatic {
 state() PullTowardDynamic {
   // ignores  Tick;
 
+  // CONSIDER TODO: I did not bother implementing bPrimaryWinch and bCrouchReleases for PullTowardDynamic.
+
   simulated function Tick(float DeltaTime) {
     if (Thing==None)
       Self.Destroy();
@@ -676,10 +681,10 @@ state() PullTowardDynamic {
     if (LineSprite != None)
       LineSprite.Pivot = Thing.Location; // TODO: This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
 
-    if (VSize(Thing.Location-Location)>10) {
-      Self.SetLocation( Location*0.1 + Thing.Location*0.9);
+    if (VSize(Thing.Location-Location)>10.0) {
+      Self.SetLocation( Location*0.5 + Thing.Location*0.5);
       Self.Velocity = Thing.Velocity;
-    }
+    } // TODO: gonna be jerky - better to use FChop
 
     if (Instigator==None || Master==None) {
       if (Role == ROLE_Authority) {
@@ -692,17 +697,26 @@ state() PullTowardDynamic {
       // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
     }
 
-    Instigator.Velocity = Normal(Thing.Location - Instigator.Location) * 1.0 * GrappleSpeed;
-    Master.AmbientSound = PullSound;
-    AmbientSound = PullSound;
+    if (VSize(Thing.Location - Instigator.Location) > MinRetract) {
+      Instigator.Velocity = Normal(Thing.Location - Instigator.Location) * 1.0 * GrappleSpeed;
+      Master.AmbientSound = PullSound;
+      AmbientSound = PullSound;
+    } else {
+      // Instigator.Velocity = Thing.Velocity;  // Let our player free for a moment!
+      //// Maybe better not to have sound flickering on and off
+      Master.AmbientSound = None;
+      AmbientSound = None;
+    }
     OnPull(DeltaTime);
     UpdateLineSprite();
     // DONE: cause HitDamage!
     if (FRand()<DeltaTime*2) { // Avg twice a second
-      Thing.TakeDamage(HitDamage/4+FRand()*HitDamage/2,Instigator,pullDest,vect(0,0,0),'');
+      //               Avg half HitDamage
+      Thing.TakeDamage(0.25*HitDamage+0.5*FRand()*HitDamage,Instigator,(Thing.Location+Location)/2,vect(0,0,0),'');
       if (VSize(Thing.Velocity) > 1.2*VSize(Instigator.Velocity)) {
         // Thing managed to shake the hook off (special move = moving faster than opponent when check comes around)
         Self.Destroy();
+        // Grappler's Velocity was either set to Thing.Velocity or to GrappleSpeed, but now sometimes it's given some freedom.
         return;
       }
     }
@@ -728,8 +742,8 @@ defaultproperties {
     bBlockActors=True
     bBlockPlayers=True
     DrawScale=1.35
-    CollisionRadius=0.025
-    CollisionHeight=0.05
+    CollisionRadius=0.05
+    CollisionHeight=0.01
     bNetTemporary=False
     NetPriority=2.6
     RemoteRole=ROLE_SimulatedProxy
@@ -745,7 +759,7 @@ defaultproperties {
     MaxSpeed=4000.00
     GrappleSpeed=600 // 600 is quite fast for old Expert100, but quite sober for kxGrapple.
     // GrappleSpeed=0
-    HitDamage=20.00
+    HitDamage=20.00 // Not very strong, but you can switch weapon and hit them with something else too!
     bDoAttachPawn=True
     bSwingPhysics=True
     // bLinePhysics=True // This deals with grapple pull in terms of line length.
