@@ -10,12 +10,18 @@ class kx_GrappleLauncher expands TournamentWeapon Config(kxGrapple);
 var config bool bAutoDrop;
 var config bool bIdenticalButtons; // TODO: Not working!
 var config bool bLogging;
+var config Sound FailSound,ThrowSound;
 
 var Weapon PreviousWeapon;
 var kxGrapple kxGrapple;
 var bool bManualShot;
 var bool bShooting;
 var kxMutator kxMutator;
+
+replication {
+  reliable if (Role==ROLE_Authority)
+    bIdenticalButtons,bLogging,bAutoDrop,FailSound,ThrowSound;
+}
 
 exec function AttachHook () {
   PlayerPawn(Owner).ClientMessage("Trying to attachHook");
@@ -98,15 +104,17 @@ function Fire (optional float Value) {
     }
     bPointing = True;
     PlayFiring();
-    PlaySound(class'kxGrapple'.default.ThrowSound,SLOT_Interface,2.0);
     // AmbientSound = class'kxGrapple'.default.ThrowSound;
     // AmbientSound = Sound'Hidraul2';
     // AmbientSound = Sound'Slurp';
     kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
     if (kxGrapple == None) {
       if (bLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
-      // TODO: denied sound
+      // DONE: denied sound
+      PlaySound(ThrowSound,SLOT_None,2.0);
+      PlaySound(FailSound,SLOT_Interface,2.0);
     } else {
+      PlaySound(ThrowSound,SLOT_Interface,2.0);
       kxGrapple.SetMaster(self);
       // TODO BUG: These sounds are not working.  It would be nice to hear the line flying out.
       kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
@@ -128,6 +136,8 @@ function AltFire (float Value) {
   } else if (bIdenticalButtons) {
     Fire(Value);
     // return; // BAD locks up all weapons till respawn :P
+  } else {
+    PlaySound(FailSound,SLOT_Interface,2.0);
   }
   GotoState('AltFiring');
 }
@@ -164,8 +174,7 @@ state AltFiring {
   }
 
   Begin:
-    if ( kxGrapple != None )
-    {
+    if ( kxGrapple != None ) {
       AmbientSound = None;
       kxGrapple.Destroy();
       kxGrapple = None;
@@ -254,8 +263,9 @@ function SetHand (float hand) {
     }
     if ( hand == -1 ) {
       Mesh = Mesh(DynamicLoadObject("Botpack.TranslocR",Class'Mesh'));
+      // Mesh = Mesh(DynamicLoadObject("Botpack.Transloc",Class'Mesh'));
     } else {
-      Mesh = LodMesh'Transloc';
+      Mesh = PlayerViewMesh;
     }
   }
   Super.SetHand(hand);
@@ -347,13 +357,26 @@ defaultproperties {
     AltProjectileClass=Class'kxGrapple'
     DeathMessage="%k removed %o's skeleton with a rusty hook."
     bRotatingPickup=False
-    ItemName="kx Grapple Launcher"
+    ItemName="kx Grappling Hook"
     PlayerViewOffset=(X=5.00,Y=-4.00,Z=-7.00),
     StatusIcon=Texture'Botpack.Icons.UseTrans'
     Mass=10.00
     bAutoDrop=False
-    SelectSound=sound'UnrealI.flak.load1'
+    SelectSound=Sound'UnrealI.flak.load1'
+    // These should really be FireSound and AltFireSound:
+    ThrowSound=Sound'Botpack.Translocator.ThrowTarget'
+    FailSound=Sound'Botpack.Translocator.ReturnTarget'
     // SelectSound=sound'kxGrapple.Slurp'
-    bIdenticalButtons=False // TODO: NOT working!
+    // bIdenticalButtons=True // TODO: NOT working!
+
+    // From Translocator.uc:
+    AutoSwitchPriority=0 // did not help
+    DeathMessage="%k tore %o into chunks with his grappling hook!"
+    PlayerViewMesh=Mesh'Botpack.TranslocR'
+    PickupViewMesh=Mesh'Botpack.Trans3loc'
+    ThirdPersonMesh=Mesh'Botpack.Trans3loc'
+    StatusIcon=Texture'Botpack.Icons.UseTrans'
+    Icon=Texture'Botpack.Icons.UseTrans'
+    // Mesh=Mesh'Botpack.Trans3loc'
 }
 

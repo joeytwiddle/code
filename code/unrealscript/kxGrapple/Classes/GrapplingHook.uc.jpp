@@ -11,16 +11,16 @@
 // TODO: When I switch to this weapon I must wait a moment before I can primary fire, unlike the Translocator.
 // DONE: jump to un-grapple (only when holding another weapon)
 // TODO: jump to un-grapple sometimes fails because the tick didn't notice bPressedJump if the player only tapped jump quickly.
-// DONE: now that we have lineLength, we should make it a function of grappleSpeed.
+// DONE: now that we have lineLength, we should make it a function of GrappleSpeed.
 // TEST maybe fixed: you can get into very fast swings on the ceiling which never stop, presumably because we are always >MinRetract so the dampening never takes effect.
 // DONE: it would be nice to have a second mesh - the line between us and the grapple
 // TODO BUG: sometimes doublejump intercepts bJumping and clears it, or at any rate we don't see it.
 // TODO BUG: if there is lag (on the server) the physics breaks and the player sometimes gets tugged up in the air unrealistically!  Maybe bLinePhysics can help with this...
 // TODO: I have not yet put real physics into PullTowardDynamic.
-// TODO: At time of writing, bLinePhysics=False appears to have become a bit broken!
+// TODO: At time of writing, bLinePhysics=False appears to have become a bit broken!  Mmm actually I think that may have just been when default did not match server and I changed value mid-game.
 // TODO: shieldbelt behind character (by 1 tick?  can this be fixed with velocity or ordering of processing?)
-// TODO: unwind drops back in steps
-// TODO: bCrouchReleases makes a noise when bSwingPhysics=False, but does not act :P  If bPrimaryWinch is disabled, we still only get the noise is we primary fire :P (autowind but don't hear winding in unless i click!)
+// FIXED: unwind drops back in steps.  now gravity does the unwinding
+// UNDERSTOOD: bCrouchReleases makes a noise when bSwingPhysics=False, but does not act :P  If bPrimaryWinch is disabled, we still only get the noise is we primary fire :P (autowind but don't hear winding in unless i click!)
 // TODO: Still the issue of primary fire while swinging but switched to another weapon.  Consider preventing winching but allowing it by some other mechanism.
 //       The problem appears to be when the server setting is bPrimaryWinch=False but the class default setting is True (so the client does not think the sound needs to be played?).
 // CONSIDER: Instead of bPrimaryWinch, bPrimaryFirePausesWinching or bWalkPausesWinching ?
@@ -28,6 +28,8 @@
 // TODO: We should keep bBehindView preference client side.
 // TODO: kx_GrappleLauncher is always the first weapon when we spawn.  It should be enforcer.
 // TODO: If we fire to respawn, sometimes we will immediately fire our grapple.
+// CONSIDER: Instead of InstigatorRep, shouldn't we just use Master.Owner?  I wonder if the simulated SetMaster() fn guarantees the replication of the variable.
+// DONE: GrappleSpeed is scaled down when used for bSwingPhysics, but this is reasonable since swinging can add a lot of speed on top of the winching.
 
 // class kxGrapple extends XPGrapple Config(kxGrapple);
 class kxGrapple extends Projectile Config(kxGrapple);
@@ -38,8 +40,8 @@ class kxGrapple extends Projectile Config(kxGrapple);
 // #exec AUDIO IMPORT FILE="Sounds\End.wav" NAME="KrrChink" // kchink when grapple hits target
 #exec AUDIO IMPORT FILE="Sounds\hit1g.wav" NAME="hit1g" // From UnrealI.GasBag
 
-var() config float grappleSpeed;
-var() config float hitdamage;
+var() config float GrappleSpeed;
+var() config float HitDamage;
 var() config bool bDoAttachPawn;
 var() config bool bLineOfSight;
 var() config bool bLineFolding;
@@ -55,7 +57,7 @@ var() config bool bFiddlePhysics0;
 var() config bool bFiddlePhysics1;
 var() config bool bFiddlePhysics2;
 var() config bool bShowLine;
-var() config sound ThrowSound,HitSound,PullSound,ReleaseSound,RetractSound;
+var() config sound HitSound,PullSound,ReleaseSound,RetractSound;
 var() config Mesh LineMesh;
 var() config Texture LineTexture;
 var() config bool bLogging;
@@ -72,22 +74,20 @@ var float lineLength;
 var kxLine LineSprite;
 var bool bDestroyed;
 var Vector hNormal; // Never actually used, just a temporary variable for Trace().
-var Pawn InstigatorRep;
+var Pawn InstigatorRep; // Sometimes the Instigator is not replicated, so we use our own variable to propogate it to the client.
 
 replication {
-  // I changed this to "reliable" and nothing changed :P
-  // reliable if (Role == ROLE_Authority)
-    // grappleSpeed,hitdamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bPrimaryWinch,bCrouchReleases,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,ThrowSound,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bLogging; // Replicating all config vars in case server setting differs from class default.  Does this solve the winching sound problem?
+  // I believe all config vars need to be replicated because I have set defaults which the client may see unless we transfer the server's values.  Unfortunately I don't think it's working.  OK if no default is set, then they get replicated just fine.  And this replication statement *is* needed!
+  reliable if (Role == ROLE_Authority && bNetInitial)
+    GrappleSpeed,HitDamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bPrimaryWinch,bCrouchReleases,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bLogging;
   reliable if (Role == ROLE_Authority)
-    pullDest,lineLength,thing,Master,bDestroyed,InstigatorRep; // ,bThingPawn,hNormal;
-  reliable if (Role == ROLE_Authority) LineSprite; // We don't want the client and server to have different LineSprites, or they will turn themselves off :P
+    pullDest,bDestroyed,lineLength,Thing,Master,InstigatorRep; // ,bThingPawn,hNormal;
+  reliable if (Role == ROLE_Authority)
+    LineSprite; // We don't want the client and server to have different LineSprites, or they will stop themselves!
   reliable if (Role == ROLE_Authority)
     InitLineSprite,DoLineOfSightChecks; // This was what was needed to get the variables replicated into the lines.
   reliable if (Role == ROLE_Authority)
-    UpdateLineSprite;
-  // I changed this to "unreliable" and nothing changed :P
-  // reliable if ( Role == ROLE_Authority )
-    // LineSprite,bDestroyed;
+    UpdateLineSprite; // needed to make it reliable since InitLineSprite was sometimes called from there?
 }
 
 auto state Flying {
@@ -97,7 +97,7 @@ auto state Flying {
     // Set outgoing Velocity of the grapple, adjusting for ThrowAngle:
     outRot = Rotation;
     outRot.Pitch += ThrowAngle*8192/45;
-    Velocity = vector(outRot) * speed;
+    Velocity = vector(outRot) * Speed;
     pullDest = Location;
     // Let's point the mesh in the opposite direction:
     outRot.Yaw = Rotation.Yaw + 32768;
@@ -154,7 +154,7 @@ auto state Flying {
     PlaySound(HitSound,SLOT_None,10.0);
     Master.PlaySound(HitSound,SLOT_None,10.0);
     //// I could not hear the ones done with AmbientSound.
-    if (grappleSpeed>0 && !bPrimaryWinch) {
+    if (GrappleSpeed>0 && !bPrimaryWinch) {
       Master.AmbientSound = PullSound;
       AmbientSound = PullSound;
     } else {
@@ -209,7 +209,7 @@ simulated event Destroyed () {
 simulated function InitLineSprite() { // simulated needed?
   local float numPoints;
   if (bShowLine || bLineFolding) {
-    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" Inst="$Instigator$" InstRep="$InstigatorRep); }
+    // if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Running with Role="$Role$" Inst="$Instigator$" InstRep="$InstigatorRep); }
     if (Role != ROLE_Authority) { // spawns it on server only
     // if (Role == ROLE_Authority) { // don't spawn it on server but maybe on client
       if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Not spawning LineSprite at this end."); }
@@ -290,8 +290,9 @@ simulated function UpdateLineSprite() {
   local float numPoints;
 
   // This is here because occasionally the first InitLineSprite() was getting called with Instigator=None.  We try again now, in case that variable has been replicated.
-  if (LineSprite==None)
+  if (LineSprite==None && Role==ROLE_Authority)
     InitLineSprite();
+  // Actually we aren't doing the client spawn anyway, we are just replicating the server's kxLines.
 
   if (bShowLine) {
     // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
@@ -407,6 +408,7 @@ simulated function DoLineOfSightChecks() {
           LastLine = LineSprite;
           LineSprite = None;
           InitLineSprite();
+
           if (LineSprite == None) {
             // Oh no! Sometimes we do get "failed to spawn child kxLine!", often when the wall is quite close, and the child line will not spawn because it is inside the wall?
             // This may happen less now that I've set kxLine.bCollideWorld=False.
@@ -415,13 +417,16 @@ simulated function DoLineOfSightChecks() {
             NewPivot = LastLine.Pivot;
             LastLine.bStopped = False;
             LastLine.SetPhysics(PHYS_Rotating);
-          } else
-          LineSprite.ParentLine = LastLine;
+            if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() FAILED to spawn kxLine to split "$LastLine); }
+          } else {
+            LineSprite.ParentLine = LastLine;
+            if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
+          }
+
         }
         pullDest = NewPivot;
         lineLength = VSize(Instigator.Location - pullDest);
         // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
-        if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
         // return; // Don't return, we gotta render this new style!
       }
 
@@ -442,6 +447,17 @@ state() PullTowardStatic {
     local bool doInwardPull,bSingleLine;
 
     OnPull(DeltaTime);
+
+    if (Instigator==None || Master==None) {
+      if (Role == ROLE_Authority) {
+        if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      } else {
+        // We are client side.  Don't make a fuss.
+        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Client can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      }
+      return; // Proceeding will just throw Accessed Nones.
+      // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
+    }
 
     DoLineOfSightChecks();
 
@@ -472,12 +488,14 @@ state() PullTowardStatic {
 
       doInwardPull = True;
 
+      if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() bLinePhysics="$bLinePhysics); }
+
       // Deal with grapple pull:
       if (bLinePhysics) {
         if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
           doInwardPull = False;
           lineLength = currentLength;
-          // lineLength = lineLength + 2 * 0.3 * grappleSpeed*DeltaTime;
+          // lineLength = lineLength + 2 * 0.3 * GrappleSpeed*DeltaTime;
           // Force correct length:
           // Instigator.SetLocation( pullDest + lineLength*-Inward );
           // Instigator.SetLocation( pullDest + Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,1) );
@@ -488,7 +506,7 @@ state() PullTowardStatic {
           Master.AmbientSound = None;
           AmbientSound = None;
         } else {
-          lineLength = lineLength - 0.3 * grappleSpeed*DeltaTime;
+          lineLength = lineLength - 0.3 * GrappleSpeed*DeltaTime;
           // 0.3 is my estimate conversion from acceleration to velocity
           Master.AmbientSound = PullSound;
           AmbientSound = PullSound;
@@ -501,7 +519,7 @@ state() PullTowardStatic {
           // Elasticity if the line was lengthened by the player swinging.
           // linePull += (currentLength - lineLength)*100.0; // Provide velocity to cancel the change in 0.01 seconds.
           Instigator.AddVelocity( (currentLength - lineLength) * Inward * 1.0 );
-          // Instigator.AddVelocity( grappleSpeed * Inward * DeltaTime );
+          // Instigator.AddVelocity( GrappleSpeed * Inward * DeltaTime );
           // TODO BUG: because it is not pre-emptive, we get pulled up in jerks.
           // TODO BUG: this method is always jerky unless we also do the below.
           //           but the below can cause unrealistic swinging around on the ceiling!
@@ -557,7 +575,7 @@ state() PullTowardStatic {
           AmbientSound = None;
           doInwardPull = False;
         }
-        linePull = power*grappleSpeed;
+        linePull = power*GrappleSpeed;
 
         // Instigator.Velocity = Instigator.Velocity + linePull*Inward*DeltaTime;
         Instigator.AddVelocity(linePull*Inward*DeltaTime);
@@ -612,7 +630,7 @@ state() PullTowardStatic {
         Instigator.AddVelocity(Instigator.Velocity * -1);
       } else {
         // No gravity or swinging
-        Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed;
+        Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
       }
 
     }
@@ -629,7 +647,7 @@ state() PullTowardStatic {
 
   simulated function BeginState () {
     if (!bSwingPhysics) {
-      Instigator.Velocity = Normal(pullDest - Instigator.Location) * grappleSpeed;
+      Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
     }
     Instigator.SetPhysics(PHYS_Falling);
   }
@@ -642,19 +660,34 @@ state() PullTowardDynamic {
   simulated function Tick(float DeltaTime) {
     if (Thing==None)
       Self.Destroy();
+
     pullDest = Thing.Location;
+
     if (LineSprite != None)
-      LineSprite.Pivot = Thing.Location; // This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
+      LineSprite.Pivot = Thing.Location; // TODO: This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
+
     if (VSize(Thing.Location-Location)>10) {
       Self.SetLocation( Location*0.1 + Thing.Location*0.9);
       Self.Velocity = Thing.Velocity;
     }
-    Instigator.Velocity = Normal(Thing.Location - Instigator.Location) * 1.0 * grappleSpeed;
+
+    if (Instigator==None || Master==None) {
+      if (Role == ROLE_Authority) {
+        if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      } else {
+        // We are client side.  Don't make a fuss.
+        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() Client can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      }
+      return; // Proceeding will just throw Accessed Nones.
+      // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
+    }
+
+    Instigator.Velocity = Normal(Thing.Location - Instigator.Location) * 1.0 * GrappleSpeed;
     Master.AmbientSound = PullSound;
     AmbientSound = PullSound;
     OnPull(DeltaTime);
     UpdateLineSprite();
-    // DONE: cause hitdamage!
+    // DONE: cause HitDamage!
     if (FRand()<DeltaTime*2) { // Avg twice a second
       Thing.TakeDamage(HitDamage/4+FRand()*HitDamage/2,Instigator,pullDest,vect(0,0,0),'');
       if (VSize(Thing.Velocity) > 1.2*VSize(Instigator.Velocity)) {
@@ -678,52 +711,48 @@ state() PullTowardDynamic {
 }
 
 defaultproperties {
-    speed=4000.00
-    MaxSpeed=4000.00
     MyDamageType=eviscerated
     LifeSpan=60.00
     // bUnlit=True
     bUnlit=False
     bBlockActors=True
     bBlockPlayers=True
-    DrawScale=1.2
-    // CollisionRadius=0.05
-    // CollisionHeight=0.1
+    DrawScale=1.35
+    CollisionRadius=0.025
+    CollisionHeight=0.05
     bNetTemporary=False
     NetPriority=2.6
     RemoteRole=ROLE_SimulatedProxy
     bMeshEnviroMap=True
     Texture=Texture'UMenu.Icons.Bg41'
-    Mesh=LodMesh'UnrealShare.GrenadeM'
-
-    grappleSpeed=600 // 600 was good for old Expert100, and is adjusted to work with new code also.
-    // grappleSpeed=0
-    // grappleSpeed=100 // Almost nothing, slight pull upwards
-    // grappleSpeed=800
-    hitdamage=20.00
-    bDoAttachPawn=True
-    bLineOfSight=True
-    bLineFolding=True
-    // MinRetract=50
-    MinRetract=125
-    // MinRetract=200
-    // MinRetract=250
+    Mesh=Mesh'UnrealShare.GrenadeM'
     Physics=PHYS_Projectile
     ThrowAngle=0
     // Physics=PHYS_Falling
     // ThrowAngle=15
-    bPrimaryWinch=True // Grapple only winds in while player is holding primary fire.
-    bCrouchReleases=True
-    bDropFlag=True
+
+    Speed=4000.00
+    MaxSpeed=4000.00
+    GrappleSpeed=600 // 600 is quite fast for old Expert100, but quite sober for kxGrapple.
+    // GrappleSpeed=0
+    HitDamage=20.00
+    bDoAttachPawn=True
     bSwingPhysics=True
-    //// These two are cheats in terms of real physics, but may be useful for large maps without handy ceilings.
-    bLinePhysics=True // This attempts to deal with grapple pull in terms of line length, but it still needs some work.
+    // bLinePhysics=True // This deals with grapple pull in terms of line length.
+    bLineOfSight=True
+    bLineFolding=True
+    bShowLine=True
+    // MinRetract=50
+    MinRetract=125
+    // MinRetract=200
+    // MinRetract=250
+    bPrimaryWinch=True // Grapple only winds in while player is holding primary fire.
+    bCrouchReleases=True // Grapple line unwinds while player is crouching
+    bDropFlag=True
     bExtraPower=False
     bFiddlePhysics0=False // May be needed if bSwingPhysics=True but bLinePhysics=False
     bFiddlePhysics1=False // An alternative method for counteracting gravity, which unrealistically helps swing.
     bFiddlePhysics2=False // Try to help swing by turning downward momentum into forward momentum.
-    bShowLine=True
-    ThrowSound=sound'Botpack.Translocator.ThrowTarget'
     // HitSound=sound'UnrealI.GasBag.hit1g'
     // HitSound=sound'KrrChink'
     HitSound=sound'hit1g'
@@ -733,7 +762,7 @@ defaultproperties {
     RetractSound=sound'Slurp'
     // LineMesh=mesh'botpack.shockbm'
     // LineMesh=mesh'botpack.plasmaM'
-    LineMesh=mesh'Botpack.bolt1'
+    LineMesh=Mesh'Botpack.bolt1'
     // LineMesh=mesh'Botpack.TracerM'
     LineTexture=Texture'UMenu.Icons.Bg41'
     // LineTexture=Texture'Botpack.ammocount'
@@ -741,3 +770,4 @@ defaultproperties {
     // Hey would we have got the config default if we hadn't set a default here? :o
 }
 
+// It's true what he said.  If the defaultproperties has bLinePhysics=True, even if the server sets it to False and tries to replicate it, the client will see bLinePhysics=True.

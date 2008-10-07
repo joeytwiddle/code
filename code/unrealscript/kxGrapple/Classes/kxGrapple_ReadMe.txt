@@ -28,7 +28,7 @@ The default controls are designed to feel like the Translocator: PrimaryFire to 
 
 Other options:
 
-You may wish to increase GrappleSpeed, or set bExtraPower to make it faster at *distance* (eh not yet with bLinePhysics).  Making the winch faster makes the grapple easier to use, but I think it makes players too fast.  A lot of speed can be gained from swinging, rather than winching, when the weapon is used correctly.
+You may wish to increase GrappleSpeed, or set bExtraPower to make it faster at *distance* (eh not yet with bLinePhysics).  Making the winch faster makes the grapple easier to use, but I think it makes players too fast.  A lot of speed can be gained from swinging, rather than winching, when the weapon is used correctly.  The default GrappleSpeed is 600.  Set it to 0 to disable winching altogether, or 1200 for easier takeoff.
 
 DO NOT set bIdenticalButtons, it is BUGGY!  It was supposed to make both fire buttons act the same, simply firing and retracting the hook alternately.
 

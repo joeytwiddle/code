@@ -19,9 +19,9 @@ var int bBehindView[64];
 var int bChangeFOV[64];
 var float PreviousFOV[64];
 
-replication
-{
-  unreliable if ( Role == 4 ) cl;
+replication {
+  unreliable if (Role == 4)
+    cl;
 }
 
 function PostBeginPlay ()
@@ -32,7 +32,7 @@ function PostBeginPlay ()
     return;
   }
   Initialized = True;
-  DefaultWeapon = Class'enforcer';
+  // DefaultWeapon = Class'enforcer'; // I set this but I still spawned with the GrappleLauncher selected.
   // DefaultWeapon = Class'ImpactHammer';
   // Level.Game.RegisterDamageMutator(self);
   for (i=0;i<64;i++) {
@@ -135,13 +135,17 @@ function Mutate (string MutateString, PlayerPawn Sender)
   if ( MutateString ~= "FireGrapple" ) {
     cl = GetGrappleLauncher(Sender);
     if ( cl != None && cl.kxGrapple == None ) {
+      /*
       // TODO: This is unfinished / not working properly:
-      PlaySound(class'kxGrapple'.default.ThrowSound,SLOT_Interface,2.0);
+      PlaySound(class'kx_GrappleLauncher'.default.ThrowSound,SLOT_Interface,2.0);
       cl.kxGrapple = Spawn(class'kxGrapple',Sender,,Sender.Location+64*Vector(Sender.Rotation),Sender.Rotation);
       cl.kxGrapple.SetMaster(cl);
       cl.Instigator = Sender;
-      cl.kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
-      cl.AmbientSound = class'kxGrapple'.default.ReleaseSound;
+      cl.kxGrapple.AmbientSound = class'kx_GrappleLauncher'.default.ReleaseSound;
+      cl.AmbientSound = class'kx_GrappleLauncher'.default.ReleaseSound;
+      */
+      // Maybe better to do something like call cl.Fire()?
+      cl.Fire(); // Maybe no good from the server
     }
   }
   if ( MutateString ~= "KillHook" ) {
