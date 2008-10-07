@@ -4,50 +4,37 @@
 
 class kxMutator extends Mutator Config(kxGrapple);
 
-var bool Initialized;
+var bool bDoneInit;
 var DeathMatchPlus DM;
-var config bool UseBuiltinGrapple;
+var config bool bRemoveTranslocator,bGiveToPlayers;
 var config bool ExtraJumpBoots;
-var config bool bDefaultBehindView,bDefaultChangeFOV;
 var() name WeaponName;
 var() name AmmoName;
 var() string WeaponString;
 var() string AmmoString;
 var kx_GrappleLauncher cl;
 
-var int bBehindView[64];
-var int bChangeFOV[64];
-var float PreviousFOV[64];
-
 replication {
   unreliable if (Role == 4)
     cl;
 }
 
-function PostBeginPlay ()
-{
+function PostBeginPlay () {
   local int i;
-  if ( Initialized )
-  {
+  if (bDoneInit) {
+    Log(Level.TimeSeconds$" "$Self$".PostBeginPlay() was called a SECOND time!  Dropping out.");
     return;
   }
-  Initialized = True;
+  bDoneInit = True;
   // DefaultWeapon = Class'enforcer'; // I set this but I still spawned with the GrappleLauncher selected.
   // DefaultWeapon = Class'ImpactHammer';
   // Level.Game.RegisterDamageMutator(self);
-  for (i=0;i<64;i++) {
-    if (bDefaultBehindView)
-      bBehindView[i] = 1;
-    if (bDefaultChangeFOV)
-      bChangeFOV[i] = 1;
-    PreviousFOV[i] = 90;
-  }
 }
 
 function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
-  if (UseBuiltinGrapple && Other.IsA('Translocator') && !Other.IsA('kx_GrappleLauncher')) {
-    ReplaceWith(Other,"kxGrapple.kx_GrappleLauncher");
+  if (bRemoveTranslocator && Other.IsA('Translocator') && !Other.IsA('kx_GrappleLauncher')) {
+    ReplaceWith(Other,"kxGrapple.kx_GrappleLauncher"); // This was supposed to replace the translocator but it only removes it!
     // ReplaceWith(Other,"kxGrapple.Translocator");
     // Log("[kxGrapple.kxMutator] CheckReplacement("$Other$") -> kx_GrappleLauncher");
     return False;
@@ -61,12 +48,19 @@ function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // return True;
 }
 
-function ModifyPlayer (Pawn Other)
-{
-  if (PlayerPawn(Other) != None)
-    OnDeselect(PlayerPawn(Other));
+function ModifyPlayer (Pawn Other) {
+  local Inventory Inv;
   GiveWeaponsTo(Other);
+  if (PlayerPawn(Other) != None) {
+    // OnDeselect(PlayerPawn(Other));
+    // TODO CONSIDER: Isn't this just GetGrappleLauncher(Other).OnDeselect() ?
+    Inv = PlayerPawn(Other).FindInventoryType(class'kxGrapple.kx_GrappleLauncher');
+    if (kx_GrappleLauncher(Inv)!=None) {
+      kx_GrappleLauncher(Inv).OnDeselect();
+    }
+  }
   // This player/pawn has respawned, so any grapples which were hooked on it should now be dropped.
+  // We could have just searched all kxGrapples.  :P
   foreach AllActors(class'kx_GrappleLauncher',cl) {
     if (cl.kxGrapple!=None && cl.kxGrapple.thing == Other) {
       cl.kxGrapple.Destroy();
@@ -75,10 +69,9 @@ function ModifyPlayer (Pawn Other)
   Super.ModifyPlayer(Other);
 }
 
-function GiveWeaponsTo (Pawn P)
-{
+function GiveWeaponsTo (Pawn P) {
   local Inventory Inv;
-  if (UseBuiltinGrapple) {
+  if (bGiveToPlayers) {
     // // P.AddInventory(Spawn(class'kxGrapple.Translocator'));
     // P.AddInventory(Spawn(class'kxGrapple.kx_GrappleLauncher'));
     Inv = P.FindInventoryType(class'kxGrapple.kx_GrappleLauncher');
@@ -94,9 +87,10 @@ function GiveWeaponsTo (Pawn P)
     }
     if (P.PlayerReplicationInfo.Deaths==0) {
       // P.ClientMessage("You have a Grappling Hook.");
-      if (bDefaultBehindView || bDefaultChangeFOV) {
-        P.ClientMessage("To disable the grapple's BehindView switching: mutate BV off");
-      }
+      // if (bDefaultBehindView || bDefaultChangeFOV) {
+        // P.ClientMessage("To disable the grapple's BehindView switching: autobehindview");
+      // }
+      P.ClientMessage("To toggle the grapple's automatic view switching: AutoBehindView");
     }
     // Remove any Translocator they might have:
     Inv = P.FindInventoryType(class'Botpack.Translocator');
@@ -114,24 +108,23 @@ function bool PreventDeath (Pawn Killed, Pawn Killer, name DamageType, Vector Hi
   return Super.PreventDeath(Killed,Killer,DamageType,HitLocation);
 }
 
-function kx_GrappleLauncher GetGrappleLauncher (Actor Other)
-{
+function kx_GrappleLauncher GetGrappleLauncher (Actor Other) {
   local kx_GrappleLauncher thelauncher;
-
-  foreach AllActors(Class'kx_GrappleLauncher',thelauncher)
-  // foreach AllActors(Class'kxGrapple.Translocator',thelauncher)
-  {
-    if ( thelauncher.Owner == Other )
-    {
+  foreach AllActors(Class'kx_GrappleLauncher',thelauncher) {
+  // foreach AllActors(Class'kxGrapple.Translocator',thelauncher) {
+    if ( thelauncher.Owner == Other ) {
       return thelauncher;
     }
   }
   return None;
 }
 
-function Mutate (string MutateString, PlayerPawn Sender)
-{
+function Mutate (string MutateString, PlayerPawn Sender) {
+  // TODO: These mutate options are probably redundant given the exec functi_ns.
+  //       NOT SO!  exec commands only work when switched to the weapon.  If we get these commands working, they could be used to grapple at any time without selecting it.  Admin should be able to disable that ability.
+  //       NOT SO!  exec commands DO work when switched to OTHER weapons!
   // We allow players to fire or retract their grappling hook without having it selected as a weapon!
+  local kxGrapple kxg;
   if ( MutateString ~= "FireGrapple" ) {
     cl = GetGrappleLauncher(Sender);
     if ( cl != None && cl.kxGrapple == None ) {
@@ -155,56 +148,22 @@ function Mutate (string MutateString, PlayerPawn Sender)
     }
   }
   if (MutateString ~= "HELP") {
-    Sender.ClientMessage("kxGrapple commands: mutate BV off | mutate BV on");
+    Sender.ClientMessage("kxGrapple commands: AutoBehindView [on|off] | AttachHook | ReleaseHook | FireHook | mutate FireGrapple | mutate KillHook | mutate status");
   }
-  if (MutateString ~= "BV off") {
-    bBehindView[Sender.PlayerReplicationInfo.PlayerID%64]=0;
-    bChangeFOV[Sender.PlayerReplicationInfo.PlayerID%64]=0;
-    // Reset their settings.  BUG: Eek if they type this *before* using the grapple, their FOV will be changed to default 90.  And maybe they wanted to be in behindview, just not switching!
-    Sender.ConsoleCommand("BehindView 0");
-    Sender.ConsoleCommand("FOV "$PreviousFOV[Sender.PlayerReplicationInfo.PlayerID%64]);
+  if (MutateString ~= "STATUS") {
+    kxg = Spawn(class'kxGrapple');
+    Sender.ClientMessage("kxGrapple defaults: Speed="$kxg.default.Speed$" GrappleSpeed="$kxg.default.GrappleSpeed);
+    Sender.ClientMessage("kxGrapple status:   Speed="$kxg.Speed$" GrappleSpeed="$kxg.GrappleSpeed);
   }
-  if (MutateString ~= "BV on") {
-    bBehindView[Sender.PlayerReplicationInfo.PlayerID%64]=1;
-    bChangeFOV[Sender.PlayerReplicationInfo.PlayerID%64]=1;
+  if (MutateString ~= "AutoBehindView") {
+    // The player need not have typed "mutate" :P
+    // This probably doesn't work:
+    GetGrappleLauncher(Sender).AutoBehindView();
   }
   Super.Mutate(MutateString,Sender);
 }
 
-function OnSelect(PlayerPawn p) {
-  if (p == None)
-    return;
-  if (bBehindView[p.PlayerReplicationInfo.PlayerID%64]>0) {
-    p.ConsoleCommand("BehindView 1");
-  }
-  if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
-    PreviousFOV[p.PlayerReplicationInfo.PlayerID%64] = p.DesiredFOV;
-    if (p.FOVAngle<110) {
-      p.ConsoleCommand("FOV 110");
-      //// This method didn't work even when I made the calling functi0ns "simulated":
-      // p.DefaultFOV = 110;
-      // p.DesiredFOV = 110;
-      //// Well of course, we are in the mutator, although we were called by the weapon.
-    }
-  }
-}
-
-function OnDeselect(PlayerPawn p) {
-  if (p == None)
-    return;
-  if (bBehindView[p.PlayerReplicationInfo.PlayerID%64]>0) {
-    p.ConsoleCommand("BehindView 0");
-  }
-  if (bChangeFOV[p.PlayerReplicationInfo.PlayerID%64]>0) {
-    p.ConsoleCommand("FOV "$PreviousFOV[p.PlayerReplicationInfo.PlayerID%64]);
-    //// This method didn't work even when I made the calling functi0ns "simulated":
-    // p.DesiredFOV = PreviousFOV[p.PlayerReplicationInfo.PlayerID%64];
-    // p.DefaultFOV = PreviousFOV[p.PlayerReplicationInfo.PlayerID%64];
-  }
-}
-
-defaultproperties
-{
+defaultproperties {
     WeaponName=kx_GrappleLauncher
     // WeaponName=Translocator
     AmmoName=DefaultAmmo
@@ -212,8 +171,7 @@ defaultproperties
     AmmoString="none"
     // Doing this causes the ImpactHammer to be replaced:
     // DefaultWeapon=Class'kx_GrappleLauncher'
-    UseBuiltinGrapple=True
-    bDefaultBehindView=True
-    bDefaultChangeFOV=True
+    bRemoveTranslocator=True
+    bGiveToPlayers=True // For some reason we need both of these!
 }
 

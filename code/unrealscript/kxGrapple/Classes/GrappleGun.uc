@@ -2,46 +2,84 @@
 // kx_GrappleLauncher.
 //================================================================================
 
+// TODO: We should offer exec commands WinchGrapplingLine and ReleaseGrapplingLine, or ShortenLine and LengthenLine.
+
 // class kx_GrappleLauncher expands Translocator Config(kxGrapple); // Tried doing this so that the player's translocator bind would work automatically, but it didn't!
 class kx_GrappleLauncher expands TournamentWeapon Config(kxGrapple);
 
 // #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
-var config bool bAutoDrop;
+var config bool bAutoDrop; // bAutoRetract?
 var config bool bIdenticalButtons; // TODO: Not working!
+var config bool bDisableAutoBehindview; // This is the only one we really want on the client config.  The rest are for the server (could go to another class, e.g. kxRules).  If we did that we could remove the Config(kxGrapple) above!
 var config bool bLogging;
 var config Sound FailSound,ThrowSound;
 
 var Weapon PreviousWeapon;
 var kxGrapple kxGrapple;
-var bool bManualShot;
-var bool bShooting;
 var kxMutator kxMutator;
+
+var String NextCommand; // Used as RPC mechanism from server to client
+var float LastFOV; // Used only on the client
 
 replication {
   reliable if (Role==ROLE_Authority)
-    bIdenticalButtons,bLogging,bAutoDrop,FailSound,ThrowSound;
+    bIdenticalButtons,bLogging,bAutoDrop,FailSound,ThrowSound,NextCommand;
+  //// We do NOT want to replicate bDisableAutoBehindview - we want the client to see his version and not be updated from the server.
+  // reliable if (Role!=ROLE_Authority)
+    // bDisableAutoBehindview;
+  reliable if (Role==ROLE_Authority)
+    AutoBehindView; // In case it is called from kxMutator().
 }
 
-exec function AttachHook () {
+simulated function PreBeginPlay() {
+  local PlayerPawn P;
+  local String nextState;
+  Super.PreBeginPlay();
+  if ( Level.NetMode == 1 ) {
+    return;
+  }
+  foreach AllActors(Class'PlayerPawn',P) {
+    if ( Viewport(P.Player) != None ) {
+      break;
+    } else {
+      P = None;
+    }
+  }
+  if ( P == None ) {
+    Log("kx_GrappleLauncher.PreBeginPlay() NO LOCAL PLAYERPAWN!");
+    // But we actually take no action :P
+    return;
+  }
+  if (p.PlayerReplicationInfo.Deaths == 0) {
+    // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like bDoneCheck.
+    CheckPlayerBinds(P);
+    // Only display grapple message on first spawn:
+    // PlayerPawn(Owner).ClientMessage("To toggle the grappling hook's auto view switching, type: AutoBehindView");
+    if (bDisableAutoBehindview)
+      nextState="enable";
+    else
+      nextState="disable";
+    PlayerPawn(Owner).ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: AutoBehindView");
+    // TODO: This is NOT getting displayed!
+  }
+}
+
+simulated exec function AttachHook () {
   PlayerPawn(Owner).ClientMessage("Trying to attachHook");
   if ( kxGrapple == None ) {
     FireHook();
   }
 }
 
-exec function ReleaseHook () {
+simulated exec function ReleaseHook () {
   PlayerPawn(Owner).ClientMessage("Trying to releaseHook");
   if ( kxGrapple != None ) {
     kxGrapple.Destroy();
   }
 }
 
-simulated function ClientFireHook () {
-  return;
-}
-
-exec function FireHook () {
+simulated exec function FireHook () {
   if ( kxGrapple != None ) {
     return;
   }
@@ -53,8 +91,12 @@ exec function FireHook () {
   GotoState('NormalFire');
 }
 
-function Destroyed () {
-  GetKXMutator().OnDeselect(PlayerPawn(Owner));
+simulated function ClientFireHook () {
+  return;
+}
+
+simulated function Destroyed () {
+  OnDeselect();
   if ( kxGrapple != None ) {
     kxGrapple.Destroy();
     kxGrapple = None;
@@ -99,23 +141,25 @@ function ReturnToPreviousWeapon() {
 function Fire (optional float Value) {
   GotoState('NormalFire');
   if ( kxGrapple == None ) {
-    if ( PlayerPawn(Owner) != None ) {
-      PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
-    }
-    bPointing = True;
-    PlayFiring();
     // AmbientSound = class'kxGrapple'.default.ThrowSound;
     // AmbientSound = Sound'Hidraul2';
     // AmbientSound = Sound'Slurp';
     kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
     if (kxGrapple == None) {
-      if (bLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
+      // if (bLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
       // DONE: denied sound
-      PlaySound(ThrowSound,SLOT_None,2.0);
+      // TODO: bug - the sounds play rapidy repeating until the button is released - just once, or once a second would be enough
+      //       this is really a problem with the fire mechanism retrying, instead of waiting for release and then a second press
+      PlaySound(ThrowSound,SLOT_None,0.8); // quiet failed throw
       PlaySound(FailSound,SLOT_Interface,2.0);
     } else {
-      PlaySound(ThrowSound,SLOT_Interface,2.0);
       kxGrapple.SetMaster(self);
+      if ( PlayerPawn(Owner) != None ) {
+        PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
+      }
+      bPointing = True;
+      PlayFiring();
+      PlaySound(ThrowSound,SLOT_Interface,1.5);
       // TODO BUG: These sounds are not working.  It would be nice to hear the line flying out.
       kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
       AmbientSound = class'kxGrapple'.default.ReleaseSound;
@@ -194,7 +238,7 @@ state Idle {
     PlayIdleAnim();
   }
 
-  function bool PutDown () {
+  simulated function bool PutDown () {
     GotoState('DownWeapon');
     return True;
   }
@@ -205,7 +249,7 @@ state Idle {
     PlayIdleAnim();
 }
 
-function Finish () {
+simulated function Finish () {
   local Pawn PawnOwner;
 
   if ( bChangeWeapon ) {
@@ -271,27 +315,6 @@ function SetHand (float hand) {
   Super.SetHand(hand);
 }
 
-simulated function PreBeginPlay() {
-  local PlayerPawn P;
-  Super.PreBeginPlay();
-  if ( Level.NetMode == 1 ) {
-    return;
-  }
-  foreach AllActors(Class'PlayerPawn',P) {
-    if ( Viewport(P.Player) != None ) {
-      break;
-    } else {
-      P = None;
-    }
-  }
-  if ( P == None ) {
-    Log("kx_GrappleLauncher.PreBeginPlay() NO LOCAL PLAYERPAWN!");
-    return;
-  }
-  if (p.PlayerReplicationInfo.Deaths == 0) // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like bDoneCheck.
-    CheckPlayerBinds(P);
-}
-
 simulated function CheckPlayerBinds(PlayerPawn P) {
   local int i;
   local string toAdd;
@@ -316,7 +339,7 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
   Log("kx_GrappleLauncher.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
   if (!bBindExists) {
     // P.ClientMessage("You should make a keybind for the Translocator and Grappling Hook weapons using your console.");
-    // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon kx_GrapplingHook");
+    // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon kx_GrappleLauncher");
     // P.ClientMessage("You could make a keybind for your Translocator using the console, then reconnect.");
     P.ClientMessage("You should make a keybind for your Grappling Hook.");
     P.ClientMessage("Type in the console: SET INPUT Q SwitchWeapon 1");
@@ -325,18 +348,20 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
 }
 
 simulated function PlaySelect() {
-  GetKXMutator().OnSelect(PlayerPawn(Owner));
-  // Super.PlaySelect(); // Avoids errors thrown by missing meshes.
+  OnSelect();
+  Super.PlaySelect(); // Avoids errors thrown by missing meshes.
 }
 
 state DownWeapon {
   function BeginState() {
-    GetKXMutator().OnDeselect(PlayerPawn(Owner));
+    OnDeselect(); // Was not being called simulated, so moved it to the GotoState() calls, but still not.  So made it work non-replicated.
     Super.BeginState();
   }
 }
 
-function kxMutator GetKXMutator() {
+/*
+simulated function kxMutator GetKXMutator() {
+  Log("kx_GrappleLauncher.GetKXMutator() called - kxMutator="$kxMutator$" Owner="$Owner);
   if (kxMutator!=None)
     return kxMutator;
   foreach AllActors(class'kxMutator',kxMutator) {
@@ -349,6 +374,90 @@ function kxMutator GetKXMutator() {
   }
   return kxMutator;
 }
+*/
+
+
+// AutoBehindView
+
+simulated exec function AutoBehindView(optional String extra) {
+  if (extra=="0" || extra~="OFF" || extra~="NO" || extra~="False") {
+    bDisableAutoBehindview = True;
+  } else if (extra=="1" || extra~="ON" || extra~="YES" || extra~="True") {
+    bDisableAutoBehindview = False;
+  } else {
+    bDisableAutoBehindview = !bDisableAutoBehindview;
+  }
+  SaveConfig();
+  if (bDisableAutoBehindview) extra="DISABLED"; else extra="ENABLED";
+  PlayerPawn(Owner).ClientMessage("The grappling hook's auto-behindview has been "$extra$", your settings were saved.");
+  if (bActive) {
+    // The grapple is the current weapon.  We probably need to switch view since behaviour has just changed.
+    if (bDisableAutoBehindview) {
+      UndoBehindview(); // Without checking our setting, undo the view change we probably made earlier.
+    } else {
+      DoBehindview(); // Set the view as desired.
+    }
+  } else {
+    // We go not have the grapple selected.  We should be in the correct view style already.
+  }
+}
+
+// The functions OnSelect() and OnDeselect() are sometimes called
+// non-simulated, but we require that the response actions are called
+// simulated, so we replicate a command to the client here, and the command
+// should be run simulated in the next call to Tick().
+
+function OnSelect() {
+  NextCommand = "onselect";
+}
+
+function OnDeselect() {
+  NextCommand = "ondeselect";
+}
+
+simulated event Tick(float DeltaTime) {
+  Super.Tick(DeltaTime);
+  if (Role==ROLE_Authority) // We only want to execute these commands on the client.
+    return;
+  if (NextCommand=="")
+    return;
+  if (NextCommand=="onselect") {
+    OnSelectCheck();
+  } else if (NextCommand=="ondeselect") {
+    OnDeselectCheck();
+  } else {
+    Log(Self$".Tick() Error! NextCommand=\""$NextCommand$"\" is an unknown command!");
+  }
+  NextCommand="";
+}
+
+simulated function OnSelectCheck() {
+  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".OnSelectCheck() called with Role="$Role); }
+  if (!bDisableAutoBehindview) {
+    DoBehindview();
+ }
+}
+
+simulated function OnDeselectCheck() {
+  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".OnDeselectCheck() called with Role="$Role); }
+  if (!bDisableAutoBehindview) {
+    UndoBehindview();
+ }
+}
+
+simulated function DoBehindview() {
+  LastFOV = PlayerPawn(Owner).DesiredFOV;
+  // PlayerPawn(Owner).ConsoleCommand("FOV 110");
+  PlayerPawn(Owner).DesiredFOV = 110;
+  PlayerPawn(Owner).ConsoleCommand("BehindView 1");
+}
+
+simulated function UndoBehindview() {
+  PlayerPawn(Owner).ConsoleCommand("FOV "$LastFOV);
+  PlayerPawn(Owner).ConsoleCommand("BehindView 0");
+}
+
+
 
 defaultproperties {
     bCanThrow=False
@@ -368,9 +477,11 @@ defaultproperties {
     FailSound=Sound'Botpack.Translocator.ReturnTarget'
     // SelectSound=sound'kxGrapple.Slurp'
     // bIdenticalButtons=True // TODO: NOT working!
+    NetPriority=2.95 // I was hoping here to make replication of NextCommand as fast as possible.
 
+    InventoryGroup=1
     // From Translocator.uc:
-    AutoSwitchPriority=0 // did not help
+    // AutoSwitchPriority=0 // did not help
     DeathMessage="%k tore %o into chunks with his grappling hook!"
     PlayerViewMesh=Mesh'Botpack.TranslocR'
     PickupViewMesh=Mesh'Botpack.Trans3loc'
@@ -378,5 +489,7 @@ defaultproperties {
     StatusIcon=Texture'Botpack.Icons.UseTrans'
     Icon=Texture'Botpack.Icons.UseTrans'
     // Mesh=Mesh'Botpack.Trans3loc'
+    // bDisableAutoBehindview=True // I fear setting a default might override the client value.
+    LastFOV=90 // In case we accidentally read it before writing it!
 }
 
