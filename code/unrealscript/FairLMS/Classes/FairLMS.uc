@@ -3,7 +3,14 @@
 // TODO BUG: Were some of the armor+pads getting left invisible on the spawnpoints?  I kept spawning with 150, but maybe that was done by normal LMS.
 // TODO: Anti-camper detection.
 // TODO: I didn't hear the amp pickup sound (altho maybe it came the same time as "headshot")
-// TODO: Sucks to get Armour then Armour again, etc.  :P
+// DONE: Sucks to get Armour then Armour again, etc.  :P
+// TODO: Deemer
+// I spawned with shieldbelt.
+// My Invis refused to wear off.
+// Redeemer fire works but not altfire.
+// FairLMS DM-Liandri.FairLMS0 (Function FairLMS.FairLMS.GiveRandomPowerup:029B) Accessed None
+// FairLMS DM-Liandri.FairLMS0 (Function FairLMS.FairLMS.GiveRandomPowerup:02A3) Attempt to assigned variable through None
+// WarheadLauncher DM-Liandri.WarheadLauncher0 (Function Botpack.WarheadLauncher.AltFire:002C) Accessed None
 
 class FairLMS expands Mutator config(FairLMS);
 
@@ -29,22 +36,30 @@ function PostBeginPlay() {
 	if (bGivePowerups || HealthGainedPerKill>0)
 		Level.Game.GameName = Level.Game.GameName $" with Frag Bonuses";
 	DeathMatchPlus(Level.Game).StartMessage = "Your are losing health!  Kill to stay alive!";
+	// Turn redeemers into mini-redeemers.
+	// TODO: Do these changes propogate over maps, messing with other types of game?
+	class'WarShell'.default.Speed = 400;
+	class'WarShell'.default.Damage = 400;
+	class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.6;
+	class'WarShell'.default.MomentumTransfer = 1000;
 }
 
 event Timer() {
-	local PlayerPawn p;
+	local Pawn p;
 	Super.Timer();
-	foreach AllActors(class'PlayerPawn',p) {
-		p.Health -= HealthLostPerSec;
-		if (p.Health<1)
-			p.Health = 1;
-		// Average death 10 seconds after health runs out, provided timer stays at 1.0.
-		if (p.Health <= 1 && FRand()<0.1) { // TODO: or was hit recently (may be about to be finished off)
-			// Level.Game.
-			p.Died(None, 'Suicided', p.Location);
+	foreach AllActors(class'Pawn',p) {
+		if (PlayerPawn(p)!=None || Bot(p)!=None) {
+			p.Health -= HealthLostPerSec;
+			if (p.Health<1)
+				p.Health = 1;
+			// Average death 10 seconds after health runs out, provided timer stays at 1.0.
+			if (p.Health <= 1 && FRand()<0.1) { // TODO: or was hit recently (may be about to be finished off)
+				// Level.Game.
+				p.Died(None, 'Suicided', p.Location);
+			}
+			// CONSIDER TODO: when player first reaches 0, we could add some effect to him (skull above his head) to show that he requires only 1 damage hit to die.
+			//                maybe fairer not to warn other players, but to warn the player who is in danger!
 		}
-		// CONSIDER TODO: when player first reaches 0, we could add some effect to him (skull above his head) to show that he requires only 1 damage hit to die.
-		//                maybe fairer not to warn other players, but to warn the player who is in danger!
 	}
 }
 
@@ -53,7 +68,7 @@ function ModifyPlayer(Pawn p) {
 	p.Health = InitialHealth;
 	// p.PlayerReplicationInfo.Armor = InitialArmour;
 	GiveAllWeapons(p);
-	if (PlayerPawn(p)!=None) {
+	if (p.PlayerReplicationInfo!=None) {
 		KillsSinceSpawn[p.PlayerReplicationInfo.PlayerID%64] = 0;
 	}
 }
@@ -63,11 +78,11 @@ function ScoreKill(Pawn killer, Pawn other) {
 	if (killer != None) {
 		killer.Health += HealthGainedPerKill;
 		if (killer.Health > 199) killer.Health = 199;
-	}
-	if (PlayerPawn(killer)!=None && PlayerPawn(killer).PlayerReplicationInfo!=None) {
-		KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64] += 1;
-		if (KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64]%FragsForPowerup == 0 && bGivePowerups) {
-			GiveRandomPowerup(killer);
+		if (killer.PlayerReplicationInfo!=None) {
+			KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64] += 1;
+			if (KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64]%FragsForPowerup == 0 && bGivePowerups) {
+				GiveRandomPowerup(killer);
+			}
 		}
 	}
 }
@@ -109,12 +124,18 @@ function GiveAllWeapons(Pawn p) {
 function Inventory GivePickup(Pawn p, class<Inventory> t) {
 	local Inventory Inv;
 	Inv = p.FindInventoryType(t);
-	if (Inv!=None)
-		Log(Self$".GivePickup() Warning! "$p.getHumanName()$" already had a "$t$" so re-using it "$Inv);
+	if (Inv!=None) {
+		// Log(Self$".GivePickup() Warning! "$p.getHumanName()$" already had a "$t$" so re-using it "$Inv);
+		Log(Self$".GivePickup() "$p.getHumanName()$" already has a "$Inv$" - destroying it.");
+		Inv.Destroy();
+		Inv = None;
+		// TODO: This might be a bummer if it destroys the weapon you are currently holding!
+	}
+	// In the case of amp at least, re-using is bad because you don't get the fresh charge!
 	if (Inv==None)
 		Inv = Spawn(t);
 	if (Inv==None) {
-		Log(Self$".GivePickup() Failed to spawn a "$t);
+		Log(Self$".GivePickup() Warning! Failed to spawn a "$t);
 	} else {
 		Inv.bHeldItem=True;
 		Inv.RespawnTime=0;
@@ -134,13 +155,16 @@ function Inventory GivePickup(Pawn p, class<Inventory> t) {
 
 function GiveRandomPowerup(Pawn p) {
 	local int i;
+	local class<Inventory> type;
 	local Inventory inv;
-	i = 7*FRand();
+	i = 8*FRand();
 	// TODO: may as well just put these in lists in the config!
 	// TODO: No, be intelligent, give you something you need, or something you haven't already got.
+	if (p.Health<100 && FRand()<0.5)
+		i = 0; // If you are low on health there is a 50% chance you will get health
 	switch (i) {
 		case 0:
-			if (p.Health>=100) {
+			if (p.Health>=150) {
 				GiveRandomPowerup(p); return;
 			}
 			p.Health += 100;
@@ -168,18 +192,35 @@ function GiveRandomPowerup(Pawn p) {
 		case 4:
 			GivePickup(p,class'UT_Stealth');
 			FlashMessage(p,"Invisibility",InvisibilityColor);
-			// TODO: Appears to play no sound.
 		break;
 		case 5:
+			inv = p.FindInventoryType(class'UT_ShieldBelt');
+			if (inv!=None && UT_ShieldBelt(inv).Charge>=0) {
+				GiveRandomPowerup(p); return;
+			}
 			GivePickup(p,class'UT_ShieldBelt');
 			FlashMessage(p,"Shield Belt",ShieldBeltColor);
 		break;
 		case 6:
 			// DONE: Worked up until firing, but then there was no projectile.  However summoning one worked fine.
 			inv = GivePickup(p,class'WarheadLauncher');
+			if (inv==None) {
+				GiveRandomPowerup(p); return;
+			}
 			Weapon(inv).AmmoType.AmmoAmount = 1;
 			FlashMessage(p,"Redeemer",RedeemerColor);
 			// DONE: can they get a second warhead?
+		break;
+		case 7:
+			type = class<Inventory>(DynamicLoadObject("SiegeXXL2e.Jetpack",class'Class'));
+			if (type==None) {
+				GiveRandomPowerup(p); return;
+			}
+			inv = GivePickup(p,type);
+			if (inv==None) {
+				GiveRandomPowerup(p); return;
+			}
+			FlashMessage(p,"JetPack",JumpBootsColor);
 		break;
 	}
 }
@@ -198,15 +239,30 @@ function FlashMessage(Pawn p, String msg, Color col) {
 function Mutate(String msg, PlayerPawn Sender) {
 	local String rep;
 	local Inventory inv;
+	local Sound snd;
+
 	if (msg ~= "LISTINV") {
+
 		rep = "";
 		for (Inv=Sender.Inventory; Inv!=None; Inv=Inv.Inventory) {
 			// rep = rep $ Inv $"("$ Inv.getHumanName() $") ";
 			rep = rep $ Inv $" ";
-			if (Len(rep)>1200)
+			if (Len(rep)>1500) {
+				rep = rep $ "...";
 				break;
+			}
 		}
 		Sender.ClientMessage("Your inventory: "$rep);
+
+	} else if (Left(msg,10) ~= "TESTSOUND ") {
+
+		snd = Sound(DynamicLoadObject(Mid(msg,10),class'Sound'));
+		if (snd == None) {
+			Sender.ClientMessage("Failed to load sound \""$ Mid(msg,10) $"\".");
+		} else {
+			Sender.PlaySound(snd,SLOT_Interface,2.0);
+		}
+
 	}
 	Super.Mutate(msg,Sender);
 }
