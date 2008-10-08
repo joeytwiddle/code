@@ -1,0 +1,33 @@
+if [ "$SETSERVER_AUTO" ] || [ "$CHANNEL" = "#kx.live" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#ut.pug" ] || [ "$AUTH" = "nogginBasher" ]
+then :
+else exit 0
+fi
+
+if [ ! "$*" ]
+then
+	echo "Usage: !findmap <part_of_map_name>"
+	exit 0
+fi
+
+. restrict_repetitive_calls "10 seconds"
+
+SERVER_CONNECT="k1210@85.131.247.65"
+
+# for SEARCH
+for SEARCH in "$*" ## since it's an ssh, we only want them to do one search
+do
+
+	RESULTS=`
+	verbosely ssh "$SERVER_CONNECT" "find ut/ut-server/Maps/ -iname '*$SEARCH*'" | grep "\.unr$" | sed 's+.*/++;s+\.unr$++' |
+	randomorder | head -n 20 | sort | tr '\n' ' '
+	`
+
+	if [ "$RESULTS" ]
+	then
+		echo "Maps matching \"$SEARCH\": $RESULTS"
+	else
+		echo "No maps found matching \"$SEARCH\"."
+	fi
+
+done
+
