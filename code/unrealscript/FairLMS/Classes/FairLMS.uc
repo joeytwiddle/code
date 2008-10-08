@@ -8,7 +8,7 @@
 class FairLMS expands Mutator config(FairLMS);
 
 var config bool bGiveWeapons;
-var config int InitialHealth,InitialArmour;
+var config int InitialArmour,InitialHealth;
 var config float HealthLostPerSec,HealthGainedPerKill;
 var config int FragsForPowerup;
 var config bool bGivePowerups;
@@ -28,7 +28,7 @@ function PostBeginPlay() {
 		Level.Game.GameName = "Anti-Idle "$ Level.Game.GameName;
 	if (bGivePowerups || HealthGainedPerKill>0)
 		Level.Game.GameName = Level.Game.GameName $" with Frag Bonuses";
-	DeathMatchPlus(Level.Game).StartMessage = "Your are losing health - kill to stay alive!";
+	DeathMatchPlus(Level.Game).StartMessage = "Your are losing health!  Kill to stay alive!";
 }
 
 event Timer() {
@@ -60,9 +60,11 @@ function ModifyPlayer(Pawn p) {
 
 function ScoreKill(Pawn killer, Pawn other) {
 	Super.ScoreKill(killer,other);
-	killer.Health += HealthGainedPerKill;
-	if (killer.Health > 199) killer.Health = 199;
-	if (PlayerPawn(killer)!=None) {
+	if (killer != None) {
+		killer.Health += HealthGainedPerKill;
+		if (killer.Health > 199) killer.Health = 199;
+	}
+	if (PlayerPawn(killer)!=None && PlayerPawn(killer).PlayerReplicationInfo!=None) {
 		KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64] += 1;
 		if (KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64]%FragsForPowerup == 0 && bGivePowerups) {
 			GiveRandomPowerup(killer);
@@ -138,12 +140,19 @@ function GiveRandomPowerup(Pawn p) {
 	// TODO: No, be intelligent, give you something you need, or something you haven't already got.
 	switch (i) {
 		case 0:
+			if (p.Health>=100) {
+				GiveRandomPowerup(p); return;
+			}
 			p.Health += 100;
 			if (p.Health > 199) p.Health = 199;
 			p.PlaySound(Sound'UnrealShare.Pickups.Health2',SLOT_Interface,3.0);
 			FlashMessage(p,"Health",HealthColor);
 		break;
 		case 1:
+			inv = p.FindInventoryType(class'Armor2');
+			if (inv!=None && Armor2(inv).Charge>=0) {
+				GiveRandomPowerup(p); return;
+			}
 			GivePickup(p,class'Armor2');
 			// GivePickup(p,class'ThighPads');
 			FlashMessage(p,"Armor",ArmorColor);
@@ -194,7 +203,7 @@ function Mutate(String msg, PlayerPawn Sender) {
 		for (Inv=Sender.Inventory; Inv!=None; Inv=Inv.Inventory) {
 			// rep = rep $ Inv $"("$ Inv.getHumanName() $") ";
 			rep = rep $ Inv $" ";
-			if (Len(rep)>800)
+			if (Len(rep)>1200)
 				break;
 		}
 		Sender.ClientMessage("Your inventory: "$rep);
@@ -203,9 +212,10 @@ function Mutate(String msg, PlayerPawn Sender) {
 }
 
 defaultproperties {
-	bGiveWeapons=False
+	bGiveWeapons=False  // Handled by LMS
+	InitialArmour=0     // Handled by LMS
 	InitialHealth=100
-	InitialArmour=100
+	// InitialArmour=100
 	HealthLostPerSec=2.0
 	HealthGainedPerKill=50.0
 	bGivePowerups=True
