@@ -355,7 +355,7 @@ captain () {
 			MAPS="`cat "$CURRENT_MAP_FILE" | sed 's/\(^\| \)+/\1/g'`"
 			if [ "$MAPS" ]
 			then
-				sh ./pugbot/setserver -zppug $MAPS || echo "/notice nogginBasher Failed to set server."
+				SETSERVER_AUTO=1 sh ./pugbot/setserver -zppug $MAPS || echo "/notice nogginBasher Failed to set server."
 				## Trying -zppug for the moment instead of -pug, hoping it makes weapon switch faster?
 				# && echo "!kx"
 			fi

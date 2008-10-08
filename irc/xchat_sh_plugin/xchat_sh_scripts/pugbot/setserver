@@ -1,6 +1,12 @@
+if [ "$SETSERVER_AUTO" ] || [ "$CHANNEL" = "#kx.live" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#ut.pug" ] || [ "$AUTH" = "nogginBasher" ]
+then :
+else exit 0
+fi
+
 if [ ! "$*" ]
 then
-	echo "!setserver <map>" >&2
+	echo "Usage: !setserver [-public|-war|-pug|-zppug|-ff] <map_name> [<other_map_names>..]"
+	# Secret: -f = force
 	exit 0
 fi
 
@@ -27,23 +33,25 @@ function do_switch () {
   if [ "$FORCE" ] || echo "$PLAYERCOUNT" | grep "^0/[0-9]*$" >/dev/null
   then
 	echo "[setserver] Server is empty ($PLAYERCOUNT) - requesting map switch: $MAPS" >&2
-  	verbosely ssh "$SERVER_CONNECT" j/jsh sh ut/switch_map.sh $MAPS > setserver_switch_map.out 2>&1 &
+  	verbosely ssh "$SERVER_CONNECT" j/jsh sh ut/switch_map.sh $MAPS > setserver_switch_map.out 2>setserver_switch_map.err &
 
 	echo "[setserver] Done ssh, waiting for outcome..." >&2
 	sleep 5
 	for X in `seq 1 5`
 	do
-		if cat setserver_switch_map.out | grep "Bringing Level .* up for play" >/dev/null &&
+		if cat setserver_switch_map.err | grep "Bringing Level .* up for play" >/dev/null &&
 		   do_qstat "$SERVER_ADDRESS" | grep -v "\<DOWN\>" | grep . >/dev/null
 		then ./utp kx | prepend_each_line "Server is set: " ; exit 0
 		fi
-		sleep 5
+		sleep 3
 	done
   	# echo "[setserver] Tried to switch to \"$MAPS\" but server didn't come back up!" >&2
   	echo "[setserver] Failed to get verification from both log and query." >&2
-	./utp kx | prepend_each_line "[setserver] Server status is: " >&2
+	# ./utp kx | prepend_each_line "[setserver] Server status is: " >&2
+	cat setserver_switch_map.out | head -n 3
+	echo "Failed to set the server: `./utp kx`"
   else
-  	echo "[setserver] Server is not empty: $RESPONSE" >&2
+  	echo "Not switching, server is in use! $RESPONSE" >&2
   fi
 }
 
