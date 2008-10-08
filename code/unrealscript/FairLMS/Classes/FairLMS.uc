@@ -9,10 +9,13 @@
 // My Invis refused to wear off.
 // Redeemer fire works but not altfire.
 // DONE: WarheadLauncher DM-Liandri.WarheadLauncher0 (Function Botpack.WarheadLauncher.AltFire:002C) Accessed None
-// BACK: WarheadLauncher DM-Liandri.WarheadLauncher12 (Function Botpack.WarheadLauncher.RateSelf:0027) Accessed None
+// DONE: WarheadLauncher DM-Liandri.WarheadLauncher12 (Function Botpack.WarheadLauncher.RateSelf:0027) Accessed None
 // LMS seems a bit stingy on initial ammo.
 // TODO: It is sometimes a bit laggy to load a new external object (e.g. the siege jetpack) during play due to DynamicLoadObject() calls.
 //       Since one is likely to spawn during the game anyway, have server and client pre-load the Powerups resources before the game starts.
+// TODO: I think you only get given one WarheadLauncher per life.  This is a feature, so ensure it stays that way!
+// TODO: Detect last 2 players, display it, and then stop giving powerups+health.
+// DONE: Some errors from the bots - are they due to pathing on spawned items which they think are navigable to/through?  Seemed to be fixed with some more additions to GiveInventory().
 
 class FairLMS expands Mutator config(FairLMS);
 
@@ -20,7 +23,7 @@ struct LMSBonus {
 	// var String Name;  // Actually each item probably already has a Name available from its defaultproperties.
 	var String Type;
 	var Color Color;
-	var Sound Sound;
+	var String Sound;
 };
 
 var config bool bGiveWeapons;
@@ -40,8 +43,9 @@ function PostBeginPlay() {
 	if (HealthLostPerSec>0)
 		Level.Game.GameName = "Anti-Idle "$ Level.Game.GameName;
 	if (bGivePowerups || HealthGainedPerKill>0)
-		Level.Game.GameName = Level.Game.GameName $" with Frag Bonuses";
-	DeathMatchPlus(Level.Game).StartMessage = "Your are losing health!  Kill to stay alive!";
+		Level.Game.GameName = Level.Game.GameName $" with Bonuses Powerups";
+	if (HealthLostPerSec>0)
+		DeathMatchPlus(Level.Game).StartMessage = "Your are losing health!  Kill to stay alive!";
 	// Turn redeemers into mini-redeemers.
 	// TODO: Do these changes propogate over maps, messing with other types of game?
 	class'WarShell'.default.Speed = 400;
@@ -165,14 +169,43 @@ function Inventory GivePickupType(Pawn p, class<Inventory> t) {
 }
 
 function GiveInventory(Pawn p, Inventory inv) {
-	Inv.bHeldItem=True;
-	Inv.RespawnTime=0;
-	if (Weapon(Inv)!=None && Weapon(Inv).AmmoType!=None) {
-		Weapon(Inv).AmmoType.AmmoAmount = Weapon(Inv).AmmoType.default.AmmoAmount * 3;
+	local Weapon w;
+
+	inv.bHeldItem=True;
+	inv.RespawnTime=0;
+
+	w = Weapon(inv);
+	if (w!=None) {
+
+		// Handle Weapon:
+		w.Instigator = P;
+		w.BecomeItem();
+		P.AddInventory(w);
+		// w.GiveTo(p);
+		w.GiveAmmo(P);
+		// Not for the redeemer (or other 1 ammo weapons):
+		if (Weapon(inv)!=None && Weapon(inv).AmmoType!=None && Weapon(inv).AmmoType.AmmoAmount>1) {
+			// Increase ammo x 3
+			Weapon(inv).AmmoType.AmmoAmount = Weapon(inv).AmmoType.AmmoAmount * 3;
+		}
+		w.SetSwitchPriority(P);
+		w.WeaponSet(P);
+		w.AmbientGlow = 0;
+
+		// DeathMatchPlus does this to weapons:
+		if ( p.IsA('PlayerPawn') )
+			w.SetHand(PlayerPawn(p).Handedness);
+		else
+			w.GotoState('Idle');
+
+	} else {
+
+		// Handle other Inventory item:
+		inv.GiveTo(p);
+		inv.Activate();
+
 	}
-	Inv.GiveTo(p);
-	Inv.Activate();
-	// TODO: Check out what DeathMatchPlus, and Translocator/GrappleGun do to initialise weapons correctly.
+	// DONE: Check out what DeathMatchPlus, and Translocator/GrappleGun do to initialise weapons correctly.
 	//       We may be missing something we should do for weapons.  In a game with bots I got: WarheadLauncher DM-Liandri.WarheadLauncher3 (F_nction Botpack.WarheadLauncher.RateSelf:0027) Accessed None
 }
 
@@ -181,6 +214,7 @@ function GiveRandomPowerup(Pawn p) {
 	local class<Inventory> type;
 	local Inventory inv;
 	local Color col;
+	local Sound resource;
 	for (j=0;j<100;j++) {
 		i = 20*FRand();
 		if (Powerup[i].Type == "")
@@ -211,8 +245,12 @@ function GiveRandomPowerup(Pawn p) {
 		}
 		FlashMessage(p,inv.ItemName,col);
 		// DONE: Sound!
-		if (Powerup[i].Sound != None) {
-			p.PlaySound(Powerup[i].Sound,SLOT_Interface,3.0);
+		resource = None;
+		if (Powerup[i].Sound != "") {
+			resource = Sound(DynamicLoadObject(Powerup[i].Sound,class'Sound'));
+		}
+		if (resource != None) {
+			p.PlaySound(resource,SLOT_Interface,3.0);
 		} else {
 			if (Inv.PickupSound != None) {
 				p.PlaySound(Inv.PickupSound,SLOT_Interface,3.0);
@@ -223,7 +261,7 @@ function GiveRandomPowerup(Pawn p) {
 		return;
 	}
 	if (j==100) {
-		Log(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!");
+		Log(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already.");
 		// TODO: maybe remove something from his inventory? ^^
 	}
 
@@ -264,7 +302,7 @@ function Mutate(String msg, PlayerPawn Sender) {
 		if (snd == None) {
 			Sender.ClientMessage("Failed to load sound \""$ Mid(msg,10) $"\".");
 		} else {
-			Sender.PlaySound(snd,SLOT_Interface,2.0);
+			Sender.PlaySound(snd,SLOT_Interface,3.0);
 		}
 
 	}
