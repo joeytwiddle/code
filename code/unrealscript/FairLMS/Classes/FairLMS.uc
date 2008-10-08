@@ -5,14 +5,23 @@
 // TODO: I didn't hear the amp pickup sound (altho maybe it came the same time as "headshot")
 // DONE: Sucks to get Armour then Armour again, etc.  :P
 // TODO: Deemer
-// I spawned with shieldbelt.
+// DONE: I spawned with shieldbelt.
 // My Invis refused to wear off.
 // Redeemer fire works but not altfire.
-// FairLMS DM-Liandri.FairLMS0 (Function FairLMS.FairLMS.GiveRandomPowerup:029B) Accessed None
-// FairLMS DM-Liandri.FairLMS0 (Function FairLMS.FairLMS.GiveRandomPowerup:02A3) Attempt to assigned variable through None
-// WarheadLauncher DM-Liandri.WarheadLauncher0 (Function Botpack.WarheadLauncher.AltFire:002C) Accessed None
+// DONE: WarheadLauncher DM-Liandri.WarheadLauncher0 (Function Botpack.WarheadLauncher.AltFire:002C) Accessed None
+// BACK: WarheadLauncher DM-Liandri.WarheadLauncher12 (Function Botpack.WarheadLauncher.RateSelf:0027) Accessed None
+// LMS seems a bit stingy on initial ammo.
+// TODO: It is sometimes a bit laggy to load a new external object (e.g. the siege jetpack) during play due to DynamicLoadObject() calls.
+//       Since one is likely to spawn during the game anyway, have server and client pre-load the Powerups resources before the game starts.
 
 class FairLMS expands Mutator config(FairLMS);
+
+struct LMSBonus {
+	// var String Name;  // Actually each item probably already has a Name available from its defaultproperties.
+	var String Type;
+	var Color Color;
+	var Sound Sound;
+};
 
 var config bool bGiveWeapons;
 var config int InitialArmour,InitialHealth;
@@ -20,13 +29,10 @@ var config float HealthLostPerSec,HealthGainedPerKill;
 var config int FragsForPowerup;
 var config bool bGivePowerups;
 var config String InitialWeapon[20];
-var config Color HealthColor,ArmorColor,JumpBootsColor,DamageAmpColor,InvisibilityColor,ShieldBeltColor,RedeemerColor;
+var config LMSBonus Powerup[20];
 var config Sound PowerupSound;
 
 var int KillsSinceSpawn[64];
-
-// struct LMSBonus { var String Name; var class<Inventory> Type; var Color Color; var Name Sound; }
-// Actually each item probably already has a Name available from its defaultproperties.
 
 function PostBeginPlay() {
 	Super.PostBeginPlay();
@@ -65,7 +71,8 @@ event Timer() {
 
 function ModifyPlayer(Pawn p) {
 	Super.ModifyPlayer(p);
-	p.Health = InitialHealth;
+	if (InitialHealth>0)
+		p.Health = InitialHealth;
 	// p.PlayerReplicationInfo.Armor = InitialArmour;
 	GiveAllWeapons(p);
 	if (p.PlayerReplicationInfo!=None) {
@@ -96,12 +103,12 @@ function GiveAllWeapons(Pawn p) {
 	// CONSIDER: Alternatively, give them normal armour, but adjust its Charge.
 	if (InitialArmour<50) {
 	} else if (InitialArmour>=50 && InitialArmour<100) {
-		GivePickup(p,class'ThighPads');
+		GivePickupType(p,class'ThighPads');
 	} else if (InitialArmour>=100 && InitialArmour<150) {
-		GivePickup(p,class'Armor2');
+		GivePickupType(p,class'Armor2');
 	} else if (InitialArmour>=150) {
-		GivePickup(p,class'Armor2');
-		GivePickup(p,class'ThighPads');
+		GivePickupType(p,class'Armor2');
+		GivePickupType(p,class'ThighPads');
 	}
 
 	if (bGiveWeapons) {
@@ -121,108 +128,105 @@ function GiveAllWeapons(Pawn p) {
 
 }
 
-function Inventory GivePickup(Pawn p, class<Inventory> t) {
+function Inventory GivePickupType(Pawn p, class<Inventory> t) {
+	// TODO: Can we just grab the implementation in GiveRandomPowerup()?
 	local Inventory Inv;
 	Inv = p.FindInventoryType(t);
 	if (Inv!=None) {
-		// Log(Self$".GivePickup() Warning! "$p.getHumanName()$" already had a "$t$" so re-using it "$Inv);
-		Log(Self$".GivePickup() "$p.getHumanName()$" already has a "$Inv$" - destroying it.");
+		// Log(Self$".GivePickupType() Warning! "$p.getHumanName()$" already had a "$t$" so re-using it "$Inv);
+		Log(Self$".GivePickupType() "$p.getHumanName()$" already has a "$Inv$" - destroying it.");
 		Inv.Destroy();
 		Inv = None;
 		// TODO: This might be a bummer if it destroys the weapon you are currently holding!
 	}
 	// In the case of amp at least, re-using is bad because you don't get the fresh charge!
-	if (Inv==None)
-		Inv = Spawn(t);
 	if (Inv==None) {
-		Log(Self$".GivePickup() Warning! Failed to spawn a "$t);
+		// Log(Self$".GivePickupType() Spawning a new "$t$" for "$p.getHumanName());
+		Inv = Spawn(t,p);
+	}
+	if (Inv==None) {
+		Log(Self$".GivePickupType() Warning! Failed to spawn a "$t);
 	} else {
-		Inv.bHeldItem=True;
-		Inv.RespawnTime=0;
-		if (Weapon(Inv)!=None && Weapon(Inv).AmmoType!=None) {
-			Weapon(Inv).AmmoType.AmmoAmount = Weapon(Inv).AmmoType.default.AmmoAmount * 3;
-		}
-		Inv.GiveTo(p);
-		Inv.Activate();
-		if (Inv.PickupSound != None) {
-			p.PlaySound(Inv.PickupSound,SLOT_Interface,3.0);
-		} else {
-			p.PlaySound(PowerupSound,SLOT_Interface,3.0);
+		GiveInventory(p,Inv);
+		// if (Inv.PickupSound != None) {
+			// p.PlaySound(Inv.PickupSound,SLOT_Interface,3.0);
+		// } else {
+			// p.PlaySound(PowerupSound,SLOT_Interface,3.0);
+		// }
+
+		// Post-hacks:
+		if (Weapon(Inv)!=None) {
+			// Really for the redeemer.
+			if (Weapon(Inv).AmmoType.AmmoAmount<1)
+				Weapon(Inv).AmmoType.AmmoAmount = 1;
 		}
 	}
 	return Inv;
 }
 
+function GiveInventory(Pawn p, Inventory inv) {
+	Inv.bHeldItem=True;
+	Inv.RespawnTime=0;
+	if (Weapon(Inv)!=None && Weapon(Inv).AmmoType!=None) {
+		Weapon(Inv).AmmoType.AmmoAmount = Weapon(Inv).AmmoType.default.AmmoAmount * 3;
+	}
+	Inv.GiveTo(p);
+	Inv.Activate();
+	// TODO: Check out what DeathMatchPlus, and Translocator/GrappleGun do to initialise weapons correctly.
+	//       We may be missing something we should do for weapons.  In a game with bots I got: WarheadLauncher DM-Liandri.WarheadLauncher3 (F_nction Botpack.WarheadLauncher.RateSelf:0027) Accessed None
+}
+
 function GiveRandomPowerup(Pawn p) {
-	local int i;
+	local int i,j;
 	local class<Inventory> type;
 	local Inventory inv;
-	i = 8*FRand();
-	// TODO: may as well just put these in lists in the config!
-	// TODO: No, be intelligent, give you something you need, or something you haven't already got.
-	if (p.Health<100 && FRand()<0.5)
-		i = 0; // If you are low on health there is a 50% chance you will get health
-	switch (i) {
-		case 0:
-			if (p.Health>=150) {
-				GiveRandomPowerup(p); return;
+	local Color col;
+	for (j=0;j<100;j++) {
+		i = 20*FRand();
+		if (Powerup[i].Type == "")
+			continue;
+		type = class<Inventory>( DynamicLoadObject(Powerup[i].Type,class'Class') );
+		if (type == None) {
+			Log("[FairLMS] Powerup #"$i$" \""$Powerup[i].Type$"\" does not exist!");
+			continue;
+		}
+		inv = p.FindInventoryType(type);
+		if (inv != None) {
+			// A bit log spammy:
+			// Log(Self$".GiveRandomPowerup() "$p.getHumanName()$" already has a "$inv);
+			// Log(Self$".GiveRandomPowerup() maybe they don't want another - maybe we could upgrade it?");
+			// It seems to me that items *are* being removed from a player's inventory when he loses them.
+			// I don't know if warhead 2nd time around is working now.
+			continue;
+		}
+		inv = Spawn(type,p);
+		if (inv == None) {
+			Log(Self$".GiveRandomPowerup() Failed to spawn "$type);
+			continue;
+		}
+		GiveInventory(p,inv);
+		col = Powerup[i].Color;
+		if (col.R==0 && col.G==0 && col.B==0) {
+			col.R=255; col.G=255; col.B=16; col.A=16;
+		}
+		FlashMessage(p,inv.ItemName,col);
+		// DONE: Sound!
+		if (Powerup[i].Sound != None) {
+			p.PlaySound(Powerup[i].Sound,SLOT_Interface,3.0);
+		} else {
+			if (Inv.PickupSound != None) {
+				p.PlaySound(Inv.PickupSound,SLOT_Interface,3.0);
+			} else {
+				p.PlaySound(PowerupSound,SLOT_Interface,3.0);
 			}
-			p.Health += 100;
-			if (p.Health > 199) p.Health = 199;
-			p.PlaySound(Sound'UnrealShare.Pickups.Health2',SLOT_Interface,3.0);
-			FlashMessage(p,"Health",HealthColor);
-		break;
-		case 1:
-			inv = p.FindInventoryType(class'Armor2');
-			if (inv!=None && Armor2(inv).Charge>=0) {
-				GiveRandomPowerup(p); return;
-			}
-			GivePickup(p,class'Armor2');
-			// GivePickup(p,class'ThighPads');
-			FlashMessage(p,"Armor",ArmorColor);
-		break;
-		case 2:
-			GivePickup(p,class'UT_JumpBoots');
-			FlashMessage(p,"Jump Boots",JumpBootsColor);
-		break;
-		case 3:
-			GivePickup(p,class'UDamage');
-			FlashMessage(p,"Damage Amp",DamageAmpColor);
-		break;
-		case 4:
-			GivePickup(p,class'UT_Stealth');
-			FlashMessage(p,"Invisibility",InvisibilityColor);
-		break;
-		case 5:
-			inv = p.FindInventoryType(class'UT_ShieldBelt');
-			if (inv!=None && UT_ShieldBelt(inv).Charge>=0) {
-				GiveRandomPowerup(p); return;
-			}
-			GivePickup(p,class'UT_ShieldBelt');
-			FlashMessage(p,"Shield Belt",ShieldBeltColor);
-		break;
-		case 6:
-			// DONE: Worked up until firing, but then there was no projectile.  However summoning one worked fine.
-			inv = GivePickup(p,class'WarheadLauncher');
-			if (inv==None) {
-				GiveRandomPowerup(p); return;
-			}
-			Weapon(inv).AmmoType.AmmoAmount = 1;
-			FlashMessage(p,"Redeemer",RedeemerColor);
-			// DONE: can they get a second warhead?
-		break;
-		case 7:
-			type = class<Inventory>(DynamicLoadObject("SiegeXXL2e.Jetpack",class'Class'));
-			if (type==None) {
-				GiveRandomPowerup(p); return;
-			}
-			inv = GivePickup(p,type);
-			if (inv==None) {
-				GiveRandomPowerup(p); return;
-			}
-			FlashMessage(p,"JetPack",JumpBootsColor);
-		break;
+		}
+		return;
 	}
+	if (j==100) {
+		Log(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!");
+		// TODO: maybe remove something from his inventory? ^^
+	}
+
 }
 
 function FlashMessage(Pawn p, String msg, Color col) {
@@ -269,8 +273,8 @@ function Mutate(String msg, PlayerPawn Sender) {
 
 defaultproperties {
 	bGiveWeapons=False  // Handled by LMS
-	InitialArmour=0     // Handled by LMS
-	InitialHealth=100
+	InitialArmour=123   // Handled by LMS
+	InitialHealth=123   // Handled by LMS?
 	// InitialArmour=100
 	HealthLostPerSec=2.0
 	HealthGainedPerKill=50.0
@@ -285,15 +289,16 @@ defaultproperties {
 	InitialWeapon(6)="Botpack.UT_EightBall"
 	InitialWeapon(7)="Botpack.ShockRifle"
 	InitialWeapon(8)="Botpack.SniperRifle"
-	HealthColor=(R=91,G=255,B=91,A=30)
-	ArmorColor=(R=255,G=173,B=91,A=30)
-	JumpBootsColor=(R=91,G=255,B=255,A=30)
-	DamageAmpColor=(R=255,G=91,B=255,A=30)
-	InvisibilityColor=(R=91,G=91,B=255,A=30)
-	ShieldBeltColor=(R=255,G=255,B=91,A=30)
-	RedeemerColor=(R=255,G=91,B=91,A=30)
 	PowerupSound=Sound'Botpack.Pickups.BeltSnd'
 	// PowerupSound=Sound'Botpack.Pickups.Sbelthe2'
 	// PowerupSound=Sound'Botpack.Pickups.AmpOut'
+	Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32))
+	Powerup(1)=(Type="Botpack.Armor2",Color=(R=255,G=131,B=91,A=32))
+	Powerup(2)=(Type="Botpack.UDamage",Color=(R=255,G=31,B=31,A=32))
+	Powerup(3)=(Type="Botpack.UT_Stealth",Color=(R=31,G=31,B=190,A=48))
+	Powerup(4)=(Type="Botpack.UT_ShieldBelt",Color=(R=255,G=31,B=31,A=32))
+	Powerup(5)=(Type="Botpack.UT_JumpBoots",Color=(R=91,G=255,B=255,A=32))
+	Powerup(6)=(Type="Botpack.WarheadLauncher",Color=(R=255,G=31,B=31,A=32))
+	Powerup(7)=(Type="SiegeXXL2e.JetPack",Color=(R=91,G=255,B=255,A=32))
 }
 
