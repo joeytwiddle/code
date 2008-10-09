@@ -222,5 +222,23 @@ defaultproperties {
 
     RechargeRate=5.0
     bRestrictFC=True
+
+    // This is what makes the boots a pickup:
+    ExpireMessage="DoubleJumping is over"
+    bAutoActivate=True
+    bActivatable=True
+    bDisplayableInv=True
+    PickupMessage="You picked up the DoubleJumpBoots"
+    ItemName="DoubleJumpBoots"
+    RespawnTime=30.00
+    PickupViewMesh=LodMesh'Botpack.jboot'
+    MaxDesireability=0.50
+    PickupSound=Sound'UnrealShare.Pickups.GenPickSnd'
+    ActivateSound=Sound'Botpack.Pickups.BootSnd'
+    Icon=Texture'UnrealI.Icons.I_Boots'
+    AmbientGlow=64
+    CollisionRadius=22.00
+    CollisionHeight=14.00
+
 }
 
