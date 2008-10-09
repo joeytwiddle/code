@@ -1,5 +1,5 @@
 //================================================================================
-// kxGrapple.
+// GrapplingHook.
 //================================================================================
 
 // TODO: fires on spawn :f
@@ -24,9 +24,9 @@
 // TODO: Still the issue of primary fire while swinging but switched to another weapon.  Consider preventing winching but allowing it by some other mechanism.
 //       The problem appears to be when the server setting is bPrimaryWinch=False but the class default setting is True (so the client does not think the sound needs to be played?).
 // CONSIDER: Instead of bPrimaryWinch, bPrimaryFirePausesWinching or bWalkPausesWinching ?
-// DONE: Line wrapping around corners magic.  Now kxLines must be created if bLineFolding=True even if bShowLine=False.
+// DONE: Line wrapping around corners magic.  Now GrapplingLines must be created if bLineFolding=True even if bShowLine=False.
 // DONE: We should keep bBehindView preference client side.
-// TODO: kx_GrappleLauncher is always the first weapon when we spawn.  It should be enforcer.
+// TODO: GrappleGun is always the first weapon when we spawn.  It should be enforcer.
 // TODO: If we fire to respawn, sometimes we will immediately fire our grapple.
 // CONSIDER: Instead of InstigatorRep, shouldn't we just use Master.Owner?  I wonder if the simulated SetMaster() fn guarantees the replication of the variable.
 // DONE: GrappleSpeed is scaled down when used for bSwingPhysics, but this is reasonable since swinging can add a lot of speed on top of the winching.
@@ -35,9 +35,13 @@
 // TODO: PullTowardDynamic - you can currently grapple onto team-mates :f
 // TODO: PullTowardDynamic - quite buggy, the hook stays suspended in the air, while the opponent warps around and the line points somewhere odd
 // TODO: line does not appear to come out of weapon in firstperson view.
+// TODO: would be nice to have a "whipping" sound when the grapple first flies out
+// TODO: Just go ahead and somehow fudge the physics so that players can make large upwards swings from the pivot using air control.
+// DONE: Grapple will sometimes refuse to embed into corners.  This was fixed by returning to Physics=PHYS_Projectile.
+// TODO: On PullTowardDynamic, sometimes the grapple is just left sitting in space, looks naff.  But is the problem the algorithm or replication?
+// TEST: You can telefrag other players (incl. teammates?!) by swinging into them.  I think this was caused by SetLocation(), which I have now replaced with MoveSmooth()/Move().
 
-// class kxGrapple extends XPGrapple Config(kxGrapple);
-class kxGrapple extends Projectile Config(kxGrapple);
+class GrapplingHook extends Projectile Config(kxGrapple);
 
 #exec AUDIO IMPORT FILE="Sounds\Pull.wav" NAME="Pull" // grindy windy one from ND
 // #exec AUDIO IMPORT FILE="Sounds\SoftPull.wav" NAME="SoftPull" // softer one from ND (more robotic)
@@ -67,7 +71,7 @@ var() config Mesh LineMesh;
 var() config Texture LineTexture;
 var() config bool bLogging;
 
-var kx_GrappleLauncher Master;
+var GrappleGun Master;
 var Vector pullDest;
 var bool bAttachedToThing;
 var Actor thing;
@@ -76,14 +80,14 @@ var float lineLength;
 // var ShockBeam LineSprite;
 // var Effects LineSprite;
 // var rocketmk2 LineSprite;
-var kxLine LineSprite;
+var GrapplingLine LineSprite;
 var bool bDestroyed;
 var Vector hNormal; // Never actually used, just a temporary variable for Trace().
 var Pawn InstigatorRep; // Sometimes the Instigator is not replicated, so we use our own variable to propogate it to the client.
 
 replication {
   // I believe all config vars need to be replicated because I have set defaults which the client may see unless we transfer the server's values.  Unfortunately I don't think it's working.  OK if no default is set, then they get replicated just fine.  And this replication statement *is* needed!
-  reliable if (Role == ROLE_Authority && bNetInitial)
+  reliable if (Role == ROLE_Authority)
     GrappleSpeed,HitDamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bPrimaryWinch,bCrouchReleases,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bLogging;
   reliable if (Role == ROLE_Authority)
     pullDest,bDestroyed,lineLength,Thing,Master,InstigatorRep; // ,bThingPawn,hNormal;
@@ -103,6 +107,9 @@ auto state Flying {
     outRot = Rotation;
     outRot.Pitch += ThrowAngle*8192/45;
     Velocity = vector(outRot) * Speed;
+    if (ThrowAngle != 0) {
+      SetPhysics(PHYS_Falling);
+    }
     pullDest = Location;
     // Let's point the mesh in the opposite direction:
     outRot.Yaw = Rotation.Yaw + 32768;
@@ -115,10 +122,37 @@ auto state Flying {
   }
 
   simulated function Tick(float DeltaTime) {
-    pullDest = Location;
+    local rotator rot;
+    // pullDest = Location;
+    pullDest = Location + 11.0*DrawScale*Vector(Rotation);
     if (LineSprite != None)
-      LineSprite.Pivot = Location;
+      LineSprite.Pivot = pullDest;
     UpdateLineSprite();
+
+    // We only need one of the following, depending what Physics type we decide to use.
+    // I will probably go with PHYS_Projectile since with PHYS_Falling the hook was refusing to stick in some corners.
+
+    if (Physics == PHYS_Falling) {
+      // Orient grapple according to trajectory:
+      rot = Rotator(Velocity);
+      rot.Yaw += 32768;
+      rot.Pitch *= -1;
+      SetRotation(rot);
+
+      // Naughty, but I want it to only feel 10% gravity:
+      Velocity -= Region.Zone.ZoneGravity*0.9*DeltaTime;
+      // If anyone asks, just say that it's equipped with wings which allow it to glide.
+      // Alternatively, we could set PHYS_Projectile as before or PHYS_Flying, and do all the gravity ourself.
+    }
+
+    if (Physics == PHYS_Projectile) {
+      // Falling projectile? ^^
+      Velocity += Region.Zone.ZoneGravity*0.2*DeltaTime;
+      rot = Rotator(Velocity);
+      rot.Yaw += 32768;
+      rot.Pitch *= -1;
+      SetRotation(rot);
+    }
   }
 
   // Is this pickup handling?
@@ -153,6 +187,7 @@ auto state Flying {
       }
       GotoState('PullTowardDynamic');
     } else {
+      Velocity = vect(0,0,0);
       GotoState('PullTowardStatic');
     }
     CheckFlagDrop();
@@ -170,7 +205,7 @@ auto state Flying {
 
 }
 
-simulated function SetMaster (kx_GrappleLauncher W) {
+simulated function SetMaster (GrappleGun W) {
   Master = W;
   Instigator = Pawn(W.Owner);
   // InitLineSprite();
@@ -178,13 +213,13 @@ simulated function SetMaster (kx_GrappleLauncher W) {
 
 simulated event Destroyed () {
   local int i;
-  local kxGrapple G;
-  local kxLine NextLine;
-  foreach AllActors(class'kxGrapple',G) {
+  local GrapplingHook G;
+  local GrapplingLine NextLine;
+  foreach AllActors(class'GrapplingHook',G) {
     i++;
   }
-  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$i$" kxGrapples on the level."); }
-  Master.kxGrapple = None;
+  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$i$" GrapplingHooks on the level."); }
+  Master.GrapplingHook = None;
   AmbientSound = None;
   Master.AmbientSound = None;
   // if (Role==ROLE_Authority && LineSprite!=None) {
@@ -204,8 +239,8 @@ simulated event Destroyed () {
   // Master.PlaySound(sound'UnrealI.hit1g',SLOT_Interface,10.0);
   // PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0);
   // Master.PlaySound(sound'Botpack.Translocator.ReturnTarget',SLOT_Interface,1.0);
-  PlaySound(RetractSound,SLOT_Interface,2.0,,,240);
-  Master.PlaySound(RetractSound,SLOT_Interface,2.0,,,240);
+  PlaySound(RetractSound,SLOT_Interface,3.0,,,240);
+  Master.PlaySound(RetractSound,SLOT_Interface,3.0,,,240);
   // Master.PlaySound(sound'FlyBuzz', SLOT_Interface, 2.5, False, 32, 16);
   Instigator.SetPhysics(PHYS_Falling);
   Super.Destroyed();
@@ -244,8 +279,8 @@ simulated function InitLineSprite() { // simulated needed?
     }
     // Instigator = InstigatorRep; // For client
     if (LineSprite == None) {
-      // LineSprite = Spawn(class'kxLine',,,(InstigatorRep.Location+pullDest)/2,rotator(pullDest-InstigatorRep.Location));
-      LineSprite = Spawn(class'kxLine',,,,);
+      // LineSprite = Spawn(class'GrapplingLine',,,(InstigatorRep.Location+pullDest)/2,rotator(pullDest-InstigatorRep.Location));
+      LineSprite = Spawn(class'GrapplingLine',,,,);
       if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Spawned "$LineSprite); }
     } else {
       if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Re-using old UNCLEANED LineSprite "$LineSprite$"!"); }
@@ -254,7 +289,7 @@ simulated function InitLineSprite() { // simulated needed?
       LineSprite.SetRotation(rotator(pullDest-InstigatorRep.Location));
     }
     if (LineSprite == None) {
-      if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() failed to spawn child kxLine!"); }
+      if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() failed to spawn child GrapplingLine!"); }
       return;
     }
     // LineSprite.SetFromTo(InstigatorRep,Self);
@@ -298,7 +333,7 @@ simulated function UpdateLineSprite() {
   // This is here because occasionally the first InitLineSprite() was getting called with Instigator=None.  We try again now, in case that variable has been replicated.
   if (LineSprite==None && Role==ROLE_Authority)
     InitLineSprite();
-  // Actually we aren't doing the client spawn anyway, we are just replicating the server's kxLines.
+  // Actually we aren't doing the client spawn anyway, we are just replicating the server's GrapplingLines.
 
   if (bShowLine) {
     // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".UpdateLineSprite() Running with Role="$Role$" pullDest="$pullDest); }
@@ -337,7 +372,7 @@ simulated function UpdateLineSprite() {
 function OnPull(float DeltaTime) {
   CheckFlagDrop();
   // If we have switched weapon away from grapple, then Jump will un-grapple us!
-  if (PlayerPawn(Master.Owner)!=None && PlayerPawn(Master.Owner).bPressedJump && kx_GrappleLauncher(PlayerPawn(Master.Owner).Weapon) == None) {
+  if (PlayerPawn(Master.Owner)!=None && PlayerPawn(Master.Owner).bPressedJump && GrappleGun(PlayerPawn(Master.Owner).Weapon) == None) {
     Destroy();
   }
 }
@@ -351,7 +386,7 @@ function CheckFlagDrop() {
 /*simulated*/ function DoLineOfSightChecks() {
   local Actor A;
   local Vector NewPivot;
-  local kxLine LastLine;
+  local GrapplingLine LastLine;
 
   if (bLogging && LineSprite!=None && VSize(pullDest-LineSprite.Pivot)>1.0) {
     Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Warning! pullDest "$pullDest$" != LS.Pivot "$LineSprite.Pivot$" !!");
@@ -390,7 +425,7 @@ function CheckFlagDrop() {
             LastLine.SetPhysics(PHYS_Rotating);
             // LastLine.Enable('Tick');
             // LastLine.Reached = vect(0,0,0); // we could use it as a marker like bStopped
-            // CONSIDER: If this revival of old kxLine fails, we could just destroy it and spawn a fresh one.
+            // CONSIDER: If this revival of old GrapplingLine fails, we could just destroy it and spawn a fresh one.
             // Instigator.ClientMessage("Your grappling line has straightened "$A);
           }
         }
@@ -421,15 +456,15 @@ function CheckFlagDrop() {
           InitLineSprite();
 
           if (LineSprite == None) {
-            // Oh no! Sometimes we do get "failed to spawn child kxLine!", often when the wall is quite close, and the child line will not spawn because it is inside the wall?
-            // This may happen less now that I've set kxLine.bCollideWorld=False.
+            // Oh no! Sometimes we do get "failed to spawn child GrapplingLine!", often when the wall is quite close, and the child line will not spawn because it is inside the wall?
+            // This may happen less now that I've set GrapplingLine.bCollideWorld=False.
             // Re-enable the line we just failed to split:
             LineSprite = LastLine;
             NewPivot = LastLine.Pivot;
             pullDest = NewPivot;
             LastLine.bStopped = False;
             LastLine.SetPhysics(PHYS_Rotating);
-            if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() FAILED to spawn kxLine to split "$LastLine); }
+            if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() FAILED to spawn GrapplingLine to split "$LastLine); }
           } else {
             LineSprite.ParentLine = LastLine;
             LineSprite.Pivot = NewPivot;
@@ -453,10 +488,215 @@ function CheckFlagDrop() {
 
 state() PullTowardStatic {
 
-  simulated function Tick (float DeltaTime) {
+  simulated function DoPhysics(float DeltaTime) {
     local float currentLength,outwardPull,linePull,power;
     local Vector Inward;
     local bool doInwardPull,bSingleLine;
+
+    currentLength = VSize(Instigator.Location - pullDest);
+
+    if ( currentLength <= MinRetract ) {
+        AmbientSound = None;
+        Master.AmbientSound = None;
+    }
+
+    // This is used to decide whether to stop at MinRetract.
+    // If we are below a fold, we should continue to winch towards pullDest even below MinRetract.
+    bSingleLine = !(LineSprite!=None && LineSprite.ParentLine!=None);
+
+    if (!bSwingPhysics) {
+
+      //// Original grapple physics
+      if ( currentLength <= MinRetract && bSingleLine ) {
+        // When we reach destination, we just stop
+        Instigator.SetPhysics(PHYS_None);
+        Instigator.AddVelocity(Instigator.Velocity * -1);
+      } else {
+        // No gravity or swinging
+        Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
+      }
+
+      return;
+
+    }
+
+    //// Swing physics
+
+    // Dampening when we reach the top:
+    if (currentLength <= 3*MinRetract) {
+      Instigator.Velocity = Instigator.Velocity*0.997;
+    } else {
+      // Instigator.Velocity = Instigator.Velocity*0.999;
+    }
+
+    // if (/*currentLength > 4*MinRetract &&*/ Instigator.Velocity.Z<0) {
+      // Instigator.Velocity.Z *= 0.99;
+    // }
+
+    Inward = Normal(pullDest-Instigator.Location);
+
+    doInwardPull = True;
+
+    //// Testing replication of this option:
+    // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() bLinePhysics="$bLinePhysics); }
+
+    // Deal with grapple pull:
+    if (bLinePhysics) {
+
+      //// We know the length of the line!
+
+      if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
+        doInwardPull = False;
+        lineLength = currentLength;
+        // lineLength = lineLength + 2 * 0.3 * GrappleSpeed*DeltaTime;
+        // Force correct length:
+        // Instigator.SetLocation( pullDest + lineLength*-Inward );
+        // Instigator.SetLocation( pullDest + Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,1) );
+        // Undo the "keep the same length" from earlier:
+        Master.AmbientSound = ReleaseSound;
+        AmbientSound = ReleaseSound;
+        // Don't wind out faster than 1400.
+        if (VSize(Instigator.Velocity) > 1400) {
+          Instigator.Velocity = 1400 * Normal(Instigator.Velocity);
+        }
+        // TODO: This should really affect you only in the direction of the line; we could turn lineLength back on!
+        //       Also the code is duplicated below, should be refactored.
+        // This version, relative to grappling hook, was supposed to be clever, but caused trouble. :P
+        // if (VSize(Instigator.Velocity - Velocity) > 1400) {
+          // Instigator.Velocity = 1400 * Normal(Instigator.Velocity - Velocity) + Velocity;
+        // }
+      } else if ((lineLength<=MinRetract && bSingleLine) || (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0)) { // TODO: right now this applies even if weapon is switched, and we primary fire with that :f
+        Master.AmbientSound = None;
+        AmbientSound = None;
+      } else {
+        lineLength = lineLength - 0.3 * GrappleSpeed*DeltaTime;
+        // 0.3 is my estimate conversion from acceleration to velocity
+        Master.AmbientSound = PullSound;
+        AmbientSound = PullSound;
+      }
+      if (lineLength<MinRetract && bSingleLine) lineLength=MinRetract;
+      if (currentLength > lineLength) {
+        /// Player is further from pullDest than he should be, as if the line had elongated!  This is not allowed!
+        /// We force the player to the correct distance.
+
+        // Instigator.SetLocation( pullDest + lineLength*-Inward );
+        //// Can cause random telefrags.  When we get stuck, ev_ntually pulls us through the wall!
+        //// This was good, it "guaranteed" getting un-stuck.
+
+        // Instigator.MoveSmooth( (pullDest + lineLength*-Inward) - Instigator.Location );  // 
+        //// Can cause crater against wall when stuck!
+
+        // Instigator.Move( (pullDest + lineLength*-Inward) - Instigator.Location );
+        //// When stuck we just sit static.
+
+        TryMoveTo(Instigator,pullDest - lineLength*Inward);
+        //// Adds random velocity when stuck.
+
+        // If we are stuck, the line keeps getting shorter.
+        // Often this is not a problem because as soon as we become unstuck, the line unfolds and lineLength is updated from the new pull dest.
+        // But in case that doesn't happen, let's keep lineLength under control:
+        if (lineLength < currentLength - 250)
+          lineLength = currentLength - 250;
+        // TODO CONSIDER: Maybe this should be removed if we go back to the SetLocation() method.
+
+      } else if (currentLength < lineLength /*&& currentLength>=MinRetract*/) {
+        // Line is shorter than it should be.
+        // Undo the inward pull effect:
+        doInwardPull = False;
+        // Alternatively, shorten the line to the new length!
+        // lineLength = currentLength;
+      }
+
+   } else {
+
+      //// Try to deal with swing without knowing the line length.
+      //// We assume the line length is whatever distance we are from the hook.
+
+      if (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0) {
+        power = 0.0;
+        Master.AmbientSound = None;
+        AmbientSound = None;
+      } else {
+        power = 1.0;
+        if (bExtraPower) {
+          power += 1.0 + 1.5 * FMin(1.0, currentLength / 1024.0 );
+        }
+        Master.AmbientSound = PullSound;
+        AmbientSound = PullSound;
+      }
+      if (bCrouchReleases) {
+        if (PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
+           // We make no pull with the line at all, gravity affects us and we get our new line length.
+           power = 0.0;
+           // Instigator.AddVelocity( Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * -Inward );
+           // Instigator.AddVelocity( Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
+           doInwardPull = False;
+           // power = -1.0;
+           Master.AmbientSound = ReleaseSound;
+           AmbientSound = ReleaseSound;
+           // Don't wind out faster than 1400.
+           if (VSize(Instigator.Velocity) > 1400) {
+             Instigator.Velocity = 1400 * Normal(Instigator.Velocity);
+           }
+        }
+      }
+      if (currentLength <= MinRetract && bSingleLine) {
+        power = 0.0;
+        Master.AmbientSound = None;
+        AmbientSound = None;
+        doInwardPull = False;
+      }
+      linePull = power*GrappleSpeed*1.5; // I don't know what changed, but 600 was almost too weak to pull me up!
+
+      // Instigator.Velocity = Instigator.Velocity + linePull*Inward*DeltaTime;
+      Instigator.AddVelocity(linePull*Inward*DeltaTime);
+
+    }
+
+    if (doInwardPull) {
+      // Deal with any outward velocity (against the line):
+      outwardPull = Instigator.Velocity Dot Normal(Instigator.Location-pullDest);
+      if (outwardPull<0 || (currentLength <= MinRetract && bSingleLine)) outwardPull=0;
+      // if (outwardPull<1.0) outwardPull=1.0*outwardPull*outwardPull; // Smooth the last inch
+      // This makes the line weak and stretchy:
+      // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime;
+      // This completely cancels outward momentum - the line length should not increase!
+      // Instigator.AddVelocity( 2.0 * outwardPull * Inward ); // equilibrium (line stretches very very slowly)
+      // Cancel the outward velocity - it never really should have happened.
+      // Also changes global velocity by pulling it towards the line, not only countering gravity.
+      Instigator.AddVelocity( 1.0 * outwardPull * Inward ); // keep the line the same length.  The 0.1 prev.nts slow sinking
+      // Instigator.Velocity = Instigator.Velocity + 1.0*outwardPull*Inward; // keep the line the same length.  The 0.1 prev.nts slow sinking
+      // Instigator.Velocity = Instigator.Velocity + 1.0*outwardPull*Normal(Instigator.Velocity); // Turn the lost momentum into forward momentum!  Stupid dangerous non-Newtonian nonsense!
+      // DONE: I am adding this here, then in a few places below, removing it if I decide it wasn't wanted.
+      //       Would be better to pass along a boolean which decides at the end whether or not to apply this.
+      //       This might allow us to actually walk and jump normally if our line has gone slack.
+    }
+
+    // Stop slow gentle sinking (due to iterative gravity) by removing half of gravity pre-emptively:
+    // I think these were more needed with bLinePhysics=False.
+    if (bFiddlePhysics0) {
+      // It should only act in Inward direction:
+      // Instigator.AddVelocity( - 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
+      Instigator.AddVelocity( - (Inward Dot Vect(0,0,1)) * 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
+      // TODO: We should not need this for bLinePhysics but might still need it without it.
+    }
+    if (bFiddlePhysics1) {
+      Instigator.AddVelocity( 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
+      // This is unrealistic because if they swing outwards, they still get this anti-grav effect.
+      // But it but plays well!  It lets you gain and keep height with wide swings.
+    }
+    // Dampen gravity (useful for swinging outwards on long pulls)
+    if (bFiddlePhysics2 && Instigator.Velocity.Z<0) {
+      // We want to turn whatever velocity we lost into forward velocity.
+      Instigator.AddVelocity( Normal(Instigator.Velocity) * 0.1*Abs(Instigator.Velocity.Z) );
+      Instigator.Velocity.Z *= 0.9;
+    }
+    // Dampen velocity:
+    // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
+
+  }
+
+  simulated function Tick (float DeltaTime) {
 
     if (Instigator==None || Master==None) {
       if (Role == ROLE_Authority) {
@@ -473,180 +713,7 @@ state() PullTowardStatic {
 
     DoLineOfSightChecks();
 
-    currentLength = VSize(Instigator.Location - pullDest);
-
-    if ( currentLength <= MinRetract ) {
-        AmbientSound = None;
-        Master.AmbientSound = None;
-    }
-
-    // This is used to decide whether to stop at MinRetract.
-    // If we are below a fold, we should continue to winch upward.
-    bSingleLine = !(LineSprite!=None && LineSprite.ParentLine!=None);
-
-    if (bSwingPhysics) {
-
-      // Dampening when we reach the top:
-      // if ( currentLength <= (MinRetract+8.0) /*|| Abs(currentLength-lineLength)<8.0*/ ) {
-        Instigator.Velocity = Instigator.Velocity*0.998;
-      // }
-      // Now always dampening.
-
-      // if (/*currentLength > 4*MinRetract &&*/ Instigator.Velocity.Z<0) {
-        // Instigator.Velocity.Z *= 0.99;
-      // }
-
-      Inward = Normal(pullDest-Instigator.Location);
-
-      doInwardPull = True;
-
-      //// Testing replication of this option:
-      // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() bLinePhysics="$bLinePhysics); }
-
-      // Deal with grapple pull:
-      if (bLinePhysics) {
-        if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
-          doInwardPull = False;
-          lineLength = currentLength;
-          // lineLength = lineLength + 2 * 0.3 * GrappleSpeed*DeltaTime;
-          // Force correct length:
-          // Instigator.SetLocation( pullDest + lineLength*-Inward );
-          // Instigator.SetLocation( pullDest + Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,1) );
-          // Undo the "keep the same length" from earlier:
-          Master.AmbientSound = ReleaseSound;
-          AmbientSound = ReleaseSound;
-        } else if ((lineLength<=MinRetract && bSingleLine) || (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0)) { // TODO: right now this applies even if weapon is switched, and we primary fire with that :f
-          Master.AmbientSound = None;
-          AmbientSound = None;
-        } else {
-          lineLength = lineLength - 0.3 * GrappleSpeed*DeltaTime;
-          // 0.3 is my estimate conversion from acceleration to velocity
-          Master.AmbientSound = PullSound;
-          AmbientSound = PullSound;
-        }
-        if (lineLength<MinRetract && bSingleLine) lineLength=MinRetract;
-        if (currentLength > lineLength) {
-        /*
-          // Line has elongated!  This is not allowed!
-          // Instigator.ClientMessage("Elongation = "$ (currentLength - lineLength) $" Velocity = "$ VSize(Instigator.Velocity));
-          // Elasticity if the line was lengthened by the player swinging.
-          // linePull += (currentLength - lineLength)*100.0; // Provide velocity to cancel the change in 0.01 seconds.
-          Instigator.AddVelocity( (currentLength - lineLength) * Inward * 1.0 );
-          // Instigator.AddVelocity( GrappleSpeed * Inward * DeltaTime );
-          // TODO BUG: because it is not pre-emptive, we get pulled up in jerks.
-          // TODO BUG: this method is always jerky unless we also do the below.
-          //           but the below can cause unrealistic swinging around on the ceiling!
-          // Instigator.AddVelocity( (currentLength - lineLength) * Inward * 5.0 );
-          // TODO: This new approach could replace all the gravity tweaks we made.
-          // TODO: But it just doesn't work; it doesn't allow us to swing.
-          // Respond with upward pull:  (This must be *as well as* and *less than* inward pull, otherwise we can just float up and up, and elongation increases!)
-          if (pullDest.Z > Instigator.Location.Z) {
-            Instigator.AddVelocity( (currentLength - lineLength) * Vect(0,0,1) * 1.5 );
-            // 2.0 was too strong, allowed u to almost pr.vent swingback entirely!
-            // But 1.0 was too weak, you couldn't add enough swing to be useful.
-            // Well this does add some extra swinging power, but not really enough.
-          }
-        */
-          // Force correct length:
-          Instigator.SetLocation( pullDest + lineLength*-Inward );
-          // BUG: If bLineOfSight=False, this can pull us through walls!
-        } else if (currentLength < lineLength /*&& currentLength>=MinRetract*/) {
-          // Line is shorter than it should be.
-          // Undo the inward pull effect:
-          doInwardPull = False;
-          // Alternatively, shorten the line to the new length!
-          // lineLength = currentLength;
-        }
-     } else {
-        if (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0) {
-          power = 0.0;
-          Master.AmbientSound = None;
-          AmbientSound = None;
-        } else {
-          power = 1.0;
-          if (bExtraPower) {
-            power += 1.0 + 1.5 * FMin(1.0, currentLength / 1024.0 );
-          }
-          Master.AmbientSound = PullSound;
-          AmbientSound = PullSound;
-        }
-        if (bCrouchReleases) {
-          if (PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
-             // We make no pull with the line at all, gravity affects us and we get our new line length.
-             power = 0.0;
-             // Instigator.AddVelocity( Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * -Inward );
-             // Instigator.AddVelocity( Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
-             doInwardPull = False;
-             // power = -1.0;
-             Master.AmbientSound = ReleaseSound;
-             AmbientSound = ReleaseSound;
-           }
-        }
-        if (currentLength <= MinRetract && bSingleLine) {
-          power = 0.0;
-          Master.AmbientSound = None;
-          AmbientSound = None;
-          doInwardPull = False;
-        }
-        linePull = power*GrappleSpeed;
-
-        // Instigator.Velocity = Instigator.Velocity + linePull*Inward*DeltaTime;
-        Instigator.AddVelocity(linePull*Inward*DeltaTime);
-      }
-
-      if (doInwardPull) {
-        // Deal with any outward velocity (against the line):
-        outwardPull = Instigator.Velocity Dot Normal(Instigator.Location-pullDest);
-        if (outwardPull<0 || (currentLength <= MinRetract && bSingleLine)) outwardPull=0;
-        // if (outwardPull<1.0) outwardPull=1.0*outwardPull*outwardPull; // Smooth the last inch
-        // This makes the line weak and stretchy:
-        // Instigator.Velocity = Instigator.Velocity + Inward*DeltaTime;
-        // This completely cancels outward momentum - the line length should not increase!
-        // Instigator.AddVelocity( 2.0 * outwardPull * Inward ); // equilibrium (line stretches very very slowly)
-        // Cancel the outward velocity - it never really should have happened.
-        // Also changes global velocity by pulling it towards the line, not only countering gravity.
-        Instigator.AddVelocity( 1.0 * outwardPull * Inward ); // keep the line the same length.  The 0.1 prev.nts slow sinking
-        // Instigator.Velocity = Instigator.Velocity + 1.0*outwardPull*Inward; // keep the line the same length.  The 0.1 prev.nts slow sinking
-        // Instigator.Velocity = Instigator.Velocity + 1.0*outwardPull*Normal(Instigator.Velocity); // Turn the lost momentum into forward momentum!  Stupid dangerous non-Newtonian nonsense!
-        // DONE: I am adding this here, then in a few places below, removing it if I decide it wasn't wanted.
-        //       Would be better to pass along a boolean which decides at the end whether or not to apply this.
-        //       This might allow us to actually walk and jump normally if our line has gone slack.
-      }
-
-      // Stop slow gentle sinking (due to iterative gravity) by removing half of gravity pre-emptively:
-      if (bFiddlePhysics0) {
-        // It should only act in Inward direction:
-        // Instigator.AddVelocity( - 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
-        Instigator.AddVelocity( - (Inward Dot Vect(0,0,1)) * 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
-        // TODO: We should not need this for bLinePhysics but might still need it without it.
-      }
-      if (bFiddlePhysics1) {
-        Instigator.AddVelocity( 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
-        // This is unrealistic because if they swing outwards, they still get this anti-grav effect.
-        // But it but plays well!  It lets you gain and keep height with wide swings.
-      }
-      // Dampen gravity (useful for swinging outwards on long pulls)
-      if (bFiddlePhysics2 && Instigator.Velocity.Z<0) {
-        // We want to turn whatever velocity we lost into forward velocity.
-        Instigator.AddVelocity( Normal(Instigator.Velocity) * 0.1*Abs(Instigator.Velocity.Z) );
-        Instigator.Velocity.Z *= 0.9;
-      }
-      // Dampen velocity:
-      // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
-
-    } else {
-
-      // Original grapple
-      if ( currentLength <= MinRetract && bSingleLine ) {
-        // When we reach destination, we just stop
-        Instigator.SetPhysics(PHYS_None);
-        Instigator.AddVelocity(Instigator.Velocity * -1);
-      } else {
-        // No gravity or swinging
-        Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
-      }
-
-    }
+    DoPhysics(DeltaTime);
 
     UpdateLineSprite();
 
@@ -667,6 +734,36 @@ state() PullTowardStatic {
 
 }
 
+// TESTING:
+// What we really need to do is to get the triangle that is Player - Pivot - NextPivot
+// and move Pivot *out* a bit.
+function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't know what it means when there is a Rand() involved.
+  local float offness;
+  local Vector NextPivot;
+  if (a.Move(targetLoc - a.Location))
+  // if (a.MoveSmooth(targetLoc - a.Location)) // Sucks, warpish and ugly!
+    return;
+  offness = VSize(targetLoc - a.Location);
+  // Push out the pivot a bit:
+  if (LineSprite!=None && LineSprite.ParentLine!=None) {
+    NextPivot = LineSprite.ParentLine.Pivot;
+    // pullDest += Normal( (pullDest-a.Location) + (pullDest - NextPivot) ) * 5.0;
+    pullDest += ( Normal(pullDest-a.Location) + Normal(pullDest-NextPivot) ) * 5.0; // more square
+    LineSprite.Pivot = pullDest; // May update sprite!
+    PlayerPawn(a).ClientMessage("Moved pivot by "$ VSize(LineSprite.ParentLine.Reached-pullDest));
+    LineSprite.ParentLine.Reached = pullDest; // May update sprite!
+  } else if (offness > 10.0 && FRand()<0.25) {
+    // Bounce the player around a bit:
+    // Cap the velocity we will add
+    if (offness > 200)
+      offness = 200;
+    offness *= 3;
+    a.Velocity += 1.0 * offness * Normal(VRand());
+    PlayerPawn(a).ClientMessage("You are stuck "$ offness $" ("$ VSize(targetLoc - a.Location) $")");
+    // TODO: play sound
+  }
+}
+
 state() PullTowardDynamic {
   // ignores  Tick;
 
@@ -677,14 +774,43 @@ state() PullTowardDynamic {
       Self.Destroy();
 
     pullDest = Thing.Location;
-
+    //// TODO: This is the wrong thing to do - only the top line moves with the Thing, but we may have a LineSprite below that one.
+    ////       What we should really do is keep a copy of the tail LineSprite as well as the head.  If Thing moves, it will pull or release the lines, moving the player.
     if (LineSprite != None)
       LineSprite.Pivot = Thing.Location; // TODO: This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
 
+    // Cause HitDamage:
+    if (FRand()<DeltaTime*2) { // Avg twice a second
+      //               Avg half HitDamage
+      Thing.TakeDamage(0.25*HitDamage+0.5*FRand()*HitDamage,Instigator,(Thing.Location+Location)/2,vect(0,0,0),'');
+
+      // Allow victim to shake the hook off:
+      if (VSize(Thing.Velocity) > 1.2*VSize(Instigator.Velocity) && FRand()<0.5) {
+        // Thing managed to shake the hook off (special move = moving faster than opponent when check comes around)
+        Self.Destroy();
+        // TODO: play sound
+        // Grappler's Velocity was previously either Thing.Velocity or GrappleSpeed, but now it's given more freedom.
+        return;
+      }
+
+    }
+
+    // Check for problems.
+    if (VSize(Thing.Location-Location)>200.0) {
+      // Somehow the Thing got far from our grapple.
+      // Maybe it took a teleporter, or respawned.  We should ungrapple.
+      // (Our previous pullDest may have be pointing right at the teleporter Thing took.)
+      Destroy();
+    }
+    // Update Grapple's movement:
     if (VSize(Thing.Location-Location)>10.0) {
-      Self.SetLocation( Location*0.5 + Thing.Location*0.5);
+      // Self.SetLocation( Location*0.5 + Thing.Location*0.5);
+      Self.Move( (Location*0.5 + Thing.Location*0.5) - Location );
+      // TryMoveTo(Self, Location*0.5 + Thing.Location*0.5 );
       Self.Velocity = Thing.Velocity;
     } // TODO: gonna be jerky - better to use FChop
+
+    // We could dampen Thing's movement.  He is carrying the mass of Instigator now!
 
     if (Instigator==None || Master==None) {
       if (Role == ROLE_Authority) {
@@ -697,29 +823,29 @@ state() PullTowardDynamic {
       // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
     }
 
-    if (VSize(Thing.Location - Instigator.Location) > MinRetract) {
-      Instigator.Velocity = Normal(Thing.Location - Instigator.Location) * 1.0 * GrappleSpeed;
-      Master.AmbientSound = PullSound;
-      AmbientSound = PullSound;
+    if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
+      // Player is pressing release.  Do not affect his velocity with the line.
+      Master.AmbientSound = ReleaseSound;
+      AmbientSound = ReleaseSound;
     } else {
-      // Instigator.Velocity = Thing.Velocity;  // Let our player free for a moment!
-      //// Maybe better not to have sound flickering on and off
-      Master.AmbientSound = None;
-      AmbientSound = None;
-    }
+
+       // Update Grappler's velocity:
+       if (VSize(Thing.Location - Instigator.Location) > MinRetract) {
+         Instigator.Velocity = Normal(Thing.Location - Instigator.Location) * 1.0 * GrappleSpeed;
+         Master.AmbientSound = PullSound;
+         AmbientSound = PullSound;
+       } else {
+         // Instigator.Velocity = Thing.Velocity;  // Let our player free for a moment!
+         //// Maybe better not to have sound flickering on and off
+         Master.AmbientSound = None;
+         AmbientSound = None;
+       }
+
+   }
+
     OnPull(DeltaTime);
     UpdateLineSprite();
-    // DONE: cause HitDamage!
-    if (FRand()<DeltaTime*2) { // Avg twice a second
-      //               Avg half HitDamage
-      Thing.TakeDamage(0.25*HitDamage+0.5*FRand()*HitDamage,Instigator,(Thing.Location+Location)/2,vect(0,0,0),'');
-      if (VSize(Thing.Velocity) > 1.2*VSize(Instigator.Velocity)) {
-        // Thing managed to shake the hook off (special move = moving faster than opponent when check comes around)
-        Self.Destroy();
-        // Grappler's Velocity was either set to Thing.Velocity or to GrappleSpeed, but now sometimes it's given some freedom.
-        return;
-      }
-    }
+
   }
 
   simulated function ProcessTouch (Actor Other, Vector HitLocation) {
@@ -741,28 +867,30 @@ defaultproperties {
     bUnlit=False
     bBlockActors=True
     bBlockPlayers=True
-    DrawScale=1.35
-    CollisionRadius=0.05
-    CollisionHeight=0.01
+    DrawScale=1.25
+    CollisionRadius=0.5
+    CollisionHeight=0.1
     bNetTemporary=False
     NetPriority=2.6
     RemoteRole=ROLE_SimulatedProxy
     bMeshEnviroMap=True
     Texture=Texture'UMenu.Icons.Bg41'
     Mesh=Mesh'UnrealShare.GrenadeM'
-    Physics=PHYS_Projectile
+    Physics=PHYS_Projectile // Makes it land properly in corners, hit walls well
     ThrowAngle=0
     // Physics=PHYS_Falling
     // ThrowAngle=15
+    // ThrowAngle=1
+    //// With PHYS_Falling I had trouble getting the hook to attach to some of the corners in Bleak
 
     Speed=4000.00
     MaxSpeed=4000.00
-    GrappleSpeed=600 // 600 is quite fast for old Expert100, but quite sober for kxGrapple.
+    GrappleSpeed=900 // 600 is quite fast for old Expert100, but quite sober for GrapplingHook.
     // GrappleSpeed=0
     HitDamage=20.00 // Not very strong, but you can switch weapon and hit them with something else too!
     bDoAttachPawn=True
     bSwingPhysics=True
-    // bLinePhysics=True // This deals with grapple pull in terms of line length.
+    bLinePhysics=True // This deals with grapple pull in terms of line length.
     bLineOfSight=True
     bLineFolding=True
     bShowLine=True
@@ -790,7 +918,7 @@ defaultproperties {
     // LineMesh=mesh'Botpack.TracerM'
     LineTexture=Texture'UMenu.Icons.Bg41'
     // LineTexture=Texture'Botpack.ammocount'
-    // bLogging=False // FIXED: Since kxLine accesses this as a default, sometimes this setting is more relevant than the server setting.  OK now we have one config var per class.
+    // bLogging=False // FIXED: Since GrapplingLine accesses this as a default, sometimes this setting is more relevant than the server setting.  OK now we have one config var per class.
     // Hey would we have got the config default if we hadn't set a default here? :o
 }
 

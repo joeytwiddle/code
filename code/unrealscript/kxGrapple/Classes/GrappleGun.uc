@@ -1,35 +1,39 @@
 //================================================================================
-// kx_GrappleLauncher.
+// GrappleGun.
 //================================================================================
 
 // TODO: We should offer exec commands WinchGrapplingLine and ReleaseGrapplingLine, or ShortenLine and LengthenLine.
 
-// class kx_GrappleLauncher expands Translocator Config(kxGrapple); // Tried doing this so that the player's translocator bind would work automatically, but it didn't!
-class kx_GrappleLauncher expands TournamentWeapon Config(kxGrapple);
+// class GrappleGun expands Translocator Config(GrapplingHook); // Tried doing this so that the player's translocator bind would work automatically, but it didn't!
+class GrappleGun expands TournamentWeapon Config(kxGrapple);
 
 // #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
 var config bool bAutoDrop; // bAutoRetract?
 var config bool bIdenticalButtons; // TODO: Not working!
-var config bool bDisableAutoBehindview; // This is the only one we really want on the client config.  The rest are for the server (could go to another class, e.g. kxRules).  If we did that we could remove the Config(kxGrapple) above!
+var config bool bDisableAutoBehindview; // This is the only one we really want on the client config.  The rest are for the server (could go to another class, e.g. kxRules).  If we did that we could remove the Config(GrapplingHook) above!
+var config int BehindViewFOV; // OK this is another var we want the client to control.
 var config bool bLogging;
 var config Sound FailSound,ThrowSound;
 
 var Weapon PreviousWeapon;
-var kxGrapple kxGrapple;
-var kxMutator kxMutator;
+var GrapplingHook GrapplingHook;
+var GrapplingMut GrapplingMut;
 
 var String NextCommand; // Used as RPC mechanism from server to client
 var float LastFOV; // Used only on the client
 
 replication {
   reliable if (Role==ROLE_Authority)
-    bIdenticalButtons,bLogging,bAutoDrop,FailSound,ThrowSound,NextCommand;
+    bLogging,bIdenticalButtons,bAutoDrop,FailSound,ThrowSound,NextCommand;
+  // WARN CHECK TODO: If we don't sommehow sync these between client and server, things might start acting weird: bAutoDrop,bIdenticalButtons
+  // Client vars (may want to send to server):
+  //   bAutoDrop,bIdenticalButtons,bDisableAutoBehindview,BehindViewFOV;
   //// We do NOT want to replicate bDisableAutoBehindview - we want the client to see his version and not be updated from the server.
   // reliable if (Role!=ROLE_Authority)
     // bDisableAutoBehindview;
   reliable if (Role==ROLE_Authority)
-    AutoBehindView; // In case it is called from kxMutator().
+    ABV,AutoBehindView; // In case it is called from GrapplingMut().
 }
 
 simulated function PreBeginPlay() {
@@ -47,22 +51,28 @@ simulated function PreBeginPlay() {
     }
   }
   if ( P == None ) {
-    Log("kx_GrappleLauncher.PreBeginPlay() NO LOCAL PLAYERPAWN!");
+    Log("GrappleGun.PreBeginPlay() NO LOCAL PLAYERPAWN!");
     // But we actually take no action :P
     return;
   }
+
+  if (BehindViewFOV==0)
+  	 BehindViewFOV=110;
+
   if (p.PlayerReplicationInfo.Deaths == 0) {
     // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like bDoneCheck.
     CheckPlayerBinds(P);
     // Only display grapple message on first spawn:
-    // PlayerPawn(Owner).ClientMessage("To toggle the grappling hook's auto view switching, type: AutoBehindView");
+    // p.ClientMessage("To toggle the grappling hook's auto view switching, type: ABV");
     if (bDisableAutoBehindview)
       nextState="enable";
     else
       nextState="disable";
-    PlayerPawn(Owner).ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: AutoBehindView");
+    // p.ClientMessage("You can use the AutoBehindView command to "$nextState$" the grappling hook's behind-view switching");
+    p.ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: ABV");
     // TODO: This is NOT getting displayed!
   }
+
 }
 
 // Failed attempts to make it not the spawn weapon:
@@ -75,20 +85,20 @@ function SetSwitchPriority(Pawn Other) {
 
 simulated exec function AttachHook () {
   PlayerPawn(Owner).ClientMessage("Trying to attachHook");
-  if ( kxGrapple == None ) {
+  if ( GrapplingHook == None ) {
     FireHook();
   }
 }
 
 simulated exec function ReleaseHook () {
   PlayerPawn(Owner).ClientMessage("Trying to releaseHook");
-  if ( kxGrapple != None ) {
-    kxGrapple.Destroy();
+  if ( GrapplingHook != None ) {
+    GrapplingHook.Destroy();
   }
 }
 
 simulated exec function FireHook () {
-  if ( kxGrapple != None ) {
+  if ( GrapplingHook != None ) {
     return;
   }
   if ( Role < 4 ) {
@@ -105,17 +115,17 @@ simulated function ClientFireHook () {
 
 simulated function Destroyed () {
   OnDeselect();
-  if ( kxGrapple != None ) {
-    kxGrapple.Destroy();
-    kxGrapple = None;
+  if ( GrapplingHook != None ) {
+    GrapplingHook.Destroy();
+    GrapplingHook = None;
   }
   Super.Destroyed();
 }
 
 function DropFrom (Vector StartLocation) {
-  if ( kxGrapple != None ) {
-    kxGrapple.Destroy();
-    kxGrapple = None;
+  if ( GrapplingHook != None ) {
+    GrapplingHook.Destroy();
+    GrapplingHook = None;
   }
   Super.DropFrom(StartLocation);
 }
@@ -130,7 +140,7 @@ function RaiseUp (Weapon OldWeapon) {
     PreviousWeapon = None;
   } else {
     PreviousWeapon = OldWeapon;
-    // Log("kx_GrappleLauncher.RaiseUp() Set PreviousWeapon = "$PreviousWeapon);
+    // Log("GrappleGun.RaiseUp() Set PreviousWeapon = "$PreviousWeapon);
   }
   Super.BringUp();
 }
@@ -148,20 +158,20 @@ function ReturnToPreviousWeapon() {
 
 function Fire (optional float Value) {
   GotoState('NormalFire');
-  if ( kxGrapple == None ) {
-    // AmbientSound = class'kxGrapple'.default.ThrowSound;
+  if ( GrapplingHook == None ) {
+    // AmbientSound = class'GrapplingHook'.default.ThrowSound;
     // AmbientSound = Sound'Hidraul2';
     // AmbientSound = Sound'Slurp';
-    kxGrapple = kxGrapple(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
-    if (kxGrapple == None) {
-      // if (bLogging) { Log(Self$".Fire() Failed to create kxGrapple!"); }
+    GrapplingHook = GrapplingHook(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
+    if (GrapplingHook == None) {
+      // if (bLogging) { Log(Self$".Fire() Failed to create GrapplingHook!"); }
       // DONE: denied sound
       // TODO: bug - the sounds play rapidy repeating until the button is released - just once, or once a second would be enough
       //       this is really a problem with the fire mechanism retrying, instead of waiting for release and then a second press
       PlaySound(ThrowSound,SLOT_None,0.8); // quiet failed throw
       PlaySound(FailSound,SLOT_Interface,3.0);
     } else {
-      kxGrapple.SetMaster(self);
+      GrapplingHook.SetMaster(self);
       if ( PlayerPawn(Owner) != None ) {
         PlayerPawn(Owner).ShakeView(shaketime,shakemag,shakevert);
       }
@@ -169,8 +179,8 @@ function Fire (optional float Value) {
       PlayFiring();
       PlaySound(ThrowSound,SLOT_Interface,1.6);
       // TODO BUG: These sounds are not working.  It would be nice to hear the line flying out.
-      kxGrapple.AmbientSound = class'kxGrapple'.default.ReleaseSound;
-      AmbientSound = class'kxGrapple'.default.ReleaseSound;
+      GrapplingHook.AmbientSound = class'GrapplingHook'.default.ReleaseSound;
+      AmbientSound = class'GrapplingHook'.default.ReleaseSound;
     }
   } else if (bIdenticalButtons) {
     AltFire(Value);
@@ -181,15 +191,15 @@ function Fire (optional float Value) {
 }
 
 function AltFire (float Value) {
-  if ( kxGrapple != None ) {
+  if ( GrapplingHook != None ) {
     AmbientSound = None;
-    kxGrapple.Destroy();
-    kxGrapple = None;
+    GrapplingHook.Destroy();
+    GrapplingHook = None;
   } else if (bIdenticalButtons) {
     Fire(Value);
     // return; // BAD locks up all weapons till respawn :P
   } else {
-    PlaySound(FailSound,SLOT_Interface,2.0);
+    // PlaySound(FailSound,SLOT_Interface,2.0);
   }
   GotoState('AltFiring');
 }
@@ -226,10 +236,10 @@ state AltFiring {
   }
 
   Begin:
-    if ( kxGrapple != None ) {
+    if ( GrapplingHook != None ) {
       AmbientSound = None;
-      kxGrapple.Destroy();
-      kxGrapple = None;
+      GrapplingHook.Destroy();
+      GrapplingHook = None;
     }
     FinishAnim();
     Sleep(0.1);
@@ -283,10 +293,10 @@ simulated function Finish () {
           // I guess this was primary-fire release-button ev_nt.
           if (bAutoDrop) {
             // If you release primary fire, your grapple retracts
-            if ( kxGrapple != None ) {
+            if ( GrapplingHook != None ) {
               AmbientSound = None;
-              kxGrapple.Destroy();
-              kxGrapple = None;
+              GrapplingHook.Destroy();
+              GrapplingHook = None;
             }
           } else {
             // Hook continues to fly until you force it to release and retract.
@@ -328,7 +338,7 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
   local string toAdd;
   local string keyName,keyVal,keyValCaps;
   local bool bBindExists;
-  toAdd = "GetWeapon kx_GrappleLauncher";
+  toAdd = "GetWeapon GrappleGun";
   for (i=0;i<256;i++) {
     keyName = p.ConsoleCommand("keyname "$i);
     keyVal = p.ConsoleCommand("keybinding "$keyName);
@@ -344,10 +354,10 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
       bBindExists = True;
     }
   }
-  Log("kx_GrappleLauncher.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
+  Log("GrappleGun.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
   if (!bBindExists) {
     // P.ClientMessage("You should make a keybind for the Translocator and Grappling Hook weapons using your console.");
-    // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon kx_GrappleLauncher");
+    // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon GrappleGun");
     // P.ClientMessage("You could make a keybind for your Translocator using the console, then reconnect.");
     P.ClientMessage("You should make a keybind for your Grappling Hook.");
     P.ClientMessage("Type in the console: SET INPUT Q SwitchWeapon 1");
@@ -369,9 +379,29 @@ state DownWeapon {
 
 
 
+simulated exec function Status() {
+	local GrapplingHook hook;
+	foreach AllActors(class'GrapplingHook',hook) {
+		break;
+	}
+	if (hook == None) {
+		PlayerPawn(Owner).ClientMessage("I can only show the kxGrapple settings if there is a grappling hook deployed!");
+	} else {
+		//// Well the server default values do appears to match the current server config values.
+		//// If only this was a simulated functi_n, we could check the client's values also, to see if replication is working properly.
+		//// TODO: Move this into an exec functi0n in the weapon.
+		PlayerPawn(Owner).ClientMessage("Client kxGrapple defaults: Speed="$hook.default.Speed$" GrappleSpeed="$hook.default.GrappleSpeed$" bSwingPhysics="$hook.default.bSwingPhysics$" bLinePhysics="$hook.default.bLinePhysics);
+		PlayerPawn(Owner).ClientMessage("Client kxGrapple status:    Speed="$hook.Speed$" GrappleSpeed="$hook.GrappleSpeed$" bSwingPhysics="$hook.bSwingPhysics$" bLinePhysics="$hook.bLinePhysics);
+		PlayerPawn(Owner).ClientMessage("Client GrapplingHook status: Owner="$hook.Owner$" Master="$hook.Master$" InstigatorRep="$hook.InstigatorRep$" LineSprite="$hook.LineSprite);
+	}
+}
+
 // AutoBehindView
 
 simulated exec function AutoBehindView(optional String extra) {
+	ABV(extra);
+}
+simulated exec function ABV(optional String extra) {
   if (extra=="0" || extra~="OFF" || extra~="NO" || extra~="False") {
     bDisableAutoBehindview = True;
   } else if (extra=="1" || extra~="ON" || extra~="YES" || extra~="True") {
@@ -382,7 +412,8 @@ simulated exec function AutoBehindView(optional String extra) {
   SaveConfig();
   if (bDisableAutoBehindview) extra="DISABLED"; else extra="ENABLED";
   PlayerPawn(Owner).ClientMessage("The grappling hook's auto-behindview has been "$extra$", your settings were saved.");
-  if (bActive) {
+  // if (bActive) { // TODO: FAIL!
+  if (Pawn(Owner).Weapon == Self) {
     // The grapple is the current weapon.  We probably need to switch view since behaviour has just changed.
     if (bDisableAutoBehindview) {
       UndoBehindview(); // Without checking our setting, undo the view change we probably made earlier.
@@ -439,8 +470,8 @@ simulated function OnDeselectCheck() {
 
 simulated function DoBehindview() {
   LastFOV = PlayerPawn(Owner).DesiredFOV;
-  // PlayerPawn(Owner).ConsoleCommand("FOV 110");
-  PlayerPawn(Owner).DesiredFOV = 110;
+  // PlayerPawn(Owner).ConsoleCommand("FOV "$BehindViewFOV);
+  PlayerPawn(Owner).DesiredFOV = BehindViewFOV;
   PlayerPawn(Owner).ConsoleCommand("BehindView 1");
 }
 
@@ -454,8 +485,8 @@ simulated function UndoBehindview() {
 defaultproperties {
     bCanThrow=False
     FireOffset=(X=115.00,Y=15.00,Z=2.00),
-    ProjectileClass=Class'kxGrapple'
-    AltProjectileClass=Class'kxGrapple'
+    ProjectileClass=Class'GrapplingHook'
+    AltProjectileClass=Class'GrapplingHook'
     // DeathMessage="%k removed %o's skeleton with a rusty hook."
     // DeathMessage="%k ripped %o into chunks with a grappling hook!"
     // DeathMessage="%k tore %o into chunks with a grappling hook!"
@@ -471,7 +502,7 @@ defaultproperties {
     // These should really be FireSound and AltFireSound:
     ThrowSound=Sound'Botpack.Translocator.ThrowTarget'
     FailSound=Sound'Botpack.Translocator.ReturnTarget'
-    // SelectSound=sound'kxGrapple.Slurp'
+    // SelectSound=sound'GrapplingHook.Slurp'
     // bIdenticalButtons=True // TODO: NOT working!
     NetPriority=2.95 // I was hoping here to make replication of NextCommand as fast as possible.
 

@@ -1,11 +1,11 @@
-class kxLine extends Projectile;
+class GrapplingLine extends Projectile; // TODO: Projectile?  Is that really needed?
 
 // TODO: try rewriting this class with just from,to (modified externally) and bSuicide.
 
 var config bool bLogging;
 
-var kxGrapple GrappleParent;
-var kxLine ParentLine;
+var GrapplingHook GrappleParent;
+var GrapplingLine ParentLine;
 var bool bStopped;
 var Vector Pivot;
 var Vector Reached; // BUG: Never gets updated!
@@ -138,11 +138,11 @@ simulated event Tick(float DeltaTime) {
 
 simulated event Destroyed() {
 	local int i;
-	local kxLine L;
-	foreach AllActors(class'kxLine',L) {
+	local GrapplingLine L;
+	foreach AllActors(class'GrapplingLine',L) {
 		i++;
 	}
-	// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Destructing with "$i$" kxLines on the level."); }
+	// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Destructing with "$i$" GrapplingLines on the level."); }
 	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Bye! (1/"$i$") GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" Pivot="$Pivot$" Reached="$Reached$""); }
 	Super.Destroyed();
 	//// No we don't always want to do this, we might only be moving up a line!
