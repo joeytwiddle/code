@@ -410,7 +410,8 @@ function CheckFlagDrop() {
           if (A == None || A==LastLine) {
             // We can see the grapple again!
             pullDest = LastLine.Pivot;
-            lineLength = VSize(Instigator.Location - pullDest);
+            // lineLength = VSize(Instigator.Location - pullDest);
+            lineLength = VSize(LastLine.Pivot - LastLine.Reached) + lineLength;
 
             if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
 
@@ -522,7 +523,7 @@ state() PullTowardStatic {
     local float currentLength,outwardPull,linePull,power;
     local Vector Inward;
     local bool doInwardPull,bSingleLine;
-    local bool isStuck;
+    local bool isStuck; // TODO: just make this a class-wide variable :P
 
     currentLength = VSize(Instigator.Location - pullDest);
 
