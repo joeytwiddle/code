@@ -84,6 +84,7 @@ var GrapplingLine LineSprite;
 var bool bDestroyed;
 var Vector hNormal; // Never actually used, just a temporary variable for Trace().
 var Pawn InstigatorRep; // Sometimes the Instigator is not replicated, so we use our own variable to propogate it to the client.
+local bool isStuck;
 
 replication {
   // I believe all config vars need to be replicated because I have set defaults which the client may see unless we transfer the server's values.  Unfortunately I don't think it's working.  OK if no default is set, then they get replicated just fine.  And this replication statement *is* needed!
@@ -523,7 +524,8 @@ state() PullTowardStatic {
     local float currentLength,outwardPull,linePull,power;
     local Vector Inward;
     local bool doInwardPull,bSingleLine;
-    local bool isStuck; // TODO: just make this a class-wide variable :P
+
+    isStuck = False;
 
     currentLength = VSize(Instigator.Location - pullDest);
 
@@ -547,8 +549,6 @@ state() PullTowardStatic {
         // No gravity or swinging
         Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
       }
-
-      return !isStuck;
 
     }
 
@@ -621,7 +621,7 @@ state() PullTowardStatic {
         // Instigator.Move( (pullDest + lineLength*-Inward) - Instigator.Location );
         //// When stuck we just sit static.
 
-        isStuck = isStuck || !TryMoveTo(Instigator,pullDest - lineLength*Inward);
+        TryMoveTo(Instigator,pullDest - lineLength*Inward);
         //// Adds random velocity when stuck.
 
         // If we are stuck, the line keeps getting shorter.
@@ -746,7 +746,7 @@ function bool TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don'
   local Vector NextPivot;
   // if (a.MoveSmooth(targetLoc - a.Location)) // Sucks, warpish and ugly when stuck!  Also danger of leaving a crater.  :P
   if (a.Move(targetLoc - a.Location))
-    return True;
+    return;
   offness = VSize(targetLoc - a.Location);
   // Push out the pivot a bit:
   if (LineSprite!=None && LineSprite.ParentLine!=None) {
@@ -766,7 +766,7 @@ function bool TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don'
     PlayerPawn(a).ClientMessage("You are stuck "$ offness $" ("$ VSize(targetLoc - a.Location) $")");
     // TODO: play sound
   }
-  return False;
+  isStuck = True;
 }
 
 state() PullTowardDynamic {
