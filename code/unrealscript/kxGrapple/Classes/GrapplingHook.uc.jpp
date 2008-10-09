@@ -405,7 +405,8 @@ function CheckFlagDrop() {
       if (LineSprite != None) {
         LastLine = LineSprite.ParentLine;
         if (LastLine != None) {
-          A = Trace(NewPivot,hNormal,LastLine.Pivot,Instigator.Location,false);
+          // A = Trace(NewPivot,hNormal,LastLine.Pivot,Instigator.Location,false);
+          A = Trace(NewPivot,hNormal,Instigator.Location,LastLine.Pivot,false);
           if (A == None || A==LastLine) {
             // We can see the grapple again!
             pullDest = LastLine.Pivot;
@@ -432,7 +433,7 @@ function CheckFlagDrop() {
       }
 
       // Check if the line has swung around a corner:
-      A = Trace(NewPivot,hNormal,pullDest,Instigator.Location,false);
+      A = Trace(NewPivot,hNormal,Instigator.Location,pullDest,false);
       if (A != None && VSize(NewPivot-pullDest)>5) {
         // Self.DrawType = DT_None;
         // Self.SetLocation(NewPivot);
@@ -488,10 +489,40 @@ function CheckFlagDrop() {
 
 state() PullTowardStatic {
 
-  simulated function DoPhysics(float DeltaTime) {
+  simulated function BeginState () {
+    if (!bSwingPhysics) {
+      Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
+    }
+    Instigator.SetPhysics(PHYS_Falling);
+  }
+
+  simulated function Tick (float DeltaTime) {
+
+    if (Instigator==None || Master==None) {
+      if (Role == ROLE_Authority) {
+        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      } else {
+        // We are client side.  Don't make a fuss.
+        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Client can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      }
+      return; // Proceeding will just throw Accessed Nones.
+      // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
+    }
+
+    OnPull(DeltaTime);
+
+    if (DoPhysics(DeltaTime))
+      DoLineOfSightChecks();
+
+    UpdateLineSprite();
+
+  }
+
+  simulated function bool DoPhysics(float DeltaTime) { // Returns False if pawn is stuck.
     local float currentLength,outwardPull,linePull,power;
     local Vector Inward;
     local bool doInwardPull,bSingleLine;
+    local bool isStuck;
 
     currentLength = VSize(Instigator.Location - pullDest);
 
@@ -516,7 +547,7 @@ state() PullTowardStatic {
         Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
       }
 
-      return;
+      return !isStuck;
 
     }
 
@@ -589,7 +620,7 @@ state() PullTowardStatic {
         // Instigator.Move( (pullDest + lineLength*-Inward) - Instigator.Location );
         //// When stuck we just sit static.
 
-        TryMoveTo(Instigator,pullDest - lineLength*Inward);
+        isStuck = isStuck || !TryMoveTo(Instigator,pullDest - lineLength*Inward);
         //// Adds random velocity when stuck.
 
         // If we are stuck, the line keeps getting shorter.
@@ -694,28 +725,7 @@ state() PullTowardStatic {
     // Dampen velocity:
     // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
 
-  }
-
-  simulated function Tick (float DeltaTime) {
-
-    if (Instigator==None || Master==None) {
-      if (Role == ROLE_Authority) {
-        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
-      } else {
-        // We are client side.  Don't make a fuss.
-        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardStatic.Tick() Client can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
-      }
-      return; // Proceeding will just throw Accessed Nones.
-      // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
-    }
-
-    OnPull(DeltaTime);
-
-    DoLineOfSightChecks();
-
-    DoPhysics(DeltaTime);
-
-    UpdateLineSprite();
+    return !isStuck;
 
   }
 
@@ -725,24 +735,17 @@ state() PullTowardStatic {
     Destroy();
   }
 
-  simulated function BeginState () {
-    if (!bSwingPhysics) {
-      Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
-    }
-    Instigator.SetPhysics(PHYS_Falling);
-  }
-
 }
 
 // TESTING:
 // What we really need to do is to get the triangle that is Player - Pivot - NextPivot
 // and move Pivot *out* a bit.
-function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't know what it means when there is a Rand() involved.
+function bool TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't know what it means when there is a Rand() involved.
   local float offness;
   local Vector NextPivot;
+  // if (a.MoveSmooth(targetLoc - a.Location)) // Sucks, warpish and ugly when stuck!  Also danger of leaving a crater.  :P
   if (a.Move(targetLoc - a.Location))
-  // if (a.MoveSmooth(targetLoc - a.Location)) // Sucks, warpish and ugly!
-    return;
+    return True;
   offness = VSize(targetLoc - a.Location);
   // Push out the pivot a bit:
   if (LineSprite!=None && LineSprite.ParentLine!=None) {
@@ -762,6 +765,7 @@ function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't kno
     PlayerPawn(a).ClientMessage("You are stuck "$ offness $" ("$ VSize(targetLoc - a.Location) $")");
     // TODO: play sound
   }
+  return False;
 }
 
 state() PullTowardDynamic {
