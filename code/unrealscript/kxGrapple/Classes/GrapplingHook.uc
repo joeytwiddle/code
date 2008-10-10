@@ -84,7 +84,7 @@ var GrapplingLine LineSprite;
 var bool bDestroyed;
 var Vector hNormal; // Never actually used, just a temporary variable for Trace().
 var Pawn InstigatorRep; // Sometimes the Instigator is not replicated, so we use our own variable to propogate it to the client.
-local bool isStuck;
+var bool isStuck;
 
 replication {
   // I believe all config vars need to be replicated because I have set defaults which the client may see unless we transfer the server's values.  Unfortunately I don't think it's working.  OK if no default is set, then they get replicated just fine.  And this replication statement *is* needed!
@@ -127,7 +127,7 @@ auto state Flying {
     // pullDest = Location;
     pullDest = Location + 11.0*DrawScale*Vector(Rotation);
     if (LineSprite != None)
-      LineSprite.Pivot = pullDest;
+      LineSprite.NearPivot = pullDest;
     UpdateLineSprite();
 
     // We only need one of the following, depending what Physics type we decide to use.
@@ -172,7 +172,7 @@ auto state Flying {
     pullDest = Location + 11.0*DrawScale*Vector(Rotation);
     // InitLineSprite();
     if (LineSprite != None)
-      LineSprite.Pivot = pullDest;
+      LineSprite.NearPivot = pullDest;
     hNormal = HitNormal;
     SetPhysics(PHYS_None);
     lineLength = VSize(Instigator.Location - pullDest);
@@ -295,8 +295,8 @@ simulated function InitLineSprite() { // simulated needed?
     }
     // LineSprite.SetFromTo(InstigatorRep,Self);
     LineSprite.GrappleParent = Self;
-    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Setting Pivot of new LineSprite to "$pullDest); }
-    LineSprite.Pivot = pullDest; // Actually this may be too early, since the grapple itself is moving.  We set it again later.
+    if (bLogging) { Log(Level.TimeSeconds$" "$Self$".InitLineSprite() Setting NearPivot of new LineSprite to "$pullDest); }
+    LineSprite.NearPivot = pullDest; // Actually this may be too early, since the grapple itself is moving.  We set it again later.
     if (!bShowLine) {
       LineSprite.bStopped = True;
       LineSprite.DrawType = DT_None;
@@ -386,12 +386,12 @@ function CheckFlagDrop() {
 
 /*simulated*/ function DoLineOfSightChecks() {
   local Actor A;
-  local Vector NewPivot;
+  local Vector NewPivot,NewPivotNear,visualPullDest;
   local GrapplingLine LastLine;
 
-  if (bLogging && LineSprite!=None && VSize(pullDest-LineSprite.Pivot)>1.0) {
-    Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Warning! pullDest "$pullDest$" != LS.Pivot "$LineSprite.Pivot$" !!");
-  }
+  // if (bLogging && LineSprite!=None && VSize(pullDest-LineSprite.NearPivot)>1.0) {
+    // Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Warning! pullDest "$pullDest$" != LS.NearPivot "$LineSprite.NearPivot$" !!");
+  // }
 
   // if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Running with Role="$Role$" LineSprite="$LineSprite); }
   // OK good now got it running on the client too.
@@ -405,14 +405,23 @@ function CheckFlagDrop() {
       // Check if we have swung back, and the line will become one again:
       if (LineSprite != None) {
         LastLine = LineSprite.ParentLine;
-        if (LastLine != None) {
-          // A = Trace(NewPivot,hNormal,LastLine.Pivot,Instigator.Location,false);
-          A = Trace(NewPivot,hNormal,Instigator.Location,LastLine.Pivot,false);
-          if (A == None || A==LastLine) {
+        if (LastLine != None
+          // But don't merge if we are almost finished
+          // && ( lineLength<-50 || lineLength>MinRetract )
+        ) {
+          // A = Trace(NewPivot,hNormal,LastLine.NearPivot,Instigator.Location,false);
+          A = Trace(NewPivot,hNormal,LastLine.NearPivot,Instigator.Location,false);
+          if (A == None || A==LastLine || A==Self) { // A==Self never seems to happen / be needed but w/e
             // We can see the grapple again!
-            pullDest = LastLine.Pivot;
-            // lineLength = VSize(Instigator.Location - pullDest);
-            lineLength = VSize(LastLine.Pivot - LastLine.Reached) + lineLength;
+            // pullDest = LastLine.NearPivot; // No this must now become LastLine.LastLine.Reached or grapple Location otherwise!
+            if (LastLine.ParentLine == None) {
+              pullDest = Location;
+            } else {
+              pullDest = LastLine.ParentLine.Reached;
+            }
+            // Neither of these feel great, when you jump because you were stuck then SetLocation worked.
+            lineLength = VSize(Instigator.Location - pullDest);
+            // lineLength = VSize(pullDest - LastLine.Reached) + lineLength;
 
             if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
 
@@ -429,18 +438,25 @@ function CheckFlagDrop() {
             // LastLine.Enable('Tick');
             // LastLine.Reached = vect(0,0,0); // we could use it as a marker like bStopped
             // CONSIDER: If this revival of old GrapplingLine fails, we could just destroy it and spawn a fresh one.
-            // Instigator.ClientMessage("Your grappling line has straightened "$A);
+            Instigator.ClientMessage("Your grappling line has straightened new length "$lineLength);
           }
         }
       }
 
       // Check if the line has swung around a corner:
-      A = Trace(NewPivot,hNormal,Instigator.Location,pullDest,false);
+      // CONSIDER: problems when moving at high velocity - split is not outside the edge, but on one side or other of the corner.
+      if (LineSprite!=None /*&& LineSprite.ParentLine!=None*/) {
+        visualPullDest = LineSprite.NearPivot;
+      } else {
+        visualPullDest = pullDest;
+      }
+      A = Trace(NewPivotNear,hNormal,visualPullDest,Instigator.Location,false); // TODO: Not so nice for far end.  Far side hitpoint should really be our new pull target but near side should be check-line-of-sight target!  We can do that using pullDest and NewPivot.
+      A = Trace(NewPivot,hNormal,Instigator.Location,visualPullDest,false); // Nice for far end, causes subsequent near end line splitting to fail tho, cos there is a wall in the way!  (or maybe it splits every tick :f )
       if (A != None && VSize(NewPivot-pullDest)>5) {
         // Self.DrawType = DT_None;
         // Self.SetLocation(NewPivot);
-        // if (pullDest != LineSprite.Pivot) {
-          // BroadcastMessage("Warning! pullDest "$pullDest$" != Pivot "$LineSprite.Pivot$"");
+        // if (pullDest != LineSprite.NearPivot) {
+          // BroadcastMessage("Warning! pullDest "$pullDest$" != NearPivot "$LineSprite.NearPivot$"");
         // }
         // TODO BUG: for some reason, I am not hearing these sounds!  Now trying SLOT_Interface instead of SLOT_None.
         // PlaySound(HitSound,SLOT_Interface,10.0);
@@ -448,7 +464,7 @@ function CheckFlagDrop() {
         // No joy.
         // Leave the old line part hanging, and create a new part:
         if (LineSprite != None) {
-          LineSprite.Pivot = pullDest;
+          // LineSprite.NearPivot = pullDest;
           LineSprite.Reached = NewPivot;
           LineSprite.bStopped = True;
           LineSprite.SetPhysics(PHYS_None);
@@ -460,23 +476,26 @@ function CheckFlagDrop() {
 
           if (LineSprite == None) {
             // Oh no! Sometimes we do get "failed to spawn child GrapplingLine!", often when the wall is quite close, and the child line will not spawn because it is inside the wall?
-            // This may happen less now that I've set GrapplingLine.bCollideWorld=False.
+            // This may happen less now that I've set GrapplingLine.bCollideWorld=False and Physics=PHYS_Projectile.
             // Re-enable the line we just failed to split:
             LineSprite = LastLine;
-            NewPivot = LastLine.Pivot;
-            pullDest = NewPivot;
-            LastLine.bStopped = False;
-            LastLine.SetPhysics(PHYS_Rotating);
+            if (LineSprite.ParentLine!=None)
+              pullDest = LineSprite.ParentLine.Reached;
+            else
+              pullDest = Location;
+            LineSprite.bStopped = False;
+            LineSprite.SetPhysics(PHYS_Rotating);
             if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() FAILED to spawn GrapplingLine to split "$LastLine); }
+            Instigator.ClientMessage("Failed split!");
           } else {
             LineSprite.ParentLine = LastLine;
-            LineSprite.Pivot = NewPivot;
+            LineSprite.NearPivot = NewPivotNear;
             if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
+            lineLength = VSize(Instigator.Location - pullDest);
+            Instigator.ClientMessage("Your grappling line was caught on a corner new length "$lineLength);
           }
 
         }
-        lineLength = VSize(Instigator.Location - pullDest);
-        // Instigator.ClientMessage("Your grappling line was caught on a corner "$A);
         // return; // Don't return, we gotta render this new style!
       }
 
@@ -513,14 +532,16 @@ state() PullTowardStatic {
 
     OnPull(DeltaTime);
 
-    if (DoPhysics(DeltaTime))
+    DoPhysics(DeltaTime);
+
+    // if (!isStuck)
       DoLineOfSightChecks();
 
     UpdateLineSprite();
 
   }
 
-  simulated function bool DoPhysics(float DeltaTime) { // Returns False if pawn is stuck.
+  simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuck.
     local float currentLength,outwardPull,linePull,power;
     local Vector Inward;
     local bool doInwardPull,bSingleLine;
@@ -627,8 +648,8 @@ state() PullTowardStatic {
         // If we are stuck, the line keeps getting shorter.
         // Often this is not a problem because as soon as we become unstuck, the line unfolds and lineLength is updated from the new pull dest.
         // But in case that doesn't happen, let's keep lineLength under control:
-        if (lineLength < currentLength - 250)
-          lineLength = currentLength - 250;
+        // if (lineLength < currentLength - 250)
+          // lineLength = currentLength - 250;
         // TODO CONSIDER: Maybe this should be removed if we go back to the SetLocation() method.
 
       } else if (currentLength < lineLength /*&& currentLength>=MinRetract*/) {
@@ -726,8 +747,6 @@ state() PullTowardStatic {
     // Dampen velocity:
     // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
 
-    return !isStuck;
-
   }
 
   simulated function ProcessTouch (Actor Other, Vector HitLocation) {
@@ -739,33 +758,53 @@ state() PullTowardStatic {
 }
 
 // TESTING:
-// What we really need to do is to get the triangle that is Player - Pivot - NextPivot
-// and move Pivot *out* a bit.
-function bool TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't know what it means when there is a Rand() involved.
+// What we really need to do is to get the triangle that is Player - NearPivot - NextPivot
+// and move NearPivot *out* a bit.
+function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't know what it means when there is a Rand() involved.
   local float offness;
   local Vector NextPivot;
   // if (a.MoveSmooth(targetLoc - a.Location)) // Sucks, warpish and ugly when stuck!  Also danger of leaving a crater.  :P
   if (a.Move(targetLoc - a.Location))
     return;
+
+  // Player is stuck!
+
+  // Attempted solutions to getting un-stuck:
+
+  // Best solution so far (better than staying stuck?):
+  // if (lineLength<MinRetract) // We are close to winding up to the next line part.  Assumption (bad?): we only get stuck at these corners.  Yes bad assumption - sometimes the line merges through line-of-sight but we are still stuck.
+  if (FRand()<0.2) // don't always do it (mid-air collisions won't guarantee telefrag :P )
+    a.SetLocation(targetLoc);
+
+  // Neither of the following attempts to un-stick the player made things better.
+  /*
   offness = VSize(targetLoc - a.Location);
-  // Push out the pivot a bit:
-  if (LineSprite!=None && LineSprite.ParentLine!=None) {
-    NextPivot = LineSprite.ParentLine.Pivot;
+
+  if (LineSprite!=None && LineSprite.ParentLine!=None
+    // Will not attempt push if angles are close
+    && (Normal(LineSprite.ParentLine.NearPivot - pullDest) Dot Normal(pullDest - a.Location) < 0.8)
+  ) {
+    // Push out the pivot a bit:
+    // TODO: sometimes this is pushing it IN and that is bad!
+    //       That happens when it merges and then re-breaks at <MinRetract.
+    NextPivot = LineSprite.ParentLine.NearPivot;
     // pullDest += Normal( (pullDest-a.Location) + (pullDest - NextPivot) ) * 5.0;
     pullDest += ( Normal(pullDest-a.Location) + Normal(pullDest-NextPivot) ) * 5.0; // more square
-    LineSprite.Pivot = pullDest; // May update sprite!
-    PlayerPawn(a).ClientMessage("Moved pivot by "$ VSize(LineSprite.ParentLine.Reached-pullDest));
+    LineSprite.NearPivot = pullDest; // May update sprite!
+    PlayerPawn(a).ClientMessage("Moved pivot by "$ VSize(LineSprite.ParentLine.Reached-pullDest) $" lineLength="$lineLength);
     LineSprite.ParentLine.Reached = pullDest; // May update sprite!
   } else if (offness > 10.0 && FRand()<0.25) {
     // Bounce the player around a bit:
     // Cap the velocity we will add
     if (offness > 200)
       offness = 200;
-    offness *= 3;
+    offness *= 2;
     a.Velocity += 1.0 * offness * Normal(VRand());
-    PlayerPawn(a).ClientMessage("You are stuck "$ offness $" ("$ VSize(targetLoc - a.Location) $")");
+    PlayerPawn(a).ClientMessage("You are stuck "$ offness $" ("$ VSize(targetLoc - a.Location) $") lineLength="$lineLength);
     // TODO: play sound
   }
+  */
+
   isStuck = True;
 }
 
@@ -782,7 +821,7 @@ state() PullTowardDynamic {
     //// TODO: This is the wrong thing to do - only the top line moves with the Thing, but we may have a LineSprite below that one.
     ////       What we should really do is keep a copy of the tail LineSprite as well as the head.  If Thing moves, it will pull or release the lines, moving the player.
     if (LineSprite != None)
-      LineSprite.Pivot = Thing.Location; // TODO: This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
+      LineSprite.NearPivot = Thing.Location; // TODO: This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
 
     // Cause HitDamage:
     if (FRand()<DeltaTime*2) { // Avg twice a second
@@ -873,8 +912,8 @@ defaultproperties {
     bBlockActors=True
     bBlockPlayers=True
     DrawScale=1.25
-    CollisionRadius=0.5
-    CollisionHeight=0.1
+    CollisionRadius=0.1
+    CollisionHeight=0.2
     bNetTemporary=False
     NetPriority=2.6
     RemoteRole=ROLE_SimulatedProxy

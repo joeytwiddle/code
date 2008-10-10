@@ -7,20 +7,20 @@ var config bool bLogging;
 var GrapplingHook GrappleParent;
 var GrapplingLine ParentLine;
 var bool bStopped;
-var Vector Pivot;
+var Vector NearPivot;
 var Vector Reached; // BUG: Never gets updated!
 
 replication {
   reliable if (Role == ROLE_Authority)
     bLogging;
   reliable if (Role == ROLE_Authority)
-    GrappleParent,ParentLine,bStopped,Pivot,Reached;
+    GrappleParent,ParentLine,bStopped,NearPivot,Reached;
   reliable if (Role == ROLE_Authority)
     DoUpdate;
 }
 
 // simulated event PostBeginPlay() {
-	// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PostBeginPlay() New GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" Pivot="$Pivot); }
+	// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PostBeginPlay() New GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" NearPivot="$NearPivot); }
 	// Super.PostBeginPlay();
 // }
 
@@ -67,7 +67,7 @@ simulated event DoUpdate(float DeltaTime) {
 		bStopped = True;
 	}
 
-	// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Render="$(Role!=ROLE_Authority)$" bStopped="$bStopped$" LineSprite="$GrappleParent.LineSprite$" Pivot="$Pivot$" Reached="$Reached); }
+	// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Render="$(Role!=ROLE_Authority)$" bStopped="$bStopped$" LineSprite="$GrappleParent.LineSprite$" NearPivot="$NearPivot$" Reached="$Reached); }
 	// OK good we are now running on the client with variables replicated.
 
 	if (Role == ROLE_Authority)
@@ -78,8 +78,8 @@ simulated event DoUpdate(float DeltaTime) {
 	// if (GrappleParent.LineSprite != Self) {
 	if (bStopped) {
 		from = Reached;
-		to = Pivot;
-		// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$Reached$" <-> high "$Pivot); }
+		to = NearPivot;
+		// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$Reached$" <-> high "$NearPivot); }
 		// from = GrappleParent.Location;
 		// to = GrappleParent.pullDest;
 		Velocity = vect(0,0,0);
@@ -91,7 +91,7 @@ simulated event DoUpdate(float DeltaTime) {
 			if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() Warning! My GrappleParent.Instigator == None so I can't update!  My GrappleParent.InstigatorRep="$GrappleParent.InstigatorRep); }
 			return;
 		}
-		// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$GrappleParent$" <-> high "$GrappleParent.pullDest$" (Pivot="$Pivot$")"); }
+		// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$GrappleParent$" <-> high "$GrappleParent.pullDest$" (NearPivot="$NearPivot$")"); }
 		// from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
 		// from = GrappleParent.Instigator.Location + GrappleParent.Instigator.Rotation * Vect(-3.0,+5.0,GrappleParent.Instigator.BaseEyeHeight);
 		GetAxes(GrappleParent.Instigator.Rotation,X,Y,Z);
@@ -99,12 +99,12 @@ simulated event DoUpdate(float DeltaTime) {
 		// Translocator has PlayerViewOffset=(X=5.000000,Y=-4.200000,Z=-7.000000)
 		from = GrappleParent.Instigator.Location + 1.0*X - 6.0*Y + 0.3*GrappleParent.Instigator.BaseEyeHeight*Z;
 		// to = GrappleParent.pullDest;
-		to = Pivot; // better replicated than GrappleParent.pullDest!
+		to = NearPivot; // better replicated than GrappleParent.pullDest!
 		// Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
 		Velocity = GrappleParent.Velocity; // Nicer for firstperson when thrown, maybe not so good for swinging.
 	}
 		// if (GrappleParent.LineSprite != Self) {
-			// from = ChildLine.Pivot; // :P
+			// from = ChildLine.NearPivot; // :P
 		// } else {
 			// from = GrappleParent.Instigator.Location + 0.5*GrappleParent.Instigator.BaseEyeHeight*Vect(0,0,1);
 		// }
@@ -112,7 +112,7 @@ simulated event DoUpdate(float DeltaTime) {
 		// Velocity = GrappleParent.Instigator.Velocity * 0.5;
 		// if (GrappleParent.LineSprite != None && GrappleParent.LineSprite != Self) {
 			// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): My GrappleParent has a new LineSprite="$GrappleParent.LineSprite$" - failing."); }
-			// from = GrappleParent.LineSprite.Pivot;
+			// from = GrappleParent.LineSprite.NearPivot;
 		// }
 		SetLocation((from+to)/2);
 		SetRotation(rotator(to-from));
@@ -143,7 +143,7 @@ simulated event Destroyed() {
 		i++;
 	}
 	// if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Destructing with "$i$" GrapplingLines on the level."); }
-	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Bye! (1/"$i$") GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" Pivot="$Pivot$" Reached="$Reached$""); }
+	if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() Bye! (1/"$i$") GP="$GrappleParent$" PL="$ParentLine$" bStopped="$bStopped$" NearPivot="$NearPivot$" Reached="$Reached$""); }
 	Super.Destroyed();
 	//// No we don't always want to do this, we might only be moving up a line!
 	// if (ParentLine!=None) {
