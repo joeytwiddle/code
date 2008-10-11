@@ -16,21 +16,25 @@
 // TODO: I think you only get given one WarheadLauncher per life.  This is a feature, so ensure it stays that way!
 // TODO: Detect last 2 players, display it, and then stop giving powerups+health.
 // DONE: Some errors from the bots - are they due to pathing on spawned items which they think are navigable to/through?  Seemed to be fixed with some more additions to GiveInventory().
+// TODO: Rather than watch health go down 2 points each second, set the timer frequency calculated to remove 1hp each call to Timer().
+// TODO: zeroping weapons not working, piglet wants "+50" txt, or happy with healthsound instead.
+//       initial armour and health got set by LMS.
+//       Player is Out.
 
 class FairLMS expands Mutator config(FairLMS);
 
 struct LMSBonus {
-	// var String Name;  // Actually each item probably already has a Name available from its defaultproperties.
 	var String Type;
 	var Color Color;
-	var String Sound;
+	var String Name;  // If not set, defaults to item's ItemName.
+	var String Sound; // If not set, defaults to item's PickupSound.
 };
 
 var config bool bGiveWeapons;
 var config int InitialArmour,InitialHealth;
 var config float HealthLostPerSec,HealthGainedPerKill;
-var config int FragsForPowerup;
 var config bool bGivePowerups;
+var config int FragsForPowerup;
 var config String InitialWeapon[20];
 var config LMSBonus Powerup[20];
 var config Sound PowerupSound;
@@ -40,18 +44,24 @@ var int KillsSinceSpawn[64];
 function PostBeginPlay() {
 	Super.PostBeginPlay();
 	SetTimer(1,True);
-	if (HealthLostPerSec>0)
-		Level.Game.GameName = "Anti-Idle "$ Level.Game.GameName;
-	if (bGivePowerups || HealthGainedPerKill>0)
-		Level.Game.GameName = Level.Game.GameName $" with Bonuses Powerups";
+	if (HealthLostPerSec>0 || HealthGainedPerKill>0)
+		Level.Game.GameName = "Anti-Hide "$ Level.Game.GameName;
+	if (bGivePowerups)
+		Level.Game.GameName = Level.Game.GameName $" with Bonus Powerups";
 	if (HealthLostPerSec>0)
 		DeathMatchPlus(Level.Game).StartMessage = "Your are losing health!  Kill to stay alive!";
-	// Turn redeemers into mini-redeemers.
+
+	// TESTING: Turn redeemers into mini-redeemers.
 	// TODO: Do these changes propogate over maps, messing with other types of game?
+	// CONSIDER: If setting defaults doesn't work, change values after it has spawned.  (CheckReplacement() / IsRelevant()?)
 	class'WarShell'.default.Speed = 400;
 	class'WarShell'.default.Damage = 400;
 	class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.6;
 	class'WarShell'.default.MomentumTransfer = 1000;
+	class'GuidedWarShell'.default.Speed = 400;
+	class'GuidedWarShell'.default.Damage = 400;
+	class'GuidedWarShell'.default.DrawScale = class'GuidedWarShell'.default.DrawScale * 0.6;
+	class'GuidedWarShell'.default.MomentumTransfer = 1000;
 }
 
 event Timer() {
@@ -152,11 +162,6 @@ function Inventory GivePickupType(Pawn p, class<Inventory> t) {
 		Log(Self$".GivePickupType() Warning! Failed to spawn a "$t);
 	} else {
 		GiveInventory(p,Inv);
-		// if (Inv.PickupSound != None) {
-			// p.PlaySound(Inv.PickupSound,SLOT_Interface,3.0);
-		// } else {
-			// p.PlaySound(PowerupSound,SLOT_Interface,3.0);
-		// }
 
 		// Post-hacks:
 		if (Weapon(Inv)!=None) {
@@ -238,12 +243,16 @@ function GiveRandomPowerup(Pawn p) {
 			Log(Self$".GiveRandomPowerup() Failed to spawn "$type);
 			continue;
 		}
+
+		// OK we have created the powerup, we can give it to the player:
 		GiveInventory(p,inv);
 		col = Powerup[i].Color;
 		if (col.R==0 && col.G==0 && col.B==0) {
 			col.R=255; col.G=255; col.B=16; col.A=16;
 		}
-		FlashMessage(p,inv.ItemName,col);
+		if (Powerup[i].Name == "")
+			Powerup[i].Name = inv.ItemName;
+		FlashMessage(p,Powerup[i].Name,col);
 		// DONE: Sound!
 		resource = None;
 		if (Powerup[i].Sound != "") {
@@ -259,6 +268,7 @@ function GiveRandomPowerup(Pawn p) {
 			}
 		}
 		return;
+
 	}
 	if (j==100) {
 		Log(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already.");
@@ -332,11 +342,13 @@ defaultproperties {
 	// PowerupSound=Sound'Botpack.Pickups.AmpOut'
 	Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32))
 	Powerup(1)=(Type="Botpack.Armor2",Color=(R=255,G=131,B=91,A=32))
-	Powerup(2)=(Type="Botpack.UDamage",Color=(R=255,G=31,B=31,A=32))
+	Powerup(2)=(Type="Botpack.UDamage",Color=(R=192,G=31,B=192,A=32))
 	Powerup(3)=(Type="Botpack.UT_Stealth",Color=(R=31,G=31,B=190,A=48))
-	Powerup(4)=(Type="Botpack.UT_ShieldBelt",Color=(R=255,G=31,B=31,A=32))
+	Powerup(4)=(Type="Botpack.UT_ShieldBelt",Color=(R=255,G=255,B=31,A=32))
 	Powerup(5)=(Type="Botpack.UT_JumpBoots",Color=(R=91,G=255,B=255,A=32))
 	Powerup(6)=(Type="Botpack.WarheadLauncher",Color=(R=255,G=31,B=31,A=32))
-	Powerup(7)=(Type="SiegeXXL2e.JetPack",Color=(R=91,G=255,B=255,A=32))
+	Powerup(7)=(Type="SiegeXXL2e.JetPack",Color=(R=91,G=192,B=255,A=32))
+	Powerup(8)=(Type="kxGrapple.GrappleGun",Color=(R=91,G=50,B=12,A=32))
+	Powerup(9)=(Type="kxDoubleJump.DoubleJumpBoots",Color=(R=91,G=255,B=255,A=32))
 }
 
