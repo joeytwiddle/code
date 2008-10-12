@@ -38,12 +38,15 @@ var config int FragsForPowerup;
 var config String InitialWeapon[20];
 var config LMSBonus Powerup[20];
 var config Sound PowerupSound;
+var config Color MessageColor;
 
 var int KillsSinceSpawn[64];
+var bool bGameStarted,bTwoPlayersLeft;
 
 function PostBeginPlay() {
 	Super.PostBeginPlay();
-	SetTimer(1,True);
+	Level.Game.BaseMutator.AddMutator(Self); // It was likely to happen later anyway.  This way we can get destroyed if neccessary, before setting any of this stuff up twice!
+	SetTimer(1.0/HealthLostPerSec,True);
 	if (HealthLostPerSec>0 || HealthGainedPerKill>0)
 		Level.Game.GameName = "Anti-Hide "$ Level.Game.GameName;
 	if (bGivePowerups)
@@ -54,32 +57,65 @@ function PostBeginPlay() {
 	// TESTING: Turn redeemers into mini-redeemers.
 	// TODO: Do these changes propogate over maps, messing with other types of game?
 	// CONSIDER: If setting defaults doesn't work, change values after it has spawned.  (CheckReplacement() / IsRelevant()?)
+	class'WarheadLauncher'.default.ItemName = "Mini Redeemer";
+	class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.6;
 	class'WarShell'.default.Speed = 400;
 	class'WarShell'.default.Damage = 400;
-	class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.6;
 	class'WarShell'.default.MomentumTransfer = 1000;
+	class'GuidedWarShell'.default.DrawScale = class'GuidedWarShell'.default.DrawScale * 0.6;
 	class'GuidedWarShell'.default.Speed = 400;
 	class'GuidedWarShell'.default.Damage = 400;
-	class'GuidedWarShell'.default.DrawScale = class'GuidedWarShell'.default.DrawScale * 0.6;
 	class'GuidedWarShell'.default.MomentumTransfer = 1000;
+	class'WarExplosion'.default.DrawScale = class'WarExplosion'.default.DrawScale * 0.6;
+	class'WarExplosion2'.default.DrawScale = class'WarExplosion2'.default.DrawScale * 0.6;
+}
+
+function AddMutator(Mutator m) {
+	if (m.class == Self.class) {
+		if (m != Self)
+			m.Destroy();
+		Log(Self$".AddMutator() Not adding mutator "$m$" because I already exist!");
+	} else {
+		Super.AddMutator(m);
+	}
 }
 
 event Timer() {
 	local Pawn p;
+	local PlayerPawn pp;
+	local int aliveCount;
+	local String players;
 	Super.Timer();
 	foreach AllActors(class'Pawn',p) {
-		if (PlayerPawn(p)!=None || Bot(p)!=None) {
-			p.Health -= HealthLostPerSec;
-			if (p.Health<1)
-				p.Health = 1;
-			// Average death 10 seconds after health runs out, provided timer stays at 1.0.
-			if (p.Health <= 1 && FRand()<0.1) { // TODO: or was hit recently (may be about to be finished off)
-				// Level.Game.
-				p.Died(None, 'Suicided', p.Location);
-			}
-			// CONSIDER TODO: when player first reaches 0, we could add some effect to him (skull above his head) to show that he requires only 1 damage hit to die.
-			//                maybe fairer not to warn other players, but to warn the player who is in danger!
+		if (!bGameStarted && p.FindInventoryType(class'Weapon')!=None) {
+			bGameStarted = True;
 		}
+		if ((PlayerPawn(p)!=None || Bot(p)!=None) && Spectator(p)==None) {
+			if (!bTwoPlayersLeft) {
+				p.Health -= 1;
+				if (p.Health == 0)
+					FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
+				if (p.Health <= -15) {
+					p.Died(None, 'Suicided', p.Location);
+				}
+				// CONSIDER DONE: when player first reaches 0, we could add some effect to him (skull above his head) to show that he requires only 1 damage hit to die.
+				//                maybe fairer not to warn other players, but to warn the player who is in danger!
+			}
+		}
+		if (p.PlayerReplicationInfo.Score>0) {
+			aliveCount++;
+			if (players == "")
+				players = p.getHumanName() $ " v";
+			else
+				players = players $ " " $ p.getHumanName();
+		}
+	}
+	if (bGameStarted && LastManStanding(Level.Game)!=None && aliveCount==2 && !bTwoPlayersLeft) {
+		foreach AllActors(class'PlayerPawn',pp) {
+			FlashMessage(pp,"Two players left: ",MessageColor,3,true);
+			FlashMessage(pp,players,MessageColor,4);
+		}
+		bTwoPlayersLeft = True;
 	}
 }
 
@@ -101,11 +137,14 @@ function ScoreKill(Pawn killer, Pawn other) {
 		if (killer.Health > 199) killer.Health = 199;
 		if (killer.PlayerReplicationInfo!=None) {
 			KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64] += 1;
-			if (KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64]%FragsForPowerup == 0 && bGivePowerups) {
+			if (KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64]%FragsForPowerup == 0 && bGivePowerups && !bTwoPlayersLeft) {
 				GiveRandomPowerup(killer);
 			}
 		}
 	}
+}
+
+function GiveArmor(Pawn p) {
 }
 
 function GiveAllWeapons(Pawn p) {
@@ -252,7 +291,7 @@ function GiveRandomPowerup(Pawn p) {
 		}
 		if (Powerup[i].Name == "")
 			Powerup[i].Name = inv.ItemName;
-		FlashMessage(p,Powerup[i].Name,col);
+		FlashMessage(p,"-+- "$Caps(Powerup[i].Name)$" -+-",col);
 		// DONE: Sound!
 		resource = None;
 		if (Powerup[i].Sound != "") {
@@ -272,20 +311,21 @@ function GiveRandomPowerup(Pawn p) {
 	}
 	if (j==100) {
 		Log(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already.");
-		// TODO: maybe remove something from his inventory? ^^
+		// TODO: maybe remove something from his inventory and retry?  Then at least he could get a fresh one.
 	}
 
 }
 
-function FlashMessage(Pawn p, String msg, Color col) {
+function FlashMessage(Pawn p, String msg, Color col, optional int line, optional bool bMoreComing) {
 	if (PlayerPawn(p)==None)
 		return;
+	if (line == 0) line=4;
 	// msg = Caps(msg) $ "!";
-	msg = "-+- "$ Caps(msg) $" -+-";
-	PlayerPawn(p).ClearProgressMessages();
+	if (!bMoreComing)
+		PlayerPawn(p).ClearProgressMessages();
 	PlayerPawn(p).SetProgressTime(3.0);
-	PlayerPawn(p).SetProgressColor(col,4);
-	PlayerPawn(p).SetProgressMessage(msg,4);
+	PlayerPawn(p).SetProgressColor(col,line);
+	PlayerPawn(p).SetProgressMessage(msg,line);
 }
 
 function Mutate(String msg, PlayerPawn Sender) {
@@ -350,5 +390,6 @@ defaultproperties {
 	Powerup(7)=(Type="SiegeXXL2e.JetPack",Color=(R=91,G=192,B=255,A=32))
 	Powerup(8)=(Type="kxGrapple.GrappleGun",Color=(R=91,G=50,B=12,A=32))
 	Powerup(9)=(Type="kxDoubleJump.DoubleJumpBoots",Color=(R=91,G=255,B=255,A=32))
+	MessageColor=(R=255,G=255,B=31,A=0)
 }
 
