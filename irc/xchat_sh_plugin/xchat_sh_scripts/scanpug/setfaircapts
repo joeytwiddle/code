@@ -54,7 +54,7 @@ ORDERED_LIST=$(
 			# : # echo "4.52963ish? $PLAYER"
 		# fi
 		STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
-		[ "$STRENGTH" = "?.?" ] || echo "$STRENGTH $PLAYER"
+		[ "$STRENGTH" = "?.?" ] || [ "$AUTH" = MrsFace ] || echo "$STRENGTH $PLAYER"
 	done |
 	sort -n -k 1
 )
