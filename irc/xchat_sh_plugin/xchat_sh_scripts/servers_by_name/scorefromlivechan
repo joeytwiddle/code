@@ -1,0 +1,37 @@
+LOGFILE="$1"
+[ "$LOGFILE" ] || LOGFILE="$HOME/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pmplive2.log"
+
+#### You idiot!
+#### You could have just looked for line "New Score: Red Team 0:4 Blue Team"
+
+## Find the last time scores were published:
+DATA=` grep -A3 "\] \*\* Current Score:" "$LOGFILE" | tail -n 4 `
+
+## Extract the scores at that time:
+REDSCORE=` echo "$DATA" | grep "Red Team" | afterfirst "Team" | takecols 2 `
+BLUESCORE=` echo "$DATA" | grep "Blue Team" | afterfirst "Team" | takecols 2 `
+
+## Now find any caps since then:
+
+## Should have worked but did not:
+# TOPLINERE=` echo "$DATA" | head -n 1 | toregexp `
+# UPDATES=` cat "$LOGFILE" | fromline "^$TOPLINERE$" `
+
+TOPLINERE=` echo "$DATA" | head -n 1 | takecols 1 2 3 | toregexp `
+UPDATES=` cat "$LOGFILE" | fromline "^$TOPLINERE" `
+
+REDDELTA=` echo "$UPDATES" | grep "The red team scores\!$" | wc -l `
+BLUEDELTA=` echo "$UPDATES" | grep "The blue team scores\!$" | wc -l `
+
+REDSCORE=$((REDSCORE+REDDELTA))
+BLUESCORE=$((BLUESCORE+BLUEDELTA))
+
+if [ "$REDSCORE" = 0 ] && [ "$BLUESCORE" = 0 ]
+then
+	:
+else
+	# echo "[$REDSCORE-$BLUESCORE]"
+	# echo "[Red: $REDSCORE - Blue: $BLUESCORE]"
+	echo "[Red $REDSCORE - Blue $BLUESCORE]"
+fi
+
