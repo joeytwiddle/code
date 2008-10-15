@@ -1,7 +1,13 @@
-TIME_REMAINING=` tail -n 20 "$LOGDIR"/"$NETWORK"-#ut.pmplive2.log | grep "<PmP|Maria>" | tail -n 1 | takecols 5 | sed 's+^\[\(.*\):\(.*\)\]+\1m\2s remaining+' `
+LOGFILE="$LOGDIR/$NETWORK-#ut.pmplive2.log"
+if [ -f "$LOGFILE" ]
+then
+	TIME_REMAINING=` tail -n 20 "$LOGFILE" | grep "<PmP|Maria>" | tail -n 1 | takecols 5 | sed 's+^\[\(.*\):\(.*\)\]+\1m\2s remaining+' `
+	SCORES=`sh ut_servers/scorefromlivechan "$LOGFILE"`
+fi
+
 QUERY=`
 # ./utp "$@" 82.96.91.7:6200
 # ./utp "$@" 82.96.91.61:6200
 ./utp "$@" 82.96.91.12:6200
 `
-echo "$QUERY $TIME_REMAINING"
+echo "$QUERY $SCORES $TIME_REMAINING"
