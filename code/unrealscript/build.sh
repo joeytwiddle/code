@@ -30,7 +30,7 @@
 TOPDIR="$PWD"
 ## Problem: comments out required packages!  also adds some packages (e.g. Screen) which we don't actually want to recompile
 ##    TODO: But it doesn't have to.  As long as it checks that it is really a custom package.
-cat compiling.ini | dos2unix | grep EditPackages= |
+cat compiling.ini | dos2unix | grep "^\(; \|\)"EditPackages= |
 afterlast = |
 while read PKG
 do
