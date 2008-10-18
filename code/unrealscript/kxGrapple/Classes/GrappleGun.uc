@@ -75,10 +75,11 @@ simulated function PreBeginPlay() {
 
 }
 
-// Failed attempts to make it not the spawn weapon:
-function float RateSelf(out int bUseAltMode) {
-  return -2.0;
-}
+// function float RateSelf(out int bUseAltMode) {
+  // return -2.0;
+// }
+
+// Stops GrappleGun from being the spawn weapon (IF called when weapon is created!):
 function SetSwitchPriority(Pawn Other) {
   AutoSwitchPriority=0;
 }
