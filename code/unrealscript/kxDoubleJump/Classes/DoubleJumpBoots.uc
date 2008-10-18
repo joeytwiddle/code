@@ -1,10 +1,10 @@
 //================================================================================
-// DJ_InventoryItem.
+// DoubleJumpBoots.
 //================================================================================
 
 // TODO: If we have normal jump boots, our in-air doublejumps also jump with their strength.  I think this is wrong - we should ideally prevent the jump boots from being used in-air, but keep their charge.
 
-class DJ_InventoryItem extends TournamentPickup config(kxDoubleJump);
+class DoubleJumpBoots extends TournamentPickup config(kxDoubleJump);
 
 var() config int MaxJumps;
 var() config float JumpHeight;
@@ -130,8 +130,8 @@ exec function DoubleJump ()
         case 3:
           //// Let the player choose whether to go for height or distance on the secondary jumps:
           //// Add extra jump to current velocity (half up, half "with" our sideways velocity)
-          // P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
-          // P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+          P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
+          P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
         break;
         default:
           P.Velocity.Z = P.JumpZ * JumpHeight;
@@ -197,39 +197,33 @@ simulated function ClientPlayAnim (name Sequence, optional float Rate, optional 
 
 defaultproperties {
     nofJumps=1
-    ExpireMessage="ExpireMessage"
-    PickupMessage="PickupMessage"
-    ItemName="DoubleJumpUT"
-    // TODO: ItemName="DoubleJumpItem"
-    Mesh=LodMesh'Botpack.jboot'
-    AmbientGlow=0
-
-    MaxJumps=3
+    MaxJumps=3 // Maybe we should have called it TripleJump? :P
 
     // DJ:
-    JumpHeight=1.20
-    VelocityLimit=100
-    JumpType=1
-    JumpStyle=0
+    // JumpHeight=1.20
+    // VelocityLimit=100
+    // JumpType=1
+    // JumpStyle=0
 
     // kx:
-    // JumpHeight=1.20
-    // VelocityLimit=120
-    // JumpType=0
-    // JumpStyle=2
+    JumpHeight=1.20
+    VelocityLimit=120
+    JumpType=0
+    JumpStyle=0
+    // JumpStyle=2 // totest!
 
     // VelocityLimit=80 // slightly harder because we use additional velocity - actually 100 seems hard enough ;p
 
-    RechargeRate=5.0
     bRestrictFC=True
+    RechargeRate=5.0
 
     // This is what makes the boots a pickup:
+    ItemName="DoubleJumpBoots"
+    PickupMessage="You picked up the DoubleJumpBoots"
     ExpireMessage="DoubleJumping is over"
     bAutoActivate=True
     bActivatable=True
     bDisplayableInv=True
-    PickupMessage="You picked up the DoubleJumpBoots"
-    ItemName="DoubleJumpBoots"
     RespawnTime=30.00
     PickupViewMesh=LodMesh'Botpack.jboot'
     MaxDesireability=0.50
@@ -237,8 +231,9 @@ defaultproperties {
     ActivateSound=Sound'Botpack.Pickups.BootSnd'
     Icon=Texture'UnrealI.Icons.I_Boots'
     AmbientGlow=64
-    CollisionRadius=22.00
     CollisionHeight=14.00
+    Mesh=LodMesh'Botpack.jboot'
+    AmbientGlow=0
 
 }
 
