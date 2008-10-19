@@ -2,6 +2,8 @@
 // ForceGunMut
 //================================================================================
 
+// TODO: bRemoveHammer does remove the hammer, but Pure throws some Accessed None errors, and the ForceGun items are left as pickups on the map at the spawnpoints!
+
 class ForceGunMut extends Mutator Config(kxForceGun);
 
 var config bool bRemoveHammer,bUseForceGun;
@@ -30,8 +32,10 @@ function AddMutator(Mutator mut) {
 function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
   if (bRemoveHammer && Other.IsA('ImpactHammer') && !Other.IsA('ForceGun')) {
+    //// TODO: Even commented out, this still causes the errors with Pure: ST_Mutator DM-Liandri.ST_Mutator0 (F_nction PureStat7G.ST_Mutator.GetReplacementWeapon:03AC) Accessed None
+    ////       But at least it doesn't leave pickups sitting around.
     ReplaceWith(Other,String(class'ForceGun')); // This was supposed to replace the hammer but it only removes it!
-    // Log("[kxForceGun.ForceGun] CheckReplacement("$Other$") -> ForceGun");
+    Log("[kxForceGun.ForceGun] CheckReplacement("$Other$") -> ForceGun");
     return False;
   }
   return Super.CheckReplacement(Other,bSuperRelevant);
@@ -69,7 +73,7 @@ function GiveWeaponsTo (Pawn P) {
          w.GiveAmmo(P);
          w.SetSwitchPriority(P);
          w.WeaponSet(P);
-         Log(Self$".GiveWeaponsTo() Gave "$w$" to "$P);
+         // Log(Self$".GiveWeaponsTo() Gave "$w$" to "$P);
       }
     }
     if (P.PlayerReplicationInfo.Deaths==0) {
