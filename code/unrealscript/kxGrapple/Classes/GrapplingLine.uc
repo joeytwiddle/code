@@ -8,13 +8,14 @@ var GrapplingHook GrappleParent;
 var GrapplingLine ParentLine;
 var bool bStopped;
 var Vector NearPivot;
-var Vector Reached; // BUG: Never gets updated!
+var Vector Reached; // OLD BUG: Never gets updated!
+var Vector ReachedRender; // When rendering from nearpivot to nextpivot, lines against flat walls disappeared; this keeps the old rendering style and somehow that problem is gone.
 
 replication {
   reliable if (Role == ROLE_Authority)
     bLogging;
   reliable if (Role == ROLE_Authority)
-    GrappleParent,ParentLine,bStopped,NearPivot,Reached;
+    GrappleParent,ParentLine,bStopped,NearPivot,Reached,ReachedRender;
   reliable if (Role == ROLE_Authority)
     DoUpdate;
 }
@@ -70,19 +71,25 @@ simulated event DoUpdate(float DeltaTime) {
 	// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate(): Render="$(Role!=ROLE_Authority)$" bStopped="$bStopped$" LineSprite="$GrappleParent.LineSprite$" NearPivot="$NearPivot$" Reached="$Reached); }
 	// OK good we are now running on the client with variables replicated.
 
-	if (Role == ROLE_Authority)
+	// if (Role == ROLE_Authority || Level.NetMode != NM_Client)
+	if (Level.NetMode == NM_DedicatedServer)
 		return;
 	// The rest is *only* done on the client.
 
 	// Update position of line:
 	// if (GrappleParent.LineSprite != Self) {
 	if (bStopped) {
-		from = Reached;
+		// from = Reached;
+		from = ReachedRender;
 		to = NearPivot;
+		// This was supposed to make rendering better when an inbetween line gets stuck against a flat wall.  But it didn't.
+		// I wonder now why they didn't always disappear against flat walls.
+		if (ParentLine!=None)
+			to = ParentLine.Reached;
 		// if (bLogging && FRand()<0.01) { Log(Level.TimeSeconds$" "$Self$".DoUpdate() low "$Reached$" <-> high "$NearPivot); }
 		// from = GrappleParent.Location;
 		// to = GrappleParent.pullDest;
-		Velocity = vect(0,0,0);
+		// Velocity = vect(0,0,0); // was already done when we were stopped
 		// TODO: Inefficiency. We keep setting the location etc. of this line, although it is at the moment static
 		//       We just need to make sure all the variables have been replicated when we switch off.
 		// In fact in *this* case, the server could calculate our Location, and we could do nothing but wait for it to be replicated.
@@ -100,6 +107,7 @@ simulated event DoUpdate(float DeltaTime) {
 		from = GrappleParent.Instigator.Location + 1.0*X - 6.0*Y + 0.3*GrappleParent.Instigator.BaseEyeHeight*Z;
 		// to = GrappleParent.pullDest;
 		to = NearPivot; // better replicated than GrappleParent.pullDest!
+		// CONSIDER TODO: could instead use ParentLine.Reached
 		// Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
 		Velocity = GrappleParent.Velocity; // Nicer for firstperson when thrown, maybe not so good for swinging.
 	}
@@ -158,7 +166,8 @@ defaultproperties {
 	// Texture=Texture'BotPack.ammocount'
 	DrawType=DT_Mesh
 	RotationRate=(Roll=90000)
-	bUnlit=False
+	// bUnlit=False
+	bUnlit=True
 	bNetTemporary=False
 	NetPriority=2.6
 	RemoteRole=ROLE_SimulatedProxy

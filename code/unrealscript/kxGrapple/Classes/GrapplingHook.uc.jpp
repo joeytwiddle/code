@@ -40,6 +40,14 @@
 // DONE: Grapple will sometimes refuse to embed into corners.  This was fixed by returning to Physics=PHYS_Projectile.
 // TODO: On PullTowardDynamic, sometimes the grapple is just left sitting in space, looks naff.  But is the problem the algorithm or replication?
 // TEST: You can telefrag other players (incl. teammates?!) by swinging into them.  I think this was caused by SetLocation(), which I have now replaced with MoveSmooth()/Move().
+// BUGS: winching out when on floor there should be no sound (cos lineLength does not increase!)
+// BUGS: winching in when stuck, the sounds stops, but lineLength is decreasing!
+// LATEST FUN BUGS: throw at a wall on face, then walk thru teleporer and use it - creates a lot of messy lines :P
+// LATEST FUN BUGS: odd out the front of face, if i wrap the line around the outer wall, the lengths displayed do not add up!
+// DONE: grapple should not hurt teammate
+// CONSIDER: If we could do the maths correctly, we could do a trace and work out the ideal trajectory to the target point, forcing the correct ThrowAngle.  Then we could remove the anti-grav hax and have a nice soaring grapple.  :)
+// TODO: Damage should be only when grapple is pulled back.
+// TODO: Allow maximum range on the grappling hook (aka maximum line length).
 
 class GrapplingHook extends Projectile Config(kxGrapple);
 
@@ -438,7 +446,7 @@ function CheckFlagDrop() {
             // LastLine.Enable('Tick');
             // LastLine.Reached = vect(0,0,0); // we could use it as a marker like bStopped
             // CONSIDER: If this revival of old GrapplingLine fails, we could just destroy it and spawn a fresh one.
-            Instigator.ClientMessage("Your grappling line has straightened new length "$lineLength);
+            if (bLogging) Instigator.ClientMessage("Your grappling line has straightened new length "$lineLength);
           }
         }
       }
@@ -450,8 +458,13 @@ function CheckFlagDrop() {
       } else {
         visualPullDest = pullDest;
       }
+
       A = Trace(NewPivotNear,hNormal,visualPullDest,Instigator.Location,false); // TODO: Not so nice for far end.  Far side hitpoint should really be our new pull target but near side should be check-line-of-sight target!  We can do that using pullDest and NewPivot.
+
+      // TODO: swap the next two lines to get old behaviour, when lines against flat walls always show fine!
       A = Trace(NewPivot,hNormal,Instigator.Location,visualPullDest,false); // Nice for far end, causes subsequent near end line splitting to fail tho, cos there is a wall in the way!  (or maybe it splits every tick :f )
+      // NewPivot = NewPivotNear;
+
       if (A != None && VSize(NewPivot-pullDest)>5) {
         // Self.DrawType = DT_None;
         // Self.SetLocation(NewPivot);
@@ -466,6 +479,7 @@ function CheckFlagDrop() {
         if (LineSprite != None) {
           // LineSprite.NearPivot = pullDest;
           LineSprite.Reached = NewPivot;
+          LineSprite.ReachedRender = NewPivotNear;
           LineSprite.bStopped = True;
           LineSprite.SetPhysics(PHYS_None);
           LineSprite.Velocity = vect(0,0,0);
@@ -486,13 +500,13 @@ function CheckFlagDrop() {
             LineSprite.bStopped = False;
             LineSprite.SetPhysics(PHYS_Rotating);
             if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() FAILED to spawn GrapplingLine to split "$LastLine); }
-            Instigator.ClientMessage("Failed split!");
+            if (bLogging) Instigator.ClientMessage("Failed split!");
           } else {
             LineSprite.ParentLine = LastLine;
             LineSprite.NearPivot = NewPivotNear;
             if (bLogging && Role==ROLE_Authority) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Split "$LastLine$" to "$LineSprite); }
             lineLength = VSize(Instigator.Location - pullDest);
-            Instigator.ClientMessage("Your grappling line was caught on a corner new length "$lineLength);
+            if (bLogging) Instigator.ClientMessage("Your grappling line was caught on a corner new length "$lineLength);
           }
 
         }
@@ -773,8 +787,10 @@ function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't kno
 
   // Best solution so far (better than staying stuck?):
   // if (lineLength<MinRetract) // We are close to winding up to the next line part.  Assumption (bad?): we only get stuck at these corners.  Yes bad assumption - sometimes the line merges through line-of-sight but we are still stuck.
-  if (FRand()<0.2) // don't always do it (mid-air collisions won't guarantee telefrag :P )
+  // if (FRand()<0.2) // don't always do it (mid-air collisions won't guarantee telefrag :P )  Mmm not good sometimes caused large jumps due to waiting.
     a.SetLocation(targetLoc);
+  // TODO: If we are still getting mid-air telefrags, then do a trace on this movement (starting from targetLoc?), and only force it if there is a wall in the way, not a person.
+  // TODO: Play sound!
 
   // Neither of the following attempts to un-stick the player made things better.
   /*
@@ -785,7 +801,7 @@ function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't kno
     && (Normal(LineSprite.ParentLine.NearPivot - pullDest) Dot Normal(pullDest - a.Location) < 0.8)
   ) {
     // Push out the pivot a bit:
-    // TODO: sometimes this is pushing it IN and that is bad!
+    // BUG: sometimes this is pushing it IN and that is bad!
     //       That happens when it merges and then re-breaks at <MinRetract.
     NextPivot = LineSprite.ParentLine.NearPivot;
     // pullDest += Normal( (pullDest-a.Location) + (pullDest - NextPivot) ) * 5.0;
@@ -813,6 +829,12 @@ state() PullTowardDynamic {
 
   // CONSIDER TODO: I did not bother implementing bPrimaryWinch and bCrouchReleases for PullTowardDynamic.
 
+  simulated function BeginState () {
+    SetPhysics(PHYS_Flying);
+    Velocity = vect(0,0,0);
+    Instigator.SetPhysics(PHYS_Flying);
+  }
+
   simulated function Tick(float DeltaTime) {
     if (Thing==None)
       Self.Destroy();
@@ -823,8 +845,25 @@ state() PullTowardDynamic {
     if (LineSprite != None)
       LineSprite.NearPivot = Thing.Location; // TODO: This ain't gonna work - folding linesprite on Dynamic target is gonna be messy!
 
-    // Cause HitDamage:
-    if (FRand()<DeltaTime*2) { // Avg twice a second
+    if (Instigator==None || Master==None) {
+      if (Role == ROLE_Authority) {
+        if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      } else {
+        // We are client side.  Don't make a fuss.
+        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() Client can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
+      }
+      return; // Proceeding will just throw Accessed Nones.
+      // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
+    }
+
+    // Cause HitDamage, if not friendly:
+    if ( FRand()<DeltaTime*2 // Avg twice a second
+      && !(Level.Game.IsA('TeamGamePlus')
+           && bThingPawn
+           && Pawn(Thing).PlayerReplicationInfo!=None && Instigator.PlayerReplicationInfo!=None
+           && Pawn(Thing).PlayerReplicationInfo.Team == Instigator.PlayerReplicationInfo.Team)
+    ) {
+
       //               Avg half HitDamage
       Thing.TakeDamage(0.25*HitDamage+0.5*FRand()*HitDamage,Instigator,(Thing.Location+Location)/2,vect(0,0,0),'');
 
@@ -844,6 +883,7 @@ state() PullTowardDynamic {
       // Somehow the Thing got far from our grapple.
       // Maybe it took a teleporter, or respawned.  We should ungrapple.
       // (Our previous pullDest may have be pointing right at the teleporter Thing took.)
+      if (bLogging) Instigator.ClientMessage("Your target "$Thing.getHumanName()$" got too far away - maybe took a teleporter.");
       Destroy();
     }
     // Update Grapple's movement:
@@ -856,17 +896,6 @@ state() PullTowardDynamic {
 
     // We could dampen Thing's movement.  He is carrying the mass of Instigator now!
 
-    if (Instigator==None || Master==None) {
-      if (Role == ROLE_Authority) {
-        if (bLogging) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() Server can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
-      } else {
-        // We are client side.  Don't make a fuss.
-        if (bLogging && FRand()<0.1) { Log(Level.TimeSeconds$" "$Self$".PullTowardDynamic.Tick() Client can't do motion because Instigator="$Instigator$" or Master="$Master$" btw InstigatorRep="$InstigatorRep); }
-      }
-      return; // Proceeding will just throw Accessed Nones.
-      // CONSIDER: If this logs that we have InstigatorRep but not Instigator, then we should use former!
-    }
-
     if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
       // Player is pressing release.  Do not affect his velocity with the line.
       Master.AmbientSound = ReleaseSound;
@@ -874,8 +903,8 @@ state() PullTowardDynamic {
     } else {
 
        // Update Grappler's velocity:
-       if (VSize(Thing.Location - Instigator.Location) > MinRetract) {
-         Instigator.Velocity = Normal(Thing.Location - Instigator.Location) * 1.0 * GrappleSpeed;
+       if (VSize(Self.Location - Instigator.Location) > MinRetract) {
+         Instigator.Velocity = Normal(Self.Location - Instigator.Location) * 0.3 * GrappleSpeed;
          Master.AmbientSound = PullSound;
          AmbientSound = PullSound;
        } else {
@@ -896,10 +925,6 @@ state() PullTowardDynamic {
     Instigator.AmbientSound = None;
     AmbientSound = None;
     Destroy();
-  }
-
-  simulated function BeginState () {
-    Instigator.SetPhysics(PHYS_Flying);
   }
 
 }
