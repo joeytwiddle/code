@@ -2,7 +2,26 @@
 // ForceGun.
 //================================================================================
 
+// DONE: Since adding OldPhysics, I can move sgBuildings and they sit where dropped.
+// TODO: SiegeBuildings usually have at least 2 actors related to them.  The thing that tends to get picked up and moved is the central glow, which is the sgBuilding.  But we want to move the sgMeshFX newFX also.
+// DONE/TEST: A short while after I move an sgBuilding, it disappears from the game!
+// TODO: If Target is bStatic, try to hide it and create a new non-static clone.
+// TODO: Pickups don't have a Team, we must guess which team they belong to.
+// TODO: remove OldPhysics?
+//       or test with projectiles first
+//       OldPhysics was introduced for sgBuildings.
+//       But we often need to change the Physics to PHYS_Falling when we drop an object, even if it was PHYS_None when we picked it up.
+//       Exceptions are sgBuildings, Projectiles, ...
+//       Now that the ForceGun is working, we should start to reduce the number of (permanent) changes we make to objects, and do a per-tick change instead.
+// BEWARE: I think if I summon on of these, then rejoin the server, POwner is wrong.
+
+#define SIEGE_COMPATIBILITY
+// TODO: sgSuperProtector has THREE meshes - don't break, find all with corresponding owner.
+
 class ForceGun expands TournamentWeapon Config(kxForceGun);
+
+// #define PHYS_ForceGun PHYS_Falling
+#define PHYS_ForceGun PHYS_None
 
 var config bool bLogging;
 var config bool bTesting;
@@ -17,6 +36,15 @@ var Actor Target;
 var Actor LastTarget;
 
 var int UpdateCount;
+var int LastUpdate;
+
+var EPhysics OldPhysics;
+
+var Vector LastLoc;
+
+#ifdef SIEGE_COMPATIBILITY
+var sgMeshFX sgTargetMesh;
+#endif
 
 replication {
 	reliable if (Role==ROLE_Authority)
@@ -25,17 +53,21 @@ replication {
 		bTesting;
 	reliable if (Role==ROLE_Authority)
 		Target;
+	reliable if (Role==ROLE_Authority)
+		UpdateCount;
+	reliable if (Role==ROLE_Authority)
+		OldPhysics;
+	// reliable if (Role==ROLE_Authority)
+		// AcquireTarget,SetTargetMovement,ReleaseTarget; // ,Tick
+	reliable if (Role==ROLE_Authority)
+		SetTargetMovement; // Making this reliable means the meshes move!  I think it keeps thing in sync better.
+	// reliable if (Role==ROLE_Authority)
+		// ReleaseTarget; // Causes us to never release the target (at least from the client point of view)
 }
 
 // TODO: At release time we should comment out all DebugLog() and ClientLog() calls, because we don't want them building those message strings!
-simulated function DebugLog(String message) {
-	if (bLogging)
-		Super.Log(message);
-}
-simulated function ClientLog(String message) {
-	if (bLogging)
-		Instigator.ClientMessage(message);
-}
+#define DebugLog(message) if (bLogging) { Super.Log(message); }
+#define ClientLog(message) if (bLogging) { Instigator.ClientMessage(message); } DebugLog("[ClientLog] "$ message)
 
 simulated function PreBeginPlay() {
 	Super.PreBeginPlay();
@@ -59,6 +91,10 @@ simulated function PreBeginPlay() {
 	DebugLog(Self$".PreBeginPlay() Owner = "$Owner$" Instigator="$Instigator$" POwner="$POwner);
 	// All=None on server at spawn-time
 
+}
+
+function float RateSelf( out int bUseAltMode ) {
+	return 2;
 }
 
 // This doesn't appear to get used, but Instigator is set anyway.
@@ -89,10 +125,13 @@ simulated function AcquireTarget() {
 	local Vector HitLoction,HitNormal;
 	DebugLog(Self$".AcquireTarget() Owner = "$Owner$" Instigator="$Instigator$" POwner="$POwner);
 	// Target = Trace(HitLoction,HitNormal,Instigator.Location+10000*Vector(Instigator.Rotation),Instigator.Location,true);
-	Target = FindClosestActor(Instigator);
-	if (Target==None) return; // No target acquired
+	Target = FindTarget(Instigator);
+	if (Target==None) {
+		Instigator.ClientMessage("The "$ItemName$" failed to acquire a target.");
+		return;
+	}
 	if (!bPickupPlayers && Target.IsA('Pawn') && Pawn(Target).bIsPlayer) {
-		ClientLog("You may not pick up "$Target.getHumanName()$"!");
+		Instigator.ClientMessage("You may not pick up "$Target.getHumanName()$"!");
 		Target=None;
 		return;
 	}
@@ -101,14 +140,14 @@ simulated function AcquireTarget() {
 			&& GetTeam(Target) != GetTeam(Instigator)
 	) {
 		// ClientLog("You cannot move "$Target$", it belongs to the enemy.");
-		ClientLog("You cannot move "$Target$", it belongs to the enemy.  ("$GetTeam(Target)$"!="$GetTeam(Instigator)$")");
+		Instigator.ClientMessage("You cannot move "$Target$", it belongs to the enemy.  ("$GetTeam(Target)$"!="$GetTeam(Instigator)$")");
 	}
 	if (Target == Instigator || Target == Self || Target==Level) {
 		DebugLog(Self$".BeginState() Bad Target = "$Target);
-		ClientLog("You can not pick up "$Target);
+		Instigator.ClientMessage("You can not pick up "$Target);
 		Target = None;
 	} else {
-		ClientLog("Acquired target "$Target$" mass "$Target.Mass$" distance "$Int(VSize(Target.Location-Instigator.Location)));
+		Instigator.ClientMessage("Acquired target "$Target.getHumanName()$" type "$Target.Class.Name$" mass "$Target.Mass$" distance "$Int(VSize(Target.Location-Instigator.Location)));
 		InitTarget();
 		if (Pawn(Target)!=None)
 			Pawn(Target).ClientMessage("You have been picked up by "$Instigator.getHumanName());
@@ -117,6 +156,8 @@ simulated function AcquireTarget() {
 }
 
 simulated function InitTarget() {
+	local int count;
+	local int meshCount;
 
 	DebugLog(Self$".InitTarget() called while UpdateCount="$UpdateCount$" Target="$Target);
 	// Target.SetLocation( Target.Location + vect(0,0,8.0) ); // get things underway?
@@ -125,79 +166,262 @@ simulated function InitTarget() {
 	// Target.SetPhysics(PHYS_Walking);
 	// Target.bSimFall = False;
 
-	ClientLog("Target's Physics was "$Target.Physics);
+	LastLoc = Target.Location;
 
-	Target.SetPhysics(PHYS_Falling);
-	// Target.Velocity = vect(0,0,0);
-	SetTargetMovement(0.05);
-
+	// ClientLog("Target's Physics was "$Target.Physics);
 	if (Target.bStatic) {
 		ClientLog("Target is bStatic - may not move!");
 	}
+
+	OldPhysics = Target.Physics;
+	// Target.SetPhysics(PHYS_Flying); // Does not work!
+	Target.SetPhysics(PHYS_ForceGun); // TODO: ? can we keep it moving but take out the gravity?
+	// Target.Velocity = vect(0,0,0);
+	SetTargetMovement(0.05);
+
+	Target.bUnlit = True;
+
+	Target.LifeSpan = Target.LifeSpan*2;
+	if (Target.LifeSpan>0 && Target.LifeSpan<20)
+		Target.LifeSpan = 20;
 	if (Projectile(Target)!=None)
 		Target.Disable('Tick');
 	// Target.default.bStatic = False;
-	if (Target.IsA('Inventory'))
-		Inventory(Target).bRotatingPickup = False;
-	Target.LifeSpan = Target.LifeSpan*2;
-	if (Target.LifeSpan<20)
-		Target.LifeSpan = 20;
 	// DONE: Set some net-relevant properties
+	// Target.NetPriority = 2.8;
+	// Target.bNetTemporary = False;
 	// With ROLE_SimulatedProxy, InventorySpots/Pickups *are* getting moved, but the client does not see it.
-	if (bTesting) {
+	if ( False /* bTesting */) {
 		Target.RemoteRole = ROLE_SimulatedProxy;
 		Self.RemoteRole = ROLE_SimulatedProxy;
+		// Didn't get this working, although it could potentially be smoother.
 	} else {
 		Target.RemoteRole = ROLE_DumbProxy; // works better when client-server
 		Self.RemoteRole = ROLE_DumbProxy;
 	}
-	// Target.NetPriority = 2.8;
-	// Target.bNetTemporary = False;
+	if (Target.IsA('Inventory'))
+		Inventory(Target).bRotatingPickup = False;
 
-}
-
-simulated function SetTargetMovement(float DeltaTime) {
-	local Vector holdPos;
-
-	// DebugLog("Doing SetTargetMovement("$DeltaTime$" NetMode="$Level.NetMode$" Role="$Role$" with Target="$Target$" and Instigator="$Instigator$" distance="$VSize(holdPos-Target.Location)$" velocity="$Target.Velocity);
-	// DebugLog("Doing SetTargetMovement("$DeltaTime$" distance="$VSize(holdPos-Target.Location)$" Target="$Target$" Location="$Target.Location$" Velocity="$Target.Velocity$" Instigator="$Instigator$" Location="$Instigator.Location$" Velocity="$Instigator.Velocity);
-	// DebugLog("Doing SetTargetMovement("$DeltaTime$" distance="$VSize(holdPos-Target.Location)$" Target="$Target$" Location="$Target.Location$" Velocity="$Target.Velocity$" Instigator="$Instigator);
-	DebugLog("Doing SetTargetMovement("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.loc="$Target.Location$" ins.loc="$Instigator.Location);
-	holdPos = Instigator.Location + 120.0 * Vector(Instigator.Rotation) + Vect(0,0,50);
-	// DebugLog("130 = "$VSize(holdPos-Instigator.Location));
-
-	if (Role==ROLE_Authority || Target.RemoteRole==ROLE_SimulatedProxy) {
-		// Should end at distance 130, since 50*50+120*120=130*130.
-		// Target.SetLocation( Target.Location*0.99 + holdPos*0.01 );
-		// if (VSize(holdPos-Target.Location)<5.0) {
-			// Target.Velocity = VRand()*0.1;
-		// } else {
-			// If I do this on the client, distance and velocity go to inf!
-			Target.Velocity = Normal(holdPos - Target.Location) * 480.0 / Difficulty();
-		// }
+	#ifdef SIEGE_COMPATIBILITY
+	// sgBuilding will have a corresponding mesh actor
+	if (Level.NetMode != NM_DedicatedServer && sgBuilding(Target)!=None) {
+	// if (sgBuilding(Target)!=None) {
+		ClientLog("Checking for sgBuilding's mesh...");
+		meshCount=0;
+		foreach AllActors(class'sgMeshFX',sgTargetMesh) {
+			meshCount++;
+			if (sgTargetMesh.Instigator == Target || sgTargetMesh.Owner == Target) {
+			// if (VSize(sgTargetMesh.Location-Target.Location)<0.5) {
+				ClientLog("Got sgMesh by Instigator "$(sgTargetMesh.Instigator == Target)$" or Owner "$(sgTargetMesh.Owner == Target));
+				sgTargetMesh.SetPhysics(PHYS_ForceGun);
+				sgTargetMesh.RemoteRole = ROLE_DumbProxy;
+				break;
+			}
+		}
+		if (sgTargetMesh==None || (sgTargetMesh.Instigator != Target && sgTargetMesh.Owner != Target)) {
+			ClientLog("FAILED to get mesh for sgBuilding, seached "$meshCount$"!");
+		}
+	} else {
+		// ClientLog("NOT checking for sgBuilding's mesh!");
 	}
-	if (bTesting && Target.RemoteRole==ROLE_SimulatedProxy) {
-		Target.SetLocation(Target.Location + DeltaTime*Velocity);
-	}
+	#endif
+
 }
 
 /*simulated*/ function ReleaseTarget() {
 	if (Target != None) {
-		Target.SetPhysics(PHYS_Falling);
-		// Target.bSimFall = True;
-		Target = None;
-		if (Projectile(Target)!=None)
+		Target.bUnlit = False; // TODO: Should really be bTargetWasUnlit
+		if (Target.IsA('Projectile')) {
 			Target.Enable('Tick');
+			Target.SetPhysics(PHYS_Projectile); // OldPhysics :P
+		#ifdef SIEGE_COMPATIBILITY
+		} else if (sgBuilding(Target)!=None) {
+			// For sgBuildings (and hopefully decorations)
+			// Target.SetPhysics(OldPhysics); // Probably PHYS_None
+			Target.SetPhysics(PHYS_None);
+		#endif
+		} else if (Target.bCollideWorld) {
+			// Healthy, but maybe not ideal for projectiles?
+			Target.SetPhysics(PHYS_Falling);
+		} else {
+			// Target.SetPhysics(OldPhysics); // Probably PHYS_None
+			Target.SetPhysics(PHYS_None);
+		}
+		// TODO: Instead of setting PHYS_None, set PHYS_Flying, and dampen velocity until building stops.
+		// Target.bSimFall = True;
+		// TODO: We didn't reset RemoteRole!
+		DebugLog("ReleaseTarget() Target released with Physics="$Target.Physics);
+		Target = None;
+		// #ifdef SIEGE_COMPATIBILITY
+		// sgTargetMesh = None;
+		// #endif
 	}
-	DebugLog("ReleaseTarget() running NetMode="$Level.NetMode$" Role="$Role);
+}
+
+simulated function Tick(float DeltaTime) {
+	local Vector holdPos;
+
+	// Log("Tick() called on "$Level.NetMode$" Role "$Role$" (Remote="$RemoteRole$")");
+
+	if (Level.NetMode!=1 && Instigator==None) {
+		DebugLog(Self$".Tick() had to set Instigator from POwner.");
+		Instigator = POwner;
+	}
+
+	if (Target != None) {
+		ChangeTargetVelocity(DeltaTime);
+	}
+
+	SetTargetMovement(DeltaTime);
+
+}
+
+simulated function SetTargetMovement(float DeltaTime) {
+	local int meshCount;
+
+	// Only on the client
+	if (Level.NetMode!=1) {
+
+		// Check if replication has dropped the target:
+		if (Target==None) {
+			if (sgTargetMesh!=None || LastTarget!=None) {
+				ClientLog(Self$".Tick() Dropping sgTargetMesh "$sgTargetMesh$" and LastTarget="$LastTarget);
+			}
+			if (sgTargetMesh!=None) {
+				sgTargetMesh.SetPhysics(PHYS_None);
+				// TODO: reset role etc.
+			}
+			sgTargetMesh = None; // The call to clear it may not have got replicated to client.
+			LastTarget = None;
+		}
+
+		// Check replication has given us a new target:
+		if (Target!=None && Target!=LastTarget) {
+			// DebugLog(Self$".Tick() - Calling InitTarget()");
+			ClientLog(Self$".Tick() - Client got Target update!  ("$LastTarget$") -> Target="$Target);
+			LastTarget = Target;
+			//// Initialize the clientside actor separately from the serverside actor.
+			InitTarget();
+			// If we don't do this InitTarget(), the mesh does not move!
+			if (UpdateCount > LastUpdate+1)
+				ClientLog(Self$".Tick() FAIL skipped "$ (UpdateCount-LastUpdate-1) $" updates!");
+			LastUpdate = UpdateCount;
+		}
+
+	}
+
+	if (Target != None) {
+
+		// Log(Self$".Tick() called Target="$Target$" LastTarget="$LastTarget);
+
+		// Undo gravity?
+		// ...
+		// SetTargetMovement(DeltaTime);
+
+		#ifdef SIEGE_COMPATIBILITY
+		// sgBuilding will have a corresponding mesh actor
+		if (Level.NetMode != NM_DedicatedServer && sgBuilding(Target)!=None) {
+		// if (sgBuilding(Target)!=None) {
+			meshCount=0;
+			if (sgTargetMesh==None) {
+				foreach AllActors(class'sgMeshFX',sgTargetMesh) {
+					meshCount++;
+					if (VSize(sgTargetMesh.Location-Target.Location)<5.0 || sgTargetMesh.Instigator == Target || sgTargetMesh.Owner == Target) {
+						if (FRand()<0.1) { ClientLog(Self$".SetTargetMovement() Caught mesh "$sgTargetMesh$" for Target "$Target); }
+						sgTargetMesh.SetPhysics(PHYS_ForceGun);
+						sgTargetMesh.RemoteRole = ROLE_DumbProxy;
+						break;
+					}
+				}
+			}
+			if (sgTargetMesh==None) {
+				ClientLog(Self$".SetTargetMovement() FAILED to find Mesh for "$Target$", searched "$meshCount);
+			} else {
+				sgTargetMesh.SetLocation(Target.Location);
+				sgTargetMesh.Velocity = Target.Velocity;
+				if (FRand()<0.1) { DebugLog(Self$".SetTargetMovement() Moved mesh "$sgTargetMesh); }
+			}
+			// if (sgTargetMesh==None || VSize(sgTargetMesh.Location-Target.Location)>=0.5) {
+			// }
+		}
+		#endif
+
+	}
+
+}
+
+// Not simulated on purpose
+function ChangeTargetVelocity(float DeltaTime) {
+	local Vector holdPos;
+	local rotator changeRot;
+
+	if (Target==None || Instigator==None) {
+		Log(Self$".ChangeTargetVelocity() aborting with with Target="$None$", Instigator="$None);
+		return;
+	}
+
+	holdPos = Instigator.Location + 240.0 * Vector(Instigator.Rotation) + Vect(0,0,100);
+	// DebugLog("130 = "$VSize(holdPos-Instigator.Location));
+
+	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" NetMode="$Level.NetMode$" Role="$Role$" with Target="$Target$" and Instigator="$Instigator$" distance="$VSize(holdPos-Target.Location)$" velocity="$Target.Velocity);
+	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$VSize(holdPos-Target.Location)$" Target="$Target$" Location="$Target.Location$" Velocity="$Target.Velocity$" Instigator="$Instigator$" Location="$Instigator.Location$" Velocity="$Instigator.Velocity);
+	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$VSize(holdPos-Target.Location)$" Target="$Target$" Location="$Target.Location$" Velocity="$Target.Velocity$" Instigator="$Instigator);
+	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.loc="$Target.Location$" ins.loc="$Instigator.Location);
+	DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.V="$Int(VSize(Target.Velocity))$" ins.V="$Int(VSize(Instigator.Velocity)));
+
+		if (Role==ROLE_Authority /*|| bTesting*/) {
+		// if (True) { // Doing it on both causes client error: Target$" moved without proper hashing"
+
+			// Should end at distance 130, since 50*50+120*120=130*130.
+			// Target.SetLocation( Target.Location*0.99 + holdPos*0.01 );
+			// if (VSize(holdPos-Target.Location)<5.0) {
+				// Target.Velocity = VRand()*0.1;
+			// } else {
+				// If I do this on the client, distance and velocity go to inf!
+				Target.Velocity = Normal(holdPos - Target.Location) * 480.0 / Difficulty();
+			// }
+
+			// Soften velocity in the centre of the field
+			if (VSize(holdPos-Target.Location)<10.0) {
+				Target.Velocity *= FClamp(VSize(holdPos-Target.Location)/10.0,0.0,1.0);
+			}
+
+			// ClientLog("Trying to undo gravity.");
+			// Target.Velocity = Target.Velocity - Level.ZoneGravity*vect(0,0,0.5);
+			// Actually no need since we force position.
+			LastLoc = LastLoc + Target.Velocity*DeltaTime;
+			Target.SetLocation(LastLoc);
+
+		}
+
+		//// If we do this on the client, we get hashing errors!
+		// if (bTesting && Role!=ROLE_Authority) {
+			// Target.SetLocation(Target.Location + DeltaTime*Velocity);
+		// }
+
+		changeRot = Target.Rotation;
+		changeRot.Pitch += 0.05*(FRand()-0.5);
+		changeRot.Roll += 0.1*(FRand()-0.5);
+		changeRot.Yaw += 0.1*(FRand()-0.5);
+		Target.SetRotation(changeRot);
+		Target.DesiredRotation = changeRot;
+		// Try harder!
+		if (Target.IsA('Inventory')) {
+			Inventory(Target).bRotatingPickup = False;
+			// ...
+			// XX Inventory(Target).bRotating = False;
+		}
+
 }
 
 simulated function ThrowTarget() {
 	if (Target != None) {
 		Target.Velocity = Vector(Instigator.Rotation) * 1200.0 + Vect(0,0,300);
-		Target.Velocity *= 1.0/Difficulty();
-		ClientLog("Throwing "$Target$" with velocity "$VSize(Target.Velocity)$" difficulty="$Int(Difficulty()));
+		Target.Velocity *= 1.5/Difficulty();
+		// ClientLog("Throwing "$Target$" with velocity "$VSize(Target.Velocity)$" difficulty="$String(Difficulty()));
+		ClientLog("Throwing "$Target.getHumanName()$" with velocity "$VSize(Target.Velocity)$" (vertical "$Target.Velocity.Z$") difficulty="$String(Difficulty()));
 		ReleaseTarget();
+		// Target.SetPhysics(PHYS_Falling); // TODO: But what if it doesn't bCollideWorld?  Ideally we would like it to float to a stop in the air.
 	}
 }
 
@@ -207,10 +431,19 @@ simulated function Destroyed () {
 }
 
 function float Difficulty() { // num from 1.0 to 100.0
-	if (Target==None)
+	local float useMass;
+	if (Target==None) {
 		return 1.0;
-	else
-		return FClamp(1+Mass/50,1,100);
+	} else {
+		useMass = Target.Mass;
+		#ifdef SIEGE_COMPATIBILITY
+		if (sgBuilding(Target)!=None)
+			useMass *= 2;
+		if (sgBaseCore(Target)!=None)
+			useMass *= 10;
+		#endif
+		return FClamp(1+useMass/50,1,100);
+	}
 }
 
 function DropFrom (Vector StartLocation) {
@@ -234,40 +467,6 @@ simulated function Fire (optional float Value) {
 
 function AltFire (float Value) {
 	GotoState('AltFiring');
-}
-
-simulated function Tick(float DeltaTime) {
-	local Vector holdPos;
-	local rotator changeRot;
-
-	if (Level.NetMode!=1 && Instigator==None) {
-		DebugLog(Self$".Tick() had to set Instigator from POwner.");
-		Instigator = POwner;
-	}
-	if (Target != None) {
-
-		if (Level.NetMode!=1 && Target!=LastTarget) {
-			DebugLog(Self$".Tick() - Calling InitTarget()");
-			InitTarget();
-			LastTarget = Target;
-		}
-
-		SetTargetMovement(DeltaTime);
-
-		changeRot = Target.Rotation;
-		changeRot.Pitch += 0.05*(FRand()-0.5);
-		changeRot.Roll += 0.1*(FRand()-0.5);
-		changeRot.Yaw += 0.1*(FRand()-0.5);
-		Target.SetRotation(changeRot);
-		Target.DesiredRotation = changeRot;
-		// Try harder!
-		if (Target.IsA('Inventory')) {
-			Inventory(Target).bRotatingPickup = False;
-			// ...
-			// XX Inventory(Target).bRotating = False;
-		}
-
-	}
 }
 
 state NormalFire {
@@ -398,12 +597,12 @@ state DownWeapon {
 	}
 }
 
-function Actor FindClosestActor(Actor from) {
+function Actor FindTarget(Actor from) {
 	local Actor A;
-	local int distance;
-	local int deltaRotation;
+	local float distance;
+	local float deltaRotation;
 	local Actor bestActor;
-	local int bestDistance;
+	local float bestDistance;
 	bestActor = None;
 	foreach VisibleActors(class'Actor', A, 1024, from.Location) {
 	// foreach AllActors(class'Actor', A) { // not using VisibleActors gets us more invisible actors like InventorySpot/Light/...
@@ -424,19 +623,21 @@ function Actor FindClosestActor(Actor from) {
 			continue;
 		}
 
-		distance = VSize(A.Location - from.Location);
-		deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
-		// if (deltaRotation < 8192 || deltaRotation > 8192*7) {
-		if (deltaRotation > 8192*4) {
-			deltaRotation = 8192*8 - deltaRotation;
-		}
-		if (deltaRotation < 8192 && deltaRotation > -8192) {
+		// distance = VSize(A.Location - from.Location);
+		// deltaRotation = Abs( Rotator(A.Location - from.Location).Yaw - from.Rotation.Yaw ) % 65536;
+		// // if (deltaRotation < 8192 || deltaRotation > 8192*7) {
+		// if (deltaRotation > 8192*4) {
+			// deltaRotation = 8192*8 - deltaRotation;
+		// }
+		// if (deltaRotation < 8192 && deltaRotation > -8192) {
+		// "distance" is now actually correspondence with line-of-sight
+		distance = 1000 - Normal(Vector(from.Rotation)) Dot Normal(A.Location-from.Location);
 			if (bestActor == None || distance < bestDistance) {
 				bestActor = A;
 				bestDistance = distance;
 				// PlayerPawn(from).ClientMessage("  " $ A $" (" $ deltaRotation $ ") -> " $ distance $ "");
 			}
-		}
+		// }
 
 	}
 	return bestActor;
@@ -445,16 +646,17 @@ function Actor FindClosestActor(Actor from) {
 
 
 defaultproperties {
-		bCanThrow=False
+		bCanThrow=True // To make it sharable in Siege?
 		FireOffset=(X=115.00,Y=15.00,Z=2.00),
 		// ProjectileClass=class'kxGrapple.GrapplingHook'
 		// AltProjectileClass=class'kxGrapple.GrapplingHook'
 		DeathMessage="%k hurled %o across the room!"
+		PickupMessage="You got the kx Force Gun."
 		// bRotatingPickup=True
 		ItemName="kx Force Gun"
 		PlayerViewOffset=(X=5.00,Y=-4.00,Z=-7.00),
 		StatusIcon=Texture'Botpack.Icons.UseTrans'
-		Mass=25.00
+		Mass=200.00
 		SelectSound=Sound'UnrealI.flak.load1'
 		// NetPriority=2.95 // I was hoping here to make replication of NextCommand as fast as possible.
 
@@ -462,16 +664,46 @@ defaultproperties {
 		InventoryGroup=1
 		FiringSpeed=1.0
 		PickupAmmoCount=1
-		PlayerViewMesh=Mesh'Botpack.TranslocR'
-		PickupViewMesh=Mesh'Botpack.Trans3loc'
-		ThirdPersonMesh=Mesh'Botpack.Trans3loc'
-		StatusIcon=Texture'Botpack.Icons.UseTrans'
-		Icon=Texture'Botpack.Icons.UseTrans'
+		// PlayerViewMesh=Mesh'Botpack.TranslocR'
+		// PickupViewMesh=Mesh'Botpack.Trans3loc'
+		// ThirdPersonMesh=Mesh'Botpack.Trans3loc'
+		// StatusIcon=Texture'Botpack.Icons.UseTrans'
+		// Icon=Texture'Botpack.Icons.UseTrans'
 		// Mesh=Mesh'Botpack.Trans3loc'
 
 		// TODO: These should be False!
 		bLogging=True
 		bPickupPlayers=True
-		// bTesting=True
+		bTesting=False
+
+	// From ImpactHammer:
+		InstFlash=0.0
+		InstFog=(X=475.00000,Y=325.00000,Z=145.00000)
+		MyDamageType=Impact
+		InventoryGroup=1
+		AltFireSound=Sound'Botpack.ImpactFire'
+		// TensionSound=Sound'Botpack.ImpactLoop'
+		bMeleeWeapon=True
+		bRapidFire=true
+		RefireRate=1.000000
+		AltRefireRate=1.000000
+		FireSound=Sound'Botpack.ImpactAltFireRelease'
+		Misc1Sound=Sound'Botpack.ImpactAltFireStart'
+		PlayerViewOffset=(X=3.800000,Y=-1.600000,Z=-1.800000)
+		PlayerViewMesh=Mesh'Botpack.ImpactHammer'
+		PickupViewMesh=Mesh'Botpack.ImpPick'
+		Mesh=Mesh'Botpack.ImpPick'
+		ThirdPersonMesh=Mesh'Botpack.ImpactHandm'
+		StatusIcon=Texture'Botpack.Icons.UseHammer'
+		PickupSound=Sound'UnrealShare.Pickups.WeaponPickup'
+		SelectSound=Sound'Botpack.ImpactPickup'
+		Icon=Texture'Botpack.Icons.UseHammer'
+		bMeshCurvy=False
+		bNoSmooth=False
+		SoundRadius=50
+		SoundVolume=200
+		WeaponDescription="Classification: Gravitational Field Piston\\n\\nPrimary Fire: Pulls objects toward you and holds them in the air\\n\\nSecondary Fire: Throws held objects away from you."
+		NameColor=(R=255,G=192,B=0)
+
 }
 

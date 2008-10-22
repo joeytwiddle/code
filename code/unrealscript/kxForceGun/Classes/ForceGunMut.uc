@@ -2,7 +2,8 @@
 // ForceGunMut
 //================================================================================
 
-// TODO: bRemoveHammer does remove the hammer, but Pure throws some Accessed None errors, and the ForceGun items are left as pickups on the map at the spawnpoints!
+// TODO: bRemoveHammer does remove the hammer, but Pure throws some Accessed None errors!
+// TODO: Secondary fire with nothing held = boost off nearest wall?  Against floor, should could gentle hover. ^^
 
 class ForceGunMut extends Mutator Config(kxForceGun);
 
@@ -62,10 +63,12 @@ function GiveWeaponsTo (Pawn P) {
     if (Inv != None) {
       Log("[ForceGunMut] "$P.getHumanName()$" already has a "$Inv$"!"); // I've seen this, so I guess CheckReplacement() is working.
     } else {
-      w = Spawn(class'ForceGun');
+      w = Spawn(class'ForceGun',P);
       if (w == None) {
          Log(Self$".GiveWeaponsTo("$P.getHumanName()$") Warning! Failed to spawn ForceGun!");
       } else {
+         w.bHeldItem=True;
+         w.RespawnTime=0;
          // w.bRotatingPickup = False; // otherwise it appears at the spawnpoint!  This did not work.  Maybe we are given the weapon elsewhere.
          w.Instigator = P;
          w.BecomeItem();
