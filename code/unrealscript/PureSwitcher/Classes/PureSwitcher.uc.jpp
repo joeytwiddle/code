@@ -1,0 +1,172 @@
+// TODO CONSIDER: In case of failure, detect "mutate fixpure" disable pure and restart map.
+//                Maybe an admin can do this anyway with "mutate disablepure" and "admin servertravel" but can they disable purestats also?
+
+// TODO: We may want a list of maps for which to disable pure, e.g. BleakNFR and EvilBedrooms.
+
+// TODO: We could also check all the weapons for Pure-incompatible ones, but we might catch them too late to disable it.
+
+// NOTE: If server is switched by another means than mapvote, e.g. servertravel or ServerMode, then PureSwitcher will not engage, so the admin must ensure that Pure is disable/enabled as required.
+
+class PureSwitcher expands Mutator;
+
+#define CHECK_GAMETYPE
+#define CHECK_MUTATORS
+// #define CHECK_MAPVOTE_MESSAGES
+
+var config String PureVersion;
+var config String PureStatVersion;
+
+#ifdef CHECK_GAMETYPE
+var config String IncompatibleGametypes;
+#endif
+
+#ifdef CHECK_MUTATORS
+var config String IncompatibleMutators;
+#endif
+
+#ifdef CHECK_MAPVOTE_MESSAGES
+var config String IncompatibleMVLAPrefixes;
+var bool bDoneCheck;
+#endif
+
+defaultproperties {
+	// TODO:
+	// PureSwitcher is currently oriented towards MapVoteLA.
+	// For redundancy, we should put incompatible gametypes here:
+	// IncompatibleMVLAPrefixes="SiegeXXL2e,SLVArena,BattyBT"
+	// If we can intercept ServerTravel (see DynamicPackageLoader) then we can fix this before switching map.
+	// Or if we detect a map has loaded with incompatible settings, we can fix settings and force a map reload(switch).
+	// And rename the following: IncompatibleMVPrefixes="SG,XXL,FB,..."
+	#ifdef CHECK_GAMETYPE
+	IncompatibleGametypes="SiegeGI,FreeBuildGI,FastBuildGI,SiegeAssault,SiegeCTF,SiegeDM,SiegeDomination,SiegeTDM"
+	#endif
+	#ifdef CHECK_MUTATORS
+	IncompatibleMutators="ZeroPingPlus103,ZeroPingPlus,ForceBehindView"
+	#endif
+	#ifdef CHECK_MAPVOTE_MESSAGES
+	IncompatibleMVLAPrefixes="SG,fSG,sgAS,sgCTF,sgDM,sgDOM,sgTDM,publicCTF,pugCTF,pugzpCTF,4v4pugSG,5v5pugSG,6v6pugSG"
+	#endif
+	// Maybe we don't need to include the pug modes since servermode did that before anyway.
+	PureVersion="RC7G"
+	PureStatVersion="7G"
+}
+
+function DisableUTPure(optional String Reason) {
+	Log("PureSwitcher: Disabling UTPure"$PureVersion$" and PureStat"$PureStatVersion$" ("$Reason$")");
+	ConsoleCommand("SET UTPure"$PureVersion$".UTPure bUTPureEnabled False");
+	ConsoleCommand("SET PureStat"$PureStatVersion$".PureStat bEnabled False");
+}
+
+function EnableUTPure(optional String Reason) {
+	Log("PureSwitcher: Enabling UTPure"$PureVersion$" and PureStat"$PureStatVersion$" ("$Reason$")");
+	ConsoleCommand("SET UTPure"$PureVersion$".UTPure bUTPureEnabled True");
+	ConsoleCommand("SET PureStat"$PureStatVersion$".PureStat bEnabled True");
+}
+
+function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
+	if (InStr(String(Other),"UTPure")>=0) {
+		Log("PureSwitcher.CheckReplacement(): Caught "$Other);
+	}
+	return Super.CheckReplacement(Other,bSuperRelevant);
+}
+
+function PreBeginPlay() {
+	local String gametype;
+	gametype = Mid(""$Level.Game.class,Instr(""$Level.Game.class,".")+1); // CTF-Face.CTFGame0 -> CTFGame0
+	Log("[PureSwitcher] Gametype = "$ gametype);
+	#ifdef CHECK_GAMETYPE
+	if (Instr(","$IncompatibleGametypes$",", ","$gametype$",")>=0) {
+		DisableUTPure("Gametype "$gametype);
+	} else {
+		EnableUTPure("Gametype "$gametype);
+	}
+	#endif
+	Super.PreBeginPlay();
+	CheckMutators();
+}
+
+function PostBeginPlay() {
+	Level.Game.RegisterMessageMutator(Self);
+	Super.PostBeginPlay();
+	// // We don't have to do this, if detection is working fine.  But it should offer some peace of mind in case detection fails for some reason.
+	// // We disable Pure by default.  It will only come ON next map, if next-map detection decides it should.
+	// DisableUTPure();
+	CheckMutators(); // This call and the one in PreBeginPlay() both happen too early.
+}
+
+function CheckMutators() {
+	#ifdef CHECK_MUTATORS
+	local Mutator m;
+	local int mCount;
+	local String mutPackage,mutName;
+	m = Level.Game.BaseMutator;
+	while (m != None) {
+		mCount++;
+		mutPackage = StrBeforeFirst(String(m.class),".");
+		mutName = StrAfterFirst(String(m.class),".");
+		if (StrContains(","$IncompatibleMutators$",",","$mutPackage$",") || StrContains(","$IncompatibleMutators$",",","$mutName$",")) {
+			DisableUTPure("Mutator "$m.class$" is incompatible with UTPure.");
+		}
+		m = m.NextMutator;
+	}
+	Log("PureSwitcher.CheckMutators() Checked "$mCount$" mutators.");
+	#endif
+}
+
+function AddMutator(Mutator mut) {
+	// TODO: why don't we check the mutator, before we add it - then we have the option of dropping the mutator rather than pure.
+	//       ofc this will only catch mutators added after us in the list, we must still check those before us, which have already been added.
+	Super.AddMutator(mut);
+	CheckMutators(); // TODO: This is overkill, but late enough to work
+}
+
+// This gets called once for each player on the server, and once for the UTServerAdminSpectator.
+// If there are no players, and no UTServerAdminSpectator (i.e. if UTDC is not present - err is it UTDC that created the UTServerAdminSpectator?!), then it probably won't get checked!!
+function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
+	local String NextMap;
+	#ifdef CHECK_MAPVOTE_MESSAGES
+	// if (InStr(Msg,"Next map will be ")>=0) {
+		// NextMap = Right(Msg,17);
+	if (!bDoneCheck) {
+		// DONE: To avoid accidentally checking matching string said by a specatator, we should check that Sender is a type of BDBMapVote.
+		if (InStr(Caps(""$Sender),Caps(".BDBMapVote"))>=0) { // TODO: This detects MapVoteLA, and presumably (but untested) BDBMapVote, but what about x3dfxmapvote?!
+			Log("PureSwitcher.MutatorBroadcastMessage(): Checking for BDB: "$Sender$": "$Msg);
+			// There are two ways that MapVoteLA tells us the map is switching:
+			// TODO: What about BDBMapVote and x3dfxmapvote?!
+			if (InStr(Msg," has won.")>=0) {
+				// Log("PureSwitcher: "$Sender$" sent "$Msg);
+				bDoneCheck=True;
+				NextMap = Left(Msg,InStr(Msg," "));
+				CheckMap(NextMap);
+			} else if (InStr(Msg,"Server Admin has force a map switch to ")==0) {
+				// Log("PureSwitcher: "$Sender$" sent "$Msg);
+				bDoneCheck=True;
+				NextMap = Right(Msg,Len("Server Admin has force a map switch to "));
+				CheckMap(NextMap);
+			}
+		}
+		// if (InStr(Msg,"Server admin has forced a ...")>=0) {
+	}
+	#endif
+	return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type);
+}
+
+function CheckMap(String NextMap) {
+	local String NextGametype;
+	// Log("PureSwitcher.CheckMap(): NextMap = "$NextMap);
+	NextGametype = Left(NextMap,InStr(NextMap,"-"));
+	Log("PureSwitcher.CheckMap(): NextMap="$NextMap$ " NextGametype="$NextGametype);
+	// if (NextGametype ~= "SG") {
+	#ifdef CHECK_MAPVOTE_MESSAGES
+	if (InStr(","$IncompatibleMVLAPrefixes$",",","$NextGametype$",")>=0) {
+		BroadcastMessage("UTPure and PureStats will be disabled");
+		DisableUTPure("Prefix "$NextGametype);
+	} else {
+		BroadcastMessage("UTPure and PureStats will be enabled");
+		EnableUTPure("Prefix "$NextGametype);
+	}
+	#endif
+}
+
+#include "../../JLib/jlib.uc.jpp"
+
