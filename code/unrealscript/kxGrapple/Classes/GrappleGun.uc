@@ -497,7 +497,7 @@ defaultproperties {
     ItemName="kx Grappling Hook"
     PlayerViewOffset=(X=5.00,Y=-4.00,Z=-7.00),
     StatusIcon=Texture'Botpack.Icons.UseTrans'
-    Mass=25.00
+    Mass=75.00
     bAutoDrop=False
     SelectSound=Sound'UnrealI.flak.load1'
     // These should really be FireSound and AltFireSound:
