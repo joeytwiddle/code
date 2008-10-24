@@ -1,6 +1,8 @@
 # DATA_DIR="$HOME/eventarr/data"
 # DATA_DIR="/home/utquery/eventarr/data"
-DATA_DIR="`dirname "$0"`"/data
+# DATA_DIR="`dirname "$0"`"/data
+DATA_DIR="$HOME/.utb0t/event_data"
+mkdir -p "$DATA_DIR"
 
 CATEGORY="ut"
 
@@ -143,7 +145,9 @@ case "$COMMAND" in
 	listevents)
 		cd "$EVENTS_DIR"
 		for EVENTNUM in *
-		do "$ME" showevent "$EVENTNUM"
+		do
+			[ "$EVENTNUM" = CVS ] && continue
+			"$ME" showevent "$EVENTNUM"
 		done
 	;;
 
