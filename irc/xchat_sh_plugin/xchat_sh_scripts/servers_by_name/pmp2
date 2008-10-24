@@ -3,6 +3,10 @@ if [ -f "$LOGFILE" ]
 then
 	TIME_REMAINING=` tail -n 20 "$LOGFILE" | grep "<PmP|Maria>" | tail -n 1 | takecols 5 | sed 's+^\[\(.*\):\(.*\)\]+\1m\2s remaining+' `
 	SCORES=`sh ut_servers/scorefromlivechan "$LOGFILE"`
+	## Avoid scores from *last* map showing, after map has switched.
+	if [ "$TIME_REMAINING" = "20m00s remaining" ]
+	then SCORES="" ; TIME_REMAINING=""
+	fi
 fi
 
 QUERY=`
