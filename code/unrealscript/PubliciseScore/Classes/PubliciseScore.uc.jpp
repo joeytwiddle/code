@@ -23,7 +23,7 @@ var bool Initialized;
 var string titleDefault;
 
 defaultproperties {
-	bShowTeamCounts=True
+	bShowTeamCounts=False // Only really wanted on XOL well we had the incorrect count in query
 	bShowTeamScore=True
 	bShowTeamNames=False
 	bShowTime=True
