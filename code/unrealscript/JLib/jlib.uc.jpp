@@ -191,3 +191,17 @@ function String StrReplaceAll(String in, String search, String replace) {
 	return out;
 }
 
+function String StrPop(out String str, String delimiter) {
+	local int i;
+	local String result;
+	i = InStr(str,delimiter);
+	if (i>=0) {
+		result = Left(str,i);
+		str = Mid(str,i+Len(delimiter));
+	} else {
+		result = str;
+		str = "";
+	}
+	return result;
+}
+
