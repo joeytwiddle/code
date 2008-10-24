@@ -46,8 +46,9 @@
 // LATEST FUN BUGS: odd out the front of face, if i wrap the line around the outer wall, the lengths displayed do not add up!
 // DONE: grapple should not hurt teammate
 // CONSIDER: If we could do the maths correctly, we could do a trace and work out the ideal trajectory to the target point, forcing the correct ThrowAngle.  Then we could remove the anti-grav hax and have a nice soaring grapple.  :)
-// TODO: Damage should be only when grapple is pulled back.
+// DONE: Damage when grapple is pulled back.
 // TODO: Allow maximum range on the grappling hook (aka maximum line length).
+// DONE: Disabled winch when *also* crouching, so you can fire and swing, or fire and winch, or drop without firing!
 
 class GrapplingHook extends Projectile Config(kxGrapple);
 
@@ -106,6 +107,10 @@ replication {
     // InitLineSprite,DoLineOfSightChecks; // This was what was needed to get the variables replicated into the lines.
   // reliable if (Role == ROLE_Authority)
     // UpdateLineSprite; // needed to make it reliable since InitLineSprite was sometimes called from there?
+}
+
+function float RateSelf( out int bUseAltMode ) {
+	return 2;
 }
 
 auto state Flying {
@@ -221,13 +226,25 @@ simulated function SetMaster (GrappleGun W) {
 }
 
 simulated event Destroyed () {
-  local int i;
+  local int grapCnt;
   local GrapplingHook G;
   local GrapplingLine NextLine;
-  foreach AllActors(class'GrapplingHook',G) {
-    i++;
+  if (bLogging) {
+    foreach AllActors(class'GrapplingHook',G) {
+      grapCnt++;
+    }
+    Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$grapCnt$" GrapplingHooks on the level.");
   }
-  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".Destroyed() destructing with "$i$" GrapplingHooks on the level."); }
+
+  // Cause HitDamage on grapple-retract, if we were grappled to an enemy pawn:
+  if ( !(
+      Level.Game.IsA('TeamGamePlus') && Pawn(Thing)!=None && bThingPawn
+      && Pawn(Thing).PlayerReplicationInfo!=None && Instigator.PlayerReplicationInfo!=None
+      && Pawn(Thing).PlayerReplicationInfo.Team == Instigator.PlayerReplicationInfo.Team
+  ) ) {
+    Thing.TakeDamage(2*HitDamage,Instigator,(Thing.Location+Location)/2,vect(0,0,0),'');
+  }
+
   Master.GrapplingHook = None;
   AmbientSound = None;
   Master.AmbientSound = None;
@@ -612,7 +629,7 @@ state() PullTowardStatic {
 
       //// We know the length of the line!
 
-      if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
+      if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0 && PlayerPawn(Instigator).bFire==0) {
         doInwardPull = False;
         lineLength = currentLength;
         // lineLength = lineLength + 2 * 0.3 * GrappleSpeed*DeltaTime;
@@ -632,7 +649,7 @@ state() PullTowardStatic {
         // if (VSize(Instigator.Velocity - Velocity) > 1400) {
           // Instigator.Velocity = 1400 * Normal(Instigator.Velocity - Velocity) + Velocity;
         // }
-      } else if ((lineLength<=MinRetract && bSingleLine) || (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0)) { // TODO: right now this applies even if weapon is switched, and we primary fire with that :f
+      } else if ( (lineLength<=MinRetract && bSingleLine) || (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0) || (bPrimaryWinch && bCrouchReleases && PlayerPawn(Instigator).bFire!=0 && PlayerPawn(Instigator).bDuck!=0) ) { // TODO: right now this applies even if weapon is switched, and we primary fire with that :f
         Master.AmbientSound = None;
         AmbientSound = None;
       } else {
@@ -679,7 +696,10 @@ state() PullTowardStatic {
       //// Try to deal with swing without knowing the line length.
       //// We assume the line length is whatever distance we are from the hook.
 
-      if (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0) {
+      if ( (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0) ||
+           (bPrimaryWinch && bCrouchReleases && PlayerPawn(Instigator)!=None &&
+            PlayerPawn(Instigator).bFire!=0 && PlayerPawn(Instigator).bDuck!=0)
+      ) {
         power = 0.0;
         Master.AmbientSound = None;
         AmbientSound = None;
@@ -692,7 +712,7 @@ state() PullTowardStatic {
         AmbientSound = PullSound;
       }
       if (bCrouchReleases) {
-        if (PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
+        if (PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0 && PlayerPawn(Instigator).bFire==0) {
            // We make no pull with the line at all, gravity affects us and we get our new line length.
            power = 0.0;
            // Instigator.AddVelocity( Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * -Inward );
@@ -896,7 +916,7 @@ state() PullTowardDynamic {
 
     // We could dampen Thing's movement.  He is carrying the mass of Instigator now!
 
-    if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0) {
+    if (bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0 && PlayerPawn(Instigator).bFire==0) {
       // Player is pressing release.  Do not affect his velocity with the line.
       Master.AmbientSound = ReleaseSound;
       AmbientSound = ReleaseSound;
