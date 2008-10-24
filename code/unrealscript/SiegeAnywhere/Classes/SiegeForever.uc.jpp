@@ -7,6 +7,10 @@ class SiegeForever extends Mutator config(SiegeForever);
 // DONE: If the gametype is Assault, then red/blue is not enough - we end up with buildings swapping side!  We should say 0=Attackers and 1=Defenders, and map from that to/from Red/Blue, according to Team Assault(Level.Game).Attacker and Defender.
 // CONSIDER: Could be really clever, and detect whether the map is symmetrical, using some distance-minimisation search on the PlayerStarts, and if so, spawn exactly the same sets of buildings for both teams.
 // DONE: do not load or save sgBaseCore!
+// DONE: fixed the multi-color bug (failed to decide whether MaxTeams=4 or 2!)
+// TODO: the config file is hard to read - a nicer format might be: CTF-Face 0 SiegeXXL2e.sgSupplier@6975,848,-1883 SiegeXXL2e.sgHealthPod@6974,847,-1882
+// TODO: sgBuildings moved by the kxForceGun can cause doubles to get saved in the config (if bRememberOld/bAutoSave is set).
+// TODO: The server sometimes segfaults when using reloaded Teleporters!  It was fine when I made 2 using my 1 playerpawn.
 
 #define MaxTeams 4
 #define MaxMaps 48
@@ -19,6 +23,7 @@ var config bool bAutoLoad,bSaveAtEnd,bAutoSave,bRememberOld,bSpawnFairly;
 var config String Maps[MaxMaps]; // 0-MaxMaps
 var config String Types[MaxTypes]; // 0-MaxTypes
 var config String BuildingsData[MAX_ALL]; // 0-(MaxTeams*MaxTypes*MaxMaps)
+var config bool bPlayersMaySave,bPlayersMayLoad,bPlayersMayClear;
 
 var bool bDoneLoad;
 
@@ -31,14 +36,17 @@ defaultproperties {
 	bAutoLoad=True       // When set, stored buildings will be loaded at the start of the game.  (Otherwise only accessible through "mutate load".)
 	bSaveAtEnd=True      // When set, at the end of the game the remaining buildings will be saved.  (May cause lag at 0:00 if game goes into overtime.)
 	bAutoSave=False      // When set, buildings in the game will be saved at regular intervals (CAUSES LAG!).
-	bRememberOld=False   // When set, will keep records of old buildings which have been destroyed.  (Will only remember buildings destroyed mid-game if bAutoSave=True.)
+	bRememberOld=False   // When set, will keep records of old buildings which have been destroyed.  (Will only remember buildings destroyed mid-game if bAutoSave=True.)  When unset, only remembers the buildings that were in the game when the buildings were last saved.
 	bSpawnFairly=True    // When set, on loading buildings, will only spawn an equal number of buildings of each type for each team.
 	// DONE: bAutoSave already does this O_o // bKeepDestroyed=True  // When set, buildings will be scanned every 3 minutes, but SaveConfig() will not be run, to avoid lag.  LIES the lag is in the processing!
+	bPlayersMaySave=True
+	bPlayersMayLoad=True
+	bPlayersMayClear=False
 }
 
 function PreBeginPlay() {
 	Super.PreBeginPlay();
-	SetTimer(20,True);
+	SetTimer(12,True);
 }
 
 event Timer() {
@@ -51,23 +59,26 @@ event Timer() {
 }
 
 function Mutate(String str, PlayerPawn Sender) {
-	if (Sender.bAdmin) {
-		// You do not need to be an admin to save the buildings:
-		if (str ~= "SAVE" || str ~= "SAVEBUILDINGS") {
-			SaveBuildings();
-		}
-		// Only an admin can run these commands, or any player in the first 10 seconds of the game.
-		if (Sender.bAdmin || Level.TimeSeconds < 10) {
-			if (str ~= "LOAD" || str ~= "LOADBUILDINGS") {
-				TryToLoadBuildings();
-				BroadcastMessage(Sender.getHumanName()$" has loaded some buildings.  Type mutate save to save them..");
-			}
-			if (str ~= "CLEAR" || str ~= "CLEARBUILDINGS" || str ~= "KILLBUILDINGS" || str ~= "RESET") {
-				KillAllBuildings(); // Admin could also try: admin killall sgBuilding
-				// BroadcastMessage(Sender.getHumanName()" cleared all the buildings.");
-				BroadcastMessage(Sender.getHumanName()$" cleared all the buildings.  Type mutate load to re-load them.");
-			}
-		}
+	// You do not need to be an admin to save the buildings:
+	// TODO: This is nice that anyone can do it, but since it causes lag, we don't really want players spamming it mid-game.
+	if ( (Sender.bAdmin || bPlayersMaySave)
+		&& (str ~= "SAVE" || str ~= "SAVEBUILDINGS")
+	) {
+		SaveBuildings();
+	}
+	// Only an admin can run these commands, or any player in the first 10 seconds of the game.
+	if ( (Sender.bAdmin || bPlayersMayLoad)
+		&& (str ~= "LOAD" || str ~= "LOADBUILDINGS")
+	) {
+		TryToLoadBuildings();
+		BroadcastMessage(Sender.getHumanName()$" has loaded some buildings.  Type mutate save to save them..");
+	}
+	if ( (Sender.bAdmin || bPlayersMayClear)
+		&& (str ~= "CLEAR" || str ~= "CLEARBUILDINGS" || str ~= "KILLBUILDINGS" || str ~= "RESET")
+	) {
+		// TODO: might be a good idea to save them first!
+		KillAllBuildings(); // Admin could also try: admin killall sgBuilding
+		BroadcastMessage(Sender.getHumanName()$" cleared all the buildings.  Type mutate load to reload them.");
 	}
 	Super.Mutate(str,Sender);
 }
@@ -79,24 +90,28 @@ function TryToLoadBuildings() {
 	blueOwner = None;
 	// We must find a PlayerPawn for every building.
 	// In the end, I don't care if he's on the wrong team!
+	// We can load red buildings with a blue pawn, but they will end up with a blue glow!
+	// TODO: Can't we use a Bot when a Player is not present?  (Player is preferable ofc, for ownership.)
 	for (p=Level.PawnList;p!=None;p=p.NextPawn) {
-		// if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
-		if (p.IsA('PlayerPawn') && p.PlayerReplicationInfo != None) {
-			if (p.PlayerReplicationInfo.Team == 0 || redOwner == None) {
+		if ((p.IsA('PlayerPawn') || p.IsA('Bot')) && p.PlayerReplicationInfo != None) {
+			if (p.PlayerReplicationInfo.Team == 0) { // || redOwner == None) {
 				redOwner = p;
 			}
-			if (p.PlayerReplicationInfo.Team == 1 || blueOwner == None) {
+			if (p.PlayerReplicationInfo.Team == 1) { // || blueOwner == None) {
 				blueOwner = p;
 			}
 		}
 	}
 	if (redOwner != None && blueOwner != None) {
-		if (bAutoLoad) {
+		if (bAutoLoad && !DeathMatchPlus(Level.Game).bTournament) {
 			LoadBuildings(redOwner,blueOwner);
 			BroadcastMessage("Buildings were auto-loaded.  Type mutate clear to remove them.");
 		}
 		bDoneLoad=True;
 		SetTimer(60,True);
+	} else {
+		if (FRand()<0.1)
+			Log("SiegeAnywhere.SiegeForever.TryToLoadBuildings() Waiting for red and blue Pawns...");
 	}
 }
 
@@ -121,13 +136,13 @@ function Pawn GetRandomPlayer(int team) {
 	local int count;
 	count = 0;
 	for (p=Level.PawnList;p!=None;p=p.NextPawn) {
-		if (p.IsA('PlayerPawn') && p.PlayerReplicationInfo != None && p.PlayerReplicationInfo.Team == team) {
+		if ((p.IsA('PlayerPawn') || p.IsA('Bot')) && p.PlayerReplicationInfo != None && p.PlayerReplicationInfo.Team == team) {
 			count++;
 		}
 	}
-	count = count * FRand() + 1;
+	count = 1 + count * FRand();
 	for (p=Level.PawnList;p!=None;p=p.NextPawn) {
-		if (p.IsA('PlayerPawn') && p.PlayerReplicationInfo != None && p.PlayerReplicationInfo.Team == team) {
+		if ((p.IsA('PlayerPawn') || p.IsA('Bot')) && p.PlayerReplicationInfo != None && p.PlayerReplicationInfo.Team == team) {
 			count--;
 			if (count == 0)
 				return p;
@@ -147,6 +162,7 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 	local int numToSkip;
 	local Actor sgB;
 	local Pawn pOwner;
+	local int resetTeam;
 	map = GetMap();
 	// local string LoadedTypes;
 	for (i=0;i<MaxTypes;i++) {
@@ -199,7 +215,12 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 								if (team == 1)
 									pOwner = blueOwner;
 							}
+							resetTeam = pOwner.PlayerReplicationInfo.Team;
+							if (pOwner.PlayerReplicationInfo.Team != team)
+								pOwner.PlayerReplicationInfo.Team = team;
+							// TODO: If there is already a building of the same type at almost this exact location, do not build a second.
 							sgB = Spawn(typeClass,pOwner,,Vector(buildingLocation));
+							pOwner.PlayerReplicationInfo.Team = resetTeam;
 							if (sgB == None) {
 								Log("SiegeForever.LoadBuildings(): Failed to spawn "$type$" "$typeClass$" at ("$buildingLocation$")");
 							} else {
@@ -207,9 +228,12 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 								sgBuilding(sgB).Grade = 2;
 								if (FRand() < 0.5)
 									sgBuilding(sgB).Grade = 3;
-								// sgBuilding(sgB).BuildTime = FRand()*10.0;
+								// Build faster than normal.  Randomize for twinkle! :D
+								// TODO: even prettier (but harder) would be to slightly stagger the spawning.
+								// sgBuilding(sgB).BuildTime = sgBuilding(sgB).BuildTime / (2+FRand()*4);
 								// sgBuilding(sgB).Energy = 75.0;
-								sgBuilding(sgB).Energy = sgBuilding(sgB).MaxEnergy;
+								// sgBuilding(sgB).Energy = sgBuilding(sgB).MaxEnergy;
+								sgBuilding(sgB).SCount = sgBuilding(sgB).SCount / (3+FRand()*7);
 								// sgBuilding(sgB).Health = 75.0;
 								// sgBuilding(sgB).DoneBuilding = True;
 								// Log("SiegeForever.LoadBuildings(): Spawned "$sgB$" ("$Pawn(sgB.Owner).PlayerReplicationInfo.Team$")");
@@ -277,12 +301,12 @@ function int GetBuildingsI(String map, String type, int team) {
 	local int i,j,k;
 	local String key;
 	team = FixTeamForAssault(team);
-	i = (team % 2); // 0 or 1
+	i = (team % MaxTeams); // 0-3
 	j = (GetTypeI(type) % MaxTypes);
 	k = (GetMapI(map) % MaxMaps);
 	// key = map $ ":" $ type $ ":" $ team $ ":";
 	// return i + (j * 2) + (k * MaxTypes*2);
-	return i + j*2 + k*2*MaxTypes;
+	return i + j*MaxTeams + k*MaxTeams*MaxTypes;
 }
 
 function int GetMapI(String map) {
