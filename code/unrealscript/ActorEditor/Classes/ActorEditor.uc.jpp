@@ -3,6 +3,13 @@
 // TODO: things to match (logical combinations of (map-regexp) or (game-variable)
 //       things to change: add mutator, change setting of class, change setting of map, spawn object at position
 
+// e.g.: on CTF-LuciusCB set FlagBase1.DrawScale 2.5
+// on <condition> do <action>
+// action = set <actor>.<varname> <newvalue> | remove <actor> | removeall <actor_type> | ...
+
+// TODO: ActorEditor only works on actors which exist at (before) the start of the game.  (It never acts on an sgBaseCore for example.)
+//       Maybe we should check whether to act on Actors at CheckReplacement() stage.
+
 class ActorEditor expands Mutator config(ActorEditor);
 
 // Wizard may want to: replace a specific actor, replace all actors matching "...", change properties of one/more actors
@@ -54,7 +61,6 @@ var Actor workingActor;
 
 function PostBeginPlay() {
 	local Actor A;
-	local int i;
 
 	// If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
    // Level.Game.BaseMutator.AddMutator(Self);
@@ -66,17 +72,36 @@ function PostBeginPlay() {
 
 	// Update all edits from config:
 	foreach AllActors(class'Actor', A) {
-		for (i=0;i<1024;i++) {
-			if (UpdateActor[i] == "") {
-				break; // TODO: this makes the updating faster, BUT we must that lower lines are moved up if any lines are cleared
-			}
-			if ( Caps(UpdateActor[i]) == Caps(""$A) ) {
-				Log("ActorEditor: Updating "$A$"."$UpdateProperty[i]$" -> "$UpdateValue[i]);
-				A.SetPropertyText(UpdateProperty[i],UpdateValue[i]);
-			}
-		}
+		CheckActionOn(A);
 	}
 
+}
+
+function CheckActionOn(Actor A) {
+	local int i;
+	for (i=0;i<1024;i++) {
+		if (UpdateActor[i] == "") {
+			break; // TODO: this makes the updating faster, BUT we must ensure that lower lines are moved up if any lines above them are cleared!
+		}
+		if ( Caps(UpdateActor[i]) == Caps(""$A) ) { // Caps(""$A) could be pre-calculated for efficiency
+			Log("[ActorEditor] Updating "$A$"."$UpdateProperty[i]$" -> "$UpdateValue[i]);
+			A.SetPropertyText(UpdateProperty[i],UpdateValue[i]);
+		}
+	}
+	// Log("[ActorEditor] Done: "$A);
+}
+
+function bool AlwaysKeep(Actor A) {
+	CheckActionOn(A);
+	return Super.AlwaysKeep(A);
+}
+
+function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
+	local bool bRes;
+	bRes = Super.CheckReplacement(Other,bSuperRelevant);
+	if (!bRes)
+		Log("ActorEditor.CheckReplacement("$Other$","$bSuperRelevant$") = "$bRes);
+	return bRes;
 }
 
 // Catch messages from players:
@@ -172,6 +197,10 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	}
 	#endif
 
+
+
+	// Stuff players may or may not be allowed to do:
+
 	if (bOnlyAdmin && !Sender.bAdmin) {
 		return False;
 	}
@@ -180,15 +209,20 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		Sender.ClientMessage("ActorEditor commands:");
 		Sender.ClientMessage("  help | look | search/find/seek <actor_name_part> | findclosest <actor_name_part> | searchprop/findprop/seekprop <property> <value_part> | ");
 		// Sender.ClientMessage("  get/check <property> | set/put <property> <value> | store/save <property> <value> | grab <property>");
-		Sender.ClientMessage("  get/check <property> | set/put/save/store <property> <value> | grab <property>");
+		Sender.ClientMessage("  get/check <property> | set/put/save/store <property> <value> | grab <property> | setscale <float>");
+		#ifdef ENABLE_SCREEN_SUPPORT
 		Sender.ClientMessage("  setserver <server_address> <server_title/description> | settext <new_text_for_screen> | seturl <new_url_for_teleporter>");
-		Sender.ClientMessage("  saveall");
+		#endif
+		Sender.ClientMessage("  saveconf <actor_name_part> | saveall");
+		// Sender.ClientMessage("  ev"$"ent <tag>");
 		return True;
 	}
 
-	if (command ~= "EV"$"ENT") {
-		Trigger(Self,args[1]);
-	}
+	// if (command ~= ("EV"$"ENT")) {
+		// foreach AllActors( class 'Actor', A, args[1]) {
+			// A.Trigger( Self, Self.Instigator );
+		// }
+	// }
 
 	if (command ~= "LOOK") {
 		workingActor = FindClosestActor(Sender);
@@ -197,8 +231,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	}
 
 	if (command ~= "SEARCH" || command ~= "FIND" || command ~= "SEEK") {
-		workingActor = FindMatchingActor(args[1]);
-		Sender.ClientMessage("Found: "$workingActor);
+		workingActor = SeekActorMatching(args[1],Sender);
 		return True;
 	}
 
@@ -238,14 +271,70 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		return True;
 	}
 
+	if (command ~= "SETSCALE") {
+		Sender.ClientMessage(workingActor $".DrawScale was "$ workingActor.DrawScale);
+		workingActor.default.DrawScale = Float(args[1]);
+		workingActor.DrawScale = Float(args[1]);
+		Sender.ClientMessage(workingActor $".DrawScale is now "$ workingActor.DrawScale);
+		return True;
+	}
+
+	/*if (command ~= "SETSPRITESCALE") {
+		Sender.ClientMessage(sgBuilding(workingActor) $".SpriteScale was "$ sgBuilding(workingActor).SpriteScale);
+		sgBuilding(workingActor).default.SpriteScale = Float(args[1]);
+		sgBuilding(workingActor).SpriteScale = Float(args[1]);
+		Sender.ClientMessage(sgBuilding(workingActor) $".SpriteScale is now "$ sgBuilding(workingActor).SpriteScale);
+		return True;
+	}*/
+
 	if (command ~= "SAVEALL") {
 		SaveConfig();
 		Sender.ClientMessage("Your changes have been saved.");
 		return True;
 	}
 
+
+
+	// Stuff really only for admin can do:
+
+	if (!Sender.bAdmin)
+		return False;
+
+	if (command ~= "SAVECONF") {
+		workingActor = SeekActorMatching(args[1],Sender);
+		if (workingActor != None) {
+			workingActor.SaveConfig();
+			Sender.ClientMessage("ActorEditor forced "$ workingActor $" to save its config.");
+		}
+		return True;
+	}
+
 	return False;
 
+}
+
+function Actor SeekActorMatching(string str, PlayerPawn Sender) {
+	local Actor A,F;
+	local String others;
+	foreach AllActors(class'Actor', A) {
+		if (StrContains(Caps(""$A),Caps(str))) {
+			// if (F==None || FRand()<0.2) {
+			if (F==None) {
+				F = A;
+			} else {
+				if (Len(others) < FRand()*100) {
+					others = others $ " " $ ShortActorName(A);
+				}
+			}
+		}
+	}
+	if (others != "") others = " (others:"$others$")";
+	Sender.ClientMessage("Found: "$ ShortActorName(F) $ others);
+	return F;
+}
+
+function String ShortActorName(Actor A) {
+	return StrAfterFirst(String(A),".");
 }
 
 function SaveUpdate(Actor A, String property, String newValue) {
