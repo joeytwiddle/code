@@ -3,7 +3,8 @@
 
 # EVENTARR=/home/utquery/eventarr/eventarr
 # EVENTARR=/home/joey/.xchat2/plugin/xchat_sh_scripts/eventarr.backend/eventarr
-EVENTARR=/home/joey/.xchat2/plugin/eventarr.backend/eventarr
+# EVENTARR=/home/joey/.xchat2/plugin/eventarr.backend/eventarr
+EVENTARR="$HOME"/.xchat2.utb0t/plugin/eventarr.backend/eventarr
 
 ## Maybe these should go in irccols?
 
