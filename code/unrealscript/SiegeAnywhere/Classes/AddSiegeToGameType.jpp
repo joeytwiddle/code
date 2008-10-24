@@ -11,6 +11,8 @@
 
 // TODO: SiegeDM has a problem with damage on players of the same colour.  Either let them damage each other, or make sure everyone who joins goes on a smaller team ( = 5 team TDM).
 
+// TODO: When I upgraded to SiegeXXL2f, and played with a bunch of SiegeAnywhere mutators, I could not upgrade my buildings!
+
 #ifndef SiegeAnywhereHUDType
 	#define SiegeAnywhereHUDType class'SiegeAnywhereHUD'
 #endif
@@ -18,6 +20,11 @@
 var config float StartingMaxRU, StartingRU;
 var config float FriendlyFireScale;
 var config bool bAllWeapons;
+
+#define RUGainedPerKill 75
+#define RULostPerDeath 20
+#define RULostPerSuicide 50
+#define RUMaxExpansionRate 50
 
 // var class<HUD> OriginalHUDType;
 
@@ -41,6 +48,9 @@ function PostBeginPlay() {
 	// CONSIDER: we could set GoalTeamScore to 0, so the game goes the full time.
 	Level.Game.GameName = Level.Game.GameName $ " Sieged";
 	Enable('Tick');
+	// Global tweaks
+	class'sgProtProj'.default.MomentumTransfer /= 4;
+	class'sgSProtProj'.default.MomentumTransfer /= 4;
 }
 
 event PlayerPawn Login(string portal, string options, out string error, class<PlayerPawn> spawnClass) {
@@ -113,7 +123,7 @@ function ScoreKill(Pawn killer, Pawn other) {
 		// if ( other.PlayerReplicationInfo != None )
 			// other.PlayerReplicationInfo.Score -= 1;
 		if ( sgPRI(other.PlayerReplicationInfo) != None ) {
-			sgPRI(other.PlayerReplicationInfo).AddRU(-50);
+			sgPRI(other.PlayerReplicationInfo).AddRU(-RULostPerSuicide);
 			if (sgPRI(other.PlayerReplicationInfo).RU < 0)
 				sgPRI(other.PlayerReplicationInfo).RU = 0;
 		}
@@ -126,9 +136,9 @@ function ScoreKill(Pawn killer, Pawn other) {
 		{
 			// killer.PlayerReplicationInfo.Score += 1;
 			if ( sgPRI(killer.PlayerReplicationInfo) != None ) {
-				sgPRI(killer.playerreplicationinfo).AddRU(50);
+				sgPRI(killer.playerreplicationinfo).AddRU(RUGainedPerKill);
 				if (sgPRI(killer.PlayerReplicationInfo).RU > sgPRI(killer.PlayerReplicationInfo).MaxRU) {
-					sgPRI(killer.PlayerReplicationInfo).MaxRU += 25;
+					sgPRI(killer.PlayerReplicationInfo).MaxRU += RUMaxExpansionRate;
 					if (sgPRI(killer.PlayerReplicationInfo).RU > sgPRI(killer.PlayerReplicationInfo).MaxRU) {
 						sgPRI(killer.PlayerReplicationInfo).RU = sgPRI(killer.PlayerReplicationInfo).MaxRU;
 					}
@@ -136,7 +146,7 @@ function ScoreKill(Pawn killer, Pawn other) {
 			}
 		}
 		if ( sgPRI(other.PlayerReplicationInfo) != None ) {
-			sgPRI(other.PlayerReplicationInfo).AddRU(-10);
+			sgPRI(other.PlayerReplicationInfo).AddRU(-RULostPerDeath);
 			if (sgPRI(other.PlayerReplicationInfo).RU < 0)
 				sgPRI(other.PlayerReplicationInfo).RU = 0;
 		}
