@@ -24,7 +24,7 @@ do
 	`
 
 	WHEN=` echo "$FIRST_RESULT" | grep -A1 "<div class=['\"]results_playerlist_c6['\"]>" | tail -n 1 | sed 's+^[ 	]*++;s+[ 	]*$++' `
-	WHERE=` echo "$FIRST_RESULT" | grep -A2 "<div class=['\"]results_playerlist_c3['\"]>" | tail -n 1 | sed "s+[ 	]*<a href=['\"]/server_info/\([^/]*\)/['\"]>\([^<]*\)</a>[ 	]*+$COLBLUE$COLBOLD""\1$COLBOLD $COLYELLOW\2+" `
+	WHERE=` echo "$FIRST_RESULT" | grep -A2 "<div class=['\"]results_playerlist_c3['\"]>" | tail -n 1 | sed "s+[ 	]*<a href=['\"]\(http://www.gametracker.com\|\)/server_info/\([^/]*\)/['\"]>\([^<]*\)</a>[ 	]*+$COLBLUE$COLBOLD""\2$COLBOLD $COLYELLOW\3+" `
 
 	# jshinfo "WHEN=$WHEN"
 	# jshinfo "WHERE=$WHERE"
