@@ -16,7 +16,11 @@
 // BEWARE: I think if I summon on of these, then rejoin the server, POwner is wrong.
 // DONE: Despite rotation code, the ForceGun generally stops actors from rotating, and they don't start again when dropped!
 // TODO BUG: By walking quickly, or through a teleporters, you can eventually pull your Target *through* a wall.
-// TODO: I think I can still pick up Items *and* sgBuildings that belong to the other team!
+
+// TODO: Fix the nasty "RPC bunch overflowed" bug
+//       This seems to happen when a Bot picks up a PlayerPawn (me).
+//       It may be the simulated InitTarget() or something else we do on the client, or something we do on the server that we are not supposed to do to PlayerPawns!
+//       It is possible to pickup earlier players though - piglet it and I managed it with an early (pre cvs?) version.
 
 #define SIEGE_COMPATIBILITY
 // DONE: sgSuperProtector has THREE meshes - don't break, find all with corresponding owner.
@@ -32,7 +36,6 @@ var config bool bTesting;
 var config bool bPickupPlayers;
 var config bool bSameTeamOnly;
 
-var PlayerPawn POwner;
 // var Actor Weilder;
 // var Pawn Weilder;
 var float Grip;
@@ -62,58 +65,33 @@ replication {
 	reliable if (Role==ROLE_Authority)
 		OldPhysics;
 	// reliable if (Role==ROLE_Authority)
-		// AcquireTarget,SetTargetMovement,ReleaseTarget; // ,Tick
+		// AcquireTarget,CheckForUpdateAndMoveMeshes,ReleaseTarget; // ,Tick
+	// I tried making these two UNreliable, still got the crashes, but not the RPC errors!
 	reliable if (Role==ROLE_Authority)
-		SetTargetMovement; // Making this reliable means the meshes move!  I think it keeps thing in sync better.
+		CheckForUpdate; // Making this reliable means the meshes move!  I think it keeps thing in sync better.
+	reliable if (Role==ROLE_Authority)
+		MoveMeshes; // Making this reliable means the meshes move!  I think it keeps thing in sync better.
 	// reliable if (Role==ROLE_Authority)
 		// ReleaseTarget; // Causes us to never release the target (at least from the client point of view)
 }
 
 // TODO: At release time we should comment out all DebugLog() and ClientLog() calls, because we don't want them building those message strings!
 #define DebugLog(message) if (bLogging) { Super.Log(message); }
-#define ClientLog(message) if (bLogging) { Instigator.ClientMessage(message); } DebugLog("[ClientLog] "$ message)
+#define ClientLog(message) if (bLogging) { BroadcastMessage(message); } DebugLog("[ClientLog] "$ message)
 
 simulated function PreBeginPlay() {
 	Super.PreBeginPlay();
-
-	if ( Level.NetMode != 1 ) {
-		foreach AllActors(Class'PlayerPawn',POwner) {
-			if ( Viewport(POwner.Player) != None ) {
-				break;
-			} else {
-				POwner = None;
-			}
-		}
-		if ( POwner == None ) {
-			Log(Self$".PreBeginPlay() NO LOCAL PLAYERPAWN!");
-			// But we actually take no action :P
-			return;
-		}
-	}
-
 	Enable('Tick');
-	DebugLog(Self$".PreBeginPlay() Owner="$Owner$" Instigator="$Instigator$" POwner="$POwner);
-	// All=None on server at spawn-time
-
 }
 
 function float RateSelf( out int bUseAltMode ) {
 	return 2;
 }
 
-// This doesn't appear to get used, but Instigator is set anyway.
-/*
 function GiveTo(Pawn o) {
 	Instigator = o;
-	DebugLog(Self$".GiveTo() Set Instigator="$Instigator$" while Owner="$Owner);
 	Super.GiveTo(o);
-
-	// if (Instigator.PlayerReplicationInfo.Deaths == 0 && POwner.Weapon == Self) {
-	if (Instigator.PlayerReplicationInfo.Deaths == 0) {
-		Instigator.ClientMessage("Welcome to the kx Force Gun "$Self$".  Use primary fire to grab things, secondary fire to throw them!");
-	}
 }
-*/
 
 function int GetTeam(Actor a) {
 	local String s;
@@ -125,9 +103,11 @@ function int GetTeam(Actor a) {
 	return -1;
 }
 
-simulated function AcquireTarget() {
+/*simulated*/ function AcquireTarget() {
 	local Vector HitLoction,HitNormal;
-	DebugLog(Self$".AcquireTarget() Owner = "$Owner$" Instigator="$Instigator$" POwner="$POwner);
+	// TODO: Many of the checks in here could be moved to FindTarget() so that an alternative Target can be sought.
+	//       Although in that case the player will not see why that particular Target could not be acquired.
+	// DebugLog(Self$".AcquireTarget() Owner = "$Owner$" Instigator="$Instigator);
 	// Target = Trace(HitLoction,HitNormal,Instigator.Location+10000*Vector(Instigator.Rotation),Instigator.Location,true);
 	Target = FindTarget(Instigator);
 	if (Target==None) {
@@ -136,33 +116,53 @@ simulated function AcquireTarget() {
 	}
 	if (!bPickupPlayers && Target.IsA('Pawn') && Pawn(Target).bIsPlayer) {
 		Instigator.ClientMessage("You may not pick up "$Target.getHumanName()$"!");
-		Target=None;
+		Target = None;
 		return;
 	}
-	if (bSameTeamOnly && Level.Game.IsA('TeamGamePlus')
+	if (bSameTeamOnly && TeamGamePlus(Level.Game)!=None
 			&& GetTeam(Target) != -1
 			&& GetTeam(Target) != GetTeam(Instigator)
 	) {
-		// ClientLog("You cannot move "$Target$", it belongs to the enemy.");
-		Instigator.ClientMessage("You cannot move "$Target$", it belongs to the enemy.  ("$GetTeam(Target)$"!="$GetTeam(Instigator)$")");
+		if (bLogging) {
+			Instigator.ClientMessage("You cannot move "$Target$", it belongs to the enemy!  ("$GetTeam(Target)$"!="$GetTeam(Instigator)$")");
+		} else {
+			Instigator.ClientMessage("You cannot move "$Target$", it belongs to the enemy!");
+		}
+		Target = None;
+		return;
 	}
 	if (Target == Instigator || Target == Self || Target==Level) {
 		DebugLog(Self$".BeginState() Bad Target = "$Target);
 		Instigator.ClientMessage("You can not pick up "$Target);
 		Target = None;
-	} else {
-		Instigator.ClientMessage("Acquired target "$Target.getHumanName()$" type "$Target.Class.Name$" mass "$Target.Mass$" distance "$Int(VSize(Target.Location-Instigator.Location)));
+		return;
+	}
+	if (Target.bStatic) {
+		Instigator.ClientMessage("Target is bStatic - it will probably not move!");
+		// Target = None;
+		// return;
+		//// Actually we should check this in FindTarget() and seek another instead.
+	}
+	if (Target != None) {
+		if (bLogging) {
+			Instigator.ClientMessage("Acquired target "$Target.getHumanName()$" type "$Target.Class.Name$" mass "$Int(Target.Mass)$" distance "$Int(VSize(Target.Location-Instigator.Location))$" difficulty "$Difficulty());
+		} else {
+			Instigator.ClientMessage("Acquired target "$Target.getHumanName()$" mass "$Int(Target.Mass)$".");
+		}
 		InitTarget();
-		SetTargetMovement(0.05); // Hmm pulling this out might help
+		ChangeTargetVelocity(0.05);
+		// CheckForUpdate(0.05);
+		// MoveMeshes(0.05);
 		if (Pawn(Target)!=None)
 			Pawn(Target).ClientMessage("You have been picked up by "$Instigator.getHumanName());
+		if (PlayerPawn(Target)!=None) {
+			DebugLog("[WARNING!] A PlayerPawn was just picked up - we may get RPC errors soon...");
+		}
 		UpdateCount++;
-	}
+	} // else should never happen!
 }
 
 simulated function InitTarget() {
-	local int count;
-	local int meshCount;
 
 	DebugLog(Self$".InitTarget() called while UpdateCount="$UpdateCount$" Target="$Target);
 	// Target.SetLocation( Target.Location + vect(0,0,8.0) ); // get things underway?
@@ -172,11 +172,6 @@ simulated function InitTarget() {
 	// Target.bSimFall = False;
 
 	LastLoc = Target.Location;
-
-	// ClientLog("Target's Physics was "$Target.Physics);
-	if (Target.bStatic) {
-		ClientLog("Target is bStatic - may not move!");
-	}
 
 	OldPhysics = Target.Physics;
 	// Target.SetPhysics(PHYS_Flying); // Does not work!
@@ -195,12 +190,11 @@ simulated function InitTarget() {
 	// Target.NetPriority = 2.8;
 	// Target.bNetTemporary = False;
 	// With ROLE_SimulatedProxy, InventorySpots/Pickups *are* getting moved, but the client does not see it.
-	if ( False /* bTesting */) {
-		Target.RemoteRole = ROLE_SimulatedProxy;
-		Self.RemoteRole = ROLE_SimulatedProxy;
-		// Didn't get this working, although it could potentially be smoother.
-	} else {
-		Target.RemoteRole = ROLE_DumbProxy; // works better when client-server
+	//// ROLE_SimulatedProxy did not work when client-server!
+	// Target.RemoteRole = ROLE_SimulatedProxy;
+	// Self.RemoteRole = ROLE_SimulatedProxy;
+	if (PlayerPawn(Target) == None) { // I believe this fixed the RPC errors and client crashes!
+		Target.RemoteRole = ROLE_DumbProxy;
 		Self.RemoteRole = ROLE_DumbProxy;
 	}
 	// if (Target.IsA('Inventory'))
@@ -258,10 +252,12 @@ simulated function InitTarget() {
 		}
 		// TODO: Instead of setting PHYS_None, set PHYS_Flying, and dampen velocity until building stops.
 		// Target.bSimFall = True;
-		// TODO: We didn't reset RemoteRole!
-		Target.RotationRate.Pitch = Target.RotationRate.Pitch/8;
-		Target.RotationRate.Yaw = Target.RotationRate.Yaw/8;
-		Target.RotationRate.Roll = Target.RotationRate.Roll/8;
+		// TODO: We didn't reset RemoteRole!  Maybe we should store PreviousRole (and re-enable Tick, but was it enabled before?!).
+		if (PlayerPawn(Target)==None) {
+			Target.RotationRate.Pitch = Target.RotationRate.Pitch/8;
+			Target.RotationRate.Yaw = Target.RotationRate.Yaw/8;
+			Target.RotationRate.Roll = Target.RotationRate.Roll/8;
+		}
 		DebugLog("ReleaseTarget() Target released with Physics="$Target.Physics);
 		Target = None;
 	}
@@ -271,21 +267,28 @@ simulated function Tick(float DeltaTime) {
 
 	// Log("Tick() called on "$Level.NetMode$" Role "$Role$" (Remote="$RemoteRole$")");
 
+	// if (PlayerPawn(Target)!=None)
+		// return; // This did not pr_vent the crashes!
+
 	if (Level.NetMode!=1 && Instigator==None) {
-		DebugLog(Self$".Tick() had to set Instigator from POwner.");
-		Instigator = POwner;
+		// Although Instigator is set on the server, it does not get replicated to the client.
+		if (Owner != None && Pawn(Owner)!=None) {
+			DebugLog(Self$".Tick() Set Instigator from Owner "$Owner);
+			Instigator = Pawn(Owner);
+		}
 	}
+
+	CheckForUpdate(DeltaTime);
 
 	if (Target != None) {
 		ChangeTargetVelocity(DeltaTime);
 	}
 
-	SetTargetMovement(DeltaTime);
+	MoveMeshes(DeltaTime);
 
 }
 
-simulated function SetTargetMovement(float DeltaTime) {
-	local int meshCount;
+simulated function CheckForUpdate(float DeltaTime) {
 
 	// Only on the client
 	if (Level.NetMode!=1) {
@@ -293,7 +296,7 @@ simulated function SetTargetMovement(float DeltaTime) {
 		// Check if replication has dropped the target:
 		if (Target==None) {
 			if (LastTarget!=None) {
-				ClientLog(Self$".Tick() Dropped LastTarget="$LastTarget);
+				DebugLog(Self$".Tick() Dropped LastTarget="$LastTarget);
 			}
 			#ifdef SIEGE_COMPATIBILITY
 			if (sgBuilding(LastTarget)!=None) {
@@ -308,27 +311,33 @@ simulated function SetTargetMovement(float DeltaTime) {
 					}
 				}
 			}
-			sgTargetMesh = None; // The call to clear it may not have got replicated to client.
+			sgTargetMesh = None; // The call to clear it may not have got replicated to client.  Bah we don't use it any more.
 			#endif
 			LastTarget = None;
 		}
 
-		// Check replication has given us a new target:
+		// Check if replication has given us a new target:
 		if (Target!=None && Target!=LastTarget) {
 			// DebugLog(Self$".Tick() - Calling InitTarget()");
 			DebugLog(Self$".Tick() - Client got Target update!  ("$LastTarget$") -> Target="$Target);
 			LastTarget = Target;
 			//// Initialize the clientside actor separately from the serverside actor.
-			InitTarget(); // TODO: This is dirty, and if done wrong could result in an infinite loop - abtract what is needed and neaten this up.
+			InitTarget(); // TODO: This is dirty, and if done wrong could result in an infinite loop - abstract what is needed and neaten this up.
 			// However commenting this out did not fix the "RPC bunch overflowed" errors and client half-freezes.
 			// It did stop the sgBuildings moving as well.
 			// If we don't do this InitTarget(), the mesh does not move!
-			if (UpdateCount > LastUpdate+1)
-				ClientLog(Self$".Tick() FAIL skipped "$ (UpdateCount-LastUpdate-1) $" updates!");
+			if (UpdateCount > LastUpdate+1) {
+				DebugLog(Self$".Tick() We have missed "$ (UpdateCount-LastUpdate-1) $" updates!");
+			}
 			LastUpdate = UpdateCount;
 		}
 
 	}
+
+}
+
+simulated function MoveMeshes(float DeltaTime) {
+	local int meshCount;
 
 	if (Target != None) {
 
@@ -336,22 +345,23 @@ simulated function SetTargetMovement(float DeltaTime) {
 
 		// Undo gravity?
 		// ...
-		// SetTargetMovement(DeltaTime);
+		// CheckForUpdateAndMoveMeshes(DeltaTime);
 
 		#ifdef SIEGE_COMPATIBILITY
 		// sgBuilding will have a corresponding mesh actor
 		if (Level.NetMode != NM_DedicatedServer && sgBuilding(Target)!=None) {
 		// if (sgBuilding(Target)!=None) {
-			meshCount=0;
 			// if (sgTargetMesh==None) {
 				// TODO CONSIDER: we might make this more efficient with VisibleActors().
 				foreach AllActors(class'sgMeshFX',sgTargetMesh) {
 					meshCount++;
 					// if (VSize(sgTargetMesh.Location-Target.Location)<5.0 || sgTargetMesh.Instigator == Target || sgTargetMesh.Owner == Target) {
 					if (sgTargetMesh.Owner == Target) {
-						// if (FRand()<0.01) { ClientLog(Self$".SetTargetMovement() Caught mesh "$sgTargetMesh$" for Target "$Target); }
+						if (FRand()<0.01) { DebugLog(Self$".MoveMeshes() Caught mesh "$sgTargetMesh$" for Target "$Target); }
+						// First time
 						sgTargetMesh.SetPhysics(PHYS_ForceGun);
 						sgTargetMesh.RemoteRole = ROLE_DumbProxy;
+						// Updates
 						sgTargetMesh.SetLocation(Target.Location);
 						sgTargetMesh.Velocity = Target.Velocity;
 						BrownianRotate(sgTargetMesh);
@@ -359,12 +369,13 @@ simulated function SetTargetMovement(float DeltaTime) {
 					}
 				}
 			// }
-			// if (sgTargetMesh==None) {
-				// ClientLog(Self$".SetTargetMovement() FAILED to find Mesh for "$Target$", searched "$meshCount);
+			if (sgTargetMesh==None && FRand()<0.01) {
+				DebugLog(Self$".MoveMeshes() FAILED to find Mesh for "$Target$", searched "$meshCount);
+			}
 			// } else {
 				// sgTargetMesh.SetLocation(Target.Location);
 				// sgTargetMesh.Velocity = Target.Velocity;
-				// if (FRand()<0.1) { DebugLog(Self$".SetTargetMovement() Moved mesh "$sgTargetMesh); }
+				// if (FRand()<0.1) { DebugLog(Self$".CheckForUpdateAndMoveMeshes() Moved mesh "$sgTargetMesh); }
 			// }
 			// if (sgTargetMesh==None || VSize(sgTargetMesh.Location-Target.Location)>=0.5) {
 			// }
@@ -377,19 +388,35 @@ simulated function SetTargetMovement(float DeltaTime) {
 
 simulated function BrownianRotate(Actor A) {
 	local rotator changeRot;
-	// changeRot = A.Rotation;
-	// changeRot.Pitch += 5*(FRand()-0.5);
-	// changeRot.Roll += 5*(FRand()-0.5);
-	// changeRot.Yaw += 5*(FRand()-0.5);
-	// A.SetRotation(changeRot);
+	local float MaxRotRate;
+	if (PlayerPawn(A)!=None) {
+		return;
+	}
+	/*if (Bot(A)!=None) {
+		changeRot = A.Rotation;
+		changeRot.Pitch += 5*(FRand()-0.5);
+		changeRot.Roll += 5*(FRand()-0.5);
+		changeRot.Yaw += 5*(FRand()-0.5);
+		A.SetRotation(changeRot);
+		return;
+	}*/
+	// This works nicely on meshes and other Actors.
+	// TODO: But Bots tend to change pitch to one extreme, that stays fixed for quite a while.
 	// A.RotationRate.Pitch += 15*(FRand()-0.5);
 	// A.RotationRate.Roll += 15*(FRand()-0.5);
 	// A.RotationRate.Yaw += 15*(FRand()-0.5);
-	#define MaxRotRate (40000/Difficulty())
-	#define Mutate(V) if (FRand()<0.5) { V-=5; } else { V+=5; } if (V<MaxRotRate) { V=-MaxRotRate; } else if (V>MaxRotRate) { V=MaxRotRate; }
-	Mutate(A.RotationRate.Pitch);
-	Mutate(A.RotationRate.Roll);
-	Mutate(A.RotationRate.Yaw);
+	// MaxRotRate = 20000;
+	// TODO: ideally we would rotate the sgBuilding relative to it's current rotation rate, and set it back again after.
+	//       atm containers end up rotating about the right speed when dropped, but protectors end up rotating too slowly!
+	MaxRotRate = 120000/Difficulty(); // Ahhh this was inf until I made Difficulty() simulated.
+	if (MaxRotRate>40000)
+		MaxRotRate=40000;
+	// #define ChangeRotRate(V) if (FRand()<0.5) { V-=5; } else { V+=5; } if (V<MaxRotRate) { V=-MaxRotRate; } else if (V>MaxRotRate) { V=MaxRotRate; }
+	// sgBuildings only rotate around the axes they were rotating about before!
+	#define ChangeRotRate(V) if (sgBuilding(A)==None || Abs(V)>0) { if (FRand()<0.5) { V-=5; } else { V+=5; } if (V<MaxRotRate) { V=-MaxRotRate; } else if (V>MaxRotRate) { V=MaxRotRate; } }
+	ChangeRotRate(A.RotationRate.Pitch);
+	ChangeRotRate(A.RotationRate.Roll);
+	ChangeRotRate(A.RotationRate.Yaw);
 	// A.DesiredRotation = changeRot;
 	// Try harder!
 	// if (A.IsA('Inventory')) {
@@ -397,7 +424,8 @@ simulated function BrownianRotate(Actor A) {
 	// }
 }
 
-// Not simulated on purpose
+// Not simulated on purpose - we only want to move the Target on the server.
+// If we moce the Target on the client, we get errors Target$" moved without proper hashing".
 function ChangeTargetVelocity(float DeltaTime) {
 	local Vector holdPos;
 
@@ -406,17 +434,14 @@ function ChangeTargetVelocity(float DeltaTime) {
 		return;
 	}
 
-	if (Instigator.IsA('PlayerPawn'))
-		holdPos = Instigator.Location + 180.0 * Vector(PlayerPawn(Instigator).ViewRotation) + Vect(0,0,75);
-	else
-		holdPos = Instigator.Location + 180.0 * Vector(Instigator.Rotation) + Vect(0,0,75);
+	holdPos = Instigator.Location + 180.0 * GetLookDir(Instigator) + Vect(0,0,75);
 	// if (FRand()<0.02) { ClientLog("195 = "$VSize(holdPos-Instigator.Location)); }
 
 	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" NetMode="$Level.NetMode$" Role="$Role$" with Target="$Target$" and Instigator="$Instigator$" distance="$VSize(holdPos-Target.Location)$" velocity="$Target.Velocity);
 	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$VSize(holdPos-Target.Location)$" Target="$Target$" Location="$Target.Location$" Velocity="$Target.Velocity$" Instigator="$Instigator$" Location="$Instigator.Location$" Velocity="$Instigator.Velocity);
 	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$VSize(holdPos-Target.Location)$" Target="$Target$" Location="$Target.Location$" Velocity="$Target.Velocity$" Instigator="$Instigator);
 	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.loc="$Target.Location$" ins.loc="$Instigator.Location);
-	DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.V="$Int(VSize(Target.Velocity))$" ins.V="$Int(VSize(Instigator.Velocity)));
+	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.V="$Int(VSize(Target.Velocity))$" ins.V="$Int(VSize(Instigator.Velocity)));
 
 		if (Role==ROLE_Authority /*|| bTesting*/) {
 		// if (True) { // Doing it on both causes client error: Target$" moved without proper hashing"
@@ -437,8 +462,10 @@ function ChangeTargetVelocity(float DeltaTime) {
 
 			// ClientLog("Trying to undo gravity.");
 			// Target.Velocity = Target.Velocity - Level.ZoneGravity*vect(0,0,0.5);
-			// Actually no need since we force position.
+			// Actually no need since now we force position.
+			//// TODO: This approach lets us pull objects through walls!  Maybe detect if the move failed?
 			LastLoc = LastLoc + Target.Velocity*DeltaTime;
+			// if (PlayerPawn(Target)!=None || bTesting) // Will this stop the RPC crashes? NO!
 			Target.SetLocation(LastLoc);
 
 			BrownianRotate(Target);
@@ -452,15 +479,23 @@ function ChangeTargetVelocity(float DeltaTime) {
 
 }
 
+simulated function Vector GetLookDir(Actor A) {
+	// PlayerPawn.Rotation does not look up/down properly, we must use ViewRotation!
+	if (Pawn(A)!=None)
+		return Vector(Pawn(A).ViewRotation);
+	// if (PlayerPawn(A)!=None)
+		// return Vector(PlayerPawn(A).ViewRotation);
+	// if (Bot(A)!=None)
+		// return Vector(Bot(A).ViewRotation);
+	return Vector(A.Rotation);
+}
+
 simulated function ThrowTarget() {
 	// TODO: For Actors which we can't throw (they don't like to fall), we could either
 	//       - Move the focal point of the gravity field outward, so they object rests further away.
 	//       - Push the target away from us, and Tick it until it comes to a stop.
 	if (Target != None) {
-		if (Instigator.IsA('PlayerPawn'))
-			Target.Velocity = Vector(PlayerPawn(Instigator).ViewRotation) * 1200.0 + Vect(0,0,300);
-		else
-			Target.Velocity = Vector(Instigator.Rotation) * 1200.0 + Vect(0,0,300);
+		Target.Velocity = GetLookDir(Instigator) * 1200.0 + Vect(0,0,300);
 		Target.Velocity *= 1.5/Difficulty();
 		// ClientLog("Throwing "$Target$" with velocity "$VSize(Target.Velocity)$" difficulty="$String(Difficulty()));
 		Instigator.ClientMessage("Throwing "$Target.getHumanName()$" with velocity "$VSize(Target.Velocity)$" (vertical "$Target.Velocity.Z$") difficulty="$String(Difficulty()));
@@ -475,7 +510,7 @@ simulated function Destroyed () {
 }
 
 // Difficulty is basically mass, but it is tweaked, because many Actors are 100 when I want them to have other values.
-function float Difficulty() { // num from 1.0 to 100.0
+simulated function float Difficulty() { // num from 1.0 to 100.0 - normal 100mass object has Difficulty 3.
 	local float useMass;
 	if (Target==None) {
 		return 1.0;
@@ -484,7 +519,7 @@ function float Difficulty() { // num from 1.0 to 100.0
 		#ifdef SIEGE_COMPATIBILITY
 		// Siege buildings should be heavier than normal 100 actors, but are not marked as such :P
 		if (sgBuilding(Target)!=None)
-			useMass *= (2+sgBuilding(Target).Grade);
+			useMass *= (1+sgBuilding(Target).Grade/2);
 		// Damage-giving buildings are heavier still: (I skipped the fast explosives)
 		if (
 			sgProtector(Target)!=None
@@ -685,10 +720,8 @@ function Actor FindTarget(Actor from) {
 		// }
 		// if (deltaRotation < 8192 && deltaRotation > -8192) {
 		// "distance" is now actually correspondence with line-of-sight
-		if (from.IsA('PlayerPawn'))
-			distance = 1000 - Normal(Vector(PlayerPawn(from).ViewRotation)) Dot Normal(A.Location-from.Location);
-		else
-			distance = 1000 - Normal(Vector(from.Rotation)) Dot Normal(A.Location-from.Location);
+		distance = 1000 - Normal(GetLookDir(from)) Dot Normal(A.Location-from.Location);
+		// So we get the thing closest to the centre of our view, even if it hides behind another object!
 		if (bestActor == None || distance < bestDistance) {
 			bestActor = A;
 			bestDistance = distance;
@@ -728,9 +761,9 @@ defaultproperties {
 		// Icon=Texture'Botpack.Icons.UseTrans'
 		// Mesh=Mesh'Botpack.Trans3loc'
 
-		// TODO: These should be False!
-		bLogging=True
+		bLogging=True // TODO
 		bPickupPlayers=True
+		bSameTeamOnly=True
 		bTesting=False
 
 	// From ImpactHammer:
