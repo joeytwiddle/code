@@ -24,6 +24,7 @@
 // TODO: Ammo is not working!
 // In LMS fragged players are not dropping their weapons?!  Then we really must increase their ammo!
 // TODO: Still showing "Large Bullets"
+// TODO: Make it an admin option, whether sounds are heard by all or only the relevant player.
 
 class FairLMS expands Mutator config(FairLMS);
 
@@ -40,17 +41,25 @@ var config int InitialArmour,InitialHealth;
 var config float HealthLostPerSec,HealthGainedPerKill;
 var config bool bGivePowerups;
 var config int FragsForPowerup;
+var config bool bBroadcastPowerups;
 var config Color MessageColor;
 var config Sound PowerupSound;
+var config Sound WarningSound;
+
 var config String InitialWeapon[20];
-var config LMSBonus Powerup[20];
+var config LMSBonus Powerup[25];
 
 var int KillsSinceSpawn[64];
 var bool bGameStarted,bTwoPlayersLeft;
 
-var float TimerLast;
-var float TimerAverage;
-var int TimerCount;
+// These turned out pretty good: FairLMS.Timer() at 275.035034 gap 0.477356 average 0.500064 
+// var float TimerLast;
+// var float TimerAverage;
+// var int TimerCount;
+
+function LogWarn(String Msg) {
+	BroadcastMessage("[WARN] "$Msg);
+}
 
 function PostBeginPlay() {
 	local Mutator m;
@@ -63,20 +72,23 @@ function PostBeginPlay() {
 	}
 	Super.PostBeginPlay();
 	SetTimer(1.0/HealthLostPerSec,True);
-	if (HealthLostPerSec>0 || HealthGainedPerKill>0)
-		Level.Game.GameName = "Anti-Camping "$ Level.Game.GameName;
-	if (bGivePowerups)
-		Level.Game.GameName = Level.Game.GameName $" with Bonus Powerups";
+	// if (HealthLostPerSec>0 || HealthGainedPerKill>0)
+	if (HealthLostPerSec>0)
+		Level.Game.GameName = "Anti-Idle "$ Level.Game.GameName;
+	if (bGivePowerups) {
+		if (InStr(Level.Game.GameName," with ")>=0)
+			Level.Game.GameName = Level.Game.GameName $" and Bonus Powerups";
+		else
+			Level.Game.GameName = Level.Game.GameName $" with Bonus Powerups";
+	}
 	if (HealthLostPerSec>0)
 		DeathMatchPlus(Level.Game).StartMessage = "Your are losing health!  Kill to stay alive!";
 
 	// TESTING: Turn redeemers into mini-redeemers.  I think this is working!
 	// TODO CHECK: Do these changes propogate over maps, messing with other types of game, or next round of LMS?
 	// CONSIDER: If setting defaults doesn't work, change values after it has spawned.  (CheckReplacement() / IsRelevant()?)
-	Log(Self.class$" Changing Warhead speed from "$ class'WarShell'.default.DrawScale );
 	class'WarheadLauncher'.default.ItemName = "Mini Redeemer";
 	class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.3;
-	Log(Self.class$"                          to "$ class'WarShell'.default.DrawScale );
 	class'WarShell'.default.Speed = class'WarShell'.default.Speed * 0.3;
 	class'WarShell'.default.Damage = class'WarShell'.default.Damage * 0.3;
 	class'WarShell'.default.MomentumTransfer = class'WarShell'.default.MomentumTransfer * 0.3;
@@ -87,6 +99,7 @@ function PostBeginPlay() {
 	//// TODO: Value sometimes set from PostBeginPlay().  We should intercept just after creation.  bIsRelevant/CheckReplacement?
 	class'WarExplosion'.default.DrawScale = class'WarExplosion'.default.DrawScale * 0.3;
 	class'WarExplosion2'.default.DrawScale = class'WarExplosion2'.default.DrawScale * 0.3;
+	// I think these don't work in Siege, maybe WarheadLauncher gets replaced by sgWarheadLauncher.
 }
 
 event Timer() {
@@ -95,6 +108,7 @@ event Timer() {
 	local int aliveCount;
 	local String players;
 	local Inventory inv;
+	/*
 	if (bLogging) {
 		TimerAverage = ( TimerAverage*TimerCount + (Level.TimeSeconds-TimerLast)*1 ) / (TimerCount+1);
 		TimerCount++;
@@ -102,9 +116,12 @@ event Timer() {
 		Log("FairLMS.Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) $" average "$TimerAverage);
 		TimerLast = Level.TimeSeconds;
 	}
+	*/
 	Super.Timer();
 	foreach AllActors(class'Pawn',p) {
 		if ((PlayerPawn(p)!=None || Bot(p)!=None) && Spectator(p)==None) {
+
+			// We detect gamestart by looking for a weapon in a player/pawn's inventory.
 			if (!bGameStarted) {
 				for (Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory) {
 					if (Inv.IsA('Weapon')) {
@@ -113,18 +130,24 @@ event Timer() {
 					}
 				}
 			}
+
 			if (!bTwoPlayersLeft) {
 				p.Health -= 1;
-				if (p.Health == 0)
+				if (p.Health == 0) {
 					// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
 					FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
+					p.PlaySound(WarningSound,SLOT_Interface,1.0);
 					p.bUnlit=True;
+				}
 				if (p.Health <= -15) {
 					p.Died(None, 'Suicided', p.Location);
 					// TODO: make a puff of smoke appear here!!! xD
 				}
 			}
+
 		}
+
+		// Count the number of players still in the game.
 		if (p.PlayerReplicationInfo!=None && p.PlayerReplicationInfo.Score>0) {
 			aliveCount++;
 			if (aliveCount<3) {
@@ -134,7 +157,10 @@ event Timer() {
 					players = players $ " " $ p.getHumanName();
 			}
 		}
+
 	}
+
+	// Check to see if there are only 2 players left.
 	if (bGameStarted && LastManStanding(Level.Game)!=None && aliveCount==2 && !bTwoPlayersLeft && FRand()<0.2) { // Delay to avoid get overwritten by LastManStanding.
 		foreach AllActors(class'PlayerPawn',pp) {
 			FlashMessage(pp,"Two players left:",MessageColor,3,true);
@@ -144,6 +170,7 @@ event Timer() {
 		}
 		bTwoPlayersLeft = True;
 	}
+
 }
 
 function ModifyPlayer(Pawn p) {
@@ -152,25 +179,31 @@ function ModifyPlayer(Pawn p) {
 	if (InitialHealth>0)
 		p.Health = InitialHealth;
 	// p.PlayerReplicationInfo.Armor = InitialArmour;
-	GiveAllWeapons(p);
+	GiveInitialInventory(p);
 	if (p.PlayerReplicationInfo!=None) {
 		KillsSinceSpawn[p.PlayerReplicationInfo.PlayerID%64] = 0;
 	}
 }
 
-function ScoreKill(Pawn killer, Pawn other) {
-	Super.ScoreKill(killer,other);
-	if (killer != None) {
+function ScoreKill(Pawn killer, Pawn victim) {
+	Super.ScoreKill(killer,victim);
+	if (killer != None && killer!=victim) {
 		if (!bTwoPlayersLeft) {
+
+			// HealthGainedPerKill:
 			killer.Health += HealthGainedPerKill;
 			if (killer.Health > 199) killer.Health = 199;
-			killer.PlaySound(class'Botpack.TournamentHealth'.default.PickupSound,SLOT_Interface,3.0);
+			// killer.PlaySound(class'Botpack.TournamentHealth'.default.PickupSound,SLOT_Interface,3.0);
+			killer.PlaySound(Sound'Botpack.Pickups.UTHealth',SLOT_Interface,3.0);
+
+			// bGivePowerups:
 			if (killer.PlayerReplicationInfo!=None) {
 				KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64] += 1;
 				if (bGivePowerups && KillsSinceSpawn[killer.PlayerReplicationInfo.PlayerID%64]%FragsForPowerup == 0) {
 					GiveRandomPowerup(killer);
 				}
 			}
+
 		}
 	}
 }
@@ -178,10 +211,11 @@ function ScoreKill(Pawn killer, Pawn other) {
 function GiveArmor(Pawn p) {
 }
 
-function GiveAllWeapons(Pawn p) {
+function GiveInitialInventory(Pawn p) {
 	local Inventory Inv;
 	local int i;
-	local class<Weapon> type;
+	local class<Weapon> wType;
+	// local class<Inventory> iType;
 
 	// Give appropriate armour.
 	// CONSIDER: Alternatively, give them normal armour, but adjust its Charge.
@@ -198,23 +232,24 @@ function GiveAllWeapons(Pawn p) {
 	if (bGiveWeapons) {
 		for (i=0;i<20;i++) {
 			if (InitialWeapon[i]!="") {
-				type = class<Weapon>(DynamicLoadObject(InitialWeapon[i],class'class'));
-				Inv = p.FindInventoryType(type);
+				wType = class<Weapon>(DynamicLoadObject(InitialWeapon[i],class'class'));
+				// iType = class<Inventory>(DynamicLoadObject(InitialWeapon[i],class'class'));
+				/*
+				Inv = p.FindInventoryType(wType);
 				if (Inv == None) {
 					DeathMatchPlus(Level.Game).GiveWeapon(p,InitialWeapon[i]);
 				} else {
-					// WarnMsg(Self$".GiveAllWeapons() Warning! "$p.getHumanName()$" already had a "$type$" so re-using it "$Inv);
-					Log(Self$".GiveAllWeapons() Warning! "$p.getHumanName()$" already had a "$type$" so re-using it "$Inv);
+					// LogWarn(Self$".GiveInitialInventory() Warning! "$p.getHumanName()$" already had a "$wType$" so re-using it "$Inv);
+					Log(Self$".GiveInitialInventory() Warning! "$p.getHumanName()$" already had a "$wType$" so re-using it "$Inv);
 					// Maybe this is not needed.  My actual problem was adding a SniperRifle to a player that already had a zp_SniperRifle.
 				}
+				*/
+				GivePickupType(p,wType);
+				// GivePickupType(p,iType);
 			}
 		}
 	}
 
-}
-
-function WarnMsg(String Msg) {
-	BroadcastMessage("[WARN] "$Msg);
 }
 
 function Inventory GivePickupType(Pawn p, class<Inventory> t) {
@@ -296,39 +331,66 @@ function GiveRandomPowerup(Pawn p) {
 	local Color col;
 	local Sound resource;
 	for (j=0;j<100;j++) {
-		i = 20*FRand();
+		i = 25*FRand();
 		if (Powerup[i].Type == "")
 			continue;
-		type = class<Inventory>( DynamicLoadObject(Powerup[i].Type,class'Class') );
-		if (type == None) {
-			Log("[FairLMS] Powerup #"$i$" \""$Powerup[i].Type$"\" does not exist!");
-			continue;
-		}
-		inv = p.FindInventoryType(type);
-		if (inv != None) {
-			// A bit log spammy:
-			// Log(Self$".GiveRandomPowerup() "$p.getHumanName()$" already has a "$inv);
-			// Log(Self$".GiveRandomPowerup() maybe they don't want another - maybe we could upgrade it?");
-			// It seems to me that items *are* being removed from a player's inventory when he loses them.
-			// I don't know if warhead 2nd time around is working now.
-			continue;
-		}
-		inv = Spawn(type,p);
-		if (inv == None) {
-			Log(Self$".GiveRandomPowerup() Failed to spawn "$type);
-			continue;
-		}
 
-		// OK we have created the powerup, we can give it to the player:
-		GiveInventory(p,inv);
+		if (Powerup[i].Type == "FairLMS.AmmoBoost") {
+			if (FRand()<0.25)
+				continue; // Since this item never enters the inventory, we might offer it too often, so 75% chance of re-roll.
+			for (inv=p.Inventory;inv!=None;inv=p.Inventory) {
+				if (Weapon(inv)!=None) {
+					if (Weapon(inv).AmmoType==None) {
+						LogWarn("FairLMS.GiveRandomPowerup() Can not boost ammo for "$inv);
+					} else {
+						if (Weapon(inv).AmmoType.default.AmmoAmount>1) { // Not for deemer
+							Weapon(inv).AmmoType.AmmoAmount = Weapon(inv).AmmoType.default.AmmoAmount;
+							LogWarn("FairLMS.GiveRandomPowerup() Boosted ammo "$Weapon(inv).AmmoType$" to "$Weapon(inv).AmmoType.AmmoAmount);
+						} else {
+							LogWarn("FairLMS.GiveRandomPowerup() Not boosing ammo for "$inv);
+						}
+					}
+				}
+			}
+		} else {
+			type = class<Inventory>( DynamicLoadObject(Powerup[i].Type,class'Class') );
+			if (type == None) {
+				Log("[FairLMS] Powerup #"$i$" type \""$Powerup[i].Type$"\" does not exist!");
+				continue;
+			}
+			inv = p.FindInventoryType(type);
+			if (inv != None) {
+				// A bit log spammy:
+				// Log(Self$".GiveRandomPowerup() "$p.getHumanName()$" already has a "$inv);
+				// Log(Self$".GiveRandomPowerup() maybe they don't want another - maybe we could upgrade it?");
+				// It seems to me that items *are* being removed from a player's inventory when he loses them.
+				// I don't know if warhead 2nd time around is working now.
+				continue;
+			}
+			inv = Spawn(type,p);
+			if (inv == None) {
+				Log(Self$".GiveRandomPowerup() Failed to spawn "$type);
+				continue;
+			}
+
+			// OK we have created the powerup, we can give it to the player:
+			GiveInventory(p,inv);
+		}
 
 		col = Powerup[i].Color;
 		if (col.R==0 && col.G==0 && col.B==0) {
-			col.R=255; col.G=255; col.B=16; col.A=16;
+			col.R=128+128*FRand(); col.G=128+128*FRand(); col.B=128+128*FRand(); col.A=32;
 		}
 		if (Powerup[i].Name == "")
 			Powerup[i].Name = inv.ItemName;
 		FlashMessage(p,"-+- "$Caps(Powerup[i].Name)$" -+-",col);
+		if (bBroadcastPowerups) {
+			BroadcastMessage(p.getHumanName()$" got the "$Powerup[i].Name);
+			// if (InStr("AEIOU",Caps(Left(Powerup[i].Name,1)))>=0)
+				// BroadcastMessage(p.getHumanName()$" got an "$Powerup[i].Name);
+			// else
+				// BroadcastMessage(p.getHumanName()$" got a "$Powerup[i].Name);
+		}
 
 		// DONE: Sound!
 		resource = None;
@@ -351,7 +413,8 @@ function GiveRandomPowerup(Pawn p) {
 	if (j==100) {
 		Log(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already.");
 		// TODO: maybe remove something from his inventory and retry?  Then at least he could get a fresh one.
-		BroadcastMessage(p.getHumanName()$" is MAXXED OUT!");
+		if (bBroadcastPowerups)
+			BroadcastMessage(p.getHumanName()$" is MAXXED OUT!");
 	}
 
 }
@@ -378,7 +441,7 @@ function Mutate(String msg, PlayerPawn Sender) {
 		rep = "";
 		for (Inv=Sender.Inventory; Inv!=None; Inv=Inv.Inventory) {
 			// rep = rep $ Inv $"("$ Inv.getHumanName() $") ";
-			rep = rep $ Inv $" ";
+			rep = rep $ Inv.ItemName $" ";
 			if (Len(rep)>1500) {
 				rep = rep $ "...";
 				break;
@@ -411,6 +474,7 @@ defaultproperties {
 	FragsForPowerup=3
 	MessageColor=(R=255,G=255,B=31,A=0)
 	PowerupSound=Sound'Botpack.Pickups.BeltSnd'
+	WarningSound=Sound'Botpack.FlagBase.FlagTaken'
 	InitialWeapon(0)="Botpack.ImpactHammer"
 	InitialWeapon(1)="Botpack.Enforcer"
 	InitialWeapon(2)="Botpack.UT_BioRifle"
@@ -422,26 +486,20 @@ defaultproperties {
 	InitialWeapon(8)="Botpack.SniperRifle"
 	// PowerupSound=Sound'Botpack.Pickups.Sbelthe2'
 	// PowerupSound=Sound'Botpack.Pickups.AmpOut'
-	Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32))
+	Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32),Name="Health Boost")
 	Powerup(1)=(Type="Botpack.Armor2",Color=(R=255,G=131,B=91,A=32))
 	Powerup(2)=(Type="Botpack.UDamage",Color=(R=192,G=31,B=192,A=32))
-	Powerup(3)=(Type="Botpack.UT_Stealth",Color=(R=3,G=3,B=150,A=48))
+	Powerup(3)=(Type="Botpack.UT_Stealth",Color=(R=3,G=3,B=150,A=48),Name="Invisibility")
 	Powerup(4)=(Type="Botpack.UT_ShieldBelt",Color=(R=255,G=255,B=31,A=32))
 	Powerup(5)=(Type="Botpack.UT_JumpBoots",Color=(R=91,G=255,B=255,A=32))
 	Powerup(6)=(Type="Botpack.WarheadLauncher",Color=(R=180,G=21,B=21,A=32))
-	Powerup(7)=(Type="SiegeXXL2e.JetPack",Color=(R=91,G=192,B=255,A=32))
-	Powerup(8)=(Type="kxGrapple.GrappleGun",Color=(R=91,G=50,B=12,A=32))
-	Powerup(9)=(Type="kxDoubleJump.DoubleJumpBoots",Color=(R=91,G=255,B=255,A=32))
-	// Disabled some since something was giving me "Large Bullets" :P
-	// Powerup(11)=(Type="Botpack.EClip",Color=(R=102,G=102,B=102,A=32))
-	Powerup(12)=(Type="Botpack.BioAmmo",Color=(R=102,G=102,B=102,A=32))
-	Powerup(13)=(Type="Botpack.PAmmo",Color=(R=102,G=102,B=102,A=32))
-	// Powerup(14)=(Type="Botpack.MiniAmmo",Color=(R=102,G=102,B=102,A=32))
-	Powerup(15)=(Type="Botpack.FlakAmmo",Color=(R=102,G=102,B=102,A=32))
-	Powerup(16)=(Type="Botpack.RocketPack",Color=(R=102,G=102,B=102,A=32))
-	Powerup(17)=(Type="Botpack.ShockCore",Color=(R=102,G=102,B=102,A=32))
-	// Powerup(18)=(Type="Botpack.BulletBox",Color=(R=102,G=102,B=102,A=32))
-	//// Not working - I get a second enforcer, rather than my single becoming double!
+	Powerup(7)=(Type="FairLMS.AmmoBoost",Color=(R=102,G=102,B=102,A=32),Name="Ammo Boost")
+	// Powerup(7)=(Type="SiegeXXL2f.JetPack",Color=(R=91,G=192,B=255,A=32))
+	// Powerup(8)=(Type="kxGrapple.GrappleGun",Color=(R=255,G=60,B=60,A=44))
+	// Powerup(9)=(Type="kxDoubleJump.DoubleJumpBoots",Color=(R=91,G=255,B=255,A=32))
+	// None of the ammo "powerups" are working - probably we already have an ammo of that type, altho maybe 0 of it.
+	// So, should we make a FreshAmmoPickupItem, or should we just fudge it into FairLMS always, or as an option?
+	//// Not working - I get a second enforcer, rather than my single becoming double!  Is that zp related?
 	// Powerup(19)=(Type="Botpack.DoubleEnforcer",Color=(R=180,G=180,B=180,A=32))
 }
 
