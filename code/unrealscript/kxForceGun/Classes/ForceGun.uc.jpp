@@ -21,6 +21,7 @@
 //       This seems to happen when a Bot picks up a PlayerPawn (me).
 //       It may be the simulated InitTarget() or something else we do on the client, or something we do on the server that we are not supposed to do to PlayerPawns!
 //       It is possible to pickup earlier players though - piglet it and I managed it with an early (pre cvs?) version.
+// TODO: RUs do not move
 
 #define SIEGE_COMPATIBILITY
 // DONE: sgSuperProtector has THREE meshes - don't break, find all with corresponding owner.
@@ -31,6 +32,7 @@ class ForceGun expands TournamentWeapon Config(kxForceGun);
 // #define PHYS_ForceGun PHYS_None
 #define PHYS_ForceGun PHYS_Rotating
 
+var config float PullStrength;
 var config bool bLogging;
 var config bool bTesting;
 var config bool bPickupPlayers;
@@ -54,6 +56,8 @@ var sgMeshFX sgTargetMesh;
 #endif
 
 replication {
+	reliable if (Role==ROLE_Authority)
+		PullStrength;
 	reliable if (Role==ROLE_Authority)
 		bLogging;
 	reliable if (Role==ROLE_Authority)
@@ -124,9 +128,9 @@ function int GetTeam(Actor a) {
 			&& GetTeam(Target) != GetTeam(Instigator)
 	) {
 		if (bLogging) {
-			Instigator.ClientMessage("You cannot move "$Target$", it belongs to the enemy!  ("$GetTeam(Target)$"!="$GetTeam(Instigator)$")");
+			Instigator.ClientMessage("You cannot move "$ StrAfterFirst(String(Target),".") $", it belongs to the enemy!  ("$GetTeam(Target)$"!="$GetTeam(Instigator)$")");
 		} else {
-			Instigator.ClientMessage("You cannot move "$Target$", it belongs to the enemy!");
+			Instigator.ClientMessage("You cannot move "$ StrAfterFirst(String(Target),".") $", it belongs to the enemy!");
 		}
 		Target = None;
 		return;
@@ -302,7 +306,7 @@ simulated function CheckForUpdate(float DeltaTime) {
 			if (sgBuilding(LastTarget)!=None) {
 				// Reset the building's meshes!
 				foreach AllActors(class'sgMeshFX',sgTargetMesh) {
-					if (sgTargetMesh.Owner == LastTarget) {
+					if (sgTargetMesh.Owner == LastTarget && sgBaseCore(LastTarget)==None) {
 						sgTargetMesh.RotationRate.Pitch = sgTargetMesh.RotationRate.Pitch/8;
 						sgTargetMesh.RotationRate.Yaw = sgTargetMesh.RotationRate.Yaw/8;
 						sgTargetMesh.RotationRate.Roll = sgTargetMesh.RotationRate.Roll/8;
@@ -364,7 +368,9 @@ simulated function MoveMeshes(float DeltaTime) {
 						// Updates
 						sgTargetMesh.SetLocation(Target.Location);
 						sgTargetMesh.Velocity = Target.Velocity;
-						BrownianRotate(sgTargetMesh);
+						if (sgBaseCore(Target)==None) {
+							BrownianRotate(sgTargetMesh);
+						}
 						// break;
 					}
 				}
@@ -408,9 +414,9 @@ simulated function BrownianRotate(Actor A) {
 	// MaxRotRate = 20000;
 	// TODO: ideally we would rotate the sgBuilding relative to it's current rotation rate, and set it back again after.
 	//       atm containers end up rotating about the right speed when dropped, but protectors end up rotating too slowly!
-	MaxRotRate = 120000/Difficulty(); // Ahhh this was inf until I made Difficulty() simulated.
-	if (MaxRotRate>40000)
-		MaxRotRate=40000;
+	MaxRotRate = 120000 * PullStrength / Difficulty(); // Ahhh this was inf until I made Difficulty() simulated.
+	if (MaxRotRate>30000)
+		MaxRotRate=30000;
 	// #define ChangeRotRate(V) if (FRand()<0.5) { V-=5; } else { V+=5; } if (V<MaxRotRate) { V=-MaxRotRate; } else if (V>MaxRotRate) { V=MaxRotRate; }
 	// sgBuildings only rotate around the axes they were rotating about before!
 	#define ChangeRotRate(V) if (sgBuilding(A)==None || Abs(V)>0) { if (FRand()<0.5) { V-=5; } else { V+=5; } if (V<MaxRotRate) { V=-MaxRotRate; } else if (V>MaxRotRate) { V=MaxRotRate; } }
@@ -443,8 +449,10 @@ function ChangeTargetVelocity(float DeltaTime) {
 	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.loc="$Target.Location$" ins.loc="$Instigator.Location);
 	// DebugLog("Doing ChangeTargetVelocity("$DeltaTime$" distance="$ Int(VSize(holdPos-Target.Location)) $" tgt.P="$Target.Physics$" ins.P="$Instigator.Physics$" tgt.V="$Int(VSize(Target.Velocity))$" ins.V="$Int(VSize(Instigator.Velocity)));
 
-		if (Role==ROLE_Authority /*|| bTesting*/) {
+		if (Role==ROLE_Authority /*|| bTesting*/) { // this check probably isn't needed, we aren't in a simulated fn
 		// if (True) { // Doing it on both causes client error: Target$" moved without proper hashing"
+
+			/*
 
 			// Should end at distance 130, since 50*50+120*120=130*130.
 			// Target.SetLocation( Target.Location*0.99 + holdPos*0.01 );
@@ -452,7 +460,7 @@ function ChangeTargetVelocity(float DeltaTime) {
 				// Target.Velocity = VRand()*0.1;
 			// } else {
 				// If I do this on the client, distance and velocity go to inf!
-				Target.Velocity = Normal(holdPos - Target.Location) * 480.0 / Difficulty();
+				Target.Velocity = Normal(holdPos - Target.Location) * 480.0 * PullStrength / Difficulty();
 			// }
 
 			// Soften velocity in the centre of the field
@@ -466,7 +474,25 @@ function ChangeTargetVelocity(float DeltaTime) {
 			//// TODO: This approach lets us pull objects through walls!  Maybe detect if the move failed?
 			LastLoc = LastLoc + Target.Velocity*DeltaTime;
 			// if (PlayerPawn(Target)!=None || bTesting) // Will this stop the RPC crashes? NO!
-			Target.SetLocation(LastLoc);
+			// Target.SetLocation(LastLoc);
+			if (!Target.Move(LastLoc-Target.Location) && FRand()>0.1) {
+				ClientLog("Target "$Target.getHumanName()$" doing odd movement "$Int(VSize(LastLoc-Target.Location)));
+				Target.SetLocation(LastLoc);
+			}
+
+			*/
+
+			Target.Velocity = Target.Velocity * 0.95 + 3.0*480.0 * DeltaTime * Normal(holdPos-Target.Location) * PullStrength / Difficulty();
+			if (VSize(holdPos-Target.Location)<10.0) {
+				Target.Velocity = Target.Velocity * (0.95 + 0.05*VSize(holdPos-Target.Location)/10.0); // 0.95 - 1.0
+			}
+			LastLoc = Target.Location + Target.Velocity*DeltaTime;
+			// LastLoc = LastLoc + Target.Velocity*DeltaTime; // This will catch up (push thru wall) after blocked for some time.
+			if (!Target.Move(Target.Velocity*DeltaTime) && FRand()>0.1) {
+				ClientLog("Target "$Target.getHumanName()$" doing odd movement "$Int(VSize(LastLoc-Target.Location)));
+				// Target.SetLocation(LastLoc);
+				Target.SetLocation(Target.Location + Velocity*DeltaTime);
+			}
 
 			BrownianRotate(Target);
 
@@ -496,7 +522,7 @@ simulated function ThrowTarget() {
 	//       - Push the target away from us, and Tick it until it comes to a stop.
 	if (Target != None) {
 		Target.Velocity = GetLookDir(Instigator) * 1200.0 + Vect(0,0,300);
-		Target.Velocity *= 1.5/Difficulty();
+		Target.Velocity *= 1.5 * PullStrength / Difficulty();
 		// ClientLog("Throwing "$Target$" with velocity "$VSize(Target.Velocity)$" difficulty="$String(Difficulty()));
 		Instigator.ClientMessage("Throwing "$Target.getHumanName()$" with velocity "$VSize(Target.Velocity)$" (vertical "$Target.Velocity.Z$") difficulty="$String(Difficulty()));
 		ReleaseTarget();
@@ -519,7 +545,7 @@ simulated function float Difficulty() { // num from 1.0 to 100.0 - normal 100mas
 		#ifdef SIEGE_COMPATIBILITY
 		// Siege buildings should be heavier than normal 100 actors, but are not marked as such :P
 		if (sgBuilding(Target)!=None)
-			useMass *= (1+sgBuilding(Target).Grade/2);
+			useMass *= (2.0+sgBuilding(Target).Grade/2);
 		// Damage-giving buildings are heavier still: (I skipped the fast explosives)
 		if (
 			sgProtector(Target)!=None
@@ -529,9 +555,9 @@ simulated function float Difficulty() { // num from 1.0 to 100.0 - normal 100mas
 			useMass *= 3;
 		// The BaseCore is very heavy:
 		if (sgBaseCore(Target)!=None)
-			useMass *= 30;
+			useMass *= 240;
 		#endif
-		return FClamp(1+useMass/50,1,300);
+		return FClamp(1+useMass/50,1,800);
 	}
 }
 
@@ -733,6 +759,10 @@ function Actor FindTarget(Actor from) {
 	return bestActor;
 }
 
+function String StrAfterFirst(String s, String x) {
+	return Mid(s,Instr(s,x)+Len(x));
+}
+
 
 
 defaultproperties {
@@ -761,6 +791,7 @@ defaultproperties {
 		// Icon=Texture'Botpack.Icons.UseTrans'
 		// Mesh=Mesh'Botpack.Trans3loc'
 
+		PullStrength=1.0
 		bLogging=True // TODO
 		bPickupPlayers=True
 		bSameTeamOnly=True
