@@ -8,6 +8,8 @@
 class ForceGunMut extends Mutator Config(kxForceGun);
 
 var config bool bRemoveHammer,bUseForceGun;
+var config class<Weapon> WeaponClass;
+var config name WeaponName;
 
 replication {
   // unreliable if (Role == 4)
@@ -32,10 +34,10 @@ function AddMutator(Mutator mut) {
 
 function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
-  if (bRemoveHammer && Other.IsA('ImpactHammer') && !Other.IsA('ForceGun')) {
+  if (bRemoveHammer && Other.IsA('ImpactHammer') && !Other.IsA(WeaponName)) {
     //// TODO: Even commented out, this still causes the errors with Pure: ST_Mutator DM-Liandri.ST_Mutator0 (F_nction PureStat7G.ST_Mutator.GetReplacementWeapon:03AC) Accessed None
     ////       But at least it doesn't leave pickups sitting around.
-    ReplaceWith(Other,String(class'ForceGun')); // This was supposed to replace the hammer but it only removes it!
+    ReplaceWith(Other,String(WeaponClass)); // This was supposed to replace the hammer but it only removes it!
     Log("[kxForceGun.ForceGun] CheckReplacement("$Other$") -> ForceGun");
     return False;
   }
@@ -59,11 +61,11 @@ function GiveWeaponsTo (Pawn P) {
   local Inventory Inv;
   local Weapon w;
   if (bUseForceGun) {
-    Inv = P.FindInventoryType(class'ForceGun');
+    Inv = P.FindInventoryType(WeaponClass);
     if (Inv != None) {
       Log("[ForceGunMut] "$P.getHumanName()$" already has a "$Inv$"!"); // I've seen this, so I guess CheckReplacement() is working.
     } else {
-      w = Spawn(class'ForceGun',P);
+      w = Spawn(WeaponClass,P);
       if (w == None) {
          Log(Self$".GiveWeaponsTo("$P.getHumanName()$") Warning! Failed to spawn ForceGun!");
       } else {
@@ -73,18 +75,19 @@ function GiveWeaponsTo (Pawn P) {
          w.Instigator = P;
          w.BecomeItem();
          P.AddInventory(w);
+         // w.GiveTo(P);
          w.GiveAmmo(P);
          w.SetSwitchPriority(P);
          w.WeaponSet(P);
-         // Log(Self$".GiveWeaponsTo() Gave "$w$" to "$P);
+         Log(Self$".GiveWeaponsTo() Gave "$w$" to "$P);
       }
     }
     if (P.PlayerReplicationInfo.Deaths==0) {
     }
-    // Remove any Translocator they might have:
+    // Remove any ImpactHammer they might have:
     if (bRemoveHammer) {
       Inv = P.FindInventoryType(class'Botpack.ImpactHammer');
-      if (Inv != None && !Inv.IsA('ForceGun')) {
+      if (Inv != None && !Inv.IsA(WeaponName)) {
         Log("[ForceGunMut] Removing "$Inv$" from "$P.getHumanName());
         Inv.Destroy();
       }
@@ -102,5 +105,7 @@ function Mutate (string MutateString, PlayerPawn Sender) {
 defaultproperties {
     bRemoveHammer=True
     bUseForceGun=True // For some reason we need both of these!
+    WeaponClass=class'ForceGun'
+    WeaponName='ForceGun'
 }
 
