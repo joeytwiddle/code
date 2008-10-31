@@ -107,5 +107,7 @@ defaultproperties {
     bUseForceGun=True // For some reason we need both of these!
     WeaponClass=class'ForceGun'
     WeaponName='ForceGun'
+    // WeaponClass=class'ForceHammer'
+    // WeaponName='ForceHammer'
 }
 

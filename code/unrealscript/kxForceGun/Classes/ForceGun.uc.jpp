@@ -22,11 +22,19 @@
 //       It may be the simulated InitTarget() or something else we do on the client, or something we do on the server that we are not supposed to do to PlayerPawns!
 //       It is possible to pickup earlier players though - piglet it and I managed it with an early (pre cvs?) version.
 // TODO: RUs do not move
+// TODO: A bot moved a container with the ForceGun, but the mesh did not move!
+// TODO: When we move a VisibleTeleporter, one of the meshes doesn't move.
+// TODO: VisibleTeleporter is also an example of something which was bUnlit before but gets wrongly set to !bUnlit when dropped.
 
 #define SIEGE_COMPATIBILITY
 // DONE: sgSuperProtector has THREE meshes - don't break, find all with corresponding owner.
 
-class ForceGun expands TournamentWeapon Config(kxForceGun);
+#ifndef FORCEGUN_CLASS
+#define FORCEGUN_CLASS ForceGun
+#define FORCEGUN_PARENTCLASS TournamentWeapon
+#endif
+
+class FORCEGUN_CLASS expands FORCEGUN_PARENTCLASS Config(kxForceGun);
 
 // #define PHYS_ForceGun PHYS_Falling
 // #define PHYS_ForceGun PHYS_None
@@ -538,6 +546,9 @@ simulated function Destroyed () {
 // Difficulty is basically mass, but it is tweaked, because many Actors are 100 when I want them to have other values.
 simulated function float Difficulty() { // num from 1.0 to 100.0 - normal 100mass object has Difficulty 3.
 	local float useMass;
+	// The default masses we get are pretty odd:
+	// Some weapons are 100, some 50.  Some pickups are 100.  Bots and players are 100.
+	// We could act to override, or work *with* values which we deem incorrect.
 	if (Target==None) {
 		return 1.0;
 	} else {

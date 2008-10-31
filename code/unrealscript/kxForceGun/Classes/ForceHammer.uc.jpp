@@ -1,0 +1,5 @@
+#define FORCEGUN_CLASS ForceHammer
+#define FORCEGUN_PARENTCLASS ImpactHammer
+
+#include "ForceGun.uc.jpp"
+
