@@ -1,17 +1,15 @@
-LOGFILE="$LOGDIR/$NETWORK-#ut.pmplive2.log"
-if [ -f "$LOGFILE" ]
-then
-	TIME_REMAINING=` tail -n 20 "$LOGFILE" | grep "<PmP|Maria>" | tail -n 1 | takecols 5 | sed 's+^\[\(.*\):\(.*\)\]+\1m\2s remaining+' `
-	SCORES=`sh ut_servers/scorefromlivechan "$LOGFILE"`
-	## Avoid scores from *last* map showing, after map has switched.
-	if [ "$TIME_REMAINING" = "20m00s remaining" ]
-	then SCORES="" ; TIME_REMAINING=""
-	fi
-fi
+## Now done by utp:
+# LOGFILE="$LOGDIR/$NETWORK-#ut.pmplive2.log"
+# if [ -f "$LOGFILE" ]
+# then
+	# TIME_REMAINING=` tail -n 20 "$LOGFILE" | grep "<PmP|Maria>" | tail -n 1 | takecols 5 | sed 's+^\[\(.*\):\(.*\)\]+\1m\2s remaining+' `
+	# SCORES=`sh ut_servers/scorefromlivechan "$LOGFILE"`
+	# ## Avoid scores from *last* map showing, after map has switched.
+	# if [ "$TIME_REMAINING" = "20m00s remaining" ]
+	# then SCORES="" ; TIME_REMAINING=""
+	# fi
+# fi
 
-QUERY=`
 # ./utp "$@" 82.96.91.7:6200
 # ./utp "$@" 82.96.91.61:6200
-./utp "$@" 82.96.91.12:6200
-`
-echo "$QUERY $SCORES $TIME_REMAINING"
+REPCHAN="#ut.pmplive2" ./utp "$@" 82.96.91.12:6200
