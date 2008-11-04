@@ -86,6 +86,7 @@ NL="\\
 				echo "$COLRESET""Nothing found for \"$SEARCH\""
 			else cat
 			fi |
+			sort |
 			tr '\n' ' ' |
 
 			# sed "s+mutators=\([^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL""mutators=\1$NL\2=+" |
@@ -97,10 +98,17 @@ NL="\\
 			# sed "s+\([^ ,=]*\)=+$COLBLUE\1$COLYELLOW=$COLAQUA+g" | ## colours are broken here somehow
 			sed 's+,\([^ ]\)+, \1+g' |
 
+			## Numbers:
 			# sed "s+[0-9][0-9]*+$COLGREEN\0$COLAQUA+g" | ## Must do this one before others!
-			sed "s+=\([0-9][0-9.]*\)+=$COLGREEN\1$COLAQUA+g" | ## Must do this one before others!
+			# sed "s+=\([0-9][0-9.]*\)+=$COLGREEN\1$COLAQUA+g" | ## Must do this one before others!
+
+			## Booleans:
+			sed "s+\(\<true\>\)+$COLGREEN\0+ig" |
+			sed "s+\(\<false\>\)+$COLRED\0+ig" |
+
 			# sed "s+,+$COLGREY\0$COLBLUE+g" |
-			sed "s+\([^ ]*\)=+$COLBLUE\1$COLORANGE=$COLAQUA+g" |
+			# sed "s+\([^ ]*\)=+$COLBLUE\1$COLORANGE=$COLAQUA+g" |
+			sed "s+\([^ ]*\)=+$COLRESET\1=$COLAQUA+g" |
 
 			# sed 's/, /+/g' |
 			# sed "s+[ ]*mutators\([^=]*=[^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL$COLPINK""Mutators\1$NL$COLBLUE\2=+" |
@@ -226,6 +234,13 @@ NL="\\
 				if [ "$NOPLAYERS" ]
 				then cat > /dev/null
 				else cat
+				fi
+
+				if [ "$REPCHAN" ]
+				then
+					SCORE_AND_TIMELEFT=`sh ./ut_servers/scorefromlivechan "$REPCHAN"`
+					[ "$SCORE_AND_TIMELEFT" ] && echo -n " $COLAQUA$SCORE_AND_TIMELEFT"
+					echo -n " $COLRESET""$REPCHAN"
 				fi
 
 				## Why did I have COLRESET off?!
