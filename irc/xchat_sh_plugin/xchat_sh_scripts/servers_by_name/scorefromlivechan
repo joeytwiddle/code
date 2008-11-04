@@ -1,3 +1,53 @@
+REPCHAN="$1"
+LOGFILE="$LOGDIR/$NETWORK-$REPCHAN.log"
+
+if [ ! -f "$LOGFILE" ]
+then
+	jshwarn "Cannot scan $REPCHAN since no logfile found: $LOGFILE"
+	exit 1
+fi
+
+touch -d "2 minutes ago" /tmp/1minago
+if newer /tmp/1minago "$LOGFILE"
+then
+	jshinfo "Not checking $REPCHAN for scores since the logfile is OLD!"
+	exit 2
+fi
+rm -f /tmp/1minago
+
+## Logfile should have lines like this:
+## 2008-11-04 00:28:41 [#repchan] <repbot> [02:37] New Score: Red Team 2:2 Blue Team
+
+SCORE=`
+	tail -n 2000 "$LOGFILE" |
+	## We must convert "[20:00] *** Currently Playing: ..." to score 0-0
+	## since this indicates a new map, but it does not provide a "New Score: 0:0" for us :P
+	sed 's+\*\*\* Currently Playing:.*+New Score: Reddies 0:0 Bluees+' |
+	grep "\<New Score:" |
+	tail -n 1 |
+	afterfirst "New Score:" |
+	sed 's+.* \([0-9][0-9]*:[0-9][0-9]*\) .*+\1+ ; s+:+-+'
+`
+TIME=` tail -n 200 "$LOGFILE" | dropcols 1 2 3 4 | takecols 1 | grep '^\[.*\]$' | tail -n 1 `
+
+
+if [ "$TIME" = "[20:00]" ]
+then exit 0 ## Fresh map, game has not started.
+fi
+
+if [ "$TIME" = "[00:00]" ]
+then TIME="Game Ended"
+else TIME="`echo "$TIME" | sed 's+^\[[0:]*++;s+:+m+;s+\]$+s+'` remaining"
+fi
+
+echo "[$SCORE] $TIME"
+
+exit
+
+
+
+## OLD method:
+
 LOGFILE="$1"
 [ "$LOGFILE" ] || LOGFILE="$HOME/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pmplive2.log"
 
