@@ -1,7 +1,9 @@
 # ./utp "$@" 84.31.200.198:666
 
-RESULT=`./utp "$@" 84.31.200.198:666`
-if echo "$RESULT" | grep "no response" >/dev/null
-then NOTICE_STYLE=none ./scraping/searchserv "Extended Last Man Standing"
-else echo "$RESULT"
-fi
+# RESULT=`./utp "$@" 84.31.200.198:666`
+# if echo "$RESULT" | grep "no response" >/dev/null
+# then NOTICE_STYLE=none ./scraping/searchserv "Extended Last Man Standing"
+# else echo "$RESULT"
+# fi
+
+./utp "$@" 195.149.21.71:7700
