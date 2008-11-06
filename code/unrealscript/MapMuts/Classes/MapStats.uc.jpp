@@ -25,6 +25,8 @@
 // Update: Right now I only seem to be getting the first problem.
 //       The DLO actually succeeds on the first mapswitch attempt, so maybe we should prevent it from running the second time around.
 
+// DONE: Should not act in the first of two Assault rounds.  Fortunately the timeout was high enough in my case so the map switched anyway.
+
 // All XOL's info is stored in Fate.BestFitMapList
 
 // DONE: mutate search <part_of_mapname>   so we can see what maps are installed even if they aren't in mapvote
@@ -168,7 +170,7 @@ KnownGameTypes="CTF:botpack.CTFGame|DM:botpack.DeathMatchPlus:botpack.TeamGamePl
 // #define DebugLog(Y); 
 #define DebugLog(Y); if (bDebugLogging) { Log("-MapStats- " $ Y); }
 // #define NormalLog(Y); 
-#define NormalLog(Y); if (bLogging) { Super.Log("[MapStats] " $ Y); }
+#define NormalLog(Y); if (bLogging) { Super.Log("[MapStats] "$Int(Level.TimeSeconds)$" " $ Y); }
 #define WarnLog(Y); Super.Log("Warning! [MapStats] " $ Y);
 // Fails: // function NormalLog(String Y) { if (bLogging) { Super.Log(Y); } }
 // Fails: // #define Log(Y); NormalLog(Y);
@@ -363,9 +365,9 @@ function ModifyPlayer(Pawn Other) {
 				// Update some stats for this map:
 				currentMap.DateLastPlayed = DaysSince1970();
 				#ifdef LIST_RECENTLY_PLAYED
-				RecentlyPlayedMaps = StrReplace(RecentlyPlayedMaps,mapName$" ","") $ mapName $ " ";
+				RecentlyPlayedMaps = StrReplace(RecentlyPlayedMaps," "$mapName$" "," ") $" "$ mapName;
 				if (Len(RecentlyPlayedMaps)>60) {
-					RecentlyPlayedMaps = StrAfterFirst(RecentlyPlayedMaps," ");
+					RecentlyPlayedMaps = " "$ StrAfterFirst(StrAfterFirst(RecentlyPlayedMaps," ")," ");
 				}
 				#endif
 				// bMustSave = True;
@@ -436,6 +438,11 @@ event Timer() {
 			}
 		}
 		// Level.Game.MaxPlayers = 2*Int( (CountActors(class'PlayerPawn')+1.0)/2.0 );
+	}
+
+	// We do not do the below checks for bEndGameSwitchMap if this is the first of two assault rounds.
+	if (Assault(Level.Game)!=None && Assault(Level.Game).Part ==1) {
+		return;
 	}
 
 	// Check if game has just ended:
@@ -566,21 +573,26 @@ function DoLevelSwitch() {
 	} else {
 		url = url $"?game="$ gametype;
 	}
-	// TODO: We didn't handle mutators yet ... well leaving them empty will keep them the same as last map.
+	// TODO: We didn't handle mutators yet ... well leaving them empty might just keep them the same as last map.
+	//       This is undesirable on kx if, say, we change from eLMS mode to CTF!
 	// url = url $"?mutator=...";
+	// TODO: We should also try Level.ConsoleCommand()!
 	if (p != None) {
 		p.bAdmin = True;
 		NormalLog("DoLevelSwitch() Calling "$p.getHumanName()$".ConsoleCommand(\"admin servertravel "$url$"\")");
 		p.ConsoleCommand("admin servertravel "$url);
 		p.bAdmin = False;
+		// TODO: I think client was disconnecting although the switch went ok.
 	} else {
 		//// Fallback methods...
 		//// Not the desired method with players present, well at least one of the below caused client disconnect. =/
 		NormalLog("DoLevelSwitch() No PlayerPawn available.");
-		if (TryingMap == "") {
+		if (TRUE || TryingMap == "") {
 			//// Works now, best so far:
 			NormalLog("DoLevelSwitch() Doing: Level.NextURL = "$url);
 			Level.NextURL = url;
+			// It causes clients to disconnect, but that's ok, we don't have any!
+			// Level.ServerTravel(url,false); // This works for the server.  I think it might cause trouble for joined clients though.
 		} else {
 			//// This was crashing with AnthChecker1.38!
 			// NormalLog("DoLevelSwitch() Doing: Level.ServerTravel(\""$url$"\",false)");
@@ -592,6 +604,8 @@ function DoLevelSwitch() {
 			// Level.Game.ProcessServerTravel(url,false); // This did not work
 		}
 		//// Even if I turn all these off, it seems a level change is made anyway.  Mmm dunno maybe that was with PreClientTravel().
+		//// Did not work:
+		// Level.ConsoleCommand("admin servertravel "$url);
 	}
 
 	#ifdef CATCH_LEVEL_SWITCH
@@ -828,7 +842,7 @@ function String ChooseNextMap() {
 					if (Level.Game.bGameEnded) {
 						ConsideredMaps = ConsideredMaps $ bestMap $" ";
 					} else {
-						ConsideredMaps = ConsideredMaps $ bestMap $"("$ NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $","$ NiceFloat(MapRecord(bestMap).PreferredPlayers) $")"$ " ";
+						ConsideredMaps = ConsideredMaps $ bestMap $"("$ StrReplace(NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed)," ","_") $","$ NiceFloat(MapRecord(bestMap).PreferredPlayers) $")"$ " ";
 					}
 					if (Len(ConsideredMaps)>60)
 						ConsideredMaps = StrAfterFirst(ConsideredMaps," ");
@@ -870,11 +884,13 @@ function int CountActors(class<Actor> type) {
 
 #ifdef CATCH_LEVEL_SWITCH
 event Tick(float DeltaTime) {
-	if (TryingMap!="") {
+	if (TryingMap!="" && FRand()<0.005) {
 		// We have tried to switch map, but here we are still running.
 		// Most likely the log is saying something like: Failed to load 'Level None.MyLevel': Can't find file 'CTF-Audacity'
 		// We will try again, switching to a different map.
 		NormalLog("CRASHED MAP: "$TryingMap);
+		MapRecord(TryingMap).bCrashes = False; // TESTING TODO REMOVE: I was testing servertravel methods and falsely marking maps as crashed when actually it was the travel method
+		SaveConfig();
 		// We should have already saved the map marked as crashed in the last DoLevelSwitch().
 		// MapRecord(TryingMap).bCrashes = True;
 		// SaveConfig();
@@ -894,16 +910,16 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
 }
 
-function bool ScanMaps(optional String search) {
+function bool ScanMaps(optional String search, optional String prefix) {
 	local string FirstMap, NextMap, TestMap, MapName;
 	local int availableCount,crashCount,missingCount,unknownCount;
 	local int count,i;
-	local String prefix;
 	// prefix = Botmatch.Parent.Default.MapPrefix;
 	// prefix = Botpack.CTFGame.Default.MapPrefix;
 	// NormalLog("ScanMaps(): Starting new scan...");
 	// NormalLog("Iterate maps running...");
 	local int blocked;
+	// It sucks that we only scan one gametype prefix at a time (presently the prefix of the currently playing map).
 
 	count = 0;
 	// Reset bOnDisk info, because we are about to regenerate it:
@@ -921,8 +937,8 @@ function bool ScanMaps(optional String search) {
 	}
 	NormalLog("ScanMaps() Total maps in database: "$count$" with "$ 100*blocked/count $"% congestion.");
 
-	// TODO: we only scan maps which match the current gamemode.  If it stays this way, at least document it!
-	prefix = Level.Game.Default.MapPrefix;
+	if (prefix == "")
+		prefix = Level.Game.Default.MapPrefix;
 	FirstMap = GetMapName(prefix, "", 0);
 	NextMap = FirstMap;
 	count = 0;
@@ -1005,8 +1021,9 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 		#endif
 
 		#ifdef MAP_TAGS
-		if (Left(Msg,8)~="!tagmap ") {
-			AddTags(Right(Msg,8));
+		if (Left(Msg,5)~="!tag ") {
+			AddTags(Right(Msg,5));
+			ListMapsTo(PlayerPawn(Sender),mapName);
 			SaveConfig();
 		}
 		#endif
@@ -1090,7 +1107,12 @@ function Mutate(String str, PlayerPawn Sender) {
 		if (str~="scanmaps" && Sender.bAdmin) {
 			bDoMapScan=True;
 			bMapScanDone=False;
-			ScanMaps();
+			ScanMaps(,"AS");
+			ScanMaps(,"BT");
+			ScanMaps(,"CTF");
+			ScanMaps(,"DM");
+			ScanMaps(,"DOM");
+			ScanMaps(,"RA");
 		}
 		if (StrStartsWith(Caps(str),"LIST ") || StrStartsWith(Caps(Str),"LISTMAPS")) { // aka SHOWINFO
 			if (StrContains(str," ")) {
@@ -1105,7 +1127,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		}
 		#endif
 		if (str~="help") {
-			Sender.ClientMessage("MapStats say commands: yes | no | good map | bad map | !tagmap <tag1,tag2,...>");
+			Sender.ClientMessage("MapStats say commands: yes | no | good map | bad map | !tag <tag1,tag2,...>");
 			Sender.ClientMessage("MapStats mutate commands: help | suggest | list <part_of_mapname> | listrecent");
 			Sender.ClientMessage("MapStats admin mutate commands: nextmap | scanmaps");
 		}
@@ -1114,22 +1136,39 @@ function Mutate(String str, PlayerPawn Sender) {
 	Super.Mutate(str, Sender);
 }
 
-function ListMapsTo(PlayerPawn p, String str) {
+function ListMapsTo(PlayerPawn p, String searchStr) {
 	local int i;
 	local bool hit;
-	str = Caps(str);
+	local String outStr;
+	searchStr = Caps(searchStr);
 	for (i=0;i<MaxData;i++) {
-		if (MapStats[i].MapName != "" && StrContains(Caps(MapStats[i].MapName),str)) {
-			#ifdef MAP_TAGS
-			p.ClientMessage("["$i$"] "$MapStats[i].MapName$" playcount="$((MapStats[i].GamesStarted+MapStats[i].GamesEnded)/2)$" prefplayers="$Left(""$MapStats[i].PreferredPlayers,4)$" +"$MapStats[i].GoodVotes$" -"$MapStats[i].BadVotes$" tags="$MapStats[i].Tags);
-			#else
-			p.ClientMessage("["$i$"] "$MapStats[i].MapName$" playcount="$((MapStats[i].GamesStarted+MapStats[i].GamesEnded)/2)$" prefplayers="$Left(""$MapStats[i].PreferredPlayers,4)$" +"$MapStats[i].GoodVotes$" -"$MapStats[i].BadVotes$"");
+		if (MapStats[i].MapName != "" && StrContains(Caps(MapStats[i].MapName),searchStr)) {
+			outStr = "";
+			outStr = outStr $ "#="$Left(""$MapStats[i].PreferredPlayers,4);
+			#ifdef MAP_RATING
+				outStr = outStr $" +"$ MapStats[i].GoodVotes $" -"$ MapStats[i].BadVotes;
 			#endif
+			outStr = outStr $ " ["$i$"]";
+			if (MapStats[i].bCrashes) outStr = outStr $ " CRASHES";
+			if (!MapStats[i].bOnDisk) outStr = outStr $ " MISSING";
+			if (MapStats[i].bDisabled) outStr = outStr $ " DISABLED";
+			outStr = outStr $ " \"" $ MapStats[i].MapName $ "\"";
+			outStr = outStr $ " games="$(MapStats[i].GamesStarted+MapStats[i].GamesEnded)/2$" flow="$Left(String(MapStats[i].AveragePlayerFlow),3);
+			#ifdef MAP_TAGS
+				outStr = outStr $ " tags="$MapStats[i].Tags;
+			#endif
+			p.ClientMessage(outStr);
 			hit = true;
 		}
 	}
+
+	if (MapStats[i].MapName != "") { // TODO: bAdmin ?
+		NextMap = MapStats[i].MapName;
+		BroadcastMessage("Next map will be "$NextMap);
+	}
+
 	if (hit == false) {
-		p.ClientMessage("I could not find any map matching "$Locs(str)$" - use mutate scanmaps to rescan at next mapswitch.");
+		p.ClientMessage("I could not find any map matching "$Locs(searchStr)$" - try \"mutate scanmaps\" to rescan at next mapswitch.");
 	}
 }
 
