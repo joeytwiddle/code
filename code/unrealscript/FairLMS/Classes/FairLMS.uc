@@ -25,6 +25,9 @@
 // In LMS fragged players are not dropping their weapons?!  Then we really must increase their ammo!
 // TODO: Still showing "Large Bullets"
 // TODO: Make it an admin option, whether sounds are heard by all or only the relevant player.
+// TODO CONSIDER: If it's a TeamGame, spawn the same Powerup for each team at semi-regular intervals, somewhere in front of their player with most health (who is in their base, or least under threat).
+//                In Siege games, makes this dependent on certain conditions.
+// TODO: Remove logging, or #define it to be optional and efficient.
 
 class FairLMS expands Mutator config(FairLMS);
 
@@ -33,6 +36,7 @@ struct LMSBonus {
 	var Color Color;
 	var String Name;  // If not set, defaults to item's ItemName.
 	var String Sound; // If not set, defaults to item's PickupSound.
+	var int Ammo; // If not set, defaults to weapon's default ammo x 4.
 };
 
 var config bool bLogging;
@@ -58,7 +62,7 @@ var bool bGameStarted,bTwoPlayersLeft;
 // var int TimerCount;
 
 function LogWarn(String Msg) {
-	BroadcastMessage("[WARN] "$Msg);
+	BroadcastMessage("[FairLMS] "$Msg);
 }
 
 function PostBeginPlay() {
@@ -161,7 +165,7 @@ event Timer() {
 	}
 
 	// Check to see if there are only 2 players left.
-	if (bGameStarted && LastManStanding(Level.Game)!=None && aliveCount==2 && !bTwoPlayersLeft && FRand()<0.2) { // Delay to avoid get overwritten by LastManStanding.
+	if (bGameStarted && LastManStanding(Level.Game)!=None && aliveCount==2 && !bTwoPlayersLeft && FRand()<0.2) { // Delay to avoid get overwritten by other messages.
 		foreach AllActors(class'PlayerPawn',pp) {
 			FlashMessage(pp,"Two players left:",MessageColor,3,true);
 			FlashMessage(pp,players,MessageColor,4,true);
@@ -237,6 +241,7 @@ function GiveInitialInventory(Pawn p) {
 				/*
 				Inv = p.FindInventoryType(wType);
 				if (Inv == None) {
+					// TODO: we could try Spawning and Giving - in which case we should refactor the spawning out of GiveRandomPowerup().
 					DeathMatchPlus(Level.Game).GiveWeapon(p,InitialWeapon[i]);
 				} else {
 					// LogWarn(Self$".GiveInitialInventory() Warning! "$p.getHumanName()$" already had a "$wType$" so re-using it "$Inv);
@@ -301,7 +306,7 @@ function GiveInventory(Pawn p, Inventory inv) {
 		// Not for the redeemer (or other 1 ammo weapons):
 		if (Weapon(inv)!=None && Weapon(inv).AmmoType!=None && Weapon(inv).AmmoType.AmmoAmount>1) {
 			// Increase ammo x 3
-			Weapon(inv).AmmoType.AmmoAmount = Weapon(inv).AmmoType.AmmoAmount * 3;
+			Weapon(inv).AmmoType.AmmoAmount = Weapon(inv).AmmoType.AmmoAmount * 4; // Now 4 sixpacks instead of 3
 		}
 		w.SetSwitchPriority(P);
 		w.WeaponSet(P);
@@ -336,18 +341,27 @@ function GiveRandomPowerup(Pawn p) {
 			continue;
 
 		if (Powerup[i].Type == "FairLMS.AmmoBoost") {
-			if (FRand()<0.25)
-				continue; // Since this item never enters the inventory, we might offer it too often, so 75% chance of re-roll.
-			for (inv=p.Inventory;inv!=None;inv=p.Inventory) {
+			if (p.Weapon!=None && p.Weapon.AmmoType!=None && p.Weapon.AmmoType.AmmoAmount>=15 && FRand()<0.9) {
+				// His current weapon has plenty of ammo - don't give him an AmmoBoost
+				continue;
+			}
+			if (p.Weapon!=None && p.Weapon.AmmoType!=None && p.Weapon.AmmoType.AmmoAmount<=8 && FRand()<0.9) {
+				// His current weapon is a bit low - definitely give the AmmoBoost
+			} else {
+				// We don't know the state of his weapon, or his ammo is "average".
+				if (FRand()<0.25)
+					continue; // Since this item never enters the inventory, we might offer it too often, so 75% chance of re-roll.
+			}
+			for (inv=p.Inventory;inv!=None;inv=inv.Inventory) {
 				if (Weapon(inv)!=None) {
 					if (Weapon(inv).AmmoType==None) {
 						LogWarn("FairLMS.GiveRandomPowerup() Can not boost ammo for "$inv);
 					} else {
 						if (Weapon(inv).AmmoType.default.AmmoAmount>1) { // Not for deemer
 							Weapon(inv).AmmoType.AmmoAmount = Weapon(inv).AmmoType.default.AmmoAmount;
-							LogWarn("FairLMS.GiveRandomPowerup() Boosted ammo "$Weapon(inv).AmmoType$" to "$Weapon(inv).AmmoType.AmmoAmount);
+							Log("FairLMS.GiveRandomPowerup() Boosted ammo "$Weapon(inv).AmmoType$" to "$Weapon(inv).AmmoType.AmmoAmount);
 						} else {
-							LogWarn("FairLMS.GiveRandomPowerup() Not boosing ammo for "$inv);
+							LogWarn("FairLMS.GiveRandomPowerup() Not boosting ammo for "$inv);
 						}
 					}
 				}
@@ -371,6 +385,10 @@ function GiveRandomPowerup(Pawn p) {
 			if (inv == None) {
 				Log(Self$".GiveRandomPowerup() Failed to spawn "$type);
 				continue;
+			}
+
+			if (Powerup[i].Ammo>0 && Weapon(inv)!=None && Weapon(inv).AmmoType!=None) {
+				Weapon(inv).AmmoType.AmmoAmount = Powerup[i].Ammo;
 			}
 
 			// OK we have created the powerup, we can give it to the player:
@@ -494,11 +512,11 @@ defaultproperties {
 	Powerup(5)=(Type="Botpack.UT_JumpBoots",Color=(R=91,G=255,B=255,A=32))
 	Powerup(6)=(Type="Botpack.WarheadLauncher",Color=(R=180,G=21,B=21,A=32))
 	Powerup(7)=(Type="FairLMS.AmmoBoost",Color=(R=102,G=102,B=102,A=32),Name="Ammo Boost")
+	// Speed - too much!
+	// Relics...
 	// Powerup(7)=(Type="SiegeXXL2f.JetPack",Color=(R=91,G=192,B=255,A=32))
 	// Powerup(8)=(Type="kxGrapple.GrappleGun",Color=(R=255,G=60,B=60,A=44))
 	// Powerup(9)=(Type="kxDoubleJump.DoubleJumpBoots",Color=(R=91,G=255,B=255,A=32))
-	// None of the ammo "powerups" are working - probably we already have an ammo of that type, altho maybe 0 of it.
-	// So, should we make a FreshAmmoPickupItem, or should we just fudge it into FairLMS always, or as an option?
 	//// Not working - I get a second enforcer, rather than my single becoming double!  Is that zp related?
 	// Powerup(19)=(Type="Botpack.DoubleEnforcer",Color=(R=180,G=180,B=180,A=32))
 }
