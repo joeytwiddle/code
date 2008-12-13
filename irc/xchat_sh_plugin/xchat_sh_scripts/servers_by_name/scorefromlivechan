@@ -1,3 +1,9 @@
+# vim: filetype=sh syn=on
+
+## TODO: The 20:00 below is bad - we could actually detect the initial clock from the first "Currently Playing" after the last mapswitch.
+
+## TODO: This was written for CTF.  What will happen during AS, DM, TDM, DOM or Siege games?!
+
 REPCHAN="$1"
 LOGFILE="$LOGDIR/$NETWORK-$REPCHAN.log"
 
@@ -30,8 +36,9 @@ SCORE=`
 `
 TIME=` tail -n 200 "$LOGFILE" | dropcols 1 2 3 4 | takecols 1 | grep '^\[.*\]$' | tail -n 1 `
 
-if [ "$TIME" = "[20:00]" ]
-then exit 0 ## Fresh map, game has not started.
+if [ "$TIME" = "[20:00]" ] || [ "$TIME" = "[00:00]" ] || [ "$TIME" = "[15:00]" ] || [ "$TIME" = "[Warmup]" ]
+then
+	[ "$SCORE" = "0-0" ] && exit 0 ## Fresh map, game has not started.  Or unlucky exactly 5 minutes into 20 minutes game with 0 caps.
 fi
 ## Actually that's only true for servers set for 20 minute games!
 ## If we really want to detect game start, look for:
