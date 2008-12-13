@@ -8,9 +8,9 @@ class DoubleJumpBoots extends TournamentPickup config(kxDoubleJump);
 
 var() config int MaxJumps;
 var() config float JumpHeight;
-var() config float VelocityLimit;
-var() config int JumpType;
-var() config int JumpStyle;
+var() config float VelocityLimit; // Defines the size of the apex
+var() config int JumpType; // This is the restriction on jumping
+var() config int JumpStyle; // This is the type of jump that the player performs
 var() config float RechargeRate;
 var() config bool bRestrictFC;
 var int nofJumps;
@@ -98,12 +98,12 @@ exec function DoubleJump ()
     {
       switch (JumpType)
       {
-        case 0:
+        case 0: // Only allow jump at the apex
           if (Abs(P.Velocity.Z) > VelocityLimit) { // Not at apex
             return;
           }
         break;
-        case 1:
+        case 1: // Only allow jump when going upwards, or at the apex (not falling too fast)
           if (P.Velocity.Z < -VelocityLimit) { // Falling fast
             return;
           }
@@ -112,10 +112,10 @@ exec function DoubleJump ()
       }
 
       switch (JumpStyle) {
-        case 0:
+        case 0: // Set standard upward velocity
           P.Velocity.Z = P.JumpZ * JumpHeight;
         break;
-        case 1:
+        case 1: // Moderated additional
           //// If we are already goin up fast, give us only half a jump extra
           P.Velocity.Z = P.Velocity.Z + 0.5 * P.JumpZ * JumpHeight;
           //// If we are not going up at jump speed, make us go up at jump speed!
@@ -145,9 +145,9 @@ exec function DoubleJump ()
       if ( (Level.Game != None) && (Level.Game.Difficulty > 0) ) {
         P.MakeNoise(0.1 * Level.Game.Difficulty);
       }
-      if ( nofJumps == MaxJumps ) {
+      // if ( nofJumps == MaxJumps ) {
         SetFinalMesh(P);
-      }
+      // }
     }
   } else {
     P.DoJump();
@@ -170,6 +170,7 @@ simulated function SetFinalMesh(PlayerPawn P) {
   if ( sqrt(P.Velocity.X*P.Velocity.X+P.Velocity.Y*P.Velocity.Y)<120) { // && P.HasAnim('Flip')) {
     //// Do not change mesh.
     // newMesh = 'Flip';
+    // TODO: should really *set* them on flat jump anim, since they may have started jumping sideways but then flattened to straight upward velocity.
   } else if ( rightness > Abs(forwardness) && P.HasAnim('ROLLRIGHT') ) {
     newMesh = 'ROLLRIGHT';
   } else if ( rightness > Abs(forwardness) && P.HasAnim('DodgeL') ) {
@@ -202,15 +203,16 @@ defaultproperties {
     // DJ:
     // JumpHeight=1.20
     // VelocityLimit=100
-    // JumpType=1
+    // JumpType=0
+    // // JumpType=1 // surely not?!
     // JumpStyle=0
 
     // kx:
     JumpHeight=1.20
     VelocityLimit=120
     JumpType=0
-    JumpStyle=0
-    // JumpStyle=2 // totest!
+    // JumpStyle=0
+    JumpStyle=2 // totest!
 
     // VelocityLimit=80 // slightly harder because we use additional velocity - actually 100 seems hard enough ;p
 

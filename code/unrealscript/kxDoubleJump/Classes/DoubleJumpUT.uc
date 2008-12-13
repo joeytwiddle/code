@@ -16,7 +16,7 @@ function ModifyPlayer (Pawn Other)
   local DoubleJumpBoots DJ_Inv;
 
   Super.ModifyPlayer(Other); // 0x00000014 : 0x0000
-  if (  !Other.IsA('PlayerPawn') || Other.IsA('Spectator') ) // 0x00000019 : 0x000B
+  if ( Other.IsA('Spectator') || (!Other.IsA('PlayerPawn') && !Other.IsA('Bot')) ) // 0x00000019 : 0x000B
   {
     return; // 0x0000003A : 0x0037
   }
