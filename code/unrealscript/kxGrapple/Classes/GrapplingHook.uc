@@ -2,7 +2,11 @@
 // GrapplingHook.
 //================================================================================
 
-// TODO: fires on spawn :f
+// TODO: Current line release is nice and realistic, but not easy to use.  Make line release constant and medium-speed, so player can tweak his altitude neatly, maybe let it grow (aka power,velocity,sensitivity) a bit, but falling with gravity is too little at the start, and then quickly too much!
+// TODO: 
+// TODO: allow player to say ABV as well as mutate it
+// TODO: visible jerks when GrappleSpeed is set high (1400+)
+// DONE: Fires on (click to) spawn, if GrappleGun is the player's default weapon.  "Fixed" by making it not the default weapon.
 // TODO: makes amp sounds when used with amp
 // TODO: sometimes trying to hook when we are right next to the walls fails - we need an audio indicator of that (sometimes we hear the ThrowSound twice)
 // TODO: Wall hit sound could be a bit better / should be clear + distinct from throw sound.
@@ -49,6 +53,8 @@
 // DONE: Damage when grapple is pulled back.
 // TODO: Allow maximum range on the grappling hook (aka maximum line length).
 // DONE: Disabled winch when *also* crouching, so you can fire and swing, or fire and winch, or drop without firing!
+// TODO: bJumpAlwaysRetracts - actually only after 1 second after grapple connected.  Before then player might be jumping thinking their grapple has not yet engaged.
+// TODO: ABV switching does not work in NM_Standalone!
 
 class GrapplingHook extends Projectile Config(kxGrapple);
 
@@ -79,6 +85,7 @@ var() config sound HitSound,PullSound,ReleaseSound,RetractSound;
 var() config Mesh LineMesh;
 var() config Texture LineTexture;
 var() config bool bLogging;
+var() config float StuckSlowdown;
 
 var GrappleGun Master;
 var Vector pullDest;
@@ -436,34 +443,39 @@ function CheckFlagDrop() {
         ) {
           // A = Trace(NewPivot,hNormal,LastLine.NearPivot,Instigator.Location,false);
           A = Trace(NewPivot,hNormal,LastLine.NearPivot,Instigator.Location,false);
-          if (A == None || A==LastLine || A==Self) { // A==Self never seems to happen / be needed but w/e
-            // We can see the grapple again!
-            // pullDest = LastLine.NearPivot; // No this must now become LastLine.LastLine.Reached or grapple Location otherwise!
-            if (LastLine.ParentLine == None) {
-              pullDest = Location;
-            } else {
-              pullDest = LastLine.ParentLine.Reached;
-            }
-            // Neither of these feel great, when you jump because you were stuck then SetLocation worked.
-            lineLength = VSize(Instigator.Location - pullDest);
-            // lineLength = VSize(pullDest - LastLine.Reached) + lineLength;
+          if (A == None || A==LastLine) { // A==Self never seems to happen / be needed but w/e
+            // But we should also  be able to see LastLine.Reached.
+            // TODO: This is better, but it still allows the line to ghost through some thin pipes.
+            // A = Trace(NewPivot,hNormal,LastLine.Reached,Instigator.Location,false);
+            // if (a == None || A==LastLine) { // TODO: This does not work too well :P
+              // We can see the grapple again!
+              // pullDest = LastLine.NearPivot; // No this must now become LastLine.LastLine.Reached or grapple Location otherwise!
+              if (LastLine.ParentLine == None) {
+                pullDest = Location;
+              } else {
+                pullDest = LastLine.ParentLine.Reached;
+              }
+              // Neither of these feel great, when you jump because you were stuck then SetLocation worked.
+              lineLength = VSize(Instigator.Location - pullDest);
+              // lineLength = VSize(pullDest - LastLine.Reached) + lineLength;
 
-            if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
+              if (bLogging) { Log(Level.TimeSeconds$" "$Self$".DoLineOfSightChecks() Merging "$LineSprite$" into "$LastLine); }
 
-            LineSprite.bStopped = True;
-            LineSprite.DrawType = DT_None;
-            LineSprite.SetPhysics(PHYS_None);
-            // LineSprite.Disable('Tick');
-            LineSprite.Destroy(); // Fail as expected :P
+              LineSprite.bStopped = True;
+              LineSprite.DrawType = DT_None;
+              LineSprite.SetPhysics(PHYS_None);
+              // LineSprite.Disable('Tick');
+              LineSprite.Destroy(); // Fail as expected :P
 
-            LineSprite = LastLine;
+              LineSprite = LastLine;
 
-            LastLine.bStopped = False;
-            LastLine.SetPhysics(PHYS_Rotating);
-            // LastLine.Enable('Tick');
-            // LastLine.Reached = vect(0,0,0); // we could use it as a marker like bStopped
-            // CONSIDER: If this revival of old GrapplingLine fails, we could just destroy it and spawn a fresh one.
-            if (bLogging) Instigator.ClientMessage("Your grappling line has straightened new length "$lineLength);
+              LastLine.bStopped = False;
+              LastLine.SetPhysics(PHYS_Rotating);
+              // LastLine.Enable('Tick');
+              // LastLine.Reached = vect(0,0,0); // we could use it as a marker like bStopped
+              // CONSIDER: If this revival of old GrapplingLine fails, we could just destroy it and spawn a fresh one.
+              if (bLogging) Instigator.ClientMessage("Your grappling line has straightened new length "$lineLength);
+            // }
           }
         }
       }
@@ -577,7 +589,7 @@ state() PullTowardStatic {
     local Vector Inward;
     local bool doInwardPull,bSingleLine;
 
-    isStuck = False;
+    // isStuck = False;
 
     currentLength = VSize(Instigator.Location - pullDest);
 
@@ -653,7 +665,10 @@ state() PullTowardStatic {
         Master.AmbientSound = None;
         AmbientSound = None;
       } else {
-        lineLength = lineLength - 0.3 * GrappleSpeed*DeltaTime;
+        if (isStuck)
+          lineLength = lineLength - 0.3 * StuckSlowdown*GrappleSpeed*DeltaTime;
+        else
+          lineLength = lineLength - 0.3 * GrappleSpeed*DeltaTime;
         // 0.3 is my estimate conversion from acceleration to velocity
         Master.AmbientSound = PullSound;
         AmbientSound = PullSound;
@@ -733,6 +748,8 @@ state() PullTowardStatic {
         AmbientSound = None;
         doInwardPull = False;
       }
+      if (isStuck && power>0)
+        power = power*StuckSlowdown;
       linePull = power*GrappleSpeed*1.5; // I don't know what changed, but 600 was almost too weak to pull me up!
 
       // Instigator.Velocity = Instigator.Velocity + linePull*Inward*DeltaTime;
@@ -794,20 +811,28 @@ state() PullTowardStatic {
 // TESTING:
 // What we really need to do is to get the triangle that is Player - NearPivot - NextPivot
 // and move NearPivot *out* a bit.
+
+// TODO: should this be pre-empted / simulated on the client?
 function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't know what it means when there is a Rand() involved.
   local float offness;
   local Vector NextPivot;
   // if (a.MoveSmooth(targetLoc - a.Location)) // Sucks, warpish and ugly when stuck!  Also danger of leaving a crater.  :P
-  if (a.Move(targetLoc - a.Location))
+  if (a.Move(targetLoc - a.Location)) {
+    isStuck = False;
     return;
+  }
 
   // Player is stuck!
 
   // Attempted solutions to getting un-stuck:
 
+  // TODO BEST: refuse to winch (allow unwinch=slack), stop velocity, cause tiny damage~vel
+  // TODO: temporarily expand player's collision radius and height
+
   // Best solution so far (better than staying stuck?):
   // if (lineLength<MinRetract) // We are close to winding up to the next line part.  Assumption (bad?): we only get stuck at these corners.  Yes bad assumption - sometimes the line merges through line-of-sight but we are still stuck.
   // if (FRand()<0.2) // don't always do it (mid-air collisions won't guarantee telefrag :P )  Mmm not good sometimes caused large jumps due to waiting.
+    if (bLogging && FRand()<0.1) { BroadcastMessage(a.getHumanName()$" is doing dangerous movement "$Int(VSize(targetLoc-a.Location))); }
     a.SetLocation(targetLoc);
   // TODO: If we are still getting mid-air telefrags, then do a trace on this movement (starting from targetLoc?), and only force it if there is a wall in the way, not a person.
   // TODO: Play sound!
@@ -903,8 +928,8 @@ state() PullTowardDynamic {
       // Somehow the Thing got far from our grapple.
       // Maybe it took a teleporter, or respawned.  We should ungrapple.
       // (Our previous pullDest may have be pointing right at the teleporter Thing took.)
-      if (bLogging) Instigator.ClientMessage("Your target "$Thing.getHumanName()$" got too far away - maybe took a teleporter.");
-      Destroy();
+      if (bLogging) Instigator.ClientMessage("Your target "$Thing.getHumanName()$" got too far away - maybe it took a teleporter.");
+      Destroy(); // TODO: Does not work!
     }
     // Update Grapple's movement:
     if (VSize(Thing.Location-Location)>10.0) {
@@ -924,7 +949,10 @@ state() PullTowardDynamic {
 
        // Update Grappler's velocity:
        if (VSize(Self.Location - Instigator.Location) > MinRetract) {
-         Instigator.Velocity = Normal(Self.Location - Instigator.Location) * 0.3 * GrappleSpeed;
+         if (isStuck)
+           Instigator.Velocity = Normal(Self.Location - Instigator.Location) * 0.3 * StuckSlowdown*GrappleSpeed;
+         else
+           Instigator.Velocity = Normal(Self.Location - Instigator.Location) * 0.3 * GrappleSpeed;
          Master.AmbientSound = PullSound;
          AmbientSound = PullSound;
        } else {
@@ -974,7 +1002,7 @@ defaultproperties {
 
     Speed=4000.00
     MaxSpeed=4000.00
-    GrappleSpeed=900 // 600 is quite fast for old Expert100, but quite sober for GrapplingHook.
+    GrappleSpeed=900 // 600 is quite fast for old Expert100, but quite sober for GrapplingHook.  1600 is swift, and a little faster than walking
     // GrappleSpeed=0
     HitDamage=20.00 // Not very strong, but you can switch weapon and hit them with something else too!
     bDoAttachPawn=True
@@ -1009,6 +1037,7 @@ defaultproperties {
     // LineTexture=Texture'Botpack.ammocount'
     // bLogging=False // FIXED: Since GrapplingLine accesses this as a default, sometimes this setting is more relevant than the server setting.  OK now we have one config var per class.
     // Hey would we have got the config default if we hadn't set a default here? :o
+    StuckSlowdown=0.5
 }
 
 // It's true what he said.  If the defaultproperties has bLinePhysics=True, even if the server sets it to False and tries to replicate it, the client will see bLinePhysics=True.

@@ -15,7 +15,7 @@
 class GrapplingMut extends Mutator Config(kxGrapple);
 
 var bool bDoneInit;
-var config bool bRemoveTranslocator,bUseGrappleGun;
+var config bool bReplaceTranslocator,bGiveWeapon;
 var GrappleGun cl;
 
 replication {
@@ -48,7 +48,7 @@ function AddMutator(Mutator mut) {
 
 function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
-  if (bRemoveTranslocator && Other.IsA('Translocator') && !Other.IsA('GrappleGun')) {
+  if (bReplaceTranslocator && Other.IsA('Translocator') && !Other.IsA('GrappleGun')) {
     ReplaceWith(Other,String(class'GrappleGun')); // This was supposed to replace the translocator but it only removes it!
     // Log("[GrapplingHook.GrapplingMut] CheckReplacement("$Other$") -> GrappleGun");
     return False;
@@ -108,7 +108,7 @@ function ScoreKill(Pawn Killer, Pawn Victim) {
 function GiveWeaponsTo (Pawn P) {
   local Inventory Inv;
   local Weapon w;
-  if (bUseGrappleGun) {
+  if (bGiveWeapon) {
     //// Adding these did not change weapon priority.
     // DeathMatchPlus(Level.Game).GiveWeapon(P,"Botpack.ImpactHammer");
     // DeathMatchPlus(Level.Game).GiveWeapon(P,"Botpack.Enforcer");
@@ -226,7 +226,7 @@ function Mutate (string MutateString, PlayerPawn Sender) {
 defaultproperties {
     // DefaultWeapon=Class'GrappleGun'
     // Doing this used to cause the ImpactHammer to be replaced:
-    bRemoveTranslocator=True
-    bUseGrappleGun=True // For some reason we need both of these!
+    bReplaceTranslocator=True // You probably want this True for CTF, False for FairLMS/Siege.
+    bGiveWeapon=True // Whether to always give the player this weapon on spawn.
 }
 
