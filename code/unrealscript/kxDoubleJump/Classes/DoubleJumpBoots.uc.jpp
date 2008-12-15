@@ -4,6 +4,9 @@
 
 // TODO: If we have normal jump boots, our in-air doublejumps also jump with their strength.  I think this is wrong - we should ideally prevent the jump boots from being used in-air, but keep their charge.
 
+// TODO: I think we can remove GRAPPLEGUN_JUMPOFF_FIX.  The grapple jump-off is unreliable with or without DJBoots.  I doubt DJBoots are intercepting the jump call, since they work by adding a keybind!
+// #define GRAPPLEGUN_JUMPOFF_FIX
+
 class DoubleJumpBoots extends TournamentPickup config(kxDoubleJump);
 
 var() config int MaxJumps;
@@ -81,6 +84,29 @@ exec function DoubleJump ()
 {
   local PlayerPawn P;
 
+  #ifdef GRAPPLEGUN_JUMPOFF_FIX
+  // local Inventory i;
+  if (
+    // Player has a grapplinggun
+    P.FindInventoryType(class'GrappleGun') != None
+    // Player is using / has fired the grapple - it is active and he has a line (although it maybe has not hit the wall yet)
+    && GrappleGun(P.FindInventoryType(class'GrappleGun')).GrapplingHook != None
+  ) {
+    // Player is NOT holding the grapple gun, and jumping.
+    if (InStr(""$P.Weapon,"Grapple")==-1) {
+      // He probably wants to jump off his grappling line.
+      // To do that, we must cancel any air DoubleJump here.
+      Log("DoubleJumpBoots: Blocked DoubleJump to allow release from Grapple.");
+      // TODO: This doesn't appear to be getting called.
+      // If I jump while grappled but holding sniper, first time jump is often ignored, but at right time I can airjump off line nicely.
+      // Ideally we would doublejump if on was allowed (or always? depends on jumpstyle - could be too powerful upwards!), otherwise just fall off, but either way release the line.
+      // Maybe we should invoke playerpawn's default jump fvnction here, before returning.
+      // TODO: If the jump does release them from the line, and a doublejump was available, the jump should be made as they release.
+      return;
+    }
+  }
+  #endif
+
   if ( PlayerPawn(Owner) == None )
   {
     return;
@@ -92,6 +118,7 @@ exec function DoubleJump ()
   if (bRestrictFC && P.PlayerReplicationInfo.HasFlag != None && nofJumps<MaxJumps) {
     nofJumps = MaxJumps-1;
   }
+
   if ( P.Physics == 2 )
   {
     if ( nofJumps < MaxJumps )
@@ -181,7 +208,7 @@ simulated function SetFinalMesh(PlayerPawn P) {
     newMesh = 'DodgeR';
   } else if ( forwardness < (-Abs(rightness)) && P.HasAnim('DodgeB') ) {
     newMesh = 'DodgeB';
-  } else if ( P.HasAnim('Flip') ) { /*forwardness>Abs(rightness) &&*/
+  } else if ( P.HasAnim('Flip') ) { // forwardness>Abs(rightness)
     newMesh = 'Flip';
   }
   if (newMesh != '' && P.HasAnim(newMesh)) {
