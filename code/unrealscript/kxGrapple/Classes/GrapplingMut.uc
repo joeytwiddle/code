@@ -33,7 +33,22 @@ function PostBeginPlay () {
   // DefaultWeapon = Class'Enforcer'; // I set this but I still spawned with the GrappleLauncher selected.
   // DefaultWeapon = Class'ImpactHammer';
   // Level.Game.RegisterDamageMutator(self);
+  Level.Game.RegisterMessageMutator(Self);
 }
+
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	local GrappleGun gg;
+	if (Sender == Receiver) {
+		if (Msg ~= "ABV" && Pawn(Sender)!=None) {
+			gg = GrappleGun( Pawn(Sender).FindInventoryType(class'GrappleGun') );
+			if (gg != None) {
+				gg.ABV();
+			}
+		}
+	}
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
+}
+
 
 function AddMutator(Mutator mut) {
 	if (mut.class == Self.class) {
@@ -143,7 +158,8 @@ function GiveWeaponsTo (Pawn P) {
       // if (bDefaultBehindView || bDefaultChangeFOV) {
         // P.ClientMessage("To disable the grapple's BehindView switching: autobehindview");
       // }
-      P.ClientMessage("To toggle the grapple's automatic behind-view switching: ABV");
+      // P.ClientMessage("To toggle the grapple's automatic behind-view switching: ABV");
+      // This was moved to the gun itself.
     }
     // Remove any Translocator they might have:
     Inv = P.FindInventoryType(class'Botpack.Translocator');

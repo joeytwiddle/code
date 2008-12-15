@@ -34,6 +34,8 @@ replication {
     // bDisableAutoBehindview;
   reliable if (Role==ROLE_Authority)
     ABV,AutoBehindView; // In case it is called from GrapplingMut().
+  reliable if (Role!=ROLE_Authority)
+    DoubleJump;
 }
 
 simulated function PreBeginPlay() {
@@ -57,7 +59,7 @@ simulated function PreBeginPlay() {
   }
 
   if (BehindViewFOV==0)
-  	 BehindViewFOV=110;
+    BehindViewFOV=110;
 
   if (p.PlayerReplicationInfo.Deaths == 0) {
     // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like bDoneCheck.
@@ -69,7 +71,8 @@ simulated function PreBeginPlay() {
     else
       nextState="disable";
     // p.ClientMessage("You can use the AutoBehindView command to "$nextState$" the grappling hook's behind-view switching");
-    p.ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: ABV");
+    // p.ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: ABV");
+    p.ClientMessage("To "$nextState$" the grappling hook's AutoBehindView, type: ABV");
     // TODO: This is NOT getting displayed!
   }
 
@@ -378,7 +381,30 @@ state DownWeapon {
   }
 }
 
+// This makes jumping off the line more reliable, 
+// It is fired on the client and the call is replicated on the server, where the action happens.
+// It actually relies on DoubleJumpUT or a derivative to add the DoubleJump call to the player's keybinds.  TODO: Ideally we would do/check that independently.
+// WARN: I'm pretty sure if we want to use the DoubleJumpUT mutator, it should be put *AFTER* the GrapplingMut in the mutator list.
+// TOTEST: I'm not convinced this is working at all when DoubleJump is present anywhere in the mutator chain.
+simulated exec function DoubleJump() {
+  // if (Role == ROLE_Authority) { // Only acts on the server
+    // PlayerPawn(Owner).ClientMessage("GrappleGun is processing DoubleJump call.");
+    if (GrapplingHook==None) {
+      // PlayerPawn(Owner).ClientMessage("Your GrappleGun has no GrapplingHook!");
+    } else {
+      if (PlayerPawn(Owner)!=None && GrappleGun(PlayerPawn(Owner).Weapon)==None) {
+        PlayerPawn(Owner).ClientMessage(Role$": Forcing un-grapple through GrappleGun.DoubleJump()!");
+        GrapplingHook.Destroy();
+      } else {
+        // PlayerPawn(Owner).ClientMessage("Not ungrappling, weapon="$PlayerPawn(Owner).Weapon);
+      }
+    }
+  // }
+}
 
+
+
+// AutoBehindView
 
 simulated exec function Status() {
 	local GrapplingHook hook;
@@ -396,8 +422,6 @@ simulated exec function Status() {
 		PlayerPawn(Owner).ClientMessage("Client GrapplingHook status: Owner="$hook.Owner$" Master="$hook.Master$" InstigatorRep="$hook.InstigatorRep$" LineSprite="$hook.LineSprite);
 	}
 }
-
-// AutoBehindView
 
 simulated exec function AutoBehindView(optional String extra) {
 	ABV(extra);

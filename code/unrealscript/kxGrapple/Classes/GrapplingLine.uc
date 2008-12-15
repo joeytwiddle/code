@@ -109,7 +109,9 @@ simulated event DoUpdate(float DeltaTime) {
 		to = NearPivot; // better replicated than GrappleParent.pullDest!
 		// CONSIDER TODO: could instead use ParentLine.Reached
 		// Velocity = GrappleParent.Instigator.Velocity * 0.5 + GrappleParent.Velocity * 0.5; // It could be that either the grapple or the instigator is moving, maybe even both.
-		Velocity = GrappleParent.Velocity; // Nicer for firstperson when thrown, maybe not so good for swinging.
+		// Velocity = GrappleParent.Instigator.Velocity; // Nicer for firstperson when thrown, maybe not so good for swinging.
+		Velocity = GrappleParent.Velocity; // Keeps up with flying hook - best.
+		// Velocity = 0.5*GrappleParent.Velocity + 0.5*GrappleParent.Instigator.Velocity; // Nicer for firstperson when thrown, maybe not so good for swinging.
 	}
 		// if (GrappleParent.LineSprite != Self) {
 			// from = ChildLine.NearPivot; // :P
