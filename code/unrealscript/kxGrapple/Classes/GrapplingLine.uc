@@ -10,6 +10,7 @@ var bool bStopped;
 var Vector NearPivot;
 var Vector Reached; // OLD BUG: Never gets updated!
 var Vector ReachedRender; // When rendering from nearpivot to nextpivot, lines against flat walls disappeared; this keeps the old rendering style and somehow that problem is gone.
+var byte Depth;
 
 replication {
   reliable if (Role == ROLE_Authority)

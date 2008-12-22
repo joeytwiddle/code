@@ -16,12 +16,7 @@ class GrapplingMut extends Mutator Config(kxGrapple);
 
 var bool bDoneInit;
 var config bool bReplaceTranslocator,bGiveWeapon;
-var GrappleGun cl;
-
-replication {
-  unreliable if (Role == 4)
-    cl;
-}
+var config bool bCanGrappleWithoutSelection; // AKA RemoteControl
 
 function PostBeginPlay () {
   local int i;
@@ -36,20 +31,6 @@ function PostBeginPlay () {
   Level.Game.RegisterMessageMutator(Self);
 }
 
-function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
-	local GrappleGun gg;
-	if (Sender == Receiver) {
-		if (Msg ~= "ABV" && Pawn(Sender)!=None) {
-			gg = GrappleGun( Pawn(Sender).FindInventoryType(class'GrappleGun') );
-			if (gg != None) {
-				gg.ABV();
-			}
-		}
-	}
-	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
-}
-
-
 function AddMutator(Mutator mut) {
 	if (mut.class == Self.class) {
 		if (mut != Self) {
@@ -63,7 +44,8 @@ function AddMutator(Mutator mut) {
 
 function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
-  if (bReplaceTranslocator && Other.IsA('Translocator') && !Other.IsA('GrappleGun')) {
+  // if (bReplaceTranslocator && Other.IsA('Translocator') && !Other.IsA('GrappleGun')) {
+  if (bReplaceTranslocator && Translocator(Other)!=None && GrappleGun(Other)==None) {
     ReplaceWith(Other,String(class'GrappleGun')); // This was supposed to replace the translocator but it only removes it!
     // Log("[GrapplingHook.GrapplingMut] CheckReplacement("$Other$") -> GrappleGun");
     return False;
@@ -182,61 +164,101 @@ function GrappleGun GetGrappleLauncher (Actor Other) {
 }
 
 function Mutate (string MutateString, PlayerPawn Sender) {
+  local String command,args;
+  local GrappleGun gun;
+  local GrapplingHook hook;
   // TODO: These mutate options are probably redundant given the exec functi_ns.
   //       NOT SO!  exec commands only work when switched to the weapon.  If we get these commands working, they could be used to grapple at any time without selecting it.  Admin should be able to disable that ability.
   //       NOT SO!  exec commands DO work when switched to OTHER weapons!
   // We allow players to fire or retract their grappling hook without having it selected as a weapon!
-  local GrapplingHook kxg;
-  if ( MutateString ~= "FireGrapple" ) {
-    cl = GetGrappleLauncher(Sender);
-    if ( cl != None && cl.GrapplingHook == None ) {
-      /*
-      // TODO: This is unfinished / not working properly:
-      PlaySound(class'GrappleGun'.default.ThrowSound,SLOT_Interface,2.0);
-      cl.GrapplingHook = Spawn(class'GrapplingHook',Sender,,Sender.Location+64*Vector(Sender.Rotation),Sender.Rotation);
-      cl.GrapplingHook.SetMaster(cl);
-      cl.Instigator = Sender;
-      cl.GrapplingHook.AmbientSound = class'GrappleGun'.default.ReleaseSound;
-      cl.AmbientSound = class'GrappleGun'.default.ReleaseSound;
-      */
-      // Maybe better to do something like call cl.Fire()?
-      cl.Fire(); // Maybe no good from the server
-    }
+  if (InStr(MutateString," ")>=0) {
+    command = Left(MutateString,InStr(MutateString," "));
+    args = Right(MutateString,InStr(MutateString," ")+1);
+  } else {
+    command = MutateString;
+    args = "";
   }
-  if ( MutateString ~= "KillHook" ) {
-    cl = GetGrappleLauncher(Sender);
-    if ( cl != None ) {
-      cl.GrapplingHook.Destroy();
-    }
-  }
-  if (MutateString ~= "HELP") {
-    Sender.ClientMessage("Grappling commands: ABV [0|1] | AutoBehindView [on|off] | AttachHook | ReleaseHook | FireHook | mutate FireGrapple | mutate KillHook | status | mutate status");
+  if (command ~= "HELP") {
+    Sender.ClientMessage("Grappling commands: ABV [0|1] | AutoBehindView [on|off] | FTW [0|1] | FireToWinch [on|off] | status"); // | AttachHook | ReleaseHook | FireHook");
+    Sender.ClientMessage("Grappling mutate commands: mutate help | FireHook | ReleaseHook | ToggleHook | status | ABV | FTW"); // | GrappleJump
   }
   // DONE: Move this into an exec functi0n in the weapon.
   // TODO: this here is now redundant
   // NO! Keep it, it is telling me that server and client values are not in agreement!
   // Maybe the problem is that they are config vars.
-  if (MutateString ~= "STATUS") {
-    // kxg = Spawn(class'GrapplingHook'); // FAILed!
-    // kxg = Spawn(class'kxGrapple.GrapplingHook'); // FAILed!
-    foreach AllActors(class'GrapplingHook',kxg) {
-      break;
-    }
-    if (kxg == None) {
+  if (command ~= "STATUS") {
+    // hook = Spawn(class'GrapplingHook'); // FAILed!
+    // hook = Spawn(class'kxGrapple.GrapplingHook'); // FAILed!
+    // foreach AllActors(class'GrapplingHook',hook) {
+      // break;
+    // }
+    gun = GetGrappleLauncher(Sender);
+    if (gun!=None)
+      hook = gun.GrapplingHook;
+    if (hook == None) {
       Sender.ClientMessage("I can only show kxGrapple settings when there is a grappling hook deployed!");
     } else {
       //// Well the server default values do appears to match the current server config values.
       //// If only this was a simulated functi_n, we could check the client's values also, to see if replication is working properly.
-      // Sender.ClientMessage("kxGrapple defaults: Speed="$kxg.default.Speed$" GrappleSpeed="$kxg.default.GrappleSpeed$" bSwingPhysics="$kxg.default.bSwingPhysics$" bLinePhysics="$kxg.default.bLinePhysics$" bPrimaryWinch="$kxg.default.bPrimaryWinch$" bCrouchReleases="$kxg.default.bCrouchReleases);
-      Sender.ClientMessage("kxGrapple status:   Speed="$kxg.Speed$" GrappleSpeed="$kxg.GrappleSpeed$" bSwingPhysics="$kxg.bSwingPhysics$" bLinePhysics="$kxg.bLinePhysics$" bPrimaryWinch="$kxg.bPrimaryWinch$" bCrouchReleases="$kxg.bCrouchReleases);
+      // Sender.ClientMessage("kxGrapple defaults: Speed="$hook.default.Speed$" GrappleSpeed="$hook.default.GrappleSpeed$" bSwingPhysics="$hook.default.bSwingPhysics$" bLinePhysics="$hook.default.bLinePhysics$" bPrimaryWinch="$hook.default.bPrimaryWinch$" bCrouchReleases="$hook.default.bCrouchReleases);
+      Sender.ClientMessage("Server GrappleGun status: bDisableAutoBehindview="$gun.bDisableAutoBehindview$" bFireToWinch="$gun.bFireToWinch);
+      Sender.ClientMessage("Server GrapplingHook status:   Speed="$hook.Speed$" GrappleSpeed="$hook.GrappleSpeed$" bSwingPhysics="$hook.bSwingPhysics$" bLinePhysics="$hook.bLinePhysics$" bPrimaryWinch="$hook.bPrimaryWinch$" bCrouchReleases="$hook.bCrouchReleases);
+      // TODO: Wait a second, we only grabbed the first hook we could fine, we should have grabbed the one belonging to Sender!
     }
   }
-  if (MutateString ~= "AutoBehindView") {
-    // The player need not have typed "mutate" :P
-    // This probably doesn't work:
-    GetGrappleLauncher(Sender).AutoBehindView();
+  // TODO: These fnctions should be passed String extra
+  if (command~="ABV" || command~="AutoBehindView") {
+    GetGrappleLauncher(Sender).AutoBehindView(args);
+  }
+  if (command~="FTW" || command~="FireToWinch") {
+    GetGrappleLauncher(Sender).FireToWinch(args);
+  }
+  if (command~="GrappleJump") {
+    GetGrappleLauncher(Sender).DoubleJump();
+  }
+  if (bCanGrappleWithoutSelection) {
+    if (command~="FireHook" || command~="ToggleHook") {
+      gun = GetGrappleLauncher(Sender);
+      if (gun != None) {
+        if (gun.GrapplingHook == None) {
+           // gun.Fire(1.0); // Works but only when we have GrappleGun selected.  (Occasionally fires without selection.)
+           gun.PlaySound(class'GrappleGun'.default.ThrowSound,SLOT_Interface,2.0);
+           // gun.GrapplingHook = Spawn(class'GrapplingHook',Sender,,Sender.Location+64*Vector(Sender.Rotation),Sender.Rotation);
+           // gun.ProjectileFire(gun.ProjectileClass, gun.ProjectileSpeed, gun.bWarnTarget);
+           gun.GrapplingHook = GrapplingHook(gun.ProjectileFire(gun.ProjectileClass,class'GrapplingHook'.default.Speed,gun.bWarnTarget));
+           // Fires grapple fine, but grappling line does not respond.  Ah we needed to SetMaster.
+           gun.GrapplingHook.SetMaster(gun);
+           gun.Instigator = Sender;
+           gun.GrapplingHook.AmbientSound = class'GrapplingHook'.default.ReleaseSound;
+           gun.AmbientSound = class'GrapplingHook'.default.ReleaseSound;
+        } else {
+           if (command~="ToggleHook") {
+              gun.GrapplingHook.Destroy();
+           }
+        }
+      }
+    }
+    // TODO: Now that I can ungrapple just by hitting a button, I don't need GrappleJump anymore - in fact I don't want it!
+    if (command~="KillHook" || command~="ReleaseHook") {
+      gun = GetGrappleLauncher(Sender);
+      if (gun!=None && gun.GrapplingHook!=None) {
+        gun.GrapplingHook.Destroy();
+      }
+    }
   }
   Super.Mutate(MutateString,Sender);
+}
+
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	if (Sender == Receiver && Pawn(Sender)!=None) {
+		if (Msg~="ABV" || Msg~="AutoBehindView") {
+			GetGrappleLauncher(Sender).AutoBehindView();
+		}
+		if (Msg~="FTW" || Msg~="FireToWinch") {
+			GetGrappleLauncher(Sender).FireToWinch();
+		}
+	}
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
 }
 
 defaultproperties {
@@ -244,5 +266,6 @@ defaultproperties {
     // Doing this used to cause the ImpactHammer to be replaced:
     bReplaceTranslocator=True // You probably want this True for CTF, False for FairLMS/Siege.
     bGiveWeapon=True // Whether to always give the player this weapon on spawn.
+    // bCanGrappleWithoutSelection=True // TODO: I expect most servers will want this default to False.
 }
 

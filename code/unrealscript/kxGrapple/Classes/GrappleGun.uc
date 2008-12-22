@@ -9,12 +9,17 @@ class GrappleGun expands TournamentWeapon Config(kxGrapple);
 
 // #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
-var config bool bAutoDrop; // bAutoRetract?
-var config bool bIdenticalButtons; // TODO: Not working!
-var config bool bDisableAutoBehindview; // This is the only one we really want on the client config.  The rest are for the server (could go to another class, e.g. kxRules).  If we did that we could remove the Config(GrapplingHook) above!
-var config int BehindViewFOV; // OK this is another var we want the client to control.
+// Server config:
 var config bool bLogging;
 var config Sound FailSound,ThrowSound;
+// Could move to client:
+var config bool bAutoDrop; // bAutoRetract?
+var config bool bIdenticalButtons; // TODO: Not working!
+
+// Client config:
+var config bool bDisableAutoBehindview;
+var config bool bFireToWinch;
+var config int BehindViewFOV;
 
 var Weapon PreviousWeapon;
 var GrapplingHook GrapplingHook;
@@ -26,15 +31,20 @@ var float LastFOV; // Used only on the client
 replication {
   reliable if (Role==ROLE_Authority)
     bLogging,bIdenticalButtons,bAutoDrop,FailSound,ThrowSound,NextCommand;
-  // WARN CHECK TODO: If we don't sommehow sync these between client and server, things might start acting weird: bAutoDrop,bIdenticalButtons
+  // WARN CHECK TODO: If we don't somehow sync these between client and server, things might start acting weird: bAutoDrop,bIdenticalButtons
   // Client vars (may want to send to server):
   //   bAutoDrop,bIdenticalButtons,bDisableAutoBehindview,BehindViewFOV;
   //// We do NOT want to replicate bDisableAutoBehindview - we want the client to see his version and not be updated from the server.
-  // reliable if (Role!=ROLE_Authority)
-    // bDisableAutoBehindview;
+  //// Blimey.  We need to replicate these player configs in entirely different ways, because of how they get picked up.
+  reliable if (Role==ROLE_Authority) // Get changed and used on the client
+    bDisableAutoBehindview,BehindViewFOV;
   reliable if (Role==ROLE_Authority)
-    ABV,AutoBehindView; // In case it is called from GrapplingMut().
-  reliable if (Role!=ROLE_Authority)
+    ABV,AutoBehindView;
+  reliable if (Role!=ROLE_Authority) // Gets changed on the client, but used on the server.
+    bFireToWinch;
+  unreliable if (Role!=ROLE_Authority)
+    FTW,FireToWinch;
+  reliable if (Role<4)
     DoubleJump;
 }
 
@@ -55,14 +65,23 @@ simulated function PreBeginPlay() {
   if ( P == None ) {
     Log("GrappleGun.PreBeginPlay() NO LOCAL PLAYERPAWN!");
     // But we actually take no action :P
+    // I never see the server complain about this.  Ah we checked NetMode earlier.
     return;
   }
 
   if (BehindViewFOV==0)
     BehindViewFOV=110;
 
-  if (p.PlayerReplicationInfo.Deaths == 0) {
-    // Only check binds on first spawn.  More efficient but will not work if mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like bDoneCheck.
+  // It is quite important that this runs at the start of each new player's game, or they might not have the binds everyone else has, which would be unfair!
+  // But it's also important that it runs only once, since otherwise it will cause lag and spam messages during play.
+  // TODO BUG: This is getting called for every ForceGun created in the scene, not only the one belonging to this player.
+  // I tried checking p==Owner or Instigator, but both were None.
+  // FAILED: P.Weapon==None should at least check that the player has not already spawned.  He might get more than one message if other bots/players spawn at the same time, but he won't get any messages once he has finished spawning and has a weapon in hard.
+  // if (p.PlayerReplicationInfo.Deaths == 0 && P.Weapon==None) {
+  // FIXED now I hope.  We check if P has a grappling gun which is not this gun.  If his gun is this gun or he has none, and this is his first life, only then we message him.
+  if (p.PlayerReplicationInfo.Deaths == 0 && P.FindInventoryType(class'GrappleGun')==None || P.FindInventoryType(class'GrappleGun')==Self) {
+    if (bLogging) { Log(Self$" Checking binds for "$P$" while Owner="$owner$" Instigator="$Instigator$" Deaths="$p.PlayerReplicationInfo.Deaths$" P.Weapon="$P.Weapon$" gg="$P.FindInventoryType(class'GrappleGun')); }
+    // Only check binds on first spawn.  More efficient but will not work if weapon is not available on first spawn, e.g. mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like GrapplingMut.bDoneCheck[].
     CheckPlayerBinds(P);
     // Only display grapple message on first spawn:
     // p.ClientMessage("To toggle the grappling hook's auto view switching, type: ABV");
@@ -72,35 +91,101 @@ simulated function PreBeginPlay() {
       nextState="disable";
     // p.ClientMessage("You can use the AutoBehindView command to "$nextState$" the grappling hook's behind-view switching");
     // p.ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: ABV");
-    p.ClientMessage("To "$nextState$" the grappling hook's AutoBehindView, type: ABV");
-    // TODO: This is NOT getting displayed!
+    // p.ClientMessage("To "$nextState$" the grappling hook's AutoBehindView, type: ABV");
+    // DONE: This is NOT getting displayed!
+    P.ClientMessage("Toggle the grappling hook's features with ABV and FTW");
+  } else {
+    if (bLogging) { Log(Self$" Not checking binds for "$P$" while Owner="$owner$" Instigator="$Instigator$" Deaths="$p.PlayerReplicationInfo.Deaths$" P.Weapon="$P.Weapon$" gg="$P.FindInventoryType(class'GrappleGun')); }
   }
 
 }
 
-// function float RateSelf(out int bUseAltMode) {
-  // return -2.0;
-// }
+simulated function CheckPlayerBinds(PlayerPawn P) {
+  local int i;
+  local string toAdd;
+  local string keyName,keyVal,keyValCaps;
+  local bool bBindExists;
+  toAdd = "GetWeapon GrappleGun";
+  for (i=0;i<256;i++) {
+    keyName = p.ConsoleCommand("keyname "$i);
+    keyVal = p.ConsoleCommand("keybinding "$keyName);
+    keyValCaps = Caps(keyVal);
+    // if (InStr(keyValCaps,Caps(toAdd))>=0) {
+      // return; // We have found an existing key bound to this weapon.  To save time, stop searching!
+    // }
+    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || Right(keyValCaps,14)=="SWITCHWEAPON 1" || InStr(keyValCaps,"SWITCHWEAPON 1 ")>=0 || InStr(keyValCaps,"SWITCHWEAPON 1|")>=0) {
+      if (InStr(keyValCaps,Caps(toAdd))==-1) {
+        // Add a binding to this key!
+        p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$"| "$toAdd);
+        p.ClientMessage("* Grappling hook now available on your ["$keyName$"] key.");
+        // Continue to search for other binds we could attach to.
+      }
+      bBindExists = True;
+    }
+    if (InStr(keyValCaps,"JUMP")>=0 && InStr(keyValCaps,"MUTATE GRAPPLEJUMP")==-1) {
+      // Add a binding to this key!
+      p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$"| Mutate GrappleJump");
+      p.ClientMessage("* Grappling jump now available on your ["$keyName$"] key.");
+      // Continue to search for other binds we could attach to.
+      // bBindExists = True;
+    }
+  }
+  Log("GrappleGun.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
+  if (!bBindExists) {
+    // P.ClientMessage("You should make a keybind for the Translocator and Grappling Hook weapons using your console.");
+    // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon GrappleGun");
+    // P.ClientMessage("You could make a keybind for your Translocator using the console, then reconnect.");
+    // P.ClientMessage("You should make a keybind for your Grappling Hook.");
+    // P.ClientMessage("Type in the console: SET INPUT Q GetWeapon GrappleGun");
+    P.ClientMessage("# You need to set a keybind in the console: SET INPUT Q GetWeapon GrappleGun");
+    Log("Somehow creation of GrapplingHook keybinds failed.");
+  }
+  return;
+}
+
+simulated function Destroyed () {
+  OnDeselect();
+  if ( GrapplingHook != None ) {
+    GrapplingHook.Destroy();
+    GrapplingHook = None;
+  }
+  Super.Destroyed();
+}
+
+function float RateSelf(out int bUseAltMode) {
+  if (bUseAltMode==0) {
+    if (GrapplingHook==None)
+      return 0.1;
+    else
+      return -0.1;
+  } else {
+    if (GrapplingHook!=None)
+      return 0.2;
+    else
+      return -0.5;
+  }
+}
 
 // Stops GrappleGun from being the spawn weapon (IF called when weapon is created!):
+// I'm not sure this works :P
 function SetSwitchPriority(Pawn Other) {
   AutoSwitchPriority=0;
 }
 
+// Old inherited functions from Expert100 which we don't really need?
 simulated exec function AttachHook () {
   PlayerPawn(Owner).ClientMessage("Trying to attachHook");
   if ( GrapplingHook == None ) {
     FireHook();
   }
 }
-
 simulated exec function ReleaseHook () {
   PlayerPawn(Owner).ClientMessage("Trying to releaseHook");
   if ( GrapplingHook != None ) {
     GrapplingHook.Destroy();
   }
 }
-
+// We tried using this in "Mutate FireHook" but it didn't work all the time.
 simulated exec function FireHook () {
   if ( GrapplingHook != None ) {
     return;
@@ -115,15 +200,6 @@ simulated exec function FireHook () {
 
 simulated function ClientFireHook () {
   return;
-}
-
-simulated function Destroyed () {
-  OnDeselect();
-  if ( GrapplingHook != None ) {
-    GrapplingHook.Destroy();
-    GrapplingHook = None;
-  }
-  Super.Destroyed();
 }
 
 function DropFrom (Vector StartLocation) {
@@ -166,12 +242,14 @@ function Fire (optional float Value) {
     // AmbientSound = class'GrapplingHook'.default.ThrowSound;
     // AmbientSound = Sound'Hidraul2';
     // AmbientSound = Sound'Slurp';
-    GrapplingHook = GrapplingHook(ProjectileFire(ProjectileClass,2000.0,bWarnTarget));
+    GrapplingHook = GrapplingHook(ProjectileFire(ProjectileClass,class'GrapplingHook'.default.Speed,bWarnTarget));
     if (GrapplingHook == None) {
+      //// Hook failed to spawn - probably we are standing right in front of a wall, so there is no space for it!
       // if (bLogging) { Log(Self$".Fire() Failed to create GrapplingHook!"); }
       // DONE: denied sound
-      // TODO: bug - the sounds play rapidy repeating until the button is released - just once, or once a second would be enough
-      //       this is really a problem with the fire mechanism retrying, instead of waiting for release and then a second press
+      // TODO: bug - the sounds play rapidy repeating until the button is released.  Just once, or once a second would be enough
+      //       this is really a problem with the fire mechanism retrying, instead of waiting for release and then a second press.
+      //       Well I got used to this sound by now.  At least it makes it clear that the Grapple is trying to fire and failing.
       PlaySound(ThrowSound,SLOT_None,0.8); // quiet failed throw
       PlaySound(FailSound,SLOT_Interface,3.0);
     } else {
@@ -337,38 +415,6 @@ function SetHand (float hand) {
   Super.SetHand(hand);
 }
 
-simulated function CheckPlayerBinds(PlayerPawn P) {
-  local int i;
-  local string toAdd;
-  local string keyName,keyVal,keyValCaps;
-  local bool bBindExists;
-  toAdd = "GetWeapon GrappleGun";
-  for (i=0;i<256;i++) {
-    keyName = p.ConsoleCommand("keyname "$i);
-    keyVal = p.ConsoleCommand("keybinding "$keyName);
-    keyValCaps = Caps(keyVal);
-    if (InStr(keyValCaps,Caps(toAdd))>=0) {
-      return; // We have found an existing key bound to this weapon.  To save time, stop searching!
-    }
-    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || (Right(keyValCaps,14)=="SWITCHWEAPON 1" || InStr(keyValCaps,"SWITCHWEAPON 1 ")>=0 && InStr(keyValCaps,"SWITCHWEAPON 1|")>=0)) {
-      // Add a binding to this key!
-      p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$" | "$toAdd);
-      p.ClientMessage("Grappling hook now available on your ["$keyName$"] key.");
-      // Continue to search for other binds we could attach to.
-      bBindExists = True;
-    }
-  }
-  Log("GrappleGun.CheckPlayerBinds() Finished checking all "$p.getHumanName()$"'s keybinds.");
-  if (!bBindExists) {
-    // P.ClientMessage("You should make a keybind for the Translocator and Grappling Hook weapons using your console.");
-    // P.ClientMessage("For example: SET INPUT Q GetWeapon Translocator | GetWeapon GrappleGun");
-    // P.ClientMessage("You could make a keybind for your Translocator using the console, then reconnect.");
-    P.ClientMessage("You should make a keybind for your Grappling Hook.");
-    P.ClientMessage("Type in the console: SET INPUT Q SwitchWeapon 1");
-  }
-  return;
-}
-
 simulated function PlaySelect() {
   OnSelect();
   Super.PlaySelect(); // Avoids errors thrown by missing meshes.
@@ -393,7 +439,9 @@ simulated exec function DoubleJump() {
       // PlayerPawn(Owner).ClientMessage("Your GrappleGun has no GrapplingHook!");
     } else {
       if (PlayerPawn(Owner)!=None && GrappleGun(PlayerPawn(Owner).Weapon)==None) {
-        PlayerPawn(Owner).ClientMessage(Role$": Forcing un-grapple through GrappleGun.DoubleJump()!");
+        if (bLogging) {
+           PlayerPawn(Owner).ClientMessage(Role$": Forcing un-grapple through GrappleGun.DoubleJump()!");
+        }
         GrapplingHook.Destroy();
       } else {
         // PlayerPawn(Owner).ClientMessage("Not ungrappling, weapon="$PlayerPawn(Owner).Weapon);
@@ -404,7 +452,7 @@ simulated exec function DoubleJump() {
 
 
 
-// AutoBehindView
+// AutoBehindView options
 
 simulated exec function Status() {
 	local GrapplingHook hook;
@@ -417,14 +465,15 @@ simulated exec function Status() {
 		//// Well the server default values do appears to match the current server config values.
 		//// If only this was a simulated functi_n, we could check the client's values also, to see if replication is working properly.
 		//// TODO: Move this into an exec functi0n in the weapon.
-		PlayerPawn(Owner).ClientMessage("Client kxGrapple defaults: Speed="$hook.default.Speed$" GrappleSpeed="$hook.default.GrappleSpeed$" bSwingPhysics="$hook.default.bSwingPhysics$" bLinePhysics="$hook.default.bLinePhysics);
-		PlayerPawn(Owner).ClientMessage("Client kxGrapple status:    Speed="$hook.Speed$" GrappleSpeed="$hook.GrappleSpeed$" bSwingPhysics="$hook.bSwingPhysics$" bLinePhysics="$hook.bLinePhysics);
-		PlayerPawn(Owner).ClientMessage("Client GrapplingHook status: Owner="$hook.Owner$" Master="$hook.Master$" InstigatorRep="$hook.InstigatorRep$" LineSprite="$hook.LineSprite);
+		PlayerPawn(Owner).ClientMessage("Client GrapplingGun status: bDisableAutoBehindview="$bDisableAutoBehindview$" bFireToWinch="$bFireToWinch);
+		PlayerPawn(Owner).ClientMessage("Client GrapplingHook defaults: Speed="$hook.default.Speed$" GrappleSpeed="$hook.default.GrappleSpeed$" bSwingPhysics="$hook.default.bSwingPhysics$" bLinePhysics="$hook.default.bLinePhysics);
+		PlayerPawn(Owner).ClientMessage("Client GrapplingHook status :  Speed="$hook.Speed$" GrappleSpeed="$hook.GrappleSpeed$" bSwingPhysics="$hook.bSwingPhysics$" bLinePhysics="$hook.bLinePhysics$" bPrimaryWinch="$hook.bPrimaryWinch);
+		PlayerPawn(Owner).ClientMessage("Client GrapplingHook other: Owner="$hook.Owner$" Master="$hook.Master$" InstigatorRep="$hook.InstigatorRep$" LineSprite="$hook.LineSprite);
 	}
 }
 
 simulated exec function AutoBehindView(optional String extra) {
-	ABV(extra);
+  ABV(extra);
 }
 simulated exec function ABV(optional String extra) {
   if (extra=="0" || extra~="OFF" || extra~="NO" || extra~="False") {
@@ -436,7 +485,7 @@ simulated exec function ABV(optional String extra) {
   }
   SaveConfig();
   if (bDisableAutoBehindview) extra="DISABLED"; else extra="ENABLED";
-  PlayerPawn(Owner).ClientMessage("The grappling hook's auto-behindview has been "$extra$", your settings were saved.");
+  PlayerPawn(Owner).ClientMessage("The grappling hook's Auto-BehindView has been "$extra$", your settings were saved.");
   // if (bActive) { // TODO: FAIL!
   if (Pawn(Owner).Weapon == Self) {
     // The grapple is the current weapon.  We probably need to switch view since behaviour has just changed.
@@ -450,10 +499,35 @@ simulated exec function ABV(optional String extra) {
   }
 }
 
+simulated exec function FireToWinch(optional String extra) {
+  FTW(extra);
+}
+simulated exec function FTW(optional String extra) {
+  if (extra=="0" || extra~="OFF" || extra~="NO" || extra~="False") {
+    bFireToWinch = False;
+  } else if (extra=="1" || extra~="ON" || extra~="YES" || extra~="True") {
+    bFireToWinch = True;
+  } else {
+    bFireToWinch = !bFireToWinch;
+  }
+  SaveConfig();
+  if (bFireToWinch) extra="ENABLED"; else extra="DISABLED";
+  PlayerPawn(Owner).ClientMessage("The grappling hook's Fire-To-Winch has been "$extra$", your settings were saved.");
+  // Take immediate effect:
+  if (GrapplingHook != None) {
+   GrapplingHook.bPrimaryWinch = bFireToWinch;
+  }
+}
+
+
+
+// AutoBehindView event handling
+
 // The functions OnSelect() and OnDeselect() are sometimes called
 // non-simulated, but we require that the response actions are called
 // simulated, so we replicate a command to the client here, and the command
 // should be run simulated in the next call to Tick().
+// This is not a queue; there should only be one happening at a time.
 
 function OnSelect() {
   NextCommand = "onselect";
@@ -480,20 +554,25 @@ simulated event Tick(float DeltaTime) {
 }
 
 simulated function OnSelectCheck() {
-  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".OnSelectCheck() called with Role="$Role); }
+  // if (bLogging) { Log(Level.TimeSeconds$" "$Self$".OnSelectCheck() called with Role="$Role); }
   if (!bDisableAutoBehindview) {
     DoBehindview();
  }
 }
 
 simulated function OnDeselectCheck() {
-  if (bLogging) { Log(Level.TimeSeconds$" "$Self$".OnDeselectCheck() called with Role="$Role); }
+  // if (bLogging) { Log(Level.TimeSeconds$" "$Self$".OnDeselectCheck() called with Role="$Role); }
   if (!bDisableAutoBehindview) {
     UndoBehindview();
  }
 }
 
+// TODO: If server has behindview disabled, this will have the effect of only changing their FOV, which is not really desirable.  We could try to detect whether the server has BV disabled, and if so, do nothing.
+// TODO TEST: What happens if server has restricted FOV?  It might cause our FOV 110 to fail entirely because the server max is 105, in which case we should have gone for 105.
+
 simulated function DoBehindview() {
+  if (PlayerPawn(Owner)==None)
+    return;
   LastFOV = PlayerPawn(Owner).DesiredFOV;
   // PlayerPawn(Owner).ConsoleCommand("FOV "$BehindViewFOV);
   PlayerPawn(Owner).DesiredFOV = BehindViewFOV;
@@ -501,6 +580,8 @@ simulated function DoBehindview() {
 }
 
 simulated function UndoBehindview() {
+  if (PlayerPawn(Owner)==None)
+    return;
   PlayerPawn(Owner).ConsoleCommand("FOV "$LastFOV);
   PlayerPawn(Owner).ConsoleCommand("BehindView 0");
 }
@@ -517,7 +598,7 @@ defaultproperties {
     // DeathMessage="%k tore %o into chunks with a grappling hook!"
     // DeathMessage="%k tried to climb %o but tore him into chunks!"
     DeathMessage="%k chopped %o into chunks with a grappling hook!"
-    bRotatingPickup=False
+    bRotatingPickup=True
     ItemName="kx Grappling Hook"
     PlayerViewOffset=(X=5.00,Y=-4.00,Z=-7.00),
     StatusIcon=Texture'Botpack.Icons.UseTrans'
@@ -544,7 +625,8 @@ defaultproperties {
     StatusIcon=Texture'Botpack.Icons.UseTrans'
     Icon=Texture'Botpack.Icons.UseTrans'
     // Mesh=Mesh'Botpack.Trans3loc'
-    // bDisableAutoBehindview=True // I fear setting a default might override the client value.
+    bDisableAutoBehindview=True // I fear setting a default might override the client value.  Hmm this seems to work ok at the moment.  The client gets to keep and use whatever is in his config.
+    bFireToWinch=False
     LastFOV=90 // In case we accidentally read it before writing it!
 }
 
