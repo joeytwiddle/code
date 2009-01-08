@@ -4,7 +4,7 @@ sh ./scanpug/consider_showing_strengths
 ## Consider setting fair captains.
 if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ]
 then
-	if tail -n 10 "$LOGDIR/$NETWORK-$CHANNEL.log" | grep "<Rival>.*Random captains will be selected" >/dev/null
+	if tail -n 10 "$LOGDIR/$NETWORK-$CHANNEL.log" | grep "<\(Rival\|RF\)>.*Random captains will be selected" >/dev/null
 	then sleep 5 ; BANIDLECAPTAINS=1 sh ./scanpug/setfaircapts
 	fi
 fi
