@@ -30,9 +30,11 @@ LASTLIST=`
 # grep -v " Specs: " | ## server query also matches regexp, remove it!
 
 tail -n "$BACKCHECK" "/home/joey/.xchat2.utb0t/logs/$NETWORK-$CHANNEL.log" |
-grep "<Rival>[ 	]*" |
+grep "<\(Rival\|RF\)>[ 	]*" |
 grep -A1 "please .pick from the .list" |
-afterfirst "<Rival>[ 	]*" |
+# afterfirst "<\(Rival\|RF\)>[ 	]*" | ## afterfirst regexps cannot contain \(...\) brackets
+# sed "s+.*<\(Rival\|RF\)>[ 	]*++" |
+afterlast "<\(Rival\|RF\)>[ 	]*" |
 tail -n 1 |
 afterfirst "/10 " |
 # sed 's+? .)+ +g'
