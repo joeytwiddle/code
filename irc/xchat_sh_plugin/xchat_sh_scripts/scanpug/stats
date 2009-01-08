@@ -1,4 +1,4 @@
 if [ "$CHANNEL" = "#ut.pug" ]
-then echo 'http://www.nordicbots.com/stats.php?net=quakenet&cid=66201'
+then echo 'Channel stats: http://www.nordicbots.com/stats.php?net=quakenet&cid=66201'
 fi
 
