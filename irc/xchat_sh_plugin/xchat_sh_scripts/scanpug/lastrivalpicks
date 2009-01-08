@@ -14,7 +14,7 @@
 LASTLINES=`
 cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 # grep ".*<Rival>.*?.*,.*,.*,.*,.*?.*" | grep -v " ago " | grep -v " Specs: " | tail -n 2
-grep "<Rival>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1
+grep "<\(Rival\|RF\)>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1
 `
 
 if [ "$1" = -lines ]
