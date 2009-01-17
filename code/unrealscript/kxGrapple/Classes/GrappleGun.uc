@@ -4,8 +4,8 @@
 
 // TODO: We should offer exec commands WinchGrapplingLine and ReleaseGrapplingLine, or ShortenLine and LengthenLine.
 
-// class GrappleGun expands Translocator Config(GrapplingHook); // Tried doing this so that the player's translocator bind would work automatically, but it didn't!
-class GrappleGun expands TournamentWeapon Config(kxGrapple);
+// class GrappleGun expands Translocator config(GrapplingHook); // Tried doing this so that the player's translocator bind would work automatically, but it didn't!
+class GrappleGun expands TournamentWeapon config(kxGrapple);
 
 // #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
@@ -428,26 +428,37 @@ state DownWeapon {
 }
 
 // This makes jumping off the line more reliable, 
+// WARN: I suspected that sometimes DoubleJumpUT was swallowing jump presses before they could reach the GrapplingHook.  I generally tested with the DoubleJumpUT mutator listed after the GrapplingMut in the mutator list.
 // It is fired on the client and the call is replicated on the server, where the action happens.
-// It actually relies on DoubleJumpUT or a derivative to add the DoubleJump call to the player's keybinds.  TODO: Ideally we would do/check that independently.
-// WARN: I'm pretty sure if we want to use the DoubleJumpUT mutator, it should be put *AFTER* the GrapplingMut in the mutator list.
-// TOTEST: I'm not convinced this is working at all when DoubleJump is present anywhere in the mutator chain.
-simulated exec function DoubleJump() {
+// Or if not, it should be done by the mutator call in GrapplingMut, which should have been bound to all of the player's Jump keys in CheckPlayerBinds() earlier.
+// TODO: Test can we do it without the mutate?
+// TODO: Test fully and analyse then document before removing: do we need to be simulated, do we need to be exec?
+simulated exec function GrappleJump() {
   // if (Role == ROLE_Authority) { // Only acts on the server
     // PlayerPawn(Owner).ClientMessage("GrappleGun is processing DoubleJump call.");
     if (GrapplingHook==None) {
       // PlayerPawn(Owner).ClientMessage("Your GrappleGun has no GrapplingHook!");
     } else {
       if (PlayerPawn(Owner)!=None && GrappleGun(PlayerPawn(Owner).Weapon)==None) {
-        if (bLogging) {
-           PlayerPawn(Owner).ClientMessage(Role$": Forcing un-grapple through GrappleGun.DoubleJump()!");
-        }
+        // TODO: Ideally only log client-side role - server is expected.
+        if (bLogging) { PlayerPawn(Owner).ClientMessage("Forcing un-grapple through GrappleGun.GrappleJump() with ROLE="$Role); }
+        // CONSIDER: We could refactor this into DoGrappleJump()
         GrapplingHook.Destroy();
       } else {
-        // PlayerPawn(Owner).ClientMessage("Not ungrappling, weapon="$PlayerPawn(Owner).Weapon);
+        // bLogging? PlayerPawn(Owner).ClientMessage("Not ungrappling, weapon="$PlayerPawn(Owner).Weapon);
       }
     }
   // }
+}
+
+// TOTEST: I'm not convinced this is working at all when DoubleJump is present anywhere in the mutator chain.
+// TODO: Rename this - we are calling it from GrapplingMut now, rather than receiving the DoubleJump call directly.
+simulated exec function DoubleJump() {
+   GrappleJump();
+}
+
+simulated exec function Jump() {
+  if (bLogging) { PlayerPawn(Owner).ClientMessage("GrappleGun.JUMP() was called!"); }
 }
 
 

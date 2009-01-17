@@ -3,6 +3,8 @@
 //================================================================================
 // vim: ts=2 sw=2 expandtab
 
+// TODO: Folding.  Too often when falling it makes the line go into/thru a wall, nota round the edge.  When initially folding we need to check corner visibility and push out if needed using velocity and angle of bend.
+//       Sometimes folding moves the corner into an unrealistic place.  It should really be as tight as possible.  Take a look at longitude/latitude.  Move corner in latitude (i actually mean distance down line which is longitude, but it's usually a verticalish axis which would be latitude on a globe), and move in - can we retain visibility but reduce length (make corner as close as possible to edge)?
 // TODO: Rather than still allowing fine control of grapple after switching weapon, maybe instead make the grapple continue to move as it did before the weapon switch, i.e. lock its state.  Alternatively, allow user to set the winching state with commands "wind,hold,unwind" so they can make a bind for each.
 // DONE: The line might get caught around a corner *before* the grapple has hit a target.  We have not dealt with this case at all.
 //       Line now folds whilst hook is in flight.  I introduced TopLineSprite to help with this.
@@ -99,9 +101,6 @@ var() config bool bCrouchReleases;
 var() config bool bUnrealUnwind;
 var() config float MinRetract;
 var() config float ThrowAngle;
-var() config bool bFiddlePhysics0;
-var() config bool bFiddlePhysics1;
-var() config bool bFiddlePhysics2;
 var() config bool bShowLine;
 var() config sound HitSound,PullSound,ReleaseSound,RetractSound;
 var() config Mesh LineMesh;
@@ -129,7 +128,7 @@ var bool bPrimaryWinch; // This has now become a client option, read from Grappl
 replication {
   // I believe all config vars need to be replicated because I have set defaults which the client may see unless we transfer the server's values.  Unfortunately I don't think it's working.  OK if no default is set, then they get replicated just fine.  And this replication statement *is* needed!
   reliable if (Role == ROLE_Authority)
-    GrappleSpeed,HitDamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bCrouchReleases,bUnrealUnwind,MinRetract,ThrowAngle,bFiddlePhysics0,bFiddlePhysics1,bFiddlePhysics2,bShowLine,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bLogging;
+    GrappleSpeed,HitDamage,bDoAttachPawn,bLineOfSight,bLineFolding,bDropFlag,bSwingPhysics,bLinePhysics,bExtraPower,bCrouchReleases,bUnrealUnwind,MinRetract,ThrowAngle,bShowLine,HitSound,PullSound,ReleaseSound,RetractSound,LineMesh,LineTexture,bLogging;
   reliable if (Role == ROLE_Authority)
     pullDest,bDestroyed,lineLength,Thing,Master,InstigatorRep; // ,bThingPawn,hNormal;
   reliable if (Role == ROLE_Authority)
@@ -179,11 +178,17 @@ auto state Flying {
 
   simulated function Tick(float DeltaTime) {
     local rotator rot;
+    local Vector lineDest;
+    lineDest = Location + 11.0*DrawScale*Vector(Rotation);
     // pullDest = Location;
-    pullDest = Location + 11.0*DrawScale*Vector(Rotation);
+    if (LineSprite!=None && LineSprite.ParentLine!=None) {
+      // pullDest has been set elsewhere.
+    } else {
+      pullDest = lineDest;
+    }
     //// Now that we are folding during flight, we need to do this to the top LineSprite only.
     if (TopLineSprite != None)
-      TopLineSprite.NearPivot = pullDest;
+      TopLineSprite.NearPivot = lineDest;
     // This method only works on LineSprite.  But it appears TopLineSprite updates anyway.  :)
     // UpdateLineSprite();
 
@@ -474,8 +479,10 @@ function UnFoldLine() {
   }
 
   // Neither of these feel great, when you jump because you were stuck then SetLocation worked.
-  lineLength = VSize(Instigator.Location - pullDest);
+  // Realistic but TODO: currently line keeps getting longer when we swing under something then back out =/
   // lineLength = VSize(pullDest - LastLine.Reached) + lineLength;
+  // Springy - line springs to current length automatically, and you keep all your swing.
+  lineLength = VSize(Instigator.Location - pullDest);
 
   if (bLogging) { Log(Level.TimeSeconds$" "$Self$".UnFoldLine() Merging "$LineSprite$" into "$LastLine); }
 
@@ -525,13 +532,13 @@ function UnFoldLine() {
           if (A == None || A==LastLine) { // A==Self never seems to happen / be needed but w/e
             // But we should also  be able to see LastLine.Reached.
             // TODO: This is better, but it still allows the line to ghost through some thin pipes.
-            A = Trace(NewPivot,hNormal,LastLine.Reached,Instigator.Location,false);
-            if (a == None || A==LastLine) { // This does not work too well :P
+            // A = Trace(NewPivot,hNormal,LastLine.Reached,Instigator.Location,false);
+            // if (A == None || A==LastLine) { // This does not work too well :P
               // We can see the grapple again!
               // pullDest = LastLine.NearPivot; // No this must now become LastLine.LastLine.Reached or grapple Location otherwise!
               UnFoldLine();
               if (bLogging) Instigator.ClientMessage("Your grappling line has straightened new length "$lineLength);
-            }
+            // }
           }
         }
       }
@@ -624,6 +631,9 @@ function UnFoldLine() {
 }
 
 function TryToSlip() {
+  // TODO: sometimes gets caught inside solid bits with daft results when outcome could have been straightforward
+  // TODO: when we do slip, this usually involves the player falling lower, even though overall lineLength has not increased, it appears to.  This should be prevented!
+  //       I don't know what is causing this.  But UnFoldLine() at least recalculates lineLength from current positions.
   local GrapplingLine LastLine;
   local Vector perp,inward,newMiddle;
   local int side;
@@ -635,12 +645,13 @@ function TryToSlip() {
   perp = Normal( (LastLine.NearPivot - LineSprite.NearPivot) Cross (Instigator.Location - LineSprite.NearPivot) );
   // NO: this inward causes the point to move up/down the line, if the triangle is not symmetrical.
   // inward = Normal( (Instigator.Location + LastLine.NearPivot)/2 - LineSprite.NearPivot );
-  inward = Normal( (Instigator.Location - LastLine.NearPivot) Cross perp ); // This gets the right direction 90% of the time.  :P
   /*
-  inward = (Instigator.Location - LastLine.NearPivot);
-  inward = inward - (inward Dot Normal(LastLine.NearPivot-Instigator.Location))*Normal(LastLine.NearPivot-Instigator.Location);
-  inward = Normal(inward);
+  inward = Normal( (Instigator.Location - LastLine.NearPivot) Cross perp ); // This gets the right direction 90% of the time.  :P
   */
+  inward = (Instigator.Location - LineSprite.NearPivot);
+  inward = inward - (inward Dot Normal(Instigator.Location-LastLine.NearPivot))*Normal(Instigator.Location-LastLine.NearPivot);
+  inward = Normal(inward);
+  // TODO: This favours one side over the over.
   for (side=-1;side<=1;side+=2) {
     newMiddle = LineSprite.NearPivot + side*perp*4.0;
     newMiddle += inward * 2.0;
@@ -650,6 +661,7 @@ function TryToSlip() {
       LineSprite.NearPivot = newMiddle;
       LastLine.Reached = newMiddle;
       LastLine.ReachedRender = newMiddle;
+      pullDest = newMiddle; // Seems to be needed if the hook is in flight during fold, but not otherwise.
     }
     // We continue to do the other side.  If that side works too, we will have moved inwards, which is good!
   }
@@ -998,36 +1010,16 @@ state() PullTowardStatic {
       //       This might allow us to actually walk and jump normally if our line has gone slack.
     }
 
-    // Stop slow gentle sinking (due to iterative gravity) by removing half of gravity pre-emptively:
-    // I think these were more needed with bLinePhysics=False.
-    if (bFiddlePhysics0) {
-      // It should only act in Inward direction:
-      // Instigator.AddVelocity( - 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
-      Instigator.AddVelocity( - (Inward Dot Vect(0,0,1)) * 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Inward );
-      // TODO: We should not need this for bLinePhysics but might still need it without it.
-    }
-    if (bFiddlePhysics1) {
-      Instigator.AddVelocity( 0.6 * Instigator.HeadRegion.Zone.ZoneGravity * DeltaTime * Vect(0,0,-1) );
-      // This is unrealistic because if they swing outwards, they still get this anti-grav effect.
-      // But it but plays well!  It lets you gain and keep height with wide swings.
-    }
-    // Dampen gravity (useful for swinging outwards on long pulls)
-    if (bFiddlePhysics2 && Instigator.Velocity.Z<0) {
-      // We want to turn whatever velocity we lost into forward velocity.
-      Instigator.AddVelocity( Normal(Instigator.Velocity) * 0.1*Abs(Instigator.Velocity.Z) );
-      Instigator.Velocity.Z *= 0.9;
-    }
-    // Dampen velocity:
-    // Instigator.AddVelocity( Instigator.Velocity*-0.001*DeltaTime );
-
     // TODO: We may have reduced the line length.  If we are below a fold, and have now reduced it below 0, equations will stop working, so we
     // need to do something.  Probably best to just un-catch the line from the corner and move up to swinging on the higher pivot.
     // But when lineLength is calculated from currentLength (distance from player to pivot), we will hardly get a chance to catch this, especially if the player cannot quite reach the pivot.
     // if (lineLength<0 && !bSingleLine) {
+    /*
     if (lineLength<50 && !bSingleLine) {
       UnFoldLine();
       if (bLogging) Instigator.ClientMessage("Your grappling line was ARTIFICIALLY straightened!");
     }
+    */
 
   }
 
@@ -1062,9 +1054,10 @@ function TryMoveTo(Actor a, Vector targetLoc) { // Removed simulated I don't kno
 
   // Best solution so far (better than staying stuck?):
   // if (lineLength<MinRetract) // We are close to winding up to the next line part.  Assumption (bad?): we only get stuck at these corners.  Yes bad assumption - sometimes the line merges through line-of-sight but we are still stuck.
+  if (bLogging && PlayerPawn(a)!=None && FRand()<0.1) { PlayerPawn(a).ClientMessage("You are stuck trying "$Int(VSize(targetLoc-a.Location))); }
   // if (FRand()<0.2) // don't always do it (mid-air collisions won't guarantee telefrag :P )  Mmm not good sometimes caused large jumps due to waiting.
-    if (bLogging && FRand()<0.1) { BroadcastMessage(a.getHumanName()$" is doing dangerous movement "$Int(VSize(targetLoc-a.Location))); }
-    a.SetLocation(targetLoc);
+    // if (bLogging && FRand()<0.1) { BroadcastMessage(a.getHumanName()$" is doing dangerous movement "$Int(VSize(targetLoc-a.Location))); }
+    // a.SetLocation(targetLoc);
     // ATM turning this off does all kinds of nasty things, just swing around Face a bit to see.  Until they are fixed, we need this on for production.
     // if (bLogging && FRand()<0.1) { BroadcastMessage(a.getHumanName()$" is AVOIDING doing dangerous movement "$Int(VSize(targetLoc-a.Location))); }
   // TODO: If we are still getting mid-air telefrags, then do a trace on this movement (starting from targetLoc?), and only force it if there is a wall in the way, not a person.
@@ -1249,8 +1242,12 @@ defaultproperties {
     // ThrowAngle=1
     //// With PHYS_Falling I had trouble getting the hook to attach to some of the corners in Bleak
 
-    Speed=3000.00
-    MaxSpeed=3000.00
+    //// I quite like this medium/some-slowness speed:
+    // Speed=3000.00
+    // MaxSpeed=3000.00
+    //// This is more like ND's speed.
+    Speed=3500.00
+    MaxSpeed=3500.00
     // GrappleSpeed=900 // 600 is quite fast for old Expert100, but quite sober for GrapplingHook.  1600 is swift, and a little faster than walking
     // 900 is elegant vertical but too slow horizontally - useless compared to Translocator.  We need ~2800 horizontal, to compare to Translocator, and therefore vertical should also be higher, otherwise we will be discouraging swinging!
     // GrappleSpeed=0
@@ -1284,9 +1281,6 @@ defaultproperties {
     bUnrealUnwind=False // Less realistic but friendly to use line release.  TODO: Unfinished for PullTowardDynamic.
     bDropFlag=True
     bExtraPower=False
-    bFiddlePhysics0=False // May be needed if bSwingPhysics=True but bLinePhysics=False
-    bFiddlePhysics1=False // An alternative method for counteracting gravity, which unrealistically helps swing.
-    bFiddlePhysics2=False // Try to help swing by turning downward momentum into forward momentum.
     // HitSound=sound'UnrealI.GasBag.hit1g'
     // HitSound=sound'KrrChink'
     HitSound=sound'hit1g'

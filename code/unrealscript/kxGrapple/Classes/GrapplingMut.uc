@@ -173,7 +173,7 @@ function Mutate (string MutateString, PlayerPawn Sender) {
   // We allow players to fire or retract their grappling hook without having it selected as a weapon!
   if (InStr(MutateString," ")>=0) {
     command = Left(MutateString,InStr(MutateString," "));
-    args = Right(MutateString,InStr(MutateString," ")+1);
+    args = Mid(MutateString,InStr(MutateString," ")+1);
   } else {
     command = MutateString;
     args = "";
@@ -214,7 +214,7 @@ function Mutate (string MutateString, PlayerPawn Sender) {
     GetGrappleLauncher(Sender).FireToWinch(args);
   }
   if (command~="GrappleJump") {
-    GetGrappleLauncher(Sender).DoubleJump();
+    GetGrappleLauncher(Sender).GrappleJump();
   }
   if (bCanGrappleWithoutSelection) {
     if (command~="FireHook" || command~="ToggleHook") {
@@ -231,6 +231,7 @@ function Mutate (string MutateString, PlayerPawn Sender) {
            gun.Instigator = Sender;
            gun.GrapplingHook.AmbientSound = class'GrapplingHook'.default.ReleaseSound;
            gun.AmbientSound = class'GrapplingHook'.default.ReleaseSound;
+           // TODO: Set gun.bUsingGrappleRemotely (WithoutSelection) so that the gun knows NOT to respond to jump-off-line when on another weapon.
         } else {
            if (command~="ToggleHook") {
               gun.GrapplingHook.Destroy();
