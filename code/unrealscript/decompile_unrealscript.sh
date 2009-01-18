@@ -15,7 +15,7 @@ cat "$USCRIPTFILE" |
 sed "s+$+\\\\r\\\\n+" |
 
 ## Delete all the existing newlines: NO this really slows it down!
-# tr -d '\r\n' |
+tr -d '\r\n' | ## Oh but we need to do it because of how we grep blocks later!
 
 tee /tmp/decompile_unrealscript.debug.1 |
 
