@@ -1,3 +1,4 @@
+// vim: filetype=uc
 // This is an attempt to add the Siege constructor to any gametype.
 // But I think we will need a custom constructor and HUD, since e.g. SiegeGI(Level.Game).MaxRU is not available!
 // Ah actually we get away with that.  But I did manage to get negative RU, and then DOWNgraded one of my buildings!  >.<
@@ -11,7 +12,8 @@
 
 // TODO: SiegeDM has a problem with damage on players of the same colour.  Either let them damage each other, or make sure everyone who joins goes on a smaller team ( = 5 team TDM).
 
-// TODO: When I upgraded to SiegeXXL2f, and played with a bunch of SiegeAnywhere mutators, I could not upgrade my buildings!
+// DONE: When I upgraded to SiegeXXL2f, and played with a bunch of SiegeAnywhere mutators, I could not upgrade my buildings!
+// TODO: SiegeCTF friendly fire is active for minigun but not shock primary!  sgProtectors kill us!
 
 #ifndef SiegeAnywhereHUDType
 	#define SiegeAnywhereHUDType class'SiegeAnywhereHUD'
@@ -21,7 +23,8 @@ var config float StartingMaxRU, StartingRU;
 var config float FriendlyFireScale;
 var config bool bAllWeapons;
 
-#define RUGainedPerKill 75
+// #define RUGainedPerKill 75
+#define RUGainedPerKill 100
 #define RULostPerDeath 20
 #define RULostPerSuicide 50
 #define RUMaxExpansionRate 50
@@ -115,6 +118,7 @@ function AddDefaultInventory(Pawn p) {
 
 }
 
+// CONSIDER: Does this ever get called.  Is it a mutator or a gametype function?
 function ScoreKill(Pawn killer, Pawn other) {
 
 	// We adjust RU here, but leave it to our parent class to score kills/deaths, and call the mutator chain.
@@ -157,12 +161,13 @@ function ScoreKill(Pawn killer, Pawn other) {
 	Super.ScoreKill(killer,other);
 }
 
+// TODO: We may refactor this into the SiegeAnywhere mutator.
 simulated event Tick(float DeltaTime) {
 	local PlayerPawn p;
 	Super.Tick(DeltaTime);
 	// Since there are no cores, siege code cannot check when we exceed MaxRU, e.g. by leeching or from supermines.
 	// So we check here.
-	// We cap RU at MaxRU.  So currently the only way to expand your MaxRU is by fragging, as in ScoreKill() below.
+	// We cap RU at MaxRU.  Currently the only way to expand your MaxRU is by fragging, as in ScoreKill() below.
 	foreach AllActors(class'PlayerPawn', p) {
 		if (sgPRI(p.PlayerReplicationInfo) != None)
 			if (sgPRI(p.PlayerReplicationInfo).RU > sgPRI(p.PlayerReplicationInfo).MaxRU)
@@ -233,7 +238,11 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 		}
 	}
 	else*/
-	if ( sgBuilding(injured) == None && damageType == 'sgSpecial' ) {
+
+	// Stop sgProtectors from being so damaging on players.
+	// TODO: Refactor this into SiegeAnywhere mutator, so it can reduce boost also.
+	/*
+	if ( (sgProtector(instigatedBy)!=None || damageType=='sgSpecial') && sgBuilding(injured)==None ) {
 		// This is from a Protector or SuperPro, it doesn't kill.
 		// Since the Siege pros are a bit strong, we go gentle:
 		damage = damage / 16;
@@ -242,6 +251,12 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 			damage = 0;
 		}
 	}
+	if (sgProtector(instigatedBy) != None && damageType != 'sgSpecial') {
+		Log("Warning: "$instigatedBy$" just gave "$injured$" damage of unknown type: "$damageType);
+		// If this happens, it means the code above will not have acted, although it should have.
+	}
+	*/
+
 	if (injured != None && instigatedBy != None
 			&& injured.PlayerReplicationInfo != None
 			&& instigatedBy.PlayerReplicationInfo != None
