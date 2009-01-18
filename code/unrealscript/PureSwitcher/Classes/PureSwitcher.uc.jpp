@@ -1,11 +1,33 @@
+// TODO: When Pure is incompatible with things, sometimes we get the problem
+//       that the map starts and players can join but they never spawn and they
+//       cannot use chat or mapvote.  Can we automatically detect when this has
+//       happened, and disable pure and restart the map?
+
 // TODO CONSIDER: In case of failure, detect "mutate fixpure" disable pure and restart map.
-//                Maybe an admin can do this anyway with "mutate disablepure" and "admin servertravel" but can they disable purestats also?
+//                Maybe an admin can do this anyway with "mutate disablepure"
+//                and "admin servertravel" but can they disable purestats also?
 
-// TODO: We may want a list of maps for which to disable pure, e.g. BleakNFR and EvilBedrooms.
+// TODO: It may be that only some maps are incompatible with Pure (e.g. some
+//       maps might have old Strangeloves embedded in them).
+//       We may want a list of maps for which to disable pure, e.g. BleakNFR
+//       and EvilBedrooms.
+//       #define CHECK_MAP_NAMES
 
-// TODO: We could also check all the weapons for Pure-incompatible ones, but we might catch them too late to disable it.
+// mutate PureOn | mutate pureoff ?  Is there any point when UTPure already
+// provides mutate EnablePure and DisablePure?
 
-// NOTE: If server is switched by another means than mapvote, e.g. servertravel or ServerMode, then PureSwitcher will not engage, so the admin must ensure that Pure is disable/enabled as required.
+// TODO: We could also check all the weapons for Pure-incompatible ones, but we
+//       might catch them too late to disable it.
+
+// NOTE: If server is switched by another means than mapvote, e.g. servertravel
+//       or ServerMode, then we cannot rely on CHECK_MAPVOTE_MESSAGES to
+//       enable/disable pure appropriately, so the admin must ensure that Pure
+//       is disable/enabled as required, or that CHECK_GAMETYPE or
+//       CHECK_MUTATORS will deal with it.
+
+// TODO: IncompatibleClasses=... ?  e.g. NFRabit.Rabit_FlakCannon might be
+//       incompatible with Pure, but we don't know that it exists until
+//       mid-game!
 
 class PureSwitcher expands Mutator;
 
@@ -29,6 +51,8 @@ var config String IncompatibleMVLAPrefixes;
 var bool bDoneCheck;
 #endif
 
+var bool bDoneChange,bPureEnabled;
+
 defaultproperties {
 	// TODO:
 	// PureSwitcher is currently oriented towards MapVoteLA.
@@ -36,7 +60,6 @@ defaultproperties {
 	// IncompatibleMVLAPrefixes="SiegeXXL2e,SLVArena,BattyBT"
 	// If we can intercept ServerTravel (see DynamicPackageLoader) then we can fix this before switching map.
 	// Or if we detect a map has loaded with incompatible settings, we can fix settings and force a map reload(switch).
-	// And rename the following: IncompatibleMVPrefixes="SG,XXL,FB,..."
 	#ifdef CHECK_GAMETYPE
 	IncompatibleGametypes="SiegeGI,FreeBuildGI,FastBuildGI,SiegeAssault,SiegeCTF,SiegeDM,SiegeDomination,SiegeTDM"
 	#endif
@@ -44,23 +67,34 @@ defaultproperties {
 	IncompatibleMutators="ZeroPingPlus103,ZeroPingPlus,ForceBehindView"
 	#endif
 	#ifdef CHECK_MAPVOTE_MESSAGES
+	// Rename the following: IncompatibleMVPrefixes="SG,XXL,FB,..."
 	IncompatibleMVLAPrefixes="SG,fSG,sgAS,sgCTF,sgDM,sgDOM,sgTDM,publicCTF,pugCTF,pugzpCTF,4v4pugSG,5v5pugSG,6v6pugSG"
 	#endif
 	// Maybe we don't need to include the pug modes since servermode did that before anyway.
 	PureVersion="RC7G"
 	PureStatVersion="7G"
+	bDoneChange=False
+	bPureEnabled=False
 }
 
+// TODO: Only if needed - don't do a log or a SET if a GET shows we are already on it ;p
+
 function DisableUTPure(optional String Reason) {
-	Log("PureSwitcher: Disabling UTPure"$PureVersion$" and PureStat"$PureStatVersion$" ("$Reason$")");
+	if (!bDoneChange || bPureEnabled) {
+		Log("### PureSwitcher ### _ DISABLING _ UTPure"$PureVersion$" and PureStat"$PureStatVersion$" ("$Reason$")");
+	}
 	ConsoleCommand("SET UTPure"$PureVersion$".UTPure bUTPureEnabled False");
 	ConsoleCommand("SET PureStat"$PureStatVersion$".PureStat bEnabled False");
+	bDoneChange=True; bPureEnabled=False;
 }
 
 function EnableUTPure(optional String Reason) {
-	Log("PureSwitcher: Enabling UTPure"$PureVersion$" and PureStat"$PureStatVersion$" ("$Reason$")");
+	if (!bDoneChange || !bPureEnabled) {
+		Log("### PureSwitcher ### + ENABLING + UTPure"$PureVersion$" and PureStat"$PureStatVersion$" ("$Reason$")");
+	}
 	ConsoleCommand("SET UTPure"$PureVersion$".UTPure bUTPureEnabled True");
 	ConsoleCommand("SET PureStat"$PureStatVersion$".PureStat bEnabled True");
+	bDoneChange=True; bPureEnabled=True;
 }
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
@@ -105,11 +139,11 @@ function CheckMutators() {
 		mutPackage = StrBeforeFirst(String(m.class),".");
 		mutName = StrAfterFirst(String(m.class),".");
 		if (StrContains(","$IncompatibleMutators$",",","$mutPackage$",") || StrContains(","$IncompatibleMutators$",",","$mutName$",")) {
-			DisableUTPure("Mutator "$m.class$" is incompatible with UTPure.");
+			DisableUTPure("UTPure is incompatible with mutator \""$m.class$"\".");
 		}
 		m = m.NextMutator;
 	}
-	Log("PureSwitcher.CheckMutators() Checked "$mCount$" mutators.");
+	// Log("PureSwitcher.CheckMutators() Checked "$mCount$" mutators.");
 	#endif
 }
 
@@ -160,10 +194,10 @@ function CheckMap(String NextMap) {
 	#ifdef CHECK_MAPVOTE_MESSAGES
 	if (InStr(","$IncompatibleMVLAPrefixes$",",","$NextGametype$",")>=0) {
 		BroadcastMessage("UTPure and PureStats will be disabled");
-		DisableUTPure("Prefix "$NextGametype);
+		DisableUTPure("UTPure is marked incompatible with mapvote prefix \""$NextGametype$"\".");
 	} else {
 		BroadcastMessage("UTPure and PureStats will be enabled");
-		EnableUTPure("Prefix "$NextGametype);
+		EnableUTPure("UTPure should work with \""$NextGametype$"\" mapvte prefix.");
 	}
 	#endif
 }
