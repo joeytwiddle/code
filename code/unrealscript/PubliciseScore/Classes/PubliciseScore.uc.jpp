@@ -1,5 +1,7 @@
 class PubliciseScore extends Mutator config(PubliciseScore);
 
+// TODO: Introduce format %s/%S=score %p=playercount %t/%T=timeleft ...
+
 // Title:
 var config bool bShowTeamCounts;
 var config bool bShowTeamScore;
@@ -33,8 +35,8 @@ defaultproperties {
 	#ifdef CYCLE_SERVERNAME
 	bCycleServerName=False
 	CycledServerName(0)="default"
-	CycledServerName(1)="[running PubliciseScore with bCycleServerName enabled]"
-	CycledServerName(2)="[server admin should edit CycledServerName[0-20] in PubliciseScore.ini]"
+	// CycledServerName(1)="[running PubliciseScore with bCycleServerName enabled]"
+	// CycledServerName(2)="[server admin should edit CycledServerName[0-20] in PubliciseScore.ini]"
 	// CycledServerName(0)="default"
 	// CycledServerName(1)="No Downloads we miss your grapple!"
 	// CTF/DM/MapVote
@@ -193,6 +195,15 @@ function SetTitle(String newText) {
 	}
 	#endif
 
+	// TODO: If there are any '\'s in the string, they will not make it through the server query response!
+	Level.Game.GameReplicationInfo.ServerName = FilterSlashes( Level.Game.GameReplicationInfo.ServerName );
+
+	// Log("Set server title to: "$Level.Game.GameReplicationInfo.ServerName);
+
+}
+
+function String FilterSlashes(String str) {
+	return StrReplaceAll(str,"\\","/");
 }
 
 #include "../../JLib/jlib.uc.jpp"
