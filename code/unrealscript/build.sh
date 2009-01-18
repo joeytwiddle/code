@@ -25,6 +25,30 @@
 
 
 
+function check_age_of_pakage_against_source () {
+	PKGFILE="$1"
+	SRCPKG="$2"
+	if [[ ! -f "$PKGFILE" ]]
+	then return 0
+	fi
+	if find "$SRCPKG/Classes" -type f -newer "$PKGFILE" | grep -v "/CVS/" | grep . >/dev/null
+	then return 0
+	fi
+	## In some inconvenient situations, I wish to recompile $PKGFILE if one of its dependencies has been recompiled.
+	## The dependencies must be listed by the developer in .depends
+	if [ -f "$SRCPKG/Classes/.depends" ]
+	then
+		cat "$SRCPKG/Classes/.depends" |
+		while read SUBPKG
+		do
+			if check_age_of_pakage_against_source "$PKGFILE" "$SUBPKG"
+			then return 0
+			fi
+		done
+	fi ## BUG: there is no checking for infinite loops, or even any output to indicate one might be occuring.
+	return 1
+}
+
 ## TODO: What's really nasty is when we compile a script, then try to load it as a lib when recompiling other things.  On hwi atm, it's causing ucc to stick on that package.
 
 TOPDIR="$PWD"
@@ -37,18 +61,37 @@ do
 	cd "$TOPDIR"
 	if [[ -d "$PKG/Classes" ]]
 	then
-		if [[ ! -f "System/$PKG.u" ]] || find "$PKG/Classes" -type f -newer "System/$PKG.u" | grep -v "/CVS/" | grep . >/dev/null
+		## TODO: Also check if the package has .depends, and any of the dependent packages are newer.
+		# if [[ ! -f "System/$PKG.u" ]] || find "$PKG/Classes" -type f -newer "System/$PKG.u" | grep -v "/CVS/" | grep . >/dev/null
+		if check_age_of_pakage_against_source "System/$PKG.u" "$PKG"
 		then
+
 			echo "Needs rebuild: $PKG"
+
 			cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+EditPackages=$PKG+" | dog compiling.ini
+
 			[[ -f "System/$PKG.u" ]] && verbosely mv "System/$PKG.u" "System/$PKG.u.last"
+
 			cd "$PKG"/Classes &&
 			find . -maxdepth 1 -type f -name "*.jpp" |
 			while read JPPFILE
 			do
 				TARGETFILE="`echo "$JPPFILE" | sed 's+\.jpp$++'`"
 				verbosely jpp -- "$JPPFILE" > "$TARGETFILE"
+				## We can always safely strip comments here.  This is not the original it's a temporary post-processed compile file.
+				# sh ../../strip_comments.sh "$TARGETFILE"
 			done
+
+			## Warning: This should only be used on one-time builds.  Any comments in non-jpp .uc files will be lost!
+			## Disabled here: We don't want to just strip all .uc files in our build.
+			## This is better run from other places, when appropriate.
+			# if [ "$STRIPCOMMENTS" ]
+			# then
+				# for CLASSFILE in *.uc
+				# do sh ../../strip_comments.sh "$CLASSFILE"
+				# done
+			# fi
+
 		else
 			echo "Nothing new: $PKG"
 			cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+; EditPackages=$PKG+" | dog compiling.ini
