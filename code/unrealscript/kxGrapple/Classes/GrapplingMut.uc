@@ -217,7 +217,7 @@ function Mutate (string MutateString, PlayerPawn Sender) {
     GetGrappleLauncher(Sender).GrappleJump();
   }
   if (bCanGrappleWithoutSelection) {
-    if (command~="FireHook" || command~="ToggleHook") {
+    if (command~="FireHook" || command~="ToggleHook") { /* ToggleGrapple? */
       gun = GetGrappleLauncher(Sender);
       if (gun != None) {
         if (gun.GrapplingHook == None) {

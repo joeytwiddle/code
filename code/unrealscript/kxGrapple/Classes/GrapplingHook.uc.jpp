@@ -1,9 +1,13 @@
 //================================================================================
 // GrapplingHook.
 //================================================================================
-// vim: ts=2 sw=2 expandtab
+// vim: ts=2 sw=2 expandtab ft=uc
 
-// TODO: Folding.  Too often when falling it makes the line go into/thru a wall, nota round the edge.  When initially folding we need to check corner visibility and push out if needed using velocity and angle of bend.
+#define KX_GRAPPLE
+// #define ND_GRAPPLE
+
+// TODO: slipping causes line length to change.
+// TODO: Folding.  Too often when falling it makes the line go into/thru a wall, not around the edge.  When initially folding we need to check corner visibility and push out if needed using velocity and angle of bend.
 //       Sometimes folding moves the corner into an unrealistic place.  It should really be as tight as possible.  Take a look at longitude/latitude.  Move corner in latitude (i actually mean distance down line which is longitude, but it's usually a verticalish axis which would be latitude on a globe), and move in - can we retain visibility but reduce length (make corner as close as possible to edge)?
 // TODO: Rather than still allowing fine control of grapple after switching weapon, maybe instead make the grapple continue to move as it did before the weapon switch, i.e. lock its state.  Alternatively, allow user to set the winching state with commands "wind,hold,unwind" so they can make a bind for each.
 // DONE: The line might get caught around a corner *before* the grapple has hit a target.  We have not dealt with this case at all.
@@ -854,14 +858,19 @@ state() PullTowardStatic {
         if (isStuck) {
           targetInVel = targetInVel * StuckSlowdown;
         }
-        if (bSingleLine && lineLength<MinRetract*4.0) { // If they are close the the top, we reduce the pull a bit.
-          // lineLength is somewhere between MinRetract and MinRetract*2.0
-          targetInVel = targetInVel * (lineLength-MinRetract)/(3.0*MinRetract);
+        // #ifdef DAMPENING
+        if (bSingleLine && lineLength<MinRetract*3.0) {
+          // If they are close the the top, we reduce the pull a bit.
+          // Without this the player's upward speed can be so great that he flies up above the hook, or even bumps his head on it!
+          // lineLength is somewhere between MinRetract and MinRetract*3.0
+          targetInVel = targetInVel * (lineLength-MinRetract)/(2.0*MinRetract);
         }
         if (!bSingleLine && lineLength<MinRetract*4.0) { // Only happens when !bSingleLine
-          // This tones down the extreme new pull when your line catches around a corner.
-          targetInVel = targetInVel * (0.1+0.9*lineLength/MinRetract/4.0);
+          // Without this, the player can get an extreme new pull, sending them in an abrupt new direction, when their line catches around a relatively close corner.  They still get pull, but it is dampened.
+          // targetInVel = targetInVel * (0.1+0.9*lineLength/MinRetract/4.0);
+          targetInVel = targetInVel * (0.3+0.7*lineLength/MinRetract/4.0);
         }
+        // #endif
         lineLength = lineLength - targetInVel*DeltaTime;
         if (lineLength < 0)
           lineLength = 0;
@@ -1243,36 +1252,44 @@ defaultproperties {
     //// With PHYS_Falling I had trouble getting the hook to attach to some of the corners in Bleak
 
     //// I quite like this medium/some-slowness speed:
-    // Speed=3000.00
-    // MaxSpeed=3000.00
+    Speed=3000.00
+    MaxSpeed=3000.00
     //// This is more like ND's speed.
-    Speed=3500.00
-    MaxSpeed=3500.00
+    // Speed=4000.00
+    // MaxSpeed=4000.00
     // GrappleSpeed=900 // 600 is quite fast for old Expert100, but quite sober for GrapplingHook.  1600 is swift, and a little faster than walking
     // 900 is elegant vertical but too slow horizontally - useless compared to Translocator.  We need ~2800 horizontal, to compare to Translocator, and therefore vertical should also be higher, otherwise we will be discouraging swinging!
     // GrappleSpeed=0
     HitDamage=20.00 // Not very strong, but you can switch weapon and hit them with something else too!
     bDoAttachPawn=True
 
+    // If GrappleSpeed and VerticalGrappleSpeed were accelerations, they should in theory differ by 950=gravity.  But they are velocities :P
+
+    #ifdef KX_GRAPPLE
     // kX:
-    GrappleSpeed=2550
+    GrappleSpeed=2550 // Pretty strong but not over-doing it
+    // GrappleSpeed=2700 // No dummy you set this while playing at 80% speed :P  Almost strong enough for noobs dragging themselves along the floor, a bit too overstrong for amateurs and pros.
     VerticalGrappleSpeed=900
     bSwingPhysics=True
     bLinePhysics=True // This deals with grapple pull in terms of line length.
     bLineOfSight=True
     bLineFolding=True
     MinRetract=125
+    #endif
 
-    // NOTE: You cannot use /* */ to comment these out!
-
+    #ifdef ND_GRAPPLE
     // ND:
-    // GrappleSpeed=610
-    // VerticalGrappleSpeed=300
-    // bSwingPhysics=False
-    // bLinePhysics=False
-    // bLineOfSight=True  // This safety check is needed to detach the hook if we lose line-of-sight to our destination grapple.
-    // bLineFolding=False // This works BADLY if the swing and line physics are off.
-    // MinRetract=50
+    GrappleSpeed=610
+    VerticalGrappleSpeed=300
+    // GrappleSpeed=671
+    // VerticalGrappleSpeed=330
+    bSwingPhysics=False
+    bLinePhysics=False
+    bLineOfSight=True  // This safety check is needed to detach the hook if we lose line-of-sight to our destination grapple.
+    bLineFolding=False // This works BADLY if the swing and line physics are off.
+    MinRetract=50
+    // NOTE: You cannot use /* */ to comment these out!
+    #endif
 
     bShowLine=True
     // bPrimaryWinch=False // Grapple only winds in while player is holding primary fire.  When I changed the config on the server from default True to config False, everything seemed to replicate to the client except sounds! // In other words, if you set it to true in the defaultproperties, then false on the server, it won't all work.
