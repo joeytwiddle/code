@@ -4,7 +4,13 @@
 // TODO: allow enabling of non-playerpawn damage display (so u can see damage to Siege buildings for example)
 // TODO: perform accumulation of damage-made-recently in the display, so if he gets hit by 3 rockets in close succession, it displays 60 ... 120 ... 180!
 
+// TODO: Scroll the line used for messaging player if is still displaying a line from < 1.0 seconds ago :P
+// DONE: bShowLifeLog: Create a list of damage given and received during the course of the spawnsession.  Report it when player dies.
+
 class TrackDamage expands Mutator config(TrackDamage);
+
+#define ANNOUNCE
+#define RECORD_LIFE_LOG
 
 // #define bDebugLogging False
 #define bDebugLogging True
@@ -14,6 +20,10 @@ struct PlayerSettings {
 	var bool bSeeDamageGiven;   // Show damage this player causes
 	var bool bSeeDamageReceived;  // Show damage this player receives
 	var bool bSeeAllDamage;  // Show all damage that occurs!  (Not yet added)
+	#ifdef RECORD_LIFE_LOG
+	var bool bShowLifeLog;  // Report at death all the damage taken.  aka "logdamage"
+	var String LifeLog;
+	#endif
 };
 
 var config bool bAcceptSpokenCommands;
@@ -123,7 +133,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 			stateStr = "on";
 		Sender.ClientMessage("Your show damage is "$stateStr);
 		// if (!ps.bNoFlash) 
-		FlashMessageToPlayer(Sender,"show damage = "$stateStr,SentPainColor,1,4,True);
+		FlashMessageToPlayer(Sender,"damage = "$stateStr,SentPainColor,1,2,True);
 		return True;
 	}
 
@@ -133,7 +143,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		if (ps.bSeeDamageReceived)
 			stateStr = "on";
 		Sender.ClientMessage("Your show pain is "$stateStr);
-		FlashMessageToPlayer(Sender,"show pain = "$stateStr,ReceivedPainColor,7,2,True);
+		FlashMessageToPlayer(Sender,"pain = "$stateStr,ReceivedPainColor,2,2,True);
 		return True;
 	}
 
@@ -142,18 +152,46 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		stateStr = "off";
 		if (ps.bSeeAllDamage)
 			stateStr = "on";
-		Sender.ClientMessage("show alldamage = "$stateStr);
-		FlashMessageToPlayer(Sender,"Your show all damage is "$stateStr,InfoColor,3,2,True);
+		Sender.ClientMessage("Your show all damage is "$stateStr);
+		FlashMessageToPlayer(Sender,"alldamage = "$stateStr,InfoColor,3,2,True);
+		return True;
+	}
+
+	if (command ~= "logdamage") {
+		ps.bShowLifeLog = !ps.bShowLifeLog;
+		stateStr = "off";
+		if (ps.bShowLifeLog)
+			stateStr = "on";
+		Sender.ClientMessage("Your damage log is "$stateStr);
+		FlashMessageToPlayer(Sender,"logdamage = "$stateStr,InfoColor,4,2,True);
 		return True;
 	}
 
 	if (command ~= "HELP") {
-		Sender.ClientMessage("TrackDamage commands: ! or mutate flash|damage|pain|alldamage - shows you damage caused during play");
+		Sender.ClientMessage("TrackDamage commands: ! or mutate damage|pain|flash|alldamage - shows you damage caused during play");
 		return True;
 	}
 
 	return False;
 
+}
+
+function ModifyPlayer(Pawn Other) {
+	Super.ModifyPlayer(Other);
+	#ifdef ANNOUNCE
+		if (PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
+			// First spawn!
+			// Other.ClientMessage("TrackDamage is available on this server.  Try !damage and !pain.");
+			Other.ClientMessage("You can use TrackDamage to see changes in health.  Try !damage and !pain.");
+		}
+	#endif
+	#ifdef RECORD_LIFE_LOG
+		#define TrimTrail(str,n) Left(str,Len(str)-n)
+		if ( GetPlayerSettingsFor(Other).bShowLifeLog && GetPlayerSettingsFor(Other).LifeLog != "") {
+			Other.ClientMessage("You died thanks to: "$ TrimTrail(GetPlayerSettingsFor(Other).LifeLog,2) );
+			GetPlayerSettingsFor(Other).LifeLog = "";
+		}
+	#endif
 }
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
@@ -164,10 +202,17 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	local String actualDamageStr;
 	local bool bSameTeam;
 
+	// Since we can be affected by mutators earlier in the chain, we are now
+	// doing the Super call first, and are affected by ALL mutators in the chain.
+	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
+	// Consider: We could log any change made by the mutators later in the chain,
+	// during the Super call.  But not those earlier in the chain.
+
 	if (bDebugLogging && PlayerPawn(Victim)==None && Bot(Victim)==None)
 		Log("TrackDamage.MutatorTakeDamage(): "$InstigatedBy.getHumanName()$" -> "$ActualDamage$" -> "$Victim$" is not a PlayerPawn or a Bot.");
+	// Maybe it's an sgBuilding, which is a type of Pawn.
 
-	bSameTeam = (Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team);
+	bSameTeam = (Victim!=None && InstigatedBy!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team);
 	if (ActualDamage == 0 && !bSameTeam)
 		actualDamageStr = "(absorbed)"; // shield or armor (or some other reason) caused this to give 0 damage to enemy
 	else
@@ -193,7 +238,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			// TODO: damage on multiple players at one moment in time should appear on different lines
 			#undef FlashMessage
 			#undef SayMessage
-			#define FlashMessage Victim.getHumanName()$" -"$actualDamageStr
+			// #define FlashMessage Victim.getHumanName()$" -"$actualDamageStr
+			#define FlashMessage Victim.getHumanName()$" "$DamageType$" -"$actualDamageStr
 			#define SayMessage "Damage "$ actualDamageStr $" on "$ Victim.getHumanName() $" type "$ DamageType $" "$ boost
 			// Line 0-1 is "You killed"
 			// Line ~2 is "Double Kill"
@@ -221,12 +267,20 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		}
 	}
 
-	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
+	#ifdef RECORD_LIFE_LOG
+		// TODO: trim name if it was last name, and/or damagetype if it was last type
+		#define HIT_REPORT (InstigatedBy.getHumanName()$" "$DamageType$" "$Victim.Health)
+		if ( GetPlayerSettingsFor(Victim).bShowLifeLog ) {
+			GetPlayerSettingsFor(Victim).LifeLog = GetPlayerSettingsFor(Victim).LifeLog $ HIT_REPORT $ ", ";
+		}
+	#endif
+
 }
 
 function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum, optional int duration, optional bool bAdditional, optional bool bBeep) {
-	if (linenum == 0)
-		linenum = 4;
+	// if (linenum == 0)
+		// linenum = 4;
+	// linenum=FRand()*4;
 	if (duration == 0)
 		duration = 2;
 	if (!bAdditional)

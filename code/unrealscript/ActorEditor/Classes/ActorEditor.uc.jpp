@@ -1,5 +1,7 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// Can we set/change location of objects?
+
 // TODO: things to match (logical combinations of (map-regexp) or (game-variable)
 //       things to change: add mutator, change setting of class, change setting of map, spawn object at position
 
@@ -224,6 +226,11 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		// }
 	// }
 
+	if (command ~= "SHOW" || command ~= "SHOWINVIS" || command~="LIGHT") {
+		ShowInvisibleActors();
+		return True;
+	}
+
 	if (command ~= "LOOK") {
 		workingActor = FindClosestActor(Sender);
 		Sender.ClientMessage("Viewing: "$workingActor);
@@ -311,6 +318,16 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 	return False;
 
+}
+
+function ShowInvisibleActors() {
+	local Actor A;
+	foreach AllActors(Class'Actor',A) {
+		if (A.DrawType == DT_None) {
+			A.DrawType = DT_Sprite;
+			// A.Sprite = None;
+		}
+	}
 }
 
 function Actor SeekActorMatching(string str, PlayerPawn Sender) {

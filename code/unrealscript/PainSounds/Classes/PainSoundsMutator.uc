@@ -129,9 +129,11 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_None,volume,False,radius,pitch);
 					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Misc,volume,False,radius,pitch);
 					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Pain,volume,False,radius,pitch);
-					if (ActualDamage > 50)
+					if (ActualDamage > 100)
 						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
 					/*
+					if (ActualDamage > 50)
+						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
 					// Windows players were crashing, so I removed two of the slots.  Let's see if this fixes it.
 					if (ActualDamage > 100)
 						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Talk,volume,False,radius,pitch);

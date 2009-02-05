@@ -9,7 +9,7 @@ class TranslocBots expands Mutator;
 var config bool bLogging;
 var config bool bForceBotsTransloc; // On a timer, attempts to force bots to translocate somewhere
 var config bool bGoForFlag;
-var config bool bReplacePathNodes; // Will replace PathNode actors with FreshTranslocStart/Dest/FreshLiftCenter/Exits actors.
+var config bool bReplacePathNodes; // NOT WORKING: Will replace PathNode actors with FreshTranslocStart/Dest/FreshLiftCenter/Exits actors.  One problem here is that the weights of the paths which link NavigationPoints are calculated by UED during map build.
 var config bool bStopAtEndGame;
 var config bool bRenameBots;
 var config bool bTransToVisiblePoint;
@@ -19,10 +19,11 @@ var config bool bRoamToEnemyFlag;
 var String PropertiesToCheck;
 
 defaultproperties {
-  bLogging=True
+  // bLogging=True
   bForceBotsTransloc=True
   bGoForFlag=True
   bReplacePathNodes=False
+  // wtf is this...
   PropertiesToCheck="From_NavigationPoint:,ownerTeam,taken,upstreamPaths,Paths,PrunedPaths,VisNoReachPaths,visitedWeight,routeCache,bestPathWeight,nextNavigationPoint,nextOrdered,prevOrdered,startPath,previousPath,cost,ExtraCost,bPlayerOnly,bEndPoint,bEndPointOnly,bSpecialCost,bOneWayPath,bNeverUseStrafing,bAutoBuilt,bTwoWay,From_Actor:,bStatic,bHidden,bNoDelete,bAnimFinished,bAnimLoop,bAnimNotify,bAnimByOwner,bDeleteMe,bAssimilated,bTicked,bLightChanged,bDynamicLight,bTimerLoop,bCanTeleport,bOwnerNoSee,bOnlyOwnerSee,bIsMover,bAlwaysRelevant,bAlwaysTick,bHighDetail,bStasis,bForceStasis,bIsPawn,bNetTemporary,bNetOptional,bReplicateInstigator,bTrailerSameRotation,bTrailerPrePivot,bClientAnim,bSimFall,Role,RemoteRole,NetTag,Owner,InitialState,Group,TimerRate,TimerCounter,LifeSpan,AnimSequence,AnimFrame,AnimRate,TweenRate,SkelAnim,LODBias,Level,XLevel,Tag,Event,Target,Instigator,AmbientSound,Inventory,Base,Region,AttachTag,StandingCount,MiscNumber,LatentByte,LatentInt,LatentFloat,LatentActor,Touching[4],Deleted,SpecialTag,Location,Rotation,OldLocation,ColLocation,Velocity,Acceleration,OddsOfAppearing,bHiddenEd,bDirectional,bSelected,bMemorized,bHighlighted,bEdLocked,bEdShouldSnap,bEdSnap,bTempEditor,bDifficulty0,bDifficulty1,bDifficulty2,bDifficulty3,bSinglePlayer,bNet,bNetSpecial,bScriptInitialized,HitActor,EDrawType,ERenderStyle,Sprite,Texture,Skin,Mesh,Brush,DrawScale,PrePivot,ScaleGlow,VisibilityRadius,VisibilityHeight,AmbientGlow,Fatness,SpriteProjForward,bUnlit,bNoSmooth,bParticles,bRandomFrame,bMeshEnviroMap,bMeshCurvy,bFilterByVolume,bShadowCast,bHurtEntry,bGameRelevant,bCarriedItem,bForcePhysicsUpdate,bIsSecretGoal,bIsKillGoal,bIsItemGoal,bCollideWhenPlacing,bTravel,bMovable,MultiSkins[8],SoundRadius,SoundVolume,SoundPitch,TransientSoundVolume,TransientSoundRadius,CollisionRadius,CollisionHeight,bCollideActors,bCollideWorld,bBlockActors,bBlockPlayers,bProjTarget,ELightType,ELightEffect,byte,bSpecialLit,bActorShadows,bCorona,bLensFlare,bBounce,bFixedRotationDir,bRotateToDesired,bInterpolating,bJustTeleported,EDodgeDir,Mass,Buoyancy,RotationRate,DesiredRotation,PhysAlpha,PhysRate,PendingTouch,AnimLast,AnimMinRate,OldAnimRate,SimAnim,NetPriority,NetUpdateFrequency,bNetInitial,bNetOwner,bNetRelevant,bNetSee,bNetHear,bNetFeel,bSimulatedPawn,bDemoRecording,bClientDemoRecording,bClientDemoNetFunc,RenderIteratorClass,RenderInterface"
   bStopAtEndGame=False // TODO: should default to True for sensible servers, but then check UpdateBotName() will be called before AutoTeamBalance updates stats.
   bRenameBots=False // interesting to watch bots change state
@@ -363,6 +364,7 @@ function TranslocateToVector(Bot b, vector dest) {
   b.DesiredRotation = rotator(dest - b.Location);
   b.SpecialPause = 1.5;
 
+  // This may be wrong - is TranslocatorTarget a visible Actor?
   b.MyTranslocator.TTarget = Spawn(class'TranslocatorTarget',,,dest);
   if (b.MyTranslocator.TTarget != None) {
     b.MyTranslocator.bTTargetOut = True;

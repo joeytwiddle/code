@@ -1,5 +1,28 @@
 class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
+// vim: ft=uc
+
+// Language: We have not actually reduced head and body radius, we have created new inner-head and inner-body cylinders!
+
+// KNOWN BUG: If you make a headshot but it is detected as an ear-clip or a
+// body-shot, but it kills the opponent, then UT still sends the "Headshot!"
+// message and Announcer sound.
+
+// TODO: Automatically log to UT log the end-of-game stats.  If we are curious after a particular game, we can go look them up.
+
+// BUG: We can't stop the blood spurt appearing even if we detect a clip/miss
+//      and did damage 0.
+//      Likewise the dust doesn't appear at the wall where we should have hit,
+//      the bullet has already stopped at the player :P
+//      To fix that we have to create a custom SniperRifle weapon, which should
+//      be straightforward for default UT.  But I can't do it for ZPPure, it
+//      won't let me compile against it.  I haven't tried ZeroPingPlus103.
+//      We would have to give them a non-zp weapon.
+
+//// TODO: Combine ADJUST_SNIPER_DAMAGE and ADJUST_HEADSHOT_DAMAGE? :P
+//// ADJUST_SNIPER_DAMAGE is removed at the moment to avoid confusion.
+//// ATM if both reductors are enabled, then BOTH get applied to the damage.
+
 // OK now working reasonably in non-zeroping games.
 // Headshots appear to be working when shooting enemy from in front of or behind him.
 // When shooting him from the side, thin cylinder might not quite be in the right place. :f
@@ -17,15 +40,17 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // TODO: #define SHOTS_JUST_FAIL
 #define REDUCED_COLLISION_CYLINDER
+// #define OLD_HITCYLINDER_ANALYSIS
 #define TRACE_METHOD_RETRACE
-#define ADJUST_SNIPER_DAMAGE
-#define ADJUST_MISS_DAMAGE
+// #define ADJUST_SNIPER_DAMAGE
 #define ADJUST_HEADSHOT_DAMAGE
+#define ADJUST_MISS_DAMAGE
 // TODO: ADJUST_BODYSHOT_DAMAGE?
 
 // Debugging:
 
 #define DEBUG_DRAW_LINES
+#define MAINTAIN_LINES
 
 #define DO_COLLECT_STATS
 #ifdef DO_COLLECT_STATS
@@ -40,28 +65,30 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 var config bool bEnabled;
 var config bool bLogging;
 var config bool bLiveReports;
-#ifdef SHOTS_JUST_FAIL
-var config float HeadshotFailRate;
-var config float BodyhitFailRate;
 // TODO: implement!
+#ifdef SHOTS_JUST_FAIL
+// var config float HeadshotFailRate;
+// var config float BodyhitFailRate;
 #endif
 #ifdef REDUCED_COLLISION_CYLINDER
 //// TODO: hard code these variables for official release (maybe use some more #defines).
 var config float HeadRadiusScale,HeadHeightScale;
 var config float BodyRadiusScale;
+#endif
 #ifdef ADJUST_SNIPER_DAMAGE
 var config float SniperDamageScale,SniperBoostScale;
-#endif
-#ifdef ADJUST_HEADSHOT_DAMAGE
-var config float HeadshotDamageScale,HeadshotBoostScale;
 #endif
 #ifdef ADJUST_MISS_DAMAGE
 var config float HeadshotMissScale,BodyhitMissScale;
 #endif
+#ifdef ADJUST_HEADSHOT_DAMAGE
+var config float HeadshotDamageScale,HeadshotBoostScale;
 #endif
 #ifdef DEBUG_DRAW_LINES
 var config bool bDebugDrawLines;
 #endif
+
+var bool bTrustViewRotation;
 
 #ifdef DO_COLLECT_STATS
 var int HeadshotCount, HeadshotWideCount, HeadshotLowCount, HeadshotRespectedCount;
@@ -71,10 +98,24 @@ var int BodyhitCount, BodyhitWideCount;
 var float AverageBodyhitRadius, AverageBodyhitHeight;
 var float MaxBodyhitRadius, MinBodyhitRadius, MaxBodyhitHeight, MinBodyhitHeight;
 #endif
+#ifdef MAINTAIN_LINES
+var Actor Lines[64];
+var int CurrentLine;
+#endif
 
 function PostBeginPlay() {
+	// if (bEnabled) {
+	Level.Game.RegisterDamageMutator(Self);
+	Level.Game.RegisterMessageMutator(Self);
+	// }
+}
+
+function ModifyPlayer(Pawn Other) {
+	Super.ModifyPlayer(Other);
 	if (bEnabled) {
-		Level.Game.RegisterDamageMutator(Self);
+		if (PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
+			Other.ClientMessage("Player hitboxes have been reduced for sniper bullets by FixWeaponBalance.  Try \"mutate report\" for reports.");
+		}
 	}
 }
 
@@ -99,61 +140,55 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	local String args[256];
 	local String command;
 
+	// DebugLog("FixWeaponBalance.CheckMessage() ("$Sender$"): "$Msg$"");
+	argcount = SplitString(line," ",args);
+
+	command = args[0];
+
+	if (command ~= "HELP") {
+		Sender.ClientMessage("FixWeaponBalance.bEnabled = "$bEnabled);
+		#ifdef DEBUG_DRAW_LINES
+		Sender.ClientMessage("FixWeaponBalance commands: !report | !status | !logstatus | !lines");
+		#else
+		Sender.ClientMessage("FixWeaponBalance commands: !report | !status | !logstatus");
+		#endif
+		return True;
+	}
+
 	/*
 	if (!Sender.bAdmin) {
 		return False;
 	}
 	*/
 
-	// DebugLog("FixWeaponBalance.CheckMessage() ("$Sender$"): "$Msg$"");
-	argcount = SplitString(line," ",args);
+	// Just for early releases, so players can easily turn this on/off:
+	if (command ~= "REPORT") {
+		bLiveReports = !bLiveReports;
+		if (bLiveReports)
+			BroadcastMessage(Sender.getHumanName()$" has ENABLED FixWeaponBalance reporting with \"mutate report\".");
+		if (!bLiveReports)
+			BroadcastMessage(Sender.getHumanName()$" has DISABLED FixWeaponBalance reporting with \"mutate report\".");
+	}
 
-	command = args[0];
+	#ifdef DEBUG_DRAW_LINES
+	if (command ~= "LINES") {
+		bDebugDrawLines = !bDebugDrawLines;
+		if (bDebugDrawLines)
+			BroadcastMessage(Sender.getHumanName()$" has ENABLED FixWeaponBalance line debugging with \"mutate lines\".");
+		if (!bDebugDrawLines)
+			BroadcastMessage(Sender.getHumanName()$" has DISABLED FixWeaponBalance line debugging with \"mutate lines\".");
+	}
+	#endif
 
-	//// Normally we send the info to the caller:
-	// #define Send Sender.ClientMessage
-	//// But sometimes I want the output logged to the logfile, so I can post-process it:
-	#define Send DebugLog
 	if (command ~= "STATUS") {
-		Send("FixWeaponBalance.bEnabled = "$bEnabled);
-		Send("FixWeaponBalance.bLogging = "$bLogging);
-		Send("FixWeaponBalance.HeadHeightScale = "$HeadHeightScale);
-		Send("FixWeaponBalance.HeadRadiusScale = "$HeadRadiusScale);
-		Send("FixWeaponBalance.BodyRadiusScale = "$BodyRadiusScale);
-		Send("FixWeaponBalance.SniperBoostScale = "$SniperBoostScale);
-		#ifdef ADJUST_SNIPER_DAMAGE
-		Send("FixWeaponBalance.SniperDamageScale = "$SniperDamageScale);
-		#endif
-		#ifdef ADJUST_MISS_DAMAGE
-		Send("FixWeaponBalance.HeadshotMissScale = "$HeadshotMissScale);
-		Send("FixWeaponBalance.BodyhitMissScale = "$BodyhitMissScale);
-		#endif
-		#ifdef ADJUST_HEADSHOT_DAMAGE
-		Send("FixWeaponBalance.HeadshotDamageScale = "$HeadshotDamageScale);
-		Send("FixWeaponBalance.HeadshotBoostScale = "$HeadshotBoostScale);
-		#endif
-		#ifdef DO_COLLECT_STATS
-		Send(HeadshotCount $" headshots, "$ HeadshotWideCount $" wide, "$ HeadshotLowCount $" low.");
-		// Send("HeadshotCount = "$HeadshotCount);
-		// Send("HeadshotWideCount = "$HeadshotWideCount);
-		// Send("HeadshotLowCount = "$HeadshotLowCount);
-		// Send("HeadshotRespectedCount = "$HeadshotRespectedCount);
-		// Send("BodyhitCount = "$BodyhitCount);
-		// Send("BodyhitWideCount = "$BodyhitWideCount);
-		Send("HeadshotRadius was ~ ["$MinHeadshotRadius$" - "$AverageHeadshotRadius$" - "$MaxHeadshotRadius$"]");
-		Send("HeadshotHeight was ~ ["$MinHeadshotHeight$" - "$AverageHeadshotHeight$" - "$MaxHeadshotHeight$"]");
-		Send("BodyhitRadius was ~ ["$MinBodyhitRadius$" - "$AverageBodyhitRadius$" - "$MaxBodyhitRadius$"]");
-		Send("BodyhitHeight was ~ ["$MinBodyhitHeight$" - "$AverageBodyhitHeight$" - "$MaxBodyhitHeight$"]");
-		// Send("AverageHeadshotRadius = "$AverageHeadshotRadius);
-		// Send("AverageHeadshotHeight = "$AverageHeadshotHeight);
-		// Send("AverageBodyhitRadius = "$AverageBodyhitRadius);
-		#endif
+		SendStatusTo(Sender);
+		SendStatsTo(Sender);
 		return True;
 	}
 
-	if (command ~= "HELP") {
-		Sender.ClientMessage("FixWeaponBalance.bEnabled = "$bEnabled);
-		Sender.ClientMessage("FixWeaponBalance mutate commands: status");
+	if (command ~= "LOGSTATS") {
+		// SendStatusTo(None);
+		SendStatsTo(None);
 		return True;
 	}
 
@@ -161,10 +196,91 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 }
 
+//// Normally we send the info to the caller:
+// #define Send Sender.ClientMessage
+//// But sometimes I want the output logged to the logfile, so I can post-process it:
+// #define Send DebugLog
+// #define Send(X); Sender.ClientMessage(X); Log(X);
+#define Send(X); if (Sender==None) { Log(X); } else { Sender.ClientMessage(X); }
+function SendStatusTo(Pawn Sender) {
+	Send("FixWeaponBalance settings:");
+	Send("  Enabled = "$bEnabled);
+	Send("  Logging = "$bLogging);
+	Send("  Reporting = "$bLiveReports);
+	#ifdef REDUCED_COLLISION_CYLINDER
+	Send("  HeadHeightScale = "$PercentageChangeStr(HeadHeightScale));
+	Send("  HeadRadiusScale = "$PercentageChangeStr(HeadRadiusScale));
+	Send("  BodyRadiusScale = "$PercentageChangeStr(BodyRadiusScale));
+	#endif
+	#ifdef ADJUST_SNIPER_DAMAGE
+	Send("  SniperDamageScale = "$PercentageChangeStr(SniperDamageScale));
+	Send("  SniperBoostScale = "$PercentageChangeStr(SniperBoostScale));
+	Send("So headshot 150 now gives "$Int(150*SniperDamageScale)$" and bodyhit 67 gives "$Int(67*SniperDamageScale)$".");
+	#endif
+	#ifdef ADJUST_HEADSHOT_DAMAGE
+	Send("  HeadshotDamageScale = "$PercentageChangeStr(HeadshotDamageScale));
+	Send("  HeadshotBoostScale = "$PercentageChangeStr(HeadshotBoostScale));
+	Send("So headshot 150 now gives "$Int(150*HeadshotDamageScale)$".");
+	#endif
+	#ifdef ADJUST_MISS_DAMAGE
+	Send("  HeadshotMissScale = "$PercentageChangeStr(HeadshotMissScale));
+	Send("  BodyhitMissScale = "$PercentageChangeStr(BodyhitMissScale));
+	Send("So missing the head now clips the ear for "$Int(150*HeadshotMissScale)$" damage, and missing the body gives "$Int(67*BodyhitMissScale)$" damage.");
+	#endif
+}
+function SendStatsTo(Pawn Sender) {
+	#ifdef DO_COLLECT_STATS
+	Send("HeadshotRadius was ~ ["$MinHeadshotRadius$" - "$AverageHeadshotRadius$" - "$MaxHeadshotRadius$"]");
+	Send("HeadshotHeight was ~ ["$MinHeadshotHeight$" - "$AverageHeadshotHeight$" - "$MaxHeadshotHeight$"]");
+	Send("BodyhitRadius was ~ ["$MinBodyhitRadius$" - "$AverageBodyhitRadius$" - "$MaxBodyhitRadius$"]");
+	Send("BodyhitHeight was ~ ["$MinBodyhitHeight$" - "$AverageBodyhitHeight$" - "$MaxBodyhitHeight$"]");
+	// Send("AverageHeadshotRadius = "$AverageHeadshotRadius);
+	// Send("AverageHeadshotHeight = "$AverageHeadshotHeight);
+	// Send("AverageBodyhitRadius = "$AverageBodyhitRadius);
+
+	// Send("HeadshotCount = "$HeadshotCount);
+	// Send("HeadshotWideCount = "$HeadshotWideCount);
+	// Send("HeadshotLowCount = "$HeadshotLowCount);
+	// Send("HeadshotRespectedCount = "$HeadshotRespectedCount);
+	// Send("BodyhitCount = "$BodyhitCount);
+	// Send("BodyhitWideCount = "$BodyhitWideCount);
+	// Send(HeadshotCount $" headshots, "$ HeadshotWideCount $" wide, "$ HeadshotLowCount $" low.");
+	Send("Respected "$ HeadshotRespectedCount $" headshots out of "$ HeadshotCount $" potential, suppressed "$ HeadshotWideCount $" for being wide, and "$ HeadshotLowCount $" for being low.");
+	#endif
+}
+
+function String PercentageChangeStr(float proportion) {
+	if (proportion == 1.0) {
+		return "normal";
+	}
+	if (proportion < 1.0) {
+		return Int(100*(1.0-proportion)+0.5)$"% smaller";
+	}
+	if (proportion > 1.0) {
+		return Int(100*(proportion-1.0)+0.5)$"% larger";
+	}
+}
+
 #ifdef DEBUG_DRAW_LINES
 	function DrawLine(Vector from,Vector to) {
 		local Actor a;
-		a = Spawn(class'Effects',,,,);
+		#define DO_SPAWN a = Spawn(class'Effects',,,,);
+		// #define DO_SPAWN a = Spawn(class'MeshActor',,,,);
+		// #define DO_SPAWN a = Spawn(class'StationaryPawn',,,,);
+		#ifdef MAINTAIN_LINES
+			if (Lines[CurrentLine] != None) {
+				// a = Lines[CurrentLine];
+				Lines[CurrentLine].Destroy();
+				DO_SPAWN
+				Lines[CurrentLine] = a;
+			} else {
+				DO_SPAWN
+				Lines[CurrentLine] = a;
+			}
+			CurrentLine++;
+		#else
+			DO_SPAWN
+		#endif
 		// a = Spawn(class'Projectile',,,,);
 		a.SetLocation((from+to)/2);
 		a.DrawType = DT_Mesh;
@@ -172,8 +288,8 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		a.Texture = Texture'UMenu.Icons.Bg41';
 		a.DrawScale = VSize(from-to)/64.0;
 		a.SetRotation(rotator(to-from));
-		a.LifeSpan = 20.0;
-		a.RemoteRole = ROLE_SimulatedProxy;
+		// a.LifeSpan = 20.0;
+		// a.RemoteRole = ROLE_SimulatedProxy;
 		// TODO: kill old lines!
 	}
 
@@ -231,8 +347,6 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	local rotator DirectionRot;
 	local vector Direction;
 
-	InputDamage = ActualDamage;
-
 	// Detect headshot like in Botpack.SniperRifle, but reduce radius, and if outside boundary, fail.
 	// Consider: if player is dodging, does headshot cylinder really appear where the head is in the mesh?
 
@@ -245,7 +359,13 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 	// TODO: Alternative method.  Temporarily change the player's cylinder size, and re-perform the trace, once for body cylinder, once for headshot cylinder.  Reset their cylinder size to normal.
 
-	if (PlayerPawn(InstigatedBy)!=None) {
+	if (bEnabled && PlayerPawn(InstigatedBy)!=None) {
+
+		InputDamage = ActualDamage;
+
+		#ifdef MAINTAIN_LINES
+			CurrentLine = 0;
+		#endif
 
 		// Is this a headshot?
 		if (DamageType == 'decapitated' /*ActualDamage==100*/ ) {
@@ -308,11 +428,70 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			StartTrace = InstigatedBy.Location + InstigatedBy.Eyeheight * Z;
 			// TODO: Some weapons require AdjustThingy?
 			// TODO: AimError usually belongs to Pawn I think, otherwise to Weapon.  Maybe only for Bots?
-			#define AimError 0.0
-			AdjustedAim = InstigatedBy.AdjustAim(1000000, StartTrace, 2*AimError, False, False);
+			// #define AimError 0.0
+			AdjustedAim = InstigatedBy.AdjustAim(1000000, StartTrace, 2*InstigatedBy.Weapon.AimError, False, False);
 			X = vector(AdjustedAim);
 
+			if (bTrustViewRotation) {
+				Direction = X;
+			} else {
+
+				// For ZeroPing.
+				// We can't trust adjusted .ViewRotation - it gets artificially set to central by zp.
+				// We can't trust the pitch in .Rotation - that's always wrong.
+				// So we combine .Rotation with pitch from .ViewRotation :)
+				// This is still wrong - the pitch is artificial, but at least it is within the body, so we can check collision against the thinner cylinders, although we can't trust the height of the 
+				DirectionRot = InstigatedBy.Rotation;
+				DirectionRot.Pitch = InstigatedBy.ViewRotation.Pitch;
+
+				// DirectionRot = rotator(Normal(HitLocation-StartTrace));
+				// DirectionRot.Roll = InstigatedBy.Rotation.Roll;
+				// DirectionRot.Yaw = InstigatedBy.Rotation.Yaw;
+
+				// DirectionRot = InstigatedBy.ViewRotation;
+
+				Direction = Vector(DirectionRot);
+
+				// Direction = Normal(X);
+
+			}
+
+			//// Adjusted ViewRotation is good for non-zp:
+			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Normal(X),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
+
+			//// Testing things for ZP:
+			//// But ZP always show us the InstigatedBy's view aiming towards the centre of the body.
+			//// Hmm in zp at least, the HitLocation appears to be set to where the gore will appear, not where we actually aimed or hit.
+			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+1.5*(HitLocation-StartTrace),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
+			//// Let's try non-adjusted ViewRotation?
+			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Vector(InstigatedBy.ViewRotation),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
+			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Vector(InstigatedBy.Rotation),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
+			#define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Direction,Victim,crs,chs,delta,hlOut,hnOut)==Victim)
+
+			// TODO: the head delta should be set so that the cylinder is short - atm the head cylinder is as tall as his collision cylinder!
+			bHitHead = HitCylinder(HeadRadiusScale,1.0,0.0,headHitLocation,headHitNormal);
+			// bHitBody = HitCylinder(BodyRadiusScale,0.62,bodyHitLocation,bodyHitNormal);
+			bHitBody = HitCylinder(BodyRadiusScale,0.62,0.0,bodyHitLocation,bodyHitNormal);
+			// TODO: we have chopped off 0.38 of his feet in the last check!
+			// bHitBody = HitCylinder(BodyRadiusScale,0.81,-0.19,bodyHitLocation,bodyHitNormal);
+
+			// TODO: the problems above could be solved without changing the
+			// cylinder's position, but by checking how high up the (too tall)
+			// cylinder the hit occured.
+			// However this might break the case where, had the cylinder been the correct height, we would have hit its flat top, rather than the curved side but above (or below) the boundary!
+
 			/*
+			if (bHitHead) {
+				DebugLog("HEADSHOT! "$ActualDamage);
+			} else if (bHitBody) {
+				DebugLog("Bodyhit! "$ActualDamage);
+			} else {
+				DebugLog("= MISS = "$ActualDamage);
+			}
+			*/
+
+			/*
+			// Never used.  Now done elsewhere.
 			#ifdef TRACE_METHOD_RETRACE
 			oldRadius = Victim.CollisionRadius;
 			Victim.SetCollisionRadius(Victim.CollisionRadius*HeadRadiusScale);
@@ -326,6 +505,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			#endif
 			*/
 
+			#ifdef OLD_HITCYLINDER_ANALYSIS
 			// closestPoint = TraceClosestPoint( Victim.Location+vect(0,0,1)*Victim.CollisionHeight/2, StartTrace, Normal(X) );
 			closestPoint = TraceClosestPoint( HitLocation, StartTrace, Normal(X) );
 			// closestPoint = TraceClosestPoint( Victim.Location+vect(0,0,1)*Victim.CollisionHeight/2, StartTrace, Normal(Vector(InstigatedBy.ViewRotation)) );
@@ -381,73 +561,39 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			// BodyRadiusThreshold = Victim.CollisionRadius * BodyRadiusScale;
 			// BodyRadiusThreshold = 6.01 * BodyRadiusScale;
 			BodyRadiusThreshold = Victim.CollisionRadius * BodyRadiusScale;
-
-			// For ZeroPing.  This is still wrong - the pitch is artificial, but at least it is within the body, so we can check collision against the thinner cylinders, although we can't trust the height of the 
-			DirectionRot = InstigatedBy.Rotation;
-			DirectionRot.Pitch = InstigatedBy.ViewRotation.Pitch;
-			Direction = Vector(DirectionRot);
-
-			//// Adjusted ViewRotation is good for non-zp:
-			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Normal(X),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
-
-			//// Testing things for ZP:
-			//// But ZP always show us the InstigatedBy's view aiming towards the centre of the body.
-			//// Hmm in zp at least, the HitLocation appears to be set to where the gore will appear, not where we actually aimed or hit.
-			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+1.5*(HitLocation-StartTrace),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
-			//// Let's try non-adjusted ViewRotation?
-			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Vector(InstigatedBy.ViewRotation),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
-			// #define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Vector(InstigatedBy.Rotation),Victim,crs,chs,delta,hlOut,hnOut)==Victim)
-			#define HitCylinder(crs,chs,delta,hlOut,hnOut) (DidHitCylinder(InstigatedBy,StartTrace,StartTrace+20000*Direction,Victim,crs,chs,delta,hlOut,hnOut)==Victim)
-
-			// TODO: the head delta should be set so that the cylinder is short - atm the head cylinder is as tall as his collision cylinder!
-			bHitHead = HitCylinder(HeadRadiusScale,1.0,0.0,headHitLocation,headHitNormal);
-			// bHitBody = HitCylinder(BodyRadiusScale,0.62,bodyHitLocation,bodyHitNormal);
-			bHitBody = HitCylinder(BodyRadiusScale,0.62,0.0,bodyHitLocation,bodyHitNormal);
-			// TODO: we have chopped off 0.38 of his feet in the last check!
-			// bHitBody = HitCylinder(BodyRadiusScale,0.81,-0.19,bodyHitLocation,bodyHitNormal);
-
-			// TODO: the problems above could be solved without changing the
-			// cylinder's position, but by checking how high up the (too tall)
-			// cylinder the hit occured.
-			// However this might break the case where, had the cylinder been the correct height, we would have hit its flat top, rather than the curved side but above (or below) the boundary!
+			#endif
 
 			/*
-			if (bHitHead) {
-				DebugLog("HEADSHOT! "$ActualDamage);
-			} else if (bHitBody) {
-				DebugLog("Bodyhit! "$ActualDamage);
-			} else {
-				DebugLog("= MISS = "$ActualDamage);
-			}
-			*/
-
 			// From Weapon.ProjectileFire():
 			GetAxes(InstigatedBy.ViewRotation,X,Y,Z);
 			// StartTrace = InstigatedBy.Location + InstigatedBy.Weapon.CalcDrawOffset() + InstigatedBy.Weapon.FireOffset.X * X + InstigatedBy.Weapon.FireOffset.Y * Y + InstigatedBy.Weapon.FireOffset.Z * Z;
 			// AdjustedAim = InstigatedBy.AdjustAim(1000000, StartTrace, InstigatedBy.Weapon.AimError, True, bWarn);
 			X = vector(AdjustedAim);
+			// Isn't this just a copy of what we did earlier?
+			// We aren't even using it anyway :P  Oh it was needed above.
+			*/
 
 			#ifdef DEBUG_DRAW_LINES
 			if (bDebugDrawLines) {
 				//// Draw trajectory of the bullet:
 				// DrawLine(HitLocation,StartTrace);
-				DrawLine(StartTrace,StartTrace+Normal(HitLocation-StartTrace)*FClamp(VSize(HitLocation-StartTrace),0.0,20000.0));
-				DrawSplat(HitLocation,7.0,Normal(StartTrace-Victim.Location));
-				/*
+				// DrawLine(StartTrace,StartTrace+Normal(HitLocation-StartTrace)*FClamp(VSize(HitLocation-StartTrace),0.0,20000.0));
+				// DrawSplat(HitLocation,7.0,Normal(StartTrace-Victim.Location));
 				// To the various hitlocations:
-				if (bHitHead) {
-					// DrawLine(headHitLocation,StartTrace);
-					// DrawStar(headHitLocation,3.5);
-					DrawSplat(headHitLocation,7.0,headHitNormal);
-				} else if (bHitBody) {
+				if (bHitBody) {
 					// DrawLine(bodyHitLocation,StartTrace);
 					// DrawStar(bodyHitLocation,3.5);
 					DrawSplat(bodyHitLocation,7.0,bodyHitNormal);
+				} else if (bHitHead) {
+					// DrawLine(headHitLocation,StartTrace);
+					// DrawStar(headHitLocation,3.5);
+					DrawSplat(headHitLocation,7.0,headHitNormal);
 				} else {
 					// DrawLine(HitLocation,StartTrace);
 					// DrawStar(HitLocation,3.5);
 					DrawSplat(HitLocation,7.0,-Normal(Momentum));
 				}
+				/*
 				*/
 				// According to the view direction:
 				// Maybe take a mix or Rotation and ViewRotation?  Nah zp gets ViewRotation completely wrong.
@@ -462,7 +608,10 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 				//   collision (gj the head cylinder is still tall!), and use
 				//   Epic's headshot/not decision for the height.  OK we did this
 				//   and called it Direction, but it still sometimes sucks.
-				DrawLine(StartTrace,StartTrace+VSize(StartTrace-Victim.Location)*Direction);
+				// DrawLine(StartTrace,StartTrace+VSize(StartTrace-Victim.Location)*Direction);
+				#define DistanceChopped FClamp(VSize(StartTrace-Victim.Location),0.0,20000.0)
+				DrawLine(StartTrace,StartTrace+DistanceChopped*Normal(Direction));
+				// DrawSplat(StartTrace+DistanceChopped*Normal(Direction),7.0,Normal(StartTrace-Victim.Location));
 
 				//// Draw UT default hitbox cylinder of target pawn:
 				// DrawCylinder(Victim.Location,Victim.CollisionHeight,Victim.CollisionRadius);
@@ -544,7 +693,10 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 					// if (ActualDamage>45)
 						// ActualDamage = 45;
 					// ActualDamage = ActualDamage * 45/150;
-					ActualDamage = ActualDamage * 67/150;
+					// Convert from headshot damage (what we got) to bodyhit damage (67).
+					ActualDamage = ActualDamage * 67/150; // Will be processed through BodyhitMissScale below if neccessary.
+					// FIXED: if player had 60 health we get input 60 damage?  In that case the reduction breaks the numbers :P
+					if (ActualDamage<67) ActualDamage=67;
 					// ReportMiss("BELOW HEAD!"); // Neck-shot or Shoulder-shot!
 					DebugLog("Missed head but hit body..."); // Could be a (below) neck-shot or shoulder-shot!
 					// We should get a report later
@@ -661,21 +813,25 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 			#endif
 
-			// Scale damage?
-			NewDamage = ActualDamage * SniperDamageScale;
-			if (NewDamage < ActualDamage) {
-				DebugLog("Reducing SHOT "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
-			}
-			ActualDamage = NewDamage;
-			Momentum = Momentum * SniperBoostScale;
+			#ifdef ADJUST_SNIPER_DAMAGE
+				// Always scale damage for sniper rifle?
+				NewDamage = ActualDamage * SniperDamageScale;
+				if (NewDamage < ActualDamage) {
+					DebugLog("Reducing SHOT "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
+				}
+				ActualDamage = NewDamage;
+				Momentum = Momentum * SniperBoostScale;
+			#endif
 
 		}
 
-	}
+		if (ActualDamage == 0) {
+			Momentum = vect(0,0,0);
+			//// TO TEST!
+			// DamageType = ''; //// Will this stop the last mutator (DMMutator?) from producing blood when there should be none?
+			//// No the blood spurt still appears =/
+		}
 
-	if (ActualDamage == 0) {
-		// Momentum = vect(0,0,0);
-		DamageType = ''; // Will this stop the last mutator (DMMutator?) from producing blood when there should be none?
 	}
 
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
@@ -783,23 +939,39 @@ function Vector DropZ(Vector v) {
 
 defaultproperties {
 	bEnabled=True
-	bLogging=True
-	bLiveReports=True
+	bLogging=False
+	bLiveReports=False
+	bTrustViewRotation=True
+	#ifdef SHOTS_JUST_FAIL
+	HeadshotFailRate=0.34
+	BodyhitFailRate=0.26
+	#endif
+	#ifdef REDUCED_COLLISION_CYLINDER
 	// If all these values are 1.0 then FixWeaponBalance "should" do nothing.
+	// HeadHeightScale=1.0
+	// HeadRadiusScale=0.3
+	// BodyRadiusScale=0.75
 	HeadHeightScale=1.0
-	HeadRadiusScale=0.3
-	BodyRadiusScale=0.8
+	HeadRadiusScale=0.25
+	BodyRadiusScale=0.6
+	#endif
+	// TODO: refactor ADJUST_SNIPER_DAMAGE to ADJUST_BODYHIT_DAMAGE ?
+	#ifdef ADJUST_SNIPER_DAMAGE
 	SniperDamageScale=1.000
 	// SniperDamageScale=0.667
 	SniperBoostScale=1.000
 	// SniperBoostScale=0.667
-	#ifdef ADJUST_MISS_DAMAGE
-	HeadshotMissScale=0.1
-	BodyhitMissScale=0.1
 	#endif
 	#ifdef ADJUST_HEADSHOT_DAMAGE
-	HeadshotDamageScale=0.800
-	HeadshotBoostScale=0.800
+	// HeadshotDamageScale=0.800
+	// HeadshotBoostScale=0.800
+	HeadshotDamageScale=1.000
+	HeadshotBoostScale=1.000
+	#endif
+	#ifdef ADJUST_MISS_DAMAGE
+	HeadshotMissScale=0.1 // 150 becomes 15
+	// BodyhitMissScale=0.25 // 67 becomes 16
+	BodyhitMissScale=0.3 // 67 becomes 20
 	#endif
 	#ifdef DEBUG_DRAW_LINES
 	bDebugDrawLines=False

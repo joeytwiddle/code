@@ -1,6 +1,6 @@
 // At the moment, it doesn't really force it against cheaters.  It could be easily defeated by a player's client refusing to receive the behindview command, or performing behindview 0 regularly.
 
-class ForceBehindViewMut extends Mutator;
+class ForceBehindView extends Mutator;
 
 var config bool bEnabled;
 var config int SetFOV;

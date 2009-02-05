@@ -1,34 +1,34 @@
+// TODO CHECK: It seemed Invis was never being given.  And in CTF mode, it seemed health packs were far too popular!
 // TODO CONSIDER: Maybe we should integrate anti-camper with the health countdown.  We could apply the health countdown only to players who are far from other players, and not moving towards the other players.  Beware - 3 players on a large map might not know HOW to find each other, and might lose health unfairly.  Check values against average?
 // TODO: Move this class to BonusPowerups, and then let this class add the FairLMS stuff on top.
-// TODO: When running during a CTFGame, if the player runs out of health whilst holding the flag, he/she respawns still holding the flag!
-// TODO: Similar problem with invis during FairLMS.
-// TODO: If someone runs out of energy, but you hit him 15 seconds ago, maybe you should get at least a weak late-kill bonus.
+// FIXED: When running during a CTFGame, if the player runs out of health whilst holding the flag, he/she respawns still holding the flag!
+// FIXED: Similar problem with invis during FairLMS.
+// TODO: If someone runs out of energy, but you hit him 10 seconds ago, maybe you should get at least a weak late-kill bonus.
 // TODO: We didn't really need to give the player those weapons, since LMS will probably suit them up anyway.
 //       But maybe we aren't in the LMS gametype.  In which case, we should probably remove weapons and other pickup items from the map.
 // TODO BUG: Were some of the armor+pads getting left invisible on the spawnpoints?  I kept spawning with 150, but maybe that was done by normal LMS.
 // TODO: Anti-camper anti-idler detection.  Otherwise you still get some advantage by sitting on your spawnpoint - people might avoid killing you because you are idling and they don't wanna be lame!
-// TODO: I didn't hear the amp pickup sound (altho maybe it came the same time as "headshot")
 // DONE: Sucks to get Armour then Armour again, etc.  :P
 // DONE: Deemer
 // DONE: I spawned with shieldbelt.
 // Redeemer fire works but not altfire.
 // DONE: WarheadLauncher DM-Liandri.WarheadLauncher0 (Function Botpack.WarheadLauncher.AltFire:002C) Accessed None
 // DONE: WarheadLauncher DM-Liandri.WarheadLauncher12 (Function Botpack.WarheadLauncher.RateSelf:0027) Accessed None
-// LMS seems a bit stingy on initial ammo.
+// FIXED: LMS seems a bit stingy on initial ammo.
 // TODO: It is sometimes a bit laggy to load a new external object (e.g. the siege jetpack) during play due to DynamicLoadObject() calls.
 //       Since one is likely to spawn during the game anyway, have server and client pre-load the Powerups resources before the game starts.
 //       But do we need to spawn one in order to get the client to load it?
 // TODO: I think you only get given one WarheadLauncher per life.  This is a feature, so ensure it stays that way!
 // TODO: Detect last 2 players, display it, and then stop giving powerups+health.
 // DONE: Some errors from the bots - are they due to pathing on spawned items which they think are navigable to/through?  Seemed to be fixed with some more additions to GiveInventory().
-// TODO: Rather than watch health go down 2 points each second, set the timer frequency calculated to remove 1hp each call to Timer().
+// DONE: Rather than watch health go down 2 points each second, set the timer frequency calculated to remove 1hp each call to Timer().
 // TODO: zeroping weapons not working, piglet wants "+50" txt, or happy with healthsound instead.
 //       initial armour and health got set by LMS.
 // DONE: (i think) Player is Out.
 // TODO: invis lasts too long
-// TODO: Ammo is not working!
+// DONE: Ammo is not working!
 // In LMS fragged players are not dropping their weapons?!  Then we really must increase their ammo!
-// TODO: Still showing "Large Bullets"
+// FIXED: Still showing "Large Bullets"
 // TODO: Make it an admin option, whether sounds are heard by all or only the relevant player.
 // TODO CONSIDER: If it's a TeamGame, spawn the same Powerup for each team at semi-regular intervals, somewhere in front of their player with most health (who is in their base, or least under threat).
 //                In Siege games, makes this dependent on certain conditions.

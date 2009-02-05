@@ -13,7 +13,9 @@ function Execute ()
 
   P = MenuItem.Owner.GetPlayerOwner();
   if ( !P.PlayerReplicationInfo.bIsSpectator ) {
-    P.ClientMessage("Warning: nBAutoSpectate running in-eyes mode may cause camera trouble!");
+    //// I get this message when playing a demo in-eyes.
+    // P.ClientMessage("Warning: nBAutoSpectate running in-eyes mode may cause camera trouble!");
+    //// TODO: Maybe we should set AS.bInEyes=True;
     // MenuItem.Owner.Root.EscClose();
     // return;
   }
@@ -42,6 +44,7 @@ function bool FindOldAS ()
   return bFound;
 }
 
+// Does not work
 exec function yo() {
 	P.ClientMessage("yo");
 }

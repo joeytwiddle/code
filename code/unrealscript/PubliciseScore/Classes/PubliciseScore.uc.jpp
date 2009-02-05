@@ -13,7 +13,7 @@ var config int UpdateInterval;
 var config bool bInformEnterText;
 var config bool bInformSpeed;
 
-#define CYCLE_SERVERNAME
+// #define CYCLE_SERVERNAME
 
 #ifdef CYCLE_SERVERNAME
 var config bool bCycleServerName;

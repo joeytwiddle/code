@@ -1,5 +1,14 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// TODO: mutate findmap | mutate switchmap <n>
+
+// One time for some reason (level switching mid-merge weirdness) it was very slow to change map, so before it did, it tried to switch to various maps, and found itself marking them all as bCrashes and trying more.       Eventually it ran out of maps, and starting putting "".
+// One solution: bCrashes only makes the score much worse, it doesn't veto the map altogether.  (Could cause rare crashes - bDetectCrashingMaps)
+// Another solution: Ignore bCrashes, clear random bCrashes, do map rescan, when you detect desperation!
+
+// TODO: On kx it was selecting a new map but only very occasionally would the server switch to it.
+//       This produced a lot of falsely marked crashed maps, and we ended up running out of maps, and trying to set NextURL="".
+
 // DONE: determine required level switch gametype from prefix or from map itself, thus allowing switching to other gametypes
 
 // TODO: Record nice stats for the admin, such as number of spawnpoints, whether the map has weapons or not, ...
@@ -60,6 +69,8 @@ class MapStats expands Mutator config(MapStats);
 #define PLAYERS_CAN_VETO
 #define LIST_RECENTLY_PLAYED
 #define MinimumNosForVeto 1
+//// I'm afraid it can't be done.  We can't compile against MapVoteLA13 (at least not under Linux/wine/ucc), and we can't access elements of MapListTemp's array using ConsoleCommands.
+// #define ADJUST_MAPVOTELA_LIST
 
 var config bool bShowLevelEnterText;
 var config bool bEndGameSwitchMap;
@@ -153,7 +164,7 @@ bAllowMutateSwitch=True
 bSetMaxPlayers=False
 bAutoExpandMaxPlayers=False
 ServerMinPlayers=6
-ServerMaxPlayers=24
+ServerMaxPlayers=16
 bDoMapScan=True
 bShowLevelEnterText=False
 bStickWithCurrentMode=True
@@ -412,13 +423,22 @@ event Timer() {
 	#endif
 	*/
 
+	#ifdef ADJUST_MAPVOTELA_LIST
+	// Just for TESTING!
+	AdjustMapVoteLAList();
+	#endif
+
 	// Mid-game checks:
 	if (bEmptyServerSwitchMap && CountPlayers()==0 && Level.TimeSeconds>EmptyServerSwitchSeconds) {
-		NormalLog("Timer(): bEmptyServerSwitchMap=True - auto switching at "$Level.TimeSeconds$"");
-		// Level.Game.bGameEnded = True;
-		// bDoneGameEnd = True; // This prevents DoEnd() from being called, which is good since it's an idle server switch, not a real end-game.
-		// redundant: bCanChooseUnsizedMaps = True;
-		DoLevelSwitch();
+		if (Level.NextURL != "" && FRand()<0.9) {
+			NormalLog("Timer(): bEmptyServerSwitchMap=True but NextURL is already set.  Waiting...");
+		} else {
+			NormalLog("Timer(): bEmptyServerSwitchMap=True - auto switching at "$Level.TimeSeconds$"");
+			// Level.Game.bGameEnded = True;
+			// bDoneGameEnd = True; // This prevents DoEnd() from being called, which is good since it's an idle server switch, not a real end-game.
+			// redundant: bCanChooseUnsizedMaps = True;
+			DoLevelSwitch();
+		}
 	}
 
 	#define bIgnoreMapSizeWhenChangingServerMax False
@@ -520,7 +540,50 @@ function DoEnd() {
 	DebugLog("DoEnd() calling SaveConfig()");
 	SaveConfig();
 
+	#ifdef ADJUST_MAPVOTELA_LIST
+		AdjustMapVoteLAList();
+	#endif
+
 }
+
+#ifdef ADJUST_MAPVOTELA_LIST
+function AdjustMapVoteLAList() {
+	local Actor a,mlt;
+	local float currentNumPlayers,diff;
+	local String str,map;
+	local int i,removed;
+	currentNumPlayers = CountPlayers() - 0.5 + 1.0*FRand();
+	foreach AllActors(class'Actor',a) {
+		if (StrContains(Caps(String(a.class)),"MAPLISTTEMP")) {
+			mlt = a;
+			break;
+		}
+	}
+	if (mlt == None) {
+		NormalLog("No MapListTemp found!  Trying to spawn one...");
+		mlt = Spawn( Class<actor>( DynamicLoadObject("MapVoteLA13.MapListTemp",class'Class') ) );
+	}
+	if (mlt == None) {
+		NormalLog("Could not get a MapListTemp!  Cannot adjust mapvote's list!");
+		return;
+	}
+	// NormalLog("Got MapListTemp "$mlt$" with M[4]="$ mlt.GetPropertyText("M(4)"));
+	NormalLog("Got "$mlt.class$" with M[4]="$ mlt.ConsoleCommand("get "$mlt.class$" M(4)"));
+	/*
+	for (i=0;i<1024;i++) {
+		// str = mlt.M[i];
+		str = mlt.GetPropertyText("M("$i$")");
+		map = StrBeforeFirst(str,":");
+		diff = Abs(MapRecord(map).PreferredPlayers - currentNumPlayers);
+		if (diff>=4) {
+			mlt.SetPropertyText("M("$i$")","");
+			removed++;
+		}
+	}
+	*/
+	NormalLog("AdjustMapVoteLAList() Removed "$removed$" maps.");
+}
+#endif
 
 function DoLevelSwitch() {
 	local float num;
@@ -529,6 +592,18 @@ function DoLevelSwitch() {
 
 	if (NextMap == "") {
 		NextMap = ChooseNextMap();
+	}
+
+	if (NextMap == "") {
+		WarnLog("Could not choose a map to switch to.");
+		// I have seen the server stuck in this state, trying to switch to to another map but failing every time, eventually filling up ConsideredMaps.  I think the problem was, all the maps in the DB were missing on disk.
+		// bDoMapScan = True;
+		// bMapScanDone = False;
+		// // SaveConfig();
+		ScanMaps();
+		// TODO: Clear ConsideredMaps.
+		// Or maybe give up trying to switch map.  Or assert(false) after a long amount of time.
+		return;
 	}
 
 	// MapRecord(NextMap).DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Might be nicer to set date = 1 day ago, unless a player joins and makes it more recent.  But that's still not ideal.  What is?)  OK moved to DoStart(), where we move the time half-way.
@@ -754,22 +829,23 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	// #define deltaPlayers ( FRand() - 0.5 )
 	#define deltaPlayers (FRand()*0.5)
 	playerDiff = Abs(currentNumPlayers + deltaPlayers - MapStats[nextI].PreferredPlayers);
-	playerDiff += 2.0; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
+	playerDiff += 0.2; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
 	// if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
 	ageInDays += 0.01;
 	// TODO: tweaks zeroed until stats are fixed:
 	#define flowTweak (0.0*MapStats[nextI].AveragePlayerFlow*0.125)
 	// playerTweak encourages maps with larger playercount.
 	#define playerTweak (0.0*MapStats[nextI].AveragePlayerCount*0.05)
-	// ratingTweak makes a map 1 hour older * number of good ratings (-bad).
+	// ratingTweak makes a map 2 hours older * number of good ratings (-2*bad).
 	#define ratingTweak (2.0/24.0*(MapStats[nextI].GoodVotes - 2*MapStats[nextI].BadVotes))
 	// TODO: anyway playerTweak should work wrt currentNumPlayers!  playerTweak tends towards slightly larger maps, in order to encourage players to join? :o
 	// if (currentNumPlayers==0 && MapStats[nextI].PreferredPlayers==0) // When the server is empty
 		// ageInDays += 5.0; // boost the score of maps whose size is unknown
-	result = 384.0 * ( ageInDays + flowTweak + playerTweak + ratingTweak) / playerDiff;
+	result = 384.0 * (ageInDays + flowTweak + playerTweak + ratingTweak) / playerDiff;
 	if (bDebugLogging && FRand()<0.05) {
-		DebugLog("Score for "$ MapStats[nextI].MapName $" PreferredPlayers="$ NiceFloat(MapStats[nextI].PreferredPlayers) $"] is: "$ NiceFloat(result));
-		DebugLog("  ( age "$ NiceFloat(ageInDays) $"d + tweaks "$ NiceFloat(flowTweak) $" + "$ NiceFloat(playerTweak) $" + "$ NiceFloat(ratingTweak) $" ) / playerDiff "$ NiceFloat(playerDiff));
+		// DebugLog("Score for "$ MapStats[nextI].MapName $" PreferredPlayers="$ NiceFloat(MapStats[nextI].PreferredPlayers) $"] is: "$ NiceFloat(result));
+		// DebugLog("  ( age "$ NiceFloat(ageInDays) $"d + tweaks "$ NiceFloat(flowTweak) $" + "$ NiceFloat(playerTweak) $" + "$ NiceFloat(ratingTweak) $" ) / playerDiff "$ NiceFloat(playerDiff));
+		DebugLog("  "$ MapStats[nextI].MapName $" score="$ NiceFloat(result) $" age="$ NiceFloat(ageInDays) $" tweaks="$ NiceFloat(flowTweak + playerTweak + ratingTweak) $" / playerDiff="$ NiceFloat(playerDiff) $"");
 	}
 	return result;
 }
@@ -801,7 +877,7 @@ function String ChooseNextMap() {
 	currentNumPlayers = CountPlayers();
 	if (currentNumPlayers == 0) {
 		bCanChooseUnsizedMaps = True;
-		currentNumPlayers = (ServerMaxPlayers+1)*FRand();
+		currentNumPlayers = ServerMinPlayers + FRand() * (ServerMaxPlayers - ServerMinPlayers + 1);
 	} // TODO: If MapStats is the server's only method of map switching, it may refuse to ever try a new map.  (e.g. if bEmptyServerSwitchMap is unset)
 	NormalLog("Current players = "$ currentNumPlayers $", choosing...");
 	for (i=0;i<MaxData;i++) {
@@ -842,7 +918,7 @@ function String ChooseNextMap() {
 					if (Level.Game.bGameEnded) {
 						ConsideredMaps = ConsideredMaps $ bestMap $" ";
 					} else {
-						ConsideredMaps = ConsideredMaps $ bestMap $"("$ StrReplace(NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed)," ","_") $","$ NiceFloat(MapRecord(bestMap).PreferredPlayers) $")"$ " ";
+						ConsideredMaps = ConsideredMaps $ bestMap $"("$ StrReplaceAll(NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed)," ","_") $","$ NiceFloat(MapRecord(bestMap).PreferredPlayers) $")"$ " ";
 					}
 					if (Len(ConsideredMaps)>60)
 						ConsideredMaps = StrAfterFirst(ConsideredMaps," ");
@@ -884,7 +960,7 @@ function int CountActors(class<Actor> type) {
 
 #ifdef CATCH_LEVEL_SWITCH
 event Tick(float DeltaTime) {
-	if (TryingMap!="" && FRand()<0.005) {
+	if (TryingMap!="" && FRand()<0.0005) {
 		// We have tried to switch map, but here we are still running.
 		// Most likely the log is saying something like: Failed to load 'Level None.MyLevel': Can't find file 'CTF-Audacity'
 		// We will try again, switching to a different map.
@@ -1152,7 +1228,7 @@ function ListMapsTo(PlayerPawn p, String searchStr) {
 			if (MapStats[i].bCrashes) outStr = outStr $ " CRASHES";
 			if (!MapStats[i].bOnDisk) outStr = outStr $ " MISSING";
 			if (MapStats[i].bDisabled) outStr = outStr $ " DISABLED";
-			outStr = outStr $ " \"" $ MapStats[i].MapName $ "\"";
+			outStr = outStr $ " " $ MapStats[i].MapName $ "";
 			outStr = outStr $ " games="$(MapStats[i].GamesStarted+MapStats[i].GamesEnded)/2$" flow="$Left(String(MapStats[i].AveragePlayerFlow),3);
 			#ifdef MAP_TAGS
 				outStr = outStr $ " tags="$MapStats[i].Tags;

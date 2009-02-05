@@ -25,6 +25,9 @@
 
 
 
+## Argh there was a situation where I wanted .depends to act in an entirely different way.
+## I just wanted to list there, the packages which should be present when compiling this package.
+
 function check_age_of_pakage_against_source () {
 	PKGFILE="$1"
 	SRCPKG="$2"
@@ -45,7 +48,7 @@ function check_age_of_pakage_against_source () {
 			then return 0
 			fi
 		done
-	fi ## BUG: there is no checking for infinite loops, or even any output to indicate one might be occuring.
+	fi ## BUG: there is no checking for infinite loops, or even any output to indicate one might be occuring.  Maintaining a depth variable might be an easy solution.
 	return 1
 }
 

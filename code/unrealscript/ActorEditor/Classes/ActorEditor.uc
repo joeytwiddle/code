@@ -3,6 +3,8 @@
 
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+// Can we set/change location of objects?
+
 // TODO: things to match (logical combinations of (map-regexp) or (game-variable)
 //       things to change: add mutator, change setting of class, change setting of map, spawn object at position
 

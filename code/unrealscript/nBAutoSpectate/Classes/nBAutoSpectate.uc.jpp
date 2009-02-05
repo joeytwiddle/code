@@ -2,6 +2,20 @@
 // nBAutoSpectate.
 //================================================================================
 
+// TODO: AutoSpectate Online is working pretty nice, although there are three bugs when viewing:
+//       1) Sometimes it switches to view a new player without doing ViewClass?
+//       At least the result is that the NetPriority is not focused on that
+//       player, so if he is far from the last Viewed player, his weapon and
+//       the things around him become invisible, and he disappears.
+//       2) When choosing a new camera position, too often it is far down
+//       looking up, which is a crap angle.  Change limits or probabilities.
+//       3) It shows messages about "no event" and whatnot, but event
+//       replay/record should be disabled!
+
+// TODO: Allow it to be a ServerActor and ServerPackage, that does not throw a lot of Tick() errors on the server, but does auto-start AutoSpectate for spectators.  (Also make the provided package usable by the user on other server from the mod menu like the original AutoSpectate.)
+
+// TODO: Every second or so, get a list of all the current viewable pawns (and projectiles)
+
 // TODO: Sometimes during first playback (3rdperson) we are confronted with No Event and a picture of a wall.  THAT is the time to call ViewClass!  If I press F5 then I see other players.  If I don't press F5 is usually am following myself.
 
 // TODO: Probably what we should be doing is calling ViewClass until UT gives us the player we want info for.
@@ -38,6 +52,7 @@
 // #define PKATB
 // #define MEASURE_TICKRATE
 #define RECORD_ALL_PLAYERNAMES
+#define PRINT_GAME_INFO
 
 #define MaxEvents 4096
 
@@ -111,11 +126,14 @@
 // #define Log(X); LogDebug(X);
 
 
-#define GetActorCount() ( "("$ CountInterestingActors() $"/"$ CountAllActors() $")" )
+#define GetActorReport() ( "("$ CountInterestingActors() $"/"$ CountAllActors() $" - "$ GetRandomInterestingActor().getHumanName() $")" )
 
 
-// class nBAutoSpectate extends Info;
+// class nBAutoSpectate extends Object config(nBAutoSpectate);
+// class nBAutoSpectate extends Info config(nBAutoSpectate);
 class nBAutoSpectate extends Mutator config(nBAutoSpectate);
+// #define BE_A_MUTATOR
+// class nBAutoSpectate extends DemoRecSpectator config(nBAutoSpectate);
 
 var PlayerPawn Camera;
 var string blueFC;
@@ -133,6 +151,7 @@ var int pdelta;
 // var private int ;
 // var private int ;
 var int Offset;
+var bool bWeAreOnline;
 
 // nB:
 var config bool bLogging;
@@ -236,6 +255,7 @@ struct LoggedEvent {
 #endif
 
 var config int eventCount;
+var int eventCountAtLoad;
 
 #ifdef RECORD_ALL_PLAYERNAMES
 var String AllPlayerNames;
@@ -247,6 +267,7 @@ var int CurrentEventi;
 #endif
 
 function PostBeginPlay() { // In case spawned rather than selected from menu
+
 	Super.PostBeginPlay();
 
 	// This allows us to "spawn nBAutoSpectate" in a local game:
@@ -257,16 +278,13 @@ function PostBeginPlay() { // In case spawned rather than selected from menu
 
 }
 
-function bool WeAreOnline() {
-	return False;
+function bool AreWeOnline() { // TODO
+	// ?
+	return false;
 }
 
 function bool IsDemo() {
 	return (GetDemoID() != "");
-}
-
-function bool IsOnline() {
-	return WeAreOnline();
 }
 
 function PlayerPawn GetRandomPlayer() {
@@ -324,6 +342,17 @@ function int CountAllActors() {
 		// LogDebug(count$" actors.");
 	#endif
 	return count;
+}
+
+function Actor GetRandomInterestingActor() {
+	// return FindClosestInterestingActor(Camera);
+	local Actor a;
+	foreach AllActors(class'Actor',a) {
+		if (isInteresting(a) && FRand()<0.5) {
+			return a;
+		}
+	}
+	return a;
 }
 
 function int CountInterestingActors() {
@@ -437,8 +466,19 @@ function GetRandomCameraNow() {
 	CreateNewCamera(GetRandomActor());
 }
 
+// function ClientMessage( coerce string S, optional name Type, optional bool bBeep ) {
+	// Log("Oh wow, nBAutoSpectate.ClientMessage() was called!");
+	// Super.ClientMessage(S,Type,bBeep);
+// }
+
 function bool isCameraModeAllowed() {
-	return (CameraMode>=0 && CameraMode<=6);
+	if (bWeAreOnline) {
+		// return (CameraMode==0 || CameraMode==5);
+		/// Mode 5 was pretty jittery :P  But I think maybe once it worked ok?
+		return (CameraMode==0);
+	} else {
+		return (CameraMode>=0 && CameraMode<=6);
+	}
 }
 
 function CreateNewCamera(Actor a, optional Actor b) {
@@ -546,7 +586,7 @@ function CreateNewCamera(Actor a, optional Actor b) {
 		if (LookActor == None) {
 			LookActor = FindClosestInterestingActor(Camera.ViewTarget);
 		}
-		if (!CanSee(FollowActor.Location,Camera.Location)) {
+		if (!CanSeeV(FollowActor.Location,Camera.Location)) {
 			Camera.SetLocation( FollowActor.Location + vect(0,0,64) );
 			Camera.SetRotation( rotator(LookActor.Location - Camera.Location) );
 		}
@@ -662,8 +702,7 @@ function String getTeamCounts() {
 	local Actor A;
 	local int countRed,countBlue;
 	foreach AllActors(class'Actor', A) {
-		// if (A.IsA('Pawn')) {
-		if (A.IsA('Bot') || A.IsA('PlayerPawn')) {
+		if (A.IsA('Bot') || A.IsA('PlayerPawn')) { // 'Pawn'
 			if (Pawn(A).PlayerReplicationInfo != None) {
 				if (Pawn(A).PlayerReplicationInfo.Team == 0) {
 					countRed++;
@@ -913,8 +952,8 @@ function DeltaCamera(float Delta) {
 		// followTarget = rotator(CentreOfMass() - Camera.Location);
 		// Camera.ViewRotation.yaw   = Camera.ViewRotation.yaw * 0.99 + followTarget.yaw * 0.01;
 		doNotPan = true;
-		if (!CanSee(CentreOfMass(),Camera.Location) && FRand()<0.1) {
-			LogInfo("CanSee failed - Forcing FollowActor=None");
+		if (!CanSeeV(CentreOfMass(),Camera.Location) && FRand()<0.1) {
+			LogInfo("CanSeeV failed - Forcing FollowActor=None");
 			FollowActor = None;
 		}
 	}
@@ -980,7 +1019,7 @@ function DeltaCamera(float Delta) {
 		PointTowardsLocation(Camera, TargetLookLocation);
 		#undef TargetLookLocation
 		// TargetLocation = FollowActor.Location - Normal(LookActor.Location-FollowActor.Location)*180 + vect(0,0,1)*64;
-		if (!CanSee(TargetLocation,Camera.Location) && !CanSee(Camera.Location,FollowActor.Location) && !CanSee(Camera.Location,LookActor.Location)) {
+		if (!CanSeeV(TargetLocation,Camera.Location) && !CanSeeV(Camera.Location,FollowActor.Location) && !CanSeeV(Camera.Location,LookActor.Location)) {
 			// Camera.SetLocation( FinalTarget + vect(16,0,16) );
 			Camera.SetLocation( LookActor.Location );
 			Camera.SetLocation( TargetLocation + vect(16,0,16) );
@@ -1051,10 +1090,10 @@ function float Chop(float Lowest, float Highest, float In) {
 function bool CanSeeActors(Actor from, Actor to) {
 	if (from == None || to == None)
 		return false;
-	return CanSee(from.Location,to.Location);
+	return CanSeeV(from.Location,to.Location);
 }
 
-function bool CanSee(Vector from, Vector to) {
+function bool CanSeeV(Vector from, Vector to) {
 	local Vector HitLocation, HitNormal;
 	// CollisionRadius=1;
 	// CollisionHeight=1;
@@ -1148,6 +1187,7 @@ function CheckForInterestingTarget() {
 }
 */
 
+// Does not work.
 simulated exec function SPEC() {
 	Log("nBAutoSpectate.SPEC()!");
 }
@@ -1166,13 +1206,20 @@ function CheckConsole() {
 		// TODO CONSIDER BUG: Sometimes events occur with a player that we cannot find in the current Actor list (using FindPlayerNamed()).  (e.g. someone captures a flag beyond our view)
 		// Is it worthwhile recording these events?  There may not be much to see at their location.
 
+		// TODO: maybe for events we need to check the ChatLog
+
 	line = Camera.Player.Console.MsgText[Camera.Player.Console.TopLine];
 
 	if (line != LastConsoleLine) {
 		// New console line!
 
+		#ifdef TESTING
+		if (bLogConsole)
+			Log("[CONSOLE] ("$Int(Level.TimeSeconds)$") "$line$" "$GetActorReport());
+		#else
 		if (bLogConsole)
 			Log("[CONSOLE] ("$Int(Level.TimeSeconds)$") "$line);
+		#endif
 		if (bFlashConsole)
 			FlashMessageToPlayer(Camera,line,colBlue,0,1.0);
 
@@ -1203,7 +1250,7 @@ function CheckLineForEvent(String line) {
 	local Color msgCol;
 	local Pawn p;
 
-	// FlashMessageToPlayer(Camera,"[o] ("$ Int(Level.TimeSeconds) $") ? "$ GetActorCount(),colYellow,6,1.0);
+	// FlashMessageToPlayer(Camera,"[o] ("$ Int(Level.TimeSeconds) $") ? "$ GetActorReport(),colYellow,6,1.0);
 
 	// Can we find players in the line?  If so, fill ev.Primary and ev.Secondary:
 	wordCount = SplitString(line," ",words);
@@ -1269,7 +1316,9 @@ function CheckLineForEvent(String line) {
 
 		// LogDebug("[o] RECORD ("$ev.Primary$","$ev.Secondary$"): " $ line );
 		LogDebug("["$Int(Level.TimeSeconds)$"] [o] RECORD "$ev.Primary$" > "$ev.Secondary$" #"$eventCount);
-		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [o] REC #" $ eventCount $ " " $ ev.Primary$" > "$ev.Secondary$ GetActorCount(),colRed,7,1.0);
+		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [o] REC #" $ eventCount $ " " $ ev.Primary$" > "$ ev.Secondary $" "$ GetActorReport(),colRed,7,1.0);
+		// Very bad!  Gets picked up again!  Camera.ClientMessage("[o] Recorded #"$ eventCount $" "$ ev.Primary $" > "$ ev.Secondary);
+		Camera.ClientMessage("> [o] Recorded #"$ eventCount $" "$ ev.Primary $" > "$ ev.Secondary);
 
 		// Once database is full, it overwrites old events randomly
 		if (eventCount >= MaxEvents) {
@@ -1510,10 +1559,11 @@ function FindNextEvent() {
 	// LogInfo("Failed to find actor for replay");
 	if (FRand()<0.02) {
 		// LogFlash("Failed to find actor for replay");
-		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] No ev3nt "$ GetActorCount(),colYellow,7,0.9);
+		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] No ev3nt",colYellow,7,0.9);
+		FlashMessageToPlayer(Camera,GetActorReport(),colBlue,8,0.9);
 	}
 
-	if (bAutoRecord && !bRecordEvents /*&& !WeAreOnline()*/) { // TODO: Actually we want to check whether we are recording or playing a demo - if so then autorecord/replay is good!
+	if (bAutoRecord && !bRecordEvents /*&& !bWeAreOnline*/) { // TODO: Actually we want to check whether we are recording or playing a demo - if so then autorecord/replay is good!
 		LogInfo("Auto turning recording on.");
 		bRecordEvents = True; // auto_record
 		if (bAutoSpeed && bReplayEvents) {
@@ -1526,6 +1576,7 @@ function FindNextEvent() {
 		bSwitchCamera = True;
 	}
 	if (!IsDemo()) {
+		LogInfo("DISABLED ev3nt recording - NOT a DEMO.");
 		bRecordEvents = False;
 	}
 
@@ -1564,7 +1615,7 @@ function ReplayEvent(int i) {
 		if (FindPlayerNamed(GetSecondary(i)) != None) {
 			FollowActor = FindPlayerNamed(GetSecondary(i));
 			report = report $ "2"; // ="$FollowActor;
-			// if (!CanSee(Camera.Location,FollowActor.Location)) {
+			// if (!CanSeeV(Camera.Location,FollowActor.Location)) {
 				// LogInfo("Had to move camera to see "$FollowActor);
 				// Camera.SetLocation(FollowActor.Location);
 			// }
@@ -1576,7 +1627,7 @@ function ReplayEvent(int i) {
 		}
 		if (bFlashing && FRand()<0.1) {
 			if (Level.TimeSeconds < GetTime(i)+5)
-				FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [>] #"$CurrentEventi$" " $ GetPrimary(i) $ " > " $ GetSecondary(i) $ " (" $ Int(GetTime(i)-Level.TimeSeconds+1) $ ") "$report,colGreen,7,1.0);
+				FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [>] #"$CurrentEventi$" " $ GetPrimary(i) $ " > " $ GetSecondary(i) $ " (" $ Int(GetTime(i)-Level.TimeSeconds+1) $ ") "$report$" "$ GetActorReport(),colGreen,7,1.0);
 			// else
 				// FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] #"$CurrentEventi$" " $ GetPrimary(i) $ " > " $ GetSecondary(i) $ " (" $ Int(GetTime(i)-Level.TimeSeconds+1) $ ")",colGreen,7,1.0);
 		}
@@ -1603,6 +1654,20 @@ function ClearFlashedMessages() {
 
 #endif
 
+function bool MayControlCamera() {
+	return CanDoViewClass();
+}
+
+function bool WatchingInEyes() {
+	return !(Camera.PlayerReplicationInfo.bIsSpectator);
+}
+
+function bool CanDoViewClass() {
+	// if (bWeAreOnline) return True;
+	if (WatchingInEyes() && bRecordEvents && !bWeAreOnline && IsDemo()) return False; // We are scanning a demo, so we are probably in 1st person non-behindview, so let's not do ViewClass()!
+	return bDoViewClass;
+}
+
 function CheckSwitchCamera() {
 
 	local int i,j;
@@ -1621,7 +1686,7 @@ function CheckSwitchCamera() {
 		//       and back on again ;)
 		// BUG: when online, this takes a little time to get back, *after* we switch cam :
 		// maybe we should detect "now viewing from" and *then* switch cam
-		if (bDoViewClass && !bDoneViewClass && FRand()<0.2) {
+		if (CanDoViewClass() && !bDoneViewClass && FRand()<0.2) {
 			report = report $ "[From "$CountInterestingActors()$"] ";
 			// To keep a fresh list of actors during online play, we call ViewClass:
 			/*
@@ -1633,13 +1698,14 @@ function CheckSwitchCamera() {
 			Camera.ViewClass(class'Pawn');
 			Camera.ViewClass(class'Pawn');
 			*/
-			j = FRand()*12;
-			for (i=0;i<j;i++) {
-				if (Frand()<0.5)
-					Camera.ViewClass(class'Pawn');
-				else
-					Camera.ViewClass(class'Actor');
-			}
+			Camera.ViewClass(class'Pawn');
+			// j = FRand()*12;
+			// for (i=0;i<j;i++) {
+				// if (Frand()<0.5)
+					// Camera.ViewClass(class'Pawn');
+				// else
+					// Camera.ViewClass(class'Actor');
+			// }
 			bDoneViewClass = True;
 		}
 	}
@@ -1657,7 +1723,8 @@ function CheckSwitchCamera() {
 	if (CameraMode != 3 && bCheckLost) {
 		if (Camera.ViewTarget == None && FollowActor == None && LookActor == None) {
 			report = report $ "LOST EVERYTHING! ";
-			if (bDoViewClass) {
+			// LogWarn("Lost Everything!");
+			if (CanDoViewClass()) {
 				Camera.ViewClass(class'Pawn');
 			}
 			GetRandomCameraNow();
@@ -1715,7 +1782,7 @@ event Tick (float Delta) {
 	// #endif
 
 	CheckForNewActors();
-	if (bSwitchCamera) {
+	if (bSwitchCamera && MayControlCamera()) {
 		CheckSwitchCamera();
 	}
 
@@ -1725,7 +1792,9 @@ event Tick (float Delta) {
 	}
 	#endif
 
-	DeltaCamera(Delta);
+	if (MayControlCamera()) {
+		DeltaCamera(Delta);
+	}
 
 	// Maybe it's ok to have both == None (Spec free fly mode)
 	/* if (Camera.ViewTarget == None && FollowActor == None) {
@@ -1893,11 +1962,24 @@ function bool FindPlayer(string playerName) {
 }
 */
 
+// Find player by name:
 
-/*
-// Find player by name
-// In first-person demo playback, only saw self =(
 function Pawn FindPlayerNamed(String str) {
+	return FindPlayerInAllActors(str);
+}
+
+function Pawn FindPlayerInAllActors(String str) {
+	local Pawn p;
+	foreach AllActors(class'Pawn',p) {
+		if (p.getHumanName() == str) {
+			return p;
+		}
+	}
+	return None;
+}
+
+// In 3rdperson playback of ineyes demo, only saw self =(
+function Pawn FindPlayerInPawnList(String str) {
 	local Pawn p;
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
@@ -1909,9 +1991,9 @@ function Pawn FindPlayerNamed(String str) {
 	}
 	return None;
 }
-*/
 
-function PlayerPawn FindPlayerNamed(string playerName) {
+// In 3rdperson playback of ineyes demo, only saw self =(
+function PlayerPawn FindPlayerInGRI(string playerName) {
 	local int i;
 	local TournamentGameReplicationInfo ptgri;
 
@@ -1964,14 +2046,52 @@ function Timer () {
 
 // This is the initialisation function
 function setpawn (PlayerPawn o) {
+	local Actor a;
+	local String aname;
+
 	Camera = o;
-	AddSelfAsMutator();
-	Level.Game.RegisterDamageMutator(Self);
-	#ifdef ENABLE_EVENT_RECORD_REPLAY
-	LogWarn("nBAutoSpectate cam="$bSwitchCamera$" rec="$bRecordEvents$" replay="$bReplayEvents$" eventCount="$eventCount$" (ne="$CountNonEmptyEvents()$")");
+
+	#ifdef BE_A_MUTATOR
+		AddSelfAsMutator();
+		Level.Game.RegisterDamageMutator(Self);
 	#endif
-	bAutoRecord = IsDemo() && !isOnline();
+
+	#ifdef ENABLE_EVENT_RECORD_REPLAY
+		LogWarn("nBAutoSpectate weAreOnline="$bWeAreOnline$" IsDemo="$IsDemo()$" InEyes="$WatchingInEyes()$" swCam="$bSwitchCamera$" Rec="$bRecordEvents$" replay="$bReplayEvents$" eventCount="$eventCount$" (NE="$CountNonEmptyEvents()$")");
+		eventCountAtLoad = eventCount;
+		bAutoRecord = IsDemo() && !bWeAreOnline;
+	#endif
+
+	#ifdef PRINT_GAME_INFO
+		PrintGameInfo(o);
+	#endif
+
+	// Do a check for nasties...
+	foreach AllActors(class'Actor',a) {
+		aname = ""$a;
+		if (StrContains(Caps(aname),Caps("XConsole"))) {
+			o.ClientMessage("WARNING: nBAutoSpectate cannot detect death events with XConsole running!");
+		}
+	}
+	// TODO: Maybe we should just warn on *any* custom console.
+	LogInfo("Camera.Player.Console = "$Camera.Player.Console);
+	if (StrContains(Caps(""$Camera.Player.Console),Caps("XConsole"))) {
+		o.ClientMessage("WARNING2: nBAutoSpectate cannot detect death events with XConsole running!");
+	}
+
 }
+
+#ifdef PRINT_GAME_INFO
+function PrintGameInfo(PlayerPawn to) {
+	local String mStr;
+	local Mutator m;
+	for (m=Level.Game.BaseMutator; m!=None; m=m.NextMutator) {
+		mStr = mStr $ "" $ m.Class $ " ";
+	}
+	// to.ClientMessage("Mutators: "$mStr);
+	LogInfo("Mutators: "$mStr);
+}
+#endif
 
 function int CountNonEmptyEvents() {
 	local int i;
@@ -1982,6 +2102,8 @@ function int CountNonEmptyEvents() {
 	}
 	return count;
 }
+
+#ifdef BE_A_MUTATOR
 
 // Adding as mutator only works in certain situations (when playing offline?).
 // Best to use another method where possible.
@@ -2010,6 +2132,11 @@ function AddMutator(Mutator Other) {
 		LogInfo("Adding mutator: "$Other);
 		Super.AddMutator(Other);
 	}
+}
+
+function Mutate(String str, PlayerPawn Sender) {
+	CheckMessage("!"$str, Sender);
+	Super.Mutate(str,Sender);
 }
 
 // I have not seen this hit, online or during demos:
@@ -2045,21 +2172,18 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep);
 }
 
-function Mutate(String str, PlayerPawn Sender) {
-	CheckMessage("!"$str, Sender);
-	Super.Mutate(str,Sender);
-}
+#endif
 
 function CheckMessage(String str, Actor SenderA) {
 	local PlayerPawn Sender;
 	Sender = PlayerPawn(SenderA);
+	LogInfo("Checking console line for commands: ("$Sender$") "$str);
 	if (Sender == None)
 		Sender = Camera;
-	LogDebug("Got message: >"$str$"< from "$Sender);
 	if (Left(str,1) == "!") {
 		str = Mid(str,1);
 		if (str ~= "HELP") {
-			Sender.ClientMessage("nBAutoSpectate: FollowFC | NoFollowFC | DoViewClass | NoDoViewClass | Follow <nick> | Resize <size> | Record | NoRecord | Save");
+			Sender.ClientMessage("nBAutoSpectate: !FollowFC | NoFollowFC | DoViewClass | NoDoViewClass | Follow <nick> | Resize <size> | Record | NoRecord | Save");
 		}
 		if (str ~= "FOLLOWFC") {
 			bStickWithFC = True;
@@ -2115,6 +2239,7 @@ function SaveData() {
 }
 
 simulated function Destroyed() {
+	LogInfo("I am being .Destroyed() - I will save my data.");
 	SaveData();
 	if (Camera != None) {
 		Camera.ViewTarget = None;
@@ -2192,13 +2317,13 @@ defaultproperties {
 	bStickWithFC=True
 	bDoViewClass=True
 
-	bLogging=True
-	bDebugLogging=True
+	bLogging=False
+	bDebugLogging=False
 
 	#ifdef ENABLE_EVENT_RECORD_REPLAY
-	bFlashing=True
+	bFlashing=False
 	bLogConsole=False
-	bFlashConsole=True
+	bFlashConsole=False
 	bRecordEvents=True
 	bReplayEvents=True
 	bAutoRecord=True // Turns recording on or off, depending whether previously recorded events were found.

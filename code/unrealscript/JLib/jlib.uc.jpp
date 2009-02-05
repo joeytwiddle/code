@@ -59,9 +59,7 @@ function String StrAfter(String s, String x) {
 }
 
 function String StrAfterFirst(String s, String x) {
-	local int i;
-	i = Instr(s,x);
-	return Mid(s,i+Len(x));
+	return Mid(s,Instr(s,x)+Len(x));
 }
 
 function string StrAfterLast(string s, string x) {
