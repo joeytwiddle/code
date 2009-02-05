@@ -1,4 +1,6 @@
-class FastBuildGI extends SiegeGI;
+class FastBuildGI extends SiegeGI config (SiegeAnywhere);
+
+// TODO: It may be that the mutator is in the chain anyway, but we don't want to create 2.  Does the mutator itself prevent that?  If not, it or we should!
 
 event InitGame(string options, out string error) {
 	local Mutator m;

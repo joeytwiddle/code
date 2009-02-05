@@ -1,4 +1,4 @@
-class SiegeTDM extends TeamGamePlus;
+class SiegeTDM extends TeamGamePlus config (SiegeAnywhere);
 
 #include "AddSiegeToGameType.jpp"
 

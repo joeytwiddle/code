@@ -5,7 +5,7 @@
 // DONE: SiegeAssault is still displaying gamegoal "20 captures wins the match" O_o
 // TODO BUG: The message has now become "20 frags wins the match".  It appears even if I set GoalTeamScore and FragLimit = 0 (should have been done by InitGame()).
 
-class SiegeAssault extends Assault;
+class SiegeAssault extends Assault config (SiegeAnywhere);
 
 // var config int SiegeAssaultTimeLimit;
 

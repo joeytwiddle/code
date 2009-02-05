@@ -29,6 +29,13 @@ var config bool bAllWeapons;
 #define RULostPerSuicide 50
 #define RUMaxExpansionRate 50
 
+//// I want 20 or even 50.
+//// But we keep getting killed by sgProtectors!
+//// Setting 10 seems to fix this.
+#define sgProtectorsStopAt 32
+// #define sgProtectorsStopAt 20
+// #define sgProtectorsStopAt 10
+
 // var class<HUD> OriginalHUDType;
 
 function PreBeginPlay() {
@@ -239,22 +246,26 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 	}
 	else*/
 
-	// Stop sgProtectors from being so damaging on players.
-	// TODO: Refactor this into SiegeAnywhere mutator, so it can reduce boost also.
-	/*
-	if ( (sgProtector(instigatedBy)!=None || damageType=='sgSpecial') && sgBuilding(injured)==None ) {
+	// Reduce sgProtector damage against players (and anything that isn't a building).
+	// TODO: unfortunately we can't reduce boost - only a mutator can
+	if ( (sgProtector(instigatedBy)!=None || damageType=='sgSpecial') && sgBuilding(injured)==None && damage>0) {
 		// This is from a Protector or SuperPro, it doesn't kill.
 		// Since the Siege pros are a bit strong, we go gentle:
-		damage = damage / 16;
-		if ( injured.Health - damage <= 20 ) {
-			injured.Health = 20;
+		damage = damage / 8;
+		if (damage < 1)
+			damage = 1;
+		if (injured.Health<=sgProtectorsStopAt) {
 			damage = 0;
+		} else if (injured.Health-damage <= sgProtectorsStopAt) {
+			damage = injured.Health - sgProtectorsStopAt;
+			// injured.Health = sgProtectorsStopAt;
 		}
 	}
 	if (sgProtector(instigatedBy) != None && damageType != 'sgSpecial') {
-		Log("Warning: "$instigatedBy$" just gave "$injured$" damage of unknown type: "$damageType);
+		Log(Self$".ReduceDamage() Warning: "$instigatedBy$" just gave "$injured$" damage of unknown type: "$damageType);
 		// If this happens, it means the code above will not have acted, although it should have.
 	}
+	/*
 	*/
 
 	if (injured != None && instigatedBy != None
@@ -323,10 +334,15 @@ event InitGame( string Options, out string Error ) {
 // event Timer() {
 // }
 
+
+
+
+
 defaultproperties {
 	StartingMaxRU=100
 	StartingRU=0
 	FriendlyFireScale=0
 	bAllWeapons=True
 }
+
 

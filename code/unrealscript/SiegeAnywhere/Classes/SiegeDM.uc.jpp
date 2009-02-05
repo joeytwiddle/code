@@ -1,4 +1,4 @@
-class SiegeDM extends DeathMatchPlus;
+class SiegeDM extends DeathMatchPlus config (SiegeAnywhere);
 
 #include "AddSiegeToGameType.jpp"
 

@@ -1,15 +1,26 @@
 // Modifies the default sgConstructor, so that it will refuse to build anywhere nearby an important Actor.
 // This should prevent people from blocking objectives in Assault, or building things right next to flagspots in CTF.
 
-class SiegeAnywhereConstructor extends sgConstructor;
+class SiegeAnywhereConstructor extends sgConstructor config (SiegeAnywhere);
+
+//// This worked once we made it simulated.
+#define SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
 
 var config bool bBlockBuildingOnKeypoints;
 var config float HealthBasedRUPerSec;
 
 defaultproperties {
-	bBlockBuildingOnKeypoints=True
+	bBlockBuildingOnKeypoints=False // This is good for sensible games, but annoying for players.  Let admin turn it on.
 	HealthBasedRUPerSec=1.0 // For non Siege games, how much RU to give a player each second (if they have 100 health).
+	#ifndef SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
+	BuildCategories(2)=class'SiegeAnywhereCategoryItems'
+	BuildCategories(3)=class'SiegeAnywhereCategoryTeleport'
+	#endif
 }
+// TODO: Instead of overwriting the BuildCategories here, make a function which
+// checks to see if the items are available, and appends them to the
+// appropriate list if they are.
+// This could work live on any siege gametype, and be directed by a config file!
 
 function PlaceIt()
 {
@@ -177,8 +188,29 @@ function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
 
 
 
-function PostBeginPlay() {
+function float RateSelf( out int bUseAltMode ) {
+	if (bUseAltMode>0)
+		return -0.2;
+	return -0.4; // Bots go crazy in SiegeAnywhere, shooting at teammates etc., so it's better if they use the Constructor!
+}
+
+function Pawn GetTarget() {
+	if (Bot(Owner) != None) {
+		// Prevents Accessed Nones being thrown.
+		return None;
+	} else {
+		// Needed for player's Upgrade to work (maybe everything else too).
+		return Super.GetTarget();
+	}
+}
+
+simulated function PostBeginPlay() {
 	SetTimer(1,True);
+	Super.PostBeginPlay();
+
+	#define SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
+	AddExtraBuildOptions();
+	#endif
 }
 
 event Timer() {
@@ -190,6 +222,7 @@ event Timer() {
 	pri = sgPRI(p.PlayerReplicationInfo);
 	if (pri == None)
 		return;
+	// TODO: Does this do anything if it comes out as an int less than 1?
 	if (HealthBasedRUPerSec > 0 && SiegeGI(Level.Game)==None) {
 		pri.AddRU( HealthBasedRUPerSec * p.Health / 100.0 );
 		if (pri.RU > pri.MaxRU) {
@@ -198,4 +231,37 @@ event Timer() {
 		}
 	}
 }
+
+#ifdef SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
+
+simulated function AddExtraBuildOptions() {
+	//// TODO: Remove Invisibility.  It sucks for sgCTF and sgAS.
+	//// TODO: Remove Jetpack from sgAS, and from sgCTF until we can force flagdrop when jetting.
+	// if ( ! sgCategoryTeleport.class.default.Selections[4] == class'sgItemGrappleGun' ) {
+		// InsertInCategory(class'sgCategoryTeleport',class'sgItemGrappleGun',4);
+	// }
+	InsertInCategory(class'sgCategoryItems',class'sgItemDoubleJumpBoots',2);
+	// InsertInCategory(class'sgCategoryItems',class'sgItemGhost',3);
+	InsertInCategory(class'sgCategoryItems',class'sgItemForceGun',5);
+	// InsertInCategory(class'sgCategoryItems',class'sgItemSpawner',6); // not an item, just a building!  it doesn't display properly in constructor menu ... maybe if we set its defaults?  it doesn't work anyway :P
+	InsertInCategory(class'sgCategoryTeleport',class'sgItemGrappleGun',4);
+	InsertInCategory(class'sgCategoryExplosives',class'sgItemVoiceBox',5);
+}
+
+simulated function InsertInCategory(class<sgBuildCategory> categoryClass, class<sgBuilding> BuildClass, int pos) {
+	local int i;
+	if (categoryClass.default.Selections[pos] == BuildClass)
+		return; // It's already there where we wanted to put it - do nothing.
+	for (i=categoryClass.default.NumSelections;i>pos;i--) {
+		categoryClass.default.Selections[i] = categoryClass.default.Selections[i-1];
+	}
+	categoryClass.default.Selections[pos] = BuildClass;
+	categoryClass.default.NumSelections++;
+}
+
+// Example config:
+// ExtraItems(1)=ExtraItem(Name="A Bucket",Mesh="BucketMesh",InventoryType="Botpack.Bucket",BuildCost=250,UpgradeCost=50)
+// Mmmm unfortunately the current system requires that a separate sgItem class exists for each item.
+
+#endif
 

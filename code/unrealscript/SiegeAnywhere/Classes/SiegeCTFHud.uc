@@ -1,6 +1,6 @@
 // BUG TODO: sgHUD.PostRender() throws Accessed None
 
-class SiegeCTFHud extends SiegeAnywhereHUD;
+class SiegeCTFHud extends SiegeAnywhereHUD config (SiegeAnywhere);
 
 var CTFFlag MyFlag;
 

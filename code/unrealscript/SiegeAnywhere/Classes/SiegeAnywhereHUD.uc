@@ -1,4 +1,4 @@
-class SiegeAnywhereHUD extends sgHUD;
+class SiegeAnywhereHUD extends sgHUD config (SiegeAnywhere);
 
 var config bool bDrawClock;
 
@@ -36,6 +36,7 @@ simulated function PostRender( canvas Canvas ) {
 simulated function DrawTimeAt(Canvas Canvas, float X, float Y) { // Modified
 	local int Minutes, Seconds, d;
 	local float ClockScale;
+	local FastBuildMut fbm;
 
 	if ( PlayerOwner.GameReplicationInfo == None )
 		return;
@@ -50,14 +51,25 @@ simulated function DrawTimeAt(Canvas Canvas, float X, float Y) { // Modified
 	if ( PlayerOwner.GameReplicationInfo.RemainingTime > 0 )
 	{
 		Minutes = PlayerOwner.GameReplicationInfo.RemainingTime/60;
-		Seconds = PlayerOwner.GameReplicationInfo.RemainingTime % 60;
+		Seconds = PlayerOwner.GameReplicationInfo.RemainingTime%60;
 	}
 	else
 	{
 		Minutes = 0;
 		Seconds = 0;
 	}
-	
+
+	/*
+	// Won't work.  This is clientside code but the mutator is only serverside!
+	foreach AllActors(class'FastBuildMut',fbm) {
+		if (fbm.bGameStarted && !fbm.bFastBuildOver) {
+			Minutes = fbm.SecondsToGo/60;
+			Seconds = fbm.SecondsToGo%60;
+		}
+		break;
+	}
+	*/
+
 	if ( Minutes > 0 )
 	{
 		if ( Minutes >= 10 )

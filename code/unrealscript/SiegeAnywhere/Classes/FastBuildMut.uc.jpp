@@ -1,10 +1,23 @@
-// For convenience, FastBuildMut can be invoked by selecting the FastBuildGI gametype.  But adding the mutator to a classic Siege game has the same effect.
+// vim: ft=uc
 
-// TODO: FastBuild starts even if the server is empty!
+// TODO CHECK: we used to give 15 ru per sec, this seems like a nice rate.  But we wanted to make it fair if the teams have different #players.  However we should not make it 15*5/num_players because in 1v2 the 1 guy would get so much he wouldn't be able to spend it, and would in fact be forced to waste some because he won't be able to get his max ru up fast enough.  So make it 15 for the larger team, a bit more for the smaller team.
 
-// TODO: colours are shite
+// For convenience (and recommended), FastBuildMut can be invoked by selecting the FastBuildGI gametype, which is a type of SiegeGI.  But adding the mutator to a classic Siege game has the same effect.
+// Alternatively FastBuildMut can be used in more general situations where construction may occur, e.g. SiegeCTF.  In this case no sgCore is available to generate RU.  In this case players can slowly bump up their MaxRU when they overflow it; upgrading containers no longer affect it.
+
+// TODO: If there is only one person playing during the FastBuild, and the MapIsSymmetrical(), then whenever he builds a building, build one on the opposite team side aldo.  Like a mirror effect, he can test his build without changing team!
+
+// TODO: If run in a non-siege game, could act as an arena mutator, giving every player a SiegeAnywhereConstructor.  Or that could be delegated to SiegeAnywhere.
+
+// TODO: Optionally remove Translocator (grapple etc?  slot 0?) if player spawns with it, and add SiegeAnywhereConstructor if needed, when the player spawns.
+//       This might allow us to run a SiegeAnywhere game in a normal unknown gametype, with a FastBuild (or without if we bDisable it or refactor this), without needing a special gametype.
+//       Or it might not work.  Maybe the gametype needs special stuff.
+
+// FIXED or TESTING: FastBuild starts even if the server is empty!  It starts in Warmup mode.  (Maybe bGameStarted is fixed now)
+
 // TODO: damage protection should be optional - if you shoot you lose it
-// TODO: Problem with: sgTDM and sgDOM - sometimes spawnpoints are outside the safe area!  Ideally they wouldn't have one.
+// TODO: Or better - no (damage) weapons available during the FastBuild.
+// DONE? sgTDM and sgDOM - sometimes spawnpoints are outside the safe area!
 
 // DONE: no selfharm during the fastbuild is ok, but fall harm and zone harm should be ON!  ok now only harm from other players is blocked
 
@@ -29,7 +42,15 @@
 // TODO: They can get in for a moment (long enough to take a pickup!) using their translocator.  Translocators should not be allowed into the enemy volume either.
 // Consider: kill players who are too far inside enemy base (more than just walking or dodging into the wall).
 
-class FastBuildMut extends Mutator;
+// TODO: Not so urgent, but it buzzes me and complains I'm crossing the bounday before anyone has even spawned.
+// TESTING: FAIL on CTF-BT-ViRuS probably because their are 2 red and 2 blue flags!  Probably also fails on Burning, and IncineratorJE.  Instead of using MaxDistance,use plane.  To fix Jolt, check spawnpoints, and consider switching plane, rotating it, relocating it to average, or removing it.  For DM maps we should treate everyone as the same team, oh we ignore them, well my point is what if a map has only spawnpoints for green team, we're gonna do something but what?
+
+// #define RAINBOW_FASTBUILD_OVER
+
+class FastBuildMut extends Mutator config (SiegeAnywhere);
+
+// #define PQRR #exec OBJ LOAD FILE=..\Sounds\Announcer.uax
+// PQRR
 
 var config Color colorGreen,colorYellow,colorRed,colorWhite;
 var config float FastBuildMinutes;
@@ -37,14 +58,15 @@ var config int FastBuildRUPerSecond;
 var config int FastBuildStartingMaxRU;
 // var config int PostbuildMaxRU;
 var config bool bNoDamage;
-var config bool bConfineToBase;
+var config bool bConfineToBase; // FastBuildMut should never do SaveConfig() since this sometimes gets set false at playtime
 var config bool bRUGetsMaxxedOut;
 
 // Config vars but not yet committed to config, because I might rename or remove them, so I don't yet want them written in the .ini file.
 var /*config*/ bool bMoreFlashing;
 
-var FlagBase FlagSpots[2];
-var Vector TeamOrigin[2];
+#define MAX_TEAMS 2
+var FlagBase FlagSpots[MAX_TEAMS];
+var Vector TeamOrigin[MAX_TEAMS];
 var float MaxAllowedRadius;
 
 var bool bGameStarted;
@@ -54,7 +76,7 @@ var int SecondsToGo;
 defaultproperties {
 	FastBuildMinutes=3
 	// FastBuildRUPerSecond=50
-	FastBuildRUPerSecond=15 // For non SiegeGI, Max RU in 26 seconds, then remaining 154 seconds give half to max => 400 + 1155 = 1555 (actually came out at 1422).  But if you build and upgrade conts, you never exceed max, so you get total 60 * 3 * 15 = 2700!
+	FastBuildRUPerSecond=15 // This is actually RU per player per second in a 5v5 game.  It's 150 in 10 seconds.
 	FastBuildStartingMaxRU=400 // We could just use SiegeGI.StartingMaxRU, unless we want a *different* setting for FastBuild + normal Siege.
 	// PostbuildMaxRU=1000
 	bNoDamage=True
@@ -71,6 +93,10 @@ defaultproperties {
 	colorYellow=(R=255,G=255,B=0,A=0)
 	colorRed=(R=255,G=0,B=0,A=0)
 	colorWhite=(R=255,G=255,B=255,A=0)
+}
+
+function LogWarn(String msg) {
+	BroadcastMessage(msg);
 }
 
 function PostBeginPlay() {
@@ -101,12 +127,26 @@ function PostBeginPlay() {
 }
 
 function FindBoundary() {
+	local PlayerStart spawnPoint;
 
 	//// We don't need to scan, if we aren't gonna confine them.  But we scan anyway, in case an admin turns it on during play.
 	// if (!bConfineToBase)
 		// return;
 
 	MaxAllowedRadius = 0;
+
+	if (Domination(Level.Game)!=None) {
+		bConfineToBase = False;
+		Log("FastBuildMut.FindBoundary(): Disabling because playing DOM");
+		return;
+	}
+
+	if ( String(Level.Game.Class)~="Botpack.TeamGamePlus" || String(Level.Game.Class)~="Botpack.DeathMatchPlus") {
+		Log("FastBuildMut.FindBoundary(): Disabling because DM/TDM map");
+		bConfineToBase = False;
+	}
+
+	// TODO: if !teamgame then bases can't exist!
 
 	FindBoundaryFromFlags();
 
@@ -130,9 +170,18 @@ function FindBoundary() {
 		bConfineToBase = False;
 	}
 
-	if ( String(Level.Game.Class)~="Botpack.TeamGamePlusDeathMatchPlus" || String(Level.Game.Class)~="Botpack.DeathMatchPlus") {
-		Log("FastBuildMut.FindBoundary(): Disabling because DM/TDM map");
-		bConfineToBase = False;
+	// Final check:
+	if (bConfineToBase) {
+		foreach AllActors(class'PlayerStart', spawnPoint) {
+			if (spawnPoint.TeamNumber>=0 && spawnPoint.TeamNumber<=MAX_TEAMS) {
+				#define distance (VSize(TeamOrigin[spawnPoint.TeamNumber] - spawnPoint.Location))
+				if (distance > MaxAllowedRadius) {
+					MaxAllowedRadius = distance;
+					// Log("FastBuildMut.FindBoundary(): WARNING PlayerStart for team "$spawnPoint.TeamNumber$" is too far from TeamOrigin - expanding MaxAllowedRadius to "$MaxAllowedRadius);
+					Log("FastBuildMut.FindBoundary(): WARNING PlayerStart(team "$spawnPoint.TeamNumber$") caused expansion of MaxAllowedRadius to "$MaxAllowedRadius);
+				}
+			}
+		}
 	}
 
 	// Some maps, e.g. CTF-Burning, have the flags quite close to each other, but the map expands away from them.
@@ -178,6 +227,7 @@ function ModifyPlayer(Pawn p) {
 	Log("FastBuildMut.ModifyPlayer(" $ p.getHumanName() $ ")");
 	// This detects game start, when the first player spawns.
 	// But will it work if the tournament mode lets players fight?!  Probably not!
+	// Also, why not spawn the building before game start.  The playing might be spectators.  Oh but their team might not be fixed (if ATB is present).
 	if (!bGameStarted) {
 		DoGameStart();
 	}
@@ -199,15 +249,23 @@ function bool PreventDeath(Pawn Killed, Pawn Killer, name damageType, vector Hit
 // This is the FALLBACK we kept, in case we were not invoked from FastBuildGI.
 function CheckForGameStart() {
 	local PlayerPawn p;
+	local Inventory inv;
 	foreach AllActors(class'PlayerPawn', p) {
 		// We could in fact check for any weapon type which we know will be a default, e.g. enforcer/piston.
 		// if (p.FindInventoryType(class'sgConstructor') != None || p.FindInventoryType(class'SiegeAnywhereConstructor') != None) { // This was firing early - I blame AddSiegeToGameType.AddDefaultInventory()!
 		// TODO: This is no good in SiegeCTF in tournament mode (at least when Pure is present)!
-		if (p.FindInventoryType(class'ImpactHammer') != None) {
+		for (Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory) {
+			if (Inv.IsA('Weapon')) {
+				Log("FastBuildMut.CheckForGameStart() Detected player " $ p.getHumanName() $ " holding weapon "$Inv.getHumanName()$" - doing GameStart!");
+				DoGameStart();
+				break;
+			}
+		}
+		/*if (p.FindInventoryType(class'ImpactHammer') != None) {
 			Log("FastBuildMut.CheckForGameStart() Detected player " $ p.getHumanName() $ " who is holding a weapon - doing GameStart!");
 			DoGameStart();
 			return;
-		}
+		}*/
 	}
 }
 
@@ -245,12 +303,13 @@ event Timer() {
 			Log("FastBuild.Timer(): Doing game start at "$Level.TimeSeconds$".");
 			DoGameStart();
 		} else {
+			// NOTE TESTING: moved all these down 1 line and made duration 2, to stop tournament atb TeamChangeMessage flashing
 			if (bConfineToBase) {
-				FlashToAllPlayers("You may not leave your base during the FastBuild.",colorWhite,3,0,True,False);
+				FlashToAllPlayers("You may not leave your base during the FastBuild.",colorWhite,4,2,True,False);
 			} else {
-				FlashToAllPlayers("Weapons will not work during the FastBuild.",colorWhite,3,0,True,False);
+				FlashToAllPlayers("Weapons will not work during the FastBuild.",colorWhite,4,2,True,False);
 			}
-			FlashToAllPlayers("Resource rate = "$FastBuildRUPerSecond$" RU/sec",colorWhite,4,0,True,False);
+			FlashToAllPlayers("Resource rate = "$FastBuildRUPerSecond$" RU/sec",colorWhite,5,2,True,False);
 			CheckForGameStart();
 			return;
 		}
@@ -260,11 +319,21 @@ event Timer() {
 			bFastBuildOver = True;
 			Log("FastBuildMut.Timer() FastBuild ended at "$Level.TimeSeconds);
 			// FlashToAllPlayers("Weapons are Live - Assault the Base!",colorRed,4);
+			#ifndef RAINBOW_FASTBUILD_OVER
+			#define colorGreen colorWhite
+			#define colorRed colorWhite
+			#define colorYellow colorWhite
+			#endif
 			FlashToAllPlayers("FastBuild is over",colorGreen,2,0,False,True);
 			if (bMoreFlashing) {
 				FlashToAllPlayers("Weapons are LIVE!",colorRed,3,0,True,False);
 				FlashToAllPlayers("Assault the Base!",colorYellow,4,0,True,False);
 			}
+			#ifndef RAINBOW_FASTBUILD_OVER
+			#undef colorGreen
+			#undef colorRed
+			#undef colorYellow
+			#endif
 			// SecondsToGo = 330;
 			// SetStage();
 			// SetTimer(0,False);
@@ -272,34 +341,49 @@ event Timer() {
 
 			AddRUGlobally(FastBuildRUPerSecond);
 
-			if ((SecondsToGo % 60) == 0) {
-				FlashToAllPlayers("You have " $ (SecondsToGo/60) $ " minutes to build your base!",colorWhite,2,0,False,True);
+			// The TimeMessages appear over the top of our own flashes messages, but they make the announcer sound.
+			if (SecondsToGo == 180) {
+				PlayTimeMessageToAll(2);
 			}
 			if (SecondsToGo == 60) {
+				PlayTimeMessageToAll(4);
 				FlashToAllPlayers("Weapons go Live in 1 minute...",colorWhite,2,0,False,True);
 			}
 			if (SecondsToGo == 30) {
 				// FlashToAllPlayers("Freebuild ends in 30 seconds...",colorGreen,2);
+				PlayTimeMessageToAll(5);
 				FlashToAllPlayers("Weapons go Live in 30 seconds...",colorWhite,2,0,False,True);
 			}
 			if (SecondsToGo <= 10) {
-				FlashToAllPlayers(SecondsToGo $ " ...",colorWhite,2,0,False, (SecondsToGo==10) );
+				// FlashToAllPlayers(SecondsToGo $ " ...",colorWhite,2,0,False, (SecondsToGo==10) );
+				PlayTimeMessageToAll(6+(10-SecondsToGo));
+			}
+			if ((SecondsToGo % 60) == 0) {
+				FlashToAllPlayers("You have " $ (SecondsToGo/60) $ " minutes to build your base!",colorWhite,2,0,False,True);
 			}
 
-			SecondsToGo--;
+			SecondsToGo--; // TODO: Is this accurate?  Shouldn't we mark the game start time and then check the difference?
 			// SetTimer(1,True);
 		}
 	}
+	/*
+	// CONSIDER: make this an option
 	if (bFastBuildOver) {
-		// AddRUGlobally(FastBuildRUPerSecond/4.0); // global trickle in case no core is feeding
-		// DONE: This should really be moved to SiegeAnywhere.
-		// It's only needed when we can't find an sgBaseCore.
+		if (Level.Game.IsA('SiegeGI')) {
+		} else {
+			// AddRUGlobally(FastBuildRUPerSecond/8.0); // global trickle in case no core is feeding
+			// DONE: This should really be moved to SiegeAnywhere.
+			// It's only needed when we can't find an sgBaseCore.
+		}
 	}
+	*/
 }
 
 event Tick(float DeltaTime) {
 	if (bGameStarted && !bFastBuildOver)
 		CheckBoundaries();
+	// TODO: If you are spectating from the wrong side of the map when the game starts, you get pushed across the map before you even spawn!
+	// I.e. the game start is detected and starts acting before the players actually spawn.
 }
 
 function CheckBoundaries() {
@@ -332,7 +416,8 @@ function CheckBoundaries() {
 		}
 		*/
 
-		if (Pawn(a) != None && Pawn(a).bIsPlayer) {
+		// The last Weapon!=None check will hopefully pr_vent boundaries from affecting players before they have actually spawned at the start of a game.
+		if (Pawn(a) != None && Pawn(a).bIsPlayer && Spectator(a)==None && Pawn(a).Weapon!=None) {
 			p = Pawn(a);
 			depth = (p.Location - origin) Dot Normal(TeamOrigin[p.PlayerReplicationInfo.Team]-origin);
 			if (depth < 0) {
@@ -388,13 +473,54 @@ function CheckBoundaries() {
 
 function AddRUGlobally(float amount) {
 	local Actor a;
+	local PlayerPawn p;
+	local int i;
+
+	local int TeamPlayerCount[8];
+	local float teamScale;
+
+	local int TeamCount;
+	local float averagePlayersPerTeam;
+
+	foreach AllActors(class'PlayerPawn', p) {
+		if (!p.IsA('Spectator') && p.PlayerReplicationInfo!=None && p.PlayerReplicationInfo.Team>-1)
+			TeamPlayerCount[ p.PlayerReplicationInfo.Team ] ++ ;
+	}
+
+	for (i=0;i<8;i++) {
+		if (TeamPlayerCount[i] > 0) {
+			averagePlayersPerTeam += TeamPlayerCount[i];
+			TeamCount++;
+		}
+	}
+	averagePlayersPerTeam = averagePlayersPerTeam / TeamCount;
+
 	foreach AllActors(class'Actor', a) {
-		if (sgPRI(a) != None) {
+		if (sgPRI(a)!=None) {
+		// if (sgPRI(a)!=None && Pawn(a)!=None) { // eh :f
 
 			// if (sgPRI(a).MaxRU < FastBuildStartingMaxRU)
 				// sgPRI(a).MaxRU = FastBuildStartingMaxRU;
 
-			sgPRI(a).AddRU(amount);
+			// teamScale = 1.0;
+
+			// teamScale = count_on_enemy_team/count_on_my_team; but halved because it works BOTH ways so would double!
+			teamScale = averagePlayersPerTeam / TeamPlayerCount[ Pawn(a.Owner).PlayerReplicationInfo.Team ];
+
+			/*
+			// Yes it is unfair to have 2 players vs 1, each getting 15RU.  But this was not a solution, it would give them all too much!
+			if (PlayerPawn(sgPRI(a).Owner)!=None && PlayerPawn(sgPRI(a).Owner).PlayerReplicationInfo!=None)
+				teamScale = 5.0 / TeamPlayerCount[ PlayerPawn(sgPRI(a).Owner).PlayerReplicationInfo.Team ];
+			// I suspect the Instigator attempt is not needed.
+			else if (PlayerPawn(sgPRI(a).Instigator)!=None && PlayerPawn(sgPRI(a).Instigator).PlayerReplicationInfo!=None)
+				teamScale = 5.0 / TeamPlayerCount[ PlayerPawn(sgPRI(a).Instigator).PlayerReplicationInfo.Team ];
+			else {
+				LogWarn("Error: FastBuildMut could not get "$a$"'s player from Owner "$a.Owner$" or Instigator "$a.Instigator$"");
+				teamScale = 1.0;
+			}
+			*/
+
+			sgPRI(a).AddRU(amount * teamScale);
 
 			// FastBuild is meant to run with classic Siege, where MaxRU is dealt with at game start and then by the cores.
 			// Although it wasn't designed for SiegeAnywhere, it can work in *some* of those types.
@@ -432,18 +558,25 @@ function AddRUGlobally(float amount) {
 	}
 }
 
+// BUG but who cares: sgPros still drain armour during the FastBuild.
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 	// if (!bGameStarted) { // FALLBACK in case DoGameStart() is not called from FastBuildGI.
 		// DoGameStart();
 	// }
 	if (bGameStarted && !bFastBuildOver && bNoDamage) {
 		// Only block if damage was caused by another player or an enemy building
-		if (/*PlayerPawn(InstigatedBy) != None*/ InstigatedBy != None && DamageType != 'Fell' && DamageType != 'Suicided') {
+		if (Victim!=InstigatedBy && InstigatedBy!=None && DamageType!='Fell' && DamageType!='Suicided') {
 			ActualDamage=0;
 			// DamageType = None;
 			// Momentum = Momentum * 2.0;
-			if (InstigatedBy.PlayerReplicationInfo.Team != Victim.PlayerReplicationInfo.Team)
+			if (InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo!=None
+				&& InstigatedBy.PlayerReplicationInfo.Team == Victim.PlayerReplicationInfo.Team
+			) {
+				// Boosted by a team-mate or team pawn, allow it.
+			} else {
+				// But no boosting from enemies or unknown during FastBuild.
 				Momentum = Momentum * 0.0;
+			}
 		}
 	}
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
@@ -471,8 +604,8 @@ function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional
 	p.SetProgressTime(Duration);
 	p.SetProgressColor(msgColor,linenum);
 	p.SetProgressMessage(Msg,linenum);
-	if (bBeep) // TODO; this beep is broken somehow!  Maybe UnrealShare is not loaded by client at runtime?
-		p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32); // we play our own sound
+	// if (bBeep) // TODO; this beep is broken somehow!  Maybe UnrealShare is not loaded by client at runtime?
+		// p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32); // we play our own sound
 }
 
 function FlashToAllPlayers(String Msg, Color msgColor, optional int linenum, optional int Duration, optional bool bAdditional, optional bool bBeep) {
@@ -482,5 +615,23 @@ function FlashToAllPlayers(String Msg, Color msgColor, optional int linenum, opt
 			FlashMessageToPlayer(P,Msg,msgColor,linenum,Duration,bAdditional,bBeep);
 		}
 	}
+}
+
+function PlayTimeMessageToAll(int MessageNum) {
+	local PlayerPawn P;
+	// announceSound = Sound(DynamicLoadObject(soundName,class'Sound'));
+	// if (announceSound == None) {
+		// Log("FastBuildMut: Warning! Failed to load sound: "$soundName$"");
+	// } else {
+		foreach AllActors(class'PlayerPawn',P) {
+			// The problem is the client needs to load it, not the server mutator!
+			// No that is lies.  FairLMS does it just fine.
+			// P.PlaySound(announceSound,SLOT_Interface,5.0);
+			P.ReceiveLocalizedMessage(class'TimeMessage',MessageNum);
+			// P.PlaySound(announceSound,SLOT_Interface,5.0, False, 32, 32);
+			// p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32); // we play our own sound
+			// P.AmbientSound = announceSound;
+		}
+	// }
 }
 

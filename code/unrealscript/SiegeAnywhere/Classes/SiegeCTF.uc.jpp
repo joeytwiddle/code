@@ -1,7 +1,8 @@
-class SiegeCTF extends CTFGame;
+class SiegeCTF extends CTFGame config (SiegeAnywhere);
 
 // FIXED: You can telefrag containers.  Presumably the same for SiegeDomination.
 // BUG: I changed team, and was able to kill my teammates!
+// TODO: Teleporters should be some way restricted in CTF.  (Keep a certain distance from the flag wrt overall distance?)
 
 #define SiegeAnywhereHUDType class'SiegeCTFHud'
 

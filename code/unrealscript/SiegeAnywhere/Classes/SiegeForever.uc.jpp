@@ -1,5 +1,9 @@
 class SiegeForever extends Mutator config(SiegeForever);
 
+// vim: filetype=uc
+
+// CONSIDER: atm buildings stay with the server until the server drops them.  but we could associate saved buildings with the players that built them (or upgraded them).  that way, a player joining the game, brings his favourite buildings for the map with him.  dunno how desirable that is :P
+// TODO: spawn fairly - if we can detect that the map is symmetrical, for every building we spawn for red, build a clone in the other team's base.
 // BUG: If only 1 player is present at game start, all auto-loaded buildings will belong to him, and have an inner glow of his colour.
 // DONE: TryToLoadBuildings() should use random players as owners, if more than 1 are available.
 // DONE: Detect EndGame and auto-save then.  (Well, sorta detected ;p )
@@ -11,14 +15,17 @@ class SiegeForever extends Mutator config(SiegeForever);
 // TODO: the config file is hard to read - a nicer format might be: CTF-Face 0 SiegeXXL2e.sgSupplier@6975,848,-1883 SiegeXXL2e.sgHealthPod@6974,847,-1882
 // TODO: sgBuildings moved by the kxForceGun can cause doubles to get saved in the config (if bRememberOld/bAutoSave is set).
 // TODO: The server sometimes segfaults when using reloaded Teleporters!  It was fine when I made 2 using my 1 playerpawn.
+// TODO: When we need to remove the data for a map, pick the map with fewest stored buildings, and for which buildings have not been loaded or saved for a long time.
 
+// If you change any of these values, you must scrap your old .ini (or migrate it by hand), otherwise it will load the buildings of the wrong type in the wrong location on the wrong map with the wrong colour!
+// MAX_ALL must be the multiple of the other 3.
 #define MaxTeams 4
 #define MaxMaps 48
 #define MaxTypes 20
 #define MAX_ALL 3840
-// MAX_ALL must be the multiple of the other 3.
 
 var config bool bAutoLoad,bSaveAtEnd,bAutoSave,bRememberOld,bSpawnFairly;
+var config bool bBroadcastInfo,bBroadcastSaves;
 
 var config String Maps[MaxMaps]; // 0-MaxMaps
 var config String Types[MaxTypes]; // 0-MaxTypes
@@ -42,6 +49,8 @@ defaultproperties {
 	bPlayersMaySave=True
 	bPlayersMayLoad=True
 	bPlayersMayClear=False
+	bBroadcastInfo=True
+	bBroadcastSaves=False
 }
 
 function PreBeginPlay() {
@@ -50,17 +59,21 @@ function PreBeginPlay() {
 }
 
 event Timer() {
-	if (!bDoneLoad) {
+	if (bAutoLoad && !bDoneLoad && !DeathMatchPlus(Level.Game).bTournament) {
 		TryToLoadBuildings();
 		return;
 	}
-	if (bDoneLoad && bAutoSave)
+	if (bDoneLoad && bAutoSave && !DeathMatchPlus(Level.Game).bTournament)
 		SaveBuildings();
 }
 
 function Mutate(String str, PlayerPawn Sender) {
+	Super.Mutate(str,Sender);
 	// You do not need to be an admin to save the buildings:
 	// TODO: This is nice that anyone can do it, but since it causes lag, we don't really want players spamming it mid-game.
+	// DONE: They can't do it during Tournament games.
+	if (DeathMatchPlus(Level.Game).bTournament && !Sender.bAdmin)
+		return;
 	if ( (Sender.bAdmin || bPlayersMaySave)
 		&& (str ~= "SAVE" || str ~= "SAVEBUILDINGS")
 	) {
@@ -71,16 +84,19 @@ function Mutate(String str, PlayerPawn Sender) {
 		&& (str ~= "LOAD" || str ~= "LOADBUILDINGS")
 	) {
 		TryToLoadBuildings();
-		BroadcastMessage(Sender.getHumanName()$" has loaded some buildings.  Type mutate save to save them..");
+		if (bBroadcastInfo) {
+			BroadcastMessage(Sender.getHumanName()$" has loaded some buildings.  Type mutate save to save them..");
+		}
 	}
 	if ( (Sender.bAdmin || bPlayersMayClear)
 		&& (str ~= "CLEAR" || str ~= "CLEARBUILDINGS" || str ~= "KILLBUILDINGS" || str ~= "RESET")
 	) {
-		// TODO: might be a good idea to save them first!
+		// TODO: might be a good idea to save them first!  But not if the map is currently empty or sparse.
 		KillAllBuildings(); // Admin could also try: admin killall sgBuilding
-		BroadcastMessage(Sender.getHumanName()$" cleared all the buildings.  Type mutate load to reload them.");
+		if (bBroadcastInfo) {
+			BroadcastMessage(Sender.getHumanName()$" cleared all the buildings.  Type mutate load to reload them.");
+		}
 	}
-	Super.Mutate(str,Sender);
 }
 
 function TryToLoadBuildings() {
@@ -103,9 +119,9 @@ function TryToLoadBuildings() {
 		}
 	}
 	if (redOwner != None && blueOwner != None) {
-		if (bAutoLoad && !DeathMatchPlus(Level.Game).bTournament) {
-			LoadBuildings(redOwner,blueOwner);
-			BroadcastMessage("Buildings were auto-loaded.  Type mutate clear to remove them.");
+		LoadBuildings(redOwner,blueOwner);
+		if (bBroadcastInfo) {
+			BroadcastMessage("Buildings were loaded.  Type mutate clear to remove them.");
 		}
 		bDoneLoad=True;
 		SetTimer(60,True);
@@ -248,7 +264,9 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 			}
 		}
 		if (countSpawned[0]>0 || countSpawned[1]>0) {
-			BroadcastMessage("Spawned "$countSpawned[0]$" x "$StrAfterLast(type,".")$" for Red, and "$countSpawned[1]$" for Blue.");
+			if (bBroadcastInfo) {
+				BroadcastMessage("Spawned "$countSpawned[0]$" x "$StrAfterLast(type,".")$" for Red, and "$countSpawned[1]$" for Blue.");
+			}
 			Log("Spawned "$countSpawned[0]$" "$type$"s for Red, and "$countSpawned[1]$" for Blue.");
 		}
 		// LoadedTypes = LoadedTypes $ ":" $ type $ ":";
@@ -259,10 +277,24 @@ function SaveBuildings() {
 	local int i,TypeI,team,count;
 	local string SavedTypes,type,map;
 	local sgBuilding A;
+
+	// This check just ensures we don't override old map data, when we don't even have any buildings to save anyway.
+	count = 0;
+	foreach AllActors(class'sgBuilding',A) {
+		if (!A.IsA('sgBaseCore')) {
+			count++;
+		}
+	}
+	if (count == 0) {
+		// No buildings to save.  If invoked by user, as opposed to auto-run, we should really tell them we failed.
+		return;
+	}
+
 	map = GetMap();
 	// i = FRand()*MaxRecords;
 	SavedTypes="";
 	TypeI=-1; // just for the logging at the end
+	count = 0;
 	foreach AllActors(class'sgBuilding',A) {
 		if (A.IsA('sgBaseCore')) // Buildings we don't save
 			continue;
@@ -277,7 +309,7 @@ function SaveBuildings() {
 			for (team=0;team<MaxTeams;team++) {
 				i = GetBuildingsI(map,type,team);
 				if (!bRememberOld)
-					BuildingsData[i] = "";
+					BuildingsData[i] = ""; // BUG: We only clear old for those types that we search (those currently on the map).
 				foreach AllActors(class'sgBuilding',A) {
 					// if (String(A.class) == type && Pawn(A.Owner).PlayerReplicationInfo.Team == team) {
 					if (String(A.class) == type && A.Team == team) {
@@ -293,7 +325,9 @@ function SaveBuildings() {
 	}
 	SaveConfig();
 	// I'm not sure (TypeI+1) is a good estimate, probably CountOfStr(SavedTypes,":")/2 is better ^^
-	BroadcastMessage("Saved "$(TypeI+1)$" types of building, "$count$" new.");
+	if (bBroadcastSaves) {
+		BroadcastMessage("Saved "$(TypeI+1)$" types of building, "$count$" new.");
+	}
 	Log("Saved "$(TypeI+1)$" types of building, "$count$" new.");
 }
 
@@ -312,6 +346,8 @@ function int GetBuildingsI(String map, String type, int team) {
 function int GetMapI(String map) {
 	local int i;
 	local int type,team;
+	// local int smallestI,smallestCount;
+	// smallestI = 0; smallestCount = -1;
 	for (i=0;i<MaxMaps;i++) {
 		if (Maps[i] ~= map) {
 			return i;
@@ -320,10 +356,15 @@ function int GetMapI(String map) {
 		if (Maps[i] ~= "") {
 			break;
 		}
+		// myCount = Len(i*MaxTypes*MaxTypes)+Len
+		// No dammit it's hard to count because they are split over different fields
 	}
 	if (i==MaxMaps) {
 		i = MaxMaps*FRand();
-		BroadcastMessage("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
+		// i = smallestI;
+		if (bBroadcastInfo) {
+			BroadcastMessage("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
+		}
 		Log("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
 	}
 	Maps[i] = map;
@@ -348,7 +389,9 @@ function int GetTypeI(String type) {
 	}
 	if (i==MaxTypes) {
 		i = MaxTypes*FRand();
-		BroadcastMessage("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
+		if (bBroadcastInfo) {
+			BroadcastMessage("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
+		}
 		Log("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
 	}
 	Types[i] = type;

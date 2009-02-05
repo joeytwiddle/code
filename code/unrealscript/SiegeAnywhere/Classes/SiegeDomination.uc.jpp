@@ -1,4 +1,4 @@
-class SiegeDomination extends Domination;
+class SiegeDomination extends Domination config (SiegeAnywhere);
 
 #include "AddSiegeToGameType.jpp"
 
