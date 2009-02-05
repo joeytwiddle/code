@@ -7,6 +7,12 @@
 // class GrappleGun expands Translocator config(GrapplingHook); // Tried doing this so that the player's translocator bind would work automatically, but it didn't!
 class GrappleGun expands TournamentWeapon config(kxGrapple);
 
+#exec AUDIO IMPORT FILE="Sounds\Pull.wav" NAME="Pull" // grindy windy one from ND
+// #exec AUDIO IMPORT FILE="Sounds\SoftPull.wav" NAME="SoftPull" // softer one from ND (more robotic)
+#exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp" // metallic slurp from ND
+// #exec AUDIO IMPORT FILE="Sounds\End.wav" NAME="KrrChink" // kchink when grapple hits target
+#exec AUDIO IMPORT FILE="Sounds\hit1g.wav" NAME="hit1g" // From UnrealI.GasBag
+
 // #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
 
 // Server config:
@@ -125,7 +131,7 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
     if (InStr(keyValCaps,"JUMP")>=0 && InStr(keyValCaps,"MUTATE GRAPPLEJUMP")==-1) {
       // Add a binding to this key!
       p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$"| Mutate GrappleJump");
-      p.ClientMessage("* Grappling jump now available on your ["$keyName$"] key.");
+      // p.ClientMessage("* Grappling jump now available on your ["$keyName$"] key."); // They don't care :P
       // Continue to search for other binds we could attach to.
       // bBindExists = True;
     }
@@ -242,7 +248,7 @@ function Fire (optional float Value) {
     // AmbientSound = class'GrapplingHook'.default.ThrowSound;
     // AmbientSound = Sound'Hidraul2';
     // AmbientSound = Sound'Slurp';
-    GrapplingHook = GrapplingHook(ProjectileFire(ProjectileClass,class'GrapplingHook'.default.Speed,bWarnTarget));
+    GrapplingHook = GrapplingHook(ProjectileFire(ProjectileClass,1,bWarnTarget));
     if (GrapplingHook == None) {
       //// Hook failed to spawn - probably we are standing right in front of a wall, so there is no space for it!
       // if (bLogging) { Log(Self$".Fire() Failed to create GrapplingHook!"); }
@@ -526,7 +532,7 @@ simulated exec function FTW(optional String extra) {
   PlayerPawn(Owner).ClientMessage("The grappling hook's Fire-To-Winch has been "$extra$", your settings were saved.");
   // Take immediate effect:
   if (GrapplingHook != None) {
-   GrapplingHook.bPrimaryWinch = bFireToWinch;
+    GrapplingHook.bPrimaryWinch = bFireToWinch;
   }
 }
 
@@ -619,9 +625,13 @@ defaultproperties {
     // These should really be FireSound and AltFireSound:
     ThrowSound=Sound'Botpack.Translocator.ThrowTarget'
     FailSound=Sound'Botpack.Translocator.ReturnTarget'
+    PickupSound=Sound'UnrealShare.Pickups.WeaponPickup'
+    // PickupSound=Sound'UnrealI.Pickups.WeaponPickup'
     // SelectSound=sound'GrapplingHook.Slurp'
     // bIdenticalButtons=True // TODO: NOT working!
     NetPriority=2.95 // I was hoping here to make replication of NextCommand as fast as possible.
+
+    ProjectileSpeed=3000
 
     // From Translocator.uc:
     AutoSwitchPriority=0

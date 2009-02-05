@@ -225,7 +225,7 @@ function Mutate (string MutateString, PlayerPawn Sender) {
            gun.PlaySound(class'GrappleGun'.default.ThrowSound,SLOT_Interface,2.0);
            // gun.GrapplingHook = Spawn(class'GrapplingHook',Sender,,Sender.Location+64*Vector(Sender.Rotation),Sender.Rotation);
            // gun.ProjectileFire(gun.ProjectileClass, gun.ProjectileSpeed, gun.bWarnTarget);
-           gun.GrapplingHook = GrapplingHook(gun.ProjectileFire(gun.ProjectileClass,class'GrapplingHook'.default.Speed,gun.bWarnTarget));
+           gun.GrapplingHook = GrapplingHook(gun.ProjectileFire(gun.ProjectileClass,1,gun.bWarnTarget));
            // Fires grapple fine, but grappling line does not respond.  Ah we needed to SetMaster.
            gun.GrapplingHook.SetMaster(gun);
            gun.Instigator = Sender;
