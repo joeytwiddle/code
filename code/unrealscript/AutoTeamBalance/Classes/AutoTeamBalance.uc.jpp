@@ -27,15 +27,26 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
+// You are advised to set MaxRecords to the max 4096 now, for better
+// operation in the future.
+// TODO: In fact we will make this a default.
+// If you want to change MaxRecords, do it before migration!
+// Once you have a 1.5 database you should not change MaxRecords!
+// Actually you can change it if you want to, but you must set DBVersion back
+// to 1.4, so that migration will re-run, and records will be placed in their
+// correct bands.
+
 // TODO: Requested by sony_scarface.  Allow players back onto their original team, if they have left and rejoined.
 //       In the case that doing this would create e.g. 6v4, then move a player to the other team to fix it.  The player we move should be the one with least time in the game.  Maybe the rejoining player actually has less time than that guy, or has been away a long time, in which case soddit the rejoining player won't get his team back.  :P
 //       Also we need to watch out for if the player swaps team legitimately.  E.g. someone leaves making 4v6, and Qwartz goes Red, then he becomes a red player (if he stays long enough - if not he might like to go back to blue :o ).
+// ALSO: He has trouble typing in the player's name for "mutate kick".  So instead, offer him a list of player IDs, and let him select the ID to remove.
 
 // REQUEST: log all actions taken by semi-admins.
 //          kick for 1 map
 //          embedded IDC-like system
 
 // DONE: If engine has bNoTeamChanges set, then players can't switch in Player Options.  In that case, we should also disable !red and !blue!
+//       Actually it's not true - There is a bug in UT's implementation of bNoTeamChanges which means it doesn't work!
 
 // TODO: ATM ATB gives a raised priority to player who joined the game only recently.  If we skew this via some variable, and set that to 1.0, we would be able to enforce "bAlways/OnlySwitchRecentJoiners".
 //       The theory here is especially for Siege, but also for CTF, on a public server if people often leave, and leave the losing team, that team needs a helpful switch fast, or it will fall behind.  That means 50% of the time a player drops, we need to rebalance.  And also since Siege involves investment, it makes sense to switch the new guy regardless of his strength, it's better than not moving anyone, or moving someone who has been playing for longer.
@@ -236,14 +247,9 @@ struct Node {
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
 #define ENABLE_MIN_REQUESTS_FOR_REBALANCE
-// FAST_DATE_COMPARISON may be dangerous, since records just created might be seen as worth deleting!  Check this before defining FAST_DATE_COMPARISON.
-// #define FAST_DATE_COMPARISON
 #define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data.
 #define ENABLE_SHOW_STATS
 #define DETECT_PLAYERJOINS
-// #define FAST_TREE
-// #define FAST_HASH
-// #define TAKE_MOST_RECENT_DUPLICATE
 #define TEAMSPEAK
 // Semi-admin stuff:
 #define RENAME_PLAYERS
@@ -260,14 +266,25 @@ struct Node {
 #define TESTING
 #define SHORTHELP
 
+//// CAN_CLEANUP - pre-game cleanup of records, to minimize lag mid-game
+#define CAN_CLEANUP
+//// CAN_CLEANUP - requires one of the techniques below
+// #define CLEANUP14
+#define HASH15
+
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
 // #define PRECLEAR_SOME_RECORDS - current implementation is dangerous
 // #define ATB_TRACKER - not working
-//// Requires DETECT_PLAYERJOINS
+//// RANDOMBOTGREET Requires DETECT_PLAYERJOINS
 //// I don't know if it works or not because join detection happens before I really enter :P
 // #define RANDOMBOTGREET
+// #define FAST_TREE
+// #define FAST_HASH
+// #define TAKE_MOST_RECENT_DUPLICATE
+//// FAST_DATE_COMPARISON may be dangerous, since records just created might be seen as worth deleting!  Check this before defining FAST_DATE_COMPARISON.
+// #define FAST_DATE_COMPARISON
 
 //// Debugging - Things we only want during development, and will never release:
 // #define DEBUGGING
@@ -292,12 +309,15 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 
 
+#ifdef HASH15
+#define MY_HASH_FN
+#endif
+
 #ifdef FAST_HASH
-#define HASH_MAX 65531
+#define MY_HASH_FN
 // struct Hashtable {
 	// var String indices[HASH_MAX];
 // };
-
 var Hashtable IPHashtable;
 var Hashtable NickHashtable;
 #endif
@@ -419,15 +439,14 @@ var Trie NickTrie;
 	#define MaxPlayerDataMax 4096
 	var config String playerData[MaxPlayerDataMax]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
-	#ifdef NEW_HASHTABLE
-	var config int DBVersion;
-	#endif
+	var config float DBVersion;
 
 
 // Temporary state:
 
 	// Internal (parsed) player data:
 	var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
+	var String rkey[MaxPlayerDataMax]; // Not yet stored in config file!  Must be regenerated when needed.
 	var String ip[MaxPlayerDataMax]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
 	var String nick[MaxPlayerDataMax];
 	var float avg_score[MaxPlayerDataMax];
@@ -594,9 +613,7 @@ defaultproperties {
 	#ifdef LOG_LAG
 	bLogLag=True
 	#endif
-	#ifdef NEW_HASHTABLE
-	DBVersion=1
-	#endif
+	DBVersion=1.4
 	colorWhite=(R=255,G=255,B=255,A=32)
 	colorRed=(R=255,G=32,B=32,A=32)
 	colorBlue=(R=32,G=32,B=255,A=32)
@@ -685,7 +702,7 @@ function PostBeginPlay() {
 	CopyConfigIntoArrays();  // First time the data is needed, we must convert it.
 
 #ifdef NEW_HASHTABLE
-      if (DBVersion == 1)
+      if (DBVersion == 1.4)
               ConvertDBToVersionTwo();
 #endif
 
@@ -703,8 +720,14 @@ function PostBeginPlay() {
 		CreateNewPlayerRecord(None);
 		CreateNewPlayerRecord(None);
 	#endif
-	#ifdef TESTING
+	// #ifdef CAN_CLEANUP
+		// CleanupDatabase();
+	// #endif
+	#ifdef CLEANUP14
 		CleanupDatabase();
+	#endif
+	#ifdef HASH15
+		MigrateDB14To15();
 	#endif
 
 	initialized = true;
@@ -1333,9 +1356,6 @@ function Mutate(String str, PlayerPawn Sender) {
 				//// Better instead to clear this record, and allow the nick+idc record to be found/created later.
 				// if ( ip[i] != ("IDC#" $ IDCfor(Sender)) ) {
 				if (bIDCDeletesIPRecords && Left(ip[i],4) != "IDC#") {
-					if (bLogDeletedRecords) {
-						DefaultLog("Mutate() CLEAR ["$i$"] "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");
-					}
 					ClearRecord(i);
 					bCached[i] = 0;
 				}
@@ -1554,10 +1574,11 @@ function Mutate(String str, PlayerPawn Sender) {
 				mutClass = class<Mutator>(DynamicLoadObject(mutStr, class'Class'));
 				mut = Spawn(mutClass,None,,Self.Location);
 				if (mut == None) {
-					Sender.ClientMessage(". Failed to load mutator \""$args[1]$"\"");
+					// BroadcastMessageAndLog("! Prepare for new mutator !");
+					Sender.ClientMessage("Failed to load mutator \""$args[1]$"\".  Try \"mutate addmut <full_mutator_name>\".");
 				} else {
 					// BroadcastMessageAndLog("! Prepare for new mutator "$args[1]);
-					BroadcastMessageAndLog("[+] Adding mutator: "$mut);
+					BroadcastMessageAndLog("[+] Adding mutator: "$mutClass.Name);
 					// mut.NextMutator = Level.Game.BaseMutator.NextMutator;
 					// Level.Game.BaseMutator.NextMutator = mut;
 					Level.Game.BaseMutator.AddMutator(mut);
@@ -1566,7 +1587,7 @@ function Mutate(String str, PlayerPawn Sender) {
 
 			case "DELMUT":
 				if (args[1]=="") {
-					BroadcastMessageAndLog("! Prepare for mutator removal!");
+					// BroadcastMessageAndLog("! Prepare for mutator removal !");
 					Sender.ClientMessage("List mutators with \"mutate listmuts\", delete one with \"mutate delmut <part_of_name>\".");
 				} else {
 					mut = Level.Game.BaseMutator;
@@ -1579,7 +1600,7 @@ function Mutate(String str, PlayerPawn Sender) {
 					while (mut.NextMutator != None) {
 						nmut = mut.NextMutator;
 						if (StrContains(CAPS(""$nmut),CAPS(args[1]))) {
-							BroadcastMessageAndLog("[X] Destroying mutator: "$nmut);
+							BroadcastMessageAndLog("[X] Destroying mutator: "$nmut.Class.Name);
 							mut.NextMutator = nmut.NextMutator;
 							// Destroy old mut, otherwise Timer() and Tick() functi_ns may continue!
 							nmut.Destroy();
@@ -2102,6 +2123,7 @@ function CheckGameEnd() {
 	}
 }
 
+// Do we care if it's a teamgame?  Maybe they just want to change skin colour!
 #define AllowedToSwitch() (TeamGamePlus(Level.Game)!=None && !TeamGamePlus(Level.Game).bNoTeamChanges)
 
 function bool CheckMessage(String Msg, Pawn Sender) {
@@ -2852,6 +2874,7 @@ function ProposeChange(Pawn one, Pawn two) {
 
 function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 	local Color msgColor;
+	local bool oldbNoTeamChanges;
 	if (p.IsA('Spectator')) {
 		NormalLog("ChangePlayerToTeam("$p.getHumanName()$","$teamnum$"): refusing to change the team of a spectator!");
 		return;
@@ -2878,9 +2901,15 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
 		Bot(p).ConsoleCommand("taunt wave");
 	}
 
+	if (TeamGamePlus(Level.Game) != None)
+		oldbNoTeamChanges = TeamGamePlus(Level.Game).bNoTeamChanges;
+
 	// NormalLog("ChangePlayerToTeam("$p.getHumanName()$","$teamNum$"): (strength "$GetPlayerStrength(p)$") "$p.PlayerReplicationInfo.Team$" -> "$teamnum$"");
 	NormalLog("ChangePlayerToTeam("$p.getHumanName()$","$teamNum$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum$"");
 	Level.Game.ChangeTeam(p,teamnum); // TODO: suppress the BroadcastMessage() made by TeamGame.AddToTeam() when we are flashing team to player elsewhere anyway
+
+	if (TeamGamePlus(Level.Game) != None)
+		TeamGamePlus(Level.Game).bNoTeamChanges = oldbNoTeamChanges;
 
 	// Kill the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
 	p.Died(None, '', p.Location);
@@ -3194,15 +3223,19 @@ function Pawn FindPlayerNamed(String name) {
 
 // ======== Player database: ======== //
 
-#ifdef FAST_HASH
+#ifdef MY_HASH_FN
+#define HASH_MAX 65531
 function int GetHash(String key) {
 	local int i,sum;
 	sum=0;
 	for (i=0;i<Len(key);i++) {
-		sum = ( sum + Abs(Asc(Mid(key,i,1))) * (1+(i%7)) ) % HASH_MAX;
+		sum = ( sum + Abs(Asc(Mid(key,i,1))) * (1+(i%227)) ) % HASH_MAX;
 	}
 	return sum;
 }
+#endif
+
+#ifdef FAST_HASH
 
 function AddToHashtable(HashTable h, String key, int value) {
 	local int i;
@@ -3279,7 +3312,9 @@ function CopyArraysIntoConfig() {
 	local int i;
 	DebugLog("CopyArraysIntoConfig() "$GetDate()$" running");
 	for (i=0; i<MaxPlayerData; i++) {
-		 if (ip[i] != "") {
+		if (nick[i]=="" && ip[i]=="") {
+			playerData[i] = "";
+		} else {
 			playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i] $ " " $ date_last_played[i];
 		}
 	}
@@ -3482,6 +3517,7 @@ function int FindPlayerRecord(Pawn p) {
 }
 
 function SwapPlayerRecords(int i,int j) {
+	local string tmp_rkey;
 	local string tmp_player_nick, tmp_player_ip;
 	local float tmp_avg_score, tmp_hours_played;
 	local string tmp_date_last_played;
@@ -3492,16 +3528,19 @@ function SwapPlayerRecords(int i,int j) {
 	#endif
 	NormalLog("SwapPlayerRecords() Swapping records "$ j $" <-> "$ i $" ("$ nick[j] $":"$ ip[j] $"("$ Int(avg_score[j]) $") <-> "$ nick[i] $":"$ ip[i] $"("$ Int(avg_score[i]) $"))");
 	// Swap record [i] for record [j]:
+	tmp_rkey = rkey[i];
 	tmp_player_nick = nick[i];
 	tmp_player_ip = ip[i];
 	tmp_avg_score = avg_score[i];
 	tmp_hours_played = hours_played[i];
 	tmp_date_last_played = date_last_played[i];
+	rkey[i] = rkey[j];
 	nick[i] = nick[j];
 	ip[i] = ip[j];
 	avg_score[i] = avg_score[j];
 	hours_played[i] = hours_played[j];
 	date_last_played[i] = date_last_played[j];
+	rkey[j] = tmp_rkey;
 	nick[j] = tmp_player_nick;
 	ip[j] = tmp_player_ip;
 	avg_score[j] = tmp_avg_score;
@@ -3620,6 +3659,11 @@ function int CreateNewPlayerRecord(Pawn p) {
 }
 
 function ClearRecord(int i) {
+	if (bLogDeletedRecords) {
+		DefaultLog("CLEAR ["$i$"] "$ rkey[i] $" "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");
+	}
+
+	rkey[i] = "";
 	ip[i] = "";
 	nick[i] = "";
 	avg_score[i] = 0;
@@ -3714,6 +3758,8 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
 	return found;
 }
 
+#ifdef CLEANUP14
+
 // This is actually pretty damn slow!
 // We could try cleaning up 1 per second during post-game.
 // But that still might not clear all in time!
@@ -3727,6 +3773,11 @@ function CleanupDatabase() {
 			MoveRecordIntoDB(i);
 		}
 	}
+	// This is so slow, we will do SaveConfig() after.
+	#ifndef TESTING
+		CopyArraysIntoConfig();
+		SaveConfig();
+	#endif
 }
 
 function MoveRecordIntoDB(int i) {
@@ -3741,6 +3792,124 @@ function MoveRecordIntoDB(int i) {
 	ClearRecord(found);
 	SwapPlayerRecords(i,found);
 }
+
+#endif
+
+#ifdef HASH15
+
+/*
+function MoveRecordIntoDB(int i) {
+	// Doesn't actually clear first 64 atm.  Just testing GetRecord() a bit.
+	local int j,found;
+	if (rkey[i] == "") {
+		rkey[i] = nick[i]$" "$ip[i];
+	}
+	found = GetRecord(rkey[i]);
+	DefaultLog("Migrating "$i$" -> "$j$" ("$rkey[i]$")");
+	SwapPlayerRecords(i,found);
+}
+*/
+
+#define KEY_DELIM "%"
+
+function MigrateDB14To15() {
+	local int i,j;
+	if (DBVersion >= 1.5)
+		return;
+	DefaultLog("Migrating DB from version "$DBVersion$" to 1.5 - This may take some time!");
+	// First generate rkey for all existing records
+	for (i=0;i<MaxPlayerData;i++) {
+		if (nick[i] != "") {
+			if (rkey[i] == "") {
+				rkey[i] = nick[i] $ KEY_DELIM $ ip[i];
+			}
+		}
+	}
+	for (i=0;i<MaxPlayerData;i++) {
+		if (nick[i] != "") {
+			j = GetRecord(rkey[i]);
+			if (j == i) {
+				// Record is already home.
+				NormalLog("Record "$i$" ("$rkey[i]$") is home.");
+			} else {
+				if (rkey[i] == rkey[j]) {
+					DebugLog("Naughty me - found duplicate records "$i$" and "$j$" - clearing latter.");
+					ClearRecord(j);
+				}
+				DebugLog("Migrating "$i$" -> "$j$" ("$rkey[i]$")");
+				SwapPlayerRecords(i,j);
+				i--; // We need to do the record that just moved here!
+			}
+		}
+	}
+	DBVersion = 1.50;
+	CopyArraysIntoConfig();
+	SaveConfig();
+	DefaultLog("Migration completed and saved.");
+}
+
+// Returns the index of the record with nick == key,
+// or if none exists, returns an empty record where it could go.
+function int GetRecord(String key) {
+	local int start,i,j;
+	local int bestJ;
+	local float bestScore;
+
+	i = GetHash(key);
+	DebugLog("Hash for \""$key$"\" is "$i);
+	start = 64 + (i%(MaxPlayerData-64));
+
+	// We will look in range start to start+HTBandSize.
+	#define HTBandSize 128
+
+	// Fast: Try to find the record in the band.
+	for (i=start;i<start+HTBandSize;i++) {
+		j = i;
+		if (j>=MaxPlayerData)
+			j = j-MaxPlayerData+64;
+		if (rkey[j] == key)
+			return j;
+	}
+
+	// Slower: Try to find an empty record in the range.
+	//         Or the oldest record in the range.
+	// Consider: If we are likely to find an empty record, because the table is being pre-cleaned for us, then it may be worthwhile
+	// checking only for empty records first, before trying to find oldest.
+	bestJ = 0;
+	for (i=start;i<start+HTBandSize;i++) {
+		j = i;
+		if (j>=MaxPlayerData)
+			j = j-MaxPlayerData+64;
+		if (nick[j] == "") {
+			// TODO: Initialiserecord.
+			return j;
+		}
+		if (bestJ==0 || FindOldestPlayerRecordMeasure(j)<bestScore) {
+			bestScore = FindOldestPlayerRecordMeasure(j);
+			bestJ = j;
+		}
+	}
+
+	// During migration, we sometimes have to clear a record, to fit the
+	// existing records into their now smaller windows.
+	// If we are here in the code, with DBVersion<1.5, we assume that migration is currently underway.
+	// We don't actually compare the record we are clearing to the one we will
+	// put there.  It may be we cleared a fresher record to make way for an old
+	// one.  But it doesn't really matter and is also unlikely: the cleared
+	// record was found to be older than all others in the band.
+	// 2-record collision when both are oldest in their overlappings bands, so we keep swapping each to the same place.
+	if (DBVersion>=1.5 || FRand()<0.2)
+		ClearRecord(bestJ);
+	// During normal 1.5 operation, we always clear the record.
+	// Unless we assume the code outside will do that.
+
+	DebugLog("GetRecord(\""$key$"\") considered whole band and chose to replace "$bestJ);
+
+	return bestJ;
+
+}
+
+#endif
 
 // NOTE: currentDateDays should have been set to DaysFromDateString(GetDate()) recently.
 function float AgeInDays(String dateString) {
