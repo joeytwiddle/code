@@ -1,5 +1,10 @@
 #define FORCEGUN_CLASS ForceHammer
 #define FORCEGUN_PARENTCLASS ImpactHammer
 
+#define FORCEGUN_ITEMNAME "Force Hammer"
+
+//// Not needed by maybe nicer to read:
+// #define ForceGun ForceHammer
+
 #include "ForceGun.uc.jpp"
 

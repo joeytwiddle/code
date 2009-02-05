@@ -34,13 +34,15 @@ function AddMutator(Mutator mut) {
 
 function bool CheckReplacement (Actor Other, out byte bSuperRelevant) {
   // Replace the Translocator with the grappling hook?
-  if (bRemoveHammer && Other.IsA('ImpactHammer') && !Other.IsA(WeaponName)) {
+  /*
+  if (bRemoveHammer && ImpactHammer(Other)!=None && !Other.IsA(WeaponName)) {
     //// TODO: Even commented out, this still causes the errors with Pure: ST_Mutator DM-Liandri.ST_Mutator0 (F_nction PureStat7G.ST_Mutator.GetReplacementWeapon:03AC) Accessed None
     ////       But at least it doesn't leave pickups sitting around.
-    ReplaceWith(Other,String(WeaponClass)); // This was supposed to replace the hammer but it only removes it!
+    ReplaceWith(Other,String(WeaponClass)); // This was supposed to replace the hammer with a forcegun, but it only removes the hammer.
     Log("[kxForceGun.ForceGun] CheckReplacement("$Other$") -> ForceGun");
     return False;
   }
+  */
   return Super.CheckReplacement(Other,bSuperRelevant);
 }
 
@@ -65,20 +67,26 @@ function GiveWeaponsTo (Pawn P) {
     if (Inv != None) {
       Log("[ForceGunMut] "$P.getHumanName()$" already has a "$Inv$"!"); // I've seen this, so I guess CheckReplacement() is working.
     } else {
-      w = Spawn(WeaponClass,P);
+      // w = Spawn(WeaponClass,P);
+      w = Spawn(WeaponClass); // NO DAMMIT THEY ARE STILL APPEARING! This is how we stop it appearing on the map - we don't give it an actor to get a location from!  TOTEST: Does it still spawn, now at (0,0,0)?
       if (w == None) {
          Log(Self$".GiveWeaponsTo("$P.getHumanName()$") Warning! Failed to spawn ForceGun!");
       } else {
-         w.bHeldItem=True;
-         w.RespawnTime=0;
-         // w.bRotatingPickup = False; // otherwise it appears at the spawnpoint!  This did not work.  Maybe we are given the weapon elsewhere.
+         // w.bTossedOut=False;
+         // w.bHeldItem=True;
+         // w.RespawnTime=0;
          w.Instigator = P;
          w.BecomeItem();
          P.AddInventory(w);
-         // w.GiveTo(P);
+         // w.GiveTo(P); // This did not help either.
          w.GiveAmmo(P);
          w.SetSwitchPriority(P);
          w.WeaponSet(P);
+         // a la DeathMatchPlus:
+         // if ( p.IsA('PlayerPawn') )
+           // w.SetHand(PlayerPawn(p).Handedness);
+         // else
+           // w.GotoState('Idle');
          Log(Self$".GiveWeaponsTo() Gave "$w$" to "$P);
       }
     }
