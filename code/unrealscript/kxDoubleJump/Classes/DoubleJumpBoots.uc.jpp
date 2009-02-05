@@ -2,6 +2,8 @@
 // DoubleJumpBoots.
 //================================================================================
 
+// vim: ft=uc
+
 // TODO: If we have normal jump boots, our in-air doublejumps also jump with their strength.  I think this is wrong - we should ideally prevent the jump boots from being used in-air, but keep their charge.
 
 // TODO: I think we can remove GRAPPLEGUN_JUMPOFF_FIX.  The grapple jump-off is unreliable with or without DJBoots.  I doubt DJBoots are intercepting the jump call, since they work by adding a keybind!
@@ -256,7 +258,8 @@ defaultproperties {
     RespawnTime=30.00
     PickupViewMesh=LodMesh'Botpack.jboot'
     MaxDesireability=0.50
-    PickupSound=Sound'UnrealShare.Pickups.GenPickSnd'
+    // PickupSound=Sound'UnrealShare.Pickups.GenPickSnd'
+    PickupSound=Sound'Botpack.Pickups.BootSnd'
     ActivateSound=Sound'Botpack.Pickups.BootSnd'
     Icon=Texture'UnrealI.Icons.I_Boots'
     AmbientGlow=64
