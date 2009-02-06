@@ -85,7 +85,7 @@
 
 // #define ATB_VERSION "1.4.9d-kx"
 // #define ATB_VERSION "xol-1.5.0-pre2"
-#define ATB_VERSION "1.4.8a"
+#define ATB_VERSION "1.4.8b"
 
 #define bHideAdminActivity False
 
@@ -266,18 +266,15 @@ struct Node {
 #define TESTING
 #define SHORTHELP
 
-//// CAN_CLEANUP - pre-game cleanup of records, to minimize lag mid-game
-#define CAN_CLEANUP
-//// CAN_CLEANUP - requires one of the techniques below
-// #define CLEANUP14
-#define HASH15
+#define CLEANUP14
+// #define HASH15
 
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
 // #define PRECLEAR_SOME_RECORDS - current implementation is dangerous
 // #define ATB_TRACKER - not working
-//// RANDOMBOTGREET Requires DETECT_PLAYERJOINS
+//// RANDOMBOTGREET requires DETECT_PLAYERJOINS
 //// I don't know if it works or not because join detection happens before I really enter :P
 // #define RANDOMBOTGREET
 // #define FAST_TREE
@@ -720,9 +717,6 @@ function PostBeginPlay() {
 		CreateNewPlayerRecord(None);
 		CreateNewPlayerRecord(None);
 	#endif
-	// #ifdef CAN_CLEANUP
-		// CleanupDatabase();
-	// #endif
 	#ifdef CLEANUP14
 		CleanupDatabase();
 	#endif

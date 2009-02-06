@@ -219,15 +219,13 @@
 // #define ENABLE_USEISPNOTFULLIP
 // Semi-admin stuff:
 //// Testing - Things we are finalising for next release:
-//// CAN_CLEANUP - pre-game cleanup of records, to minimize lag mid-game
-//// CAN_CLEANUP - requires one of the techniques below
-// #define CLEANUP14
+// #define HASH15
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
 // #define PRECLEAR_SOME_RECORDS - current implementation is dangerous
 // #define ATB_TRACKER - not working
-//// RANDOMBOTGREET Requires DETECT_PLAYERJOINS
+//// RANDOMBOTGREET requires DETECT_PLAYERJOINS
 //// I don't know if it works or not because join detection happens before I really enter :P
 // #define RANDOMBOTGREET
 // #define FAST_TREE
@@ -492,10 +490,7 @@ function PostBeginPlay() {
  SetTimer(1,True);
  gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
  CopyConfigIntoArrays(); // First time the data is needed, we must convert it.
- // #ifdef CAN_CLEANUP
-  // CleanupDatabase();
- // #endif
-  MigrateDB14To15();
+  CleanupDatabase();
  initialized = true;
 }
 // Implementation of AddMutator which prevents double or recursive adding:
@@ -1187,23 +1182,23 @@ function Mutate(String str, PlayerPawn Sender) {
    pass_if_needed = " [password]";
   if (bEnablePlayerCommands) {
    // Sender.ClientMessage("    teams !teams !red !blue !spec !play !vote !strengths !stats");
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8a" $" commands: teams !teams !red !blue !spec !play !vote !stats");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8b" $" commands: teams !teams !red !blue !spec !play !vote !stats");
   } else {
    // Sender.ClientMessage("    teams !teams");
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8a" $" commands: teams !teams");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8b" $" commands: teams !teams");
   }
   // Sender.ClientMessage("    mutate strengths [extra]"); // also just "strength"
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.8a" $" mutate commands: strengths [extra] | listmuts | listfakes");
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.8b" $" mutate commands: strengths [extra] | listmuts | listfakes");
   // Sender.ClientMessage("    mutate listmuts"); // also "listmutators"
   // Sender.ClientMessage("    mutate listfakes"); // also "listfakers"
   if (localPass == "") {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8a" $" semi-admin console commands:");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8b" $" semi-admin console commands:");
    Sender.ClientMessage("    mutate teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | addmut <mut> | delmut <mut> | kick <p> <msg> | kickban <p> <msg> | forcetravel <url>");
   } else {
    Sender.ClientMessage("    mutate help [<password>]");
   }
   if (Sender.bAdmin) {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8a" $" admin-only console commands: mutate saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd>");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8b" $" admin-only console commands: mutate saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd>");
   }
  }
  Super.Mutate(str,Sender);
@@ -2400,14 +2395,6 @@ function Pawn FindPlayerNamed(String name) {
  return found; // return partial match, or None
 }
 // ======== Player database: ======== //
-function int GetHash(String key) {
- local int i,sum;
- sum=0;
- for (i=0;i<Len(key);i++) {
-  sum = ( sum + Abs(Asc(Mid(key,i,1))) * (1+(i%227)) ) % 65531;
- }
- return sum;
-}
 // Copies from playerData[] to ip[],nick[],avg_score[],... (should be done at the start)
 function CopyConfigIntoArrays() {
  local int field;
@@ -2732,103 +2719,32 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
  }
  return found;
 }
-/*
+// This is actually pretty damn slow!
+// We could try cleaning up 1 per second during post-game.
+// But that still might not clear all in time!
+// And on really slow servers, it might take more than 1 second.  :P
+// On my machine, it does about 2 per second.
+function CleanupDatabase() {
+ local int i;
+ ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CleanupDatabase() Freeing records 0-64, to reduce in-game lag..."); };
+ for (i=0;i<64;i++) {
+  if (nick[i] != "") {
+   MoveRecordIntoDB(i);
+  }
+ }
+ // This is so slow, we will do SaveConfig() after.
+}
 function MoveRecordIntoDB(int i) {
-	// Doesn't actually clear first 64 atm.  Just testing GetRecord() a bit.
-	local int j,found;
-	if (rkey[i] == "") {
-		rkey[i] = nick[i]$" "$ip[i];
-	}
-	found = GetRecord(rkey[i]);
-	DefaultLog("Migrating "$i$" -> "$j$" ("$rkey[i]$")");
-	SwapPlayerRecords(i,found);
-}
-*/
-function MigrateDB14To15() {
- local int i,j;
- if (DBVersion >= 1.5)
-  return;
- ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Migrating DB from version "$DBVersion$" to 1.5 - This may take some time!");;
- // First generate rkey for all existing records
- for (i=0;i<MaxPlayerData;i++) {
-  if (nick[i] != "") {
-   if (rkey[i] == "") {
-    rkey[i] = nick[i] $ "%" $ ip[i];
-   }
+ local int j,found;
+ found = 64;
+ for (j=64;j<MaxPlayerData;j+=128) {
+  found = FindOldestPlayerRecordInnerBatch(found,j);
+  if (nick[found] == "") {
+   break; // An empty record - we can replace this!
   }
  }
- for (i=0;i<MaxPlayerData;i++) {
-  if (nick[i] != "") {
-   j = GetRecord(rkey[i]);
-   if (j == i) {
-    // Record is already home.
-    ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Record "$i$" ("$rkey[i]$") is home."); };
-   } else {
-    if (rkey[i] == rkey[j]) {
-     ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Naughty me - found duplicate records "$i$" and "$j$" - clearing latter."); };
-     ClearRecord(j);
-    }
-    ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Migrating "$i$" -> "$j$" ("$rkey[i]$")"); };
-    SwapPlayerRecords(i,j);
-    i--; // We need to do the record that just moved here!
-   }
-  }
- }
- DBVersion = 1.50;
- CopyArraysIntoConfig();
- SaveConfig();
- ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Migration completed and saved.");;
-}
-// Returns the index of the record with nick == key,
-// or if none exists, returns an empty record where it could go.
-function int GetRecord(String key) {
- local int start,i,j;
- local int bestJ;
- local float bestScore;
- i = GetHash(key);
- ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Hash for \""$key$"\" is "$i); };
- start = 64 + (i%(MaxPlayerData-64));
- // We will look in range start to start+HTBandSize.
- // Fast: Try to find the record in the band.
- for (i=start;i<start+128;i++) {
-  j = i;
-  if (j>=MaxPlayerData)
-   j = j-MaxPlayerData+64;
-  if (rkey[j] == key)
-   return j;
- }
- // Slower: Try to find an empty record in the range.
- //         Or the oldest record in the range.
- // Consider: If we are likely to find an empty record, because the table is being pre-cleaned for us, then it may be worthwhile
- // checking only for empty records first, before trying to find oldest.
- bestJ = 0;
- for (i=start;i<start+128;i++) {
-  j = i;
-  if (j>=MaxPlayerData)
-   j = j-MaxPlayerData+64;
-  if (nick[j] == "") {
-   // TODO: Initialiserecord.
-   return j;
-  }
-  if (bestJ==0 || FindOldestPlayerRecordMeasure(j)<bestScore) {
-   bestScore = FindOldestPlayerRecordMeasure(j);
-   bestJ = j;
-  }
- }
- // During migration, we sometimes have to clear a record, to fit the
- // existing records into their now smaller windows.
- // If we are here in the code, with DBVersion<1.5, we assume that migration is currently underway.
- // We don't actually compare the record we are clearing to the one we will
- // put there.  It may be we cleared a fresher record to make way for an old
- // one.  But it doesn't really matter and is also unlikely: the cleared
- // record was found to be older than all others in the band.
- // 2-record collision when both are oldest in their overlappings bands, so we keep swapping each to the same place.
- if (DBVersion>=1.5 || FRand()<0.2)
-  ClearRecord(bestJ);
- // During normal 1.5 operation, we always clear the record.
- // Unless we assume the code outside will do that.
- ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "GetRecord(\""$key$"\") considered whole band and chose to replace "$bestJ); };
- return bestJ;
+ ClearRecord(found);
+ SwapPlayerRecords(i,found);
 }
 // NOTE: currentDateDays should have been set to DaysFromDateString(GetDate()) recently.
 function float AgeInDays(String dateString) {
