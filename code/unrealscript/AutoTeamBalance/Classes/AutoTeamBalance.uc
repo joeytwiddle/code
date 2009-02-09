@@ -30,6 +30,15 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
+// BUG: ATB and Resurector are incompatible.  Since Resurector v1 does not
+// recover each player's timeInGame, ATB will calculate skewed player stats.
+// Until we fix Resurector to recover timeInGame also, I recommend not running
+// it alongside ATB.
+
+// TODO: Have better support for detecting when a player is having a good or bad day ;)
+//       This may require doubling up his records, one for short term and one for long term strength.
+//       Although after 1 map we can't deduce a lot, after 2 map of pwnage, we really should try to rearrange the teams a bit better with respect to this day's irregularities.
+
 // You are advised to set MaxRecords to the max 4096 now, for better
 // operation in the future.
 // TODO: In fact we will make this a default.
@@ -219,6 +228,7 @@
 // #define ENABLE_USEISPNOTFULLIP
 // Semi-admin stuff:
 //// Testing - Things we are finalising for next release:
+// SHORTHELP became default
 // #define HASH15
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
@@ -307,6 +317,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  // var config bool bRelativeNormalisation;
  var config float RelativeNormalisationProportion;
  var config float StrengthProportionFromCurrentGame;
+ var config float PreferenceToSwitchNewPlayers;
  var config bool bScalePlayerScoreToFullTime; // Leave this true, more accurate this way
  var config int NormalisedStrength;
  var config int UnknownStrength;
@@ -314,6 +325,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var config int FlagStrength;
  var config int StrengthThreshold;
  var config int WinningTeamBonus;
+ var config int ScoreThresholdLow;
+ var config int ScoreThresholdHigh;
  var config bool bClanWar;
  var config string clanTag;
  // var config bool bUseOnlyInGameScoresForRebalance;
@@ -375,7 +388,7 @@ defaultproperties {
  bShowProposedSwitch=True
  bOverrideMinRequests=True
  // MinRequestsForRebalancePercent=25    // or 25% of players request it.
- // MaxPlayerData=4096
+ // MaxPlayerData=4096    // TODO: Force this up to max, for HashTable.
  MaxPlayerData=1024
  bShowReason=True
  bFlashOnWarning=True
@@ -387,6 +400,7 @@ defaultproperties {
  CheckFrequency=15 // How often to check for mid-game imbalance, and flash the warning if neccessary, in seconds.
  StrengthThreshold=125
   StrengthProportionFromCurrentGame=0.5
+ PreferenceToSwitchNewPlayers=0.7
  bAllowSemiAdminKick=True
  bAllowSemiAdminForceTravel=True
  bBalanceBots=False
@@ -418,6 +432,8 @@ defaultproperties {
  BotStrength=10
  FlagStrength=10
  WinningTeamBonus=5
+ ScoreThresholdLow=-10
+ ScoreThresholdHigh=2000
  bClanWar=False
  clanTag="XOL"
  // bUseOnlyInGameScoresForRebalance=False
@@ -888,6 +904,7 @@ function Mutate(String str, PlayerPawn Sender) {
  local String msg;
  local int i;
  local Pawn p;
+ local PlayerPawn pp;
  local bool bTempBool;
  local String mutStr;
  local class<Mutator> mutClass;
@@ -903,7 +920,7 @@ function Mutate(String str, PlayerPawn Sender) {
  if (Sender.bAdmin)
   localPass = ""; // no pass is required
  if (Left(str,4) ~= "ATB ")
-  str = Right(str,4);
+  str = Mid(str,4);
  argcount = SplitString(str," ",args);
  // Commands which do not require a password:
  if ( args[0]~="TEAMS" || args[0]~="TEAMSTRENGTH" ) {
@@ -935,6 +952,9 @@ function Mutate(String str, PlayerPawn Sender) {
  }
  if ( args[0]~="STATS" ) {
   ShowStatsTo(Sender);
+ }
+ if ( args[0]~="LOGSTATS" ) {
+  ShowStatsTo(None);
  }
  if ( args[0]~="LISTMUTS" || args[0]~="LISTMUTATORS" ) {
   ListMutsTo(Sender);
@@ -1016,8 +1036,17 @@ function Mutate(String str, PlayerPawn Sender) {
      Sender.ClientMessage("Could not find PlayerPawn with name \""$args[1]$"\".");
     }
    break;
+   case "LISTIDS":
+    // TODO: Send list of all players and IDs to Sender.
+    // Sender.ClientMessage("[ID] Player_Name");
+    Sender.ClientMessage("Player list with IDs:");
+    foreach AllActors(class'PlayerPawn',pp) {
+     if (pp.PlayerReplicationInfo.PlayerName != "Player")
+      Sender.ClientMessage("["$ pp.PlayerReplicationInfo.PlayerID $"] "$ pp.getHumanName());
+    }
+   break;
    case "KICK":
-    if (bAllowSemiAdminKick) {
+    if (bAllowSemiAdminKick || Sender.bAdmin) {
      msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
      p = FindPlayerNamed(args[1]);
      if (args[1]=="" || p == None) {
@@ -1034,8 +1063,26 @@ function Mutate(String str, PlayerPawn Sender) {
      }
     }
    break;
+   case "KICKID":
+    if (bAllowSemiAdminKick || Sender.bAdmin) {
+     msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+     p = FindPlayerWithID(Int(args[1]));
+     if (args[1]=="" || p == None || (Int(args[1])==0 && args[1]!="0")) {
+      Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+     } else {
+      BroadcastMessageAndLog(p.getHumanName()$" was kicked for "$msg);
+      p.ClientMessage("You have been kicked for: " $ msg);
+      // If the player is a semi-admin, but not admin, we must temporarily make him an admin, for this to run successfully:
+      bTempBool = Sender.bAdmin;
+      Sender.bAdmin = True;
+      Sender.Kick(p.getHumanName());
+      Sender.bAdmin = bTempBool;
+      // Sender.ClientMessage(p.getHumanName()$" was warned and kicked.");
+     }
+    }
+   break;
    case "KICKBAN":
-    if (bAllowSemiAdminKick) {
+    if (bAllowSemiAdminKick || Sender.bAdmin) {
      msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
      p = FindPlayerNamed(args[1]);
      if (args[1]=="" || p == None) {
@@ -1052,8 +1099,26 @@ function Mutate(String str, PlayerPawn Sender) {
      }
     }
    break;
+   case "KICKBANID":
+    if (bAllowSemiAdminKick || Sender.bAdmin) {
+     msg=""; for (i=2;i<argcount;i++) { if (!(args[i]~=localPass)) msg = msg $ args[i] $ " "; } // hack to rebuild args without password
+     p = FindPlayerWithID(Int(args[1]));
+     if (args[1]=="" || p == None || (Int(args[1])==0 && args[1]!="0")) {
+      Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+     } else {
+      BroadcastMessageAndLog(p.getHumanName()$" was banned for "$msg);
+      p.ClientMessage("You have been banned for: " $ msg);
+      // If the player is a semi-admin, but not admin, we must temporarily make him an admin, for this to run successfully:
+      bTempBool = Sender.bAdmin;
+      Sender.bAdmin = True;
+      Sender.KickBan(p.getHumanName());
+      Sender.bAdmin = bTempBool;
+      // Sender.ClientMessage(p.getHumanName()$" was warned and banned.");
+     }
+    }
+   break;
    case "FORCETRAVEL":
-    if (bAllowSemiAdminForceTravel) {
+    if (bAllowSemiAdminForceTravel || Sender.bAdmin) {
      //// We may not want to publicise the password of the server we are forwarding to.  (e.g. server may have an irc reporter)
      // if (bBroadcastHelloGoodbye) { BroadcastMessageAndLog("Admin has forced a Server Travel to: "$args[1]); }
      if (bBroadcastHelloGoodbye) { BroadcastMessageAndLog("Admin is forcing a server switch!"); }
@@ -1115,6 +1180,7 @@ function Mutate(String str, PlayerPawn Sender) {
  // You can use "mutate set" instead of "admin set".  It provides confirmation of the new value, or the existing value if a change could not be made.
  if (Sender.bAdmin) {
   switch ( Caps(args[0]) ) {
+   // GET and SET are redundant.  They act pretty much the same as "admin GET|SET", but are unneccessarily verbose, much like myself.
    // Allows admins to read variables from the config files (and maybe some live variables too; untested)
    case "GET":
     // Prev_nt reading of password records (so that granting someone you trust temp admin is "safer"):
@@ -1181,24 +1247,20 @@ function Mutate(String str, PlayerPawn Sender) {
   else
    pass_if_needed = " [password]";
   if (bEnablePlayerCommands) {
-   // Sender.ClientMessage("    teams !teams !red !blue !spec !play !vote !strengths !stats");
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8b" $" commands: teams !teams !red !blue !spec !play !vote !stats");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8d" $" commands: teams !teams !red !blue !spec !play !vote !stats");
   } else {
-   // Sender.ClientMessage("    teams !teams");
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8b" $" commands: teams !teams");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8d" $" commands: teams !teams");
   }
-  // Sender.ClientMessage("    mutate strengths [extra]"); // also just "strength"
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.8b" $" mutate commands: strengths [extra] | listmuts | listfakes");
-  // Sender.ClientMessage("    mutate listmuts"); // also "listmutators"
-  // Sender.ClientMessage("    mutate listfakes"); // also "listfakers"
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.8d" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
   if (localPass == "") {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8b" $" semi-admin console commands:");
-   Sender.ClientMessage("    mutate teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | addmut <mut> | delmut <mut> | kick <p> <msg> | kickban <p> <msg> | forcetravel <url>");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8d" $" semi-admin console commands:");
+   Sender.ClientMessage("    mutate [atb] ( teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | kick <p> <msg> | kickban <p> <msg> ");
+   Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> ) "$pass_if_needed);
   } else {
    Sender.ClientMessage("    mutate help [<password>]");
   }
   if (Sender.bAdmin) {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8b" $" admin-only console commands: mutate saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd>");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8d" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> )");
   }
  }
  Super.Mutate(str,Sender);
@@ -1801,14 +1863,6 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
  local Pawn p;
  local string s;
  // If the last request was a long time ago (>1 minute), reset the request list
- // Refuse to balance teams more than once every MinSecondsBeforeRebalance seconds:
- // This also fixed the bug that (I think) if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
- if (/*MinRequestsForRebalance<2 &&*/ lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
-  // DebugLog("MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds);
-  //// Don't both broadcasting, just mute.
-  // BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
-  return;
- }
  if (lastRebalanceRequestTime < Level.TimeSeconds - 60) {
   for (i=0;i<64;i++) {
    pidsRequestingRebalance[i] = 0;
@@ -1825,22 +1879,41 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
  }
  // Work out how many more requests are needed
  additionalRequiredRequests = MinRequestsForRebalance - countRequests;
- // But if teams differ in size by 2 or more players, only one request to rebalance is needed:
- // TODO: we could also require only 1 request if the stronger team has more players
- if (bOverrideMinRequests && Abs(GetTeamSize(0)-GetTeamSize(1))>=2) {
-  additionalRequiredRequests = 0;
+ // But we might now change this variable, under certain conditions.
+ // Refuse to balance teams more than once every MinSecondsBeforeRebalance seconds:
+ // This also fixed the bug that (I think) if the player who said "!teams" was switched, a second call to MutatorTeamMessage was made, and MidGameRebalance was getting called again.
+ // TODO TEST: I may have re-introduced that bug when I moved this code around, to apply bOverrideMinRequests.
+ if (/*MinRequestsForRebalance<2 &&*/ lastBalanceTime + MinSecondsBeforeRebalance > Level.TimeSeconds) {
+  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "MidGameRebalance() refusing to rebalance since lastBalanceTime="$lastBalanceTime$" is too close to current time "$Level.TimeSeconds); };
+  //// Don't broadcast, just mute.
+  // BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
+  // return;
+  additionalRequiredRequests = 99;
+  // But we may override this with bOverrideMinRequests...
  }
- if (bOverrideMinRequests && Abs(GetTeamStrength(0) - GetTeamStrength(1)) > StrengthThreshold) {
-  additionalRequiredRequests = 0;
- }
- if (DeathMatchPlus(Level.Game).bTournament) { // We are probably doing bHelpInPugs, but we shall go a little softer:
+ if (DeathMatchPlus(Level.Game).bTournament && MinRequestsForRebalance<2) {
+  // We are probably doing bHelpInPugs, so let's go a little softer.
+  // Basically this means, during tournament mode, 1 person alone cannot force teambalance.
   additionalRequiredRequests++;
+ } else {
+  // But if teams differ in size by 2 or more players, only one request to rebalance is needed:
+  // CONSIDER TODO: we could also require only 1 request if the stronger team has more players
+  if (bOverrideMinRequests && Abs(GetTeamSize(0)-GetTeamSize(1))>=2) {
+   additionalRequiredRequests = 0;
+  }
+  if (bOverrideMinRequests && Abs(GetTeamStrength(0) - GetTeamStrength(1)) > StrengthThreshold) {
+   additionalRequiredRequests = 0;
+  }
  }
  // Decide what to do
  if (additionalRequiredRequests <= 0) {
   MidGameRebalance(True);
   lastRebalanceRequestTime = -60; // Will force a reset the next time we are called
  } else {
+  if (additionalRequiredRequests == 99) {
+   BroadcastMessageAndLog("AutoTeamBalance refuses to rebalance teams again so soon.");
+   return;
+  }
   if (bShowProposedSwitch) {
    MidGameRebalance(False); // This will send a message
   } else {
@@ -1909,7 +1982,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
  local Pawn p;
  local Pawn closestPlayer; // the most ideal potential player to switch
  local float newDifference; // the absolute strength difference between the two teams after the potential switch
- local float timeInGame,bestScore,potentialNewDifference;
+ local float timeInGame,bestScore,potentialNewDifference,thisScore;
  local int playerCountDifference;
  fromTeamStrength = GetTeamStrength(fromTeam);
  toTeamStrength = GetTeamStrength(toTeam);
@@ -1928,22 +2001,24 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
    playerStrength = GetPlayerStrength(p);
    timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
    if (p == LastBadPlayer)
-    timeInGame = timeInGame * 0.2;
+    timeInGame = timeInGame * 0.5;
    // We want a linear scale; i.e. players in for 10 minutes are 2x less likely to be switched than players in for 5.
    // BUT, if timeInGame==0 then the player who joined 1 second ago will be switched, regardless of whether he's a good swap or not!  So we add a little.
    // Actually we add a little more than a little, because I decided timeInGame is really not as important as new difference.
    timeInGame += 480.0;
    potentialNewDifference = Abs(currentDifference-playerStrength*2);
+   // thisScore = (5+potentialNewDifference)*(5+potentialNewDifference)*timeInGame;
+   thisScore = ((5+potentialNewDifference)^(4.0 - 4.0*PreferenceToSwitchNewPlayers)) * (timeInGame^(2.0*PreferenceToSwitchNewPlayers));
    if (
      closestPlayer == None
      // We no longer check that it is actually less difference here, that is done at the end.
      // Best score so far:
-     || ( (5+potentialNewDifference)*(5+potentialNewDifference)*timeInGame < bestScore )
+     || ( thisScore < bestScore && potentialNewDifference<currentDifference )
    ) {
     closestPlayer = p;
     // Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
     newDifference = potentialNewDifference;
-    bestScore = (5+newDifference)*(5+newDifference*timeInGame);
+    bestScore = thisScore;
    }
   }
  }
@@ -2009,7 +2084,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
  local Pawn redPlayerToMove,bluePlayerToMove; // the best two players found so far
  local float bestDifference; // the strength difference between the two teams after switching these players
  local float bothTimeInGame;
- local float bestScore;
+ local float bestScore,thisScore;
  local float playerCountDifference;
  redTeamStrength = GetTeamStrength(0);
  blueTeamStrength = GetTeamStrength(1);
@@ -2045,8 +2120,10 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
       if (redP == LastBadPlayer || blueP == LastBadPlayer)
        bothTimeInGame = bothTimeInGame * 0.5;
       bothTimeInGame += 480.0;
-      if (bothTimeInGame*(5+potentialNewDifference)*(5+potentialNewDifference) < bestScore) {
-       bestScore = bothTimeInGame*(5+potentialNewDifference)*(5+potentialNewDifference);
+      // thisScore = bothTimeInGame*(5+potentialNewDifference)*(5+potentialNewDifference);
+      thisScore = (bothTimeInGame^(2.0*PreferenceToSwitchNewPlayers))*((5+potentialNewDifference)^(4.0 - 4.0*PreferenceToSwitchNewPlayers));
+      if (thisScore < bestScore) {
+       bestScore = thisScore;
        bestDifference = potentialNewDifference;
        redPlayerToMove = redP;
        bluePlayerToMove = blueP;
@@ -2069,10 +2146,9 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
  } else {
   BroadcastRebalanceMessage("AutoTeamBalance could not find two switches to improve the teams.");
   // DONE: Should really log the state now, so we can check the values to debug if neccessary!
+  // TODO: Once we believe ATB is stable and optimal, we can trust this result and skip the logging!
   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "MidGameTeamBalanceSwitchTwoPlayers("$ bDo $") failed while "$ GetTeamSize(0) $"v"$ GetTeamSize(1) $" "$ Int(redTeamStrength) $"v"$ Int(blueTeamStrength) $" "$ GetTeamScore(0) $"-"$ GetTeamScore(1) $" diff="$ difference $" bestDiff="$ bestDifference $" bestScore="$ bestScore $" redP="$ redPlayerToMove $" blueP="$ bluePlayerToMove $""); };
   LogSituation();
-  // Assassin was 1v3 the other night, but it refused to switch anyone.  Maybe the noobie it needed to switch was holding the flag.  :P
-  // I also saw it 2v0.
   return False;
  }
 }
@@ -2145,13 +2221,16 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
  if (p.IsA('Bot')) {
   Bot(p).ConsoleCommand("taunt wave");
  }
- if (TeamGamePlus(Level.Game) != None)
+ if (TeamGamePlus(Level.Game) != None) {
   oldbNoTeamChanges = TeamGamePlus(Level.Game).bNoTeamChanges;
+  TeamGamePlus(Level.Game).bNoTeamChanges = False;
+ }
  // NormalLog("ChangePlayerToTeam("$p.getHumanName()$","$teamNum$"): (strength "$GetPlayerStrength(p)$") "$p.PlayerReplicationInfo.Team$" -> "$teamnum$"");
  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "ChangePlayerToTeam("$p.getHumanName()$","$teamNum$"): "$p.PlayerReplicationInfo.Team$" -> "$teamnum$""); };
  Level.Game.ChangeTeam(p,teamnum); // TODO: suppress the BroadcastMessage() made by TeamGame.AddToTeam() when we are flashing team to player elsewhere anyway
- if (TeamGamePlus(Level.Game) != None)
+ if (TeamGamePlus(Level.Game) != None) {
   TeamGamePlus(Level.Game).bNoTeamChanges = oldbNoTeamChanges;
+ }
  // Kill the player, forcing them to drop flag if they have it (before this we could get a red player holding the red flag!)
  p.Died(None, '', p.Location);
  // Recompensate player for suicide/death points:
@@ -2393,6 +2472,18 @@ function Pawn FindPlayerNamed(String name) {
   }
  }
  return found; // return partial match, or None
+}
+// Find player by name, or partial name
+function Pawn FindPlayerWithID(int id) {
+ local Pawn p;
+ for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+  if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
+   if (PlayerPawn(p).PlayerReplicationInfo.PlayerID == id) {
+    return p;
+   }
+  }
+ }
+ return None;
 }
 // ======== Player database: ======== //
 // Copies from playerData[] to ip[],nick[],avg_score[],... (should be done at the start)
@@ -2904,6 +2995,12 @@ function float GetScoreForPlayer(Pawn p) {
   award_score = ScaleToFullTime(p) * (p.KillCount + p.PlayerReplicationInfo.Score) / 2.0;
  } else if (ScoringMethod == 3 || ScoringMethod > 3) {
   award_score = GetRankingPoints(p); // Note that for this method, scaling score to full time is done *inside* GetRankingPoints()
+ }
+ // Siege can give dodgy scores.  Sometimes HUGE negative numbers, or leech
+ // games produce unrepresentatively high numbers.
+ if (award_score<ScoreThresholdLow || award_score>ScoreThresholdHigh) {
+  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Adjusting extreme score "$award_score); };
+  award_score = FClamp(award_score,ScoreThresholdLow,ScoreThresholdHigh);
  }
  return award_score;
 }
