@@ -416,7 +416,7 @@ var Trie NickTrie;
 	// var config bool bRelativeNormalisation;
 	var config float RelativeNormalisationProportion;
 	var config float StrengthProportionFromCurrentGame;
-	var config float PreferenceToSwitchNewPlayers;
+	var config float PreferenceToSwitchNewPlayers; // Misnamed.  Should be ToChange.  Also, a better approach might be - only switch players who are so-far down the scoreboard, or so-far down the list of recently joined players.
 	var config bool bScalePlayerScoreToFullTime; // Leave this true, more accurate this way
 
 	var config int NormalisedStrength;
