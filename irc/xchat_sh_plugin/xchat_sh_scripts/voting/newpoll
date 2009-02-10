@@ -2,6 +2,15 @@
 . irccols.shlib
 . voting/voting.shlib
 
+if [ "$CHANNEL" = "#ut.pug" ]
+then
+	if [ ! "$HASOP" ]
+	then
+		echo "/notice $NICK Only ops can start a new poll in #ut.pug"
+		exit 0
+	fi
+fi
+
 VOTEDURATION="$1 $2" ; shift ; shift
 if [[ "$1" =~ "/" ]]
 then VOTECHOICES="$1" ; shift
@@ -15,12 +24,16 @@ else VOTECHOICES="yes/no"
 fi
 VOTEWORDS="$*"
 
+if [ "$CHANNEL" = "#ut.pug" ]
+then VOTEWORD="[#ut.pug] $VOTEWORDS"
+fi
+
 # if [[ ! "$VOTEWORDS" =~ "\?.$" ]] || [[ "$VOTEWORDS" =~ " \<or\> " ]]
 if ! echo "$VOTEWORDS" | grep "\?$" >/dev/null || [[ "$VOTEWORDS" =~ " \<or\> " ]]
 then
 	echo "!newvote <duration> [ option1/option2/... ] <question>"
 	# echo "To create a new vote, ask a question with a yes/no answer, which ends in a \? and does not contain the word \"or\"."
-	echo "For example: !newvote 1 week Does this voting system rock?" | notice
+	echo "For example: !newvote 1 week yes/no Does this voting system rock?" | notice
 	exit 0
 fi
 

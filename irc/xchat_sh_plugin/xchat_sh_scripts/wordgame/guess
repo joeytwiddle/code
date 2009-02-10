@@ -123,6 +123,12 @@ do
 				SCORE_SUM="$SCORE_SUM $COLGREY+$COLORANGE""10 for using all the letters!"
 			fi
 
+			if [ "$NICK" = "[A]Melted_Ice" ] && [ `seq 1 5 | chooserandomline` = 1 ]
+			then
+				increase_score "$NICK" "-50"
+				SCORE_SUM="$SCORE_SUM $COLGREY""-""$COLRED$COLBOLD""50 for cheating$COLBOLD"
+			fi
+
 			SO_FAR=$((SO_FAR+1))
 
 			if [ $((TOTAL-SO_FAR)) -lt 10 ]

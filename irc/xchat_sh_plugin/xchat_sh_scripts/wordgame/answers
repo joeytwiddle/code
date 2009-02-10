@@ -19,7 +19,7 @@ else
 
 	else
 
-		WORDS=` list_answers | tr '\n' ' ' `
+		WORDS=` list_answers | sort | tr '\n' ' ' `
 
 		# echo "Answers: $COLYELLOW$WORDS$COLGREY"
 

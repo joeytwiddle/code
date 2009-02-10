@@ -4,30 +4,40 @@
 
 expireoldvotes
 
-(
+## If the user requested a specific vote:
 
-	if [ "$1" ]
+if [ "$1" ]
+then
+
+	VOTENUM="`echo "$1" | sed 's+^#++'`"
+
+	if [ ! -f "$VOTINGDIR"/"$VOTENUM".votes ]
 	then
-
-		VOTENUM="`echo "$1" | sed 's+^#++'`"
-
-		if [ ! -f "$VOTINGDIR"/"$VOTENUM".votes ]
-		then
-			echo "There is no poll #$VOTENUM"
-			exit 2
-		fi
-
-		## TODO: this and only this, should not be |notice d
-		# echo "Comments for #$VOTENUM `cat "$VOTINGDIR"/"$VOTENUM".words`:"
-		showvote "$VOTENUM"
-		# echo "Comments for poll #$VOTENUM:"
-		# cat "$VOTINGDIR"/"$VOTENUM".votes | dropcols 1 2 3 4 5 6 | grep -v "^[ ]*$" | randomorder | head -n 10
-		NONWS="[^ 	][^ 	]*"
-		cat "$VOTINGDIR"/"$VOTENUM".votes | grep "$NONWS $NONWS $NONWS $NONWS $NONWS $NONWS $NONWS.*" | randomorder | head -n 10 |
-		dropcols 1 3 4 5
-
-		exit
+		echo "There is no poll #$VOTENUM"
+		exit 2
 	fi
+
+	## TODO: this and only this, should not be |notice d
+	# echo "Comments for #$VOTENUM `cat "$VOTINGDIR"/"$VOTENUM".words`:"
+	showvote "$VOTENUM"
+	# echo "Comments for poll #$VOTENUM:"
+	# cat "$VOTINGDIR"/"$VOTENUM".votes | dropcols 1 2 3 4 5 6 | grep -v "^[ ]*$" | randomorder | head -n 10
+	NONWS="[^ 	][^ 	]*"
+	cat "$VOTINGDIR"/"$VOTENUM".votes | grep "$NONWS $NONWS $NONWS $NONWS $NONWS $NONWS $NONWS.*" | randomorder | head -n 10 |
+	dropcols 1 3 4 5
+
+	if [ -f "$VOTINGDIR"/"$VOTENUM".running ]
+	then
+		echo "Cast your vote with !vote #$VOTENUM <your_choice>"
+	fi
+
+	exit
+
+fi
+
+## Otherwise, send summary of all votes as a notice:
+
+(
 
 	# TOTAL_AUTHS=` cat "$VOTINGDIR"/*.votes | takecols 1 | removeduplicatelines | countlines `
 	# echo "I hold voting records for $TOTAL_AUTHS unique voters."

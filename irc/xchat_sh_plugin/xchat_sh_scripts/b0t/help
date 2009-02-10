@@ -4,13 +4,12 @@
 	# exit 0
 # fi
 
-if [ "$CHANNEL" = "#utportal" ] || [ "$CHANNEL" = "#utb0t" ]
-then
+./commands "$@"
 
-	./commands
+# ./pugbot/help
 
-else
+# if [ "$CHANNEL" = "#utportal" ] || [ "$CHANNEL" = "#utb0t" ] || ! echo "$CHANNEL" | grep "^#" >/dev/null
+# then
+# else
+# fi
 
-	./pugbot/help
-
-fi

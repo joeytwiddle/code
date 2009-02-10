@@ -1,3 +1,7 @@
+if [ "$CHANNEL" = "#adl.ut" ] || [ "$CHANNEL" = "#adl.pvt" ] || [ "$CHANNEL" = "#M][B" ]
+then exit 0
+fi
+
 . irc.shlib
 . irccols.shlib
 . voting/voting.shlib
@@ -11,7 +15,7 @@ then exit 0 ## Looks like they were trying to vote a captain in a pug.
 fi
 
 ## Channels which already have their own !vote command.
-if [ "$CHANNEL" = "#crazypug" ] || [ "$CHANNEL" = "m][b" ]
+if [ "$CHANNEL" = "#crazypug" ] || [ "$CHANNEL" = "m][b" ] || [ "$CHANNEL" = "#ut.pug" ]
 then exit 0
 fi
 
