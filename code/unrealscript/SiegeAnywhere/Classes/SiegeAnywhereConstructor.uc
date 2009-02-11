@@ -15,12 +15,10 @@ var config float HealthBasedRUPerSec;
 defaultproperties {
  bBlockBuildingOnKeypoints=False // This is good for sensible games, but annoying for players.  Let admin turn it on.
  HealthBasedRUPerSec=1.0 // For non Siege games, how much RU to give a player each second (if they have 100 health).
-
-
-
-
+ // BuildCategories(2)=class'SiegeAnywhereCategoryItems'
+ // BuildCategories(3)=class'SiegeAnywhereCategoryTeleport'
 }
-// TODO: Instead of overwriting the BuildCategories here, make a function which
+// DONE: Instead of overwriting the BuildCategories here, make a function which
 // checks to see if the items are available, and appends them to the
 // appropriate list if they are.
 // This could work live on any siege gametype, and be directed by a config file!
@@ -248,7 +246,7 @@ simulated function AddExtraBuildOptions() {
  InsertInCategory(class'sgCategoryItems',class'sgItemForceGun',5);
  // InsertInCategory(class'sgCategoryItems',class'sgItemSpawner',6); // not an item, just a building!  it doesn't display properly in constructor menu ... maybe if we set its defaults?  it doesn't work anyway :P
  InsertInCategory(class'sgCategoryTeleport',class'sgItemGrappleGun',4);
- InsertInCategory(class'sgCategoryExplosives',class'sgItemVoiceBox',5);
+ // InsertInCategory(class'sgCategoryExplosives',class'sgItemVoiceBox',5); // Was in 2e but not 2g.
 }
 
 simulated function InsertInCategory(class<sgBuildCategory> categoryClass, class<sgBuilding> BuildClass, int pos) {

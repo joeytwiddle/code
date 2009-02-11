@@ -90,6 +90,7 @@ function AddDefaultInventory(Pawn p) {
 	Super.AddDefaultInventory(p);
 
 	// If player doesn't have a siege constructor, give him one:
+	// TODO: If he has an sgConstructor, but not a SiegeAnywhereConstructor, shouldn't we replace former with latter?
 	cons = sgConstructor(p.FindInventoryType(class'sgConstructor'));
 	if (cons == None)
 		cons = SiegeAnywhereConstructor(p.FindInventoryType(class'SiegeAnywhereConstructor'));
