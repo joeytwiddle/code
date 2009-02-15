@@ -35,15 +35,22 @@
 // Until we fix Resurector to recover timeInGame also, I recommend not running
 // it alongside ATB.
 
+// TODO: F1Says redScore=total_of_red_scores+TeamScore, blueScore=... ; compare
+// TODO: mutate debug
+// TODO: AutoTeamBalanceTest.jpp
+
+// TODO CONSIDER: Would it be better to catch attempted creation of new Mutator in CheckReplacement or AlwaysKeep?
+
 // TODO: Have better support for detecting when a player is having a good or bad day ;)
 //       This may require doubling up his records, one for short term and one for long term strength.
 //       Although after 1 map we can't deduce a lot, after 2 map of pwnage, we really should try to rearrange the teams a bit better with respect to this day's irregularities.
 
-// You are advised to set MaxRecords to the max 4096 now, for better
+// CONSIDER: CurrentPlayerRecordTop could be the variable version of MaxPlayerData :P  Although <1.5 ATBs used MaxPlayerData.
+// You are advised to set MaxPlayerData to the max 4096 now, for better
 // operation in the future.
 // TODO: In fact we will make this a default.
-// If you want to change MaxRecords, do it before migration!
-// Once you have a 1.5 database you should not change MaxRecords!
+// If you want to change MaxPlayerData, do it before migration!
+// Once you have a 1.5 database you should not change MaxPlayerData!
 // Actually you can change it if you want to, but you must set DBVersion back
 // to 1.4, so that migration will re-run, and records will be placed in their
 // correct bands.
@@ -94,12 +101,6 @@
 // DONE: bHelpInPugs=False // If set, overrides bTournament, to provide !teams suggestions.
 
 // TODO: If we can't do better lookups, at least organise the db to have lost records later in the list.  We can do this slowly over time, by swapping 3 records instead of swapping 2.  Move the new guy 70% towards the top, and he will be sort-of cached for the next few hours.
-
-// #define ATB_VERSION "1.4.9d-kx"
-// #define ATB_VERSION "xol-1.5.0-pre2"
-
-
-
 
 // TODO: bAutoSwitchNewPlayers doesn't take action *until* B spawns, which is good if B doesn't stay long enough to spawn, but is it messy?
 //       We could actually inform player A from the moment B joins that they will be swapped, but wait until B spawns.
@@ -222,18 +223,44 @@
 // CONSIDER: when ip does change (often), delete the old record - it's no use to us
 // TEST: When I was testing both ServerActor *and* mutator (not actually desirable), it seemed "!teams" was not working - is this fixed now?
 // BUG: Do not use NetWait<3; it may cause the teambalance to occur before anyone joins the server!
-// Preprocessing definitions:
-// Still compiling ATB for XOL, did not yet get ATBXOL auto-compiling.
+
+
+
+
+
+
+//// Preprocessing definitions:
+
+// #define ATB_VERSION "1.4.9d-kx"
+// #define ATB_VERSION "xol-1.5.0-pre2"
+
+
 // #define XOL_SPECIFIC
-// #define ENABLE_USEISPNOTFULLIP
-// Semi-admin stuff:
+
 //// Testing - Things we are finalising for next release:
-// SHORTHELP became default
+
+
+
+// #define SWING_PROPS
+
+//// Good #defines which we have turned on
+// #define ENABLE_USEISPNOTFULLIP
+
+
+
+
+// TODO: inline STRENGTHS_EXTRA?  Or make medium between two?
+
+
+
+// Semi-admin stuff:
+// CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY
+// #define CLEANUP14
 // #define HASH15
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
-// #define PRECLEAR_SOME_RECORDS - current implementation is dangerous
+// #define PRECLEAR_SOME_RECORDS - current implementation is dangerous - also doesn't work on the presence of CLEANUP14
 // #define ATB_TRACKER - not working
 //// RANDOMBOTGREET requires DETECT_PLAYERJOINS
 //// I don't know if it works or not because join detection happens before I really enter :P
@@ -244,56 +271,19 @@
 //// FAST_DATE_COMPARISON may be dangerous, since records just created might be seen as worth deleting!  Check this before defining FAST_DATE_COMPARISON.
 // #define FAST_DATE_COMPARISON
 //// Debugging - Things we only want during development, and will never release:
-// #define DEBUGGING
 // TODO: If we do take the duplicate, the older useless one should be removed.
 // #define LOG_TICKRATE
 // #define WARN_TICKRATE_CHANGE
+// Changelog:
+// 0209 inlined SHORTHELP
 // Just for me really:
-// #define FindOldPlayerRecord FindOldestPlayerRecordSlow
-// #define FindOldPlayerRecord FindOldPlayerRecordFast
+// #define ATB15 // (if debugging ^^ )
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
-// Config variables (documented in AutoTeamBalance.txt):
- // var config bool bBalanceAtStartIfNotInTournament; // always true!
- var config bool bForceEvenTeams;
- var config bool bLetPlayersRebalance;
- var config bool bEnablePlayerCommands;
- var config bool bHelpInPugs;
- var config bool bNeverRebalanceWhenTeamsAreEven;
- var config int MinRequestsForRebalance;
- var config bool bOnlyFlashInvolvedPlayers;
- var config bool bFlashRebalanceRequest;
- var config bool bShowProposedSwitch;
- var int pidsRequestingRebalance[64];
- var int lastRebalanceRequestTime;
- var config bool bOverrideMinRequests;
- var config bool bWarnMidGameUnbalance;
- var config bool bCheckStrengthBalance;
- var config int CheckFrequency;
- var config bool bShowReason;
- var config bool bFlashOnWarning;
- var config bool bShakeOnWarning;
- var config bool bBuzzOnWarning;
- var config bool bShakeWhenMoved;
- var config int MinSecondsBeforeRebalance;
- // For storing player strength data:
- var config int MaxPlayerData;
- var config bool bSeparateStatsByGamemode;
- var config bool bSeparateStatsByMutators;
- var config String TeamspeakChannel[4];
- var config String TeamspeakChannelOther;
- var config bool bDebugLogging;
- var config bool bLogging;
- var config bool bLogDeletedRecords; // #define bLogDeletedRecords True
+//// Various hashing attempts.
+// MY_HASH_FN is used by more than one!
+//// Config variables (documented in AutoTeamBalance.txt):
+ //// Will it run?
  var config bool bBroadcastHelloGoodbye;
- var config bool bBroadcastTeamStrengths;
- var config bool bBroadcastTeamStrengthDifference;
- var config bool bFlashTeamStrengths;
- var config bool bBroadcastCookies;
- var config bool bFlashCookies;
- var config bool bFlashPlayerJoins;
- var config bool bAutoSwitchNewPlayers;
- var config bool bReportStrengthAsCookies;
- var config int FlashLine;
  var config bool bAutoBalanceTeamsForCTF;
  var config bool bAutoBalanceTeamsForTDM;
  var config bool bAutoBalanceTeamsForAS;
@@ -303,8 +293,54 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var config bool bUpdatePlayerStatsForAS;
  var config bool bUpdatePlayerStatsForOtherTeamGames;
  var config bool bUpdatePlayerStatsForNonTeamGames;
+ var config bool bSeparateStatsByGamemode;
+ var config bool bSeparateStatsByMutators;
+ var config String TeamspeakChannel[4];
+ var config String TeamspeakChannelOther;
+ var config bool bForceEvenTeams;
+ var config int CheckFrequency;
+ var config bool bNeverRebalanceWhenTeamsAreEven;
+ var config bool bLetPlayersRebalance;
+ var config bool bEnablePlayerCommands;
+ var config bool bAutoSwitchNewPlayers;
+ // CONSIDER: Possible refactoring for 2.0; is bOverrideMinRequests ==
+ // bNeverRebalanceWhenTeamsAreEven or better related to it than it is now?
+ // Some combinations of Flashing options and bShowProposedSwitch might be
+ // incompatible and also ripe for refactoring.  #define some
+ // bReallyOverrideMinRequestNow maybe? :p
+ // If players can rebalance, how does it happen?
+ var config int MinSecondsBeforeRebalance;
+ var config bool bOverrideMinRequests; // (when teams are terrible (by count, not strength! :P ))
+ var config int MinRequestsForRebalance;
+ var config bool bFlashRebalanceRequest;
+ var config bool bShowProposedSwitch;
+ var config bool bOnlyFlashInvolvedPlayers;
+ var int pidsRequestingRebalance[64];
+ var int lastRebalanceRequestTime;
+ // Checking and warning?
+ var config bool bCheckStrengthBalance;
+ var config bool bWarnMidGameUnbalance;
+ var config bool bShowReason;
+ var config bool bFlashOnWarning;
+ var config bool bShakeOnWarning;
+ var config bool bBuzzOnWarning;
+ var config bool bShakeWhenMoved;
+ // Flashing?
+ var config bool bFlashPlayerJoins;
+ var config bool bFlashTeamStrengths;
+ var config bool bBroadcastCookies;
+ var config bool bFlashCookies;
+ var config bool bReportStrengthAsCookies;
+ var config int FlashLine;
+ var config bool bHelpInPugs; // 2.0 - bATBDuringWarmupAndPause
+ // Debugging?
+ var config bool bLogging;
+ var config bool bLogDeletedRecords; // #define bLogDeletedRecords True
  var config bool bBalanceBots;
  var config bool bRankBots;
+ var config bool bDebugLogging;
+ var config bool bBroadcastTeamStrengths;
+ var config bool bBroadcastTeamStrengthDifference;
  var config bool bAllowSemiAdminKick;
  var config bool bAllowSemiAdminForceTravel;
  var config String SemiAdminPass;
@@ -316,8 +352,9 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var config bool bNormaliseScores;
  // var config bool bRelativeNormalisation;
  var config float RelativeNormalisationProportion;
- var config float StrengthProportionFromCurrentGame;
- var config float PreferenceToSwitchNewPlayers;
+ var config float StrengthProportionFromCurrentGame; // TODO: This should swing depending whether records are from last game or two weeks ago.
+ var config float PreferenceToSwitchNewPlayers; // Misnamed.  Should be ToChange.  Also, a better approach might be - only switch players who are so-far down the scoreboard, or so-far down the list of recently joined players.
+ // TODO: var config float HowFarDownAgeList;
  var config bool bScalePlayerScoreToFullTime; // Leave this true, more accurate this way
  var config int NormalisedStrength;
  var config int UnknownStrength;
@@ -337,6 +374,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var config string LastUpdate;
  var config Color strengthColor,warnColor;
  var config String playerData[4096]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
+ // For storing player strength data:
+ var config int MaxPlayerData;
  var config float DBVersion;
 // Temporary state:
  // Internal (parsed) player data:
@@ -351,6 +390,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  // runtime single-threaded:
  var bool bSuggesting;
  var String SuggestedChanges;
+ // TODO: bCached[0] is not implemented properly - is it undesirable to fix it?
  var int bCached[64]; // TODO CONSIDER: One change that bCached has introduced: if the player changes nick after they have been looked up, ATB will continue to use their old record.  However, I don't think this is a major problem.  The new record should be copied from the old record at the next game.
  var float currentDateDays; // Used by FindOldestPlayerRecordMeasure().
  // For local state caching (not repeating when called by Tick's or Timer's):
@@ -383,7 +423,11 @@ defaultproperties {
  bForceEvenTeams=False
  bLetPlayersRebalance=True
  MinRequestsForRebalance=2
- bOnlyFlashInvolvedPlayers=True // If this and bShowProposedSwitch are set, then bFlashRebalanceRequest is overriden.  ATB will flash the 1 or 2 players that are recommended for the switch, and broadcast the recommedation to everyone in the chat area.
+ bOnlyFlashInvolvedPlayers=False // If this and bShowProposedSwitch are set,
+ // then bFlashRebalanceRequest is overriden.  ATB will flash the 1 or 2
+ // players that are recommended for the switch, and broadcast the
+ // recommedation to everyone in the chat area.  TODO: Not yet suppressing the
+ // problem flash.
  bFlashRebalanceRequest=True
  bShowProposedSwitch=True
  bOverrideMinRequests=True
@@ -454,11 +498,12 @@ defaultproperties {
  colorBlack=(R=0,G=0,B=0,A=32)
  strengthColor=(R=255,G=152,B=48,A=32)
  warnColor=(R=255,G=144,B=32,A=32)
- TeamspeakChannel(0)="teamspeak://ekiebox.org:8767?channel=#noobpug"
- TeamspeakChannel(1)="teamspeak://ekiebox.org:8767?channel=#siegepug"
+ TeamspeakChannelOther="teamspeak://ekiebox.org:8767?channel=#noobpug"
+ // TeamspeakChannel(0)="teamspeak://ekiebox.org:8767?channel=#noobpug"
+ // TeamspeakChannel(1)="teamspeak://ekiebox.org:8767?channel=#siegepug"
  // TeamspeakChannelOther="http://www.unrealadmin.org/forums/showthread.php?t=23777"
  // We don't really want to force their browser to open:
- TeamspeakChannelOther=
+ // TeamspeakChannelOther=
 }
 // DefaultLog is important stuff that gets logged even if bLogging=False, but it has the same formatting as the other log levels.
 // #define DebugLog(X); 
@@ -506,7 +551,6 @@ function PostBeginPlay() {
  SetTimer(1,True);
  gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
  CopyConfigIntoArrays(); // First time the data is needed, we must convert it.
-  CleanupDatabase();
  initialized = true;
 }
 // Implementation of AddMutator which prevents double or recursive adding:
@@ -648,6 +692,7 @@ function FixTeamsizeBug() {
 function ModifyPlayer(Pawn paw) {
  local PlayerPawn p;
  local float strengthSwing;
+ ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "ModifyPlayer("$paw.getHumanName()$") called."); };
  // Check if this is the player's first spawn:
  p = PlayerPawn(paw);
  if (p!=None && p.PlayerReplicationInfo.Deaths == 0 && Spectator(p)==None) {
@@ -774,7 +819,7 @@ function ListFakesTo(PlayerPawn Sender) {
    if (nickList != "")
     Sender.ClientMessage(p.getHumanName() $" has other nicks: "$ nickList);
    else
-    Sender.ClientMessage(p.getHumanName() $" has ip: "$ ip[FindPlayerRecord(p)]);
+    Sender.ClientMessage(p.getHumanName() $" has ip: "$ ip[FindPlayerRecordGuaranteed(p)]);
   }
  }
 }
@@ -865,7 +910,7 @@ function ListMutsTo(PlayerPawn Sender) {
 function String GetNicksFor(PlayerPawn p) {
  local int i,j;
  local String pip,list,pnick,onick;
- i = FindPlayerRecord(p);
+ i = FindPlayerRecordGuaranteed(p);
  if (i == -1)
   return "";
  pip = ip[i];
@@ -1480,6 +1525,9 @@ function CheckMidGameBalance() {
   if (!bShowReason)
    problem = "";
   // TODO: if (bForceEvenTeams) { MidGameRebalance(True); return; }
+  if (bShowProposedSwitch && bOnlyFlashInvolvedPlayers) {
+   // TODO: Skip the flashing below, but allow the one in MidGameRebalance().
+  }
   // Send all players the team imbalance warning:
   if (bLetPlayersRebalance && bShowProposedSwitch) {
    // OK now we suggest who to move:
@@ -1645,8 +1693,9 @@ function SendPlayerToTeamspeak(PlayerPawn Sender) {
   // For teamspeak urls, append player name:
   if (StrContains(url,"teamspeak://") && StrContains(url,"?")) {
    nickname = StrFilterBadChars(Sender.getHumanName());
+   // CONSIDER DONE: We could also add a random number on the end, in case someone else is using the same nick.
+   nickname = nickname $ Int(FRand()*10);
    url = StrBeforeFirst(url,"?") $ "?nickname=" $ nickname $ "?" $ StrAfterFirst(url,"?");
-   // CONSIDER: We could also add a random number on the end, in case someone else is using the same nick.
   }
   Sender.ClientMessage(">> "$url);
   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Sending "$Sender.getHumanName()$" to "$StrAfterFirst(url,"://")); };
@@ -1863,7 +1912,7 @@ function RequestMidGameRebalance(PlayerPawn Sender) {
  local Pawn p;
  local string s;
  // If the last request was a long time ago (>1 minute), reset the request list
- if (lastRebalanceRequestTime < Level.TimeSeconds - 60) {
+ if (Level.TimeSeconds > lastRebalanceRequestTime+60) {
   for (i=0;i<64;i++) {
    pidsRequestingRebalance[i] = 0;
   }
@@ -2008,7 +2057,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
    timeInGame += 480.0;
    potentialNewDifference = Abs(currentDifference-playerStrength*2);
    // thisScore = (5+potentialNewDifference)*(5+potentialNewDifference)*timeInGame;
-   thisScore = ((5+potentialNewDifference)^(4.0 - 4.0*PreferenceToSwitchNewPlayers)) * (timeInGame^(2.0*PreferenceToSwitchNewPlayers));
+   thisScore = ((5+potentialNewDifference)^(4.0 - 4.0*FClamp(PreferenceToSwitchNewPlayers,0,1))) * (timeInGame^(2.0*FClamp(PreferenceToSwitchNewPlayers,0,1)));
    if (
      closestPlayer == None
      // We no longer check that it is actually less difference here, that is done at the end.
@@ -2121,7 +2170,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
        bothTimeInGame = bothTimeInGame * 0.5;
       bothTimeInGame += 480.0;
       // thisScore = bothTimeInGame*(5+potentialNewDifference)*(5+potentialNewDifference);
-      thisScore = (bothTimeInGame^(2.0*PreferenceToSwitchNewPlayers))*((5+potentialNewDifference)^(4.0 - 4.0*PreferenceToSwitchNewPlayers));
+      thisScore = (bothTimeInGame^(2.0*FClamp(PreferenceToSwitchNewPlayers,0,1)))*((5+potentialNewDifference)^(4.0 - 4.0*FClamp(PreferenceToSwitchNewPlayers,0,1)));
       if (thisScore < bestScore) {
        bestScore = thisScore;
        bestDifference = potentialNewDifference;
@@ -2172,6 +2221,7 @@ function ProposeChange(Pawn one, Pawn two) {
   msg = "Type !teams to swap "$one.getHumanName()$" with "$two.getHumanName();
   action = one.getHumanName()$" and "$two.getHumanName()$" switch";
  }
+ // TODO NOTE: Even with this on, all players still get the Flash "Teams look uneven ..."
  if (bOnlyFlashInvolvedPlayers) {
   // TODO: These messages might not be accurate, if the player we are flashing to is one of those who has already requested rebalance.
   if (two == None) {
@@ -2421,18 +2471,18 @@ function float GetFlagStrength() {
 // TODO: We should lean the proportion more towards current game, if known time for recorded player strength is <5 minutes.
 function float GetPlayerStrength(Pawn p) {
  local float timeInGame;
- if (StrengthProportionFromCurrentGame >= 1.0) {
-  return NormaliseScore(GetScoreForPlayer(p));
- }
- if (StrengthProportionFromCurrentGame <= 0.0) {
-  return GetRecordedPlayerStrength(p);
- }
- if (gameStartDone) {
-  timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
-  if (timeInGame > 180) {
-   return NormaliseScore(GetScoreForPlayer(p)) * StrengthProportionFromCurrentGame + GetRecordedPlayerStrength(p) * (1.0 - StrengthProportionFromCurrentGame);
+  if (StrengthProportionFromCurrentGame >= 1.0) {
+   return NormaliseScore(GetScoreForPlayer(p));
   }
- }
+  if (StrengthProportionFromCurrentGame <= 0.0) {
+   return GetRecordedPlayerStrength(p);
+  }
+  if (gameStartDone) {
+   timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
+   if (timeInGame > 180) {
+    return NormaliseScore(GetScoreForPlayer(p)) * StrengthProportionFromCurrentGame + GetRecordedPlayerStrength(p) * (1.0 - StrengthProportionFromCurrentGame);
+   }
+  }
  // We can't mix the values yet because the game hasn't started or the player has only just joined, so we must:
  return GetRecordedPlayerStrength(p);
 }
@@ -2442,7 +2492,7 @@ function float GetRecordedPlayerStrength(Pawn p) {
  if (!AllowedToRank(p) && !AllowedToBalance(p)) {
   return BotStrength;
  }
- found = FindPlayerRecord(p);
+ found = FindPlayerRecordGuaranteed(p);
  if (found == -1) {
   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Using UnknownStrength "$UnknownStrength$" for "$p.getHumanName()); };
   return UnknownStrength; // unknown player or player is too weak for list (should never happen - ok with STAGGER_LOOKUPS now it can happen!)
@@ -2515,7 +2565,7 @@ function CopyArraysIntoConfig() {
  local int i;
  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CopyArraysIntoConfig() "$GetDate()$" running"); };
  for (i=0; i<MaxPlayerData; i++) {
-  if (nick[i]=="" && ip[i]=="") {
+  if (( nick[i]=="" && ip[i]=="" )) {
    playerData[i] = "";
   } else {
    playerData[i] = ip[i] $ " " $ nick[i] $ " " $ avg_score[i] $ " " $ hours_played[i] $ " " $ date_last_played[i];
@@ -2523,6 +2573,8 @@ function CopyArraysIntoConfig() {
  }
  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CopyArraysIntoConfig() "$GetDate()$" done"); };
 }
+// The big disadvantage os using bUseISPNotFullIP, if that if a player changes nick, they may get matched to the record of another player on the same ISP, not their old record!
+// But if they have changed nick *and* part-ip, without bUseISPNotFullIP, they won't get any matches.  :P
 function String getIP(Pawn p) {
  if (p.IsA('PlayerPawn')) {
   return stripPort(PlayerPawn(p).GetPlayerNetworkAddress());
@@ -2530,8 +2582,6 @@ function String getIP(Pawn p) {
   return "0.0.0.0";
  }
 }
-// The big disadvantage os using bUseISPNotFullIP, if that if a player changes nick, they may get matched to the record of another player on the same ISP, not their old record!
-// But if they have changed nick *and* part-ip, without bUseISPNotFullIP, they won't get any matches.  :P
 /*
 */
 // Returns player name, with gametype and/or mutator signature appended
@@ -2571,7 +2621,12 @@ function String GetDBName(Pawn p) {
  }
  return str;
 }
-// function int FindPlayerRecord(Pawn p)
+// Tries to find the player record, but if it doesn't exist returns -1.
+function int FindPlayerRecord(Pawn p) {
+ // return -1;
+ return FindPlayerRecordGuaranteed(p);
+}
+// function int FindPlayerRecordGuaranteed(Pawn p)
 //
 // Will always return a valid exact record index, creating a new record if neccessary.
 //
@@ -2580,7 +2635,7 @@ function String GetDBName(Pawn p) {
 // record in that spot if necessary.  It calls FindPlayerRecordNoFastHash() to
 // do the actual lookup.  This makes it possible to call FindPlayerRecord(p)
 // frequently and efficiently.
-function int FindPlayerRecord(Pawn p) {
+function int FindPlayerRecordGuaranteed(Pawn p) {
  local int pid,i;
  local int found;
  // i = p.PlayerReplicationInfo.PlayerID % MaxPlayerData;
@@ -2705,15 +2760,29 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 function int CreateNewPlayerRecord(Pawn p) {
  local int pos;
  local int returned;
+ pos = -1;
+ // #ifdef CLEANUP14
+  // KEEP_EARLY_RECORDS_EMPTY has happened!
+  // Bah who cares, let's always scan for an empty one!
+ pos = FindEmptyPlayerRecordFast();
+ // #endif
+ if (pos<0 || pos >= MaxPlayerData) { // all records were full
+  // DONE: find the record with lowest hours_played and replace that one
+  // DONE: better, find the oldest record and replace it (we need last_date_played for that)
+  // TODO: first seek "oldest player record with min play-time", but if it fails, find "oldest player record"
+  //// This is what we should do (best yet guaranteed)
   pos = FindOldPlayerRecordFastDuringGame();
- if (bLogDeletedRecords) {
+ }
+ if (bLogDeletedRecords && !( nick[pos]=="" && ip[pos]=="" )) {
   ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CreateNewPlayerRecord() true" /*"$ gameStartDone*/ $" DEL ["$pos$"] "$ nick[pos] $" "$ ip[pos] $" "$ avg_score[pos] $" "$ hours_played[pos] $" "$ date_last_played[pos] $" (score "$ FindOldestPlayerRecordMeasure(pos) $")");;
  }
  if (pos<64)
-  bCached[pos] = 0;
+  bCached[pos] = 0; // DEBUGGING: if his bCached had been 1, this might be a live overwrite :f
+ // Check for PRECLEAR_SOME_RECORDS which we believe to be dangerous! :P
  if (p == None) {
   ClearRecord(pos);
  } else {
+  // Copy the pawn's vital data into his record before returning.
   ip[pos] = getIP(p);
   nick[pos] = GetDBName(p);
   avg_score[pos] = UnknownStrength;
@@ -2740,20 +2809,33 @@ function int CreateNewPlayerRecordInnerBatch(int posStart) {
  local int pos;
  // Find an empty slot:
  for (pos=posStart;pos<MaxPlayerData && pos<posStart+128;pos++) {
-  if (ip[pos] == "" && nick[pos] == "") {
+  if (( nick[pos]=="" && ip[pos]=="" )) {
    return pos;
   }
  }
  return -1;
 }
+// Find an empty record in the DB, starting at 0, or returns -1 if DB is full.
+// Use this if your DB is likely to have empty records at the start, or may have empty records scattered throughout.
+function int FindEmptyPlayerRecordFast() {
+ local int i;
+ for (i=0;i<MaxPlayerData;i++) {
+  if (( nick[i]=="" && ip[i]=="" )) {
+   return i;
+  }
+ }
+ return -1;
+}
+//// Best so far.  But don't use if there might be an empty record or an existing record for the pawn!!
+// #define FASTEST_FindOldPlayerRecordFast FindOldPlayerRecordMediumRandom
 function int FindOldPlayerRecordFastDuringGame() {
  if (gameStartDone && !Level.Game.bGameEnded)
-  return FindOldPlayerRecordFast();
+  return FindOldPlayerRecordMediumRandom();
  else
   return FindOldestPlayerRecordSlow();
 }
 // Compares 16 random records, and returns the one most eligible for deletion.
-function int FindOldPlayerRecordFast() {
+function int FindOldPlayerRecordMediumRandom() {
  local int i,j,bestI;
  local float age,bestAge,bestHours,now;
  local float bestScore,newScore;
@@ -2764,7 +2846,7 @@ function int FindOldPlayerRecordFast() {
  for (j=0;j<16;j++) {
    // i = MaxPlayerData * FRand();
    i = 64 + (MaxPlayerData-64) * FRand();
-  if (ip[i] == "" || nick[i] == "")
+  if (( nick[i]=="" && ip[i]=="" ))
    return i;
   age = currentDateDays - DaysFromDateString(date_last_played[i]);
   // if (j == 0 || (age > bestAge && hours_played[i] < bestHours)) {
@@ -2809,33 +2891,6 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
   // TODO: cache NumFromDateString_date_last_played_found throughout this fn
  }
  return found;
-}
-// This is actually pretty damn slow!
-// We could try cleaning up 1 per second during post-game.
-// But that still might not clear all in time!
-// And on really slow servers, it might take more than 1 second.  :P
-// On my machine, it does about 2 per second.
-function CleanupDatabase() {
- local int i;
- ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CleanupDatabase() Freeing records 0-64, to reduce in-game lag..."); };
- for (i=0;i<64;i++) {
-  if (nick[i] != "") {
-   MoveRecordIntoDB(i);
-  }
- }
- // This is so slow, we will do SaveConfig() after.
-}
-function MoveRecordIntoDB(int i) {
- local int j,found;
- found = 64;
- for (j=64;j<MaxPlayerData;j+=128) {
-  found = FindOldestPlayerRecordInnerBatch(found,j);
-  if (nick[found] == "") {
-   break; // An empty record - we can replace this!
-  }
- }
- ClearRecord(found);
- SwapPlayerRecords(i,found);
 }
 // NOTE: currentDateDays should have been set to DaysFromDateString(GetDate()) recently.
 function float AgeInDays(String dateString) {
