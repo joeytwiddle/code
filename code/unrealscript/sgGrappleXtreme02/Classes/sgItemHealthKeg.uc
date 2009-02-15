@@ -5,18 +5,20 @@ class sgItemDoubleJumpBoots extends sgaItem;
 
 simulated function PostBeginPlay() {
  Super.PostBeginPlay();
- InventoryType = String(class'DoubleJumpBoots');
+ InventoryType = String(class'HealthPack');
 }
 
 simulated function OnGive(Pawn Target, Inventory Inv) {
- DoubleJumpBoots(Inv).JumpHeight = DoubleJumpBoots(Inv).JumpHeight * (0.6 + 0.45*Grade/5);
+ if (Grade >= 0.1) {
+  HealthPack(Inv).HealingAmount = FClamp(100+Grade*100,100,200);
+ }
 }
 
 defaultproperties {
  // InventoryType="kxDoubleJump.DoubleJumpBoots"
  // InventoryClass=class'kxDoubleJump.DoubleJumpBoots'
  BuildingName="DoubleJump Boots"
- BuildCost=600
- UpgradeCost=50
+ BuildCost=100
+ UpgradeCost=20
  Model=LodMesh'Botpack.jboot'
 }

@@ -1015,6 +1015,9 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
           // He still gets 0.3 pull even if lineLength=0.
         }
       }
+      if (currentLength < lineLength-4.0) {
+        ;;
+      }
   /*
 
       // OK we have calculated what targetInVel should be.  But in fact we

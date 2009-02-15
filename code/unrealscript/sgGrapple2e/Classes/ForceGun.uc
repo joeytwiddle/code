@@ -424,6 +424,7 @@ simulated function MoveMeshes(float DeltaTime) {
     // if (sgTargetMesh==None || VSize(sgTargetMesh.Location-LTarget.Location)>=0.5) {
     // }
     if (meshCount==0 && FRand()<0.1) {
+     BroadcastMessage("Found no meshes for "$gun.Target);
     }
    }
   }
