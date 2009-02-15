@@ -1,4 +1,7 @@
-class SiegeGI expands SiegeGIFix;
+// When I built 2e, Shiva was testing SiegeGIFix with the fix for bNoTeamChanges.
+// He may resume using it again in the future.
+// class SiegeGI expands SiegeGIFix;
+class SiegeGI expands SiegeXXL2g.SiegeGI;
 
 // This gametype simply gives the player an extra item when he spawns.
 // The item adds the extra build items to his constructor, and this is
