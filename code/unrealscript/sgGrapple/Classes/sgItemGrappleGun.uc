@@ -14,7 +14,7 @@ defaultproperties {
 	// InventoryClass=class'kxGrapple.GrappleGun'
 	BuildingName="Grapple Gun"
 	BuildCost=1000
-	UpgradeCost=30
+	UpgradeCost=50
 	// Model=LodMesh'Botpack.Trans3loc'
 	Model=LodMesh'UnrealShare.GrenadeM'
 }

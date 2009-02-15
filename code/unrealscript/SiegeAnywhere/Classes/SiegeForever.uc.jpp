@@ -17,6 +17,8 @@ class SiegeForever extends Mutator config(SiegeForever);
 // TODO: The server sometimes segfaults when using reloaded Teleporters!  It was fine when I made 2 using my 1 playerpawn.
 // TODO: When we need to remove the data for a map, pick the map with fewest stored buildings, and for which buildings have not been loaded or saved for a long time.
 
+#define AUTO_SWITCH_VERSION
+
 // If you change any of these values, you must scrap your old .ini (or migrate it by hand), otherwise it will load the buildings of the wrong type in the wrong location on the wrong map with the wrong colour!
 // MAX_ALL must be the multiple of the other 3.
 #define MaxTeams 4
@@ -375,6 +377,12 @@ function int GetMapI(String map) {
 	return i;
 }
 
+function String GetSiegeVersion() {
+	return Left(String(Level.Game.class),Instr(String(Level.Game.class),"."));
+}
+
+#define AfterFirst(str,srch) Mid(str,Instr(str,srch)+Len(srch))
+
 function int GetTypeI(String type) {
 	local int i;
 	local int map,team;
@@ -382,6 +390,13 @@ function int GetTypeI(String type) {
 		if (Types[i] ~= type) {
 			return i;
 		}
+		#ifdef AUTO_SWITCH_VERSION
+		if (AfterFirst(Types[i],".") ~= AfterFirst(type,".")) {
+			// BroadcastMessage("Playing version "$GetSiegeVersion()$", converting "$ Types[i] $" to "$type);
+			// Types[i] = type;
+			return i;
+		}
+		#endif
 		// Empty slot:
 		if (Types[i] ~= "") {
 			break;
