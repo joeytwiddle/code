@@ -9,7 +9,7 @@ simulated event Tick(float DeltaTime) {
 	local float distance;
 	local Vector velocity;
 
-	foreach Self.RadiusActors(class'Actor',target,700) {
+	foreach Self.RadiusActors(class'Actor',target,1500) {
 		if (target != Self) {
 			if (target.IsA('PlayerPawn') || Target.IsA('Bot') || Target.IsA('Projectile')) {
 				distance = VSize(target.Location - Location);

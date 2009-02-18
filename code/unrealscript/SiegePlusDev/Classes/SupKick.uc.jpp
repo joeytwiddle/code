@@ -12,7 +12,7 @@ var Pawn LastHogger[MAX_HOGGERS];
 var float LastTime[MAX_HOGGERS];
 
 function PostBeginPlay() {
-	SetTimer(1.0,True);
+	SetTimer(3.0,True);
 	Log("SupKick will look for sgSuppliers of type "$ sgSearchClass);
 }
 
