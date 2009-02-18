@@ -1,0 +1,13 @@
+class AntiSupplierSpam expands Mutator;
+
+// halve damage taken by players in the supplier
+// optionally increase of reduce bounce
+// reduce RU of player who is attacking supplier
+// optionally supplier sometimes drops out weapons :)
+
+
+// if enemy strikes supplier while someone is in it, damage (and hence leeching) is reduced
+// also sup's ammo output is boosted!
+
+
+

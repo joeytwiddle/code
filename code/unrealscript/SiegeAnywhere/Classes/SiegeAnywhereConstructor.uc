@@ -10,10 +10,12 @@ class SiegeAnywhereConstructor extends sgConstructor config (SiegeAnywhere);
 
 
 var config bool bBlockBuildingOnKeypoints;
+var config float BlockRadius;
 var config float HealthBasedRUPerSec;
 
 defaultproperties {
  bBlockBuildingOnKeypoints=False // This is good for sensible games, but annoying for players.  Let admin turn it on.
+ BlockRadius=72
  HealthBasedRUPerSec=1.0 // For non Siege games, how much RU to give a player each second (if they have 100 health).
  // BuildCategories(2)=class'SiegeAnywhereCategoryItems'
  // BuildCategories(3)=class'SiegeAnywhereCategoryTeleport'
@@ -163,7 +165,7 @@ function bool ShouldNotBuild(class type, Vector Location, optional Pawn Owner) {
      || (p.IsA('Pickup') && Owner!=p.Owner && !Pickup(p).bHeldItem) // pickup point, and not my weapon, or held by another
     )
    &&
-    VSize(p.Location - Location) < 96
+    VSize(p.Location - Location) < BlockRadius
     // 128
     // 96 seemed a little too close to me; mines could still reach a player grabbing the flag.
     // I wouldn't mind expanding it even more.  Although it could end up blocking too much of the map.

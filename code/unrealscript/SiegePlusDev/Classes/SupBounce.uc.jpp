@@ -1,0 +1,77 @@
+class SupBounce expands Mutator;
+
+#define BounceReliefSeconds 1.0
+
+// #define sgSearchType sgSupplier
+// #define sgSearchClass class'sgSupplier'
+#define sgSearchType sgEquipmentSupplier
+#define sgSearchClass class'sgEquipmentSupplier'
+
+var float LastBounceTime;
+
+function PostBeginPlay() {
+	Super.PostBeginPlay();
+	// SetTimer(0.1,True);
+	Enable('Tick');
+	Log("SupBounce will look for sgSuppliers of type "$ sgSearchClass);
+}
+
+// event Timer() {
+simulated event Tick(float DeltaTime) {
+	local sgSearchType sup;
+	local Pawn p;
+	local float distance;
+	local Pawn inner,outer;
+	local float innerDist,outerDist;
+	Super.Timer();
+	if (Level.TimeSeconds < LastBounceTime+BounceReliefSeconds) {
+		return;
+	}
+	// TODO: what about supplierX?  SHOULD activate
+	// TODO: what about super supplier?  should NOT activate
+	foreach AllActors(sgSearchClass,sup) {
+		inner = None;
+		outer = None;
+		foreach sup.RadiusActors(class'Pawn',P,sup.CollisionRadius*1.5) {
+			if (P.IsA('Bot') || P.IsA('PlayerPawn')) {
+				if (P.PlayerReplicationInfo.Team != Sup.Team)
+					continue;
+				// BroadcastMessage(P.getHumanName()$" is inside Supplier!");
+				distance = VSize(sup.Location - P.Location);
+				// if (distance>350)
+					// continue;
+				if (inner == None || distance<innerDist) {
+					inner = P;
+					innerDist = distance;
+				}
+				if (outer == None || distance>outerDist) {
+					outer = P;
+					outerDist = distance;
+				}
+			}
+		}
+		if (inner!=None && outer!=None && inner!=outer) {
+			if (VSize(outer.Velocity) > 150) {
+				if (outer.Velocity Dot (sup.Location-outer.Location) > 0) {
+					inner.SetPhysics(PHYS_Falling);
+					inner.AddVelocity(outer.Velocity*1.2);
+					if (inner.Velocity.Z < 0)
+						inner.Velocity.Z = - inner.Velocity.Z;
+					// if (inner.Velocity.Z < 24)
+						// inner.Velocity.Z += 32;
+					if (inner.Velocity.Z < 240)
+						inner.Velocity.Z = 240;
+					outer.Velocity = outer.Velocity * 0.5;
+					// BroadcastMessage(outer.getHumanName()$" knocked "$inner.getHumanName()$" out of the supplier!");
+					// BroadcastMessage(outer.getHumanName()$" knocked "$inner.getHumanName()$" out of the supplier with velocity "$Int(VSize(inner.Velocity))$"!");
+					BroadcastMessage(outer.getHumanName()$" knocked "$inner.getHumanName()$" out of "$Sup$" with velocity "$Int(VSize(inner.Velocity))$"!");
+					// BroadcastMessage(outer.getHumanName()$" knocked "$inner.getHumanName()$" out of the supplier!");
+					LastBounceTime = Level.TimeSeconds;
+					return;
+				}
+			}
+		}
+	}
+}
+
+

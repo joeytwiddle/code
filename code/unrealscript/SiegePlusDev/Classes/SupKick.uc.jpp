@@ -1,0 +1,90 @@
+class SupKick expands Mutator;
+
+// related to maxteams
+#define MAX_HOGGERS 4
+
+// #define sgSearchType sgSupplier
+// #define sgSearchClass class'sgSupplier'
+#define sgSearchType sgEquipmentSupplier
+#define sgSearchClass class'sgEquipmentSupplier'
+
+var Pawn LastHogger[MAX_HOGGERS];
+var float LastTime[MAX_HOGGERS];
+
+function PostBeginPlay() {
+	SetTimer(1.0,True);
+	Log("SupKick will look for sgSuppliers of type "$ sgSearchClass);
+}
+
+event Timer() {
+	local sgSearchType sup;
+	local Pawn p;
+	local float distance;
+	local Pawn inner,outer;
+	local float innerDist,outerDist;
+	// TODO: what about supplierX?  SHOULD activate
+	// TODO: what about super supplier?  should NOT activate
+	foreach AllActors(sgSearchClass,sup) {
+		inner = None;
+		outer = None;
+		foreach sup.RadiusActors(class'Pawn',P,sup.CollisionRadius*1.5) {
+			if (P.IsA('Bot') || P.IsA('PlayerPawn')) {
+				if (P.PlayerReplicationInfo.Team != Sup.Team)
+					continue;
+				// BroadcastMessage(P.getHumanName()$" is inside Supplier!");
+				distance = VSize(sup.Location - P.Location);
+				// if (distance>350)
+					// continue;
+				if (inner == None || distance<innerDist) {
+					inner = P;
+					innerDist = distance;
+				}
+				if (outer == None || distance>outerDist) {
+					outer = P;
+					outerDist = distance;
+				}
+			}
+		}
+		/*
+		if (inner!=None && outer!=None && inner!=outer) {
+			if (VSize(inner.Velocity) > 80) {
+				if (outer.Velocity Dot (sup.Location-outer.Location) > 0) {
+					inner.Velocity = outer.Velocity*1.2;
+					if (inner.Velocity.Z < 0)
+						inner.Velocity.Z = - inner.Velocity.Z;
+					if (inner.Velocity.Z < 24)
+						inner.Velocity.Z += 32;
+					outer.Velocity *= 0.7;
+					BroadcastMessage(outer.getHumanName()$" knocked "$inner.getHumanName()$" out of the supplier!");
+					// BroadcastMessage(outer.getHumanName()$" knocked "$inner.getHumanName()$" out of the supplier!");
+				}
+			}
+		}
+		*/
+		if (inner == None) {
+			// We could clear last hogger
+			// We could set it to the player who bumped.
+		} else if (inner!=None && outer!=None && inner!=outer) {
+			// #define team (inner.PlayerReplicationInfo.Team)
+			// should really be sup's team
+			#define team (Sup.Team)
+			if (LastHogger[team]==inner && outer!=None) { // only if there is an outer player
+				// inner is still hogging!
+				inner.Velocity += VRand()*350.0;
+				inner.Velocity.Z = Abs(inner.Velocity.Z);
+				if (inner.Velocity.Z < 200)
+					inner.Velocity.Z = 200;
+				inner.SetPhysics(PHYS_Falling);
+				BroadcastMessage(inner.getHumanName()$" was kicked out of the supplier for "$outer.getHumanName()$""); // .
+				// LastHogger[team] = None; // If he stayed in, kick him again.
+			} else {
+				LastHogger[team] = inner;
+				break;
+				// Don't set LastHogger[team] again - this will break the algorithm!  We can kick other hoggers out later.
+			}
+		}
+	}
+
+}
+
+

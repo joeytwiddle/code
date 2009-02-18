@@ -1,0 +1,77 @@
+class VersionSelector expands Mutator;
+
+// var config 
+
+// TODO: various CheckReplace
+
+var name WeaponName, AmmoName;
+var string WeaponString, AmmoString;
+
+defaultproperties {
+	AmmoName=FlakAmmo
+	AmmoString="Botpack.flakammo"
+	WeaponString="Botpack.UT_FlakCannon"
+	DefaultWeapon=class'Botpack.UT_FlakCannon'
+	// OldName(0)=UT_FlakCannon
+	// Upgrade(0)="SiegeXXL2g.sgSupplier->SGX22frg.SGSuperSuperDuperSupplier"
+	// SCFLEADSupplier
+}
+
+function AddMutator(Mutator M) {
+	if ( M.IsA('Arena') ) {
+		Log("VersionSelector is blocking AddMutator("$M$") because it is an arena mutator.");
+		// TOTEST: Was the mutator's PostBeginPlay() called anyway? :o
+		return; //only allow one arena mutator
+	}
+	Super.AddMutator(M);
+}
+
+/*
+function bool AlwaysKeep(Actor Other) {
+	local bool bTemp;
+
+	if ( Other.IsA(WeaponName) ) {
+		Weapon(Other).PickupAmmoCount = Weapon(Other).AmmoName.Default.MaxAmmo;
+		return true;
+	}
+	if ( Other.IsA(AmmoName) ) {
+		Ammo(Other).AmmoAmount = Ammo(Other).MaxAmmo;
+		return true;
+	}
+
+	if ( NextMutator != None )
+		return ( NextMutator.AlwaysKeep(Other) );
+	return false;
+}
+*/
+
+function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
+	if (Other.IsA('WildcardsForceField') && ! Other.IsA('nBsgForceField')) {
+		Log("VersionSelector: Upgrading "$Other$" to nBsgForceField");
+		ReplaceWith(Other, "SiegePlusDev.nBsgForceField");
+		return false;
+	}
+	bSuperRelevant = 0;
+	return true;
+	/*
+	if ( Other.IsA('Weapon') ) {
+		if (WeaponString == "")
+			return false;
+		else if ((WeaponString != "") && !Other.IsA(WeaponName)) {
+			Level.Game.bCoopWeaponMode = false;
+			ReplaceWith(Other, WeaponString);
+			return false;
+		}
+	}
+	if ( Other.IsA('Ammo') ) {
+		if (AmmoString == "")
+			return false;
+		else if ((AmmoString != "") && !Other.IsA(AmmoName)) {
+			ReplaceWith(Other, AmmoString);
+			return false;
+		}
+	}
+	bSuperRelevant = 0;
+	return true;
+	*/
+}

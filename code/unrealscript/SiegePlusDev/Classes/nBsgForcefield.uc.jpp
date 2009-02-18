@@ -1,0 +1,25 @@
+// If detects foreign body within field radius, divert it's direction and speed, to "bounce" it away.  Take damage/wear.
+
+// I failed to catch this:
+// class sgForceField expands SiegeXtreme002.sgForceField;
+class nBsgForceField expands WildcardsForceField;
+
+simulated event Tick(float DeltaTime) {
+	local Actor target;
+	local float distance;
+	local Vector velocity;
+
+	foreach Self.RadiusActors(class'Actor',target,700) {
+		if (target != Self) {
+			if (target.IsA('PlayerPawn') || Target.IsA('Bot') || Target.IsA('Projectile')) {
+				distance = VSize(target.Location - Location);
+				if (FRand()<0.25) {
+					BroadcastMessage("Detected "$target$" inside field of "$Self$" at distance "$Int(distance));
+				}
+			}
+		}
+	}
+
+	Super.Tick(DeltaTime);
+}
+

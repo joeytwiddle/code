@@ -14,9 +14,9 @@ simulated function OnGive(Pawn Target, Inventory Inv) {
 defaultproperties {
 	// InventoryType="kxDoubleJump.DoubleJumpBoots"
 	// InventoryClass=class'kxDoubleJump.DoubleJumpBoots'
-	BuildingName="DoubleJump Boots"
+	BuildingName="Health Keg"
 	BuildCost=100
 	UpgradeCost=20
-	Model=LodMesh'Botpack.jboot'
+	Model=LodMesh'Botpack.hbox'
 }
 

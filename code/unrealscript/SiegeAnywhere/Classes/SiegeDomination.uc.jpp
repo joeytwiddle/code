@@ -22,3 +22,12 @@ defaultproperties
      GoalTeamScore=200.000000
 }
 
+// TODO: Replace the N domination points with an sgCore for each of the N teams
+// (this will require extending a SiegeGI gametype).  Even out the N teams at
+// gamestart.  If one core goes down, kill core, and move players to teams for
+// remaining cores.
+
+// CONSIDER: When a player jumps on a control point, he turns that core into
+// his colour, and gets DOM score and RU.
+
+

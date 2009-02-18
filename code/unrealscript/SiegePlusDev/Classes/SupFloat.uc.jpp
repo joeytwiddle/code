@@ -1,0 +1,133 @@
+class SupFloat expands Mutator;
+
+#define RadiusScale 3.0
+// 2.0 seems to be about the right horizontal radius, but it doesn't push the players vertically for long enough!
+
+// #define sgSearchType sgSupplier
+// #define sgSearchClass class'sgSupplier'
+#define sgSearchType sgEquipmentSupplier
+#define sgSearchClass class'sgEquipmentSupplier'
+// CONSIDER: Should also work for sgHealthPods and any other type of supplier?  To include healthpods, search for sgEquipmentSupplier instead of sgSupplier!
+
+function PostBeginPlay() {
+	Enable('Tick');
+	Log("SupFloat will look for sgSuppliers of type "$ sgSearchClass);
+}
+
+function Vector Flatten(Vector v) {
+	v.Z=0;
+	return v;
+}
+
+function float HorizontalDistance(vector A, vector B) {
+	A.Z=0;
+	B.Z=0;
+	return VSize(A-B);
+}
+
+simulated event Tick(float DeltaTime) {
+	local sgSearchType sup;
+	local Pawn p;
+	local float distance;
+	local Pawn inner,outer;
+	local float innerDist,outerDist;
+	// TODO: what about supplierX?  SHOULD activate
+	// TODO: what about super supplier?  should NOT activate
+	foreach AllActors(sgSearchClass,sup) {
+		inner = None;
+		outer = None;
+		foreach sup.RadiusActors(class'Pawn',P,sup.CollisionRadius*RadiusScale) {
+			if (P.IsA('Bot') || P.IsA('PlayerPawn')) {
+				if (P.PlayerReplicationInfo.Team != Sup.Team)
+					continue;
+				// BroadcastMessage(P.getHumanName()$" is inside Supplier!");
+				// distance = VSize(sup.Location - P.Location);
+				distance = HorizontalDistance(sup.Location,P.Location);
+				// if (distance>350)
+					// continue;
+				if (inner == None || distance<innerDist) {
+					inner = P;
+					innerDist = distance;
+				}
+				if (outer == None || distance>outerDist) {
+					outer = P;
+					outerDist = distance;
+				}
+			}
+		}
+
+		if (inner!=None && outer!=None && inner!=outer) {
+
+			// foreach sup.RadiusActors(class'Pawn',P,sup.CollisionRadius*RadiusScale) {
+
+				// inner = P;
+				P = inner;
+
+				if (P.IsA('Bot') || P.IsA('PlayerPawn')) {
+
+					// DONE: add tiny bit of horizontal velocity
+					P.AddVelocity( Flatten(4.0 * VRand()) );
+
+				// if (inner!=None) { // for testing
+				// if (outer!=None && inner!=outer) {
+					/*
+					if (inner.velocity.Z < 20) {
+						// todo- Check that he has weapons and ammo
+						inner.velocity.Z = 20;
+					}
+					*/
+					//// Cancel gravity for this tick, and add some float:
+					// P.Velocity.Z = P.Velocity.Z - DeltaTime*P.Region.Zone.ZoneGravity.Z + 6;
+					//// DONE: must we override gravity in tick?
+					//// BUG: This can be applied multiple times if he is sitting in multiple suppliers, giving him horrible upward boost!
+					// P.Velocity.Z = P.Velocity.Z - DeltaTime*P.Region.Zone.ZoneGravity.Z;
+
+					/*
+					// distance = VSize(sup.Location - P.Location);
+					distance = HorizontalDistance(sup.Location,P.Location);
+					// if (distance<4)
+						// distance=4;
+					// P.Velocity.Z = P.Velocity.Z + 24*FClamp(4/distance,0.0,1.0);
+					// P.Velocity.Z = P.Velocity.Z + 48*FClamp(1.0-1.0*distance/sup.CollisionRadius/RadiusScale,0,1);
+					P.Velocity.Z = P.Velocity.Z + 4.0*FClamp(1.0-1.0*distance/sup.CollisionRadius/RadiusScale,0,1);
+					*/
+
+					if (P.Velocity.Z < 4) {
+						P.Velocity.Z = 4;
+					}
+
+					if (P.Velocity.Z < -Region.Zone.ZoneGravity.Z/20) {
+						P.Velocity.Z = -Region.Zone.ZoneGravity.Z/20;
+					}
+
+					P.SetPhysics(PHYS_Falling);
+					// P.SetPhysics(PHYS_Flying); // I *think* this can get stuck on - he floats around other parts of the map! :P
+					// P.SetPhysics(PHYS_Floating); // PHYS_Floating does not exst!
+					// maybe faling at top?
+					// or none, let engine re-decide?
+					// P.SetPhysics(PHYS_None);
+					/*
+					if (VSize(P.Velocity) > 80) {
+						if (outer.Velocity Dot (sup.Location-outer.Location) > 0) {
+							P.Velocity = outer.Velocity*1.2;
+							if (P.Velocity.Z < 0)
+								P.Velocity.Z = - P.Velocity.Z;
+							if (P.Velocity.Z < 24)
+								P.Velocity.Z += 32;
+							outer.Velocity *= 0.7;
+							BroadcastMessage(outer.getHumanName()$" knocked "$P.getHumanName()$" out of the supplier!");
+							// BroadcastMessage(outer.getHumanName()$" knocked "$P.getHumanName()$" out of the supplier!");
+						}
+					}
+					*/
+
+				}
+
+			}
+
+		// }
+
+	}
+
+}
+

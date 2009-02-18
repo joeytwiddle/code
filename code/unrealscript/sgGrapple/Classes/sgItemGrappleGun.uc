@@ -6,7 +6,7 @@ simulated function PostBeginPlay() {
 }
 
 simulated function OnGive(Pawn Target, Inventory Inv) {
-	GrappleGun(Inv).ProjectileSpeed = GrappleGun(Inv).ProjectileSpeed * (1.25*Grade/5);
+	GrappleGun(Inv).ProjectileSpeed = GrappleGun(Inv).ProjectileSpeed * (0.5*Sqrt(0.02+Grade/5));
 }
 
 defaultproperties {
@@ -14,7 +14,7 @@ defaultproperties {
 	// InventoryClass=class'kxGrapple.GrappleGun'
 	BuildingName="Grapple Gun"
 	BuildCost=1000
-	UpgradeCost=50
+	UpgradeCost=100
 	// Model=LodMesh'Botpack.Trans3loc'
 	Model=LodMesh'UnrealShare.GrenadeM'
 }

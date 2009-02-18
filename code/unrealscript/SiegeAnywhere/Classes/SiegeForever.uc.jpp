@@ -2,6 +2,7 @@ class SiegeForever extends Mutator config(SiegeForever);
 
 // vim: filetype=uc
 
+// TODO: Optionally build all buildings as belonging to admin or current player.
 // CONSIDER: atm buildings stay with the server until the server drops them.  but we could associate saved buildings with the players that built them (or upgraded them).  that way, a player joining the game, brings his favourite buildings for the map with him.  dunno how desirable that is :P
 // TODO: spawn fairly - if we can detect that the map is symmetrical, for every building we spawn for red, build a clone in the other team's base.
 // BUG: If only 1 player is present at game start, all auto-loaded buildings will belong to him, and have an inner glow of his colour.
@@ -19,12 +20,34 @@ class SiegeForever extends Mutator config(SiegeForever);
 
 #define AUTO_SWITCH_VERSION
 
-// If you change any of these values, you must scrap your old .ini (or migrate it by hand), otherwise it will load the buildings of the wrong type in the wrong location on the wrong map with the wrong colour!
-// MAX_ALL must be the multiple of the other 3.
+#define DEV
+
+// TODO: VERSION_INDEPENDENCE
+
+// If you change any of these values, you must scrap your old .ini (or migrate
+//   it by hand), otherwise it may load the buildings of the wrong type in the
+//   wrong location on the wrong map with the wrong colour, and they may be
+//   impossible to remove.
 #define MaxTeams 4
 #define MaxMaps 48
 #define MaxTypes 20
+// MAX_ALL must be the multiple of the other 3.
+// #define MAX_ALL (MaxTeams*MaxMaps*MaxTypes)
 #define MAX_ALL 3840
+
+// #define MyLogHeader ("["$Self.class$"]")
+#define MyLogHeader "[SiegeForever]"
+#define WarnLog(X); if (true) { Log( MyLogHeader $" "$ X ); }
+#define InfoLog(X); if (true) { Log( MyLogHeader $" "$ X ); }
+#define DebugLog(X); 
+#ifdef DEV
+	#undef WarnLog
+	#define WarnLog(X); if (true) { Log( MyLogHeader $" "$ X ); BroadcastMessage( MyLogHeader $" "$ X ); }
+	// #undef InfoLog
+	// #define InfoLog(X); if (true) { Log( MyLogHeader $" "$ X ); BroadcastMessage( MyLogHeader $" "$ X ); }
+	#undef DebugLog
+	#define DebugLog(X); Log( MyLogHeader $" "$ X );
+#endif
 
 var config bool bAutoLoad,bSaveAtEnd,bAutoSave,bRememberOld,bSpawnFairly;
 var config bool bBroadcastInfo,bBroadcastSaves;
@@ -34,6 +57,8 @@ var config String Types[MaxTypes]; // 0-MaxTypes
 var config String BuildingsData[MAX_ALL]; // 0-(MaxTeams*MaxTypes*MaxMaps)
 var config bool bPlayersMaySave,bPlayersMayLoad,bPlayersMayClear;
 
+var Pawn redOwner,blueOwner;
+var int CurrentLoadingIndex;
 var bool bDoneLoad;
 
 // var String SavedTypes;
@@ -55,14 +80,19 @@ defaultproperties {
 	bBroadcastSaves=False
 }
 
-function PreBeginPlay() {
-	Super.PreBeginPlay();
-	SetTimer(12,True);
+// PreBeginPlay was too early - UpgradeTypes couldn't get the Level.Game.GameReplicationInfo
+function PostBeginPlay() {
+	Super.PostBeginPlay();
+	#ifdef AUTO_SWITCH_VERSION
+	UpgradeTypes();
+	#endif
+	SetTimer(5,True);
 }
 
 event Timer() {
 	if (bAutoLoad && !bDoneLoad && !DeathMatchPlus(Level.Game).bTournament) {
-		TryToLoadBuildings();
+		// TryToLoadBuildings();
+		LoadSomeBuildings();
 		return;
 	}
 	if (bDoneLoad && bAutoSave && !DeathMatchPlus(Level.Game).bTournament)
@@ -70,39 +100,45 @@ event Timer() {
 }
 
 function Mutate(String str, PlayerPawn Sender) {
-	Super.Mutate(str,Sender);
 	// You do not need to be an admin to save the buildings:
 	// TODO: This is nice that anyone can do it, but since it causes lag, we don't really want players spamming it mid-game.
 	// DONE: They can't do it during Tournament games.
-	if (DeathMatchPlus(Level.Game).bTournament && !Sender.bAdmin)
-		return;
-	if ( (Sender.bAdmin || bPlayersMaySave)
-		&& (str ~= "SAVE" || str ~= "SAVEBUILDINGS")
-	) {
-		SaveBuildings();
-	}
-	// Only an admin can run these commands, or any player in the first 10 seconds of the game.
-	if ( (Sender.bAdmin || bPlayersMayLoad)
-		&& (str ~= "LOAD" || str ~= "LOADBUILDINGS")
-	) {
-		TryToLoadBuildings();
-		if (bBroadcastInfo) {
-			BroadcastMessage(Sender.getHumanName()$" has loaded some buildings.  Type mutate save to save them..");
+	DebugLog("SiegeForever.Mutate(\""$str$"\") was called.");
+	if (DeathMatchPlus(Level.Game).bTournament && !Sender.bAdmin) {
+	} else {
+		if ( (Sender.bAdmin || bPlayersMaySave)
+			&& (str ~= "SAVE" || str ~= "SAVEBUILDINGS")
+		) {
+			SaveBuildings();
+		}
+		// Only an admin can run these commands, or any player in the first 10 seconds of the game.
+		if ( (Sender.bAdmin || bPlayersMayLoad)
+			&& (str ~= "LOAD" || str ~= "LOADBUILDINGS")
+		) {
+			TryToLoadBuildings();
+			if (bBroadcastInfo) {
+				BroadcastMessage(Sender.getHumanName()$" has loaded some buildings.  Type mutate save to save them..");
+			}
+		}
+		if ( (Sender.bAdmin || bPlayersMayClear)
+			&& (str ~= "CLEAR" || str ~= "CLEARBUILDINGS" || str ~= "KILLBUILDINGS" || str ~= "RESET")
+		) {
+			// DONE: might be a good idea to save them first!  But not if the map is currently empty or sparse.
+			// Admin Clear does NOT save them.  He can clear broken buildings and exploits.
+			if (!Sender.bAdmin) {
+				SaveBuildings();
+			}
+			KillAllBuildings(); // Admin could also try: admin killall sgBuilding
+			// FINE IMO: Is admin wanting to clear current game, changes this game, or all history for this map?  He's currently doing the middle one.
+			if (bBroadcastInfo) {
+				BroadcastMessage(Sender.getHumanName()$" cleared all the buildings.  Type mutate load to reload them.");
+			}
 		}
 	}
-	if ( (Sender.bAdmin || bPlayersMayClear)
-		&& (str ~= "CLEAR" || str ~= "CLEARBUILDINGS" || str ~= "KILLBUILDINGS" || str ~= "RESET")
-	) {
-		// TODO: might be a good idea to save them first!  But not if the map is currently empty or sparse.
-		KillAllBuildings(); // Admin could also try: admin killall sgBuilding
-		if (bBroadcastInfo) {
-			BroadcastMessage(Sender.getHumanName()$" cleared all the buildings.  Type mutate load to reload them.");
-		}
-	}
+	Super.Mutate(str,Sender);
 }
 
-function TryToLoadBuildings() {
-	local Pawn redOwner,blueOwner;
+function GetRedBluePawns() {
 	local Pawn p;
 	redOwner = None;
 	blueOwner = None;
@@ -120,29 +156,49 @@ function TryToLoadBuildings() {
 			}
 		}
 	}
+}
+
+function TryToLoadBuildings() {
+	GetRedBluePawns();
 	if (redOwner != None && blueOwner != None) {
-		LoadBuildings(redOwner,blueOwner);
+		LoadBuildings();
 		if (bBroadcastInfo) {
 			BroadcastMessage("Buildings were loaded.  Type mutate clear to remove them.");
 		}
-		bDoneLoad=True;
+		bDoneLoad = True;
 		SetTimer(60,True);
 	} else {
-		if (FRand()<0.1)
-			Log("SiegeAnywhere.SiegeForever.TryToLoadBuildings() Waiting for red and blue Pawns...");
+		if (FRand()<0.01) {
+			DebugLog("SiegeAnywhere.SiegeForever.TryToLoadBuildings() Waiting for red and blue Pawns...");
+		}
+	}
+}
+
+function LoadSomeBuildings() {
+	GetRedBluePawns();
+	// if (redOwner != None && blueOwner != None) {
+	if (redOwner != None && blueOwner != None) {
+		if (CurrentLoadingIndex >= MaxTypes) {
+			bDoneLoad = True;
+			SetTimer(60,True);
+			return;
+		}
+		LoadBuildingsType(CurrentLoadingIndex);
+		CurrentLoadingIndex++;
+		SetTimer(1.0,True);
 	}
 }
 
 function KillAllBuildings() {
 	local sgBuilding b;
-	foreach AllActors(class'sgBuilding',b) {
+	foreach AllActors(class'sgBuilding',b) { // TODO: VERSION_INDEPENDENCE
 		b.Destroy();
 	}
 }
 
 function TrimRecord(int j) {
 	local int i;
-	if (len(BuildingsData[j]) > 36*32) {
+	if (len(BuildingsData[j]) > 22*32) {
 		// BuildingsData[j] = Right(BuildingsData[j],36*32);
 		i = InstrOff(BuildingsData[j],":",len(BuildingsData[j])/4);
 		BuildingsData[j] = Mid(BuildingsData[j],i+1);
@@ -169,10 +225,56 @@ function Pawn GetRandomPlayer(int team) {
 	return None;
 }
 
-function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
-	local int i,j,k,l,team;
+#ifdef AUTO_SWITCH_VERSION
+#define AfterFirst(str,srch) Mid(str,Instr(str,srch)+Len(srch))
+#define BeforeFirst(str,srch) Left(str,Instr(str,"."))
+
+function String GetSiegeVersion() {
+	//// Whatever we were compiled against.
+	return BeforeFirst(String(class'sgBuilding'),".");
+	//// Good but doesn't work during Pre or PostBeginPlay().
+	// if (Level.Game!=None && Level.Game.GameReplicationInfo!=None)
+		// return BeforeFirst(String(Level.Game.GameReplicationInfo.class),"."); // Should work more often.
+	//// Fails on SiegeGIFix and sgGrappleNNN.SiegeGI.
+	// else
+		// return BeforeFirst(String(Level.Game.class),".");
+	// return "";
+}
+
+function UpgradeTypes() {
+	local int i;
+	local String newType;
+	local class<Actor> targetClass;
+	for (i=0;i<MaxTypes;i++) {
+		if (Types[i] == "")
+			continue;
+		if (! (BeforeFirst(Types[i],".") ~= GetSiegeVersion()) ) {
+			// Can we load this type of building in the new siege version?
+			newType = GetSiegeVersion() $"."$ AfterFirst( Types[i] ,".") ;
+			targetClass = class<Actor>(DynamicLoadObject(newType, class'Class'));
+			if (targetClass == None) {
+				WarnLog("Could not upgrade "$ Types[i] $" to "$newType);
+			} else {
+				WarnLog("Upgrading "$ Types[i] $" to "$newType);
+				Types[i] = newType;
+			}
+		}
+	}
+}
+#endif
+
+function LoadBuildings() {
+	local int i;
+	// local string LoadedTypes;
+	for (i=0;i<MaxTypes;i++) {
+		LoadBuildingsType(i);
+	}
+}
+
+function LoadBuildingsType(int TypeI) {
+	local int j,k,l,team;
 	local string type,buildingLocation,map;
-	local class<sgBuilding> typeClass;
+	local class<Actor> typeClass;
 	local int countStored[MaxTeams];
 	local int maxToSpawn;
 	local int countSpawned[MaxTeams];
@@ -181,98 +283,115 @@ function LoadBuildings(Pawn redOwner, Pawn blueOwner) {
 	local Actor sgB;
 	local Pawn pOwner;
 	local int resetTeam;
+	type = Types[TypeI];
 	map = GetMap();
-	// local string LoadedTypes;
-	for (i=0;i<MaxTypes;i++) {
-		type = Types[i];
-		if (type == "")
-			break;
-		// typeClass = Class(type);
-		// typeClass = class<sgBuilding>(DynamicLoadObject("SiegeXXL2dRC1.sgBuilding", class'Class'));
-		typeClass = class<sgBuilding>(DynamicLoadObject(type, class'Class'));
-		// Count how many buildings of this type each team has stored:
-		maxToSpawn = 9999;
-		for (team=0;team<MaxTeams;team++) {
-			j = GetBuildingsI(map,type,team);
-			countStored[team] = 0;
-			k = 0;
-			while (true) {
-				l = InstrOff(BuildingsData[j],":",k);
-				if (l>-1) {
-					countStored[team]++;
-					k = l+1;
-				} else {
-					break;
-				}
-			}
-			if (countStored[team] < maxToSpawn)
-				maxToSpawn = countStored[team];
-		}
-		// Go ahead and spawn buildings of this type:
-		for (team=0;team<MaxTeams;team++) {
-			if (bSpawnFairly)
-				numToSkip = countStored[team] - maxToSpawn;
-			countSpawned[team]=0;
-			j = GetBuildingsI(map,type,team);
-			TrimRecord(j);
-			Log("SiegeForever.LoadBuildings(): "$type$" "$team$" BuildingsData["$j$"] = \""$BuildingsData[j]$"\"");
-			k = 0;
-			while (true) {
-				l = InstrOff(BuildingsData[j],":",k);
-				if (l>-1) {
-					buildingLocation = Mid(BuildingsData[j],k,l-k);
-					if (buildingLocation != "") { // could also check for 2 ","s and 3 "."s
-						if (bSpawnFairly && numToSkip>0) {
-							numToSkip--;
-						} else {
-							pOwner = GetRandomPlayer(team);
-							if (pOwner == None) { // Might happen if only 1 player is present.
-								// redOwner and blueOwner are guaranteed to have values, even if there are no red players present.
-								if (team == 0)
-									pOwner = redOwner;
-								if (team == 1)
-									pOwner = blueOwner;
-							}
-							resetTeam = pOwner.PlayerReplicationInfo.Team;
-							if (pOwner.PlayerReplicationInfo.Team != team)
-								pOwner.PlayerReplicationInfo.Team = team;
-							// TODO: If there is already a building of the same type at almost this exact location, do not build a second.
-							sgB = Spawn(typeClass,pOwner,,Vector(buildingLocation));
-							pOwner.PlayerReplicationInfo.Team = resetTeam;
-							if (sgB == None) {
-								Log("SiegeForever.LoadBuildings(): Failed to spawn "$type$" "$typeClass$" at ("$buildingLocation$")");
-							} else {
-								sgBuilding(sgB).Team = team;
-								sgBuilding(sgB).Grade = 2;
-								if (FRand() < 0.5)
-									sgBuilding(sgB).Grade = 3;
-								// Build faster than normal.  Randomize for twinkle! :D
-								// TODO: even prettier (but harder) would be to slightly stagger the spawning.
-								// sgBuilding(sgB).BuildTime = sgBuilding(sgB).BuildTime / (2+FRand()*4);
-								// sgBuilding(sgB).Energy = 75.0;
-								// sgBuilding(sgB).Energy = sgBuilding(sgB).MaxEnergy;
-								sgBuilding(sgB).SCount = sgBuilding(sgB).SCount / (3+FRand()*7);
-								// sgBuilding(sgB).Health = 75.0;
-								// sgBuilding(sgB).DoneBuilding = True;
-								// Log("SiegeForever.LoadBuildings(): Spawned "$sgB$" ("$Pawn(sgB.Owner).PlayerReplicationInfo.Team$")");
-								countSpawned[team]++;
-							}
-						} // else don't spawn it, for fairness!
-					}
-					k = l+1;
-				} else {
-					break;
-				}
-			}
-		}
-		if (countSpawned[0]>0 || countSpawned[1]>0) {
-			if (bBroadcastInfo) {
-				BroadcastMessage("Spawned "$countSpawned[0]$" x "$StrAfterLast(type,".")$" for Red, and "$countSpawned[1]$" for Blue.");
-			}
-			Log("Spawned "$countSpawned[0]$" "$type$"s for Red, and "$countSpawned[1]$" for Blue.");
-		}
-		// LoadedTypes = LoadedTypes $ ":" $ type $ ":";
+	/*
+	#ifdef AUTO_SWITCH_VERSION
+	if (type != Types[GetTypeI(type)]) {
+		WarnLog("We called GetTypeI() for the sake of AUTO_SWITCH_VERSION, but got a different number back!");
 	}
+	#endif
+	*/
+	if (type == "")
+		return;
+	// typeClass = Class(type);
+	// typeClass = class<sgBuilding>(DynamicLoadObject("SiegeXXL2dRC1.sgBuilding", class'Class'));
+	typeClass = class<Actor>(DynamicLoadObject(type, class'Class'));
+	// Count how many buildings of this type each team has stored:
+	maxToSpawn = 9999;
+	for (team=0;team<MaxTeams;team++) {
+		j = GetBuildingsI(map,type,team);
+		if (BuildingsData[j] != "") {
+			InfoLog("SiegeForever.LoadBuildingsType("$TypeI$") has BuildingsData["$j$"] = \""$ BuildingsData[j] $"\"");
+		}
+		countStored[team] = 0;
+		k = 0;
+		while (true) {
+			l = InstrOff(BuildingsData[j],":",k);
+			if (l>-1) {
+				countStored[team]++;
+				k = l+1;
+			} else {
+				break;
+			}
+		}
+		if (team<2 && countStored[team] < maxToSpawn)
+			maxToSpawn = countStored[team];
+	}
+	InfoLog("SiegeForever.LoadBuildingsType("$TypeI$"): "$type$" spawning max="$maxToSpawn$" since redcount="$countStored[0]$" bluecount="$countStored[1]);
+	// Go ahead and spawn buildings of this type:
+	for (team=0;team<MaxTeams;team++) {
+		if (bSpawnFairly) {
+			numToSkip = countStored[team] - maxToSpawn;
+			DebugLog("SiegeForever.LoadBuildingsType("$TypeI$"): Skipping "$numToSkip$" / "$countStored[team]$" buildings of type "$type$" belonging to team "$team$" for fairness.");
+		} // else numToSkip should sit at default 0
+		countSpawned[team]=0;
+		j = GetBuildingsI(map,type,team);
+		TrimRecord(j);
+		k = 0;
+		while (true) {
+			l = InstrOff(BuildingsData[j],":",k);
+			if (l>-1) {
+				buildingLocation = Mid(BuildingsData[j],k,l-k);
+				if (buildingLocation != "") { // could also check for 2 ","s and 3 "."s
+					if (bSpawnFairly && numToSkip>0) {
+						numToSkip--;
+					} else {
+						pOwner = GetRandomPlayer(team);
+						if (pOwner == None) { // Might happen if only 1 player is present.
+							// redOwner and blueOwner are guaranteed to have values, even if there are no red players present.
+							if (team == 0)
+								pOwner = redOwner;
+							if (team == 1)
+								pOwner = blueOwner;
+						}
+						resetTeam = pOwner.PlayerReplicationInfo.Team;
+						if (pOwner.PlayerReplicationInfo.Team != team)
+							pOwner.PlayerReplicationInfo.Team = team;
+						// TODO: If there is already a building of the same type at almost this exact location, do not build a second.
+						sgB = Spawn(typeClass,pOwner,,Vector(buildingLocation));
+						pOwner.PlayerReplicationInfo.Team = resetTeam;
+						if (sgB == None) {
+							WarnLog("SiegeForever.LoadBuildingsType("$TypeI$"): Failed to spawn "$type$" "$typeClass$" at ("$buildingLocation$")");
+						} else {
+							// TODO: VERSION_INDEPENDENCE
+							// sgB.Team = team;
+							// Pawn(sgB).Team = team;
+							sgBuilding(sgB).Team = team;
+							sgBuilding(sgB).Grade = 2;
+							if (FRand() < 0.4)
+								sgBuilding(sgB).Grade = 3;
+							// Build faster than normal.  Randomize for twinkle! :D
+							// TODO: even prettier (but harder) would be to slightly stagger the spawning.
+							// sgBuilding(sgB).BuildTime = sgBuilding(sgB).BuildTime / (2+FRand()*4);
+							// sgBuilding(sgB).Energy = 75.0;
+							// sgBuilding(sgB).Energy = sgBuilding(sgB).MaxEnergy;
+							// sgBuilding(sgB).SCount = sgBuilding(sgB).SCount / (3+FRand()*7);
+							// sgBuilding(sgB).SCount = sgBuilding(sgB).SCount / (3+FRand()*3);
+							sgBuilding(sgB).SCount = (20 + FRand()*80);
+							// sgBuilding(sgB).Health = 75.0;
+							// sgBuilding(sgB).DoneBuilding = True;
+							// InfoLog("SiegeForever.LoadBuildingsType("$TypeI$"): Spawned "$sgB$" ("$Pawn(sgB.Owner).PlayerReplicationInfo.Team$")");
+							countSpawned[team]++;
+						}
+					} // else don't spawn it, for fairness!
+				}
+				k = l+1;
+			} else {
+				break;
+			}
+		}
+	}
+	if (countSpawned[0]>0 || countSpawned[1]>0) {
+		if (bBroadcastInfo) {
+			BroadcastMessage("Spawned "$countSpawned[0]$" x "$StrAfterLast(type,".")$" for Red, and "$countSpawned[1]$" for Blue.");
+		}
+		InfoLog("Spawned "$countSpawned[0]$" "$type$"s for Red, and "$countSpawned[1]$" for Blue.");
+	}
+	if (countSpawned[0]==0 && countSpawned[1]==0 && (countStored[0]>0 || countStored[1]>0)) {
+		WarnLog("Blocked loading of "$type$" despite redcount="$countStored[0]$" and bluecount="$countStored[1]);
+	}
+	// LoadedTypes = LoadedTypes $ ":" $ type $ ":";
 }
 
 function SaveBuildings() {
@@ -280,13 +399,15 @@ function SaveBuildings() {
 	local string SavedTypes,type,map;
 	local sgBuilding A;
 
-	// This check just ensures we don't override old map data, when we don't even have any buildings to save anyway.
 	count = 0;
+	InfoLog("SaveBuildings() searching for siege buildings like "$ class'sgBuilding');
 	foreach AllActors(class'sgBuilding',A) {
 		if (!A.IsA('sgBaseCore')) {
 			count++;
 		}
 	}
+	InfoLog("SaveBuildings() saw "$count);
+	//// This check just ensures we don't override old map data, when we don't even have any buildings to save anyway.
 	if (count == 0) {
 		// No buildings to save.  If invoked by user, as opposed to auto-run, we should really tell them we failed.
 		return;
@@ -330,7 +451,7 @@ function SaveBuildings() {
 	if (bBroadcastSaves) {
 		BroadcastMessage("Saved "$(TypeI+1)$" types of building, "$count$" new.");
 	}
-	Log("Saved "$(TypeI+1)$" types of building, "$count$" new.");
+	InfoLog("Saved "$(TypeI+1)$" types of building, "$count$" new.");
 }
 
 function int GetBuildingsI(String map, String type, int team) {
@@ -367,21 +488,15 @@ function int GetMapI(String map) {
 		if (bBroadcastInfo) {
 			BroadcastMessage("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
 		}
-		Log("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
+		WarnLog("SiegeForever: Ran out of slots for maps!  "$Maps[i]$" will be replaced by "$map);
 	}
 	Maps[i] = map;
-	Log("Clearing all data for map "$i$" ("$map$")");
+	WarnLog("Clearing all data for map "$i$" ("$map$")");
 	for (type=0;type<MaxTypes;type++)
 		for (team=0;team<MaxTeams;team++)
 			BuildingsData[ GetBuildingsI(map,Types[type],team) ] = "";
 	return i;
 }
-
-function String GetSiegeVersion() {
-	return Left(String(Level.Game.class),Instr(String(Level.Game.class),"."));
-}
-
-#define AfterFirst(str,srch) Mid(str,Instr(str,srch)+Len(srch))
 
 function int GetTypeI(String type) {
 	local int i;
@@ -390,13 +505,15 @@ function int GetTypeI(String type) {
 		if (Types[i] ~= type) {
 			return i;
 		}
+		/*
 		#ifdef AUTO_SWITCH_VERSION
 		if (AfterFirst(Types[i],".") ~= AfterFirst(type,".")) {
-			// BroadcastMessage("Playing version "$GetSiegeVersion()$", converting "$ Types[i] $" to "$type);
-			// Types[i] = type;
+			WarnLog("Playing version "$GetSiegeVersion()$", converting "$ Types[i] $" to "$type);
+			Types[i] = type;
 			return i;
 		}
 		#endif
+		*/
 		// Empty slot:
 		if (Types[i] ~= "") {
 			break;
@@ -407,10 +524,10 @@ function int GetTypeI(String type) {
 		if (bBroadcastInfo) {
 			BroadcastMessage("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
 		}
-		Log("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
+		WarnLog("SiegeForever: Ran out of slots for types!  "$Types[i]$" will be replaced by "$type);
 	}
 	Types[i] = type;
-	Log("Clearing all data for type "$i$" ("$type$")");
+	WarnLog("Clearing all data for type "$i$" ("$type$")");
 	for (map=0;map<MaxMaps;map++)
 		for (team=0;team<MaxTeams;team++)
 			BuildingsData[ GetBuildingsI(Maps[map],type,team) ] = "";
