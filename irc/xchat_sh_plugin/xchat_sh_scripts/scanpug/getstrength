@@ -1,15 +1,21 @@
+if [ "$1" = -andcount ]
+then ANDCOUNT=1; shift
+fi
+
 AUTH="$1"
 if [ "$AUTH" = "DUNNO_AUTH" ]
 then echo "?.?"
 else
 	COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+	PLUSCOUNT=""
+	[ "$ANDCOUNT" ] && PLUSCOUNT=" $COUNT"
 	if [ "$COUNT" -gt 0 ]
 	then
 		SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
 		STRENGTH=$((10*SUM/COUNT))
 		STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
-		echo "$STRENGTH"
+		echo "$STRENGTH$PLUSCOUNT"
 	else
-		echo "?.?"
+		echo "?.?$PLUSCOUNT"
 	fi
 fi

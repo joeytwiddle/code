@@ -10,6 +10,7 @@ EXPLAIN_TO="$1"
 if [ "$1" = "" ]
 then echo "/msg $NICK You need to give me the nick of the person you want me to explain PUG to :P"
 else
+	echo "/notice $NICK Sending info to $EXPLAIN_TO ..."
 	echo "/msg $EXPLAIN_TO $NICK asked me to tell you..."
 	echo "/msg $EXPLAIN_TO PUG means \"pick up game\" - it's like a spontaneous clanwar.  We meet in #ut.pug or #ut994funpug or #noobpug, and once 10 players sign up, two teams are chosen, and we go to play a war!"
 	echo "/msg $EXPLAIN_TO It's good for practicing communication through TeamSpeak, and experiencing new teamwork with different players."
@@ -18,6 +19,6 @@ else
 	echo "/msg $EXPLAIN_TO People who sign up for a pug but miss it, get banned, for causing inconvenience to the other players."
 	echo "/msg $EXPLAIN_TO The pug tries to make fair teams, by letting each captain choose players in turn.  So it's also IMPORTANT: don't make yourself a captain unless you know the skills of all the players in the pug!"
 	echo "/msg $EXPLAIN_TO Type !rules in the pug channel for the full set of rules for this pug.  Abusing the pug rules can result in a temporary or permanent ban."
-	echo "/msg $EXPLAIN_TO Also, before you add to pug, it's useful to check you can join the server.  Type !ip1 for the server IP.  If you get kicked out by UTDC then you need to install UTDC 1.7 and/or 1.8 from http://ut-files.com/Anticheat/UTDC/"
+	echo "/msg $EXPLAIN_TO Also, before you add to pug, it's useful to check you can join the server.  Type !ip1 for the server IP.  If you get kicked out by UTDC then you need to install UTDC 2.1 from http://ut-files.com/Anticheat/UTDC/"
 fi
 

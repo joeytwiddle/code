@@ -13,20 +13,21 @@ fi
 NL='\
 '
 
-PLAYER=`echo "$PLAYER" | sed 's+\`+\\\\\`+g'`
+echo -n "$COLRED$PLAYER$COLRESET: "
 
-BOTHLINES=`
-
-# wget "http://www.rork.nl/fox/xol/ranking.php?nick=$PLAYER" -O - 2>/dev/null |
+# wget -nv "http://www.rork.nl/fox/xol/ranking.php?nick=$PLAYER" -O - 2>/dev/null |
 # wget -nv "http://www.rork.nl/fox/xol/player.pl?nick=$PLAYER" -O - 2>/dev/null |
-memo -t "600 seconds" wget -nv "http://www.rork.nl/ut/index.php?page=7&nick=$PLAYER" -O - 2>/dev/null |
+memo -t "10 minutes" wget -nv "http://www.rork.nl/ut/index.php?page=7&nick=$PLAYER" -O - 2>/dev/null |
 
 fromhtml |
 
 # fromline "Records" |
-fromline -x "^Country:" |
+fromline -x "^Stats for " |
 # toline -x "Last matches" |
-toline -x "All time stats" |
+toline -x "^Last matches played$" |
+
+## Remove the third column from 3-column display, e.g. "Rank: 59 20"
+sed 's+^\([A-Za-z ]*: *[0-9hm]*\) *[0-9hm]*+\1+' |
 
 tr '\n' ' ' | tr -s ' ' |
 
@@ -37,73 +38,45 @@ sed 's+This month['"'"']*s stats+\n\0+' |
 
 sed 's+: +:+g' |
 
-# sed 's+Records[ ]*$++' |
-
-sed "s+\<Highscore:\([0-9]*\)+\1 hiscore+g" |
-sed "s+\<Most covers:\([0-9]*\)+\1 covers+g" |
-sed "s+\<Fastest cap:\([0-9hms]*\) \([0-9hms]*\)+\1\2 fastcap+g" |
-
-## This colours numbers - we must do it *before* adding any other colour codes, or the colours codes will get mangled!
-sed "s+\<[0-9-][0-9hms]*\>+$COLGREEN\0$COLRESET+g" |
-# sed "s+\<[0-9-][0-9]*\>+$COLGREEN\0$COLRESET+g" |
-
-sed "s+ Map records +\n$COLYELLOW""Records$COLRESET: +" |
+sed 's+Records[ ]*$++' |
 
 sed 's+ seconds+s+g' |
 
+sed "s+\<[0-9][0-9]*\([hms]\|\)\>+$COLGREEN\0$COLRESET+g" |
+
 # sed "s+Records+$NL$COLYELLOW""Records$COLRESET:+" |
 # sed "s+Records+$COLYELLOW""Records$COLRESET:+" |
+sed "s+Map records+\n$COLYELLOW""Map records$COLRESET:+" |
 # sed "s+This month[']*s stats+$COLYELLOW\0$COLRESET:+" |
-# sed "s+This month[']*s stats ++" |
+sed "s+This month[']*s stats ++" |
 
-# sed "s+\<Highscore:\([0-9]*\)+$COLGREEN\1 hiscore$COLRESET+g" |
-# sed "s+\<Most covers:\([0-9]*\)+$COLYELLOW\1 covers$COLRESET+g" |
-# sed "s+\<Fastest cap:\([0-9hms]*\) \([0-9hms]*\)+$COLRED\1\2 fastcap$COLRESET+g" |
-
-# sed "s+CTF-[^ ]*+$COLBLUE\0$COLRESET+g" |
 sed "s+CTF-[^ ]*+$COLGREY\0$COLRESET+g" |
+
 # sed "s+^Nickname:\([^ ]*\)+$COLRED$COLBOLD\1$COLRESET:+" |
 
-sed "s+.*Stats for \([^ ]*\)+$COLRED\1$COLRESET+" |
-beforelast " Last matches played " |
-beforelast " Map:" | beforelast "__________[_]*"
-
-`
-
-## fallbacks in case previous failed
-
+cat
 
 # reverse
 
-STATS=`echo "$BOTHLINES" | head -n 1`
-RECORDS=`echo "$BOTHLINES" | drop 1`
 
-## Remove all the second row overall stats, keep only this months:
-# STATS=`echo "$STATS" | sed 's+ \([^: ][^: ]*\) +(\1) +g'`
-STATS=` echo "$STATS" | sed 's+ \([^: ][^: ]*\)\( \|$\)+ +g' | sed "s+ month + $COLYELLOW""this month$COLRESET: +" `
 
-if [ `seq 1 2 | chooserandomline` -lt 2 ]
-then
-
-	LOWERNAME="`echo "$PLAYER" | tolowercase`"
-	if [ "$LOWERNAME" = "zbe|f0x" ]
-	then EXTRA=" $COLAQUA$COLBOLD<<Smelly award!>>$COLRESET"
-	fi
-	if [ "$LOWERNAME" = "(-:smo:-)vader" ]
-	then EXTRA=" $COLPINK$COLBOLD<<Fairy award!>>$COLRESET"
-	fi
-	if [ "$LOWERNAME" = "rork" ] || [ "$LOWERNAME" = "f0x|rork" ]
-	then EXTRA=" $COLORANGE$COLBOLD<<Uber admin award!>>$COLRESET"
-	fi
-	if [ "$LOWERNAME" = "beat.mox" ] || [ "$LOWERNAME" = "frag.mox" ]
-	then EXTRA=" $COLPINK$COLBOLD<<Ultrabatty award!>>$COLRESET"
-	fi
-
+LOWERNAME="`echo "$PLAYER" | tolowercase`"
+if [ "$LOWERNAME" = "zbe|f0x" ]
+then echo "$COLAQUA$COLBOLD<<Smelly award!>>$COLRESET"
+fi
+if [ "$LOWERNAME" = "(-:smo:-)vader" ]
+then echo "$COLPINK$COLBOLD<<Fairy award!>>$COLRESET"
+fi
+if [ "$LOWERNAME" = "rork" ] || [ "$LOWERNAME" = "f0x|rork" ]
+then echo "$COLORANGE$COLBOLD<<Uber admin award!>>$COLRESET"
+fi
+if [ "$LOWERNAME" = "beat.mox" ] || [ "$LOWERNAME" = "frag.mox" ]
+then echo "$COLPINK$COLBOLD<<Ultrabatty award!>>$COLRESET"
 fi
 
-echo "$STATS"
-echo "$RECORDS$EXTRA"
+echo
 
-) # |
+) |
 
 # reverse
+cat

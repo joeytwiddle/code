@@ -43,7 +43,7 @@ fi
 	else SEARCH_CHANNEL="$CHANNEL"
 	fi
 
-	if [ "$SEARCH_CHANNEL" ] && contains "$SEARCH_CHANNEL" "priv" && [ ! "$CHANNEL" = "$SEARCH_CHANNEL" ]
+	if [ "$SEARCH_CHANNEL" ] && ( contains "$SEARCH_CHANNEL" "priv" || contains "$SEARCH_CHANNEL" "pvt" ) && [ ! "$CHANNEL" = "$SEARCH_CHANNEL" ]
 	then
 		echo "Refusing to repeat log for private channel [$SEARCH_CHANNEL]."
 		exit 0

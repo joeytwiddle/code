@@ -1,0 +1,1 @@
+echo "http://images.google.com/images?q=$*" | tr ' ' '+'
