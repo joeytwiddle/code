@@ -5,4 +5,5 @@
 TARGET="$1"
 [ "$TARGET" ] || TARGET="$NICK"
 
-echo "/me removes channel operator status from $COLAQUA$TARGET$COLRESET"
+[ "`seq 1 10 | chooserandomline`" -lt 3 ] && echo "/deop $NICK" || echo "/me removes channel operator status from $COLAQUA$TARGET$COLRESET"
+

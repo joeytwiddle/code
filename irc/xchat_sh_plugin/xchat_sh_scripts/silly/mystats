@@ -1,4 +1,4 @@
-if [[ ! "$CHANNEL" = "#ut.pug" ]]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#[a]ssassins" ]
 then exit 0
 fi
 
@@ -15,6 +15,7 @@ top flopper
 you think you have the flag when you don't
 you rush to the enemy base but there are no flags there
 you kill yourself with your last rocket
+you get banned for talking in TeamSpeak
 pro whiner
 hardskinner
 ownage quota 3%
@@ -30,10 +31,8 @@ you forget whether you are on red or blue, and start shooting at the purple play
 it's not actually possible to complete the multiplayer game
 you think a superpro is a really good player
 in soviet russia, flag drops you!
-in soviet russia, flag dies before it reaches you
-in soviet russia, spawnkilling can't stop you
-in soviet russia, your FC abandons you
-in soviet russia, powerups forget you!
+in soviet russia, FC abandons you
+in soviet russia, EFC telefrags you!
 in soviet russia, you are in the right place at the right time
 when you win you think you deserved it, when you lose you think it was unfair
 you are the 234th best player in this pug
@@ -41,6 +40,9 @@ Faster than the wind!
 we trained 24 teenagers to play UT competitvely over an intensive 2 weeks course; we also encouraged 12 working adults to play an hour of UT each evening for one week; then we took 6 dying monkeys who had never seen the colour green before and gave them broken laptops; in the resulting tournament, they all beat you
 your eyes have a framerate of 12, your brain ticks at 7, your biological lag is 232ms
 !
+# in soviet russia, powerups forget you!
+# in soviet russia, flag dies before it reaches you
+# in soviet russia, spawnkilling can't stop you
 # in soviet russia, combo makes you
 # you need more rocket ammo - you kill yourself with your last rocket, every time
 # Bran Flakes
