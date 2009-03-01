@@ -1,8 +1,13 @@
 list () {
 cat << !
 <Zored> free pics of Ophie\` and calm in spoon, pm me
+<+Maxiu> i think you are pro... who can play UT like you with wine, beers etc. before game has started:P   <+Ophie\`> no one !  :p
+<Ophie\`> i took a leak and got 800:- in penalty for that!!!   <Ophie\`> i told the cops to go fuck them selves   <Ophie\`> this wanker to cop, just broke me down in the ground...  "plz dont talk to me or i will KILL you! i said
 !
 }
+# <+Maxiu> i think you are pro... who can play UT like you with wine, beers etc. before game has started:P
+# <+Ophie`> let me think.......
+# <+Ophie`> no one !  :p
 
 list | randomorder | head -n 1
 
