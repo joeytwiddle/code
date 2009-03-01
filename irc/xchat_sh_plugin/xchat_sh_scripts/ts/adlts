@@ -1,6 +1,7 @@
 # ./ts/tsquery 78.159.108.11 51234 1337 |
 # ./ts/tsquery ts12.light-speed.com 51234 8351 |
-./ts/tsquery 87.117.208.81 51234 8351 |
+# ./ts/tsquery 87.117.208.81 51234 8351 |
+./ts/tsquery 91.121.110.18 62474 9359 |
 
 sed 's+SOuLReaveR+\0_the_batty+ig' |
 sed 's+KGB+\0_el_caralho+ig' |
