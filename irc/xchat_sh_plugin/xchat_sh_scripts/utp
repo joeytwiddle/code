@@ -3,6 +3,8 @@
 
 ## TODO: Add CACHED_LAST_SEEN_POPULATED for each server - would be useful info for empty servers :P
 
+## Sometimes responds DOWN insted of <no response> and we don't show the cached :P
+
 [ -d "$HOME/myroots/qstat" ] && . includepath "$HOME/myroots/qstat"
 
 [ "$COMMAND_SCRIPTS_DIR" ] || COMMAND_SCRIPTS_DIR=.
