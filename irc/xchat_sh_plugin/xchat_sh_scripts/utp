@@ -11,8 +11,9 @@ IRCNICK="$NICK"
 
 if [ "$*" = "" ]
 then
-	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r|-i [property]] [-justserver|-noplayers] <ip_and_port>s..."
-	echo "To query UT99 servers: !utp [-ping|-p] [-scores|-s] [-rules|-r] [-justserver|-noplayers] <ip_and_port>s..."
+	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r|-muts|-m|-i [property]] [-justserver|-noplayers] <ip_and_port>s..."
+	echo "To query UT99 servers: !utp [-ping|-p] [-scores|-s] [-rules|-r] [-m|-muts] <ip_and_port>s..."
+	## Not really public: [-justserver|-noplayers] 
 	echo "  NOTE: to query a hostname, use !utp unreal://<hostname>[:<port>]"
 	exit 0
 fi
@@ -28,6 +29,14 @@ fi
 SEARCH=
 if [ "$1" = -rules ] || [ "$1" = -r ] || [ "$1" = -i ]
 then SHOWRULES=true ; shift
+fi
+
+if [ "$1" = -muts ] || [ "$1" = -m ]
+then SHOWRULES=true ; shift ; SEARCH="Mutators"
+fi
+
+if [ "$1" = -i ]
+then SHOWRULES=true ; shift ; SEARCH="$1" ; shift
 fi
 
 if [ "$1" = -justserver ]
@@ -65,7 +74,7 @@ NL="\\
 			echo -n "$COLBLUE$COLBOLD$URL$COLBOLD "
 
 			QSTAT_OUTPUT=`
-				qstat -default uns -timeout 20 -R "$IP" 2>&1 | drop 2
+				qstat -retry 3 -interval 3 -default uns -timeout 20 -R "$IP" 2>&1 | drop 2
 			`
 
 			echo "$QSTAT_OUTPUT" |
@@ -87,6 +96,16 @@ NL="\\
 			else cat
 			fi |
 			sort |
+
+			## These two must come before changing the mutators
+			## Actually they appear to do very little - remove them?
+			sed "s+\([^ ,=]*\)=+\1=+g" |
+			sed 's+,\([^ ]\)+, \1+g' |
+			## Colour mutators in orange:
+			sed "s+^mutators=+mutators=$COLORANGE+" |
+
+			tee /tmp/out.1 |
+
 			tr '\n' ' ' |
 
 			# sed "s+mutators=\([^=]*\)\([A-Za-z][A-Za-z]*\)=+$NL""mutators=\1$NL\2=+" |
@@ -94,9 +113,7 @@ NL="\\
 			# sed "s+\([^ ,]*\)=+$NL$COLNORM\1$COLYELLOW$COLBOLD=$COLBLUE+g" |
 			# # tr -d '\n' | sed "s+mutators+$NL""mutators+" |
 
-			sed "s+\([^ ,=]*\)=+\1=+g" |
 			# sed "s+\([^ ,=]*\)=+$COLBLUE\1$COLYELLOW=$COLAQUA+g" | ## colours are broken here somehow
-			sed 's+,\([^ ]\)+, \1+g' |
 
 			## Numbers:
 			# sed "s+[0-9][0-9]*+$COLGREEN\0$COLAQUA+g" | ## Must do this one before others!
@@ -133,7 +150,11 @@ NL="\\
 
 		else
 
-			QSTAT_OUTPUT=` qstat -default uns -timeout 5 -P "$IP" 2>&1 | dos2unix | drop 1 `
+			mkdir -p /tmp/jsh-joey/utpcache
+			CACHE_FILE=/tmp/jsh-joey/utpcache/"$IP".last
+			CACHED_COPY=` cat "$CACHE_FILE" `
+
+			QSTAT_OUTPUT=` qstat -retry 3 -interval 3 -default uns -timeout 5 -P "$IP" 2>&1 | dos2unix | drop 1 `
 
 			# echo ">$QSTAT_OUTPUT<" >&2
 
@@ -143,10 +164,11 @@ NL="\\
 				## Query failed
 				### TODO: wait, then retry
 				## Ask utquery's scanner data:
-				if ! echo "$IP" | grep ":" > /dev/null
-				then IP="$IP:7777"
+				if echo "$IP" | grep ":" > /dev/null
+				then IPP="$IP"
+				else IPP="$IP:7777"
 				fi
-				UTQUERY_FILE=/home/utquery/utquery/data/"$IP".info
+				UTQUERY_FILE=/home/utquery/utquery/data/"$IPP".info
 				if [ -f "$UTQUERY_FILE" ]
 				then
 					# ls -l "$UTQUERY_FILE" >&2
@@ -154,103 +176,119 @@ NL="\\
 					WHEN=`datediff -file "$UTQUERY_FILE"`" ago"
 					# if echo "$SERVER_STATUS" | head -n 1 | grep "^DOWN$" >/dev/null || echo "$SERVER_STATUS" | head -n 1 | grep "^no response$" >/dev/null
 					if echo "$SERVER_STATUS" | head -n 1 | grep "^ *\(no response\|\|DOWN\) *$" >/dev/null
-					then echo "unreal://$IP/ = $SERVER_STATUS" | sed 's+\<DOWN\>+did not respond+g'
-					else echo "Last seen $WHEN: unreal://$IP/ $SERVER_STATUS"
+					then echo "unreal://$IPP/ = $SERVER_STATUS" | sed 's+\<DOWN\>+did not respond+g'
+					else echo "Last queried $WHEN: unreal://$IPP/ $SERVER_STATUS"
 					fi
 				else
-					echo ">$QSTAT_OUTPUT< no record"
+					if [ "x$CACHED_COPY" = x ]
+					then echo ">$QSTAT_OUTPUT< no record"
+					# else echo "Last: $CACHED_COPY"
+					else
+						CACHED_TIME=`datediff -file "$CACHE_FILE"`
+						echo "$COLGREEN""Last seen $CACHED_TIME ago: $CACHED_COPY"
+					fi
+					## TODO: can we re-use a memo made from an earlier successful call?  will the old memo be broken by now?  we could grab a copy of it at the start...
 				fi
 				exit 5
 			fi
 			# qstat -default uns -timeout 10 -P "$IP" |
 
-			echo "$QSTAT_OUTPUT" |
-			# tee -a /tmp/qstats.out |
-			striptermchars | ## This is for servers like Explosive with crazy chars in their title, which IRC refuses to accept.
-			# drop 1 |
-			# sed 's+^[[:digit:].:][^ 	]*[ 	]*++' |
-			tr -s ' ' |
-			(
+			PRETTY_SERVER_STATUS=`
 
-				[ "$JUSTSERVER" ] || KEEPINFO="\\2 " ## KEEPINFO is #players+ + ping
+				echo "$QSTAT_OUTPUT" |
+				# tee -a /tmp/qstats.out |
+				striptermchars | ## This is for servers like Explosive with crazy chars in their title, which IRC refuses to accept.
+				# drop 1 |
+				# sed 's+^[[:digit:].:][^ 	]*[ 	]*++' |
+				tr -s ' ' |
+				(
 
-				read IP REST
-				# echo -n "$COLBLUE""unreal://$IP $COLGREY""$REST "
-				# echo -n "unreal://$IP$COLNORM ""$REST " |
-				echo -n "$COLBLUE$COLBOLD""unreal://$IP$COLBOLD$COLNORM ""$REST " | ## i would have used COLRESET but that sets colour to White not Default :P
-				# sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
-				sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+" |
+					[ "$JUSTSERVER" ] || KEEPINFO="\\2 " ## KEEPINFO is #players+ + ping
 
-				## Colour any team-related PubliciseScore info in the title with approriate team colour:
-				# # sed "s+(\([0-9]*\)v\([0-9]*\))+($COLRED\1$COLYELLOW""v$COLBLUE\2$COLYELLOW)+" |
-				# # sed "s+\[\([0-9]*\)-\([0-9]*\)\]+[$COLRED\1$COLYELLOW-$COLBLUE\2$COLYELLOW]+" |
-				# sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD($COLBOLD$COLYELLOW\1v\2$COLBLUE$COLBOLD)$COLBOLD$COLYELLOW+" |
-				# sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[$COLBOLD$COLYELLOW\1-\2$COLBLUE$COLBOLD]$COLBOLD$COLYELLOW+" |
-				# # sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD(\1$COLBOLD$COLYELLOW""v""$COLBLUE$COLBOLD\2)$COLBOLD$COLYELLOW+" |
-				# # sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[\1$COLBOLD$COLYELLOW""-""$COLBLUE$COLBOLD\2]$COLBOLD$COLYELLOW+" |
+					read IPR REST
+					# echo -n "$COLBLUE""unreal://$IPR $COLGREY""$REST "
+					# echo -n "unreal://$IPR$COLNORM ""$REST " |
+					echo -n "$COLBLUE$COLBOLD""unreal://$IPR$COLBOLD$COLNORM ""$REST " | ## i would have used COLRESET but that sets colour to White not Default :P
+					# sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
+					sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+" |
 
+					## Colour any team-related PubliciseScore info in the title with approriate team colour:
+					# # sed "s+(\([0-9]*\)v\([0-9]*\))+($COLRED\1$COLYELLOW""v$COLBLUE\2$COLYELLOW)+" |
+					# # sed "s+\[\([0-9]*\)-\([0-9]*\)\]+[$COLRED\1$COLYELLOW-$COLBLUE\2$COLYELLOW]+" |
+					# sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD($COLBOLD$COLYELLOW\1v\2$COLBLUE$COLBOLD)$COLBOLD$COLYELLOW+" |
+					# sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[$COLBOLD$COLYELLOW\1-\2$COLBLUE$COLBOLD]$COLBOLD$COLYELLOW+" |
+					# # sed "s+(\([0-9]*\)v\([0-9]*\))+$COLRED$COLBOLD(\1$COLBOLD$COLYELLOW""v""$COLBLUE$COLBOLD\2)$COLBOLD$COLYELLOW+" |
+					# # sed "s+\[\([0-9]*\)-\([0-9]*\)\]+$COLRED$COLBOLD[\1$COLBOLD$COLYELLOW""-""$COLBLUE$COLBOLD\2]$COLBOLD$COLYELLOW+" |
+
+					cat
+
+					# cat > /dev/null
+					sort -n -r -k 1 | ## highest frags first :)
+					# tee /tmp/utp.mid |
+					# takecols 5 |
+					while read SCORE dummy TEAM PING NICK
+					do
+
+						TEAMCOL="$COLNORM"
+						[ "$TEAM" = "team#0" ] && TEAMCOL="$COLRED"
+						[ "$TEAM" = "team#1" ] && TEAMCOL="$COLBLUE"
+						[ "$TEAM" = "team#2" ] && TEAMCOL="$COLGREEN"
+						[ "$TEAM" = "team#3" ] && TEAMCOL="$COLYELLOW"
+
+						if [ "$SHOWPINGS" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
+						then echo -n "($PING)"
+						fi
+
+						echo -n "$TEAMCOL""$NICK"
+
+						if [ "$SHOWSCORES" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
+						then
+							echo -n "$COLNORM($SCORE)"
+						fi
+
+						echo -n "$COLNORM, "
+
+					done |
+					# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
+					# # sed "s+^+$COLRED+" |
+					# sed "s+$+$COLGREY, +" |
+					# tr '\n' ' ' |
+					tr -s ' ' |
+					sed 's+, $++' |
+					# sed "s+^+[ + ; s+\$+ ]+"
+					sed "s+^+$COLGREY[ + ; s+\$+ $COLGREY]+" |
+					# sed "s+^+ -\\\\- + ; s+\$+ -/-+"
+					# sed "s+^+ \\\\\\\\- + ; s+\$+ -//+"
+					# sed "s+^+ \\\\\\\\--( + ; s+\$+ )--//+"
+					# sed "s+^+ ~\\\\~ + ; s+\$+ ~/~+"
+					# sed "s+^+ \\\\\\\\ + ; s+\$+ //+"
+					if [ "$NOPLAYERS" ]
+					then cat > /dev/null
+					else cat
+					fi
+
+					if [ "$REPCHAN" ]
+					then
+						SCORE_AND_TIMELEFT=$(sh ./ut_servers/scorefromlivechan "$REPCHAN")
+						[ "$SCORE_AND_TIMELEFT" ] && echo -n " $COLGREEN$SCORE_AND_TIMELEFT"
+						# echo -n " $COLRESET""[$REPCHAN]"
+					fi
+
+					## Why did I have COLRESET off?!
+					echo "$COLRESET"
+					# echo
+
+				) |
+				## No it's best not to break up the line here, they might be grepped outside of here.
+				# sed "s+\(.\{0,245\}[^ ]\)\(  *\|$\)+\0$NL +g" | grep -v "^ $"
 				cat
 
-				# cat > /dev/null
-				sort -n -r -k 1 | ## highest frags first :)
-				# tee /tmp/utp.mid |
-				# takecols 5 |
-				while read SCORE dummy TEAM PING NICK
-				do
+			`
 
-					TEAMCOL="$COLNORM"
-					[ "$TEAM" = "team#0" ] && TEAMCOL="$COLRED"
-					[ "$TEAM" = "team#1" ] && TEAMCOL="$COLBLUE"
-					[ "$TEAM" = "team#2" ] && TEAMCOL="$COLGREEN"
-					[ "$TEAM" = "team#3" ] && TEAMCOL="$COLYELLOW"
+			echo "$PRETTY_SERVER_STATUS"
 
-					if [ "$SHOWPINGS" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
-					then echo -n "($PING)"
-					fi
-
-					echo -n "$TEAMCOL""$NICK"
-
-					if [ "$SHOWSCORES" ] && [ ! "$TEAMCOL" = "$COLNORM" ]
-					then
-						echo -n "$COLNORM($SCORE)"
-					fi
-
-					echo -n "$COLNORM, "
-
-				done |
-				# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
-				# # sed "s+^+$COLRED+" |
-				# sed "s+$+$COLGREY, +" |
-				# tr '\n' ' ' |
-				tr -s ' ' |
-				sed 's+, $++' |
-				# sed "s+^+[ + ; s+\$+ ]+"
-				sed "s+^+$COLGREY[ + ; s+\$+ $COLGREY]+" |
-				# sed "s+^+ -\\\\- + ; s+\$+ -/-+"
-				# sed "s+^+ \\\\\\\\- + ; s+\$+ -//+"
-				# sed "s+^+ \\\\\\\\--( + ; s+\$+ )--//+"
-				# sed "s+^+ ~\\\\~ + ; s+\$+ ~/~+"
-				# sed "s+^+ \\\\\\\\ + ; s+\$+ //+"
-				if [ "$NOPLAYERS" ]
-				then cat > /dev/null
-				else cat
-				fi
-
-				if [ "$REPCHAN" ]
-				then
-					SCORE_AND_TIMELEFT=`sh ./ut_servers/scorefromlivechan "$REPCHAN"`
-					[ "$SCORE_AND_TIMELEFT" ] && echo -n " $COLAQUA$SCORE_AND_TIMELEFT"
-					echo -n " $COLRESET""$REPCHAN"
-				fi
-
-				## Why did I have COLRESET off?!
-				echo "$COLRESET"
-				# echo
-
-			) |
-			## No it's best not to break up the line here, they might be grepped outside of here.
-			# sed "s+\(.\{0,245\}[^ ]\)\(  *\|$\)+\0$NL +g" | grep -v "^ $"
-			cat
+			## Update cache with good reading:
+			echo "$PRETTY_SERVER_STATUS" > "$CACHE_FILE"
 
 		fi
 
