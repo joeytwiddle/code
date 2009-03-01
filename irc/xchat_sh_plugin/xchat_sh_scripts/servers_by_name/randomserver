@@ -1,3 +1,8 @@
+## Disabled
+exit 0
+
+
+
 # ./utp `'ls' /home/utquery/utquery/data/ | grep .players"$" | chooserandomline | sedreplace ".players" ""`
 
 ## The !random command is used by Rival, so:

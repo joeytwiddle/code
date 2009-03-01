@@ -1,5 +1,5 @@
 # ./utp "$@" 85.131.187.70
 # ./utp "$@" 85.131.247.180:6666
-REPCHAN="#kx.live" ./utp "$@" 85.131.247.65:6666 | grep "unreal://" ||
-REPCHAN="#kx.live" ./utp "$@" 85.131.247.65:6668 | sed 's+:6668+~6666+g' | grep "unreal://" ||
-REPCHAN="#kx.live" ./utp "$@" 85.131.247.65:6669 | sed 's+:6669+~6666+g'
+REPCHAN="#kx.live" ./utp "$@" 85.131.247.65:6666 | grep "^[^ ]*unreal://" ||
+REPCHAN="#kx.live" ./utp "$@" 85.131.247.65:6668 | sed 's+:6668+:6666~8+g' | grep "^[^ ]*unreal://" ||
+REPCHAN="#kx.live" ./utp "$@" 85.131.247.65:6669 | sed 's+:6669+:6666~9+g'

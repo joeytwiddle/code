@@ -1,3 +1,5 @@
-# ./utp neuralyte.org
+# ./utp "$@" unreal://neuralyte.org/
 # ./utp "$@" 213.121.244.94 ## since utp now only accepts IP *addresses*
-./utp "$@" 91.84.38.68 ## since utp now only accepts IP *addresses*
+# ./utp "$@" 91.84.38.68 ## since utp now only accepts IP *addresses*
+# ./utp "$@" unreal://hwi.ath.cx/
+./utp "$@" 217.174.240.213
