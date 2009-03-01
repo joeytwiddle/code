@@ -8,14 +8,28 @@
 ## Get the last !last:
 # grep ".*<Rival>.*..*,.*,.*,.*,.*,.*,.*,.*,.*,.*..*" /home/joey/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pug.log | tail -n 1
 
+# alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
+alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "
+
 [ "$CHANNEL" = "" ] && CHANNEL="#ut.pug"
 
 ## Get last two filled teams lines:
 LASTLINES=`
 cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 # grep ".*<Rival>.*?.*,.*,.*,.*,.*?.*" | grep -v " ago " | grep -v " Specs: " | tail -n 2
-grep "<\(Rival\|RF\)>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1
+grep "<\(Rival\|RF\)>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1 | tr -d '‡'
 `
+
+# LASTLINESABOT=`
+# cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
+# grep "<\(APug\|ABot\)>" | grep -A1 " Teams have been set " | tail -n 1
+# `
+# LASTLINESABOT=`
+# echo "$LASTLINESABOT" | afterfirst "Red Team: " | sed 's+  *Blue Team:  *+\n+' | sed 's+ +, +g' | sed 's+,[^,]*$++g' | sed 's+^+<Rival> @ +'
+# `
+# LASTLINES="$LASTLINESABOT"
+
+jshinfo "LASTLINES=$LASTLINES"
 
 if [ "$1" = -lines ]
 then
@@ -35,15 +49,34 @@ fi
 	# read A; echo "4 $A"
 # )
 
-echo "$LASTLINES" | afterfirst ", " | beforelast " .$" | sed 's+, *+\n+g' |
+# echo "$LASTLINES" | afterfirst ", " | beforelast " .$" | sed 's+, *+\n+g' |
+##    To trim the nasty ~G char we need this " *[^ ]* "
+echo "$LASTLINES" |
+double_escape_slashes |
+afterlast "<\(Rival\|RF\)> *[^ ]* " |
+beforelast " .$" |
+sed 's+, *+\n+g' |
 (
+
+	read A
+	REDCAPTAUTH=`sh scanpug/slowgetauth "$A"`
+	echo "REDCAPT $REDCAPTAUTH $A"
+
 	read A; echo "1 `sh scanpug/slowgetauth "$A"` $A"
 	read A; echo "4 `sh scanpug/slowgetauth "$A"` $A"
 	read A; echo "5 `sh scanpug/slowgetauth "$A"` $A"
 	read A; echo "8 `sh scanpug/slowgetauth "$A"` $A"
+
+	# echo
+	# echo ---------
+
+	read A
+	BLUECAPTAUTH=`sh scanpug/slowgetauth "$A"`
+	echo "BLUECAPT $BLUECAPTAUTH $A"
+
 	read A; echo "2 `sh scanpug/slowgetauth "$A"` $A"
 	read A; echo "3 `sh scanpug/slowgetauth "$A"` $A"
 	read A; echo "6 `sh scanpug/slowgetauth "$A"` $A"
 	read A; echo "7 `sh scanpug/slowgetauth "$A"` $A"
-)
 
+)

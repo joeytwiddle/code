@@ -1,4 +1,10 @@
 ## TODO BUG: on the new machine, the auto !strengths at the start of a pug reads and repeats the wrong line!
+#
+## TODO BUG: with APug, the "pickable list" differs in format from the just-filled list.
+##           we pick up the just-filled list, but we need to pick up the 8/10 list without the captains.
+##           i don't think we ever really need to find the just-filled list, although it would show pugcounts for all 10 players.
+##           except for some reason 10 players is too much and runs out of chars O_o
+## lol run mid-edit: <UT> $ Avgpicks :: ++g | [tr -d ?] lover 4) [r-LovelyPmP ?] # tail [-n 1 | afterfirst (10/10) . | # sed s+^. + +g ; s+ .$++g ; s+<[0-9][0-9]*) ?]  ` []  sed [s+^. + +g ; s+ .$++g | tr -d ?] 10) r-goly [3.8] 8) r-Stas 
 
 if [ "$AUTH" = nogginBasher ]
 then CHANNEL="#ut.pug"
@@ -40,6 +46,22 @@ afterfirst "/10 " |
 # sed 's+? .)+ +g'
 sed 's+^. + +g ; s+ .$++'
 `
+
+#### For APug:
+## TODO: get the 8/10 pickables without the captains.
+## <APug> # Captains type .here to prevent yourself from getting kicked # r-ostis gets to pick first. #
+## <APug> # Available Players:  Puglist (10/10) # 1) r-abid-abeo 2) r-bong 3) R-Vader`lover 4) r-Lovely` 5) r-vaderBasher 7) r-Amazigh`PmP 8) r-Stas 10) r-goly #
+# LASTLIST=`
+	# FIELD="[^ ][^ ]*" ; WS="  *"
+	# tail -n "$BACKCHECK" "$LOGDIR/$NETWORK-$CHANNEL.log" |
+	# grep "<\(APug\|ABot\)>.*(10/10)" |
+	# ## Actually we really want the line with 10 entries, in case picking already started
+	# grep "(10/10) . $FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD ." |
+	# tail -n 1 |
+	# afterfirst "(10/10) . " |
+	# # sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr -d ' '
+	# sed 's+^. + +g ; s+ .$++g ' | tr -d ' '
+# `
 
 if [ ! "$LASTLIST" ]
 then

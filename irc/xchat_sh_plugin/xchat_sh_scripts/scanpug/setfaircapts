@@ -1,4 +1,4 @@
-if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#siegepug" ]
 then exit 0
 fi
 
@@ -7,36 +7,65 @@ fi
 # else NETWORK="irc.quakenet.org"
 # fi
 
-## Since MF now calls !setfaircapts automatically, we should wait a bit for Rival to respond to his !list...
-sleep 3
+## In case MF calls !setfaircapts automatically, we should wait a bit for Rival to respond to his !list...
+# sleep 3
 
-# echo "!list"
-# echo "Please be patient... I am slow..."
-# sleep 15 ## 5 and 8 were TOO SLOW! (utb0t was lagging a bit).  Maybe the buffer does not get flushed :|
-LIST_LINE=`
-	tail -n 20 "$LOGDIR"/"$NETWORK-$CHANNEL".log |
-	grep "<\(Rival\|RF\)>.*. 10/10 . " |
-	tail -n 1 |
-	afterfirst ". 10/10 . " |
-	sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' '
-`
-jshinfo "LIST_LINE=$LIST_LINE"
+[ "$BACKCHECK" ] || BACKCHECK=40
 
-COUNT=`echo "$LIST_LINE" | wc -l`
+for ATTEMPT in 1 2
+do
 
-if [ "$COUNT" = 10 ]
-then :
-else
-	# echo "Sorry, I could not see 10 players so I cannot set captains."
-	echo "I need to see the 10/10 !list first, then please retry."
-	echo "!list"
-	exit 0
-fi
+	## For Rival:
+	# echo "!list"
+	# echo "Please be patient... I am slow..."
+	# sleep 15 ## 5 and 8 were TOO SLOW! (utb0t was lagging a bit).  Maybe the buffer does not get flushed :|
+	LIST_LINE=`
+		tail -n "$BACKCHECK" "$LOGDIR"/"$NETWORK-$CHANNEL".log |
+		grep "<\(Rival\|RF\)>.*. 10/10 . " |
+		grep -v "Map:.*Specs:" | ## hide any matching lines that are from server query response (not likely if called promptly, but useful for testing)
+		tail -n 1 |
+		afterfirst ". 10/10 . " |
+		sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' '
+	`
+
+	## For APug:
+	## APug line looks like:
+	## <APug> # nwCTF # Letter: M # Puglist (10/10) # 3) m-Stas 4) m-kk 5) m-frostis 6) m-fu 7) m-hufs^sucks 8) ness 9) m-B4dzhootEr2 10) m-Habbi #
+	# LIST_LINE=`
+		# FIELD="[^ ][^ ]*" ; WS="  *"
+		# tail -n 40 "$LOGDIR/$NETWORK-$CHANNEL.log" |
+		# grep "<\(APug\|ABot\)>.*(10/10)" |
+		# ## Actually we really want the line with 10 entries, in case picking already started
+		# grep "(10/10) . $FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD$WS$FIELD ." |
+		# tail -n 1 |
+		# afterfirst "(10/10) . " |
+		# sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' '
+	# `
+
+	jshinfo "Got LIST_LINE=$LIST_LINE"
+	COUNT=`echo "$LIST_LINE" | wc -l`
+
+	if [ "$COUNT" = 10 ]
+	then break
+	elif [ "$ATTEMPT" = 1 ]
+	then
+		# echo "Sorry, I could not see 10 players so I cannot set captains."
+		# echo "I need to see the 10/10 !list first, then please retry."
+		echo "!list"
+		## TODO: flush buffer!
+		sleep 15
+	else
+		echo "Sorry, I failed." ## Couldn't see 10 players.  Retry might work.
+		exit 0
+	fi
+
+done
 
 NICK="nB^" . restrict_repetitive_calls "30 seconds"
 
 # echo "On my way, hang in there..."
-echo "Setting fair captains..."
+# echo "Setting fair captains..."
+echo "Thanks _StalkeR_, setting fair captains..."
 
 ORDERED_LIST=$(
 	echo "$LIST_LINE" |
@@ -53,11 +82,14 @@ ORDERED_LIST=$(
 		# else
 			# : # echo "4.52963ish? $PLAYER"
 		# fi
-		STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
-		if [ "$AUTH" = MrsFace ] || [ "$AUTH" = "~fu" ] ## zR
-		then continue
-		fi
-		[ "$STRENGTH" = "?.?" ] || echo "$STRENGTH $PLAYER"
+		# STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
+		STRENGTHANDCOUNT=`sh ./scanpug/getstrength -andcount "$AUTH"`
+		STRENGTH=`echo "$STRENGTHANDCOUNT" | takecols 1`
+		COUNT=`echo "$STRENGTHANDCOUNT" | takecols 2`
+		# if [ "$AUTH" = MrsFace ] || [ "$AUTH" = "~fu" ] ## zR
+		# then continue
+		# fi
+		[ "$STRENGTH" = "?.?" ] || echo "$STRENGTH $PLAYER $COUNT"
 	done |
 	sort -n -k 1
 )
@@ -74,21 +106,84 @@ fi
 
 COUNT=$((COUNT-2))
 
-for X in 1 2 3 4 5
+## BUG! Will stop working in year 2100!  Better to grep -v "last" (provided that isn't channel name!)
+## BUG TODO: Will stop working when number of .picks files exceeds shell max args.
+RECENT_PICK_FILES=`ls -art ~/.scanpug/"$CHANNEL-20"*.picks | dos2unix | tail -n 15`
+
+for X in `seq 1 20`
 do
 	TOSKIP=`seq 0 $COUNT | chooserandomline`
 	# TOSKIP=`seq 0 6 | chooserandomline` ## we skip the last 2 noobies - they will never be set as captain :P
 	CAPTS=` echo "$ORDERED_LIST" | drop "$TOSKIP" | head -n 2 | randomorder `
 
-	## Check if difference > 1.5, and if so, retry.
+	jshinfo "($X/20) Considering captains: $(echo "$CAPTS" | tr '\n' ' ')"
+
+	## TODO: check the number of times they captained in the last 32 pugs, and let that affect the probability.
+	## Check if one of these captains already captained recently
+	PREDC=`echo "$CAPTS" | head -n 1 | takecols 2`
+	PBLUEC=`echo "$CAPTS" | tail -n 1 | takecols 2`
+	PREDCAUTH=`NOINFO=1 sh scanpug/slowgetauth "$PREDC"`
+	PBLUECAUTH=`NOINFO=1 sh scanpug/slowgetauth "$PBLUEC"`
+
+	## DUH - DUNNO_AUTH players were stripped earlier during build of ORDERED_LIST - since we don't know their strength!
+	if [ "$PREDCAUTH" = DUNNO_AUTH ] || [ "$PBLUECAUTH" = DUNNO_AUTH ]
+	then
+		## 90% chance of preventing DUNNO_AUTH from being captain
+		# if [ "`seq 0 9 | chooserandomline`" -lt 9 ]
+		if [ "$((RANDOM%100))" -gt 9 ]
+		then
+			jshinfo "One of these players has unknown auth.  Retrying..."
+			continue
+		else
+			jshwarn "Allowing DUNNO_AUTH through!"
+		fi
+	fi
+
+	PREDCAUTHRE=`toregexp "$PREDCAUTH"`
+	PBLUECAUTHRE=`toregexp "$PBLUECAUTH"`
+	# if grep "^\(RED\|BLUE\)CAPT.*$AUTHRE" $RECENT_PICK_FILES >/dev/null
+	if cat $RECENT_PICK_FILES | grep "^\(RED\|BLUE\)CAPT.*\($PREDCAUTHRE\|$PBLUECAUTHRE\)" >/dev/null
+	then
+		## 10% chance of making him captain anyway! :P
+		# if [ "`seq 0 9 | chooserandomline`" -gt 1 ]
+		if [ "$((RANDOM%100))" -gt 9 ]
+		then
+			jshinfo "One of these players captained recently!  Retrying... ($PREDC=$PREDCAUTHRE $PBLUEC=$PBLUECAUTHRE)"
+			continue
+		else
+			jshwarn "Allowing recent captain through!"
+		fi
+	fi
+
+	REDCAPTCOUNT=`echo "$CAPTS" | head -n 1 | takecols 3`
+	BLUECAPTCOUNT=`echo "$CAPTS" | tail -n 1 | takecols 3`
+	if [ "$REDCAPTCOUNT" ] && [ "$BLUECAPTCOUNT" ] &&
+	   ( [ "$REDCAPTCOUNT" -lt 15 ] || [ "$BLUECAPTCOUNT" -lt 15 ] )
+	then
+		## 10% chance of making him captain anyway! :P
+		# if [ "`seq 0 9 | chooserandomline`" -gt 1 ]
+		if [ "$((RANDOM%100))" -gt 9 ]
+		then
+			jshinfo "One of these captains has played fewer than 15 pugs.  Retrying..."
+			continue
+		else
+			jshwarn "Allowing NEW pugger through!"
+		fi
+	fi
+
+	## Check if difference > 1.1, and if so, retry.
 	STRENGTHS=` echo "$CAPTS" | takecols 1 | sed 's+\.++' `
 	# echo "sqrt((3.1 - 4.2)^2)*10" | bc -l
 	SUM=`echo "$STRENGTHS" | tr '\n' '-' | sed 's+-$++'`
 	DIFFINT=` verbosely echo "sqrt(($SUM)^2)" | bc -l | sed 's+\..*++' `
-	if [ "$DIFFINT" -lt 11 ]
-	then break
-	else jshinfo "Captains differ by 1.1 or more, retrying. ($DIFFINT) [$CAPTS]"
+	if [ "$DIFFINT" -gt 11 ]
+	then
+		jshinfo "Captains differ by more than 1.1, retrying. ($DIFFINT) [$PREDC,$PBLUEC]"
+		continue
 	fi
+
+	## If we got this far, we have two good captains! :)
+	break
 done
 
 ### This failed dunno why!!  OK it was cos list had 7, and dropped 6.  ;p
@@ -100,11 +195,14 @@ then error "FAIL: COUNT=$COUNT CAPTS=$CAPTS" ; echo "/me FAIL! ffs KGB" ; exit 1
 fi
 
 echo "$CAPTS" |
-while read STRENGTH CAPT
-do echo "!setcapt $CAPT (avgpick #$STRENGTH)"
+while read STRENGTH CAPT COUNT
+## Rival only:
+# do echo "!setcapt $CAPT (avgpick #$STRENGTH)"
+## ABot and Rival:
+do echo "!setcaptain $CAPT (avgpick #$STRENGTH)" ## try this if below works
+# do echo "!setcaptain $CAPT"
 done
 
-sleep 15 ## Rival should now print his "Please pick from the list:" line.  5 was too short once.  Plus it's good to be slow, then we appear *after* _StalkeR_ ;)
-## Bah 10 was still faster than Rival sometimes!  Set to 15.
+sleep 15 ## Rival should now print his "Please pick from the list:" line.  5 was too short once.  10 was too short once!  Plus it's good to be slow, then we appear *after* _StalkeR_ ;)
 BACKCHECK=20 sh ./scanpug/strengths
 

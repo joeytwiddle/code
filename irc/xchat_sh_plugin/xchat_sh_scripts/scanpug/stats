@@ -1,4 +1,5 @@
-if [ "$CHANNEL" = "#ut.pug" ]
-then echo 'Channel stats: http://www.nordicbots.com/stats.php?net=quakenet&cid=66201'
-fi
+## Conflicts with ABot's !stats
+# if [ "$CHANNEL" = "#ut.pug" ]
+# then echo 'Channel stats: http://www.nordicbots.com/stats.php?net=quakenet&cid=66201'
+# fi
 

@@ -15,9 +15,10 @@
 
 [ "$LOGDIR" ] || LOGDIR="$HOME/.xchat2.utb0t/logs/" ## For testing from shell
 
-NICKREGEXP=`toregexp "$1"`
+SEARCHNICK="$1"
+NICKREGEXP=`toregexp "$SEARCHNICK"`
 
-jshinfo "NICKREGEXP=$NICKREGEXP"
+# jshinfo "NICKREGEXP=$NICKREGEXP"
 
 COUNT=0
 
@@ -80,7 +81,7 @@ do
 			# break
 			exit 0
 		else
-			jshwarn "Could not find auth from join line: $LINE"
+			jshwarn "Could not find auth for $1 with join line: $LINE"
 			echo "DUNNO_AUTH"
 			exit 1
 		fi
@@ -90,7 +91,7 @@ do
 
 done
 
-[[ "$COUNT" = 40 ]] && echo "DUNNO" && jshwarn "slowgetauth: ERROR aborted $NICKREGEXP since COUNT=$COUNT" && exit 1
+[[ "$COUNT" = 40 ]] && echo "DUNNO_AUTH" && jshwarn "slowgetauth: ERROR aborted $NICKREGEXP since COUNT=$COUNT" && exit 1
 
 ## BUG: Unfortunately "is now known as" events are currently getting logged in NETWORK not in channel.
 
