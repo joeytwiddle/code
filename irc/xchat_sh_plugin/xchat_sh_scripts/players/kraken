@@ -1,0 +1,10 @@
+list () {
+cat << !
+I was a bit frustrated that I didn't get to kill anyone
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+
