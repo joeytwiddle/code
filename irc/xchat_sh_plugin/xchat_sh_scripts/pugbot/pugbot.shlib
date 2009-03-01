@@ -51,8 +51,17 @@ fi
 [ "$NUMBER_OF_PLAYERS_NEEDED" ] || NUMBER_OF_PLAYERS_NEEDED=10
 
 ## double_escape_slashes used to be a function, but then it didn't work :o
+## This implementation appears to be quadruple_escape_slashes, but anyway it's what we need!  :P
 alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
 # alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "
+
+function require_ops () {
+	if [ "$HASOP" = "" ]
+	then
+		echo "/notice $NICK Unauthorized access attempt detected - authorities have been informed."
+		exit 0
+	fi
+}
 
 get_new_map () {
 	MAP1=`cat "$MAP_POOL_FILE" | grep -v "^#" | beforelast " (" | trimempty | randomorder | randomorder | randomorder | head -n 1`
@@ -62,17 +71,22 @@ get_new_map () {
 }
 
 reset () {
+	get_num_players
+	if [ "$RESET_CHECK_OPS" ] && [ "$NUMBER_OF_PLAYERS" -gt 0 ] && [ ! -f "$MAP_POOL_FILE" ]
+	then require_ops
+	fi
 	if [ -f "$MAP_POOL_FILE" ]
 	then
 		## Update the CURRENT_MAP_FILE randomly from the pool, but only if the last reset was > 1 minute ago:
-		get_num_players
 		touch -d "$((NUMBER_OF_PLAYERS+1)) minute ago" "$LAST_RESET_FILE"
 		if newer "$LAST_RESET_FILE" "$CURRENT_MAP_FILE"
 		then
 			get_new_map
 			echo "$NEW_MAP" > "$CURRENT_MAP_FILE" &&
 			# echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *You have 1 minute to join!*"
-			echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *Maps will change in 1 minute!*" | double_escape_slashes
+			# echo "New pug is: $COLYELLOW$NEW_MAP$COLRESET *Maps will change in 1 minute!*" | double_escape_slashes
+			# echo "Let's try new maps: $COLYELLOW$NEW_MAP$COLRESET Join now before maps change again!" | double_escape_slashes
+			echo "Choosing new maps...  Join NOW before maps change again!" | double_escape_slashes
 		else
 			NOW=`date "+%s"`
 			THEN=`date -r "$CURRENT_MAP_FILE" "+%s"`
@@ -117,7 +131,9 @@ list_players () {
 	[ "$NUMBER_OF_PLAYERS" = 0 ] && [ -f "$MAP_POOL_FILE" ] && NICK="" reset
 	[ -f "$MAP_POOL_FILE" ] && [ -f "$CURRENT_MAP_FILE" ] && SHOW_CURRENT_MAP="{$COLYELLOW`cat "$CURRENT_MAP_FILE"`$COLRESET} "
 	## DONE: was not displaying \s in a players nick, making it rather hard to pick them :>
-	echo "[$CHANNEL] $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | double_escape_slashes | sed 's+ $++' ` $COLBLUE]$COLNORM"
+	INTRO="[$CHANNEL]"
+	[ "$CHANNEL" = "#kawa" ] && INTRO="iCTF zp"
+	echo "$INTRO $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | double_escape_slashes | sed 's+ $++' ` $COLBLUE]$COLNORM"
 }
 
 show_last () {
@@ -213,6 +229,7 @@ sub () {
 }
 
 removeplayer () {
+	# require_ops
 	if [ "$1" = -quiet ]
 	then QUIET=true ; shift
 	fi
@@ -432,6 +449,9 @@ pool () {
 }
 
 setlimit () {
+	if [ "$CHANNEL" = "#ut.pug" ]
+	then require_ops
+	fi
 	get_num_players
 	if [ ! "$NUMBER_OF_PLAYERS" = 0 ]
 	# then echo "/notice $NICK You can only change the settings of an empty pug." | double_escape_slashes

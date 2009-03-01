@@ -5,7 +5,7 @@ fi
 
 if [ ! "$*" ]
 then
-	echo "Usage: !setserver [-public|-war|-pug|-zppug|-ff] <map_name> [<other_map_names>..]"
+	echo "Usage: !setserver [-public|-grapple|-cbwar|-pug|-zppug|-sgpug|-4v4|-5v5|-6v6|-7v7|-ff] [ <map_name>s... ]"
 	# Secret: -f = force
 	exit 0
 fi
@@ -20,8 +20,8 @@ fi
 function do_qstat () {
   which qstat >/dev/null || return 4
   (
-	  qstat -default uns -timeout 5 -retry 6     "$SERVER_ADDRESS" | grep -v "\<DOWN\>$" | grep     "^$SERVER_ADDRESS" ||
-	  qstat -default uns -timeout 5 -retry 6 "$ALT_SERVER_ADDRESS" | grep -v "\<DOWN\>$" | grep "^$ALT_SERVER_ADDRESS"
+	  qstat -default uns -timeout 5 -retry 6     "$SERVER_ADDRESS" | grep     "^$SERVER_ADDRESS" ||
+	  qstat -default uns -timeout 5 -retry 6 "$ALT_SERVER_ADDRESS" | grep "^$ALT_SERVER_ADDRESS"
   ) | head -n 1
 }
 
@@ -29,8 +29,8 @@ function do_switch () {
   MAPS="$*"
   RESPONSE=` do_qstat "$SERVER_ADDRESS" `
   PLAYERCOUNT=`echo "$RESPONSE" | takecols 2`
-  ## If server is empty:
-  if [ "$FORCE" ] || echo "$PLAYERCOUNT" | grep "^0/[0-9]*$" >/dev/null
+  ## We only attempt to set the server if it is empty, or down:
+  if [ "$FORCE" ] || echo "$PLAYERCOUNT" | grep "^0/[0-9]*$" >/dev/null || echo "$RESPONSE" | grep "\<DOWN\>$"
   then
 	echo "[setserver] Server is empty ($PLAYERCOUNT) - requesting map switch: $MAPS" >&2
   	verbosely ssh "$SERVER_CONNECT" j/jsh sh ut/switch_map.sh $MAPS > setserver_switch_map.out 2>setserver_switch_map.err &
@@ -43,7 +43,7 @@ function do_switch () {
 		   do_qstat "$SERVER_ADDRESS" | grep -v "\<DOWN\>" | grep . >/dev/null
 		then ./utp kx | prepend_each_line "Server is set: " ; exit 0
 		fi
-		sleep 3
+		sleep 5
 	done
   	# echo "[setserver] Tried to switch to \"$MAPS\" but server didn't come back up!" >&2
   	echo "[setserver] Failed to get verification from both log and query." >&2
@@ -51,7 +51,7 @@ function do_switch () {
 	cat setserver_switch_map.out | head -n 3
 	echo "Failed to set the server: `./utp kx`"
   else
-  	echo "Not switching, server is in use! $RESPONSE" >&2
+  	echo "Not switching, server is in use! $RESPONSE"
   fi
 }
 

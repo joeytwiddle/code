@@ -1,4 +1,5 @@
 . pugbot/pugbot.shlib
 
 do_pre_checks
+require_ops
 addplayer "$@"

@@ -1,4 +1,4 @@
 . pugbot/pugbot.shlib
 
 do_pre_checks
-reset "$@"
+RESET_CHECK_OPS=1 reset "$@"
