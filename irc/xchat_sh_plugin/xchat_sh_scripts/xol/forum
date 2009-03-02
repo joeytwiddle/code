@@ -1,0 +1,6 @@
+if [ "$CHANNEL" = "#xoldog" ]
+then echo "http://rork.nl/ut"
+elif [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#smilingmonster.ut" ]
+then echo "http://www.s8.createphpbb.com/smoclan/index.php?mforum=smoclan"
+fi
+
