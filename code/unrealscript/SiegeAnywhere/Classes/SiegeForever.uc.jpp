@@ -106,6 +106,18 @@ function Mutate(String str, PlayerPawn Sender) {
 	DebugLog("SiegeForever.Mutate(\""$str$"\") was called.");
 	if (DeathMatchPlus(Level.Game).bTournament && !Sender.bAdmin) {
 	} else {
+		if (str ~= "HELP") {
+			if (Sender.bAdmin || bPlayersMaySave) {
+				Sender.ClientMessage(Self.class.name$": mutate save | mutate savebuildings");
+			}
+			if (Sender.bAdmin || bPlayersMayLoad) {
+				Sender.ClientMessage(Self.class.name$": mutate load | mutate loadbuildings");
+			}
+			if (Sender.bAdmin || bPlayersMayClear) {
+				Sender.ClientMessage(Self.class.name$": mutate clear | mutate killbuildings | mutate reset");
+			}
+		}
+		// Only an admin can run these commands, or any player in the first 10 seconds of the game.
 		if ( (Sender.bAdmin || bPlayersMaySave)
 			&& (str ~= "SAVE" || str ~= "SAVEBUILDINGS")
 		) {
