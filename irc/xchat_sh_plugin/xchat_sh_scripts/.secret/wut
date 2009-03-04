@@ -90,7 +90,12 @@ havent_played_since_booting () {
 
 # UT Status - Server: ( unreal://82.96.91.3:6100 ) Details: (blobb^cl @ CTF-IncineratorLE-102)
 
-LOGFILE=`echolines /tmp/ut.out.* | tail -n 1`
+if [ "$CHANNEL" = "#" ]
+then havent_played_for_a_bit ; exit
+fi
+
+# LOGFILE=`echolines /tmp/ut.out.* | tail -n 1`
+LOGFILE="/tmp/ut.out"
 if [ "$LOGFILE" ]
 then
 	## Check if the logfile is recent
