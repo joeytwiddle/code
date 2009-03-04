@@ -1,3 +1,9 @@
+# if [ "$CHANNEL" = "#noobpug" ]
+# then
+	# echo "Nope u missed your chance now.  :P"
+	# exit 0
+# fi
+
 . irc.shlib
 . irccols.shlib
 
