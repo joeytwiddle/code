@@ -48,10 +48,12 @@ public class IRCBot extends LogBot {
 
     // Per bot:
     
-    public String server = "pictor.vm.bytemark.co.uk";
+    public String server;
+    // public String server = "pictor.vm.bytemark.co.uk";
     // public String server = "irc.quakenet.org";
+    public String network;
     
-    final File configDir,channelsFile,performFile;
+    final File configDir,channelsFile,performFile,serversFile;
     
     public static void main(String[] args) {
         
@@ -90,9 +92,9 @@ public class IRCBot extends LogBot {
     }
     
     static void loadBot(File configDir) {
-        final String server = configDir.getName().replaceAll("-.*", "");
+        final String network = configDir.getName().replaceAll("-.*", "");
         final String botName = configDir.getName().replaceAll("^[^-]*-", "");
-        final IRCBot bot = new IRCBot(configDir,botName,server);
+        final IRCBot bot = new IRCBot(configDir,botName,network);
         allBots.add(bot);
         bot.doConnect();
     }
@@ -103,8 +105,8 @@ public class IRCBot extends LogBot {
     }
     */
     
-    public IRCBot(File configDir, String name, String server) {
-        super(name, logDir);
+    public IRCBot(File configDir, String name, String network) {
+        super(name, network, logDir);
         setName(name);
         setFinger("whoAreYou");
         setVersion("utb0t-O.o");
@@ -113,15 +115,31 @@ public class IRCBot extends LogBot {
         this.configDir = configDir;
         this.channelsFile = new File(configDir+"/channels");
         this.performFile = new File(configDir+"/perform");
-        this.server = server;
+        this.serversFile = new File(configDir+"/servers");
+        this.network = network;
+        this.server = network;
     }
     
     private void doConnect() {
         setVerbose(true);
         int sleepTime = 30;
         while (true) {
+            int port = 6667;
+
+            // Choose a random server from the server list:
+            if (serversFile.exists()) {
+                String[] servers = readLinesFromFile(serversFile);
+                String nextServer = servers[(int)(Math.random()*servers.length)];
+                if (nextServer.contains("/")) {
+                    String[] halves = nextServer.split("/");
+                    nextServer = halves[0];
+                    port = Integer.parseInt(halves[1]);
+                }
+                server = nextServer;
+            }
+            
             try {
-                connect(server);
+                connect(server,port);
                 break;
             } catch (final Exception e) {
                 e.printStackTrace(System.err);
@@ -174,20 +192,24 @@ public class IRCBot extends LogBot {
     }
     
     public static String[] readLinesFromFile(File file) {
-        try {
-            final Vector<String> result = new Vector<String>();
-            final BufferedReader in = new BufferedReader(new FileReader(file));
-            String line;
-            while (true) {
-                line = in.readLine();
-                if (line == null)
-                    break;
-                result.add(line);
+        if (file.exists()) {
+            try {
+                final Vector<String> result = new Vector<String>();
+                final BufferedReader in = new BufferedReader(new FileReader(file));
+                String line;
+                while (true) {
+                    line = in.readLine();
+                    if (line == null)
+                        break;
+                    result.add(line);
+                }
+                return result.toArray(new String[0]);
+            } catch (final Exception e) {
+                e.printStackTrace(System.err);
+                return null;
             }
-            return result.toArray(new String[0]);
-        } catch (final Exception e) {
-            e.printStackTrace(System.err);
-            return null;
+        } else {
+            return new String[0]; // it's ok for the file to not exist
         }
     }
     
@@ -265,7 +287,7 @@ public class IRCBot extends LogBot {
             //// Add environment variables to map, then collect as String[].
             // //We cannot modify System.getEnv(), so we create a new map.
             Map<String, String> envMap = new HashMap<String, String>( System.getenv() ); 
-            envMap.put("NETWORK",server);
+            envMap.put("NETWORK",network);
             envMap.put("SERVER",server);
             envMap.put("NICK",sender);
             envMap.put("CHANNEL",channel);
@@ -374,6 +396,7 @@ public class IRCBot extends LogBot {
         for (int i=0;i<users.length;i++) {
             String toAdd = users[i].getNick();
             if (withModes) {
+                // TODO: these do not appear to work on QuakeNet!
               if (users[i].isOp())
                   toAdd = "@"+toAdd;
               else if (users[i].hasVoice())
@@ -404,7 +427,7 @@ public class IRCBot extends LogBot {
             if (!first)
                 channelReport += " :: ";
             first = false;
-            channelReport += "[" + c +"] "+getUsers(c).length+" users";
+            channelReport += c +" "+getUsers(c).length+" users";
         }
         channelReport = channelReport.substring(0,channelReport.length());
 
@@ -419,7 +442,7 @@ public class IRCBot extends LogBot {
         if (newChannels.size()>0)
             channelReport += " // New channels are: "+newChannels;
 
-        return "{"+getName()+"} " + channelReport;
+        return "["+getName()+"] " + channelReport;
     }
     
     @Override
@@ -440,10 +463,9 @@ public class IRCBot extends LogBot {
         } else {
             rest = "";
         }
-        if (com.equals("/mode")) {
-            final String channel = firstArg;
-            final String mode = rest;
-            setMode(channel, mode);
+        if (com.equals("/nick")) {
+            final String newNick = rest;
+            changeNick(newNick);
         } else if (com.equals("/join")) {
             final String channel= firstArg;
             final String key = rest;
@@ -451,11 +473,6 @@ public class IRCBot extends LogBot {
                 joinChannel(channel);
             else
                 joinChannel(channel,key);
-        } else if (com.equals("/notice")) {
-            final String target = firstArg;
-            final String message = rest;
-            super.onNotice(getNick(), getLogin(), "hostname123", target, message); // For LogBot
-            sendNotice(target,message);
         } else if (com.equals("/msg")) {
             final String target = firstArg;
             final String message = rest;
@@ -466,15 +483,35 @@ public class IRCBot extends LogBot {
             final String message = firstArg + " " + rest;
             super.onAction(getNick(), getLogin(), "hostname123", target, message); // For LogBot 
             sendAction(target,message);
+       } else if (com.equals("/notice")) {
+            final String target = firstArg;
+            final String message = rest;
+            super.onNotice(getNick(), getLogin(), "hostname123", target, message); // For LogBot
+            sendNotice(target,message);
         } else if (com.equals("/invite")) { // Maybe worked before anyway
             final String nick = firstArg;
             final String channel = rest;
             super.onInvite(nick, getNick(), getLogin(), "hostname123", channel); // For LogBot
             sendInvite(nick, channel);
+        } else if (com.equals("/mode")) {
+            final String channel = firstArg;
+            final String mode = rest;
+            setMode(channel, mode);
         } else if (com.equals("/voice")) {
             // Actually I found if I tried to voice more than one person at a time, I would end up changing various channel modes (depending on the chars in the nicks being "voiced").  So now I voice users one on each line.  ;p
             super.onVoice(source, getNick(), getLogin(), "hostname123", firstArg+" "+rest);
             voice(source, firstArg + " " + rest);
+        } else if (com.equals("/op")) {
+            super.onOp(source, getNick(), getLogin(), "hostname123", firstArg+" "+rest);
+            op(source, firstArg + " " + rest);
+        } else if (com.equals("/kick")) {
+            super.onKick(source, getNick(), getLogin(), "hostname123", firstArg, rest);
+            kick(source, firstArg, rest);
+        } else if (com.equals("/ban")) {
+            ban(source, firstArg + " " + rest);
+        } else if (com.equals("/unban")) {
+            unBan(source, firstArg + " " + rest);
+        // @todo /kickban
         } else {
             // We warn that this command might not work raw:
             mylog("XXXX "+line);
@@ -528,7 +565,7 @@ public class IRCBot extends LogBot {
         txt = Colors.removeFormattingAndColors(txt);
         final String whereStr = ( getWhereStr().equals("log") ? "." : "#" ); // getWhereStr();
         final String dateStr = new java.text.SimpleDateFormat("kk:mm:ss").format(new java.util.Date());
-        final String[] serverBits = getServer().split("\\.");
+        final String[] serverBits = network.split("\\.");
         String shortServer = ""; 
         for (String serverBit : serverBits) {
             if (!serverBit.equals("irc")) {
