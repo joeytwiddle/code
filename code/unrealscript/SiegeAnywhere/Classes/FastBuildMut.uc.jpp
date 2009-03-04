@@ -476,17 +476,16 @@ function AddRUGlobally(float amount) {
 	local PlayerPawn p;
 	local int i;
 
+	// We are going to calculate teamScale, so that FastBuildRUPerSecond is fair for e.g. 3v2.
+	// To be really fair, this should also be true for the rest of RU collection during normal siege once the fastbuild is over.
 	local int TeamPlayerCount[8];
 	local float teamScale;
-
 	local int TeamCount;
 	local float averagePlayersPerTeam;
-
 	foreach AllActors(class'PlayerPawn', p) {
 		if (!p.IsA('Spectator') && p.PlayerReplicationInfo!=None && p.PlayerReplicationInfo.Team>-1)
 			TeamPlayerCount[ p.PlayerReplicationInfo.Team ] ++ ;
 	}
-
 	for (i=0;i<8;i++) {
 		if (TeamPlayerCount[i] > 0) {
 			averagePlayersPerTeam += TeamPlayerCount[i];
@@ -520,12 +519,14 @@ function AddRUGlobally(float amount) {
 			}
 			*/
 
+			// TODO CHECK: For really small cases (24v24), If this is <1.0 and data is int and AddRU does not do it probabilistically or fractionally, then we should!
 			sgPRI(a).AddRU(amount * teamScale);
 
+			// Although FastBuild wasn't designed for SiegeAnywhere, it can work in *some* of those types.
 			// FastBuild is meant to run with classic Siege, where MaxRU is dealt with at game start and then by the cores.
-			// Although it wasn't designed for SiegeAnywhere, it can work in *some* of those types.
+			// E.g. But if SiegeCTF starts with MaxRU 100, we should expand it somehow as players earn it.
 			if (sgPRI(a).RU >= sgPRI(a).MaxRU) {
-				// If SiegeCTF starts with MaxRU 100, we should expand it as they score.
+				// We will do it even in normal Siege FastBuild games, if bRUGetsMaxxedOut=false.
 				if (SiegeGI(Level.Game) == None || (!bRUGetsMaxxedOut) /*&& sgPRI(a).MaxRU < FastBuildMaxRU*/) {
 					// If we're not playing siege, then the only way to increase Max is by fragging.
 					// Since fragging is impossible during FastBuild, we let AddRUGlobally push up their max.
