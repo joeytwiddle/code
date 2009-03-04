@@ -1,0 +1,26 @@
+class SiegeGI expands SiegeXtreme002.SiegeGI;
+
+// This gametype simply gives the player an extra item when he spawns.
+// The item adds the extra build items to his constructor, and this is
+// simulated on client!
+
+function AddDefaultInventory(Pawn p) {
+	local Inventory inv;
+
+	Super.AddDefaultInventory(p);
+
+	Inv = Spawn(class'sgBuildOptionAdder');
+	if (Inv == None) {
+		Log(Self$".ModifyPlayer("$P.getHumanName()$") Warning! Failed to spawn sgXConstructor!");
+	} else {
+		inv.Instigator = p;
+		inv.BecomeItem();
+		p.AddInventory(Inv);
+		// inv.GiveAmmo(P);
+		// inv.SetSwitchPriority(P);
+		// inv.WeaponSet(P);
+		Log("Gave "$inv$" to "$p.getHumanName());
+	}
+
+}
+
