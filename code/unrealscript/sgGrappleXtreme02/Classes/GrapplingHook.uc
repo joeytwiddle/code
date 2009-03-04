@@ -13,8 +13,20 @@
 // #define DAMPEN_PULL_BY_TIME
 
 
+// #define DebugLog(X); 
 // #define DebugLog(X); Log("---KXG--- "$(X));
+
+// I think the BroadcastMessage fails with a DevNet warning, when called simulated on the client :P
+
+
+
+
+
+
+
 /*
+
+// TODO: swinging without winding is smooth.  swinging with tiny wind is jerky =/
 
 // CONSIDER: Local (simulated) physics processing could be skipped for pawns who are not the local player, or visible on his screen.  That information can just be updated slowly by replication later.  I still don't get replication.  If I try this I have a feeling I will probably break it.  ;p
 
@@ -845,6 +857,7 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
   local float currentOutVel,targetInVel;
   local bool doInwardPull; // aka CancelOutwardPull
   local bool bSingleLine; // bSingleLine actually means, "Is this the final line that attaches to the hook, or is it a secondary line bent around a corner?".
+  local float currentInVel;
                           // We often use it to decide whether the short lineLength really is relevant, as opposed to being short only to the next bend.
                           // But really in those cases we should use totalLineLength.
   // isStuck = False;
@@ -871,7 +884,7 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       Instigator.Velocity = Normal(pullDest - Instigator.Location) * GrappleSpeed;
       Master.AmbientSound = PullSound;
       AmbientSound = PullSound;
-      ;;
+      // DebugLog("Set PullSound 1");
     }
     return;
   }
@@ -914,7 +927,9 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       if (bUnrealUnwind) {
         //// Release the line at constant medium speed.  This is easy to control (linear with time pressed, as opposed to exponential with gravity).
         //// Nah this sucked - disabled.
-        //// We could still go for a medium model - starting with gravity but max wind out speed.  Or a slowdown on release.
+        //// You fall with gravity to begin with, then catch up with line's length, and begin to jerk down :P
+        //// DONE in other model.  We could still go for a medium model - starting with gravity but max wind out speed.  Or a slowdown on release.
+        //// Anyway this has now become a fall with gravity, but with a smaller max-speed.
         // lineLength = lineLength + 600*DeltaTime;
         lineLength = currentLength;
         //// No we don't want to push the player out with the line.
@@ -951,6 +966,14 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
         // }
       }
       WinchStartTime = 0; // reset if we just stopped winching
+    } else if (currentLength<lineLength) {
+      //// * FALLING (line is slack)
+      Master.AmbientSound = None;
+      AmbientSound = None;
+      doInwardPull = False;
+      // Instigator.ClientMessage("Your line is slack by "$Int(lineLength-currentLength));
+      // DebugLog("Your line is slack by "$Int(lineLength-currentLength));
+      //// If I make my line slack and then jump off the floor, I get this log message only on the way down!
     } else if (
       (lineLength<=MinRetract && bSingleLine)
       || (bPrimaryWinch && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire==0) // Fire to winch
@@ -958,7 +981,7 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       || (bPrimaryWinch && bCrouchReleases && PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bFire!=0 && PlayerPawn(Instigator).bDuck!=0)
       || GrappleSpeed==0
     ) {
-      //// * JUST SWINGING
+      //// * JUST SWINGING (at end of tight line)
       // TODO: right now this applies even if weapon is switched, and we primary fire with that :f
       Master.AmbientSound = None;
       AmbientSound = None;
@@ -990,6 +1013,15 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
 
       */
       WinchStartTime = 0; // reset if we just stopped winching
+      // TESTING:
+      if (bSingleLine && currentLength<MinRetract) {
+        doInwardPull = False;
+        ; if (True) { Log("---KXG--- "$("Skipping inwardPull since below MinRetract.")); BroadcastMessage("-KXG- "$("Skipping inwardPull since below MinRetract.")); };
+      }
+      //// DONE below
+      // if (currentLength > lineLength) {
+        // DebugLog("Artificially shortening line!");
+      // }
     } else {
       //// * WINCHING IN
       // We only need to set velocities here.  The movement is done below.
@@ -1011,13 +1043,14 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
         if (lineLength<500) { // Only happens when !bSingleLine
           // Without this, the player can get an extreme new pull, sending them in an abrupt new direction, when their line catches around a relatively close corner.  They still get pull, but it is dampened.
           // targetInVel = targetInVel * (0.1+0.9*lineLength/MinRetract/4.0);
-          targetInVel = targetInVel * (0.3+0.7*lineLength/(500));
+          targetInVel = targetInVel * (0.5+0.5*lineLength/(500));
           // He still gets 0.3 pull even if lineLength=0.
         }
       }
-      if (currentLength < lineLength-4.0) {
-        ;;
-      }
+      // if (currentLength < lineLength-4.0) {
+        // && doInwardPull
+        // DebugLog("Line should be slack but we are winching in ("$ (lineLength-currentLength) $")!");
+      // }
   /*
 
       // OK we have calculated what targetInVel should be.  But in fact we
@@ -1040,12 +1073,14 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
         WinchStartTime = Level.TimeSeconds;
       // targetInVel = 0.9*targetInVel + 0.1*(-outwardPull);
       targetInVel = (1.0-FClamp(0.5*DeltaTime,0.0,1.0))*targetInVel + FClamp(0.5*DeltaTime,0.0,1.0)*(-outwardPull);
+      // The line's length is adjusted for this tick:
       lineLength = lineLength - targetInVel*DeltaTime;
       if (lineLength < 0)
         lineLength = 0;
       if (lineLength>=currentLength) { // It could be that the line was slack, and we have only reeled it in, not pulling ourself.
         doInwardPull = False;
       } else {
+        // If he is not moving at targetInVel speed inwards, make him!
         if (-currentOutVel<targetInVel) {
           Instigator.AddVelocity(currentOutVel*Inward + targetInVel*Inward);
         }
@@ -1057,10 +1092,10 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       } else {
         Master.AmbientSound = PullSound;
         AmbientSound = PullSound;
-        ;;
+        // DebugLog("Set PullSound 2");
       }
       // Do we need to leave doInwardPull set?
-      if (bBunnyJump && !(bSingleLine && lineLength<MinRetract*1.1)) {
+      if (bBunnyJump && !(bSingleLine && lineLength<MinRetract*1.5)) {
         // If Player is being pulled but dragging on floor, make him bounce/jump automatically:
         /*
 
@@ -1095,7 +1130,7 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
         */
         // Actually this does work, it takes affect immediately, and the player
         // keeps his velocity, performing perfect bunny jumps.
-        if (Instigator.Physics == PHYS_Walking && FRand()<0.5) {
+        if (Instigator.Physics == PHYS_Walking /*&& FRand()<0.5*/ ) {
           if (PlayerPawn(Instigator)!=None)
             PlayerPawn(Instigator).bPressedJump = True;
           if (Bot(Instigator)!=None)
@@ -1105,6 +1140,13 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
         }
         // Consider: Would it be better to make him forward-dodge?
         // Fixed with FRand(): He starts jumping immediately.
+      }
+    }
+    if (FRand()<0.1) {
+      if (doInwardPull) {
+        ; if (True) { Log("---KXG--- "$("DOING inward pull.")); BroadcastMessage("-KXG- "$("DOING inward pull.")); };
+      } else {
+        ; if (True) { Log("---KXG--- "$("Not doing inward pull.")); BroadcastMessage("-KXG- "$("Not doing inward pull.")); };
       }
     }
     if (lineLength<MinRetract && bSingleLine) lineLength=MinRetract;
@@ -1118,7 +1160,15 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       //// Can cause crater against wall when stuck!
       // Instigator.Move( (pullDest + lineLength*-Inward) - Instigator.Location );
       //// When stuck we just sit static.
-      TryMoveTo(Instigator,pullDest - lineLength*Inward);
+      // TryMoveTo(Instigator,pullDest - lineLength*Inward);
+      // DONE: Would be better to give him a tiny bit of inward velocity :P
+      // CONSIDER TODO: Maybe we shouldn't do this if we have already adjusted his velocity because he is winching.  But then
+      targetInVel = (currentLength-lineLength); // fix difference in 1 second
+      currentInVel = Instigator.Velocity Dot Normal(pullDest-Instigator.Location);
+      if (currentInVel < targetInVel) {
+        Instigator.Velocity = Instigator.Velocity + (targetInVel-currentInVel)*Normal(pullDest-Instigator.Location);
+      }
+      ; if (True) { Log("---KXG--- "$("Fixed inward velocity at "$targetInVel)); BroadcastMessage("-KXG- "$("Fixed inward velocity at "$targetInVel)); };
       /*
 
       // We should have no outward velocity.  If we do, it will be cancelled out by the force of the line, in the Inward direction.
@@ -1188,7 +1238,7 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       }
       Master.AmbientSound = PullSound;
       AmbientSound = PullSound;
-      ;;
+      // DebugLog("Set PullSound 3");
     }
     if (bCrouchReleases) {
       if (PlayerPawn(Instigator)!=None && PlayerPawn(Instigator).bDuck!=0 && PlayerPawn(Instigator).bFire==0) {
@@ -1581,9 +1631,9 @@ defaultproperties {
     // HitSound=sound'UnrealI.GasBag.hit1g'
     // HitSound=sound'KrrChink'
     // PullSound=sound'SoftPull'
-    HitSound=sound'kxGrapple.hit1g'
-    PullSound=sound'kxGrapple.Pull'
-    RetractSound=sound'kxGrapple.Slurp'
+    HitSound=sound'sgGrappleXtreme02.hit1g'
+    PullSound=sound'sgGrappleXtreme02.Pull'
+    RetractSound=sound'sgGrappleXtreme02.Slurp'
     ReleaseSound=sound'ObjectPush'
     // LineMesh=mesh'botpack.shockbm'
     // LineMesh=mesh'botpack.plasmaM'

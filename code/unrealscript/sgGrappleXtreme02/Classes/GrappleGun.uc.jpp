@@ -1,1 +1,5 @@
+#define KXGRAPPLE_HITSOUND sound'sgGrappleXtreme02.hit1g'
+#define KXGRAPPLE_PULLSOUND sound'sgGrappleXtreme02.Pull'
+#define KXGRAPPLE_RETRACTSOUND sound'sgGrappleXtreme02.Slurp'
+
 #include "../../kxGrapple/Classes/GrappleGun.uc"

@@ -14,7 +14,8 @@ simulated function PostBeginPlay() {
 }
 
 simulated function OnGive(Pawn Target, Inventory Inv) {
- ForceGun(Inv).PullStrength = ForceGun(Inv).PullStrength * (0.5 + 0.5*Grade/5);
+ // The default seemed too powerful for a live game, so I halved it.
+ ForceGun(Inv).PullStrength = ForceGun(Inv).PullStrength * (0.1 + 0.9*Grade/5) / 2;
 }
 
 defaultproperties {
