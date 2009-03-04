@@ -15,6 +15,8 @@ import org.jibble.pircbot.*;
 
 public class LogBot extends PircBot {
 
+    private String prefix;
+    
     // private static final Pattern urlPattern = Pattern.compile("(?i:\\b((http|https|ftp|irc)://[^\\s]+))");
     private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss");
@@ -30,9 +32,10 @@ public class LogBot extends PircBot {
     
     public static boolean logToStdOut = false; // Whether to also send the lines we are logging to channel logfiles, to stdout.
     
-    public LogBot(String name, File outDir) {
+    public LogBot(String name, String prefix, File outDir) {
         setName(name);
         setVerbose(true);
+        this.prefix = prefix;
         this.outDir = outDir;
         if (!outDir.exists()) {
             outDir.mkdirs();
@@ -62,7 +65,7 @@ public class LogBot extends PircBot {
             System.out.println("-LOG- " + entry);
 
         // File file = new File(outDir, date + ".log");
-        final String fileName = getServer()+ "-" + channel + ".log"; // Could send to lower case, but I don't see much need.
+        final String fileName = prefix + "-" + channel + ".log"; // Could send to lower case, but I don't see much need - might break log searches.
         final File file = new File(outDir, fileName);
         try {
             // BufferedWriter writer = getWriterForChannel(channel); 
