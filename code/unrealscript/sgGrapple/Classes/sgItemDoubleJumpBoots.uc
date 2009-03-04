@@ -7,7 +7,7 @@ simulated function PostBeginPlay() {
 
 simulated function OnGive(Pawn Target, Inventory Inv) {
 	DoubleJumpBoots(Inv).JumpHeight = DoubleJumpBoots(Inv).JumpHeight * (0.6 + 0.45*Grade/5);
-	DoubleJumpBoots(Inv).MaxJumps = Int(FClamp(2.0+Grade/2,2.0,3.0));
+	DoubleJumpBoots(Inv).MaxJumps = Int(FClamp(2.0+Grade/3,2.0,3.0));
 }
 
 defaultproperties {
