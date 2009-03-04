@@ -6,7 +6,7 @@ simulated function PostBeginPlay() {
 }
 
 simulated function OnGive(Pawn Target, Inventory Inv) {
-	GrappleGun(Inv).ProjectileSpeed = GrappleGun(Inv).ProjectileSpeed * (0.5*Sqrt(0.02+Grade/5));
+	GrappleGun(Inv).ProjectileSpeed = GrappleGun(Inv).ProjectileSpeed * (0.5*Sqrt(0.1+Grade/5));
 }
 
 defaultproperties {
