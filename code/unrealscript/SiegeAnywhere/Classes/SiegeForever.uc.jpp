@@ -30,10 +30,10 @@ class SiegeForever extends Mutator config(SiegeForever);
 //   impossible to remove.
 #define MaxTeams 4
 #define MaxMaps 48
-#define MaxTypes 20
+#define MaxTypes 32
 // MAX_ALL must be the multiple of the other 3.
 // #define MAX_ALL (MaxTeams*MaxMaps*MaxTypes)
-#define MAX_ALL 3840
+#define MAX_ALL 6144
 
 // #define MyLogHeader ("["$Self.class$"]")
 #define MyLogHeader "[SiegeForever]"
