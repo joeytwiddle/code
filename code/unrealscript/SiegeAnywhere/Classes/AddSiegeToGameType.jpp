@@ -19,7 +19,8 @@
 	#define SiegeAnywhereHUDType class'SiegeAnywhereHUD'
 #endif
 
-#define INCLUDE_BUILDOPTION_ADDER
+// #define INCLUDE_BUILDOPTION_ADDER
+//// See also: SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
 
 var config float StartingMaxRU, StartingRU;
 var config float FriendlyFireScale;

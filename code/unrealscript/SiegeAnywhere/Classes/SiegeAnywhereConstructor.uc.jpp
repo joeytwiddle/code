@@ -4,7 +4,8 @@
 class SiegeAnywhereConstructor extends sgConstructor config (SiegeAnywhere);
 
 //// This worked once we made it simulated.
-#define SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
+// #define SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
+//// See also: INCLUDE_BUILDOPTION_ADDER
 
 var config bool bBlockBuildingOnKeypoints;
 var config float BlockRadius;

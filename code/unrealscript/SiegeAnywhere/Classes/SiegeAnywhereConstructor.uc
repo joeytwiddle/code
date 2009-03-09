@@ -7,7 +7,8 @@
 class SiegeAnywhereConstructor extends sgConstructor config (SiegeAnywhere);
 
 //// This worked once we made it simulated.
-
+// #define SIEGEANYWHERE_ADD_TO_CONSTRUCTOR
+//// See also: INCLUDE_BUILDOPTION_ADDER
 
 var config bool bBlockBuildingOnKeypoints;
 var config float BlockRadius;
@@ -212,7 +213,7 @@ simulated function PostBeginPlay() {
  Super.PostBeginPlay();
 
 
- AddExtraBuildOptions();
+
 
 }
 
@@ -234,34 +235,3 @@ event Timer() {
   }
  }
 }
-
-
-
-simulated function AddExtraBuildOptions() {
- //// TODO: Remove Invisibility.  It sucks for sgCTF and sgAS.
- //// TODO: Remove Jetpack from sgAS, and from sgCTF until we can force flagdrop when jetting.
- // if ( ! sgCategoryTeleport.class.default.Selections[4] == class'sgItemGrappleGun' ) {
-  // InsertInCategory(class'sgCategoryTeleport',class'sgItemGrappleGun',4);
- // }
- InsertInCategory(class'sgCategoryItems',class'sgItemDoubleJumpBoots',2);
- // InsertInCategory(class'sgCategoryItems',class'sgItemGhost',3);
- InsertInCategory(class'sgCategoryItems',class'sgItemForceGun',5);
- // InsertInCategory(class'sgCategoryItems',class'sgItemSpawner',6); // not an item, just a building!  it doesn't display properly in constructor menu ... maybe if we set its defaults?  it doesn't work anyway :P
- InsertInCategory(class'sgCategoryTeleport',class'sgItemGrappleGun',4);
- // InsertInCategory(class'sgCategoryExplosives',class'sgItemVoiceBox',5); // Was in 2e but not 2g.
-}
-
-simulated function InsertInCategory(class<sgBuildCategory> categoryClass, class<sgBuilding> BuildClass, int pos) {
- local int i;
- if (categoryClass.default.Selections[pos] == BuildClass)
-  return; // It's already there where we wanted to put it - do nothing.
- for (i=categoryClass.default.NumSelections;i>pos;i--) {
-  categoryClass.default.Selections[i] = categoryClass.default.Selections[i-1];
- }
- categoryClass.default.Selections[pos] = BuildClass;
- categoryClass.default.NumSelections++;
-}
-
-// Example config:
-// ExtraItems(1)=ExtraItem(Name="A Bucket",Mesh="BucketMesh",InventoryType="Botpack.Bucket",BuildCost=250,UpgradeCost=50)
-// Mmmm unfortunately the current system requires that a separate sgItem class exists for each item.
