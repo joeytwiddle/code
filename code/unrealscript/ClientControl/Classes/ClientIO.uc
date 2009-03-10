@@ -7,21 +7,16 @@
 // ClientIO
 //================================================================================
 
-// TODO: When logger starts up, would be nice to log the date+time and the current map and the server.
-// TODO: If we wanna be really nice, we could offer %m=message %n=sender_name %t=time %w=mapname %s=servername %d=date etc., and let the user decide the output format.
-// TODO: Only captures single lines.  If server send many lines, only the last one is caught.
-//       To solve this, we could seek back in MsgText array to see if we can find the last line we recorded.
-
+// TODO: Hide mapname (atm it appears in actor's name and weapon's name).
+//       Don't send only Pawn info.  Send also projectiles, and local items.  Send all actors?!
+//       Send updates instead of everything each time (especially for actors which never move).
 class ClientIO expands Actor config (ClientIO);
-
 var config bool bLogAllPawns;
-
 var PlayerPawn OurPlayer;
-
+var int TickCount;
 defaultproperties {
 bLogAllPawns=true
 }
-
 function PostBeginPlay() { // In case spawned rather than selected from menu
  Super.PostBeginPlay();
  // This allows us to "summon ClientIO.ClientIO" in a local game:
@@ -29,36 +24,39 @@ function PostBeginPlay() { // In case spawned rather than selected from menu
   Init(PlayerPawn(Owner));
  } // TODO: Does this work if we were spawned client-side as a mutator?  Maybe we should check Role.
 }
-
 // This is the initialisation function
 function Init(PlayerPawn o) {
  OurPlayer = o;
  Enable('Tick');
  Log("[ClientIO] Initialised for "$o.getHumanName());
 }
-
 event Tick (float DeltaTime) {
  // Log("### State at "$Level.TimeSeconds$" follows after "$DeltaTime);
- Log("### START STATE");
- Log("Time="$Level.TimeSeconds$" DeltaTime="$DeltaTime);
+ SendData("### START STATE");
+ SendData("Moment="$TickCount$" Time="$Level.TimeSeconds$" DeltaTime="$DeltaTime);
+ TickCount++;
  SendUpdates(DeltaTime);
- Log("### END STATE");
+ SendData("### END STATE");
  Super.Tick(DeltaTime);
 }
-
 // event Timer () {
 // }
-
 function SendUpdates(float DeltaTime) {
  local Pawn p;
- Log("TYPE ID NAME LOCATION VELOCITY VIEWROTATION PHYSICS WEAPON DUCK FIRE ALTFIRE"); // JUMP");
+ local String n;
+ SendData("Type ID Name Location Velocity Viewrotation Physics Weapon Duck Fire Altfire"); // Jump");
  foreach AllActors(class'Pawn',p) {
-  Log(p.class $" "$ p $" "$ p.getHumanName() $" "$ p.Location $" "$ p.Velocity $" "$ p.ViewRotation $" "$ p.Physics $" "$ p.Weapon $" "$ p.bDuck $" "$ p.bFire);
+  n = p.getHumanName();
+  if (p.IsA('Bot'))
+   n = p.PlayerReplicationInfo.PlayerName; // Needed for bots during online play
+  SendData(p.class $" "$ p $" "$ p.getHumanName() $" "$ p.Location $" "$ p.Velocity $" "$ p.ViewRotation $" "$ p.Physics $" "$ p.Weapon $" "$ p.bDuck $" "$ p.bFire);
   //  $" "$ p.bJump
   // TODO: Show the pawn's mesh (sprite?  and frame?)
  }
 }
-
 function bool WeAreOnline() {
  return False;
+}
+function SendData(String str) {
+ Log(str);
 }

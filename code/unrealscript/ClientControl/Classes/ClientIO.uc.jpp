@@ -1,0 +1,77 @@
+//================================================================================
+// ClientIO
+//================================================================================
+
+// TODO: Hide mapname (atm it appears in actor's name and weapon's name).
+//       Don't send only Pawn info.  Send also projectiles, and local items.  Send all actors?!
+//       Send updates instead of everything each time (especially for actors which never move).
+
+#ifndef CLASS_NAME
+	#define CLASS_NAME ClientIO
+#endif
+#ifndef PARENT_CLASS
+	#define PARENT_CLASS Actor
+#endif
+
+class CLASS_NAME expands PARENT_CLASS config (ClientIO);
+
+var config bool bLogAllPawns;
+
+var PlayerPawn OurPlayer;
+
+var int TickCount;
+
+defaultproperties {
+bLogAllPawns=true
+}
+
+function PostBeginPlay() { // In case spawned rather than selected from menu
+	Super.PostBeginPlay();
+	// This allows us to "summon ClientIO.ClientIO" in a local game:
+	if (OurPlayer==None && PlayerPawn(Owner)!=None) {
+		Init(PlayerPawn(Owner));
+	} // TODO: Does this work if we were spawned client-side as a mutator?  Maybe we should check Role.
+}
+
+// This is the initialisation function
+function Init(PlayerPawn o) {
+	OurPlayer = o;
+	Enable('Tick');
+	Log("[ClientIO] Initialised for "$o.getHumanName());
+}
+
+event Tick (float DeltaTime) {
+	// Log("### State at "$Level.TimeSeconds$" follows after "$DeltaTime);
+	SendData("### START STATE");
+	SendData("Moment="$TickCount$" Time="$Level.TimeSeconds$" DeltaTime="$DeltaTime);
+	TickCount++;
+	SendUpdates(DeltaTime);
+	SendData("### END STATE");
+	Super.Tick(DeltaTime);
+}
+
+// event Timer () {
+// }
+
+function SendUpdates(float DeltaTime) {
+	local Pawn p;
+	local String n;
+	SendData("Type ID Name Location Velocity Viewrotation Physics Weapon Duck Fire Altfire"); // Jump");
+	foreach AllActors(class'Pawn',p) {
+		n = p.getHumanName();
+		if (p.IsA('Bot'))
+			n = p.PlayerReplicationInfo.PlayerName; // Needed for bots during online play
+		SendData(p.class $" "$ p $" "$ p.getHumanName() $" "$ p.Location $" "$ p.Velocity $" "$ p.ViewRotation $" "$ p.Physics $" "$ p.Weapon $" "$ p.bDuck $" "$ p.bFire);
+		//  $" "$ p.bJump
+		// TODO: Show the pawn's mesh (sprite?  and frame?)
+	}
+}
+
+function bool WeAreOnline() {
+	return False;
+}
+
+function SendData(String str) {
+	Log(str);
+}
+
