@@ -34,6 +34,7 @@ event Tick (float DeltaTime) {
  // Log("### State at "$Level.TimeSeconds$" follows after "$DeltaTime);
  SendData("### START STATE");
  SendData("Moment="$TickCount$" Time="$Level.TimeSeconds$" DeltaTime="$DeltaTime);
+ // SendData("POV="$OurPlayer);
  TickCount++;
  SendUpdates(DeltaTime);
  SendData("### END STATE");
@@ -56,7 +57,8 @@ function SendUpdates(float DeltaTime) {
    else
     n = P.getHumanName();
    pawnExtra = " "$ P.ViewRotation $" "$ P.Weapon $" "$ P.bDuck $" "$ P.bFire;
-  } else if (A.IsA('Projectile')) {
+  // } else if (A.IsA('Projectile')) {
+  } else if (Projectile(A) != None) {
    n = "" $ A.Name;
   } else {
    continue; // We won't report this actor

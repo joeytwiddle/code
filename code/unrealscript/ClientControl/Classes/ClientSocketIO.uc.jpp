@@ -30,10 +30,11 @@ function Init(PlayerPawn o) {
 function SendData(String str) {
 	// TODO: It might be more efficient to build up the whole string for this tick, then send it all in one go.
 	if (socket!=None && socket.bReady) {
-		socket.SendText(str $ "\n");
+		// socket.SendText(str $ "\\r\\n");
+		socket.SendText(str $ Chr(13) $ Chr(10));
 	} else {
 		// Log("Could not send: "$str,Name);
-		if (FRand()<0.01) { Log("[ClientSocketIO] Cannot send to socket "$ConnectHost$":"$ConnectPort); }
+		if (FRand()<0.001) { Log("[ClientSocketIO] Cannot send to socket "$ConnectHost$":"$ConnectPort$" - missing "$str); }
 	}
 }
 

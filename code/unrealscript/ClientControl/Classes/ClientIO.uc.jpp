@@ -69,7 +69,8 @@ function SendUpdates(float DeltaTime) {
 			else
 				n = P.getHumanName();
 			pawnExtra = " "$ P.ViewRotation $" "$ P.Weapon $" "$ P.bDuck $" "$ P.bFire;
-		} else if (A.IsA('Projectile')) {
+		// } else if (A.IsA('Projectile')) {
+		} else if (Projectile(A) != None) {
 			n = "" $ A.Name;
 		} else {
 			continue; // We won't report this actor

@@ -1,11 +1,15 @@
 class TcpSocket extends TcpLink;
 
+// DONE: There is now a dodgy way to reset RetryTime.  (Except to stop current and start fresh ClientSocketIO.)
+
 var() string Host;
 var() int Port;
 
 var bool bReady;
+var float RetryTime;
 
 function Start() {
+	RetryTime = 3.0;
 	Resolve(Host);
 }
 
@@ -19,16 +23,18 @@ event Resolved(IpAddr AddressIp) {
 }
 
 event ResolveFailed() {
-	Log("Unable to resolve" @ Host, Name);
+	Log("Unable to resolve"$ Host, Name);
 	Destroy();
 }
 
 event Opened() {
 	local string Query;
-	Log("Opened"$ Host $ ":" $ Port, Name);
+	Log("Opened"$ Host $":"$ Port, Name);
 	bReady = True;
 	// We might change this in future.
 	LinkMode = MODE_Text;
+	//// We can't do this here.  We always reach here even if connection failed!
+	// RetryTime = 3.0;
 }
 
 event ReceivedText(string Text) {
@@ -38,10 +44,22 @@ event ReceivedText(string Text) {
 }
 
 event Closed() {
-	Log("Closed connection to "$Host$":"$Port, Name);
 	bReady = False;
 	// TODO CONSIDER: Set timer to retry in 5/10/20/40/... seconds?
-	Destroy();
+	// Destroy();
+	Log("Connection to "$Host$":"$Port$" closed - retry in "$Int(RetryTime)$" seconds.", Name);
+	SetTimer(RetryTime,False);
+	// RetryTime = RetryTime * 1.5;
+	RetryTime = RetryTime + 3.0;
+	// After 6 slowing steps, he goes back to a fast retry..
+	if (RetryTime > 30)
+		RetryTime = 3.0;
+}
+
+event Timer() {
+	if (!bReady) {
+		Resolve(Host);
+	}
 }
 
 function Destroyed() {
