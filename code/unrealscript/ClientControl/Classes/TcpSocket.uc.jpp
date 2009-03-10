@@ -1,0 +1,50 @@
+class TcpSocket extends TcpLink;
+
+var() string Host;
+var() int Port;
+
+var bool bReady;
+
+function Start() {
+	Resolve(Host);
+}
+
+event Resolved(IpAddr AddressIp) {
+	local int AddressLocalPort;
+	AddressIp.Port = Port;
+	AddressLocalPort = BindPort();
+	Log("Got "$ IpAddrToString(AddressIp) $" for "$ Host, Name);
+	Log("Local port "$ AddressLocalPort, Name);
+	Open(AddressIp);
+}
+
+event ResolveFailed() {
+	Log("Unable to resolve" @ Host, Name);
+	Destroy();
+}
+
+event Opened() {
+	local string Query;
+	Log("Opened"$ Host $ ":" $ Port, Name);
+	bReady = True;
+	// We might change this in future.
+	LinkMode = MODE_Text;
+}
+
+event ReceivedText(string Text) {
+	if (Len(Text) > 0) {
+		Log("Received data << ("$ Host $":"$ Port $") << "$ Text, Name);
+	}
+}
+
+event Closed() {
+	Log("Closed connection to "$Host$":"$Port, Name);
+	bReady = False;
+	// TODO CONSIDER: Set timer to retry in 5/10/20/40/... seconds?
+	Destroy();
+}
+
+function Destroyed() {
+	// bReady = False;
+}
+

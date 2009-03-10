@@ -42,15 +42,27 @@ event Tick (float DeltaTime) {
 // event Timer () {
 // }
 function SendUpdates(float DeltaTime) {
- local Pawn p;
+ local Actor A;
+ local Pawn P;
  local String n;
- SendData("Type ID Name Location Velocity Viewrotation Physics Weapon Duck Fire Altfire"); // Jump");
- foreach AllActors(class'Pawn',p) {
-  n = p.getHumanName();
-  if (p.IsA('Bot'))
-   n = p.PlayerReplicationInfo.PlayerName; // Needed for bots during online play
-  SendData(p.class $" "$ p $" "$ p.getHumanName() $" "$ p.Location $" "$ p.Velocity $" "$ p.ViewRotation $" "$ p.Physics $" "$ p.Weapon $" "$ p.bDuck $" "$ p.bFire);
-  //  $" "$ p.bJump
+ local String pawnExtra;
+ SendData("Type ID Name Location Velocity Physics (ViewRotation Weapon Duck Fire Altfire)"); // Jump");
+ foreach AllActors(class'Actor',A) {
+  pawnExtra = "";
+  if (A.IsA('Pawn')) {
+   P = Pawn(A);
+   if (P.IsA('Bot'))
+    n = P.PlayerReplicationInfo.PlayerName; // Needed for bots during online play
+   else
+    n = P.getHumanName();
+   pawnExtra = " "$ P.ViewRotation $" "$ P.Weapon $" "$ P.bDuck $" "$ P.bFire;
+  } else if (A.IsA('Projectile')) {
+   n = "" $ A.Name;
+  } else {
+   continue; // We won't report this actor
+  }
+  SendData(A.class $" "$ A $" "$ A.getHumanName() $" "$ A.Location $" "$ A.Velocity $" "$ A.Physics $ pawnExtra);
+  //  $" "$ P.bJump
   // TODO: Show the pawn's mesh (sprite?  and frame?)
  }
 }
