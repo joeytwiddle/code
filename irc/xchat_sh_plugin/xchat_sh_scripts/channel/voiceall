@@ -3,5 +3,5 @@ then
 	for NICK in $USERS
 	do echo "/voice $NICK"
 	done
-	# echo "/voice $USERS"
+	# echo "/voice $USERS" ## Causes nasty channel mode changes!
 fi
