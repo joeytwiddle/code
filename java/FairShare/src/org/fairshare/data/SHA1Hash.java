@@ -7,12 +7,11 @@ import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.Security;
 
 
 public class SHA1Hash implements Hash {
     
-    String hexValue;
+    public String hexValue;
     
     public SHA1Hash(String hashHexString) {
         this.hexValue = hashHexString;

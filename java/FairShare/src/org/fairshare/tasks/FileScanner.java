@@ -11,7 +11,7 @@ import org.common.lib.ProcessResult;
 import org.common.lib.Streamer;
 import org.fairshare.data.Database;
 import org.fairshare.data.SHA1Hash;
-import org.neuralyte.Logger;
+import org.fairshare.Logger;
 import org.neuralyte.common.io.StreamUtils;
 
 import com.sun.org.apache.xalan.internal.xslt.Process;
@@ -52,10 +52,10 @@ public class FileScanner {
             String data = StreamUtils.streamStringFrom(in);
 //            String hash = SHA1.calculateSHA1_s(data);
             String hash = SHA1Hash.calculateSHA1(data);
-            org.neuralyte.Logger.log("sha1:"+hash+" file:"+file);
+            org.fairshare.Logger.log("sha1:"+hash+" file:"+file);
             return hash;
         } catch (Exception e) {
-            org.neuralyte.Logger.error(e);
+            org.fairshare.Logger.error(e);
             return null;
         }
     }
@@ -93,6 +93,9 @@ public class FileScanner {
             e.printStackTrace();
         }
         ProcessResult result = new ProcessResult();
+        if (stdOut.result == null || stdErr.result == null) {
+            Logger.warn("Process streams are empty! "+stdOut+" "+stdErr);
+        }
         result.exitValue = process.exitValue();
         result.stdOutStr = stdOut.result;
         result.stdErrStr = stdErr.result;

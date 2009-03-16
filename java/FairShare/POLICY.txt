@@ -1,0 +1,30 @@
+--- Tags
+
+A tag can have a description which explains in detail exactly what makes it differ
+from other similarly named tags.  The global policy should be that this description
+data lives in key tagdesc:
+
+In fact some tags even have rules associated with them:
+e.g. If tag:rachels_favourite_cooking_recipies then tag:cooking_recipie
+
+
+
+The "public" tag could be the globally "agreed" merge of all the private tags.
+Continually estimated and updated according to new info and checks.
+Can we trust the servers with a good reputation to give accurate tags?
+No for tags we go for total democracy - each "ip/user" has an equal vote.
+
+
+
+If you have a huge debt to peer X, what incentive is there to give
+back to him, since you will never dent the debt?
+
+
+
+
+DONT_SHOW_ME
+and
+DONT_SHOW_SYS
+
+
+

@@ -3,7 +3,7 @@ package org.common.lib;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.neuralyte.Logger;
+import org.fairshare.Logger;
 import org.neuralyte.common.io.StreamUtils;
 
 public class Streamer extends Thread {

@@ -18,14 +18,19 @@ public class Database {
      * then process.
      */
     
+    // #define Hash String
+    
     public Map<Hash,File> localFiles = new HashMap<Hash,File>();
     // These are not really associated with user, or not publically anyway.
     
-    public ListMap tagDB = new ListMap<String,Object>();
+    public ListMap<String,Object> tagDB = new ListMap<String,Object>();
     // There may be global tags and user tags.
     // No maybe only global tags i.e. words :P
     
     // User ratings
     // KnowledgeDB will have GlobalUserRating!
+    
+    // There are different types of rating.
+    // Normally ofc 
     
 }

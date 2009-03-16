@@ -1,10 +1,11 @@
 package org.common.nap;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Map;
 
-import org.neuralyte.Logger;
+import org.fairshare.Logger;
 import org.neuralyte.util.reflection.ReflectionHelper;
 
 public class SimpleNapper implements Napper {
@@ -27,13 +28,20 @@ public class SimpleNapper implements Napper {
             return;
         }
         
+        if (obj instanceof String) {
+            out.append('\"' + ""+obj + '\"');
+            return;
+        }
+        
+        final String subIndent = indent = "\t";
+
         if (obj instanceof Collection) {
             Collection col = (Collection)obj;
             int i = 0;
             for (Object item : col) {
                 // out.append(indent+"["+i+"] = "+toString(item));
-                out.append(indent+"["+i+"] = ");
-                toString(item,indent+"\t",out);
+                out.append(subIndent+"["+i+"] = ");
+                toString(item,subIndent+"\t",out);
                 out.append("\n");
                 i++;
             }
@@ -46,9 +54,16 @@ public class SimpleNapper implements Napper {
             Collection keySet = map.keySet();
             for (Object key : keySet) {
                 Object val = map.get(key);
-                out.append(indent+"\t"+toString(key)+" = "+toString(val)+"\n");
+                
+                out.append(subIndent+"\t"+toString(key)+" = "+toString(val)+"\n");
             }
-            out.append(indent+"}\n");
+            out.append(indent+"} #(end map)\n");
+            return;
+        }
+        
+        if (obj instanceof File) {
+            File file = (File)obj;
+            out.append(file.getPath());
             return;
         }
         
@@ -60,7 +75,7 @@ public class SimpleNapper implements Napper {
         out.append(indent + obj.getClass().getName() + " {\n");
         
         Field[] fields = obj.getClass().getFields();
-        String subIndent = indent + "\t";
+        final String subIndent = indent + "\t";
         if (fields.length == 0) {
             Logger.warn("Doing " + fields.length + " fields for " + obj);
         }
