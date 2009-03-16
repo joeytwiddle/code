@@ -16,7 +16,7 @@ public class SearchRequest extends Request {
     public Response process(Context context) {
         SearchResponse response = new SearchResponse();
         String[] searchStringSplit = searchString.split(" ");
-        for (Hash hash : context.database.localFiles.keySet()) {
+        for (String hash : context.database.localFiles.keySet()) {
             File file = context.database.localFiles.get(hash);
             double score = 0.5d;
             int upCount=0, downCount=0;

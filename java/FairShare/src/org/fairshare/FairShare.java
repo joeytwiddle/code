@@ -17,7 +17,9 @@ import org.fairshare.tasks.FileScanner;
 
 public class FairShare {
 
-    static Database database = new Database();
+    public static Config config = new Config();
+    
+    public static Database database = new Database();
     
     public static void main(String[] args) {
         
@@ -26,25 +28,40 @@ public class FairShare {
         File[] dirs = { new File(".") };
         
         
+        // TODO: Load config
+        try {
+            config = (Config)Nap.fromFile("fairshare.cfg");
+        } catch (Exception e) {
+            Logger.info(""+e);
+        }
         
         
+        // TODO: Operate cmdline args.
+        
+        
+        // TODO: Start in background, if idling.
         new FileScanner().scanDB(dirs, database);
         
+        
+        
+        
+        // Write files before exiting:
         
         System.out.println("Database:");
         System.out.println(Nap.toString(database));
         
         try {
-            OutputStream out = new FileOutputStream("config.new");
-            Nap.sendToStream(database,out);
+            
+            OutputStream cacheOut = new FileOutputStream("cache.new");
+            Nap.sendToStream(database.localFiles,cacheOut);
+            
+            OutputStream dataOut = new FileOutputStream("data.new");
+            Nap.sendToStream(database.tagDB,dataOut);
+            // Actually the current tagDB is all auto-generated too, so more cache than data :P
+            
         } catch (Exception e) {
             Logger.error(e);
         }
-        
-        
-        
-        
-        
         
         
         

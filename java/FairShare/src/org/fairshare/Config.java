@@ -7,4 +7,7 @@ public class Config {
     
     int port;
     
+    public boolean autoGenerateTags = true;
+    public boolean autoGenerateRatings = true;
+    
 }

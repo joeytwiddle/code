@@ -8,6 +8,7 @@ import org.fairshare.data.Hash;
 
 public class SearchResponse implements Response {
 
-    Map<Hash,Double> results = new HashMap<Hash,Double>(); 
+    // The String is actually a Hash.
+    Map<String,Double> results = new HashMap<String,Double>(); 
 
 }

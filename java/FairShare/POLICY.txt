@@ -1,8 +1,15 @@
+
+
+
+By "global" I mean "shared+distributed".
+
+
+
 --- Tags
 
-A tag can have a description which explains in detail exactly what makes it differ
-from other similarly named tags.  The global policy should be that this description
-data lives in key tagdesc:
+A tag can have a description which explains in detail exactly what makes it
+differ from other similarly named tags.  The global policy should be that this
+description data lives in key tagdesc:
 
 In fact some tags even have rules associated with them:
 e.g. If tag:rachels_favourite_cooking_recipies then tag:cooking_recipie
@@ -25,6 +32,36 @@ back to him, since you will never dent the debt?
 DONT_SHOW_ME
 and
 DONT_SHOW_SYS
+
+
+
+In terms of space it is far more efficient to store all the things together:
+  hash   rating   default_filename
+
+But if some of them won't be there, we can save space by storing them separately.
+Although it seems like a lot of work.
+Indexed tables cannot be guaranteed globally, so only local clients and ultrapeers can use them.
+
+Oh but if we index everything (files,tags,...) by sha1, then we do have a
+global index (of things that cannot update?  or are we only sha-ing the keys?
+Most keys will be shorter than the SHA sum!  :P 
+Yeah SHA sum needs at least 32 bits to store it :f
+We could have local hash of SHA to int (16-bit number).
+Or direct link to the damn object :P
+Hey wait that's true if we do have a 40-char hash String, does Java really
+cost 40 chars to hold another copy?  Maybe not!
+
+
+
+
+
+
+"Maintainers"
+B sees that A is doing a good job.
+He votes for A's stuff, and by rates the new stuff as better.
+A goes offline.
+But B has been making copies, and he becomes the new maintainer.  His older
+copies are already rated up, so he moves in smoothly, alongside some others.
 
 
 

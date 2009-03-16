@@ -20,7 +20,7 @@ public class Database {
     
     // #define Hash String
     
-    public Map<Hash,File> localFiles = new HashMap<Hash,File>();
+    public Map<String,File> localFiles = new HashMap<String,File>();
     // These are not really associated with user, or not publically anyway.
     
     public ListMap<String,Object> tagDB = new ListMap<String,Object>();
@@ -29,6 +29,7 @@ public class Database {
     
     // User ratings
     // KnowledgeDB will have GlobalUserRating!
+    public Map<String,Float> userRatings = new HashMap<String,Float>();
     
     // There are different types of rating.
     // Normally ofc 

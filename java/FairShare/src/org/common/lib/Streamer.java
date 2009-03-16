@@ -10,7 +10,7 @@ public class Streamer extends Thread {
 
     InputStream in;
 
-    public  String result;
+    public String result;
 
     public Streamer(InputStream in) {
         this.in = in;

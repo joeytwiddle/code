@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 
@@ -11,6 +12,7 @@ import org.common.lib.ProcessResult;
 import org.common.lib.Streamer;
 import org.fairshare.data.Database;
 import org.fairshare.data.SHA1Hash;
+import org.fairshare.FairShare;
 import org.fairshare.Logger;
 import org.neuralyte.common.io.StreamUtils;
 
@@ -32,16 +34,31 @@ public class FileScanner {
                 String hashStr = hashFile(file);
                 if (hashStr != null) {
                     // Hash hash = new Hash(hashStr);
-                    db.localFiles.put(new SHA1Hash(hashStr), file);
-                    for (String tag : tags) {
-                        db.tagDB.getList(tag).add(hashStr);
+                    db.localFiles.put(hashStr, file);
+                    if (FairShare.config.autoGenerateTags) {
+                        for (String tag : tags) {
+                            db.tagDB.getList(tag).add(hashStr);
+                        }
                     }
-                    Logger.log("Tagged with "+tags);
+                    org.fairshare.Logger.log(hashStr+" file:"+file+" (tags="+tags+")");
+                    // Logger.log("  Tagged with "+tags);
+                    if (FairShare.config.autoGenerateRatings) {
+                        long timeNow = new Date().getTime();
+                        // long lastRead = file.lastModified();
+                        long lastWritten = file.lastModified();
+                        long age = timeNow - lastWritten;
+                        double rating = 1.0/Math.max(1+Math.log(1+((double)age)/50000d)/400d,1.0);
+                        db.userRatings.put(hashStr, (float)rating);
+                    }
                 }
             } else if (file.isDirectory() && !isSymlink(file)) {
-                tags.add(parent.getName()); 
-                scanDir(db,tags,file);
-                tags.remove(tags.size()-1); 
+                if (parent.getName() != ".") {
+                    tags.add(parent.getName()); 
+                    scanDir(db,tags,file);
+                    tags.remove(tags.size()-1);
+                } else {
+                    scanDir(db,tags,file);
+                }
             }
         }
     }
@@ -52,8 +69,7 @@ public class FileScanner {
             String data = StreamUtils.streamStringFrom(in);
 //            String hash = SHA1.calculateSHA1_s(data);
             String hash = SHA1Hash.calculateSHA1(data);
-            org.fairshare.Logger.log("sha1:"+hash+" file:"+file);
-            return hash;
+            return "sha1:"+hash;
         } catch (Exception e) {
             org.fairshare.Logger.error(e);
             return null;
@@ -61,8 +77,9 @@ public class FileScanner {
     }
     
     public static boolean isSymlink(File file) {
+        /*
         String[] existTest = { "find", ""+file, "-maxdepth", "0" };
-        String[] linkTest = { "find", ""+file, "-type", "l", "-maxdepth", "0" };
+        String[] linkTest = { "find", ""+file, "-maxdepth", "0", "-type", "l" };
         try {
             // Process existsProcess = runCommand(existTest);
             // Process linkProcess = runCommand(linkTest);
@@ -79,26 +96,35 @@ public class FileScanner {
             Logger.log(e);
             return false; // true?
         }
+        */
+        return false;
     }
 
-    private static ProcessResult runCommand(String[] existTest) throws IOException {
-        java.lang.Process process = Runtime.getRuntime().exec(existTest);
+    private static ProcessResult runCommand(String[] command) throws IOException {
+        java.lang.Process process = Runtime.getRuntime().exec(command);
         Streamer stdOut = new Streamer(process.getInputStream());
         stdOut.start();
         Streamer stdErr = new Streamer(process.getErrorStream());
         stdErr.start();
         try {
             process.waitFor();
+            // stdOut.wait();
+            // stdErr.wait();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        // try { Thread.currentThread().sleep(10); } catch (InterruptedException e) { e.printStackTrace(); }
         ProcessResult result = new ProcessResult();
         if (stdOut.result == null || stdErr.result == null) {
-            Logger.warn("Process streams are empty! "+stdOut+" "+stdErr);
+            Logger.warn("One of the process streams is empty!");
         }
         result.exitValue = process.exitValue();
         result.stdOutStr = stdOut.result;
         result.stdErrStr = stdErr.result;
+        if (result.stdOutStr == null)
+            result.stdOutStr = "";
+        if (result.stdErrStr == null)
+            result.stdErrStr = "";
         return result;
     }
 
