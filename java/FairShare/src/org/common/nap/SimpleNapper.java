@@ -1,11 +1,13 @@
 package org.common.nap;
 
 import java.io.File;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Map;
 
 import org.fairshare.Logger;
+import org.fairshare.data.Database;
 import org.neuralyte.util.reflection.ReflectionHelper;
 
 public class SimpleNapper implements Napper {
@@ -97,6 +99,10 @@ public class SimpleNapper implements Napper {
         }
         out.append(indent + "}\n");
         
+    }
+
+    public void sendToStream(Object obj, OutputStream out) {
+        // TODO
     }
 
 }
