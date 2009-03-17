@@ -10,54 +10,92 @@ import java.util.Vector;
 
 import org.common.lib.ProcessResult;
 import org.common.lib.Streamer;
-import org.fairshare.data.Database;
-import org.fairshare.data.SHA1Hash;
 import org.fairshare.FairShare;
 import org.fairshare.Logger;
+import org.fairshare.data.Database;
+import org.fairshare.data.FileRecord;
+import org.fairshare.data.SHA1Hash;
 import org.neuralyte.common.io.StreamUtils;
-
-import com.sun.org.apache.xalan.internal.xslt.Process;
 
 
 public class FileScanner {
 
-    public void scanDB(File[] dirs, Database db) {
+    public void scanDB(File[] dirs, FairShare fairshare) {
         List<String> tags = new Vector();
         for (File dir : dirs) {
-            scanDir(db,tags,dir);
+            scanDir(fairshare,tags,dir);
         }
     }
 
-    private void scanDir(Database db, List<String> tags, File parent) {
+    private void scanDir(FairShare fairshare, List<String> tags, File parent) {
         for (File file : parent.listFiles()) {
             if (file.isFile()) {
+                
+                FileRecord record = fairshare.database.fileRecordsByPath.get(file.getPath());
+                if (record != null
+                     && file.length() == record.size
+                     &&  file.lastModified() == record.lastModified
+                     // We don't need to check or even store record.file
+                     // because the table key holds the file path!
+                     && record.file != null
+                     && file.getPath().equals(record.file.getPath())
+                ) {
+                        // Logger.log("We can skip re-hashing "+file);
+                    fairshare.cache.fileRecordsByHash.put(record.hash,record);
+                    continue;
+                }
+
                 String hashStr = hashFile(file);
-                if (hashStr != null) {
+                if (hashStr == null) {
+                    Logger.warn("Got NULL hash so skipping file: "+file);
+                } else {
+                    
                     // Hash hash = new Hash(hashStr);
-                    db.localFiles.put(hashStr, file);
-                    if (FairShare.config.autoGenerateTags) {
+                    
+                    // fairshare.database.localFiles.put(hashStr, file);
+
+                    if (record == null) {
+                        record = new FileRecord();
+                        Logger.log("Creating new record for "+file);
+                    } else {
+                        Logger.log("Updating existing record for "+record.file);
+                    }
+                    // fairshare.database.fileRecordsByPath.put(file.getPath(),record);
+
+                    record.size = file.length();
+                    record.lastModified = file.lastModified();
+                    record.hash = hashStr;
+                    record.file = file;
+                    
+                    fairshare.database.fileRecordsByPath.put(file.getPath(),record); // Only really needed if record was not already in DB.
+                    fairshare.cache.fileRecordsByHash.put(hashStr,record);
+                    
+                    if (fairshare.config.autoGenerateTags) {
                         for (String tag : tags) {
-                            db.tagDB.getList(tag).add(hashStr);
+                            fairshare.database.tagDB.getList(tag).add(hashStr);
                         }
                     }
-                    org.fairshare.Logger.log(hashStr+" file:"+file+" (tags="+tags+")");
-                    // Logger.log("  Tagged with "+tags);
-                    if (FairShare.config.autoGenerateRatings) {
+
+                    if (fairshare.config.autoGenerateRatings) {
                         long timeNow = new Date().getTime();
                         // long lastRead = file.lastModified();
                         long lastWritten = file.lastModified();
                         long age = timeNow - lastWritten;
                         double rating = 1.0/Math.max(1+Math.log(1+((double)age)/50000d)/400d,1.0);
-                        db.userRatings.put(hashStr, (float)rating);
+                        fairshare.database.userRatings.put(hashStr, (float)rating);
                     }
+                    
+                    // org.fairshare.Logger.log("Added "+file+" (tags="+tags+")");
+                    // org.fairshare.Logger.log("  hash="+hashStr+" written="+new Date(file.lastModified()));
+                    
                 }
             } else if (file.isDirectory() && !isSymlink(file)) {
                 if (parent.getName() != ".") {
                     tags.add(parent.getName()); 
-                    scanDir(db,tags,file);
+                    scanDir(fairshare,tags,file);
                     tags.remove(tags.size()-1);
                 } else {
-                    scanDir(db,tags,file);
+                    scanDir(fairshare,tags,file);
                 }
             }
         }
