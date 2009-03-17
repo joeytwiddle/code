@@ -15,7 +15,7 @@ public class LazyFileInputStream extends InputStream {
 
     File file;
 
-    FileInputStream fis;
+    BufferedInputStream fis;
 
     public LazyFileInputStream(File _file) {
        file = _file;
@@ -28,7 +28,7 @@ public class LazyFileInputStream extends InputStream {
 
     private void checkFisInstantiated() throws FileNotFoundException {
         if (fis == null) {
-            fis = new FileInputStream(file);
+            fis = new BufferedInputStream( new FileInputStream(file) );
         }
     }
 

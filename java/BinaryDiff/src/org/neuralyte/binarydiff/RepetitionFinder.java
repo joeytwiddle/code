@@ -270,6 +270,16 @@ public class RepetitionFinder {
         output.output_rawByte(b);
     }
 
+    /***************************************************************************
+     * @todo Add this small heuristic for improving compression: group files
+     *       with similar names close together, even if they are in different
+     *       folders. This will required generating the list of files first,
+     *       sorting it, and then outputting and creating the input streams. (Do
+     *       we have to create a vector of inputStreams, can't we just generate
+     *       them from our new list of files/filenames? We might not need
+     *       LazyFileInputStream any more...)
+     **************************************************************************/
+    
     public  void addInputStreamOrStreamsForFile(File file, Vector inputStreams, Outputter output_) throws IOException {
         if (file.isFile()) {
             // Note: if we ever find we are opening too many inputstreams right at the start,
@@ -278,7 +288,7 @@ public class RepetitionFinder {
             // Well it turns out that this was indeed needed!  I got a FileNotFoundException (too many open files)
             // InputStream is = new FileInputStream( file );
             InputStream is = new LazyFileInputStream( file );
-            is = new BufferedInputStream(is);
+            // is = new BufferedInputStream(is);
             inputStreams.add( is );
             String filePath = "" + file;
             if (filePath.startsWith("/")) {
@@ -288,11 +298,23 @@ public class RepetitionFinder {
             ETA.addTodo(file.length());
         } else if (file.isDirectory()) {
             File[] subFiles = file.listFiles();
-            for (int i=0;i<subFiles.length;i++) {
-                addInputStreamOrStreamsForFile(subFiles[i],inputStreams,output_);
+            if (subFiles==null) {
+                System.err.println("Got null for subFiles of "+file);
+            } else {
+                for (int i=0;i<subFiles.length;i++) {
+                    String handle = new File(file.getCanonicalFile(),subFiles[i].getName()).toString();
+                    String followed = subFiles[i].getCanonicalFile().toString();
+                    // System.out.println("handle = "+handle);
+                    // System.out.println("follow = "+followed);
+                    if (!handle.equals(followed) && subFiles[i].isDirectory()) {
+                        System.err.println("I fear "+handle+" is a symlink AND a directory - SKIPPING!");
+                    } else {
+                        addInputStreamOrStreamsForFile(subFiles[i],inputStreams,output_);
+                    }
+                }
             }
         } else {
-            System.err.println("WARNING: I don't know what to do with non-file and non-directory "+file);
+            System.err.println("WARNING: I don't know what to do with non-file and non-directory "+file+" (may be a broken symlink)");
         }
     }
     
