@@ -20,8 +20,10 @@ public class Database {
     
     // #define Hash String
     
-    public Map<String,File> localFiles = new HashMap<String,File>();
+    // public Map<String,File> localFiles = new HashMap<String,File>();
     // These are not really associated with user, or not publically anyway.
+    
+    public Map<String,FileRecord> fileRecordsByPath = new HashMap<String,FileRecord>();
     
     public ListMap<String,Object> tagDB = new ListMap<String,Object>();
     // There may be global tags and user tags.

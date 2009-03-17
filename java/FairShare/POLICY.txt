@@ -40,7 +40,8 @@ In terms of space it is far more efficient to store all the things together:
 
 But if some of them won't be there, we can save space by storing them separately.
 Although it seems like a lot of work.
-Indexed tables cannot be guaranteed globally, so only local clients and ultrapeers can use them.
+Indexed tables cannot be guaranteed globally, so only local clients and
+ultrapeers can use them.
 
 Oh but if we index everything (files,tags,...) by sha1, then we do have a
 global index (of things that cannot update?  or are we only sha-ing the keys?
@@ -63,5 +64,41 @@ A goes offline.
 But B has been making copies, and he becomes the new maintainer.  His older
 copies are already rated up, so he moves in smoothly, alongside some others.
 
+
+
+
+
+
+What if, you like a particular film, altho u don't have a copy of it.  But u
+want to tell the network that this film is one of your favourites.
+This is a rating on something vague - a word or tag.
+Maybe do it through a user stage - he does a lookup for the film, finds a copy, doesn't downloaded it, but rates it anyway (via hash) as good.
+
+
+
+Not all things which have tags are files.
+e.g. some searches might produce results which are URLs.
+If there is a hash, it refers to the contents of that URL.
+(Assuming the URL points to a file that does not change.)
+So a hash lookup might give back the URL to a file with that hash, as well as
+peers which have the file with that hash. 
+
+
+
+
+// Peer-to-peer protocol:
+
+When two peers connect, is one a server and one a client?  Or do we start TWO I/O streams, for req/res in both directions?
+
+SEARCH <sender> <text>\n
+
+FINDPEERS <sender> <hash>\n
+
+The <sender> is an IP/port where people should send results.
+
+Do we also want to give each request an ID?  The ID need only be unique on the
+sender's machine.  It can tell the sender which query the response is for!
+Otherwise the response should contain the query data.  Or enough data so that
+the querier can see for himself where the result should go.  
 
 

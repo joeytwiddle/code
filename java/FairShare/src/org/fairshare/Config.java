@@ -1,11 +1,13 @@
 package org.fairshare;
 
+import java.io.File;
+
 
 public class Config {
 
-    String[] shareDirs;
+    public File[] shareDirs = { new File(".") };
     
-    int port;
+    public int port;
     
     public boolean autoGenerateTags = true;
     public boolean autoGenerateRatings = true;

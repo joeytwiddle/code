@@ -1,10 +1,11 @@
 package org.fairsharex.io;
 
-import org.fairshare.data.Database;
+import org.fairshare.FairShare;
 
 
 public class Context {
 
-    Database database;
+    FairShare fairshare;
+    // Database database;
     
 }

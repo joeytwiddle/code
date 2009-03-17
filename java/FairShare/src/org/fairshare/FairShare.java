@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 
 import org.common.nap.Nap;
+import org.fairshare.data.Cache;
 import org.fairshare.data.Database;
 import org.fairshare.tasks.FileScanner;
 
@@ -17,57 +18,51 @@ import org.fairshare.tasks.FileScanner;
 
 public class FairShare {
 
-    public static Config config = new Config();
-    
-    public static Database database = new Database();
-    
+    public Config config = new Config();
+    public Database database = new Database();
+    public Cache cache = new Cache();
+
     public static void main(String[] args) {
-        
-        
-        
-        File[] dirs = { new File(".") };
-        
+        FairShare fairshare = new FairShare();
+    }
+
+    public FairShare() {
+        init();
+    }
+    
+    public void init() {
         
         // TODO: Load config
         try {
-            config = (Config)Nap.fromFile("fairshare.cfg");
+            config = (Config)Nap.fromFile("config.nap");
+            database = (Database)Nap.fromFile("database.nap");
         } catch (Exception e) {
-            Logger.info(""+e);
+            // Logger.error(e);
+            Logger.warn("Failed to read config file ("+e+").  I hope this is your first run!");
         }
-        
         
         // TODO: Operate cmdline args.
         
-        
         // TODO: Start in background, if idling.
-        new FileScanner().scanDB(dirs, database);
+        new FileScanner().scanDB(config.shareDirs, this);
         
-        
-        
-        
-        // Write files before exiting:
-        
-        System.out.println("Database:");
-        System.out.println(Nap.toString(database));
-        
+        //// Write files before exiting:
+        // System.out.println("Database:");
+        // System.out.println(Nap.toString(database));
         try {
-            
-            OutputStream cacheOut = new FileOutputStream("cache.new");
-            Nap.sendToStream(database.localFiles,cacheOut);
-            
-            OutputStream dataOut = new FileOutputStream("data.new");
-            Nap.sendToStream(database.tagDB,dataOut);
+            Nap.sendToStream(config, new FileOutputStream("config.nap"));
+            Nap.sendToStream(database, new FileOutputStream("database.nap"));
+            Nap.sendToStream(cache, new FileOutputStream("cache.nap"));
             // Actually the current tagDB is all auto-generated too, so more cache than data :P
-            
         } catch (Exception e) {
             Logger.error(e);
         }
         
-        
+//         new FileScanner().scanDB(dirs, database);
         
         // Collection col = database.tagDB.iterator();
         // Iterator it = ((Collection)database.tagDB).iterator();
         
     }
-
+    
 }
