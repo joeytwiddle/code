@@ -32,13 +32,22 @@ public class FairShare {
     
     public void init() {
         
+        File configFile = new File("config.nap");
+        File databaseFile = new File("database.nap");
+        File cacheFile = new File("cache.nap");
+        
         // TODO: Load config
         try {
-            config = (Config)Nap.fromFile("config.nap");
-            database = (Database)Nap.fromFile("database.nap");
+            if (configFile.exists())
+                config = (Config)Nap.fromFile(configFile);
+            if (databaseFile.exists())
+                database = (Database)Nap.fromFile(databaseFile);
+            if (cacheFile.exists())
+                cache = (Cache)Nap.fromFile(cacheFile);
         } catch (Exception e) {
-            // Logger.error(e);
-            Logger.warn("Failed to read config file ("+e+").  I hope this is your first run!");
+            Logger.error("Problem reading files at startup:");
+            Logger.error(e);
+            // Logger.warn("Failed to read config file ("+e+").  I hope this is your first run!");
         }
         
         // TODO: Operate cmdline args.
@@ -50,9 +59,16 @@ public class FairShare {
         // System.out.println("Database:");
         // System.out.println(Nap.toString(database));
         try {
-            Nap.sendToStream(config, new FileOutputStream("config.nap"));
-            Nap.sendToStream(database, new FileOutputStream("database.nap"));
-            Nap.sendToStream(cache, new FileOutputStream("cache.nap"));
+            Nap.writeToFile(config, configFile+".new");
+            Nap.writeToFile(database, databaseFile+".new");
+            Nap.writeToFile(cache, cacheFile+".new");
+            
+            configFile.renameTo(new File(configFile+".old"));
+            new File(configFile+".new").renameTo(configFile);
+            databaseFile.renameTo(new File(databaseFile+".old"));
+            new File(databaseFile+".new").renameTo(databaseFile);
+            cacheFile.renameTo(new File(cacheFile+".old"));
+            new File(cacheFile+".new").renameTo(cacheFile);
             // Actually the current tagDB is all auto-generated too, so more cache than data :P
         } catch (Exception e) {
             Logger.error(e);

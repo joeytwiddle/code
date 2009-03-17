@@ -5,6 +5,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -13,6 +15,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Vector;
+
+import javax.lang.model.type.PrimitiveType;
 
 import org.fairshare.Logger;
 import org.neuralyte.util.reflection.ReflectionHelper;
@@ -29,6 +33,7 @@ import org.neuralyte.util.reflection.ReflectionHelper;
 public class SimpleNapper implements Napper {
 
     public static String neatClass(Object obj) {
+        // TODO: Doesn't work on e.g. Integer.class - shows "java.lang.Class" O_o
         return obj.getClass().getName();
     }
 
@@ -83,10 +88,15 @@ public class SimpleNapper implements Napper {
         String subIndent = indent + "\t";
 
         if (obj.getClass().isArray()) {
-            List list = Arrays.asList(obj);
-            obj = list; // This causes stack overflow below!
+            //// This first attempt actually created a List containing the Array, causing stack overflow below!
+            //// It's a different implementation of asList().
+            // List<Object> list = Arrays.asList(obj);
+            List<Object> list = Arrays.asList((Object[])obj);
+            // obj = list;
+            //// obj is now a java.util.Arrays$ArrayList
+            //// This writes ok, but we cannot reload a java.util.Arrays$ArrayList
             obj = new Vector();
-            ((Vector)obj).addAll(list);
+            ((Vector<Object>)obj).addAll(list);
         }
         
         if (obj instanceof Collection) {
@@ -152,9 +162,8 @@ public class SimpleNapper implements Napper {
         }
         // Number?
         try {
-            if (new Double(token) != 0) {
-                return new Double(token);
-            }
+            Double d = new Double(token);
+            return d;
         } catch (NumberFormatException e) {
         }
         
@@ -173,8 +182,9 @@ public class SimpleNapper implements Napper {
         try {
             c = Class.forName(className);
         } catch (Exception e) {
-            String rest = readTo(in,"djksjfdslkjsdfwoirpwepro;xk;kx");
+            Logger.error("Failed to load class \""+className+"\"");
             Logger.error(e);
+            String rest = readTo(in,"djksjfdslkjsdfwoirpwepro;xk;kx");
             Logger.error("Rest = " + rest);
             return null;
         }
@@ -207,7 +217,7 @@ public class SimpleNapper implements Napper {
         }
 
         if (Collection.class.isAssignableFrom(c)) {
-            Collection col = (Collection)c.newInstance();
+            Collection<Object> col = (Collection<Object>)c.newInstance();
             // Logger.log("Reading collection into type "+neatClass(c));
             readExpect(in, "{");
             int i = 0;
@@ -227,7 +237,7 @@ public class SimpleNapper implements Napper {
         }
         
         if (Map.class.isAssignableFrom(c)) {
-            Map map = (Map)c.newInstance();
+            Map<Object, Object> map = (Map<Object, Object>)c.newInstance();
             readExpect(in, "{");
             while (true) {
                 Object key = readNap(in);
@@ -302,19 +312,72 @@ public class SimpleNapper implements Napper {
                 
             // Logger.info("Setting "+fieldName+" to "+value);
             
-                try {
-                    f.set(obj, value);
-                } catch (Exception e) {
-                    
-                    try {
-                        value = new Long((long)(double)new Double(""+value));
-                        f.set(obj, value);
-                    } catch (Exception e2) {
-                        Logger.error("Got exception trying to set "+f+" to "+value);
-                        Logger.error(e2);
-                    }
-                    
+            if (
+                    f.getType().isArray()
+                    && value instanceof Collection
+            ) {
+                // Object got = f.getType().newInstance(); // FAILS
+                // Object got = Array.newInstance(f.getType(), 0); // Gives us array of arrays.
+                Object got = Array.newInstance(f.getType().getComponentType(), 0);
+                value = ((Collection)value).toArray( (Object[])got ); 
+            }
+
+            try {
+                f.set(obj, value);
+                continue;
+            } catch (Exception e) {
+            }
+
+            // if (f.getType().isPrimitive())
+            // if (f.getType().isLocalClass())
+
+            // We could not set this value directly.
+            // Maybe it is a primitive type.
+            // e.g. we have been given a Double, but are trying to set an int.
+            try {
+                Class classType = f.getType();
+                if (classType.isPrimitive()) {
+                    classType = getClassTypeFromPrimitiveType(f.getType());
+                    // Logger.log("Got "+neatClass(classType)+" from "+neatClass(f.getType()));
+                    // Logger.log("Got "+(classType)+" from "+(f.getType()));
                 }
+                // Class[] parameterTypes = { value.getClass() };
+                Class[] parameterTypes = { String.class };
+                // f.getType().get;
+                // ((PrimitiveType)f.getType()).getKind().
+                Constructor cons = classType.getConstructor(parameterTypes);
+                
+                // If we are trying to convert to an integer, then we cannot have any "."s in the String, or the constructor will fail.
+                if (
+                        classType.equals(Integer.class) || classType.equals(Long.class)
+                        || classType.equals(Byte.class) || classType.equals(Short.class)
+                ) {
+                    /*
+                    if (value.toString().contains(".")) {
+                        value = value.toString().replaceFirst("\\..*", "");
+                    }
+                    */
+                    value = ((Number)value).longValue();
+                }
+                
+                Object[] args = { value.toString() };
+                value = cons.newInstance(args);
+                f.set(obj, value);
+                continue;
+            } catch (Exception e) {
+                Logger.warn(e);
+            }
+
+            try {
+                value = new Long((long)(double)new Double(""+value));
+                f.set(obj, value);
+                continue;
+            } catch (Exception e2) {
+                Logger.error("Got exception trying to set "+f+" to "+value);
+                Logger.error(e2);
+            }
+            
+            Logger.error("Failed to set "+f+" to "+value);
             
         }
         return obj;
@@ -394,6 +457,29 @@ public class SimpleNapper implements Napper {
         str = str.replaceAll("&quot;","\"");
         str = str.replaceAll("&amp;","&");
         return str;
+    }
+    
+    public static final Class[] primitiveTypes = {
+        Integer.class, Long.class,
+        Double.class, Float.class,
+        Boolean.class, Character.class,
+        Byte.class, Short.class,
+    };
+    
+    public static Class getClassTypeFromPrimitiveType(Class type) {
+        for (int i=0;i<primitiveTypes.length;i++) {
+            Class classType = primitiveTypes[i];
+            try {
+                Class primitiveType = (Class)classType.getField("TYPE").get(null);
+                if (type.equals(primitiveType)) {
+                    return classType;
+                }
+            } catch (Exception e) {
+                org.neuralyte.Logger.error(e);
+            }
+        }
+        Logger.error("I do not know how to convert "+neatClass(type)+" to non-primitive.");
+        return type;
     }
     
 }

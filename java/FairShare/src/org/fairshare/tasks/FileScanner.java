@@ -17,6 +17,11 @@ import org.fairshare.data.FileRecord;
 import org.fairshare.data.SHA1Hash;
 import org.neuralyte.common.io.StreamUtils;
 
+/**
+ * This should really be run as a slow and gentle background thread.
+ * TODO: We will need to lock the Hashtables before making each change, in case
+ * another Thread is using them!
+ */
 
 public class FileScanner {
 
@@ -28,6 +33,7 @@ public class FileScanner {
     }
 
     private void scanDir(FairShare fairshare, List<String> tags, File parent) {
+        Logger.log("Scanning "+parent+" ...");
         for (File file : parent.listFiles()) {
             if (file.isFile()) {
                 
@@ -44,6 +50,13 @@ public class FileScanner {
                     fairshare.cache.fileRecordsByHash.put(record.hash,record);
                     continue;
                 }
+                
+                if (record == null) {
+                    record = new FileRecord();
+                    Logger.log("Creating new record for "+file);
+                } else {
+                    Logger.log("Updating existing record for "+record.file);
+                }
 
                 String hashStr = hashFile(file);
                 if (hashStr == null) {
@@ -54,12 +67,6 @@ public class FileScanner {
                     
                     // fairshare.database.localFiles.put(hashStr, file);
 
-                    if (record == null) {
-                        record = new FileRecord();
-                        Logger.log("Creating new record for "+file);
-                    } else {
-                        Logger.log("Updating existing record for "+record.file);
-                    }
                     // fairshare.database.fileRecordsByPath.put(file.getPath(),record);
 
                     record.size = file.length();
