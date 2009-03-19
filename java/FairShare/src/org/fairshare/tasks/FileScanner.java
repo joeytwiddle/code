@@ -21,6 +21,14 @@ import org.neuralyte.common.io.StreamUtils;
  * This should really be run as a slow and gentle background thread.
  * TODO: We will need to lock the Hashtables before making each change, in case
  * another Thread is using them!
+ * 
+ * We might want to delete old records.  (Especially we want to notice if a File
+ * has moved!)  But we do not want to delete a record if it has a rating
+ * associated with it.  (Actually we CAN delete it, provided the network has it,
+ * then we can always lookup what file it was using the hash.)
+ * 
+ * TODO: Files which change, rather than being re-scanned, could be marked and
+ * removed from database, as no use for file-sharing.  :P
  */
 
 public class FileScanner {

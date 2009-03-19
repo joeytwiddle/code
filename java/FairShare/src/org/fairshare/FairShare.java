@@ -39,11 +39,11 @@ public class FairShare {
         // TODO: Load config
         try {
             if (configFile.exists())
-                config = (Config)Nap.fromFile(configFile);
+                config = (Config)readFromFile(configFile);
             if (databaseFile.exists())
-                database = (Database)Nap.fromFile(databaseFile);
+                database = (Database)readFromFile(databaseFile);
             if (cacheFile.exists())
-                cache = (Cache)Nap.fromFile(cacheFile);
+                cache = (Cache)readFromFile(cacheFile);
         } catch (Exception e) {
             Logger.error("Problem reading files at startup:");
             Logger.error(e);
@@ -59,9 +59,9 @@ public class FairShare {
         // System.out.println("Database:");
         // System.out.println(Nap.toString(database));
         try {
-            Nap.writeToFile(config, configFile+".new");
-            Nap.writeToFile(database, databaseFile+".new");
-            Nap.writeToFile(cache, cacheFile+".new");
+            writeToFile(config, configFile+".new");
+            writeToFile(database, databaseFile+".new");
+            writeToFile(cache, cacheFile+".new");
             
             configFile.renameTo(new File(configFile+".old"));
             new File(configFile+".new").renameTo(configFile);
@@ -79,6 +79,16 @@ public class FairShare {
         // Collection col = database.tagDB.iterator();
         // Iterator it = ((Collection)database.tagDB).iterator();
         
+    }
+
+    private Object readFromFile(File file) throws Exception {
+        Logger.log("Reading from "+file);
+        return Nap.fromFile(file);
+    }
+    
+    private void writeToFile(Object obj, String fileName) throws Exception {
+        Nap.writeToFile(obj, fileName);
+        Logger.log("Wrote "+obj+" to "+fileName);
     }
     
 }

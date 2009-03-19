@@ -11,7 +11,7 @@ import com.sun.org.apache.xalan.internal.xsltc.runtime.Hashtable;
 
 public class SearchRequest extends Request {
 
-    String searchString;
+    public String searchString;
     
     public Response process(Context context) {
         SearchResponse response = new SearchResponse();

@@ -19,9 +19,12 @@ public class Nap {
         return globalNapper.toString(obj);
     }
 
+    public static void writeToFile(Object obj, File file) throws Exception {
+        writeToFile(obj, file.getPath());
+    }
+    
     public static void writeToFile(Object obj, String fileName) throws Exception {
         globalNapper.writeNap(obj,new FileOutputStream(fileName));
-        Logger.log("Wrote "+obj+" to "+fileName);
     }
     
     public static String fromString(String str) {
@@ -30,7 +33,6 @@ public class Nap {
     }
     
     public static Object fromFile(String fileName) throws Exception {
-        Logger.log("Reading from "+fileName);
         return fromStream(new FileInputStream(fileName));
     }
     

@@ -102,3 +102,29 @@ Otherwise the response should contain the query data.  Or enough data so that
 the querier can see for himself where the result should go.  
 
 
+
+
+
+Consider:
+
+When peers A and B meet, they want to calculate their taste-similarity.
+To do this they need to share the ratings of all rated files which they have
+in common.
+How can we improve the process so that they don't have to send ALL their
+rating data?
+I.e. how can we get a list of only those files which they have in common.
+(Ofc they don't actually NEED the file, only a rating for it.)
+
+One possibility:
+Take the space of all hashes, and quantise it down to say 65536 bins.  (256 is
+not enough.)
+Now accumulate in these bins.  Actually we only want to see which bins get 0
+hits.
+The accumulation can be sent to the peer.  By looking at the 0-bins, he can
+say for sure that the peer does not have such-and-such-hash.
+
+
+
+
+
+

@@ -5,7 +5,7 @@ import org.fairshare.FairShare;
 
 public class Context {
 
-    FairShare fairshare;
+    public FairShare fairshare;
     // Database database;
     
 }

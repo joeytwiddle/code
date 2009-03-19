@@ -16,8 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 
-import javax.lang.model.type.PrimitiveType;
-
+import org.common.lib.StreamReadingUtils;
 import org.fairshare.Logger;
 import org.neuralyte.util.reflection.ReflectionHelper;
 
@@ -30,7 +29,7 @@ import org.neuralyte.util.reflection.ReflectionHelper;
  * Actually they have detect() before read() or something like that.
  */
 
-public class SimpleNapper implements Napper {
+public class SimpleNapper extends StreamReadingUtils implements Napper {
 
     public static String neatClass(Object obj) {
         // TODO: Doesn't work on e.g. Integer.class - shows "java.lang.Class" O_o
@@ -75,7 +74,7 @@ public class SimpleNapper implements Napper {
         // write(out,neatClass(obj) + " ");
 
         // Is this a type we handle in a special way?
-        if (ReflectionHelper.isPrimitiveType(obj.getClass())) {
+        if (ReflectionHelper.isPrimitiveHolder(obj.getClass())) {
             write(out,""+obj);
             return;
         }
@@ -260,6 +259,10 @@ public class SimpleNapper implements Napper {
     }
     
     public void writeGeneric(Object obj, String indent, OutputStream out) {
+
+        if (Thread.currentThread().getStackTrace().length > 64) {
+            throw new Error("Stack is too big!");
+        }
         
         write(out, neatClass(obj) + " {\n");
         final String subIndent = indent + "\t";
@@ -280,8 +283,9 @@ public class SimpleNapper implements Napper {
                 write(out,subIndent + f.getName() + " = ");
                 writeNap(val, subIndent, out);
                 write(out,"\n");
-            } catch (Exception e) {
-                e.printStackTrace(System.err);
+            } catch (Throwable e) {
+                Logger.error("Problem writing field "+f);
+                Logger.error(e);
             }
         }
         write(out,indent + "}");
@@ -383,61 +387,6 @@ public class SimpleNapper implements Napper {
         return obj;
     }
 
-    public String readTo(InputStream in, String hit) throws IOException {
-        StringBuffer got = new StringBuffer();
-        StringBuffer check = new StringBuffer();
-        while (true) {
-            int i = in.read();
-            if (i == -1)
-                break;
-            check.append(""+(char)i);
-            if (check.length() > hit.length()) {
-                char c = check.charAt(0);
-                check.deleteCharAt(0);
-                got.append(""+c);
-            }
-            if (check.toString().equals(hit.toString()))
-                break;
-        }
-        return got.toString();
-    }
-    
-    public boolean readExpect(InputStream in, String expectStr) throws IOException {
-        String before = readTo(in,expectStr);
-        if (before.trim().length() > 0) {
-            Logger.error("Was expecting >"+expectStr+"< but got >"+before+"<");
-            return false;
-        }
-        return true;
-    }
-    
-    /*
-    public void readWhitespace(InputStream in) {
-        while
-    }
-    */
-
-    public String readToken(InputStream in) throws IOException {
-        StringBuffer token = new StringBuffer();
-        boolean inWord = false;
-        while (true) {
-            int i = in.read();
-            if (i == -1)
-                break;
-            char c = (char)i;
-            if (c==' ' || c=='\t' || c=='\n' || c=='\r') {
-                if (inWord) {
-                    break;
-                    // NOTE: We have read one token of the whitespace :P
-                }
-            } else {
-                inWord = true;
-                token.append(""+c);
-            }
-        }
-        return token.toString();
-    }
-    
     public final static String encode(String str) {
         return URLEncoder.encode(str);
     }
