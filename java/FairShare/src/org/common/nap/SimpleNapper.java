@@ -73,8 +73,8 @@ public class SimpleNapper extends StreamReadingUtils implements Napper {
         
         // write(out,neatClass(obj) + " ");
 
-        // Is this a type we handle in a special way?
-        if (ReflectionHelper.isPrimitiveHolder(obj.getClass())) {
+        // Is this a simple type to write?
+        if (obj.getClass().isPrimitive() && ReflectionHelper.isPrimitiveHolder(obj.getClass())) {
             write(out,""+obj);
             return;
         }

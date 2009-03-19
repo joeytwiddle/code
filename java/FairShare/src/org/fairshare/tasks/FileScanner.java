@@ -41,7 +41,9 @@ public class FileScanner {
     }
 
     private void scanDir(FairShare fairshare, List<String> tags, File parent) {
-        Logger.log("Scanning "+parent+" ...");
+        if (parent.listFiles().length > 10) {
+            Logger.log("Scanning "+parent+" ...");
+        }
         for (File file : parent.listFiles()) {
             if (file.isFile()) {
                 

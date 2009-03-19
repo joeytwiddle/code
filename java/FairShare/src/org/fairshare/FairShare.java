@@ -81,12 +81,12 @@ public class FairShare {
         
     }
 
-    private Object readFromFile(File file) throws Exception {
+    private static Object readFromFile(File file) throws Exception {
         Logger.log("Reading from "+file);
         return Nap.fromFile(file);
     }
     
-    private void writeToFile(Object obj, String fileName) throws Exception {
+    private static void writeToFile(Object obj, String fileName) throws Exception {
         Nap.writeToFile(obj, fileName);
         Logger.log("Wrote "+obj+" to "+fileName);
     }
