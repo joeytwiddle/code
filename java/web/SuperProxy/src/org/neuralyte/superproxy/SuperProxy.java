@@ -1,28 +1,17 @@
 package org.neuralyte.superproxy;
 
 import java.io.InputStream;
-import java.io.StringWriter;
-import java.nio.ByteBuffer;
-
-import javax.print.Doc;
 
 import org.apache.xerces.parsers.DOMParser;
 import org.cyberneko.html.HTMLConfiguration;
-import org.neuralyte.common.io.StreamUtils;
+import org.neuralyte.Logger;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
-import org.neuralyte.simpleproxy.SimpleProxy;
 import org.neuralyte.simpleserver.SocketServer;
 import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
 import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
-import org.neuralyte.superproxy.plugins.examples.OpenLinksInIframe;
-import org.neuralyte.superproxy.plugins.examples.SavingProxy;
 import org.w3c.dom.Document;
 import org.xml.sax.InputSource;
-
-// import org.w3c.tidy.Tidy;
-
-import sun.rmi.transport.proxy.HttpReceiveSocket;
 
 // for x in document.xpath://object" do replace(x, niceobject(x))
 // ...
@@ -37,31 +26,25 @@ public class SuperProxy extends HttpRequestHandler {
 
     public HttpResponse handleHttpRequest(HttpRequest httpRequest) {
 
-        logger.log(">> |    " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
-        logger.log("   | >> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log(">> |    " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("   | >> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
 
         HttpResponse httpResponse = passRequestToServer(httpRequest);
 
-        try {
-            try {            
-                HTTPStreamingTools.unencodeResponse(httpResponse);
-                // One of these breaks the gzipped stream we get back from Google.
-                String temp = httpResponse.getContentAsString();
-                // httpResponse.setContent(temp);
-                // Document document = parseDocument(httpResponse.getContentAsStream());
-                // document = processDocument(document);
-            } catch (Exception eParsing) {
-                eParsing.printStackTrace(System.err);
-            }
-        } catch (Exception eStream) {
-            eStream.printStackTrace(System.err);
+        try {            
+            HTTPStreamingTools.unencodeResponse(httpResponse);
+            // One of these breaks the gzipped stream we get back from Google.
+            String temp = httpResponse.getContentAsString();
+            httpResponse.setContent(temp);
+            // Document document = parseDocument(httpResponse.getContentAsStream());
+            // document = processDocument(document);
+        } catch (Exception e) {
+            Logger.warn(e);
         }
-        /*
-        */
 
-        logger.log("   | << " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("   | << " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
         // httpResponse.removeHeader("Content-length"); // In case the content has been changed by one of the filters
-        logger.log("<< |  " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("<< |  " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
 
         return httpResponse;
     }

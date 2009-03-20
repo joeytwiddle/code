@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 
+import org.neuralyte.Logger;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
 import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
@@ -119,14 +120,16 @@ public class SavingProxy extends HttpRequestHandler {
         FileOutputStream resOut = new FileOutputStream(fileHead+".response");
         FileOutputStream contOut = new FileOutputStream(fileHead+".content");
         
-        logger.log(">> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("Will save to "+requestNumber+".request .response and .content");
+        
+        Logger.log(">> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
         
         writeHeaders(httpRequest.getRequestAsList(), reqOut);
         reqOut.flush(); reqOut.close();
         
         HttpResponse httpResponse = handleHttpRequest(httpRequest);
 
-        logger.log("<< " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("<< " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
         
         writeHeaders(httpResponse.getResponseAsList(), resOut);
         resOut.flush(); resOut.close();
@@ -144,14 +147,14 @@ public class SavingProxy extends HttpRequestHandler {
 
     public HttpResponse handleHttpRequest(HttpRequest httpRequest) {
 
-        logger.log(">> |    " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
-        logger.log("   | >> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log(">> |    " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("   | >> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
 
         HttpResponse httpResponse = passRequestToServer(httpRequest);
 
-        logger.log("   | << " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("   | << " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
         // httpResponse.removeHeader("Content-length"); // In case the content has been changed by one of the filters
-        logger.log("<< |  " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
+        Logger.log("<< |  " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
 
         return httpResponse;
     }
