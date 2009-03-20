@@ -26,6 +26,35 @@ Or a file which says:
 - ...
 - Forget blockN.  ?
 
+Or:
+
+- Paste block N.
+- Now paste block M.
+- ...
+
+Or:
+
+- Paste block N 3 times
+- Now paste block M twice...
+
+Or:
+
+- Paste blocks N,M,O 4 times
+- ...
+
+Or:
+
+- Paste this data
+- Copy from earlier data
+- Paste this data
+- Copy from earlier data...
+
+Or:
+
+- Paste this data; store bytes N-M in register 1
+- Paste register 1
+- ...
+
 
 
 Useful technology:
@@ -33,4 +62,48 @@ Useful technology:
 We can build partial sums to make it fast+easy to compare two large blocks (with rare false-positives from hash collisions).
 If we are asked to build the sums of all blocks size 64 in the data, we can put the sums in a hashmap for easy retrieval/comparison (or maybe better an ArrayMap, depends how we are scanning+outputting).
 Let's say we do a short+quick scan to find matching blocks size 256.  When a match is found, we can attempt to expand it (left+right, but preferably scalable/recursive/fractal/binary/tree-like search), to encompass other regions of data which match.
+
+
+
+Let's say we have a set of sets of matching blocks.
+Each matchset could have an efficiency(a) = the amount of data it reproduces in the output / the cost of recreating the data inside this match.
+The data inside the matchset could simply be a byte[len], costing len bytes.  (Well actually there should also be some cost associated with the number of output blocks, since we must specify their positions, and fewer would be better.)
+Or it could be made up from previous builds, which would affect it's efficiency, from both the source of the data, and the destination of the data.
+So consider, calculating efficiency(b) = efficiency(a) - amount of data already built
+and let the destination effect be dealt with by the search algorithm (looking upwards, using effect of "already built")
+
+So the algorithm could be:
+Find the most efficient matchset, and add it to the output.  Rerun until all data covered!
+At each stage, efficiency will depend on what has already been built, and how much data still needs to be covered.
+
+I'm not sure this algorthm is optimal, but it's a good start.
+It may be optimal, provided the initial adds are optimal (building bottom up, not worrying about later).
+
+
+Prototype output format:
+
+header = version number + optional parameters (eg. scan size, remember-history-length)
+
+block = <a byte>
+  which describes the number of subsequent bytes to copy from the input to the output
+  or if <a byte> = 0
+  then
+    4bytes = 32 bit word describing where earlier in the stream to start copying from
+    a byte = the number of bytes to copy from that area
+    but if a byte = 0
+      4bytes = 0 means end of process :D (could alternatively be detected by the ending of the input stream)
+      4bytes = 1 means end of file; read new filename and open that for subsequent output
+      4bytes = 2 means ...
+
+
+
+Using partial sums for faster block comparison
+
+If we want to compare two large blocks of data, and there is a high-probability that they are not actually identical, using partial sums may be more efficient.
+We can compare the different between sums at each end of the block, and then go down recursively, i.e. compare the difference in partial sums of the middle and the start, and the middle and the end.
+If the blocks are non-identical, we may find a mismatch quite soon.
+If the blocks are identical, we will know once the recursion has dropped to a resolution of 1.
+However, that descent will take longer than a normal byte-by-byte comparison, so actual matches must be quite rare for this to be an efficient method.
+Also, the partial sums will need to be stored in memory (although in theory they could replace the raw data history stored in memory, since each data byte value can be retrieved from the partial sums on either side of it (twice as costly though).
+I guess this will only really be efficient when comparing large window sizes.
 

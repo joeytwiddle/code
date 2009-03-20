@@ -1,0 +1,4 @@
+We could use heuristics to make searching faster, e.g. look for words [A-Za-z0-9_]*
+
+We could count histogram of most common bytes, most common 2-bytes, most common 3-bytes.  Later searches could be narrowed down by earlier searches.  Uncommon byte sequences will end up falling out of the data (to save memory) but we will certainly get all long/common byte sequences.
+The histogram will have to be hashmaps with the less useful data being dropped.  Interesting for heuristics might be the areas in 3-byte space of non-occuring sequences.
