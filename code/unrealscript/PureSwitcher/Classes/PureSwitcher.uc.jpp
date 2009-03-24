@@ -7,6 +7,8 @@
 //                Maybe an admin can do this anyway with "mutate disablepure"
 //                and "admin servertravel" but can they disable purestats also?
 
+// TODO: Detect mid game dynamic-loading of incompatible actors, and disable pure and warn player(s).
+
 // TODO: It may be that only some maps are incompatible with Pure (e.g. some
 //       maps might have old Strangeloves embedded in them).
 //       We may want a list of maps for which to disable pure, e.g. BleakNFR
@@ -31,12 +33,20 @@
 
 class PureSwitcher expands Mutator;
 
+#define CHECK_ACTORS
 #define CHECK_GAMETYPE
 #define CHECK_MUTATORS
 // #define CHECK_MAPVOTE_MESSAGES
 
+#define SWITCH_HARDCORE_WRT_SIEGE
+// (requires CHECK_GAMETYPE)
+
 var config String PureVersion;
 var config String PureStatVersion;
+
+#ifdef CHECK_ACTORS
+var config String IncompatibleActors;
+#endif
 
 #ifdef CHECK_GAMETYPE
 var config String IncompatibleGametypes;
@@ -60,6 +70,9 @@ defaultproperties {
 	// IncompatibleMVLAPrefixes="SiegeXXL2e,SLVArena,BattyBT"
 	// If we can intercept ServerTravel (see DynamicPackageLoader) then we can fix this before switching map.
 	// Or if we detect a map has loaded with incompatible settings, we can fix settings and force a map reload(switch).
+	#ifdef CHECK_ACTORS
+	IncompatibleActors="*.ZeroPingPlus,SiegeAnywhere,SiegeCTF,SiegeAnywhere.SiegeAnywhereConstructor,ForceBehindView.ForceBehindView,NFRabit"
+	#endif
 	#ifdef CHECK_GAMETYPE
 	IncompatibleGametypes="SiegeGI,FreeBuildGI,FastBuildGI,SiegeAssault,SiegeCTF,SiegeDM,SiegeDomination,SiegeTDM"
 	#endif
@@ -101,12 +114,20 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 	if (InStr(String(Other),"UTPure")>=0) {
 		Log("PureSwitcher.CheckReplacement(): Caught "$Other);
 	}
+	if (InStr(Caps(Other.class.name),Caps(IncompatibleActors)) >= 0) {
+		if (bPureEnabled) {
+			BroadcastMessage("UTPure is enabled but we have just loaded "$Other.class.name$" - expect problems!");
+		}
+	}
 	return Super.CheckReplacement(Other,bSuperRelevant);
 }
 
 function PreBeginPlay() {
 	local String gametype;
 	gametype = Mid(""$Level.Game.class,Instr(""$Level.Game.class,".")+1); // CTF-Face.CTFGame0 -> CTFGame0
+	while (Asc(Right(gametype,1))>=Asc("0") && Asc(Right(gametype,1))<=Asc("9")) {
+		gametype = Left(gametype,Len(gametype)-1);
+	}
 	Log("[PureSwitcher] Gametype = "$ gametype);
 	#ifdef CHECK_GAMETYPE
 	if (Instr(","$IncompatibleGametypes$",", ","$gametype$",")>=0) {
@@ -114,6 +135,14 @@ function PreBeginPlay() {
 	} else {
 		EnableUTPure("Gametype "$gametype);
 	}
+	#endif
+	#ifdef SWITCH_HARDCORE_WRT_SIEGE
+	if (Instr(Caps(gametype),"SIEGE")>=0 || Instr(gametype,"GI")>=0 || Instr(gametype,"XXL")>=0 || Instr(gametype,"Xtreme")>=0) {
+		DeathMatchPlus(Level.Game).bHardcoreMode = False;
+	} else {
+		DeathMatchPlus(Level.Game).bHardcoreMode = True;
+	}
+	Log("Set HardcoreMode="$DeathMatchPlus(Level.Game).bHardcoreMode$" for gametype "$gametype);
 	#endif
 	Super.PreBeginPlay();
 	CheckMutators();
