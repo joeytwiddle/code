@@ -3,7 +3,8 @@ class TeamSwitcher expands Mutator;
 // DONE: For SONY_sCarface, add "!vote"
 
 function PostBeginPlay() {
- Level.Game.RegisterMessageMutator(Self);
+  Level.Game.RegisterMessageMutator(Self);
+  Super.PostBeginPlay();
 }
 
 // Catch messages from spectators:
