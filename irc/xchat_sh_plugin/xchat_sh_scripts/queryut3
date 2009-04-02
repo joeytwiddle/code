@@ -1,0 +1,30 @@
+. irc.shlib
+. irccols.shlib
+
+SERVER_PORT="$1"
+
+if [ "$SERVER_PORT" = "" ] || [ "$SERVER_PORT" = "--help" ]
+then
+	echo "Usage: !queryut3 <server_and_port>    -- powered by gametracker.com"
+	exit 0
+fi
+
+SERVER_PORT="` echo "$SERVER_PORT" | sed 's+.*://++ ; s+/$++' `"
+if ! echo "$SERVER_PORT" | grep ":" >/dev/null
+then SERVER_PORT="$SERVER_PORT:7777"
+fi
+
+TMPFILE="/tmp/ut3_query.$$.tmp"
+
+wget -nv "http://www.gametracker.com/server_info/$SERVER_PORT/" -O "$TMPFILE"
+
+TITLE=` cat "$TMPFILE" | grep -A1 '<div class="server_header_title">' | tail -n 1 | sed 's+^[ 	]*++ ; s+[ 	]*$++' `
+
+PLAYERS=` cat "$TMPFILE" | fromline '.*<table class="players">.*' | toline '.*<\/table>.*' | grep '<a href.*class="player"' | afterfirst '/player/' | beforefirst '/"' | sed 's+$+,+' | tr '\n' ' ' | sed 's+, $++' `
+
+MAP=` cat "$TMPFILE" | grep -A1 '<div class="si_map_header" id="HTML_curr_map">' | tail -n 1 | sed 's+^[ 	]*++ ; s+[ 	]*$++' `
+
+echo "$COLBLUE""ut3://$SERVER_PORT $COLGREY""$MAP $COLYELLOW$TITLE $COLBLUE""[ $COLNORM$PLAYERS $COLBLUE""]$COLRESET"
+
+rm -f "$TMPFILE"
+
