@@ -24,7 +24,8 @@ then
 	exit
 fi
 
-if [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#adl.pvt" ] || echo "$NICK" | grep -i "^goly" >/dev/null || echo "$NICK" | grep -i "^mox" >/dev/null || echo "$NICK" | grep -i "mox$" >/dev/null || echo "$NICK" | grep -i "^[|]*sandwich[|]*$" >/dev/null || echo "$NICK" | grep -i "^[|]*xaz[|]*$" >/dev/null || echo "$NICK" | grep -i "^evi" >/dev/null
+[ "$CHANNEL" = "#adl.pvt" ]
+if [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#smo.priv" ] || echo "$NICK" | grep -i "^goly" >/dev/null || echo "$NICK" | grep -i "^mox" >/dev/null || echo "$NICK" | grep -i "mox$" >/dev/null || echo "$NICK" | grep -i "^[|]*sandwich[|]*$" >/dev/null || echo "$NICK" | grep -i "^[|]*xaz[|]*$" >/dev/null || echo "$NICK" | grep -i "^evi" >/dev/null
 then
 	if [ "$1" ]
 	then NICK="$1"

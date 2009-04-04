@@ -1,0 +1,3 @@
+if [ "$CHANNEL" = "#siegepug" ]
+then echo "!promote"
+fi

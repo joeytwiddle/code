@@ -3,3 +3,4 @@ then echo "!promote"
 fi
 ## And since in the Java environment the bot can't read messages from himself:
 ./pugbot/promote
+## TODO: This might cause infloop outside of Java environment (in XChat)!
