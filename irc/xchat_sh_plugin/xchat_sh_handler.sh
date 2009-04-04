@@ -119,7 +119,10 @@ abort_if_needed () {
 	fi
 
 	## Commands not wanted on irc.utchat.com/#ut:
-	if [ "$SERVER" = irc.utchat.com ] || [ "$NETWORK" = "ChaoticNetworks.Com" ]
+	if [ "$CHANNEL" = "#ut" ] && [ "$COMMAND" = u ]
+	then exit 0
+	fi
+	if [ "$SERVER" = irc.utchat.com ] || [ "$NETWORK" = "ChaoticNetworks.Com" ] || [ "$NETWORK" = irc.globalgamers.net ]
 	then
 
 		## Blacklist:
