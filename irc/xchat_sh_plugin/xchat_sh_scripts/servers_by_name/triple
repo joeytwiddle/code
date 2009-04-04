@@ -1,2 +1,9 @@
 # ./utp "$@" unreal://84.31.200.198:443
-./utp "$@" unreal://84.31.200.198
+
+## Last seen 2 months, 2 days, 6 hours, 43 minutes and 32 seconds ago: unreal://84.31.200.198 12/12 CTF-LavaGiant
+## 64 / 0 CTFGame No Downloads - Works 4 Everyone - 6v6 // Red: 2 | Blue: 3
+## [ CoD|*J0$sty'][*, dutch_beauty.nl, GalaxyNewsRadio, asshole, Fart, CoD|T3RM!N@T0R, halun_hans, .bbk, Nowik, seba, SEM-A-D, () ]
+# ./utp "$@" unreal://84.31.200.198
+
+./utp "$@" 84.31.189.250
+
