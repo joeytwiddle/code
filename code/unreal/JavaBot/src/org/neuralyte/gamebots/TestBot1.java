@@ -55,7 +55,7 @@ public class TestBot1 extends HumanBot {
             "jump",
             "rotate",
             "runTo",
-            "say",
+            // "say",
             "setName",
             "setWalk",
             "shoot",
@@ -68,6 +68,36 @@ public class TestBot1 extends HumanBot {
         java.util.List goodMethodsList = Arrays.asList(goodMethodsArray);
 
         while (true) {
+
+            if (Math.random() <= 0.01) {
+                // Try to use translocator
+                String tlFound = null;
+                for (int i=0;i<inventory.size();i++) {
+                    String invItem = (String)inventory.get(i);
+                    if (invItem.indexOf("Translocator")>=0) {
+                        tlFound = invItem; // break;
+                    }
+                }
+                if (tlFound != null) {
+                    System.out.println("Trying to use "+tlFound);
+                    say("Trying to use "+tlFound,true);
+                    threadSleep(1000);
+                    changeWeapon(tlFound);
+                    threadSleep(1000);
+                    // shoot();
+                    // shoot(0,0,0,"CTF-BleakCE-100.FlagBase1",false);
+                    shoot(0,0,0,"None",false);
+                    // shoot("CTF-BleakCE-100.FlagBase1",false);
+                    // shoot("",false);
+                    threadSleep(1000);
+                    // shoot(1,1,1,"CTF-BleakCE-100.FlagBase1",true);
+                    // shoot(0,0,0,"None",true);
+                    shoot("CTF-BleakCE-100.FlagBase1",true);
+                    // shoot("",true);
+                    threadSleep(1000);
+                    continue;
+                }
+            }
 
             // Take a random action
 
