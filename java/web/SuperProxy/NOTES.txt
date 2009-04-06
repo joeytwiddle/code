@@ -1,0 +1,8 @@
+The search engine tree watcher goes like this:
+If they follow a link, we add to session
+  Result 3/20 from search "this thing is cool".  [ List: Abc Def [GHI] Jkl Mno Pqr ... ]
+This appears at the top of each page (response).
+Until they click one of them.
+
+
+

@@ -122,6 +122,9 @@ public class SavingProxy extends HttpRequestHandler {
         
         Logger.log("Will save to "+requestNumber+".request .response and .content");
         
+        // TODO consider: not super()?
+        // Would super do processDocument before we can get the original response stream?
+        
         Logger.log(">> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
         
         writeHeaders(httpRequest.getRequestAsList(), reqOut);
