@@ -13,6 +13,8 @@
 <script type="text/javascript"> <!--
 #endif
 
+#ifdef INCLUDE_COMMENTS
+
 // Useful: :! onchange "powerbar.html.jpp" do 'jpp -- powerbar.html.jpp > ./powerbar.html'
 //   also: :! onchange "powerbar.html.jpp" do "env JPP_GCC_OPTS='-D BOOKMARKLET' jpp -- powerbar.html.jpp > ./powerbarframe.html"
 
@@ -32,6 +34,8 @@
 // TOGO BUG: How can we prevent all the parents from capturing the XPath click event in Mozilla?  Actually Konqueror has the same issue but still refers to the same srcElement.
 
 // TODO: It would be nice to have some text fields clear their values when entered.  See jumpgate.
+
+#endif
 
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
 var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
@@ -66,7 +70,6 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 	#define LOG(str) top.log(str)
 	#define WARN(str) top.log("[WARN] "+str)
 	#define LOG_ELEMENT_ID "logElementId"
-	// #define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
 	#define LOG_ELEMENT_HTML '<font size="-1">PowerBar log:<BR><div id="' + LOG_ELEMENT_ID + '"></div></font>'
 	#define LOG_MAX_LINES 7
 	var logText = "";
@@ -208,12 +211,13 @@ function generatePowerBar() {
 	powerBarHtml += '<table><tr><td valign="top" align="center">';
 
 	//// Location URL textfield:
+	//// TODO BUG: These references to top.powerBarFrame fail!
 	powerBarHtml += '<FORM name="locationForm" onsubmit="top.changeLocation(top.mainFrame,top.powerBarFrame.locationForm.locationBox.value)" action="javascript:">';
 	powerBarHtml += 'Location:\n';
-	powerBarHtml += '<INPUT name="locationBox" type="text" size="30" value="http://www.google.com/">';
+	powerBarHtml += '<INPUT id="locationBox" name="locationBox" type="text" size="30" value="http://www.google.com/">';
 	// powerBarHtml += defaultSubmitButton;
 	if (opt_ButtonsOnPowerBarForms) {
-		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,top.powerBarFrame.locationForm.locationBox.value)">';
+		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,getElementById(\'locationBox\').value)">';
 	}
 	powerBarHtml += '</FORM>';
 
@@ -292,6 +296,8 @@ function generatePowerBar() {
 	powerBarLocationFormElement = powerBarFrame.document.forms[0];
 
 	// alert("Getting: "+document.getElementById(LOG_ELEMENT_ID));
+
+	// powerBarHtml += '<SCRIPT type="text/javascript"> top.powerBarFrame = window; </script>';
 
 	LOG("generatePowerBar() finished.");
 
@@ -393,16 +399,23 @@ function processTodoList() {
 function changeLocation(frame,url) {
 	// writeToFrame(frame,'<script type="text/javascript">window.location = "' + url + '";</script>');
 	lastKnownLocation = url;
+
+	//// This works, but we have no control over the new DOM!
 	// frame.location = url;
+	mainFrame.location = url;
+	return;
+
 	var tidyUrl = '/cgi-bin/joey/tidy?url=';
 	if (new XMLHttpRequest()) {
+		// Mozilla:
 		var httpRequest = new XMLHttpRequest();
 		httpRequest.open('GET', tidyUrl+url, false);
-		httpRequest.send(null);
+		httpRequest.send(null);  
 		var xmlDocument = httpRequest.responseXML;
 		alert(xmlDocument.documentElement.nodeName)
+		// Fails with xmlDocument == null.
 	} else if (new ActiveXObject('Microsoft.XMLHTTP')) {
-		// Konqueror attempts this.
+		// Konqueror / IE:
 		var httpRequest = new ActiveXObject('Microsoft.XMLHTTP');
 		httpRequest.open('GET', tidyUrl+url, false);
 		httpRequest.send();
@@ -603,11 +616,18 @@ function attachClickListener(context,node) {
 
 // var eventObj;
 
+var lastXPath = "";
 // This gets called for every node below the mouse, not just the first one!
 function processClick(event) {
 	var node = event.srcElement;
 	if (!node) {
 		node = event.currentTarget;
+	}
+	var xpath = getXPath(node);
+	if (lastXPath.substring(0,xpath.length) == xpath) {
+		return;
+	} else {
+		lastXPath = xpath;
 	}
 	// alert("Node " + node + " has " + node.childNodes.length + " kids and XPath:\n" + getXPath(node));
 	// LOG(getXPath(node) + ": \"" + toHtml(node.)));
