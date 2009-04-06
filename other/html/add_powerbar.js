@@ -29,7 +29,6 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 // You can then log to that element using LOG(report);
  // #define LOG(str) log(str)
  //// Works from within DHTML on<action> thingies.  Actually it doesn't cos they are always in quotes and hence not interpreted, so to do it I have to put "top.log" in the string.  Damn!
- // #define LOG(str) try { log(str); } catch (e) { }
  // #define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
  var logText = "";
  function log(str) {
