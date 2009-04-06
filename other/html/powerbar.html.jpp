@@ -1,9 +1,17 @@
+#ifdef PURE_SCRIPT
+	#define BOOKMARKLET
+#else
+	#define WRAP_IN_HTML_PAGE
+#endif
+
+#ifdef WRAP_IN_HTML_PAGE
 <HTML>
 <HEAD>
 
 <TITLE>Powerbar</TITLE>
 
 <script type="text/javascript"> <!--
+#endif
 
 // Useful: :! onchange "powerbar.html.jpp" do 'jpp -- powerbar.html.jpp > ./powerbar.html'
 //   also: :! onchange "powerbar.html.jpp" do "env JPP_GCC_OPTS='-D BOOKMARKLET' jpp -- powerbar.html.jpp > ./powerbarframe.html"
@@ -56,6 +64,7 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 	// #define LOG(str) log(str)
 	//// Works from within DHTML on<action> thingies.  Actually it doesn't cos they are always in quotes and hence not interpreted, so to do it I have to put "top.log" in the string.  Damn!
 	#define LOG(str) top.log(str)
+	#define WARN(str) top.log("[WARN] "+str)
 	// #define LOG(str) try { log(str); } catch (e) { }
 	#define LOG_ELEMENT_ID "logElementId"
 	// #define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
@@ -78,6 +87,8 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 		}
 		if (element) {
 			element.innerHTML = toHtml(logText);
+			// element.innerHTML = ( skipEscaping ? logText : toHtml(logText) );
+			// element.innerHTML = logText;
 			// Attempt at forced refresh:
 			/*
 			// if (element.style.visibility == "visible") {
@@ -103,6 +114,7 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 
 	#define LOG(str) 
 	#define LOG_ELEMENT_HTML ""
+	#define WARN(str) 
 
 #endif
 
@@ -152,28 +164,39 @@ var todoList = "";
 
 #ifdef BOOKMARKLET
 	init();
-	powerBarFrame = window.frames[0];
-	mainFrame = window.frames[1];
-	generatePowerBar();
+	// powerBarFrame = window.frames[0];
+	// mainFrame = window.frames[1];
+	// generatePowerBar();
 #else
 	init();
 #endif
 
 function createFrameset() {
 	var distrib = ( opt_powerBarPosition == "top" ? "20%,*" : "*,20%" );
-	var startFrameSet     = '<frameset rows="' + distrib + '">';
-	var powerBarFrameHtml = '<frame src="about:blank">';
-	// var mainFrameHtml     = '<frame src="http://www.google.com/">';
-	var mainFrameHtml     = '<frame src="about:blank">';
-	var endFrameSet       = '</frameset>';
-	var framesetHtml = "";
-	framesetHtml += startFrameSet;
-	framesetHtml += ( opt_powerBarPosition == "top" ?  powerBarFrameHtml : mainFrameHtml );
-	framesetHtml += ( opt_powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
-	framesetHtml += endFrameSet;
+	#ifdef BOOKMARKLET
+		var framesetHtml = '<IFRAME width="900" height="260" id="powerBarFrame" src="about:blank"></IFRAME>\n';
+		framesetHtml += '<BR>\n';
+		framesetHtml += '<IFRAME width="900" height="600" id="mainFrame" src="about:blank"></IFRAME>\n';
+	#else
+		var startFrameSet     = '<frameset rows="' + distrib + '">';
+		var powerBarFrameHtml = '<frame src="about:blank">';
+		// var mainFrameHtml     = '<frame src="http://www.google.com/">';
+		var mainFrameHtml     = '<frame src="about:blank">';
+		var endFrameSet       = '</frameset>';
+		var framesetHtml = "";
+		framesetHtml += startFrameSet;
+		framesetHtml += ( opt_powerBarPosition == "top" ?  powerBarFrameHtml : mainFrameHtml );
+		framesetHtml += ( opt_powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
+		framesetHtml += endFrameSet;
+	#endif
 	document.writeln(framesetHtml);
-	powerBarFrame  = window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
-	mainFrame = window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
+	// #ifdef BOOKMARKLET
+		// powerBarFrame = document.getElementById("powerBarFrame");
+		// mainFrame = document.getElementById("mainFrame");
+	// #else
+		powerBarFrame  = window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
+		mainFrame = window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
+	// #endif
 }
 
 // TODO: Move init code for each module to that module and out of here.
@@ -186,13 +209,12 @@ function generatePowerBar() {
 	powerBarHtml += '<table><tr><td valign="top" align="center">';
 
 	//// Location URL textfield:
-	// powerBarHtml += '<FORM name="locationTextBox" action="javascript:top.changeLocation(top.mainFrame,this.location.value)">';
-	powerBarHtml += '<FORM name="locationForm" onsubmit="top.changeLocation(top.mainFrame,location.value)" action="javascript:">';
+	powerBarHtml += '<FORM name="locationForm" onsubmit="top.changeLocation(top.mainFrame,top.powerBarFrame.locationForm.locationBox.value)" action="javascript:">';
 	powerBarHtml += 'Location:\n';
-	powerBarHtml += '<INPUT name="location" type="text" size="30" value="http://www.google.com/">';
+	powerBarHtml += '<INPUT name="locationBox" type="text" size="30" value="http://www.google.com/">';
 	// powerBarHtml += defaultSubmitButton;
 	if (opt_ButtonsOnPowerBarForms) {
-		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,location.value)">';
+		powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,top.powerBarFrame.locationForm.locationBox.value)">';
 	}
 	powerBarHtml += '</FORM>';
 
@@ -272,7 +294,7 @@ function generatePowerBar() {
 
 	// alert("Getting: "+document.getElementById(LOG_ELEMENT_ID));
 
-	// LOG("generatePowerBar() finished.");
+	LOG("generatePowerBar() finished.");
 
 }
 
@@ -326,21 +348,21 @@ function updatePowerBar() {
 	var urlOfMainFrame = mainFrame.location;
 	// var urlInTextBox = powerBarFrame.document.forms[0].location;
 	try {
-	if (powerBarFrame.document.forms["locationForm"]) {
-		var urlInTextBox = powerBarFrame.document.forms["locationForm"].location;
-		// if (urlOfMainFrame != urlInTextBox.value) {
-		if (urlOfMainFrame != lastKnownLocation) {
-			LOG("URL changed from " + lastKnownLocation + " to " + urlOfMainFrame);
-			urlInTextBox.value = urlOfMainFrame; // BUG: doesn't work for Mozilla
-			lastKnownLocation = urlOfMainFrame;
+		if (powerBarFrame.document.forms["locationForm"]) {
+			var urlInTextBox = powerBarFrame.document.forms["locationForm"].locationBox.value;
+			// if (urlOfMainFrame != urlInTextBox.value) {
+			if (urlOfMainFrame != lastKnownLocation) {
+				LOG("URL changed from " + lastKnownLocation + " to " + urlOfMainFrame);
+				urlInTextBox.value = urlOfMainFrame; // BUG: doesn't work for Mozilla
+				lastKnownLocation = urlOfMainFrame;
+			}
 		}
-	}
-	if (opt_ClockEnabled) {
-		var clockElem = powerBarFrame.document.getElementById('clockHook');
-		clockElem.innerHTML = "" + niceDate();
-	}
-	processTodoList();
-	refreshTimer();
+		if (opt_ClockEnabled) {
+			var clockElem = powerBarFrame.document.getElementById('clockHook');
+			clockElem.innerHTML = "" + niceDate();
+		}
+		processTodoList();
+		refreshTimer();
 	} catch (e) {
 		LOG(e);
 	}
@@ -381,11 +403,15 @@ function changeLocation(frame,url) {
 		var xmlDocument = httpRequest.responseXML;
 		alert(xmlDocument.documentElement.nodeName)
 	} else if (new ActiveXObject('Microsoft.XMLHTTP')) {
+		// Konqueror attempts this.
 		var httpRequest = new ActiveXObject('Microsoft.XMLHTTP');
 		httpRequest.open('GET', tidyUrl+url, false);
 		httpRequest.send();
 		var xmlDocument = httpRequest.responseXML;
-		alert(xmlDocument.documentElement.nodeName)
+		if (xmlDocument == null)
+			WARN("Tried to request "+tidyUrl+url+" but got xmlDocument="+xmlDocument);
+		else
+			alert("Got xmlDocument = "+xmlDocument.documentElement.nodeName);
 	}
 	refreshTimer();
 }
@@ -578,17 +604,23 @@ function attachClickListener(context,node) {
 
 // var eventObj;
 
+// This gets called for every node below the mouse, not just the first one!
 function processClick(event) {
 	var node = event.srcElement;
 	if (!node) {
 		node = event.currentTarget;
 	}
-	alert("Node " + node + " has " + node.childNodes.length + " kids and XPath:\n" + getXPath(node));
+	// alert("Node " + node + " has " + node.childNodes.length + " kids and XPath:\n" + getXPath(node));
 	// LOG(getXPath(node) + ": \"" + toHtml(node.)));
-	try {
-		node.style.backgroundColor = randomColour();
-	} catch (e) {
-		LOG(e);
+	var col = randomColour();
+	// log("XPath: <font color='"+col+"'>" + getXPath(node) + "</font>");
+	log("XPath: " + getXPath(node));
+	if (node.style) {
+		try {
+			node.style.backgroundColor = col;
+		} catch (e) {
+			LOG(e);
+		}
 	}
 	// event.currentTarget.onmouseup = "";
 	// eventObj = node;
@@ -645,6 +677,7 @@ function viewInnerHtml() {
 /////////////////////////// Library functions ///////////////////////////
 
 function writeToFrame(frame,html) {
+	LOG("Writing "+html.length+" bytes to "+frame+" "+frame.id);
 	// if (frame.document.open()) {
 		frame.document.open();
 		frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
@@ -867,8 +900,11 @@ function whereDoesPathBreak(path) {
 
 
 
+#ifdef WRAP_IN_HTML_PAGE
 // --> </script>
 
+// vim: ft=javascript foldmethod=indent foldenable
 </HEAD>
 <BODY>If you don't have Javascript, you're not getting in.</BODY>
 </HTML>
+#endif
