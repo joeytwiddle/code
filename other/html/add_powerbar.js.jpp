@@ -1,0 +1,2 @@
+#define PURE_SCRIPT
+#include "powerbar.html.jpp"
