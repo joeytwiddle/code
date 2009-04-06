@@ -5,20 +5,6 @@
 <HEAD>
 <TITLE>Powerbar</TITLE>
 <script type="text/javascript"> <!--
-// Useful: :! onchange "powerbar.html.jpp" do 'jpp -- powerbar.html.jpp > ./powerbar.html'
-//   also: :! onchange "powerbar.html.jpp" do "env JPP_GCC_OPTS='-D BOOKMARKLET' jpp -- powerbar.html.jpp > ./powerbarframe.html"
-// TODO: make it easy to add javascripttester or whatever to new opened windows.
-// BUGS:
-// Not yet ported to IE.  (Written against Mozilla, ported to Konqueror.)
-// Konqueror's log text sometimes freezes up and doesn't display until nudged (eg. by resizing frame).
-// HELP!
-// I have yet to find a nice way to make a textfield which does something when user hits enter.
-//   1) onblur works if they move out of the component.  onsubmit tends to do zilch.
-//   2) I can put the textfield in a form, but then we need to make the form's action sterile, and any JS must now refer to the textfield's value with an absolute references, because local references don't appear to work in Mozilla.  :-(
-// Compare the <INPUT> in jsReflectorShow() (method 1) to those in generatePowerBar() (method 2).
-// TODO: once above solved, refactor all the <INPUT> string creation code to use nice generic functions.
-// TOGO BUG: How can we prevent all the parents from capturing the XPath click event in Mozilla?  Actually Konqueror has the same issue but still refers to the same srcElement.
-// TODO: It would be nice to have some text fields clear their values when entered.  See jumpgate.
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
 var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
 var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
@@ -33,7 +19,6 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 // You can then log to that element using LOG(report);
  // #define LOG(str) log(str)
  //// Works from within DHTML on<action> thingies.  Actually it doesn't cos they are always in quotes and hence not interpreted, so to do it I have to put "top.log" in the string.  Damn!
- // #define LOG_ELEMENT_HTML '<font size="-1"><div id="' + LOG_ELEMENT_ID + '"></div></font>'
  var logText = "";
  function log(str) {
   str = niceDate() + ": " + str;
@@ -121,12 +106,13 @@ function generatePowerBar() {
  var powerBarHtml = "";
  powerBarHtml += '<table><tr><td valign="top" align="center">';
  //// Location URL textfield:
+ //// TODO BUG: These references to top.powerBarFrame fail!
  powerBarHtml += '<FORM name="locationForm" onsubmit="top.changeLocation(top.mainFrame,top.powerBarFrame.locationForm.locationBox.value)" action="javascript:">';
  powerBarHtml += 'Location:\n';
- powerBarHtml += '<INPUT name="locationBox" type="text" size="30" value="http://www.google.com/">';
+ powerBarHtml += '<INPUT id="locationBox" name="locationBox" type="text" size="30" value="http://www.google.com/">';
  // powerBarHtml += defaultSubmitButton;
  if (opt_ButtonsOnPowerBarForms) {
-  powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,top.powerBarFrame.locationForm.locationBox.value)">';
+  powerBarHtml += '<INPUT type="button" value="Go" onclick="top.changeLocation(top.mainFrame,getElementById(\'locationBox\').value)">';
  }
  powerBarHtml += '</FORM>';
  // powerBarHtml += '</td><td valign="top" align="center">';
@@ -184,6 +170,7 @@ function generatePowerBar() {
  writeToFrame(powerBarFrame,powerBarHtml);
  powerBarLocationFormElement = powerBarFrame.document.forms[0];
  // alert("Getting: "+document.getElementById(LOG_ELEMENT_ID));
+ // powerBarHtml += '<SCRIPT type="text/javascript"> top.powerBarFrame = window; </script>';
  top.log("generatePowerBar() finished.");
 }
 var timerId;
@@ -274,15 +261,19 @@ function changeLocation(frame,url) {
  // writeToFrame(frame,'<script type="text/javascript">window.location = "' + url + '";</script>');
  lastKnownLocation = url;
  // frame.location = url;
+ mainFrame.location = url;
+ return;
  var tidyUrl = '/cgi-bin/joey/tidy?url=';
  if (new XMLHttpRequest()) {
+  // Mozilla:
   var httpRequest = new XMLHttpRequest();
   httpRequest.open('GET', tidyUrl+url, false);
   httpRequest.send(null);
   var xmlDocument = httpRequest.responseXML;
   alert(xmlDocument.documentElement.nodeName)
+  // Fails with xmlDocument == null.
  } else if (new ActiveXObject('Microsoft.XMLHTTP')) {
-  // Konqueror attempts this.
+  // Konqueror / IE:
   var httpRequest = new ActiveXObject('Microsoft.XMLHTTP');
   httpRequest.open('GET', tidyUrl+url, false);
   httpRequest.send();
@@ -427,11 +418,18 @@ function attachClickListener(context,node) {
  // }
 }
 // var eventObj;
+var lastXPath = "";
 // This gets called for every node below the mouse, not just the first one!
 function processClick(event) {
  var node = event.srcElement;
  if (!node) {
   node = event.currentTarget;
+ }
+ var xpath = getXPath(node);
+ if (lastXPath.substring(0,xpath.length) == xpath) {
+  return;
+ } else {
+  lastXPath = xpath;
  }
  // alert("Node " + node + " has " + node.childNodes.length + " kids and XPath:\n" + getXPath(node));
  // LOG(getXPath(node) + ": \"" + toHtml(node.)));
