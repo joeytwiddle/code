@@ -1,9 +1,11 @@
 ## TODO: support for POST requests
 
-if [ ! "$QUERY_STRING" ] && [ "$URL" ]
-then
-	QUERY_STRING=`echo "$URL" | afterfirst "\?"`
-fi
+## I think QUERY_STRING is provided by Apache, URL is not.
+## This code is only useful outside of apache, when we have URL but not QUERY_STRING.
+# jshinfo "URL=$URL QUERY_STRING=$QUERY_STRING"
+# if [ "$URL" ]
+# then QUERY_STRING=`echo "$URL" | afterfirst "\?"`
+# fi
 
 getcgi() {
 	TESTRES=`echo "$QUERY_STRING" | sed "s/.*\(^\|&\|'\)$1=\([^&']*\)\($\|&\|'\).*/\2/"`
@@ -52,6 +54,7 @@ then
 fi
 
 tocgi () {
+echo "$1" |
 sed '
 s+\!+%21+g
 s+\"+%22+g

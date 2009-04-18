@@ -1,0 +1,48 @@
+#!/bin/sh
+
+. cgilib
+# export JPATH=/home/joey/j
+# . /home/joey/j/startj-simple
+
+URL="`getcgi "url"`"
+
+## These are security measures.
+## TODO: Convert them to what they should be (eg. "s would need to be escaped to go inside the memo's \"s).
+URL=`echo "$URL" | tr -d '"'"'"`
+# URL=`echo "$URL" | sed 's+:1:$++'` ## Fix for XSLT bug, probably not needed
+## TODO: I am still worried about this memo; because it will eval!
+##       and even after above fixed, what about eg. CTRL-chars?
+## And what escaping gets lost when we use echo above?  echovar?!
+
+# wget -nv -O - "$URL" | tidy -asxml
+
+# /home/joey/j/jsh memo "
+# wget -nv -O - \"$URL\" |
+# sed 's+&nbsp;++g' |
+# tidy -asxml ; true
+# "
+
+# wget -nv -O - "$URL" | sed 's+&nbsp;++g' | tidy -asxml
+# /home/joey/j/jsh memo wget -nv -O - "$URL" | sed 's+&nbsp;++g' | tidy -asxml ; true
+# /home/joey/j/jsh memo "wget -nv -O - \"$URL\" | sed 's+&nbsp;++g' | tidy -asxml ; true"
+
+## CONSIDER: Try jtidy to avoid getting empty results.
+
+# /home/joey/j/jsh memo -t "1 hour" wget -nv -O - "$URL" | sed 's+&nbsp;++g' > /tmp/tmpfile
+# cat /tmp/tmpfile | tidy -asxml > /tmp/tmpfile.tidied 2> /tmp/tidy.err
+# if grep . /tmp/tmpfile.tidied >/dev/null
+# then cat /tmp/tmpfile.tidied
+# else
+	# echo "<FAILURE>W3C Tidy could not tidy this document because it has too many errors.  Sorry I wish it would do better than nothing!</FAILURE>"
+	# # cat /tmp/tmpfile
+# fi
+
+
+/home/joey/j/jsh memo -t "1 hour" wget -nv -O - "$URL" | sed 's+&nbsp;++g' |
+tidy -asxml 2> /tmp/tidy.err | grep .
+
+if [ ! "$?" = 0 ]
+then echo "<FAILURE>W3C Tidy could not tidy this document because it has too many errors.  Sorry I wish it would do better than nothing!</FAILURE>"
+fi
+
+# echo "Got $URL" > /tmp/tidy.got
