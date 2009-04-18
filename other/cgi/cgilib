@@ -1,9 +1,15 @@
 ## TODO: support for POST requests
 
+if [ ! "$QUERY_STRING" ] && [ "$URL" ]
+then
+	QUERY_STRING=`echo "$URL" | afterfirst "\?"`
+fi
+
 getcgi() {
 	TESTRES=`echo "$QUERY_STRING" | sed "s/.*\(^\|&\|'\)$1=\([^&']*\)\($\|&\|'\).*/\2/"`
+	## BAD: TESTRES=`echo "$QUERY_STRING" | sed "s/.*\(^\|[&?]\|'\)$1=\([^&?']*\)\($\|[&?]\|'\).*/\2/"`
 	if [ "$TESTRES" = "$QUERY_STRING" ]
-	then echo "cglib.getcgi(): Error finding var >$1<" >&2
+	then [ "$REPORT_CGI_FAILURES" ] && echo "cglib.getcgi(\"$1\"): no var >$1< was present." >&2
 	else echo "$TESTRES" | fromcgi
 	fi
 }
@@ -44,6 +50,18 @@ then
 	fi
 	simpleresponseheader
 fi
+
+tocgi () {
+sed '
+s+\!+%21+g
+s+\"+%22+g
+s+\#+%23+g
+s:\&:%26:g
+s:+:%2B:g
+s: :+:g
+s:\?:%3F:g
+'
+}
 
 fromcgi () {
 ## BUG TODO: We seem to be losing real '+'s into ' 's, but don't know how!
