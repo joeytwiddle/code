@@ -33,7 +33,6 @@
 		<div id='floatframe'>
 			<iframe id='floatingFrame1' width='320' height='240' src='blah.html' align='left'> </iframe>
 		</div>
-		-->
 		<style type="text/css">
 			#floatframe {position:absolute;
 				right:20px;
@@ -43,6 +42,7 @@
 				z-index:100;
 			}
 		</style>
+		-->
 		<P>
 			<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
 			<!-- <A href="javascript: alert(document.getElementsByTagName('IFRAME')); document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" >Test</A> -->
@@ -73,6 +73,7 @@
 					links[i].onmouseover = eventHandler;
 				}
 				/* TODO: In Mozilla, our whole page gets replaced with '[object HTMLIFrameElement]', or whatever our last statement returns. */
+				alert('Preview ready.  Sorry the popup is a workaround for Firefox!');
 			">Preview Links in FloatingFrame</A>
 			<!-- "></INPUT> -->
 		</P>
