@@ -1,0 +1,96 @@
+<HTML>
+	<BODY>
+
+		<P>
+			<A href="
+				javascript:
+				function attachClickListener(node,clickProcessor) {
+					if (node.captureEvents) {
+						node.captureEvents(Event.CLICK);
+					}
+					node.onmouseup = clickProcessor;
+					if (node.style) {
+						node.style.cursor = (clickProcessor?'crosshair':'');
+					}
+					var kids = node.childNodes;
+					for (var i=0;i<kids.length;i++) {
+						attachClickListener(kids[i],clickProcessor);
+					}
+				}
+				function processClick(event) {
+					var node = event.srcElement;
+					if (!node) {
+						node = event.currentTarget;
+					}
+					node.innerHTML='';
+					attachClickListener(document,null);
+				}
+				attachClickListener(document,processClick);
+			">Nuke next item clicked</A>
+		</P>
+
+		<!--
+		<div id='floatframe'>
+			<iframe id='floatingFrame1' width='320' height='240' src='blah.html' align='left'> </iframe>
+		</div>
+		-->
+		<style type="text/css">
+			#floatframe {position:absolute;
+				right:20px;
+				top:20px;
+				width:320px;
+				height:240px;
+				z-index:100;
+			}
+		</style>
+		<P>
+			<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
+			<!-- <A href="javascript: alert(document.getElementsByTagName('IFRAME')); document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" >Test</A> -->
+			<A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A>
+		</P><P>
+			<!--
+			<A href="
+				javascript:
+				var f = document.createElement('IFRAME');
+				f.style = 'z-index:100';
+				f.style.position = 'absolute';
+				f.style.width = window.innerWidth * 3/4;
+				f.style.height = window.innerHeight * 3/4;
+				f.style.top = 20;
+				f.style.right = 20;
+				f.id = 'floatingFrame1';
+				var links = document.getElementsByTagName('A');
+				alert(''+links.length);
+				for (var i=0;i<links.length;i++) {
+					/* links[i].onmouseover = 'alert(&quot;boo&quot;); document.getElementById(&quot;floatingFrame1&quot;).src = &quot;http://www.google.com&quot;;'; */
+					links[i].onmouseover = 'javascript: alert(3);';
+				}
+				document.body.appendChild(f);
+			">Preview Links in FloatingFrame</A>
+			-->
+			<A href="
+				javascript:
+				var f = document.createElement('IFRAME');
+				f.style = 'z-index:100';
+				f.style.position = 'absolute';
+				f.style.width = window.innerWidth * 3/4;
+				f.style.height = window.innerHeight * 3/4;
+				f.style.top = 20;
+				f.style.right = 20;
+				f.id = 'floatingFrame1';
+				var links = document.getElementsByTagName('A');
+				function eventHandler(evt) {
+					/* var linkNode = evt.srcElement; */
+					var linkNode = evt.currentTarget;
+					document.getElementById('floatingFrame1').src = linkNode.href;
+				}
+				for (var i=0;i<links.length;i++) {
+					/* links[i].onmouseover = 'alert(&quot;boo&quot;); document.getElementById(&quot;floatingFrame1&quot;).src = &quot;http://www.google.com&quot;;'; */
+					links[i].onmouseover = eventHandler;
+				}
+				document.body.appendChild(f);
+			">Preview Links in FloatingFrame</A>
+		</P>
+
+	</BODY>
+</HTML>
