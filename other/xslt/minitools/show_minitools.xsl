@@ -1,5 +1,5 @@
 <?xml version="1.0"?> 
-<?xml-stylesheet type="text/xsl" href="jumpgate.xsl"?>
+<?xml-stylesheet type="text/xsl" href="show_minitools.xsl"?>
 <xsl:stylesheet version="1.0"
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:yaslt="http://www.mod-xslt2.com/ns/1.0"
@@ -31,7 +31,8 @@
 	<xsl:include href="../xmlverbatim.xsl"/>
 
 	<xsl:template match="/">
-		<xsl:variable name="srcUrl" value="'http://hwi.ath.cx/xslt/src/minitools/show_minitools.xsl'"/>
+		<!-- srcUrl is preset as 'http://hwi.ath.cx/xslt/src/minitools/show_minitools.html -->
+		<xsl:variable name="xsltURL" value="'http://hwi.ath.cx/xslt/src/minitools/show_minitools.xsl'"/>
 		<xsl:variable name="pageUrl" select="//URL/@url"/>
 
 		<!-- <P>Document 1 has <xsl:value-of select="count(//*)"/> nodes.</P> -->
@@ -62,35 +63,89 @@
 				<H1>Minitools</H1>
 
 				<P>
-					Konqueror Minitools from <A><xsl:attribute name="href"><xsl:value-of select="//URL/@url"/></xsl:attribute>
-						<!-- <xsl:value-of select="substring-before(//URL/@url,'/')"/></A> -->
-						<xsl:value-of select="(//URL/@url)"/></A>
+					My Konqueror Bookmarklets from <A><xsl:attribute name="href"><xsl:value-of select="//URL/@url"/></xsl:attribute>
+						<!-- <xsl:value-of select="substring-after-last(//URL/@url,'/')"/></A> -->
+						minitools.xml</A>
 					<!-- via <A><xsl:attribute name="href"><xsl:value-of select="concat('http://hwi.ath.cx/cgi-bin/joey/tidy?url=',$pageUrl)"/></xsl:attribute>Tidied</A> -->
 					<!-- via <A><xsl:attribute name="href"><xsl:value-of select="'http://hwi.ath.cx/cgi-bin/joey/tidy?url='"/><xsl:value-of select="$pageUrl"/></xsl:attribute>this tidied copy</A> -->
-					formatted into HTML by <A><xsl:attribute name="href" select="$srcUrl"/>this XSLT</A>.
+					arranged into HTML by
+					<!-- TODO: very odd - $xsltURL kept coming out as $srcUrl O_o. -->
+					<!-- by <A><xsl:attribute name="href" select="$xsltURL"/>this XSLT</A>. -->
+					<!-- <A><xsl:attribute name="href" select="'http://hwi.ath.cx/xslt/src/minitools/show_minitools.xsl'"/>this XSLT</A>. -->
+					<A href="http://hwi.ath.cx/xslt/src/minitools/show_minitools.xsl">this XSLT</A>
+					.
 				</P>
 
-				<TABLE>
-
-					<!-- <xsl:apply-templates select="$thePage//bookmark"/> -->
-					<!-- We need to reverse the order.  I store my minitools in reverse order because Konqueror displays them in reverse order! -->
-					<xsl:for-each select="$thePage//bookmark">
+				<H2>Minitools</H2>
+				<BLOCKQUOTE>
+					<!-- The reasons for the xsl:sort's is that we need to reverse the order.  I store my minitools in reverse order because Konqueror displays them in reverse order! -->
+					<!-- Show the toplevel (no subfolder) bookmarklets: -->
+					<TABLE>
+						<!-- <xsl:apply-templates select="$thePage//bookmark"/> -->
+						<xsl:for-each select="$thePage/*/bookmark">
+							<xsl:sort select="position()" data-type="number" order="descending"/>
+							<xsl:apply-templates select="."/>
+						</xsl:for-each>
+					</TABLE>
+					<xsl:for-each select="$thePage//folder">
 						<xsl:sort select="position()" data-type="number" order="descending"/>
 						<xsl:apply-templates select="."/>
 					</xsl:for-each>
+				</BLOCKQUOTE>
 
-				</TABLE>
+				<!-- Not working well!
+				<script language="JavaScript" type="text/javascript" src="http://hwi.ath.cx/javascript/modifyDOM.js"></script>
+				<script language="JavaScript" type="text/javascript"> addFoldsToBlockQuotes(); </script>
+				-->
 
 				<SCRIPT type="text/javascript">
-					document.write("There are "+document.links.length+" links on this page.&lt;BR&gt;");
+					document.write("Javascript reports "+document.links.length+" links on this page so far.&lt;BR&gt;");
 					for (i=0;i&lt;document.links;i++) {
 					}
-					document.write("Script finished.");
 				</SCRIPT>
+
+				<P>NOTE: Not all of these Bookmarklets work in Firefox.  They are my Konqueror Bookmarklets.</P>
+
+				<H3>Importing</H3>
+				<BLOCKQUOTE>
+					There is an easy way to import all these bookmarklets into Firefox in one shot, and it goes like this:
+					<BLOCKQUOTE>
+						<LI>1) Save this page as a temporary file on your system, e.g. <TT>to_import.html</TT>.</LI>
+						<LI>2) In Firefox, go to Bookmarks -&gt; Organise Bookmarks, then select Import, and import the file.</LI>
+						<LI>3) Look for the imported Bookmarklets at the bottom of your Bookmarks Menu, and move them wherever you want.  (I prefer to keep my Bookmarklets in my Bookmarks Toolbar.)</LI>
+						<LI><FONT size='-1'>4) You may wish to delete those few imported bookmarks which are links on this page but not bookmarklets!</FONT></LI>
+					</BLOCKQUOTE>
+					<P><FONT size='-1'>Implementation notes: It appears links inside a BLOCKQUOTE headed by an H3 get imported into a folder with the name of the H3, but these folders are not imported into a tree, they are all placed top-level.</FONT></P>
+				</BLOCKQUOTE>
+
+				<H3>TODO</H3>
+				<BLOCKQUOTE>
+					<LI>Add Javascript which allows viewers to View or Edit the Javascript of each Bookmarklet.</LI>
+					<LI>Make the Importing and See Also sections appear in the top-right of the page!</LI>
+				</BLOCKQUOTE>
+
+				<P align='right'>
+					You can find other Bookmarklets at
+					<A href="http://hwi.ath.cx/joeys_bookmarklets.html">My bookmarklet development page</A> and on <A href="http://hwi.ath.cx/xslt/live/jumpgate/jumpgate.xml">Jumpgate 2</A>.
+				</P>
+
 
 			</BODY>
 		</HTML>
 
+	</xsl:template>
+
+	<xsl:template match="folder">
+		<H3><xsl:value-of select="title"/></H3>
+		<BLOCKQUOTE>
+			<TABLE>
+				<!-- <xsl:apply-templates select=".//bookmark"/> -->
+				<xsl:for-each select=".//bookmark">
+					<xsl:sort select="position()" data-type="number" order="descending"/>
+					<xsl:apply-templates select="."/>
+				</xsl:for-each>
+			</TABLE>
+		</BLOCKQUOTE>
 	</xsl:template>
 
 	<xsl:template match="bookmark">

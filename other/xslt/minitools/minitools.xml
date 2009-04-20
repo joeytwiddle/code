@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xbel>
 <xbel folded="no" >
- <folder folded="yes" icon="bookmark_folder" >
+ <folder folded="no" icon="bookmark_folder" >
   <title>More</title>
   <bookmark icon="www" href="http://www.google.com/search?num=100&amp;q=site%3Awiki.beyondunreal.com+%25s" >
    <title>UnrealWiki with Google</title>
@@ -77,7 +77,7 @@
     <title>Go to Referrer (Back)</title>
    </bookmark>
   </folder>
-  <folder folded="yes" icon="bookmark_folder" >
+  <folder folded="no" icon="bookmark_folder" >
    <title>Web Development</title>
    <bookmark icon="unknown" href="javascript:(function()%7B%20function%20htmlEscape(s)%7Bs%3Ds.replace(/%26/g,%27%26amp;%27);s%3Ds.replace(/%3E/g,%27%26gt;%27);s%3Ds.replace(/%3C/g,%27%26lt;%27);return%20s;%7D%20x%3Dwindow.open();%20x.document.write(%27%3Cpre%3E%27%20%2B%20htmlEscape(%27%3Chtml%3E%5Cn%27%20%2B%20document.documentElement.innerHTML%20%2B%20%27%5Cn%3C/html%3E%27));%20x.document.close();%20%7D)();" >
     <title>Live DOM Source</title>
@@ -149,13 +149,13 @@
     <title>Show link URLs</title>
    </bookmark>
   </folder>
-  <folder folded="yes" icon="bookmark_folder" >
+  <folder folded="no" icon="bookmark_folder" >
    <title>Links</title>
    <bookmark icon="unknown" href="javascript:(function()%7Bvar%20x,i;%20x%3Ddocument.links;%20for(i%3D0;i%3Cx.length;%2B%2Bi)%20%7B%20x%5Bi%5D.target%3D%22_blank%22;%20%7D%20%7D)();" >
-    <title>Make all links target new tab</title>
+    <title>Make Links target new window</title>
    </bookmark>
    <bookmark icon="unknown" href="javascript:(function()%7Bvar%20x,i;%20x%3Ddocument.links;%20for(i%3D0;i%3Cx.length;%2B%2Bi)%20%7B%20x%5Bi%5D.target%3D%22_self%22;%20%7D%20%7D)();" >
-    <title>Make all links target this window</title>
+    <title>Make Links target this window</title>
    </bookmark>
    <bookmark icon="unknown" href="javascript:(function()%7Bvar%20n_to_open,dl,dll,i;%20function%20linkIsSafe(u)%20%7B%20if%20(u.substr(0,7)%3D%3D%27mailto%3A%27)%20return%20false;%20if%20(u.substr(0,11)%3D%3D%27javascript%3A%27)%20return%20false;%20return%20true;%20%7D%20n_to_open%20%3D%200;%20dl%20%3D%20document.links;%20dll%20%3D%20dl.length;%20if%20(window.getSelection%20%26%26%20window.getSelection().containsNode)%20%7B%20/*%20mozilla%20*/%20for(i%3D0;%20i%3Cdll;%20%2B%2Bi)%20%7B%20if%20(window.getSelection().containsNode(dl%5Bi%5D,%20true)%20%26%26%20linkIsSafe(dl%5Bi%5D.href))%20%2B%2Bn_to_open;%20%7D%20if%20(n_to_open%20%26%26%20confirm(%27Open%20%27%20%2B%20n_to_open%20%2B%20%27%20selected%20links%20in%20new%20windows?'))%20{%20for(i=0;%20i&lt;dll;%20++i)%20if%20(window.getSelection().containsNode(dl[i],%20true)%20&amp;&amp;%20linkIsSafe(dl[i].href))%20window.open(dl[i].href);%20}%20}%20/*%20/mozilla%20*/%20if%20(!n_to_open)%20{%20/*ie,%20or%20mozilla%20with%20no%20links%20selected:%20this%20section%20matches%20open_all_links,%20except%20for%20the%20alert%20text%20*/%20for(i%20=%200;%20i%20&lt;%20dll;%20++i)%20{%20if%20(linkIsSafe(dl[i].href))%20++n_to_open;%20}%20if%20(!n_to_open)%20alert%20('no%20links');%20else%20{%20if%20(confirm('No%20links%20selected.%20%20Open%20'%20+%20n_to_open%20+%20'%20links%20in%20new%20windows?'))%20for%20(i%20=%200;%20i%20&lt;%20dll;%20++i)%20if%20(linkIsSafe(dl[i].href))%20window.open(dl[i].href);%20}%20}%20})();" >
     <title>Open selected links in new windows</title>
@@ -179,6 +179,9 @@
  </bookmark>
  <bookmark icon="unknown" href="javascript:(function()%7Bvar%20x;%20x%3D%27Auto%20%27%2Bdocument.title;%20if%20(x%20!%3D%20null)%20%7B%20window.sidebar.addPanel(x,location.href,%27%27);%20%7D%20%7D)();" >
   <title>Open in SideBar</title>
+ </bookmark>
+ <bookmark icon="www" href="javascript:var%20f%20%3D%20document.createElement(%27IFRAME%27);f.style%20%3D%20%27z-index%3A100%27;f.style.position%20%3D%20%27absolute%27;f.style.width%20%3D%20window.innerWidth%20*%203/4;f.style.height%20%3D%20window.innerHeight%20*%203/4;f.style.top%20%3D%2020;f.style.right%20%3D%2020;f.id%20%3D%20%27floatingFrame1%27;var%20links%20%3D%20document.getElementsByTagName(%27A%27);function%20eventHandler(evt)%20%7B/*%20var%20linkNode%20%3D%20evt.srcElement;%20*/var%20linkNode%20%3D%20evt.currentTarget;document.getElementById(%27floatingFrame1%27).src%20%3D%20linkNode.href;%7Dfor%20(var%20i%3D0;i%3Clinks.length;i%2B%2B)%20%7B/*%20links%5Bi%5D.onmouseover%20%3D%20%27alert(%22boo%22);%20document.getElementById(%22floatingFrame1%22).src%20%3D%20%22http%3A//www.google.com%22;%27;%20*/links%5Bi%5D.onmouseover%20%3D%20eventHandler;%7Ddocument.body.appendChild(f);" >
+  <title>Preview Links in Floating Frame</title>
  </bookmark>
  <bookmark icon="www" href="javascript:void(window.open(%27http%3A//www.google.com/search?q='+document.getSelection()+'&amp;hl=en&amp;ie=ISO-8859-1&amp;meta=&amp;btnG=Google%20Search&amp;btnI=I'm%20Feeling%20Lucky','location=no,status=yes,menubar=no,scrollbars=yes,resizable=yes,width=800,height=600'))" >
   <title>Google QuickSearch</title>
