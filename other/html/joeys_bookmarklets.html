@@ -1,82 +1,136 @@
 <HTML>
-	<BODY>
+<BODY>
 
-		<P>
-			<A href="
-				javascript:
-				function attachClickListener(node,clickProcessor) {
-					if (node.captureEvents) {
-						node.captureEvents(Event.CLICK);
-					}
-					node.onmouseup = clickProcessor;
-					if (node.style) {
-						node.style.cursor = (clickProcessor?'crosshair':'');
-					}
-					var kids = node.childNodes;
-					for (var i=0;i<kids.length;i++) {
-						attachClickListener(kids[i],clickProcessor);
-					}
-				}
-				function processClick(event) {
-					var node = event.srcElement;
-					if (!node) {
-						node = event.currentTarget;
-					}
-					node.innerHTML='';
-					attachClickListener(document,null);
-				}
-				attachClickListener(document,processClick);
-			">Nuke next item clicked</A>
-		</P>
+<H1>Joey's Bookmarklet (Development) Page</H1>
 
-		<!--
-		<div id='floatframe'>
-			<iframe id='floatingFrame1' width='320' height='240' src='blah.html' align='left'> </iframe>
-		</div>
-		<style type="text/css">
-			#floatframe {position:absolute;
-				right:20px;
-				top:20px;
-				width:320px;
-				height:240px;
-				z-index:100;
+<P align='right'>
+See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey's Minitools/Bookmarklets</A>
+</P>
+
+<H2>Ready</H2>
+
+<BLOCKQUOTE>
+
+<P>
+	<A href="
+		javascript:
+		function attachClickListener(node,clickProcessor) {
+			if (node.captureEvents) {
+				node.captureEvents(Event.CLICK);
 			}
-		</style>
-		-->
-		<P>
-			<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
-			<!-- <A href="javascript: alert(document.getElementsByTagName('IFRAME')); document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" >Test</A> -->
-			<A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A>
-		</P><P>
-			<!-- <INPUT type="button" value="Go" onclick=" -->
-			<A href="
-				javascript:
-				var f = document.createElement('IFRAME');
-				/* f.style = 'z-index:100'; */ /* breaks moz */
-				f.align = 'left';
-				/* f.src = 'blah.html'; */
-				f.style.position = 'absolute';
-				f.style.width = window.innerWidth * 3/4;
-				f.style.height = window.innerHeight * 3/4;
-				f.style.top = 20;
-				f.style.right = 20;
-				/* TODO: our lovely positioning breaks on google! */
-				f.id = 'floatingFrame1';
-				document.body.appendChild(f);
-				var links = document.getElementsByTagName('A');
-				function eventHandler(evt) {
-					var linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					document.getElementById('floatingFrame1').src = linkNode.href;
-				}
-				for (var i=0;i<links.length;i++) {
-					links[i].onmouseover = eventHandler;
-				}
-				/* TODO: In Mozilla, our whole page gets replaced with '[object HTMLIFrameElement]', or whatever our last statement returns. */
-				alert('Preview ready.  Sorry the popup is a workaround for Firefox!');
-			">Preview Links in FloatingFrame</A>
-			<!-- "></INPUT> -->
-		</P>
+			node.onmouseup = clickProcessor;
+			if (node.style) {
+				node.style.cursor = (clickProcessor?'crosshair':'');
+			}
+			var kids = node.childNodes;
+			for (var i=0;i<kids.length;i++) {
+				attachClickListener(kids[i],clickProcessor);
+			}
+		}
+		function processClick(event) {
+			var node = event.srcElement;
+			if (!node) {
+				node = event.currentTarget;
+			}
+			node.innerHTML='';
+			attachClickListener(document,null);
+		}
+		attachClickListener(document,processClick);
+	">Nuke next item clicked</A>
+<BLOCKQUOTE>
+	<LI class='todo'>Needs 'undo' feature.</LI>
+	<LI class='todo'>Add two icons to the page, one to re-use the bookmarklet, another to empty the Trash (undo the deletes).</LI>
+</BLOCKQUOTE>
+</P>
 
-	</BODY>
+<P>
+	<!--
+	
+	TODO: Reloading the iframe every time we mouseover a link is a bit too much!
+	We should at least check we aren't already loading this page, and that the user
+	is hovering on our link, not just quickly passing over it to reach another.
+	
+	TODO: For real speed when flicking between previews, we should have 1 IFrame
+	per link, but rotate/hide them so that only 1 is visible.  The background ones
+	can load and be fast and ready.
+	
+	TODO: On Google, the floating IFrame does not appear where we desire.  This is
+	consistent between Firefox and Konqueror!  Maybe we need to place the style tag
+	in HTML rather than adding style prefs to the object.
+	
+	FIX: In Mozilla, our whole page gets replaced with '[object
+	HTMLIFrameElement]', or whatever our last statement returns. The alert prevents
+	it!
+	
+	-->
+	<A href="
+		javascript:
+		var f = document.createElement('IFRAME');
+		/* f.style = 'z-index:100'; */ /* breaks moz */
+		f.align = 'left';
+		/* f.src = 'blah.html'; */
+		f.style.position = 'absolute';
+		f.style.width = window.innerWidth * 3/4;
+		f.style.height = window.innerHeight * 3/4;
+		f.style.top = 20;
+		f.style.right = 20;
+		/* TODO: our lovely positioning breaks on google! */
+		f.id = 'floatingFrame1';
+		document.body.appendChild(f);
+		var links = document.getElementsByTagName('A');
+		function eventHandler(evt) {
+			var linkNode = evt.srcElement; /*moz?*/
+			if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
+			document.getElementById('floatingFrame1').src = linkNode.href;
+		}
+		for (var i=0;i<links.length;i++) {
+			links[i].onmouseover = eventHandler;
+		}
+		alert('Preview ready.  Sorry the popup is a workaround for Firefox!');
+	">Preview Links in FloatingFrame</A>
+	<!-- Another workaround is to put the javascript in a button on the page.
+	This does not suffer problem related to the return value.-->
+	<!-- <INPUT type="button" value="Go" onclick=" -->
+	<!-- "></INPUT> -->
+	<BLOCKQUOTE>
+		<LI>Pops up a floating IFrame on the current page, and displays target pages when we hover over existing links on the page.</LI>
+		<LI class='todo'>Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
+		<LI class='todo'>Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
+		<LI class='todo'>When invoked on Google result pages, the IFrame's floating style does not work properly - it sits at the bottom of the page.</LI>
+	</BLOCKQUOTE>
+</P>
+
+</BLOCKQUOTE>
+
+<H2>Development</H2>
+
+<BLOCKQUOTE>
+
+<!--
+<div id='floatframe'>
+	<iframe id='floatingFrame1' width='320' height='240' src='blah.html' align='left'> </iframe>
+</div>
+<style type="text/css">
+	#floatframe {position:absolute;
+		right:20px;
+		top:20px;
+		width:320px;
+		height:240px;
+		z-index:100;
+	}
+</style>
+-->
+<P>
+	<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
+	<!-- <A href="javascript: alert(document.getElementsByTagName('IFRAME')); document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" >Test</A> -->
+	<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
+	<A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A>
+</P>
+
+</BLOCKQUOTE>
+
+<STYLE>
+</STYLE>
+
+</BODY>
 </HTML>
