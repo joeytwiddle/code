@@ -76,22 +76,29 @@
 					.
 				</P>
 
-				<H2>Minitools</H2>
-				<BLOCKQUOTE>
+				<TABLE cellpadding='20'><TR>
+				<TD bgcolor="#ffffdd">
+					<H2>Minitools</H2>
 					<!-- The reasons for the xsl:sort's is that we need to reverse the order.  I store my minitools in reverse order because Konqueror displays them in reverse order! -->
 					<!-- Show the toplevel (no subfolder) bookmarklets: -->
 					<!-- <xsl:apply-templates select="($thePage)"/> -->
-					<TABLE>
-						<xsl:for-each select="$thePage/*/bookmark">
-							<xsl:sort select="position()" data-type="number" order="descending"/>
-							<xsl:apply-templates select="."/>
-						</xsl:for-each>
-					</TABLE>
+					<xsl:apply-templates select="$thePage/xbel"/>
+					<!--
 					<xsl:for-each select="$thePage/*/folder">
 						<xsl:sort select="position()" data-type="number" order="descending"/>
 						<xsl:apply-templates select="."/>
 					</xsl:for-each>
-				</BLOCKQUOTE>
+					-->
+				</TD>
+
+				<TD valign='top' bgcolor='#ddddff'>
+					<div id='scriptLabel1'>Scriptname</div>
+					<TEXTAREA id='scriptTextArea1' cols='40' rows='15'>javascript: </TEXTAREA>
+					<BR/>
+
+				</TD>
+
+				</TR></TABLE>
 
 				<!-- Not working well!
 				<script language="JavaScript" type="text/javascript" src="http://hwi.ath.cx/javascript/modifyDOM.js"></script>
@@ -129,53 +136,72 @@
 					<A href="http://hwi.ath.cx/joeys_bookmarklets.html">My bookmarklet development page</A> and on <A href="http://hwi.ath.cx/xslt/live/jumpgate/jumpgate.xml">Jumpgate 2</A>.
 				</P>
 
+					<SCRIPT type="text/javascript">
+
+						var scriptLabel = document.getElementById('scriptLabel1');
+						var scriptTextArea = document.getElementById('scriptTextArea1');
+						// alert('scriptLabel='+scriptLabel);
+						// alert('scriptTextArea='+scriptTextArea);
+
+						function showBookmarklet(evt) {
+							var linkNode = evt.srcElement; /*moz?*/
+							if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
+							alert('linkNode='+linkNode);
+							scriptLabel.innerHTML = escape(""+linkNode);
+							scriptTextArea.innerHTML = escape(""+linkNode);
+						}
+
+						for (i=0;i&lt;document.links;i++) {
+							document.links[i].onmouseover = showBookmarklet;
+						}
+						document.write("Added "+document.links.length+" events.<BR/>");
+
+					</SCRIPT>
+
+					<!--
+					<A href="javascript:
+						for (i=0;i&lt;document.links;i++) {
+							document.links[i].onmouseover = showBookmarklet;
+						}
+						alert(&quot;Added &quot;+document.links.length+&quot; events.&lt;BR/&gt;&quot;);
+					">Test</A>
+					-->
 
 			</BODY>
 		</HTML>
 
 	</xsl:template>
 
-	<xsl:template match="folder">
+	<xsl:template match="folder|xbel">
 		<H3><xsl:value-of select="title"/></H3>
 		<BLOCKQUOTE>
-			<xsl:for-each select="./folder">
+			<!-- <xsl:apply-templates select=".//bookmark"/> -->
+			<xsl:for-each select="./folder | ./bookmark">
 				<xsl:sort select="position()" data-type="number" order="descending"/>
 				<xsl:apply-templates select="."/>
 			</xsl:for-each>
-			<TABLE>
-				<!-- <xsl:apply-templates select=".//bookmark"/> -->
-				<xsl:for-each select="./bookmark">
-					<xsl:sort select="position()" data-type="number" order="descending"/>
-					<xsl:apply-templates select="."/>
-				</xsl:for-each>
-			</TABLE>
 		</BLOCKQUOTE>
 	</xsl:template>
 
 	<xsl:template match="bookmark">
-		<TR>
-			<TD>
-				<A>
-					<xsl:attribute name="id"><xsl:value-of select="position()"/></xsl:attribute>
-					<xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
-					<xsl:value-of select="string(.)"/>
-				</A>
-			</TD>
-			<!-- Content of TEXTAREA should be converted to HTML. -->
-			<TD>
-				<!-- <xsl:value-of select="@href"/> -->
-				<!-- <xsl:value-of select="translate(@href,';',';   ')"/> -->
-				<!--
-				<BR/>
-				<TEXTAREA cols="60" rows="3">
-					<xsl:value-of select="@href"/>
-				</TEXTAREA>
-				<BR/>
-				-->
-					<!-- <xsl:copy-of select="string(@href)"/> -->
-					<!-- <A href="javascript:edit();">Edit</A> -->
-			</TD>
-		</TR>
+		<A>
+			<xsl:attribute name="id"><xsl:value-of select="position()"/></xsl:attribute>
+			<xsl:attribute name="href"><xsl:value-of select="@href"/></xsl:attribute>
+			<xsl:value-of select="string(.)"/>
+		</A>
+		<BR/>
+		<!-- Content of TEXTAREA should be converted to HTML. -->
+		<!-- <xsl:value-of select="@href"/> -->
+		<!-- <xsl:value-of select="translate(@href,';',';   ')"/> -->
+		<!--
+		<BR/>
+		<TEXTAREA cols="60" rows="3">
+			<xsl:value-of select="@href"/>
+		</TEXTAREA>
+		<BR/>
+		-->
+		<!-- <xsl:copy-of select="string(@href)"/> -->
+		<!-- <A href="javascript:edit();">Edit</A> -->
 	</xsl:template>
 
 </xsl:stylesheet>
