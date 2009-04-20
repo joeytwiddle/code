@@ -80,14 +80,14 @@
 				<BLOCKQUOTE>
 					<!-- The reasons for the xsl:sort's is that we need to reverse the order.  I store my minitools in reverse order because Konqueror displays them in reverse order! -->
 					<!-- Show the toplevel (no subfolder) bookmarklets: -->
+					<!-- <xsl:apply-templates select="($thePage)"/> -->
 					<TABLE>
-						<!-- <xsl:apply-templates select="$thePage//bookmark"/> -->
 						<xsl:for-each select="$thePage/*/bookmark">
 							<xsl:sort select="position()" data-type="number" order="descending"/>
 							<xsl:apply-templates select="."/>
 						</xsl:for-each>
 					</TABLE>
-					<xsl:for-each select="$thePage//folder">
+					<xsl:for-each select="$thePage/*/folder">
 						<xsl:sort select="position()" data-type="number" order="descending"/>
 						<xsl:apply-templates select="."/>
 					</xsl:for-each>
@@ -138,9 +138,13 @@
 	<xsl:template match="folder">
 		<H3><xsl:value-of select="title"/></H3>
 		<BLOCKQUOTE>
+			<xsl:for-each select="./folder">
+				<xsl:sort select="position()" data-type="number" order="descending"/>
+				<xsl:apply-templates select="."/>
+			</xsl:for-each>
 			<TABLE>
 				<!-- <xsl:apply-templates select=".//bookmark"/> -->
-				<xsl:for-each select=".//bookmark">
+				<xsl:for-each select="./bookmark">
 					<xsl:sort select="position()" data-type="number" order="descending"/>
 					<xsl:apply-templates select="."/>
 				</xsl:for-each>

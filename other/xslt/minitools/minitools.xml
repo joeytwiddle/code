@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xbel>
 <xbel folded="no" >
- <folder folded="no" icon="bookmark_folder" >
-  <title>More</title>
+ <folder folded="yes" icon="bookmark_folder" >
+  <title>Old</title>
   <bookmark icon="www" href="http://www.google.com/search?num=100&amp;q=site%3Awiki.beyondunreal.com+%25s" >
    <title>UnrealWiki with Google</title>
   </bookmark>
@@ -31,7 +31,7 @@
   </bookmark>
  </folder>
  <folder folded="no" icon="bookmark_folder" >
-  <title>Zap (SquareFree)</title>
+  <title>From SquareFree</title>
   <bookmark icon="www" href="https://www.squarefree.com/bookmarklets/seo.html" >
    <title>Search Engine Optimization Bookmarklets</title>
   </bookmark>
