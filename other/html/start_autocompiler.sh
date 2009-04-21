@@ -1,1 +1,1 @@
-onchange "*.jpp" do jpp -- ./powerbar.html.jpp
+onchange "*.jpp" do eval 'jpp -- ./powerbar.html.jpp > powerbar.html'

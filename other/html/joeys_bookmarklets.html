@@ -1,4 +1,5 @@
 <HTML>
+<HEAD><TITLE>Joey's Bookmarklet (Development) Page</TITLE></HEAD>
 <BODY>
 
 <H2>Joey's Bookmarklet (Development) Page</H2>
@@ -51,6 +52,132 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 	</BLOCKQUOTE>
 	</P>
 
+	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
+
+	<P>
+		<A target='_self' href='javascript:
+			var info = document.links.length+" links on <A href=\""+document.location+"\">"+document.title+"</A>";
+			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			for (i=0;i<document.links.length;i++) {
+				var link = document.links[i];
+				html += "<TR><TD><A href=\""+(link.href)+"\">"+(link.text)+"</A></TD><TD>"+(link.href)+"</TD></TR>\n";
+			}
+			html += "</TABLE></BODY></HTML>\n";
+			document.open();
+			document.write(html);
+			document.close();
+		'>Just the Links</A>
+	</P>
+
+	<P>
+		<A target='_self' href='javascript:
+			var images = document.getElementsByTagName("IMG"),
+					info = images.length+" images on <A href=\""+document.location+"\">"+document.title+"</A>";
+			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			for (i=0;i<images.length;i++) {
+				var image = images[i];
+				html += "<TR><TD align=\"center\">\n";
+				html += "&lt;IMG src=\""+image.src+"\"&gt;<BR/>\n";
+				html += "<A href=\""+image.src+"\">"+image.src+"</A>\n";
+				html += "</TD></TR>\n";
+			}
+			html += "</TABLE></BODY></HTML>\n";
+			/* var w = open().document; */
+			var w = document;
+			w.open();
+			w.write(html);
+			w.close();
+		'>Just the Images</A>
+	</P>
+
+	<P>
+		<A target='_self' href='javascript:
+			(function(){
+				for (i=0;i<document.links.length;i++) {
+					document.links[i].target = "_self";
+				}
+				for (i=0;i<document.forms.length;i++) {
+					document.forms[i].target = "_self";
+				}
+				window.status = "Updated "+document.links.length+" links and "+document.forms.length+" forms.";
+			})();
+		'>Target Links and Forms on This Window</A>
+	</P>
+
+	<P>
+		<A target='_self' href='javascript:
+			(function(){
+				for (i=0;i<document.links.length;i++) {
+					document.links[i].target = "_blank";
+				}
+				for (i=0;i<document.forms.length;i++) {
+					document.forms[i].target = "_blank";
+				}
+				window.status = "Updated "+document.links.length+" links and "+document.forms.length+" forms.";
+			})();
+		'>Target Links and Forms on New Window</A>
+	</P>
+
+</BLOCKQUOTE>
+
+<H3>Development</H3>
+<BLOCKQUOTE>
+
+	<P>
+	<A href='javascript:
+		'>Invisibly preload links when I mouseover them</A>
+	<BLOCKQUOTE>
+		Sometimes I am reading a page but I know where I am likely to go next.
+		If I can preload that page then when I do follow the link, it will load fast when I do click.
+	</BLOCKQUOTE>
+	</P>
+
+	<P>
+		StripSearch.  Hides all elements except those containing the search text.  Ideal for tables.
+	</P>
+
+	<P>
+		<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
+		<!-- <A href="javascript: alert(document.getElementsByTagName('IFRAME')); document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" >Test</A> -->
+		<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
+		<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
+	</P>
+
+	<P>
+		<A href="
+			javascript:(function(){
+			function eventHandler(evt) {
+				var linkNode = evt.srcElement; /*moz?*/
+				if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
+				document.getElementById('myframe').src = linkNode.href;
+				document.getElementById('previewlink').href = linkNode.href;
+				document.getElementById('previewlink').innerHTML = linkNode.text;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+			}
+			var t = document.createElement('TABLE');
+			var r = document.createElement('TR');
+			var d1 = document.createElement('TD');
+			var d2 = document.createElement('TD');
+			d1.width='40%';
+			d2.width='60%';
+			/* d2.style.valign='top'; Not working! */
+			var f = document.createElement('IFRAME');
+			f.id = 'myframe';
+			f.width=window.innerWidth*55/100;
+			f.height=window.innerHeight;
+			d1.appendChild(document.documentElement);
+			d2.innerHTML = '<A id=\'previewlink\'>Preview</A><BR/>\n';
+			d2.appendChild(f);
+			r.appendChild(d1);
+			r.appendChild(d2);
+			t.appendChild(r);
+			document.appendChild(t);
+			})();
+		">Split Preview</A>
+	</P>
+
 	<P>
 		<!--
 		
@@ -72,7 +199,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		
 		-->
 		<A href="
-			javascript:
+			javascript:(function(){
 			var f = document.createElement('IFRAME');
 			/* f.style = 'z-index:100'; */ /* breaks moz */
 			f.align = 'left';
@@ -85,23 +212,22 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			/* TODO: our lovely positioning breaks on google! */
 			f.id = 'floatingFrame1';
 			document.body.appendChild(f);
-			var links = document.getElementsByTagName('A');
 			function eventHandler(evt) {
 				var linkNode = evt.srcElement; /*moz?*/
 				if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
 				document.getElementById('floatingFrame1').src = linkNode.href;
 			}
-			for (var i=0;i<links.length;i++) {
-				links[i].onmouseover = eventHandler;
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
 			}
-			alert('Preview ready.  Sorry the popup is a workaround for Firefox!');
+			})();
 		">Preview Links in FloatingFrame</A>
 		<!-- Another workaround is to put the javascript in a button on the page.
 		This does not suffer problem related to the return value.-->
 		<!-- <INPUT type="button" value="Go" onclick=" -->
 		<!-- "></INPUT> -->
 		<BLOCKQUOTE>
-			<P>Pops up a floating IFrame on the current page, where it displays target pages when we hover over existing links on the page.</P>
+			<P>Pops up a floating IFrame, where target pages are displayed when we hover over links on the current page.</P>
 			<LI class='todo'>Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
 			<LI class='todo'>Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
 			<LI class='todo'>When invoked on Google result pages, the IFrame's floating style does not work properly - it sits at the bottom of the page.</LI>
@@ -124,24 +250,16 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 
 </BLOCKQUOTE>
 
-<H3>Development</H3>
-<BLOCKQUOTE>
-
-	<P>
-		<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
-		<!-- <A href="javascript: alert(document.getElementsByTagName('IFRAME')); document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" >Test</A> -->
-		<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
-		<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
-	</P>
-
-</BLOCKQUOTE>
-
 <H3>Wanted / TODO</H3>
 <BLOCKQUOTE>
 
 	<P>
+		MakeABookmarkletFromTheSearchFormOnThisPage ^^
+	</P>
+
+	<P>
 		To help page investigation, colour every element (a bit like XPathGrabber does).
-		And when we mouseover an element, show which one it is in the StatusBar.
+		And when we mouseover an element, show which one it is in the StatusBar (e.g. show it's XPath, since colour won't be possible in the StatusBar)p.
 	</P>
 
 	<P>
