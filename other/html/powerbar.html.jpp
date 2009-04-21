@@ -50,8 +50,9 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 
 // #define STUFF_IM_JUST_TESTING
 
-#define POPUP_JSREFLECTOR
+// #define POPUP_JSREFLECTOR
 // otherwise jsReflection appears in mainFrame
+// mmm in konqueror it pops up a window either way :P
 
 // ------------------------ Logging -----------------------
 
@@ -254,13 +255,16 @@ function generatePowerBar() {
 	if (opt_JSTesterEnabled) {
 		// powerBarHtml += '<FORM action="javascript:top.processJs(code.value)">'; // worked fine for konq
 		powerBarHtml += '<FORM onsubmit="top.processJs(code.value)" action="javascript:">'; // but this needed for mozilla
-		powerBarHtml += 'JavaScript tester:\n';
+		powerBarHtml += 'JavaScript tester:<BR>\n';
 		// powerBarHtml += '<INPUT id="codeToExecute" name="code" type="text" size="30" value="type some javascript here">';
 		// powerBarHtml += '<TEXTAREA id="codeToExecute" name="code" type="text" columns="20" rows="3">type some javascript here</TEXTAREA>';
-		powerBarHtml += '<TEXTAREA id="codeToExecute" name="code" type="text" columns="20" rows="3">Type some javascript here, e.g.: thisbox = top.powerBarFrame.document.getElementsByTagName("textarea")[0]; thisbox.cols=60; thisbox.rows=20; </TEXTAREA>';
+		powerBarHtml += '<TEXTAREA id="codeToExecute" name="code" type="text" columns="20" rows="3">Type some javascript here, e.g.: thisbox = top.powerBarFrame.document.getElementsByTagName("textarea")[0]; thisbox.cols=60; thisbox.rows=20; </TEXTAREA>\n';
+		powerBarHtml += '<BR>\n';
 		// powerBarHtml += '<INPUT type="button" value="Go" onclick="submit()">'; // worked fine for konq
 		if (opt_ButtonsOnPowerBarForms) {
 			powerBarHtml += '<INPUT type="button" value="Go" onclick="top.processJs(code.value)">'; // but mozilla needs this too!
+			powerBarHtml += '<INPUT type="button" value="Unescape" onclick="code.value = unescape(code.value);">';
+			powerBarHtml += '<INPUT type="button" value="Escape" onclick="code.value = escape(code.value);">';
 		}
 		// powerBarHtml += defaultSubmitButton;
 		powerBarHtml += '</FORM>';
@@ -336,6 +340,7 @@ function init() {
 		+ "<LI>Can we stop log freezes in Konqueror?!"
 		+ "<LI>How do we (ahem) get round security preventing access to pages from other sites?"
 		+ "</TL></BLOCKQUOTE>"
+		+ "<A href='javascript: function attachClickListener(node,clickProcessor) { if (node.captureEvents) { node.captureEvents(Event.CLICK); } node.onmouseup = clickProcessor; var kids = node.childNodes; for (var i=0;i<kids.length;i++) { attachClickListener(kids[i],clickProcessor); } } function processClick(event) { var node = event.srcElement; if (!node) { node = event.currentTarget; } node.innerHTML=\"\"; attachClickListener(document,null); } attachClickListener(document,processClick); '>Nuke next item clicked</A>"
 	);
 	updatePowerBar();
 }

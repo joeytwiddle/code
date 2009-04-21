@@ -146,12 +146,13 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 	<P>
 		<A href="
 			javascript:(function(){
-			var linkNode;
+			var linkNode,lastLoaded;
 			function doGet() {
-				if (linkNode) {
+				if (linkNode && linkNode != lastLoaded) {
 					document.getElementById('myframe').src = linkNode.href;
 					document.getElementById('previewlink').href = linkNode.href;
 					document.getElementById('previewlink').innerHTML = linkNode.text;
+					lastLoaded = linkNode;
 				}
 			}
 			function eventHandler(evt) {
@@ -159,17 +160,23 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 				if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
 				setTimeout('document.doGet();',1000);
 			}
+			function clearLinkNode() {
+				linkNode = null;
+			}
+
 			for (var i=0;i<document.links.length;i++) {
 				document.links[i].onmouseover = eventHandler;
-				document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);';
+				/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
+				/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
+				document.links[i].onmouseout = clearLinkNode;
 			}
 			var t = document.createElement('TABLE');
 			var r = document.createElement('TR');
 			var d1 = document.createElement('TD');
 			var d2 = document.createElement('TD');
+			d2.valign='top';
 			d1.width=window.innerWidth*40/100+'px';
 			d2.width=window.innerWidth*55/100+'px';
-			/* d2.style.valign='top'; Not working! */
 			var f = document.createElement('IFRAME');
 			f.id = 'myframe';
 			f.width=window.innerWidth*55/100;
@@ -186,16 +193,17 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			document.doGet = doGet;
 			})();
 		">Split Preview</A>
-	</P>
 		<BLOCKQUOTE>
+			<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
 			<LI class='done'>Done: Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
 			<LI class='done'>Done: Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
 		</BLOCKQUOTE>
+	</P>
 
 	<P>
 		<!--
 		
-		TODO: Reloading the iframe every time we mouseover a link is a bit too much!
+		DONE: Reloading the iframe every time we mouseover a link is a bit too much!
 		We should at least check we aren't already loading this page, and that the user
 		is hovering on our link, not just quickly passing over it to reach another.
 		
@@ -259,6 +267,22 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			}
 		</style>
 		-->
+	</P>
+
+	<P>
+		<A href="
+			javascript:(function(){
+				theForm = document.forms[0];
+				theStr = '';
+				for (i=0; i < theForm.elements.length; i++) {
+					ele = theForm.elements[i];
+					theStr += ele.name + ' : ' + ele.value + '\n';
+				}
+				alert (theStr);
+			})();
+		">Copy form</A>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
 	</P>
 
 </BLOCKQUOTE>
