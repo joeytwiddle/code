@@ -45,10 +45,10 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		">Nuke next item clicked</A>
 	<BLOCKQUOTE>
 		<P>Waits for user click, and removes whatever element they clicked on from the page.</P>
-		<LI class='todo'>Needs 'undo' feature.</LI>
-		<LI class='todo'>Add two icons to the page, one to re-use the bookmarklet, another to empty the Trash (undo the deletes).</LI>
-		<LI class='todo'>Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
-		<LI class='todo'>Make it more fine-grained and friendly.  For example, it's hard to target a specific BLOCKQUOTE, so do we need to 'make them larger'?</LI>
+		<LI class='todo'>Todo: Needs 'undo' feature.</LI>
+		<LI class='todo'>Todo: Add two icons to the page, one to re-use the bookmarklet, another to empty the Trash (undo the deletes).</LI>
+		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
+		<LI class='todo'>Todo: Make it more fine-grained and friendly.  For example, it's hard to target a specific BLOCKQUOTE, so do we need to 'make them larger'?</LI>
 	</BLOCKQUOTE>
 	</P>
 
@@ -66,7 +66,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			document.open();
 			document.write(html);
 			document.close();
-		'>Just the Links</A>
+		'>Just the Links</A> - this works badly on this page because the page is poorly formatted.  But it works fine on valid pages!
 	</P>
 
 	<P>
@@ -146,37 +146,51 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 	<P>
 		<A href="
 			javascript:(function(){
+			var linkNode;
+			function doGet() {
+				if (linkNode) {
+					document.getElementById('myframe').src = linkNode.href;
+					document.getElementById('previewlink').href = linkNode.href;
+					document.getElementById('previewlink').innerHTML = linkNode.text;
+				}
+			}
 			function eventHandler(evt) {
-				var linkNode = evt.srcElement; /*moz?*/
+				linkNode = evt.srcElement; /*moz?*/
 				if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-				document.getElementById('myframe').src = linkNode.href;
-				document.getElementById('previewlink').href = linkNode.href;
-				document.getElementById('previewlink').innerHTML = linkNode.text;
+				setTimeout('document.doGet();',1000);
 			}
 			for (var i=0;i<document.links.length;i++) {
 				document.links[i].onmouseover = eventHandler;
+				document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);';
 			}
 			var t = document.createElement('TABLE');
 			var r = document.createElement('TR');
 			var d1 = document.createElement('TD');
 			var d2 = document.createElement('TD');
-			d1.width='40%';
-			d2.width='60%';
+			d1.width=window.innerWidth*40/100+'px';
+			d2.width=window.innerWidth*55/100+'px';
 			/* d2.style.valign='top'; Not working! */
 			var f = document.createElement('IFRAME');
 			f.id = 'myframe';
 			f.width=window.innerWidth*55/100;
 			f.height=window.innerHeight;
 			d1.appendChild(document.documentElement);
-			d2.innerHTML = '<A id=\'previewlink\'>Preview</A><BR/>\n';
+			d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+f.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
+			             + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
+			/* cheap and dirty close - should be right aligned, maybe a button with value X. */
 			d2.appendChild(f);
 			r.appendChild(d1);
 			r.appendChild(d2);
 			t.appendChild(r);
 			document.appendChild(t);
+			document.doGet = doGet;
 			})();
 		">Split Preview</A>
 	</P>
+		<BLOCKQUOTE>
+			<LI class='done'>Done: Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
+			<LI class='done'>Done: Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
+		</BLOCKQUOTE>
 
 	<P>
 		<!--
@@ -198,7 +212,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		it!
 		
 		-->
-		<A href="
+		Old attempt: <A href="
 			javascript:(function(){
 			var f = document.createElement('IFRAME');
 			/* f.style = 'z-index:100'; */ /* breaks moz */
@@ -228,9 +242,8 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		<!-- "></INPUT> -->
 		<BLOCKQUOTE>
 			<P>Pops up a floating IFrame, where target pages are displayed when we hover over links on the current page.</P>
-			<LI class='todo'>Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
-			<LI class='todo'>Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
-			<LI class='todo'>When invoked on Google result pages, the IFrame's floating style does not work properly - it sits at the bottom of the page.</LI>
+			<LI class='todo'>Bug: When invoked on Google result pages, the IFrame's floating style does not work properly - it sits at the bottom of the page.</LI>
+			<LI class='todo'>Bug: It frequently covers up the links we want to hover over!</LI>
 		</BLOCKQUOTE>
 		<!--
 		<div id='floatframe'>
