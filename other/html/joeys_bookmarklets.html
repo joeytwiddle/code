@@ -12,64 +12,59 @@ Click on a bookmarklet link to try it out.  (Reload the page or navigate back if
 <BR/>
 To 'install' a bookmarklet, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.
 <BR/>
-Known bugs and TODOs are <font class='todo'>shown in red</font>.
+Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 
 <H3>Ready to use Bookmarklets</H3>
 <BLOCKQUOTE>
 
-	<!--
 	<P>
-		<LI><A href="javascript:(function(){
+		<!--
+						These lines, although commented, were breaking the minitool when pasting it into Konqueror:
+						/**Failing in every way to highlight the loaded(ing) preview:**/
+						/*
+						linkNode.text = &quot;*&quot;+linkNode.text+&quot;*&quot;;
+						linkNode.color = &quot;#eeee00&quot;;
+						linkNode.parentNode.style = &quot;bgcolor = #ffff00;&quot;;
+						linkNode.parentNode.style.bgcolor = &quot;#ffff00&quot;;
+						*/
+		-->
+		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
 			var oldHTML = document.documentElement.innerHTML;
 			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;40%25,*&quot;>\n');
+			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
 			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('</frameset>\n');
 			/*document.close();*/
-
 			var scriptText = '
 				var linkNode,lastLoaded;
 				function doGet() {
 					if (linkNode && linkNode != lastLoaded) {
 						top.document.getElementById(&quot;previewFrame&quot;).src = linkNode.href;
-						/*document.getElementById(&quot;previewlink&quot;).href = linkNode.href;
-						document.getElementById(&quot;previewlink&quot;).innerHTML = linkNode.text;
-						*/
 						lastLoaded = linkNode;
-						linkNode.text = &quot;WHEEE&quot;;
-						/*alert(&quot;doGet called with linkNode = &quot;+linkNode);*/
 					}
 				}
 				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					setTimeout(&quot;doGet();&quot;,1000);
+					linkNode = (evt.srcElement ? evt.srcElement /*moz*/ : evt.currentTarget /*not moz*/ );
+					setTimeout(&quot;doGet();&quot;,700);
 				}
 				function clearLinkNode() {
+					setTimeout(&quot;&quot;);
 					linkNode = null;
 				}
 				for (var i=0;i<document.links.length;i++) {
+					/*document.links[i].target = &quot;_parent&quot;;*/
+					document.links[i].target = &quot;previewFrame&quot;;
 					document.links[i].onmouseover = eventHandler;
 					document.links[i].onmouseout = clearLinkNode;
 				}
 				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
 			';
-			/** This works on Mozilla but not Konqueror. **/
-			/*
-			var scriptElement = window.frames[0].document.createElement('SCRIPT');
-			scriptElement.type = 'text/javascript';
-			scriptElement.innerHTML = scriptText;
-			window.frames[0].document.documentElement.appendChild(scriptElement);
-			*/
-			/*window.frames[0].document.write('<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n');*/
-
-			/*window.frames[0].document.open();*/
-			/** Prepending <pre> makes the text TT! **/
-			/*oldHTML = oldHTML.replace(/&quot;/g,%27%26quot;%27);*/
-			/*
-			oldHTML = oldHTML.replace(/%3C.BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');
-			*/
+			/** We can do .BODY but I prefer to push the / through with a
+			 * backslash.  But this can still fail, e.g. on bookmarklet pages, if
+			 * an earlier /BODY is seen and replaced. */
+			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
+			/** This never fails. **/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
 			if (i<=0) { alert('Failed to find ze body tag!'); }
@@ -81,14 +76,23 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			window.frames[1].document.close();
 			document.close();
-		})();">Split Preview</A> 0.8 - Good!</LI>
+		})();">Split Preview</A> 0.85 - Good!</LI>
 		<BLOCKQUOTE>
-			<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
-			<P><I>(Rejoice!  It was an effort but I nailed this critter.)</I></P>
-			<LI class='todo'>Todo: Clicking on a link causes it to open in the sideFrame, but preferably the browser would drop the frames and go directly to the page.</LI>
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+				<!-- heh it was worth a bash :p
+				<SCRIPT type='text/javascript'>
+					document.write('Maybe you want the ');
+					document.write('<A id="splitPreviewBookmarkletWithClickToBreakOut">Older version</A>.');
+					document.getElementById('splitPreviewBookmarkletWithClickToBreakOut').href = escape(document.getElementById('splitPreviewBookmarklet').href.replace('target = &quot;previewFrame&quot;','target = &quot;_parent&quot;'));
+				</SCRIPT>
+				-->
+			</P>
+			<LI>I have set links to open in the right frame when clicked, rather than leaving the frameset, although hover is usually enough.</LI>
+			<!-- When I am using the SplitPreview, I am very annoyed when I accidentally click and lose it!  In Konq, we need to reload the bookmarklet, we can't just 'go back'.. -->
+			<LI class='todo'>Todo: There should be two close buttons available to the user, one for each frame.</LI>
+			<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.</LI>
 		</BLOCKQUOTE>
 	</P>
-	-->
 
 	<P>
 		<LI><A href="javascript:(function(){
@@ -99,7 +103,6 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('</frameset>\n');
 			/*document.close();*/
-
 			var scriptText = '
 				var linkNode,lastLoaded;
 				function doGet() {
@@ -136,7 +139,6 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			window.frames[0].document.documentElement.appendChild(scriptElement);
 			*/
 			/*window.frames[0].document.write('<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n');*/
-
 			/*window.frames[0].document.open();*/
 			/** Prepending <pre> makes the text TT! **/
 			/*oldHTML = oldHTML.replace(/&quot;/g,%27%26quot;%27);*/
@@ -154,11 +156,9 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			window.frames[1].document.close();
 			document.close();
-		})();">Split Preview</A> 0.8 - Good!</LI>
+		})();">Split Preview</A> 0.8</LI>
 		<BLOCKQUOTE>
-			<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
-			<P><I>(Rejoice!  It was an effort but I nailed this critter.)</I></P>
-			<LI>Done: Clicking on a link now causes it to open in the current tab, dropping the frames.</LI>
+			<LI>In this version, clicking on a link causes it to open in the current tab, leaving the frameset.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -195,7 +195,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		<LI class='todo'>Todo: Needs 'undo' feature.</LI>
 		<LI class='todo'>Todo: Add two icons to the page, one to re-use the bookmarklet, another to empty the Trash (undo the deletes).</LI>
 		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
-		<LI class='todo'>Todo: Make it more fine-grained and friendly.  For example, it's hard to target a specific BLOCKQUOTE, so do we need to 'make them larger'?</LI>
+		<LI class='todo'>Todo: The element we want to destroy might not have any exposed surface to click on.  Maybe we can fatten out invisible/zero-size elements.  (E.g. mark each with a '.'s and give info on mouseover?)</LI>
 	</BLOCKQUOTE>
 	</P>
 
@@ -292,17 +292,91 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 <H3>Development Bookmarklets (Do not work well)</H3>
 <BLOCKQUOTE>
 
-	<P>
-	<A href='javascript:
-		'>Invisibly preload links when I mouseover them</A>
-	<BLOCKQUOTE>
-		Sometimes I am reading a page but I know where I am likely to go next.
-		If I can preload that page then when I do follow the link, it will load fast when I do click.
-	</BLOCKQUOTE>
-	</P>
+	<!-- <P>No bookmarklet in development on this page right now.  You probably wouldn't want to use it if it was. -->
+	<!-- I might even consider separating my development and release pages. --></P>
 
 	<P>
-		StripSearch.  Hides all elements except those containing the search text.  Ideal for tables.
+		<!--
+						These lines, although commented, were breaking the minitool when pasting it into Konqueror:
+						/**Failing in every way to highlight the loaded(ing) preview:**/
+						/*
+						linkNode.text = &quot;*&quot;+linkNode.text+&quot;*&quot;;
+						linkNode.color = &quot;#eeee00&quot;;
+						linkNode.parentNode.style = &quot;bgcolor = #ffff00;&quot;;
+						linkNode.parentNode.style.bgcolor = &quot;#ffff00&quot;;
+						*/
+		-->
+		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
+			var oldHTML = document.documentElement.innerHTML;
+			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
+			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
+			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('</frameset>\n');
+			/*document.close();*/
+			var scriptText = '
+				var linkNode,lastLoaded;
+				function doGet() {
+					if (linkNode && linkNode != lastLoaded) {
+						/*var rightFrame = top.document.getElementById(&quot;previewFrame&quot;);*/
+						/*top.window.frames[1].document.documentElement.innerHTML = ... ;*/
+						top.window.frames[1].document.write(&quot;&lt;BODY&gt;Loading &quot;+linkNode.href+&quot;...&lt;/BODY&gt;&quot;);
+						/** Writing to the frame above causes the line below to fail in Konqueror. **/
+						/** One fix might be to embed some javascript inside the body we just posted, to redirect the frame/page/doc. **/
+						/*top.window.frames[1].src = linkNode.href;*/
+						/** Oh this saves Konqueror :) **/
+						top.window.frames[1].location = linkNode.href;
+						lastLoaded = linkNode;
+					}
+				}
+				function eventHandler(evt) {
+					linkNode = (evt.srcElement ? evt.srcElement /*moz*/ : evt.currentTarget /*not moz*/ );
+					setTimeout(&quot;doGet();&quot;,700);
+				}
+				function clearLinkNode() {
+					setTimeout(&quot;&quot;);
+					linkNode = null;
+				}
+				for (var i=0;i<document.links.length;i++) {
+					/*document.links[i].target = &quot;_parent&quot;;*/
+					document.links[i].target = &quot;previewFrame&quot;;
+					document.links[i].onmouseover = eventHandler;
+					document.links[i].onmouseout = clearLinkNode;
+				}
+				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
+			';
+			/** We can do .BODY but I prefer to push the / through with a
+			 * backslash.  But this can still fail, e.g. on bookmarklet pages, if
+			 * an earlier /BODY is seen and replaced. */
+			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
+			/** This never fails. **/
+			var i = oldHTML.lastIndexOf('%3C/body%3E');
+			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
+			if (i<=0) { alert('Failed to find ze body tag!'); }
+			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
+			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
+			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
+			window.frames[0].document.write(oldHTML);
+			window.frames[0].document.close();
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+			window.frames[1].document.close();
+			document.close();
+		})();">Split Preview</A> 0.85+DEV</LI>
+		<BLOCKQUOTE>
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+				<!-- heh it was worth a bash :p
+				<SCRIPT type='text/javascript'>
+					document.write('Maybe you want the ');
+					document.write('<A id="splitPreviewBookmarkletWithClickToBreakOut">Older version</A>.');
+					document.getElementById('splitPreviewBookmarkletWithClickToBreakOut').href = escape(document.getElementById('splitPreviewBookmarklet').href.replace('target = &quot;previewFrame&quot;','target = &quot;_parent&quot;'));
+				</SCRIPT>
+				-->
+			</P>
+			<LI>I have set links to open in the right frame when clicked, rather than leaving the frameset, although hover is usually enough.</LI>
+			<!-- When I am using the SplitPreview, I am very annoyed when I accidentally click and lose it!  In Konq, we need to reload the bookmarklet, we can't just 'go back'.. -->
+			<LI class='todo'>Todo: There should be two close buttons available to the user, one for each frame.</LI>
+			<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.</LI>
+		</BLOCKQUOTE>
 	</P>
 
 	<P>
@@ -358,7 +432,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 					document.links[i].onmouseover = eventHandler;
 				}
 				})();
-			">Split Preview Prototype 0.4</A>
+			">Split Preview Prototype 0.3</A>
 			<!-- Another workaround is to put the javascript in a button on the page.
 			This does not suffer problem related to the return value.-->
 			<!-- <INPUT type="button" value="Go" onclick=" -->
@@ -430,7 +504,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 				t.appendChild(r);
 				document.appendChild(t);
 				document.doGet = doGet;
-			})();">Split Preview Prototype 0.5</A>
+			})();">Split Preview Prototype 0.4</A>
 			<BLOCKQUOTE>
 				<LI class='done'>Done: Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
 				<LI class='done'>Done: Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
@@ -714,6 +788,77 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		</P>
 		-->
 
+		<!--
+		<P>
+			<LI><A href="javascript:(function(){
+				var oldHTML = document.documentElement.innerHTML;
+				document.write('<head><title>Previewing '+document.title+'</title></head>\n');
+				document.write('<frameset cols=&quot;40%25,*&quot;>\n');
+				document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
+				document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
+				document.write('</frameset>\n');
+				/*document.close();*/
+				var scriptText = '
+					var linkNode,lastLoaded;
+					function doGet() {
+						if (linkNode && linkNode != lastLoaded) {
+							top.document.getElementById(&quot;previewFrame&quot;).src = linkNode.href;
+							/*document.getElementById(&quot;previewlink&quot;).href = linkNode.href;
+							document.getElementById(&quot;previewlink&quot;).innerHTML = linkNode.text;
+							*/
+							lastLoaded = linkNode;
+							linkNode.text = &quot;WHEEE&quot;;
+							/*alert(&quot;doGet called with linkNode = &quot;+linkNode);*/
+						}
+					}
+					function eventHandler(evt) {
+						linkNode = evt.srcElement; /*moz?*/
+						if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
+						setTimeout(&quot;doGet();&quot;,1000);
+					}
+					function clearLinkNode() {
+						linkNode = null;
+					}
+					for (var i=0;i<document.links.length;i++) {
+						document.links[i].onmouseover = eventHandler;
+						document.links[i].onmouseout = clearLinkNode;
+					}
+					document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
+				';
+				/** This works on Mozilla but not Konqueror. **/
+				/*
+				var scriptElement = window.frames[0].document.createElement('SCRIPT');
+				scriptElement.type = 'text/javascript';
+				scriptElement.innerHTML = scriptText;
+				window.frames[0].document.documentElement.appendChild(scriptElement);
+				*/
+				/*window.frames[0].document.write('<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n');*/
+				/*window.frames[0].document.open();*/
+				/** Prepending <pre> makes the text TT! **/
+				/*oldHTML = oldHTML.replace(/&quot;/g,%27%26quot;%27);*/
+				/*
+				oldHTML = oldHTML.replace(/%3C.BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');
+				*/
+				var i = oldHTML.lastIndexOf('%3C/body%3E');
+				if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
+				if (i<=0) { alert('Failed to find ze body tag!'); }
+				oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
+				if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
+				/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
+				window.frames[0].document.write(oldHTML);
+				window.frames[0].document.close();
+				window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+				window.frames[1].document.close();
+				document.close();
+			})();">Split Preview</A> 0.79 - Good!</LI>
+			<BLOCKQUOTE>
+				<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
+				<P><I>(Rejoice!  It was an effort but I nailed this critter.)</I></P>
+				<LI class='todo'>Todo: Clicking on a link causes it to open in the sideFrame, but preferably the browser would drop the frames and go directly to the page.</LI>
+			</BLOCKQUOTE>
+		</P>
+		-->
+
 	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
@@ -745,6 +890,21 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		We may be able to use Referrer to determine if this page was obtained from a search-results page.  (Although actually, we could consider 'any' page as a 'list-of-links', we don't have to restrict this feature to search-result pages only.)
 	</P>
 
+	<P>
+	<A href='javascript:
+		'>Invisibly preload links when I mouseover them</A>
+	<BLOCKQUOTE>
+		Sometimes I am reading a page but I know where I am likely to go next.
+		If I can preload that page then when I do follow the link, it will load fast when I do click.
+	</BLOCKQUOTE>
+	</P>
+
+	<P>
+		StripSearch.  Hides all elements except those containing the search text.  Ideal for tables.
+	</P>
+
+	<P>BatchNuke (aka BatchSelect*-1): User is given text box to enter an XPath.  (He can get xpath hints by mouseover the document.)  As he types the XPath, elements of the page are hidden, until he finds the XPath he wants.  Then he hits enter, they are permanently hidden/destroyed, and he can enter another XPath if he wishes.</P>
+
 	<P>Bookmarklets and Framesets do not mix well.  Most Bookmarklets will try to target the frameset document rather than the child frame we are trying to focus on.  It would be nice to have a generic solution to this.</P>
 
 </BLOCKQUOTE>
@@ -752,7 +912,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 <STYLE type='text/css'>
 	.todo {
 		/*font-size: -1;*/
-		color: #800000;
+		color: #884400;
 	}
 </STYLE>
 
