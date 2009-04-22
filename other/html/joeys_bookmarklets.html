@@ -94,7 +94,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		<LI><A href="javascript:(function(){
 			var oldHTML = document.documentElement.innerHTML;
 			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;40%25,*&quot;>\n');
+			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
 			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('</frameset>\n');
@@ -158,7 +158,7 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 		<BLOCKQUOTE>
 			<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
 			<P><I>(Rejoice!  It was an effort but I nailed this critter.)</I></P>
-			<LI class='todo'>Todo: Clicking on a link causes it to open in the sideFrame, but preferably the browser would drop the frames and go directly to the page.</LI>
+			<LI>Done: Clicking on a link now causes it to open in the current tab, dropping the frames.</LI>
 		</BLOCKQUOTE>
 	</P>
 
