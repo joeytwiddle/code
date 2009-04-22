@@ -17,11 +17,12 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 <H3>Ready to use Bookmarklets</H3>
 <BLOCKQUOTE>
 
+	<!--
 	<P>
 		<LI><A href="javascript:(function(){
 			var oldHTML = document.documentElement.innerHTML;
 			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;45%25,*&quot;>\n');
+			document.write('<frameset cols=&quot;40%25,*&quot;>\n');
 			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('</frameset>\n');
@@ -77,7 +78,80 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
 			window.frames[0].document.write(oldHTML);
 			window.frames[0].document.close();
-			window.frames[1].document.write('&lt;BODY&gt;Ready with i='+i+' and total='+oldHTML.length+'&lt;/BODY&gt;');
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+			window.frames[1].document.close();
+			document.close();
+		})();">Split Preview</A> 0.8 - Good!</LI>
+		<BLOCKQUOTE>
+			<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
+			<P><I>(Rejoice!  It was an effort but I nailed this critter.)</I></P>
+			<LI class='todo'>Todo: Clicking on a link causes it to open in the sideFrame, but preferably the browser would drop the frames and go directly to the page.</LI>
+		</BLOCKQUOTE>
+	</P>
+	-->
+
+	<P>
+		<LI><A href="javascript:(function(){
+			var oldHTML = document.documentElement.innerHTML;
+			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
+			document.write('<frameset cols=&quot;40%25,*&quot;>\n');
+			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('</frameset>\n');
+			/*document.close();*/
+
+			var scriptText = '
+				var linkNode,lastLoaded;
+				function doGet() {
+					if (linkNode && linkNode != lastLoaded) {
+						top.document.getElementById(&quot;previewFrame&quot;).src = linkNode.href;
+						/*document.getElementById(&quot;previewlink&quot;).href = linkNode.href;
+						document.getElementById(&quot;previewlink&quot;).innerHTML = linkNode.text;
+						*/
+						lastLoaded = linkNode;
+						linkNode.text = &quot;WHEEE&quot;;
+						/*alert(&quot;doGet called with linkNode = &quot;+linkNode);*/
+					}
+				}
+				function eventHandler(evt) {
+					linkNode = evt.srcElement; /*moz?*/
+					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
+					setTimeout(&quot;doGet();&quot;,1000);
+				}
+				function clearLinkNode() {
+					linkNode = null;
+				}
+				for (var i=0;i<document.links.length;i++) {
+					document.links[i].onmouseover = eventHandler;
+					document.links[i].onmouseout = clearLinkNode;
+					document.links[i].target = &quot;_parent&quot;
+				}
+				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
+			';
+			/** This works on Mozilla but not Konqueror. **/
+			/*
+			var scriptElement = window.frames[0].document.createElement('SCRIPT');
+			scriptElement.type = 'text/javascript';
+			scriptElement.innerHTML = scriptText;
+			window.frames[0].document.documentElement.appendChild(scriptElement);
+			*/
+			/*window.frames[0].document.write('<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n');*/
+
+			/*window.frames[0].document.open();*/
+			/** Prepending <pre> makes the text TT! **/
+			/*oldHTML = oldHTML.replace(/&quot;/g,%27%26quot;%27);*/
+			/*
+			oldHTML = oldHTML.replace(/%3C.BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');
+			*/
+			var i = oldHTML.lastIndexOf('%3C/body%3E');
+			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
+			if (i<=0) { alert('Failed to find ze body tag!'); }
+			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
+			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
+			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
+			window.frames[0].document.write(oldHTML);
+			window.frames[0].document.close();
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			window.frames[1].document.close();
 			document.close();
 		})();">Split Preview</A> 0.8 - Good!</LI>
@@ -109,8 +183,10 @@ Known bugs and TODOs are <font class='todo'>shown in red</font>.
 				if (!node) {
 					node = event.currentTarget;
 				}
-				node.innerHTML='';
+				window.status = 'Removed '+node;
 				attachClickListener(document,null);
+				node.innerHTML='';
+				node.parentNode.removeChild(node);
 			}
 			attachClickListener(document,processClick);
 		">Nuke next item clicked</A></LI>
