@@ -114,8 +114,9 @@ show_label () {
 	# show_sql_table "SELECT tags_labels.url FROM tags_labels,labels WHERE labels.name='$LABELNAME' AND labels.id=tags_labels.labelid"
 	echo "<CENTER>"
 	echo "<TABLE cellpadding='4'>" # width='90%' 
-	sqlite3 "$DB" "SELECT tags_labels.url FROM tags_labels,labels WHERE labels.name=\"$(sql_string_escape "$LABELNAME")\" AND labels.id=tags_labels.labelid" |
-	while read URL
+	sqlite3 "$DB" "SELECT statistics.rating,tags_labels.url FROM statistics,tags_labels,labels WHERE labels.name=\"$(sql_string_escape "$LABELNAME")\" AND labels.id=tags_labels.labelid AND statistics.url=tags_labels.url" |
+	sort -t '|' -k 1 -n -r |
+	while IFS='|' read RATING URL
 	do
 		# echo "$URL"
 		LABELS=$(sqlite3 "$DB" "SELECT labels.name FROM labels,tags_labels WHERE labels.id=tags_labels.labelid AND tags_labels.url=\"$(sql_string_escape "$URL")\"" | sort)
@@ -134,6 +135,7 @@ show_label () {
 			echo -n "</A>&nbsp; "
 		done
 		echo "</TD>"
+		echo "<TD bgcolor='#ddddaa'>$RATING</TD>"
 		echo "</TR>"
 	done
 	echo "</TABLE>"
