@@ -14,12 +14,20 @@ To 'install' a bookmarklet, drag the link to your Bookmarks Toolbar, or right-cl
 <BR/>
 Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 
-<H3>Testing Bookmarks</H3>
+<!--
 
+<H3>Testing Bookmarks</H3>
 <BLOCKQUOTE>
 	<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
 
 	<P>The bookmarklets in this section are IN DEVELOPMENT!  You probably don't want to try using them just yet.  Go for the Ready to use Bookmarklets instead.</P>
+
+</BLOCKQUOTE>
+
+-->
+
+<H3>Ready to use Bookmarklets</H3>
+<BLOCKQUOTE>
 
 	<P>
 		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
@@ -27,6 +35,8 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 				var linkNode,lastLoaded,lastbgcol;
 				function doGet() {
 					if (linkNode && linkNode != lastLoaded) {
+						if (linkNode.className == \'specialButton\')
+							return;
 						if (lastLoaded) {
 							lastLoaded.style.backgroundColor = lastbgcol;
 							lastLoaded.parentNode.style.backgroundColor = lastbgcol;
@@ -56,7 +66,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 				/** This can cause a document overwrite on Google results pages.  Maybe an append would work better. **/
 				/*document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);*/
 			</SCRIPT>\n';
-			var header = '<P align=&quot;right&quot;>[ <A id=&quot;closeSidebarLink&quot; target=&quot;_top&quot;>Close This Sidebar</A> | <A target=&quot;_top&quot; href=&quot;'+(document.location)+'&quot;>Close Other Frame</A> ]</P>\n';
+			var header = '<P align=&quot;right&quot;>[ <A class=&quot;specialButton&quot; id=&quot;closeSidebarLink&quot; target=&quot;_top&quot;>Close This Sidebar</A> | <A class=&quot;specialButton&quot; target=&quot;_top&quot; href=&quot;'+(document.location)+'&quot;>Close Other Frame</A> ]</P>\n';
 			var oldHTML = document.documentElement.innerHTML;
 			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n'+scriptText);*/
 			/** Start of document **/
@@ -75,7 +85,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			/*alert('i = '+i); return;*/
 			/*oldHTML = oldHTML.substring(0,i) + 'HELLO' + scriptText + oldHTML.substring(i);*/
 			/*oldHTML = header + oldHTML + scriptText;*/
-			oldHTML = oldHTML + scriptText;
+			oldHTML = header + oldHTML + scriptText;
 			if (i<=0) { alert('Failed to find ze body tag!'); return; }
 			if (oldHTML.indexOf(scriptText) < 0) { alert('Insert failed.'); return; }
 			/*document.write(oldHTML); return;*/
@@ -88,22 +98,21 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			window.frames[0].document.write(oldHTML);
 			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			document.close();
+			/** This works in Firefox but fails in Konqueror: **/
+			/*
 			var closeBar = document.createElement('P');
 			closeBar.innerHTML = header;
-			/*with (window.frames[0].document.body) { insertBefore(closeBar,childNodes.item(0)); }*/
-			/** This works in Firefox but fails in Konqueror: **/
-			window.frames[0].document.body.insertBefore(closeBar,window.frames[0].document.body.childNodes.item(0));
-			window.frames[0].document.close();
-			window.frames[1].document.close();
+			with (window.frames[0].document.body) { insertBefore(closeBar,childNodes.item(0)); }
+			*/
 		})();">Split Preview</A> 0.88</LI>
 		<BLOCKQUOTE>
 			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
 			<LI>Now highlighting the link which is being previewed.</LI>
 			<P class='todo'>Todo:</P>
 			<BLOCKQUOTE>
+				<LI class='done'>There are now two close buttons available to the user, one for each frame.</LI>
 				<LI class='todo'>Open the first link automatically.</LI>
 				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
-				<LI class='todo'>There should be two close buttons available to the user, one for each frame.</LI>
 				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
 				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
 				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
@@ -111,11 +120,6 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
-
-</BLOCKQUOTE>
-
-<H3>Ready to use Bookmarklets</H3>
-<BLOCKQUOTE>
 
 	<P>
 		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
@@ -170,17 +174,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			document.close();
 		})();">Split Preview</A> 0.87</LI>
 		<BLOCKQUOTE>
-			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
 			<LI>Now highlighting the link which is being previewed.</LI>
-			<P class='todo'>Todo:</P>
-			<BLOCKQUOTE>
-				<LI class='todo'>Open the first link automatically.</LI>
-				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
-				<LI class='todo'>There should be two close buttons available to the user, one for each frame.</LI>
-				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
-				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
-				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
-				<LI class='todo'>Bug/Feature: By quickly clicking on a link then moving away, it is possible to leave the highlight behind on an earlier link.</LI>
 			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
