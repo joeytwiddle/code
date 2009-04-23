@@ -83,8 +83,20 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			window.frames[1].document.close();
 			document.close();
-		})();">Split Preview</A> 0.86 - added loading page (nice for intial feedback, dirty afterwards)</LI>
+		})();">Split Preview</A> 0.86 - added loading page (nice for feedback, annoying afterwards)</LI>
 		<BLOCKQUOTE>
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+			<LI>I have set links to open in the right frame when clicked, rather than leaving the frameset or opening a new window, although hover is usually sufficient anyway.</LI>
+			<P class='todo'>Todo:</P>
+			<BLOCKQUOTE>
+				<LI class='todo'>Open the first link automatically.</LI>
+				<LI class='todo'>Highlight in the left pane, the currently previewed link.</LI>
+				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
+				<LI class='todo'>There should be two close buttons available to the user, one for each frame.</LI>
+				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
+				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
+				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
+			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
 
@@ -149,7 +161,6 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			document.close();
 		})();">Split Preview</A> 0.85 - Good!</LI>
 		<BLOCKQUOTE>
-			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
 				<!-- heh it was worth a bash :p
 				<SCRIPT type='text/javascript'>
 					document.write('Maybe you want the ');
@@ -158,11 +169,8 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 				</SCRIPT>
 				-->
 			</P>
-			<LI>I have set links to open in the right frame when clicked, rather than leaving the frameset, although hover is usually enough.</LI>
+			<LI>In this version only, links from the left pane open in a new tab/window when clicked.</LI>
 			<!-- When I am using the SplitPreview, I am very annoyed when I accidentally click and lose it!  In Konq, we need to reload the bookmarklet, we can't just 'go back'.. -->
-			<LI class='todo'>Todo: There should be two close buttons available to the user, one for each frame.</LI>
-			<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
-			<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -359,6 +367,58 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 		</BLOCKQUOTE>
 	</P>
 
+	<P>
+		<LI><A href="javascript:(function(){
+			var cnt = 0;
+			function doneLoading() {
+				if (this.addFoldsToBlockQuotes != undefined) {
+					/*alert('script_ready = ' + document.getElementsByTagName('SCRIPT').innerHTML);*/
+					/*alert('script_ready = ' + this.addFoldsToBlockQuotes);*/
+					/*alert('Loading complete.');*/
+					addFoldsToBlockQuotes();
+					/*alert('script_ready = '+document.getElementsByTagName('SCRIPT').readyState);*/
+				} else {
+					window.status = 'Waiting for script to load...'+(cnt++)*5+'ms';
+					setTimeout('top.doneLoading();',5);
+				}
+			}
+			top.doneLoading = doneLoading;
+
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/modifyDOM.js';
+			/*newScript.onload = doneLoading;*/
+			newScript.onload = 'javascript:document.doneLoading();';
+			document.getElementsByTagName('head')[0].appendChild(newScript);
+			/*
+			*/
+			/*
+			document.writeln('<SCRIPT type=&quot;text/javascript&quot; src=&quot;http://hwi.ath.cx/javascript/modifyDOM.js&quot;></SCRIPT>\n' + document.documentElement.innerHTML);
+			*/
+
+			/*
+			document.documentElement.innerHTML =
+				document.documentElement.innerHTML
+				+ '<SCRIPT type=&quot;text/javascript&quot; src=&quot;http://hwi.ath.cx/javascript/modifyDOM.js&quot;></SCRIPT>'
+				+ '<SCRIPT type=&quot;text/javascript&quot;> addFoldsToBlockQuotes(); </SCRIPT>';
+			*/
+
+			/*
+			document.documentElement.innerHTML =
+				document.documentElement.innerHTML.replace(/<title/i,
+				'<SCRIPT type=&quot;text/javascript&quot; src=&quot;http://hwi.ath.cx/javascript/modifyDOM.js&quot;></SCRIPT>\n'
+				+ '<SCRIPT type=&quot;text/javascript&quot;> addFoldsToBlockQuotes(); </SCRIPT>\n<title');
+			*/
+
+			setTimeout('top.doneLoading();',5);
+		})();" keyword="keywordInjected" description="descriptionInjected" title="Version 0.9">Page Folding = ON</A></LI>
+	</P>
+	<!-- Nasty - FF was reloading all the resources except mosifyDOM.js, which is the one I was changing!  -->
+	<BLOCKQUOTE>
+		<P>Makes parts of the page collapsable and expandable, for easier navigation through large (tree-structured) pages.</P>
+		<LI class='todo'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI>
+	</BLOCKQUOTE>
+
 </BLOCKQUOTE>
 
 <H3>Development Bookmarklets (Do not work well)</H3>
@@ -366,33 +426,6 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 
 	<!-- <P>No bookmarklet in development on this page right now.  You probably wouldn't want to use it if it was. -->
 	<!-- I might even consider separating my development and release pages. --></P>
-
-	<P>
-		<A href="javascript:(function(){
-			function doneLoading() {
-				/*alert('Done Loading!');
-				window.status = 'done loading.';*/
-				addFoldsToBlockQuotes();
-			}
-			/* document.writeln('<SCRIPT type=&quot;text/javascript&quot; src=&quot;http://hwi.ath.cx/javascript/modifyDOM.js&quot;></SCRIPT>'); */
-			var newScript = document.createElement('script');
-			newScript.type = 'text/javascript';
-			newScript.src = 'http://hwi.ath.cx/javascript/modifyDOM.js';
-			newScript.onload = doneLoading;
-			document.getElementsByTagName('head')[0].appendChild(newScript);
-			/*document.close();*/
-			/* window.status = ''+document.getElementsByTagName('SCRIPT').length; */
-			/*var scripts = document.getElementsByTagName('SCRIPT');
-			var script = scripts.item(scripts.length-1);*/
-			/** duh ofc this is true for both moz and konq ;) **/
-			/*alert('script == newScript? '+(script==newScript));*/
-			/** We can not call addFoldsToBlockQuotes until it had loaded! :P **/
-			/*alert('Can see '+script+' with '+script.addFoldsToBlockQuotes);*/
-			/*addFoldsToBlockQuotes();*/
-			/*setTimeout('addFoldsToBlockQuotes();',1000);*/
-			/** Solved by setting newScript.onload. **/
-		})();">TEST Fold Divs and Blockquotes</A>
-	</P>
 
 	<P>
 		<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
@@ -879,7 +912,12 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 </BLOCKQUOTE>
 
 <H3>Wanted / TODO</H3>
-<BLOCKQUOTE>
+<BLOCKQUOTE class='todo'>
+
+	<P>
+		HighlightLevels
+		<P>e.g. the structure of this page, whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate. </P>
+	</P>
 
 	<P>
 		MakeABookmarkletFromTheSearchFormOnThisPage ^^
