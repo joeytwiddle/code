@@ -14,6 +14,106 @@ To 'install' a bookmarklet, drag the link to your Bookmarks Toolbar, or right-cl
 <BR/>
 Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 
+<H3>Testing Bookmarks</H3>
+
+<BLOCKQUOTE>
+	<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
+
+	<P>The bookmarklets in this section are IN DEVELOPMENT!  You probably don't want to try using them just yet.  Go for the Ready to use Bookmarklets instead.</P>
+
+	<P>
+		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
+			var scriptText = '<SCRIPT type=&quot;text/javascript&quot;>
+				var linkNode,lastLoaded,lastbgcol;
+				function doGet() {
+					if (linkNode && linkNode != lastLoaded) {
+						if (lastLoaded) {
+							lastLoaded.style.backgroundColor = lastbgcol;
+							lastLoaded.parentNode.style.backgroundColor = lastbgcol;
+						}
+						lastLoaded = linkNode;
+						lastbgcol = linkNode.style.backgroundColor;
+						linkNode.style.backgroundColor=&quot;#ffff44&quot;;
+						linkNode.parentNode.style.backgroundColor=&quot;#ffffbb&quot;;
+						top.window.frames[1].location = linkNode.href;
+						document.getElementById(&quot;closeSidebarLink&quot;).href = linkNode.href;
+					}
+				}
+				function eventHandler(evt) {
+					linkNode = evt.currentTarget;
+					setTimeout(&quot;doGet();&quot;,700);
+				}
+				function clearLinkNode() {
+					linkNode = null;
+				}
+				for (var i=0;i<document.links.length;i++) {
+					/*document.links[i].target = &quot;_parent&quot;;*/
+					document.links[i].target = &quot;previewFrame&quot;;
+					document.links[i].onmouseover = eventHandler;
+					document.links[i].onmouseout = clearLinkNode;
+					document.links[i].onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
+				}
+				/** This can cause a document overwrite on Google results pages.  Maybe an append would work better. **/
+				/*document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);*/
+			</SCRIPT>\n';
+			var header = '<P align=&quot;right&quot;>[ <A id=&quot;closeSidebarLink&quot; target=&quot;_top&quot;>Close This Sidebar</A> | <A target=&quot;_top&quot; href=&quot;'+(document.location)+'&quot;>Close Other Frame</A> ]</P>\n';
+			var oldHTML = document.documentElement.innerHTML;
+			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n'+scriptText);*/
+			/** Start of document **/
+			var i = oldHTML.indexOf('%3CBODY');
+			i = oldHTML.indexOf('%3E',i)+1;
+			if (i<=0) {
+				i = oldHTML.indexOf('%3Cbody');
+				i = oldHTML.indexOf('%3E',i)+1;
+			}
+			/** End of document **/
+			/*
+			var i = oldHTML.lastIndexOf('%3C/body%3E');
+			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
+			*/
+			/*oldHTML = 'i = '+i+'<BR>' + oldHTML;*/
+			/*alert('i = '+i); return;*/
+			/*oldHTML = oldHTML.substring(0,i) + 'HELLO' + scriptText + oldHTML.substring(i);*/
+			/*oldHTML = header + oldHTML + scriptText;*/
+			oldHTML = oldHTML + scriptText;
+			if (i<=0) { alert('Failed to find ze body tag!'); return; }
+			if (oldHTML.indexOf(scriptText) < 0) { alert('Insert failed.'); return; }
+			/*document.write(oldHTML); return;*/
+			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
+			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
+			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('</frameset>\n');
+			/*document.close();*/
+			window.frames[0].document.write(oldHTML);
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+			document.close();
+			var closeBar = document.createElement('P');
+			closeBar.innerHTML = header;
+			/*with (window.frames[0].document.body) { insertBefore(closeBar,childNodes.item(0)); }*/
+			/** This works in Firefox but fails in Konqueror: **/
+			window.frames[0].document.body.insertBefore(closeBar,window.frames[0].document.body.childNodes.item(0));
+			window.frames[0].document.close();
+			window.frames[1].document.close();
+		})();">Split Preview</A> 0.88</LI>
+		<BLOCKQUOTE>
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+			<LI>Now highlighting the link which is being previewed.</LI>
+			<P class='todo'>Todo:</P>
+			<BLOCKQUOTE>
+				<LI class='todo'>Open the first link automatically.</LI>
+				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
+				<LI class='todo'>There should be two close buttons available to the user, one for each frame.</LI>
+				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
+				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
+				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
+				<LI class='todo'>Bug/Feature: By quickly clicking on a link then moving away, it is possible to leave the highlight behind on an earlier link.</LI>
+			</BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+
+</BLOCKQUOTE>
+
 <H3>Ready to use Bookmarklets</H3>
 <BLOCKQUOTE>
 
@@ -31,10 +131,6 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 				function doGet() {
 					if (linkNode && linkNode != lastLoaded) {
 						if (lastLoaded) {
-							/* Purple for visited.  Maybe we should look up the vlink
-							class.  Oh the browser should do that for the link anyway. */
-							/*lastLoaded.style.backgroundColor = &quot;#ffbbff&quot;;
-							lastLoaded.parentNode.style.backgroundColor = &quot;ff44ff&quot;;*/
 							lastLoaded.style.backgroundColor = lastbgcol;
 							lastLoaded.parentNode.style.backgroundColor = lastbgcol;
 						}
@@ -42,18 +138,11 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 						lastbgcol = linkNode.style.backgroundColor;
 						linkNode.style.backgroundColor=&quot;#ffff44&quot;;
 						linkNode.parentNode.style.backgroundColor=&quot;#ffffbb&quot;;
-						/*var rightFrame = top.document.getElementById(&quot;previewFrame&quot;);*/
-						/*top.window.frames[1].document.documentElement.innerHTML = ... ;*/
-						/*top.window.frames[1].document.write(&quot;&lt;BODY&gt;Loading &quot;+linkNode.href+&quot;...&lt;/BODY&gt;&quot;);*/
-						/** Writing to the frame above causes the line below to fail in Konqueror. **/
-						/** One fix might be to embed some javascript inside the body we just posted, to redirect the frame/page/doc. **/
-						/*top.window.frames[1].src = linkNode.href;*/
-						/** Oh this saves Konqueror :) **/
 						top.window.frames[1].location = linkNode.href;
 					}
 				}
 				function eventHandler(evt) {
-					linkNode = (evt.srcElement ? evt.srcElement /*moz*/ : evt.currentTarget /*not moz*/ );
+					linkNode = evt.currentTarget;
 					setTimeout(&quot;doGet();&quot;,700);
 				}
 				function clearLinkNode() {
@@ -65,19 +154,15 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 					document.links[i].onmouseover = eventHandler;
 					document.links[i].onmouseout = clearLinkNode;
 				}
-				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
+				/** This can cause a document overwrite when on Google results pages. **/
+				/*document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);*/
 			';
-			/** We can do .BODY but I prefer to push the / through with a
-			 * backslash.  But this can still fail, e.g. on bookmarklet pages, if
-			 * an earlier /BODY is seen and replaced. */
 			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
-			/** This never fails. **/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
 			if (i<=0) { alert('Failed to find ze body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
-			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
 			window.frames[0].document.write(oldHTML);
 			window.frames[0].document.close();
 			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
@@ -95,6 +180,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
 				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
 				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
+				<LI class='todo'>Bug/Feature: By quickly clicking on a link then moving away, it is possible to leave the highlight behind on an earlier link.</LI>
 			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
@@ -124,7 +210,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 					}
 				}
 				function eventHandler(evt) {
-					linkNode = (evt.srcElement ? evt.srcElement /*moz*/ : evt.currentTarget /*not moz*/ );
+					linkNode = evt.currentTarget;
 					setTimeout(&quot;doGet();&quot;,700);
 				}
 				function clearLinkNode() {
@@ -190,7 +276,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 					}
 				}
 				function eventHandler(evt) {
-					linkNode = (evt.srcElement ? evt.srcElement /*moz*/ : evt.currentTarget /*not moz*/ );
+					linkNode = evt.currentTarget;
 					setTimeout(&quot;doGet();&quot;,700);
 				}
 				function clearLinkNode() {
@@ -259,8 +345,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 					}
 				}
 				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
+					linkNode = evt.currentTarget;
 					setTimeout(&quot;doGet();&quot;,1000);
 				}
 				function clearLinkNode() {
@@ -321,10 +406,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 				}
 			}
 			function processClick(event) {
-				var node = event.srcElement;
-				if (!node) {
-					node = event.currentTarget;
-				}
+				var node = evt.currentTarget;
 				window.status = 'Removed '+node;
 				attachClickListener(document,null);
 				node.innerHTML='';
@@ -474,490 +556,90 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 		<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
 	</P>
 
-	<H4>Old attempts:</H4>
-	<BLOCKQUOTE>
-
-		<P>
-			<!--
-			
-			DONE: Reloading the iframe every time we mouseover a link is a bit too much!
-			We should at least check we aren't already loading this page, and that the user
-			is hovering on our link, not just quickly passing over it to reach another.
-			
-			TODO: For real speed when flicking between previews, we should have 1 IFrame
-			per link, but rotate/hide them so that only 1 is visible.  The background ones
-			can load and be fast and ready.
-			
-			TODO: On Google, the floating IFrame does not appear where we desire.  This is
-			consistent between Firefox and Konqueror!  Maybe we need to place the style tag
-			in HTML rather than adding style prefs to the object.
-			
-			FIX: In Mozilla, our whole page gets replaced with '[object
-			HTMLIFrameElement]', or whatever our last statement returns. The alert prevents
-			it!
-			
-			-->
-			<A href="
-				javascript:(function(){
-				var f = document.createElement('IFRAME');
-				/* f.style = 'z-index:100'; */ /* breaks moz */
-				f.align = 'left';
-				/* f.src = 'blah.html'; */
-				f.style.position = 'absolute';
-				f.style.width = window.innerWidth * 3/4;
-				f.style.height = window.innerHeight * 3/4;
-				f.style.top = 20;
-				f.style.right = 20;
-				/* TODO: our lovely positioning breaks on google! */
-				f.id = 'floatingFrame1';
-				document.body.appendChild(f);
-				function eventHandler(evt) {
-					var linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					document.getElementById('floatingFrame1').src = linkNode.href;
+	<P>
+		<LI><A href="javascript:(function(){
+			var firstEvent = true;
+			function processNode(node) {
+				node.onmouseover = doHighlight;
+				node.onmouseout  = undoHighlight;
+				for (var i=0;i<node.childNodes.length;i++) {
+					processNode(node.childNodes.item(i));
 				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
+			}
+			function getColorFor(obj) {
+				var s = ''+obj;
+				var hash = 0;
+				for (i=0;i<s.length;i++) {
+					hash = ((i+2) %25 32)*s.charCodeAt(i);
 				}
-				})();
-			">Split Preview Prototype 0.3</A>
-			<!-- Another workaround is to put the javascript in a button on the page.
-			This does not suffer problem related to the return value.-->
-			<!-- <INPUT type="button" value="Go" onclick=" -->
-			<!-- "></INPUT> -->
-			<BLOCKQUOTE>
-				<P>Pops up a floating IFrame, where target pages are displayed when we hover over links on the current page.</P>
-				<LI class='todo'>Bug: When invoked on Google result pages, the IFrame's floating style does not work properly - it sits at the bottom of the page.</LI>
-				<LI class='todo'>Bug: It frequently covers up the links we want to hover over!</LI>
-			</BLOCKQUOTE>
-			<!--
-			<div id='floatframe'>
-				<iframe id='floatingFrame1' width='320' height='240' src='blah.html' align='left'> </iframe>
-			</div>
-			<style type="text/css">
-				#floatframe {position:absolute;
-					right:20px;
-					top:20px;
-					width:320px;
-					height:240px;
-					z-index:100;
+				var hex = parseInt('0x'+hash,16);
+				if (Math.floor(Math.random()*6) == 5) {
+					window.status = 'Did parseInt on '+hash+' and got '+hex;
 				}
-			</style>
-			-->
-		</P>
-
-		<P>
-			<A href="javascript:(function(){
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						document.getElementById('myframe').src = linkNode.href;
-						document.getElementById('previewlink').href = linkNode.href;
-						document.getElementById('previewlink').innerHTML = linkNode.text;
-						lastLoaded = linkNode;
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					setTimeout('document.doGet();',1000);
-				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
-					/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
-					/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				var t = document.createElement('TABLE');
-				var r = document.createElement('TR');
-				var d1 = document.createElement('TD');
-				var d2 = document.createElement('TD');
-				d2.valign='top';
-				d1.width=window.innerWidth*40/100+'px';
-				d2.width=window.innerWidth*55/100+'px';
-				var f = document.createElement('IFRAME');
-				f.id = 'myframe';
-				f.width=window.innerWidth*55/100;
-				f.height=window.innerHeight;
-				d1.appendChild(document.documentElement);
-				d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+f.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
-								 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
-				/* cheap and dirty close - should be right aligned, maybe a button with value X. */
-				d2.appendChild(f);
-				r.appendChild(d1);
-				r.appendChild(d2);
-				t.appendChild(r);
-				document.appendChild(t);
-				document.doGet = doGet;
-			})();">Split Preview Prototype 0.4</A>
-			<BLOCKQUOTE>
-				<LI class='done'>Done: Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
-				<LI class='done'>Done: Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
-			</BLOCKQUOTE>
-		</P>
-
-		<!--
-		<P>
-			<A href="javascript:(function(){
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						document.getElementById('myframe').src = linkNode.href;
-						document.getElementById('previewlink').href = linkNode.href;
-						document.getElementById('previewlink').innerHTML = linkNode.text;
-						lastLoaded = linkNode;
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					setTimeout('document.doGet();',1000);
-				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
-					/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
-					/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				var t = document.createElement('TABLE');
-				var r = document.createElement('TR');
-				var d1 = document.createElement('TD');
-				var d2 = document.createElement('TD');
-				d2.valign='top';
-				d1.width=window.innerWidth*40/100+'px';
-				d2.width=window.innerWidth*55/100+'px';
-				var leftFrame = document.createElement('IFRAME');
-				var rightFrame = document.createElement('IFRAME');
-				rightFrame.id = 'myframe';
-				rightFrame.width=window.innerWidth*55/100;
-				rightFrame.height=window.innerHeight;
-				window.status = '1';
-				/*d1.appendChild(document.documentElement);*/
-				leftFrame.appendChild(document.documentElement);
-				d1.appendChild(leftFrame);
-				d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+rightFrame.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
-								 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
-				d2.appendChild(rightFrame);
-				r.appendChild(d1);
-				r.appendChild(d2);
-				t.appendChild(r);
-				/* leftFrame.src = document.location; */
-				document.appendChild(t);
-				document.doGet = doGet;
-			})();">Split Preview New 0.1</A>
-			<BLOCKQUOTE>
-			</BLOCKQUOTE>
-		</P>
-		-->
-
-		<!--
-		<P>
-			<A href="javascript:(function(){
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						document.getElementById('myframe').src = linkNode.href;
-						document.getElementById('previewlink').href = linkNode.href;
-						document.getElementById('previewlink').innerHTML = linkNode.text;
-						lastLoaded = linkNode;
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					setTimeout('document.doGet();',1000);
-				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
-					/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
-					/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				var target = document.location;
-				document.open(); document.write('<HTML><BODY>bleh</BODY></HTML>'); document.close();
-				var t = document.createElement('TABLE');
-				var r = document.createElement('TR');
-				t.appendChild(r);
-				var d1 = document.createElement('TD');
-				var d2 = document.createElement('TD');
-				d2.valign='top';
-				d1.width=window.innerWidth*40/100+'px';
-				d2.width=window.innerWidth*55/100+'px';
-				r.appendChild(d1);
-				r.appendChild(d2);
-				var leftFrame = document.createElement('IFRAME');
-				var rightFrame = document.createElement('IFRAME');
-				d1.appendChild(leftFrame);
-				d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+rightFrame.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
-								 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
-				d2.appendChild(rightFrame);
-				rightFrame.id = 'myframe';
-				rightFrame.width=window.innerWidth*55/100;
-				rightFrame.height=window.innerHeight;
-				/*window.status = '1';*/
-				/*d1.appendChild(document.documentElement);*/
-				leftFrame.appendChild(document.documentElement);
-				leftFrame.innerHTML = '<HTML><BODY>ffs</BODY></HTML>';
-				/*leftFrame.src = target;*/
-				document.appendChild(t);
-				document.doGet = doGet;
-			})();">Split Preview New 0.2</A>
-			<BLOCKQUOTE>
-			</BLOCKQUOTE>
-		</P>
-		-->
-
-		<!--
-		<P>
-			<A href="javascript:(function(){
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						document.getElementById('myframe').src = linkNode.href;
-						document.getElementById('previewlink').href = linkNode.href;
-						document.getElementById('previewlink').innerHTML = linkNode.text;
-						lastLoaded = linkNode;
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					setTimeout('document.doGet();',1000);
-				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
-					/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
-					/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				var target = document.location;
-				var oldHTML = document.documentElement.innerHTML;
-				with(window.open(&quot;&quot;,&quot;_blank&quot;,&quot;width=&quot;+screen.width*.6+&quot;,left=&quot;+screen.width*.35+&quot;,height=&quot;+screen.height*.9+&quot;,resizable,scrollbars=yes&quot;)) {
-					document.open();
+				if (hex.length>6) hex=hex.substring(0,6);
+				while (hex.length<6) { hex='0'+hex; }
+				return hex;
+			}
+			function doHighlight(evt) {
+				var node = evt.currentTarget; /* try evt.srcElement if this fails. */
+				var xpath = getXPath(node);
+				var depth = xpath.replace(/[^/]/g,'').length - 1;
+				if (node.tagName!='HTML' && node.tagName!='BODY') {
+					if (depth>9) depth=9;
+					depth = 9-depth;
+					node.style.backgroundColor = '#' + getColorFor(node.tagName+depth);
 					/*
-					document.write('<HTML><BODY>\n');
-					document.write('IFrame coming...<BR/>');
-					document.write('<IFRAME>\n');
-					document.write('Doc coming...<BR/>');
-					oldHTML = oldHTML.replace(/%26/g,%27%26amp;%27).replace(/%3E/g,%27%26gt;%27).replace(/%3C/g,%27%26lt;%27);
-					document.write(oldHTML);
-					document.write('Doc done.<BR/>');
-					document.write('</IFRAME>\n');
-					document.write('IFrame done.<BR/>');
-					document.write('</BODY></HTML>\n');
+					node.style.backgroundColor = '#ffff'+depth+''+depth;
 					*/
-					document.write('<head><title>asdddd</title></head><frameset rows=&quot;25,*&quot;>\n');
-					document.write('<frame name=&quot;leftFrame&quot; src=&quot;about:blank&quot; noresize=&quot;&quot;>\n');
-					document.write('<frame name=&quot;rightFrame&quot; src=&quot;about:blank&quot; noresize=&quot;&quot;>\n');
-					document.write('</frameset>\n');
-					document.close();
-					/*var text = document.createElement('DIV');
-					text.innerHTML = '<BODY>HELLO</BODY>';*/
-					/* document.getElementsByTagName('IFRAME')[0].appendChild(text); */
-					/* document.getElementsByTagName('IFRAME')[0].write('<BODY>Hello</BODY>'); */
-					frames[1].src = 'http://hwi.ath.cx/';
-					frames[0].write('<HEAD>a frame</HEAD><BODY>Hello</BODY>');
-					/* This throws an error, but it's what the PartialSource bookmarklet uses. */
+					/*
+					if (Math.floor(Math.random()*6) == 5) {
+						window.status = 'set '+xpath+' color '+getColorFor(node.tagName+depth);
+					}
+					*/
 				}
-			})();">Split Preview New HTML 0.3</A>
-			<BLOCKQUOTE>
-			</BLOCKQUOTE>
-		</P>
-		-->
-
-		<!--
-		<P>
-			<A href="javascript:(function(){
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						document.getElementById('myframe').src = linkNode.href;
-						document.getElementById('previewlink').href = linkNode.href;
-						document.getElementById('previewlink').innerHTML = linkNode.text;
-						lastLoaded = linkNode;
+				if (firstEvent) {
+					/*window.status = xpath;*/
+					firstEvent = false;
+				} else {
+					if (xpath == '/html') {
+						firstEvent = true;
 					}
 				}
-				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					setTimeout('document.doGet();',1000);
+			}
+			function undoHighlight(evt) {
+				var node = evt.currentTarget;
+				node.style.backgroundColor = 'white'; /*document.bgcolor;*/
+			}
+			function getXPath(node) {
+				var parent = node.parentNode;
+				if (!parent) {
+					return '';
 				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
-					/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
-					/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				var t = document.createElement('TABLE');
-				var r = document.createElement('TR');
-				var d1 = document.createElement('TD');
-				var d2 = document.createElement('TD');
-				d2.valign='top';
-				d1.width=window.innerWidth*40/100+'px';
-				d2.width=window.innerWidth*55/100+'px';
-				var leftFrame = document.createElement('IFRAME');
-				var rightFrame = document.createElement('IFRAME');
-				rightFrame.id = 'myframe';
-				rightFrame.width=window.innerWidth*55/100;
-				rightFrame.height=window.innerHeight;
-				leftFrame.appendChild(document.documentElement);
-				/* leftFrame.innerHTML = document.documentElement.innerHTML; */
-				d1.appendChild(leftFrame);
-				d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+rightFrame.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
-								 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
-				/* cheap and dirty close - should be right aligned, maybe a button with value X. */
-				d2.appendChild(rightFrame);
-				r.appendChild(d1);
-				r.appendChild(d2);
-				t.appendChild(r);
-				document.appendChild(t);
-				document.doGet = doGet;
-			})();">Split Preview Two IFrames 0.2</A>
-			<BLOCKQUOTE>
-			</BLOCKQUOTE>
-		</P>
-
-		<P>
-			<A href="javascript:(function(){
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						document.getElementById('rightFrame').src = linkNode.href;
-						/* document.getElementById('previewlink').href = linkNode.href;
-						document.getElementById('previewlink').innerHTML = linkNode.text; */
-						lastLoaded = linkNode;
+				var siblings = parent.childNodes;
+				var totalCount = 0;
+				var thisCount = -1;
+				for (var i=0;i<siblings.length;i++) {
+					var sibling = siblings[i];
+					if (sibling.nodeType == node.nodeType) {
+						totalCount++;
+					}
+					if (sibling == node) {
+						thisCount = totalCount;
 					}
 				}
-				function eventHandler(evt) {
-					linkNode = evt.srcElement; /*moz?*/
-					if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-					setTimeout('document.doGet();',1000);
-				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
-					/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
-					/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				var frameset = document.createElement('FRAMESET');
-				frameset.rows = '40%,*';
-				var leftFrame = document.createElement('FRAME');
-				var rightFrame = document.createElement('FRAME');
-				frameset.appendChild(leftFrame);
-				frameset.appendChild(rightFrame);
-				rightFrame.id = 'rightFrame';
-				/* leftFrame.src = 'http://hwi.ath.cx/'; */
-				rightFrame.src = 'about:blank';
-				leftFrame.appendChild(document.documentElement);
-				/* document.open(); document.close(); */
-				document.appendChild(frameset);
-				document.doGet = doGet;
-			})();">Split Preview Frames 0.2</A>
-			<BLOCKQUOTE>
-			</BLOCKQUOTE>
-		</P>
-		-->
-
-		<!--
-		<P>
-			<LI><A href="javascript:(function(){
-				var oldHTML = document.documentElement.innerHTML;
-				document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-				document.write('<frameset cols=&quot;40%25,*&quot;>\n');
-				document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
-				document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
-				document.write('</frameset>\n');
-				/*document.close();*/
-				var scriptText = '
-					var linkNode,lastLoaded;
-					function doGet() {
-						if (linkNode && linkNode != lastLoaded) {
-							top.document.getElementById(&quot;previewFrame&quot;).src = linkNode.href;
-							/*document.getElementById(&quot;previewlink&quot;).href = linkNode.href;
-							document.getElementById(&quot;previewlink&quot;).innerHTML = linkNode.text;
-							*/
-							lastLoaded = linkNode;
-							linkNode.text = &quot;WHEEE&quot;;
-							/*alert(&quot;doGet called with linkNode = &quot;+linkNode);*/
-						}
-					}
-					function eventHandler(evt) {
-						linkNode = evt.srcElement; /*moz?*/
-						if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-						setTimeout(&quot;doGet();&quot;,1000);
-					}
-					function clearLinkNode() {
-						linkNode = null;
-					}
-					for (var i=0;i<document.links.length;i++) {
-						document.links[i].onmouseover = eventHandler;
-						document.links[i].onmouseout = clearLinkNode;
-					}
-					document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
-				';
-				/** This works on Mozilla but not Konqueror. **/
-				/*
-				var scriptElement = window.frames[0].document.createElement('SCRIPT');
-				scriptElement.type = 'text/javascript';
-				scriptElement.innerHTML = scriptText;
-				window.frames[0].document.documentElement.appendChild(scriptElement);
-				*/
-				/*window.frames[0].document.write('<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n');*/
-				/*window.frames[0].document.open();*/
-				/** Prepending <pre> makes the text TT! **/
-				/*oldHTML = oldHTML.replace(/&quot;/g,%27%26quot;%27);*/
-				/*
-				oldHTML = oldHTML.replace(/%3C.BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');
-				*/
-				var i = oldHTML.lastIndexOf('%3C/body%3E');
-				if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-				if (i<=0) { alert('Failed to find ze body tag!'); }
-				oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
-				if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
-				/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
-				window.frames[0].document.write(oldHTML);
-				window.frames[0].document.close();
-				window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
-				window.frames[1].document.close();
-				document.close();
-			})();">Split Preview</A> 0.79 - Good!</LI>
-			<BLOCKQUOTE>
-				<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
-				<P><I>(Rejoice!  It was an effort but I nailed this critter.)</I></P>
-				<LI class='todo'>Todo: Clicking on a link causes it to open in the sideFrame, but preferably the browser would drop the frames and go directly to the page.</LI>
-			</BLOCKQUOTE>
-		</P>
-		-->
-
-	</BLOCKQUOTE>
+				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
+			}
+			processNode(document.documentElement);
+		})();">Highlight Structure</A></LI>
+		<BLOCKQUOTE>
+			<P>The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate. </P>
+		</BLOCKQUOTE>
+	</P>
 
 </BLOCKQUOTE>
 
 <H3>Wanted / TODO</H3>
 <BLOCKQUOTE class='todo'>
-
-	<P>
-		HighlightLevels
-		<P>e.g. the structure of this page, whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate. </P>
-	</P>
 
 	<P>
 		MakeABookmarkletFromTheSearchFormOnThisPage ^^
@@ -1001,6 +683,476 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 	<P>JavascriptConsole: Konqueror does not accept javascript: commands in the location bar.  How can I run little snippets of javascript on the page?  This Bookmarklet should popup a floating IFrame with a textarea where the user can edit and execute Javascript, and close it when finished.  For debugging but also for power-processing of pages.  (We may wish to append/include external .js files.)</P>
 
 	<P>Bookmarklets and Framesets do not mix well.  Most Bookmarklets will try to target the frameset document rather than the child frame we are trying to focus on.  It would be nice to have a generic solution to this.</P>
+
+</BLOCKQUOTE>
+
+<H3>Older versions:</H3>
+<BLOCKQUOTE>
+
+	<P>The only good thing about these IFrame implementations, is that we don&apos;t have to rebuild the DOM, we can successfully move the existing page inside the table.</P>
+
+	<P>
+		<A href="javascript:(function(){
+			var linkNode,lastLoaded;
+			function doGet() {
+				if (linkNode && linkNode != lastLoaded) {
+					document.getElementById('myframe').src = linkNode.href;
+					document.getElementById('previewlink').href = linkNode.href;
+					document.getElementById('previewlink').innerHTML = linkNode.text;
+					lastLoaded = linkNode;
+				}
+			}
+			function eventHandler(evt) {
+				linkNode = evt.currentTarget;
+				setTimeout('document.doGet();',1000);
+			}
+			function clearLinkNode() {
+				linkNode = null;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+				/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
+				/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
+				document.links[i].onmouseout = clearLinkNode;
+			}
+			var t = document.createElement('TABLE');
+			var r = document.createElement('TR');
+			var d1 = document.createElement('TD');
+			var d2 = document.createElement('TD');
+			d2.valign='top';
+			d1.width=window.innerWidth*40/100+'px';
+			d2.width=window.innerWidth*55/100+'px';
+			var f = document.createElement('IFRAME');
+			f.id = 'myframe';
+			f.width=window.innerWidth*55/100;
+			f.height=window.innerHeight;
+			d1.appendChild(document.documentElement);
+			d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+f.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
+							 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
+			/* cheap and dirty close - should be right aligned, maybe a button with value X. */
+			d2.appendChild(f);
+			r.appendChild(d1);
+			r.appendChild(d2);
+			t.appendChild(r);
+			document.appendChild(t);
+			document.doGet = doGet;
+		})();">Split Preview Prototype 0.4</A> - Poor
+		<BLOCKQUOTE>
+			<P>Instead of a floating IFrame, we split the view left/right and put the two panes inside a table.</P>
+			<LI class='done'>Done: Using only onmouseover for hover detection is too sensitive.  We should also check: 1) user has hovered over the link for some time, and 2) the link being hovered on is not already loading!</LI>
+			<LI class='done'>Done: Add Close button, to remove the floatingframe, and remove all the onmouseover events we added.</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<!--
+		
+		DONE: Reloading the iframe every time we mouseover a link is a bit too much!
+		We should at least check we aren't already loading this page, and that the user
+		is hovering on our link, not just quickly passing over it to reach another.
+		
+		TODO: For real speed when flicking between previews, we should have 1 IFrame
+		per link, but rotate/hide them so that only 1 is visible.  The background ones
+		can load and be fast and ready.
+		
+		TODO: On Google, the floating IFrame does not appear where we desire.  This is
+		consistent between Firefox and Konqueror!  Maybe we need to place the style tag
+		in HTML rather than adding style prefs to the object.
+		
+		FIX: In Mozilla, our whole page gets replaced with '[object
+		HTMLIFrameElement]', or whatever our last statement returns. The alert prevents
+		it!
+		
+		-->
+		<A href="
+			javascript:(function(){
+			var f = document.createElement('IFRAME');
+			/* f.style = 'z-index:100'; */ /* breaks moz */
+			f.align = 'left';
+			/* f.src = 'blah.html'; */
+			f.style.position = 'absolute';
+			f.style.width = window.innerWidth * 3/4;
+			f.style.height = window.innerHeight * 3/4;
+			f.style.top = 20;
+			f.style.right = 20;
+			/* TODO: our lovely positioning breaks on google! */
+			f.id = 'floatingFrame1';
+			document.body.appendChild(f);
+			function eventHandler(evt) {
+				var linkNode = evt.currentTarget;
+				document.getElementById('floatingFrame1').src = linkNode.href;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+			}
+			})();
+		">Popup Preview Prototype 0.3</A> - Poor
+		<!-- Another workaround is to put the javascript in a button on the page.
+		This does not suffer problem related to the return value.-->
+		<!-- <INPUT type="button" value="Go" onclick=" -->
+		<!-- "></INPUT> -->
+		<BLOCKQUOTE>
+			<P>Pops up a floating IFrame, where target pages are displayed when we hover over links on the current page.</P>
+			<LI class='todo'>Bug: When invoked on Google result pages, the IFrame's floating style does not work properly - it sits at the bottom of the page.</LI>
+			<LI class='todo'>Bug: It frequently covers up the links we want to hover over!</LI>
+		</BLOCKQUOTE>
+		<!--
+		<div id='floatframe'>
+			<iframe id='floatingFrame1' width='320' height='240' src='blah.html' align='left'> </iframe>
+		</div>
+		<style type="text/css">
+			#floatframe {position:absolute;
+				right:20px;
+				top:20px;
+				width:320px;
+				height:240px;
+				z-index:100;
+			}
+		</style>
+		-->
+	</P>
+
+	<!--
+	<P>
+		<A href="javascript:(function(){
+			var linkNode,lastLoaded;
+			function doGet() {
+				if (linkNode && linkNode != lastLoaded) {
+					document.getElementById('myframe').src = linkNode.href;
+					document.getElementById('previewlink').href = linkNode.href;
+					document.getElementById('previewlink').innerHTML = linkNode.text;
+					lastLoaded = linkNode;
+				}
+			}
+			function eventHandler(evt) {
+				linkNode = evt.currentTarget;
+				setTimeout('document.doGet();',1000);
+			}
+			function clearLinkNode() {
+				linkNode = null;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+				/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
+				/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
+				document.links[i].onmouseout = clearLinkNode;
+			}
+			var t = document.createElement('TABLE');
+			var r = document.createElement('TR');
+			var d1 = document.createElement('TD');
+			var d2 = document.createElement('TD');
+			d2.valign='top';
+			d1.width=window.innerWidth*40/100+'px';
+			d2.width=window.innerWidth*55/100+'px';
+			var leftFrame = document.createElement('IFRAME');
+			var rightFrame = document.createElement('IFRAME');
+			rightFrame.id = 'myframe';
+			rightFrame.width=window.innerWidth*55/100;
+			rightFrame.height=window.innerHeight;
+			window.status = '1';
+			/*d1.appendChild(document.documentElement);*/
+			leftFrame.appendChild(document.documentElement);
+			d1.appendChild(leftFrame);
+			d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+rightFrame.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
+							 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
+			d2.appendChild(rightFrame);
+			r.appendChild(d1);
+			r.appendChild(d2);
+			t.appendChild(r);
+			/* leftFrame.src = document.location; */
+			document.appendChild(t);
+			document.doGet = doGet;
+		})();">Split Preview New 0.1</A>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+	-->
+
+	<!--
+	<P>
+		<A href="javascript:(function(){
+			var linkNode,lastLoaded;
+			function doGet() {
+				if (linkNode && linkNode != lastLoaded) {
+					document.getElementById('myframe').src = linkNode.href;
+					document.getElementById('previewlink').href = linkNode.href;
+					document.getElementById('previewlink').innerHTML = linkNode.text;
+					lastLoaded = linkNode;
+				}
+			}
+			function eventHandler(evt) {
+				linkNode = evt.currentTarget;
+				setTimeout('document.doGet();',1000);
+			}
+			function clearLinkNode() {
+				linkNode = null;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+				/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
+				/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
+				document.links[i].onmouseout = clearLinkNode;
+			}
+			var target = document.location;
+			document.open(); document.write('<HTML><BODY>bleh</BODY></HTML>'); document.close();
+			var t = document.createElement('TABLE');
+			var r = document.createElement('TR');
+			t.appendChild(r);
+			var d1 = document.createElement('TD');
+			var d2 = document.createElement('TD');
+			d2.valign='top';
+			d1.width=window.innerWidth*40/100+'px';
+			d2.width=window.innerWidth*55/100+'px';
+			r.appendChild(d1);
+			r.appendChild(d2);
+			var leftFrame = document.createElement('IFRAME');
+			var rightFrame = document.createElement('IFRAME');
+			d1.appendChild(leftFrame);
+			d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+rightFrame.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
+							 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
+			d2.appendChild(rightFrame);
+			rightFrame.id = 'myframe';
+			rightFrame.width=window.innerWidth*55/100;
+			rightFrame.height=window.innerHeight;
+			/*window.status = '1';*/
+			/*d1.appendChild(document.documentElement);*/
+			leftFrame.appendChild(document.documentElement);
+			leftFrame.innerHTML = '<HTML><BODY>ffs</BODY></HTML>';
+			/*leftFrame.src = target;*/
+			document.appendChild(t);
+			document.doGet = doGet;
+		})();">Split Preview New 0.2</A>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+	-->
+
+	<!--
+	<P>
+		<A href="javascript:(function(){
+			var linkNode,lastLoaded;
+			function doGet() {
+				if (linkNode && linkNode != lastLoaded) {
+					document.getElementById('myframe').src = linkNode.href;
+					document.getElementById('previewlink').href = linkNode.href;
+					document.getElementById('previewlink').innerHTML = linkNode.text;
+					lastLoaded = linkNode;
+				}
+			}
+			function eventHandler(evt) {
+				linkNode = evt.currentTarget;
+				setTimeout('document.doGet();',1000);
+			}
+			function clearLinkNode() {
+				linkNode = null;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+				/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
+				/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
+				document.links[i].onmouseout = clearLinkNode;
+			}
+			var target = document.location;
+			var oldHTML = document.documentElement.innerHTML;
+			with(window.open(&quot;&quot;,&quot;_blank&quot;,&quot;width=&quot;+screen.width*.6+&quot;,left=&quot;+screen.width*.35+&quot;,height=&quot;+screen.height*.9+&quot;,resizable,scrollbars=yes&quot;)) {
+				document.open();
+				/*
+				document.write('<HTML><BODY>\n');
+				document.write('IFrame coming...<BR/>');
+				document.write('<IFRAME>\n');
+				document.write('Doc coming...<BR/>');
+				oldHTML = oldHTML.replace(/%26/g,%27%26amp;%27).replace(/%3E/g,%27%26gt;%27).replace(/%3C/g,%27%26lt;%27);
+				document.write(oldHTML);
+				document.write('Doc done.<BR/>');
+				document.write('</IFRAME>\n');
+				document.write('IFrame done.<BR/>');
+				document.write('</BODY></HTML>\n');
+				*/
+				document.write('<head><title>asdddd</title></head><frameset rows=&quot;25,*&quot;>\n');
+				document.write('<frame name=&quot;leftFrame&quot; src=&quot;about:blank&quot; noresize=&quot;&quot;>\n');
+				document.write('<frame name=&quot;rightFrame&quot; src=&quot;about:blank&quot; noresize=&quot;&quot;>\n');
+				document.write('</frameset>\n');
+				document.close();
+				/*var text = document.createElement('DIV');
+				text.innerHTML = '<BODY>HELLO</BODY>';*/
+				/* document.getElementsByTagName('IFRAME')[0].appendChild(text); */
+				/* document.getElementsByTagName('IFRAME')[0].write('<BODY>Hello</BODY>'); */
+				frames[1].src = 'http://hwi.ath.cx/';
+				frames[0].write('<HEAD>a frame</HEAD><BODY>Hello</BODY>');
+				/* This throws an error, but it's what the PartialSource bookmarklet uses. */
+			}
+		})();">Split Preview New HTML 0.3</A>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+	-->
+
+	<!--
+	<P>
+		<A href="javascript:(function(){
+			var linkNode,lastLoaded;
+			function doGet() {
+				if (linkNode && linkNode != lastLoaded) {
+					document.getElementById('myframe').src = linkNode.href;
+					document.getElementById('previewlink').href = linkNode.href;
+					document.getElementById('previewlink').innerHTML = linkNode.text;
+					lastLoaded = linkNode;
+				}
+			}
+			function eventHandler(evt) {
+				linkNode = evt.currentTarget;
+				setTimeout('document.doGet();',1000);
+			}
+			function clearLinkNode() {
+				linkNode = null;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+				/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
+				/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
+				document.links[i].onmouseout = clearLinkNode;
+			}
+			var t = document.createElement('TABLE');
+			var r = document.createElement('TR');
+			var d1 = document.createElement('TD');
+			var d2 = document.createElement('TD');
+			d2.valign='top';
+			d1.width=window.innerWidth*40/100+'px';
+			d2.width=window.innerWidth*55/100+'px';
+			var leftFrame = document.createElement('IFRAME');
+			var rightFrame = document.createElement('IFRAME');
+			rightFrame.id = 'myframe';
+			rightFrame.width=window.innerWidth*55/100;
+			rightFrame.height=window.innerHeight;
+			leftFrame.appendChild(document.documentElement);
+			/* leftFrame.innerHTML = document.documentElement.innerHTML; */
+			d1.appendChild(leftFrame);
+			d2.innerHTML = '<TABLE bgcolor=\'#bbbbff\' width=\''+rightFrame.width+'\'><TR><TD><A id=\'previewlink\'>Preview</A></TD>'
+							 + '<TD align=\'right\'>[ <A href=\'javascript:document.location=&quot;'+document.location+'&quot;;\'>Close</A> ]</TD></TR></TABLE>\n';
+			/* cheap and dirty close - should be right aligned, maybe a button with value X. */
+			d2.appendChild(rightFrame);
+			r.appendChild(d1);
+			r.appendChild(d2);
+			t.appendChild(r);
+			document.appendChild(t);
+			document.doGet = doGet;
+		})();">Split Preview Two IFrames 0.2</A>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<A href="javascript:(function(){
+			var linkNode,lastLoaded;
+			function doGet() {
+				if (linkNode && linkNode != lastLoaded) {
+					document.getElementById('rightFrame').src = linkNode.href;
+					/* document.getElementById('previewlink').href = linkNode.href;
+					document.getElementById('previewlink').innerHTML = linkNode.text; */
+					lastLoaded = linkNode;
+				}
+			}
+			function eventHandler(evt) {
+				linkNode = evt.currentTarget;
+				setTimeout('document.doGet();',1000);
+			}
+			function clearLinkNode() {
+				linkNode = null;
+			}
+			for (var i=0;i<document.links.length;i++) {
+				document.links[i].onmouseover = eventHandler;
+				/* document.links[i].onmouseout = 'setTimeout(&quot;&quot;,1000);'; */
+				/* document.links[i].onmouseout = '(function(){clearLinkNode();}'; */
+				document.links[i].onmouseout = clearLinkNode;
+			}
+			var frameset = document.createElement('FRAMESET');
+			frameset.rows = '40%,*';
+			var leftFrame = document.createElement('FRAME');
+			var rightFrame = document.createElement('FRAME');
+			frameset.appendChild(leftFrame);
+			frameset.appendChild(rightFrame);
+			rightFrame.id = 'rightFrame';
+			/* leftFrame.src = 'http://hwi.ath.cx/'; */
+			rightFrame.src = 'about:blank';
+			leftFrame.appendChild(document.documentElement);
+			/* document.open(); document.close(); */
+			document.appendChild(frameset);
+			document.doGet = doGet;
+		})();">Split Preview Frames 0.2</A>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+	-->
+
+	<!--
+	<P>
+		<LI><A href="javascript:(function(){
+			var oldHTML = document.documentElement.innerHTML;
+			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
+			document.write('<frameset cols=&quot;40%25,*&quot;>\n');
+			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('</frameset>\n');
+			/*document.close();*/
+			var scriptText = '
+				var linkNode,lastLoaded;
+				function doGet() {
+					if (linkNode && linkNode != lastLoaded) {
+						top.document.getElementById(&quot;previewFrame&quot;).src = linkNode.href;
+						/*document.getElementById(&quot;previewlink&quot;).href = linkNode.href;
+						document.getElementById(&quot;previewlink&quot;).innerHTML = linkNode.text;
+						*/
+						lastLoaded = linkNode;
+						linkNode.text = &quot;WHEEE&quot;;
+						/*alert(&quot;doGet called with linkNode = &quot;+linkNode);*/
+					}
+				}
+				function eventHandler(evt) {
+					linkNode = evt.currentTarget;
+					setTimeout(&quot;doGet();&quot;,1000);
+				}
+				function clearLinkNode() {
+					linkNode = null;
+				}
+				for (var i=0;i<document.links.length;i++) {
+					document.links[i].onmouseover = eventHandler;
+					document.links[i].onmouseout = clearLinkNode;
+				}
+				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
+			';
+			/** This works on Mozilla but not Konqueror. **/
+			/*
+			var scriptElement = window.frames[0].document.createElement('SCRIPT');
+			scriptElement.type = 'text/javascript';
+			scriptElement.innerHTML = scriptText;
+			window.frames[0].document.documentElement.appendChild(scriptElement);
+			*/
+			/*window.frames[0].document.write('<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n');*/
+			/*window.frames[0].document.open();*/
+			/** Prepending <pre> makes the text TT! **/
+			/*oldHTML = oldHTML.replace(/&quot;/g,%27%26quot;%27);*/
+			/*
+			oldHTML = oldHTML.replace(/%3C.BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');
+			*/
+			var i = oldHTML.lastIndexOf('%3C/body%3E');
+			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
+			if (i<=0) { alert('Failed to find ze body tag!'); }
+			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
+			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
+			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
+			window.frames[0].document.write(oldHTML);
+			window.frames[0].document.close();
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+			window.frames[1].document.close();
+			document.close();
+		})();">Split Preview</A> 0.79 - Good!</LI>
+		<BLOCKQUOTE>
+			<P>Splits the page, with the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
+			<P><I>(Rejoice!  It was an effort but I nailed this critter.)</I></P>
+			<LI class='todo'>Todo: Clicking on a link causes it to open in the sideFrame, but preferably the browser would drop the frames and go directly to the page.</LI>
+		</BLOCKQUOTE>
+	</P>
+	-->
 
 </BLOCKQUOTE>
 
