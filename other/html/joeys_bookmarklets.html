@@ -285,13 +285,13 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 				}
 				node.onmouseover = doHighlight;
 				node.onmouseout  = undoHighlight;
+				/*
 				var xpath = getXPath(node);
 				if (node.style) {
-					/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
-					var simplexpath = xpath.replace(/[0-9]*/g,'');
 					node.style.backgroundColor = '#' + getColorFor(simplexpath);
 				}
 				node.title = simplexpath;
+				*/
 			}
 			function getColorFor(obj) {
 				var s = ''+obj;
@@ -311,28 +311,22 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			function doHighlight(evt) {
 				var node = evt.currentTarget; /* try evt.srcElement if this fails. */
 				var xpath = getXPath(node);
+				/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
 				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					/* I was so lost as to why the initial and final colours wouldn't match - turns out it wasn't here - I'm not sure where it was :P */
-					/*if (node.style) {*/
+					node.title = xpath; /* this can break things if done on the wrong elements! */
+					if (node.style) {
 						node.style.backgroundColor = '#' + getColorFor(simplexpath);
-					/*}*/
+					}
 				}
 				if (firstEvent) {
 					firstEvent = false;
 					/* Do whatever it is we want to do only on the topmost element. */
-					window.status = xpath;
-					/*
-					*/
 				} else {
 					if (xpath == '/html') {
 						firstEvent = true;
 					}
 				}
-					/*node.title = simplexpath;*/
-					if ((''+node.title).indexOf('|')==-1) {
-						node.title = node.title + ' | ' + simplexpath + (node.title.length)+'/'+simplexpath.length;
-					}
 			}
 			function undoHighlight(evt) {
 				var node = evt.currentTarget;
