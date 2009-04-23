@@ -43,74 +43,52 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 						}
 						lastLoaded = linkNode;
 						lastbgcol = linkNode.style.backgroundColor;
-						linkNode.style.backgroundColor=&quot;#ffff44&quot;;
-						linkNode.parentNode.style.backgroundColor=&quot;#ffffbb&quot;;
+						linkNode.style.backgroundColor=\'#ffff44\';
+						linkNode.parentNode.style.backgroundColor=\'#ffffbb\';
 						top.window.frames[1].location = linkNode.href;
-						document.getElementById(&quot;closeSidebarLink&quot;).href = linkNode.href;
+						document.getElementById(\'closeSidebarLink\').href = linkNode.href;
 					}
 				}
 				function eventHandler(evt) {
 					linkNode = evt.currentTarget;
-					setTimeout(&quot;doGet();&quot;,700);
+					setTimeout(\'doGet();\',700);
 				}
 				function clearLinkNode() {
 					linkNode = null;
 				}
 				for (var i=0;i<document.links.length;i++) {
-					/*document.links[i].target = &quot;_parent&quot;;*/
-					document.links[i].target = &quot;previewFrame&quot;;
-					document.links[i].onmouseover = eventHandler;
-					document.links[i].onmouseout = clearLinkNode;
-					document.links[i].onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
+					var linkElem = document.links[i];
+					if (linkElem.className == \'specialButton\')
+						continue;
+					/*linkElem.target = \'_parent\';*/
+					linkElem.target = \'previewFrame\';
+					linkElem.onmouseover = eventHandler;
+					linkElem.onmouseout = clearLinkNode;
+					linkElem.onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
 				}
-				/** This can cause a document overwrite on Google results pages.  Maybe an append would work better. **/
-				/*document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);*/
 			</SCRIPT>\n';
-			var header = '<P align=&quot;right&quot;>[ <A class=&quot;specialButton&quot; id=&quot;closeSidebarLink&quot; target=&quot;_top&quot;>Close This Sidebar</A> | <A class=&quot;specialButton&quot; target=&quot;_top&quot; href=&quot;'+(document.location)+'&quot;>Close Other Frame</A> ]</P>\n';
+			var header = '<P align=\'right\'>[ <A class=\'specialButton\' id=\'closeSidebarLink\' target=\'_top\'>Close This Sidebar</A> | <A class=\'specialButton\' target=\'_top\' href=\''+(document.location)+'\'>Close Other Frame</A> ]</P>\n';
 			var oldHTML = document.documentElement.innerHTML;
-			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n'+scriptText);*/
-			/** Start of document **/
-			var i = oldHTML.indexOf('%3CBODY');
-			i = oldHTML.indexOf('%3E',i)+1;
-			if (i<=0) {
-				i = oldHTML.indexOf('%3Cbody');
-				i = oldHTML.indexOf('%3E',i)+1;
-			}
-			/** End of document **/
-			/*
-			var i = oldHTML.lastIndexOf('%3C/body%3E');
-			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			*/
-			/*oldHTML = 'i = '+i+'<BR>' + oldHTML;*/
-			/*alert('i = '+i); return;*/
-			/*oldHTML = oldHTML.substring(0,i) + 'HELLO' + scriptText + oldHTML.substring(i);*/
-			/*oldHTML = header + oldHTML + scriptText;*/
 			oldHTML = header + oldHTML + scriptText;
-			if (i<=0) { alert('Failed to find ze body tag!'); return; }
+			/*if (i<=0) { alert('Failed to find ze body tag!'); return; }
 			if (oldHTML.indexOf(scriptText) < 0) { alert('Insert failed.'); return; }
-			/*document.write(oldHTML); return;*/
+			document.write(oldHTML); return;*/
 			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
 			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
 			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('</frameset>\n');
-			/*document.close();*/
-			window.frames[0].document.write(oldHTML);
-			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			document.close();
-			/** This works in Firefox but fails in Konqueror: **/
-			/*
-			var closeBar = document.createElement('P');
-			closeBar.innerHTML = header;
-			with (window.frames[0].document.body) { insertBefore(closeBar,childNodes.item(0)); }
-			*/
+			window.frames[0].document.write(oldHTML);
+			window.frames[0].document.close();
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+			window.frames[1].document.close();
 		})();">Split Preview</A> 0.88</LI>
 		<BLOCKQUOTE>
 			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
-			<LI>Now highlighting the link which is being previewed.</LI>
+			<LI title='Unfortunately the implementation is to navigate the window to the remaining page.  I doubt we can destroy the frameset without destroying the page.' class='done'>There are now two close buttons available to the user, one for each frame.</LI>
 			<P class='todo'>Todo:</P>
 			<BLOCKQUOTE>
-				<LI class='done'>There are now two close buttons available to the user, one for each frame.</LI>
 				<LI class='todo'>Open the first link automatically.</LI>
 				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
 				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
@@ -175,7 +153,6 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 		})();">Split Preview</A> 0.87</LI>
 		<BLOCKQUOTE>
 			<LI>Now highlighting the link which is being previewed.</LI>
-			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
 
