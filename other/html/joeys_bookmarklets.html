@@ -370,28 +370,25 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 	<P>
 		<LI><A href="javascript:(function(){
 			var cnt = 0;
-			function doneLoading() {
+			function checkDoneLoading() {
 				if (this.addFoldsToBlockQuotes != undefined) {
-					/*alert('script_ready = ' + document.getElementsByTagName('SCRIPT').innerHTML);*/
-					/*alert('script_ready = ' + this.addFoldsToBlockQuotes);*/
-					/*alert('Loading complete.');*/
+					window.status = 'Script loaded in '+(cnt*5)+'ms.';
 					addFoldsToBlockQuotes();
-					/*alert('script_ready = '+document.getElementsByTagName('SCRIPT').readyState);*/
 				} else {
-					window.status = 'Waiting for script to load...'+(++cnt)*5+'ms';
-					setTimeout('top.doneLoading();',5);
+					window.status = 'Waiting for script to load... ('+(++cnt)*5+'ms)';
+					setTimeout('top.checkDoneLoading();',5);
 				}
 			}
-			top.doneLoading = doneLoading;
+			top.checkDoneLoading = checkDoneLoading;
 
 			var newScript = document.createElement('script');
 			newScript.type = 'text/javascript';
 			newScript.src = 'http://hwi.ath.cx/javascript/modifyDOM.js';
-			newScript.onload = doneLoading;
-			/** I thought this might work for Konqueror but it didn't: **/
-			/*newScript.onload = 'javascript:document.doneLoading();';*/
+			/** Good method but acts twice since we are using other method for Konqueror. **/
+			/* newScript.onload = checkDoneLoading; */
 			document.getElementsByTagName('head')[0].appendChild(newScript);
-			setTimeout('top.doneLoading();',5);
+			/** Konqueror needs this: **/
+			setTimeout('top.checkDoneLoading();',5);
 		})();" keyword="keywordInjected" description="descriptionInjected" title="Version 0.9">Page Folding = ON</A></LI>
 	</P>
 	<!-- Nasty - FF was reloading all the resources except mosifyDOM.js, which is the one I was changing!  -->
