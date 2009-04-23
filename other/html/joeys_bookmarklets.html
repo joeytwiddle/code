@@ -378,7 +378,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 					addFoldsToBlockQuotes();
 					/*alert('script_ready = '+document.getElementsByTagName('SCRIPT').readyState);*/
 				} else {
-					window.status = 'Waiting for script to load...'+(cnt++)*5+'ms';
+					window.status = 'Waiting for script to load...'+(++cnt)*5+'ms';
 					setTimeout('top.doneLoading();',5);
 				}
 			}
@@ -387,29 +387,10 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			var newScript = document.createElement('script');
 			newScript.type = 'text/javascript';
 			newScript.src = 'http://hwi.ath.cx/javascript/modifyDOM.js';
-			/*newScript.onload = doneLoading;*/
+			newScript.onload = doneLoading;
+			/** I thought this might work for Konqueror but it didn't: **/
 			/*newScript.onload = 'javascript:document.doneLoading();';*/
 			document.getElementsByTagName('head')[0].appendChild(newScript);
-			/*
-			*/
-			/*
-			document.writeln('<SCRIPT type=&quot;text/javascript&quot; src=&quot;http://hwi.ath.cx/javascript/modifyDOM.js&quot;></SCRIPT>\n' + document.documentElement.innerHTML);
-			*/
-
-			/*
-			document.documentElement.innerHTML =
-				document.documentElement.innerHTML
-				+ '<SCRIPT type=&quot;text/javascript&quot; src=&quot;http://hwi.ath.cx/javascript/modifyDOM.js&quot;></SCRIPT>'
-				+ '<SCRIPT type=&quot;text/javascript&quot;> addFoldsToBlockQuotes(); </SCRIPT>';
-			*/
-
-			/*
-			document.documentElement.innerHTML =
-				document.documentElement.innerHTML.replace(/<title/i,
-				'<SCRIPT type=&quot;text/javascript&quot; src=&quot;http://hwi.ath.cx/javascript/modifyDOM.js&quot;></SCRIPT>\n'
-				+ '<SCRIPT type=&quot;text/javascript&quot;> addFoldsToBlockQuotes(); </SCRIPT>\n<title');
-			*/
-
 			setTimeout('top.doneLoading();',5);
 		})();" keyword="keywordInjected" description="descriptionInjected" title="Version 0.9">Page Folding = ON</A></LI>
 	</P>
