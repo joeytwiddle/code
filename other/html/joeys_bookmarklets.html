@@ -18,16 +18,88 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 <BLOCKQUOTE>
 
 	<P>
-		<!--
-						These lines, although commented, were breaking the minitool when pasting it into Konqueror:
-						/**Failing in every way to highlight the loaded(ing) preview:**/
-						/*
-						linkNode.text = &quot;*&quot;+linkNode.text+&quot;*&quot;;
-						linkNode.color = &quot;#eeee00&quot;;
-						linkNode.parentNode.style = &quot;bgcolor = #ffff00;&quot;;
-						linkNode.parentNode.style.bgcolor = &quot;#ffff00&quot;;
-						*/
-		-->
+		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
+			var oldHTML = document.documentElement.innerHTML;
+			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
+			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
+			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('</frameset>\n');
+			/*document.close();*/
+			var scriptText = '
+				var linkNode,lastLoaded,lastbgcol;
+				function doGet() {
+					if (linkNode && linkNode != lastLoaded) {
+						if (lastLoaded) {
+							/* Purple for visited.  Maybe we should look up the vlink
+							class.  Oh the browser should do that for the link anyway. */
+							/*lastLoaded.style.backgroundColor = &quot;#ffbbff&quot;;
+							lastLoaded.parentNode.style.backgroundColor = &quot;ff44ff&quot;;*/
+							lastLoaded.style.backgroundColor = lastbgcol;
+							lastLoaded.parentNode.style.backgroundColor = lastbgcol;
+						}
+						lastLoaded = linkNode;
+						lastbgcol = linkNode.style.backgroundColor;
+						linkNode.style.backgroundColor=&quot;#ffff44&quot;;
+						linkNode.parentNode.style.backgroundColor=&quot;#ffffbb&quot;;
+						/*var rightFrame = top.document.getElementById(&quot;previewFrame&quot;);*/
+						/*top.window.frames[1].document.documentElement.innerHTML = ... ;*/
+						/*top.window.frames[1].document.write(&quot;&lt;BODY&gt;Loading &quot;+linkNode.href+&quot;...&lt;/BODY&gt;&quot;);*/
+						/** Writing to the frame above causes the line below to fail in Konqueror. **/
+						/** One fix might be to embed some javascript inside the body we just posted, to redirect the frame/page/doc. **/
+						/*top.window.frames[1].src = linkNode.href;*/
+						/** Oh this saves Konqueror :) **/
+						top.window.frames[1].location = linkNode.href;
+					}
+				}
+				function eventHandler(evt) {
+					linkNode = (evt.srcElement ? evt.srcElement /*moz*/ : evt.currentTarget /*not moz*/ );
+					setTimeout(&quot;doGet();&quot;,700);
+				}
+				function clearLinkNode() {
+					linkNode = null;
+				}
+				for (var i=0;i<document.links.length;i++) {
+					/*document.links[i].target = &quot;_parent&quot;;*/
+					document.links[i].target = &quot;previewFrame&quot;;
+					document.links[i].onmouseover = eventHandler;
+					document.links[i].onmouseout = clearLinkNode;
+				}
+				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
+			';
+			/** We can do .BODY but I prefer to push the / through with a
+			 * backslash.  But this can still fail, e.g. on bookmarklet pages, if
+			 * an earlier /BODY is seen and replaced. */
+			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
+			/** This never fails. **/
+			var i = oldHTML.lastIndexOf('%3C/body%3E');
+			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
+			if (i<=0) { alert('Failed to find ze body tag!'); }
+			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
+			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
+			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
+			window.frames[0].document.write(oldHTML);
+			window.frames[0].document.close();
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+			window.frames[1].document.close();
+			document.close();
+		})();">Split Preview</A> 0.87</LI>
+		<BLOCKQUOTE>
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+			<LI>Now highlighting the link which is being previewed.</LI>
+			<P class='todo'>Todo:</P>
+			<BLOCKQUOTE>
+				<LI class='todo'>Open the first link automatically.</LI>
+				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
+				<LI class='todo'>There should be two close buttons available to the user, one for each frame.</LI>
+				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
+				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
+				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
+			</BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
 		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
 			var oldHTML = document.documentElement.innerHTML;
 			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
@@ -83,20 +155,10 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>.
 			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			window.frames[1].document.close();
 			document.close();
-		})();">Split Preview</A> 0.86 - added loading page (nice for feedback, annoying afterwards)</LI>
+		})();">Split Preview</A> 0.86</LI>
 		<BLOCKQUOTE>
-			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
-			<LI>I have set links to open in the right frame when clicked, rather than leaving the frameset or opening a new window, although hover is usually sufficient anyway.</LI>
-			<P class='todo'>Todo:</P>
-			<BLOCKQUOTE>
-				<LI class='todo'>Open the first link automatically.</LI>
-				<LI class='todo'>Highlight in the left pane, the currently previewed link.</LI>
-				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
-				<LI class='todo'>There should be two close buttons available to the user, one for each frame.</LI>
-				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
-				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
-				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
-			</BLOCKQUOTE>
+			<LI>Added loading page (nice for feedback, annoying afterwards).</LI>
+			<LI>I set links to open in the right frame when clicked, rather than leaving the frameset or opening a new window, although hover is usually sufficient anyway.</LI>
 		</BLOCKQUOTE>
 	</P>
 
