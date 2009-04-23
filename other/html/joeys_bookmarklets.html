@@ -261,8 +261,10 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 
 </BLOCKQUOTE>
 
-<H3>Development Bookmarklets (Do not work well)</H3>
+<H3>Development Bookmarklets</H3>
 <BLOCKQUOTE>
+
+	These are Bookmarklets I am still working on.  They may or may not work.
 
 	<!-- <P>No bookmarklet in development on this page right now.  You probably wouldn't want to use it if it was. -->
 	<!-- I might even consider separating my development and release pages. --></P>
@@ -278,16 +280,18 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 		<LI><A href="javascript:(function(){
 			var firstEvent = true;
 			function processNode(node) {
-				node.onmouseover = doHighlight;
-				node.onmouseout  = undoHighlight;
 				for (var i=0;i<node.childNodes.length;i++) {
 					processNode(node.childNodes.item(i));
 				}
+				node.onmouseover = doHighlight;
+				node.onmouseout  = undoHighlight;
 				var xpath = getXPath(node);
-				var depth = xpath.replace(/[^/]/g,'').length - 1;
-				var simplexpath = xpath.replace(/\[[^]]*\]/g,'');
-				if (node.style)
-					node.style.backgroundColor = '#' + getColorFor(depth+/*node.tagName*/simplexpath);
+				if (node.style) {
+					/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
+					var simplexpath = xpath.replace(/[0-9]*/g,'');
+					node.style.backgroundColor = '#' + getColorFor(simplexpath);
+				}
+				node.title = simplexpath;
 			}
 			function getColorFor(obj) {
 				var s = ''+obj;
@@ -307,30 +311,28 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			function doHighlight(evt) {
 				var node = evt.currentTarget; /* try evt.srcElement if this fails. */
 				var xpath = getXPath(node);
-				var depth = xpath.replace(/[^/]/g,'').length - 1;
-				var simplexpath = xpath.replace(/\[[^]]*\]/g,'');
+				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					if (depth>9) depth=9;
-					depth = 9-depth;
-					node.style.backgroundColor = '#' + getColorFor(depth+/*node.tagName*/simplexpath);
-					/*
-					node.style.backgroundColor = '#ffff'+depth+''+depth;
-					*/
-					/*
-					if (Math.floor(Math.random()*6) == 5) {
-						window.status = 'set '+xpath+' color '+getColorFor(node.tagName+depth);
-					}
-					*/
+					/* I was so lost as to why the initial and final colours wouldn't match - turns out it was here! Errors thrown via events dont seem to get reported. */
+					/*if (node.style) {*/
+						node.style.backgroundColor = '#' + getColorFor(simplexpath);
+					/*}*/
 				}
 				if (firstEvent) {
 					firstEvent = false;
 					/* Do whatever it is we want to do only on the topmost element. */
 					window.status = xpath;
+					/*
+					*/
 				} else {
 					if (xpath == '/html') {
 						firstEvent = true;
 					}
 				}
+					/*node.title = simplexpath;*/
+					if ((''+node.title).indexOf('|')==-1) {
+						node.title = node.title + ' | ' + simplexpath + (node.title.length)+'/'+simplexpath.length;
+					}
 			}
 			function undoHighlight(evt) {
 				var node = evt.currentTarget;
@@ -355,10 +357,12 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 				}
 				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
 			}
-			processNode(document.documentElement);
+			processNode(document.body);
 		})();">Highlight Structure</A></LI>
 		<BLOCKQUOTE>
-			<P>The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate. </P>
+			<P>Colours the background of every element in the document according to its path.</P>
+			<P>Shows the XPath of each element as title popup.</P>
+			<LI>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 		</BLOCKQUOTE>
 	</P>
 
