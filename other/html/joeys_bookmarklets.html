@@ -313,7 +313,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 				var xpath = getXPath(node);
 				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					/* I was so lost as to why the initial and final colours wouldn't match - turns out it was here! Errors thrown via events dont seem to get reported. */
+					/* I was so lost as to why the initial and final colours wouldn't match - turns out it wasn't here - I'm not sure where it was :P */
 					/*if (node.style) {*/
 						node.style.backgroundColor = '#' + getColorFor(simplexpath);
 					/*}*/
