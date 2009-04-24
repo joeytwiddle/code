@@ -35,14 +35,15 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			function checkDoneLoading() {
 				if (this.addFoldsToBlockQuotes != undefined) {
 					window.status = 'Script loaded in '+(cnt*5)+'ms.';
-					addFoldsToBlockQuotes();
+					/*addFoldsToBlockQuotes();*/
+					var tagTypes = new Array( "ul", "blockquote", "table" );
+					addFoldsToPage(tagTypes,false);
 				} else {
 					window.status = 'Waiting for script to load... ('+(++cnt)*5+'ms)';
 					setTimeout('top.checkDoneLoading();',5);
 				}
 			}
 			top.checkDoneLoading = checkDoneLoading;
-
 			var newScript = document.createElement('script');
 			newScript.type = 'text/javascript';
 			newScript.src = 'http://hwi.ath.cx/javascript/modifyDOM.js';
@@ -57,7 +58,8 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 	<BLOCKQUOTE>
 		<P>Makes parts of the page collapsable and expandable, for easier navigation through large (tree-structured) pages.</P>
 		<LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This is my first Bookmarklet which loads an external javascript file.</LI>
-		<LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI>
+		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
+		<LI class='todo'>Todo: We had to introduce a different loading technique for Konqueror.  But the FF way might be faster if we can detect that it will work.</LI>
 	</BLOCKQUOTE>
 
 	<P>
@@ -74,8 +76,13 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 						}
 						lastLoaded = linkNode;
 						lastbgcol = linkNode.style.backgroundColor;
-						linkNode.style.backgroundColor=\'#ffff44\';
-						linkNode.parentNode.style.backgroundColor=\'#ffffbb\';
+						linkNode.style.backgroundColor=\'#bbffbb\';
+						/* linkNode.parentNode.style.backgroundColor=\'#88ee88\'; */
+						var colUp = linkNode.parentNode;
+						while (colUp.getElementsByTagName(\'A\').length == 1) {
+							colUp.style.backgroundColor=\'#88ee88\';
+							colUp = colUp.parentNode;
+						}
 						top.window.frames[1].location = linkNode.href;
 						document.getElementById(\'closeSidebarLink\').href = linkNode.href;
 					}
@@ -101,7 +108,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			var header = '<P align=\'right\'>[ <A class=\'specialButton\' id=\'closeSidebarLink\' target=\'_top\'>Close This Sidebar</A> | <A class=\'specialButton\' target=\'_top\' href=\''+(document.location)+'\'>Close Other Frame</A> ]</P>\n';
 			var oldHTML = document.documentElement.innerHTML;
 			oldHTML = header + oldHTML + scriptText;
-			/*if (i<=0) { alert('Failed to find ze body tag!'); return; }
+			/*if (i<=0) { alert('Failed to find the body tag!'); return; }
 			if (oldHTML.indexOf(scriptText) < 0) { alert('Insert failed.'); return; }
 			document.write(oldHTML); return;*/
 			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
@@ -319,11 +326,14 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 						node.style.backgroundColor = '#' + getColorFor(simplexpath);
 					}
 				}
+				/** This might display the xpath of elements which don't display their title but can be rolled over. **/
 				if (firstEvent) {
 					firstEvent = false;
 					/* Do whatever it is we want to do only on the topmost element. */
+					window.status = xpath;
 				} else {
-					if (xpath == '/html') {
+					/*if (xpath == '/html') {*/
+					if (node.tagName=='HTML' || node.tagName=='BODY') {
 						firstEvent = true;
 					}
 				}
@@ -355,7 +365,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 		})();">Highlight Structure</A></LI>
 		<BLOCKQUOTE>
 			<P>Colours the background of every element in the document according to its path.</P>
-			<P>Shows the XPath of each element as title popup.</P>
+			<P>Displays the XPath of the focused element as a popup (sets title attribute).</P>
 			<LI>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 		</BLOCKQUOTE>
 	</P>
@@ -456,7 +466,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			window.frames[0].document.write(oldHTML);
@@ -517,7 +527,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			/** This never fails. **/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
@@ -583,7 +593,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			/** This never fails. **/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
@@ -659,7 +669,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			*/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
@@ -717,7 +727,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			window.frames[0].document.write(oldHTML);
@@ -778,7 +788,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			/** This never fails. **/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
@@ -844,7 +854,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			/** This never fails. **/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
@@ -920,7 +930,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			*/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
@@ -935,7 +945,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 		</BLOCKQUOTE>
 	</P>
 
-	<P>The only good thing about these IFrame implementations, is that we don&apos;t have to rebuild the DOM, we can successfully move the existing page inside the table.</P>
+	<P>The only good thing about the following IFrame implementations, is that we don&apos;t have to rebuild the DOM, we can successfully move the existing page inside the table.</P>
 
 	<P>
 		<A href="javascript:(function(){
@@ -1382,7 +1392,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			*/
 			var i = oldHTML.lastIndexOf('%3C/body%3E');
 			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find ze body tag!'); }
+			if (i<=0) { alert('Failed to find the body tag!'); }
 			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
 			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
 			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
@@ -1405,10 +1415,10 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 <STYLE type='text/css'>
 	.todo {
 		/*font-size: -1;*/
-		color: #884400;
+		color: #886644;
 	}
 	.done {
-		color: #226622;
+		color: #005500;
 	}
 </STYLE>
 
