@@ -16,6 +16,9 @@
 	<xsl:import href="../xhtmlCommon.xsl" />
 	-->
 
+	<!-- TODO: The Javascript should be in a separate file and included. -->
+
+	<!-- Load relevant CGI variables. -->
 	<xsl:variable name="mode">
 		<xsl:choose>
 			<xsl:when test="element-available('yaslt:value-of')">
@@ -92,10 +95,12 @@
 				</TD>
 
 				<TD valign='top' bgcolor='#ddddff'>
-					<div id='scriptLabel1'>Scriptname</div>
-					<TEXTAREA id='scriptTextArea1' cols='40' rows='15'>javascript: </TEXTAREA>
+					<INPUT id='scriptLabel1' type="text" name="text" value="[Script SourceCode View]" size='50'/>
 					<BR/>
-
+					<TEXTAREA id='scriptTextArea1' cols='50' rows='20'></TEXTAREA>
+					<P>
+						<A target="_blank" href="http://subsimple.com/bookmarklets/jsbuilder.htm">Bookmarklet Builder</A>
+					</P>
 				</TD>
 
 				</TR></TABLE>
@@ -127,7 +132,8 @@
 
 				<H3>TODO</H3>
 				<BLOCKQUOTE>
-					<LI>Add Javascript which allows viewers to View or Edit the Javascript of each Bookmarklet.</LI>
+					<LI>We have not yet brought the comments out of the minitools.  We may be able to present them so that Firefox will import them as descriptions.</LI>
+					<LI>Add Javascript which allows viewers to View (done) or Edit the Javascript of each Bookmarklet.</LI>
 					<LI>Make the Importing and See Also sections appear in the top-right of the page!</LI>
 				</BLOCKQUOTE>
 
@@ -146,26 +152,20 @@
 						function showBookmarklet(evt) {
 							var linkNode = evt.srcElement; /*moz?*/
 							if (!linkNode) { linkNode = evt.currentTarget; } /*not moz?*/
-							alert('linkNode='+linkNode);
-							scriptLabel.innerHTML = escape(""+linkNode);
-							scriptTextArea.innerHTML = escape(""+linkNode);
+							// alert('linkNode='+linkNode);
+							// scriptTextArea.innerHTML = unescape(""+linkNode.href);
+							scriptTextArea.value = unescape(""+linkNode.href).replace('\t','  ');
+							scriptLabel.value = ""+linkNode.text;
+							// scriptLabel.innerHTML = escape(""+linkNode);
+							// document.getElementById('textBox').value = escape(""+linkNode);
 						}
 
-						for (i=0;i&lt;document.links;i++) {
+						for (i=0;i&lt;document.links.length;i++) {
 							document.links[i].onmouseover = showBookmarklet;
 						}
-						document.write("Added "+document.links.length+" events.<BR/>");
+						// document.write("Added "+document.links.length+" events.<BR/>");
 
 					</SCRIPT>
-
-					<!--
-					<A href="javascript:
-						for (i=0;i&lt;document.links;i++) {
-							document.links[i].onmouseover = showBookmarklet;
-						}
-						alert(&quot;Added &quot;+document.links.length+&quot; events.&lt;BR/&gt;&quot;);
-					">Test</A>
-					-->
 
 			</BODY>
 		</HTML>
