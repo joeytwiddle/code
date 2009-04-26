@@ -63,6 +63,14 @@ function findPreviousTextNode(elem) {
 				if (elem.firstChild) {
 					elem = elem.firstChild;
 				}
+				/* Avoid becoming trapped inside a link.  Hopefully the element above contains only the link! */
+				if (elem.parentNode.tagName=='A')
+					elem = elem.parentNode;
+				/* I thought this might put us left of the bullets, but it put our handle above :f
+				while (elem.parentNode.childNodes.length == 1) {
+					elem = elem.parentNode;
+				}
+				*/
 				return elem;
 			}
 		}
@@ -145,7 +153,7 @@ function addFoldsToBlockQuotes() { // TODO: also add the automatic clear on focu
 	// var nodes = window.document.body.getElementsByTagName("BLOCKQUOTE");
 	// var tagTypes = [ "ul", "blockquote" ];
 	var tagTypes = new Array( "ul", "blockquote" );
-	addFoldsToPage(tagTypes,true);
+	addFoldsToPage(tagTypes,false);
 }
 
 function addFoldsToPage(tagTypes,startClosed) {
@@ -179,6 +187,8 @@ function addFoldToBlockQuote(elemToFold) {
 	addFoldToBlockQuoteState(elemToFold,true);
 }
 
+// We should not assume we will always have a handle.
+// Some pages there will be something there but it won't be correct!
 function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	var drawBranches = false;
 	// elemToFold.parentNode.insertBefore('<FONT size="-2" color="white"><INPUT TYPE="button" VALUE="X" ONCLICK="javascript:clearAndFocus(' + elemToFold + ');"></FONT>',elemToFold);
@@ -187,11 +197,20 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	elemToFold.id = foldId + "Block";
 	// }
 
+	// Occasionally we are asked to fold an empty element.  Rather than annoy
+	// the user with a fold with nothing inside, we refuse it.
+	if (elemToFold.innerHTML.replace(/[ 	\n\r]*/g,'') == '')
+		return;
+	// CONSIDER: We could also drop elements whose contents are below a certain
+	// size.  mm we might not know the size of embedded things?
+
 	// Create the image element which displays the handle/toggle state:
 	var imgElem = document.createElement("IMG");
 	imgElem.setAttribute("src",rollup_image);
 	imgElem.id = foldId + "Image";
 	// alert("imgElem = " + imgElem);
+	imgElem.style.paddingLeft=2;
+	imgElem.style.paddingRight=8;
 
 	//// Create a clickable span object to wrap the image:
 	var handleElem = document.createElement("SPAN");
@@ -210,16 +229,17 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 	// handleElem.setAttribute("onclick",'javascript:toggleFold(document.getElementById(\"' + foldId+"Handle" + '\"));');
 
 	//// These standards worked fine for Mozilla and Konqueror, but not for IE:
-	// handleElem.setAttribute("onclick",'javascript:toggleFoldNamed(\"' + foldId + '\");');
-	// handleElem.setAttribute("onmouseover",'javascript:rollOntoHandle(\"'+foldId+'\");');
-	// handleElem.setAttribute("onmouseout",'javascript:rollOffHandle(\"'+foldId+'\");');
+	handleElem.setAttribute("onclick",'javascript:toggleFoldNamed(\"' + foldId + '\");');
+	handleElem.setAttribute("onmouseover",'javascript:rollOntoHandle(\"'+foldId+'\");');
+	handleElem.setAttribute("onmouseout",'javascript:rollOffHandle(\"'+foldId+'\");');
 
-	//// But IE can only attach a function (not a function call, with params):
+	//// It seems IE can only attach a function (not a function call, with params):
 	handleElem.onclick=handleToggleFoldEvent;
 	handleElem.onmouseover=handleRollOntoEvent;
 	handleElem.onmouseout=handleRollOffEvent;
 
-	handleElem.style.cursor = "n-resize";
+	// handleElem.style.cursor = "n-resize";
+	handleElem.style.cursor = "crosshair";
 
 	//// Wait; we are going to move the node, to put the handle in a suitable place.
 	//// This is a hack heuristic which served my purposes with blockQuotes:
@@ -245,8 +265,16 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 		labelElem.parentNode.insertBefore(handleElem,labelElem);
 		// alert("handleElem = " + handleElem);
 		// handleElem.appendChild(document.createTextNode("Handle" + foldId));
-		handleElem.appendChild(imgElem);
 		// TODO: doesn't work for Opera:
+		handleElem.appendChild(imgElem);
+		//// This moves the label inside our fold handle.
+		//// Only if it's not a link already - that would be confusing!
+		// I don't know why but getElementsByTagName failed however I tried it.
+		// if (labelElem.getElementsByTagName('A').length == 0)
+		if (labelElem.tagName != 'A')
+			handleElem.appendChild(labelElem);
+	} else {
+		elemToFold.parentNode.insertBefore(handleElem,elemToFold);
 	}
 	if (drawBranches) {
 		// Move the hidable block into a table so we can give it a "branch" on the left
@@ -301,6 +329,7 @@ function toggleFold(node) {
 */
 
 /* These three wrappers were added for IE: */
+/* Surely not!  These are the only way it works, and it works for FF. */
 function handleToggleFoldEvent(evt) {
 	toggleFoldNamed(chopOffEndIfMatched(this.id,"Handle"));
 }
@@ -315,6 +344,7 @@ function handleRollOffEvent(evt) {
 // }
 
 function toggleFoldNamed(name) {
+	lastFocus = undefined;
 	// alert("Toggling fold named: \""+name+"\"");
 	var block = document.getElementById(name+"Block");
 	// alert("found block for name=\""+name+"\": "+block);
@@ -353,6 +383,8 @@ function mouseOutHandle(node) {
 	// node.style.text-decoration="none";
 }
 
+var lastFocus;
+
 function rollOntoHandle(foldId) {
 	// var img = document.getElementById(foldId+"Image");
 	// img.src = rollup_image_mouseover;
@@ -370,7 +402,22 @@ function rollOntoHandle(foldId) {
 			}
 		}
 	}
-	// mouseOverHandle(this); 
+	// setTimeout('handleToggleFoldEvent();',2000);
+	lastFocus = foldId;
+	// setTimeout('toggleFoldNamed(chopOffEndIfMatched("'+foldId+'","Handle"));',1000);
+	setTimeout('processMouseHover();',2000);
+	// mouseOverHandle(this);
+}
+
+function processMouseHover() {
+	/** This worked but I'm not sure it's desirable!  Disabled. **/
+	/** It was really only a work-around when our handle images were getting lost inside <A> elements.**/
+	/*
+	if (lastFocus) {
+		toggleFoldNamed(chopOffEndIfMatched(lastFocus,"Handle"));
+		lastFocus = undefined;
+	}
+	*/
 }
 
 function rollOffHandle(foldId) {
@@ -387,6 +434,8 @@ function rollOffHandle(foldId) {
 		}
 	}
 	// mouseOutHandle(this); 
+	// setTimeout(''); // Doesn't cancel the existing timer =/
+	lastFocus = undefined;
 }
 
 // toggleFoldNamed('quote');
@@ -408,3 +457,6 @@ document.onclick = clickHandler;
 */
 
 // ======== END functions specific to the page-folding utility.
+
+/*alert("<P>modifyDOM.js loaded.</P>");*/
+
