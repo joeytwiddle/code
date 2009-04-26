@@ -8,25 +8,33 @@
 See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey's Minitools/Bookmarklets</A>
 </P>
 
-Click on a bookmarklet link to try it out.  (Reload the page or navigate back if you don't like the results!)
+Bookmarklets are a bit like Bookmarks, but instead of taking you to a web page, they perform useful actions on the page you are viewing.
+<BR/>
+Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)
 <BR/>
 To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.
 <BR/>
 Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.
 
+
+
 <!--
 
-<H3>Testing Bookmarks</H3>
+<H3>Testing Bookmarklets</H3>
 <BLOCKQUOTE>
-	<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
 
 	<P>The bookmarklets in this section are IN DEVELOPMENT!  You probably don't want to try using them just yet.  Go for the Ready to use Bookmarklets instead.</P>
 
 </BLOCKQUOTE>
+<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
 
 -->
 
-<H3>Ready to use Bookmarklets</H3>
+<!-- I didn't feel like making a css class for that one-off. ;p -->
+
+
+
+<H3>User Bookmarklets</H3>
 <BLOCKQUOTE>
 
 	<P>
@@ -36,7 +44,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 				if (this.addFoldsToBlockQuotes != undefined) {
 					window.status = 'Script loaded in '+(cnt*5)+'ms.';
 					/*addFoldsToBlockQuotes();*/
-					var tagTypes = new Array( "ul", "blockquote", "table" );
+					var tagTypes = new Array( 'ul', 'blockquote', 'table' );
 					addFoldsToPage(tagTypes,false);
 				} else {
 					window.status = 'Waiting for script to load... ('+(++cnt)*5+'ms)';
@@ -57,9 +65,11 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 	<!-- Nasty - At one point, FF was reloading all the resources except mosifyDOM.js, which is the one I was changing!  I cleared my cache and it stopped doing it after that. -->
 	<BLOCKQUOTE>
 		<P>Makes parts of the page collapsable and expandable, for easier navigation through large (tree-structured) pages.</P>
-		<LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This is my first Bookmarklet which loads an external javascript file.</LI>
+		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This is my first Bookmarklet which loads an external javascript file.</LI> -->
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
-		<LI class='todo'>Todo: We had to introduce a different loading technique for Konqueror.  But the FF way might be faster if we can detect that it will work.</LI>
+		 <LI class='todo'>Todo: We had to introduce a different loading technique for Konqueror.  But the FF way might be faster if we can detect that it will work.</LI>
+		 <LI class='todo'>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it's easy to add extra tags.)</LI>
+		 <LI class='todo'>This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the page does have a header, and we don't use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI>
 	</BLOCKQUOTE>
 
 	<P>
@@ -140,6 +150,19 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
 
 	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/trim_elements.js';
+			/* newScript.onload = (function(){ init(); }); */
+			document.body.appendChild(newScript);
+		})();" title="Version 0.9">Trim to Search String</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Hides all parts of the page except those matching your search expression.</P>
+	</BLOCKQUOTE>
+
+	<P>
 		<LI><A target='_self' href='javascript:
 			var info = document.links.length+" links on <A href=\""+document.location+"\">"+document.title+"</A>";
 			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
@@ -195,7 +218,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			})();
 		'>Target Links and Forms at New Window</A></LI>
 		<BLOCKQUOTE>
-			Use this if you want the browser to open a new window when you click on a link or button.
+			Use this if you want the browser to open a new window when you click on a link or button.  (E.g. you want to use the search form, but you don't want to leave the current page.)
 		</BLOCKQUOTE>
 	</P>
 
@@ -212,23 +235,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			})();
 		'>Target Links and Forms at This Window</A></LI>
 		<BLOCKQUOTE>
-			Use this if you do not want the browser to open a new window when you click on a link or button.
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<LI><A href="
-			javascript:(function(){
-				theForm = document.forms[0];
-				theStr = '';
-				for (i=0; i < theForm.elements.length; i++) {
-					ele = theForm.elements[i];
-					theStr += ele.name + ' : ' + ele.value + '\n';
-				}
-				alert (theStr);
-			})();
-		">Copy form</A></LI>
-		<BLOCKQUOTE>
+			Use this if you want the browser to stay in the current window when you click on a link or button.
 		</BLOCKQUOTE>
 	</P>
 
@@ -248,7 +255,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 					attachClickListener(kids[i],clickProcessor);
 				}
 			}
-			function processClick(event) {
+			function processClick(evt) {
 				var node = evt.currentTarget;
 				window.status = 'Removed '+node;
 				attachClickListener(document,null);
@@ -268,20 +275,8 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 
 </BLOCKQUOTE>
 
-<H3>Development Bookmarklets</H3>
+<H3>Web-Developer Bookmarklets</H3>
 <BLOCKQUOTE>
-
-	These are Bookmarklets I am still working on.  They may or may not work.
-
-	<!-- <P>No bookmarklet in development on this page right now.  You probably wouldn't want to use it if it was. -->
-	<!-- I might even consider separating my development and release pages. --></P>
-
-	<P>
-		<!-- <INPUT type="button" value="Go" onclick="document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" ></INPUT> -->
-		<!-- <A href="javascript: alert(document.getElementsByTagName('IFRAME')); document.getElementsByTagName('IFRAME')[0].src='http://www.google.com/';" >Test</A> -->
-		<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
-		<!-- <A onmouseover="javascript: document.getElementById('floatingFrame1').src=href;" href="http://hwi.ath.cx/">TEST</A> -->
-	</P>
 
 	<P>
 		<LI><A href="javascript:(function(){
@@ -340,7 +335,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			}
 			function undoHighlight(evt) {
 				var node = evt.currentTarget;
-				node.style.backgroundColor = 'white'; /*document.bgcolor;*/
+				node.style.backgroundColor = 'white'; /*document.bgcolor;*/ /*parents bgcol?  original bgcol?!*/
 			}
 			function getXPath(node) {
 				var parent = node.parentNode;
@@ -359,16 +354,235 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 						thisCount = totalCount;
 					}
 				}
-				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
+				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
 			}
 			processNode(document.body);
-		})();">Highlight Structure</A></LI>
+		})();">Highlight Structure</A> - Live Updates</LI>
 		<BLOCKQUOTE>
 			<P>Colours the background of every element in the document according to its path.</P>
 			<P>Displays the XPath of the focused element as a popup (sets title attribute).</P>
-			<LI>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
+			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
+			<LI class='todo'>Can be sluggish to run on the heavier DOMs.</LI>
 		</BLOCKQUOTE>
 	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			var firstEvent = true;
+			function processNode(node) {
+				for (var i=0;i<node.childNodes.length;i++) {
+					processNode(node.childNodes.item(i));
+				}
+				/*node.onmouseover = doHighlight;
+				node.onmouseout  = undoHighlight;*/
+				var xpath = getXPath(node);
+				var simplexpath = xpath.replace(/[0-9]*/g,'');
+				if (node.style) {
+					node.style.backgroundColor = '#' + getColorFor(simplexpath);
+				}
+				node.title = simplexpath;
+			}
+			function getColorFor(obj) {
+				var s = ''+obj;
+				var hash = 0;
+				for (i=0;i<s.length;i++) {
+					hash += ((i+39357) %25 52597)*s.charCodeAt(i);
+					hash = hash % 16777216;
+				}
+				var hex = hash.toString(16);
+				/*if (Math.floor(Math.random()*6) == 5) {
+					window.status = 'Did parseInt for \''+obj+'\' hash='+hash+' and got hex='+hex;
+				}*/
+				if (hex.length>6) hex=hex.substring(0,6);
+				while (hex.length<6) { hex='0'+hex; }
+				return hex;
+			}
+			function doHighlight(evt) {
+				var node = evt.currentTarget; /* try evt.srcElement if this fails. */
+				var xpath = getXPath(node);
+				/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
+				var simplexpath = xpath.replace(/[0-9]*/g,'');
+				if (node.tagName!='HTML' && node.tagName!='BODY') {
+					node.title = xpath; /* this can break things if done on the wrong elements! */
+					if (node.style) {
+						node.style.backgroundColor = '#' + getColorFor(simplexpath);
+					}
+				}
+				/** This might display the xpath of elements which don't display their title but can be rolled over. **/
+				if (firstEvent) {
+					firstEvent = false;
+					/* Do whatever it is we want to do only on the topmost element. */
+					window.status = xpath;
+				} else {
+					/*if (xpath == '/html') {*/
+					if (node.tagName=='HTML' || node.tagName=='BODY') {
+						firstEvent = true;
+					}
+				}
+			}
+			function undoHighlight(evt) {
+				var node = evt.currentTarget;
+				node.style.backgroundColor = 'white'; /*document.bgcolor;*/ /*parents bgcol?  original bgcol?!*/
+			}
+			function getXPath(node) {
+				var parent = node.parentNode;
+				if (!parent) {
+					return '';
+				}
+				var siblings = parent.childNodes;
+				var totalCount = 0;
+				var thisCount = -1;
+				for (var i=0;i<siblings.length;i++) {
+					var sibling = siblings[i];
+					if (sibling.nodeType == node.nodeType) {
+						totalCount++;
+					}
+					if (sibling == node) {
+						thisCount = totalCount;
+					}
+				}
+				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
+			}
+			processNode(document.body);
+		})();">Highlight Structure</A> - All In One Go</LI>
+		<BLOCKQUOTE>
+			<P>A modified version which does all the colouring in one go.</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="
+			javascript:(function(){
+				theForm = document.forms[0];
+				theStr = '';
+				for (i=0; i < theForm.elements.length; i++) {
+					ele = theForm.elements[i];
+					theStr += ele.name + ' : ' + ele.value + '\n';
+				}
+				alert (theStr);
+			})();
+		">Show Form Data</A></LI>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+
+</BLOCKQUOTE>
+
+<H3 id='dev'>Bookmarklets under Development</H3>
+<BLOCKQUOTE>
+
+	<!-- <P>No bookmarklet in development on this page right now.  You probably wouldn't want to use it if it was. -->
+	<!-- I might even consider separating my development and release pages. --></P>
+
+	These are Bookmarklets I am still working on.  They may or may not work.
+
+	<P>
+		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
+			var scriptText = '<SCRIPT type=&quot;text/javascript&quot;>
+				var linkNode,lastLoaded,lastbgcol;
+				function doGet() {
+					if (linkNode && linkNode != lastLoaded) {
+						if (linkNode.className == \'specialButton\')
+							return;
+						if (lastLoaded) {
+							lastLoaded.style.backgroundColor = lastbgcol;
+							lastLoaded.parentNode.style.backgroundColor = lastbgcol;
+						}
+						lastLoaded = linkNode;
+						lastbgcol = linkNode.style.backgroundColor;
+						linkNode.style.backgroundColor=\'#bbffbb\';
+						/* linkNode.parentNode.style.backgroundColor=\'#88ee88\'; */
+						var colUp = linkNode.parentNode;
+						while (colUp.getElementsByTagName(\'A\').length == 1) {
+							colUp.style.backgroundColor=\'#88ee88\';
+							colUp = colUp.parentNode;
+						}
+						top.window.frames[1].location = linkNode.href;
+						document.getElementById(\'closeSidebarLink\').href = linkNode.href;
+					}
+				}
+				function eventHandler(evt) {
+					linkNode = evt.currentTarget;
+					setTimeout(\'doGet();\',700);
+				}
+				function clearLinkNode() {
+					linkNode = null;
+				}
+				for (var i=0;i<document.links.length;i++) {
+					var linkElem = document.links[i];
+					if (linkElem.className == \'specialButton\')
+						continue;
+					/*linkElem.target = \'_parent\';*/
+					linkElem.target = \'previewFrame\';
+					linkElem.onmouseover = eventHandler;
+					linkElem.onmouseout = clearLinkNode;
+					linkElem.onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
+				}
+				var lastWidth = 0;
+				function toggleSideBar() {
+					/** TODO: we should make everything in the sidebar, except for the toggle bar, invisible! **/
+					/** TODO: On Konqueror, repeated toggling makes the frame smaller.  On Mozilla it works perfectly already. **/
+					/** TODO: Need better style to fix the width of the toggleBar. **/
+					if (lastWidth == 0) {
+						top.window.frames[0].document.getElementById(\'rightRow\').style.display = \'none\';
+						/*top.window.frames[0].document.getElementById(\'header\').style.display = \'none\';*/
+						lastWidth = top.window.frames[0].window.innerWidth;
+						/*alert(\'toggling!\');*/
+						top.document.body.cols = \'32,*\';
+						/*alert(\'cols = \'+top.document.body.cols);*/
+						window.frames[0].document.getElementById(\'leftRow\').style.width = \'2px\';
+					} else {
+						top.document.body.cols = lastWidth + \',*\';
+						lastWidth = 0;
+						top.window.frames[0].document.getElementById(\'rightRow\').style.display = \'\';
+						/*top.window.frames[0].document.getElementById(\'header\').style.display = \'\';*/
+						window.frames[0].document.getElementById(\'leftRow\').style.width = \'18px\';
+					}
+				}
+			</SCRIPT>\n';
+			var toggler = '<A class=\'specialButton\' href=\'javascript:toggleSideBar();\'>Collapse</A> | ';
+			var header = '<P id=\'header\' align=\'right\'>[ ' + toggler + ' <A class=\'specialButton\' target=\'_top\' href=\''+(document.location)+'\'>Restore</A> | <A class=\'specialButton\' id=\'closeSidebarLink\' target=\'_top\'>Close</A> ]</P>\n';
+			var oldHTML = document.documentElement.innerHTML;
+			oldHTML =
+				'<TABLE cellpadding=\'4\'><TR><TD id=\'leftRow\' onclick=\'javascript:toggleSideBar();\' bgcolor=\'blue\' width=\'4px\'></TD><TD id=\'rightRow\'>\n'
+				+ header
+				+ oldHTML
+				+ '</TD></TR></TABLE>\n'
+				+ scriptText;
+			/*if (i<=0) { alert('Failed to find the body tag!'); return; }
+			if (oldHTML.indexOf(scriptText) < 0) { alert('Insert failed.'); return; }
+			document.write(oldHTML); return;*/
+			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
+			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
+			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
+			document.write('</frameset>\n');
+			document.close();
+			window.frames[0].document.write(oldHTML);
+			window.frames[0].document.close();
+			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
+			window.frames[1].document.close();
+			window.frames[0].document.getElementById('header').style.position = 'absolute';
+			window.frames[0].document.getElementById('header').style.top = '5px';
+			window.frames[0].document.getElementById('header').style.right = '8px';
+			/* window.frames[0].document.getElementById('header').style.setAttribute('z-index',100); */
+			window.frames[0].document.getElementById('leftRow').style.width = '2px';
+			/*window.frames[0].document.getElementById('leftRow').style.height = '100%2525';*/
+			window.frames[0].document.getElementById('leftRow').style.height = top.window.innerHeight - 24;
+		})();">Split Preview</A> version 0.89 DEV - Toggle</LI>
+		<BLOCKQUOTE>
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+			<LI class='done'>This version provides a 'Togglebar' to flatten/unflatten the sidebar.</LI>
+			<LI class='todo'>It's working quite OK in Firefox, but a bit messily in Konqueror.</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="" title="Version 0.9">Auto Highlight</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Checks document.referrer and if it contains a search expression, assume this is a result page, and highlight the search terms.</P>
+	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
 
@@ -684,268 +898,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 		</BLOCKQUOTE>
 	</P>
 
-	<P>
-		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
-			var oldHTML = document.documentElement.innerHTML;
-			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
-			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('</frameset>\n');
-			/*document.close();*/
-			var scriptText = '
-				var linkNode,lastLoaded,lastbgcol;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						if (lastLoaded) {
-							lastLoaded.style.backgroundColor = lastbgcol;
-							lastLoaded.parentNode.style.backgroundColor = lastbgcol;
-						}
-						lastLoaded = linkNode;
-						lastbgcol = linkNode.style.backgroundColor;
-						linkNode.style.backgroundColor=&quot;#ffff44&quot;;
-						linkNode.parentNode.style.backgroundColor=&quot;#ffffbb&quot;;
-						top.window.frames[1].location = linkNode.href;
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.currentTarget;
-					setTimeout(&quot;doGet();&quot;,700);
-				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					/*document.links[i].target = &quot;_parent&quot;;*/
-					document.links[i].target = &quot;previewFrame&quot;;
-					document.links[i].onmouseover = eventHandler;
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				/** This can cause a document overwrite when on Google results pages. **/
-				/*document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);*/
-			';
-			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
-			var i = oldHTML.lastIndexOf('%3C/body%3E');
-			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find the body tag!'); }
-			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
-			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
-			window.frames[0].document.write(oldHTML);
-			window.frames[0].document.close();
-			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
-			window.frames[1].document.close();
-			document.close();
-		})();">Split Preview</A> 0.87</LI>
-		<BLOCKQUOTE>
-			<LI class='done'>Now highlighting the link which is being previewed.</LI>
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
-			var oldHTML = document.documentElement.innerHTML;
-			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
-			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('</frameset>\n');
-			/*document.close();*/
-			var scriptText = '
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						/*var rightFrame = top.document.getElementById(&quot;previewFrame&quot;);*/
-						/*top.window.frames[1].document.documentElement.innerHTML = ... ;*/
-						top.window.frames[1].document.write(&quot;&lt;BODY&gt;Loading &quot;+linkNode.href+&quot;...&lt;/BODY&gt;&quot;);
-						/** Writing to the frame above causes the line below to fail in Konqueror. **/
-						/** One fix might be to embed some javascript inside the body we just posted, to redirect the frame/page/doc. **/
-						/*top.window.frames[1].src = linkNode.href;*/
-						/** Oh this saves Konqueror :) **/
-						top.window.frames[1].location = linkNode.href;
-						lastLoaded = linkNode;
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.currentTarget;
-					setTimeout(&quot;doGet();&quot;,700);
-				}
-				function clearLinkNode() {
-					setTimeout(&quot;&quot;);
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					/*document.links[i].target = &quot;_parent&quot;;*/
-					document.links[i].target = &quot;previewFrame&quot;;
-					document.links[i].onmouseover = eventHandler;
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
-			';
-			/** We can do .BODY but I prefer to push the / through with a
-			 * backslash.  But this can still fail, e.g. on bookmarklet pages, if
-			 * an earlier /BODY is seen and replaced. */
-			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
-			/** This never fails. **/
-			var i = oldHTML.lastIndexOf('%3C/body%3E');
-			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find the body tag!'); }
-			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
-			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
-			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
-			window.frames[0].document.write(oldHTML);
-			window.frames[0].document.close();
-			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
-			window.frames[1].document.close();
-			document.close();
-		})();">Split Preview</A> 0.86</LI>
-		<BLOCKQUOTE>
-			<LI class='done'>Added loading page (nice for feedback, annoying afterwards).</LI>
-			<LI class='done'>I set links to open in the right frame when clicked, rather than leaving the frameset or opening a new window, although hover is usually sufficient anyway.</LI>
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<!--
-						These lines, although commented, were breaking the minitool when pasting it into Konqueror:
-						/**Failing in every way to highlight the loaded(ing) preview:**/
-						/*
-						linkNode.text = &quot;*&quot;+linkNode.text+&quot;*&quot;;
-						linkNode.color = &quot;#eeee00&quot;;
-						linkNode.parentNode.style = &quot;bgcolor = #ffff00;&quot;;
-						linkNode.parentNode.style.bgcolor = &quot;#ffff00&quot;;
-						*/
-		-->
-		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
-			var oldHTML = document.documentElement.innerHTML;
-			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
-			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('</frameset>\n');
-			/*document.close();*/
-			var scriptText = '
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						top.document.getElementById(&quot;previewFrame&quot;).src = linkNode.href;
-						lastLoaded = linkNode;
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.currentTarget;
-					setTimeout(&quot;doGet();&quot;,700);
-				}
-				function clearLinkNode() {
-					setTimeout(&quot;&quot;);
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					/*document.links[i].target = &quot;_parent&quot;;*/
-					document.links[i].target = &quot;previewFrame&quot;;
-					document.links[i].onmouseover = eventHandler;
-					document.links[i].onmouseout = clearLinkNode;
-				}
-				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
-			';
-			/** We can do .BODY but I prefer to push the / through with a
-			 * backslash.  But this can still fail, e.g. on bookmarklet pages, if
-			 * an earlier /BODY is seen and replaced. */
-			/*oldHTML = oldHTML.replace(/%3C\/BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');*/
-			/** This never fails. **/
-			var i = oldHTML.lastIndexOf('%3C/body%3E');
-			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find the body tag!'); }
-			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
-			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
-			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
-			window.frames[0].document.write(oldHTML);
-			window.frames[0].document.close();
-			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
-			window.frames[1].document.close();
-			document.close();
-		})();">Split Preview</A> 0.85 - Good!</LI>
-		<BLOCKQUOTE>
-				<!-- heh it was worth a bash :p
-				<SCRIPT type='text/javascript'>
-					document.write('Maybe you want the ');
-					document.write('<A id="splitPreviewBookmarkletWithClickToBreakOut">Older version</A>.');
-					document.getElementById('splitPreviewBookmarkletWithClickToBreakOut').href = escape(document.getElementById('splitPreviewBookmarklet').href.replace('target = &quot;previewFrame&quot;','target = &quot;_parent&quot;'));
-				</SCRIPT>
-				-->
-			</P>
-			<LI class='done'>In this version only, links from the left pane open in a new tab/window when clicked.</LI>
-			<!-- When I am using the SplitPreview, I am very annoyed when I accidentally click and lose it!  In Konq, we need to reload the bookmarklet, we can't just 'go back'.. -->
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<LI><A href="javascript:(function(){
-			var oldHTML = document.documentElement.innerHTML;
-			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
-			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('<frame id=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
-			document.write('</frameset>\n');
-			/*document.close();*/
-			var scriptText = '
-				var linkNode,lastLoaded;
-				function doGet() {
-					if (linkNode && linkNode != lastLoaded) {
-						top.document.getElementById(&quot;previewFrame&quot;).src = linkNode.href;
-						/*document.getElementById(&quot;previewlink&quot;).href = linkNode.href;
-						document.getElementById(&quot;previewlink&quot;).innerHTML = linkNode.text;
-						*/
-						lastLoaded = linkNode;
-						linkNode.text = &quot;WHEEE&quot;;
-						/*alert(&quot;doGet called with linkNode = &quot;+linkNode);*/
-					}
-				}
-				function eventHandler(evt) {
-					linkNode = evt.currentTarget;
-					setTimeout(&quot;doGet();&quot;,1000);
-				}
-				function clearLinkNode() {
-					linkNode = null;
-				}
-				for (var i=0;i<document.links.length;i++) {
-					document.links[i].onmouseover = eventHandler;
-					document.links[i].onmouseout = clearLinkNode;
-					document.links[i].target = &quot;_parent&quot;
-				}
-				document.writeln(&quot;&lt;P&gt;&quot;+document.links.length+&quot; links prepared for rollover.&lt;/P&gt;&quot;);
-			';
-			/** This works on Mozilla but not Konqueror. **/
-			/*
-			var scriptElement = window.frames[0].document.createElement('SCRIPT');
-			scriptElement.type = 'text/javascript';
-			scriptElement.innerHTML = scriptText;
-			window.frames[0].document.documentElement.appendChild(scriptElement);
-			*/
-			/*window.frames[0].document.write('<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n');*/
-			/*window.frames[0].document.open();*/
-			/** Prepending <pre> makes the text TT! **/
-			/*oldHTML = oldHTML.replace(/&quot;/g,%27%26quot;%27);*/
-			/*
-			oldHTML = oldHTML.replace(/%3C.BODY%3E/i,'&lt;HEAD&gt;\n&lt;SCRIPT type=&quot;text/javascript&quot;&gt;'+scriptText+'&lt;/SCRIPT&gt;\n');
-			*/
-			var i = oldHTML.lastIndexOf('%3C/body%3E');
-			if (i<=0) i = oldHTML.lastIndexOf('%3C/BODY%3E');
-			if (i<=0) { alert('Failed to find the body tag!'); }
-			oldHTML = oldHTML.substring(0,i) + '<SCRIPT type=&quot;text/javascript&quot;>'+scriptText+'</SCRIPT>\n' + oldHTML.substring(i);
-			if (oldHTML.indexOf(scriptText) <= 0) { alert('Insert failed.'); }
-			/*alert('Final HTML = '+oldHTML.substring(i-40,i+60));*/
-			window.frames[0].document.write(oldHTML);
-			window.frames[0].document.close();
-			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
-			window.frames[1].document.close();
-			document.close();
-		})();">Split Preview</A> 0.8</LI>
-		<BLOCKQUOTE>
-			<LI class='done'>In this version, clicking on a link causes it to open in the current tab, leaving the frameset.</LI>
-		</BLOCKQUOTE>
-	</P>
-
-	<P>The only good thing about the following IFrame implementations, is that we don&apos;t have to rebuild the DOM, we can successfully move the existing page inside the table.</P>
+	<P>The only good thing about the initial IFrame implementations, is that we don&apos;t have to rebuild the DOM, we can successfully move the existing page inside the table.  The disadvantage is they they suck.  The sidebar needs a scrollbar too, but I couldn&apos;t successfully add the document into an IFrame.</P>
 
 	<P>
 		<A href="javascript:(function(){
