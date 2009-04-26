@@ -5,6 +5,8 @@ export JPATH=/home/joey/j
 
 DB="/home/www-data/amarokradio/collection.db"
 
+. importshfn memo rememo
+
 if ! which sqlite3 >/dev/null
 then echo "amarokradio cannot run - sqlite3 is not installed." ; exit 1
 fi
@@ -81,7 +83,7 @@ index () {
 	# show_sql_table "SELECT * FROM 'tags' SORTBY"
 	# show_sql_table "SELECT labels.id,name,tags.url FROM 'labels','tags' WHERE labels.id = "
 	# show_sql_table "SELECT statistics.url"
-	# show_sql_table "SELECT COUNTOF(
+	# show_sql_table "SELECT COUNT(
 
 }
 
@@ -90,16 +92,22 @@ function show_label_list () {
 	echo "Browse by label: [ "
 	# sqlite3 "$DB" "SELECT labels.name FROM labels" | sed 's+$+, +' | tr -d '\n' ; echo
 	sqlite3 "$DB" "SELECT labels.name FROM labels" |
+	# sqlite3 "$DB" "SELECT labels.name,COUNT(tags_labels.*) FROM labels,tags_labels WHERE labels.id=tags_labels.labelid" |
+	# sqlite3 "$DB" "SELECT COUNT(*) as labelid,url FROM tags_labels group by url"
+	sqlite3 "$DB" "SELECT COUNT(*) as url,labels.name FROM tags_labels,labels where labels.id=tags_labels.labelid group by labelid" |
 	sort |
-	while read SHOWLABEL
+	# while read SHOWLABEL
+	while IFS="|" read COUNT SHOWLABEL
 	do
 		if [ "$SHOWLABEL" = "$LABEL" ]
-		then echo -n "<B>$SHOWLABEL</B> | "
+		then echo -n "<B>$SHOWLABEL</B>"
 		else
 			echo -n "<A href='?label=$(tocgi "$SHOWLABEL")'>"
 			echo -n "$SHOWLABEL" | tohtml | sed 's+<BR>$++'
-			echo -n "</A> | "
+			echo -n "</A>"
 		fi
+		echo -n " <FONT size='-2'>$COUNT</FONT>"
+		echo -n " | "
 	done | sed 's+| $+] +'
 	echo "</P>"
 }
@@ -156,7 +164,7 @@ CGILIB_NO_CONTENT=true
 
 LABEL=$(getcgi "label")
 
-show_label_list
+memo -t '10 minutes' show_label_list
 
 # echo "<P>Browse by: artist / tag / date</P>"
 
