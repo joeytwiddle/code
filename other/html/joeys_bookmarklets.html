@@ -86,11 +86,11 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 						}
 						lastLoaded = linkNode;
 						lastbgcol = linkNode.style.backgroundColor;
-						linkNode.style.backgroundColor=\'#bbffbb\';
+						linkNode.style.backgroundColor=\'#ddddff\';
 						/* linkNode.parentNode.style.backgroundColor=\'#88ee88\'; */
 						var colUp = linkNode.parentNode;
 						while (colUp.getElementsByTagName(\'A\').length == 1) {
-							colUp.style.backgroundColor=\'#88ee88\';
+							colUp.style.backgroundColor=\'#bbbbff\';
 							colUp = colUp.parentNode;
 						}
 						top.window.frames[1].location = linkNode.href;
@@ -115,7 +115,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 					linkElem.onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
 				}
 			</SCRIPT>\n';
-			var header = '<P align=\'right\'>[ <A class=\'specialButton\' id=\'closeSidebarLink\' target=\'_top\'>Close This Sidebar</A> | <A class=\'specialButton\' target=\'_top\' href=\''+(document.location)+'\'>Close Other Frame</A> ]</P>\n';
+			var header = '<P align=\'right\'>[ <A class=\'specialButton\' id=\'closeSidebarLink\' title=\'Note: You will lose any navigation you have performed in the other frame.\' target=\'_top\'>Close This Sidebar</A> | <A class=\'specialButton\' target=\'_top\' href=\''+(document.location)+'\'>Close Other Frame</A> ]</P>\n';
 			var oldHTML = document.documentElement.innerHTML;
 			oldHTML = header + oldHTML + scriptText;
 			/*if (i<=0) { alert('Failed to find the body tag!'); return; }
