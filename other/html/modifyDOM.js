@@ -6,6 +6,9 @@
 // Konqueror worked once I made a few things lower case.
 // TODO: Mozilla should include adjacent empty paragraphs in the fold block, because ATM empty gaps are left.
 
+// TODO: Have it check if the element has already had a fold-handle attached to it, and if so skip it.
+// This means the fold generator can be run multiple times, with different conditionals, if desired.
+
 // Right now this is mainly an implementation of folding,
 // which works by selecting foldable elements, and attaches a handle for each by detecting the last piece of text in the document.  This should be customizable!
 
