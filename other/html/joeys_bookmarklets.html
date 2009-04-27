@@ -3,7 +3,6 @@
 	<TITLE>Joey's Bookmarklet (Development) Page</TITLE>
 	<!-- Keep viewer safe from infinte alert trap! -->
 	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'></SCRIPT>
-	<!-- TESTING -->
 </HEAD>
 <BODY>
 
@@ -16,10 +15,12 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 <H3>Introduction</H3>
 <BLOCKQUOTE>
 
-	<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a web page, they perform useful actions on the page you are viewing.</P>
+<DIV class='tip'>
+	<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a Web Page, they perform <B>useful actions</B> <I>on the page you are viewing</I>.</P>
 	<P>Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)</P>
 	<P>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</P>
 	<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
+</DIV>
 
 </BLOCKQUOTE>
 
@@ -35,6 +36,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 
 
 
+<DIV class='section'>
 <H3>User Bookmarklets</H3>
 <BLOCKQUOTE>
 
@@ -66,6 +68,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	<!-- Nasty - At one point, FF was reloading all the resources except mosifyDOM.js, which is the one I was changing!  I cleared my cache and it stopped doing it after that. -->
 	<BLOCKQUOTE>
 		<P>Makes parts of the page collapsable and expandable, for easier navigation through large (tree-structured) pages.</P>
+		<P class='tip'>You can use this bookmarklet on any web page.  Just copy it to your Bookmarks/Favorites/Minitools, and run it when you need it.</P>
 		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This is my first Bookmarklet which loads an external javascript file.</LI> -->
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
 		 <LI class='todo'>Todo: We had to introduce a different loading technique for Konqueror.  But the FF way might be faster if we can detect that it will work.</LI>
@@ -117,6 +120,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 					linkElem.onmouseout = clearLinkNode;
 					linkElem.onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
 				}
+				linkNode = document.links[2]; doGet();
 			</SCRIPT>\n';
 			/* Safer but slower: */ var getback = document.location;
 			/* Faster but messy on various sites: var getback = 'javascript:top.document.write(top.frames[0].document.documentElement.innerHTML);'; */
@@ -136,7 +140,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 			window.frames[0].document.close();
 			window.frames[1].document.write('&lt;BODY&gt;Hover over links on the left to see a preview here.&lt;/BODY&gt;');
 			window.frames[1].document.close();
-		})();">Split Preview</A> version 0.88</LI>
+		})();">Split Preview</A> version 0.90</LI>
 		<BLOCKQUOTE>
 			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
 			<LI title='Unfortunately the implementation is to navigate the window to the remaining page.  I doubt we can destroy the frameset without destroying the page.' class='done'>There are now two close buttons available to the user, one for each frame.</LI>
@@ -167,6 +171,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	<BLOCKQUOTE>
 		<P>Hides all parts of the page except those matching your search expression.</P>
 		<LI class='todo'>This is much faster in Konqueror than in Firefox.</LI>
+		<LI class='todo'>Sometimes we are wanting to select certain rows from a table, but this implementation hides the other cells in the row, even if one cell matches.</LI>
 		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
@@ -282,7 +287,9 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	</P>
 
 </BLOCKQUOTE>
+</DIV>
 
+<DIV class='section'>
 <H3>Web-Developer Bookmarklets</H3>
 <BLOCKQUOTE>
 
@@ -475,7 +482,9 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	</P>
 
 </BLOCKQUOTE>
+</DIV>
 
+<DIV class='section'>
 <H3 id='dev'>Bookmarklets under Development</H3>
 <BLOCKQUOTE>
 
@@ -637,7 +646,9 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
+</DIV>
 
+<DIV class='section'>
 <H3>Wanted / TODO</H3>
 <BLOCKQUOTE class='todo'>
 
@@ -685,7 +696,9 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	<P>Bookmarklets and Framesets do not mix well.  Most Bookmarklets will try to target the frameset document rather than the child frame we are trying to focus on.  It would be nice to have a generic solution to this.</P>
 
 </BLOCKQUOTE>
+</DIV>
 
+<DIV class='section'>
 <H3>Older Versions</H3>
 <BLOCKQUOTE>
 
@@ -1415,9 +1428,12 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	</P>
 	-->
 
-	<P>ShowWeb2: Show which elements have special events such as mouseOver etc.  In fact expose all elements with out-of-the-usual properties.</P>
+	<P>Add Kill Column to Sort Table.</P>
+
+	<P>Show Web 2.0: Show which elements have special events such as mouseOver etc.  In fact expose all elements with out-of-the-usual properties.  Limit to: javascript, css, URLs, other, ...</P>
 
 </BLOCKQUOTE>
+</DIV>
 
 <STYLE type='text/css'>
 	.todo {
@@ -1436,6 +1452,15 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 		text-decoration: none;
 		cursor: crosshair;
 	}
+	.tip {
+		background-color: #ffffdd;
+		padding: 10px;
+	}
+	/*.section {
+		background-color: #4444ee;
+		padding: 10px;
+	}
+	*/
 </STYLE>
 
 <!--

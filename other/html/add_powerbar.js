@@ -3,7 +3,11 @@
 
 
 
+<!-- Dangerous ATM! Works but pops up another one! -->
+<!-- #define LOAD_IN_NEW_WINDOW -->
 
+<!-- The non popup version overwrites mainFrame, which is usually what we want to -->
+<!-- inspect, which results in badness. -->
 
 
 
@@ -142,6 +146,7 @@ var opt_XPathGrabberEnabled = true;
 var defaultSubmitButton = ( opt_ButtonsOnPowerBarForms ? '<INPUT type="button" value="Go" onclick="submit()">' : "" );
 var powerBarFrame; // == powerBarFrame
 var mainFrame;
+var powerBarWindow;
 var powerBarLocationFormElement;
 var lastKnownLocation = "";
 var todoList = "";
@@ -166,13 +171,19 @@ function createFrameset() {
   framesetHtml += ( opt_powerBarPosition == "top" ? powerBarFrameHtml : mainFrameHtml );
   framesetHtml += ( opt_powerBarPosition == "bottom" ? powerBarFrameHtml : mainFrameHtml );
   framesetHtml += endFrameSet;
- document.writeln(framesetHtml);
+  powerBarWindow = top.window;
+  document.writeln(framesetHtml);
+ /*
+	powerBarWindow.initDone = true;
+	powerBarWindow.document.writeln(framesetHtml);
+	powerBarWindow.initDone = true;
+	*/
  // #ifdef BOOKMARKLET
   // powerBarFrame = document.getElementById("powerBarFrame");
   // mainFrame = document.getElementById("mainFrame");
  // #else
- powerBarFrame = top.window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
- mainFrame = top.window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
+ powerBarFrame = powerBarWindow.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
+ mainFrame = powerBarWindow.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
  top.powerBarFrame = powerBarFrame;
  top.mainFrame = mainFrame;
  // #endif
@@ -271,20 +282,23 @@ top.initDone = false;
 function powerbar_init() {
  if (top.initDone || top.initDone==false) {
   top.log("Blocked second init.");
+  alert("Blocked second init.");
   return;
  }
- var extra = "";
- if (top.document.frames) {
-  /*for (var frame in document.frames) {*/
-  for (var i=0;i<top.document.frames.length;i++) {
-   if (top.document.frames[i]==self) {
-    extra += "\nI am frame number "+i;
-   }
-  }
- }
- extra += "\ninitDone = "+top.initDone;
+ /*
+	var extra = "";
+	if (top.document.frames) {
+		for (var i=0;i<top.document.frames.length;i++) {
+			if (top.document.frames[i]==self) {
+				extra += "\nI am frame number "+i;
+			}
+		}
+	}
+	extra += "\ninitDone = "+top.initDone;
+	alert("[Init] self="+self+" document.location="+document.location + extra);
+	*/
+ /*for (var frame in document.frames) {*/
  top.initDone = true;
- alert("[Init] self="+self+" document.location="+document.location + extra);
  createFrameset();
  generatePowerBar();
  // TODO: Make this use referer, or last in browser's history, or url provided via CGI, or attach to last used window, or something useful.
@@ -506,7 +520,8 @@ function jsReflectorShow(objName) {
   html += list;
   html += "</table>";
   html += "</blockquote>";
-   writeToFrame(mainFrame,html);
+   // BUG re. popup window: It's what we want really, but currently in Mozilla at least, subsequent calls to top.jsReflectorShow() from the new window can not find the function!
+   writeToWindow('jsReflector',html);
   // writeToFrame(powerBarFrame,html);
  } catch (e) {
   top.log(e);

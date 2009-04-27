@@ -1,5 +1,9 @@
-#define LOAD_IN_NEW_WINDOW
+<!-- Dangerous ATM!  Works but pops up another one! -->
+<!-- #define LOAD_IN_NEW_WINDOW -->
 
+<!-- The non popup version overwrites mainFrame, which is usually what we want to -->
+<!-- inspect, which results in badness. -->
+#define POPUP_JSREFLECTOR
 
 
 #ifdef BOOKMARKLET
@@ -159,6 +163,7 @@ var opt_XPathGrabberEnabled = true;
 var defaultSubmitButton = ( opt_ButtonsOnPowerBarForms ? '<INPUT type="button" value="Go" onclick="submit()">' : "" );
 var powerBarFrame; // == powerBarFrame
 var mainFrame;
+var powerBarWindow;
 var powerBarLocationFormElement;
 var lastKnownLocation = "";
 
@@ -209,13 +214,23 @@ function createFrameset() {
 		framesetHtml += ( opt_powerBarPosition == "bottom" ?  powerBarFrameHtml : mainFrameHtml );
 		framesetHtml += endFrameSet;
 	#endif
-	document.writeln(framesetHtml);
+	#ifdef LOAD_IN_NEW_WINDOW
+		powerBarWindow = window.open('about:blank','_blank');
+	#else
+		powerBarWindow = top.window;
+		document.writeln(framesetHtml);
+	#endif
+	/*
+	powerBarWindow.initDone = true;
+	powerBarWindow.document.writeln(framesetHtml);
+	powerBarWindow.initDone = true;
+	*/
 	// #ifdef BOOKMARKLET
 		// powerBarFrame = document.getElementById("powerBarFrame");
 		// mainFrame = document.getElementById("mainFrame");
 	// #else
-	powerBarFrame = top.window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
-	mainFrame = top.window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
+	powerBarFrame = powerBarWindow.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
+	mainFrame = powerBarWindow.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
 	top.powerBarFrame = powerBarFrame;
 	top.mainFrame = mainFrame;
 	// #endif
@@ -347,11 +362,12 @@ top.initDone = false;
 function powerbar_init() {
 	if (top.initDone || top.initDone==false) {
 		LOG("Blocked second init.");
+		alert("Blocked second init.");
 		return;
 	}
+	/*
 	var extra = "";
 	if (top.document.frames) {
-		/*for (var frame in document.frames) {*/
 		for (var i=0;i<top.document.frames.length;i++) {
 			if (top.document.frames[i]==self) {
 				extra += "\nI am frame number "+i;
@@ -359,8 +375,10 @@ function powerbar_init() {
 		}
 	}
 	extra += "\ninitDone = "+top.initDone;
-	top.initDone = true;
 	alert("[Init] self="+self+" document.location="+document.location + extra);
+	*/
+	/*for (var frame in document.frames) {*/
+	top.initDone = true;
 	createFrameset();
 	generatePowerBar();
 	// TODO: Make this use referer, or last in browser's history, or url provided via CGI, or attach to last used window, or something useful.
