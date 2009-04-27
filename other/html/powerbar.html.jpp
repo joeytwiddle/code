@@ -1,5 +1,9 @@
-#ifdef PURE_SCRIPT
-	#define BOOKMARKLET
+#define LOAD_IN_NEW_WINDOW
+
+
+
+#ifdef BOOKMARKLET
+	// #define USE_IFRAMES_NOT_FRAMES
 #else
 	#define WRAP_IN_HTML_PAGE
 #endif
@@ -10,8 +14,14 @@
 
 <TITLE>Powerbar</TITLE>
 
+<!-- TODO: Add a Load External Javascript button :) -->
+<!-- TODO: Some temporary fun just for me, should be removed. -->
+<!-- <SCRIPT type="text/javascript" src="file:///home/joey/gentoo/.mozilla/firefox/jb7htq8y.default/bookmarkbackups/bookmarks-2009-04-22.json"></SCRIPT> -->
+
 <script type="text/javascript"> <!--
 #endif
+
+#include "/mnt/hwibot/var/www/javascript/alert_watcher.user.js"
 
 #ifdef INCLUDE_COMMENTS
 
@@ -60,6 +70,7 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 
 // To turn it on or off:
 #define LOGGING
+//// TODO BUG: In Firefox, the Bookmarklet version is failing to find the function top.log().
 
 // You must add LOG_ELEMENT_HTML at some point to the powerBarFrame
 // You can then log to that element using LOG(report);
@@ -166,20 +177,26 @@ var todoList = "";
 //////////////////////// PowerBar initialisation ////////////////////////
 
 #ifdef BOOKMARKLET
-	init();
+	var originalPage = document.documentElement.innerHTML;
 	// powerBarFrame = window.frames[0];
 	// mainFrame = window.frames[1];
 	// generatePowerBar();
+#endif
+
+// FIXED: If we put this call early, we end up being unable to see processJs. Ok we did top.processJs = processJs. :)
+// If we put this call late, we end up being unable to see mainFrame!
+#ifdef BOOKMARKLET
+powerbar_init();
 #else
-	init();
+powerbar_init();
 #endif
 
 function createFrameset() {
-	var distrib = ( opt_powerBarPosition == "top" ? "20%,*" : "*,20%" );
-	#ifdef BOOKMARKLET
-		var framesetHtml = '<IFRAME width="900" height="260" id="powerBarFrame" src="about:blank"></IFRAME>\n';
+	var distrib = ( opt_powerBarPosition == "top" ? "20%,80%" : "80%,20%" );
+	#ifdef USE_IFRAMES_NOT_FRAMES
+		var framesetHtml = '<IFRAME width="100%" height="50%" id="powerBarFrame" src="about:blank"></IFRAME>\n';
 		framesetHtml += '<BR>\n';
-		framesetHtml += '<IFRAME width="900" height="600" id="mainFrame" src="about:blank"></IFRAME>\n';
+		framesetHtml += '<IFRAME width="100%" height="50%" id="mainFrame" src="about:blank"></IFRAME>\n';
 	#else
 		var startFrameSet     = '<frameset rows="' + distrib + '">';
 		var powerBarFrameHtml = '<frame src="about:blank">';
@@ -197,9 +214,21 @@ function createFrameset() {
 		// powerBarFrame = document.getElementById("powerBarFrame");
 		// mainFrame = document.getElementById("mainFrame");
 	// #else
-		powerBarFrame  = window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
-		mainFrame = window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
+	powerBarFrame = top.window.frames[ ( opt_powerBarPosition == "top" ? 0 : 1 ) ];
+	mainFrame = top.window.frames[ ( opt_powerBarPosition == "top" ? 1 : 0 ) ];
+	top.powerBarFrame = powerBarFrame;
+	top.mainFrame = mainFrame;
 	// #endif
+	if (true) {
+		#ifdef LOGGING
+			document.log = log;
+			top.log = log;
+			powerBarFrame.log = log;
+			mainFrame.log = log;
+		#endif
+		top.processJs = processJs;
+		powerBarFrame.processJs = processJs;
+	}
 }
 
 // TODO: Move init code for each module to that module and out of here.
@@ -313,10 +342,35 @@ function refreshTimer() {
 	timerId = setTimeout('updatePowerBar()',1000);
 }
 
-function init() {
+top.initDone = false;
+
+function powerbar_init() {
+	if (top.initDone || top.initDone==false) {
+		LOG("Blocked second init.");
+		return;
+	}
+	var extra = "";
+	if (top.document.frames) {
+		/*for (var frame in document.frames) {*/
+		for (var i=0;i<top.document.frames.length;i++) {
+			if (top.document.frames[i]==self) {
+				extra += "\nI am frame number "+i;
+			}
+		}
+	}
+	extra += "\ninitDone = "+top.initDone;
+	top.initDone = true;
+	alert("[Init] self="+self+" document.location="+document.location + extra);
 	createFrameset();
 	generatePowerBar();
 	// TODO: Make this use referer, or last in browser's history, or url provided via CGI, or attach to last used window, or something useful.
+	// alert('Writing to frame '+mainFrame);
+	// try { console.log('Writing to frame '+mainFrame); } catch (e) { }
+#ifdef BOOKMARKLET
+	if (originalPage && originalPage!="") {
+		writeToFrame(mainFrame,originalPage);
+	} else
+#endif
 	writeToFrame(mainFrame,"Welcome to PowerBar."
 		+ "<P>PowerBar is an addition to your browser to provide much-needed features for web-surfers and web-developers."
 		+ "  It will allow you to make interactive changes to the pages you read, and create useful filters to aid your surfing."
@@ -493,12 +547,14 @@ function processJs(codeToExecute) {
 	} catch (e) {
 		result = e;
 	}
-	var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>";
+	/* var report = "I executed\n<CODE>" + codeToExecute + "</CODE>\nand got\n<RESULT>" + result + "</RESULT>"; */
+	var report = result;
 	var htmlReport = toHtml(report);
 	#ifdef LOGGING
 		LOG(report);
 	#else
-		writeToFrame(mainFrame,htmlReport);
+		// writeToFrame(mainFrame,htmlReport);
+		window.status = report;
 		//// Failed attempts to get Konqueror to write later since it dosn't always work first time:
 		// todoList += "mainFrame.document.body.innerHTML = \""+report+"\";";
 		todoList += "mainFrame.document.body.innerHTML = \"" + escapeString(htmlReport) + "\";";
@@ -535,7 +591,9 @@ function jsReflectorShow(objName) {
 				html += ", ";
 			}
 		}
-		var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
+		// var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
+		/** TODO: it seems single-quotes in the input get lost?  I was evaluating top.document.getElementsByTagName('SCRIPT').item(0) but could not click through to nextSibling. **/
+		var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:alert(\"blurred\"); if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
 		html += "<h3>Inspecting: " + trytypeof(obj) + " " + editableObjName + " = " + obj + "</h3>";
 
 		// Ripped off the web, testing here:
@@ -573,7 +631,8 @@ function jsReflectorShow(objName) {
 			list += "<tr>";
 			list += "<td align='right'>" + type + "&nbsp;</td>";
 			list += "<td align='center'><a href='" + link + "'>" + name + "</a></td>";
-			list += "<td align='left'>&nbsp;=&nbsp;" + toHtml(strip(value)) + "</td>";
+			// list += "<td align='left'>&nbsp;=&nbsp;" + toHtml(strip(value)) + "</td>";
+			list += "<td align='left'>&nbsp;=&nbsp;" + toHtml(strip(value).replace(/\n/g,' ')) + "</td>";
 			list += "</tr>";
 			list += "\n"; // for sortLines
 		}
@@ -623,10 +682,10 @@ function attachClickListener(context,node) {
 
 var lastXPath = "";
 // This gets called for every node below the mouse, not just the first one!
-function processClick(event) {
-	var node = event.srcElement;
+function processClick(evt) {
+	var node = evt.srcElement;
 	if (!node) {
-		node = event.currentTarget;
+		node = evt.currentTarget;
 	}
 	var xpath = getXPath(node);
 	if (lastXPath.substring(0,xpath.length) == xpath) {
@@ -646,7 +705,7 @@ function processClick(event) {
 			LOG(e);
 		}
 	}
-	// event.currentTarget.onmouseup = "";
+	// evt.currentTarget.onmouseup = "";
 	// eventObj = node;
 	// jsReflectorShow("top.eventObj");
 }
@@ -704,7 +763,7 @@ function writeToFrame(frame,html) {
 	LOG("Writing "+html.length+" bytes to "+frame+" "+frame.id);
 	// if (frame.document.open()) {
 		frame.document.open();
-		frame.document.write("<html><body>"); // you need /some/ kind of surrounding tag if you are just writing text
+		frame.document.write("<html><body>"); // you used to need /some/ kind of surrounding tag if you are just writing text
 		frame.document.write(html);
 		frame.document.write("</body></html>"); // these tags seemed sensible to me
 		frame.document.close();
@@ -735,6 +794,7 @@ function writeToWindow(title,contents,options) {
 	// w.document.close();
 	w.focus();
 	w.jsReflectorShow = new Function(top.jsReflectorShow);
+	/*w.processJs = new Function(top.processJs);*/
 	if (w.opener == null) // for older browsers, tell the child window we are the parent:
 		w.opener = self;
 }
@@ -922,6 +982,7 @@ function whereDoesPathBreak(path) {
 
 
 
+top.powerbar_init = powerbar_init;
 
 
 #ifdef WRAP_IN_HTML_PAGE

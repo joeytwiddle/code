@@ -1,2 +1,2 @@
-#define PURE_SCRIPT
+#define BOOKMARKLET
 #include "powerbar.html.jpp"

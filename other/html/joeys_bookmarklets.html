@@ -1,33 +1,34 @@
 <HTML>
-<HEAD><TITLE>Joey's Bookmarklet (Development) Page</TITLE></HEAD>
+<HEAD>
+	<TITLE>Joey's Bookmarklet (Development) Page</TITLE>
+	<!-- Keep viewer safe from infinte alert trap! -->
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'></SCRIPT>
+	<!-- TESTING -->
+</HEAD>
 <BODY>
 
-<H2>Joey's Bookmarklet (Development) Page</H2>
+<H2>Joey's Bookmarklet (Dev<A class='hiddenlink' href='#dev'>elopm</A>ent) Page</H2>
 
 <P align='right'>
 See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey's Minitools/Bookmarklets</A>
 </P>
 
-Bookmarklets are a bit like Bookmarks, but instead of taking you to a web page, they perform useful actions on the page you are viewing.
-<BR/>
-Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)
-<BR/>
-To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.
-<BR/>
-Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.
-
-
-
-<!--
-
-<H3>Testing Bookmarklets</H3>
+<H3>Introduction</H3>
 <BLOCKQUOTE>
 
-	<P>The bookmarklets in this section are IN DEVELOPMENT!  You probably don't want to try using them just yet.  Go for the Ready to use Bookmarklets instead.</P>
+	<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a web page, they perform useful actions on the page you are viewing.</P>
+	<P>Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)</P>
+	<P>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</P>
+	<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
 
 </BLOCKQUOTE>
-<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
 
+<!--
+<H3>Testing Bookmarklets</H3>
+<BLOCKQUOTE>
+	<P>The bookmarklets in this section are IN DEVELOPMENT!  You probably don't want to try using them just yet.  Go for the Ready to use Bookmarklets instead.</P>
+</BLOCKQUOTE>
+<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
 -->
 
 <!-- I didn't feel like making a css class for that one-off. ;p -->
@@ -47,7 +48,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 					var tagTypes = new Array( 'ul', 'blockquote', 'table' );
 					addFoldsToPage(tagTypes,false);
 				} else {
-					window.status = 'Waiting for script to load... ('+(++cnt)*5+'ms)';
+					window.status = 'Waiting for modifyDOM script to load... ('+(++cnt)*5+'ms)';
 					setTimeout('top.checkDoneLoading();',5);
 				}
 			}
@@ -69,7 +70,9 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
 		 <LI class='todo'>Todo: We had to introduce a different loading technique for Konqueror.  But the FF way might be faster if we can detect that it will work.</LI>
 		 <LI class='todo'>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it's easy to add extra tags.)</LI>
-		 <LI class='todo'>This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the page does have a header, and we don't use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI>
+		 <LI class='todo'>This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the block does have a header, and we don't use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI>
+		 <LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn't highlight newly entered elements, it won't have to unhighlight them on the way out.</LI>
+		 <LI class='todo'>We could even create blocks to compress where there was no structure.  E.g. create a block between two HR tags, provided the text content in between is large.  Or in fact squash any blocks containing text, if the text is >=15&perc; of the parent&apos;s text.</LI>
 	</BLOCKQUOTE>
 
 	<P>
@@ -115,7 +118,9 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 					linkElem.onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
 				}
 			</SCRIPT>\n';
-			var header = '<P align=\'right\'>[ <A class=\'specialButton\' id=\'closeSidebarLink\' title=\'Note: You will lose any navigation you have performed in the other frame.\' target=\'_top\'>Close This Sidebar</A> | <A class=\'specialButton\' target=\'_top\' href=\''+(document.location)+'\'>Close Other Frame</A> ]</P>\n';
+			/* Safer but slower: */ var getback = document.location;
+			/* Faster but messy on various sites: var getback = 'javascript:top.document.write(top.frames[0].document.documentElement.innerHTML);'; */
+			var header = '<P align=\'right\'>[ <A class=\'specialButton\' id=\'closeSidebarLink\' title=\'Note: You will lose any navigation you have performed in the other frame.\' target=\'_top\'>Close This Sidebar</A> | <A class=\'specialButton\' target=\'_top\' href=\''+getback+'\'>Close Other Frame</A> ]</P>\n';
 			var oldHTML = document.documentElement.innerHTML;
 			oldHTML = header + oldHTML + scriptText;
 			/*if (i<=0) { alert('Failed to find the body tag!'); return; }
@@ -143,6 +148,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
 				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
 				<LI class='todo'>Bug/Feature: By quickly clicking on a link then moving away, it is possible to leave the highlight behind on an earlier link.</LI>
+				<LI class='external'>Note: Loads external script.</LI>
 			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
@@ -156,10 +162,12 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			newScript.src = 'http://hwi.ath.cx/javascript/trim_elements.js';
 			/* newScript.onload = (function(){ init(); }); */
 			document.body.appendChild(newScript);
-		})();" title="Version 0.9">Trim to Search String</A></LI>
+		})();">Trim to Search String</A></LI>
 	</P>
 	<BLOCKQUOTE>
 		<P>Hides all parts of the page except those matching your search expression.</P>
+		<LI class='todo'>This is much faster in Konqueror than in Firefox.</LI>
+		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
 	<P>
@@ -541,10 +549,12 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 				}
 			</SCRIPT>\n';
 			var toggler = '<A class=\'specialButton\' href=\'javascript:toggleSideBar();\'>Collapse</A> | ';
-			var header = '<P id=\'header\' align=\'right\'>[ ' + toggler + ' <A class=\'specialButton\' target=\'_top\' href=\''+(document.location)+'\'>Restore</A> | <A class=\'specialButton\' id=\'closeSidebarLink\' target=\'_top\'>Close</A> ]</P>\n';
+			/* Safer but slower: */ var getback = document.location;
+			/* Faster but messy on various sites: var getback = 'javascript:top.document.write(top.frames[0].document.documentElement.innerHTML);'; */
+			var header = '<P id=\'header\' align=\'right\'>[ ' + toggler + ' <A class=\'specialButton\' target=\'_top\' href=\''+getback+'\'>Restore</A> | <A class=\'specialButton\' id=\'closeSidebarLink\' target=\'_top\'>Close</A> ]</P>\n';
 			var oldHTML = document.documentElement.innerHTML;
 			oldHTML =
-				'<TABLE cellpadding=\'4\'><TR><TD id=\'leftRow\' onclick=\'javascript:toggleSideBar();\' bgcolor=\'blue\' width=\'4px\'></TD><TD id=\'rightRow\'>\n'
+				'<TABLE cellpadding=\'4\'><TR><TD id=\'leftRow\' onclick=\'javascript:toggleSideBar();\' bgcolor=\'#aaaaff\' width=\'4px\' style=\'cursor:w-resize\'></TD><TD id=\'rightRow\' width=\'200px\'>\n'
 				+ header
 				+ oldHTML
 				+ '</TD></TR></TABLE>\n'
@@ -553,7 +563,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 			if (oldHTML.indexOf(scriptText) < 0) { alert('Insert failed.'); return; }
 			document.write(oldHTML); return;*/
 			document.write('<head><title>Previewing '+document.title+'</title></head>\n');
-			document.write('<frameset cols=&quot;35%25,*&quot;>\n');
+			document.write('<frameset cols=&quot;400px,*&quot;>\n');
 			document.write('<frame id=&quot;sideFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('<frame id=&quot;previewFrame&quot; name=&quot;previewFrame&quot; src=&quot;about:blank&quot;>\n');
 			document.write('</frameset>\n');
@@ -582,6 +592,48 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 	</P>
 	<BLOCKQUOTE>
 		<P>Checks document.referrer and if it contains a search expression, assume this is a result page, and highlight the search terms.</P>
+	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			function checkDoneLoading() {
+				if (this.powerbar_init != undefined) {
+					window.status = '';
+					powerbar_init();
+				} else {
+					window.status = 'Waiting for add_powerbar script to load.';
+					setTimeout('top.checkDoneLoading();',100);
+				}
+			}
+			top.checkDoneLoading = checkDoneLoading;
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/add_powerbar.js';
+			/** This method works for Mozilla but not Konqueror: **/
+			/* newScript.onload = (function(){ powerbar_init(); }); */
+			/* newScript.onload = checkDoneLoading; */
+			/*newScript.onload = checkDoneLoading;*/
+			/*document.getElementsByTagName('head')[0].appendChild(newScript);*/
+			document.getElementsByTagName('head')[0].appendChild(newScript);
+			/* no: document.body.appendChild(newScript); */
+			/** Konqueror requires this method: **/
+			/*setTimeout('top.checkDoneLoading();',50);*/
+			/*setTimeout('powerbar_init();',5000);*/
+			/*setTimeout('try {powerbar_init();} catch (e) { alert(e); }',5000);*/
+		})();">Load Powerbar</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>My monstrous old web test environment, almost working through a bookmarklet!</P>
+		<LI class='external'>Note: Loads external script.</LI>
+	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			window.open('http://www.google.com/search?as_lq='+escape(document.location),'_blank');
+		})();">Google Pages that Link to This</A></LI> (in a new window)
+	</P>
+	<BLOCKQUOTE>
+		<P>Finds other pages on the web which link to this page.</P>
 	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
@@ -634,7 +686,7 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 
 </BLOCKQUOTE>
 
-<H3>Older versions:</H3>
+<H3>Older Versions</H3>
 <BLOCKQUOTE>
 
 	<P>
@@ -1363,6 +1415,8 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 	</P>
 	-->
 
+	<P>ShowWeb2: Show which elements have special events such as mouseOver etc.  In fact expose all elements with out-of-the-usual properties.</P>
+
 </BLOCKQUOTE>
 
 <STYLE type='text/css'>
@@ -1372,6 +1426,15 @@ Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and 
 	}
 	.done {
 		color: #005500;
+	}
+	.external {
+		/*color: #aa4400;*/
+		color: #aaaa00;
+	}
+	.hiddenlink {
+		color: #000000;
+		text-decoration: none;
+		cursor: crosshair;
 	}
 </STYLE>
 
