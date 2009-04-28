@@ -89,26 +89,27 @@ index () {
 
 function show_label_list () {
 	echo "<P>"
-	echo "Browse by label: [ "
+	echo "Label cloud:<BR/>"
 	# sqlite3 "$DB" "SELECT labels.name FROM labels" | sed 's+$+, +' | tr -d '\n' ; echo
 	sqlite3 "$DB" "SELECT labels.name FROM labels" |
 	# sqlite3 "$DB" "SELECT labels.name,COUNT(tags_labels.*) FROM labels,tags_labels WHERE labels.id=tags_labels.labelid" |
 	# sqlite3 "$DB" "SELECT COUNT(*) as labelid,url FROM tags_labels group by url"
 	sqlite3 "$DB" "SELECT COUNT(*) as url,labels.name FROM tags_labels,labels where labels.id=tags_labels.labelid group by labelid" |
-	sort |
+	sort -k 2 -t '|' |
 	# while read SHOWLABEL
 	while IFS="|" read COUNT SHOWLABEL
 	do
 		if [ "$SHOWLABEL" = "$LABEL" ]
 		then echo -n "<B>$SHOWLABEL</B>"
 		else
-			echo -n "<A href='?label=$(tocgi "$SHOWLABEL")'>"
-			echo -n "$SHOWLABEL" | tohtml | sed 's+<BR>$++'
+			SZ=$(echo "60+l(1+$COUNT)*30" | bc -l | beforefirst "\.")
+			echo -n "<A style='font-size:$SZ%' href='?label=$(tocgi "$SHOWLABEL")'>"
+			echo -n "$SHOWLABEL" # | tohtml | sed 's+<BR>$++'
 			echo -n "</A>"
 		fi
-		echo -n " <FONT size='-2'>$COUNT</FONT>"
-		echo -n " | "
-	done | sed 's+| $+] +'
+		# echo -n " <FONT size='-2'>$COUNT</FONT>"
+		echo -n "&nbsp;&nbsp; "
+	done
 	echo "</P>"
 }
 
@@ -164,7 +165,8 @@ CGILIB_NO_CONTENT=true
 
 LABEL=$(getcgi "label")
 
-memo -t '10 minutes' show_label_list
+# memo -t '10 minutes' show_label_list
+memo -t '1 second' show_label_list
 
 # echo "<P>Browse by: artist / tag / date</P>"
 
