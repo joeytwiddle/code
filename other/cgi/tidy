@@ -1,8 +1,11 @@
 #!/bin/sh
 
+## Now slower, but works on XML documents (previously produced nothing for them).
+## This is needed for show_minitools.xsl
+
 . cgilib
-# export JPATH=/home/joey/j
-# . /home/joey/j/startj-simple
+export JPATH=/home/joey/j
+. /home/joey/j/startj-simple
 
 URL="`getcgi "url"`"
 
@@ -38,11 +41,37 @@ URL=`echo "$URL" | tr -d '"'"'"`
 # fi
 
 
-/home/joey/j/jsh memo -t "1 hour" wget -nv -O - "$URL" | sed 's+&nbsp;++g' |
-tidy -asxml 2> /tmp/tidy.err | grep .
+function try_with_options () {
+	OPTIONS="$1"
+	cat "$INFILE" |
+	sed 's+&nbsp;++g' |
+	verbosely tidy $OPTIONS >"$OUTFILE" 2>"$OUTFILE.err"
+	# cat "$OUTFILE" | grep .
+	if [ -s "$OUTFILE" ]
+	then
+		cat "$OUTFILE"
+		return 0
+	else
+		return 1
+	fi
+}
+
+INFILE=`jgettmp tidy_in`
+OUTFILE=`jgettmp tidy_out`
+
+# MEMOTIME="1 hour"
+MEMOTIME="2 minutes"
+IKNOWIDONTHAVEATTY=1 memo -t "$MEMOTIME" wget -nv -O - "$URL" > "$INFILE"
+
+for OPTIONS in -asxml -xml
+do try_with_options "$OPTIONS" && break
+done
 
 if [ ! "$?" = 0 ]
 then echo "<FAILURE>W3C Tidy could not tidy this document because it has too many errors.  Sorry I wish it would do better than nothing!</FAILURE>"
 fi
 
 # echo "Got $URL" > /tmp/tidy.got
+
+jdeltmp "$INFILE" "$OUTFILE" "$OUTFILE".err
+
