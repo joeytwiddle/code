@@ -8,21 +8,23 @@
 
 <H2>Joey's Bookmarklet (Dev<A class='hiddenlink' href='#dev'>elopm</A>ent) Page</H2>
 
-<P align='right'>
-See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey's Minitools/Bookmarklets</A>
-</P>
-
+<DIV class='section'>
 <H3>Introduction</H3>
 <BLOCKQUOTE>
 
-<DIV class='tip'>
-	<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a Web Page, they perform <B>useful actions</B> <I>on the page you are viewing</I>.</P>
+<DIV>
+	<P>This page contains bookmarklets which I am developing.</P>
+	<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
+	<P>For a big list of all my collected bookmarklets, along with a code viewer, visit:</P>
+	<BLOCKQUOTE><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&quot;s Minitools/Bookmarklets</A></BLOCKQUOTE>
+	<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a Web Page, they perform <I>useful actions</I> <B>on the page you are viewing</B>.</P>
 	<P>Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)</P>
 	<P>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</P>
-	<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
+	<!-- <P class='external'>Bookmarklets marked in yellow do not contain all the code themselves, but load an external javascript file from hwi.ath.cx.  You rarely need to upgrade these bookmarklets because they are always loading the latest version.  But if I develop the script and break it, your bookmarklet may stop working.</P> -->
 </DIV>
 
 </BLOCKQUOTE>
+</DIV>
 
 <!--
 <H3>Testing Bookmarklets</H3>
@@ -39,6 +41,8 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 <DIV class='section'>
 <H3>User Bookmarklets</H3>
 <BLOCKQUOTE>
+
+	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
 
 	<P>
 		<LI><A href="javascript:(function(){
@@ -69,14 +73,67 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	<BLOCKQUOTE>
 		<P>Makes parts of the page collapsable and expandable, for easier navigation through large (tree-structured) pages.</P>
 		<P class='tip'>You can use this bookmarklet on any web page.  Just copy it to your Bookmarks/Favorites/Minitools, and run it when you need it.</P>
-		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This is my first Bookmarklet which loads an external javascript file.</LI> -->
+		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This was my first Bookmarklet which loads an external javascript file.</LI> -->
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
-		 <LI class='todo'>Todo: We had to introduce a different loading technique for Konqueror.  But the FF way might be faster if we can detect that it will work.</LI>
-		 <LI class='todo'>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it's easy to add extra tags.)</LI>
-		 <LI class='todo'>This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the block does have a header, and we don't use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI>
-		 <LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn't highlight newly entered elements, it won't have to unhighlight them on the way out.</LI>
-		 <LI class='todo'>We could even create blocks to compress where there was no structure.  E.g. create a block between two HR tags, provided the text content in between is large.  Or in fact squash any blocks containing text, if the text is >=15&perc; of the parent&apos;s text.</LI>
+		 <LI>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it's easy to add extra tags.)</LI>
+		 <LI class='todo'>Bug: At the moment this tool only works well if the element we fold up has a short text-heading appearing just before it.  Not all pages are like this, so we need to adapt the algorithm to work over a wider range of pages.</LI>
+		 <!-- <LI class='todo'>Bug: This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the block does have a header, and we don&quot;t use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI> -->
+		 <LI class='todo'>Todo: We could even create blocks to compress where there was no structure.  E.g. create a block between two HR tags, provided the text content in between is large.  Or in fact squash any blocks containing text, if the text is >=15&perc; of the parent&apos;s text.</LI>
+		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/trim_elements.js';
+			/* newScript.onload = (function(){ init(); }); */
+			document.body.appendChild(newScript);
+		})();">Trim to Search String</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Adds a search filter bar at the top of the page.  Hides all parts of the page except those matching your search expression.</P>
+		<LI class='done'>Added a nice unpleasant green style, and Close and Clear buttons. </LI>
+		<LI class='todo'>This is much faster in Konqueror than in Firefox.</LI>
+		<LI class='todo'>Bug: Sometimes we are wanting to select certain rows from a table, but this implementation hides the other cells in the row, even if one cell matches.</LI>
+		<LI class='todo'>Todo: The search expression is too simple, at the moment we perform an exact case-sensitive match.  We should allow multi-word search, and exclusion with &apos;-&apos;.</LI>
+		<LI class='todo'>Todo: Add options: case-sensitive, search HTML (rather than text), keep neighbours.</LI>
+		<LI class='external'>Note: Loads external script.</LI>
+	</BLOCKQUOTE>
+
+	<P>
+		<LI><A href="
+			javascript:
+			function attachClickListener(node,clickProcessor) {
+				if (node.captureEvents) {
+					node.captureEvents(Event.CLICK);
+				}
+				node.onmouseup = clickProcessor;
+				if (node.style) {
+					node.style.cursor = (clickProcessor?'crosshair':'');
+				}
+				var kids = node.childNodes;
+				for (var i=0;i<kids.length;i++) {
+					attachClickListener(kids[i],clickProcessor);
+				}
+			}
+			function processClick(evt) {
+				var node = evt.currentTarget;
+				window.status = 'Removed '+node;
+				attachClickListener(document,null);
+				node.innerHTML='';
+				node.parentNode.removeChild(node);
+			}
+			attachClickListener(document,processClick);
+		">Nuke next item clicked</A></LI>
+	<BLOCKQUOTE>
+		<P>Waits for user click, and removes whatever element they clicked on from the page.</P>
+		<LI class='todo'>Todo: Needs 'undo' feature.</LI>
+		<LI class='todo'>Todo: Add two icons to the page, one to re-use the bookmarklet, another to empty the Trash (undo the deletes).</LI>
+		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
+		<LI class='todo'>Todo: The element we want to destroy might not have any exposed surface to click on.  Maybe we can fatten out invisible/zero-size elements.  (E.g. mark each with a '.'s and give info on mouseover?)</LI>
+	</BLOCKQUOTE>
+	</P>
 
 	<P>
 		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
@@ -92,11 +149,11 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 						}
 						lastLoaded = linkNode;
 						lastbgcol = linkNode.style.backgroundColor;
-						linkNode.style.backgroundColor=\'#ddddff\';
+						linkNode.style.backgroundColor=\'#ffddff\';
 						/* linkNode.parentNode.style.backgroundColor=\'#88ee88\'; */
 						var colUp = linkNode.parentNode;
 						while (colUp.getElementsByTagName(\'A\').length == 1) {
-							colUp.style.backgroundColor=\'#bbbbff\';
+							colUp.style.backgroundColor=\'#ffbbff\';
 							colUp = colUp.parentNode;
 						}
 						top.window.frames[1].location = linkNode.href;
@@ -120,7 +177,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 					linkElem.onmouseout = clearLinkNode;
 					linkElem.onclick = eventHandler; /* Not really needed for navigation, since we have set target ok, but needed to update the highlight!  Unfortunately doesn_t succeed. :P */
 				}
-				linkNode = document.links[2]; doGet();
+				/* Unfortunately on Google results, loads the fat Maps page: linkNode = document.links[2]; doGet(); */
 			</SCRIPT>\n';
 			/* Safer but slower: */ var getback = document.location;
 			/* Faster but messy on various sites: var getback = 'javascript:top.document.write(top.frames[0].document.documentElement.innerHTML);'; */
@@ -142,7 +199,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 			window.frames[1].document.close();
 		})();">Split Preview</A> version 0.90</LI>
 		<BLOCKQUOTE>
-			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.  Great for quickly browsing search results.
 			<LI title='Unfortunately the implementation is to navigate the window to the remaining page.  I doubt we can destroy the frameset without destroying the page.' class='done'>There are now two close buttons available to the user, one for each frame.</LI>
 			<P class='todo'>Todo:</P>
 			<BLOCKQUOTE>
@@ -152,28 +209,9 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
 				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
 				<LI class='todo'>Bug/Feature: By quickly clicking on a link then moving away, it is possible to leave the highlight behind on an earlier link.</LI>
-				<LI class='external'>Note: Loads external script.</LI>
 			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
-
-	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
-
-	<P>
-		<LI><A target="_self" href="javascript:(function(){
-			var newScript = document.createElement('script');
-			newScript.type = 'text/javascript';
-			newScript.src = 'http://hwi.ath.cx/javascript/trim_elements.js';
-			/* newScript.onload = (function(){ init(); }); */
-			document.body.appendChild(newScript);
-		})();">Trim to Search String</A></LI>
-	</P>
-	<BLOCKQUOTE>
-		<P>Hides all parts of the page except those matching your search expression.</P>
-		<LI class='todo'>This is much faster in Konqueror than in Firefox.</LI>
-		<LI class='todo'>Sometimes we are wanting to select certain rows from a table, but this implementation hides the other cells in the row, even if one cell matches.</LI>
-		<LI class='external'>Note: Loads external script.</LI>
-	</BLOCKQUOTE>
 
 	<P>
 		<LI><A target='_self' href='javascript:
@@ -252,41 +290,12 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 		</BLOCKQUOTE>
 	</P>
 
-	<P>
-		<LI><A href="
-			javascript:
-			function attachClickListener(node,clickProcessor) {
-				if (node.captureEvents) {
-					node.captureEvents(Event.CLICK);
-				}
-				node.onmouseup = clickProcessor;
-				if (node.style) {
-					node.style.cursor = (clickProcessor?'crosshair':'');
-				}
-				var kids = node.childNodes;
-				for (var i=0;i<kids.length;i++) {
-					attachClickListener(kids[i],clickProcessor);
-				}
-			}
-			function processClick(evt) {
-				var node = evt.currentTarget;
-				window.status = 'Removed '+node;
-				attachClickListener(document,null);
-				node.innerHTML='';
-				node.parentNode.removeChild(node);
-			}
-			attachClickListener(document,processClick);
-		">Nuke next item clicked</A></LI>
-	<BLOCKQUOTE>
-		<P>Waits for user click, and removes whatever element they clicked on from the page.</P>
-		<LI class='todo'>Todo: Needs 'undo' feature.</LI>
-		<LI class='todo'>Todo: Add two icons to the page, one to re-use the bookmarklet, another to empty the Trash (undo the deletes).</LI>
-		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
-		<LI class='todo'>Todo: The element we want to destroy might not have any exposed surface to click on.  Maybe we can fatten out invisible/zero-size elements.  (E.g. mark each with a '.'s and give info on mouseover?)</LI>
-	</BLOCKQUOTE>
-	</P>
-
 </BLOCKQUOTE>
+<P>&nbsp;&nbsp;&nbsp;&nbsp;Notes for all Bookmarklets.</P>
+<BLOCKQUOTE>
+	<LI class='todo'>I introduced a different loading technique for all the external loading scripts, so that they work with Konqueror.  But it might be desirable for the Bookmarklet to use the FF way by default, and the Konqueror way only if Konqueror is detected.</LI>
+</BLOCKQUOTE>
+
 </DIV>
 
 <DIV class='section'>
@@ -378,6 +387,8 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 			<P>Displays the XPath of the focused element as a popup (sets title attribute).</P>
 			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 			<LI class='todo'>Can be sluggish to run on the heavier DOMs.</LI>
+			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn't highlight newly entered elements, it won't have to unhighlight them on the way out.</LI>
+			<LI class='todo'>Adapt the colour generator to produce pastels only.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -388,8 +399,6 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 				for (var i=0;i<node.childNodes.length;i++) {
 					processNode(node.childNodes.item(i));
 				}
-				/*node.onmouseover = doHighlight;
-				node.onmouseout  = undoHighlight;*/
 				var xpath = getXPath(node);
 				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.style) {
@@ -401,43 +410,13 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 				var s = ''+obj;
 				var hash = 0;
 				for (i=0;i<s.length;i++) {
-					hash += ((i+39357) %25 52597)*s.charCodeAt(i);
+					hash += ((i+393457) %25 572597)*s.charCodeAt(i);
 					hash = hash % 16777216;
 				}
 				var hex = hash.toString(16);
-				/*if (Math.floor(Math.random()*6) == 5) {
-					window.status = 'Did parseInt for \''+obj+'\' hash='+hash+' and got hex='+hex;
-				}*/
 				if (hex.length>6) hex=hex.substring(0,6);
 				while (hex.length<6) { hex='0'+hex; }
 				return hex;
-			}
-			function doHighlight(evt) {
-				var node = evt.currentTarget; /* try evt.srcElement if this fails. */
-				var xpath = getXPath(node);
-				/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
-				var simplexpath = xpath.replace(/[0-9]*/g,'');
-				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					node.title = xpath; /* this can break things if done on the wrong elements! */
-					if (node.style) {
-						node.style.backgroundColor = '#' + getColorFor(simplexpath);
-					}
-				}
-				/** This might display the xpath of elements which don't display their title but can be rolled over. **/
-				if (firstEvent) {
-					firstEvent = false;
-					/* Do whatever it is we want to do only on the topmost element. */
-					window.status = xpath;
-				} else {
-					/*if (xpath == '/html') {*/
-					if (node.tagName=='HTML' || node.tagName=='BODY') {
-						firstEvent = true;
-					}
-				}
-			}
-			function undoHighlight(evt) {
-				var node = evt.currentTarget;
-				node.style.backgroundColor = 'white'; /*document.bgcolor;*/ /*parents bgcol?  original bgcol?!*/
 			}
 			function getXPath(node) {
 				var parent = node.parentNode;
@@ -466,6 +445,61 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	</P>
 
 	<P>
+		<LI><A href="javascript:(function(){
+			var firstEvent = true;
+			function processNode(node) {
+				for (var i=0;i<node.childNodes.length;i++) {
+					processNode(node.childNodes.item(i));
+				}
+				var xpath = getXPath(node);
+				var simplexpath = xpath.substring(xpath.lastIndexOf('/')).replace(/[0-9]*/g,'');
+				if (node.style) {
+					node.style.backgroundColor = '#' + getColorFor(simplexpath);
+				}
+				node.title = simplexpath;
+			}
+			function getColorFor(obj) {
+				var s = ''+obj;
+				var hash = 0;
+				for (i=0;i<s.length;i++) {
+					hash += ((i+39357) %25 52597)*s.charCodeAt(i);
+					hash = hash % 16777216;
+				}
+				var hex = hash.toString(16);
+				/*if (Math.floor(Math.random()*6) == 5) {
+					window.status = 'Did parseInt for \''+obj+'\' hash='+hash+' and got hex='+hex;
+				}*/
+				if (hex.length>6) hex=hex.substring(0,6);
+				while (hex.length<6) { hex='0'+hex; }
+				return hex;
+			}
+			function getXPath(node) {
+				var parent = node.parentNode;
+				if (!parent) {
+					return '';
+				}
+				var siblings = parent.childNodes;
+				var totalCount = 0;
+				var thisCount = -1;
+				for (var i=0;i<siblings.length;i++) {
+					var sibling = siblings[i];
+					if (sibling.nodeType == node.nodeType) {
+						totalCount++;
+					}
+					if (sibling == node) {
+						thisCount = totalCount;
+					}
+				}
+				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
+			}
+			processNode(document.body);
+		})();">Highlight Structure</A> - Sober</LI>
+		<BLOCKQUOTE>
+			<P>Fewer colours (same tags have the same colour, no matter the depth), but still too much contrast.</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
 		<LI><A href="
 			javascript:(function(){
 				theForm = document.forms[0];
@@ -485,7 +519,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 </DIV>
 
 <DIV class='section'>
-<H3 id='dev'>Bookmarklets under Development</H3>
+<H3 id='dev'>Bookmarklets under Construction</H3>
 <BLOCKQUOTE>
 
 	<!-- <P>No bookmarklet in development on this page right now.  You probably wouldn't want to use it if it was. -->
@@ -507,11 +541,11 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 						}
 						lastLoaded = linkNode;
 						lastbgcol = linkNode.style.backgroundColor;
-						linkNode.style.backgroundColor=\'#bbffbb\';
+						linkNode.style.backgroundColor=\'#ffbbff\';
 						/* linkNode.parentNode.style.backgroundColor=\'#88ee88\'; */
 						var colUp = linkNode.parentNode;
 						while (colUp.getElementsByTagName(\'A\').length == 1) {
-							colUp.style.backgroundColor=\'#88ee88\';
+							colUp.style.backgroundColor=\'#ee88ee\';
 							colUp = colUp.parentNode;
 						}
 						top.window.frames[1].location = linkNode.href;
@@ -556,6 +590,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 						window.frames[0].document.getElementById(\'leftRow\').style.width = \'18px\';
 					}
 				}
+				/* Unfortunately on Google results, loads the fat Maps page: linkNode = document.links[3]; doGet(); */
 			</SCRIPT>\n';
 			var toggler = '<A class=\'specialButton\' href=\'javascript:toggleSideBar();\'>Collapse</A> | ';
 			/* Safer but slower: */ var getback = document.location;
@@ -593,6 +628,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
 			<LI class='done'>This version provides a 'Togglebar' to flatten/unflatten the sidebar.</LI>
 			<LI class='todo'>It's working quite OK in Firefox, but a bit messily in Konqueror.</LI>
+			<LI class='todo'>The ToggleBar should change height if the user resizes the window.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -600,7 +636,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 		<LI><A href="" title="Version 0.9">Auto Highlight</A></LI>
 	</P>
 	<BLOCKQUOTE>
-		<P>Checks document.referrer and if it contains a search expression, assume this is a result page, and highlight the search terms.</P>
+		<P>Checks document.location AND document.referrer and if the CGI contains a search expression, assume this is a result page, and highlight the search terms.</P>
 	</BLOCKQUOTE>
 
 	<P>
@@ -639,7 +675,7 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
 			window.open('http://www.google.com/search?as_lq='+escape(document.location),'_blank');
-		})();">Google Pages that Link to This</A></LI> (in a new window)
+		})();">Google Pages that Link to This</A> (in a new window)</LI>
 	</P>
 	<BLOCKQUOTE>
 		<P>Finds other pages on the web which link to this page.</P>
@@ -1455,12 +1491,40 @@ See also: <A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Jo
 	.tip {
 		background-color: #ffffdd;
 		padding: 10px;
+		border-style: solid;
+		border-width: 1px;
+		border-color: black;
 	}
-	/*.section {
+	h3 {
+		color: white;
+		/*background-color: #44bbbb;*/
 		background-color: #4444ee;
-		padding: 10px;
+		padding-left: 15px;
+		padding-right: 10px;
+		padding-top: 6px;
+		padding-bottom: 4px;
+		/*
+		padding-bottom: 0px;
+		*/
+		margin-top: 0px;
 	}
-	*/
+	.section {
+		background-color: #ffffff;
+		padding-top: 0px;
+		padding-left: 0px;
+		padding-right: 0px;
+		padding-bottom: 10px;
+		border-style: solid;
+		border-width: 2px;
+		border-color: black;
+		/*border-style: solid;
+		border-width: medium;
+		border-color: #000000;*/
+		margin-top: 10px;
+	}
+	blockquote {
+		margin-left: 32px;
+	}
 </STYLE>
 
 <!--
