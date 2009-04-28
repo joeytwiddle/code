@@ -53,6 +53,8 @@ then
 	simpleresponseheader
 fi
 
+## TODO: tohtml and fromhtml are scripts in jsh.  tocgi and fromcgi should sit alongside them.
+
 tocgi () {
 echo "$1" |
 sed '
@@ -342,3 +344,4 @@ s/%f[eE]/þ/g
 s/%f[fF]/ÿ/g
 '
 }
+
