@@ -19,18 +19,20 @@
 <xsl:include href="../xmlverbatim.xsl"/>
 
 	<xsl:template match="/">
+		<HTML><BODY>
 		<xsl:apply-templates select="//JumpgateData"/>
+		</BODY></HTML>
 	</xsl:template>
 
 	<xsl:template match="JumpgateData">
 
-		<H1>Jumpgate 2</H1>
+		<H1>Jumpgate 2 PROTOTYPE</H1>
 
-		A portal to search engines on the Web.
+		A portal to search engines on the Web.  See <A href="http://hwi.ath.cx/jumpgate.html">Jumpgate 1</A> (not a prototype) for the inspiration.  <!-- <TINY>If only it was valid HTML we could import its forms...!  But if it was valid HTML it would suck.</TINY> -->
 
 		<P/>
 
-		Wizard: <A href="formscraper.xsl?mode=addEntry">Create a new entry for the jumpgate from an existing website</A> (not finished; you must add the entry manually!)
+		Wizard: <A href="formscraper.xsl?mode=addEntry">Create a new entry for the jumpgate from an existing website</A> (not finished; you must add the entry manually; email it to me if it's good!)
 
 		<P/>
 
@@ -49,7 +51,7 @@
 
 		<xsl:for-each select="JumpgateEntry">
 			<table width="100%" bgcolor="#000000"><tr><td>
-			<table width="100%" cellspacing="5" bgcolor="#ffffff">
+			<table width="100%" cellspacing="5" bgcolor="#9999dd">
 			<tr>
 			<td>
 				<font size="+1"><xsl:value-of select="@name"/></font>
@@ -83,7 +85,7 @@
 					<!-- If the form does not have its own (possible named) submit button, then we add a default one. -->
 					<xsl:if test="not(HowToAccess/Form//*[name(.)='input'][@type='submit'])">
 						<DIV align="right">
-							<INPUT type="submit" value="Search &gt;"/>
+							<INPUT type="submit" value="Go &gt;"/>
 						</DIV>
 					</xsl:if>
 
@@ -120,7 +122,7 @@
 		<LI>The Wizard should also become a JumpgateEntry editor.  Maybe the Wizard could even handle versioning...?</LI>
 		</TL>
 		<P/>
-		DONE:
+		TODO: (why did I claim this was done?!)
 		<TL>
 		<LI>Also they should popup the search in a new window rather than replace the current webpage. </LI>
 		</TL>
@@ -140,6 +142,7 @@
 					<xsl:value-of select='string("var searchUrl = &#39;")'/>
 					<xsl:value-of select='./Form/@action'/>
 					<xsl:value-of select='string("&#63;")'/>
+					<!-- TODO: How do we process radio buttons, only the default selected one should be included in the Bookmarklet. -->
 					<xsl:for-each select="./Form/ExposedParameters/*[1]"> <!-- There can be only one! -->
 						<xsl:value-of select='@name'/>
 						<xsl:value-of select='string("=&#39;+searchStr+&#39;&amp;")'/>
