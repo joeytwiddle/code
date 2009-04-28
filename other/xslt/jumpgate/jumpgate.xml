@@ -1,124 +1,219 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="http://hwi.ath.cx/xslt/src/jumpgate/jumpgate.xsl"?>
 <JumpgateData>
-	<JumpgateEntry name="Google Search" contributor="joey">
+  <JumpgateEntry name="Google Search" contributor="joey">
+    <Category>General</Category>
+    <Description>Popular search engine (but TODO: bookmarklet is
+    slightly broken)</Description>
+    <HowToAccess>
+      <Form action="http://www.google.com/search">
+        <HiddenParameters>
+          <input type="hidden" name="hl" value="en" />
+          <input type="hidden" name="ie" value="ISO-8859-1" />
+          <!--
+                                                                                                                                                                <input id="all" type="radio" name="meta" value="" checked="checked" />
+                                                                                                                                                                <input id="cty" type="radio" name="meta" value="cr=countryUK|countryGB" />
+                                                                                                                                                                -->
+          <input id="all" type="hidden" name="meta" value="" />
+        </HiddenParameters>
+        <ExposedParameters>
+          <input type="text" name="q" value="" size="20" />
+          <input type="submit" value="Google Search" name="btnG" />
+          <input type="submit" value="I'm Feeling Lucky"
+          name="btnI" />
+        </ExposedParameters>
+      </Form>
+    </HowToAccess>
+  </JumpgateEntry>
+  <JumpgateEntry name="Wikipedia" contributor="joey">
+    <Category>General</Category>
+    <Description>Online community-written Encyclopedia - Look up
+    knowledge or add your own.</Description>
+    <HowToAccess>
+      <Form action="http://wikipedia.org/w/wiki.phtml">
+        <HiddenParameters>
+</HiddenParameters>
+        <ExposedParameters>
+          <INPUT type="text" name="search" size="25"
+          value="Wikipedia" maxlength="256" />
+        </ExposedParameters>
+      </Form>
+    </HowToAccess>
+  </JumpgateEntry>
+  <JumpgateEntry name="Packages.debian.org">
+    <Description>descriptionTODO</Description>
+    <Category>categoryTODO</Category>
+    <HowToAccess>
+      <Form action="http://packages.debian.org/cgi-bin/search_packages.pl">
 
-		<Category>General</Category>
-		<Description>Popular search engine (but TODO: bookmarklet is slightly broken)</Description>
-		<HowToAccess>
-			<Form action="http://www.google.com/search">
-				<HiddenParameters>
-					<input type="hidden" name="hl" value="en" />
-					<input type="hidden" name="ie" value="ISO-8859-1" />
-					<!--
-																				<input id="all" type="radio" name="meta" value="" checked="checked" />
-																				<input id="cty" type="radio" name="meta" value="cr=countryUK|countryGB" />
-																				-->
-					<input id="all" type="hidden" name="meta" value="" />
-				</HiddenParameters>
-				<ExposedParameters>
-					<input type="text" name="q" value="" size="20" />
-					<input type="submit" value="Google Search" name="btnG" />
-					<input type="submit" value="I'm Feeling Lucky"
-					name="btnI" />
-				</ExposedParameters>
-			</Form>
-		</HowToAccess>
-	</JumpgateEntry>
-	<JumpgateEntry name="Wikipedia" contributor="joey">
-		<Category>General</Category>
-		<Description>Online community-written Encyclopedia - Look up
-		knowledge or add your own.</Description>
-		<HowToAccess>
-			<Form action="http://wikipedia.org/w/wiki.phtml">
-				<HiddenParameters></HiddenParameters>
-				<ExposedParameters>
-					<INPUT type="text" name="search" size="25"
-					value="Wikipedia" maxlength="256" />
-				</ExposedParameters>
-			</Form>
-		</HowToAccess>
-	</JumpgateEntry>
-
-<JumpgateEntry name="Packages.debian.org">
-<Description>descriptionTODO</Description>
-<Category>categoryTODO</Category>
+        <HiddenParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="radio"
+          name="searchon" value="names" id="onlynames"
+          checked="true">
+</input>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="radio"
+          name="searchon" value="all" id="descs">
+</input>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="radio"
+          name="searchon" value="sourcenames" id="src">
+</input>
+          <input xmlns="http://www.w3.org/1999/xhtml"
+          type="checkbox" name="subword" value="1" checked="true">
+          </input>
+          <input xmlns="http://www.w3.org/1999/xhtml"
+          type="checkbox" name="case" value="sensitive">
+</input>
+          <select xmlns="http://www.w3.org/1999/xhtml"
+          name="version">
+            <option value="unstable">unstable</option>
+            <option value="testing">testing</option>
+            <option value="stable" selected='true'>stable</option>
+            <option value="all">any</option>
+          </select>
+          <select xmlns="http://www.w3.org/1999/xhtml"
+          name="release">
+            <option value="main">main</option>
+            <option value="contrib">contrib</option>
+            <option value="non-free">non-free</option>
+            <option value="non-us">non-US</option>
+            <option value="all" selected='true'>any</option>
+          </select>
+        </HiddenParameters>
+        <ExposedParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="text"
+          size="30" name="keywords" id="kw">
+</input>
+        </ExposedParameters>
+      </Form>
+    </HowToAccess>
+  </JumpgateEntry>
+  <JumpgateEntry name="Dictionary.com" action="/search">
+    <Description>descriptionTODO</Description>
+    <Category>categoryTODO</Category>
+    <HowToAccess>
+      <Form action="http://www.dictionary.com/search">
+        <HiddenParameters>
+</HiddenParameters>
+        <ExposedParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="radio"
+          name="db" value="*" id="d">
+</input>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="radio"
+          name="db" value="web" id="w">
+</input>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="text"
+          name="q" value="" size="25" maxlength="256"
+          style="font-size:12pt;">
+</input>
+        </ExposedParameters>
+      </Form>
+    </HowToAccess>
+  </JumpgateEntry>
+  <CopyFormFromPage name="Google Search"
+  page="http://www.google.com/" />
+  <!--
+                                <CopyFormFromPage name="Joey's Jumpgate" page="http://hwi.ath.cx/jumpgate.html"/>
+                                -->
+  <CopyFormFromPage name="FlyBe.com"
+  page="http://www3.flybe.com/obs/booking-controller/" />
+  <JumpgateEntry name="Create a new jumpgate entry">
+    <Description>Just enter the URL of a webpage with a search that
+    you like, and follow the wizard. Note the default bookmarklet
+    is not very suitable (unless you first highlight the URL on
+    which the search engine is located), but if the bookmarklet
+    worked on obtaining the current / referring page, it would be
+    fine.</Description>
+    <Category>Jumpgate</Category>
+    <HowToAccess>
+      <Form action="formscraper.xsl">
+        <HiddenParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="hidden"
+          name="mode" value="addEntryProgress">
+</input>
+        </HiddenParameters>
+        <ExposedParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="text"
+          name="urlToScrape" value="http://" size="30"
+          maxlength="9999">
+</input>
+        </ExposedParameters>
+      </Form>
+    </HowToAccess>
+  </JumpgateEntry>
+  <JumpgateEntry name="TorrentSpy">
+    <Description>TorrentSpy is a great search engine for BitTorrent
+    files</Description>
+    <Category>Files</Category>
+    <HowToAccess>
+      <Form action="http://www.torrentspy.com/search.asp">
+        <HiddenParameters>
+          <!-- <input xmlns="http://www.w3.org/1999/xhtml" type="image"
+          border="0"
+          src="http://images.torrentspy.com/graphics/torrent_spy_index_34.gif"
+          name="submit" align="top">
+</input> -->
+        </HiddenParameters>
+        <ExposedParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="text"
+          size="44" name="query" value="">
+</input>
+        </ExposedParameters>
+      </Form>
+    </HowToAccess>
+  </JumpgateEntry>
+  <JumpgateEntry name="TorrentReactor">
+    <Description>Another torrent search engine</Description>
+    <Category>Files</Category>
+    <HowToAccess>
+      <Form action="http://www.torrentreactor.net/search.php">
+        <HiddenParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="Hidden"
+          name="search">
+</input>
+          <select xmlns="http://www.w3.org/1999/xhtml" size="1"
+          name="cid">
+            <option value="">Any category</option>
+            <option value="1">Anime</option>
+            <option value="2">Appz</option>
+            <option value="3">Games</option>
+            <option value="4">Hentai</option>
+            <option value="5">Movies</option>
+            <option value="6">Music</option>
+            <option value="7">Other</option>
+            <option value="8">Series/TV Shows</option>
+            <option value="10">XXX/Porn</option>
+          </select>
+          <!--
+          <input xmlns="http://www.w3.org/1999/xhtml" type="image"
+          src="http://69.50.170.26/images/btnGo.gif" name="B1"
+          align="absmiddle">
+</input>
+          -->
+        </HiddenParameters>
+        <ExposedParameters>
+          <input xmlns="http://www.w3.org/1999/xhtml" type="text"
+          name="words" size="20">
+</input>
+        </ExposedParameters>
+      </Form>
+    </HowToAccess>
+  </JumpgateEntry>
+<JumpgateEntry name="WineHQ">
+<Description>Find out whether an application works in Wine, the Windows (not) emulator for Linux</Description>
+<Category>Software</Category>
 <HowToAccess>
-<Form action="http://packages.debian.org/cgi-bin/search_packages.pl">
+<Form action="http://www.google.com/search">
 <HiddenParameters>
-<input xmlns="http://www.w3.org/1999/xhtml" type="radio" name="searchon" value="names" id="onlynames" checked="true">
+<input xmlns="http://www.w3.org/1999/xhtml" type="hidden" name="domains" value="www.winehq.org">
 </input>
-<input xmlns="http://www.w3.org/1999/xhtml" type="radio" name="searchon" value="all" id="descs">
+<input xmlns="http://www.w3.org/1999/xhtml" type="hidden" name="sitesearch" value="www.winehq.org">
 </input>
-<input xmlns="http://www.w3.org/1999/xhtml" type="radio" name="searchon" value="sourcenames" id="src">
-</input>
-<input xmlns="http://www.w3.org/1999/xhtml" type="checkbox" name="subword" value="1" checked="true">
-</input>
-<input xmlns="http://www.w3.org/1999/xhtml" type="checkbox" name="case" value="sensitive">
-</input>
-<select xmlns="http://www.w3.org/1999/xhtml" name="version">
-<option value="unstable">unstable</option>
-<option value="testing">testing</option>
-<option value="stable" selected='true'>stable</option>
-<option value="all">any</option>
-</select>
-<select xmlns="http://www.w3.org/1999/xhtml" name="release">
-<option value="main">main</option>
-<option value="contrib">contrib</option>
-<option value="non-free">non-free</option>
-<option value="non-us">non-US</option>
-<option value="all" selected='true'>any</option>
-</select>
 </HiddenParameters>
 <ExposedParameters>
-<input xmlns="http://www.w3.org/1999/xhtml" type="text" size="30" name="keywords" id="kw">
+<input xmlns="http://www.w3.org/1999/xhtml" type="text" name="q" value="Enter Search!" onblur="if (value == '') {value = 'Enter Search!'}" onfocus="if (value == 'Enter Search!') {value =''}" size="12" maxlength="80" class="searchInput">
 </input>
 </ExposedParameters>
 </Form>
 </HowToAccess>
 </JumpgateEntry>
-
-	<JumpgateEntry name="Dictionary.com" action="/search">
-
-		<Description>descriptionTODO</Description>
-		<Category>categoryTODO</Category>
-		<HowToAccess>
-			<Form action="http://www.dictionary.com/search">
-				<HiddenParameters>
-					<input xmlns="http://www.w3.org/1999/xhtml" type="radio"
-					name="db" value="*" id="d"></input>
-					<input xmlns="http://www.w3.org/1999/xhtml" type="radio"
-					name="db" value="web" id="w"></input>
-				</HiddenParameters>
-				<ExposedParameters>
-					<input xmlns="http://www.w3.org/1999/xhtml" type="text" name="q" value="" size="25" maxlength="256" style="font-size:12pt;"></input>
-				</ExposedParameters>
-			</Form>
-		</HowToAccess>
-	</JumpgateEntry>
-	<CopyFormFromPage name="Google Search"
-	page="http://www.google.com/" />
-	<!--
-				<CopyFormFromPage name="Joey's Jumpgate" page="http://hwi.ath.cx/jumpgate.html"/>
-				-->
-	<CopyFormFromPage name="FlyBe.com"
-	page="http://www3.flybe.com/obs/booking-controller/" />
-
-<JumpgateEntry name="Create a new jumpgate entry">
-<Description>Just enter the URL of a webpage with a search that you like, and follow the wizard.  Note the default bookmarklet is not very suitable (unless you first highlight the URL on which the search engine is located), but if the bookmarklet worked on obtaining the current / referring page, it would be fine.</Description>
-<Category>Jumpgate</Category>
-<HowToAccess>
-<Form action="formscraper.xsl">
-<HiddenParameters>
-<input xmlns="http://www.w3.org/1999/xhtml" type="hidden" name="mode" value="addEntryProgress">
-</input>
-</HiddenParameters>
-<ExposedParameters>
-<input xmlns="http://www.w3.org/1999/xhtml" type="text" name="urlToScrape" value="http://" size="30" maxlength="9999">
-</input>
-</ExposedParameters>
-</Form>
-</HowToAccess>
-</JumpgateEntry>
-
 </JumpgateData>
