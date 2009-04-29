@@ -12,31 +12,19 @@
 <H3>Introduction</H3>
 <BLOCKQUOTE>
 
-<DIV>
-	<P>This page contains bookmarklets which I am developing.</P>
-	<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
-	<P>For a big list of all my collected bookmarklets, along with a code viewer, visit:</P>
-	<BLOCKQUOTE><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&quot;s Minitools/Bookmarklets</A></BLOCKQUOTE>
-	<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a Web Page, they perform <I>useful actions</I> <B>on the page you are viewing</B>.</P>
-	<P>Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)</P>
-	<P>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</P>
-	<!-- <P class='external'>Bookmarklets marked in yellow do not contain all the code themselves, but load an external javascript file from hwi.ath.cx.  You rarely need to upgrade these bookmarklets because they are always loading the latest version.  But if I develop the script and break it, your bookmarklet may stop working.</P> -->
-</DIV>
+	<DIV>
+		<P>This page contains bookmarklets which I am developing.</P>
+		<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
+		<P>For a big list of all my collected bookmarklets, along with a code viewer, visit:</P>
+		<BLOCKQUOTE><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&quot;s Minitools/Bookmarklets</A></BLOCKQUOTE>
+		<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a Web Page, they perform <I>useful actions</I> <B>on the page you are viewing</B>.</P>
+		<P>Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)</P>
+		<P>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</P>
+		<!-- <P class='external'>Bookmarklets marked in yellow do not contain all the code themselves, but load an external javascript file from hwi.ath.cx.  You rarely need to upgrade these bookmarklets because they are always loading the latest version.  But if I develop the script and break it, your bookmarklet may stop working.</P> -->
+	</DIV>
 
 </BLOCKQUOTE>
 </DIV>
-
-<!--
-<H3>Testing Bookmarklets</H3>
-<BLOCKQUOTE>
-	<P>The bookmarklets in this section are IN DEVELOPMENT!  You probably don't want to try using them just yet.  Go for the Ready to use Bookmarklets instead.</P>
-</BLOCKQUOTE>
-<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
--->
-
-<!-- I didn't feel like making a css class for that one-off. ;p -->
-
-
 
 <DIV class='section'>
 <H3>User Bookmarklets</H3>
@@ -127,7 +115,8 @@
 			attachClickListener(document,processClick);
 		">Nuke next item clicked</A></LI>
 	<BLOCKQUOTE>
-		<P>Waits for user click, and removes whatever element they clicked on from the page.</P>
+		<P>Waits for user click, and hides whatever element they clicked on from the page.</P>
+		<LI class='todo'>Todo: Actually destroy the element!  This is more like a Zap script.</LI>
 		<LI class='todo'>Todo: Needs 'undo' feature.</LI>
 		<LI class='todo'>Todo: Add two icons to the page, one to re-use the bookmarklet, another to empty the Trash (undo the deletes).</LI>
 		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
@@ -203,12 +192,15 @@
 			<LI title='Unfortunately the implementation is to navigate the window to the remaining page.  I doubt we can destroy the frameset without destroying the page.' class='done'>There are now two close buttons available to the user, one for each frame.</LI>
 			<P class='todo'>Todo:</P>
 			<BLOCKQUOTE>
-				<LI class='todo'>Open the first link automatically.</LI>
+				<LI class='todo'>Open the first link automatically.  <DIV class='done'>I tried this and realised it&apos;s not always desirable. Google result&apos;s first link is GoogleMaps with a big flash-app.</DIV></LI>
 				<LI class='todo'>Thin frame across the top of the two panes, containing all the buttons+options, including Next/Previous buttons.</LI>
 				<LI class='todo'>Maybe also a squish/unsquish button for the sidebar (temporarily almost-maximize preview frame)?</LI>
 				<LI class='todo'>Also might be nice to have 'MoveRightFrameToLeft' and also a back button for that feature.  This would describe a sort of history-tree-browsing way or surfing, somewhat similar to the early Gnome2 file-chooser.</LI>
 				<LI class='todo'>Consider an alternative approach: forget the left frame, just have a thin top frame with all the links from the page presented as tabs, which open in the mainframe below.  We could even do this without frames, just a table and an IFrame (or a hidden stack/cache of IFrames).</LI>
 				<LI class='todo'>Bug/Feature: By quickly clicking on a link then moving away, it is possible to leave the highlight behind on an earlier link.</LI>
+				<LI class='todo'>Bug: If you click e.g. a &quot;Next&quot; link in the side-pane, that frame will navigate but you will lose the bookmarklet&apos;s functionality.  We might require a userscript to overcome this.</LI>
+				<LI class='todo'>Some pages break out of frames.  I don&apos;t know how to prevent this.</LI>
+				<LI class='todo'>Remove the hover?  Fix the sticky-hover bug?</LI>
 			</BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
@@ -290,10 +282,11 @@
 		</BLOCKQUOTE>
 	</P>
 
-</BLOCKQUOTE>
-<P>&nbsp;&nbsp;&nbsp;&nbsp;Notes for all Bookmarklets.</P>
-<BLOCKQUOTE>
-	<LI class='todo'>I introduced a different loading technique for all the external loading scripts, so that they work with Konqueror.  But it might be desirable for the Bookmarklet to use the FF way by default, and the Konqueror way only if Konqueror is detected.</LI>
+	<H4>Notes for all Bookmarklets</H4>
+	<BLOCKQUOTE>
+		<LI class='todo'>I introduced a different loading technique for all the external loading scripts, so that they work with Konqueror.  But it might be desirable for the Bookmarklet to use the FF way by default, and the Konqueror way only if Konqueror is detected.</LI>
+	</BLOCKQUOTE>
+
 </BLOCKQUOTE>
 
 </DIV>
@@ -301,6 +294,15 @@
 <DIV class='section'>
 <H3>Web-Developer Bookmarklets</H3>
 <BLOCKQUOTE>
+
+	<!--
+	<H3>Testing Bookmarklets</H3>
+	<BLOCKQUOTE>
+		<P>The bookmarklets in this section are IN DEVELOPMENT!  You probably don't want to try using them just yet.  Go for the Ready to use Bookmarklets instead.</P>
+	</BLOCKQUOTE>
+	<SCRIPT type='text/javascript'> document.getElementsByTagName('BLOCKQUOTE')[0].style.backgroundColor='#cc8888'; </SCRIPT>
+	-->
+	<!-- I didn't feel like making a css class for that one-off. ;p -->
 
 	<P>
 		<LI><A href="javascript:(function(){
@@ -515,6 +517,74 @@
 		</BLOCKQUOTE>
 	</P>
 
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			window.open('http://www.google.com/search?as_lq='+escape(document.location),'_blank');
+		})();">Google for Pages that Link to This</A> (pops up in a new tab/window)</LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Finds other pages on the web which link to this page.</P>
+	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			document.runCmd =
+			function runCmd(cmd) {
+				var result;
+				try {
+					result = ''+eval(cmd);
+				} catch (e) {
+					result = 'Error: '+e;
+				}
+				/*document.getElementById('qconsOut').innerHTML = escape(result);*/
+				document.getElementById('qconsOut').value = (result);
+			};
+			var myDiv = document.createElement('div');
+			myDiv.setAttribute('class','qcons');
+			/* &lt;IFRAME width=\'100%\' height=\'50px\'/&gt;\n */
+			/* &lt;P id=\'qconsOut\'&gt;&lt;/P&gt;\n */
+			/* &lt;B&gt;qCons:&lt;/&gt; */
+			myDiv.innerHTML = '
+				&lt;FONT size=\'-2\'&gt;
+				&lt;TEXTAREA rows=\'5\' cols=\'100\' id=\'qconsOut\'&gt;&lt;/TEXTAREA&gt;\n
+				[&lt;A href=\'javascript:myDiv.parentNode.removeChild(myDiv); myStyle.parentNode.removeChild(myStyle);\' title=\'\'>X&lt;/A&gt;]\n
+				&lt;/FONT&gt;
+				&lt;BR/&gt;
+				&lt;INPUT type=\'text\' name=\'cmd\' value=\'\' size=\'100\' onchange=\'if (value) { runCmd(value); }\'/&gt;\n
+			';
+			/* FAIL (style has no setter): myDiv.style = '{ position: color: red; fixed; bottom: 8px; z-index: 10000; }'; */
+			var myStyle = document.createElement('style');
+			myStyle.setAttribute('type','text/css');
+			/* Works for Moz: */
+			myStyle.innerHTML = 'div.qcons { color: white; background-color: #44aa44; position: fixed; left: 2px; right: 2px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; }';
+			/* Works for Konq: */
+			var x;
+			if (myDiv.style.setAttribute) {
+				x = myDiv.style;
+				x.setAttribute('color','white');
+				x.setAttribute('background-color','#44aa44');
+				x.setAttribute('padding','8px');
+				x.setAttribute('position','fixed');
+				x.setAttribute('left','2px');
+				x.setAttribute('right','2px');
+				x.setAttribute('bottom','2px');
+				x.setAttribute('z-index','10000');
+				x.setAttribute('text-align','center'); /* TODO konq fail */
+				x.setAttribute('padding','4px');
+				x.setAttribute('border','2px solid black');
+			}
+			document.documentElement.appendChild(myStyle);
+			document.documentElement.appendChild(myDiv);
+			document.body.style.marginBottom = '110px';
+			/* Give access to the Close link: */
+			top.myDiv = myDiv;
+			top.myStyle = myStyle;
+		})();">Quick Javascript Console</A> - Yet another</LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Well I had to make my own of course!</P>
+	</BLOCKQUOTE>
+
 </BLOCKQUOTE>
 </DIV>
 
@@ -633,13 +703,6 @@
 	</P>
 
 	<P>
-		<LI><A href="" title="Version 0.9">Auto Highlight</A></LI>
-	</P>
-	<BLOCKQUOTE>
-		<P>Checks document.location AND document.referrer and if the CGI contains a search expression, assume this is a result page, and highlight the search terms.</P>
-	</BLOCKQUOTE>
-
-	<P>
 		<LI><A target="_self" href="javascript:(function(){
 			function checkDoneLoading() {
 				if (this.powerbar_init != undefined) {
@@ -674,11 +737,17 @@
 
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
-			window.open('http://www.google.com/search?as_lq='+escape(document.location),'_blank');
-		})();">Google Pages that Link to This</A> (in a new window)</LI>
+			alert('TODO');
+		})();">Turn this page into a drop-down.</A></LI>
 	</P>
 	<BLOCKQUOTE>
-		<P>Finds other pages on the web which link to this page.</P>
+		<P>Generates a Bookmarklet which when invoked later offers a drop down menu of:</P>
+		<BLOCKQUOTE>
+			<LI>Opening the original page.</LI>
+			<LI>All the links on the original page.  (Maybe those links were bookmarklets ^^.  Optional: generate menu in tree, according to page.)</LI>
+		</BLOCKQUOTE>
+		<P>Maybe it isn&apos;t an immediate drop-down menu, but it sits as an icon until clicked.</P>
+		<P>If the user wants to keep it alive, we will need to keep our functions safe in a different frame.  But in that case all the bookmarks will need to be retargetted at the relevant frame.</P>
 	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
@@ -687,6 +756,15 @@
 <DIV class='section'>
 <H3>Wanted / TODO</H3>
 <BLOCKQUOTE class='todo'>
+
+	<P>
+		<LI><A href="" title="Version 0.9">Auto Highlight</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Checks document.location AND document.referrer and if the CGI contains a search expression, assume this is a result page, and highlight the search terms.</P>
+	</BLOCKQUOTE>
+
+	<P>TODO: Userscript that does: if target of link is an image, on mouseover, load image in popup iframe</P>
 
 	<P>
 		MakeABookmarkletFromTheSearchFormOnThisPage ^^
@@ -928,7 +1006,7 @@
 				-->
 			</P>
 			<LI class='done'>In this version only, links from the left pane open in a new tab/window when clicked.</LI>
-			<!-- When I am using the SplitPreview, I am very annoyed when I accidentally click and lose it!  In Konq, we need to reload the bookmarklet, we can't just 'go back'.. -->
+			<!-- When I am using the Split Preview, I am very annoyed when I accidentally click and lose it!  In Konq, we need to reload the bookmarklet, we can't just 'go back'.. -->
 		</BLOCKQUOTE>
 	</P>
 
@@ -1543,6 +1621,19 @@ document.writeln('<P>Escaped '+cnt+" bookmarklets.</P>");
 */
 </SCRIPT>
 -->
+
+<P>Some inspiration for scripts was drawn from the collection at <A href="https://www.squarefree.com/bookmarklets/">Jesse&apos;s Bookmarklets Site</A> at squarefree.com.</P>
+
+<H4>Comments / Feedback</H4>
+<BLOCKQUOTE>
+<IFRAME width="100%" height="200px" src="http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title="/>
+</BLOCKQUOTE>
+
+<SCRIPT>
+if (alert.oldconfirm) {
+	document.write("<P align='right'>You are protected from infinite alert loops by <A href='http://hwi.ath.cx/javascript/alert_watcher.user.js'>alert_watcher script</A>.</P>");
+}
+</SCRIPT>
 
 </BODY>
 </HTML>
