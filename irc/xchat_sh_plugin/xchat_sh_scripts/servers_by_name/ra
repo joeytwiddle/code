@@ -3,4 +3,5 @@
 # then shift ; ./utp "$@" 212.112.241.32:3333 # fix's new
 # else ./utp "$@" 85.236.100.43:8859 # fix's was down: 212.112.241.32:7877
 # fi
-./ut_servers/searchserv " RA-"
+# ./ut_servers/searchserv " RA-"
+./utp 69.28.220.3
