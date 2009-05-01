@@ -536,6 +536,15 @@
 				/*document.getElementById('qconsOut').innerHTML = escape(result);*/
 				document.getElementById('qconsOut').value = (result);
 			};
+			function checkKey(evt) {
+				if (evt.keyCode == 27) {
+					closeQuickConsole();
+				}
+			}
+			function closeQuickConsole() {
+				myDiv.parentNode.removeChild(myDiv);
+				myStyle.parentNode.removeChild(myStyle);
+			}
 			var myDiv = document.createElement('div');
 			myDiv.setAttribute('class','qcons');
 			/* &lt;IFRAME width=\'100%\' height=\'50px\'/&gt;\n */
@@ -570,6 +579,7 @@
 				x.setAttribute('padding','4px');
 				x.setAttribute('border','2px solid black');
 			}
+			myDiv.onkeypress = checkKey;
 			document.documentElement.appendChild(myStyle);
 			document.documentElement.appendChild(myDiv);
 			document.body.style.marginBottom = '110px';
@@ -580,6 +590,7 @@
 	</P>
 	<BLOCKQUOTE>
 		<P>Well I had to make my own of course!</P>
+		<LI class='done'>Closes on Escape key (Mozilla only I think).  It&quot;s working when focused on the input box, but not .</LI>
 		<LI class='todo'>Todo: Close button is in the wrong place.</LI>
 		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
 	</BLOCKQUOTE>
