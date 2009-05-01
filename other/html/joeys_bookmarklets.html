@@ -16,7 +16,7 @@
 		<P>This page contains bookmarklets which I am developing.</P>
 		<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
 		<P>For a big list of all my collected bookmarklets, along with a code viewer, visit:</P>
-		<BLOCKQUOTE><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&quot;s Minitools/Bookmarklets</A></BLOCKQUOTE>
+		<BLOCKQUOTE><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&apos;s Minitools/Bookmarklets</A></BLOCKQUOTE>
 		<P>Bookmarklets are a bit like Bookmarks, but instead of taking you to a Web Page, they perform <I>useful actions</I> <B>on the page you are viewing</B>.</P>
 		<P>Click on a bookmarklet below to try it out.  (Reload the page or navigate back if you don&apos;t like the results!)</P>
 		<P>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</P>
@@ -86,6 +86,7 @@
 		<LI class='todo'>Bug: Sometimes we are wanting to select certain rows from a table, but this implementation hides the other cells in the row, even if one cell matches.</LI>
 		<LI class='todo'>Todo: The search expression is too simple, at the moment we perform an exact case-sensitive match.  We should allow multi-word search, and exclusion with &apos;-&apos;.</LI>
 		<LI class='todo'>Todo: Add options: case-sensitive, search HTML (rather than text), keep neighbours.</LI>
+		<LI class='todo'>Todo: Allow trimming by XPath expression.  This can be very useful to extract precise elements of the page (e.g. Headings), or just to test an XPath.  If we display results in a small window (not the doc itself), user can click on each to jump to that part of the page!  So user just needs to find an XPath matching the headings, then he has built an index/contents navigation-assisting sidebar.</LI>
 		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
@@ -282,11 +283,6 @@
 		</BLOCKQUOTE>
 	</P>
 
-	<H4>Notes for all Bookmarklets</H4>
-	<BLOCKQUOTE>
-		<LI class='todo'>I introduced a different loading technique for all the external loading scripts, so that they work with Konqueror.  But it might be desirable for the Bookmarklet to use the FF way by default, and the Konqueror way only if Konqueror is detected.</LI>
-	</BLOCKQUOTE>
-
 </BLOCKQUOTE>
 
 </DIV>
@@ -387,6 +383,7 @@
 		<BLOCKQUOTE>
 			<P>Colours the background of every element in the document according to its path.</P>
 			<P>Displays the XPath of the focused element as a popup (sets title attribute).</P>
+			<P>Useful when using Nuke, to find the element you really need to kill. <SPAN class='todo'>Todo: Include Highlight Structure in Nuke automatically.</SPAN></P>
 			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 			<LI class='todo'>Can be sluggish to run on the heavier DOMs.</LI>
 			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn't highlight newly entered elements, it won't have to unhighlight them on the way out.</LI>
@@ -546,8 +543,8 @@
 			/* &lt;B&gt;qCons:&lt;/&gt; */
 			myDiv.innerHTML = '
 				&lt;FONT size=\'-2\'&gt;
-				&lt;TEXTAREA rows=\'5\' cols=\'100\' id=\'qconsOut\'&gt;&lt;/TEXTAREA&gt;\n
-				[&lt;A href=\'javascript:myDiv.parentNode.removeChild(myDiv); myStyle.parentNode.removeChild(myStyle);\' title=\'\'>X&lt;/A&gt;]\n
+				&lt;TEXTAREA rows=\'5\' cols=\'100\' id=\'qconsOut\' readonly&gt;&lt;/TEXTAREA&gt;\n
+				[&lt;A href=\'javascript:(function(){myDiv.parentNode.removeChild(myDiv); myStyle.parentNode.removeChild(myStyle);})();\' title=\'\'>X&lt;/A&gt;]\n
 				&lt;/FONT&gt;
 				&lt;BR/&gt;
 				&lt;INPUT type=\'text\' name=\'cmd\' value=\'\' size=\'100\' onchange=\'if (value) { runCmd(value); }\'/&gt;\n
@@ -583,6 +580,8 @@
 	</P>
 	<BLOCKQUOTE>
 		<P>Well I had to make my own of course!</P>
+		<LI class='todo'>Todo: Close button is in the wrong place.</LI>
+		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
 	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
@@ -591,6 +590,45 @@
 <DIV class='section'>
 <H3 id='dev'>Bookmarklets under Construction</H3>
 <BLOCKQUOTE>
+
+<!--
+	<SCRIPT type="text/javascript">
+	/* Until I&quot;ve finished reading it, this is a copy of the Highlight... bookmarklet. */
+	javascript:(function(){
+		var count = 0, text, dv;
+		text = prompt("Search phrase:", "");
+		if(text==null || text.length==0)
+			return;
+		dv = document.defaultView;
+		function searchWithinNode(node, te, len){
+			var pos, skip, spannode, middlebit, endbit, middleclone;
+			skip = 0;
+			if(node.nodeType == 3) {
+				pos = node.data.toUpperCase().indexOf(te);
+				if(pos >= 0) {
+					spannode = document.createElement("SPAN");
+					spannode.style.backgroundColor = "yellow";
+					middlebit = node.splitText(pos);
+					endbit = middlebit.splitText(len);
+					middleclone = middlebit.cloneNode(true);
+					spannode.appendChild(middleclone);
+					middlebit.parentNode.replaceChild(spannode,middlebit);
+					++count;
+					skip = 1;
+				}
+			} else if (node.nodeType==1&& node.childNodes && node.tagName.toUpperCase()!="SCRIPT" && node.tagName.toUpperCase!="STYLE") {
+				for (var child=0; child < node.childNodes.length; ++child){
+					child=child+searchWithinNode(node.childNodes[child], te, len);
+				}
+			}
+			return skip;
+		}
+		window.status="Searching for '"+text+"'...";
+		searchWithinNode(document.body, text.toUpperCase(), text.length);
+		window.status="Found "+count+" occurrence"+(count==1?"":"s")+" of '"+text+"'.";
+	)();
+	</SCRIPT>
+-->
 
 	<!-- <P>No bookmarklet in development on this page right now.  You probably wouldn't want to use it if it was. -->
 	<!-- I might even consider separating my development and release pages. --></P>
@@ -695,10 +733,53 @@
 			window.frames[0].document.getElementById('leftRow').style.height = top.window.innerHeight - 24;
 		})();">Split Preview</A> version 0.89 DEV - Toggle</LI>
 		<BLOCKQUOTE>
-			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.
+			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
 			<LI class='done'>This version provides a 'Togglebar' to flatten/unflatten the sidebar.</LI>
 			<LI class='todo'>It's working quite OK in Firefox, but a bit messily in Konqueror.</LI>
 			<LI class='todo'>The ToggleBar should change height if the user resizes the window.</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			function togglePreview(evt) {
+				var hit = evt.currentTarget;
+				var link = hit.nextSibling;
+				if (link.href) {
+					/*var newNode = document.createElement('P');*/
+					var newIFrame = document.createElement('IFRAME');
+					newIFrame.src = link.href;
+					newIFrame.width = '100%';
+					newIFrame.height = '320';
+					hit.parentNode.insertBefore(newIFrame,hit.nextSibling);
+				} else {
+					window.status = 'togglePreview() Failed to find link sibling '+link+' for '+hit;
+				}
+			}
+			/*for (var link in document.getElementsByTagName('A')) {*/
+			for (i=0;i<document.links.length;i++) {
+				var link = document.links[i];
+				var newNode = document.createElement('SPAN');
+				newNode.innerHTML = '<IMG src=\'http://hwi.ath.cx/images/plus.png\'/>\n';
+				link.parentNode.insertBefore(newNode,link);
+				newNode.onclick = togglePreview;
+			}
+		})();">Inline Preview</A> - an alternative approach if you didn't like Split Preview.</LI>
+		<BLOCKQUOTE>
+			<P>Adds a 'preview' to each link, to open it 'inline' in an IFrame.</P>
+			<LI class='todo'>Alternatively to clicking, show popup preview on hover.</LI>
+			<LI class='todo'>Very initial implementation (PoC).</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/friendly_preview.js';
+			document.documentElement.getElementsByTagName('HEAD')[0].appendChild(newScript);
+		})();">Friendly Preview</A></LI>
+		<BLOCKQUOTE>
 		</BLOCKQUOTE>
 	</P>
 
@@ -745,6 +826,7 @@
 		<BLOCKQUOTE>
 			<LI>Opening the original page.</LI>
 			<LI>All the links on the original page.  (Maybe those links were bookmarklets ^^.  Optional: generate menu in tree, according to page.)</LI>
+			<LI>In other words, I intend to run this script on my Minitools (collected bookmarklets) page, to generate a bookmarklet which contains all of them in a menu.  :)</LI>
 		</BLOCKQUOTE>
 		<P>Maybe it isn&apos;t an immediate drop-down menu, but it sits as an icon until clicked.</P>
 		<P>If the user wants to keep it alive, we will need to keep our functions safe in a different frame.  But in that case all the bookmarks will need to be retargetted at the relevant frame.</P>
@@ -756,6 +838,10 @@
 <DIV class='section'>
 <H3>Wanted / TODO</H3>
 <BLOCKQUOTE class='todo'>
+
+	<BLOCKQUOTE>
+		<LI class='todo'>I introduced a different loading technique for all the external loading scripts that don&apos;t auto-init, so that they work with Konqueror.  (Such scripts are more powerful since they can be loaded as libraries, but it&apos;s not essential: we can create scripts which call their own init() function.)  But it might be desirable for the Bookmarklet to use the FF way by default, and the Konqueror way only if Konqueror is detected.</LI>
+	</BLOCKQUOTE>
 
 	<P>
 		<LI><A href="" title="Version 0.9">Auto Highlight</A></LI>
@@ -1601,7 +1687,7 @@
 		margin-top: 10px;
 	}
 	blockquote {
-		margin-left: 32px;
+		/* margin-left: 32px; */
 	}
 </STYLE>
 
@@ -1623,6 +1709,8 @@ document.writeln('<P>Escaped '+cnt+" bookmarklets.</P>");
 -->
 
 <P>Some inspiration for scripts was drawn from the collection at <A href="https://www.squarefree.com/bookmarklets/">Jesse&apos;s Bookmarklets Site</A> at squarefree.com.</P>
+
+<P>I should salvage whatever Bookmarklets were previously available on <A href="http://web.archive.org/web/20070908140900/http://www.jsquickmark.com/">jsquickmark.com</A>.</P>
 
 <H4>Comments / Feedback</H4>
 <BLOCKQUOTE>
