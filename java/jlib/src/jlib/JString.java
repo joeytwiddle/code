@@ -4,7 +4,7 @@ import java.lang.String;
 import java.lang.StringBuffer;
 import java.util.Vector;
 
-public class JString {
+public class JString extends org.neuralyte.StringUtils {
 
   public final static String alphaUpper="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   public final static String alphaLower="abcdefghijklmnopqrstuvwxyz";
@@ -177,40 +177,6 @@ public class JString {
     for (int i=0;i<s.length();i++)
       n.append(tolower(s.charAt(i)));
     return n.toString();
-  }
-
-  public static String before(String x,String s) {
-    int i=x.indexOf(s);
-    if (i>=0)
-      return x.substring(0,i);
-    return x;
-  }
-
-  public static String after(String x,String s) {
-    int i=x.indexOf(s);
-    if (i>=0)
-      return x.substring(i+s.length());
-    return x;
-  }
-
-  public static String beforeLast(String x,String s) {
-    return beforelast(x,s);
-  }
-  public static String beforelast(String x,String s) {
-    int i=x.lastIndexOf(s);
-    if (i>=0)
-      return x.substring(0,i);
-    return x;
-  }
-
-  public static String afterLast(String x,String s) {
-    return afterlast(x,s);
-  }
-  public static String afterlast(String x,String s) {
-    int i=x.lastIndexOf(s);
-    if (i>=0)
-      return x.substring(i+s.length());
-    return x;
   }
 
   public static String stripendsof(String x,String s) {
