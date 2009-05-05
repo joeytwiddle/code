@@ -33,6 +33,21 @@ import org.xml.sax.InputSource;
 
 // TODO: rename to DocumentProcessor?
 
+/* TODO Consider: Waiting to parse the whole page is inefficient, if we could have just streamed the page instead.
+ * This is the case when simply adding some Javascript before the final </BODY>.
+ * Although it may be inconvenient, streaming support is much faster.
+ * In other words, we should allow support for processing the Stream OR the parsed document.
+ * We should provide support methods for inserting at certain places (e.g. after just before first "<DIV>", just after first "<BODY>").
+ * 
+ * Proxies should be able to easily modify the request, the response, or the response document.
+ * 
+ * If a proxy modifies the request, and wishes to send it off, they should call some
+ * common directed performRequest(), which will pass the request to the next proxy
+ * in the chain.
+ * 
+ * We will just have to scrap Content-length entirely!  (Calculating it means we can't stream!)
+*/                                  
+
 public class SuperProxy extends HttpRequestHandler {
 
     //#ifdef DEBUGGING
@@ -83,6 +98,7 @@ public class SuperProxy extends HttpRequestHandler {
                 url = "http://"+host+url;
                 httpRequest.setTopLine(httpRequest.getType()+" "+url+" HTTP/1.1");
                 webRequest = new WebRequest(httpRequest); // To get .path to refresh.
+                Logger.info("Should we change referer? "+httpRequest.getHeader("Referer"));
             } else {
                 Logger.info("Failed to proxy web-request");
                 // Logger.error("TODO: We should return a response saying \"You forgot the hostname!\".");
@@ -96,85 +112,101 @@ public class SuperProxy extends HttpRequestHandler {
         }
 
         // TODO: We are dumb ATM - this should change.
-        if (httpRequest.getHeader("Connection").equalsIgnoreCase("Keep-Alive")) {
-            httpRequest.setHeader("Connection", "");
+        // if (httpRequest.getHeader("Connection").equalsIgnoreCase("Keep-Alive")) {
+        // }
+        httpRequest.setHeader("Connection", "close");
+        if (httpRequest.getHeader("Proxy-Connection").length()>0) {
+            // We are definitely being used as a proxy in the normal way.
+            // But we want to hide this from the target webserver!
+            httpRequest.removeHeader("Proxy-Connection");
         }
         // However without it, currently the initial streaming takes ages, because the remote does not close the stream.
         HttpResponse httpResponse = passRequestToServer(httpRequest);
         // Really during keep-alive, we should read only content-length, then release the socket to the pool.
 
-        try {
-            // Logger.log("Starting de-chunking...");
-            HTTPStreamingTools.unencodeResponse(httpResponse);
-            // Logger.log("Finished de-chunking.");
-            //#ifdef DEBUG
-            // File file = new File("/tmp/proxydocs/"+webRequest.getPath());
-            File file = new File("/tmp/proxydocs/"+reqNum+"-"+webRequest.getPath().replaceAll("[/\\\\]","_"));
-            file.getParentFile().mkdirs();
-            reqNum++; 
-            //#endif
-            if (httpResponse.getHeader("Content-Encoding").toLowerCase().equals("gzip")) {
-                if (writeDebugFiles) {
-                    //// We used to stall here at the first bit of streaming, if Connection: Keep-Alive was set.
-                    // Logger.log("Starting streaming..."); 
-                    String originalZipped = httpResponse.getContentAsString();
-                    // Logger.log("Finished streaming.");
-                    // Logger.log("Starting save...");
-                    FileUtils.writeStringToFile(originalZipped, new File(file+".zipin"));
-                    httpResponse.setContent(originalZipped);
-                    // Logger.log("Finished save.");
+		// @todo This section is kinda inefficient, for testing, but it works now.
+        String contentType = httpResponse.getHeader("Content-type");
+        Logger.log("Content-type of response: "+contentType);
+        contentType = contentType.replaceFirst(";.*","");
+        if (!contentType.equalsIgnoreCase("text/html")) {
+            Logger.warn("Skipping! Content-type = \"" + contentType + "\" for: " + httpRequest.getTopLine());
+        } else {
+            try {
+                // Logger.log("Starting de-chunking...");
+                HTTPStreamingTools.unencodeResponse(httpResponse);
+                // Logger.log("Finished de-chunking.");
+                //#ifdef DEBUG
+                // File file = new File("/tmp/proxydocs/"+webRequest.getPath());
+                File file = new File("/tmp/proxydocs/"+reqNum+"-"+webRequest.getPath().replaceAll("[/\\\\]","_"));
+                file.getParentFile().mkdirs();
+                reqNum++; 
+                //#endif
+                if (httpResponse.getHeader("Content-Encoding").toLowerCase().equals("gzip")) {
+                    if (writeDebugFiles) {
+                        //// We used to stall here at the first bit of streaming, if Connection: Keep-Alive was set.
+                        // Logger.log("Starting streaming..."); 
+                        String originalZipped = httpResponse.getContentAsString();
+                        // Logger.log("Finished streaming.");
+                        // Logger.log("Starting save...");
+                        FileUtils.writeStringToFile(originalZipped, new File(file+".zipin"));
+                        httpResponse.setContent(originalZipped);
+                        // Logger.log("Finished save.");
+                    }
+                    // Logger.log("Starting unzipping...");
+                    GZIPInputStream in = new GZIPInputStream(httpResponse.getContentAsStream());
+                    httpResponse.setContentStream(in);
+                    // Logger.log("Finished unzipping.");
                 }
-                // Logger.log("Starting unzipping...");
-                GZIPInputStream in = new GZIPInputStream(httpResponse.getContentAsStream());
-                httpResponse.setContentStream(in);
-                // Logger.log("Finished unzipping.");
-            }
-            // TODO: This is just testing our streaming implementation doesn't break the stream.
-            // if (writeDebugFiles) {
-            // Logger.log("Starting streaming...");
-            String originalDocumentString = httpResponse.getContentAsString();
-            // Logger.log("Finished streaming.");
+                // TODO: This is just testing our streaming implementation doesn't break the stream.
+                // if (writeDebugFiles) {
+                // Logger.log("Starting streaming...");
+                String originalDocumentString = httpResponse.getContentAsString();
+                // Logger.log("Finished streaming.");
                 FileUtils.writeStringToFile(originalDocumentString, new File(file+".original"));
                 // otherwise we leave empty stream :f  TODO: fix elsewhere!
                 httpResponse.setContent(originalDocumentString);
-           // }
-            Logger.log("Starting parsing...");
-            Document document = parseDocument(httpResponse.getContentAsStream());
-            Logger.log("Finished parsing.");
-            if (writeDebugFiles) {
-                String parsedDocumentString = DOMUtils.getHtmlFromDOM(document);
-                FileUtils.writeStringToFile(parsedDocumentString, new File(file+".parsed"));
-            }
-            document.setDocumentURI(webRequest.getCGIString());
-            document = processDocument(document);
-            String newDocumentString = DOMUtils.getHtmlFromDOM(document);
-            if (writeDebugFiles) { 
-                FileUtils.writeStringToFile(newDocumentString, new File(file+".processed"));
-            }
-            // TODO: optionally clear the head and don't re-zip, to provide faster experience, albeit slightly less "real".
-            if (httpResponse.getHeader("Content-Encoding").toLowerCase().contains("gzip")) {
-                byte[] bytes = gzip(newDocumentString);
-//                StringBuffer sb = new StringBuffer();
-//                sb.append(bytes);
-//                // new StringBufferInputStream(sb);
-//                newDocumentString = sb.toString();
-//                // newDocumentString = StreamUtils.streamStringFrom(in);
-//                httpResponse.setContent(newDocumentString);
-//                // GZIPOutputStream out = new GZIPOutputStream(outStr);
-                InputStream in = new ByteArrayInputStream(bytes);
-                httpResponse.setContentStream(in);
-                newDocumentString = httpResponse.getContentAsString();
+                // }
+                // Logger.log("Starting parsing...");
+                Document document = parseDocument(httpResponse.getContentAsStream());
+                // Logger.log("Finished parsing.");
                 if (writeDebugFiles) {
-                    String outZipped = httpResponse.getContentAsString();
-                    FileUtils.writeStringToFile(outZipped, new File(file+".zipout"));
-                    httpResponse.setContent(outZipped);
+                    String parsedDocumentString = DOMUtils.getHtmlFromDOM(document);
+                    FileUtils.writeStringToFile(parsedDocumentString, new File(file+".parsed"));
                 }
+                document.setDocumentURI(webRequest.getCGIString());
+                document = processDocument(document);
+                String newDocumentString = DOMUtils.getHtmlFromDOM(document);
+                if (writeDebugFiles) { 
+                    FileUtils.writeStringToFile(newDocumentString, new File(file+".processed"));
+                }
+                // TODO: optionally clear the head and don't re-zip, to provide faster experience, albeit slightly less "real".
+                if (httpResponse.getHeader("Content-Encoding").toLowerCase().contains("gzip")) {
+                    byte[] bytes = gzip(newDocumentString);
+                    //                StringBuffer sb = new StringBuffer();
+                    //                sb.append(bytes);
+                    //                // new StringBufferInputStream(sb);
+                    //                newDocumentString = sb.toString();
+                    //                // newDocumentString = StreamUtils.streamStringFrom(in);
+                    //                httpResponse.setContent(newDocumentString);
+                    //                // GZIPOutputStream out = new GZIPOutputStream(outStr);
+                    InputStream in = new ByteArrayInputStream(bytes);
+                    httpResponse.setContentStream(in);
+                    newDocumentString = httpResponse.getContentAsString();
+                    if (writeDebugFiles) {
+                        String outZipped = httpResponse.getContentAsString();
+                        FileUtils.writeStringToFile(outZipped, new File(file+".zipout"));
+                        httpResponse.setContent(outZipped);
+                    }
+                }
+                // newDocumentString = originalDocumentString;
+                httpResponse.setHeader("Content-length", ""+newDocumentString.length());
+                httpResponse.setContent(newDocumentString);
+                // TODO:
+                // Loop through all <A> tags changing any absolute href values to point through me.
+                // Also loop through all other tags with src attribute.
+            } catch (Exception e) {
+                Logger.warn(e);
             }
-            // newDocumentString = originalDocumentString;
-            httpResponse.setHeader("Content-length", ""+newDocumentString.length());
-            httpResponse.setContent(newDocumentString);
-        } catch (Exception e) {
-            Logger.warn(e);
         }
 
         // Logger.log("   | << " + httpResponse.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
