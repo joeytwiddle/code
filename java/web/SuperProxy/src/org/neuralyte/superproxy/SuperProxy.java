@@ -138,7 +138,9 @@ public class SuperProxy extends HttpRequestHandler {
                 //#ifdef DEBUG
                 // File file = new File("/tmp/proxydocs/"+webRequest.getPath());
                 File file = new File("/tmp/proxydocs/"+reqNum+"-"+webRequest.getPath().replaceAll("[/\\\\]","_"));
-                file.getParentFile().mkdirs();
+                if (!file.getParentFile().mkdirs()) {
+                    throw new IOException("Could not create directory: "+file.getParentFile());
+                }
                 reqNum++; 
                 //#endif
                 if (httpResponse.getHeader("Content-Encoding").toLowerCase().equals("gzip")) {

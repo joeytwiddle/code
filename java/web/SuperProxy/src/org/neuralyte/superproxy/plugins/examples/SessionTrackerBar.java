@@ -24,7 +24,7 @@ public class SessionTrackerBar implements DocumentProcessor {
     // But also track the chains between them.
     // Use Referer!
     
-    class SearchPage {
+    static class SearchPage {
         String url;
         String[] resolvedLinks;
     }

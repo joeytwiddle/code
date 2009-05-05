@@ -114,7 +114,9 @@ public class SavingProxy extends HttpRequestHandler {
         requestNumber++;
         
         File sessionDir = new File("websessions",sessionName);
-        sessionDir.mkdirs();
+        if (!sessionDir.mkdirs()) {
+            throw new IOException("Could not create directory: "+sessionDir);
+        }
         String fileHead = sessionDir + "/" + requestNumber;
         FileOutputStream reqOut = new FileOutputStream(fileHead+".request");
         FileOutputStream resOut = new FileOutputStream(fileHead+".response");
