@@ -436,7 +436,7 @@ if (/search\?.*q=/.test(document.location.href)) {
   }
 } else {
   //Stupid icons stuff.
-  var FRAMEDELAY = 50,
+  var FRAMEDELAY = 50;
       names = ['Gmail', 'Calendar', 'Toolbar', 'Desktop', 'Picasa', 'YouTube', 'Notebook'],
       urls = ['http://mail.google.com/', 'http://www.google.com/calendar', 'http://toolbar.google.com/', 'http://desktop.google.com/', 'http://picasa.google.com/', 'http://youtube.com/', 'http://www.google.com/notebook'];
   var place = document.getElementsByTagName('center')[0].insertBefore(document.createElement('div'), document.forms[0].nextSibling);
