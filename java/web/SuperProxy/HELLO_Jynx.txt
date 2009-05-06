@@ -1,0 +1,84 @@
+How would you like to communicate about this project?
+
+We could use a wiki page, IRC, or this file.
+
+
+
+Anyway I would like to make a decent plugin interface, the current one is
+insufficient.
+
+Here are some things to consider:
+
+Some plugins will operate only on the headers, and ignore content entirely.
+
+Some plugins will affect the content stream (they may or may not wish to do
+this in a streaming fashion), and might want to affect request headers too.
+(Modifying stream almost always means changing response headers, at least
+Content-length is likely to change.  Changing Content-length means knowing the
+final size, so often blocks streaming - we most likely want to allow/unblock
+streaming in these cases by dropping the Content-length response header
+entirely.)
+
+Some plugins will want to work on the HTML DOM itself, and will want streaming
+to be handled automatically for them.  Some responses do not contain a DOM
+ofc.  A hybrid plugin might want to sometimes manipulate HTML DOMs, sometimes
+manipulate other content streams!
+
+All plugins should be chainable.  I am blind and cannot see a nice way to do
+this.  Unreal's mutator chain trusts each mutator to remember to call
+Super.Method() in every Method() - one bad mutator can break the chain.  (The
+superclass methods handle passing to the next in the chain.)  An alternative
+to using the superclass is to have a set of static functions available
+somewhere which we call to handle the passing.  I suspect we *will* want a
+"trust-the-plugin" approach, because that gives the plugin more power as to
+how and when it will pass the request down/along the chain.
+
+
+
+Interface:
+
+PluginInvoker says:
+  "OK game on!  User has made an HTTP request, which we will perform for them!
+  Plugin #1, you are registered to operate in this situation, What Would You
+  Like To Do?"
+
+Later (I don't know who says this, it could be the PluginInvoker, or it might
+be the last plugin):
+  "OK we made our final decided request to the remote server, and look we're
+  getting a response.  mmmm some headers, and possibly some content coming
+  straight after.  Plugin #Last, what do you want to do to/with them?"
+
+I'm guessing we will want to process responses in reverse order.
+
+Basically what I haven't decided is whether we must have the plugins process
+the request in a nested fashion (with a growing stack), or whether we can get
+away with having the PluginInvoker call the needed bits in a chain.
+
+Although nesting requires *trusting* the plugin to pass the request along/down
+as it should, there are only 3 (or one?) methods where the plugin has to get
+this right, and I think this approach offers more power.  For example, nested
+calls can hold temporary local (method) variables while the call to the remote
+server is handled by a child call, and the local variables can be used during
+the response processing.  These variables would be lost into something smelly
+like a Context hashmap if the methods to perform request/response processing
+are defined separately.
+
+OK so the old bad interface was FilterPlugin, which had:
+
+  processRequest()
+  processResponse()
+
+The new interface will be:
+
+  processRequest()  (viaChildrenPlz!)
+  addChild() I guess
+  removeChild() ... :s
+
+
+
+
+
+TODO
+
+WebRequest may as well be merged with HttpRequest - they are the same thing!
+
