@@ -41,8 +41,11 @@ public class GrimeApe implements DocumentProcessor {
     // We don't only want to processDocuments.
     // Sometimes we may want to intercept HTTP requests,
     // e.g. the browser is requesting one of the scripts which we told it to
-    // load on
-    // a previously response page.
+    // load on a previously response page.
+    // OK so we don't need to do that.
+    // But we do need the URL of the document we
+    // are "processing". We should only add/run the relevant scripts with
+    // matching includes/excludes.
 
     public Document processDocument(Document document) {
         Logger.info("DocumentURI = " + document.getBaseURI());
