@@ -79,7 +79,8 @@ function getItemsMatching(l,c) {
 		// if (it && it.url && Math.random()<0.1)
 			// GM_log("  Running condition on "+it.url);
 		if (!it) {
-			GM_log("  That is odd - it["+i+"] = "+it);
+			//// TODO: Why is this happening?
+			// GM_log("  That is odd - it["+i+"] = "+it);
 			continue;
 		}
 		if (c(it)) {
@@ -148,7 +149,7 @@ function loadData() {
 
 function addDataForThisPage() {
 	var pageData = new Object();
-	pageData.url = document.location; // stripAnchor?
+	pageData.url = ""+document.location; // stripAnchor?
 	pageData.title = document.title;
 	pageData.links = new Array();
 	for (var i=0;i<document.links.length;i++) {
@@ -161,6 +162,11 @@ function addDataForThisPage() {
 		pageData.links[i].xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
 	}
 	data[document.location] = pageData;
+}
+
+function clearHistoryData() {
+	data = new Object();
+	saveData();
 }
 
 
@@ -192,7 +198,7 @@ saveData();
 // html += "Saved data: "+data+"<BR/>\n";
 // html += "Saved data: "+uneval(data)+"<BR/>\n";
 // html += "Saved data: "+eval(uneval(data)).length+"<BR/>\n";
-loadData(); // Testing
+// loadData(); // Testing
 // html += "Reloaded data: "+data+"<BR/>\n";
 // html += "Reloaded data: "+uneval(data)+"<BR/>\n";
 // html += "Reloaded data: "+eval(uneval(data)).length+"<BR/>\n";
@@ -246,7 +252,7 @@ function showNeighbours() {
 	GM_log("Got parentPages = "+parentPages);
 	GM_log("With length = "+parentPages.length);
 	// Remove self!  (There may be links from self to self.)
-	parentPages = getItemsMatching(parentPages, function(pageData){ return (!pageData.url) || stripAnchor(pageData.url) != stripAnchor(document.location); } );
+	parentPages = getItemsMatching(parentPages, function(pageData){ return (!pageData.url) || stripAnchor(pageData.url) != stripAnchor(""+document.location); } );
 	if ((!parentPages) || (parentPages.length < 1)) {
 		html += "I do not know how we got to this page.<BR/>\n";
 		if (document.referrer)
@@ -267,7 +273,7 @@ function showNeighbours() {
 	var parentPageData = parentPages[0];
 
 	// Find all links in that page with the same xpath as our link:
-	var linksToMe = getItemsMatching(parentPageData.links, function(link){ return link.url == document.location });
+	var linksToMe = getItemsMatching(parentPageData.links, function(link){ return link.url == ""+document.location });
 	if (linksToMe.length < 1) {
 		html += "Could not find myself in " + document.referrer + "!<BR/>\n";
 		return;
@@ -282,17 +288,19 @@ function showNeighbours() {
 	html += "<A href='"+document.referrer+"'>"+parentPageData.title+"</A>";
 	html += "</FONT><BR/>\n";
 	html += "<FONT size='-1'>\n";
-	html += "<BLOCKQUOTE>\n";
+	// html += "<BLOCKQUOTE>\n";
+	html += "<P style='padding-left: 16px;'>\n";
 	for (var i=0;i<group.length;i++) {
 		var link = group[i];
-		if (link.url == document.location)
+		if (link.url == ""+document.location)
 			html += "<B>"+link.title+"</B>";
 		else
 			html += "<A href='"+link.url+"'>"+link.title+"</A>";
 		html += "<BR/>\n";
 	}
 	html += "</FONT>\n";
-	html += "</BLOCKQUOTE>\n";
+	// html += "</BLOCKQUOTE>\n";
+	html += "</P>\n";
 }
 
 var historyBlock = document.createElement("DIV");
@@ -312,7 +320,9 @@ drawHistoryTree();
 
 // data = eval(GM_getValue("g_track_history_data"));
 
-html += "<DIV style='text-align: right'>(We have "+objectToArray(data).length+" pages of history.)</DIV>\n";
+var clearButton = "<A target='_self' href='javascript:(function(){ clearHistoryData(); })();'>Clear</A>";
+
+html += "<DIV style='text-align: right'>(We have "+objectToArray(data).length+" pages of history. "+clearButton+")</DIV>\n";
 
 html =
 	"<FONT size='-1'>"
