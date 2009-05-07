@@ -1,0 +1,16 @@
+For building, you need to checkout CommonUtils and SimpleProxy from the
+SourceForge project "JavaWebTools".
+
+
+
+Projects like GrimeApe:
+
+  MonkeyGrease - JS/CSS injecting proxy - http://code.google.com/p/monkeygrease/
+
+  MouseHole - (down?) - performed user scripts server side -
+  http://redhanded.hobix.com/inspect/wikiShellOnMousehole.html
+
+
+
+For more: http://en.wikipedia.org/wiki/Greasemonkey#Proxy_level
+

@@ -68,12 +68,14 @@ public class GrimeApe implements DocumentProcessor {
 
             Logger.info("=> Adding scripts!");
 
+            /*
             // String toAdd =
             // "<script language=\"JavaScript\" src=\"http://hwi.ath.cx/powerbar/add_powerbar.js\"></script>\n";
             String toAdd = "<script language=\"JavaScript\"  type=\"text/javascript\" src=\"http://hwi.ath.cx/powerbar/add_powerbar.js\"></script>\n";
             TextImpl textNode = new org.apache.xerces.dom.TextImpl(core, toAdd);
             // textNode.setData(toAdd);
             body.appendChild(textNode);
+            */
 
             File scriptsDir = new File("userscripts");
             for (File scriptFile : scriptsDir.listFiles()) {
@@ -88,9 +90,11 @@ public class GrimeApe implements DocumentProcessor {
                                             + " will probably fail in Konqueror/GrimeApe - it uses 'XPathResult'.");
                         }
 
-                        textNode = new org.apache.xerces.dom.TextImpl(core,
-                                "<SCRIPT language=\"javascript\">" + script
-                                        + "</SCRIPT>\n");
+                        TextImpl textNode = new org.apache.xerces.dom.TextImpl(core,
+                                "<SCRIPT language=\"javascript\">"
+                                + '\n' + script + '\n'
+                                + "</SCRIPT>\n"
+                        );
                         // textNode.setData("<SCRIPT language=\"javascript\">" +
                         // script + "</SCRIPT>\n");
                         body.appendChild(textNode);
