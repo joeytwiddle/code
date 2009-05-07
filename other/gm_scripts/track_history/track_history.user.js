@@ -23,6 +23,7 @@
 // TODO:
 // Cleanup old data!
 // Curious: How does http://stories.swik.net/jaunty_jackalope_ubuntu_springs_into_beta add images next to the links *after* I have generated them?!
+// We keep getting renderered according to the page styles.  We need to disable that, so that we look the same all the time!
 
 // DONE:
 // Track secondary (followed) links.
@@ -255,8 +256,11 @@ function showNeighbours() {
 	if (parentPages.length > 1) {
 		// html += "(One of "+parentPages.length+" options)<BR/>\n";
 		html += "Multiple pages link to this: ";
-		for (var pageData in parentPages) {
-			html += pageData.title + " ";
+		// for (var pageData in parentPages) { // FAIL
+		for (var i=0;i<parentPages.length;i++) {
+			var pageData = parentPages[i];
+			// html += pageData.title + " ";
+			html += "<A href='"+pageData.url+"'>"+pageData.title+"</A>" + " ";
 		}
 		html += "<BR/><BR/>\n";
 	}
