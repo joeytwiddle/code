@@ -130,11 +130,9 @@ function arrayToJSON(a) {
 	return out;
 }
 
-// function deserialize(name, def) {
-	// return eval(GM_getValue(name, (def || '({})')));
-// }
 
 
+//// Data collection and persistence ///
 
 function saveData() {
 	GM_setValue('g_track_history_data',uneval(data));
@@ -143,8 +141,6 @@ function saveData() {
 
 function loadData() {
 	data = eval(GM_getValue('g_track_history_data'));
-	// if (data)
-		// data = data[0];
 }
 
 function addDataForThisPage() {
@@ -171,42 +167,24 @@ function clearHistoryData() {
 
 
 
-var html = "";
-
-
-
 var data;
+
 loadData();
-// GM_log("I am here.");
-// html += "Loaded data: "+data+"<BR/>\n";
-// html += "Loaded data: "+data.length+"<BR/>\n";
-// html += "Loaded data: "+uneval(data)+"<BR/>\n";
 if (!data) {
 	// var data = new Array(); // Fails uneval().  (TOTEST: right?!)
 	data = new Object(); // Survives uneval().
 }
-// html += "Starting data: "+uneval(data)+"<BR/>\n";
-// html += "Starting data: "+data.length+"<BR/>\n";
 
 // Add data for this page
 addDataForThisPage();
 
-// alert('data.length = '+data.length);
-
-// GM_log("Saving...");
 saveData();
-// html += "Saved data: "+data+"<BR/>\n";
-// html += "Saved data: "+uneval(data)+"<BR/>\n";
-// html += "Saved data: "+eval(uneval(data)).length+"<BR/>\n";
-// loadData(); // Testing
-// html += "Reloaded data: "+data+"<BR/>\n";
-// html += "Reloaded data: "+uneval(data)+"<BR/>\n";
-// html += "Reloaded data: "+eval(uneval(data)).length+"<BR/>\n";
-// GM_log("Saved.");
 
 
 
 
+
+//// Presenting the data ////
 
 function pageContainsLinkTo(pageData,url) {
 	// GM_log("Checking "+pageData.links.length+" links...");
@@ -223,35 +201,10 @@ function drawHistoryTree() {
 function showNeighbours() {
 	// Find the page which took us to this page:
 
-	// document.referrer works well, but only for the first display
-	// Once the user starts following the links we offer them, document.referrer
-	// is no longer relevant!
-	/*
-	var parentPageData = data[document.referrer];
-	if (!parentPageData) {
-		html += "Unknown referrer: " + document.referrer + "<BR/>\n";
-		return;
-	}
-	*/
-
-	/*
-	for (var i in data) {
-		GM_log("data: "+i);
-		var pd = data[i];
-		GM_log("  length="+pd.links.length);
-		for (var j in pd.links) {
-			GM_log("  j = "+j);
-			GM_log("  l = "+pd.links[j].title);
-			break;
-		}
-	}
-	*/
-
-	// GM_log("Seeking links to "+document.location);
 	var parentPages = findPagesContainingLinkTo(""+document.location);
 	GM_log("Got parentPages = "+parentPages);
 	GM_log("With length = "+parentPages.length);
-	// Remove self!  (There may be links from self to self.)
+	// Remove self - There may be links from self to self.
 	parentPages = getItemsMatching(parentPages, function(pageData){ return (!pageData.url) || stripAnchor(pageData.url) != stripAnchor(""+document.location); } );
 	if ((!parentPages) || (parentPages.length < 1)) {
 		html += "I do not know how we got to this page.<BR/>\n";
@@ -262,10 +215,8 @@ function showNeighbours() {
 	if (parentPages.length > 1) {
 		// html += "(One of "+parentPages.length+" options)<BR/>\n";
 		html += "Multiple pages link to this: ";
-		// for (var pageData in parentPages) { // FAIL
 		for (var i=0;i<parentPages.length;i++) {
 			var pageData = parentPages[i];
-			// html += pageData.title + " ";
 			html += "<A href='"+pageData.url+"'>"+pageData.title+"</A>" + " ";
 		}
 		html += "<BR/><BR/>\n";
@@ -314,6 +265,8 @@ historyBlock.style.zIndex = '1000';
 historyBlock.style.border = 'solid 1px black';
 historyBlock.style.backgroundColor = 'white';
 historyBlock.style.padding = '6px';
+
+var html = "";
 
 showNeighbours();
 drawHistoryTree();
