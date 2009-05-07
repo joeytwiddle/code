@@ -177,7 +177,7 @@ var html = "";
 
 var data;
 loadData();
-GM_log("I am here.");
+// GM_log("I am here.");
 // html += "Loaded data: "+data+"<BR/>\n";
 // html += "Loaded data: "+data.length+"<BR/>\n";
 // html += "Loaded data: "+uneval(data)+"<BR/>\n";
@@ -193,7 +193,7 @@ addDataForThisPage();
 
 // alert('data.length = '+data.length);
 
-GM_log("Saving...");
+// GM_log("Saving...");
 saveData();
 // html += "Saved data: "+data+"<BR/>\n";
 // html += "Saved data: "+uneval(data)+"<BR/>\n";
@@ -202,7 +202,7 @@ saveData();
 // html += "Reloaded data: "+data+"<BR/>\n";
 // html += "Reloaded data: "+uneval(data)+"<BR/>\n";
 // html += "Reloaded data: "+eval(uneval(data)).length+"<BR/>\n";
-GM_log("Saved.");
+// GM_log("Saved.");
 
 
 
@@ -247,7 +247,7 @@ function showNeighbours() {
 	}
 	*/
 
-	GM_log("Seeking links to "+document.location);
+	// GM_log("Seeking links to "+document.location);
 	var parentPages = findPagesContainingLinkTo(""+document.location);
 	GM_log("Got parentPages = "+parentPages);
 	GM_log("With length = "+parentPages.length);
@@ -285,7 +285,7 @@ function showNeighbours() {
 	// html += "Got group: "+group+"<BR/>\n";
 	html += "<FONT size='+0'>";
 	html += (myIndex+1)+" of "+group.length+" from ";
-	html += "<A href='"+document.referrer+"'>"+parentPageData.title+"</A>";
+	html += "<A href='"+parentPageData.url+"'>"+parentPageData.title+"</A>";
 	html += "</FONT><BR/>\n";
 	html += "<FONT size='-1'>\n";
 	// html += "<BLOCKQUOTE>\n";
@@ -338,7 +338,8 @@ html =
 historyBlock.innerHTML = html;
 
 document.body.appendChild(historyBlock);
-GM_log("I am NOT HERE.");
+
+GM_log("Done.");
 
 // historyBlock.style = 'position: fixed; top: 4px; left: 4px; z-index: 10000; border: solid 1px black; background-color: white; padding: 6px;';
 
