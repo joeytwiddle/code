@@ -43,6 +43,7 @@
 // One solution to faster solution would be to store the data indexed by link
 // URL, rather than by page URL.  But we would still need to be able to
 // retrieve all the links for one page.
+// OK here's the fix: refuse to store more than 40 links from each page!
 
 **/
 
