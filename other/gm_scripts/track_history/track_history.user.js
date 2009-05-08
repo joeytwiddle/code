@@ -35,13 +35,22 @@
 // BUG: The script loses track if the link we follow actually redirects to
 // another address.  (Probably not fixable.)
 
+// BUG: Goes slow on big pages with many links (sometimes invoking
+// "Unresponsive Script" window.) This may be due to the slow XPath generator
+// for each link, and the recursive nature of that function.
+// This huge list of links will also slow down the script for other pages,
+// because they are there in the data and will be searched.
+// One solution to faster solution would be to store the data indexed by link
+// URL, rather than by page URL.  But we would still need to be able to
+// retrieve all the links for one page.
+
 **/
 
 // DONE:
 // Track secondary (followed) links.
 // Cleaning up old data.
-// DONE: Made all the links use location.replace(newURL), so we don't lose
-// referer, and user's Back button will skip intermediaries.
+// DONE: Made the links use location.replace(newURL), so user's Back button
+// will skip intermediary pages.
 
 
 
@@ -284,7 +293,7 @@ function drawHistoryTree() {
 	// html += "<DIV style='text-align: right'>(We have "+objectToArray(data).length+" pages of history."+clearButton+")</DIV>\n";
 
 	html =
-		"<FONT size='-1'>"
+		"<FONT size='+1'>"
 		+ "<DIV style='float: right; padding-left: 12px;'>"
 		+"[<A target='_self' href='javascript:(function(){ var h = document.getElementById(&quot;historyResults&quot;); h.style.display = (h.style && h.style.display?&quot;&quot;:&quot;none&quot;); })();'>--</A>] "
 		+"[<A target='_self' href='javascript:(function(){ var h = document.getElementById(&quot;historyFloat&quot;); h.parentNode.removeChild(h); })();'>X</A>]"
