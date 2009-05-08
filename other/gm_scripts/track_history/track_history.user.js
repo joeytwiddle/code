@@ -1,9 +1,12 @@
 // ==UserScript==
 // @name           track_history
 // @namespace      noggieb
-// @description    Presents a list/tree of the browsing path you took to reach the current page.  Allows you to go to neighbouring link without having to go Back.
+// @description    Presents a list of the group of links including the one that took you to the current page.  Allows you to go to a neighbouring link without having to go Back.
 // @include        *
 // ==/UserScript==
+
+// Original idea which has since changed:
+// Presents a list/tree of the browsing path you took to reach the current page.
 
 // As well as displaying the tree of other pages, we could display *all* the
 // links from the previous page, to allow fast switching.  (Or better: all the
@@ -35,7 +38,7 @@
 // BUG: The script loses track if the link we follow actually redirects to
 // another address.  (Probably not fixable.)
 
-// BUG: Goes slow on big pages with many links (sometimes invoking
+// DONE: Goes slow on big pages with many links (sometimes invoking
 // "Unresponsive Script" window.) This may be due to the slow XPath generator
 // for each link, and the recursive nature of that function.
 // This huge list of links will also slow down the script for other pages,
@@ -44,6 +47,10 @@
 // URL, rather than by page URL.  But we would still need to be able to
 // retrieve all the links for one page.
 // OK here's the fix: refuse to store more than 40 links from each page!
+// TODO: Make a better fix (fix getXPath?).
+
+// TODO: Make the popup draggable, in case user would prefer it in a different
+// position.  (And remember position?)
 
 **/
 
@@ -57,9 +64,11 @@
 
 //// Config ////
 
-var goForwards = false; // Whether to navigate forward in browser when following a generated link, otherwise we replace the current page.
+var maxPageHistory = 16;
+var goForwards = false; // Whether to navigate forward in browser when following a generated link, otherwise we replace the current page.  Disadvantage with the replace method, is that your browser won't colour the visited links differently.
 var useReferrerOnly = false; // (!goForwards); // Argh document.location.replace() also updates referrer.  Leave this false or the script will only work on the first result!
 var verboseAlternatives = false; // Whether to show info when we had multiple options for the parentPage.
+var maxLinks = 100;
 
 
 
@@ -83,6 +92,11 @@ function getXPath(node) {
 		}
 	}
 	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
+}
+
+function escapeHTML(s) {
+	// return s.split("&").join("&amp;").split( "<").join("&lt;").split(">").join("&gt;")
+	return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/'/g,"&apos;").replace(/"/g,"&quot;");
 }
 
 // NOTE: this drops the keys from the Object-map entirely, keeping only the values.
@@ -182,7 +196,12 @@ function addDataForThisPage() {
 	pageData.referrer = document.referrer;
 	pageData.lastUsed = new Date().getTime();
 	pageData.links = new Array();
-	for (var i=0;i<document.links.length;i++) {
+	var lastIndex = document.links.length;
+	if (lastIndex > maxLinks) {
+		lastIndex = maxLinks;
+		GM_log("Too many links ("+document.links.length+") - skipping "+(document.links.length-lastIndex)+".");
+	}
+	for (var i=0;i<lastIndex;i++) {
 		var link = document.links[i];
 		if (link.href.match('^\s*javascript:'))
 			continue;
@@ -198,7 +217,7 @@ function addDataForThisPage() {
 function cleanupData() {
 	var dataArray = objectToArray(data);
 	var cnt = 0; // failsafe
-	while (dataArray.length > 32) {
+	while (dataArray.length > maxPageHistory) {
 		// Find oldest piece of data
 		var oldest;
 		var oldestLastUsed = new Date().getTime();
@@ -277,8 +296,8 @@ function drawHistoryTree() {
 	historyBlock.style.position = 'fixed';
 	historyBlock.style.left = '4px';
 	historyBlock.style.top = '4px';
-	historyBlock.style.zIndex = '1000';
-	// historyBlock.style.setProperty('z-index','1000');
+	historyBlock.style.zIndex = '50000';
+	// historyBlock.style.setProperty('z-index','50000');
 	historyBlock.style.border = 'solid 1px black';
 	historyBlock.style.backgroundColor = 'white';
 	historyBlock.style.padding = '6px';
@@ -299,10 +318,12 @@ function drawHistoryTree() {
 		+"[<A target='_self' href='javascript:(function(){ var h = document.getElementById(&quot;historyResults&quot;); h.style.display = (h.style && h.style.display?&quot;&quot;:&quot;none&quot;); })();'>--</A>] "
 		+"[<A target='_self' href='javascript:(function(){ var h = document.getElementById(&quot;historyFloat&quot;); h.parentNode.removeChild(h); })();'>X</A>]"
 		+ "</DIV>\n"
+		+ "</FONT>\n"
 		+ "<DIV id='historyResults'>\n"
+		+ "<FONT size='-1'>"
 		+ html
-		+ "</DIV>\n"
-		+ "</FONT>\n";
+		+ "</FONT>"
+		+ "</DIV>\n";
 
 	historyBlock.innerHTML = html;
 
@@ -339,7 +360,7 @@ function showNeighbours() {
 		if ((!parentPages) || (parentPages.length < 1)) {
 			html += "I do not know how we got to this page.<BR/>\n";
 			if (document.referrer)
-				html += "Referrer was <A href='"+document.referrer+"'>referrer</A>.<BR/>\n";
+				html += "Referrer was <A href='"+document.referrer+"'>here</A>.<BR/>\n";
 			return html;
 		}
 		if (parentPages.length > 1) {
@@ -348,7 +369,7 @@ function showNeighbours() {
 				html += "Multiple pages link to this: ";
 				for (var i=0;i<parentPages.length;i++) {
 					var pageData = parentPages[i];
-					html += "<A href='"+pageData.url+"'>"+pageData.title+"</A>" + " ";
+					html += "<A href='"+pageData.url+"'>"+escapeHTML(pageData.title)+"</A>" + " ";
 				}
 				html += "<BR/><BR/>\n";
 			}
@@ -374,7 +395,7 @@ function showNeighbours() {
 	// html += "Got group: "+group+"<BR/>\n";
 	html += "<FONT size='+0'>";
 	html += (myIndex+1)+" of "+group.length+" from ";
-	html += "<A href='"+parentPageData.url+"'>"+parentPageData.title+"</A>";
+	html += "<A href='"+parentPageData.url+"'>"+escapeHTML(parentPageData.title)+"</A>";
 	html += "</FONT><BR/>\n";
 	html += "<FONT size='-1'>\n";
 	// html += "<BLOCKQUOTE>\n";
@@ -382,12 +403,13 @@ function showNeighbours() {
 	for (var i=0;i<group.length;i++) {
 		var link = group[i];
 		if (urlsMatch(link.url,""+document.location)) {
-			html += "<B>"+link.title+"</B>";
+			html += "<B>"+escapeHTML(link.title)+"</B>";
 		} else {
+			// TODO: We should escape these link titles, but not with CGI escape()!
 			if (goForwards) {
-				html += "<A href='"+link.url+"'>"+link.title+"</A>";
+				html += "<A href='"+link.url+"'>"+escapeHTML(link.title)+"</A>";
 			} else {
-				html += "<A href='javascript:document.location.replace(\""+link.url+"\");'>"+link.title+"</A>";
+				html += "<A href='javascript:document.location.replace(\""+link.url+"\");'>"+escapeHTML(link.title)+"</A>";
 			}
 		}
 		html += "<BR/>\n";
