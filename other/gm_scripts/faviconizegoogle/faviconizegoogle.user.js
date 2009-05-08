@@ -1,9 +1,17 @@
 // ==UserScript==
 // @name           FaviconizeGoogle
-// @namespace      noggieb
-// @description    Adds Favicons to Google search results.
+// @namespace      http://userscripts.org/users/89794
+// @description    Adds favicons to each link offered by Google search results.
 // @include        http://www.google.com/search?*
 // ==/UserScript==
+
+// TODO: Provide more options where to place favicon: left of link, right of
+// link, left of url, right of url; also inside or outside the link.
+
+// Broken images would be messy, but we don't see them, I don't know why.
+// We do see the gap from the image's padding.
+// It might be desirable to check each image actually exists/loads, or remove it.
+// Is that possible, without making an http request ourselves?
 
 var placeFaviconByUrl = false;
 
