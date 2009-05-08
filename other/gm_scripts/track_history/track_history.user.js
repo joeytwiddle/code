@@ -247,7 +247,12 @@ saveData();
 
 function pageContainsLinkTo(pageData,url) {
 	// GM_log("Checking "+pageData.links.length+" links...");
-	return getItemsMatching(pageData.links, function(link){ /*if (Math.random()<0.01) { GM_log("link="+link+" link.url="+link.url); }*/ return link!=undefined && link.url==url; } ).length > 0;
+	return getItemsMatching(pageData.links, function(link){ /*if (Math.random()<0.01) { GM_log("link="+link+" link.url="+link.url); }*/ return link!=undefined && urlsMatch(link.url,url); } ).length > 0;
+}
+
+function urlsMatch(x,y) {
+	// return x==y || x+'/'==y || x==y+'/';
+	return x.replace(/\/$/,'') == y.replace(/\/$/,'');
 }
 
 function findPagesContainingLinkTo(url) {
@@ -346,9 +351,10 @@ function showNeighbours() {
 	saveData();
 
 	// Find all links in that page with the same xpath as our link:
-	var linksToMe = getItemsMatching(parentPageData.links, function(link){ return link.url == ""+document.location });
+	// var linksToMe = getItemsMatching(parentPageData.links, function(link){ return link.url == ""+document.location });
+	var linksToMe = getItemsMatching(parentPageData.links, function(link){ return urlsMatch(link.url,""+document.location) });
 	if (linksToMe.length < 1) {
-		html += "Could not find myself in " + document.referrer + "!<BR/>\n";
+		html += "Could not find myself in " + parentPageData.url + "!<BR/>\n";
 		return html;
 	}
 	var myLink = linksToMe[0];
@@ -365,7 +371,7 @@ function showNeighbours() {
 	html += "<P style='padding-left: 16px;'>\n";
 	for (var i=0;i<group.length;i++) {
 		var link = group[i];
-		if (link.url == ""+document.location) {
+		if (urlsMatch(link.url,""+document.location)) {
 			html += "<B>"+link.title+"</B>";
 		} else {
 			if (goForwards) {
