@@ -6,8 +6,9 @@
 // @include        http://www.google.*/search?*
 // ==/UserScript==
 
-// TODO: Provide more options where to place favicon: left of link, right of
-// link, left of url, right of url; also inside or outside the link.
+// DONE: Provided more options where to place favicon: by the link or by the
+// url, before or after, inside or outside the link.  However in my opinion
+// they all suck except the default. ;)
 
 // Broken images would be messy, but Firefox seems to hide them after a while
 // anyway.  We do still see the gap from the image's padding though!
@@ -15,6 +16,8 @@
 // Is that possible, without making an http request ourselves?
 
 var placeFaviconByUrl = false;
+var placeFaviconAfter = false;
+var placeFaviconInsideLink = false;
 
 function filterListBy(l,c) {
 	var ret = new Array();
@@ -34,7 +37,8 @@ var links = filterListBy(document.links, function(x){ return x.className=='l'; }
 // GM_log("Got links = "+links.snapshotLength);
 
 var style = document.createElement('STYLE');
-style.innerHTML = ".favicon { padding-right: 4px; vertical-align: middle; }";
+var padSide = (placeFaviconAfter?'left':'right');
+style.innerHTML = ".favicon { padding-"+padSide+": 4px; vertical-align: middle; }";
 document.getElementsByTagName('head')[0].appendChild(style);
 
 // for (var i=0;i<links.snapshotLength;i++) {
@@ -53,14 +57,20 @@ for (var i=0;i<links.length;i++) {
 	img.width = '16';
 	img.height = '16';
 	img.className = 'favicon';
-	if (placeFaviconByUrl) {
-		// var urlNodes = document.evaluate("./parent-node::li[1]//cite",link,null,6,null);
-		// var urlNode = urlNodes.snapshotItem(0);
-		var urlNode = link.parentNode.parentNode.getElementsByTagName('cite')[0];
-		urlNode.parentNode.insertBefore(img,urlNode);
+	img.border = 0;
+	var targetNode = (placeFaviconByUrl ? link.parentNode.parentNode.getElementsByTagName('cite')[0] : link);
+	if (placeFaviconInsideLink) {
+		if (placeFaviconAfter) {
+			targetNode.appendChild(img);
+		} else {
+			targetNode.insertBefore(img,targetNode.firstChild);
+		}
 	} else {
-		link.parentNode.insertBefore(img,link);
+		if (placeFaviconAfter) {
+			targetNode.parentNode.insertBefore(img,targetNode.nextSibling);
+		} else {
+			targetNode.parentNode.insertBefore(img,targetNode);
+		}
 	}
-
 }
 
