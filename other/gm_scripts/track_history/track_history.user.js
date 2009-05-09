@@ -1,66 +1,9 @@
 // ==UserScript==
 // @name           track_history
 // @namespace      noggieb
-// @description    Presents a list of the group of links including the one that took you to the current page.  Allows you to go to a neighbouring link without having to go Back.
+// @description    Presents a list of the group of links including the one that took you to the current page.  Allows you to go to a neighbouring link without having to go Back.  THIS IS BETA PREVIEW OF THE FINAL SCRIPT.  I recommend you grab the Userscripts Updater, so that you know when I release the 1.0 version.
 // @include        *
 // ==/UserScript==
-
-// Original idea which has since changed:
-// Presents a list/tree of the browsing path you took to reach the current page.
-
-// As well as displaying the tree of other pages, we could display *all* the
-// links from the previous page, to allow fast switching.  (Or better: all the
-// links with the same xpath?).
-
-// We could provide the feature that the history thingy will switch between
-// the offered links using hidden/shown IFrames, a bit like tags.
-
-/** TODOs:
-
-// Curious: How does http://stories.swik.net/jaunty_jackalope_ubuntu_springs_into_beta add images next to the links *after* I have generated them?!
-// We keep getting renderered according to the page styles.  We need to disable that, so that we look the same all the time!
-// Provide <Previous and Next> buttons.
-
-// BUG: Why are we getting 'undefined' parentPage and links?
-// The 'undefined' parentPage has a lot of unrelated links.
-// Make this reproducable.
-
-// When we have multiple options for parentNode, we could choose the one with
-// the most links in group (although group is not calculated yet).
-// Or we could choose the oldest referring page (probably more stable for user
-// to stick with the first one he used).  (This would require new date property
-// firstSeen.)
-
-// CONSIDER: We have made data an Object rather then an Array, so that it serializes.
-// But this is creating some inefficiencies.
-// Maybe better to make data an Array, but convert it to/from Object during serialization.
-
-// BUG: The script loses track if the link we follow actually redirects to
-// another address.  (Probably not fixable.)
-
-// DONE: Goes slow on big pages with many links (sometimes invoking
-// "Unresponsive Script" window.) This may be due to the slow XPath generator
-// for each link, and the recursive nature of that function.
-// This huge list of links will also slow down the script for other pages,
-// because they are there in the data and will be searched.
-// One solution to faster solution would be to store the data indexed by link
-// URL, rather than by page URL.  But we would still need to be able to
-// retrieve all the links for one page.
-// OK here's the fix: refuse to store more than 40 links from each page!
-// TODO: Make a better fix (fix getXPath?).
-
-// TODO: Make the popup draggable, in case user would prefer it in a different
-// position.  (And remember position?)
-
-**/
-
-// DONE:
-// Track secondary (followed) links.
-// Cleaning up old data.
-// DONE: Made the links use location.replace(newURL), so user's Back button
-// will skip intermediary pages.
-
-
 
 //// Config ////
 
@@ -69,6 +12,97 @@ var goForwards = false; // Whether to navigate forward in browser when following
 var useReferrerOnly = false; // (!goForwards); // Argh document.location.replace() also updates referrer.  Leave this false or the script will only work on the first result!
 var verboseAlternatives = false; // Whether to show info when we had multiple options for the parentPage.
 var maxLinks = 100;
+var dontBeDaft = true; // Only disable this for debug/development.
+
+
+/**
+
+//// INTRO ////
+
+Original idea which has since changed:
+Present a list/tree of the browsing path you took to reach the current page,
+for easy navigation back (or sideways), and to keep track of how the hell
+you got to this tab.
+
+How the idea developed:
+As well as displaying the tree of other pages, we could display *all* the
+links from the previous page, to allow fast switching.  (Or better: all the
+links with the same xpath?).
+
+
+
+//// CONSIDER ////
+
+Curious: How does http://stories.swik.net/jaunty_jackalope_ubuntu_springs_into_beta
+add images next to the links *after* I have generated them?!  stylez?
+
+We could provide the feature that the history thingy will switch between
+the offered links using hidden/shown IFrames, a bit like tags.
+
+An alternative (more powerful, maybe lighter, but more invasive) approach might
+be to detect onclick events, and at that moment store the relevant link data
+for this page (maybe even associate with current tab somehow?!).
+
+
+
+//// TODOs ////
+
+We keep getting renderered according to the page styles.  We need to disable
+that, so that we look the same all the time!
+Provide <Previous and Next> buttons.
+
+When we have multiple options for parentNode, we could choose the one with
+the most links in group (although group is not calculated yet).
+Or we could choose the oldest referring page (probably more stable for user
+to stick with the first one he used).  (This would require new date property
+firstSeen.)
+
+TODO: We have made data an Object rather then an Array, so that it serializes.
+But this is creating some inefficiencies.
+Maybe better to make data an Array, but convert it to/from Object during serialization.
+
+BUG: The script loses track if the link we follow actually redirects to
+another address.  (Probably not fixable.)
+Ofc it also loses track if we get new page by filling and submitting form.
+
+TODO: Make the popup draggable, in case user would prefer it in a different
+position.  (And remember position?)
+
+Goes slow on big pages with many links (was invoking "Unresponsive Script"
+window before maxLinks.) This may be due to the slow XPath generator for
+each link, and the recursive nature of that function.  This huge list of
+links will also slow down the script for other pages, because they are there
+in the data and will be searched.
+HELPED: Refuse to store more than maxLinks links from each page!
+
+Actually the slowdown is probably due to the searching?
+One solution for faster system would be to store the data indexed by link
+URL, rather than by page URL.  But we would still need to be able to
+retrieve all the links for one page.
+The search goes in 2 stages:
+  1) Find all pages which have this page as a link
+  2) Find all links on that page, then do XPath grouping.
+So in fact using either indexing method, we will still end up searching ALL
+the links in our DB, either in stage 1 or 2.
+Unless ... we use double indexing!
+That would double the size of our DB, but greatly improve speed.
+
+Also, the cleanup method is a little slow.  Maybe better to build and sort
+list of (age,page) pairs, then select oldest few for cleanup.
+
+
+
+//// DONE ////
+
+Now tracking secondary (followed) links.
+Now cleaning up old data.
+Made the links use location.replace(newURL), so user's Back button will now
+skip those intermediary pages.
+
+WENT AWAY: We were getting 'undefined' parentPage and links, but I think that
+bug is gone now.
+
+**/
 
 
 
@@ -395,6 +429,7 @@ function showNeighbours() {
 	// html += "Got group: "+group+"<BR/>\n";
 	html += "<FONT size='+0'>";
 	html += (myIndex+1)+" of "+group.length+" from ";
+	// TODO: We could make this link do Back for the user, only if the url == referrer.
 	html += "<A href='"+parentPageData.url+"'>"+escapeHTML(parentPageData.title)+"</A>";
 	html += "</FONT><BR/>\n";
 	html += "<FONT size='-1'>\n";
@@ -405,7 +440,7 @@ function showNeighbours() {
 		if (urlsMatch(link.url,""+document.location)) {
 			html += "<B>"+escapeHTML(link.title)+"</B>";
 		} else {
-			// TODO: We should escape these link titles, but not with CGI escape()!
+			// DONE: We should escape these link titles, but not with CGI escape()!
 			if (goForwards) {
 				html += "<A href='"+link.url+"'>"+escapeHTML(link.title)+"</A>";
 			} else {
