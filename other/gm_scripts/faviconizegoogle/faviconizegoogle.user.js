@@ -1,15 +1,16 @@
 // ==UserScript==
 // @name           FaviconizeGoogle
 // @namespace      http://userscripts.org/users/89794
-// @description    Adds favicons to each link offered by Google search results.
-// @include        http://www.google.com/search?*
+// @description    Adds favicons next to Google search results.
+// @include        http://google.*/search?*
+// @include        http://www.google.*/search?*
 // ==/UserScript==
 
 // TODO: Provide more options where to place favicon: left of link, right of
 // link, left of url, right of url; also inside or outside the link.
 
-// Broken images would be messy, but we don't see them, I don't know why.
-// We do see the gap from the image's padding.
+// Broken images would be messy, but Firefox seems to hide them after a while
+// anyway.  We do still see the gap from the image's padding though!
 // It might be desirable to check each image actually exists/loads, or remove it.
 // Is that possible, without making an http request ourselves?
 
@@ -28,6 +29,7 @@ function filterListBy(l,c) {
 
 // var links = document.evaluate("//a[@class='l']",document,null,6,null);
 var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
+// var links = document.links.filter( function(x){ return x.className=='l'; } );
 
 // GM_log("Got links = "+links.snapshotLength);
 
