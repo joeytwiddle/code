@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Reclaim CPU
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
-// @description    Disables all javascript timers on the page after 60 seconds, so Firefox stops chugging at the CPU.
+// @description    Destroys plugins and disables javascript timers on the page, when it has been left idle, so Firefox stops taking CPU when you are not using it.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.
 // @include        *
 // @exclude        http://userscripts.org/*
 // ==/UserScript==
@@ -17,9 +17,9 @@
 
 //// Config ////
 
-var bool onlyIfIdle = true;
+var onlyIfIdle = true;
 
-var checkSeconds = 15; // When onlyIfIdle==false, will trigger cleanup after
+var checkSeconds = 2; // When onlyIfIdle==false, will trigger cleanup after
 							  // exactly this time.  When onlyIfIdle==true, will
 							  // trigger cleanup after at least twice this time.
 
@@ -42,8 +42,11 @@ detect an event (e.g. mouse movement, but we should make this kbd-only
 compatible too!).
 
 DONE: Rather than removing elements, replace them with "[ELEMENT REMOVED]".
-TODO: We could offer a link/button which the user can click if they want to
+DONE: We could offer a link/button which the user can click if they want to
 restore the element.
+
+TODO: Is it possible to give the user a way to restart the javascript timers in
+the same way?
 
 TODO: Doing this on Google Maps page appears to cause some new transfers to
 take place!  Mmm I think maybe Google Maps is pure Javascript anyway?  If so,
@@ -100,7 +103,7 @@ function cleanupCPUHoggers() {
 	window.status = report;
 	if (GM_log) {
 		// GM_log("On \""+document.title+"\": "+report);
-		GM_log("On \""+window.top.document.title+"\": "+report);
+		GM_log("On \""+document.title+"\": "+report);
 	}
 
 	/*
@@ -137,51 +140,72 @@ function removeNastyElements() {
 }
 
 function removeElemsWithTag(tag) {
-	var nasties = document.getElementsByTagName(tag);
+	var nasties = unsafeWindow.document.getElementsByTagName(tag);
 	report += ", "+nasties.length+" "+tag+"s"; // .map("QWERTYUIOPASDFGHJKLZXCVBNM","qwertyuiopasdfghjklzxcvbnm");
 	for (var i=nasties.length-1;i>=0;i--) {
 		var lastLength = nasties.length;
 		var node = nasties[i];
+
+		// var elemHTML = node.outerHTML; // In all browsers except Mozilla :P
 		var attribs = "";
 		for (var j=0;j<node.attributes.length;j++) {
 			var attr = node.attributes[j];
-			attribs += ' ' + attr.name + '=' + attr.value;
+			attribs += ' ' + attr.name + '="' + attr.value.replace(/"/g,'%22') + '"';
 		}
-		// var text = "<FONT size='+1'><B>[Removed "+tag+" Element]</B></FONT>";
-		var text = "[REMOVED ELEMENT <"+tag+" "+attribs+"/>]";
+		var elemHTML = "<"+tag+""+attribs+"/>";
+
 		var sis = node.nextSibling;
 		var dad = node.parentNode;
 		dad.removeChild(node);
-		var textNode = document.createTextNode(text);
-		dad.insertBefore(textNode,sis);
+		var newNode = document.createElement('SPAN');
+		// newNode.appendChild(document.createTextNode("[REMOVED HEAVY ELEMENT "+elemHTML));
+		newNode.appendChild(document.createTextNode("["));
+
+		var restoreElement = function(evt) {
+			// TODO: Would be neater to create correct element type directly, without the SPAN.
+			var restoredNode = document.createElement('SPAN');
+			restoredNode.innerHTML = elemHTML;
+			newNode.parentNode.insertBefore(restoredNode,newNode);
+			newNode.parentNode.removeChild(newNode);
+		};
 		/*
+		var restoreElement = function() { };
+		*/
+		var restoreLink = unsafeWindow.document.createElement("A");
+		restoreLink.textContent = "Restore Removed Plugin";
+		restoreLink.href = "javascript:(function(){})();"; // Just to prevent browser changing page.
+		restoreLink.target = "#self";
+		restoreLink.onclick = restoreElement;
+		restoreLink.title = elemHTML;
+		newNode.appendChild(restoreLink);
+
+		newNode.appendChild(document.createTextNode("]"));
+		dad.insertBefore(newNode,sis);
 		//// No longer needed now we reversed the order of the loop.
+		/*
 		// DONE TEST: has nasties.length now changed?!
-		nasties = document.getElementsByTagName(tag); // Sometimes this is needed :f
 		if (nasties.length < lastLength) {
 			i--;
 			// GM_log('nasties.length did indeed drop.');
 			// Yup this happens!
 		}
 		*/
-		// nasties = document.getElementsByTagName(tag);
-		// GM_log("After doing "+i+" nasties.length="+nasties.length);
 	}
 }
 
 
 //// Not GM compatible: 
 // window.top.document.cleanupCPUHoggers = cleanupCPUHoggers;
-// setTimeout('window.top.document.cleanupCPUHoggers();',secondsBeforeStoppingJavascript*1000);
+// setTimeout('window.top.document.cleanupCPUHoggers();',checkSeconds*1000);
 //// GM double-plus good:
-setTimeout(cleanupCPUHoggers,secondsBeforeStoppingJavascript*1000);
+setTimeout(cleanupCPUHoggers,checkSeconds*1000);
 
 /*
 */
 
 /*
 // This works:
-setTimeout(' (function () { var c, tID, iID; tID = setTimeout(function(){}, 0); for (c=1; c<1000 && c<=tID; ++c) { clearTimeout(tID - c); } iID = setInterval(function(){},1000); for (c=0; c<1000 && c<=iID; ++c) { clearInterval(iID - c); } window.status = "Scripts stopped.  ("+tID+","+iID+")"; })(); ',secondsBeforeStoppingJavascript*1000);
+setTimeout(' (function () { var c, tID, iID; tID = setTimeout(function(){}, 0); for (c=1; c<1000 && c<=tID; ++c) { clearTimeout(tID - c); } iID = setInterval(function(){},1000); for (c=0; c<1000 && c<=iID; ++c) { clearInterval(iID - c); } window.status = "Scripts stopped.  ("+tID+","+iID+")"; })(); ',checkSeconds*1000);
 */
 
 
