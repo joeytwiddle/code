@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name           Alert Watcher
 // @namespace      alertwatcher
-// @description    Watch for possible malicious alert/confirm/prompt loops and allow the user to break out.
+// @description    Protects your browser from infinite alert loops.  Overrides the default alert/confirm/prompt commands with a version that allows further messages to be cancelled.
 // @include        *
+// This script is actually a combination of some other greasemonkey anti-alert-loop scripts.
 // ==/UserScript==
 
 var init = function()
 {
-	var lasttime = 0; 
 	var nexttime = 0;
 	var oldconfirm = unsafeWindow.confirm;
 
@@ -28,3 +28,4 @@ var init = function()
 	remap('prompt');
 	remap('confirm');
 }();
+
