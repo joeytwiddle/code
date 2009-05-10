@@ -163,33 +163,22 @@ function removeElemsWithTag(tag) {
 
 		var restoreElement = function(evt) {
 			// TODO: Would be neater to create correct element type directly, without the SPAN.
+			// TODO BUG: Oh noes I think the value of newNode is the last value it had, not the value it had when we created the function.
 			var restoredNode = document.createElement('SPAN');
 			restoredNode.innerHTML = elemHTML;
 			newNode.parentNode.insertBefore(restoredNode,newNode);
 			newNode.parentNode.removeChild(newNode);
+			window.status = "Restored: "+elemHTML;
 		};
-		/*
-		var restoreElement = function() { };
-		*/
 		var restoreLink = unsafeWindow.document.createElement("A");
 		restoreLink.textContent = "Restore Removed Plugin";
-		restoreLink.href = "javascript:(function(){})();"; // Just to prevent browser changing page.
-		restoreLink.target = "#self";
 		restoreLink.onclick = restoreElement;
 		restoreLink.title = elemHTML;
+		restoreLink.href = "javascript:(function(){})();"; // Just to prevent browser changing page.
 		newNode.appendChild(restoreLink);
 
 		newNode.appendChild(document.createTextNode("]"));
 		dad.insertBefore(newNode,sis);
-		//// No longer needed now we reversed the order of the loop.
-		/*
-		// DONE TEST: has nasties.length now changed?!
-		if (nasties.length < lastLength) {
-			i--;
-			// GM_log('nasties.length did indeed drop.');
-			// Yup this happens!
-		}
-		*/
 	}
 }
 
