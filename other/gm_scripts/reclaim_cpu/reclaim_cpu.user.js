@@ -14,7 +14,7 @@
 
 ////// Config //////
 
-var idleSeconds = 60;       // Page will cleanup if mouse has been outside it
+var idleSeconds = 30;       // Page will cleanup if mouse has been outside it
                             // for this many seconds.  Or if you set
                             // detectWhenIdle=false, page will cleanup this
                             // many seconds after loading.
@@ -35,7 +35,7 @@ var beAggressive = true;    // When attempting idle detection, if the user
                             // unwanted triggering, just move your mouse once
                             // over the document you are reading, *after* it
                             // has finished loading.  (We often do this
-                            // natureally during normal browsing.)  But beware
+                            // naturally during normal browsing.)  But beware
                             // this could trigger badly on pages which
                             // automatically reload or change URL, e.g. to
                             // present a slideshow.  If so, increase
@@ -151,7 +151,11 @@ function removeNastyElements() {
 	report += " and ";
 	removeElemsWithTag("embed");
 	// removeElemsMatching( function(x){ return x.tagName == "embed" } );
-	report += " from \""+document.title+"\".";
+	report += " from \""+document.title+"\"";
+   if (document != top.document) {
+      report += " (child frame of \""+top.document.title+"\")";
+   }
+   report += ".";
 }
 
 function removeElemsWithTag(tag) {
@@ -249,12 +253,12 @@ function initTimer() {
 				window.removeEventListener("mouseout", watchMouseLeave, false);
 			} else {
 				if (mouseHasLeft) {
-					GM_log("Unusual: Mouse has left but checkIdle() has triggered with idleTime only "+idleTime+".  Waiting...");
+					// GM_log("Unusual: Mouse has left but checkIdle() has triggered with idleTime only "+idleTime+".  Waiting..."); // Not so unusual really - it just means the user has wiggled their mouse over the edge: out, in, out.
 					if (timerRunning) {
 						GM_log("Blimey: Another timer started while checkIdle() was running!");
 					} else {
 						timerRunning = true;
-						setTimeout(checkIdle,10*1000); // Let's check again in 10 seconds
+						setTimeout(checkIdle,idleSeconds*1000); // Let's check again later
 					}
 				} else {
 					// GM_log("Stopped timer loop since mouse is back.");
