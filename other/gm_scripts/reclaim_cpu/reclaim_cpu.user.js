@@ -41,6 +41,9 @@ var beAggressive = true;    // When attempting idle detection, if the user
                             // present a slideshow.  If so, increase
                             // idleSeconds.
 
+var stopJavascriptTimers = true;
+var removePlugins = true;
+
 // NOTE: One source of CPU hog not handled by Reclaim_CPU script is animated
 // gifs.  Firefox has an option to stop animated gifs after one cycle.  You may
 // wish to visit about:config and set image.animation_mode = "once".
@@ -87,7 +90,11 @@ TODO: Doing this on Google Maps page appears to cause some new transfers to
 take place!  Mmm I think maybe Google Maps is pure Javascript anyway?  If so,
 it might not be hogging the CPU anyway.
 
-// DONE: Does not trigger if the mouse is outside the window when the script inits.
+DONE: Will now optionally trigger if the mouse is outside the window when the
+script inits.
+
+TODO TEST: What if an <embed> plugin is living inside an IFrame on the page?
+Will it be found and destroyed ok?
 
 */
 
@@ -100,8 +107,10 @@ var report;
 function cleanupCPUHoggers() {
 	report = "";
 
-	clearJavascriptTimers();
-	removeNastyElements();
+   if (stopJavascriptTimers)
+      clearJavascriptTimers();
+   if (removePlugins)
+      removeNastyElements();
 
 	window.status = report;
 	if (GM_log) {
@@ -131,11 +140,13 @@ function clearJavascriptTimers() {
 		clearInterval(iID - c);
 	// alert("tID was "+tID+" iID was "+iID);
 	report += "Stopped timers ("+tID+","+iID+")";
+   // Haha I really don't know what tID and iID mean, but I keep printing them
+   // out until I reach enlightenment.
 }
 
 function removeNastyElements() {
 	// Clear embedded plugins (Flash/Java-applet/...)
-	report += " and removed ";
+	report += (report==''?'R':" and r") + "emoved ";
 	removeElemsWithTag("object");
 	report += " and ";
 	removeElemsWithTag("embed");
