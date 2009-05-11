@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           track_history
-// @namespace      noggieb
+// @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Presents a list of the group of links including the one that took you to the current page.  Allows you to go to a neighbouring link without having to go Back.  THIS IS BETA PREVIEW OF THE FINAL SCRIPT.  I recommend you grab the Userscripts Updater, so that you know when I release the 1.0 version.
 // @include        *
 // ==/UserScript==
@@ -12,7 +12,8 @@ var goForwards = false; // Whether to navigate forward in browser when following
 var useReferrerOnly = false; // (!goForwards); // Argh document.location.replace() also updates referrer.  Leave this false or the script will only work on the first result!
 var verboseAlternatives = false; // Whether to show info when we had multiple options for the parentPage.
 var maxLinks = 100;
-var dontBeDaft = true; // Only disable this for debug/development.
+var dontBeDaft = false; // Hides info when it's not useful.  Only disable this for debug/development.
+var showFavicons = true;
 
 
 /**
@@ -123,6 +124,7 @@ function getXPath(node) {
 		}
 		if (sibling == node) {
 			thisCount = totalCount;
+			break;
 		}
 	}
 	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
@@ -230,22 +232,39 @@ function addDataForThisPage() {
 	pageData.referrer = document.referrer;
 	pageData.lastUsed = new Date().getTime();
 	pageData.links = new Array();
-	var lastIndex = document.links.length;
+	//// FIXED: No matter how I do this, it becomes really slow on some large
+	//// pages (e.g. about:cache?device=memory where i had 644 links).  I mean
+	//// really slow.  What's the problem?!
+	//// AHH it was getXPath that is slowing us down!  Slightly improved it.
+	// var lastIndex = document.links.length;
+	// var links = document.links;
+	var links = document.getElementsByTagName('A');
+	var lastIndex = links.length;
+	// CONSIDER: We could make maxLinks act inside the loop, if stored-data > maxLinks.
+	// This could mean more reading, but the constraint would be applied to the
+	// output, not the input, which is really what we wanted.  Bah this is only
+	// relevant if there are many Bookmarklets early in the page.  :P
 	if (lastIndex > maxLinks) {
+		GM_log("Too many links ("+lastIndex+") - skipping "+(lastIndex-maxLinks)+" at "+new Date()+".");
 		lastIndex = maxLinks;
-		GM_log("Too many links ("+document.links.length+") - skipping "+(document.links.length-lastIndex)+".");
 	}
 	for (var i=0;i<lastIndex;i++) {
-		var link = document.links[i];
+		// var link = document.links[i];
+		var link = links[i];
 		if (link.href.match('^\s*javascript:'))
 			continue;
-		// TODO: other protocols we should skip: "news:rec.arts.sf.written", ...
-		pageData.links[i] = new Object();
-		pageData.links[i].url = makeLinkAbsolute(link.href);
-		pageData.links[i].title = link.textContent;
-		pageData.links[i].xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
+		// TODO: other protocols we should skip: "news:rec.arts.sf.written", "mailto:...", ...
+		// FIXED: before using var j instead of i, we were skipping (hence creating) empty items.
+		var j = pageData.links.length;
+		pageData.links[j] = new Object();
+		pageData.links[j].url = makeLinkAbsolute(link.href);
+		pageData.links[j].title = link.textContent;
+		pageData.links[j].xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
 	}
 	data[document.location] = pageData;
+	if (links.length > maxLinks) {
+		GM_log("Finished parsing at "+new Date());
+	}
 }
 
 function cleanupData() {
@@ -314,6 +333,10 @@ function pageContainsLinkTo(pageData,url) {
 }
 
 function urlsMatch(x,y) {
+	if (x==undefined || y==undefined) {
+		GM_log("There are still UNDEFINED links being stored/used!");
+		return false;
+	}
 	// return x==y || x+'/'==y || x==y+'/';
 	return x.replace(/\/$/,'') == y.replace(/\/$/,'');
 }
@@ -324,23 +347,13 @@ function findPagesContainingLinkTo(url) {
 
 function drawHistoryTree() {
 
-	var historyBlock = document.createElement("DIV");
-
-	historyBlock.id = 'historyFloat';
-	historyBlock.style.position = 'fixed';
-	historyBlock.style.left = '4px';
-	historyBlock.style.top = '4px';
-	historyBlock.style.zIndex = '50000';
-	// historyBlock.style.setProperty('z-index','50000');
-	historyBlock.style.border = 'solid 1px black';
-	historyBlock.style.backgroundColor = 'white';
-	historyBlock.style.padding = '6px';
-
 	// historyBlock.style = 'position: fixed; top: 4px; left: 4px; z-index: 10000; border: solid 1px black; background-color: white; padding: 6px;';
 
-	var html = "";
+	var html = showNeighbours();
 
-	html += showNeighbours();
+	if (html == "") {
+		return;
+	}
 
 	// // var clearButton = " <A target='_self' href='javascript:(function(){ clearHistoryData(); })();'>Clear</A>";
 	// var clearButton = "";
@@ -359,6 +372,18 @@ function drawHistoryTree() {
 		+ "</FONT>"
 		+ "</DIV>\n";
 
+	var historyBlock = document.createElement("DIV");
+
+	historyBlock.id = 'historyFloat';
+	historyBlock.style.position = 'fixed';
+	historyBlock.style.left = '4px';
+	historyBlock.style.top = '4px';
+	historyBlock.style.zIndex = '50000';
+	// historyBlock.style.setProperty('z-index','50000');
+	historyBlock.style.border = 'solid 1px black';
+	historyBlock.style.backgroundColor = 'white';
+	historyBlock.style.padding = '6px';
+
 	historyBlock.innerHTML = html;
 
 	document.body.appendChild(historyBlock);
@@ -369,12 +394,15 @@ function drawHistoryTree() {
 }
 
 function showNeighbours() {
-	// Find the page which took us to this page:
 
 	var html = "";
 
+	if (showFavicons)
+		html += "<STYLE type='text/css'> .favicon { padding-right: 4px; vertical-align: middle; } </STYLE>\n";
+
 	var parentPageData;
 
+	// Find the page which took us to this page:
 	if (useReferrerOnly) {
 		if (!document.referrer) {
 			html += "This page has no referrer.<BR/>\n";
@@ -392,6 +420,9 @@ function showNeighbours() {
 		// Remove self - There may be links from self to self.
 		parentPages = getItemsMatching(parentPages, function(pageData){ return (!pageData.url) || stripAnchor(pageData.url) != stripAnchor(""+document.location); } );
 		if ((!parentPages) || (parentPages.length < 1)) {
+			if (dontBeDaft) {
+				return "";
+			}
 			html += "I do not know how we got to this page.<BR/>\n";
 			if (document.referrer)
 				html += "Referrer was <A href='"+document.referrer+"'>here</A>.<BR/>\n";
@@ -440,6 +471,8 @@ function showNeighbours() {
 		if (urlsMatch(link.url,""+document.location)) {
 			html += "<B>"+escapeHTML(link.title)+"</B>";
 		} else {
+			if (showFavicons)
+				html += createFaviconHTMLFor(link.url);
 			// DONE: We should escape these link titles, but not with CGI escape()!
 			if (goForwards) {
 				html += "<A href='"+link.url+"'>"+escapeHTML(link.title)+"</A>";
@@ -454,6 +487,14 @@ function showNeighbours() {
 	html += "</P>\n";
 
 	return html;
+}
+
+function createFaviconHTMLFor(url) {
+	var host = makeLinkAbsolute(url).replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
+	// if (host == document.location.host) {
+		// return null;
+	// }
+	return "<IMG src='http://"+host+"/favicon.ico' width='16' height='16' class='favicon' border='0'/>";
 }
 
 
