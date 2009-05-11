@@ -88,10 +88,9 @@
 				<TABLE cellpadding='20'><TR>
 				<TD id='minitoolsBlock' width="60%" bgcolor="#eeffdd">
 					<H2>Minitools</H2>
-					<!-- The reasons for the xsl:sort's is that we need to reverse the order.  I store my minitools in reverse order because Konqueror displays them in reverse order! -->
+					<xsl:apply-templates select="$thePage/xbel"/>
 					<!-- Show the toplevel (no subfolder) bookmarklets: -->
 					<!-- <xsl:apply-templates select="($thePage)"/> -->
-					<xsl:apply-templates select="$thePage/xbel"/>
 					<!--
 					<xsl:for-each select="$thePage/*/folder">
 						<xsl:sort select="position()" data-type="number" order="descending"/>
@@ -112,21 +111,24 @@
 
 						<H3>Bookmarklet Viewer / Editor</H3>
 
-						<INPUT id='scriptLabel1' type="text" name="text" value="" size='50'/>
-						<font size='-1'><P id='scriptDescription1' style='background-color:#eeeebb;padding:10px;border:solid;border-width:1;border-color:black;'>Description</P></font>
-						<TEXTAREA id='scriptTextArea1' cols='50' rows='20'></TEXTAREA>
-						<P align="right"><FONT size='+2'><A id="scriptTestLink1" target="_self" href="javascript:">Test It!</A></FONT></P>
+						<DIV id='simpleEditor'>
+							<INPUT id='scriptLabel1' type="text" name="text" value="" size='50'/>
+							<font size='-1'><P id='scriptDescription1' style='background-color:#eeeebb;padding:10px;border:solid;border-width:1;border-color:black;'>Description</P></font>
+							<TEXTAREA id='scriptTextArea1' cols='50' rows='20'></TEXTAREA>
+							<P align="right"><FONT size='+2'><A id="scriptTestLink1" target="_self" href="javascript:">Test It!</A></FONT></P>
 
-						<BR/>
-						<BR/>
-						<BR/>
+							<BR/>
+							<BR/>
+							<BR/>
 
-						<P>Advanced <A target="_self" href="javascript:(function()%7Bdocument.getElementById('scriptStuff').innerHTML=''; document.getElementById('bmlbldriframe').innerHTML = '&lt;IFRAME width=&quot;100%&quot; height=&quot;600&quot; src=&quot;http://subsimple.com/bookmarklets/jsbuilder.htm&quot;&gt;&lt;/IFRAME&gt;';%7D)();">Bookmarklet Builder</A> - can format the code for easy reading.</P>
+							<P>Advanced <A target="_self" href="javascript:(function()%7B document.getElementById('bmlbldriframe').innerHTML = '&lt;IFRAME width=&quot;480px&quot; height=&quot;600&quot; src=&quot;http://subsimple.com/bookmarklets/jsbuilder.htm&quot;&gt;&lt;/IFRAME&gt;'; document.getElementById('simpleEditor').innerHTML=''; %7D)();">Bookmarklet Builder</A> - can format the code for easy reading.</P>
+						</DIV>
+
+						<DIV id='bmlbldriframe'/>
 
 						<!-- <P>Advanced <A target="_blank" href="http://subsimple.com/bookmarklets/jsbuilder.htm">Bookmarklet Builder</A> - can format the code for easy reading.</P> -->
 						<!-- <IFRAME width="100%" height="300" src="http://subsimple.com/bookmarklets/jsbuilder.htm"></IFRAME> -->
-						<DIV id='bmlbldriframe'/>
-						<P align='right'><A target="_blank" href="http://subsimple.com/bookmarklets/jsbuilder.htm">Popup</A></P>
+						<P align='right'><A target="_blank" href="http://subsimple.com/bookmarklets/jsbuilder.htm">Popup Editor</A></P>
 
 					</DIV>
 
@@ -221,7 +223,9 @@
 							// scriptLabel.innerHTML = escape(""+linkNode);
 							// document.getElementById('textBox').value = escape(""+linkNode);
 							scriptTestLink.href = linkNode.href;
-							document.getElementById('scriptDescription1').innerHTML = linkNode.title;
+							/* We can't set it if we removed the simpleEditor! */
+							if (document.getElementById('scriptDescription1'))
+								document.getElementById('scriptDescription1').innerHTML = linkNode.title;
 						}
 						for (i=0;i&lt;document.links.length;i++) {
 							if (document.links[i].href.substring(0,11) == 'javascript:') {
@@ -249,6 +253,9 @@
 		<BLOCKQUOTE>
 			<!-- <xsl:apply-templates select=".//bookmark"/> -->
 			<xsl:for-each select="./folder | ./bookmark">
+				<!-- The reasons for the xsl:sort is that we need to reverse the
+				order.  I store my minitools in reverse order because Konqueror
+				displays them in reverse order! -->
 				<xsl:sort select="position()" data-type="number" order="descending"/>
 				<xsl:apply-templates select="."/>
 			</xsl:for-each>
