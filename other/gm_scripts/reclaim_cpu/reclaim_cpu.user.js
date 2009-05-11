@@ -181,15 +181,18 @@ function destroyNasty(node) {
 	}
 	var elemHTML = "<"+node.tagName+""+attribs+"/>";
 	var sis = node.nextSibling;
-
-	//// Main bit: remove the offending element:
+   var sizeConstraints = "";
+   if (node.width && node.height) {
+      sizeConstraints = "width:"+node.width+"px; height:"+node.height+"px;";
+   }
 	var dad = node.parentNode;
-	dad.removeChild(node);
 
 	//// Put a Restore link in its place:
 
-	var newNode = document.createElement('SPAN');
-	newNode.innerHTML = "<STYLE type='text/css'> .WhiteOnRed{ color:#ffffff; background-color:#dd0000; padding: 2px; font-weight: bold; } </STYLE>";
+	var newNode = document.createElement('DIV');
+   // BUG: vertical-align is not working.
+   // sizeConstraints only works when newNode is a DIV, not a SPAN.
+	newNode.innerHTML = "<STYLE type='text/css'> .WhiteOnRed{ color:#ffffff; background-color:#aa0000; padding: 2px; font-weight: bold; vertical-align: middle; "+sizeConstraints+" } </STYLE>";
 	newNode.className = "WhiteOnRed";
 	newNode.appendChild(document.createTextNode("["));
 
@@ -215,6 +218,14 @@ function destroyNasty(node) {
 
 	newNode.appendChild(document.createTextNode("]"));
 	dad.insertBefore(newNode,sis);
+
+   // newNode.style.width = node.width+'px';
+   // newNode.style.height = node.height+'px';
+   // restoreLink.style.width = node.width+'px';
+   // restoreLink.style.height = node.height+'px';
+
+	//// Main bit: remove the offending element:
+	dad.removeChild(node);
 
 }
 
