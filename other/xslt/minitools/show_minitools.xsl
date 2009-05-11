@@ -112,7 +112,7 @@
 						<H3>Bookmarklet Viewer / Editor</H3>
 
 						<DIV id='simpleEditor'>
-							<INPUT id='scriptLabel1' type="text" name="text" value="" size='50'/>
+							<INPUT id='scriptLabel1' type="text" name="text" value="" size='50' onkeyup=' document.getElementById("scriptTestLink1").textContent = document.getElementById("scriptLabel1").value; '/>
 							<font size='-1'><P id='scriptDescription1' style='background-color:#eeeebb;padding:10px;border:solid;border-width:1;border-color:black;'>Description</P></font>
 							<TEXTAREA id='scriptTextArea1' cols='50' rows='20'></TEXTAREA>
 							<P align="right"><FONT size='+2'><A id="scriptTestLink1" target="_self" href="javascript:">Test It!</A></FONT></P>
@@ -223,6 +223,9 @@
 							// scriptLabel.innerHTML = escape(""+linkNode);
 							// document.getElementById('textBox').value = escape(""+linkNode);
 							scriptTestLink.href = linkNode.href;
+							if (scriptTestLink.textContent != 'Test It!')
+								// scriptTestLink.textContent = scriptLabel.value;
+								scriptTestLink.textContent = 'Test It!';
 							/* We can't set it if we removed the simpleEditor! */
 							if (document.getElementById('scriptDescription1'))
 								document.getElementById('scriptDescription1').innerHTML = linkNode.title;
