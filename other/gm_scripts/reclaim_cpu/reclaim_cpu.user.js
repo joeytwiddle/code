@@ -3,41 +3,43 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers.
 // @include        *
+// @exclude        http://*.other.sites/where/we/want/to/leave/everything/running
+// ==/UserScript==
+
+////// Some sites you might like to exclude: //////
 // @exclude        http://userscripts.org/*
 // @exclude        http://*.userscripts.org/*
 // @exclude        http://youtube.*/*
 // @exclude        http://*.youtube.*/*
-// @exclude        http://*.other.sites/where/we/want/to/leave/everything/running
-// ==/UserScript==
 
-//// Config ////
+////// Config //////
 
 var idleSeconds = 60;       // Page will cleanup if mouse has been outside it
-									 // for this many seconds.  Or if you set
-									 // detectWhenIdle=false, page will cleanup this
-									 // many seconds after loading.
+                            // for this many seconds.  Or if you set
+                            // detectWhenIdle=false, page will cleanup this
+                            // many seconds after loading.
 
 var detectWhenIdle = true;  // This is much more user-friendly, but adds a small
-									 // processing overhead until the cleanup occurs.
+                            // processing overhead until the cleanup occurs.
 
 var reTrigger = true;       // Resume idle detection if the user restores a
-									 // hidden element.
+                            // hidden element.
 
 var beAggressive = true;    // When attempting idle detection, if the user
-									 // never touches the new window, it is hard to tell
-									 // whether he is just watching/reading the page or
-									 // doing something else.  beAggressive==true means
-									 // we will cleanup in this situation.  You really
-									 // want this on if you tend to open 10 tabs, but
-									 // read only 5 of them.  It is easy to prevent
-									 // unwanted triggering, just move your mouse once
-									 // over the document you are reading, *after* it
-									 // has finished loading.  (We often do this
-									 // natureally during normal browsing.)  But beware
-									 // this could trigger badly on pages which
-									 // automatically reload or change URL, e.g. to
-									 // present a slideshow.  If so, increase
-									 // idleSeconds.
+                            // never touches the new window, it is hard to tell
+                            // whether he is just watching/reading the page or
+                            // doing something else.  beAggressive==true means
+                            // we will cleanup in this situation.  You really
+                            // want this on if you tend to open 10 tabs, but
+                            // read only 5 of them.  It is easy to prevent
+                            // unwanted triggering, just move your mouse once
+                            // over the document you are reading, *after* it
+                            // has finished loading.  (We often do this
+                            // natureally during normal browsing.)  But beware
+                            // this could trigger badly on pages which
+                            // automatically reload or change URL, e.g. to
+                            // present a slideshow.  If so, increase
+                            // idleSeconds.
 
 // NOTE: One source of CPU hog not handled by Reclaim_CPU script is animated
 // gifs.  Firefox has an option to stop animated gifs after one cycle.  You may
@@ -52,7 +54,7 @@ var beAggressive = true;    // When attempting idle detection, if the user
 
 
 
-/*
+/* Developer notes / Changes / Todos
 
 DONE: Rename to CPU Reclaimer.
 
@@ -90,6 +92,8 @@ it might not be hogging the CPU anyway.
 */
 
 
+
+////// Functions which perform the page cleanup. //////
 
 var report;
 
@@ -131,9 +135,9 @@ function clearJavascriptTimers() {
 
 function removeNastyElements() {
 	// Clear embedded plugins (Flash/Java-applet/...)
-	report += " Removed: ";
+	report += " and removed ";
 	removeElemsWithTag("object");
-	report += ", ";
+	report += " and ";
 	removeElemsWithTag("embed");
 	// removeElemsMatching( function(x){ return x.tagName == "embed" } );
 	report += " from \""+document.title+"\".";
@@ -199,6 +203,10 @@ function destroyNasty(node) {
 
 }
 
+
+
+////// Functions which perform idle page detection. //////
+
 function initTimer() {
 
 	if (!detectWhenIdle) {
@@ -208,7 +216,7 @@ function initTimer() {
 
 	} else {
 
-		//// Detect when page is idle (no longer in view), and cleanup then.
+		//// Detect when page is idle (no longer in focus), and cleanup then.
 
 		var mouseHasLeft = false;
 		var timerRunning = false;
