@@ -1,29 +1,56 @@
 // ==UserScript==
 // @name           Reclaim CPU
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
-// @description    Destroys plugins and disables javascript timers on the page, when it has been left idle, so Firefox stops taking CPU when you are not using it.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  It will only stop pages which automatically refresh themselves, if you set the checkSeconds config variable to trigger cleanup <I>before</I> the page reloads itself!
+// @description    Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers.
 // @include        *
 // @exclude        http://userscripts.org/*
-// ==/UserScript==
-
-////////
 // @exclude        http://*.userscripts.org/*
+// @exclude        http://youtube.*/*
 // @exclude        http://*.youtube.*/*
-// @exclude        http://*.other.sites/where/using/cpu/is/a/good/thing
-
-// Fatness not handled by FatFox script (do this yourself!):
-// Firefox has an option to stop animated gifs.
-// In about:config set image.animation_mode = "once".
+// @exclude        http://*.other.sites/where/we/want/to/leave/everything/running
+// ==/UserScript==
 
 //// Config ////
 
-var onlyIfIdle = true;
+var idleSeconds = 60;       // Page will cleanup if mouse has been outside it
+									 // for this many seconds.  Or if you set
+									 // detectWhenIdle=false, page will cleanup this
+									 // many seconds after loading.
 
-var idleSeconds = 60; // Page will cleanup if it has not been in view for this many seconds.
+var detectWhenIdle = true;  // This is much more user-friendly, but adds a small
+									 // processing overhead until the cleanup occurs.
 
-var checkSeconds = 15; // When onlyIfIdle==false, will trigger cleanup after
-							  // exactly this time.  When onlyIfIdle==true, will
-							  // trigger cleanup after at least twice this time.
+var reTrigger = true;       // Resume idle detection if the user restores a
+									 // hidden element.
+
+var beAggressive = true;    // When attempting idle detection, if the user
+									 // never touches the new window, it is hard to tell
+									 // whether he is just watching/reading the page or
+									 // doing something else.  beAggressive==true means
+									 // we will cleanup in this situation.  You really
+									 // want this on if you tend to open 10 tabs, but
+									 // read only 5 of them.  It is easy to prevent
+									 // unwanted triggering, just move your mouse once
+									 // over the document you are reading, *after* it
+									 // has finished loading.  (We often do this
+									 // natureally during normal browsing.)  But beware
+									 // this could trigger badly on pages which
+									 // automatically reload or change URL, e.g. to
+									 // present a slideshow.  If so, increase
+									 // idleSeconds.
+
+// NOTE: One source of CPU hog not handled by Reclaim_CPU script is animated
+// gifs.  Firefox has an option to stop animated gifs after one cycle.  You may
+// wish to visit about:config and set image.animation_mode = "once".
+
+// Other sources of CPU hog not handled by this script are of course extensions
+// and Firefox itself.
+
+// NOTE: Reclaim_CPU will only cleanup pages which automatically refresh
+// themselves, IF the idleSeconds triggers cleanup *before* the page reloads
+// itself!
+
+
 
 /*
 
@@ -32,9 +59,10 @@ DONE: Rename to CPU Reclaimer.
 DONE: As well as killing JS timers, kill flash apps (remove all object and
 embed tags I guess)!
 
-TODO: Optionally remove all gif's.  (Presuming we can't just stop them.)
+TODO: Optionally remove all gif's.  (Presuming we can't just stop their
+animation.)
 
-TODO: Delay the script disabling until user has stopped using the page.  Detect
+DONE: Delay the script disabling until user has stopped using the page.  Detect
 user-idle by checking if his mouse x/y has changed.  Hmm that might trigger
 when not wanted, e.g. when user is just watching a video.  Can we check if the
 user's focus has moved away from the current tab to another tab, or off the
@@ -57,22 +85,24 @@ TODO: Doing this on Google Maps page appears to cause some new transfers to
 take place!  Mmm I think maybe Google Maps is pure Javascript anyway?  If so,
 it might not be hogging the CPU anyway.
 
+// DONE: Does not trigger if the mouse is outside the window when the script inits.
+
 */
 
-var report = "";
 
 
-
-
+var report;
 
 function cleanupCPUHoggers() {
+	report = "";
+
 	clearJavascriptTimers();
 	removeNastyElements();
 
 	window.status = report;
 	if (GM_log) {
 		// GM_log("On \""+document.title+"\": "+report);
-		GM_log("On \""+document.title+"\": "+report);
+		GM_log(report);
 	}
 
 	/*
@@ -101,16 +131,17 @@ function clearJavascriptTimers() {
 
 function removeNastyElements() {
 	// Clear embedded plugins (Flash/Java-applet/...)
-	report += " Removed elements";
+	report += " Removed: ";
 	removeElemsWithTag("object");
+	report += ", ";
 	removeElemsWithTag("embed");
 	// removeElemsMatching( function(x){ return x.tagName == "embed" } );
-	report += ".";
+	report += " from \""+document.title+"\".";
 }
 
 function removeElemsWithTag(tag) {
 	var nasties = unsafeWindow.document.getElementsByTagName(tag);
-	report += ", "+nasties.length+" "+tag+"s"; // .map("QWERTYUIOPASDFGHJKLZXCVBNM","qwertyuiopasdfghjklzxcvbnm");
+	report += nasties.length+" "+tag.toUpperCase()+"s"; // .map("QWERTYUIOPASDFGHJKLZXCVBNM","qwertyuiopasdfghjklzxcvbnm");
 	for (var i=nasties.length-1;i>=0;i--) {
 		var lastLength = nasties.length;
 		var node = nasties[i];
@@ -139,7 +170,8 @@ function destroyNasty(node) {
 	//// Put a Restore link in its place:
 
 	var newNode = document.createElement('SPAN');
-	// newNode.appendChild(document.createTextNode("[REMOVED HEAVY ELEMENT "+elemHTML));
+	newNode.innerHTML = "<STYLE type='text/css'> .WhiteOnRed{ color:#ffffff; background-color:#dd0000; padding: 2px; font-weight: bold; } </STYLE>";
+	newNode.className = "WhiteOnRed";
 	newNode.appendChild(document.createTextNode("["));
 
 	var restoreElement = function(evt) {
@@ -150,12 +182,16 @@ function destroyNasty(node) {
 		newNode.parentNode.insertBefore(restoredNode,newNode);
 		newNode.parentNode.removeChild(newNode);
 		window.status = "Restored: "+elemHTML;
+		if (reTrigger) {
+			initTimer();
+		}
 	};
 	var restoreLink = unsafeWindow.document.createElement("A");
 	restoreLink.textContent = "Restore Removed Plugin";
 	restoreLink.onclick = restoreElement;
 	restoreLink.title = elemHTML;
 	restoreLink.href = "javascript:(function(){})();"; // Just to prevent browser changing page.
+	restoreLink.className = "WhiteOnRed";
 	newNode.appendChild(restoreLink);
 
 	newNode.appendChild(document.createTextNode("]"));
@@ -163,63 +199,106 @@ function destroyNasty(node) {
 
 }
 
+function initTimer() {
 
-//// Not GM compatible: 
-// window.top.document.cleanupCPUHoggers = cleanupCPUHoggers;
-// setTimeout('window.top.document.cleanupCPUHoggers();',idleSeconds*1000);
-//// GM double-plus good:
-// setTimeout(cleanupCPUHoggers,idleSeconds*1000);
+	if (!detectWhenIdle) {
 
-/*
-// Old style:
-setTimeout(' (function () { var c, tID, iID; tID = setTimeout(function(){}, 0); for (c=1; c<1000 && c<=tID; ++c) { clearTimeout(tID - c); } iID = setInterval(function(){},1000); for (c=0; c<1000 && c<=iID; ++c) { clearInterval(iID - c); } window.status = "Scripts stopped.  ("+tID+","+iID+")"; })(); ',idleSeconds*1000);
-*/
+		//// Cleanup automatically at fixed time after page has loaded.
+		setTimeout(cleanupCPUHoggers,idleSeconds*1000);
 
-
-
-var mouseHasLeft = false;
-var lastSawMouse = new Date().getTime();
-
-var idleInfo = document.createElement('DIV');
-document.body.insertBefore(idleInfo,unsafeWindow.document.body.firstChild);
-
-var watchMouseMove = function(e) {
-	mouseHasLeft = false;
-	lastSawMouse = new Date().getTime();
-	// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
-	window.status = "(" + e.pageX + "," + e.pageY + ")";
-	idleInfo.textContent = "Mouse is back.";
-};
-// document.body.addEventListener("mousemove", watchMouseMove, false);
-window.addEventListener("mousemove", watchMouseMove, false);
-window.addEventListener("focus", watchMouseMove, false); // Catches when use re-enters window with keyboard.
-
-var watchMouseLeave = function(e) {
-	mouseHasLeft = true;
-	lastSawMouse = new Date().getTime();
-	window.status = "Mouse has left the window.";
-	idleInfo.textContent = "Mouse has left the window.";
-}
-window.addEventListener("mouseout", watchMouseLeave, false);
-
-// TODO TEST: Is catching the window fine-grained enough?  If we switch to other tabs, does original tab still think it is alive?
-// BUG: If I Alt-Tab to get on/off the window, no events are fired.
-
-/*
-document.body.addEventListener("mousemove", function(ev){
-	window.status = "hello";
-}, false);
-*/
-
-function checkIdle() {
-	var now = new Date().getTime();
-	var idleTime = (now-lastSawMouse)/1000;
-	idleInfo.textContent = "Last saw mouse "+ idleTime +"s ago.";
-	if (idleTime > idleSeconds) {
 	} else {
-		setTimeout(checkIdle,5000);
+
+		//// Detect when page is idle (no longer in view), and cleanup then.
+
+		var mouseHasLeft = false;
+		var timerRunning = false;
+		var lastSawMouse = new Date().getTime();
+
+		// var idleInfo = document.createElement('DIV');
+		// document.body.insertBefore(idleInfo,unsafeWindow.document.body.firstChild);
+
+		function checkIdle() {
+			timerRunning = false;
+			var now = new Date().getTime();
+			var idleTime = (now-lastSawMouse)/1000;
+			// idleInfo.textContent = "Last saw mouse "+ idleTime +"s ago.";
+			if (mouseHasLeft && idleTime > idleSeconds) {
+				cleanupCPUHoggers();
+				// DONE: We should also disable all the event watchers.
+				window.removeEventListener("mousemove", watchMouseMove, false);
+				window.removeEventListener("focus", watchMouseMove, false);
+				window.removeEventListener("mouseout", watchMouseLeave, false);
+			} else {
+				if (mouseHasLeft) {
+					GM_log("Unusual: Mouse has left but checkIdle() has triggered with idleTime only "+idleTime+".  Waiting...");
+					if (timerRunning) {
+						GM_log("Blimey: Another timer started while checkIdle() was running!");
+					} else {
+						timerRunning = true;
+						setTimeout(checkIdle,10*1000); // Let's check again in 10 seconds
+					}
+				} else {
+					// GM_log("Stopped timer loop since mouse is back.");
+				}
+			}
+		}
+		// DONE: We don't actually need to run the checkIdle timer at all, until the mouse has left!
+
+		var watchMouseMove = function(e) {
+			mouseHasLeft = false;
+			lastSawMouse = new Date().getTime();
+			// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
+			// window.status = "(" + e.pageX + "," + e.pageY + ")";
+			// idleInfo.textContent = "Mouse is back.";
+			return false;
+		};
+		// document.body.addEventListener("mousemove", watchMouseMove, false);
+		window.addEventListener("mousemove", watchMouseMove, false);
+		window.addEventListener("focus", watchMouseMove, false); // Catches when use re-enters window with keyboard.
+
+		var watchMouseLeave = function(e) {
+			// Oh of course - this is getting triggered for mouseout of all elements!
+			// But fortunately it was immediately being disabled by watchMouseMove.
+			// Well anyway let's fix that:
+			if (e.target.tagName != 'HTML')
+				return false;
+			if (!mouseHasLeft) {
+				if (timerRunning) {
+					// Don't start a timer - we have one!
+				} else {
+					setTimeout(checkIdle,(idleSeconds+0.5)*1000);
+					timerRunning = true;
+				}
+			}
+			mouseHasLeft = true;
+			lastSawMouse = new Date().getTime();
+			// window.status = "Mouse has left the "+e.target.tagName;
+			// idleInfo.textContent = "Mouse has left the window.";
+			// GM_log("Mouse has left the "+e.target.tagName);
+			return false;
+		}
+		window.addEventListener("mouseout", watchMouseLeave, false);
+
+		// DONE TEST: Is catching the window fine-grained enough?  If we switch to other tabs, does original tab still think it is alive?  Yes, and No.  It works fine.  window only refers to current tab, not whole browser window.  ;)
+		// BUG: If I Alt-Tab to get on/off the window, no events are fired.
+
+		/*
+		document.body.addEventListener("mousemove", function(ev){
+			window.status = "hello";
+		}, false);
+		*/
+
+		// setTimeout(checkIdle,5000);
+
+		if (beAggressive) {
+			mouseHasLeft = true;
+			timerRunning = true;
+			setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
+		}
+
 	}
+
 }
 
-setTimeout(checkIdle,5000);
+initTimer();
 
