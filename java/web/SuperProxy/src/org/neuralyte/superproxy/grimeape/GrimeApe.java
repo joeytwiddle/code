@@ -3,6 +3,7 @@ package org.neuralyte.superproxy.grimeape;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.Date;
 import java.util.List;
 
@@ -108,6 +109,18 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 String scriptDir = topDir + "/" + args[2];
                 return makeFileHttpResponse(new File(scriptDir,fileBeyond),"text/javascript",request);
                /** @todo danger of "../../../../etc/passwd" in args2 ! */
+                
+            } else if (args[2].equals("log")) {
+                // Should be tool for this pff.
+                String cgi = wreq.getCGIString();
+                // argh String logData = cgi.replaceAll("^.*data=([^&]*).*","\\1");
+                String logData = cgi.replaceAll("^.*data=", "");
+                logData = URLDecoder.decode(logData);
+                Logger.info("GM_LOG: "+logData);
+                // return ""; // "\/\*thanksforlogging\*\/"
+                // throw new Error("Just deal with it.");
+                return failedHttpResponse("too lazy to respond empty"); // TODO
+                
             } else {
                 Logger.error("Bad request: "+wreq.getPath());
                 throw new Error("Bad request: "+wreq.getPath());
@@ -177,6 +190,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         response.setTopLine("HTTP/1.0 539 OHDEAR");
         response.setHeader("Date",WebRequestHandler.getFormattedDate());
         response.setHeader("Connection","close");
+        response.setContent(""); // If we don't do this, we actually don't get NullPointerException, but a "Stream closed" IOException.
         return response;
     }
     

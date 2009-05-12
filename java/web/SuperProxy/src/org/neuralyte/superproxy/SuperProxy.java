@@ -184,7 +184,8 @@ public class SuperProxy extends PluggableHttpRequestHandler {
                 
                 
                 
-                document.setDocumentURI(webRequest.getCGIString());
+                // document.setDocumentURI(webRequest.getCGIString());
+                document.setDocumentURI(webRequest.getURL());
                 document = processDocument(document);
                 
                 
