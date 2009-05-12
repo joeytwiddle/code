@@ -3,6 +3,7 @@
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers.
 // @include        *
+// @exclude        http://www.last.fm/*
 // @exclude        http://*.other.sites/where/we/want/to/leave/everything/running
 // ==/UserScript==
 
@@ -12,9 +13,11 @@
 // @exclude        http://youtube.*/*
 // @exclude        http://*.youtube.*/*
 
+function() {
+
 ////// Config //////
 
-var idleSeconds = 30;       // Page will cleanup if mouse has been outside it
+var idleSeconds =  5;       // Page will cleanup if mouse has been outside it
                             // for this many seconds.  Or if you set
                             // detectWhenIdle=false, page will cleanup this
                             // many seconds after loading.
@@ -25,24 +28,45 @@ var detectWhenIdle = true;  // This is much more user-friendly, but adds a small
 var reTrigger = true;       // Resume idle detection if the user restores a
                             // hidden element.
 
-var beAggressive = true;    // When attempting idle detection, if the user
-                            // never touches the new window, it is hard to tell
-                            // whether he is just watching/reading the page or
-                            // doing something else.  beAggressive==true means
-                            // we will cleanup in this situation.  You really
-                            // want this on if you tend to open 10 tabs, but
-                            // read only 5 of them.  It is easy to prevent
-                            // unwanted triggering, just move your mouse once
-                            // over the document you are reading, *after* it
-                            // has finished loading.  (We often do this
-                            // naturally during normal browsing.)  But beware
-                            // this could trigger badly on pages which
-                            // automatically reload or change URL, e.g. to
-                            // present a slideshow.  If so, increase
+var beAggressive = true;    // If set, will cleanup a newly loaded page if it
+                            // receives no mouse signals at all after loading.
+                            // This means you must move your mouse a tiny amount
+                            // over the page after it has loaded, or cleanup
+                            // will occur!
+                            // But without beAggressive, tabs opened in the
+                            // background, or pages which finished loading
+                            // after you switched away from Firefox, will not
+                            // be marked idle.
+
+                            // When attempting idle detection, if the user
+                            // does not move the mouse over the page at all
+                            // after it has loaded, Reclaim_CPU
+                            // he is watching/reading the page or doing
+                            // something else, and we have no knowledge of
+                            // whether the mouse is inside the window or not.
+                            // beAggressive==true means we will cleanup in this
+                            // situation.  You really want this on if you tend
+                            // to open 10 tabs, but read only 5 of them.  It is
+                            // easy to prevent unwanted triggering, just move
+                            // your mouse once over the document you are
+                            // reading, *after* it has finished loading.  (We
+                            // often do this naturally during normal browsing.)
+                            // But beware this could trigger badly on pages
+                            // which automatically reload or change URL, e.g.
+                            // to present a slideshow.  If so, increase
                             // idleSeconds.
 
 var stopJavascriptTimers = true;
 var removePlugins = true;
+var showInfoInTitle = true; // Handy for debugging/watching Reclaim_CPU working.
+
+/* ////// Documentation //////
+
+// As far as Reclaim_CPU is concerned, moving the mouse anywhere outside the
+// page is "going idle".  So don't hover on the toolbar if you don't want the
+// page to cleanup.  I think it might also be true that if you don't move your
+// mouse at all after the page has completed loading (when the script starts),
+// it will think you are idle.
 
 // NOTE: One source of CPU hog not handled by Reclaim_CPU script is animated
 // gifs.  Firefox has an option to stop animated gifs after one cycle.  You may
@@ -55,9 +79,14 @@ var removePlugins = true;
 // themselves, IF the idleSeconds triggers cleanup *before* the page reloads
 // itself!
 
+// NOTE: If you use Flashbock to load a plugin *after* Reclaim CPU has cleaned
+// up the page, it won't know, so it won't clean it up if you go idle later.
+
+*/
 
 
-/* Developer notes / Changes / Todos
+
+/* ////// Developer notes / Changes / Todos //////
 
 DONE: Rename to CPU Reclaimer.
 
@@ -93,8 +122,16 @@ it might not be hogging the CPU anyway.
 DONE: Will now optionally trigger if the mouse is outside the window when the
 script inits.
 
-TODO TEST: What if an <embed> plugin is living inside an IFrame on the page?
-Will it be found and destroyed ok?
+DONE: What if an <embed> plugin is living inside an IFrame on the page?
+Will it be found and destroyed ok?  Yes GM scripts run for each IFrame.
+
+TODO: Provide way to disable from in-page.  Maybe you started listening to a
+video/audio plugin, and you do want to leave it running whilst working
+elsewhere.  (Little widget next to each plugin?)  (Would we ever want to leave
+JS running?  Well anyway in that case it might not be so disruptive to disable
+script and reload page).
+
+TODO: The beAggressive issue could be helped by adding a little message to the page: "User appears idle.  Closing plugins and stopping scripts in 7 seconds..."
 
 */
 
@@ -125,6 +162,8 @@ function cleanupCPUHoggers() {
 	// document.body.appendChild(d);
 	document.body.insertBefore(d,document.body.firstChild);
 	*/
+
+   if (showInfoInTitle) { document.title = "[Clean] " + document.title.replace(/^\[Idling\] /,""); }
 
 }
 
@@ -192,7 +231,7 @@ function destroyNasty(node) {
 	var newNode = document.createElement('DIV');
    // BUG: vertical-align is not working.
    // sizeConstraints only works when newNode is a DIV, not a SPAN.
-	newNode.innerHTML = "<STYLE type='text/css'> .WhiteOnRed{ color:#ffffff; background-color:#aa0000; padding: 2px; font-weight: bold; vertical-align: middle; "+sizeConstraints+" } </STYLE>";
+	newNode.innerHTML = "<STYLE type='text/css'> .WhiteOnRed{ color:#660000; background-color:#eeeeee; padding: 2px; font-weight: bold; vertical-align: middle; "+sizeConstraints+" } </STYLE>";
 	newNode.className = "WhiteOnRed";
 	newNode.appendChild(document.createTextNode("["));
 
@@ -244,6 +283,7 @@ function initTimer() {
 
 		//// Detect when page is idle (no longer in focus), and cleanup then.
 
+		var haveSeenMouse = false;
 		var mouseHasLeft = false;
 		var timerRunning = false;
 		var lastSawMouse = new Date().getTime();
@@ -279,7 +319,9 @@ function initTimer() {
 		// DONE: We don't actually need to run the checkIdle timer at all, until the mouse has left!
 
 		var watchMouseMove = function(e) {
+         if (mouseHasLeft && showInfoInTitle) { document.title = document.title.replace(/^\[Idling\] /,""); }
 			mouseHasLeft = false;
+         haveSeenMouse = true;
 			lastSawMouse = new Date().getTime();
 			// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
 			// window.status = "(" + e.pageX + "," + e.pageY + ")";
@@ -303,8 +345,10 @@ function initTimer() {
 					setTimeout(checkIdle,(idleSeconds+0.5)*1000);
 					timerRunning = true;
 				}
+            if (showInfoInTitle) { document.title = "[Idling] " + (document.title.replace(/^\[Idling\] /,"")); }
 			}
 			mouseHasLeft = true;
+         haveSeenMouse = true;
 			lastSawMouse = new Date().getTime();
 			// window.status = "Mouse has left the "+e.target.tagName;
 			// idleInfo.textContent = "Mouse has left the window.";
@@ -325,6 +369,7 @@ function initTimer() {
 		// setTimeout(checkIdle,5000);
 
 		if (beAggressive) {
+         if (showInfoInTitle) { document.title = "[Idling] " + (document.title.replace(/^\[Idling\] /,"")); }
 			mouseHasLeft = true;
 			timerRunning = true;
 			setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
@@ -335,4 +380,41 @@ function initTimer() {
 }
 
 initTimer();
+
+
+
+////// TESTING //////
+
+/*
+
+//// This weak attempt to find the mouse coordinates was obviously doomed to failure.
+
+function fireEvent(element, eventName) {
+   evt = element[eventName];
+   if (typeof(evt) == "function") {
+      element[eventName]();
+   } else {
+      document.writeln("bah");
+   }
+}
+
+var evtTarget = unsafeWindow.document.documentElement.getElementsByTagName('BODY')[0];
+
+evtTarget.onclick = function (evt) {
+   if (evt) {
+      GM_log("Good got event!");
+   } else {
+      GM_log("BAD");
+   }
+};
+
+fireEvent(evtTarget,'onclick');
+
+evtTarget['onclick']();
+
+*/
+
+}();
+
+GM_log("this="+this+" self="+self);
 
