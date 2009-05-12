@@ -94,6 +94,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
 
+        //// Check for special requests directed at GrimeApe, not the web.
         WebRequest wreq = new WebRequest(request);
         // Logger.warn("path = " + wreq.getPath());
         if (wreq.getPath().startsWith("/_gRiMeApE_/")) {
@@ -127,6 +128,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             }
         }
         
+        //// OK we have a normal web request.
+        //// Handle it, then inject scripts if it is a web page.
+        
         // HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
         HttpResponse response = super.handleHttpRequest(request);
         
@@ -143,7 +147,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                         "javascript/test.js",
                         "javascript/grimeape_greasemonkey_compat.js",
                         "userscripts/faviconizegoogle.user.js",
-                        "userscripts/track_history.user.js"
+                        "userscripts/track_history.user.js",
+                        "userscripts/alert_watcher/alert_watcher.user.js",
+                        "userscripts/reclaim_cpu/reclaim_cpu.user.js",
                 };
                 for (String script : scriptsToInject) {
                     // String srcURL = "/_gRiMeApE_/javascript/test.js";

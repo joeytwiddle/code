@@ -22,9 +22,15 @@ GM_xmlhttprequest or whatever it's called.
 // is not defined there, JS will check up the contexts eventually to the top
 // window and find our introduced function there.
 
+// When do we want to check before overriding an object, and when do we want to
+// always override?  Bear in mind we are inside an insecure environment - a
+// malicious webpage may have already set variables in an attempt to confuse us.
+// OTOH, testing for the existence of a function before overriding it, is a good
+// way to use browser-internals when they exist, or our alternatives otherwise.
+
 // TODO: These should be hidden out of the main context in some sub-context,
 // but visible to GM_log() (which is at top/main context).
-var logToProxy = true;
+var logToProxy = false;
 var localLog = "";
 
 function GM_log(obj) {
@@ -60,7 +66,11 @@ function GM_getValue(name,defaultValue) {
 	return "";
 }
 
-var unsafewindow = window;
+// var unsafeWindow = window;
+// if (!this.unsafeWindow) {
+	// this.unsafeWindow = window;
+// }
+unsafeWindow = window;
 
 if (!document.evaluate) {
 	document.evaluate = function (args) {
