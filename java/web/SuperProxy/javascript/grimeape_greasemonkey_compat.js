@@ -19,8 +19,17 @@ GM_xmlhttprequest or whatever it's called.
 
 function GM_log(obj) {
 	window.status = ""+obj;
-	// TODO
+	/*
+	//// This works, although it does cause the DOM to grow.
+	var tmpScript = document.createElement('SCRIPT');
+	tmpScript.src = "/gReAsEmOnKeY/log/?data=" + escape(""+obj);
+	top.document.body.appendChild(tmpScript);
+	//// Of course, we could do it with a hidden IFrame, or an image, or
+	//// anything which will cause and HTTP request without messing up too much.
+	*/
 }
+
+GM_log("GM_log() works!");
 
 function GM_setValue(name,value) {
 	// TODO
@@ -33,7 +42,20 @@ function GM_getValue(name,defaultValue) {
 
 var unsafewindow = window;
 
-// document.evaluate = function (args) {
-	// TODO
-// }
+if (!document.evaluate) {
+	document.evaluate = function (args) {
+		GM_log("TODO: "+this);
+	}
+}
+
+// Awhh hell.
+if (!this.uneval) {
+	this.uneval = function (obj) {
+		GM_log("TODO: uneval() (this="+this+" self="+self+")");
+	}
+}
+
+GM_log("Self = "+self+" This = "+this);
+
+// TODO: Remove all the TODOs from this file.  We know the whole file is TODO.
 

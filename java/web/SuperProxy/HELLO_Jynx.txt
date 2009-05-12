@@ -89,6 +89,14 @@ WebRequest may as well be merged with HttpRequest - they are the same thing!
 
 
 
+BUG TODO
+
+Throughout SimpleProxy and SuperProxy, I have been acting with "Connection:
+close", because this makes streaming much easier.  But if we want to support
+Keep-Alive, we will have to change some key parts of the code to work more
+intelligently.  (Take only Content-Length from the InputStream, leave the rest
+for later HTTP transactions.  That *is* how keepalive works right?)
+
 
 
 

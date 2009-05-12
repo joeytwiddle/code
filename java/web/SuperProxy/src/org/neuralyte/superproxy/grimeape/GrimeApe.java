@@ -96,6 +96,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         WebRequest wreq = new WebRequest(request);
         // Logger.warn("path = " + wreq.getPath());
         if (wreq.getPath().startsWith("/_gRiMeApE_/")) {
+            Logger.log("Handling special GA request: "+wreq.getPath());
             String[] args = wreq.getPath().split("/");
             // Logger.warn("args[1] = " + args[1]);
             if (args[2].equals("javascript") || args[2].equals("userscripts")) {
@@ -118,17 +119,18 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         
         if (response.getHeader("Content-type").toLowerCase().startsWith("text/html")) {
             StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
-            Logger.log(""+responseString);
-            int i = responseString.indexOf("</BODY>");
+            // Logger.log(""+responseString);
+            int i = responseString.lastIndexOf("</BODY>");
             if (i == -1)
-                i = responseString.indexOf("</body>");
+                i = responseString.lastIndexOf("</body>");
             if (i == -1) {
                 Logger.warn("Failed to inject script tag.");
             } else {
                 String[] scriptsToInject = {
                         "javascript/test.js",
                         "javascript/grimeape_greasemonkey_compat.js",
-                        "userscripts/faviconizegoogle.user.js"
+                        "userscripts/faviconizegoogle.user.js",
+                        "userscripts/track_history.user.js"
                 };
                 for (String script : scriptsToInject) {
                     // String srcURL = "/_gRiMeApE_/javascript/test.js";
