@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.xerces.parsers.DOMParser;
@@ -18,7 +17,7 @@ import org.neuralyte.httpdata.HttpResponse;
 import org.neuralyte.simpleserver.SocketServer;
 import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
 import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
-import org.neuralyte.superproxy.plugins.examples.GrimeApe;
+import org.neuralyte.superproxy.grimeape.GrimeApe;
 import org.neuralyte.superproxy.plugins.examples.OpenLinksInIframe;
 import org.neuralyte.superproxy.plugins.examples.SessionTrackerBar;
 import org.neuralyte.util.dom.DOMUtils;

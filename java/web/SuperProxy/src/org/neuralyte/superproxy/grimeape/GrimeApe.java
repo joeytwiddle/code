@@ -1,8 +1,10 @@
-package org.neuralyte.superproxy.plugins.examples;
+package org.neuralyte.superproxy.grimeape;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import javax.xml.ws.Response;
 
 import org.apache.xerces.dom.CoreDocumentImpl;
 import org.apache.xerces.dom.TextImpl;
@@ -11,10 +13,12 @@ import org.neuralyte.common.FileUtils;
 import org.neuralyte.common.io.StreamUtils;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
+import org.neuralyte.simpleserver.SocketServer;
 import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
 import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
 import org.neuralyte.superproxy.DocumentProcessor;
 import org.neuralyte.superproxy.HTMLDOMUtils;
+import org.neuralyte.superproxy.SuperProxy;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -79,12 +83,26 @@ public class GrimeApe extends HttpRequestHandler {
      * /gRiMeApE/userscripts/<script_name> to get a userscript
      * e.g. /gRiMeApE/userscripts/config.js
      */
-
+    
+    public static void main(String[] args) {
+        new SocketServer(7152,new GrimeApe()).run();
+    }
+        
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
         HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
         if (response.getHeader("Content-type").equalsIgnoreCase("text/html")) {
-            // StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
-            
+            StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
+            int i = responseString.indexOf("</BODY>");
+            if (i == -1)
+                i = responseString.indexOf("</body>");
+            if (i == -1) {
+                Logger.warn("Failed to inject script tag.");
+            } else {
+                String srcURL = "/_gRiMeApE_/javascript/test.js";
+                String scriptHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'/>\n";
+                responseString.insert(i, scriptHTML);
+                response.setContent(responseString.toString());
+            }
         }
         return response;
     }
