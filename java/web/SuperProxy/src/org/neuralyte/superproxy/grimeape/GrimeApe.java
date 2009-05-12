@@ -87,7 +87,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         new SocketServer(7152,new GrimeApe()).run();
     }
         
+    static String topDir = ".";
     static String coreScriptsDir = "./javascript/";
+    static String userscriptsDir = "./userscripts/";
     
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
 
@@ -96,13 +98,14 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         if (wreq.getPath().startsWith("/_gRiMeApE_/")) {
             String[] args = wreq.getPath().split("/");
             // Logger.warn("args[1] = " + args[1]);
-            if (args[2].equals("javascript")) {
+            if (args[2].equals("javascript") || args[2].equals("userscripts")) {
                 // Return script as webserver
                 // Before we factor this out to another method:
                 // What headers should we build?
                 // And do they need to know the request headers in order to be generated?
                 String fileBeyond = wreq.getPath().replaceAll("^/[^/]*/[^/]*/*", ""); // aka args[3] onward, joined again.
-                return makeFileHttpResponse(new File(coreScriptsDir,fileBeyond),"text/javascript",request);
+                String scriptDir = topDir + "/" + args[2];
+                return makeFileHttpResponse(new File(scriptDir,fileBeyond),"text/javascript",request);
                /** @todo danger of "../../../../etc/passwd" in args2 ! */
             } else {
                 Logger.error("Bad request: "+wreq.getPath());
@@ -122,9 +125,18 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             if (i == -1) {
                 Logger.warn("Failed to inject script tag.");
             } else {
-                String srcURL = "/_gRiMeApE_/javascript/test.js";
-                String scriptHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'/>\n";
-                responseString.insert(i, scriptHTML);
+                String[] scriptsToInject = {
+                        "javascript/test.js",
+                        "javascript/grimeape_greasemonkey_compat.js",
+                        "userscripts/faviconizegoogle.user.js"
+                };
+                for (String script : scriptsToInject) {
+                    // String srcURL = "/_gRiMeApE_/javascript/test.js";
+                    String srcURL = "/_gRiMeApE_/"+script;
+                    String injectHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'/>\n";
+                    responseString.insert(i, injectHTML);
+                    i += injectHTML.length();
+                }
             }
             // We must reset it after streaming it, even if we didn't change it.
             response.setContent(responseString.toString());
@@ -142,24 +154,28 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 // Duplicated from WebRequestHandler:
 
                 httpResponse.setTopLine("HTTP/1.0 200 OK"); // wget barfed when we were returning HTTP/1.x
-                httpResponse.setHeader("Date",WebRequestHandler.getFormattedDate());
-                httpResponse.setHeader("Connection","close");
-
+                // httpResponse.setHeader("Connection","close");
                 httpResponse.setHeader("Date", WebRequestHandler.getFormattedDate(new Date(file.lastModified())));
-
                 httpResponse.setContentStream(new FileInputStream(file));
                 httpResponse.setHeader("Content-Length",""+file.length());
 
                 return httpResponse;
 
+            } else {
+                Logger.warn("File does not exist: "+file);
             }
         } catch (Exception e) {
-            
+            Logger.warn(""+e);
         }
-        
-        // TODO both in one
-        
-        return null;
+        return failedHttpResponse("Sorry no file for you.");
+    }
+    
+    public static HttpResponse failedHttpResponse(String str) {
+        HttpResponse response = new HttpResponse();
+        response.setTopLine("HTTP/1.0 539 OHDEAR");
+        response.setHeader("Date",WebRequestHandler.getFormattedDate());
+        response.setHeader("Connection","close");
+        return response;
     }
     
     /** @deprecated GrimeApe converted from DocumentProcessor to HttpRequestHandler  **/
