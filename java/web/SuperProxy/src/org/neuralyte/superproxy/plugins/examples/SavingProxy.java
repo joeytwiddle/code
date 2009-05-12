@@ -150,7 +150,7 @@ public class SavingProxy extends HttpRequestHandler {
         contOut.close();
     }
 
-    public HttpResponse handleHttpRequest(HttpRequest httpRequest) {
+    public HttpResponse handleHttpRequest(HttpRequest httpRequest) throws IOException {
 
         Logger.log(">> |    " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
         Logger.log("   | >> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");

@@ -1,26 +1,28 @@
 package org.neuralyte.superproxy.plugins.examples;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.xerces.dom.CoreDocumentImpl;
 import org.apache.xerces.dom.TextImpl;
 import org.neuralyte.Logger;
 import org.neuralyte.common.FileUtils;
+import org.neuralyte.common.io.StreamUtils;
+import org.neuralyte.httpdata.HttpRequest;
+import org.neuralyte.httpdata.HttpResponse;
+import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
+import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
 import org.neuralyte.superproxy.DocumentProcessor;
 import org.neuralyte.superproxy.HTMLDOMUtils;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 /**
- * GrimeApe serves a similar function to Mozilla's GreaseMonkey - it adds
- * Javascript to webpages specified by the user, to change their behaviour or
- * looks.
- * 
- * @author joey
- * 
+ * GrimeApe aims to be a GreaseMonkey emulator which works as a web-proxy.
  */
 
+/*
 // TODO: If possible, rather than insert the script inline into the page it
 // would be better
 // to insert an external link to the script, so it can be loaded more
@@ -58,8 +60,9 @@ import org.w3c.dom.Node;
 // Since it's unlikely we will be able to really fix these, I recommend a
 // "paranoid-mode" setting for users. They could choose to 'Always Allow'
 // read-write to certain GM_setValue vars, choose 'Always Ask' for others. :)
+*/
 
-public class GrimeApe implements DocumentProcessor {
+public class GrimeApe extends HttpRequestHandler {
 
     // We don't only want to processDocuments.
     // Sometimes we may want to intercept HTTP requests,
@@ -70,7 +73,23 @@ public class GrimeApe implements DocumentProcessor {
     // are "processing". We should only add/run the relevant scripts with
     // matching includes/excludes.
 
-    public Document processDocument(Document document) {
+    /*//// Intercepts ////
+     * Requests made to /gRiMeApE/ are handled in special ways by the proxy.
+     * /gRiMeApE/javascript/<script_name> to get a core script
+     * /gRiMeApE/userscripts/<script_name> to get a userscript
+     * e.g. /gRiMeApE/userscripts/config.js
+     */
+
+    public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
+        HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
+        if (response.getHeader("Content-type").equalsIgnoreCase("text/html")) {
+            // StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
+            
+        }
+        return response;
+    }
+    
+    public Document injectScripts(Document document) {
         Logger.info("DocumentURI = " + document.getBaseURI());
         List<Node> tags = HTMLDOMUtils.getElementsByTagName(document, "A");
         Logger.info("  has " + tags.size() + " links.");
@@ -106,6 +125,8 @@ public class GrimeApe implements DocumentProcessor {
                     try {
                         String script = FileUtils
                                 .readStringFromFile(scriptFile);
+                        
+                        /*
                         if (script.contains("XPathResult")) {
                             Logger
                                     .warn("Script "
@@ -113,13 +134,18 @@ public class GrimeApe implements DocumentProcessor {
                                             + " will probably fail in Konqueror/GrimeApe - it uses 'XPathResult'.");
                         }
 
-                        TextImpl textNode = new org.apache.xerces.dom.TextImpl(core,
-                                "<SCRIPT language=\"javascript\">"
+                        TextImpl textNode = TextImpl(core,
+                                "<SCRIPT type=\"text/javascript\">"
                                 + '\n' + script + '\n'
                                 + "</SCRIPT>\n"
                         );
                         // textNode.setData("<SCRIPT language=\"javascript\">" +
                         // script + "</SCRIPT>\n");
+                        body.appendChild(textNode);
+                        */
+                        
+                        String srcURL = "/_gRiMeApE_/userscript/" + scriptFile.getName(); // +"?sessionid="+sessionID;
+                        TextImpl textNode = new TextImpl(core,"<SCRIPT type='text/javascript' src='" + srcURL + "'/>\n");
                         body.appendChild(textNode);
 
                     } catch (Exception e) {
@@ -132,4 +158,5 @@ public class GrimeApe implements DocumentProcessor {
 
         return document;
     }
+
 }

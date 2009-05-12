@@ -1,5 +1,6 @@
 package org.neuralyte.webmuncher;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Iterator;
@@ -16,7 +17,7 @@ import org.w3c.dom.Node;
 
 public class WebMuncher extends SuperProxy {
 
-    public HttpResponse handleHttpRequest(HttpRequest httpRequest) {
+    public HttpResponse handleHttpRequest(HttpRequest httpRequest) throws IOException {
         return super.handleHttpRequest(httpRequest);
     }
 

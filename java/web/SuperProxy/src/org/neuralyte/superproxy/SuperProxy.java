@@ -55,11 +55,15 @@ public class SuperProxy extends HttpRequestHandler {
     public static int reqNum = 0;
     //#endif
 
+    static HttpRequestHandler[] handlers = {
+        new GrimeApe()
+    };
+    
     // We may get StackOverflow on instantiation without that static.  ;)
     static DocumentProcessor[] processors = {
             new SessionTrackerBar(),
             new OpenLinksInIframe(),
-            new GrimeApe()
+            // new GrimeApe()
     };
 
     public static void main(String[] args) {
@@ -68,7 +72,7 @@ public class SuperProxy extends HttpRequestHandler {
         // new SocketServer(7152,new SavingProxy()).run();
     }
 
-    public HttpResponse handleHttpRequest(HttpRequest httpRequest) {
+    public HttpResponse handleHttpRequest(HttpRequest httpRequest) throws IOException {
 
         // Logger.log(">> |    " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
         // Logger.log("   | >> " + httpRequest.getTopLine() + " ["+httpRequest.getHeadersAsList().size()+"]");
@@ -143,6 +147,7 @@ public class SuperProxy extends HttpRequestHandler {
                 }
                 reqNum++; 
                 //#endif
+                /*
                 if (httpResponse.getHeader("Content-Encoding").toLowerCase().equals("gzip")) {
                     if (writeDebugFiles) {
                         //// We used to stall here at the first bit of streaming, if Connection: Keep-Alive was set.
@@ -157,8 +162,11 @@ public class SuperProxy extends HttpRequestHandler {
                     // Logger.log("Starting unzipping...");
                     GZIPInputStream in = new GZIPInputStream(httpResponse.getContentAsStream());
                     httpResponse.setContentStream(in);
+                    httpResponse.setHeader("Content-Encoding","none"); // TODO "none" was just a guess, could just remove it. :P
                     // Logger.log("Finished unzipping.");
                 }
+                 */
+                HTTPStreamingTools.unzipResponse(httpResponse);
                 // TODO: This is just testing our streaming implementation doesn't break the stream.
                 // if (writeDebugFiles) {
                 // Logger.log("Starting streaming...");
@@ -175,8 +183,14 @@ public class SuperProxy extends HttpRequestHandler {
                     String parsedDocumentString = DOMUtils.getHtmlFromDOM(document);
                     FileUtils.writeStringToFile(parsedDocumentString, new File(file+".parsed"));
                 }
+                
+                
+                
                 document.setDocumentURI(webRequest.getCGIString());
                 document = processDocument(document);
+                
+                
+                
                 String newDocumentString = DOMUtils.getHtmlFromDOM(document);
                 if (writeDebugFiles) { 
                     FileUtils.writeStringToFile(newDocumentString, new File(file+".processed"));
