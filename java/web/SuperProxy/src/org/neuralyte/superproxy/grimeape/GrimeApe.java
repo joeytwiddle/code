@@ -101,7 +101,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             Logger.log("Handling special GA request: "+wreq.getPath());
             String[] args = wreq.getPath().split("/");
             // Logger.warn("args[1] = " + args[1]);
-            if (args[2].equals("javascript") || args[2].equals("userscripts")) {
+            if (args[2].equals("javascript") || args[2].equals("userscripts") || args[2].equals("images")) {
                 // Return script as webserver
                 // Before we factor this out to another method:
                 // What headers should we build?
@@ -134,6 +134,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         // HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
         HttpResponse response = super.handleHttpRequest(request);
         
+        /** @todo What does GM trigger on?  I've seen it run (fail) on .txt and .js pages also. **/
         if (response.getHeader("Content-type").toLowerCase().startsWith("text/html")) {
             StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
             // Logger.log(""+responseString);
@@ -141,11 +142,16 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             if (i == -1)
                 i = responseString.lastIndexOf("</body>");
             if (i == -1) {
+                i = responseString.length();
+                // yeah nice Google doesn't bother with </BODY> lol
+            }
+            if (i == -1) {
                 Logger.warn("Failed to inject script tag.");
             } else {
                 String[] scriptsToInject = {
                         "javascript/test.js",
                         "javascript/grimeape_greasemonkey_compat.js",
+                        "javascript/grimeape_config.js",
                         "userscripts/faviconizegoogle.user.js",
                         "userscripts/track_history.user.js",
                         "userscripts/alert_watcher/alert_watcher.user.js",
