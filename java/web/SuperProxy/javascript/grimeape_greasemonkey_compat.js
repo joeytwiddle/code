@@ -33,3 +33,7 @@ function GM_getValue(name,defaultValue) {
 
 var unsafewindow = window;
 
+// document.evaluate = function (args) {
+	// TODO
+// }
+

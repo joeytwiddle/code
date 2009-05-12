@@ -13,7 +13,7 @@ import java.util.Vector;
 import org.neuralyte.Logger;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
-import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
+import org.neuralyte.superproxy.PluggableHttpRequestHandler;
 
 /*
  *
@@ -100,7 +100,7 @@ import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
 
 // TODO: Could be useful to gunzip the .content file for the user.
 
-public class SavingProxy extends HttpRequestHandler {
+public class SavingProxy extends PluggableHttpRequestHandler {
 
     String sessionName = "" + new SimpleDateFormat("yyyyMMdd-kkmmss").format(new Date());
     
@@ -116,6 +116,7 @@ public class SavingProxy extends HttpRequestHandler {
         File sessionDir = new File("websessions",sessionName);
         if (!sessionDir.isDirectory() && !sessionDir.mkdirs()) {
             throw new IOException("Could not create directory: "+sessionDir);
+            // This just smells.  What if it's a directory but not writeable.  We'll still crash later.  :P
         }
         String fileHead = sessionDir + "/" + requestNumber;
         FileOutputStream reqOut = new FileOutputStream(fileHead+".request");

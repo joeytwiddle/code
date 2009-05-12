@@ -16,7 +16,6 @@ import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
 import org.neuralyte.simpleserver.SocketServer;
 import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
-import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
 import org.neuralyte.superproxy.grimeape.GrimeApe;
 import org.neuralyte.superproxy.plugins.examples.OpenLinksInIframe;
 import org.neuralyte.superproxy.plugins.examples.SessionTrackerBar;
@@ -47,14 +46,14 @@ import org.xml.sax.InputSource;
  * We will just have to scrap Content-length entirely!  (Calculating it means we can't stream!)
 */                                  
 
-public class SuperProxy extends HttpRequestHandler {
+public class SuperProxy extends PluggableHttpRequestHandler {
 
     //#ifdef DEBUGGING
     public static boolean writeDebugFiles = true; // What about SavingProxy? :P
     public static int reqNum = 0;
     //#endif
 
-    static HttpRequestHandler[] handlers = {
+    static PluggableHttpRequestHandler[] handlers = {
         new GrimeApe()
     };
     

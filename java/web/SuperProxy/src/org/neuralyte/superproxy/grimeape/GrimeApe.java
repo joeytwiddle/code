@@ -1,10 +1,10 @@
 package org.neuralyte.superproxy.grimeape;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
-
-import javax.xml.ws.Response;
 
 import org.apache.xerces.dom.CoreDocumentImpl;
 import org.apache.xerces.dom.TextImpl;
@@ -14,11 +14,10 @@ import org.neuralyte.common.io.StreamUtils;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
 import org.neuralyte.simpleserver.SocketServer;
-import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
-import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
-import org.neuralyte.superproxy.DocumentProcessor;
 import org.neuralyte.superproxy.HTMLDOMUtils;
-import org.neuralyte.superproxy.SuperProxy;
+import org.neuralyte.superproxy.PluggableHttpRequestHandler;
+import org.neuralyte.webserver.WebRequest;
+import org.neuralyte.webserver.WebRequestHandler;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -66,7 +65,7 @@ import org.w3c.dom.Node;
 // read-write to certain GM_setValue vars, choose 'Always Ask' for others. :)
 */
 
-public class GrimeApe extends HttpRequestHandler {
+public class GrimeApe extends PluggableHttpRequestHandler {
 
     // We don't only want to processDocuments.
     // Sometimes we may want to intercept HTTP requests,
@@ -88,10 +87,35 @@ public class GrimeApe extends HttpRequestHandler {
         new SocketServer(7152,new GrimeApe()).run();
     }
         
+    static String coreScriptsDir = "./javascript/";
+    
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
-        HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
-        if (response.getHeader("Content-type").equalsIgnoreCase("text/html")) {
+
+        WebRequest wreq = new WebRequest(request);
+        // Logger.warn("path = " + wreq.getPath());
+        if (wreq.getPath().startsWith("/_gRiMeApE_/")) {
+            String[] args = wreq.getPath().split("/");
+            // Logger.warn("args[1] = " + args[1]);
+            if (args[2].equals("javascript")) {
+                // Return script as webserver
+                // Before we factor this out to another method:
+                // What headers should we build?
+                // And do they need to know the request headers in order to be generated?
+                String fileBeyond = wreq.getPath().replaceAll("^/[^/]*/[^/]*/*", ""); // aka args[3] onward, joined again.
+                return makeFileHttpResponse(new File(coreScriptsDir,fileBeyond),"text/javascript",request);
+               /** @todo danger of "../../../../etc/passwd" in args2 ! */
+            } else {
+                Logger.error("Bad request: "+wreq.getPath());
+                throw new Error("Bad request: "+wreq.getPath());
+            }
+        }
+        
+        // HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
+        HttpResponse response = super.handleHttpRequest(request);
+        
+        if (response.getHeader("Content-type").toLowerCase().startsWith("text/html")) {
             StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
+            Logger.log(""+responseString);
             int i = responseString.indexOf("</BODY>");
             if (i == -1)
                 i = responseString.indexOf("</body>");
@@ -101,12 +125,44 @@ public class GrimeApe extends HttpRequestHandler {
                 String srcURL = "/_gRiMeApE_/javascript/test.js";
                 String scriptHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'/>\n";
                 responseString.insert(i, scriptHTML);
-                response.setContent(responseString.toString());
             }
+            // We must reset it after streaming it, even if we didn't change it.
+            response.setContent(responseString.toString());
         }
+        
         return response;
     }
+
+    public HttpResponse makeFileHttpResponse(File file, String contentType, HttpRequest request) {
+        HttpResponse httpResponse = new HttpResponse();
+        
+        try {
+            if (file.exists()) {
+
+                // Duplicated from WebRequestHandler:
+
+                httpResponse.setTopLine("HTTP/1.0 200 OK"); // wget barfed when we were returning HTTP/1.x
+                httpResponse.setHeader("Date",WebRequestHandler.getFormattedDate());
+                httpResponse.setHeader("Connection","close");
+
+                httpResponse.setHeader("Date", WebRequestHandler.getFormattedDate(new Date(file.lastModified())));
+
+                httpResponse.setContentStream(new FileInputStream(file));
+                httpResponse.setHeader("Content-Length",""+file.length());
+
+                return httpResponse;
+
+            }
+        } catch (Exception e) {
+            
+        }
+        
+        // TODO both in one
+        
+        return null;
+    }
     
+    /** @deprecated GrimeApe converted from DocumentProcessor to HttpRequestHandler  **/
     public Document injectScripts(Document document) {
         Logger.info("DocumentURI = " + document.getBaseURI());
         List<Node> tags = HTMLDOMUtils.getElementsByTagName(document, "A");

@@ -74,6 +74,8 @@ The new interface will be:
   addChild() I guess
   removeChild() ... :s
 
+OK scrap all that.  Go check PluggableHttpRequestHandler for new efforts.
+
 
 
 
@@ -81,4 +83,18 @@ The new interface will be:
 TODO
 
 WebRequest may as well be merged with HttpRequest - they are the same thing!
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
