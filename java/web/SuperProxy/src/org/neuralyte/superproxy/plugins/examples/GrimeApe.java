@@ -26,15 +26,38 @@ import org.w3c.dom.Node;
 // to insert an external link to the script, so it can be loaded more
 // intelligently (cached)
 // by the browser.
+// I guess these should be directed at the proxy, and the proxy should intercept
+// them and handle them like a webserver would.
+// Hmm in fact I would like to add one SCRIPT at the end of the page, which
+// waits maybe a second for the page to really finish loading, then goes ahead
+// and appends all our userscripts.
 
 // @todo We should be checking each script's include/exclude patterns.
 
 // @todo We should probably cache the scripts in memory, for speed, but update
-// them if the file changes.  include/exclude metas should be cached again.
+// them if the file changes. include/exclude metas should be cached again (in
+// fact we should have the regexps pre-compiled :).
 
 // @todo We may be able to include some of the Firefox GM libraries, and get
 // more userscripts working. Some functions might be portable if they don't work
 // immediately.
+
+// Hmm GM has browser privileges, and sandbox. We are running inside the page.
+// This does mean a little "insecurity" - we are making our source available to
+// the page, in theory it could be read and sent back to the site!
+
+// Anyway we are much more limited than GM, but we could pull some tricks.
+
+// We could implement GM_getValue and GM_setValue by making XMLHttpRequests
+// (AJAX) to the proxy. GM will need to be high enough in the plugin chain to
+// intercept these special http requests.
+
+// Ah nice, we have opened up more insecurities. Now in theory the remote server
+// could start fiddling with our proxy params!
+
+// Since it's unlikely we will be able to really fix these, I recommend a
+// "paranoid-mode" setting for users. They could choose to 'Always Allow'
+// read-write to certain GM_setValue vars, choose 'Always Ask' for others. :)
 
 public class GrimeApe implements DocumentProcessor {
 

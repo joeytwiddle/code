@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name           Auto Highlight Text on All Results Pages
+// @name           Highlight Search Result Pages
 // @namespace      search
-// @description    Highlights the words you used in your search on the search result page and on the page itself, by checking Referrer.
+// @description    Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer.
 // @include        *
 // ==/UserScript==
 
@@ -42,7 +42,7 @@ if (!words)
 
 if (words) {
 
-	GM_log("Searching for '"+words+"'...");
+	// GM_log("Searching for '"+words+"'...");
 	/* window.status="Searching for '"+words+"'..."; */
 
 	/* This function taken from the "Highlight..." bookmarklet on SquareFree. */
