@@ -102,7 +102,17 @@ for later HTTP transactions.  That *is* how keepalive works right?)
 
 
 
+We can't really use creation of new <SCRIPT> elements to load remote data, because
+we have to *wait* for it to load in Konqueror, and I don't know how to do that when
+we are inside some code which needs to return.  Don't fancy while (true).  setTimeout
+doesn't really do it either.  Hmm maybe a combination of the two?  :f
 
+So one alternative is XMLHttpRequest.
 
+Another alternative is non-dynamic: We always inject cookies containing the relevant GM_getValue
+results, so scripts can access them.  Or feck cookies, we inject the data with script request.
+The point is we can do it in advance, because we know what userscripts will be running
+(those enabled with matching @include/excludes)
+and the registry isn't huge.
 
 

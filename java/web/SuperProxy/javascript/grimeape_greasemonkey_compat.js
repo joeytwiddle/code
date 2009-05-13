@@ -18,6 +18,7 @@ GM_xmlhttprequest or whatever it's called.
 */
 
 // In case you were wondering, self=window and this=window.
+// GM_log("Self = "+self+" This = "+this+" so self==window? "+(self==window)); // true
 // I believe if we are in a sub-context, and code tries to use a function which
 // is not defined there, JS will check up the contexts eventually to the top
 // window and find our introduced function there.
@@ -47,6 +48,8 @@ function GM_log(obj) {
 		tmpScript.src = logUrl;
 		document.body.appendChild(tmpScript);
 		// document.writeln(''); // Ends up separate from the tmpScript element!
+		//// TODO: We should make a version of this which removes the SCRIPT from
+		//// the DOM afterwards, to prevent continual growth.
 		*/
 		document.writeln('<SCRIPT src="'+logUrl+'"/>'); // Easier to read in LiveDOMHTML.
 		// I'm not sure which is faster.  Apparently setting innerHTML is
@@ -59,11 +62,17 @@ GM_log("GM_log() works!");
 
 function GM_setValue(name,value) {
 	// TODO
+	document.writeln('<SCRIPT src="/_gRiMeApE_/setValue?name='+escape(name)+'&value='+escape(value)+'/>');
 }
 
 function GM_getValue(name,defaultValue) {
-	// TODO
-	return "";
+	document.writeln('<SCRIPT src="/_gRiMeApE_/getValue?name='+escape(name)+'"/>');
+	// In Konqueror I think we must wait before we can get result.
+	// Awh shucks how are we gonna return? :f
+	if (window.GM_getValueResult)
+		return unescape(window.GM_getValueResult);
+	else
+		return defaultValue;
 }
 
 // var unsafeWindow = window;
@@ -84,10 +93,25 @@ if (!document.evaluate) {
 if (!this.uneval) {
 	this.uneval = function (obj) {
 		GM_log("TODO: uneval() (this="+this+" self="+self+")");
+		if (typeof(obj)=='string') {
+			return '"' + obj.replace(/"/g,'\\"') + '"';
+		} else if (typeof(obj)=='number') {
+			return ""+obj;
+		} else if (typeof(obj)=='object') {
+			// ({x:"fart", 1:"pants"})
+			var arrayString = "";
+			for (var key in obj) {
+				var val = obj[val];
+				if (arrayString!="") arrayString += ", ";
+				arrayString += uneval(key)+":"+uneval(val);
+			}
+			arrayString = "({" + arrayString + "})";
+			return arrayString;
+		} else {
+			return "DUNNO_TYPE_"+typeof(obj);
+		}
 	}
 }
-
-GM_log("Self = "+self+" This = "+this+" so self==window? "+(self==window));
 
 // TODO: Remove all the TODOs from this file.  We know the whole file is TODO.
 
