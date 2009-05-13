@@ -17,6 +17,17 @@ GM_xmlhttprequest or whatever it's called.
 
 */
 
+// OLD IE compat:
+if(typeof XMLHttpRequest == "undefined") {
+	XMLHttpRequest = function() {
+		try { return new ActiveXObject("Msxml2.XMLHTTP.6.0") } catch(e) {}
+		try { return new ActiveXObject("Msxml2.XMLHTTP.3.0") } catch(e) {}
+		try { return new ActiveXObject("Msxml2.XMLHTTP") } catch(e) {}
+		try { return new ActiveXObject("Microsoft.XMLHTTP") } catch(e) {}
+		throw new Error( "This browser does not support XMLHttpRequest." )
+	};
+}
+
 // In case you were wondering, self=window and this=window.
 // GM_log("Self = "+self+" This = "+this+" so self==window? "+(self==window)); // true
 // I believe if we are in a sub-context, and code tries to use a function which
@@ -42,7 +53,7 @@ function GM_log(obj) {
 		//// This works, although it does cause the DOM to grow.
 		//// Of course, we could do it with a hidden IFrame, or an image, or
 		//// anything which will cause an HTTP request without messing up too much.
-		var logUrl = "/_gRiMeApE_/log/?data=" + escape(""+obj);
+		var logUrl = "/_gRiMeApE_/log/?data=" + cgiEscape(""+obj);
 		/*
 		var tmpScript = document.createElement('SCRIPT');
 		tmpScript.src = logUrl;
@@ -60,24 +71,68 @@ function GM_log(obj) {
 
 GM_log("GM_log() works!");
 
+// escape(val) is not enough for CGI.  It does nothing to real +s, but webserver reads real +s from CGI as spaces!
+function cgiEscape(val) {
+	return escape(val).replace(/\+/g,'%2b');
+}
+
 function GM_setValue(name,value) {
 	// TODO
-	GM_log('setting 1');
 	if (value==undefined || value==null)
 		value = "";
-	GM_log('setting 2');
-	document.writeln('<SCRIPT type="text/javascript" src="/_gRiMeApE_/setValue?name='+escape(name)+'&value='+escape(value)+'"/>');
-	GM_log('setting 3');
+	var url = '/_gRiMeApE_/setValue?name='+cgiEscape(name)+'&value='+cgiEscape(value);
+	// document.writeln('<SCRIPT type="text/javascript" src="'+url+'"/>');
+	//// Doing it the above way in Konqueror, means the request does not actuall happen until *after* this thread has finished.
+	//// This way will set immediately:
+	var client = new XMLHttpRequest();
+	client.open('GET',url,false);
+	client.send(null);
 }
 
 function GM_getValue(name,defaultValue) {
-	document.writeln('<SCRIPT src="/_gRiMeApE_/getValue?name='+escape(name)+'"/>');
+	var url = '/_gRiMeApE_/getValue?name='+cgiEscape(name);
+	/*
+	url += '&type=js';
+	window.GM_getValueResult = undefined;
+	document.writeln('<SCRIPT src="'+url+'"/>');
+	*/
 	// In Konqueror I think we must wait before we can get result.
 	// Awh shucks how are we gonna return? :f
+	// We can do a long pause: for (var i=0;i<1000000;i++) { }
+	// But the request doesn't get made until after it.  :P
+	/*
 	if (window.GM_getValueResult)
 		return unescape(window.GM_getValueResult);
 	else
 		return defaultValue;
+	*/
+	var client = new XMLHttpRequest();
+	client.open('GET',url,false);
+	client.send(null);
+	GM_log("GM_getValue(\""+name+"\") returned: "+client.responseText);
+	return client.responseText;
+	/*
+	var waitUntil = new Date().getTime() + 5*1000;
+	for (var i=0;i<100000;i++) {
+		if (client.responseText!=undefined && client.responseText!=null) {
+			GM_log("GM_getValue() Client responded at loop "+i+" with "+client.responseText);
+			return client.responseText;
+		}
+		// if (window.GM_getValueResult) {
+			// GM_log("GM_getValue() Client responded at loop "+i+" with "+window.GM_getValueResult);
+			// return window.GM_getValueResult;
+		// }
+		var now = new Date().getTime();
+		if (now > waitUntil) {
+			GM_log("GM_getValue() Time expired - no response.");
+			return undefined;
+		}
+	}
+	// GM_log("Got response: "+client.responseText);
+	// return client.responseText;
+	GM_log("GM_getValue() WARNING! Loop gave up before time did!");
+	return undefined;
+	*/
 }
 
 // var unsafeWindow = window;
@@ -116,6 +171,8 @@ if (!this.uneval) {
 			arrayString = "({" + arrayString + "})";
 			// GM_log("Returning arrayString="+arrayString);
 			return arrayString;
+		} else if (typeof(obj)=='function') {
+			return (""+obj).replace(/\n/g,'');
 		} else {
 			GM_log("<WARNING!> uneval does not know type "+typeof(obj));
 			return "DUNNO_TYPE_"+typeof(obj);
@@ -124,4 +181,7 @@ if (!this.uneval) {
 }
 
 // TODO: Remove all the TODOs from this file.  We know the whole file is TODO.
+
+
+
 

@@ -102,8 +102,8 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         if (args.length>0 && args[0].equals("--ind")) {
             doDaemonStreaming();
         } else {
-            // I use 7152 for production, 7153 
-            new SocketServer(7153,new GrimeApe()).run();
+            // Use 7152 for production, 7153 for dev. 
+            new SocketServer(7152,new GrimeApe()).run();
         }
     }
     
@@ -194,11 +194,18 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             String name = wreq.getParam("name");
             String value = gmRegistry.get(name);
             Logger.info("GM_GETVALUE: "+name+" ~ \""+value+"\"");
-            String response =  "window.GM_getValueResult = " + (
-                    value == null
-                    ? "null"
-                     : "\"" + URLEncoder.encode(value)+"\""
-            ) + ";";
+            String type = wreq.getParam("type");
+            // Return raw (if request was an XMLHttpRequest):
+            String response = ""+value;
+            // Or return JS (if request was made by adding new <SCRIPT> to doc):
+            if (type.equals("js")) {
+                response =  "window.GM_getValueResult = " + (
+                        value == null
+                        ? "null"
+                                : "\"" + URLEncoder.encode(value)+"\""
+                ) + ";";
+            }
+            // In the end we will use only 1 of the techniques, but for testing I want both.
             return stringHttpResponse("text/javascript",response);
             
         } else {
@@ -223,14 +230,14 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 Logger.warn("Failed to inject script tag.");
             } else {
                 String[] scriptsToInject = {
-                        /* "javascript/test.js", */
                         "javascript/grimeape_greasemonkey_compat.js",
+                        "javascript/test.js",
                         "javascript/grimeape_config.js",
                         "userscripts/faviconizegoogle/faviconizegoogle.user.js",
                         "userscripts/track_history/track_history.user.js",
                         "userscripts/alert_watcher/alert_watcher.user.js",
                         "userscripts/reclaim_cpu/reclaim_cpu.user.js",
-                        "userscripts/auto_highlight_text_on_a.user/auto_highlight_text_on_a.user.js",
+                        "userscripts/auto_highlight_text_on_a/auto_highlight_text_on_a.user.js",
                 };
                 for (String script : scriptsToInject) {
                     // String srcURL = "/_gRiMeApE_/javascript/test.js";
