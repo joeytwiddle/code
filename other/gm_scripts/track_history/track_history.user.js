@@ -232,30 +232,18 @@ function addDataForThisPage() {
 	pageData.referrer = document.referrer;
 	pageData.lastUsed = new Date().getTime();
 	pageData.links = new Array();
-	//// FIXED: No matter how I do this, it becomes really slow on some large
-	//// pages (e.g. about:cache?device=memory where i had 644 links).  I mean
-	//// really slow.  What's the problem?!
-	//// AHH it was getXPath that is slowing us down!  Slightly improved it.
-	// var lastIndex = document.links.length;
-	// var links = document.links;
-	var links = document.getElementsByTagName('A');
-	var lastIndex = links.length;
-	// CONSIDER: We could make maxLinks act inside the loop, if stored-data > maxLinks.
-	// This could mean more reading, but the constraint would be applied to the
-	// output, not the input, which is really what we wanted.  Bah this is only
-	// relevant if there are many Bookmarklets early in the page.  :P
-	if (lastIndex > maxLinks) {
-		GM_log("Too many links ("+lastIndex+") - skipping "+(lastIndex-maxLinks)+" at "+new Date()+".");
-		lastIndex = maxLinks;
-	}
-	for (var i=0;i<lastIndex;i++) {
+	var links = document.links;
+	for (var i=0;i<links.length;i++) {
 		// var link = document.links[i];
 		var link = links[i];
 		if (link.href.match('^\s*javascript:'))
 			continue;
 		// TODO: other protocols we should skip: "news:rec.arts.sf.written", "mailto:...", ...
-		// FIXED: before using var j instead of i, we were skipping (hence creating) empty items.
 		var j = pageData.links.length;
+		if (j > maxLinks) {
+			GM_log("Too many links ("+links.length+") - skipping "+(links.length-maxLinks)+".");
+			break;
+		}
 		pageData.links[j] = new Object();
 		pageData.links[j].url = makeLinkAbsolute(link.href);
 		pageData.links[j].title = link.textContent;
@@ -468,11 +456,11 @@ function showNeighbours() {
 	html += "<P style='padding-left: 16px;'>\n";
 	for (var i=0;i<group.length;i++) {
 		var link = group[i];
+		if (showFavicons)
+			html += createFaviconHTMLFor(link.url);
 		if (urlsMatch(link.url,""+document.location)) {
 			html += "<B>"+escapeHTML(link.title)+"</B>";
 		} else {
-			if (showFavicons)
-				html += createFaviconHTMLFor(link.url);
 			// DONE: We should escape these link titles, but not with CGI escape()!
 			if (goForwards) {
 				html += "<A href='"+link.url+"'>"+escapeHTML(link.title)+"</A>";
