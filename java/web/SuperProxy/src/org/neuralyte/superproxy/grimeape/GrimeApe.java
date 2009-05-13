@@ -2,7 +2,10 @@ package org.neuralyte.superproxy.grimeape;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Date;
@@ -87,17 +90,38 @@ public class GrimeApe extends PluggableHttpRequestHandler {
      * e.g. /gRiMeApE/userscripts/config.js
      */
     
-    public static void main(String[] args) {
-        new SocketServer(7152,new GrimeApe()).run();
-    }
-        
     static String topDir = ".";
     static String coreScriptsDir = "./javascript/";
     static String userscriptsDir = "./userscripts/";
     
     // TODO: This should not be a global, but associated with user/session.
-    static Map<String,String> gmRegistry = new Hashtable<String,String>();
+    public final static Map<String,String> gmRegistry = new Hashtable<String,String>();
+    // TODO: Also it doesn't work in the daemon, because it does not persist on restart.
+
+    public static void main(String[] args) throws IOException {
+        if (args.length>0 && args[0].equals("--ind")) {
+            doDaemonStreaming();
+        } else {
+            // I use 7152 for production, 7153 
+            new SocketServer(7153,new GrimeApe()).run();
+        }
+    }
     
+    public static void doDaemonStreaming() throws IOException {
+        OutputStream realOut = System.out;
+        PrintStream logOut = new PrintStream(
+                new FileOutputStream("/tmp/grimeaped.log",true)
+        );
+        // System.setOut(System.err); // Send logging to err out
+        // Hmm still xinetd is sending err anyway.
+        // System.setOut(null);
+        // System.setErr(null);
+        System.setOut(logOut);
+        System.setErr(logOut);
+        GrimeApe ga = new GrimeApe();
+        ga.handleRequest(System.in, realOut); // Send response to real out
+    }
+        
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
 
         //// Check for special requests directed at GrimeApe, not the web.
@@ -202,8 +226,8 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                         /* "javascript/test.js", */
                         "javascript/grimeape_greasemonkey_compat.js",
                         "javascript/grimeape_config.js",
-                        "userscripts/faviconizegoogle.user.js",
-                        "userscripts/track_history.user.js",
+                        "userscripts/faviconizegoogle/faviconizegoogle.user.js",
+                        "userscripts/track_history/track_history.user.js",
                         "userscripts/alert_watcher/alert_watcher.user.js",
                         "userscripts/reclaim_cpu/reclaim_cpu.user.js",
                         "userscripts/auto_highlight_text_on_a.user/auto_highlight_text_on_a.user.js",

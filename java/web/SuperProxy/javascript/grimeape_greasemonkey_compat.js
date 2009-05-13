@@ -62,7 +62,12 @@ GM_log("GM_log() works!");
 
 function GM_setValue(name,value) {
 	// TODO
-	document.writeln('<SCRIPT src="/_gRiMeApE_/setValue?name='+escape(name)+'&value='+escape(value)+'/>');
+	GM_log('setting 1');
+	if (value==undefined || value==null)
+		value = "";
+	GM_log('setting 2');
+	document.writeln('<SCRIPT type="text/javascript" src="/_gRiMeApE_/setValue?name='+escape(name)+'&value='+escape(value)+'"/>');
+	GM_log('setting 3');
 }
 
 function GM_getValue(name,defaultValue) {
@@ -92,7 +97,9 @@ if (!document.evaluate) {
 // if (!uneval) { /* Testing existence this way fails with "No such var". */
 if (!this.uneval) {
 	this.uneval = function (obj) {
-		GM_log("TODO: uneval() (this="+this+" self="+self+")");
+		if (obj==undefined) { return "undefined"; }
+		// Still this==window: GM_log("TODO: uneval() (this="+this+" self="+self+")");
+		// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
 		if (typeof(obj)=='string') {
 			return '"' + obj.replace(/"/g,'\\"') + '"';
 		} else if (typeof(obj)=='number') {
@@ -101,13 +108,16 @@ if (!this.uneval) {
 			// ({x:"fart", 1:"pants"})
 			var arrayString = "";
 			for (var key in obj) {
-				var val = obj[val];
+				var val = obj[key];
+				// GM_log("Got key "+key+" and val "+val);
 				if (arrayString!="") arrayString += ", ";
 				arrayString += uneval(key)+":"+uneval(val);
 			}
 			arrayString = "({" + arrayString + "})";
+			// GM_log("Returning arrayString="+arrayString);
 			return arrayString;
 		} else {
+			GM_log("<WARNING!> uneval does not know type "+typeof(obj));
 			return "DUNNO_TYPE_"+typeof(obj);
 		}
 	}

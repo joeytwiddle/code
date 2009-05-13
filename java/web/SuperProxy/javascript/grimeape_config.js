@@ -83,8 +83,12 @@ function(){
 		addMenuItem: function(txt,fn) {
 			var menuItem = document.createElement('A');
 			menuItem.textContent = txt;
-			menuItem.href = '#';
-			menuItem.target = '_self';
+			/*
+			// bad can cause page refresh or temporary hangup in konqueror
+			// menuItem.href = '#';
+			// menuItem.target = '_self';
+			*/
+			menuItem.href = 'javascript:void(0)'; // yum the "nice" way
 			menuItem.onclick = fn;
 			var line = document.createElement('P');
 			line.appendChild(menuItem);
@@ -109,7 +113,7 @@ function(){
 	with (Menu.menuElement.style) {
 		display = 'none';
 		position = 'fixed';
-		right = '8px';
+		right = '4px';
 		bottom = (iconHeight+4)+'px';
 		zIndex = 10000;
 		border = '1px solid black';

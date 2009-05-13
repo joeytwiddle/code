@@ -116,3 +116,9 @@ The point is we can do it in advance, because we know what userscripts will be r
 and the registry isn't huge.
 
 
+
+TODO: In the Javascript,setValue and getValue should be redefined differently for each
+script (appended to the top when loading it?).  These wrappers can call the actual
+working set/getValue functions, passing down the script-name, so we can keep the
+namespace like GM does.
+

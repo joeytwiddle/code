@@ -8,6 +8,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Arrays;
@@ -19,6 +20,8 @@ import java.util.Vector;
 import org.common.lib.StreamReadingUtils;
 import org.fairshare.Logger;
 import org.neuralyte.util.reflection.ReflectionHelper;
+
+// TODO: XML napper - uses same algorithm, but the text is a different format.
 
 /*
  * TODO
@@ -74,7 +77,7 @@ public class SimpleNapper extends StreamReadingUtils implements Napper {
         // write(out,neatClass(obj) + " ");
 
         // Is this a simple type to write?
-        if (obj.getClass().isPrimitive() && ReflectionHelper.isPrimitiveHolder(obj.getClass())) {
+        if (obj.getClass().isPrimitive() || ReflectionHelper.isPrimitiveHolder(obj.getClass())) {
             write(out,""+obj);
             return;
         }
@@ -272,6 +275,10 @@ public class SimpleNapper extends StreamReadingUtils implements Napper {
             Logger.warn("Doing " + fields.length + " fields for " + obj);
         }
         for (Field f : fields) {
+            if (Modifier.isFinal(f.getModifiers())) {
+                Logger.debug("Skipping final field: "+f);
+                continue;
+            }
             Logger.debug("Doing " + f);
             try {
                 // We might not need to show the type if the instance type ==
