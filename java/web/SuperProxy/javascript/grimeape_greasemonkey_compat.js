@@ -75,6 +75,9 @@ GM_log("GM_log() works!");
 function cgiEscape(val) {
 	return escape(val).replace(/\+/g,'%2b');
 }
+function cgiUnescape(val) {
+	return unescape(val.replace(/\+/g,' '));
+}
 
 function GM_setValue(name,value) {
 	// TODO
@@ -111,8 +114,8 @@ function GM_getValue(name,defaultValue) {
 	client.open('GET',url,false);
 	client.send(null);
 	GM_log("GM_getValue(\""+name+"\") returned: "+client.responseText);
-	return client.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,'');
-	// return client.responseText;
+	// return client.responseText; // this worked fine for konqueror ;p
+	return cgiUnescape(unescape(client.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,''))); // mozilla
 	/*
 	var waitUntil = new Date().getTime() + 5*1000;
 	for (var i=0;i<100000;i++) {

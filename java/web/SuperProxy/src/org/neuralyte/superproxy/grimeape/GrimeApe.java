@@ -216,7 +216,8 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             } else {
                 // Konqueror was fine receiving just a String, but Firefox needs
                 // something well-formed:
-                response = "<RESPONSE>" + response + "</RESPONSE>";
+                // sob
+                response = "<RESPONSE>" + URLEncoder.encode(response.replaceAll("\\+","%2b")) + "</RESPONSE>";
                 // We don't need to escape the middle 'cos we just trim the ends off text style. ;)
             }
             // In the end we will use only 1 of the techniques, but for testing I want both.
