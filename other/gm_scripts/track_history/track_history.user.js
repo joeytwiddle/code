@@ -218,11 +218,11 @@ function arrayToJSON(a) {
 //// Data collection and persistence ///
 
 function saveData() {
-	GM_setValue('g_track_history_data',uneval(data));
+	GM_setValue('pageHistoryData',uneval(data));
 }
 
 function loadData() {
-	data = eval(GM_getValue('g_track_history_data'));
+	data = eval(GM_getValue('pageHistoryData'));
 }
 
 function addDataForThisPage() {
@@ -250,6 +250,7 @@ function addDataForThisPage() {
 		pageData.links[j].xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
 	}
 	data[document.location] = pageData;
+	// GM_log(data[document.location]+" should = "+pageData);
 	if (links.length > maxLinks) {
 		GM_log("Finished parsing at "+new Date());
 	}
@@ -489,7 +490,7 @@ function createFaviconHTMLFor(url) {
 
 drawHistoryTree();
 
-// data = eval(GM_getValue("g_track_history_data"));
+// data = eval(GM_getValue("pageHistoryData"));
 
 GM_log("Done.");
 
