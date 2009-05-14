@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="3" relativePaths="false">
+  <component name="ProjectRootManager" version="2">
+    <jdk name="Debian's java version &quot;1.4.1&quot; (Not Gentoo)" />
+    <projectPath>
+      <root type="composite">
+        <root type="simple" url="file:///home/joey/j/code/java" />
+      </root>
+    </projectPath>
+    <sourcePath>
+      <root type="composite">
+        <root type="jdk" rootType="sourcePath" name="Debian's java version &quot;1.4.1&quot; (Not Gentoo)" />
+        <root type="simple" url="file:///home/joey/j/code/java" />
+      </root>
+    </sourcePath>
+    <classPath>
+      <root type="composite">
+        <root type="jdk" rootType="classPath" name="Debian's java version &quot;1.4.1&quot; (Not Gentoo)" />
+        <root type="output" />
+      </root>
+    </classPath>
+    <excludePath>
+      <root type="composite">
+        <root type="excludedOutput" />
+        <root type="simple" url="file:///home/joey/j/code/java/.dune" />
+        <root type="simple" url="file:///home/joey/j/code/java/changetheworld" />
+        <root type="simple" url="file:///home/joey/j/code/java/ChangeTheWorld" />
+        <root type="simple" url="file:///home/joey/j/code/java/CVS" />
+        <root type="simple" url="file:///home/joey/j/code/java/HTTPClient" />
+        <root type="simple" url="file:///home/joey/j/code/java/web" />
+        <root type="simple" url="file:///home/joey/j/code/java/tools" />
+        <root type="simple" url="file:///home/joey/j/code/java/net" />
+        <root type="simple" url="file:///home/joey/j/code/java/macros" />
+        <root type="simple" url="file:///home/joey/j/code/java/VisualJava" />
+      </root>
+    </excludePath>
+    <javadocPath>
+      <root type="composite">
+        <root type="jdk" rootType="javadocPath" name="Debian's java version &quot;1.4.1&quot; (Not Gentoo)" />
+      </root>
+    </javadocPath>
+    <assert_keyword enabled="no" />
+    <exclude_output enabled="yes" />
+  </component>
+  <component name="CompilerConfiguration">
+    <option name="DEFAULT_COMPILER" value="Javac" />
+    <option name="SYNCHRONIZE_OUTPUT_DIRECTORY" value="false" />
+    <option name="DEFAULT_OUTPUT_PATH" value="/home/joey/j/code/java/jlib" />
+    <option name="OUTPUT_MODE" value="single" />
+    <excludeFromCompile>
+      <file url="file://$PROJECT_DIR$/.notready/SmartReader.java" />
+    </excludeFromCompile>
+    <resourceExtensions>
+      <entry name=".+\.(properties|xml|html)" />
+      <entry name=".+\.(gif|png|jpeg|jpg)" />
+    </resourceExtensions>
+  </component>
+  <component name="JavacSettings">
+    <option name="DEBUGGING_INFO" value="true" />
+    <option name="GENERATE_NO_WARNINGS" value="false" />
+    <option name="DEPRECATION" value="true" />
+    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
+    <option name="MAXIMUM_HEAP_SIZE" value="128" />
+  </component>
+  <component name="JikesSettings">
+    <option name="JIKES_PATH" value="" />
+    <option name="DEBUGGING_INFO" value="true" />
+    <option name="DEPRECATION" value="true" />
+    <option name="GENERATE_NO_WARNINGS" value="false" />
+    <option name="GENERATE_MAKE_FILE_DEPENDENCIES" value="false" />
+    <option name="DO_FULL_DEPENDENCE_CHECK" value="false" />
+    <option name="IS_EMACS_ERRORS_MODE" value="true" />
+    <option name="ADDITIONAL_OPTIONS_STRING" value="" />
+  </component>
+  <component name="AntConfiguration">
+    <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
+    <option name="FILTER_TARGETS" value="false" />
+  </component>
+  <component name="JavadocGenerationManager">
+    <option name="OUTPUT_DIRECTORY" />
+    <option name="OPTION_SCOPE" value="protected" />
+    <option name="OPTION_HIERARCHY" value="true" />
+    <option name="OPTION_NAVIGATOR" value="true" />
+    <option name="OPTION_INDEX" value="true" />
+    <option name="OPTION_SEPARATE_INDEX" value="true" />
+    <option name="OPTION_DOCUMENT_TAG_USE" value="false" />
+    <option name="OPTION_DOCUMENT_TAG_AUTHOR" value="false" />
+    <option name="OPTION_DOCUMENT_TAG_VERSION" value="false" />
+    <option name="OPTION_DOCUMENT_TAG_DEPRECATED" value="true" />
+    <option name="OPTION_DEPRECATED_LIST" value="true" />
+    <option name="OTHER_OPTIONS" value="" />
+    <option name="HEAP_SIZE" />
+    <option name="OPEN_IN_BROWSER" value="true" />
+  </component>
+  <component name="WebManager">
+    <option enabled="false" />
+  </component>
+  <component name="WebRootContainer" />
+  <component name="EjbManager" enabled="false" />
+  <component name="JUnitProjectSettings">
+    <option name="TEST_RUNNER" value="UI" />
+  </component>
+  <component name="EntryPointsManager">
+    <entry_points />
+  </component>
+  <component name="EjbActionsConfiguration">
+    <option name="NEW_MESSAGE_BEAN_LAST_PACKAGE" value="" />
+    <option name="NEW_ENTITY_BEAN_LAST_PACKAGE" value="" />
+    <option name="NEW_SESSION_BEAN_LAST_PACKAGE" value="" />
+  </component>
+  <component name="CodeStyleManager">
+    <option name="USE_DEFAULT_CODE_STYLE_SCHEME" value="true" />
+    <option name="CODE_STYLE_SCHEME" value="" />
+  </component>
+  <component name="ExportToHTMLSettings">
+    <option name="PRINT_LINE_NUMBERS" value="false" />
+    <option name="OPEN_IN_BROWSER" value="false" />
+    <option name="OUTPUT_DIRECTORY" />
+  </component>
+</project>
+
