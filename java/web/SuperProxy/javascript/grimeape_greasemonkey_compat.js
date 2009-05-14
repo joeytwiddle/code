@@ -87,6 +87,7 @@ function GM_setValue(name,value) {
 	var client = new XMLHttpRequest();
 	client.open('GET',url,false);
 	client.send(null);
+	return null;
 }
 
 function GM_getValue(name,defaultValue) {
@@ -110,7 +111,8 @@ function GM_getValue(name,defaultValue) {
 	client.open('GET',url,false);
 	client.send(null);
 	GM_log("GM_getValue(\""+name+"\") returned: "+client.responseText);
-	return client.responseText;
+	return client.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,'');
+	// return client.responseText;
 	/*
 	var waitUntil = new Date().getTime() + 5*1000;
 	for (var i=0;i<100000;i++) {

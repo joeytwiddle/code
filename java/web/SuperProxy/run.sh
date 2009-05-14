@@ -5,5 +5,6 @@ do . addtoclasspath "$JAR"
 done
 . addtoclasspath $PWD/bin
 
-java org.neuralyte.superproxy.SuperProxy "$@"
+# java org.neuralyte.superproxy.SuperProxy "$@"
+java org.neuralyte.superproxy.GrimeApe "$@"
 

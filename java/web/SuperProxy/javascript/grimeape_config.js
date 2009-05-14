@@ -1,4 +1,4 @@
-function(){
+(function(){
 
 	// var grimeApeConfig = GM_getValue('grimeApeConfig');
 
@@ -125,4 +125,4 @@ function(){
 	icon.onclick = Menu.showHideMenu;
 	// GM_log("icon.parentNode = "+icon.parentNode);
 
-}();
+})();

@@ -102,8 +102,12 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         if (args.length>0 && args[0].equals("--ind")) {
             doDaemonStreaming();
         } else {
-            // Use 7152 for production, 7153 for dev. 
-            new SocketServer(7152,new GrimeApe()).run();
+            // I use 7152 for production, 7153 for dev. 
+            int port = 7152; 
+            if (args.length>=2 && args[0].equals("--port")) {
+                port = Integer.parseInt(args[1]);
+            }
+            new SocketServer(port,new GrimeApe()).run();
         }
     }
     
@@ -124,6 +128,11 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
 
+        request.removeHeader("Proxy-Connection"); // Most proxies should do this, i.e. not pass it to the remote host
+        // Doing these because SimpleProxy can't yet handle keepalive :P
+        request.removeHeader("Keep-Alive");
+        request.setHeader("Connection", "close");
+        
         //// Check for special requests directed at GrimeApe, not the web.
         WebRequest wreq = new WebRequest(request);
         // Logger.warn("path = " + wreq.getPath());
@@ -181,14 +190,14 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             // return ""; // "\/\*thanksforlogging\*\/"
             // throw new Error("Just deal with it.");
             // return failedHttpResponse("too lazy to respond empty"); // DONE
-            return stringHttpResponse("text/javascript","");
+            return stringHttpResponse("text/javascript","<NODATA/>");
 
         } else if (commandDir.equals("setValue")) {
             String name = wreq.getParam("name");
             String value = wreq.getParam("value");
             Logger.info("GM_SETVALUE: "+name+" = \""+value+"\"");
             gmRegistry.put(name,value);
-            return stringHttpResponse("text/javascript","");
+            return stringHttpResponse("text/javascript","<NODATA/>");
             
         } else if (commandDir.equals("getValue")) {
             String name = wreq.getParam("name");
@@ -204,6 +213,11 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                         ? "null"
                                 : "\"" + URLEncoder.encode(value)+"\""
                 ) + ";";
+            } else {
+                // Konqueror was fine receiving just a String, but Firefox needs
+                // something well-formed:
+                response = "<RESPONSE>" + response + "</RESPONSE>";
+                // We don't need to escape the middle 'cos we just trim the ends off text style. ;)
             }
             // In the end we will use only 1 of the techniques, but for testing I want both.
             return stringHttpResponse("text/javascript",response);
@@ -229,6 +243,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             if (i == -1) {
                 Logger.warn("Failed to inject script tag.");
             } else {
+                Logger.log("Doing injection at index "+i);
                 String[] scriptsToInject = {
                         "javascript/grimeape_greasemonkey_compat.js",
                         "javascript/test.js",
@@ -242,7 +257,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 for (String script : scriptsToInject) {
                     // String srcURL = "/_gRiMeApE_/javascript/test.js";
                     String srcURL = "/_gRiMeApE_/"+script;
-                    String injectHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'/>\n";
+                    String injectHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'></SCRIPT>\n";
                     responseString.insert(i, injectHTML);
                     i += injectHTML.length();
                 }
