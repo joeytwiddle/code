@@ -429,13 +429,13 @@
 				/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
 				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					var attrSum = '';
-					for (var i=0;i<node.attributes.length;i++) {
-						var attr = node.attributes[i];
+					var attribs = '';
+					for (var j=0;j<node.attributes.length;j++) {
+						var attr = node.attributes[j];
 						if (attr.name == 'title') { continue; }
-						attrSum += ' | - ' + attr.name + '=' + attr.value + '\n';
+						attribs += ' ' + attr.name + '=&quot;' + attr.value.replace(/&quot;/g,'%22') + '&quot;';
 					}
-					node.title = xpath + '\n' + /*escapeHTML*/(attrSum) + '';
+					node.title = xpath + '\n' + '\n' + '  <'+node.tagName+attribs+'/>'; /*escapeHTML(attrSum) + '';*/
 					if (node.style) {
 						node.style.backgroundColor = '#' + getColorFor(simplexpath);
 					}
@@ -483,11 +483,81 @@
 			<P>Displays the XPath of the focused element as a popup (sets title attribute).</P>
 			<P>Useful when using Nuke, to find the element you really need to kill. <SPAN class='todo'>Todo: Include Highlight Structure in Nuke automatically.</SPAN></P>
 			<LI class='done'>More useful for developers: as well as showing the XPath, we now also show the attributes of the element in its title/popup.</LI>
+			<LI class='done'>Added tag and attributes to title.  Too bad the newlines don&apos;t work in the fox.</LI>
 			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 			<LI class='todo'>Can be sluggish to run on the heavier DOMs.</LI>
 			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn't highlight newly entered elements, it won't have to unhighlight them on the way out.</LI>
 			<LI class='todo'>Adapt the colour generator to produce pastels only.</LI>
 		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			var firstEvent = true;
+			function processNode(node) {
+				for (var i=0;i<node.childNodes.length;i++) {
+					processNode(node.childNodes.item(i));
+				}
+				node.onmouseover = doHighlight;
+				node.onmouseout  = undoHighlight;
+			}
+			function getColorFor(obj) {
+				var s = ''+obj;
+				var hash = 0;
+				for (i=0;i<s.length;i++) {
+					hash += ((i+39357) %25 52597)*s.charCodeAt(i);
+					hash = hash % 16777216;
+				}
+				var hex = hash.toString(16);
+				if (hex.length>6) hex=hex.substring(0,6);
+				while (hex.length<6) { hex='0'+hex; }
+				return hex;
+			}
+			function doHighlight(evt) {
+				var node = evt.currentTarget;
+				var xpath = getXPath(node);
+				var simplexpath = xpath.replace(/[0-9]*/g,'');
+				if (node.tagName!='HTML' && node.tagName!='BODY') {
+					node.title = xpath;
+					if (node.style) {
+						node.style.backgroundColor = '#' + getColorFor(simplexpath);
+					}
+				}
+				if (firstEvent) {
+					firstEvent = false;
+					window.status = xpath;
+				} else {
+					if (node.tagName=='HTML' || node.tagName=='BODY') {
+						firstEvent = true;
+					}
+				}
+			}
+			function undoHighlight(evt) {
+				var node = evt.currentTarget;
+				node.style.backgroundColor = 'white';
+			}
+			function getXPath(node) {
+				var parent = node.parentNode;
+				if (!parent) {
+					return '';
+				}
+				var siblings = parent.childNodes;
+				var totalCount = 0;
+				var thisCount = -1;
+				for (var i=0;i<siblings.length;i++) {
+					var sibling = siblings[i];
+					if (sibling.nodeType == node.nodeType) {
+						totalCount++;
+					}
+					if (sibling == node) {
+						thisCount = totalCount;
+						break;
+					}
+				}
+				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
+			}
+			processNode(document.body);
+		})();">Highlight Structure</A> - Live Updates (without HTML popup)</LI>
 	</P>
 
 	<P>
