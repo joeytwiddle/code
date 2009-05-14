@@ -16,6 +16,7 @@
 
 	var GrimeApeConfig = {
 		enabled: true,
+		// scripts: ({ "faviconizegoogle", "reclaim_cpu" }),
 	};
 
 	// var iconStyleString = " position: fixed; right: 4px; bottom: 4px; z-index: 1000 ";

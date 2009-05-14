@@ -6,6 +6,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Date;
@@ -15,6 +16,7 @@ import java.util.Map;
 
 import org.apache.xerces.dom.CoreDocumentImpl;
 import org.apache.xerces.dom.TextImpl;
+import org.common.nap.Nap;
 import org.neuralyte.Logger;
 import org.neuralyte.common.FileUtils;
 import org.neuralyte.common.io.StreamUtils;
@@ -27,6 +29,9 @@ import org.neuralyte.webserver.WebRequest;
 import org.neuralyte.webserver.WebRequestHandler;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
+
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
 
 /**
  * GrimeApe aims to be a GreaseMonkey emulator which works as a web-proxy.
@@ -95,10 +100,11 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     static String userscriptsDir = "./userscripts/";
     
     // TODO: This should not be a global, but associated with user/session.
-    public final static Map<String,String> gmRegistry = new Hashtable<String,String>();
+    public static Map<String,String> gmRegistry = new Hashtable<String,String>();
     // TODO: Also it doesn't work in the daemon, because it does not persist on restart.
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws Exception {
+        loadData();
         if (args.length>0 && args[0].equals("--ind")) {
             doDaemonStreaming();
         } else {
@@ -108,9 +114,37 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 port = Integer.parseInt(args[1]);
             }
             new SocketServer(port,new GrimeApe()).run();
+            SignalHandler watchForClose = new SignalHandler() {
+                public void handle(Signal sig) {
+                    saveData();
+                }
+            };
+            /* oldHandler = */
+            Signal.handle(new Signal("TERM"), watchForClose);
+            Signal.handle(new Signal("INT"), watchForClose);
+            Signal.handle(new Signal("HUP"), watchForClose);
+            Signal.handle(new Signal("QUIT"), watchForClose);
+            // Signal.handle(new Signal("KILL"), watchForClose);
+        }
+
+    }
+
+    public static void saveData() {
+        /* if (interceptor.handle(sig.getName()) && (oldHandler != null)) {
+            oldHandler.handle(sig);
+        } */
+        try {
+            Logger.info("Shutting down...");
+            Nap.writeToFile(gmRegistry, "grimeape_registry.nap");
+        } catch (Exception e) {
+            Logger.error(e);
         }
     }
     
+    public static void loadData() throws Exception {
+        gmRegistry = (Map<String,String>)Nap.fromFile("grimeape_registry.nap");
+    }
+
     public static void doDaemonStreaming() throws IOException {
         OutputStream realOut = System.out;
         PrintStream logOut = new PrintStream(
@@ -138,6 +172,16 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         // Logger.warn("path = " + wreq.getPath());
         if (wreq.getPath().startsWith("/_gRiMeApE_/")) {
             return handleSpecialRequest(request, wreq);
+        }
+        
+        // All our proxies should check for this.
+        // If the target of the client request is the proxy,
+        // we will get stuck in a loop trying to proxy that request!
+        String localhost = "127.0.0.1"; // Was giving me 127.0.1.1 hence failing to match: InetAddress.getLocalHost().getHostAddress();
+        String reqHost= InetAddress.getByName(wreq.getHost()).getHostAddress();
+        if (reqHost.equals(localhost)) {
+            // throw new Error("Requested host is me!");
+            return stringHttpResponse("text/txt", "I am a proxy.  Please leave me alone.");
         }
         
         //// OK we have a normal web request.
@@ -197,6 +241,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             String value = wreq.getParam("value");
             Logger.info("GM_SETVALUE: "+name+" = \""+value+"\"");
             gmRegistry.put(name,value);
+            saveData();
             return stringHttpResponse("text/javascript","<NODATA/>");
             
         } else if (commandDir.equals("getValue")) {
@@ -270,15 +315,23 @@ public class GrimeApe extends PluggableHttpRequestHandler {
 
     public HttpResponse makeFileHttpResponse(File file, String contentType, HttpRequest request) {
         HttpResponse httpResponse = new HttpResponse();
+        httpResponse.setHeader("Date", WebRequestHandler.getFormattedDate(new Date(file.lastModified())));
         
         try {
             if (file.exists()) {
+
+                String since = request.getHeader("If-Modified-Since");
+                if (since.length()>0) {
+                    long lastSeen = Date.parse(since);
+                    if (file.lastModified() == lastSeen) {
+                        httpResponse.setTopLine("HTTP/1.1 304 Not Modified");
+                    }
+                }
 
                 // Duplicated from WebRequestHandler:
 
                 httpResponse.setTopLine("HTTP/1.0 200 OK"); // wget barfed when we were returning HTTP/1.x
                 // httpResponse.setHeader("Connection","close");
-                httpResponse.setHeader("Date", WebRequestHandler.getFormattedDate(new Date(file.lastModified())));
                 httpResponse.setContentStream(new FileInputStream(file));
                 httpResponse.setHeader("Content-Length",""+file.length());
 

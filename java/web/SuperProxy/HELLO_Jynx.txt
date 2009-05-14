@@ -122,3 +122,14 @@ script (appended to the top when loading it?).  These wrappers can call the actu
 working set/getValue functions, passing down the script-name, so we can keep the
 namespace like GM does.
 
+
+
+scratch_pad = quick-cons plus ;)
+
+page history should be a dropdown V with a mini-icon in its SE corner - the favicon of the page from which we are drawing results ;)   
+since this script is so heavy searching, have it done on a setTimeout (or a few, batched).  so page does not feel so laggy =)   
+
+
+
+
+

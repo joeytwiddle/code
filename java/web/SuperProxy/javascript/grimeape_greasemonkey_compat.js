@@ -113,7 +113,7 @@ function GM_getValue(name,defaultValue) {
 	var client = new XMLHttpRequest();
 	client.open('GET',url,false);
 	client.send(null);
-	GM_log("GM_getValue(\""+name+"\") returned: "+client.responseText);
+	// GM_log("GM_getValue(\""+name+"\") returned: "+client.responseText);
 	// return client.responseText; // this worked fine for konqueror ;p
 	return cgiUnescape(unescape(client.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,''))); // mozilla
 	/*
