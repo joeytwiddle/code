@@ -107,6 +107,10 @@ bug is gone now.
 
 
 
+var html = ""; // Output report - may be written to by various sub-functions.
+
+
+
 //// General functions ////
 
 function getXPath(node) {
@@ -218,11 +222,25 @@ function arrayToJSON(a) {
 //// Data collection and persistence ///
 
 function saveData() {
-	GM_setValue('pageHistoryData',uneval(data));
+	// GM_setValue('pageHistoryData',uneval(data));
+	GM_log(new Date()+" Preparing data with uneval...");
+	var unevaled = uneval(data);
+	GM_log(new Date()+" Calling GM_setValue...");
+	GM_setValue('pageHistoryData',unevaled);
+	GM_log(new Date()+" Done.");
 }
 
 function loadData() {
-	data = eval(GM_getValue('pageHistoryData'));
+	var dataStr = GM_getValue('pageHistoryData');
+	try {
+		data = eval(dataStr);
+	} catch (e) {
+		GM_log("loadData() failed to parse dataStr: "+e);
+		GM_log("  dataStr = "+dataStr);
+		// I really want to warn but gotta stay GM compatible.
+		// document.writeln("<BR/>track_history.loadData() failed - sorry your data was corrupt and destroyed.  Check the log.");
+		html += "Sorry Data Corrupted. uneval failed with:<BR/>\n"+escapeHTML(""+e)+"<BR/>\n";
+	}
 }
 
 function addDataForThisPage() {
@@ -231,7 +249,7 @@ function addDataForThisPage() {
 	pageData.title = document.title;
 	pageData.referrer = document.referrer;
 	pageData.lastUsed = new Date().getTime();
-	pageData.links = new Array();
+	pageData.groups = new Object();
 	var links = document.links;
 	for (var i=0;i<links.length;i++) {
 		// var link = document.links[i];
@@ -239,21 +257,30 @@ function addDataForThisPage() {
 		if (link.href.match('^\s*javascript:'))
 			continue;
 		// TODO: other protocols we should skip: "news:rec.arts.sf.written", "mailto:...", ...
-		var j = pageData.links.length;
-		if (j > maxLinks) {
+		// var j = pageData.links.length;
+		if (i >= maxLinks) {
 			GM_log("Too many links ("+links.length+") - skipping "+(links.length-maxLinks)+".");
 			break;
 		}
-		pageData.links[j] = new Object();
-		pageData.links[j].url = makeLinkAbsolute(link.href);
-		pageData.links[j].title = link.textContent;
-		pageData.links[j].xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
+		var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
+		if (!pageData.groups[xpath])
+			pageData.groups[xpath] = new Array();
+		var k = pageData.groups[xpath].length;
+		// GM_log("k="+k);
+		// GM_log("pageData.groups[xpath]="+typeof(pageData.groups[xpath]));
+		pageData.groups[xpath][k] = new Object();
+		pageData.groups[xpath][k].url = makeLinkAbsolute(link.href);
+		pageData.groups[xpath][k].title = link.textContent;
+		// pageData.groups[xpath].xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
+		if (!data.revLinks[link.href]) // keep oldest copy
+			data.revLinks[link.href] = ""+document.location;
 	}
 	data[document.location] = pageData;
 	// GM_log(data[document.location]+" should = "+pageData);
-	if (links.length > maxLinks) {
-		GM_log("Finished parsing at "+new Date());
-	}
+	// if (links.length > maxLinks) {
+		// GM_log("Finished parsing at "+new Date());
+	// }
+	// GM_log("pageData.groups = "+pageData.groups);
 }
 
 function cleanupData() {
@@ -267,7 +294,7 @@ function cleanupData() {
 			// var pageData = dataArray[i];
 		for (var key in data) {
 			var pageData = data[key];
-			if (!pageData.lastUsed || pageData.lastUsed<oldestLastUsed) {
+			if (pageData.lastUsed && pageData.lastUsed<oldestLastUsed) {
 				// oldest = pageData.url;
 				oldest = key;
 				oldestLastUsed = pageData.lastUsed;
@@ -280,6 +307,7 @@ function cleanupData() {
 		cnt++; if (cnt>10) break; // failsafe
 		dataArray = objectToArray(data);
 	}
+	// TODO: revLinks are never cleaned up
 }
 
 function clearHistoryData() {
@@ -298,13 +326,20 @@ if (!data) {
 	// var data = new Array(); // Fails uneval().  (TOTEST: right?!)
 	data = new Object(); // Survives uneval().
 }
+if (!data.revLinks) {
+	data.revLinks = new Object();
+}
+
+GM_log(new Date()+" Parsing current page");
 
 // Add data for this page
 addDataForThisPage();
 
+GM_log(new Date()+" Done");
+
 cleanupData();
 
-saveData();
+// saveData();
 // saveData() might be called again later (e.g. to update the lastUsed of the
 // parentPageData), but we do it here in case 1) the code below breaks, or 2)
 // we don't actually display the parentPage history.
@@ -321,24 +356,46 @@ function pageContainsLinkTo(pageData,url) {
 	return getItemsMatching(pageData.links, function(link){ /*if (Math.random()<0.01) { GM_log("link="+link+" link.url="+link.url); }*/ return link!=undefined && urlsMatch(link.url,url); } ).length > 0;
 }
 
+function findLinkGroup(pageData,url) {
+	// GM_log("pageData.groups = "+typeof(pageData.groups));
+	// GM_log("pageData.groups = "+pageData.groups);
+	for (var xpath in pageData.groups) {
+	// for (var i=0;i<pageData.groups.length;i++) {
+		// var xpath = pageData.groups[i];
+		var links = pageData.groups[xpath];
+		// GM_log("For xpath="+xpath+" Got links = "+typeof(links)+" = "+links);
+		// GM_log("length = "+pageData.groups[xpath].length);
+		if (getItemsMatching(links, function(link){ return link!=undefined && urlsMatch(link.url,url); } ).length > 0) {
+			return links;
+		}
+	}
+	return false;
+}
+
 function urlsMatch(x,y) {
 	if (x==undefined || y==undefined) {
 		GM_log("There are still UNDEFINED links being stored/used!");
+		return false;
+	}
+	if (typeof(x)!='string' || typeof(y)!='string') {
+		GM_log("There are NON-STRINGS links being stored/used! "+typeof(x)+" "+typeof(y));
 		return false;
 	}
 	// return x==y || x+'/'==y || x==y+'/';
 	return x.replace(/\/$/,'') == y.replace(/\/$/,'');
 }
 
-function findPagesContainingLinkTo(url) {
-	return getItemsMatching(data, function(pageData){ return pageContainsLinkTo(pageData,url); } );
-}
+// function findPagesContainingLinkTo(url) {
+	// return getItemsMatching(data, function(pageData){ return pageContainsLinkTo(pageData,url); } );
+// }
 
 function drawHistoryTree() {
 
 	// historyBlock.style = 'position: fixed; top: 4px; left: 4px; z-index: 10000; border: solid 1px black; background-color: white; padding: 6px;';
 
-	var html = showNeighbours();
+	GM_log(new Date()+" Calling showNeighbours");
+	html = showNeighbours();
+	GM_log(new Date()+" Done");
 
 	if (html == "") {
 		return;
@@ -365,12 +422,16 @@ function drawHistoryTree() {
 
 	historyBlock.id = 'historyFloat';
 	historyBlock.style.position = 'fixed';
-	historyBlock.style.left = '4px';
-	historyBlock.style.top = '4px';
+	historyBlock.style.left = "" + parseInt(document.width*0.75) + "px"; // Appears further right in Konqueror.
+	// GM_log("parseInt gave: "+parseInt(document.width*0.85) + "px");
+	// historyBlock.style.left = '600px';
+	// historyBlock.style.right = '4px';
+	historyBlock.style.top = '60px';
 	historyBlock.style.zIndex = '50000';
 	// historyBlock.style.setProperty('z-index','50000');
-	historyBlock.style.border = 'solid 1px black';
-	historyBlock.style.backgroundColor = 'white';
+	historyBlock.style.border = 'solid 2px #442200';
+	// historyBlock.style.backgroundColor = 'white';
+	historyBlock.style.backgroundColor = '#dddddd';
 	historyBlock.style.padding = '6px';
 
 	historyBlock.innerHTML = html;
@@ -384,7 +445,7 @@ function drawHistoryTree() {
 
 function showNeighbours() {
 
-	var html = "";
+	// var html = "";
 
 	if (showFavicons)
 		html += "<STYLE type='text/css'> .favicon { padding-right: 4px; vertical-align: middle; } </STYLE>\n";
@@ -403,6 +464,7 @@ function showNeighbours() {
 			return html;
 		}
 	} else {
+		/*
 		var parentPages = findPagesContainingLinkTo(""+document.location);
 		GM_log("Got parentPages = "+parentPages);
 		GM_log("With length = "+parentPages.length);
@@ -430,22 +492,51 @@ function showNeighbours() {
 			// html += parentPages.length + " pages link to this one.<BR/><BR/>\n";
 		}
 		parentPageData = parentPages[0];
+		*/
+		var parentPageURL = data.revLinks[""+document.location];
+		if (!parentPageURL) { // Try without trailing /
+			parentPageURL = data.revLinks[(""+document.location).replace(/\/$/,'')];
+		}
+		if (!parentPageURL) { // Try with trailing /
+			parentPageURL = data[document.location+'/'];
+		}
+		GM_log('Got parentPageURL='+parentPageURL);
+		if (parentPageURL) {
+			parentPageData = data[parentPageURL];
+		}
+		if (!parentPageData) {
+			html += "I do not know how we got to this page.<BR/>\n";
+			if (document.referrer)
+				html += "Referrer was <A href='"+document.referrer+"'>here</A>.<BR/>\n";
+			return html;
+		}
 	}
 
 	parentPageData.lastUsed = new Date().getTime();
-	saveData();
 
 	// Find all links in that page with the same xpath as our link:
 	// var linksToMe = getItemsMatching(parentPageData.links, function(link){ return link.url == ""+document.location });
-	var linksToMe = getItemsMatching(parentPageData.links, function(link){ return urlsMatch(link.url,""+document.location) });
-	if (linksToMe.length < 1) {
-		html += "Could not find myself in " + parentPageData.url + "!<BR/>\n";
-		return html;
+	// var linksToMe = getItemsMatching(parentPageData.links, function(link){ return urlsMatch(link.url,""+document.location) });
+	// if (linksToMe.length < 1) {
+		// html += "Could not find myself in " + parentPageData.url + "!<BR/>\n";
+		// return html;
+	// }
+	// var myLink = linksToMe[0];
+	// var myXPathWas = myLink.xpath;
+	// var group = getItemsMatching(parentPageData.links, function(link){ return link.xpath == myXPathWas });
+	// GM_log("parentPageData = "+parentPageData);
+	// GM_log("parentPageData.groups = "+parentPageData.groups);
+	var group = findLinkGroup(parentPageData,""+document.location);
+	// GM_log("Got group = "+group);
+	var myLink;
+	// This should not really fail, but just in case.
+	try {
+		myLink = getItemsMatching(group, function(link){ return urlsMatch(link.url,""+document.location); } )[0];
+	} catch (e) {
+		GM_log("Failed to find myLink."+e);
 	}
-	var myLink = linksToMe[0];
-	var myXPathWas = myLink.xpath;
-	var group = getItemsMatching(parentPageData.links, function(link){ return link.xpath == myXPathWas });
 	var myIndex = getIndexOf(myLink,group);
+	// var myIndex = 1337;
 	// html += "Got group: "+group+"<BR/>\n";
 	html += "<FONT size='+0'>";
 	html += (myIndex+1)+" of "+group.length+" from ";
@@ -487,12 +578,38 @@ function createFaviconHTMLFor(url) {
 }
 
 
+GM_log(new Date()+" data.revLinks = "+data.revLinks);
 
-drawHistoryTree();
+try {
+	drawHistoryTree();
+} catch (e) {
+	GM_log("drawHistoryTree() broke with "+e);
+}
 
-// data = eval(GM_getValue("pageHistoryData"));
+unsafeWindow.document.data = data; // a reference for debugging (which I can't seem to access anyway :P )
 
-GM_log("Done.");
+if (navigator.appName == 'Konqueror') {
+	// Fine in Konqueror but not Firefox (even with unsafeWindow):
+	document.write('<SCRIPT type="text/javascript" src="http://hwi.ath.cx/javascript/make_elements_draggable.js"></SCRIPT>');
+	document.write('<SCRIPT type="text/javascript"> makeDraggable(document.getElementById("historyFloat")); </SCRIPT>');
 
-top.data = data; // a reference for debugging (which I can't seem to access anyway :P )
+} else if (navigator.appName == 'Mozilla' || true) {
+
+	// This works in Firefox:
+	var scr = document.createElement('SCRIPT');
+	scr.type = 'text/javascript';
+	scr.src = 'http://hwi.ath.cx/javascript/make_elements_draggable.js';
+	document.body.appendChild(scr);
+
+	scr = document.createElement('SCRIPT');
+	scr.type = 'text/javascript';
+	scr.textContent = ' makeDraggable(document.getElementById("historyFloat")); ';
+	document.body.appendChild(scr);
+
+}
+
+
+saveData();
+// if (testReadWrite)
+// 	var checkData = eval(GM_getValue("pageHistoryData"));
 
