@@ -1,7 +1,6 @@
 package org.neuralyte.superproxy.grimeape;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -9,10 +8,11 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.util.Date;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Observable;
+import java.util.Observer;
 
 import org.apache.xerces.dom.CoreDocumentImpl;
 import org.apache.xerces.dom.TextImpl;
@@ -22,11 +22,11 @@ import org.neuralyte.common.FileUtils;
 import org.neuralyte.common.io.StreamUtils;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
+import org.neuralyte.httpdatatools.HttpResponseBuilder;
 import org.neuralyte.simpleserver.SocketServer;
 import org.neuralyte.superproxy.HTMLDOMUtils;
 import org.neuralyte.superproxy.PluggableHttpRequestHandler;
 import org.neuralyte.webserver.WebRequest;
-import org.neuralyte.webserver.WebRequestHandler;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -77,6 +77,15 @@ import sun.misc.SignalHandler;
 // read-write to certain GM_setValue vars, choose 'Always Ask' for others. :)
 */
 
+/*
+ * TODO: When we get a 304 or 404 response. Well 304 is empty so we should NOT
+ * inject! 404 sometimes has a message, so i guess injection is ok.
+ * 
+ * Possible advanced features of SuperProxy:
+ * We could allow scripts to register to receive certain events from the Proxy,
+ * such as 404? Would that be useful?
+ */
+
 public class GrimeApe extends PluggableHttpRequestHandler {
 
     // We don't only want to processDocuments.
@@ -114,17 +123,24 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 port = Integer.parseInt(args[1]);
             }
             new SocketServer(port,new GrimeApe()).run();
+            
             SignalHandler watchForClose = new SignalHandler() {
                 public void handle(Signal sig) {
                     saveData();
                 }
             };
+            Observer observer = new Observer() {
+                public void update(Observable arg0, Object arg1) {
+                    saveData();
+                }
+            };
             /* oldHandler = */
-            Signal.handle(new Signal("TERM"), watchForClose);
             Signal.handle(new Signal("INT"), watchForClose);
             Signal.handle(new Signal("HUP"), watchForClose);
             Signal.handle(new Signal("QUIT"), watchForClose);
-            // Signal.handle(new Signal("KILL"), watchForClose);
+            Signal.handle(new Signal("KILL"), watchForClose);
+            Signal.handle(new Signal(""+SignalHandler.SIG_DFL), watchForClose);
+            Signal.handle(new Signal(""+SignalHandler.SIG_IGN), watchForClose);
         }
 
     }
@@ -181,7 +197,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         String reqHost= InetAddress.getByName(wreq.getHost()).getHostAddress();
         if (reqHost.equals(localhost)) {
             // throw new Error("Requested host is me!");
-            return stringHttpResponse("text/txt", "I am a proxy.  Please leave me alone.");
+            return HttpResponseBuilder.stringHttpResponse("text/txt", "I am a proxy.  Please leave me alone.");
         }
         
         //// OK we have a normal web request.
@@ -222,7 +238,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 throw new Error("Attempted Security Breach Detected! Requested file \""+scriptFile+"\" is not an ancestor of \""+validScriptDir+"\".");
             }
             // File checkParent = scriptFile.getParentFile();
-            return makeFileHttpResponse(scriptFile,"text/javascript",request);
+            return HttpResponseBuilder.makeFileHttpResponse(scriptFile,"text/javascript",request);
             
         } else if (commandDir.equals("log")) {
             // Should be tool for this pff.
@@ -234,15 +250,15 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             // return ""; // "\/\*thanksforlogging\*\/"
             // throw new Error("Just deal with it.");
             // return failedHttpResponse("too lazy to respond empty"); // DONE
-            return stringHttpResponse("text/javascript","<NODATA/>");
+            return HttpResponseBuilder.stringHttpResponse("text/javascript","<NODATA/>");
 
         } else if (commandDir.equals("setValue")) {
             String name = wreq.getParam("name");
             String value = wreq.getParam("value");
             Logger.info("GM_SETVALUE: "+name+" = \""+value+"\"");
             gmRegistry.put(name,value);
-            saveData();
-            return stringHttpResponse("text/javascript","<NODATA/>");
+            // saveData();
+            return HttpResponseBuilder.stringHttpResponse("text/javascript","<NODATA/>");
             
         } else if (commandDir.equals("getValue")) {
             String name = wreq.getParam("name");
@@ -266,7 +282,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 // We don't need to escape the middle 'cos we just trim the ends off text style. ;)
             }
             // In the end we will use only 1 of the techniques, but for testing I want both.
-            return stringHttpResponse("text/javascript",response);
+            return HttpResponseBuilder.stringHttpResponse("text/javascript",response);
             
         } else {
             Logger.error("Bad request: "+wreq.getPath());
@@ -313,57 +329,6 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         }
     }
 
-    public HttpResponse makeFileHttpResponse(File file, String contentType, HttpRequest request) {
-        HttpResponse httpResponse = new HttpResponse();
-        httpResponse.setHeader("Date", WebRequestHandler.getFormattedDate(new Date(file.lastModified())));
-        
-        try {
-            if (file.exists()) {
-
-                String since = request.getHeader("If-Modified-Since");
-                if (since.length()>0) {
-                    long lastSeen = Date.parse(since);
-                    if (file.lastModified() == lastSeen) {
-                        httpResponse.setTopLine("HTTP/1.1 304 Not Modified");
-                    }
-                }
-
-                // Duplicated from WebRequestHandler:
-
-                httpResponse.setTopLine("HTTP/1.0 200 OK"); // wget barfed when we were returning HTTP/1.x
-                // httpResponse.setHeader("Connection","close");
-                httpResponse.setContentStream(new FileInputStream(file));
-                httpResponse.setHeader("Content-Length",""+file.length());
-
-                return httpResponse;
-
-            } else {
-                Logger.warn("File does not exist: "+file);
-            }
-        } catch (Exception e) {
-            Logger.warn(""+e);
-        }
-        return failedHttpResponse("Sorry no file for you.");
-    }
-
-    public HttpResponse stringHttpResponse(String contentType, String content) {
-        HttpResponse httpResponse = new HttpResponse();
-        httpResponse.setTopLine("HTTP/1.0 200 OK"); // wget barfed when we were returning HTTP/1.x
-        // httpResponse.setHeader("Connection","close");
-        // httpResponse.setHeader("Date", WebRequestHandler.getFormattedDate());
-        httpResponse.setContent(content);
-        return httpResponse;
-    }
-    
-    public static HttpResponse failedHttpResponse(String str) {
-        HttpResponse response = new HttpResponse();
-        response.setTopLine("HTTP/1.0 539 OHDEAR");
-        response.setHeader("Date",WebRequestHandler.getFormattedDate());
-        response.setHeader("Connection","close");
-        response.setContent(""); // If we don't do this, we actually don't get NullPointerException, but a "Stream closed" IOException.
-        return response;
-    }
-    
     /** @deprecated GrimeApe converted from DocumentProcessor to HttpRequestHandler  **/
     public Document injectScripts(Document document) {
         Logger.info("DocumentURI = " + document.getBaseURI());
