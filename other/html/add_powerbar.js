@@ -3,22 +3,13 @@
 
 
 
-<!-- Dangerous ATM! Works but pops up another one! -->
-<!-- #define LOAD_IN_NEW_WINDOW -->
-
-<!-- The non popup version overwrites mainFrame, which is usually what we want to -->
-<!-- inspect, which results in badness. -->
-
-
-
-
- // #define USE_IFRAMES_NOT_FRAMES
 // ==UserScript==
 // @name           Alert Watcher
 // @namespace      alertwatcher
 // @description    Watch for possible malicious alert/confirm/prompt loops and allow the user to break out.
 // @include        *
 // ==/UserScript==
+
 /*
 
 This was originally a userscript, but now it can be loaded into any web page.
@@ -37,12 +28,15 @@ I suspect neither of these problems really exist.  Well maybe it IS a problem
 is a script re-writes the page.
 
 */
+
 var unsafeWindow = window;
+
 var init = function()
 {
  var lasttime = 0;
  var nexttime = 0;
  var oldconfirm = unsafeWindow.confirm;
+
  var remap = function(func) {
   var oldfunc = unsafeWindow[func];
   unsafeWindow[func] = function() {
@@ -55,6 +49,7 @@ var init = function()
    }
   }
  }
+
  remap('alert');
  remap('prompt');
  remap('confirm');
@@ -63,36 +58,8 @@ var exploder = (navigator.appName == "Microsoft Internet Explorer");
 var nutscrape = (navigator.appName == "Netscape"); // also what Mozilla reports
 var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 // var browserCanRewriteFramesUsingDocumentDotWrite = nutscrape;
-
-
-///////////////////////// Compile-time options /////////////////////////
-
-// #define STUFF_IM_JUST_TESTING
-
-// #define POPUP_JSREFLECTOR
-// otherwise jsReflection appears in mainFrame
-// mmm in konqueror it pops up a window either way :P
-
-// ------------------------ Logging -----------------------
-
-// The simplest demonstration of the usefulness of #define's pre-compile stripping.
-
-// To turn it on or off:
-
-//// TODO BUG: In Firefox, the Bookmarklet version is failing to find the function top.log().
-
-// You must add LOG_ELEMENT_HTML at some point to the powerBarFrame
-// You can then log to that element using LOG(report);
-
-
-
  // #define LOG(str) log(str)
  //// Works from within DHTML on<action> thingies.  Actually it doesn't cos they are always in quotes and hence not interpreted, so to do it I have to put "top.log" in the string.  Damn!
-
-
-
-
-
  var logText = "";
  function log(str) {
   str = niceDate() + ": " + str;
@@ -135,7 +102,7 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 /////////////////////////////// Constants ///////////////////////////////
 /////////// Options: (will be load/saveable using cookies...) ///////////
 var listOfOptions = [ "opt_powerBarPosition", "opt_ButtonsOnPowerBarForms", "opt_ClockEnabled", "opt_JSTesterEnabled", "opt_ViewInnerHtmlButton", "opt_JSReflectorEnabled", "opt_XPathGrabberEnabled" ];
-var opt_powerBarPosition = "top";
+var opt_powerBarPosition = "bottom";
 var opt_ButtonsOnPowerBarForms = true;
 var opt_ClockEnabled = true;
 var opt_JSTesterEnabled = true;
@@ -160,7 +127,7 @@ var todoList = "";
 // If we put this call late, we end up being unable to see mainFrame!
 powerbar_init();
 function createFrameset() {
- var distrib = ( opt_powerBarPosition == "top" ? "20%,80%" : "80%,20%" );
+ var distrib = ( opt_powerBarPosition == "top" ? "50%,50%" : "50%,50%" );
   var startFrameSet = '<frameset rows="' + distrib + '">';
   var powerBarFrameHtml = '<frame src="about:blank">';
   // var mainFrameHtml     = '<frame src="http://www.google.com/">';
@@ -190,6 +157,10 @@ function createFrameset() {
  if (true) {
    document.log = log;
    top.log = log;
+   // These are needed for some calls to log() to work.
+   document.niceDate = niceDate;
+   document.toHtml = toHtml;
+   top.jsReflectorShow = jsReflectorShow;
    powerBarFrame.log = log;
    mainFrame.log = log;
   top.processJs = processJs;
@@ -481,20 +452,19 @@ function jsReflectorShow(objName) {
   html += "Go back to: ";
   for (var i=0;i<jsReflectorHistory.length;i++) {
    var prevObjName = jsReflectorHistory[i];
-   html += "<a href='javascript:top.jsReflectorShow(\"" + prevObjName + "\")'>" + prevObjName + "</a>";
+   html += "<a href='javascript:opener.jsReflectorShow(\"" + prevObjName + "\")'>" + prevObjName + "</a>";
    if (i < jsReflectorHistory.length - 1) {
     html += ", ";
    }
   }
   // var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
-  /** TODO: it seems single-quotes in the input get lost?  I was evaluating top.document.getElementsByTagName('SCRIPT').item(0) but could not click through to nextSibling. **/
-  var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:alert(\"blurred\"); if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
+  /** BUG TESTING: apostrophes in the input get lost.  should be fixed now but i left < and > unescaped :P **/
+  var editableObjName = "<INPUT type='text' size='30' value='" + objName.replace(/'/g,"&apos;") + "' onchange='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
   html += "<h3>Inspecting: " + trytypeof(obj) + " " + editableObjName + " = " + obj + "</h3>";
   // Ripped off the web, testing here:
-  html += "<blockquote>";
-  html += "<table cellpadding='0' cellspacing='0'>";
   var i = 0;
   var list = "";
+  var fnlist = "";
   for (var name in obj) { // BUG: Mozilla doesn't find the "document" in window objects!
    var globName = objName + "." + name;
    var value = "<neverset>";
@@ -507,7 +477,15 @@ function jsReflectorShow(objName) {
    } catch (e) {
     value = "<unattainable> (" + e + ")";
    }
-   var link = 'javascript:top.jsReflectorShow("' + globName + '")';
+   if (type=='function') {
+    // fnlist += " "+name;
+    // DONE We need partial escaping, not CGI, but to hide '"'s '<'s '>'s etc.
+    // fnlist += " <SPAN title=\""+escape(value)+"\">"+name+"</SPAN>";
+    // PFF powerbar is quite smelly - we could be using span.title :P
+    fnlist += " <SPAN title=\""+value.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+"\">"+name+"</SPAN>";
+    continue;
+   }
+   var link = 'javascript:opener.jsReflectorShow("' + globName + '")';
    list += "<tr>";
    list += "<td align='right'>" + type + "&nbsp;</td>";
    list += "<td align='center'><a href='" + link + "'>" + name + "</a></td>";
@@ -517,12 +495,15 @@ function jsReflectorShow(objName) {
    list += "\n"; // for sortLines
   }
   list = sortLines(list);
+  if (fnlist != "")
+   list = "Functions: " + fnlist + "<P/>\n" + list;
+  // html += "<blockquote>";
+  html += "<table cellpadding='0' cellspacing='0'>";
   html += list;
   html += "</table>";
-  html += "</blockquote>";
-   // BUG re. popup window: It's what we want really, but currently in Mozilla at least, subsequent calls to top.jsReflectorShow() from the new window can not find the function!
-   writeToWindow('jsReflector',html);
-  // writeToFrame(powerBarFrame,html);
+  // html += "</blockquote>";
+   // writeToFrame(mainFrame,html);
+   writeToFrame(powerBarFrame,html);
  } catch (e) {
   top.log(e);
  }
@@ -593,6 +574,7 @@ function getXPath(node) {
   }
   if (sibling == node) {
    thisCount = totalCount;
+   break;
   }
  }
  //// Extended info xpath: could also show name, id, other attribs if present:
@@ -627,6 +609,7 @@ function writeToFrame(frame,html) {
   frame.document.write(html);
   frame.document.write("</body></html>"); // these tags seemed sensible to me
   frame.document.close();
+ /*if (top.functions.length > */
  // } else {
   // try {
    // frame.location = "about:blank";
