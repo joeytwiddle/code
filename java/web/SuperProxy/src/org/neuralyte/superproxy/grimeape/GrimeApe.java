@@ -124,23 +124,27 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             }
             new SocketServer(port,new GrimeApe()).run();
             
-            SignalHandler watchForClose = new SignalHandler() {
-                public void handle(Signal sig) {
-                    saveData();
-                }
-            };
-            Observer observer = new Observer() {
-                public void update(Observable arg0, Object arg1) {
-                    saveData();
-                }
-            };
-            /* oldHandler = */
-            Signal.handle(new Signal("INT"), watchForClose);
-            Signal.handle(new Signal("HUP"), watchForClose);
-            Signal.handle(new Signal("QUIT"), watchForClose);
-            Signal.handle(new Signal("KILL"), watchForClose);
-            Signal.handle(new Signal(""+SignalHandler.SIG_DFL), watchForClose);
-            Signal.handle(new Signal(""+SignalHandler.SIG_IGN), watchForClose);
+            try {
+                SignalHandler watchForClose = new SignalHandler() {
+                    public void handle(Signal sig) {
+                        saveData();
+                    }
+                };
+                Observer observer = new Observer() {
+                    public void update(Observable arg0, Object arg1) {
+                        saveData();
+                    }
+                };
+                /* oldHandler = */
+                Signal.handle(new Signal("INT"), watchForClose);
+                Signal.handle(new Signal("HUP"), watchForClose);
+                Signal.handle(new Signal("QUIT"), watchForClose);
+                Signal.handle(new Signal("KILL"), watchForClose);
+                // Signal.handle(new Signal(""+SignalHandler.SIG_DFL), watchForClose);
+                // Signal.handle(new Signal(""+SignalHandler.SIG_IGN), watchForClose);
+            } catch (Throwable e) {
+                Logger.log(e);
+            }
         }
 
     }
