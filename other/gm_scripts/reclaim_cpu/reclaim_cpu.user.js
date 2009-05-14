@@ -13,7 +13,8 @@
 // @exclude        http://youtube.*/*
 // @exclude        http://*.youtube.*/*
 
-function() {
+//// Putting it neatly in a whole function() block broke it!
+// function() {
 
 ////// Config //////
 
@@ -25,7 +26,7 @@ var idleSeconds =  5;       // Page will cleanup if mouse has been outside it
 var detectWhenIdle = true;  // This is much more user-friendly, but adds a small
                             // processing overhead until the cleanup occurs.
 
-var reTrigger = true;       // Resume idle detection if the user restores a
+var reTrigger = false;      // Resume idle detection if the user restores a
                             // hidden element.
 
 var beAggressive = true;    // If set, will cleanup a newly loaded page if it
@@ -55,6 +56,8 @@ var beAggressive = true;    // If set, will cleanup a newly loaded page if it
                             // which automatically reload or change URL, e.g.
                             // to present a slideshow.  If so, increase
                             // idleSeconds.
+
+// TODO: var removeAllImages = true; // This might free up some memory.
 
 var stopJavascriptTimers = true;
 var removePlugins = true;
@@ -129,9 +132,16 @@ TODO: Provide way to disable from in-page.  Maybe you started listening to a
 video/audio plugin, and you do want to leave it running whilst working
 elsewhere.  (Little widget next to each plugin?)  (Would we ever want to leave
 JS running?  Well anyway in that case it might not be so disruptive to disable
-script and reload page).
+script and reload page).  I am turning reTrigger OFF for this reason!
 
-TODO: The beAggressive issue could be helped by adding a little message to the page: "User appears idle.  Closing plugins and stopping scripts in 7 seconds..."
+DONEish The beAggressive issue could be helped by adding a little message to
+the page: "User appears idle.  Closing plugins and stopping scripts in 7
+seconds..."  Well now showInfoInTitle can help with this.
+
+TODO: Is it silly to clear timers without also clearing events.  It would be
+very easy for a mouseover event to start a new timeout chain.  But how likely
+is that?  Weigh that against how destructive it would be to remove all events
+from a page you wanted to use.
 
 */
 
@@ -283,7 +293,6 @@ function initTimer() {
 
 		//// Detect when page is idle (no longer in focus), and cleanup then.
 
-		var haveSeenMouse = false;
 		var mouseHasLeft = false;
 		var timerRunning = false;
 		var lastSawMouse = new Date().getTime();
@@ -321,7 +330,6 @@ function initTimer() {
 		var watchMouseMove = function(e) {
          if (mouseHasLeft && showInfoInTitle) { document.title = document.title.replace(/^\[Idling\] /,""); }
 			mouseHasLeft = false;
-         haveSeenMouse = true;
 			lastSawMouse = new Date().getTime();
 			// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
 			// window.status = "(" + e.pageX + "," + e.pageY + ")";
@@ -348,7 +356,6 @@ function initTimer() {
             if (showInfoInTitle) { document.title = "[Idling] " + (document.title.replace(/^\[Idling\] /,"")); }
 			}
 			mouseHasLeft = true;
-         haveSeenMouse = true;
 			lastSawMouse = new Date().getTime();
 			// window.status = "Mouse has left the "+e.target.tagName;
 			// idleInfo.textContent = "Mouse has left the window.";
@@ -380,41 +387,4 @@ function initTimer() {
 }
 
 initTimer();
-
-
-
-////// TESTING //////
-
-/*
-
-//// This weak attempt to find the mouse coordinates was obviously doomed to failure.
-
-function fireEvent(element, eventName) {
-   evt = element[eventName];
-   if (typeof(evt) == "function") {
-      element[eventName]();
-   } else {
-      document.writeln("bah");
-   }
-}
-
-var evtTarget = unsafeWindow.document.documentElement.getElementsByTagName('BODY')[0];
-
-evtTarget.onclick = function (evt) {
-   if (evt) {
-      GM_log("Good got event!");
-   } else {
-      GM_log("BAD");
-   }
-};
-
-fireEvent(evtTarget,'onclick');
-
-evtTarget['onclick']();
-
-*/
-
-}();
-
-GM_log("this="+this+" self="+self);
 
