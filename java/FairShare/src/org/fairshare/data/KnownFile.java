@@ -1,5 +1,7 @@
 package org.fairshare.data;
 
+import org.neuralyte.hashing.Hash;
+
 
 public class KnownFile {
 

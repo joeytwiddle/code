@@ -14,8 +14,8 @@ import org.fairshare.FairShare;
 import org.fairshare.Logger;
 import org.fairshare.data.Database;
 import org.fairshare.data.FileRecord;
-import org.fairshare.data.SHA1Hash;
 import org.neuralyte.common.io.StreamUtils;
+import org.neuralyte.hashing.SHA1Hash;
 
 /**
  * This should really be run as a slow and gentle background thread.

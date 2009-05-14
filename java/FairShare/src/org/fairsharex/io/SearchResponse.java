@@ -3,7 +3,7 @@ package org.fairsharex.io;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.fairshare.data.Hash;
+import org.neuralyte.hashing.Hash;
 
 
 public class SearchResponse implements Response {

@@ -4,7 +4,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.fairshare.data.Hash;
+import org.neuralyte.hashing.Hash;
 
 import com.sun.org.apache.xalan.internal.xsltc.runtime.Hashtable;
 

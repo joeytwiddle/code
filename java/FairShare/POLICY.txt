@@ -1,3 +1,12 @@
+FairShare puts everything on the internet together, in one system ;p
+If you give it the hash of a file, it can tell you all the webpages that file appears on.  (note: there may be infinitely many on some websites)
+You can get a list of all known images, and sort them by category, date, etc.
+To achieve this massive database, we use a little bit of storage space on each client user.
+
+
+You can give FairShare a set of 20 paintings of sci-fi scenes, and ask for other images in
+that artist's portfolio, or just other images (paintings?) of sci-fi scenes.
+The bigger result could offer cutting down categories: digital vs brushed, manga vs non-manga
 
 
 
@@ -123,8 +132,7 @@ hits.
 The accumulation can be sent to the peer.  By looking at the 0-bins, he can
 say for sure that the peer does not have such-and-such-hash.
 
+Once a user has around 65,000 files, the bins become less useful but are less important.
 
-
-
-
+The bin bitmasks are useful for this: if A's mask && B's mask = 0, then they have no hashes/files/ratings in common, and are unable to recommend to each other.
 
