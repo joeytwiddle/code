@@ -75,6 +75,7 @@
 		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This was my first Bookmarklet which loads an external javascript file.</LI> -->
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
 		 <LI>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it's easy to add extra tags.)</LI>
+		 <LI class='todo'>Shouldn&quot; it be collapsing all the text after each bookmarklet on this page?  (They are in blockquotes.)  Is it missing them because they contain so little, or because we have done the parent and lost track of the child?</LI>
 		 <LI class='todo'>Bug: At the moment this tool only works well if the element we fold up has a short text-heading appearing just before it.  Not all pages are like this, so we need to adapt the algorithm to work over a wider range of pages.</LI>
 		 <!-- <LI class='todo'>Bug: This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the block does have a header, and we don&quot;t use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI> -->
 		 <LI class='todo'>Todo: We could even create blocks to compress where there was no structure.  E.g. create a block between two HR tags, provided the text content in between is large.  Or in fact squash any blocks containing text, if the text is >=15% of the parent&apos;s text.</LI>
@@ -299,10 +300,88 @@
 		<LI><A target="_self" href="javascript:(function(){
 			window.open('http://www.google.com/search?as_lq='+escape(document.location),'_blank');
 		})();">Google for Pages that Link to This</A> (pops up in a new tab/window)</LI>
+		<BLOCKQUOTE>
+			<P>Finds other pages on the web which link to this page.</P>
+		</BLOCKQUOTE>
 	</P>
-	<BLOCKQUOTE>
-		<P>Finds other pages on the web which link to this page.</P>
-	</BLOCKQUOTE>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			var style = document.createElement('STYLE');
+			style.innerHTML = '.favicon { padding-right: 4px; vertical-align: middle; }';
+			document.getElementsByTagName('head')[0].appendChild(style);
+			for (var i=0;i<document.links.length;i++) {
+				var link = document.links[i];
+				if (link.href.match('^javascript:') || link.href.match('^#')) {
+					continue;
+				}
+				var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
+				if (host == document.location.host) {
+					continue;
+				}
+				var img = document.createElement('IMG');
+				img.src = 'http://'+host+'/favicon.ico';
+				/*img.width = '16';
+				img.height = '16';*/
+				img.className = 'favicon';
+				link.parentNode.insertBefore(img,link);
+			}
+		})();">Faviconize External Links</A></LI>
+		<BLOCKQUOTE>
+			<P>Adds the favicon of the host server next to every external link on the page.</P>
+			<P>I was recommended to consider also host/favicon.png but I saw none of these so stuck with .ico.</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			function killFonts(node) {
+				if (node.tagName == 'FONT' || node.tagName == 'font') {
+					if (node.face) {
+						/* for (var child in node.childNodes) {
+							node.parentNode.insertBefore(child,node);
+						}
+						node.parentNode.removeChild(node); */
+						node.face = '';
+					} /* otherwise leave the tag alone - it is harmless. */
+				}
+				if (node.style) {
+					if (node.style.font) {
+						node.style.font = '';
+					}
+					if (node.style.fontFamily) {
+						node.style.fontFamily = '';
+					}
+				}
+				for (var child in node.childNodes) {
+					killFonts(child);
+				}
+			}
+			killFonts(document.body);
+			/* check css... */
+			if (document.styleSheets) {
+				for (var i=0;i<document.styleSheets.length;i++) {
+					var rules = document.styleSheets[i].cssRules;
+					for (var j=0;j<rules.length;j++) {
+						var rule = rules[j];
+						if (rule.style) {
+							if (rule.style.font) {
+								rule.style.font = '';
+							}
+							if (rule.style.fontFamily) {
+								rule.style.fontFamily = '';
+							}
+						}
+					}
+				}
+			}
+			window.document.status = 'All fonts cleared.';
+		})();">Kill All Fonts</A></LI>
+		<BLOCKQUOTE>
+			<P>For when you would prefer the fonts you specified in your browser over than the ones specified by the page.</P>
+			<LI class='todo'>Todo: Convert known faces to sensible choice.  E.g. if the document specifies a fixed-width font we recognise, then convert the font to our favourite fixed-width font, and not a serif font.</LI>
+		</BLOCKQUOTE>
+	</P>
 
 </BLOCKQUOTE>
 
@@ -350,7 +429,13 @@
 				/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
 				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					node.title = xpath; /* this can break things if done on the wrong elements! */
+					var attrSum = '';
+					for (var i=0;i<node.attributes.length;i++) {
+						var attr = node.attributes[i];
+						if (attr.name == 'title') { continue; }
+						attrSum += ' | - ' + attr.name + '=' + attr.value + '\n';
+					}
+					node.title = xpath + '\n' + /*escapeHTML*/(attrSum) + '';
 					if (node.style) {
 						node.style.backgroundColor = '#' + getColorFor(simplexpath);
 					}
@@ -386,6 +471,7 @@
 					}
 					if (sibling == node) {
 						thisCount = totalCount;
+						break;
 					}
 				}
 				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
@@ -396,6 +482,7 @@
 			<P>Colours the background of every element in the document according to its path.</P>
 			<P>Displays the XPath of the focused element as a popup (sets title attribute).</P>
 			<P>Useful when using Nuke, to find the element you really need to kill. <SPAN class='todo'>Todo: Include Highlight Structure in Nuke automatically.</SPAN></P>
+			<LI class='done'>More useful for developers: as well as showing the XPath, we now also show the attributes of the element in its title/popup.</LI>
 			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 			<LI class='todo'>Can be sluggish to run on the heavier DOMs.</LI>
 			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn't highlight newly entered elements, it won't have to unhighlight them on the way out.</LI>
@@ -444,6 +531,7 @@
 					}
 					if (sibling == node) {
 						thisCount = totalCount;
+						break;
 					}
 				}
 				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
@@ -499,6 +587,7 @@
 					}
 					if (sibling == node) {
 						thisCount = totalCount;
+						break;
 					}
 				}
 				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
@@ -792,7 +881,8 @@
 			}
 		})();">Widen Tables etc.</A></LI>
 		<BLOCKQUOTE>
-			<P>Attempts to release the CSS constraints of pages with fixed width, so the page will expand to fill your screen.</P>
+			<P>Releases some CSS and HTML width constraints, so fixed-width pages will expand horizontally to fill your screen.</P>
+			<P class='todo'>It is quite hard to construct an algorithm that will work on a wide range of pages.  It is easy to destroy CSS that was preventing overlapping for example.  I don&apos;t know enough about the different ways CSS is used to really attempt this properly.  My primitive attempt remains here until I find a better one!</P>
 			<LI class='done'>Done: Apart from tables, there are divs with fixed width, controlled by their css style.  e.g. &lt;div style=&quot;width: 710px;&quot;&gt;</LI>
 			<LI class='done'>Seems we must check all the CSS styles, not only those associated with elements.</LI>
 			<LI class='done'>Current implementation only works on widths which have been given specified width between 500 and 1024px.</LI>
@@ -878,83 +968,6 @@
 			document.documentElement.getElementsByTagName('HEAD')[0].appendChild(newScript);
 		})();">Friendly Preview</A></LI>
 		<BLOCKQUOTE>
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<LI><A href="javascript:(function(){
-			function killFonts(node) {
-				if (node.tagName == 'FONT' || node.tagName == 'font') {
-					if (node.face) {
-						/* for (var child in node.childNodes) {
-							node.parentNode.insertBefore(child,node);
-						}
-						node.parentNode.removeChild(node); */
-						node.face = '';
-					} /* otherwise leave the tag alone - it is harmless. */
-				}
-				if (node.style) {
-					if (node.style.font) {
-						node.style.font = '';
-					}
-					if (node.style.fontFamily) {
-						node.style.fontFamily = '';
-					}
-				}
-				for (var child in node.childNodes) {
-					killFonts(child);
-				}
-			}
-			killFonts(document.body);
-			/* check css... */
-			if (document.styleSheets) {
-				for (var i=0;i<document.styleSheets.length;i++) {
-					var rules = document.styleSheets[i].cssRules;
-					for (var j=0;j<rules.length;j++) {
-						var rule = rules[j];
-						if (rule.style) {
-							if (rule.style.font) {
-								rule.style.font = '';
-							}
-							if (rule.style.fontFamily) {
-								rule.style.fontFamily = '';
-							}
-						}
-					}
-				}
-			}
-			window.document.status = 'All fonts cleared.';
-		})();">Kill All Fonts</A></LI>
-		<BLOCKQUOTE>
-			<P>For when you would prefer the fonts you specified in your browser over than the ones specified by the page.</P>
-			<LI class='todo'>Todo: Convert known faces to sensible choice.  E.g. if the document specifies a fixed-width font we recognise, make sure we convert the font to our favourite fixed-width font, and not a serif font.</LI>
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<LI><A href="javascript:(function(){
-			var style = document.createElement('STYLE');
-			style.innerHTML = '.favicon { padding-right: 4px; vertical-align: middle; }';
-			document.getElementsByTagName('head')[0].appendChild(style);
-			for (var i=0;i<document.links.length;i++) {
-				var link = document.links[i];
-				if (link.href.match('^javascript:') || link.href.match('^#')) {
-					continue;
-				}
-				var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
-				if (host == document.location.host) {
-					continue;
-				}
-				var img = document.createElement('IMG');
-				img.src = 'http://'+host+'/favicon.ico';
-				img.width = '16';
-				img.height = '16';
-				img.className = 'favicon';
-				link.parentNode.insertBefore(img,link);
-			}
-		})();">Faviconize External Links</A></LI>
-		<BLOCKQUOTE>
-			...
 		</BLOCKQUOTE>
 	</P>
 
@@ -1049,6 +1062,8 @@
 	<P>Add Kill Column to Sort Table.</P>
 
 	<P>Show Web 2.0: Show which elements have special events such as mouseOver etc.  In fact expose all elements with out-of-the-usual properties.  Limit to: javascript, css, URLs, other, ...</P>
+
+	<P>Some of these bookmarklets are setting events on <I>every element in the DOM</I> in order to capture them (and then having to do tricks to only capture the top event fired!).  I believe using addEventListener() should allow us to capture all events, and the element on which each event occurred on.</P>
 
 </BLOCKQUOTE>
 </DIV>
