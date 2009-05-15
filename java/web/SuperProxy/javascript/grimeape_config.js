@@ -190,8 +190,9 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					var toggleScript = (function(evt) {
 							// scriptData.enabled = checkbox.checked;
 							scriptData.enabled = !scriptData.enabled;
-							GrimeApeConfig.save();
 							checkbox.checked = scriptData.enabled;
+							GrimeApeConfig.save();
+							Menu.showHideMenu();
 					});
 
 					checkbox.onclick = toggleScript;

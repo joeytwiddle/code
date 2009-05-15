@@ -217,7 +217,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         request.removeHeader("Keep-Alive");
         request.setHeader("Connection", "close");
         request.setTopLine(request.getTopLine().replaceAll("HTTP/1.1$", "HTTP/1.0"));
-        Logger.log("New top line = "+request.getTopLine());
+        // Logger.log("New top line = "+request.getTopLine());
         
         //// Check for special requests directed at GrimeApe, not the web.
         WebRequest wreq = new WebRequest(request);
