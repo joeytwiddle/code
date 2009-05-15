@@ -22,8 +22,10 @@ import org.neuralyte.common.FileUtils;
 import org.neuralyte.common.io.StreamUtils;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
+import org.neuralyte.httpdatatools.HttpRequestBuilder;
 import org.neuralyte.httpdatatools.HttpResponseBuilder;
 import org.neuralyte.simpleserver.SocketServer;
+import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
 import org.neuralyte.superproxy.HTMLDOMUtils;
 import org.neuralyte.superproxy.PluggableHttpRequestHandler;
 import org.neuralyte.webserver.WebRequest;
@@ -102,51 +104,66 @@ public class GrimeApe extends PluggableHttpRequestHandler {
      * /gRiMeApE/javascript/<script_name> to get a core script
      * /gRiMeApE/userscripts/<script_name> to get a userscript
      * e.g. /gRiMeApE/userscripts/config.js
+     * /gRiMeApE/setValue?name=...&value=...
+     * /gRiMeApE/getValue?name=...
+     * OLD: /gRiMeApE/log?line=...
+     * Request to other paths should produce an error, returning nothing useful.
      */
     
     static String topDir = ".";
+    static File userscriptsDir = new File(topDir,"userscripts");
+    /*
     static String coreScriptsDir = "./javascript/";
     static String userscriptsDir = "./userscripts/";
+    */
     
     // TODO: This should not be a global, but associated with user/session.
     public static Map<String,String> gmRegistry = new Hashtable<String,String>();
     // TODO: Also it doesn't work in the daemon, because it does not persist on restart.
 
     public static void main(String[] args) throws Exception {
-        loadData();
+        
         if (args.length>0 && args[0].equals("--ind")) {
             doDaemonStreaming();
         } else {
+            
             // I use 7152 for production, 7153 for dev. 
             int port = 7152; 
             if (args.length>=2 && args[0].equals("--port")) {
                 port = Integer.parseInt(args[1]);
             }
+
+            loadData();
+            setupWatchForClose();
+
             new SocketServer(port,new GrimeApe()).run();
             
-            try {
-                SignalHandler watchForClose = new SignalHandler() {
-                    public void handle(Signal sig) {
-                        saveData();
-                    }
-                };
-                Observer observer = new Observer() {
-                    public void update(Observable arg0, Object arg1) {
-                        saveData();
-                    }
-                };
-                /* oldHandler = */
-                Signal.handle(new Signal("INT"), watchForClose);
-                Signal.handle(new Signal("HUP"), watchForClose);
-                Signal.handle(new Signal("QUIT"), watchForClose);
-                Signal.handle(new Signal("KILL"), watchForClose);
-                // Signal.handle(new Signal(""+SignalHandler.SIG_DFL), watchForClose);
-                // Signal.handle(new Signal(""+SignalHandler.SIG_IGN), watchForClose);
-            } catch (Throwable e) {
-                Logger.log(e);
-            }
         }
 
+    }
+
+    private static void setupWatchForClose() {
+        try {
+            SignalHandler watchForClose = new SignalHandler() {
+                public void handle(Signal sig) {
+                    saveData();
+                }
+            };
+            Observer observer = new Observer() {
+                public void update(Observable arg0, Object arg1) {
+                    saveData();
+                }
+            };
+            /* oldHandler = */
+            Signal.handle(new Signal("INT"), watchForClose);
+            Signal.handle(new Signal("HUP"), watchForClose);
+            Signal.handle(new Signal("QUIT"), watchForClose);
+            Signal.handle(new Signal("KILL"), watchForClose);
+            // Signal.handle(new Signal(""+SignalHandler.SIG_DFL), watchForClose);
+            // Signal.handle(new Signal(""+SignalHandler.SIG_IGN), watchForClose);
+        } catch (Throwable e) {
+            Logger.warn("Problem setting up auto-save on close: "+e);
+        }
     }
 
     public static void saveData() {
@@ -162,10 +179,20 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     }
     
     public static void loadData() throws Exception {
-        gmRegistry = (Map<String,String>)Nap.fromFile("grimeape_registry.nap");
+        try {
+            gmRegistry = (Map<String,String>)Nap.fromFile("grimeape_registry.nap");
+            Logger.log("Loaded "+gmRegistry.size()+" keys from file.");
+        } catch (Exception e) {
+            Logger.warn("Could not load registry: "+e);
+        }
+        if (gmRegistry == null) {
+            gmRegistry = new Hashtable<String,String>();
+        }
     }
 
-    public static void doDaemonStreaming() throws IOException {
+    public static void doDaemonStreaming() throws Exception {
+        
+        /** Argh!  First thing we must do is stop logging from going to client output! **/
         OutputStream realOut = System.out;
         PrintStream logOut = new PrintStream(
                 new FileOutputStream("/tmp/grimeaped.log",true)
@@ -176,16 +203,21 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         // System.setErr(null);
         System.setOut(logOut);
         System.setErr(logOut);
+
+        loadData();
         GrimeApe ga = new GrimeApe();
         ga.handleRequest(System.in, realOut); // Send response to real out
+        saveData();
     }
         
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
 
-        request.removeHeader("Proxy-Connection"); // Most proxies should do this, i.e. not pass it to the remote host
+        request.removeHeader("Proxy-Connection"); // Most proxies will want to do this, i.e. not pass this header to the remote host
         // Doing these because SimpleProxy can't yet handle keepalive :P
         request.removeHeader("Keep-Alive");
         request.setHeader("Connection", "close");
+        request.setTopLine(request.getTopLine().replaceAll("HTTP/1.1$", "HTTP/1.0"));
+        Logger.log("New top line = "+request.getTopLine());
         
         //// Check for special requests directed at GrimeApe, not the web.
         WebRequest wreq = new WebRequest(request);
@@ -210,6 +242,25 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         // HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
         HttpResponse response = super.handleHttpRequest(request);
         
+        /** TODO: I think we have a bug here, might be more common that just GrimeApe.
+         * If we *didn't* change HTTP/1.1 to 1.0 earlier, and receive o 404 Not Found
+         * then the connection seems to stay open for ages.
+         * I think this may be because some part of the system is expecting a contentStream.
+         */
+
+        /** Actually that bug might not exist.  The problem is the browser was spinning the
+         * "loading" icon, although it seemed all request had finished.
+         * I think the problem there was that I had broken gmRegistry==null, cause a NPE,
+         * so GM_setValue requests were not returning a valid response.
+         * Therefore...
+         */
+        
+        /** @todo BUG
+         * If an exception(error/throwable) is thrown, should catch it and at least return
+         * a valid response, "391.5 ERROR" or whatever.
+         * (Well usually we should.  Maybe attempted access violations we shouldn't even. :P ) 
+         */
+        
         maybeAddScripts(response);
         
         return response;
@@ -222,47 +273,44 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         // We know args[1] == "_gRiMeApE_"
         String commandDir = args[2];
         // Logger.warn("args[1] = " + args[1]);
+        
         if (
-                /* Allowed paths for file request: */
                 commandDir.equals("javascript")
                 || commandDir.equals("userscripts")
                 || commandDir.equals("images")
         ) {
-            /** @todo Security danger of "../../../../etc/passwd" in args3,4,... !
+            /* For these paths we simply serve the requested file. */
+            /** DONE I think: Security danger of "../../../../etc/passwd" in args3,4,... !
              * (Although Konqueror won't usually let you do this, other things might.) 
             **/
-            // Return script as webserver
-            // Before we factor this out to another method:
-            // What headers should we build?
-            // And do they need to know the request headers in order to be generated?
+
             String fileBeyond = wreq.getPath().replaceAll("^/[^/]*/[^/]*/*", ""); // aka args[3] onward, joined again.
-            String validScriptDir = topDir + "/" + commandDir; // We can trust commandDir, we checked it.
-            File scriptFile = new File(validScriptDir,fileBeyond);
-            if (!scriptFile.toString().startsWith(validScriptDir.toString())) {
-                throw new Error("Attempted Security Breach Detected! Requested file \""+scriptFile+"\" is not an ancestor of \""+validScriptDir+"\".");
-            }
+
+            // Check security by checking requested dir does lie beneath validScriptDir.
+            File jailDir = new File(topDir,commandDir); // We can trust commandDir, we checked it.
+            File requestedFile = new File(jailDir,fileBeyond);
+            assertFileIsBelow(requestedFile, jailDir);
             // File checkParent = scriptFile.getParentFile();
-            return HttpResponseBuilder.makeFileHttpResponse(scriptFile,"text/javascript",request);
+            return HttpResponseBuilder.makeFileHttpResponse(requestedFile,"text/javascript",request);
             
         } else if (commandDir.equals("log")) {
-            // Should be tool for this pff.
-            String cgi = wreq.getCGIString();
-            // argh String logData = cgi.replaceAll("^.*data=([^&]*).*","\\1");
-            String logData = cgi.replaceAll("^.*data=", "");
+            // We don't use this, it's very slow to send all logging to the server.
+            // Now we prefer to keep it on the client and display it with Javascript.
+            String logData = wreq.getParam("data");
             logData = URLDecoder.decode(logData);
             Logger.info("GM_LOG: "+logData);
-            // return ""; // "\/\*thanksforlogging\*\/"
-            // throw new Error("Just deal with it.");
-            // return failedHttpResponse("too lazy to respond empty"); // DONE
-            return HttpResponseBuilder.stringHttpResponse("text/javascript","<NODATA/>");
+            return noData();
 
         } else if (commandDir.equals("setValue")) {
             String name = wreq.getParam("name");
             String value = wreq.getParam("value");
             Logger.info("GM_SETVALUE: "+name+" = \""+value+"\"");
             gmRegistry.put(name,value);
-            // saveData();
-            return HttpResponseBuilder.stringHttpResponse("text/javascript","<NODATA/>");
+            // @todo Occasional saves - remove this later.
+            if (Math.random() < 0.1) {
+                saveData();
+            }
+            return noData();
             
         } else if (commandDir.equals("getValue")) {
             String name = wreq.getParam("name");
@@ -273,25 +321,68 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             String response = ""+value;
             // Or return JS (if request was made by adding new <SCRIPT> to doc):
             if (type.equals("js")) {
+                // We don't really use this, although it is an alternative response method.
+                // The calling Javascript must wait on a Timer.
                 response =  "window.GM_getValueResult = " + (
                         value == null
                         ? "null"
                                 : "\"" + URLEncoder.encode(value)+"\""
                 ) + ";";
             } else {
-                // Konqueror was fine receiving just a String, but Firefox needs
-                // something well-formed:
-                // sob
+                // Konqueror was happy receiving just the String, but Firefox needs
+                // something well-formed... // sob
                 response = "<RESPONSE>" + URLEncoder.encode(response.replaceAll("\\+","%2b")) + "</RESPONSE>";
-                // We don't need to escape the middle 'cos we just trim the ends off text style. ;)
             }
-            // In the end we will use only 1 of the techniques, but for testing I want both.
-            return HttpResponseBuilder.stringHttpResponse("text/javascript",response);
+            return HttpResponseBuilder.stringHttpResponse("text/xml",response);
+
+        } else if (commandDir.equals("saveAll")) {
+            saveData();
+            return noData();
+
+        } else if (commandDir.equals("clearAll")) {
+            gmRegistry.clear();
+            saveData();
+            return noData();
+
+        } else if (commandDir.equals("installUserscript")) {
+            String name = wreq.getParam("name");
+            String fsName = name.toLowerCase().replaceAll(" ", "_");
+            String url = wreq.getParam("url");
+            String contents = wreq.getParam("contents");
+            File outFile = new File(userscriptsDir,fsName+"/"+fsName+".user.js");
+            assertFileIsBelow(outFile,userscriptsDir);
+            
+            HttpRequest req = HttpRequestBuilder.getResource(url);
+            HttpResponse res = HTTPStreamingTools.passRequestToServer(req);
+            outFile.getParentFile().mkdir();
+            try {
+                OutputStream out = new FileOutputStream(outFile);
+                StreamUtils.pipeStream(res.getContentAsStream(), out);
+            } catch (Exception e) {
+                Logger.error(e);
+                return HttpResponseBuilder.stringHttpResponse("text/xml","<%!CDATA>Failure</%CDATA>");
+            }
+            return HttpResponseBuilder.stringHttpResponse("text/xml","<%!CDATA>Success!</%CDATA>");
             
         } else {
             Logger.error("Bad request: "+wreq.getPath());
             throw new Error("Bad request: "+wreq.getPath());
         }
+        
+    }
+    
+    public static void assertFileIsBelow(File suspect, File parent) {
+        if (!fileIsBelow(suspect, parent)) {
+            throw new Error("Attempted Security Breach Detected! Requested file \""+suspect+"\" is not an ancestor of \""+parent+"\".");
+        }
+    }
+
+        public static boolean fileIsBelow(File suspect, File parent) {
+        return (suspect.toString().startsWith(parent.toString()));
+    }
+
+    private HttpResponse noData() {
+        return HttpResponseBuilder.stringHttpResponse("text/xml","<NODATA>OK</NODATA>");
     }
 
     private void maybeAddScripts(HttpResponse response) throws IOException {
@@ -312,13 +403,13 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 Logger.log("Doing injection at index "+i);
                 String[] scriptsToInject = {
                         "javascript/grimeape_greasemonkey_compat.js",
-                        "javascript/test.js",
+                        // "javascript/test.js",
                         "javascript/grimeape_config.js",
-                        "userscripts/faviconizegoogle/faviconizegoogle.user.js",
-                        "userscripts/track_history/track_history.user.js",
-                        "userscripts/alert_watcher/alert_watcher.user.js",
-                        "userscripts/reclaim_cpu/reclaim_cpu.user.js",
-                        "userscripts/auto_highlight_text_on_a/auto_highlight_text_on_a.user.js",
+                        // "userscripts/faviconizegoogle/faviconizegoogle.user.js",
+                        // "userscripts/track_history/track_history.user.js",
+                        // "userscripts/alert_watcher/alert_watcher.user.js",
+                        // "userscripts/reclaim_cpu/reclaim_cpu.user.js",
+                        // "userscripts/auto_highlight_text_on_a/auto_highlight_text_on_a.user.js",
                 };
                 for (String script : scriptsToInject) {
                     // String srcURL = "/_gRiMeApE_/javascript/test.js";
@@ -331,77 +422,6 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             // We must reset it after streaming it, even if we didn't change it.
             response.setContent(responseString.toString());
         }
-    }
-
-    /** @deprecated GrimeApe converted from DocumentProcessor to HttpRequestHandler  **/
-    public Document injectScripts(Document document) {
-        Logger.info("DocumentURI = " + document.getBaseURI());
-        List<Node> tags = HTMLDOMUtils.getElementsByTagName(document, "A");
-        Logger.info("  has " + tags.size() + " links.");
-
-        CoreDocumentImpl core = (CoreDocumentImpl) document;
-        /*
-         * Node body = DOMUtils.getChildNodesMeetingCondition(document, new
-         * DOMUtils.NodeCondition() { public boolean metBy(Node n) { return
-         * (n.getNodeName().equalsIgnoreCase("BODY")); } } )[0];
-         */
-        // Node body = HTMLDOMUtils.getElementsByTagName(document,
-        // "BODY").get(0);
-        Node body = HTMLDOMUtils.getFirstElementWithTagName(document, "BODY");
-        if (body == null) {
-            Logger.warn("Cannot add script to " + document
-                    + " - it has no body!");
-        } else {
-
-            Logger.info("=> Adding scripts!");
-
-            /*
-            // String toAdd =
-            // "<script language=\"JavaScript\" src=\"http://hwi.ath.cx/powerbar/add_powerbar.js\"></script>\n";
-            String toAdd = "<script language=\"JavaScript\"  type=\"text/javascript\" src=\"http://hwi.ath.cx/powerbar/add_powerbar.js\"></script>\n";
-            TextImpl textNode = new org.apache.xerces.dom.TextImpl(core, toAdd);
-            // textNode.setData(toAdd);
-            body.appendChild(textNode);
-            */
-
-            File scriptsDir = new File("userscripts");
-            for (File scriptFile : scriptsDir.listFiles()) {
-                if (scriptFile.getName().endsWith(".user.js")) {
-                    try {
-                        String script = FileUtils
-                                .readStringFromFile(scriptFile);
-                        
-                        /*
-                        if (script.contains("XPathResult")) {
-                            Logger
-                                    .warn("Script "
-                                            + scriptFile.getName()
-                                            + " will probably fail in Konqueror/GrimeApe - it uses 'XPathResult'.");
-                        }
-
-                        TextImpl textNode = TextImpl(core,
-                                "<SCRIPT type=\"text/javascript\">"
-                                + '\n' + script + '\n'
-                                + "</SCRIPT>\n"
-                        );
-                        // textNode.setData("<SCRIPT language=\"javascript\">" +
-                        // script + "</SCRIPT>\n");
-                        body.appendChild(textNode);
-                        */
-                        
-                        String srcURL = "/_gRiMeApE_/userscript/" + scriptFile.getName(); // +"?sessionid="+sessionID;
-                        TextImpl textNode = new TextImpl(core,"<SCRIPT type='text/javascript' src='" + srcURL + "'/>\n");
-                        body.appendChild(textNode);
-
-                    } catch (Exception e) {
-                        Logger.error(e);
-                    }
-                }
-            }
-
-        }
-
-        return document;
     }
 
 }

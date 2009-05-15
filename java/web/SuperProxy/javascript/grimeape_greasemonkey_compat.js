@@ -79,6 +79,12 @@ function cgiUnescape(val) {
 	return unescape(val.replace(/\+/g,' '));
 }
 
+// CONSIDER: We could queue up GM_setValue requests, and flush them in a
+// separate thread.  This might speed up some scripts (no stalling for return),
+// and by sending batches we might reduce HTTP traffic.  We must ensure not to
+// break order, and we must stall GM_getValue requests until queue is flushed.
+// Having our own setValue/getValue queue might actually improve synchronization
+// over multiple JS threads.
 function GM_setValue(name,value) {
 	// TODO
 	if (value==undefined || value==null)
@@ -90,6 +96,7 @@ function GM_setValue(name,value) {
 	var client = new XMLHttpRequest();
 	client.open('GET',url,false);
 	client.send(null);
+	GM_log(new Date()+' GM_setValue("'+name+'","'+value+'") responded with "'+client.responseText+'".');
 	return null;
 }
 
@@ -154,35 +161,40 @@ if (!document.evaluate) {
 
 // Awhh hell Konqueror doesn't even have uneval().
 
+this.ga_uneval = function (obj) {
+	if (obj==undefined) { return "undefined"; }
+	// Still this==window: GM_log("TODO: uneval() (this="+this+" self="+self+")");
+	// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
+	if (typeof(obj)=='string') {
+		return '"' + obj.replace(/"/g,'\\"') + '"';
+	} else if (typeof(obj)=='number') {
+		return ""+obj;
+	} else if (typeof(obj)=='object') {
+		// ({x:"fart", 1:"pants"})
+		var arrayString = "";
+		for (var key in obj) {
+			var val = obj[key];
+			// GM_log("Got key "+key+" and val "+val);
+			if (arrayString!="") arrayString += ", ";
+			arrayString += uneval(key)+":"+uneval(val);
+		}
+		arrayString = "({" + arrayString + "})";
+		// GM_log("Returning arrayString="+arrayString);
+		return arrayString;
+	} else if (typeof(obj)=='function') {
+		// return (""+obj).replace(/\n/g,''); // This is quite similar to what FF produces
+		return '"NO_FUNKTIONS"';
+	} else if (typeof(obj)=='boolean') {
+		return ""+obj;
+	} else {
+		GM_log("<WARNING!> uneval does not know type "+typeof(obj));
+		return ""+obj+" <DUNNO_TYPE_"+typeof(obj)+">";
+	}
+}
+
 // if (!uneval) { /* Testing existence this way fails with "No such var". */
 if (!this.uneval) {
-	this.uneval = function (obj) {
-		if (obj==undefined) { return "undefined"; }
-		// Still this==window: GM_log("TODO: uneval() (this="+this+" self="+self+")");
-		// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
-		if (typeof(obj)=='string') {
-			return '"' + obj.replace(/"/g,'\\"') + '"';
-		} else if (typeof(obj)=='number') {
-			return ""+obj;
-		} else if (typeof(obj)=='object') {
-			// ({x:"fart", 1:"pants"})
-			var arrayString = "";
-			for (var key in obj) {
-				var val = obj[key];
-				// GM_log("Got key "+key+" and val "+val);
-				if (arrayString!="") arrayString += ", ";
-				arrayString += uneval(key)+":"+uneval(val);
-			}
-			arrayString = "({" + arrayString + "})";
-			// GM_log("Returning arrayString="+arrayString);
-			return arrayString;
-		} else if (typeof(obj)=='function') {
-			return (""+obj).replace(/\n/g,'');
-		} else {
-			GM_log("<WARNING!> uneval does not know type "+typeof(obj));
-			return "DUNNO_TYPE_"+typeof(obj);
-		}
-	}
+	this.uneval = this.ga_uneval;
 }
 
 // TODO: Remove all the TODOs from this file.  We know the whole file is TODO.
