@@ -13,7 +13,7 @@ results by writing them invisibly into the document somewhere for retrieval.
 
 TODO:
 document.evaluate (XPath tool available in Mozilla, often used in userscripts)
-GM_xmlhttprequest or whatever it's called.
+GM_xmlhttpRequest or whatever it's called.
 
 */
 
@@ -87,16 +87,26 @@ function cgiUnescape(val) {
 // over multiple JS threads.
 function GM_setValue(name,value) {
 	// TODO
+	// Konqueror appears to fail (or take forever) if params.length exceeds 30,000.  Needs batching!  :f
+	// Hmm Firefox was going very slow about 40k also.  =/  Stream timed out when it completed.  Are we blocking in a buffer somewhere?
 	if (value==undefined || value==null)
 		value = "";
-	var url = '/_gRiMeApE_/setValue?name='+cgiEscape(name)+'&value='+cgiEscape(value);
+	var url = '/_gRiMeApE_/setValue';
+	var params = 'name='+cgiEscape(name)+'&value='+cgiEscape(value);
 	// document.writeln('<SCRIPT type="text/javascript" src="'+url+'"/>');
 	//// Doing it the above way in Konqueror, means the request does not actuall happen until *after* this thread has finished.
 	//// This way will set immediately:
-	var client = new XMLHttpRequest();
-	client.open('GET',url,false);
-	client.send(null);
-	GM_log(new Date()+' GM_setValue("'+name+'","'+value+'") responded with "'+client.responseText+'".');
+	var request = new XMLHttpRequest();
+	// request.open('GET',url+'?'+params,false);
+	request.open('POST',url,false);
+	request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+	request.setRequestHeader("Content-length", params.length);
+	request.setRequestHeader("Connection", "close");
+	request.send(params);
+	// request.send('\n');
+	// request.send('\n');
+	// GM_log(new Date()+' GM_setValue("'+name+'","'+value+'") responded with "'+request.responseText+'".');
+	GM_log(new Date()+' GM_setValue("'+name+'",{"'+value.length+'"}) responded with "'+request.responseText+'".');
 	return null;
 }
 
@@ -117,18 +127,18 @@ function GM_getValue(name,defaultValue) {
 	else
 		return defaultValue;
 	*/
-	var client = new XMLHttpRequest();
-	client.open('GET',url,false);
-	client.send(null);
-	// GM_log("GM_getValue(\""+name+"\") returned: "+client.responseText);
-	// return client.responseText; // this worked fine for konqueror ;p
-	return cgiUnescape(unescape(client.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,''))); // mozilla
+	var request = new XMLHttpRequest();
+	request.open('GET',url,false);
+	request.send(null);
+	// GM_log("GM_getValue(\""+name+"\") returned: "+request.responseText);
+	// return request.responseText; // this worked fine for konqueror ;p
+	return cgiUnescape(unescape(request.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,''))); // mozilla
 	/*
 	var waitUntil = new Date().getTime() + 5*1000;
 	for (var i=0;i<100000;i++) {
-		if (client.responseText!=undefined && client.responseText!=null) {
-			GM_log("GM_getValue() Client responded at loop "+i+" with "+client.responseText);
-			return client.responseText;
+		if (request.responseText!=undefined && request.responseText!=null) {
+			GM_log("GM_getValue() Client responded at loop "+i+" with "+request.responseText);
+			return request.responseText;
 		}
 		// if (window.GM_getValueResult) {
 			// GM_log("GM_getValue() Client responded at loop "+i+" with "+window.GM_getValueResult);
@@ -140,8 +150,8 @@ function GM_getValue(name,defaultValue) {
 			return undefined;
 		}
 	}
-	// GM_log("Got response: "+client.responseText);
-	// return client.responseText;
+	// GM_log("Got response: "+request.responseText);
+	// return request.responseText;
 	GM_log("GM_getValue() WARNING! Loop gave up before time did!");
 	return undefined;
 	*/
@@ -197,8 +207,61 @@ if (!this.uneval) {
 	this.uneval = this.ga_uneval;
 }
 
+// TODO
+// ga_xmlhttpRequest = function (method,url,headers,data,onload,onerror,onreadystatechange) {
+ga_xmlhttpRequest = function (req) {
+	GM_log("xmlhttpRequest: "+req);
+	var responseState;
+	try {
+		// Security:
+		/*
+		if (req.url.startsWith("http://") || req.url.startsWith("https://") || req.url.startsWith("ftp://")) {
+		} else {
+			GM_log("Making illegal request scheme: "+req.url);
+			return;
+		}
+		// Er lol that's GM security.  I doubt our proxy can access Mozilla's chrome:// scheme :P
+		*/
+		var url = '/_gRiMeApE_/xmlhttpRequest?url='+cgiEscape(req.url); // +'&data='+cgiEscape(req.data);
+		var request = new XMLHttpRequest();
+		// TODO: data(?),onload,onerror,onreadystatechange
+		GM_log("Doing: open("+req.method+","+url+",false)...");
+		request.open(req.method,url,false); // user,passwd
+		for (var header in req.headers) {
+			GM_log("Header ["+header+"] = "+req.headers[header]);
+			request.setRequestHeader(header,req.headers[header]);
+		}
+		GM_log("Done");
+		request.send(req.data);
+
+		GM_log(new Date()+' GM_xmlhttpRequest("'+url+'") responded with "'+request.responseText+'".');
+
+		responseState = {
+			// can't support responseXML because security won't
+			// let the browser call properties on it
+			responseText:request.responseText,
+			readyState:request.readyState,
+			responseHeaders:(request.readyState == 4 ? request.getAllResponseHeaders() : ""),
+			status:(request.readyState == 4 ? request.status : 0),
+			statusText:(request.readyState == 4 ? request.statusText : ""),
+			// finalUrl:(request.readyState == 4 ? request.channel.URI.spec : "")
+			// finalUrl:req.url,
+		}
+		// The callback function for onreadystatechange is called repeatedly while
+		// the request is in progress. It takes a single parameter, responseDetails.
+		if (req.onreadystatechange) { req.onreadystatechange(responseState); }
+		if (req.onload) { req.onload(responseState); }
+
+	} catch (e) {
+		if (req.onerror) { req.onerror(responseState); }
+		throw e;
+	}
+	return null;
+}
+
+if (!this.GM_xmlhttpRequest) {
+	GM_xmlhttpRequest = ga_xmlhttpRequest;
+}
+
 // TODO: Remove all the TODOs from this file.  We know the whole file is TODO.
-
-
-
 

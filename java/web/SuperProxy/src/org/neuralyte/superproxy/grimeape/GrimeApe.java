@@ -267,7 +267,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     }
 
     private HttpResponse handleSpecialRequest(HttpRequest request, WebRequest wreq)
-            throws Error {
+            throws IOException {
         Logger.log("Handling special GA request: "+wreq.getPath());
         String[] args = wreq.getPath().split("/");
         // We know args[1] == "_gRiMeApE_"
@@ -299,7 +299,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             String logData = wreq.getParam("data");
             logData = URLDecoder.decode(logData);
             Logger.info("GM_LOG: "+logData);
-            return noData();
+            return respondOK();
 
         } else if (commandDir.equals("setValue")) {
             String name = wreq.getParam("name");
@@ -310,7 +310,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             if (Math.random() < 0.1) {
                 saveData();
             }
-            return noData();
+            return respondOK();
             
         } else if (commandDir.equals("getValue")) {
             String name = wreq.getParam("name");
@@ -337,16 +337,18 @@ public class GrimeApe extends PluggableHttpRequestHandler {
 
         } else if (commandDir.equals("saveAll")) {
             saveData();
-            return noData();
+            return respondOK();
 
         } else if (commandDir.equals("clearAll")) {
             gmRegistry.clear();
             saveData();
-            return noData();
+            return respondOK();
 
         } else if (commandDir.equals("installUserscript")) {
             String name = wreq.getParam("name");
             String fsName = name.toLowerCase().replaceAll(" ", "_");
+            if (fsName.length()>24)
+                fsName = fsName.substring(0,24);
             String url = wreq.getParam("url");
             String contents = wreq.getParam("contents");
             File outFile = new File(userscriptsDir,fsName+"/"+fsName+".user.js");
@@ -363,6 +365,15 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 return HttpResponseBuilder.stringHttpResponse("text/xml","<%!CDATA>Failure</%CDATA>");
             }
             return HttpResponseBuilder.stringHttpResponse("text/xml","<%!CDATA>Success!</%CDATA>");
+
+        } else if (commandDir.equals("xmlhttpRequest")) {
+            String url = wreq.getParam("url");
+            // request.getTopLine();
+            String newReq = request.getType()+" "+url+" HTTP/1.0";
+            request.setTopLine(newReq);
+            String newHost = new WebRequest(request).getHost();
+            request.setHeader("Host",newHost);
+            return super.handleHttpRequest(request);
             
         } else {
             Logger.error("Bad request: "+wreq.getPath());
@@ -381,8 +392,10 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         return (suspect.toString().startsWith(parent.toString()));
     }
 
-    private HttpResponse noData() {
+    private HttpResponse respondOK() {
         return HttpResponseBuilder.stringHttpResponse("text/xml","<NODATA>OK</NODATA>");
+        //// There are a few cases where this produces an error:
+        // return HttpResponseBuilder.stringHttpResponse("text/plain","OK");
     }
 
     private void maybeAddScripts(HttpResponse response) throws IOException {
