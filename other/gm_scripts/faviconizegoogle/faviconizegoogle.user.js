@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name           FaviconizeGoogle
-// @namespace      http://userscripts.org/users/89794
+// @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
 // @include        http://google.*/search?*
 // @include        http://www.google.*/search?*
+//// TODO DEV: This is just here so I can *see* if it works on other Google pages, e.g. Google Images (altho it would suck there unless we target urls instead of links).
+// @include        http://*google.*/*
 // ==/UserScript==
 
 // DONE: Provided more options where to place favicon: by the link or by the
@@ -30,6 +32,20 @@ function filterListBy(l,c) {
 	return ret;
 }
 
+function createFaviconFor(url) {
+	var host = url.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
+	// if (host == document.location.host) {
+		// return null;
+	// }
+	var img = document.createElement('IMG');
+	img.src = 'http://'+host+'/favicon.ico';
+	img.width = '16';
+	img.height = '16';
+	img.className = 'favicon';
+	img.border = 0;
+	return img;
+}
+
 // var links = document.evaluate("//a[@class='l']",document,null,6,null);
 var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
 // var links = document.links.filter( function(x){ return x.className=='l'; } );
@@ -48,16 +64,7 @@ for (var i=0;i<links.length;i++) {
 	// if (link.href.match('^javascript:') || link.href.match('^#')) {
 		// continue;
 	// }
-	var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
-	// if (host == document.location.host) {
-		// continue;
-	// }
-	var img = document.createElement('IMG');
-	img.src = 'http://'+host+'/favicon.ico';
-	img.width = '16';
-	img.height = '16';
-	img.className = 'favicon';
-	img.border = 0;
+	var img = createFaviconFor(link.href);
 	var targetNode = (placeFaviconByUrl ? link.parentNode.parentNode.getElementsByTagName('cite')[0] : link);
 	if (placeFaviconInsideLink) {
 		if (placeFaviconAfter) {
