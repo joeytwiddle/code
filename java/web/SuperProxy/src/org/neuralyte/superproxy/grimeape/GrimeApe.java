@@ -155,10 +155,10 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 }
             };
             /* oldHandler = */
-            Signal.handle(new Signal("INT"), watchForClose);
             Signal.handle(new Signal("HUP"), watchForClose);
             Signal.handle(new Signal("QUIT"), watchForClose);
             Signal.handle(new Signal("KILL"), watchForClose);
+            Signal.handle(new Signal("INT"), watchForClose);
             // Signal.handle(new Signal(""+SignalHandler.SIG_DFL), watchForClose);
             // Signal.handle(new Signal(""+SignalHandler.SIG_IGN), watchForClose);
         } catch (Throwable e) {
@@ -171,7 +171,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             oldHandler.handle(sig);
         } */
         try {
-            Logger.info("Shutting down...");
+            Logger.info("Saving data...");
             Nap.writeToFile(gmRegistry, "grimeape_registry.nap");
         } catch (Exception e) {
             Logger.error(e);
@@ -227,13 +227,14 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         }
         
         // All our proxies should check for this.
-        // If the target of the client request is the proxy,
-        // we will get stuck in a loop trying to proxy that request!
+        // If the target of the client request is the proxy, then the user has made a normal web request,
+        // We will get stuck in a loop trying to proxy that request!
+        // So let's make a web response.
         String localhost = "127.0.0.1"; // Was giving me 127.0.1.1 hence failing to match: InetAddress.getLocalHost().getHostAddress();
         String reqHost= InetAddress.getByName(wreq.getHost()).getHostAddress();
-        if (reqHost.equals(localhost)) {
+        if (reqHost.equals(localhost) && wreq.getPort() == 7152) {
             // throw new Error("Requested host is me!");
-            return HttpResponseBuilder.stringHttpResponse("text/txt", "I am a proxy.  Please leave me alone.");
+            return HttpResponseBuilder.stringHttpResponse("text/plain", "I am a proxy.\nIf you want to use me, set your browser's proxy settings to this address.");
         }
         
         //// OK we have a normal web request.
@@ -291,7 +292,16 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             File requestedFile = new File(jailDir,fileBeyond);
             assertFileIsBelow(requestedFile, jailDir);
             // File checkParent = scriptFile.getParentFile();
-            return HttpResponseBuilder.makeFileHttpResponse(requestedFile,"text/javascript",request);
+            /* if (!wreq.getParam("cdata").isEmpty()) {
+                request.removeHeader("If-Modified-Since");
+            } */
+            HttpResponse response = HttpResponseBuilder.makeFileHttpResponse(requestedFile,"text/javascript",request);
+            // This still didn't stop Firefox complaining about poorly formatted response.
+            // With or without it, even with errors, the data gets through fine.
+            if (!wreq.getParam("cdata").isEmpty()) {
+                response.setContent("<![CDATA[" + response.getContentAsString() + "]]>");
+            }
+            return response;
             
         } else if (commandDir.equals("log")) {
             // We don't use this, it's very slow to send all logging to the server.
@@ -344,27 +354,33 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             saveData();
             return respondOK();
 
-        } else if (commandDir.equals("installUserscript")) {
+        } else if (commandDir.equals("updateScript")) {
             String name = wreq.getParam("name");
             String fsName = name.toLowerCase().replaceAll(" ", "_");
             if (fsName.length()>24)
                 fsName = fsName.substring(0,24);
             String url = wreq.getParam("url");
-            String contents = wreq.getParam("contents");
+            String content = wreq.getParam("content");
             File outFile = new File(userscriptsDir,fsName+"/"+fsName+".user.js");
             assertFileIsBelow(outFile,userscriptsDir);
-            
-            HttpRequest req = HttpRequestBuilder.getResource(url);
-            HttpResponse res = HTTPStreamingTools.passRequestToServer(req);
             outFile.getParentFile().mkdir();
-            try {
-                OutputStream out = new FileOutputStream(outFile);
-                StreamUtils.pipeStream(res.getContentAsStream(), out);
-            } catch (Exception e) {
-                Logger.error(e);
-                return HttpResponseBuilder.stringHttpResponse("text/xml","<%!CDATA>Failure</%CDATA>");
+            
+            Logger.info("User is saving new script to "+outFile);
+            if (!url.isEmpty()) {
+                HttpRequest req = HttpRequestBuilder.getResource(url);
+                HttpResponse res = HTTPStreamingTools.passRequestToServer(req);
+                try {
+                    OutputStream out = new FileOutputStream(outFile);
+                    StreamUtils.pipeStream(res.getContentAsStream(), out);
+                } catch (Exception e) {
+                    Logger.error(e);
+                    return HttpResponseBuilder.stringHttpResponse("text/xml","<![CDATA[Failure: "+e+"]]>");
+                }
+                return respondOK();
+            } else {
+                FileUtils.writeStringToFile(content, outFile);
+                return respondOK();
             }
-            return HttpResponseBuilder.stringHttpResponse("text/xml","<%!CDATA>Success!</%CDATA>");
 
         } else if (commandDir.equals("xmlhttpRequest")) {
             String url = wreq.getParam("url");
@@ -394,7 +410,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
 
     private HttpResponse respondOK() {
         return HttpResponseBuilder.stringHttpResponse("text/xml","<NODATA>OK</NODATA>");
-        //// There are a few cases where this produces an error:
+        //// This causes Firefox to barf parsing the response:
         // return HttpResponseBuilder.stringHttpResponse("text/plain","OK");
     }
 

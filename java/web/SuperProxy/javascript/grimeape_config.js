@@ -55,15 +55,19 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		GM_setValue("GrimeApeConfig",uneval(GrimeApeConfig));
 	};
 
+	function getFsName(scriptName) {
+		return scriptName.toLowerCase().replace(/ /g,'_').substring(0,24);
+	}
+
 	function loadScript(scriptName) {
-		var fsName = scriptName.toLowerCase().replace(/ /g,'_').substring(0,24);
+		var fsName = getFsName(scriptName);
 		GM_log('Loading: '+scriptName);
 		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js"
 		document.writeln("<SCRIPT type='text/javascript' src='" + url + "'></SCRIPT>");
 	}
 
 	function loadScriptOtherWay(scriptName) {
-		var fsName = scriptName.toLowerCase().replace(/ /g,'_').substring(0,24);
+		var fsName = getFsName(scriptName);
 		GM_log('Loading: '+scriptName);
 		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js"
 		var scriptElement = document.createElement("SCRIPT");
@@ -128,29 +132,46 @@ The loading of userscripts should still be delayed till the end of loading thoug
 	var ScriptEditor = {
 
 		openNewEditor: function(scriptName) {
+
+			////// Create new editor window:
 			var formID = "scriptEditorForm"+document.forms.length;
 			var newEditor = document.createElement('DIV');
 			newEditor.innerHTML = ''
 				// + '<STYLE type="text/css"> .td{ text-align:right; } </STYLE>\n'
-				+ '<FONT size="-1">\n'
 				+ '<FORM id="'+formID+'" method="GET" action="/_gRiMeApE_/saveUserscript">\n'
-				+ '<TABLE>'
-				+ '<TR><TD align="right">Name:</TD><TD><INPUT type="text" name="name" value="Script Name"/></TD></TR>\n'
-				+ '<TR><TD align="right">Namespace:</TD><TD><INPUT type="text" name="namespace" value="Nobody knows what this is."/></TD></TR>\n'
-				+ '<TR><TD align="right">Description:</TD><TD><INPUT type="text" name="description" value="Description of the script"/></TD></TR>\n'
-				// + '<TR><TD align="right">Includes:</TD><TD><TEXTAREA name="includes" cols=50>*</TEXTAREA></TD></TR>\n'
-				// + '<TR><TD align="right">Excludes:</TD><TD><TEXTAREA name="excludes" cols=50>http://*google.co*/*</TEXTAREA></TD></TR>\n'
-				+ '<TR><TD align="right">Script:</TD><TD><TEXTAREA name="content" cols=50 rows=20>blah(); blah(); blah(); // I am good at HMTL</TEXTAREA></TD></TR>\n'
-				+ '</TABLE>\n'
-				+ '<P align="right">\n'
+				+ '<FONT size="-1">'
+				// + '<TABLE>'
+				// + '<TR><TD align="right">Name:</TD><TD><INPUT type="text" name="name" value="Script Name"/></TD></TR>\n'
+				// + '<TR><TD align="right">Namespace:</TD><TD><INPUT type="text" name="namespace" value="Nobody knows what this is."/></TD></TR>\n'
+				// + '<TR><TD align="right">Description:</TD><TD><INPUT type="text" name="description" value="Description of the script"/></TD></TR>\n'
+				// // + '<TR><TD align="right">Includes:</TD><TD><TEXTAREA name="includes" cols=80>*</TEXTAREA></TD></TR>\n'
+				// // + '<TR><TD align="right">Excludes:</TD><TD><TEXTAREA name="excludes" cols=80>http://*google.co*/*</TEXTAREA></TD></TR>\n'
+				// + '<TR><TD align="right">Script:</TD><TD><TEXTAREA name="content" cols=80 rows=20>blah(); blah(); blah(); // I am good at HMTL</TEXTAREA></TD></TR>\n'
+				// + '</TABLE>\n'
+				+ '<TEXTAREA name="content" cols=80 rows=30>'
+				+ '// ==UserScript==\n'
+				+ '// @name           ...\n'
+				+ '// @namespace      ...\n'
+				+ '// @description    ...\n'
+				+ '// @include        ...\n'
+				+ '// @exclude        ...\n'
+				+ '// @author         ...\n'
+				+ '// @date           ...\n'
+				+ '// @version        ...\n'
+				+ '// ==/UserScript==\n'
+				+ '\n'
+				+ '</TEXTAREA>'
+				+ '<P align="right">'
 				+ '<INPUT type="button" name="test" value="Test"/>\n'
-				+ '<INPUT type="button" name="send" value="Save"/>\n'
-				+ '<INPUT type="button" name="cancel" value="Cancel"/>\n'
-				+ '</P>\n'
-				+ '</FORM>\n'
-				+ '</FONT>\n'
+				+ '<INPUT type="button" name="save" value="Save"/>\n'
+				+ '<INPUT type="button" name="cancel" value="Cancel"/>'
+				+ '</P>'
+				+ '</FONT>'
+				+ '</FORM>' // Bah this creates always an empty line after.  Should swap div and form around :P
 				+ '';
 			document.body.appendChild(newEditor);
+
+			////// Style:
 			newEditor.style.backgroundColor = '#f8f8f8';
 			newEditor.style.color = 'black';
 			newEditor.style.border = '2px solid black';
@@ -166,26 +187,114 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			// newEditor.style.width = '400px';
 			// newEditor.style.height = '400px';
 			newEditor.style.padding = '12px';
+
+			////// Make it moveable:
+			if (this.makeMoveable) {
+				makeMoveable(newEditor);
+			}
+			/*
 			try {
 				// Testing this.makeMoveable failed :o
 				// But I fear in its absence, testing makeMoveable might throw an error :S
 				if (makeMoveable) {
 					makeMoveable(newEditor);
 				}
+				// if (!this.makeMoveable) {
+					// GM_log("Whoa makeMoveable worked but this.makeMoveable failed!");
+				// }
 			} catch (e) { GM_log('Trying to load makeMoveable: '+e); }
+			*/
 			// return document.getElementById(formID);
+
+			// Populate form values:
 			var form = document.getElementById(formID);
 			if (scriptName) {
 				var scriptData = GrimeApeConfig.scripts[scriptName];
 				if (scriptData) {
-					form['name'].value = scriptName;
-					form['namespace'].value = scriptData.namespace;
-					form['description'].value = scriptData.description;
-					// form['includes'].value = scriptData.includes;
-					// form['excludes'].value = scriptData.excludes;
-					form['content'].value = "TODO: Load it :P";
+					// form['name'].value = scriptName;
+					// form['namespace'].value = scriptData.namespace;
+					// form['description'].value = scriptData.description;
+					// // form['includes'].value = scriptData.includes;
+					// // form['excludes'].value = scriptData.excludes;
+					////// Now the big one - script content:
+					//// DONE: We should be requesting CDATA wrapped response.  But Firefox still complains.  :P
+					var fsName = getFsName(scriptName);
+					var req = new XMLHttpRequest();
+					req.open('GET','/_gRiMeApE_/userscripts/'+fsName+'/'+fsName+'.user.js?cdata=yes',false);
+					req.setRequestHeader('Accept','text/javascript');
+					// GM_log("Requesting script contents...");
+					req.send(null);
+					// GM_log("Got "+req.responseText);
+					// var strippedResponse = req.responseText.replace(/^<!\[CDATA\[/,'').replace(/\]\]>$/,'');
+					//// What does .replace() do if the text contains multiple newlines?
+					var strippedResponse = req.responseText;
+					var expectStart = "<![CDATA[";
+					var expectEnd = "]]>";
+					if (strippedResponse.substring(0,expectStart.length) == expectStart)
+						strippedResponse = strippedResponse.substring(expectStart.length);
+					// else GM_log("Expected BLAH but got \""+strippedResponse.substring(0,expectStart.length)+"\"");
+					if (strippedResponse.substring(strippedResponse.length - expectEnd.length) == expectEnd)
+						strippedResponse = strippedResponse.substring(0,strippedResponse.length - expectEnd.length);
+					form['content'].value = strippedResponse;
+					form['content'].textContent = strippedResponse; // Needed for Konq, doesn't work for Moz.
 				}
 			}
+
+			////// Setup form button events:
+			form['cancel'].onclick = function() {
+				newEditor.parentNode.removeChild(newEditor);
+			};
+			form['test'].onclick = function() {
+				eval('(function(){ ' + form['content'].value + '})();');
+			};
+			form['save'].onclick = function() {
+				GM_log("Attemping save ... ");
+				try {
+					// var content = form['content'].textContent; // In Konq this is not updated by user!
+					var content = form['content'].value;
+					function getMeta(key) {
+						var regex = "// *@"+key+"  *(.*)";
+						try {
+							return content.match(regex)[1];
+						} catch (e) {
+							// alert("Your script needs a tag: // @"+key+" ...");
+							GM_log("Failed to get meta @"+key);
+							return "";
+						}
+					}
+					// var newScriptName = content.match(/\/\/ *@name  *(.*)/)[1];
+					var newScriptName = getMeta('name');
+					if (!newScriptName) {
+						alert("Your script needs a tag: // @name MyScriptName");
+					}
+					var fsName = getFsName(newScriptName); // TODO: Actually should get new name from script!
+					var cgi = "name="+cgiEscape(newScriptName) + "&content="+cgiEscape(content);
+					var req = new XMLHttpRequest();
+					req.open("POST","/_gRiMeApE_/updateScript",false);
+					GM_log("Sending...");
+					req.send(cgi);
+					GM_log("Sent.  Got response: \""+req.responseText+"\"");
+					if (req.responseText == "<NODATA>OK</NODATA>") {
+						GrimeApeConfig.scripts[newScriptName] = new Object();
+						var scriptData = GrimeApeConfig.scripts[newScriptName];
+						scriptData.enabled = true;
+						scriptData.namespace = getMeta("namespace");
+						scriptData.description = getMeta("description");
+						// TODO: these are multiple :f
+						scriptData.includes = getMeta("include");
+						scriptData.excludes = getMeta("exclude");
+						GrimeApeConfig.save();
+						Menu.rebuild();
+						form['cancel'].onclick(); // close window
+					} else {
+						GM_log("Error uploading: "+req.responseText);
+						alert("Error uploading: "+req.responseText);
+					}
+				} catch (e) {
+					alert(e);
+				}
+			};
+
 		},
 
 	};
@@ -196,7 +305,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 	var Menu = {
 
-		menuElement: document.createElement('DIV'),
+		// menuElement: document.createElement('DIV'),
+		menuElement: undefined,
 
 		showHideMenu: function() {
 			Menu.menuElement.style.display = ( Menu.menuElement.style.display ? '' : 'none' );
@@ -222,7 +332,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			Menu.showHideMenu();
 		},
 
-		showInstallWindow: function(scriptName) {
+		openEditorWindow: function(scriptName) {
 			Menu.showHideMenu();
 			ScriptEditor.openNewEditor(scriptName);
 		},
@@ -248,8 +358,9 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		},
 
 		init: function() {
+			Menu.menuElement = document.createElement('DIV');
 			// Menu.addMenuItem("About GrimeApe",(function(){w=window.open();w.location='http://hwi.ath.cx/';}));
-			Menu.addMenuItem("Install New Script",Menu.showInstallWindow);
+			Menu.addMenuItem("Create New Userscript",Menu.openEditorWindow);
 			Menu.addMenuItem("Clear All Data",Menu.clearAllData);
 			// Menu.menuElement.appendChild(document.createElement('HR')); // Too wide in Konq!
 			Menu.menuElement.appendChild(document.createElement('BR'));
@@ -267,8 +378,11 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					var editButton = document.createElement('img');
 					editButton.src = "/_gRiMeApE_/images/edit16x16.png";
 					editButton.title = 'Edit';
-					editButton.style.textAlign = 'right';
-					editButton.onclick = (function(){ Menu.showInstallWindow(scriptName); });
+					editButton.style.paddingLeft = '8px';
+					// editButton.style.textAlign = 'right';
+					// editButton.style.position = 'fixed';
+					// editButton.style.right = '12px';
+					editButton.onclick = (function(){ Menu.openEditorWindow(scriptName); });
 
 					var toggleScript = (function(evt) {
 							// scriptData.enabled = checkbox.checked;
@@ -290,6 +404,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 					checkbox.onclick = toggleScript;
 					var menuItem = Menu.addMenuItem(script,toggleScript);
+					// menuItem.style.paddingRight = '32px';
 					Menu.menuElement.insertBefore(checkbox,menuItem);
 					Menu.menuElement.insertBefore(editButton,menuItem.nextSibling);
 				})();
@@ -300,6 +415,9 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			Menu.menuElement.appendChild(document.createTextNode('-----------'));
 			Menu.addMenuItem("Show Log",Menu.showHideLog);
 			Menu.addMenuItem("Enable/Disable",Menu.toggleEnabled);
+
+			document.body.appendChild(Menu.menuElement);
+			Menu.initStyle();
 		},
 
 		initStyle: function() {
@@ -317,13 +435,20 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			}
 			// var css = " #menuEnabled.link{ color:#00ff00; } #menuDisabled.link{ color:#880000; } ";
 			// document.writeln("<SCRIPT type='text/css'>"+css+"</SCRIPT>");
+		},
+
+		rebuild: function() {
+			if (Menu.menuElement) {
+				Menu.menuElement.parentNode.removeChild(Menu.menuElement);
+			}
+			Menu.init();
 		}
 
 	};
 
 	Menu.init();
-	document.body.appendChild(Menu.menuElement);
-	Menu.initStyle();
+	// document.body.appendChild(Menu.menuElement);
+	// Menu.initStyle();
 
 	// var icon = document.getElementById('gaIcon');
 	// icon.addEventListener('onclick',Menu.showHideMenu());

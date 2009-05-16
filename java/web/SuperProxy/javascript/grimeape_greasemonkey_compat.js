@@ -71,7 +71,8 @@ function GM_log(obj) {
 
 GM_log("GM_log() works!");
 
-// escape(val) is not enough for CGI.  It does nothing to real +s, but webserver reads real +s from CGI as spaces!
+// escape(val) is not enough for real CGI escaping.  It does nothing to real
+// '+'s, but the webserver will real '+'s from CGI as spaces!
 function cgiEscape(val) {
 	return escape(val).replace(/\+/g,'%2b');
 }
