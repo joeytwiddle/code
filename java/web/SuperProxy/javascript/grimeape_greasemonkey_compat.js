@@ -228,9 +228,11 @@ ga_xmlhttpRequest = function (req) {
 		// TODO: data(?),onload,onerror,onreadystatechange
 		GM_log("Doing: open("+req.method+","+url+",false)...");
 		request.open(req.method,url,false); // user,passwd
-		for (var header in req.headers) {
-			GM_log("Header ["+header+"] = "+req.headers[header]);
-			request.setRequestHeader(header,req.headers[header]);
+		if (req.headers) {
+			for (var header in req.headers) {
+				GM_log("Header ["+header+"] = "+req.headers[header]);
+				request.setRequestHeader(header,req.headers[header]);
+			}
 		}
 		GM_log("Done");
 		request.send(req.data);

@@ -86,7 +86,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		// var iconStyleString = " position: fixed; right: 4px; bottom: 4px; z-index: 1000 ";
 		iconWidth  : 42,
 		iconHeight : 43,
-		iconURL         : "/_gRiMeApE_/images/punkape.png", // blueape.png",
+		iconURL         : "/_gRiMeApE_/images/blueape.png", // punkape.png",
 		iconURLDisabled : "/_gRiMeApE_/images/punkape_disabled.png",
 
 		initIcon : function() {
@@ -295,6 +295,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				}
 			};
 
+			return form;
 		},
 
 	};
@@ -335,6 +336,30 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		openEditorWindow: function(scriptName) {
 			Menu.showHideMenu();
 			ScriptEditor.openNewEditor(scriptName);
+		},
+
+		deleteScript: function(scriptName) {
+			Menu.showHideMenu();
+			var decision = confirm("Are you sure you want to delete \""+scriptName+"\"?");
+			if (decision) {
+				try {
+					var url = "/_gRiMeApE_/deleteScript?name="+cgiEscape(scriptName);
+					var client = new XMLHttpRequest();
+					client.open("GET",url,false);
+					client.send(null);
+					if (client.responseText == "<NODATA>OK</NODATA>") {
+						delete GrimeApeConfig.scripts[scriptName];
+						GrimeApeConfig.save();
+						Menu.rebuild();
+					} else {
+						alert("Delete did not go cleanly.");
+						// Remove it from config anyway?
+					}
+				} catch (e) {
+					GM_log(e);
+					alert(e);
+				}
+			}
 		},
 
 		addMenuItem: function(txt,fn) {
@@ -382,7 +407,17 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					// editButton.style.textAlign = 'right';
 					// editButton.style.position = 'fixed';
 					// editButton.style.right = '12px';
+					editButton.style.verticalAlign = 'middle';
 					editButton.onclick = (function(){ Menu.openEditorWindow(scriptName); });
+
+					var deleteButton = document.createElement('img');
+					deleteButton.src = "/_gRiMeApE_/images/delete16x16.png";
+					deleteButton.width = 12;
+					deleteButton.height = 12;
+					deleteButton.title = 'Delete';
+					deleteButton.style.paddingLeft = '8px';
+					deleteButton.style.verticalAlign = 'middle';
+					deleteButton.onclick = (function(){ Menu.deleteScript(scriptName); });
 
 					var toggleScript = (function(evt) {
 							// scriptData.enabled = checkbox.checked;
@@ -406,6 +441,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					var menuItem = Menu.addMenuItem(script,toggleScript);
 					// menuItem.style.paddingRight = '32px';
 					Menu.menuElement.insertBefore(checkbox,menuItem);
+					Menu.menuElement.insertBefore(deleteButton,menuItem.nextSibling);
 					Menu.menuElement.insertBefore(editButton,menuItem.nextSibling);
 				})();
 			}
@@ -455,6 +491,31 @@ The loading of userscripts should still be delayed till the end of loading thoug
 	// iconHolder.href = '#'; iconHolder.target = '_self';
 	ApeIcon.icon.onclick = Menu.showHideMenu;
 	// GM_log("icon.parentNode = "+icon.parentNode);
+
+
+
+	//// Special - convert Userscripts.org Install button into GrimeApe Install button. ////
+	if (document.location.href.match('http://(www.|)userscripts.org/scripts/show/')) {
+		var links = document.links;
+		for (var i=0;i<links.length;i++) {
+			var link = links[i];
+			if (link.className == 'userjs') {
+				(function() { // Creating a context for scriptHref
+					var scriptHref = link.href;
+					link.onclick = function(evt) {
+						evt.preventDefault();
+						var form = ScriptEditor.openNewEditor();
+						GM_xmlhttpRequest( { method:'GET', url:scriptHref,
+							onload: function(response) {
+								form['content'].value = response.responseText;
+								form['content'].textContent = response.responseText;
+							}
+						} );
+					};
+				})();
+			}
+		}
+	}
 
 
 

@@ -382,6 +382,22 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 return respondOK();
             }
 
+        } else if (commandDir.equals("deleteScript")) {
+            String name = wreq.getParam("name");
+            String fsName = name.toLowerCase().replaceAll(" ", "_");
+            if (fsName.length()>24)
+                fsName = fsName.substring(0,24);
+            File file = new File(userscriptsDir,fsName+"/"+fsName+".user.js");
+            assertFileIsBelow(file,userscriptsDir);
+            Logger.info("User is deleting script: "+file);
+            file.delete();
+            try {
+                file.getParentFile().delete();
+            } catch (Exception e) {
+                Logger.warn(""+e);
+            }
+            return respondOK();
+            
         } else if (commandDir.equals("xmlhttpRequest")) {
             String url = wreq.getParam("url");
             // request.getTopLine();
