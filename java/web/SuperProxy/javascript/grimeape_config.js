@@ -148,7 +148,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				// // + '<TR><TD align="right">Excludes:</TD><TD><TEXTAREA name="excludes" cols=80>http://*google.co*/*</TEXTAREA></TD></TR>\n'
 				// + '<TR><TD align="right">Script:</TD><TD><TEXTAREA name="content" cols=80 rows=20>blah(); blah(); blah(); // I am good at HMTL</TEXTAREA></TD></TR>\n'
 				// + '</TABLE>\n'
-				+ '<TEXTAREA name="content" cols=80 rows=30>'
+				+ '<TEXTAREA name="content" cols="80" rows="35">'
 				+ '// ==UserScript==\n'
 				+ '// @name           ...\n'
 				+ '// @namespace      ...\n'
@@ -178,8 +178,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			// breaks: newEditor.style.setProperty('-mozBorderRadius','4px');
 			newEditor.style.position = 'fixed';
 			newEditor.style.zIndex = '10000';
-			newEditor.style.left = parseInt(document.width * 0.15) + 'px';
-			newEditor.style.top = parseInt(document.width * 0.15) + 'px';
+			newEditor.style.left = parseInt(document.width * 0.10) + 'px';
+			newEditor.style.top = parseInt(document.width * 0.05) + 'px';
 			newEditor.style.right = '';
 			newEditor.style.bottom = '';
 			// newEditor.style.width = parseInt(document.width * 0.75) + 'px';
@@ -189,6 +189,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			newEditor.style.padding = '12px';
 
 			////// Make it moveable:
+			//// TODO: bring this in for sure
 			if (this.makeMoveable) {
 				makeMoveable(newEditor);
 			}
