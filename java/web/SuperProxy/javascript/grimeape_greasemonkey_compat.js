@@ -11,6 +11,12 @@ CONSIDER: If we really don't want to make XMLHttpRequests, we could use this
 filthy hack instead:  Add a <SCRIPT> element to the page, which would return
 results by writing them invisibly into the document somewhere for retrieval.
 
+// TODO: Complete API: http://wiki.greasespot.net/Greasemonkey_Manual:API
+// GM_registerMenuCommand, GM_deleteValue, GM_listValues, GM_getResourceURL, GM_getResourceText,
+// GM_addStyle, XPathResult, GM_openinTab.
+// Also: @resource @require @unwrap
+// TODO: namespace magic, and maybe some jail for scripts?
+
 TODO:
 document.evaluate (XPath tool available in Mozilla, often used in userscripts)
 GM_xmlhttpRequest or whatever it's called.
@@ -87,7 +93,6 @@ function cgiUnescape(val) {
 // Having our own setValue/getValue queue might actually improve synchronization
 // over multiple JS threads.
 function GM_setValue(name,value) {
-	// TODO
 	// Konqueror appears to fail (or take forever) if params.length exceeds 30,000.  Needs batching!  :f
 	// Hmm Firefox was going very slow about 40k also.  =/  Stream timed out when it completed.  Are we blocking in a buffer somewhere?
 	if (value==undefined || value==null)
@@ -166,7 +171,8 @@ unsafeWindow = window;
 
 if (!document.evaluate) {
 	document.evaluate = function (args) {
-		GM_log("TODO: "+this);
+		// TODO
+		GM_log("TODO: GA needs to implement document.evaluate().");
 	}
 }
 
@@ -174,10 +180,9 @@ if (!document.evaluate) {
 
 this.ga_uneval = function (obj) {
 	if (obj==undefined) { return "undefined"; }
-	// Still this==window: GM_log("TODO: uneval() (this="+this+" self="+self+")");
 	// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
 	if (typeof(obj)=='string') {
-		return '"' + obj.replace(/"/g,'\\"') + '"';
+		return '"' + obj.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r') + '"';
 	} else if (typeof(obj)=='number') {
 		return ""+obj;
 	} else if (typeof(obj)=='object') {
@@ -208,7 +213,6 @@ if (!this.uneval) {
 	this.uneval = this.ga_uneval;
 }
 
-// TODO
 // ga_xmlhttpRequest = function (method,url,headers,data,onload,onerror,onreadystatechange) {
 ga_xmlhttpRequest = function (req) {
 	GM_log("xmlhttpRequest: "+req);
@@ -266,5 +270,7 @@ if (!this.GM_xmlhttpRequest) {
 	GM_xmlhttpRequest = ga_xmlhttpRequest;
 }
 
-// TODO: Remove all the TODOs from this file.  We know the whole file is TODO.
+function GM_registerMenuCommand(commandName, commandFunc, accelKey, accelModifiers, accessKey) {
+	Menu.addUserscriptCommand(commandName,commandFunc,accelKey,accelModifiers,accessKey);
+}
 
