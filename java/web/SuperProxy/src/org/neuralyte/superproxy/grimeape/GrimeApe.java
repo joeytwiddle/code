@@ -347,6 +347,16 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             }
             return HttpResponseBuilder.stringHttpResponse("text/xml",response);
 
+        } else if (commandDir.equals("deleteValue")) {
+            String name = wreq.getParam("name");
+            Logger.info("GM_DELETEVALUE: "+name);
+            gmRegistry.remove(name);
+            // @todo Occasional saves - remove this later.
+            if (Math.random() < 1.0) {
+                saveData();
+            }
+            return respondOK();
+            
         } else if (commandDir.equals("saveAll")) {
             saveData();
             return respondOK();

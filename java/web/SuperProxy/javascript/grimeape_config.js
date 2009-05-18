@@ -34,7 +34,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			scripts: ({
 				"FaviconizeGoogle" : ({ enabled: true }) ,
 				"Highlight Search Result Pages" : ({ enabled: true }),
-				"Delicious Search Results On Google" : ({ enabled: true }),
+				"Delicious Search Results on Google" : ({ enabled: true }),
 				"Twitter Search Results On Google" : ({ enabled: false }),
 				"SF ProjectHomepage" : ({ enabled: true }),
 				"Googles Old Favicon" : ({ enabled: true }),
@@ -140,7 +140,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				with (icon.style) {
 					position='fixed';
 					right='4px';
-					bottom='4px';
+					bottom='2px';
 					zIndex='120000';
 				}
 				// iconHolder.appendChild(icon);
@@ -226,8 +226,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				// breaks: newEditor.style.setProperty('-mozBorderRadius','4px');
 				newEditor.style.position = 'fixed';
 				newEditor.style.zIndex = '12000';
-				newEditor.style.left = parseInt(document.width * 0.10) + 'px';
-				newEditor.style.top = parseInt(document.width * 0.05) + 'px';
+				newEditor.style.left = parseInt(window.innerWidth * 0.10) + 'px';
+				newEditor.style.top = parseInt(window.innerHeight * 0.05) + 'px';
 				newEditor.style.right = '';
 				newEditor.style.bottom = '';
 				// newEditor.style.width = parseInt(document.width * 0.75) + 'px';
@@ -515,7 +515,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						deleteButton.style.position = 'absolute';
 						deleteButton.style.right = '6px';
 						deleteButton.style.cursor = 'pointer';
-						deleteButton.style.marginTop = '6px';
+						deleteButton.style.marginTop = '4px';
 						deleteButton.onclick = (function(evt){ evt.preventDefault(); Menu.deleteScript(scriptName); });
 
 						var toggleScript = (function() {

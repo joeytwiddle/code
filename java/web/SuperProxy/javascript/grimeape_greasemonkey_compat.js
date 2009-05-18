@@ -12,7 +12,7 @@ filthy hack instead:  Add a <SCRIPT> element to the page, which would return
 results by writing them invisibly into the document somewhere for retrieval.
 
 // TODO: Complete API: http://wiki.greasespot.net/Greasemonkey_Manual:API
-// GM_registerMenuCommand, GM_deleteValue, GM_listValues, GM_getResourceURL, GM_getResourceText,
+// GM_listValues, GM_getResourceURL, GM_getResourceText,
 // GM_addStyle, XPathResult, GM_openinTab.
 // Also: @resource @require @unwrap
 // TODO: namespace magic, and maybe some jail for scripts?
@@ -164,6 +164,21 @@ function GM_getValue(name,defaultValue) {
 	*/
 }
 
+function GM_deleteValue(name) {
+	var url = '/_gRiMeApE_/deleteValue?name='+cgiEscape(name);
+	var request = new XMLHttpRequest();
+	request.open('GET',url,false);
+	request.send(null);
+	if (request.responseText != "<NODATA>OK</NODATA>") {
+		GM_log("GM_deleteValue(name) failed!  "+request.responseText);
+	}
+	return;
+}
+
+function GM_listValues() {
+	GM_log("WARNING: GM_listValues() will not be implemented until we have a namespace.");
+}
+
 // var unsafeWindow = window;
 // if (!this.unsafeWindow) {
 	// this.unsafeWindow = window;
@@ -272,7 +287,6 @@ if (!this.GM_xmlhttpRequest) {
 	GM_xmlhttpRequest = ga_xmlhttpRequest;
 }
 
-// function GM_registerMenuCommand(commandName, commandFunc, accelKey, accelModifiers, accessKey) {
-	// Menu.addUserscriptCommand(commandName,commandFunc,accelKey,accelModifiers,accessKey);
-// }
+// GM_registerMenuCommand is actually implemented in grimeape_config.js
+
 

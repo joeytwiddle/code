@@ -1,0 +1,12 @@
+#!/bin/bash
+
+cd "`dirname "$0"`"
+
+CLASSPATH="/stuff/dev/java/javawebtools/CommonUtils/bin:/stuff/dev/java/javawebtools/SimpleProxy/classes:/stuff/dev/java/javawebtools/SuperProxy/bin"
+export CLASSPATH
+
+# ( /usr/local/install/java/j2re-latest/bin/java org.neuralyte.superproxy.grimeape.GrimeApe "$@" | tee /tmp/grimeape.log )&
+
+/usr/local/install/java/j2re-latest/bin/java org.neuralyte.superproxy.grimeape.GrimeApe 2>&1 & P="$!"
+echo "$P" > /tmp/grimeaped.pid
+

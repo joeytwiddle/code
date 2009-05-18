@@ -1,0 +1,9 @@
+#!/bin/bash
+
+cd /home/joey/j/code/java/web/SuperProxy
+
+CLASSPATH="/stuff/dev/java/javawebtools/CommonUtils/bin:/stuff/dev/java/javawebtools/SimpleProxy/classes:/stuff/dev/java/javawebtools/SuperProxy/bin"
+export CLASSPATH
+
+/usr/local/install/java/j2re-latest/bin/java org.neuralyte.superproxy.grimeape.GrimeApe --ind "$@"
+
