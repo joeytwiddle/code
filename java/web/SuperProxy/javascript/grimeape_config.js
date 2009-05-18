@@ -49,7 +49,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 	// This may look like a long-winded way of declaring the object, but:
 	// declaring the functions this way gives them access to each other,
 	// and we really should be overwriting save() because the function may have
-	// been loaded from the uneval, but the versions here might be newer.
+	// been loaded from the uneval, but the version here might be newer.
 
 	GrimeApeConfig.save = function() {
 		GM_setValue("GrimeApeConfig",uneval(GrimeApeConfig));
@@ -104,7 +104,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				position='fixed';
 				right='4px';
 				bottom='4px';
-				zIndex='1000';
+				zIndex='120000';
 			}
 			// iconHolder.appendChild(icon);
 			// document.body.appendChild(iconHolder);
@@ -138,7 +138,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			var newEditor = document.createElement('DIV');
 			newEditor.innerHTML = ''
 				// + '<STYLE type="text/css"> .td{ text-align:right; } </STYLE>\n'
-				+ '<FORM id="'+formID+'" method="GET" action="/_gRiMeApE_/saveUserscript">\n'
+				// + '<FORM id="'+formID+'" method="GET" action="/_gRiMeApE_/saveUserscript">\n'
+				+ '<FORM id="'+formID+'">\n'
 				+ '<FONT size="-1">'
 				// + '<TABLE>'
 				// + '<TR><TD align="right">Name:</TD><TD><INPUT type="text" name="name" value="Script Name"/></TD></TR>\n'
@@ -150,14 +151,15 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				// + '</TABLE>\n'
 				+ '<TEXTAREA name="content" cols="80" rows="35">'
 				+ '// ==UserScript==\n'
-				+ '// @name           ...\n'
-				+ '// @namespace      ...\n'
-				+ '// @description    ...\n'
-				+ '// @include        ...\n'
-				+ '// @exclude        ...\n'
-				+ '// @author         ...\n'
-				+ '// @date           ...\n'
-				+ '// @version        ...\n'
+				+ '// @name           ....\n'
+				+ '// @namespace      ....\n'
+				+ '// @description    ....\n'
+				+ '// @include        ....\n'
+				+ '// @exclude        ....\n'
+				+ '// @version        ....\n'
+				+ '// @homepage       ....\n'
+				+ '// @copyright      %year, %author\n'
+				+ '// @license        ....\n'
 				+ '// ==/UserScript==\n'
 				+ '\n'
 				+ '</TEXTAREA>'
@@ -177,7 +179,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			newEditor.style.border = '2px solid black';
 			// breaks: newEditor.style.setProperty('-mozBorderRadius','4px');
 			newEditor.style.position = 'fixed';
-			newEditor.style.zIndex = '10000';
+			newEditor.style.zIndex = '12000';
 			newEditor.style.left = parseInt(document.width * 0.10) + 'px';
 			newEditor.style.top = parseInt(document.width * 0.05) + 'px';
 			newEditor.style.right = '';
@@ -190,13 +192,14 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 			////// Make it moveable:
 			//// TODO: bring this in for sure
+			/*
 			if (this.makeMoveable) {
 				makeMoveable(newEditor);
 			}
-			/*
+			*/
 			try {
-				// Testing this.makeMoveable failed :o
-				// But I fear in its absence, testing makeMoveable might throw an error :S
+				// Testing this.makeMoveable failed! :o
+				// But I fear testing just makeMoveable in its absence, might throw an error :S
 				if (makeMoveable) {
 					makeMoveable(newEditor);
 				}
@@ -204,7 +207,6 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					// GM_log("Whoa makeMoveable worked but this.makeMoveable failed!");
 				// }
 			} catch (e) { GM_log('Trying to load makeMoveable: '+e); }
-			*/
 			// return document.getElementById(formID);
 
 			// Populate form values:
@@ -242,13 +244,16 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			}
 
 			////// Setup form button events:
-			form['cancel'].onclick = function() {
+			form['cancel'].onclick = function(evt) {
+				evt.preventDefault();
 				newEditor.parentNode.removeChild(newEditor);
 			};
-			form['test'].onclick = function() {
+			form['test'].onclick = function(evt) {
+				evt.preventDefault();
 				eval('(function(){ ' + form['content'].value + '})();');
 			};
-			form['save'].onclick = function() {
+			form['save'].onclick = function(evt) {
+				evt.preventDefault();
 				GM_log("Attemping save ... ");
 				try {
 					// var content = form['content'].textContent; // In Konq this is not updated by user!
@@ -309,8 +314,9 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 		// menuElement: document.createElement('DIV'),
 		menuElement: undefined,
+		userscriptCommandsDiv: undefined,
 
-		showHideMenu: function() {
+		showHideMenu: function(evt) {
 			Menu.menuElement.style.display = ( Menu.menuElement.style.display ? '' : 'none' );
 		},
 
@@ -327,11 +333,14 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		},
 
 		clearAllData: function() {
-			var url = "/_gRiMeApE_/clearAll";
-			var client = new XMLHttpRequest();
-			client.open('GET',url,false);
-			client.send(null);
 			Menu.showHideMenu();
+			var decision = confirm("Are you sure you want to reset GrimeApe to defaults?");
+			if (decision) {
+				var url = "/_gRiMeApE_/clearAll";
+				var client = new XMLHttpRequest();
+				client.open('GET',url,false);
+				client.send(null);
+			}
 		},
 
 		openEditorWindow: function(scriptName) {
@@ -363,6 +372,22 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			}
 		},
 
+		showUserscriptCommands: function(evt) {
+			Menu.userscriptCommandsDiv.style.right = (document.width - window.scrollX - evt.clientX)+'px';
+			Menu.userscriptCommandsDiv.style.bottom = (document.height - window.scrollY - evt.clientY)+'px';
+			Menu.userscriptCommandsDiv.style.display = ( Menu.userscriptCommandsDiv.style.display ? '' : 'none' );
+		},
+
+		addUserscriptCommand: function(commandName, commandFunc, accelKey, accelModifier, accessKey) {
+			if (Menu.userscriptCommandsDiv.childNodes.length > 0)
+				Menu.userscriptCommandsDiv.appendChild(document.createElement('BR'));
+			var link = document.createElement('A');
+			link.textContent = commandName;
+			link.href = 'javascript:void(0)';
+			link.onclick = (function(evt) { evt.preventDefault(); commandFunc(); });
+			Menu.userscriptCommandsDiv.appendChild(link);
+		},
+
 		addMenuItem: function(txt,fn) {
 			var menuItem = document.createElement('A');
 			menuItem.textContent = txt;
@@ -386,11 +411,10 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		init: function() {
 			Menu.menuElement = document.createElement('DIV');
 			// Menu.addMenuItem("About GrimeApe",(function(){w=window.open();w.location='http://hwi.ath.cx/';}));
-			Menu.addMenuItem("Create New Userscript",Menu.openEditorWindow);
-			Menu.addMenuItem("Clear All Data",Menu.clearAllData);
+			// Menu.addMenuItem("Clear All Data",Menu.clearAllData);
 			// Menu.menuElement.appendChild(document.createElement('HR')); // Too wide in Konq!
-			Menu.menuElement.appendChild(document.createElement('BR'));
-			Menu.menuElement.appendChild(document.createTextNode('-----------'));
+			// Menu.menuElement.appendChild(document.createElement('BR'));
+			// Menu.menuElement.appendChild(document.createTextNode('-----------'));
 
 			for (var script in GrimeApeConfig.scripts) {
 				(function(){ // To keep scriptName, scriptData and checkbox local for toggleScript's context.
@@ -409,7 +433,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					// editButton.style.position = 'fixed';
 					// editButton.style.right = '12px';
 					editButton.style.verticalAlign = 'middle';
-					editButton.onclick = (function(){ Menu.openEditorWindow(scriptName); });
+					editButton.onclick = (function(evt){ evt.preventDefault(); Menu.openEditorWindow(scriptName); });
 
 					var deleteButton = document.createElement('img');
 					deleteButton.src = "/_gRiMeApE_/images/delete16x16.png";
@@ -418,9 +442,10 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					deleteButton.title = 'Delete';
 					deleteButton.style.paddingLeft = '8px';
 					deleteButton.style.verticalAlign = 'middle';
-					deleteButton.onclick = (function(){ Menu.deleteScript(scriptName); });
+					deleteButton.onclick = (function(evt){ evt.preventDefault(); Menu.deleteScript(scriptName); });
 
 					var toggleScript = (function(evt) {
+							evt.preventDefault();
 							// scriptData.enabled = checkbox.checked;
 							scriptData.enabled = !scriptData.enabled;
 							checkbox.checked = scriptData.enabled;
@@ -450,10 +475,15 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			// Menu.menuElement.appendChild(document.createElement('HR'));
 			Menu.menuElement.appendChild(document.createElement('BR'));
 			Menu.menuElement.appendChild(document.createTextNode('-----------'));
+			Menu.addMenuItem("Userscript Commands",Menu.showUserscriptCommands);
+			Menu.addMenuItem("Create New Userscript",Menu.openEditorWindow);
 			Menu.addMenuItem("Show Log",Menu.showHideLog);
 			Menu.addMenuItem("Enable/Disable",Menu.toggleEnabled);
 
+			Menu.userscriptCommandsDiv = document.createElement('DIV');
+			Menu.userscriptCommandsDiv.appendChild(document.createTextNode('Userscript Commands'));
 			document.body.appendChild(Menu.menuElement);
+			document.body.appendChild(Menu.userscriptCommandsDiv);
 			Menu.initStyle();
 		},
 
@@ -463,7 +493,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				position = 'fixed';
 				right = '4px';
 				bottom = (ApeIcon.iconHeight+4)+'px';
-				zIndex = 10000;
+				zIndex = 120000;
 				border = '1px solid black';
 				backgroundColor = '#ffffff';
 				color = 'black';
@@ -472,6 +502,14 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			}
 			// var css = " #menuEnabled.link{ color:#00ff00; } #menuDisabled.link{ color:#880000; } ";
 			// document.writeln("<SCRIPT type='text/css'>"+css+"</SCRIPT>");
+			Menu.userscriptCommandsDiv.style.display = 'none';
+			Menu.userscriptCommandsDiv.style.position = 'fixed';
+			Menu.userscriptCommandsDiv.style.zIndex = 120001;
+			Menu.userscriptCommandsDiv.style.border = '1px solid black';
+			Menu.userscriptCommandsDiv.style.backgroundColor = 'white';
+			Menu.userscriptCommandsDiv.style.color = 'black';
+			Menu.userscriptCommandsDiv.style.padding = '4px';
+			Menu.userscriptCommandsDiv.style.textAlign = 'left';
 		},
 
 		rebuild: function() {
@@ -490,7 +528,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 	// var icon = document.getElementById('gaIcon');
 	// icon.addEventListener('onclick',Menu.showHideMenu());
 	// iconHolder.href = '#'; iconHolder.target = '_self';
-	ApeIcon.icon.onclick = Menu.showHideMenu;
+	// ApeIcon.icon.onclick = Menu.showHideMenu;
+	ApeIcon.icon.onclick = (function(evt) { Menu.showHideMenu(); evt.preventDefault(); });
 	// GM_log("icon.parentNode = "+icon.parentNode);
 
 

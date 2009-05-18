@@ -182,6 +182,7 @@ this.ga_uneval = function (obj) {
 	if (obj==undefined) { return "undefined"; }
 	// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
 	if (typeof(obj)=='string') {
+		// TODO: ok we have done some basic chars, but what about non-ascii chars?!
 		return '"' + obj.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r') + '"';
 	} else if (typeof(obj)=='number') {
 		return ""+obj;

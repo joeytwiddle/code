@@ -159,7 +159,7 @@ function getItemsMatching(l,c) {
 		l = objectToArray(l);
 	}
 	if (l.item) {
-		GM_log("getItemsMatching() has actually never been testing with .item()");
+		GM_log("getItemsMatching() has actually never been testing with .item() :P");
 	}
 	var ret = new Array();
 	for (var i=0;i<l.length;i++) {
@@ -196,7 +196,7 @@ function makeLinkAbsolute(url) {
 		if (i>=0) {
 			docTop = docTop.substring(0,i+1);
 		}
-		GM_log("Absolutized "+url+" to "+docTop+url);
+		// GM_log("Absolutized "+url+" to "+docTop+url);
 		return docTop + url;
 	}
 }
@@ -229,7 +229,7 @@ function saveData() {
 	var unevaled = uneval(data);
 
 		var revLinkStr = uneval(data.revLinks) + uneval(data.revLinkArray);
-		GM_log("dataStr is "+unevaled.length+", of which "+revLinkStr.length+" is revlinks.");
+		GM_log(new Date()+" dataStr is "+unevaled.length+", of which "+revLinkStr.length+" is revlinks.");
 
 	GM_log(new Date()+" Calling GM_setValue (size="+ unevaled.length +") ...");
 	GM_setValue('pageHistoryData',unevaled);
@@ -250,6 +250,19 @@ function loadData() {
 		// document.writeln("<BR/>track_history.loadData() failed - sorry your data was corrupt and destroyed.  Check the log.");
 		html += "Sorry Data Corrupted. uneval failed with:<BR/>\n"+escapeHTML(""+e)+"<BR/>\n";
 	}
+}
+
+function urlsMatch(x,y) {
+	if (x==undefined || y==undefined) {
+		GM_log("There are still UNDEFINED links being stored/used!");
+		return false;
+	}
+	if (typeof(x)!='string' || typeof(y)!='string') {
+		GM_log("There are NON-STRINGS links being stored/used! "+typeof(x)+" "+typeof(y));
+		return false;
+	}
+	// return x==y || x+'/'==y || x==y+'/';
+	return x.replace(/\/$/,'') == y.replace(/\/$/,'');
 }
 
 function addDataForThisPage() {
@@ -396,11 +409,13 @@ cleanupData();
 // saveData() might be called again later (e.g. to update the lastUsed of the
 // parentPageData), but we do it here in case 1) the code below breaks, or 2)
 // we don't actually display the parentPage history.
-// TODO: The best solution would be to put the rest of the code in a try-catch,
+// DONE: The best solution would be to put the rest of the code in a try-catch,
 // and call saveData() just once, at the end.
 
 
 
+
+if (true /*document == window.document*/) { // TODO: Only act on top frame
 
 //// Presenting the data ////
 
@@ -425,19 +440,6 @@ function findLinkGroup(pageData,url) {
 	return false;
 }
 
-function urlsMatch(x,y) {
-	if (x==undefined || y==undefined) {
-		GM_log("There are still UNDEFINED links being stored/used!");
-		return false;
-	}
-	if (typeof(x)!='string' || typeof(y)!='string') {
-		GM_log("There are NON-STRINGS links being stored/used! "+typeof(x)+" "+typeof(y));
-		return false;
-	}
-	// return x==y || x+'/'==y || x==y+'/';
-	return x.replace(/\/$/,'') == y.replace(/\/$/,'');
-}
-
 // function findPagesContainingLinkTo(url) {
 	// return getItemsMatching(data, function(pageData){ return pageContainsLinkTo(pageData,url); } );
 // }
@@ -446,9 +448,9 @@ function drawHistoryTree() {
 
 	// historyBlock.style = 'position: fixed; top: 4px; left: 4px; z-index: 10000; border: solid 1px black; background-color: white; padding: 6px;';
 
-	GM_log(new Date()+" Calling showNeighbours");
+	// GM_log(new Date()+" Calling showNeighbours");
 	html = showNeighbours();
-	GM_log(new Date()+" Done");
+	// GM_log(new Date()+" Done");
 
 	if (html == "") {
 		return;
@@ -590,13 +592,14 @@ function showNeighbours() {
 	} catch (e) {
 		GM_log("Failed to find myLink."+e);
 	}
-	var myIndex = getIndexOf(myLink,group);
+	var groupArray = objectToArray(group);
+	var myIndex = getIndexOf(myLink,groupArray);
 	// GM_log("myIndex = "+myIndex);
 	// var myIndex = 1337;
 	// html += "Got group: "+group+"<BR/>\n";
 	html += "<FONT size='+0'>";
 	// TODO: sometimes group.length fails - makes sense since group is a map not a list!  so why does it sometimes work?  :P
-	html += (myIndex+1)+" of "+group.length+" from ";
+	html += (myIndex+1)+" of "+groupArray.length+" from ";
 	// TODO: We could make this link do Back for the user, only if the url == referrer.
 	html += "<A href='"+parentPageData.url+"'>"+escapeHTML(parentPageData.title)+"</A>";
 	html += "</FONT><BR/>\n";
@@ -635,7 +638,7 @@ function createFaviconHTMLFor(url) {
 }
 
 
-GM_log(new Date()+" data.revLinks = "+data.revLinks);
+// GM_log(new Date()+" data.revLinks = "+data.revLinks);
 
 try {
 	drawHistoryTree();
@@ -670,6 +673,8 @@ if (makeBoxMoveable) {
 		document.body.appendChild(scr);
 
 	}
+}
+
 }
 
 
