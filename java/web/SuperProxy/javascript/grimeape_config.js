@@ -245,15 +245,12 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 			////// Setup form button events:
 			form['cancel'].onclick = function(evt) {
-				evt.preventDefault();
 				newEditor.parentNode.removeChild(newEditor);
 			};
 			form['test'].onclick = function(evt) {
-				evt.preventDefault();
 				eval('(function(){ ' + form['content'].value + '})();');
 			};
 			form['save'].onclick = function(evt) {
-				evt.preventDefault();
 				GM_log("Attemping save ... ");
 				try {
 					// var content = form['content'].textContent; // In Konq this is not updated by user!
@@ -384,7 +381,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			var link = document.createElement('A');
 			link.textContent = commandName;
 			link.href = 'javascript:void(0)';
-			link.onclick = (function(evt) { evt.preventDefault(); commandFunc(); });
+			link.onclick = (function(evt) { commandFunc(); });
 			Menu.userscriptCommandsDiv.appendChild(link);
 		},
 
@@ -445,7 +442,6 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					deleteButton.onclick = (function(evt){ evt.preventDefault(); Menu.deleteScript(scriptName); });
 
 					var toggleScript = (function(evt) {
-							evt.preventDefault();
 							// scriptData.enabled = checkbox.checked;
 							scriptData.enabled = !scriptData.enabled;
 							checkbox.checked = scriptData.enabled;
@@ -459,8 +455,6 @@ The loading of userscripts should still be delayed till the end of loading thoug
 								// loadScript(script);
 								loadScriptOtherWay(scriptName);
 							}
-							// evt.preventDefault();
-							// return null;
 					});
 
 					checkbox.onclick = toggleScript;
