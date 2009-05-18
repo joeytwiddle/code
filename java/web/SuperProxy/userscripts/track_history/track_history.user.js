@@ -7,8 +7,8 @@
 
 //// Config ////
 
-var maxPageHistory = 12;
-var maxRevLinkHistory = 1000;
+var maxPageHistory = 5;
+var maxRevLinkHistory = 500;
 var goForwards = false; // Whether to navigate forward in browser when following a generated link, otherwise we replace the current page.  Disadvantage with the replace method, is that your browser won't colour the visited links differently.
 var useReferrerOnly = false; // (!goForwards); // Argh document.location.replace() also updates referrer.  Leave this false or the script will only work on the first result!
 var verboseAlternatives = false; // Whether to show info when we had multiple options for the parentPage.
@@ -229,7 +229,8 @@ function saveData() {
 	var unevaled = uneval(data);
 
 		var revLinkStr = uneval(data.revLinks) + uneval(data.revLinkArray);
-		GM_log(new Date()+" dataStr is "+unevaled.length+", of which "+revLinkStr.length+" is revlinks.");
+		GM_log("dataStr is "+unevaled.length+", of which "+revLinkStr.length+" is revlinks.");
+		GM_log("There are "+objectToArray(data).length+" pages of history and "+objectToArray(data.revLinks).length+" revLinks.");
 
 	GM_log(new Date()+" Calling GM_setValue (size="+ unevaled.length +") ...");
 	GM_setValue('pageHistoryData',unevaled);
@@ -313,10 +314,6 @@ function addDataForThisPage() {
 
 function cleanupData() {
 
-	// var dataStr = uneval(data);
-	// var revLinkStr = uneval(data.revLinks) + uneval(data.revLinkArray);
-	// html += "dataStr is "+dataStr.length+", of which "+revLinkStr.length+" is revlinks.<BR/>\n";
-
 	var dataArray = objectToArray(data);
 	// html += "There are "+dataArray.length+" pages in history, ";
 	var cntPage = 0; // failsafe
@@ -363,7 +360,8 @@ function cleanupData() {
 		revLinkArray = objectToArray(data.revLinks);
 	}
 
-	// html += "Cleaned up "+cntPage+" pages and "+cntLinks+" links.<BR/>\n";
+	// if (cntPage>0 || cntLinks>0)
+		// html += "Cleaned up "+cntPage+" pages and "+cntLinks+" links.<BR/>\n";
 
 }
 
