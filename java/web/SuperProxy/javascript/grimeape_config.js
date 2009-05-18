@@ -19,7 +19,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 	// Try loading config:
 	try {
 		GrimeApeConfig = eval(GM_getValue("GrimeApeConfig"));
-		GM_log("Loaded config: "+uneval(GrimeApeConfig));
+		// GM_log("Loaded config length "+uneval(GrimeApeConfig).length);
 	} catch (e) {
 		GM_log(e);
 	}
@@ -33,14 +33,14 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			// scripts: ({ "faviconizegoogle", "reclaim_cpu" }),
 			scripts: ({
 				"FaviconizeGoogle" : ({ enabled: true }) ,
-				"auto_highlight_text_on_a" : ({ enabled: true }),
-				"Delicious Search Results On Google" : ({ enabled: false }), // Requires GM_xmlhttpRequest.
-				"Twitter Search Results On Google" : ({ enabled: false }), // Requires GM_xmlhttpRequest.
-				"SF ProjectHomepage" : ({ enabled: false }), // needs @include we don't want it every page!
-				"Googles Old Favicon" : ({ enabled: false }),
+				"Highlight Search Result Pages" : ({ enabled: true }),
+				"Delicious Search Results On Google" : ({ enabled: true }),
+				"Twitter Search Results On Google" : ({ enabled: false }),
+				"SF ProjectHomepage" : ({ enabled: true }),
+				"Googles Old Favicon" : ({ enabled: true }),
 				"Track History" : ({ enabled: false }),
 				"Cleanup Fonts" : ({ enabled: false }),
-				"Reclaim CPU" : ({ enabled: false }),
+				"Reclaim CPU" : ({ enabled: true }),
 			}),
 		};
 
@@ -61,7 +61,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 	function loadScript(scriptName) {
 		var fsName = getFsName(scriptName);
-		GM_log('Loading: '+scriptName);
+		GM_log('Loading userscript: '+scriptName);
 		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js"
 		document.writeln("<SCRIPT type='text/javascript' src='" + url + "'></SCRIPT>");
 	}
@@ -151,12 +151,14 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				// Add a gap at the bottom of the page, for our 'icon-bar'.
 				document.body.style.paddingBottom = ApeIcon.iconHeight+8 + document.body.style.paddingBottom + "px";
 
-				icon.style.opacity='0.8';
-				/*icon.style.filter='alpha(opacity=50)';
-				icon.style.mozOpacity='0.5'; // none work for Konq
-				icon.style._mozOpacity='0.5';*/
-				icon.onmouseout = function() { icon.style.opacity='0.8'; };
-				icon.onmouseover = function() { icon.style.opacity='1.0'; };
+				/*
+				icon.style.opacity='1.0';
+				// icon.style.filter='alpha(opacity=50)';
+				// icon.style.mozOpacity='0.5'; // none work for Konq
+				// icon.style._mozOpacity='0.5';
+				icon.onmouseout = function() { icon.style.opacity='1.0'; };
+				icon.onmouseover = function() { icon.style.opacity='0.8'; };
+				*/
 
 			},
 
@@ -489,24 +491,28 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						var editButton = document.createElement('img');
 						editButton.src = "/_gRiMeApE_/images/edit16x16.png";
 						editButton.title = 'Edit';
-						editButton.style.paddingLeft = '8px';
+						// editButton.style.paddingLeft = '8px';
+						// editButton.style.verticalAlign = 'middle';
 						// editButton.style.textAlign = 'right';
-						// editButton.style.position = 'fixed';
-						// editButton.style.right = '12px';
-						editButton.style.verticalAlign = 'middle';
+						editButton.style.position = 'absolute';
+						editButton.style.right = '22px';
+						editButton.style.cursor = 'pointer';
 						editButton.onclick = (function(evt){ evt.preventDefault(); Menu.openEditorWindow(scriptName); });
 
 						var deleteButton = document.createElement('img');
 						deleteButton.src = "/_gRiMeApE_/images/delete16x16.png";
-						deleteButton.width = 12;
-						deleteButton.height = 12;
+						deleteButton.width = 10;
+						deleteButton.height = 10;
 						deleteButton.title = 'Delete';
-						deleteButton.style.paddingLeft = '8px';
-						deleteButton.style.verticalAlign = 'middle';
+						// deleteButton.style.paddingLeft = '8px';
+						// deleteButton.style.verticalAlign = 'middle';
+						// deleteButton.style.textAlign = 'right';
+						deleteButton.style.position = 'absolute';
+						deleteButton.style.right = '6px';
+						deleteButton.style.cursor = 'pointer';
 						deleteButton.onclick = (function(evt){ evt.preventDefault(); Menu.deleteScript(scriptName); });
 
-						var toggleScript = (function(evt) {
-								evt.preventDefault();
+						var toggleScript = (function() {
 								// scriptData.enabled = checkbox.checked;
 								scriptData.enabled = !scriptData.enabled;
 								checkbox.checked = scriptData.enabled;
@@ -523,15 +529,17 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						});
 
 						checkbox.onclick = toggleScript;
-						var menuItem = Menu.addMenuItem(script,toggleScript);
-						// menuItem.style.paddingRight = '32px';
+						// var menuItem = Menu.addMenuItem(script,toggleScript);
+						var menuItem = Menu.addMenuItem(script,function(evt){ evt.preventDefault(); toggleScript(); });
+						menuItem.style.paddingRight = '40px';
 						Menu.menuElement.insertBefore(checkbox,menuItem);
 						Menu.menuElement.insertBefore(deleteButton,menuItem.nextSibling);
 						Menu.menuElement.insertBefore(editButton,menuItem.nextSibling);
 						if (GrimeApeConfig.scripts[script].description) {
 							menuItem.title = GrimeApeConfig.scripts[script].description;
 						}
-						if (!scriptTriggers(GrimeApeConfig.scripts[script])) {
+						GM_log("Checking script \""+script+"\" with includes "+GrimeApeConfig.scripts[scriptName].includes);
+						if (!scriptTriggers(GrimeApeConfig.scripts[scriptName])) {
 							menuItem.style.color = '#aaaaaa';
 						}
 					})();
@@ -560,10 +568,10 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					right = '4px';
 					bottom = (ApeIcon.iconHeight+4)+'px';
 					zIndex = 120000;
-					border = '1px solid black';
+					border = '1px solid #444444';
 					backgroundColor = '#ffffff';
 					color = 'black';
-					padding = '4px';
+					padding = '6px';
 					textAlign = 'left';
 				}
 				// var css = " #menuEnabled.link{ color:#00ff00; } #menuDisabled.link{ color:#880000; } ";
@@ -571,7 +579,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				Menu.userscriptCommandsDiv.style.display = 'none';
 				Menu.userscriptCommandsDiv.style.position = 'fixed';
 				Menu.userscriptCommandsDiv.style.zIndex = 120001;
-				Menu.userscriptCommandsDiv.style.border = '1px solid black';
+				Menu.userscriptCommandsDiv.style.border = '1px solid #444444';
 				Menu.userscriptCommandsDiv.style.backgroundColor = 'white';
 				Menu.userscriptCommandsDiv.style.color = 'black';
 				Menu.userscriptCommandsDiv.style.padding = '4px';
@@ -641,12 +649,12 @@ The loading of userscripts should still be delayed till the end of loading thoug
 	//// Start ////
 
 	function matchesGlob(str,glob) {
-		var re = new RegExp(glob.replace(/\*/g,'.*'));
 		try {
+			var re = new RegExp(glob.replace(/\*/g,'.*'));
 			return re.exec(str);
 		} catch (e) {
-			GM_log(""+e);
-			GM_log("  "+glob+"  ~~  "+re);
+			// GM_log("  "+glob+"  ~~  "+re);
+			GM_log("Problem matching glob \""+glob+"\": "+e);
 			return false;
 		}
 	}
@@ -658,11 +666,11 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				// GM_log("script = "+script);
 				// GM_log("scripts[script] = " + GrimeApeConfig.scripts[script]);
 				var scriptData = GrimeApeConfig.scripts[script];
-				if (GrimeApeConfig.scripts[script].enabled && scriptTriggers(GrimeApeConfig.scripts[script])) {
+				if (GrimeApeConfig.scripts[script].enabled && scriptTriggers(scriptData)) {
 					loadScript(script);
 					countLoaded++;
 				} else {
-					GM_log("Skipping ("+script+")");
+					// GM_log("Skipping ("+script+")");
 				}
 			}
 		}

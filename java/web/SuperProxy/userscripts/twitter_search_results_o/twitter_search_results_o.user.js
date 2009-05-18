@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name           Twitter Search Results on Google
+// @name           Twitter Search Results On Google
 // @namespace      markcarey
 // @description    Shows results from Twitter on Google search pages
 // @include        http://www.google.*/search?*q=*

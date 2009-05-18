@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name           track_history
+// @name           Track History
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Presents a list of the group of links including the one that took you to the current page.  Allows you to go to a neighbouring link without having to go Back.  THIS IS BETA PREVIEW OF THE FINAL SCRIPT.  I recommend you grab the Userscripts Updater, so that you know when I release the 1.0 version.
 // @include        *
