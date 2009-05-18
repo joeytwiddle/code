@@ -78,9 +78,10 @@ function GM_log(obj) {
 GM_log("GM_log() works!");
 
 // escape(val) is not enough for real CGI escaping.  It does nothing to real
-// '+'s, but the webserver will real '+'s from CGI as spaces!
+// '+'s, but the webserver will read real '+'s from CGI as spaces!
 function cgiEscape(val) {
-	return escape(val).replace(/\+/g,'%2b');
+	return encodeURIComponent(val);
+	// return escape(val).replace(/\+/g,'%2b');
 }
 function cgiUnescape(val) {
 	return unescape(val.replace(/\+/g,' '));
@@ -271,7 +272,7 @@ if (!this.GM_xmlhttpRequest) {
 	GM_xmlhttpRequest = ga_xmlhttpRequest;
 }
 
-function GM_registerMenuCommand(commandName, commandFunc, accelKey, accelModifiers, accessKey) {
-	Menu.addUserscriptCommand(commandName,commandFunc,accelKey,accelModifiers,accessKey);
-}
+// function GM_registerMenuCommand(commandName, commandFunc, accelKey, accelModifiers, accessKey) {
+	// Menu.addUserscriptCommand(commandName,commandFunc,accelKey,accelModifiers,accessKey);
+// }
 

@@ -356,9 +356,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
 
         } else if (commandDir.equals("updateScript")) {
             String name = wreq.getParam("name");
-            String fsName = name.toLowerCase().replaceAll(" ", "_");
-            if (fsName.length()>24)
-                fsName = fsName.substring(0,24);
+            String fsName = getFsName(name);
             String url = wreq.getParam("url");
             String content = wreq.getParam("content");
             File outFile = new File(userscriptsDir,fsName+"/"+fsName+".user.js");
@@ -384,9 +382,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
 
         } else if (commandDir.equals("deleteScript")) {
             String name = wreq.getParam("name");
-            String fsName = name.toLowerCase().replaceAll(" ", "_");
-            if (fsName.length()>24)
-                fsName = fsName.substring(0,24);
+            String fsName = getFsName(name);
             File file = new File(userscriptsDir,fsName+"/"+fsName+".user.js");
             assertFileIsBelow(file,userscriptsDir);
             Logger.info("User is deleting script: "+file);
@@ -412,6 +408,14 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             throw new Error("Bad request: "+wreq.getPath());
         }
         
+    }
+
+    private String getFsName(String name) {
+        String fsName = name.toLowerCase().replaceAll(" ", "_")
+        .replaceAll("'", "").replaceAll("/", "");
+        if (fsName.length()>24)
+            fsName = fsName.substring(0,24);
+        return fsName;
     }
     
     public static void assertFileIsBelow(File suspect, File parent) {
