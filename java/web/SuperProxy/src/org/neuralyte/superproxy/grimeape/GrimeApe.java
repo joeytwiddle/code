@@ -300,6 +300,8 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             // With or without it, even with errors, the data gets through fine.
             if (!wreq.getParam("cdata").isEmpty()) {
                 response.setContent("<![CDATA[" + response.getContentAsString() + "]]>");
+            } else if (commandDir.equals("userscripts")) {
+                response.setContent("(function(){\n" + response.getContentAsString() + "\n})();");
             }
             return response;
             

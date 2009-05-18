@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name           Delicious Search Results On Google
+// @name           Delicious Search Results on Google
 // @namespace      gaillard
 // @description    Shows results from Delicious on Google search pages
 // @include        http://www.google.*/search?*q=*

@@ -81,10 +81,12 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		// if (!scriptData.includes) {
 			// GM_log("Odd: no includes. "+scriptData.includes);
 		// }
+		// GM_log("Checking triggers for "+scriptData+" "+typeof(scriptData.includes)+"/"+typeof(scriptData.excludes));
 		if (scriptData.includes) {
 			var pass = false;
 			for (var i in scriptData.includes) {
-				if (matchesGlob(""+document.location,scriptData.includes[i])) {
+				// GM_log("About to check include ["+i+"] = "+scriptData.includes[i]);
+				if (matchesGlob(""+document.location,""+scriptData.includes[i])) {
 					// GM_log("Script matched include: "+scriptData.includes[i]);
 					pass = true; break;
 				}
@@ -95,7 +97,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 		}
 		if (scriptData.excludes) {
 			for (var i in scriptData.excludes) {
-				if (matchesGlob(""+document.location,scriptData.excludes[i])) {
+				// GM_log("About to check exclude ["+i+"] = "+scriptData.excludes[i]);
+				if (matchesGlob(""+document.location,""+scriptData.excludes[i])) {
 					// GM_log("Script matched exclude: "+scriptData.excludes[i]);
 					return false;
 				}
@@ -323,6 +326,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						while (match = regex.exec(content)) {
 							list.push(match[1]);
 						}
+						if (list.length == 0)
+							return undefined;
 						return list;
 					}
 					// var newScriptName = content.match(/\/\/ *@name  *(.*)/)[1];
@@ -510,6 +515,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						deleteButton.style.position = 'absolute';
 						deleteButton.style.right = '6px';
 						deleteButton.style.cursor = 'pointer';
+						deleteButton.style.marginTop = '6px';
 						deleteButton.onclick = (function(evt){ evt.preventDefault(); Menu.deleteScript(scriptName); });
 
 						var toggleScript = (function() {
@@ -538,7 +544,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						if (GrimeApeConfig.scripts[script].description) {
 							menuItem.title = GrimeApeConfig.scripts[script].description;
 						}
-						GM_log("Checking script \""+script+"\" with includes "+GrimeApeConfig.scripts[scriptName].includes);
+						// GM_log("Checking script \""+script+"\" with includes "+GrimeApeConfig.scripts[scriptName].includes);
 						if (!scriptTriggers(GrimeApeConfig.scripts[scriptName])) {
 							menuItem.style.color = '#aaaaaa';
 						}
@@ -615,10 +621,11 @@ The loading of userscripts should still be delayed till the end of loading thoug
 			var links = document.links;
 			for (var i=0;i<links.length;i++) {
 				var link = links[i];
-				if (link.className == 'userjs') {
+				// if (link.className == 'userjs') {
+				if (link.href && link.href.match(/\.user\.js$/)) {
 					(function() { // Creating a context for scriptHref
 						var scriptHref = link.href;
-						link.onclick = function(evt) {
+						var doGrimeApeInstall = function(evt) {
 							evt.preventDefault();
 							var form = ScriptEditor.openNewEditor();
 							GM_xmlhttpRequest( { method:'GET', url:scriptHref,
@@ -628,6 +635,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 								}
 							} );
 						};
+						link.addEventListener('click',doGrimeApeInstall,false);
 						link.title = "Install in GrimeApe...";
 						var miniApe = document.createElement("IMG");
 						miniApe.src = "/_gRiMeApE_/images/blueape.png";
@@ -650,7 +658,9 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 	function matchesGlob(str,glob) {
 		try {
-			var re = new RegExp(glob.replace(/\*/g,'.*'));
+			var globre = glob.replace(/\*/g,'.*');
+			// GM_log("Checking against "+glob+" where globre="+globre);
+			var re = new RegExp(globre);
 			return re.exec(str);
 		} catch (e) {
 			// GM_log("  "+glob+"  ~~  "+re);
