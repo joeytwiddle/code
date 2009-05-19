@@ -185,12 +185,9 @@ function GM_listValues() {
 // }
 unsafeWindow = window;
 
-if (!document.evaluate) {
-	document.evaluate = function (args) {
-		// TODO
-		GM_log("TODO: GA needs to implement document.evaluate().");
-	}
-}
+// document.evaluate and XPathResult are implemented in xpath.js
+// TODO: If you load an XML document via XMLHttpRequest or another mechanism,
+// the evaluate() method is also available.
 
 // Awhh hell Konqueror doesn't even have uneval().
 
