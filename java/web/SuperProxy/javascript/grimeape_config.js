@@ -658,6 +658,9 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 	function matchesGlob(str,glob) {
 		try {
+			if (typeof(str) != 'string') {
+				GM_log("matchesGlob has been passed non-string: "+typeof(str)+"");
+			}
 			var globre = glob.replace(/\*/g,'.*');
 			// GM_log("Checking against "+glob+" where globre="+globre);
 			var re = new RegExp(globre);

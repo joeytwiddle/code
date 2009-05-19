@@ -301,7 +301,21 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             if (!wreq.getParam("cdata").isEmpty()) {
                 response.setContent("<![CDATA[" + response.getContentAsString() + "]]>");
             } else if (commandDir.equals("userscripts")) {
-                response.setContent("(function(){\n" + response.getContentAsString() + "\n})();");
+                String namespace = args[3];
+                // @todo Should really be @namespace from the file's meta.
+                // Actually in the log and maybe also the prefs, GM shows:
+                //     nameSpaceMeta+"/"+scriptName
+                // Note that is the script's name not it's filename, which we don't have here!
+                StringBuffer content = response.getContentAsStringBuffer();
+                content.insert(0,
+                        "(function(){\n"
+                        + "var GA_namespace = \""+namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"")+"\";\n"
+                        + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
+                        + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
+                        + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
+                );
+                content.append("\n})();");
+                response.setContent(content);
             }
             return response;
             
@@ -463,6 +477,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             } else {
                 Logger.log("Doing injection at index "+i);
                 String[] scriptsToInject = {
+                        "javascript/xpath.js", // Only really needed for a few browsers.
                         "javascript/grimeape_greasemonkey_compat.js",
                         // "javascript/test.js",
                         "javascript/grimeape_config.js",

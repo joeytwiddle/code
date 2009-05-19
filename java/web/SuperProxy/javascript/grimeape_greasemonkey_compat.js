@@ -23,17 +23,6 @@ GM_xmlhttpRequest or whatever it's called.
 
 */
 
-// OLD IE compat:
-if(typeof XMLHttpRequest == "undefined") {
-	XMLHttpRequest = function() {
-		try { return new ActiveXObject("Msxml2.XMLHTTP.6.0") } catch(e) {}
-		try { return new ActiveXObject("Msxml2.XMLHTTP.3.0") } catch(e) {}
-		try { return new ActiveXObject("Msxml2.XMLHTTP") } catch(e) {}
-		try { return new ActiveXObject("Microsoft.XMLHTTP") } catch(e) {}
-		throw new Error( "This browser does not support XMLHttpRequest." )
-	};
-}
-
 // In case you were wondering, self=window and this=window.
 // GM_log("Self = "+self+" This = "+this+" so self==window? "+(self==window)); // true
 // I believe if we are in a sub-context, and code tries to use a function which
@@ -51,8 +40,24 @@ if(typeof XMLHttpRequest == "undefined") {
 var logToProxy = false;
 var localLog = "";
 
-function GM_log(obj) {
-	localLog += ""+obj+"\n";
+function GA_padLeft(str,num,padChar) {
+	str = ""+str;
+	while (str.length < num) {
+		str = padChar + str;
+	}
+	return str;
+}
+
+function GA_getSimpleTime() {
+	var now = new Date();
+	return GA_padLeft(now.getHours(),2,'0')
+		+":"+ GA_padLeft(now.getMinutes(),2,'0')
+		+":"+ GA_padLeft(now.getSeconds(),2,'0')
+		+"."+ GA_padLeft(now.getMilliseconds(),4,'0').substring(0,2);
+}
+
+function GA_log(namespace,obj) {
+	localLog += "["+GA_getSimpleTime()+"] "+namespace+": "+obj+ "\n";
 	window.status = ""+obj;
 	if (logToProxy) {
 		//// Send log line to the proxy, by requesting a special URL.
@@ -75,8 +80,13 @@ function GM_log(obj) {
 	}
 }
 
+function GM_log(obj) {
+	GA_log("NONE!",obj);
+}
+
 GM_log("GM_log() works!");
 
+//// @deprecated - I found encodeURIComponent!
 // escape(val) is not enough for real CGI escaping.  It does nothing to real
 // '+'s, but the webserver will read real '+'s from CGI as spaces!
 function cgiEscape(val) {
@@ -93,32 +103,36 @@ function cgiUnescape(val) {
 // break order, and we must stall GM_getValue requests until queue is flushed.
 // Having our own setValue/getValue queue might actually improve synchronization
 // over multiple JS threads.
-function GM_setValue(name,value) {
+function GA_setValue(namespace,name,value) {
 	// Konqueror appears to fail (or take forever) if params.length exceeds 30,000.  Needs batching!  :f
 	// Hmm Firefox was going very slow about 40k also.  =/  Stream timed out when it completed.  Are we blocking in a buffer somewhere?
 	if (value==undefined || value==null)
 		value = "";
-	var url = '/_gRiMeApE_/setValue';
-	var params = 'name='+cgiEscape(name)+'&value='+cgiEscape(value);
+	var url = "/_gRiMeApE_/setValue";
+	var params = "name="+cgiEscape(name)+"&namespace="+cgiEscape(namespace)+"&value="+cgiEscape(value);
 	// document.writeln('<SCRIPT type="text/javascript" src="'+url+'"/>');
 	//// Doing it the above way in Konqueror, means the request does not actuall happen until *after* this thread has finished.
 	//// This way will set immediately:
 	var request = new XMLHttpRequest();
-	// request.open('GET',url+'?'+params,false);
-	request.open('POST',url,false);
+	// request.open("GET",url+"?"+params,false);
+	request.open("POST",url,false);
 	request.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 	request.setRequestHeader("Content-length", params.length);
 	request.setRequestHeader("Connection", "close");
 	request.send(params);
-	// request.send('\n');
-	// request.send('\n');
-	// GM_log(new Date()+' GM_setValue("'+name+'","'+value+'") responded with "'+request.responseText+'".');
-	GM_log(new Date()+' GM_setValue("'+name+'",{"'+value.length+'"}) responded with "'+request.responseText+'".');
+	// request.send("\n");
+	// request.send("\n");
+	// GM_log('GM_setValue("'+name+'","'+value+'") responded with "'+request.responseText+'".');
+	GA_log(namespace,'GM_setValue("'+name+'","'+namespace+'",{'+value.length+'}) responded with "'+request.responseText+'".');
 	return null;
 }
 
-function GM_getValue(name,defaultValue) {
-	var url = '/_gRiMeApE_/getValue?name='+cgiEscape(name);
+function GM_setValue(name,value) {
+	GA_setValue("NO_NAMESPACE",name,value);
+}
+
+function GA_getValue(namespace,name,defaultValue) {
+	var url = '/_gRiMeApE_/getValue?name='+cgiEscape(name)+"&namespace="+cgiEscape(namespace);
 	/*
 	url += '&type=js';
 	window.GM_getValueResult = undefined;
@@ -164,8 +178,12 @@ function GM_getValue(name,defaultValue) {
 	*/
 }
 
-function GM_deleteValue(name) {
-	var url = '/_gRiMeApE_/deleteValue?name='+cgiEscape(name);
+function GM_getValue(name,defaultValue) {
+	return GA_getValue("NO_NAMESPACE",name,defaultValue);
+}
+
+function GA_deleteValue(namespace,name) {
+	var url = '/_gRiMeApE_/deleteValue?name='+cgiEscape(name)+"&namespace="+cgiEscape(namespace);
 	var request = new XMLHttpRequest();
 	request.open('GET',url,false);
 	request.send(null);
@@ -173,6 +191,10 @@ function GM_deleteValue(name) {
 		GM_log("GM_deleteValue(name) failed!  "+request.responseText);
 	}
 	return;
+}
+
+function GM_deleteValue(name) {
+	GA_deleteValue("NO_NAMESPACE",name);
 }
 
 function GM_listValues() {
@@ -255,7 +277,7 @@ ga_xmlhttpRequest = function (req) {
 		GM_log("Done");
 		request.send(req.data);
 
-		GM_log(new Date()+' GM_xmlhttpRequest("'+url+'") responded with "'+request.responseText+'".');
+		GM_log('GM_xmlhttpRequest("'+url+'") responded with "'+request.responseText+'".');
 
 		responseState = {
 			// can't support responseXML because security won't
@@ -284,6 +306,27 @@ if (!this.GM_xmlhttpRequest) {
 	GM_xmlhttpRequest = ga_xmlhttpRequest;
 }
 
-// GM_registerMenuCommand is actually implemented in grimeape_config.js
+// GM_registerMenuCommand is implemented in grimeape_config.js
 
+function GM_addStyle(css) {
+	var doc = document;
+	var head, style;
+	head = doc.getElementsByTagName("head")[0];
+	if (!head) { return; }
+	style = doc.createElement("style");
+	style.type = "text/css";
+	style.innerHTML = css;
+	head.appendChild(style);
+}
+
+// OLD IE compat:
+if(typeof XMLHttpRequest == "undefined") {
+	XMLHttpRequest = function() {
+		try { return new ActiveXObject("Msxml2.XMLHTTP.6.0") } catch(e) {}
+		try { return new ActiveXObject("Msxml2.XMLHTTP.3.0") } catch(e) {}
+		try { return new ActiveXObject("Msxml2.XMLHTTP") } catch(e) {}
+		try { return new ActiveXObject("Microsoft.XMLHTTP") } catch(e) {}
+		GM_log("This browser does not support XMLHttpRequest.");
+	};
+}
 
