@@ -310,6 +310,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					// var content = form['content'].textContent; // In Konq this is not updated by user!
 					var content = form['content'].value;
 					function getMeta(key) {
+						key = key.replace(/\*/g,'\\*');
 						var regex = "// *@"+key+"  *(.*)";
 						try {
 							return content.match(regex)[1];
@@ -320,6 +321,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						}
 					}
 					function getMetas(key) {
+						key = key.replace(/\*/g,'\\*');
 						var regex = new RegExp("// *@"+key+"  *(.*)","g");
 						var list = new Array();
 						var match;
@@ -345,7 +347,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					if (req.responseText == "<NODATA>OK</NODATA>") {
 						var scriptData = new Object();
 						scriptData.enabled = true;
-						// scriptData.namespace = getMeta("namespace");
+						scriptData.namespace = getMeta("namespace");
 						scriptData.description = getMeta("description");
 						scriptData.includes = getMetas("include");
 						scriptData.excludes = getMetas("exclude");
