@@ -225,16 +225,16 @@ function arrayToJSON(a) {
 
 function saveData() {
 	// GM_setValue('pageHistoryData',uneval(data));
-	GM_log(new Date()+" Preparing data with uneval...");
+	GM_log("Preparing data with uneval...");
 	var unevaled = uneval(data);
 
 		var revLinkStr = uneval(data.revLinks) + uneval(data.revLinkArray);
 		GM_log("dataStr is "+unevaled.length+", of which "+revLinkStr.length+" is revlinks.");
 		GM_log("There are "+objectToArray(data).length+" pages of history and "+objectToArray(data.revLinks).length+" revLinks.");
 
-	GM_log(new Date()+" Calling GM_setValue (size="+ unevaled.length +") ...");
+	GM_log("Calling GM_setValue (size="+ unevaled.length +") ...");
 	GM_setValue('pageHistoryData',unevaled);
-	GM_log(new Date()+" Done.");
+	GM_log("Done.");
 }
 
 function loadData() {
@@ -394,12 +394,12 @@ if (!data.revLinksAges) {
 	data.revLinksAges = new Object();
 }
 
-GM_log(new Date()+" Parsing current page...");
+GM_log("Parsing current page...");
 
 // Add data for this page
 addDataForThisPage();
 
-GM_log(new Date()+" Cleaning up data...");
+GM_log("Cleaning up data...");
 
 cleanupData();
 

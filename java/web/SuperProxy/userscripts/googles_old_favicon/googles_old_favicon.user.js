@@ -3,10 +3,10 @@
 // @description   Brings back the old Google favicon
 // @version       2.16
 // @author        !user
-// @include       http://*.google.tld/*
-// @include       http://google.tld/*
-// @include       https://*.google.tld/*
-// @include       https://google.tld/*
+// @include       http://*.google.*/*
+// @include       http://google.*/*
+// @include       https://*.google.*/*
+// @include       https://google.*/*
 // @exclude       http://desktop.google.tld/*
 // @exclude       http://docs.google.tld/*
 // @exclude       http://google.tld/notebook/*
