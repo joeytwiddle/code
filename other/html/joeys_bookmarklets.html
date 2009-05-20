@@ -75,7 +75,7 @@
 		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This was my first Bookmarklet which loads an external javascript file.</LI> -->
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
 		 <LI>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it's easy to add extra tags.)</LI>
-		 <LI class='todo'>Shouldn&quot; it be collapsing all the text after each bookmarklet on this page?  (They are in blockquotes.)  Is it missing them because they contain so little, or because we have done the parent and lost track of the child?</LI>
+		 <LI class='todo'>Shouldn&apos; it be collapsing all the text after each bookmarklet on this page?  (They are in blockquotes.)  Is it missing them because they contain so little, or because we have done the parent and lost track of the child?</LI>
 		 <LI class='todo'>Bug: At the moment this tool only works well if the element we fold up has a short text-heading appearing just before it.  Not all pages are like this, so we need to adapt the algorithm to work over a wider range of pages.</LI>
 		 <!-- <LI class='todo'>Bug: This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the block does have a header, and we don&quot;t use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI> -->
 		 <LI class='todo'>Todo: We could even create blocks to compress where there was no structure.  E.g. create a block between two HR tags, provided the text content in between is large.  Or in fact squash any blocks containing text, if the text is >=15% of the parent&apos;s text.</LI>
@@ -423,19 +423,35 @@
 				while (hex.length<6) { hex='0'+hex; }
 				return hex;
 			}
+			function getAttribs(node) {
+				var attribs = '';
+				for (var j=0;j<node.attributes.length;j++) {
+					var attr = node.attributes[j];
+					if (attr.name == 'title') { continue; }
+					attribs += ' ' + attr.name + '=&quot;' + attr.value.replace(/&quot;/g,'%22') + '&quot;';
+				}
+				return attribs;
+			}
+			function getCSS(node) {
+				/*There are just too many of these, unless we strip out some estimate of the 'defaults'.*/
+				/*var css = getComputedStyle(node,'');*/
+				var css = node.style;
+				var out = '';
+				/*for (i in css) {*/
+				for (var i=0;i<css.length;i++) {
+					if (typeof(css[i])=='function') { continue; }
+					out += css[i] + '=' + css.getAttribute(css[i]) + ' ';
+				}
+				return out;
+			}
 			function doHighlight(evt) {
 				var node = evt.currentTarget; /* try evt.srcElement if this fails. */
 				var xpath = getXPath(node);
 				/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
 				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					var attribs = '';
-					for (var j=0;j<node.attributes.length;j++) {
-						var attr = node.attributes[j];
-						if (attr.name == 'title') { continue; }
-						attribs += ' ' + attr.name + '=&quot;' + attr.value.replace(/&quot;/g,'%22') + '&quot;';
-					}
-					node.title = xpath + '\n' + '\n' + '  <'+node.tagName+attribs+'/>'; /*escapeHTML(attrSum) + '';*/
+					var attribs = getAttribs(node);
+					node.title = xpath + '\n\n' + '  <'+node.tagName+attribs+'/>' + '\n\n' + '  '+getCSS(node); /*escapeHTML(attrSum) + '';*/
 					if (node.style) {
 						node.style.backgroundColor = '#' + getColorFor(simplexpath);
 					}
@@ -454,7 +470,7 @@
 			}
 			function undoHighlight(evt) {
 				var node = evt.currentTarget;
-				node.style.backgroundColor = 'white'; /*document.bgcolor;*/ /*parents bgcol?  original bgcol?!*/
+				node.style.backgroundColor = 'white';
 			}
 			function getXPath(node) {
 				var parent = node.parentNode;
@@ -477,17 +493,20 @@
 				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
 			}
 			processNode(document.body);
-		})();">Highlight Structure</A> - Live Updates</LI>
+		})();">Highlight Structure</A> - Live Updates (Extra Info)</LI>
 		<BLOCKQUOTE>
 			<P>Colours the background of every element in the document according to its path.</P>
 			<P>Displays the XPath of the focused element as a popup (sets title attribute).</P>
 			<P>Useful when using Nuke, to find the element you really need to kill. <SPAN class='todo'>Todo: Include Highlight Structure in Nuke automatically.</SPAN></P>
 			<LI class='done'>More useful for developers: as well as showing the XPath, we now also show the attributes of the element in its title/popup.</LI>
 			<LI class='done'>Added tag and attributes to title.  Too bad the newlines don&apos;t work in the fox.</LI>
+			<LI class='done'>Added limited CSS info to title.</LI>
 			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 			<LI class='todo'>Can be sluggish to run on the heavier DOMs.</LI>
-			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn't highlight newly entered elements, it won't have to unhighlight them on the way out.</LI>
+			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn&apos;t highlight newly entered elements, it won&apos;t have to unhighlight them on the way out.</LI>
+			<LI class='todo'>Part of the problem is that a mouselistener is added to every element in the DOM, when we should just capture using the body element.</LI>
 			<LI class='todo'>Adapt the colour generator to produce pastels only.</LI>
+			<LI class='todo'>Rather than use the browser&quot;s default popup for title tag when hovering over elements, we could use our own custom popup.  This could give 2 advantages: 1) we could make newlines work in Mozilla; 2) By keeping the popup ever-present, the user can easily see when the XPath switches by a little or a lot.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -557,7 +576,7 @@
 				return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 %3F '[' + thisCount + ']' : '' );
 			}
 			processNode(document.body);
-		})();">Highlight Structure</A> - Live Updates (without HTML popup)</LI>
+		})();">Highlight Structure</A> - Live Updates (Less Info)</LI>
 	</P>
 
 	<P>
