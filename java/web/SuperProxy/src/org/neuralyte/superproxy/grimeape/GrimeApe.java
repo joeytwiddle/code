@@ -213,11 +213,13 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
 
         request.removeHeader("Proxy-Connection"); // Most proxies will want to do this, i.e. not pass this header to the remote host
-        // Doing these because SimpleProxy can't yet handle keepalive :P
-        request.removeHeader("Keep-Alive");
-        request.setHeader("Connection", "close");
-        request.setTopLine(request.getTopLine().replaceAll("HTTP/1.1$", "HTTP/1.0"));
-        // Logger.log("New top line = "+request.getTopLine());
+        
+        if (!HTTPStreamingTools.KEEP_REMOTE_SOCKETS_ALIVE) {
+            request.removeHeader("Keep-Alive");
+            request.setHeader("Connection", "close");
+            request.setTopLine(request.getTopLine().replaceAll("HTTP/1.1$", "HTTP/1.0"));
+            Logger.log("New top line = "+request.getTopLine());
+        }
         
         //// Check for special requests directed at GrimeApe, not the web.
         WebRequest wreq = new WebRequest(request);
@@ -391,6 +393,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             
             Logger.info("User is saving new script to "+outFile);
             if (!url.isEmpty()) {
+                // @todo "Default headers"
                 HttpRequest req = HttpRequestBuilder.getResource(url);
                 HttpResponse res = HTTPStreamingTools.passRequestToServer(req);
                 try {

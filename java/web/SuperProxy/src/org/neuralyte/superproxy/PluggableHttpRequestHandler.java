@@ -1,20 +1,11 @@
 package org.neuralyte.superproxy;
 
-import java.util.Vector;
-import java.util.List;
-import java.io.InputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.BufferedInputStream;
-import java.net.Socket;
 
-import org.neuralyte.Logger;
-import org.neuralyte.contrib.muffin.ChunkedStreamHandling;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
-import org.neuralyte.simpleserver.StreamedRequestHandler;
+import org.neuralyte.simpleserver.httpadapter.AdvancedHttpRequestHandler;
 import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
-import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
 
 // joey Apr 12, 2006 9:53:55 PM
 
@@ -65,19 +56,28 @@ import org.neuralyte.simpleserver.httpadapter.HttpRequestHandler;
 
 // We extend HTTPStreamingTools just for library functions.
 
-public class PluggableHttpRequestHandler extends HttpRequestHandler {
+public class PluggableHttpRequestHandler extends AdvancedHttpRequestHandler {
 
     public HttpResponse handleHttpRequest(HttpRequest request) throws IOException {
         // TODO WRONG!  Should pass to next plugin, if exists.
         
-        // if (moreInChain) { passDownChain() } else {
+        // if (nextHandler!=null) { nextHandler.handle() } else {
         
         HttpResponse response = HTTPStreamingTools.passRequestToServer(request);
+        
         // So this is actual response from remote server.
         // De-chunking has been performed
         // It's unlikely the later plugins will want to work with a gzipped stream.
         // Let's gunzip it now if we need to, leaving no need to check again.
+
+        // @todo I suggest removing this, or somehow making it optional
+        // Plenty of proxies will ignore 90% of data passing through, so unzipping
+        // stream is BAD!
+        
         HTTPStreamingTools.unzipResponse(response);
+        
+        // We could easily put a warning in getResponseStreamAsStringBuffer ;)
+        
         return response;
         
     }
