@@ -214,6 +214,8 @@ public class GrimeApe extends PluggableHttpRequestHandler {
 
         request.removeHeader("Proxy-Connection"); // Most proxies will want to do this, i.e. not pass this header to the remote host
         
+        // Should this be somewhere else?
+        // But where?  Where we handle it in HTTPStreamUtils I guess.
         if (!HTTPStreamingTools.KEEP_REMOTE_SOCKETS_ALIVE) {
             request.removeHeader("Keep-Alive");
             request.setHeader("Connection", "close");
@@ -308,6 +310,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 // Actually in the log and maybe also the prefs, GM shows:
                 //     nameSpaceMeta+"/"+scriptName
                 // Note that is the script's name not it's filename, which we don't have here!
+                HTTPStreamingTools.unzipResponse(response);
                 StringBuffer content = response.getContentAsStringBuffer();
                 content.insert(0,
                         "(function(){\n"
@@ -466,7 +469,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     private void maybeAddScripts(HttpResponse response) throws IOException {
         /** @todo What does GM trigger on?  I've seen it run (fail) on .txt and .js pages also. **/
         if (response.getHeader("Content-type").toLowerCase().startsWith("text/html")) {
-            StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
+            HTTPStreamingTools.unzipResponse(response);
+            // StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
+            StringBuffer responseString = response.getContentAsStringBuffer();
             // Logger.log(""+responseString);
             int i = responseString.lastIndexOf("</BODY>");
             if (i == -1)
