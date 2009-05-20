@@ -17,7 +17,7 @@
 // It might be desirable to check each image actually exists/loads, or remove it.
 // Is that possible, without making an http request ourselves?
 
-var placeFaviconByUrl = false;
+var placeFaviconByUrl = true;
 var placeFaviconAfter = false;
 var placeFaviconInsideLink = false;
 

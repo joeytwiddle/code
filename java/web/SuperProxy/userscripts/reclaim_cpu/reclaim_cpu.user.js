@@ -18,7 +18,7 @@
 
 ////// Config //////
 
-var idleSeconds =  5;       // Page will cleanup if mouse has been outside it
+var idleSeconds =  60;       // Page will cleanup if mouse has been outside it
                             // for this many seconds.  Or if you set
                             // detectWhenIdle=false, page will cleanup this
                             // many seconds after loading.
