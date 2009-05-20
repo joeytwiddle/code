@@ -215,7 +215,7 @@ public class LogBot extends PircBot {
             longestNick = nick.length();
         return padLeft(nick,' ',longestNick);
     }
-    
+
     public static String padLeft(String str, char padder, int desiredLength) {
         if (desiredLength > str.length()) {
             final StringBuffer left = new StringBuffer();
