@@ -1,0 +1,23 @@
+If we visit http://hwi.ath.cx/hwikalong, the scripts are not being injected.
+
++000.127 Thread-416 (HTTPStreamingTools.java:250).passRequestToServer() [log] Sending request: [GET http://bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com/ HTTP/1.1, User-Agent: Mozilla/5.0 (compatible; Konqueror/3.5; Linux; X11; i686; en_US) KHTML/3.5.10 (like Gecko) (Debian), Accept: text/html, image/jpeg, image/png, text/*, image/*, */*, Accept-Encoding: x-gzip, x-deflate, gzip, deflate, Accept-Charset: iso-8859-1, utf-8;q=0.5, *;q=0.5, Accept-Language: en, Host: bubbleshq.com, Cookie: __utma=224260744.3304739011440306700.1242093181.1242093181.1242093181.2; __utmz=224260744.1242093181.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none), Connection: close]
+
+
+When browsing http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/java.html in Konqueror
+Firefox will refuse to load the data.  "unterminated string literal"
+
+
+FIXED by trimTopLine(): There is a bug appearing on Hwi's Wiki which happens on a few other sites also.
+  Somehow CSS tag in the HTML *and* requests to grimeape for userscripts, are requesting <host>http/... instead of <host>/...
+
+
+FIXED by improving uneval(): Browsing my webserver's cgi folders breaks track_history uneval on Konqueror: http://hwi.ath.cx/cgi-bin/viewcvs.cgi/other/gm_scripts/
+
+
+http://web.archive.org/web/20070123042959/http://www.dunck.us/collab/GreaseMonkeyUserScripts#head-68cca0b4cd20c940c1410bb1ccc58e403dc42d06
+the GM icon is not loading because konq puts the /_gRiMeApE_/ in the middle, not at the start!
+Oh maybe not.  I think it's javascript injected by WebArchive which is changing the image's href!
+
+
+If track_history is run before Delicious_Search_Results_On_Google, then the latter fails in Konq, with parse error :o
+

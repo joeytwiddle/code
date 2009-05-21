@@ -1,0 +1,37 @@
+DONE: respect @include and @exclude rules
+
+DONE: GM_registerMenuCommand
+
+BUG: If we install a userscript in one window, that window's GrimeApeConfig
+gets updated, and it is sent to the server.  But if another tab then changes
+the config, by doing anything simple, this tab's config will overwrite the one
+with the newly installed script.  The install will be lost.  The same goes for
+enabling/disabling scripts.
+
+It is possible to fix this in theory.  One heavy method: re-focused tabs could
+check with the proxy, that GA config has not been changed elsewhere, before
+allowing the user to make (or commit) a change.  If it has changed, they can
+reload.
+
+A smarter method, although distant from our current setup:
+The GA config GUI in the browser should only send requests for small config
+changes to the proxy.
+The proxy will accept the request and update just that part of the config the
+user wanted to change.  On page reload or change, true sync with config will
+occur.
+
+Konqueror seems to have a couple of niggles.
+I tried to do synchronous AJAX throughout, just to see how it would go.
+I think Konqueror might be happier if we made them asynchronous.
+Especially when user has clicked.  If Konq takes a long time to finish running
+the JS, mouse will often end up 'dragging' whatever was clicked on.  :f
+
+Another issue is page-never-stops-loading-spinner, although there are no open
+sockets to the server.  This might be bad AJAX again, or something else.
+
+Ohh I think the cause for that might have been Reclaim_CPU doing cleanup before
+the page had really stopped loading.  (There were Userscripts after it that
+locked the browser up so that Reclaim_CPU saw no mouse movements, and thought
+the page had gone idle before the scripts had even finished loading!  It really
+needs to run last, or at least get its 'start date' last.)
+

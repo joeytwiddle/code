@@ -1,0 +1,2 @@
+Konqueror's document.body does not report mouseout events like Firefox does.
+
