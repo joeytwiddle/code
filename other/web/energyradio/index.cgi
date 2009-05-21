@@ -88,7 +88,7 @@ index () {
 }
 
 function show_label_list () {
-	echo "<P>"
+	echo "<P style='text-align:center; vertical-align:middle; border: 1px solid black;'>"
 	echo "Label cloud:<BR/>"
 	# sqlite3 "$DB" "SELECT labels.name FROM labels" | sed 's+$+, +' | tr -d '\n' ; echo
 	sqlite3 "$DB" "SELECT labels.name FROM labels" |
@@ -100,10 +100,13 @@ function show_label_list () {
 	while IFS="|" read COUNT SHOWLABEL
 	do
 		if [ "$SHOWLABEL" = "$LABEL" ]
-		then echo -n "<B>$SHOWLABEL</B>"
+		then echo -n "<B>$SHOWLABEL</B>" ## No size/count/etc.?
 		else
 			SZ=$(echo "60+l(1+$COUNT)*30" | bc -l | beforefirst "\.")
-			echo -n "<A style='font-size:$SZ%' href='?label=$(tocgi "$SHOWLABEL")'>"
+			COL=$(echo "64+l(1+$COUNT)*32" | bc -l | beforefirst "\.")
+			[ "$COL" -gt 255 ] && COL="255"
+			COL=$((255-COL))
+			echo -n "<A title='$COUNT' style='font-size:$SZ%; color:rgb($COL,$COL,255);' href='?label=$(tocgi "$SHOWLABEL")'>"
 			echo -n "$SHOWLABEL" # | tohtml | sed 's+<BR>$++'
 			echo -n "</A>"
 		fi
@@ -165,8 +168,8 @@ CGILIB_NO_CONTENT=true
 
 LABEL=$(getcgi "label")
 
-# memo -t '10 minutes' show_label_list
-memo -t '1 second' show_label_list
+memo -t '10 minutes' show_label_list
+# memo -t '1 second' show_label_list ## For development
 
 # echo "<P>Browse by: artist / tag / date</P>"
 
