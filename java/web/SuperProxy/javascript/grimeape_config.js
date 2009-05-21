@@ -277,6 +277,9 @@ has even loaded in the client.
 					makeMoveable(newEditor);
 				}
 				*/
+				// This only loads if its available
+				// But recently it seems if it fails on first attempt, the form doesn't get populated.
+				/*
 				try {
 					// Testing this.makeMoveable failed! :o
 					// But I fear testing just makeMoveable in its absence, might throw an error :S
@@ -288,6 +291,7 @@ has even loaded in the client.
 					// }
 				} catch (e) { GM_log('Trying to load makeMoveable: '+e); }
 				// return document.getElementById(formID);
+				*/
 
 				// Populate form values:
 				var form = document.getElementById(formID);
@@ -339,15 +343,18 @@ has even loaded in the client.
 			saveScript: function(evt) {
 
 				GM_log("Attemping save ... ");
+				var form = document.getElementById(formID);
+				form['save'].disabled = true;
 				try {
-					var form = document.getElementById(formID);
 					// var content = form['content'].textContent; // In Konq this is not updated by user!
 					var content = form['content'].value;
 					function getMeta(key) {
 						// key = key.replace(/\*/g,'\\*');
-						var regex = "//\s*@"+key+"\s\s*(.*)";
+						// var regex = new RegExp("// *@"+key+"  *(.*)");
+						var regex = new RegExp("//\\s*@"+key+"\\s\\s*(.*)");
 						try {
-							return content.match(regex)[1];
+							// return content.match(regex)[1];
+							return regex.exec(content)[1];
 						} catch (e) {
 							// alert("Your script needs a tag: // @"+key+" ...");
 							GM_log("Failed to get meta @"+key);
@@ -356,7 +363,7 @@ has even loaded in the client.
 					}
 					function getMetasArray(key) {
 						// key = key.replace(/\*/g,'\\*');
-						var regex = new RegExp("//\s*@"+key+"\s\s*(.*)","g");
+						var regex = new RegExp("//\\s*@"+key+"\\s\\s*(.*)","g");
 						var list = new Array();
 						var match;
 						while (match = regex.exec(content)) {
@@ -369,7 +376,7 @@ has even loaded in the client.
 					}
 					function getMetas(key) {
 						// key = key.replace(/\*/g,'\\*');
-						var regex = new RegExp("//\s*@"+key+"\s\s*(.*)","g");
+						var regex = new RegExp("//\\s*@"+key+"\\s\\s*(.*)","g");
 						var obj = new Object();
 						var match;
 						var i = 0;
@@ -380,7 +387,7 @@ has even loaded in the client.
 						return obj;
 					}
 					function getPairedMetas(key) {
-						var regex = new RegExp("//\s*@"+key+"\s\s*([^\s]*)\s\s*(.*)","g");
+						var regex = new RegExp("//\\s*@"+key+"\\s\\s*([^\\s]*)\\s\\s*(.*)","g");
 						var obj = new Object();
 						var match;
 						while (match = regex.exec(content)) {
@@ -390,38 +397,44 @@ has even loaded in the client.
 						return obj;
 					}
 					// var newScriptName = content.match(/\/\/ *@name  *(.*)/)[1];
-					var newScriptName = getMeta('name');
+					var newScriptName = getMeta("name");
 					if (!newScriptName) {
 						alert("Your script needs a tag: // @name MyScriptName");
-					}
-					var fsName = getFsName(newScriptName); // TODO: Actually should get new name from script!
-					var cgi = "name="+encodeURIComponent(newScriptName) + "&content="+encodeURIComponent(content);
-					var req = new XMLHttpRequest();
-					req.open("POST","/_gRiMeApE_/updateScript",false);
-					GM_log("Sending...");
-					req.send(cgi);
-					GM_log("Sent.  Got response: \""+req.responseText+"\"");
-					if (req.responseText == "<NODATA>OK</NODATA>") {
-						var scriptData = new Object();
-						scriptData.enabled = true;
-						scriptData.namespace = getMeta("namespace");
-						scriptData.description = getMeta("description");
-						scriptData.includes = getMetas("include");
-						GM_log("Got includes = "+scriptData.includes);
-						GM_log("Got unevaled includes = "+uneval(scriptData.includes));
-						scriptData.excludes = getMetas("exclude");
-						scriptData.resources = getPairedMetas("resource");
-						GrimeApeConfig.scripts[newScriptName] = scriptData;
-						GrimeApeConfig.save();
-						Menu.rebuild();
-						form['cancel'].onclick(); // close window
 					} else {
-						GM_log("Error uploading: "+req.responseText);
-						alert("Error uploading: "+req.responseText);
+						// Upload the file:
+						var fsName = getFsName(newScriptName); // TODO: Actually should get new name from script!
+						var cgi = "name="+encodeURIComponent(newScriptName) + "&content="+encodeURIComponent(content);
+						var req = new XMLHttpRequest();
+						req.open("POST","/_gRiMeApE_/updateScript",false);
+						GM_log("Sending...");
+						req.send(cgi);
+						GM_log("Sent.  Got response: \""+req.responseText+"\"");
+						
+						// Update the config:
+						if (req.responseText == "<NODATA>OK</NODATA>") {
+							var scriptData = new Object();
+							scriptData.enabled = true;
+							scriptData.namespace = getMeta("namespace");
+							scriptData.description = getMeta("description");
+							scriptData.includes = getMetas("include");
+							GM_log("Got includes = "+scriptData.includes);
+							GM_log("Got unevaled includes = "+uneval(scriptData.includes));
+							scriptData.excludes = getMetas("exclude");
+							scriptData.resources = getPairedMetas("resource");
+							GrimeApeConfig.scripts[newScriptName] = scriptData;
+							GrimeApeConfig.save();
+							Menu.rebuild();
+							form['cancel'].onclick(); // close window
+						} else {
+							GM_log("Error uploading: "+req.responseText);
+							alert("Error uploading: "+req.responseText);
+						}
 					}
 				} catch (e) {
 					alert(e);
 				}
+				if (form && form['save']) // May have been destroyed
+					form['save'].disabled = false;
 
 			},
 
