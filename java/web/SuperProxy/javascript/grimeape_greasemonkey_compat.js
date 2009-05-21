@@ -64,7 +64,7 @@ function GA_log(namespace,obj) {
 		//// This works, although it does cause the DOM to grow.
 		//// Of course, we could do it with a hidden IFrame, or an image, or
 		//// anything which will cause an HTTP request without messing up too much.
-		var logUrl = "/_gRiMeApE_/log/?data=" + cgiEscape(""+obj);
+		var logUrl = "/_gRiMeApE_/log/?data=" + encodeURIComponent(""+obj);
 		/*
 		var tmpScript = document.createElement('SCRIPT');
 		tmpScript.src = logUrl;
@@ -89,10 +89,12 @@ GM_log("GM_log() works!");
 //// @deprecated - I found encodeURIComponent!
 // escape(val) is not enough for real CGI escaping.  It does nothing to real
 // '+'s, but the webserver will read real '+'s from CGI as spaces!
-function cgiEscape(val) {
-	return encodeURIComponent(val);
-	// return escape(val).replace(/\+/g,'%2b');
-}
+//// Deprecated/removed
+// function cgiEscape(val) {
+	// return encodeURIComponent(val);
+	// // return escape(val).replace(/\+/g,'%2b');
+// }
+//// Do we still need this, or is there unencodeURIComponent()?
 function cgiUnescape(val) {
 	return unescape(val.replace(/\+/g,' '));
 }
@@ -109,7 +111,7 @@ function GA_setValue(namespace,name,value) {
 	if (value==undefined || value==null)
 		value = "";
 	var url = "/_gRiMeApE_/setValue";
-	var params = "name="+cgiEscape(name)+"&namespace="+cgiEscape(namespace)+"&value="+cgiEscape(value);
+	var params = "name="+encodeURIComponent(name)+"&namespace="+encodeURIComponent(namespace)+"&value="+encodeURIComponent(value);
 	// document.writeln('<SCRIPT type="text/javascript" src="'+url+'"/>');
 	//// Doing it the above way in Konqueror, means the request does not actuall happen until *after* this thread has finished.
 	//// This way will set immediately:
@@ -128,11 +130,11 @@ function GA_setValue(namespace,name,value) {
 }
 
 function GM_setValue(name,value) {
-	GA_setValue("NO_NAMESPACE",name,value);
+	GA_setValue("_",name,value);
 }
 
 function GA_getValue(namespace,name,defaultValue) {
-	var url = '/_gRiMeApE_/getValue?name='+cgiEscape(name)+"&namespace="+cgiEscape(namespace);
+	var url = '/_gRiMeApE_/getValue?name='+encodeURIComponent(name)+"&namespace="+encodeURIComponent(namespace);
 	/*
 	url += '&type=js';
 	window.GM_getValueResult = undefined;
@@ -179,11 +181,11 @@ function GA_getValue(namespace,name,defaultValue) {
 }
 
 function GM_getValue(name,defaultValue) {
-	return GA_getValue("NO_NAMESPACE",name,defaultValue);
+	return GA_getValue("_",name,defaultValue);
 }
 
 function GA_deleteValue(namespace,name) {
-	var url = '/_gRiMeApE_/deleteValue?name='+cgiEscape(name)+"&namespace="+cgiEscape(namespace);
+	var url = '/_gRiMeApE_/deleteValue?name='+encodeURIComponent(name)+"&namespace="+encodeURIComponent(namespace);
 	var request = new XMLHttpRequest();
 	request.open('GET',url,false);
 	request.send(null);
@@ -194,7 +196,7 @@ function GA_deleteValue(namespace,name) {
 }
 
 function GM_deleteValue(name) {
-	GA_deleteValue("NO_NAMESPACE",name);
+	GA_deleteValue("_",name);
 }
 
 function GM_listValues() {
@@ -222,13 +224,24 @@ this.ga_uneval = function (obj) {
 	} else if (typeof(obj)=='number') {
 		return ""+obj;
 	} else if (typeof(obj)=='object') {
+		// if (obj.length == 0) { // It's actually an array
+			// return "[]"; // return "({})"; // If we do the stuff below to an empty array, we list all the fns?
+		// }
 		// ({x:"fart", 1:"pants"})
 		var arrayString = "";
 		for (var key in obj) {
+			// If obj is a custom object, any functions in it are iterated
+			// If obj is an array, in Moz only the items (keys) are iterated, but
+			// in Konq, the default array fns are also iterated :f
+			// We could sort-of detect arrays badly by detecting the length property :f
+			// But in general I found it preferable to use objects for storage.
 			var val = obj[key];
 			// GM_log("Got key "+key+" and val "+val);
 			if (arrayString!="") arrayString += ", ";
 			arrayString += uneval(key)+":"+uneval(val);
+			// If key here is a string, Moz does not quote it if not needed, or surrounds
+			// it with single apostrophes if it contains a space or special chars.
+			// I believe our current method is equivalent anyway, although not identical.
 		}
 		arrayString = "({" + arrayString + "})";
 		// GM_log("Returning arrayString="+arrayString);
@@ -251,7 +264,11 @@ if (!this.uneval) {
 
 // ga_xmlhttpRequest = function (method,url,headers,data,onload,onerror,onreadystatechange) {
 ga_xmlhttpRequest = function (req) {
-	GM_log("xmlhttpRequest: "+req);
+	if (this.namespace) { // Long shot, hoping to see context of calling function, but I think it failed due to closure.
+		GM_log(namespace,"xmlhttpRequest: "+req);
+	} else {
+		GM_log("NO_NAMESPACE","xmlhttpRequest: "+req);
+	}
 	var responseState;
 	try {
 		// Security:
@@ -263,7 +280,7 @@ ga_xmlhttpRequest = function (req) {
 		}
 		// Er lol that's GM security.  I doubt our proxy can access Mozilla's chrome:// scheme :P
 		*/
-		var url = '/_gRiMeApE_/xmlhttpRequest?url='+cgiEscape(req.url); // +'&data='+cgiEscape(req.data);
+		var url = '/_gRiMeApE_/xmlhttpRequest?url='+encodeURIComponent(req.url); // +'&data='+encodeURIComponent(req.data);
 		var request = new XMLHttpRequest();
 		// TODO: data(?),onload,onerror,onreadystatechange
 		GM_log("Doing: open("+req.method+","+url+",false)...");

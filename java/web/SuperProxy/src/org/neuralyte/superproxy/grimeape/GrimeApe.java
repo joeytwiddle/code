@@ -175,9 +175,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     }
     
     public static void saveData() {
-        /* if (interceptor.handle(sig.getName()) && (oldHandler != null)) {
-            oldHandler.handle(sig);
-        } */
+        /** @todo There are many calls made to this function which could be dropped,
+         * if only we could get Java to call saveData() when the process is killed.
+         */
         try {
             Logger.info("Saving data...");
             Nap.writeToFile(gmRegistry, "grimeape_registry.nap");
