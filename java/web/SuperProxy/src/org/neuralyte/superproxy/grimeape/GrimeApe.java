@@ -449,7 +449,25 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             request.setTopLine(newReq);
             String newHost = new WebRequest(request).getHost();
             request.setHeader("Host",newHost);
-            return super.handleHttpRequest(request);
+            // Should we really be re-using the headers we were given?
+            // This is a request to a fourth-party .
+            // We have cookies from the page, but since the host is different, they should go.
+            request.removeHeader("Cookie");
+            request.removeHeader("Referer");
+            // GrimeApe itself sometimes sets the Accept header.
+            // GM_xmlhttpRequest does allow headers to be set.
+            // We should just check it's implementation (watch HTTPHeaders).
+            /** @todo If userscripts want to be able to set cookies in their requests
+             * and we want to isolate them from the cookies we have from the current
+             * page, we could get ga_xmlhttpRequest to "special-tag" the custom
+             * cookies, so we can un-tag them here, and strip the never-tagged headers
+             * (those added by the browser for the current page, not the xmlhttpReq). 
+             */
+            // Or we could just forget the security and allow all Cookies through.  :P 
+            HttpResponse response = super.handleHttpRequest(request);
+            response.removeHeader("Set-Cookies");
+            // Well we could keep response cookies
+            return response;
             
         } else {
             Logger.error("Bad request: "+wreq.getPath());
