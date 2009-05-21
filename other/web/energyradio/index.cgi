@@ -88,8 +88,9 @@ index () {
 }
 
 function show_label_list () {
-	echo "<P style='text-align:center; vertical-align:middle; border: 1px solid black;'>"
-	echo "Label cloud:<BR/>"
+	echo "<STYLE type='text/css'> .cloudBit { vertical-align:middle; } </STYLE>"
+	echo "<P style='text-align:center; border: 0px solid black;'>"
+	echo "Tags:<BR/>"
 	# sqlite3 "$DB" "SELECT labels.name FROM labels" | sed 's+$+, +' | tr -d '\n' ; echo
 	sqlite3 "$DB" "SELECT labels.name FROM labels" |
 	# sqlite3 "$DB" "SELECT labels.name,COUNT(tags_labels.*) FROM labels,tags_labels WHERE labels.id=tags_labels.labelid" |
@@ -100,13 +101,13 @@ function show_label_list () {
 	while IFS="|" read COUNT SHOWLABEL
 	do
 		if [ "$SHOWLABEL" = "$LABEL" ]
-		then echo -n "<B>$SHOWLABEL</B>" ## No size/count/etc.?
+		then echo -n "<B class='cloudBit'>$SHOWLABEL</B>" ## No size/count/etc.?
 		else
 			SZ=$(echo "60+l(1+$COUNT)*30" | bc -l | beforefirst "\.")
 			COL=$(echo "64+l(1+$COUNT)*32" | bc -l | beforefirst "\.")
 			[ "$COL" -gt 255 ] && COL="255"
 			COL=$((255-COL))
-			echo -n "<A title='$COUNT' style='font-size:$SZ%; color:rgb($COL,$COL,255);' href='?label=$(tocgi "$SHOWLABEL")'>"
+			echo -n "<A class='cloudBit' title='$COUNT' style='font-size:$SZ%; color:rgb($COL,$COL,255);' href='?label=$(tocgi "$SHOWLABEL")'>"
 			echo -n "$SHOWLABEL" # | tohtml | sed 's+<BR>$++'
 			echo -n "</A>"
 		fi
