@@ -155,10 +155,10 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 }
             };
             /* oldHandler = */
-            Signal.handle(new Signal("HUP"), watchForClose);
-            Signal.handle(new Signal("QUIT"), watchForClose);
-            Signal.handle(new Signal("KILL"), watchForClose);
-            Signal.handle(new Signal("INT"), watchForClose);
+            tryToCatchSignal("HUP",watchForClose); // does not block Ctrl+C
+            // tryToCatchSignal("INT",watchForClose); // blocks Ctrl+C =/
+            // tryToCatchSignal("QUIT",watchForClose);
+            // tryToCatchSignal("KILL",watchForClose);
             // Signal.handle(new Signal(""+SignalHandler.SIG_DFL), watchForClose);
             // Signal.handle(new Signal(""+SignalHandler.SIG_IGN), watchForClose);
         } catch (Throwable e) {
@@ -166,6 +166,14 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         }
     }
 
+    public static void tryToCatchSignal(String signal, SignalHandler watchForClose) {
+        try {
+            Signal.handle(new Signal(signal), watchForClose);
+        } catch (Throwable e) {
+            Logger.warn("Problem setting up auto-save for \""+signal+"\" signal: "+e);
+        }
+    }
+    
     public static void saveData() {
         /* if (interceptor.handle(sig.getName()) && (oldHandler != null)) {
             oldHandler.handle(sig);
@@ -279,6 +287,10 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         String commandDir = args[2];
         // Logger.warn("args[1] = " + args[1]);
         
+        // Greasemonkey uses the key:
+        //   greasemonkey.scriptvals.<namespace>/<scriptName>.<var_name>
+        // when storing setValue/getValue data.
+        
         if (
                 commandDir.equals("javascript")
                 || commandDir.equals("userscripts")
@@ -305,22 +317,27 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             if (!wreq.getParam("cdata").isEmpty()) {
                 response.setContent("<![CDATA[" + response.getContentAsString() + "]]>");
             } else if (commandDir.equals("userscripts")) {
-                String namespace = args[3];
+                // String namespace = args[3];
+                String namespace = wreq.getParam("namespace");
                 // @todo Should really be @namespace from the file's meta.
                 // Actually in the log and maybe also the prefs, GM shows:
                 //     nameSpaceMeta+"/"+scriptName
                 // Note that is the script's name not it's filename, which we don't have here!
-                HTTPStreamingTools.unzipResponse(response);
-                StringBuffer content = response.getContentAsStringBuffer();
-                content.insert(0,
-                        "(function(){\n"
-                        + "var GA_namespace = \""+namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"")+"\";\n"
-                        + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
-                        + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
-                        + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
-                );
-                content.append("\n})();");
-                response.setContent(content);
+                
+                // We should not adjust 304s!  That would break since we have no content stream.
+                if (response.getResponseCode() == 200) {
+                    // HTTPStreamingTools.unzipResponse(response); // not needed i think :P
+                    StringBuffer content = response.getContentAsStringBuffer();
+                    content.insert(0,
+                            "(function(){\n"
+                            + "var GA_namespace = \""+namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"")+"\";\n"
+                            + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
+                            + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
+                            + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
+                    );
+                    content.append("\n})();");
+                    response.setContent(content);
+                }
             }
             return response;
             
@@ -333,20 +350,20 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             return respondOK();
 
         } else if (commandDir.equals("setValue")) {
+            String namespace = wreq.getParam("namespace");
             String name = wreq.getParam("name");
             String value = wreq.getParam("value");
-            Logger.info("GM_SETVALUE: "+name+" = \""+value+"\"");
-            gmRegistry.put(name,value);
+            Logger.info("GM_SETVALUE: "+namespace+"."+name+" = \""+value+"\"");
+            gmRegistry.put(namespace+"."+name,value);
             // @todo Occasional saves - remove this later.
-            if (Math.random() < 0.1) {
-                saveData();
-            }
+            saveData();
             return respondOK();
             
         } else if (commandDir.equals("getValue")) {
+            String namespace = wreq.getParam("namespace");
             String name = wreq.getParam("name");
-            String value = gmRegistry.get(name);
-            Logger.info("GM_GETVALUE: "+name+" ~ \""+value+"\"");
+            String value = gmRegistry.get(namespace+"."+name);
+            Logger.info("GM_GETVALUE: "+namespace+"."+name+" ~ \""+value+"\"");
             String type = wreq.getParam("type");
             // Return raw (if request was an XMLHttpRequest):
             String response = ""+value;
@@ -367,13 +384,12 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             return HttpResponseBuilder.stringHttpResponse("text/xml",response);
 
         } else if (commandDir.equals("deleteValue")) {
+            String namespace = wreq.getParam("namespace");
             String name = wreq.getParam("name");
-            Logger.info("GM_DELETEVALUE: "+name);
-            gmRegistry.remove(name);
+            Logger.info("GM_DELETEVALUE: "+namespace+"."+name);
+            gmRegistry.remove(namespace+"."+name);
             // @todo Occasional saves - remove this later.
-            if (Math.random() < 1.0) {
-                saveData();
-            }
+            saveData();
             return respondOK();
             
         } else if (commandDir.equals("saveAll")) {

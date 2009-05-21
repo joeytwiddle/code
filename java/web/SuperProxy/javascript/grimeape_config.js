@@ -6,6 +6,24 @@ so that the user can see him early, and config him while the page loads.
 The loading of userscripts should still be delayed till the end of loading though.
 (Either injected by proxy, or detected by onLoad or something.)
 
+TODO: We could split the config up a bit better.  It grows rather large.
+1) Common config: which scripts are enabled/disabled
+      This is small so fast upload when the user changes it.
+2) Common script data (includes/excludes)
+      We want this every page, but we don't want to upload it too often!
+2) Extra script data
+      All the other data, loaded on demand.
+      e.g. Userscript descriptions need only be loaded when the user is
+           actually interacting with the menu.
+      We could split this data into 1 request per userscript.
+      But it might make sense to load the whole thing if it is needed.
+Whoops I am bloating this file with TODO comments.
+
+Consider a super-streamlined system.  It would only send what is needed.
+Why send the include/exclude data to the client when the proxy side could
+match them against the current URL, and do all the injection before GrimeApe
+has even loaded in the client.
+
 */
 
 (function(){
@@ -62,18 +80,34 @@ The loading of userscripts should still be delayed till the end of loading thoug
 	function loadScript(scriptName) {
 		var fsName = getFsName(scriptName);
 		GM_log('Loading userscript: '+scriptName);
-		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js"
+		var namespace = GrimeApeConfig.scripts[scriptName].namespace;
+		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js?namespace=" + encodeURIComponent(namespace+"/"+scriptName);
 		document.writeln("<SCRIPT type='text/javascript' src='" + url + "'></SCRIPT>");
 	}
 
+	/** This is better if the document has finished loading.  Sometimes the other method can cause
+	 * problems in that situation. **/
 	function loadScriptOtherWay(scriptName) {
 		var fsName = getFsName(scriptName);
 		GM_log('Loading: '+scriptName);
-		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js"
+		// var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js"
+		var namespace = GrimeApeConfig.scripts[scriptName].namespace;
+		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js?namespace=" + encodeURIComponent(namespace+"/"+scriptName);
 		var scriptElement = document.createElement("SCRIPT");
 		scriptElement.type = 'text/javascript';
 		scriptElement.src = url;
 		// document.body.appendChild(scriptElement); // Sometimes page change in Konq? yes
+		document.getElementsByTagName("HEAD")[0].appendChild(scriptElement);
+	}
+
+	function loadScriptString(scriptString) {
+		document.writeln("<SCRIPT type='text/javascript'>"+scriptString+"</SCRIPT>");
+	}
+
+	function loadScriptStringOtherWay(scriptString) {
+		var scriptElement = document.createElement("SCRIPT");
+		scriptElement.type = 'text/javascript';
+		scriptElement.innerHTML = scriptString;
 		document.getElementsByTagName("HEAD")[0].appendChild(scriptElement);
 	}
 
@@ -310,8 +344,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 					// var content = form['content'].textContent; // In Konq this is not updated by user!
 					var content = form['content'].value;
 					function getMeta(key) {
-						key = key.replace(/\*/g,'\\*');
-						var regex = "// *@"+key+"  *(.*)";
+						// key = key.replace(/\*/g,'\\*');
+						var regex = "//\s*@"+key+"\s\s*(.*)";
 						try {
 							return content.match(regex)[1];
 						} catch (e) {
@@ -320,17 +354,40 @@ The loading of userscripts should still be delayed till the end of loading thoug
 							return "";
 						}
 					}
-					function getMetas(key) {
-						key = key.replace(/\*/g,'\\*');
-						var regex = new RegExp("// *@"+key+"  *(.*)","g");
+					function getMetasArray(key) {
+						// key = key.replace(/\*/g,'\\*');
+						var regex = new RegExp("//\s*@"+key+"\s\s*(.*)","g");
 						var list = new Array();
 						var match;
 						while (match = regex.exec(content)) {
-							list.push(match[1]);
+							GM_log("Got match for \""+key+"\": "+match[1]);
+							list.push(""+match[1]);
 						}
-						if (list.length == 0)
-							return undefined;
+						// if (list.length == 0)
+							// return undefined;
 						return list;
+					}
+					function getMetas(key) {
+						// key = key.replace(/\*/g,'\\*');
+						var regex = new RegExp("//\s*@"+key+"\s\s*(.*)","g");
+						var obj = new Object();
+						var match;
+						var i = 0;
+						while (match = regex.exec(content)) {
+							GM_log("Got match for \""+key+"\": "+match[1]);
+							obj[i++] = ""+match[1];
+						}
+						return obj;
+					}
+					function getPairedMetas(key) {
+						var regex = new RegExp("//\s*@"+key+"\s\s*([^\s]*)\s\s*(.*)","g");
+						var obj = new Object();
+						var match;
+						while (match = regex.exec(content)) {
+							GM_log("Got pair match for \""+key+"\": "+match[1]+" -> "+match[2]);
+							obj[(""+match[1])] = ""+match[2];
+						}
+						return obj;
 					}
 					// var newScriptName = content.match(/\/\/ *@name  *(.*)/)[1];
 					var newScriptName = getMeta('name');
@@ -338,7 +395,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						alert("Your script needs a tag: // @name MyScriptName");
 					}
 					var fsName = getFsName(newScriptName); // TODO: Actually should get new name from script!
-					var cgi = "name="+cgiEscape(newScriptName) + "&content="+cgiEscape(content);
+					var cgi = "name="+encodeURIComponent(newScriptName) + "&content="+encodeURIComponent(content);
 					var req = new XMLHttpRequest();
 					req.open("POST","/_gRiMeApE_/updateScript",false);
 					GM_log("Sending...");
@@ -350,7 +407,10 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						scriptData.namespace = getMeta("namespace");
 						scriptData.description = getMeta("description");
 						scriptData.includes = getMetas("include");
+						GM_log("Got includes = "+scriptData.includes);
+						GM_log("Got unevaled includes = "+uneval(scriptData.includes));
 						scriptData.excludes = getMetas("exclude");
+						scriptData.resources = getPairedMetas("resource");
 						GrimeApeConfig.scripts[newScriptName] = scriptData;
 						GrimeApeConfig.save();
 						Menu.rebuild();
@@ -411,12 +471,17 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				ScriptEditor.openNewEditor(scriptName);
 			},
 
+			getUserscripts: function() {
+				Menu.showHideMenu();
+				window.open("http://www.userscripts.org/");
+			},
+
 			deleteScript: function(scriptName) {
 				Menu.showHideMenu();
 				var decision = confirm("Are you sure you want to delete \""+scriptName+"\"?");
 				if (decision) {
 					try {
-						var url = "/_gRiMeApE_/deleteScript?name="+cgiEscape(scriptName);
+						var url = "/_gRiMeApE_/deleteScript?name="+encodeURIComponent(scriptName);
 						var client = new XMLHttpRequest();
 						client.open("GET",url,false);
 						client.send(null);
@@ -497,7 +562,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 
 						var editButton = document.createElement('img');
 						editButton.src = "/_gRiMeApE_/images/edit16x16.png";
-						editButton.title = 'Edit';
+						editButton.title = 'Edit '+scriptName;
 						// editButton.style.paddingLeft = '8px';
 						// editButton.style.verticalAlign = 'middle';
 						// editButton.style.textAlign = 'right';
@@ -510,7 +575,7 @@ The loading of userscripts should still be delayed till the end of loading thoug
 						deleteButton.src = "/_gRiMeApE_/images/delete16x16.png";
 						deleteButton.width = 10;
 						deleteButton.height = 10;
-						deleteButton.title = 'Delete';
+						deleteButton.title = 'Delete '+scriptName;
 						// deleteButton.style.paddingLeft = '8px';
 						// deleteButton.style.verticalAlign = 'middle';
 						// deleteButton.style.textAlign = 'right';
@@ -559,6 +624,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				// Menu.userscriptCommandsMenuItem = Menu.addMenuItem("Userscript Commands",Menu.showUserscriptCommands);
 				Menu.userscriptCommandsMenuItem = Menu.addMenuItem("Userscript Commands");
 				Menu.addMenuItem("Create New Userscript",Menu.openEditorWindow);
+				// TODO: If we make Get Userscripts a link A with valid href and target, Konq won't ask confirmation to pop it up!
+				Menu.addMenuItem("Get Userscripts",Menu.getUserscripts);
 				Menu.addMenuItem("Show Log",Menu.showHideLog);
 				Menu.addMenuItem("Enable/Disable",Menu.toggleEnabled);
 
@@ -689,7 +756,8 @@ The loading of userscripts should still be delayed till the end of loading thoug
 				}
 			}
 		}
-		GM_log("GrimeApe loaded "+countLoaded+" scripts.");
+		GM_log("GrimeApe loading "+countLoaded+" userscripts...");
+		loadScriptString("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
 	}
 
 	doStart();
