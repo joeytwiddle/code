@@ -324,13 +324,25 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 //     nameSpaceMeta+"/"+scriptName
                 // Note that is the script's name not it's filename, which we don't have here!
                 
+                /** This was a later addition.
+                 * 
+                 * We wrap the script in a function() because that is what I believe GM does.
+                 * (It means "return;" works ok, and ofc provides better isolation.)
+                 * 
+                 * We also inject the namespace, and force the GM API functions to pass
+                 * it to the proxy during registry interaction.
+                 * 
+                 *  We may want to add more of the API functions here, if they can make
+                 *  use of the namespace.
+                 */
+                
                 // We should not adjust 304s!  That would break since we have no content stream.
                 if (response.getResponseCode() == 200) {
                     // HTTPStreamingTools.unzipResponse(response); // not needed i think :P
                     StringBuffer content = response.getContentAsStringBuffer();
                     content.insert(0,
                             "(function(){\n"
-                            + "var GA_namespace = \""+namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"")+"\";\n"
+                            + "var GA_namespace = \""+namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"")+"\";\n" /* escaping ftw lol */
                             + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
                             + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
                             + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
