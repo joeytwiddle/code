@@ -1,0 +1,129 @@
+// Ignore
+// Lets players on your server ignore each other!
+// vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
+
+class Ignore expands Mutator;
+
+struct Victim {
+	var int PIDs[32];
+};
+
+// Players are Victims because actually they are also Spammers.  The first index is the player being blocked.  The second index is the player who is blocking them.
+
+var Victim Players[32];
+
+function PostBeginPlay() {
+	Level.Game.RegisterMessageMutator(Self);
+}
+
+// Catch messages from spectators:
+function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
+	local bool hideMessage;
+	hideMessage = SuperCheckMessage(Sender,Receiver,Mid(Msg,InStr(Msg,":")+1));
+	return Super.MutatorBroadcastMessage(Sender,Receiver,Msg,bBeep,Type) && (!hideMessage); // || !bSwallowSpokenCommands);
+}
+
+// Catch messages from players:
+function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
+	local bool hideMessage;
+	hideMessage = SuperCheckMessage(Sender,Receiver,Msg);
+	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage); // || !bSwallowSpokenCommands);
+}
+
+// Returns True if this message should be swallowed / hidden from other players.
+function bool SuperCheckMessage(Actor Sender, Pawn Receiver, String Msg) {
+	local Pawn Target;
+	local Victim v;
+	local int blocker,spammer;
+	if (PlayerPawn(Sender) != None && PlayerPawn(Receiver) != None) {
+		// if (Players[PlayerPawn(Receiver).PlayerReplicationInfo.PlayerID].PIDs[PlayerPawn(Sender).PlayerReplicationInfo.PlayerID] > 0) {
+		blocker = PlayerPawn(Receiver).PlayerReplicationInfo.PlayerID;
+		spammer = PlayerPawn(Sender).PlayerReplicationInfo.PlayerID;
+		v = Players[spammer];
+		// if (Players[spammer].PIDs[blocker] > 0) {
+		if (v.PIDs[blocker] > 0) {
+			// Receiver is ignoring Sender
+			return true;
+		}
+	}
+	if (Sender == Receiver && StrStartsWith(Caps(Msg),"!IGNORE")) {
+		Target = FindPlayerNamed( StrAfterFirst(Msg," ") );
+		AddIgnore(PlayerPawn(Sender), PlayerPawn(Target));
+		PlayerPawn(Sender).ClientMessage("You are now ignoring "$Target.getHumanName());
+	}
+	return False;
+}
+
+function AddIgnore(PlayerPawn Receiver, PlayerPawn Target) {
+	// Players[ Receiver.PlayerReplicationInfo.PlayerID ].PIDs[ Target.PlayerReplicationInfo.PlayerID ] = 1;
+	local Victim v;
+	local int blocker,spammer;
+	blocker = Receiver.PlayerReplicationInfo.PlayerID;
+	spammer = Target.PlayerReplicationInfo.PlayerID;
+	v = Players[spammer];
+	v.PIDs[blocker] = 1;
+}
+
+/*
+function Mutate(String str, PlayerPawn Sender) {
+	if (bAcceptMutateCommands) {
+		CheckMessage(str, Sender);
+	}
+	Super.Mutate(str, Sender);
+}
+*/
+
+/*
+event Timer() {
+	local Pawn p;
+
+	if (bCheckMailOnPlayerJoin) {
+		CheckForNewPlayers();
+	}
+}
+
+function CheckForNewPlayers() {
+	local Pawn p;
+	while (Level.Game.CurrentID > lastPlayerChecked) {
+		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+			if (p.IsA('PlayerPawn') && p.PlayerReplicationInfo.PlayerID == lastPlayerChecked) {
+				ProcessNewPlayer(PlayerPawn(p));
+				break;
+			}
+		}
+		lastPlayerChecked++;
+	}
+}
+
+function ProcessNewPlayer(PlayerPawn p) {
+	// Check for new mail for this player:
+	if ( ! CheckMailFor(p) ) {
+		// Only announce the mutator if they didn't have new mail:
+		if (bAnnounceOnJoin) {
+			p.ClientMessage("This server is running the PostBox mutator.");
+			p.ClientMessage("You can leave messages for other players with the !mail command.");
+		}
+	}
+}
+*/
+
+// Find player by name, or partial name
+function Pawn FindPlayerNamed(String name) {
+	local Pawn p;
+	local Pawn found;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
+			if (p.getHumanName() ~= name) { // exact case insensitive match, return player
+				return p;
+			}
+			if (Instr(Caps(p.getHumanName()),Caps(name))>=0) { // partial match, remember it but keep searching for exact match
+				found = p;
+			}
+		}
+	}
+	return found; // return partial match, or None
+}
+
+#include "../../JLib/jlib.uc.jpp"
+// #include "../../JLib/findactor.uc.jpp"
+
