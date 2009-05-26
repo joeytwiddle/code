@@ -74,7 +74,7 @@ public class PluggableHttpRequestHandler extends AdvancedHttpRequestHandler {
         // Plenty of proxies will ignore 90% of data passing through, so unzipping
         // stream is BAD!
         
-        HTTPStreamingTools.unzipResponse(response);
+        // HTTPStreamingTools.unzipResponse(response);
         
         // We could easily put a warning in getResponseStreamAsStringBuffer ;)
         

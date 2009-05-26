@@ -515,7 +515,8 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     private void maybeAddScripts(HttpResponse response) throws IOException {
         /** @todo What does GM trigger on?  I've seen it run (fail) on .txt and .js pages also. **/
         if (response.getHeader("Content-type").toLowerCase().startsWith("text/html")) {
-            HTTPStreamingTools.unzipResponse(response);
+            // HTTPStreamingTools.unencodeResponse(response);
+            // HTTPStreamingTools.unzipResponse(response);
             // StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
             StringBuffer responseString = response.getContentAsStringBuffer();
             // Logger.log(""+responseString);
