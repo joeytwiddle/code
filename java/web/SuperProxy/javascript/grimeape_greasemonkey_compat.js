@@ -80,6 +80,9 @@ function GA_log(namespace,obj) {
 	}
 }
 
+// This will be overriden before being called by userscripts.
+// But much of our core is still using it.
+// Same goes for GM_setValue etc.
 function GM_log(obj) {
 	GA_log("NONE!",obj);
 }

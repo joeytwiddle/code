@@ -24,6 +24,9 @@ Why send the include/exclude data to the client when the proxy side could
 match them against the current URL, and do all the injection before GrimeApe
 has even loaded in the client.
 
+TODO: when uninstalling a script, GA should offer to search and destroy any
+registry values set by that script's namespace.
+
 */
 
 (function(){
@@ -530,7 +533,8 @@ has even loaded in the client.
 				var link = document.createElement('A');
 				link.textContent = commandName;
 				link.href = 'javascript:void(0)';
-				link.onclick = (function(evt) { commandFunc(); });
+				// Trying onmousedown instead of onclick, maybe will reduce Konq's switch to drag mode.
+				link.onmousedown = (function(evt) { commandFunc(); });
 				Menu.userscriptCommandsDiv.appendChild(link);
 				Menu.userscriptCommandsMenuItem.onclick = Menu.showUserscriptCommands;
 			},
@@ -690,7 +694,7 @@ has even loaded in the client.
 		this.GM_registerMenuCommand = Menu.addUserscriptCommand;
 
 		// var icon = document.getElementById('gaIcon');
-		// icon.addEventListener('onclick',Menu.showHideMenu());
+		// icon.addEventListener('click',Menu.showHideMenu());
 		// iconHolder.href = '#'; iconHolder.target = '_self';
 		// ApeIcon.icon.onclick = Menu.showHideMenu;
 		ApeIcon.icon.onclick = (function(evt) { Menu.showHideMenu(); evt.preventDefault(); });
@@ -773,12 +777,14 @@ has even loaded in the client.
 		loadScriptString("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
 	}
 
-	doStart();
-
 
 
 	// Visible to me for debugging!
 	this.GrimeApeConfig = GrimeApeConfig;
+
+	doStart();
+	// document.body.addEventListener('load',doStart,false);
+	// setTimeout('doStart()',1000);
 
 
 
