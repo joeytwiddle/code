@@ -80,7 +80,7 @@ function GA_log(namespace,obj) {
 	}
 }
 
-// This will be overriden before being called by userscripts.
+// This should get overriden before being called by userscripts.
 // But much of our core is still using it.
 // Same goes for GM_setValue etc.
 function GM_log(obj) {
@@ -268,9 +268,9 @@ if (!this.uneval) {
 // ga_xmlhttpRequest = function (method,url,headers,data,onload,onerror,onreadystatechange) {
 ga_xmlhttpRequest = function (req) {
 	if (this.namespace) { // Long shot, hoping to see context of calling function, but I think it failed due to closure.
-		GM_log(namespace,"xmlhttpRequest: "+req);
+		GA_log(namespace,"xmlhttpRequest: "+req);
 	} else {
-		GM_log("NO_NAMESPACE","xmlhttpRequest: "+req);
+		GM_log("xmlhttpRequest: "+req);
 	}
 	var responseState;
 	try {
