@@ -281,7 +281,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
 
     private HttpResponse handleSpecialRequest(HttpRequest request, WebRequest wreq)
             throws IOException {
-        Logger.log("Handling special GA request: "+wreq.getPath());
+        Logger.log("Intercepted special GA request: "+wreq.getPath());
         String[] args = wreq.getPath().split("/");
         // We know args[1] == "_gRiMeApE_"
         String commandDir = args[2];
@@ -339,15 +339,25 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 // We should not adjust 304s!  That would break since we have no content stream.
                 if (response.getResponseCode() == 200) {
                     // HTTPStreamingTools.unzipResponse(response); // not needed i think :P
+                    String escapedNamespace = namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"");
                     StringBuffer content = response.getContentAsStringBuffer();
-                    content.insert(0,
-                            "(function(){\n"
-                            + "var GA_namespace = \""+namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"")+"\";\n" /* escaping ftw lol */
+                    content.insert(0, ""
+                            + "try {\n"
+                            + "(function(){\n"
+                            + "var GA_namespace = \""+escapedNamespace+"\";\n"
                             + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
                             + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
                             + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
+                            + "function GM_xmlhttpRequest(x) { GA_xmlhttpRequest(GA_namespace,x); }\n"
+                            + "GM_log(\"Initializing "+escapedNamespace+"...\");\n"
                     );
-                    content.append("\n})();");
+                    content.append("\n"
+                            + "GM_log(\"Done "+escapedNamespace+".\");\n"
+                            + "})();\n"
+                            + "} catch (e) {\n"
+                            + "  GM_log(\"ERROR during "+escapedNamespace+": \"+e);\n"
+                            + "}\n"
+                    );
                     response.setContent(content);
                 }
             }

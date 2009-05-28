@@ -65,6 +65,8 @@ registry values set by that script's namespace.
 			}),
 		};
 
+		GM_log("Created fresh GrimeApe config.");
+
 	}
 
 	// This may look like a long-winded way of declaring the object, but:
@@ -82,7 +84,7 @@ registry values set by that script's namespace.
 
 	function loadScript(scriptName) {
 		var fsName = getFsName(scriptName);
-		GM_log('Loading userscript: '+scriptName);
+		// GM_log('Appending userscript: '+scriptName);
 		var namespace = GrimeApeConfig.scripts[scriptName].namespace;
 		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js?namespace=" + encodeURIComponent(namespace+"/"+scriptName);
 		document.writeln("<SCRIPT type='text/javascript' src='" + url + "'></SCRIPT>");
@@ -717,7 +719,7 @@ registry values set by that script's namespace.
 							GM_xmlhttpRequest( { method:'GET', url:scriptHref,
 								onload: function(response) {
 									form['content'].value = response.responseText;
-									form['content'].textContent = response.responseText;
+									form['content'].textContent = response.responseText; // Konq
 								}
 							} );
 						};
@@ -767,6 +769,7 @@ registry values set by that script's namespace.
 				var scriptData = GrimeApeConfig.scripts[script];
 				if (GrimeApeConfig.scripts[script].enabled && scriptTriggers(scriptData)) {
 					loadScript(script);
+					// loadScriptOtherWay(script);
 					countLoaded++;
 				} else {
 					// GM_log("Skipping ("+script+")");
@@ -775,6 +778,7 @@ registry values set by that script's namespace.
 		}
 		GM_log("GrimeApe loading "+countLoaded+" userscripts...");
 		loadScriptString("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
+		// loadScriptStringOtherWay("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
 	}
 
 
@@ -783,7 +787,8 @@ registry values set by that script's namespace.
 	this.GrimeApeConfig = GrimeApeConfig;
 
 	doStart();
-	// document.body.addEventListener('load',doStart,false);
+	// document.addEventListener('load',doStart,false);
+	// window.doStart = doStart;
 	// setTimeout('doStart()',1000);
 
 

@@ -266,12 +266,8 @@ if (!this.uneval) {
 }
 
 // ga_xmlhttpRequest = function (method,url,headers,data,onload,onerror,onreadystatechange) {
-ga_xmlhttpRequest = function (req) {
-	if (this.namespace) { // Long shot, hoping to see context of calling function, but I think it failed due to closure.
-		GA_log(namespace,"xmlhttpRequest: "+req);
-	} else {
-		GM_log("xmlhttpRequest: "+req);
-	}
+GA_xmlhttpRequest = function (namespace,req) {
+	GA_log(namespace,"xmlhttpRequest: "+req.url);
 	var responseState;
 	try {
 		// Security:
@@ -286,18 +282,19 @@ ga_xmlhttpRequest = function (req) {
 		var url = '/_gRiMeApE_/xmlhttpRequest?url='+encodeURIComponent(req.url); // +'&data='+encodeURIComponent(req.data);
 		var request = new XMLHttpRequest();
 		// TODO: data(?),onload,onerror,onreadystatechange
-		GM_log("Doing: open("+req.method+","+url+",false)...");
+		// GM_log("Doing: open("+req.method+","+url+",false)...");
 		request.open(req.method,url,false); // user,passwd
 		if (req.headers) {
 			for (var header in req.headers) {
-				GM_log("Header ["+header+"] = "+req.headers[header]);
+				// GM_log("Header ["+header+"] = "+req.headers[header]);
 				request.setRequestHeader(header,req.headers[header]);
 			}
 		}
-		GM_log("Done");
+		// GM_log("Done");
 		request.send(req.data);
 
-		GM_log('GM_xmlhttpRequest("'+url+'") responded with "'+request.responseText+'".');
+		// GM_log('GM_xmlhttpRequest("'+url+'") responded with "'+request.responseText+'".');
+		GA_log(namespace,'GM_xmlhttpRequest("'+req.url+'") responded with '+request.responseText.length+' bytes of data.');
 
 		responseState = {
 			// can't support responseXML because security won't
@@ -322,8 +319,11 @@ ga_xmlhttpRequest = function (req) {
 	return null;
 }
 
-if (!this.GM_xmlhttpRequest) {
-	GM_xmlhttpRequest = ga_xmlhttpRequest;
+// if (!this.GM_xmlhttpRequest) {
+	// GM_xmlhttpRequest = ga_xmlhttpRequest;
+// }
+function GM_xmlhttpRequest(req) {
+	return GA_xmlhttpRequest("DUNNO",req);
 }
 
 // GM_registerMenuCommand is implemented in grimeape_config.js
