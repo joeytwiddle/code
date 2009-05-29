@@ -41,12 +41,11 @@ function getXPath(node) {
 	var thisCount = -1;
 	for (var i=0;i<siblings.length;i++) {
 		var sibling = siblings[i];
-		if (sibling.nodeType == node.nodeType) {
+		if (sibling.tagName == node.tagName) {
 			totalCount++;
 		}
 		if (sibling == node) {
 			thisCount = totalCount;
-			break;
 		}
 	}
 	return getXPath(parent) + "/" + node.nodeName.toLowerCase() + (totalCount>1 ? "[" + thisCount + "]" : "" );
@@ -55,6 +54,8 @@ function getXPath(node) {
 var lastRes;
 
 function doUpdate(xpathExpr) {
+	var resultsDiv = document.getElementById('resultsDiv');
+
 	if (lastRes) {
 		for (var i=0;i<lastRes.snapshotLength;i++) {
 			var node = lastRes.snapshotItem(i);
@@ -62,7 +63,7 @@ function doUpdate(xpathExpr) {
 				node.style.backgroundColor = 'white';
 		}
 	}
-	var resultsDiv = document.getElementById('resultsDiv');
+
 	resultsDiv.innerHTML = '<TT>';
 	var res = document.evaluate(xpathExpr, document, null, 6, null);
 	for (var i=0;i<res.snapshotLength;i++) {
@@ -77,6 +78,7 @@ function doUpdate(xpathExpr) {
 	resultsDiv.style.backgroundColor = '#ffffdd';
 	resultsDiv.style.color = 'black';
 	window.status = "Matched "+res.snapshotLength+" nodes.";
+
 	lastRes = res;
 }
 
