@@ -3,6 +3,12 @@
 	<TITLE>Joey's Bookmarklet (Development) Page</TITLE>
 	<!-- Keep viewer safe from infinte alert trap! -->
 	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'></SCRIPT>
+	<!--
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xmltoken.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/util.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/dom.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xpath.js'></SCRIPT>
+	-->
 </HEAD>
 <BODY>
 
@@ -357,7 +363,6 @@
 					killFonts(child);
 				}
 			}
-			killFonts(document.body);
 			/* check css... */
 			if (document.styleSheets) {
 				for (var i=0;i<document.styleSheets.length;i++) {
@@ -375,6 +380,7 @@
 					}
 				}
 			}
+			killFonts(document.body);
 			window.document.status = 'All fonts cleared.';
 		})();">Kill All Fonts</A></LI>
 		<BLOCKQUOTE>
@@ -793,6 +799,26 @@
 		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> and <TT>loadScript(url)</TT>.</LI>
 		<LI class='todo'>Todo: Close button is in the wrong place.</LI>
 		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
+	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			/*
+			var libScript = document.createElement('script');
+			libScript.type = 'text/javascript';
+			libScript.src = 'http://hwi.ath.cx/javascript/xpath.js';
+			document.body.appendChild(libScript);
+			*/
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/xpath_tester.js';
+			document.body.appendChild(newScript);
+		})();">XPath Tester</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Loads a little XPath testing tool which will show you the results of your xpath query.</P>
+		<LI class='todo'>I thought I had a pure Javascript implementation of XPathResult which would work for Konqueror, but I didn&apos;t.  ajaxslt looks pretty promising though.</LI>
+		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
