@@ -1,14 +1,8 @@
-<!-- Dangerous ATM!  Works but pops up another one! -->
-<!-- #define LOAD_IN_NEW_WINDOW -->
-
-<!-- The non popup version overwrites mainFrame, which is usually what we want to -->
-<!-- inspect, which results in badness. -->
-#define POPUP_JSREFLECTOR
+#define LOGGING
 
 
-#ifdef BOOKMARKLET
-	// #define USE_IFRAMES_NOT_FRAMES
-#else
+
+#ifndef BOOKMARKLET
 	#define WRAP_IN_HTML_PAGE
 #endif
 
@@ -18,19 +12,50 @@
 
 <TITLE>Powerbar</TITLE>
 
-<!-- TODO: Add a Load External Javascript button :) -->
-<!-- TODO: Some temporary fun just for me, should be removed. -->
-<!-- <SCRIPT type="text/javascript" src="file:///home/joey/gentoo/.mozilla/firefox/jb7htq8y.default/bookmarkbackups/bookmarks-2009-04-22.json"></SCRIPT> -->
-
 <script type="text/javascript"> <!--
 #endif
 
 #include "/mnt/hwibot/var/www/javascript/alert_watcher.user.js"
 
+
+
 #ifdef INCLUDE_COMMENTS
+
+// We can't put comments much earlier, because we don't know if we are javascript or HTML!
 
 // Useful: :! onchange "powerbar.html.jpp" do 'jpp -- powerbar.html.jpp > ./powerbar.html'
 //   also: :! onchange "powerbar.html.jpp" do "env JPP_GCC_OPTS='-D BOOKMARKLET' jpp -- powerbar.html.jpp > ./powerbarframe.html"
+
+///////////////////////// Compile-time options /////////////////////////
+
+// #define STUFF_IM_JUST_TESTING
+
+// #define POPUP_JSREFLECTOR
+// otherwise jsReflection appears in mainFrame
+// mmm in konqueror it pops up a window either way :P
+
+// ------------------------ Logging -----------------------
+
+// The simplest demonstration of the usefulness of #define's pre-compile stripping.
+
+// To turn it on or off:
+//// TODO BUG: In Firefox, the Bookmarklet version is failing to find the function top.log().
+
+// You must add LOG_ELEMENT_HTML at some point to the powerBarFrame
+// You can then log to that element using LOG(report);
+
+// Dangerous ATM!  Works but pops up another one!
+// #define LOAD_IN_NEW_WINDOW
+
+// The non popup version overwrites mainFrame, which is usually what we want to
+// inspect, which results in badness.
+// #define POPUP_JSREFLECTOR
+
+#ifdef BOOKMARKLET
+	// #define USE_IFRAMES_NOT_FRAMES
+#else
+	#define WRAP_IN_HTML_PAGE
+#endif
 
 // TODO: make it easy to add javascripttester or whatever to new opened windows.
 
@@ -49,6 +74,8 @@
 
 // TODO: It would be nice to have some text fields clear their values when entered.  See jumpgate.
 
+// TODO: Add a Load External Javascript button :)
+
 #endif
 
 var exploder = (navigator.appName == "Microsoft Internet Explorer");
@@ -59,25 +86,6 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 
 
 
-
-///////////////////////// Compile-time options /////////////////////////
-
-// #define STUFF_IM_JUST_TESTING
-
-// #define POPUP_JSREFLECTOR
-// otherwise jsReflection appears in mainFrame
-// mmm in konqueror it pops up a window either way :P
-
-// ------------------------ Logging -----------------------
-
-// The simplest demonstration of the usefulness of #define's pre-compile stripping.
-
-// To turn it on or off:
-#define LOGGING
-//// TODO BUG: In Firefox, the Bookmarklet version is failing to find the function top.log().
-
-// You must add LOG_ELEMENT_HTML at some point to the powerBarFrame
-// You can then log to that element using LOG(report);
 
 #ifdef LOGGING
 
@@ -146,7 +154,7 @@ var konqueror = (navigator.appName == "Konqueror"); // also what Mozilla reports
 
 var listOfOptions = [ "opt_powerBarPosition", "opt_ButtonsOnPowerBarForms", "opt_ClockEnabled", "opt_JSTesterEnabled", "opt_ViewInnerHtmlButton", "opt_JSReflectorEnabled", "opt_XPathGrabberEnabled" ];
 
-var opt_powerBarPosition = "top";
+var opt_powerBarPosition = "bottom";
 var opt_ButtonsOnPowerBarForms = true;
 var opt_ClockEnabled = true;
 var opt_JSTesterEnabled = true;
@@ -197,7 +205,7 @@ powerbar_init();
 #endif
 
 function createFrameset() {
-	var distrib = ( opt_powerBarPosition == "top" ? "20%,80%" : "80%,20%" );
+	var distrib = ( opt_powerBarPosition == "top" ? "50%,50%" : "50%,50%" );
 	#ifdef USE_IFRAMES_NOT_FRAMES
 		var framesetHtml = '<IFRAME width="100%" height="50%" id="powerBarFrame" src="about:blank"></IFRAME>\n';
 		framesetHtml += '<BR>\n';
@@ -238,6 +246,10 @@ function createFrameset() {
 		#ifdef LOGGING
 			document.log = log;
 			top.log = log;
+			// These are needed for some calls to log() to work.
+			document.niceDate = niceDate;
+			document.toHtml = toHtml;
+			top.jsReflectorShow = jsReflectorShow;
 			powerBarFrame.log = log;
 			mainFrame.log = log;
 		#endif
@@ -604,14 +616,14 @@ function jsReflectorShow(objName) {
 		html += "Go back to: ";
 		for (var i=0;i<jsReflectorHistory.length;i++) {
 			var prevObjName = jsReflectorHistory[i];
-			html += "<a href='javascript:top.jsReflectorShow(\"" + prevObjName + "\")'>" + prevObjName + "</a>";
+			html += "<a href='javascript:opener.jsReflectorShow(\"" + prevObjName + "\")'>" + prevObjName + "</a>";
 			if (i < jsReflectorHistory.length - 1) {
 				html += ", ";
 			}
 		}
 		// var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
-		/** TODO: it seems single-quotes in the input get lost?  I was evaluating top.document.getElementsByTagName('SCRIPT').item(0) but could not click through to nextSibling. **/
-		var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:alert(\"blurred\"); if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
+		/** BUG TESTING: apostrophes in the input get lost.  should be fixed now but i left < and > unescaped :P **/
+		var editableObjName = "<INPUT type='text' size='30' value='" + objName.replace(/'/g,"&apos;") + "' onchange='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
 		html += "<h3>Inspecting: " + trytypeof(obj) + " " + editableObjName + " = " + obj + "</h3>";
 
 		// Ripped off the web, testing here:
@@ -629,15 +641,15 @@ function jsReflectorShow(objName) {
 			html += "<a href='javascript:load(\"b.html\",top.opener)'>Test opener</a><BR>\n";
 		#endif
 
-		html += "<blockquote>";
-		html += "<table cellpadding='0' cellspacing='0'>";
 		var i = 0;
 		var list = "";
+		var fnlist = "";
 		for (var name in obj) { // BUG: Mozilla doesn't find the "document" in window objects!
 			var globName = objName + "." + name;
 			var value = "<neverset>";
 			var type = "<neverset>";
 			try {
+				// TODO: mmm silly me, isn't this exactly the same as obj[name] ?
 				value = eval("obj." + name);
 				type = trytypeof(value);
 				// We need to ensure it can be evaluated as a string or it might fail when added to HTML later:
@@ -645,7 +657,15 @@ function jsReflectorShow(objName) {
 			} catch (e) {
 				value = "<unattainable> (" + e + ")";
 			}
-			var link = 'javascript:top.jsReflectorShow("' + globName + '")';
+			if (type=='function') {
+				// fnlist += " "+name;
+				// DONE We need partial escaping, not CGI, but to hide '"'s '<'s '>'s etc.
+				// fnlist += " <SPAN title=\""+escape(value)+"\">"+name+"</SPAN>";
+				// PFF powerbar is quite smelly - we could be using span.title :P
+				fnlist += " <SPAN title=\""+value.replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+"\">"+name+"</SPAN>";
+				continue;
+			}
+			var link = 'javascript:opener.jsReflectorShow("' + globName + '")';
 			list += "<tr>";
 			list += "<td align='right'>" + type + "&nbsp;</td>";
 			list += "<td align='center'><a href='" + link + "'>" + name + "</a></td>";
@@ -655,16 +675,20 @@ function jsReflectorShow(objName) {
 			list += "\n"; // for sortLines
 		}
 		list = sortLines(list);
+		if (fnlist != "")
+			list = "Functions: " + fnlist + "<P/>\n" + list;
+		// html += "<blockquote>";
+		html += "<table cellpadding='0' cellspacing='0'>";
 		html += list;
 		html += "</table>";
-		html += "</blockquote>";
+		// html += "</blockquote>";
 		#ifdef POPUP_JSREFLECTOR
 			// BUG re. popup window: It's what we want really, but currently in Mozilla at least, subsequent calls to top.jsReflectorShow() from the new window can not find the function!
 			writeToWindow('jsReflector',html);
 		#else
-			writeToFrame(mainFrame,html);
+			// writeToFrame(mainFrame,html);
+			writeToFrame(powerBarFrame,html);
 		#endif
-		// writeToFrame(powerBarFrame,html);
 	} catch (e) {
 		LOG(e);
 	}
@@ -743,6 +767,7 @@ function getXPath(node) {
 		}
 		if (sibling == node) {
 			thisCount = totalCount;
+			break;
 		}
 	}
 	//// Extended info xpath: could also show name, id, other attribs if present:
@@ -785,6 +810,7 @@ function writeToFrame(frame,html) {
 		frame.document.write(html);
 		frame.document.write("</body></html>"); // these tags seemed sensible to me
 		frame.document.close();
+	/*if (top.functions.length > */
 	// } else {
 		// try {
 			// frame.location = "about:blank";
