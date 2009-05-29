@@ -42,40 +42,48 @@ rightCell.appendChild(iframe);
 
 iframe.style.backgroundColor = '#eeeeee';
 
-var lastFocus = null;
+var lastHover = null;
+var lastPreview = null;
 
 function checkFocus() {
-	if (lastFocus) {
-		GM_log("Previewing "+lastFocus.href);
+	if (lastHover) {
+		GM_log("Previewing "+lastHover.href);
 		if (highlightFocusedResult) {
-			for (var i=0;i<document.links.length;i++) {
-				if (document.links[i].className == "l") {
-					document.links[i].parentNode.style.backgroundColor = '';
-				}
-			}
-			lastFocus.parentNode.style.backgroundColor = "#ffccff";
+			if (lastPreview)
+				lastPreview.parentNode.style.backgroundColor = "";
+			lastHover.parentNode.style.backgroundColor = "#ffccff";
 		}
-		iframe.src = lastFocus.href;
+		iframe.src = lastHover.href;
+		lastPreview = lastHover;
 	}
 }
 
 function helloMouse(evt) {
 	var node = evt.target;
 	window.status = "Over "+node;
-	if (node.tagName=="A" && node.className=="l") {
-		lastFocus = node;
+	// if (node.tagName=="A" && node.className=="l") {
+		lastHover = node;
 		setTimeout(checkFocus,1000);
-	}
+	// }
 }
 
 function goodbyeMouse(evt) {
 	var node = evt.target;
 	window.status = "Out "+node;
-	if (node.tagName=="A" && node.className=="l") {
-		lastFocus = null;
-	}
+	// if (node.tagName=="A" && node.className=="l") {
+		lastHover = null;
+	// }
 }
 
+/*
 document.body.addEventListener('mouseover',helloMouse,false);
 document.body.addEventListener('mouseout',goodbyeMouse,false);
+*/
+
+for (var i=0;i<document.links.length;i++) {
+	if (document.links[i].className == "l") {
+		document.links[i].addEventListener('mouseover',helloMouse,false);
+		document.links[i].addEventListener('mouseout',goodbyeMouse,false);
+	}
+}
 
