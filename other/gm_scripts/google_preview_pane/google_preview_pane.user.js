@@ -6,7 +6,7 @@
 // @include        http://www.google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
 // @include        http://www.google.*/webhp?*q=*
-// @version        0.9.7
+// @version        0.9.8
 // ==/UserScript==
 
 // Settings:
@@ -42,13 +42,15 @@ browsersSuck.addEventListener('load',function(){
 			resultsBlock.appendChild(document.body.childNodes[0]);
 		}
 		document.body.appendChild(resultsBlock);
-		var annoyingLine = document.getElementsByClassName("gbh")[0];
-		annoyingLine.parentNode.removeChild(annoyingLine);
-		annoyingLine = document.getElementsByClassName("gbh")[0];
-		annoyingLine.parentNode.removeChild(annoyingLine);
+		try {
+			var annoyingLine = document.getElementsByClassName("gbh")[0];
+			annoyingLine.parentNode.removeChild(annoyingLine);
+			annoyingLine = document.getElementsByClassName("gbh")[0];
+			annoyingLine.parentNode.removeChild(annoyingLine);
+		} catch (e) { }
 	}
 
-	GM_log("resultsBlock = " + resultsBlock);
+	// GM_log("resultsBlock = " + resultsBlock);
 
 	var table = document.createElement("TABLE");
 	var tbody = document.createElement("TBODY");
