@@ -6,62 +6,66 @@
 // @include        http://www.google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
 // @include        http://www.google.*/webhp?*q=*
-// @version        0.9.1
+// @version        0.9.3
 // ==/UserScript==
 
 // Settings:
+
 var highlightFocusedResult = true;
 var previewWidth = 0.6;
 var pageHeightUsed = 0.7;
 
 
 
-// We must delay action on webhp pages - I think we are waiting for the page to
-// be populated by Google's Javascript.
-setTimeout(function(){
+// On webhp pages, I think the content is loaded by Javascript.  We must wait
+// for the page to finish loading before we can find the resultsBlock.
 
-var resultsWidth = 1.0 - previewWidth;
+document.addEventListener('load',function(){
 
-var resultsBlock = document.getElementById("res");
+	var resultsWidth = 1.0 - previewWidth;
 
-var table = document.createElement("TABLE");
-var tbody = document.createElement("TBODY");
-var row = document.createElement("TR");
-var leftCell = document.createElement("TD");
-var rightCell = document.createElement("TD");
+	var resultsBlock = document.getElementById("res");
 
-leftCell.style.width = (window.innerWidth * resultsWidth) +'px';
-rightCell.style.width = (window.innerWidth * previewWidth) +'px';
-resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
-resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
-resultsBlock.style.overflow = 'auto';
+	// GM_log("resultsBlock = " + resultsBlock);
 
-var iframe = document.createElement('IFRAME');
-iframe.width = '100%';
-iframe.height = window.innerHeight * 0.70;
-iframe.style.backgroundColor = '#eeeeee';
-rightCell.appendChild(iframe);
+	var table = document.createElement("TABLE");
+	var tbody = document.createElement("TBODY");
+	var row = document.createElement("TR");
+	var leftCell = document.createElement("TD");
+	var rightCell = document.createElement("TD");
 
-tbody.appendChild(row);
-table.appendChild(tbody);
-row.appendChild(leftCell);
-row.appendChild(rightCell);
+	leftCell.style.width = (window.innerWidth * resultsWidth) +'px';
+	rightCell.style.width = (window.innerWidth * previewWidth) +'px';
+	resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
+	resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
+	resultsBlock.style.overflow = 'auto';
 
-resultsBlock.parentNode.insertBefore(table,resultsBlock);
-leftCell.appendChild(resultsBlock);
+	var iframe = document.createElement('IFRAME');
+	iframe.width = '100%';
+	iframe.height = window.innerHeight * 0.70;
+	iframe.style.backgroundColor = '#eeeeee';
+	rightCell.appendChild(iframe);
 
-(function(){
+	tbody.appendChild(row);
+	table.appendChild(tbody);
+	row.appendChild(leftCell);
+	row.appendChild(rightCell);
+
+	resultsBlock.parentNode.insertBefore(table,resultsBlock);
+	leftCell.appendChild(resultsBlock);
+
+	// Listeners:
 
 	var lastHover = null;
 	var lastPreview = null;
 
 	function checkFocus() {
 		if (lastHover) {
-			GM_log("Previewing "+lastHover.href);
+			// GM_log("Previewing "+lastHover.href);
 			if (highlightFocusedResult) {
 				if (lastPreview)
 					lastPreview.style.backgroundColor = "";
-				lastHover.style.backgroundColor = "#bbffbb"; // "#ffccff";
+				lastHover.style.backgroundColor = "#ccccff"; // "#ffccff";
 			}
 			iframe.src = lastHover.href;
 			lastPreview = lastHover;
@@ -74,7 +78,6 @@ leftCell.appendChild(resultsBlock);
 			node = node.parentNode;
 		}
 		if (node /*&& node.className=="l"*/) {
-			GM_log("Over "+node);
 			lastHover = node;
 			setTimeout(checkFocus,1000);
 		}
@@ -86,7 +89,6 @@ leftCell.appendChild(resultsBlock);
 			node = node.parentNode;
 		}
 		if (node /*&& node.className=="l"*/) {
-			GM_log("Out "+node);
 			lastHover = null;
 		}
 	}
@@ -94,7 +96,11 @@ leftCell.appendChild(resultsBlock);
 	resultsBlock.addEventListener('mouseover',helloMouse,true);
 	resultsBlock.addEventListener('mouseout',goodbyeMouse,true);
 
-})();
+	// The "Sponsored Links" block gets in the way.
+	var toKill = document.getElementById("mbEnd");
+	if (toKill) {
+		toKill.parentNode.removeChild(toKill);
+	}
 
-}, (document.location.href.match(/webhp/)?4000:100) ); // We need not delay long on normal Google pages.
+},false);
 
