@@ -6,15 +6,17 @@
 // @include        http://www.google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
 // @include        http://www.google.*/webhp?*q=*
-// @version        0.9.6
+// @version        0.9.7
 // ==/UserScript==
 
 // Settings:
 
-var highlightFocusedResult = true;
-var previewWidth = 0.6;
 var fillWholeWindow = false;
+var previewWidth = 0.6;
 var pageHeightUsed = 0.7;
+var hoverTime = 800;
+var highlightFocusedResult = true;
+var noPanelBorder = false;
 
 
 
@@ -40,6 +42,10 @@ browsersSuck.addEventListener('load',function(){
 			resultsBlock.appendChild(document.body.childNodes[0]);
 		}
 		document.body.appendChild(resultsBlock);
+		var annoyingLine = document.getElementsByClassName("gbh")[0];
+		annoyingLine.parentNode.removeChild(annoyingLine);
+		annoyingLine = document.getElementsByClassName("gbh")[0];
+		annoyingLine.parentNode.removeChild(annoyingLine);
 	}
 
 	GM_log("resultsBlock = " + resultsBlock);
@@ -60,6 +66,8 @@ browsersSuck.addEventListener('load',function(){
 	iframe.width = '100%';
 	iframe.height = (window.innerHeight * pageHeightUsed) + 'px';
 	iframe.style.backgroundColor = '#eeeeee';
+	if (noPanelBorder)
+		iframe.style.border = '0px solid white';
 	rightCell.appendChild(iframe);
 
 	tbody.appendChild(row);
@@ -95,7 +103,7 @@ browsersSuck.addEventListener('load',function(){
 		}
 		if (node /*&& node.className=="l"*/) {
 			lastHover = node;
-			setTimeout(checkFocus,1000);
+			setTimeout(checkFocus,hoverTime);
 		}
 	}
 
