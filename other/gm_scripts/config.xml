@@ -1,5 +1,5 @@
 <UserScriptConfig>
-	<Script filename="google_image_relinker.user.js" name="Google Image Relinker" namespace="http://patcavit.com/greasemonkey" description="Rewrites Google Image Search links to point straight to the pictures" enabled="true" basedir="google_image_relinker">
+	<Script filename="google_image_relinker.user.js" name="Google Image Relinker" namespace="http://patcavit.com/greasemonkey" description="Rewrites Google Image Search links to point straight to the pictures" enabled="false" basedir="google_image_relinker">
 		<Include>http://images.google.*/*</Include>
 	</Script>
 	<Script filename="jaspers_google_reader_su.user.js" name="Jasper's Google Reader subscribe" namespace="http://browservulsel.blogspot.com/" description="v0.3 - Another Google Reader subscriber. This one was designed to use as little screen size as possible. It only adds a feed icon in the top right corner. On mouse over the subscribe links are shown." enabled="false" basedir="jaspers_google_reader_su">
@@ -45,12 +45,12 @@
 		<Include>https://welcome27.co-operativebank.co.uk/CBIBSWeb/getVisaStatementPage.do*</Include>
 		<Include>https://welcome27.co-operativebank.co.uk/CBIBSWeb/visaStatements.do*</Include>
 	</Script>
-	<Script filename="google_image_relinker_mo.user.js" name="Google Image Relinker Mod" namespace="http://userscripts.org/users/9022" description="http://userscripts.org/scripts/show/5059" enabled="true" basedir="google_image_relinker_mo">
+	<Script filename="google_image_relinker_mo.user.js" name="Google Image Relinker Mod" namespace="http://userscripts.org/users/9022" description="http://userscripts.org/scripts/show/5059" enabled="false" basedir="google_image_relinker_mo">
 		<Include>http://images.google.tld/images?*</Include>
 		<Include>http://images.google.com/images?*</Include>
 		<Include>http://images.google.de/images?*</Include>
 	</Script>
-	<Script filename="unfuck_facebook.user.js" name="UnFuck Facebook" namespace="sizzlemctwizzle" description="An update of the classic unfuck script. Now with a two column homepage layout!" enabled="true" basedir="unfuck_facebook">
+	<Script filename="unfuck_facebook.user.js" name="UnFuck Facebook" namespace="sizzlemctwizzle" description="An update of the classic unfuck script. Now with a two column homepage layout!" enabled="false" basedir="unfuck_facebook">
 		<Include>http://*.facebook.com/*</Include>
 		<Include>https://*.facebook.com/*</Include>
 	</Script>
@@ -60,9 +60,6 @@
 	</Script>
 	<Script filename="google_shortcuts.user.js" name="Google Shortcuts" namespace="http://userscripts.org/users/50149" description="Allows you to search other sites using the Google search." enabled="false" basedir="google_shortcuts">
 		<Include>http://www.google.*/search*</Include>
-	</Script>
-	<Script filename="userscripts_updater.user.js" name="Userscripts Updater" namespace="meh" description="Easy way to check for scripts updates. Automatic checking, import installed scripts." enabled="true" basedir="userscripts_updater">
-		<Include>http://*userscripts.org/*</Include>
 	</Script>
 	<Script filename="lastfm_2_discogs.user.js" name="Last.fm 2 Discogs" namespace="http://maybe78.blogspot.com" description="Shows a link to Discogs artist search next to any artist link on last.fm" enabled="true" basedir="lastfm_2_discogs">
 		<Include>http://*.last.fm/*</Include>
@@ -187,7 +184,7 @@
 	<Script filename="fullimage.user.js" name="FullImage" namespace="http://jeffpalm.com/fullimage" description="Provides links to the full image on Google's image search" enabled="false" basedir="fullimage">
 		<Include>http://images.google.com/images*</Include>
 	</Script>
-	<Script filename="google_link_preview.user.js" name="Google Link Preview" namespace="http://loucypher.wordpress.com/" description="Adds Clusty.com-like magnifiers on web and news search results to preview a link in a frame" enabled="true" basedir="google_link_preview">
+	<Script filename="google_link_preview.user.js" name="Google Link Preview" namespace="http://loucypher.wordpress.com/" description="Adds Clusty.com-like magnifiers on web and news search results to preview a link in a frame" enabled="false" basedir="google_link_preview">
 		<Include>http://www.google.tld/search?*</Include>
 		<Include>http://www.google.tld/custom?*</Include>
 		<Include>http://www.google.tld/search%3F*</Include>
@@ -239,10 +236,9 @@
 	<Script filename="track_history.user.js" name="track_history" namespace="noggieb" description="Presents a list/tree of the browsing path you took to reach the current page.  An advanced in-page Back button." enabled="false" basedir="track_history">
 		<Include>*</Include>
 	</Script>
-	<Script filename="faviconizegoogle.user.js" name="FaviconizeGoogle" namespace="noggieb" description="Adds Favicons to Google search results." enabled="true" basedir="faviconizegoogle">
+	<Script filename="faviconizegoogle.user.js" name="FaviconizeGoogle" namespace="noggieb" description="Adds Favicons to Google search results." enabled="false" basedir="faviconizegoogle">
 		<Include>http://google.*/search?*</Include>
-		<Include>http://www.google.com/search?*</Include>
-		<Include>http://*google.*/*</Include>
+		<Include>http://*.google.*/search?*</Include>
 	</Script>
 	<Script filename="imdb_search_torrents.user.js" name="IMDB: Search Torrents" namespace="http://userscripts.org/scripts/show/47385" description="Searches multiple torrent sites for the movie, videogame, etc" enabled="true" basedir="imdb_search_torrents">
 		<Include>http://*.imdb.com/title/*</Include>
@@ -255,7 +251,7 @@
 		<Include>http://userscripts.org/scripts?*</Include>
 		<Include>http://userscripts.org/scripts/search?*</Include>
 	</Script>
-	<Script filename="faviconizegoogle.user.js" name="FaviconizeGoogle" namespace="http://userscripts.org/users/89794" description="Adds favicons to each link offered by Google search results." enabled="false" basedir="faviconizegoogle-1">
+	<Script filename="faviconizegoogle.user.js" name="FaviconizeGoogle" namespace="http://userscripts.org/users/89794" description="Adds favicons to each link offered by Google search results." enabled="true" basedir="faviconizegoogle-1">
 		<Include>http://www.google.com/search?*</Include>
 	</Script>
 	<Script filename="googlekingkong.user.js" name="GoogleKingKong" namespace="http://userstyles.org" description="改善 Google 的搜索结果界面，提高阅读效率" enabled="false" basedir="googlekingkong">
@@ -265,25 +261,25 @@
 		<Include>*</Include>
 		<Exclude>http://*.last.fm/*</Exclude>
 	</Script>
-	<Script filename="script_updater.user.js" name="Script Updater" namespace="userscripts.org/alien_scum" description="checks all your scripts for updates on user script.org" enabled="false" basedir="script_updater">
+	<Script filename="script_updater.user.js" name="Script Updater" namespace="userscripts.org/alien_scum" description="checks all your scripts for updates on user script.org" enabled="true" basedir="script_updater">
 		<Include>*</Include>
 	</Script>
 	<Script filename="reclaim_cpu.user.js" name="Reclaim CPU" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers." enabled="false" basedir="reclaim_cpu-1">
 		<Include>*</Include>
 		<Exclude>http://*.other.sites/where/we/want/to/leave/everything/running</Exclude>
 	</Script>
-	<Script filename="twitter_search_results_o.user.js" name="Twitter Search Results on Google" namespace="markcarey" description="Shows results from Twitter on Google search pages" enabled="true" basedir="twitter_search_results_o">
+	<Script filename="twitter_search_results_o.user.js" name="Twitter Search Results on Google" namespace="markcarey" description="Shows results from Twitter on Google search pages" enabled="false" basedir="twitter_search_results_o">
 		<Include>http://www.google.*/search?*q=*</Include>
 		<Include>http://www.google.*/*</Include>
 	</Script>
-	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" enabled="true" basedir="delicious_search_results">
+	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" enabled="false" basedir="delicious_search_results">
 		<Include>http://www.google.*/search?*q=*</Include>
 		<Include>http://www.google.*/*</Include>
 	</Script>
-	<Script filename="cleanup_fonts.user.js" name="Cleanup Fonts" namespace="noggieb" description="Removes unwanted fonts and uses your own." enabled="true" basedir="cleanup_fonts">
+	<Script filename="cleanup_fonts.user.js" name="Cleanup Fonts" namespace="noggieb" description="Removes unwanted fonts and uses your own." enabled="false" basedir="cleanup_fonts">
 		<Include>*</Include>
 	</Script>
-	<Script filename="facebook_view_photo_in_a.user.js" name="Facebook View Photo in Album" namespace="znerp" description="Adds a link above photos to see them in their albums, even if you're not friends with the photographer. Adds links to view all photos of a user together (regardless of who took them). Adds links to view whole galleries/albums on one page." enabled="true" basedir="facebook_view_photo_in_a">
+	<Script filename="facebook_view_photo_in_a.user.js" name="Facebook View Photo in Album" namespace="znerp" description="Adds a link above photos to see them in their albums, even if you're not friends with the photographer. Adds links to view all photos of a user together (regardless of who took them). Adds links to view whole galleries/albums on one page." enabled="false" basedir="facebook_view_photo_in_a">
 		<Include>http://*.facebook.com/photo.php?*</Include>
 		<Include>http://*.facebook.com/photo_search.php?*</Include>
 		<Include>http://*.facebook.com/album.php?*</Include>
@@ -297,18 +293,71 @@
 		<Include>http://*.imdb.com/title/*</Include>
 		<Include>http://imdb.com/title/*</Include>
 	</Script>
-	<Script filename="linkify_ting.user.js" name="Linkify ting" namespace="http://ergosum.frac.dk/user/" description="Turn plain text links into real clikable links. Attempts to catch links like google.com" enabled="true" basedir="linkify_ting">
+	<Script filename="linkify_ting.user.js" name="Linkify ting" namespace="http://ergosum.frac.dk/user/" description="Turn plain text links into real clikable links. Attempts to catch links like google.com" enabled="false" basedir="linkify_ting">
 		<Include>*</Include>
 		<Exclude>http://*.google.*/*</Exclude>
 	</Script>
-	<Script filename="facebook_auto-colorizer.user.js" name="Facebook Auto-Colorizer" namespace="http://wisc.facebook.com/message.php?id=8638838" description="Colorizes facebook based on the user's photo." enabled="true" basedir="facebook_auto-colorizer">
+	<Script filename="facebook_auto-colorizer.user.js" name="Facebook Auto-Colorizer" namespace="http://wisc.facebook.com/message.php?id=8638838" description="Colorizes facebook based on the user's photo." enabled="false" basedir="facebook_auto-colorizer">
 		<Include>http://*.facebook.com/*</Include>
 	</Script>
 	<Script filename="facebook_colour_changer.user.js" name="facebook colour changer" namespace="znerp" description="Gives the option of changing the facebook colour scheme!" enabled="false" basedir="facebook_colour_changer">
 		<Include>http://*.facebook.com/*</Include>
 		<Include>https://*.facebook.com/*</Include>
 	</Script>
-	<Script filename="google_search_sidebar_fo.user.js" name="Google Search Sidebar for FF3 - Wikipedia, Dictionary.com, Flickr, and Youtube Results" namespace=" " description="Adds a sidebar with search results from Dictionary.com, Wikipedia, Flickr, and Youtube. Please report any bugs." enabled="true" basedir="google_search_sidebar_fo">
+	<Script filename="google_search_sidebar_fo.user.js" name="Google Search Sidebar for FF3 - Wikipedia, Dictionary.com, Flickr, and Youtube Results" namespace=" " description="Adds a sidebar with search results from Dictionary.com, Wikipedia, Flickr, and Youtube. Please report any bugs." enabled="false" basedir="google_search_sidebar_fo">
 		<Include>http://www.google.com/search?*</Include>
+	</Script>
+	<Script filename="easyread.user.js" name="EasyRead" namespace="namespace" description="" enabled="false" basedir="easyread">
+		<Include>*</Include>
+	</Script>
+	<Script filename="flickr_large_images.user.js" name="Flickr Large Images" namespace="http://amzn1995.googlepages.com" description="Makes Flickr's thumbnail images bigger on hover over." enabled="true" basedir="flickr_large_images">
+		<Include>http://flickr.com/*</Include>
+		<Include>https://flickr.com/*</Include>
+		<Include>http://*.flickr.com/*</Include>
+		<Include>https://*.flickr.com/*</Include>
+	</Script>
+	<Script filename="google_images_large_imag.user.js" name="Google Images Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see the images on images.google.com in full size by hovering over them." enabled="true" basedir="google_images_large_imag">
+		<Include>http://images.google.com/*</Include>
+		<Include>https://images.google.com/*</Include>
+	</Script>
+	<Script filename="wikipedia_large_images.user.js" name="Wikipedia Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you make Wikipedia images larger when you hover over them." enabled="true" basedir="wikipedia_large_images">
+		<Include>http://*.wikipedia.org/*</Include>
+		<Include>https://*.wikipedia.org/*</Include>
+	</Script>
+	<Script filename="imdb_large_images.user.js" name="IMDB Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see IMDB images in full size when you hover your mouse over them." enabled="true" basedir="imdb_large_images">
+		<Include>http://imdb.com/*</Include>
+		<Include>https://imdb.com/*</Include>
+		<Include>http://*.imdb.com/*</Include>
+		<Include>https://*.imdb.com/*</Include>
+		<Include>http://www.imdb.com/*</Include>
+		<Include>https://www.imdb.com/*</Include>
+	</Script>
+	<Script filename="facebook_large_images.user.js" name="Facebook Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see Facebook images in full size when you hover over them." enabled="true" basedir="facebook_large_images">
+		<Include>http://www.facebook.com/*</Include>
+		<Include>https://www.facebook.com/*</Include>
+		<Include>http://*.facebook.com/*</Include>
+		<Include>https://*.facebook.com/*</Include>
+	</Script>
+	<Script filename="userscripts_updater.user.js" name="Userscripts Updater" namespace="meh" description="Easy way to check for scripts updates. Automatic checking, import installed scripts." enabled="true" basedir="userscripts_updater">
+		<Include>*</Include>
+	</Script>
+	<Script filename="youtube_auto_buffer__rem.user.js" name="YouTube Auto Buffer &amp; Remove Ads &amp; Auto HD" namespace="userscripts.org" description="Buffers the video without autoplaying, removes in-video ads, and puts it in hd if the option is on" enabled="false" basedir="youtube_auto_buffer__rem">
+		<Include>http://*.youtube.com/watch*v=*</Include>
+		<Include>http://youtube.com/watch*v=*</Include>
+	</Script>
+	<Script filename="youtube_long_urls.user.js" name="YouTube Long URL's" namespace="http://userscripts.org/users/23652" description="Makes links show the full name of the video in the text" enabled="false" basedir="youtube_long_urls">
+		<Include>http://*.youtube.com/*</Include>
+	</Script>
+	<Script filename="google_image_color_searc.user.js" name="Google Image Color Search" namespace="userscripts.org" description="Allows you to limit your search results to specific colors using google imgcolor feature.." enabled="true" basedir="google_image_color_searc">
+		<Include>http://*images.google.*/images?*</Include>
+	</Script>
+	<Script filename="picasaweb_view_all_origi.user.js" name="Picasaweb view all original images of album in one click" namespace="http://userscripts.org" description="Add one button that change all images of album to original images. It easy download album. Based in source from joe.lapoutre.com/gm/picasawebdl" enabled="true" basedir="picasaweb_view_all_origi">
+		<Include>http://picasaweb.google.com/*/*</Include>
+	</Script>
+	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="joeytwiddle" description="Loads Google results in a Preview Pane on hover" enabled="true" basedir="google_preview_pane">
+		<Include>http://google.*/search?*q=*</Include>
+		<Include>http://www.google.*/search?*q=*</Include>
+		<Include>http://google.*/webhp?*q=*</Include>
+		<Include>http://www.google.*/webhp?*q=*</Include>
 	</Script>
 </UserScriptConfig>
