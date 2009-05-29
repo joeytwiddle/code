@@ -1,24 +1,26 @@
 // ==UserScript==
 // @name           Google Preview Pane
-// @namespace      joeytwiddle
-// @description    Loads Google results in a Preview Pane on hover
+// @namespace      http://userscripts.org/users/89794
+// @description    Loads Google results in a Preview Pane on mouse hover
 // @include        http://google.*/search?*
 // @include        http://www.google.*/search?*
 // ==/UserScript==
 
 var highlightFocusedResult = true;
 
-var resultsBlock = unsafeWindow.document.getElementById("res");
+var resultsBlock = window.document.getElementById("res");
 
-var table = unsafeWindow.document.createElement("TABLE");
-var row = unsafeWindow.document.createElement("TR");
-var leftCell = unsafeWindow.document.createElement("TD");
-var rightCell = unsafeWindow.document.createElement("TD");
+var table = window.document.createElement("TABLE");
+var row = window.document.createElement("TR");
+var leftCell = window.document.createElement("TD");
+var rightCell = window.document.createElement("TD");
 
 leftCell.width = '50%';
+// leftCell.width = (window.innerWidth/2) +'px';
 rightCell.width = '50%';
 // leftCell.height = window.innerHeight * 0.70;
 // rightCell.height = window.innerHeight * 0.75;
+resultsBlock.style.width = (window.innerWidth/2) + 'px';
 resultsBlock.style.height = (window.innerHeight * 0.70) + 'px';
 
 // leftCell.scrollable = true;
@@ -35,7 +37,7 @@ leftCell.appendChild(resultsBlock);
 
 // leftCell.style.backgroundColor = '#eeeeee';
 
-var iframe = unsafeWindow.document.createElement('IFRAME');
+var iframe = window.document.createElement('IFRAME');
 iframe.width = '100%';
 iframe.height = window.innerHeight * 0.70;
 rightCell.appendChild(iframe);
@@ -60,30 +62,30 @@ function checkFocus() {
 
 function helloMouse(evt) {
 	var node = evt.target;
-	window.status = "Over "+node;
-	// if (node.tagName=="A" && node.className=="l") {
+	// window.status = "Over "+node;
+	if (node.tagName=="A" && node.className=="l") {
 		lastHover = node;
 		setTimeout(checkFocus,1000);
-	// }
+	}
 }
 
 function goodbyeMouse(evt) {
 	var node = evt.target;
-	window.status = "Out "+node;
-	// if (node.tagName=="A" && node.className=="l") {
+	// window.status = "Out "+node;
+	if (node.tagName=="A" && node.className=="l") {
 		lastHover = null;
-	// }
+	}
 }
 
-/*
 document.body.addEventListener('mouseover',helloMouse,false);
 document.body.addEventListener('mouseout',goodbyeMouse,false);
-*/
 
+/*
 for (var i=0;i<document.links.length;i++) {
 	if (document.links[i].className == "l") {
 		document.links[i].addEventListener('mouseover',helloMouse,false);
 		document.links[i].addEventListener('mouseout',goodbyeMouse,false);
 	}
 }
+*/
 
