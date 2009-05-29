@@ -6,13 +6,14 @@
 // @include        http://www.google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
 // @include        http://www.google.*/webhp?*q=*
-// @version        0.9.5
+// @version        0.9.6
 // ==/UserScript==
 
 // Settings:
 
 var highlightFocusedResult = true;
 var previewWidth = 0.6;
+var fillWholeWindow = false;
 var pageHeightUsed = 0.7;
 
 
@@ -32,6 +33,15 @@ browsersSuck.addEventListener('load',function(){
 
 	var resultsBlock = document.getElementById("res");
 
+	if (fillWholeWindow) {
+		pageHeightUsed = 0.97;
+		resultsBlock = document.createElement("DIV");
+		while (document.body.childNodes.length > 0) {
+			resultsBlock.appendChild(document.body.childNodes[0]);
+		}
+		document.body.appendChild(resultsBlock);
+	}
+
 	GM_log("resultsBlock = " + resultsBlock);
 
 	var table = document.createElement("TABLE");
@@ -48,7 +58,7 @@ browsersSuck.addEventListener('load',function(){
 
 	var iframe = document.createElement('IFRAME');
 	iframe.width = '100%';
-	iframe.height = window.innerHeight * 0.70;
+	iframe.height = (window.innerHeight * pageHeightUsed) + 'px';
 	iframe.style.backgroundColor = '#eeeeee';
 	rightCell.appendChild(iframe);
 
