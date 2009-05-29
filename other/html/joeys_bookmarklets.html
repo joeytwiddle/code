@@ -440,6 +440,7 @@
 				/*for (i in css) {*/
 				for (var i=0;i<css.length;i++) {
 					if (typeof(css[i])=='function') { continue; }
+					if (css[i] == 'background-color') { continue; }
 					out += css[i] + '=' + css.getAttribute(css[i]) + ' ';
 				}
 				return out;
@@ -450,11 +451,11 @@
 				/* Did not work: var simplexpath = xpath.replace(/\[[^]]*\]/g,''); */
 				var simplexpath = xpath.replace(/[0-9]*/g,'');
 				if (node.tagName!='HTML' && node.tagName!='BODY') {
-					var attribs = getAttribs(node);
-					node.title = xpath + '\n\n' + '  <'+node.tagName+attribs+'/>' + '\n\n' + '  '+getCSS(node); /*escapeHTML(attrSum) + '';*/
 					if (node.style) {
 						node.style.backgroundColor = '#' + getColorFor(simplexpath);
 					}
+					var attribs = getAttribs(node);
+					node.title = xpath + '\n\n' + '  <'+node.tagName+attribs+'/>' + '\n\n' + '  '+getCSS(node);
 				}
 				/** This might display the xpath of elements which don't display their title but can be rolled over. **/
 				if (firstEvent) {
@@ -506,7 +507,7 @@
 			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn&apos;t highlight newly entered elements, it won&apos;t have to unhighlight them on the way out.</LI>
 			<LI class='todo'>Part of the problem is that a mouselistener is added to every element in the DOM, when we should just capture using the body element.</LI>
 			<LI class='todo'>Adapt the colour generator to produce pastels only.</LI>
-			<LI class='todo'>Rather than use the browser&quot;s default popup for title tag when hovering over elements, we could use our own custom popup.  This could give 2 advantages: 1) we could make newlines work in Mozilla; 2) By keeping the popup ever-present, the user can easily see when the XPath switches by a little or a lot.</LI>
+			<LI class='todo'>Rather than use the browser&quot;s default popup for title tag when hovering over elements, we could use our own custom popup.  This could give 2 advantages: 1) we could make newlines work in Mozilla; 2) By keeping the popup ever-present, the user can easily see when the XPath switches by a little or a lot.  The XPath in Konqueror&apos;s statusbar almost does this, but when hovering over a link it gets hidden.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -731,8 +732,8 @@
 					var newScript = document.createElement('SCRIPT');
 					newScript.type = 'text/javascript';
 					newScript.src = url;
-					document.body.appendChild(newScript);
-					// document.getElementsByTagName('head')[0].appendChild(newScript);
+					/*document.body.appendChild(newScript);*/
+					document.getElementsByTagName('head')[0].appendChild(newScript);
 				};
 			function checkKey(evt) {
 				if (evt.keyCode == 27) {
