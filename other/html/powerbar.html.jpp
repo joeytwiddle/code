@@ -623,7 +623,7 @@ function jsReflectorShow(objName) {
 		}
 		// var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
 		/** BUG TESTING: apostrophes in the input get lost.  should be fixed now but i left < and > unescaped :P **/
-		var editableObjName = "<INPUT type='text' size='30' value='" + objName.replace(/'/g,"&apos;") + "' onchange='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
+		var editableObjName = "<INPUT type='text' size='30' value='" + objName.replace(/'/g,'&apos;') + "' onchange='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
 		html += "<h3>Inspecting: " + trytypeof(obj) + " " + editableObjName + " = " + obj + "</h3>";
 
 		// Ripped off the web, testing here:

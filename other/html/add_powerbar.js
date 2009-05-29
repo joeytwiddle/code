@@ -459,7 +459,7 @@ function jsReflectorShow(objName) {
   }
   // var editableObjName = "<INPUT type='text' size='30' value='" + objName + "' onblur='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
   /** BUG TESTING: apostrophes in the input get lost.  should be fixed now but i left < and > unescaped :P **/
-  var editableObjName = "<INPUT type='text' size='30' value='" + objName.replace(/'/g,"&apos;") + "' onchange='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
+  var editableObjName = "<INPUT type='text' size='30' value='" + objName.replace(/'/g,'&apos;') + "' onchange='javascript:if (value!=defaultValue) { top.jsReflectorShow(value) }'>";
   html += "<h3>Inspecting: " + trytypeof(obj) + " " + editableObjName + " = " + obj + "</h3>";
   // Ripped off the web, testing here:
   var i = 0;
@@ -470,6 +470,7 @@ function jsReflectorShow(objName) {
    var value = "<neverset>";
    var type = "<neverset>";
    try {
+    // TODO: mmm silly me, isn't this exactly the same as obj[name] ?
     value = eval("obj." + name);
     type = trytypeof(value);
     // We need to ensure it can be evaluated as a string or it might fail when added to HTML later:
@@ -569,7 +570,7 @@ function getXPath(node) {
  var thisCount = -1;
  for (var i=0;i<siblings.length;i++) {
   var sibling = siblings[i];
-  if (sibling.nodeType == node.nodeType) {
+  if (sibling.tagName == node.tagName) {
    totalCount++;
   }
   if (sibling == node) {
