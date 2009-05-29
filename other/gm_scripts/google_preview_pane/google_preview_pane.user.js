@@ -6,7 +6,7 @@
 // @include        http://www.google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
 // @include        http://www.google.*/webhp?*q=*
-// @version        0.9.3
+// @version        0.9.5
 // ==/UserScript==
 
 // Settings:
@@ -17,16 +17,22 @@ var pageHeightUsed = 0.7;
 
 
 
+if (window != top)
+	return;
+
 // On webhp pages, I think the content is loaded by Javascript.  We must wait
 // for the page to finish loading before we can find the resultsBlock.
 
-document.addEventListener('load',function(){
+// Dagnammit Konqueror needs document.onload and Firefox needs window.onload.
+var browsersSuck = ( navigator.appName.match(/Konqueror/i) ? document : window );
+
+browsersSuck.addEventListener('load',function(){
 
 	var resultsWidth = 1.0 - previewWidth;
 
 	var resultsBlock = document.getElementById("res");
 
-	// GM_log("resultsBlock = " + resultsBlock);
+	GM_log("resultsBlock = " + resultsBlock);
 
 	var table = document.createElement("TABLE");
 	var tbody = document.createElement("TBODY");
