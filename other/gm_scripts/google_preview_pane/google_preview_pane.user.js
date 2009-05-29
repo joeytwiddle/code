@@ -16,6 +16,10 @@ var pageHeightUsed = 0.7;
 
 
 
+// We must delay action on webhp pages - I think we are waiting for the page to
+// be populated by Google's Javascript.
+setTimeout(function(){
+
 var resultsWidth = 1.0 - previewWidth;
 
 var resultsBlock = document.getElementById("res");
@@ -91,4 +95,6 @@ leftCell.appendChild(resultsBlock);
 	resultsBlock.addEventListener('mouseout',goodbyeMouse,true);
 
 })();
+
+}, (document.location.href.match(/webhp/)?4000:100) ); // We need not delay long on normal Google pages.
 
