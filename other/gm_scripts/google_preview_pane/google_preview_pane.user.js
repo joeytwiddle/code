@@ -6,6 +6,8 @@
 // @include        http://www.google.*/search?*
 // ==/UserScript==
 
+var highlightFocusedResult = true;
+
 var resultsBlock = unsafeWindow.document.getElementById("res");
 
 var table = unsafeWindow.document.createElement("TABLE");
@@ -44,6 +46,15 @@ var lastFocus = null;
 
 function checkFocus() {
 	if (lastFocus) {
+		GM_log("Previewing "+lastFocus.href);
+		if (highlightFocusedResult) {
+			for (var i=0;i<document.links.length;i++) {
+				if (document.links[i].className == "l") {
+					document.links[i].parentNode.style.backgroundColor = '';
+				}
+			}
+			lastFocus.parentNode.style.backgroundColor = "#ffccff";
+		}
 		iframe.src = lastFocus.href;
 	}
 }
