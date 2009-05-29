@@ -21,7 +21,7 @@ leftCell.width = '50%';
 rightCell.width = '50%';
 // leftCell.height = window.innerHeight * 0.70;
 // rightCell.height = window.innerHeight * 0.75;
-// resultsBlock.style.width = (window.innerWidth/2) + 'px';
+resultsBlock.style.width = (window.innerWidth/2) + 'px';
 resultsBlock.style.height = (window.innerHeight * 0.70) + 'px';
 
 // leftCell.scrollable = true;
@@ -56,8 +56,8 @@ iframe.style.backgroundColor = '#eeeeee';
 			GM_log("Previewing "+lastHover.href);
 			if (highlightFocusedResult) {
 				if (lastPreview)
-					lastPreview.parentNode.style.backgroundColor = "";
-				lastHover.parentNode.style.backgroundColor = "#ffccff";
+					lastPreview.style.backgroundColor = "";
+				lastHover.style.backgroundColor = "#ffccff";
 			}
 			iframe.src = lastHover.href;
 			lastPreview = lastHover;
