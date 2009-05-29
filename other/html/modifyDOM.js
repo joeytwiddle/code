@@ -32,10 +32,13 @@ function trim(str) {
 }
 
 function findPreviousTextNode(elem) {
+	/** TODO: Previously found text element should only be used if it's textValue is less than the foldedNode! **/
+	// Parent steps are fine, but we shouldn't make too many previousSibling steps.
 	while (true) {
 		if (elem.previousSibling) {
 			elem = elem.previousSibling;
-			while (elem.lastChild) {
+			// while (elem.lastChild) {
+			while (elem.lastChild && (!elem.value || trim(elem.value)=="")) {
 				elem = elem.lastChild;
 			}
 		} else if (elem.parentNode) {
@@ -155,7 +158,8 @@ function addFoldsToBlockQuotes() { // TODO: also add the automatic clear on focu
 	// while (true) {
 	// var nodes = window.document.body.getElementsByTagName("BLOCKQUOTE");
 	// var tagTypes = [ "ul", "blockquote" ];
-	var tagTypes = new Array( "ul", "blockquote" );
+	// var tagTypes = new Array( "ul", "blockquote" );
+	var tagTypes = new Array( "ul", "blockquote", "dl", "table" );
 	addFoldsToPage(tagTypes,false);
 }
 
@@ -224,7 +228,7 @@ function addFoldToBlockQuoteState(elemToFold,startClosed) {
 		handleElem.captureEvents(Event.CLICK);
 		handleElem.captureEvents(Event.MOUSEOVER);
 		handleElem.captureEvents(Event.MOUSEOUT);
-	}
+	} // These days it's addEventListener, but that will work in the past.
 	// handleElem.addEventListener("click",handleToggleFoldEvent,false);
 	// handleElem.attachEvent("click","javascript:toggleFoldEvent(\""+foldId+"\");");
 
