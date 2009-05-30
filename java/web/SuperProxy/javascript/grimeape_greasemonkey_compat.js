@@ -4,39 +4,19 @@
 
 /*
 
-CONSIDER: Will we need to make XMLHttpRequests targetted at the page host, to
-prevent security from blocking us, but still have them caught by the Proxy?
-
-CONSIDER: If we really don't want to make XMLHttpRequests, we could use this
-filthy hack instead:  Add a <SCRIPT> element to the page, which would return
-results by writing them invisibly into the document somewhere for retrieval.
+// DONE: GM_xmlhttpRequest, GM_addStyle
+// DONE: namespace magic
+// DONE: document.getElementsByClassName()
 
 // TODO: Complete API: http://wiki.greasespot.net/Greasemonkey_Manual:API
-// GM_listValues, GM_getResourceURL, GM_getResourceText,
-// GM_addStyle, XPathResult, GM_openinTab.
-// Also: @resource @require @unwrap
-// TODO: namespace magic, and maybe some jail for scripts?
-
-TODO:
-document.evaluate (XPath tool available in Mozilla, often used in userscripts)
-GM_xmlhttpRequest or whatever it's called.
+// TODO: GM_listValues, GM_getResourceURL, GM_getResourceText, GM_openinTab.
+// TODO: Support @resource @require @unwrap
+// TODO: maybe some jail for scripts?
+// TODO: document.evaluate() and XPathResult
 
 */
 
-// In case you were wondering, self=window and this=window.
-// GM_log("Self = "+self+" This = "+this+" so self==window? "+(self==window)); // true
-// I believe if we are in a sub-context, and code tries to use a function which
-// is not defined there, JS will check up the contexts eventually to the top
-// window and find our introduced function there.
-
-// When do we want to check before overriding an object, and when do we want to
-// always override?  Bear in mind we are inside an insecure environment - a
-// malicious webpage may have already set variables in an attempt to confuse us.
-// OTOH, testing for the existence of a function before overriding it, is a good
-// way to use browser-internals when they exist, or our alternatives otherwise.
-
-// TODO: These should be hidden out of the main context in some sub-context,
-// but visible to GM_log() (which is at top/main context).
+// TODO: Tidy these into an object, e.g. GrimeApe?
 var logToProxy = false;
 var localLog = "";
 
@@ -57,8 +37,9 @@ function GA_getSimpleTime() {
 }
 
 function GA_log(namespace,obj) {
-	localLog += "["+GA_getSimpleTime()+"] "+namespace+": "+obj+ "\n";
-	window.status = ""+obj;
+	// localLog += /* "[" + GA_getSimpleTime() + "] " + */ namespace + ": " + obj + "\n";
+	localLog += "[" + namespace.replace(/.*\//,'') + "]"+ " " + obj + "\n";
+	window.status = "[" + namespace.replace(/.*\//,'') + "]"+ " " + obj + "\n";
 	if (logToProxy) {
 		//// Send log line to the proxy, by requesting a special URL.
 		//// This works, although it does cause the DOM to grow.
@@ -84,7 +65,7 @@ function GA_log(namespace,obj) {
 // But much of our core is still using it.
 // Same goes for GM_setValue etc.
 function GM_log(obj) {
-	GA_log("NONE!",obj);
+	GA_log("GrimeApe",obj);
 }
 
 GM_log("GM_log() works!");
@@ -339,6 +320,14 @@ function GM_addStyle(css) {
 	head.appendChild(style);
 }
 
+
+
+
+
+// The following are not part of the Greasemonkey API.
+// They are features found in some modern browser, but not all.
+// TODO: Javascript 1.5, 1.6, 1.7.  (Array functions etc.)
+
 // OLD IE compat:
 if(typeof XMLHttpRequest == "undefined") {
 	XMLHttpRequest = function() {
@@ -348,5 +337,18 @@ if(typeof XMLHttpRequest == "undefined") {
 		try { return new ActiveXObject("Microsoft.XMLHTTP") } catch(e) {}
 		GM_log("This browser does not support XMLHttpRequest.");
 	};
+}
+
+if (!document.getElementsByClassName) {
+	document.getElementsByClassName = function(names) {
+		names = " "+names+" ";
+		var results = new Array();
+		var allElements = document.getElementsByTagName("*");
+		for (var i=0;i<allElements.length;i++) {
+			if (names.indexOf(" "+allElements[i].className+" ")>=0)
+				results[results.length] = allElements[i];
+		}
+		return results;
+	}
 }
 
