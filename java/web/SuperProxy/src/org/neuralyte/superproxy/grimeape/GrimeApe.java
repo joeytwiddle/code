@@ -342,21 +342,23 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                     String escapedNamespace = namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"");
                     StringBuffer content = response.getContentAsStringBuffer();
                     content.insert(0, ""
-                            + "try {\n"
                             + "(function(){\n"
                             + "var GA_namespace = \""+escapedNamespace+"\";\n"
                             + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
                             + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
                             + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
                             + "function GM_xmlhttpRequest(x) { GA_xmlhttpRequest(GA_namespace,x); }\n"
-                            + "GM_log(\"Initializing "+escapedNamespace+"...\");\n"
+                            + "GM_log(\"Initializing ...\");\n"
+                            + "var GA_userscriptStartTime = new Date().getTime();\n"
+                            + "try {\n"
                     );
                     content.append("\n"
-                            + "GM_log(\"Done "+escapedNamespace+".\");\n"
-                            + "})();\n"
                             + "} catch (e) {\n"
-                            + "  GM_log(\"ERROR during "+escapedNamespace+": \"+e);\n"
+                            + "  GM_log(\"ERROR: \"+e);\n"
                             + "}\n"
+                            + "var GA_userscriptTimeTaken = (new Date().getTime() - GA_userscriptStartTime) / 1000;\n"
+                            + "GM_log(\"Completed in \"+GA_userscriptTimeTaken+\" seconds.\");\n"
+                            + "})();\n"
                     );
                     response.setContent(content);
                 }
