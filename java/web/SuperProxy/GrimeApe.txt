@@ -1,0 +1,2 @@
+GrimeApe is (c)Paul Clark 2009, released under GNU Public License.
+

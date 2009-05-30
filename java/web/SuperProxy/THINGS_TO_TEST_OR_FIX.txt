@@ -1,13 +1,21 @@
-If we visit http://hwi.ath.cx/hwikalong, the scripts are not being injected.
+If we visit http://hwi.ath.cx/hwikalong, in Konq or FF, the GA scripts are not being run.
+Mmm that's actually the page's fault - the badly-formed bookmarklets break the HTM
+ parsing, so our injected script tags aren't seen.
+ A solution for such broken pages, would be to inject at the start of the document
+ (before any HTML errors can appear), but still wait for page load event before
+ loading our userscripts.
 
+
+Fixed by tidyTopLine():
 +000.127 Thread-416 (HTTPStreamingTools.java:250).passRequestToServer() [log] Sending request: [GET http://bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com//bubbleshq.com/ HTTP/1.1, User-Agent: Mozilla/5.0 (compatible; Konqueror/3.5; Linux; X11; i686; en_US) KHTML/3.5.10 (like Gecko) (Debian), Accept: text/html, image/jpeg, image/png, text/*, image/*, */*, Accept-Encoding: x-gzip, x-deflate, gzip, deflate, Accept-Charset: iso-8859-1, utf-8;q=0.5, *;q=0.5, Accept-Language: en, Host: bubbleshq.com, Cookie: __utma=224260744.3304739011440306700.1242093181.1242093181.1242093181.2; __utmz=224260744.1242093181.1.1.utmcsr=(direct)|utmccn=(direct)|utmcmd=(none), Connection: close]
 
 
+Appears page has no problems now:
 When browsing http://java.sun.com/j2se/1.5.0/docs/tooldocs/solaris/java.html in Konqueror
 Firefox will refuse to load the data.  "unterminated string literal"
 
 
-FIXED by trimTopLine(): There is a bug appearing on Hwi's Wiki which happens on a few other sites also.
+FIXED by tidyTopLine(): There is a bug appearing on Hwi's Wiki which happens on a few other sites also.
   Somehow CSS tag in the HTML *and* requests to grimeape for userscripts, are requesting <host>http/... instead of <host>/...
 
 
@@ -20,4 +28,27 @@ Oh maybe not.  I think it's javascript injected by WebArchive which is changing 
 
 
 If track_history is run before Delicious_Search_Results_On_Google, then the latter fails in Konq, with parse error :o
+
+
+On wikipedia, the POST for Preview edits was never returning from the server.
+Our client requested "Connection: close" but we requested "keep-alive" from the server, which is likely to be the cause.
+But are keep-alive POSTs impossible?  If not, what is wrong with ours?  We do send Content-Length.
+
+
+
+
+
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:311) .getSocketFromPool() [log] There are 0 pooled connections.
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK] java.net.SocketException: Too many open files
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]  at java.net.Socket.createImpl(Socket.java:388)
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     java.net.Socket.<init>(Socket.java:362)
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     java.net.Socket.<init>(Socket.java:180)
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools.openSocket(HTTPStreamingT>
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools.passRequestToServer(HTTPS>
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     org.neuralyte.superproxy.PluggableHttpRequestHandler.handleHttpRequest(PluggableHtt>
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     org.neuralyte.superproxy.grimeape.GrimeApe.handleHttpRequest(GrimeApe.java:256)
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     org.neuralyte.simpleserver.httpadapter.AdvancedHttpRequestHandler.handleRequest(Adv>
+[00:42:33] Thread-1674 (HTTPStreamingTools.java:557) .passRequestToServer() [STACK]     org.neuralyte.simpleserver.ServerThread.run(ServerThread.java:56)
+[00:42:33] Thread-1674 (AdvancedHttpRequestHandler.java:227) .handleRequest() [log] <= HTTP/1.x 409 ERROR java.net.SocketException: Too many open files
+
 

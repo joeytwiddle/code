@@ -17,6 +17,10 @@
 
 */
 
+// I was hoping this would provide Konqueror with a pure Javascript
+// implementation of XPathResult, but it does not.  I may look into
+// wrapping ajaxslt...
+
 // var isIe = /MSIE [56789]/.test(navigator.userAgent) && (navigator.platform == "Win32");
 
 // Mozilla has support by default, we don't have an implementation for the rest

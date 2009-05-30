@@ -191,7 +191,7 @@ registry values set by that script's namespace.
 				*/
 
 				// Add a gap at the bottom of the page, for our 'icon-bar'.
-				document.body.style.paddingBottom = ApeIcon.iconHeight+8 + document.body.style.paddingBottom + "px";
+				document.body.style.marginBottom = (ApeIcon.iconHeight+6) + "px";
 
 				/*
 				icon.style.opacity='1.0';
