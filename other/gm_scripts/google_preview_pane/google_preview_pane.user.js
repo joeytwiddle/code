@@ -11,7 +11,9 @@
 
 // Settings:
 
-var fillWholeWindow = false;
+var fillWholeWindow = true;
+var keepHeaderAbove = true;
+var removeLogo = false;
 var previewWidth = 0.6;
 var pageHeightUsed = 0.7;
 var hoverTime = 800;
@@ -38,16 +40,62 @@ browsersSuck.addEventListener('load',function(){
 	if (fillWholeWindow) {
 		pageHeightUsed = 0.97;
 		resultsBlock = document.createElement("DIV");
-		while (document.body.childNodes.length > 0) {
-			resultsBlock.appendChild(document.body.childNodes[0]);
+
+		// Copy wanted parts of window into our left-pane block:
+		if (keepHeaderAbove) {
+			pageHeightUsed = 0.75;
+			var curNode = document.getElementById("ssb").nextSibling;
+			while (curNode) {
+				var nextNode = curNode.nextSibling;
+				resultsBlock.appendChild(curNode);
+				curNode = nextNode;
+			}
+		} else {
+			while (document.body.childNodes.length > 0) {
+				resultsBlock.appendChild(document.body.childNodes[0]);
+			}
 		}
+
 		document.body.appendChild(resultsBlock);
+
 		try {
 			var annoyingLine = document.getElementsByClassName("gbh")[0];
 			annoyingLine.parentNode.removeChild(annoyingLine);
 			annoyingLine = document.getElementsByClassName("gbh")[0];
 			annoyingLine.parentNode.removeChild(annoyingLine);
 		} catch (e) { }
+
+		// The header is too wide, and some parts are nowrap.
+		// We must reduce the width to avoid getting a horizontal scrollbar.
+
+		if (!keepHeaderAbove) {
+
+			if (removeLogo) {
+				var logo = document.getElementsByTagName("IMG")[0];
+				logo = logo.parentNode.parentNode.parentNode; // TD
+				// logo = logo.parentNode.parentNode; // A
+				var pNode = logo.parentNode;
+				pNode.removeChild(logo);
+				document.getElementById('sff').getElementsByTagName('table')[0].style.marginTop = '5px'
+			}
+			/*
+			var newImg = document.createElement("IMG");
+			newImg.src = "/favicon.ico";
+			pNode.appendChild(newImg);
+			*/
+
+			document.getElementsByTagName('form')[0].getElementsByTagName("input")[1].size = 20;
+			// This avoids the white-space: wrap but kills the blue header background.
+			document.getElementById("ssb").id = 'not_ssb';
+			document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
+			document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
+			var resText = document.getElementById('prs').nextSibling;
+			resText.style.textAlign = 'right';
+
+		}
+
+		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
+
 	}
 
 	// GM_log("resultsBlock = " + resultsBlock);
@@ -60,6 +108,7 @@ browsersSuck.addEventListener('load',function(){
 
 	leftCell.style.width = (window.innerWidth * resultsWidth) +'px';
 	rightCell.style.width = (window.innerWidth * previewWidth) +'px';
+	// If we leave room for vertical scrollbar, we won't need horizontal one. :)
 	resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
 	resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
 	resultsBlock.style.overflow = 'auto';
@@ -88,7 +137,7 @@ browsersSuck.addEventListener('load',function(){
 	function checkFocus() {
 		if (lastHover) {
 			// GM_log("Previewing "+lastHover.href);
-			if (highlightFocusedResult) {
+			if (highlightFocusedResult && lastHover!=lastPreview) {
 				if (lastPreview)
 					lastPreview.style.backgroundColor = "";
 				lastHover.style.backgroundColor = "#ccccff"; // "#ffccff";
@@ -129,4 +178,17 @@ browsersSuck.addEventListener('load',function(){
 	}
 
 },false);
+
+
+/*
+// Yikes!  Causes blank page if done after page load.
+// wtf is that image from?!
+var logo = document.getElementsByTagName("IMG")[0];
+logo.width = logo.width / 2;
+logo.height = logo.height / 2;
+logo.src = log.src;
+logo = logo.parentNode;
+logo.style.width = logo.style.width / 2;
+logo.style.height = logo.style.height / 2;
+*/
 
