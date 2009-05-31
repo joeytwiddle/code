@@ -133,38 +133,63 @@ browsersSuck.addEventListener('load',function(){
 
 	var lastHover = null;
 	var lastPreview = null;
+	var currentTimerID = null;
+
+	function highlightNode(node,col) {
+		node = isSelectable(node);
+		node.style.backgroundColor = col;
+	}
 
 	function checkFocus() {
-		if (lastHover) {
+		if (lastHover && lastHover != lastPreview) {
 			// GM_log("Previewing "+lastHover.href);
-			if (highlightFocusedResult && lastHover!=lastPreview) {
+			lastHover = isSelectable(lastHover);
+			if (highlightFocusedResult) {
+				// if (lastPreview)
+					// lastPreview.style.backgroundColor = "";
+				// lastHover.style.backgroundColor = "#ccccff"; // "#ffccff";
 				if (lastPreview)
-					lastPreview.style.backgroundColor = "";
-				lastHover.style.backgroundColor = "#ccccff"; // "#ffccff";
+					highlightNode(lastPreview,'');
+				highlightNode(lastHover,'#ddddff');
 			}
-			iframe.src = lastHover.href;
+			var link = lastHover;
+			if (link.tagName != 'A') {
+				link = lastHover.getElementsByTagName('A')[0];
+			}
+			iframe.src = link.href;
 			lastPreview = lastHover;
 		}
 	}
 
-	function helloMouse(evt) {
-		var node = evt.target;
-		while (node && node.tagName!="A") {
+	function isSelectable(node) {
+		while (node) {
+			if (node.tagName == "A" && !node.className == 'r') {
+				return node;
+			}
+			if (node.className == 'g') {
+				return node;
+			}
 			node = node.parentNode;
 		}
-		if (node /*&& node.className=="l"*/) {
+		return undefined;
+	}
+
+	function helloMouse(evt) {
+		var node = evt.target;
+		if (isSelectable(node) && isSelectable(node)!=lastPreview) {
 			lastHover = node;
-			setTimeout(checkFocus,hoverTime);
+			if (currentTimerID)
+				clearTimeout(currentTimerID);
+			currentTimerID = setTimeout(checkFocus,hoverTime);
+			highlightNode(node,'#eeffee');
 		}
 	}
 
 	function goodbyeMouse(evt) {
 		var node = evt.target;
-		while (node && node.tagName!="A") {
-			node = node.parentNode;
-		}
-		if (node /*&& node.className=="l"*/) {
+		if (isSelectable(node) && isSelectable(node)!=lastPreview) {
 			lastHover = null;
+			highlightNode(node,'');
 		}
 	}
 
