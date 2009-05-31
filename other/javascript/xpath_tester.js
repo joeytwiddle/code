@@ -17,12 +17,13 @@ function init() {
 	newBlock.style.top = '4px';
 	newBlock.style.left = '4px';
 	newBlock.style.right = '4px';
+	newBlock.style.zIndex = '10000';
+	document.body.style.marginTop = '44px';
 	var html = "<CENTER>\n";
 	html += "<B>XPath expression:</B>\n";
 	html += "[<A href='javascript:(function(){ document.getElementById(&quot;DONT_HIDE_ME&quot;).getElementsByTagName(&quot;INPUT&quot;)[0].value = &quot;&quot;; doUpdate(&quot;&quot;); })();'>Clear</A>]\n";
 	html += "<INPUT type='text' size='30' onchange='javascript:doUpdate(value);'/>\n";
-	html += "(case-sensitive)\n";
-	html += "<A href='javascript:(function(){ document.getElementById(&quot;resultsDiv&quot;).style.display = ( document.getElementById(&quot;resultsDiv&quot;).style.display == &quot;none&quot; ? &quot;&quot; : &quot;none&quot; ); })();'>Results</A>\n"
+	html += "[<A href='javascript:(function(){ document.getElementById(&quot;resultsDiv&quot;).style.display = ( document.getElementById(&quot;resultsDiv&quot;).style.display == &quot;none&quot; ? &quot;&quot; : &quot;none&quot; ); })();'>Results</A>]\n"
 	html += "[<A href='javascript:(function(){ var e = document.getElementById(&quot;DONT_HIDE_ME&quot;); e.parentNode.removeChild(e); })();'>Close</A>]\n";
 	html += "<DIV align='left' id='resultsDiv'></DIV>";
 	html += "</CENTER>\n";
@@ -32,52 +33,68 @@ function init() {
 }
 
 function getXPath(node) {
-	var parent = node.parentNode;
-	if (!parent) {
+	var pNode = node.parentNode;
+	if (!pNode) {
 		return "";
 	}
-	var siblings = parent.childNodes;
+	var pPath = getXPath(pNode);
+	var tagName = node.tagName;
+	var siblings = pNode.childNodes;
 	var totalCount = 0;
 	var thisCount = -1;
-	for (var i=0;i<siblings.length;i++) {
+	for (var i=0,len=siblings.length;i<len;i++) {
 		var sibling = siblings[i];
-		if (sibling.tagName == node.tagName) {
+		if (sibling.tagName == tagName) {
 			totalCount++;
 		}
 		if (sibling == node) {
 			thisCount = totalCount;
+			if (thisCount > 1) {
+				break;
+			}
 		}
 	}
-	return getXPath(parent) + "/" + node.nodeName.toLowerCase() + (totalCount>1 ? "[" + thisCount + "]" : "" );
+	return pPath + "/" + tagName.toLowerCase() + (totalCount>1 ? "[" + thisCount + "]" : "" );
 }
 
 var lastRes;
 
 function doUpdate(xpathExpr) {
 	var resultsDiv = document.getElementById('resultsDiv');
+	resultsDiv.style.backgroundColor = '#eef0ff';
+	resultsDiv.style.color = 'black';
+	resultsDiv.style.border = '1px solid black';
+
+	resultsDiv.style.height = '320px';
+	resultsDiv.style.overflow = 'auto';
 
 	if (lastRes) {
 		for (var i=0;i<lastRes.snapshotLength;i++) {
 			var node = lastRes.snapshotItem(i);
 			if (node.style)
-				node.style.backgroundColor = 'white';
+				node.style.backgroundColor = '';
 		}
 	}
 
-	resultsDiv.innerHTML = '<TT>';
+	try {
+
+	resultsDiv.innerHTML = '<FONT size="-1"><TT>';
 	var res = document.evaluate(xpathExpr, document, null, 6, null);
 	for (var i=0;i<res.snapshotLength;i++) {
 		var node = res.snapshotItem(i);
 		if (node.style)
-			node.style.backgroundColor = '#dddd00';
+			node.style.backgroundColor = '#ffee99';
 		resultsDiv.innerHTML += "<BR/>" + getXPath(node);
 		// TODO: build results list out of elements not HTML
 		// TODO: attach to each result, onmouseover/out events which will highlight the currently hovered node.
 	}
-	resultsDiv.innerHTML += '</TT>';
-	resultsDiv.style.backgroundColor = '#ffffdd';
-	resultsDiv.style.color = 'black';
+	resultsDiv.innerHTML += '</TT></FONT>';
 	window.status = "Matched "+res.snapshotLength+" nodes.";
+
+	} catch (e) {
+		window.status = ""+e;
+		resultsDiv.innerHTML = ""+e;
+	}
 
 	lastRes = res;
 }
