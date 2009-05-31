@@ -6,7 +6,7 @@
 // @include        http://www.google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
 // @include        http://www.google.*/webhp?*q=*
-// @version        0.9.8
+// @version        0.9.9
 // ==/UserScript==
 
 // Settings:
@@ -14,7 +14,7 @@
 var fillWholeWindow = true;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
 var miniLogo = true;           // miniLogo or removeLogo may help to reduce
-var removeLogo = false;        // width when keepHeaderAbove==false.
+var removeLogo = false;        // width, especially when keepHeaderAbove==false.
 var reduceWidth = !keepHeaderAbove;  // Also recommended.
 var previewWidth = 0.6;        // Size of the preview pane.
 var pageHeightUsed = 0.7;      // Will be overriden if keepHeaderAbove==true.
@@ -23,6 +23,8 @@ var hoverTime = 800;           // Milliseconds of mouse hover before load.
 var highlightFocusedResult = true;   // Who wouldn't want this?
 
 
+
+// BUG: We can't hover over "Cached" links, or "Next Page" etc.  (Check Delicious results too.)
 
 if (window != top)
 	return;
@@ -86,7 +88,7 @@ browsersSuck.addEventListener('load',function(){
 			// OK we restore the blue background:
 			document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
 			document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
-			// But vertical alignment of text is still wrong:
+			// TODO: But vertical alignment of text is still wrong.
 			// document.getElementById("not_ssb").style.verticalAlign = 'middle';
 			var resText = document.getElementById('prs').nextSibling;
 			resText.style.textAlign = 'right';
@@ -172,7 +174,7 @@ browsersSuck.addEventListener('load',function(){
 				highlightNode(lastHover,'#ddddff');
 			}
 			var link = lastHover;
-			if (link.tagName != 'A') {
+			if (link.tagName != "A") {
 				link = lastHover.getElementsByTagName('A')[0];
 			}
 			iframe.src = link.href;
@@ -182,7 +184,7 @@ browsersSuck.addEventListener('load',function(){
 
 	function isSelectable(node) {
 		while (node) {
-			if (node.tagName == "A" && !node.className == 'r') {
+			if (node.tagName == "A" && node.className != 'l') {
 				return node;
 			}
 			if (node.className == 'g') {
@@ -224,17 +226,4 @@ browsersSuck.addEventListener('load',function(){
 	}
 
 },false);
-
-
-/*
-// Yikes!  Causes blank page if done after page load.
-// wtf is that image from?!
-var logo = document.getElementsByTagName("IMG")[0];
-logo.width = logo.width / 2;
-logo.height = logo.height / 2;
-logo.src = log.src;
-logo = logo.parentNode;
-logo.style.width = logo.style.width / 2;
-logo.style.height = logo.style.height / 2;
-*/
 
