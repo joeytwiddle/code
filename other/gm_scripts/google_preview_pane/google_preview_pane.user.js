@@ -24,8 +24,6 @@ var highlightFocusedResult = true;   // Who wouldn't want this?
 
 
 
-// BUG: We can't hover over "Cached" links, or "Next Page" etc.  (Check Delicious results too.)
-
 if (window != top)
 	return;
 
