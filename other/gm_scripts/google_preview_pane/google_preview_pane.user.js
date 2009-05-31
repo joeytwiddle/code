@@ -11,14 +11,16 @@
 
 // Settings:
 
-var fillWholeWindow = true;
-var keepHeaderAbove = true;
-var removeLogo = false;
-var previewWidth = 0.6;
-var pageHeightUsed = 0.7;
-var hoverTime = 800;
-var highlightFocusedResult = true;
-var noPanelBorder = false;
+var fillWholeWindow = true;    // Bring more of the page into the left pane.
+var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
+var miniLogo = true;           // miniLogo or removeLogo may help to reduce
+var removeLogo = false;        // width when keepHeaderAbove==false.
+var reduceWidth = !keepHeaderAbove;  // Also recommended.
+var previewWidth = 0.6;        // Size of the preview pane.
+var pageHeightUsed = 0.7;      // Will be overriden if keepHeaderAbove==true.
+var noPanelBorder = false;     // I like the preview pane to have depth.
+var hoverTime = 800;           // Milliseconds of mouse hover before load.
+var highlightFocusedResult = true;   // Who wouldn't want this?
 
 
 
@@ -43,7 +45,7 @@ browsersSuck.addEventListener('load',function(){
 
 		// Copy wanted parts of window into our left-pane block:
 		if (keepHeaderAbove) {
-			pageHeightUsed = 0.75;
+			pageHeightUsed = ( miniLogo||removeLogo ? 0.80 : 0.75 );
 			var curNode = document.getElementById("ssb").nextSibling;
 			while (curNode) {
 				var nextNode = curNode.nextSibling;
@@ -65,33 +67,50 @@ browsersSuck.addEventListener('load',function(){
 			annoyingLine.parentNode.removeChild(annoyingLine);
 		} catch (e) { }
 
-		// The header is too wide, and some parts are nowrap.
+		// Google's header blocks are too wide, and some parts are nowrap.
 		// We must reduce the width to avoid getting a horizontal scrollbar.
 
-		if (!keepHeaderAbove) {
+		if (reduceWidth) {
 
-			if (removeLogo) {
-				var logo = document.getElementsByTagName("IMG")[0];
-				logo = logo.parentNode.parentNode.parentNode; // TD
-				// logo = logo.parentNode.parentNode; // A
-				var pNode = logo.parentNode;
-				pNode.removeChild(logo);
-				document.getElementById('sff').getElementsByTagName('table')[0].style.marginTop = '5px'
+			var nobr = document.getElementsByTagName('nobr')[0];
+			nobr.parentNode.innerHTML = nobr.innerHTML;
+			// document.getElementsByTagName('form')[0].getElementsByTagName("input")[1].size = 20;
+			var inputs = document.getElementsByTagName("INPUT");
+			for (var i=0;i<inputs.length;i++) {
+				if (inputs[i].name == 'q')
+					inputs[i].size = 20;
 			}
-			/*
-			var newImg = document.createElement("IMG");
-			newImg.src = "/favicon.ico";
-			pNode.appendChild(newImg);
-			*/
 
-			document.getElementsByTagName('form')[0].getElementsByTagName("input")[1].size = 20;
 			// This avoids the white-space: wrap but kills the blue header background.
 			document.getElementById("ssb").id = 'not_ssb';
+			// OK we restore the blue background:
 			document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
 			document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
+			// But vertical alignment of text is still wrong:
+			// document.getElementById("not_ssb").style.verticalAlign = 'middle';
 			var resText = document.getElementById('prs').nextSibling;
 			resText.style.textAlign = 'right';
 
+			document.getElementsByTagName("bsf").padding = '0px';
+
+		}
+
+		if (removeLogo || miniLogo) {
+			var logo = document.getElementsByTagName("IMG")[0];
+			logo = logo.parentNode.parentNode; // A
+			if (!miniLogo)
+				logo = logo.parentNode; // TD
+			var pNode = logo.parentNode;
+			pNode.removeChild(logo);
+			document.getElementById('sff').getElementsByTagName('table')[0].style.marginTop = '5px'
+			if (miniLogo) {
+				var newImg = document.createElement("IMG");
+				// newImg.src = "/favicon.ico";
+				newImg.src = "http://www.google.com/intl/en_ALL/images/logo.gif";
+				newImg.width = 276/3;
+				newImg.height = 110/3;
+				pNode.appendChild(newImg);
+			}
 		}
 
 		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
@@ -181,7 +200,8 @@ browsersSuck.addEventListener('load',function(){
 			if (currentTimerID)
 				clearTimeout(currentTimerID);
 			currentTimerID = setTimeout(checkFocus,hoverTime);
-			highlightNode(node,'#eeffee');
+			if (highlightFocusedResult)
+				highlightNode(node,'#eeffee');
 		}
 	}
 
@@ -189,7 +209,8 @@ browsersSuck.addEventListener('load',function(){
 		var node = evt.target;
 		if (isSelectable(node) && isSelectable(node)!=lastPreview) {
 			lastHover = null;
-			highlightNode(node,'');
+			if (highlightFocusedResult)
+				highlightNode(node,'');
 		}
 	}
 
