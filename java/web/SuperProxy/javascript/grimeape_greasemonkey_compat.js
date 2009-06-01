@@ -352,3 +352,30 @@ if (!document.getElementsByClassName) {
 	}
 }
 
+// Mozilla forced global adoption of window.onload, which Konquerer has not yet implemented:
+if (navigator.appName.match(/Konqueror/i)) {
+
+	window.onload = function(a,b,c) {
+		document.onload(a,b,c);
+	};
+
+	var original_window_addEventListener = window.addEventListener;
+	window.addEventListener = function(a,b,c) {
+		if (a == 'load') {
+			document.addEventListener(a,b,c);
+		} else {
+			original_window_addEventListener(a,b,c);
+		}
+	};
+
+	var original_window_removeEventListener = window.removeEventListener;
+	window.removeEventListener = function(a,b,c) {
+		if (a == 'load') {
+			document.removeEventListener(a,b,c);
+		} else {
+			original_window_removeEventListener(a,b,c);
+		}
+	};
+
+}
+
