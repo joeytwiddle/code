@@ -846,6 +846,27 @@
 	These are Bookmarklets I am still working on.  They may or may not work.
 
 	<P>
+		<LI><A href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/make_elements_moveable.js';
+			document.body.appendChild(newScript);
+			document.body.addEventListener('mousedown',function(evt){
+				var node = evt.target;
+				node.style.position = 'fixed';
+				if (!node.style.left && !node.style.right)
+					node.style.left = evt.pageX - document.body.scrollLeft;
+				if (!node.style.top && !node.style.bottom)
+					node.style.top = evt.pageY - document.body.scrollTop;
+				makeMoveable(node);
+			},true);
+		})();">Move Things Around</A></LI>
+		<BLOCKQUOTE>
+			<P>Allows you to move parts of the page around.</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
 		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
 			var scriptText = '<SCRIPT type=&quot;text/javascript&quot;>
 				var linkNode,lastLoaded,lastbgcol;
