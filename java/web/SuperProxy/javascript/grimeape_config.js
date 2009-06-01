@@ -161,7 +161,7 @@ registry values set by that script's namespace.
 			// var iconStyleString = " position: fixed; right: 4px; bottom: 4px; z-index: 1000 ";
 			iconWidth  : 42,
 			iconHeight : 43,
-			iconURLLoading  : "/_gRiMeApE_/images/blueape_loading.png",
+			iconURLLoading  : "/_gRiMeApE_/images/blueape_shocked.png",
 			iconURL         : "/_gRiMeApE_/images/blueape.png", // punkape.png",
 			iconURLDisabled : "/_gRiMeApE_/images/blueape_disabled.png",
 
@@ -170,9 +170,9 @@ registry values set by that script's namespace.
 				var icon = document.createElement('IMG');
 				icon.id = 'gaIcon';
 				ApeIcon.icon = icon;
-				ApeIcon.setIcon();
 				icon.width = ApeIcon.iconWidth;
 				icon.height = ApeIcon.iconHeight;
+				ApeIcon.icon.src = ApeIcon.iconURLLoading;
 				// javascript needs a "send to back" ;)
 				// icon.style = iconStyleString;
 				// var iconHolder = document.createElement('A');
@@ -779,6 +779,10 @@ registry values set by that script's namespace.
 		GM_log("GrimeApe loading "+countLoaded+" userscripts...");
 		loadScriptString("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
 		// loadScriptStringOtherWay("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
+		// ApeIcon.setIcon();
+		// setTimeout(ApeIcon.setIcon,1000);
+		this.ApeIcon = ApeIcon;
+		loadScriptString("this.ApeIcon.setIcon();");
 	}
 
 
