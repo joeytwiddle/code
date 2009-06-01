@@ -37,46 +37,58 @@ registry values set by that script's namespace.
 
 	var GrimeApeConfig = new Object();
 
-	// Try loading config:
-	try {
-		GrimeApeConfig = eval(GM_getValue("GrimeApeConfig"));
-		// GM_log("Loaded config length "+uneval(GrimeApeConfig).length);
-	} catch (e) {
-		GM_log(e);
-	}
+	function loadConfig() {
 
-	// If not, set default:
-	if (!GrimeApeConfig || !GrimeApeConfig.scripts) {
+		// Try loading config:
+		try {
+			GrimeApeConfig = eval(GM_getValue("GrimeApeConfig"));
+			// GM_log("Loaded config length "+uneval(GrimeApeConfig).length);
+		} catch (e) {
+			GM_log(e);
+		}
 
-		GrimeApeConfig = {
-			enabled: true,
-			// scripts: new Object(),
-			// scripts: ({ "faviconizegoogle", "reclaim_cpu" }),
-			scripts: ({
-				"FaviconizeGoogle" : ({ enabled: true }) ,
-				"Highlight Search Result Pages" : ({ enabled: true }),
-				"Delicious Search Results on Google" : ({ enabled: true }),
-				"Twitter Search Results On Google" : ({ enabled: false }),
-				"SF ProjectHomepage" : ({ enabled: true }),
-				"Googles Old Favicon" : ({ enabled: true }),
-				"Track History" : ({ enabled: false }),
-				"Cleanup Fonts" : ({ enabled: false }),
-				"Reclaim CPU" : ({ enabled: true }),
-			}),
+		// If we could not load, create a default config:
+		if (!GrimeApeConfig || !GrimeApeConfig.scripts) {
+
+			GrimeApeConfig = {
+				enabled: false,
+				// scripts: new Object(),
+				// scripts: ({ "faviconizegoogle", "reclaim_cpu" }),
+				scripts: ({
+					"FaviconizeGoogle" : ({ enabled: true }) ,
+					"Highlight Search Result Pages" : ({ enabled: true }),
+					"Delicious Search Results on Google" : ({ enabled: true }),
+					"Twitter Search Results On Google" : ({ enabled: false }),
+					"SF ProjectHomepage" : ({ enabled: true }),
+					"Googles Old Favicon" : ({ enabled: true }),
+					"Track History" : ({ enabled: false }),
+					"Cleanup Fonts" : ({ enabled: false }),
+					"Reclaim CPU" : ({ enabled: true }),
+				}),
+			};
+
+			GM_log("Created fresh GrimeApe config.  this="+this+" self="+self);
+			// User really needs a warning indicator:
+			if (typeof ApeIcon != 'undefined') {
+				ApeIcon.setError();
+			}
+			// This works but gets overwritten later by setIcon().
+
+		}
+
+		// This may look like a long-winded way of declaring the object, but:
+		// declaring the functions this way gives them access to each other,
+		// and we really should be overwriting save() because the function may have
+		// been loaded from the uneval, but the version here might be newer.
+
+		GrimeApeConfig.save = function() {
+			GM_setValue("GrimeApeConfig",uneval(GrimeApeConfig));
 		};
 
-		GM_log("Created fresh GrimeApe config.");
+		// Sometimes I want to make this object globally visible for debugging!
+		// this.GrimeApeConfig = GrimeApeConfig;
 
 	}
-
-	// This may look like a long-winded way of declaring the object, but:
-	// declaring the functions this way gives them access to each other,
-	// and we really should be overwriting save() because the function may have
-	// been loaded from the uneval, but the version here might be newer.
-
-	GrimeApeConfig.save = function() {
-		GM_setValue("GrimeApeConfig",uneval(GrimeApeConfig));
-	};
 
 	function getFsName(scriptName) {
 		return scriptName.toLowerCase().replace(/ /g,'_').replace(/'/g,'').replace(/\//g,'').substring(0,24);
@@ -148,7 +160,7 @@ registry values set by that script's namespace.
 
 
 
-	// GrimeApe runs in all frames, but the icon+menu only appear in the top frame.
+	// GrimeApe runs in all frames, but for tidiness the icon+menu only appear in the top frame.
 	// If the user really wants a monkey in a sub-frame, she could try opening the frame in her main window.
 	// Sometimes this causes a "Permission denied to get property Window.document"
 	// if (document == top.document) {
@@ -161,9 +173,10 @@ registry values set by that script's namespace.
 			// var iconStyleString = " position: fixed; right: 4px; bottom: 4px; z-index: 1000 ";
 			iconWidth  : 42,
 			iconHeight : 43,
-			iconURLLoading  : "/_gRiMeApE_/images/blueape_shocked.png",
 			iconURL         : "/_gRiMeApE_/images/blueape.png", // punkape.png",
+			iconURLLoading  : "/_gRiMeApE_/images/blueape_shocked.png",
 			iconURLDisabled : "/_gRiMeApE_/images/blueape_disabled.png",
+			iconURLError    : "/_gRiMeApE_/images/blueape_disabled_full.png",
 
 			initIcon : function() {
 
@@ -206,13 +219,23 @@ registry values set by that script's namespace.
 
 			setIcon : function() {
 				ApeIcon.icon.src = ( GrimeApeConfig.enabled ? ApeIcon.iconURL : ApeIcon.iconURLDisabled );
+			},
+
+			setError : function() {
+				ApeIcon.icon.src = ApeIcon.iconURLError;
 			}
 
 		};
 
 		ApeIcon.initIcon();
 
+	}
 
+	// Now the icon is displayed, we can do the slow operation of loading the config:
+	loadConfig();
+
+	// Now continue setting up the icon+menu:
+	if (window == top) {
 
 		var formID = "scriptEditorForm"+document.forms.length;
 		var ScriptEditor = {
@@ -338,6 +361,7 @@ registry values set by that script's namespace.
 				};
 				form['test'].onclick = function(evt) {
 					eval('(function(){ ' + form['content'].value + '})();');
+					// TODO: If the script sets/expects an onload event, it will not be fired as expected.
 				};
 				form['save'].onclick = ScriptEditor.saveScript;
 
@@ -617,6 +641,7 @@ registry values set by that script's namespace.
 									//// Esp. track_history.
 									// loadScript(script);
 									loadScriptOtherWay(scriptName);
+									// BUG: If the script sets/expects an onload event, it will not be fired as expected.
 								}
 						});
 
@@ -702,42 +727,42 @@ registry values set by that script's namespace.
 		ApeIcon.icon.onclick = (function(evt) { Menu.showHideMenu(); evt.preventDefault(); });
 		// GM_log("icon.parentNode = "+icon.parentNode);
 
+	}
 
 
-		//// Special - convert Userscripts.org Install button into GrimeApe Install button. ////
-		if (GrimeApeConfig.enabled && document.location.href.match('http://(www.|)userscripts.org/scripts/show/')) {
-			var links = document.links;
-			for (var i=0;i<links.length;i++) {
-				var link = links[i];
-				// if (link.className == 'userjs') {
-				if (link.href && link.href.match(/\.user\.js$/)) {
-					(function() { // Creating a context for scriptHref
-						var scriptHref = link.href;
-						var doGrimeApeInstall = function(evt) {
-							evt.preventDefault();
-							var form = ScriptEditor.openNewEditor();
-							GM_xmlhttpRequest( { method:'GET', url:scriptHref,
-								onload: function(response) {
-									form['content'].value = response.responseText;
-									form['content'].textContent = response.responseText; // Konq
-								}
-							} );
-						};
-						link.addEventListener('click',doGrimeApeInstall,false);
-						link.title = "Install in GrimeApe...";
-						var miniApe = document.createElement("IMG");
-						miniApe.src = "/_gRiMeApE_/images/blueape.png";
-						miniApe.height = 16; miniApe.width = 16;
-						miniApe.style.verticalAlign = 'middle';
-						miniApe.style.paddingLeft = '6px';
-						miniApe.style.paddingBottom = '2px';
-						link.appendChild(miniApe);
-						// link.parentNode.insertBefore(miniApe,link.nextSibling);
-					})();
-				}
+
+	//// Special - convert Userscripts.org Install button into GrimeApe Install button. ////
+	if (GrimeApeConfig.enabled && document.location.href.match('http://(www.|)userscripts.org/scripts/show/')) {
+		var links = document.links;
+		for (var i=0;i<links.length;i++) {
+			var link = links[i];
+			// if (link.className == 'userjs') {
+			if (link.href && link.href.match(/\.user\.js$/)) {
+				(function() { // Creating a context for scriptHref
+					var scriptHref = link.href;
+					var doGrimeApeInstall = function(evt) {
+						evt.preventDefault();
+						var form = ScriptEditor.openNewEditor();
+						GM_xmlhttpRequest( { method:'GET', url:scriptHref,
+							onload: function(response) {
+								form['content'].value = response.responseText;
+								form['content'].textContent = response.responseText; // Konq
+							}
+						} );
+					};
+					link.addEventListener('click',doGrimeApeInstall,false);
+					link.title = "Install in GrimeApe...";
+					var miniApe = document.createElement("IMG");
+					miniApe.src = "/_gRiMeApE_/images/blueape.png";
+					miniApe.height = 16; miniApe.width = 16;
+					miniApe.style.verticalAlign = 'middle';
+					miniApe.style.paddingLeft = '6px';
+					miniApe.style.paddingBottom = '2px';
+					link.appendChild(miniApe);
+					// link.parentNode.insertBefore(miniApe,link.nextSibling);
+				})();
 			}
 		}
-
 	}
 
 
@@ -781,14 +806,12 @@ registry values set by that script's namespace.
 		// loadScriptStringOtherWay("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
 		// ApeIcon.setIcon();
 		// setTimeout(ApeIcon.setIcon,1000);
-		this.ApeIcon = ApeIcon;
-		loadScriptString("this.ApeIcon.setIcon();");
+		GM_log("Done loading.  this="+this+" self="+self+" self.ApeIcon="+self.ApeIcon+" this.ApeIcon="+this.ApeIcon);
+		if (typeof ApeIcon != 'undefined') {
+			this.ApeIcon = ApeIcon;
+			loadScriptString("this.ApeIcon.setIcon();");
+		}
 	}
-
-
-
-	// Visible to me for debugging!
-	this.GrimeApeConfig = GrimeApeConfig;
 
 	doStart();
 	// document.addEventListener('load',doStart,false);
