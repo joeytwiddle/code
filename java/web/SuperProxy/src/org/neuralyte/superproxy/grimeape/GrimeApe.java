@@ -478,6 +478,11 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             // We have cookies from the page, but since the host is different, they should go.
             request.removeHeader("Cookie");
             request.removeHeader("Referer");
+            /**
+             * @todo What other headers should we remove for security purposes?
+             * @todo I think there is another way of sending cookies which uses
+             * multiple headers, which we have not yet dealt with.
+             */
             // GrimeApe itself sometimes sets the Accept header.
             // GM_xmlhttpRequest does allow headers to be set.
             // We should just check it's implementation (watch HTTPHeaders).
