@@ -23,6 +23,7 @@
 			This page contains bookmarklets which I have developed, and sometimes improve.
 			<!-- Maybe misleading since some of the bookmarklets source external scripts. -->
 			It was last updated <SCRIPT type='text/javascript'>document.write(document.lastModified);</SCRIPT>.
+			(<A href="http://hwi.ath.cx/cgi-bin/cvsweb/other/html/joeys_bookmarklets.html">CV</A><A href="http://hwi.ath.cx/cgi-bin/viewcvs.cgi/other/html/joeys_bookmarklets.html">S</A>)
 		</P>
 		<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
 		<P>For a big list of all my collected bookmarklets, along with a code viewer, visit:</P>
@@ -847,22 +848,33 @@
 
 	<P>
 		<LI><A href="javascript:(function(){
-			var newScript = document.createElement('script');
-			newScript.type = 'text/javascript';
-			newScript.src = 'http://hwi.ath.cx/javascript/make_elements_moveable.js';
-			document.body.appendChild(newScript);
-			document.body.addEventListener('mousedown',function(evt){
-				var node = evt.target;
-				node.style.position = 'fixed';
-				if (!node.style.left && !node.style.right)
-					node.style.left = evt.pageX - document.body.scrollLeft;
-				if (!node.style.top && !node.style.bottom)
-					node.style.top = evt.pageY - document.body.scrollTop;
-				makeMoveable(node);
-			},true);
+			if (this.selectElementForMoving) {
+				/* Toggle off */
+				document.body.removeEventListener('mousedown',selectElementForMoving,true);
+				this.selectElementForMoving = null;
+			} else {
+				this.selectElementForMoving = function(evt) {
+					var node = evt.target;
+					node.style.position = 'fixed';
+					if (!node.style.left && !node.style.right)
+						node.style.left = evt.pageX - 32 - document.body.scrollLeft;
+					if (!node.style.top && !node.style.bottom)
+						node.style.top = evt.pageY - 32 - document.body.scrollTop;
+					makeMoveable(node);
+				};
+				var newScript = document.createElement('script');
+				newScript.type = 'text/javascript';
+				newScript.src = 'http://hwi.ath.cx/javascript/make_elements_moveable.js';
+				document.body.appendChild(newScript);
+				document.body.addEventListener('mousedown',selectElementForMoving,true);
+			}
 		})();">Move Things Around</A></LI>
 		<BLOCKQUOTE>
 			<P>Allows you to move parts of the page around.</P>
+			<LI>
+				<SPAN class="done">Re-run the bookmarklet to stop it.</SPAN>
+				<SPAN class="todo">Beware that won&apos;t be possible by clicking on this page!</SPAN>
+			</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -1143,9 +1155,7 @@
 <H3>Wanted / TODO</H3>
 <BLOCKQUOTE class='todo'>
 
-	<BLOCKQUOTE>
-		<LI class='todo'>I introduced a different loading technique for all the external loading scripts that don&apos;t auto-init, so that they work with Konqueror.  (Such scripts are more powerful since they can be loaded as libraries, but it&apos;s not essential: we can create scripts which call their own init() function.)  But it might be desirable for the Bookmarklet to use the FF way by default, and the Konqueror way only if Konqueror is detected.</LI>
-	</BLOCKQUOTE>
+	<P>I introduced a different loading technique for all the external loading scripts that don&apos;t auto-init, so that they work with Konqueror.  (Such scripts are more powerful since they can be loaded as libraries, although it&apos;s not essential: we could create scripts which call their own init() function.)  Some of these bookmarklets would be smaller/neater without the Konqueror support.  The compatibility of my loading technique has not been tested on other browsers.</P>
 
 	<P>
 		<LI><A href="" title="Version 0.9">Auto Highlight</A></LI>
