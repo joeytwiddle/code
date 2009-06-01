@@ -30,10 +30,10 @@ function GA_padLeft(str,num,padChar) {
 
 function GA_getSimpleTime() {
 	var now = new Date();
-	return GA_padLeft(now.getHours(),2,'0')
-		+":"+ GA_padLeft(now.getMinutes(),2,'0')
-		+":"+ GA_padLeft(now.getSeconds(),2,'0')
-		+"."+ GA_padLeft(now.getMilliseconds(),4,'0').substring(0,2);
+	return GA_padLeft(now.getHours(),2,'0')+
+		":"+ GA_padLeft(now.getMinutes(),2,'0')+
+		":"+ GA_padLeft(now.getSeconds(),2,'0')+
+		"."+ GA_padLeft(now.getMilliseconds(),4,'0').substring(0,2);
 }
 
 function GA_log(namespace,obj) {
@@ -92,8 +92,9 @@ function cgiUnescape(val) {
 function GA_setValue(namespace,name,value) {
 	// Konqueror appears to fail (or take forever) if params.length exceeds 30,000.  Needs batching!  :f
 	// Hmm Firefox was going very slow about 40k also.  =/  Stream timed out when it completed.  Are we blocking in a buffer somewhere?
-	if (value==undefined || value==null)
+	if (value===undefined || value===null) {
 		value = "";
+	}
 	var url = "/_gRiMeApE_/setValue";
 	var params = "name="+encodeURIComponent(name)+"&namespace="+encodeURIComponent(namespace)+"&value="+encodeURIComponent(value);
 	// document.writeln('<SCRIPT type="text/javascript" src="'+url+'"/>');
@@ -187,11 +188,11 @@ function GM_listValues() {
 	GM_log("WARNING: GM_listValues() will not be implemented until we have a namespace.");
 }
 
-// var unsafeWindow = window;
 // if (!this.unsafeWindow) {
 	// this.unsafeWindow = window;
 // }
-unsafeWindow = window;
+// unsafeWindow = window;
+var unsafeWindow = window;
 
 // document.evaluate and XPathResult are implemented in xpath.js
 // TODO: If you load an XML document via XMLHttpRequest or another mechanism,
@@ -200,7 +201,7 @@ unsafeWindow = window;
 // Awhh hell Konqueror doesn't even have uneval().
 
 this.ga_uneval = function (obj) {
-	if (obj==undefined) { return "undefined"; }
+	if (obj===undefined) { return "undefined"; }
 	// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
 	if (typeof(obj)=='string') {
 		// TODO: ok we have done some basic chars, but what about non-ascii chars?!
@@ -221,7 +222,7 @@ this.ga_uneval = function (obj) {
 			// But in general I found it preferable to use objects for storage.
 			var val = obj[key];
 			// GM_log("Got key "+key+" and val "+val);
-			if (arrayString!="") arrayString += ", ";
+			if (arrayString) { arrayString += ", "; }
 			arrayString += uneval(key)+":"+uneval(val);
 			// If key here is a string, Moz does not quote it if not needed, or surrounds
 			// it with single apostrophes if it contains a space or special chars.
@@ -239,7 +240,7 @@ this.ga_uneval = function (obj) {
 		GM_log("<WARNING!> uneval does not know type "+typeof(obj));
 		return ""+obj+" <DUNNO_TYPE_"+typeof(obj)+">";
 	}
-}
+};
 
 // if (!uneval) { /* Testing existence this way fails with "No such var". */
 if (!this.uneval) {
@@ -284,10 +285,10 @@ GA_xmlhttpRequest = function (namespace,req) {
 			readyState:request.readyState,
 			responseHeaders:(request.readyState == 4 ? request.getAllResponseHeaders() : ""),
 			status:(request.readyState == 4 ? request.status : 0),
-			statusText:(request.readyState == 4 ? request.statusText : ""),
+			statusText:(request.readyState == 4 ? request.statusText : "")
 			// finalUrl:(request.readyState == 4 ? request.channel.URI.spec : "")
 			// finalUrl:req.url,
-		}
+		};
 		// The callback function for onreadystatechange is called repeatedly while
 		// the request is in progress. It takes a single parameter, responseDetails.
 		if (req.onreadystatechange) { req.onreadystatechange(responseState); }
@@ -298,7 +299,7 @@ GA_xmlhttpRequest = function (namespace,req) {
 		throw e;
 	}
 	return null;
-}
+};
 
 // if (!this.GM_xmlhttpRequest) {
 	// GM_xmlhttpRequest = ga_xmlhttpRequest;
@@ -331,10 +332,10 @@ function GM_addStyle(css) {
 // OLD IE compat:
 if(typeof XMLHttpRequest == "undefined") {
 	XMLHttpRequest = function() {
-		try { return new ActiveXObject("Msxml2.XMLHTTP.6.0") } catch(e) {}
-		try { return new ActiveXObject("Msxml2.XMLHTTP.3.0") } catch(e) {}
-		try { return new ActiveXObject("Msxml2.XMLHTTP") } catch(e) {}
-		try { return new ActiveXObject("Microsoft.XMLHTTP") } catch(e) {}
+		try { return new ActiveXObject("Msxml2.XMLHTTP.6.0"); } catch(e) {}
+		try { return new ActiveXObject("Msxml2.XMLHTTP.3.0"); } catch(e) {}
+		try { return new ActiveXObject("Msxml2.XMLHTTP"); } catch(e) {}
+		try { return new ActiveXObject("Microsoft.XMLHTTP"); } catch(e) {}
 		GM_log("This browser does not support XMLHttpRequest.");
 	};
 }
@@ -342,14 +343,15 @@ if(typeof XMLHttpRequest == "undefined") {
 if (!document.getElementsByClassName) {
 	document.getElementsByClassName = function(names) {
 		names = " "+names+" ";
-		var results = new Array();
+		var results = []; // new Array();
 		var allElements = document.getElementsByTagName("*");
 		for (var i=0;i<allElements.length;i++) {
-			if (names.indexOf(" "+allElements[i].className+" ")>=0)
+			if (names.indexOf(" "+allElements[i].className+" ")>=0) {
 				results[results.length] = allElements[i];
+			}
 		}
 		return results;
-	}
+	};
 }
 
 // Mozilla forced global adoption of window.onload, which Konquerer has not yet implemented:
