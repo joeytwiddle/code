@@ -70,6 +70,8 @@ class CLASS_NAME extends Mutator config(Resize);
 
 */
 
+/*
+
 // BUGS TODO:
 // I picked up a weapon with the wrong in-hand drawscale.
 // Thrown weapons fly at wrong speed.
@@ -117,8 +119,10 @@ class CLASS_NAME extends Mutator config(Resize);
 
 // BUG: Current incarnation appears to make shock balls travel 4x as fast instead of 2x as fast at 200, and pickups are still small!
 
+*/
+
 // === START pre-compile config ===
-// #define DEBUG
+#define DEBUG
 #define CHECK_DODGE
 #define CHANGE_GRAVITY
 // #define LOG_TICKS
@@ -700,8 +704,13 @@ function CheckPlayerStateForDodge(Pawn p) {
   // TODO: how we scale dodge should be different if we have CHANGE_GRAVITY switched on or off.
   // TODO: if we don't change gravity, fixed y should be no problem, since x is scaled ideally
   //       to make the jump *look* better, we could increase y and decrease x.
-  if (p.PlayerReplicationInfo == None || (PlayerPawn(p)==None && Bot(p)==None) || UTServerAdminSpectator(p)!=None)
+  if (p.PlayerReplicationInfo == None || (PlayerPawn(p)==None && Bot(p)==None))
     return;
+  // if (p.PlayerReplicationInfo == None || (PlayerPawn(p)==None && Bot(p)==None) || UTServerAdminSpectator(p)!=None)
+  if (p.PlayerReplicationInfo.PlayerName == "Player") {
+    DebugShout("Rejecting "$p$" because his name == Player");
+    return;
+  }
   #define pDodgeState (LastDodgeState[p.PlayerReplicationInfo.PlayerID % 64])
   if (pDodgeState == "NOTWALKING") {
     if (p.Physics == PHYS_Walking) {
@@ -761,14 +770,14 @@ function ScaleProjectileClass(class<Projectile> ProjectileClass) {
   if (InStr(ProjectilesAlreadyHandled," "$ProjectileClass$" ") != -1) {
     return; // We already scaled these default properties earlier for this weapon/projectile type.
   }
-  DebugShout("Scaling projectile type: "$ProjectileClass);
+  DebugLog("Scaling projectile type: "$ProjectileClass);
   // BUG TODO: UTChunk and flakslug report 2 x "Accessed None" here.
   // ProjectileClass.default.DrawScale = ProjectileClass.default.DrawScale * Scale; // This does not seem to work, so doing it in HandleNewActor() instead.
   ProjectileClass.default.Speed = ScaleOnceOnly(ProjectileClass$".default.Speed", ProjectileClass.default.Speed);
   ProjectileClass.default.MaxSpeed = ScaleOnceOnly(ProjectileClass$".default.MaxSpeed", ProjectileClass.default.MaxSpeed);
   ProjectileClass.default.MomentumTransfer = ScaleOnceOnly(ProjectileClass$".default.MomentumTransfer", ProjectileClass.default.MomentumTransfer);
   ProjectileClass.default.ExplosionDecal.default.DrawScale = ScaleOnceOnly(ProjectileClass$".default.ExplosionDecal.default.DrawScale", ProjectileClass.default.ExplosionDecal.default.DrawScale);
-  DebugShout("New properties for "$ProjectileClass$": Speed="$ProjectileClass.default.Speed$" MaxSpeed="$ProjectileClass.default.MaxSpeed$".");
+  DebugLog("New properties for "$ProjectileClass$": Speed="$ProjectileClass.default.Speed$" MaxSpeed="$ProjectileClass.default.MaxSpeed$".");
   // We cannot scale default CollisionSize here, so we do it later.  Oh well strangely we didn't need to!
   // Add this Projectile type to the list, so that we don't scale its defaults again later:
   ProjectilesAlreadyHandled = ProjectilesAlreadyHandled $ " " $ ProjectileClass $ " ";
