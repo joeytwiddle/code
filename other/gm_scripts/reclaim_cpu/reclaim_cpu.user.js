@@ -4,7 +4,8 @@
 // @description    Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers.
 // @include        *
 // @exclude        http://www.last.fm/*
-// @exclude        http://*.other.sites/where/we/want/to/leave/everything/running
+// @exclude        http://www.deezer.com/*
+// @exclude        http://*.other.sites/where/we/want/to/leave/the/page/running
 // ==/UserScript==
 
 ////// Some sites you might like to exclude: //////
@@ -18,13 +19,17 @@
 
 ////// Config //////
 
-var idleSeconds =  5;       // Page will cleanup if mouse has been outside it
+var idleSeconds = 10;       // Page will cleanup if mouse has been outside it
                             // for this many seconds.  Or if you set
                             // detectWhenIdle=false, page will cleanup this
                             // many seconds after loading.
 
-var detectWhenIdle = true;  // This is much more user-friendly, but adds a small
-                            // processing overhead until the cleanup occurs.
+var detectWhenIdle = true;  // detectWhenIdle is much more user-friendly,
+                            // although a bit more complicated.
+                            // If set to false, cleanup will be performed
+                            // automatically after idleSeconds.
+                            // If set to true, cleanup is performed after
+                            // user has left page idle for idleSeconds.
 
 var reTrigger = false;      // Resume idle detection if the user restores a
                             // hidden element.
@@ -90,6 +95,14 @@ var showInfoInTitle = true; // Handy for debugging/watching Reclaim_CPU working.
 
 
 /* ////// Developer notes / Changes / Todos //////
+
+TODO: We should delay initialization of the script until the document.onload
+event or maybe a short time after with setTimeout.  This will ensure script does
+not trigger idle detection when in fact page was still loaded (browser was frozen).
+
+TODO: OK so we clean up all frames where GM is loaded.  But what if an iframe
+is created at runtime, with a flash element inside it.  Will our script cleanup
+the element?  I fear not.
 
 DONE: Rename to CPU Reclaimer.
 
@@ -199,6 +212,8 @@ function removeNastyElements() {
 	removeElemsWithTag("object");
 	report += " and ";
 	removeElemsWithTag("embed");
+	report += " and ";
+	removeElemsWithTag("applet");
 	// removeElemsMatching( function(x){ return x.tagName == "embed" } );
 	report += " from \""+document.title+"\"";
    if (document != top.document) {
@@ -308,9 +323,9 @@ function initTimer() {
 			if (mouseHasLeft && idleTime > idleSeconds) {
 				cleanupCPUHoggers();
 				// DONE: We should also disable all the event watchers.
-				window.removeEventListener("mousemove", watchMouseMove, false);
-				window.removeEventListener("focus", watchMouseMove, false);
-				window.removeEventListener("mouseout", watchMouseLeave, false);
+				window.removeEventListener("mousemove", watchMouseMove, true);
+				window.removeEventListener("focus", watchMouseMove, true);
+				window.removeEventListener("mouseout", watchMouseLeave, true);
 			} else {
 				if (mouseHasLeft) {
 					// GM_log("Unusual: Mouse has left but checkIdle() has triggered with idleTime only "+idleTime+".  Waiting..."); // Not so unusual really - it just means the user has wiggled their mouse over the edge: out, in, out.
@@ -332,20 +347,20 @@ function initTimer() {
 			mouseHasLeft = false;
 			lastSawMouse = new Date().getTime();
 			// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
-			// window.status = "(" + e.pageX + "," + e.pageY + ")";
+			// window.status = "Mouse moved (" + e.pageX + "," + e.pageY + ")";
+			// window.status = "Mouse has entered the "+e.target.tagName;
 			// idleInfo.textContent = "Mouse is back.";
 			return false;
 		};
-		// document.body.addEventListener("mousemove", watchMouseMove, false);
-		window.addEventListener("mousemove", watchMouseMove, false);
-		window.addEventListener("focus", watchMouseMove, false); // Catches when use re-enters window with keyboard.
 
 		var watchMouseLeave = function(e) {
 			// Oh of course - this is getting triggered for mouseout of all elements!
 			// But fortunately it was immediately being disabled by watchMouseMove.
 			// Well anyway let's fix that:
-			if (e.target.tagName != 'HTML')
+			if (!e.target.tagName || e.target.tagName=='HTML' || e.target.tagName=='BODY') {
+         } else {
 				return false;
+         }
 			if (!mouseHasLeft) {
 				if (timerRunning) {
 					// Don't start a timer - we have one!
@@ -362,7 +377,24 @@ function initTimer() {
 			// GM_log("Mouse has left the "+e.target.tagName);
 			return false;
 		}
-		window.addEventListener("mouseout", watchMouseLeave, false);
+
+      // for (var i=0;i<document.body.childNodes.length;i++) {
+         // var x = document.body.childNodes[i];
+         var x = document.body;
+         x.addEventListener("mouseover", watchMouseMove, false);
+         x.addEventListener("focus", watchMouseMove, false); // Catches when user re-enters window with keyboard?
+         x.addEventListener("mouseout", watchMouseLeave, false);
+         // These work better in konq?  They seem to do all depths.
+         // x.onmouseover = watchMouseMove;
+         // x.onfocus = watchMouseMove;
+         // x.onmouseout = watchMouseLeave;
+         document.addEventListener("load",function(evt){GM_log("onload has evt="+evt+" mouse=("+evt.pageX+","+evt.pageY+")");},false);
+      // }
+
+      // It seems on Konqueror, the last event I caught firing when the mouse
+      // was moved out of the window was a mouseover on BODY, not leaving it.
+      // I think maybe i get the leave before the enter O_o
+      // Hmm I can also produce mouseover BODY by scroll with the wheel =/
 
 		// DONE TEST: Is catching the window fine-grained enough?  If we switch to other tabs, does original tab still think it is alive?  Yes, and No.  It works fine.  window only refers to current tab, not whole browser window.  ;)
 		// BUG: If I Alt-Tab to get on/off the window, no events are fired.
