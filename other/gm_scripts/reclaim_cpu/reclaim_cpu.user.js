@@ -216,14 +216,17 @@ function removeNastyElements() {
 	removeElemsWithTag("applet");
 	// removeElemsMatching( function(x){ return x.tagName == "embed" } );
 	report += " from \""+document.title+"\"";
-   if (document != top.document) {
-      report += " (child frame of \""+top.document.title+"\")";
+   // if (document != top.document) {
+   if (window != top) {
+      // report += " (child frame of \""+top.document.title+"\")";
+      report += " (child frame)";
    }
    report += ".";
 }
 
 function removeElemsWithTag(tag) {
-	var nasties = unsafeWindow.document.getElementsByTagName(tag);
+   // We were using unsafeWindow.document which worked in GM but some sub-frames complained in GA.
+	var nasties = document.getElementsByTagName(tag);
 	report += nasties.length+" "+tag.toUpperCase()+"s"; // .map("QWERTYUIOPASDFGHJKLZXCVBNM","qwertyuiopasdfghjklzxcvbnm");
 	for (var i=nasties.length-1;i>=0;i--) {
 		var lastLength = nasties.length;
@@ -419,4 +422,14 @@ function initTimer() {
 }
 
 initTimer();
+
+/*
+GM_log("Reclaim CPU running in "+document.location);
+try {
+   var x = unsafeWindow.document;
+   GM_log("I can access unsafeWindow.document = " + unsafeWindow.document);
+} catch (e) {
+   GM_log("I can NOT access unsafeWindow.document.");
+}
+*/
 
