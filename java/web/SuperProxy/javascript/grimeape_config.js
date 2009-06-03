@@ -35,16 +35,17 @@ registry values set by that script's namespace.
 
 	//// Config ////
 
-	var GrimeApeConfig = new Object();
+	var GrimeApeConfig = {}; // new Object();
 
 	function loadConfig() {
 
 		// Try loading config:
 		try {
-			GrimeApeConfig = eval(GM_getValue("GrimeApeConfig"));
-			// GM_log("Loaded config length "+uneval(GrimeApeConfig).length);
+			var configVal = GM_getValue("GrimeApeConfig");
+			GM_log("Got config string with length "+configVal.length);
+			GrimeApeConfig = eval(configVal);
 		} catch (e) {
-			GM_log(e);
+			GM_log("Problem loading GrimeApeConfig: "+e);
 		}
 
 		// If we could not load, create a default config:
@@ -67,7 +68,7 @@ registry values set by that script's namespace.
 				}),
 			};
 
-			GM_log("Created fresh GrimeApe config.  this="+this+" self="+self);
+			GM_log("Created fresh GrimeApe config.");
 			// User really needs a warning indicator:
 			if (typeof ApeIcon != 'undefined') {
 				ApeIcon.setError();
@@ -95,7 +96,7 @@ registry values set by that script's namespace.
 	}
 
 	function loadScript(scriptName) {
-		var fsName = getFsName(scriptName);
+		var fsName = encodeURIComponent(getFsName(scriptName));
 		// GM_log('Appending userscript: '+scriptName);
 		var namespace = GrimeApeConfig.scripts[scriptName].namespace;
 		var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js?namespace=" + encodeURIComponent(namespace+"/"+scriptName);
@@ -105,7 +106,7 @@ registry values set by that script's namespace.
 	/** This is better if the document has finished loading.  Sometimes the other method can cause
 	 * problems in that situation. **/
 	function loadScriptOtherWay(scriptName) {
-		var fsName = getFsName(scriptName);
+		var fsName = encodeURIComponent(getFsName(scriptName));
 		GM_log('Loading: '+scriptName);
 		// var url = "/_gRiMeApE_/userscripts/" + fsName + '/' + fsName + ".user.js"
 		var namespace = GrimeApeConfig.scripts[scriptName].namespace;
@@ -163,8 +164,10 @@ registry values set by that script's namespace.
 	// GrimeApe runs in all frames, but for tidiness the icon+menu only appear in the top frame.
 	// If the user really wants a monkey in a sub-frame, she could try opening the frame in her main window.
 	// Sometimes this causes a "Permission denied to get property Window.document"
-	// if (document == top.document) {
-	if (window == top) {
+	var showIcon = true; // (window == top);
+	// I want an icon in every frame since we can't send all logging to the top. =/
+
+	if (showIcon) {
 
 		//// Icon ////
 
@@ -183,18 +186,17 @@ registry values set by that script's namespace.
 				var icon = document.createElement('IMG');
 				icon.id = 'gaIcon';
 				ApeIcon.icon = icon;
+				//// We only really need to do this if we are changing the natural size of the image.
 				icon.width = ApeIcon.iconWidth;
 				icon.height = ApeIcon.iconHeight;
 				ApeIcon.icon.src = ApeIcon.iconURLLoading;
 				// javascript needs a "send to back" ;)
 				// icon.style = iconStyleString;
 				// var iconHolder = document.createElement('A');
-				with (icon.style) {
-					position='fixed';
-					right='4px';
-					bottom='2px';
-					zIndex='120000';
-				}
+				icon.style.position='fixed';
+				icon.style.right='4px';
+				icon.style.bottom='2px';
+				icon.style.zIndex='120000';
 				// iconHolder.appendChild(icon);
 				// document.body.appendChild(iconHolder);
 				document.body.appendChild(icon);
@@ -203,7 +205,7 @@ registry values set by that script's namespace.
 				document.writeln('<IMG id="gaIcon" src="'+iconURL+'" width="'+iconWidth+'" height="'+iconHeight+'" class="gaicon">');
 				*/
 
-				// Add a gap at the bottom of the page, for our 'icon-bar'.
+				// Add a gap at the bottom of the page, for our 'one-icon-bar'.
 				document.body.style.marginBottom = (ApeIcon.iconHeight+6) + "px";
 
 				/*
@@ -235,7 +237,7 @@ registry values set by that script's namespace.
 	loadConfig();
 
 	// Now continue setting up the icon+menu:
-	if (window == top) {
+	if (showIcon) {
 
 		var formID = "scriptEditorForm"+document.forms.length;
 		var ScriptEditor = {
@@ -244,11 +246,11 @@ registry values set by that script's namespace.
 
 				////// Create new editor window:
 				var newEditor = document.createElement('DIV');
-				newEditor.innerHTML = ''
+				newEditor.innerHTML = '' +
 					// + '<STYLE type="text/css"> .td{ text-align:right; } </STYLE>\n'
 					// + '<FORM id="'+formID+'" method="GET" action="/_gRiMeApE_/saveUserscript">\n'
-					+ '<FORM id="'+formID+'">\n'
-					+ '<FONT size="-1">'
+					'<FORM id="'+formID+'">\n' +
+					'<FONT size="-1">' +
 					// + '<TABLE>'
 					// + '<TR><TD align="right">Name:</TD><TD><INPUT type="text" name="name" value="Script Name"/></TD></TR>\n'
 					// + '<TR><TD align="right">Namespace:</TD><TD><INPUT type="text" name="namespace" value="Nobody knows what this is."/></TD></TR>\n'
@@ -257,28 +259,28 @@ registry values set by that script's namespace.
 					// // + '<TR><TD align="right">Excludes:</TD><TD><TEXTAREA name="excludes" cols=80>http://*google.co*/*</TEXTAREA></TD></TR>\n'
 					// + '<TR><TD align="right">Script:</TD><TD><TEXTAREA name="content" cols=80 rows=20>blah(); blah(); blah(); // I am good at HMTL</TEXTAREA></TD></TR>\n'
 					// + '</TABLE>\n'
-					+ '<TEXTAREA name="content" cols="80" rows="35">'
-					+ '// ==UserScript==\n'
-					+ '// @name           ....\n'
-					+ '// @namespace      ....\n'
-					+ '// @description    ....\n'
-					+ '// @include        ....\n'
-					+ '// @exclude        ....\n'
-					+ '// @version        ....\n'
-					+ '// @homepage       ....\n'
-					+ '// @copyright      %year, %author\n'
-					+ '// @license        ....\n'
-					+ '// ==/UserScript==\n'
-					+ '\n'
-					+ '</TEXTAREA>'
-					+ '<P align="right">'
-					+ '<INPUT type="button" name="test" value="Test"/>\n'
-					+ '<INPUT type="button" name="save" value="Save"/>\n'
-					+ '<INPUT type="button" name="cancel" value="Cancel"/>'
-					+ '</P>'
-					+ '</FONT>'
-					+ '</FORM>' // Bah this creates always an empty line after.  Should swap div and form around :P
-					+ '';
+					'<TEXTAREA name="content" cols="80" rows="35">' +
+					'// ==UserScript==\n' +
+					'// @name           ....\n' +
+					'// @namespace      ....\n' +
+					'// @description    ....\n' +
+					'// @include        ....\n' +
+					'// @exclude        ....\n' +
+					'// @version        ....\n' +
+					'// @homepage       ....\n' +
+					'// @copyright      %year, %author\n' +
+					'// @license        ....\n' +
+					'// ==/UserScript==\n' +
+					'\n' +
+					'</TEXTAREA>' +
+					'<P align="right">' +
+					'<INPUT type="button" name="test" value="Test"/>\n' +
+					'<INPUT type="button" name="save" value="Save"/>\n' +
+					'<INPUT type="button" name="cancel" value="Cancel"/>' +
+					'</P>' +
+					'</FONT>' +
+					'</FORM>' + // Bah this creates always an empty line after.  Should swap div and form around :P
+					'';
 				document.body.appendChild(newEditor);
 
 				////// Style:
@@ -288,8 +290,8 @@ registry values set by that script's namespace.
 				// breaks: newEditor.style.setProperty('-mozBorderRadius','4px');
 				newEditor.style.position = 'fixed';
 				newEditor.style.zIndex = '12000';
-				newEditor.style.left = parseInt(window.innerWidth * 0.10) + 'px';
-				newEditor.style.top = parseInt(window.innerHeight * 0.05) + 'px';
+				newEditor.style.left = parseInt(window.innerWidth * 0.10,10) + 'px';
+				newEditor.style.top = parseInt(window.innerHeight * 0.05,10) + 'px';
 				newEditor.style.right = '';
 				newEditor.style.bottom = '';
 				// newEditor.style.width = parseInt(document.width * 0.75) + 'px';
@@ -333,7 +335,7 @@ registry values set by that script's namespace.
 						// // form['excludes'].value = scriptData.excludes;
 						////// Now the big one - script content:
 						//// DONE: We should be requesting CDATA wrapped response.  But Firefox still complains.  :P
-						var fsName = getFsName(scriptName);
+						var fsName = encodeURIComponent(getFsName(scriptName));
 						var req = new XMLHttpRequest();
 						req.open('GET','/_gRiMeApE_/userscripts/'+fsName+'/'+fsName+'.user.js?cdata=yes',false);
 						req.setRequestHeader('Accept','text/javascript');
@@ -345,11 +347,13 @@ registry values set by that script's namespace.
 						var strippedResponse = req.responseText;
 						var expectStart = "<![CDATA[";
 						var expectEnd = "]]>";
-						if (strippedResponse.substring(0,expectStart.length) == expectStart)
+						if (strippedResponse.substring(0,expectStart.length) == expectStart) {
 							strippedResponse = strippedResponse.substring(expectStart.length);
+						}
 						// else GM_log("Expected BLAH but got \""+strippedResponse.substring(0,expectStart.length)+"\"");
-						if (strippedResponse.substring(strippedResponse.length - expectEnd.length) == expectEnd)
+						if (strippedResponse.substring(strippedResponse.length - expectEnd.length) == expectEnd) {
 							strippedResponse = strippedResponse.substring(0,strippedResponse.length - expectEnd.length);
+						}
 						form['content'].value = strippedResponse;
 						form['content'].textContent = strippedResponse; // Needed for Konq, doesn't work for Moz.
 					}
@@ -393,7 +397,7 @@ registry values set by that script's namespace.
 					function getMetasArray(key) {
 						// key = key.replace(/\*/g,'\\*');
 						var regex = new RegExp("//\\s*@"+key+"\\s\\s*(.*)","g");
-						var list = new Array();
+						var list = [];
 						var match;
 						while (match = regex.exec(content)) {
 							GM_log("Got match for \""+key+"\": "+match[1]);
@@ -406,7 +410,7 @@ registry values set by that script's namespace.
 					function getMetas(key) {
 						// key = key.replace(/\*/g,'\\*');
 						var regex = new RegExp("//\\s*@"+key+"\\s\\s*(.*)","g");
-						var obj = new Object();
+						var obj = {};
 						var match;
 						var i = 0;
 						while (match = regex.exec(content)) {
@@ -417,7 +421,7 @@ registry values set by that script's namespace.
 					}
 					function getPairedMetas(key) {
 						var regex = new RegExp("//\\s*@"+key+"\\s\\s*([^\\s]*)\\s\\s*(.*)","g");
-						var obj = new Object();
+						var obj = {};
 						var match;
 						while (match = regex.exec(content)) {
 							GM_log("Got pair match for \""+key+"\": "+match[1]+" -> "+match[2]);
@@ -431,7 +435,6 @@ registry values set by that script's namespace.
 						alert("Your script needs a tag: // @name MyScriptName");
 					} else {
 						// Upload the file:
-						var fsName = getFsName(newScriptName); // TODO: Actually should get new name from script!
 						var cgi = "name="+encodeURIComponent(newScriptName) + "&content="+encodeURIComponent(content);
 						var req = new XMLHttpRequest();
 						req.open("POST","/_gRiMeApE_/updateScript",false);
@@ -441,7 +444,7 @@ registry values set by that script's namespace.
 						
 						// Update the config:
 						if (req.responseText == "<NODATA>OK</NODATA>") {
-							var scriptData = new Object();
+							var scriptData = {};
 							scriptData.enabled = true;
 							scriptData.namespace = getMeta("namespace");
 							scriptData.description = getMeta("description");
@@ -460,12 +463,13 @@ registry values set by that script's namespace.
 						}
 					}
 				} catch (e) {
-					alert(e);
+					alert("Unexpected Error updating script: "+e);
 				}
-				if (form && form['save']) // May have been destroyed
+				if (form && form['save']) { // May have been destroyed
 					form['save'].disabled = false;
+				}
 
-			},
+			}
 
 		};
 
@@ -554,8 +558,9 @@ registry values set by that script's namespace.
 			},
 
 			addUserscriptCommand: function(commandName, commandFunc, accelKey, accelModifier, accessKey) {
-				if (Menu.userscriptCommandsDiv.childNodes.length > 0)
+				if (Menu.userscriptCommandsDiv.childNodes.length > 0) {
 					Menu.userscriptCommandsDiv.appendChild(document.createElement('BR'));
+				}
 				var link = document.createElement('A');
 				link.textContent = commandName;
 				link.href = 'javascript:void(0)';
@@ -575,10 +580,11 @@ registry values set by that script's namespace.
 				//var line = document.createElement('P');
 				//line.appendChild(menuItem);
 				//Menu.menuElement/*thisisstupid*/.appendChild(line);
-				if (Menu.menuElement.childNodes.length > 0)
+				if (Menu.menuElement.childNodes.length > 0) {
 					// if (Menu.menuElement.lastChild.tagName!='HR')
 						Menu.menuElement.appendChild(document.createElement('BR'));
 					// menuItem.insertBefore(document.createElement('BR'),menuItem.firstChild);
+				}
 				Menu.menuElement.appendChild(menuItem);
 
 				// A shorter way to create a link:
@@ -669,7 +675,9 @@ registry values set by that script's namespace.
 				Menu.userscriptCommandsMenuItem = Menu.addMenuItem("Userscript Commands");
 				Menu.addMenuItem("Create New Userscript",Menu.openEditorWindow);
 				// TODO: If we make Get Userscripts a link A with valid href and target, Konq won't ask confirmation to pop it up!
-				Menu.addMenuItem("Get Userscripts",Menu.getUserscripts);
+				var getScriptsMenuItem = Menu.addMenuItem("Get Userscripts",null);
+				getScriptsMenuItem.href = "http://www.userscripts.org/";
+				getScriptsMenuItem.target = "_blank";
 				Menu.addMenuItem("Show Log",Menu.showHideLog);
 				Menu.addMenuItem("Enable/Disable",Menu.toggleEnabled);
 
@@ -681,18 +689,16 @@ registry values set by that script's namespace.
 			},
 
 			initStyle: function() {
-				with (Menu.menuElement.style) {
-					display = 'none';
-					position = 'fixed';
-					right = '4px';
-					bottom = (ApeIcon.iconHeight+4)+'px';
-					zIndex = 120000;
-					border = '1px solid #444444';
-					backgroundColor = '#ffffff';
-					color = 'black';
-					padding = '6px';
-					textAlign = 'left';
-				}
+				Menu.menuElement.style.display = 'none';
+				Menu.menuElement.style.position = 'fixed';
+				Menu.menuElement.style.right = '4px';
+				Menu.menuElement.style.bottom = (ApeIcon.iconHeight)+'px';
+				Menu.menuElement.style.zIndex = 120000;
+				Menu.menuElement.style.border = '1px solid #444444';
+				Menu.menuElement.style.backgroundColor = '#ffffff';
+				Menu.menuElement.style.color = 'black';
+				Menu.menuElement.style.padding = '6px';
+				Menu.menuElement.style.textAlign = 'left';
 				// var css = " #menuEnabled.link{ color:#00ff00; } #menuDisabled.link{ color:#880000; } ";
 				// document.writeln("<SCRIPT type='text/css'>"+css+"</SCRIPT>");
 				Menu.userscriptCommandsDiv.style.display = 'none';
@@ -806,12 +812,16 @@ registry values set by that script's namespace.
 		// loadScriptStringOtherWay("GM_log('GrimeApe loaded "+countLoaded+" scripts.');");
 		// ApeIcon.setIcon();
 		// setTimeout(ApeIcon.setIcon,1000);
-		GM_log("Done loading.  this="+this+" self="+self+" self.ApeIcon="+self.ApeIcon+" this.ApeIcon="+this.ApeIcon);
+		// GM_log("Done loading.  this="+this+" self="+self+" self.ApeIcon="+self.ApeIcon+" this.ApeIcon="+this.ApeIcon);
 		if (typeof ApeIcon != 'undefined') {
 			this.ApeIcon = ApeIcon;
 			loadScriptString("this.ApeIcon.setIcon();");
 		}
 	}
+
+	//// This breaks things if done here:
+	// loadScript("http://base2.googlecode.com/svn/trunk/lib/src/base2.js");
+	//// So we load it before GrimeApe entirely, that seems ok.
 
 	doStart();
 	// document.addEventListener('load',doStart,false);
