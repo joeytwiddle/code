@@ -1,0 +1,2 @@
+MYDIR=`dirname "$0"`
+java -cp "$MYDIR/bin" org.neuralyte.superproxy.grimeape.GrimeApe "$@"

@@ -1,0 +1,2 @@
+Large HTTP requests (POSTs I guess) can be chunked by the client.
+

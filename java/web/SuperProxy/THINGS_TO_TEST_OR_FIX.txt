@@ -52,3 +52,12 @@ But are keep-alive POSTs impossible?  If not, what is wrong with ours?  We do se
 [00:42:33] Thread-1674 (AdvancedHttpRequestHandler.java:227) .handleRequest() [log] <= HTTP/1.x 409 ERROR java.net.SocketException: Too many open files
 
 
+The WayBackArchive's Javascript does not play nicely with GrimeApe.  Actually it will sometimes happily load and run the userscripts, but then the icon URL gets changed and for some reason the config gets reset to default.
+
+
+
+Multi-frame pages which cause problems:
+http://webdesign.about.com/od/advancedcss/a/aa061307.htm    (500 images!  Hmm I think konq is loading more images each time I reload the page :f)
+http://blog.taragana.com/index.php/archive/how-to-open-client-socket-with-timeout/
+
+

@@ -1,6 +1,10 @@
 For building, you need to checkout CommonUtils and SimpleProxy from the
 SourceForge project "JavaWebTools".
 
+Konqueror Userscripts:
+1) ...
+2) http://namshub-kde.blogspot.com/ (Nov 2007)
+
 
 
 Projects like GrimeApe:
@@ -13,4 +17,9 @@ Projects like GrimeApe:
 
 
 For more: http://en.wikipedia.org/wiki/Greasemonkey#Proxy_level
+
+
+GM API implemented for Opera:
+http://www.howtocreate.co.uk/operaStuff/userJavaScript.html#compatibility
+
 

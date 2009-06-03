@@ -116,6 +116,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     static String coreScriptsDir = "./javascript/";
     static String userscriptsDir = "./userscripts/";
     */
+    static File storageFile = new File(topDir,"grimeape_registry.nap");
     
     // TODO: This should not be a global, but associated with user/session.
     public static Map<String,String> gmRegistry = new Hashtable<String,String>();
@@ -188,7 +189,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     
     public static void loadData() throws Exception {
         try {
-            gmRegistry = (Map<String,String>)Nap.fromFile("grimeape_registry.nap");
+            gmRegistry = (Map<String,String>)Nap.fromFile(storageFile);
             Logger.log("Loaded "+gmRegistry.size()+" keys from file.");
         } catch (Exception e) {
             Logger.warn("Could not load registry: "+e);
@@ -338,6 +339,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 
                 // We should not adjust 304s!  That would break since we have no content stream.
                 if (response.getResponseCode() == 200) {
+                    // We used to just send the file directly, but now we add useful wrapping code.
                     // HTTPStreamingTools.unzipResponse(response); // not needed i think :P
                     String escapedNamespace = namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"");
                     StringBuffer content = response.getContentAsStringBuffer();
@@ -549,15 +551,24 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             } else {
                 Logger.log("Doing injection at index "+i);
                 String[] scriptsToInject = {
-                        "javascript/xpath.js", // Only really needed for a few browsers.
+                        
+                        //// Stuff to improve browser compatibility.
+                        //// Not needed for all browsers.
+                        //// (Could be loaded dynamically only when needed.)
+                        // "javascript/xpath.js", // Not done yet.
+                        // "javascript/base2.js", // Not working yet.
+                        
+                        //// GrimeApe API, GUI and runner.
                         "javascript/grimeape_greasemonkey_compat.js",
-                        // "javascript/test.js",
                         "javascript/grimeape_config.js",
+                        
+                        //// Userscripts are now loaded dynamically.
                         // "userscripts/faviconizegoogle/faviconizegoogle.user.js",
                         // "userscripts/track_history/track_history.user.js",
                         // "userscripts/alert_watcher/alert_watcher.user.js",
                         // "userscripts/reclaim_cpu/reclaim_cpu.user.js",
                         // "userscripts/auto_highlight_text_on_a/auto_highlight_text_on_a.user.js",
+                        
                 };
                 for (String script : scriptsToInject) {
                     // String srcURL = "/_gRiMeApE_/javascript/test.js";

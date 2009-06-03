@@ -12,13 +12,19 @@
 // TODO: GM_listValues, GM_getResourceURL, GM_getResourceText, GM_openinTab.
 // TODO: Support @resource @require @unwrap
 // TODO: maybe some jail for scripts?
-// TODO: document.evaluate() and XPathResult
+// TODO: document.evaluate() and XPathResult for lacking browsers
 
 */
 
+// We don't always have permission to 'top' =/
+if (self.GA_API_loaded) {
+	try { self.GA_log("","Refusing to load GA_API again for "+this+" / "+self); } catch (e) { }
+} else {
+	self.GA_API_loaded = true;
+
 // TODO: Tidy these into an object, e.g. GrimeApe?
-var logToProxy = false;
-var localLog = "";
+self.logToProxy = false;
+self.localLog = "";
 
 function GA_padLeft(str,num,padChar) {
 	str = ""+str;
@@ -36,11 +42,14 @@ function GA_getSimpleTime() {
 		"."+ GA_padLeft(now.getMilliseconds(),4,'0').substring(0,2);
 }
 
-function GA_log(namespace,obj) {
-	// localLog += /* "[" + GA_getSimpleTime() + "] " + */ namespace + ": " + obj + "\n";
-	localLog += "[" + namespace.replace(/.*\//,'') + "]"+ " " + obj + "\n";
+self.GA_log = function(namespace,obj) {
+	// if (window != self && self.GA_log) {
+		// try { self.GA_log("Subframe:"+namespace,obj); } catch (e) { }
+	// }
+	// self.localLog += /* "[" + GA_getSimpleTime() + "] " + */ namespace + ": " + obj + "\n";
+	self.localLog += "[" + namespace.replace(/.*\//,'') + "]"+ " " + obj + "\n";
 	window.status = "[" + namespace.replace(/.*\//,'') + "]"+ " " + obj + "\n";
-	if (logToProxy) {
+	if (self.logToProxy) {
 		//// Send log line to the proxy, by requesting a special URL.
 		//// This works, although it does cause the DOM to grow.
 		//// Of course, we could do it with a hidden IFrame, or an image, or
@@ -59,13 +68,15 @@ function GA_log(namespace,obj) {
 		// recommended over createElement and appendChild, because the "parser is
 		// faster".  That would suggest document.writeln() should be faster.
 	}
+};
+
 }
 
 // This should get overriden before being called by userscripts.
 // But much of our core is still using it.
 // Same goes for GM_setValue etc.
 function GM_log(obj) {
-	GA_log("GrimeApe",obj);
+	self.GA_log("GrimeApe",obj);
 }
 
 GM_log("GM_log() works!");
@@ -329,6 +340,8 @@ function GM_addStyle(css) {
 // They are features found in some modern browser, but not all.
 // TODO: Javascript 1.5, 1.6, 1.7.  (Array functions etc.)
 
+// base2.DOM.bind(document);
+
 // OLD IE compat:
 if(typeof XMLHttpRequest == "undefined") {
 	XMLHttpRequest = function() {
@@ -379,5 +392,11 @@ if (navigator.appName.match(/Konqueror/i)) {
 		}
 	};
 
+}
+
+if (typeof XPathRequest == 'undefined') {
+	GM_log("We have no XPathResult object!");
+	// XPathResult = {};
+	// document.evaluate = function() { };
 }
 
