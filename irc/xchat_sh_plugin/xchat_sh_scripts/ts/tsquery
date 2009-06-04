@@ -45,6 +45,7 @@ do
 		tr -s ' ' |
 		(
 
+			## TODO BUG: I think the script can block here if the result was not in expected format.
 			read IP REST
 			# echo -n "$COLBLUE""teamspeak2://$IP""?nick=$NICK""$COLGREY ""$REST " |
 			echo -n "$COLBLUE""teamspeak2://$IP$COLGREY ""$REST " |
