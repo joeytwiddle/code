@@ -81,6 +81,13 @@ list_unguessed_words () {
 	done
 }
 
+list_guessed_words () {
+	list_answers |
+	while read WORD
+	do already_guessed "$WORD" && echo "$WORD"
+	done
+}
+
 already_guessed () {
 	WORD="$1"
 	grep "^$WORD was" "$GUESSED_FILE" >/dev/null

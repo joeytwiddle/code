@@ -5,6 +5,12 @@
 
 WORD=` list_unguessed_words | chooserandomline `
 
+if [ ! "$WORD" ]
+then
+	echo "Congratulations, you have guessed all of the words!  To start a new game type: !wordgame new [ <number_of_letters> ]"
+	exit 0
+fi
+
 RND_LETTERS=` echo "$WORD" | randomise_letters `
 
 # increase_score "$NICK" -1
@@ -15,4 +21,4 @@ SCORE_PENALTY=$((NUM_LETTERS-4))
 increase_score "$NICK" -$SCORE_PENALTY
 echo "$COLRED$COLBOLD $NICK -$SCORE_PENALTY"
 
-echo "There is a unguessed word which uses the letters: $RND_LETTERS"
+echo "There is an unguessed word which uses the letters: $RND_LETTERS"
