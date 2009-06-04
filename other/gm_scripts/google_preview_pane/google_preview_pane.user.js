@@ -11,33 +11,37 @@
 
 // Settings:
 
-var fillWholeWindow = true;    // Bring more of the page into the left pane.
+var fillWholeWindow = false;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
 var miniLogo = true;           // miniLogo or removeLogo may help to reduce
 var removeLogo = false;        // width, especially when keepHeaderAbove==false.
-var reduceWidth = !keepHeaderAbove;  // Also recommended.
-var previewWidth = 0.6;        // Size of the preview pane.
-var pageHeightUsed = 0.7;      // Will be overriden if keepHeaderAbove==true.
+var reduceWidth = false;       // You may need to reduceWidth if keepHeaderAbove==false.
+var previewWidth = 0.7;        // Size of the preview pane.
+var pageHeightUsed = 0.7;      // Will be overridden later if keepHeaderAbove==true.
 var noPanelBorder = false;     // I like the preview pane to have depth.
 var hoverTime = 800;           // Milliseconds of mouse hover before load.
 var highlightFocusedResult = true;   // Who wouldn't want this?
 
 
 
+// TODO: Currently BROKEN in Firefox!
+// TODO: Find where unsafeWindow is needed to make the event listeners work.
+
+// Don't run if we are in a sub-frame:
 if (window != top)
 	return;
 
 // On webhp pages, I think the content is loaded by Javascript.  We must wait
 // for the page to finish loading before we can find the resultsBlock.
 
-// Dagnammit Konqueror needs document.onload and Firefox needs window.onload.
-var browsersSuck = ( navigator.appName.match(/Konqueror/i) ? document : window );
+// FIXED in GrimeApe:  Dagnammit Konqueror needs document.onload and Firefox needs window.onload.
+// var browsersSuck = ( navigator.appName.match(/Konqueror/i) ? document : window );
 
-browsersSuck.addEventListener('load',function(){
+window.addEventListener('load',function(){
 
 	var resultsWidth = 1.0 - previewWidth;
 
-	var resultsBlock = document.getElementById("res");
+	var resultsBlock = unsafeWindow.document.getElementById("res");
 
 	if (fillWholeWindow) {
 		pageHeightUsed = 0.97;
@@ -58,7 +62,7 @@ browsersSuck.addEventListener('load',function(){
 			}
 		}
 
-		document.body.appendChild(resultsBlock);
+		unsafeWindow.document.body.appendChild(resultsBlock);
 
 		try {
 			var annoyingLine = document.getElementsByClassName("gbh")[0];
@@ -67,10 +71,13 @@ browsersSuck.addEventListener('load',function(){
 			annoyingLine.parentNode.removeChild(annoyingLine);
 		} catch (e) { }
 
-		// Google's header blocks are too wide, and some parts are nowrap.
-		// We must reduce the width to avoid getting a horizontal scrollbar.
-
 		if (reduceWidth) {
+
+			// If we pulled more stuff than just the results into the left pane,
+			// then we may need to reduce the width of the contents, or we will
+			// get an unpleasant horizontal scrollbar.
+			// Just about everything except the results can become too wide at
+			// some point, so this is quite a fiddle...
 
 			var nobr = document.getElementsByTagName('nobr')[0];
 			nobr.parentNode.innerHTML = nobr.innerHTML;
@@ -92,6 +99,11 @@ browsersSuck.addEventListener('load',function(){
 			resText.style.textAlign = 'right';
 
 			document.getElementsByTagName("bsf").padding = '0px';
+
+			// TODO:
+			// Google gave me a lot of "Searches related to: resize window iframe" at the bottom
+			// which were too wide (5 column table, one with long word "addeventlistener").
+			// Users with very narrow pane may not be able to fit the 10 next page images.
 
 		}
 
@@ -119,20 +131,23 @@ browsersSuck.addEventListener('load',function(){
 
 	// GM_log("resultsBlock = " + resultsBlock);
 
-	var table = document.createElement("TABLE");
-	var tbody = document.createElement("TBODY");
-	var row = document.createElement("TR");
-	var leftCell = document.createElement("TD");
-	var rightCell = document.createElement("TD");
+	var table = unsafeWindow.document.createElement("TABLE");
+	var tbody = unsafeWindow.document.createElement("TBODY");
+	var row = unsafeWindow.document.createElement("TR");
+	var leftCell = unsafeWindow.document.createElement("TD");
+	var rightCell = unsafeWindow.document.createElement("TD");
 
-	leftCell.style.width = (window.innerWidth * resultsWidth) +'px';
-	rightCell.style.width = (window.innerWidth * previewWidth) +'px';
+	leftCell.width = resultsWidth*100+"%";
+	rightCell.width = previewWidth*100+"%";
+	// rightCell.style.width = (window.innerWidth * previewWidth) +'px';
+	// leftCell.style.width = (window.innerWidth * resultsWidth) +'px';
+	// rightCell.style.width = (window.innerWidth * previewWidth) +'px';
 	// If we leave room for vertical scrollbar, we won't need horizontal one. :)
 	resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
 	resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
 	resultsBlock.style.overflow = 'auto';
 
-	var iframe = document.createElement('IFRAME');
+	var iframe = unsafeWindow.document.createElement('IFRAME');
 	iframe.width = '100%';
 	iframe.height = (window.innerHeight * pageHeightUsed) + 'px';
 	iframe.style.backgroundColor = '#eeeeee';
@@ -169,7 +184,7 @@ browsersSuck.addEventListener('load',function(){
 				// lastHover.style.backgroundColor = "#ccccff"; // "#ffccff";
 				if (lastPreview)
 					highlightNode(lastPreview,'');
-				highlightNode(lastHover,'#ddddff');
+				highlightNode(lastHover,'#eeeeff');
 			}
 			var link = lastHover;
 			if (link.tagName != "A") {
@@ -182,8 +197,13 @@ browsersSuck.addEventListener('load',function(){
 
 	function isSelectable(node) {
 		while (node) {
-			if (node.tagName == "A" && node.className != 'l') {
-				return node;
+			if (node.tagName == "A") {
+				if (node.className == 'l' && node.onmousedown) {
+					// This is a Google result.  We skip it, to select the parent 'g' DIV
+					// but will use this link (let's hope it is the first in the DIV!).
+				} else {
+					return node;
+				}
 			}
 			if (node.className == 'g') {
 				return node;
@@ -214,8 +234,8 @@ browsersSuck.addEventListener('load',function(){
 		}
 	}
 
-	resultsBlock.addEventListener('mouseover',helloMouse,true);
-	resultsBlock.addEventListener('mouseout',goodbyeMouse,true);
+	resultsBlock.addEventListener('mouseover',helloMouse,false);
+	resultsBlock.addEventListener('mouseout',goodbyeMouse,false);
 
 	// The "Sponsored Links" block gets in the way.
 	var toKill = document.getElementById("mbEnd");
