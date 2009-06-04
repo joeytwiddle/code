@@ -1,12 +1,23 @@
+PRIVILEGED=
+if [ "$CHANNEL" = "#smo.priv" ] || [ "$AUTH" = nogginBasher ] || [ "$AUTH" = Nownex ]
+then PRIVILEGED=true
+fi
+
 if [ "$SETSERVER_AUTO" ] || [ "$CHANNEL" = "#kx.live" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#ut.pug" ] || [ "$AUTH" = "nogginBasher" ]
 then :
 else exit 0
 fi
 
-if [ ! "$*" ]
+if [ ! "$*" ] || [ "$1" = --help ] || [ "$1" = -help ] || [ "$1" = -h ]
 then
-	echo "Usage: !setserver [-public|-grapple|-cbwar|-pug|-zppug|-sgpug|-4v4|-5v5|-6v6|-7v7|-ff] [ <map_name>s... ]"
-	# Secret: -f = force
+	EXTRA=""
+	if [ "$PRIVILEGED" ]
+	then EXTRA=" [-f]"
+	fi
+	echo "Usage: !setserver$EXTRA [-public|-grapple|-cbwar|-pug|-zppug|-sgpug|-4v4|-5v5|-6v6|-7v7|-ff] [ <map_name>s... ]"
+	if [ "$PRIVILEGED" ]
+	then echo "  -f forces switch even if there are players! (only in #smo.priv)"
+	fi
 	exit 0
 fi
 
@@ -62,7 +73,7 @@ SERVER_ADDRESS="85.131.247.65:6666"
 ALT_SERVER_ADDRESS="85.131.247.65:6669"
 SERVER_CONNECT="k1210@85.131.247.65"
 
-if [ "$1" = -f ]
+if [ "$1" = -f ] && [ "$PRIVILEGED" ]
 then FORCE=true ; shift   ## Forces map switch even if server is "not-empty".
 fi
 
