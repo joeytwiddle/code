@@ -90,10 +90,12 @@ list_commands_old () {
 }
 
 list_categories () {
-	echo -n "Pick a category: "
+	# echo -n "Pick a category: "
+	echo -n "Please try !help <category> picking a category from the list: $COLRED"
 	list_dirs |
 	while read DIR
-	do echo -n "[$COLRED$DIR$COLRESET] "
+	# do echo -n "[$COLRED$DIR$COLRESET] "
+	do echo -n "$DIR "
 	done
 	echo
 }
