@@ -1,0 +1,10 @@
+list () {
+cat << !
+<afkiglet> and it turns out I have been using FOV 80 ... since ... i dont know
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+
