@@ -87,7 +87,7 @@ index () {
 
 }
 
-function show_label_list () {
+function show_label_cloud () {
 	echo "<STYLE type='text/css'> .cloudBit { vertical-align:middle; } </STYLE>"
 	echo "<P style='text-align:center; border: 0px solid black;'>"
 	echo "Tags:<BR/>"
@@ -100,7 +100,7 @@ function show_label_list () {
 	# while read SHOWLABEL
 	while IFS="|" read COUNT SHOWLABEL
 	do
-		if [ "$SHOWLABEL" = "$LABEL" ]
+		if [ "$SHOWLABEL" = "$LABEL" ] && false ## Don't do this if we are memo-ing!
 		then echo -n "<B class='cloudBit'>$SHOWLABEL</B>" ## No size/count/etc.?
 		else
 			SZ=$(echo "60+l(1+$COUNT)*30" | bc -l | beforefirst "\.")
@@ -117,8 +117,14 @@ function show_label_list () {
 	echo "</P>"
 }
 
+## TODO: The pipes to 'tohtml' are slowing things down.  Maybe we can make a
+## faster method.  If it was a fn call which we pass the line to as a parameter,
+## it should be must faster (no forking, no parsing sh).
+## Interesting to test how much more costly is |fn vs fn "$n"
+
 show_label () {
 	LABELNAME="$1"
+	# echo "<P align='right'><A href='listen.cgi?label=$LABELNAME'>Listen to $LABELNAME radio</A></P>"
 	echo "<H2>Browsing label &quot;$(tohtml "$LABELNAME")&quot;</H2>"
 	# show_sql_table "SELECT url FROM tags_labels WHERE labelid=$LABELNAME"
 	# show_sql_table "SELECT labels.name,tags_labels.url FROM labels,tags_labels WHERE labels.id = tags_labels.labelid AND labels.name='dub'"
@@ -169,8 +175,9 @@ CGILIB_NO_CONTENT=true
 
 LABEL=$(getcgi "label")
 
-memo -t '10 minutes' show_label_list
-# memo -t '1 second' show_label_list ## For development
+## Argh we can't memo this!  It blocks the "currently viewing" link, which changes!
+memo -t '10 minutes' show_label_cloud
+# memo -t '1 second' show_label_cloud ## For development
 
 # echo "<P>Browse by: artist / tag / date</P>"
 

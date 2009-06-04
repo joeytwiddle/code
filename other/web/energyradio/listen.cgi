@@ -40,9 +40,9 @@ pull_bit () {
 	fi
 }
 
-sqlite3 "$DB" "SELECT statistics.rating,tags_labels.url FROM statistics,tags_labels,labels WHERE labels.name=\"$(sql_string_escape "$LABEL")\" AND labels.id=tags_labels.labelid AND statistics.url=tags_labels.url" |
+sqlite3 "$DB" "SELECT statistics.rating,tags_labels.url FROM statistics,tags_labels,labels WHERE labels.name=\"$(sql_string_escape "$LABEL")\" AND labels.id=tags_labels.labelid AND statistics.url=tags_labels.url AND statistics.rating >= 5.0" |
 # sort -t '|' -k 1 -n -r |
-randomorder | head -n 5 |
+randomorder | head -n 1 | # 5
 while IFS='|' read RATING URL
 do
 	FILE="/$URL"
@@ -55,7 +55,9 @@ do
 
 	if [ "$ALWAYS_INSERT_ID3TAG" ]
 	then
-		TITLE="`echo "$URL" | afterlast / | beforelast "\.\(mp3\|ogg\)"` ($RATING)"
+		TITLE="`echo "$URL" | afterlast / | beforelast "\.\(mp3\|ogg\)"`"
+		# TITLE="$TITLE ($RATING)"
+
 		cat "$FILE" > /tmp/next.mp3
 		FILE="/tmp/next.mp3"
 
