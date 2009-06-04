@@ -204,6 +204,7 @@ window.addEventListener('load',function(){
 				}
 			}
 			if (node.className == 'g' || node.className == 'g w0' || node.tagName=='LI') {
+				// Reluctantly added LI in case they change the 'g' class again!
 				return node;
 			}
 			node = node.parentNode;
