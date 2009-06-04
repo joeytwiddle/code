@@ -13,7 +13,11 @@ then
 
 	if [ ! -f "$VOTINGDIR"/"$VOTENUM".votes ]
 	then
-		echo "There is no poll #$VOTENUM"
+		## If the user PMed, tell them what went wrong, but if in a channel, don't.
+		if echo "$CHANNEL" | grep "^#" >/dev/null   ## aka [ ! "$NICK" = "$CHANNEL" ] ?
+		then :
+		else echo "There is no poll #$VOTENUM"
+		fi
 		exit 2
 	fi
 

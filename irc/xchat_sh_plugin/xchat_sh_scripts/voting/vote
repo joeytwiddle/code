@@ -21,8 +21,12 @@ fi
 
 if [ "$*" = "" ]
 then
-	echo "/msg $NICK Vote anonymously with: !vote #<pollnum> <your_vote>"
-	echo "/msg $NICK      or publicly with: !vote #<pollnum> <your_vote> <comments>"
+	if echo "$CHANNEL" | grep "^#" >/dev/null
+	then :
+	else
+		echo "/msg $NICK Vote anonymously with: !vote #<pollnum> <your_vote>"
+		echo "/msg $NICK      or publicly with: !vote #<pollnum> <your_vote> <comments>"
+	fi
 	exit
 fi
 
