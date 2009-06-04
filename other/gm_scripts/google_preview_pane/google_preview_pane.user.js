@@ -11,7 +11,7 @@
 
 // Settings:
 
-var fillWholeWindow = false;    // Bring more of the page into the left pane.
+var fillWholeWindow = true;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
 var miniLogo = true;           // miniLogo or removeLogo may help to reduce
 var removeLogo = false;        // width, especially when keepHeaderAbove==false.
@@ -23,9 +23,6 @@ var hoverTime = 800;           // Milliseconds of mouse hover before load.
 var highlightFocusedResult = true;   // Who wouldn't want this?
 
 
-
-// TODO: Currently BROKEN in Firefox!
-// TODO: Find where unsafeWindow is needed to make the event listeners work.
 
 // Don't run if we are in a sub-frame:
 if (window != top)
@@ -41,7 +38,7 @@ window.addEventListener('load',function(){
 
 	var resultsWidth = 1.0 - previewWidth;
 
-	var resultsBlock = unsafeWindow.document.getElementById("res");
+	var resultsBlock = document.getElementById("res");
 
 	if (fillWholeWindow) {
 		pageHeightUsed = 0.97;
@@ -62,7 +59,7 @@ window.addEventListener('load',function(){
 			}
 		}
 
-		unsafeWindow.document.body.appendChild(resultsBlock);
+		document.body.appendChild(resultsBlock);
 
 		try {
 			var annoyingLine = document.getElementsByClassName("gbh")[0];
@@ -131,11 +128,11 @@ window.addEventListener('load',function(){
 
 	// GM_log("resultsBlock = " + resultsBlock);
 
-	var table = unsafeWindow.document.createElement("TABLE");
-	var tbody = unsafeWindow.document.createElement("TBODY");
-	var row = unsafeWindow.document.createElement("TR");
-	var leftCell = unsafeWindow.document.createElement("TD");
-	var rightCell = unsafeWindow.document.createElement("TD");
+	var table = document.createElement("TABLE");
+	var tbody = document.createElement("TBODY");
+	var row = document.createElement("TR");
+	var leftCell = document.createElement("TD");
+	var rightCell = document.createElement("TD");
 
 	leftCell.width = resultsWidth*100+"%";
 	rightCell.width = previewWidth*100+"%";
@@ -147,7 +144,7 @@ window.addEventListener('load',function(){
 	resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
 	resultsBlock.style.overflow = 'auto';
 
-	var iframe = unsafeWindow.document.createElement('IFRAME');
+	var iframe = document.createElement('IFRAME');
 	iframe.width = '100%';
 	iframe.height = (window.innerHeight * pageHeightUsed) + 'px';
 	iframe.style.backgroundColor = '#eeeeee';
@@ -202,10 +199,11 @@ window.addEventListener('load',function(){
 					// This is a Google result.  We skip it, to select the parent 'g' DIV
 					// but will use this link (let's hope it is the first in the DIV!).
 				} else {
+					// A link but not a normal result.  Use it directly:
 					return node;
 				}
 			}
-			if (node.className == 'g') {
+			if (node.className == 'g' || node.className == 'g w0' || node.tagName=='LI') {
 				return node;
 			}
 			node = node.parentNode;
