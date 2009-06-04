@@ -72,6 +72,7 @@ ORDERED_LIST=$(
 	while read PLAYER
 	do
 		AUTH=`sh scanpug/slowgetauth "$PLAYER"`
+		# AUTH=`IKNOWIDONTHAVEATTY=1 memo -t "1 hour" sh scanpug/slowgetauth "$PLAYER"`
 		# COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
 		# if [ "$COUNT" -gt 0 ]
 		# then
@@ -106,11 +107,7 @@ fi
 
 COUNT=$((COUNT-2))
 
-## BUG! Will stop working in year 2100!  Better to grep -v "last" (provided that isn't channel name!)
-## BUG TODO: Will stop working when number of .picks files exceeds shell max args.
-RECENT_PICK_FILES=`ls -art ~/.scanpug/"$CHANNEL-20"*.picks | dos2unix | tail -n 15`
-
-for X in `seq 1 20`
+for X in `seq 1 32`
 do
 	TOSKIP=`seq 0 $COUNT | chooserandomline`
 	# TOSKIP=`seq 0 6 | chooserandomline` ## we skip the last 2 noobies - they will never be set as captain :P
@@ -130,7 +127,7 @@ do
 	then
 		## 90% chance of preventing DUNNO_AUTH from being captain
 		# if [ "`seq 0 9 | chooserandomline`" -lt 9 ]
-		if [ "$((RANDOM%100))" -gt 9 ]
+		if [ "$((RANDOM%100))" -lt 99 ]
 		then
 			jshinfo "One of these players has unknown auth.  Retrying..."
 			continue
@@ -139,6 +136,14 @@ do
 		fi
 	fi
 
+	## After many iterations, we start to care less who captained a long time ago.
+	## If the pug is full of recent captains, it will still pick someone!
+	NUM_GAMES_TO_CHECK=$((16-X/2))
+	[ "$NUM_GAMES_TO_CHECK" -gt 0 ] || NUM_GAMES_TO_CHECK=1
+	## BUG! Will stop working in year 2100!  Better to grep -v "last" (provided that isn't channel name!)
+	## BUG TODO: Will stop working when number of .picks files exceeds shell max args.
+	RECENT_PICK_FILES=`ls -art ~/.scanpug/"$CHANNEL-20"*.picks | dos2unix | tail -n $NUM_GAMES_TO_CHECK`
+
 	PREDCAUTHRE=`toregexp "$PREDCAUTH"`
 	PBLUECAUTHRE=`toregexp "$PBLUECAUTH"`
 	# if grep "^\(RED\|BLUE\)CAPT.*$AUTHRE" $RECENT_PICK_FILES >/dev/null
@@ -146,7 +151,7 @@ do
 	then
 		## 10% chance of making him captain anyway! :P
 		# if [ "`seq 0 9 | chooserandomline`" -gt 1 ]
-		if [ "$((RANDOM%100))" -gt 9 ]
+		if [ "$((RANDOM%100))" -lt 97 ]
 		then
 			jshinfo "One of these players captained recently!  Retrying... ($PREDC=$PREDCAUTHRE $PBLUEC=$PBLUECAUTHRE)"
 			continue
@@ -183,8 +188,15 @@ do
 	fi
 
 	## If we got this far, we have two good captains! :)
+	X="GOOD"
 	break
 done
+
+if [ ! "$X" = "GOOD" ]
+then
+	jshwarn "Failed to find captains - X=$X"
+	echo "/me blames KGB"
+fi
 
 ### This failed dunno why!!  OK it was cos list had 7, and dropped 6.  ;p
 COUNT=`echo "$CAPTS" | wc -l`
@@ -201,6 +213,7 @@ while read STRENGTH CAPT COUNT
 ## ABot and Rival:
 do echo "!setcaptain $CAPT (avgpick #$STRENGTH)" ## try this if below works
 # do echo "!setcaptain $CAPT"
+   echo "/notice $CAPT If you need help picking your team, consult the Avgpicks list..."
 done
 
 sleep 15 ## Rival should now print his "Please pick from the list:" line.  5 was too short once.  10 was too short once!  Plus it's good to be slow, then we appear *after* _StalkeR_ ;)
