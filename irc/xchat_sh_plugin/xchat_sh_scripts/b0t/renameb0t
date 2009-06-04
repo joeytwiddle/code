@@ -1,3 +1,11 @@
+PASS="$1"
+if [ "$PASS" = wibble ]
+then shift
+else
+	echo "No."
+	exit 0
+fi
+
 NEW_NICK="$1"
 
 if [ "$NEW_NICK" ]
