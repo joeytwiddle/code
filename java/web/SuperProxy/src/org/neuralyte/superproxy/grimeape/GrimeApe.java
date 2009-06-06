@@ -339,6 +339,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 
                 // We should not adjust 304s!  That would break since we have no content stream.
                 if (response.getResponseCode() == 200) {
+                    /* @todo If we want to implement @unwrap, we should check it here,
+                     * and if it is set, remove the (function(){ wrapper below.
+                     */
                     // We used to just send the file directly, but now we add useful wrapping code.
                     // HTTPStreamingTools.unzipResponse(response); // not needed i think :P
                     String escapedNamespace = namespace.replaceAll("\\\\","\\\\\\\\").replaceAll("\"","\\\"");
@@ -552,11 +555,27 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                 Logger.log("Doing injection at index "+i);
                 String[] scriptsToInject = {
                         
-                        //// Stuff to improve browser compatibility.
-                        //// Not needed for all browsers.
-                        //// (Could be loaded dynamically only when needed.)
-                        // "javascript/xpath.js", // Not done yet.
-                        // "javascript/base2.js", // Not working yet.
+                        //// Stuff to improve browser compatibility. ////
+                        //// Not needed for all browsers. ////
+                        
+                        // For efficiency, these should only be loaded
+                        // for browsers which will benefit from them.
+                        // Also we need only load components if they are 
+                        // used.  We could add stubs which wait until they
+                        // are called before loading the actual implementation.
+                        // This may require requesting a script by synchronous
+                        // xmlhttpRequest and eval()ing it.
+                        // Maybe Base2 has a technique for this already.
+                        
+                        // Base2 fixes the DOM so it is standards compliant.
+                        // For example, in Konqueror 3.5 it makes window.onload work.
+                        "javascript/base2/base2.js",
+                        "javascript/base2/base2-dom.js",
+                        // "javascript/base2/base2-dom-strict.js",
+                        "javascript/base2/base2-legacy.js",
+                        
+                        // This adds XPathResult if we do not already have one.
+                        "javascript/xpath.js",
                         
                         //// GrimeApe API, GUI and runner.
                         "javascript/grimeape_greasemonkey_compat.js",
