@@ -1,0 +1,26 @@
+#!/bin/bash
+
+USER=www-data
+PIDFILE=/var/run/grimeaped.pid
+
+if [ "$1" = start ]
+then
+	echo -n "grimaped: "
+	# -m -b 
+	start-stop-daemon --start -c "$USER" -u "$USER" --pidfile "$PIDFILE" --exec /bin/bash -- /stuff/dev/java/javawebtools/SuperProxy/grimeaped.start > /var/log/grimeaped.log
+	# sleep 1 ## time for the forked shell to fork the java and save the pid
+	mv -f /tmp/grimeaped.pid "$PIDFILE" &&
+		echo "started (`cat "$PIDFILE"`)."
+elif [ "$1" = stop ]
+then
+	echo -n "grimaped: "
+	start-stop-daemon --stop -c "$USER" -u "$USER" --pidfile "$PIDFILE" &&
+		echo "stopped."
+elif [ "$1" = restart ]
+then
+	"$0" stop
+	"$0" start
+else
+	echo "fail"
+fi
+
