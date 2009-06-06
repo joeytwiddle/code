@@ -6,16 +6,17 @@
 // @include        http://www.google.*/webhp?*q=*
 // @include        http://google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
-// @version        0.9.9.2
+// @version        0.9.9.3
 // ==/UserScript==
 
 // Settings:
 
+var focusWithHover = false;    // If set, does not wait for click before loading preview.
 var fillWholeWindow = true;    // Bring more of the page into the left pane.
-var keepHeaderAbove = true;   // Avoid bringing the top of the page in.
+var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
 var miniLogo = true;           // miniLogo or removeLogo help to reduce the
 var removeLogo = false;        // width and the height of header.
-var reduceWidth = !keepHeaderAbove;  // Shrink the width of the header and footer.
+var reduceWidth = true;        // Try harder to make things fit into the left pane.
 var previewWidth = 0.7;        // Size of the preview pane.
 var pageHeightUsed = 0.7;      // Will be overridden later if keepHeaderAbove==true.
 var noPanelBorder = false;     // I like the preview pane to have depth.
@@ -24,15 +25,19 @@ var highlightFocusedResult = true;   // Who wouldn't want this?
 
 
 
+/* ==================
+ * CHANGES in 0.9.9.3
+ *
+ * Made hovering optional.  Default now uses click to preview (second click to
+ * follow link as usual).  Set focusWithHover=true for old behaviour.
+ * ================== */
+
 // Don't run if we are in a sub-frame:
 if (window != top)
 	return;
 
-// On webhp pages, I think the content is loaded by Javascript.  We must wait
-// for the page to finish loading before we can find the resultsBlock.
-window.addEventListener('load',function(){
 
-
+function initPreview() {
 
 	//// Set up the Layout ////
 
@@ -65,56 +70,64 @@ window.addEventListener('load',function(){
 
 			document.body.appendChild(resultsBlock);
 
-			// I think only really needed if keepHeaderAbove==false.
+			// Only really needed if keepHeaderAbove==false.
 			try {
+				// Without this, the blue line at the top of the light blue bar
+				// stretches over the preview!
 				var annoyingLine = document.getElementsByClassName("gbh")[0];
 				annoyingLine.parentNode.removeChild(annoyingLine);
 				annoyingLine = document.getElementsByClassName("gbh")[0];
 				annoyingLine.parentNode.removeChild(annoyingLine);
 			} catch (e) { }
 
+			// If we pulled more stuff than just the results into the left pane,
+			// then we may need to reduce the width of the contents, or we will
+			// get an unpleasant horizontal scrollbar.
+			// Just about everything except the results can become too wide at
+			// some point, so this is quite a fiddle...
+
+			// document.getElementsByTagName('form')[0].getElementsByTagName("input")[1].size = 20;
+			var inputs = resultsBlock.getElementsByTagName("INPUT");
+			for (var i=0;i<inputs.length;i++) {
+				if (inputs[i].name == 'q')
+					inputs[i].size = 10;
+			}
+
 			if (reduceWidth) {
+
+				// TODO: Sometimes it is the row of Next/Previous Goooooooogle results.
+				// Google gave me a lot of "Searches related to: resize window iframe" at the bottom
+				// which were too wide (5 column table, one with long word "addeventlistener").
+
+				// TODO: Sometimes it is the <cite> URL of the result that it too wide!  (They wrap in Moz but not in Konq.))
+				// Or the result summary text may contain a really long word which does not wrap.
 
 				// Makes a few pieces of text smaller, but most have custom style font sizes.
 				document.body.style.fontSize='10px';
-
-				// If we pulled more stuff than just the results into the left pane,
-				// then we may need to reduce the width of the contents, or we will
-				// get an unpleasant horizontal scrollbar.
-				// Just about everything except the results can become too wide at
-				// some point, so this is quite a fiddle...
 
 				// The first nobr was a lone child when I wrote this.
 				// We break it.
 				var nobr = document.getElementsByTagName('NOBR')[0];
 				nobr.parentNode.innerHTML = nobr.innerHTML;
 
-				// document.getElementsByTagName('form')[0].getElementsByTagName("input")[1].size = 20;
-				var inputs = document.getElementsByTagName("INPUT");
-				for (var i=0;i<inputs.length;i++) {
-					if (inputs[i].name == 'q')
-						inputs[i].size = 10;
-				}
-
 				// This avoids the white-space: wrap but kills the blue header background.
 				document.getElementById("ssb").id = 'not_ssb';
 				// OK we restore the blue background:
 				document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
 				document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
-				// TODO: But vertical alignment of text is still wrong.
+				// TODO: Vertical alignment of text is still wrong.
 				// document.getElementById("not_ssb").style.verticalAlign = 'middle';
 				var resText = document.getElementById('prs').nextSibling;
 				resText.style.textAlign = 'right';
-
-				// TODO:
-				// Google gave me a lot of "Searches related to: resize window iframe" at the bottom
-				// which were too wide (5 column table, one with long word "addeventlistener").
-				// Users with very narrow pane may not be able to fit the 10 next page images.
 
 				// Footer
 				document.getElementById("bsf").padding = '0px';
 
 			}
+
+			// The last Goooooooogle TD has a silly huge margin
+			var tds = document.getElementById('nav').getElementsByTagName('td');
+			tds[tds.length-1].getElementsByTagName('span')[0].style.marginRight = '0px';
 
 		}
 
@@ -154,9 +167,9 @@ window.addEventListener('load',function(){
 	leftCell.width = resultsWidth*100+"%";
 	rightCell.width = previewWidth*100+"%";
 
-	// If we leave room for vertical scrollbar, we won't need horizontal one. :)
-	document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
 	// resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
+	//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
+	document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
 	resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
 	resultsBlock.style.overflow = 'auto';
 
@@ -203,7 +216,7 @@ window.addEventListener('load',function(){
 				highlightNode(lastPreview,'');
 			// We don't really seem to use lastHover much - we could have set it
 			// to container from the start.
-			highlightNode(lastHover,'#eeeeff');
+			highlightNode(lastHover,'#ddeeff');
 			// GM_log("Got lastHover = "+lastHover);
 			var container = getContainer(lastHover);
 			// GM_log("Got container = "+container);
@@ -212,6 +225,30 @@ window.addEventListener('load',function(){
 			iframe.src = link.href;
 			// lastPreview = lastHover;
 			lastPreview = container; // normalises - two different nodes might both hit the same container
+			return true;
+		}
+		return false;
+	}
+
+	function checkClick(evt) {
+		var node = evt.target;
+		if (node == lastHover) {
+			// If the user is selecting a link to another results page, they
+			// probably don't want a preview!
+			if (node.tagName=='A' && node.host==document.location.host
+				&& node.pathname.match('/(search|webhp)')
+			) {
+				// We will pass the event up to click on the actual link.
+			} else {
+				// Let's try to Preview what the user clicked
+				if (checkFocus()) {
+					// OK we set focus, preview is loading.
+					evt.preventDefault();
+				} else {
+					// Well we didn't want to focus this node.
+					// Let's pass the event to other elements.
+				}
+			}
 		}
 	}
 
@@ -227,6 +264,11 @@ window.addEventListener('load',function(){
 					link = node;
 				}
 			}
+			// CONSIDER: My only remaining niggle with this algorithm is that the
+			// Delicious Results userscript makes 'l' class links, but there is no
+			// parent LI, so the very first one highlights the whole block.
+			// We could fix this by aborting ascent if we can find other 'l' links
+			// in the parent (rather than just an earlier link).
 			var goUp = true;
 			if (link) {
 				// If we have found a link, only go up if that link was a main result.
@@ -270,9 +312,11 @@ window.addEventListener('load',function(){
 			// OK start hover on this.  checkFocus() will check if we are still
 			// here in hoverTime ms, and if so activate.
 			lastHover = node;
-			if (currentTimerID)
-				clearTimeout(currentTimerID);
-			currentTimerID = setTimeout(checkFocus,hoverTime);
+			if (focusWithHover) {
+				if (currentTimerID)
+					clearTimeout(currentTimerID);
+				currentTimerID = setTimeout(checkFocus,hoverTime);
+			}
 			highlightNode(node,'#eeffee');
 		}
 	}
@@ -293,15 +337,38 @@ window.addEventListener('load',function(){
 
 	resultsBlock.addEventListener('mouseover',helloMouse,false);
 	resultsBlock.addEventListener('mouseout',goodbyeMouse,false);
+	if (!focusWithHover)
+		resultsBlock.addEventListener('click',checkClick,false);
+
+}
 
 
 
-},false);
+var earlyResultsBlock = document.getElementById('res');
+if (earlyResultsBlock) {
+	initPreview();
+} else {
+	window.addEventListener('load',initPreview,false);
+	// On webhp pages, I think the content is loaded by Javascript.  We must
+	// wait for the page to finish loading before we can find the resultsBlock.
+}
 
 
 
-/* CONSIDER: If we were to arrange things in a two or three framed page, the
- * user would be able to resize the results/preview panes by dragging their
- * vertical bar separator.  The SplitPreview bookmarklet demonstrates this.
- */
+/*
+
+CONSIDER: If we were to arrange things in a two or three framed page, the
+user would be able to resize the results/preview panes by dragging their
+vertical bar separator.  The SplitPreview bookmarklet demonstrates this.
+
+TODO: We could extra highlight the link that will be followed.  It's not
+always obvious.
+
+TODO: New double-click to load behaviour is annoying for links which point
+to further Google Results pages, e.g. Next/Prev/Similar pages.
+
+TODO: We don't need the setTimeout on non-webhp pages.  We should check to
+see if resultsBlock exists first, to avoid using it unneccessarily.
+
+*/
 
