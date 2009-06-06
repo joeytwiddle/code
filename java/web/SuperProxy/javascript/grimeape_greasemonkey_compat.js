@@ -211,6 +211,14 @@ var unsafeWindow = window;
 
 // Awhh hell Konqueror doesn't even have uneval().
 
+// We defined uneval even if we don't need it, in case I ever get around to
+// testing it against say Mozilla's native implementation.
+
+// TODO: Seems uneval can handle recursive nesting but I don't think mine can!
+//   x = {}; y = {x: x}; x.y = y; uneval(x)
+//   "#1={y:{x:#1#}}"
+// Not that eval() can re-build it anyway.  But we will get inf loop!
+
 this.ga_uneval = function (obj) {
 	if (obj===undefined) { return "undefined"; }
 	// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
@@ -220,8 +228,8 @@ this.ga_uneval = function (obj) {
 	} else if (typeof(obj)=='number') {
 		return ""+obj;
 	} else if (typeof(obj)=='object') {
-		// if (obj.length == 0) { // It's actually an array
-			// return "[]"; // return "({})"; // If we do the stuff below to an empty array, we list all the fns?
+		// if (obj.length == 0) { // It's actually an array?
+			// return "[]"; // return "({})"; // If we use for..in on an empty array, we list all the fns?
 		// }
 		// ({x:"fart", 1:"pants"})
 		var arrayString = "";
@@ -243,8 +251,8 @@ this.ga_uneval = function (obj) {
 		// GM_log("Returning arrayString="+arrayString);
 		return arrayString;
 	} else if (typeof(obj)=='function') {
-		// return (""+obj).replace(/\n/g,''); // This is quite similar to what FF produces
-		return '"NO_FUNKTIONS"';
+		return (""+obj).replace(/\n/g,''); // This is quite similar to what FF produces
+		// return '"NO_FUNKTIONS"';
 	} else if (typeof(obj)=='boolean') {
 		return ""+obj;
 	} else {
@@ -253,7 +261,7 @@ this.ga_uneval = function (obj) {
 	}
 };
 
-// if (!uneval) { /* Testing existence this way fails with "No such var". */
+// if (!uneval) { /* Testing existence this way throws Error "No such var". */
 if (!this.uneval) {
 	this.uneval = this.ga_uneval;
 }
@@ -338,6 +346,7 @@ function GM_addStyle(css) {
 
 // The following are not part of the Greasemonkey API.
 // They are features found in some modern browser, but not all.
+// Could be moved to a different file, or into Base2!
 // TODO: Javascript 1.5, 1.6, 1.7.  (Array functions etc.)
 
 // base2.DOM.bind(document);
@@ -368,6 +377,7 @@ if (!document.getElementsByClassName) {
 }
 
 // Mozilla forced global adoption of window.onload, which Konquerer has not yet implemented:
+/* Now fixed by Base2.
 if (navigator.appName.match(/Konqueror/i)) {
 
 	window.onload = function(a,b,c) {
@@ -393,10 +403,21 @@ if (navigator.appName.match(/Konqueror/i)) {
 	};
 
 }
+*/
 
-if (typeof XPathRequest == 'undefined') {
+// We're now getting XPathResult from xpath.js
+if (typeof XPathResult == 'undefined') {
 	GM_log("We have no XPathResult object!");
 	// XPathResult = {};
 	// document.evaluate = function() { };
 }
+
+// Compatibility TODOs:
+// Konq won't accept setting textarea content with .value, only .textContent.
+// OTOH, when reading, Konq must use .value and not .textContent!
+// But how can we override a property - maybe not as easy as overriding a function prototype.
+// This might help: document.addEventListener("DOMNodeInserted", checkNewNode, true);
+// Nah that won't help.
+// Maybe we can watch the property for change: window.watch.call(unsafeWindow,"location", watchFn);
+// Nope Konq does not have watch().  =/
 

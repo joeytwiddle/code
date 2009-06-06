@@ -61,3 +61,12 @@ http://webdesign.about.com/od/advancedcss/a/aa061307.htm    (500 images!  Hmm I 
 http://blog.taragana.com/index.php/archive/how-to-open-client-socket-with-timeout/
 
 
+
+If an xmlhttpRequest responds with a Redirect response, and Location header, it
+seems Konqueror tries to make the followup request directly!  We should do what
+GM does, I suspect that may be to perform the redirection, and setting
+finalUrl, before returning to the caller.
+
+
+
+

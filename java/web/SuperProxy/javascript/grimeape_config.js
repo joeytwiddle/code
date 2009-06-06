@@ -674,7 +674,7 @@ registry values set by that script's namespace.
 				// Menu.userscriptCommandsMenuItem = Menu.addMenuItem("Userscript Commands",Menu.showUserscriptCommands);
 				Menu.userscriptCommandsMenuItem = Menu.addMenuItem("Userscript Commands");
 				Menu.addMenuItem("Create New Userscript",Menu.openEditorWindow);
-				// TODO: If we make Get Userscripts a link A with valid href and target, Konq won't ask confirmation to pop it up!
+				// DONE: If we make Get Userscripts a link A with valid href and target, Konq won't ask confirmation to pop it up!
 				var getScriptsMenuItem = Menu.addMenuItem("Get Userscripts",null);
 				getScriptsMenuItem.href = "http://www.userscripts.org/";
 				getScriptsMenuItem.target = "_blank";
@@ -738,7 +738,9 @@ registry values set by that script's namespace.
 
 
 	//// Special - convert Userscripts.org Install button into GrimeApe Install button. ////
-	if (GrimeApeConfig.enabled && document.location.href.match('http://(www.|)userscripts.org/scripts/show/')) {
+	// Actually works for any A tag with href to a .user.js file, but atm for
+	// efficiency we only check userscripts.org script pages.
+	if (GrimeApeConfig.enabled && document.location.href.match('http://(www.|)userscripts.org/scripts/')) {
 		var links = document.links;
 		for (var i=0;i<links.length;i++) {
 			var link = links[i];
@@ -760,10 +762,10 @@ registry values set by that script's namespace.
 					link.title = "Install in GrimeApe...";
 					var miniApe = document.createElement("IMG");
 					miniApe.src = "/_gRiMeApE_/images/blueape.png";
-					miniApe.height = 16; miniApe.width = 16;
-					miniApe.style.verticalAlign = 'middle';
-					miniApe.style.paddingLeft = '6px';
-					miniApe.style.paddingBottom = '2px';
+					miniApe.height = 20; miniApe.width = 20;
+					miniApe.style.verticalAlign = 'middle'; // didn't really do what i hoped
+					miniApe.style.paddingLeft = '2px';
+					link.style.marginTop = '12px'; // make a bit taller to match the ape's height
 					link.appendChild(miniApe);
 					// link.parentNode.insertBefore(miniApe,link.nextSibling);
 				})();
