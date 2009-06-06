@@ -13,9 +13,9 @@
 
 var fillWholeWindow = true;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
-var miniLogo = true;           // miniLogo or removeLogo may help to reduce
-var removeLogo = false;        // width, especially when keepHeaderAbove==false.
-var reduceWidth = false;       // You may need to reduceWidth if keepHeaderAbove==false.
+var miniLogo = true;           // miniLogo or removeLogo help to reduce the
+var removeLogo = false;        // width and the height of header.
+var reduceWidth = false; // Fix the width of header.
 var previewWidth = 0.7;        // Size of the preview pane.
 var pageHeightUsed = 0.7;      // Will be overridden later if keepHeaderAbove==true.
 var noPanelBorder = false;     // I like the preview pane to have depth.
@@ -30,11 +30,11 @@ if (window != top)
 
 // On webhp pages, I think the content is loaded by Javascript.  We must wait
 // for the page to finish loading before we can find the resultsBlock.
-
-// FIXED in GrimeApe:  Dagnammit Konqueror needs document.onload and Firefox needs window.onload.
-// var browsersSuck = ( navigator.appName.match(/Konqueror/i) ? document : window );
-
 window.addEventListener('load',function(){
+
+
+
+	//// Set up the Layout ////
 
 	var resultsWidth = 1.0 - previewWidth;
 
@@ -122,24 +122,20 @@ window.addEventListener('load',function(){
 			}
 		}
 
+		// If we leave room for vertical scrollbar, we won't need horizontal one. :)
 		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
 
 	}
 
-	// GM_log("resultsBlock = " + resultsBlock);
-
-	var table = document.createElement("TABLE");
-	var tbody = document.createElement("TBODY");
-	var row = document.createElement("TR");
-	var leftCell = document.createElement("TD");
+	var table     = document.createElement("TABLE");
+	var tbody     = document.createElement("TBODY");
+	var row       = document.createElement("TR");
+	var leftCell  = document.createElement("TD");
 	var rightCell = document.createElement("TD");
 
 	leftCell.width = resultsWidth*100+"%";
 	rightCell.width = previewWidth*100+"%";
-	// rightCell.style.width = (window.innerWidth * previewWidth) +'px';
-	// leftCell.style.width = (window.innerWidth * resultsWidth) +'px';
-	// rightCell.style.width = (window.innerWidth * previewWidth) +'px';
-	// If we leave room for vertical scrollbar, we won't need horizontal one. :)
+
 	resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
 	resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
 	resultsBlock.style.overflow = 'auto';
@@ -160,7 +156,15 @@ window.addEventListener('load',function(){
 	resultsBlock.parentNode.insertBefore(table,resultsBlock);
 	leftCell.appendChild(resultsBlock);
 
-	// Listeners:
+	// The "Sponsored Links" block gets in the way.
+	var toKill = document.getElementById("mbEnd");
+	if (toKill) {
+		toKill.parentNode.removeChild(toKill);
+	}
+
+
+
+	//// Listeners ////
 
 	var lastHover = null;
 	var lastPreview = null;
@@ -190,6 +194,7 @@ window.addEventListener('load',function(){
 	}
 
 	function getContainer(startNode) {
+		GM_log("Got startNode = "+startNode);
 		var node = startNode;
 		var link = null; // node.getElementsByTagName('A')[0];
 		// To make it easier to select links, they can select results by hovering over the non-link areas.
@@ -267,11 +272,7 @@ window.addEventListener('load',function(){
 	resultsBlock.addEventListener('mouseover',helloMouse,false);
 	resultsBlock.addEventListener('mouseout',goodbyeMouse,false);
 
-	// The "Sponsored Links" block gets in the way.
-	var toKill = document.getElementById("mbEnd");
-	if (toKill) {
-		toKill.parentNode.removeChild(toKill);
-	}
+
 
 },false);
 
