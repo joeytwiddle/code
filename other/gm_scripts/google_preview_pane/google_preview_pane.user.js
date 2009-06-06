@@ -6,7 +6,7 @@
 // @include        http://www.google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
 // @include        http://www.google.*/webhp?*q=*
-// @version        0.9.9
+// @version        0.9.9.1
 // ==/UserScript==
 
 // Settings:
@@ -167,69 +167,100 @@ window.addEventListener('load',function(){
 	var currentTimerID = null;
 
 	function highlightNode(node,col) {
-		node = isSelectable(node);
-		node.style.backgroundColor = col;
+		if (highlightFocusedResult) {
+			node = getContainer(node);
+			node.style.backgroundColor = col;
+		}
 	}
 
 	function checkFocus() {
 		if (lastHover && lastHover != lastPreview) {
-			// GM_log("Previewing "+lastHover.href);
-			lastHover = isSelectable(lastHover);
-			if (highlightFocusedResult) {
-				// if (lastPreview)
-					// lastPreview.style.backgroundColor = "";
-				// lastHover.style.backgroundColor = "#ccccff"; // "#ffccff";
-				if (lastPreview)
-					highlightNode(lastPreview,'');
-				highlightNode(lastHover,'#eeeeff');
-			}
-			var link = lastHover;
-			if (link.tagName != "A") {
-				link = lastHover.getElementsByTagName('A')[0];
-			}
+			if (lastPreview)
+				highlightNode(lastPreview,'');
+			highlightNode(lastHover,'#eeeeff');
+			// GM_log("Got lastHover = "+lastHover);
+			var container = getContainer(lastHover);
+			// GM_log("Got container = "+container);
+			var link = ( container.tagName == "A" ? container : container.getElementsByTagName('A')[0] );
+			// GM_log("Got link = "+link);
 			iframe.src = link.href;
-			lastPreview = lastHover;
+			// lastPreview = lastHover;
+			lastPreview = container; // normalises - two different nodes might both hit the same container
 		}
 	}
 
-	function isSelectable(node) {
+	function getContainer(startNode) {
+		var node = startNode;
+		var link = null; // node.getElementsByTagName('A')[0];
+		// To make it easier to select links, they can select results by hovering over the non-link areas.
+		// We check this by going up parent nodes until we find a link, or hit the top of a results block.
 		while (node) {
-			if (node.tagName == "A") {
-				if (node.className == 'l' && node.onmousedown) {
-					// This is a Google result.  We skip it, to select the parent 'g' DIV
-					// but will use this link (let's hope it is the first in the DIV!).
-				} else {
-					// A link but not a normal result.  Use it directly:
-					return node;
+			if (!link) {
+				if (node.tagName == "A") {
+					link = node;
 				}
 			}
-			if (node.className == 'g' || node.className == 'g w0' || node.tagName=='LI') {
-				// Reluctantly added LI in case they change the 'g' class again!
+			var goUp = true;
+			if (link) {
+				// If we have found a link, only go up if that link was a main result.
+				// Otherwise the Cache selects the div above it, which looks weird.
+				if (link.className == 'l' && link.onmousedown) {
+				} else {
+					return link;
+				}
+			}
+			// If we have a link, we must not go to the parent if the parent
+			// contains any earlier links.  Unlikely given former check.
+			if (link != null) {
+				var parentsFirstLink = node.parentNode.getElementsByTagName('A')[0];
+				if (parentsFirstLink != link) {
+					goUp = false;
+				}
+			}
+			// Or have we reached a google result block?  If so, stop here.
+			if ( node.tagName=='LI' || node.className == 'g' || node.className == 'g w0' ) {
+				goUp = false;
+				// link will be first 'A' child.
+			}
+			if (!goUp) {
+				// We better check we do contain a link!
 				return node;
 			}
 			node = node.parentNode;
 		}
-		return undefined;
+		// Don't highlight the whole document, but highlight the link if we got one.
+		return link;
 	}
 
 	function helloMouse(evt) {
 		var node = evt.target;
-		if (isSelectable(node) && isSelectable(node)!=lastPreview) {
+		var container = getContainer(node);
+		// Should we hover on this?
+		if (container && container!=lastPreview) {
+			// If we were just hovered on something, unhighlight it:
+			if (lastHover && lastHover!=lastPreview)
+				highlightNode(lastHover,'');
+			// OK start hover on this.  checkFocus() will check if we are still
+			// here in hoverTime ms, and if so activate.
 			lastHover = node;
 			if (currentTimerID)
 				clearTimeout(currentTimerID);
 			currentTimerID = setTimeout(checkFocus,hoverTime);
-			if (highlightFocusedResult)
-				highlightNode(node,'#eeffee');
+			highlightNode(node,'#eeffee');
 		}
 	}
 
 	function goodbyeMouse(evt) {
 		var node = evt.target;
-		if (isSelectable(node) && isSelectable(node)!=lastPreview) {
+		var container = getContainer(node);
+		// Should we stop hovering on this?
+		if (container && container!=lastPreview) {
+			// Clear highlight:
+			if (lastHover && lastHover!=lastPreview)
+				highlightNode(lastHover,'');
 			lastHover = null;
-			if (highlightFocusedResult)
-				highlightNode(node,'');
+			highlightNode(node,'');
+			// We don't need to clearTimeout checkFocus(), it knows we left.
 		}
 	}
 
