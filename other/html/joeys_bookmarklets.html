@@ -38,7 +38,7 @@
 </DIV>
 
 <DIV class='section'>
-<H3>User Bookmarklets</H3>
+<H3>Page Bookmarklets</H3>
 <BLOCKQUOTE>
 
 	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
@@ -88,6 +88,226 @@
 		 <LI class='todo'>Todo: We could even create blocks to compress where there was no structure.  E.g. create a block between two HR tags, provided the text content in between is large.  Or in fact squash any blocks containing text, if the text is >=15% of the parent&apos;s text.</LI>
 		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/trim_elements.js';
+			/* newScript.onload = (function(){ init(); }); */
+			document.body.appendChild(newScript);
+		})();">Trim to Search String</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Adds a search filter bar at the top of the page.  Hides all parts of the page except those matching your search expression.</P>
+		<LI class='todo'>Pretty damn slow in Mozilla.  Not too bad in Konqueror though.  The reason is that I set all child nodes to display:none, in case we don&apos;t set the parent node.  But if we do, all those sets on the children were a wasted effort.  Improve the algorithm!</LI>
+		<LI class='done'>Added a nice unpleasant green style, and Close and Clear buttons. </LI>
+		<LI class='todo'>Bug: Sometimes we are wanting to select certain rows from a table, but this implementation hides the other cells in the row, even if one cell matches.</LI>
+		<LI class='todo'>Todo: The search expression is too simple, at the moment we perform an exact case-sensitive match.  We should allow multi-word search, and exclusion with &apos;-&apos;.</LI>
+		<LI class='todo'>Todo: Add options: case-sensitive, search HTML (rather than text), keep neighbours.</LI>
+		<!-- <LI class='todo'>Todo: Maybe not neighbours.  But maybe all ancestors up to body, tho none of their other children?  Oh we are doing that duh!</LI> -->
+		<LI class='done'>This idea was moved to XPath Tester: Allow trimming by XPath expression.  This can be very useful to extract precise elements of the page (e.g. Headings), or just to test an XPath.  If we display results in a small window (not the doc itself), user can click on each to jump to that part of the page!  So user just needs to find an XPath matching the headings, then he has built an index/contents navigation-assisting sidebar.</LI>
+		<LI class='external'>Note: Loads external script.</LI>
+	</BLOCKQUOTE>
+
+	<P>
+		<LI><A href="
+			javascript:
+			function attachClickListener(node,clickProcessor) {
+				if (node.captureEvents) {
+					node.captureEvents(Event.CLICK);
+				}
+				node.onmouseup = clickProcessor;
+				if (node.style) {
+					node.style.cursor = (clickProcessor?'crosshair':'');
+				}
+				var kids = node.childNodes;
+				for (var i=0;i<kids.length;i++) {
+					attachClickListener(kids[i],clickProcessor);
+				}
+			}
+			function processClick(evt) {
+				var node = evt.currentTarget;
+				window.status = 'Removed '+node;
+				attachClickListener(document,null);
+				node.innerHTML='';
+				node.parentNode.removeChild(node);
+			}
+			attachClickListener(document,processClick);
+		">Nuke next item clicked</A></LI>
+	<BLOCKQUOTE>
+		<P>Waits for user click, and hides whatever element they clicked on from the page.</P>
+		<LI class='todo'>Todo: Actually destroy the element!  This is more like a Zap script, setting style.display=&apos;none&apos;.</LI>
+		<LI class='todo'>Todo: Add two icons to the page, one to turn off the bookmarklet, another to undo deletes (restore deleted elements from the Trash).</LI>
+		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
+		<LI class='todo'>Todo: The element we want to destroy might not have any exposed surface to click on, e.g. a FORM.  Maybe we can fatten out invisible/zero-size elements.  (E.g. mark each with a '.'s and give info on mouseover?)</LI>
+	</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A target='_self' href='javascript:
+			var info = document.links.length+" links on <A href=\""+document.location+"\">"+document.title+"</A>";
+			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			for (i=0;i<document.links.length;i++) {
+				var link = document.links[i];
+				html += "<TR><TD><A href=\""+(link.href)+"\">"+(link.text)+"</A></TD><TD>"+(link.href)+"</TD></TR>\n";
+			}
+			html += "</TABLE></BODY></HTML>\n";
+			document.open();
+			document.write(html);
+			document.close();
+		'>Just the Links</A></LI>
+		<BLOCKQUOTE>
+			Displays a list of all the links in the page.
+			<P class='todo'>(This works badly on this page because the hrefs are poorly formatted, but on most pages it works fine!)</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A target='_self' href='javascript:
+			var images = document.getElementsByTagName("IMG"),
+					info = images.length+" images on <A href=\""+document.location+"\">"+document.title+"</A>";
+			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			for (i=0;i<images.length;i++) {
+				var image = images[i];
+				html += "<TR><TD align=\"center\">\n";
+				html += "&lt;IMG src=\""+image.src+"\"&gt;<BR/>\n";
+				html += "<A href=\""+image.src+"\">"+image.src+"</A>\n";
+				html += "</TD></TR>\n";
+			}
+			html += "</TABLE></BODY></HTML>\n";
+			/* var w = open().document; */
+			var w = document;
+			w.open();
+			w.write(html);
+			w.close();
+		'>Just the Images</A></LI>
+		<BLOCKQUOTE>
+			Displays a list of all the images in the page.
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			var style = document.createElement('STYLE');
+			style.innerHTML = '.favicon { padding-right: 4px; vertical-align: middle; }';
+			document.getElementsByTagName('head')[0].appendChild(style);
+			for (var i=0;i<document.links.length;i++) {
+				var link = document.links[i];
+				if (link.href.match('^javascript:') || link.href.match('^#')) {
+					continue;
+				}
+				var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
+				if (host == document.location.host) {
+					continue;
+				}
+				var img = document.createElement('IMG');
+				img.src = 'http://'+host+'/favicon.ico';
+				/*img.width = '16';
+				img.height = '16';*/
+				img.className = 'favicon';
+				link.parentNode.insertBefore(img,link);
+			}
+		})();">Faviconize External Links</A></LI>
+		<BLOCKQUOTE>
+			<P>Adds the favicon of the host server next to every external link on the page.</P>
+			<P>I was recommended to consider also host/favicon.png but I saw none of these so stuck with .ico.</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			function killFonts(node) {
+				if (node.tagName == 'FONT' || node.tagName == 'font') {
+					if (node.face) {
+						/* for (var child in node.childNodes) {
+							node.parentNode.insertBefore(child,node);
+						}
+						node.parentNode.removeChild(node); */
+						node.face = '';
+					} /* otherwise leave the tag alone - it is harmless. */
+				}
+				if (node.style) {
+					if (node.style.font) {
+						node.style.font = '';
+					}
+					if (node.style.fontFamily) {
+						node.style.fontFamily = '';
+					}
+				}
+				for (var child in node.childNodes) {
+					killFonts(child);
+				}
+			}
+			/* check css... */
+			if (document.styleSheets) {
+				for (var i=0;i<document.styleSheets.length;i++) {
+					var rules = document.styleSheets[i].cssRules;
+					for (var j=0;j<rules.length;j++) {
+						var rule = rules[j];
+						if (rule.style) {
+							if (rule.style.font) {
+								rule.style.font = '';
+							}
+							if (rule.style.fontFamily) {
+								rule.style.fontFamily = '';
+							}
+						}
+					}
+				}
+			}
+			killFonts(document.body);
+			window.document.status = 'All fonts cleared.';
+		})();">Kill All Fonts</A></LI>
+		<BLOCKQUOTE>
+			<P>For when you would prefer the fonts you specified in your browser over than the ones specified by the page.</P>
+			<LI class='todo'>Todo: Convert known faces to sensible choice.  E.g. if the document specifies a fixed-width font we recognise, then convert the font to our favourite fixed-width font, and not a serif font.</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			if (this.selectElementForMoving) {
+				/* Toggle off */
+				document.body.removeEventListener('mousedown',selectElementForMoving,true);
+				this.selectElementForMoving = null;
+			} else {
+				this.selectElementForMoving = function(evt) {
+					var node = evt.target;
+					if (!node.style.left && !node.style.right)
+						node.style.left = evt.pageX - 32;
+					if (!node.style.top && !node.style.bottom)
+						node.style.top = evt.pageY - 32;
+					makeMoveable(node);
+					node.style.position = 'absolute';
+				};
+				var newScript = document.createElement('script');
+				newScript.type = 'text/javascript';
+				newScript.src = 'http://hwi.ath.cx/javascript/make_elements_moveable.js';
+				document.body.appendChild(newScript);
+				document.body.addEventListener('mousedown',selectElementForMoving,true);
+			}
+		})();">Move Things Around</A> version 0.2</LI>
+		<BLOCKQUOTE>
+			<P>Allows you to move parts of the page around.</P>
+			<LI><SPAN class="done">Re-run the bookmarklet to stop it.</SPAN>
+				<SPAN class="todo">Elements made moveable will remain moveable, and un-clickable.</SPAN>
+			</LI>
+			<LI class="todo">When testing from this page, the script cannot be easily disabled if you have not first Bookmarkleted it!</LI>
+			<LI class="todo">Done: Made moved elements sit relative to the page, not floating relative to the window.</LI>
+			<LI class="todo">Todo: Reset border properly when done.</LI>
+			<LI class="todo">Todo: To make selection of the correct container easier for the user, we should highlight or change the border of the element about to be selected, like Highlight Structure does.  We should reset the changed style property afterwards.</LI>
+			<LI class="todo">Isn&apos;t there some sort of "nowrap" or "float" option that will stop things overlapping?</LI>
+			<LI class='external'>Note: Loads external script.</LI>
+		</BLOCKQUOTE>
+	</P>
+
+</BLOCKQUOTE>
+</DIV>
+
+<DIV class='section'>
+<H3>Navigation Bookmarklets</H3>
+<BLOCKQUOTE>
 
 	<P>
 		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
@@ -172,103 +392,6 @@
 	</P>
 
 	<P>
-		<LI><A target="_self" href="javascript:(function(){
-			var newScript = document.createElement('script');
-			newScript.type = 'text/javascript';
-			newScript.src = 'http://hwi.ath.cx/javascript/trim_elements.js';
-			/* newScript.onload = (function(){ init(); }); */
-			document.body.appendChild(newScript);
-		})();">Trim to Search String</A></LI>
-	</P>
-	<BLOCKQUOTE>
-		<P>Adds a search filter bar at the top of the page.  Hides all parts of the page except those matching your search expression.</P>
-		<LI class='done'>Added a nice unpleasant green style, and Close and Clear buttons. </LI>
-		<LI class='todo'>This is much faster in Konqueror than in Firefox.</LI>
-		<LI class='todo'>Bug: Sometimes we are wanting to select certain rows from a table, but this implementation hides the other cells in the row, even if one cell matches.</LI>
-		<LI class='todo'>Todo: The search expression is too simple, at the moment we perform an exact case-sensitive match.  We should allow multi-word search, and exclusion with &apos;-&apos;.</LI>
-		<LI class='todo'>Todo: Add options: case-sensitive, search HTML (rather than text), keep neighbours.</LI>
-		<LI class='todo'>Todo: Allow trimming by XPath expression.  This can be very useful to extract precise elements of the page (e.g. Headings), or just to test an XPath.  If we display results in a small window (not the doc itself), user can click on each to jump to that part of the page!  So user just needs to find an XPath matching the headings, then he has built an index/contents navigation-assisting sidebar.</LI>
-		<LI class='external'>Note: Loads external script.</LI>
-	</BLOCKQUOTE>
-
-	<P>
-		<LI><A href="
-			javascript:
-			function attachClickListener(node,clickProcessor) {
-				if (node.captureEvents) {
-					node.captureEvents(Event.CLICK);
-				}
-				node.onmouseup = clickProcessor;
-				if (node.style) {
-					node.style.cursor = (clickProcessor?'crosshair':'');
-				}
-				var kids = node.childNodes;
-				for (var i=0;i<kids.length;i++) {
-					attachClickListener(kids[i],clickProcessor);
-				}
-			}
-			function processClick(evt) {
-				var node = evt.currentTarget;
-				window.status = 'Removed '+node;
-				attachClickListener(document,null);
-				node.innerHTML='';
-				node.parentNode.removeChild(node);
-			}
-			attachClickListener(document,processClick);
-		">Nuke next item clicked</A></LI>
-	<BLOCKQUOTE>
-		<P>Waits for user click, and hides whatever element they clicked on from the page.</P>
-		<LI class='todo'>Todo: Actually destroy the element!  This is more like a Zap script, setting style.display=&apos;none&apos;.</LI>
-		<LI class='todo'>Todo: Add two icons to the page, one to turn off the bookmarklet, another to undo deletes (restore deleted elements from the Trash).</LI>
-		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
-		<LI class='todo'>Todo: The element we want to destroy might not have any exposed surface to click on, e.g. a FORM.  Maybe we can fatten out invisible/zero-size elements.  (E.g. mark each with a '.'s and give info on mouseover?)</LI>
-	</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<LI><A target='_self' href='javascript:
-			var info = document.links.length+" links on <A href=\""+document.location+"\">"+document.title+"</A>";
-			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
-			for (i=0;i<document.links.length;i++) {
-				var link = document.links[i];
-				html += "<TR><TD><A href=\""+(link.href)+"\">"+(link.text)+"</A></TD><TD>"+(link.href)+"</TD></TR>\n";
-			}
-			html += "</TABLE></BODY></HTML>\n";
-			document.open();
-			document.write(html);
-			document.close();
-		'>Just the Links</A></LI>
-		<BLOCKQUOTE>
-			Displays a list of all the links in the page.
-			<P class='todo'>(This works badly on this page because the hrefs are poorly formatted, but on most pages it works fine!)</P>
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
-		<LI><A target='_self' href='javascript:
-			var images = document.getElementsByTagName("IMG"),
-					info = images.length+" images on <A href=\""+document.location+"\">"+document.title+"</A>";
-			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
-			for (i=0;i<images.length;i++) {
-				var image = images[i];
-				html += "<TR><TD align=\"center\">\n";
-				html += "&lt;IMG src=\""+image.src+"\"&gt;<BR/>\n";
-				html += "<A href=\""+image.src+"\">"+image.src+"</A>\n";
-				html += "</TD></TR>\n";
-			}
-			html += "</TABLE></BODY></HTML>\n";
-			/* var w = open().document; */
-			var w = document;
-			w.open();
-			w.write(html);
-			w.close();
-		'>Just the Images</A></LI>
-		<BLOCKQUOTE>
-			Displays a list of all the images in the page.
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
 		<LI><A target='_self' href='javascript:
 			(function(){
 				for (i=0;i<document.links.length;i++) {
@@ -312,85 +435,20 @@
 	</P>
 
 	<P>
-		<LI><A href="javascript:(function(){
-			var style = document.createElement('STYLE');
-			style.innerHTML = '.favicon { padding-right: 4px; vertical-align: middle; }';
-			document.getElementsByTagName('head')[0].appendChild(style);
-			for (var i=0;i<document.links.length;i++) {
-				var link = document.links[i];
-				if (link.href.match('^javascript:') || link.href.match('^#')) {
-					continue;
-				}
-				var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
-				if (host == document.location.host) {
-					continue;
-				}
-				var img = document.createElement('IMG');
-				img.src = 'http://'+host+'/favicon.ico';
-				/*img.width = '16';
-				img.height = '16';*/
-				img.className = 'favicon';
-				link.parentNode.insertBefore(img,link);
-			}
-		})();">Faviconize External Links</A></LI>
+		<LI><A target="_self" href="javascript:(function(){
+			document.location.href = document.location.href.replace(/[#/][^#/]*$/,'');
+		})();">Go Up</A></LI>
 		<BLOCKQUOTE>
-			<P>Adds the favicon of the host server next to every external link on the page.</P>
-			<P>I was recommended to consider also host/favicon.png but I saw none of these so stuck with .ico.</P>
+			<P>Some browsers don&apos;t have this as a default button!</P>
+			<LI class='todo'>When we run out of path, we could reduce the domain.</LI>
 		</BLOCKQUOTE>
 	</P>
 
 	<P>
-		<LI><A href="javascript:(function(){
-			function killFonts(node) {
-				if (node.tagName == 'FONT' || node.tagName == 'font') {
-					if (node.face) {
-						/* for (var child in node.childNodes) {
-							node.parentNode.insertBefore(child,node);
-						}
-						node.parentNode.removeChild(node); */
-						node.face = '';
-					} /* otherwise leave the tag alone - it is harmless. */
-				}
-				if (node.style) {
-					if (node.style.font) {
-						node.style.font = '';
-					}
-					if (node.style.fontFamily) {
-						node.style.fontFamily = '';
-					}
-				}
-				for (var child in node.childNodes) {
-					killFonts(child);
-				}
-			}
-			/* check css... */
-			if (document.styleSheets) {
-				for (var i=0;i<document.styleSheets.length;i++) {
-					var rules = document.styleSheets[i].cssRules;
-					for (var j=0;j<rules.length;j++) {
-						var rule = rules[j];
-						if (rule.style) {
-							if (rule.style.font) {
-								rule.style.font = '';
-							}
-							if (rule.style.fontFamily) {
-								rule.style.fontFamily = '';
-							}
-						}
-					}
-				}
-			}
-			killFonts(document.body);
-			window.document.status = 'All fonts cleared.';
-		})();">Kill All Fonts</A></LI>
-		<BLOCKQUOTE>
-			<P>For when you would prefer the fonts you specified in your browser over than the ones specified by the page.</P>
-			<LI class='todo'>Todo: Convert known faces to sensible choice.  E.g. if the document specifies a fixed-width font we recognise, then convert the font to our favourite fixed-width font, and not a serif font.</LI>
-		</BLOCKQUOTE>
+		<LI><A href="javascript:(function(){window.open(document.location.href);})();">Duplicate This Page</A></LI>
 	</P>
 
 </BLOCKQUOTE>
-
 </DIV>
 
 <DIV class='section'>
@@ -519,6 +577,7 @@
 			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn&apos;t highlight newly entered elements, it won&apos;t have to unhighlight them on the way out.</LI>
 			<LI class='todo'>Part of the problem is that a mouselistener is added to every element in the DOM, when we should just capture using the body element.</LI>
 			<LI class='todo'>Adapt the colour generator to produce pastels only.</LI>
+			<LI class="todo">Todo: Colouring all things of the same depth/path with the same colour is informative, but sometimes two neighbouring elements merge together and cannot be distinguished.  Recommend slightly altering brightness/saturation (not hue) for neighbouring elements.</LI>
 			<LI class='todo'>Rather than use the browser&quot;s default popup for title tag when hovering over elements, we could use our own custom popup.  This could give 2 advantages: 1) we could make newlines work in Mozilla; 2) By keeping the popup ever-present, the user can easily see when the XPath switches by a little or a lot.  The XPath in Konqueror&apos;s statusbar almost does this, but when hovering over a link it gets hidden.</LI>
 		</BLOCKQUOTE>
 	</P>
@@ -845,38 +904,6 @@
 	<!-- I might even consider separating my development and release pages. --></P>
 
 	These are Bookmarklets I am still working on.  They may or may not work.
-
-	<P>
-		<LI><A href="javascript:(function(){
-			if (this.selectElementForMoving) {
-				/* Toggle off */
-				document.body.removeEventListener('mousedown',selectElementForMoving,true);
-				this.selectElementForMoving = null;
-			} else {
-				this.selectElementForMoving = function(evt) {
-					var node = evt.target;
-					node.style.position = 'fixed';
-					if (!node.style.left && !node.style.right)
-						node.style.left = evt.pageX - 32 - document.body.scrollLeft;
-					if (!node.style.top && !node.style.bottom)
-						node.style.top = evt.pageY - 32 - document.body.scrollTop;
-					makeMoveable(node);
-				};
-				var newScript = document.createElement('script');
-				newScript.type = 'text/javascript';
-				newScript.src = 'http://hwi.ath.cx/javascript/make_elements_moveable.js';
-				document.body.appendChild(newScript);
-				document.body.addEventListener('mousedown',selectElementForMoving,true);
-			}
-		})();">Move Things Around</A></LI>
-		<BLOCKQUOTE>
-			<P>Allows you to move parts of the page around.</P>
-			<LI>
-				<SPAN class="done">Re-run the bookmarklet to stop it.</SPAN>
-				<SPAN class="todo">Beware that won&apos;t be possible by clicking on this page!</SPAN>
-			</LI>
-		</BLOCKQUOTE>
-	</P>
 
 	<P>
 		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
@@ -1214,6 +1241,8 @@
 	<P>Show Web 2.0: Show which elements have special events such as mouseOver etc.  In fact expose all elements with out-of-the-usual properties.  Limit to: javascript, css, URLs, other, ...</P>
 
 	<P>Some of these bookmarklets are setting events on <I>every element in the DOM</I> in order to capture them (and then having to do tricks to only capture the top event fired!).  I believe using addEventListener() should allow us to capture all events, and the element on which each event occurred on.</P>
+
+	<P>I generated hex by hand in the Highlight Structure bookmarklets.  But I could have used: number.toString(16).</P>
 
 </BLOCKQUOTE>
 </DIV>
