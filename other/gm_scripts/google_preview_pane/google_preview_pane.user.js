@@ -199,7 +199,7 @@ function initPreview() {
 		leftCell.width = resultsWidth*100+"%";
 		rightCell.width = previewWidth*100+"%";
 		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
-		resultsBlock.style.width = (window.innerWidth * resultsWidth - 48) +'px';
+		// Better without: resultsBlock.style.width = (window.innerWidth * resultsWidth - 48) +'px';
 		resultsBlock.style.overflow = 'auto';
 		previewFrame.width = '100%';
 		// Old: resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
