@@ -12,7 +12,7 @@
 // Settings:
 
 var focusWithHover = false;    // If set, does not wait for click before loading preview.
-var fillWholeWindow = true;    // Bring more of the page into the left pane.
+var fillWholeWindow = false;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
 var miniLogo = true;           // miniLogo or removeLogo help to reduce the
 var removeLogo = false;        // width and the height of header.
@@ -21,6 +21,7 @@ var previewWidth = 0.7;        // Size of the preview pane.
 var noPanelBorder = false;     // I like the preview pane to have depth.
 var hoverTime = 800;           // Milliseconds of mouse hover before load.
 var highlightFocusedResult = true;   // Who wouldn't want this?
+var gapBelow = (fillWholeWindow?16:80);   // Space left below panes.  16 for safety, 64 for footer.
 
 
 
@@ -28,7 +29,8 @@ var highlightFocusedResult = true;   // Who wouldn't want this?
  *
  * CHANGES in 0.9.9.4
  *
- * Frames now resize when window is resized.  pageHeightUsed dropped.
+ * Frames now resize when window is resized.  Dropped setting pageHeightUsed
+ * for gapBelow.
  *
  * ==================
  *
@@ -201,7 +203,7 @@ function initPreview() {
 		resultsBlock.style.overflow = 'auto';
 		previewFrame.width = '100%';
 		// previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
-		var heightFree = window.innerHeight - table.offsetTop - 16;
+		var heightFree = window.innerHeight - table.offsetTop - gapBelow;
 		resultsBlock.style.height = heightFree+'px';
 		previewFrame.height = heightFree+'px';
 		window.status = "Got heightFree: "+heightFree;
