@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Google Preview Pane
 // @namespace      http://userscripts.org/users/89794
-// @description    Loads Google results in a Preview Pane on mouse hover
+// @description    Displays Google results in a Preview Pane so you don't have to leave the results page.
 // @include        http://www.google.*/search?*q=*
 // @include        http://www.google.*/webhp?*q=*
 // @include        http://google.*/search?*q=*
@@ -164,22 +164,31 @@ function initPreview() {
 	var leftCell  = document.createElement("TD");
 	var rightCell = document.createElement("TD");
 
-	leftCell.width = resultsWidth*100+"%";
-	rightCell.width = previewWidth*100+"%";
-
-	// resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
-	//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
-	document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
-	resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
-	resultsBlock.style.overflow = 'auto';
-
-	var iframe = document.createElement('IFRAME');
-	iframe.width = '100%';
-	iframe.height = (window.innerHeight * pageHeightUsed) + 'px';
-	iframe.style.backgroundColor = '#eeeeee';
+	var previewFrame = document.createElement('IFRAME');
+	previewFrame.style.backgroundColor = '#eeeeee';
 	if (noPanelBorder)
-		iframe.style.border = '0px solid white';
-	rightCell.appendChild(iframe);
+		previewFrame.style.border = '0px solid white';
+	rightCell.appendChild(previewFrame);
+
+	function setDimensions() {
+		leftCell.width = resultsWidth*100+"%";
+		rightCell.width = previewWidth*100+"%";
+		// resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
+		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
+		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
+		resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
+		resultsBlock.style.overflow = 'auto';
+		previewFrame.width = '100%';
+		previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
+	}
+	setDimensions();
+	var resizeTimer = 0;
+	function checkResize() {
+		if (resizeTimer)
+			clearTimeout(resizeTimer);
+		resizeTimer = setTimeout(setDimensions, 500);
+	}
+	unsafeWindow.addEventListener('resize',checkResize,false);
 
 	tbody.appendChild(row);
 	table.appendChild(tbody);
@@ -222,7 +231,7 @@ function initPreview() {
 			// GM_log("Got container = "+container);
 			var link = ( container.tagName == "A" ? container : container.getElementsByTagName('A')[0] );
 			// GM_log("Got link = "+link);
-			iframe.src = link.href;
+			previewFrame.src = link.href;
 			// lastPreview = lastHover;
 			lastPreview = container; // normalises - two different nodes might both hit the same container
 			return true;
@@ -253,7 +262,7 @@ function initPreview() {
 	}
 
 	function getContainer(startNode) {
-		GM_log("Got startNode = "+startNode);
+		// GM_log("Got startNode = "+startNode);
 		var node = startNode;
 		var link = null; // node.getElementsByTagName('A')[0];
 		// To make it easier to select links, they can select results by hovering over the non-link areas.
