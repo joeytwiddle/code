@@ -12,7 +12,7 @@
 // Settings:
 
 var focusWithHover = false;    // If set, does not wait for click before loading preview.
-var fillWholeWindow = false;    // Bring more of the page into the left pane.
+var fillWholeWindow = true;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
 var miniLogo = true;           // miniLogo or removeLogo help to reduce the
 var removeLogo = false;        // width and the height of header.
@@ -21,7 +21,7 @@ var previewWidth = 0.7;        // Size of the preview pane.
 var noPanelBorder = false;     // I like the preview pane to have depth.
 var hoverTime = 800;           // Milliseconds of mouse hover before load.
 var highlightFocusedResult = true;   // Who wouldn't want this?
-var gapBelow = (fillWholeWindow?16:80);   // Space left below panes.  16 for safety, 64 for footer.
+var gapBelow = 16;             // Space left below panes.
 
 
 
