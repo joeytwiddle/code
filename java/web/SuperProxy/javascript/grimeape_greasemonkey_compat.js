@@ -4,12 +4,12 @@
 
 /*
 
-// DONE: GM_xmlhttpRequest, GM_addStyle
+// DONE: GM_xmlhttpRequest, GM_addStyle, GM_openInTab
 // DONE: namespace magic
 // DONE: document.getElementsByClassName()
 
 // TODO: Complete API: http://wiki.greasespot.net/Greasemonkey_Manual:API
-// TODO: GM_listValues, GM_getResourceURL, GM_getResourceText, GM_openinTab.
+// TODO: GM_listValues, GM_getResourceURL, GM_getResourceText
 // TODO: Support @resource @require @unwrap
 // TODO: maybe some jail for scripts?
 // TODO: document.evaluate() and XPathResult for lacking browsers
@@ -338,6 +338,10 @@ function GM_addStyle(css) {
 	style.type = "text/css";
 	style.innerHTML = css;
 	head.appendChild(style);
+}
+
+function GM_openInTab(url) {
+	window.open(url);
 }
 
 
