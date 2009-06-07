@@ -11,17 +11,19 @@
 
 // Settings:
 
-var focusWithHover = false;    // If set, does not wait for click before loading preview.
+var previewWidth    = 0.7;     // Width of the preview pane (proportion of window width).
+var gapBelow        = 16;      // Space left below panes (pixels).
 var fillWholeWindow = true;    // Bring more of the page into the left pane.
-var keepHeaderAbove = true;    // Avoid bringing the top of the page in.
-var miniLogo = true;           // miniLogo or removeLogo help to reduce the
-var removeLogo = false;        // width and the height of header.
-var reduceWidth = true;        // Try harder to make things fit into the left pane.
-var previewWidth = 0.7;        // Size of the preview pane.
-var noPanelBorder = false;     // I like the preview pane to have depth.
-var hoverTime = 800;           // Milliseconds of mouse hover before load.
-var highlightFocusedResult = true;   // Who wouldn't want this?
-var gapBelow = 16;             // Space left below panes.
+var keepHeaderAbove = true;    // Do not bring the top of the page in.
+
+var highlightHover  = true;    // Change colour of current / hovered item.
+var focusWithHover  = false;   // If set, does not wait for click before loading preview.
+var hoverTime       = 800;     // Milliseconds of mouse hover before preview.
+
+var miniLogo        = true;    // miniLogo or removeLogo can help to reduce the
+var removeLogo      = false;   // width and the height of the header.
+var reduceWidth     = true;    // Try lots of little things to make things fit into the left pane.
+var panelHasBorder  = true;    // I like the preview pane to look sunken.
 
 
 
@@ -181,7 +183,7 @@ function initPreview() {
 
 	var previewFrame = document.createElement('IFRAME');
 	previewFrame.style.backgroundColor = '#eeeeee';
-	if (noPanelBorder)
+	if (!panelHasBorder)
 		previewFrame.style.border = '0px solid white';
 	rightCell.appendChild(previewFrame);
 
@@ -226,7 +228,7 @@ function initPreview() {
 	var currentTimerID = null;
 
 	function highlightNode(node,col) {
-		if (highlightFocusedResult) {
+		if (highlightHover) {
 			node = getContainer(node);
 			node.style.backgroundColor = col;
 		}
