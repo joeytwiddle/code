@@ -7,12 +7,12 @@
 // DONE: GM_xmlhttpRequest, GM_addStyle, GM_openInTab
 // DONE: namespace magic
 // DONE: document.getElementsByClassName()
+// DONE: document.evaluate() and XPathResult for lacking browsers
 
 // TODO: Complete API: http://wiki.greasespot.net/Greasemonkey_Manual:API
 // TODO: GM_listValues, GM_getResourceURL, GM_getResourceText
 // TODO: Support @resource @require @unwrap
 // TODO: maybe some jail for scripts?
-// TODO: document.evaluate() and XPathResult for lacking browsers
 
 */
 
