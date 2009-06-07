@@ -6,7 +6,7 @@
 // @include        http://www.google.*/webhp?*q=*
 // @include        http://google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
-// @version        0.9.9.3
+// @version        0.9.9.4
 // ==/UserScript==
 
 // Settings:
@@ -18,7 +18,6 @@ var miniLogo = true;           // miniLogo or removeLogo help to reduce the
 var removeLogo = false;        // width and the height of header.
 var reduceWidth = true;        // Try harder to make things fit into the left pane.
 var previewWidth = 0.7;        // Size of the preview pane.
-var pageHeightUsed = 0.7;      // Will be overridden later if keepHeaderAbove==true.
 var noPanelBorder = false;     // I like the preview pane to have depth.
 var hoverTime = 800;           // Milliseconds of mouse hover before load.
 var highlightFocusedResult = true;   // Who wouldn't want this?
@@ -26,10 +25,18 @@ var highlightFocusedResult = true;   // Who wouldn't want this?
 
 
 /* ==================
+ *
+ * CHANGES in 0.9.9.4
+ *
+ * Frames now resize when window is resized.  pageHeightUsed dropped.
+ *
+ * ==================
+ *
  * CHANGES in 0.9.9.3
  *
  * Made hovering optional.  Default now uses click to preview (second click to
  * follow link as usual).  Set focusWithHover=true for old behaviour.
+ *
  * ================== */
 
 // Don't run if we are in a sub-frame:
@@ -50,12 +57,10 @@ function initPreview() {
 
 		if (fillWholeWindow) {
 
-			pageHeightUsed = 0.97;
 			resultsBlock = document.createElement("DIV");
 
 			// Copy wanted parts of window into our left-pane block:
 			if (keepHeaderAbove) {
-				pageHeightUsed = ( miniLogo||removeLogo ? 0.80 : 0.72 );
 				var curNode = document.getElementById("ssb").nextSibling;
 				while (curNode) {
 					var nextNode = curNode.nextSibling;
@@ -154,9 +159,17 @@ function initPreview() {
 			}
 		}
 
+		// The "Sponsored Links" block gets in the way.
+		var toKill = document.getElementById("mbEnd");
+		if (toKill) {
+			toKill.parentNode.removeChild(toKill);
+		}
+
 	} catch (e) {
 		GM_log("Error during layout: "+e);
 	}
+
+
 
 	var table     = document.createElement("TABLE");
 	var tbody     = document.createElement("TBODY");
@@ -170,26 +183,6 @@ function initPreview() {
 		previewFrame.style.border = '0px solid white';
 	rightCell.appendChild(previewFrame);
 
-	function setDimensions() {
-		leftCell.width = resultsWidth*100+"%";
-		rightCell.width = previewWidth*100+"%";
-		// resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
-		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
-		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
-		resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
-		resultsBlock.style.overflow = 'auto';
-		previewFrame.width = '100%';
-		previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
-	}
-	setDimensions();
-	var resizeTimer = 0;
-	function checkResize() {
-		if (resizeTimer)
-			clearTimeout(resizeTimer);
-		resizeTimer = setTimeout(setDimensions, 500);
-	}
-	unsafeWindow.addEventListener('resize',checkResize,false);
-
 	tbody.appendChild(row);
 	table.appendChild(tbody);
 	row.appendChild(leftCell);
@@ -198,11 +191,29 @@ function initPreview() {
 	resultsBlock.parentNode.insertBefore(table,resultsBlock.nextSibling);
 	leftCell.appendChild(resultsBlock);
 
-	// The "Sponsored Links" block gets in the way.
-	var toKill = document.getElementById("mbEnd");
-	if (toKill) {
-		toKill.parentNode.removeChild(toKill);
+	function setDimensions() {
+		leftCell.width = resultsWidth*100+"%";
+		rightCell.width = previewWidth*100+"%";
+		// resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
+		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
+		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
+		// resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
+		resultsBlock.style.overflow = 'auto';
+		previewFrame.width = '100%';
+		// previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
+		var heightFree = window.innerHeight - table.offsetTop - 16;
+		resultsBlock.style.height = heightFree+'px';
+		previewFrame.height = heightFree+'px';
+		window.status = "Got heightFree: "+heightFree;
 	}
+	setDimensions();
+	var resizeTimer = 0;
+	function checkResize() {
+		if (resizeTimer)
+			clearTimeout(resizeTimer);
+		resizeTimer = setTimeout(setDimensions, 50);
+	}
+	unsafeWindow.addEventListener('resize',checkResize,false);
 
 
 
