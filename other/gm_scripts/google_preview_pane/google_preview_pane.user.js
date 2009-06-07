@@ -104,12 +104,14 @@ function initPreview() {
 
 			if (reduceWidth) {
 
-				// TODO: Sometimes it is the row of Next/Previous Goooooooogle results.
-				// Google gave me a lot of "Searches related to: resize window iframe" at the bottom
-				// which were too wide (5 column table, one with long word "addeventlistener").
-
-				// TODO: Sometimes it is the <cite> URL of the result that it too wide!  (They wrap in Moz but not in Konq.))
-				// Or the result summary text may contain a really long word which does not wrap.
+				//// TODO: Various things I haven't narrowed. ///
+				// - Sometimes it is the row of Next/Previous Goooooooogle results.
+				// - Google gave me a lot of "Searches related to: resize window
+				//   iframe" at the bottom which were too wide (5 column table, one
+				//   with long word "addeventlistener").
+				// - Sometimes it is the <cite> URL of the result that it too wide!  (They wrap in Moz but not in Konq.))
+				// - Or the result summary text may contain a really long word which does not wrap.
+				// - Video results - 2 columns with text beside, can be wider than desired.
 
 				// Makes a few pieces of text smaller, but most have custom style font sizes.
 				document.body.style.fontSize='10px';
@@ -199,7 +201,7 @@ function initPreview() {
 		leftCell.width = resultsWidth*100+"%";
 		rightCell.width = previewWidth*100+"%";
 		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
-		// Better without: resultsBlock.style.width = (window.innerWidth * resultsWidth - 48) +'px';
+		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
 		resultsBlock.style.overflow = 'auto';
 		previewFrame.width = '100%';
 		// Old: resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
@@ -209,35 +211,58 @@ function initPreview() {
 		previewFrame.height = heightFree+'px';
 	}
 	setDimensions();
-	// We will call setDimensions again if the user resizes the window:
-	window.addEventListener('resize',setDimensions,false);
 
 
 
 	//// Listeners ////
 
+	// We will call setDimensions again if the user resizes the window:
+	window.addEventListener('resize',setDimensions,false);
+
 	var lastHover = null;
 	var lastPreview = null;
 	var currentTimerID = null;
 
-	function highlightNode(node,col) {
+	function highlightNode(node,col,borderCol) {
 		if (highlightHover) {
-			node = getContainer(node);
-			node.style.backgroundColor = col;
+			var container = getContainer(node);
+			realHighlightNode(container,col,borderCol);
+			// var link = getLink(container);
+			// if (link) {
+				// realHighlightNode(link,borderCol);
+			// }
+		}
+	}
+	function realHighlightNode(elem,col,borderCol) {
+		elem.style.backgroundColor = col;
+		if (borderCol) {
+			elem.style.border = '1px solid '+borderCol;
+			// elem.style.margin = '-1px';
+		} else {
+			elem.style.border = '';
+			// elem.style.margin = '0px';
 		}
 	}
 
 	function checkFocus() {
 		if (lastHover && getContainer(lastHover) != lastPreview) {
-			if (lastPreview)
-				highlightNode(lastPreview,'');
+			if (lastPreview) {
+				// highlightNode(lastPreview,'',''); // but lastPreview is the container already!
+				realHighlightNode(lastPreview,'');
+				realHighlightNode(getLink(lastPreview),'');
+				lastPreview.style.padding = '0px';
+			}
 			// We don't really seem to use lastHover much - we could have set it
 			// to container from the start.
-			highlightNode(lastHover,'#ddeeff');
 			// GM_log("Got lastHover = "+lastHover);
 			var container = getContainer(lastHover);
 			// GM_log("Got container = "+container);
-			var link = ( container.tagName == "A" ? container : container.getElementsByTagName('A')[0] );
+			var link = getLink(container);
+			// highlightNode(lastHover,'#ddeeff','#ccddff');
+			highlightNode(lastHover,'#ebeff9','#d6e4ff');
+			container.style.padding = '6px';
+			// realHighlightNode(container,'#ddeeff');
+			// realHighlightNode(link,'#ccddee');
 			// GM_log("Got link = "+link);
 			previewFrame.src = link.href;
 			// lastPreview = lastHover;
@@ -252,10 +277,17 @@ function initPreview() {
 		if (node == lastHover) {
 			// If the user is selecting a link to another results page, they
 			// probably don't want a preview!
-			if (node.tagName=='A' && node.host==document.location.host
-				&& node.pathname.match('/(search|webhp)')
+			var link = getLink(getContainer(node));
+			if (link && link.tagName=='A' && link.host==document.location.host
+				&& link.pathname.match('/(search|webhp)')
 			) {
 				// We will pass the event up to click on the actual link.
+				// If it works, we can set this:
+				highlightNode(node,'#ffeedd','#ffddcc');
+				// Let's make sure it works ;p
+				// document.location = link.href;
+				// Pff we need to give FF time to colour the highlight :P
+				setTimeout(function(){document.location = link.href;},100);
 			} else {
 				// Let's try to Preview what the user clicked
 				if (checkFocus()) {
@@ -264,11 +296,24 @@ function initPreview() {
 				} else {
 					// Well we didn't want to focus this node.
 					// Let's pass the event to other elements.
+					// This means that if we click the focused node a second time,
+					// and there is a link below it, then we will follow it
+					// normally.
+					// Nah let's force it.  We want this to work even if they didn't
+					// click directly:
+					// BUG MAYBE FIXED: I fear we are sometimes not reaching here
+					// because we earlier failed the check container != lastPreview.
+					if (link) {
+						highlightNode(node,'#eeddff','#ddccff');
+						// document.location = link.href;
+						setTimeout(function(){document.location = link.href;},20);
+					}
 				}
 			}
 		}
 	}
 
+	// If user is hovering over startNode, which parent block can we highlight?
 	function getContainer(startNode) {
 		// GM_log("Got startNode = "+startNode);
 		var node = startNode;
@@ -318,14 +363,20 @@ function initPreview() {
 		return link;
 	}
 
+	// If we are highlighting container, then what link does this relate to?
+	function getLink(container) {
+		return ( container.tagName == "A" ? container : container.getElementsByTagName('A')[0] );
+	}
+
 	function helloMouse(evt) {
 		var node = evt.target;
 		var container = getContainer(node);
 		// Should we hover on this?
-		if (container && container!=lastPreview) {
+		if (container) {
 			// If we were just hovered on something, unhighlight it:
-			if (lastHover && getContainer(lastHover)!=lastPreview)
-				highlightNode(lastHover,'');
+			if (lastHover && getContainer(lastHover)!=lastPreview) {
+				highlightNode(lastHover,'','');
+			}
 			// OK start hover on this.  checkFocus() will check if we are still
 			// here in hoverTime ms, and if so activate.
 			lastHover = node;
@@ -334,7 +385,10 @@ function initPreview() {
 					clearTimeout(currentTimerID);
 				currentTimerID = setTimeout(checkFocus,hoverTime);
 			}
-			highlightNode(node,'#eeffee');
+			if (container != lastPreview) {
+				// highlightNode(node,'#eeffee','#ddffdd');
+				highlightNode(node,'#eeffee');
+			}
 		}
 	}
 
@@ -345,9 +399,9 @@ function initPreview() {
 		if (container && container!=lastPreview) {
 			// Clear highlight:
 			if (lastHover && getContainer(lastHover)!=lastPreview)
-				highlightNode(lastHover,'');
+				highlightNode(lastHover,'','');
 			lastHover = null;
-			highlightNode(node,'');
+			highlightNode(node,'','');
 			// We don't need to clearTimeout checkFocus(), it knows we left.
 		}
 	}
@@ -378,14 +432,26 @@ CONSIDER: If we were to arrange things in a two or three framed page, the
 user would be able to resize the results/preview panes by dragging their
 vertical bar separator.  The SplitPreview bookmarklet demonstrates this.
 
-TODO: We could extra highlight the link that will be followed.  It's not
-always obvious.
+DONE: We could extra highlight the link that will be followed.  It's not
+always obvious.  This didn't really look nice.
 
-TODO: New double-click to load behaviour is annoying for links which point
+DONE: New double-click to load behaviour is annoying for links which point
 to further Google Results pages, e.g. Next/Prev/Similar pages.
 
-TODO: We don't need the setTimeout on non-webhp pages.  We should check to
+DONE: We don't need the setTimeout on non-webhp pages.  We should check to
 see if resultsBlock exists first, to avoid using it unneccessarily.
+
+TODO: I suspect most users do not want the behaviour we have at the moment.
+Users would probably be happier to have clicked links behave as normal, and
+use only clicks on highlighted divs to load the preview.
+However I personally want to preview links, because the results from the
+Delicious Bookmark script do not have surrounding divs.  There is the same
+problem if we wanted to preview the Cached page.
+
+TODO: Sometimes we don't get (or properly process) the mouseout event, if
+the results panel has a horizontal scrollbar, so we move our mouse into
+the previewPane without really leaving the "focusable" highlight, so it
+stays highlighted.
 
 */
 
