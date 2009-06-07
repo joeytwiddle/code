@@ -198,26 +198,19 @@ function initPreview() {
 	function setDimensions() {
 		leftCell.width = resultsWidth*100+"%";
 		rightCell.width = previewWidth*100+"%";
-		// resultsBlock.style.width = (window.innerWidth * resultsWidth) + 'px';
 		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
-		document.getElementById("res").style.width = (window.innerWidth * resultsWidth - 48) +'px';
-		// resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
+		resultsBlock.style.width = (window.innerWidth * resultsWidth - 48) +'px';
 		resultsBlock.style.overflow = 'auto';
 		previewFrame.width = '100%';
-		// previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
+		// Old: resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
+		// Old: previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
 		var heightFree = window.innerHeight - table.offsetTop - gapBelow;
 		resultsBlock.style.height = heightFree+'px';
 		previewFrame.height = heightFree+'px';
-		window.status = "Got heightFree: "+heightFree;
 	}
 	setDimensions();
-	var resizeTimer = 0;
-	function checkResize() {
-		if (resizeTimer)
-			clearTimeout(resizeTimer);
-		resizeTimer = setTimeout(setDimensions, 50);
-	}
-	unsafeWindow.addEventListener('resize',checkResize,false);
+	// We will call setDimensions again if the user resizes the window:
+	window.addEventListener('resize',setDimensions,false);
 
 
 
