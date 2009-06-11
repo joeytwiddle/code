@@ -228,6 +228,7 @@ this.ga_uneval = function (obj) {
 	} else if (typeof(obj)=='number') {
 		return ""+obj;
 	} else if (typeof(obj)=='object') {
+		// We could check for array with: obj instanceof Array
 		// if (obj.length == 0) { // It's actually an array?
 			// return "[]"; // return "({})"; // If we use for..in on an empty array, we list all the fns?
 		// }
