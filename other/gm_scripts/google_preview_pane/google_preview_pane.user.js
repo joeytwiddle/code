@@ -236,10 +236,14 @@ function initPreview() {
 	function realHighlightNode(elem,col,borderCol) {
 		elem.style.backgroundColor = col;
 		if (borderCol) {
-			elem.style.border = '1px solid '+borderCol;
+			elem.style.border = '2px solid '+borderCol;
 			// elem.style.margin = '-1px';
+			//// Naff since we don't reach the edge:
+			// if (elem.className == 'g') // Only visually sensible for main results.
+				// elem.style.borderRight = 'none';
 		} else {
-			elem.style.border = '';
+			elem.style.border = 'none';
+			// elem.style.border = '0px solid white';
 			// elem.style.margin = '0px';
 		}
 	}
@@ -259,7 +263,7 @@ function initPreview() {
 			// GM_log("Got container = "+container);
 			var link = getLink(container);
 			// highlightNode(lastHover,'#ddeeff','#ccddff');
-			highlightNode(lastHover,'#ebeff9','#d6e4ff');
+			highlightNode(lastHover,'#ddeeff','#ccddff');
 			container.style.padding = '6px';
 			// realHighlightNode(container,'#ddeeff');
 			// realHighlightNode(link,'#ccddee');
@@ -388,6 +392,8 @@ function initPreview() {
 			if (container != lastPreview) {
 				// highlightNode(node,'#eeffee','#ddffdd');
 				highlightNode(node,'#eeffee');
+				// highlightNode(node,'#eeffee','#ddffdd'); // extra border causes restructure which is slow
+				// TODO: I think we should setup borders in advance
 			}
 		}
 	}
@@ -444,14 +450,19 @@ see if resultsBlock exists first, to avoid using it unneccessarily.
 TODO: I suspect most users do not want the behaviour we have at the moment.
 Users would probably be happier to have clicked links behave as normal, and
 use only clicks on highlighted divs to load the preview.
-However I personally want to preview links, because the results from the
-Delicious Bookmark script do not have surrounding divs.  There is the same
-problem if we wanted to preview the Cached page.
+But sometimes we might want to preview links which do not have a surrounding
+div, for example the Google Cache page, or extra links embedded by the
+Delicious Search Results userscript.
 
 TODO: Sometimes we don't get (or properly process) the mouseout event, if
 the results panel has a horizontal scrollbar, so we move our mouse into
 the previewPane without really leaving the "focusable" highlight, so it
 stays highlighted.
+
+CONSIDER TODO: If we decide to click a link and follow it fullscreen, we could
+kill the iframe, so if the page is still loading from the first (preview)
+click, the browser will stop loading it clearly and immediately, and devote
+full resources to the new page load?
 
 */
 
