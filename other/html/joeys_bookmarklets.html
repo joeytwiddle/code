@@ -44,6 +44,19 @@
 	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
 
 	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/focus.js';
+			/* newScript.onload = (function(){ init(); }); */
+			document.body.appendChild(newScript);
+		})();">Focus</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Lets you select a part of the page, and throws away the rest!  But has undo.  :)</P>
+	</BLOCKQUOTE>
+
+	<P>
 		<LI><A href="javascript:(function(){
 			var cnt = 0;
 			function checkDoneLoading() {
@@ -436,11 +449,40 @@
 
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
-			document.location.href = document.location.href.replace(/[#/][^#/]*$/,'');
+			var q = '' + (window.getSelection ? window.getSelection() : document.getSelection ? document.getSelection() : document.selection.createRange().text);
+			var domain = document.location.host;
+			document.location = 'http://www.google.com/search?q='+escape(q)+'+site:'+domain;
+		})();">Search This Site with Google</A></LI>
+		<BLOCKQUOTE>
+			<P>Uses Google to search this site for your selection, or all pages if you haven't selected anything.</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			var newURL = document.location.href;
+			if (newURL.slice(-1)=='/') {
+				newURL = newURL.slice(0,-1);
+			}
+			document.location.href = document.location.href.replace(/[#/?][^#/?]*$/,'');
 		})();">Go Up</A></LI>
 		<BLOCKQUOTE>
 			<P>Some browsers don&apos;t have this as a default button!</P>
 			<LI class='todo'>When we run out of path, we could reduce the domain.</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			if (document.referrer) {
+				document.location = document.referrer;
+			} else {
+				window.status = 'This page has no referrer.';
+			}
+		})();">Go Back</A></LI>
+		<BLOCKQUOTE>
+			<P>Magic Back button.  If you have opened a link in a new tab or window, the tab will not have a Back button.  But document.referrer should be set, so you can use this button just once, to go 'back' to the page which we were linked from.</P>
+			<LI class='todo'>This actually takes us forwards, which is why it only works once.  To avoid confusion, we could use document.location.replace() which would prevent creating confusing history.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -888,7 +930,7 @@
 </DIV>
 
 <DIV class='section'>
-<H3 id='dev'>Bookmarklets under Construction</H3>
+<H3 name='dev'>Bookmarklets under Construction</H3>
 <BLOCKQUOTE>
 
 	<!--
@@ -1227,7 +1269,12 @@
 	</P>
 
 	<P>
-		StripSearch.  Hides all elements except those containing the search text.  Ideal for tables.
+	Zoom To.  Using a selection border like Firebug, let the user pick a block of the image.  Move this block to the top of the document, and move everything else in the document into a hidden block, until Zoom Out is clicked.
+	This would be an ideal way to throw away parts of the page we don't want, before using Split Preview.
+	</P>
+
+	<P>
+		StripSearch.  Hides all elements except those containing the search text.  Ideal for tables.  OK this was implemented as Trim to Search String above, but it's NOT great for tables!
 	</P>
 
 	<P>BatchNuke (aka BatchSelect*-1): User is given text box to enter an XPath.  (He can get xpath hints by mouseover the document.)  As he types the XPath, elements of the page are hidden, until he finds the XPath he wants.  Then he hits enter, they are permanently hidden/destroyed, and he can enter another XPath if he wishes.</P>
