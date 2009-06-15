@@ -6,7 +6,7 @@
 // @include        http://www.google.*/webhp?*q=*
 // @include        http://google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
-// @version        0.9.9.4
+// @version        0.9.9.5
 // ==/UserScript==
 
 // Settings:
@@ -24,6 +24,8 @@ var miniLogo        = true;    // miniLogo or removeLogo can help to reduce the
 var removeLogo      = false;   // width and the height of the header.
 var reduceWidth     = true;    // Try lots of little things to make things fit into the left pane.
 var panelHasBorder  = true;    // I like the preview pane to look sunken.
+
+var clearFrameWhenLeaving  = true; // Can speed up loading of the clicked page if the preview is still loading.
 
 
 
@@ -276,6 +278,11 @@ function initPreview() {
 		return false;
 	}
 
+	function closeFrame() {
+		previewFrame.src = 'about:blank';
+		// previewFrame.parentNode.removeChild(previewFrame);
+	}
+
 	function checkClick(evt) {
 		var node = evt.target;
 		if (node == lastHover) {
@@ -287,11 +294,12 @@ function initPreview() {
 			) {
 				// We will pass the event up to click on the actual link.
 				// If it works, we can set this:
-				highlightNode(node,'#ffeedd','#ffddcc');
+				highlightNode(node,'#ffeecc','#ffeebb');
 				// Let's make sure it works ;p
 				// document.location = link.href;
 				// Pff we need to give FF time to colour the highlight :P
-				setTimeout(function(){document.location = link.href;},100);
+				if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},20); }
+				setTimeout(function(){document.location = link.href;},40);
 			} else {
 				// Let's try to Preview what the user clicked
 				if (checkFocus()) {
@@ -308,9 +316,10 @@ function initPreview() {
 					// BUG MAYBE FIXED: I fear we are sometimes not reaching here
 					// because we earlier failed the check container != lastPreview.
 					if (link) {
-						highlightNode(node,'#eeddff','#ddccff');
+						highlightNode(node,'#ddccff','#ccbbff');
 						// document.location = link.href;
-						setTimeout(function(){document.location = link.href;},20);
+						if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},20); }
+						setTimeout(function(){document.location = link.href;},40);
 					}
 				}
 			}
@@ -463,6 +472,8 @@ CONSIDER TODO: If we decide to click a link and follow it fullscreen, we could
 kill the iframe, so if the page is still loading from the first (preview)
 click, the browser will stop loading it clearly and immediately, and devote
 full resources to the new page load?
+
+TODO: Yellow highlights get cleared when we move off them.  Not so the purple.
 
 */
 
