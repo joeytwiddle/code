@@ -449,8 +449,8 @@ registry values set by that script's namespace.
 							scriptData.namespace = getMeta("namespace");
 							scriptData.description = getMeta("description");
 							scriptData.includes = getMetas("include");
-							GM_log("Got includes = "+scriptData.includes);
-							GM_log("Got unevaled includes = "+uneval(scriptData.includes));
+							// GM_log("Got includes = "+scriptData.includes);
+							// GM_log("Got unevaled includes = "+uneval(scriptData.includes));
 							scriptData.excludes = getMetas("exclude");
 							scriptData.resources = getPairedMetas("resource");
 							GrimeApeConfig.scripts[newScriptName] = scriptData;

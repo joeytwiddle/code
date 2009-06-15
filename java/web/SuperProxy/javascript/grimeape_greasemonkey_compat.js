@@ -227,30 +227,21 @@ this.ga_uneval = function (obj) {
 		return '"' + obj.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r') + '"';
 	} else if (typeof(obj)=='number') {
 		return ""+obj;
-	} else if (typeof(obj)=='object') {
-		// We could check for array with: obj instanceof Array
-		// if (obj.length == 0) { // It's actually an array?
-			// return "[]"; // return "({})"; // If we use for..in on an empty array, we list all the fns?
-		// }
-		// ({x:"fart", 1:"pants"})
+	} else if (obj instanceof Array) {
 		var arrayString = "";
-		for (var key in obj) {
-			// If obj is a custom object, any functions in it are iterated
-			// If obj is an array, in Moz only the items (keys) are iterated, but
-			// in Konq, the default array fns are also iterated :f
-			// We could sort-of detect arrays badly by detecting the length property :f
-			// But in general I found it preferable to use objects for storage.
-			var val = obj[key];
-			// GM_log("Got key "+key+" and val "+val);
+		for (var i=0;i<obj.length;i++) {
 			if (arrayString) { arrayString += ", "; }
-			arrayString += uneval(key)+":"+uneval(val);
-			// If key here is a string, Moz does not quote it if not needed, or surrounds
-			// it with single apostrophes if it contains a space or special chars.
-			// I believe our current method is equivalent anyway, although not identical.
+			arrayString += uneval(obj[i]);
 		}
-		arrayString = "({" + arrayString + "})";
-		// GM_log("Returning arrayString="+arrayString);
-		return arrayString;
+		return "[" + arrayString + "]";
+	} else if (typeof(obj)=='object') {
+		var objString = "";
+		for (var key in obj) {
+			var val = obj[key];
+			if (objString) { objString += ", "; }
+			objString += uneval(key)+":"+uneval(val);
+		}
+		return "({" + objString + "})";
 	} else if (typeof(obj)=='function') {
 		return (""+obj).replace(/\n/g,''); // This is quite similar to what FF produces
 		// return '"NO_FUNKTIONS"';
