@@ -31,17 +31,10 @@ var clearFrameWhenLeaving  = true; // Can speed up loading of the clicked page i
 
 /* ==================
  *
- * CHANGES in 0.9.9.4
+ * CHANGES in 0.9.9.5
  *
- * Frames now resize when window is resized.  Dropped setting pageHeightUsed
- * for gapBelow.
- *
- * ==================
- *
- * CHANGES in 0.9.9.3
- *
- * Made hovering optional.  Default now uses click to preview (second click to
- * follow link as usual).  Set focusWithHover=true for old behaviour.
+ * Borders, clearFrameWhenLeaving, and enough comments to keep you reading
+ * until next release.
  *
  * ================== */
 
@@ -93,9 +86,9 @@ function initPreview() {
 
 			// If we pulled more stuff than just the results into the left pane,
 			// then we may need to reduce the width of the contents, or we will
-			// get an unpleasant horizontal scrollbar.
-			// Just about everything except the results can become too wide at
-			// some point, so this is quite a fiddle...
+			// get an unwanted horizontal scrollbar.
+			// Just about everything can become too wide at some point, so this is
+			// quite a fiddle...
 
 			// document.getElementsByTagName('form')[0].getElementsByTagName("input")[1].size = 20;
 			var inputs = resultsBlock.getElementsByTagName("INPUT");
@@ -106,7 +99,7 @@ function initPreview() {
 
 			if (reduceWidth) {
 
-				//// TODO: Various things I haven't narrowed. ///
+				//// TODO: Various things I haven't narrowed. ////
 				// - Sometimes it is the row of Next/Previous Goooooooogle results.
 				// - Google gave me a lot of "Searches related to: resize window
 				//   iframe" at the bottom which were too wide (5 column table, one
@@ -327,6 +320,7 @@ function initPreview() {
 	}
 
 	// If user is hovering over startNode, which parent block can we highlight?
+	// This could be re-written (to work better with Delicious Results for example)
 	function getContainer(startNode) {
 		// GM_log("Got startNode = "+startNode);
 		var node = startNode;
@@ -468,10 +462,10 @@ the results panel has a horizontal scrollbar, so we move our mouse into
 the previewPane without really leaving the "focusable" highlight, so it
 stays highlighted.
 
-CONSIDER TODO: If we decide to click a link and follow it fullscreen, we could
-kill the iframe, so if the page is still loading from the first (preview)
-click, the browser will stop loading it clearly and immediately, and devote
-full resources to the new page load?
+DONE: If we decide to click a link and follow it fullscreen, we could kill the
+iframe, so if the page is still loading from the first (preview) click, the
+browser will stop loading it cleanly and immediately, and devote full resources
+to the new page load.
 
 TODO: Yellow highlights get cleared when we move off them.  Not so the purple.
 
