@@ -11,6 +11,11 @@ function doop () {
 	echo "$*"
 }
 
+## Op anyone who asks for it in #pug.ut:
+if [ "$CHANNEL" = "#pug.up" ] && [ "$TARGET" = "$NICK" ] && [ ! "$AUTH" = "KGB" ]
+then doop "$*" "/op $TARGET" ; exit
+fi
+
 ## In pug channels, the !op command actually has a small chance of doing something!
 if echo "$CHANNEL" | grep "^#.*pug$" >/dev/null && ## pug channel
    # echo "$NICK" | grep "^[a-zA-Z][a-zA-Z]*-" >/dev/null && ## caller is pugger
