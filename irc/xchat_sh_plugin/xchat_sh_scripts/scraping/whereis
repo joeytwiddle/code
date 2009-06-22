@@ -1,3 +1,7 @@
+## Disabled
+# echo "whereis is disabled until i cba to fix it"
+# exit 0
+
 . irccols.shlib
 
 ## Try; http://www.gametracker.com/search/ut/1500/?search_by=online_player&query=max&sort=name.asc
@@ -24,14 +28,14 @@ do
 	tee /tmp/gt |
 	tr '\n\t' '  ' |
 	tr -s ' ' |
-	sed 's+<div class=.results_op_c2[^ ]* +\n+g' |
-	sed 's+<a href="http://www.gametracker.com/server/\([^/]*\)/[^"]*">+X +g' |
+	sed 's+<div class="gttable_item gttable_srchop_c02"> *+\n+g' |
+	sed 's+<a href="\(http://www.gametracker.com\|\)/server/\([^/]*\)/[^"]*">+X +g' |
 	tee /tmp/gt2 |
 	grep "^X " |
 	tee /tmp/gt3 |
 	dropcols 1 |
 	# sed 's+</a>.*<a href=.\(http://www.gametracker.com/\|\)/server_info/\([^/]*\)/.>+ \2 +' |
-	sed 's+<a href=.http://www.gametracker.com/server_info/\([^/]*\)/.>+\1 +g' |
+	sed 's+<a href=.\(http://www.gametracker.com\|\)/server_info/\([^/]*\)/.>+\1 +g' |
 	# sed 's+</a>.*++' |
 	# grep "Online Now" |
 	sed 's+<div class=.results_op_c3.> Online Now </div>++g' |
