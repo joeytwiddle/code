@@ -32,7 +32,8 @@ then
 	fi
 	echo "/invite $NICK #ut.pug"
 	echo "/invite $NICK #noobpug"
-	# if [ "$1" ]
+	echo "/invite $NICK #pug.up"
+        # if [ "$1" ]
 	# then echo "/invite $1 #ut.pug"
 	# fi
 	exit 0
