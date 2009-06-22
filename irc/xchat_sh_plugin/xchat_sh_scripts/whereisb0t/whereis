@@ -1,3 +1,6 @@
+## Disabled
+exit 0
+
 . irc.shlib
 . irccols.shlib
 
