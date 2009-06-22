@@ -43,12 +43,14 @@ fi
 	else SEARCH_CHANNEL="$CHANNEL"
 	fi
 
+	## Channels which look like private (priv/pvt) channel can only be read if you are in that channel!
 	if [ "$SEARCH_CHANNEL" ] && ( contains "$SEARCH_CHANNEL" "priv" || contains "$SEARCH_CHANNEL" "pvt" ) && [ ! "$CHANNEL" = "$SEARCH_CHANNEL" ]
 	then
 		echo "Refusing to repeat log for private channel [$SEARCH_CHANNEL]."
 		exit 0
 	fi
 
+	## Same for private messages:
 	if [ "$SEARCH_CHANNEL" ] && ! startswith "$SEARCH_CHANNEL" "#"
 	then
 		echo "Refusing to repeat log for private message [$SEARCH_CHANNEL]."
