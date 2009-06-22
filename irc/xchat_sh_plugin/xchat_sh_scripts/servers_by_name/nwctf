@@ -21,7 +21,7 @@ fi
 (
 	export NOTICE_STYLE="none"
 	# Now closed: Multiplay CTF 85.236.100.43 p 195.4.17.197 
-	for SERVER in xol of inz u hh2 kx syn synlin cod nd dn tacsu f0x nzp $OTHERS zooz terror kawa gla f0x2 84.31.200.198:443 # focr nzp noobpug ## (multiplay FFA DM+CTF) # inf 
+	for SERVER in xol of inz u hh2 kx syn synlin cod dn tacsu f0x nzp $OTHERS zooz terror kawa gla f0x2 84.31.200.198:443 # nd focr nzp noobpug ## (multiplay FFA DM+CTF) # inf 
 	## DOWN afaik: tits oldpmp bmb be sahne il whore relax dk fraggerspub
 	## now MH: smo
 	# 82.192.78.54:7000 ## -ev!L~eLves-
