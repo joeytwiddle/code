@@ -1,0 +1,57 @@
+class AutoResize expands ResizeLib;
+
+var() config int CheckTime;
+var() config bool ResizeOnlyOnce;
+var() config int LowPlayers,HighPlayers;
+var() config float LowScale,HighScale;
+
+defaultproperties {
+	CheckTime=30
+	ResizeOnlyOnce=true
+	LowPlayers=6
+	HighPlayers=16
+	LowScale=0.75
+	HighScale=1.5
+}
+
+function PostBeginPlay() {
+	Super.PostBeginPlay();
+	SetTimer(CheckTime,false);
+}
+
+function int CountHumanPlayers() {
+	local Pawn p;
+	local int countHumanPlayers;
+	countHumanPlayers = 0;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p.bIsPlayer && !p.IsA('Spectator') && !p.IsA('Bot') && p.IsA('PlayerPawn') && p.bIsHuman) { // maybe the last 2 are not needed
+			countHumanPlayers++;
+		}
+	}
+	return countHumanPlayers;
+}
+
+event Timer() {
+	local int count;
+	count = CountHumanPlayers();
+
+	if (count <= LowPlayers) {
+		if (Scale != LowScale) {
+			BroadcastMessage(count$" players, resizing to "$Int(LowScale*100)$"%");
+			ChangeScaleTo(LowScale);
+		}
+	} else if (count >= HighPlayers) {
+		if (Scale != HighScale) {
+			ChangeScaleTo(HighScale);
+		}
+	} else {
+		if (Scale != 100) {
+			ChangeScaleTo(100);
+		}
+	}
+
+	// We restart the timer only if the option is still enabled.
+	if (!ResizeOnlyOnce)
+		SetTimer(CheckTime,false);
+}
+
