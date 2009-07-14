@@ -2,6 +2,8 @@
 // nBAutoSpectate.
 //================================================================================
 
+// vim: ft=uc sw=3 ts=3
+
 // TODO: AutoSpectate Online is working pretty nice, although there are three bugs when viewing:
 //       1) Sometimes it switches to view a new player without doing ViewClass?
 //       At least the result is that the NetPriority is not focused on that
@@ -11,6 +13,8 @@
 //       looking up, which is a crap angle.  Change limits or probabilities.
 //       3) It shows messages about "no event" and whatnot, but event
 //       replay/record should be disabled!
+
+// TODO: nBAutoSpectate (Online, probably offline too) should really call ViewClass to target the player we want to view.  If we just target him without, we often lose him after a few seconds, because he is out of focus.
 
 // TODO: Allow it to be a ServerActor and ServerPackage, that does not throw a lot of Tick() errors on the server, but does auto-start AutoSpectate for spectators.  (Also make the provided package usable by the user on other server from the mod menu like the original AutoSpectate.)
 
@@ -1535,6 +1539,7 @@ function FindNextEvent() {
 				EventSecondaryLocation[i] = String(tmpLocation);
 			}
 			*/
+			#ifdef ENABLE_EVENT_RECORD_REPLAY
 			if (bAutoRecord && bRecordEvents) {
 				LogInfo("Auto turning recording off.");
 				bRecordEvents = False; // auto_record // TODO BUG: this is getting called a lot!
@@ -1548,9 +1553,10 @@ function FindNextEvent() {
 				LogWarn("Changing speed to 0.8");
 				Camera.ConsoleCommand("slomo 0.8");
 			}
-			return; // don't look at any others
+			#endif
 			// SwitchToEvent(EventLog[i]);
 			// ReplayEvent(EventLog[i]);
+			return; // don't look at any others
 		}
 	}
 
@@ -1563,6 +1569,7 @@ function FindNextEvent() {
 		FlashMessageToPlayer(Camera,GetActorReport(),colBlue,8,0.9);
 	}
 
+	#ifdef ENABLE_EVENT_RECORD_REPLAY
 	if (bAutoRecord && !bRecordEvents /*&& !bWeAreOnline*/) { // TODO: Actually we want to check whether we are recording or playing a demo - if so then autorecord/replay is good!
 		LogInfo("Auto turning recording on.");
 		bRecordEvents = True; // auto_record
@@ -1579,6 +1586,7 @@ function FindNextEvent() {
 		LogInfo("DISABLED ev3nt recording - NOT a DEMO.");
 		bRecordEvents = False;
 	}
+	#endif
 
 	#undef ev
 
@@ -1664,7 +1672,9 @@ function bool WatchingInEyes() {
 
 function bool CanDoViewClass() {
 	// if (bWeAreOnline) return True;
-	if (WatchingInEyes() && bRecordEvents && !bWeAreOnline && IsDemo()) return False; // We are scanning a demo, so we are probably in 1st person non-behindview, so let's not do ViewClass()!
+	if (WatchingInEyes() && !bWeAreOnline && IsDemo()) return False; // We are scanning a demo, so we are probably in 1st person non-behindview, so let's not do ViewClass()!
+	//// Bah who cares if it fucks up?  Leave this to isCameraModeAllowed.
+	// bRecordEvents && 
 	return bDoViewClass;
 }
 
@@ -2215,6 +2225,7 @@ function CheckMessage(String str, Actor SenderA) {
 			Camera.ViewRotation = Pawn(Camera.ViewTarget).ViewRotation;
 			Sender.ClientMessage("nBAutoSpectate perorming roll.");
 		}
+		#ifdef ENABLE_EVENT_RECORD_REPLAY
 		if (str ~= "RECORD") { // Could make this a toggle
 			bRecordEvents = True;
 			LogWarn("Enabled recording.");
@@ -2226,6 +2237,7 @@ function CheckMessage(String str, Actor SenderA) {
 			LogWarn("Disabled recording.");
 			Sender.ClientMessage("nBAutoSpectate disabled recording.");
 		}
+		#endif
 		if (str ~= "SAVE") {
 			SaveData();
 			Sender.ClientMessage("nBAutoSpectate saved all data.");
