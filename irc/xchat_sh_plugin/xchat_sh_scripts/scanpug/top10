@@ -1,0 +1,50 @@
+if [ "$CHANNEL" = "#ut.pug" ]
+then :
+else exit 0
+fi
+
+if [ "$COUNT" ] && [ "$COUNT" -gt 0 ]
+then :
+else COUNT=10
+fi
+
+if [ "$COUNT" -gt 20 ]
+then NOTICE=true
+fi
+
+if [ "$COUNT" -gt 100 ]
+then COUNT=100
+fi
+
+. irc.shlib
+. irccols.shlib
+
+(
+	cat "$HOME"/.scanpug/*.picks | takecols 2 | sort | uniq -c | sort -n -k 1 -r |
+	grep -v "DUNNO_AUTH$" | grep -v "DUNNO$" |
+	head -n "$COUNT" |
+	PADDING=0 numbereachline |
+	while read NUM COUNT AUTH
+	do
+		AUTHRE=`toregexp "$AUTH"`
+		LAST_NICK=`
+			cat "$HOME"/.scanpug/*.picks | grep " $AUTHRE " | tail -n 1 | takecols 3
+		`
+		# jshinfo "$AUTH => $LAST_NICK"
+		if [ "$LAST_NICK" ]
+		then :
+		else LAST_NICK="$AUTH"; jshwarn "Failed to find nick for auth $AUTH"
+		fi
+		echo -n "$COLGREY""[$COLAQUA""$((NUM+1))""$COLGREY] $LAST_NICK (""$COLGREEN""$COUNT""$COLGREY"")  "
+		# if [ $((NUM%10)) = 9 ]
+		if [ $((NUM%8)) = 7 ]
+		then echo
+		fi
+	done
+	echo
+) |
+if [ "$NOTICE" ]
+then notice
+else cat
+fi
+
