@@ -34,7 +34,9 @@ grep "<\(Rival\|RF\)>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1 | tr -d '
 LASTLINESABOT=`
 cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 grep "<\(APug\|AB[Oo0][Tt]\)>" | grep "secs ago" | tail -n 1 |
-afterfirst ".(.). " | sed 's+ .±. +\n+' | beforelast " .±. " | sed 's+ +, +g'
+afterfirst "<[^>]*> *[^ ]* " |
+# afterfirst ".(.). " | sed 's+ .±. +\n+' | beforelast " .±. " | sed 's+ +, +g'
+strings | head -n 2 | sed 's+\(^\. \| \.$\)++g' | sed 's+\(^ \| $\)++'
 `
 [ "$LASTLINESABOT" ] && LASTLINES="$LASTLINESABOT"
 
@@ -62,9 +64,9 @@ fi
 ##    To trim the nasty ~G char we need this " *[^ ]* "
 echo "$LASTLINES" |
 double_escape_slashes |
-afterlast "<\(Rival\|RF\)> *[^ ]* " |
+afterfirst "<[^>]*> *[^ ]* " |
 beforelast " .$" |
-sed 's+, *+\n+g' |
+tr -d ',' | sed 's+ +\n+g' |
 (
 
 	read A
