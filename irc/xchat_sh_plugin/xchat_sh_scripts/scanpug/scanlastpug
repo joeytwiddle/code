@@ -1,7 +1,7 @@
 ## TODO: This has to do a lot of work scanning auths whenever someone does !list
 ##       It would be better just to check whether the most recent list == the last scanned list, *before* doing the auth scanning.  :P
 
-if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#pug.up" ]
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#pug.up" ] || [ "$CHANNEL" = "#ut994funpug" ] || [ "$CHANNEL" = "#pug" ]
 then
 
 	(
@@ -31,8 +31,8 @@ then
 		# echo "/notice nB^ $CHANNEL pickup stats updated."
 		# echo "/msg #ut.pug-bottalk $CHANNEL pickup stats updated."
 		MINIREPORT="`echo "$DATA" | takecols 1 2 | tr '\n' ' '`"
-		echo "/msg #ut.pug-bottalk $CHANNEL pickup stats updated: $MINIREPORT"
-		# echo "/msg nB^ $CHANNEL pickup stats updated: $MINIREPORT"
+		echo "/msg nogginBasher $CHANNEL pickup stats updated: $MINIREPORT"
+		# echo "/msg amok $CHANNEL pickup stats updated: $MINIREPORT"
 	else
 		jshinfo "We have already scanned this pug but we didn't know until latest test!"
 	fi
