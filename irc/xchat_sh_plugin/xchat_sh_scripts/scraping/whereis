@@ -1,6 +1,6 @@
 ## Disabled
-# echo "whereis is disabled until i cba to fix it"
-# exit 0
+echo "whereis is disabled until i cba to fix it"
+exit 0
 
 . irccols.shlib
 
