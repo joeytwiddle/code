@@ -1,23 +1,36 @@
 # if [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#ut" ]
 # then exit 0
 # fi
-
-if [ "$CHANNEL" = "#ut.pug" ] # && [[ "$NETWORK" =~ ".*[Qq]uakenet\.\(org\|net\)" ]]
+. irccols.shlib
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#pug.up" ] # && [[ "$NETWORK" =~ ".*[Qq]uakenet\.\(org\|net\)" ]]
 then
 	if [ "$*" ]
 	then
 		. restrict_repetitive_calls "5 minutes"
-		echo "[$CHANNEL is not accepting new invites at this time.]"
-		exit
-		echo "[Your request to invite $* has been forwarded to #ut.admins (probably)]"
-		echo "/msg #ut.admins [$NICK is requesting an invite for $*]"
-		echo "/msg LiquidFire [$NICK is requesting an invite for $* to #ut.pug]"
-		echo "/msg Majinx [$NICK is requesting an invite for $* to #ut.pug]"
-		# echo "/msg [SMo]Vader [$NICK is requesting an invite for $* to #ut.pug]"
-		echo "/msg BADMF [$NICK is requesting an invite for $* to #ut.pug]"
-		echo "/msg nogginBasher [$NICK is requesting an invite for $* to #ut.pug]"
-		echo "/msg off|noggin [$NICK is requesting an invite for $* to #ut.pug]"
-		echo "/msg nB^ [$NICK is requesting an invite for $* to #ut.pug]"
+		if [ "$CHANNEL" = "#pug.up" ]
+		then
+			echo "[Your request to invite $* has been forwarded!]"
+			echo "/msg amok [$NICK requested an invite for $* in $CHANNEL]"
+			echo "/msg tOmy\` [$NICK requested an invite for $* in $CHANNEL]"
+			echo "/msg [eC]Rednas [$NICK requested an invite for $* in $CHANNEL]"
+			echo "/msg nogginBasher [$NICK requested an invite for $* in $CHANNEL]"
+                        echo "/msg BADMF [$NICK requested an invite for $* in $CHANNEL]"
+			echo "/msg #pug.up.admins [$NICK requested an invite for $* in $CHANNEL]"
+                        exit
+		elif [ "$CHANNEL" = "#ut.pug" ]
+		then
+			# echo "[$CHANNEL is not accepting new invites at this time.]"
+			exit
+			echo "[Your request to invite $* has been forwarded to #ut.admins (probably)]"
+			echo "/msg #ut.admins [$NICK is requesting an invite for $*]"
+			echo "/msg LiquidFire [$NICK is requesting an invite for $* to #ut.pug]"
+			echo "/msg Majinx [$NICK is requesting an invite for $* to #ut.pug]"
+			# echo "/msg [SMo]Vader [$NICK is requesting an invite for $* to #ut.pug]"
+			echo "/msg BADMF [$NICK is requesting an invite for $* to #ut.pug]"
+			echo "/msg nogginBasher [$NICK is requesting an invite for $* to #ut.pug]"
+			echo "/msg off|noggin [$NICK is requesting an invite for $* to #ut.pug]"
+			echo "/msg nB^ [$NICK is requesting an invite for $* to #ut.pug]"
+		fi
 	else
 		echo "Usage: !invite <nick>"
 	fi
@@ -25,7 +38,7 @@ then
 fi
 
 [ "$CHANNEL" = "#adl.pvt" ]
-if [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#smo.priv" ] || echo "$NICK" | grep -i "^goly" >/dev/null || echo "$NICK" | grep -i "^mox" >/dev/null || echo "$NICK" | grep -i "mox$" >/dev/null || echo "$NICK" | grep -i "^[|]*sandwich[|]*$" >/dev/null || echo "$NICK" | grep -i "^[|]*xaz[|]*$" >/dev/null || echo "$NICK" | grep -i "^evi" >/dev/null
+if [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#smo.priv" ] || [ "$CHANNEL" = "#chillmunks.priv" ] || echo "$NICK" | grep -i "^goly" >/dev/null || echo "$NICK" | grep -i "^mox" >/dev/null || echo "$NICK" | grep -i "mox$" >/dev/null || echo "$NICK" | grep -i "^[|]*sandwich[|]*$" >/dev/null || echo "$NICK" | grep -i "^[|]*xaz[|]*$" >/dev/null || echo "$NICK" | grep -i "^evi" >/dev/null
 then
 	if [ "$1" ]
 	then NICK="$1"
@@ -47,6 +60,65 @@ then
 	echo "I have invited $1 to #ut.pug"
 	# echo "!explaininviteto $1"
 	exit
+fi
+
+if [ "$CHANNEL" = "#pug.up.admins" ]
+then
+        if [ "$1" = "help" ] || [ "$1" = "-h" ]
+	then
+            echo "$COLRED$COLBOLD .invite <nick> <trial/register>"
+	exit
+	fi
+
+        if [ "$2" = "register" ]
+        then
+            echo "/msg Q chanlev #pug.up $1 +gv"
+            echo "$COLRESET I have invited $COLRED$COLBOLD $1 $COLRESET to #pug.up and also attempted to $COLBOLD register $COLRESET him with +gv"
+            echo "/invite $1 #pug.up"
+            echo "$COLPINK Sending Explanation to $COLRED$COLBOLD $1 $COLPINK..."
+            echo "/msg $1 $COLBOLD U have been invited to join #pug.up"
+            echo "/msg $1 $COLBOLD In order to keep unwanted people out, #pug.up is an invite-only channel."
+            echo "/msg $1 $COLBOLD If you are authed atm i registered u to the channel with +gv."
+            echo "/msg $1 $COLBOLD From now on u can invite urself to the pug channel with the following commands:"
+            echo "/msg $1 $COLRED$COLBOLD /msg Q invite #pug.up"
+            echo "/msg $1 $COLBOLD /join #pug.up"
+            echo "/msg $1 $COLBOLD Alternatively, you can set your own +j flag on the channel, which will cause you to be auto-invited whenever you auth: /msg Q chanlev #pug.up $1 +j"
+            echo "/msg $1 $COLBOLD If you need an auth account, then you need to type: /msg Q HELLO <your_email> <your_email>"
+            echo "/msg $1 $COLBOLD If i failed to register u properly contact the admins for support: BADMF, amok, teasy, tomy, nogginbasher"
+            echo "/msg $1 $COLGREEN$COLBOLD Enjoy puggin !"
+	    echo "$COLPINK ... done"
+        exit
+        fi
+
+        if [ "$2" = "trial" ]
+        then
+            echo "/msg Q chanlev #pug.up $1 +k"
+            echo "$COLRESET I have invited $COLRED$COLBOLD $1 $COLRESET to #pug.up and also attempted to $COLBOLD register $COLRESET him as $COLGREEN$COLBOLD trial $COLRESET with +k"
+            echo "/invite $1 #pug.up"
+            echo "$COLPINK Sending Explanation to $COLRED$COLBOLD $1 $COLPINK..."
+            echo "/msg $1 $COLBOLD U have been invited to join #pug.up"
+            echo "/msg $1 $COLBOLD In order to keep unwanted people out, #pug.up is an invite-only channel."
+            echo "/msg $1 $COLBOLD If you are authed atm i registered u to the channel for trial."
+            echo "/msg $1 $COLBOLD From now on u can invite urself to the pug channel with the following commands:"
+            echo "/msg $1 $COLRED$COLBOLD /msg Q invite #pug.up"
+            echo "/msg $1 $COLBOLD /join #pug.up"
+            echo "/msg $1 $COLBOLD Alternatively, you can set your own +j flag on the channel, which will cause you to be auto-invited whenever you auth: /msg Q chanlev #pug.up $1 +j"
+            echo "/msg $1 $COLBOLD If you need an auth account, then you need to type: /msg Q HELLO <your_email> <your_email>"
+            echo "/msg $1 $COLBOLD If i failed to register u properly contact the admins for support: BADMF, amok, teasy, tomy, nogginbasher"
+            echo "/msg $1 $COLGREEN$COLBOLD Enjoy puggin !"
+	    echo "$COLPINK ... done"
+
+        exit
+        fi
+
+            echo "/invite $1 #pug.up"
+            echo "$COLRESET I have invited $COLRED$COLBOLD $1 $COLRESET to #pug.up"
+            echo "$COLPINK Sending Explanation to $COLRED$COLBOLD $1 $COLPINK..."
+            echo "/msg $1 $COLBOLD U have been invited to join #pug.up"
+            echo "/msg $1 $COLBOLD In order to keep unwanted people out, #pug.up is an invite-only channel."
+            echo "/msg $1 $COLBOLD Make sure to read the rules, be nice and enjoy puggin !"
+            echo "$COLPINK ... done"  
+        exit
 fi
 
 # if [ ! "$CHANNEL" = "#noobpug" ]
