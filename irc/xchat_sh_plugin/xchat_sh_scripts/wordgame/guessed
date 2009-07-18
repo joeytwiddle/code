@@ -1,0 +1,9 @@
+. irc.shlib
+. irccols.shlib
+
+. wordgame/wordgame.shlib
+
+echo -n "Words already guessed: "
+list_guessed_words | tr '\n' ' '
+echo
+

@@ -16,7 +16,7 @@ TARGET="$*"
 R="`expr $RANDOM % 100`"
 # jshinfo "[kick] R=$R"
 if [ "$R" -lt 25 ] &&
-	 ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
+   ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
    [ "$*" ] && echo "$CHANNEL" | grep "pug" >/dev/null &&
    # true
    ## Caller is pugged up - nice extra probability changer, but often
@@ -76,6 +76,10 @@ then
 fi
 
 
+NEEDE="`echo "$VERB" | grep "s$"`"
+if [ "$NEEDE" ]
+then NEEDE=e
+fi
 
-echo "/me $VERB"s"$EXTRA!"
+echo "/me $VERB$NEEDE"s"$EXTRA!"
 

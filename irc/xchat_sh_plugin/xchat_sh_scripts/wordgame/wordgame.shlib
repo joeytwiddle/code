@@ -94,8 +94,9 @@ already_guessed () {
 }
 
 increase_score () {
-	NICK="$1"
-	SCORE_TO_ADD="$2"
+	local NICK="$1"
+	local SCORE_TO_ADD="$2"
+	[ "$AUTH" ] && NICK="$AUTH"
 	SCORE_FILE="$WORDGAME_DATA_DIR"/wordgame."$NICK".score
 	if [ ! -f "$SCORE_FILE" ]
 	then CURRENT_SCORE=0
