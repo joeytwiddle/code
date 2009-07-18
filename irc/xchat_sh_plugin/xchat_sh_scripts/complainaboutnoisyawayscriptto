@@ -20,6 +20,7 @@ else
 		echo "/msg $RECIPIENT It messes up IRC for users who want to know when somebody has actually said something, or asked a question."
 		echo "/msg $RECIPIENT Please remove the \"/ME is now away/back\" from your away script, and make our lives happier! Thanks!"
 		echo "/msg $RECIPIENT The movement for noise-free away scripts is supported by F0X|nogginBasher, [eC]Puste, [pWa]amok, Reno\`mp3, [eC]Xenomorph, PmP|SubZer0 and [SMo]Vader. Please MSG me to add your name to the petition! >.<"
+		echo "/msg $RECIPIENT You might also like to read this: http://sackheads.org/~bnaylor/spew/away_msgs.html"
 
 	done
 
