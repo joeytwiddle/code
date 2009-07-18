@@ -1,4 +1,4 @@
-if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#siegepug" ] && [ ! "$CHANNEL" = "#pug.up" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#siegepug" ] && [ ! "$CHANNEL" = "#pug.up" ] && [ ! "$CHANNEL" = "#ut994funpug" ] && [ ! "$CHANNEL" = "#pug" ]
 then exit 0
 fi
 
@@ -6,6 +6,10 @@ fi
 # then NETWORK="irc.$NETWORK"
 # else NETWORK="irc.quakenet.org"
 # fi
+
+# 2009-07-17 01:15:11 [#ut.pug] <Rival>   ~G 10/10 ¬ 1) jr-D|  2) jr-dominod|  3) jr-eaver|  4) jr-habbi|  5) jr-HoT16^blk`|  6) jr-nog^boring|  7) jr-tOmy|  8) jr-bandalho|  9) jr-bjomlol|  10) jr-kK^boring ~G
+# 2009-07-15 02:47:23 [#pug.up] <AB0T>    ·(¥)· Available Players:  Puglist (10/10) .±. 1) TeKNeO 3) j-oggin 4) kK^ 5) adl|sreaver 6) j-rD 7) amok 8) Mermaid` 10) j-zombix ·(¥)·
+# 2009-07-17 21:08:02 [#ut994funpug] <AB0T>       °» Letter: Q «°» Puglist (10/10) «°» 1) Ares[4F] 2) eNi` 3) ID^Hektor 5) q-vnv|tom^^^^^^ 6) BillyJoel 7) q-mati`- 9) scr|mYst1c`- 10) Credit «°
 
 ## In case MF calls !setfaircapts automatically, we should wait a bit for Rival to respond to his !list...
 # sleep 3
@@ -24,11 +28,13 @@ do
 		grep "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)>.*. [(]*10/10[)]* ." |
 		grep -v "Map:.*Specs:" | ## hide any matching lines that are from server query response (not likely if called promptly, but useful for testing)
 		tail -n 1 |
-		afterfirst ". [(]*10/10[)]* ." |
+		afterfirst ". [(]*10/10[)]* [^ ]* " |
+		beforelast " " |
 		## For ABot:
-		afterfirst "±. " | beforefirst " ·(¥)·" |
+		# afterfirst "±. " | beforefirst " ·(¥)·" |
 		## For Rival:
-		sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' ' | grep -v "^$"
+		# sed 's+^. + +g ; s+ .$++g' |
+		sed 's+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' ' | grep -v "^$"
 	`
 
 	## For APug:
