@@ -1,4 +1,4 @@
-if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#siegepug" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#siegepug" ] && [ ! "$CHANNEL" = "#pug.up" ]
 then exit 0
 fi
 
@@ -21,11 +21,14 @@ do
 	# sleep 15 ## 5 and 8 were TOO SLOW! (utb0t was lagging a bit).  Maybe the buffer does not get flushed :|
 	LIST_LINE=`
 		tail -n "$BACKCHECK" "$LOGDIR"/"$NETWORK-$CHANNEL".log |
-		grep "<\(Rival\|RF\)>.*. 10/10 . " |
+		grep "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)>.*. [(]*10/10[)]* ." |
 		grep -v "Map:.*Specs:" | ## hide any matching lines that are from server query response (not likely if called promptly, but useful for testing)
 		tail -n 1 |
-		afterfirst ". 10/10 . " |
-		sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' '
+		afterfirst ". [(]*10/10[)]* ." |
+		## For ABot:
+		afterfirst "±. " | beforefirst " ·(¥)·" |
+		## For Rival:
+		sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' ' | grep -v "^$"
 	`
 
 	## For APug:

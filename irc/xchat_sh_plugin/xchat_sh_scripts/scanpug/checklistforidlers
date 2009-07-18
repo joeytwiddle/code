@@ -1,4 +1,9 @@
-if [ "$CHANNEL" = "#ut.pug" ]
+## This is not checking for IRC users who have gone idle, but for IRC users who have not rejoined the channel for a long time.
+## The reason is that our 'slowgetauth' script only looks back in the last million lines of history, to retrieve the puggers auth from the log.
+## If the pugger never leaves the channel, we lose track of his auth.  =/
+## Usually we want him to rejoin the channel, but sometimes we just kick him.  :D
+
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#pug.up" ]
 then :
 else exit 0
 fi
@@ -32,16 +37,20 @@ sleep 10 ## Wait for Rival to actually make !list response.
 ## Actually we shouldn't skip 0/10 or 10/10 lists if that WAS the last !list response - we should just abort processing for them!
 LIST=`
 	tail -n "$BACKCHECK" "$HOME/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
-	grep ".*<\(Rival\|RF\)>[^/]*[^0]/10" |
+	grep ".*<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)>[^/]*[^0]/10" |
 	tail -n 1 |
 	double_escape_slashes |
-	afterlast "<\(Rival\|RF\)> *[^ ]* " |
+	afterlast "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)> *[^ ]* " |
+	beforelast " [0-9]* spots remaining.*" |
+	# beforelast " .±. " | afterlast " .±. " | ## For ABot
+	beforelast " " | afterlast " Puglist[^ ]* [^ ]* " | ## For ABot
 	afterfirst ")" |
 	# betweenthe "[ 0-9)]*" |
 	# betweenthe " [0-9)]* " |
-	betweenthe "[ )]*" |
+	betweenthe " )" |
 	# striptermchars |
 	tr -d '‡ ' |
+	# grep -v "^\(.±.\|·(¥\|·\)$" |
 	grep -v "^[0-9]*$" |
 	grep -v "^ *$" |
 	cat
@@ -73,7 +82,7 @@ do
 			else echo "/kick $PUGGER Banned: Idling in IRC, talking in teamspeak, fragging other players."
 			fi
 			# echo "/kick $PUGGER Banned: Idling in IRC, talking in teamspeak, capping flags."
-		else echo "$PUGGER, I can't process your stats until you rejoin the channel."
+		else echo "$PUGGER, I can't process your stats until you rejoin the channel." #   Or I may have gone teasy."
 		fi
 	else
 		jshinfo "Verified: $PUGGER ($AUTH)"

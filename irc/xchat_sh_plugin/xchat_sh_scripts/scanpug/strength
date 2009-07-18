@@ -1,16 +1,19 @@
-# if [ ! "$CHANNEL" = "#ut.pug" ]
-# then exit
-# fi
-
-if echo "$CHANNEL" | grep "^#" >/dev/null
-then
-	if [ "$CHANNEL" = "#ut.pug" ]
-	then echo "My !strength command only works if you PM me."
-	fi ## does nothing outside of #ut.pug
-	exit 0
+## Only operates in pug channels, or from PM.
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#pug.up" ] || ! echo "$CHANNEL" | grep "^#" >/dev/null
+then :
+else exit
 fi
 
-export CHANNEL="#ut.pug" ## So that slowgetauth looks in that log
+if [ "$CHANNEL" = "#ut.pug" ]
+then echo "My !strength command only works if you PM me." ; exit 0
+fi ## does nothing outside of #ut.pug
+
+## In PMs, default to #ut.pug:
+if ! echo "$CHANNEL" | grep "^#" >/dev/null
+then CHANNEL="#ut.pug"
+fi
+
+# export CHANNEL="#ut.pug" ## So that slowgetauth looks in that log
 
 # echo "No such command: !strength"
 # exit 0
@@ -34,7 +37,7 @@ then
 	# echo "/notice $NICK I know $WHO as $AUTH"
 	# echo "/notice $NICK I have seen him in `cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l` pugs."
 	EXTRA=""
-	COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
+	COUNT=`cat ~/.scanpug/$CHANNEL-*.picks | grep " $AUTH " | wc -l`
 	# if [ "$COUNT" -gt 0 ]
 	# then
 		# SUM=`cat ~/.scanpug/*.picks | grep " $AUTH " | takecols 1 | awksum`
@@ -46,7 +49,7 @@ then
 	STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
 	[[ ! "$STRENGTH" = "?.?" ]] && EXTRA="  He/she was picked #$STRENGTH on average [scale 1-8]."
 	# echo "I have seen $AUTH play $COUNT pugs.$EXTRA"
-	echo "I have seen $AUTH picked $COUNT times.$EXTRA"
+	echo "I have seen $AUTH picked $COUNT times in $CHANNEL.$EXTRA"
 else
 	echo "I do not know $WHO"
 fi

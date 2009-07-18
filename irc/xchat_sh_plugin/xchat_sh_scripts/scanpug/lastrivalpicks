@@ -20,6 +20,7 @@ cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 grep "<\(Rival\|RF\)>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1 | tr -d '‡'
 `
 
+## Unfortunately ABot does not print the final teams until !last is requested.
 # LASTLINESABOT=`
 # cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 # grep "<\(APug\|ABot\)>" | grep -A1 " Teams have been set " | tail -n 1
@@ -28,6 +29,14 @@ grep "<\(Rival\|RF\)>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1 | tr -d '
 # echo "$LASTLINESABOT" | afterfirst "Red Team: " | sed 's+  *Blue Team:  *+\n+' | sed 's+ +, +g' | sed 's+,[^,]*$++g' | sed 's+^+<Rival> @ +'
 # `
 # LASTLINES="$LASTLINESABOT"
+
+## Second attempt:
+LASTLINESABOT=`
+cat "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
+grep "<\(APug\|AB[Oo0][Tt]\)>" | grep "secs ago" | tail -n 1 |
+afterfirst ".(.). " | sed 's+ .±. +\n+' | beforelast " .±. " | sed 's+ +, +g'
+`
+[ "$LASTLINESABOT" ] && LASTLINES="$LASTLINESABOT"
 
 jshinfo "LASTLINES=$LASTLINES"
 

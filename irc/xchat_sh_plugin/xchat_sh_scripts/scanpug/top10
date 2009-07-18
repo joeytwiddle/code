@@ -1,4 +1,4 @@
-if [ "$CHANNEL" = "#ut.pug" ]
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#pug.up" ]
 then :
 else exit 0
 fi

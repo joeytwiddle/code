@@ -6,11 +6,12 @@
 ##           except for some reason 10 players is too much and runs out of chars O_o
 ## lol run mid-edit: <UT> $ Avgpicks :: ++g | [tr -d ?] lover 4) [r-LovelyPmP ?] # tail [-n 1 | afterfirst (10/10) . | # sed s+^. + +g ; s+ .$++g ; s+<[0-9][0-9]*) ?]  ` []  sed [s+^. + +g ; s+ .$++g | tr -d ?] 10) r-goly [3.8] 8) r-Stas 
 
+## Just for testing:
 if [ "$AUTH" = nogginBasher ]
-then CHANNEL="#ut.pug"
+then CHANNEL="#pug.up"
 fi
 
-if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#pug.up" ]
 then exit
 fi
 
