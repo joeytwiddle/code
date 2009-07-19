@@ -641,52 +641,81 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         return scriptHTML;
     }
 
+    /** Warning: Do not use ^ or $ in your regexp.  These will match every buffer checked!
+     * Also beware any \\\\1s in your regexp will be broken when doing appendOnFailure, due to literalise_replacement. 
+    **/
+    
     class ReplacingInputStream extends InputStream {
         final InputStream source;
         final Pattern regexPattern;
         final String replacement;
         final boolean replaceAll;
+        final boolean appendOnFailure;
         final int bufferLength;
         final StringBuffer outBuffer;
         final StringBuffer inBuffer;
 
         boolean doneReplacement = false;
+        boolean reachedEnd = false;
 
         public ReplacingInputStream(InputStream in, String regexp, String replacement) {
-            this(in,regexp,replacement,Pattern.CASE_INSENSITIVE,false,4096/8);
+            this(in,regexp,replacement,Pattern.CASE_INSENSITIVE,false,true,4096/4);
         }
-        public ReplacingInputStream(InputStream in, String regexp, String replacement, int flags, boolean replaceAll, int bufferLength) {
+        public ReplacingInputStream(InputStream in, String regexp, String replacement, int flags, boolean replaceAll, boolean appendOnFailure, int maxMatchLength) {
             this.source = in;
             this.regexPattern = Pattern.compile(regexp,flags);
             this.replacement = replacement;
             this.replaceAll = replaceAll;
-            this.bufferLength = bufferLength;
+            this.appendOnFailure = appendOnFailure;
+            this.bufferLength = maxMatchLength * 2; // The bufferLength we use should be twice the max matchable string length.
             this.inBuffer = new StringBuffer();
             this.outBuffer = new StringBuffer();
         }
         
         public int read() throws IOException {
-            while (inBuffer.length() < bufferLength) {
-                int i = source.read();
-                if (i == -1)
-                    break;
-                inBuffer.append((char)i);
+            try {
+                // Buffer is filled, then checked.
+                // Then we allow the buffer to be half emptied, before the next re-fill and check.
+                // BUG: During the last bufferLength/2 bytes of the stream, we check
+                // every byte, which is pointless to repeat after the first attempt!
+                // Ah I think the addition of reachedEnd circumvents this.
+                if (!reachedEnd && inBuffer.length() < bufferLength/2) {
+                    while (inBuffer.length() < bufferLength) {
+                        int i = source.read();
+                        if (i == -1) {
+                            reachedEnd = true;
+                            break;
+                        }
+                        inBuffer.append((char)i);
+                    }
+                    checkBuffer();
+                }
+                if (outBuffer.length() == 0 && inBuffer.length() == 0) {
+                    // We are at the end of the stream.
+                    if (appendOnFailure && !doneReplacement) {
+                        // The replacement may attempt to use special codes such as \1 (todo: &)
+                        // We must remove them.
+                        outBuffer.append(replacement.replaceAll("\\\\[0-9]*","")); // literalise_replacament
+                        doneReplacement = true;
+                    } else {
+                        return -1;
+                    }
+                }
+                if (outBuffer.length() > 0) {
+                    char c = outBuffer.charAt(0);
+                    outBuffer.deleteCharAt(0);
+                    return (int)c;
+                }
+                if (inBuffer.length() > 0) {
+                    char c = inBuffer.charAt(0);
+                    inBuffer.deleteCharAt(0);
+                    return (int)c;
+                }
+            } catch (Exception e) {
+                Logger.error("Unexpected exception!  Deal with this!");
+                Logger.error(e);
             }
-            if (outBuffer.length() == 0 && inBuffer.length() == 0) {
-                return -1;
-            }
-            checkBuffer();
-            if (outBuffer.length() > 0) {
-                char c = outBuffer.charAt(0);
-                outBuffer.deleteCharAt(0);
-                return (int)c;
-            }
-            if (inBuffer.length() > 0) {
-                char c = inBuffer.charAt(0);
-                inBuffer.deleteCharAt(0);
-                return (int)c;
-            }
-            return 0;
+            return -1; // Should rarely happen.  Maybe if replacement=="".
         }
 
         public void checkBuffer() {
@@ -715,7 +744,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         response.setHeader("Connection","Close");
         StringBuffer extraHTML = getScriptHTMLForInjection();
         InputStream originalInput = response.getContentAsStream();
-        InputStream modifiedInput = new ReplacingInputStream(originalInput,"(<[Bb][Oo][Dd][Yy][^>]*>)",extraHTML+"\\1");
+        InputStream modifiedInput = new ReplacingInputStream(originalInput,"(</[Bb][Oo][Dd][Yy][^>]*>)",extraHTML+"\\1");
         response.setContentStream(modifiedInput);
     }
 
