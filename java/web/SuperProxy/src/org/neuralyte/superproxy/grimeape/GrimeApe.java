@@ -3,19 +3,19 @@ package org.neuralyte.superproxy.grimeape;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.Hashtable;
-import java.util.List;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.apache.xerces.dom.CoreDocumentImpl;
-import org.apache.xerces.dom.TextImpl;
 import org.common.nap.Nap;
 import org.neuralyte.Logger;
 import org.neuralyte.common.FileUtils;
@@ -26,11 +26,8 @@ import org.neuralyte.httpdatatools.HttpRequestBuilder;
 import org.neuralyte.httpdatatools.HttpResponseBuilder;
 import org.neuralyte.simpleserver.SocketServer;
 import org.neuralyte.simpleserver.httpadapter.HTTPStreamingTools;
-import org.neuralyte.superproxy.HTMLDOMUtils;
 import org.neuralyte.superproxy.PluggableHttpRequestHandler;
 import org.neuralyte.webserver.WebRequest;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 
 import sun.misc.Signal;
 import sun.misc.SignalHandler;
@@ -86,6 +83,12 @@ import sun.misc.SignalHandler;
  * Possible advanced features of SuperProxy:
  * We could allow scripts to register to receive certain events from the Proxy,
  * such as 404? Would that be useful?
+ */
+
+/*
+ * I had not considered injecting a base tag to the HTML document.
+ * It could be a sneaky way to watermark a page so we will know that future
+ * requests hitting that watermark are originated from the marked page.
  */
 
 public class GrimeApe extends PluggableHttpRequestHandler {
@@ -316,6 +319,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             // This still didn't stop Firefox complaining about poorly formatted response.
             // With or without it, even with errors, the data gets through fine.
             if (!wreq.getParam("cdata").isEmpty()) {
+                // @todo BUG If response.getContentAsString() contains the
+                // string "]]>" then we are in trouble. We would have to escape
+                // that here (and probably unescape it on the JS side).
                 response.setContent("<![CDATA[" + response.getContentAsString() + "]]>");
             } else if (commandDir.equals("userscripts")) {
                 // String namespace = args[3];
@@ -348,12 +354,15 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                     StringBuffer content = response.getContentAsStringBuffer();
                     content.insert(0, ""
                             + "(function(){\n"
+                            /* Setup namespace specifics. */
                             + "var GA_namespace = \""+escapedNamespace+"\";\n"
                             + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
                             + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
                             + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
                             + "function GM_xmlhttpRequest(x) { GA_xmlhttpRequest(GA_namespace,x); }\n"
+                            /* Some logging */
                             + "GM_log(\"Initializing ...\");\n"
+                            + "document.title = '['+GA_namespace+'] '+document.title.replace(/^\\[[^\\]]*\\] /,'');\n"
                             + "var GA_userscriptStartTime = new Date().getTime();\n"
                             + "try {\n"
                     );
@@ -363,6 +372,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                             + "}\n"
                             + "var GA_userscriptTimeTaken = (new Date().getTime() - GA_userscriptStartTime) / 1000;\n"
                             + "GM_log(\"Completed in \"+GA_userscriptTimeTaken+\" seconds.\");\n"
+                            + "document.title = document.title.replace(/^\\[[^\\]]*\\] /,'');\n"
                             + "})();\n"
                     );
                     response.setContent(content);
@@ -535,71 +545,178 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     }
 
     private void maybeAddScripts(HttpResponse response) throws IOException {
-        /** @todo What does GM trigger on?  I've seen it run (fail) on .txt and .js pages also. **/
+        /** @todo What does GM trigger on?  I've seen it run (fail) on .txt and .js pages also.
+         * Does GM trigger when JS creates a new IFrame and populates it without HTTP?  We don't.
+        **/
         if (response.hasContent() && response.getHeader("Content-type").toLowerCase().startsWith("text/html")) {
             // HTTPStreamingTools.unencodeResponse(response);
             // HTTPStreamingTools.unzipResponse(response);
             // StringBuffer responseString = StreamUtils.streamStringBufferFrom(response.getContentAsStream());
-            StringBuffer responseString = response.getContentAsStringBuffer();
-            // Logger.log(""+responseString);
-            int i = responseString.lastIndexOf("</BODY>");
-            if (i == -1)
-                i = responseString.lastIndexOf("</body>");
-            if (i == -1) {
-                i = responseString.length();
-                // yeah nice Google doesn't bother with </BODY> lol
-            }
-            if (i == -1) {
-                Logger.warn("Failed to inject script tag.");
-            } else {
-                Logger.log("Doing injection at index "+i);
-                String[] scriptsToInject = {
-                        
-                        //// Stuff to improve browser compatibility. ////
-                        //// Not needed for all browsers. ////
-                        
-                        // For efficiency, these should only be loaded
-                        // for browsers which will benefit from them.
-                        // Also we need only load components if they are 
-                        // used.  We could add stubs which wait until they
-                        // are called before loading the actual implementation.
-                        // This may require requesting a script by synchronous
-                        // xmlhttpRequest and eval()ing it.
-                        // Maybe Base2 has a technique for this already.
-                        
-                        // Base2 fixes the DOM so it is standards compliant.
-                        // For example, in Konqueror 3.5 it makes window.onload work.
-                        "javascript/base2/base2.js",
-                        "javascript/base2/base2-dom.js",
-                        // "javascript/base2/base2-dom-strict.js",
-                        "javascript/base2/base2-legacy.js",
-                        
-                        // This adds XPathResult if we do not already have one.
-                        "javascript/xpath.js",
-                        
-                        //// GrimeApe API, GUI and runner.
-                        "javascript/grimeape_greasemonkey_compat.js",
-                        "javascript/grimeape_config.js",
-                        
-                        //// Userscripts are now loaded dynamically.
-                        // "userscripts/faviconizegoogle/faviconizegoogle.user.js",
-                        // "userscripts/track_history/track_history.user.js",
-                        // "userscripts/alert_watcher/alert_watcher.user.js",
-                        // "userscripts/reclaim_cpu/reclaim_cpu.user.js",
-                        // "userscripts/auto_highlight_text_on_a/auto_highlight_text_on_a.user.js",
-                        
-                };
-                for (String script : scriptsToInject) {
-                    // String srcURL = "/_gRiMeApE_/javascript/test.js";
-                    String srcURL = "/_gRiMeApE_/"+script;
-                    String injectHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'></SCRIPT>\n";
-                    responseString.insert(i, injectHTML);
-                    i += injectHTML.length();
-                }
-            }
-            // We must reset it after streaming it, even if we didn't change it.
-            response.setContent(responseString.toString());
+            // @todo Although it will be less CPU efficient, it would be better for the
+            // user if we perform this stream editing in a streaming fashion.  Some
+            // pages take a long time to load, so we should pass what we get
+            // until we reach the injection point.
+            // Ah problem.  We want to seek the last occurrence, to avoid hitting a false positive on for example some javascript embedded in the page which contains the string "</BODY>".
+            // Of course to find the last, we require the whole page.
+            // Solutions?
+            //   - Heavy: Parse the page properly into a DOM, allowing us to avoid the invalid hits.
+            //   - Good: Stream as we read, until we hit the first </BODY>.  Then get the rest of the stream without passing, so we can get the last </BODY>.
+            //   - Also: Don't inject our JS at </BODY>.  Inject it into <HEAD> but make it add an event which doesn't fire until the page has loaded.
+            // StreamEditor ed = new StreamEditor();
+            
+            // addScriptsSlowStable(response);
+            streamAndAddScripts(response);
+            
         }
+    }
+
+    private void addScriptsSlowStable(HttpResponse response) {
+        StringBuffer responseString = response.getContentAsStringBuffer();
+        // Logger.log(""+responseString);
+        int i = responseString.lastIndexOf("</BODY>");
+        if (i == -1)
+            i = responseString.lastIndexOf("</body>");
+        if (i == -1) {
+            i = responseString.length();
+            // yeah nice Google doesn't bother with </BODY> lol
+        }
+        if (i == -1) {
+            Logger.warn("Failed to inject script tag.");
+        } else {
+            Logger.log("Doing injection at index "+i);
+            StringBuffer scriptHTML = getScriptHTMLForInjection();
+            responseString.insert(i,scriptHTML);
+            i += scriptHTML.length();
+        }
+        // We must reset it after streaming it, even if we didn't change it.
+        response.setContent(responseString.toString());
+    }
+
+    private StringBuffer getScriptHTMLForInjection() {
+        String[] scriptsToInject = {
+                
+                //// Stuff to improve browser compatibility. ////
+                //// Not needed for all browsers. ////
+                
+                // For efficiency, these should only be loaded
+                // for browsers which will benefit from them.
+                // Also we need only load components if they are 
+                // used.  We could add stubs which wait until they
+                // are called before loading the actual implementation.
+                // This may require requesting a script by synchronous
+                // xmlhttpRequest and eval()ing it.
+                // Maybe Base2 has a technique for this already.
+                
+                // Base2 fixes the DOM so it is standards compliant.
+                // For example, in Konqueror 3.5 it makes window.onload work.
+                "javascript/base2/base2.js",
+                "javascript/base2/base2-dom.js",
+                // "javascript/base2/base2-dom-strict.js",
+                "javascript/base2/base2-legacy.js",
+                
+                // This adds XPathResult if we do not already have one.
+                "javascript/xpath.js",
+                
+                //// GrimeApe API, GUI and runner.
+                "javascript/grimeape_greasemonkey_compat.js",
+                "javascript/grimeape_config.js",
+                
+                //// Userscripts are now loaded dynamically.
+                // "userscripts/faviconizegoogle/faviconizegoogle.user.js",
+                // "userscripts/track_history/track_history.user.js",
+                // "userscripts/alert_watcher/alert_watcher.user.js",
+                // "userscripts/reclaim_cpu/reclaim_cpu.user.js",
+                // "userscripts/auto_highlight_text_on_a/auto_highlight_text_on_a.user.js",
+                
+        };
+        StringBuffer scriptHTML = new StringBuffer();
+        for (String script : scriptsToInject) {
+            // String srcURL = "/_gRiMeApE_/javascript/test.js";
+            String srcURL = "/_gRiMeApE_/"+script;
+            String injectHTML = "<SCRIPT type='text/javascript' src='" + srcURL + "'></SCRIPT>\n";
+            // responseString.insert(i, injectHTML);
+            // i += injectHTML.length();
+            scriptHTML.append(injectHTML);
+        }
+        return scriptHTML;
+    }
+
+    class ReplacingInputStream extends InputStream {
+        final InputStream source;
+        final Pattern regexPattern;
+        final String replacement;
+        final boolean replaceAll;
+        final int bufferLength;
+        final StringBuffer outBuffer;
+        final StringBuffer inBuffer;
+
+        boolean doneReplacement = false;
+
+        public ReplacingInputStream(InputStream in, String regexp, String replacement) {
+            this(in,regexp,replacement,Pattern.CASE_INSENSITIVE,false,4096/8);
+        }
+        public ReplacingInputStream(InputStream in, String regexp, String replacement, int flags, boolean replaceAll, int bufferLength) {
+            this.source = in;
+            this.regexPattern = Pattern.compile(regexp,flags);
+            this.replacement = replacement;
+            this.replaceAll = replaceAll;
+            this.bufferLength = bufferLength;
+            this.inBuffer = new StringBuffer();
+            this.outBuffer = new StringBuffer();
+        }
+        
+        public int read() throws IOException {
+            while (inBuffer.length() < bufferLength) {
+                int i = source.read();
+                if (i == -1)
+                    break;
+                inBuffer.append((char)i);
+            }
+            if (outBuffer.length() == 0 && inBuffer.length() == 0) {
+                return -1;
+            }
+            checkBuffer();
+            if (outBuffer.length() > 0) {
+                char c = outBuffer.charAt(0);
+                outBuffer.deleteCharAt(0);
+                return (int)c;
+            }
+            if (inBuffer.length() > 0) {
+                char c = inBuffer.charAt(0);
+                inBuffer.deleteCharAt(0);
+                return (int)c;
+            }
+            return 0;
+        }
+
+        public void checkBuffer() {
+            if (doneReplacement && !replaceAll) {
+                return;
+            }
+            Matcher m = regexPattern.matcher(inBuffer.toString());
+            if (m.find()) {
+                Logger.log("Found a match at "+m.start());
+                // int start = m.start();
+                int end = m.end();
+                String result = m.replaceFirst(replacement);
+                // We send the replaced string to the output:
+                int resEnd = end + (result.length() - inBuffer.length());
+                outBuffer.append( result.subSequence(0, resEnd) );
+                // And remove the matched string from the input:
+                inBuffer.delete(0,end);
+            }
+        }
+        
+    }
+    
+    private void streamAndAddScripts(HttpResponse response) throws IOException {
+        HTTPStreamingTools.unencodeResponse(response);
+        HTTPStreamingTools.unzipResponse(response);
+        response.setHeader("Connection","Close");
+        StringBuffer extraHTML = getScriptHTMLForInjection();
+        InputStream originalInput = response.getContentAsStream();
+        InputStream modifiedInput = new ReplacingInputStream(originalInput,"(<[Bb][Oo][Dd][Yy][^>]*>)",extraHTML+"\\1");
+        response.setContentStream(modifiedInput);
     }
 
 }
