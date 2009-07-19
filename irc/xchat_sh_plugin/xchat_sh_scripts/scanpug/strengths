@@ -11,7 +11,7 @@ if [ "$AUTH" = nogginBasher ]
 then CHANNEL="#pug.up"
 fi
 
-if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#pug.up" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#pug.up" ] && [ ! "$CHANNEL" = "#ut994funpug" ] && [ ! "$CHANNEL" = "#pug" ]
 then exit
 fi
 
@@ -47,6 +47,7 @@ afterfirst "/10 " |
 # sed 's+? .)+ +g'
 sed 's+^. + +g ; s+ .$++'
 `
+jshinfo "LASTLIST=$LASTLIST"
 
 #### For APug:
 ## TODO: get the 8/10 pickables without the captains.
@@ -63,6 +64,20 @@ sed 's+^. + +g ; s+ .$++'
 	# # sed 's+^. + +g ; s+ .$++g ; s+\<[0-9][0-9]*) ++g' | tr -d ' '
 	# sed 's+^. + +g ; s+ .$++g ' | tr -d ' '
 # `
+LASTLIST_ABOT=`
+tail -n "$BACKCHECK" "$LOGDIR/$NETWORK-$CHANNEL.log" |
+grep "<\(APug\|[Aa][Bb][Oo0][Tt]\)>" |
+# grep -A1 "Teams have been set" | ## Duh that's too late, shows all players!
+grep "Available Players: " |
+tail -n 1 |
+afterfirst "Puglist[^ ]*" |
+strings |
+tail -n 2 |
+afterfirst ": " |
+beforelast " \. *"
+`
+jshinfo "LASTLIST_ABOT=$LASTLIST_ABOT"
+[ "$LASTLIST_ABOT" ] && LASTLIST="$LASTLIST_ABOT"
 
 if [ ! "$LASTLIST" ]
 then
@@ -80,7 +95,8 @@ jshinfo "LASTLIST=$LASTLIST"
 NEWLIST=""
 for WORD in $LASTLIST
 do
-	if echo "$WORD" | grep "\\-" >/dev/null
+	# if echo "$WORD" | grep "\\-" >/dev/null
+	if ! echo "$WORD" | grep "[0-9]*)" >/dev/null
 	then
 		NEWLIST="$NEWLIST""$COLGREY$WORD"
 		AUTH=`sh scanpug/slowgetauth "$WORD"`
@@ -104,13 +120,15 @@ do
 			else STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
 			fi
 		fi
+		[ "$PREFIX" ] || PREFIX="#"
+		NEWLIST="$NEWLIST""$COLGREY$COLBOLD$PREFIX$COLBOLD"
 		if [ "$STRENGTH" = "?.?" ]
-		then echo "$WORD ?"
-		else echo "$WORD $STRENGTH"
+		then echo "$WORD ? $PREFIX"
+		else echo "$WORD $STRENGTH $PREFIX"
 		fi
 	else
-		NEWLIST="$NEWLIST""$COLGREY$COLBOLD$WORD$COLBOLD"
-		echo -n "$WORD "
+		# echo -n "$WORD "
+		PREFIX="$WORD"
 	fi
 	NEWLIST="$NEWLIST"" "
 done > /tmp/pugstrengths.list
@@ -137,11 +155,18 @@ TITLE="Avgpicks"
 # echo -n "$COLPINK\$ $COLBLUE$COLBOLD""$TITLE$COLBOLD $COLPINK:: "
 echo -n "$DECOCOL$DECOCHAR $COLBLUE$COLBOLD$TITLE$COLBOLD $DECOCOL:: "
 cat /tmp/pugstrengths.list |
-sort -n -k 3 $SORTREV |
-while read NUM NICK STRENGTH
+sort -n -k 2 $SORTREV |
+while read NICK STRENGTH NUM
 do
 	[[ "$STRENGTH" = "?" ]] && STRENGTH="$COLYELLOW$STRENGTH""?"
-	echo -n "$COLWHITE$NUM $COLGREY$NICK $BRACKETCOL""[$STRENGTHCOL""$STRENGTH$BRACKETCOL""] "
+	# echo -n "$COLWHITE$NUM $COLGREY$NICK $BRACKETCOL""[$STRENGTHCOL""$STRENGTH$BRACKETCOL""] "
+	if [ "$NUM" ]
+	then echo -n "$COLGREY$COLBOLD$NUM$COLBOLD "
+	fi
+	echo -n "$COLGREY$NICK "
+	if [ "$STRENGTH" ]
+	then echo -n "$BRACKETCOL""[$STRENGTHCOL""$STRENGTH$BRACKETCOL""] "
+	fi
 done
 # echo "$COLPINK\$"
 echo "$DECOCOL$DECOCHAR"
