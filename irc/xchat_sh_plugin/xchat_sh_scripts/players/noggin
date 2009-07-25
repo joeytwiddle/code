@@ -2,22 +2,25 @@ list () {
 cat << !
 <x-noggin^SGI> swimming is awesome we should live in the sea and just come on land for meals
 "There is always a way to pwn." - The Masterer
-Mr. Spock says there are always alternatives.
-Mr. Spock rules - he's the coolest!
+Mr. Spock says there is always an alternative.
 Are wasps scary because they wear yellow+black stripes, or are yellow+black stripes scary because that's what wasps wear?
 Is the cold coming, or is the heat leaving?
 You know you've had too much coffee, when you are making a fresh pot of coffee, but your hand twitches, and you throw the coffee you are currently drinking up the wall.
-noggin is the kind of guy that watches wildlife videos and screams "omg why didn't the cameraman stop that wolf?!"
 If the world becomes too much, you can step back from the world, and into your mind.
+(+nB^) nin and kgb weren't talking so i couldn't get any covers  (+nB^) so i made a sandwich in our flak room while they equalised
+<nogginBasher> i was a darth for 5 minutes  <nogginBasher> but i didn't like the helmets  <nogginBasher> i found them hard to breathe in
+<noggin^slaughte> mm 7-day old coffee tastes like mushrooms
 !
+# Mr. Spock rules - he's the coolest!
+# noggin gets upset during wildlife movies.  "why didn't the cameraman save that rabbit?!"
+# noggin is the kind of guy that watches wildlife videos and screams "omg why didn't the cameraman stop that wolf?!"
 # <ty-noggin> i can't deny i sucked pretty hard at the start of revenge, 2 enemy caps and muppet here has 0 frags <ty-noggin> but i don't care i had a lot of fun the music is so exciting on that map <ty-noggin> and it was nice to telefrag vetro twice and look at how noobish nin's skin is and how he moves like an elephant with a limp
-# (+nB^) nin and kgb weren't talking so i couldn't get any covers  (+nB^) so i made a sandwich in our flak room
-# Mr. Spock says there is always an alternative.
 # I may have gone to Amsterdam!  Phone/txt me: +447791 944657
 # Let's not talk about money, let's talk about love ...
-# Practice smiling at all times.  That way, when you are old, even if you can do nothing else, you can smile.
+# Practice smiling at all times.  That way, when you are old, even if you can do nothing else, you can still smile.
 # I feel slightly guilty when someone leaves IRC, like it was something I said that made them leave.  On the other hand, when someone joins the channel, I have a good feeling we will be friends.
 # <@nogginBasher> my hair got longer. the local kids stopped calling me "Jesus" now they prefer "Captain Caveman"
+# Mr. Spock says there are always alternatives.
 }
 
 list | randomorder | head -n 1

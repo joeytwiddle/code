@@ -1,0 +1,13 @@
+list () {
+# 2009-07-18 22:22:11 [#puB] <hinterland> we have the cheap, chinese knockoff... utb0t   2009-07-18 23:50:49 [#puB] <utb0t> i resent being called a knockoff
+# 2009-07-24 15:41:46 <hinter|work> !guess taco   2009-07-24 15:41:48 <utb0t> (4/53) taco: n 1: offensive terms for a person of Mexican descent [syn: {greaser}, hinter|work +1 => 309!
+# <ichokedahos> <utb0t> (4/53) taco: n 1: offensive terms for a person of Mexican descent [syn: {greaser}
+cat << !
+-15:41- <utb0t> (4/53) taco: n 1: offensive terms for a person of Mexican descent [syn: {greaser}, hinter|work +1 => 309!
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+
