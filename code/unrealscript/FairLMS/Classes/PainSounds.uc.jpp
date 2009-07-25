@@ -1,0 +1,2 @@
+#define PainSoundsMutator PainSounds
+#include "../../PainSounds/Classes/PainSoundsMutator.uc"
