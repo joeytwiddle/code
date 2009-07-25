@@ -1,0 +1,11 @@
+if [ "$CHANNEL" = "#ut.pug-bottalk" ]
+then
+
+	if [ "$1" = "[ADL]SREAVER" ]
+	then
+		echo "/msg #ut.pug Thanks Vader."
+		echo "/msg [SMo]Vader $1 has joined #ut.pug"
+	fi
+
+fi
+
