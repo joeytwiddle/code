@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Google Preview Pane
 // @namespace      http://userscripts.org/users/89794
-// @description    Displays Google results in a Preview Pane so you don't have to leave the results page.
+// @description    Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page.
 // @include        http://www.google.*/search?*q=*
 // @include        http://www.google.*/webhp?*q=*
 // @include        http://google.*/search?*q=*

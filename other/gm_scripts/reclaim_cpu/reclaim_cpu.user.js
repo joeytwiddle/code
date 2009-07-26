@@ -15,11 +15,11 @@
 // @exclude        http://*.youtube.*/*
 
 //// Putting it neatly in a whole function() block broke it!
-// function() {
+(function() {
 
 ////// Config //////
 
-var idleSeconds = 10;       // Page will cleanup if mouse has been outside it
+var idleSeconds = 30;       // Page will cleanup if mouse has been outside it
                             // for this many seconds.  Or if you set
                             // detectWhenIdle=false, page will cleanup this
                             // many seconds after loading.
@@ -423,13 +423,5 @@ function initTimer() {
 
 initTimer();
 
-/*
-GM_log("Reclaim CPU running in "+document.location);
-try {
-   var x = unsafeWindow.document;
-   GM_log("I can access unsafeWindow.document = " + unsafeWindow.document);
-} catch (e) {
-   GM_log("I can NOT access unsafeWindow.document.");
-}
-*/
+})();
 
