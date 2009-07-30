@@ -27,6 +27,10 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // ===========================================================================
 
+
+
+/*
+
 // BUG: ATB and Resurector are incompatible.  Since Resurector v1 does not
 // recover each player's timeInGame, ATB will calculate skewed player stats.
 // Until we fix Resurector to recover timeInGame also, I recommend not running
@@ -55,7 +59,9 @@
 // TODO: Requested by sony_scarface.  Allow players back onto their original team, if they have left and rejoined.
 //       In the case that doing this would create e.g. 6v4, then move a player to the other team to fix it.  The player we move should be the one with least time in the game.  Maybe the rejoining player actually has less time than that guy, or has been away a long time, in which case soddit the rejoining player won't get his team back.  :P
 //       Also we need to watch out for if the player swaps team legitimately.  E.g. someone leaves making 4v6, and Qwartz goes Red, then he becomes a red player (if he stays long enough - if not he might like to go back to blue :o ).
-// ALSO: He has trouble typing in the player's name for "mutate kick".  So instead, offer him a list of player IDs, and let him select the ID to remove.
+// DONE: He has trouble typing in the player's name for "mutate kick".  So instead, offer him a list of player IDs, and let him select the ID to remove.
+// TODO: Shiva requests that we detect leech games, and collect no stats for them.
+//       For detection, he recommends "look for >40 conts", or Max RU > 4000, at any point during game!
 
 // REQUEST: log all actions taken by semi-admins.
 //          kick for 1 map
@@ -221,8 +227,7 @@
 // TEST: When I was testing both ServerActor *and* mutator (not actually desirable), it seemed "!teams" was not working - is this fixed now?
 // BUG: Do not use NetWait<3; it may cause the teambalance to occur before anyone joins the server!
 
-
-
+*/
 
 
 
@@ -230,15 +235,16 @@
 
 // #define ATB_VERSION "1.4.9d-kx"
 // #define ATB_VERSION "xol-1.5.0-pre2"
-#define ATB_VERSION "1.4.8d"
+#define ATB_VERSION "1.4.8e"
 
-// #define XOL_SPECIFIC
+#define XOL_SPECIFIC
 
 //// Testing - Things we are finalising for next release:
-#define KX_TESTING
-#define TESTING
-#define DEBUGGING
+// #define KX_TESTING
+// #define TESTING
+// #define DEBUGGING
 // #define SWING_PROPS
+// #define TAKE_MOST_RECENT_DUPLICATE
 
 //// Good #defines which we have turned on
 // #define ENABLE_USEISPNOTFULLIP
@@ -276,7 +282,6 @@
 // #define RANDOMBOTGREET
 // #define FAST_TREE
 // #define FAST_HASH
-// #define TAKE_MOST_RECENT_DUPLICATE
 //// FAST_DATE_COMPARISON may be dangerous, since records just created might be seen as worth deleting!  Check this before defining FAST_DATE_COMPARISON.
 // #define FAST_DATE_COMPARISON
 
@@ -285,8 +290,10 @@
 #define bLogDuplicateRecords False
 #define LogWarn(X); NormalLog( "* " $ X );
 #ifndef DEBUGGING
-	#redefine bLogDuplicateRecords True
-	#redefine LogWarn(X); NormalLog( "* Warning " $ X ); BroadcastMessageAndLog( "* " $ X );
+	#undefine bLogDuplicateRecords
+	#undefine LogWarn
+	#define bLogDuplicateRecords True
+	#define LogWarn(X); NormalLog( "* Warning " $ X ); BroadcastMessageAndLog( "* " $ X );
 	// #define LOG_LAG
 	// #define LOG_LAG_KEEP_LAST_ACTION
 #endif
@@ -299,10 +306,10 @@
 // #define ATB15 // (if debugging ^^ )
 
 
-
 #ifndef XOL_SPECIFIC
-class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 #endif
+
+class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 
 
@@ -512,6 +519,11 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var float LastCalculatedAverages;
 
 	var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
+
+	// TODO!
+	#ifdef ONE_MAP_MUTE
+	var bool bMutedForMap;
+	#endif
 
 	#ifdef DETECT_PLAYERJOINS
 	var PlayerPawn LastBadPlayer; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
@@ -807,8 +819,10 @@ event Destroyed() {
 	local int i;
 	Log(Self$".Destroyed() I was destroyed at "$Level.TimeSeconds);
 
-	// Find out why:
-	// assert(false);
+	// Find out why - should create a stack-trace in the log:
+	// if (FRand()<0.2) {
+		// assert(false);
+	// }
 
 	#ifdef LOG_LAG_KEEP_LAST_ACTION
 	if (debugTimerLastReason != "") {
@@ -1174,15 +1188,20 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 }
 
 #ifdef ENABLE_SHOW_STATS
-function ShowStatsTo(PlayerPawn Sender) {
+function ShowStatsTo(PlayerPawn Sender,optional bool showIPs) {
 	local int i;
 	local Pawn p;
+	local String ipstr;
 	ShowLineTo(Sender,"Team | Name | IP | Ping | PktLoss | Strength | Hours | Last | Score | Frags | Deaths | Items | Spree | Secret | Time");
 	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 		if (!p.IsA('Spectator') && AllowedToRank(p)) {
 			i = FindPlayerRecord(p);
+			if (showIPs)
+				ipstr = getIP(p);
+			else
+				ipstr = "-";
 			if (i>-1) {
-				ShowLineTo(Sender,""$p.PlayerReplicationInfo.Team$" | "$p.getHumanName()$" | "$getIP(p)$" | "$p.PlayerReplicationInfo.Ping$" | "$p.PlayerReplicationInfo.PacketLoss$" | "$Int(avg_score[i])$" | "$Int(hours_played[i])$" | "$date_last_played[i]$" | "$Int(p.PlayerReplicationInfo.Score)$" | "$p.KillCount$" | "$Int(p.PlayerReplicationInfo.Deaths)$" | "$p.ItemCount$" | "$p.Spree$" | "$p.SecretCount$" | "$Int(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$"");
+				ShowLineTo(Sender,""$p.PlayerReplicationInfo.Team$" | "$p.getHumanName()$" | "$ipstr$" | "$p.PlayerReplicationInfo.Ping$" | "$p.PlayerReplicationInfo.PacketLoss$" | "$Int(avg_score[i])$" | "$Int(hours_played[i])$" | "$date_last_played[i]$" | "$Int(p.PlayerReplicationInfo.Score)$" | "$p.KillCount$" | "$Int(p.PlayerReplicationInfo.Deaths)$" | "$p.ItemCount$" | "$p.Spree$" | "$p.SecretCount$" | "$Int(Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)$"");
 			}
 		}
 	}
@@ -1215,7 +1234,7 @@ function ListFakesTo(PlayerPawn Sender) {
 function LogSituation() {
 	ShowStrengthsTo(None,true);
 	#ifdef ENABLE_SHOW_STATS
-	ShowStatsTo(None);
+	ShowStatsTo(None,true);
 	// TODO: ListFakesTo log
 	#endif
 }
@@ -1460,13 +1479,14 @@ function Mutate(String str, PlayerPawn Sender) {
 
 	#ifdef ENABLE_SHOW_STATS
 	if ( args[0]~="STATS" ) {
-		ShowStatsTo(Sender);
+		ShowStatsTo(Sender,Sender.bAdmin || localPass=="");
 	}
 	if ( args[0]~="LOGSTATS" ) {
-		ShowStatsTo(None);
+		ShowStatsTo(None,true);
 	}
 
 	if ( args[0]~="LISTMUTS" || args[0]~="LISTMUTATORS" ) {
+		Sender.ClientMessage("Game type is "$ Level.Game.Name);
 		ListMutsTo(Sender);
 	}
 
@@ -1557,7 +1577,7 @@ function Mutate(String str, PlayerPawn Sender) {
 			case "RENAME":
 				p = FindPlayerNamed(args[1]);
 				if (args[1]!="" && args[2]!="" && PlayerPawn(p)!=None) {
-					PlayerPawn(p).ConsoleCommand("setnick "$args[2]);
+					PlayerPawn(p).ConsoleCommand("setname "$args[2]);
 					Sender.ClientMessage("Renamed \""$ p.getHumanName() $"\" to \""$args[2]$"\".");
 				} else {
 					Sender.ClientMessage("Could not find PlayerPawn with name \""$args[1]$"\".");
@@ -1957,16 +1977,19 @@ function FlashPreGameLines() {
 				}
 				#endif
 
-				// We don't flash in tournament mode, because it flashes all the way through warmup!
-				if (!DeathMatchPlus(Level.Game).bTournament) {
-					if (bFlashCookies) {
-						if (bReportStrengthAsCookies)
-							FlashMessageToPlayer(p, p.getHumanName() $", you have "$ Int(strength) $" cookies.",strengthColor,targetLine);
-						else
-							FlashMessageToPlayer(p, p.getHumanName() $" you have strength "$ Int(strength) $"",strengthColor,targetLine);
-					} else {
-						FlashMessageToPlayer(p,"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
-						// FlashMessageToPlayer(p,"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
+				// We don't spam messages if we are not going to balance teams later.  (They might not get cleared!)
+				if (ShouldBalance(Level.Game)) {
+					// We don't flash in tournament mode, because it flashes all the way through warmup!
+					if (!DeathMatchPlus(Level.Game).bTournament) {
+						if (bFlashCookies) {
+							if (bReportStrengthAsCookies)
+								FlashMessageToPlayer(p, p.getHumanName() $", you have "$ Int(strength) $" cookies.",strengthColor,targetLine);
+							else
+								FlashMessageToPlayer(p, p.getHumanName() $" you have strength "$ Int(strength) $"",strengthColor,targetLine);
+						} else {
+							FlashMessageToPlayer(p,"Teams not yet assigned.",colorWhite,targetLine); // colMagenta
+							// FlashMessageToPlayer(p,"Assigning teams in "$Max(c-1,n-e-1),colorMagenta,3);
+						}
 					}
 				}
 		}
@@ -3785,9 +3808,23 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 		bIPMatches = ( player_ip == ip[i] );
 		// Exact match! return the index immediately
 		if (bNickMatches && bIPMatches) {
-			found = i;
-			DebugLog("FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
-			return found;
+			// TODO: Another kind of REMOVE_DUPLICATES should act here, to cleanup exact duplicates which ATB buggily creates occasionally.
+			#ifdef CLEANUP_NAUGHTY_DUPLICATES
+				if (found>-1 && nick[i]==nick[found] && ip[i]==ip[found]) {
+					NormalLog("Unwanted duplicate entry "$found$" vs "$i$" - cleaning up.");
+					if (hours_played[i]>hours_played[found]) {
+						ClearRecord(found);
+						found = i;
+					} else {
+						ClearRecord(i);
+						// found = found;
+					}
+				}
+			#else
+				found = i;
+				DebugLog("FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
+				return found;
+			#endif
 		} else if (bIPMatches) {
 			if (bLogDuplicateRecords && found >= 0) { DefaultLog("FindPlayerRecordNoFastHash(p) DUPLICATE IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); }
 			if (found == -1 || BetterThanCurrent) {
@@ -4337,7 +4374,7 @@ function float GetScoreForPlayer(Pawn p) {
 	// Siege can give dodgy scores.  Sometimes HUGE negative numbers, or leech
 	// games produce unrepresentatively high numbers.
 	if (award_score<ScoreThresholdLow || award_score>ScoreThresholdHigh) {
-		DebugLog("Adjusting extreme score "$award_score);
+		DebugLog("Adjusting "$ p.getHumanName() $"'s extreme score "$award_score);
 		award_score = FClamp(award_score,ScoreThresholdLow,ScoreThresholdHigh);
 	}
 	return award_score;
