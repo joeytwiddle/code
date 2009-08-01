@@ -78,7 +78,7 @@ NL="\\
 			echo -n "$COLBLUE$COLBOLD$URL$COLBOLD "
 
 			QSTAT_OUTPUT=`
-				qstat -retry 3 -interval 3 -default uns -timeout 20 -R "$IP" 2>&1 | drop 2
+				qstat -default uns -retry 5 -interval 4 -timeout 20 -R "$IP" 2>&1 | drop 2
 			`
 
 			echo "$QSTAT_OUTPUT" |
@@ -158,7 +158,7 @@ NL="\\
 			CACHE_FILE=/tmp/jsh-joey/utpcache/"$IP".last
 			CACHED_COPY=` cat "$CACHE_FILE" `
 
-			QSTAT_OUTPUT=` qstat -retry 3 -interval 3 -default uns -timeout 5 -P "$IP" 2>&1 | dos2unix | drop 1 `
+			QSTAT_OUTPUT=` qstat -default uns -retry 5 -interval 4 -timeout 20 -P "$IP" 2>&1 | dos2unix | drop 1 `
 
 			# echo ">$QSTAT_OUTPUT<" >&2
 
