@@ -11,10 +11,11 @@ function doop () {
 	echo "$*"
 }
 
-## Op anyone who asks for it in #pug.ut:
-if [ "$CHANNEL" = "#pug.up" ] && [ "$TARGET" = "$NICK" ] && [ ! "$AUTH" = "KGB" ]
-then doop "$*" "/op $TARGET" ; exit
-fi
+## Op anyone who asks for it in #pug.up:
+## tomy didn't like this.  what a fucking right-winger
+# if [ "$CHANNEL" = "#pug.up" ] && [ "$TARGET" = "$NICK" ]
+# then doop "$*" "/op $TARGET" ; exit
+# fi
 
 ## In pug channels, the !op command actually has a small chance of doing something!
 if echo "$CHANNEL" | grep "^#.*pug$" >/dev/null && ## pug channel
