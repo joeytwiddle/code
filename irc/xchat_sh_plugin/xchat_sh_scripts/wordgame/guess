@@ -28,6 +28,7 @@ remove_letter () {
 }
 
 ALL_LETTERS=`cat "$LETTERS_FILE" | tr '\n' ' '`
+TOTAL_NUM_LETTERS=`cat "$LETTERS_FILE" | tr ' ' '\n' | wc -l`
 # TOTAL=`./answers --force-list | wc -l`
 TOTAL=`list_answers | wc -l`
 SO_FAR=`cat "$GUESSED_FILE" | wc -l`
@@ -117,7 +118,7 @@ do
 			# now done by increase_score: CURRENT_SCORE=$((CURRENT_SCORE+SCORE_TO_ADD))
 			SCORE_SUM="$SCORE_SUM $COLGREY+$COLGREEN$SCORE_TO_ADD"
 
-			if [ "$NUM_LETTERS" = `cat "$LETTERS_FILE" | tr ' ' '\n' | wc -l` ] && [ "$NUM_LETTERS" -gt 8 ] ## only for 9-letter words or longer
+			if [ "$NUM_LETTERS" = "$TOTAL_NUM_LETTERS" ] && [ "$NUM_LETTERS" -gt 8 ] ## only for 9-letter words or longer
 			then
 				increase_score "$NICK" "10"
 				SCORE_SUM="$SCORE_SUM $COLGREY+$COLORANGE""10 for using all the letters!"
@@ -131,7 +132,7 @@ do
 
 			SO_FAR=$((SO_FAR+1))
 
-			if [ $((TOTAL-SO_FAR)) -lt 10 ]
+			if [ $((TOTAL-SO_FAR)) -lt 10 ] && [ "$TOTAL_NUM_LETTERS" -gt 6 ] ## bonus only for wordgames with 7 or more letters
 			then
 				# BONUS=$(((10-TOTAL+SO_FAR)*10))
 				BONUS=$((10-TOTAL+SO_FAR))
