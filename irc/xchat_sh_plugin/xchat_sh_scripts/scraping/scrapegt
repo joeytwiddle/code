@@ -17,6 +17,8 @@ if [ "$NOCOLS" ]
 then COLBLUE=""; COLBOLD=""; COLRESET=""; COLYELLOW=""
 fi
 
+[ "$MAX_RESULTS" ] || MAX_RESULTS=10
+
 for URLEXTRA in "" # '?page=2' '?page=3' '?page=4'
 do
 	# sleep 4
@@ -50,6 +52,6 @@ fi |
 sed "s+^\(.*\) \([0-9][0-9]*/[0-9][0-9]*\)  *\([^ ]*\)  *\(.*\)+$COLBLUE$COLBOLD""unreal://\3 $COLRESET\2 \4 $COLYELLOW\1 +" |
 sed 's+:7777++' |
 
-head -n 10 |
+head -n "$MAX_RESULTS" |
 notice
 
