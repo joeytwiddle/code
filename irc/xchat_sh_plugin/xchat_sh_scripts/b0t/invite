@@ -1,3 +1,5 @@
+alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
+
 # if [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#ut" ]
 # then exit 0
 # fi
@@ -62,6 +64,7 @@ then
 	exit
 fi
 
+(
 if [ "$CHANNEL" = "#pug.up.admins" ]
 then
         if [ "$1" = "help" ] || [ "$1" = "-h" ]
@@ -120,6 +123,7 @@ then
             echo "$COLPINK ... done"  
         exit
 fi
+) | double_escape_slashes
 
 # if [ ! "$CHANNEL" = "#noobpug" ]
 # then
