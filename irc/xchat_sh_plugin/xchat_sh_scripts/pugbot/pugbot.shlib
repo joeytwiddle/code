@@ -229,7 +229,7 @@ sub () {
 }
 
 removeplayer () {
-	# require_ops
+	# require_ops <-- would cause problems when being called from do_pre_checks
 	if [ "$1" = -quiet ]
 	then QUIET=true ; shift
 	fi
