@@ -43,7 +43,7 @@ LIST=`
 	afterlast "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)> *[^ ]* " |
 	beforelast " [0-9]* spots remaining.*" |
 	# beforelast " .±. " | afterlast " .±. " | ## For ABot
-	beforelast " " | afterlast " Puglist[^ ]* [^ ]* " | ## For ABot
+	beforelast " " | afterlast " Puglist[^ ]* [^ ]* " | beforelast " *[^ ]* *[0-9][0-9]* spot[s]* remaining" | ## For ABot
 	afterfirst ")" |
 	# betweenthe "[ 0-9)]*" |
 	# betweenthe " [0-9)]* " |

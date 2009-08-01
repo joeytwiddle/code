@@ -1,1 +1,3 @@
-sh ./scanpug/consider_showing_strengths
+## Some of the channels aren't ready for this (not enough stats)
+## Anyway if they use !setfaircapts this should happen automatically.
+# sh ./scanpug/consider_showing_strengths

@@ -12,6 +12,12 @@ then
 	LASTLINES=`cat ~/.scanpug/$CHANNEL-last.lines`
 	LASTDATA=`cat ~/.scanpug/$CHANNEL-last.picks`
 	LINES=`sh scanpug/lastrivalpicks -lines`
+	if [ ! "$LINES" ]
+	then
+		jshwarn "Failed to get LINES"
+		echo "/msg nogginBasher Failed to get LINES in $CHANNEL"
+		exit 0
+	fi
 	if [ "$LINES" = "$LASTLINES" ]
 	then ## This is the efficient way to skip repeat scanning
 		jshinfo "We have already scanned this pug."
@@ -24,15 +30,22 @@ then
 	# done | grep .
 	if [ "$?" = 0 ] && [ ! "$DATA" = "$LASTDATA" ]
 	then
-		echo "$LINES" > ~/.scanpug/"$CHANNEL-last.lines"
-		echo "$DATA" > ~/.scanpug/"$CHANNEL-last.picks"
-		echo "$DATA" > ~/.scanpug/"$CHANNEL-`geekdate -fine`.picks"
-		# echo "Stats updated."
-		# echo "/notice nB^ $CHANNEL pickup stats updated."
-		# echo "/msg #ut.pug-bottalk $CHANNEL pickup stats updated."
-		MINIREPORT="`echo "$DATA" | takecols 1 2 | tr '\n' ' '`"
-		echo "/msg nogginBasher $CHANNEL pickup stats updated: $MINIREPORT"
-		# echo "/msg amok $CHANNEL pickup stats updated: $MINIREPORT"
+		BAD_COUNT=`echo "$DATA" | grep -c "DUNNO_AUTH"`
+		if [ "$BAD_COUNT" -gt 5 ]
+		then
+			echo "/msg nogginBasher Error! Failed attempt to parse $CHANNEL pickup stats: $MINIREPORT"
+		else
+			## OK go ahead and save the data.
+			echo "$LINES" > ~/.scanpug/"$CHANNEL-last.lines"
+			echo "$DATA" > ~/.scanpug/"$CHANNEL-last.picks"
+			echo "$DATA" > ~/.scanpug/"$CHANNEL-`geekdate -fine`.picks"
+			# echo "Stats updated."
+			# echo "/notice nB^ $CHANNEL pickup stats updated."
+			# echo "/msg #ut.pug-bottalk $CHANNEL pickup stats updated."
+			MINIREPORT="`echo "$DATA" | takecols 1 2 | tr '\n' ' '`"
+			echo "/msg nogginBasher $CHANNEL pickup stats updated: $MINIREPORT"
+			# echo "/msg amok $CHANNEL pickup stats updated: $MINIREPORT"
+		fi
 	else
 		jshinfo "We have already scanned this pug but we didn't know until latest test!"
 	fi

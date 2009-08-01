@@ -14,35 +14,35 @@
 	# ./utp "$@" 213.202.195.43:7777 # 82.96.91.7:6200
 	# ./utp "$@" 85.14.224.120
 	./ut_servers/u "$@"
+) | notice
 
-	# ./ut_servers/tt "$@"
+# ./ut_servers/tt "$@"
 
-	## House of Honks:
-	# ./utp "$@" 85.14.236.47
+## House of Honks:
+# ./utp "$@" 85.14.236.47
 
-	## Fallen souls
-	# ./utp "$@" unreal://213.160.3.8:7800
+## Fallen souls
+# ./utp "$@" unreal://213.160.3.8:7800
 
-	# ./dnf2 "$@"
+# ./dnf2 "$@"
 
-	## Servers we only display when they have players:
+## Servers we only display when they have players:
+(
+	# ./ut_servers/gla "$@" ## new ffa 195.146.141.95:7000
+	## Servers that have pug mode, but we only want to show when in public mode:
 	(
-		./ut_servers/gla "$@" ## new ffa 195.146.141.95:7000
-		## Servers that have pug mode, but we only want to show when in public mode:
-		(
-			./ut_servers/f0x "$@"
-			# ./ut_servers/f0x2 "$@"
-			# ./ut_servers/nzp "$@"
-			./ut_servers/kx "$@"
-		) | grep -i -u -v "\<PRIVATE\>" | grep -i -u -v "\<war\>" | grep -i -u -v "\<pug\>"
-		./ut_servers/dutchnet "$@"
-		# ./ut_servers/focr "$@"
-		./ut_servers/syn "$@"
-		./ut_servers/ae "$@"
-	) | grep -u -v "[^0-9]0/" | grep -u -v "no response" | grep -u -v "unreal: //" | grep -u -v "no record" | grep -u -v " did not respond"
-
-	## This is a nwCTF query.  If none of the above have results, we should also try xol/hh2/focr.
-
-) |
-
+		./ut_servers/f0x "$@"
+		# ./ut_servers/f0x2 "$@"
+		# ./ut_servers/nzp "$@"
+		./ut_servers/kx "$@"
+	) | grep -i -u -v "\<PRIVATE\>" | grep -i -u -v "\<war\>" | grep -i -u -v "\<pug\>"
+	./ut_servers/dutchnet "$@"
+	# ./ut_servers/focr "$@"
+	./ut_servers/syn "$@"
+	./ut_servers/ae "$@"
+	./ut_servers/cod "$@"
+) | grep -u -v "[^0-9]0/" | grep -u -v "no response" | grep -u -v "unreal: //" | grep -u -v "no record" | grep -u -v " did not respond" |
 notice
+
+## This is a nwCTF query.  If none of the above have results, we should also try xol/hh2/focr.
+

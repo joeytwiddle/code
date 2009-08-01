@@ -6,4 +6,13 @@
 # else echo "$RESULT"
 # fi
 
-./utp "$@" 195.149.21.71:7700
+# ./utp "$@" 195.149.21.71:7700
+
+## It wasn't responding from moxbox, but this worked:
+./scraping/searchserv "195.149.21.71:7700"
+
+## Show kx if it is on LMS and has players
+./utp kx |
+# grep "LastManStanding" |
+grep -v "[^0-9]0/[0-9][0-9]*[^0-9]"
+

@@ -70,7 +70,7 @@ grep "<\(APug\|[Aa][Bb][Oo0][Tt]\)>" |
 # grep -A1 "Teams have been set" | ## Duh that's too late, shows all players!
 grep "Available Players: " |
 tail -n 1 |
-afterfirst "Puglist[^ ]*" |
+afterfirst "Puglist[^ ]*" | sed 's+(10/10)++' | sed 's+\(^ *\. *\| *\. *\)++g' |
 strings |
 tail -n 2 |
 afterfirst ": " |

@@ -16,7 +16,8 @@ fi
 touch -d "2 minutes ago" /tmp/1minago
 if newer /tmp/1minago "$LOGFILE"
 then
-	jshinfo "Not checking $REPCHAN for scores since the logfile is OLD!"
+	## OK this appears to work fine.
+	# jshinfo "Not checking $REPCHAN for scores since the logfile is OLD!"
 	exit 2
 fi
 rm -f /tmp/1minago
@@ -28,7 +29,10 @@ SCORE=`
 	tail -n 2000 "$LOGFILE" |
 	## We must convert "[20:00] *** Currently Playing: ..." to score 0-0
 	## since this indicates a new map, but it does not provide a "New Score: 0:0" for us :P
-	sed 's+\*\*\* Currently Playing:.*+New Score: Reddies 0:0 Bluees+' |
+	## We could add some other standard times here, eg. 15:00 but we can
+	## not accept just any time since the "Currently Playing" message also
+	## appear mid-game.
+	sed 's+\[\(20\|15\):00\] \*\*\* Currently Playing:.*+New Score: Reddies 0:0 Bluees+' |
 	grep "\<New Score:" |
 	tail -n 1 |
 	afterfirst "New Score:" |

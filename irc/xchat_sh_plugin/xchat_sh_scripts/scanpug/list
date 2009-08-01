@@ -4,7 +4,7 @@
 ## Has pug just filled?  Was this a call to !list from _StalkeR_?
 ## Consider setting fair captains.
 
-if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ] ## Not ready yet: || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#pug.up" ]
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#pug.up" ] ## Not ready yet: || [ "$CHANNEL" = "#siegepug" ]
 then
 	if tail -n 10 "$LOGDIR/$NETWORK-$CHANNEL.log" | grep "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)>.*\(Random captains will be selected\|PUG has been filled\)" >/dev/null
 	then sleep 10 ; BANIDLECAPTAINS=1 sh ./scanpug/setfaircapts

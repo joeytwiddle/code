@@ -2,6 +2,9 @@ if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNE
 then exit 0
 fi
 
+## Unfortunately these days ABot requires us to have some kind of SuperAdmin
+## privilege before we can do !setcaptain with it.
+
 # if [ "$NETWORK" ]
 # then NETWORK="irc.$NETWORK"
 # else NETWORK="irc.quakenet.org"
@@ -25,8 +28,11 @@ do
 	# sleep 15 ## 5 and 8 were TOO SLOW! (utb0t was lagging a bit).  Maybe the buffer does not get flushed :|
 	LIST_LINE=`
 		tail -n "$BACKCHECK" "$LOGDIR"/"$NETWORK-$CHANNEL".log |
-		grep "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)>.*. [(]*10/10[)]* ." |
+		grep "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)>" |
+		# grep -A 10 "\(please .pick from the .list\|PUG has been filled\)" | tail -n 10 |
+		grep " [(]*10/10[)]* " |
 		grep -v "Map:.*Specs:" | ## hide any matching lines that are from server query response (not likely if called promptly, but useful for testing)
+		# head -n 1 |
 		tail -n 1 |
 		afterfirst ". [(]*10/10[)]* [^ ]* " |
 		beforelast " " |
@@ -73,8 +79,8 @@ done
 NICK="nB^" . restrict_repetitive_calls "30 seconds"
 
 # echo "On my way, hang in there..."
-# echo "Setting fair captains..."
-echo "Thanks _StalkeR_, setting fair captains..."
+echo "Setting fair captains..."
+# echo "Thanks _StalkeR_, setting fair captains..."
 
 ORDERED_LIST=$(
 	echo "$LIST_LINE" |
@@ -220,9 +226,10 @@ while read STRENGTH CAPT COUNT
 ## Rival only:
 # do echo "!setcapt $CAPT (avgpick #$STRENGTH)"
 ## ABot and Rival:
-do echo "!setcaptain $CAPT (avgpick #$STRENGTH)" ## try this if below works
-# do echo "!setcaptain $CAPT"
-   echo "/notice $CAPT If you need help picking your team, consult the Avgpicks list..."
+do
+	echo "!setcaptain $CAPT (avgpick #$STRENGTH)" ## try this if below works
+	# echo "!setcaptain $CAPT"
+	echo "/msg $CAPT If you need help picking your team, consult the Avgpicks list."
 done
 
 sleep 15 ## Rival should now print his "Please pick from the list:" line.  5 was too short once.  10 was too short once!  Plus it's good to be slow, then we appear *after* _StalkeR_ ;)
