@@ -1,4 +1,4 @@
-if [ "$CHANNEL" = "#adl.ut" ] || [ "$CHANNEL" = "#adl.pvt" ] || [ "$CHANNEL" = "#M][B" ]
+if [ "$CHANNEL" = "#adl.ut" ] || [ "$CHANNEL" = "#adl.pvt" ] || [ "$CHANNEL" = "#M][B" ] || [ "$CHANNEL" = "#ownage" ]
 then exit 0
 fi
 
