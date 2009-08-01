@@ -95,7 +95,7 @@ already_guessed () {
 
 increase_score () {
 	local NICK="$1"
-	local SCORE_TO_ADD="$2"
+	SCORE_TO_ADD="$2" ## We want to export this
 	[ "$AUTH" ] && NICK="$AUTH"
 	SCORE_FILE="$WORDGAME_DATA_DIR"/wordgame."$NICK".score
 	if [ ! -f "$SCORE_FILE" ]
