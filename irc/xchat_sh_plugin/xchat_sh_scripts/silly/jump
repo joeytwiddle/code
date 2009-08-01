@@ -11,19 +11,20 @@ VERB="`filename "$0"`"
 
 ## In pug channels, the !kick and !ban actions have a small chance of actually doing something!
 ## NOTE: The sleeps here are ok in new framework, but not good under XChat.
+## TODO TBH: It should track which auths call !kick the most, and make them the ones most likely for it to work on. :)
+## TODO: If we kick ourself, we might want to kick the other guy too.  Or come back later and get him.
 TARGET="$*"
 # R="`seq 0 99 | chooserandomline`" 
 R="`expr $RANDOM % 100`"
 # jshinfo "[kick] R=$R"
-if [ "$R" -lt 25 ] &&
-   ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
+if ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
    [ "$*" ] && echo "$CHANNEL" | grep "pug" >/dev/null &&
-   # true
-   ## Caller is pugged up - nice extra probability changer, but often
-   ## justifiable angry people won't be pugged up again.
-   # echo "$NICK" | grep "^[A-Za-z][A-Za-z]*-" >/dev/null
+   ## Never kick the really important IRC entities, the bots:
+   ! echo "$CALLER $NICK" | grep -i "\<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)\>" >/dev/null &&
    ## Target is not pugged up.  (z-Name or az-Name)
-   ! (echo "$TARGET" | grep "^[A-Za-z]\(-\|[A-Za-z]-\)" >/dev/null)
+   ! (echo "$TARGET" | grep "^[A-Za-z]\(-\|[A-Za-z]-\)" >/dev/null) &&
+   ## Probability 1 in 4
+   [ "$R" -lt 25 ]
 then
 
 	function doop () {
@@ -34,12 +35,15 @@ then
 	}
 
 	## PRIVILEGED is as much curse as blessing - helps u kick but also get kicked!
-	PRIVILEGED="\<\(kgb\|max\|mox\|golyat\|marco\|addy\|MF\|abeo\|piglet\|majinx\|zbe\)\>"
-	## Found it early and did a lot: vader\|nin\|
+	# Found it early and did a lot: vader\|nin\|
+	# OLDPRIVILEGED="\<\(kgb\|max\|mox\|golyat\|marco\|addy\|MF\|abeo\|piglet\|majinx\|zbe\|liquidfire\)\>"
+	PRIVILEGED="\<\(kgb\|wiza\|vader\|UT\|utb0t\|utbot\)\>"
 
+	## Good security.  Each person can only get this far every 5 minutes.
 	RESTRICT_EXTRA="$NICK" . restrict_repetitive_calls "5 minutes"
+	## Unfortunately this gives a warning message and exits this script, so not even a /me kicks is performed.  Nevermind he's obviously spamming anyway.
 
-	## If ban and both are privileged, 1 in 8 ban both.
+	## If ban and both are privileged, 1 in 8 kick both.
    	if [ "$R" -lt 12 ] &&
 	   [ "$VERB" = ban ] &&
 	   echo "$TARGET" | grep "$PRIVILEGED" >/dev/null &&
@@ -76,7 +80,7 @@ then
 fi
 
 
-NEEDE="`echo "$VERB" | grep "s$"`"
+NEEDE="`echo "$VERB" | grep "[sh]$"`"
 if [ "$NEEDE" ]
 then NEEDE=e
 fi
