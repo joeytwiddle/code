@@ -69,11 +69,12 @@ registry values set by that script's namespace.
 			};
 
 			GM_log("Created fresh GrimeApe config.");
-			// User really needs a warning indicator:
+			//// User really needs a warning indicator:
 			if (typeof ApeIcon != 'undefined') {
 				ApeIcon.setError();
 			}
-			// This works but gets overwritten later by setIcon().
+			alert("Created a fresh GrimeApe config.\n\nIf this is NOT your first run, then DO NOT change any settings - just navigate away!");
+			// TODO: Better: The warning (in fact a confirmation dialog) should be made by the save() function!
 
 		}
 

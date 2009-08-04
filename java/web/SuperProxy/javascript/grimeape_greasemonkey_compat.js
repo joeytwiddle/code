@@ -219,6 +219,8 @@ var unsafeWindow = window;
 //   "#1={y:{x:#1#}}"
 // Not that eval() can re-build it anyway.  But we will get inf loop!
 
+// TODO: What about custom classes?  Is our object uneval accurate for them?
+
 this.ga_uneval = function (obj) {
 	if (obj===undefined) { return "undefined"; }
 	// GM_log("Trying to uneval: "+obj+" (type "+typeof(obj)+")");
@@ -227,6 +229,8 @@ this.ga_uneval = function (obj) {
 		return '"' + obj.replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n').replace(/\r/g,'\\r') + '"';
 	} else if (typeof(obj)=='number') {
 		return ""+obj;
+
+	// These are all types of object:
 	} else if (obj instanceof Array) {
 		var arrayString = "";
 		for (var i=0;i<obj.length;i++) {
@@ -234,6 +238,10 @@ this.ga_uneval = function (obj) {
 			arrayString += uneval(obj[i]);
 		}
 		return "[" + arrayString + "]";
+	} else if (obj instanceof Boolean) {
+		return "(new Boolean("+obj.getValue()+"))";
+	// TODO: What other types are there like Boolean?
+
 	} else if (typeof(obj)=='object') {
 		var objString = "";
 		for (var key in obj) {
@@ -242,6 +250,7 @@ this.ga_uneval = function (obj) {
 			objString += uneval(key)+":"+uneval(val);
 		}
 		return "({" + objString + "})";
+
 	} else if (typeof(obj)=='function') {
 		return (""+obj).replace(/\n/g,''); // This is quite similar to what FF produces
 		// return '"NO_FUNKTIONS"';
@@ -416,4 +425,10 @@ if (typeof XPathResult == 'undefined') {
 // Nah that won't help.
 // Maybe we can watch the property for change: window.watch.call(unsafeWindow,"location", watchFn);
 // Nope Konq does not have watch().  =/
+
+// Konq still needs .toSource() .watch() ...
+// o.toSource() is mostly identical to uneval(o), except in a few cases, e.g. with strings:
+// <joeytwiddle> jseval [ "abc".toSource(), uneval("abc") ]
+// <buubot> joeytwiddle: { 0: (new String("abc")), 1: "abc"}
+// <firefox> (new String("abc")),"abc"
 
