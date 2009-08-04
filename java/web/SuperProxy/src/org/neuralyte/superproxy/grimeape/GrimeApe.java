@@ -13,12 +13,11 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.common.nap.Nap;
 import org.neuralyte.Logger;
 import org.neuralyte.common.FileUtils;
+import org.neuralyte.common.io.ReplacingInputStream;
 import org.neuralyte.common.io.StreamUtils;
 import org.neuralyte.httpdata.HttpRequest;
 import org.neuralyte.httpdata.HttpResponse;
@@ -242,11 +241,11 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             return handleSpecialRequest(request, wreq);
         }
         
-        // All our proxies should check for this.
-        // If the target of the client request is the proxy, then the user has made a normal web request,
+        // All proxies should check for this.
+        // If the target of the client request is the proxy itself, then the user has made a normal web request,
         // We will get stuck in a loop trying to proxy that request!
-        // So let's make a web response.
-        String localhost = "127.0.0.1"; // Was giving me 127.0.1.1 hence failing to match: InetAddress.getLocalHost().getHostAddress();
+        // So we should abort (with a friendly error web response).
+        final String localhost = "127.0.0.1"; // Was giving me 127.0.1.1 hence failing to match: InetAddress.getLocalHost().getHostAddress();
         String reqHost= InetAddress.getByName(wreq.getHost()).getHostAddress();
         if (reqHost.equals(localhost) && wreq.getPort() == 7152) {
             // throw new Error("Requested host is me!");
@@ -548,6 +547,9 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         /** @todo What does GM trigger on?  I've seen it run (fail) on .txt and .js pages also.
          * Does GM trigger when JS creates a new IFrame and populates it without HTTP?  We don't.
         **/
+        if (response.getResponseCode() != 200) {
+            return;
+        }
         if (response.hasContent() && response.getHeader("Content-type").toLowerCase().startsWith("text/html")) {
             // HTTPStreamingTools.unencodeResponse(response);
             // HTTPStreamingTools.unzipResponse(response);
@@ -568,28 +570,6 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             streamAndAddScripts(response);
             
         }
-    }
-
-    private void addScriptsSlowStable(HttpResponse response) {
-        StringBuffer responseString = response.getContentAsStringBuffer();
-        // Logger.log(""+responseString);
-        int i = responseString.lastIndexOf("</BODY>");
-        if (i == -1)
-            i = responseString.lastIndexOf("</body>");
-        if (i == -1) {
-            i = responseString.length();
-            // yeah nice Google doesn't bother with </BODY> lol
-        }
-        if (i == -1) {
-            Logger.warn("Failed to inject script tag.");
-        } else {
-            Logger.log("Doing injection at index "+i);
-            StringBuffer scriptHTML = getScriptHTMLForInjection();
-            responseString.insert(i,scriptHTML);
-            i += scriptHTML.length();
-        }
-        // We must reset it after streaming it, even if we didn't change it.
-        response.setContent(responseString.toString());
     }
 
     private StringBuffer getScriptHTMLForInjection() {
@@ -641,103 +621,28 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         return scriptHTML;
     }
 
-    /** Warning: Do not use ^ or $ in your regexp.  These will match every buffer checked!
-     * Also beware any \\\\1s in your regexp will be broken when doing appendOnFailure, due to literalise_replacement. 
-    **/
-    
-    class ReplacingInputStream extends InputStream {
-        final InputStream source;
-        final Pattern regexPattern;
-        final String replacement;
-        final boolean replaceAll;
-        final boolean appendOnFailure;
-        final int bufferLength;
-        final StringBuffer outBuffer;
-        final StringBuffer inBuffer;
-
-        boolean doneReplacement = false;
-        boolean reachedEnd = false;
-
-        public ReplacingInputStream(InputStream in, String regexp, String replacement) {
-            this(in,regexp,replacement,Pattern.CASE_INSENSITIVE,false,true,4096/4);
+    private void addScriptsSlowStable(HttpResponse response) {
+        StringBuffer responseString = response.getContentAsStringBuffer();
+        // Logger.log(""+responseString);
+        int i = responseString.lastIndexOf("</BODY>");
+        if (i == -1)
+            i = responseString.lastIndexOf("</body>");
+        if (i == -1) {
+            i = responseString.length();
+            // yeah nice Google doesn't bother with </BODY> lol
         }
-        public ReplacingInputStream(InputStream in, String regexp, String replacement, int flags, boolean replaceAll, boolean appendOnFailure, int maxMatchLength) {
-            this.source = in;
-            this.regexPattern = Pattern.compile(regexp,flags);
-            this.replacement = replacement;
-            this.replaceAll = replaceAll;
-            this.appendOnFailure = appendOnFailure;
-            this.bufferLength = maxMatchLength * 2; // The bufferLength we use should be twice the max matchable string length.
-            this.inBuffer = new StringBuffer();
-            this.outBuffer = new StringBuffer();
+        if (i == -1) {
+            Logger.warn("Failed to inject script tag.");
+        } else {
+            Logger.log("Doing injection at index "+i);
+            StringBuffer scriptHTML = getScriptHTMLForInjection();
+            responseString.insert(i,scriptHTML);
+            i += scriptHTML.length();
         }
-        
-        public int read() throws IOException {
-            try {
-                // Buffer is filled, then checked.
-                // Then we allow the buffer to be half emptied, before the next re-fill and check.
-                // BUG: During the last bufferLength/2 bytes of the stream, we check
-                // every byte, which is pointless to repeat after the first attempt!
-                // Ah I think the addition of reachedEnd circumvents this.
-                if (!reachedEnd && inBuffer.length() < bufferLength/2) {
-                    while (inBuffer.length() < bufferLength) {
-                        int i = source.read();
-                        if (i == -1) {
-                            reachedEnd = true;
-                            break;
-                        }
-                        inBuffer.append((char)i);
-                    }
-                    checkBuffer();
-                }
-                if (outBuffer.length() == 0 && inBuffer.length() == 0) {
-                    // We are at the end of the stream.
-                    if (appendOnFailure && !doneReplacement) {
-                        // The replacement may attempt to use special codes such as \1 (todo: &)
-                        // We must remove them.
-                        outBuffer.append(replacement.replaceAll("\\\\[0-9]*","")); // literalise_replacament
-                        doneReplacement = true;
-                    } else {
-                        return -1;
-                    }
-                }
-                if (outBuffer.length() > 0) {
-                    char c = outBuffer.charAt(0);
-                    outBuffer.deleteCharAt(0);
-                    return (int)c;
-                }
-                if (inBuffer.length() > 0) {
-                    char c = inBuffer.charAt(0);
-                    inBuffer.deleteCharAt(0);
-                    return (int)c;
-                }
-            } catch (Exception e) {
-                Logger.error("Unexpected exception!  Deal with this!");
-                Logger.error(e);
-            }
-            return -1; // Should rarely happen.  Maybe if replacement=="".
-        }
-
-        public void checkBuffer() {
-            if (doneReplacement && !replaceAll) {
-                return;
-            }
-            Matcher m = regexPattern.matcher(inBuffer.toString());
-            if (m.find()) {
-                Logger.log("Found a match at "+m.start());
-                // int start = m.start();
-                int end = m.end();
-                String result = m.replaceFirst(replacement);
-                // We send the replaced string to the output:
-                int resEnd = end + (result.length() - inBuffer.length());
-                outBuffer.append( result.subSequence(0, resEnd) );
-                // And remove the matched string from the input:
-                inBuffer.delete(0,end);
-            }
-        }
-        
+        // We must reset it after streaming it, even if we didn't change it.
+        response.setContent(responseString.toString());
     }
-    
+
     private void streamAndAddScripts(HttpResponse response) throws IOException {
         HTTPStreamingTools.unencodeResponse(response);
         HTTPStreamingTools.unzipResponse(response);
