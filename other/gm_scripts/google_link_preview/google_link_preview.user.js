@@ -45,9 +45,11 @@ window.setTimeout(function() {
   //if (!links.snapshotLength) return;
   if (links.snapshotLength<=0 || links.snapshotLength>=50) {
     links = getXPathSnapshot(XPath + localCondition);
+    GM_log("Trying local links got " + links.snapshotLength);
   }
   if (links.snapshotLength<=0 || links.snapshotLength>=50) {
     links = getXPathSnapshot(XPath + remoteCondition);
+    GM_log("Trying remote links got " + links.snapshotLength);
   }
   if (links.snapshotLength<=0 || links.snapshotLength>=50) {
     links = getXPath("(//a)[1]");
@@ -56,20 +58,21 @@ window.setTimeout(function() {
   window.document.title = "+"+links.snapshotLength+" "+window.document.title;
 
   for (var i = 0; i < links.snapshotLength; i++) {
-    var link = links.snapshotItem(i);
-    if(link.hasAttribute("onmousedown")) link.removeAttribute("onmousedown");
 
-    var pLink = link.parentNode.insertBefore(document.createElement("a"),
-                                             link.nextSibling)
-    pLink.href = link.href;
-    pLink.title = "preview";
-    pLink.style.marginLeft = "0.2em";
-    pLink.style.marginRight = "0.2em";
-    pLink.style.width = "0.1em";
-    pLink.style.height = "0.1em";
-
-    // start closure for iframe and thereby pLink
+    // start closure for iframe and thereby pLink, and also for link
     (function(){
+
+      var link = links.snapshotItem(i);
+      if(link.hasAttribute("onmousedown")) link.removeAttribute("onmousedown");
+
+      var pLink = link.parentNode.insertBefore(document.createElement("a"),
+                                               link.nextSibling)
+      pLink.href = link.href;
+      pLink.title = "preview";
+      pLink.style.marginLeft = "0.2em";
+      pLink.style.marginRight = "0.2em";
+      pLink.style.width = "0.1em";
+      pLink.style.height = "0.1em";
 
       var iframe = null;
 
@@ -107,7 +110,7 @@ window.setTimeout(function() {
   R0lGODlhDAAMAMIGAKZZWatkYcqfjsyikM2mk9KumfLsyPLsyCH5BAEKAAcALAAAAAAM\
   AAwAAAMneEcRpFCFokqIi8Ly4MWfhB1hFnGgZgkj4wjAMEZDPEO1fB%2F5zg8JADs%3D";
 
-    })(); // end closure for iframe, pLink
+    })(); // end closure for iframe, pLink, link
 
   } // end for i < links.snapshotLength
 
