@@ -14,8 +14,20 @@
 // Last updated: 2007-08-03
 
 window.setTimeout(function() {
-  var XPath;
 
+  function getXPathSnapshot(XPath) {
+    return document.evaluate(XPath, document, null, 6, null);
+  }
+
+  var thisSite = document.location.protocol+"//"+document.location.host+"/";
+
+  var relativeExpr = "starts-with(@href,'/')";
+  var localExpr = "starts-with(@href,'"+ thisSite +"')";
+  var remoteExpr = "(not(relativeExpr) and not(localExpr))";
+  var localCondition = "[" + relativeExpr + " or " + localExpr + "]";
+  var remoteCondition = "[" + remoteExpr + "]";
+
+  var XPath;
   // This script has special support for:some sites
   // TODO: Rather than have strict URL matching, try all XPaths, and then
   // choose a set which has an appropriate number?
@@ -29,8 +41,19 @@ window.setTimeout(function() {
     XPath = "//a[not( . = '' )]";
   }
 
-  var links = document.evaluate(XPath, document, null, 6, null);
+  var links = getXPathSnapshot(XPath);
   //if (!links.snapshotLength) return;
+  if (links.snapshotLength<=0 || links.snapshotLength>=50) {
+    links = getXPathSnapshot(XPath + localCondition);
+  }
+  if (links.snapshotLength<=0 || links.snapshotLength>=50) {
+    links = getXPathSnapshot(XPath + remoteCondition);
+  }
+  if (links.snapshotLength<=0 || links.snapshotLength>=50) {
+    links = getXPath("(//a)[1]");
+  }
+
+  window.document.title = "+"+links.snapshotLength+" "+window.document.title;
 
   for (var i = 0; i < links.snapshotLength; i++) {
     var link = links.snapshotItem(i);
@@ -87,6 +110,8 @@ window.setTimeout(function() {
     })(); // end closure for iframe, pLink
 
   } // end for i < links.snapshotLength
+
+  window.document.title = window.document.title.substring(window.document.title.indexOf(' '));
 
 });
 
