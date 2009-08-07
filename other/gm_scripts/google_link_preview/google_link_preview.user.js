@@ -6,6 +6,8 @@
 // @include       http://www.google.tld/search%3F*
 // @include       http://www.google.tld/custom%3F*
 // @include       http://www.google.com/blogsearch*
+// @include       http://*/*
+// @include       https://*/*
 // @description	  Adds Clusty.com-like magnifiers on web and news search results to preview a link in a frame
 // ==/UserScript==
 
@@ -13,10 +15,14 @@
 
 window.setTimeout(function() {
   var XPath;
-  if (location.href.match(/\/blogsearch\?/)) {
-    XPath = "//a[starts-with(@id, 'p-') and count(img)=0]";
+  if (location.href.match(/google/)) {
+    if (location.href.match(/\/blogsearch\?/)) {
+      XPath = "//a[starts-with(@id, 'p-') and count(img)=0]";
+    } else {
+      XPath = "//a[@class='l']";
+    }
   } else {
-    XPath = "//a[@class='l']";
+    XPath = "//a[not( . = '' )]";
   }
 
   var links = document.evaluate(XPath, document, null, 6, null);
@@ -30,7 +36,10 @@ window.setTimeout(function() {
                                              link.nextSibling)
     pLink.href = link.href;
     pLink.title = "preview";
-    pLink.style.marginLeft = "1em";
+    pLink.style.marginLeft = "0.2em";
+    pLink.style.marginRight = "0.2em";
+    pLink.style.width = "0.1em";
+    pLink.style.height = "0.1em";
     pLink.addEventListener("click", function(e) {
       e.preventDefault();
       var pOpen = "data:image/gif;base64,\
