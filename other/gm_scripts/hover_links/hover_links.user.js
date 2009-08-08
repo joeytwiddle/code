@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name          Hover Links
 // @namespace     http://www.userscripts.org
-// @description   A tooltip pops up when hovering over links.
+// @description   A tooltip pops up when hovering over links, showing the target URL.
 // @include       *
 // ==/UserScript==
 
