@@ -10,6 +10,9 @@
 // to save a zip file just because we hovered on it.
 // Dammit some pages break out of the iframe!
 
+// Quite nice on apache file listings of .jpegs, but a bit slow.  Ideally pre-load hoverable images?
+// Could be a bit heavy.  It depends on the page...
+
 var focus = undefined;
 var lastFocus = undefined;
 
@@ -44,11 +47,18 @@ function eekAMouse(evt) {
 
 function phewMouseGone(evt) {
 	focus = undefined;
+	// TODO: Don't hide the popup if mouse is currently over the popup!
 	if (myPopup) {
 		// myPopup.parentNode.removeChild(myPopup);
 		// myPopup = undefined; // eww cache it!
 		myPopup.style.display = 'none';
 	}
+}
+
+// DONE: If the user clicks a link, this isn't really a hover, so we should not
+// activate and just let the user's click be processed!
+function aClick(evt) {
+	focus = undefined;
 }
 
 function showPreviewWindow(link) {
@@ -57,9 +67,9 @@ function showPreviewWindow(link) {
 		myPopup = document.createElement('DIV');
 		/** Seems style does not work for Konqueror this way. **/
 		myPopup.innerHTML =
-			"<STYLE type='text/css'> iframe.preview { color: white; background-color: #44aa44; position: fixed; right: 12px; bottom: 12px; z-index: 10000; padding: 4px; border: 1px solid #000000; text-align: center; } </STYLE>"
+			"<STYLE type='text/css'> iframe.preview { color: white; background-color: #aaaaaa; position: fixed; right: 12px; bottom: 12px; z-index: 10000; padding: 4px; border: 2px solid #000000; text-align: center; } </STYLE>"
 			+
-			"<IFRAME class='preview' width='480' height='320' src='about:blank'></IFRAME>";
+			"<IFRAME class='preview' width='"+(window.innerWidth/2)+"' height='"+(window.innerHeight/2)+"' src='about:blank'></IFRAME>";
 		
 		document.documentElement.appendChild(myPopup);
 		myFrame = myPopup.getElementsByTagName('IFRAME')[0];
@@ -78,6 +88,7 @@ function init() {
 		/** The new way: **/
 		link.addEventListener("mouseover", function(evt) { eekAMouse(evt) }, false);
 		link.addEventListener("mouseout", function(evt) { phewMouseGone(); }, false);
+		link.addEventListener("click", function(evt) { aClick(); }, false);
 		// link.addEventListener("mousemove", function(evt) { locate(evt); }, true);
 	}
 }
