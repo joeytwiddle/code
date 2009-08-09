@@ -1,11 +1,19 @@
 <UserScriptConfig>
+	<Script filename="twitter_search_results_o.user.js" name="Twitter Search Results on Google" namespace="markcarey" description="Shows results from Twitter on Google search pages" enabled="false" basedir="twitter_search_results_o">
+		<Include>http://www.google.*/search?*q=*</Include>
+		<Include>http://www.google.*/*</Include>
+	</Script>
+	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" enabled="false" basedir="delicious_search_results">
+		<Include>http://www.google.*/search?*q=*</Include>
+		<Include>http://www.google.*/*</Include>
+	</Script>
 	<Script filename="script_updater.user.js" name="Script Updater" namespace="userscripts.org/alien_scum" description="checks all your scripts for updates on user script.org" enabled="false" basedir="script_updater">
 		<Include>*</Include>
 	</Script>
-	<Script filename="script_autoupdater.user.js" name="Script AutoUpdater" namespace="userscripts.org/eyalsoha" description="checks all your scripts for updates on user script.org" enabled="true" basedir="script_autoupdater">
+	<Script filename="script_autoupdater.user.js" name="Script AutoUpdater" namespace="userscripts.org/eyalsoha" description="checks all your scripts for updates on user script.org" enabled="false" basedir="script_autoupdater">
 		<Include>*</Include>
 	</Script>
-	<Script filename="userscripts_updater.user.js" name="Userscripts Updater" namespace="meh" description="Easy way to check for scripts updates. Automatic checking, import installed scripts." enabled="true" basedir="userscripts_updater">
+	<Script filename="userscripts_updater.user.js" name="Userscripts Updater" namespace="meh" description="Easy way to check for scripts updates. Automatic checking, import installed scripts." enabled="false" basedir="userscripts_updater">
 		<Include>*</Include>
 	</Script>
 	<Script filename="userscripts_script_chang.user.js" name="Userscripts Script Change Notifier" namespace="http://userscripts.org/users/62523" description="Logs the number of downloads, posts, and fans of each script, and shows the changes upon each visit." enabled="true" basedir="userscripts_script_chang">
@@ -17,7 +25,7 @@
 	<Script filename="download_video_from_yout.user.js" name="Download Video from YouTube" namespace="userscripts.org" description="adds a link to download flv form YouTube" enabled="true" basedir="download_video_from_yout">
 		<Include>*youtube.com/*v=*</Include>
 	</Script>
-	<Script filename="youtube_enhancer.user.js" name="YouTube Enhancer" namespace="http://userscripts.org/scripts/show/33042" description="Download Link + Quality Selector + Rollover Preview + Media Controller" enabled="true" basedir="youtube_enhancer">
+	<Script filename="youtube_enhancer.user.js" name="YouTube Enhancer" namespace="http://userscripts.org/scripts/show/33042" description="Download Link + Quality Selector + Rollover Preview + Media Controller" enabled="false" basedir="youtube_enhancer">
 		<Include>http://*.youtube.*/*</Include>
 		<Include>http://youtube.*/*</Include>
 	</Script>
@@ -39,19 +47,11 @@
 		<Include>https://welcome27.co-operativebank.co.uk/CBIBSWeb/getVisaStatementPage.do*</Include>
 		<Include>https://welcome27.co-operativebank.co.uk/CBIBSWeb/visaStatements.do*</Include>
 	</Script>
-	<Script filename="unfuck_facebook.user.js" name="UnFuck Facebook" namespace="sizzlemctwizzle" description="An update of the classic unfuck script. Now with a two column homepage layout!" enabled="true" basedir="unfuck_facebook">
-		<Include>http://*.facebook.com/*</Include>
-		<Include>https://*.facebook.com/*</Include>
-	</Script>
 	<Script filename="facebook__add_status.user.js" name="Facebook | Add Status" namespace="http://userscripts.org/scripts/source/46217.user.js" description="Adds your status to the homepage" enabled="true" basedir="facebook__add_status">
 		<Include>http://*.facebook.com/home.php*</Include>
 		<Include>http://facebook.com/home.php*</Include>
 		<Include>https://*.facebook.com/home.php*</Include>
 		<Include>https://facebook.com/home.php*</Include>
-	</Script>
-	<Script filename="twitter_search_results_o.user.js" name="Twitter Search Results on Google" namespace="markcarey" description="Shows results from Twitter on Google search pages" enabled="true" basedir="twitter_search_results_o">
-		<Include>http://www.google.*/search?*q=*</Include>
-		<Include>http://www.google.*/*</Include>
 	</Script>
 	<Script filename="google_extra.user.js" name="google extra" namespace="znerp" description="Displays results for google image search, video search, wikipedia search and dictionary.com search alongside normal google searches." enabled="false" basedir="google_extra">
 		<Include>http://www.google.*/search?*q=*</Include>
@@ -66,6 +66,17 @@
 	<Script filename="gmail_compactor.user.js" name="GMail Compactor" namespace="http://www.pavelgutin.com" description="This maximized the vertical real estate in GMail by colapsing the links on the left to an image box, and moving the search to left side" enabled="false" basedir="gmail_compactor">
 		<Include>https://mail.google.com/*</Include>
 		<Include>http://mail.google.com/*</Include>
+	</Script>
+	<Script filename="google_image_relinker_mo.user.js" name="Google Image Relinker Mod" namespace="http://userscripts.org/users/9022" description="http://userscripts.org/scripts/show/5059" enabled="false" basedir="google_image_relinker_mo">
+		<Include>http://images.google.tld/images?*</Include>
+		<Include>http://images.google.com/images?*</Include>
+		<Include>http://images.google.de/images?*</Include>
+	</Script>
+	<Script filename="google_image_directlink.user.js" name="Google Image DirectLink" namespace="eagle" description="Goes directly to the real URL of an image" enabled="false" basedir="google_image_directlink">
+		<Include>http://images.google.tld/images?*</Include>
+	</Script>
+	<Script filename="google_image_relinker_wi.user.js" name="Google Image Relinker with Mouseover" namespace="http://bhabishyakumar.com/scripts" description="View Google Image Search links in CSS Popup on Mouseover" enabled="false" basedir="google_image_relinker_wi">
+		<Include>http://images.google.*/*</Include>
 	</Script>
 	<Script filename="google_two_columns.user.js" name="Google Two Columns" namespace="userscripts.org" description="Shows the search results in two columns" enabled="false" basedir="google_two_columns">
 		<Include>http://www.google.com*/search?*</Include>
@@ -124,33 +135,18 @@
 		<Exclude>https://www.google.tld/health/*</Exclude>
 		<Exclude>https://www.google.tld/reader/*</Exclude>
 	</Script>
-	<Script filename="google_link_preview.user.js" name="Google Link Preview" namespace="http://loucypher.wordpress.com/" description="Adds Clusty.com-like magnifiers on web and news search results to preview a link in a frame" enabled="true" basedir="google_link_preview">
+	<Script filename="googlekingkong.user.js" name="GoogleKingKong" namespace="http://userstyles.org" description="改善 Google 的搜索结果界面，提高阅读效率" enabled="false" basedir="googlekingkong">
+		<Include>http://www.google.*/search*</Include>
+	</Script>
+	<Script filename="google_link_preview.user.js" name="Google Link Preview" namespace="http://loucypher.wordpress.com/" description="Adds Clusty.com-like magnifiers on web and news search results to preview a link in a frame" enabled="false" basedir="google_link_preview">
 		<Include>http://www.google.tld/search?*</Include>
 		<Include>http://www.google.tld/custom?*</Include>
 		<Include>http://www.google.tld/search%3F*</Include>
 		<Include>http://www.google.tld/custom%3F*</Include>
 		<Include>http://www.google.com/blogsearch*</Include>
-	</Script>
-	<Script filename="googlekingkong.user.js" name="GoogleKingKong" namespace="http://userstyles.org" description="改善 Google 的搜索结果界面，提高阅读效率" enabled="false" basedir="googlekingkong">
-		<Include>http://www.google.*/search*</Include>
-	</Script>
-	<Script filename="google_search_sidebar_fo.user.js" name="Google Search Sidebar for FF3 - Wikipedia, Dictionary.com, Flickr, and Youtube Results" namespace=" " description="Adds a sidebar with search results from Dictionary.com, Wikipedia, Flickr, and Youtube. Please report any bugs." enabled="true" basedir="google_search_sidebar_fo">
-		<Include>http://www.google.com/search?*</Include>
-	</Script>
-	<Script filename="google_image_relinker_mo.user.js" name="Google Image Relinker Mod" namespace="http://userscripts.org/users/9022" description="http://userscripts.org/scripts/show/5059" enabled="true" basedir="google_image_relinker_mo">
-		<Include>http://images.google.tld/images?*</Include>
-		<Include>http://images.google.com/images?*</Include>
-		<Include>http://images.google.de/images?*</Include>
-	</Script>
-	<Script filename="google_image_directlink.user.js" name="Google Image DirectLink" namespace="eagle" description="Goes directly to the real URL of an image" enabled="false" basedir="google_image_directlink">
-		<Include>http://images.google.tld/images?*</Include>
-	</Script>
-	<Script filename="google_image_relinker_wi.user.js" name="Google Image Relinker with Mouseover" namespace="http://bhabishyakumar.com/scripts" description="View Google Image Search links in CSS Popup on Mouseover" enabled="true" basedir="google_image_relinker_wi">
-		<Include>http://images.google.*/*</Include>
-	</Script>
-	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" enabled="true" basedir="delicious_search_results">
-		<Include>http://www.google.*/search?*q=*</Include>
-		<Include>http://www.google.*/*</Include>
+		<Include>http://*/*</Include>
+		<Include>https://*/*</Include>
+		<Include>*</Include>
 	</Script>
 	<Script filename="lastfm_-_lyrics.user.js" name="Last.fm - Lyrics" namespace="http://userscripts.org/users/43234" description="Adds lyrics from LyricWiki to a Last.fm song page." enabled="true" basedir="lastfm_-_lyrics">
 		<Include>http://www.last.fm/music/*/*/*</Include>
@@ -264,6 +260,7 @@
 	</Script>
 	<Script filename="hover_preview.user.js" name="Hover Preview" namespace="noggieb" description="Shows a tooltip when you hover over links, containing the target page!" enabled="false" basedir="hover_preview">
 		<Include>*</Include>
+		<Exclude>http://images.google.com/*</Exclude>
 	</Script>
 	<Script filename="track_history.user.js" name="track_history" namespace="noggieb" description="Presents a list/tree of the browsing path you took to reach the current page.  An advanced in-page Back button." enabled="false" basedir="track_history">
 		<Include>*</Include>
@@ -281,24 +278,23 @@
 		<Include>http://userscripts.org/scripts?*</Include>
 		<Include>http://userscripts.org/scripts/search?*</Include>
 	</Script>
-	<Script filename="faviconizegoogle.user.js" name="FaviconizeGoogle" namespace="http://userscripts.org/users/89794" description="Adds favicons to each link offered by Google search results." enabled="false" basedir="faviconizegoogle-1">
-		<Include>http://www.google.com/search?*</Include>
-	</Script>
 	<Script filename="reclaim_cpu.user.js" name="Reclaim CPU" namespace="noggieb" description="blah" enabled="true" basedir="reclaim_cpu">
 		<Include>*</Include>
 		<Exclude>http://*.last.fm/*</Exclude>
 	</Script>
-	<Script filename="reclaim_cpu.user.js" name="Reclaim CPU" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers." enabled="false" basedir="reclaim_cpu-1">
-		<Include>*</Include>
-		<Exclude>http://*.other.sites/where/we/want/to/leave/everything/running</Exclude>
+	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="http://userscripts.org/users/89794" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click again to load the result." enabled="true" basedir="google_preview_pane">
+		<Include>http://www.google.*/search?*q=*</Include>
+		<Include>http://www.google.*/webhp?*q=*</Include>
+		<Include>http://google.*/search?*q=*</Include>
+		<Include>http://google.*/webhp?*q=*</Include>
 	</Script>
 	<Script filename="cleanup_fonts.user.js" name="Cleanup Fonts" namespace="noggieb" description="Removes unwanted fonts and uses your own." enabled="false" basedir="cleanup_fonts">
 		<Include>*</Include>
 	</Script>
-	<Script filename="virtual_keyboard_interfa.user.js" name="Virtual Keyboard Interface" namespace="http://www.greywyvern.com/" description="Adds a virtual keyboard to text fields, password fields and textareas allowing keyboardless input of text and special characters.  Install the script and double-click on one of the form element types above to display the keyboard." enabled="true" basedir="virtual_keyboard_interfa">
+	<Script filename="virtual_keyboard_interfa.user.js" name="Virtual Keyboard Interface" namespace="http://www.greywyvern.com/" description="Adds a virtual keyboard to text fields, password fields and textareas allowing keyboardless input of text and special characters.  Install the script and double-click on one of the form element types above to display the keyboard." enabled="false" basedir="virtual_keyboard_interfa">
 		<Include>*</Include>
 	</Script>
-	<Script filename="rapidshare_links_checker.user.js" name="Rapidshare Links Checker" namespace="http://userscripts.org/scripts/show/9467" description="checks rapidshare links" enabled="true" basedir="rapidshare_links_checker">
+	<Script filename="rapidshare_links_checker.user.js" name="Rapidshare Links Checker" namespace="http://userscripts.org/scripts/show/9467" description="checks rapidshare links" enabled="false" basedir="rapidshare_links_checker">
 		<Include>http://*</Include>
 		<Include>file:///*</Include>
 		<Exclude>http://rapidshare.com/*</Exclude>
@@ -329,7 +325,7 @@
 		<Include>http://*.imdb.com/title/*</Include>
 		<Include>http://imdb.com/title/*</Include>
 	</Script>
-	<Script filename="youtube_large_images.user.js" name="YouTube Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see YouTube images in full size when you hover your mouse over them. " enabled="true" basedir="youtube_large_images">
+	<Script filename="youtube_large_images.user.js" name="YouTube Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see YouTube images in full size when you hover your mouse over them. " enabled="false" basedir="youtube_large_images">
 		<Include>http://youtube.com/*</Include>
 		<Include>https://youtube.com/*</Include>
 		<Include>http://*.youtube.com/*</Include>
@@ -359,7 +355,7 @@
 		<Include>http://*.wikipedia.org/*</Include>
 		<Include>https://*.wikipedia.org/*</Include>
 	</Script>
-	<Script filename="google_images_large_imag.user.js" name="Google Images Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see the images on images.google.com in full size by hovering over them." enabled="false" basedir="google_images_large_imag">
+	<Script filename="google_images_large_imag.user.js" name="Google Images Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see the images on images.google.com in full size by hovering over them." enabled="true" basedir="google_images_large_imag">
 		<Include>http://images.google.com/*</Include>
 		<Include>https://images.google.com/*</Include>
 		<Include>http://images.google.co.uk/*</Include>
@@ -383,10 +379,655 @@
 		<Include>http://*.twitter.com/*</Include>
 		<Include>https://*.twitter.com/*</Include>
 	</Script>
-	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="http://userscripts.org/users/89794" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click again to load the result." enabled="true" basedir="google_preview_pane">
-		<Include>http://www.google.*/search?*q=*</Include>
-		<Include>http://www.google.*/webhp?*q=*</Include>
-		<Include>http://google.*/search?*q=*</Include>
-		<Include>http://google.*/webhp?*q=*</Include>
+	<Script filename="wikipedia_backbars.user.js" name="Wikipedia Backbars" namespace="http://elzr.com" description="Add backbars to Wikipedia tables." enabled="true" basedir="wikipedia_backbars">
+		<Include>http://en.wikipedia.org/*</Include>
+		<Require filename="jquery.js"/>
+	</Script>
+	<Script filename="wikipedia_inline_article.user.js" name="Wikipedia Inline Article Viewer" namespace="http://projects.apathyant.com/wikipediainline/" description="Adds an icon after internal article links on wikipedia pages which, when clicked, opens the article inline in a dhtml frame" enabled="true" basedir="wikipedia_inline_article">
+		<Include>http://wikipedia.tld/*</Include>
+		<Include>http://*.wikipedia.tld/*</Include>
+	</Script>
+	<Script filename="unfuck_facebook.user.js" name="UnFuck Facebook" namespace="sizzlemctwizzle" description="An update of the classic unfuck script. Now with auto-updating home stream!" enabled="false" basedir="unfuck_facebook">
+		<Include>http://*.facebook.com/*</Include>
+		<Include>https://*.facebook.com/*</Include>
+	</Script>
+	<Script filename="google_search_sidebar_fo.user.js" name="Google Search Sidebar for FF3 - Wikipedia, Dictionary.com, Flickr, and Youtube Results" namespace=" " description="Adds a sidebar with search results from Dictionary.com, Wikipedia, Flickr, and Youtube. Please report any bugs." enabled="false" basedir="google_search_sidebar_fo">
+		<Include>http://www.google.com/search?*</Include>
+	</Script>
+	<Script filename="google_pirateer_v11_prev.user.js" name="Google Pirateer v1.1 Preview" namespace="userscripts.org" description="Search for free music, movies, and software with Google." enabled="false" basedir="google_pirateer_v11_prev">
+		<Include>http://www.google.com/webhp*</Include>
+		<Include>http://www.google.com/</Include>
+		<Include>http://www.google.com/ig*</Include>
+		<Include>http://www.google.com/search*</Include>
+	</Script>
+	<Script filename="wiki_sidebar_tweak.user.js" name="Wiki sidebar tweak" namespace="http://www.netvibes.com/jordi" description="Keep the sidebar of Wiki's always visible and keep the languages you know on top in the 'other languages'-box" enabled="false" basedir="wiki_sidebar_tweak">
+		<Include>*wiki*</Include>
+	</Script>
+	<Script filename="my_delicious_search_resu.user.js" name="My Delicious Search Results on Google" namespace="jmason" description="Shows tag-search results from my Delicious account on Google search pages, with links to more extensive Delicious searches.  Use 'User Script Commands' -&gt; 'Set Delicious Username' to specify your username" enabled="false" basedir="my_delicious_search_resu">
+		<Include>http://www.google.*q=*</Include>
+	</Script>
+	<Script filename="facebook_auto-colorizer.user.js" name="Facebook Auto-Colorizer" namespace="http://wisc.facebook.com/message.php?id=8638838" description="Colorizes facebook based on the user's photo." enabled="true" basedir="facebook_auto-colorizer">
+		<Include>http://*.facebook.com/*</Include>
+	</Script>
+	<Script filename="facebook_view_photo_in_a.user.js" name="Facebook View Photo in Album" namespace="znerp" description="Adds a link above photos to see them in their albums, even if you're not friends with the photographer. Adds links to view all photos of a user together (regardless of who took them). Adds links to view whole galleries/albums on one page." enabled="true" basedir="facebook_view_photo_in_a">
+		<Include>http://*.facebook.com/photo.php?*</Include>
+		<Include>http://*.facebook.com/photo_search.php?*</Include>
+		<Include>http://*.facebook.com/album.php?*</Include>
+		<Include>http://*.facebook.com/photos.php?subj=*</Include>
+		<Include>http://*.facebook.com/*</Include>
+	</Script>
+	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="" enabled="true" basedir="wikiindent">
+		<Include>*wiki*</Include>
+	</Script>
+	<Script filename="lastfm_-_re-structured.user.js" name="last.fm - re-structured" namespace="http://userstyles.org" description="*update* 11/15/200" enabled="true" basedir="lastfm_-_re-structured">
+		<Include>http://beta.last.fm/*</Include>
+		<Include>https://beta.last.fm/*</Include>
+		<Include>http://*.beta.last.fm/*</Include>
+		<Include>https://*.beta.last.fm/*</Include>
+		<Include>http://last.fm/*</Include>
+		<Include>https://last.fm/*</Include>
+		<Include>http://*.last.fm/*</Include>
+		<Include>https://*.last.fm/*</Include>
+		<Include>http://lastfm.com.br/*</Include>
+		<Include>https://lastfm.com.br/*</Include>
+		<Include>http://*.lastfm.com.br/*</Include>
+		<Include>https://*.lastfm.com.br/*</Include>
+		<Include>http://lastfm.de/*</Include>
+		<Include>https://lastfm.de/*</Include>
+		<Include>http://*.lastfm.de/*</Include>
+		<Include>https://*.lastfm.de/*</Include>
+		<Include>http://lastfm.es/*</Include>
+		<Include>https://lastfm.es/*</Include>
+		<Include>http://*.lastfm.es/*</Include>
+		<Include>https://*.lastfm.es/*</Include>
+		<Include>http://lastfm.fr/*</Include>
+		<Include>https://lastfm.fr/*</Include>
+		<Include>http://*.lastfm.fr/*</Include>
+		<Include>https://*.lastfm.fr/*</Include>
+		<Include>http://lastfm.it/*</Include>
+		<Include>https://lastfm.it/*</Include>
+		<Include>http://*.lastfm.it/*</Include>
+		<Include>https://*.lastfm.it/*</Include>
+		<Include>http://lastfm.pl/*</Include>
+		<Include>https://lastfm.pl/*</Include>
+		<Include>http://*.lastfm.pl/*</Include>
+		<Include>https://*.lastfm.pl/*</Include>
+		<Include>http://lastfm.se/*</Include>
+		<Include>https://lastfm.se/*</Include>
+		<Include>http://*.lastfm.se/*</Include>
+		<Include>https://*.lastfm.se/*</Include>
+		<Include>http://lastfm.com.tr/*</Include>
+		<Include>https://lastfm.com.tr/*</Include>
+		<Include>http://*.lastfm.com.tr/*</Include>
+		<Include>https://*.lastfm.com.tr/*</Include>
+		<Include>http://lastfm.ru/*</Include>
+		<Include>https://lastfm.ru/*</Include>
+		<Include>http://*.lastfm.ru/*</Include>
+		<Include>https://*.lastfm.ru/*</Include>
+		<Include>http://lastfm.jp/*</Include>
+		<Include>https://lastfm.jp/*</Include>
+		<Include>http://*.lastfm.jp/*</Include>
+		<Include>https://*.lastfm.jp/*</Include>
+		<Include>http://cn.last.fm/*</Include>
+		<Include>https://cn.last.fm/*</Include>
+		<Include>http://*.cn.last.fm/*</Include>
+		<Include>https://*.cn.last.fm/*</Include>
+		<Include>http://last.fm/user*</Include>
+		<Include>http://beta.fm/user*</Include>
+		<Include>http://lastfm.com.br/user*</Include>
+		<Include>http://lastfm.de/user*</Include>
+		<Include>http://lastfm.es/user*</Include>
+		<Include>http://lastfm.fr/user*</Include>
+		<Include>http://lastfm.it/user*</Include>
+		<Include>http://lastfm.pl/user*</Include>
+		<Include>http://lastfm.se/user*</Include>
+		<Include>http://lastfm.com.tr/user*</Include>
+		<Include>http://lastfm.ru/user*</Include>
+		<Include>http://lastfm.jp/user*</Include>
+		<Include>http://cn.last.fm/user*</Include>
+		<Include>http://www.last.fm/user*</Include>
+		<Include>http://www.lastfm.com.br/user*</Include>
+		<Include>http://www.lastfm.de/user*</Include>
+		<Include>http://www.lastfm.es/user*</Include>
+		<Include>http://www.lastfm.fr/user*</Include>
+		<Include>http://www.lastfm.it/user*</Include>
+		<Include>http://www.lastfm.pl/user*</Include>
+		<Include>http://www.lastfm.se/user*</Include>
+		<Include>http://www.lastfm.com.tr/user*</Include>
+		<Include>http://www.lastfm.ru/user*</Include>
+		<Include>http://www.lastfm.jp/user*</Include>
+		<Include>http://www.cn.last.fm/user*</Include>
+		<Include>http://last.fm/music*</Include>
+		<Include>http://beta.fm/music*</Include>
+		<Include>http://lastfm.com.br/music*</Include>
+		<Include>http://lastfm.de/music*</Include>
+		<Include>http://lastfm.es/music*</Include>
+		<Include>http://lastfm.fr/music*</Include>
+		<Include>http://lastfm.it/music*</Include>
+		<Include>http://lastfm.pl/music*</Include>
+		<Include>http://lastfm.se/music*</Include>
+		<Include>http://lastfm.com.tr/music*</Include>
+		<Include>http://lastfm.ru/music*</Include>
+		<Include>http://lastfm.jp/music*</Include>
+		<Include>http://cn.last.fm/music*</Include>
+		<Include>http://www.last.fm/music*</Include>
+		<Include>http://www.lastfm.com.br/music*</Include>
+		<Include>http://www.lastfm.de/music*</Include>
+		<Include>http://www.lastfm.es/music*</Include>
+		<Include>http://www.lastfm.fr/music*</Include>
+		<Include>http://www.lastfm.it/music*</Include>
+		<Include>http://www.lastfm.pl/music*</Include>
+		<Include>http://www.lastfm.se/music*</Include>
+		<Include>http://www.lastfm.com.tr/music*</Include>
+		<Include>http://www.lastfm.ru/music*</Include>
+		<Include>http://www.lastfm.jp/music*</Include>
+		<Include>http://www.cn.last.fm/music*</Include>
+		<Include>http://last.fm/group*</Include>
+		<Include>http://beta.fm/group*</Include>
+		<Include>http://lastfm.com.br/group*</Include>
+		<Include>http://lastfm.de/group*</Include>
+		<Include>http://lastfm.es/group*</Include>
+		<Include>http://lastfm.fr/group*</Include>
+		<Include>http://lastfm.it/group*</Include>
+		<Include>http://lastfm.pl/group*</Include>
+		<Include>http://lastfm.se/group*</Include>
+		<Include>http://lastfm.com.tr/group*</Include>
+		<Include>http://lastfm.ru/group*</Include>
+		<Include>http://lastfm.jp/group*</Include>
+		<Include>http://cn.last.fm/group*</Include>
+		<Include>http://www.last.fm/group*</Include>
+		<Include>http://www.lastfm.com.br/group*</Include>
+		<Include>http://www.lastfm.de/group*</Include>
+		<Include>http://www.lastfm.es/group*</Include>
+		<Include>http://www.lastfm.fr/group*</Include>
+		<Include>http://www.lastfm.it/group*</Include>
+		<Include>http://www.lastfm.pl/group*</Include>
+		<Include>http://www.lastfm.se/group*</Include>
+		<Include>http://www.lastfm.com.tr/group*</Include>
+		<Include>http://www.lastfm.ru/group*</Include>
+		<Include>http://www.lastfm.jp/group*</Include>
+		<Include>http://www.cn.last.fm/group*</Include>
+		<Include>http://last.fm/event*</Include>
+		<Include>http://beta.fm/event*</Include>
+		<Include>http://lastfm.com.br/event*</Include>
+		<Include>http://lastfm.de/event*</Include>
+		<Include>http://lastfm.es/event*</Include>
+		<Include>http://lastfm.fr/event*</Include>
+		<Include>http://lastfm.it/event*</Include>
+		<Include>http://lastfm.pl/event*</Include>
+		<Include>http://lastfm.se/event*</Include>
+		<Include>http://lastfm.com.tr/event*</Include>
+		<Include>http://lastfm.ru/event*</Include>
+		<Include>http://lastfm.jp/event*</Include>
+		<Include>http://cn.last.fm/event*</Include>
+		<Include>http://www.last.fm/event*</Include>
+		<Include>http://www.lastfm.com.br/event*</Include>
+		<Include>http://www.lastfm.de/event*</Include>
+		<Include>http://www.lastfm.es/event*</Include>
+		<Include>http://www.lastfm.fr/event*</Include>
+		<Include>http://www.lastfm.it/event*</Include>
+		<Include>http://www.lastfm.pl/event*</Include>
+		<Include>http://www.lastfm.se/event*</Include>
+		<Include>http://www.lastfm.com.tr/event*</Include>
+		<Include>http://www.lastfm.ru/event*</Include>
+		<Include>http://www.lastfm.jp/event*</Include>
+		<Include>http://www.cn.last.fm/event*</Include>
+		<Include>http://last.fm/user*</Include>
+		<Include>http://beta.fm/user*</Include>
+		<Include>http://lastfm.com.br/user*</Include>
+		<Include>http://lastfm.de/user*</Include>
+		<Include>http://lastfm.es/user*</Include>
+		<Include>http://lastfm.fr/user*</Include>
+		<Include>http://lastfm.it/user*</Include>
+		<Include>http://lastfm.pl/user*</Include>
+		<Include>http://lastfm.se/user*</Include>
+		<Include>http://lastfm.com.tr/user*</Include>
+		<Include>http://lastfm.ru/user*</Include>
+		<Include>http://lastfm.jp/user*</Include>
+		<Include>http://cn.last.fm/user*</Include>
+		<Include>http://www.last.fm/user*</Include>
+		<Include>http://www.lastfm.com.br/user*</Include>
+		<Include>http://www.lastfm.de/user*</Include>
+		<Include>http://www.lastfm.es/user*</Include>
+		<Include>http://www.lastfm.fr/user*</Include>
+		<Include>http://www.lastfm.it/user*</Include>
+		<Include>http://www.lastfm.pl/user*</Include>
+		<Include>http://www.lastfm.se/user*</Include>
+		<Include>http://www.lastfm.com.tr/user*</Include>
+		<Include>http://www.lastfm.ru/user*</Include>
+		<Include>http://www.lastfm.jp/user*</Include>
+		<Include>http://www.cn.last.fm/user*</Include>
+		<Include>http://last.fm/music*</Include>
+		<Include>http://beta.fm/music*</Include>
+		<Include>http://lastfm.com.br/music*</Include>
+		<Include>http://lastfm.de/music*</Include>
+		<Include>http://lastfm.es/music*</Include>
+		<Include>http://lastfm.fr/music*</Include>
+		<Include>http://lastfm.it/music*</Include>
+		<Include>http://lastfm.pl/music*</Include>
+		<Include>http://lastfm.se/music*</Include>
+		<Include>http://lastfm.com.tr/music*</Include>
+		<Include>http://lastfm.ru/music*</Include>
+		<Include>http://lastfm.jp/music*</Include>
+		<Include>http://cn.last.fm/music*</Include>
+		<Include>http://www.last.fm/music*</Include>
+		<Include>http://www.lastfm.com.br/music*</Include>
+		<Include>http://www.lastfm.de/music*</Include>
+		<Include>http://www.lastfm.es/music*</Include>
+		<Include>http://www.lastfm.fr/music*</Include>
+		<Include>http://www.lastfm.it/music*</Include>
+		<Include>http://www.lastfm.pl/music*</Include>
+		<Include>http://www.lastfm.se/music*</Include>
+		<Include>http://www.lastfm.com.tr/music*</Include>
+		<Include>http://www.lastfm.ru/music*</Include>
+		<Include>http://www.lastfm.jp/music*</Include>
+		<Include>http://www.cn.last.fm/music*</Include>
+		<Include>http://last.fm/group*</Include>
+		<Include>http://beta.fm/group*</Include>
+		<Include>http://lastfm.com.br/group*</Include>
+		<Include>http://lastfm.de/group*</Include>
+		<Include>http://lastfm.es/group*</Include>
+		<Include>http://lastfm.fr/group*</Include>
+		<Include>http://lastfm.it/group*</Include>
+		<Include>http://lastfm.pl/group*</Include>
+		<Include>http://lastfm.se/group*</Include>
+		<Include>http://lastfm.com.tr/group*</Include>
+		<Include>http://lastfm.ru/group*</Include>
+		<Include>http://lastfm.jp/group*</Include>
+		<Include>http://cn.last.fm/group*</Include>
+		<Include>http://www.last.fm/group*</Include>
+		<Include>http://www.lastfm.com.br/group*</Include>
+		<Include>http://www.lastfm.de/group*</Include>
+		<Include>http://www.lastfm.es/group*</Include>
+		<Include>http://www.lastfm.fr/group*</Include>
+		<Include>http://www.lastfm.it/group*</Include>
+		<Include>http://www.lastfm.pl/group*</Include>
+		<Include>http://www.lastfm.se/group*</Include>
+		<Include>http://www.lastfm.com.tr/group*</Include>
+		<Include>http://www.lastfm.ru/group*</Include>
+		<Include>http://www.lastfm.jp/group*</Include>
+		<Include>http://www.cn.last.fm/group*</Include>
+		<Include>http://last.fm/event*</Include>
+		<Include>http://beta.fm/event*</Include>
+		<Include>http://lastfm.com.br/event*</Include>
+		<Include>http://lastfm.de/event*</Include>
+		<Include>http://lastfm.es/event*</Include>
+		<Include>http://lastfm.fr/event*</Include>
+		<Include>http://lastfm.it/event*</Include>
+		<Include>http://lastfm.pl/event*</Include>
+		<Include>http://lastfm.se/event*</Include>
+		<Include>http://lastfm.com.tr/event*</Include>
+		<Include>http://lastfm.ru/event*</Include>
+		<Include>http://lastfm.jp/event*</Include>
+		<Include>http://cn.last.fm/event*</Include>
+		<Include>http://www.last.fm/event*</Include>
+		<Include>http://www.lastfm.com.br/event*</Include>
+		<Include>http://www.lastfm.de/event*</Include>
+		<Include>http://www.lastfm.es/event*</Include>
+		<Include>http://www.lastfm.fr/event*</Include>
+		<Include>http://www.lastfm.it/event*</Include>
+		<Include>http://www.lastfm.pl/event*</Include>
+		<Include>http://www.lastfm.se/event*</Include>
+		<Include>http://www.lastfm.com.tr/event*</Include>
+		<Include>http://www.lastfm.ru/event*</Include>
+		<Include>http://www.lastfm.jp/event*</Include>
+		<Include>http://www.cn.last.fm/event*</Include>
+		<Include>http://last.fm/inbox*</Include>
+		<Include>http://beta.fm/inbox*</Include>
+		<Include>http://lastfm.com.br/inbox*</Include>
+		<Include>http://lastfm.de/inbox*</Include>
+		<Include>http://lastfm.es/inbox*</Include>
+		<Include>http://lastfm.fr/inbox*</Include>
+		<Include>http://lastfm.it/inbox*</Include>
+		<Include>http://lastfm.pl/inbox*</Include>
+		<Include>http://lastfm.se/inbox*</Include>
+		<Include>http://lastfm.com.tr/inbox*</Include>
+		<Include>http://lastfm.ru/inbox*</Include>
+		<Include>http://lastfm.jp/inbox*</Include>
+		<Include>http://cn.last.fm/inbox*</Include>
+		<Include>http://www.last.fm/inbox*</Include>
+		<Include>http://www.lastfm.com.br/inbox*</Include>
+		<Include>http://www.lastfm.de/inbox*</Include>
+		<Include>http://www.lastfm.es/inbox*</Include>
+		<Include>http://www.lastfm.fr/inbox*</Include>
+		<Include>http://www.lastfm.it/inbox*</Include>
+		<Include>http://www.lastfm.pl/inbox*</Include>
+		<Include>http://www.lastfm.se/inbox*</Include>
+		<Include>http://www.lastfm.com.tr/inbox*</Include>
+		<Include>http://www.lastfm.ru/inbox*</Include>
+		<Include>http://www.lastfm.jp/inbox*</Include>
+		<Include>http://www.cn.last.fm/inbox*</Include>
+		<Include>http://last.fm/home*</Include>
+		<Include>http://beta.fm/home*</Include>
+		<Include>http://lastfm.com.br/home*</Include>
+		<Include>http://lastfm.de/home*</Include>
+		<Include>http://lastfm.es/home*</Include>
+		<Include>http://lastfm.fr/home*</Include>
+		<Include>http://lastfm.it/home*</Include>
+		<Include>http://lastfm.pl/home*</Include>
+		<Include>http://lastfm.se/home*</Include>
+		<Include>http://lastfm.com.tr/home*</Include>
+		<Include>http://lastfm.ru/home*</Include>
+		<Include>http://lastfm.jp/home*</Include>
+		<Include>http://cn.last.fm/home*</Include>
+		<Include>http://www.last.fm/home*</Include>
+		<Include>http://www.lastfm.com.br/home*</Include>
+		<Include>http://www.lastfm.de/home*</Include>
+		<Include>http://www.lastfm.es/home*</Include>
+		<Include>http://www.lastfm.fr/home*</Include>
+		<Include>http://www.lastfm.it/home*</Include>
+		<Include>http://www.lastfm.pl/home*</Include>
+		<Include>http://www.lastfm.se/home*</Include>
+		<Include>http://www.lastfm.com.tr/home*</Include>
+		<Include>http://www.lastfm.ru/home*</Include>
+		<Include>http://www.lastfm.jp/home*</Include>
+		<Include>http://www.cn.last.fm/home*</Include>
+	</Script>
+	<Script filename="lastfm_-_re-structured_-.user.js" name="last.fm - re-structured - old red" namespace="http://userstyles.org" description="This is a red version of the style made by naglfar and celuie" enabled="true" basedir="lastfm_-_re-structured_-">
+		<Include>http://beta.last.fm/*</Include>
+		<Include>https://beta.last.fm/*</Include>
+		<Include>http://*.beta.last.fm/*</Include>
+		<Include>https://*.beta.last.fm/*</Include>
+		<Include>http://last.fm/*</Include>
+		<Include>https://last.fm/*</Include>
+		<Include>http://*.last.fm/*</Include>
+		<Include>https://*.last.fm/*</Include>
+		<Include>http://lastfm.com.br/*</Include>
+		<Include>https://lastfm.com.br/*</Include>
+		<Include>http://*.lastfm.com.br/*</Include>
+		<Include>https://*.lastfm.com.br/*</Include>
+		<Include>http://lastfm.de/*</Include>
+		<Include>https://lastfm.de/*</Include>
+		<Include>http://*.lastfm.de/*</Include>
+		<Include>https://*.lastfm.de/*</Include>
+		<Include>http://lastfm.es/*</Include>
+		<Include>https://lastfm.es/*</Include>
+		<Include>http://*.lastfm.es/*</Include>
+		<Include>https://*.lastfm.es/*</Include>
+		<Include>http://lastfm.fr/*</Include>
+		<Include>https://lastfm.fr/*</Include>
+		<Include>http://*.lastfm.fr/*</Include>
+		<Include>https://*.lastfm.fr/*</Include>
+		<Include>http://lastfm.it/*</Include>
+		<Include>https://lastfm.it/*</Include>
+		<Include>http://*.lastfm.it/*</Include>
+		<Include>https://*.lastfm.it/*</Include>
+		<Include>http://lastfm.pl/*</Include>
+		<Include>https://lastfm.pl/*</Include>
+		<Include>http://*.lastfm.pl/*</Include>
+		<Include>https://*.lastfm.pl/*</Include>
+		<Include>http://lastfm.se/*</Include>
+		<Include>https://lastfm.se/*</Include>
+		<Include>http://*.lastfm.se/*</Include>
+		<Include>https://*.lastfm.se/*</Include>
+		<Include>http://lastfm.com.tr/*</Include>
+		<Include>https://lastfm.com.tr/*</Include>
+		<Include>http://*.lastfm.com.tr/*</Include>
+		<Include>https://*.lastfm.com.tr/*</Include>
+		<Include>http://lastfm.ru/*</Include>
+		<Include>https://lastfm.ru/*</Include>
+		<Include>http://*.lastfm.ru/*</Include>
+		<Include>https://*.lastfm.ru/*</Include>
+		<Include>http://lastfm.jp/*</Include>
+		<Include>https://lastfm.jp/*</Include>
+		<Include>http://*.lastfm.jp/*</Include>
+		<Include>https://*.lastfm.jp/*</Include>
+		<Include>http://cn.last.fm/*</Include>
+		<Include>https://cn.last.fm/*</Include>
+		<Include>http://*.cn.last.fm/*</Include>
+		<Include>https://*.cn.last.fm/*</Include>
+		<Include>http://last.fm/user*</Include>
+		<Include>http://beta.fm/user*</Include>
+		<Include>http://lastfm.com.br/user*</Include>
+		<Include>http://lastfm.de/user*</Include>
+		<Include>http://lastfm.es/user*</Include>
+		<Include>http://lastfm.fr/user*</Include>
+		<Include>http://lastfm.it/user*</Include>
+		<Include>http://lastfm.pl/user*</Include>
+		<Include>http://lastfm.se/user*</Include>
+		<Include>http://lastfm.com.tr/user*</Include>
+		<Include>http://lastfm.ru/user*</Include>
+		<Include>http://lastfm.jp/user*</Include>
+		<Include>http://cn.last.fm/user*</Include>
+		<Include>http://www.last.fm/user*</Include>
+		<Include>http://www.lastfm.com.br/user*</Include>
+		<Include>http://www.lastfm.de/user*</Include>
+		<Include>http://www.lastfm.es/user*</Include>
+		<Include>http://www.lastfm.fr/user*</Include>
+		<Include>http://www.lastfm.it/user*</Include>
+		<Include>http://www.lastfm.pl/user*</Include>
+		<Include>http://www.lastfm.se/user*</Include>
+		<Include>http://www.lastfm.com.tr/user*</Include>
+		<Include>http://www.lastfm.ru/user*</Include>
+		<Include>http://www.lastfm.jp/user*</Include>
+		<Include>http://www.cn.last.fm/user*</Include>
+		<Include>http://last.fm/music*</Include>
+		<Include>http://beta.fm/music*</Include>
+		<Include>http://lastfm.com.br/music*</Include>
+		<Include>http://lastfm.de/music*</Include>
+		<Include>http://lastfm.es/music*</Include>
+		<Include>http://lastfm.fr/music*</Include>
+		<Include>http://lastfm.it/music*</Include>
+		<Include>http://lastfm.pl/music*</Include>
+		<Include>http://lastfm.se/music*</Include>
+		<Include>http://lastfm.com.tr/music*</Include>
+		<Include>http://lastfm.ru/music*</Include>
+		<Include>http://lastfm.jp/music*</Include>
+		<Include>http://cn.last.fm/music*</Include>
+		<Include>http://www.last.fm/music*</Include>
+		<Include>http://www.lastfm.com.br/music*</Include>
+		<Include>http://www.lastfm.de/music*</Include>
+		<Include>http://www.lastfm.es/music*</Include>
+		<Include>http://www.lastfm.fr/music*</Include>
+		<Include>http://www.lastfm.it/music*</Include>
+		<Include>http://www.lastfm.pl/music*</Include>
+		<Include>http://www.lastfm.se/music*</Include>
+		<Include>http://www.lastfm.com.tr/music*</Include>
+		<Include>http://www.lastfm.ru/music*</Include>
+		<Include>http://www.lastfm.jp/music*</Include>
+		<Include>http://www.cn.last.fm/music*</Include>
+		<Include>http://last.fm/group*</Include>
+		<Include>http://beta.fm/group*</Include>
+		<Include>http://lastfm.com.br/group*</Include>
+		<Include>http://lastfm.de/group*</Include>
+		<Include>http://lastfm.es/group*</Include>
+		<Include>http://lastfm.fr/group*</Include>
+		<Include>http://lastfm.it/group*</Include>
+		<Include>http://lastfm.pl/group*</Include>
+		<Include>http://lastfm.se/group*</Include>
+		<Include>http://lastfm.com.tr/group*</Include>
+		<Include>http://lastfm.ru/group*</Include>
+		<Include>http://lastfm.jp/group*</Include>
+		<Include>http://cn.last.fm/group*</Include>
+		<Include>http://www.last.fm/group*</Include>
+		<Include>http://www.lastfm.com.br/group*</Include>
+		<Include>http://www.lastfm.de/group*</Include>
+		<Include>http://www.lastfm.es/group*</Include>
+		<Include>http://www.lastfm.fr/group*</Include>
+		<Include>http://www.lastfm.it/group*</Include>
+		<Include>http://www.lastfm.pl/group*</Include>
+		<Include>http://www.lastfm.se/group*</Include>
+		<Include>http://www.lastfm.com.tr/group*</Include>
+		<Include>http://www.lastfm.ru/group*</Include>
+		<Include>http://www.lastfm.jp/group*</Include>
+		<Include>http://www.cn.last.fm/group*</Include>
+		<Include>http://last.fm/event*</Include>
+		<Include>http://beta.fm/event*</Include>
+		<Include>http://lastfm.com.br/event*</Include>
+		<Include>http://lastfm.de/event*</Include>
+		<Include>http://lastfm.es/event*</Include>
+		<Include>http://lastfm.fr/event*</Include>
+		<Include>http://lastfm.it/event*</Include>
+		<Include>http://lastfm.pl/event*</Include>
+		<Include>http://lastfm.se/event*</Include>
+		<Include>http://lastfm.com.tr/event*</Include>
+		<Include>http://lastfm.ru/event*</Include>
+		<Include>http://lastfm.jp/event*</Include>
+		<Include>http://cn.last.fm/event*</Include>
+		<Include>http://www.last.fm/event*</Include>
+		<Include>http://www.lastfm.com.br/event*</Include>
+		<Include>http://www.lastfm.de/event*</Include>
+		<Include>http://www.lastfm.es/event*</Include>
+		<Include>http://www.lastfm.fr/event*</Include>
+		<Include>http://www.lastfm.it/event*</Include>
+		<Include>http://www.lastfm.pl/event*</Include>
+		<Include>http://www.lastfm.se/event*</Include>
+		<Include>http://www.lastfm.com.tr/event*</Include>
+		<Include>http://www.lastfm.ru/event*</Include>
+		<Include>http://www.lastfm.jp/event*</Include>
+		<Include>http://www.cn.last.fm/event*</Include>
+		<Include>http://last.fm/user*</Include>
+		<Include>http://beta.fm/user*</Include>
+		<Include>http://lastfm.com.br/user*</Include>
+		<Include>http://lastfm.de/user*</Include>
+		<Include>http://lastfm.es/user*</Include>
+		<Include>http://lastfm.fr/user*</Include>
+		<Include>http://lastfm.it/user*</Include>
+		<Include>http://lastfm.pl/user*</Include>
+		<Include>http://lastfm.se/user*</Include>
+		<Include>http://lastfm.com.tr/user*</Include>
+		<Include>http://lastfm.ru/user*</Include>
+		<Include>http://lastfm.jp/user*</Include>
+		<Include>http://cn.last.fm/user*</Include>
+		<Include>http://www.last.fm/user*</Include>
+		<Include>http://www.lastfm.com.br/user*</Include>
+		<Include>http://www.lastfm.de/user*</Include>
+		<Include>http://www.lastfm.es/user*</Include>
+		<Include>http://www.lastfm.fr/user*</Include>
+		<Include>http://www.lastfm.it/user*</Include>
+		<Include>http://www.lastfm.pl/user*</Include>
+		<Include>http://www.lastfm.se/user*</Include>
+		<Include>http://www.lastfm.com.tr/user*</Include>
+		<Include>http://www.lastfm.ru/user*</Include>
+		<Include>http://www.lastfm.jp/user*</Include>
+		<Include>http://www.cn.last.fm/user*</Include>
+		<Include>http://last.fm/music*</Include>
+		<Include>http://beta.fm/music*</Include>
+		<Include>http://lastfm.com.br/music*</Include>
+		<Include>http://lastfm.de/music*</Include>
+		<Include>http://lastfm.es/music*</Include>
+		<Include>http://lastfm.fr/music*</Include>
+		<Include>http://lastfm.it/music*</Include>
+		<Include>http://lastfm.pl/music*</Include>
+		<Include>http://lastfm.se/music*</Include>
+		<Include>http://lastfm.com.tr/music*</Include>
+		<Include>http://lastfm.ru/music*</Include>
+		<Include>http://lastfm.jp/music*</Include>
+		<Include>http://cn.last.fm/music*</Include>
+		<Include>http://www.last.fm/music*</Include>
+		<Include>http://www.lastfm.com.br/music*</Include>
+		<Include>http://www.lastfm.de/music*</Include>
+		<Include>http://www.lastfm.es/music*</Include>
+		<Include>http://www.lastfm.fr/music*</Include>
+		<Include>http://www.lastfm.it/music*</Include>
+		<Include>http://www.lastfm.pl/music*</Include>
+		<Include>http://www.lastfm.se/music*</Include>
+		<Include>http://www.lastfm.com.tr/music*</Include>
+		<Include>http://www.lastfm.ru/music*</Include>
+		<Include>http://www.lastfm.jp/music*</Include>
+		<Include>http://www.cn.last.fm/music*</Include>
+		<Include>http://last.fm/group*</Include>
+		<Include>http://beta.fm/group*</Include>
+		<Include>http://lastfm.com.br/group*</Include>
+		<Include>http://lastfm.de/group*</Include>
+		<Include>http://lastfm.es/group*</Include>
+		<Include>http://lastfm.fr/group*</Include>
+		<Include>http://lastfm.it/group*</Include>
+		<Include>http://lastfm.pl/group*</Include>
+		<Include>http://lastfm.se/group*</Include>
+		<Include>http://lastfm.com.tr/group*</Include>
+		<Include>http://lastfm.ru/group*</Include>
+		<Include>http://lastfm.jp/group*</Include>
+		<Include>http://cn.last.fm/group*</Include>
+		<Include>http://www.last.fm/group*</Include>
+		<Include>http://www.lastfm.com.br/group*</Include>
+		<Include>http://www.lastfm.de/group*</Include>
+		<Include>http://www.lastfm.es/group*</Include>
+		<Include>http://www.lastfm.fr/group*</Include>
+		<Include>http://www.lastfm.it/group*</Include>
+		<Include>http://www.lastfm.pl/group*</Include>
+		<Include>http://www.lastfm.se/group*</Include>
+		<Include>http://www.lastfm.com.tr/group*</Include>
+		<Include>http://www.lastfm.ru/group*</Include>
+		<Include>http://www.lastfm.jp/group*</Include>
+		<Include>http://www.cn.last.fm/group*</Include>
+		<Include>http://last.fm/event*</Include>
+		<Include>http://beta.fm/event*</Include>
+		<Include>http://lastfm.com.br/event*</Include>
+		<Include>http://lastfm.de/event*</Include>
+		<Include>http://lastfm.es/event*</Include>
+		<Include>http://lastfm.fr/event*</Include>
+		<Include>http://lastfm.it/event*</Include>
+		<Include>http://lastfm.pl/event*</Include>
+		<Include>http://lastfm.se/event*</Include>
+		<Include>http://lastfm.com.tr/event*</Include>
+		<Include>http://lastfm.ru/event*</Include>
+		<Include>http://lastfm.jp/event*</Include>
+		<Include>http://cn.last.fm/event*</Include>
+		<Include>http://www.last.fm/event*</Include>
+		<Include>http://www.lastfm.com.br/event*</Include>
+		<Include>http://www.lastfm.de/event*</Include>
+		<Include>http://www.lastfm.es/event*</Include>
+		<Include>http://www.lastfm.fr/event*</Include>
+		<Include>http://www.lastfm.it/event*</Include>
+		<Include>http://www.lastfm.pl/event*</Include>
+		<Include>http://www.lastfm.se/event*</Include>
+		<Include>http://www.lastfm.com.tr/event*</Include>
+		<Include>http://www.lastfm.ru/event*</Include>
+		<Include>http://www.lastfm.jp/event*</Include>
+		<Include>http://www.cn.last.fm/event*</Include>
+		<Include>http://last.fm/inbox*</Include>
+		<Include>http://beta.fm/inbox*</Include>
+		<Include>http://lastfm.com.br/inbox*</Include>
+		<Include>http://lastfm.de/inbox*</Include>
+		<Include>http://lastfm.es/inbox*</Include>
+		<Include>http://lastfm.fr/inbox*</Include>
+		<Include>http://lastfm.it/inbox*</Include>
+		<Include>http://lastfm.pl/inbox*</Include>
+		<Include>http://lastfm.se/inbox*</Include>
+		<Include>http://lastfm.com.tr/inbox*</Include>
+		<Include>http://lastfm.ru/inbox*</Include>
+		<Include>http://lastfm.jp/inbox*</Include>
+		<Include>http://cn.last.fm/inbox*</Include>
+		<Include>http://www.last.fm/inbox*</Include>
+		<Include>http://www.lastfm.com.br/inbox*</Include>
+		<Include>http://www.lastfm.de/inbox*</Include>
+		<Include>http://www.lastfm.es/inbox*</Include>
+		<Include>http://www.lastfm.fr/inbox*</Include>
+		<Include>http://www.lastfm.it/inbox*</Include>
+		<Include>http://www.lastfm.pl/inbox*</Include>
+		<Include>http://www.lastfm.se/inbox*</Include>
+		<Include>http://www.lastfm.com.tr/inbox*</Include>
+		<Include>http://www.lastfm.ru/inbox*</Include>
+		<Include>http://www.lastfm.jp/inbox*</Include>
+		<Include>http://www.cn.last.fm/inbox*</Include>
+		<Include>http://last.fm/home*</Include>
+		<Include>http://beta.fm/home*</Include>
+		<Include>http://lastfm.com.br/home*</Include>
+		<Include>http://lastfm.de/home*</Include>
+		<Include>http://lastfm.es/home*</Include>
+		<Include>http://lastfm.fr/home*</Include>
+		<Include>http://lastfm.it/home*</Include>
+		<Include>http://lastfm.pl/home*</Include>
+		<Include>http://lastfm.se/home*</Include>
+		<Include>http://lastfm.com.tr/home*</Include>
+		<Include>http://lastfm.ru/home*</Include>
+		<Include>http://lastfm.jp/home*</Include>
+		<Include>http://cn.last.fm/home*</Include>
+		<Include>http://www.last.fm/home*</Include>
+		<Include>http://www.lastfm.com.br/home*</Include>
+		<Include>http://www.lastfm.de/home*</Include>
+		<Include>http://www.lastfm.es/home*</Include>
+		<Include>http://www.lastfm.fr/home*</Include>
+		<Include>http://www.lastfm.it/home*</Include>
+		<Include>http://www.lastfm.pl/home*</Include>
+		<Include>http://www.lastfm.se/home*</Include>
+		<Include>http://www.lastfm.com.tr/home*</Include>
+		<Include>http://www.lastfm.ru/home*</Include>
+		<Include>http://www.lastfm.jp/home*</Include>
+		<Include>http://www.cn.last.fm/home*</Include>
+	</Script>
+	<Script filename="glass_everything.user.js" name="Glass Everything" namespace="joeytwiddle" description="From http://userstyles.org/styles/19104" enabled="false" basedir="glass_everything">
+		<Include>*</Include>
 	</Script>
 </UserScriptConfig>
