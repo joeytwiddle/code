@@ -46,7 +46,7 @@ if (document.location.pathname == "/imgres") {
  * Dual licensed under the MIT (MIT-LICENSE.txt)
  * and GPL (GPL-LICENSE.txt) licenses.
  *
- * $Date: 2009/08/09 11:16:10 $
+ * $Date: 2009/08/09 23:58:47 $
  * $Rev: 5685 $
  */
 (function(){var _jQuery=window.jQuery,_$=window.$;var jQuery=window.jQuery=window.$=function(selector,context){return new jQuery.fn.init(selector,context);};var quickExpr=/^[^<]*(<(.|\s)+>)[^>]*$|^#(\w+)$/,isSimple=/^.[^:#\[\.]*$/,undefined;jQuery.fn=jQuery.prototype={init:function(selector,context){selector=selector||document;if(selector.nodeType){this[0]=selector;this.length=1;return this;}if(typeof selector=="string"){var match=quickExpr.exec(selector);if(match&&(match[1]||!context)){if(match[1])selector=jQuery.clean([match[1]],context);else{var elem=document.getElementById(match[3]);if(elem){if(elem.id!=match[3])return jQuery().find(selector);return jQuery(elem);}selector=[];}}else
@@ -112,8 +112,11 @@ var hoverInFunction = function (e) {
 
 	// attach events to new image 
 	$(popImage).mousemove( function() { 
-		$(popDiv).remove(); 
-		$("body").css("overflow", "auto");
+		$(popImage.parentNode.parentNode).fadeOut('slow');
+		setTimeout( function(){
+			$(popDiv).remove(); 
+			$("body").css("overflow", "auto");
+		}, 4000);
 	});
 	$(popImage).css('cursor','none');
 
@@ -153,7 +156,7 @@ var hoverInFunction = function (e) {
 
 			$(popImage.parentNode.parentNode).css('left',x);
 			$(popImage.parentNode.parentNode).css('top',y);
-			$(popImage.parentNode.parentNode).fadeIn('fast');
+			$(popImage.parentNode.parentNode).fadeIn('slow');
 
 			hoveredImage.style.cursor = 'crosshair';	
 	});
