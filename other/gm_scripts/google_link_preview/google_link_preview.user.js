@@ -52,7 +52,7 @@ window.setTimeout(function() {
     GM_log("Trying remote links got " + links.snapshotLength);
   }
   if (links.snapshotLength<=0 || links.snapshotLength>=50) {
-    links = getXPath("(//a)[1]");
+    links = getXPathSnapshot("(//a)[1]");
   }
 
   window.document.title = "+"+links.snapshotLength+" "+window.document.title;
