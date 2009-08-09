@@ -8,6 +8,37 @@
 // @include        https://images.google.co.uk/*
 // ==/UserScript==
 
+function getCGI(param) {
+	// var rx = /.*(^|&)"+param+"=([^&]*).*/;
+	var rx = new RegExp("(^|[&?])"+param+"=([^&]*)");
+	var result = document.location.search.match(rx);
+	// log("param="+param+" result="+(result?result[2]:""));
+	return ( result ? decodeURIComponent(result[2]) : "" );
+}
+
+/*
+function getCGI(key) {
+	var val = decodeURIComponent(document.location.search.indexOf("&"+key+"=");
+			replace(".*[?&]"+key+"=([^&]*).*","\1"));
+	GM_log("getCGI('"+key+"') = "+val);
+	return val;
+}
+*/
+
+if (document.location.pathname == "/imgres") {
+	(function(){
+		var targetUrl = getCGI('imgrefurl'); // or 'imgurl'
+		if (targetUrl) {
+			GM_log("Skipping Google Images framed results page.");
+			// GM_log("Skipping Google Images framed results page to target: "+targetUrl);
+			window.document.location.replace(targetUrl);
+			//// Pause before travel.  I don't know why this would not work:
+			// setTimeout( function(){ window.document.location.replace(targetUrl); }, 3000);
+		}
+	})();
+	return;
+}
+
 /*
  * jQuery 1.2.6 - New Wave Javascript
  *
@@ -15,7 +46,7 @@
  * Dual licensed under the MIT (MIT-LICENSE.txt)
  * and GPL (GPL-LICENSE.txt) licenses.
  *
- * $Date: 2009/07/26 03:04:58 $
+ * $Date: 2009/08/09 11:16:10 $
  * $Rev: 5685 $
  */
 (function(){var _jQuery=window.jQuery,_$=window.$;var jQuery=window.jQuery=window.$=function(selector,context){return new jQuery.fn.init(selector,context);};var quickExpr=/^[^<]*(<(.|\s)+>)[^>]*$|^#(\w+)$/,isSimple=/^.[^:#\[\.]*$/,undefined;jQuery.fn=jQuery.prototype={init:function(selector,context){selector=selector||document;if(selector.nodeType){this[0]=selector;this.length=1;return this;}if(typeof selector=="string"){var match=quickExpr.exec(selector);if(match&&(match[1]||!context)){if(match[1])selector=jQuery.clean([match[1]],context);else{var elem=document.getElementById(match[3]);if(elem){if(elem.id!=match[3])return jQuery().find(selector);return jQuery(elem);}selector=[];}}else
