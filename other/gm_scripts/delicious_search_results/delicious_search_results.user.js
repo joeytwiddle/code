@@ -35,7 +35,7 @@ GM_DUR = {
 
 	handle : function(response)
 	{
-		GM_log("Delicious response was "+response+" with text: "+response.responseText);
+		// GM_log("Delicious response was "+response+" with text: "+response.responseText);
 		var results = eval("("+response.responseText+")");
 		if( results.length > 0 )
 		{
