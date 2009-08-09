@@ -46,9 +46,18 @@ function createFaviconFor(url) {
 	return img;
 }
 
+function getElementsByTagNameAndClassName(tN,cN) {
+	return filterListBy( document.getElementsByTagName(tN), function(x){ return x.className==cN } );
+}
+
+function getElementsByClassName(cN) {
+	return getElementsByTagNameAndClassName("*",cN);
+}
+
 // var links = document.evaluate("//a[@class='l']",document,null,6,null);
-var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
+// var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
 // var links = document.links.filter( function(x){ return x.className=='l'; } );
+var links = getElementsByTagNameAndClassName("A",'l');
 
 // GM_log("Got links = "+links.snapshotLength);
 
