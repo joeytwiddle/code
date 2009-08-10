@@ -10,6 +10,10 @@
 // to save a zip file just because we hovered on it.
 // Dammit some pages break out of the iframe!
 
+// if (window.document != document) {
+	// return; // Don't run in iframes
+// }
+
 // Quite nice on apache file listings of .jpegs, but a bit slow.  Ideally pre-load hoverable images?
 // Could be a bit heavy.  It depends on the page...
 
@@ -18,6 +22,8 @@ var lastFocus = undefined;
 
 var myPopup;
 var myFrame;
+
+var isOverPopup = false;
 
 function checkFocus() {
 	if (focus) {
@@ -35,7 +41,7 @@ function eekAMouse(evt) {
 		focus = evt.currentTarget;
 		// setTimeout('checkFocus();',1000);
 		// Hack to bring the popup back immediately if we've gone back to the same link.
-		if (myFrame && myFrame.href && myFrame.href == focus.href) {
+		if (myFrame && myFrame.href == focus.href) {
 			showPreviewWindow(focus);
 		} else {
 			setTimeout(checkFocus,1000);
@@ -47,7 +53,13 @@ function eekAMouse(evt) {
 
 function phewMouseGone(evt) {
 	focus = undefined;
-	// TODO: Don't hide the popup if mouse is currently over the popup!
+	// TESTING: Don't hide the popup if mouse is currently over the popup!
+	setTimeout(clearPopup,500);
+}
+
+function clearPopup(e) {
+	if (isOverPopup || focus)
+		return;
 	if (myPopup) {
 		// myPopup.parentNode.removeChild(myPopup);
 		// myPopup = undefined; // eww cache it!
@@ -61,18 +73,33 @@ function aClick(evt) {
 	focus = undefined;
 }
 
+function createPopup() {
+	// Create frame
+	myPopup = document.createElement('DIV');
+	/** Seems style does not work for Konqueror this way. **/
+	myPopup.innerHTML =
+		"<STYLE type='text/css'> iframe.preview { color: #ff8822; background-color: #ff0000; margin: 0px; padding: 2px; border: 2px solid white; text-align: center; } </STYLE>"
+		+
+		"<IFRAME class='preview' width='"+(window.innerWidth*0.75)+"' height='"+(window.innerHeight*0.75)+"' src='about:blank'></IFRAME>";
+	myPopup.addEventListener("mouseover", function(evt) { isOverPopup=true; }, false);
+	myPopup.addEventListener("mouseout", function(evt) { isOverPopup=false; setTimeout(clearPopup,500); }, false);
+	document.documentElement.appendChild(myPopup);
+	/*
+	myPopup.style.border = "4px solid white";
+	myPopup.style.backgroundColor = "#004400";
+	myPopup.style.margin = "4px";
+	myPopup.style.padding = "4px";
+	*/
+	myPopup.style.position = "fixed";
+	myPopup.style.right = "12px";
+	myPopup.style.bottom = "12px";
+	myPopup.style.zIndex = "10000";
+	myFrame = myPopup.getElementsByTagName('IFRAME')[0];
+}
+
 function showPreviewWindow(link) {
 	if (!myFrame) {
-		// Create frame
-		myPopup = document.createElement('DIV');
-		/** Seems style does not work for Konqueror this way. **/
-		myPopup.innerHTML =
-			"<STYLE type='text/css'> iframe.preview { color: white; background-color: #aaaaaa; position: fixed; right: 12px; bottom: 12px; z-index: 10000; padding: 4px; border: 2px solid #000000; text-align: center; } </STYLE>"
-			+
-			"<IFRAME class='preview' width='"+(window.innerWidth/2)+"' height='"+(window.innerHeight/2)+"' src='about:blank'></IFRAME>";
-		
-		document.documentElement.appendChild(myPopup);
-		myFrame = myPopup.getElementsByTagName('IFRAME')[0];
+		createPopup();
 	}
 	myPopup.style.display = '';
 	if (!myFrame.src || myFrame.src != link.href)
