@@ -58,6 +58,9 @@ function getElementsByClassName(cN) {
 // var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
 // var links = document.links.filter( function(x){ return x.className=='l'; } );
 var links = getElementsByTagNameAndClassName("A",'l');
+// Allows it to work on any sites:
+if (links.length == 0)
+	links = getElementsByTagName("A");
 
 // GM_log("Got links = "+links.snapshotLength);
 
@@ -73,6 +76,10 @@ for (var i=0;i<links.length;i++) {
 	// if (link.href.match('^javascript:') || link.href.match('^#')) {
 		// continue;
 	// }
+	//// Skip relative and same-host links:
+	if (link.href.match(/^[/]/) || link.href.match("://"+document.location.host)) {
+		continue;
+	}
 	var img = createFaviconFor(link.href);
 	var targetNode = (placeFaviconByUrl ? link.parentNode.parentNode.getElementsByTagName('cite')[0] : link);
 	if (placeFaviconInsideLink) {

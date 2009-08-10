@@ -53,7 +53,9 @@ var beAggressive = true;    // If set, will cleanup a newly loaded page if it
 
 var stopJavascriptTimers = true;
 var removePlugins = true;
-var showInfoInTitle = false; // Handy for debugging/watching Reclaim_CPU working.
+var showInfoInTitle = true; // Handy for debugging/watching Reclaim_CPU working.
+
+
 
 /* ////// Documentation //////
 
@@ -159,6 +161,28 @@ user returns to the window.
 
 
 
+////// Libraries //////
+
+var showInfo = ({});
+showInfo.showClean = function () {
+	showInfo.newInfo("");
+};
+showInfo.showInUse = function () {
+	showInfo.newInfo("* ");
+};
+showInfo.showIdle = function () {
+	showInfo.newInfo(". ");
+};
+showInfo.newInfo = function (newPre) {
+	if (!showInfoInTitle)
+		return;
+	// We intentionally get info from the frame document, but set the toplevel title.
+	window.document.title = document.title.replace(/^([*] |[=] |[.] )/,'');
+	window.document.title = newPre + document.title;
+};
+
+
+
 ////// Functions which perform the page cleanup. //////
 
 var report;
@@ -185,7 +209,7 @@ function cleanupCPUHoggers() {
 	document.body.insertBefore(d,document.body.firstChild);
 	*/
 
-   if (showInfoInTitle) { document.title = "[Clean] " + document.title.replace(/^\[(Idling|Clean)\] /,""); }
+	showInfo.showClean();
 
 }
 
@@ -304,6 +328,7 @@ function initTimer() {
 
 		//// Cleanup automatically at fixed time after page has loaded.
 		setTimeout(cleanupCPUHoggers,idleSeconds*1000);
+		showInfo.showIdle();
 
 	} else {
 
@@ -326,9 +351,7 @@ function initTimer() {
 				// DONE: We should also disable all the event watchers.
 				// Actually let's leave our listeners on.  Cleanup can be retriggered by a new mouseover.
 				if (!reTrigger) {
-					window.removeEventListener("mousemove", watchMouseMove, true);
-					window.removeEventListener("focus", watchMouseMove, true);
-					window.removeEventListener("mouseout", watchMouseLeave, true);
+					removeListeners();
 				}
 			} else {
 				if (mouseHasLeft) {
@@ -347,13 +370,17 @@ function initTimer() {
 		// DONE: We don't actually need to run the checkIdle timer at all, until the mouse has left!
 
 		var watchMouseMove = function(e) {
-         if (mouseHasLeft && showInfoInTitle) { document.title = document.title.replace(/^\[(Idling|Clean)\] /,""); }
+         if (mouseHasLeft) { showInfo.showInUse(); }
 			mouseHasLeft = false;
 			lastSawMouse = new Date().getTime();
 			// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
 			// window.status = "Mouse moved (" + e.pageX + "," + e.pageY + ")";
 			// window.status = "Mouse has entered the "+e.target.tagName;
 			// idleInfo.textContent = "Mouse is back.";
+			if (reTrigger && !timerRunning) {
+				timerRunning = true;
+				setTimeout(checkIdle,idleSeconds*1000);
+			}
 			return false;
 		};
 
@@ -366,13 +393,13 @@ function initTimer() {
 				return false;
          }
 			if (!mouseHasLeft) {
+				showInfo.showIdle();
 				if (timerRunning) {
 					// Don't start a timer - we have one!
 				} else {
 					setTimeout(checkIdle,(idleSeconds+0.5)*1000);
 					timerRunning = true;
 				}
-            if (showInfoInTitle) { document.title = "[Idling] " + (document.title.replace(/^\[(Idling|Clean)\] /,"")); }
 			}
 			mouseHasLeft = true;
 			lastSawMouse = new Date().getTime();
@@ -382,19 +409,30 @@ function initTimer() {
 			return false;
 		}
 
-      // for (var i=0;i<document.body.childNodes.length;i++) {
-         // var x = document.body.childNodes[i];
-         // var x = document.body; // For Konq
-         var x = window; // For FF
-         x.addEventListener("mouseover", watchMouseMove, true);
-         x.addEventListener("focus", watchMouseMove, true); // Catches when user re-enters window with keyboard?
-         x.addEventListener("mouseout", watchMouseLeave, true);
-         // These work better in konq?  They seem to do all depths.
-         // x.onmouseover = watchMouseMove;
-         // x.onfocus = watchMouseMove;
-         // x.onmouseout = watchMouseLeave;
-         document.addEventListener("load",function(evt){GM_log("onload has evt="+evt+" mouse=("+evt.pageX+","+evt.pageY+")");},false);
-      // }
+		var listenElement = window; // For FF
+		// var listenElement = document.body; // For Konq
+		//// Testing:
+		// for (var i=0;i<document.body.childNodes.length;i++) { var listenElement = document.body.childNodes[i]; /* ... */ }
+
+		function addListeners() {
+			listenElement.addEventListener("mouseover", watchMouseMove, true);
+			listenElement.addEventListener("focus", watchMouseMove, true); // Catches when user re-enters window with keyboard?
+			listenElement.addEventListener("mouseout", watchMouseLeave, true);
+			// These work better in konq?  They seem to do all depths.
+			// x.onmouseover = watchMouseMove;
+			// x.onfocus = watchMouseMove;
+			// x.onmouseout = watchMouseLeave;
+		}
+
+		function removeListeners() {
+			listenElement.removeEventListener("mousemove", watchMouseMove, true);
+			listenElement.removeEventListener("focus", watchMouseMove, true);
+			listenElement.removeEventListener("mouseout", watchMouseLeave, true);
+		}
+
+		addListeners();
+
+		// document.addEventListener("load",function(evt){GM_log("onload has evt="+evt+" mouse=("+evt.pageX+","+evt.pageY+")");},false);
 
       // It seems on Konqueror, the last event I caught firing when the mouse
       // was moved out of the window was a mouseover on BODY, not leaving it.
@@ -413,10 +451,16 @@ function initTimer() {
 		// setTimeout(checkIdle,5000);
 
 		if (beAggressive) {
-         if (showInfoInTitle) { document.title = "[Idling] " + (document.title.replace(/^\[(Idling|Clean)\] /,"")); }
 			mouseHasLeft = true;
-			timerRunning = true;
-			setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
+			// setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
+			// We could stall this until document.load event, IF page has not already loaded.
+			document.addEventListener("load",function(evt){
+				if (mouseHasLeft) {
+					showInfo.showIdle();
+					timerRunning = true;
+					setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
+				}
+			},false);
 		}
 
 	}
