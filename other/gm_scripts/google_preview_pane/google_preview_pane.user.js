@@ -7,10 +7,20 @@
 // @include        http://www.google.*/webhp?*q=*
 // @include        http://google.*/search?*q=*
 // @include        http://google.*/webhp?*q=*
-// @version        0.9.9.5
+// @version        0.9.9.6
 // ==/UserScript==
 
+
+
+//// Changelog ////
+
 /* ==================
+ *
+ * CHANGES in 0.9.9.6
+ *
+ * checkerRows, loadEarly, renderLikeTabs
+ *
+ * ==================
  *
  * CHANGES in 0.9.9.5
  *
@@ -19,7 +29,9 @@
  *
  * ================== */
 
-// Settings:
+
+
+//// Settings ////
 
 var previewWidth    = 0.75;    // Width of the preview pane (proportion of window width).
 var gapBelow        = 16;      // Space left below panes (pixels).
@@ -36,8 +48,8 @@ var reduceWidth     = true;    // Try lots of little things to make things fit i
 var reduceTextSize  = true;    // Reduce size of text in results area (maybe also top).
 var panelHasBorder  = true;    // I like the preview pane to look sunken.
 var loadEarly       = true;    // Better (e.g. with Delicious on Google script) to wait.
-var checkerRows     = true;    // Alternates grey and white background to separate results.
-var renderLikeTabs  = true;    // Different visual style.
+var checkerRows     = false;   // Alternates grey and white background to separate results.
+var renderLikeTabs  = false;   // Different visual style.
 
 var clearFrameWhenLeaving  = true; // Can speed up loading of the clicked page if the preview is still loading.
 
@@ -50,192 +62,28 @@ var Colors = {
 };
 
 if (renderLikeTabs) {
-	Colors.selected = { bg: "white", border: "#ccddff" };
-	Colors.checkers = { 0: '#f6f6f6', 1: '#eeeeee' };
+	// Colors.selected = { bg: "#f7fcff", border: "#ccddff" };
+	// Colors.selected = { bg: "#ffffee", border: "#ddddcc" };
+	// Colors.checkers = { 0: '#f6f6f6', 1: '#eeeeee' };
 }
 
 var resultsWidth = 1.0 - previewWidth;
+
+
+
+//// Instantiation ////
 
 // Don't run if we are in a sub-frame:
 if (window != top)
 	return;
 
-
-
-//// Library Functions ////
-
-function findIndexOf(item,list) {
-	for (var i=0;i<list.length;i++) {
-		if (list[i] == item)
-			return i;
-	}
-	return -1;
-}
-
-function getXPath(elem) {
-	var list = document.getElementsByTagName(elem.tagName);
-	var index = findIndexOf(elem,list);
-	if (index>=0) {
-		return "(//"+elem.tagName+")["+(index+1)+"]";
-	} else {
-		throw new Error("Not found: "+elem+" in "+list);
-	}
-}
-
-function showSelected(elem) {
-	if (elem.tagName != "LI")
-		return;
-	elem.style.margin = '0px';
-	elem.style.padding = '8px';
-	if (renderLikeTabs) {
-		elem.style.border = '2px solid '+Colors.selected.border;
-		elem.style.padding = '8px';
-		elem.style.borderRight = '2px solid white';
-		elem.style.paddingRight = '8px';
-	}
-}
-
-function showUnselected(elem) {
-	if (elem.tagName != "LI")
-		return;
-	// elem.style.padding = '0px';
-	// elem.style.paddingTop = '12px';
-	// elem.style.paddingBottom = '12px';
-	elem.style.margin = '0px';
-	elem.style.padding = '8px';
-	if (renderLikeTabs) {
-		elem.style.border = '0px';
-		elem.style.padding = '10px';
-		elem.style.borderRight = '2px solid '+Colors.selected.border;
-		elem.style.paddingRight = '8px';
-	}
-}
-
-function reformatThings() {
-
-	// Do some styling on the main result LI nodes.
-	var results = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
-	for (var i=0;i<results.snapshotLength;i++) {
-		var elem = results.snapshotItem(i);
-		// Alternate background color
-		if (checkerRows)
-			elem.style.backgroundColor = Colors.checkers[i%2];
-		// elem.style.paddingTop = '1em';
-		// elem.style.paddingBottom = '1em';
-		// elem.style.paddingLeft = '0px';
-		// elem.style.paddingRight = '0px';
-		// elem.style.border = '2px solid '+elem.style.backgroundColor;
-		showUnselected(elem);
-	}
-
-	if (reduceWidth) {
-
-		//// TODO: Various things I haven't narrowed. ////
-		// - Sometimes it is the row of Next/Previous Goooooooogle results.
-		// - Google gave me a lot of "Searches related to: resize window
-		//   iframe" at the bottom which were too wide (5 column table, one
-		//   with long word "addeventlistener").
-		// - Sometimes it is the <cite> URL of the result that it too wide!  (They wrap in Moz but not in Konq.))
-		// - Or the result summary text may contain a really long word which does not wrap.
-		// - Video results - 2 columns with text beside, can be wider than desired.
-
-		// Makes a few pieces of text smaller, but most have custom style font sizes.
-		document.body.style.fontSize='10px';
-
-		//// The first nobr was a lone child when I wrote this.
-		//// We break it.
-		// var nobr = document.getElementsByTagName('NOBR')[0];
-		// nobr.parentNode.innerHTML = nobr.innerHTML;
-		//// Remove all nobrs, leaving their children in their place:
-		var nobrs = document.getElementsByTagName("NOBR");
-		for (var i=nobrs.length-1; i>=0; i--) {
-			var nobr = nobrs[i];
-			while (nobr && nobr.firstChild) {
-				nobr.parentNode.insertBefore(nobr.firstChild,nobr);
-			}
-			nobr.parentNode.removeChild(nobr);
-		}
-
-		// This avoids the white-space: wrap but kills the blue header background.
-		document.getElementById("ssb").id = 'not_ssb';
-		// OK we restore the blue background:
-		document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
-		document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
-		// TODO: Vertical alignment of text is still wrong.
-		// document.getElementById("not_ssb").style.verticalAlign = 'middle';
-		var resText = document.getElementById('prs').nextSibling;
-		resText.style.textAlign = 'right';
-
-		// Footer
-		document.getElementById("bsf").padding = '0px';
-
-		// The last Goooooooogle TD has a silly huge margin
-		var tds = document.getElementById('nav').getElementsByTagName('td');
-		tds[tds.length-1].getElementsByTagName('span')[0].style.marginRight = '0px';
-		// Remove all the images in that block
-		var oooogs = document.getElementById('nav').getElementsByTagName('span')
-		for (var i=oooogs.length-1;i>=0;i--) {
-			var oog = oooogs[i];
-			// The text links will appear very close together unless we space them
-			oog.parentNode.style.padding = '3px';
-			// Remove the span/image:
-			oog.parentNode.removeChild(oog);
-		}
-
-	}
-
-	if (reduceTextSize) {
-		// var log = "";
-		function resizeTextNode(node,difference) {
-			for (var child=node.firstChild; (child); child = child.nextSibling) {
-				resizeTextNode(child,difference);
-			}
-			if (node && node.style) {
-				var oldSize = getComputedStyle(node,null).fontSize;
-				if (oldSize) {
-					var newSize = parseFloat(oldSize) + difference;
-					// log+= node+" ("+oldSize+"->"+newSize+"px) \n";
-					node.style.fontSize = newSize + "px";
-				}
-			}
-		}
-		resizeTextNode(document.getElementById('res'),-1);
-		// log;
-		// setTimeout(function(){ resizeTextNode(resultsBlock,-4); },1000);
-		// NOTE: resultsBlock is no longer available in this scope
-		// GM_log(log);
-		// BUG TODO: In FF3.5 when doing this while zoomed IN, somehow it increases the size of the fonts, although it is reporting otherwise.
-	}
-
-	if (removeLogo || miniLogo) {
-		var logo = document.getElementsByTagName("IMG")[0];
-		logo = logo.parentNode.parentNode; // A
-		if (!miniLogo)
-			logo = logo.parentNode; // TD
-		var pNode = logo.parentNode;
-		pNode.removeChild(logo);
-		document.getElementById('sff').getElementsByTagName('table')[0].style.marginTop = '5px'
-		if (miniLogo) {
-			var newImg = document.createElement("IMG");
-			// newImg.src = "/favicon.ico";
-			newImg.src = "http://www.google.com/intl/en_ALL/images/logo.gif";
-			newImg.width = 276/5;
-			newImg.height = 110/5;
-			pNode.appendChild(newImg);
-			pNode.style.paddingTop = '8px';
-			pNode.style.paddingRight = '0px';
-			document.getElementById('sft').style.marginTop = '0px';
-			document.getElementById('sft').style.marginBottom = '0px';
-			document.getElementById('sff').style.paddingBottom = '0px';
-		}
-	}
-
-	// The "Sponsored Links" block gets in the way.
-	var toKill = document.getElementById("mbEnd");
-	if (toKill) {
-		toKill.parentNode.removeChild(toKill);
-	}
-
+var earlyResultsBlock = document.getElementById('res');
+if (earlyResultsBlock && loadEarly) {
+	initPreview();
+} else {
+	window.addEventListener('load',initPreview,false);
+	// On webhp pages, I think the content is loaded by Javascript.  We must
+	// wait for the page to finish loading before we can find the resultsBlock.
 }
 
 
@@ -288,7 +136,7 @@ function initPreview() {
 				annoyingLine = document.getElementsByClassName("gbh")[0];
 				annoyingLine.parentNode.removeChild(annoyingLine);
 			} catch (e) {
-				GM_log("Caught: "+e);
+				GM_log("Caught A: "+e);
 			}
 
 			// If we pulled more stuff than just the results into the left pane,
@@ -342,11 +190,20 @@ function initPreview() {
 	resultsBlock.parentNode.insertBefore(table,resultsBlock.nextSibling);
 	leftCell.appendChild(resultsBlock);
 
-	// if (renderLikeTabs) {
-	// table.style.backgroundColor = Colors.selected.bg;
-	// table.style.padding = '0px';
-	// table.style.margin = '0px';
-	// }
+	var div = null;
+
+	if (renderLikeTabs) {
+		// We create a "tab" rectangle that we use to meet up with the "tabs" and
+		// surround the preview window.
+		// TODO: Would be better if this span only joined tabs to the preview cell,
+		// and have the preview cell tab-coloured, with the IFrame inside it.
+		div = document.createElement("SPAN");
+		leftCell.appendChild(div);
+		div.style.backgroundColor = Colors.selected.bg;
+		div.style.position = 'fixed';
+		div.style.zIndex = -200;
+		div.style.border = '2px solid '+Colors.selected.border;
+	}
 
 	function setDimensions() {
 		leftCell.width = parseInt(resultsWidth*100)+"%";
@@ -367,6 +224,28 @@ function initPreview() {
 		var heightFree = window.innerHeight - table.offsetTop - gapBelow;
 		resultsBlock.style.height = heightFree+'px';
 		previewFrame.height = heightFree+'px';
+		if (div) {
+			try {
+				/*
+				// Works in FF:
+				var rect = leftCell.getClientRects()[0];
+				div.style.left = (rect.left + resultsBlock.clientWidth - 16 - 2) +'px';
+				div.style.right = (window.innerWidth - 8) +'px';
+				div.style.top = (rect.top - 8) +'px';
+				div.style.bottom = (rect.bottom - 2) +'px';
+				*/
+				// Works in FF and Konq:
+				div.style.left = (table.offsetLeft + resultsBlock.clientWidth - 16 - 0) +'px';
+				div.style.right = (table.offsetLeft + table.clientWidth + 4) +'px';
+				div.style.top = (table.offsetTop - 8) +'px';
+				div.style.bottom = (table.offsetTop + table.clientHeight - 2) +'px';
+				//
+				div.style.width = (parseInt(div.style.right) - parseInt(div.style.left)) +'px';
+				div.style.height = (parseInt(div.style.bottom) - parseInt(div.style.top)) +'px';
+			} catch (e) {
+				GM_log("Caught B: "+e);
+			}
+		}
 	}
 	setDimensions();
 	//// This pause fixes the window's horizontal scrollbar without increasing gapBelow.
@@ -677,18 +556,187 @@ function initPreview() {
 
 
 
-//// Instantiation
-var earlyResultsBlock = document.getElementById('res');
-if (earlyResultsBlock && loadEarly) {
-	initPreview();
-} else {
-	window.addEventListener('load',initPreview,false);
-	// On webhp pages, I think the content is loaded by Javascript.  We must
-	// wait for the page to finish loading before we can find the resultsBlock.
+//// Library Functions ////
+
+function findIndexOf(item,list) {
+	for (var i=0;i<list.length;i++) {
+		if (list[i] == item)
+			return i;
+	}
+	return -1;
+}
+
+function getXPath(elem) {
+	var list = document.getElementsByTagName(elem.tagName);
+	var index = findIndexOf(elem,list);
+	if (index>=0) {
+		return "(//"+elem.tagName+")["+(index+1)+"]";
+	} else {
+		throw new Error("Not found: "+elem+" in "+list);
+	}
+}
+
+function showSelected(elem) {
+	if (elem.tagName != "LI")
+		return;
+	elem.style.margin = '0px';
+	elem.style.padding = '8px';
+	if (renderLikeTabs) {
+		elem.style.border = '2px solid ' + Colors.selected.border;
+		elem.style.padding = '8px';
+		elem.style.borderRight = '2px solid ' + Colors.selected.bg;
+		elem.style.paddingRight = '8px';
+	}
+}
+
+function showUnselected(elem) {
+	if (elem.tagName != "LI")
+		return;
+	// elem.style.padding = '0px';
+	// elem.style.paddingTop = '12px';
+	// elem.style.paddingBottom = '12px';
+	elem.style.margin = '0px';
+	elem.style.padding = '8px';
+	if (renderLikeTabs) {
+		elem.style.border = '0px';
+		elem.style.padding = '10px';
+		elem.style.borderRight = '2px solid '+Colors.selected.border;
+		elem.style.paddingRight = '8px';
+		elem.style.borderLeft = '2px solid white';
+		elem.style.paddingLeft = '8px';
+	}
+}
+
+function reformatThings() {
+
+	// Do some styling on the main result LI nodes.
+	var results = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
+	for (var i=0;i<results.snapshotLength;i++) {
+		var elem = results.snapshotItem(i);
+		// Alternate background color
+		if (checkerRows)
+			elem.style.backgroundColor = Colors.checkers[i%2];
+		// elem.style.paddingTop = '1em';
+		// elem.style.paddingBottom = '1em';
+		// elem.style.paddingLeft = '0px';
+		// elem.style.paddingRight = '0px';
+		// elem.style.border = '2px solid '+elem.style.backgroundColor;
+		showUnselected(elem);
+	}
+
+	if (reduceWidth) {
+
+		//// TODO: Various things I haven't narrowed. ////
+		// - Sometimes it is the row of Next/Previous Goooooooogle results.
+		// - Google gave me a lot of "Searches related to: resize window
+		//   iframe" at the bottom which were too wide (5 column table, one
+		//   with long word "addeventlistener").
+		// - Sometimes it is the <cite> URL of the result that it too wide!  (They wrap in Moz but not in Konq.))
+		// - Or the result summary text may contain a really long word which does not wrap.
+		// - Video results - 2 columns with text beside, can be wider than desired.
+
+		// Makes a few pieces of text smaller, but most have custom style font sizes.
+		document.body.style.fontSize='10px';
+
+		//// The first nobr was a lone child when I wrote this.
+		//// We break it.
+		// var nobr = document.getElementsByTagName('NOBR')[0];
+		// nobr.parentNode.innerHTML = nobr.innerHTML;
+		//// Remove all nobrs, leaving their children in their place:
+		var nobrs = document.getElementsByTagName("NOBR");
+		for (var i=nobrs.length-1; i>=0; i--) {
+			var nobr = nobrs[i];
+			while (nobr && nobr.firstChild) {
+				nobr.parentNode.insertBefore(nobr.firstChild,nobr);
+			}
+			nobr.parentNode.removeChild(nobr);
+		}
+
+		// This avoids the white-space: wrap but kills the blue header background.
+		document.getElementById("ssb").id = 'not_ssb';
+		// OK we restore the blue background:
+		document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
+		document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
+		// TODO: Vertical alignment of text is still wrong.
+		// document.getElementById("not_ssb").style.verticalAlign = 'middle';
+		var resText = document.getElementById('prs').nextSibling;
+		resText.style.textAlign = 'right';
+
+		// Footer
+		document.getElementById("bsf").padding = '0px';
+
+		// The last Goooooooogle TD has a silly huge margin
+		var tds = document.getElementById('nav').getElementsByTagName('td');
+		tds[tds.length-1].getElementsByTagName('span')[0].style.marginRight = '0px';
+		// Remove all the images in that block
+		var oooogs = document.getElementById('nav').getElementsByTagName('span')
+		for (var i=oooogs.length-1;i>=0;i--) {
+			var oog = oooogs[i];
+			// The text links will appear very close together unless we space them
+			oog.parentNode.style.padding = '3px';
+			// Remove the span/image:
+			oog.parentNode.removeChild(oog);
+		}
+
+	}
+
+	if (reduceTextSize) {
+		// var log = "";
+		function resizeTextNode(node,difference) {
+			for (var child=node.firstChild; (child); child = child.nextSibling) {
+				resizeTextNode(child,difference);
+			}
+			if (node && node.style) {
+				var oldSize = getComputedStyle(node,null).fontSize;
+				if (oldSize) {
+					var newSize = parseFloat(oldSize) + difference;
+					// log+= node+" ("+oldSize+"->"+newSize+"px) \n";
+					node.style.fontSize = newSize + "px";
+				}
+			}
+		}
+		resizeTextNode(document.getElementById('res'),-1);
+		// log;
+		// setTimeout(function(){ resizeTextNode(resultsBlock,-4); },1000);
+		// NOTE: resultsBlock is no longer available in this scope
+		// GM_log(log);
+		// BUG TODO: In FF3.5 when doing this while zoomed IN, somehow it increases the size of the fonts, although it is reporting otherwise.
+	}
+
+	if (removeLogo || miniLogo) {
+		var logo = document.getElementsByTagName("IMG")[0];
+		logo = logo.parentNode.parentNode; // A
+		if (!miniLogo)
+			logo = logo.parentNode; // TD
+		var pNode = logo.parentNode;
+		pNode.removeChild(logo);
+		document.getElementById('sff').getElementsByTagName('table')[0].style.marginTop = '5px'
+		if (miniLogo) {
+			var newImg = document.createElement("IMG");
+			// newImg.src = "/favicon.ico";
+			newImg.src = "http://www.google.com/intl/en_ALL/images/logo.gif";
+			newImg.width = 276/5;
+			newImg.height = 110/5;
+			pNode.appendChild(newImg);
+			pNode.style.paddingTop = '8px';
+			pNode.style.paddingRight = '0px';
+			document.getElementById('sft').style.marginTop = '0px';
+			document.getElementById('sft').style.marginBottom = '0px';
+			document.getElementById('sff').style.paddingBottom = '0px';
+		}
+	}
+
+	// The "Sponsored Links" block gets in the way.
+	var toKill = document.getElementById("mbEnd");
+	if (toKill) {
+		toKill.parentNode.removeChild(toKill);
+	}
+
 }
 
 
 
+//// Developer notes ////
 
 /*
 
