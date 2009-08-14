@@ -246,8 +246,11 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         // We will get stuck in a loop trying to proxy that request!
         // So we should abort (with a friendly error web response).
         final String localhost = "127.0.0.1"; // Was giving me 127.0.1.1 hence failing to match: InetAddress.getLocalHost().getHostAddress();
-        String reqHost= InetAddress.getByName(wreq.getHost()).getHostAddress();
-        if (reqHost.equals(localhost) && wreq.getPort() == 7152) {
+        // This is the desirable code:
+        boolean proxyFail = localhost.equals(InetAddress.getByName(wreq.getHost()).getHostAddress()) && wreq.getPort() == 7152;
+        // But hwi's chroot can be very slow at this, so:
+        // boolean proxyFail = wreq.getHost().matches("(hwi.ath.cx|127.0.0.1)") && wreq.getPort()==7152; // |myIp|myOtherDomains
+        if (proxyFail) {
             // throw new Error("Requested host is me!");
             return HttpResponseBuilder.stringHttpResponse("text/plain", "I am a proxy.\nIf you want to use me, set your browser's proxy settings to this address.");
         }
@@ -566,8 +569,10 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             //   - Also: Don't inject our JS at </BODY>.  Inject it into <HEAD> but make it add an event which doesn't fire until the page has loaded.
             // StreamEditor ed = new StreamEditor();
             
-            // addScriptsSlowStable(response);
-            streamAndAddScripts(response);
+            addScriptsSlowStable(response);
+            //// ReplacingInputStream still seems to have bugs
+            //// Also it can't do what we really want, which is to replace the last occurrence only.
+            // streamAndAddScripts(response);
             
         }
     }
