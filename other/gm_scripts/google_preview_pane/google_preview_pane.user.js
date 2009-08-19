@@ -3,10 +3,8 @@
 // @namespace      GPP
 // @homepage       http://userscripts.org/users/89794
 // @description    Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page.
-// @include        http://www.google.*/search?*q=*
-// @include        http://www.google.*/webhp?*q=*
-// @include        http://google.*/search?*q=*
-// @include        http://google.*/webhp?*q=*
+// @include        http://www.google.*/*q=*
+// @include        http://google.*/*q=*
 // @version        0.9.9.6
 // ==/UserScript==
 
@@ -71,20 +69,9 @@ var resultsWidth = 1.0 - previewWidth;
 
 
 
-//// Instantiation ////
-
 // Don't run if we are in a sub-frame:
 if (window != top)
 	return;
-
-var earlyResultsBlock = document.getElementById('res');
-if (earlyResultsBlock && loadEarly) {
-	initPreview();
-} else {
-	window.addEventListener('load',initPreview,false);
-	// On webhp pages, I think the content is loaded by Javascript.  We must
-	// wait for the page to finish loading before we can find the resultsBlock.
-}
 
 
 
@@ -203,6 +190,10 @@ function initPreview() {
 		div.style.position = 'fixed';
 		div.style.zIndex = -200;
 		div.style.border = '2px solid '+Colors.selected.border;
+
+		// rightCell.style.padding = '10px';
+		// previewFrame.style.margin = '10px';
+		rightCell.style.backgroundColor = Colors.selected.bg;
 	}
 
 	function setDimensions() {
@@ -212,9 +203,9 @@ function initPreview() {
 		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
 		//// Fixed for sidebars.
 		//// Fixed for previewWidth=0.8
-		// resultsBlock.style.width = (document.body.clientWidth * resultsWidth) +'px';
+		resultsBlock.style.width = (document.body.clientWidth * resultsWidth) +'px';
 		// document.getElementById("res").style.width = (document.body.clientWidth * resultsWidth - 32) +'px';
-		resultsBlock.style.width = '30em';
+		// resultsBlock.style.width = '30em';
 		document.getElementById("res").style.width = (resultsBlock.clientWidth - 16) +'px';
 		// resultsBlock.style.width = (resultsBlock.clientWidth - 16) +'px';
 		//// If we still fail to lose the horizontal scrollbar, in fact 32 is a little large for display with one, may as well use 24.
@@ -731,7 +722,24 @@ function reformatThings() {
 	if (toKill) {
 		toKill.parentNode.removeChild(toKill);
 	}
+	toKill = document.getElementById("tads");
+	if (toKill) {
+		toKill.parentNode.removeChild(toKill);
+	}
 
+}
+
+
+
+//// Instantiation ////
+
+var earlyResultsBlock = document.getElementById('res');
+if (earlyResultsBlock && loadEarly) {
+	initPreview();
+} else {
+	window.addEventListener('load',initPreview,false);
+	// On webhp pages, I think the content is loaded by Javascript.  We must
+	// wait for the page to finish loading before we can find the resultsBlock.
 }
 
 
@@ -739,6 +747,15 @@ function reformatThings() {
 //// Developer notes ////
 
 /*
+
+TODO: If the user moves quickly onto and off the element to click it, and the
+browser is still busy loading, I think the slowness means the click does not
+match the current focus, and is not accepted.
+This is wrong, we should accept all clicks and force the focus to be the
+clicked element.  Even if highlight focus is lagging behind.
+Focus and click should still remain equivalent for the same location of the
+pointer.  Our previous assertion was a way to check that was true.  (Seems to
+be ATM.)
 
 CONSIDER: If we were to arrange things in a two or three framed page, the
 user would be able to resize the results/preview panes by dragging their
