@@ -322,6 +322,9 @@ function initPreview() {
 		if (link) {
 			// If this is a major link, and the first in its LI, we can highlight the whole LI.
 			if (link.className == "l") {
+				// TODO: This is good on main link blocks, but not good on
+				// sub-blocks such as embedded News, Delicious Userscript, etc.
+				// The check should be strict!
 				var li = getAncestorByTagName(startNode,"LI");
 				if (li) {
 					if (li.getElementsByTagName("A") != link) {
