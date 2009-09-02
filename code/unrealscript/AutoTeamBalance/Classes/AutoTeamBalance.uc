@@ -41,6 +41,12 @@
 // Until we fix Resurector to recover timeInGame also, I recommend not running
 // it alongside ATB.
 
+// TODO: When it looks like teams are bad, send a message to relevant players:
+//       "Press F1 to switch team"
+// Then detect calls from those players: "mutate smartctf stats"
+// This saves us having to go client-side to set a keybind, and should work for
+// most players, maybe not all.
+
 // TODO: F1Says redScore=total_of_red_scores+TeamScore, blueScore=... ; compare
 // TODO: mutate debug
 // TODO: AutoTeamBalanceTest.jpp
@@ -242,14 +248,13 @@
 // #define ATB_VERSION "xol-1.5.0-pre2"
 
 
-
+// #define XOL_SPECIFIC
 
 //// Testing - Things we are finalising for next release:
 // #define KX_TESTING
 // #define TESTING
 // #define DEBUGGING
 // #define SWING_PROPS
-// #define TAKE_MOST_RECENT_DUPLICATE
 
 //// Good #defines which we have turned on
 // #define ENABLE_USEISPNOTFULLIP
@@ -262,21 +267,9 @@
 
 
 // Semi-admin stuff:
-
-
-
-
-
-
- // STAGGER_LOOKUPS is rather disruptive when ATB is destroyed and recovered, because ATB will not see all the strengths when checking midgame balance.
- // OK only doing staggering at game start.
-
-
-
 // CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY
 // #define CLEANUP14
 // #define HASH15
-
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
@@ -289,35 +282,18 @@
 // #define FAST_HASH
 //// FAST_DATE_COMPARISON may be dangerous, since records just created might be seen as worth deleting!  Check this before defining FAST_DATE_COMPARISON.
 // #define FAST_DATE_COMPARISON
-
 //// Debugging - Things we only want during development, and will never release:
 // TODO: If we do take the duplicate, the older useless one should be removed.
-
-
-
-
-
-
-
  // #define LOG_LAG
  // #define LOG_LAG_KEEP_LAST_ACTION
-
 // #define LOG_TICKRATE
 // #define WARN_TICKRATE_CHANGE
-
+// This is quite important to ensure old duplicates get forgotten.  Although it has introduced some extra calculation.
 // Changelog:
 // 0209 inlined SHORTHELP
 // Just for me really:
 // #define ATB15 // (if debugging ^^ )
-
-
-
-
-
 class AutoTeamBalance expands Mutator config(AutoTeamBalance);
-
-
-
 //// Various hashing attempts.
 // MY_HASH_FN is used by more than one!
 //// Config variables (documented in AutoTeamBalance.txt):
@@ -349,7 +325,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  // bReallyOverrideMinRequestNow maybe? :p
  // If players can rebalance, how does it happen?
  var config int MinSecondsBeforeRebalance;
- var config bool bOverrideMinRequests; // (when teams are terrible (by count, not strength! :P ))
+ var config bool bOverrideMinRequests; // When teams are terrible by count, or by strength.  Also overrides MinSecondsBeforeRebalance.
  var config int MinRequestsForRebalance;
  var config bool bFlashRebalanceRequest;
  var config bool bShowProposedSwitch;
@@ -409,9 +385,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var config bool bLogFakenickers;
  var config bool bBroadcastFakenickers;
  var config bool bAllowUsersToListFakes;
- var config bool bWaitForIDC; // Avoids the creation of IP records if we expect to receive an IDC soon.  Disable this if there is a chance of IDC failing.
- var config bool bIDCDeletesIPRecords; // If IDC is working perfectly, and you don't mind missing players who change IDC and nick but not IP, you can enable this to hide all the IP records, and effectively double the capacity of your database.  Actually bWaitForIDC is stronger, because it avoids creating an IP record in the first place.
- var config bool bIDCOverridesNick; // If you want the database to ignore nicks entirely, and use only IDC (and maybe IP) to track players, enable this.
  var config bool bShuffleTeamsEarly;
  var config string LastUpdate;
  var config Color strengthColor,warnColor;
@@ -447,8 +420,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
  // TODO!
  var PlayerPawn LastBadPlayer; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
- var int idc[64];
- var float LastLookupTime;
 // Default values:
 defaultproperties {
  bLogging=True
@@ -477,8 +448,7 @@ defaultproperties {
  bShowProposedSwitch=True
  bOverrideMinRequests=True
  // MinRequestsForRebalancePercent=25    // or 25% of players request it.
- // MaxPlayerData=4096    // TODO: Force this up to max, for HashTable.
- MaxPlayerData=1024
+  MaxPlayerData=1024
  bShowReason=True
  bFlashOnWarning=True
  bShakeOnWarning=False
@@ -529,9 +499,6 @@ defaultproperties {
  bLogFakenickers=False
  bBroadcastFakenickers=False
  bAllowUsersToListFakes=True
- bWaitForIDC=False
- bIDCDeletesIPRecords=False
- bIDCOverridesNick=False
  bSeparateStatsByGamemode=False
  bSeparateStatsByMutators=False
  DBVersion=1.4
@@ -616,9 +583,6 @@ function AddMutator(Mutator Other) {
   // DebugLog(Self$".AddMutator("$Other$") Calling Super.AddMutator().");
   Super.AddMutator(Other);
  }
-}
-function SetIDC(int i, int j) {
- idc[i] = j;
 }
 // There was a problem whereby it was getting destroyed (due to taking 3 seconds to process CheckMidGameBalance), and then the new one was perform ForceFullTeamsRebalance!  I think this is fixed now, but disabling this code until I have time to watch it a bit.  ;)  OR ... make it an option ... OR ... somehow make it auto-fix (aka disable) when that happens.  :P
 // #define DESTROY_RECOVERY
@@ -756,9 +720,7 @@ function ModifyPlayer(Pawn paw) {
     FlashToAllPlayers(p.getHumanName()$" has joined the game!",colorGreen,1);
    }
    // Do LastBadPlayer balancing:
-    if (!bWaitForIDC) {
-     CheckNewPlayer(p);
-    }
+    CheckNewPlayer(p);
    //// TODO XOL BUG: We don't have accurate strengths until we have their Idc record!
    // strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
    // if (Abs(strengthSwing)>50) { // This may have changed, but what it prints won't have.
@@ -800,6 +762,8 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
   return;
  if (A.PlayerReplicationInfo.HasFlag!=None) // no need to check B, he just joined
   return; // damn we can't switch him now he has the flag, he got away with it!
+ // TODO: We might also be slightly disinclined to switch him if he just got belt or amp.  If he loses armour/vials/weapons well tough.
+ //       Heh we could work Resurrector style and restore his location and inventory just keep his team switched ^^
  redTeamStrength = GetTeamStrength(0);
  blueTeamStrength = GetTeamStrength(1);
  oldDifference = blueTeamStrength - redTeamStrength;
@@ -1027,40 +991,6 @@ function Mutate(String str, PlayerPawn Sender) {
  if (Left(str,4) ~= "ATB ")
   str = Mid(str,4);
  argcount = SplitString(str," ",args);
- if (args[0]=="IDC") {
-  if (idc[Sender.PlayerReplicationInfo.PlayerID%64] == 0) {
-   idc[Sender.PlayerReplicationInfo.PlayerID%64] = Int(args[1]);
-   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Mutate() Caught IDC for ["$Int(Sender.PlayerReplicationInfo.PlayerID%64)$"] "$Sender.getHumanName()$": "$str$""); };
-   i = Sender.PlayerReplicationInfo.PlayerID % 64;
-   // ATB on XOL sometimes creates records for players with their ip, before the players IDC is obtained.
-   if (bCached[i] > 0) {
-    //// We can force a new record to be generated/found using IDC:
-    // This keeps the useless IDC record.  But such 0 time records should be recycled fairly soon.
-    bCached[i] = 0;
-    //// Or we can turn their IP record into an IDC record:
-    // NormalLog("Mutate() Overwriting ip "$ ip[i] $" with IDC#"$ Int(args[1]));
-    // ip[i] = "IDC#"$Int(args[1]);
-    //// No, overriding IP is bad because if they have a record elsewhere in the DB, then this one becomes a duplicate!
-    //// Better instead to clear this record, and allow the nick+idc record to be found/created later.
-    // if ( ip[i] != ("IDC#" $ IDCfor(Sender)) ) {
-    if (bIDCDeletesIPRecords && Left(ip[i],4) != "IDC#") {
-     ClearRecord(i);
-     bCached[i] = 0;
-    }
-    //// This creates an empty record, and removes the IP record.
-    //// This is bad, because next time the IP record needs to be looked up, it will be created and deleted again.
-    //// That is a little worse than being able to find an exact match.
-    //// Well it should at least mean fewer useless IP records in the DB.  (If for some reason certain players don't get IDCs, IP will be happily used.)
-    //// It does however mean that IP will no longer be used to retain strengths from older records.
-   }
-   if (bWaitForIDC) {
-    CheckNewPlayer(Sender);
-   }
-  } else {
-   // Trying to prevent a malicious player from typing "mutate IDC 302498" themselves :P
-   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Mutate() WARNING! Ignored second IDC from "$Sender.getHumanName()$"["$Int(Sender.PlayerReplicationInfo.PlayerID%64)$"]: "$str$""); };
-  }
- }
  // Commands which do not require a password:
  if ( args[0]~="TEAMS" || args[0]~="TEAMSTRENGTH" ) {
   Sender.ClientMessage(GetTeamStrengthString());
@@ -1387,20 +1317,20 @@ function Mutate(String str, PlayerPawn Sender) {
   else
    pass_if_needed = " [password]";
   if (bEnablePlayerCommands) {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8e" $" commands: teams !teams !red !blue !spec !play !vote !stats");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8f" $" commands: teams !teams !red !blue !spec !play !vote !stats");
   } else {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8e" $" commands: teams !teams");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.8f" $" commands: teams !teams");
   }
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.8e" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.8f" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
   if (localPass == "") {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8e" $" semi-admin console commands:");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8f" $" semi-admin console commands:");
    Sender.ClientMessage("    mutate [atb] ( teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | kick <p> <msg> | kickban <p> <msg> ");
    Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> ) "$pass_if_needed);
   } else {
    Sender.ClientMessage("    mutate help [<password>]");
   }
   if (Sender.bAdmin) {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8e" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> )");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.8f" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> )");
   }
  }
  Super.Mutate(str,Sender);
@@ -1510,11 +1440,6 @@ function FlashPreGameLines() {
      targetLine = 2; // At lease true for CTF
     // We do this even if not needed, to force lookups when staggering at the start of the map
     strength = GetRecordedPlayerStrength(p);
-    // On XOL, highscores are displayed to each player 8 seconds after they join.
-    // At that point, we just stop flashing.
-    if (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime >= 8) {
-     continue;
-    }
     // We don't spam messages if we are not going to balance teams later.  (They might not get cleared!)
     if (ShouldBalance(Level.Game)) {
      // We don't flash in tournament mode, because it flashes all the way through warmup!
@@ -1561,7 +1486,7 @@ function DoGameStart() {
     // #define LINENR_FOR_FLASH -1
     // CONSIDER: PlayerPawn(p).ClearProgressMessages();
     // TODO: For Assault, we need to move 1 line up.
-    FlashMessageToPlayer(p,"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,4);
+    FlashMessageToPlayer(p,"You are on the "$Caps(getTeamName(p.PlayerReplicationInfo.Team))$" team.",msgColor,3);
    }
   }
   // BroadcastMessage("",False);
@@ -1848,6 +1773,7 @@ function ForceFullTeamsRebalance() {
  local TeamGamePlus g; // my linux ucc make had trouble with TeamGamePlus :|
  local int oldMaxTeamSize;
  local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
+ local bool flip;
  // We can't balance if it's not a teamgame
  if (!Level.Game.GameReplicationInfo.bTeamGame) return;
  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "ForceFullTeamsRebalance() Running..."); };
@@ -1912,6 +1838,11 @@ function ForceFullTeamsRebalance() {
    teamstr[teamnr]+=ps[pid];
   }
  } else {
+  // Will we start with red or blue?
+  if (FRand() < 0.5)
+   flip = true;
+  else
+   flip = false;
   // Rebuild teams by strength, assigning in order: red-blue-blue-red-red-blue-blue-...
   // (On the way we also calculate total team strengths)
   teamstr[0]=0;
@@ -1921,6 +1852,7 @@ function ForceFullTeamsRebalance() {
    pid=plorder[i];
    teamnr=0;
    if ((i&3)==1 || (i&3)==2) teamnr=1;
+   if (flip) teamnr=1-teamnr;
    ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "ForceFullTeamsRebalance() i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$"."); };
    ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
    teamstr[teamnr]+=ps[pid];
@@ -2427,39 +2359,14 @@ function BroadcastMessageAndLog(string Msg) {
  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Broadcasting: "$Msg); };
  BroadcastMessage(Msg);
 }
-/*
-	// Does not work.
-	function ReportProgressMessages(PlayerPawn p) {
-		local int i;
-		for (i=0;i<6;i++) {
-			DebugLog("ReportProgressMessages("$p.getHumanName()$"): "$i$" "$(p.ProgressMessage[5])$"\"");
-		}
-	}
-*/
 function FlashMessageToPlayer(Pawn p, string Msg, Color msgColor, optional int linenum) {
  if (PlayerPawn(p)==None)
   return; // Don't flash messages to bots
  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Flashing message to "$p.getHumanName()$": "$Msg); };
- if (StrContains(p.getHumanName(),"origion")) {
-  p.ClientMessage(Msg);
-  return;
- }
  // p.ClientMessage(Msg, 'CriticalEvent', False); // goes to HUD and console, no beep
  // Coloured messages, with our own choice of colour and timeout:
  if (linenum == 0)
   linenum = FlashLine;
- /*
-		// Don't overwrite XDScoringRules, but make sure we overwrite premature "You are on the Red team":
-		if (linenum == 3) {
-			if (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime >= 8) {
-				linenum = 4; // TODO: should probably be line 4, but using 5 for now to see if anything might appear in 4
-				if (StrContains(Msg,"assigned"))
-					return;
-			}
-		}
-		// if (bDebugLogging)
-			// ReportProgressMessages(p);
-	*/
  // p.ClearProgressMessages();
  // p.SetProgressTime(4);
  PlayerPawn(p).SetProgressTime(5);
@@ -2703,28 +2610,11 @@ function CopyArraysIntoConfig() {
 // The big disadvantage os using bUseISPNotFullIP, if that if a player changes nick, they may get matched to the record of another player on the same ISP, not their old record!
 // But if they have changed nick *and* part-ip, without bUseISPNotFullIP, they won't get any matches.  :P
 function String getIP(Pawn p) {
-  if (p.IsA('PlayerPawn')) {
-   if (idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64] != 0) {
-    return "IDC#"$(idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64]);
-   }
-   //// If we aren't gonna keep IPs, may as well not even start with them.
-   //// Disabled for now though, because I want to see old IP records getting picked up then cleared.  ;)
-   //// TODO: Uncomment this!
-   // if (bIDCDeletesIPRecords) {
-    // return "AN_IP";
-   // }
-  }
  if (p.IsA('PlayerPawn')) {
   return stripPort(PlayerPawn(p).GetPlayerNetworkAddress());
  } else {
   return "0.0.0.0";
  }
-}
-function String getIDCOrNick(Pawn p) {
- if (bIDCOverridesNick && p.IsA('PlayerPawn') && idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64] != 0)
-  return "IDC#"$(idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64]);
- else
-  return p.getHumanName();
 }
 /*
 */
@@ -2736,7 +2626,7 @@ function String GetDBName(Pawn p) {
  local int i;
  local int c;
  local Mutator m;
- str = getIDCOrNick(p);
+ str = p.getHumanName();
  if (bSeparateStatsByGamemode) {
   str = str $ "@" $ StrAfter(String(Level.Game.Class),".");
  }
@@ -2791,16 +2681,6 @@ function int FindPlayerRecordGuaranteed(Pawn p) {
  // if (GetDBName(p) == nick[pid] && getIP(p) == ip[pid]) {
   // DebugLog("FindPlayerRecord(p) FAST EXACT match for "$nick[pid]$","$ip[pid]$": ["$pid$"] ("$avg_score[pid]$","$hours_played[pid]$","$date_last_played[pid]$")");
   return pid;
- }
- // TODO CONSIDER: instead of staggering lookups, stagger cleanups by a larger duration - they are the real problem (sometimes taking 0.4s!)
- if (!gameStartDone && LastLookupTime > Level.TimeSeconds-0.5) {
-  if (bDebugLogging && FRand()<0.2) { ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "FindPlayerRecord() Delaying lookup of "$ p.getHumanName() $" "$ getIP(p)); }; }
-  return -1;
- }
- LastLookupTime = Level.TimeSeconds;
- if (bWaitForIDC && p.IsA('PlayerPawn') && idc[PlayerPawn(p).PlayerReplicationInfo.PlayerID%64] == 0) {
-  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "FindPlayerRecord() Waiting for IDC for "$ p.getHumanName() $" "$ getIP(p)); };
-  return -1;
  }
  // Is there an exact or partial match for this player in the database?
  found = FindPlayerRecordNoFastHash(p);
@@ -2878,7 +2758,9 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
  local float bestDate;
  player_nick = GetDBName(p);
  player_ip = getIP(p);
-  // Or don't (more efficient):
+  // If there are multiple partially matching records, take the most recent one.
+  // This should give a more up-to-date strength, and importantly ensures old older partial records will be thrown away rather than refreshed.
+  // #define BetterThanCurrent NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])
  found = -1;
  for (i=0;i<MaxPlayerData;i++) {
   bNickMatches = ( player_nick == nick[i] );
@@ -2888,17 +2770,18 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
    // TODO: Another kind of REMOVE_DUPLICATES should act here, to cleanup exact duplicates which ATB buggily creates occasionally.
     found = i;
     ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); };
+    // Provided our database stays tidy, this will be the only exact match, so there can be no other records we want to look at.  We can return immediately.
     return found;
   } else if (bIPMatches) {
    if (True && found >= 0) { ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "FindPlayerRecordNoFastHash(p) DUPLICATE IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");; }
-   if (found == -1 || false) {
+   if (found == -1 || (NumFromDateString(date_last_played[i]) > bestDate)) {
     found = i; // matching ip
     bestDate = NumFromDateString(date_last_played[found]);
     ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "FindPlayerRecordNoFastHash(p) IP match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")"); };
    }
   } else if (bNickMatches /* && found == -1 */ ) { // the part commented out was to prefer matching_ip+different_nick over matching_nick+different_ip
    if (True && found >= 0) { ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "FindPlayerRecordNoFastHash(p) DUPLICATE NICK match for "$player_nick$","$player_ip$": ["$found$"] "$nick[i]$" ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");; }
-   if (found == -1 || false) {
+   if (found == -1 || (NumFromDateString(date_last_played[i]) > bestDate)) {
     found = i;
     bestDate = NumFromDateString(date_last_played[found]);
     ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "FindPlayerRecordNoFastHash(p) NICK match for "$player_nick$","$player_ip$": ["$found$"] "$ip[found]$" ("$avg_score[found]$","$hours_played[found]$"),"$date_last_played[found]$""); };

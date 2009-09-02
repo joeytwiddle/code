@@ -36,6 +36,12 @@
 // Until we fix Resurector to recover timeInGame also, I recommend not running
 // it alongside ATB.
 
+// TODO: When it looks like teams are bad, send a message to relevant players:
+//       "Press F1 to switch team"
+// Then detect calls from those players: "mutate smartctf stats"
+// This saves us having to go client-side to set a keybind, and should work for
+// most players, maybe not all.
+
 // TODO: F1Says redScore=total_of_red_scores+TeamScore, blueScore=... ; compare
 // TODO: mutate debug
 // TODO: AutoTeamBalanceTest.jpp
@@ -235,16 +241,15 @@
 
 // #define ATB_VERSION "1.4.9d-kx"
 // #define ATB_VERSION "xol-1.5.0-pre2"
-#define ATB_VERSION "1.4.8e"
+#define ATB_VERSION "1.4.8f"
 
-#define XOL_SPECIFIC
+// #define XOL_SPECIFIC
 
 //// Testing - Things we are finalising for next release:
 // #define KX_TESTING
 // #define TESTING
 // #define DEBUGGING
 // #define SWING_PROPS
-// #define TAKE_MOST_RECENT_DUPLICATE
 
 //// Good #defines which we have turned on
 // #define ENABLE_USEISPNOTFULLIP
@@ -296,9 +301,12 @@
 	#define LogWarn(X); NormalLog( "* Warning " $ X ); BroadcastMessageAndLog( "* " $ X );
 	// #define LOG_LAG
 	// #define LOG_LAG_KEEP_LAST_ACTION
+	#define bTesting True
 #endif
 // #define LOG_TICKRATE
 // #define WARN_TICKRATE_CHANGE
+// This is quite important to ensure old duplicates get forgotten.  Although it has introduced some extra calculation.
+#define TAKE_MOST_RECENT_DUPLICATE
 
 // Changelog:
 // 0209 inlined SHORTHELP
@@ -393,7 +401,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	// If players can rebalance, how does it happen?
 	var config int MinSecondsBeforeRebalance;
 	#ifdef ENABLE_MIN_REQUESTS_FOR_REBALANCE
-	var config bool bOverrideMinRequests; // (when teams are terrible (by count, not strength! :P ))
+	var config bool bOverrideMinRequests; // When teams are terrible by count, or by strength.  Also overrides MinSecondsBeforeRebalance.
 	var config int MinRequestsForRebalance;
 	var config bool bFlashRebalanceRequest;
 	var config bool bShowProposedSwitch;
@@ -594,8 +602,11 @@ defaultproperties {
 	bOverrideMinRequests=True
 	// MinRequestsForRebalancePercent=25    // or 25% of players request it.
 	#endif
-	// MaxPlayerData=4096    // TODO: Force this up to max, for HashTable.
-	MaxPlayerData=1024
+	#ifdef TESTING
+		MaxPlayerData=4096
+	#else
+		MaxPlayerData=1024
+	#endif
 	bShowReason=True
 	bFlashOnWarning=True
 	bShakeOnWarning=False
@@ -1089,6 +1100,8 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 		return;
 	if (A.PlayerReplicationInfo.HasFlag!=None) // no need to check B, he just joined
 		return; // damn we can't switch him now he has the flag, he got away with it!
+	// TODO: We might also be slightly disinclined to switch him if he just got belt or amp.  If he loses armour/vials/weapons well tough.
+	//       Heh we could work Resurrector style and restore his location and inventory just keep his team switched ^^
 	redTeamStrength = GetTeamStrength(0);
 	blueTeamStrength = GetTeamStrength(1);
 	oldDifference = blueTeamStrength - redTeamStrength;
@@ -2392,6 +2405,7 @@ function ForceFullTeamsRebalance() {
 	local TeamGamePlus g; // my linux ucc make had trouble with TeamGamePlus :|
 	local int oldMaxTeamSize;
 	local bool oldbPlayersBalanceTeams, oldbNoTeamChanges;
+	local bool flip;
 
 	#ifdef LOG_LAG
 	debugTimerStart = Level.TimeSeconds;
@@ -2471,6 +2485,12 @@ function ForceFullTeamsRebalance() {
 
 	} else {
 
+		// Will we start with red or blue?
+		if (FRand() < 0.5)
+			flip = true;
+		else
+			flip = false;
+
 		// Rebuild teams by strength, assigning in order: red-blue-blue-red-red-blue-blue-...
 		// (On the way we also calculate total team strengths)
 		teamstr[0]=0;
@@ -2480,6 +2500,7 @@ function ForceFullTeamsRebalance() {
 			pid=plorder[i];
 			teamnr=0;
 			if ((i&3)==1 || (i&3)==2) teamnr=1;
+			if (flip) teamnr=1-teamnr;
 			DebugLog("ForceFullTeamsRebalance() i="$i$" Putting pid="$pid$" pl="$pl[pid].getHumanName()$" into team "$teamnr$".");
 			ChangePlayerToTeam(pl[pid],teamnr,gameStartDone);
 			teamstr[teamnr]+=ps[pid];
@@ -3794,12 +3815,16 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 	player_ip = getIP(p);
 
 	#ifdef TAKE_MOST_RECENT_DUPLICATE
-		// Take a duplicate record only if the last one found is older
+		// If there are multiple partially matching records, take the most recent one.
+		// This should give a more up-to-date strength, and importantly ensures old older partial records will be thrown away rather than refreshed.
 		// #define BetterThanCurrent NumFromDateString(date_last_played[i]) > NumFromDateString(date_last_played[found])
 		#define BetterThanCurrent (NumFromDateString(date_last_played[i]) > bestDate)
 	#else
-		// Or don't (more efficient):
+		// Or don't compare them (faster):
 		#define BetterThanCurrent false
+		// This will return the first partial match if there are many partial matches.
+		// That's bad because the data gets shuffled up and down, so all the duplicates may get updated and therefore retained, rather than only the most recent one.
+		// TODO: This #define is only half-finished - we still waste time calculating bestDate when we don't need to.
 	#endif
 
 	found = -1;
@@ -3823,6 +3848,7 @@ function int FindPlayerRecordNoFastHash(Pawn p) {
 			#else
 				found = i;
 				DebugLog("FindPlayerRecordNoFastHash(p) EXACT match for " $player_nick$","$player_ip$": ["$found$"] ("$avg_score[found]$","$hours_played[found]$","$date_last_played[found]$")");
+				// Provided our database stays tidy, this will be the only exact match, so there can be no other records we want to look at.  We can return immediately.
 				return found;
 			#endif
 		} else if (bIPMatches) {
