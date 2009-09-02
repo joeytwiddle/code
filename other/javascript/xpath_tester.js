@@ -30,6 +30,11 @@ function init() {
 	newBlock.innerHTML = html;
 	document.body.insertBefore(newBlock,document.body.firstChild);
 	// document.location = '#';
+	document.addEventListener("keypress",function(evt){
+			if (evt.keyCode == 27) {
+				newBlock.parentNode.removeChild(newBlock);
+			}
+	},false);
 }
 
 function getXPath(node) {
@@ -57,8 +62,27 @@ function getXPath(node) {
 	return pPath + "/" + tagName.toLowerCase() + (totalCount>1 ? "[" + thisCount + "]" : "" );
 }
 
+function getXPathValue(node) {
+	var xpath = getXPath(node);
+	if (xpath == "") {
+		// It is an attribute node, or something else
+		// We show its value
+		window.xpathresult = node;
+		if (node.value)
+			return node.value;
+		else
+			return node.toString();
+	} else {
+		// It is a node
+		// We show its path
+		return xpath;
+	}
+}
+
 var lastRes;
 
+// TODO: Build results list out of elements not HTML
+// TODO: Attach to each result, onmouseover/out events which will highlight the hovered item.
 function doUpdate(xpathExpr) {
 	var resultsDiv = document.getElementById('resultsDiv');
 	resultsDiv.style.backgroundColor = '#eef0ff';
@@ -69,34 +93,86 @@ function doUpdate(xpathExpr) {
 	resultsDiv.style.overflow = 'auto';
 
 	if (lastRes) {
-		for (var i=0;i<lastRes.snapshotLength;i++) {
-			var node = lastRes.snapshotItem(i);
-			if (node.style)
-				node.style.backgroundColor = '';
+		if (lastRes.resultType==XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE || lastRes.resultType==XPathResult.ORDERED_NODE_SNAPSHOT_TYPE) {
+			for (var i=0;i<lastRes.snapshotLength;i++) {
+				var node = lastRes.snapshotItem(i);
+				if (node.style)
+					node.style.backgroundColor = '';
+			}
 		}
 	}
 
+	resultsDiv.innerHTML = '<FONT size="-1"><TT>';
+
 	try {
 
-	resultsDiv.innerHTML = '<FONT size="-1"><TT>';
-	var res = document.evaluate(xpathExpr, document, null, 6, null);
-	for (var i=0;i<res.snapshotLength;i++) {
-		var node = res.snapshotItem(i);
-		if (node.style)
-			node.style.backgroundColor = '#ffee99';
-		resultsDiv.innerHTML += "<BR/>" + getXPath(node);
-		// TODO: build results list out of elements not HTML
-		// TODO: attach to each result, onmouseover/out events which will highlight the currently hovered node.
-	}
-	resultsDiv.innerHTML += '</TT></FONT>';
-	window.status = "Matched "+res.snapshotLength+" nodes.";
+		// Wow XPathResult sucks pretty hard.
+		var res;
+		// If we want multiple results, we must try that first:
+		try {
+			res = document.evaluate(xpathExpr, document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null);
+			// resultsDiv.innerHTML += "UNORDERED_NODE_SNAPSHOT_TYPE succeeded<BR/>";
+			// If the result is an attribute, then it is returned as a node.
+		} catch (e) {
+			// If we want a string, we must try that first:
+			try {
+				// Number types get returned as strings ok.
+				res = document.evaluate(xpathExpr, document, null, XPathResult.STRING_TYPE, null);
+				// If it's multiple results, then we must try multiple before STRING (which gives us "Results") or ANY (returns only the first).
+				// But if it's a string result, and we try multiple, we get a happy empty response.
+				// resultsDiv.innerHTML += "STRING_TYPE succeeded<BR/>";
+			} catch (e) {
+				try {
+					res = document.evaluate(xpathExpr, document, null, XPathResult.ANY_TYPE, null);
+					// resultsDiv.innerHTML += "ANY_TYPE succeeded<BR/>";
+				} catch (e) {
+					resultsDiv.innerHTML += "Failed on ANY: "+e;
+					res = null;
+				}
+			}
+		}
+		// resultsDiv.innerHTML = ""+res.resultType;
+		window.status = "Result type "+res.resultType;
+		if (res.resultType==XPathResult.NUMBER_TYPE) {
+			resultsDiv.innerHTML += "" + res.numberValue;
+		} else if (res.resultType==XPathResult.STRING_TYPE) {
+			resultsDiv.innerHTML += "" + res.stringValue;
+		} else if (res.resultType==XPathResult.BOOLEAN_VALUE) {
+			resultsDiv.innerHTML += "" + res.booleanValue;
+		} else if (res.resultType==XPathResult.UNORDERED_NODE_ITERATOR_TYPE || res.resultType==XPathResult.ORDERED_NODE_ITERATOR_TYPE) {
+			var node = res.iterateNext();
+			while (node) {
+				resultsDiv.innerHTML += getXPathValue(node);
+				if (node.style)
+					node.style.backgroundColor = '#ffee99';
+				// It's a fucking iterator, but iterateNext throws error gg.
+				try { node = res.iterateNext(); }
+				catch (e) { break; }
+				break;
+			}
+		} else {
+			for (var i=0;i<res.snapshotLength;i++) {
+				var node = res.snapshotItem(i);
+				// if (node.nodeName) { // is a node
+					resultsDiv.innerHTML += getXPathValue(node);
+					if (node.style)
+						node.style.backgroundColor = '#ffee99';
+				// }
+				resultsDiv.innerHTML += "<BR/>"
+			}
+			window.status = "Matched "+res.snapshotLength+" nodes.";
+		}
+		lastRes = res;
+		// The only reason I'm here is 'cos I want to test a fucking tiny xpath to select nodes by className.
 
 	} catch (e) {
-		window.status = ""+e;
-		resultsDiv.innerHTML = ""+e;
+		// window.status = ""+e;
+		resultsDiv.innerHTML += ""+e;
+		lastRes = null;
 	}
 
-	lastRes = res;
+	resultsDiv.innerHTML += '</TT></FONT>';
+
 }
 
 init();
