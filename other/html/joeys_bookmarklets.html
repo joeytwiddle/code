@@ -48,12 +48,12 @@
 			var newScript = document.createElement('script');
 			newScript.type = 'text/javascript';
 			newScript.src = 'http://hwi.ath.cx/javascript/focus.js';
-			/* newScript.onload = (function(){ init(); }); */
 			document.body.appendChild(newScript);
 		})();">Focus</A></LI>
 	</P>
 	<BLOCKQUOTE>
 		<P>Lets you select a part of the page, and throws away the rest!  But has undo.  :)</P>
+		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
 	<P>
@@ -117,7 +117,7 @@
 		<LI class='done'>Added a nice unpleasant green style, and Close and Clear buttons. </LI>
 		<LI class='todo'>Bug: Sometimes we are wanting to select certain rows from a table, but this implementation hides the other cells in the row, even if one cell matches.</LI>
 		<LI class='todo'>Todo: The search expression is too simple, at the moment we perform an exact case-sensitive match.  We should allow multi-word search, and exclusion with &apos;-&apos;.</LI>
-		<LI class='todo'>Todo: Add options: case-sensitive, search HTML (rather than text), keep neighbours.</LI>
+		<LI class='todo'>Todo: Add options: case-sensitive, search HTML (rather than text), keep neighbours to depth/distance N.</LI>
 		<!-- <LI class='todo'>Todo: Maybe not neighbours.  But maybe all ancestors up to body, tho none of their other children?  Oh we are doing that duh!</LI> -->
 		<LI class='done'>This idea was moved to XPath Tester: Allow trimming by XPath expression.  This can be very useful to extract precise elements of the page (e.g. Headings), or just to test an XPath.  If we display results in a small window (not the doc itself), user can click on each to jump to that part of the page!  So user just needs to find an XPath matching the headings, then he has built an index/contents navigation-assisting sidebar.</LI>
 		<LI class='external'>Note: Loads external script.</LI>
@@ -205,7 +205,7 @@
 			var style = document.createElement('STYLE');
 			style.innerHTML = '.favicon { padding-right: 4px; vertical-align: middle; }';
 			document.getElementsByTagName('head')[0].appendChild(style);
-			for (var i=0;i<document.links.length;i++) {
+			for (var i=document.links.length-1;i>=0;i--) {
 				var link = document.links[i];
 				if (link.href.match('^javascript:') || link.href.match('^#')) {
 					continue;
@@ -216,10 +216,12 @@
 				}
 				var img = document.createElement('IMG');
 				img.src = 'http://'+host+'/favicon.ico';
-				/*img.width = '16';
-				img.height = '16';*/
-				img.className = 'favicon';
-				link.parentNode.insertBefore(img,link);
+				img.width = '16';
+				img.height = '16';
+				/*img.className = 'favicon';*/ /*This is bad on Delicious site! */
+				/*link.parentNode.insertBefore(img,link);*/
+				/*link.parentNode.insertBefore(img,link.nextSibling);*/
+				link.appendChild(img);
 			}
 		})();">Faviconize External Links</A></LI>
 		<BLOCKQUOTE>
@@ -464,7 +466,7 @@
 			if (newURL.slice(-1)=='/') {
 				newURL = newURL.slice(0,-1);
 			}
-			document.location.href = document.location.href.replace(/[#/?][^#/?]*$/,'');
+			document.location.href = document.location.href.replace(/[#/?][^#/?]*[/]*$/,'');
 		})();">Go Up</A></LI>
 		<BLOCKQUOTE>
 			<P>Some browsers don&apos;t have this as a default button!</P>
@@ -487,7 +489,30 @@
 	</P>
 
 	<P>
-		<LI><A href="javascript:(function(){window.open(document.location.href);})();">Duplicate This Page</A></LI>
+	<LI><A href="javascript:(function(){
+		window.open(document.location.href);
+		})();">Clone*</A> - Opens a new window/tab with the current page.</LI>
+	</P>
+
+	<P>
+	<LI><A href="javascript:(function(){
+		var targetUrl=document.location.href;document.location.replace(''+targetUrl);
+		})();">Revisit</A></LI>
+		<BLOCKQUOTE>
+			<P>Navigates to the current page.  Can act like Reload but less heavy.  Usually updates the page correctly, but still uses images from the cache.</P>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			window.open('http://delicious.com/url/view?url='+encodeURIComponent(document.location.protocol+'//'+document.location.host+'/')+'&show=notes_only');
+			})();">Lookup This Site on Delicious *</A> (Popup, Notes)</LI>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			window.open('http://delicious.com/url/view?url='+encodeURIComponent(document.location.href)+'&show=notes_only');
+			})();">Lookup This Page on Delicious *</A> (Popup, Notes)</LI>
 	</P>
 
 </BLOCKQUOTE>
@@ -820,6 +845,7 @@
 			document.runCmd =
 				function runCmd(cmd) {
 					var result;
+					document.getElementById('qconsOut').value = '...';
 					try {
 						result = ''+eval(cmd);
 					} catch (e) {
@@ -904,6 +930,7 @@
 		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> and <TT>loadScript(url)</TT>.</LI>
 		<LI class='todo'>Todo: Close button is in the wrong place.</LI>
 		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
+		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> is a much better console!</LI>
 	</BLOCKQUOTE>
 
 	<P>
@@ -1290,6 +1317,8 @@
 	<P>Some of these bookmarklets are setting events on <I>every element in the DOM</I> in order to capture them (and then having to do tricks to only capture the top event fired!).  I believe using addEventListener() should allow us to capture all events, and the element on which each event occurred on.</P>
 
 	<P>I generated hex by hand in the Highlight Structure bookmarklets.  But I could have used: number.toString(16).</P>
+
+	<P>We would like to be able to select whether a Bookmarklet will open a new window, or popup an iframe in the existing page, or just go straight to the page.  This would require abstracting bookmarklets which produce a destination URL.   It could be a pre-processing done by Javascript before we grab the bookmarklet.</P>
 
 </BLOCKQUOTE>
 </DIV>
