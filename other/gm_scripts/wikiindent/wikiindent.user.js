@@ -81,37 +81,58 @@ if (fixUnderlinesToOverlines) {
 if (typeof $ != 'undefined')
 GM_log("WikiIndent found "+$);
 
-// document.getElementById('column-one').appendChild(document.getElementById('toc'));
-
 
 
 
 
 if (makeTableOfContentsFloat) {
 
+	// CONSIDER TODO: If the TOC has a "Hide/Show" link ("button") then we
+	// should just fire this instead of changing opacity.
+
+	// document.getElementById('column-one').appendChild(document.getElementById('toc'));
+
+	function fadeElement(elem,start,stop,speed,current) {
+		if (current == null)
+			current = start;
+		if (speed == null)
+			speed = (stop - start) / 5;
+		if (Math.abs(current+speed-stop) > Math.abs(current-stop))
+			current = stop;
+		else
+			current = current + speed;
+		elem.style.opacity = current;
+		// if (Math.random()<0.2)
+			// GM_log("current="+current);
+		if (current != stop)
+			setTimeout(function(){fadeElement(elem,start,stop,speed,current);},100);
+		else
+			GM_log("current="+current);
+	}
+
 	var toc = document.getElementById('toc');
-	function theRest() {
+	if (toc) {
+		// toc.style.backgroundColor = '#eeeeee';
 		toc.style.position = 'fixed';
 		toc.style.right = '16px';
 		toc.style.top = '16px';
 		toc.style.zIndex = '5000';
+		fadeElement(toc,1.0,0.4);
+		var listenElement = toc;
+		// var listenElement = toc.getElementsByTagName('TD')[0];
+		var focused = false;
+		var visible = false;
+		listenElement.addEventListener('mouseover',function(){
+			if (!visible)
+				setTimeout(function(){ if (focused) { fadeElement(toc,0.4,1.0,0.4); visible=true; } },10);
+			focused = true;
+		},false);
+		listenElement.addEventListener('mouseout',function(){
+			if (visible)
+				setTimeout(function(){ if (!focused) { fadeElement(toc,1.0,0.2); visible=false; } },10);
+			focused = false;
+		},false);
 	}
-	toc.setAttribute('style','background-color: #eeeeee; opacity: 0.4;');
-	theRest();
-	var listenElement = toc;
-	// var listenElement = toc.getElementsByTagName('TD')[0];
-	listenElement.addEventListener('mouseover',function(){
-		toc.setAttribute('style','background-color: #eeeeee; opacity: 1.0;');
-		theRest();
-	},false);
-	listenElement.addEventListener('mouseout',function(){
-		toc.setAttribute('style','background-color: #eeeeee; opacity: 0.2;');
-		theRest();
-		// toc.style.zIndex = '-10'; // If we do this, our mouseovers fail!
-	},false);
-
-	// CONSIDER TODO: If the TOC has a "Hide/Show" link ("button") then we should
-	// fire this instead of changing opacity.
 
 }
 
