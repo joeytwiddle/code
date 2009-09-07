@@ -110,6 +110,7 @@ var font_size = "11px";
 								if (onFailFn) {
 									onFailFn();
 								} else {
+									tt_div.appendChild(document.createElement('BR'));
 									tt_div.appendChild(document.createTextNode("No Info"));
 								}
 							}
