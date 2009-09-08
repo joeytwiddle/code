@@ -46,17 +46,17 @@ var reduceWidth     = true;    // Try lots of little things to make things fit i
 var reduceTextSize  = true;    // Reduce size of text in results area (maybe also top).
 var panelHasBorder  = true;    // I like the preview pane to look sunken.
 var loadEarly       = true;    // Better (e.g. with Delicious on Google script) to wait.
-var checkerRows     = false;   // Alternates grey and white background to separate results.
+var checkerRows     = true;    // Alternates grey and white background to separate results.
 var renderLikeTabs  = false;   // Different visual style.
 
-var clearFrameWhenLeaving  = true; // Can speed up loading of the clicked page if the preview is still loading.
+var clearFrameWhenLeaving = false; // Can speed up loading of the clicked page if the preview is still loading.
 
 var Colors = {
+	focus:    { bg: "#eefbfb", border: "#ddeeee" },
 	selected: { bg: "#ddeeff", border: "#ccddff" },
 	travel:   { bg: "#ffeecc", border: "#ffccbb" },
 	action:   { bg: "#ddccff", border: "#ccbbff" },
-	focus:    { bg: "#ddeeee", border: "#ddeeee" },
-	checkers: { 0: "#f9f9f9", 1: "#f1f1f1" }
+	checkers: { 0: "#f9f9f9", 1: "#ffffff" }
 };
 
 if (renderLikeTabs) {
@@ -70,8 +70,9 @@ var resultsWidth = 1.0 - previewWidth;
 
 
 // Don't run if we are in a sub-frame:
-if (window != top)
-	return;
+// Mmm should be more like don't run if we have already run in a sub-frame. :P
+// if (window != top)
+	// return;
 
 
 
@@ -81,7 +82,7 @@ function initPreview() {
 
 	//// Set up the Layout ////
 
-	var resultsBlock = document.getElementById("res"); // May change!
+	var resultsBlock = getResultsBlock(); // May change!
 
 	// Non-essential reformatting which might break
 	try {
@@ -110,7 +111,7 @@ function initPreview() {
 			// We need to push the 8px or i think the previewPane is too wide!
 
 			// Google's #res class was defining margin: 0 16px
-			document.getElementById('res').style.margin = '0 0 0 0';
+			getResultsBlock().style.margin = '0 0 0 0';
 			// TODO: Various bits of the page below the results also have margins. :f
 
 			// Only really needed if keepHeaderAbove==false.
@@ -204,9 +205,9 @@ function initPreview() {
 		//// Fixed for sidebars.
 		//// Fixed for previewWidth=0.8
 		resultsBlock.style.width = (document.body.clientWidth * resultsWidth) +'px';
-		// document.getElementById("res").style.width = (document.body.clientWidth * resultsWidth - 32) +'px';
+		// getResultsBlock().style.width = (document.body.clientWidth * resultsWidth - 32) +'px';
 		// resultsBlock.style.width = '30em';
-		document.getElementById("res").style.width = (resultsBlock.clientWidth - 16) +'px';
+		getResultsBlock().style.width = (resultsBlock.clientWidth - 16) +'px';
 		// resultsBlock.style.width = (resultsBlock.clientWidth - 16) +'px';
 		//// If we still fail to lose the horizontal scrollbar, in fact 32 is a little large for display with one, may as well use 24.
 		resultsBlock.style.overflow = 'auto';
@@ -319,30 +320,39 @@ function initPreview() {
 		*/
 		//// New Implementation:
 		var link = ( startNode.tagName == "A" ? startNode : getAncestorByTagName(startNode,'A') );
-		if (link) {
-			// If this is a major link, and the first in its LI, we can highlight the whole LI.
+		if (!link) {
+			// If we are not over a link, ascend to the parent LI block, and select that.
+			var li = getAncestorByTagName(startNode.firstChild,"LI");
+			if (li) {
+				return li;
+			}
+			//// Ascend until we can find a link
+			//// Bah ofc this stop ascension properly on Delicious, but
+			//// prematurely on main google results, due to the earlier (lower)
+			//// Cached and Similar.
+			// var n = startNode;
+			// while (n) {
+				// if (n.getElementsByTagName("A"))
+					// return n;
+				// n = n.parentNode;
+			// }
+			return null;
+		} else {
+			// If we are over a link, we may still want to ascend to the parent LI, but
+			// only if it's first link child is us.
 			if (link.className == "l") {
-				// TODO: This is good on main link blocks, but not good on
-				// sub-blocks such as embedded News, Delicious Userscript, etc.
-				// The check should be strict!
 				var li = getAncestorByTagName(startNode,"LI");
 				if (li) {
-					if (li.getElementsByTagName("A") != link) {
-						GM_log("Can't ascend since link != li");
+					var lowerLinks = li.getElementsByTagName("A");
+					if (lowerLinks && lowerLinks[0].href == link.href) {
+						return li;
 					}
-					return li;
 				}
 			}
 			return link;
-		} else {
-			// There is no link - ascend if we can.
-			var li = getAncestorByTagName(startNode.firstChild,"LI");
-			if (li)
-				return li;
-			else
-				return null;
 		}
-		// return startNode;
+		return startNode;
+		// return null;
 	}
 
 	// If we are highlighting container, then what link does this relate to?
@@ -552,6 +562,11 @@ function initPreview() {
 
 //// Library Functions ////
 
+function getResultsBlock() {
+	return document.getElementById("res")
+		|| document.getElementById("web"); // For Google on other sites, e.g.: http://search.creativecommons.org/
+}
+
 function findIndexOf(item,list) {
 	for (var i=0;i<list.length;i++) {
 		if (list[i] == item)
@@ -630,7 +645,9 @@ function reformatThings() {
 		// - Video results - 2 columns with text beside, can be wider than desired.
 
 		// Makes a few pieces of text smaller, but most have custom style font sizes.
-		document.body.style.fontSize='10px';
+		if (reduceTextSize)
+			document.body.style.fontSize='50%';
+			// document.body.style.fontSize='10px';
 
 		//// The first nobr was a lone child when I wrote this.
 		//// We break it.
@@ -675,6 +692,7 @@ function reformatThings() {
 	}
 
 	if (reduceTextSize) {
+		//// @TODO: This is Wrong and Bad (see below) but it works with my settings.
 		// var log = "";
 		function resizeTextNode(node,difference) {
 			for (var child=node.firstChild; (child); child = child.nextSibling) {
@@ -689,7 +707,7 @@ function reformatThings() {
 				}
 			}
 		}
-		resizeTextNode(document.getElementById('res'),-1);
+		resizeTextNode(getResultsBlock(),-1);
 		// log;
 		// setTimeout(function(){ resizeTextNode(resultsBlock,-4); },1000);
 		// NOTE: resultsBlock is no longer available in this scope
@@ -736,7 +754,7 @@ function reformatThings() {
 
 //// Instantiation ////
 
-var earlyResultsBlock = document.getElementById('res');
+var earlyResultsBlock = getResultsBlock();
 if (earlyResultsBlock && loadEarly) {
 	initPreview();
 } else {
@@ -780,17 +798,12 @@ But sometimes we might want to preview links which do not have a surrounding
 div, for example the Google Cache page, or extra links embedded by the
 Delicious Search Results userscript.
 
-TODO: Sometimes we don't get (or properly process) the mouseout event, if
-the results panel has a horizontal scrollbar, so we move our mouse into
-the previewPane without really leaving the "focusable" highlight, so it
-stays highlighted.
-
 DONE: If we decide to click a link and follow it fullscreen, we could kill the
 iframe, so if the page is still loading from the first (preview) click, the
 browser will stop loading it cleanly and immediately, and devote full resources
 to the new page load.
 
-TODO: Yellow highlights get cleared when we move off them.  Not so the purple.
+TODO: Some of our font scaling is going wrong.  Try using "em" instead of "px".
 
 */
 
