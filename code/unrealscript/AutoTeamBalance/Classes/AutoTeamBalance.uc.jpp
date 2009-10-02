@@ -139,6 +139,7 @@
 // TODO: Add "mutate undo" and "!undo" which can restore last few saved team states.  That way you can try some things to improve the teams, but go back if needed.
 
 // Changes since 1.4:
+// Re-arranged database to 1.5 hashtable style.
 // When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
 // Changed the default number of player records to 2048, to reduce lag on general servers.
 // Reduced MinSecondsBeforeRebalance to 3 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
@@ -622,7 +623,8 @@ defaultproperties {
 	#else
 		StrengthProportionFromCurrentGame=0.5
 	#endif
-	PreferenceToSwitchNewPlayers=0.7
+	// I think 0.5 was a little weak (maybe that's good ^^ ), whilst 0.7 was too strong.
+	PreferenceToSwitchNewPlayers=0.5
 	bAllowSemiAdminKick=True
 	bAllowSemiAdminForceTravel=True
 	bBalanceBots=False
