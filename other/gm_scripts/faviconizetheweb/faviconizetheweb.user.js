@@ -6,10 +6,8 @@
 
 // Based on FaviconizeGoogle.
 
-// My Bookmarklet does it thus:
+// My Bookmarklet did it thus:
 // javascript:(function(){for (var i=0;i<document.links.length;i++) {var link = document.links[i];if (link.href.match('^javascript:') || link.href.match('^#')) {continue;}var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');if (host == document.location.host) {continue;}var img = document.createElement('IMG');img.src = 'http://'+host+'/favicon.ico';link.parentNode.insertBefore(img,link);}})();
-
-// Or my Google userscript was thus:
 
 // DONE: Provided more options where to place favicon: by the link or by the
 // url, before or after, inside or outside the link.  However in my opinion
@@ -22,7 +20,7 @@ var delayExecution = 3000;
 
 function doIt() {
 
-GM_log("doIt() was called!");
+// GM_log("doIt() was called!");
 
 function filterListBy(l,c) {
 	var ret = new Array();
@@ -41,7 +39,8 @@ function createFaviconFor(url) {
 		// return null;
 	// }
 	var img = document.createElement('IMG');
-	img.src = 'http://'+host+'/favicon.ico';
+	// img.src = 'http://'+host+'/favicon.ico';
+	img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.
 	img.width = 16*scaleIcon;
 	img.height = 16*scaleIcon;
 	img.className = 'ftwFavicon';
@@ -80,6 +79,10 @@ var links = document.getElementsByTagName("A");
 var lastURL = null;
 for (var i=0;i<links.length;i++) {
 	var link = links[i];
+
+	if (!link.href) {
+		continue;
+	}
 	if (link.href.match('^javascript:') || link.href.match('^#')) {
 		continue;
 	}
