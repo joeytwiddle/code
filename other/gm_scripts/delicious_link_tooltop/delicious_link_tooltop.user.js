@@ -326,63 +326,68 @@ function createTooltip(event) {
 
 	stillFocused = link;
 
-	if (!link.href.match(/^javascript:/)) {
+	// Links we do not want to act on:
+	if (link.href.match(/^javascript:/))
+		return;
+	if (document.location.hostname == link.hostname
+			&& document.location.pathname == link.pathname)
+		return;   // Either a link to self, or a # link to an anchor in self
 
-		var subjectUrl = getCanonicalUrl(link.href);
+	var subjectUrl = getCanonicalUrl(link.href);
+	// Remove any #anchor from the url
+	subjectUrl = ""+subjectUrl.match(/^[^#]*/);
 
-		if (dataCache[subjectUrl] == "working...") {
-			return;  // We can't do anything useful here.  We must wait for the XHR to respond.
-		}
+	if (dataCache[subjectUrl] == "working...") {
+		return;  // We can't do anything useful here.  We must wait for the XHR to respond.
+	}
 
-		if (dataCache[subjectUrl] != null) {
-			displayResults(dataCache[subjectUrl],subjectUrl,event);
-		} else {
+	if (dataCache[subjectUrl] != null) {
+		displayResults(dataCache[subjectUrl],subjectUrl,event);
+	} else {
 
-			// Closure around link and subjectUrl.
-			function tryLookup(lookupURL,onFailFn) {
-				var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
-				GM_xmlhttpRequest({
-					method: "GET",
-					url: jsonUrl,
-					headers: {
-						"Accept":"text/json"
-					},
-					onload: function(response) {
-						// GM_log("Delicious responded: "+response.responseText);
-						// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
-						var resultObj = eval(response.responseText); // INSECURE!
-						if (resultObj)
-							resultObj = resultObj[0];
-						if (!resultObj && onFailFn && stillFocused==link) {
-							onFailFn();
-						} else { // Got resultObj, or no onFailFn, or no longer focused
-							// Overwrite "working..." with the good or failed result
-							dataCache[subjectUrl] = resultObj;
-							// GM_log("Got data for "+subjectUrl+" meanwhile link="+link);
-							if (stillFocused == link) {
-								displayResults(resultObj,subjectUrl,event);
-							}
+		// Closure around link and subjectUrl.
+		function tryLookup(lookupURL,onFailFn) {
+			var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
+			GM_xmlhttpRequest({
+				method: "GET",
+				url: jsonUrl,
+				headers: {
+					"Accept":"text/json"
+				},
+				onload: function(response) {
+					// GM_log("Delicious responded: "+response.responseText);
+					// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+					var resultObj = eval(response.responseText); // INSECURE!
+					if (resultObj)
+						resultObj = resultObj[0];
+					if (!resultObj && onFailFn && stillFocused==link) {
+						onFailFn();
+					} else { // Got resultObj, or no onFailFn, or no longer focused
+						// Overwrite "working..." with the good or failed result
+						dataCache[subjectUrl] = resultObj;
+						// GM_log("Got data for "+subjectUrl+" meanwhile link="+link);
+						if (stillFocused == link) {
+							displayResults(resultObj,subjectUrl,event);
 						}
 					}
-				});
-				// TODO: The GM_xmlhttpRequest should also include an
-				// onreadystatechange function to catch any failed requests.
-			}
-
-			timer = setTimeout(function() {
-				if (stillFocused == link) {
-					dataCache[subjectUrl] = "working...";
-					var hostUrl = "http://"+getHostnameOfUrl(subjectUrl)+"/";
-					if (getWebsiteInfoOnly) {
-						subjectUrl = hostUrl;
-						tryLookup(subjectUrl,null);
-					} else {
-						tryLookup(subjectUrl,function(){ tryLookup(hostUrl); });
-					}
 				}
-			},1000);
-
+			});
+			// TODO: The GM_xmlhttpRequest should also include an
+			// onreadystatechange function to catch any failed requests.
 		}
+
+		timer = setTimeout(function() {
+			if (stillFocused == link) {
+				dataCache[subjectUrl] = "working...";
+				var hostUrl = "http://"+getHostnameOfUrl(subjectUrl)+"/";
+				if (getWebsiteInfoOnly) {
+					subjectUrl = hostUrl;
+					tryLookup(subjectUrl,null);
+				} else {
+					tryLookup(subjectUrl,function(){ tryLookup(hostUrl); });
+				}
+			}
+		},1000);
 
 	}
 
