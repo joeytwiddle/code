@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name           Get Page Meta
+// @name           Delicious Link Tooltip
 // @namespace      GPM
-// @description    Shows Delicious info for target page in a tooltip when you hover over a link.
+// @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
 // @include        *
 // ==/UserScript==
 // old require        http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
@@ -10,7 +10,7 @@
 
 // == Notes ==
 
-// TODO: Rename script "Get Link Meta" or "Get Delicious Info for Links" or
+// DONE: Rename script "Get Link Meta" or "Get Delicious Info for Links" or
 // "Delicious Link Tooltip"
 
 // Some code adapted from Hover Links userscript.
@@ -29,7 +29,7 @@
 // null or elem;  Or maybe we can use stillFocused.
 
 // DONE: We prevent a second XHR being made if one is already running for a
-// given link, by sacing the "working..." string in the dataCache.
+// given link, by saving the "working..." string in the dataCache.
 
 // DONE: Give all tags an automatic color by hash, but not too vivid.  May help
 // us to track common tags.
@@ -345,8 +345,9 @@ function createTooltip(event) {
 		displayResults(dataCache[subjectUrl],subjectUrl,event);
 	} else {
 
-		// Closure around link and subjectUrl.
+		// Note: This makes use of the closed scope vars link and subjectUrl above.
 		function tryLookup(lookupURL,onFailFn) {
+			// We can use https here, but it is slower.
 			var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
 			GM_xmlhttpRequest({
 				method: "GET",
