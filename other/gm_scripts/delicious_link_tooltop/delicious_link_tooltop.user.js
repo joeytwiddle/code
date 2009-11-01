@@ -11,7 +11,7 @@
 // == Notes ==
 
 // DONE: Rename script "Get Link Meta" or "Get Delicious Info for Links" or
-// "Delicious Link Tooltip"
+// "Delicious Link Tooltip" with an accidental typo then upload it.
 
 // Some code adapted from Hover Links userscript.
 // Thanks to: http://delicious.com/help/feeds
@@ -41,9 +41,15 @@
 // At least a fix for the Mediawiki problem would make us (me) happy.
 // Tried 100x larger zIndex but no success.
 
-// TODO: Does not activate for links added to the document later.  Should add a
+// DONE: Activate for links added to the document later.  Should add a
 // DOMNodeInserted event listener.  Or maybe neater, add listeners to the top
 // of the doc, but have them only activate on A elements.
+
+// TODO: I made some of the info in the tooltip into links, but to access them
+// we have to allow mouseover the tooltip without it disappearing.  I tried to
+// implement that but it doesn't work quite right.  :P
+
+// TODO: The right-floating popBar/Cont is working for Chrome and Konq, but not FF!
 
 
 
@@ -56,7 +62,7 @@ var warn_bg_color = "#EADADA";
 var warn_color = "#FF4444";
 var border_color = "#AAAAAA";
 var font_color = "#000000";
-var font_face = "tahoma";
+var font_face = ""; // "tahoma";
 var font_size = "11px";
 
 
@@ -171,11 +177,14 @@ var timer;
 var stillFocused;
 var tooltipDiv;
 
+var rolledOverTooltip = false;
+
 function positionTooltip(event) {
 	if (tooltipDiv) {
 		var posx = event.clientX + window.pageXOffset;
 		var posy = event.clientY + window.pageYOffset;
 
+		tooltipDiv.style.right = '';
 		tooltipDiv.style.left = (posx + 15) + "px";
 		tooltipDiv.style.top = (posy + 7) + "px";
 
@@ -194,8 +203,13 @@ function positionTooltip(event) {
 		// we use divWidth.
 		var divWidth = ( tooltipDiv.clientWidth > max_width ? tooltipDiv.clientWidth : max_width ) + 20;
 		if (parseInt(tooltipDiv.style.left) + divWidth + scrollbarWidth > window.innerWidth + window.pageXOffset) {
-			tooltipDiv.style.left = (posx - 15 - divWidth) + "px";
+			// tooltipDiv.style.left = (posx - 15 - divWidth) + "px";
+			tooltipDiv.style.left = '';
+			tooltipDiv.style.right = (window.innerWidth - pox + 15) + "px";
 			// tooltipDiv.style.width = divWidth;
+			if (tooltipDiv.clientWidth > max_width) {
+				tooltipDiv.style.width = max_width + "px";
+			}
 			// TODO: Can move the tooltip too far left, if it is naturally narrow.
 		}
 		// The +scrollbarWidth deals with the case when there is a scrollbar
@@ -224,8 +238,17 @@ function displayResults(resultObj,subjectUrl,event) {
 		fontSize = font_size;
 		position = "absolute";
 		zIndex = 100000;
+		textAlign = 'left';
 	}
 	tooltipDiv.style.padding = '6px';
+
+	tooltipDiv.addEventListener('mouseover',function(evt){
+			rolledOverTooltip = true;
+	},false);
+
+	tooltipDiv.addEventListener('mouseout',function(evt){
+			hideTooltipMomentarily();
+	},false);
 
 	// Sometimes Delicious returns a result with nothing but the hash and
 	// total_posts=1.  These days I am getting this more often than
@@ -264,14 +287,29 @@ function displayResults(resultObj,subjectUrl,event) {
 			tooltipDiv.appendChild(document.createElement('BR'));
 		}
 
-		// tooltipDiv.appendChild(document.createTextNode("Title: "));
-		// tooltipDiv.appendChild(boldTextElement(resultObj.title));
-		// tooltipDiv.appendChild(document.createElement('BR'));
-		//// The title can contain HTML-encoded chars, so we must decode/present accordingly
-		tooltipDiv.innerHTML += "<B style='font-size:1.1em;'>" + resultObj.title + "</B><BR>";
+		var titleCont = document.createElement("DIV");
 
-		// tooltipDiv.appendChild(document.createTextNode("Popularity: "));
-		// tooltipDiv.appendChild(boldTextElement(""+resultObj.total_posts));
+		// titleCont.appendChild(document.createTextNode("Title: "));
+		// titleCont.appendChild(boldTextElement(resultObj.title));
+		// titleCont.appendChild(document.createElement('BR'));
+		//// The title can contain HTML-encoded chars, so we must decode/present accordingly
+		// titleCont.innerHTML += "<B style='font-size:1.1em;'>" + resultObj.title + "</B><BR>";
+
+		var titleElem = boldTextElement(unescapeHTML(resultObj.title));
+
+		// Make it a link?
+		var link = document.createElement("A");
+		link.href = 'http://delicious.com/url/view?url='+encodeURIComponent(resultObj.url)+'&show=notes_only';
+		link.target = "_blank";
+		link.style.paddingRight = '8px';
+		link.appendChild(titleElem);
+		titleElem = link;
+
+		titleElem.style.float = 'left';
+		titleCont.appendChild(titleElem);
+
+		// titleCont.appendChild(document.createTextNode("Popularity: "));
+		// titleCont.appendChild(boldTextElement(""+resultObj.total_posts));
 		// var popWidth = Math.log(3 + parseInt(resultObj.total_posts))*30;
 		var popWidth = Math.log(parseInt(resultObj.total_posts)/40)*max_width/8;
 		if (!popWidth || popWidth<=10) popWidth = 10;
@@ -279,36 +317,81 @@ function displayResults(resultObj,subjectUrl,event) {
 		var popBar = document.createElement('DIV');
 		var thru = popWidth/max_width;
 		// popBar.style.backgroundColor = 'rgb(128,'+parseInt(127+128*thru)+','+parseInt(255-128*thru)+')';
-		var hue = 2/3 - 1/3*thru;   // blue -> cyan -> green
+		// var hue = 2/3 - 1/3*thru;   // blue -> cyan -> green
 		// var hue = thru/3;        // red -> yellow -> green
-		popBar.style.backgroundColor = hsv2rgbString(hue, 0.4, 0.9);
+		// var saturation = 0.4;
+		// var variance = 0.9;
+		var hue = 1.8/3;
+		var saturation = 0.6+0.3*thru;
+		var variance = 0.9-0.4*thru;
+		popBar.style.backgroundColor = hsv2rgbString(hue, saturation, variance);
+		popBar.style.color = 'white';
 		popBar.style.width = popWidth+'px';
-		popBar.style.padding = '1px 6px 1px 6px';
 		popBar.style.margin = '2px 0px 2px 0px';
+		popBar.style.padding = '3px 8px 2px 8px';
+		popBar.style.textAlign = 'right';
 		// popBar.appendChild(document.createTextNode(" "));
+		// popBar.style.float = 'right';
 		popBar.appendChild(boldTextElement(addCommasToNumber(resultObj.total_posts)));
-		tooltipDiv.appendChild(popBar);
+
+		var popBarCont = document.createElement("DIV");
+		popBarCont.style.float = 'right';
+		// popBarCont.style.position = 'fixed';
+		// popBarCont.style.right = '0px';
+		popBarCont.style.textAlign = 'right';
+		// popBarCont.align = 'right';
+		popBarCont.appendChild(popBar);
+
+		titleCont.appendChild(popBarCont);
+
+		tooltipDiv.appendChild(titleCont);
 
 		if (resultObj.top_tags) {
+
+			tooltipDiv.appendChild(document.createElement("BR"));
+
+			var tagsCont = document.createElement("SPAN");
+			tagsCont.style.marginTop = '4px';
+			tagsCont.style.float = 'right';
+			var tagsDiv = document.createElement("DIV");
+			tagsDiv.style.textAlign = 'right';
+
 			/*
 			//// Simple list
 			var tags = "";
 			for (var tag in resultObj.top_tags) {
 				tags += (tags==""?"":", ") + tag;
 			}
-			tooltipDiv.appendChild(document.createTextNode("Tags: "+tags+""));
+			tagsDiv.appendChild(document.createTextNode("Tags: "+tags+""));
 			*/
+
 			//// List with colored tags
 			var first = true;
 			for (var tag in resultObj.top_tags) {
 				if (!first)
-					tooltipDiv.appendChild(document.createTextNode(", "));
+					tagsDiv.appendChild(document.createTextNode(", "));
 				first = false;
+
 				var tagSpan = document.createElement("SPAN");
+
 				tagSpan.appendChild(document.createTextNode(tag));
 				tagSpan.style.color = hsv2rgbString( (getHash(tag)%256)/256, 1.0, 0.5 );
-				tooltipDiv.appendChild(tagSpan);
+
+				// Make it a link?
+				var link = document.createElement("A");
+				link.href = "http://delicious.com/tag/"+tag;
+				link.target = "_blank";
+				link.appendChild(tagSpan);
+				tagSpan = link;
+
+				tagsCont.appendChild(tagsDiv);
+
+				tagsDiv.appendChild(tagSpan);
+
 			}
+
+			tooltipDiv.appendChild(tagsCont);
+
 		}
 
 	} else {
@@ -322,7 +405,9 @@ function createTooltip(event) {
 
 	hideTooltip();
 
-	var link = event.currentTarget;
+	var link = event.target;
+
+	lastMoveEvent = event;
 
 	stillFocused = link;
 
@@ -341,44 +426,47 @@ function createTooltip(event) {
 		return;  // We can't do anything useful here.  We must wait for the XHR to respond.
 	}
 
-	if (dataCache[subjectUrl] != null) {
-		displayResults(dataCache[subjectUrl],subjectUrl,event);
-	} else {
-
-		// Note: This makes use of the closed scope vars link and subjectUrl above.
-		function tryLookup(lookupURL,onFailFn) {
-			// We can use https here, but it is slower.
-			var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
-			GM_xmlhttpRequest({
-				method: "GET",
-				url: jsonUrl,
-				headers: {
-					"Accept":"text/json"
-				},
-				onload: function(response) {
-					// GM_log("Delicious responded: "+response.responseText);
-					// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
-					var resultObj = eval(response.responseText); // INSECURE!
-					if (resultObj)
-						resultObj = resultObj[0];
-					if (!resultObj && onFailFn && stillFocused==link) {
-						onFailFn();
-					} else { // Got resultObj, or no onFailFn, or no longer focused
-						// Overwrite "working..." with the good or failed result
-						dataCache[subjectUrl] = resultObj;
-						// GM_log("Got data for "+subjectUrl+" meanwhile link="+link);
-						if (stillFocused == link) {
-							displayResults(resultObj,subjectUrl,event);
-						}
+	// Note: This makes use of the closed scope vars link and subjectUrl above.
+	function tryLookup(lookupURL,onFailFn) {
+		// We can use https here, but it is slower.
+		var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
+		GM_xmlhttpRequest({
+			method: "GET",
+			url: jsonUrl,
+			headers: {
+				"Accept":"text/json"
+			},
+			onload: function(response) {
+				// GM_log("Delicious responded: "+response.responseText);
+				// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+				var resultObj = eval(response.responseText); // INSECURE!
+				if (resultObj)
+					resultObj = resultObj[0];
+				if (!resultObj && onFailFn && stillFocused==link) {
+					onFailFn();
+				} else { // Got resultObj, or no onFailFn, or no longer focused
+					// Overwrite "working..." with the good or failed result
+					dataCache[subjectUrl] = resultObj;
+					GM_setValue("CachedResponse"+subjectUrl,uneval(resultObj));
+					// GM_log("Got data for "+subjectUrl+" meanwhile link="+link);
+					if (stillFocused == link) {
+						displayResults(resultObj,subjectUrl,lastMoveEvent || event);
 					}
 				}
-			});
-			// TODO: The GM_xmlhttpRequest should also include an
-			// onreadystatechange function to catch any failed requests.
-		}
+			}
+		});
+		// TODO: The GM_xmlhttpRequest should also include an
+		// onreadystatechange function to catch any failed requests.
+	}
 
-		timer = setTimeout(function() {
-			if (stillFocused == link) {
+	function maybeTryLookup() {
+		if (stillFocused == link) {
+			if (dataCache[subjectUrl] == null) {
+				dataCache[subjectUrl] = eval(GM_getValue("CachedResponse"+subjectUrl,"null"));
+			}
+			if (dataCache[subjectUrl] != null) {
+				displayResults(dataCache[subjectUrl],subjectUrl,event);
+			} else {
 				dataCache[subjectUrl] = "working...";
 				var hostUrl = "http://"+getHostnameOfUrl(subjectUrl)+"/";
 				if (getWebsiteInfoOnly) {
@@ -388,10 +476,22 @@ function createTooltip(event) {
 					tryLookup(subjectUrl,function(){ tryLookup(hostUrl); });
 				}
 			}
-		},1000);
-
+		}
 	}
 
+	var waitTime = ( dataCache[subjectUrl] != null ? 300 : 1000 );
+
+	timer = setTimeout(maybeTryLookup,waitTime);
+
+}
+
+function hideTooltipMomentarily() {
+	rolledOverTooltip = false;
+	stillFocused = null;
+	setTimeout(function(){
+			if (stillFocused == null && !rolledOverTooltip)
+				hideTooltip();
+	},200);
 }
 
 function hideTooltip() {
@@ -400,21 +500,50 @@ function hideTooltip() {
 		clearTimeout(timer);
 		timer = null;
 	}
+	// TODO: iff we are mousingoff the link, we should delay before closing, to see if the user is mousing onto the tooltip, and if so not hide.
 	if (tooltipDiv) {
 		if (tooltipDiv.parentNode) {
 			tooltipDiv.parentNode.removeChild(tooltipDiv);
 		}
 		tooltipDiv = null;
 	}
+	rolledOverTooltip = false;
 }
 
 // Initialise
+
+/*
 for (var i=0; i<document.links.length; i++) {
 	var link = document.links[i];
 	link.addEventListener("mouseover",createTooltip,false);
 	link.addEventListener("mouseout",hideTooltip,false);
-	link.addEventListener("mousemove",positionTooltip,true);
+	// TODO: We should only really enable the mousemove/out/down events when we have done a mouseover!
+	link.addEventListener("mousemove",positionTooltip,false);
 	// If user clicks either button on the link, then we hide it
 	link.addEventListener("mousedown",hideTooltip,true);
 }
+*/
+
+// A better event listener, which will respond to links added to the DOM later.
+
+var linksOnly = function(evt) { return (evt && evt.target && evt.target.tagName == "A"); };
+
+addGlobalConditionalEventListener("mouseover",createTooltip,linksOnly);
+addGlobalConditionalEventListener("mouseout",hideTooltipMomentarily,linksOnly);
+// TODO: We should only really enable the mousemove/out/down events when we have done a mouseover!
+// addGlobalConditionalEventListener("mousemove",positionTooltip,linksOnly);
+addGlobalConditionalEventListener("mousemove",function(evt){if (evt.target == stillFocused) { lastMoveEvent=evt; } },linksOnly);
+// If user clicks either button on the link, then we hide it
+addGlobalConditionalEventListener("mousedown",hideTooltip,linksOnly);
+
+function addGlobalConditionalEventListener(evType,handlerFn,conditionFn) {
+	document.body.addEventListener(evType,function(evt){
+			if (conditionFn(evt)) {
+				/* if (evType != "mousemove") {
+					GM_log("Performing "+evType+" on "+evt.target);
+				} */
+				return handlerFn(evt);
+			}
+	},true);
+};
 
