@@ -4,7 +4,8 @@
 // @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
 // @include        *
 // ==/UserScript==
-// old require        http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
+// don't require   http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
+// @require        http://json.org/json2.js
 
 
 
@@ -45,11 +46,22 @@
 // DOMNodeInserted event listener.  Or maybe neater, add listeners to the top
 // of the doc, but have them only activate on A elements.
 
-// TODO: I made some of the info in the tooltip into links, but to access them
-// we have to allow mouseover the tooltip without it disappearing.  I tried to
-// implement that but it doesn't work quite right.  :P
+// I made some of the info in the tooltip into links, but to access them we
+// have to allow mouseover the tooltip without it disappearing.  I tried to
+// implement that but things haven't been 100% smooth since...
 
-// TODO: The right-floating popBar/Cont is working for Chrome and Konq, but not FF!
+// TODO: Sometimes if we move quickly over to the link, no tooltip will appear.
+// TODO: The tooltip should appear wherever we last mousemoved-ed over the
+// link, (current cursor pos) rather than where we mouseover-ed (entered it).
+// HMMM it seems to me that this is happening when we mouseover the <EM> part
+// of a Google result but works fine on the non-EM parts.  So maybe we should
+// be using capture?
+
+// DONE: The right-floating popBar/Cont is working for Chrome and Konq, but not FF!
+// Forget CSS float, I used a TABLE and all works fine.  :)
+// TODO: Tidy up the aftermath.
+// Unfortunately the table appears to override our popWidth, but maybe we don't
+// need/want that anymore anyway.
 
 
 
@@ -205,7 +217,7 @@ function positionTooltip(event) {
 		if (parseInt(tooltipDiv.style.left) + divWidth + scrollbarWidth > window.innerWidth + window.pageXOffset) {
 			// tooltipDiv.style.left = (posx - 15 - divWidth) + "px";
 			tooltipDiv.style.left = '';
-			tooltipDiv.style.right = (window.innerWidth - pox + 15) + "px";
+			tooltipDiv.style.right = (window.innerWidth - posx + 15) + "px";
 			// tooltipDiv.style.width = divWidth;
 			if (tooltipDiv.clientWidth > max_width) {
 				tooltipDiv.style.width = max_width + "px";
@@ -287,7 +299,7 @@ function displayResults(resultObj,subjectUrl,event) {
 			tooltipDiv.appendChild(document.createElement('BR'));
 		}
 
-		var titleCont = document.createElement("DIV");
+		var titleCont = document.createElement("TD");
 
 		// titleCont.appendChild(document.createTextNode("Title: "));
 		// titleCont.appendChild(boldTextElement(resultObj.title));
@@ -305,8 +317,11 @@ function displayResults(resultObj,subjectUrl,event) {
 		link.appendChild(titleElem);
 		titleElem = link;
 
-		titleElem.style.float = 'left';
 		titleCont.appendChild(titleElem);
+		//// For some reason Firefox refuses to notice the addition of this
+		//// style, so we do it with a CSS class instead.
+		// titleCont.style.float = 'left';
+		// titleCont.className = 'dlttLeft';
 
 		// titleCont.appendChild(document.createTextNode("Popularity: "));
 		// titleCont.appendChild(boldTextElement(""+resultObj.total_posts));
@@ -314,7 +329,7 @@ function displayResults(resultObj,subjectUrl,event) {
 		var popWidth = Math.log(parseInt(resultObj.total_posts)/40)*max_width/8;
 		if (!popWidth || popWidth<=10) popWidth = 10;
 		if (popWidth>max_width) popWidth = max_width;
-		var popBar = document.createElement('DIV');
+		var popBar = document.createElement('SPAN');
 		var thru = popWidth/max_width;
 		// popBar.style.backgroundColor = 'rgb(128,'+parseInt(127+128*thru)+','+parseInt(255-128*thru)+')';
 		// var hue = 2/3 - 1/3*thru;   // blue -> cyan -> green
@@ -334,25 +349,33 @@ function displayResults(resultObj,subjectUrl,event) {
 		// popBar.style.float = 'right';
 		popBar.appendChild(boldTextElement(addCommasToNumber(resultObj.total_posts)));
 
-		var popBarCont = document.createElement("DIV");
-		popBarCont.style.float = 'right';
+		var popBarCont = document.createElement("TD");
+		popBarCont.appendChild(popBar);
+		// popBarCont.style.float = 'right';
+		// popBarCont.className = 'dlttRight';
 		// popBarCont.style.position = 'fixed';
 		// popBarCont.style.right = '0px';
 		popBarCont.style.textAlign = 'right';
 		// popBarCont.align = 'right';
-		popBarCont.appendChild(popBar);
+		popBarCont.align = 'right';
 
-		titleCont.appendChild(popBarCont);
+		// titleCont.appendChild(popBarCont);
 
-		tooltipDiv.appendChild(titleCont);
+		var topTable = document.createElement("TABLE");
+		topTable.width = '100%';
+		var topRow = document.createElement("TR");
+		topTable.appendChild(topRow);
+		topRow.appendChild(titleCont);
+		topRow.appendChild(popBarCont);
+		tooltipDiv.appendChild(topTable);
 
 		if (resultObj.top_tags) {
 
-			tooltipDiv.appendChild(document.createElement("BR"));
+			// tooltipDiv.appendChild(document.createElement("BR"));
 
-			var tagsCont = document.createElement("SPAN");
+			var tagsCont = document.createElement("P");
 			tagsCont.style.marginTop = '4px';
-			tagsCont.style.float = 'right';
+			// tagsCont.style.float = 'right';
 			var tagsDiv = document.createElement("DIV");
 			tagsDiv.style.textAlign = 'right';
 
@@ -399,6 +422,7 @@ function displayResults(resultObj,subjectUrl,event) {
 	}
 	document.body.appendChild(tooltipDiv);
 	positionTooltip(event);
+	// GM_log("tooltipDiv.innerHTML = "+tooltipDiv.innerHTML);
 }
 
 function createTooltip(event) {
@@ -426,7 +450,8 @@ function createTooltip(event) {
 		return;  // We can't do anything useful here.  We must wait for the XHR to respond.
 	}
 
-	// Note: This makes use of the closed scope vars link and subjectUrl above.
+	// Note: These functions make use of the scope vars link and subjectUrl.
+
 	function tryLookup(lookupURL,onFailFn) {
 		// We can use https here, but it is slower.
 		var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
@@ -465,7 +490,7 @@ function createTooltip(event) {
 				dataCache[subjectUrl] = eval(GM_getValue("CachedResponse"+subjectUrl,"null"));
 			}
 			if (dataCache[subjectUrl] != null) {
-				displayResults(dataCache[subjectUrl],subjectUrl,event);
+				displayResults(dataCache[subjectUrl],subjectUrl,lastMoveEvent || event);
 			} else {
 				dataCache[subjectUrl] = "working...";
 				var hostUrl = "http://"+getHostnameOfUrl(subjectUrl)+"/";
@@ -510,7 +535,25 @@ function hideTooltip() {
 	rolledOverTooltip = false;
 }
 
+function cleanupCache() {
+	var cacheList = GM_listValues();
+	while (cacheList.length > 128) {
+		// Keep deleting records at random until we meet our max cache size.
+		var i = parseInt(Math.random() * cacheList.length);
+		// GM_log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
+		GM_deleteValue(cacheList[i]);
+		// delete cacheList[i];
+		cacheList[i] = cacheList[cacheList.length-1];
+		cacheList.length--;
+	}
+}
+
+
+
 // Initialise
+
+// GM_addStyle(".dlttLeft { float: left; }");
+// GM_addStyle(".dlttRight { float: right; }");
 
 /*
 for (var i=0; i<document.links.length; i++) {
@@ -525,8 +568,26 @@ for (var i=0; i<document.links.length; i++) {
 */
 
 // A better event listener, which will respond to links added to the DOM later.
+// DONE: One problem with this method.  If we mouseover a //A/EM then the event
+// doesn't fire!
+// DONE: I guess we better look up the tree at our parentNodes for the A, and maybe
+// even change/fake the evt.target to point to the A!
 
-var linksOnly = function(evt) { return (evt && evt.target && evt.target.tagName == "A"); };
+// var linksOnly = function(evt) { return (evt && evt.target && evt.target.tagName == "A"); };
+
+var linksOnly = function(evt) {
+	try {
+		var node = evt.target;
+		while (node) {
+			if (node.tagName == "A")
+				return node;
+			node = node.parentNode;
+		}
+	} catch (e) {
+		node = null;
+	}
+	return node;
+};
 
 addGlobalConditionalEventListener("mouseover",createTooltip,linksOnly);
 addGlobalConditionalEventListener("mouseout",hideTooltipMomentarily,linksOnly);
@@ -536,14 +597,29 @@ addGlobalConditionalEventListener("mousemove",function(evt){if (evt.target == st
 // If user clicks either button on the link, then we hide it
 addGlobalConditionalEventListener("mousedown",hideTooltip,linksOnly);
 
-function addGlobalConditionalEventListener(evType,handlerFn,conditionFn) {
+function addGlobalConditionalEventListener(evType,handlerFn,whereToFireFn) {
 	document.body.addEventListener(evType,function(evt){
-			if (conditionFn(evt)) {
+			// if (conditionFn(evt)) {
+			var finalTarget = whereToFireFn(evt);
+			if (finalTarget) {
+				var fakeEvt = ({});
+				// Maybe better to do a for (var prop in evt) to construct fakeEvt?
+				// Hmm no that acts weird, only showing properties for evt which I
+				// have already read!
+				// OK then let's just set the ones we know we need:
+				fakeEvt.target = finalTarget;
+				fakeEvt.clientX = evt.clientX;
+				fakeEvt.clientY = evt.clientY;
 				/* if (evType != "mousemove") {
-					GM_log("Performing "+evType+" on "+evt.target);
+					GM_log("Performing "+evType+" on "+fakeEvt.target);
 				} */
-				return handlerFn(evt);
+				return handlerFn(fakeEvt);
 			}
 	},true);
 };
+
+// Should we cleanup some of our old cached data?
+if (Math.random() < 0.1) {
+	cleanupCache();
+}
 
