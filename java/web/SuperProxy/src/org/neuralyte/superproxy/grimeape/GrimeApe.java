@@ -358,23 +358,23 @@ public class GrimeApe extends PluggableHttpRequestHandler {
                             + "(function(){\n"
                             /* Setup namespace specifics. */
                             + "var GA_namespace = \""+escapedNamespace+"\";\n"
-                            + "function GM_log(x) { GA_log(GA_namespace,x); }\n"
-                            + "function GM_setValue(x,y) { GA_setValue(GA_namespace,x,y); }\n"
-                            + "function GM_getValue(x) { GA_getValue(GA_namespace,x); }\n"
-                            + "function GM_xmlhttpRequest(x) { GA_xmlhttpRequest(GA_namespace,x); }\n"
+                            + "function GM_log(x) { return GA_log(GA_namespace,x); }\n"
+                            + "function GM_setValue(x,y) { return GA_setValue(GA_namespace,x,y); }\n"
+                            + "function GM_getValue(x) { return GA_getValue(GA_namespace,x); }\n"
+                            + "function GM_xmlhttpRequest(x) { return GA_xmlhttpRequest(GA_namespace,x); }\n"
                             /* Some logging */
                             + "GM_log(\"Initializing ...\");\n"
-                            + "document.title = '['+GA_namespace+'] '+document.title.replace(/^\\[[^\\]]*\\] /,'');\n"
-                            + "var GA_userscriptStartTime = new Date().getTime();\n"
+                            // + "document.title = '['+GA_namespace+'] '+document.title.replace(/^\\[[^\\]]*\\] /,'');\n"
+                            // + "var GA_userscriptStartTime = new Date().getTime();\n"
                             + "try {\n"
                     );
                     content.append("\n"
                             + "} catch (e) {\n"
                             + "  GM_log(\"ERROR: \"+e);\n"
                             + "}\n"
-                            + "var GA_userscriptTimeTaken = (new Date().getTime() - GA_userscriptStartTime) / 1000;\n"
-                            + "GM_log(\"Completed in \"+GA_userscriptTimeTaken+\" seconds.\");\n"
-                            + "document.title = document.title.replace(/^\\[[^\\]]*\\] /,'');\n"
+                            // + "var GA_userscriptTimeTaken = (new Date().getTime() - GA_userscriptStartTime) / 1000;\n"
+                            // + "GM_log(\"Completed in \"+GA_userscriptTimeTaken+\" seconds.\");\n"
+                            // + "document.title = document.title.replace(/^\\[[^\\]]*\\] /,'');\n"
                             + "})();\n"
                     );
                     response.setContent(content);
@@ -654,6 +654,8 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         response.setHeader("Connection","Close");
         StringBuffer extraHTML = getScriptHTMLForInjection();
         InputStream originalInput = response.getContentAsStream();
+        /* This is wrong, because we only want to replace the last occurrence,
+         * not the first occurrence, or all occurrences. */
         InputStream modifiedInput = new ReplacingInputStream(originalInput,"(</[Bb][Oo][Dd][Yy][^>]*>)",extraHTML+"\\1");
         response.setContentStream(modifiedInput);
     }
