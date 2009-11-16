@@ -3,7 +3,7 @@
 
 
 
-// vim: ft=uc ts=3 sw=3 expandtab
+// vim: ft=uc ts=3 sw=3 noexpandtab
 
 // DONE: It seemed Invis was never being given.  And in CTF mode, it seemed health packs were far too popular!  We must use UT_Stealth, Stealth just doesn't work.
 // TODO CONSIDER: Maybe we should integrate anti-camper with the health countdown.  We could apply the health countdown only to players who are far from other players, and not moving towards the other players.  Beware - 3 players on a large map might not know HOW to find each other, and might lose health unfairly.  Check values against average?
@@ -43,7 +43,7 @@
 // TODO: Invis does not wear off!
 // TODO: bSpawnPowerupsAsDroppedPickups
 
-
+// #define DEBUG
 
 class FairLMS expands Mutator config(FairLMS);
 
@@ -57,7 +57,7 @@ struct LMSBonus {
 
 var config bool bLogging;
 
-var config bool bDebugLogging;
+
 
 var config bool bGiveWeapons;
 var config int InitialArmour,InitialHealth;
@@ -65,6 +65,7 @@ var config float HealthLostPerSec,HealthGainedPerKill;
 var config bool bGivePowerups;
 var config int FragsForPowerup;
 var config bool bBroadcastPowerups;
+var config bool bInformHealth;
 var config bool bSpawnPowerupsAsDroppedPickups;
 var config bool bPainSounds;
 var config Color MessageColor;
@@ -162,7 +163,7 @@ event Timer() {
     for (Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory) {
      if (Inv.IsA('Weapon')) {
       bGameStarted = True;
-      break;
+      break; // Why?
      }
     }
    }
@@ -203,35 +204,28 @@ event Timer() {
   // Count the number of players still in the game.
   if (p.PlayerReplicationInfo!=None && p.PlayerReplicationInfo.Score>0) {
    aliveCount++;
+   // Update the players string.  (We won't use it anyway if aliveCount>=3)
    if (players == "") {
     players = p.getHumanName();
    } else {
     players = players $ " v " $ p.getHumanName();
    }
-   /*
-			if (aliveCount<3) {
-				if (players == "")
-					players = p.getHumanName() $ " v";
-				else
-					players = players $ " " $ p.getHumanName();
-			}
-			*/
   }
 
  }
 
 
- if (bDebugLogging && FRand()<0.2) {
-  BroadcastMessage("I see "$ aliveCount $" players: "$players);
- }
+
+
+
 
 
  // Check to see if there are only 2 players left.
  if (bGameStarted && LastManStanding(Level.Game)!=None && aliveCount==2 && !bTwoPlayersLeft && FRand()<0.2) { // Delay to avoid get overwritten by other messages.
+  BroadcastMessage("Two players left: "$players);
   foreach AllActors(class'PlayerPawn',pp) {
    FlashMessage(pp,"Two players left:",MessageColor,3,false);
    FlashMessage(pp,players,MessageColor,4,true);
-   BroadcastMessage("Two players left: "$players);
    // TODO: switch everyone's music >.<  Hmm might be hard, since only the map's track it loaded. :P
    //       but actually ND manages it, altho maybe client-side.
   }
@@ -276,6 +270,9 @@ function ScoreKill(Pawn killer, Pawn victim) {
    if (killer.Health > 199) killer.Health = 199;
    // killer.PlaySound(class'Botpack.TournamentHealth'.default.PickupSound,SLOT_Interface,3.0);
    killer.PlaySound(Sound'Botpack.Pickups.UTHealth',SLOT_Interface,3.0); // TEST: I think this is ok, all hear it.
+   if (bInformHealth) {
+    killer.ClientMessage("You gained "$HealthGainedPerKill$" health for your kill.");
+   }
 
    // bGivePowerups:
    if (killer.PlayerReplicationInfo!=None) {
@@ -606,9 +603,9 @@ function Mutate(String msg, PlayerPawn Sender) {
   }
 
 
-  if (msg ~= "DEBUG") {
-   bDebugLogging = !bDebugLogging;
-  }
+
+
+
 
 
  }
