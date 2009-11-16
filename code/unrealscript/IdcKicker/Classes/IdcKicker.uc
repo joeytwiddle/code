@@ -42,6 +42,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		SaveConfig();
 	}
 
+	// Check for banned players when their IDC is broadcast
 	if (bEnabled && Left(str,4) ~= "IDC ") {
 
 		idc = Mid(str,4);
