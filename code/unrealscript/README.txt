@@ -1,4 +1,21 @@
-==== nogginBasher's mods ====
+==== nogginBasher's Unreal Tournament mods ====
+
+Some of my latest compiled .u and .int files are available from:
+
+  http://hwi.ath.cx/ut/dev/System/
+
+Other mods you will need to compile yourself!  (Add the package name to
+EditorActors= in UT.ini, and then run ucc.exe make.)  Source code is available
+from the PackageName/Classes folders beneath:
+
+  http://hwi.ath.cx/ut/dev/
+
+Some of them are experimental.  Some of them are overdeveloped, in which case
+you may prefer to look for an earlier stable version from CVS:
+
+  http://hwi.ath.cx/cgi-bin/viewcvs.cgi/code/unrealscript/
+
+
 
 
 === GREAT ===
@@ -10,9 +27,14 @@
   ZoneInfo3.Gravity, Bot5.Health)
   Changes can be saved to be re-applied when map is next loaded.  (Can
   occasionally be used to fix small map bugs.)
-  Cannot yet spawn new actors (or can it?).
+  No support yet for spawning new actors.
 
-* MapMuts/
+* AutoTeamBalance
+
+  Tracks player scores in order to balance the teams at the beginning of each
+  game.
+
+* MapMuts
 
   Collects stats on maps into one big file, including approximate size
   (player-capacity) of map, number of times played, total frags, has it
@@ -20,38 +42,39 @@
   Can automatically switch to the "ideal" next map for servers without
   mapvote.
 
-* MessageAdmin/
+* MessageAdmin
 
   Allows players to leave a message for the server admin by saying in game
   "!admin xer0 just made me cry".  Basically a cut-down copy of PostBox.
-  Not connected to IRC, just dumps the message in an ini file.
+  Not connected to IRC, Twitter or e-mail, just dumps the message in an ini
+  file which the admin must check and clear.
 
-* PostBox/
+* PostBox
 
   Allows players to leave messages for their friends which can be picked up
   later.
 
-* PubliciseScore/
+* PubliciseScore
 
   Add info to the server's title as displayed in the UT server list.  Can show
   the number of players, current team scores, and time remaining in the game.
 
-* FairLMS/
+* FairLMS
 
   A mutator-style copy of the ELMS gametype from the No Downloads servers.
   LastManStanding with a twist: your health is dropping, only frags can get
   you more health, and 4 frags will give you a powerup!  Great fun.  Too bad
-  the jolt server is quiet now.
+  the jolt server is empty these days.
 
-* kxGrapple/
+* kxGrapple
 
   My advanced grappling hook for UT, with a realistic swinging and wrapping
   line.  Can offer players winch-in and wind-out ability.  Based on Expert100,
   inspired by No Downloads, lovingly refined.  A fun substitute for the
   Translocator on CTF maps with any headroom.  Also available in rigid-line
-  mode.
+  mode (classic ND).
 
-* TeamSwitcher/
+* TeamSwitcher
 
   Provides a few commands to players: !red !blue !green !spec !play !vote
 
@@ -59,36 +82,36 @@
 
 === GOOD ===
 
-+ ChatMuts/
++ ChatMuts
 
   Simple mutator ChatMuts.Ignore allows players to type !ignore KGB so they
   won't receive further say messages from KGB that game.  Unfortunately does
   not work on taunts.
 
-+ ClientConsoleLogger/
++ ClientConsoleLogger
 
   There are a couple of these already, but this one works in Linux!  Well
   actually it just logs to the standard log.  You have to grep out the
   [ChatLog] lines. :)
 
-+ CrouchBlocksDamage/
++ CrouchBlocksDamage
 
   My first ever mutator, for protection against shock balls on XOL.  Never
   really tried it, you can boost over Face crouching with your own ripper.
 
-+ PainSounds/
++ PainSounds
 
   Hitsounds made from grunts and groans in the male and female sound packs.
   Originally part of ELMS/FairLMS.  (Some earlier versions caused players to
   crash when I sent the sound on too many channels.)
 
-+ RedirectPlayers/
++ RedirectPlayers
 
   Put this mutator on your old server and players will be automatically sent
   to the new server.  (Does not update their favourites but I think it does
   spam them.)
 
-+ Resize/
++ Resize
 
   Resizes a map during play!  Well actually it attempts to resize everything
   in play except for the map.  ;)  Has a few small bugs but does work in many
@@ -100,72 +123,75 @@
 
 === MAYBE ===
 
-~ ArenaFallback/
-
-  Instagib maps often don't include weapon pickups.  If run in normal mode,
-  players have only enforcer and impact hammer.  If your server has a mixture
-  of modes and maps, this mutator will kick in on maps where no weapons are
-  provided, creating an instagib or flak arena.  The mutator has been
-  overdeveloped and broken, but one of the earlier versions was good.
-
-~ JLib/
+~ JLib
 
   Some common functions I use in UnrealScripts.
 
-~ PureSwitcher/
+~ PureSwitcher
 
   Enables and disables UTPure when playing certain maps/modes/mutators.
   Might be a fiddle to configure.
 
-~ Resurector/
+~ Resurector
 
   If a player disconnects from the server, will bring them back with some of
   their stats intact.  Does not work for SmartCTF.  I just fixed a couple of
   bugs in this version, and stopped it from fragging AutoTeamBalance stats.
 
-~ RocketArenaMutator/
+~ RocketArenaMutator
 
   Allows you to boost yourself with your own weapons, like you can in
   RocketArena.  I actually changed some of the parameters so the boosts are
-  more like CTF warmup mode.  Does not yet provide all weapons like
-  RocketArena maps do.  Does not break the game up into 1v1 or 2v2 rounds.
+  more like CTF warmup mode.  Does not yet provide all weapons like RocketArena
+  maps do.  Does not break the game up into 1v1 or 2v2 rounds, it's only a
+  simple damage/boost mutator.
 
-~ SiegeAnywhere/
+~ SiegeAnywhere
 
   An attempt to provide Siege features into the default UT gametypes.  This
-  makes no sense and isn't particularly fun.  But the package does include a
-  mutator which can be used to save the load the buildings currently on the
-  map!  Last built for XXL2g.
+  makes no sense and isn't particularly fun.  But the package *does* include
+  SiegeAnywhere.SiegeForever, a mutator which can be used to save and load the
+  buildings currently on the map!  Last built for XXL2g.
 
-~ SiegePlusDev/
+~ SiegePlusDev
 
   Attempts at ways of getting noobs out of the supplier *$&!*$"
 
-~ TrackMuts/
+~ TrackMuts
 
-  Can show you how much damage you are inflicting on other players, or how
-  much you are receiving.  Unfortunately this mutator cannot see damage
-  absorbed by armour - you actually only see health decrease.
+  TrackMuts.TrackDamage can show you how much damage you are inflicting on
+  other players, or how much you are receiving.  Unfortunately this mutator
+  cannot see damage absorbed by armour/shield - you only see the final health
+  reduction.
 
-~ WeirdMuts/
+  TrackMuts.TrackPlayers can be used to display messages about your Flag
+  Carrier's location (ZoneName), for servers without SmartCTF.  (Admins may
+  also be able to use it for more general player tracking.)
 
-  You can force everyone to play a map in behindview mode!
+~ WeirdMuts
 
-~ kxForceGun/
+  WeirdMuts.ForceBehindView - You can force everyone to play a map in
+  behindview mode!
 
-  Allows you to pick up weapons, siege buildings and bots, and move them to
-  other places.  Intended as a half-life gun.  Still some bugs.
+  (There's also a dodgy GrowthMutator which spawns a new piece of flora
+  wherever a player dies, sometimes half-embedded in the wall or floor.)
 
-~ sgGrapple/
+~ kxForceGun
 
-  This addon to siege can provide build options for the kxGrapple and
-  kxForceGun weapons.
+  A crazy weapon which allows you to pick up weapons, siege buildings and bots,
+  and move them to other places.  Like the gun from Half Life.  Still some
+  bugs in Siege (meshes do not update for other players).
 
-~ sgGrapple2f/
+~ sgGrapple
+
+  This patch to Siege provides build options for the kxGrapple, kxForceGun and
+  kxDoubleJump items.
+
+~ sgGrapple2f
 
   A build for SiegeXXL2d
 
-~ sgGrappleXtreme02/
+~ sgGrappleXtreme02
 
   A build for SiegeXtreme2
 
@@ -173,33 +199,42 @@
 
 === DODGY ===
 
-- FixWeaponBalance/
+- ArenaFallback
+
+  Instagib maps often don't include weapon pickups.  If run in normal mode,
+  players have only enforcer and impact hammer.  This mutator will only kick in
+  on maps where no weapons are provided, creating an instagib or flak arena.
+  (The mutator has been overdeveloped and broken, but one of the earlier
+  versions worked fine.)
+
+- FixWeaponBalance
 
   In zeroping with all weapons, sniper and shock primary become more powerful
   than the other weapons.  This mutator attempted to restore the normal
   balance, by reducing the cylinder radius of the player's head and body.
   FAILED: Mutator cannot do this.
 
-- RandomMutators/
+- RandomMutators
 
   Given a big list of mutators, will choose a random 3 to use at the beginning
   of each map.  This mutator is classically whack.
 
-- ScreenEditor.deprecated/
+- ScreenEditor.deprecated
 
   On maps using Mychael's Screen actor, allows players to write messages onto
-  the screens, or link nearby screens+teleporters to certain servers.
-  This was moved into ActorEditor in the end, making ScreenEdtior obsolete.
+  the screens, or link nearby screens+teleporters to certain servers.  In the
+  end I moved this into ActorEditor, and work on the code in ScreenEditor was
+  discontinued.
 
-- ScreenExtensions/
+- ScreenExtensions
 
   Provides triggers to switch or pause Screen slides.  For embedding into maps.
 
-- TranslocBots/
+- TranslocBots
 
   Makes bots translocate around a bit more.  Not very well.
 
-- nBAutoSpectate/
+- nBAutoSpectate
 
   My terrible modification of the fanatstic AutoSpectate mod.  Attempts to
   setup interesting camera angles when spectating or replaying demos.  Pretty
