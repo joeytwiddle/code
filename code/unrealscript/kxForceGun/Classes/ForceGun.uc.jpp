@@ -6,6 +6,9 @@
 
 #ifdef COMMENTS
 
+// TODO: After others bugs are fixed...  ATM we only act on sgBuilding from the Siege version we compiled against.  It may be possible to act on all sgBuildings from any running/dynamically-loaded version of siege.
+// TODO: sgBuildings keep their velocity between when we drop them and pick them up, although they were static!  Also their meshes stop dead when dropped by me.
+// TODO: Strong ForceGun gives the Target more velocity, so he swings past the target location and out of control *more* easily than weaker ForceGun.  That should not be the case!
 // TODO: If not immediate target aquired, keep seeking for N seconds while player is still holding fire, until a target comes into view.
 // TODO BUG: New changes have a problem.  I introduced some stuff to move meshes for targets other than the current client's.  But this brought back an old bug of sgBuildings falling out of the world, I think because Physics was not set or replicated too late, or the new client-side stuff is going longer than it should (The Target replicates slower than the Object's position).  Also weapon meshes were sometimes failing to fall.
 // TODO: I can pick up map-defined weapons/pickups, but in online play the movement does not show!  It does show however for spawned weapons (such as the force gun inventories that wouldn't disappear!)
@@ -43,13 +46,19 @@
 
 #endif
 
+#include "../../build.defs"
+// #define DEBUG
+
 #define MOVE_MESHES
 #define SIEGE_COMPATIBILITY
 // DONE: sgSuperProtector has THREE meshes - don't break, find all with corresponding owner.
 
+// Protection from damage on AltFire (if not throwing).  Also anyone withing radius of shield gets boosted.  :)
+#define ADD_SUPERSHIELD
+
 #ifndef FORCEGUN_CLASS
-#define FORCEGUN_CLASS ForceGun
-#define FORCEGUN_PARENTCLASS TournamentWeapon
+	#define FORCEGUN_CLASS ForceGun
+	#define FORCEGUN_PARENTCLASS TournamentWeapon
 #endif
 
 class FORCEGUN_CLASS expands FORCEGUN_PARENTCLASS Config(kxForceGun);
@@ -90,6 +99,15 @@ var sgMeshFX sgTargetMesh;
 #endif
 #endif
 
+#ifdef DEBUG
+// TODO: At release time we should comment out all DebugLog() and ClientLog() calls, because we don't want them building those message strings!
+#define DebugLog(message) if (bLogging) { Super.Log(message); }
+#define ClientLog(message) if (bLogging) { BroadcastMessage(message); } DebugLog("[ClientLog] "$ message)
+#else
+#define DebugLog(message); 
+#define ClientLog(message); 
+#endif
+
 replication {
 	reliable if (Role==ROLE_Authority)
 		PullStrength;
@@ -112,16 +130,12 @@ replication {
 	reliable if (Role==ROLE_Authority)
 		MoveMeshes; // Making this reliable means the meshes move!  I think it keeps thing in sync better.
 	unreliable if (Role==ROLE_Authority)
-		GrabMesh; // Making this unrealiable stopped pickup up item from continuing to float back up for a while after being dropped.
+		MoveMesh; // Making this unrealiable stopped pickup up item from continuing to float back up for a while after being dropped.
 	// reliable if (Role==ROLE_Authority)
 		// ReleaseTarget; // Causes us to never release the target (at least from the client point of view)
 	reliable if (Role==ROLE_Authority)
 		ReleaseMesh; // Hoping this will stop released buildings sometimes bouncing around
 }
-
-// TODO: At release time we should comment out all DebugLog() and ClientLog() calls, because we don't want them building those message strings!
-#define DebugLog(message) if (bLogging) { Super.Log(message); }
-#define ClientLog(message) if (bLogging) { BroadcastMessage(message); } DebugLog("[ClientLog] "$ message)
 
 simulated function PreBeginPlay() {
 	Super.PreBeginPlay();
@@ -436,7 +450,7 @@ simulated function CheckForUpdate(float DeltaTime) {
 
 }
 
-simulated function GrabMesh(ForceGun gun, Actor dec, Actor LTarget) {
+simulated function MoveMesh(ForceGun gun, Actor dec, Actor LTarget, float DeltaTime) {
 	// if (VSize(dec.Location-LTarget.Location)<5.0 || dec.Instigator == LTarget || dec.Owner == LTarget) {
 	if (dec.Owner == LTarget) {
 		if (FRand()<0.01) { DebugLog(Self$".MoveMeshes() Caught mesh "$dec$" for LTarget "$LTarget); }
@@ -475,6 +489,12 @@ simulated function MoveMeshes(float DeltaTime) {
 			// ...
 			// CheckForUpdateAndMoveMeshes(DeltaTime);
 
+			#ifdef DEBUG
+			if (gun.Owner.IsA('Bot')) {
+				DebugLog("Moving meshes for Bot.Target! "$gun.Owner.getHumanName()$" "$gun.Target);
+			}
+			#endif
+
 			// sgBuilding will have a corresponding mesh actor
 			// So does a VisibleTeleporter
 			// But TODO: there may be some meshes we don't want to move, just because they belong to something we are moving.
@@ -485,16 +505,16 @@ simulated function MoveMeshes(float DeltaTime) {
 					// TODO CONSIDER: we might make this more efficient with VisibleActors().
 					foreach AllActors(class'Effects',TargetEffects) {
 						meshCount++;
-						GrabMesh(gun,TargetEffects,LTarget);
+						MoveMesh(gun,TargetEffects,LTarget,DeltaTime);
 					}
 					foreach AllActors(class'MeshActor',TargetMesh) {
 						meshCount++;
-						GrabMesh(gun,TargetMesh,LTarget);
+						MoveMesh(gun,TargetMesh,LTarget,DeltaTime);
 					}
 					#ifdef SIEGE_COMPATIBILITY
 					foreach AllActors(class'sgMeshFX',sgTargetMesh) {
 						meshCount++;
-						GrabMesh(gun,sgTargetMesh,LTarget);
+						MoveMesh(gun,sgTargetMesh,LTarget,DeltaTime);
 					}
 					if (sgTargetMesh==None && TargetMesh==None && TargetEffects==None && FRand()<0.01) {
 						DebugLog(Self$".MoveMeshes() FAILED to find Mesh for "$LTarget$", searched "$meshCount);
@@ -508,6 +528,11 @@ simulated function MoveMeshes(float DeltaTime) {
 				// }
 				// if (sgTargetMesh==None || VSize(sgTargetMesh.Location-LTarget.Location)>=0.5) {
 				// }
+				#ifdef DEBUG
+				if (meshCount==0 && FRand()<0.1) {
+					BroadcastMessage("Found no meshes for "$gun.Target);
+				}
+				#endif
 			}
 			#ifdef SIEGE_COMPATIBILITY
 			#endif
