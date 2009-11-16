@@ -1,6 +1,8 @@
+// TrackPlayers.
+
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
-// TrackPlayers:
+// TODO: Report changes in position of EFC, when one of your players can see him.
 
 // !follow <player> or !track <player> will give you updates of the location of that player in your chat window, provided bAllowTracking, and bTrackOppositeTeam or isTeamMate().
 // Useful if someone in a pug is not talking. ;)
@@ -222,7 +224,7 @@ event Timer() {
 					#endif
 					continue;
 				}
-				if (checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackEFC && p.PlayerReplicationInfo.Team != checkP.PlayerReplicationInfo.Team && bAllowEnemyTracking) {
+				if (bAllowEnemyTracking && checkP.PlayerReplicationInfo.HasFlag!=None && ps.bTrackEFC && p.PlayerReplicationInfo.Team != checkP.PlayerReplicationInfo.Team) {
 					if (bLogging) Log("TrackPlayers.Timer(): Show EFC to "$p.GetHumanName()$": "$checkP.GetHumanName() $" has your flag at "$ zone);
 					p.ClientMessage(checkP.GetHumanName() $" has your flag at "$ zone);
 					continue;
@@ -231,7 +233,7 @@ event Timer() {
 				argcount = SplitString(ps.trackWords," ",args);
 				for (i=0;i<argcount;i++) {
 					if (Len(args[i])>0 && StrContains(Caps(checkP.GetHumanName()), Caps(args[i]))) {
-						if (p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team || bAllowEnemyTracking)
+						if (bAllowEnemyTracking || p.PlayerReplicationInfo.Team == checkP.PlayerReplicationInfo.Team)
 							p.ClientMessage(checkP.GetHumanName() $" -> "$ zone);
 					}
 				}
