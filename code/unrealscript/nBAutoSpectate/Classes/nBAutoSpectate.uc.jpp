@@ -4,6 +4,8 @@
 
 // vim: ft=uc sw=3 ts=3
 
+// We appear to be selecting a different player to view from than the one last found by View Class (message "Now viewing from").
+
 // TODO: AutoSpectate Online is working pretty nice, although there are three bugs when viewing:
 //       1) Sometimes it switches to view a new player without doing ViewClass?
 //       At least the result is that the NetPriority is not focused on that
@@ -13,6 +15,30 @@
 //       looking up, which is a crap angle.  Change limits or probabilities.
 //       3) It shows messages about "no event" and whatnot, but event
 //       replay/record should be disabled!
+
+// Weight each player to choose which to watch:
+// is_there_a_warhead_flying
+// score + do_they_have_flag + do_they_have_warhead + ...
+// detect killer shock-balls or rockets etc., note their details for replay
+
+// TODO: When speccing online: We MUST ViewClass to switch to desired player.
+// If we try to observe another player while our ViewClass is on someone else,
+// we will lose the target very quickly.
+
+// Auto-set 'ghost' so we can move outside the map and with high FOV get detailed distance-shots :)
+// May avoid us getting snagged on corners during slow-follow mode.
+
+// If we do a "switch camera" but actually decide to stay on the same player, then don't change the camera angle etc.
+// If we change to a different player, we might consider leaving the orientation alone, but setup new deltas.  This might help
+// give some continuity to the spectator.
+
+// Now viewing from own camera tends to put the camera back where it was before.  But it might be preferable, if we detect this line, to
+// put the camera somewhere near where we were viewing before, so we can continue to follow that action.
+
+// When we switch camera, why not point it towards player's closest enemy (they may be fighting).
+// We could even leave generation of deltaYaw until after first tick, and base it on relative movement of opponent during that tick.
+
+// CONSIDER: In Siege games, when a warhead is fired, would be nice to switch to follow that, presumably put camera gently behind like AS.
 
 // TODO: nBAutoSpectate (Online, probably offline too) should really call ViewClass to target the player we want to view.  If we just target him without, we often lose him after a few seconds, because he is out of focus.
 
@@ -173,10 +199,10 @@ var config bool bCheckLost;
 var Actor LastNewActor;
 
 var float LastSwitchTime;
-var float deltaYaw, deltaPitch, deltaFOV, fov;
+var float deltaYaw, deltaPitch, deltaFOV; // , fov;
 var Actor FollowActor, LookActor;
 
-var bool bCheckingForInterestingTarget;
+var bool bCheckingForInterestingTarget; // This comes on for a period of time when we allow immediate camera-switch to new interesting actors.
 var bool bDoneViewClass;
 
 var int CameraMode;
@@ -529,6 +555,11 @@ function CreateNewCamera(Actor a, optional Actor b) {
 	if (CameraMode == 0) {
 		Camera.ViewTarget = a;
 		report = "[0] Viewing from "$NameActor(a);
+		// Sometimes for some reason a==None.  Sometimes we see {0/755} actors (maybe our camera is nowhere near anything?).  In these situations, a successful ViewClass will fix it.
+		if (a == None) {
+			LogWarn("Had to do emergency ViewClass!");
+			Camera.ViewClass(class'Pawn');
+		}
 	}
 	if (CameraMode == 1) {
 		FollowActor = a;
@@ -784,7 +815,7 @@ function NewCamera() {
 	Camera.ViewRotation.Yaw = 8192*8*FFRand()*SgnRand();
 	Camera.ViewRotation.Pitch = 8192*0.8*FFRand()*SgnRand();
 	Camera.ViewRotation.Roll = 0;
-	Camera.DesiredFOV = 90 + 30 * FRand();
+	Camera.DesiredFOV = 100 + 30 * FRand();
 	// Camera.ConsoleCommand("FOV "$Camera.DesiredFOV); // seems to be needed! NO it causes ini file writes!
 	#endif
 
@@ -1053,8 +1084,8 @@ function DeltaCamera(float Delta) {
 		Camera.ViewRotation.Yaw += deltaYaw;
 		Camera.ViewRotation.Pitch += deltaPitch;
 		// Camera.ConsoleCommand("FOV "$Camera.DesiredFOV); // seems to be needed! NO it causes ini file writes!
-		deltaYaw = deltaYaw * 0.998;
-		deltaPitch = deltaPitch * 0.998;
+		deltaYaw = deltaYaw * 0.992;
+		deltaPitch = deltaPitch * 0.992;
 	}
 	if (bCameraPanning) {
 		Camera.DesiredFOV = Camera.DesiredFOV + deltaFOV;
@@ -1150,7 +1181,7 @@ function float Sgn(float num) {
 }
 
 function bool isAGoodProjectile(Actor A) {
-	return (A.isA('flakslug') || A.isA('ShockProj') || A.isA('Rocket'));
+	return (A.isA('warshell') || A.isA('GuidedWarShell') || A.isA('flakslug') || A.isA('ShockProj') || A.isA('Rocket'));
 }
 
 function HandleNewActor(Actor A) {
@@ -1169,6 +1200,7 @@ function HandleNewActor(Actor A) {
 			LogInfo("HandleNewActor(): New Actor: "$A);
 			// TODO: CreateNewCamera works for bSwitchCamera, but we could also integrate HandleNewActor() into the bRecordEvents or bReplayEvents system.
 			CreateNewCamera(A,A.Owner);
+			// TODO: Now that we have detected it, really we want to repeat ViewClass <that_objects_class> until we reach it!
 		}
 	}
 }
@@ -1430,6 +1462,7 @@ function CheckLineForEvent(String line) {
 		*/
 	// }
 
+// 0 <= linenum < 8
 function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum, optional float duration) {
 	if (!bFlashing)
 		return; // blocked
@@ -1562,12 +1595,15 @@ function FindNextEvent() {
 
 	// TODO CONSIDER: Set CurrentEventi == 0 ?
 
+	// We don't really want this when we are online.  In fact we don't really need it.
 	// LogInfo("Failed to find actor for replay");
-	if (FRand()<0.02) {
+	/*
+	if (FRand()<0.02 && bReplayEvents) {
 		// LogFlash("Failed to find actor for replay");
 		FlashMessageToPlayer(Camera,"["$Int(Level.TimeSeconds)$"] [_] No ev3nt",colYellow,7,0.9);
-		FlashMessageToPlayer(Camera,GetActorReport(),colBlue,8,0.9);
+		FlashMessageToPlayer(Camera,GetActorReport(),colBlue,6,0.9);
 	}
+	*/
 
 	#ifdef ENABLE_EVENT_RECORD_REPLAY
 	if (bAutoRecord && !bRecordEvents /*&& !bWeAreOnline*/) { // TODO: Actually we want to check whether we are recording or playing a demo - if so then autorecord/replay is good!
@@ -1683,7 +1719,7 @@ function CheckSwitchCamera() {
 	local int i,j;
 	local string report;
 
-	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds - 1) {
+	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds - 2) {
 		// Start watching for actors which we want to catch on spawn (e.g. short-lived projectiles)
 		bCheckingForInterestingTarget = True;
 	}
@@ -1708,7 +1744,9 @@ function CheckSwitchCamera() {
 			Camera.ViewClass(class'Pawn');
 			Camera.ViewClass(class'Pawn');
 			*/
-			Camera.ViewClass(class'Pawn');
+			/*Camera.ViewClass(class'Pawn');*/
+			// Although we might want Bots and Monsters, we don't really want sgBuildings, so:
+			Camera.ViewClass(class'PlayerPawn');
 			// j = FRand()*12;
 			// for (i=0;i<j;i++) {
 				// if (Frand()<0.5)
@@ -1720,7 +1758,7 @@ function CheckSwitchCamera() {
 		}
 	}
 
-	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds + 1) {
+	if (Level.TimeSeconds > LastSwitchTime + CameraSwitchSeconds + 0.1) {
 		report = report $ "Time to switch camera. ";
 		GetRandomCameraNow(); // If we use the player selected by ViewTeam, ... ?
 		// NewCamera();
