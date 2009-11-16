@@ -26,6 +26,7 @@ function PostBeginPlay() {
 	// DONE: really we want this to be displayed in the user's chat area when they join the server (like ZPPure does)
 	Log("CrouchBlocksDamage mutator is running.  Crouch when hit to reduce damage by "$SavePercent$"%!");
 	BroadcastMessage("CrouchBlocksDamage mutator is running.  Crouch when hit to reduce damage by "$SavePercent$"%!");
+	Super.PostBeginPlay();
 }
 
 function ModifyPlayer(Pawn Other) {
