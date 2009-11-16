@@ -1,3 +1,5 @@
 [Public]
-Object=(Name=ClientControl.ClientIOMMI,Class=Class,MetaClass=UMenu.UMenuModMenuItem,description="Engage ClientIO")
 Object=(Name=ClientControl.ClientIO,Class=Class,MetaClass=Engine.Console)
+Object=(Name=ClientControl.ClientIOMMI,Class=Class,MetaClass=UMenu.UMenuModMenuItem,description="Engage ClientIO")
+Object=(Name=ClientControl.ClientSocketIO,Class=Class,MetaClass=Engine.Console)
+Object=(Name=ClientControl.ClientSocketIOMMI,Class=Class,MetaClass=UMenu.UMenuModMenuItem,description="Engage ClientSocketIO")
