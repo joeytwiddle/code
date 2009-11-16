@@ -7,23 +7,18 @@
 // vim: ts=2 sw=2 expandtab ft=uc
 
 
+
+
 // #define ND_GRAPPLE
 
 //// I don't think both DAMPEN_PULL_*'s are recommended.
 // #define DAMPEN_PULL_BY_TIME
 
 
-// #define DebugLog(X); 
-// #define DebugLog(X); Log("---KXG--- "$(X));
 
-// I think the BroadcastMessage fails with a DevNet warning, when called simulated on the client :P
+  // #define DebugLog(X); Log("---KXG--- "$(X));
 
-
-
-
-
-
-
+  // I think the BroadcastMessage fails with a DevNet warning, when called simulated on the client :P
 /*
 
 // TODO: swinging without winding is smooth.  swinging with tiny wind is jerky =/
@@ -204,6 +199,7 @@
 
 */
 class GrapplingHook extends Projectile Config(kxGrapple);
+var() config bool bDebugLogging;
 var() config float GrappleSpeed;
 var() config float VerticalGrappleSpeed;
 var() config float HitDamage;
@@ -1016,7 +1012,7 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       // TESTING:
       if (bSingleLine && currentLength<MinRetract) {
         doInwardPull = False;
-        ; if (True) { Log("---KXG--- "$("Skipping inwardPull since below MinRetract.")); BroadcastMessage("-KXG- "$("Skipping inwardPull since below MinRetract.")); };
+        ; if (bDebugLogging) { Log("---KXG--- "$("Skipping inwardPull since below MinRetract.")); BroadcastMessage("-KXG- "$("Skipping inwardPull since below MinRetract.")); };
       }
       //// DONE below
       // if (currentLength > lineLength) {
@@ -1077,9 +1073,12 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       lineLength = lineLength - targetInVel*DeltaTime;
       if (lineLength < 0)
         lineLength = 0;
-      if (lineLength>=currentLength) { // It could be that the line was slack, and we have only reeled it in, not pulling ourself.
-        doInwardPull = False;
-      } else {
+      //// This was done above!  It's second only to the unwind check.
+      // if (lineLength>=currentLength+10) { // It could be that the line was slack, and we have only reeled it in, not pulling ourself.
+        // doInwardPull = False;
+        // DebugLog("Line is slack!");
+      // }
+      if (lineLength<currentLength) {
         // If he is not moving at targetInVel speed inwards, make him!
         if (-currentOutVel<targetInVel) {
           Instigator.AddVelocity(currentOutVel*Inward + targetInVel*Inward);
@@ -1142,13 +1141,23 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
         // Fixed with FRand(): He starts jumping immediately.
       }
     }
+    /*
+
     if (FRand()<0.1) {
+
       if (doInwardPull) {
-        ; if (True) { Log("---KXG--- "$("DOING inward pull.")); BroadcastMessage("-KXG- "$("DOING inward pull.")); };
+
+        DebugLog("DOING inward pull.");
+
       } else {
-        ; if (True) { Log("---KXG--- "$("Not doing inward pull.")); BroadcastMessage("-KXG- "$("Not doing inward pull.")); };
+
+        DebugLog("Not doing inward pull.");
+
       }
+
     }
+
+    */
     if (lineLength<MinRetract && bSingleLine) lineLength=MinRetract;
     if (currentLength > lineLength) {
       /// Player is further from pullDest than he should be, as if the line had elongated!  This is not allowed!
@@ -1168,7 +1177,7 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       if (currentInVel < targetInVel) {
         Instigator.Velocity = Instigator.Velocity + (targetInVel-currentInVel)*Normal(pullDest-Instigator.Location);
       }
-      ; if (True) { Log("---KXG--- "$("Fixed inward velocity at "$targetInVel)); BroadcastMessage("-KXG- "$("Fixed inward velocity at "$targetInVel)); };
+      ; if (bDebugLogging) { Log("---KXG--- "$("Fixed inward velocity at "$targetInVel)); BroadcastMessage("-KXG- "$("Fixed inward velocity at "$targetInVel)); };
       /*
 
       // We should have no outward velocity.  If we do, it will be cancelled out by the force of the line, in the Inward direction.
@@ -1644,5 +1653,6 @@ defaultproperties {
     // bLogging=False // FIXED: Since GrapplingLine accesses this as a default, sometimes this setting is more relevant than the server setting.  OK now we have one config var per class.
     // Hey would we have got the config default if we hadn't set a default here? :o
     StuckSlowdown=0.5
+    bDebugLogging=True
 }
 // It's true what he said.  If the defaultproperties has bLinePhysics=True, even if the server sets it to False and tries to replicate it, the client will see bLinePhysics=True.
