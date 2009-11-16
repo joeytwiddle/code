@@ -1,1 +1,1 @@
-#include "../../sgGrappleSRC/Classes/sgaItem.uc"
+#include "../../sgGrapple/Classes/sgaItem.uc"

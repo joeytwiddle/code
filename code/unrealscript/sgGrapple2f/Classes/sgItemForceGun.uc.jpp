@@ -1,1 +1,1 @@
-#include "../../sgGrappleSRC/Classes/sgItemForceGun.uc"
+#include "../../sgGrapple/Classes/sgItemForceGun.uc"
