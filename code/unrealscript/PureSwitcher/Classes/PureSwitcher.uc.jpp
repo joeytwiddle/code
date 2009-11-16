@@ -18,8 +18,8 @@
 // mutate PureOn | mutate pureoff ?  Is there any point when UTPure already
 // provides mutate EnablePure and DisablePure?
 
-// TODO: We could also check all the weapons for Pure-incompatible ones, but we
-//       might catch them too late to disable it.
+// DONE via IncompatibleActors: We could also check all the weapons for
+//       Pure-incompatible ones, but we might catch them too late to disable it.
 
 // NOTE: If server is switched by another means than mapvote, e.g. servertravel
 //       or ServerMode, then we cannot rely on CHECK_MAPVOTE_MESSAGES to
@@ -27,9 +27,18 @@
 //       is disable/enabled as required, or that CHECK_GAMETYPE or
 //       CHECK_MUTATORS will deal with it.
 
-// TODO: IncompatibleClasses=... ?  e.g. NFRabit.Rabit_FlakCannon might be
+// DONE: IncompatibleActors=... ?  e.g. NFRabit.Rabit_FlakCannon might be
 //       incompatible with Pure, but we don't know that it exists until
 //       mid-game!
+
+// If we can intercept ServerTravel (see DynamicPackageLoader) then we can fix
+// this before switching map.
+// Or if we detect a map has loaded with incompatible settings, we can fix
+// settings and force a map reload(switch).  (Not very desirable after
+// gamestart though, where it would need to be accompanied by
+// warning/explanation.)
+
+// PureSwitcher has special support for MapVoteLA but has not been tested with BDBMapVote.
 
 class PureSwitcher expands Mutator;
 
@@ -39,7 +48,6 @@ class PureSwitcher expands Mutator;
 // #define CHECK_MAPVOTE_MESSAGES
 
 #define SWITCH_HARDCORE_WRT_SIEGE
-// (requires CHECK_GAMETYPE)
 
 var config String PureVersion;
 var config String PureStatVersion;
@@ -64,24 +72,18 @@ var bool bDoneCheck;
 var bool bDoneChange,bPureEnabled;
 
 defaultproperties {
-	// TODO:
-	// PureSwitcher is currently oriented towards MapVoteLA.
-	// For redundancy, we should put incompatible gametypes here:
-	// IncompatibleMVLAPrefixes="SiegeXXL2e,SLVArena,BattyBT"
-	// If we can intercept ServerTravel (see DynamicPackageLoader) then we can fix this before switching map.
-	// Or if we detect a map has loaded with incompatible settings, we can fix settings and force a map reload(switch).
 	#ifdef CHECK_ACTORS
 	IncompatibleActors="*.ZeroPingPlus,SiegeAnywhere,SiegeCTF,SiegeAnywhere.SiegeAnywhereConstructor,ForceBehindView.ForceBehindView,NFRabit"
 	#endif
 	#ifdef CHECK_GAMETYPE
-	IncompatibleGametypes="SiegeGI,FreeBuildGI,FastBuildGI,SiegeAssault,SiegeCTF,SiegeDM,SiegeDomination,SiegeTDM"
+	IncompatibleGametypes="SiegeGI,FreeBuildGI,FastBuildGI,SiegeAssault,SiegeCTF,SiegeDM,SiegeDomination,SiegeTDM,RocketArenaGame"
 	#endif
 	#ifdef CHECK_MUTATORS
 	IncompatibleMutators="ZeroPingPlus103,ZeroPingPlus,ForceBehindView"
 	#endif
 	#ifdef CHECK_MAPVOTE_MESSAGES
 	// Rename the following: IncompatibleMVPrefixes="SG,XXL,FB,..."
-	IncompatibleMVLAPrefixes="SG,fSG,sgAS,sgCTF,sgDM,sgDOM,sgTDM,publicCTF,pugCTF,pugzpCTF,4v4pugSG,5v5pugSG,6v6pugSG"
+	IncompatibleMVLAPrefixes="SG,fSG,sgAS,sgCTF,sgDM,sgDOM,sgTDM,publicCTF,pugCTF,pugzpCTF,4v4pugSG,5v5pugSG,6v6pugSG,RA"
 	#endif
 	// Maybe we don't need to include the pug modes since servermode did that before anyway.
 	PureVersion="RC7G"
@@ -114,11 +116,14 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 	if (InStr(String(Other),"UTPure")>=0) {
 		Log("PureSwitcher.CheckReplacement(): Caught "$Other);
 	}
+	#ifdef CHECK_ACTORS
 	if (InStr(Caps(Other.class.name),Caps(IncompatibleActors)) >= 0) {
 		if (bPureEnabled) {
-			BroadcastMessage("UTPure is enabled but we have just loaded "$Other.class.name$" - expect problems!");
+			BroadcastMessage("UTPure was enabled but we have loaded "$Other.class.name$" - expect problems!");
+			DisableUTPure("Actor "$Other);
 		}
 	}
+	#endif
 	return Super.CheckReplacement(Other,bSuperRelevant);
 }
 
@@ -137,7 +142,7 @@ function PreBeginPlay() {
 	}
 	#endif
 	#ifdef SWITCH_HARDCORE_WRT_SIEGE
-	if (Instr(Caps(gametype),"SIEGE")>=0 || Instr(gametype,"GI")>=0 || Instr(gametype,"XXL")>=0 || Instr(gametype,"Xtreme")>=0) {
+	if (Instr(Caps(gametype),"SIEGE")>=0 /* || Instr(gametype,"GI")>=0 || Instr(gametype,"XXL")>=0 || Instr(gametype,"Xtreme")>=0 */) {
 		DeathMatchPlus(Level.Game).bHardcoreMode = False;
 	} else {
 		DeathMatchPlus(Level.Game).bHardcoreMode = True;
