@@ -4,6 +4,8 @@
 
 // TODO: When logger starts up, would be nice to log the date+time and the current map and the server.
 // TODO: If we wanna be really nice, we could offer %m=message %n=sender_name %t=time %w=mapname %s=servername %d=date etc., and let the user decide the output format.
+// TODO: Only captures single lines.  If server send many lines, only the last one is caught.
+//       To solve this, we could seek back in MsgText array to see if we can find the last line we recorded.
 
 class ClientConsoleLogger expands Actor config (ClientConsoleLogger);
 
