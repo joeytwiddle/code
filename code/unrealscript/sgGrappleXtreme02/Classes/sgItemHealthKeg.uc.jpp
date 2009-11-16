@@ -1,1 +1,1 @@
-#include "../../sgGrappleSRC/Classes/sgItemHealthKeg.uc"
+#include "../../sgGrapple/Classes/sgItemHealthKeg.uc"
