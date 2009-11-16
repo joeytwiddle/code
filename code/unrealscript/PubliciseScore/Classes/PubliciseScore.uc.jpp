@@ -17,6 +17,7 @@ var config bool bInformSpeed;
 
 #ifdef CYCLE_SERVERNAME
 var config bool bCycleServerName;
+var config bool bOnlyCycleWhenEmpty;
 var config String CycledServerName[20];
 var int CycleNum;
 #endif
@@ -34,6 +35,7 @@ defaultproperties {
 	bInformSpeed=False
 	#ifdef CYCLE_SERVERNAME
 	bCycleServerName=False
+	bOnlyCycleWhenEmpty=True
 	CycledServerName(0)="default"
 	// CycledServerName(1)="[running PubliciseScore with bCycleServerName enabled]"
 	// CycledServerName(2)="[server admin should edit CycledServerName[0-20] in PubliciseScore.ini]"
