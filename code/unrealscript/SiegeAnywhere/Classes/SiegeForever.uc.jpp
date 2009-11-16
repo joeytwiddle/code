@@ -35,6 +35,9 @@ class SiegeForever extends Mutator config(SiegeForever);
 // #define MAX_ALL (MaxTeams*MaxMaps*MaxTypes)
 #define MAX_ALL 6144
 
+//// TODO: Have WarnLog and InfoLog do Broadcast only if admin specified bBroadcastInfo=True.
+////       Maybe bBroadcastInfo to True and bBroadcastWarning to False?
+////       No both default true, but warning can be disabled.
 // #define MyLogHeader ("["$Self.class$"]")
 #define MyLogHeader "[SiegeForever]"
 #define WarnLog(X); if (true) { Log( MyLogHeader $" "$ X ); }
@@ -204,6 +207,9 @@ function LoadSomeBuildings() {
 function KillAllBuildings() {
 	local sgBuilding b;
 	foreach AllActors(class'sgBuilding',b) { // TODO: VERSION_INDEPENDENCE
+		// Don't kill the cores!
+		if (b.IsA('sgBaseCore'))
+			continue;
 		b.Destroy();
 	}
 }
@@ -401,7 +407,7 @@ function LoadBuildingsType(int TypeI) {
 		InfoLog("Spawned "$countSpawned[0]$" "$type$"s for Red, and "$countSpawned[1]$" for Blue.");
 	}
 	if (countSpawned[0]==0 && countSpawned[1]==0 && (countStored[0]>0 || countStored[1]>0)) {
-		WarnLog("Blocked loading of "$type$" despite redcount="$countStored[0]$" and bluecount="$countStored[1]);
+		WarnLog("Blocked loading of "$type$" although redcount="$countStored[0]$" and bluecount="$countStored[1]);
 	}
 	// LoadedTypes = LoadedTypes $ ":" $ type $ ":";
 }
