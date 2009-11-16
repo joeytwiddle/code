@@ -2,6 +2,10 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // vim: ft=uc
 
+// 1 in 3 - adjust with memory - how to exploit ?
+// Probabilistically: ...
+// Tend to 0.25 radius, but reduce slowly towards where he is hitting.  (Or towards 0.0000000001, or wider, depending how much he sux.)
+
 // Language: We have not actually reduced head and body radius, we have created new inner-head and inner-body cylinders!
 
 // KNOWN BUG: If you make a headshot but it is detected as an ear-clip or a
@@ -50,6 +54,7 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 // Debugging:
 
 #define DEBUG_DRAW_LINES
+// UNSURE: I think this is probably best on.  Although it doesn't cleanup on clients, it does cleanup on server, and maybe therefore rejoining clients??
 #define MAINTAIN_LINES
 
 #define DO_COLLECT_STATS
@@ -262,6 +267,9 @@ function String PercentageChangeStr(float proportion) {
 }
 
 #ifdef DEBUG_DRAW_LINES
+
+	// TODO: We need to spawn something which will destroy itself on the client after N seconds.
+
 	function DrawLine(Vector from,Vector to) {
 		local Actor a;
 		#define DO_SPAWN a = Spawn(class'Effects',,,,);
