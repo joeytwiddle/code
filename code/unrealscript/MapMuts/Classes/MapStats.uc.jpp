@@ -1,5 +1,13 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
+/*
+
+// TODO: Detect end of game (e.g. by recognising a variety of mapvote messages,
+// or by checking bGameEnd like other Mutators do) and if there are <10 votes
+// been made for a map, spam a message asking people to rate it.
+// I sometimes forget after playing a new map, to tell the system whether it
+// was good or not, so I need to be prompted!
+
 // TODO: mutate findmap | mutate switchmap <n>
 
 // One time for some reason (level switching mid-merge weirdness) it was very slow to change map, so before it did, it tried to switch to various maps, and found itself marking them all as bCrashes and trying more.       Eventually it ran out of maps, and starting putting "".
@@ -45,6 +53,12 @@
 
 // CONSIDER: on the one hand, people voting a map means it's a good map
 //           on the other hand, we want to offer maps people don't play much, until it is rated
+
+// As an alternative fix for MapVoteLA's port switch problem, Rednas suggests: try setting bWorldLog to false.
+
+*/
+
+#ifndef HEAD
 
 #define TESTING
 
@@ -187,6 +201,8 @@ KnownGameTypes="CTF:botpack.CTFGame|DM:botpack.DeathMatchPlus:botpack.TeamGamePl
 // Fails: // #define Log(Y); NormalLog(Y);
 
 #define BroadcastAndLog(Y); BroadcastMessage(Y); if (bLogging) { Log("[MapStats] Broadcasted: " $ Y); }
+
+#endif
 
 #define NiceFloat FloatToString
 function String FloatToString(float f) {
@@ -387,7 +403,7 @@ function ModifyPlayer(Pawn Other) {
 			}
 			// currentMap.DateLastPlayed = DaysSince1970(); // hope that a SaveConfig happens later (should happen in DoEnd())
 
-			if (PlayerPawn(Other)!=None && Other.PlayerReplicationInfo.Deaths == 0 && bShowLevelEnterText && Level.LevelEnterText != "") {
+			if (PlayerPawn(Other)!=None && Other.PlayerReplicationInfo.Deaths==0 && bShowLevelEnterText && Level.LevelEnterText!="") {
 				PlayerPawn(Other).ClientMessage(Level.Title $ " : " $ Level.LevelEnterText);
 			}
 
@@ -1062,6 +1078,21 @@ function bool ScanMaps(optional String search, optional String prefix) {
 	return False;
 }
 
+function float GetRatingForMapI(int i) {
+	local float pUnknown,pGood,pBad;
+	local int TotalVotes;
+	pGood = MapStats[i].GoodVotes / 20.0;
+	pBad = MapStats[i].BadVotes / 10.0;
+	TotalVotes = MapStats[i].GoodVotes + MapStats[i].BadVotes;
+	pUnknown = 0.5 / (TotalVotes + 1);
+	return (pGood*10 + pBad*0 + pUnknown*5) / (pGood+pBad+pUnknown);
+}
+
+function BroadcastMapRating() {
+	// BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVotes $" up -"$ currentMap.BadVotes $" down.");
+	BroadcastAndLog("Current rating for "$ currentMap.MapName $" is "$ GetRatingForMapI(mapI) $" (+"$ currentMap.GoodVotes $" -"$ currentMap.BadVotes $").");
+}
+
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	#ifdef PLAYERS_CAN_VETO
@@ -1078,8 +1109,8 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 			} else {
 				currentMap.GoodVotes++;
 				PlayerPawn(Sender).ClientMessage("You have rated this map +1");
-				BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVotes $" up -"$ currentMap.BadVotes $" down.");
 				currentMap.RatedUpBy = currentMap.RatedUpBy $ Sender.getHumanName() $ " ";
+				BroadcastMapRating();
 			}
 			SaveConfig();
 		}
@@ -1089,7 +1120,6 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 			} else {
 				currentMap.BadVotes++;
 				PlayerPawn(Sender).ClientMessage("You have rated this map -1");
-				BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVotes $" up -"$ currentMap.BadVotes $" down.");
 				currentMap.RatedDownBy = currentMap.RatedDownBy $ Sender.getHumanName() $ " ";
 			}
 			SaveConfig();
@@ -1219,17 +1249,20 @@ function ListMapsTo(PlayerPawn p, String searchStr) {
 	searchStr = Caps(searchStr);
 	for (i=0;i<MaxData;i++) {
 		if (MapStats[i].MapName != "" && StrContains(Caps(MapStats[i].MapName),searchStr)) {
-			outStr = "";
-			outStr = outStr $ "#="$Left(""$MapStats[i].PreferredPlayers,4);
-			#ifdef MAP_RATING
-				outStr = outStr $" +"$ MapStats[i].GoodVotes $" -"$ MapStats[i].BadVotes;
-			#endif
-			outStr = outStr $ " ["$i$"]";
+			outStr = "["$i$"]";
 			if (MapStats[i].bCrashes) outStr = outStr $ " CRASHES";
 			if (!MapStats[i].bOnDisk) outStr = outStr $ " MISSING";
 			if (MapStats[i].bDisabled) outStr = outStr $ " DISABLED";
-			outStr = outStr $ " " $ MapStats[i].MapName $ "";
-			outStr = outStr $ " games="$(MapStats[i].GamesStarted+MapStats[i].GamesEnded)/2$" flow="$Left(String(MapStats[i].AveragePlayerFlow),3);
+			#ifdef MAP_RATING
+				if (MapStats[i].GoodVotes+MapStats[i].BadVotes > 0) {
+					outStr = outStr $ " rating="$ Left(String( GetRatingForMapI(i) ),3);
+					outStr = outStr $" (+"$ MapStats[i].GoodVotes $" -"$ MapStats[i].BadVotes $")";
+				}
+			#endif
+			outStr = outStr $ " #="$Left(""$MapStats[i].PreferredPlayers,4);
+			outStr = outStr $ " "$ MapStats[i].MapName;
+			outStr = outStr $ " games="$(MapStats[i].GamesStarted+MapStats[i].GamesEnded)/2;
+			outStr = outStr $ " flow="$Left(String(MapStats[i].AveragePlayerFlow),3);
 			#ifdef MAP_TAGS
 				outStr = outStr $ " tags="$MapStats[i].Tags;
 			#endif
