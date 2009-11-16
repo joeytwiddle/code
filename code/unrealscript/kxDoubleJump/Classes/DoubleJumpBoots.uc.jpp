@@ -5,8 +5,9 @@
 // vim: ft=uc
 
 // TODO: If we have normal jump boots, our in-air doublejumps also jump with their strength.  I think this is wrong - we should ideally prevent the jump boots from being used in-air, but keep their charge.
+// TODO: Refuse doublejump during dodge (could make it an admin option).
 
-// TODO: I think we can remove GRAPPLEGUN_JUMPOFF_FIX.  The grapple jump-off is unreliable with or without DJBoots.  I doubt DJBoots are intercepting the jump call, since they work by adding a keybind!
+// DONE: I think we can remove GRAPPLEGUN_JUMPOFF_FIX.  The grapple jump-off is unreliable with or without DJBoots.  I doubt DJBoots are intercepting the jump call, since they work by adding a keybind!
 // #define GRAPPLEGUN_JUMPOFF_FIX
 
 class DoubleJumpBoots extends TournamentPickup config(kxDoubleJump);
@@ -66,11 +67,12 @@ simulated function InitializeKeys (PlayerPawn P)
 
   nofJumpKeys = 0;
   for (i=0;i<256;i++) {
+    // TODO: This looks ballbag - check and test.  Why aren' we using GET INPUT?  Match on Jump single-word.
     KeyName = P.ConsoleCommand("Keyname" @ string(i));
     if ( (InStr(P.ConsoleCommand("Keybinding" @ KeyName),"Jump") != -1) && (InStr(P.ConsoleCommand("Keybinding" @ KeyName),"DoubleJump") == -1) )
     {
       keyBinding = P.ConsoleCommand("Keybinding" @ KeyName);
-      P.ConsoleCommand("SET INPUT" @ KeyName @ "DoubleJump|" $ keyBinding);
+      P.ConsoleCommand("SET INPUT " @ KeyName @ " DoubleJump|" $ keyBinding);
       Log("DJ: Changed" @ KeyName @ "from" @ keyBinding @ "to DoubleJump|" $ keyBinding);
       nofJumpKeys++;
     } else {
@@ -120,6 +122,11 @@ exec function DoubleJump ()
   if (bRestrictFC && P.PlayerReplicationInfo.HasFlag != None && nofJumps<MaxJumps) {
     nofJumps = MaxJumps-1;
   }
+
+  #ifdef TESTING
+  // TODO: don't allow doublejump with jump boots, or somehow dampen it (make it like a normal mid-air doublejump)
+  // normalJumpBoots = P.FindInventory(class'JumpBoots');
+  #endif
 
   if ( P.Physics == 2 )
   {
