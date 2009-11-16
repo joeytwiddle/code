@@ -5,6 +5,8 @@ class PainSoundsMutator extends Mutator config(PainSounds);
 // Bots do normally make their own sounds when they take damage, but they make them at their location on the map.
 // For PainSounds, we want to play a sound just to the player who caused the damage, so he knows he made a hit.
 
+// PainSoundsMutator is directly imported into FairLMS.  That is where it was first used.
+
 // TODO: Add some mutate commands to test: 1) the various noises, 2) make the sound appear to 1 player only, not others.
 // DONE: Optional bTeamHitSounds *Ping/warning* sound when hitting teammates
 // TODO: Should auto-disable when Pure is present.
@@ -132,6 +134,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 					if (ActualDamage > 100)
 						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
 					/*
+					//// Some player were crashing, I think due to sound overload.
+					//// I hope removing these was a fix for that bug!
 					if (ActualDamage > 50)
 						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
 					// Windows players were crashing, so I removed two of the slots.  Let's see if this fixes it.
