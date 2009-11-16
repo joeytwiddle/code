@@ -43,6 +43,7 @@ var Actor RandomFoundNavigationPoint;
 
 // function PreBeginPlay() {
 function PostBeginPlay() {
+  Super.PostBeginPlay();
   if (bForceBotsTransloc) SetTimer(1.0,True);
 }
 
@@ -58,6 +59,8 @@ event Timer() {
   local Actor dest;
   local int method;
   local vector X,Y,Z;
+
+  Super.Timer();
 
   if (!bForceBotsTransloc) // admin can turn it on/off mid-game
     return;
