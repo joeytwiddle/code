@@ -1,1 +1,2 @@
 Object=(Name=FairLMS.FairLMS,Class=Class,MetaClass=Engine.Mutator,Description="FairLMS")
+Object=(Name=FairLMS.PainSounds,Class=Class,MetaClass=Engine.Mutator,Description="PainSounds")
