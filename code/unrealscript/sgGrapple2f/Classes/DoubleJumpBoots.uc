@@ -70,11 +70,12 @@ simulated function InitializeKeys (PlayerPawn P)
 
   nofJumpKeys = 0;
   for (i=0;i<256;i++) {
+    // TODO: This looks ballbag - check and test.  Why aren' we using GET INPUT?  Match on Jump single-word.
     KeyName = P.ConsoleCommand("Keyname" @ string(i));
     if ( (InStr(P.ConsoleCommand("Keybinding" @ KeyName),"Jump") != -1) && (InStr(P.ConsoleCommand("Keybinding" @ KeyName),"DoubleJump") == -1) )
     {
       keyBinding = P.ConsoleCommand("Keybinding" @ KeyName);
-      P.ConsoleCommand("SET INPUT" @ KeyName @ "DoubleJump|" $ keyBinding);
+      P.ConsoleCommand("SET INPUT " @ KeyName @ " DoubleJump|" $ keyBinding);
       Log("DJ: Changed" @ KeyName @ "from" @ keyBinding @ "to DoubleJump|" $ keyBinding);
       nofJumpKeys++;
     } else {

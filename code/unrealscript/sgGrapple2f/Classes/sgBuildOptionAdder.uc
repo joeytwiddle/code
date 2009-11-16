@@ -3,21 +3,40 @@
 
 class sgBuildOptionAdder expands Inventory;
 
+// TODO: Despite the checks appearing to work, on second spawn we see too many build options!  And the ForceGun won't build properly.
+
+/*
+// The admin settings were just not getting replicated to clients!
 // Until we sort out a better config:
-var globalconfig bool bAddGrappleGun;
-var globalconfig bool bAddDoubleJumpBoots;
-var globalconfig bool bAddForceGun;
+var config bool bAddGrappleGun;
+var config bool bAddDoubleJumpBoots;
+var config bool bAddForceGun; // oh ffs serveradmin can set this but value isn't replicated :P
+
+// defaultproperties {
+	// bAddGrappleGun=True
+	// bAddDoubleJumpBoots=True
+	// bAddForceGun=False
+// }
+
+replication {
+	reliable if (Role == ROLE_Authority)
+		bAddGrappleGun,bAddDoubleJumpBoots,bAddForceGun;
+}
+*/
+
+
+
+
 
 // Example config:
 // ExtraItems(1)=ExtraItem(Name="A Bucket",Mesh="BucketMesh",InventoryType="Botpack.Bucket",BuildCost=250,UpgradeCost=50)
 // Although this would allow us to add ANY item, it does not give us fine control over what happens when the item is upgraded!
 // Mmmm unfortunately the current system requires that a separate sgItem class exists for each item.
 
-defaultproperties {
- bAddGrappleGun=True
- bAddDoubleJumpBoots=True
- bAddForceGun=False
-}
+var bool bDoneHere; // To prevent us running more than once per client/server -
+                    // we check and change the default value of this variable.
+// TODO TEST: Does it get reset between mapswitches?!  Maybe it doesn't matter,
+// if the default sgCategoryItems we are adjusting also aren't reset. :)
 
 simulated function PostBeginPlay() {
  Log(Self$" - calling AddExtraBuildOptions()");
@@ -26,18 +45,24 @@ simulated function PostBeginPlay() {
 }
 
 simulated function AddExtraBuildOptions() {
+ // TODO: This should run once per client per runtime, and once per server per runtime!
  //// TODO: Remove Invisibility.  It sucks for sgCTF and sgAS.
  //// TODO: Remove Jetpack from sgAS, and from sgCTF until we can force flagdrop when jetting.
  // if ( ! sgCategoryTeleport.class.default.Selections[4] == class'sgItemGrappleGun' ) {
  // InsertInCategory(class'sgCategoryTeleport',class'sgItemGrappleGun',4);
  // }
- if (bAddDoubleJumpBoots)
+ if (default.bDoneHere) {
+  Log("sgBuildOptionAdder.AddExtraBuildOptions() Already done here.");
+  return;
+ }
+ default.bDoneHere = True;
+ if (True)
   InsertInCategory(class'sgCategoryItems',class'sgItemDoubleJumpBoots',2);
  // InsertInCategory(class'sgCategoryItems',class'sgItemGhost',3);
- if (bAddForceGun)
+ if (True)
   InsertInCategory(class'sgCategoryItems',class'sgItemForceGun',5);
  // InsertInCategory(class'sgCategoryItems',class'sgItemSpawner',6); // not an item, just a building!  it doesn't display properly in constructor menu ... maybe if we set its defaults?  it doesn't work anyway :P
- if (bAddGrappleGun)
+ if (True)
   InsertInCategory(class'sgCategoryTeleport',class'sgItemGrappleGun',4);
  // InsertInCategory(class'sgCategoryExplosives',class'sgItemVoiceBox',5); // Was in 2e but not 2g.
 }
@@ -54,4 +79,5 @@ simulated function InsertInCategory(class<sgBuildCategory> categoryClass, class<
  // Probably due to NumSelections being replicated but Selections[] array not.
  if (categoryClass.default.Selections[categoryClass.default.NumSelections] != None)
   categoryClass.default.NumSelections++;
+ Log("sgBuildOptionAdder.InsertInCategory() Added "$BuildClass$" to "$categoryClass$" at position "$pos$", expanding total to "$categoryClass.default.NumSelections);
 }
