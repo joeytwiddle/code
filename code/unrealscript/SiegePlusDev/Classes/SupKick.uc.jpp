@@ -2,34 +2,72 @@ class SupKick expands Mutator;
 
 // related to maxteams
 #define MAX_HOGGERS 4
+// #define RadiusScale 2.0
+#define RadiusScale 1.5
 
+/*
 // #define sgSearchType sgSupplier
 // #define sgSearchClass class'sgSupplier'
 #define sgSearchType sgEquipmentSupplier
 #define sgSearchClass class'sgEquipmentSupplier'
+*/
+
+var() config float ScanSeconds;
+var() config bool bShowKickMessage;
 
 var Pawn LastHogger[MAX_HOGGERS];
 var float LastTime[MAX_HOGGERS];
 
-function PostBeginPlay() {
-	SetTimer(3.0,True);
-	Log("SupKick will look for sgSuppliers of type "$ sgSearchClass);
+defaultproperties {
+	ScanSeconds=3.0
+	bShowKickMessage=True
 }
 
+function PostBeginPlay() {
+	SetTimer(ScanSeconds,True);
+	// Log("SupKick will look for sgSuppliers of type "$ sgSearchClass);
+}
+
+#define AfterFirst(str,srch) Mid(str,Instr(str,srch)+Len(srch))
+#define BeforeFirst(str,srch) Left(str,Instr(str,"."))
+
+function bool ShouldCheck(Pawn sup) {
+	/*
+	if (sup.class == class'SiegeXXL2g.sgSupplier')
+		return True;
+	if (sup.class == class'SiegeXtreme02.sgSupplier')
+		return True;
+	*/
+	// CONSIDER TODO: SupplierX and HealthPod
+	local String supClass;
+	supClass = AfterFirst(String(sup.class),".");
+	// Good: Log("SupKick.ShouldCheck() Checking supClass = \""$supClass$"\"");
+	if (supClass ~= "sgSupplier")
+		return True;
+	return False;
+}
+
+// #define supTeam (inner.PlayerReplicationInfo.Team)
+// should really be sup's team
+// #define supTeam (Sup.Team)
+#define supTeam Int(Sup.GetPropertyText("Team"))
+
 event Timer() {
-	local sgSearchType sup;
+	local Pawn sup;
 	local Pawn p;
 	local float distance;
 	local Pawn inner,outer;
 	local float innerDist,outerDist;
 	// TODO: what about supplierX?  SHOULD activate
 	// TODO: what about super supplier?  should NOT activate
-	foreach AllActors(sgSearchClass,sup) {
+	foreach AllActors(class'Pawn',sup) {
+		if (!ShouldCheck(sup))
+			continue;
 		inner = None;
 		outer = None;
-		foreach sup.RadiusActors(class'Pawn',P,sup.CollisionRadius*1.5) {
+		foreach sup.RadiusActors(class'Pawn',P,sup.CollisionRadius*RadiusScale) {
 			if (P.IsA('Bot') || P.IsA('PlayerPawn')) {
-				if (P.PlayerReplicationInfo.Team != Sup.Team)
+				if (P.PlayerReplicationInfo.Team != supTeam)
 					continue;
 				// BroadcastMessage(P.getHumanName()$" is inside Supplier!");
 				distance = VSize(sup.Location - P.Location);
@@ -65,26 +103,30 @@ event Timer() {
 			// We could clear last hogger
 			// We could set it to the player who bumped.
 		} else if (inner!=None && outer!=None && inner!=outer) {
-			// #define team (inner.PlayerReplicationInfo.Team)
-			// should really be sup's team
-			#define team (Sup.Team)
-			if (LastHogger[team]==inner && outer!=None) { // only if there is an outer player
+			// OK: Log("SupKick.Timer() Checking supTeam = \""$ supTeam $"\"");
+			if (LastHogger[supTeam]==inner && outer!=None) { // only if there is an outer player
 				// inner is still hogging!
 				inner.Velocity += VRand()*350.0;
 				inner.Velocity.Z = Abs(inner.Velocity.Z);
 				if (inner.Velocity.Z < 200)
 					inner.Velocity.Z = 200;
 				inner.SetPhysics(PHYS_Falling);
-				BroadcastMessage(inner.getHumanName()$" was kicked out of the supplier for "$outer.getHumanName()$""); // .
-				// LastHogger[team] = None; // If he stayed in, kick him again.
+				if (bShowKickMessage) {
+					// BroadcastMessage(inner.getHumanName()$" was kicked out of the supplier for "$outer.getHumanName()$""); // .
+					if (inner.IsA('PlayerPawn')) {
+						// PlayerPawn(inner).ClientMessage("Don't hog the supplier!");
+						PlayerPawn(inner).ClientMessage(inner.getHumanName()$" don't hog the supplier!");
+					}
+				}
+				// LastHogger[supTeam] = None; // If he comes back by next scan, kick him again.
 			} else {
-				LastHogger[team] = inner;
-				break;
-				// Don't set LastHogger[team] again - this will break the algorithm!  We can kick other hoggers out later.
+				LastHogger[supTeam] = inner;
+				break; // We don't scan for other inner's to set as
+				// LastHogger[supTeam] - this would break the algorithm!  We can kick
+				// other hoggers out later.
 			}
 		}
 	}
 
 }
-
 
