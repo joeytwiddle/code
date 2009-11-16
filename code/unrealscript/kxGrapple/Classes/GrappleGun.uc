@@ -8,15 +8,13 @@
 class GrappleGun expands TournamentWeapon config(kxGrapple);
 
 #exec AUDIO IMPORT FILE="Sounds\Pull.wav" NAME="Pull" // grindy windy one from ND
-// #exec AUDIO IMPORT FILE="Sounds\SoftPull.wav" NAME="SoftPull" // softer one from ND (more robotic)
 #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp" // metallic slurp from ND
-// #exec AUDIO IMPORT FILE="Sounds\End.wav" NAME="KrrChink" // kchink when grapple hits target
 #exec AUDIO IMPORT FILE="Sounds\hit1g.wav" NAME="hit1g" // From UnrealI.GasBag
-
-// #exec AUDIO IMPORT FILE="Sounds\greset.wav" NAME="Slurp"
+// #exec AUDIO IMPORT FILE="Sounds\SoftPull.wav" NAME="SoftPull" // softer pull from ND (more robotic)
+// #exec AUDIO IMPORT FILE="Sounds\End.wav" NAME="KrrChink" // kchink when grapple hits target
 
 // Server config:
-var config bool bLogging;
+var config bool bLogging,bShowInfo;
 var config Sound FailSound,ThrowSound;
 // Could move to client:
 var config bool bAutoDrop; // bAutoRetract?
@@ -36,7 +34,7 @@ var float LastFOV; // Used only on the client
 
 replication {
   reliable if (Role==ROLE_Authority)
-    bLogging,bIdenticalButtons,bAutoDrop,FailSound,ThrowSound,NextCommand;
+    bLogging,bShowInfo,bIdenticalButtons,bAutoDrop,FailSound,ThrowSound,NextCommand;
   // WARN CHECK TODO: If we don't somehow sync these between client and server, things might start acting weird: bAutoDrop,bIdenticalButtons
   // Client vars (may want to send to server):
   //   bAutoDrop,bIdenticalButtons,bDisableAutoBehindview,BehindViewFOV;
@@ -80,30 +78,52 @@ simulated function PreBeginPlay() {
 
   // It is quite important that this runs at the start of each new player's game, or they might not have the binds everyone else has, which would be unfair!
   // But it's also important that it runs only once, since otherwise it will cause lag and spam messages during play.
-  // TODO BUG: This is getting called for every ForceGun created in the scene, not only the one belonging to this player.
+  // FIXED: This was getting called for every ForceGun created in the scene, not only the one belonging to this player.  The ==Self check below fixed it.
   // I tried checking p==Owner or Instigator, but both were None.
   // FAILED: P.Weapon==None should at least check that the player has not already spawned.  He might get more than one message if other bots/players spawn at the same time, but he won't get any messages once he has finished spawning and has a weapon in hard.
   // if (p.PlayerReplicationInfo.Deaths == 0 && P.Weapon==None) {
   // FIXED now I hope.  We check if P has a grappling gun which is not this gun.  If his gun is this gun or he has none, and this is his first life, only then we message him.
+	// TODO TESTING: probable bug - if they have died before getting the weapon (likely in some modes), then they won't get checked!!
+	//       solution - change a client side default bool from false to true :)
   if (p.PlayerReplicationInfo.Deaths == 0 && P.FindInventoryType(class'GrappleGun')==None || P.FindInventoryType(class'GrappleGun')==Self) {
     if (bLogging) { Log(Self$" Checking binds for "$P$" while Owner="$owner$" Instigator="$Instigator$" Deaths="$p.PlayerReplicationInfo.Deaths$" P.Weapon="$P.Weapon$" gg="$P.FindInventoryType(class'GrappleGun')); }
     // Only check binds on first spawn.  More efficient but will not work if weapon is not available on first spawn, e.g. mutator is added mid-game, or Deaths is otherwise non-zero.  Alternatively, use something like GrapplingMut.bDoneCheck[].
     CheckPlayerBinds(P);
     // Only display grapple message on first spawn:
-    // p.ClientMessage("To toggle the grappling hook's auto view switching, type: ABV");
-    if (bDisableAutoBehindview)
-      nextState="enable";
-    else
-      nextState="disable";
-    // p.ClientMessage("You can use the AutoBehindView command to "$nextState$" the grappling hook's behind-view switching");
-    // p.ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: ABV");
-    // p.ClientMessage("To "$nextState$" the grappling hook's AutoBehindView, type: ABV");
-    // DONE: This is NOT getting displayed!
-    P.ClientMessage("Toggle the grappling hook's features with ABV and FTW");
+		if (bShowInfo) {
+			// p.ClientMessage("To toggle the grappling hook's auto view switching, type: ABV");
+			if (bDisableAutoBehindview)
+				nextState="enable";
+			else
+				nextState="disable";
+			// p.ClientMessage("You can use the AutoBehindView command to "$nextState$" the grappling hook's behind-view switching");
+			// p.ClientMessage("To "$nextState$" the grappling hook's auto-behindview, type: ABV");
+			// p.ClientMessage("To "$nextState$" the grappling hook's AutoBehindView, type: ABV");
+			// P.ClientMessage("Toggle the grappling hook's features with ABV and FTW");
+			// P.ClientMessage("Crouch to unwind, Jump off if holding another weapon, Fire affects winching.");
+			P.ClientMessage("Grappling Hook!  Aim high and swing!  Use ABV and FTW to toggle features.");
+			P.ClientMessage("Fire pauses the winch, Crouch unwinds, Jump releases the grapple if you have another weapon.");
+		}
   } else {
     if (bLogging) { Log(Self$" Not checking binds for "$P$" while Owner="$owner$" Instigator="$Instigator$" Deaths="$p.PlayerReplicationInfo.Deaths$" P.Weapon="$P.Weapon$" gg="$P.FindInventoryType(class'GrappleGun')); }
   }
 
+}
+
+function bool ContainsCommand(String bindStr, String cmd) {
+	return (
+		(
+			// bindStr contains cmd with a neat end
+			Right(bindStr,Len(cmd))==cmd
+			|| InStr(bindStr,cmd$" ")>=0
+			|| InStr(bindStr,cmd$"|")>=0
+		) && (
+			// bindStr contains cmd with a neat start
+			Left(bindStr,Len(cmd))==cmd
+			|| InStr(bindStr," "$cmd)>=0
+			|| InStr(bindStr,"|"$cmd)>=0
+		)
+	);
 }
 
 simulated function CheckPlayerBinds(PlayerPawn P) {
@@ -119,7 +139,14 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
     // if (InStr(keyValCaps,Caps(toAdd))>=0) {
       // return; // We have found an existing key bound to this weapon.  To save time, stop searching!
     // }
-    if (InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0 || Right(keyValCaps,14)=="SWITCHWEAPON 1" || InStr(keyValCaps,"SWITCHWEAPON 1 ")>=0 || InStr(keyValCaps,"SWITCHWEAPON 1|")>=0) {
+    if (
+			// InStr(keyValCaps,"GETWEAPON TRANSLOCATOR")>=0
+			// || Right(keyValCaps,14)=="SWITCHWEAPON 1"
+			// || InStr(keyValCaps,"SWITCHWEAPON 1 ")>=0
+			// || InStr(keyValCaps,"SWITCHWEAPON 1|")>=0
+			ContainsCommand(keyValCaps,"GETWEAPON TRANSLOCATOR")
+			|| ContainsCommand(keyValCaps,"SWITCHWEAPON 1")
+		) {
       if (InStr(keyValCaps,Caps(toAdd))==-1) {
         // Add a binding to this key!
         p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$"| "$toAdd);
@@ -128,7 +155,11 @@ simulated function CheckPlayerBinds(PlayerPawn P) {
       }
       bBindExists = True;
     }
-    if (InStr(keyValCaps,"JUMP")>=0 && InStr(keyValCaps,"MUTATE GRAPPLEJUMP")==-1) {
+    if (
+			// InStr(keyValCaps,"JUMP")>=0
+			ContainsCommand(keyValCaps,"JUMP")
+			&& InStr(keyValCaps,"MUTATE GRAPPLEJUMP")==-1
+		) {
       // Add a binding to this key!
       p.ConsoleCommand("SET INPUT "$keyName$" "$keyVal$"| Mutate GrappleJump");
       // p.ClientMessage("* Grappling jump now available on your ["$keyName$"] key."); // They don't care :P
@@ -649,5 +680,6 @@ defaultproperties {
     bDisableAutoBehindview=True // I fear setting a default might override the client value.  Hmm this seems to work ok at the moment.  The client gets to keep and use whatever is in his config.
     bFireToWinch=False
     LastFOV=90 // In case we accidentally read it before writing it!
+		bShowInfo=True
 }
 
