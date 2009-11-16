@@ -65,6 +65,7 @@ function ModifyPlayer (Pawn Other) {
   local Inventory Inv;
   // In case the victim was grappling before death, we should undo the grapple's AutoBehindView:
   // This was in PreventDeath() for a while but didn't always work.
+  // TODO: We may prefer to not to OnDeselect() if we are about to respawn with it immediately.  (Might cause FOV/behindview to stick!)
   if (PlayerPawn(Other) != None) {
     Inv = PlayerPawn(Other).FindInventoryType(class'GrappleGun');
     if (GrappleGun(Inv)!=None) {
@@ -115,6 +116,7 @@ function GiveWeaponsTo (Pawn P) {
     if (Inv != None) {
       // Log("[GrapplingMut] "$P.getHumanName()$" already has a "$Inv$"!"); // I've seen this, so I guess CheckReplacement() is working.
       if (GrappleGun(Inv).GrapplingHook != None) {
+        //// I guess this really belongs in ModifyPlayer().  It ensures their old grapple is dead if they were grappling.
         Log("[GrapplingMut] Retracted "$P.getHumanName()$"'s grapple.");
         GrappleGun(Inv).GrapplingHook.Destroy();
         GrappleGun(Inv).GrapplingHook = None;
