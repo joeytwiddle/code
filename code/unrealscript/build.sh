@@ -23,6 +23,14 @@
 
 
 
+echo | verbosely mykill wine
+echo | verbosely mykill wineserver
+echo | verbosely mykill winedevices.exe
+echo | verbosely mykill winedevices.exe
+echo | verbosely mykill ucc
+verbosely findjob wine
+verbosely findjob ucc
+
 
 
 ## Argh there was a situation where I wanted .depends to act in an entirely different way.
@@ -52,7 +60,24 @@ function check_age_of_pakage_against_source () {
 	return 1
 }
 
+function add_to_build_path () {
+	EDITPACKAGES="$EDITPACKAGES $1"
+}
+
+comment_editpackage () {
+	PKG="$1"
+	cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+; EditPackages=$PKG+" | dog compiling.ini
+}
+
+uncomment_editpackage () {
+	PKG="$1"
+	cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+EditPackages=$PKG+" | dog compiling.ini
+}
+
 ## TODO: What's really nasty is when we compile a script, then try to load it as a lib when recompiling other things.  On hwi atm, it's causing ucc to stick on that package.
+
+EDITPACKAGES=""
+echo "EDITPACKAGES=\"$EDITPACKAGES\"" > editpackages.ini
 
 TOPDIR="$PWD"
 ## Problem: comments out required packages!  also adds some packages (e.g. Screen) which we don't actually want to recompile
@@ -71,7 +96,7 @@ do
 
 			echo "Needs rebuild: $PKG"
 
-			cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+EditPackages=$PKG+" | dog compiling.ini
+			uncomment_editpackage "$PKG"
 
 			[[ -f "System/$PKG.u" ]] && verbosely mv "System/$PKG.u" "System/$PKG.u.last"
 
@@ -80,7 +105,9 @@ do
 			while read JPPFILE
 			do
 				TARGETFILE="`echo "$JPPFILE" | sed 's+\.jpp$++'`"
-				verbosely jpp -- "$JPPFILE" > "$TARGETFILE"
+				jshinfo "Preprocessing: $JPPFILE -> $TARGETFILE"
+				NOEXEC=1 verbosely \
+				jpp -- "$JPPFILE" > "$TARGETFILE"
 				## We can always safely strip comments here.  This is not the original it's a temporary post-processed compile file.
 				# sh ../../strip_comments.sh "$TARGETFILE"
 			done
@@ -95,12 +122,27 @@ do
 				# done
 			# fi
 
+			cd "$TOPDIR"
+			if [ -f "$PKG/Classes/.dependson" ]
+			then
+				for NEEDPKG in `cat "$PKG/Classes/.dependson"`
+				do add_to_build_path "$NEEDPKG"
+				done
+				echo "EDITPACKAGES=\"$EDITPACKAGES\"" > editpackages.ini
+			fi
+
 		else
 			echo "Nothing new: $PKG"
-			cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+; EditPackages=$PKG+" | dog compiling.ini
+			comment_editpackage "$PKG"
 		fi
 	fi
 done
+
+. editpackages.ini
+for PKG in $EDITPACKAGES
+do uncomment_editpackage "$PKG"
+done
+
 
 
 
