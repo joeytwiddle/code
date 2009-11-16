@@ -7,8 +7,8 @@ do
 	fi
 done
 
-UT_OPTIONS="$UT_OPTIONS -windowed"
-# UT_OPTIONS="$UT_OPTIONS -pretty"
+# UT_OPTIONS="$UT_OPTIONS -windowed"
+UT_OPTIONS="$UT_OPTIONS -pretty"
 
 [ "$RUNNING_GENTOO" = 1 ] && DEBDO="debdo"
 
