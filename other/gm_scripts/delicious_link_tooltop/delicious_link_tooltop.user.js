@@ -50,8 +50,8 @@
 // have to allow mouseover the tooltip without it disappearing.  I tried to
 // implement that but things haven't been 100% smooth since...
 
-// TODO: Sometimes if we move quickly over to the link, no tooltip will appear.
-// TODO: The tooltip should appear wherever we last mousemoved-ed over the
+// DONE: Sometimes if we move quickly over to the link, no tooltip will appear.
+// DONE: The tooltip should appear wherever we last mousemoved-ed over the
 // link, (current cursor pos) rather than where we mouseover-ed (entered it).
 // HMMM it seems to me that this is happening when we mouseover the <EM> part
 // of a Google result but works fine on the non-EM parts.  So maybe we should
@@ -160,6 +160,10 @@ function getHostnameOfUrl(url) {
 }
 
 function addCommasToNumber(numString) {
+	return commafy(numString); // Trying alternative implementation
+	return numString; // Disabled for the moment, because...
+	// BUG: Konqueror returns "$1,$2"!  (Is this because we are using a fallback
+	// Regexp, or is Konq's regexp broken?)
 	numString = ""+numString;
 	x = numString.split('.');
 	x1 = x[0];
@@ -169,6 +173,13 @@ function addCommasToNumber(numString) {
 		x1 = x1.replace(rgx, '$1' + ',' + '$2');
 	}
 	return x1 + x2;
+}
+
+function commafy(num) {
+	var str = (num+"").split(".");
+	dec=str[1]||"";
+	num=str[0].replace(/(\d)(?=(\d{3})+\b)/g,"$1,");
+	return (dec) ? num+'.'+dec : num;
 }
 
 function boldTextElement(txt) {
@@ -239,7 +250,7 @@ function displayResults(resultObj,subjectUrl,event) {
 	hideTooltip();
 
 	tooltipDiv = document.createElement("div");
-	tooltipDiv.id = "link_tt";
+	tooltipDiv.id = "DLTtooltip";
 	// tooltipDiv.setAttribute("style", "background:" + bg_color + ";border:1px solid " + border_color + ";padding:2px;color:" + font_color + ";font-family:" + font_face + ";font-size:" + font_size + ";position:absolute;z-index:100000;")
 	with (tooltipDiv.style) {
 		backgroundColor = bg_color;
@@ -537,8 +548,9 @@ function hideTooltip() {
 
 function cleanupCache() {
 	var cacheList = GM_listValues();
+	// Rather casual method: Keep deleting records at random until we meet
+	// our max cache size.
 	while (cacheList.length > 128) {
-		// Keep deleting records at random until we meet our max cache size.
 		var i = parseInt(Math.random() * cacheList.length);
 		// GM_log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
 		GM_deleteValue(cacheList[i]);
@@ -573,18 +585,37 @@ for (var i=0; i<document.links.length; i++) {
 // DONE: I guess we better look up the tree at our parentNodes for the A, and maybe
 // even change/fake the evt.target to point to the A!
 
+// DONE: New bug with the new global event listener.  Now we can't mouseover
+// the tooltip any more.  :s
+// Maybe the problem here is the As inside the tooltip.  But why wasn't that a
+// problem before? :o
+// Solved with checkParentsForId().
+
+// TODO: One bug with this method is that when moving in or out of the SPAN
+// inside the A, a mouseout then a mouseover get fired on the A.  This is
+// slightly hard to fix, how to we know whether the mouseout should be fired or
+// not?
+
 // var linksOnly = function(evt) { return (evt && evt.target && evt.target.tagName == "A"); };
 
+function checkParentsForId(node,id) {
+	while (node) {
+		if (node.id == id)
+			return true;
+		node = node.parentNode;
+	}
+	return false;
+}
+
 var linksOnly = function(evt) {
-	try {
-		var node = evt.target;
-		while (node) {
-			if (node.tagName == "A")
-				return node;
-			node = node.parentNode;
-		}
-	} catch (e) {
-		node = null;
+	var node = evt.target;
+	// We don't want to act on links inside the tooltip
+	if (checkParentsForId(node,"DLTtooltip"))
+		return null;
+	while (node) {
+		if (node.tagName == "A")
+			return node;
+		node = node.parentNode;
 	}
 	return node;
 };
@@ -616,7 +647,7 @@ function addGlobalConditionalEventListener(evType,handlerFn,whereToFireFn) {
 				return handlerFn(fakeEvt);
 			}
 	},true);
-};
+}
 
 // Should we cleanup some of our old cached data?
 if (Math.random() < 0.1) {
