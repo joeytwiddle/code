@@ -53,6 +53,7 @@
 	</P>
 	<BLOCKQUOTE>
 		<P>Lets you select a part of the page, and throws away the rest!  But has undo.  :)</P>
+		<LI class='todo'>Todo: Oh dear I just tried it on this page, and the restore brought everything back in reverse order!</LI>
 		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
@@ -500,6 +501,16 @@
 		})();">Revisit</A></LI>
 		<BLOCKQUOTE>
 			<P>Navigates to the current page.  Can act like Reload but less heavy.  Usually updates the page correctly, but still uses images from the cache.</P>
+			<LI class='todo'>I believe this fails to work in some browsers when the URL contains an anchor (# char) because the browser attempts only to change the scroll position, and does not make a fresh navigation to the page.</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="javascript:(function(){
+			window.open('http://delicious.com/url/view?url='+encodeURIComponent(document.location.href)+'&show=notes_only');
+			})();">Lookup This Page on Delicious *</A> (Popup, Notes)</LI>
+		<BLOCKQUOTE>
+			Sometimes the page will not have been bookmarked by anyone, in which case you could lookup the website homepage with...
 		</BLOCKQUOTE>
 	</P>
 
@@ -507,12 +518,6 @@
 		<LI><A href="javascript:(function(){
 			window.open('http://delicious.com/url/view?url='+encodeURIComponent(document.location.protocol+'//'+document.location.host+'/')+'&show=notes_only');
 			})();">Lookup This Site on Delicious *</A> (Popup, Notes)</LI>
-	</P>
-
-	<P>
-		<LI><A href="javascript:(function(){
-			window.open('http://delicious.com/url/view?url='+encodeURIComponent(document.location.href)+'&show=notes_only');
-			})();">Lookup This Page on Delicious *</A> (Popup, Notes)</LI>
 	</P>
 
 </BLOCKQUOTE>
@@ -542,10 +547,7 @@
 			function getColorFor(obj) {
 				var s = ''+obj;
 				var hash = 0;
-				for (i=0;i<s.length;i++) {
-					hash += ((i+39357) %25 52597)*s.charCodeAt(i);
-					hash = hash % 16777216;
-				}
+				for (i=0;i<s.length;i++) { hash += ((i+39357) % 2552597)*s.charCodeAt(i); hash = hash % 16777216; }
 				var hex = hash.toString(16);
 				/*if (Math.floor(Math.random()*6) == 5) {
 					window.status = 'Did parseInt for \''+obj+'\' hash='+hash+' and got hex='+hex;
@@ -645,6 +647,7 @@
 			<LI class='todo'>Part of the problem is that a mouselistener is added to every element in the DOM, when we should just capture using the body element.</LI>
 			<LI class='todo'>Adapt the colour generator to produce pastels only.</LI>
 			<LI class="todo">Todo: Colouring all things of the same depth/path with the same colour is informative, but sometimes two neighbouring elements merge together and cannot be distinguished.  Recommend slightly altering brightness/saturation (not hue) for neighbouring elements.</LI>
+			<LI class="todo">Depth: number of parent-nodes with non-zero clientWidth x Height, and larger area than children.  Depth should rotate around the hues in e.g. 6 or 9 steps.</LI>
 			<LI class='todo'>Rather than use the browser&quot;s default popup for title tag when hovering over elements, we could use our own custom popup.  This could give 2 advantages: 1) we could make newlines work in Mozilla; 2) By keeping the popup ever-present, the user can easily see when the XPath switches by a little or a lot.  The XPath in Konqueror&apos;s statusbar almost does this, but when hovering over a link it gets hidden.</LI>
 		</BLOCKQUOTE>
 	</P>
@@ -1319,6 +1322,8 @@
 	<P>I generated hex by hand in the Highlight Structure bookmarklets.  But I could have used: number.toString(16).</P>
 
 	<P>We would like to be able to select whether a Bookmarklet will open a new window, or popup an iframe in the existing page, or just go straight to the page.  This would require abstracting bookmarklets which produce a destination URL.   It could be a pre-processing done by Javascript before we grab the bookmarklet.</P>
+
+	<P>For pages with too few anchor elements: A Bookmarklet which when run generates a new Bookmarklet.  The new Bookmarklet, when run in future, will navigate to the original page at the original scrollpoint!  <A href="http://www.bookmarklets.com/tools/navigation/index.phtml">This page</A> uses a short user scroll to find the neccessary element.</P>
 
 </BLOCKQUOTE>
 </DIV>
