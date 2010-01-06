@@ -536,7 +536,7 @@ public class GrimeApe extends PluggableHttpRequestHandler {
         }
     }
 
-        public static boolean fileIsBelow(File suspect, File parent) {
+    public static boolean fileIsBelow(File suspect, File parent) {
         return (suspect.toString().startsWith(parent.toString()));
     }
 
@@ -569,10 +569,12 @@ public class GrimeApe extends PluggableHttpRequestHandler {
             //   - Also: Don't inject our JS at </BODY>.  Inject it into <HEAD> but make it add an event which doesn't fire until the page has loaded.
             // StreamEditor ed = new StreamEditor();
             
-            addScriptsSlowStable(response);
-            //// ReplacingInputStream still seems to have bugs
-            //// Also it can't do what we really want, which is to replace the last occurrence only.
-            // streamAndAddScripts(response);
+            // addScriptsSlowStable(response);
+            //// ReplacingInputStream is not quite as we want it
+            //// It can't yet do what we really want, which is to replace the last occurrence only.
+            //// A real solution that meets our needs, would be to stream until the first occurrence is found,
+            //// then buffer the rest to find the definite last occurrence, then replace that.
+            streamAndAddScripts(response);
             
         }
     }
@@ -651,12 +653,16 @@ public class GrimeApe extends PluggableHttpRequestHandler {
     private void streamAndAddScripts(HttpResponse response) throws IOException {
         HTTPStreamingTools.unencodeResponse(response);
         HTTPStreamingTools.unzipResponse(response);
-        response.setHeader("Connection","Close");
+        // response.setHeader("Connection","Close");  //// Do we really need this?
         StringBuffer extraHTML = getScriptHTMLForInjection();
         InputStream originalInput = response.getContentAsStream();
-        /* This is wrong, because we only want to replace the last occurrence,
-         * not the first occurrence, or all occurrences. */
-        InputStream modifiedInput = new ReplacingInputStream(originalInput,"(</[Bb][Oo][Dd][Yy][^>]*>)",extraHTML+"\\1");
+        /*
+         * This is wrong, because we only want to replace the last occurrence,
+         * not the first occurrence, or all occurrences. (Just in case
+         * Javascript in the page contains the string "</body>".) Barring that,
+         * this approach is desirable because it does stream!
+         */
+        InputStream modifiedInput = new ReplacingInputStream(originalInput,"(</[Bb][Oo][Dd][Yy][^>]*>)",extraHTML+"$1");
         response.setContentStream(modifiedInput);
     }
 
