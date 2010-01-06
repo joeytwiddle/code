@@ -68,12 +68,12 @@ registry values set by that script's namespace.
 				}),
 			};
 
-			GM_log("Created fresh GrimeApe config.");
+			GM_log("Warning!  Created fresh GrimeApe config.");
 			//// User really needs a warning indicator:
 			if (typeof ApeIcon != 'undefined') {
 				ApeIcon.setError();
 			}
-			alert("Created a fresh GrimeApe config.\n\nIf this is NOT your first run, then DO NOT change any settings - just navigate away!");
+			alert("Warning!  Created a fresh GrimeApe config.\n\nIf this is NOT your first run, then DO NOT change any settings - just navigate away!");
 			// TODO: Better: The warning (in fact a confirmation dialog) should be made by the save() function!
 
 		}
@@ -565,9 +565,8 @@ registry values set by that script's namespace.
 				}
 				var link = document.createElement('A');
 				link.textContent = commandName;
-				link.href = 'javascript:void(0)';
-				// Trying onmousedown instead of onclick, maybe will reduce Konq's switch to drag mode.
-				link.onmousedown = (function(evt) { commandFunc(); });
+				link.href = '#';
+				link.onclick = (function(evt) { commandFunc(); });
 				Menu.userscriptCommandsDiv.appendChild(link);
 				Menu.userscriptCommandsMenuItem.onclick = Menu.showUserscriptCommands;
 			},
@@ -576,7 +575,7 @@ registry values set by that script's namespace.
 				var menuItem = document.createElement('A');
 				menuItem.textContent = txt;
 				if (fn) {
-					menuItem.href = 'javascript:void(0)'; // yum the "nice" way
+					menuItem.href = '#'; // yum the "nice" way
 					menuItem.onclick = fn;
 				}
 				//var line = document.createElement('P');
@@ -739,10 +738,9 @@ registry values set by that script's namespace.
 
 
 
-	//// Special - convert Userscripts.org Install button into GrimeApe Install button. ////
-	// Actually works for any A tag with href to a .user.js file, but atm for
-	// efficiency we only check userscripts.org script pages.
-	if (GrimeApeConfig.enabled && document.location.href.match('http://(www.|)userscripts.org/scripts/')) {
+	//// Special - convert links to userscripts into GrimeApe Install buttons. ////
+	// Now activating on all domains, not just userscripts.org.
+	if (GrimeApeConfig.enabled /*&& document.location.href.match('http://(www.|)userscripts.org/scripts/')*/) {
 		var links = document.links;
 		for (var i=0;i<links.length;i++) {
 			var link = links[i];

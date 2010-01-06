@@ -149,9 +149,10 @@ function GA_getValue(namespace,name,defaultValue) {
 	var request = new XMLHttpRequest();
 	request.open('GET',url,false);
 	request.send(null);
-	// GM_log("GM_getValue(\""+name+"\") returned: "+request.responseText);
+	var inside = request.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,'');
 	// return request.responseText; // this worked fine for konqueror ;p
-	return cgiUnescape(unescape(request.responseText.replace(/^<RESPONSE>/,'').replace(/<\/RESPONSE>$/,''))); // mozilla
+	return cgiUnescape(unescape(inside)); // mozilla
+	// return cgiUnescape(inside); // mozilla
 	/*
 	var waitUntil = new Date().getTime() + 5*1000;
 	for (var i=0;i<100000;i++) {
@@ -220,6 +221,8 @@ var unsafeWindow = window;
 // Not that eval() can re-build it anyway.  But we will get inf loop!
 
 // TODO: What about custom classes?  Is our object uneval accurate for them?
+
+// See also: http://stackoverflow.com/questions/171407/implementing-mozillas-tosource-method-in-internet-explorer
 
 this.ga_uneval = function (obj) {
 	if (obj===undefined) { return "undefined"; }
