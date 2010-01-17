@@ -732,6 +732,7 @@ function String GetGameTypeFromPrefix(String map) {
 	}
 }
 
+/*
 function int HashStr(String str, optional int max) {
 	local int hash;
 	local int ch;
@@ -774,6 +775,28 @@ function int MapIndex(String mapName) {
 		}
 	}
 	// never reached: return 0;
+}
+*/
+
+function int MapIndex(String mapName) {
+	local int i,empty;
+	empty = -1;
+	for (i=0;i<MaxData;i++) {
+		if (MapStats[i].MapName ~= mapName) {
+			return i;
+		}
+		if (empty==-1 && MapStats[i].MapName == "") {
+			empty = i;
+		}
+	}
+	if (empty == -1) {
+		i = FRand() * MaxData;
+		WarnLog("MapStats database is full!  Overwriting random record for "$ MapStats[i].MapName);
+	} else {
+		i = empty;
+	}
+	MapStats[i].MapName = mapName;
+	return i;
 }
 
 function float AverageActorDistanceType(class<Actor> type) {
