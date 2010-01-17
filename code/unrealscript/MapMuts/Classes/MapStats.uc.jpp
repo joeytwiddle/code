@@ -1,4 +1,4 @@
-// vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
+// vim: noexpandtab filetype=uc
 
 /*
 
@@ -60,7 +60,7 @@
 
 #ifndef HEAD
 
-#define TESTING
+// #define TESTING
 
 // Do not change this once you already have data.  It will change the hashing algorithm and all your data will be missed/lost/stuck.
 #define MaxData 3000
@@ -77,12 +77,11 @@ class MapStats expands Mutator config(MapStats);
 #define CATCH_LEVEL_SWITCH
 // CATCH_LEVEL_SWITCH works!  But it changes the map we had chosen.  Well we did set NextMap="" (for other reasons).
 // And now I can't get it working.  :P
+#define LIST_RECENTLY_PLAYED
 #define MAP_RATING
-#define MAP_TAGS
+// #define MAP_TAGS
 // PLAYERS_CAN_VETO affects bEndGameSwitchMap
 #define PLAYERS_CAN_VETO
-#define LIST_RECENTLY_PLAYED
-#define MinimumNosForVeto 1
 //// I'm afraid it can't be done.  We can't compile against MapVoteLA13 (at least not under Linux/wine/ucc), and we can't access elements of MapListTemp's array using ConsoleCommands.
 // #define ADJUST_MAPVOTELA_LIST
 
@@ -110,6 +109,7 @@ var config bool bListRecentlyPlayed;
 var config String RecentlyPlayedMaps;
 #endif
 var config String KnownGameTypes;
+var config float MaxPlayerSizeDifference;
 
 struct MapInfo {
 	var String MapName;
@@ -156,6 +156,7 @@ var String TryingMap;
 var String NextMap;
 var String RejectedMaps;
 #ifdef PLAYERS_CAN_VETO
+var config int MinimumNosForVeto;
 var int NoCount;
 var String VetoersList;
 #endif
@@ -186,6 +187,10 @@ bStickWithCurrentMode=True
 bListRecentlyPlayed=False
 #endif
 KnownGameTypes="CTF:botpack.CTFGame|DM:botpack.DeathMatchPlus:botpack.TeamGamePlus:botpack.LastManStanding|AS:botpack.Assault|BT:BunnyTrack2.BunnyTrackGame"
+MaxPlayerSizeDifference=5.0
+#ifdef PLAYERS_CAN_VETO
+MinimumNosForVeto=2
+#endif
 }
 
 #define MapRecord(X) MapStats[MapIndex(X)]
@@ -845,6 +850,8 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	// #define deltaPlayers ( FRand() - 0.5 )
 	#define deltaPlayers (FRand()*0.5)
 	playerDiff = Abs(currentNumPlayers + deltaPlayers - MapStats[nextI].PreferredPlayers);
+	if (playerDiff > MaxPlayerSizeDifference)
+		playerDiff = playerDiff + 50;
 	playerDiff += 0.2; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
 	// if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
 	ageInDays += 0.01;
@@ -883,7 +890,7 @@ function String ChooseNextMap() {
 			DebugLog("ChooseNextMap(): Scanning maps for "$Level.Game.Default.MapPrefix$" ...");
 			ScanMaps();
 			bDoMapScan=False;
-			SaveConfig(); // I guess this could be optional, but it would slow down any subsequent boot if we haven't saved :P
+			SaveConfig(); // I guess this could be optional, but it would slow down any subsequent boot if we don't save later :P
 		} else {
 			DebugLog("NOT scanning maps until you set MapMuts.MapStats bDoMapScan True");
 		}
