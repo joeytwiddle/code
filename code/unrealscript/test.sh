@@ -15,7 +15,7 @@ UT_OPTIONS="$UT_OPTIONS -pretty"
 if $DEBDO sh ./build.sh
 then
 
-	cd /mnt/hdb6/ut_server
+	cd /stuff/ut/servers/ut_server
 	# xterm -e sh ./run_server_once & # | higrep kx -C3 &
 	# bigwin "sh ./run_server_once | higrep kx -C3"
 	# xterm -geometry 170x50 -bg "#eeeeaa" -fg "#aa4400" -e "sh ./run_server_once | tee server.log ; read L" &
