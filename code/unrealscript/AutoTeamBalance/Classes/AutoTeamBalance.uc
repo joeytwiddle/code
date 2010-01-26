@@ -36,13 +36,13 @@
 
 /*
 
-// TODO: Best strategy ever for mid-game switch.
-// Alert to all players:
+// Another alternative strategy for mid-game switch:
+// When teams are bad, or a player requests, alert to all players:
 //   Teams look uneven (reason)
 //   Type T to switch with %ideal_opposite_player
 // Swallow all Ts so they are invisible.
-// When two matching players type T then swap them.  Or, after a given amount
-// of time choose the best 2 of those who volunteered.
+// When two matching players type T then swap them.  Or better, after a given
+// amount of time choose the best 2 of those who volunteered.
 
 // If teams look even, reduce probability that 1 player will cause spam of all others.
 // Maybe only spam his opposite(s) when he is trying to fix the teams.
@@ -265,14 +265,13 @@
 // #define XOL_SPECIFIC
 
 //// Testing - Things we are finalising for next release:
-// #define KX_TESTING
 // #define TESTING
 // #define DEBUGGING
 // #define SWING_PROPS
 
 //// CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY:
 // #define CLEANUP14
-//// HASH15 is not yet complete:
+//// HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
 // #define HASH15
 //// Works but not sure we actually want it:
 // #define APPLY_LASTBADPLAYER_TO_REBALANCE
@@ -287,6 +286,7 @@
 
 
 
+
 // Semi-admin stuff:
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
@@ -296,6 +296,7 @@
 //// RANDOMBOTGREET requires DETECT_PLAYERJOINS
 //// I don't know if it works or not because join detection happens before I really enter :P
 // #define RANDOMBOTGREET
+//// I never got these data-structures working. =/
 // #define FAST_TREE
 // #define FAST_HASH
 //// FAST_DATE_COMPARISON may be dangerous, since records just created might be seen as worth deleting!  Check this before defining FAST_DATE_COMPARISON.
@@ -326,6 +327,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var config bool bUpdatePlayerStatsForNonTeamGames;
  var config bool bSeparateStatsByGamemode;
  var config bool bSeparateStatsByMutators;
+ var config String WebsiteURL;
  var config String TeamspeakChannel[4];
  var config String TeamspeakChannelOther;
  var config bool bForceEvenTeams;
@@ -401,6 +403,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  // var config bool bUseOnlyInGameScoresForRebalance;
  var config bool bLogFakenickers;
  var config bool bBroadcastFakenickers;
+ var config bool bLetPlayersViewStrengths;
  var config bool bAllowUsersToListFakes;
  var config bool bShuffleTeamsEarly;
  var config string LastUpdate;
@@ -518,6 +521,7 @@ defaultproperties {
  // bUseOnlyInGameScoresForRebalance=False
  bLogFakenickers=False
  bBroadcastFakenickers=False
+ bLetPlayersViewStrengths=True
  bAllowUsersToListFakes=True
  bSeparateStatsByGamemode=False
  bSeparateStatsByMutators=False
@@ -533,6 +537,7 @@ defaultproperties {
  colorBlack=(R=0,G=0,B=0,A=32)
  strengthColor=(R=255,G=152,B=48,A=32)
  warnColor=(R=255,G=144,B=32,A=32)
+ WebsiteURL=""
  TeamspeakChannelOther="teamspeak://ekiebox.org:8767?channel=shitbra"
  // TeamspeakChannel(0)="teamspeak://ekiebox.org:8767?channel=xolred"
  // TeamspeakChannel(1)="teamspeak://ekiebox.org:8767?channel=xolblue"
@@ -1034,10 +1039,12 @@ function Mutate(String str, PlayerPawn Sender) {
 	}
 	*/
  // BroadcastMessageAndLog("Proposed team changes: "$SuggestedChanges);
- if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
-  // debugTimerReason = "mutate strengths from "$Sender.getHumanName();
-  // debugTimerStart = Level.TimeSeconds;
-  ShowStrengthsTo(Sender, (args[1] ~= "EXTRA"));
+ if (bLetPlayersViewStrengths) {
+  if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
+   // debugTimerReason = "mutate strengths from "$Sender.getHumanName();
+   // debugTimerStart = Level.TimeSeconds;
+   ShowStrengthsTo(Sender, (args[1] ~= "EXTRA"));
+  }
  }
  if ( args[0]~="STATS" ) {
   ShowStatsTo(Sender,Sender.bAdmin || localPass=="");
@@ -1352,20 +1359,20 @@ function Mutate(String str, PlayerPawn Sender) {
   else
    pass_if_needed = " [password]";
   if (bEnablePlayerCommands) {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9j" $" commands: teams !teams !red !blue !spec !play !vote !stats");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9l" $" commands: teams !teams !red !blue !spec !play !vote !stats");
   } else {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9j" $" commands: teams !teams");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9l" $" commands: teams !teams");
   }
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9j" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9l" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
   if (localPass == "") {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9j" $" semi-admin console commands:");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9l" $" semi-admin console commands:");
    Sender.ClientMessage("    mutate [atb] ( teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | kick <p> <msg> | kickban <p> <msg> ");
    Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> ) "$pass_if_needed);
   } else {
    Sender.ClientMessage("    mutate help [<password>]");
   }
   if (Sender.bAdmin) {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9j" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> | cc <p> <cmd>)");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9l" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> | cc <p> <cmd>)");
   }
  }
  Super.Mutate(str,Sender);
@@ -1720,6 +1727,13 @@ function bool CheckMessage(String Msg, Pawn Sender) {
     ListFakesTo(PlayerPawn(Sender));
    }
   if (Sender.IsA('PlayerPawn')) {
+   if (Msg ~= "!WEBSITE" || Msg ~= "!W" || Msg ~= "!WEB" || Msg ~= "!WWW") {
+    if (WebsiteURL != "") {
+     SendPlayerToUrl(PlayerPawn(Sender),WebsiteURL);
+    }
+   }
+  }
+  if (Sender.IsA('PlayerPawn')) {
    if (Msg ~= "!TS" || Msg ~= "!TEAMSPEAK") {
     SendPlayerToTeamspeak(PlayerPawn(Sender));
    }
@@ -1736,37 +1750,44 @@ function bool CheckMessage(String Msg, Pawn Sender) {
   PlayerPawn(Sender).Mutate(StrAfter(Msg," "));
  }
 }
+function SendPlayerToUrl(PlayerPawn Sender, String url) {
+ Sender.ClientMessage(">> Opening "$url);
+ ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Sending "$Sender.getHumanName()$" to "$StrAfterFirst(url,"://")); };
+ //// Did not work:
+ // Sender.ConsoleCommand("open "$url);
+ //// We could test this alternative:
+ // Sender.ConsoleCommand("START "$url);
+ //// Works:
+ Sender.PreClientTravel();
+ Sender.ClientTravel(url, TRAVEL_Absolute, False);
+}
 function SendPlayerToTeamspeak(PlayerPawn Sender) {
  local int teamNum;
  local string url,nickname;
+ // Use the single common channel during non-team games, or if no other is found.
+ url = TeamspeakChannelOther;
+ // During team games, use the player's team.  By default this will only occur
+ // during tournament-games, or when no other channel is set; see below.
  teamNum = Sender.PlayerReplicationInfo.Team;
- if (!Level.Game.GameReplicationInfo.bTeamGame)
-  teamNum = -1;
- if (!DeathMatchPlus(Level.Game).bTournament) // TESTING UNSURE
-  url = TeamspeakChannelOther; // for freelance mode, we prefer the public channel if given by the admin, as players may be switched in game and won't want to reconnect to teamspeak
- if (url == "" && (teamNum>=0 && teamNum<4))
+ if ( url=="" || (Level.Game.GameReplicationInfo.bTeamGame && teamNum>=0 && teamNum<4) )
   url = TeamspeakChannel[teamNum];
- if (url == "")
+ // Public servers may only want team channels during pugs/wars, but use the
+ // common channel during FFA.  We assume this!  If you always want to put
+ // players in their team-channel, then don't set TeamspeakChannelOther.
+ if (!DeathMatchPlus(Level.Game).bTournament && TeamspeakChannelOther!="")
   url = TeamspeakChannelOther;
  if (url == "") {
-  Sender.ClientMessage("No TeamSpeak URL has been configured for this server.");
+  Sender.ClientMessage("No TeamSpeak channel has been configured for this server.");
  } else {
   // DebugLog("SendPlayerToTeamspeak("$Sender.getHumanName()$"): target url "$url);
-  // For teamspeak urls, append player name:
+  /* For teamspeak urls, append player name: */
   if (StrContains(url,"teamspeak://") && StrContains(url,"?")) {
    nickname = StrFilterBadChars(Sender.getHumanName());
-   // CONSIDER DONE: We could also add a random number on the end, in case someone else is using the same nick.
+   /* We could also add a random number on the end, in case someone else is using the same nick. */
+   /* nickname = nickname $ Int(FRand()*100); */
    url = StrBeforeFirst(url,"?") $ "?nickname=" $ nickname $ "?" $ StrAfterFirst(url,"?");
   }
-  Sender.ClientMessage(">> "$url);
-  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Sending "$Sender.getHumanName()$" to "$StrAfterFirst(url,"://")); };
-  //// Did not work:
-  // Sender.ConsoleCommand("open "$url);
-  //// Works:
-  Sender.PreClientTravel();
-  Sender.ClientTravel(url, TRAVEL_Absolute, False);
-  //// Testing:
-  // Sender.ConsoleCommand("START "$url);
+  SendPlayerToUrl(Sender,url);
  }
 }
 // Teamspeak will fail if the player's nickname contains certain chars, so we strip them here.  Even better would be encoding them!
@@ -1775,6 +1796,7 @@ function String StrFilterBadChars(String inStr) {
  local int i,c;
  for (i=0;i<Len(inStr);i++) {
   c = Asc(Mid(inStr,i,1));
+  // TO TEST: Maybe ok to allow ( ) $ [ ] ?
   if ( (c>=Asc("A") && c<=Asc("Z")) || (c>=Asc("a") && c<=Asc("z")) ||
        (c>=Asc("0") && c<=Asc("9")) || c==Asc("_") || c==Asc("+") ||
        c==Asc("-") )
@@ -1903,7 +1925,7 @@ function ForceFullTeamsRebalance() {
   {
    pid=plorder[i];
    teamnr=0; weakestStr=999999;
-   for (i=0;i<TeamGamePlus(Level.Game).MaxTeams-1;i++) {
+   for (i=0;i<TeamGamePlus(Level.Game).MaxTeams;i++) {
     if (teamstr[i] < weakestStr) {
      weakestStr = teamstr[i];
      teamnr = i;
@@ -2121,14 +2143,14 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
  local int playerCountDifference;
  fromTeamStrength = GetTeamStrength(fromTeam);
  toTeamStrength = GetTeamStrength(toTeam);
- currentDifference = fromTeamStrength - toTeamStrength; // Should usually be positive.  ;)
+ currentDifference = fromTeamStrength - toTeamStrength; // Will often be positive, but not always.
  playerCountDifference = GetTeamSize(fromTeam) - GetTeamSize(toTeam);
  if (currentDifference<0 && playerCountDifference<2) {
   // Switching a player to the smaller but stronger team won't help!
   return False;
  }
  teamScoreStrengthDifference = GetFlagStrengthForTeam(fromTeam) - GetFlagStrengthForTeam(toTeam);
- if (currentDifference<MinStrengthDifferenceForRebalance && playerCountDifference<2 && Abs(teamScoreStrengthDifference) <= 15) {
+ if (Abs(currentDifference)<MinStrengthDifferenceForRebalance && playerCountDifference<2 && Abs(teamScoreStrengthDifference) <= 15) {
   return False;
  }
  // Find the player on fromTeam with strength closest to difference, and switch him/her
@@ -2141,7 +2163,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
    // We want a linear scale; i.e. players in for 10 minutes are 2x less likely to be switched than players in for 5.
    // BUT, if timeInGame==0 then the player who joined 1 second ago will be switched, regardless of whether he's a good swap or not!  So we add a little.
    // Actually we add more than a little, because I decided timeInGame is really not as important as new difference.
-   timeInGame += 480.0;
+   timeInGame += 120.0;
    potentialNewDifference = Abs(currentDifference-playerStrength*2);
    // thisScore = (5+potentialNewDifference)*(5+potentialNewDifference)*timeInGame;
    thisScore = ((5+potentialNewDifference)*(0.0 + 2.0*FClamp(1.0-PreferenceToSwitchNewPlayers,0,1)))*100 + (timeInGame*(0.0 + 2.0*FClamp(PreferenceToSwitchNewPlayers,0,1)));
@@ -2149,7 +2171,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
      closestPlayer == None
      // We no longer check that it is actually less difference here, that is done at the end.
      // Best score so far:
-     || ( thisScore < bestScore && potentialNewDifference<currentDifference )
+     || ( thisScore < bestScore && potentialNewDifference<Abs(currentDifference) )
    ) {
     closestPlayer = p;
     // Note we multiply playerStrength by 2 here, because switching him will cause -strength to fromTeam and +strength to toTeam.
@@ -2258,7 +2280,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
       // This is an improvement on the current situation.
       // bothTimeInGame = redPTimeInGame + bluePTimeInGame;
       bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
-      bothTimeInGame += 480.0;
+      bothTimeInGame += 240.0;
       // thisScore = bothTimeInGame*(5+potentialNewDifference)*(5+potentialNewDifference);
       thisScore = (bothTimeInGame*(0.0 + 2.0*FClamp(PreferenceToSwitchNewPlayers,0,1))) + ((5+potentialNewDifference)*(0.0 + 2.0*FClamp(1.0-PreferenceToSwitchNewPlayers,0,1)))*100;
       if (thisScore < bestScore) {
@@ -2397,7 +2419,7 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
   }
    if (TeamspeakChannel[teamnum]!="" && /*DeathMatchPlus(Level.Game).bTournament &&*/ bHelpInPugs) {
    // todo: && someone else has used !TS in the last hour
-    FlashMessageToPlayer(p,"Type !TS to change teamspeak channel.",colorWhite,4);
+    FlashMessageToPlayer(p,"Type !TS to change teamspeak channel.",colorWhite,5);
    }
  }
  //// I'm going to try NOT doing this, and see if now switching two players always works ok.  ATB was sometimes switching two players, but one of them was not getting switched.
@@ -2405,8 +2427,9 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
   // FixTeamsizeBug();
  // }
 }
-// I want to Log all calls to BroadcastMessage() so that I can see without playing how much the players are getting spammed by broadcasts.
+// For debugging I want some calls to BroadcastMessage() to be logged on the server, so that I can see without playing how much the players are getting spammed by broadcasts.
 // Eventually, calls to BroadcastMessageAndLog could be turned back to just BroadcastMessage() calls.
+// If you really really want to log, use BroadcastMessageAndAlwaysLog.
 function BroadcastMessageAndLog(string Msg) {
  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Broadcasting: "$Msg); };
  BroadcastMessage(Msg);
