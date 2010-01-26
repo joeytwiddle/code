@@ -4,6 +4,7 @@ class PainSoundsMutator extends Mutator config(PainSounds);
 // It defaults to voice sounds, to emulate the NoDownloads ELMS sounds.  But you can set it to be more like Pure.
 // Bots do normally make their own sounds when they take damage, but they make them at their location on the map.
 // For PainSounds, we want to play a sound just to the player who caused the damage, so he knows he made a hit.
+// Unfortunately, it seems PlaySound cannot play a sound to just one player when called from a mutator.
 
 // PainSoundsMutator is directly imported into FairLMS.  That is where it was first used.
 
@@ -130,12 +131,12 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 					//// The only way I found of making it louder was to play on four slots at once:
 					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_None,volume,False,radius,pitch);
 					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Misc,volume,False,radius,pitch);
-					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Pain,volume,False,radius,pitch);
 					if (ActualDamage > 100)
 						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
 					/*
 					//// Some player were crashing, I think due to sound overload.
 					//// I hope removing these was a fix for that bug!
+					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Pain,volume,False,radius,pitch);
 					if (ActualDamage > 50)
 						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
 					// Windows players were crashing, so I removed two of the slots.  Let's see if this fixes it.
