@@ -677,9 +677,9 @@ defaultproperties {
     StatusIcon=Texture'Botpack.Icons.UseTrans'
     Icon=Texture'Botpack.Icons.UseTrans'
     // Mesh=Mesh'Botpack.Trans3loc'
-    bDisableAutoBehindview=True // I fear setting a default might override the client value.  Hmm this seems to work ok at the moment.  The client gets to keep and use whatever is in his config.
-    bFireToWinch=False
+    // bDisableAutoBehindview=True   // Do not set a default for this - it will override the client's value!
+    // bFireToWinch=False   // Likewise
     LastFOV=90 // In case we accidentally read it before writing it!
-		bShowInfo=True
+    bShowInfo=True
 }
 
