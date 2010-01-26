@@ -2,6 +2,7 @@
 
 Some of my latest compiled .u and .int files are available from:
 
+  http://neuralyte.org/~joey/ut_releases/
   http://hwi.ath.cx/ut/dev/System/
 
 Other mods you will need to compile yourself!  (Add the package name to
@@ -74,6 +75,10 @@ you may prefer to look for an earlier stable version from CVS:
   Translocator on CTF maps with any headroom.  Also available in rigid-line
   mode (classic ND).
 
+  NOTE: You should not download kxGrapple.u since this is my development
+  version and subject to change (using this one is just asking for Version
+  Mismatch).  Instead download the latest release, e.g. kxGrapple03.u
+
 * TeamSwitcher
 
   Provides a few commands to players: !red !blue !green !spec !play !vote
@@ -116,7 +121,7 @@ you may prefer to look for an earlier stable version from CVS:
   Resizes a map during play!  Well actually it attempts to resize everything
   in play except for the map.  ;)  Has a few small bugs but does work in many
   ways.  Could be useful for mappers considering using MapScale and wanting to
-  test out some scale values.  Should not be a mutator, cannot increate splash
+  test out some scale values.  Should not be a mutator, cannot increase splash
   radius.
 
 
@@ -236,7 +241,7 @@ you may prefer to look for an earlier stable version from CVS:
 
 - nBAutoSpectate
 
-  My terrible modification of the fanatstic AutoSpectate mod.  Attempts to
+  My terrible modification of the fantastic AutoSpectate mod.  Attempts to
   setup interesting camera angles when spectating or replaying demos.  Pretty
   random, sometimes great, generally rubbish.
 
