@@ -974,7 +974,7 @@ defaultproperties {
 		// Icon=Texture'Botpack.Icons.UseTrans'
 		// Mesh=Mesh'Botpack.Trans3loc'
 
-		PullStrength=1.0
+		PullStrength=1.5
 		bLogging=True // TODO
 		bPickupPlayers=False // Can be very annoying to be picked up by bots.  TODO: If two players both pick each other up, unrealistic levitation occurs!
 		bSameTeamOnly=True
