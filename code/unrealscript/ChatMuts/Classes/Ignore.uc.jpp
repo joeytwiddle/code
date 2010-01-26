@@ -46,10 +46,14 @@ function bool SuperCheckMessage(Actor Sender, Pawn Receiver, String Msg) {
 			return true;
 		}
 	}
-	if (Sender == Receiver && StrStartsWith(Caps(Msg),"!IGNORE")) {
+	if (Sender == Receiver && StrStartsWith(Caps(Msg),"!IGNORE") || StrStartsWith(Caps(Msg),"!MUTE")) {
 		Target = FindPlayerNamed( StrAfterFirst(Msg," ") );
-		AddIgnore(PlayerPawn(Sender), PlayerPawn(Target));
-		PlayerPawn(Sender).ClientMessage("You are now ignoring "$Target.getHumanName());
+		if (Target == None) {
+			PlayerPawn(Sender).ClientMessage("Could not find player matching "$ StrAfterFirst(Msg," "));
+		} else {
+			AddIgnore(PlayerPawn(Sender), PlayerPawn(Target));
+			PlayerPawn(Sender).ClientMessage("You are now ignoring "$Target.getHumanName());
+		}
 	}
 	return False;
 }
