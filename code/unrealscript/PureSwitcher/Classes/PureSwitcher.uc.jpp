@@ -40,7 +40,7 @@
 
 // PureSwitcher has special support for MapVoteLA but has not been tested with BDBMapVote.
 
-class PureSwitcher expands Mutator;
+class PureSwitcher expands Mutator config(PureSwitcher);
 
 #define CHECK_ACTORS
 #define CHECK_GAMETYPE
@@ -117,10 +117,10 @@ function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
 		Log("PureSwitcher.CheckReplacement(): Caught "$Other);
 	}
 	#ifdef CHECK_ACTORS
-	if (InStr(Caps(Other.class.name),Caps(IncompatibleActors)) >= 0) {
+	if (InStr(Caps(IncompatibleActors),Caps(Other.class.name)) >= 0) {
 		if (bPureEnabled) {
 			BroadcastMessage("UTPure was enabled but we have loaded "$Other.class.name$" - expect problems!");
-			DisableUTPure("Actor "$Other);
+			DisableUTPure("Incompatible actor "$Other$" (class "$Other.class.name$")");
 		}
 	}
 	#endif
