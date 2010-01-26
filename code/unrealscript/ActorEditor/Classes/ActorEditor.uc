@@ -247,6 +247,11 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
   return True;
  }
 
+ if (command ~= "SEARCHLAST" || command ~= "FINDLAST" || command ~= "SEEKLAST") {
+  workingActor = SeekLastActorMatching(args[1],Sender);
+  return True;
+ }
+
  if (command ~= "FINDCLOSEST") {
   workingActor = FindClosestActorMatching(Sender,args[1]);
   Sender.ClientMessage("Found: "$workingActor);
@@ -348,6 +353,21 @@ function Actor SeekActorMatching(string str, PlayerPawn Sender) {
      others = others $ " " $ ShortActorName(A);
     }
    }
+  }
+ }
+ if (others != "") others = " (others:"$others$")";
+ Sender.ClientMessage("Found: "$ ShortActorName(F) $ others);
+ return F;
+}
+
+function Actor SeekLastActorMatching(string str, PlayerPawn Sender) {
+ local Actor A,F;
+ local String others;
+ foreach AllActors(class'Actor', A) {
+  if (StrContains(Caps(""$A),Caps(str))) {
+   if (F != None)
+    others = others $ " " $ ShortActorName(F);
+   F = A;
   }
  }
  if (others != "") others = " (others:"$others$")";
