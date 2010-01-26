@@ -6,6 +6,7 @@
 // vim: ft=uc ts=3 sw=3 noexpandtab
 
 // DONE: It seemed Invis was never being given.  And in CTF mode, it seemed health packs were far too popular!  We must use UT_Stealth, Stealth just doesn't work.
+// TODO: In the original, the health countdown stops for a few seconds after you make a kill.
 // TODO CONSIDER: Maybe we should integrate anti-camper with the health countdown.  We could apply the health countdown only to players who are far from other players, and not moving towards the other players.  Beware - 3 players on a large map might not know HOW to find each other, and might lose health unfairly.  Check values against average?
 // TODO: Move this class to BonusPowerups, and then let this class add the FairLMS stuff on top.
 // FIXED: When running during a CTFGame, if the player runs out of health whilst holding the flag, he/she respawns still holding the flag!
@@ -43,7 +44,7 @@
 // TODO: Invis does not wear off!
 // TODO: bSpawnPowerupsAsDroppedPickups
 
-// #define DEBUG
+
 
 class FairLMS expands Mutator config(FairLMS);
 
@@ -57,7 +58,7 @@ struct LMSBonus {
 
 var config bool bLogging;
 
-
+var config bool bDebugLogging;
 
 var config bool bGiveWeapons;
 var config int InitialArmour,InitialHealth;
@@ -121,11 +122,11 @@ function PostBeginPlay() {
  // CONSIDER: If setting defaults doesn't work, change values after it has spawned.  (CheckReplacement() / IsRelevant()?)
  class'WarheadLauncher'.default.ItemName = "Mini Redeemer";
  class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.3;
- class'WarShell'.default.Speed = class'WarShell'.default.Speed * 0.5;
+ class'WarShell'.default.Speed = class'WarShell'.default.Speed * 0.6;
  class'WarShell'.default.Damage = class'WarShell'.default.Damage * 0.3;
  class'WarShell'.default.MomentumTransfer = class'WarShell'.default.MomentumTransfer * 0.3;
  class'GuidedWarShell'.default.DrawScale = class'GuidedWarShell'.default.DrawScale * 0.3;
- class'GuidedWarShell'.default.Speed = class'GuidedWarShell'.default.Speed * 0.5;
+ class'GuidedWarShell'.default.Speed = class'GuidedWarShell'.default.Speed * 0.6; // BUG: This doesn't seem to work!
  class'GuidedWarShell'.default.Damage = class'GuidedWarShell'.default.Damage * 0.3;
  class'GuidedWarShell'.default.MomentumTransfer = class'GuidedWarShell'.default.MomentumTransfer * 0.3;
  //// TODO: Value sometimes set from PostBeginPlay().  We should intercept just after creation.  bIsRelevant/CheckReplacement?
@@ -169,14 +170,14 @@ event Timer() {
    }
 
    if (!bTwoPlayersLeft) {
-    // This technique was nice - they always die after the same amounr of time.
-    // But it caused problems - a player with <=0 HP can't take pickups, or lose their invis etc.!
+    // This technique was nice - they always die after the same amount of time.
+    // But it caused problems - a player with <=0 HP can't take pickups!
     /*
 				p.Health -= 1;
 				if (p.Health == 0) {
 					// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
 					FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
-					p.PlaySound(WarningSound,SLOT_Interface,1.0); // TEST: Does this go to the player alone, or all?  All might be fun, probably we should make it a little quiet tho, or 2/3 or 3/4 radius.
+					p.PlaySound(WarningSound,SLOT_Interface,1.0); // Other players can hear this, if they are close.
 					p.bUnlit=True;
 				}
 				if (p.Health <= -15) {
@@ -184,7 +185,7 @@ event Timer() {
 					// TODO: make a puff of smoke appear here!!! xD
 				}
 				*/
-    if (p.Health == 2) {
+    if (p.Health == 10) {
      // FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
      FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
      p.PlaySound(WarningSound,SLOT_Interface,1.0); // TEST: Does this go to the player alone, or all?  All might be fun, probably we should make it a little quiet tho, or 2/3 or 3/4 radius.
@@ -193,7 +194,7 @@ event Timer() {
     if (p.Health > 1) {
      p.Health -= 1;
     } else {
-     if (FRand()<0.1) {
+     if (FRand()<0.2) {
       p.Died(None, 'Suicided', p.Location);
      }
     }
@@ -202,7 +203,7 @@ event Timer() {
   }
 
   // Count the number of players still in the game.
-  if (p.PlayerReplicationInfo!=None && p.PlayerReplicationInfo.Score>0) {
+  if (p.PlayerReplicationInfo!=None && (p.PlayerReplicationInfo.Score>0 || p.Health>0)) {
    aliveCount++;
    // Update the players string.  (We won't use it anyway if aliveCount>=3)
    if (players == "") {
@@ -215,9 +216,9 @@ event Timer() {
  }
 
 
-
-
-
+ if (bDebugLogging && FRand()<0.2) {
+  BroadcastMessage("I see "$ aliveCount $" players: "$players);
+ }
 
 
  // Check to see if there are only 2 players left.
@@ -226,8 +227,9 @@ event Timer() {
   foreach AllActors(class'PlayerPawn',pp) {
    FlashMessage(pp,"Two players left:",MessageColor,3,false);
    FlashMessage(pp,players,MessageColor,4,true);
-   // TODO: switch everyone's music >.<  Hmm might be hard, since only the map's track it loaded. :P
+   // TODO: switch everyone's music >.<  Hmm might be hard, since only the map's track is loaded. :P
    //       but actually ND manages it, altho maybe client-side.
+   //       Maybe we can do it by spawning some sound Actor, and triggering it.
   }
   bTwoPlayersLeft = True;
  }
@@ -254,7 +256,7 @@ function ScoreKill(Pawn killer, Pawn victim) {
  Super.ScoreKill(killer,victim);
  if (killer != None && killer!=victim) {
 
-  // I was dropping powerups when dying from crater/suicide etc, during siege games.  O_o
+  // I was dropping my powerup weapon when dying from crater/suicide etc, during siege games.
   if (TeamGamePlus(Level.Game)!=None) {
    if (killer.PlayerReplicationInfo!=None && victim.PlayerReplicationInfo!=None) {
     if (killer.PlayerReplicationInfo.Team == victim.PlayerReplicationInfo.Team) {
@@ -266,6 +268,7 @@ function ScoreKill(Pawn killer, Pawn victim) {
   if (!bTwoPlayersLeft) {
 
    // HealthGainedPerKill:
+   Killer.bUnlit=False;
    killer.Health += HealthGainedPerKill;
    if (killer.Health > 199) killer.Health = 199;
    // killer.PlaySound(class'Botpack.TournamentHealth'.default.PickupSound,SLOT_Interface,3.0);
@@ -603,9 +606,9 @@ function Mutate(String msg, PlayerPawn Sender) {
   }
 
 
-
-
-
+  if (msg ~= "DEBUG") {
+   bDebugLogging = !bDebugLogging;
+  }
 
 
  }
@@ -619,8 +622,8 @@ defaultproperties {
  InitialArmour=123 // Handled by LMS
  InitialHealth=123 // Handled by LMS?
  // InitialArmour=100
- HealthLostPerSec=2.0
- HealthGainedPerKill=50.0
+ HealthLostPerSec=1.8
+ HealthGainedPerKill=40.0
  bGivePowerups=True
  FragsForPowerup=4
  // bBroadcastPowerups=False
@@ -639,16 +642,21 @@ defaultproperties {
  InitialWeapon(6)="Botpack.UT_EightBall"
  InitialWeapon(7)="Botpack.ShockRifle"
  InitialWeapon(8)="Botpack.SniperRifle"
+ //// On my zp server, I think I needed to add the following zp weapons:
+ // InitialWeapon[9]=ZeroPingPlus103.zp_ShockRifle
+ // InitialWeapon[10]=ZeroPingPlus103.zp_SniperRifle
+ // InitialWeapon[11]=ZeroPingPlus103.zp_Enforcer
  // PowerupSound=Sound'Botpack.Pickups.Sbelthe2'
  // PowerupSound=Sound'Botpack.Pickups.AmpOut'
- Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32),Name="Health Boost")
+ //// I removed HealthPack and AmmoBoost cos they just kinda suck.
+ // Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32),Name="Health Boost")
  Powerup(1)=(Type="Botpack.Armor2",Color=(R=255,G=131,B=91,A=32))
  Powerup(2)=(Type="Botpack.UDamage",Color=(R=192,G=31,B=192,A=32))
- Powerup(3)=(Type="Botpack.UT_Stealth",Color=(R=3,G=3,B=150,A=48),Name="Invisibility")
+ Powerup(3)=(Type="Botpack.UT_Invisibility",Color=(R=3,G=3,B=150,A=48),Name="Invisibility")
  Powerup(4)=(Type="Botpack.UT_ShieldBelt",Color=(R=255,G=255,B=31,A=32))
  Powerup(5)=(Type="Botpack.UT_JumpBoots",Color=(R=91,G=255,B=255,A=32))
  Powerup(6)=(Type="Botpack.WarheadLauncher",Color=(R=180,G=21,B=21,A=32))
- Powerup(7)=(Type="FairLMS.AmmoBoost",Color=(R=102,G=102,B=102,A=32),Name="Ammo Boost")
+ // Powerup(7)=(Type="FairLMS.AmmoBoost",Color=(R=102,G=102,B=102,A=32),Name="Ammo Boost")
  // Speed - too much!
  // Relics...
  // Powerup(8)=(Type="SiegeXXL2f.JetPack",Color=(R=91,G=192,B=255,A=32))
