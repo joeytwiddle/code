@@ -2,6 +2,11 @@
 
 /*
 
+// MapStats - Collect some statistics on your maps.  Optionally, automatically
+// cycle to a suitable map based on size relative to number of players on
+// server, and time since it was last played.
+// By nogginBasher, improvements by Rork.
+
 // TODO: Detect end of game (e.g. by recognising a variety of mapvote messages,
 // or by checking bGameEnd like other Mutators do) and if there are <10 votes
 // been made for a map, spam a message asking people to rate it.
@@ -85,11 +90,13 @@ class MapStats expands Mutator config(MapStats);
 //// I'm afraid it can't be done.  We can't compile against MapVoteLA13 (at least not under Linux/wine/ucc), and we can't access elements of MapListTemp's array using ConsoleCommands.
 // #define ADJUST_MAPVOTELA_LIST
 
+var config bool bBroadcastStuff;
 var config bool bShowLevelEnterText;
 var config bool bEndGameSwitchMap;
 var config int EndGameSwitchSeconds;
 var config bool bAllowMutateSwitch;
 var config bool bEmptyServerSwitchMap;
+var config bool bEmptyServerRandomMap;
 var config int EmptyServerSwitchSeconds;
 var config bool bStickWithCurrentMode; // turn it on to keep server playable (no CTF on DM maps etc.!) - turn it off to scan all map-sizes
 var config bool bSetMaxPlayers;
@@ -164,6 +171,7 @@ var String VetoersList;
 #endif
 
 defaultproperties {
+bBroadcastStuff=True
 bLogging=True
 bDebugLogging=False
 bDetectCrashingMaps=False
@@ -174,8 +182,9 @@ bEstimatePreferredPlayers=True
 bEndGameSwitchMap=False
 EndGameSwitchSeconds=30
 bEmptyServerSwitchMap=False
+bEmptyServerRandomMap=False
 EmptyServerSwitchSeconds=120
-bAllowMutateSwitch=True
+bAllowMutateSwitch=False
 bSetMaxPlayers=False
 bAutoExpandMaxPlayers=False
 ServerMinPlayers=6
@@ -492,14 +501,16 @@ event Timer() {
 		bDoneGameEnd = True;
 		if (bEndGameSwitchMap) {
 			NextMap = ChooseNextMap();
-			// BroadcastAndLog("Map will change to "$ NextMap $" in "$EndGameSwitchSeconds$" seconds.");
-			// #ifdef PLAYERS_CAN_VETO
-			// BroadcastAndLog("Next map will be "$ NextMap $"... say no to reject.");
-			// #else
-			// BroadcastAndLog("Next map will be "$ NextMap $".");
-			// #endif
-			// BroadcastAndLog("(Other maps: "$ ConsideredMaps $")");
-			BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+			if (bBroadcastStuff) {
+				// BroadcastAndLog("Map will change to "$ NextMap $" in "$EndGameSwitchSeconds$" seconds.");
+				// #ifdef PLAYERS_CAN_VETO
+				// BroadcastAndLog("Next map will be "$ NextMap $"... say no to reject.");
+				// #else
+				// BroadcastAndLog("Next map will be "$ NextMap $".");
+				// #endif
+				// BroadcastAndLog("(Other maps: "$ ConsideredMaps $")");
+				BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+			}
 			// We do the switch in the if clause below, when Timer is next called.
 			SetTimer(EndGameSwitchSeconds,False);
 		} else {
@@ -638,16 +649,18 @@ function DoLevelSwitch() {
 	// CONSIDER TODO: Shouldn't we do DoEnd() here?  Well it should be already done, provided we only get here by activation after the end of a game.
 	SaveConfig();
 
-	BroadcastAndLog("Considered maps: "$ ConsideredMaps);
-	// BroadcastAndLog("Switching to "$ NextMap $" now.");
+	if (bBroadcastStuff) {
+		BroadcastAndLog("Considered maps: "$ ConsideredMaps);
+		// BroadcastAndLog("Switching to "$ NextMap $" now.");
 
-	num = (DaysSince1970() - MapRecord(NextMap).DateLastPlayed);
-	if (num<2.0) {
-		// NormalLog(mapName$" was last played "$ Int(24*num+0.5) $" hours ago.");
-		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(24.0*num+0.5) $" hours ago.");
-	} else {
-		// NormalLog(mapName$" was last played "$ Int(num+0.5) $" days ago.");
-		BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(num+0.5) $" days ago.");
+		num = (DaysSince1970() - MapRecord(NextMap).DateLastPlayed);
+		if (num<2.0) {
+			// NormalLog(mapName$" was last played "$ Int(24*num+0.5) $" hours ago.");
+			BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(24.0*num+0.5) $" hours ago.");
+		} else {
+			// NormalLog(mapName$" was last played "$ Int(num+0.5) $" days ago.");
+			BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(num+0.5) $" days ago.");
+		}
 	}
 
 	// if (!StrEndsWith(Caps(NextMap),".UNR"))
@@ -669,9 +682,14 @@ function DoLevelSwitch() {
 	} else {
 		url = url $"?game="$ gametype;
 	}
-	// TODO: We didn't handle mutators yet ... well leaving them empty might just keep them the same as last map.
+	// TODO: We didn't handle mutators yet ... leaving them empty just keeps them the same as last map.
 	//       This is undesirable on kx if, say, we change from eLMS mode to CTF!
 	// url = url $"?mutator=...";
+	
+	// NOTE: We're using Level.ServerTravel(url,false) this will crash if we're using AnthChecker_v138 and bEnableNetFix=true
+	Level.ServerTravel(url,false);
+	/*
+	// NOTE: redundant code to switch maps: they have issues worse then the anthchecker crash
 	// TODO: We should also try Level.ConsoleCommand()!
 	if (p != None) {
 		p.bAdmin = True;
@@ -703,6 +721,7 @@ function DoLevelSwitch() {
 		//// Did not work:
 		// Level.ConsoleCommand("admin servertravel "$url);
 	}
+	*/
 
 	#ifdef CATCH_LEVEL_SWITCH
 	TryingMap = NextMap;
@@ -859,7 +878,7 @@ function float MaxActorDistanceType(class<Actor> type) {
 }
 
 function float DaysSince1970() {
-	return (Level.Year-1970.0)*365.25 + Level.Month*30.0 + Level.Day + Level.Hour/24.0 + Level.Minute/24.0/60.0 + Level.Second/24.0/60.0/60.0;
+	return (Level.Year-1970.0)*365.25 + Level.Month*31.0 + Level.Day + Level.Hour/24.0 + Level.Minute/24.0/60.0 + Level.Second/24.0/60.0/60.0;
 }
 
 function float ScoreForNextMap(int nextI, int currentNumPlayers) {
@@ -921,8 +940,8 @@ function String ChooseNextMap() {
 	}
 	ConsideredMaps="";
 	currentNumPlayers = CountPlayers();
-	if (currentNumPlayers == 0) {
-		bCanChooseUnsizedMaps = True;
+	if (currentNumPlayers == 0 && bEmptyServerRandomMap) {
+		bCanChooseUnsizedMaps = True;   // A chance to estimate player size for maps we have not yet processed
 		currentNumPlayers = ServerMinPlayers + FRand() * (ServerMaxPlayers - ServerMinPlayers + 1);
 	} // TODO: If MapStats is the server's only method of map switching, it may refuse to ever try a new map.  (e.g. if bEmptyServerSwitchMap is unset)
 	NormalLog("Current players = "$ currentNumPlayers $", choosing...");
@@ -1024,7 +1043,7 @@ event Tick(float DeltaTime) {
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 	if (bCollectDamage) {
-		if (TeamGame(Level.Game)==None || (Victim!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy!=None && InstigatedBy.PlayerReplicationInfo!=None && (Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team))) {
+		if (TeamGamePlus(Level.Game)==None || (Victim!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy!=None && InstigatedBy.PlayerReplicationInfo!=None && (Victim.PlayerReplicationInfo.Team != InstigatedBy.PlayerReplicationInfo.Team))) {
 			currentMap.TotalDamage += ActualDamage;
 			// bMustSave=True;
 		}
@@ -1101,7 +1120,7 @@ function bool ScanMaps(optional String search, optional String prefix) {
 		// Text to see if this is the last.
 		TestMap = NextMap;
 	}
-	// Broadcast because: it should never happen during play, so if it does, we want to know about it!
+	// Always broadcast because it should never happen during play, so if it does, we want to know about it!
 	BroadcastMessage("MapStats found "$ availableCount $" available "$ prefix $" maps.");
 	NormalLog("ScanMaps() Found "$ availableCount $" available "$ prefix $" maps out of "$ count $" known, where "$ crashCount $" crash, "$ missingCount $" are missing, and "$ unknownCount $" have unknown size.");
 	SaveConfig();
@@ -1207,8 +1226,7 @@ function Mutate(String str, PlayerPawn Sender) {
 	local PlayerPawn p;
 	if (bAllowMutateSwitch) {
 		if (str~="suggest") {
-			// Current NextMap is discarded
-			// In fact, current NextMap is vetoed:
+			// If we want to veto the currentNextMap:
 			// if (NextMap != "")
 				// RejectedMaps = RejectedMaps $ " " $ NextMap;
 			NextMap = ChooseNextMap();
@@ -1220,8 +1238,8 @@ function Mutate(String str, PlayerPawn Sender) {
 			   (str~="nextmap" && Sender.bAdmin)
 			|| (str~="nextmap" && CountPlayers()==1)
 			|| (str~= ("nextmap "$ ConsoleCommand("get engine.gameinfo AdminPassword") ) )
-			|| str ~= "nextmap..."
-			|| str ~= "next..." // TODO WARNING BUG: This little backdoor allows any player to force a mapswitch, but I am currently using it for TESTING.
+			// || str ~= "nextmap..."
+			// || str ~= "next..." // FIXED (WARNING BUG): This little backdoor allows any player to force a mapswitch, but I am currently using it for TESTING.
 		) {
 			// if (Level.Game.bGameEnded) {
 			if (FRand()<0.25) {
@@ -1259,7 +1277,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		}
 		#ifdef LIST_RECENTLY_PLAYED
 		if (str~="LISTRECENT" || str~="LASTMAPS") {
-			BroadcastAndLog("Recently played maps: "$ RecentlyPlayedMaps);
+			Sender.ClientMessage("Recently played maps: "$ RecentlyPlayedMaps);
 		}
 		#endif
 		if (str~="help") {
@@ -1303,7 +1321,7 @@ function ListMapsTo(PlayerPawn p, String searchStr) {
 
 	if (MapStats[i].MapName != "") { // TODO: bAdmin ?
 		NextMap = MapStats[i].MapName;
-		BroadcastMessage("Next map will be "$NextMap);
+		p.ClientMessage("Next map will be "$NextMap);
 	}
 
 	if (hit == false) {
@@ -1317,100 +1335,6 @@ function AddTags(String tags) {
 	// done outside atm: SaveConfig();
 }
 #endif
-
-/*
-// Returns True if the command was recognised (and therefore the player's message could optionally be swallowed).
-function bool CheckMessage(String line, PlayerPawn Sender) {
-	local int argCount;
-	local String args[256];
-	local Actor A;
-	local String result;
-	local int i,j;
-	local String squishedName;
-	local String url;
-	local String rebuilt_string; // CONSIDER: instead of rebuilding the string, we could just use StrAfter(line," ") one or more times.
-	local String command;
-	// local PlayerSettings ps;
-	local String stateStr;
-
-	if (bOnlyAdmin && !Sender.bAdmin) {
-		return False;
-	}
-
-	// ps = GetPlayerSettingsFor(Sender);
-	#define ps GetPlayerSettingsFor(Sender)
-
-	// NormalLog("ActorEditor.CheckMessage() ("$Sender$"): "$Msg$"");
-	argcount = SplitString(line," ",args);
-
-	command = args[0];
-
-	if (command ~= "flash") {
-		ps.bFlash = !ps.bFlash;
-		stateStr = "off";
-		if (ps.bFlash)
-			stateStr = "on";
-		// if (ps.bFlash)
-		FlashMessageToPlayer(Sender,"damage flash = "$stateStr,InfoColor,0,2,true);
-		// else Sender.ClearProgressMessages();
-		Sender.ClientMessage("Your damage flash is "$stateStr);
-		return True;
-	}
-
-	if (command ~= "damage") {
-		ps.bSeeDamageGiven = !ps.bSeeDamageGiven;
-		stateStr = "off";
-		if (ps.bSeeDamageGiven)
-			stateStr = "on";
-		Sender.ClientMessage("Your showdamage is "$stateStr);
-		// if (ps.bFlash) 
-		FlashMessageToPlayer(Sender,"show damage = "$stateStr,SentPainColor,1,2,True);
-		return True;
-	}
-
-	if (command ~= "pain" || command ~="mydamage") {
-		ps.bSeeDamageReceived = !ps.bSeeDamageReceived;
-		stateStr = "off";
-		if (ps.bSeeDamageReceived)
-			stateStr = "on";
-		Sender.ClientMessage("Your show pain is "$stateStr);
-		FlashMessageToPlayer(Sender,"show pain = "$stateStr,ReceivedPainColor,7,2,True);
-		return True;
-	}
-
-	if (command ~= "alldamage") {
-		ps.bSeeAllDamage = !ps.bSeeAllDamage;
-		stateStr = "off";
-		if (ps.bSeeAllDamage)
-			stateStr = "on";
-		Sender.ClientMessage("show alldamage = "$stateStr);
-		FlashMessageToPlayer(Sender,"Your show all damage is "$stateStr,InfoColor,3,2,True);
-		return True;
-	}
-
-	if (command ~= "HELP") {
-		Sender.ClientMessage("TrackDamage commands: flash damage pain alldamage");
-		return True;
-	}
-
-	return False;
-
-}
-
-function FlashMessageToPlayer(PlayerPawn p, string Msg, Color msgColor, optional int linenum, optional int duration, optional bool bAdditional, optional bool bBeep) {
-	if (linenum == 0)
-		linenum = 4;
-	if (duration == 0)
-		duration = 2;
-	if (!bAdditional)
-		p.ClearProgressMessages();
-	p.SetProgressTime(duration);
-	p.SetProgressColor(msgColor,linenum);
-	p.SetProgressMessage(Msg,linenum);
-	if (bBeep)
-		p.PlaySound(sound'Beep', SLOT_Interface, 2.5, False, 32, 32);
-}
-*/
 
 // #include "../../JLib/findactor.uc.jpp"
 
