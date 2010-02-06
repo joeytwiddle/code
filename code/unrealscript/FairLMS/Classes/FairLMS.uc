@@ -5,16 +5,17 @@
 
 // vim: ft=uc ts=3 sw=3 noexpandtab
 
+// TODO: Uggla keeps getting two warheads, or respawning with one.  I dunno how this is happening!
 // DONE: It seemed Invis was never being given.  And in CTF mode, it seemed health packs were far too popular!  We must use UT_Stealth, Stealth just doesn't work.
 // TODO: In the original, the health countdown stops for a few seconds after you make a kill.
 // TODO CONSIDER: Maybe we should integrate anti-camper with the health countdown.  We could apply the health countdown only to players who are far from other players, and not moving towards the other players.  Beware - 3 players on a large map might not know HOW to find each other, and might lose health unfairly.  Check values against average?
-// TODO: Move this class to BonusPowerups, and then let this class add the FairLMS stuff on top.
+// TODO: Move some of this class to BonusPowerups, and then let this class add the FairLMS stuff on top.
 // FIXED: When running during a CTFGame, if the player runs out of health whilst holding the flag, he/she respawns still holding the flag!
 // FIXED: Similar problem with invis during FairLMS.
 // TODO: If someone runs out of energy, but you hit him 10 seconds ago, maybe you should get at least a weak late-kill bonus.
 // TODO: We didn't really need to give the player those weapons, since LMS will probably suit them up anyway.
 //       But maybe we aren't in the LMS gametype.  In which case, we should probably remove weapons and other pickup items from the map.
-// TODO BUG: Were some of the armor+pads getting left invisible on the spawnpoints?  I kept spawning with 150, but maybe that was done by normal LMS.
+// WAS NOT A BUG: Were some of the armor+pads getting left invisible on the spawnpoints?  I kept spawning with 150, but maybe that was done by normal LMS.
 // TODO: Anti-camper anti-idler detection.  Otherwise you still get some advantage by sitting on your spawnpoint - people might avoid killing you because you are idling and they don't wanna be lame!
 // DONE: Sucks to get Armour then Armour again, etc.  :P
 // DONE: Deemer
@@ -27,24 +28,24 @@
 //       Since one is likely to spawn during the game anyway, have server and client pre-load the Powerups resources before the game starts.
 //       But do we need to spawn one in order to get the client to load it?
 // TODO: I think you only get given one WarheadLauncher per life.  This is a feature, so ensure it stays that way!
-// TODO: Detect last 2 players, display it, and then stop giving powerups+health.
+// DONE: Detect last 2 players, display it, and then stop giving powerups+health.
 // DONE: Some errors from the bots - are they due to pathing on spawned items which they think are navigable to/through?  Seemed to be fixed with some more additions to GiveInventory().
 // DONE: Rather than watch health go down 2 points each second, set the timer frequency calculated to remove 1hp each call to Timer().
-// TODO: zeroping weapons not working, piglet wants "+50" txt, or happy with healthsound instead.
+// DONE: zeroping weapons not working, piglet wants "+50" txt, or happy with healthsound instead.
 //       initial armour and health got set by LMS.
 // DONE: (i think) Player is Out.
-// TODO: invis lasts too long
+// FIXED: invis lasts too long
 // DONE: Ammo is not working!
 // In LMS fragged players are not dropping their weapons?!  Then we really must increase their ammo!
 // FIXED: Still showing "Large Bullets"
 // TODO: Make it an admin option, whether sounds are heard by all or only the relevant player.
 // TODO CONSIDER: If it's a TeamGame, spawn the same Powerup for each team at semi-regular intervals, somewhere in front of their player with most health (who is in their base, or least under threat).
 //                In Siege games, makes this dependent on certain conditions.
-// TODO: Remove logging, or #define it to be optional and efficient.
+// DONE Remove logging, or #define it to be optional and efficient.
 // TODO: Invis does not wear off!
 // TODO: bSpawnPowerupsAsDroppedPickups
 
-
+// #define DEBUG
 
 class FairLMS expands Mutator config(FairLMS);
 
@@ -58,7 +59,7 @@ struct LMSBonus {
 
 var config bool bLogging;
 
-var config bool bDebugLogging;
+
 
 var config bool bGiveWeapons;
 var config int InitialArmour,InitialHealth;
@@ -88,6 +89,8 @@ function LogWarn(String Msg) {
  // BroadcastMessage("[FairLMS] "$Msg);
  Log("[FairLMS] Warning: "$Msg);
 }
+
+
 
 function PostBeginPlay() {
  local Mutator m;
@@ -150,8 +153,8 @@ event Timer() {
 	if (bLogging) {
 		TimerAverage = ( TimerAverage*TimerCount + (Level.TimeSeconds-TimerLast)*1 ) / (TimerCount+1);
 		TimerCount++;
-		// Log("FairLMS.Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) );
-		Log("FairLMS.Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) $" average "$TimerAverage);
+		// MaybeLog("FairLMS.Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) );
+		MaybeLog("FairLMS.Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) $" average "$TimerAverage);
 		TimerLast = Level.TimeSeconds;
 	}
 	*/
@@ -203,7 +206,8 @@ event Timer() {
   }
 
   // Count the number of players still in the game.
-  if (p.PlayerReplicationInfo!=None && (p.PlayerReplicationInfo.Score>0 || p.Health>0)) {
+  if (p.PlayerReplicationInfo!=None && p.getHumanName()!="Player"
+      && (p.PlayerReplicationInfo.Score>0 || p.Health>0)) {
    aliveCount++;
    // Update the players string.  (We won't use it anyway if aliveCount>=3)
    if (players == "") {
@@ -213,12 +217,18 @@ event Timer() {
    }
   }
 
+
+
+
+
+
+
  }
 
 
- if (bDebugLogging && FRand()<0.2) {
-  BroadcastMessage("I see "$ aliveCount $" players: "$players);
- }
+
+
+
 
 
  // Check to see if there are only 2 players left.
@@ -322,7 +332,7 @@ function GiveInitialInventory(Pawn p) {
 					DeathMatchPlus(Level.Game).GiveWeapon(p,InitialWeapon[i]);
 				} else {
 					// LogWarn(Self$".GiveInitialInventory() Warning! "$p.getHumanName()$" already had a "$wType$" so re-using it "$Inv);
-					Log(Self$".GiveInitialInventory() Warning! "$p.getHumanName()$" already had a "$wType$" so re-using it "$Inv);
+					MaybeLog(Self$".GiveInitialInventory() Warning! "$p.getHumanName()$" already had a "$wType$" so re-using it "$Inv);
 					// Maybe this is not needed.  My actual problem was adding a SniperRifle to a player that already had a zp_SniperRifle.
 				}
 				*/
@@ -339,19 +349,18 @@ function Inventory GivePickupType(Pawn p, class<Inventory> t) {
  local Inventory Inv;
  Inv = p.FindInventoryType(t);
  if (Inv!=None) {
-  // Log(Self$".GivePickupType() Warning! "$p.getHumanName()$" already had a "$t$" so re-using it "$Inv);
-  Log(Self$".GivePickupType() "$p.getHumanName()$" already has a "$Inv$" - destroying it.");
+  if (bLogging) { Log("[FairLMS] Log: " $ Self$".GivePickupType() "$p.getHumanName()$" already has a "$Inv$" - destroying it."); };
   Inv.Destroy();
   Inv = None;
-  // TODO: This might be a bummer if it destroys the weapon you are currently holding!
+  // This might be a bummer if it destroys the weapon you are currently holding, but I've never seen that happen.
  }
  // In the case of amp at least, re-using is bad because you don't get the fresh charge!
  if (Inv==None) {
-  // Log(Self$".GivePickupType() Spawning a new "$t$" for "$p.getHumanName());
+  // MaybeLog(Self$".GivePickupType() Spawning a new "$t$" for "$p.getHumanName());
   Inv = Spawn(t,p);
  }
  if (Inv==None) {
-  Log(Self$".GivePickupType() Warning! Failed to spawn a "$t);
+  if (bLogging) { Log("[FairLMS] Log: " $ Self$".GivePickupType() Warning! Failed to spawn a "$t); };
  } else {
   GiveInventory(p,Inv);
 
@@ -443,7 +452,7 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
      } else {
       if (Weapon(inv).AmmoType.default.AmmoAmount>1) { // Not for deemer
        Weapon(inv).AmmoType.AmmoAmount = Weapon(inv).AmmoType.MaxAmmo;
-       // Log("FairLMS.GiveRandomPowerup() Boosted ammo "$Weapon(inv).AmmoType$" to "$Weapon(inv).AmmoType.AmmoAmount);
+       // MaybeLog("FairLMS.GiveRandomPowerup() Boosted ammo "$Weapon(inv).AmmoType$" to "$Weapon(inv).AmmoType.AmmoAmount);
       } else {
        LogWarn("FairLMS.GiveRandomPowerup() Not boosting ammo for "$inv);
       }
@@ -453,21 +462,21 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
   } else {
    type = class<Inventory>( DynamicLoadObject(Powerup[i].Type,class'Class') );
    if (type == None) {
-    Log("[FairLMS] Powerup #"$i$" type \""$Powerup[i].Type$"\" does not exist!");
+    if (bLogging) { Log("[FairLMS] Log: " $ "[FairLMS] Powerup #"$i$" type \""$Powerup[i].Type$"\" does not exist!"); };
     continue;
    }
    inv = p.FindInventoryType(type);
    if (inv != None) {
     // A bit log spammy:
-    // Log(Self$".GiveRandomPowerup() "$p.getHumanName()$" already has a "$inv);
-    // Log(Self$".GiveRandomPowerup() maybe they don't want another - maybe we could upgrade it?");
+    // MaybeLog(Self$".GiveRandomPowerup() "$p.getHumanName()$" already has a "$inv);
+    // MaybeLog(Self$".GiveRandomPowerup() maybe they don't want another - maybe we could upgrade it?");
     // It seems to me that items *are* being removed from a player's inventory when he loses them.
     // I don't know if warhead 2nd time around is working now.
     continue;
    }
    inv = Spawn(type,p);
    if (inv == None) {
-    Log(Self$".GiveRandomPowerup() Failed to spawn "$type);
+    if (bLogging) { Log("[FairLMS] Log: " $ Self$".GiveRandomPowerup() Failed to spawn "$type); };
     continue;
    }
 
@@ -509,7 +518,7 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
    GiveInventory(p,inv);
 
    if (bLogging) {
-    Log("[FairLMS] Gave "$inv$" to "$p);
+    if (bLogging) { Log("[FairLMS] Log: " $ "[FairLMS] Gave "$inv$" to "$p); };
    }
   }
 
@@ -549,7 +558,7 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
 
  }
  if (j==100) {
-  Log(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already.");
+  if (bLogging) { Log("[FairLMS] Log: " $ Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already."); };
   // TODO: maybe remove something from his inventory and retry?  Then at least he could get a fresh one.
   if (bBroadcastPowerups)
    BroadcastMessage(p.getHumanName()$" is MAXXED OUT!");
@@ -606,9 +615,9 @@ function Mutate(String msg, PlayerPawn Sender) {
   }
 
 
-  if (msg ~= "DEBUG") {
-   bDebugLogging = !bDebugLogging;
-  }
+
+
+
 
 
  }
