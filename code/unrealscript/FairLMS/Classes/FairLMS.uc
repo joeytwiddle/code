@@ -5,6 +5,7 @@
 
 // vim: ft=uc ts=3 sw=3 noexpandtab
 
+// TODO: When a player gets the shieldbelt, other players do not see it surround him.
 // TODO: Uggla keeps getting two warheads, or respawning with one.  I dunno how this is happening!
 // DONE: It seemed Invis was never being given.  And in CTF mode, it seemed health packs were far too popular!  We must use UT_Stealth, Stealth just doesn't work.
 // TODO: In the original, the health countdown stops for a few seconds after you make a kill.
@@ -17,9 +18,6 @@
 //       But maybe we aren't in the LMS gametype.  In which case, we should probably remove weapons and other pickup items from the map.
 // WAS NOT A BUG: Were some of the armor+pads getting left invisible on the spawnpoints?  I kept spawning with 150, but maybe that was done by normal LMS.
 // TODO: Anti-camper anti-idler detection.  Otherwise you still get some advantage by sitting on your spawnpoint - people might avoid killing you because you are idling and they don't wanna be lame!
-// DONE: Sucks to get Armour then Armour again, etc.  :P
-// DONE: Deemer
-// DONE: I spawned with shieldbelt.
 // Redeemer fire works but not altfire.
 // DONE: WarheadLauncher DM-Liandri.WarheadLauncher0 (Function Botpack.WarheadLauncher.AltFire:002C) Accessed None
 // DONE: WarheadLauncher DM-Liandri.WarheadLauncher12 (Function Botpack.WarheadLauncher.RateSelf:0027) Accessed None
@@ -206,8 +204,12 @@ event Timer() {
   }
 
   // Count the number of players still in the game.
-  if (p.PlayerReplicationInfo!=None && p.getHumanName()!="Player"
-      && (p.PlayerReplicationInfo.Score>0 || p.Health>0)) {
+  if ( p.getHumanName()!="Player"
+      && p.PlayerReplicationInfo!=None
+      && !p.PlayerReplicationInfo.bIsSpectator
+      && !p.PlayerReplicationInfo.bWaitingPlayer
+      && p.PlayerReplicationInfo.Score>0
+     ) {
    aliveCount++;
    // Update the players string.  (We won't use it anyway if aliveCount>=3)
    if (players == "") {
@@ -631,10 +633,10 @@ defaultproperties {
  InitialArmour=123 // Handled by LMS
  InitialHealth=123 // Handled by LMS?
  // InitialArmour=100
- HealthLostPerSec=1.8
- HealthGainedPerKill=40.0
+ HealthLostPerSec=1.9
+ HealthGainedPerKill=50.0
  bGivePowerups=True
- FragsForPowerup=4
+ FragsForPowerup=3
  // bBroadcastPowerups=False
  // bSpawnPowerupsAsDroppedPickups=False
  bPainSounds=True
