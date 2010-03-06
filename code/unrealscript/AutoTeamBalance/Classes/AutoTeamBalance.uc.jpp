@@ -31,6 +31,11 @@
 
 /*
 
+// TODO: Do not update stats for players who are "sitting".  e.g. If they have
+// not moved and have not fired their weapon in the last 10 seconds, then
+// decrease their time-in-game (increase their join time) by 10 seconds.
+// Fine for CTF.  In Siege and LMS it might punish the player a bit; so be it!
+
 // Another alternative strategy for mid-game switch:
 // When teams are bad, or a player requests, alert to all players:
 //   Teams look uneven (reason)
@@ -154,7 +159,7 @@
 // TODO: Add "mutate undo" and "!undo" which can restore last few saved team states.  That way you can try some things to improve the teams, but go back if needed.
 
 // Changes since 1.4:
-// Re-arranged database to 1.5 hashtable style.
+// Re-arranged database to 1.5 hashtable style.  (Not actually enabled yet - see HASH15!)
 // When exact matching is not possible, prefers to match more recent records.  This requires extra processing when multiple partial matches are found, so watch out for lag or "too many iterations" errors.
 // Changed the default number of player records to 2048, to reduce lag on general servers.
 // Reduced MinSecondsBeforeRebalance to 3 because it's annoying and only really needed to fix the bug with duplicated calls to MutatorTeamMessage().
@@ -255,7 +260,7 @@
 
 //// Preprocessing definitions:
 
-#define ATB_VERSION "1.4.9l"
+#define ATB_VERSION "1.4.9m"
 
 // #define XOL_SPECIFIC
 
@@ -264,20 +269,19 @@
 // #define DEBUGGING
 // #define SWING_PROPS
 
-//// CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY:
-// #define CLEANUP14
 //// HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
 // #define HASH15
-//// Works but not sure we actually want it:
+//// Disabled because I'm not sure we actually want it:
 // #define APPLY_LASTBADPLAYER_TO_REBALANCE
 
 //// Features which worked and we are keeping:
-// #define ENABLE_USEISPNOTFULLIP
+//// CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, it should help to reduce lag.
+#define CLEANUP14
+#define ENABLE_USEISPNOTFULLIP
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
 #define ENABLE_MIN_REQUESTS_FOR_REBALANCE
 #define ENABLE_STRENGTHS_EXTRA // Allows players to query for extra player data.
-// TODO: inline STRENGTHS_EXTRA so admin can enable/disable it?
 #define ENABLE_SHOW_STATS
 #define DETECT_PLAYERJOINS
 #define WEBSITE
@@ -298,7 +302,6 @@
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
 // #define PRECLEAR_SOME_RECORDS - current implementation is dangerous - also doesn't work on the presence of CLEANUP14
-// #define ATB_TRACKER - not working
 //// RANDOMBOTGREET requires DETECT_PLAYERJOINS
 //// I don't know if it works or not because join detection happens before I really enter :P
 // #define RANDOMBOTGREET
@@ -378,7 +381,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 //// Config variables (documented in AutoTeamBalance.txt):
 
-	//// Will it run?
 	var config bool bBroadcastHelloGoodbye;
 	var config bool bAutoBalanceTeamsForCTF;
 	var config bool bAutoBalanceTeamsForTDM;
@@ -411,6 +413,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var config bool bEnablePlayerCommands;
 	#ifdef DETECT_PLAYERJOINS
 	var config bool bAutoSwitchNewPlayers;
+	var config int AutoSwitchTimeout;
 	#endif
 
 	// CONSIDER: Possible refactoring for 2.0; is bOverrideMinRequests ==
@@ -565,11 +568,6 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#define IDCfor(X) idc[X.PlayerReplicationInfo.PlayerID%64]
 	#endif
 
-	#ifdef ATB_TRACKER
-	var String trackingID[64];
-	#define IDfor(X) trackingID[X.PlayerReplicationInfo.PlayerID%64]
-	#endif
-
 	#ifdef LOG_LAG
 	var config bool bLogLag;
 	var float debugTimerStart;
@@ -607,6 +605,7 @@ defaultproperties {
 	#ifdef DETECT_PLAYERJOINS
 	bFlashPlayerJoins=False
 	bAutoSwitchNewPlayers=False
+	AutoSwitchTimeout=10 // After this long in the game, the player will not be eligible for auto switching.
 	#endif
 	bReportStrengthAsCookies=True
 	FlashLine=0 // Highest is most out of the way (but overlaps some other text).  Range 0-6 ok, or 7 if bShowProposedSwitch=False.
@@ -695,7 +694,7 @@ defaultproperties {
 	bIDCOverridesNick=False
 	#endif
 	#ifdef ENABLE_USEISPNOTFULLIP
-	bUseISPNotFullIP=False        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
+	bUseISPNotFullIP=True        // Many ISPs regularly assign players with a new IP.  Enabling this option will strip the last two numbers of each player's IP address, to reveal their ISP only.  Disadvantage: more likely to incorrectly match a different player from the same ISP when player changes nick.  TODO: probably better to keep full IP to detect when a player has changed nick, but ignore the last two digits to detect when a player has changed IP.  I.e. smth like: if nick match is found, ignore last two digits of IP, but if no nick match is found, look for full IP.  So what if a player changes nick and last 2 digits of IP?  If they are the only player on that ISP, then match to that record, otherwise create a new one I guess.
 	#endif
 	#ifdef ENABLE_MUTATOR_SIGNATURE
 	bSeparateStatsByGamemode=False
@@ -803,16 +802,6 @@ function PostBeginPlay() {
 	if (bLogLag) { Enable('Tick'); }
 	#endif
 
-	#ifdef PRECLEAR_SOME_RECORDS
-		// WARNING! Not ready.
-		// We only actually want to empty records if there are too few empty.
-		// If we get fewer new players than we clear each map, we'll end up removing all our data!
-		DefaultLog("PostBeginPlay() Testing! CreateNewPlayerRecord() x 4");
-		CreateNewPlayerRecord(None);
-		CreateNewPlayerRecord(None);
-		CreateNewPlayerRecord(None);
-		CreateNewPlayerRecord(None);
-	#endif
 	#ifdef CLEANUP14
 		CleanupDatabase();
 	#endif
@@ -1065,11 +1054,6 @@ function ModifyPlayer(Pawn paw) {
 				#endif
 			}
 
-			#ifdef ATB_TRACKER
-				IDfor(p) = GetPlayerID(p);
-				BroadcastMessageAndLog("Got ID \""$ IDfor(p) $"\" for "$ p.getHumanName());
-			#endif
-
 			// Do LastBadPlayer balancing:
 			#ifndef ENABLE_IDC
 				CheckNewPlayer(p);
@@ -1127,6 +1111,7 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 		return; // damn we can't switch him now he has the flag, he got away with it!
 	// TODO: We might also be slightly disinclined to switch him if he just got belt or amp.  If he loses armour/vials/weapons well tough.
 	//       Heh we could work Resurrector style and restore his location and inventory just keep his team switched ^^
+	// TODO: Do not switch him if he has a warhead.
 	redTeamStrength = GetTeamStrength(0);
 	blueTeamStrength = GetTeamStrength(1);
 	oldDifference = blueTeamStrength - redTeamStrength;
@@ -1138,7 +1123,7 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 	newDifference = blueTeamStrength - redTeamStrength + delta*2.0;
 	timeInGameA = Level.TimeSeconds - A.PlayerReplicationInfo.StartTime;
 	timeInGameB = Level.TimeSeconds - B.PlayerReplicationInfo.StartTime; // Only needed since we moved CheckNewPlayer() into bWaitForIDC.
-	if (Abs(newDifference) < 0.5*Abs(oldDifference) && timeInGameA<180 && timeInGameB<7) { // definite improvement in balance, and older player has been on server for less than 3 minutes
+	if (Abs(newDifference) < 0.5*Abs(oldDifference) && timeInGameA<AutoSwitchTimeout && timeInGameB<7) { // definite improvement in balance, and older player has been on server for less than 3 minutes
 		NormalLog("CheckTwoNewPlayers() Auto switching "$B.getHumanName()$" with "$A.getHumanName()$".  Team difference should change from "$ oldDifference $" to "$ newDifference $".");
 		BroadcastMessageAndLog("Switching recent player "$B.getHumanName()$" for a fairer game."); // During TESTING, so we can see if it is working.  CONSIDER removing, but see below.
 		#define newTeamStr getTeamName(B.PlayerReplicationInfo.Team)
@@ -1167,37 +1152,6 @@ function RandomBotGreet(PlayerPawn player) {
 			return; // we only want one greet
 		}
 	}
-}
-#endif
-
-#ifdef ATB_TRACKER
-function String GetPlayerID(PlayerPawn p) {
-	// TODO: for convenience, should this use the local lookup if it exists?  Danger - we might do GET INPUT multiple times =/
-	local String got;
-	got = p.ConsoleCommand("GET INPUT UnknownF4");
-	// FAIL.  We gut "unknown property"
-	// will this work simulated if we do it during Tick()?!  Mmm it's a native fn it doesn't say it's simulated though.
-	if (got == "") {
-		// Or not sanitized?  If not sanitized then maybe we should not overwrite,
-		// but instead add to the keybind.  In that case we should have performed
-		// "extraction" of our ID from the bing string earlier.
-		// TODO: create new ID for this player
-	} else {
-		return got;
-	}
-}
-
-simulated event Tick(float DeltaTime) {
-	local String got;
-	local PlayerPawn p;
-	foreach AllActors(class'PlayerPawn',p) {
-		if (FRand()<0.01) {
-			got = p.ConsoleCommand("GET INPUT UnknownF4");
-			// FAIL. Nope that didn't work either.
-			BroadcastMessageAndLog(got);
-		}
-	}
-	Super.Tick(DeltaTime);
 }
 #endif
 
@@ -1506,7 +1460,7 @@ function Mutate(String str, PlayerPawn Sender) {
 
 	// BroadcastMessageAndLog("Proposed team changes: "$SuggestedChanges);
 
-	if (bLetPlayersViewStrengths) {
+	if (bLetPlayersViewStrengths || localPass=="") {
 		if ( args[0]~="STRENGTHS" || args[0]~="STRENGTH" ) {
 			// debugTimerReason = "mutate strengths from "$Sender.getHumanName();
 			// debugTimerStart = Level.TimeSeconds;
@@ -2549,7 +2503,7 @@ function ForceFullTeamsRebalance() {
 
 	} else {
 
-		// Will we start with red or blue?
+		// Will we start assigning players left->right or right->left?
 		if (FRand() < 0.5)
 			flip = true;
 		else
