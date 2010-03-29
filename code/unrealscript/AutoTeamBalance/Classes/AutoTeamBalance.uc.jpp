@@ -563,7 +563,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#endif
 
 	#ifdef DETECT_PLAYERJOINS
-	var PlayerPawn LastBadPlayer; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
+	var PlayerPawn LastPlayerToJoin; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
 	#endif
 
 	#ifdef ENABLE_IDC
@@ -1057,7 +1057,7 @@ function ModifyPlayer(Pawn paw) {
 				#endif
 			}
 
-			// Do LastBadPlayer balancing:
+			// Do LastPlayerToJoin balancing:
 			#ifndef ENABLE_IDC
 				CheckNewPlayer(p);
 			#else
@@ -1084,8 +1084,8 @@ function CheckNewPlayer(PlayerPawn p) {
 	if (bAutoSwitchNewPlayers && gameStartDone && CountHumanPlayers()>2 && !DeathMatchPlus(Level.Game).bTournament) {
 		if ( (CountHumanPlayers() % 2) > 0 ) {
 			// This player has made the teams uneven by playercount!
-			LastBadPlayer = p;
-			// NormalLog("ModifyPlayer() Setting "$p.getHumanName()$" as LastBadPlayer.");
+			LastPlayerToJoin = p;
+			// NormalLog("ModifyPlayer() Setting "$p.getHumanName()$" as LastPlayerToJoin.");
 			// strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
 			// if (Abs(strengthSwing)>70 && GetPlayerStrength(p)>70) {
 				// NormalLog("ModifyPlayer() And warned him because strengthSwing "$strengthSwing$" > 70 and playerStrength > 70 !");
@@ -1093,10 +1093,10 @@ function CheckNewPlayer(PlayerPawn p) {
 			// }
 		} else {
 			// This player has made the teams even by playercount.
-			// But teams might be better if he switched with the LastBadPlayer ...
-			CheckTwoNewPlayers(LastBadPlayer, p);
-			// LastBadPlayer = None;
-			LastBadPlayer = p;
+			// But teams might be better if he switched with the LastPlayerToJoin ...
+			CheckTwoNewPlayers(LastPlayerToJoin, p);
+			// LastPlayerToJoin = None;
+			LastPlayerToJoin = p;
 		}
 	}
 }
@@ -1141,8 +1141,8 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 		A.ClientMessage("Teams are fairer with you on "$ newTeamStr $".  You will not be switched again.");
 		// A.ClientMessage("You have been moved to the "$ Caps(newTeamStr) $" for a fairer game.  You will not be switched again.");
 		// A.ClientMessage("You have been automatically moved to the "$ Caps(newTeamStr) $" since you recently joined, and teams are uneven.");
-		// LastBadPlayer = None;
-		LastBadPlayer = B; // Actually most recent to join, hasn't done anything wrong yet.
+		// LastPlayerToJoin = None;
+		LastPlayerToJoin = B; // Actually most recent to join, hasn't done anything wrong yet.
 	}
 }
 #endif
@@ -2332,7 +2332,7 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 		if (bLetPlayersRebalance && (bHelpInPugs || !DeathMatchPlus(Level.Game).bTournament)) {
 			NormalLog("MutatorTeamMessage() "$ Sender.getHumanName() $" requested rebalance with \""$ Msg $"\".");
 			RequestMidGameRebalance(PlayerPawn(Sender));
-			// if (FRand()<0.4) LastBadPlayer = PlayerPawn(Sender);
+			// if (FRand()<0.4) LastPlayerToJoin = PlayerPawn(Sender);
 		}
 	}
 
@@ -2843,7 +2843,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 			playerStrength = GetPlayerStrength(p);
 			timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
 			#ifdef APPLY_LASTBADPLAYER_TO_REBALANCE
-			if (p == LastBadPlayer)
+			if (p == LastPlayerToJoin)
 				timeInGame = timeInGame * 0.5;
 			#endif
 			// We want a linear scale; i.e. players in for 10 minutes are 2x less likely to be switched than players in for 5.
@@ -2992,7 +2992,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 						// bothTimeInGame = redPTimeInGame + bluePTimeInGame;
 						bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
 						#ifdef APPLY_LASTBADPLAYER_TO_REBALANCE
-						if (redP == LastBadPlayer || blueP == LastBadPlayer)
+						if (redP == LastPlayerToJoin || blueP == LastBadPlayer)
 							bothTimeInGame = bothTimeInGame * 0.5;
 						#endif
 						bothTimeInGame += 240.0;

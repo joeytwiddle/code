@@ -36,6 +36,10 @@
 
 /*
 
+// Note: Server admins who use Resurrector should be aware that restoring the
+// player's Score without restoring his TimeInGame will break ATB's scoring
+// calculations.
+
 // TODO: Do not update stats for players who are "sitting".  e.g. If they have
 // not moved and have not fired their weapon in the last 10 seconds, then
 // decrease their time-in-game (increase their join time) by 10 seconds.
@@ -274,14 +278,14 @@
 // #define DEBUGGING
 // #define SWING_PROPS
 
-//// HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
-// #define HASH15
-//// Disabled because I'm not sure we actually want it:
-// #define APPLY_LASTBADPLAYER_TO_REBALANCE
-
 //// Features which worked and we are keeping:
-//// CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, it should help to reduce lag.
 // Semi-admin stuff:
+//// Important: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
+//// Disabled - For good reason.
+// HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
+//// #define HASH15
+// APPLY_LASTBADPLAYER_TO_REBALANCE is not really doing it right.
+//// #define APPLY_LASTBADPLAYER_TO_REBALANCE
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
@@ -433,7 +437,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var float LastCalculatedAverages;
  var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
  // TODO!
- var PlayerPawn LastBadPlayer; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
+ var PlayerPawn LastPlayerToJoin; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
 // Default values:
 defaultproperties {
  bLogging=True
@@ -741,7 +745,7 @@ function ModifyPlayer(Pawn paw) {
     ClearAllProgressMessages();
     FlashToAllPlayers(p.getHumanName()$" has joined the game!",colorGreen,1);
    }
-   // Do LastBadPlayer balancing:
+   // Do LastPlayerToJoin balancing:
     CheckNewPlayer(p);
    //// TODO XOL BUG: We don't have accurate strengths until we have their Idc record!
    // strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
@@ -757,8 +761,8 @@ function CheckNewPlayer(PlayerPawn p) {
  if (bAutoSwitchNewPlayers && gameStartDone && CountHumanPlayers()>2 && !DeathMatchPlus(Level.Game).bTournament) {
   if ( (CountHumanPlayers() % 2) > 0 ) {
    // This player has made the teams uneven by playercount!
-   LastBadPlayer = p;
-   // NormalLog("ModifyPlayer() Setting "$p.getHumanName()$" as LastBadPlayer.");
+   LastPlayerToJoin = p;
+   // NormalLog("ModifyPlayer() Setting "$p.getHumanName()$" as LastPlayerToJoin.");
    // strengthSwing = GetTeamStrength(1)-GetTeamStrength(0);
    // if (Abs(strengthSwing)>70 && GetPlayerStrength(p)>70) {
     // NormalLog("ModifyPlayer() And warned him because strengthSwing "$strengthSwing$" > 70 and playerStrength > 70 !");
@@ -766,10 +770,10 @@ function CheckNewPlayer(PlayerPawn p) {
    // }
   } else {
    // This player has made the teams even by playercount.
-   // But teams might be better if he switched with the LastBadPlayer ...
-   CheckTwoNewPlayers(LastBadPlayer, p);
-   // LastBadPlayer = None;
-   LastBadPlayer = p;
+   // But teams might be better if he switched with the LastPlayerToJoin ...
+   CheckTwoNewPlayers(LastPlayerToJoin, p);
+   // LastPlayerToJoin = None;
+   LastPlayerToJoin = p;
   }
  }
 }
@@ -807,13 +811,13 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CheckTwoNewPlayers() Auto switching "$B.getHumanName()$" with "$A.getHumanName()$".  Team difference should change from "$ oldDifference $" to "$ newDifference $"."); };
   ChangePlayerToTeam(A, 1-A.PlayerReplicationInfo.Team, true); // had it coming
   ChangePlayerToTeam(B, 1-B.PlayerReplicationInfo.Team, false); // only just got here
-  BroadcastMessageAndLog("Switched recently joined player "$B.getHumanName()$" for a fairer game."); // During TESTING, so we can see if it is working.  CONSIDER removing, but see below.
+  // BroadcastMessageAndLog("Switched recently joined player "$B.getHumanName()$" for a fairer game."); // During TESTING, so we can see if it is working.  CONSIDER removing, but see below.
   //// Does he really need this if it has already been broadcast publically?
-  // A.ClientMessage("Teams are fairer with you on "$ newTeamStr $".  You will not be switched again.");
+  A.ClientMessage("Teams are fairer with you on "$ getTeamName(B.PlayerReplicationInfo.Team) $".  You will not be switched again.");
   // A.ClientMessage("You have been moved to the "$ Caps(newTeamStr) $" for a fairer game.  You will not be switched again.");
   // A.ClientMessage("You have been automatically moved to the "$ Caps(newTeamStr) $" since you recently joined, and teams are uneven.");
-  // LastBadPlayer = None;
-  LastBadPlayer = B; // Actually most recent to join, hasn't done anything wrong yet.
+  // LastPlayerToJoin = None;
+  LastPlayerToJoin = B; // Actually most recent to join, hasn't done anything wrong yet.
  }
 }
 // Catch messages from spectators:
@@ -1752,7 +1756,7 @@ function bool CheckMessage(String Msg, Pawn Sender) {
   if (bLetPlayersRebalance && (bHelpInPugs || !DeathMatchPlus(Level.Game).bTournament)) {
    ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "MutatorTeamMessage() "$ Sender.getHumanName() $" requested rebalance with \""$ Msg $"\"."); };
    RequestMidGameRebalance(PlayerPawn(Sender));
-   // if (FRand()<0.4) LastBadPlayer = PlayerPawn(Sender);
+   // if (FRand()<0.4) LastPlayerToJoin = PlayerPawn(Sender);
   }
  }
  if (StrStartsWith(Caps(Msg),"!MUTATE ")) {
