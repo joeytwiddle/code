@@ -416,8 +416,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var float hours_played[4096];
  var String date_last_played[4096];
  // var int games_played[MaxPlayerDataMax];
- // runtime single-threaded:
- var bool bSuggesting;
+ // Runtime
+ var bool bSuggesting; // When true means we should not switch players, we are just doing a dummy run to build up SuggestedChanges.
  var String SuggestedChanges;
  // TODO: bCached[0] is not implemented properly - is it undesirable to fix it?
  var int bCached[64]; // TODO CONSIDER: One change that bCached has introduced: if the player changes nick after they have been looked up, ATB will continue to use their old record.  However, I don't think this is a major problem.  The new record should be copied from the old record at the next game.
@@ -927,7 +927,8 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 // Does a dummy mid-game rebalance, so that a semi-admin (or in fact any player) can see the proposed switches.
 function GetSuggestedChanges() {
  bSuggesting = True;
- SuggestedChanges = "";
+ // SuggestedChanges = "";
+ SuggestedChanges = "[" $ (GetTeamStrength(1) - GetTeamStrength(0)) $ "]";
  // UpdateStatsAtEndOfGame(); // We undo this later with CopyConfigIntoArrays() but that will reset caching!  TODO: do we even need this?
  // TODO CONSIDER: Make this a rebalance request, so multiple mutates from different players will take action
  // ForceFullTeamsRebalance();
@@ -2235,6 +2236,9 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
  } else {
   ProposeChange(closestPlayer,None);
  }
+ if (bSuggesting) {
+  SuggestedChanges = SuggestedChanges $ " ("$newDifference$")";
+ }
  // return True;
  // If we actually made strengths worse, but #players better, do a 2-player rebalance now:
  return (newDifference <= Abs(currentDifference));
@@ -2311,6 +2315,9 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
   } else {
    ProposeChange(redPlayerToMove,bluePlayerToMove);
   }
+  if (bSuggesting) {
+   SuggestedChanges = SuggestedChanges $ " ("$bestDifference$")";
+  }
   return True;
  } else {
   BroadcastRebalanceMessage("AutoTeamBalance could not find two switches to improve the teams.");
@@ -2384,7 +2391,7 @@ function ChangePlayerToTeam(Pawn p, int teamnum, bool bInform) {
   if (SuggestedChanges != "")
    SuggestedChanges = SuggestedChanges $ ", ";
   SuggestedChanges = SuggestedChanges $ p.getHumanName()$" to "$getTeamName(teamnum);
-  return;
+  return; // Do not actually switch team
  }
  if (p.IsA('Bot')) {
   Bot(p).ConsoleCommand("taunt wave");

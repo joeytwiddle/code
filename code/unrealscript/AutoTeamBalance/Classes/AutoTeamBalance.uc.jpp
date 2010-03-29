@@ -31,6 +31,10 @@
 
 /*
 
+// Note: Server admins who use Resurrector should be aware that restoring the
+// player's Score without restoring his TimeInGame will break ATB's scoring
+// calculations.
+
 // TODO: Do not update stats for players who are "sitting".  e.g. If they have
 // not moved and have not fired their weapon in the last 10 seconds, then
 // decrease their time-in-game (increase their join time) by 10 seconds.
@@ -269,14 +273,7 @@
 // #define DEBUGGING
 // #define SWING_PROPS
 
-//// HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
-// #define HASH15
-//// Disabled because I'm not sure we actually want it:
-// #define APPLY_LASTBADPLAYER_TO_REBALANCE
-
 //// Features which worked and we are keeping:
-//// CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, it should help to reduce lag.
-#define CLEANUP14
 #define ENABLE_USEISPNOTFULLIP
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
@@ -289,6 +286,14 @@
 // Semi-admin stuff:
 #define RENAME_PLAYERS
 #define bHideAdminActivity False
+//// Important: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
+#define CLEANUP14
+
+//// Disabled - For good reason.
+// HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
+//// #define HASH15
+// APPLY_LASTBADPLAYER_TO_REBALANCE is not really doing it right.
+//// #define APPLY_LASTBADPLAYER_TO_REBALANCE
 
 #ifdef XOL_SPECIFIC
 	#define ENABLE_IDC
@@ -1131,9 +1136,9 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 		#define newTeamStr getTeamName(B.PlayerReplicationInfo.Team)
 		ChangePlayerToTeam(A, 1-A.PlayerReplicationInfo.Team, true);  // had it coming
 		ChangePlayerToTeam(B, 1-B.PlayerReplicationInfo.Team, false); // only just got here
-		BroadcastMessageAndLog("Switched recently joined player "$B.getHumanName()$" for a fairer game."); // During TESTING, so we can see if it is working.  CONSIDER removing, but see below.
+		// BroadcastMessageAndLog("Switched recently joined player "$B.getHumanName()$" for a fairer game."); // During TESTING, so we can see if it is working.  CONSIDER removing, but see below.
 		//// Does he really need this if it has already been broadcast publically?
-		// A.ClientMessage("Teams are fairer with you on "$ newTeamStr $".  You will not be switched again.");
+		A.ClientMessage("Teams are fairer with you on "$ newTeamStr $".  You will not be switched again.");
 		// A.ClientMessage("You have been moved to the "$ Caps(newTeamStr) $" for a fairer game.  You will not be switched again.");
 		// A.ClientMessage("You have been automatically moved to the "$ Caps(newTeamStr) $" since you recently joined, and teams are uneven.");
 		// LastBadPlayer = None;
@@ -1291,7 +1296,8 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 // Does a dummy mid-game rebalance, so that a semi-admin (or in fact any player) can see the proposed switches.
 function GetSuggestedChanges() {
 	bSuggesting = True;
-	SuggestedChanges = "";
+	// SuggestedChanges = "";
+	SuggestedChanges = "[" $ (GetTeamStrength(1) - GetTeamStrength(0)) $ "]";
 	// UpdateStatsAtEndOfGame(); // We undo this later with CopyConfigIntoArrays() but that will reset caching!  TODO: do we even need this?
 	// TODO CONSIDER: Make this a rebalance request, so multiple mutates from different players will take action
 	// ForceFullTeamsRebalance();
@@ -2907,6 +2913,9 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 	} else {
 		ProposeChange(closestPlayer,None);
 	}
+	if (bSuggesting) {
+		SuggestedChanges = SuggestedChanges $ " ("$newDifference$")";
+	}
 	// return True;
 	// If we actually made strengths worse, but #players better, do a 2-player rebalance now:
 	return (newDifference <= Abs(currentDifference));
@@ -3012,6 +3021,9 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 			// BroadcastTeamStrengths();
 		} else {
 			ProposeChange(redPlayerToMove,bluePlayerToMove);
+		}
+		if (bSuggesting) {
+			SuggestedChanges = SuggestedChanges $ " ("$bestDifference$")";
 		}
 		return True;
 	} else {
