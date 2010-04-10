@@ -1,0 +1,90 @@
+class RocketArenaMutator expands Mutator config(RocketArenaMutator);
+
+var config bool bPreventDamageFromSelf;
+var config bool bPreventDamageFromFall;
+var config float SelfBoostScale;
+var config int FallLimit;
+
+defaultproperties {
+  bPreventDamageFromSelf=True
+  bPreventDamageFromFall=True
+  SelfBoostScale=1.4
+  FallLimit=500
+  // TODO: FlagCarrierBoostHandling: 0=self-boost allowed, 1=allowed_but_takes_damage lol, 2=normal_boost_and_damage_for_FC
+}
+
+function PostBeginPlay() {
+	Super.PostBeginPlay();
+	Level.Game.RegisterDamageMutator( Self );
+}
+
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+
+	// Deal with boosting (damage and boost amount).
+	if (InstigatedBy == Victim) {
+
+		if (bPreventDamageFromSelf) {
+			ActualDamage = 0;
+		}
+
+		// This is the right amount to scale rockets:
+		Momentum *= SelfBoostScale;
+
+		// But the other weapons need to be adjusted to give appropriate RA boost.
+		if (DamageType == 'jolted') {
+			Momentum *= 1.9;
+		}
+		if (DamageType == 'Mortared') {
+			Momentum *= 1.8;
+		}
+		if (DamageType == 'FlakDeath') {
+			Momentum *= 1.6;
+		}
+		if (DamageType == 'shredded') {
+			Momentum *= 1.6;
+		}
+		if (DamageType == 'decapitated') {
+			Momentum *= 1.6;
+		}
+		if (DamageType == 'Corroded') {
+			Momentum *= 1.4;
+		}
+
+	}
+
+	// Deal with falling.
+	if (bPreventDamageFromFall && DamageType=='Fell') {
+		// If you got hurt more than FallLimit, then you don't get fall
+		// protection!  Why?  Well some maps you can fall off the edge, and the
+		// author expects you to die from it.  If we don't kill the player, then
+		// he will just sit alone at the bottom of the chasm!
+		if (ActualDamage < FallLimit) {
+			ActualDamage = 0;
+		}
+	}
+
+	Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
+}
+
+/**
+
+// A weak approximation of the Rocket Arena game mode implemented as a Mutator.
+// Only one file need be used on the server, and no downloads are required.
+
+TODOS:
+
+There may be some things we need to consider.  Have we got all the weaposn
+right?  Does RA adjust anything we haven't thought of, such as splash radius,
+affect on other players, times when InstigatedBy=None but we should save the
+player from damage, scale of boost wrt damage might not be linear in the real
+RA.
+
+// Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
+// 'Decapitated' 'Drowned' 'Eradicated' 'Exploded' 'Fell' 'FlakDeath'
+// 'GameInfo' 'Gibbed' 'GrenadeDeath' 'Hacked' 'Mortared' 'None'
+// 'RedeemerDeath' 'RipperAltDeath' 'RocketDeath' 'Special' 'SpecialDamage'
+// 'Suicided' 'Zapped' 'burned' 'corroded' 'decapitated' 'destroyed' 'exploded'
+// 'impact' 'jolted' 'sgSpecial' 'shot' 'shredded' 'zapped'
+
+**/
+
