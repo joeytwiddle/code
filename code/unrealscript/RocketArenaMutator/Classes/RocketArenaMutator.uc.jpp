@@ -20,14 +20,14 @@ function PostBeginPlay() {
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 
-	// Deal with boosting (damage and boost amount).
+	// Deal with self-boosting (damage and boost amount).
 	if (InstigatedBy == Victim) {
 
 		if (bPreventDamageFromSelf) {
 			ActualDamage = 0;
 		}
 
-		// This is the right amount to scale rockets:
+		// This is the right amount to scale 2 rockets:
 		Momentum *= SelfBoostScale;
 
 		// But the other weapons need to be adjusted to give appropriate RA boost.
@@ -68,8 +68,10 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 /**
 
-// A weak approximation of the Rocket Arena game mode implemented as a Mutator.
+// An weak approximation of the Rocket Arena game mode implemented as a Mutator.
 // Only one file need be used on the server, and no downloads are required.
+// There are no rounds, the actual gametype remains the same.
+// But self-boosting, and boost tweaking for all the damagetypes is set (actually more like CTF warmup than RA).
 
 TODOS:
 
