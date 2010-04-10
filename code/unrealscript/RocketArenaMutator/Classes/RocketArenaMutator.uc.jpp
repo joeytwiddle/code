@@ -38,16 +38,16 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			Momentum *= 1.8;
 		}
 		if (DamageType == 'FlakDeath') {
-			Momentum *= 1.6;
+			Momentum *= 1.8;
 		}
 		if (DamageType == 'shredded') {
-			Momentum *= 1.6;
+			Momentum *= 1.7;
 		}
 		if (DamageType == 'decapitated') {
 			Momentum *= 1.6;
 		}
 		if (DamageType == 'Corroded') {
-			Momentum *= 1.4;
+			Momentum *= 1.5;
 		}
 
 	}
@@ -72,6 +72,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 // Only one file need be used on the server, and no downloads are required.
 // There are no rounds, the actual gametype remains the same.
 // But self-boosting, and boost tweaking for all the damagetypes is set (actually more like CTF warmup than RA).
+// Because it is a mutator, armor is lost on self-boosts and falls.
 
 TODOS:
 
