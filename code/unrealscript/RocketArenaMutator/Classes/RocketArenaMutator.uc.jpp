@@ -1,5 +1,31 @@
 class RocketArenaMutator expands Mutator config(RocketArenaMutator);
 
+/* ============================================================================
+
+A weak approximation of the Rocket Arena game mode physics, implemented as a
+Mutator.  Only one file need be used on the server, and no downloads are
+required.  There are no rounds, the actual gametype remains the same.  But self
+boosting, and boost tweaking for all the damagetypes is set (actually more like
+CTF warmup than RA).  Because it is a mutator, armor is lost on self-boosts and
+falls.
+
+TODOS:
+
+There may be some things we need to consider.  Have we got all the weaposn
+right?  Does RA adjust anything we haven't thought of, such as splash radius,
+affect on other players, times when InstigatedBy=None but we should save the
+player from damage, scale of boost wrt damage might not be linear in the real
+RA.
+
+Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
+ 'Decapitated' 'Drowned' 'Eradicated' 'Exploded' 'Fell' 'FlakDeath' 'GameInfo'
+ 'Gibbed' 'GrenadeDeath' 'Hacked' 'Mortared' 'None' 'RedeemerDeath'
+ 'RipperAltDeath' 'RocketDeath' 'Special' 'SpecialDamage' 'Suicided' 'Zapped'
+ 'burned' 'corroded' 'decapitated' 'destroyed' 'exploded' 'impact' 'jolted'
+ 'sgSpecial' 'shot' 'shredded' 'zapped'
+
+============================================================================ */
+
 var config bool bPreventDamageFromSelf;
 var config bool bPreventDamageFromFall;
 var config float SelfBoostScale;
@@ -65,29 +91,4 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 	Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
 }
-
-/**
-
-// An weak approximation of the Rocket Arena game mode implemented as a Mutator.
-// Only one file need be used on the server, and no downloads are required.
-// There are no rounds, the actual gametype remains the same.
-// But self-boosting, and boost tweaking for all the damagetypes is set (actually more like CTF warmup than RA).
-// Because it is a mutator, armor is lost on self-boosts and falls.
-
-TODOS:
-
-There may be some things we need to consider.  Have we got all the weaposn
-right?  Does RA adjust anything we haven't thought of, such as splash radius,
-affect on other players, times when InstigatedBy=None but we should save the
-player from damage, scale of boost wrt damage might not be linear in the real
-RA.
-
-// Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
-// 'Decapitated' 'Drowned' 'Eradicated' 'Exploded' 'Fell' 'FlakDeath'
-// 'GameInfo' 'Gibbed' 'GrenadeDeath' 'Hacked' 'Mortared' 'None'
-// 'RedeemerDeath' 'RipperAltDeath' 'RocketDeath' 'Special' 'SpecialDamage'
-// 'Suicided' 'Zapped' 'burned' 'corroded' 'decapitated' 'destroyed' 'exploded'
-// 'impact' 'jolted' 'sgSpecial' 'shot' 'shredded' 'zapped'
-
-**/
 
