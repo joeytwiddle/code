@@ -5,27 +5,27 @@
 // @description    Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page.
 // @include        http://www.google.*/*q=*
 // @include        http://google.*/*q=*
-// @version        0.9.9.6
+// @version        0.9.9.7
 // ==/UserScript==
 
 
 
-//// Changelog ////
-
-/* ==================
+/* === Changelog ===
  *
- * CHANGES in 0.9.9.6
+ * 0.9.9.7
  *
- * checkerRows, loadEarly, renderLikeTabs
+ *   * fixed some bugs, created some new ones
  *
- * ==================
+ * 0.9.9.6
  *
- * CHANGES in 0.9.9.5
+ *   * checkerRows, loadEarly, renderLikeTabs
  *
- * Borders, clearFrameWhenLeaving, and enough comments to keep you reading
- * until next release.
+ * 0.9.9.5
  *
- * ================== */
+ *   * Borders, clearFrameWhenLeaving, and enough comments to keep you reading
+ *     until next release.
+ *
+ * ==== /Changelog === */
 
 
 
@@ -48,15 +48,21 @@ var panelHasBorder  = true;    // I like the preview pane to look sunken.
 var loadEarly       = true;    // Better (e.g. with Delicious on Google script) to wait.
 var checkerRows     = true;    // Alternates grey and white background to separate results.
 var renderLikeTabs  = false;   // Different visual style.
+var linksActNormally = true;   // TODO: if this=true and we are hovering a link, then DON'T highlight!
+var reduceIndent    = true;    // Our sidebar is not very wide.  Make indents more subtle.
 
-var clearFrameWhenLeaving = false; // Can speed up loading of the clicked page if the preview is still loading.
+var createPanelLater = false;  // The split does not occur until a result is selected for preview.  Nice for a larger initial overview of results, but when we do select one, the re-arrangement loses our scroll position.
+
+var clearFrameWhenLeaving = true; // Can speed up loading of the clicked page if the preview is still loading.  Certainly helps Konqueror.
+
+var includeHeaderLinks = true; // Whether to preview header links as well as result links.
 
 var Colors = {
 	focus:    { bg: "#eefbfb", border: "#ddeeee" },
 	selected: { bg: "#ddeeff", border: "#ccddff" },
 	travel:   { bg: "#ffeecc", border: "#ffccbb" },
 	action:   { bg: "#ddccff", border: "#ccbbff" },
-	checkers: { 0: "#f9f9f9", 1: "#ffffff" }
+	checkers: { 0: "#f6f6f6", 1: "#ffffff" }
 };
 
 if (renderLikeTabs) {
@@ -80,6 +86,8 @@ var resultsWidth = 1.0 - previewWidth;
 
 function initPreview() {
 
+	// GM_log("Doing init.");
+
 	//// Set up the Layout ////
 
 	var resultsBlock = getResultsBlock(); // May change!
@@ -87,17 +95,22 @@ function initPreview() {
 	// Non-essential reformatting which might break
 	try {
 
-		if (fillWholeWindow) {
+		function fillWindow() {
 
 			resultsBlock = document.createElement("DIV");
 
 			// Copy wanted parts of window into our left-pane block:
 			if (keepHeaderAbove) {
-				var curNode = document.getElementById("ssb").nextSibling;
-				while (curNode) {
-					var nextNode = curNode.nextSibling;
-					resultsBlock.appendChild(curNode);
-					curNode = nextNode;
+				var ssb = document.getElementById("ssb") || document.getElementById("not_ssb");
+				if (!ssb) {
+					GM_log("Failed to find ssb!");
+				} else {
+					var curNode = ssb.nextSibling;
+					while (curNode) {
+						var nextNode = curNode.nextSibling;
+						resultsBlock.appendChild(curNode);
+						curNode = nextNode;
+					}
 				}
 			} else {
 				while (document.body.childNodes.length > 0) {
@@ -124,7 +137,7 @@ function initPreview() {
 				annoyingLine = document.getElementsByClassName("gbh")[0];
 				annoyingLine.parentNode.removeChild(annoyingLine);
 			} catch (e) {
-				GM_log("Caught A: "+e);
+				// GM_log("Failed to find annoying line: "+e);
 			}
 
 			// If we pulled more stuff than just the results into the left pane,
@@ -150,411 +163,449 @@ function initPreview() {
 
 		}
 
+		if (fillWholeWindow) {
+			fillWindow();
+		}
+
+		// I tried doing this later, but things broke!
 		reformatThings();
 
 	} catch (e) {
-		GM_log("Error during layout: "+e);
+		GM_log("Exception during layout: "+e);
 	}
 
 
+	var previewFrame;
 
-	var table     = document.createElement("TABLE");
-	var tbody     = document.createElement("TBODY");
-	var row       = document.createElement("TR");
-	var leftCell  = document.createElement("TD");
-	var rightCell = document.createElement("TD");
+	function createPreviewFrame() {
 
-	var previewFrame = document.createElement('IFRAME');
-	previewFrame.style.backgroundColor = '#eeeeee';
-	if (!panelHasBorder)
-		previewFrame.style.border = '0px solid white';
-	rightCell.appendChild(previewFrame);
+		var table     = document.createElement("TABLE");
+		var tbody     = document.createElement("TBODY");
+		var row       = document.createElement("TR");
+		var leftCell  = document.createElement("TD");
+		var rightCell = document.createElement("TD");
 
-	tbody.appendChild(row);
-	table.appendChild(tbody);
-	row.appendChild(leftCell);
-	row.appendChild(rightCell);
+		previewFrame = document.createElement('IFRAME');
+		previewFrame.style.backgroundColor = '#eeeeee';
+		if (!panelHasBorder)
+			previewFrame.style.border = '0px solid white';
+		rightCell.appendChild(previewFrame);
 
-	resultsBlock.parentNode.insertBefore(table,resultsBlock.nextSibling);
-	leftCell.appendChild(resultsBlock);
+		tbody.appendChild(row);
+		table.appendChild(tbody);
+		row.appendChild(leftCell);
+		row.appendChild(rightCell);
 
-	var div = null;
+		resultsBlock.parentNode.insertBefore(table,resultsBlock.nextSibling);
+		leftCell.appendChild(resultsBlock);
 
-	if (renderLikeTabs) {
-		// We create a "tab" rectangle that we use to meet up with the "tabs" and
-		// surround the preview window.
-		// TODO: Would be better if this span only joined tabs to the preview cell,
-		// and have the preview cell tab-coloured, with the IFrame inside it.
-		div = document.createElement("SPAN");
-		leftCell.appendChild(div);
-		div.style.backgroundColor = Colors.selected.bg;
-		div.style.position = 'fixed';
-		div.style.zIndex = -200;
-		div.style.border = '2px solid '+Colors.selected.border;
+		var div = null;
 
-		// rightCell.style.padding = '10px';
-		// previewFrame.style.margin = '10px';
-		rightCell.style.backgroundColor = Colors.selected.bg;
-	}
+		if (renderLikeTabs) {
+			// We create a "tab" rectangle that we use to meet up with the "tabs" and
+			// surround the preview window.
+			// TODO: Would be better if this span only joined tabs to the preview cell,
+			// and have the preview cell tab-coloured, with the IFrame inside it.
+			div = document.createElement("SPAN");
+			leftCell.appendChild(div);
+			div.style.backgroundColor = Colors.selected.bg;
+			div.style.position = 'fixed';
+			div.style.zIndex = -200;
+			div.style.border = '2px solid '+Colors.selected.border;
 
-	function setDimensions() {
-		leftCell.width = parseInt(resultsWidth*100)+"%";
-		rightCell.width = parseInt(previewWidth*100)+"%";
-		previewFrame.width = '100%';
-		//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
-		//// Fixed for sidebars.
-		//// Fixed for previewWidth=0.8
-		resultsBlock.style.width = (document.body.clientWidth * resultsWidth) +'px';
-		// getResultsBlock().style.width = (document.body.clientWidth * resultsWidth - 32) +'px';
-		// resultsBlock.style.width = '30em';
-		getResultsBlock().style.width = (resultsBlock.clientWidth - 16) +'px';
-		// resultsBlock.style.width = (resultsBlock.clientWidth - 16) +'px';
-		//// If we still fail to lose the horizontal scrollbar, in fact 32 is a little large for display with one, may as well use 24.
-		resultsBlock.style.overflow = 'auto';
-		// Old: resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
-		// Old: previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
-		var heightFree = window.innerHeight - table.offsetTop - gapBelow;
-		resultsBlock.style.height = heightFree+'px';
-		previewFrame.height = heightFree+'px';
-		if (div) {
-			try {
-				/*
-				// Works in FF:
-				var rect = leftCell.getClientRects()[0];
-				div.style.left = (rect.left + resultsBlock.clientWidth - 16 - 2) +'px';
-				div.style.right = (window.innerWidth - 8) +'px';
-				div.style.top = (rect.top - 8) +'px';
-				div.style.bottom = (rect.bottom - 2) +'px';
-				*/
-				// Works in FF and Konq:
-				div.style.left = (table.offsetLeft + resultsBlock.clientWidth - 16 - 0) +'px';
-				div.style.right = (table.offsetLeft + table.clientWidth + 4) +'px';
-				div.style.top = (table.offsetTop - 8) +'px';
-				div.style.bottom = (table.offsetTop + table.clientHeight - 2) +'px';
-				//
-				div.style.width = (parseInt(div.style.right) - parseInt(div.style.left)) +'px';
-				div.style.height = (parseInt(div.style.bottom) - parseInt(div.style.top)) +'px';
-			} catch (e) {
-				GM_log("Caught B: "+e);
+			// rightCell.style.padding = '10px';
+			// previewFrame.style.margin = '10px';
+			rightCell.style.backgroundColor = Colors.selected.bg;
+		}
+
+		function setDimensions() {
+			leftCell.width = parseInt(resultsWidth*100)+"%";
+			rightCell.width = parseInt(previewWidth*100)+"%";
+			previewFrame.width = '100%';
+			//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
+			//// Fixed for sidebars.
+			//// Fixed for previewWidth=0.8
+			resultsBlock.style.width = (document.body.clientWidth * resultsWidth) +'px';
+			// getResultsBlock().style.width = (document.body.clientWidth * resultsWidth - 32) +'px';
+			// resultsBlock.style.width = '30em';
+			getResultsBlock().style.width = (resultsBlock.clientWidth - 16) +'px';
+			// resultsBlock.style.width = (resultsBlock.clientWidth - 16) +'px';
+			//// If we still fail to lose the horizontal scrollbar, in fact 32 is a little large for display with one, may as well use 24.
+			resultsBlock.style.overflow = 'auto';
+			// Old: resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
+			// Old: previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
+			var heightFree = window.innerHeight - table.offsetTop - gapBelow;
+			resultsBlock.style.height = heightFree+'px';
+			previewFrame.height = heightFree+'px';
+			if (div) {
+				try {
+					/*
+					// Works in FF:
+					var rect = leftCell.getClientRects()[0];
+					div.style.left = (rect.left + resultsBlock.clientWidth - 16 - 2) +'px';
+					div.style.right = (window.innerWidth - 8) +'px';
+					div.style.top = (rect.top - 8) +'px';
+					div.style.bottom = (rect.bottom - 2) +'px';
+					*/
+					// Works in FF and Konq:
+					div.style.left = (table.offsetLeft + resultsBlock.clientWidth - 16 - 0) +'px';
+					div.style.right = (table.offsetLeft + table.clientWidth + 4) +'px';
+					div.style.top = (table.offsetTop - 8) +'px';
+					div.style.bottom = (table.offsetTop + table.clientHeight - 2) +'px';
+					//
+					div.style.width = (parseInt(div.style.right) - parseInt(div.style.left)) +'px';
+					div.style.height = (parseInt(div.style.bottom) - parseInt(div.style.top)) +'px';
+				} catch (e) {
+					GM_log("Exception during div setup: "+e);
+				}
 			}
 		}
-	}
-	setDimensions();
-	//// This pause fixes the window's horizontal scrollbar without increasing gapBelow.
-	setTimeout(setDimensions,1);
+		setDimensions();
+		//// This pause fixes the window's horizontal scrollbar without increasing gapBelow.
+		setTimeout(setDimensions,1);
 
+		// We will call setDimensions again if the user resizes the window:
+		window.addEventListener('resize',setDimensions,false);
+
+	}
+
+	if (!createPanelLater) {
+		createPreviewFrame();
+	}
 
 
 	//// Listeners ////
 
-	// We will call setDimensions again if the user resizes the window:
-	window.addEventListener('resize',setDimensions,false);
+	function setupListeners() {
 
-	var lastHover = null;
-	var lastPreview = null;
-	var currentTimerID = null;
+		var lastHover = null;
+		var lastPreview = null;
+		var currentTimerID = null;
 
-	function closeFrame() {
-		previewFrame.src = 'about:blank';
-		// previewFrame.parentNode.removeChild(previewFrame);
-	}
-
-	function getAncestorByTagName(node,tagName) {
-		while (node = node.parentNode) {
-			if (node.tagName == tagName)
-				return node;
+		function closeFrame() {
+			previewFrame.src = 'about:blank';
+			// previewFrame.parentNode.removeChild(previewFrame);
 		}
-		return null;
-	}
 
-	// If user is hovering over startNode, which parent block can we highlight?
-	// This could be re-written (to work better with Delicious Results for example)
-	function getContainer(startNode) {
-		/*
-		// GM_log("Got startNode = "+startNode);
-		var node = startNode;
-		var link = null; // node.getElementsByTagName('A')[0];
-		// To make it easier to select links, they can select results by hovering over the non-link areas.
-		// We check this by going up parent nodes until we find a link, or hit the top of a results block.
-		while (node) {
-			if (!link) {
-				if (node.tagName == "A") {
-					link = node;
+		function getAncestorByTagName(node,tagName) {
+			if (node) {
+				while (node = node.parentNode) {
+					if (node.tagName == tagName)
+						return node;
 				}
 			}
-			// CONSIDER: My only remaining niggle with this algorithm is that the
-			// Delicious Results userscript makes 'l' class links, but there is no
-			// parent LI, so the very first one highlights the whole block.
-			// We could fix this by aborting ascent if we can find other 'l' links
-			// in the parent (rather than just an earlier link).
-			var goUp = true;
-			if (link) {
-				// If we have found a link, only go up if that link was a main result.
-				// Otherwise the Cache selects the div above it, which looks weird.
-				if (link.className == 'l') {
-				} else {
-					return link;
-				}
-			}
-			// If we have a link, we must not go to the parent if the parent
-			// contains any earlier links.  Unlikely given former check.
-			if (link != null) {
-				var parentsFirstLink = node.parentNode.getElementsByTagName('A')[0];
-				if (parentsFirstLink != link) {
-					goUp = false;
-				}
-			}
-			// Or have we reached a google result block?  If so, stop here.
-			if ( node.tagName=='LI' || node.className == 'g' || node.className == 'g w0' ) {
-				goUp = false;
-				// link will be first 'A' child.
-			}
-			if (!goUp) {
-				// We better check we do contain a link!
-				return node;
-			}
-			node = node.parentNode;
-		}
-		// Don't highlight the whole document, but highlight the link if we got one.
-		return link;
-		*/
-		//// New Implementation:
-		var link = ( startNode.tagName == "A" ? startNode : getAncestorByTagName(startNode,'A') );
-		if (!link) {
-			// If we are not over a link, ascend to the parent LI block, and select that.
-			var li = getAncestorByTagName(startNode.firstChild,"LI");
-			if (li) {
-				return li;
-			}
-			//// Ascend until we can find a link
-			//// Bah ofc this stop ascension properly on Delicious, but
-			//// prematurely on main google results, due to the earlier (lower)
-			//// Cached and Similar.
-			// var n = startNode;
-			// while (n) {
-				// if (n.getElementsByTagName("A"))
-					// return n;
-				// n = n.parentNode;
-			// }
 			return null;
-		} else {
-			// If we are over a link, we may still want to ascend to the parent LI, but
-			// only if it's first link child is us.
-			if (link.className == "l") {
-				var li = getAncestorByTagName(startNode,"LI");
-				if (li) {
-					var lowerLinks = li.getElementsByTagName("A");
-					if (lowerLinks && lowerLinks[0].href == link.href) {
-						return li;
+		}
+
+		// If user is hovering over startNode, which parent block can we highlight?
+		// This could be re-written (to work better with Delicious Results for example)
+		function getContainer(startNode) {
+			/*
+			// GM_log("Got startNode = "+startNode);
+			var node = startNode;
+			var link = null; // node.getElementsByTagName('A')[0];
+			// To make it easier to select links, they can select results by hovering over the non-link areas.
+			// We check this by going up parent nodes until we find a link, or hit the top of a results block.
+			while (node) {
+				if (!link) {
+					if (node.tagName == "A") {
+						link = node;
 					}
 				}
+				// CONSIDER: My only remaining niggle with this algorithm is that the
+				// Delicious Results userscript makes 'l' class links, but there is no
+				// parent LI, so the very first one highlights the whole block.
+				// We could fix this by aborting ascent if we can find other 'l' links
+				// in the parent (rather than just an earlier link).
+				var goUp = true;
+				if (link) {
+					// If we have found a link, only go up if that link was a main result.
+					// Otherwise the Cache selects the div above it, which looks weird.
+					if (link.className == 'l') {
+					} else {
+						return link;
+					}
+				}
+				// If we have a link, we must not go to the parent if the parent
+				// contains any earlier links.  Unlikely given former check.
+				if (link != null) {
+					var parentsFirstLink = node.parentNode.getElementsByTagName('A')[0];
+					if (parentsFirstLink != link) {
+						goUp = false;
+					}
+				}
+				// Or have we reached a google result block?  If so, stop here.
+				if ( node.tagName=='LI' || node.className == 'g' || node.className == 'g w0' ) {
+					goUp = false;
+					// link will be first 'A' child.
+				}
+				if (!goUp) {
+					// We better check we do contain a link!
+					return node;
+				}
+				node = node.parentNode;
 			}
+			// Don't highlight the whole document, but highlight the link if we got one.
 			return link;
-		}
-		return startNode;
-		// return null;
-	}
-
-	// If we are highlighting container, then what link does this relate to?
-	function getLink(container) {
-		return ( container.tagName == "A" ? container : container.getElementsByTagName('A')[0] );
-	}
-
-	function highlightNode(node,col,borderCol) {
-		if (highlightHover) {
-			var container = getContainer(node);
-			realHighlightNode(container,col,borderCol);
-			// var link = getLink(container);
-			// if (link) {
-				// realHighlightNode(link,borderCol);
-			// }
-		}
-	}
-
-	var oldBG = ({});
-	var oldBorder = ({});
-	function realHighlightNode(elem,col,borderCol) {
-		var xp = getXPath(elem); // Hash used by our cache tables.  Storing in elem.oldBG wasn't working for me.
-		if (col) {
-			if (oldBG[xp] == null) {
-				oldBG[xp] = elem.style.backgroundColor;
-				// GM_log(elem.tagName+" "+elem+" Stored to oldBG="+oldBG[xp]+" col="+col);
+			*/
+			//// New Implementation:
+			var link = ( startNode.tagName == "A" ? startNode : getAncestorByTagName(startNode,'A') );
+			if (!link) {
+				// If we are not over a link, ascend to the parent LI block, and select that.
+				var li = getAncestorByTagName(startNode.firstChild,"LI");
+				if (li) {
+					return li;
+				}
+				//// Ascend until we can find a link
+				//// Bah ofc this stop ascension properly on Delicious, but
+				//// prematurely on main google results, due to the earlier (lower)
+				//// Cached and Similar.
+				// var n = startNode;
+				// while (n) {
+					// if (n.getElementsByTagName("A"))
+						// return n;
+					// n = n.parentNode;
+				// }
+				return null;
+			} else {
+				// If we are over a link, we may still want to ascend to the parent LI, but
+				// only if its first link child is us.
+				if (link.className == "l") {
+					var li = getAncestorByTagName(startNode,"LI");
+					if (li) {
+						var lowerLinks = li.getElementsByTagName("A");
+						if (lowerLinks && lowerLinks[0].href == link.href) {
+							return li;
+						}
+					}
+				}
+				// Otherwise do a generic ascent, but only while we are the only link in the block!
+				while (link.parentNode.getElementsByTagName('A') == 1) {
+					link = link.parentNode;
+				}
+				return link;
 			}
-			// if (!oldBG[xp])
-				// oldBG[xp] = getComputedStyle(elem,'').backgroundColor;
-			elem.style.backgroundColor = col;
-		} else {
-			// elem.style.backgroundColor = '';
-			// elem.style.backgroundColor = ( oldBG[xp] ? oldBG[xp] : "" );
-			if (oldBG[xp] == null) {
+			return startNode;
+			// return null;
+		}
+
+		// If we are highlighting container, then what link does this relate to?
+		function getLink(container) {
+			return ( container.tagName == "A" ? container : container.getElementsByTagName('A')[0] );
+		}
+
+		function highlightNode(node,col,borderCol) {
+			if (highlightHover) {
+				var container = getContainer(node);
+				realHighlightNode(container,col,borderCol);
+				// var link = getLink(container);
+				// if (link) {
+					// realHighlightNode(link,borderCol);
+				// }
+			}
+		}
+
+		var oldBG = ({});
+		var oldBorder = ({});
+		function realHighlightNode(elem,col,borderCol) {
+			var xp = getXPath(elem); // Hash used by our cache tables.  Storing in elem.oldBG wasn't working for me.  Argh this sucks, but at least it works.  I think maybe the problem was not the storage, but the ==null checks.  Maybe we could even do ===undefined.
+			if (col) {
+				if (oldBG[xp] == null) {
+					oldBG[xp] = elem.style.backgroundColor;
+					// GM_log(elem.tagName+" "+elem+" Stored to oldBG="+oldBG[xp]+" col="+col);
+				}
+				// if (!oldBG[xp])
+					// oldBG[xp] = getComputedStyle(elem,'').backgroundColor;
+				elem.style.backgroundColor = col;
+			} else {
 				// elem.style.backgroundColor = '';
-			} else {
-				// GM_log(elem.tagName+" "+elem+" Restoring from oldBG="+oldBG[xp]+" col="+col);
-				elem.style.backgroundColor = oldBG[xp];
-			}
-		}
-		if (borderCol) {
-			// Before setting the border, we take a copy of the existing border.
-			if (oldBorder[xp] == null) {
-				oldBorder[xp] = elem.style.border.replace(/initial[ ]*/g,''); // "initial" is a bug we got from konqueror
-				GM_log(elem.tagName+" "+elem+" Stored to oldBorder="+oldBorder[xp]);
-			}
-			elem.style.border = '2px solid '+borderCol;
-			if (renderLikeTabs)
-				elem.style.borderRight = '0px';
-			// elem.style.margin = '-1px';
-			//// Naff since we don't reach the edge:
-			// if (elem.className == 'g') // Only visually sensible for main results.
-				// elem.style.borderRight = 'none';
-		} else {
-			if (oldBorder[xp]) {
-				GM_log(elem.tagName+" "+elem+" Restoring from oldBorder="+oldBorder[xp]);
-				elem.style.border = oldBorder[xp];
-			} else {
-				elem.style.border = 'none';
-				// elem.style.border = '2px solid '+elem.style.backgroundColor;
-			}
-			// elem.style.border = '0px solid white';
-			// elem.style.margin = '0px';
-		}
-	}
-
-	function checkFocus() {
-		if (lastHover && getContainer(lastHover) != lastPreview) {
-			if (lastPreview) {
-				// highlightNode(lastPreview,'',''); // but lastPreview is the container already!
-				realHighlightNode(lastPreview,'','');
-				realHighlightNode(getLink(lastPreview),'','');
-				showUnselected(lastPreview);
-				// lastPreview.style.padding = '8px';
-			}
-			// We don't really seem to use lastHover much - we could have set it
-			// to container from the start.
-			// GM_log("Got lastHover = "+lastHover);
-			var container = getContainer(lastHover);
-			// GM_log("Got container = "+container);
-			var link = getLink(container);
-			// highlightNode(lastHover,'#ddeeff','#ccddff');
-			highlightNode(lastHover,Colors.selected.bg,Colors.selected.border);
-			showSelected(container);
-			// container.style.padding = '6px';
-			// realHighlightNode(container,'#ddeeff');
-			// realHighlightNode(link,'#ccddee');
-			// GM_log("Got link = "+link);
-			previewFrame.src = link.href;
-			// lastPreview = lastHover;
-			lastPreview = container; // normalises - two different nodes might both hit the same container
-			return true;
-		}
-		return false;
-	}
-
-	function checkClick(evt) {
-		var node = evt.target;
-		if (node == lastHover) {
-			// If the user is selecting a link to another results page, they
-			// probably don't want a preview!
-			var link = getLink(getContainer(node));
-			if (link && link.tagName=='A' && link.host==document.location.host
-				&& link.pathname.match('/(search|webhp)')
-			) {
-				// We will pass the event up to click on the actual link.
-				// If it works, we can set this:
-				// highlightNode(node,'#ffeecc','#ffeebb');
-				highlightNode(node,Colors.travel.bg,Colors.travel.border);
-				// Let's make sure it works ;p
-				// document.location = link.href;
-				// Pff we need to give FF time to colour the highlight :P
-				if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},20); }
-				setTimeout(function(){document.location = link.href;},40);
-			} else {
-				// Let's try to Preview what the user clicked
-				if (checkFocus()) {
-					// OK we set focus, preview is loading.
-					evt.preventDefault();
+				// elem.style.backgroundColor = ( oldBG[xp] ? oldBG[xp] : "" );
+				if (oldBG[xp] == null) {
+					// elem.style.backgroundColor = '';
 				} else {
-					// Well we didn't want to focus this node.
-					// Let's pass the event to other elements.
-					// This means that if we click the focused node a second time,
-					// and there is a link below it, then we will follow it
-					// normally.
-					// Nah let's force it.  We want this to work even if they didn't
-					// click directly:
-					// BUG MAYBE FIXED: I fear we are sometimes not reaching here
-					// because we earlier failed the check container != lastPreview.
-					if (link) {
-						// highlightNode(node,'#ddccff','#ccbbff');
-						highlightNode(node,Colors.action.bg,Colors.action.border);
-						// document.location = link.href;
-						if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},20); }
-						setTimeout(function(){document.location = link.href;},40);
+					// GM_log(elem.tagName+" "+elem+" Restoring from oldBG="+oldBG[xp]+" col="+col);
+					elem.style.backgroundColor = oldBG[xp];
+				}
+			}
+			if (borderCol) {
+				// Before setting the border, we take a copy of the existing border.
+				if (oldBorder[xp] == null) {
+					oldBorder[xp] = elem.style.border.replace(/initial[ ]*/g,''); // "initial" is a bug we got from konqueror
+					// GM_log(elem.tagName+" "+elem+" Stored to oldBorder="+oldBorder[xp]);
+				}
+				elem.style.border = '2px solid '+borderCol;
+				if (renderLikeTabs)
+					elem.style.borderRight = '0px';
+				// elem.style.margin = '-1px';
+				//// Naff since we don't reach the edge:
+				// if (elem.className == 'g') // Only visually sensible for main results.
+					// elem.style.borderRight = 'none';
+			} else {
+				if (oldBorder[xp]) {
+					// GM_log(elem.tagName+" "+elem+" Restoring from oldBorder="+oldBorder[xp]);
+					elem.style.border = oldBorder[xp];
+				} else {
+					elem.style.border = 'none';
+					// elem.style.border = '2px solid '+elem.style.backgroundColor;
+				}
+				// elem.style.border = '0px solid white';
+				// elem.style.margin = '0px';
+			}
+		}
+
+		function checkFocus() {
+			if (lastHover && getContainer(lastHover) != lastPreview) {
+				if (lastPreview) {
+					// highlightNode(lastPreview,'',''); // but lastPreview is the container already!
+					realHighlightNode(lastPreview,'','');
+					realHighlightNode(getLink(lastPreview),'','');
+					showUnselected(lastPreview);
+					// lastPreview.style.padding = '8px';
+				}
+				// We don't really seem to use lastHover much - we could have set it
+				// to container from the start.
+				// GM_log("Got lastHover = "+lastHover);
+				var container = getContainer(lastHover);
+				// GM_log("Got container = "+container);
+				var link = getLink(container);
+				// highlightNode(lastHover,'#ddeeff','#ccddff');
+				highlightNode(lastHover,Colors.selected.bg,Colors.selected.border);
+				showSelected(container);
+				// container.style.padding = '6px';
+				// realHighlightNode(container,'#ddeeff');
+				// realHighlightNode(link,'#ccddee');
+				// GM_log("Got link = "+link);
+				if (!previewFrame) {
+					createPreviewFrame();
+				}
+				previewFrame.src = link.href;
+				// lastPreview = lastHover;
+				lastPreview = container; // normalises - two different nodes might both hit the same container
+				return true;
+			}
+			return false;
+		}
+
+		function checkClick(evt) {
+			helloMouse(evt); // Without this sometimes we fail to activate because we receive click before mouseover (or for some reason didn't get a mouseover).
+			var node = evt.target;
+			if (linksActNormally && node.tagName == "A" && getContainer(node)!=node) {
+				return;
+			}
+			if (node == lastHover) {
+				// If the user is selecting a link to another results page, they
+				// probably don't want a preview!
+				var link = getLink(getContainer(node));
+				if (link && link.tagName=='A' && link.host==document.location.host
+					&& link.pathname.match('/(search|webhp)')
+				) {
+					// We will pass the event up to click on the actual link.
+					// If it works, we can set this:
+					// highlightNode(node,'#ffeecc','#ffeebb');
+					highlightNode(node,Colors.travel.bg,Colors.travel.border);
+					// Let's make sure it works ;p
+					// document.location = link.href;
+					// Pff we need to give FF time to colour the highlight :P
+					if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},20); }
+					setTimeout(function(){document.location = link.href;},40);
+				} else {
+					// Let's try to Preview what the user clicked
+					if (checkFocus()) {
+						// OK we set focus, preview is loading.
+						evt.preventDefault();
+					} else {
+						// Well we didn't want to focus this node.
+						// Let's pass the event to other elements.
+						// This means that if we click the focused node a second time,
+						// and there is a link below it, then we will follow it
+						// normally.
+						// Nah let's force it.  We want this to work even if they didn't
+						// click directly:
+						// BUG MAYBE FIXED: I fear we are sometimes not reaching here
+						// because we earlier failed the check container != lastPreview.
+						if (link) {
+							// highlightNode(node,'#ddccff','#ccbbff');
+							highlightNode(node,Colors.action.bg,Colors.action.border);
+							// if (clearFrameWhenLeaving) { closeFrame(); }
+							// document.location = link.href;
+							//// Were working ok, but then did once fail on me:
+							if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},10); }
+							setTimeout(function(){document.location = link.href;},20);
+							//// The failure occurred when trying a second click on the first result of
+							//// "google reader help", maybe the IFrame messed with the top window?
+						}
 					}
 				}
 			}
 		}
-	}
 
-	function helloMouse(evt) {
-		var node = evt.target;
-		var container = getContainer(node);
-		// Should we hover on this?
-		if (container) {
-			// This is needed for when we hover a new thing *inside* something
-			// already hovered (i.e. we haven't done mouseout on lastHover yet).
-			if (lastHover && getContainer(lastHover)!=lastPreview) {
-				highlightNode(lastHover,'','');
-				if (renderLikeTabs)
-					showUnselected(getContainer(lastHover));
-			}
-			// OK start hover on this.  checkFocus() will check if we are still
-			// here in hoverTime ms, and if so activate.
-			lastHover = node;
-			if (focusWithHover) {
-				if (currentTimerID)
-					clearTimeout(currentTimerID);
-				currentTimerID = setTimeout(checkFocus,hoverTime);
-			}
-			if (container != lastPreview) {
-				// highlightNode(node,'#eeffee','#ddffdd');
-				// highlightNode(node,'#eeffee','');
-				// highlightNode(node,'#ddeeee','');
-				//// TODO BUG: padding goes wrong because we didn't call showSelected()
-				//// But showSelected wants to put a border on the right :f
-				if (renderLikeTabs) {
-					highlightNode(node,Colors.focus.bg,Colors.focus.border);
-					showSelected(container);
-				} else {
-					highlightNode(node,Colors.focus.bg,'');
+		function helloMouse(evt) {
+			var node = evt.target;
+			var container = getContainer(node);
+			// Should we hover on this?
+			if (container) {
+				// This is needed for when we hover a new thing *inside* something
+				// already hovered (i.e. we haven't done mouseout on lastHover yet).
+				if (lastHover && getContainer(lastHover)!=lastPreview) {
+					highlightNode(lastHover,'','');
+					if (renderLikeTabs)
+						showUnselected(getContainer(lastHover));
 				}
-				// highlightNode(node,'#eeffee','#ddffdd'); // extra border causes restructure which is slow
+				// OK start hover on this.  checkFocus() will check if we are still
+				// here in hoverTime ms, and if so activate.
+				lastHover = node;
+				if (focusWithHover) {
+					if (currentTimerID)
+						clearTimeout(currentTimerID);
+					currentTimerID = setTimeout(checkFocus,hoverTime);
+				}
+				if (container != lastPreview) {
+					// highlightNode(node,'#eeffee','#ddffdd');
+					// highlightNode(node,'#eeffee','');
+					// highlightNode(node,'#ddeeee','');
+					//// TODO BUG: padding goes wrong because we didn't call showSelected()
+					//// But showSelected wants to put a border on the right :f
+					if (renderLikeTabs) {
+						highlightNode(node,Colors.focus.bg,Colors.focus.border);
+						showSelected(container);
+					} else {
+						highlightNode(node,Colors.focus.bg,'');
+					}
+					// highlightNode(node,'#eeffee','#ddffdd'); // extra border causes restructure which is slow
+				}
 			}
 		}
-	}
 
-	function goodbyeMouse(evt) {
-		var node = evt.target;
-		var container = getContainer(node);
-		// Should we stop hovering on this?
-		if (container && container!=lastPreview) {
-			// Clear highlight:
-			if (lastHover && getContainer(lastHover)!=lastPreview) {
-				highlightNode(lastHover,'','');
-				if (renderLikeTabs)
-					showUnselected(getContainer(lastHover));
-				// FIXED: Does not always fire properly (sometimes a clear highlight is flushed after?)
-				// BUG: If we select a sub-element (not an LI) in tabs mode, the LI should look unselected but with the mouseover/out model it isn't.
+		function goodbyeMouse(evt) {
+			var node = evt.target;
+			var container = getContainer(node);
+			// Should we stop hovering on this?
+			if (container && container!=lastPreview) {
+				// Clear highlight:
+				if (lastHover && getContainer(lastHover)!=lastPreview) {
+					highlightNode(lastHover,'','');
+					if (renderLikeTabs)
+						showUnselected(getContainer(lastHover));
+					// FIXED: Does not always fire properly (sometimes a clear highlight is flushed after?)
+					// BUG: If we select a sub-element (not an LI) in tabs mode, the LI should look unselected but with the mouseover/out model it isn't.
+				}
+				lastHover = null;
+				// highlightNode(node,'','');
+				// showUnselected(node);
+				// We don't need to clearTimeout checkFocus(), it knows we left.
 			}
-			lastHover = null;
-			// highlightNode(node,'','');
-			// showUnselected(node);
-			// We don't need to clearTimeout checkFocus(), it knows we left.
 		}
+
+		var whereToListen = ( includeHeaderLinks ? document.body : resultsBlock );
+
+		whereToListen.addEventListener('mouseover',helloMouse,false);
+		whereToListen.addEventListener('mouseout',goodbyeMouse,false);
+		if (!focusWithHover)
+			whereToListen.addEventListener('click',checkClick,false);
+
 	}
 
-	resultsBlock.addEventListener('mouseover',helloMouse,false);
-	resultsBlock.addEventListener('mouseout',goodbyeMouse,false);
-	if (!focusWithHover)
-		resultsBlock.addEventListener('click',checkClick,false);
+	setupListeners();
 
 }
 
@@ -641,13 +692,15 @@ function reformatThings() {
 		//   iframe" at the bottom which were too wide (5 column table, one
 		//   with long word "addeventlistener").
 		// - Sometimes it is the <cite> URL of the result that it too wide!  (They wrap in Moz but not in Konq.))
+		//   We can try forcing max-width of cite element for Konqueror.
 		// - Or the result summary text may contain a really long word which does not wrap.
 		// - Video results - 2 columns with text beside, can be wider than desired.
 
 		// Makes a few pieces of text smaller, but most have custom style font sizes.
-		if (reduceTextSize)
-			document.body.style.fontSize='50%';
+		if (reduceTextSize) {
+			document.body.style.fontSize='90%';
 			// document.body.style.fontSize='10px';
+		}
 
 		//// The first nobr was a lone child when I wrote this.
 		//// We break it.
@@ -715,6 +768,26 @@ function reformatThings() {
 		// BUG TODO: In FF3.5 when doing this while zoomed IN, somehow it increases the size of the fonts, although it is reporting otherwise.
 	}
 
+	if (reduceIndent) {
+		// For some reason a load of <ul>s with style attributes appear
+		// much later, so we delay the fix here.
+		setTimeout(function(){
+			var tocheck = document.getElementsByTagName("*");
+			var i = tocheck.length;
+			while (--i>=0) {
+				var elem = tocheck[i];
+				var pl = parseInt(elem.style.paddingLeft);
+				if (pl>0)
+					elem.style.paddingLeft = '4px';
+				var ml = parseInt(elem.style.marginLeft);
+				if (ml>0)
+					elem.style.marginLeft = '4px';
+			}
+			GM_addStyle("li { padding-left: 0px; margin-left: 0px; }");
+			GM_addStyle("ul { padding-left: 0px; margin-left: 0px; }");
+		},100);
+	}
+
 	if (removeLogo || miniLogo) {
 		var logo = document.getElementsByTagName("IMG")[0];
 		logo = logo.parentNode.parentNode; // A
@@ -727,8 +800,8 @@ function reformatThings() {
 			var newImg = document.createElement("IMG");
 			// newImg.src = "/favicon.ico";
 			newImg.src = "http://www.google.com/intl/en_ALL/images/logo.gif";
-			newImg.width = 276/5;
-			newImg.height = 110/5;
+			newImg.width = 276*0.3;
+			newImg.height = 110*0.3;
 			pNode.appendChild(newImg);
 			pNode.style.paddingTop = '8px';
 			pNode.style.paddingRight = '0px';
@@ -758,7 +831,16 @@ var earlyResultsBlock = getResultsBlock();
 if (earlyResultsBlock && loadEarly) {
 	initPreview();
 } else {
-	window.addEventListener('load',initPreview,false);
+	// window.addEventListener('load',initPreview,false);
+	function checkStart() {
+		var rb = getResultsBlock();
+		if (rb)
+			initPreview();
+		else
+			setTimeout(checkStart,1000);
+	}
+	// window.addEventListener('DOMContentLoaded',checkStart,false);
+	setTimeout(initPreview,1000);
 	// On webhp pages, I think the content is loaded by Javascript.  We must
 	// wait for the page to finish loading before we can find the resultsBlock.
 }
@@ -769,7 +851,7 @@ if (earlyResultsBlock && loadEarly) {
 
 /*
 
-TODO: If the user moves quickly onto and off the element to click it, and the
+DONE: If the user moves quickly onto and off the element to click it, and the
 browser is still busy loading, I think the slowness means the click does not
 match the current focus, and is not accepted.
 This is wrong, we should accept all clicks and force the focus to be the
@@ -804,6 +886,12 @@ browser will stop loading it cleanly and immediately, and devote full resources
 to the new page load.
 
 TODO: Some of our font scaling is going wrong.  Try using "em" instead of "px".
+
+BUG TODO: fillWholeWindow=false is broken (width of iframe is wrong)
+
+DONE: Broken on webhp pages, e.g.: http://www.google.com/webhp?hl=eN#hl=eN&source=hp&q=strip+exe&aq=f&aqi=g-p1g9&oq=&fp=fd871eff22583196
+
+TODO: The focus color over an 'action' link should be related to the 'action' color not the main highlight color.
 
 */
 
