@@ -5,10 +5,44 @@
 
 class RocketArenaMutator expands Mutator config(RocketArenaMutator);
 
+/* ============================================================================
+
+A weak approximation of the Rocket Arena game mode physics, implemented as a
+Mutator.  Only one file need be used on the server, and no downloads are
+required.  There are no rounds, the actual gametype remains the same.  But self
+boosting, and boost tweaking for all the damagetypes is set (actually more like
+CTF warmup than RA).  Because it is a mutator, armor is lost on self-boosts and
+falls.
+
+TODOS:
+
+There may be some things we need to consider.  Have we got all the weaposn
+right?  Does RA adjust anything we haven't thought of, such as splash radius,
+affect on other players, times when InstigatedBy=None but we should save the
+player from damage, scale of boost wrt damage might not be linear in the real
+RA.  Most weapons will fire only one charge at a time.  Only rockets allows for
+a selected charge.
+
+Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
+ 'Decapitated' 'Drowned' 'Eradicated' 'Exploded' 'Fell' 'FlakDeath' 'GameInfo'
+ 'Gibbed' 'GrenadeDeath' 'Hacked' 'Mortared' 'None' 'RedeemerDeath'
+ 'RipperAltDeath' 'RocketDeath' 'Special' 'SpecialDamage' 'Suicided' 'Zapped'
+ 'burned' 'corroded' 'decapitated' 'destroyed' 'exploded' 'impact' 'jolted'
+ 'sgSpecial' 'shot' 'shredded' 'zapped'
+
+============================================================================ */
+
+
+
 var config bool bPreventDamageFromSelf;
 var config bool bPreventDamageFromFall;
 var config float SelfBoostScale;
 var config int FallLimit;
+
+
+var int ArmorCharge[64];
+var int bRestoreArmor[64];
+
 
 defaultproperties {
   bPreventDamageFromSelf=True
@@ -21,18 +55,21 @@ defaultproperties {
 function PostBeginPlay() {
  Super.PostBeginPlay();
  Level.Game.RegisterDamageMutator( Self );
+
+ Enable('Tick');
+
 }
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 
- // Deal with boosting (damage and boost amount).
+ // Deal with self-boosting (damage and boost amount).
  if (InstigatedBy == Victim) {
 
   if (bPreventDamageFromSelf) {
    ActualDamage = 0;
   }
 
-  // This is the right amount to scale rockets:
+  // This is the right amount to scale 2 rockets:
   Momentum *= SelfBoostScale;
 
   // But the other weapons need to be adjusted to give appropriate RA boost.
@@ -43,17 +80,19 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
    Momentum *= 1.8;
   }
   if (DamageType == 'FlakDeath') {
-   Momentum *= 1.6;
+   Momentum *= 1.8;
   }
   if (DamageType == 'shredded') {
-   Momentum *= 1.6;
+   Momentum *= 1.7;
   }
   if (DamageType == 'decapitated') {
    Momentum *= 1.6;
   }
   if (DamageType == 'Corroded') {
-   Momentum *= 1.4;
+   Momentum *= 1.5;
   }
+
+  RestoreArmour(Victim);
 
  }
 
@@ -65,30 +104,53 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
   // he will just sit alone at the bottom of the chasm!
   if (ActualDamage < FallLimit) {
    ActualDamage = 0;
+   RestoreArmour(Victim);
   }
  }
 
  Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
 }
 
-/**
 
-// A weak approximation of the Rocket Arena game mode implemented as a Mutator.
-// Only one file need be used on the server, and no downloads are required.
+event Tick(float DeltaTime) {
+ local Pawn p;
+ local int pid;
+ local Inventory inv;
+ foreach AllActors(class'Pawn',p) {
+  if (p.PlayerReplicationInfo != None) {
+   pid = p.PlayerReplicationInfo.PlayerID % 64;
+   inv = FindInventorySubclass(p,'Armor');
+   if (inv != None) {
+    ArmorCharge[pid] = inv.Charge;
+   }
+  }
+ }
+}
 
-TODOS:
+function Inventory FindInventorySubclass(Pawn p, name DesiredClass) {
+ local Inventory Inv;
+ local int Count;
 
-There may be some things we need to consider.  Have we got all the weaposn
-right?  Does RA adjust anything we haven't thought of, such as splash radius,
-affect on other players, times when InstigatedBy=None but we should save the
-player from damage, scale of boost wrt damage might not be linear in the real
-RA.
+ for( Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory )
+ {
+  if ( Inv.IsA(DesiredClass) )
+   return Inv;
+  Count++;
+  if ( Count > 1000 )
+   return None;
+ }
+ return None;
+}
 
-// Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
-// 'Decapitated' 'Drowned' 'Eradicated' 'Exploded' 'Fell' 'FlakDeath'
-// 'GameInfo' 'Gibbed' 'GrenadeDeath' 'Hacked' 'Mortared' 'None'
-// 'RedeemerDeath' 'RipperAltDeath' 'RocketDeath' 'Special' 'SpecialDamage'
-// 'Suicided' 'Zapped' 'burned' 'corroded' 'decapitated' 'destroyed' 'exploded'
-// 'impact' 'jolted' 'sgSpecial' 'shot' 'shredded' 'zapped'
 
-**/
+function RestoreArmour(Pawn p) {
+ local int pid;
+ local Inventory inv;
+
+ if (p.PlayerReplicationInfo != None) {
+  pid = p.PlayerReplicationInfo.PlayerID % 64;
+  inv = FindInventorySubclass(p,'Armor');
+  inv.Charge = ArmorCharge[pid];
+ }
+
+}

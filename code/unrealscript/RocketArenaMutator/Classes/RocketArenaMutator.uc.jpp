@@ -15,7 +15,8 @@ There may be some things we need to consider.  Have we got all the weaposn
 right?  Does RA adjust anything we haven't thought of, such as splash radius,
 affect on other players, times when InstigatedBy=None but we should save the
 player from damage, scale of boost wrt damage might not be linear in the real
-RA.
+RA.  Most weapons will fire only one charge at a time.  Only rockets allows for
+a selected charge.
 
 Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
  'Decapitated' 'Drowned' 'Eradicated' 'Exploded' 'Fell' 'FlakDeath' 'GameInfo'
@@ -26,10 +27,17 @@ Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
 
 ============================================================================ */
 
+#define ARMOUR_HACK
+
 var config bool bPreventDamageFromSelf;
 var config bool bPreventDamageFromFall;
 var config float SelfBoostScale;
 var config int FallLimit;
+
+#ifdef ARMOUR_HACK
+var int ArmorCharge[64];
+var int bRestoreArmor[64];
+#endif
 
 defaultproperties {
   bPreventDamageFromSelf=True
@@ -42,6 +50,9 @@ defaultproperties {
 function PostBeginPlay() {
 	Super.PostBeginPlay();
 	Level.Game.RegisterDamageMutator( Self );
+	#ifdef ARMOUR_HACK
+	Enable('Tick');
+	#endif
 }
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
@@ -76,6 +87,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			Momentum *= 1.5;
 		}
 
+		RestoreArmour(Victim);
+
 	}
 
 	// Deal with falling.
@@ -86,9 +99,54 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		// he will just sit alone at the bottom of the chasm!
 		if (ActualDamage < FallLimit) {
 			ActualDamage = 0;
+			RestoreArmour(Victim);
 		}
 	}
 
 	Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
+}
+
+#ifdef ARMOUR_HACK
+event Tick(float DeltaTime) {
+	local Pawn p;
+	local int pid;
+	local Inventory inv;
+	foreach AllActors(class'Pawn',p) {
+		if (p.PlayerReplicationInfo != None) {
+			pid = p.PlayerReplicationInfo.PlayerID % 64;
+			inv = FindInventorySubclass(p,'Armor');
+			if (inv != None) {
+				ArmorCharge[pid] = inv.Charge;
+			}
+		}
+	}
+}
+
+function Inventory FindInventorySubclass(Pawn p, name DesiredClass) {
+	local Inventory Inv;
+	local int Count;
+
+	for( Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory )
+	{
+		if ( Inv.IsA(DesiredClass) )
+			return Inv;
+		Count++;
+		if ( Count > 1000 )
+			return None;
+	}
+	return None;
+}
+#endif
+
+function RestoreArmour(Pawn p) {
+	local int pid;
+	local Inventory inv;
+	#ifdef ARMOUR_HACK
+	if (p.PlayerReplicationInfo != None) {
+		pid = p.PlayerReplicationInfo.PlayerID % 64;
+		inv = FindInventorySubclass(p,'Armor');
+		inv.Charge = ArmorCharge[pid];
+	}
+	#endif
 }
 
