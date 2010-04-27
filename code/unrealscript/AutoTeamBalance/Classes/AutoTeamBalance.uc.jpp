@@ -264,7 +264,7 @@
 
 //// Preprocessing definitions:
 
-#define ATB_VERSION "1.4.9o"
+#define ATB_VERSION "1.4.9q"
 
 // #define XOL_SPECIFIC
 
@@ -286,7 +286,7 @@
 // Semi-admin stuff:
 #define RENAME_PLAYERS
 #define bHideAdminActivity False
-//// Important: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
+//// Note: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
 #define CLEANUP14
 
 //// Disabled - For good reason.
@@ -294,6 +294,8 @@
 //// #define HASH15
 // APPLY_LASTBADPLAYER_TO_REBALANCE is not really doing it right.
 //// #define APPLY_LASTBADPLAYER_TO_REBALANCE
+// I believe cleanup before the game is better.  On slow machines, CLEANUP_AFTER might possibly cause the red-icon.
+//// #define CLEANUP_AFTER
 
 #ifdef XOL_SPECIFIC
 	#define ENABLE_IDC
@@ -592,6 +594,9 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var float LastLookupTime;
 	#endif
 
+	#ifdef CLEANUP14
+	var int CleanupProgress;
+	#endif
 
 // Default values:
 
@@ -607,7 +612,7 @@ defaultproperties {
 	bFlashCookies=False // I think this gets hidden by the endgame scoreboard, and is therefore useless.  No because it gets flashed at game start!
 	#ifdef DETECT_PLAYERJOINS
 	bFlashPlayerJoins=False
-	bAutoSwitchNewPlayers=False
+	bAutoSwitchNewPlayers=True
 	AutoSwitchTimeout=10 // After this long in the game, the player will not be eligible for auto switching.
 	#endif
 	bReportStrengthAsCookies=True
@@ -805,12 +810,14 @@ function PostBeginPlay() {
 	if (bLogLag) { Enable('Tick'); }
 	#endif
 
-	#ifdef CLEANUP14
-		CleanupDatabase();
-	#endif
-	#ifdef HASH15
-		MigrateDB14To15();
-	#endif
+#ifdef CLEANUP14
+#ifndef CLEANUP_AFTER
+	CleanupDatabase();
+#endif
+#endif
+#ifdef HASH15
+	MigrateDB14To15();
+#endif
 
 	initialized = true;
 
@@ -913,7 +920,7 @@ event Destroyed() {
 // Also (after HandleEndGame() is called), it detects the real game end, and calls UpdateStatsAtEndOfGame().
 event Timer() {
 	if (!gameStartDone) CheckGameStart();
-	if (gameStartDone) CheckGameEnd();
+	if (gameStartDone) CheckGameEnd(); // This is where gameEndDone is determined
 	if ((bWarnMidGameUnbalance || bForceEvenTeams)
 			&& gameStartDone && !gameEndDone
 			&& Level.Game.IsA('TeamGamePlus') && !DeathMatchPlus(Level.Game).bTournament
@@ -923,7 +930,14 @@ event Timer() {
 	// Reset frequency.  (Was not really needed until we set it low in HandleEndGame().)
 	if (gameStartDone)
 		SetTimer(CheckFrequency,!gameEndDone && (bWarnMidGameUnbalance || bForceEvenTeams));
-	// Before gameStartDone, it should continue checking every 1 second.
+#ifdef CLEANUP14
+#ifdef CLEANUP_AFTER
+	if (gameEndDone) {
+		CleanupDatabaseABit();
+		SetTimer(0.2,True);
+	}
+#endif
+#endif
 }
 
 // If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
@@ -1297,7 +1311,7 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 function GetSuggestedChanges() {
 	bSuggesting = True;
 	// SuggestedChanges = "";
-	SuggestedChanges = "[" $ (GetTeamStrength(1) - GetTeamStrength(0)) $ "]";
+	SuggestedChanges = "[" $ Int(GetTeamStrength(1) - GetTeamStrength(0)) $ "]";
 	// UpdateStatsAtEndOfGame(); // We undo this later with CopyConfigIntoArrays() but that will reset caching!  TODO: do we even need this?
 	// TODO CONSIDER: Make this a rebalance request, so multiple mutates from different players will take action
 	// ForceFullTeamsRebalance();
@@ -2754,7 +2768,7 @@ function MidGameRebalance(bool bDo) {
 	if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
 		return;
 
-	if (bDo) {
+	if (bDo && !bSuggesting) {
 		lastBalanceTime = Level.TimeSeconds;
 	}
 
@@ -2914,7 +2928,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
 		ProposeChange(closestPlayer,None);
 	}
 	if (bSuggesting) {
-		SuggestedChanges = SuggestedChanges $ " ("$newDifference$")";
+		SuggestedChanges = SuggestedChanges $ " ["$ Int(newDifference) $"]";
 	}
 	// return True;
 	// If we actually made strengths worse, but #players better, do a 2-player rebalance now:
@@ -3023,7 +3037,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 			ProposeChange(redPlayerToMove,bluePlayerToMove);
 		}
 		if (bSuggesting) {
-			SuggestedChanges = SuggestedChanges $ " ("$bestDifference$")";
+			SuggestedChanges = SuggestedChanges $ " ["$ Int(bestDifference) $"]";
 		}
 		return True;
 	} else {
@@ -3498,6 +3512,10 @@ function float GetRecordedPlayerStrength(Pawn p) {
 		NormalLog("Using UnknownStrength "$UnknownStrength$" for "$p.getHumanName());
 		return UnknownStrength; // unknown player or player is too weak for list (should never happen - ok with STAGGER_LOOKUPS now it can happen!)
 	} else {
+		if (avg_score[found] < 0) {
+			LogWarn("Player "$p.getHumanName()$" had negative avg_score="$avg_score[found]$" so resetting to 0.");
+			avg_score[found] = 0;
+		}
 		// If the amount of time we have observed the player for is quite short, then their strength can be innaccurate.
 		// (This can cause problems e.g. with a player who played for 3 minutes and got a good score - next game his strength will be 150!)
 		// So if he has played for less than an hour, interpolate his strength between default server average and observed strength, according to time played.
@@ -4019,7 +4037,9 @@ function InitialiseRecord(int i, Pawn p) {
 
 function ClearRecord(int i) {
 	if (bLogDeletedRecords) {
-		DefaultLog("CLEAR ["$i$"] "$ rkey[i] $" "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");
+		if (nick[i]!="" || ip[i]!="" || avg_score[i]!=0 || hours_played[i]!=0 || date_last_played[i]!="") {
+			DefaultLog("CLEAR ["$i$"] "$ rkey[i] $" "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");
+		}
 	}
 
 	rkey[i] = "";
@@ -4134,30 +4154,41 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
 
 #ifdef CLEANUP14
 
-//// CleanupDatabase empties the first 64 records in preparation for the next game.
-// This is actually pretty damn slow!
-// We could try cleaning up 1 per second during post-game.
-// But that still might not clear all in time!
-// And on really slow servers, it might take more than 1 second.  :P
-// On my machine, it does about 2 per second.
+// CleanupDatabase empties the first 64 records in preparation for the next game.
 function CleanupDatabase() {
 	local int i;
-	NormalLog("CleanupDatabase() Freeing records 0-64, to reduce in-game lag...");
 	for (i=0;i<64;i++) {
-		if (nick[i] != "") {
-			MoveRecordIntoDB(i);
-		}
+		CleanupDatabaseABit();
 	}
-	// This is so slow, we will do SaveConfig() after.
-	#ifndef TESTING
+	// CleanupDatabaseABit(); // 65th call causes DB to be saved
+}
+
+// CleanupDatabaseABit handles only one record each time, but it is called 5 times a second from Timer().
+function CleanupDatabaseABit() {
+	if (CleanupProgress == 64) {
+		DebugLog("Saving Database after Cleanup.");
 		CopyArraysIntoConfig();
 		SaveConfig();
-	#endif
+		CleanupProgress++;
+	}
+	if (CleanupProgress < 64) {
+		if (nick[CleanupProgress] != "") {
+			// NormalLog("CleanupDatabaseABit() Freeing records 0-64, to reduce in-game lag...");
+			MoveRecordIntoDB(CleanupProgress);
+		}
+		ClearRecord(CleanupProgress);
+		CleanupProgress++;
+	}
 	// This created KEEP_EARLY_RECORDS_EMPTY
 }
 
 function MoveRecordIntoDB(int i) {
-	local int j,found;
+	local int j,k,found;
+	local float lowestScore,score;
+
+	/*
+	// Replace the oldest record in the DB.  This is too heavy when moving all at
+	// once, and too slow when done in pieces (causes red icon).
 	found = 64;
 	for (j=64;j<MaxPlayerData;j+=BatchSize) {
 		found = FindOldestPlayerRecordInnerBatch(found,j);
@@ -4167,6 +4198,31 @@ function MoveRecordIntoDB(int i) {
 	}
 	ClearRecord(found);
 	SwapPlayerRecords(i,found);
+	*/
+
+	// This method is faster but not optimal.  It will replace the oldest out of
+	// a random 64 records.
+	lowestScore = 0.0;
+	found = -1;
+	for (j=0;j<32;j++) {
+		k = 64 + FRand() * (MaxPlayerData - 64);
+		if (RecordIsEmpty(k)) {
+			found = k;
+			break;
+		}
+		score = FindOldestPlayerRecordMeasure(k);
+		if (score < lowestScore) {
+			lowestScore = score;
+			found = k;
+		}
+	}
+	if (found == -1) {
+		NormalLog("Warning: Despite "$j$" attempts, could not find a record to replace, so replacing a random one.");
+		found = 64 + FRand() * (MaxPlayerData - 64);
+	}
+	ClearRecord(found);
+	SwapPlayerRecords(i,found);
+
 }
 
 #endif
