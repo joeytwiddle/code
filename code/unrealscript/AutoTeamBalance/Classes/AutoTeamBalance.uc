@@ -280,12 +280,14 @@
 
 //// Features which worked and we are keeping:
 // Semi-admin stuff:
-//// Important: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
+//// Note: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
 //// Disabled - For good reason.
 // HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
 //// #define HASH15
 // APPLY_LASTBADPLAYER_TO_REBALANCE is not really doing it right.
 //// #define APPLY_LASTBADPLAYER_TO_REBALANCE
+// I believe cleanup before the game is better.  On slow machines, CLEANUP_AFTER might possibly cause the red-icon.
+//// #define CLEANUP_AFTER
 //// Unstable - Things which we cannot release, and have been abandoned for the moment:
 // #define SUPERBALANCE - i think it breaks the engine's idea of who is on which team
 // #define COOL_CAMERA - not a project for ATB, needs to be clientside anyway
@@ -438,6 +440,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var Color colorWhite,colorRed,colorBlue,colorGreen,colorYellow,colorCyan,colorMagenta,colorGray,colorBlack;
  // TODO!
  var PlayerPawn LastPlayerToJoin; // Originally intended as the last player to join an even (2v2) game and unbalance it.  But now also may hold other players who are offering themselves for auto-switching.
+ var int CleanupProgress;
 // Default values:
 defaultproperties {
  bLogging=True
@@ -450,7 +453,7 @@ defaultproperties {
  bBroadcastCookies=False
  bFlashCookies=False // I think this gets hidden by the endgame scoreboard, and is therefore useless.  No because it gets flashed at game start!
  bFlashPlayerJoins=False
- bAutoSwitchNewPlayers=False
+ bAutoSwitchNewPlayers=True
  AutoSwitchTimeout=10 // After this long in the game, the player will not be eligible for auto switching.
  bReportStrengthAsCookies=True
  FlashLine=0 // Highest is most out of the way (but overlaps some other text).  Range 0-6 ok, or 7 if bShowProposedSwitch=False.
@@ -591,7 +594,7 @@ function PostBeginPlay() {
  SetTimer(1,True);
  gameEndDone = false; // Kinda redundant, since it will have been default initialised to false anyway.
  CopyConfigIntoArrays(); // First time the data is needed, we must convert it.
-  CleanupDatabase();
+ CleanupDatabase();
  initialized = true;
 }
 // Implementation of AddMutator which prevents double or recursive adding:
@@ -628,7 +631,7 @@ event Destroyed() {
 // Also (after HandleEndGame() is called), it detects the real game end, and calls UpdateStatsAtEndOfGame().
 event Timer() {
  if (!gameStartDone) CheckGameStart();
- if (gameStartDone) CheckGameEnd();
+ if (gameStartDone) CheckGameEnd(); // This is where gameEndDone is determined
  if ((bWarnMidGameUnbalance || bForceEvenTeams)
    && gameStartDone && !gameEndDone
    && Level.Game.IsA('TeamGamePlus') && !DeathMatchPlus(Level.Game).bTournament
@@ -638,7 +641,6 @@ event Timer() {
  // Reset frequency.  (Was not really needed until we set it low in HandleEndGame().)
  if (gameStartDone)
   SetTimer(CheckFrequency,!gameEndDone && (bWarnMidGameUnbalance || bForceEvenTeams));
- // Before gameStartDone, it should continue checking every 1 second.
 }
 // If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
 // This may cause a little lag on slow CPU servers when a new player joins, because it will search the whole database to find his record; if this is a problem, set bUseOnlyInGameScoresForRebalance.
@@ -932,7 +934,7 @@ function ShowStrengthsTo(PlayerPawn Sender,bool bExtra) {
 function GetSuggestedChanges() {
  bSuggesting = True;
  // SuggestedChanges = "";
- SuggestedChanges = "[" $ (GetTeamStrength(1) - GetTeamStrength(0)) $ "]";
+ SuggestedChanges = "[" $ Int(GetTeamStrength(1) - GetTeamStrength(0)) $ "]";
  // UpdateStatsAtEndOfGame(); // We undo this later with CopyConfigIntoArrays() but that will reset caching!  TODO: do we even need this?
  // TODO CONSIDER: Make this a rebalance request, so multiple mutates from different players will take action
  // ForceFullTeamsRebalance();
@@ -1372,20 +1374,20 @@ function Mutate(String str, PlayerPawn Sender) {
   else
    pass_if_needed = " [password]";
   if (bEnablePlayerCommands) {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9o" $" commands: teams !teams !red !blue !spec !play !vote !stats");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9q" $" commands: teams !teams !red !blue !spec !play !vote !stats");
   } else {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9o" $" commands: teams !teams");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9q" $" commands: teams !teams");
   }
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9o" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9q" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
   if (localPass == "") {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9o" $" semi-admin console commands:");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9q" $" semi-admin console commands:");
    Sender.ClientMessage("    mutate [atb] ( teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | kick <p> <msg> | kickban <p> <msg> ");
    Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> ) "$pass_if_needed);
   } else {
    Sender.ClientMessage("    mutate help [<password>]");
   }
   if (Sender.bAdmin) {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9o" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> | cc <p> <cmd>)");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9q" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> | cc <p> <cmd>)");
   }
  }
  Super.Mutate(str,Sender);
@@ -2114,7 +2116,7 @@ function MidGameRebalance(bool bDo) {
  local bool success;
  if (!Level.Game.IsA('TeamGamePlus') || !Level.Game.bTeamGame)
   return;
- if (bDo) {
+ if (bDo && !bSuggesting) {
   lastBalanceTime = Level.TimeSeconds;
  }
  if (!bDo) {
@@ -2241,7 +2243,7 @@ function bool MidGameTeamBalanceSwitchOnePlayer(bool bDo, int fromTeam, int toTe
   ProposeChange(closestPlayer,None);
  }
  if (bSuggesting) {
-  SuggestedChanges = SuggestedChanges $ " ("$newDifference$")";
+  SuggestedChanges = SuggestedChanges $ " ["$ Int(newDifference) $"]";
  }
  // return True;
  // If we actually made strengths worse, but #players better, do a 2-player rebalance now:
@@ -2320,7 +2322,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
    ProposeChange(redPlayerToMove,bluePlayerToMove);
   }
   if (bSuggesting) {
-   SuggestedChanges = SuggestedChanges $ " ("$bestDifference$")";
+   SuggestedChanges = SuggestedChanges $ " ["$ Int(bestDifference) $"]";
   }
   return True;
  } else {
@@ -2629,6 +2631,10 @@ function float GetRecordedPlayerStrength(Pawn p) {
   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Using UnknownStrength "$UnknownStrength$" for "$p.getHumanName()); };
   return UnknownStrength; // unknown player or player is too weak for list (should never happen - ok with STAGGER_LOOKUPS now it can happen!)
  } else {
+  if (avg_score[found] < 0) {
+   ; ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "* " $ "Player "$p.getHumanName()$" had negative avg_score="$avg_score[found]$" so resetting to 0."); };;
+   avg_score[found] = 0;
+  }
   // If the amount of time we have observed the player for is quite short, then their strength can be innaccurate.
   // (This can cause problems e.g. with a player who played for 3 minutes and got a good score - next game his strength will be 150!)
   // So if he has played for less than an hour, interpolate his strength between default server average and observed strength, according to time played.
@@ -2941,7 +2947,9 @@ function InitialiseRecord(int i, Pawn p) {
 }
 function ClearRecord(int i) {
  if (bLogDeletedRecords) {
-  ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CLEAR ["$i$"] "$ rkey[i] $" "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");;
+  if (nick[i]!="" || ip[i]!="" || avg_score[i]!=0 || hours_played[i]!=0 || date_last_played[i]!="") {
+   ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CLEAR ["$i$"] "$ rkey[i] $" "$ nick[i] $" "$ ip[i] $" "$ avg_score[i] $" "$ hours_played[i] $" "$ date_last_played[i] $" (score "$ FindOldestPlayerRecordMeasure(i) $")");;
+  }
  }
  rkey[i] = "";
  ip[i] = "";
@@ -3037,33 +3045,67 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
  }
  return found;
 }
-//// CleanupDatabase empties the first 64 records in preparation for the next game.
-// This is actually pretty damn slow!
-// We could try cleaning up 1 per second during post-game.
-// But that still might not clear all in time!
-// And on really slow servers, it might take more than 1 second.  :P
-// On my machine, it does about 2 per second.
+// CleanupDatabase empties the first 64 records in preparation for the next game.
 function CleanupDatabase() {
  local int i;
- ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "CleanupDatabase() Freeing records 0-64, to reduce in-game lag..."); };
  for (i=0;i<64;i++) {
-  if (nick[i] != "") {
-   MoveRecordIntoDB(i);
-  }
+  CleanupDatabaseABit();
  }
- // This is so slow, we will do SaveConfig() after.
+ // CleanupDatabaseABit(); // 65th call causes DB to be saved
+}
+// CleanupDatabaseABit handles only one record each time, but it is called 5 times a second from Timer().
+function CleanupDatabaseABit() {
+ if (CleanupProgress == 64) {
+  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Saving Database after Cleanup."); };
   CopyArraysIntoConfig();
   SaveConfig();
+  CleanupProgress++;
+ }
+ if (CleanupProgress < 64) {
+  if (nick[CleanupProgress] != "") {
+   // NormalLog("CleanupDatabaseABit() Freeing records 0-64, to reduce in-game lag...");
+   MoveRecordIntoDB(CleanupProgress);
+  }
+  ClearRecord(CleanupProgress);
+  CleanupProgress++;
+ }
  // This created KEEP_EARLY_RECORDS_EMPTY
 }
 function MoveRecordIntoDB(int i) {
- local int j,found;
- found = 64;
- for (j=64;j<MaxPlayerData;j+=128) {
-  found = FindOldestPlayerRecordInnerBatch(found,j);
-  if (( nick[found]=="" && ip[found]=="" )) {
-   break; // An empty record - we can replace this!
+ local int j,k,found;
+ local float lowestScore,score;
+ /*
+	// Replace the oldest record in the DB.  This is too heavy when moving all at
+	// once, and too slow when done in pieces (causes red icon).
+	found = 64;
+	for (j=64;j<MaxPlayerData;j+=BatchSize) {
+		found = FindOldestPlayerRecordInnerBatch(found,j);
+		if (RecordIsEmpty(found)) {
+			break; // An empty record - we can replace this!
+		}
+	}
+	ClearRecord(found);
+	SwapPlayerRecords(i,found);
+	*/
+ // This method is faster but not optimal.  It will replace the oldest out of
+ // a random 64 records.
+ lowestScore = 0.0;
+ found = -1;
+ for (j=0;j<32;j++) {
+  k = 64 + FRand() * (MaxPlayerData - 64);
+  if (( nick[k]=="" && ip[k]=="" )) {
+   found = k;
+   break;
   }
+  score = FindOldestPlayerRecordMeasure(k);
+  if (score < lowestScore) {
+   lowestScore = score;
+   found = k;
+  }
+ }
+ if (found == -1) {
+  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Warning: Despite "$j$" attempts, could not find a record to replace, so replacing a random one."); };
+  found = 64 + FRand() * (MaxPlayerData - 64);
  }
  ClearRecord(found);
  SwapPlayerRecords(i,found);
