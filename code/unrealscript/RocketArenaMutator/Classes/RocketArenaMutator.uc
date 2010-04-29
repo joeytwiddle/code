@@ -7,21 +7,35 @@ class RocketArenaMutator expands Mutator config(RocketArenaMutator);
 
 /* ============================================================================
 
+=== RocketArenaMutator ===
+
 A weak approximation of the Rocket Arena game mode physics, implemented as a
 Mutator.  Only one file need be used on the server, and no downloads are
 required.  There are no rounds, the actual gametype remains the same.  But self
 boosting, and boost tweaking for all the damagetypes is set (actually more like
-CTF warmup than RA).  Because it is a mutator, armor is lost on self-boosts and
-falls.
+CTF warmup than RA).
 
-TODOS:
+Because it is a mutator, armor is lost on self-boosts and falls.  ARMOR_HACK
+attempts to solve this, by recording and restoring armor, but it is not 100%
+accurate.
+
+=== TODOS ===
 
 There may be some things we need to consider.  Have we got all the weaposn
 right?  Does RA adjust anything we haven't thought of, such as splash radius,
 affect on other players, times when InstigatedBy=None but we should save the
 player from damage, scale of boost wrt damage might not be linear in the real
-RA.  Most weapons will fire only one charge at a time.  Only rockets allows for
-a selected charge.
+RA.  Most weapons will fire only one charge at a time.  Only rockets, grenades
+and bio allow for a selected charge.
+
+=== ARMOR_HACK BUGS ===
+
+If you are wearing a shieldbelt or MetalSuit but by boosting or falling you
+destroy it (or knock it down to normal armor), then it will be restored as
+normal armor.
+
+If one of your armors has a stronger charge, after boosting its charge may be
+transferred to one of the *other* types of armour in your inventory.
 
 Some damage types: 'Breathe' 'Burned' 'Corroded' 'DamTypeShieldImpact'
  'Decapitated' 'Drowned' 'Eradicated' 'Exploded' 'Fell' 'FlakDeath' 'GameInfo'
@@ -92,7 +106,9 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
    Momentum *= 1.5;
   }
 
-  RestoreArmour(Victim);
+
+  RestoreArmor(Victim);
+
 
  }
 
@@ -104,12 +120,15 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
   // he will just sit alone at the bottom of the chasm!
   if (ActualDamage < FallLimit) {
    ActualDamage = 0;
-   RestoreArmour(Victim);
+
+   RestoreArmor(Victim);
+
   }
  }
 
  Super.MutatorTakeDamage( ActualDamage, Victim, InstigatedBy, HitLocation, Momentum, DamageType );
 }
+
 
 
 event Tick(float DeltaTime) {
@@ -119,38 +138,50 @@ event Tick(float DeltaTime) {
  foreach AllActors(class'Pawn',p) {
   if (p.PlayerReplicationInfo != None) {
    pid = p.PlayerReplicationInfo.PlayerID % 64;
-   inv = FindInventorySubclass(p,'Armor');
-   if (inv != None) {
+   inv = FindArmor(p);
+   if (inv == None) {
+    ArmorCharge[pid] = 0;
+   } else {
     ArmorCharge[pid] = inv.Charge;
    }
   }
  }
 }
 
-function Inventory FindInventorySubclass(Pawn p, name DesiredClass) {
+function Inventory FindArmor(Pawn p) {
  local Inventory Inv;
+ local Inventory Found;
  local int Count;
 
  for( Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory )
  {
-  if ( Inv.IsA(DesiredClass) )
-   return Inv;
+  if (Armor(Inv)!=None || ThighPads(Inv)!=None || Armor2(Inv)!=None || ShieldBelt(Inv)!=None || UT_ShieldBelt(Inv)!=None) {
+   if (Found == None || Inv.Charge > Found.Charge)
+    Found = Inv;
+  }
   Count++;
   if ( Count > 1000 )
-   return None;
+   break;
  }
- return None;
+ return Found;
 }
 
-
-function RestoreArmour(Pawn p) {
+function RestoreArmor(Pawn p) {
  local int pid;
  local Inventory inv;
-
- if (p.PlayerReplicationInfo != None) {
+ if (p.PlayerReplicationInfo != None && ArmorCharge[pid]>0) {
+  // Log("Restoring Armor for "$p.getHumanName());
   pid = p.PlayerReplicationInfo.PlayerID % 64;
-  inv = FindInventorySubclass(p,'Armor');
-  inv.Charge = ArmorCharge[pid];
+  inv = FindArmor(p);
+  if (inv == None) {
+   inv = Spawn(class'Armor2',p);
+   inv.GiveTo(p);
+   // inv.Activate();
+   // Pickup(inv).PickupFunction();
+  }
+  if (inv != None) {
+   // Log("Restoring Armor "$ArmorCharge[pid]$" into "$inv);
+   inv.Charge = ArmorCharge[pid];
+  }
  }
-
 }
