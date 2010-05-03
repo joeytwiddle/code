@@ -512,8 +512,8 @@ defaultproperties {
  RelativeNormalisationProportion=0.5 // 0.0 = no relative, scores always normalised around NormalisedStrength (50); 1.0 = scores normalised around average strength of players in game
  bScalePlayerScoreToFullTime=True
  NormalisedStrength=50
- UnknownStrength=50
- BotStrength=10
+ UnknownStrength=45
+ BotStrength=30
  FlagStrength=5
  WinningTeamBonus=5
  ScoreThresholdLow=-10
@@ -3271,6 +3271,9 @@ function float GetScoreForPlayer(Pawn p) {
  }
  // Siege can give dodgy scores.  Sometimes HUGE negative numbers, or leech
  // games produce unrepresentatively high numbers.
+ if (award_score < -1000000) {
+  award_score = ScoreThresholdHigh;
+ }
  if (award_score<ScoreThresholdLow || award_score>ScoreThresholdHigh) {
   ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Adjusting "$ p.getHumanName() $"'s extreme score "$award_score); };
   award_score = FClamp(award_score,ScoreThresholdLow,ScoreThresholdHigh);
