@@ -84,11 +84,17 @@ class MapStats expands Mutator config(MapStats);
 // And now I can't get it working.  :P
 #define LIST_RECENTLY_PLAYED
 #define MAP_RATING
-// #define MAP_TAGS
+#define MAP_TAGS
 // PLAYERS_CAN_VETO affects bEndGameSwitchMap
 #define PLAYERS_CAN_VETO
-//// I'm afraid it can't be done.  We can't compile against MapVoteLA13 (at least not under Linux/wine/ucc), and we can't access elements of MapListTemp's array using ConsoleCommands.
+//// I'm afraid it can't be done.  We can't compile against MapVoteLA13 (at least not under Linux/wine/ucc), and we can't access elements of MapListTemp's array using ConsoleCommands.  TEST: Can we read MapListTemp using config() ?
 // #define ADJUST_MAPVOTELA_LIST
+
+//// The XOL build has slightly different equations, and not all the extra (unneccessary) features.
+// #define XOL_BUILD
+#ifdef XOL_BUILD
+	#undef MAP_TAGS
+#endif
 
 var config bool bBroadcastStuff;
 var config bool bShowLevelEnterText;
@@ -115,8 +121,9 @@ var config bool bRetryCrashedMaps;
 var config bool bListRecentlyPlayed;
 var config String RecentlyPlayedMaps;
 #endif
-var config String KnownGameTypes;
+var config String KnownGameTypes; // used to associate map prefixes with their gametypes
 var config float MaxPlayerSizeDifference;
+var config bool bDisplayInfoWhenVoting;
 
 struct MapInfo {
 	var String MapName;
@@ -509,7 +516,13 @@ event Timer() {
 				// BroadcastAndLog("Next map will be "$ NextMap $".");
 				// #endif
 				// BroadcastAndLog("(Other maps: "$ ConsideredMaps $")");
-				BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+				// BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+				BroadcastAndLog("Considered maps: "$ConsideredMaps);
+				#ifdef PLAYERS_CAN_VETO
+				BroadcastAndLog("Next map will be: "$ NextMap $", unless you type !NO to veto it.");
+				#else
+				BroadcastAndLog("Next map will be: "$ NextMap $" (last played "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago)");
+				#endif
 			}
 			// We do the switch in the if clause below, when Timer is next called.
 			SetTimer(EndGameSwitchSeconds,False);
@@ -650,7 +663,7 @@ function DoLevelSwitch() {
 	SaveConfig();
 
 	if (bBroadcastStuff) {
-		BroadcastAndLog("Considered maps: "$ ConsideredMaps);
+		// BroadcastAndLog("Considered maps: "$ ConsideredMaps);
 		// BroadcastAndLog("Switching to "$ NextMap $" now.");
 
 		num = (DaysSince1970() - MapRecord(NextMap).DateLastPlayed);
@@ -894,23 +907,31 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	playerDiff = Abs(currentNumPlayers + deltaPlayers - MapStats[nextI].PreferredPlayers);
 	if (playerDiff > MaxPlayerSizeDifference)
 		playerDiff = playerDiff + 50;
-	playerDiff += 0.2; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
-	// if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
+	// playerDiff += 0.2; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
+	#ifdef XOL_BUILD
+		playerDiff = (playerDiff*playerDiff)/2.0 + 0.2; // Rork's suggestion - to make playerDiff more relevant than ageInDays
+	#endif
+	#ifndef XOL_BUILD
+		if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
+	#endif
 	ageInDays += 0.01;
 	// TODO: tweaks zeroed until stats are fixed:
 	#define flowTweak (0.0*MapStats[nextI].AveragePlayerFlow*0.125)
 	// playerTweak encourages maps with larger playercount.
 	#define playerTweak (0.0*MapStats[nextI].AveragePlayerCount*0.05)
-	// ratingTweak makes a map 2 hours older * number of good ratings (-2*bad).
-	#define ratingTweak (2.0/24.0*(MapStats[nextI].GoodVotes - 2*MapStats[nextI].BadVotes))
+	//// ratingTweak makes a map 2 hours older * number of good ratings (-2*bad).
+	// #define ratingTweak (2.0/24.0*(MapStats[nextI].GoodVotes - 2*MapStats[nextI].BadVotes))
+	//// ratingMultiplierTweak is scalable since GetRatingForMapI is bound 0-10.
+	#define ratingMultiplierTweak (0.5 + 1.5 * GetRatingForMapI(nextI)/10.0)
 	// TODO: anyway playerTweak should work wrt currentNumPlayers!  playerTweak tends towards slightly larger maps, in order to encourage players to join? :o
 	// if (currentNumPlayers==0 && MapStats[nextI].PreferredPlayers==0) // When the server is empty
 		// ageInDays += 5.0; // boost the score of maps whose size is unknown
-	result = 384.0 * (ageInDays + flowTweak + playerTweak + ratingTweak) / playerDiff;
+	// result = 384.0 * (ageInDays + flowTweak + playerTweak + ratingTweak) / playerDiff;
+	result = 384.0 * (ageInDays * ratingMultiplierTweak + flowTweak + playerTweak) / playerDiff;
 	if (bDebugLogging && FRand()<0.05) {
 		// DebugLog("Score for "$ MapStats[nextI].MapName $" PreferredPlayers="$ NiceFloat(MapStats[nextI].PreferredPlayers) $"] is: "$ NiceFloat(result));
 		// DebugLog("  ( age "$ NiceFloat(ageInDays) $"d + tweaks "$ NiceFloat(flowTweak) $" + "$ NiceFloat(playerTweak) $" + "$ NiceFloat(ratingTweak) $" ) / playerDiff "$ NiceFloat(playerDiff));
-		DebugLog("  "$ MapStats[nextI].MapName $" score="$ NiceFloat(result) $" age="$ NiceFloat(ageInDays) $" tweaks="$ NiceFloat(flowTweak + playerTweak + ratingTweak) $" / playerDiff="$ NiceFloat(playerDiff) $"");
+		DebugLog("  "$ MapStats[nextI].MapName $" score="$ NiceFloat(result) $" age="$ NiceFloat(ageInDays) $"x"$ ratingMultiplierTweak $" tweaks="$ NiceFloat(flowTweak + playerTweak) $" / playerDiff="$ NiceFloat(playerDiff) $"");
 	}
 	return result;
 }
@@ -1127,6 +1148,7 @@ function bool ScanMaps(optional String search, optional String prefix) {
 	return False;
 }
 
+// Returns a rating for the map in the range 0.0-10.0
 function float GetRatingForMapI(int i) {
 	local float pUnknown,pGood,pBad;
 	local int TotalVotes;
@@ -1170,14 +1192,15 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 				currentMap.BadVotes++;
 				PlayerPawn(Sender).ClientMessage("You have rated this map -1");
 				currentMap.RatedDownBy = currentMap.RatedDownBy $ Sender.getHumanName() $ " ";
+				BroadcastMapRating();
 			}
 			SaveConfig();
 		}
 		#endif
 
 		#ifdef MAP_TAGS
-		if (Left(Msg,5)~="!tag ") {
-			AddTags(Right(Msg,5));
+		if (Left(Msg,5)~="!tag " || Left(Msg,8)~="!tagmap ") {
+			AddTags(StrAfterFirst(Msg," "));
 			ListMapsTo(PlayerPawn(Sender),mapName);
 			SaveConfig();
 		}
@@ -1189,23 +1212,25 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 		// }
 		// if (Level.Game.bGameEnded && bEndGameSwitchMap) {
 		if (NextMap != "") {
-			if (Msg ~= "NO" || Msg ~= "!NO" || Msg ~= "YES" || Msg ~= "!YES") {
+			if (Msg ~= "!NO" || Msg ~= "!YES") {
 				if (StrContains(VetoersList," "$Sender.getHumanName()$" ")) {
 					PlayerPawn(Sender).ClientMessage("You have already voted on "$ NextMap $"!");
 					hideMessage = True;
 				} else {
 					VetoersList = VetoersList $ " " $ Sender.getHumanName() $ " ";
-					if (Msg ~= "NO" || Msg ~= "!NO")
+					if (Msg ~= "!NO")
 						NoCount++;
-					if (Msg ~= "YES" || Msg ~= "!YES")
+					if (Msg ~= "!YES")
 						NoCount--;
+					hideMessage = True;
 					// CONSIDER TODO: saying yes/no should be equivalent to saying "good map"/"bad map" on the target map.
 					if (NoCount >= MinimumNosForVeto) {
 						NoCount = 0;
 						VetoersList = "";
 						RejectedMaps = RejectedMaps $ " " $ NextMap;
 						NextMap = ChooseNextMap();
-						BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+						// BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+						BroadcastAndLog("Next map will be: "$ NextMap $" (last played "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago)");
 					} else {
 						s = "s" ; if ((MinimumNosForVeto-NoCount)==1) s = "";
 						BroadcastAndLog( (MinimumNosForVeto-NoCount) $" more vote"$s$" needed to reject "$ NextMap);
@@ -1216,6 +1241,11 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 		}
 		// }
 		#endif
+
+		if (bDisplayInfoWhenVoting) {
+			// TODO: We want to catch messages such as: The_Master voted for xLMS-Gothic
+			// And then display its size to the players (and maybe its ratings too).
+		}
 
 	}
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage /* || !bSwallowSpokenCommands */ );
@@ -1281,7 +1311,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		}
 		#endif
 		if (str~="help") {
-			Sender.ClientMessage("MapStats say commands: yes | no | good map | bad map | !tag <tag1,tag2,...>");
+			Sender.ClientMessage("MapStats say commands: !yes | !no | good map | bad map | !tag <tag1,tag2,...>");
 			Sender.ClientMessage("MapStats mutate commands: help | suggest | list <part_of_mapname> | listrecent");
 			Sender.ClientMessage("MapStats admin mutate commands: nextmap | scanmaps");
 		}
