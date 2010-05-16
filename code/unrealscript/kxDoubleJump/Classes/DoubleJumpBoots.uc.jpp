@@ -147,6 +147,11 @@ exec function DoubleJump ()
         default:
       }
 
+      if (p.DodgeDir == DODGE_Active) {
+        // p.ClientMessage("Disallowed DoubleJump because you are mid-dodge.");
+        return;
+      }
+
       switch (JumpStyle) {
         case 0: // Set standard upward velocity
           P.Velocity.Z = P.JumpZ * JumpHeight;
@@ -174,6 +179,8 @@ exec function DoubleJump ()
         break;
       }
 
+      // OK we will do a jump
+
       nofJumps++;
       LastJumpTime = Level.TimeSeconds;
 
@@ -186,6 +193,7 @@ exec function DoubleJump ()
       // }
     }
   } else {
+    // Do a normal jump off the ground:
     P.DoJump();
     nofJumps = 1;
     LastJumpTime = Level.TimeSeconds;
