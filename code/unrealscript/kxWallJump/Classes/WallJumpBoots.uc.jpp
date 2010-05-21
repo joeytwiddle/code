@@ -1,0 +1,332 @@
+//================================================================================
+// WallJumpBoots.
+//================================================================================
+
+// vim: ft=uc
+
+// TODO: If we have normal jump boots, our in-air doublejumps also jump with their strength.  I think this is wrong - we should ideally prevent the jump boots from being used in-air, but keep their charge.
+// TODO: Refuse doublejump during dodge (could make it an admin option).
+
+// DONE: I think we can remove GRAPPLEGUN_JUMPOFF_FIX.  The grapple jump-off is unreliable with or without DJBoots.  I doubt DJBoots are intercepting the jump call, since they work by adding a keybind!
+// #define GRAPPLEGUN_JUMPOFF_FIX
+
+class WallJumpBoots extends TournamentPickup config(kxWallJump);
+
+var() config float WallProximity;
+var() config int MaxJumps;
+var() config float JumpHeight;
+var() config float VelocityLimit; // Defines the size of the apex
+var() config int JumpType; // This is the restriction on jumping
+var() config int JumpStyle; // This is the type of jump that the player performs
+var() config float RechargeRate;
+var() config bool bRestrictFC;
+var int nofJumps;
+var int nofJumpKeys;
+var float LastJumpTime;
+
+// #define MaxWallDist 25.0 // almost enough
+// #define MaxWallDist 50.0 // reasonable distance
+#define MaxWallDist 64.0 // generous distance
+#define NormalBounce 0.4
+
+replication
+{
+	reliable if ( Role == 4 )
+		ClientPlayAnim;
+	reliable if ( Role < 4 )
+		WallJump;
+}
+
+simulated function PreBeginPlay ()
+{
+	local PlayerPawn P;
+
+	if ( Level.NetMode == 1 )
+	{
+		return;
+	}
+	foreach AllActors(Class'PlayerPawn',P)
+	{
+		if ( Viewport(P.Player) != None ) {
+			break;
+		} else {
+			P = None;
+		}
+	}
+	if ( P == None )
+	{
+		Log("kxWallJump.WallJumpBoots.PreBeginPlay() NO LOCAL PLAYERPAWN !!!");
+		return;
+	}
+	InitializeKeys(P);
+	if ( nofJumpKeys == 0 ) {
+		Log("kxWallJump.WallJumpBoots.PreBeginPlay() Could NOT find any keys bound to JUMP/DOUBLEJUMP, WallJump will NOT work !!!");
+	} else {
+	}
+}
+
+simulated function InitializeKeys (PlayerPawn P)
+{
+	local string KeyName;
+	local string keyBinding;
+	local int i;
+
+	nofJumpKeys = 0;
+	for (i=0;i<256;i++) {
+		// TODO: This looks ballbag - check and test.  Why aren' we using GET INPUT?  Match on Jump single-word.
+		KeyName = P.ConsoleCommand("Keyname" @ string(i));
+		if ( (InStr(P.ConsoleCommand("Keybinding" @ KeyName),"Jump") != -1) && (InStr(P.ConsoleCommand("Keybinding" @ KeyName),"WallJump") == -1) )
+		{
+			keyBinding = P.ConsoleCommand("Keybinding" @ KeyName);
+			P.ConsoleCommand("SET INPUT " @ KeyName @ " WallJump|" $ keyBinding);
+			Log("kxWallJump.WallJumpBoots.InitializeKeys() Changed" @ KeyName @ "from" @ keyBinding @ "to WallJump|" $ keyBinding);
+			nofJumpKeys++;
+		} else {
+			if ( InStr(P.ConsoleCommand("Keybinding" @ KeyName),"WallJump") != -1 )
+			{
+				nofJumpKeys++;
+			}
+		}
+	}
+}
+
+exec function WallJump ()
+{
+	local PlayerPawn P;
+	local Actor HitWall;
+	local vector HitLocation,WallNormal,DeltaV;
+
+	#ifdef GRAPPLEGUN_JUMPOFF_FIX
+	// local Inventory i;
+	if (
+		// Player has a grapplinggun
+		P.FindInventoryType(class'GrappleGun') != None
+		// Player is using / has fired the grapple - it is active and he has a line (although it maybe has not hit the wall yet)
+		&& GrappleGun(P.FindInventoryType(class'GrappleGun')).GrapplingHook != None
+	) {
+		// Player is NOT holding the grapple gun, and jumping.
+		if (InStr(""$P.Weapon,"Grapple")==-1) {
+			// He probably wants to jump off his grappling line.
+			// To do that, we must cancel any air WallJump here.
+			Log("kxWallJump.WallJumpBoots.WallJump() Blocked WallJump to allow release from Grapple.");
+			// TODO: This doesn't appear to be getting called.
+			// If I jump while grappled but holding sniper, first time jump is often ignored, but at right time I can airjump off line nicely.
+			// Ideally we would doublejump if on was allowed (or always? depends on jumpstyle - could be too powerful upwards!), otherwise just fall off, but either way release the line.
+			// Maybe we should invoke playerpawn's default jump fvnction here, before returning.
+			// TODO: If the jump does release them from the line, and a doublejump was available, the jump should be made as they release.
+			return;
+		}
+	}
+	#endif
+
+	if ( PlayerPawn(Owner) == None )
+	{
+		return;
+	}
+	P = PlayerPawn(Owner);
+	if (RechargeRate>0 && (Level.TimeSeconds-LastJumpTime)>=RechargeRate && nofJumps>1) {
+		nofJumps = 1;
+	}
+	if (bRestrictFC && P.PlayerReplicationInfo.HasFlag != None && nofJumps<MaxJumps) {
+		nofJumps = MaxJumps-1;
+	}
+
+	#ifdef TESTING
+	// TODO: don't allow doublejump with jump boots, or somehow dampen it (make it like a normal mid-air doublejump)
+	// normalJumpBoots = P.FindInventory(class'JumpBoots');
+	#endif
+
+	if ( P.Physics == PHYS_Falling )
+	{
+		if ( nofJumps < MaxJumps )
+		{
+			switch (JumpType)
+			{
+				case 0: // Only allow jump at the apex
+					if (Abs(P.Velocity.Z) > VelocityLimit) { // Not at apex
+						return;
+					}
+				break;
+				case 1: // Only allow jump when going upwards, or at the apex (not falling too fast)
+					if (P.Velocity.Z < -VelocityLimit) { // Falling fast
+						return;
+					}
+				break;
+				default:
+			}
+
+
+			// if (p.DodgeDir == DODGE_Active) {
+				// p.ClientMessage("Disallowed WallJump because you are mid-dodge.");
+				// return;
+			// }
+
+			HitWall = FindClosestWall(p,HitLocation,WallNormal);
+			if (HitWall == None) {
+				p.ClientMessage("You need to be near a wall to wall-jump!");
+				return;
+			}
+
+			// OK we will do a jump
+
+			nofJumps++;
+			LastJumpTime = Level.TimeSeconds;
+
+			switch (JumpStyle) {
+				case 0: // Set standard upward velocity
+					P.Velocity.Z = P.JumpZ * JumpHeight;
+				break;
+				case 1: // Moderated additional
+					//// If we are already goin up fast, give us only half a jump extra
+					P.Velocity.Z = P.Velocity.Z + 0.5 * P.JumpZ * JumpHeight;
+					//// If we are not going up at jump speed, make us go up at jump speed!
+					if (P.Velocity.Z < P.JumpZ * JumpHeight) {
+						P.Velocity.Z = P.JumpZ * JumpHeight;
+					}
+				break;
+				case 2:
+					//// Add extra jump to current upward velocity.  This can take you very high if tapped quickly, so in this case JumpType=on-apex is recommended.
+					P.Velocity.Z += P.JumpZ * JumpHeight;
+				break;
+				case 3:
+					//// Let the player choose whether to go for height or distance on the secondary jumps:
+					//// Add extra jump to current velocity (half up, half "with" our sideways velocity)
+					P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
+					P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+				break;
+				default:
+					P.Velocity.Z = P.JumpZ * JumpHeight;
+				break;
+			}
+
+			// P.Velocity.Z = P.JumpZ * JumpHeight;
+			// P.Velocity.X = 0;
+			// P.Velocity.Y = 0;
+
+			DeltaV = P.JumpZ * JumpHeight * NormalBounce * WallNormal;
+			P.Velocity = P.Velocity + DeltaV;
+
+			P.PlaySound(P.JumpSound,SLOT_Interface,1.5,True,1200.0,1.0);
+			if ( (Level.Game != None) && (Level.Game.Difficulty > 0) ) {
+				P.MakeNoise(0.1 * Level.Game.Difficulty);
+			}
+			// if ( nofJumps == MaxJumps ) {
+				SetFinalMesh(P,DeltaV);
+			// }
+		}
+	} else if (p.Physics == PHYS_Walking) {
+		// Do a normal jump off the ground:
+		P.DoJump();
+		nofJumps = 1;
+		LastJumpTime = Level.TimeSeconds;
+	}
+}
+
+function Actor FindClosestWall(PlayerPawn P, out vector BestHitLocation, out vector BestHitNormal) {
+	local float ClosestSoFar,angle;
+	local Actor BestA,A;
+	local vector HitLocation,HitNormal;
+	local vector Direction;
+	ClosestSoFar = 1000000.00;
+	for (angle=0;angle<2.0*PI;angle+=PI/8.0) {
+		// Direction = vect( MaxWallDist*sin(angle), MaxWallDist*cos(angle), 0.0 );
+		// Direction = vector( rotator(angle,0,0) );
+		Direction.X = MaxWallDist*sin(angle);
+		Direction.Y = MaxWallDist*cos(angle);
+		Direction.Z = 0;
+		A = Trace(HitLocation,HitNormal,P.Location+Direction,P.Location,false);
+		if (A!=None && VSize(HitLocation-P.Location) < ClosestSoFar) {
+			BestHitLocation = HitLocation;
+			BestHitNormal = HitNormal;
+			BestA = A;
+		}
+	}
+	return BestA;
+}
+
+simulated function SetFinalMesh(PlayerPawn P, Vector DeltaV) {
+	local name newMesh;
+	local float forwardness,rightness;
+	local Rotator right;
+	newMesh = '';
+	forwardness = Normal(DeltaV) Dot Normal(Vector(P.Rotation));
+	right = P.Rotation;
+	right.Yaw += 16384;
+	rightness = Normal(DeltaV) Dot Normal(Vector(right));
+	// if ( sqrt(forwardness*forwardness+rightness*rightness)<0.2 && P.HasAnim('Flip')) {
+		// newMesh = 'Flip';
+	if ( sqrt(DeltaV.X*DeltaV.X+DeltaV.Y*DeltaV.Y)<4.0) { // && P.HasAnim('Flip')) {
+		//// Do not change mesh.
+		// newMesh = 'Flip';
+		// TODO: should really *set* them on flat jump anim, since they may have started jumping sideways but then flattened to straight upward velocity.
+	} else if ( rightness > Abs(forwardness) && P.HasAnim('ROLLRIGHT') ) {
+		newMesh = 'ROLLRIGHT';
+	} else if ( rightness > Abs(forwardness) && P.HasAnim('DodgeL') ) {
+		newMesh = 'DodgeL';
+	} else if ( rightness < (-Abs(forwardness)) && P.HasAnim('ROLLLEFT') ) {
+		newMesh = 'ROLLLEFT';
+	} else if ( rightness < (-Abs(forwardness)) && P.HasAnim('DodgeR') ) {
+		newMesh = 'DodgeR';
+	} else if ( forwardness < (-Abs(rightness)) && P.HasAnim('DodgeB') ) {
+		newMesh = 'DodgeB';
+	} else if ( P.HasAnim('Flip') ) { // forwardness>Abs(rightness)
+		newMesh = 'Flip';
+	}
+	if (newMesh != '' && P.HasAnim(newMesh)) {
+		P.PlayAnim(newMesh,1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
+		if ( Level.NetMode != 0 ) {
+			ClientPlayAnim(newMesh,1.352 * FMax(0.34999999,Region.Zone.ZoneGravity.Z / Region.Zone.Default.ZoneGravity.Z),0.06);
+		}
+	}
+}
+
+simulated function ClientPlayAnim (name Sequence, optional float Rate, optional float TweenTime) {
+	Owner.PlayAnim(Sequence,Rate,TweenTime);
+}
+
+defaultproperties {
+		nofJumps=1
+		MaxJumps=8 // Maybe we should have called it TripleJump? :P
+
+		WallProximity=128
+
+		// DJ:
+		// JumpHeight=1.20
+		// VelocityLimit=100
+		// JumpType=0
+		// // JumpType=1 // surely not?!
+		// JumpStyle=0
+
+		// kx:
+		JumpHeight=1.20
+		VelocityLimit=120
+		JumpType=0
+		// JumpStyle=0
+		JumpStyle=2 // totest!
+
+		// VelocityLimit=80 // slightly harder because we use additional velocity - actually 100 seems hard enough ;p
+
+		bRestrictFC=False
+		RechargeRate=5.0
+
+		// This is what makes the boots a pickup:
+		ItemName="WallJumpBoots"
+		PickupMessage="You picked up the WallJumpBoots"
+		ExpireMessage="WallJumping is over"
+		bAutoActivate=True
+		bActivatable=True
+		bDisplayableInv=True
+		RespawnTime=30.00
+		PickupViewMesh=LodMesh'Botpack.jboot'
+		MaxDesireability=0.50
+		// PickupSound=Sound'UnrealShare.Pickups.GenPickSnd'
+		PickupSound=Sound'Botpack.Pickups.BootSnd'
+		ActivateSound=Sound'Botpack.Pickups.BootSnd'
+		Icon=Texture'UnrealI.Icons.I_Boots'
+		AmbientGlow=64
+		CollisionHeight=14.00
+		Mesh=LodMesh'Botpack.jboot'
+		AmbientGlow=0
+
+}
+
