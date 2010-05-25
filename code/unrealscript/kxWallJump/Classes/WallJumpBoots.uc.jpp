@@ -12,22 +12,19 @@
 
 class WallJumpBoots extends TournamentPickup config(kxWallJump);
 
-var() config float WallProximity;
 var() config int MaxJumps;
 var() config float JumpHeight;
 var() config float VelocityLimit; // Defines the size of the apex
 var() config int JumpType; // This is the restriction on jumping
 var() config int JumpStyle; // This is the type of jump that the player performs
-var() config float RechargeRate;
+var() config float RechargeRate; // This allows your boots to recharge slowly without walking if you don't use them for some time, for example, when using the grappling hook.
 var() config bool bRestrictFC;
+var() config float MaxWallDist;
+var() config float NormalBounce;
+
 var int nofJumps;
 var int nofJumpKeys;
 var float LastJumpTime;
-
-// #define MaxWallDist 25.0 // almost enough
-// #define MaxWallDist 50.0 // reasonable distance
-#define MaxWallDist 64.0 // generous distance
-#define NormalBounce 0.4
 
 replication
 {
@@ -155,11 +152,11 @@ exec function WallJump ()
 				default:
 			}
 
-
-			// if (p.DodgeDir == DODGE_Active) {
+			// Repeated jump after dodge takes player too far!  (Certainly if velocity is additional.)
+			if (p.DodgeDir == DODGE_Active) {
 				// p.ClientMessage("Disallowed WallJump because you are mid-dodge.");
-				// return;
-			// }
+				return;
+			}
 
 			HitWall = FindClosestWall(p,HitLocation,WallNormal);
 			if (HitWall == None) {
@@ -171,6 +168,8 @@ exec function WallJump ()
 
 			nofJumps++;
 			LastJumpTime = Level.TimeSeconds;
+
+			DeltaV = P.JumpZ * JumpHeight * NormalBounce * WallNormal;
 
 			switch (JumpStyle) {
 				case 0: // Set standard upward velocity
@@ -185,7 +184,7 @@ exec function WallJump ()
 					}
 				break;
 				case 2:
-					//// Add extra jump to current upward velocity.  This can take you very high if tapped quickly, so in this case JumpType=on-apex is recommended.
+					//// Add extra jump to current upward velocity.  This can take you very high if tapped quickly, so for this JumpStyle, JumpType=on-apex is recommended.
 					P.Velocity.Z += P.JumpZ * JumpHeight;
 				break;
 				case 3:
@@ -193,6 +192,12 @@ exec function WallJump ()
 					//// Add extra jump to current velocity (half up, half "with" our sideways velocity)
 					P.Velocity.Z += P.JumpZ * JumpHeight * 0.5;
 					P.Velocity = Normal(P.Velocity) * (VSize(P.Velocity) + P.JumpZ * JumpHeight * 0.5);
+				break;
+				case 4: // "Fixed" / "sticky" / "standard"
+					// Always standard (TODO: should only be applied if greater than existing Z or horizontal velocity):
+					P.Velocity.X = 0;
+					P.Velocity.Y = 0;
+					P.Velocity.Z = P.JumpZ * JumpHeight;
 				break;
 				default:
 					P.Velocity.Z = P.JumpZ * JumpHeight;
@@ -203,7 +208,6 @@ exec function WallJump ()
 			// P.Velocity.X = 0;
 			// P.Velocity.Y = 0;
 
-			DeltaV = P.JumpZ * JumpHeight * NormalBounce * WallNormal;
 			P.Velocity = P.Velocity + DeltaV;
 
 			P.PlaySound(P.JumpSound,SLOT_Interface,1.5,True,1200.0,1.0);
@@ -286,25 +290,23 @@ simulated function ClientPlayAnim (name Sequence, optional float Rate, optional 
 
 defaultproperties {
 		nofJumps=1
-		MaxJumps=8 // Maybe we should have called it TripleJump? :P
+		MaxJumps=3
 
-		WallProximity=128
-
-		// DJ:
-		// JumpHeight=1.20
-		// VelocityLimit=100
+		// Simple, restricted, sane:
 		// JumpType=0
-		// // JumpType=1 // surely not?!
-		// JumpStyle=0
+		// VelocityLimit=120
+		// JumpStyle=4
+		// JumpHeight=1.20
 
 		// kx:
-		JumpHeight=1.20
-		VelocityLimit=120
 		JumpType=0
-		// JumpStyle=0
-		JumpStyle=2 // totest!
+		VelocityLimit=110
+		JumpStyle=2
+		JumpHeight=1.10
 
-		// VelocityLimit=80 // slightly harder because we use additional velocity - actually 100 seems hard enough ;p
+		MaxWallDist=64.0
+		NormalBounce=0.65
+		// NormalBounce=0.4   // You can easily reach back to wall to repeat walljump up straight walls.
 
 		bRestrictFC=False
 		RechargeRate=5.0
