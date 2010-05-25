@@ -17,10 +17,11 @@ var() config float JumpHeight;
 var() config float VelocityLimit; // Defines the size of the apex
 var() config int JumpType; // This is the restriction on jumping
 var() config int JumpStyle; // This is the type of jump that the player performs
-var() config float RechargeRate; // This allows your boots to recharge slowly without walking if you don't use them for some time, for example, when using the grappling hook.
-var() config bool bRestrictFC;
 var() config float MaxWallDist;
 var() config float NormalBounce;
+var() config bool bKillInwardVelocity;
+var() config float RechargeRate; // This allows your boots to recharge slowly without walking if you don't use them for some time, for example, when using the grappling hook.
+var() config bool bRestrictFC;
 
 var int nofJumps;
 var int nofJumpKeys;
@@ -204,9 +205,22 @@ exec function WallJump ()
 				break;
 			}
 
+			// We do this before any adjustments to DeltaV
+			SetFinalMesh(P,DeltaV);
+
 			// P.Velocity.Z = P.JumpZ * JumpHeight;
 			// P.Velocity.X = 0;
 			// P.Velocity.Y = 0;
+
+			// IMO we should cancel the component of velocity parallel to the normal.
+			// Or, "kill inward velocity"
+
+			// Kill any inward velocity
+			if (bKillInwardVelocity) {
+				if (P.Velocity Dot -WallNormal > 0) {
+					DeltaV = DeltaV + WallNormal * (P.Velocity Dot -WallNormal);
+				}
+			}
 
 			P.Velocity = P.Velocity + DeltaV;
 
@@ -214,9 +228,6 @@ exec function WallJump ()
 			if ( (Level.Game != None) && (Level.Game.Difficulty > 0) ) {
 				P.MakeNoise(0.1 * Level.Game.Difficulty);
 			}
-			// if ( nofJumps == MaxJumps ) {
-				SetFinalMesh(P,DeltaV);
-			// }
 		}
 	} else if (p.Physics == PHYS_Walking) {
 		// Do a normal jump off the ground:
@@ -232,20 +243,32 @@ function Actor FindClosestWall(PlayerPawn P, out vector BestHitLocation, out vec
 	local vector HitLocation,HitNormal;
 	local vector Direction;
 	ClosestSoFar = 1000000.00;
+	// #define distance VSize(P.Location - HitLocation)
+	//// But actually the closest distance to this polygon is:
+	#define distance ((P.Location - HitLocation) Dot HitNormal)
+	//// assuming that the polygon does actually reach this far.
 	for (angle=0;angle<2.0*PI;angle+=PI/8.0) {
 		// Direction = vect( MaxWallDist*sin(angle), MaxWallDist*cos(angle), 0.0 );
 		// Direction = vector( rotator(angle,0,0) );
-		Direction.X = MaxWallDist*sin(angle);
-		Direction.Y = MaxWallDist*cos(angle);
+		Direction.X = MaxWallDist*1.5*sin(angle);
+		Direction.Y = MaxWallDist*1.5*cos(angle);
 		Direction.Z = 0;
 		A = Trace(HitLocation,HitNormal,P.Location+Direction,P.Location,false);
-		if (A!=None && VSize(HitLocation-P.Location) < ClosestSoFar) {
+		// Do not allow WallJump off essentially flat surfaces (the jump they produce is unrealistically high)
+		if (HitNormal.Z > 0.8)
+			continue;
+		if (A!=None && distance < ClosestSoFar) {
 			BestHitLocation = HitLocation;
 			BestHitNormal = HitNormal;
 			BestA = A;
+			ClosestSoFar = distance;
 		}
 	}
-	return BestA;
+	#undef distance
+	if (ClosestSoFar <= MaxWallDist)
+		return BestA;
+	else
+		return None;
 }
 
 simulated function SetFinalMesh(PlayerPawn P, Vector DeltaV) {
@@ -305,8 +328,9 @@ defaultproperties {
 		JumpHeight=1.10
 
 		MaxWallDist=64.0
-		NormalBounce=0.65
+		NormalBounce=0.63121
 		// NormalBounce=0.4   // You can easily reach back to wall to repeat walljump up straight walls.
+		bKillInwardVelocity=True
 
 		bRestrictFC=False
 		RechargeRate=5.0
