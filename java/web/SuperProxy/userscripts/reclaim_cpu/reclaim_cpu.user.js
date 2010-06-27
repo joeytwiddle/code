@@ -4,46 +4,47 @@
 // @description    Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers.
 // @include        *
 // @exclude        http://www.last.fm/*
-// @exclude        http://*.other.sites/where/we/want/to/leave/everything/running
-// ==/UserScript==
-
-////// Some sites you might like to exclude: //////
-// @exclude        http://userscripts.org/*
-// @exclude        http://*.userscripts.org/*
+// @exclude        http://www.deezer.com/*
+// @exclude        http://www.spotify.com/*
 // @exclude        http://youtube.*/*
-// @exclude        http://*.youtube.*/*
-
-//// Putting it neatly in a whole function() block broke it!
-// function() {
+// @exclude        http://demoscene.tv/*
+// @exclude        http://*.other.sites/where/we/want/to/leave/the/page/running
+// ==/UserScript==
 
 ////// Config //////
 
-var idleSeconds =  60;       // Page will cleanup if mouse has been outside it
+// 30 or 60 seconds is good.  5 is also fine.  I set it really low because I
+// want showInfoInTitle to cleanup fast when I'm making a bookmark.
+var idleSeconds = 60;        // Page will cleanup if mouse has been outside it
                             // for this many seconds.  Or if you set
                             // detectWhenIdle=false, page will cleanup this
                             // many seconds after loading.
 
-var detectWhenIdle = true;  // This is much more user-friendly, but adds a small
-                            // processing overhead until the cleanup occurs.
+var detectWhenIdle = true;  // detectWhenIdle is much more user-friendly,
+                            // although a bit more complicated.
+                            // If set to false, cleanup will be performed
+                            // automatically after idleSeconds.
+                            // If set to true, cleanup is performed after
+                            // user has left page idle for idleSeconds.
 
-var reTrigger = false;      // Resume idle detection if the user restores a
-                            // hidden element.
+var reTrigger = true;       // Resume idle detection if the user restores a
+                            // hidden element, or moves back into the window.
 
 var beAggressive = true;    // If set, will cleanup a newly loaded page if it
                             // receives no mouse signals at all after loading.
                             // This means you must move your mouse a tiny amount
                             // over the page after it has loaded, or cleanup
                             // will occur!
-                            // But without beAggressive, tabs opened in the
+                            // Without beAggressive, tabs opened in the
                             // background, or pages which finished loading
                             // after you switched away from Firefox, will not
                             // be marked idle.
 
                             // When attempting idle detection, if the user
                             // does not move the mouse over the page at all
-                            // after it has loaded, Reclaim_CPU
+                            // after it has loaded, Reclaim_CPU will think
                             // he is watching/reading the page or doing
-                            // something else, and we have no knowledge of
+                            // something else, as there no knowledge of
                             // whether the mouse is inside the window or not.
                             // beAggressive==true means we will cleanup in this
                             // situation.  You really want this on if you tend
@@ -52,16 +53,12 @@ var beAggressive = true;    // If set, will cleanup a newly loaded page if it
                             // your mouse once over the document you are
                             // reading, *after* it has finished loading.  (We
                             // often do this naturally during normal browsing.)
-                            // But beware this could trigger badly on pages
-                            // which automatically reload or change URL, e.g.
-                            // to present a slideshow.  If so, increase
-                            // idleSeconds.
-
-// TODO: var removeAllImages = true; // This might free up some memory.
 
 var stopJavascriptTimers = true;
 var removePlugins = true;
-var showInfoInTitle = true; // Handy for debugging/watching Reclaim_CPU working.
+var showInfoInTitle = false; // Handy for debugging/monitoring Reclaim_CPU working.
+
+
 
 /* ////// Documentation //////
 
@@ -90,6 +87,25 @@ var showInfoInTitle = true; // Handy for debugging/watching Reclaim_CPU working.
 
 
 /* ////// Developer notes / Changes / Todos //////
+
+UI is good except when we:
+  1) Destroy Flash apps if the user has started watching/listening to it, then
+  wandered off the page.
+  2) Destroy a Flash app after user has gone back to the page and restored it!
+We cannot expect the user to add a new @exclude rule when they stumble across a
+site where they want to keep the JS/Flash running.  (Actually really
+Greasemonkey needs this!)
+
+TODO: The title 'theme' for showing whether a window is Clean or not should be
+a leading "- " or some other symbol when unclean, or nothing when clean :)
+
+TODO: We should delay initialization of the script until the document.onload
+event or maybe a short time after with setTimeout.  This will ensure script does
+not trigger idle detection when in fact page was still loaded (browser was frozen).
+
+TODO: OK so we clean up all frames where GM is loaded.  But what if an iframe
+is created at runtime, with a flash element inside it.  Will our script cleanup
+the element?  I fear not.
 
 DONE: Rename to CPU Reclaimer.
 
@@ -138,12 +154,44 @@ DONEish The beAggressive issue could be helped by adding a little message to
 the page: "User appears idle.  Closing plugins and stopping scripts in 7
 seconds..."  Well now showInfoInTitle can help with this.
 
-TODO: Is it silly to clear timers without also clearing events.  It would be
+DONE: Is it silly to clear timers without also clearing events.  It would be
 very easy for a mouseover event to start a new timeout chain.  But how likely
 is that?  Weigh that against how destructive it would be to remove all events
 from a page you wanted to use.
+FIX was to have reTrigger re-start the idle-detection post-cleanup whenever the
+user returns to the window.
+
+//// Try to free up memory when a page is not being viewed:
+// var removeAllImages = true;
+// var removeAllIFrames = true;
+//// NOTE: We don't actually have to remove them.  Just set their src attribute
+//// to something null which will replace the current, and set their oldSrc so
+//// we can recover later.
 
 */
+
+
+
+////// Libraries //////
+
+var showInfo = ({});
+showInfo.showClean = function () {
+	showInfo.newInfo(""); // "[Clean] "
+};
+showInfo.showInUse = function () {
+	showInfo.newInfo("* "); // "[Active] "
+};
+showInfo.showIdle = function () {
+	showInfo.newInfo(". "); // "[Idle] "
+};
+showInfo.newInfo = function (newPre) {
+	if (!showInfoInTitle)
+		return;
+	// We intentionally get info from the frame document, but set the toplevel title.
+	// window.document.title = document.title.replace(/^([Active] |[Clean] |[Idle] )/,'');
+	window.document.title = document.title.replace(/^([*] |[=] |[.] )/,'');
+	window.document.title = newPre + document.title;
+};
 
 
 
@@ -173,24 +221,22 @@ function cleanupCPUHoggers() {
 	document.body.insertBefore(d,document.body.firstChild);
 	*/
 
-   if (showInfoInTitle) { document.title = "[Clean] " + document.title.replace(/^\[Idling\] /,""); }
+	showInfo.showClean();
 
 }
 
 function clearJavascriptTimers() {
 	// Kill any existing Javascript timers:
 	// (Thanks to Joel's Bookmarklets at squarefree.com)
+	// We request a new timerID, then clear all timers up to that ID.
 	var c, tID, iID;
 	tID = setTimeout(function(){}, 0);
-	for (c=1; c<1000 && c<=tID; ++c)
+	for (c=0; c<1000 && c<=tID; ++c)
 		clearTimeout(tID - c);
 	iID = setInterval(function(){},1000);
 	for (c=0; c<1000 && c<=iID; ++c)
 		clearInterval(iID - c);
-	// alert("tID was "+tID+" iID was "+iID);
 	report += "Stopped timers ("+tID+","+iID+")";
-   // Haha I really don't know what tID and iID mean, but I keep printing them
-   // out until I reach enlightenment.
 }
 
 function removeNastyElements() {
@@ -199,16 +245,21 @@ function removeNastyElements() {
 	removeElemsWithTag("object");
 	report += " and ";
 	removeElemsWithTag("embed");
+	report += " and ";
+	removeElemsWithTag("applet");
 	// removeElemsMatching( function(x){ return x.tagName == "embed" } );
 	report += " from \""+document.title+"\"";
-   if (document != top.document) {
-      report += " (child frame of \""+top.document.title+"\")";
+   // if (document != top.document) {
+   if (window != top) {
+      // report += " (child frame of \""+top.document.title+"\")";
+      report += " (child frame)";
    }
    report += ".";
 }
 
 function removeElemsWithTag(tag) {
-	var nasties = unsafeWindow.document.getElementsByTagName(tag);
+   // We were using unsafeWindow.document which worked in GM but some sub-frames complained in GA.
+	var nasties = document.getElementsByTagName(tag);
 	report += nasties.length+" "+tag.toUpperCase()+"s"; // .map("QWERTYUIOPASDFGHJKLZXCVBNM","qwertyuiopasdfghjklzxcvbnm");
 	for (var i=nasties.length-1;i>=0;i--) {
 		var lastLength = nasties.length;
@@ -253,9 +304,10 @@ function destroyNasty(node) {
 		newNode.parentNode.insertBefore(restoredNode,newNode);
 		newNode.parentNode.removeChild(newNode);
 		window.status = "Restored: "+elemHTML;
-		if (reTrigger) {
-			initTimer();
-		}
+		//// reTrigger is now handled elsewhere.
+		// if (reTrigger) {
+			// initTimer();
+		// }
 	};
 	var restoreLink = unsafeWindow.document.createElement("A");
 	restoreLink.textContent = "Restore Removed Plugin";
@@ -288,6 +340,7 @@ function initTimer() {
 
 		//// Cleanup automatically at fixed time after page has loaded.
 		setTimeout(cleanupCPUHoggers,idleSeconds*1000);
+		showInfo.showIdle();
 
 	} else {
 
@@ -308,9 +361,10 @@ function initTimer() {
 			if (mouseHasLeft && idleTime > idleSeconds) {
 				cleanupCPUHoggers();
 				// DONE: We should also disable all the event watchers.
-				window.removeEventListener("mousemove", watchMouseMove, false);
-				window.removeEventListener("focus", watchMouseMove, false);
-				window.removeEventListener("mouseout", watchMouseLeave, false);
+				// Actually let's leave our listeners on.  Cleanup can be retriggered by a new mouseover.
+				if (!reTrigger) {
+					removeListeners();
+				}
 			} else {
 				if (mouseHasLeft) {
 					// GM_log("Unusual: Mouse has left but checkIdle() has triggered with idleTime only "+idleTime+".  Waiting..."); // Not so unusual really - it just means the user has wiggled their mouse over the edge: out, in, out.
@@ -328,32 +382,36 @@ function initTimer() {
 		// DONE: We don't actually need to run the checkIdle timer at all, until the mouse has left!
 
 		var watchMouseMove = function(e) {
-         if (mouseHasLeft && showInfoInTitle) { document.title = document.title.replace(/^\[Idling\] /,""); }
+         if (mouseHasLeft) { showInfo.showInUse(); }
 			mouseHasLeft = false;
 			lastSawMouse = new Date().getTime();
 			// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
-			// window.status = "(" + e.pageX + "," + e.pageY + ")";
+			// window.status = "Mouse moved (" + e.pageX + "," + e.pageY + ")";
+			// window.status = "Mouse has entered the "+e.target.tagName;
 			// idleInfo.textContent = "Mouse is back.";
+			if (reTrigger && !timerRunning) {
+				timerRunning = true;
+				setTimeout(checkIdle,idleSeconds*1000);
+			}
 			return false;
 		};
-		// document.body.addEventListener("mousemove", watchMouseMove, false);
-		window.addEventListener("mousemove", watchMouseMove, false);
-		window.addEventListener("focus", watchMouseMove, false); // Catches when use re-enters window with keyboard.
 
 		var watchMouseLeave = function(e) {
 			// Oh of course - this is getting triggered for mouseout of all elements!
 			// But fortunately it was immediately being disabled by watchMouseMove.
 			// Well anyway let's fix that:
-			if (e.target.tagName != 'HTML')
+			if (!e.target.tagName || e.target.tagName=='HTML' || e.target.tagName=='BODY') {
+         } else {
 				return false;
+         }
 			if (!mouseHasLeft) {
+				showInfo.showIdle();
 				if (timerRunning) {
 					// Don't start a timer - we have one!
 				} else {
 					setTimeout(checkIdle,(idleSeconds+0.5)*1000);
 					timerRunning = true;
 				}
-            if (showInfoInTitle) { document.title = "[Idling] " + (document.title.replace(/^\[Idling\] /,"")); }
 			}
 			mouseHasLeft = true;
 			lastSawMouse = new Date().getTime();
@@ -362,7 +420,36 @@ function initTimer() {
 			// GM_log("Mouse has left the "+e.target.tagName);
 			return false;
 		}
-		window.addEventListener("mouseout", watchMouseLeave, false);
+
+		var listenElement = window; // For FF
+		// var listenElement = document.body; // For Konq
+		//// Testing:
+		// for (var i=0;i<document.body.childNodes.length;i++) { var listenElement = document.body.childNodes[i]; /* ... */ }
+
+		function addListeners() {
+			listenElement.addEventListener("mouseover", watchMouseMove, true);
+			listenElement.addEventListener("focus", watchMouseMove, true); // Catches when user re-enters window with keyboard?
+			listenElement.addEventListener("mouseout", watchMouseLeave, true);
+			// These work better in konq?  They seem to do all depths.
+			// x.onmouseover = watchMouseMove;
+			// x.onfocus = watchMouseMove;
+			// x.onmouseout = watchMouseLeave;
+		}
+
+		function removeListeners() {
+			listenElement.removeEventListener("mousemove", watchMouseMove, true);
+			listenElement.removeEventListener("focus", watchMouseMove, true);
+			listenElement.removeEventListener("mouseout", watchMouseLeave, true);
+		}
+
+		addListeners();
+
+		// document.addEventListener("load",function(evt){GM_log("onload has evt="+evt+" mouse=("+evt.pageX+","+evt.pageY+")");},false);
+
+      // It seems on Konqueror, the last event I caught firing when the mouse
+      // was moved out of the window was a mouseover on BODY, not leaving it.
+      // I think maybe i get the leave before the enter O_o
+      // Hmm I can also produce mouseover BODY by scroll with the wheel =/
 
 		// DONE TEST: Is catching the window fine-grained enough?  If we switch to other tabs, does original tab still think it is alive?  Yes, and No.  It works fine.  window only refers to current tab, not whole browser window.  ;)
 		// BUG: If I Alt-Tab to get on/off the window, no events are fired.
@@ -376,15 +463,23 @@ function initTimer() {
 		// setTimeout(checkIdle,5000);
 
 		if (beAggressive) {
-         if (showInfoInTitle) { document.title = "[Idling] " + (document.title.replace(/^\[Idling\] /,"")); }
 			mouseHasLeft = true;
-			timerRunning = true;
-			setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
+			// setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
+			// We stall our checks until document.load has completed.
+			window.addEventListener("load",function(evt){
+				if (mouseHasLeft) {
+					showInfo.showIdle();
+					timerRunning = true;
+					setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
+				}
+			},false);
 		}
 
 	}
 
 }
 
+// We want to init detection of user movement within the window soon
+// But TODO we don't want to start counting down our timer to idle until after page load!
 initTimer();
 
