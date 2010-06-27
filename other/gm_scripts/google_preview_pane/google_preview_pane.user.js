@@ -32,30 +32,33 @@
 //// Settings ////
 
 var previewWidth    = 0.75;    // Width of the preview pane (proportion of window width).
-var gapBelow        = 16;      // Space left below panes (pixels).
+var gapBelow        = 124;      // Space left below panes (pixels).
 var fillWholeWindow = true;    // Bring more of the page into the left pane.
-var keepHeaderAbove = true;    // Do not bring the top of the page in.
+var keepHeaderAbove = true;    // Do not bring the top of the page in.  (BUG: has little effect on new google)
 
-var highlightHover  = true;    // Change colour of current / hovered item.
-var focusWithHover  = false;   // If set, does not wait for click before loading preview.
+// Mouse behaviour
+var highlightHover  = true;    // Change colour of current / hovered result.
+var focusWithHover  = false;   // If set, loads a preview when mouse hovers over a result.
 var hoverTime       = 800;     // Milliseconds of mouse hover before preview.
 
+// Reformatting
 var miniLogo        = true;    // miniLogo or removeLogo can help to reduce the
 var removeLogo      = false;   // width and the height of the header.
 var reduceWidth     = true;    // Try lots of little things to make things fit into the left pane.
 var reduceTextSize  = true;    // Reduce size of text in results area (maybe also top).
 var panelHasBorder  = true;    // I like the preview pane to look sunken.
-var loadEarly       = true;    // Better (e.g. with Delicious on Google script) to wait.
+var loadEarly       = true;    // If other userscripts manipulate the page, or dislike our manipulations, it may be better to run earlier or later.
 var checkerRows     = true;    // Alternates grey and white background to separate results.
 var renderLikeTabs  = false;   // Different visual style.
 var linksActNormally = true;   // TODO: if this=true and we are hovering a link, then DON'T highlight!
 var reduceIndent    = true;    // Our sidebar is not very wide.  Make indents more subtle.
+var hideSponsoredLinks = false;
 
-var createPanelLater = false;  // The split does not occur until a result is selected for preview.  Nice for a larger initial overview of results, but when we do select one, the re-arrangement loses our scroll position.
+var createPanelLater = true;  // The split does not occur until a result is selected for preview.  Nice for a larger initial overview of results, but when we do select one, the re-arrangement loses our scroll position.
 
-var clearFrameWhenLeaving = true; // Can speed up loading of the clicked page if the preview is still loading.  Certainly helps Konqueror.
+var clearFrameWhenLeaving = true; // May speed up loading of the clicked page if the preview is still loading.
 
-var includeHeaderLinks = true; // Whether to preview header links as well as result links.
+var includeGeneralBodyLinks = true; // Make all page links previewable, not only result-related links.  Konqueror has problems if I disable this!
 
 var Colors = {
 	focus:    { bg: "#eefbfb", border: "#ddeeee" },
@@ -79,6 +82,10 @@ var resultsWidth = 1.0 - previewWidth;
 // Mmm should be more like don't run if we have already run in a sub-frame. :P
 // if (window != top)
 	// return;
+
+if (typeof GM_log === 'undefined') {
+	GM_log = function() { };
+}
 
 
 
@@ -184,6 +191,7 @@ function initPreview() {
 		var row       = document.createElement("TR");
 		var leftCell  = document.createElement("TD");
 		var rightCell = document.createElement("TD");
+		table.id = 'gppTable';
 
 		previewFrame = document.createElement('IFRAME');
 		previewFrame.style.backgroundColor = '#eeeeee';
@@ -196,6 +204,7 @@ function initPreview() {
 		row.appendChild(leftCell);
 		row.appendChild(rightCell);
 
+		resultsBlock = getResultsBlock();
 		resultsBlock.parentNode.insertBefore(table,resultsBlock.nextSibling);
 		leftCell.appendChild(resultsBlock);
 
@@ -235,8 +244,11 @@ function initPreview() {
 			// Old: resultsBlock.style.height = (window.innerHeight * pageHeightUsed) + 'px';
 			// Old: previewFrame.height = (window.innerHeight * pageHeightUsed) + 'px';
 			var heightFree = window.innerHeight - table.offsetTop - gapBelow;
+			table.height = ''+heightFree;
 			resultsBlock.style.height = heightFree+'px';
 			previewFrame.height = heightFree+'px';
+			GM_log("resultsBlock.style.height = "+resultsBlock.style.height);
+			GM_log("previewFrame.height = "+previewFrame.height);
 			if (div) {
 				try {
 					/*
@@ -259,13 +271,38 @@ function initPreview() {
 					GM_log("Exception during div setup: "+e);
 				}
 			}
+
 		}
+
+		// We will call setDimensions again if the user resizes the window:
+		window.addEventListener('resize',setDimensions,false);
+
 		setDimensions();
 		//// This pause fixes the window's horizontal scrollbar without increasing gapBelow.
 		setTimeout(setDimensions,1);
 
-		// We will call setDimensions again if the user resizes the window:
-		window.addEventListener('resize',setDimensions,false);
+		// Fix things for new sidebar layout:
+		// Works outside of Greasemonkey:
+		function addSomeCSS(css) {
+			var doc = document;
+			var head = doc.getElementsByTagName("head")[0];
+			GM_log("head = "+head);
+			if (!head) { return; }
+			var style = doc.createElement("style");
+			style.type = "text/css";
+			style.innerHTML = css;
+			head.appendChild(style);
+		}
+		if (typeof GM_addStyle == 'undefined') {
+			this.GM_addStyle = addSomeCSS;
+		}
+		GM_addStyle("#cnt { max-width: 9999999px; }");
+		// GM_addStyle("#center_col { margin-right: 0px; }");
+		// GM_addStyle("#center_col { margin-right: 0px; }");
+		GM_addStyle("#leftnav { display: none; }");
+		GM_addStyle("#center_col, #foot { margin-left: 0px; margin-right: 0px; }");
+
+		reformatThingsLater();
 
 	}
 
@@ -489,8 +526,16 @@ function initPreview() {
 		function checkClick(evt) {
 			helloMouse(evt); // Without this sometimes we fail to activate because we receive click before mouseover (or for some reason didn't get a mouseover).
 			var node = evt.target;
-			if (linksActNormally && node.tagName == "A" && getContainer(node)!=node) {
+			if (linksActNormally && node.tagName == "A" && getContainer(node) != node) {
 				return;
+				// Specifically does not return when hovering over a link which is
+				// not the main link of a block (a results link with no way to
+				// preview it other than directly clicking it.)
+				// if (getContainer(node) == node) {
+					// return; // Do the click
+				// } else {
+					// // Continue and maybe do a preview, or a click
+				// }
 			}
 			if (node == lastHover) {
 				// If the user is selecting a link to another results page, they
@@ -596,7 +641,7 @@ function initPreview() {
 			}
 		}
 
-		var whereToListen = ( includeHeaderLinks ? document.body : resultsBlock );
+		var whereToListen = ( includeGeneralBodyLinks ? document.body : resultsBlock );
 
 		whereToListen.addEventListener('mouseover',helloMouse,false);
 		whereToListen.addEventListener('mouseout',goodbyeMouse,false);
@@ -684,6 +729,55 @@ function reformatThings() {
 		showUnselected(elem);
 	}
 
+	if (removeLogo || miniLogo) {
+		var logo = document.getElementsByTagName("IMG")[0];
+		logo = logo.parentNode.parentNode; // A
+		if (!miniLogo)
+			logo = logo.parentNode; // TD
+		var pNode = logo.parentNode;
+		pNode.removeChild(logo);
+		if (document.getElementById("sff"))
+			document.getElementById('sff').getElementsByTagName('table')[0].style.marginTop = '5px'
+		if (miniLogo) {
+			var newImg = document.createElement("IMG");
+			// newImg.src = "/favicon.ico";
+			newImg.src = "http://www.google.com/intl/en_ALL/images/logo.gif";
+			newImg.width = 276*0.3;
+			newImg.height = 110*0.3;
+			pNode.appendChild(newImg);
+			pNode.style.paddingTop = '8px';
+			pNode.style.paddingRight = '0px';
+			try {
+				document.getElementById('sft').style.marginTop = '0px';
+				document.getElementById('sft').style.marginBottom = '0px';
+				document.getElementById('sff').style.paddingBottom = '0px';
+			} catch (e) { }
+		}
+	}
+
+	if (hideSponsoredLinks) {
+		// The "Sponsored Links" block can get in the way.
+		var toKill = document.getElementById("mbEnd");
+		if (toKill) {
+			toKill.parentNode.removeChild(toKill);
+		}
+		toKill = document.getElementById("tads");
+		if (toKill) {
+			toKill.parentNode.removeChild(toKill);
+		}
+	}
+
+}
+
+function reformatThingsLater() {
+
+	// Hide the new sidebar
+	var sidebar2010 = document.getElementById("leftnav");
+	if (sidebar2010) {
+		sidebar2010.style.display = "none";
+		GM_addStyle("#center_col { margin-left: 0px; }");
+	}
+
 	if (reduceWidth) {
 
 		//// TODO: Various things I haven't narrowed. ////
@@ -717,17 +811,20 @@ function reformatThings() {
 		}
 
 		// This avoids the white-space: wrap but kills the blue header background.
-		document.getElementById("ssb").id = 'not_ssb';
-		// OK we restore the blue background:
-		document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
-		document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
-		// TODO: Vertical alignment of text is still wrong.
-		// document.getElementById("not_ssb").style.verticalAlign = 'middle';
-		var resText = document.getElementById('prs').nextSibling;
-		resText.style.textAlign = 'right';
+		if (document.getElementById("ssb")) {
+			document.getElementById("ssb").id = 'not_ssb';
+			// OK we restore the blue background:
+			document.getElementById("not_ssb").style.backgroundColor = '#F0F7F9';
+			document.getElementById("not_ssb").style.borderTop = '1px solid #6890DA';
+			// TODO: Vertical alignment of text is still wrong.
+			// document.getElementById("not_ssb").style.verticalAlign = 'middle';
+			var resText = document.getElementById('prs').nextSibling;
+			resText.style.textAlign = 'right';
+		}
 
 		// Footer
-		document.getElementById("bsf").padding = '0px';
+		if (document.getElementById("bsf"))
+			document.getElementById("bsf").padding = '0px';
 
 		// The last Goooooooogle TD has a silly huge margin
 		var tds = document.getElementById('nav').getElementsByTagName('td');
@@ -788,38 +885,18 @@ function reformatThings() {
 		},100);
 	}
 
-	if (removeLogo || miniLogo) {
-		var logo = document.getElementsByTagName("IMG")[0];
-		logo = logo.parentNode.parentNode; // A
-		if (!miniLogo)
-			logo = logo.parentNode; // TD
-		var pNode = logo.parentNode;
-		pNode.removeChild(logo);
-		document.getElementById('sff').getElementsByTagName('table')[0].style.marginTop = '5px'
-		if (miniLogo) {
-			var newImg = document.createElement("IMG");
-			// newImg.src = "/favicon.ico";
-			newImg.src = "http://www.google.com/intl/en_ALL/images/logo.gif";
-			newImg.width = 276*0.3;
-			newImg.height = 110*0.3;
-			pNode.appendChild(newImg);
-			pNode.style.paddingTop = '8px';
-			pNode.style.paddingRight = '0px';
-			document.getElementById('sft').style.marginTop = '0px';
-			document.getElementById('sft').style.marginBottom = '0px';
-			document.getElementById('sff').style.paddingBottom = '0px';
+	// Does not work
+	/*
+	function applyClassRule(className,ruleName,ruleValue) {
+		var list = ( className.substring(0,1)=='#' ? [ document.getElementById(className.substring(1)) ] : document.getElementsByTagName(className) );
+		for (var i=0;i<list.length;i++) {
+			var elem = list[i];
+			elem.style[ruleName] = ruleValue;
 		}
 	}
-
-	// The "Sponsored Links" block gets in the way.
-	var toKill = document.getElementById("mbEnd");
-	if (toKill) {
-		toKill.parentNode.removeChild(toKill);
-	}
-	toKill = document.getElementById("tads");
-	if (toKill) {
-		toKill.parentNode.removeChild(toKill);
-	}
+	applyClassRule("#cnt","max-width","9999999px");
+	applyClassRule("#center_col","margin-right","0px");
+	*/
 
 }
 
@@ -831,7 +908,6 @@ var earlyResultsBlock = getResultsBlock();
 if (earlyResultsBlock && loadEarly) {
 	initPreview();
 } else {
-	// window.addEventListener('load',initPreview,false);
 	function checkStart() {
 		var rb = getResultsBlock();
 		if (rb)
@@ -892,6 +968,9 @@ BUG TODO: fillWholeWindow=false is broken (width of iframe is wrong)
 DONE: Broken on webhp pages, e.g.: http://www.google.com/webhp?hl=eN#hl=eN&source=hp&q=strip+exe&aq=f&aqi=g-p1g9&oq=&fp=fd871eff22583196
 
 TODO: The focus color over an 'action' link should be related to the 'action' color not the main highlight color.
+
+2010: google.com now has some "navleft" bar which messes with our shi.  I had
+to clear the margin-left and margin-right of #center_col,#foot also.
 
 */
 
