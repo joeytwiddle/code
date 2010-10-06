@@ -5,12 +5,21 @@
 // @description    Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page.
 // @include        http://www.google.*/*q=*
 // @include        http://google.*/*q=*
-// @version        0.9.9.7
+// @exclude        http://www.google.*/images*
+// @exclude        http://google.*/images*
+// @version        0.9.9.8
 // ==/UserScript==
 
 
 
 /* === Changelog ===
+ *
+ * 0.9.9.8
+ *
+ *   * Works with the new format (that sidebar thingy)
+ *   * Set createPanelLater = true
+ *   * TODO: Fails to suck in the bottom of the page, sorry.
+ *   * TODO: Work with Google's new Ajax auto results update when search term is edited.
  *
  * 0.9.9.7
  *
@@ -40,6 +49,8 @@ var keepHeaderAbove = true;    // Do not bring the top of the page in.  (BUG: ha
 var highlightHover  = true;    // Change colour of current / hovered result.
 var focusWithHover  = false;   // If set, loads a preview when mouse hovers over a result.
 var hoverTime       = 800;     // Milliseconds of mouse hover before preview.
+var linksActNormally = true;   // clicking directly on a link skips the preview and goes directly to the result
+                               // TODO: if this=true and we are hovering a link, then DON'T highlight!
 
 // Reformatting
 var miniLogo        = true;    // miniLogo or removeLogo can help to reduce the
@@ -50,7 +61,6 @@ var panelHasBorder  = true;    // I like the preview pane to look sunken.
 var loadEarly       = true;    // If other userscripts manipulate the page, or dislike our manipulations, it may be better to run earlier or later.
 var checkerRows     = true;    // Alternates grey and white background to separate results.
 var renderLikeTabs  = false;   // Different visual style.
-var linksActNormally = true;   // TODO: if this=true and we are hovering a link, then DON'T highlight!
 var reduceIndent    = true;    // Our sidebar is not very wide.  Make indents more subtle.
 var hideSponsoredLinks = false;
 
@@ -526,16 +536,15 @@ function initPreview() {
 		function checkClick(evt) {
 			helloMouse(evt); // Without this sometimes we fail to activate because we receive click before mouseover (or for some reason didn't get a mouseover).
 			var node = evt.target;
-			if (linksActNormally && node.tagName == "A" && getContainer(node) != node) {
-				return;
-				// Specifically does not return when hovering over a link which is
-				// not the main link of a block (a results link with no way to
+			var overLink = ( node.tagName=="A" ? node : getAncestorByTagName(node,"A") );
+			if (linksActNormally && overLink && getContainer(overLink) != overLink) {
+				return;   // The user could have previewed this by clicking the
+							 // background, but since the user actually clicked the
+							 // link, we perform a normal click.
+				// Otherwise continue and maybe do a preview, or a click.
+				// Specifically does not return if hovering over a lone link which
+				// is not the main link of a block (a results link with no way to
 				// preview it other than directly clicking it.)
-				// if (getContainer(node) == node) {
-					// return; // Do the click
-				// } else {
-					// // Continue and maybe do a preview, or a click
-				// }
 			}
 			if (node == lastHover) {
 				// If the user is selecting a link to another results page, they
@@ -791,10 +800,10 @@ function reformatThingsLater() {
 		// - Video results - 2 columns with text beside, can be wider than desired.
 
 		// Makes a few pieces of text smaller, but most have custom style font sizes.
-		if (reduceTextSize) {
-			document.body.style.fontSize='90%';
-			// document.body.style.fontSize='10px';
-		}
+		// if (reduceTextSize) {
+			// document.body.style.fontSize='90%';
+			// // document.body.style.fontSize='10px';
+		// }
 
 		//// The first nobr was a lone child when I wrote this.
 		//// We break it.
@@ -842,7 +851,7 @@ function reformatThingsLater() {
 	}
 
 	if (reduceTextSize) {
-		//// @TODO: This is Wrong and Bad (see below) but it works with my settings.
+		// BUG TODO: In Chrome and Firefox, when doing this while zoomed IN, it increases the size of the fonts.
 		// var log = "";
 		function resizeTextNode(node,difference) {
 			for (var child=node.firstChild; (child); child = child.nextSibling) {
@@ -857,12 +866,10 @@ function reformatThingsLater() {
 				}
 			}
 		}
-		resizeTextNode(getResultsBlock(),-1);
-		// log;
+		resizeTextNode(getResultsBlock(),-2);
 		// setTimeout(function(){ resizeTextNode(resultsBlock,-4); },1000);
 		// NOTE: resultsBlock is no longer available in this scope
 		// GM_log(log);
-		// BUG TODO: In FF3.5 when doing this while zoomed IN, somehow it increases the size of the fonts, although it is reporting otherwise.
 	}
 
 	if (reduceIndent) {
