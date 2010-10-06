@@ -2,13 +2,15 @@
 // @name           WikiIndent
 // @namespace      joeytwiddle
 // @include        *wiki*
-// @description    Some tools for MediaWiki sites.  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the background).  Floats the Table of Contents on the right of the page.
+// @include        http://www.buzztard.com/*
+// @include        http://encyclopediadramatica.com/*
+// @description    Four tools for MediaWiki sites.  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the background).  Changes (sub)heading underlines to overlines.  Floats the Table of Contents on the right of the page for quick navigation.
 // ==/UserScript==
 
 //// Features:
 var hideSidebar = true;
 var indentSubBlocks = true;
-var fixUnderlinesToOverlines = true; // not yet working properly
+var fixUnderlinesToOverlines = true;
 var makeTableOfContentsFloat = true;
 
 
@@ -22,9 +24,13 @@ function doIt() {
 
 
 if (hideSidebar) {
-	// TODO: Make a toggle button for it!
-	var column1 = document.getElementById("column-one");
+
 	var content = document.getElementById("content");
+	var column1 = document.getElementById("column-one") || document.getElementById("panel") || document.getElementById("mw-panel");
+	var toToggle = [ document.getElementById("page-base"), document.getElementById("siteNotice"), document.getElementById("head") ];
+	var cac = document.getElementById("p-cactions");
+	var cacOldHome = ( cac ? cac.parentNode : null );
+
 	function toggleWikipediaSidebar(evt) {
 		// We don't want to act on all clicked body elements (notably not the WP
 		// image).  I detected two types of tag we wanted to click.
@@ -34,22 +40,41 @@ if (hideSidebar) {
 			// GM_log("evt="+evt);
 			// if (evt) GM_log("evt.target.tagName="+evt.target.tagName);
 			if (column1.style.display == '') {
+				// column-one contains a lot of things we want to hide
 				column1.style.display = 'none';
 				content.oldMarginLeft = content.style.marginLeft;
 				content.style.marginLeft = 0;
-				// column-one contains a lot of things, but one of them we want to preserve
+				for (var i in toToggle) {
+					if (toToggle[i]) { toToggle[i].style.display = 'none'; }
+				}
+				// but one of them we want to preserve
 				// (the row of tools across the top):
-				var cac = document.getElementById("p-cactions");
-				column1.parentNode.appendChild(cac);
+				if (cac)
+					column1.parentNode.insertBefore(cac,column1.nextSibling);
 			} else {
 				column1.style.display = '';
 				content.style.marginLeft = content.oldMarginLeft;
-				column1.appendChild(cac); // almost back where it was :P
+				for (var i in toToggle) {
+					if (toToggle[i]) { toToggle[i].style.display = ''; }
+				}
+				if (cac && cacOldHome)
+					cacOldHome.appendChild(cac); // almost back where it was :P
 			}
 		}
 	}
-	document.body.addEventListener('click',toggleWikipediaSidebar,false);
+
+	if (column1 && content) {
+		document.body.addEventListener('click',toggleWikipediaSidebar,false);
+	} else {
+		if (typeof GM_log !== 'undefined') {
+			GM_log("Did not have column1 "+column1+" or content "+content); // @todo Better to warn or error?
+		}
+	}
+
 	toggleWikipediaSidebar();
+
+	// TODO: Make a toggle button for it!
+
 }
 
 
@@ -96,22 +121,11 @@ if (indentSubBlocks) {
 
 if (fixUnderlinesToOverlines) {
 
-	// @todo
-	// ...
-	//
-	function check(tag) {
-		var elems = document.body.getElementsByTagName(tag);
-		for (var i=0;i<elems.length;i++) {
-			var elem = elems[i];
-			var style = getComputedStyle(elem,'');
-			if (style['border-bottom'] && !style.borderTop) {
-				elem.style.borderTop = style['border-bottom']
-				elem.style.borderBottom = '';
-			}
-		}
-	}
-	check("H1"); check("H2"); check("H3"); check("H4"); check("H5"); check("H6");
-	check("SPAN");
+	// TODO: Does not appear to be working in Chrome.
+	// Although I have seen GM_addStyle work in Chrome elsewhere.
+	GM_addStyle("h1, h2, h3, h4, h5, h6 { border-bottom: 0px solid #AAAAAA; }");
+	GM_addStyle("h1, h2, h3, h4, h5, h6 { border-top: 1px solid #AAAAAA; }");
+	// Do not use "text-decoration: underline;" - it makes text look like links.
 
 }
 
@@ -124,39 +138,32 @@ if (makeTableOfContentsFloat) {
 
 	// document.getElementById('column-one').appendChild(document.getElementById('toc'));
 
-	var timer = null;
+	function createFader(toc) {
 
-	// BUG: this didn't stop the two fades from conflicting when the user wiggles the mouse to start both!
-	function resetTimeout(fn,ms) {
-		if (timer) {
-			clearTimeout(timer);
+		var timer = null;
+
+		// BUG: this didn't stop the two fades from conflicting when the user wiggles the mouse to start both!
+		function resetTimeout(fn,ms) {
+			if (timer) {
+				clearTimeout(timer);
+			}
+			setTimeout(fn,ms);
 		}
-		setTimeout(fn,ms);
-	}
 
-	function fadeElement(elem,start,stop,speed,current) {
-		if (current == null)
-			current = start;
-		if (speed == null)
-			speed = (stop - start) / 8;
-		if (Math.abs(current+speed-stop) > Math.abs(current-stop))
-			current = stop;
-		else
-			current = current + speed;
-		elem.style.opacity = current;
-		if (current != stop)
-			resetTimeout(function(){fadeElement(elem,start,stop,speed,current);},50);
-	}
+		function fadeElement(elem,start,stop,speed,current) {
+			if (current == null)
+				current = start;
+			if (speed == null)
+				speed = (stop - start) / 8;
+			if (Math.abs(current+speed-stop) > Math.abs(current-stop))
+				current = stop;
+			else
+				current = current + speed;
+			elem.style.opacity = current;
+			if (current != stop)
+				resetTimeout(function(){fadeElement(elem,start,stop,speed,current);},50);
+		}
 
-	var toc = document.getElementById('toc');
-	if (toc) {
-		// toc.style.backgroundColor = '#eeeeee';
-		toc.style.position = 'fixed';
-		toc.style.right = '16px';
-		toc.style.top = '16px';
-		toc.style.zIndex = '5000';
-		// fadeElement(toc,1.0,0.4);
-		toc.style.opacity = 0.3;
 		var listenElement = toc;
 		// var listenElement = toc.getElementsByTagName('TD')[0];
 		var focused = false;
@@ -171,6 +178,22 @@ if (makeTableOfContentsFloat) {
 				setTimeout(function(){ if (!focused) { fadeElement(toc,1.0,0.2,-0.1); visible=false; } },10);
 			focused = false;
 		},false);
+
+	}
+
+	// Find the table of contents element:
+	var toc = document.getElementById("toc")   // MediaWiki
+	       || document.getElementsByClassName("table-of-contents")[0];   // BashFAQ
+
+	if (toc) {
+		// toc.style.backgroundColor = '#eeeeee';
+		toc.style.position = 'fixed';
+		toc.style.right = '16px';
+		toc.style.top = '16px';
+		toc.style.zIndex = '5000';
+		// fadeElement(toc,1.0,0.4);
+		toc.style.opacity = 0.3;
+		createFader(toc);
 	}
 
 }
