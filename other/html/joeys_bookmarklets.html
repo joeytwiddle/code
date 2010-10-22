@@ -44,20 +44,6 @@
 	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
 
 	<P>
-		<LI><A target="_self" href="javascript:(function(){
-			var newScript = document.createElement('script');
-			newScript.type = 'text/javascript';
-			newScript.src = 'http://hwi.ath.cx/javascript/focus.js';
-			document.body.appendChild(newScript);
-		})();">Focus</A></LI>
-	</P>
-	<BLOCKQUOTE>
-		<P>Lets you select a part of the page, and throws away the rest!  But has undo.  :)</P>
-		<LI class='todo'>Todo: Oh dear I just tried it on this page, and the restore brought everything back in reverse order!</LI>
-		<LI class='external'>Note: Loads external script.</LI>
-	</BLOCKQUOTE>
-
-	<P>
 		<LI><A href="javascript:(function(){
 			var cnt = 0;
 			function checkDoneLoading() {
@@ -87,7 +73,7 @@
 			*   function() { document.body.innerHTML = newBody; },
 			*   true);
 			**/
-		})();" keyword="keywordInjected" description="descriptionInjected" title="Version 0.9">Enable Page Folding</A></LI>
+			})();" keyword="keywordInjected" description="descriptionInjected" title="Version 0.9">Enable Page Folding</A> &nbsp;&nbsp;<SPAN style="color:red;font-weight:bold;">&lt;-- Click Here!</SPAN></LI>
 	</P>
 	<!-- Nasty - At one point, FF was reloading all the resources except mosifyDOM.js, which is the one I was changing!  I cleared my cache and it stopped doing it after that. -->
 	<BLOCKQUOTE>
@@ -100,6 +86,20 @@
 		 <LI class='todo'>Bug: At the moment this tool only works well if the element we fold up has a short text-heading appearing just before it.  Not all pages are like this, so we need to adapt the algorithm to work over a wider range of pages.</LI>
 		 <!-- <LI class='todo'>Bug: This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the block does have a header, and we don&quot;t use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI> -->
 		 <LI class='todo'>Todo: We could even create blocks to compress where there was no structure.  E.g. create a block between two HR tags, provided the text content in between is large.  Or in fact squash any blocks containing text, if the text is >=15% of the parent&apos;s text.</LI>
+		<LI class='external'>Note: Loads external script.</LI>
+	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/focus.js';
+			document.body.appendChild(newScript);
+		})();">Focus</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Lets you select a part of the page, and throws away the rest!  But has undo.  :)</P>
+		<LI class='todo'>Todo: Oh dear I just tried it on this page, and the restore brought everything back in reverse order!</LI>
 		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
@@ -480,7 +480,7 @@
 			if (document.referrer) {
 				document.location = document.referrer;
 			} else {
-				window.status = 'This page has no referrer.';
+				alert('This page has no referrer.');
 			}
 		})();">Go Back</A></LI>
 		<BLOCKQUOTE>
@@ -843,6 +843,7 @@
 		</BLOCKQUOTE>
 	</P>
 
+	<A name="console"></A>
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
 			function runCmd(cmd) {
@@ -949,10 +950,12 @@
 			top.myDiv = myDiv;
 			top.myStyle = myStyle;
 			myDiv.getElementsByTagName('INPUT')[0].focus();
-		})();">Quick Javascript Console</A> - Yet another</LI>
+			/* Load JQuery: */
+			loadScript('http://hwi.ath.cx/static/js/jquery.js');
+		})();">Quick Javascript Console</A></LI>
 	</P>
 	<BLOCKQUOTE>
-		<P>Well I had to make my own of course!</P>
+		<P>My own dodgy console.  With handy inspect() function.  Now auto-loads JQuery.</P>
 		<LI class='done'>Closes on Escape key (Mozilla only I think).  It&quot;s working when focused on the input box, but not .</LI>
 		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> and <TT>loadScript(url)</TT>.</LI>
 		<LI class='todo'>Todo: Close button is in the wrong place.</LI>
@@ -1261,6 +1264,31 @@
 		<P>Maybe it isn&apos;t an immediate drop-down menu, but it sits as an icon until clicked.</P>
 		<P>If the user wants to keep it alive, we will need to keep our functions safe in a different frame.  But in that case all the bookmarks will need to be retargetted at the relevant frame.</P>
 	</BLOCKQUOTE>
+
+	<P>
+		<LI><A href="javascript:(function(){
+				window.loadScript =
+				function loadScript(url) {
+					var newScript = document.createElement('SCRIPT');
+					newScript.type = 'text/javascript';
+					newScript.src = url;
+					/*document.body.appendChild(newScript);*/
+					document.getElementsByTagName('head')[0].appendChild(newScript);
+				};
+
+				/* loadScript('http://hwi.ath.cx/static/js/jquery.js'); */
+				loadScript('http://hwi.ath.cx:7152/_gRiMeApE_/javascript/base2/base2.js');
+				loadScript('http://hwi.ath.cx:7152/_gRiMeApE_/javascript/base2/base2-dom.js');
+				loadScript('http://hwi.ath.cx:7152/_gRiMeApE_/javascript/base2/base2-legacy.js');
+				loadScript('http://hwi.ath.cx:7152/_gRiMeApE_/javascript/xpath.js');
+				loadScript('http://hwi.ath.cx:7152/_gRiMeApE_/javascript/grimeape_greasemonkey_compat.js');
+				loadScript('http://hwi.ath.cx:7152/_gRiMeApE_/javascript/grimeape_config.js');
+
+		})();">Inject GrimeApe</A> (Userscript Proxy not working)</LI>
+		<BLOCKQUOTE>
+			...
+		</BLOCKQUOTE>
+	</P>
 
 	<P>
 		<LI><A href="javascript:(function(){
