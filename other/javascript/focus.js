@@ -25,11 +25,15 @@
 		/*while (document.body.firstChild) {
 			hiddenDiv.appendChild(document.body.lastChild);
 		}*/
+		var kids = [];
 		for (var i=0;i<document.body.childNodes.length;i++) {
-			var child = document.body.childNodes.item(i);
+			kids.push(document.body.childNodes.item(i));
+		}
+		for (var i=0;i<kids.length;i++) {
+			var child = kids[i];
 			if (child.tagName != 'SCRIPT') {
 				hiddenDiv.appendChild(child);
-				i--;
+				// i--;
 			}
 		}
 		var undoLink = document.createElement('A');
@@ -40,7 +44,7 @@
 			positionMarker.parentNode.removeChild(positionMarker);
 			document.body.removeChild(showingDiv);
 			while (hiddenDiv.firstChild) {
-				document.body.appendChild(hiddenDiv.lastChild);
+				document.body.appendChild(hiddenDiv.firstChild);
 			}
 			document.body.removeChild(hiddenDiv);
 			document.body.removeChild(undoLink);
