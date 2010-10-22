@@ -61,7 +61,7 @@ function findPreviousTextNode(elem) {
 					// return elem;
 				// }
 			// }
-			if (value != "" && value != undefined ) {
+			if (value != "" && value != undefined) {
 				// while (elem.firstChild && elem.firstChild.value == elem.value) {
 					// elem = elem.firstChild;
 				// }
