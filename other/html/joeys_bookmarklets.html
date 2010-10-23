@@ -845,18 +845,8 @@
 
 	<A name="console"></A>
 	<P>
-		<LI><A target="_self" href="javascript:(function(){
-			function runCmd(cmd) {
-				var result;
-				document.getElementById('qconsOut').value = '...';
-				try {
-					result = ''+eval(cmd);
-				} catch (e) {
-					result = 'Error: '+e;
-				}
-				/*document.getElementById('qconsOut').innerHTML = escape(result);*/
-				document.getElementById('qconsOut').value = (result);
-			}
+		<LI>Quick Javascript <A target="_self" href="javascript:(function(){
+
 			window.inspect =
 				function inspect(o) {
 					var result;
@@ -875,84 +865,87 @@
 					document.getElementsByTagName('head')[0].appendChild(newScript);
 				};
 
-			function checkKey(evt) {
-				if (evt.keyCode == 27) {
-					closeQuickConsole();
-				}
-			}
-			function closeQuickConsole() {
-				myDiv.parentNode.removeChild(myDiv);
-				myStyle.parentNode.removeChild(myStyle);
-			}
+			/* Load JQuery and other useful scripts: */
+			loadScript('http://hwi.ath.cx/static/js/jquery.js');
+			loadScript('http://hwi.ath.cx/javascript/changeClassProperties.js');
 
 			var myDiv = document.createElement('div');
 			myDiv.className = 'qcons';
-
+			var myStyle = document.createElement('style');
 			var textArea = document.createElement('TEXTAREA');
-			textArea.id = 'qconsOut';
+
+			var innerDiv = document.createElement('div');
+			innerDiv.className = 'qcons_inner';
+
 			textArea.rows = 5;
-			textArea.cols = 100;
+			textArea.cols = 96;
 			textArea.readonly = true;
 			textArea.style.fontSize = '-2';
-			myDiv.appendChild(textArea);
+			innerDiv.appendChild(textArea);
 
-			myDiv.appendChild(document.createTextNode('['));
-			var closeButton = document.createElement('A');
-			closeButton.appendChild(document.createTextNode('X'));
-			closeButton.href = '#';
-			closeButton.onclick = function(e){
-				closeQuickConsole();
-			};
-			myDiv.appendChild(closeButton);
-			myDiv.appendChild(document.createTextNode(']'));
-			myDiv.appendChild(document.createElement('BR'));
+			innerDiv.appendChild(document.createElement('BR'));
 
 			var commandInput = document.createElement('INPUT');
 			commandInput.type = 'text';
 			commandInput.name = 'cmd';
 			commandInput.value = '';
 			commandInput.size = 100;
+			innerDiv.appendChild(commandInput);
+
+			function runCmd(cmd) {
+				var result;
+				textArea.value = '...';
+				try {
+					result = ''+eval(cmd);
+				} catch (e) {
+					result = 'Error: '+e;
+				}
+				/*textArea.innerHTML = escape(result);*/
+				textArea.value = (result);
+			}
+
 			commandInput.onchange = function(e){
 				if (this.value) {
 					runCmd(this.value);
 				}
 			};
-			myDiv.appendChild(commandInput);
 
-			myDiv.onkeypress = checkKey;
-			commandInput.onkeypress = checkKey;
-
-			/* FAIL (style has no setter): myDiv.style = '{ position: color: red; fixed; bottom: 8px; z-index: 10000; }'; */
-			var myStyle = document.createElement('style');
-			myStyle.setAttribute('type','text/css');
-			/* Works for Moz: */
-			myStyle.innerHTML = 'div.qcons { color: white; background-color: #44aa44; position: fixed; left: 2px; right: 2px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; }';
-			/* Works for Konq: */
-			var x;
-			if (myDiv.style.setAttribute) {
-				x = myDiv.style;
-				x.setAttribute('color','white');
-				x.setAttribute('background-color','#44aa44');
-				x.setAttribute('padding','8px');
-				x.setAttribute('position','fixed');
-				x.setAttribute('left','2px');
-				x.setAttribute('right','2px');
-				x.setAttribute('bottom','2px');
-				x.setAttribute('z-index','10000');
-				x.setAttribute('text-align','center'); /* TODO konq fail */
-				x.setAttribute('padding','4px');
-				x.setAttribute('border','2px solid black');
+			function closeQuickConsole() {
+				myDiv.parentNode.removeChild(myDiv);
+				myStyle.parentNode.removeChild(myStyle);
 			}
-			document.documentElement.appendChild(myStyle);
-			document.documentElement.appendChild(myDiv);
+
+			var closeBlock = document.createElement('span');
+			closeBlock.className = 'closeBlock';
+			var closeButton = document.createElement('button');
+			closeButton.appendChild(document.createTextNode('X'));
+			closeButton.onclick = function(e){
+				closeQuickConsole();
+			};
+			closeBlock.appendChild(closeButton);
+			innerDiv.appendChild(closeBlock);
+
+			function checkKey(evt) {
+				if (evt.keyCode == 27) {
+					closeQuickConsole();
+				}
+			}
+
+			/* Under Chrome, Escape does not fire a keypress event, but does keyup. */
+			myDiv.onkeyup = checkKey;
+			commandInput.onkeyup = checkKey;
+
+			myStyle.setAttribute('type','text/css');
+			myStyle.innerHTML = 'div.qcons { color: white; background-color: #44aa44; position: fixed; left: 2px; right: 2px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; } .qcons_inner { position: relative; } .closeBlock { position: absolute; top: 0px; right: 0px; }';
+			document.getElementsByTagName('head')[0].appendChild(myStyle);
+
 			document.body.style.marginBottom = '110px';
-			/* Give access to the Close link: */
-			top.myDiv = myDiv;
-			top.myStyle = myStyle;
+			myDiv.appendChild(innerDiv);
+			document.body.appendChild(myDiv);
+
 			myDiv.getElementsByTagName('INPUT')[0].focus();
-			/* Load JQuery: */
-			loadScript('http://hwi.ath.cx/static/js/jquery.js');
-		})();">Quick Javascript Console</A></LI>
+
+		})();">Console</A></LI>
 	</P>
 	<BLOCKQUOTE>
 		<P>My own dodgy console.  With handy inspect() function.  Now auto-loads JQuery.</P>
