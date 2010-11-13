@@ -1,11 +1,21 @@
 // ==UserScript==
-// @name           Delicious Link Tooltip
+// @name           Delicious Link Tooltop
 // @namespace      GPM
 // @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
 // @include        *
 // ==/UserScript==
 // don't require   http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
 // @require        http://json.org/json2.js
+
+
+
+//// NOTES for Delicious Network Add:
+// GET http://delicious.com/settings/networkadd?networkadd=EHKNIGHT&.crumb=7FsAGAcj8szIc7Pt_37ua1qsjMM-
+// GET http://delicious.com/network?add=EHKNIGHT
+// GET http://delicious.com/EHKNIGHT?networkaction=1
+//// When user hits OK:
+// POST http://delicious.com/settings/networkadd?.crumb=7FsAGAcj8szIc7Pt_37ua1qsjMM-&jump=%2FEHKNIGHT%3Fnetworkaction%3D1&network-action-ok=&networkadd=EHKNIGHT
+// redirects to: http://delicious.com/EHKNIGHT?networkaddconfirm=EHKNIGHT
 
 
 
@@ -41,6 +51,7 @@
 // mouseovers/outs, but that is a bit strong.
 // At least a fix for the Mediawiki problem would make us (me) happy.
 // Tried 100x larger zIndex but no success.
+// Maybe it's the browser's display of the alt or title property.
 
 // DONE: Activate for links added to the document later.  Should add a
 // DOMNodeInserted event listener.  Or maybe neater, add listeners to the top
@@ -159,23 +170,7 @@ function getHostnameOfUrl(url) {
 	// return url.match(/[^:]*:[/][/][^/]*[/]/)[0];
 }
 
-function addCommasToNumber(numString) {
-	return commafy(numString); // Trying alternative implementation
-	return numString; // Disabled for the moment, because...
-	// BUG: Konqueror returns "$1,$2"!  (Is this because we are using a fallback
-	// Regexp, or is Konq's regexp broken?)
-	numString = ""+numString;
-	x = numString.split('.');
-	x1 = x[0];
-	x2 = x.length > 1 ? '.' + x[1] : '';
-	var rgx = /(\d+)(\d{3})/;
-	while (rgx.test(x1)) {
-		x1 = x1.replace(rgx, '$1' + ',' + '$2');
-	}
-	return x1 + x2;
-}
-
-function commafy(num) {
+function addCommasToNumber(num) {
 	var str = (num+"").split(".");
 	dec=str[1]||"";
 	num=str[0].replace(/(\d)(?=(\d{3})+\b)/g,"$1,");
@@ -380,7 +375,8 @@ function displayResults(resultObj,subjectUrl,event) {
 		topRow.appendChild(popBarCont);
 		tooltipDiv.appendChild(topTable);
 
-		if (resultObj.top_tags) {
+		/* top_tags is a hashtable, it has no .length */
+		if (resultObj.top_tags /* && resultObj.top_tags.length>0 */ ) {
 
 			// tooltipDiv.appendChild(document.createElement("BR"));
 
@@ -547,16 +543,20 @@ function hideTooltip() {
 }
 
 function cleanupCache() {
-	var cacheList = GM_listValues();
-	// Rather casual method: Keep deleting records at random until we meet
-	// our max cache size.
-	while (cacheList.length > 128) {
-		var i = parseInt(Math.random() * cacheList.length);
-		// GM_log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
-		GM_deleteValue(cacheList[i]);
-		// delete cacheList[i];
-		cacheList[i] = cacheList[cacheList.length-1];
-		cacheList.length--;
+	if (typeof GM_listValues === 'undefined') {
+		GM_log("Cannot cleanupCache - GM_listValues() is unavaiable.");
+	} else {
+		var cacheList = GM_listValues();
+		// Rather casual method: Keep deleting records at random until we meet
+		// our max cache size.
+		while (cacheList.length > 128) {
+			var i = parseInt(Math.random() * cacheList.length);
+			// GM_log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
+			GM_deleteValue(cacheList[i]);
+			// delete cacheList[i];
+			cacheList[i] = cacheList[cacheList.length-1];
+			cacheList.length--;
+		}
 	}
 }
 
