@@ -35,6 +35,9 @@ function doIt() {
 
 	//// Feature #1 : Hide the sidebar.  Fullsize the content.
 
+	// Toggle the sidebar by clicking the "page background" (empty space outside
+	// the main content).  Sometimes clicking the content background is enough.
+
 	if (hideSidebar) {
 
 		var content = document.getElementById("content") || document.getElementById("column-content");
@@ -107,53 +110,11 @@ function doIt() {
 
 	if (makeTableOfContentsFloat) {
 
-		// CONSIDER TODO: If the TOC has a "Hide/Show" link ("button") then we
-		// should just fire this instead of changing opacity.
+		/* @consider If the TOC has a "Hide/Show" link ("button") then we could
+		 * fire that instead of changing opacity.
+		 */
 
 		// document.getElementById('column-one').appendChild(document.getElementById('toc'));
-
-		function createFader(toc) {
-
-			var timer = null;
-
-			// BUG: this didn't stop the two fades from conflicting when the user wiggles the mouse to start both!
-			function resetTimeout(fn,ms) {
-				if (timer) {
-					clearTimeout(timer);
-				}
-				setTimeout(fn,ms);
-			}
-
-			function fadeElement(elem,start,stop,speed,current) {
-				if (current == null)
-					current = start;
-				if (speed == null)
-					speed = (stop - start) / 8;
-				if (Math.abs(current+speed-stop) > Math.abs(current-stop))
-					current = stop;
-				else
-					current = current + speed;
-				elem.style.opacity = current;
-				if (current != stop)
-					resetTimeout(function(){fadeElement(elem,start,stop,speed,current);},50);
-			}
-
-			var listenElement = toc;
-			// var listenElement = toc.getElementsByTagName('TD')[0];
-			var focused = false;
-			var visible = false;
-			listenElement.addEventListener('mouseover',function(){
-				if (!visible)
-					setTimeout(function(){ if (focused) { fadeElement(toc,0.4,1.0,0.2); visible=true; } },10);
-				focused = true;
-			},false);
-			listenElement.addEventListener('mouseout',function(){
-				if (visible)
-					setTimeout(function(){ if (!focused) { fadeElement(toc,1.0,0.2,-0.1); visible=false; } },10);
-				focused = false;
-			},false);
-
-		}
 
 		setTimeout(function(){
 
@@ -163,6 +124,7 @@ function doIt() {
 					 || document.getElementsByClassName("toc")[0];   /* LeakyTap */
 
 			if (toc) {
+
 				// toc.style.backgroundColor = '#eeeeee';
 				// alert("doing it!");
 				toc.style.position = 'fixed';
@@ -173,10 +135,55 @@ function doIt() {
 				toc.style.zIndex = '5000';
 				// fadeElement(toc,1.0,0.4);
 				toc.style.opacity = 0.3;
+
 				createFader(toc);
+
+				function createFader(toc) {
+
+					var timer = null;
+
+					// BUG: this didn't stop the two fades from conflicting when the user wiggles the mouse to start both!
+					function resetTimeout(fn,ms) {
+						if (timer) {
+							clearTimeout(timer);
+						}
+						setTimeout(fn,ms);
+					}
+
+					function fadeElement(elem,start,stop,speed,current) {
+						if (current == null)
+							current = start;
+						if (speed == null)
+							speed = (stop - start) / 8;
+						if (Math.abs(current+speed-stop) > Math.abs(current-stop))
+							current = stop;
+						else
+							current = current + speed;
+						elem.style.opacity = current;
+						if (current != stop)
+							resetTimeout(function(){fadeElement(elem,start,stop,speed,current);},50);
+					}
+
+					var listenElement = toc;
+					// var listenElement = toc.getElementsByTagName('TD')[0];
+					var focused = false;
+					var visible = false;
+					listenElement.addEventListener('mouseover',function(){
+						if (!visible)
+							setTimeout(function(){ if (focused) { fadeElement(toc,0.4,1.0,0.2); visible=true; } },10);
+						focused = true;
+					},false);
+					listenElement.addEventListener('mouseout',function(){
+						if (visible)
+							setTimeout(function(){ if (!focused) { fadeElement(toc,1.0,0.2,-0.1); visible=false; } },10);
+						focused = false;
+					},false);
+
+				}
+
 			}
 
-		},2000);
+		},20);
 
 	}
 
