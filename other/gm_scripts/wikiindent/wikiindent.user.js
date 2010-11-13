@@ -4,14 +4,15 @@
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
-// @description    Four tools for MediaWiki sites.  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the background).  Changes (sub)heading underlines to overlines.  Floats the Table of Contents on the right of the page for quick navigation.
+// @include        http://www.wormus.com/leakytap/*
+// @description    Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining.
 // ==/UserScript==
 
 //// Features:
 var hideSidebar = true;
+var makeTableOfContentsFloat = true;
 var indentSubBlocks = true;
 var fixUnderlinesToOverlines = true;
-var makeTableOfContentsFloat = true;
 
 
 /* TODOS
@@ -32,7 +33,7 @@ function doIt() {
 
 
 
-	//// Feature #0 : Hide the sidebar.  Fullsize the content.
+	//// Feature #1 : Hide the sidebar.  Fullsize the content.
 
 	if (hideSidebar) {
 
@@ -102,73 +103,7 @@ function doIt() {
 
 
 
-	//// Feature #1 : Indent the blocks so their tree-like structure is visible
-
-	if (indentSubBlocks) {
-
-		function indent(tag) {
-			// By targetting search we avoid indenting any blocks in left-hand-column (sidebar).
-			var whereToSearch = document.getElementById('bodyContent') || document.getElementById('content') || document;
-			var elems = whereToSearch.getElementsByTagName(tag);
-			if (elems.length == 1)
-				return;
-			for (var i=0;i<elems.length;i++) {
-				var elem = elems[i];
-				/* Don't fiddle with main heading, siteSub, or TOC. */
-				if (elem.className == 'firstHeading')
-					continue;
-				if (elem.id == 'siteSub')
-					continue;
-				if (elem.textContent == 'Contents')
-					continue;
-				// var newChild = document.createElement('blockquote');
-				//// Unfortunately blockquotes tend to indent too much!
-				// var newChild = document.createElement('DIV');
-				var newChild = document.createElement('UL'); // UL works better with my Folding script, but we must not do this to the TOC!
-				newChild.style.marginLeft = '1.0em';
-				var toAdd = elem.nextSibling;
-				while (toAdd && toAdd.tagName != tag) {
-					var next = toAdd.nextSibling;
-					newChild.appendChild(toAdd);
-					toAdd = next;
-				}
-				elem.parentNode.insertBefore(newChild,elem.nextSibling);
-				// GM_log("Placed "+newChild+" after "+elem);
-			}
-		}
-
-		indent("H1"); indent("H2"); indent("H3"); indent("H4"); indent("H5"); indent("H6");
-
-	}
-
-
-	// Feature #2: Change underlined headings to overlined headings.
-
-	if (fixUnderlinesToOverlines) {
-
-		// For bookmarklets:
-		if (typeof GM_addStyle == "undefined") {
-			function GM_addStyle(css) {
-				var doc = document;
-				var head, style;
-				head = doc.getElementsByTagName("head")[0];
-				if (!head) { return; }
-				style = doc.createElement("style");
-				style.type = "text/css";
-				style.innerHTML = css;
-				head.appendChild(style);
-			}
-		}
-
-		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-bottom: 0px solid #AAAAAA; }");
-		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-top: 1px solid #AAAAAA; }");
-		// Do not use "text-decoration: underline;" - it makes text look like links.
-
-	}
-
-
-
-	//// Feature #3: Make Table of Contents float
+	//// Feature #2: Make Table of Contents float
 
 	if (makeTableOfContentsFloat) {
 
@@ -224,7 +159,8 @@ function doIt() {
 
 			// Find the table of contents element:
 			var toc = document.getElementById("toc")   /* MediaWiki */
-					 || document.getElementsByClassName("table-of-contents")[0];   /* BashFAQ */
+					 || document.getElementsByClassName("table-of-contents")[0]   /* BashFAQ */
+					 || document.getElementsByClassName("toc")[0];   /* LeakyTap */
 
 			if (toc) {
 				// toc.style.backgroundColor = '#eeeeee';
@@ -243,6 +179,74 @@ function doIt() {
 		},2000);
 
 	}
+
+
+
+	//// Feature #3 : Indent the blocks so their tree-like structure is visible
+
+	if (indentSubBlocks) {
+
+		function indent(tag) {
+			// By targetting search we avoid indenting any blocks in left-hand-column (sidebar).
+			var whereToSearch = document.getElementById('bodyContent') || document.getElementById('content') || document;
+			var elems = whereToSearch.getElementsByTagName(tag);
+			if (elems.length == 1)
+				return;
+			for (var i=0;i<elems.length;i++) {
+				var elem = elems[i];
+				/* Don't fiddle with main heading, siteSub, or TOC. */
+				if (elem.className == 'firstHeading')
+					continue;
+				if (elem.id == 'siteSub')
+					continue;
+				if (elem.textContent == 'Contents')
+					continue;
+				// var newChild = document.createElement('blockquote');
+				//// Unfortunately blockquotes tend to indent too much!
+				// var newChild = document.createElement('DIV');
+				var newChild = document.createElement('UL'); // UL works better with my Folding script, but we must not do this to the TOC!
+				newChild.style.marginLeft = '1.0em';
+				var toAdd = elem.nextSibling;
+				while (toAdd && toAdd.tagName != tag) {
+					var next = toAdd.nextSibling;
+					newChild.appendChild(toAdd);
+					toAdd = next;
+				}
+				elem.parentNode.insertBefore(newChild,elem.nextSibling);
+				// GM_log("Placed "+newChild+" after "+elem);
+			}
+		}
+
+		indent("H1"); indent("H2"); indent("H3"); indent("H4"); indent("H5"); indent("H6");
+
+	}
+
+
+
+	//// Feature #4: Change underlined headings to overlined headings.
+
+	if (fixUnderlinesToOverlines) {
+
+		// For bookmarklets:
+		if (typeof GM_addStyle == "undefined") {
+			function GM_addStyle(css) {
+				var doc = document;
+				var head, style;
+				head = doc.getElementsByTagName("head")[0];
+				if (!head) { return; }
+				style = doc.createElement("style");
+				style.type = "text/css";
+				style.innerHTML = css;
+				head.appendChild(style);
+			}
+		}
+
+		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-bottom: 0px solid #AAAAAA; }");
+		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-top: 1px solid #AAAAAA; }");
+		// Do not use "text-decoration: underline;" - it makes text look like links.
+
+	}
+
 
 
 
