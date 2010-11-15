@@ -7,6 +7,9 @@
 // don't require   http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
 // @require        http://json.org/json2.js
 
+var showTooltips = true;
+var lookupCurrentPage = true;
+var annotateAllLinks = true;
 
 
 //// NOTES for Delicious Network Add:
@@ -18,6 +21,10 @@
 // redirects to: http://delicious.com/EHKNIGHT?networkaddconfirm=EHKNIGHT
 
 
+
+
+// log = (unsafeWindow.console && unsafeWindow.console.log) ? unsafeWindow.console.log : GM_log;
+log = GM_log;
 
 // == Notes ==
 
@@ -147,6 +154,10 @@ function getHash(str) {
 	return sum;
 }
 
+function startsWith(bigStr,smallStr) {
+	return (smallStr == (""+bigStr).substring(0,smallStr.length));
+}
+
 function unescapeHTML(htmlString) {
 	var tmpDiv = document.createElement("DIV");
 	tmpDiv.innerHTML = htmlString;
@@ -187,9 +198,88 @@ function boldTextElement(txt) {
 
 
 
-// == Main == //
+// == Delicious lookup service, and cache == //
 
 var dataCache = ({});
+
+function doLookup(lookupURL,onSuccess,onFailFn) {
+	lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
+	log("Requesting info for: "+lookupURL);
+	// We can use https here, but it is slower.
+	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
+	GM_xmlhttpRequest({
+		method: "GET",
+		url: jsonUrl,
+		headers: {
+			"Accept":"text/json"
+		},
+		onload: function(response) {
+			log("Delicious responded: "+response.responseText);
+			// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+			var resultObj = eval(response.responseText); // INSECURE!
+			// TODO: Sometimes Delicious return "[]" but this gets evaled as an Object.
+			// This is hard for later code to detect, e.g. ==[] does not trigger.
+			if (resultObj && resultObj[0] && resultObj[0].total_posts)
+				resultObj = resultObj[0];
+			if (!resultObj && onFailFn) { // TODO: put back? && stillFocused==link) {
+				// Done: Shouldn't we put something non-null in the dataCache, to prevent repeat requests?
+				// Oh "Working..." is there.
+				GM_log("Failed to get result, may leave \"Working...\" in the DB but won't write it to storage.");
+				onFailFn();
+			} else { // Got resultObj, or no onFailFn, or no longer focused
+				// Overwrite "working..." with the good or failed result
+				dataCache[lookupURL] = resultObj;
+				GM_setValue("CachedResponse"+lookupURL,uneval(resultObj));
+				// log("Got data for "+lookupURL+" meanwhile link="+link);
+				// if (stillFocused == link) {
+					// showResultsTooltip(resultObj,lookupURL,lastMoveEvent || evt);
+				// }
+				onSuccess(resultObj,lookupURL);
+			}
+		}
+	});
+	// TODO: The GM_xmlhttpRequest should also include an
+	// onreadystatechange function to catch any failed requests.
+}
+
+function tryLookup(subjectUrl,onSuccess,onFailure) {
+	if (dataCache[subjectUrl] == null) {
+		dataCache[subjectUrl] = eval(GM_getValue("CachedResponse"+subjectUrl,"null"));
+	}
+	if (dataCache[subjectUrl] != null && dataCache[subjectUrl]!=[]) {
+		// log("Got data for: "+subjectUrl);
+		// log("Had it cached: "+uneval(dataCache[subjectUrl])+" (Request:"+subjectUrl+")");
+		onSuccess(dataCache[subjectUrl],subjectUrl);
+	} else {
+		dataCache[subjectUrl] = "working...";
+		doLookup(subjectUrl,onSuccess,null);
+	}
+}
+
+function cleanupCache() {
+	if (typeof GM_listValues === 'undefined') {
+		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
+	} else {
+		var cacheList = GM_listValues();
+		// Rather casual method: Keep deleting records at random until we meet
+		// our max cache size.
+		// TODO: delete the oldest and least-used, keep new/popular entries
+		while (cacheList.length > 512) {
+			var i = parseInt(Math.random() * cacheList.length);
+			// log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
+			GM_deleteValue(cacheList[i]);
+			// delete cacheList[i];
+			cacheList[i] = cacheList[cacheList.length-1];
+			cacheList.length--;
+		}
+	}
+}
+
+
+
+
+
+// == Link tooltip (popup on rollover) == //
 
 var timer;
 var stillFocused;
@@ -197,10 +287,22 @@ var tooltipDiv;
 
 var rolledOverTooltip = false;
 
-function positionTooltip(event) {
+// A different version of tryLookup, which will try to lookup the hostname if the initial URL failed.
+function initiateDoubleLookup(lookupURL,onSuccess) {
+	function onFailure() {
+		var hostUrl = "http://"+getHostnameOfUrl(lookupURL)+"/";
+		if (hostUrl != lookupURL) {
+			lookupURL = hostUrl;
+			tryLookup(lookupURL,onSuccess,function(){log("both url and host lookup failed.");});
+		}
+	}
+	tryLookup(lookupURL,onSuccess,onFailure);
+}
+
+function positionTooltip(evt) {
 	if (tooltipDiv) {
-		var posx = event.clientX + window.pageXOffset;
-		var posy = event.clientY + window.pageYOffset;
+		var posx = evt.clientX + window.pageXOffset;
+		var posy = evt.clientY + window.pageYOffset;
 
 		tooltipDiv.style.right = '';
 		tooltipDiv.style.left = (posx + 15) + "px";
@@ -240,8 +342,9 @@ function positionTooltip(event) {
 	}
 }
 
-function displayResults(resultObj,subjectUrl,event) {
-	// GM_log("Displaying results for "+subjectUrl+": "+uneval(resultObj));
+function showResultsTooltip(resultObj,subjectUrl,evt) {
+	// if (stillFocused == link) {
+	// log("Displaying results for "+subjectUrl+": "+uneval(resultObj));
 	hideTooltip();
 
 	tooltipDiv = document.createElement("div");
@@ -271,8 +374,10 @@ function displayResults(resultObj,subjectUrl,event) {
 	// Sometimes Delicious returns a result with nothing but the hash and
 	// total_posts=1.  These days I am getting this more often than
 	// resultObj==null, but it is about as informative, so:
-	if (resultObj && resultObj.url=="" && resultObj.title=="" &&
-			resultObj.total_posts==1 && resultObj.top_tags.length==0) {
+	if (resultObj && resultObj.total_posts==1 /*&& resultObj.hash*/ &&
+			resultObj.url=="" && resultObj.title=="" &&
+			resultObj.top_tags.length==0) {
+		GM_log("Got boring response: "+uneval(resultObj));
 		resultObj = null;
 	}
 	// However I think this may be due to the fact that there are *private*
@@ -280,7 +385,7 @@ function displayResults(resultObj,subjectUrl,event) {
 	// admitting that they even exist in its database!
 	// TODO: Test this theory!
 
-	if (resultObj) {
+	if (resultObj && resultObj!=[]) {
 
 		if (unescapeHTML(resultObj.url) != subjectUrl) {
 			tooltipDiv.style.backgroundColor = warn_bg_color;
@@ -411,6 +516,7 @@ function displayResults(resultObj,subjectUrl,event) {
 				var link = document.createElement("A");
 				link.href = "http://delicious.com/tag/"+tag;
 				link.target = "_blank";
+				link.title = resultObj.top_tags[tag];
 				link.appendChild(tagSpan);
 				tagSpan = link;
 
@@ -428,17 +534,20 @@ function displayResults(resultObj,subjectUrl,event) {
 		tooltipDiv.appendChild(document.createTextNode("No info for "+subjectUrl));
 	}
 	document.body.appendChild(tooltipDiv);
-	positionTooltip(event);
-	// GM_log("tooltipDiv.innerHTML = "+tooltipDiv.innerHTML);
+	positionTooltip(evt);
+	// log("tooltipDiv.innerHTML = "+tooltipDiv.innerHTML);
 }
 
-function createTooltip(event) {
+// Old: These functions make use of the scope vars link and subjectUrl.
+// Note: These functions make use of the scope var dataCache.
+
+function createTooltip(evt) {
 
 	hideTooltip();
 
-	var link = event.target;
+	var link = evt.target;
 
-	lastMoveEvent = event;
+	lastMoveEvent = evt;
 
 	stillFocused = link;
 
@@ -457,63 +566,17 @@ function createTooltip(event) {
 		return;  // We can't do anything useful here.  We must wait for the XHR to respond.
 	}
 
-	// Note: These functions make use of the scope vars link and subjectUrl.
-
-	function tryLookup(lookupURL,onFailFn) {
-		// We can use https here, but it is slower.
-		var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
-		GM_xmlhttpRequest({
-			method: "GET",
-			url: jsonUrl,
-			headers: {
-				"Accept":"text/json"
-			},
-			onload: function(response) {
-				// GM_log("Delicious responded: "+response.responseText);
-				// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
-				var resultObj = eval(response.responseText); // INSECURE!
-				if (resultObj)
-					resultObj = resultObj[0];
-				if (!resultObj && onFailFn && stillFocused==link) {
-					onFailFn();
-				} else { // Got resultObj, or no onFailFn, or no longer focused
-					// Overwrite "working..." with the good or failed result
-					dataCache[subjectUrl] = resultObj;
-					GM_setValue("CachedResponse"+subjectUrl,uneval(resultObj));
-					// GM_log("Got data for "+subjectUrl+" meanwhile link="+link);
-					if (stillFocused == link) {
-						displayResults(resultObj,subjectUrl,lastMoveEvent || event);
-					}
-				}
-			}
-		});
-		// TODO: The GM_xmlhttpRequest should also include an
-		// onreadystatechange function to catch any failed requests.
-	}
-
-	function maybeTryLookup() {
-		if (stillFocused == link) {
-			if (dataCache[subjectUrl] == null) {
-				dataCache[subjectUrl] = eval(GM_getValue("CachedResponse"+subjectUrl,"null"));
-			}
-			if (dataCache[subjectUrl] != null) {
-				displayResults(dataCache[subjectUrl],subjectUrl,lastMoveEvent || event);
-			} else {
-				dataCache[subjectUrl] = "working...";
-				var hostUrl = "http://"+getHostnameOfUrl(subjectUrl)+"/";
-				if (getWebsiteInfoOnly) {
-					subjectUrl = hostUrl;
-					tryLookup(subjectUrl,null);
-				} else {
-					tryLookup(subjectUrl,function(){ tryLookup(hostUrl); });
-				}
-			}
-		}
-	}
-
 	var waitTime = ( dataCache[subjectUrl] != null ? 300 : 1000 );
 
-	timer = setTimeout(maybeTryLookup,waitTime);
+	timer = setTimeout(
+			function(){
+				if (stillFocused==link) {
+					initiateDoubleLookup(subjectUrl,function(foundResults,foundUrl) {
+						showResultsTooltip(dataCache[foundUrl],foundUrl,lastMoveEvent || evt);
+					});
+				}
+			},waitTime);
+
 
 }
 
@@ -542,114 +605,216 @@ function hideTooltip() {
 	rolledOverTooltip = false;
 }
 
-function cleanupCache() {
-	if (typeof GM_listValues === 'undefined') {
-		GM_log("Cannot cleanupCache - GM_listValues() is unavaiable.");
-	} else {
-		var cacheList = GM_listValues();
-		// Rather casual method: Keep deleting records at random until we meet
-		// our max cache size.
-		while (cacheList.length > 128) {
-			var i = parseInt(Math.random() * cacheList.length);
-			// GM_log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
-			GM_deleteValue(cacheList[i]);
-			// delete cacheList[i];
-			cacheList[i] = cacheList[cacheList.length-1];
-			cacheList.length--;
+function initialiseTooltipListeners() {
+
+	// GM_addStyle(".dlttLeft { float: left; }");
+	// GM_addStyle(".dlttRight { float: right; }");
+
+	/*
+	for (var i=0; i<document.links.length; i++) {
+		var link = document.links[i];
+		link.addEventListener("mouseover",createTooltip,false);
+		link.addEventListener("mouseout",hideTooltip,false);
+		// TODO: We should only really enable the mousemove/out/down events when we have done a mouseover!
+		link.addEventListener("mousemove",positionTooltip,false);
+		// If user clicks either button on the link, then we hide it
+		link.addEventListener("mousedown",hideTooltip,true);
+	}
+	*/
+
+	// A better event listener, which will respond to links added to the DOM later.
+	// DONE: One problem with this method.  If we mouseover a //A/EM then the event
+	// doesn't fire!
+	// DONE: I guess we better look up the tree at our parentNodes for the A, and maybe
+	// even change/fake the evt.target to point to the A!
+
+	// DONE: New bug with the new global event listener.  Now we can't mouseover
+	// the tooltip any more.  :s
+	// Maybe the problem here is the As inside the tooltip.  But why wasn't that a
+	// problem before? :o
+	// Solved with checkParentsForId().
+
+	// TODO: One bug with this method is that when moving in or out of the SPAN
+	// inside the A, a mouseout then a mouseover get fired on the A.  This is
+	// slightly hard to fix, how to we know whether the mouseout should be fired or
+	// not?
+
+	// var linksOnly = function(evt) { return (evt && evt.target && evt.target.tagName == "A"); };
+
+	function checkParentsForId(node,id) {
+		while (node) {
+			if (node.id == id)
+				return true;
+			node = node.parentNode;
 		}
+		return false;
 	}
-}
 
+	var linksOnly = function(evt) {
+		var node = evt.target;
+		// We don't want to act on links inside the tooltip
+		if (checkParentsForId(node,"DLTtooltip"))
+			return null;
+		while (node) {
+			if (node.tagName == "A")
+				return node;
+			node = node.parentNode;
+		}
+		return node;
+	};
 
-
-// Initialise
-
-// GM_addStyle(".dlttLeft { float: left; }");
-// GM_addStyle(".dlttRight { float: right; }");
-
-/*
-for (var i=0; i<document.links.length; i++) {
-	var link = document.links[i];
-	link.addEventListener("mouseover",createTooltip,false);
-	link.addEventListener("mouseout",hideTooltip,false);
+	addGlobalConditionalEventListener("mouseover",createTooltip,linksOnly);
+	addGlobalConditionalEventListener("mouseout",hideTooltipMomentarily,linksOnly);
 	// TODO: We should only really enable the mousemove/out/down events when we have done a mouseover!
-	link.addEventListener("mousemove",positionTooltip,false);
+	// addGlobalConditionalEventListener("mousemove",positionTooltip,linksOnly);
+	addGlobalConditionalEventListener("mousemove",function(evt){if (evt.target == stillFocused) { lastMoveEvent=evt; } },linksOnly);
 	// If user clicks either button on the link, then we hide it
-	link.addEventListener("mousedown",hideTooltip,true);
-}
-*/
+	addGlobalConditionalEventListener("mousedown",hideTooltip,linksOnly);
 
-// A better event listener, which will respond to links added to the DOM later.
-// DONE: One problem with this method.  If we mouseover a //A/EM then the event
-// doesn't fire!
-// DONE: I guess we better look up the tree at our parentNodes for the A, and maybe
-// even change/fake the evt.target to point to the A!
-
-// DONE: New bug with the new global event listener.  Now we can't mouseover
-// the tooltip any more.  :s
-// Maybe the problem here is the As inside the tooltip.  But why wasn't that a
-// problem before? :o
-// Solved with checkParentsForId().
-
-// TODO: One bug with this method is that when moving in or out of the SPAN
-// inside the A, a mouseout then a mouseover get fired on the A.  This is
-// slightly hard to fix, how to we know whether the mouseout should be fired or
-// not?
-
-// var linksOnly = function(evt) { return (evt && evt.target && evt.target.tagName == "A"); };
-
-function checkParentsForId(node,id) {
-	while (node) {
-		if (node.id == id)
-			return true;
-		node = node.parentNode;
+	function addGlobalConditionalEventListener(evType,handlerFn,whereToFireFn) {
+		document.body.addEventListener(evType,function(evt){
+				// if (conditionFn(evt)) {
+				var finalTarget = whereToFireFn(evt);
+				if (finalTarget) {
+					var fakeEvt = ({});
+					// Maybe better to do a for (var prop in evt) to construct fakeEvt?
+					// Hmm no that acts weird, only showing properties for evt which I
+					// have already read!
+					// OK then let's just set the ones we know we need:
+					fakeEvt.target = finalTarget;
+					fakeEvt.clientX = evt.clientX;
+					fakeEvt.clientY = evt.clientY;
+					/* if (evType != "mousemove") {
+						log("Performing "+evType+" on "+fakeEvt.target);
+					} */
+					return handlerFn(fakeEvt);
+				}
+		},true);
 	}
-	return false;
+
 }
 
-var linksOnly = function(evt) {
-	var node = evt.target;
-	// We don't want to act on links inside the tooltip
-	if (checkParentsForId(node,"DLTtooltip"))
-		return null;
-	while (node) {
-		if (node.tagName == "A")
-			return node;
-		node = node.parentNode;
+
+
+// == Initialise Tooltips == //
+
+if (showTooltips) {
+	initialiseTooltipListeners();
+}
+
+
+
+// == Initialise current-page auto-lookup == //
+
+function createScoreSpan(resultObj) {
+	var scoreSpan = document.createElement("span");
+	if (resultObj.total_posts) {
+		var text = resultObj && resultObj.total_posts;
+		scoreSpan.appendChild(boldTextElement(text));
+		var greatness = 0.2 + 0.6 * Math.log(resultObj.total_posts) / Math.log(10000);
+		scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
 	}
-	return node;
-};
+	scoreSpan.style.color = 'white';
+	scoreSpan.style.fontWeight = 'bold';
+	if (resultObj.top_tags) {
+		var tagArray = [];
+		for (var tag in resultObj.top_tags) {
+			tagArray.push(tag);
+		}
+		// Not needed - they are already sorted
+		tagArray.sort( function(a,b) {
+				return resultObj.top_tags[a] < resultObj.top_tags[b];
+		});
+		scoreSpan.title = tagArray.join(", ");
+	}
+	return scoreSpan;
+}
 
-addGlobalConditionalEventListener("mouseover",createTooltip,linksOnly);
-addGlobalConditionalEventListener("mouseout",hideTooltipMomentarily,linksOnly);
-// TODO: We should only really enable the mousemove/out/down events when we have done a mouseover!
-// addGlobalConditionalEventListener("mousemove",positionTooltip,linksOnly);
-addGlobalConditionalEventListener("mousemove",function(evt){if (evt.target == stillFocused) { lastMoveEvent=evt; } },linksOnly);
-// If user clicks either button on the link, then we hide it
-addGlobalConditionalEventListener("mousedown",hideTooltip,linksOnly);
+if (lookupCurrentPage) {
+	tryLookup(document.location.href,function(resultObj,subjectUrl,evt){
+		if (resultObj.total_posts) {
+			var lc_div = createScoreSpan(resultObj);
+			lc_div.style.position = 'fixed';
+			lc_div.style.top = '20px';
+			lc_div.style.right = '20px';
+			lc_div.style.padding = '4px';
+			lc_div.style.fontSize = '2.0em';
+			document.body.appendChild(lc_div);
+		}
+	});
+}
 
-function addGlobalConditionalEventListener(evType,handlerFn,whereToFireFn) {
-	document.body.addEventListener(evType,function(evt){
-			// if (conditionFn(evt)) {
-			var finalTarget = whereToFireFn(evt);
-			if (finalTarget) {
-				var fakeEvt = ({});
-				// Maybe better to do a for (var prop in evt) to construct fakeEvt?
-				// Hmm no that acts weird, only showing properties for evt which I
-				// have already read!
-				// OK then let's just set the ones we know we need:
-				fakeEvt.target = finalTarget;
-				fakeEvt.clientX = evt.clientX;
-				fakeEvt.clientY = evt.clientY;
-				/* if (evType != "mousemove") {
-					GM_log("Performing "+evType+" on "+fakeEvt.target);
-				} */
-				return handlerFn(fakeEvt);
+
+
+// == Initialise all-links auto-lookup == //
+
+var lookupSpeed = 50;
+
+			function addLabel(link) {
+				var sameHost = (link.host==document.location.host);
+				var badHost = (link.host=="webcache.googleusercontent.com") || (link.host.match(".google.com"));
+				var goodUrl = startsWith(link,"http://") || startsWith(link,"https://") || (""+link).indexOf(":")==-1; // skip any "about:config" or "javascript:blah" links
+				var isSearch = link.href.indexOf("?")>-1;
+				if (link.href && !sameHost && !badHost && goodUrl && !isSearch) {
+
+					// TODO: I fear link may not be caught inside the closure
+					function addAnnotationLabel(resultObj,subjectUrl,evt){
+						// log("Adding annotation for "+link.href+" with result "+uneval(resultObj));
+						if (resultObj && resultObj.total_posts) {
+							var newDiv = createScoreSpan(resultObj);
+							var text = " " + (resultObj && resultObj.total_posts) + " ";
+							// BUG TODO: Sometimes the left or right space gets ignored, because we are in a span, and it merges with outer text
+							newDiv.textContent = text;
+							newDiv.style.marginLeft = '0.2em';
+							newDiv.style.marginRight = '0.4em';
+							newDiv.style.padding = '0.1em 0.2em 0.1em 0.2em';
+							// newDiv.style.padding = '0';
+							newDiv.style.verticalAlign = "middle";
+							// newDiv.style.verticalAlign = "super";
+							// newDiv.style.marginTop = '-1.5em'; // For "super", sometimes works.
+							// newDiv.style.marginBottom = '-1.5em'; // Try to not make our parent line grow taller
+							newDiv.style.opacity = 0.7;
+							// newDiv.style.fontSize = parseInt((greatness+0.1)*10)/10 + 'em';
+							newDiv.style.fontSize = '0.6em';
+							// newDiv.style.paddingBottom = "0.2em";
+							// newDiv.firstChild.style.backgroundColor = "hsv("+2/3+","+greatness+",0.8)";
+							link.parentNode.insertBefore(newDiv,link.nextSibling);
+							// link.parentNode.appendChild(newDiv);
+							// newDiv.addEventListener('mouseover',function(evt){ showResultsTooltip(resultObj,subjectUrl,evt); },false);
+							// newDiv.addEventListener('mouseout',hideTooltipMomentarily,false);
+						}
+					}
+
+					tryLookup(link.href,addAnnotationLabel);
+				}
 			}
-	},true);
+
+if (annotateAllLinks) {
+	(function(){
+		var links = document.getElementsByTagName("A");
+		var i = 0;
+		function doOne() {
+			if (i < links.length) {
+				addLabel(links[i]);
+				i++;
+				if (lookupSpeed <= 50 && Math.random()<0.8) {
+					doOne();
+				} else {
+					setTimeout(doOne,lookupSpeed);
+					lookupSpeed = 20;
+				}
+			} else {
+				log("Considered "+i+" links for annotation with Delicious labels.");
+			}
+		}
+		doOne();
+	})();
 }
 
-// Should we cleanup some of our old cached data?
+
+
+// == Cleanup old cached data == //
+
 if (Math.random() < 0.1) {
 	cleanupCache();
 }
