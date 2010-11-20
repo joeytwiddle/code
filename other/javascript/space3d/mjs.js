@@ -51,7 +51,18 @@ const MJS_DO_ASSERT = true;
 
 // Some hacks for running in both the shell and browser,
 // and for supporting F32 and WebGLFloat arrays
-try { WebGLFloatArray; } catch (x) { WebGLFloatArray = Float32Array; }
+try {
+	WebGLFloatArray;
+	// alert("Using WebGLFloatArray");
+} catch (x) {
+	try {
+		WebGLFloatArray = Float32Array; // Chromium 2010, Firefox 4.0
+		// alert("Using Float32Array");
+	} catch (y) {
+		WebGLFloatArray = Array; // Firefox 3.5.3
+		// alert("Using Array");
+	}
+}
 
 /*
  * Constant: MJS_FLOAT_ARRAY_TYPE
