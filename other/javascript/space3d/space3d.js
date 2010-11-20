@@ -176,8 +176,8 @@ function updateWorld(scene) {
 	// for (var ship in scene.ships) {
 	for (var i=0;i<scene.ships.length;i++) {
 		var ship = scene.ships[i];
-		ship.yaw += Math.PI/231;
-		ship.roll += Math.PI/347;
+		ship.yaw += Math.PI/131;
+		ship.roll += Math.PI/87;
 		ship.pitch += Math.PI/159;
 	}
 }
@@ -188,6 +188,7 @@ function render(scene) {
 
 	ctx.globalAlpha = 1.0;
 	ctx.strokeStyle = 'rgba(0,0,0,0)';
+	ctx.lineWidth = 4.0;
 	ctx.fillStyle = 'black';
 	ctx.fillRect(0,0,w,h);
 
@@ -255,8 +256,12 @@ function render(scene) {
 		// console.log("ship.transform="+JSON.stringify(ship.transform));
 		var unTransform = M4x4.inverseOrthonormal(ship.transform);
 		var cameraRelativeToShip = M4x4_apply(unTransform,camera);
+		ship.blocks.forEach(function(block){
+			block.cachedDistanceFromCamera = V3.distance(block.positionRelativeToShip,cameraRelativeToShip);
+		});
 		function distanceFromCamera(p,q) {
-			return V3.length(V3.sub(p.positionRelativeToShip,cameraRelativeToShip)) < V3.length(V3.sub(q.positionRelativeToShip,cameraRelativeToShip));
+			// return V3.length(V3.sub(p.positionRelativeToShip,cameraRelativeToShip)) < V3.length(V3.sub(q.positionRelativeToShip,cameraRelativeToShip));
+			return p.cachedDistanceFromCamera < q.cachedDistanceFromCamera;
 		}
 		ship.blocks.sort(distanceFromCamera);
 		for (var j=0;j<ship.blocks.length;j++) {
@@ -266,6 +271,13 @@ function render(scene) {
 					return project(M4x4_apply(ship.transform,v));
 			}); // now in world space
 			// console.log("Transformed "+block.transformedVertices.length+" vertices for block "+block);
+			ctx.globalAlpha = 0.5;
+			ctx.strokeStyle = "hsla("+block.color+",100%,80%,1.0)"
+			ctx.fillStyle = "hsla("+block.color+",50%,50%,1.0)"
+			if (Math.random()<0.01) {
+				ctx.globalAlpha = 0.8;
+				ctx.fillStyle = "white";
+			}
 			for (var k=0;k<block.polys.length;k++) {
 				var poly = block.polys[k];
 				// transform polygon to ship space (didn't need to)
@@ -277,11 +289,7 @@ function render(scene) {
 				plotPolygon(block,poly);
 				// ctx.strokeStyle = block.color;
 				// ctx.fillStyle = block.color;
-				ctx.globalAlpha = 0.5;
-				ctx.fillStyle = "hsla("+block.color+",50%,50%,1.0)"
 				ctx.fill();
-				ctx.globalAlpha = 1.0;
-				ctx.strokeStyle = "hsla("+block.color+",100%,80%,1.0)"
 				ctx.stroke();
 			}
 		}
@@ -299,13 +307,14 @@ function render(scene) {
 
 	function drawFrame() {
 
+		render(scene);
+
 		frameCount++;
 		var timeRunning = (new Date().getTime() - startTime) / 1000;
 		var framerate = Math.round(frameCount / timeRunning);
+		ctx.globalAlpha = 1.0;
 		ctx.fillStyle = 'white';
 		ctx.fillText(framerate+" fps",40,10);
-
-		render(scene);
 
 	}
 

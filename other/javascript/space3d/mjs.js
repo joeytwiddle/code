@@ -314,6 +314,13 @@ V3.lengthSquared = function V3_lengthSquared(a) {
     return a[0]*a[0] + a[1]*a[1] + a[2]*a[2];
 };
 
+V3.distance = function V3_distance(a,b) {
+    //MathUtils_assert(a.length == 3, "a.length == 3");
+    //MathUtils_assert(b.length == 3, "b.length == 3");
+
+    return Math.sqrt( (a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]) + (a[2]-b[2])*(a[2]-b[2]) );
+};
+
 /*
  * Function: V3.normalize
  *
