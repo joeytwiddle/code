@@ -12,6 +12,7 @@ var lookupCurrentPage = true;
 var annotateAllLinks = true;
 
 
+
 //// NOTES for Delicious Network Add:
 // GET http://delicious.com/settings/networkadd?networkadd=EHKNIGHT&.crumb=7FsAGAcj8szIc7Pt_37ua1qsjMM-
 // GET http://delicious.com/network?add=EHKNIGHT
@@ -19,6 +20,8 @@ var annotateAllLinks = true;
 //// When user hits OK:
 // POST http://delicious.com/settings/networkadd?.crumb=7FsAGAcj8szIc7Pt_37ua1qsjMM-&jump=%2FEHKNIGHT%3Fnetworkaction%3D1&network-action-ok=&networkadd=EHKNIGHT
 // redirects to: http://delicious.com/EHKNIGHT?networkaddconfirm=EHKNIGHT
+
+// TODO: Don't annotate images, duplicates of last, or anything on delicious.com
 
 
 
@@ -80,6 +83,11 @@ log = GM_log;
 // TODO: Tidy up the aftermath.
 // Unfortunately the table appears to override our popWidth, but maybe we don't
 // need/want that anymore anyway.
+
+// TODO: Automatic annotation's decision about which links to scan could be improved.
+// e.g. some search ? links could be checked if they are short.  Some same-host links
+// we may also want to checked.  But some URLs we definitely won't want to, e.g. if
+// they appear to contain a (large) session ID.
 
 
 
@@ -204,7 +212,7 @@ var dataCache = ({});
 
 function doLookup(lookupURL,onSuccess,onFailFn) {
 	lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
-	log("Requesting info for: "+lookupURL);
+	// log("Requesting info for: "+lookupURL);
 	// We can use https here, but it is slower.
 	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
 	GM_xmlhttpRequest({
@@ -214,7 +222,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 			"Accept":"text/json"
 		},
 		onload: function(response) {
-			log("Delicious responded: "+response.responseText);
+			// log("Delicious responded: "+response.responseText);
 			// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
 			var resultObj = eval(response.responseText); // INSECURE!
 			// TODO: Sometimes Delicious return "[]" but this gets evaled as an Object.
@@ -228,6 +236,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 				onFailFn();
 			} else { // Got resultObj, or no onFailFn, or no longer focused
 				// Overwrite "working..." with the good or failed result
+				resultObj.cacheCount = 0; // not entirely neccessary
 				dataCache[lookupURL] = resultObj;
 				GM_setValue("CachedResponse"+lookupURL,uneval(resultObj));
 				// log("Got data for "+lookupURL+" meanwhile link="+link);
@@ -249,6 +258,10 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 	if (dataCache[subjectUrl] != null && dataCache[subjectUrl]!=[]) {
 		// log("Got data for: "+subjectUrl);
 		// log("Had it cached: "+uneval(dataCache[subjectUrl])+" (Request:"+subjectUrl+")");
+		if (!dataCache[subjectUrl].cacheCount)
+			dataCache[subjectUrl].cacheCount = 0;
+		dataCache[subjectUrl].cacheCount++;
+		GM_setValue("CachedResponse"+subjectUrl,uneval(dataCache[subjectUrl]));
 		onSuccess(dataCache[subjectUrl],subjectUrl);
 	} else {
 		dataCache[subjectUrl] = "working...";
@@ -260,10 +273,12 @@ function cleanupCache() {
 	if (typeof GM_listValues === 'undefined') {
 		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
 	} else {
+
 		var cacheList = GM_listValues();
+
 		// Rather casual method: Keep deleting records at random until we meet
 		// our max cache size.
-		// TODO: delete the oldest and least-used, keep new/popular entries
+		/*
 		while (cacheList.length > 512) {
 			var i = parseInt(Math.random() * cacheList.length);
 			// log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
@@ -272,6 +287,35 @@ function cleanupCache() {
 			cacheList[i] = cacheList[cacheList.length-1];
 			cacheList.length--;
 		}
+		*/
+
+		// Delete the oldest and least-used, keep new/popular entries
+		while (cacheList.length > 800) {
+			var poorestScore = 99999;
+			var poorestScorer = null;
+			for (var i=0;i<cacheList.length;i++) {
+				if (Math.random() < 0.25) // Only really scan quarter the record set
+					continue; // so we sometimes keep new (cacheCount=0) records
+				var crURL = cacheList[i]; // e.g. "CachedResponsehttp://..."
+				var url = crURL.replace(/^CachedResponse/,'');
+				if (dataCache[url] == null) {
+					dataCache[url] = eval(GM_getValue(crURL,"null"));
+				}
+				if (!poorestScorer || dataCache[url].cacheCount==null || dataCache[url].cacheCount < poorestScore) {
+					poorestScore = dataCache[url].cacheCount;
+					poorestScorer = crURL;
+					poorestScorerIndex = i;
+				}
+			}
+			if (poorestScorer == null)
+				break;
+			log("Cleaning up "+poorestScorer+" with score "+poorestScore);
+			GM_deleteValue(poorestScorer);
+			// cacheList = GM_listValues();
+			cacheList[poorestScorerIndex] = cacheList[cacheList.length-1];
+			cacheList.length--;
+		}
+
 	}
 }
 
@@ -385,7 +429,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	// admitting that they even exist in its database!
 	// TODO: Test this theory!
 
-	if (resultObj && resultObj!=[]) {
+	if (resultObj && resultObj.total_posts) {
 
 		if (unescapeHTML(resultObj.url) != subjectUrl) {
 			tooltipDiv.style.backgroundColor = warn_bg_color;
@@ -672,24 +716,26 @@ function initialiseTooltipListeners() {
 	addGlobalConditionalEventListener("mousedown",hideTooltip,linksOnly);
 
 	function addGlobalConditionalEventListener(evType,handlerFn,whereToFireFn) {
-		document.body.addEventListener(evType,function(evt){
-				// if (conditionFn(evt)) {
-				var finalTarget = whereToFireFn(evt);
-				if (finalTarget) {
-					var fakeEvt = ({});
-					// Maybe better to do a for (var prop in evt) to construct fakeEvt?
-					// Hmm no that acts weird, only showing properties for evt which I
-					// have already read!
-					// OK then let's just set the ones we know we need:
-					fakeEvt.target = finalTarget;
-					fakeEvt.clientX = evt.clientX;
-					fakeEvt.clientY = evt.clientY;
-					/* if (evType != "mousemove") {
-						log("Performing "+evType+" on "+fakeEvt.target);
-					} */
-					return handlerFn(fakeEvt);
-				}
-		},true);
+		if (document.body) {
+			document.body.addEventListener(evType,function(evt){
+					// if (conditionFn(evt)) {
+					var finalTarget = whereToFireFn(evt);
+					if (finalTarget) {
+						var fakeEvt = ({});
+						// Maybe better to do a for (var prop in evt) to construct fakeEvt?
+						// Hmm no that acts weird, only showing properties for evt which I
+						// have already read!
+						// OK then let's just set the ones we know we need:
+						fakeEvt.target = finalTarget;
+						fakeEvt.clientX = evt.clientX;
+						fakeEvt.clientY = evt.clientY;
+						/* if (evType != "mousemove") {
+							log("Performing "+evType+" on "+fakeEvt.target);
+						} */
+						return handlerFn(fakeEvt);
+					}
+			},true);
+		}
 	}
 
 }
@@ -709,10 +755,11 @@ if (showTooltips) {
 function createScoreSpan(resultObj) {
 	var scoreSpan = document.createElement("span");
 	if (resultObj.total_posts) {
-		var text = resultObj && resultObj.total_posts;
+		var text = resultObj && addCommasToNumber(resultObj.total_posts);
 		scoreSpan.appendChild(boldTextElement(text));
-		var greatness = 0.2 + 0.6 * Math.log(resultObj.total_posts) / Math.log(10000);
-		scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
+		var greatness = 80 - 30 * Math.log(resultObj.total_posts) / Math.log(10000);
+		// scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
+		scoreSpan.style.backgroundColor = "hsl(240,70%,"+greatness+"%)";
 	}
 	scoreSpan.style.color = 'white';
 	scoreSpan.style.fontWeight = 'bold';
@@ -725,7 +772,9 @@ function createScoreSpan(resultObj) {
 		tagArray.sort( function(a,b) {
 				return resultObj.top_tags[a] < resultObj.top_tags[b];
 		});
-		scoreSpan.title = tagArray.join(", ");
+		// scoreSpan.title = tagArray.join(", ");
+		// scoreSpan.title = "Popularity: "+addCommasToNumber(resultObj.total_posts) + " Tags: "+tagArray.join(", ");
+		scoreSpan.title = addCommasToNumber(resultObj.total_posts)+" "+tagArray.join(", ");
 	}
 	return scoreSpan;
 }
@@ -750,44 +799,43 @@ if (lookupCurrentPage) {
 
 var lookupSpeed = 50;
 
-			function addLabel(link) {
-				var sameHost = (link.host==document.location.host);
-				var badHost = (link.host=="webcache.googleusercontent.com") || (link.host.match(".google.com"));
-				var goodUrl = startsWith(link,"http://") || startsWith(link,"https://") || (""+link).indexOf(":")==-1; // skip any "about:config" or "javascript:blah" links
-				var isSearch = link.href.indexOf("?")>-1;
-				if (link.href && !sameHost && !badHost && goodUrl && !isSearch) {
+function addLabel(link) {
+	var sameHost = (link.host==document.location.host);
+	var badHost = (link.host=="webcache.googleusercontent.com") || (link.host.match(".google.com"));
+	var goodUrl = startsWith(link,"http://") || startsWith(link,"https://") || (""+link).indexOf(":")==-1; // skip any "about:config" or "javascript:blah" links
+	var isSearch = link.href.indexOf("?")>-1;
+	if (link.href && !sameHost && !badHost && goodUrl && !isSearch) {
 
-					// TODO: I fear link may not be caught inside the closure
-					function addAnnotationLabel(resultObj,subjectUrl,evt){
-						// log("Adding annotation for "+link.href+" with result "+uneval(resultObj));
-						if (resultObj && resultObj.total_posts) {
-							var newDiv = createScoreSpan(resultObj);
-							var text = " " + (resultObj && resultObj.total_posts) + " ";
-							// BUG TODO: Sometimes the left or right space gets ignored, because we are in a span, and it merges with outer text
-							newDiv.textContent = text;
-							newDiv.style.marginLeft = '0.2em';
-							newDiv.style.marginRight = '0.4em';
-							newDiv.style.padding = '0.1em 0.2em 0.1em 0.2em';
-							// newDiv.style.padding = '0';
-							newDiv.style.verticalAlign = "middle";
-							// newDiv.style.verticalAlign = "super";
-							// newDiv.style.marginTop = '-1.5em'; // For "super", sometimes works.
-							// newDiv.style.marginBottom = '-1.5em'; // Try to not make our parent line grow taller
-							newDiv.style.opacity = 0.7;
-							// newDiv.style.fontSize = parseInt((greatness+0.1)*10)/10 + 'em';
-							newDiv.style.fontSize = '0.6em';
-							// newDiv.style.paddingBottom = "0.2em";
-							// newDiv.firstChild.style.backgroundColor = "hsv("+2/3+","+greatness+",0.8)";
-							link.parentNode.insertBefore(newDiv,link.nextSibling);
-							// link.parentNode.appendChild(newDiv);
-							// newDiv.addEventListener('mouseover',function(evt){ showResultsTooltip(resultObj,subjectUrl,evt); },false);
-							// newDiv.addEventListener('mouseout',hideTooltipMomentarily,false);
-						}
-					}
-
-					tryLookup(link.href,addAnnotationLabel);
-				}
+		function addAnnotationLabel(resultObj,subjectUrl,evt){
+			// log("Adding annotation for "+link.href+" with result "+uneval(resultObj));
+			if (resultObj && resultObj.total_posts) {
+				var newDiv = createScoreSpan(resultObj);
+				var text = " " + (resultObj && addCommasToNumber(resultObj.total_posts)) + " ";
+				// BUG TODO: Sometimes the left or right space gets ignored, because we are in a span, and it merges with outer text
+				newDiv.textContent = text;
+				newDiv.style.marginLeft = '0.2em';
+				newDiv.style.marginRight = '0.4em';
+				newDiv.style.padding = '0.1em 0.2em 0.1em 0.2em';
+				// newDiv.style.padding = '0';
+				newDiv.style.verticalAlign = "middle";
+				// newDiv.style.verticalAlign = "super";
+				// newDiv.style.marginTop = '-1.5em'; // For "super", sometimes works.
+				// newDiv.style.marginBottom = '-1.5em'; // Try to not make our parent line grow taller
+				newDiv.style.opacity = 0.7;
+				// newDiv.style.fontSize = parseInt((greatness+0.1)*10)/10 + 'em';
+				newDiv.style.fontSize = '0.6em';
+				// newDiv.style.paddingBottom = "0.2em";
+				// newDiv.firstChild.style.backgroundColor = "hsv("+2/3+","+greatness+",0.8)";
+				link.parentNode.insertBefore(newDiv,link.nextSibling);
+				// link.parentNode.appendChild(newDiv);
+				// newDiv.addEventListener('mouseover',function(evt){ showResultsTooltip(resultObj,subjectUrl,evt); },false);
+				// newDiv.addEventListener('mouseout',hideTooltipMomentarily,false);
 			}
+		}
+
+		tryLookup(link.href,addAnnotationLabel);
+	}
+}
 
 if (annotateAllLinks) {
 	(function(){
@@ -804,7 +852,7 @@ if (annotateAllLinks) {
 					lookupSpeed = 20;
 				}
 			} else {
-				log("Considered "+i+" links for annotation with Delicious labels.");
+				log("Considered "+i+" links on "+document.location+" for annotation with Delicious labels.");
 			}
 		}
 		doOne();
@@ -815,7 +863,7 @@ if (annotateAllLinks) {
 
 // == Cleanup old cached data == //
 
-if (Math.random() < 0.1) {
-	cleanupCache();
+if (Math.random() < 10.1) {
+	setTimeout(cleanupCache,15000);
 }
 

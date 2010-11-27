@@ -6,10 +6,9 @@
 // @include        http://*.userscripts.org/*
 // ==/UserScript==
 
-// I don't play Travian or use Orkut.  Get the hell away from me!
-
 // Sometimes the text touches the edge of the browser, which looks naff.
-document.body.style.padding = '6px';
+document.body.style.paddingLeft = '4px';
+document.body.style.paddingRight = '4px';
 
 // Userscripts.org search engine sucks.  Let's use Google.
 function doSearch(evt){
@@ -22,9 +21,27 @@ function doSearch(evt){
 	}
 	return false;
 }
+function fancyInput(evt){
+	var target = evt.target;
+	if (target.tagName == "INPUT") {
+		GM_log("Working on "+target+" with name="+target.name+" and value=\""+target.value+"\" and defaultValue=\""+target.defaultValue+"\"");
+		if (target.value && !target.defaultValue) {
+			target.defaultValue = target.value;
+		}
+		if (target.value == target.defaultValue) {
+			target.value = "";
+			return;
+		} else if (target.value == "" && target.defaultValue) {
+			target.value = target.defaultValue;
+			return;
+		}
+	}
+}
 var searchForm = document.getElementById("script_search");
 var searchButton = document.getElementById("search-go");
+document.getElementById("script_q").value = "Search with Google";
 searchForm.addEventListener("submit",doSearch,true);
+searchForm.addEventListener("click",fancyInput,true); // We have to make our own if we want different text.  But @bug the old listener is still there.
 searchButton.addEventListener("click",doSearch,true);
 
 // Use color strength in the tag cloud:

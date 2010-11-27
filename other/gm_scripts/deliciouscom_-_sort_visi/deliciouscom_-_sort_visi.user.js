@@ -6,6 +6,8 @@
 // @include http://www.delicious.com/*
 // ==/UserScript==
 
+var duplicatePageNavigatorAtTop = true;
+
 var main_node = document.getElementById("bd");
 var postArr = [];
 var sortingDiv;
@@ -249,3 +251,31 @@ function addGlobalStyle(css) {
     style.innerHTML = css;
     head.appendChild(style);
 }
+
+// Added features ...
+if (duplicatePageNavigatorAtTop) {
+	var paginationDiv = document.getElementById("pagination");
+	var targetDiv = sortingDiv;
+	if (paginationDiv && targetDiv) {
+		paginationDiv.style.border = '0px';
+		paginationDiv.style.margin = '0px';
+		paginationDiv.style.padding = '0.3em 0.2em';
+		if (sortVisDiv) {
+			sortVisDiv.style.position = 'absolute';
+			sortVisDiv.style.top = '0.3em';
+			sortVisDiv.style.right = '0px';
+		}
+		var paginationClone = paginationDiv.cloneNode(true);
+		targetDiv.insertBefore(paginationClone,targetDiv.firstChild);
+		// Clear (remove) the "nnn Bookmarks" paragraph
+		if (paginationClone.lastChild.tagName == 'P') {
+			paginationClone.removeChild(paginationClone.lastChild);
+		}
+	}
+	var displayOptionsDiv = document.getElementById("displayOptions");
+	if (displayOptionsDiv) {
+		displayOptionsDiv.style.height = 'auto';
+		// Allows our child divs to take as much space as they need
+	}
+}
+

@@ -98,7 +98,7 @@ function () {
       else 
         profile='file://'+profile.replace(/Caches(\/Firefox)/i,"Application%20Support$1");
       setValue('profile',profile);
-      location.replace(profile+'bookmarks.html#scriptupdater'); //we need a file:/// page to get acsess to the scripts
+      (""+location).replace(profile+'bookmarks.html#scriptupdater'); //we need a file:/// page to get acsess to the scripts
     }
     if(location.href==profile+'bookmarks.html#scriptupdater') {
       document.body.innerHTML='';

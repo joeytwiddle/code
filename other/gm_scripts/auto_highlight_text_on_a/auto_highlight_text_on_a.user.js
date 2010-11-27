@@ -3,19 +3,39 @@
 // @namespace      search
 // @description    Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer.
 // @include        *
-/* We exclude sites who are already / already have good search tools. */
-// @exclude        http://*google*/
-// @exclude        http://*search*/
+// Exclude sites which already have satisfactory searching facilities.
+// @exclude        http://*.google.*/*
 // ==/UserScript==
 
+/** === Documentation ===
+//
+// Highlights the words you used in your search on the search result page and
+// on the page itself, by checking for CGI parameters in the Referrer.
+//
+// You can use this userscript to provide your own search terms by adding the following to the URL:
+//
+//   &search=my+words
+//   #search:my words
+//
+// One problem with the second method is that it doesn't work.  Firefox doesn't
+// refresh the page when we add an #anchor_tag.
+//
+**/
+
+/** === Developer Notes ===
+
+// TODO:
 // Don't highlight if >50 matches for the string :P
 // Don't highlight if string is a word already in the document's title.
 
-// TODO: Make any page a text-search result by accepting CGI parameters
+// TODO: Offer a float over the top with the words, their occurrence count,
+// clickable to cycle through each, or overall Previous/Next buttons + keyboard
+// shortcuts.
+
+// DONE: Make any page a text-search result by accepting CGI parameters
 // (possibly faked by the user) or accepting dialog input from the user as a
 // bookmarklet.
 
-/*
 // TODO:
 // Scroll down to (just above) first occurrence (in case our search terms do not appear until later in the document).
 // Provide at least minimal compatibility with common search term styles.
@@ -24,11 +44,8 @@
 // highlight if it's the whole phrase.)
 // Highlight the different words in different colors?
 // Highlight excluded terms (e.g. 'wheat' in q=food+-wheat) in red?
-*/
 
-if (document.location.host.match(/google/) && document.location.search.match(/q=/)) {
-	return;
-}
+*/
 
 function findSearchTerm(url) {
 	url = "" + url;
@@ -51,19 +68,29 @@ function findSearchTerm(url) {
 
 var words;
 
-words = findSearchTerm(document.location);
+// Check for user supplied #search
+words = document.location.href.replace(/.*#(search|highlight|hi|hl)[:= ]/,'');
+if (words == document.location.href)
+	words = "";
+// Check for current page CGI search terms
+if (!words)
+	words = findSearchTerm(document.location);
+// Check for referring page CGI search terms
 if (!words)
 	words = findSearchTerm(document.referrer);
-// I was prioritising referrer before, but that's messy if you perform a different search on Google! :P
+// I was prioritising referrer before, but that's messy: if you switch to a
+// different set of terms on the same search engine, the old set gets
+// highlighted!
 
 if (words) {
 
-	// GM_log("Searching for '"+words+"'...");
+	GM_log("Highlighting words: "+words);
 	/* window.status="Searching for '"+words+"'..."; */
 
 	/* This function taken from the "Highlight..." bookmarklet on SquareFree. */
 	var count = 0, text, dv;
 	var dv = document.defaultView;
+
 	function searchWithinNode(node, te, len){
 		var pos, skip, spannode, middlebit, endbit, middleclone;
 		skip = 0;
@@ -72,11 +99,14 @@ if (words) {
 			if(pos >= 0) {
 				spannode = document.createElement("SPAN");
 				spannode.className = node.className;
-				/* spannode.style.backgroundColor = "#ccffcc";
+				/*
+				// May be useful for other browsers:
+				spannode.style.backgroundColor = "#ccffcc";
 				spannode.style.setProperty('opacity','0.5');
 				spannode.style.setProperty('-moz-opacity','0.5');
-				spannode.style.setProperty('filter','alpha(opacity=50)'); */
-				spannode.setAttribute('style','background-color: #bbffbb; opacity: 0.7;');
+				spannode.style.setProperty('filter','alpha(opacity=50)');
+				*/
+				spannode.setAttribute('style','background-color: #ffff44; opacity: 0.7;');
 				middlebit = node.splitText(pos);
 				endbit = middlebit.splitText(len);
 				middleclone = middlebit.cloneNode(true);
@@ -86,26 +116,17 @@ if (words) {
 				skip = 1;
 			}
 		} else if (node.nodeType==1&& node.childNodes && node.tagName.toUpperCase()!="SCRIPT" && node.tagName.toUpperCase!="STYLE") {
-			for (var child=0; child < node.childNodes.length; ++child){
-				child=child+searchWithinNode(node.childNodes[child], te, len);
-			}
+			// setTimeout(function(){
+				for (var child=0; child < node.childNodes.length; ++child){
+					child = child + searchWithinNode(node.childNodes[child], te, len);
+				}
+			// },50);
 		}
 		return skip;
 	}
-	/*
-	searchWithinNode(document.body, text.toUpperCase(), text.length);
-	window.status="Found "+count+" occurrence"+(count==1?"":"s")+" of '"+text+"'.";
-	*/
 
 	words = unescape(words.replace(/\+/g,' '));
-	// window.status = "Got Words! \""+words+"\"";
-	/*
-	var splitWords = words.split(" ");
-	log("splitWords="+splitWords);
-	for (var text in splitWords) {
-	// Hmm we *can* loop it like an array but not with for..in
-	}
-	*/
+
 	while (words.indexOf(" ")>=0) {
 		var firstWord = words.substring(0,words.indexOf(" "));
 		words = words.substring(words.indexOf(" ")+1);
@@ -117,6 +138,6 @@ if (words) {
 	searchWithinNode(document.body, words.toUpperCase(), words.length);
 
 } else {
-	// window.status = "No search terms found in "+document.referrer+" or "+document.location;
+	// GM_log("No search terms found in "+document.referrer+" or "+document.location);
 }
 

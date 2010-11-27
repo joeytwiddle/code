@@ -48,6 +48,16 @@ for this page (maybe even associate with current tab somehow?!).
 
 //// TODOs ////
 
+Let's reduce data to only that we need.  ATM it's too much!
+Do this by waiting for onclik on an <A href>.  When caught, scan the document but only for same-group links as the one clicked.  Only these need go to the data.
+This will mean slowdown at page-load is gone, but we get some slowdown on link-click instead.
+
+Other sorts of history we want:
+Three icons providing drop-down lists:
+  - Recent Google Searches (tree of descendents)
+  - Recent history
+  - Recent history on this website
+
 We keep getting renderered according to the page styles.  We need to disable
 that, so that we look the same all the time!
 Provide <Previous and Next> buttons.
@@ -548,10 +558,13 @@ function showNeighbours() {
 	html += "<P style='padding-left: 16px;'>\n";
 	for (var i=0;i<group.length;i++) {
 		var link = group[i];
+		if (!link.title) {
+			link.title = "_"+i+"_";
+		}
 		if (showFavicons)
 			html += createFaviconHTMLFor(link.url);
 		if (urlsMatch(link.url,""+document.location)) {
-			html += "<B>"+escapeHTML(link.title)+"</B>";
+			html += "<FONT color='#7f7f7f'><B>"+escapeHTML(link.title)+"</B></FONT>";
 		} else {
 			// DONE: We should escape these link titles, but not with CGI escape()!
 			if (goForwards) {

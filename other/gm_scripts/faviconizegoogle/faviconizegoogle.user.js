@@ -17,6 +17,10 @@
 // It might be desirable to check each image actually exists/loads, or remove it.
 // Is that possible, without making an http request ourselves?
 
+// Third-party host URL detection is implemented leniently, and accordingly
+// hostname extraction implemented aggressively, which results in favicons
+// being given to unexpected things like bookmarklets which contain a site url.
+
 var placeFaviconByUrl = false;
 var placeFaviconAfter = false;
 var placeFaviconInsideLink = false;
@@ -43,6 +47,8 @@ function createFaviconFor(url) {
 	img.height = '16';
 	img.className = 'favicon';
 	img.border = 0;
+	img.style.display = 'none';
+	img.addEventListener('load',function(){ img.style.display = ''; },false);
 	return img;
 }
 
@@ -60,7 +66,7 @@ function getElementsByClassName(cN) {
 var links = getElementsByTagNameAndClassName("A",'l');
 // Allows it to work on any sites:
 if (links.length == 0)
-	links = getElementsByTagName("A");
+	links = document.getElementsByTagName("A");
 
 // GM_log("Got links = "+links.snapshotLength);
 

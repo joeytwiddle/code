@@ -44,7 +44,7 @@ function eekAMouse(evt) {
 		if (myFrame && myFrame.href == focus.href) {
 			showPreviewWindow(focus);
 		} else {
-			setTimeout(checkFocus,1000);
+			setTimeout(checkFocus,100);
 		}
 	} else {
 		window.status = "Already focused on a link wtf!";
@@ -54,7 +54,7 @@ function eekAMouse(evt) {
 function phewMouseGone(evt) {
 	focus = undefined;
 	// TESTING: Don't hide the popup if mouse is currently over the popup!
-	setTimeout(clearPopup,500);
+	setTimeout(clearPopup,50);
 }
 
 function clearPopup(e) {

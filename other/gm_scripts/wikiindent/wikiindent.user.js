@@ -9,7 +9,7 @@
 // ==/UserScript==
 
 //// Features:
-var hideSidebar = true;
+var hideSidebar = "auto";
 var makeTableOfContentsFloat = true;
 var indentSubBlocks = true;
 var fixUnderlinesToOverlines = true;
@@ -54,6 +54,7 @@ function doIt() {
 					evt.preventDefault();
 				// GM_log("evt="+evt);
 				// if (evt) GM_log("evt.target.tagName="+evt.target.tagName);
+				/* We put the GM_setValue calls on timers, so they won't slow down the rendering. */
 				if (column1) {
 					if (column1.style.display == '') {
 						// column-one contains a lot of things we want to hide
@@ -67,6 +68,9 @@ function doIt() {
 						// (the row of tools across the top):
 						if (cac)
 							column1.parentNode.insertBefore(cac,column1.nextSibling);
+						setTimeout(function(){
+							GM_setValue("sidebarHidden",true);
+						},300);
 					} else {
 						column1.style.display = '';
 						content.style.marginLeft = content.oldMarginLeft;
@@ -75,19 +79,24 @@ function doIt() {
 						}
 						if (cac && cacOldHome)
 							cacOldHome.appendChild(cac); // almost back where it was :P
+						setTimeout(function(){
+							GM_setValue("sidebarHidden",false);
+						},300);
 					}
 				}
 			}
 		}
 
-		log("column1="+column1+" and content="+content);
+		// log("column1="+column1+" and content="+content);
 		if (column1 && content) {
 			document.body.addEventListener('click',toggleWikipediaSidebar,false);
 		} else {
 			log("Did not have column1 "+column1+" or content "+content); // @todo Better to warn or error?
 		}
 
-		toggleWikipediaSidebar();
+    if (GM_getValue("sidebarHidden",false)) {
+      toggleWikipediaSidebar();
+    }
 
 		// TODO: Make a toggle button for it!
 
@@ -116,7 +125,51 @@ function doIt() {
 
 		// document.getElementById('column-one').appendChild(document.getElementById('toc'));
 
-		setTimeout(function(){
+		function createFader(toc) {
+
+			var timer = null;
+
+			// BUG: this didn't stop the two fades from conflicting when the user wiggles the mouse to start both!
+			function resetTimeout(fn,ms) {
+				if (timer) {
+					clearTimeout(timer);
+				}
+				setTimeout(fn,ms);
+			}
+
+			function fadeElement(elem,start,stop,speed,current) {
+				if (current == null)
+					current = start;
+				if (speed == null)
+					speed = (stop - start) / 8;
+				if (Math.abs(current+speed-stop) > Math.abs(current-stop))
+					current = stop;
+				else
+					current = current + speed;
+				elem.style.opacity = current;
+				if (current != stop)
+					resetTimeout(function(){fadeElement(elem,start,stop,speed,current);},50);
+			}
+
+			var listenElement = toc;
+			// var listenElement = toc.getElementsByTagName('TD')[0];
+			var focused = false;
+			var visible = false;
+			listenElement.addEventListener('mouseover',function(){
+				if (!visible)
+					setTimeout(function(){ if (focused) { fadeElement(toc,0.4,1.0,0.2); visible=true; } },10);
+				focused = true;
+			},false);
+			listenElement.addEventListener('mouseout',function(){
+				if (visible)
+					setTimeout(function(){ if (!focused) { fadeElement(toc,1.0,0.2,-0.1); visible=false; } },10);
+				focused = false;
+			},false);
+
+		}
+
+
+		function tryTOC() {
 
 			// Find the table of contents element:
 			var toc = document.getElementById("toc")   /* MediaWiki */
@@ -138,54 +191,31 @@ function doIt() {
 
 				createFader(toc);
 
-				function createFader(toc) {
-
-					var timer = null;
-
-					// BUG: this didn't stop the two fades from conflicting when the user wiggles the mouse to start both!
-					function resetTimeout(fn,ms) {
-						if (timer) {
-							clearTimeout(timer);
-						}
-						setTimeout(fn,ms);
-					}
-
-					function fadeElement(elem,start,stop,speed,current) {
-						if (current == null)
-							current = start;
-						if (speed == null)
-							speed = (stop - start) / 8;
-						if (Math.abs(current+speed-stop) > Math.abs(current-stop))
-							current = stop;
-						else
-							current = current + speed;
-						elem.style.opacity = current;
-						if (current != stop)
-							resetTimeout(function(){fadeElement(elem,start,stop,speed,current);},50);
-					}
-
-					var listenElement = toc;
-					// var listenElement = toc.getElementsByTagName('TD')[0];
-					var focused = false;
-					var visible = false;
-					listenElement.addEventListener('mouseover',function(){
-						if (!visible)
-							setTimeout(function(){ if (focused) { fadeElement(toc,0.4,1.0,0.2); visible=true; } },10);
-						focused = true;
-					},false);
-					listenElement.addEventListener('mouseout',function(){
-						if (visible)
-							setTimeout(function(){ if (!focused) { fadeElement(toc,1.0,0.2,-0.1); visible=false; } },10);
-						focused = false;
-					},false);
-
-				}
+				return true;
 
 			}
 
-		},20);
+			return false;
+
+		}
+
+		// We try to act before # anchor position occurs, but if not we
+		// fire later in case the toc loads slowly.
+		if (!tryTOC()) {
+			setTimeout(tryTOC,400);
+		}
 
 	}
+
+
+
+	// In case you have * in your includes, only continue for pages which have
+	// "wiki" before "?" in the URL, or who have both toc and content elements.
+	var isWikiPage = document.location.href.split("?")[0].match("wiki")
+		|| ( document.getElementById("toc") && document.getElementById("content") );
+
+	if (!isWikiPage)
+		return;
 
 
 
@@ -224,7 +254,9 @@ function doIt() {
 			}
 		}
 
-		indent("H1"); indent("H2"); indent("H3"); indent("H4"); indent("H5"); indent("H6");
+		setTimeout(function(){
+			indent("H1"); indent("H2"); indent("H3"); indent("H4"); indent("H5"); indent("H6");
+		},200);
 
 	}
 

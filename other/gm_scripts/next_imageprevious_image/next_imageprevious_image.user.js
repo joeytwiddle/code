@@ -7,30 +7,39 @@
 // @include *
 // ==/UserScript==
 
+// This still has bugs on flickriver
+// Notably, sometimes the backwardButton will return us to the top image =/
+// However, you can use <Space> and <Backspace> on flickriver instead of this script!
+
 (function(){
-  var rButton = 114;
-  var fButton = 102;
+  // var forwardButton = 102; // F
+  // var backwardButton = 114; // R
+  var forwardButton = 110; // N
+  var backwardButton = 112; // P
   var positions = [];
   
   document.addEventListener('keypress', function(event){
     if (event.ctrlKey || event.shiftKey || event.altKey) return;
     var code = event.keyCode || event.which;
-    if (code != rButton && code != fButton) return;
+    if (code != backwardButton && code != forwardButton) return;
     if (event.target.tagName && event.target.tagName.match(/input|select|textarea/i)) return;
 
-    // if (positions.length == 0) {
+    positions = []; // force rescan every time
+    if (positions.length == 0) {
       for (var index = 0; index < document.images.length; index++) {
         var image = document.images[index];
         if (image.width < 200 || image.height < 200) continue;
         positions.push([index, getYOffset(image)]);
       }
-    // }
+    }
 
     var scroll = Math.max(document.documentElement.scrollTop, document.body.scrollTop);
 
-    if (code == fButton) {
+    // if (code == forwardButton) {
       for (index = 0; index < positions.length; index++) {
         if (positions[index][1] - scroll <= 0) continue;
+        if (code == backwardButton)
+          index-=2;
         if (scroll == document.documentElement.scrollTop) {
           document.documentElement.scrollTop = positions[index][1];
         } else {
@@ -38,6 +47,7 @@
         }
         return;
       }
+    /*
     } else {
       for (index = positions.length - 1; index >= 0; index--) {
         if (positions[index][1] - scroll >= 0) continue;
@@ -49,6 +59,7 @@
         return;
       }
     }
+    */
     
   }, false);
   

@@ -7,25 +7,24 @@
 // @exclude        http://www.deezer.com/*
 // @exclude        http://www.spotify.com/*
 // @exclude        http://youtube.*/*
+// @exclude        http://demoscene.tv/*
 // @exclude        http://*.other.sites/where/we/want/to/leave/the/page/running
 // ==/UserScript==
 
 ////// Config //////
 
-var idleSeconds = 10;       // Page will cleanup if mouse has been outside it
-                            // for this many seconds.  Or if you set
-                            // detectWhenIdle=false, page will cleanup this
-                            // many seconds after loading.
+var stopJavascriptTimers = true;
+var removePlugins        = true;
 
-var detectWhenIdle = true;  // detectWhenIdle is much more user-friendly,
-                            // although a bit more complicated.
-                            // If set to false, cleanup will be performed
-                            // automatically after idleSeconds.
-                            // If set to true, cleanup is performed after
-                            // user has left page idle for idleSeconds.
+var alwaysCleanup = false;  // If this is set to false, then we try to detect
+                            // when the user has left the tab and not returned,
+                            // before performing cleanup.
 
-var reTrigger = false;      // Resume idle detection if the user restores a
-                            // hidden element.
+var idleSeconds = 10;       // Page will cleanup this many seconds after going
+                            // idle (or after loading, if alwaysCleanup is set)
+
+var reTrigger = true;       // Resume idle detection if the user moves back
+                            // into the window, or restores a hidden element.
 
 var beAggressive = true;    // If set, will cleanup a newly loaded page if it
                             // receives no mouse signals at all after loading.
@@ -34,8 +33,8 @@ var beAggressive = true;    // If set, will cleanup a newly loaded page if it
                             // will occur!
                             // Without beAggressive, tabs opened in the
                             // background, or pages which finished loading
-                            // after you switched away from Firefox, will not
-                            // be marked idle.
+                            // after you switched away from thr browser, will
+                            // not be marked idle.
 
                             // When attempting idle detection, if the user
                             // does not move the mouse over the page at all
@@ -51,19 +50,15 @@ var beAggressive = true;    // If set, will cleanup a newly loaded page if it
                             // reading, *after* it has finished loading.  (We
                             // often do this naturally during normal browsing.)
 
-var stopJavascriptTimers = true;
-var removePlugins = true;
-var showInfoInTitle = true; // Handy for debugging/watching Reclaim_CPU working.
+var showInfoInTitle = true; // Handy for debugging this script.
 
 
 
 /* ////// Documentation //////
 
-// As far as Reclaim_CPU is concerned, moving the mouse anywhere outside the
-// page is "going idle".  So don't hover on the toolbar if you don't want the
-// page to cleanup.  I think it might also be true that if you don't move your
-// mouse at all after the page has completed loading (when the script starts),
-// it will think you are idle.
+// NOTE: As far as Reclaim_CPU is concerned, moving the mouse anywhere outside
+// the *page* is going idle.  So hovering on the toolbar, scrollbar, or
+// statusbar can triggle idle-cleanup.
 
 // NOTE: One source of CPU hog not handled by Reclaim_CPU script is animated
 // gifs.  Firefox has an option to stop animated gifs after one cycle.  You may
@@ -73,17 +68,27 @@ var showInfoInTitle = true; // Handy for debugging/watching Reclaim_CPU working.
 // and Firefox itself.
 
 // NOTE: Reclaim_CPU will only cleanup pages which automatically refresh
-// themselves, IF the idleSeconds triggers cleanup *before* the page reloads
+// themselves, IF cleanup is triggered by idleSeconds *before* the page reloads
 // itself!
 
-// NOTE: If you use Flashbock to load a plugin *after* Reclaim CPU has cleaned
-// up the page, it won't know, so it won't clean it up if you go idle later.
+// NOTE: If you use Flashbock to hide plugins *before* Reclaim CPU has loaded,
+// it will not know about them, so will not be able to clean them up, if you do
+// choose to open them.
+// Reclaim_CPU only handles plugins which were in the DOM when it loaded.
 
 */
 
 
 
 /* ////// Developer notes / Changes / Todos //////
+
+UI is good except when we:
+  1) Destroy Flash apps if the user has started watching/listening to it, then
+  wandered off the page.
+  2) Destroy a Flash app after user has gone back to the page and restored it!
+We cannot expect the user to add a new @exclude rule when they stumble across a
+site where they want to keep the JS/Flash running.  (Actually really
+Greasemonkey needs this!)
 
 TODO: The title 'theme' for showing whether a window is Clean or not should be
 a leading "- " or some other symbol when unclean, or nothing when clean :)
@@ -163,23 +168,29 @@ user returns to the window.
 
 ////// Libraries //////
 
-var showInfo = ({});
-showInfo.showClean = function () {
-	showInfo.newInfo("");
+var ShowInfo = {
+	showClean: function () {
+		ShowInfo.newInfo(""); // "[Clean] "
+	},
+	showInUse: function () {
+		ShowInfo.newInfo("# "); // "[Active] "
+	},
+	showIdle: function () {
+		ShowInfo.newInfo(". "); // "[Idle] "
+	},
+	newInfo: function (newPre) {
+		if (!showInfoInTitle)
+			return;
+		// We intentionally get info from the frame document, but set the toplevel title.
+		// window.document.title = newPre + document.title.replace(/^([Active] |[Clean] |[Idle] )/,'');
+		// window.document.title = newPre + document.title.replace(/^([*] |[=] |[.] |[:] )/,'');
+		window.document.title = newPre + document.title.replace(/^[*=.:+#?] /,'');
+	}
 };
-showInfo.showInUse = function () {
-	showInfo.newInfo("* ");
-};
-showInfo.showIdle = function () {
-	showInfo.newInfo(". ");
-};
-showInfo.newInfo = function (newPre) {
-	if (!showInfoInTitle)
-		return;
-	// We intentionally get info from the frame document, but set the toplevel title.
-	window.document.title = document.title.replace(/^([*] |[=] |[.] )/,'');
-	window.document.title = newPre + document.title;
-};
+
+if (typeof GM_log === 'undefined') {
+	GM_log = function() { };
+}
 
 
 
@@ -196,10 +207,8 @@ function cleanupCPUHoggers() {
       removeNastyElements();
 
 	window.status = report;
-	if (GM_log) {
-		// GM_log("On \""+document.title+"\": "+report);
-		GM_log(report);
-	}
+   // GM_log("On \""+document.title+"\": "+report);
+   GM_log(report);
 
 	/*
 	var d = document.createElement('DIV');
@@ -209,7 +218,7 @@ function cleanupCPUHoggers() {
 	document.body.insertBefore(d,document.body.firstChild);
 	*/
 
-	showInfo.showClean();
+	ShowInfo.showClean();
 
 }
 
@@ -324,13 +333,19 @@ function destroyNasty(node) {
 
 function initTimer() {
 
-	if (!detectWhenIdle) {
+	if (alwaysCleanup) {
 
+		ShowInfo.showIdle();
 		//// Cleanup automatically at fixed time after page has loaded.
 		setTimeout(cleanupCPUHoggers,idleSeconds*1000);
-		showInfo.showIdle();
 
 	} else {
+
+		if (beAggressive) {
+			ShowInfo.showIdle();
+		} else {
+			ShowInfo.showInUse();
+		}
 
 		//// Detect when page is idle (no longer in focus), and cleanup then.
 
@@ -352,12 +367,18 @@ function initTimer() {
 				// Actually let's leave our listeners on.  Cleanup can be retriggered by a new mouseover.
 				if (!reTrigger) {
 					removeListeners();
+				} else {
+					// For debugging purposes, only enable titling during first incarnation
+					// showInfoInTitle = false;
+					ShowInfo.showInUse = function () {
+						ShowInfo.newInfo("+ ");
+					};
 				}
 			} else {
 				if (mouseHasLeft) {
 					// GM_log("Unusual: Mouse has left but checkIdle() has triggered with idleTime only "+idleTime+".  Waiting..."); // Not so unusual really - it just means the user has wiggled their mouse over the edge: out, in, out.
 					if (timerRunning) {
-						GM_log("Blimey: Another timer started while checkIdle() was running!");
+						GM_log("Blimey: Another timer started while checkIdle() was running!  That shouldn't have happened!");
 					} else {
 						timerRunning = true;
 						setTimeout(checkIdle,idleSeconds*1000); // Let's check again later
@@ -370,7 +391,7 @@ function initTimer() {
 		// DONE: We don't actually need to run the checkIdle timer at all, until the mouse has left!
 
 		var watchMouseMove = function(e) {
-         if (mouseHasLeft) { showInfo.showInUse(); }
+         if (mouseHasLeft) { ShowInfo.showInUse(); }
 			mouseHasLeft = false;
 			lastSawMouse = new Date().getTime();
 			// idleInfo.textContent = "(" + e.pageX + "," + e.pageY + ")";
@@ -393,7 +414,7 @@ function initTimer() {
 				return false;
          }
 			if (!mouseHasLeft) {
-				showInfo.showIdle();
+				ShowInfo.showIdle();
 				if (timerRunning) {
 					// Don't start a timer - we have one!
 				} else {
@@ -407,10 +428,12 @@ function initTimer() {
 			// idleInfo.textContent = "Mouse has left the window.";
 			// GM_log("Mouse has left the "+e.target.tagName);
 			return false;
-		}
+		};
 
 		var listenElement = window; // For FF
-		// var listenElement = document.body; // For Konq
+		if (window.navigator.appVersion.match(/KHTML/)) {
+			var listenElement = document.body; // For Konqueror and Chrome
+		}
 		//// Testing:
 		// for (var i=0;i<document.body.childNodes.length;i++) { var listenElement = document.body.childNodes[i]; /* ... */ }
 
@@ -453,10 +476,10 @@ function initTimer() {
 		if (beAggressive) {
 			mouseHasLeft = true;
 			// setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
-			// We could stall this until document.load event, IF page has not already loaded.
-			document.addEventListener("load",function(evt){
+			// We stall our checks until document.load has completed.
+			window.addEventListener("load",function(evt){
 				if (mouseHasLeft) {
-					showInfo.showIdle();
+					ShowInfo.showIdle();
 					timerRunning = true;
 					setTimeout(checkIdle,(idleSeconds-0.5)*1000); // -0.5 so it should run twice at least
 				}

@@ -7,41 +7,45 @@
 // @include        http://google.*/*q=*
 // @exclude        http://www.google.*/images*
 // @exclude        http://google.*/images*
-// @version        0.9.9.8
+// @version        2010.10.06
 // ==/UserScript==
 
 
 
-/* === Changelog ===
- *
- * 0.9.9.8
- *
- *   * Works with the new format (that sidebar thingy)
- *   * Set createPanelLater = true
- *   * TODO: Fails to suck in the bottom of the page, sorry.
- *   * TODO: Work with Google's new Ajax auto results update when search term is edited.
- *
- * 0.9.9.7
- *
- *   * fixed some bugs, created some new ones
- *
- * 0.9.9.6
- *
- *   * checkerRows, loadEarly, renderLikeTabs
- *
- * 0.9.9.5
- *
- *   * Borders, clearFrameWhenLeaving, and enough comments to keep you reading
- *     until next release.
- *
- * ==== /Changelog === */
+// === Changelog ===
+//
+// 2010.10.06
+//
+//   * ...
+//
+// 0.9.9.8
+//
+//   * Works with the new format (that sidebar thingy)
+//   * Set createPanelLater = true
+//   * TODO: Fails to suck in the bottom of the page, sorry.
+//   * TODO: Work with Google's new Ajax auto results update when search term is edited.
+//
+// 0.9.9.7
+//
+//   * fixed some bugs, created some new ones
+//
+// 0.9.9.6
+//
+//   * checkerRows, loadEarly, renderLikeTabs
+//
+// 0.9.9.5
+//
+//   * Borders, clearFrameWhenLeaving, and enough comments to keep you reading
+//     until next release.
+//
+// ==== /Changelog ===
 
 
 
 //// Settings ////
 
 var previewWidth    = 0.75;    // Width of the preview pane (proportion of window width).
-var gapBelow        = 124;      // Space left below panes (pixels).
+var gapBelow        = 144;      // Space left below panes (pixels).
 var fillWholeWindow = true;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Do not bring the top of the page in.  (BUG: has little effect on new google)
 
@@ -53,7 +57,7 @@ var linksActNormally = true;   // clicking directly on a link skips the preview 
                                // TODO: if this=true and we are hovering a link, then DON'T highlight!
 
 // Reformatting
-var miniLogo        = true;    // miniLogo or removeLogo can help to reduce the
+var miniLogo        = false;    // miniLogo or removeLogo can help to reduce the
 var removeLogo      = false;   // width and the height of the header.
 var reduceWidth     = true;    // Try lots of little things to make things fit into the left pane.
 var reduceTextSize  = true;    // Reduce size of text in results area (maybe also top).
@@ -291,26 +295,7 @@ function initPreview() {
 		//// This pause fixes the window's horizontal scrollbar without increasing gapBelow.
 		setTimeout(setDimensions,1);
 
-		// Fix things for new sidebar layout:
-		// Works outside of Greasemonkey:
-		function addSomeCSS(css) {
-			var doc = document;
-			var head = doc.getElementsByTagName("head")[0];
-			GM_log("head = "+head);
-			if (!head) { return; }
-			var style = doc.createElement("style");
-			style.type = "text/css";
-			style.innerHTML = css;
-			head.appendChild(style);
-		}
-		if (typeof GM_addStyle == 'undefined') {
-			this.GM_addStyle = addSomeCSS;
-		}
-		GM_addStyle("#cnt { max-width: 9999999px; }");
-		// GM_addStyle("#center_col { margin-right: 0px; }");
-		// GM_addStyle("#center_col { margin-right: 0px; }");
-		GM_addStyle("#leftnav { display: none; }");
-		GM_addStyle("#center_col, #foot { margin-left: 0px; margin-right: 0px; }");
+		removeSidebar();
 
 		reformatThingsLater();
 
@@ -344,7 +329,7 @@ function initPreview() {
 			return null;
 		}
 
-		// If user is hovering over startNode, which parent block can we highlight?
+		// If user is hovering over startNode, which parent block should we highlight?
 		// This could be re-written (to work better with Delicious Results for example)
 		function getContainer(startNode) {
 			/*
@@ -415,9 +400,9 @@ function initPreview() {
 				// }
 				return null;
 			} else {
-				// If we are over a link, we may still want to ascend to the parent LI, but
-				// only if its first link child is us.
-				if (link.className == "l") {
+				// If we are over a class 'l' link, we may still want to ascend to
+				// the parent LI, but only if its first link child is us.
+				if (hasClass(link,"l")) {
 					var li = getAncestorByTagName(startNode,"LI");
 					if (li) {
 						var lowerLinks = li.getElementsByTagName("A");
@@ -522,12 +507,14 @@ function initPreview() {
 				// realHighlightNode(container,'#ddeeff');
 				// realHighlightNode(link,'#ccddee');
 				// GM_log("Got link = "+link);
-				if (!previewFrame) {
-					createPreviewFrame();
-				}
-				previewFrame.src = link.href;
-				// lastPreview = lastHover;
-				lastPreview = container; // normalises - two different nodes might both hit the same container
+				setTimeout(function(){
+					if (!previewFrame) {
+						createPreviewFrame();
+					}
+					previewFrame.src = link.href;
+					// lastPreview = lastHover;
+					lastPreview = container; // normalises - two different nodes might both hit the same container
+				},10);
 				return true;
 			}
 			return false;
@@ -537,6 +524,8 @@ function initPreview() {
 			helloMouse(evt); // Without this sometimes we fail to activate because we receive click before mouseover (or for some reason didn't get a mouseover).
 			var node = evt.target;
 			var overLink = ( node.tagName=="A" ? node : getAncestorByTagName(node,"A") );
+			if (overLink)
+				GM_log("overLink = "+getXPath(overLink)+" container="+getXPath(getContainer(overLink)));
 			if (linksActNormally && overLink && getContainer(overLink) != overLink) {
 				return;   // The user could have previewed this by clicking the
 							 // background, but since the user actually clicked the
@@ -567,6 +556,7 @@ function initPreview() {
 					if (checkFocus()) {
 						// OK we set focus, preview is loading.
 						evt.preventDefault();
+						GM_log("Previewing");
 					} else {
 						// Well we didn't want to focus this node.
 						// Let's pass the event to other elements.
@@ -588,6 +578,7 @@ function initPreview() {
 							//// The failure occurred when trying a second click on the first result of
 							//// "google reader help", maybe the IFrame messed with the top window?
 						}
+						GM_log("Dropout link="+getXPath(link));
 					}
 				}
 			}
@@ -681,12 +672,14 @@ function findIndexOf(item,list) {
 }
 
 function getXPath(elem) {
+	if (!elem)
+		return "[Null elem]";
 	var list = document.getElementsByTagName(elem.tagName);
 	var index = findIndexOf(elem,list);
 	if (index>=0) {
 		return "(//"+elem.tagName+")["+(index+1)+"]";
 	} else {
-		throw new Error("Not found: "+elem+" in "+list);
+		throw new Error("Not found: "+elem+" in "+list);   // e.g. it has not yet been added to the document's DOM.
 	}
 }
 
@@ -701,6 +694,10 @@ function showSelected(elem) {
 		elem.style.borderRight = '2px solid ' + Colors.selected.bg;
 		elem.style.paddingRight = '8px';
 	}
+}
+
+function hasClass(elem,cla) {
+	return new RegExp("(^|\\s)"+cla+"(\\s|$)").test(elem.className);
 }
 
 function showUnselected(elem) {
@@ -766,14 +763,11 @@ function reformatThings() {
 
 	if (hideSponsoredLinks) {
 		// The "Sponsored Links" block can get in the way.
-		var toKill = document.getElementById("mbEnd");
-		if (toKill) {
-			toKill.parentNode.removeChild(toKill);
-		}
-		toKill = document.getElementById("tads");
-		if (toKill) {
-			toKill.parentNode.removeChild(toKill);
-		}
+		var toKill = document.getElementsByClassName("std");
+		toKill.push(document.getElementById("mbEnd"));
+		toKill.push(document.getElementById("tads"));
+		for (var i=0;i<toKill.length;i++)
+			toKill[i].parentNode.removeChild(toKill[i]);
 	}
 
 }
@@ -851,7 +845,11 @@ function reformatThingsLater() {
 	}
 
 	if (reduceTextSize) {
-		// BUG TODO: In Chrome and Firefox, when doing this while zoomed IN, it increases the size of the fonts.
+		// BUG TODO: In Chrome and Firefox, when doing this while zoomed IN, it
+		// increases the size of the fonts.  We may need to parse whether oldSize
+		// was specified in "em" or "px" or "" or something else.  The units will
+		// affect how difference should operate on them.  (Percentage would be
+		// better than adjusting by some fixed amount.)
 		// var log = "";
 		function resizeTextNode(node,difference) {
 			for (var child=node.firstChild; (child); child = child.nextSibling) {
@@ -907,8 +905,35 @@ function reformatThingsLater() {
 
 }
 
+// Add GM_addStyle so this script doesn't break outside GreaseMonkey.
+function addSomeCSS(css) {
+	var head = document.getElementsByTagName("head")[0];
+	if (!head) { return; }
+	var style = document.createElement("style");
+	style.type = "text/css";
+	style.innerHTML = css;
+	head.appendChild(style);
+}
+if (typeof GM_addStyle == 'undefined') {
+	this.GM_addStyle = addSomeCSS;
+}
+
+// Removes the new sidebar and its layout
+function removeSidebar() {
+	GM_addStyle("#cnt { max-width: 9999999px; }");
+	// GM_addStyle("#center_col { margin-right: 0px; }");
+	// GM_addStyle("#center_col { margin-right: 0px; }");
+	GM_addStyle("#leftnav { display: none; }");
+	GM_addStyle("#center_col, #foot { margin-left: 0px; margin-right: 0px; }");
+
+	if (document.getElementById("vspb")) {
+		document.getElementById("vspb").style.display = 'none';
+	}
+}
 
 
+
+removeSidebar();
 //// Instantiation ////
 
 var earlyResultsBlock = getResultsBlock();

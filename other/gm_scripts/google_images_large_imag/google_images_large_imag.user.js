@@ -2,10 +2,10 @@
 // @name           Google Images Large Images
 // @namespace      http://amzn1995.googlepages.com
 // @description    Lets you see the images on images.google.com in full size by hovering over them.
-// @include        http://images.google.com/*
-// @include        https://images.google.com/*
-// @include        http://images.google.co.uk/*
-// @include        https://images.google.co.uk/*
+// @include        http://images.google.*/*
+// @include        https://images.google.*/*
+// @include        http://www.google.*/images*
+// @include        https://www.google.*/images*
 // ==/UserScript==
 
 function getCGI(param) {
@@ -46,7 +46,7 @@ if (document.location.pathname == "/imgres") {
  * Dual licensed under the MIT (MIT-LICENSE.txt)
  * and GPL (GPL-LICENSE.txt) licenses.
  *
- * $Date: 2009/08/09 23:58:47 $
+ * $Date: 2010/11/27 21:06:28 $
  * $Rev: 5685 $
  */
 (function(){var _jQuery=window.jQuery,_$=window.$;var jQuery=window.jQuery=window.$=function(selector,context){return new jQuery.fn.init(selector,context);};var quickExpr=/^[^<]*(<(.|\s)+>)[^>]*$|^#(\w+)$/,isSimple=/^.[^:#\[\.]*$/,undefined;jQuery.fn=jQuery.prototype={init:function(selector,context){selector=selector||document;if(selector.nodeType){this[0]=selector;this.length=1;return this;}if(typeof selector=="string"){var match=quickExpr.exec(selector);if(match&&(match[1]||!context)){if(match[1])selector=jQuery.clean([match[1]],context);else{var elem=document.getElementById(match[3]);if(elem){if(elem.id!=match[3])return jQuery().find(selector);return jQuery(elem);}selector=[];}}else
@@ -130,29 +130,39 @@ var hoverInFunction = function (e) {
 			var mouseY = e.pageY;
 
 			// hide scrollbars if they would be in the way
-			$("body").css("overflow", "auto");
-			if (popImage.width > innerWidth - 16) {
-				$("body").css("overflow", "hidden");
-			}
+			// $("body").css("overflow", "auto");
+			// if (popImage.width > innerWidth - 16) {
+				// $("body").css("overflow", "hidden");
+			// }
 
 			// shrink image if wider than screen 
-			popImage.width = Math.min(popImage.width,innerWidth);
+			// popImage.width = Math.min(popImage.width,innerWidth);
+			var scaleDown = 1.0;
+			if (popImage.width > innerWidth-48)
+				scaleDown = (innerWidth-48) / popImage.width;
+			if (popImage.height > innerHeight-48)
+				scaleDown = Math.min(scaleDown, (innerHeight-48) / popImage.height);
+			if (scaleDown != 1.0) {
+				GM_log("Scaling down image to "+scaleDown);
+				popImage.width = popImage.width * scaleDown;
+				popImage.height = popImage.height * scaleDown;
+			}
 
 			// center image on mouse cursor
 			var x = mouseX - parseInt(popImage.width/2);
 			var y = mouseY - parseInt(popImage.height/2);
 
 			// move image down and right if off screen to the left or top
-			x = Math.max(x,pageXOffset);
-			y = Math.max(y,pageYOffset);
+			x = Math.max(x,pageXOffset+12);
+			y = Math.max(y,pageYOffset+12);
 
 			// move image up or left if off screen to the right or bottom
-			x = Math.min(x, pageXOffset + innerWidth - 17 - popImage.width);	
-			y = Math.min(y, pageYOffset + innerHeight - popImage.height);	
+			x = Math.min(x, pageXOffset + innerWidth - 17 - popImage.width - 12);	
+			y = Math.min(y, pageYOffset + innerHeight - popImage.height - 12);	
 
 			// move image down and right if off screen to the left or top
-			x = Math.max(x,pageXOffset);
-			y = Math.max(y,pageYOffset);
+			x = Math.max(x,pageXOffset + 12);
+			y = Math.max(y,pageYOffset + 12);
 
 			$(popImage.parentNode.parentNode).css('left',x);
 			$(popImage.parentNode.parentNode).css('top',y);
@@ -165,16 +175,23 @@ var hoverInFunction = function (e) {
 	$('body').append($(popDiv));
 };
 
-// assign hoverEvent to all resizable images 
-$("img").each(function(i) {
-	var imgsrc = $(this).attr("src");
-	if (/images\?q=/.test(imgsrc)) {
-		$(this).css('cursor','crosshair');
-		$(this).hoverIntent( hoverInFunction, function(){} );
-	}
-});	
+// Google Images now uses AJAX to load new set of results.
+// We should assign a hoverEvent to document, and check for resizable images.
 
+// For the moment we just delay the running until (hopefully) the AJAX is finished.
+
+setTimeout(function(){
+
+	// Original: assign hoverEvent to all resizable images 
+	$("img").each(function(i) {
+		var imgsrc = $(this).attr("src");
+		if (/images\?q=/.test(imgsrc)) {
+			$(this).css('cursor','crosshair');
+			$(this).hoverIntent( hoverInFunction, function(){} );
+		}
+	});
+
+},4000);
 
 });
-
 
