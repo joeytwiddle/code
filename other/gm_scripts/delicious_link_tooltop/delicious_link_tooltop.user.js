@@ -52,7 +52,7 @@ function animateScroller() {
 var oldLog = log;
 log = function(x) {
 	oldLog(x);
-	scrollText = scrollText + " ]=[ " + x;
+	scrollText = scrollText + "     " + x;
 	showScroller();
 };
 
@@ -290,6 +290,9 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 	if (dataCache[subjectUrl] != null && dataCache[subjectUrl]!=[]) {
 		// log("Got data for: "+subjectUrl);
 		// log("Had it cached: "+uneval(dataCache[subjectUrl])+" (Request:"+subjectUrl+")");
+		dataCache[subjectUrl].cacheCount++;
+		dataCache[subjectUrl].lastUsed = new Date().getTime();
+		GM_setValue("CachedResponse"+subjectUrl,uneval(dataCache[subjectUrl]));
 		onSuccess(dataCache[subjectUrl],subjectUrl);
 	} else {
 		dataCache[subjectUrl] = "working...";
@@ -297,14 +300,31 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 	}
 }
 
+function age(cachedRecord) {
+	if (cachedRecord.lastUsed == null) {
+		// log("Error: record has no date! "+uneval(cachedRecord));
+		return 0;
+	} else {
+		var ageInMilliseconds = (new Date().getTime() - cachedRecord.lastUsed);
+		// var ageInMonths = ageInMilliseconds / 86400 / 30;
+		var ageInDays = ageInMilliseconds / 86400;
+		// Avoid division by zero on current time, and future times
+		if (ageInDays <= 0.01)
+			ageInDays = 0.01;
+		return ageInDays;
+	}
+}
+
 function cleanupCache() {
 	if (typeof GM_listValues === 'undefined') {
 		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
 	} else {
+
 		var cacheList = GM_listValues();
+
 		// Rather casual method: Keep deleting records at random until we meet
 		// our max cache size.
-		// TODO: delete the oldest and least-used, keep new/popular entries
+		/*
 		while (cacheList.length > 512) {
 			var i = parseInt(Math.random() * cacheList.length);
 			// log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
@@ -313,6 +333,38 @@ function cleanupCache() {
 			cacheList[i] = cacheList[cacheList.length-1];
 			cacheList.length--;
 		}
+		*/
+
+		// Delete the oldest and least-used, keep new/popular entries
+		while (cacheList.length > 800) {
+			var poorestScore = 99999;
+			var poorestScorer = null;
+			for (var i=0;i<cacheList.length;i++) {
+				if (Math.random() < 0.25) // Only really scan quarter the record set
+					continue; // so we sometimes keep new (cacheCount=0) records
+				var crURL = cacheList[i]; // e.g. "CachedResponsehttp://..."
+				var url = crURL.replace(/^CachedResponse/,'');
+				if (dataCache[url] == null) {
+					dataCache[url] = eval(GM_getValue(crURL,"null"));
+				}
+				// All cached urls have a minimum score of 2.
+				var thisScore = (dataCache[url].cacheCount+2) / age(dataCache[url]);
+				if (!poorestScorer || thisScore < poorestScore) {
+					poorestScore = thisScore;
+					poorestScorer = crURL;
+					poorestScorerIndex = i;
+				}
+			}
+			if (poorestScorer == null)
+				break;
+			log("Cleaning up "+poorestScorer+" with age="+age(dataCache[poorestScorer])+" and count="+dataCache[poorestScorer].cacheCount); //  "+poorestScore);
+			// log("  Data: " + uneval(dataCache[poorestScorer]) );
+			GM_deleteValue(poorestScorer);
+			// cacheList = GM_listValues();
+			cacheList[poorestScorerIndex] = cacheList[cacheList.length-1];
+			cacheList.length--;
+		}
+
 	}
 }
 
