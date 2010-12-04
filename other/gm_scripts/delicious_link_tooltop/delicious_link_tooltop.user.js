@@ -31,14 +31,38 @@ var annotateAllLinks = true;
 function log(x) {
 	if (this.GM_log) {
 		GM_log(x);
-	}
-	if (this.console && console.log) {
+	} else if (this.console && console.log) {
 		console.log(x);
 	}
-	window.status = ""+x;
+	// window.status = ""+x;
 };
 
-// == Notes ==
+// == Silly scrolling logger == //
+var scrollText = "";
+
+function showScroller() {
+	window.status = scrollText.substring(0,240).replace(/\s/,' ','g');
+}
+
+function animateScroller() {
+	scrollText = scrollText.substring(1);
+	showScroller();
+}
+
+var oldLog = log;
+log = function(x) {
+	oldLog(x);
+	scrollText = scrollText + " ]=[ " + x;
+	showScroller();
+};
+
+setInterval(animateScroller,100);
+/*
+*/
+
+
+
+// == Notes == //
 
 // DONE: Rename script "Get Link Meta" or "Get Delicious Info for Links" or
 // "Delicious Link Tooltip" with an accidental typo then upload it.
@@ -221,7 +245,7 @@ var dataCache = ({});
 
 function doLookup(lookupURL,onSuccess,onFailFn) {
 	lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
-	// log("Requesting info for: "+lookupURL);
+	log("Requesting info for: "+lookupURL);
 	// We can use https here, but it is slower.
 	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
 	GM_xmlhttpRequest({
@@ -231,32 +255,20 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 			"Accept":"text/json"
 		},
 		onload: function(response) {
-			// log("Delicious responded: "+response.responseText);
-			var resultObj;
-			if (this.JSON) {
-				resultObj = JSON.parse(response.responseText); // JSON support is built into all major browsers now
-			}
-			if (!resultObj) {
-				log("WARNING! Using eval on: "+response.responseText);
-				resultObj = eval(response.responseText); // INSECURE!
-			}
+			log("Delicious responded: "+response.responseText);
+			// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+			var resultObj = eval(response.responseText); // INSECURE!
 			// TODO: Sometimes Delicious return "[]" but this gets evaled as an Object.
-			// This is hard for later code to detect, e.g. ==[] will not trigger!
+			// This is hard for later code to detect, e.g. ==[] does not trigger.
 			if (resultObj && resultObj[0] && resultObj[0].total_posts)
 				resultObj = resultObj[0];
-			if (!resultObj) { // TODO: put back? && stillFocused==link) {
-				// log("Failed to get result, may leave \"Working...\" in the DB but won't write it to storage.");
+			if (!resultObj && onFailFn) { // TODO: put back? && stillFocused==link) {
 				// Done: Shouldn't we put something non-null in the dataCache, to prevent repeat requests?
 				// Oh "Working..." is there.
-				log("Lookup for "+lookupURL+" failed.");
-				dataCache[lookupURL] = [];
-				if (onFailFn) {
-					onFailFn();
-				}
+				GM_log("Failed to get result, may leave \"Working...\" in the DB but won't write it to storage.");
+				onFailFn();
 			} else { // Got resultObj, or no onFailFn, or no longer focused
 				// Overwrite "working..." with the good or failed result
-				resultObj.cacheCount = 0; // not entirely neccessary
-				resultObj.lastUsed = new Date().getTime();
 				dataCache[lookupURL] = resultObj;
 				GM_setValue("CachedResponse"+lookupURL,uneval(resultObj));
 				// log("Got data for "+lookupURL+" meanwhile link="+link);
@@ -271,38 +283,6 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 	// onreadystatechange function to catch any failed requests.
 }
 
-var lookupQueue = [];
-
-function queueDoNext() {
-	if (lookupQueue.length>0) {
-		var nextTodo = lookupQueue[0];
-		lookupQueue = lookupQueue.slice(1);
-		nextTodo();
-	}
-}
-
-function queueLookup(subjectUrl,onSuccess,onFailure) {
-	var todo = function() {
-		doLookup(subjectUrl,function(){
-			onSuccess.apply(arguments);
-			if (lookupQueue[0] == todo)
-				lookupQueue = lookupQueue.slice(1);
-			queueDoNext();
-		},function(){
-			onFailure.apply(arguments);
-			if (lookupQueue[0] == todo)
-				lookupQueue = lookupQueue.slice(1);
-			queueDoNext();
-		});
-	};
-	if (lookupQueue.length == 0) {
-		lookupQueue.push(todo);
-		todo();
-	} else {
-		lookupQueue.push(todo);
-	}
-}
-
 function tryLookup(subjectUrl,onSuccess,onFailure) {
 	if (dataCache[subjectUrl] == null) {
 		dataCache[subjectUrl] = eval(GM_getValue("CachedResponse"+subjectUrl,"null"));
@@ -310,30 +290,10 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 	if (dataCache[subjectUrl] != null && dataCache[subjectUrl]!=[]) {
 		// log("Got data for: "+subjectUrl);
 		// log("Had it cached: "+uneval(dataCache[subjectUrl])+" (Request:"+subjectUrl+")");
-		if (!dataCache[subjectUrl].cacheCount)
-			dataCache[subjectUrl].cacheCount = 0;
-		dataCache[subjectUrl].cacheCount++;
-		dataCache[subjectUrl].lastUsed = new Date().getTime();
-		GM_setValue("CachedResponse"+subjectUrl,uneval(dataCache[subjectUrl]));
 		onSuccess(dataCache[subjectUrl],subjectUrl);
 	} else {
 		dataCache[subjectUrl] = "working...";
-		queueLookup(subjectUrl,onSuccess,null);
-	}
-}
-
-function age(cachedRecord) {
-	if (cachedRecord.lastUsed == null) {
-		// log("Error: record has no date! "+uneval(cachedRecord));
-		return 0;
-	} else {
-		var ageInMilliseconds = (new Date().getTime() - cachedRecord.lastUsed);
-		// var ageInMonths = ageInMilliseconds / 86400 / 30;
-		var ageInDays = ageInMilliseconds / 86400;
-		// Avoid division by zero on current time, and future times
-		if (ageInDays <= 0)
-			ageInDays = 0.000001;
-		return ageInDays;
+		doLookup(subjectUrl,onSuccess,null);
 	}
 }
 
@@ -341,12 +301,10 @@ function cleanupCache() {
 	if (typeof GM_listValues === 'undefined') {
 		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
 	} else {
-
 		var cacheList = GM_listValues();
-
 		// Rather casual method: Keep deleting records at random until we meet
 		// our max cache size.
-		/*
+		// TODO: delete the oldest and least-used, keep new/popular entries
 		while (cacheList.length > 512) {
 			var i = parseInt(Math.random() * cacheList.length);
 			// log("Deleting "+cacheList[i]+" length is currently "+cacheList.length);
@@ -355,37 +313,6 @@ function cleanupCache() {
 			cacheList[i] = cacheList[cacheList.length-1];
 			cacheList.length--;
 		}
-		*/
-
-		// Delete the oldest and least-used, keep new/popular entries
-		while (cacheList.length > 800) {
-			var poorestScore = 99999;
-			var poorestScorer = null;
-			for (var i=0;i<cacheList.length;i++) {
-				if (Math.random() < 0.25) // Only really scan quarter the record set
-					continue; // so we sometimes keep new (cacheCount=0) records
-				var crURL = cacheList[i]; // e.g. "CachedResponsehttp://..."
-				var url = crURL.replace(/^CachedResponse/,'');
-				if (dataCache[url] == null) {
-					dataCache[url] = eval(GM_getValue(crURL,"null"));
-				}
-				// All cached urls have a minimum score of 2.
-				var thisScore = (dataCache[url].cacheCount+2) / age(dataCache[url]);
-				if (!poorestScorer || thisScore < poorestScore) {
-					poorestScore = thisScore;
-					poorestScorer = crURL;
-					poorestScorerIndex = i;
-				}
-			}
-			if (poorestScorer == null)
-				break;
-			log("Cleaning up "+poorestScorer+" with score "+poorestScore);
-			GM_deleteValue(poorestScorer);
-			// cacheList = GM_listValues();
-			cacheList[poorestScorerIndex] = cacheList[cacheList.length-1];
-			cacheList.length--;
-		}
-
 	}
 }
 
@@ -491,7 +418,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	if (resultObj && resultObj.total_posts==1 /*&& resultObj.hash*/ &&
 			resultObj.url=="" && resultObj.title=="" &&
 			resultObj.top_tags.length==0) {
-		log("Got boring response: "+uneval(resultObj));
+		GM_log("Got boring response: "+uneval(resultObj));
 		resultObj = null;
 	}
 	// However I think this may be due to the fact that there are *private*
@@ -499,7 +426,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	// admitting that they even exist in its database!
 	// TODO: Test this theory!
 
-	if (resultObj && resultObj.total_posts) {
+	if (resultObj && resultObj!=[]) {
 
 		if (unescapeHTML(resultObj.url) != subjectUrl) {
 			tooltipDiv.style.backgroundColor = warn_bg_color;
@@ -595,7 +522,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		tooltipDiv.appendChild(topTable);
 
 		/* top_tags is a hashtable, it has no .length */
-		if (resultObj && resultObj.top_tags /* && resultObj.top_tags.length>0 */ ) {
+		if (resultObj.top_tags /* && resultObj.top_tags.length>0 */ ) {
 
 			// tooltipDiv.appendChild(document.createElement("BR"));
 
@@ -786,26 +713,24 @@ function initialiseTooltipListeners() {
 	addGlobalConditionalEventListener("mousedown",hideTooltip,linksOnly);
 
 	function addGlobalConditionalEventListener(evType,handlerFn,whereToFireFn) {
-		if (document.body) {
-			document.body.addEventListener(evType,function(evt){
-					// if (conditionFn(evt)) {
-					var finalTarget = whereToFireFn(evt);
-					if (finalTarget) {
-						var fakeEvt = ({});
-						// Maybe better to do a for (var prop in evt) to construct fakeEvt?
-						// Hmm no that acts weird, only showing properties for evt which I
-						// have already read!
-						// OK then let's just set the ones we know we need:
-						fakeEvt.target = finalTarget;
-						fakeEvt.clientX = evt.clientX;
-						fakeEvt.clientY = evt.clientY;
-						/* if (evType != "mousemove") {
-							log("Performing "+evType+" on "+fakeEvt.target);
-						} */
-						return handlerFn(fakeEvt);
-					}
-			},true);
-		}
+		document.body.addEventListener(evType,function(evt){
+				// if (conditionFn(evt)) {
+				var finalTarget = whereToFireFn(evt);
+				if (finalTarget) {
+					var fakeEvt = ({});
+					// Maybe better to do a for (var prop in evt) to construct fakeEvt?
+					// Hmm no that acts weird, only showing properties for evt which I
+					// have already read!
+					// OK then let's just set the ones we know we need:
+					fakeEvt.target = finalTarget;
+					fakeEvt.clientX = evt.clientX;
+					fakeEvt.clientY = evt.clientY;
+					/* if (evType != "mousemove") {
+						log("Performing "+evType+" on "+fakeEvt.target);
+					} */
+					return handlerFn(fakeEvt);
+				}
+		},true);
 	}
 
 }
@@ -824,16 +749,15 @@ if (showTooltips) {
 
 function createScoreSpan(resultObj) {
 	var scoreSpan = document.createElement("span");
-	if (resultObj && resultObj.total_posts) {
-		var text = resultObj && addCommasToNumber(resultObj.total_posts);
+	if (resultObj.total_posts) {
+		var text = resultObj && resultObj.total_posts;
 		scoreSpan.appendChild(boldTextElement(text));
-		var greatness = 80 - 30 * Math.log(resultObj.total_posts) / Math.log(10000);
-		// scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
-		scoreSpan.style.backgroundColor = "hsl(240,70%,"+greatness+"%)";
+		var greatness = 0.2 + 0.6 * Math.log(resultObj.total_posts) / Math.log(10000);
+		scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
 	}
 	scoreSpan.style.color = 'white';
 	scoreSpan.style.fontWeight = 'bold';
-	if (resultObj && resultObj.top_tags) {
+	if (resultObj.top_tags) {
 		var tagArray = [];
 		for (var tag in resultObj.top_tags) {
 			tagArray.push(tag);
@@ -843,20 +767,18 @@ function createScoreSpan(resultObj) {
 				return resultObj.top_tags[a] < resultObj.top_tags[b];
 		});
 		scoreSpan.title = tagArray.join(", ");
-		// scoreSpan.title = "Popularity: "+addCommasToNumber(resultObj.total_posts) + " Tags: "+tagArray.join(", ");
-		// scoreSpan.title = addCommasToNumber(resultObj.total_posts)+" "+tagArray.join(", ");
 	}
 	return scoreSpan;
 }
 
 if (lookupCurrentPage) {
 	tryLookup(document.location.href,function(resultObj,subjectUrl,evt){
-		if (resultObj && resultObj.total_posts) {
+		if (resultObj.total_posts) {
 			var lc_div = createScoreSpan(resultObj);
 			lc_div.style.position = 'fixed';
 			lc_div.style.top = '20px';
 			lc_div.style.right = '20px';
-			lc_div.style.padding = '4px 8px';
+			lc_div.style.padding = '4px';
 			lc_div.style.fontSize = '2.0em';
 			document.body.appendChild(lc_div);
 		}
@@ -933,7 +855,7 @@ if (annotateAllLinks) {
 
 // == Cleanup old cached data == //
 
-if (Math.random() < 10.1) {
+if (Math.random() < 10.1) { // TODO 0.1
 	setTimeout(cleanupCache,15000);
 }
 
