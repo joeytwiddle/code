@@ -4,6 +4,8 @@
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
 // @include       http://ssdl-wiki.cs.technion.ac.il/wiki/*
+// @include       http://wiki.greasespot.net/*
+// @include       *wiki*
 // ==/UserScript==
 
 
@@ -20,6 +22,18 @@
 // 19-Nov-2010: Updates to wikipedia's css style.
 
 // BUG TODO: appears as a portal, but collapsing does not work
+
+// Fix for Chrome
+if (!this.GM_getValue || this.GM_getValue.toString().indexOf("not supported")>-1) {
+   if (localStorage) {
+      this.GM_getValue=function (key,def) {
+         return localStorage[key] || def;
+      };
+      this.GM_setValue=function (key,value) {
+         return localStorage[key]=value;
+      };
+   }
+}
 
 setTimeout(function()
 {    
@@ -95,6 +109,8 @@ setTimeout(function()
    var dash = titleStr.indexOf (' - ');
    titleStr = titleStr.substring(0,dash);
    var newHistoryItem = normalizeUrl(document.location);
+   // Fix for when running alongside Joey's Reclaim CPU
+   titleStr = titleStr.replace(/^[*#+.?] /,'');
    var hist = read();
    if(document.location.search.indexOf("&action=edit") < 0 && document.location.search.indexOf("&printable=yes") < 0)
       hist = addHist(newHistoryItem, titleStr, hist);
@@ -110,7 +126,8 @@ setTimeout(function()
       s += listItem(o.url, o.title);
    }
    s += '</ul></div></div>';
-   s += '<style type="text/css"> .pBody { font-size: 0.7em; } div.pBody li { list-style-image: none; list-style-type: none; list-style-position: outside; } div#mw-panel div.portal div.body ul li { font-size: 0.7em; } </style>';
+   var indentLaterLines = 'padding-left: 0.5em; text-indent: -0.5em;';
+   s += '<style type="text/css"> .pBody { font-size: 0.7em; } div.pBody li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } div#mw-panel div.portal div.body ul li { font-size: 0.7em; } </style>';
    var e = document.createElement ("div");
    e.innerHTML = s;
    e.id = "p-history";
