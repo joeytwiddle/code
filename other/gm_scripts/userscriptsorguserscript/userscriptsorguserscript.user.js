@@ -4,6 +4,7 @@
 // @author         joeytwiddle
 // @include        http://userscripts.org/*
 // @include        http://*.userscripts.org/*
+// @description    Pads the text a little, improves the search box, colours the tag cloud.
 // ==/UserScript==
 
 // Sometimes the text touches the edge of the browser, which looks naff.
@@ -13,8 +14,8 @@ document.body.style.paddingRight = '4px';
 // Userscripts.org search engine sucks.  Let's use Google.
 function doSearch(evt){
 	evt.preventDefault();
-	var value = document.getElementById("script_q").value;
-	var defaultValue = document.getElementById("script_q").defaultValue;
+	var value = searchBox.value;
+	var defaultValue = searchBox.defaultValue;
 	if (value) {
 		var target = "http://www.google.com/search?q="+encodeURIComponent(value+" site:userscripts.org/scripts/show");
 		document.location = target;
@@ -39,10 +40,13 @@ function fancyInput(evt){
 }
 var searchForm = document.getElementById("script_search");
 var searchButton = document.getElementById("search-go");
-document.getElementById("script_q").value = "Search with Google";
-searchForm.addEventListener("submit",doSearch,true);
-searchForm.addEventListener("click",fancyInput,true); // We have to make our own if we want different text.  But @bug the old listener is still there.
-searchButton.addEventListener("click",doSearch,true);
+var searchBox = document.getElementById("script_q")
+if (searchBox) {
+	searchBox.value = "Search with Google";
+	searchForm.addEventListener("submit",doSearch,true);
+	searchForm.addEventListener("click",fancyInput,true); // We have to make our own if we want different text.  But @bug the old listener is still there.
+	searchButton.addEventListener("click",doSearch,true);
+}
 
 // Use color strength in the tag cloud:
 var tagCloud = unsafeWindow.document.getElementById("tag-cloud");

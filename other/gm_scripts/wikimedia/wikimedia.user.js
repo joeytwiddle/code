@@ -126,7 +126,7 @@ setTimeout(function()
       s += listItem(o.url, o.title);
    }
    s += '</ul></div></div>';
-   var indentLaterLines = 'padding-left: 0.5em; text-indent: -0.5em;';
+   var indentLaterLines = 'padding-left: 0.8em; text-indent: -0.8em;';
    s += '<style type="text/css"> .pBody { font-size: 0.7em; } div.pBody li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } div#mw-panel div.portal div.body ul li { font-size: 0.7em; } </style>';
    var e = document.createElement ("div");
    e.innerHTML = s;

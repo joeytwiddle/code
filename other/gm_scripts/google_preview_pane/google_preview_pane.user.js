@@ -67,6 +67,7 @@ var checkerRows     = true;    // Alternates grey and white background to separa
 var renderLikeTabs  = false;   // Different visual style.
 var reduceIndent    = true;    // Our sidebar is not very wide.  Make indents more subtle.
 var hideSponsoredLinks = false;
+var removeSidebarEarly = false;
 
 var createPanelLater = true;  // The split does not occur until a result is selected for preview.  Nice for a larger initial overview of results, but when we do select one, the re-arrangement loses our scroll position.
 
@@ -508,6 +509,10 @@ function initPreview() {
 				// realHighlightNode(link,'#ccddee');
 				// GM_log("Got link = "+link);
 				setTimeout(function(){
+					if (previewFrame && !previewFrame.parentNode) {
+						GM_log("previewFrame has been removed from the DOM!");
+						previewFrame = null;
+					}
 					if (!previewFrame) {
 						createPreviewFrame();
 					}
@@ -556,7 +561,7 @@ function initPreview() {
 					if (checkFocus()) {
 						// OK we set focus, preview is loading.
 						evt.preventDefault();
-						GM_log("Previewing");
+						GM_log("Previewing \""+link.textContent+"\" ("+link.href+")");
 					} else {
 						// Well we didn't want to focus this node.
 						// Let's pass the event to other elements.
@@ -933,8 +938,10 @@ function removeSidebar() {
 
 
 
-removeSidebar();
 //// Instantiation ////
+
+if (removeSidebarEarly)
+	removeSidebar();
 
 var earlyResultsBlock = getResultsBlock();
 if (earlyResultsBlock && loadEarly) {

@@ -193,6 +193,12 @@ function doSort(sortFunction) {
 	this.className = this.className + " gm_sortVisLinkOn";
 }
 
+function anti(fn) {
+	return function() {
+		return -fn.apply(this,arguments);
+	};
+}
+
 function createSortLink(linkText, sortFunction, parentDiv) {
 	var a = document.createElement("a");
 	a.innerHTML = linkText;
@@ -203,10 +209,14 @@ function createSortLink(linkText, sortFunction, parentDiv) {
 	}
 	parentDiv.appendChild(a);
 
+	var reversed = false;
+
 	a.addEventListener("click", function(event) {
 		event.stopPropagation();
 		event.preventDefault();
-		doSort(sortFunction);
+		var useFn = (reversed ? anti(sortFunction) : sortFunction);
+		doSort(useFn);
+		reversed = !reversed;
 	}, false);
 
 	return a;

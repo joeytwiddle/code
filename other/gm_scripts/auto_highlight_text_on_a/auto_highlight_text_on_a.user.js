@@ -1,11 +1,17 @@
 // ==UserScript==
-// @name           Highlight Search Result Pages
+// @name           Auto Highlight Search Terms on Result Pages
+//                 (formerly Highlight Search Result Pages)
+//                 (formerly Auto Highlight Text on All Search Result Pages)
+//                 TODO: Remove "Auto" but also rename
 // @namespace      search
 // @description    Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer.
 // @include        *
 // Exclude sites which already have satisfactory searching facilities.
 // @exclude        http://*.google.*/*
 // ==/UserScript==
+
+var highlightWholePhrase = true;
+var highlightEachTerm    = true;
 
 /** === Documentation ===
 //
@@ -47,20 +53,52 @@
 
 */
 
+function loopOnTimeout(list,fn,delay) {
+	var i = 0;
+	function doOne() {
+		if (i < list.length) {
+			i += fn(list[i]);   // This += is a special adaptation for searchWithinNode()
+			i++;
+			setTimeout(doOne,delay);
+		}
+	}
+	doOne();
+}
+
+function findSearchTerm_OLD(url) {
+	if (url.indexOf("search=")==0 || url.indexOf("&search=")>=0) {
+		// log(url.replace(/.*search=/,''));
+		// log(url.replace(/.*search=/,'').replace(/&.*/,''));
+		return url.replace(/.*search=/,'').replace(/&.*/,'');
+	} else if (url.indexOf("q=")==0 || url.indexOf("&q=")>=0) {
+		// log(url.replace(/.*q=/,''));
+		// log(url.replace(/.*q=/,'').replace(/&.*/,''));
+		return url.replace(/.*q=/,'').replace(/&.*/,'');
+	} else if (url.indexOf("value=")==0 || url.indexOf("&value=")>=0) {
+		return url.replace(/.*value=/,'').replace(/&.*/,'');
+	}
+	return null;
+}
+
 function findSearchTerm(url) {
 	url = "" + url;
+	// Grab the search string from the URL
 	if (url.indexOf("?")>=0) {
 		url = url.substring(url.indexOf("?")+1);
-		if (url.indexOf("search=")==0 || url.indexOf("&search=")>=0) {
-			// log(url.replace(/.*search=/,''));
-			// log(url.replace(/.*search=/,'').replace(/&.*/,''));
-			return url.replace(/.*search=/,'').replace(/&.*/,'');
-		} else if (url.indexOf("q=")==0 || url.indexOf("&q=")>=0) {
-			// log(url.replace(/.*q=/,''));
-			// log(url.replace(/.*q=/,'').replace(/&.*/,''));
-			return url.replace(/.*q=/,'').replace(/&.*/,'');
-		} else if (url.indexOf("value=")==0 || url.indexOf("&value=")>=0) {
-			return url.replace(/.*value=/,'').replace(/&.*/,'');
+	}
+	// but if not we assume we were handed a .search string anyway
+	var cgiParams = {};
+	url.split("&").forEach(function(arg){
+		var parts = arg.split("=");
+		if (parts.length == 2) {
+			var key = parts[0];
+			var value = parts[1];
+			cgiParams[key] = value;
+		}
+	});
+	for (var key in cgiParams) {
+		if (key=="search" || key=="q" || key=="value") {
+			return cgiParams[key];
 		}
 	}
 	return null;
@@ -69,12 +107,10 @@ function findSearchTerm(url) {
 var words;
 
 // Check for user supplied #search
-words = document.location.href.replace(/.*#(search|highlight|hi|hl)[:= ]/,'');
-if (words == document.location.href)
-	words = "";
+words = findSearchTerm(document.location.hash);
 // Check for current page CGI search terms
 if (!words)
-	words = findSearchTerm(document.location);
+	words = findSearchTerm(document.location.search);
 // Check for referring page CGI search terms
 if (!words)
 	words = findSearchTerm(document.referrer);
@@ -84,19 +120,18 @@ if (!words)
 
 if (words) {
 
-	GM_log("Highlighting words: "+words);
-	/* window.status="Searching for '"+words+"'..."; */
-
 	/* This function taken from the "Highlight..." bookmarklet on SquareFree. */
 	var count = 0, text, dv;
 	var dv = document.defaultView;
 
-	function searchWithinNode(node, te, len){
+	function searchWithinNode(node, te, len, color){
 		var pos, skip, spannode, middlebit, endbit, middleclone;
 		skip = 0;
 		if(node.nodeType == 3) {
 			pos = node.data.toUpperCase().indexOf(te);
 			if(pos >= 0) {
+				// Unfortunately we cannot pad this operation with setTimeout,
+				// because we need to return skip *after* we've completed the job.
 				spannode = document.createElement("SPAN");
 				spannode.className = node.className;
 				/*
@@ -106,7 +141,10 @@ if (words) {
 				spannode.style.setProperty('-moz-opacity','0.5');
 				spannode.style.setProperty('filter','alpha(opacity=50)');
 				*/
-				spannode.setAttribute('style','background-color: #ffff44; opacity: 0.7;');
+				// spannode.setAttribute('style','background-color: #ffff44; opacity: 0.7;');
+				spannode.style.backgroundColor = color;
+				spannode.style.opacity = 0.6;
+				// TODO BUG: sometimes does not inherit all style properties, so may not appear the same as original text.  Or maybe it's inheriting properties it didn't want.
 				middlebit = node.splitText(pos);
 				endbit = middlebit.splitText(len);
 				middleclone = middlebit.cloneNode(true);
@@ -116,26 +154,52 @@ if (words) {
 				skip = 1;
 			}
 		} else if (node.nodeType==1&& node.childNodes && node.tagName.toUpperCase()!="SCRIPT" && node.tagName.toUpperCase!="STYLE") {
-			// setTimeout(function(){
+			/*
+			setTimeout(function(){
 				for (var child=0; child < node.childNodes.length; ++child){
-					child = child + searchWithinNode(node.childNodes[child], te, len);
+					child = child + searchWithinNode(node.childNodes[child], te, len, color);
 				}
-			// },50);
+			},200); // 5 per second
+			*/
+			loopOnTimeout(node.childNodes,function(child) {
+				return searchWithinNode(child, te, len, color);
+			},100);  // 10 per second
 		}
 		return skip;
 	}
 
+	var hue = 360/6;
+	function getNextColor() {
+		var colstr = "hsl("+hue+",100%,80%)";
+		hue = Math.round(hue + 360/3.3);
+		if (hue > 360)
+			hue -= 360;
+		return colstr;
+	}
+
+	GM_log("Highlighting words: "+words);
+	/* window.status="Searching for '"+words+"'..."; */
+
 	words = unescape(words.replace(/\+/g,' '));
 
-	while (words.indexOf(" ")>=0) {
-		var firstWord = words.substring(0,words.indexOf(" "));
-		words = words.substring(words.indexOf(" ")+1);
-		if (firstWord.length>0) {
-			GM_log("Starting search for word: "+firstWord);
-			searchWithinNode(document.body, firstWord.toUpperCase(), firstWord.length);
-		}
+	var wordList = words.split(" ");
+
+	if (wordList.length==1 || highlightWholePhrase) {
+		searchWithinNode(document.body, words.toUpperCase(), words.length, getNextColor());
 	}
-	searchWithinNode(document.body, words.toUpperCase(), words.length);
+
+	if (wordList.length>1 && highlightEachTerm) {
+		wordList.forEach(function(word,i) {
+			// words = words.substring(words.indexOf(" ")+1);
+			if (word.length>0) {
+				// Stagger start time of different words
+				setTimeout(function(){
+					GM_log("Starting search for word: "+word);
+					searchWithinNode(document.body, word.toUpperCase(), word.length, getNextColor());
+				},1000*(i+1));
+			}
+		});
+	}
 
 } else {
 	// GM_log("No search terms found in "+document.referrer+" or "+document.location);

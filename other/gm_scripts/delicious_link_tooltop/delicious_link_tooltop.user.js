@@ -27,7 +27,16 @@ var annotateAllLinks = true;
 
 
 // log = (unsafeWindow.console && unsafeWindow.console.log) ? unsafeWindow.console.log : GM_log;
-log = GM_log;
+// log = GM_log;
+function(x) {
+	if (this.GM_log) {
+		GM_log(x);
+	}
+	if (this.console && console.log) {
+		console.log(x);
+	}
+	window.status = ""+x;
+};
 
 // == Notes ==
 
@@ -223,20 +232,31 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		},
 		onload: function(response) {
 			// log("Delicious responded: "+response.responseText);
-			// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
-			var resultObj = eval(response.responseText); // INSECURE!
+			var resultObj;
+			if (this.JSON) {
+				resultObj = JSON.parse(response.responseText); // JSON support is built into all major browsers now
+			}
+			if (!resultObj) {
+				log("WARNING! Using eval on: "+response.responseText);
+				resultObj = eval(response.responseText); // INSECURE!
+			}
 			// TODO: Sometimes Delicious return "[]" but this gets evaled as an Object.
-			// This is hard for later code to detect, e.g. ==[] does not trigger.
+			// This is hard for later code to detect, e.g. ==[] will not trigger!
 			if (resultObj && resultObj[0] && resultObj[0].total_posts)
 				resultObj = resultObj[0];
-			if (!resultObj && onFailFn) { // TODO: put back? && stillFocused==link) {
+			if (!resultObj) { // TODO: put back? && stillFocused==link) {
+				// log("Failed to get result, may leave \"Working...\" in the DB but won't write it to storage.");
 				// Done: Shouldn't we put something non-null in the dataCache, to prevent repeat requests?
 				// Oh "Working..." is there.
-				GM_log("Failed to get result, may leave \"Working...\" in the DB but won't write it to storage.");
-				onFailFn();
+				log("Lookup for "+lookupURL+" failed.");
+				dataCache[lookupURL] = [];
+				if (onFailFn) {
+					onFailFn();
+				}
 			} else { // Got resultObj, or no onFailFn, or no longer focused
 				// Overwrite "working..." with the good or failed result
 				resultObj.cacheCount = 0; // not entirely neccessary
+				resultObj.lastUsed = new Date().getTime();
 				dataCache[lookupURL] = resultObj;
 				GM_setValue("CachedResponse"+lookupURL,uneval(resultObj));
 				// log("Got data for "+lookupURL+" meanwhile link="+link);
@@ -251,6 +271,38 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 	// onreadystatechange function to catch any failed requests.
 }
 
+var lookupQueue = [];
+
+function queueDoNext() {
+	if (lookupQueue.length>0) {
+		var nextTodo = lookupQueue[0];
+		lookupQueue = lookupQueue.slice(1);
+		nextTodo();
+	}
+}
+
+function queueLookup(subjectUrl,onSuccess,onFailure) {
+	var todo = function() {
+		doLookup(subjectUrl,function(){
+			onSuccess.apply(arguments);
+			if (lookupQueue[0] == todo)
+				lookupQueue = lookupQueue.slice(1);
+			queueDoNext();
+		},function(){
+			onFailure.apply(arguments);
+			if (lookupQueue[0] == todo)
+				lookupQueue = lookupQueue.slice(1);
+			queueDoNext();
+		});
+	};
+	if (lookupQueue.length == 0) {
+		lookupQueue.push(todo);
+		todo();
+	} else {
+		lookupQueue.push(todo);
+	}
+}
+
 function tryLookup(subjectUrl,onSuccess,onFailure) {
 	if (dataCache[subjectUrl] == null) {
 		dataCache[subjectUrl] = eval(GM_getValue("CachedResponse"+subjectUrl,"null"));
@@ -261,11 +313,27 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 		if (!dataCache[subjectUrl].cacheCount)
 			dataCache[subjectUrl].cacheCount = 0;
 		dataCache[subjectUrl].cacheCount++;
+		dataCache[subjectUrl].lastUsed = new Date().getTime();
 		GM_setValue("CachedResponse"+subjectUrl,uneval(dataCache[subjectUrl]));
 		onSuccess(dataCache[subjectUrl],subjectUrl);
 	} else {
 		dataCache[subjectUrl] = "working...";
-		doLookup(subjectUrl,onSuccess,null);
+		queueLookup(subjectUrl,onSuccess,null);
+	}
+}
+
+function age(cachedRecord) {
+	if (cachedRecord.lastUsed == null) {
+		// log("Error: record has no date! "+uneval(cachedRecord));
+		return 0;
+	} else {
+		var ageInMilliseconds = (new Date().getTime() - cachedRecord.lastUsed);
+		// var ageInMonths = ageInMilliseconds / 86400 / 30;
+		var ageInDays = ageInMilliseconds / 86400;
+		// Avoid division by zero on current time, and future times
+		if (ageInDays <= 0)
+			ageInDays = 0.000001;
+		return ageInDays;
 	}
 }
 
@@ -301,8 +369,10 @@ function cleanupCache() {
 				if (dataCache[url] == null) {
 					dataCache[url] = eval(GM_getValue(crURL,"null"));
 				}
-				if (!poorestScorer || dataCache[url].cacheCount==null || dataCache[url].cacheCount < poorestScore) {
-					poorestScore = dataCache[url].cacheCount;
+				// All cached urls have a minimum score of 2.
+				var thisScore = (dataCache[url].cacheCount+2) / age(dataCache[url]);
+				if (!poorestScorer || thisScore < poorestScore) {
+					poorestScore = thisScore;
 					poorestScorer = crURL;
 					poorestScorerIndex = i;
 				}
@@ -421,7 +491,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	if (resultObj && resultObj.total_posts==1 /*&& resultObj.hash*/ &&
 			resultObj.url=="" && resultObj.title=="" &&
 			resultObj.top_tags.length==0) {
-		GM_log("Got boring response: "+uneval(resultObj));
+		log("Got boring response: "+uneval(resultObj));
 		resultObj = null;
 	}
 	// However I think this may be due to the fact that there are *private*
@@ -525,7 +595,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		tooltipDiv.appendChild(topTable);
 
 		/* top_tags is a hashtable, it has no .length */
-		if (resultObj.top_tags /* && resultObj.top_tags.length>0 */ ) {
+		if (resultObj && resultObj.top_tags /* && resultObj.top_tags.length>0 */ ) {
 
 			// tooltipDiv.appendChild(document.createElement("BR"));
 
@@ -754,7 +824,7 @@ if (showTooltips) {
 
 function createScoreSpan(resultObj) {
 	var scoreSpan = document.createElement("span");
-	if (resultObj.total_posts) {
+	if (resultObj && resultObj.total_posts) {
 		var text = resultObj && addCommasToNumber(resultObj.total_posts);
 		scoreSpan.appendChild(boldTextElement(text));
 		var greatness = 80 - 30 * Math.log(resultObj.total_posts) / Math.log(10000);
@@ -763,7 +833,7 @@ function createScoreSpan(resultObj) {
 	}
 	scoreSpan.style.color = 'white';
 	scoreSpan.style.fontWeight = 'bold';
-	if (resultObj.top_tags) {
+	if (resultObj && resultObj.top_tags) {
 		var tagArray = [];
 		for (var tag in resultObj.top_tags) {
 			tagArray.push(tag);
@@ -772,21 +842,21 @@ function createScoreSpan(resultObj) {
 		tagArray.sort( function(a,b) {
 				return resultObj.top_tags[a] < resultObj.top_tags[b];
 		});
-		// scoreSpan.title = tagArray.join(", ");
+		scoreSpan.title = tagArray.join(", ");
 		// scoreSpan.title = "Popularity: "+addCommasToNumber(resultObj.total_posts) + " Tags: "+tagArray.join(", ");
-		scoreSpan.title = addCommasToNumber(resultObj.total_posts)+" "+tagArray.join(", ");
+		// scoreSpan.title = addCommasToNumber(resultObj.total_posts)+" "+tagArray.join(", ");
 	}
 	return scoreSpan;
 }
 
 if (lookupCurrentPage) {
 	tryLookup(document.location.href,function(resultObj,subjectUrl,evt){
-		if (resultObj.total_posts) {
+		if (resultObj && resultObj.total_posts) {
 			var lc_div = createScoreSpan(resultObj);
 			lc_div.style.position = 'fixed';
 			lc_div.style.top = '20px';
 			lc_div.style.right = '20px';
-			lc_div.style.padding = '4px';
+			lc_div.style.padding = '4px 8px';
 			lc_div.style.fontSize = '2.0em';
 			document.body.appendChild(lc_div);
 		}
