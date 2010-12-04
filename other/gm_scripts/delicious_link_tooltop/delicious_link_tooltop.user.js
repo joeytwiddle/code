@@ -28,7 +28,7 @@ var annotateAllLinks = true;
 
 // log = (unsafeWindow.console && unsafeWindow.console.log) ? unsafeWindow.console.log : GM_log;
 // log = GM_log;
-function(x) {
+function log(x) {
 	if (this.GM_log) {
 		GM_log(x);
 	}
