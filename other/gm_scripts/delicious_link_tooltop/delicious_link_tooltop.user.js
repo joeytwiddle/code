@@ -34,9 +34,11 @@ function log(x) {
 	} else if (this.console && console.log) {
 		console.log(x);
 	}
-	// window.status = ""+x;
+	window.status = ""+x;
 };
 
+
+/*
 // == Silly scrolling logger == //
 var scrollText = "";
 
@@ -45,19 +47,20 @@ function showScroller() {
 }
 
 function animateScroller() {
-	scrollText = scrollText.substring(1);
 	showScroller();
+	if (scrollText.length > 0)
+		setTimeout(animateScroller,200);
+	scrollText = scrollText.substring(10);
 }
 
 var oldLog = log;
 log = function(x) {
 	oldLog(x);
+	if (scrollText == "") // if not, there is probably already a timeout running
+		setTimeout(animateScroller,2000);
 	scrollText = scrollText + "     " + x;
 	showScroller();
 };
-
-setInterval(animateScroller,100);
-/*
 */
 
 
@@ -244,7 +247,8 @@ function boldTextElement(txt) {
 var dataCache = ({});
 
 function doLookup(lookupURL,onSuccess,onFailFn) {
-	lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
+	// lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
+	lookupSpeed = 3000;
 	log("Requesting info for: "+lookupURL);
 	// We can use https here, but it is slower.
 	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
@@ -255,7 +259,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 			"Accept":"text/json"
 		},
 		onload: function(response) {
-			log("Delicious responded: "+response.responseText);
+			log("Delicious responded: "+response.responseText.substring(0,80));
 			// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
 			var resultObj = eval(response.responseText); // INSECURE!
 			// TODO: Sometimes Delicious return "[]" but this gets evaled as an Object.
@@ -270,6 +274,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 			} else { // Got resultObj, or no onFailFn, or no longer focused
 				// Overwrite "working..." with the good or failed result
 				dataCache[lookupURL] = resultObj;
+				dataCache[lookupURL].lastUsed = new Date().getTime();
 				GM_setValue("CachedResponse"+lookupURL,uneval(resultObj));
 				// log("Got data for "+lookupURL+" meanwhile link="+link);
 				// if (stillFocused == link) {
@@ -292,7 +297,10 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 		// log("Had it cached: "+uneval(dataCache[subjectUrl])+" (Request:"+subjectUrl+")");
 		dataCache[subjectUrl].cacheCount++;
 		dataCache[subjectUrl].lastUsed = new Date().getTime();
-		GM_setValue("CachedResponse"+subjectUrl,uneval(dataCache[subjectUrl]));
+		// I'm paranoid that setValue takes time to complete!  I guess we could just put it after.
+		setTimeout(function(){
+			GM_setValue("CachedResponse"+subjectUrl,uneval(dataCache[subjectUrl]));
+		},20);
 		onSuccess(dataCache[subjectUrl],subjectUrl);
 	} else {
 		dataCache[subjectUrl] = "working...";
@@ -301,9 +309,9 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 }
 
 function age(cachedRecord) {
-	if (cachedRecord.lastUsed == null) {
+	if (!cachedRecord || cachedRecord.lastUsed == null) {
 		// log("Error: record has no date! "+uneval(cachedRecord));
-		return 0;
+		return 30;
 	} else {
 		var ageInMilliseconds = (new Date().getTime() - cachedRecord.lastUsed);
 		// var ageInMonths = ageInMilliseconds / 86400 / 30;
@@ -336,7 +344,7 @@ function cleanupCache() {
 		*/
 
 		// Delete the oldest and least-used, keep new/popular entries
-		while (cacheList.length > 800) {
+		while (cacheList.length > 790) {
 			var poorestScore = 99999;
 			var poorestScorer = null;
 			for (var i=0;i<cacheList.length;i++) {
@@ -349,6 +357,8 @@ function cleanupCache() {
 				}
 				// All cached urls have a minimum score of 2.
 				var thisScore = (dataCache[url].cacheCount+2) / age(dataCache[url]);
+				if (thisScore == NaN) // e.g. if dataCache[url] == null
+					thisScore = 0.00001;
 				if (!poorestScorer || thisScore < poorestScore) {
 					poorestScore = thisScore;
 					poorestScorer = crURL;
@@ -357,7 +367,7 @@ function cleanupCache() {
 			}
 			if (poorestScorer == null)
 				break;
-			log("Cleaning up "+poorestScorer+" with age="+age(dataCache[poorestScorer])+" and count="+dataCache[poorestScorer].cacheCount); //  "+poorestScore);
+			log("Cleaning up "+poorestScorer+" with "+ ( dataCache[poorestScorer] ? "age="+age(dataCache[poorestScorer])+" and count="+dataCache[poorestScorer].cacheCount : "score="+poorestScore+" and uneval="+uneval(dataCache[poorestScorer]) ) );
 			// log("  Data: " + uneval(dataCache[poorestScorer]) );
 			GM_deleteValue(poorestScorer);
 			// cacheList = GM_listValues();
@@ -478,7 +488,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	// admitting that they even exist in its database!
 	// TODO: Test this theory!
 
-	if (resultObj && resultObj!=[]) {
+	if (resultObj && resultObj.total_posts) {
 
 		if (unescapeHTML(resultObj.url) != subjectUrl) {
 			tooltipDiv.style.backgroundColor = warn_bg_color;
@@ -802,10 +812,11 @@ if (showTooltips) {
 function createScoreSpan(resultObj) {
 	var scoreSpan = document.createElement("span");
 	if (resultObj.total_posts) {
-		var text = resultObj && resultObj.total_posts;
+		var text = resultObj.total_posts;
 		scoreSpan.appendChild(boldTextElement(text));
-		var greatness = 0.2 + 0.6 * Math.log(resultObj.total_posts) / Math.log(10000);
-		scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
+		var greatness = 80 - 30 * Math.log(resultObj.total_posts) / Math.log(10000);
+		// scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
+		scoreSpan.style.backgroundColor = "hsl(240,70%,"+greatness+"%)";
 	}
 	scoreSpan.style.color = 'white';
 	scoreSpan.style.fontWeight = 'bold';
@@ -819,22 +830,28 @@ function createScoreSpan(resultObj) {
 				return resultObj.top_tags[a] < resultObj.top_tags[b];
 		});
 		scoreSpan.title = tagArray.join(", ");
+		// scoreSpan.title = "Popularity: "+addCommasToNumber(resultObj.total_posts) + " Tags: "+tagArray.join(", ");
+		// scoreSpan.title = addCommasToNumber(resultObj.total_posts)+" "+tagArray.join(", ");
 	}
 	return scoreSpan;
 }
 
 if (lookupCurrentPage) {
-	tryLookup(document.location.href,function(resultObj,subjectUrl,evt){
-		if (resultObj.total_posts) {
-			var lc_div = createScoreSpan(resultObj);
-			lc_div.style.position = 'fixed';
-			lc_div.style.top = '20px';
-			lc_div.style.right = '20px';
-			lc_div.style.padding = '4px';
-			lc_div.style.fontSize = '2.0em';
-			document.body.appendChild(lc_div);
-		}
-	});
+	try {
+		tryLookup(document.location.href,function(resultObj,subjectUrl,evt){
+			if (resultObj.total_posts) {
+				var lc_div = createScoreSpan(resultObj);
+				lc_div.style.position = 'fixed';
+				lc_div.style.top = '20px';
+				lc_div.style.right = '20px';
+				lc_div.style.padding = '4px';
+				lc_div.style.fontSize = '2.0em';
+				document.body.appendChild(lc_div);
+			}
+		});
+	} catch (e) {
+		log("Caught exception: "+e);
+	}
 }
 
 
