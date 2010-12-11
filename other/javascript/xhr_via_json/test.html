@@ -1,0 +1,33 @@
+<html>
+	<head>
+	</head>
+	<body>
+		<input id="url" type="text" size="80" value="http://hwi.ath.cx/src/keep/fiery_xmms/xmms_firespectrum/out/?M=D"></input>
+		<button id="goButton">Go</button>
+		<div id="displayDiv"> ... output ... </div>
+		<script src="xss_xhr_via_jsonp.js"></script>
+		<script type="text/javascript">
+			// alert("this.GM_xmlhttpRequest="+this.GM_xmlhttpRequest);
+			function go() {
+				GM_xmlhttpRequest({
+					method: "GET",
+					url: document.getElementById("url").value,
+					onload: function(response) {
+						// alert("Got response="+JSON.stringify(response));
+						// alert("With content="+response.responseText);
+						var d = document.getElementById("displayDiv");
+						try {
+							d.innerHTML = response.responseText;
+							/* document.body.appendChild(d); */
+						} catch (e) {
+							d.textContent = "Error parsing responseText: "+e;
+						}
+					}
+				});
+			}
+			go();
+			document.getElementById("goButton").onclick = go;
+			document.getElementById("url").onkeyup = function(e){ if (e.keyCode==13) { go(); } };
+		</script>
+	</body>
+</html>
