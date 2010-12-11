@@ -9,6 +9,68 @@
 	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/dom.js'></SCRIPT>
 	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xpath.js'></SCRIPT>
 	-->
+
+	<STYLE type='text/css'>
+		.todo {
+			/*font-size: -1;*/
+			color: #775522;
+		}
+		.done {
+			color: #005500;
+		}
+		.external {
+			/*color: #aa4400;*/
+			color: #999900;
+		}
+		.hiddenlink {
+			color: #000000;
+			text-decoration: none;
+			cursor: crosshair;
+		}
+		.tip {
+			background-color: #ffffdd;
+			padding: 10px;
+			border-style: solid;
+			border-width: 1px;
+			border-color: black;
+		}
+		h3 {
+			color: white;
+			/*background-color: #44bbbb;*/
+			background-color: #4444ee;
+			padding-left: 15px;
+			padding-right: 10px;
+			padding-top: 6px;
+			padding-bottom: 4px;
+			/*
+			padding-bottom: 0px;
+			*/
+			margin-top: 0px;
+		}
+		.section {
+			background-color: #ffffff;
+			padding-top: 0px;
+			padding-left: 0px;
+			padding-right: 0px;
+			padding-bottom: 10px;
+			border-style: solid;
+			border-width: 2px;
+			border-color: black;
+			/*border-style: solid;
+			border-width: medium;
+			border-color: #000000;*/
+			margin-top: 10px;
+		}
+		blockquote {
+			/* margin-left: 32px; */
+		}
+		tt {
+			color: black;
+			background-color: #eeeeff;
+			padding: 0.3em 0.5em;
+		}
+	</STYLE>
+
 </HEAD>
 <BODY>
 
@@ -233,6 +295,30 @@
 
 	<P>
 		<LI><A href="javascript:(function(){
+			function addStyle(css) {
+				var style = document.createElement('style');
+				style.type = 'text/css';
+				style.innerHTML = css;
+				document.getElementsByTagName('head')[0].appendChild(style);
+			}
+			addStyle('body { font: none; font-family: none; }');
+			/* check css... */
+			if (document.styleSheets) {
+				for (var i=0;i<document.styleSheets.length;i++) {
+					var rules = document.styleSheets[i].cssRules;
+					for (var j=0;rules&&j<rules.length;j++) {
+						var rule = rules[j];
+						if (rule.style) {
+							if (rule.style.font) {
+								rule.style.font = '';
+							}
+							if (rule.style.fontFamily) {
+								rule.style.fontFamily = '';
+							}
+						}
+					}
+				}
+			}
 			function killFonts(node) {
 				if (node.tagName == 'FONT' || node.tagName == 'font') {
 					if (node.face) {
@@ -251,33 +337,28 @@
 						node.style.fontFamily = '';
 					}
 				}
+				/* did not work on document.body
+				var computed = getComputedStyle(node);
+				if (computed.font) {
+					node.style.font = '';
+				}
+				if (computed.fontFamily) {
+					node.style.fontFamily = '';
+				}
+				*/
 				for (var child in node.childNodes) {
 					killFonts(child);
 				}
 			}
-			/* check css... */
-			if (document.styleSheets) {
-				for (var i=0;i<document.styleSheets.length;i++) {
-					var rules = document.styleSheets[i].cssRules;
-					for (var j=0;j<rules.length;j++) {
-						var rule = rules[j];
-						if (rule.style) {
-							if (rule.style.font) {
-								rule.style.font = '';
-							}
-							if (rule.style.fontFamily) {
-								rule.style.fontFamily = '';
-							}
-						}
-					}
-				}
-			}
-			killFonts(document.body);
-			window.document.status = 'All fonts cleared.';
+			setTimeout(function(){
+				killFonts(document.body);
+				window.document.status = 'All fonts cleared.';
+			},200);
 		})();">Kill All Fonts</A></LI>
 		<BLOCKQUOTE>
-			<P>For when you would prefer the fonts you specified in your browser over than the ones specified by the page.</P>
-			<LI class='todo'>Todo: Convert known faces to sensible choice.  E.g. if the document specifies a fixed-width font we recognise, then convert the font to our favourite fixed-width font, and not a serif font.</LI>
+			<P>Removes all HTML and CSS font settings from the DOM, so your browser will use its default font set.</P>
+			<LI class='todo'>Bug: Sometimes it fails to clear all of the styles.  I think these might be css files included by script tags whos rules do not appear in document.styleSheets.</LI>
+			<LI class='todo'>Todo: Convert known faces to sensible choice.  E.g. if the document specifies a fixed-width font we recognise, then convert the font to our favourite fixed-width font, and not a serif font.  (TT and PRE tags should work fine already.)</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -642,7 +723,7 @@
 			<LI class='done'>Added tag and attributes to title.  Too bad the newlines don&apos;t work in the fox.</LI>
 			<LI class='done'>Added limited CSS info to title.</LI>
 			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
-			<LI class='todo'>Can be sluggish to run on the heavier DOMs.</LI>
+			<LI class='todo'>Can be sluggish to run on the heavier DOMs, due to poor event capturing.</LI>
 			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn&apos;t highlight newly entered elements, it won&apos;t have to unhighlight them on the way out.</LI>
 			<LI class='todo'>Part of the problem is that a mouselistener is added to every element in the DOM, when we should just capture using the body element.</LI>
 			<LI class='todo'>Adapt the colour generator to produce pastels only.</LI>
@@ -848,13 +929,15 @@
 		<LI>Quick Javascript <A target="_self" href="javascript:(function(){
 
 			window.inspect =
-				function inspect(o) {
-					var result;
-					result = '';
-					for (var i in o) {
-						result = result + i + ', ';
+				function inspect(obj) {
+					var report;
+					/* report = ''+obj+' (type: '+typeof obj+') Properties: '; */
+					report = (typeof obj)+' ('+obj+')\nProperties: ';
+					for (var prop in obj) {
+						/* report = report + prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
+						report = report+prop+', ';
 					}
-					return result;
+					return report.slice(0,-2);
 				};
 			window.loadScript =
 				function loadScript(url) {
@@ -863,6 +946,13 @@
 					newScript.src = url;
 					/*document.body.appendChild(newScript);*/
 					document.getElementsByTagName('head')[0].appendChild(newScript);
+				};
+			window.addStyle =
+				function(css) {
+					var style = document.createElement('style');
+					style.type = 'text/css';
+					style.innerHTML = css;
+					document.getElementsByTagName('head')[0].appendChild(style);
 				};
 
 			/* Load JQuery and other useful scripts: */
@@ -896,7 +986,11 @@
 				var result;
 				textArea.value = '...';
 				try {
-					result = ''+eval(cmd);
+					if (cmd.substring(0,2) == 'i:') {
+						result = inspect(eval(cmd.substring(2)));
+					} else {
+						result = ''+eval(cmd);
+					}
 				} catch (e) {
 					result = 'Error: '+e;
 				}
@@ -949,21 +1043,16 @@
 	</P>
 	<BLOCKQUOTE>
 		<P>My own dodgy console.  With handy inspect() function.  Now auto-loads JQuery.</P>
-		<LI class='done'>Closes on Escape key (Mozilla only I think).  It&quot;s working when focused on the input box, but not .</LI>
-		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> and <TT>loadScript(url)</TT>.</LI>
-		<LI class='todo'>Todo: Close button is in the wrong place.</LI>
+		<LI class='done'>Closes on Escape key.</LI>
+		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> (shortcut <TT>i:obj</TT>), <TT>loadScript(url)</TT> and <TT>addStyle(cssString)</TT>.</LI>
+		<LI class='done'>Done: Close button is in the right place now.</LI>
 		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
 		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> is a much better console!</LI>
+		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.  Intercept console.log()?</LI>
 	</BLOCKQUOTE>
 
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
-			/*
-			var libScript = document.createElement('script');
-			libScript.type = 'text/javascript';
-			libScript.src = 'http://hwi.ath.cx/javascript/xpath.js';
-			document.body.appendChild(libScript);
-			*/
 			var newScript = document.createElement('script');
 			newScript.type = 'text/javascript';
 			newScript.src = 'http://hwi.ath.cx/javascript/xpath_tester.js';
@@ -2107,62 +2196,6 @@
 
 </BLOCKQUOTE>
 </DIV>
-
-<STYLE type='text/css'>
-	.todo {
-		/*font-size: -1;*/
-		color: #775522;
-	}
-	.done {
-		color: #005500;
-	}
-	.external {
-		/*color: #aa4400;*/
-		color: #999900;
-	}
-	.hiddenlink {
-		color: #000000;
-		text-decoration: none;
-		cursor: crosshair;
-	}
-	.tip {
-		background-color: #ffffdd;
-		padding: 10px;
-		border-style: solid;
-		border-width: 1px;
-		border-color: black;
-	}
-	h3 {
-		color: white;
-		/*background-color: #44bbbb;*/
-		background-color: #4444ee;
-		padding-left: 15px;
-		padding-right: 10px;
-		padding-top: 6px;
-		padding-bottom: 4px;
-		/*
-		padding-bottom: 0px;
-		*/
-		margin-top: 0px;
-	}
-	.section {
-		background-color: #ffffff;
-		padding-top: 0px;
-		padding-left: 0px;
-		padding-right: 0px;
-		padding-bottom: 10px;
-		border-style: solid;
-		border-width: 2px;
-		border-color: black;
-		/*border-style: solid;
-		border-width: medium;
-		border-color: #000000;*/
-		margin-top: 10px;
-	}
-	blockquote {
-		/* margin-left: 32px; */
-	}
-</STYLE>
 
 <!--
 Nice idea but it didn_t work.  It breaks all the bookmarklets!
