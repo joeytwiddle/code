@@ -23,6 +23,7 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 		// since we can't callback directly to userscript-scope, instead drop the
 		// response data into the DOM, and start a timer here here to call the
 		// callback when the response data arrives.
+		// (This technique only needed when running as an extension in Chrome.)
 		window[callbackName] = function(response) { onload(response); };
 		// Request an XHR response from the proxy, which should return some javascript to call the callback.
 		var reqStrung = JSON.stringify(request);

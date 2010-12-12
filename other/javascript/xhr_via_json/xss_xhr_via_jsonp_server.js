@@ -24,7 +24,7 @@ console.log('Server running at http://127.0.0.1:8124/');
 function handleRequestForXhrOverJson(incomingRequest, response, url) {
 	var xhrReqEscaped = url.query["request"];
 	var xhrReqStr = require("querystring").unescape(xhrReqEscaped); // or decodeURIComponent()?
-	console.log("Received request: "+xhrReqStr);
+	console.log(">> Received request: "+xhrReqStr);
 	var xhrReq = JSON.parse(xhrReqStr);
 	var targetUrl = xhrReq.url;
 	var targetHost = targetUrl.match(/:\/\/([^/]*)/);
@@ -47,14 +47,14 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 		}
 	}
 	outgoingHeaders.host = targetHost;
-	console.log("  Making request: "+JSON.stringify(outgoingHeaders));
+	console.log("   >> Making request: "+JSON.stringify(outgoingHeaders));
 	var outgoingRequest = httpClient.request(xhrReq.method, targetUrl, outgoingHeaders);
 	outgoingRequest.end();
 	outgoingRequest.on('response',function (incomingResponse) {
 		// We taint the given headers to create our response headers.
+		console.log("   << Got response: "+JSON.stringify(incomingResponse.headers));
 		var httpResponseHeaders = incomingResponse.headers;
 		httpResponseHeaders["content-type"] = "text/javascript";
-		console.log("  Responding with headers: "+JSON.stringify(httpResponseHeaders));
 		response.writeHead(incomingResponse.statusCode, httpResponseHeaders);
 		var xhrResponse = {};
 		xhrResponse.responseText = "";
@@ -66,12 +66,13 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 			var xhrResponseStrung = JSON.stringify(xhrResponse);
 			// console.log("unescaped xhrResponseStrung = "+xhrResponseStrung);
 			var script =
-				  "(function(){"
-					+ "var xhrResponseStrung = decodeURIComponent(\""+encodeURIComponent(xhrResponseStrung)+"\");"
-					+ "var xhrResponse = JSON.parse(xhrResponseStrung);"
-					+ "window['"+callbackName+"'](xhrResponse);"
-				+ "})();";
-			console.log("  Responding with script length "+script.length+".");
+				  '(function(){\n'
+				+ '	var xhrResponseStrung = decodeURIComponent("'+encodeURIComponent(xhrResponseStrung)+'");\n'
+				+ '	var xhrResponse = JSON.parse(xhrResponseStrung);\n'
+				+ '	window["'+callbackName+'"](xhrResponse);\n'
+				+ '})();\n';
+			console.log("<< Responding with script "+script); // TODO: replace nonprinting chars
+			// console.log("<< Responding with script length "+script.length+".");
 			response.end(script);
 		});
 	});
