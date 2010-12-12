@@ -18,7 +18,7 @@ var logIO = false;
 
 
 // TODO: Move this to its own script!!
-GM_addStyle("a:visited { color: #440066; }");
+if (this.GM_addStyle) { GM_addStyle("a:visited { color: #440066; }"); }
 
 
 
@@ -269,6 +269,146 @@ function isImageAndWhitespace(elem) {
 
 
 
+// == Chrome compatibility layer == //
+
+// We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
+if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
+	var GM_xmlhttpRequest = function(details) {
+		var proxyHost = "hwi.ath.cx:8124";
+		// We don't want to send functions to the proxy, so we remove them from the details object.
+		var onloadCallback = details.onload;
+		var onerrorCallback = details.onerror;
+		var onreadystatechangeCallback = details.onreadystatechange;
+		delete details.onload;
+		delete details.onerror;
+		delete details.onreadystatechange;
+		// Insert a callback into the root window, anonymised by a random key.
+		var callbackName = "xss_xhr_via_jsonp_callback_" + parseInt(Math.random()*987654321);
+		var callbackFunction = function(responseDetails) {
+			if (onreadystatechangeCallback) {
+				responseDetails.readyState = 4;
+				onreadystatechangeCallback(responseDetails);
+			}
+			if (onloadCallback) {
+				onloadCallback(responseDetails);
+			}
+		};
+		if (!window.navigator.vendor.match(/Google/) /* || !weAreInUserscriptScope */) {
+			// This works fine in Firefox GM, or in Chrome's content scope.
+			window[callbackName] = callbackFunction;
+		} else {
+			// But the window seen from Chrome's userscript scope is sandboxed,
+			// and many updates are not shared between scopes.
+			// So we must get Chrome's unsafeWindow (the real content window).
+			var div = document.createElement("div");
+			div.setAttribute("onclick", "return window;");
+			unsafeWindow = div.onclick();
+			// And place the callback in that.
+			unsafeWindow[callbackName] = callbackFunction;
+		}
+		// Request an XHR response from the proxy, which should return some javascript to call the callback.
+		var reqStrung = JSON.stringify(details);
+		var params = "details="+encodeURIComponent(reqStrung)+"&callback="+callbackName;
+		var script = document.createElement("script");
+		script.type = "text/javascript";
+		script.src = "http://" + proxyHost + "/xhrasjson?" + params;
+		document.getElementsByTagName("head")[0].appendChild(script);
+		// The callback should run on a successful response.  But we need to handle errors too.
+		// script.onload = function(e) { GM_log("Script has loaded."); };
+		script.onerror = function(e) {
+			var responseDetails = {};
+			responseDetails.status = 12345;
+			if (onreadystatechangeCallback) {
+				responseDetails.readyState = 4;
+				onreadystatechangeCallback(responseDetails); // This gets called even on error, right?
+			}
+			if (onerrorCallback) {
+				onerrorCallback(responseDetails);
+			}
+			throw new Error("Failed to get JSONed XHR response from "+proxyHost+" - the server may be down.");
+		};
+	};
+}
+
+// @copyright      2009, 2010 James Campos
+// @license        cc-by-3.0; http://creativecommons.org/licenses/by/3.0/
+if (typeof GM_log == 'undefined') {
+	GM_log = function(data) {
+		if (this.console && console.log) {
+			console.log(data);
+		}
+		window.status = ""+data;
+	};
+}
+
+if (typeof GM_deleteValue == 'undefined') {
+
+	GM_addStyle = function(css) {
+		var style = document.createElement('style');
+		style.textContent = css;
+		document.getElementsByTagName('head')[0].appendChild(style);
+	};
+
+	GM_openInTab = function(url) {
+		return window.open(url, "_blank");
+	};
+
+	GM_registerMenuCommand = function(name, funk) {
+		//todo
+	};
+
+	GM_setValue = function(name, value) {
+		value = (typeof value)[0] + value;
+		localStorage.setItem(name, value);
+	};
+
+	GM_getValue = function(name, defaultValue) {
+		var value = localStorage.getItem(name);
+		if (!value)
+			return defaultValue;
+		var type = value[0];
+		value = value.substring(1);
+		switch (type) {
+			case 'b':
+				return value == 'true';
+			case 'n':
+				return Number(value);
+			default:
+				return value;
+		}
+	};
+
+	GM_deleteValue = function(name) {
+		localStorage.removeItem(name);
+	};
+
+	if (localStorage && localStorage.length) {
+		GM_listValues = function() {
+			var list = [];
+			for (var i=0;i<localStorage.length;i++) {
+				list.push(localStorage.key(i));
+			}
+			GM_log("Built key list length "+localStorage.length);
+			return list;
+		};
+	}
+
+}
+
+// Chrome also has no uneval, which forced me to change all eval/unevals to
+// JSON.parse/stringify, which was a good thing.  :)
+// Problem is, my stored data in Firefox was in uneval format, not JSON...
+function JSON_parse(str) {
+	try {
+		return JSON.parse(str);
+	} catch (e) {
+		// Parse Error?  Must be an old record!
+		return eval(str);
+	}
+}
+
+
+
 // == Delicious lookup service, and cache == //
 
 var dataCache = ({});
@@ -295,8 +435,8 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		if (logIO) {
 			log("Delicious responded: "+response.responseText.substring(0,120));
 		}
-		// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
-		var resultObj = eval(response.responseText); // INSECURE!
+		var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+		// var resultObj = eval(response.responseText); // INSECURE!
 		// The data we want is usually the first element in the array
 		if (resultObj && resultObj[0] && resultObj[0].total_posts)
 			resultObj = resultObj[0];
@@ -306,14 +446,14 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		// won't request a lookup on the same URL.
 		// Sometimes Delicious return "[]" which gets evaled as an Object but
 		// one we cannot write to (uneval does not reflect our changes).
-		if (resultObj==null || uneval(resultObj)=="[]") {
+		if (resultObj==null || JSON.stringify(resultObj)=="[]") {
 			resultObj = {};
 		}
 		// Overwrite "working..." with the good or failed result
 		dataCache[lookupURL] = resultObj;
 		dataCache[lookupURL].cacheCount = 0;
 		dataCache[lookupURL].lastUsed = new Date().getTime();
-		GM_setValue("CachedResponse"+lookupURL,uneval(dataCache[lookupURL]));
+		GM_setValue("CachedResponse"+lookupURL,JSON.stringify(dataCache[lookupURL]));
 		// log("Set data: "+uneval(dataCache[lookupURL]));
 		//
 		// Trigger the onSuccess or onFailFn.
@@ -338,7 +478,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 
 function tryLookup(subjectUrl,onSuccess,onFailure) {
 	if (dataCache[subjectUrl] == null) {
-		dataCache[subjectUrl] = eval(GM_getValue("CachedResponse"+subjectUrl,"null"));
+		dataCache[subjectUrl] = JSON_parse(GM_getValue("CachedResponse"+subjectUrl,"null"));
 	}
 	if (dataCache[subjectUrl] != null && dataCache[subjectUrl]!=[]) {
 		// log("Got data for: "+subjectUrl);
@@ -347,7 +487,7 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 		dataCache[subjectUrl].lastUsed = new Date().getTime();
 		// I'm paranoid that setValue takes time to complete!  I guess we could just put it after.
 		setTimeout(function(){
-			GM_setValue("CachedResponse"+subjectUrl,uneval(dataCache[subjectUrl]));
+			GM_setValue("CachedResponse"+subjectUrl,JSON.stringify(dataCache[subjectUrl]));
 		},20);
 		onSuccess(dataCache[subjectUrl],subjectUrl);
 	} else {
@@ -401,7 +541,7 @@ function cleanupCache() {
 				var crURL = cacheList[i]; // e.g. "CachedResponsehttp://..."
 				var url = crURL.replace(/^CachedResponse/,'');
 				if (dataCache[url] == null) {
-					dataCache[url] = eval(GM_getValue(crURL,"null"));
+					dataCache[url] = JSON_parse(GM_getValue(crURL,"null"));
 				}
 				if (dataCache[url] == null) {
 					log("Warning! Empty cache entry for "+url);
@@ -536,7 +676,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	if (resultObj && resultObj.total_posts==1 /*&& resultObj.hash*/ &&
 			resultObj.url=="" && resultObj.title=="" &&
 			resultObj.top_tags.length==0) {
-		GM_log("Got boring response: "+uneval(resultObj));
+		GM_log("Got boring response: "+JSON.stringify(resultObj));
 		resultObj = null;
 	}
 	// However I think this may be due to the fact that there are *private*
@@ -930,7 +1070,7 @@ function addLabel(link) {
 	if (link.href && !sameAsLast && !badHost && goodUrl && !isSearch && !samePage && !isImage) { // && !sameHost 
 
 		function addAnnotationLabel(resultObj,subjectUrl,evt){
-			// log("Adding annotation for "+link.href+" with result "+uneval(resultObj));
+			// log("Adding annotation for "+link.href+" with result "+JSON.stringify(resultObj));
 			if (resultObj && resultObj.total_posts) {
 				var newDiv = createScoreSpan(resultObj);
 				var text = " " + (resultObj && addCommasToNumber(resultObj.total_posts)) + " ";
@@ -957,14 +1097,16 @@ function addLabel(link) {
 			resetColor();
 		}
 
+		var resetColor;
 		if (showProgress) {
 			var oldbgcol = link.style.backgroundColor;
 			link.style.backgroundColor = '#ffff44';
-			function resetColor() {
+			resetColor = function() {
+				// log("Resetting color of "+link);
 				link.style.backgroundColor = oldbgcol;
-			}
+			};
 		} else {
-			function resetColor() { }
+			resetColor = function() { };
 		}
 
 		lastHref = link.href;
