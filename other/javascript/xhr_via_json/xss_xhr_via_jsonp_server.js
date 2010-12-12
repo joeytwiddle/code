@@ -23,15 +23,16 @@ http.createServer(function (request, response) {
 		console.log("Error handling request: "+e);
 		response.writeHead(502,"text/plain");
 		response.end("Error handling request: "+e+"\n"); // body allowed in 502?
+		throw e;
 	}
 }).listen(8124);
 console.log('Server running at http://127.0.0.1:8124/');
 
 function handleRequestForXhrOverJson(incomingRequest, response, url) {
-	// We expect the XHR request object to be provided in the "request" parameter.
-	var xhrReqEscaped = url.query["request"];
+	// We expect the XHR details object to be provided in the "details" parameter.
+	var xhrReqEscaped = url.query["details"];
 	var xhrReqStr = require("querystring").unescape(xhrReqEscaped); // or decodeURIComponent()?
-	console.log(">> Received request: "+xhrReqStr);
+	console.log(">> Received details: "+xhrReqStr);
 	var xhrReq = JSON.parse(xhrReqStr);
 	var targetUrl = xhrReq.url;
 	var targetHost = targetUrl.match(/:\/\/([^/]*)/);
@@ -40,8 +41,8 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 	var outgoingHeaders = {};
 	// TODO: copy or generate some common headers
 	/*
-	// We *could* copy over headers from the input request.
-	// But this copies over the "accept-encoding" header which returns a
+	// We *could* copy over some headers from the input details.
+	// But we don't want the "accept-encoding" header which might return a
 	// confusing gzip to us!
 	for (var h in incomingRequest.headers) {
 		outgoingHeaders[h] = incomingRequest.headers[h];
@@ -58,12 +59,14 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 	var outgoingRequest = httpClient.request(xhrReq.method, targetUrl, outgoingHeaders);
 	outgoingRequest.end();
 	outgoingRequest.on('response',function (incomingResponse) {
-		// We taint the given headers to create our response headers.
 		console.log("|| << Got response: "+JSON.stringify(incomingResponse.headers));
-		var httpResponseHeaders = incomingResponse.headers;
+		var httpResponseHeaders = {};
 		httpResponseHeaders["content-type"] = "text/javascript";
 		response.writeHead(incomingResponse.statusCode, httpResponseHeaders);
 		var xhrResponse = {};
+		xhrResponse.status = incomingResponse.statusCode;
+		xhrResponse.statusText = "HTTP "+incomingResponse.statusCode+" Unlabeled";
+		xhrResponse.responseHeaders = incomingResponse.headers;
 		xhrResponse.responseText = "";
 		incomingResponse.on('data',function(data) {
 			xhrResponse.responseText += data;
@@ -78,8 +81,8 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 				+ '	var xhrResponse = JSON.parse(xhrResponseStrung);\n'
 				+ '	window["'+callbackName+'"](xhrResponse);\n'
 				+ '})();\n';
-			console.log("<< Returning callback script: "+script); // TODO: replace nonprinting chars
-			// console.log("<< Responding with script length "+script.length+".");
+			// console.log("<< Returning callback script: "+script);
+			console.log("<< Responding with script length "+script.length+".");
 			response.end(script);
 		});
 	});
