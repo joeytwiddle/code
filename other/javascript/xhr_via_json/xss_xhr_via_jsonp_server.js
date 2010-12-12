@@ -1,27 +1,34 @@
 #!/usr/local/node-v0.3.1/bin/node
-
-/* Run this service in nodejs to serve cross-site XMLHttpRequests via a JSONP callback. */
+// @name           JSON callback proxy for cross-site XHR
+// @description    Run this service in nodejs to serve cross-site XMLHttpRequests via a JSONP callback.
+// @copyright      2010 Paul Clark
+// @license        cc-by-3.0; http://creativecommons.org/licenses/by/3.0/
 
 // TODO: Fill out some of the standard headers
 // TODO: Correct handling for failure cases.
-// TODO: Fix bugs on framed pages, e.g. http://nodejs.org/docs/v0.3.0/api.html produces:
-//       Object [object DOMWindow] has no method 'xss_xhr_via_jsonp_callback_135806449'
 
 var http = require('http');
 var net = require('net');
 
 http.createServer(function (request, response) {
-	var url = require("url").parse(request.url,true);
-	if (url.pathname === "/xhrasjson") {
-		handleRequestForXhrOverJson(request,response,url);
-	} else {
-		response.writeHead(200,"text/plain");
-		response.end("We don't serve that kind of thing here, sir.");
+	try {
+		var url = require("url").parse(request.url,true);
+		if (url.pathname === "/xhrasjson") {
+			handleRequestForXhrOverJson(request,response,url);
+		} else {
+			response.writeHead(501,"text/plain");
+			response.end("We don't serve that kind of thing here, sir.\n");
+		}
+	} catch (e) {
+		console.log("Error handling request: "+e);
+		response.writeHead(502,"text/plain");
+		response.end("Error handling request: "+e+"\n"); // body allowed in 502?
 	}
 }).listen(8124);
 console.log('Server running at http://127.0.0.1:8124/');
 
 function handleRequestForXhrOverJson(incomingRequest, response, url) {
+	// We expect the XHR request object to be provided in the "request" parameter.
 	var xhrReqEscaped = url.query["request"];
 	var xhrReqStr = require("querystring").unescape(xhrReqEscaped); // or decodeURIComponent()?
 	console.log(">> Received request: "+xhrReqStr);
@@ -47,12 +54,12 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 		}
 	}
 	outgoingHeaders.host = targetHost;
-	console.log("   >> Making request: "+JSON.stringify(outgoingHeaders));
+	console.log("|| >> Making request: "+JSON.stringify(outgoingHeaders));
 	var outgoingRequest = httpClient.request(xhrReq.method, targetUrl, outgoingHeaders);
 	outgoingRequest.end();
 	outgoingRequest.on('response',function (incomingResponse) {
 		// We taint the given headers to create our response headers.
-		console.log("   << Got response: "+JSON.stringify(incomingResponse.headers));
+		console.log("|| << Got response: "+JSON.stringify(incomingResponse.headers));
 		var httpResponseHeaders = incomingResponse.headers;
 		httpResponseHeaders["content-type"] = "text/javascript";
 		response.writeHead(incomingResponse.statusCode, httpResponseHeaders);
@@ -71,7 +78,7 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 				+ '	var xhrResponse = JSON.parse(xhrResponseStrung);\n'
 				+ '	window["'+callbackName+'"](xhrResponse);\n'
 				+ '})();\n';
-			console.log("<< Responding with script "+script); // TODO: replace nonprinting chars
+			console.log("<< Returning callback script: "+script); // TODO: replace nonprinting chars
 			// console.log("<< Responding with script length "+script.length+".");
 			response.end(script);
 		});
