@@ -11,6 +11,15 @@ var showTooltips = true;
 var lookupCurrentPage = true;
 var annotateAllLinks = true;
 
+var maxCacheSize = 1024; // Recommended: 1024
+var showProgress = true; // Highlights each link in yellow while we are making a delicious request on it
+var logIO = false;
+
+
+
+// TODO: Move this to its own script!!
+GM_addStyle("a:visited { color: #440066; }");
+
 
 
 //// NOTES for Delicious Network Add:
@@ -234,10 +243,28 @@ function addCommasToNumber(num) {
 
 function boldTextElement(txt) {
 	var span = document.createElement("SPAN");
-	span.appendChild(document.createTextNode(txt));
+	try {
+		span.appendChild(document.createTextNode(txt));
+	} catch (e) {
+		log("Problem rendering "+typeof txt+" to textnode: "+txt);
+	}
 	span.style.fontWeight = 'bold';
 	span.style.fontSize = '1.1em';
 	return span;
+}
+
+// Not checking the element we were passed, but all its children
+// BUG: Intended to detect 1 image, but will allow N images.
+function isImageAndWhitespace(elem) {
+	for (var i=0;i<elem.childNodes.length;i++) {
+		var b = elem.childNodes[i];
+		var isImage = (b.tagName == "IMG");
+		var isEmptyText = (b.nodeType==3 && b.textContent.trim()=="");
+		if (!isImage && !isEmptyText) {
+			return false;
+		}
+	}
+	return true;
 }
 
 
@@ -248,8 +275,10 @@ var dataCache = ({});
 
 function doLookup(lookupURL,onSuccess,onFailFn) {
 	// lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
-	lookupSpeed = 3000;
-	log("Requesting info for: "+lookupURL);
+	lookupSpeed = 2000;
+	if (logIO) {
+		log("Requesting info for: "+lookupURL);
+	}
 	// We can use https here, but it is slower.
 	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
 	GM_xmlhttpRequest({
@@ -258,32 +287,51 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		headers: {
 			"Accept":"text/json"
 		},
-		onload: function(response) {
-			log("Delicious responded: "+response.responseText.substring(0,80));
-			// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
-			var resultObj = eval(response.responseText); // INSECURE!
-			// TODO: Sometimes Delicious return "[]" but this gets evaled as an Object.
-			// This is hard for later code to detect, e.g. ==[] does not trigger.
-			if (resultObj && resultObj[0] && resultObj[0].total_posts)
-				resultObj = resultObj[0];
-			if (!resultObj && onFailFn) { // TODO: put back? && stillFocused==link) {
-				// Done: Shouldn't we put something non-null in the dataCache, to prevent repeat requests?
-				// Oh "Working..." is there.
-				GM_log("Failed to get result, may leave \"Working...\" in the DB but won't write it to storage.");
+		onload: responseHandler
+	});
+
+	function responseHandler(response) {
+
+		if (logIO) {
+			log("Delicious responded: "+response.responseText.substring(0,120));
+		}
+		// var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+		var resultObj = eval(response.responseText); // INSECURE!
+		// The data we want is usually the first element in the array
+		if (resultObj && resultObj[0] && resultObj[0].total_posts)
+			resultObj = resultObj[0];
+			//
+			//
+		// We should save a record, even if Delicious had no info, so we
+		// won't request a lookup on the same URL.
+		// Sometimes Delicious return "[]" which gets evaled as an Object but
+		// one we cannot write to (uneval does not reflect our changes).
+		if (resultObj==null || uneval(resultObj)=="[]") {
+			resultObj = {};
+		}
+		// Overwrite "working..." with the good or failed result
+		dataCache[lookupURL] = resultObj;
+		dataCache[lookupURL].cacheCount = 0;
+		dataCache[lookupURL].lastUsed = new Date().getTime();
+		GM_setValue("CachedResponse"+lookupURL,uneval(dataCache[lookupURL]));
+		// log("Set data: "+uneval(dataCache[lookupURL]));
+		//
+		// Trigger the onSuccess or onFailFn.
+		// if (stillFocused == link) {
+			// showResultsTooltip(resultObj,lookupURL,lastMoveEvent || evt);
+		// }
+		if (resultObj.total_posts) {
+			onSuccess(resultObj,lookupURL);
+		} else {
+			if (onFailFn) {
 				onFailFn();
-			} else { // Got resultObj, or no onFailFn, or no longer focused
-				// Overwrite "working..." with the good or failed result
-				dataCache[lookupURL] = resultObj;
-				dataCache[lookupURL].lastUsed = new Date().getTime();
-				GM_setValue("CachedResponse"+lookupURL,uneval(resultObj));
-				// log("Got data for "+lookupURL+" meanwhile link="+link);
-				// if (stillFocused == link) {
-					// showResultsTooltip(resultObj,lookupURL,lastMoveEvent || evt);
-				// }
-				onSuccess(resultObj,lookupURL);
+			} else {
+				GM_log("No result from Delicious, and no onFailFn.");
 			}
 		}
-	});
+
+	}
+
 	// TODO: The GM_xmlhttpRequest should also include an
 	// onreadystatechange function to catch any failed requests.
 }
@@ -304,7 +352,7 @@ function tryLookup(subjectUrl,onSuccess,onFailure) {
 		onSuccess(dataCache[subjectUrl],subjectUrl);
 	} else {
 		dataCache[subjectUrl] = "working...";
-		doLookup(subjectUrl,onSuccess,null);
+		doLookup(subjectUrl,onSuccess,onFailure);
 	}
 }
 
@@ -314,8 +362,8 @@ function age(cachedRecord) {
 		return 30;
 	} else {
 		var ageInMilliseconds = (new Date().getTime() - cachedRecord.lastUsed);
-		// var ageInMonths = ageInMilliseconds / 86400 / 30;
-		var ageInDays = ageInMilliseconds / 86400;
+		// var ageInMonths = ageInMilliseconds / 86400000 / 30;
+		var ageInDays = ageInMilliseconds / 86400000;
 		// Avoid division by zero on current time, and future times
 		if (ageInDays <= 0.01)
 			ageInDays = 0.01;
@@ -344,7 +392,7 @@ function cleanupCache() {
 		*/
 
 		// Delete the oldest and least-used, keep new/popular entries
-		while (cacheList.length > 790) {
+		while (cacheList.length > maxCacheSize) {
 			var poorestScore = 99999;
 			var poorestScorer = null;
 			for (var i=0;i<cacheList.length;i++) {
@@ -355,9 +403,14 @@ function cleanupCache() {
 				if (dataCache[url] == null) {
 					dataCache[url] = eval(GM_getValue(crURL,"null"));
 				}
+				if (dataCache[url] == null) {
+					log("Warning! Empty cache entry for "+url);
+					dataCache[url] = {};
+				}
 				// All cached urls have a minimum score of 2.
+				// log("Generating score form cacheCount="+dataCache[url].cacheCount+" and age="+age(dataCache[url]));
 				var thisScore = (dataCache[url].cacheCount+2) / age(dataCache[url]);
-				if (thisScore == NaN) // e.g. if dataCache[url] == null
+				if (isNaN(thisScore)) // e.g. if dataCache[url] == null
 					thisScore = 0.00001;
 				if (!poorestScorer || thisScore < poorestScore) {
 					poorestScore = thisScore;
@@ -365,10 +418,13 @@ function cleanupCache() {
 					poorestScorerIndex = i;
 				}
 			}
-			if (poorestScorer == null)
+			if (poorestScorer == null) {
+				log("Found nothing to cleanup.");
 				break;
-			log("Cleaning up "+poorestScorer+" with "+ ( dataCache[poorestScorer] ? "age="+age(dataCache[poorestScorer])+" and count="+dataCache[poorestScorer].cacheCount : "score="+poorestScore+" and uneval="+uneval(dataCache[poorestScorer]) ) );
-			// log("  Data: " + uneval(dataCache[poorestScorer]) );
+			}
+			var url = poorestScorer.replace(/^CachedResponse/,'');
+			// log("Cleaning up "+poorestScorer+" with "+ ( dataCache[url] ? "age="+age(dataCache[url])+" and count="+dataCache[url].cacheCount : "score="+poorestScore ) +" and uneval="+uneval(dataCache[url]) );
+			log("Cleaning up "+poorestScorer+" with count="+dataCache[url].cacheCount+" and age="+(""+age(dataCache[url])).substring(0,6));
 			GM_deleteValue(poorestScorer);
 			// cacheList = GM_listValues();
 			cacheList[poorestScorerIndex] = cacheList[cacheList.length-1];
@@ -846,6 +902,7 @@ if (lookupCurrentPage) {
 				lc_div.style.right = '20px';
 				lc_div.style.padding = '4px';
 				lc_div.style.fontSize = '2.0em';
+				lc_div.style.zIndex = 1209;
 				document.body.appendChild(lc_div);
 			}
 		});
@@ -859,13 +916,18 @@ if (lookupCurrentPage) {
 // == Initialise all-links auto-lookup == //
 
 var lookupSpeed = 50;
+var lastHref = null;
 
 function addLabel(link) {
+	var sameAsLast = (link.href == lastHref);
 	var sameHost = (link.host==document.location.host);
 	var badHost = (link.host=="webcache.googleusercontent.com") || (link.host.match(".google.com"));
 	var goodUrl = startsWith(link,"http://") || startsWith(link,"https://") || (""+link).indexOf(":")==-1; // skip any "about:config" or "javascript:blah" links
+	var hasHash = (link.href.indexOf("#") >= 0);
+	var samePage = (link.href.split("#")[0] == document.location.href.split("#")[0]);
 	var isSearch = link.href.indexOf("?")>-1;
-	if (link.href && !sameHost && !badHost && goodUrl && !isSearch) {
+	var isImage = isImageAndWhitespace(link);
+	if (link.href && !sameAsLast && !badHost && goodUrl && !isSearch && !samePage && !isImage) { // && !sameHost 
 
 		function addAnnotationLabel(resultObj,subjectUrl,evt){
 			// log("Adding annotation for "+link.href+" with result "+uneval(resultObj));
@@ -892,9 +954,23 @@ function addLabel(link) {
 				// newDiv.addEventListener('mouseover',function(evt){ showResultsTooltip(resultObj,subjectUrl,evt); },false);
 				// newDiv.addEventListener('mouseout',hideTooltipMomentarily,false);
 			}
+			resetColor();
 		}
 
-		tryLookup(link.href,addAnnotationLabel);
+		if (showProgress) {
+			var oldbgcol = link.style.backgroundColor;
+			link.style.backgroundColor = '#ffff44';
+			function resetColor() {
+				link.style.backgroundColor = oldbgcol;
+			}
+		} else {
+			function resetColor() { }
+		}
+
+		lastHref = link.href;
+
+		tryLookup(link.href,addAnnotationLabel,resetColor);
+
 	}
 }
 
