@@ -157,12 +157,12 @@ function doIt() {
 			var visible = false;
 			listenElement.addEventListener('mouseover',function(){
 				if (!visible)
-					setTimeout(function(){ if (focused) { fadeElement(toc,0.4,1.0,0.2); visible=true; } },10);
+					setTimeout(function(){ if (focused) { visible=true; fadeElement(toc,0.4,1.0,0.2); } },10);
 				focused = true;
 			},false);
 			listenElement.addEventListener('mouseout',function(){
 				if (visible)
-					setTimeout(function(){ if (!focused) { fadeElement(toc,1.0,0.2,-0.1); visible=false; } },10);
+					setTimeout(function(){ if (!focused) { visible=false; fadeElement(toc,1.0,0.2,-0.1); } },10);
 				focused = false;
 			},false);
 
