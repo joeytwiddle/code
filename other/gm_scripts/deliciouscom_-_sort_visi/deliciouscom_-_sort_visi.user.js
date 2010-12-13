@@ -6,6 +6,8 @@
 // @include http://www.delicious.com/*
 // ==/UserScript==
 
+// TODO: Add Date sort field, and disable auto-sort-by-popularity when on our own user pages.
+
 var duplicatePageNavigatorAtTop = true;
 
 var main_node = document.getElementById("bd");
@@ -79,7 +81,10 @@ if (sortingDiv) {
 	sortVisDiv.appendChild(document.createTextNode(" | "));
 	createSortLink("Default", postSortDefault, sortVisDiv);
 
-	doSort(postSortPop);
+	// TODO: I only want this for certain pages (search results,
+	// browsing others).  I don't want it for my bookmarks
+	// (www.delicious.com/my_username)
+	// doSort(postSortPop);
 }
 
 function doSort(sortFunction) {
