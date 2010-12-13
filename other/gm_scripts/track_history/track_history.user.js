@@ -570,7 +570,7 @@ function showNeighbours() {
 			if (goForwards) {
 				html += "<A href='"+link.url+"'>"+escapeHTML(link.title)+"</A>";
 			} else {
-				html += "<A href='javascript:document.location.replace(\""+link.url+"\");'>"+escapeHTML(link.title)+"</A>";
+				html += "<A href='"+link.url+"' onclick='document.location.replace(\""+link.url+"\");'>"+escapeHTML(link.title)+"</A>";
 			}
 		}
 		html += "<BR/>\n";
