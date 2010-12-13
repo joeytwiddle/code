@@ -2,7 +2,7 @@
 	<Script filename="first_gm_script.user.js" name="First GM Script" namespace="Timer" description="" version="" enabled="false" basedir="first_gm_script" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2010.10.06" enabled="true" basedir="google_preview_pane" modified="1290968538000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2010.10.06" enabled="true" basedir="google_preview_pane" modified="1292186846000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://www.google.*/*q=*</Include>
 		<Include>http://google.*/*q=*</Include>
 		<Exclude>http://www.google.*/images*</Exclude>
@@ -186,7 +186,7 @@
 		<Include>http://forums.about.com/n/pfx/forum.aspx?webtag=*&amp;nav=search* </Include>
 		<Include>http://forums.about.com/*/messages?msg=*</Include>
 	</Script>
-	<Script filename="auto_highlight_text_on_a.user.js" name="Auto Highlight Search Terms on Result Pages" namespace="search" description="Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer." version="" enabled="true" basedir="auto_highlight_text_on_a" modified="1291426072000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="auto_highlight_text_on_a.user.js" name="Auto Highlight Search Terms on Result Pages" namespace="search" description="Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer." version="" enabled="true" basedir="auto_highlight_text_on_a" modified="1291832919000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 		<Exclude>http://*.google.*/*</Exclude>
 	</Script>
@@ -219,7 +219,7 @@
 		<Include>*</Include>
 		<Exclude>http://images.google.com/*</Exclude>
 	</Script>
-	<Script filename="track_history.user.js" name="track_history" namespace="noggieb" description="Presents a list/tree of the browsing path you took to reach the current page.  An advanced in-page Back button." version="" enabled="false" basedir="track_history" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="track_history.user.js" name="track_history" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Presents a list of the group of links including the one that took you to the current page.  Allows you to go to a neighbouring link without having to go Back.  THIS IS BETA PREVIEW OF THE FINAL SCRIPT.  I recommend you grab the Userscripts Updater, so that you know when I release the 1.0 version." version="" enabled="false" basedir="track_history" modified="1291785139000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
 	<Script filename="faviconizegoogle.user.js" name="FaviconizeGoogle" namespace="noggieb" description="Adds Favicons to Google search results." version="" enabled="false" basedir="faviconizegoogle" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
@@ -975,7 +975,7 @@
 	<Script filename="delicious_20_readability.user.js" name="Delicious 2.0 readability tweaks" namespace="http://userscripts.org/scripts/show/30916" description="Some readability tweaks to the new Delicious" version="" enabled="false" basedir="delicious_20_readability" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://delicious.com/*</Include>
 	</Script>
-	<Script filename="userscriptsorguserscript.user.js" name="Userscripts.org Userscript" namespace="UOU" description="Pads the text a little, improves the search box, colours the tag cloud." version="" enabled="true" basedir="userscriptsorguserscript" modified="1290973350000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="userscriptsorguserscript.user.js" name="Userscripts.org Userscript" namespace="UOU" description="Pads the text a little, improves the search box, colours the tag cloud." version="" enabled="true" basedir="userscriptsorguserscript" modified="1292185329000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://userscripts.org/*</Include>
 		<Include>http://*.userscripts.org/*</Include>
 	</Script>
@@ -1017,7 +1017,7 @@
 		<Include>*</Include>
 		<Exclude>http://*youtube.com/watch?v=*</Exclude>
 	</Script>
-	<Script filename="wikimedia.user.js" name="Wikimedia+" namespace="" description="Add History box at wikimedia's leftmost column" version="" enabled="true" basedir="wikimedia" modified="1291430505000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="wikimedia.user.js" name="Wikimedia+" namespace="" description="Add History box at wikimedia's leftmost column" version="" enabled="true" basedir="wikimedia" modified="1291926340000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*.wikipedia.org/*</Include>
 		<Include>http://*.wikimedia.org/wiki/*</Include>
 		<Include>http://ssdl-wiki.cs.technion.ac.il/wiki/*</Include>
@@ -1069,7 +1069,7 @@
 		<Include>http://hwi.ath.cx/*/userscripts/*</Include>
 		<Include>http://*userscripts.org/*</Include>
 	</Script>
-	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" basedir="wikiindent" modified="1290810325000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" basedir="wikiindent" modified="1292085184000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*wiki*</Include>
 		<Include>http://www.buzztard.com/*</Include>
 		<Include>http://encyclopediadramatica.com/*</Include>
@@ -1084,7 +1084,7 @@
 	<Script filename="google_tracking-b-gone.user.js" name="Google Tracking-B-Gone" namespace="http://sbdev.org" description="Strips click tracking from Google search results" version="" enabled="false" basedir="google_tracking-b-gone" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*.google.com/*</Include>
 	</Script>
-	<Script filename="faviconizetheweb.user.js" name="FaviconizeTheWeb" namespace="FTW" description="Adds a favicon for the website next to every external link on the page.  Clearly shows when you will be leaving the current site, and where you will be going!" version="1.2" enabled="true" basedir="faviconizetheweb" modified="1289955711000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="faviconizetheweb.user.js" name="FaviconizeTheWeb" namespace="FTW" description="Adds a favicon for the website next to every external link on the page.  Clearly shows when you will be leaving the current site, and where you will be going!" version="1.3" enabled="true" basedir="faviconizetheweb" modified="1292181918000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 		<Exclude>http://*delicious.com/search*</Exclude>
 	</Script>
@@ -1127,11 +1127,11 @@
 	<Script filename="next_imageprevious_image.user.js" name="Next Image/Previous Image" namespace="http://arty.name/" description="Quick scroll to next/previous image on a page with f/r buttons" version="1.0" enabled="true" basedir="next_imageprevious_image" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="personas_liberty.user.js" name="Personas Liberty" namespace="travis" description="Allows you to load any image on the web as a Persona.  Provides advanced tweaking tools." version="" enabled="true" basedir="personas_liberty-1" modified="1287479847000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="personas_liberty.user.js" name="Personas 3D Tweaker" namespace="http://hwi.ath.cx/personas3d" description="Allows you to tweak personas.  TODO: Allows you to load any image on the web as a Persona." version="" enabled="true" basedir="personas_liberty-1" modified="1291576493000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 		<Exclude>http://www.google.com/*</Exclude>
 	</Script>
-	<Script filename="reclaim_cpu.user.js" name="Reclaim CPU" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers." version="" enabled="true" basedir="reclaim_cpu" modified="1291140307000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="reclaim_cpu.user.js" name="Reclaim CPU" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers." version="" enabled="true" basedir="reclaim_cpu" modified="1291510749000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 		<Exclude>http://www.last.fm/*</Exclude>
 		<Exclude>http://www.deezer.com/*</Exclude>
@@ -1140,7 +1140,7 @@
 		<Exclude>http://demoscene.tv/*</Exclude>
 		<Exclude>http://*.other.sites/where/we/want/to/leave/the/page/running</Exclude>
 	</Script>
-	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" basedir="delicious_link_tooltop" modified="1291431082000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" basedir="delicious_link_tooltop" modified="1292186940000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
 	<Script filename="delisub.user.js" name="delisub" namespace="http://del.icio.us/Tobu" description="Quickly subscribe and unsubscribe del.icio.us tags" version="1.1.1" enabled="false" basedir="delisub" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
@@ -1149,7 +1149,7 @@
 	<Script filename="last_gm_script.user.js" name="Last GM Script" namespace="Timer" description="" version="" enabled="false" basedir="last_gm_script" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="deliciouscom_-_sort_visi.user.js" name="Delicious.com - Sort Visible Links" namespace="http://murklins.talkoncorners.net" description="Sort all the links on the page by their title, URL or popularity." version="" enabled="true" basedir="deliciouscom_-_sort_visi" modified="1291046951000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="deliciouscom_-_sort_visi.user.js" name="Delicious.com - Sort Visible Links" namespace="http://murklins.talkoncorners.net" description="Sort all the links on the page by their title, URL or popularity." version="" enabled="true" basedir="deliciouscom_-_sort_visi" modified="1291470480000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://delicious.com/*</Include>
 		<Include>http://www.delicious.com/*</Include>
 	</Script>
@@ -1160,7 +1160,7 @@
 		<Include>http://delicious.com/*</Include>
 		<Require filename="jquery-latestmin.js"/>
 	</Script>
-	<Script filename="more_keybinds.user.js" name="More Keybinds" namespace="MK" description="Adds some extra keystrokes to Firefox." version="" enabled="true" basedir="more_keybinds" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="more_keybinds.user.js" name="More Keybinds" namespace="MK" description="Adds some extra keystrokes to Firefox." version="" enabled="true" basedir="more_keybinds" modified="1291918135000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
 	<Script filename="download_video_from_yout.user.js" name="Download Video from YouTube" namespace="userscripts.org" description="adds a link to download flv form YouTube" version="" enabled="false" basedir="download_video_from_yout" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
@@ -1201,5 +1201,40 @@
 	<Script filename="wikipedia_category_tree.user.js" name="Wikipedia Category Tree" namespace="WCT" description="" version="" enabled="true" basedir="wikipedia_category_tree" modified="1290271366000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*.wikipedia.org/wiki/Category:*</Include>
 		<Include>http://*wiki*Category*</Include>
+	</Script>
+	<Script filename="storage_viewer.user.js" name="Storage Viewer" namespace="http://userscripts.org/scripts/show/62673" description="Check the use of new kind of cookies: sessionStorage, localStorage, globalStorage and databaseStorage." version="0.13b" enabled="true" basedir="storage_viewer" modified="1292184992000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" installurl="http://userscripts.org/scripts/source/62673.user.js">
+		<Include>http://*</Include>
+		<Include>https://*</Include>
+		<Unwrap/>
+	</Script>
+	<Script filename="uso_-_installwith.user.js" name="uso - installWith" namespace="http://userscripts.org/users/37004" description="Adds option to install script with an updater. &quot;So easy, a cavemonkey can do it&quot;" version="0.8.7" enabled="true" basedir="uso_-_installwith" modified="1292191682000" dependhash="28a79e1694c945cd0b2cb4db2cc2a3cacf9efa15" installurl="http://userscripts.org/scripts/source/68219.user.js" icon="thumb.png">
+		<Include>http://userscripts.org/scripts/*/*</Include>
+		<Include>https://userscripts.org/scripts/*/*</Include>
+		<Include>http://userscripts.org/topics/*</Include>
+		<Include>https://userscripts.org/topics/*</Include>
+		<Include>http://userscripts.org/reviews/*</Include>
+		<Include>https://userscripts.org/reviews/*</Include>
+		<Include>http://userscripts.org/scripts/versions/*</Include>
+		<Include>https://userscripts.org/scripts/versions/*</Include>
+		<Exclude>http://userscripts.org/scripts/source/*.meta.js</Exclude>
+		<Exclude>https://userscripts.org/scripts/source/*.meta.js</Exclude>
+		<Exclude>http://userscripts.org/scripts/diff/*</Exclude>
+		<Exclude>https://userscripts.org/scripts/diff/*</Exclude>
+		<Exclude>http://userscripts.org/scripts/version/*</Exclude>
+		<Exclude>https://userscripts.org/scripts/version/*</Exclude>
+		<Require filename="68219.js"/>
+		<Require filename="61794user.js"/>
+		<Require filename="gm_config.js"/>
+		<Resource name="usoCheckup" filename="usocheckup.png" mimetype="image/png"/>
+		<Resource name="usoCheckupBeta" filename="usocheckupbeta.png" mimetype="image/png"/>
+		<Resource name="qmark" filename="qmark.png" mimetype="image/png"/>
+		<Resource name="script" filename="script.png" mimetype="image/png"/>
+		<Resource name="checking" filename="checking.png" mimetype="image/png"/>
+		<Resource name="low" filename="low.png" mimetype="image/png"/>
+		<Resource name="guarded" filename="guarded.png" mimetype="image/png"/>
+		<Resource name="elevated" filename="elevated.png" mimetype="image/png"/>
+		<Resource name="high" filename="high.png" mimetype="image/png"/>
+		<Resource name="severe" filename="severe.png" mimetype="image/png"/>
+		<Resource name="undetermined" filename="undetermined.png" mimetype="image/png"/>
 	</Script>
 </UserScriptConfig>
