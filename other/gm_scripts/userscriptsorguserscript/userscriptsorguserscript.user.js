@@ -8,8 +8,9 @@
 // ==/UserScript==
 
 // Sometimes the text touches the edge of the browser, which looks naff.
-document.body.style.paddingLeft = '4px';
-document.body.style.paddingRight = '4px';
+var padElement = document.getElementById("content") || document.body;
+padElement.style.paddingLeft = '4px';
+padElement.style.paddingRight = '4px';
 
 // Userscripts.org search engine sucks.  Let's use Google.
 function doSearch(evt){
