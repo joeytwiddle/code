@@ -53,12 +53,14 @@ var highlightEachTerm    = true;
 
 */
 
-function loopOnTimeout(list,fn,delay) {
-	var i = 0;
+// Backwards looping means we need not worry about the list length
+// changing as we traverse it
+function loopBackwardsOnTimeout(list,fn,delay) {
+	var i = list.length;
 	function doOne() {
-		if (i < list.length) {
-			i += fn(list[i]);   // This += is a special adaptation for searchWithinNode()
-			i++;
+		i--;
+		if (i >= 0) {
+			fn(list[i]);
 			setTimeout(doOne,delay);
 		}
 	}
@@ -102,6 +104,18 @@ function findSearchTerm(url) {
 		}
 	}
 	return null;
+}
+
+var startSearchDelay = 500;
+function startSearch(word) {
+	if (word.length > 0) {
+		// Stagger start time of different words
+		setTimeout(function(){
+			GM_log("Starting search for word: "+word);
+			searchWithinNode(document.body, word.toUpperCase(), word.length, getNextColor());
+		},startSearchDelay);
+		startSearchDelay += 1000;
+	}
 }
 
 var words;
@@ -161,7 +175,7 @@ if (words) {
 				}
 			},200); // 5 per second
 			*/
-			loopOnTimeout(node.childNodes,function(child) {
+			loopBackwardsOnTimeout(node.childNodes,function(child) {
 				return searchWithinNode(child, te, len, color);
 			},100);  // 10 per second
 		}
@@ -182,21 +196,24 @@ if (words) {
 
 	words = unescape(words.replace(/\+/g,' '));
 
-	var wordList = words.split(" ");
-
-	if (wordList.length==1 || highlightWholePhrase) {
+	if (highlightWholePhrase) {
 		searchWithinNode(document.body, words.toUpperCase(), words.length, getNextColor());
 	}
 
-	if (wordList.length>1 && highlightEachTerm) {
-		wordList.forEach(function(word,i) {
-			// words = words.substring(words.indexOf(" ")+1);
-			if (word.length>0) {
-				// Stagger start time of different words
-				setTimeout(function(){
-					GM_log("Starting search for word: "+word);
-					searchWithinNode(document.body, word.toUpperCase(), word.length, getNextColor());
-				},1000*(i+1));
+	// Split by quotes first, to extract any quoted phrases (the even numbered results)
+	var phraseList = words.split('"');
+	// Don't highlight if we already did in highlightWholePhrase!
+	if (highlightEachTerm && !(highlightWholePhrase && phraseList.length==1)) {
+		phraseList.forEach(function(phrase,i) {
+			if (i%2 == 0) {
+				// These words were outside quotes, so we need to split them
+				phrase.split(" ").forEach(function(word) {
+					startSearch(word);
+				});
+			} else {
+				// These words were inside quotes, so we search for the whole
+				// phrase, not the individual words
+				startSearch(phrase);
 			}
 		});
 	}
