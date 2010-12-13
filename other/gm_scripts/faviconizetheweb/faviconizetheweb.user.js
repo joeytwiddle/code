@@ -5,23 +5,13 @@
 // @include        *
 //// Delicious already provide favicons on some pages (via yimg).
 // @exclude        http://*delicious.com/search*
-// @version        1.2
+// @version        1.3
 // ==/UserScript==
-
 // Based on FaviconizeGoogle.
 
-// My Bookmarklet did it thus:
-// javascript:(function(){for (var i=0;i<document.links.length;i++) {var link = document.links[i];if (link.href.match('^javascript:') || link.href.match('^#')) {continue;}var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');if (host == document.location.host) {continue;}var img = document.createElement('IMG');img.src = 'http://'+host+'/favicon.ico';link.parentNode.insertBefore(img,link);}})();
 
-// DONE: Provided more options where to place favicon: by the link or by the
-// url, before or after, inside or outside the link.  However in my opinion
-// they all suck except the default. ;)
 
-// TODO: OK delay is working, but still when the script does run, it seems to
-// lock up the browser until *all* the new images are loaded (could be many).
-// Perhaps this is because they are now all coming from one host, so FF stalls
-// until it has all it needs?
-// Maybe we should add them in smaller batches with a setTimeout inbetween...
+// == Config == //
 
 var placeFaviconAfter = false;
 var placeFaviconInsideLink = false;
@@ -32,9 +22,16 @@ var batchSize = 20;
 
 var alwaysUseGoogle = true;
 
+
+
+
+
+// == Library Functions == //
+
 var oldSetTimeout = setTimeout;
-this.setTimeout = function(callbackFn,delay) {
-	if (Math.random()>(1.0/batchSize)) // 1.0 locks up the browser on large pages with many favicons
+function setTimeout(callbackFn,delay) {
+	// Rather dodgy implementation of batch processing ;)
+	if (Math.random()>(1.0/batchSize)) // 0.0 locks up the browser on large pages with many favicons
 		callbackFn();
 	else
 		oldSetTimeout(callbackFn,delay);
@@ -73,6 +70,10 @@ function iterateAndDo(list,iterationFn,delay,i) {
 	}
 	doOne();
 }
+
+
+
+// == Main == //
 
 function createFaviconFor(url) {
 
@@ -207,7 +208,7 @@ function doIt() {
 	// setTimeout(doIt,startAt);
 // },false);
 
-/* This method offers a few small chunks of free time before we start. */
+/* This method ensures a few small chunks of interaction time before we start. */
 function startCountdown(total,delay,fnToDo) {
 	function doCountdown(msToGo) {
 		if (msToGo > 0) {
