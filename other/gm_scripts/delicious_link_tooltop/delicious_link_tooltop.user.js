@@ -273,7 +273,7 @@ function isImageAndWhitespace(elem) {
 
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
-	var GM_xmlhttpRequest = function(details) {
+	GM_xmlhttpRequest = function(details) {
 		var proxyHost = "hwi.ath.cx:8124";
 		// We don't want to send functions to the proxy, so we remove them from the details object.
 		var onloadCallback = details.onload;
@@ -343,6 +343,9 @@ if (typeof GM_log == 'undefined') {
 
 if (typeof GM_deleteValue == 'undefined') {
 
+	// TODO: It would be more appropriate to use globalStorage if it is available.
+	// Well to be strictly GM-compatible, it should also separate keys by script namespace and name and number!
+
 	GM_addStyle = function(css) {
 		var style = document.createElement('style');
 		style.textContent = css;
@@ -388,7 +391,7 @@ if (typeof GM_deleteValue == 'undefined') {
 			for (var i=0;i<localStorage.length;i++) {
 				list.push(localStorage.key(i));
 			}
-			GM_log("Built key list length "+localStorage.length);
+			GM_log("localstorage is holding "+localStorage.length+" records.");
 			return list;
 		};
 	}
