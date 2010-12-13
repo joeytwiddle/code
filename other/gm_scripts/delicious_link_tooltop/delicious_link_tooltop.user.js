@@ -3,6 +3,7 @@
 // @namespace      GPM
 // @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
 // @include        *
+// @exclude        http://www.delicious.com/*
 // ==/UserScript==
 // don't require   http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
 // @require        http://json.org/json2.js
@@ -438,16 +439,20 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		if (logIO) {
 			log("Delicious responded: "+response.responseText.substring(0,120));
 		}
-		var resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
-		// var resultObj = eval(response.responseText); // INSECURE!
+		var resultObj;
+		try {
+			resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+		} catch (e) {
+			log("Failed to parse responseText with JSON: "+response.responseText);
+			// resultObj = eval(response.responseText); // INSECURE!
+		}
 		// The data we want is usually the first element in the array
-		if (resultObj && resultObj[0] && resultObj[0].total_posts)
+		if (resultObj && resultObj[0] && resultObj[0].total_posts) {
 			resultObj = resultObj[0];
-			//
-			//
+		}
 		// We should save a record, even if Delicious had no info, so we
 		// won't request a lookup on the same URL.
-		// Sometimes Delicious return "[]" which gets evaled as an Object but
+		// Sometimes Delicious returns "[]" which gets evaled as an Object but
 		// one we cannot write to (uneval does not reflect our changes).
 		if (resultObj==null || JSON.stringify(resultObj)=="[]") {
 			resultObj = {};
@@ -458,11 +463,6 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		dataCache[lookupURL].lastUsed = new Date().getTime();
 		GM_setValue("CachedResponse"+lookupURL,JSON.stringify(dataCache[lookupURL]));
 		// log("Set data: "+uneval(dataCache[lookupURL]));
-		//
-		// Trigger the onSuccess or onFailFn.
-		// if (stillFocused == link) {
-			// showResultsTooltip(resultObj,lookupURL,lastMoveEvent || evt);
-		// }
 		if (resultObj.total_posts) {
 			onSuccess(resultObj,lookupURL);
 		} else {
@@ -1013,9 +1013,11 @@ function createScoreSpan(resultObj) {
 	if (resultObj.total_posts) {
 		var text = resultObj.total_posts;
 		scoreSpan.appendChild(boldTextElement(text));
-		var greatness = 80 - 30 * Math.log(resultObj.total_posts) / Math.log(10000);
-		// scoreSpan.style.backgroundColor = hsv2rgbString(2/3,greatness,0.8);
-		scoreSpan.style.backgroundColor = "hsl(240,70%,"+greatness+"%)";
+		var greatness = Math.min(1.0,Math.log(resultObj.total_posts) / Math.log(10000));
+		var saturation = 40 + 60*greatness;
+		var brightness = 70 - 30*greatness;
+		// scoreSpan.style.backgroundColor = hsv2rgbString(2/3,0.3+0.5*greatness,0.8);
+		scoreSpan.style.backgroundColor = "hsl(240,"+saturation+"%,"+brightness+"%)";
 	}
 	scoreSpan.style.color = 'white';
 	scoreSpan.style.fontWeight = 'bold';
