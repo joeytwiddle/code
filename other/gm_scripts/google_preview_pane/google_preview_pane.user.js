@@ -14,6 +14,12 @@
 
 // === Changelog ===
 //
+// 2010.12.08
+//
+//   * Works with Google's new in-page auto-updating results.
+//   * TODO: Google's new preview window is a bit distracting.
+//   * TODO: scrollIntoView if you preview a later result with createPanelLater enabled.
+//
 // 2010.10.06
 //
 //   * ...
@@ -21,9 +27,8 @@
 // 0.9.9.8
 //
 //   * Works with the new format (that sidebar thingy)
-//   * Set createPanelLater = true
+//   * New default createPanelLater, does not reframe the results until you request a preview.
 //   * TODO: Fails to suck in the bottom of the page, sorry.
-//   * TODO: Work with Google's new Ajax auto results update when search term is edited.
 //
 // 0.9.9.7
 //
@@ -190,7 +195,7 @@ function initPreview() {
 		}
 
 		// I tried doing this later, but things broke!
-		reformatThings();
+		reformatThingsEarly();
 
 	} catch (e) {
 		GM_log("Exception during layout: "+e);
@@ -262,8 +267,8 @@ function initPreview() {
 			table.height = ''+heightFree;
 			resultsBlock.style.height = heightFree+'px';
 			previewFrame.height = heightFree+'px';
-			GM_log("resultsBlock.style.height = "+resultsBlock.style.height);
-			GM_log("previewFrame.height = "+previewFrame.height);
+			// GM_log("resultsBlock.style.height = "+resultsBlock.style.height);
+			// GM_log("previewFrame.height = "+previewFrame.height);
 			if (div) {
 				try {
 					/*
@@ -488,6 +493,7 @@ function initPreview() {
 
 		function checkFocus() {
 			if (lastHover && getContainer(lastHover) != lastPreview) {
+				// We have decided we will preview this clicked result!
 				if (lastPreview) {
 					// highlightNode(lastPreview,'',''); // but lastPreview is the container already!
 					realHighlightNode(lastPreview,'','');
@@ -515,6 +521,16 @@ function initPreview() {
 					}
 					if (!previewFrame) {
 						createPreviewFrame();
+						// If the result we clicked on was low down, it might not be
+						// visible now that we have moved the results into the side
+						// panel.  So we ensure it is still visible...
+						setTimeout(function(){
+							//// Neither of these work for me in Firefox 4 alpha 6
+							link.scrollIntoView(false); // Works in Chrome
+							//// This one work in FF4 from the console!
+							// link.name = "result"+Math.random();
+							// unsafeWindow.document.location.hash = link.name;
+						},500);
 					}
 					previewFrame.src = link.href;
 					// lastPreview = lastHover;
@@ -723,22 +739,7 @@ function showUnselected(elem) {
 	}
 }
 
-function reformatThings() {
-
-	// Do some styling on the main result LI nodes.
-	var results = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
-	for (var i=0;i<results.snapshotLength;i++) {
-		var elem = results.snapshotItem(i);
-		// Alternate background color
-		if (checkerRows)
-			elem.style.backgroundColor = Colors.checkers[i%2];
-		// elem.style.paddingTop = '1em';
-		// elem.style.paddingBottom = '1em';
-		// elem.style.paddingLeft = '0px';
-		// elem.style.paddingRight = '0px';
-		// elem.style.border = '2px solid '+elem.style.backgroundColor;
-		showUnselected(elem);
-	}
+function reformatThingsEarly() {
 
 	if (removeLogo || miniLogo) {
 		var logo = document.getElementsByTagName("IMG")[0];
@@ -775,9 +776,25 @@ function reformatThings() {
 			toKill[i].parentNode.removeChild(toKill[i]);
 	}
 
+	// Do some styling on the main result LI nodes.
+	var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
+	for (var i=0;i<resNodes.snapshotLength;i++) {
+		var elem = resNodes.snapshotItem(i);
+		// Alternate background color
+		if (checkerRows)
+			elem.style.backgroundColor = Colors.checkers[i%2];
+	}
+
 }
 
 function reformatThingsLater() {
+
+	// Do some styling on the main result LI nodes.
+	var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
+	for (var i=0;i<resNodes.snapshotLength;i++) {
+		var elem = resNodes.snapshotItem(i);
+		showUnselected(elem);
+	}
 
 	// Hide the new sidebar
 	var sidebar2010 = document.getElementById("leftnav");
@@ -836,7 +853,9 @@ function reformatThingsLater() {
 
 		// The last Goooooooogle TD has a silly huge margin
 		var tds = document.getElementById('nav').getElementsByTagName('td');
-		tds[tds.length-1].getElementsByTagName('span')[0].style.marginRight = '0px';
+		if (tds && tds.length) {
+			tds[tds.length-1].getElementsByTagName('span')[0].style.marginRight = '0px';
+		}
 		// Remove all the images in that block
 		var oooogs = document.getElementById('nav').getElementsByTagName('span')
 		for (var i=oooogs.length-1;i>=0;i--) {
@@ -1010,6 +1029,8 @@ TODO: The focus color over an 'action' link should be related to the 'action' co
 
 2010: google.com now has some "navleft" bar which messes with our shi.  I had
 to clear the margin-left and margin-right of #center_col,#foot also.
+
+TODO: Advanced search link is not detected as 'action'.
 
 */
 
