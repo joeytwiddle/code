@@ -8,7 +8,7 @@
 
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
-	var GM_xmlhttpRequest = function(details) {
+	GM_xmlhttpRequest = function(details) {
 		var proxyHost = "hwi.ath.cx:8124";
 		// We don't want to send functions to the proxy, so we remove them from the details object.
 		var onloadCallback = details.onload;
