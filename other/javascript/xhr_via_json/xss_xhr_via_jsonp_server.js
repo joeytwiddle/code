@@ -62,7 +62,7 @@ function handleRequestForXhrOverJson(incomingRequest, response, url) {
 		console.log("|| << Got response with "+incomingResponse.headers.length+" headers.");
 		var httpResponseHeaders = {};
 		httpResponseHeaders["content-type"] = "text/javascript";
-		response.writeHead(incomingResponse.statusCode, httpResponseHeaders);
+		response.writeHead(200, httpResponseHeaders);
 		var xhrResponse = {};
 		xhrResponse.status = incomingResponse.statusCode;
 		xhrResponse.statusText = "HTTP "+incomingResponse.statusCode+" Unlabeled";

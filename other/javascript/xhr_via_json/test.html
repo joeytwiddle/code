@@ -5,6 +5,9 @@
 		<input id="url" type="text" size="80" value="http://hwi.ath.cx/src/keep/fiery_xmms/xmms_firespectrum/out/?M=D"></input>
 		<button id="goButton">Go</button>
 		<div id="displayDiv"> ... output ... </div>
+		<p>
+		<!-- Fixed: Notes: If I try to load google.com or www.googlg.com, we see nothing here.  The proxy gets an HTTP 301 moved response, along with some HTML for the responseText, and this seems to be returned to make the callback, but the callback never gets run - the browser report onerror on the added script element!  Why? -->
+		</p>
 		<script src="xss_xhr_via_jsonp.js"></script>
 		<script type="text/javascript">
 			// alert("this.GM_xmlhttpRequest="+this.GM_xmlhttpRequest);

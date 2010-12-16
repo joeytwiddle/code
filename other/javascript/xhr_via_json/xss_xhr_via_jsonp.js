@@ -3,8 +3,7 @@
 // @copyright      2010 Paul Clark
 // @license        cc-by-3.0; http://creativecommons.org/licenses/by/3.0/
 
-// DONE: Some scripts provide an onreadystatechange function but not onload.
-//       So we should fake an onreadystatechange event for them.
+// TODO: scripts and functions added to the DOM should be removed after use
 
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
@@ -28,7 +27,8 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 				onloadCallback(responseDetails);
 			}
 		};
-		if (!window.navigator.vendor.match(/Google/) /* || !weAreInUserscriptScope */) {
+		var weAreInUserscriptScope = (typeof unsafeWindow != 'undefined');
+		if (!window.navigator.vendor.match(/Google/) || !weAreInUserscriptScope) {
 			// This works fine in Firefox GM, or in Chrome's content scope.
 			window[callbackName] = callbackFunction;
 		} else {
@@ -60,7 +60,7 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 			if (onerrorCallback) {
 				onerrorCallback(responseDetails);
 			}
-			throw new Error("Failed to get JSONed XHR response from "+proxyHost+" - the server may be down.");
+			throw new Error("Failed to get JSONed XHR response from "+proxyHost+" - the proxy server may be down.");
 		};
 	};
 }
