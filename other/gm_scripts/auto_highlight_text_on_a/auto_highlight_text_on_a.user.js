@@ -121,7 +121,7 @@ function startSearch(word) {
 var words;
 
 // Check for user supplied #search
-words = findSearchTerm(document.location.hash);
+words = findSearchTerm(document.location.hash.slice(1));
 // Check for current page CGI search terms
 if (!words)
 	words = findSearchTerm(document.location.search);
@@ -185,7 +185,7 @@ if (words) {
 	var hue = 360/6;
 	function getNextColor() {
 		var colstr = "hsl("+hue+",100%,80%)";
-		hue = Math.round(hue + 360/3.3);
+		hue = Math.round(hue + 360/3.3); // 10 unique colors before repeat
 		if (hue > 360)
 			hue -= 360;
 		return colstr;
@@ -197,13 +197,14 @@ if (words) {
 	words = unescape(words.replace(/\+/g,' '));
 
 	if (highlightWholePhrase) {
-		searchWithinNode(document.body, words.toUpperCase(), words.length, getNextColor());
+		startSearch(words);
+		// TODO: exceptions
 	}
 
-	// Split by quotes first, to extract any quoted phrases (the even numbered results)
-	var phraseList = words.split('"');
 	// Don't highlight if we already did in highlightWholePhrase!
-	if (highlightEachTerm && !(highlightWholePhrase && phraseList.length==1)) {
+	if (highlightEachTerm && !(highlightWholePhrase && words.indexOf(" ")==-1)) {
+		// Split by quotes first, to extract any quoted phrases (the even numbered results)
+		var phraseList = words.split('"');
 		phraseList.forEach(function(phrase,i) {
 			if (i%2 == 0) {
 				// These words were outside quotes, so we need to split them
