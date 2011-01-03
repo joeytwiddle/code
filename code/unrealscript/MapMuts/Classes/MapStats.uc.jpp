@@ -202,7 +202,7 @@ bStickWithCurrentMode=True
 #ifdef LIST_RECENTLY_PLAYED
 bListRecentlyPlayed=False
 #endif
-KnownGameTypes="CTF:botpack.CTFGame|DM:botpack.DeathMatchPlus:botpack.TeamGamePlus:botpack.LastManStanding|AS:botpack.Assault|BT:BunnyTrack2.BunnyTrackGame"
+KnownGameTypes="CTF:botpack.CTFGame|DM:botpack.DeathMatchPlus:botpack.TeamGamePlus:botpack.LastManStanding|AS:botpack.Assault|BT:bunnytrack2.BunnyTrackGame|DOM:botpack.Domination|MH:monsterhunt.MonsterHunt"
 MaxPlayerSizeDifference=5.0
 #ifdef PLAYERS_CAN_VETO
 MinimumNosForVeto=2
@@ -258,6 +258,9 @@ function PostBeginPlay() {
 		// bDoMapScan=True;
 
 	mapName = StrBeforeFirst(""$Self,".");
+	if (StrEndsWith(Caps(mapName),".UNR")) {
+		MapName = Left(mapName,Len(mapName)-4);
+	}
 	mapI = MapIndex(mapName);
 	NumberOfSpawnPoints = CountActors(class'PlayerStart');
 
@@ -289,7 +292,7 @@ function DoStart() {
 
 	// ScanMaps();
 
-	NormalLog(mapName $" Last played "$ NiceAge(DaysSince1970() - currentMap.DateLastPlayed) $" ago.");
+	NormalLog(mapName $" Last played "$ NiceAge(DaysSince1999() - currentMap.DateLastPlayed) $" ago.");
 	if (bLogStats) {
 		NormalLog(mapName $" NumberOfSpawnPoints = "$ CountActors(class'PlayerStart'));
 		NormalLog(mapName $" NumberOfWeaponPickups = "$ CountActors(class'Weapon'));
@@ -365,10 +368,10 @@ function DoStart() {
 	// Update some stats:
 	currentMap.GamesStarted++;
 	// #ifdef TESTING
-	// currentMap.DateLastPlayed = DaysSince1970(); // We need this to stop empty-switching to the same map every time.  But if we only want to record when a player actually plays the map, remove this line.
+	// currentMap.DateLastPlayed = DaysSince1999(); // We need this to stop empty-switching to the same map every time.  But if we only want to record when a player actually plays the map, remove this line.
 	// #else
-	// currentMap.DateLastPlayed = (currentMap.DateLastPlayed + DaysSince1970()) / 2.0; // Compromise: we mix the two values (it becomes half as old).
-	currentMap.DateLastPlayed = (currentMap.DateLastPlayed*0.7 + DaysSince1970()*0.3); // Compromise: we pull its date forward by 30%, so other maps with similar age/score will now have their chance.
+	// currentMap.DateLastPlayed = (currentMap.DateLastPlayed + DaysSince1999()) / 2.0; // Compromise: we mix the two values (it becomes half as old).
+	currentMap.DateLastPlayed = (currentMap.DateLastPlayed*0.7 + DaysSince1999()*0.3); // Compromise: we pull its date forward by 30%, so other maps with similar age/score will now have their chance.
 	// #endif
 	// if (currentMap.bCrashes) { NormalLog("FIXED! Map "$ mapName $" was previously crashing, but now works!"); } // Can't do, this is usually set to true by DoLevelSwitch :P
 	currentMap.bCrashes = False; // Was most likely set just before the server switched to this map.  We reset it here, to prove this is a non-crashing map.
@@ -411,7 +414,7 @@ function ModifyPlayer(Pawn Other) {
 				// We wait until 30 seconds into the map (actually the next frag).  See below.
 
 				// Update some stats for this map:
-				currentMap.DateLastPlayed = DaysSince1970();
+				currentMap.DateLastPlayed = DaysSince1999();
 				#ifdef LIST_RECENTLY_PLAYED
 				RecentlyPlayedMaps = StrReplace(RecentlyPlayedMaps," "$mapName$" "," ") $" "$ mapName;
 				if (Len(RecentlyPlayedMaps)>60) {
@@ -422,7 +425,7 @@ function ModifyPlayer(Pawn Other) {
 				SaveConfig(); // In case mapswitch is forced by admin or mapvote or another mod.
 
 			}
-			// currentMap.DateLastPlayed = DaysSince1970(); // hope that a SaveConfig happens later (should happen in DoEnd())
+			// currentMap.DateLastPlayed = DaysSince1999(); // hope that a SaveConfig happens later (should happen in DoEnd())
 
 			if (PlayerPawn(Other)!=None && Other.PlayerReplicationInfo.Deaths==0 && bShowLevelEnterText && Level.LevelEnterText!="") {
 				PlayerPawn(Other).ClientMessage(Level.Title $ " : " $ Level.LevelEnterText);
@@ -467,14 +470,20 @@ event Timer() {
 
 	// Mid-game checks:
 	if (bEmptyServerSwitchMap && CountPlayers()==0 && Level.TimeSeconds>EmptyServerSwitchSeconds) {
+		// We might be called once or twice after DoLevelSwitch, before the server actually switches.
+		// If that is the case, then NextURL will have been set, so we do nothing.
+		// Except if it happens a lot, then we assume something is stalled, and try DoLevelSwitch again.
 		if (Level.NextURL != "" && FRand()<0.9) {
-			NormalLog("Timer(): bEmptyServerSwitchMap=True but NextURL is already set.  Waiting...");
+			DebugLog("Timer(): bEmptyServerSwitchMap=True but NextURL is already set.  Waiting...");
 		} else {
 			NormalLog("Timer(): bEmptyServerSwitchMap=True - auto switching at "$Level.TimeSeconds$"");
 			// Level.Game.bGameEnded = True;
 			// bDoneGameEnd = True; // This prevents DoEnd() from being called, which is good since it's an idle server switch, not a real end-game.
 			// redundant: bCanChooseUnsizedMaps = True;
 			DoLevelSwitch();
+			// There is no point in progressing
+			// But we leave the timer on, so we can try again later if case this doesn't work for some reason.
+			return;
 		}
 	}
 
@@ -516,12 +525,12 @@ event Timer() {
 				// BroadcastAndLog("Next map will be "$ NextMap $".");
 				// #endif
 				// BroadcastAndLog("(Other maps: "$ ConsideredMaps $")");
-				// BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+				// BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
 				BroadcastAndLog("Considered maps: "$ConsideredMaps);
 				#ifdef PLAYERS_CAN_VETO
 				BroadcastAndLog("Next map will be: "$ NextMap $", unless you type !NO to veto it.");
 				#else
-				BroadcastAndLog("Next map will be: "$ NextMap $" (last played "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago)");
+				BroadcastAndLog("Next map will be: "$ NextMap $" (last played "$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $" ago)");
 				#endif
 			}
 			// We do the switch in the if clause below, when Timer is next called.
@@ -557,7 +566,7 @@ function DoEnd() {
 	// }
 
 	currentMap.GamesEnded++;
-	// currentMap.DateLastPlayed = DaysSince1970();
+	// currentMap.DateLastPlayed = DaysSince1999();
 
 	newTotalHours = currentMap.HoursPlayed + deltaHours;
 
@@ -651,7 +660,11 @@ function DoLevelSwitch() {
 		return;
 	}
 
-	// MapRecord(NextMap).DateLastPlayed = DaysSince1970(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Might be nicer to set date = 1 day ago, unless a player joins and makes it more recent.  But that's still not ideal.  What is?)  OK moved to DoStart(), where we move the time half-way.
+	if (MapRecord(NextMap).bCrashes) {
+		BroadcastAndLog("TEST! Retrying crashed map "$ NextMap);
+	}
+
+	// MapRecord(NextMap).DateLastPlayed = DaysSince1999(); // If we are auto-switching maps, we will keep cycling through the same set, if we don't update the date somehow.  (Might be nicer to set date = 1 day ago, unless a player joins and makes it more recent.  But that's still not ideal.  What is?)  OK moved to DoStart(), where we move the time half-way.
 	if (bDetectCrashingMaps) {
 		// We mark the map as crashed - it will be unmarked if it loads successfully.
 		MapRecord(NextMap).bCrashes = True;
@@ -666,7 +679,7 @@ function DoLevelSwitch() {
 		// BroadcastAndLog("Considered maps: "$ ConsideredMaps);
 		// BroadcastAndLog("Switching to "$ NextMap $" now.");
 
-		num = (DaysSince1970() - MapRecord(NextMap).DateLastPlayed);
+		num = (DaysSince1999() - MapRecord(NextMap).DateLastPlayed);
 		if (num<2.0) {
 			// NormalLog(mapName$" was last played "$ Int(24*num+0.5) $" hours ago.");
 			BroadcastAndLog("Switching to "$ NextMap $", last played "$ Int(24.0*num+0.5) $" hours ago.");
@@ -890,14 +903,14 @@ function float MaxActorDistanceType(class<Actor> type) {
 	// return Sqrt(totalDistance); // this is actually average squared-distance, we should square-root it.
 }
 
-function float DaysSince1970() {
-	return (Level.Year-1970.0)*365.25 + Level.Month*31.0 + Level.Day + Level.Hour/24.0 + Level.Minute/24.0/60.0 + Level.Second/24.0/60.0/60.0;
+function float DaysSince1999() {
+	return (Level.Year-1999.0)*372.0 + Level.Month*31.0 + Level.Day + Level.Hour/24.0 + Level.Minute/24.0/60.0 + Level.Second/24.0/60.0/60.0;
 }
 
 function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	local float ageInDays, playerDiff, result;
 	// if (MapStats[nextI].DateLastPlayed>719540) MapStats[nextI].DateLastPlayed = MapStats[nextI].DateLastPlayed - 719540; // legacy: when i changed my date calculation :P
-	ageInDays = DaysSince1970() - MapStats[nextI].DateLastPlayed;
+	ageInDays = DaysSince1999() - MapStats[nextI].DateLastPlayed;
 	// if (ageInDays>719050) ageInDays = ageInDays - 719050; // legacy: when i changed my date calculation :P
 	// if (ageInDays<0) ageInDays = -ageInDays; // legacy: when i changed my date calculation :P
 	// Originally I gave +0.5 to encourage another player to join.
@@ -905,12 +918,15 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	// #define deltaPlayers ( FRand() - 0.5 )
 	#define deltaPlayers (FRand()*0.5)
 	playerDiff = Abs(currentNumPlayers + deltaPlayers - MapStats[nextI].PreferredPlayers);
-	if (playerDiff > MaxPlayerSizeDifference)
-		playerDiff = playerDiff + 50;
-	// playerDiff += 0.2; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
 	#ifdef XOL_BUILD
-		playerDiff = (playerDiff*playerDiff)/2.0 + 0.2; // Rork's suggestion - to make playerDiff more relevant than ageInDays
+		// Rork's suggestions - to make playerDiff more relevant than ageInDays
+		if (playerDiff > MaxPlayerSizeDifference) {
+			playerDiff = playerDiff + 5;
+		}
 	#endif
+	// Punish large playerDiff more than small playerDiff.  (Basically 0-4 playerdiff is acceptable, but >7 playerdiff is terrible.)
+	playerDiff = 20.0 + (playerDiff*playerDiff*playerDiff);   // plot [0:10] [0:500] 20+(x)**3
+	// playerDiff += 2.0; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
 	#ifndef XOL_BUILD
 		if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
 	#endif
@@ -921,7 +937,7 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	#define playerTweak (0.0*MapStats[nextI].AveragePlayerCount*0.05)
 	//// ratingTweak makes a map 2 hours older * number of good ratings (-2*bad).
 	// #define ratingTweak (2.0/24.0*(MapStats[nextI].GoodVotes - 2*MapStats[nextI].BadVotes))
-	//// ratingMultiplierTweak is scalable since GetRatingForMapI is bound 0-10.
+	//// ratingMultiplierTweak scales better since GetRatingForMapI is bound 0-10.
 	#define ratingMultiplierTweak (0.5 + 1.5 * GetRatingForMapI(nextI)/10.0)
 	// TODO: anyway playerTweak should work wrt currentNumPlayers!  playerTweak tends towards slightly larger maps, in order to encourage players to join? :o
 	// if (currentNumPlayers==0 && MapStats[nextI].PreferredPlayers==0) // When the server is empty
@@ -937,7 +953,7 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 }
 
 // function bool ExistsOnDisk(String mapName) {
-	// return ScanMaps(mapName);
+	// return ScanMaps(mapName); // search no longer supported
 // }
 
 function String ChooseNextMap() {
@@ -964,6 +980,8 @@ function String ChooseNextMap() {
 	if (currentNumPlayers == 0 && bEmptyServerRandomMap) {
 		bCanChooseUnsizedMaps = True;   // A chance to estimate player size for maps we have not yet processed
 		currentNumPlayers = ServerMinPlayers + FRand() * (ServerMaxPlayers - ServerMinPlayers + 1);
+		BroadcastMessage("Seeking map for "$ currentNumPlayers $" players.");
+		NormalLog("Seeking map for "$ currentNumPlayers $" players.");
 	} // TODO: If MapStats is the server's only method of map switching, it may refuse to ever try a new map.  (e.g. if bEmptyServerSwitchMap is unset)
 	NormalLog("Current players = "$ currentNumPlayers $", choosing...");
 	for (i=0;i<MaxData;i++) {
@@ -995,6 +1013,7 @@ function String ChooseNextMap() {
 					continue;
 					// TODO: Otherwise if we do select a map with a different gametype/prefix, we should also change gametype when we switch level!
 				}
+
 				// This is our new best map!
 				// if (bestMap!="" && FRand()>0.2) {
 
@@ -1004,11 +1023,11 @@ function String ChooseNextMap() {
 					if (Level.Game.bGameEnded) {
 						ConsideredMaps = ConsideredMaps $ bestMap $" ";
 					} else {
-						ConsideredMaps = ConsideredMaps $ bestMap $"("$ StrReplaceAll(NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed)," ","_") $","$ NiceFloat(MapRecord(bestMap).PreferredPlayers) $")"$ " ";
+						ConsideredMaps = ConsideredMaps $ bestMap $"("$ StrReplaceAll(NiceAge(DaysSince1999() - MapRecord(bestMap).DateLastPlayed)," ","_") $","$ NiceFloat(MapRecord(bestMap).PreferredPlayers) $")"$ " ";
 					}
 					if (Len(ConsideredMaps)>60)
 						ConsideredMaps = StrAfterFirst(ConsideredMaps," ");
-					NormalLog("  - "$MapStats[i].MapName$" (score "$ NiceFloat(mapScore) $", age "$ NiceAge(DaysSince1970() - MapStats[i].DateLastPlayed) $", players "$ NiceFloat(MapStats[i].PreferredPlayers) $")");
+					NormalLog("  - "$MapStats[i].MapName$" (score "$ NiceFloat(mapScore) $", age "$ NiceAge(DaysSince1999() - MapStats[i].DateLastPlayed) $", players "$ NiceFloat(MapStats[i].PreferredPlayers) $")");
 				}
 
 				bestMap = MapStats[i].MapName;
@@ -1016,7 +1035,7 @@ function String ChooseNextMap() {
 			}
 		}
 	}
-	NormalLog("Best map was "$ bestMap $" (score "$ NiceFloat(bestScore) $", age "$ NiceAge(DaysSince1970() - MapRecord(bestMap).DateLastPlayed) $", players "$ NiceFloat(MapRecord(bestMap).PreferredPlayers)$ ")");
+	NormalLog("Best map was "$ bestMap $" (score "$ NiceFloat(bestScore) $", age "$ NiceAge(DaysSince1999() - MapRecord(bestMap).DateLastPlayed) $", players "$ NiceFloat(MapRecord(bestMap).PreferredPlayers)$ ")");
 	NormalLog("Other considered maps were: "$ ConsideredMaps);
 	return bestMap;
 }
@@ -1040,7 +1059,7 @@ function int CountActors(class<Actor> type) {
 		// lA=A;
 	}
 	// DebugLog("CountActors("$type$") = "$c$" [first="$GetAny(type)$" last="$lA$"]");
-	if (bDebugLogging && type != class'PlayerPawn' && type != class'Spectator') { DebugLog("CountActors("$type$") = "$c); }
+	// if (bDebugLogging && type != class'PlayerPawn' && type != class'Spectator') { DebugLog("CountActors("$type$") = "$c); }
 	return c;
 }
 
@@ -1072,43 +1091,20 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
 }
 
-function bool ScanMaps(optional String search, optional String prefix) {
+function bool ScanForMapsWithPrefix(String prefix, String search) {
 	local string FirstMap, NextMap, TestMap, MapName;
-	local int availableCount,crashCount,missingCount,unknownCount;
+	local int availableCount,crashCount,unknownCount;
 	local int count,i;
-	// prefix = Botmatch.Parent.Default.MapPrefix;
-	// prefix = Botpack.CTFGame.Default.MapPrefix;
-	// NormalLog("ScanMaps(): Starting new scan...");
-	// NormalLog("Iterate maps running...");
-	local int blocked;
-	// It sucks that we only scan one gametype prefix at a time (presently the prefix of the currently playing map).
+	local bool found;
 
-	count = 0;
-	// Reset bOnDisk info, because we are about to regenerate it:
-	for (i=0;i<MaxData;i++) {
-		if (MapStats[i].MapName != "") {
-			if (MapStats[i].bOnDisk == False) {
-				missingCount++;
-			}
-			MapStats[i].bOnDisk = False;
-			count++;
-			if (i>0 && MapStats[i-1].MapName != "") {
-				blocked++;
-			}
-		}
-	}
-	NormalLog("ScanMaps() Total maps in database: "$count$" with "$ 100*blocked/count $"% congestion.");
-
-	if (prefix == "")
-		prefix = Level.Game.Default.MapPrefix;
 	FirstMap = GetMapName(prefix, "", 0);
 	NextMap = FirstMap;
 	count = 0;
 	while (!(FirstMap ~= TestMap)) {
-		if( ! ( Left(NextMap,Len(NextMap)-4) ~= (prefix$"-tutorial") ) ) {
+		if ( ! ( Left(NextMap,Len(NextMap)-4) ~= (prefix$"-tutorial") ) ) {
 			// Add the map.
 
-			// DebugLog("ScanMaps(): "$NextMap);
+			// DebugLog("ScanForMapsWithPrefix("$prefix$"): "$NextMap);
 			count++; // maybe don't count if crashed?
 			if (StrEndsWith(NextMap,".unr")) {
 				MapName = StrBeforeLast(NextMap,".unr");
@@ -1131,21 +1127,65 @@ function bool ScanMaps(optional String search, optional String prefix) {
 
 			if (search != "") {
 				if (MapName ~= search) {
-					return True;
+					found = true;
+					// return True; // we must continue, to refill the bOnDisks we cleared earlier
 				}
 			}
 
 		}
 		// Get the map.
 		NextMap = GetMapName(prefix, NextMap, 1);
-		// Text to see if this is the last.
+		// Test to see if this is the last.
 		TestMap = NextMap;
 	}
+
 	// Always broadcast because it should never happen during play, so if it does, we want to know about it!
-	BroadcastMessage("MapStats found "$ availableCount $" available "$ prefix $" maps.");
-	NormalLog("ScanMaps() Found "$ availableCount $" available "$ prefix $" maps out of "$ count $" known, where "$ crashCount $" crash, "$ missingCount $" are missing, and "$ unknownCount $" have unknown size.");
+	BroadcastMessage("MapStats found "$ availableCount $" working "$ prefix $" maps.");
+	NormalLog("ScanForMapsWithPrefix("$prefix$") Found "$ availableCount $" working "$ prefix $" maps out of "$ count $" scanned, where "$ crashCount $" crash and "$ unknownCount $" have unknown size.");
+
+	return found;
+}
+
+function bool ScanMaps(optional String search, optional String prefix) {
+	local int count,i;
+	local int missingCount,blockedCount;
+	local bool found;
+
+	// prefix = Botmatch.Parent.Default.MapPrefix;
+	// prefix = Botpack.CTFGame.Default.MapPrefix;
+
+	if (prefix == "")
+		prefix = Level.Game.Default.MapPrefix;
+
+	count = 0;
+	// Reset bOnDisk info, because we are about to regenerate it:
+	for (i=0;i<MaxData;i++) {
+		if (MapStats[i].MapName != "") {
+			if (MapStats[i].bOnDisk == False) {
+				missingCount++;
+			}
+			MapStats[i].bOnDisk = False;
+			count++;
+			if (i>0 && MapStats[i-1].MapName != "") {
+				blockedCount++;
+			}
+		}
+	}
+	NormalLog("ScanMaps() Previous maps in database: "$count$" with "$ 100*blockedCount/count $"% congestion and "$ missingCount $" missing.");
+
+	found = false;
+	found = ScanForMapsWithPrefix(prefix,search) || found;
+	// TODO: Use SplitString to parse KnownGameTypes
+	found = ScanForMapsWithPrefix("CTF",search)  || found;
+	found = ScanForMapsWithPrefix("DM",search)   || found;
+	found = ScanForMapsWithPrefix("AS",search)   || found;
+	found = ScanForMapsWithPrefix("BT",search)   || found;
+	found = ScanForMapsWithPrefix("DOM",search)  || found;
+	found = ScanForMapsWithPrefix("MH",search)   || found;
+
 	SaveConfig();
-	return False;
+
+	return found;
 }
 
 // Returns a rating for the map in the range 0.0-10.0
@@ -1171,6 +1211,12 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 	#endif
 	local bool hideMessage; // Only actually works for the Sender.
 	hideMessage = False;
+
+	// We don't want anyone to see the voting messages.
+	if (Msg ~= "!NO" || Msg ~= "!YES") {
+		hideMessage = True;
+	}
+
 	if (Sender == Receiver && Sender.IsA('PlayerPawn')) { // Only process each message once.
 
 		#ifdef MAP_RATING
@@ -1229,8 +1275,8 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 						VetoersList = "";
 						RejectedMaps = RejectedMaps $ " " $ NextMap;
 						NextMap = ChooseNextMap();
-						// BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
-						BroadcastAndLog("Next map will be: "$ NextMap $" (last played "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago)");
+						// BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+						BroadcastAndLog("Next map will be: "$ NextMap $" (last played "$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $" ago)");
 					} else {
 						s = "s" ; if ((MinimumNosForVeto-NoCount)==1) s = "";
 						BroadcastAndLog( (MinimumNosForVeto-NoCount) $" more vote"$s$" needed to reject "$ NextMap);
@@ -1260,8 +1306,8 @@ function Mutate(String str, PlayerPawn Sender) {
 			// if (NextMap != "")
 				// RejectedMaps = RejectedMaps $ " " $ NextMap;
 			NextMap = ChooseNextMap();
-			// Sender.ClientMessage("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
-			Sender.ClientMessage("Next: "$ NextMap $" ("$ NiceAge(DaysSince1970() - MapRecord(NextMap).DateLastPlayed) $") Beaten: "$ConsideredMaps$"");
+			// Sender.ClientMessage("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
+			Sender.ClientMessage("Next: "$ NextMap $" ("$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $") Beaten: "$ConsideredMaps$"");
 			// BroadcastMessage("Next map will be "$NextMap);
 		}
 		if (
