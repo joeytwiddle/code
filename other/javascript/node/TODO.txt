@@ -1,0 +1,29 @@
+
+For some reason my proxies are having trouble proxying the following request:
+  http://www.stardusttrailers.com/scheda_testo.php?id=3416&id_testo=3985&titolo=Sensual%20Woman
+
+
+
+[Sun Jan 30 2011 19:11:52] => Received request: 
+[Sun Jan 30 2011 19:11:52]    >> GET http://blog.stevenlevithan.comhttp/blog.stevenlevithan.com/archives/date-time-format 
+[Sun Jan 30 2011 19:11:52]    >>   host: blog.stevenlevithan.comhttp 
+[Sun Jan 30 2011 19:11:52]    >>   user-agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.3) Gecko/20090920 Firefox/3.5.3 (Swiftfox) 
+[Sun Jan 30 2011 19:11:52]    >>   accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8 
+[Sun Jan 30 2011 19:11:52]    >>   accept-language: en-us,en;q=0.5 
+[Sun Jan 30 2011 19:11:52]    >>   accept-encoding: gzip,deflate 
+[Sun Jan 30 2011 19:11:52]    >>   accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7 
+[Sun Jan 30 2011 19:11:52]    >>   keep-alive: 300 
+[Sun Jan 30 2011 19:11:52]    >>   proxy-connection: keep-alive 
+[Sun Jan 30 2011 19:11:52]    >>   referer: http://www.google.co.uk/search?q=javascript%20date 
+
+events:12
+        throw arguments[1];
+                       ^
+Error: ENOTFOUND, Domain name not found
+    at IOWatcher.callback (dns:52:15)
+    at node.js:773:9
+
+
+
+
+
