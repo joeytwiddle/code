@@ -4,7 +4,6 @@ fs   = require 'fs'
 # net  = require 'net'
 
 listenPort = 8080
-serverDir = '.'
 
 ## We cannot use JSON.stringify() for general logging, because this errors if an object has a circular structure
 ## uneval() is not available in Chromium, most implementations still have .toSource()

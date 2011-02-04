@@ -4,6 +4,7 @@ fs   = require 'fs'
 # net  = require 'net'
 
 serverDir = '.'
+listenPort = 8000
 
 ## We cannot use JSON.stringify() for general logging, because this errors if
 ## an object has a circular structure.
@@ -67,6 +68,6 @@ handlerFn = (request,response) ->
 		response.end()
 
 server = http.createServer handlerFn
-server.listen 8000
-console.log "Coffee web-server exposing "+fs.realpathSync(serverDir)+" at http://localhost:8000/"
+server.listen listenPort
+console.log "Coffee web-server exposing "+fs.realpathSync(serverDir)+" at http://localhost:#{listenPort}/"
 
