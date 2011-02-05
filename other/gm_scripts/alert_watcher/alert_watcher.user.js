@@ -36,10 +36,12 @@ var init = function()
 			var d = new Date();
 			var now = d.valueOf();
 			if (nexttime <= now) {
-				if (!oldfunc.apply(this,arguments)) {
+				var result = oldfunc.apply(this,arguments);
+				if (!result) {
 					nexttime = now + 1000*resetTime;
 				}
 			}
+			return result;
 		}
 	}
 

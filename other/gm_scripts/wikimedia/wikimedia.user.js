@@ -22,6 +22,7 @@
 // 19-Nov-2010: Updates to wikipedia's css style.
 
 // BUG TODO: appears as a portal, but collapsing does not work
+// DONE: ok added manual collapsing, but still some of the formatting looks different
 
 // Fix for Chrome
 if (!this.GM_getValue || this.GM_getValue.toString().indexOf("not supported")>-1) {
@@ -126,8 +127,9 @@ setTimeout(function()
       s += listItem(o.url, o.title);
    }
    s += '</ul></div></div>';
-   var indentLaterLines = 'padding-left: 0.8em; text-indent: -0.8em;';
-   s += '<style type="text/css"> .pBody { font-size: 0.7em; } div.pBody li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } div#mw-panel div.portal div.body ul li { font-size: 0.7em; } </style>';
+   var indentLaterLines = 'padding-left: 1.5em; text-indent: -1.5em;';
+   var reduceSidebarFontSize = 'div#mw-panel div.portal div.body ul li { font-size: 0.8em; }';
+   s += '<style type="text/css"> .pBody { font-size: 0.7em; } div.pBody li { list-style-image: none; list-style-type: none; list-style-position: outside; '+indentLaterLines+' } '+reduceSidebarFontSize+' </style>';
    var e = document.createElement ("div");
    e.innerHTML = s;
    e.id = "p-history";

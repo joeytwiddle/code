@@ -42,7 +42,7 @@ function eekAMouse(evt) {
 		// setTimeout('checkFocus();',1000);
 		// Hack to bring the popup back immediately if we've gone back to the same link.
 		if (myFrame && myFrame.href == focus.href) {
-			showPreviewWindow(focus);
+			showPreviewWindow(focus,evt);
 		} else {
 			setTimeout(checkFocus,100);
 		}
@@ -97,7 +97,7 @@ function createPopup() {
 	myFrame = myPopup.getElementsByTagName('IFRAME')[0];
 }
 
-function showPreviewWindow(link) {
+function showPreviewWindow(link,evt) {
 	if (!myFrame) {
 		createPopup();
 	}

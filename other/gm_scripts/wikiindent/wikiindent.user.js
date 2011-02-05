@@ -25,9 +25,30 @@ function log(x) {
 	} else if (this.console && console.log) {
 		console.log(x);
 	} else {
+		window.status = ""+x;
 		// alert(x);
 	}
 };
+
+// For bookmarklets:
+if (typeof GM_addStyle == "undefined") {
+	GM_addStyle = function(css) {
+		var doc = document;
+		var head, style;
+		head = doc.getElementsByTagName("head")[0];
+		if (!head) { return; }
+		style = doc.createElement("style");
+		style.type = "text/css";
+		style.innerHTML = css;
+		head.appendChild(style);
+	};
+}
+
+if (typeof GM_getValue == 'undefined') {
+	GM_getValue = function(key,def) {
+		return def;
+	};
+}
 
 function doIt() {
 
@@ -94,9 +115,9 @@ function doIt() {
 			log("Did not have column1 "+column1+" or content "+content); // @todo Better to warn or error?
 		}
 
-    if (GM_getValue("sidebarHidden",false)) {
-      toggleWikipediaSidebar();
-    }
+		if (!GM_getValue("sidebarVisible",true)) {
+			toggleWikipediaSidebar();
+		}
 
 		// TODO: Make a toggle button for it!
 
@@ -265,20 +286,6 @@ function doIt() {
 	//// Feature #4: Change underlined headings to overlined headings.
 
 	if (fixUnderlinesToOverlines) {
-
-		// For bookmarklets:
-		if (typeof GM_addStyle == "undefined") {
-			function GM_addStyle(css) {
-				var doc = document;
-				var head, style;
-				head = doc.getElementsByTagName("head")[0];
-				if (!head) { return; }
-				style = doc.createElement("style");
-				style.type = "text/css";
-				style.innerHTML = css;
-				head.appendChild(style);
-			}
-		}
 
 		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-bottom: 0px solid #AAAAAA; }");
 		GM_addStyle("h1, h2, h3, h4, h5, h6 { border-top: 1px solid #AAAAAA; }");

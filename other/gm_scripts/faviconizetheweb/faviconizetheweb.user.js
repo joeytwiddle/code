@@ -4,7 +4,7 @@
 // @namespace      FTW
 // @include        *
 //// Delicious already provide favicons on some pages (via yimg).
-// @exclude        http://*delicious.com/search*
+// @exclude        http://www.delicious.com/search*
 // @version        1.3
 // ==/UserScript==
 // Based on FaviconizeGoogle.
@@ -16,9 +16,9 @@
 var placeFaviconAfter = false;
 var placeFaviconInsideLink = false;
 var scaleIcon = 0.75;
-var startAt = 50;
-var timeoutMillis = 10;
-var batchSize = 20;
+var initialDelay = 2000;
+var delayIncrement = 5; // after 200 links the delay between batches will be 1 second
+var batchSize = 10;
 
 var alwaysUseGoogle = true;
 
@@ -28,13 +28,18 @@ var alwaysUseGoogle = true;
 
 // == Library Functions == //
 
-var oldSetTimeout = setTimeout;
-function setTimeout(callbackFn,delay) {
+if (typeof GM_log == 'undefined' && typeof console != 'undefined' && typeof console.log == 'function') {
+	GM_log = function(x) {
+		console.log(x);
+	};
+}
+
+function setBatchTimeout(callbackFn,delay) {
 	// Rather dodgy implementation of batch processing ;)
 	if (Math.random()>(1.0/batchSize)) // 0.0 locks up the browser on large pages with many favicons
 		callbackFn();
 	else
-		oldSetTimeout(callbackFn,delay);
+		setTimeout(callbackFn,delay);
 }
 
 function getElementsByTagNameAndClassName(tN,cN) {
@@ -56,16 +61,17 @@ function filterListBy(l,c) {
 	return ret;
 }
 
-function iterateAndDo(list,iterationFn,delay,i) {
-	if (!delay)
-		delay=20;
-	if (!i)
-		i=0;
+var currentDelay = 0;
+function iterateAndDo(list,iterationFn) {
+	var i = 0;
 	function doOne() {
 		if (i < list.length) {
 			iterationFn(list[i]);
 			i++;
-			setTimeout(doOne,delay);
+			currentDelay += delayIncrement;
+			setBatchTimeout(doOne,currentDelay);
+		} else {
+			GM_log("Added "+i+" favicons to "+document.title+".");
 		}
 	}
 	doOne();
@@ -193,7 +199,7 @@ function doIt() {
 
 	// GM_log("Got links = "+links.snapshotLength);
 
-	iterateAndDo(links,checkLink,timeoutMillis);
+	iterateAndDo(links,checkLink);
 
 }
 
@@ -205,21 +211,21 @@ function doIt() {
  */
 
 // window.addEventListener('load',function(){
-	// setTimeout(doIt,startAt);
+	// setTimeout(doIt,initialDelay);
 // },false);
 
 /* This method ensures a few small chunks of interaction time before we start. */
-function startCountdown(total,delay,fnToDo) {
+function startCountdown(total,fnToDo) {
 	function doCountdown(msToGo) {
 		if (msToGo > 0) {
 			setTimeout(function(){
-				doCountdown(msToGo-delay);
-			},delay);
+				doCountdown(msToGo-5);
+			},5);
 		} else {
 			fnToDo();
 		}
 	}
 	doCountdown(total);
 }
-startCountdown(startAt,timeoutMillis,doIt);
+startCountdown(initialDelay,doIt);
 

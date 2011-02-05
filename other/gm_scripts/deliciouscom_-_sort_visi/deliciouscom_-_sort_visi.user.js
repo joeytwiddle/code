@@ -6,7 +6,10 @@
 // @include http://www.delicious.com/*
 // ==/UserScript==
 
-// TODO: Add Date sort field, and disable auto-sort-by-popularity when on our own user pages.
+// DONE: Add Date sort field, and disable auto-sort-by-popularity when on our own user pages.
+// TODO: Sometimes overlays their "Display options V" dropdown link (e.g. if
+//       there is not enough horizontal space, e.g. there are multiple result
+//       pages and we placed the pager high).
 
 var duplicatePageNavigatorAtTop = true;
 

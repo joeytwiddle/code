@@ -3,18 +3,24 @@
 // @namespace      GPM
 // @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
 // @include        *
-// @exclude        http://www.delicious.com/*
+// @exclude        http://www.facebook.com/*
+// @exclude        https://www.facebook.com/*
+// @exclude        http://*.google.com/images?*
+// @exclude        http://facebook.com/*
+// @exclude        https://facebook.com/*
 // ==/UserScript==
-// don't require   http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
-// @require        http://json.org/json2.js
+// We don't require: http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
+// The json2.js @require is for older browsers.
+// @require        http://json.org/json.js
 
-var showTooltips = true;
-var lookupCurrentPage = true;
-var annotateAllLinks = true;
+var showTooltips      = true;
+var lookupCurrentPage = true; // true;
+var annotateAllLinks  = true; // true;
 
-var maxCacheSize = 1024; // Recommended: 1024
+var maxCacheSize = 8192; // Recommended: at least 1024 if you are using annotateAllLinks.  Perhaps 8192.  Firefox cache should be larger than Chrome, because the DB is global rather than per-domain.
 var showProgress = true; // Highlights each link in yellow while we are making a delicious request on it
-var logIO = false;
+var logIO        = false;
+var logResponses = true;
 
 
 
@@ -272,6 +278,8 @@ function isImageAndWhitespace(elem) {
 
 // == Chrome compatibility layer == //
 
+/*
+//// GM_xhR through a JSONP proxy
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 	GM_xmlhttpRequest = function(details) {
@@ -294,7 +302,8 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 				onloadCallback(responseDetails);
 			}
 		};
-		if (!window.navigator.vendor.match(/Google/) /* || !weAreInUserscriptScope */) {
+		var weAreInUserscriptScope = (typeof GM_log != 'undefined');
+		if (!window.navigator.vendor.match(/Google/) || !weAreInUserscriptScope) {
 			// This works fine in Firefox GM, or in Chrome's content scope.
 			window[callbackName] = callbackFunction;
 		} else {
@@ -330,9 +339,40 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 		};
 	};
 }
+*/
 
-// @copyright      2009, 2010 James Campos
-// @license        cc-by-3.0; http://creativecommons.org/licenses/by/3.0/
+//// Lookalike GM_xhR for this script only, actually requests JSONP directly from delicious.
+// We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
+if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
+	GM_xmlhttpRequest = function(details) {
+		// Insert a callback into the root window, anonymised by a random key.
+		var callbackName = "xss_xhr_via_jsonp_callback_" + parseInt(Math.random()*987654321);
+		// Where should we place the callback?  Chrome Userscripts need to obtain unsafeWindow.
+		var target = window;
+		var weAreInUserscriptScope = (typeof GM_log != 'undefined');
+		if (window.navigator.vendor.match(/Google/) && weAreInUserscriptScope) {
+			var div = document.createElement("div");
+			div.setAttribute("onclick", "return window;");
+			unsafeWindow = div.onclick();
+			target = unsafeWindow;
+		}
+		var script = document.createElement("script");
+		var callbackFunction = function(dataObj) {
+			var responseDetails = {};
+			responseDetails.responseText = JSON.stringify(dataObj);
+			details.onload(responseDetails);
+			// Cleanup artifacts: script and callback function
+			delete target[callbackName];
+			document.getElementsByTagName("head")[0].removeChild(script);
+		};
+		target[callbackName] = callbackFunction;
+		// Request a JSONP response from delicious, which should return some javascript to call the callback.
+		script.src = details.url + "&callback="+callbackName;
+		document.getElementsByTagName("head")[0].appendChild(script);
+	};
+}
+// DONE: scripts and functions added to the DOM should be removed after use
+
 if (typeof GM_log == 'undefined') {
 	GM_log = function(data) {
 		if (this.console && console.log) {
@@ -342,74 +382,147 @@ if (typeof GM_log == 'undefined') {
 	};
 }
 
-if (typeof GM_deleteValue == 'undefined') {
-
-	// TODO: It would be more appropriate to use globalStorage if it is available.
-	// Well to be strictly GM-compatible, it should also separate keys by script namespace and name and number!
-
+if (typeof GM_addStyle == 'undefined') {
 	GM_addStyle = function(css) {
 		var style = document.createElement('style');
 		style.textContent = css;
 		document.getElementsByTagName('head')[0].appendChild(style);
 	};
+}
 
+if (typeof GM_openInTab == 'undefined') {
 	GM_openInTab = function(url) {
 		return window.open(url, "_blank");
 	};
+}
 
+if (typeof GM_registerMenuCommand == 'undefined') {
 	GM_registerMenuCommand = function(name, funk) {
-		//todo
+		// TODO
 	};
+}
 
-	GM_setValue = function(name, value) {
-		value = (typeof value)[0] + value;
-		localStorage.setItem(name, value);
-	};
+// DONE: It would be more appropriate to use globalStorage if it is available.
+// TODO: But then to be strictly GM-compatible, it should also separate keys by script namespace and name and number!
 
-	GM_getValue = function(name, defaultValue) {
-		var value = localStorage.getItem(name);
-		if (!value)
-			return defaultValue;
-		var type = value[0];
-		value = value.substring(1);
-		switch (type) {
-			case 'b':
-				return value == 'true';
-			case 'n':
-				return Number(value);
-			default:
-				return value;
+if (typeof GM_setValue == 'undefined' || GM_setValue.toString().indexOf("not supported")>=0) {
+
+	var storage = this.globalStorage || this.localStorage || this.sessionStorage;
+	var name = "some unlabeled";
+
+	/* var storageTypes = ["globalStorage","localStorage","sessionStorage"];
+	var storage,name;
+	for (var i=0;i<storageTypes.length;i++) {
+		if (this[storageTypes[i]]) {
+			storage = this[storageTypes[i]];
+			name = storageTypes[i];
+			break;
 		}
-	};
+	} */
 
-	GM_deleteValue = function(name) {
-		localStorage.removeItem(name);
-	};
+	if (storage) {
 
-	if (localStorage && localStorage.length) {
+		var allStorages = [this.globalStorage,this.localStorage,this.sessionStorage];
+		var names = ["Global","Local","Session"];
+		var i = (allStorages.indexOf ? allStorages.indexOf(storage) : 0);
+		var name = (i >= 0 ? names[i] : "unknown");
+
+		GM_log("Implementing GM_get/setValue using "+name+" storage.");
+
+		GM_setValue = function(name, value) {
+			value = (typeof value)[0] + value;
+			storage.setItem(name, value);
+		};
+
+		GM_getValue = function(name, defaultValue) {
+			var value = storage.getItem(name);
+			if (!value)
+				return defaultValue;
+			var type = value[0];
+			value = value.substring(1);
+			switch (type) {
+				case 'b':
+					return value == 'true';
+				case 'n':
+					return Number(value);
+				default:
+					return value;
+			}
+		};
+
+		GM_deleteValue = function(name) {
+			storage.removeItem(name);
+		};
+
 		GM_listValues = function() {
 			var list = [];
-			for (var i=0;i<localStorage.length;i++) {
-				list.push(localStorage.key(i));
+			for (var i=0;i<storage.length;i++) {
+				list.push(storage.key(i));
 			}
-			GM_log("localstorage is holding "+localStorage.length+" records.");
+			GM_log("localstorage is holding "+storage.length+" records.");
 			return list;
 		};
+
+		maxCacheSize = 4096; // per domain
+
+	} else {
+		GM_log("Warning: Could not implement GM_get/setValue.");
 	}
 
+}
+
+// I don't know a need for this at the moment.  My browsers either give me
+// get/set/list or nothing at all.
+// If we are adding this into a userscript after data already exists, we might
+// find some of the existing names through GM_getValue.
+// TODO: UNTESTED!
+if (typeof GM_listValues == 'undefined') {
+	GM_log("Implementing GM_listValues using intercepts.");
+	var original_GM_setValue = GM_setValue;
+	var original_GM_deleteValue = GM_deleteValue;
+	GM_setValue = function(name, value) {
+		original_GM_setValue(name,value);
+		var values = JSON.parse(GM_getValue("#_LISTVALUES") || "{}");
+		values[name] = true;
+		original_GM_setValue("#_LISTVALUES",JSON.stringify(values));
+	};
+	GM_deleteValue = function(name) {
+		original_GM_deleteValue(name);
+		var values = JSON.parse(GM_getValue("#_LISTVALUES") || "{}");
+		delete values[name];
+		original_GM_setValue("#_LISTVALUES",JSON.stringify(values));
+	};
+	GM_listValues = function() {
+		var values = JSON.parse(GM_getValue("#_LISTVALUES") || "{}");
+		var list = [];
+		for (var key in values) {
+			list.push(key);
+		}
+		GM_log("GM_listValues is holding "+list.length+" records.");
+		return list;
+	};
 }
 
 // Chrome also has no uneval, which forced me to change all eval/unevals to
 // JSON.parse/stringify, which was a good thing.  :)
 // Problem is, my stored data in Firefox was in uneval format, not JSON...
 function JSON_parse(str) {
+	var result;
 	try {
-		return JSON.parse(str);
+		result = JSON.parse(str);
 	} catch (e) {
 		// Parse Error?  Must be an old record!
-		return eval(str);
+		GM_log("Difficulty parsing \""+str+"\" with JSON - trying uneval.");
+		try {
+			result = eval(str);
+		} catch (e) {
+			GM_log("Could not parse: \""+str+"\"");
+			result = null;
+		}
 	}
+	return result;
 }
+// TODO: drop this a couple of month into 2011.  if i haven't fixed those old records by then, I never will!  (If I do hit one again, the error will be thrown again.)
 
 
 
@@ -417,9 +530,13 @@ function JSON_parse(str) {
 
 var dataCache = ({});
 
+var delay = 0; // slow down the lookupSpeed if we are making many queries
+
 function doLookup(lookupURL,onSuccess,onFailFn) {
 	// lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
-	lookupSpeed = 2000;
+	lookupSpeed = 1200 + delay;
+	if (delay < 9000)
+		delay += 120;
 	if (logIO) {
 		log("Requesting info for: "+lookupURL);
 	}
@@ -436,12 +553,12 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 
 	function responseHandler(response) {
 
-		if (logIO) {
-			log("Delicious responded: "+response.responseText.substring(0,120));
+		if (logIO || logResponses) {
+			log(("Delicious responded: "+response.responseText+" to "+lookupURL).substring(0,180));
 		}
 		var resultObj;
 		try {
-			resultObj = JSON.parse(response.responseText); // TODO: @require JSON!
+			resultObj = JSON.parse(response.responseText); // older browsers might need to @require json2.js
 		} catch (e) {
 			log("Failed to parse responseText with JSON: "+response.responseText);
 			// resultObj = eval(response.responseText); // INSECURE!
@@ -462,7 +579,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		dataCache[lookupURL].cacheCount = 0;
 		dataCache[lookupURL].lastUsed = new Date().getTime();
 		GM_setValue("CachedResponse"+lookupURL,JSON.stringify(dataCache[lookupURL]));
-		// log("Set data: "+uneval(dataCache[lookupURL]));
+		// log("Set data: "+GM_getValue("CachedResponse"+lookupURL));
 		if (resultObj.total_posts) {
 			onSuccess(resultObj,lookupURL);
 		} else {
@@ -479,13 +596,27 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 	// onreadystatechange function to catch any failed requests.
 }
 
+function isEmptyObject(o) {
+	for (var prop in o) {
+		if (prop=="cacheCount" || prop=="lastUsed")
+			continue; // do not count as counted properties!
+		return false;
+	}
+	return true;
+}
+
 function tryLookup(subjectUrl,onSuccess,onFailure) {
+	// Is this record already in our runtime cache?
 	if (dataCache[subjectUrl] == null) {
+		// If not, try to load it from our persistent cache.
 		dataCache[subjectUrl] = JSON_parse(GM_getValue("CachedResponse"+subjectUrl,"null"));
 	}
-	if (dataCache[subjectUrl] != null && dataCache[subjectUrl]!=[]) {
-		// log("Got data for: "+subjectUrl);
-		// log("Had it cached: "+uneval(dataCache[subjectUrl])+" (Request:"+subjectUrl+")");
+	if (dataCache[subjectUrl] != null) {
+		// Having an empty record in the cache is considered a "failure" (to allow for double lookups)
+		if (isEmptyObject(dataCache[subjectUrl])) {
+			onFailure(dataCache[subjectUrl],subjectUrl);
+			return;
+		}
 		dataCache[subjectUrl].cacheCount++;
 		dataCache[subjectUrl].lastUsed = new Date().getTime();
 		// I'm paranoid that setValue takes time to complete!  I guess we could just put it after.
@@ -595,7 +726,7 @@ function initiateDoubleLookup(lookupURL,onSuccess) {
 		var hostUrl = "http://"+getHostnameOfUrl(lookupURL)+"/";
 		if (hostUrl != lookupURL) {
 			lookupURL = hostUrl;
-			tryLookup(lookupURL,onSuccess,function(){log("both url and host lookup failed.");});
+			tryLookup(lookupURL,onSuccess,function(){log("Both URL and host lookup failed for "+hostUrl+"");});
 		}
 	}
 	tryLookup(lookupURL,onSuccess,onFailure);
@@ -608,7 +739,7 @@ function positionTooltip(evt) {
 
 		tooltipDiv.style.right = '';
 		tooltipDiv.style.left = (posx + 15) + "px";
-		tooltipDiv.style.top = (posy + 7) + "px";
+		tooltipDiv.style.top = (posy + 12) + "px";
 
 		if (tooltipDiv.clientWidth > max_width) {
 			tooltipDiv.style.width = max_width + "px";
@@ -627,7 +758,7 @@ function positionTooltip(evt) {
 		if (parseInt(tooltipDiv.style.left) + divWidth + scrollbarWidth > window.innerWidth + window.pageXOffset) {
 			// tooltipDiv.style.left = (posx - 15 - divWidth) + "px";
 			tooltipDiv.style.left = '';
-			tooltipDiv.style.right = (window.innerWidth - posx + 15) + "px";
+			tooltipDiv.style.right = (window.innerWidth - posx + 5) + "px";
 			// tooltipDiv.style.width = divWidth;
 			if (tooltipDiv.clientWidth > max_width) {
 				tooltipDiv.style.width = max_width + "px";
@@ -652,17 +783,15 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	tooltipDiv = document.createElement("div");
 	tooltipDiv.id = "DLTtooltip";
 	// tooltipDiv.setAttribute("style", "background:" + bg_color + ";border:1px solid " + border_color + ";padding:2px;color:" + font_color + ";font-family:" + font_face + ";font-size:" + font_size + ";position:absolute;z-index:100000;")
-	with (tooltipDiv.style) {
-		backgroundColor = bg_color;
-		border = "1px solid "+border_color;
-		padding = "2px";
-		color = font_color;
-		fontFamily = font_face;
-		fontSize = font_size;
-		position = "absolute";
-		zIndex = 100000;
-		textAlign = 'left';
-	}
+	tooltipDiv.style.backgroundColor = bg_color;
+	tooltipDiv.style.border = "1px solid "+border_color;
+	tooltipDiv.style.padding = "2px";
+	tooltipDiv.style.color = font_color;
+	tooltipDiv.style.fontFamily = font_face;
+	tooltipDiv.style.fontSize = font_size;
+	tooltipDiv.style.position = "absolute";
+	tooltipDiv.style.zIndex = 100000;
+	tooltipDiv.style.textAlign = 'left';
 	tooltipDiv.style.padding = '6px';
 
 	tooltipDiv.addEventListener('mouseover',function(evt){
@@ -733,7 +862,6 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		titleCont.appendChild(titleElem);
 		//// For some reason Firefox refuses to notice the addition of this
 		//// style, so we do it with a CSS class instead.
-		// titleCont.style.float = 'left';
 		// titleCont.className = 'dlttLeft';
 
 		// titleCont.appendChild(document.createTextNode("Popularity: "));
@@ -742,7 +870,8 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		var popWidth = Math.log(parseInt(resultObj.total_posts)/40)*max_width/8;
 		if (!popWidth || popWidth<=10) popWidth = 10;
 		if (popWidth>max_width) popWidth = max_width;
-		var popBar = document.createElement('SPAN');
+		var popBar = document.createElement('A');
+		popBar.href = link.href;
 		var thru = popWidth/max_width;
 		// popBar.style.backgroundColor = 'rgb(128,'+parseInt(127+128*thru)+','+parseInt(255-128*thru)+')';
 		// var hue = 2/3 - 1/3*thru;   // blue -> cyan -> green
@@ -781,6 +910,13 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		topRow.appendChild(titleCont);
 		topRow.appendChild(popBarCont);
 		tooltipDiv.appendChild(topTable);
+		/*
+		titleCont.style.float = 'left';
+		popBarCont.style.float = 'right';
+		tooltipDiv.appendChild(titleCont);
+		tooltipDiv.appendChild(popBarCont);
+		tooltipDiv.style.overflow = 'auto'; // Fix floating problems?
+		*/
 
 		/* top_tags is a hashtable, it has no .length */
 		if (resultObj.top_tags /* && resultObj.top_tags.length>0 */ ) {
@@ -789,6 +925,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 
 			var tagsCont = document.createElement("P");
 			tagsCont.style.marginTop = '4px';
+			tagsCont.style.marginBottom = '1px';
 			// tagsCont.style.float = 'right';
 			var tagsDiv = document.createElement("DIV");
 			tagsDiv.style.textAlign = 'right';
@@ -874,7 +1011,7 @@ function createTooltip(evt) {
 			function(){
 				if (stillFocused==link) {
 					initiateDoubleLookup(subjectUrl,function(foundResults,foundUrl) {
-						showResultsTooltip(dataCache[foundUrl],foundUrl,lastMoveEvent || evt);
+						showResultsTooltip(foundResults,subjectUrl,lastMoveEvent || evt);
 					});
 				}
 			},waitTime);
@@ -1037,25 +1174,6 @@ function createScoreSpan(resultObj) {
 	return scoreSpan;
 }
 
-if (lookupCurrentPage) {
-	try {
-		tryLookup(document.location.href,function(resultObj,subjectUrl,evt){
-			if (resultObj.total_posts) {
-				var lc_div = createScoreSpan(resultObj);
-				lc_div.style.position = 'fixed';
-				lc_div.style.top = '20px';
-				lc_div.style.right = '20px';
-				lc_div.style.padding = '4px';
-				lc_div.style.fontSize = '2.0em';
-				lc_div.style.zIndex = 1209;
-				document.body.appendChild(lc_div);
-			}
-		});
-	} catch (e) {
-		log("Caught exception: "+e);
-	}
-}
-
 
 
 // == Initialise all-links auto-lookup == //
@@ -1072,6 +1190,8 @@ function addLabel(link) {
 	var samePage = (link.href.split("#")[0] == document.location.href.split("#")[0]);
 	var isSearch = link.href.indexOf("?")>-1;
 	var isImage = isImageAndWhitespace(link);
+	if (link.href.match(/fbcdn.net\//) || link.href.match(/facebook.com\//))
+		return;
 	if (link.href && !sameAsLast && !badHost && goodUrl && !isSearch && !samePage && !isImage) { // && !sameHost 
 
 		function addAnnotationLabel(resultObj,subjectUrl,evt){
@@ -1121,7 +1241,8 @@ function addLabel(link) {
 	}
 }
 
-if (annotateAllLinks) {
+// Let's not auto-annotate links on delicious pages - it is likely to be redundant information!
+if (annotateAllLinks && document.location.host != "www.delicious.com") {
 	(function(){
 		var links = document.getElementsByTagName("A");
 		var i = 0;

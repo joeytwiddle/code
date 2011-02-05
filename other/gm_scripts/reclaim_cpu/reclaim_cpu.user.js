@@ -162,6 +162,8 @@ user returns to the window.
 //// to something null which will replace the current, and set their oldSrc so
 //// we can recover later.
 
+TODO: window.onblur might do better at detecting focus-left-window!
+
 */
 
 
@@ -170,13 +172,13 @@ user returns to the window.
 
 var ShowInfo = {
 	showClean: function () {
-		ShowInfo.newInfo(""); // "[Clean] "
+		ShowInfo.newInfo("_ "); // "[Clean] "
 	},
 	showInUse: function () {
 		ShowInfo.newInfo("# "); // "[Active] "
 	},
 	showIdle: function () {
-		ShowInfo.newInfo(". "); // "[Idle] "
+		ShowInfo.newInfo(""); // "[Idle] "
 	},
 	newInfo: function (newPre) {
 		if (!showInfoInTitle)
@@ -184,7 +186,7 @@ var ShowInfo = {
 		// We intentionally get info from the frame document, but set the toplevel title.
 		// window.document.title = newPre + document.title.replace(/^([Active] |[Clean] |[Idle] )/,'');
 		// window.document.title = newPre + document.title.replace(/^([*] |[=] |[.] |[:] )/,'');
-		window.document.title = newPre + document.title.replace(/^[*=.:+#?] /,'');
+		window.document.title = newPre + document.title.replace(/^[*=.:+#?_] /,'');
 	}
 };
 
@@ -370,6 +372,7 @@ function initTimer() {
 				} else {
 					// For debugging purposes, only enable titling during first incarnation
 					// showInfoInTitle = false;
+					// For debugging purposes, change the "active" symbol for re-awakened pages
 					ShowInfo.showInUse = function () {
 						ShowInfo.newInfo("+ ");
 					};

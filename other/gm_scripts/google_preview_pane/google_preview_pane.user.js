@@ -85,7 +85,7 @@ var Colors = {
 	selected: { bg: "#ddeeff", border: "#ccddff" },
 	travel:   { bg: "#ffeecc", border: "#ffccbb" },
 	action:   { bg: "#ddccff", border: "#ccbbff" },
-	checkers: { 0: "#f6f6f6", 1: "#ffffff" }
+	checkers: { 0: "#f4f4f4", 1: "#fbfbfb" }
 };
 
 if (renderLikeTabs) {
@@ -532,7 +532,9 @@ function initPreview() {
 							// unsafeWindow.document.location.hash = link.name;
 						},500);
 					}
-					previewFrame.src = link.href;
+					setTimeout(function(){
+						previewFrame.src = link.href;
+					},10);
 					// lastPreview = lastHover;
 					lastPreview = container; // normalises - two different nodes might both hit the same container
 				},10);
@@ -570,8 +572,8 @@ function initPreview() {
 					// Let's make sure it works ;p
 					// document.location = link.href;
 					// Pff we need to give FF time to colour the highlight :P
-					if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},20); }
-					setTimeout(function(){document.location = link.href;},40);
+					if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},10); }
+					setTimeout(function(){document.location = link.href;},20);
 				} else {
 					// Let's try to Preview what the user clicked
 					if (checkFocus()) {
@@ -666,8 +668,9 @@ function initPreview() {
 
 		whereToListen.addEventListener('mouseover',helloMouse,false);
 		whereToListen.addEventListener('mouseout',goodbyeMouse,false);
-		if (!focusWithHover)
+		if (!focusWithHover) {
 			whereToListen.addEventListener('click',checkClick,false);
+		}
 
 	}
 
@@ -678,11 +681,6 @@ function initPreview() {
 
 
 //// Library Functions ////
-
-function getResultsBlock() {
-	return document.getElementById("res")
-		|| document.getElementById("web"); // For Google on other sites, e.g.: http://search.creativecommons.org/
-}
 
 function findIndexOf(item,list) {
 	for (var i=0;i<list.length;i++) {
@@ -704,11 +702,20 @@ function getXPath(elem) {
 	}
 }
 
+function hasClass(elem,cla) {
+	return new RegExp("(^|\\s)"+cla+"(\\s|$)").test(elem.className);
+}
+
+function getResultsBlock() {
+	return document.getElementById("res")
+		|| document.getElementById("web"); // For Google on other sites, e.g.: http://search.creativecommons.org/
+}
+
 function showSelected(elem) {
 	if (elem.tagName != "LI")
 		return;
-	elem.style.margin = '0px';
-	elem.style.padding = '8px';
+	// elem.style.margin = '0px';
+	// elem.style.padding = '8px';
 	if (renderLikeTabs) {
 		elem.style.border = '2px solid ' + Colors.selected.border;
 		elem.style.padding = '8px';
@@ -717,18 +724,11 @@ function showSelected(elem) {
 	}
 }
 
-function hasClass(elem,cla) {
-	return new RegExp("(^|\\s)"+cla+"(\\s|$)").test(elem.className);
-}
-
 function showUnselected(elem) {
 	if (elem.tagName != "LI")
 		return;
-	// elem.style.padding = '0px';
-	// elem.style.paddingTop = '12px';
-	// elem.style.paddingBottom = '12px';
-	elem.style.margin = '0px';
-	elem.style.padding = '8px';
+	// elem.style.margin = '0px';
+	// elem.style.padding = '8px';
 	if (renderLikeTabs) {
 		elem.style.border = '0px';
 		elem.style.padding = '10px';
@@ -785,9 +785,17 @@ function reformatThingsEarly() {
 			elem.style.backgroundColor = Colors.checkers[i%2];
 	}
 
+	if (checkerRows) {
+		// Chequers look weird without padding
+		GM_addStyle("li.g { padding: 8px 12px; margin: 0px; }");
+		GM_addStyle("ul.g { padding: 8px 12px; margin: 0px; }");
+	}
+
 }
 
 function reformatThingsLater() {
+
+	// Mainly this shrinks things down in the sidebar, so it displays better.
 
 	// Do some styling on the main result LI nodes.
 	var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
@@ -869,6 +877,8 @@ function reformatThingsLater() {
 	}
 
 	if (reduceTextSize) {
+		// This is heavy - delay it
+		setTimeout(function(){
 		// BUG TODO: In Chrome and Firefox, when doing this while zoomed IN, it
 		// increases the size of the fonts.  We may need to parse whether oldSize
 		// was specified in "em" or "px" or "" or something else.  The units will
@@ -892,6 +902,7 @@ function reformatThingsLater() {
 		// setTimeout(function(){ resizeTextNode(resultsBlock,-4); },1000);
 		// NOTE: resultsBlock is no longer available in this scope
 		// GM_log(log);
+		},50);
 	}
 
 	if (reduceIndent) {
@@ -909,10 +920,15 @@ function reformatThingsLater() {
 				if (ml>0)
 					elem.style.marginLeft = '4px';
 			}
-			GM_addStyle("li { padding-left: 0px; margin-left: 0px; }");
-			GM_addStyle("ul { padding-left: 0px; margin-left: 0px; }");
 		},100);
+		// GM_addStyle("li.g { padding-left: 0px; margin-left: 0px; }");
+		// GM_addStyle("ul.g { padding-left: 0px; margin-left: 0px; }");
 	}
+
+	GM_addStyle("li.g { padding: 6px 8px; margin: 0px; }");
+	GM_addStyle("ul.g { padding: 6px 8px; margin: 0px; }");
+	GM_addStyle("li { padding: 6px 8px; margin: 0px; }");
+	GM_addStyle("ul { padding: 6px 8px; margin: 0px; }");
 
 	// Does not work
 	/*
