@@ -1174,6 +1174,25 @@ function createScoreSpan(resultObj) {
 	return scoreSpan;
 }
 
+if (lookupCurrentPage) {
+	try {
+		tryLookup(document.location.href,function(resultObj,subjectUrl,evt){
+			if (resultObj.total_posts) {
+				var lc_div = createScoreSpan(resultObj);
+				lc_div.style.position = 'fixed';
+				lc_div.style.top = '20px';
+				lc_div.style.right = '20px';
+				lc_div.style.padding = '4px';
+				lc_div.style.fontSize = '2.0em';
+				lc_div.style.zIndex = 1209;
+				document.body.appendChild(lc_div);
+			}
+		});
+	} catch (e) {
+		log("Caught exception: "+e);
+	}
+}
+
 
 
 // == Initialise all-links auto-lookup == //
