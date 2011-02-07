@@ -111,7 +111,7 @@ function startSearch(word) {
 	if (word.length > 0) {
 		// Stagger start time of different words
 		setTimeout(function(){
-			GM_log("Starting search for word: "+word);
+			// GM_log("Starting search for word: "+word);
 			searchWithinNode(document.body, word.toUpperCase(), word.length, getNextColor());
 		},startSearchDelay);
 		startSearchDelay += 1000;
