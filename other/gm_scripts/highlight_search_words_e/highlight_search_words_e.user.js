@@ -143,6 +143,7 @@ if (words) {
 		skip = 0;
 		if(node.nodeType == 3) {
 			pos = node.data.toUpperCase().indexOf(te);
+			// TODO: add optional check here for matchWholeWorldsOnly
 			if(pos >= 0) {
 				// Unfortunately we cannot pad this operation with setTimeout,
 				// because we need to return skip *after* we've completed the job.
@@ -182,10 +183,12 @@ if (words) {
 		return skip;
 	}
 
-	var hue = 360/6;
+	// var hue = 360/6;
+	var hue = 0;
 	function getNextColor() {
 		var colstr = "hsl("+hue+",100%,80%)";
-		hue = Math.round(hue + 360/3.3); // 10 unique colors before repeat
+		// hue = Math.round(hue + 360/3.3); // cyan, magenta, peach
+		hue = Math.round(hue + 360/5.7); // yellow, green, cyan
 		if (hue > 360)
 			hue -= 360;
 		return colstr;
