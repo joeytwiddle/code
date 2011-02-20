@@ -52,6 +52,8 @@ var mode;
 // TEMP
 var dot
 var tempcam
+var z, zs = [], max1, max2, triangles = [], i;
+var time1;
 
 //############################################################################# USER FUNCTIONS
 
@@ -153,8 +155,7 @@ function shapes_get2dcoordinatesandrotatedarray() {
     
 function draw(newformula) {
 
-    var time1 = new Date();
-    var time1 = time1.getTime();
+    time1 = new Date(); time1 = time1.getTime();
     
     document.getElementById("lol").innerHTML = "Preparing... "
 
@@ -226,18 +227,15 @@ function draw(newformula) {
     }                           //  */
     drawshapes();
     
-    var time2 = new Date();
-    var time2 = time2.getTime();
-    document.getElementById("lol").innerHTML += "<br>Rendering took <b>" + (time2-time1)/1000 + "</b> seconds.";
 };
 
+function ahaha(a,b) {return b[3] - a[3]}
 
 function zcolored() {
     
     document.getElementById("lol").innerHTML += "<br>Finding all valid triangles... "
     
     // FIND ALL TRIANGLES;
-    var z, zs = [], max1, max2, triangles = [];
     for (var n = 0; n < gridsize; n++ ) {
         for (var m = 0; m < gridsize; m++ ) {
             for (var l=0; l<2; l++) {
@@ -249,27 +247,57 @@ function zcolored() {
     }
     
     // SORT THEM
-    triangles.sort(function(a,b) {return b[3] - a[3]});
+    triangles.sort(ahaha);
  
     document.getElementById("lol").innerHTML += "<br>Drawing the triangles... "
     
     // DRAW THEM
-    for (var i=0; i<triangles.length; i++) {
+    
+    i = 0
+    zcolored_draw()
+    /*for (var i=0; i<triangles.length; i++) {
         for (k=0; k<3; k++) zs[k] = a3[triangles[i][k][X]][triangles[i][k][Y]][Z];
         z = (Math.min(zs[0], zs[1], zs[2])+Math.max(zs[0], zs[1], zs[2]))/2;
         red = Math.round((z-min_z) / (max_z-min_z) * 256);
         _ctx.beginPath();
         _ctx.fillStyle = "rgb(" + red + ",0,0)";
+        //if (i == Math.floor(triangles.length/2)) {alert(1);}
         _ctx.moveTo.apply(_ctx, a2[triangles[i][1][X]][triangles[i][1][Y]]);  //A
         _ctx.lineTo.apply(_ctx, a2[triangles[i][0][X]][triangles[i][0][Y]]);  //BASE
         _ctx.lineTo.apply(_ctx, a2[triangles[i][2][X]][triangles[i][2][Y]]);  //B
         _ctx.closePath();
         _ctx.strokeStyle = _ctx.fillStyle;
-        _ctx.stroke(); //*/
+        _ctx.stroke(); //
         _ctx.fill();
-    }
+    }*/
 };
- 
+
+function zcolored_draw() { 
+    if (i<triangles.length) {
+        var b=i+Math.min(Math.ceil(gridsize*gridsize/5), 600);
+        for(i; i<b && i<triangles.length; i++) {
+            for (k=0; k<3; k++) zs[k] = a3[triangles[i][k][X]][triangles[i][k][Y]][Z];
+            z = (Math.min(zs[0], zs[1], zs[2])+Math.max(zs[0], zs[1], zs[2]))/2;
+            red = Math.round((z-min_z) / (max_z-min_z) * 256);
+            _ctx.beginPath();
+            _ctx.fillStyle = "rgb(" + red + ",0,0)";
+            //if (i == Math.floor(triangles.length/2)) {alert(1);}
+            _ctx.moveTo.apply(_ctx, a2[triangles[i][1][X]][triangles[i][1][Y]]);  //A
+            _ctx.lineTo.apply(_ctx, a2[triangles[i][0][X]][triangles[i][0][Y]]);  //BASE
+            _ctx.lineTo.apply(_ctx, a2[triangles[i][2][X]][triangles[i][2][Y]]);  //B
+            _ctx.closePath();
+            _ctx.strokeStyle = _ctx.fillStyle;
+            _ctx.stroke(); //
+            _ctx.fill();
+        }
+        setTimeout(zcolored_draw, 0);
+    }
+    else { 
+        var time2 = new Date();
+        var time2 = time2.getTime();
+        document.getElementById("lol").innerHTML += "<br>Rendering took <b>" + (time2-time1)/1000 + "</b> seconds.";
+    }
+}
 
 function wireframe() {
     
@@ -502,8 +530,8 @@ function magnify(ev) {
         <span class="flink" onClick="show('b=(((l=pow(x+2,2)+pow(y+6,2)-3*3)<0) && x<0)?sqrt(abs(l)):(((r=pow(x-2,2)+pow(y+6,2)-3*3)<0) && x>=0)?sqrt(abs(r)):0;s=((x<=2) && (x>=-2) && (y<4.5) && (y>=-5))?sqrt(4-x*x):0;h=(((h=pow(x,2)+pow(y-6,2)-3*3)<0) && (y>=4.5))?sqrt(abs(h)):0;(b>s)?b:s||h');">don't click this</span>,<br>
         <span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65)');">sin(sqrt(x*x + y*y)*65)</span>.<br>
     </div>
-    If this ruins your PC.. why, that'd be amazing, man!</div>
-    <div style="font-size: 70%; padding-left: 170px;"><i>-- made by squirrel</i></div>
+    If this ruins your PC..<br>&nbsp;&nbsp;&nbsp;why, that'd be amazing, man!</div>
+    <div style="font-size: 70%; padding-left: 100px;"><i>-- made by squirrel</i></div>
     
     </div>
     <footer id="lol"></footer>
