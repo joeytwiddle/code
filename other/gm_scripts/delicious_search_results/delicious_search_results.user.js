@@ -82,7 +82,12 @@ GM_DUR = {
 	init : function()
 	{
 		var href = document.location.href;
-		GM_DUR.un = href.match(/[&?]q=([^&]*)(?:&|$)/)[1];
+		try {
+			GM_DUR.un = href.match(/[&?]q=([^&]*)(?:&|$)/)[1];
+		} catch (e) {
+			var child = (window.top == window ? '' : 'child frame ' );
+			GM_log("Failed to find search string in "+child+""+href+" - "+e);
+		}
 
 		if( GM_DUR.un != "" )
 		{
@@ -153,10 +158,11 @@ GM_DUR = {
 				// // GM_log("pop="+pop);
 				// ageMonths = parseInt(ageMonths*10)/10;
 				// var pop = 100;
+				var tit = ( results[i].n ? "title='"+results[i].n.replace(/'/,'&apos;','g')+"'" : "" );
 				il = "<div class='s'>"+
 					// "<div style='position:relative; background-color=#00cccc; z-index:-100; height=10px; width="+pop+"px;'/>"+
 					// ageMonths+"m "+
-				"<a href='"+results[i].u+"' class='l'>"+
+				"<a "+tit+" href='"+results[i].u+"' class='l'>"+
 					results[i].d+"</a> "+
 					' <span class="f"><FONT size="-1">'+ (""+results[i].t).replace(/,/g,', ') +'</FONT></span></div>';
 				newHTML += il;
