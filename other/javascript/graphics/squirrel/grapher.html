@@ -2,26 +2,30 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>1337 formulah showar bai squirrel!11</title>
+<title>1337 formulah showar bai squirrel and pnc!11</title>
 <style>
     * {margin: 0px; padding: 0px; }
     html, body { width: 100%; height: 100% }
     #canvas { position: absolute; top: 0px; left: 0px; overflow: hidden; cursor: pointer;}
     #controls { position: absolute; top: 1px; left: 2px;}
-    #controls, #controls input, #controls button { font-family: sans-serif; font-size: 12px; }
+    #controls, #controls input, #controls button { font-family: sans-serif; font-size: 13px; }
     
     #controls button { padding: 0px; margin: 0px 0px; }
-    #controls input { padding: 0px; margin: 1px 1px; height: 13px;}
+    #controls input { padding: 0px; margin: 1px 1px; }
     #controls input.short { width: 40px; }
-    #controls input.long { width: 242px; }
-    #controls input.slider { width: 200px; }
+    #controls input.long { font-size: 1.2em; width: 242px; }
+    #controls input.slider { width: 200px; height: 1.0em; }
     #controls table { border-spacing: 0px; }
-    #controls table td { padding: 0px; margin: 0px; height: 19px;}
+    #controls table td { padding: 2px; margin: 2px; vertical-align: middle; }
     
+    /* .controlBlock { background-color: #eeeeee; } */
+    .controlBlock { border: 2px bevel #cccccc; }
+
     .flink { border-bottom: 1px dotted; cursor: pointer; white-space: nowrap; }
     .flink:hover { border-bottom: 1px solid; }
     
     footer { display:block; position: absolute; bottom: 0; font-size: 70%; font-family: sans-serif;}
+
 </style>
 <script>
 
@@ -36,7 +40,7 @@ var WIREFRAME = 0; ZCOLORED = 1; LIGHTED = 2;
 
 
 // CANVAS
-var canvaswidth, canvasheight
+var canvaswidth, canvasheight;
 
 // GLOBAL VARS
 var _canvas, _ctx, _magnification;
@@ -50,8 +54,8 @@ var formula, min_x, min_y, max_x, max_y, min_z, max_z;
 var mode;
 
 // TEMP
-var dot
-var tempcam
+var dot;
+var tempcam;
 var z, zs = [], max1, max2, triangles = [], i;
 var time1;
 
@@ -72,14 +76,15 @@ var random = Math.random;
 //############################################################################# MAIN FUNCTIONS
 
 function c2dto3d() {
-    if (parallel) return [dot[X] * magnification, -dot[Z] * magnification]
+    if (parallel)
+        return [dot[X] * magnification, -dot[Z] * magnification];
     dot[Y] += camera;
-    return [camera * dot[X] / dot[Y] * magnification, -camera * dot[Z] / dot[Y] * magnification]
+    return [camera * dot[X] / dot[Y] * magnification, -camera * dot[Z] / dot[Y] * magnification];
 }
 
 function rotate() {
     for (i = 2; i>=0; i--) {
-        if (angles[i] != 0) {
+        if (angles[i] !== 0) {
             h = dot[take[i][0]]; w = dot[take[i][1]];
             alpha = Math.abs( Math.atan( h/w ) );
             
@@ -94,7 +99,7 @@ function rotate() {
             
             angle += angles[i];
             len = Math.sqrt( h*h + w*w );
-            if (len == 0) angle = 0;
+            if (len === 0) angle = 0;
             dot[take[i][0]] = Math.sin( angle ) * len;       
             dot[take[i][1]] = Math.cos( angle ) * len;
         }
@@ -103,19 +108,29 @@ function rotate() {
 
 function get3dcoordinates() {
     // THIS USES formula, multiplier, gridsize, min_x, min_y, max_x, max_y AND YIELDS a3[][] = [x, y, z]
+    var t = (new Date().getTime() - animStartTime) / 1000;
     min_z = +Infinity, max_z = -Infinity;
     var xstep = (max_x - min_x) / gridsize;
     var ystep = (max_y - min_y) / gridsize;
     for (var n = 0; n <= gridsize; n++ ) {
-        a3[n] = [];
+        if (!a3[n]) {
+            a3[n] = [];
+        }
         for (var m = 0; m <= gridsize; m++ ) {
             x = min_x + n*xstep;
             y = min_y + m*ystep;
             z = eval(formula);
-            a3[n][m] = [x, y, z*multiplier];
-
-            if (a3[n][m][Z] < min_z) min_z = a3[n][m][Z];
-            if (a3[n][m][Z] > max_z) max_z = a3[n][m][Z];
+            // a3[n][m] = [x, y, z*multiplier];
+            if (!a3[n][m]) {
+                a3[n][m] = [0,0,0];
+            }
+            a3[n][m][0] = x;
+            a3[n][m][1] = y;
+            // a3[n][m][2] = z*multiplier;
+            var depth = z*multiplier;
+            a3[n][m][2] = depth;
+            if (depth < min_z) min_z = depth;
+            if (depth > max_z) max_z = depth;
         }
     }
 };
@@ -123,12 +138,14 @@ function get3dcoordinates() {
 function get2dcoordinatesandrotatedarray() {
     // THIS USES a3 AND YIELDS a3r[][] = [x, y, z] & a2[];
     for (var n = 0; n <= gridsize; n++ ) {
-        a2[n] = [];
-        a3r[n] = [];
+        if (!a2[n]) {
+            a2[n] = [];
+            a3r[n] = [];
+        }
         for (var m = 0; m <= gridsize; m++ ) {
             dot = a3[n][m].slice(0);
             rotate();
-            a3r[n][m] = dot.slice(0);
+            a3r[n][m] = dot; // .slice(0);
             a2[n][m] = c2dto3d();
         }
     }
@@ -137,15 +154,19 @@ function get2dcoordinatesandrotatedarray() {
 function shapes_get2dcoordinatesandrotatedarray() {
     // THIS ISES shapes AND YIELDS shapes3r[][][] = [x, y, z] & shapes2[][][] = [x, y];
     for (var n = 0; n < shapes.length; n++ ) { // for each shape
-        shapes2[n] = [];
-        shapes3r[n] = [];
+        if (!shapes2[n]) {
+            shapes2[n] = [];
+            shapes3r[n] = [];
+        }
         for (var m = 0; m < shapes[n].length; m++ ) {  //for each path
-        shapes2[n][m] = [];
-        shapes3r[n][m] = [];
+            if (!shapes2[n][m]) {
+                shapes2[n][m] = [];
+                shapes3r[n][m] = [];
+            }
             for (var l = 0; l < shapes[n][m].length; l++) {
                 dot = shapes[n][m][l].slice(0);
                 rotate();
-                shapes3r[n][m][l] = dot.slice(0);
+                shapes3r[n][m][l] = dot; // .slice(0);
                 shapes2[n][m][l] = c2dto3d();
                 
             }
@@ -220,6 +241,8 @@ function draw(newformula) {
     switch (mode) {
         case WIREFRAME:
           wireframe(); break;
+        case dragging:
+          wireframe(); break;
         case ZCOLORED:
           zcolored(); break;
         case LIGHTED:
@@ -227,11 +250,17 @@ function draw(newformula) {
     }                           //  */
     drawshapes();
     
+    var time2 = new Date();
+    var time2 = time2.getTime();
+    document.getElementById("lol").innerHTML += "<br>Rendering "+triangles.length+" triangles took <b>" + (time2-time1)/1000 + "</b> seconds.";
+
 };
 
 function ahaha(a,b) {return b[3] - a[3]}
 
 function zcolored() {
+
+    triangles.length = 0;
     
     document.getElementById("lol").innerHTML += "<br>Finding all valid triangles... "
     
@@ -249,12 +278,13 @@ function zcolored() {
     // SORT THEM
     triangles.sort(ahaha);
  
-    document.getElementById("lol").innerHTML += "<br>Drawing the triangles... "
+    document.getElementById("lol").innerHTML += "<br>Drawing "+triangles.length+" triangles... ";
     
     // DRAW THEM
     
-    i = 0
-    zcolored_draw()
+    i = 0;
+    // _ctx.globalAlpha = 0.5;
+    zcolored_draw();
     /*for (var i=0; i<triangles.length; i++) {
         for (k=0; k<3; k++) zs[k] = a3[triangles[i][k][X]][triangles[i][k][Y]][Z];
         z = (Math.min(zs[0], zs[1], zs[2])+Math.max(zs[0], zs[1], zs[2]))/2;
@@ -275,27 +305,29 @@ function zcolored() {
 function zcolored_draw() { 
     if (i<triangles.length) {
         var b=i+Math.min(Math.ceil(gridsize*gridsize/5), 600);
+		  b=6000000;
         for(i; i<b && i<triangles.length; i++) {
             for (k=0; k<3; k++) zs[k] = a3[triangles[i][k][X]][triangles[i][k][Y]][Z];
             z = (Math.min(zs[0], zs[1], zs[2])+Math.max(zs[0], zs[1], zs[2]))/2;
             red = Math.round((z-min_z) / (max_z-min_z) * 256);
             _ctx.beginPath();
-            _ctx.fillStyle = "rgb(" + red + ",0,0)";
+            // _ctx.fillStyle = "rgb(" + red + ",0,0)";
+            // _ctx.fillStyle = "hsl(" + red + ",100%,50%)";
+            _ctx.fillStyle = "hsla(" + red + ",100%,50%,0.5)";
             //if (i == Math.floor(triangles.length/2)) {alert(1);}
             _ctx.moveTo.apply(_ctx, a2[triangles[i][1][X]][triangles[i][1][Y]]);  //A
             _ctx.lineTo.apply(_ctx, a2[triangles[i][0][X]][triangles[i][0][Y]]);  //BASE
             _ctx.lineTo.apply(_ctx, a2[triangles[i][2][X]][triangles[i][2][Y]]);  //B
             _ctx.closePath();
-            _ctx.strokeStyle = _ctx.fillStyle;
-            _ctx.stroke(); //
+            // _ctx.strokeStyle = _ctx.fillStyle;
+            // _ctx.stroke(); //
             _ctx.fill();
         }
         setTimeout(zcolored_draw, 0);
+        // zcolored_draw();
     }
     else { 
-        var time2 = new Date();
-        var time2 = time2.getTime();
-        document.getElementById("lol").innerHTML += "<br>Rendering took <b>" + (time2-time1)/1000 + "</b> seconds.";
+        // _ctx.globalAlpha = 1.0;
     }
 }
 
@@ -311,16 +343,16 @@ function wireframe() {
             if (isGood(n,m)) _ctx.moveTo.apply(_ctx,a2[n][m]);
             else skip = true;
             while (true) {
-            if (skip) { 
-                if (isGood(n,m)) { 
-                    skip = false;
-                    _ctx.moveTo.apply(_ctx,a2[n][m]);
+                if (skip) { 
+                    if (isGood(n,m)) { 
+                        skip = false;
+                        _ctx.moveTo.apply(_ctx,a2[n][m]);
+                    }
                 }
-            }
-            else { 
-                if ( isGood(n,m)) _ctx.lineTo.apply(_ctx,a2[n][m]);
-                else skip = true;
-            }
+                else { 
+                    if ( isGood(n,m)) _ctx.lineTo.apply(_ctx,a2[n][m]);
+                    else skip = true;
+                }
                 if (j==0) { m++; if (m>gridsize) {m=0; break;} }
                 else { n++; if (n>gridsize) {n=0; break;} }
             }
@@ -366,8 +398,23 @@ function init() {
     _canvas.onmousewheel = magnify;
     if (window.addEventListener) window.addEventListener('DOMMouseScroll', magnify, false);
     
+    animStartTime = new Date().getTime();
     adjustcanvas();
-    draw(true);
+    // draw(true);
+
+    // bad: setInterval(function(){draw();},100);
+
+    function anim() {
+        try {
+            draw(true);
+        } catch (e) {
+            // common occurrence if user provides an invalid formula (partial entry)
+            // catching it means the timeout loop will continue
+        }
+        setTimeout(anim,100);
+    }
+    anim();
+
 }
 
 function shapes_get3dcoordinates() {
@@ -415,7 +462,7 @@ function adjustcanvas() {
 
 window.onresize = function() {
     adjustcanvas();
-    draw();
+    draw(true);
 }
 
 //############################################################################# UI
@@ -449,6 +496,7 @@ function resetcoords() {
 
 function show(formula) {
     document.getElementById("formula").value = formula;
+    animStartTime = new Date().getTime();
     draw(true);
 }
 
@@ -488,47 +536,47 @@ function magnify(ev) {
 </script>
 </head>
 <body onLoad="init();">
-    <canvas id="canvas" onMouseDown="_canvas.style.cursor='move';oldpoint=[event.screenX, event.screenY]; dragging=1" onMouseUp="dragging=0;_canvas.style.cursor='pointer'"></canvas>
+    <canvas id="canvas" onMouseDown="_canvas.style.cursor='move';oldpoint=[event.screenX, event.screenY]; dragging=1" onMouseUp="dragging=0;_canvas.style.cursor='pointer';draw()"></canvas>
     <div id="controls">
     
-<table>
-    <tr><td>formula:<td colspan="3"><input id="formula" type="text" value="sin(sqrt(x*x + y*y)*65)" tag="cos(sqrt(x*x+y*y)*65)" class="long" onChange="draw(true)" />
-    <tr><td>input span:<td colspan="3">&nbsp;x: <input id="minx" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxx" type="number" value="10" class="short" onChange="draw(true)"> &
-                            y: <input id="miny" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxy" type="number" value="10" class="short" onChange="draw(true)">
-    
-    <tr><td>grid size:<td colspan="3">     <input id="gridsize"      type="range" min="5" max="100" step="1"   onChange="cvals(this); draw(true)" value="55" class="slider"><input value="55" id="igridsize"      type="number" class="short" onChange="draw(true)">
+<table class="controlBlock">
+    <tr><td>formula:<td colspan="3">z=<input id="formula" type="text" value="sin(sqrt(x*x + y*y)*65-20*t)" tag="sin(sqrt(x*x+y*y)*65-20*t)" class="long" onChange="animStartTime=new Date().getTime();draw(true)" />
+    <tr><td>input span:<td colspan="3">x: <input id="minx" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxx" type="number" value="10" class="short" onChange="draw(true)"> y: <input id="miny" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxy" type="number" value="10" class="short" onChange="draw(true)">
+    <tr><td>grid size:<td colspan="3">     <input id="gridsize"      type="range" min="3" max="100" step="1"   onChange="cvals(this); draw(true)" value="45" class="slider"><input value="45" id="igridsize"      type="number" class="short" onChange="draw(true)">
     <tr><td>magnification:<td colspan="3"> <input id="magnification" type="range" min="0" max="50"  step="0.1" onChange="cvals(this); draw()" value="30" class="slider"><input value="30" id="imagnification" type="number" class="short" onChange="draw()">
     <tr><td>z multiplier:<td colspan="3">  <input id="multiplier"    type="range" min="0" max="3"   step="0.1" onChange="cvals(this); draw(true)" value="1"  class="slider"><input value="1"  id="imultiplier"    type="number" class="short" onChange="draw(true)" step="0.1"> 
         <button onClick="var w = document.getElementById('multiplier'); w.value = 1; cvals(w); draw()">1</button>
     
     <tr><td>rotation x:<td><input id="rx" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irx" type="number" onChange="draw()" value="45" class="short">
-        <td rowspan="3"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAA9CAYAAACUTfioAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjbQg61aAAABN0lEQVRIS8WWP0uCURTGhUChwXRwFsIxaAv6AH2PliZp8wMEujc7OrT2ARyF5jaRiAhCbIhqCNyy54Hr6Pv8lvDA4R3uj+c9954/99Zqe7ehIrgkUdQFPcgHBD4Q9CHvEPhK0B0B24J+CWjmXX5O4CdBMwLOBb1S8IeAC0EbeSPBLwVsJXBFQcfnX1cqOi5D9mbVr51nQzE73QJ+p42cFHBJwecEHhdFp7HSfCTezGMCvb6moONDiiOBrsloRyI+I1UAt4PPNNqpiPtIFWCs7zWFXXIXCb4hij0a4xvZNT7HW6m5ZaO5XVGuUfW0pIbqEVf4trliz+AuxH2NJwWePc4GmmYG8XzEExfPcM8ddCvge8ZTYhqLUYCb/yyB+HbtS2mS1PwC+JJbdacdagW9KfArJYX1D+t/uXBVWuWiF5wAAAAASUVORK5CYII%3D" height="55">
+        <td rowspan="3"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAA9CAYAAACUTfioAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjbQg61aAAABN0lEQVRIS8WWP0uCURTGhUChwXRwFsIxaAv6AH2PliZp8wMEujc7OrT2ARyF5jaRiAhCbIhqCNyy54Hr6Pv8lvDA4R3uj+c9954/99Zqe7ehIrgkUdQFPcgHBD4Q9CHvEPhK0B0B24J+CWjmXX5O4CdBMwLOBb1S8IeAC0EbeSPBLwVsJXBFQcfnX1cqOi5D9mbVr51nQzE73QJ+p42cFHBJwecEHhdFp7HSfCTezGMCvb6moONDiiOBrsloRyI+I1UAt4PPNNqpiPtIFWCs7zWFXXIXCb4hij0a4xvZNT7HW6m5ZaO5XVGuUfW0pIbqEVf4trliz+AuxH2NJwWePc4GmmYG8XzEExfPcM8ddCvge8ZTYhqLUYCb/yyB+HbtS2mS1PwC+JJbdacdagW9KfArJYX1D+t/uXBVWuWiF5wAAAAASUVORK5CYII%3D" height="95%">
     <tr><td>rotation y:<td><input id="ry" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="0"  class="slider"><input id="iry" type="number" onChange="draw()" value="0"  class="short"> 
         <td><button onClick="resetcoords(); draw();">R</button>
     <tr><td>rotation z:<td><input id="rz" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irz" type="number" onChange="draw()" value="45" class="short">
     
-    <tr><td>perspective:<td colspan="3"><input id="camera" type="range" min="0" max="100" step="1" onChange="cvals(this);draw()" value="35" class="slider"><input id="icamera" type="number" onChange="draw()" value="45" class="short">
+    <tr><td>perspective:<td colspan="3"><input id="camera" type="range" min="0" max="100" step="1" onChange="cvals(this);draw()" value="35" class="slider"><input id="icamera" type="number" onChange="draw()" value="35" class="short">
     
     <tr><td>projection:<td colspan="3">&nbsp;<input id="parallel" type="checkbox" onChange="cpar(this);draw()"> parallel (no perspective)
     <tr><td>rendering:<td colspan="3">&nbsp;<input id="wireframe" type="radio" onChange="draw()" name="r" > wireframe <input id="zcolored" type="radio" onChange="draw()" name="r" checked> z-colored
     </table>
     <div style="font-size: 70%; width: 400px;">
+    <!--
     <br>Click+drag to rotate. Wheel to zoom. No licence or whatsoever included.
     <br>Use functions: cos, sin, tan (in degrees); 
     <div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
         sqrt, abs, log, floor, ceil, pow, round, random.
     </div>
+    -->
     Try the following functions: 
     <div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
-        <span class="flink" onClick="show('log(abs(x*y)+1)');">log(abs(x*y)+1)</span>,<br>
-        <span class="flink" onClick="show('cos(x*50)-cos(y*50)/2');">cos(x*50)*cos(y*50)</span>,<br>
-        <span class="flink" onClick="show('sin(x*y*15)');">sin(x*y*15)</span>,<br>
-        <span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10))*75)*3');">sin(sqrt(abs(x-y+x*y/10))*75)*3</span>,<br>
-        <span class="flink" onClick="show('sqrt(100 - x*x - y*y)');">sqrt(100 - x*x - y*y)</span>,<br>
-        <span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y))))');">-log(0.1+abs(sin(49*sqrt(x*x + y*y))))</span>,<br>
+        <span class="flink" onClick="show('log(abs(x*y+t)+1)');">log(abs(x*y+t)+1)</span>,<br>
+        <span class="flink" onClick="show('cos(x*50)-cos(y*50+20*t)/2');">cos(x*50)*cos(y*50+20*t)</span>,<br>
+        <span class="flink" onClick="show('sin(x*y*15+50*t)');">sin(x*y*15+50*t)</span>,<br>
+        <span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3</span>,<br>
+        <span class="flink" onClick="show('sqrt(20+t - x*x - y*y)');">sqrt(20+t - x*x - y*y)</span>,<br>
+        <span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))');">-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))</span>,<br>
         <span class="flink" onClick="show('((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?abs(a)/15:0')">((a=x*x+pow((y-pow(x*x,1/3)),2)-50)&lt;0)?abs(a)/15:0</span>,<br>
-        <span class="flink" onClick="show('b=(((l=pow(x+2,2)+pow(y+6,2)-3*3)<0) && x<0)?sqrt(abs(l)):(((r=pow(x-2,2)+pow(y+6,2)-3*3)<0) && x>=0)?sqrt(abs(r)):0;s=((x<=2) && (x>=-2) && (y<4.5) && (y>=-5))?sqrt(4-x*x):0;h=(((h=pow(x,2)+pow(y-6,2)-3*3)<0) && (y>=4.5))?sqrt(abs(h)):0;(b>s)?b:s||h');">don't click this</span>,<br>
-        <span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65)');">sin(sqrt(x*x + y*y)*65)</span>.<br>
+        <span class="flink" onClick="show('0.06*x*y*sin(62*t)');">0.06*x*y*sin(62*t)</span>.<br>
+        <span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65-20*t)');">sin(sqrt(x*x + y*y)*65-20*t)</span>.<br>
     </div>
     If this ruins your PC..<br>&nbsp;&nbsp;&nbsp;why, that'd be amazing, man!</div>
     <div style="font-size: 70%; padding-left: 100px;"><i>-- made by squirrel</i></div>
