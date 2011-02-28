@@ -332,40 +332,48 @@ function zcolored_draw() {
 }
 
 function wireframe() {
-    
-    document.getElementById("lol").innerHTML += "<br>Drawing... "
-    
-    // PREPARE THE LINES. THIS IS THE FASTEST FUNCTION
-    var n=0, m=0, j=0, skip;
-    while(j<2) {
-        skip = false;
-        while(true) {
-            if (isGood(n,m)) _ctx.moveTo.apply(_ctx,a2[n][m]);
-            else skip = true;
-            while (true) {
-                if (skip) { 
-                    if (isGood(n,m)) { 
-                        skip = false;
-                        _ctx.moveTo.apply(_ctx,a2[n][m]);
-                    }
-                }
-                else { 
-                    if ( isGood(n,m)) _ctx.lineTo.apply(_ctx,a2[n][m]);
-                    else skip = true;
-                }
-                if (j==0) { m++; if (m>gridsize) {m=0; break;} }
-                else { n++; if (n>gridsize) {n=0; break;} }
-            }
-            if (j==0) { n++; if (n>gridsize) {n=0; break;} }
-            else { m++; if (m>gridsize) {m=0; break;} }
-        };
-        j++;
-    };
-    
-    
-    // DRAW
-    _ctx.strokeStyle = "#000";
-    _ctx.stroke();
+
+	document.getElementById("lol").innerHTML += "<br>Drawing... "
+
+
+	// PREPARE THE LINES. THIS IS THE FASTEST FUNCTION
+	var n=0, m=0, j=0, skip;
+	while(j<2) {
+		skip = false;
+		while(true) {
+			var dist = a2[n][m][Z];
+			var lum = 70*(n+m)/gridsize;
+			_ctx.strokeStyle = "hsl(0,0%,"+lum+"%)";
+			_ctx.beginPath();
+			skip = true;
+			while (true) {
+				if (isGood(n,m)) { 
+					// var todo = ( skip ? _ctx.moveTo : _ctx.lineTo );
+					// todo.apply(_ctx,a2[n][m]);
+					if (skip) {
+						_ctx.moveTo(a2[n][m][0],a2[n][m][1]);
+					} else {
+						_ctx.lineTo(a2[n][m][0],a2[n][m][1]);
+					}
+					skip = false;
+				} else {
+					skip = true;
+				}
+				if (j==0) { m++; if (m>gridsize) {m=0; break;} }
+				else { n++; if (n>gridsize) {n=0; break;} }
+			}
+			if (j==0) { n++; if (n>gridsize) {n=0; break;} }
+			else { m++; if (m>gridsize) {m=0; break;} }
+			_ctx.stroke();
+		};
+		_ctx.stroke();
+		j++;
+	};
+
+
+	// DRAW
+	// _ctx.strokeStyle = "#000";
+	// _ctx.stroke();
 };
 
 
@@ -411,7 +419,7 @@ function init() {
             // common occurrence if user provides an invalid formula (partial entry)
             // catching it means the timeout loop will continue
         }
-        setTimeout(anim,100);
+        setTimeout(anim,50);
     }
     anim();
 
@@ -574,8 +582,8 @@ function magnify(ev) {
         <span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3</span>,<br>
         <span class="flink" onClick="show('sqrt(20+t - x*x - y*y)');">sqrt(20+t - x*x - y*y)</span>,<br>
         <span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))');">-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))</span>,<br>
-        <span class="flink" onClick="show('((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?abs(a)/15:0')">((a=x*x+pow((y-pow(x*x,1/3)),2)-50)&lt;0)?abs(a)/15:0</span>,<br>
-        <span class="flink" onClick="show('0.06*x*y*sin(62*t)');">0.06*x*y*sin(62*t)</span>.<br>
+        <span class="flink" onClick="show('((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?(1.1+0.1*log(2.1+2*sin(180*t)))*abs(a)/15:0')">((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?(1.1+0.1*log(2.1+2*sin(180*t)))*abs(a)/15:0</span>,<br>
+        <span class="flink" onClick="show('0.1*x*y*sin(62*t)');">0.1*x*y*sin(62*t)</span>.<br>
         <span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65-20*t)');">sin(sqrt(x*x + y*y)*65-20*t)</span>.<br>
     </div>
     If this ruins your PC..<br>&nbsp;&nbsp;&nbsp;why, that'd be amazing, man!</div>
