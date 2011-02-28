@@ -5,9 +5,10 @@
 // @include        *
 // @exclude        http://www.facebook.com/*
 // @exclude        https://www.facebook.com/*
-// @exclude        http://*.google.com/images?*
 // @exclude        http://facebook.com/*
 // @exclude        https://facebook.com/*
+// @exclude        http://images.google.*/*
+// @exclude        http://*.google.*/images?*
 // ==/UserScript==
 // We don't require: http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
 // The json2.js @require is for older browsers.
@@ -148,7 +149,6 @@ log = function(x) {
 var max_width = 300;
 var getWebsiteInfoOnly = false;   // Shows info for target website, not target page.
 var bg_color = "#EAEAEA";
-var warn_bg_color = "#EADADA";
 var warn_color = "#FF4444";
 var border_color = "#AAAAAA";
 var font_color = "#000000";
@@ -207,7 +207,7 @@ function hsv2rgbString(h,s,v) {
 
 function getHash(str) {
 	var sum = 0;
-	for (i=0;i<str.length;i++) {
+	for (var i=0;i<str.length;i++) {
 		sum = sum + (253*i)*(str.charCodeAt(i));
 		sum = sum % 100000;
 	}
@@ -260,13 +260,19 @@ function boldTextElement(txt) {
 	return span;
 }
 
+function trimString(str) {
+	return str.replace(/(^\s*|\s*$)/g,'');
+}
+
+// log( "trim1", '' === trimString('   a b c    ') );
+
 // Not checking the element we were passed, but all its children
 // BUG: Intended to detect 1 image, but will allow N images.
 function isImageAndWhitespace(elem) {
 	for (var i=0;i<elem.childNodes.length;i++) {
 		var b = elem.childNodes[i];
 		var isImage = (b.tagName == "IMG");
-		var isEmptyText = (b.nodeType==3 && b.textContent.trim()=="");
+		var isEmptyText = (b.nodeType==3 && trimString(b.textContent)=="");
 		if (!isImage && !isEmptyText) {
 			return false;
 		}
@@ -405,7 +411,9 @@ if (typeof GM_registerMenuCommand == 'undefined') {
 // DONE: It would be more appropriate to use globalStorage if it is available.
 // TODO: But then to be strictly GM-compatible, it should also separate keys by script namespace and name and number!
 
-if (typeof GM_setValue == 'undefined' || GM_setValue.toString().indexOf("not supported")>=0) {
+// This throws an error in FF4 GM: GM_setValue.toString().indexOf("not supported")>=0
+
+if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/)) {
 
 	var storage = this.globalStorage || this.localStorage || this.sessionStorage;
 	var name = "some unlabeled";
@@ -512,11 +520,11 @@ function JSON_parse(str) {
 		result = JSON.parse(str);
 	} catch (e) {
 		// Parse Error?  Must be an old record!
-		GM_log("Difficulty parsing \""+str+"\" with JSON - trying uneval.");
+		GM_log("Difficulty parsing \""+str+"\" with JSON - trying uneval.  e="+e);
 		try {
 			result = eval(str);
-		} catch (e) {
-			GM_log("Could not parse: \""+str+"\"");
+		} catch (e2) {
+			GM_log("Could not parse: \""+str+"\".  e2="+e2);
 			result = null;
 		}
 	}
@@ -530,16 +538,19 @@ function JSON_parse(str) {
 
 var dataCache = ({});
 
-var delay = 0; // slow down the lookupSpeed if we are making many queries
+var delay = 1000; // slow down the lookupSpeed if we are making many queries
 
 function doLookup(lookupURL,onSuccess,onFailFn) {
 	// lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
-	lookupSpeed = 1200 + delay;
-	if (delay < 9000)
-		delay += 120;
+	// lookupSpeed = 1200 + delay;
+	// if (delay < 9000)
+		// delay += 120;
+	delay = delay * 1.08;
+	lookupSpeed = delay;
 	if (logIO) {
 		log("Requesting info for: "+lookupURL);
 	}
+
 	// We can use https here, but it is slower.
 	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
 	GM_xmlhttpRequest({
@@ -649,6 +660,8 @@ function cleanupCache() {
 	if (typeof GM_listValues === 'undefined') {
 		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
 	} else {
+
+		log("Starting cleanupCache ...");
 
 		var cacheList = GM_listValues();
 
@@ -819,7 +832,6 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	if (resultObj && resultObj.total_posts) {
 
 		if (unescapeHTML(resultObj.url) != subjectUrl) {
-			tooltipDiv.style.backgroundColor = warn_bg_color;
 			var warningSpan = document.createElement("SPAN");
 			if (unescapeHTML(resultObj.url) == getHostnameOfUrl(subjectUrl)) {
 				warningSpan.appendChild(document.createTextNode("Results for website"));
@@ -836,12 +848,16 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 				// info for, so the warnings are needed!
 				warningSpan.appendChild(document.createTextNode("Results for: "+resultObj.url));
 			}
-			warningSpan.style.color = warn_color; // TODO: Oddly this does not get applied in Konqueror!
+			warningSpan.style.backgroundColor = warn_color; // TODO: Oddly this does not get applied in Konqueror!
+			warningSpan.style.color = 'white';
+			warningSpan.style.padding = '3px 6px';
+			warningSpan.style.fontWeight = 'bold';
 			tooltipDiv.appendChild(warningSpan);
 			tooltipDiv.appendChild(document.createElement('BR'));
 		}
 
 		var titleCont = document.createElement("TD");
+		titleCont.style.backgroundColor = bg_color;
 
 		// titleCont.appendChild(document.createTextNode("Title: "));
 		// titleCont.appendChild(boldTextElement(resultObj.title));
@@ -867,28 +883,21 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		// titleCont.appendChild(document.createTextNode("Popularity: "));
 		// titleCont.appendChild(boldTextElement(""+resultObj.total_posts));
 		// var popWidth = Math.log(3 + parseInt(resultObj.total_posts))*30;
-		var popWidth = Math.log(parseInt(resultObj.total_posts)/40)*max_width/8;
+		var popWidth = Math.log(Number(resultObj.total_posts)/40)*max_width/8;
 		if (!popWidth || popWidth<=10) popWidth = 10;
 		if (popWidth>max_width) popWidth = max_width;
 		var popBar = document.createElement('A');
 		popBar.href = link.href;
-		var thru = popWidth/max_width;
-		// popBar.style.backgroundColor = 'rgb(128,'+parseInt(127+128*thru)+','+parseInt(255-128*thru)+')';
-		// var hue = 2/3 - 1/3*thru;   // blue -> cyan -> green
-		// var hue = thru/3;        // red -> yellow -> green
-		// var saturation = 0.4;
-		// var variance = 0.9;
-		var hue = 1.8/3;
-		var saturation = 0.6+0.3*thru;
-		var variance = 0.9-0.4*thru;
-		popBar.style.backgroundColor = hsv2rgbString(hue, saturation, variance);
+
+		popBar.style.backgroundColor = getColorForCount(resultObj.total_posts);
 		popBar.style.color = 'white';
 		popBar.style.width = popWidth+'px';
 		popBar.style.margin = '2px 0px 2px 0px';
 		popBar.style.padding = '3px 8px 2px 8px';
 		popBar.style.textAlign = 'right';
+		popBar.style.textDecoration = 'none'; // do not underline popularity (although it is a link)
 		// popBar.appendChild(document.createTextNode(" "));
-		// popBar.style.float = 'right';
+		// popBar.style.float = 'right'; //// Ahhh apparently .float was renamed .cssFloat or .styleFloat for IE
 		popBar.appendChild(boldTextElement(addCommasToNumber(resultObj.total_posts)));
 
 		var popBarCont = document.createElement("TD");
@@ -910,6 +919,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		topRow.appendChild(titleCont);
 		topRow.appendChild(popBarCont);
 		tooltipDiv.appendChild(topTable);
+		topTable.style.backgroundColor = bg_color;
 		/*
 		titleCont.style.float = 'left';
 		popBarCont.style.float = 'right';
@@ -956,6 +966,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 				link.href = "http://delicious.com/tag/"+tag;
 				link.target = "_blank";
 				link.title = resultObj.top_tags[tag];
+				link.style.textDecoration = 'none'; // do not underline tags
 				link.appendChild(tagSpan);
 				tagSpan = link;
 
@@ -1145,16 +1156,37 @@ if (showTooltips) {
 
 // == Initialise current-page auto-lookup == //
 
+function getColorForCount(tot) {
+
+	/*
+	//// Colorful version (light cyan to dull dark blue)
+	var thru = Math.log(Number(tot)/40)/8;
+	// popBar.style.backgroundColor = 'rgb(128,'+parseInt(127+128*thru)+','+parseInt(255-128*thru)+')';
+	// var hue = 2/3 - 1/3*thru;   // blue -> cyan -> green
+	// var hue = thru/3;        // red -> yellow -> green
+	// var saturation = 0.4;
+	// var variance = 0.9;
+	var hue = 1.8/3;
+	var saturation = 0.6+0.3*thru;
+	var variance = 0.9-0.4*thru;
+	return hsv2rgbString(hue, saturation, variance);
+	*/
+
+	//// One-hue version, faint light to strong dark blue.
+	var greatness = Math.min(1.0,Math.log(tot) / Math.log(10000));
+	var saturation = 40 + 60*greatness;
+	var brightness = 70 - 30*greatness;
+	// scoreSpan.style.backgroundColor = hsv2rgbString(2/3,0.3+0.5*greatness,0.8);
+	return "hsl(240,"+saturation+"%,"+brightness+"%)";
+
+}
+
 function createScoreSpan(resultObj) {
 	var scoreSpan = document.createElement("span");
 	if (resultObj.total_posts) {
-		var text = resultObj.total_posts;
+		var text = addCommasToNumber(resultObj.total_posts);
 		scoreSpan.appendChild(boldTextElement(text));
-		var greatness = Math.min(1.0,Math.log(resultObj.total_posts) / Math.log(10000));
-		var saturation = 40 + 60*greatness;
-		var brightness = 70 - 30*greatness;
-		// scoreSpan.style.backgroundColor = hsv2rgbString(2/3,0.3+0.5*greatness,0.8);
-		scoreSpan.style.backgroundColor = "hsl(240,"+saturation+"%,"+brightness+"%)";
+		scoreSpan.style.backgroundColor = getColorForCount(resultObj.total_posts);
 	}
 	scoreSpan.style.color = 'white';
 	scoreSpan.style.fontWeight = 'bold';
@@ -1187,9 +1219,13 @@ if (lookupCurrentPage) {
 				lc_div.style.zIndex = 1209;
 				document.body.appendChild(lc_div);
 			}
+		},function(){
+			/* Do nothing on failure. */
 		});
 	} catch (e) {
-		log("Caught exception: "+e);
+		log("DLT On "+document.location);
+		log("DLT trying current page lookup, caught exception: "+e);
+		log(e);
 	}
 }
 
