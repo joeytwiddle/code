@@ -211,7 +211,6 @@ function initPreview() {
 		var row       = document.createElement("TR");
 		var leftCell  = document.createElement("TD");
 		var rightCell = document.createElement("TD");
-		table.id = 'gppTable';
 
 		previewFrame = document.createElement('IFRAME');
 		previewFrame.style.backgroundColor = '#eeeeee';
@@ -248,8 +247,8 @@ function initPreview() {
 		}
 
 		function setDimensions() {
-			leftCell.width = parseInt(resultsWidth*100)+"%";
-			rightCell.width = parseInt(previewWidth*100)+"%";
+			leftCell.width = Number(resultsWidth*100)+"%";
+			rightCell.width = Number(previewWidth*100)+"%";
 			previewFrame.width = '100%';
 			//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
 			//// Fixed for sidebars.
@@ -285,8 +284,8 @@ function initPreview() {
 					div.style.top = (table.offsetTop - 8) +'px';
 					div.style.bottom = (table.offsetTop + table.clientHeight - 2) +'px';
 					//
-					div.style.width = (parseInt(div.style.right) - parseInt(div.style.left)) +'px';
-					div.style.height = (parseInt(div.style.bottom) - parseInt(div.style.top)) +'px';
+					div.style.width = (Number(div.style.right) - Number(div.style.left)) +'px';
+					div.style.height = (Number(div.style.bottom) - Number(div.style.top)) +'px';
 				} catch (e) {
 					GM_log("Exception during div setup: "+e);
 				}
@@ -515,11 +514,13 @@ function initPreview() {
 				// realHighlightNode(link,'#ccddee');
 				// GM_log("Got link = "+link);
 				setTimeout(function(){
-					if (previewFrame && !previewFrame.parentNode) {
-						GM_log("previewFrame has been removed from the DOM!");
+					// Sometimes google's AJAX removes previewFrame from the page!
+					if (previewFrame && previewFrame.parentNode==null) {
+						// GM_log("previewFrame has been removed from the DOM!");
 						previewFrame = null;
 					}
 					if (!previewFrame) {
+						// GM_log("Creating previewFrame");
 						createPreviewFrame();
 						// If the result we clicked on was low down, it might not be
 						// visible now that we have moved the results into the side
@@ -549,6 +550,7 @@ function initPreview() {
 			var overLink = ( node.tagName=="A" ? node : getAncestorByTagName(node,"A") );
 			if (overLink)
 				GM_log("overLink = "+getXPath(overLink)+" container="+getXPath(getContainer(overLink)));
+			// GM_log("Mouseover "+node+" overLink="+overLink);
 			if (linksActNormally && overLink && getContainer(overLink) != overLink) {
 				return;   // The user could have previewed this by clicking the
 							 // background, but since the user actually clicked the
@@ -664,7 +666,9 @@ function initPreview() {
 			}
 		}
 
-		var whereToListen = ( includeGeneralBodyLinks ? document.body : resultsBlock );
+		// var whereToListen = ( includeGeneralBodyLinks ? document.body : resultsBlock );
+		//// I think the resultsBlock is sometimes being removed/replaced
+		var whereToListen = document.body;
 
 		whereToListen.addEventListener('mouseover',helloMouse,false);
 		whereToListen.addEventListener('mouseout',goodbyeMouse,false);
@@ -698,7 +702,9 @@ function getXPath(elem) {
 	if (index>=0) {
 		return "(//"+elem.tagName+")["+(index+1)+"]";
 	} else {
-		throw new Error("Not found: "+elem+" in "+list);   // e.g. it has not yet been added to the document's DOM.
+		// throw new Error("Not found: "+elem+" in "+list);   // e.g. it has not yet been added to the document's DOM.
+		//// This can happen if google blits some new results with AJAX.
+		return "(//"+elem.tagName+")[???]";
 	}
 }
 
@@ -794,6 +800,8 @@ function reformatThingsEarly() {
 }
 
 function reformatThingsLater() {
+
+	try {
 
 	// Mainly this shrinks things down in the sidebar, so it displays better.
 
@@ -913,10 +921,10 @@ function reformatThingsLater() {
 			var i = tocheck.length;
 			while (--i>=0) {
 				var elem = tocheck[i];
-				var pl = parseInt(elem.style.paddingLeft);
+				var pl = Number(elem.style.paddingLeft);
 				if (pl>0)
 					elem.style.paddingLeft = '4px';
-				var ml = parseInt(elem.style.marginLeft);
+				var ml = Number(elem.style.marginLeft);
 				if (ml>0)
 					elem.style.marginLeft = '4px';
 			}
@@ -942,6 +950,10 @@ function reformatThingsLater() {
 	applyClassRule("#cnt","max-width","9999999px");
 	applyClassRule("#center_col","margin-right","0px");
 	*/
+
+	} catch (e) {
+		GM_log("Exception during reformatThingsLater: "+e);
+	}
 
 }
 
