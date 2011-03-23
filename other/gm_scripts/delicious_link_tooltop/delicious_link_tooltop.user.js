@@ -3,22 +3,21 @@
 // @namespace      GPM
 // @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
 // @include        *
-// @exclude        http://www.facebook.com/*
-// @exclude        https://www.facebook.com/*
 // @exclude        http://facebook.com/*
 // @exclude        https://facebook.com/*
+// @exclude        http://*.facebook.com/*
+// @exclude        https://*.facebook.com/*
 // @exclude        http://images.google.*/*
 // @exclude        http://*.google.*/images?*
 // ==/UserScript==
-// We don't require: http://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.js
-// The json2.js @require is for older browsers.
-// @require        http://json.org/json.js
+// Some older browsers may need JSON, but this link is broken:
+// @require        http://json.org/json2.js
 
 var showTooltips      = true;
-var lookupCurrentPage = true; // true;
-var annotateAllLinks  = true; // true;
+var lookupCurrentPage = false;
+var annotateAllLinks  = false;
 
-var maxCacheSize = 8192; // Recommended: at least 1024 if you are using annotateAllLinks.  Perhaps 8192.  Firefox cache should be larger than Chrome, because the DB is global rather than per-domain.
+var maxCacheSize = 8192; // Total cache (for all sites).  This value is altered below if we are using localStorage.
 var showProgress = true; // Highlights each link in yellow while we are making a delicious request on it
 var logIO        = false;
 var logResponses = true;
@@ -45,13 +44,13 @@ if (this.GM_addStyle) { GM_addStyle("a:visited { color: #440066; }"); }
 
 // log = (unsafeWindow.console && unsafeWindow.console.log) ? unsafeWindow.console.log : GM_log;
 // log = GM_log;
-function log(x) {
+function log(x,y,z) {
 	if (this.GM_log) {
-		GM_log(x);
+		GM_log(x,y,z);
 	} else if (this.console && console.log) {
-		console.log(x);
+		console.log(x,y,z);
 	}
-	window.status = ""+x;
+	window.status = ""+x+" "+y+" "+z;
 };
 
 
@@ -415,10 +414,14 @@ if (typeof GM_registerMenuCommand == 'undefined') {
 
 if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/)) {
 
+	/*
 	var storage = this.globalStorage || this.localStorage || this.sessionStorage;
 	var name = "some unlabeled";
+	*/
 
-	/* var storageTypes = ["globalStorage","localStorage","sessionStorage"];
+	// Removed "globalStorage" storage because in FF4 it offers it but errors when we try to use it.
+	// Chrome doesn't offer it ATM.
+	var storageTypes = ["localStorage","sessionStorage"];
 	var storage,name;
 	for (var i=0;i<storageTypes.length;i++) {
 		if (this[storageTypes[i]]) {
@@ -426,14 +429,25 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 			name = storageTypes[i];
 			break;
 		}
-	} */
+	}
+
+	if (storage) {
+		try {
+			storage.length; storage.getItem("dummy");
+		} catch (e) {
+			alert("Tried to use "+name+" but it failed on us!");
+			storage = null;
+		}
+	}
 
 	if (storage) {
 
+		/*
 		var allStorages = [this.globalStorage,this.localStorage,this.sessionStorage];
 		var names = ["Global","Local","Session"];
 		var i = (allStorages.indexOf ? allStorages.indexOf(storage) : 0);
 		var name = (i >= 0 ? names[i] : "unknown");
+		*/
 
 		GM_log("Implementing GM_get/setValue using "+name+" storage.");
 
@@ -471,7 +485,7 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 			return list;
 		};
 
-		maxCacheSize = 4096; // per domain
+		maxCacheSize = 4096; // per domain - could drop to 1024 i suppose
 
 	} else {
 		GM_log("Warning: Could not implement GM_get/setValue.");
@@ -538,7 +552,7 @@ function JSON_parse(str) {
 
 var dataCache = ({});
 
-var delay = 1000; // slow down the lookupSpeed if we are making many queries
+var delay = 1500; // slow down the lookupSpeed if we are making many queries
 
 function doLookup(lookupURL,onSuccess,onFailFn) {
 	// lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
@@ -661,9 +675,24 @@ function cleanupCache() {
 		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
 	} else {
 
+		var oldTitle = document.title;
+		document.title = "[Cleaning cache..]";
+		var startTime = new Date().getTime();
+
 		log("Starting cleanupCache ...");
 
-		var cacheList = GM_listValues();
+		var fullCacheList = GM_listValues();
+		var cacheList = [];
+
+		// Trim the list down to only those entries relevant to this plugin.
+		// (For when we are using localStorage.)
+		for (var i=0;i<fullCacheList.length;i++) {
+			var crURL = fullCacheList[i];
+			if (startsWith(crURL,"CachedResponse")) {
+				cacheList.push(crURL);
+			}
+		}
+		fullCacheList = null; // GC can act sooner if it wishes
 
 		// Rather casual method: Keep deleting records at random until we meet
 		// our max cache size.
@@ -677,6 +706,8 @@ function cleanupCache() {
 			cacheList.length--;
 		}
 		*/
+
+		document.title = "[Cleaning cache...]";
 
 		// Delete the oldest and least-used, keep new/popular entries
 		while (cacheList.length > maxCacheSize) {
@@ -717,6 +748,11 @@ function cleanupCache() {
 			cacheList[poorestScorerIndex] = cacheList[cacheList.length-1];
 			cacheList.length--;
 		}
+
+		if (oldTitle === "")
+			oldTitle = " ";   // If we try to set "", Chrome does nothing
+		document.title = oldTitle;
+		log("Cleanup took "+(new Date().getTime() - startTime)/1000+" seconds.");
 
 	}
 }
@@ -798,14 +834,14 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	// tooltipDiv.setAttribute("style", "background:" + bg_color + ";border:1px solid " + border_color + ";padding:2px;color:" + font_color + ";font-family:" + font_face + ";font-size:" + font_size + ";position:absolute;z-index:100000;")
 	tooltipDiv.style.backgroundColor = bg_color;
 	tooltipDiv.style.border = "1px solid "+border_color;
-	tooltipDiv.style.padding = "2px";
+	tooltipDiv.style.padding = '6px';
 	tooltipDiv.style.color = font_color;
 	tooltipDiv.style.fontFamily = font_face;
 	tooltipDiv.style.fontSize = font_size;
 	tooltipDiv.style.position = "absolute";
 	tooltipDiv.style.zIndex = 100000;
 	tooltipDiv.style.textAlign = 'left';
-	tooltipDiv.style.padding = '6px';
+	tooltipDiv.style.lineHeight = '';
 
 	tooltipDiv.addEventListener('mouseover',function(evt){
 			rolledOverTooltip = true;
@@ -1323,7 +1359,7 @@ if (annotateAllLinks && document.location.host != "www.delicious.com") {
 
 // == Cleanup old cached data == //
 
-if (Math.random() < 10.1) { // TODO 0.1
-	setTimeout(cleanupCache,15000);
+if (Math.random() < 0.1) { // TODO 0.1
+	setTimeout(cleanupCache,30000);
 }
 

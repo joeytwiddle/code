@@ -9,14 +9,18 @@
 // ==/UserScript==
 
 //// Features:
-var hideSidebar = "auto";
+var toggleSidebar = true;
 var makeTableOfContentsFloat = true;
 var indentSubBlocks = true;
 var fixUnderlinesToOverlines = true;
 
 
 /* TODOS
-As we scroll the page, light up the "current" section in the TOC.
+ * As we scroll the page, light up the "current" section in the TOC.
+*/
+
+/* Changelog
+ * 23/3/2011 - Added Chrome compatibility.
 */
 
 function log(x) {
@@ -28,7 +32,7 @@ function log(x) {
 		window.status = ""+x;
 		// alert(x);
 	}
-};
+}
 
 // For bookmarklets:
 if (typeof GM_addStyle == "undefined") {
@@ -45,6 +49,7 @@ if (typeof GM_addStyle == "undefined") {
 }
 
 if (typeof GM_getValue == 'undefined') {
+	GM_log("WikiIndent: Adding fallback implementation of GM_getValue");
 	GM_getValue = function(key,def) {
 		return def;
 	};
@@ -59,7 +64,7 @@ function doIt() {
 	// Toggle the sidebar by clicking the "page background" (empty space outside
 	// the main content).  Sometimes clicking the content background is enough.
 
-	if (hideSidebar) {
+	if (toggleSidebar) {
 
 		var content = document.getElementById("content") || document.getElementById("column-content");
 		var column1 = document.getElementById("column-one") || document.getElementById("panel") || document.getElementById("mw-panel") || document.getElementById("jq-interiorNavigation");
@@ -90,7 +95,7 @@ function doIt() {
 						if (cac)
 							column1.parentNode.insertBefore(cac,column1.nextSibling);
 						setTimeout(function(){
-							GM_setValue("sidebarHidden",true);
+							GM_setValue("sidebarVisible",false);
 						},300);
 					} else {
 						column1.style.display = '';
@@ -101,7 +106,7 @@ function doIt() {
 						if (cac && cacOldHome)
 							cacOldHome.appendChild(cac); // almost back where it was :P
 						setTimeout(function(){
-							GM_setValue("sidebarHidden",false);
+							GM_setValue("sidebarVisible",true);
 						},300);
 					}
 				}
