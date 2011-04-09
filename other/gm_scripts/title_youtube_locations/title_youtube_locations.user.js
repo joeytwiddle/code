@@ -85,36 +85,45 @@ setTimeout(function(){
 // Perhaps we are responding to a mouseout event from a child element, because
 // we are not checking the event target like we should do.
 function initThumbnailAnimator() {
-	function createThumbnailAnimatorEvent(img) {
-		var timer = null;
-		img.addEventListener("mouseover",startAnimation,false);
-		img.addEventListener("mouseout",stopAnimation,false);
-		function startAnimation() {
-			// We make this check quite late, due to lazy loading
-			if (img.src.match(/default\.jpg$/)) {
-				timer = setInterval(changeFrame,600);
-			}
-		}
-		function stopAnimation() {
-			if (timer) {
-				clearInterval(timer);
-				// This isn't really neccessary, except to ensure the check for default\.jpg above works next time!
-				img.src = img.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
-			}
-		}
-		var frames = ["1.jpg","2.jpg","3.jpg"];   // "default.jpg",
-		var frameI = 0;
-		function changeFrame() {
-			frameI = (frameI + 1) % frames.length;
-			img.src = img.src.replace(/\/[^/]*$/,'') + '/' + frames[frameI];
+	// function createThumbnailAnimatorEvent(img) {
+	var img    = null;
+	var timer  = null;
+	var frames = ["1.jpg","2.jpg","3.jpg"];   // "default.jpg",
+	var frameI = 0;
+	function changeFrame() {
+		frameI = (frameI + 1) % frames.length;
+		img.src = img.src.replace(/\/[^/]*$/,'') + '/' + frames[frameI];
+	}
+	function startAnimation() {
+		// We make this check quite late, due to lazy loading
+		if (img.src.match(/default\.jpg$/)) {
+			timer = setInterval(changeFrame,600);
 		}
 	}
+	function stopAnimation() {
+		if (timer) {
+			clearInterval(timer);
+			// This isn't really neccessary, except to ensure the check for default\.jpg above works next time!
+			img.src = img.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
+		}
+	}
+	function check(fn) {
+		return function(evt) {
+			var elemToCheck = evt.target || evt.srcElement;
+			if (elemToCheck.tagName == "IMG") {
+				img = event.target;
+				return fn();
+			}
+		};
+	}
+	document.body.addEventListener("mouseover",check(startAnimation),false);
+	document.body.addEventListener("mouseout",check(stopAnimation),false);
 	// var videoList = document.getElementById("watch-sidebar"); // or watch-module or watch-module-body or watch-related or watch-more-related
 	// var videoList = document.getElementsByClassName("video-list")[0]; // can be 4 of these!
-	var thumbs = document.getElementsByTagName("img");
-	for (var i=0;i<thumbs.length;i++) {
-		createThumbnailAnimatorEvent(thumbs[i]);
-	}
+	// var thumbs = document.getElementsByTagName("img");
+	// for (var i=0;i<thumbs.length;i++) {
+		// createThumbnailAnimatorEvent(thumbs[i]);
+	// }
 }
-setTimeout(initThumbnailAnimator,4000);
+setTimeout(initThumbnailAnimator,1000);
 
