@@ -16,10 +16,12 @@
     #controls input.long { font-size: 1.2em; width: 242px; }
     #controls input.slider { width: 200px; height: 1.0em; }
     #controls table { border-spacing: 0px; }
-    #controls table td { padding: 2px; margin: 2px; vertical-align: middle; }
+    #controls table td * { padding: 2px; margin: 2px; vertical-align: middle; }
+
+    #formula { font-family: sans-serif; }
     
     /* .controlBlock { background-color: #eeeeee; } */
-    .controlBlock { padding: 4px; border: 2px outset #cccccc; /* background-color: hsla(0,0%,90%,0.6); */ }
+    .controlBlock { padding: 4px; border: 2px outset #cccccc; background-color: hsla(0,0%,90%,0.6); /* */ }
 
     .flink { border-bottom: 1px dotted; cursor: pointer; white-space: nowrap; }
     .flink:hover { border-bottom: 1px solid; }
@@ -52,6 +54,7 @@ var a3 = []; a3r = []; a2 = [];
 var shapes = [], shapes3r = []; shapes2 = [];
 var formula, min_x, min_y, max_x, max_y, min_z, max_z;
 var mode;
+var desiredFrameRate = 15;
 
 // TEMP
 var dot;
@@ -419,7 +422,7 @@ function init() {
             // common occurrence if user provides an invalid formula (partial entry)
             // catching it means the timeout loop will continue
         }
-        setTimeout(anim,50);
+        setTimeout(anim,1000/desiredFrameRate);
     }
     anim();
 
@@ -548,11 +551,11 @@ function magnify(ev) {
     <div id="controls">
     
 	<table class="controlBlock">
-		<tr><td>formula:<td colspan="3">z=<input id="formula" type="text" value="sin(sqrt(x*x + y*y)*65-20*t)" tag="sin(sqrt(x*x+y*y)*65-20*t)" class="long" onChange="animStartTime=new Date().getTime();draw(true)" />
+		<tr><td>formula:<td colspan="3">z=<textarea cols="40" rows="1" id="formula" onkeyup="this.rows=this.value.split('\n').length;" onChange=" animStartTime=new Date().getTime(); draw(true);">log(abs(x*y+t-5)+1)</textarea>
 		<tr><td>input span:<td colspan="3">x: <input id="minx" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxx" type="number" value="10" class="short" onChange="draw(true)"> y: <input id="miny" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxy" type="number" value="10" class="short" onChange="draw(true)">
-		<tr><td>grid size:<td colspan="3">     <input id="gridsize"      type="range" min="3" max="100" step="1"   onChange="cvals(this); draw(true)" value="45" class="slider"><input value="45" id="igridsize"      type="number" class="short" onChange="draw(true)">
+		<tr><td>grid size:<td colspan="3"> <input id="gridsize" type="range" min="3" max="100" step="1" onChange="cvals(this); draw(true)" value="20" class="slider"><input value="20" id="igridsize" type="number" class="short" onChange="draw(true)">
 		<tr><td>magnification:<td colspan="3"> <input id="magnification" type="range" min="0" max="50"  step="0.1" onChange="cvals(this); draw()" value="30" class="slider"><input value="30" id="imagnification" type="number" class="short" onChange="draw()">
-		<tr><td>z multiplier:<td colspan="3">  <input id="multiplier"    type="range" min="0" max="3"   step="0.1" onChange="cvals(this); draw(true)" value="1"  class="slider"><input value="1"  id="imultiplier"    type="number" class="short" onChange="draw(true)" step="0.1"> 
+		<tr><td>z multiplier:<td colspan="3">  <input id="multiplier" type="range" min="0" max="3" step="0.1" onChange="cvals(this); draw(true)" value="1"  class="slider"><input value="1"  id="imultiplier" type="number" class="short" onChange="draw(true)" step="0.1">
 			<button onClick="var w = document.getElementById('multiplier'); w.value = 1; cvals(w); draw()">1</button>
 		
 		<tr><td>rotation x:<td><input id="rx" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irx" type="number" onChange="draw()" value="45" class="short">
@@ -578,16 +581,18 @@ function magnify(ev) {
 		-->
 		Try the following functions: 
 		<div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
-			<span class="flink" onClick="show('log(abs(x*y+t-5)+1)');">log(abs(x*y+t)+1)</span><br>
-			<span class="flink" onClick="show('cos(x*50)-cos(y*50+20*t)/2');">hills</span><br>
+			<span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65-20*t)');">ripple</span><br>
 			<span class="flink" onClick="show('sin(x*y*15+50*t)');">square ripples</span><br>
-			<span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">curve</span><br>
 			<span class="flink" onClick="show('sqrt(20+t - x*x - y*y)');">sphere</span><br>
 			<span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))');">lava</span><br>
 			<span class="flink" onClick="show('((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?(1.1+0.1*log(2.1+2*sin(180*t)))*abs(a)/15:0')">heart</span><br>
+			<span class="flink" onClick="show('function rippleat(i,j) {\n  var d=sqrt((x-i)*(x-i)+(y-j)*(y-j));\n  var fade=(1-d/10);\n  return fade*sin(d*190-20*t);\n}\n\nrippleat(-5,-5)+rippleat(4,3)');">dead spots</span><br>
+			<span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">curve</span><br>
+			<span class="flink" onClick="show('sin(60*x+8*t)+sin(120*x+4*t)/2+sin(240*x+2*t)/4');">1-D ripple</span><br>
 			<span class="flink" onClick="show('0.1*(x*x-y*y)*sin(50*t)');">curved saddle</span><br>
 			<span class="flink" onClick="show('0.1*x*y*sin(50*t)');">straight saddle</span><br>
-			<span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65-20*t)');">ripple</span><br>
+			<span class="flink" onClick="show('sin(15*x+10*t)+cos(9*y+2*t)');">hills</span><br>
+			<span class="flink" onClick="show('log(abs(x*y+t-5)+1)');">flower</span><br>
 		</div>
 		<!-- I wanted to remove the following two lines, but this made the footer move! -->
 		If this ruins your PC..<br>&nbsp;&nbsp;&nbsp;why, that'd be amazing, man!</div>
