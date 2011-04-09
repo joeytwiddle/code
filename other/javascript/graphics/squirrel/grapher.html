@@ -19,7 +19,7 @@
     #controls table td { padding: 2px; margin: 2px; vertical-align: middle; }
     
     /* .controlBlock { background-color: #eeeeee; } */
-    .controlBlock { padding: 4px; border: 2px outset #cccccc; background-color: hsla(0,0%,90%,0.4); }
+    .controlBlock { padding: 4px; border: 2px outset #cccccc; /* background-color: hsla(0,0%,90%,0.6); */ }
 
     .flink { border-bottom: 1px dotted; cursor: pointer; white-space: nowrap; }
     .flink:hover { border-bottom: 1px solid; }
@@ -316,7 +316,8 @@ function zcolored_draw() {
             // _ctx.fillStyle = "rgb(" + red + ",0,0)";
             var hue = Math.round((z-min_z) / (max_z-min_z) * 240); // from red to blue, not beyond (magenta)
             // _ctx.fillStyle = "hsl(" + hue + ",100%,50%)";
-            _ctx.fillStyle = "hsla(" + hue + ",100%,50%,0.5)";
+            // _ctx.fillStyle = "hsl(" + hue + ",100%,50%)";
+            _ctx.fillStyle = "hsla(" + hue + ",100%,50%,0.5)";   // This should be slower but it isn't
             _ctx.beginPath();
             //if (i == Math.floor(triangles.length/2)) {alert(1);}
             _ctx.moveTo.apply(_ctx, a2[triangles[i][1][X]][triangles[i][1][Y]]);  //A
@@ -561,8 +562,10 @@ function magnify(ev) {
 		<tr><td>rotation z:<td><input id="rz" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irz" type="number" onChange="draw()" value="45" class="short">
 		
 		<tr><td>perspective:<td colspan="3"><input id="camera" type="range" min="0" max="100" step="1" onChange="cvals(this);draw()" value="35" class="slider"><input id="icamera" type="number" onChange="draw()" value="35" class="short">
-		
-		<tr><td>projection:<td colspan="3">&nbsp;<input id="parallel" type="checkbox" onChange="cpar(this);draw()"> parallel (no perspective)
+
+		<!-- Whoops I have broken this -->
+		<!-- <tr><td>projection:<td colspan="3">&nbsp;<input id="parallel" type="checkbox" onChange="cpar(this);draw()"> parallel (no perspective) -->
+
 		<tr><td>rendering:<td colspan="3">&nbsp;<input id="wireframe" type="radio" onChange="draw()" name="r" > wireframe <input id="zcolored" type="radio" onChange="draw()" name="r" checked> z-colored
     </table>
     <div style="font-size: 80%; width: 400px;">
@@ -575,7 +578,7 @@ function magnify(ev) {
 		-->
 		Try the following functions: 
 		<div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
-			<span class="flink" onClick="show('log(abs(x*y+t)+1)');">log(abs(x*y+t)+1)</span><br>
+			<span class="flink" onClick="show('log(abs(x*y+t-5)+1)');">log(abs(x*y+t)+1)</span><br>
 			<span class="flink" onClick="show('cos(x*50)-cos(y*50+20*t)/2');">hills</span><br>
 			<span class="flink" onClick="show('sin(x*y*15+50*t)');">square ripples</span><br>
 			<span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">curve</span><br>
