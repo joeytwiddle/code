@@ -29,7 +29,65 @@
     footer { display:block; position: absolute; bottom: 0; font-size: 70%; font-family: sans-serif; }
 
 </style>
-<script>
+</head>
+<body onLoad="init();">
+    <canvas id="canvas" onMouseDown="_canvas.style.cursor='move';oldpoint=[event.screenX, event.screenY]; dragging=1; return false" onMouseUp="dragging=0;_canvas.style.cursor='pointer';draw()"></canvas>
+    <div id="controls">
+    
+	<table class="controlBlock">
+		<tr><td>Formula:<td colspan="3">z=<textarea cols="40" rows="1" id="formula" onkeyup="if (event.keyCode==13){ this.rows=this.value.split('\n').length; animStartTime=new Date().getTime(); }" onChange=" animStartTime=new Date().getTime(); ">log(abs(x*y+t-5)+1)</textarea>
+		<tr><td>Input range:<td colspan="3">x: <input id="minx" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxx" type="number" value="10" class="short" onChange="draw(true)"> y: <input id="miny" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxy" type="number" value="10" class="short" onChange="draw(true)">
+		<tr><td>Grid size:<td colspan="3"> <input id="gridsize" type="range" min="3" max="100" step="1" onChange="cvals(this); draw(true)" value="20" class="slider"><input value="20" id="igridsize" type="number" class="short" onChange="draw(true)">
+		<tr><td>magnification:<td colspan="3"> <input id="magnification" type="range" min="0" max="50"  step="0.1" onChange="cvals(this); draw()" value="30" class="slider"><input value="30" id="imagnification" type="number" class="short" onChange="draw()">
+		<tr><td>Z multiplier:<td colspan="3">  <input id="multiplier" type="range" min="0" max="3" step="0.1" onChange="cvals(this); draw(true)" value="1"  class="slider"><input value="1"  id="imultiplier" type="number" class="short" onChange="draw(true)" step="0.1">
+			<button onClick="var w = document.getElementById('multiplier'); w.value = 1; cvals(w); draw()">1</button>
+		
+		<tr><td>Rotation x:<td><input id="rx" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irx" type="number" onChange="draw()" value="45" class="short">
+			<td rowspan="3"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAA9CAYAAACUTfioAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjbQg61aAAABN0lEQVRIS8WWP0uCURTGhUChwXRwFsIxaAv6AH2PliZp8wMEujc7OrT2ARyF5jaRiAhCbIhqCNyy54Hr6Pv8lvDA4R3uj+c9954/99Zqe7ehIrgkUdQFPcgHBD4Q9CHvEPhK0B0B24J+CWjmXX5O4CdBMwLOBb1S8IeAC0EbeSPBLwVsJXBFQcfnX1cqOi5D9mbVr51nQzE73QJ+p42cFHBJwecEHhdFp7HSfCTezGMCvb6moONDiiOBrsloRyI+I1UAt4PPNNqpiPtIFWCs7zWFXXIXCb4hij0a4xvZNT7HW6m5ZaO5XVGuUfW0pIbqEVf4trliz+AuxH2NJwWePc4GmmYG8XzEExfPcM8ddCvge8ZTYhqLUYCb/yyB+HbtS2mS1PwC+JJbdacdagW9KfArJYX1D+t/uXBVWuWiF5wAAAAASUVORK5CYII%3D" height="95%">
+		<tr><td>Rotation y:<td><input id="ry" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="0"  class="slider"><input id="iry" type="number" onChange="draw()" value="0"  class="short"> 
+			<td><button onClick="resetcoords(); draw();">R</button>
+		<tr><td>Rotation z:<td><input id="rz" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irz" type="number" onChange="draw()" value="45" class="short">
+		
+		<tr><td>Perspective:<td colspan="3"><input id="camera" type="range" min="0" max="100" step="1" onChange="cvals(this);draw()" value="35" class="slider"><input id="icamera" type="number" onChange="draw()" value="35" class="short">
+
+		<!-- Whoops I have broken this -->
+		<!-- <tr><td>projection:<td colspan="3">&nbsp;<input id="parallel" type="checkbox" onChange="cpar(this);draw()"> parallel (no perspective) -->
+
+		<tr><td>Rendering:<td colspan="3">&nbsp;<input id="wireframe" type="radio" onChange="draw()" name="r" > wireframe <input id="zcolored" type="radio" onChange="draw()" name="r" checked> z-colored
+    </table>
+    <div style="font-size: 80%; width: 400px;">
+		<!--
+		<br>Click+drag to rotate. Wheel to zoom. No licence or whatsoever included.
+		<br>Use functions: cos, sin, tan (in degrees); 
+		<div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
+			sqrt, abs, log, floor, ceil, pow, round, random.
+		</div>
+		-->
+		Try the following functions: 
+		<div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
+			<span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65-20*t)');">ripple</span><br>
+			<span class="flink" onClick="show('sin(x*y*15+50*t)');">square ripples</span><br>
+			<span class="flink" onClick="show('sqrt(20+t - x*x - y*y)');">sphere</span><br>
+			<span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))');">lava</span><br>
+			<span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">curve</span><br>
+			<span class="flink" onClick="show('((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?(1.1+0.1*log(2.1+2*sin(180*t)))*abs(a)/15:0')">heart</span><br>
+			<span class="flink" onClick="show('function rippleat(i,j) {\n  var d=sqrt((x-i)*(x-i)+(y-j)*(y-j));\n  var fade=1/(1+d);\n  return fade*sin(d*190-20*t);\n}\n\nrippleat(-5,-5)+rippleat(4,3)');">two ripples</span><br>
+			<span class="flink" onClick="show('sqrt(20+t - x*x - y*y) * (sin(120*x+5*y+55*t)>0?-1:+1)');">peel</span><br>
+			<span class="flink" onClick="show('sin(60*x+8*t)+sin(120*x+4*t)/2+sin(240*x+2*t)/4');">1-D ripple</span><br>
+			<span class="flink" onClick="show('0.1*(x*x-y*y)*sin(50*t)');">curved saddle</span><br>
+			<span class="flink" onClick="show('0.1*x*y*sin(50*t)');">straight saddle</span><br>
+			<span class="flink" onClick="show('sin(7*x+11*t)+cos(5*y+2*t)');">hills</span><br>
+			<span class="flink" onClick="show('log(abs(x*y+t-5)+1)');">flower</span><br>
+			<!--
+				sqrt(20+t - x*x - y*y) * (x>0 ^ y>0?1:-1)
+			-->
+		</div>
+		<!-- I wanted to remove the following two lines, but this made the footer move! -->
+		If this ruins your PC..<br>&nbsp;&nbsp;&nbsp;why, that'd be amazing, man!</div>
+		<div style="font-size: 70%; padding-left: 100px;"><i>-- made by squirrel</i></div>
+    </div>
+    <footer id="lol"></footer>
+    <script>
 
 //#############################################################################
 //#############################################################################
@@ -77,6 +135,23 @@ var round = Math.round;
 var random = Math.random;
 
 //############################################################################# MAIN FUNCTIONS
+
+function padRight(str,min,padChar) {
+    str = ""+str;
+    var missing = min - (""+str).length;
+    return ( missing<=0 ? str : ""+str + new Array(missing+1).join(padChar) );
+    // while (str.length < min) {
+        // str = str + padChar;
+    // }
+    // return str;
+}
+
+var lastReportDate = 0;
+function report(html) {
+    var dateDiff = new Date().getTime() - lastReportDate;
+    document.getElementById("lol").innerHTML += "<br/>("+padRight(dateDiff/1000,5,"0")+") "+html;
+    lastReportDate = new Date().getTime();
+}
 
 function c2dto3d() {
     if (parallel)
@@ -180,7 +255,8 @@ function draw(newformula) {
 
     time1 = new Date(); time1 = time1.getTime();
     
-    document.getElementById("lol").innerHTML = "Preparing... "
+    // document.getElementById("lol").innerHTML = "Preparing... "
+    document.getElementById("lol").innerHTML = "";
 
    
     // GET VALUES
@@ -196,6 +272,10 @@ function draw(newformula) {
     var rx = eval(document.getElementById("irx").value) / 180 * Math.PI;
     var ry = eval(document.getElementById("iry").value) / 180 * Math.PI;
     var rz = eval(document.getElementById("irz").value) / 180 * Math.PI;
+
+    //// Auto rotate
+    // var rz_elem = document.getElementById("irz");
+    // rz_elem.value = 12 * Math.sin(new Date().getTime() / 8000);
 
     gridsize = eval(document.getElementById("igridsize").value);
     magnification = eval(document.getElementById("imagnification").value);
@@ -219,7 +299,7 @@ function draw(newformula) {
     }
     
     var t = (new Date().getTime() - animStartTime) / 1000;
-    document.getElementById("lol").innerHTML += "<br>Calculating 3d coordinates for t="+t+" ... "
+    report("Calculating 3d coordinates for t="+t+" ... ");
     
 	// Recalibrate (re-seek) z range
     if (newformula) {
@@ -230,7 +310,7 @@ function draw(newformula) {
 	get3dcoordinates();                  // a3[n][m] = [x, y, z]
 	shapes_get3dcoordinates();
     
-    document.getElementById("lol").innerHTML += "<br>Rotating and calculating 2d coordinates... "
+    report("Rotating and calculating 2d coordinates... ");
     
     // GET 2d COORDINATES & ROTATED ARRAY
     get2dcoordinatesandrotatedarray();  // a3[n][m] = [x, y, z];    a3r[n][m] = [x, y, z];    a2[n][m] = [x, y]
@@ -258,7 +338,7 @@ function draw(newformula) {
     
     var time2 = new Date();
     var time2 = time2.getTime();
-    document.getElementById("lol").innerHTML += "<br>Rendering "+triangles.length+" triangles took <b>" + (time2-time1)/1000 + "</b> seconds.";
+    report("Rendering "+triangles.length+" triangles took <b>" + (time2-time1)/1000 + "</b> seconds.");
 
 };
 
@@ -268,7 +348,7 @@ function zcolored() {
 
     triangles.length = 0;
     
-    document.getElementById("lol").innerHTML += "<br>Finding all valid triangles... "
+    report("Finding all valid triangles... ");
     
     // FIND ALL TRIANGLES;
     for (var n = 0; n < gridsize; n++ ) {
@@ -284,7 +364,7 @@ function zcolored() {
     // SORT THEM
     triangles.sort(ahaha);
  
-    document.getElementById("lol").innerHTML += "<br>Drawing "+triangles.length+" triangles... ";
+    report("Drawing "+triangles.length+" triangles... ");
     
     // DRAW THEM
     
@@ -341,7 +421,7 @@ function zcolored_draw() {
 
 function wireframe() {
 
-	document.getElementById("lol").innerHTML += "<br>Drawing... "
+	report("Drawing... ");
 
 	_ctx.beginPath();
 
@@ -544,60 +624,6 @@ function magnify(ev) {
 //#############################################################################
 //#############################################################################
 
-</script>
-</head>
-<body onLoad="init();">
-    <canvas id="canvas" onMouseDown="_canvas.style.cursor='move';oldpoint=[event.screenX, event.screenY]; dragging=1; return false" onMouseUp="dragging=0;_canvas.style.cursor='pointer';draw()"></canvas>
-    <div id="controls">
-    
-	<table class="controlBlock">
-		<tr><td>formula:<td colspan="3">z=<textarea cols="40" rows="1" id="formula" onkeyup="this.rows=this.value.split('\n').length;" onChange=" animStartTime=new Date().getTime(); draw(true);">log(abs(x*y+t-5)+1)</textarea>
-		<tr><td>input span:<td colspan="3">x: <input id="minx" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxx" type="number" value="10" class="short" onChange="draw(true)"> y: <input id="miny" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxy" type="number" value="10" class="short" onChange="draw(true)">
-		<tr><td>grid size:<td colspan="3"> <input id="gridsize" type="range" min="3" max="100" step="1" onChange="cvals(this); draw(true)" value="20" class="slider"><input value="20" id="igridsize" type="number" class="short" onChange="draw(true)">
-		<tr><td>magnification:<td colspan="3"> <input id="magnification" type="range" min="0" max="50"  step="0.1" onChange="cvals(this); draw()" value="30" class="slider"><input value="30" id="imagnification" type="number" class="short" onChange="draw()">
-		<tr><td>z multiplier:<td colspan="3">  <input id="multiplier" type="range" min="0" max="3" step="0.1" onChange="cvals(this); draw(true)" value="1"  class="slider"><input value="1"  id="imultiplier" type="number" class="short" onChange="draw(true)" step="0.1">
-			<button onClick="var w = document.getElementById('multiplier'); w.value = 1; cvals(w); draw()">1</button>
-		
-		<tr><td>rotation x:<td><input id="rx" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irx" type="number" onChange="draw()" value="45" class="short">
-			<td rowspan="3"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAA9CAYAAACUTfioAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAFBhaW50Lk5FVCB2My41LjbQg61aAAABN0lEQVRIS8WWP0uCURTGhUChwXRwFsIxaAv6AH2PliZp8wMEujc7OrT2ARyF5jaRiAhCbIhqCNyy54Hr6Pv8lvDA4R3uj+c9954/99Zqe7ehIrgkUdQFPcgHBD4Q9CHvEPhK0B0B24J+CWjmXX5O4CdBMwLOBb1S8IeAC0EbeSPBLwVsJXBFQcfnX1cqOi5D9mbVr51nQzE73QJ+p42cFHBJwecEHhdFp7HSfCTezGMCvb6moONDiiOBrsloRyI+I1UAt4PPNNqpiPtIFWCs7zWFXXIXCb4hij0a4xvZNT7HW6m5ZaO5XVGuUfW0pIbqEVf4trliz+AuxH2NJwWePc4GmmYG8XzEExfPcM8ddCvge8ZTYhqLUYCb/yyB+HbtS2mS1PwC+JJbdacdagW9KfArJYX1D+t/uXBVWuWiF5wAAAAASUVORK5CYII%3D" height="95%">
-		<tr><td>rotation y:<td><input id="ry" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="0"  class="slider"><input id="iry" type="number" onChange="draw()" value="0"  class="short"> 
-			<td><button onClick="resetcoords(); draw();">R</button>
-		<tr><td>rotation z:<td><input id="rz" type="range" min="-180" max="180" step="1" onChange="cvals(this);draw()" value="45" class="slider"><input id="irz" type="number" onChange="draw()" value="45" class="short">
-		
-		<tr><td>perspective:<td colspan="3"><input id="camera" type="range" min="0" max="100" step="1" onChange="cvals(this);draw()" value="35" class="slider"><input id="icamera" type="number" onChange="draw()" value="35" class="short">
-
-		<!-- Whoops I have broken this -->
-		<!-- <tr><td>projection:<td colspan="3">&nbsp;<input id="parallel" type="checkbox" onChange="cpar(this);draw()"> parallel (no perspective) -->
-
-		<tr><td>rendering:<td colspan="3">&nbsp;<input id="wireframe" type="radio" onChange="draw()" name="r" > wireframe <input id="zcolored" type="radio" onChange="draw()" name="r" checked> z-colored
-    </table>
-    <div style="font-size: 80%; width: 400px;">
-		<!--
-		<br>Click+drag to rotate. Wheel to zoom. No licence or whatsoever included.
-		<br>Use functions: cos, sin, tan (in degrees); 
-		<div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
-			sqrt, abs, log, floor, ceil, pow, round, random.
-		</div>
-		-->
-		Try the following functions: 
-		<div style="margin-left: 10px; margin-top: 3px; margin-bottom: 5px;">
-			<span class="flink" onClick="show('sin(sqrt(x*x + y*y)*65-20*t)');">ripple</span><br>
-			<span class="flink" onClick="show('sin(x*y*15+50*t)');">square ripples</span><br>
-			<span class="flink" onClick="show('sqrt(20+t - x*x - y*y)');">sphere</span><br>
-			<span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))');">lava</span><br>
-			<span class="flink" onClick="show('((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?(1.1+0.1*log(2.1+2*sin(180*t)))*abs(a)/15:0')">heart</span><br>
-			<span class="flink" onClick="show('function rippleat(i,j) {\n  var d=sqrt((x-i)*(x-i)+(y-j)*(y-j));\n  var fade=(1-d/10);\n  return fade*sin(d*190-20*t);\n}\n\nrippleat(-5,-5)+rippleat(4,3)');">dead spots</span><br>
-			<span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">curve</span><br>
-			<span class="flink" onClick="show('sin(60*x+8*t)+sin(120*x+4*t)/2+sin(240*x+2*t)/4');">1-D ripple</span><br>
-			<span class="flink" onClick="show('0.1*(x*x-y*y)*sin(50*t)');">curved saddle</span><br>
-			<span class="flink" onClick="show('0.1*x*y*sin(50*t)');">straight saddle</span><br>
-			<span class="flink" onClick="show('sin(15*x+10*t)+cos(9*y+2*t)');">hills</span><br>
-			<span class="flink" onClick="show('log(abs(x*y+t-5)+1)');">flower</span><br>
-		</div>
-		<!-- I wanted to remove the following two lines, but this made the footer move! -->
-		If this ruins your PC..<br>&nbsp;&nbsp;&nbsp;why, that'd be amazing, man!</div>
-		<div style="font-size: 70%; padding-left: 100px;"><i>-- made by squirrel</i></div>
-    </div>
-    <footer id="lol"></footer>
+    </script>
 </body>
 </html>
