@@ -87,6 +87,7 @@ setTimeout(function(){
 function initThumbnailAnimator() {
 	// function createThumbnailAnimatorEvent(img) {
 	var img    = null;
+	var evt    = null;
 	var timer  = null;
 	var frames = ["1.jpg","2.jpg","3.jpg"];   // "default.jpg",
 	var frameI = 0;
@@ -102,20 +103,44 @@ function initThumbnailAnimator() {
 	}
 	function stopAnimation() {
 		if (timer) {
+			logElem("Stopping elem",img);
 			clearInterval(timer);
 			// This isn't really neccessary, except to ensure the check for default\.jpg above works next time!
 			img.src = img.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
 		}
 	}
+	function logElem(name,elem) {
+		report = "<"+elem.tagName+" id="+elem.id+" class="+elem.className+" src="+elem.src+" />";
+		GM_log(name+" = "+report);
+	}
 	function check(fn) {
-		return function(evt) {
+		return function(e) {
+			evt = e;
+			// logElem("["+evt.type+"] evt.target",evt.target);
 			var elemToCheck = evt.target || evt.srcElement;
+			var imgCount = elemToCheck.getElementsByTagName("img").length;
 			if (elemToCheck.tagName == "IMG") {
 				img = event.target;
 				return fn();
+			// } else if (imgCount == 1) {
+				// img = elemToCheck.getElementsByTagName("img")[0];
+				// // logElem("["+evt.type+"] checking sub-image",img);
+				// logElem("Whilst checking",elemToCheck);
+				// logElem("  Animating elem",img);
+				// logElem("  with parent",img.parentNode);
+				// logElem("  whilst currentTarget",evt.currentTarget);
+				// logElem("  and srcElement",evt.srcElement);
+				// return fn();
+			} else if (elemToCheck.className=='screen') {
+				var seekImg = elemToCheck.parentNode.getElementsByTagName("img")[0];
+				if (seekImg) {
+					img = seekImg;
+					fn();
+				}
 			}
 		};
 	}
+	//// Unfortunately these do not fire on any HTMLImageElements when browsing the queue.
 	document.body.addEventListener("mouseover",check(startAnimation),false);
 	document.body.addEventListener("mouseout",check(stopAnimation),false);
 	// var videoList = document.getElementById("watch-sidebar"); // or watch-module or watch-module-body or watch-related or watch-more-related

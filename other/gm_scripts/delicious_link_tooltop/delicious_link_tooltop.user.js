@@ -14,10 +14,12 @@
 // @require        http://json.org/json2.js
 
 var showTooltips      = true;
-var lookupCurrentPage = false;
-var annotateAllLinks  = false;
+var lookupCurrentPage = true;
+var annotateAllLinks  = true;
 
-var maxCacheSize = 8192; // Total cache (for all sites).  This value is altered below if we are using localStorage.
+var maxCacheSize = 1024; // Total cache (for all sites).  This value is altered below if we are using localStorage.
+// 2048 caused cache cleanup to take 27 seconds in Firefox 4.
+// 1024 caused cache cleanup to take 6.7 seconds in Firefox 4.
 var showProgress = true; // Highlights each link in yellow while we are making a delicious request on it
 var logIO        = false;
 var logResponses = true;
@@ -479,13 +481,18 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 		GM_listValues = function() {
 			var list = [];
 			for (var i=0;i<storage.length;i++) {
-				list.push(storage.key(i));
+				var key = storage.key(i);
+				// Only list those values relevant to this plugin!
+				if (startsWith(key,"CachedResponse")) {
+					list.push(key);
+				}
 			}
-			GM_log("localstorage is holding "+storage.length+" records.");
+			GM_log("localstorage is holding "+storage.length+" relevant records.");
 			return list;
 		};
 
-		maxCacheSize = 4096; // per domain - could drop to 1024 i suppose
+		maxCacheSize = 512; // per domain - could drop to 1024 i suppose
+		// In Chrome this means my cache cleanup takes about 5 seconds.
 
 	} else {
 		GM_log("Warning: Could not implement GM_get/setValue.");
@@ -552,7 +559,7 @@ function JSON_parse(str) {
 
 var dataCache = ({});
 
-var delay = 1500; // slow down the lookupSpeed if we are making many queries
+var delay = 1000; // slow down the lookupSpeed if we are making many queries
 
 function doLookup(lookupURL,onSuccess,onFailFn) {
 	// lookupSpeed = 3000 + 5000*Math.random(); // Do not poll Delicious again for 3-8 seconds
@@ -675,17 +682,19 @@ function cleanupCache() {
 		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
 	} else {
 
-		var oldTitle = document.title;
+		var oldTitle = ""+document.title;
 		document.title = "[Cleaning cache..]";
-		var startTime = new Date().getTime();
 
 		log("Starting cleanupCache ...");
+		var startTime = new Date().getTime();
 
 		var fullCacheList = GM_listValues();
 		var cacheList = [];
 
+		/*
 		// Trim the list down to only those entries relevant to this plugin.
-		// (For when we are using localStorage.)
+		// (Slow but neccessary when we are using localStorage.)
+		// DONE: Although really this should be done by the GM_listValues wrapper!
 		for (var i=0;i<fullCacheList.length;i++) {
 			var crURL = fullCacheList[i];
 			if (startsWith(crURL,"CachedResponse")) {
@@ -693,6 +702,12 @@ function cleanupCache() {
 			}
 		}
 		fullCacheList = null; // GC can act sooner if it wishes
+		*/
+		cacheList = fullCacheList;   // Let's hope it's a real sortable Array!
+
+		log("There are "+cacheList.length+" items in the cache.");
+
+		document.title = "[Cleaning cache...]";
 
 		// Rather casual method: Keep deleting records at random until we meet
 		// our max cache size.
@@ -707,46 +722,92 @@ function cleanupCache() {
 		}
 		*/
 
-		document.title = "[Cleaning cache...]";
+		function getScoreFor(crURL) {
+			var url = crURL.replace(/^CachedResponse/,'');
+			if (dataCache[url] == null) {
+				dataCache[url] = JSON_parse(GM_getValue(crURL,"null"));
+			}
+			if (dataCache[url] == null) {
+				log("Warning! Empty cache entry for "+url);
+				dataCache[url] = {};
+			}
+			// All cached urls have a minimum score of 2.
+			// log("Generating score form cacheCount="+dataCache[url].cacheCount+" and age="+age(dataCache[url]));
+			var thisScore = (dataCache[url].cacheCount+2) / age(dataCache[url]);
+			if (isNaN(thisScore)) // e.g. if dataCache[url] == null
+				thisScore = 0.00001;
+			return thisScore;
+		}
 
+		// Inefficient method: find the least valuable entry, remove it, then
+		// repeat.
+		/*
 		// Delete the oldest and least-used, keep new/popular entries
-		while (cacheList.length > maxCacheSize) {
-			var poorestScore = 99999;
-			var poorestScorer = null;
-			for (var i=0;i<cacheList.length;i++) {
-				if (Math.random() < 0.25) // Only really scan quarter the record set
-					continue; // so we sometimes keep new (cacheCount=0) records
-				var crURL = cacheList[i]; // e.g. "CachedResponsehttp://..."
-				var url = crURL.replace(/^CachedResponse/,'');
-				if (dataCache[url] == null) {
-					dataCache[url] = JSON_parse(GM_getValue(crURL,"null"));
+		function cleanupOne() {
+			if (cacheList.length > maxCacheSize) {
+				var poorestScore = 99999;
+				var poorestScorer = null;
+				for (var i=0;i<cacheList.length;i++) {
+					if (Math.random() < 0.25) // Only really scan quarter the record set
+						continue; // so we sometimes keep new (cacheCount=0) records
+					var crURL = cacheList[i]; // e.g. "CachedResponsehttp://..."
+					thisScore = getScoreFor(crURL);
+					if (!poorestScorer || thisScore < poorestScore) {
+						poorestScore = thisScore;
+						poorestScorer = crURL;
+						poorestScorerIndex = i;
+					}
 				}
-				if (dataCache[url] == null) {
-					log("Warning! Empty cache entry for "+url);
-					dataCache[url] = {};
+				if (poorestScorer == null) {
+					log("Found nothing to cleanup.");
+					return false;
 				}
-				// All cached urls have a minimum score of 2.
-				// log("Generating score form cacheCount="+dataCache[url].cacheCount+" and age="+age(dataCache[url]));
-				var thisScore = (dataCache[url].cacheCount+2) / age(dataCache[url]);
-				if (isNaN(thisScore)) // e.g. if dataCache[url] == null
-					thisScore = 0.00001;
-				if (!poorestScorer || thisScore < poorestScore) {
-					poorestScore = thisScore;
-					poorestScorer = crURL;
-					poorestScorerIndex = i;
-				}
+				var url = poorestScorer.replace(/^CachedResponse/,'');
+				// log("Cleaning up "+poorestScorer+" with "+ ( dataCache[url] ? "age="+age(dataCache[url])+" and count="+dataCache[url].cacheCount : "score="+poorestScore ) +" and uneval="+uneval(dataCache[url]) );
+				log("Cleaning up "+poorestScorer+" with count="+dataCache[url].cacheCount+" and age="+(""+age(dataCache[url])).substring(0,6));
+				GM_deleteValue(poorestScorer);
+				// cacheList = GM_listValues();
+				cacheList[poorestScorerIndex] = cacheList[cacheList.length-1];
+				cacheList.length--;
+
+				setTimeout(cleanupOne,100);
+			} else {
+				if (oldTitle === "")
+					oldTitle = " ";   // If we try to set "", Chrome does nothing
+				document.title = oldTitle;
+				log("Cleanup took "+(new Date().getTime() - startTime)/1000+" seconds.");
 			}
-			if (poorestScorer == null) {
-				log("Found nothing to cleanup.");
-				break;
-			}
-			var url = poorestScorer.replace(/^CachedResponse/,'');
-			// log("Cleaning up "+poorestScorer+" with "+ ( dataCache[url] ? "age="+age(dataCache[url])+" and count="+dataCache[url].cacheCount : "score="+poorestScore ) +" and uneval="+uneval(dataCache[url]) );
+		}
+
+		setTimeout(cleanupOne,100);
+		*/
+
+		// Better scalable method: Find all the low scorers in one pass:
+		// Disadvantage: not run on a timer!
+
+		document.title = "[Cleaning cache....]";
+
+		function compare(crURLA, crURLB) {
+			return getScoreFor(crURLA) - getScoreFor(crURLB);
+		}
+
+		var sortedList = cacheList.sort(compare);
+
+		document.title = "[Cleaning cache....]";
+
+		/*
+		GM_log("Score for 0 = "+getScoreFor(sortedList[0]));
+		GM_log("Score for 10 = "+getScoreFor(sortedList[10]));
+		GM_log("Score for 100 = "+getScoreFor(sortedList[100]));
+		*/
+
+		// sortedList.slice(maxCacheSize)
+		for (var i=maxCacheSize; i<sortedList.length; i++) {
+			var crURL = sortedList[i]; // e.g. "CachedResponsehttp://..."
+			var poorestScorer = crURL;
+			var url = crURL.replace(/^CachedResponse/,'');
 			log("Cleaning up "+poorestScorer+" with count="+dataCache[url].cacheCount+" and age="+(""+age(dataCache[url])).substring(0,6));
 			GM_deleteValue(poorestScorer);
-			// cacheList = GM_listValues();
-			cacheList[poorestScorerIndex] = cacheList[cacheList.length-1];
-			cacheList.length--;
 		}
 
 		if (oldTitle === "")
@@ -1359,7 +1420,7 @@ if (annotateAllLinks && document.location.host != "www.delicious.com") {
 
 // == Cleanup old cached data == //
 
-if (Math.random() < 0.1) { // TODO 0.1
+if (Math.random() < 10.1) { // TODO 0.1
 	setTimeout(cleanupCache,30000);
 }
 

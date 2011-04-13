@@ -2,7 +2,7 @@
 	<Script filename="first_gm_script.user.js" name="First GM Script" namespace="Timer" description="" version="" enabled="false" basedir="first_gm_script" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2010.10.06" enabled="true" basedir="google_preview_pane" modified="1294241194000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2010.10.06" enabled="true" basedir="google_preview_pane" modified="1302283393000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://www.google.*/*q=*</Include>
 		<Include>http://google.*/*q=*</Include>
 		<Exclude>http://www.google.*/images*</Exclude>
@@ -12,7 +12,7 @@
 		<Include>http://www.google.*/search?*q=*</Include>
 		<Include>http://www.google.*/*</Include>
 	</Script>
-	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" version="0.1" enabled="true" basedir="delicious_search_results" modified="1292530414000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" version="0.1" enabled="true" basedir="delicious_search_results" modified="1298813175000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://www.google.*/search?*q=*</Include>
 		<Include>http://www.google.*/*</Include>
 	</Script>
@@ -182,7 +182,7 @@
 		<Include>http://forums.about.com/n/pfx/forum.aspx?webtag=*&amp;nav=search* </Include>
 		<Include>http://forums.about.com/*/messages?msg=*</Include>
 	</Script>
-	<Script filename="auto_highlight_text_on_a.user.js" name="Auto Highlight Search Terms on Result Pages" namespace="search" description="Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer." version="" enabled="true" basedir="auto_highlight_text_on_a" modified="1292869653000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="auto_highlight_text_on_a.user.js" name="Auto Highlight Search Terms on Result Pages" namespace="search" description="Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer." version="" enabled="true" basedir="auto_highlight_text_on_a" modified="1297267658000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 		<Exclude>http://*.google.*/*</Exclude>
 	</Script>
@@ -290,7 +290,7 @@
 		<Include>http://*.wikipedia.org/*</Include>
 		<Include>https://*.wikipedia.org/*</Include>
 	</Script>
-	<Script filename="google_images_large_imag.user.js" name="Google Images Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see the images on images.google.com in full size by hovering over them." version="" enabled="true" basedir="google_images_large_imag" modified="1290891988000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="google_images_large_imag.user.js" name="Google Images Large Images" namespace="http://amzn1995.googlepages.com" description="Lets you see the images on images.google.com in full size by hovering over them." version="" enabled="true" basedir="google_images_large_imag" modified="1298747553000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://images.google.*/*</Include>
 		<Include>https://images.google.*/*</Include>
 		<Include>http://www.google.*/images*</Include>
@@ -1012,7 +1012,7 @@
 		<Include>*</Include>
 		<Exclude>http://*youtube.com/watch?v=*</Exclude>
 	</Script>
-	<Script filename="wikimedia.user.js" name="Wikimedia+" namespace="" description="Add History box at wikimedia's leftmost column" version="" enabled="true" basedir="wikimedia" modified="1292750370000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="wikimedia.user.js" name="Wikimedia+" namespace="" description="Add History box at wikimedia's leftmost column" version="" enabled="true" basedir="wikimedia" modified="1299285562000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*.wikipedia.org/*</Include>
 		<Include>http://*.wikimedia.org/wiki/*</Include>
 		<Include>http://ssdl-wiki.cs.technion.ac.il/wiki/*</Include>
@@ -1050,7 +1050,7 @@
 		<Include>http://delicious.com/*</Include>
 		<Include>http://*.delicious.com/*</Include>
 	</Script>
-	<Script filename="click-n-hold.user.js" name="click-n-hold" namespace="http://localhost/" description="" version="" enabled="true" basedir="click-n-hold" modified="1277635614000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="click-n-hold.user.js" name="click-n-hold" namespace="http://localhost/" description="" version="" enabled="false" basedir="click-n-hold" modified="1277635614000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*</Include>
 		<Include>https://*</Include>
 		<Include>ftp://*</Include>
@@ -1059,12 +1059,13 @@
 		<Include>http://www.bbc.co.uk/*/aod.shtml</Include>
 		<Include>http://www.bbc.co.uk/*/aod.shtml*</Include>
 	</Script>
-	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="true" basedir="make_bookmarklet_from_us" modified="1291329124000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="true" basedir="make_bookmarklet_from_us" modified="1302382067000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://hwi.ath.cx/*/gm_scripts/*</Include>
 		<Include>http://hwi.ath.cx/*/userscripts/*</Include>
 		<Include>http://*userscripts.org/*</Include>
+		<Exclude>http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html</Exclude>
 	</Script>
-	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" basedir="wikiindent" modified="1296448622000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" basedir="wikiindent" modified="1300887124000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*wiki*</Include>
 		<Include>http://www.buzztard.com/*</Include>
 		<Include>http://encyclopediadramatica.com/*</Include>
@@ -1095,7 +1096,7 @@
 	<Script filename="onepagewonder.user.js" name="OnePageWonder" namespace="OPW" description="Opens all links in IFrame, so going &quot;back&quot; is fast!" version="" enabled="false" basedir="onepagewonder" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="title_youtube_locations.user.js" name="Title Youtube Locations" namespace="TYTLs" description="Forces all YouTube pages to put the video title in the Location Bar" version="" enabled="true" basedir="title_youtube_locations" modified="1296117428000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="title_youtube_locations.user.js" name="Title Youtube Locations" namespace="TYTLs" description="Forces all YouTube pages to put the video title in the Location Bar" version="" enabled="true" basedir="title_youtube_locations" modified="1302394826000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*.youtube.*/*</Include>
 		<Include>http://youtube.*/*</Include>
 	</Script>
@@ -1126,7 +1127,7 @@
 		<Include>*</Include>
 		<Exclude>http://www.google.com/*</Exclude>
 	</Script>
-	<Script filename="reclaim_cpu.user.js" name="Reclaim CPU" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers." version="" enabled="false" basedir="reclaim_cpu" modified="1294343201000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="reclaim_cpu.user.js" name="Reclaim CPU" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers." version="" enabled="false" basedir="reclaim_cpu" modified="1297540454000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 		<Exclude>http://www.last.fm/*</Exclude>
 		<Exclude>http://www.deezer.com/*</Exclude>
@@ -1135,13 +1136,14 @@
 		<Exclude>http://demoscene.tv/*</Exclude>
 		<Exclude>http://*.other.sites/where/we/want/to/leave/the/page/running</Exclude>
 	</Script>
-	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" basedir="delicious_link_tooltop" modified="1296497298000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" basedir="delicious_link_tooltop" modified="1302700351000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
-		<Exclude>http://www.facebook.com/*</Exclude>
-		<Exclude>https://www.facebook.com/*</Exclude>
-		<Exclude>http://*.google.com/images?*</Exclude>
 		<Exclude>http://facebook.com/*</Exclude>
 		<Exclude>https://facebook.com/*</Exclude>
+		<Exclude>http://*.facebook.com/*</Exclude>
+		<Exclude>https://*.facebook.com/*</Exclude>
+		<Exclude>http://images.google.*/*</Exclude>
+		<Exclude>http://*.google.*/images?*</Exclude>
 	</Script>
 	<Script filename="delisub.user.js" name="delisub" namespace="http://del.icio.us/Tobu" description="Quickly subscribe and unsubscribe del.icio.us tags" version="1.1.1" enabled="false" basedir="delisub" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://delicious.com/*/*</Include>
@@ -1172,7 +1174,7 @@
 	<Script filename="demo_seen.user.js" name="Demo Seen" namespace="DS" description="In addition to being a terrible pun, this script adds a &quot;visited&quot; colour to pouet.net, so you can see which pages you have already visited." version="1.0" enabled="true" basedir="demo_seen" modified="1286391494000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://pouet.net/*</Include>
 	</Script>
-	<Script filename="pouet_plus.user.js" name="Pouet Plus" namespace="PP" description="Preview screenshots straight from the prods search by hovering over links." version="" enabled="true" basedir="pouet_plus" modified="1286405442000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="pouet_plus.user.js" name="Pouet Plus" namespace="PP" description="Preview screenshots straight from the prods search by hovering over links." version="" enabled="true" basedir="pouet_plus" modified="1301100048000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://pouet.net/*</Include>
 		<Include>http://www.pouet.net/*</Include>
 	</Script>
@@ -1186,8 +1188,8 @@
 	<Script filename="minibrowser.user.js" name="MiniBrowser" namespace="MB" description="" version="" enabled="false" basedir="minibrowser" modified="1288698588000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="bookmarklets_to_user_scr.user.js" name="Bookmarklets to User Scripts" namespace="http://www.squarefree.com/userscripts" description="Lets you install any bookmarklet as a user script." version="" enabled="true" basedir="bookmarklets_to_user_scr" modified="1287922187000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
-		<Include>http*://www.squarefree.com/bookmarklets/*</Include>
+	<Script filename="bookmarklets_to_user_scr.user.js" name="Bookmarklets to User Scripts" namespace="http://www.squarefree.com/userscripts" description="Lets you install any bookmarklet as a user script." version="" enabled="true" basedir="bookmarklets_to_user_scr" modified="1299345213000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>*</Include>
 	</Script>
 	<Script filename="linterna_mgica.user.js" name="Linterna Mágica" namespace="Linterna Mágica" description="Watch video on the web in a brand new way: You don't need a glint, the magic lantern is ignited!" version="" enabled="false" basedir="linterna_mgica" modified="1288953667000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*</Include>
@@ -1237,7 +1239,7 @@
 		<Resource name="severe" filename="severe.png" mimetype="image/png"/>
 		<Resource name="undetermined" filename="undetermined.png" mimetype="image/png"/>
 	</Script>
-	<Script filename="tab_history.user.js" name="Tab History" namespace="TH" description="Quick view of the history of this tab.  (Allows me to make a quick decision about whether to close it, or go back to an earlier page.)" version="" enabled="true" basedir="tab_history" modified="1296448612000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="tab_history.user.js" name="Tab History" namespace="TH" description="Quick view of the history of this tab.  (Allows me to make a quick decision about whether to close it, or go back to an earlier page.)" version="" enabled="true" basedir="tab_history" modified="1298865788000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*/*</Include>
 		<Include>https://*/*</Include>
 	</Script>
@@ -1264,5 +1266,12 @@
 	<Script filename="funkwurm_youtube_nifties.user.js" name="funkwurm Youtube Nifties" namespace="http://www.youtube.com/funkwurm" description="Adds a few nifty Youtube enhancements" version="" enabled="false" basedir="funkwurm_youtube_nifties" modified="1294082499000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://youtube.com/*</Include>
 		<Include>http://*.youtube.com/*</Include>
+	</Script>
+	<Script filename="fastjslogger.user.js" name="FastJSLogger" namespace="FastJSLogger" description="Attempts to redirect console.log to a div floating on the page." version="" enabled="false" basedir="fastjslogger" modified="1299533991000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>*</Include>
+	</Script>
+	<Script filename="fallbackgmapi.user.js" name="FallbackGMAPI" namespace="FallbackGMAPI" description="Default functions for GM_ API library for wider browser compatibility and userscript execution from bookmarklets." version="" enabled="true" basedir="fallbackgmapi" modified="1302698846000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>http://nowhere.example.com/@require_me_to_make_your_userscript_compatible_in_many_browsers</Include>
+		<Exclude>*</Exclude>
 	</Script>
 </UserScriptConfig>

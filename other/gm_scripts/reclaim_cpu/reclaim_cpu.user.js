@@ -181,12 +181,12 @@ var ShowInfo = {
 		ShowInfo.newInfo(""); // "[Idle] "
 	},
 	newInfo: function (newPre) {
-		if (!showInfoInTitle)
-			return;
-		// We intentionally get info from the frame document, but set the toplevel title.
-		// window.document.title = newPre + document.title.replace(/^([Active] |[Clean] |[Idle] )/,'');
-		// window.document.title = newPre + document.title.replace(/^([*] |[=] |[.] |[:] )/,'');
-		window.document.title = newPre + document.title.replace(/^[*=.:+#?_] /,'');
+		if (showInfoInTitle) {
+			// We intentionally get info from the frame document, but set the toplevel title.
+			// window.document.title = newPre + document.title.replace(/^([Active] |[Clean] |[Idle] )/,'');
+			// window.document.title = newPre + document.title.replace(/^([*] |[=] |[.] |[:] )/,'');
+			window.document.title = newPre + document.title.replace(/^[*=.:+#?_] /,'');
+		}
 	}
 };
 

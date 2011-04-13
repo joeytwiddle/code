@@ -80,6 +80,8 @@ var clearFrameWhenLeaving = true; // May speed up loading of the clicked page if
 
 var includeGeneralBodyLinks = true; // Make all page links previewable, not only result-related links.  Konqueror has problems if I disable this!
 
+var killGooglesNewPreviewPopup = true;
+
 var Colors = {
 	focus:    { bg: "#eefbfb", border: "#ddeeee" },
 	selected: { bg: "#ddeeff", border: "#ccddff" },
@@ -213,6 +215,7 @@ function initPreview() {
 		var rightCell = document.createElement("TD");
 
 		previewFrame = document.createElement('IFRAME');
+		previewFrame.id = 'gpf';
 		previewFrame.style.backgroundColor = '#eeeeee';
 		if (!panelHasBorder)
 			previewFrame.style.border = '0px solid white';
@@ -535,6 +538,12 @@ function initPreview() {
 					}
 					setTimeout(function(){
 						previewFrame.src = link.href;
+						if (killGooglesNewPreviewPopup) {
+							var vspb = document.getElementById("vspb");
+							if (vspb) {
+								vspb.style.display = 'none';
+							}
+						}
 					},10);
 					// lastPreview = lastHover;
 					lastPreview = container; // normalises - two different nodes might both hit the same container
@@ -1059,6 +1068,13 @@ TODO: The focus color over an 'action' link should be related to the 'action' co
 to clear the margin-left and margin-right of #center_col,#foot also.
 
 TODO: Advanced search link is not detected as 'action'.
+
+TODO BUG: It seems mouseout does not fire if the mouse remained still whilst
+"Delicious Search Results on Google" moved the thing we were hovering over (by
+inserting its results earlier in the page).  Well maybe it does fire; what I
+actually observe is that the thing I was previously hovered over does not get
+its highlighting reset, but highlighting is added to the new result under the
+cursor.  The old thing is now stuck with the false highlight color forever.
 
 */
 

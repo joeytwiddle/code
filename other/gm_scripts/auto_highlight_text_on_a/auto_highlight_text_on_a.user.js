@@ -2,7 +2,7 @@
 // @name           Auto Highlight Search Terms on Result Pages
 //                 (formerly Highlight Search Result Pages)
 //                 (formerly Auto Highlight Text on All Search Result Pages)
-//                 TODO: Remove "Auto" but also rename
+//                 TODO: Remove "Auto" and rename to final release name!
 // @namespace      search
 // @description    Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer.
 // @include        *
@@ -34,13 +34,14 @@ var highlightEachTerm    = true;
 // Don't highlight if >50 matches for the string :P
 // Don't highlight if string is a word already in the document's title.
 
+// CONSIDER: Considering the 2 TODOs below, sometimes the page contains many
+// instances of the words, and most frequently some or all of the words are
+// visible.  The user is probably most interested in rare words which are not
+// already visible when the page loads.
+
 // TODO: Offer a float over the top with the words, their occurrence count,
 // clickable to cycle through each, or overall Previous/Next buttons + keyboard
 // shortcuts.
-
-// DONE: Make any page a text-search result by accepting CGI parameters
-// (possibly faked by the user) or accepting dialog input from the user as a
-// bookmarklet.
 
 // TODO:
 // Scroll down to (just above) first occurrence (in case our search terms do not appear until later in the document).
@@ -51,16 +52,20 @@ var highlightEachTerm    = true;
 // Highlight the different words in different colors?
 // Highlight excluded terms (e.g. 'wheat' in q=food+-wheat) in red?
 
+// DONE: Make any page a text-search result by accepting CGI parameters
+// (possibly faked by the user) or accepting dialog input from the user as a
+// bookmarklet.
+
 */
 
 // Backwards looping means we need not worry about the list length
 // changing as we traverse it
 function loopBackwardsOnTimeout(list,fn,delay) {
-	var i = list.length;
+	var loopI = list.length;
 	function doOne() {
-		i--;
-		if (i >= 0) {
-			fn(list[i]);
+		loopI--;
+		if (loopI >= 0) {
+			fn(list[loopI]);
 			setTimeout(doOne,delay);
 		}
 	}

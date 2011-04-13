@@ -16,66 +16,43 @@
 // Cache and re-use the results if they are recent.
 
 
+//// Lookalike GM_xhR for this script only, actually requests JSONP directly from delicious.
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 	GM_xmlhttpRequest = function(details) {
-		var proxyHost = "hwi.ath.cx:8124";
-		// We don't want to send functions to the proxy, so we remove them from the details object.
-		var onloadCallback = details.onload;
-		var onerrorCallback = details.onerror;
-		var onreadystatechangeCallback = details.onreadystatechange;
-		delete details.onload;
-		delete details.onerror;
-		delete details.onreadystatechange;
 		// Insert a callback into the root window, anonymised by a random key.
 		var callbackName = "xss_xhr_via_jsonp_callback_" + parseInt(Math.random()*987654321);
-		var callbackFunction = function(responseDetails) {
-			if (onreadystatechangeCallback) {
-				responseDetails.readyState = 4;
-				onreadystatechangeCallback(responseDetails);
-			}
-			if (onloadCallback) {
-				onloadCallback(responseDetails);
-			}
-		};
-		var weAreInUserscriptScope = (typeof unsafeWindow != 'undefined');
-		if (!window.navigator.vendor.match(/Google/) || !weAreInUserscriptScope) {
-			// This works fine in Firefox GM, or in Chrome's content scope.
-			window[callbackName] = callbackFunction;
-		} else {
-			// But the window seen from Chrome's userscript scope is sandboxed,
-			// and many updates are not shared between scopes.
-			// So we must get Chrome's unsafeWindow (the real content window).
+		// Where should we place the callback?  Chrome Userscripts need to obtain unsafeWindow.
+		var target = window;
+		var weAreInUserscriptScope = (typeof GM_log != 'undefined');
+		if (window.navigator.vendor.match(/Google/) && weAreInUserscriptScope) {
 			var div = document.createElement("div");
 			div.setAttribute("onclick", "return window;");
 			unsafeWindow = div.onclick();
-			// And place the callback in that.
-			unsafeWindow[callbackName] = callbackFunction;
+			target = unsafeWindow;
 		}
-		// Request an XHR response from the proxy, which should return some javascript to call the callback.
-		var reqStrung = JSON.stringify(details);
-		var params = "details="+encodeURIComponent(reqStrung)+"&callback="+callbackName;
 		var script = document.createElement("script");
-		script.type = "text/javascript";
-		script.src = "http://" + proxyHost + "/xhrasjson?" + params;
-		document.getElementsByTagName("head")[0].appendChild(script);
-		// The callback should run on a successful response.  But we need to handle errors too.
-		// script.onload = function(e) { GM_log("Script has loaded."); };
-		script.onerror = function(e) {
+		var callbackFunction = function(dataObj) {
 			var responseDetails = {};
-			responseDetails.status = 12345;
-			if (onreadystatechangeCallback) {
-				responseDetails.readyState = 4;
-				onreadystatechangeCallback(responseDetails); // This gets called even on error, right?
-			}
-			if (onerrorCallback) {
-				onerrorCallback(responseDetails);
-			}
-			throw new Error("Failed to get JSONed XHR response from "+proxyHost+" - the proxy server may be down.");
+			responseDetails.responseText = JSON.stringify(dataObj);
+			details.onload(responseDetails);
+			// Cleanup artifacts: script and callback function
+			delete target[callbackName];
+			document.getElementsByTagName("head")[0].removeChild(script);
 		};
+		target[callbackName] = callbackFunction;
+		// Request a JSONP response from delicious, which should return some javascript to call the callback.
+		script.src = details.url + "?callback="+callbackName;
+		document.getElementsByTagName("head")[0].appendChild(script);
 	};
 }
+// DONE: scripts and functions added to the DOM should be removed after use
 
+if (!this.GM_getValue) {
+	GM_getValue = function(name,def) {
+		return def;
+	};
+}
 
 GM_DUR = {
 	un : "",
@@ -115,7 +92,8 @@ GM_DUR = {
 
 	handle : function(response)
 	{
-		GM_log("Delicious response was "+response+" with text: "+response.responseText);
+		// GM_log("Delicious response text: "+response.responseText.substring(0,100));
+		GM_log("Delicious responded with "+response.responseText.length+" bytes of data for "+GM_DUR.un);
 		var results = eval("("+response.responseText+")");
 		GM_setValue("cached_un",GM_DUR.un);
 		GM_setValue("cached_responseText",response.responseText);

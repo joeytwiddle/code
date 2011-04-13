@@ -24,16 +24,25 @@
 // BUG TODO: appears as a portal, but collapsing does not work
 // DONE: ok added manual collapsing, but still some of the formatting looks different
 
+var inGM = (typeof GM_getValue === 'function');
+
+GM_log("inGM = "+inGM);
+
 // Fix for Chrome
-if (!this.GM_getValue || this.GM_getValue.toString().indexOf("not supported")>-1) {
-   if (localStorage) {
-      this.GM_getValue=function (key,def) {
-         return localStorage[key] || def;
-      };
-      this.GM_setValue=function (key,value) {
-         return localStorage[key]=value;
-      };
-   }
+// Errors in FFox: if (!this.GM_getValue || this.GM_getValue.toString().indexOf("not supported")>-1) {
+if (inGM) {
+} else {
+	if ((""+this.GM_getValue).indexOf("not supported")>-1) {
+		if (localStorage) {
+			this.GM_getValue=function (key,def) {
+				return localStorage[key] || def;
+			};
+			this.GM_setValue=function (key,value) {
+				localStorage[key] = value;
+				return value;
+			};
+		}
+	}
 }
 
 setTimeout(function()
