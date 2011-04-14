@@ -143,16 +143,20 @@ public class IRCBot extends LogBot {
                 break;
             } catch (final Exception e) {
                 e.printStackTrace(System.err);
+                // This is to handle: java.io.IOException: The PircBot is already connected to an IRC server.  Disconnect first.
+                try {
+                    disconnect();
+                } catch (final Exception e2) {
+                    // This could often fail, if we weren't already connected
+                }
                 mylog("Sleeping for "+sleepTime+" seconds.");
                 justSleep(sleepTime);
                 sleepTime = sleepTime * 2;
-                /*
                 if (e instanceof org.jibble.pircbot.NickAlreadyInUseException) {
-                    String[] alternativeNames = { "utb0t", "utb1t", "ut99bot", "ut100bot", "ut1bot" };
+                    String[] alternativeNames = { "utb0t", "utb1t", "ut99bot", "unrealb0t", "UT1bot" };
                     String newName = alternativeNames[ (int)(Math.random()*alternativeNames.length) ];
                     setName(newName);
                 }
-                */
             }
         }
         // joinChannel("#testing");
@@ -464,7 +468,7 @@ public class IRCBot extends LogBot {
             rest = "";
         }
         if (com.equals("/nick")) {
-            final String newNick = rest;
+            final String newNick = firstArg;
             changeNick(newNick);
         } else if (com.equals("/join")) {
             final String channel= firstArg;

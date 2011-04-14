@@ -1,5 +1,5 @@
-# LIVE_HOST=joey@neuralyte.org
-LIVE_HOST=joey@77.37.18.99 ## mox's machine
+LIVE_HOST=joey@neuralyte.org
+# LIVE_HOST=joey@77.37.18.99 ## mox's machine
 
 ## Make a backup of the existing deploy:
 BACKUP_NUM=` echolines u v w x y z | chooserandomline `
