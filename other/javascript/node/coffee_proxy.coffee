@@ -19,14 +19,15 @@ inspect = (obj) ->
 	outStr = outStr.slice(0,-1)+"}"
 	return outStr
 
+pad = (n,min,padChar) ->
+	n = ""+n
+	while n.length < min
+		n = padChar + n
+	return n
+
 shortDate = () -> new Date().toString().split(' ').slice(0,5).join(' ')
 shortDate = () ->
-	pad = (n,min) ->
-		n = ""+n
-		while n.length < min
-			n = '0' + n
-		return n
-	pad2 = (n) -> pad n,2
+	pad2 = (n) -> pad n,2,'0'
 	d = new Date()
 	d.getFullYear()+"/"+pad2(d.getMonth()+1)+"/"+pad2(d.getDate()+1)+" "+
 		pad2(d.getHours())+":"+pad2(d.getMinutes())+":"+pad2(d.getSeconds())
@@ -34,11 +35,10 @@ shortDate = () ->
 log = (args...) ->
 	toLog = "["+shortDate()+"] "
 	for arg in args
-		do (arg) ->
-			if (typeof arg == "string")
-				toLog += arg + " "
-			else
-				toLog += inspect arg
+		if (typeof arg == "string")
+			toLog += arg + " "
+		else
+			toLog += inspect arg
 	console.log toLog
 
 escapeHTML = (str) -> str  # TODO!
