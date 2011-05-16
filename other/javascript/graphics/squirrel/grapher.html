@@ -7,7 +7,7 @@
     * {margin: 0px; padding: 0px; }
     html, body { width: 100%; height: 100%; }
     #canvas { position: absolute; top: 0px; left: 0px; overflow: hidden; cursor: pointer;}
-    #controls { position: absolute; top: 1px; left: 2px;}
+    #controls { position: absolute; top: 1px; left: 2px; z-index: 10 }
     #controls, #controls input, #controls button { font-family: sans-serif; font-size: 90%; }
     
     #controls button { padding: 0px; margin: 0px 0px; }
@@ -37,7 +37,8 @@
 	<table class="controlBlock">
 		<tr><td>Formula:<td colspan="3">z=<textarea cols="40" rows="1" id="formula" onkeyup="if (event.keyCode==13){ this.rows=this.value.split('\n').length; animStartTime=new Date().getTime(); }" onChange=" animStartTime=new Date().getTime(); ">log(abs(x*y+t-5)+1)</textarea>
 		<tr><td>Input range:<td colspan="3">x: <input id="minx" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxx" type="number" value="10" class="short" onChange="draw(true)"> y: <input id="miny" type="number" value="-10" class="short" onChange="draw(true)"> to <input id="maxy" type="number" value="10" class="short" onChange="draw(true)">
-		<tr><td>Grid size:<td colspan="3"> <input id="gridsize" type="range" min="3" max="100" step="1" onChange="cvals(this); draw(true)" value="20" class="slider"><input value="20" id="igridsize" type="number" class="short" onChange="draw(true)">
+		<tr><td>Grid size X:<td colspan="3"> <input id="gridsizex" type="range" min="3" max="100" step="1" onChange="cvals(this); draw(true)" value="20" class="slider"><input value="20" id="igridsizex" type="number" class="short" onChange="draw(true)">
+		<tr><td>Grid size Y:<td colspan="3"> <input id="gridsizey" type="range" min="3" max="100" step="1" onChange="cvals(this); draw(true)" value="20" class="slider"><input value="20" id="igridsizey" type="number" class="short" onChange="draw(true)">
 		<tr><td>magnification:<td colspan="3"> <input id="magnification" type="range" min="0" max="50"  step="0.1" onChange="cvals(this); draw()" value="30" class="slider"><input value="30" id="imagnification" type="number" class="short" onChange="draw()">
 		<tr><td>Z multiplier:<td colspan="3">  <input id="multiplier" type="range" min="0" max="3" step="0.1" onChange="cvals(this); draw(true)" value="1"  class="slider"><input value="1"  id="imultiplier" type="number" class="short" onChange="draw(true)" step="0.1">
 			<button onClick="var w = document.getElementById('multiplier'); w.value = 1; cvals(w); draw()">1</button>
@@ -71,7 +72,7 @@
 			<span class="flink" onClick="show('-log(0.1+abs(sin(49*sqrt(x*x + y*y + t*t))))');">lava</span><br>
 			<span class="flink" onClick="show('sin(sqrt(abs(x-y+x*y/10+t/50))*75)*3');">curve</span><br>
 			<span class="flink" onClick="show('((a=x*x+pow((y-pow(x*x,1/3)),2)-50)<0)?(1.1+0.1*log(2.1+2*sin(180*t)))*abs(a)/15:0')">heart</span><br>
-			<span class="flink" onClick="show('function rippleat(i,j) {\n  var d=sqrt((x-i)*(x-i)+(y-j)*(y-j));\n  var fade=1/(1+d);\n  return fade*sin(d*190-20*t);\n}\n\nrippleat(-5,-5)+rippleat(4,3)');">two ripples</span><br>
+			<span class="flink" onClick="show('rippleat(-5,-5)+rippleat(4,3);\nfunction rippleat(i,j) {\n  var d=sqrt((x-i)*(x-i)+(y-j)*(y-j));\n  var fade=1/(1+d);\n  return fade*sin(d*190-20*t);\n}');">two ripples</span><br>
 			<span class="flink" onClick="show('sqrt(20+t - x*x - y*y) * (sin(120*x+5*y+55*t)>0?-1:+1)');">peel</span><br>
 			<span class="flink" onClick="show('sin(60*x+8*t)+sin(120*x+4*t)/2+sin(240*x+2*t)/4');">1-D ripple</span><br>
 			<span class="flink" onClick="show('0.1*(x*x-y*y)*sin(50*t)');">curved saddle</span><br>
@@ -104,7 +105,7 @@ var canvaswidth, canvasheight;
 
 // GLOBAL VARS
 var _canvas, _ctx, _magnification;
-var camera, magnification, multiplier, angles, gridsize;
+var camera, magnification, multiplier, angles, gridsizex, gridsizey;
 var parallel;                                   //boolean
 var dragging;                                   //boolean
 var oldpoint = [];
@@ -185,18 +186,24 @@ function rotate() {
 }
 
 function get3dcoordinates() {
-    // THIS USES formula, multiplier, gridsize, min_x, min_y, max_x, max_y AND YIELDS a3[][] = [x, y, z]
+    // THIS USES formula, multiplier, gridsizex, gridsizey, min_x, min_y, max_x, max_y AND YIELDS a3[][] = [x, y, z]
     var t = (new Date().getTime() - animStartTime) / 1000;
-    var xstep = (max_x - min_x) / gridsize;
-    var ystep = (max_y - min_y) / gridsize;
-    for (var n = 0; n <= gridsize; n++ ) {
+    var xstep = (max_x - min_x) / gridsizex;
+    var ystep = (max_y - min_y) / gridsizey;
+    //// It might be a bit faster if we eval only once:
+    //// NOTE: This will break formulas who try to include functions *before* the expression.
+    // eval("window.compiledFormula = function(x,y){ return "+formula+"; };");
+    eval("window.compiledFormula = function(){ return "+formula+"; };");
+    var compiledFormula = window.compiledFormula;
+    for (var n = 0; n <= gridsizex; n++ ) {
         if (!a3[n]) {
             a3[n] = [];
         }
-        for (var m = 0; m <= gridsize; m++ ) {
+        for (var m = 0; m <= gridsizey; m++ ) {
             x = min_x + n*xstep;
             y = min_y + m*ystep;
-            z = eval(formula);
+            // z = eval(formula);
+            z = compiledFormula(x,y);
             // a3[n][m] = [x, y, z*multiplier];
             if (!a3[n][m]) {
                 a3[n][m] = [0,0,0];
@@ -214,12 +221,12 @@ function get3dcoordinates() {
 
 function get2dcoordinatesandrotatedarray() {
     // THIS USES a3 AND YIELDS a3r[][] = [x, y, z] & a2[];
-    for (var n = 0; n <= gridsize; n++ ) {
+    for (var n = 0; n <= gridsizex; n++ ) {
         if (!a2[n]) {
             a2[n] = [];
             a3r[n] = [];
         }
-        for (var m = 0; m <= gridsize; m++ ) {
+        for (var m = 0; m <= gridsizey; m++ ) {
             dot = a3[n][m].slice(0);
             rotate();
             a3r[n][m] = dot; // .slice(0);
@@ -277,7 +284,8 @@ function draw(newformula) {
     // var rz_elem = document.getElementById("irz");
     // rz_elem.value = 12 * Math.sin(new Date().getTime() / 8000);
 
-    gridsize = eval(document.getElementById("igridsize").value);
+    gridsizex = eval(document.getElementById("igridsizex").value);
+    gridsizey = eval(document.getElementById("igridsizey").value);
     magnification = eval(document.getElementById("imagnification").value);
     multiplier = eval(document.getElementById("imultiplier").value);
     camera = eval(document.getElementById("icamera").value);
@@ -351,8 +359,8 @@ function zcolored() {
     report("Finding all valid triangles... ");
     
     // FIND ALL TRIANGLES;
-    for (var n = 0; n < gridsize; n++ ) {
-        for (var m = 0; m < gridsize; m++ ) {
+    for (var n = 0; n < gridsizex; n++ ) {
+        for (var m = 0; m < gridsizey; m++ ) {
             for (var l=0; l<2; l++) {
                 trianglemaxy = Math.max( a3r[n+1][m][Y], a3r[n][m+1][Y], a3r[n+l][m+l][Y]);
                 validz = !( isNaN(a3r[n+1][m][Z]) || isNaN(a3r[n][m+1][Z]) || isNaN(a3r[n+l][m+l][Z]) );
@@ -390,7 +398,7 @@ function zcolored() {
 
 function zcolored_draw() { 
     if (i<triangles.length) {
-        var b=i+Math.min(Math.ceil(gridsize*gridsize/5), 600);
+        var b=i+Math.min(Math.ceil(gridsizex*gridsizey/5), 600);
 		  b=6000000;
         for(i; i<b && i<triangles.length; i++) {
             for (k=0; k<3; k++) zs[k] = a3[triangles[i][k][X]][triangles[i][k][Y]][Z];
@@ -445,11 +453,11 @@ function wireframe() {
 				} else {
 					skip = true;
 				}
-				if (j==0) { m++; if (m>gridsize) {m=0; break;} }
-				else { n++; if (n>gridsize) {n=0; break;} }
+				if (j==0) { m++; if (m>gridsizey) {m=0; break;} }
+				else { n++; if (n>gridsizex) {n=0; break;} }
 			}
-			if (j==0) { n++; if (n>gridsize) {n=0; break;} }
-			else { m++; if (m>gridsize) {m=0; break;} }
+			if (j==0) { n++; if (n>gridsizex) {n=0; break;} }
+			else { m++; if (m>gridsizey) {m=0; break;} }
 		};
 		j++;
 	};
@@ -511,19 +519,19 @@ function init() {
 function shapes_get3dcoordinates() {
     // each shape = [ [[startpoint] [nextpoint] [nextpoint] [lastpoint]], ... ]
     var h = Math.max(Math.min((max_y-min_y)/2, (max_x-min_x)/2),(max_z-min_z)/2)*1.2;
-    var s = h/gridsize; var hs = h-s-s; var arrow_z = [];
+    var s = 2*h/(gridsizex+gridsizey); var hs = h-s-s; var arrow_z = [];
     arrow_z.push([[0,0,0], [0,0,h], [-s,-s,hs], [-s,+s,hs], [0,0,h], [+s,-s,hs], [+s,+s,hs], [0,0,h]])
     arrow_z.push([[-s,-s,hs], [+s,-s,hs]])
     arrow_z.push([[-s,+s,hs], [+s,+s,hs]])
     var z = h/1.2;
     
-    h = (max_x-min_x)/2*1.2; s = h/gridsize; hs = h-s-s; var arrow_x = [];
+    h = (max_x-min_x)/2*1.2; s = h/gridsizex; hs = h-s-s; var arrow_x = [];
     arrow_x.push([[0,0,0], [h,0,0], [hs,-s,-s], [hs,+s,-s], [h,0,0], [hs,-s,+s], [hs,+s,+s], [h,0,0]])
     arrow_x.push([[hs,-s,-s], [hs,-s,+s]])
     arrow_x.push([[hs,+s,-s], [hs,+s,+s]])
     var x = h/1.2;
 
-    h = (max_y-min_y)/2*1.2; s = h/gridsize; hs = h-s-s; var arrow_y = [];
+    h = (max_y-min_y)/2*1.2; s = h/gridsizey; hs = h-s-s; var arrow_y = [];
     arrow_y.push([[0,0,0], [0,h,0], [-s,hs,-s], [+s,hs,-s], [0,h,0], [-s,hs,+s], [+s,hs,+s], [0,h,0]])
     arrow_y.push([[-s,hs,-s], [-s,hs,+s]])
     arrow_y.push([[+s,hs,-s], [+s,hs,+s]])
