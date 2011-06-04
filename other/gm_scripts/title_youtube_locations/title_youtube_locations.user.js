@@ -69,7 +69,7 @@ setTimeout(function(){
 	//document.getElementById("eow-title").scrollIntoView();
 	// Uploader info and videolist popdown.
 	//document.getElementById("watch-headline-user-info").scrollIntoView();
-	// The video (was supposed to be a small gap above the video but failed)
+	// The author's video list (was supposed to be a small gap above the video when collapsed, but it's not)
 	document.getElementById("watch-more-from-user").scrollIntoView();
 	// The video
 	//document.getElementsByTagName("embed")[0].scrollIntoView();
@@ -103,7 +103,7 @@ function initThumbnailAnimator() {
 	}
 	function stopAnimation() {
 		if (timer) {
-			logElem("Stopping elem",img);
+			// logElem("Stopping elem",img);
 			clearInterval(timer);
 			// This isn't really neccessary, except to ensure the check for default\.jpg above works next time!
 			img.src = img.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
@@ -122,6 +122,12 @@ function initThumbnailAnimator() {
 			if (elemToCheck.tagName == "IMG") {
 				img = event.target;
 				return fn();
+			} else if (elemToCheck.className=='screen') {
+				var seekImg = elemToCheck.parentNode.getElementsByTagName("img")[0];
+				if (seekImg) {
+					img = seekImg;
+					fn();
+				}
 			// } else if (imgCount == 1) {
 				// img = elemToCheck.getElementsByTagName("img")[0];
 				// // logElem("["+evt.type+"] checking sub-image",img);
@@ -131,12 +137,6 @@ function initThumbnailAnimator() {
 				// logElem("  whilst currentTarget",evt.currentTarget);
 				// logElem("  and srcElement",evt.srcElement);
 				// return fn();
-			} else if (elemToCheck.className=='screen') {
-				var seekImg = elemToCheck.parentNode.getElementsByTagName("img")[0];
-				if (seekImg) {
-					img = seekImg;
-					fn();
-				}
 			}
 		};
 	}
