@@ -212,7 +212,9 @@ function doIt() {
 				// alert("doing it!");
 				toc.style.position = 'fixed';
 				toc.style.right = '16px';
-				toc.style.top = '16px';
+				// toc.style.top = '16px';
+				// A healthy gap from the top allows the user to access things fixed in the top right of the page, if they can scroll finely enough.
+				toc.style.top = '24px';
 				toc.style.left = '';
 				toc.style.bottom = '';
 				toc.style.zIndex = '5000';
