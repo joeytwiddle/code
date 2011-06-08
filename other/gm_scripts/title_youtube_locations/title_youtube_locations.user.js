@@ -12,19 +12,6 @@
 // is the same as the last one we did set (via GM_set/getValue) then do not try
 // again.
 
-function getCGIParams() {
-	var toParse = document.location.search.replace(/^\?[&]*/,'');
-	var params = new Object();
-	while (toParse.length) {
-		var key = toParse.match(/^[^=]*/);
-		toParse = toParse.replace(/^[^=]*=/,'');
-		var value = toParse.match(/^[^&]*/);
-		toParse = toParse.replace(/^[^&]*[&]*/,'');
-		params[key] = decodeURIComponent(value);
-	}
-	return params;
-}
-
 setTimeout(function(){
 	if (document.location.pathname == "/watch") {
 

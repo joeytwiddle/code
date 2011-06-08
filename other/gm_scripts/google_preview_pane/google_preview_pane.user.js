@@ -14,11 +14,14 @@
 
 // === Changelog ===
 //
+// 2011.--.--
+//
+//   * DONE: Google's new preview window is a bit distracting.
+//   * DONE: scrollIntoView if you preview a later result with createPanelLater enabled.
+//
 // 2010.12.08
 //
 //   * Works with Google's new in-page auto-updating results.
-//   * TODO: Google's new preview window is a bit distracting.
-//   * TODO: scrollIntoView if you preview a later result with createPanelLater enabled.
 //
 // 2010.10.06
 //
@@ -76,7 +79,7 @@ var removeSidebarEarly = false;
 
 var createPanelLater = true;  // The split does not occur until a result is selected for preview.  Nice for a larger initial overview of results, but when we do select one, the re-arrangement loses our scroll position.
 
-var clearFrameWhenLeaving = true; // May speed up loading of the clicked page if the preview is still loading.
+var clearFrameWhenLeaving = false; // Clears the preview iframe before travelling to the selected URL.  For some browsers this might make the journey faster.
 
 var includeGeneralBodyLinks = true; // Make all page links previewable, not only result-related links.  Konqueror has problems if I disable this!
 
@@ -539,10 +542,17 @@ function initPreview() {
 					setTimeout(function(){
 						previewFrame.src = link.href;
 						if (killGooglesNewPreviewPopup) {
+							/*
 							var vspb = document.getElementById("vspb");
 							if (vspb) {
 								vspb.style.display = 'none';
 							}
+							*/
+							GM_addStyle("#vspb { display: none; }");
+							// Unfortunately google toggle the element's display value, overriding anything we do.
+							// But the vspb is an only child, so let's hide the parent:
+							GM_addStyle("#botstuff { display: none; }");
+							// I think the vspb might appear at "some point" in the future, and write its own element styles.  But the GM_addStyle will override that if it is called after the vspb appears (a second preview).
 						}
 					},10);
 					// lastPreview = lastHover;
@@ -553,7 +563,24 @@ function initPreview() {
 			return false;
 		}
 
+		/* Late check: should we do anything at all? */
+		/* i.e. is it sane to act? */
+		// I needed this when I was ignoring @include/@exclude rules: on random
+		// pages without a place for the iframe (ie. next to resultsBlock)
+		// previews were unhelpful!
+		/* TODO: This should be done as a wrapper / curry / callback /
+		 * second-order function to add the check around the original event
+		 * handler function. */
+		function eventsShouldAct() {
+			resultsBlock = getResultsBlock();
+			return (resultsBlock != null);
+		}
+
 		function checkClick(evt) {
+
+			if (!eventsShouldAct())
+				return;
+
 			helloMouse(evt); // Without this sometimes we fail to activate because we receive click before mouseover (or for some reason didn't get a mouseover).
 			var node = evt.target;
 			var overLink = ( node.tagName=="A" ? node : getAncestorByTagName(node,"A") );
@@ -619,6 +646,10 @@ function initPreview() {
 		}
 
 		function helloMouse(evt) {
+
+			if (!eventsShouldAct())
+				return;
+
 			var node = evt.target;
 			var container = getContainer(node);
 			// Should we hover on this?
@@ -656,6 +687,10 @@ function initPreview() {
 		}
 
 		function goodbyeMouse(evt) {
+
+			if (!eventsShouldAct())
+				return;
+
 			var node = evt.target;
 			var container = getContainer(node);
 			// Should we stop hovering on this?
@@ -1003,6 +1038,7 @@ var earlyResultsBlock = getResultsBlock();
 if (earlyResultsBlock && loadEarly) {
 	initPreview();
 } else {
+	/*
 	function checkStart() {
 		var rb = getResultsBlock();
 		if (rb)
@@ -1010,7 +1046,8 @@ if (earlyResultsBlock && loadEarly) {
 		else
 			setTimeout(checkStart,1000);
 	}
-	// window.addEventListener('DOMContentLoaded',checkStart,false);
+	window.addEventListener('DOMContentLoaded',checkStart,false);
+	*/
 	setTimeout(initPreview,1000);
 	// On webhp pages, I think the content is loaded by Javascript.  We must
 	// wait for the page to finish loading before we can find the resultsBlock.

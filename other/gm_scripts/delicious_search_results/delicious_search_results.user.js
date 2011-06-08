@@ -15,6 +15,15 @@
 // DONE: Don't keep spamming Delicious when we go forwards and backwards to Google again.
 // Cache and re-use the results if they are recent.
 
+// TODO: Sometimes you click on a Google result before these results have
+// appeared, but the browser applies the click *after* it appeared.  How can we
+// work around this?
+//   1) After parsing and constructing the results (a slightly heavy task),
+//      pause a bit (with a setTimout closure) before presenting, to allow the
+//      browser a chance to process any click events.
+//   2) Add the results immediately but with their click actions disabled.
+//      Enable them later, after a timeout.
+
 
 //// Lookalike GM_xhR for this script only, actually requests JSONP directly from delicious.
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.

@@ -17,7 +17,7 @@ var showTooltips      = true;
 var lookupCurrentPage = true;
 var annotateAllLinks  = true;
 
-var maxCacheSize = 1024; // Total cache (for all sites).  This value is altered below if we are using localStorage.
+var maxCacheSize = 2048; // Total cache (for all sites).  This value is altered below if we are using localStorage.
 // 2048 caused cache cleanup to take 27 seconds in Firefox 4.
 // 1024 caused cache cleanup to take 6.7 seconds in Firefox 4.
 var showProgress = true; // Highlights each link in yellow while we are making a delicious request on it
@@ -482,17 +482,17 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 			var list = [];
 			for (var i=0;i<storage.length;i++) {
 				var key = storage.key(i);
-				// Only list those values relevant to this plugin!
+				// CUSTOM: Only list those values relevant to this plugin!
 				if (startsWith(key,"CachedResponse")) {
 					list.push(key);
 				}
 			}
-			GM_log("localstorage is holding "+storage.length+" relevant records.");
+			GM_log("localstorage is holding "+storage.length+" records, "+list.length+" of which were selected.");
 			return list;
 		};
 
-		maxCacheSize = 512; // per domain - could drop to 1024 i suppose
-		// In Chrome this means my cache cleanup takes about 5 seconds.
+		maxCacheSize = 1024; // per domain
+		// In Chrome 512 means my cache cleanup takes 2-5 seconds.
 
 	} else {
 		GM_log("Warning: Could not implement GM_get/setValue.");

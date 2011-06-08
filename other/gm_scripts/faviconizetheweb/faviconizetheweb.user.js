@@ -99,6 +99,7 @@ function createFaviconFor(url) {
 			img.title = "Fail to find favicon for "+host;
 			img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
+			img.removeEventListener('error',tryExtension,true);
 		}
 	}
 	img.addEventListener('error',tryExtension,true);

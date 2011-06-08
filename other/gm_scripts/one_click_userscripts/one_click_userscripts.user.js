@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name           One Click Userscripts
 // @namespace      OCU
-// @description    Don't use Greasemonkey to load your userscripts, use this lighter interface instead!     Also works as a bookmarklet.
+// @description    Don't use Greasemonkey to load your userscripts, use this lighter interface instead!  Also works as a bookmarklet.
 // @include        *
 // ==/UserScript==
 
-// TODO:
-//   - Respect Include/Exclude rules.
+// == TODO ==
+// Respect Include/Exclude rules.
+// Could be renamed: All My Userscripts
 
 
 // == Config ==
@@ -19,12 +20,13 @@ var defaultScripts = [
 */
 
 var defaultScripts = [
-	// "http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js",
 	"fastjslogger",
+	"faviconizetheweb",
+	// "wikiindent",
+	// "make_bookmarklet_from_us",
+	"title_youtube_locations",
 	"google_preview_pane",
 	"delicious_link_tooltop",
-	"faviconizetheweb",
-	"wikiindent",
 ].map(hwiScript);
 
 var allowBrowserToCacheScripts = false;
@@ -49,10 +51,13 @@ function loadUserscripts() {
 	if (!scriptsToLoad || !scriptsToLoad.length) {
 		GM_log("[OCU] No config found, falling back to default script list.");
 		scriptsToLoad = defaultScripts;
-		GM_setValue("OCU_scriptList",JSON.stringify(scriptsToLoad));
+		// Some sites (e.g. wikitravel) replace the default JSON with an incomplete implementation.
+		if (this.JSON && JSON.stringify) {
+			GM_setValue("OCU_scriptList",JSON.stringify(scriptsToLoad));
+		}
 	}
 
-	scriptsToLoad.forEach(loadScript);
+	scriptsToLoad.forEach(considerScript);
 
 }
 
@@ -64,10 +69,19 @@ function loadScript(url,thenCallFn) {
 	}
 	scr.src = url;
 	if (thenCallFn) {
-		scr.onload = thenCallFn;
-		scr.onerror = thenCallFn;
+		// Fixed: scr.onload=thenCallFn fails in Greasemonkey with "Component is not available"
+		scr.addEventListener('load',thenCallFn,false);
+		scr.addEventListener('error',thenCallFn,false);
 	}
 	document.body.appendChild(scr);
+}
+
+function considerScript(url) {
+	// Check includes/excludes
+	// But don't do it every time, at least cache the data for occasional update.
+	if (true) {
+		loadScript(url);
+	}
 }
 
 

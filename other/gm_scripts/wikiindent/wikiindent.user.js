@@ -15,8 +15,11 @@ var indentSubBlocks = true;
 var fixUnderlinesToOverlines = true;
 
 
-/* TODOS
- * As we scroll the page, light up the "current" section in the TOC.
+/* TODO: As we scroll the page, light up the "current" section in the TOC.
+ *
+ * BUG: One occasional problem with the TOC is when it is taller than the
+ *      window!  (I usually work around this by zooming out (reducing font
+ *      size), but perhaps we can use CSS overflow to solve it properly.)
 */
 
 /* Changelog
@@ -200,7 +203,8 @@ function doIt() {
 			// Find the table of contents element:
 			var toc = document.getElementById("toc")   /* MediaWiki */
 					 || document.getElementsByClassName("table-of-contents")[0]   /* BashFAQ */
-					 || document.getElementsByClassName("toc")[0];   /* LeakyTap */
+					 || document.getElementsByClassName("toc")[0]   /* LeakyTap */
+					 || document.getElementsByClassName("wt-toc")[0];   /* Wikitravel */
 
 			if (toc) {
 
