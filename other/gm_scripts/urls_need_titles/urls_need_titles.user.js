@@ -34,7 +34,7 @@ function check() {
 	}
 
 	if (document.location.host.match(/(^|\.)xkcd\.com$/)) {
-		if (document.location.pathname.match(\/[0-9]+\/$/)) {
+		if (document.location.pathname.match(/[0-9]+\/$/)) {
 			var title = (""+document.title).replace(/^[^:]*: /,'','g');
 			setTitle(title);
 		}

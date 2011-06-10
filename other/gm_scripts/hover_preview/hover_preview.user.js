@@ -16,6 +16,7 @@
 
 // Quite nice on apache file listings of .jpegs, but a bit slow.  Ideally pre-load hoverable images?
 // Could be a bit heavy.  It depends on the page...
+// A different bookmarklet to turn all "links to images" into "images" would be nice. :)
 
 var focus = undefined;
 var lastFocus = undefined;
