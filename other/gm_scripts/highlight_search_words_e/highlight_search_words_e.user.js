@@ -1,17 +1,18 @@
 // ==UserScript==
-// @name           Auto Highlight Search Terms on Result Pages
+// @name           Highlight Search Words Everywhere
+//                 (formerly Auto Highlight Search Terms on Result Pages)
 //                 (formerly Highlight Search Result Pages)
 //                 (formerly Auto Highlight Text on All Search Result Pages)
-//                 TODO: Remove "Auto" and rename to final release name!
-// @namespace      search
-// @description    Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer.
+// @namespace      HSWE
+// @description    Like Google Cache, highlights the words you used in your search on all search result pages, by checking for CGI parameters in the Referrer.  You can also add #search=a+b+c to the URL to perform your own searches (may require a reload).
 // @include        *
-// Exclude sites which already have satisfactory searching facilities.
+//// Exclude sites which already highlight search terms!
 // @exclude        http://*.google.*/*
 // ==/UserScript==
 
 var highlightWholePhrase = true;
 var highlightEachTerm    = true;
+var highlightOnSearchPages = false;  // highlight on the search page, as well as the results pages
 
 /** === Documentation ===
 //
@@ -21,10 +22,10 @@ var highlightEachTerm    = true;
 // You can use this userscript to provide your own search terms by adding the following to the URL:
 //
 //   &search=my+words
-//   #search:my words
+//   #search=my words
 //
 // One problem with the second method is that it doesn't work.  Firefox doesn't
-// refresh the page when we add an #anchor_tag.
+// refresh the page when we add a #hash_tag.
 //
 **/
 
@@ -55,6 +56,8 @@ var highlightEachTerm    = true;
 // DONE: Make any page a text-search result by accepting CGI parameters
 // (possibly faked by the user) or accepting dialog input from the user as a
 // bookmarklet.
+
+// DONE: Background the highlighting process to avoid locking up the browser on long pages.
 
 */
 
@@ -128,7 +131,7 @@ var words;
 // Check for user supplied #search
 words = findSearchTerm(document.location.hash.slice(1));
 // Check for current page CGI search terms
-if (!words)
+if (!words && highlightOnSearchPages)
 	words = findSearchTerm(document.location.search);
 // Check for referring page CGI search terms
 if (!words)
