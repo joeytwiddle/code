@@ -1,10 +1,7 @@
 // ==UserScript==
 // @name           Highlight Search Words Everywhere
-//                 (formerly Auto Highlight Search Terms on Result Pages)
-//                 (formerly Highlight Search Result Pages)
-//                 (formerly Auto Highlight Text on All Search Result Pages)
 // @namespace      HSWE
-// @description    Like Google Cache, highlights the words you used in your search on all search result pages, by checking for CGI parameters in the Referrer.  You can also add #search=a+b+c to the URL to perform your own searches (may require a reload).
+// @description    Like Google Cache, highlights the words you used in your search on all search result pages, by checking for CGI parameters in the Referrer.  You can also add #search=a+b+c to the URL to highlight any words of your choosing (may require a reload).
 // @include        *
 //// Exclude sites which already highlight search terms!
 // @exclude        http://*.google.*/*
