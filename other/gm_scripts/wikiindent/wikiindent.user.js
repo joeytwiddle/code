@@ -8,6 +8,11 @@
 // @description    Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining.
 // ==/UserScript==
 
+//// TODO: It would be better to perform some things before the content loads
+//// (e.g. style rules like indentation, floating toc and hidden sidebar).
+//// Chrome could do this using:
+// @run-at         document-start
+
 //// Features:
 var toggleSidebar = true;
 var makeTableOfContentsFloat = true;
