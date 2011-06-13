@@ -223,7 +223,7 @@
 	<P>
 		<LI><A target='_self' href='javascript:
 			var info = document.links.length+" links on <A href=\""+document.location+"\">"+document.title+"</A>";
-			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			var html = "<HTML><HEAD><TITLE>[Links] "+document.title+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
 			for (i=0;i<document.links.length;i++) {
 				var link = document.links[i];
 				html += "<TR><TD><A href=\""+(link.href)+"\">"+(link.text)+"</A></TD><TD>"+(link.href)+"</TD></TR>\n";
@@ -243,7 +243,7 @@
 		<LI><A target='_self' href='javascript:
 			var images = document.getElementsByTagName("IMG"),
 					info = images.length+" images on <A href=\""+document.location+"\">"+document.title+"</A>";
-			var html = "<HTML><HEAD><TITLE>"+info+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			var html = "<HTML><HEAD><TITLE>[Images] "+document.title+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
 			for (i=0;i<images.length;i++) {
 				var image = images[i];
 				html += "<TR><TD align=\"center\">\n";
@@ -301,7 +301,6 @@
 				style.innerHTML = css;
 				document.getElementsByTagName('head')[0].appendChild(style);
 			}
-			addStyle('body { font: none; font-family: none; }');
 			/* check css... */
 			if (document.styleSheets) {
 				for (var i=0;i<document.styleSheets.length;i++) {
@@ -346,10 +345,12 @@
 					node.style.fontFamily = '';
 				}
 				*/
-				for (var child in node.childNodes) {
+				for (var child=node.firstChild;child;child=child.nextSibling) {
 					killFonts(child);
 				}
 			}
+			addStyle('body { font-family: none }');
+			addStyle('* { font-family: none }');
 			setTimeout(function(){
 				killFonts(document.body);
 				window.document.status = 'All fonts cleared.';
@@ -407,7 +408,7 @@
 <BLOCKQUOTE>
 
 	<P>
-		<LI><A id='splitPreviewBookmarklet' href="javascript:(function(){
+		<LI><A id='splitPreviewBookmarklet' name="splitpreview" href="javascript:(function(){
 			var scriptText = '<SCRIPT type=&quot;text/javascript&quot;>
 				var linkNode,lastLoaded,lastbgcol;
 				function doGet() {
@@ -502,6 +503,7 @@
 		'>Target Links and Forms at New Window</A></LI>
 		<BLOCKQUOTE>
 			Use this if you want the browser to open a new window when you click on a link or button.  (E.g. you want to use the search form, but you don't want to leave the current page.)
+			<BR>Some browsers now do this automatically if you Ctrl-click on the submit button.
 		</BLOCKQUOTE>
 	</P>
 
@@ -928,32 +930,33 @@
 	<P>
 		<LI>Quick Javascript <A target="_self" href="javascript:(function(){
 
-			window.inspect =
-				function inspect(obj) {
-					var report;
-					/* report = ''+obj+' (type: '+typeof obj+') Properties: '; */
-					report = (typeof obj)+' ('+obj+')\nProperties: ';
-					for (var prop in obj) {
-						/* report = report + prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
-						report = report+prop+', ';
-					}
-					return report.slice(0,-2);
-				};
-			window.loadScript =
-				function loadScript(url) {
-					var newScript = document.createElement('SCRIPT');
-					newScript.type = 'text/javascript';
-					newScript.src = url;
-					/*document.body.appendChild(newScript);*/
-					document.getElementsByTagName('head')[0].appendChild(newScript);
-				};
-			window.addStyle =
-				function(css) {
-					var style = document.createElement('style');
-					style.type = 'text/css';
-					style.innerHTML = css;
-					document.getElementsByTagName('head')[0].appendChild(style);
-				};
+			/* I don't think we should create a console object.
+			var oldConsole = window.console;
+			window.console = { log: function() { if (arguments.length>1) { arguments[0]+=''+arguments.slice(1); } if (oldConsole && oldConsole.log) { oldConsole.log.call(oldConsole,arguments[0]); } textArea.textContent += '\n' + arguments[0]; } };
+			*/
+			window.inspect = function inspect(obj) {
+				var report;
+				/* report = ''+obj+' (type: '+typeof obj+') Properties: '; */
+				report = (typeof obj)+' ('+obj+')\nProperties: ';
+				for (var prop in obj) {
+					/* report = report + prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
+					report = report+prop+', ';
+				}
+				return report.slice(0,-2);
+			};
+			window.loadScript = function loadScript(url) {
+				var newScript = document.createElement('SCRIPT');
+				newScript.type = 'text/javascript';
+				newScript.src = url;
+				/*document.body.appendChild(newScript);*/
+				document.getElementsByTagName('head')[0].appendChild(newScript);
+			};
+			window.addStyle = function(css) {
+				var style = document.createElement('style');
+				style.type = 'text/css';
+				style.innerHTML = css;
+				document.getElementsByTagName('head')[0].appendChild(style);
+			};
 
 			/* Load JQuery and other useful scripts: */
 			loadScript('http://hwi.ath.cx/static/js/jquery.js');
@@ -967,7 +970,7 @@
 			var innerDiv = document.createElement('div');
 			innerDiv.className = 'qcons_inner';
 
-			textArea.rows = 5;
+			textArea.rows = 12;
 			textArea.cols = 96;
 			textArea.readonly = true;
 			textArea.style.fontSize = '-2';
@@ -981,6 +984,9 @@
 			commandInput.value = '';
 			commandInput.size = 100;
 			innerDiv.appendChild(commandInput);
+
+			var history = [];
+			var historyPos = 0;
 
 			function runCmd(cmd) {
 				var result;
@@ -998,11 +1004,15 @@
 				textArea.value = (result);
 			}
 
-			commandInput.onchange = function(e){
-				if (this.value) {
-					runCmd(this.value);
+			function execute() {
+				if (commandInput.value) {
+					history.push(commandInput.value);
+					historyPos = history.length;
+					runCmd(commandInput.value);
+					commandInput.value = '';
 				}
-			};
+			}
+			/*commandInput.onchange = execute;*/
 
 			function closeQuickConsole() {
 				myDiv.parentNode.removeChild(myDiv);
@@ -1019,15 +1029,35 @@
 			closeBlock.appendChild(closeButton);
 			innerDiv.appendChild(closeBlock);
 
+			function nullString(s) {
+				return ( s ? s : '' );
+			}
 			function checkKey(evt) {
-				if (evt.keyCode == 27) {
+				if (evt.keyCode == 13) { /* Enter */
+					execute();
+				} else if (evt.keyCode == 27) { /* Escape */
 					closeQuickConsole();
+					evt.preventDefault();
+				} else if (commandInput.value.slice(-1)==='.') { /* Period */
+					try {
+						var thing = eval(commandInput.value.slice(0,-1));
+						textArea.value = inspect(thing);
+					} catch (e) {
+						textArea.value = '' + e;
+					}
+				} else if (evt.keyCode == 38) { /* Up Arrow */
+					historyPos--;
+					commandInput.value = nullString(history[historyPos]);
+					evt.preventDefault();
+				} else if (evt.keyCode == 40) { /* Down Arrow */
+					historyPos++;
+					commandInput.value = nullString(history[historyPos]);
+					evt.preventDefault();
 				}
 			}
 
 			/* Under Chrome, Escape does not fire a keypress event, but does keyup. */
 			myDiv.onkeyup = checkKey;
-			commandInput.onkeyup = checkKey;
 
 			myStyle.setAttribute('type','text/css');
 			myStyle.innerHTML = 'div.qcons { color: white; background-color: #44aa44; position: fixed; left: 2px; right: 2px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; } .qcons_inner { position: relative; } .closeBlock { position: absolute; top: 0px; right: 0px; }';
