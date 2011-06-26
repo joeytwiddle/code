@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ## DONE: Maybe the .uc.jpp file has not change, but one of the included files HAS changed, hence a reparse IS required although it doesn't look like it.
 ##       OK for now, it will reparse the file, if ANY file ending ".jpp" in that folder is newer than it.  This still doesn't resolve #included files from *other* folders.
 
@@ -36,10 +38,10 @@ verbosely findjob ucc
 ## Argh there was a situation where I wanted .depends to act in an entirely different way.
 ## I just wanted to list there, the packages which should be present when compiling this package.
 
-function check_age_of_pakage_against_source () {
+check_age_of_pakage_against_source () {
 	PKGFILE="$1"
 	SRCPKG="$2"
-	if [[ ! -f "$PKGFILE" ]]
+	if [ ! -f "$PKGFILE" ]
 	then return 0
 	fi
 	if find "$SRCPKG/Classes" -type f -newer "$PKGFILE" | grep -v "/CVS/" | grep . >/dev/null
@@ -60,7 +62,7 @@ function check_age_of_pakage_against_source () {
 	return 1
 }
 
-function add_to_build_path () {
+add_to_build_path () {
 	EDITPACKAGES="$EDITPACKAGES $1"
 }
 
@@ -87,10 +89,10 @@ afterlast = |
 while read PKG
 do
 	cd "$TOPDIR"
-	if [[ -d "$PKG/Classes" ]]
+	if [ -d "$PKG/Classes" ]
 	then
 		## TODO: Also check if the package has .depends, and any of the dependent packages are newer.
-		# if [[ ! -f "System/$PKG.u" ]] || find "$PKG/Classes" -type f -newer "System/$PKG.u" | grep -v "/CVS/" | grep . >/dev/null
+		# if [ ! -f "System/$PKG.u" ] || find "$PKG/Classes" -type f -newer "System/$PKG.u" | grep -v "/CVS/" | grep . >/dev/null
 		if check_age_of_pakage_against_source "System/$PKG.u" "$PKG"
 		then
 
@@ -98,7 +100,7 @@ do
 
 			uncomment_editpackage "$PKG"
 
-			[[ -f "System/$PKG.u" ]] && verbosely mv "System/$PKG.u" "System/$PKG.u.last"
+			[ -f "System/$PKG.u" ] && verbosely mv "System/$PKG.u" "System/$PKG.u.last"
 
 			cd "$PKG"/Classes &&
 			find . -maxdepth 1 -type f -name "*.jpp" |
@@ -138,7 +140,7 @@ do
 	fi
 done
 
-. editpackages.ini
+. ./editpackages.ini
 for PKG in $EDITPACKAGES
 do uncomment_editpackage "$PKG"
 done
@@ -148,20 +150,21 @@ done
 
 
 
-if [ "$WINDIR" ] # cygwin
+## Workaround for Cygwin
+if [ "$WINDIR" ]
 then
 	cmd /c make
 	exit
 fi
 
+## We must remove .u files before ucc make will recompile them.
+## Strangely I think this was already done above.  Perhaps it didn't catch all however.
 # REBUILD=true
-
 cat compiling.ini |
 dos2unix |
 grep "^EditPackages=" |
 afterfirst = |
 # pipeboth |
-
 while read PKGNAME
 do
 	if [ ! -f "System/$PKGNAME.u" ]
@@ -171,12 +174,11 @@ do
 	elif [ "$REBUILD" ] || find "$PKGNAME"/Classes -maxdepth 1 -type f '(' -iname "*.uc" -or -iname "*.jpp" ')' -and -newer "System/$PKGNAME.u" | grep . >/dev/null
 	then
 		jshinfo "$PKGNAME.u needs a rebuild..."
-		# ls -l "System/$PKGNAME.u"
-		## verbosely del System/$PKGNAME.u
 		verbosely mv -f System/$PKGNAME.u System/$PKGNAME.u.last
 	fi
 done 2>&1 | grep . || jshwarn "No .u files out-of-date or missing."
 
+## Recompile!
 cd System
 verbosely wine ucc make ini=../compiling.ini
 
