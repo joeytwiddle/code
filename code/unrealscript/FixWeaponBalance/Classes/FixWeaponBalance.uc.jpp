@@ -4,6 +4,8 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 // TODO: To make them like PureStats (CTF), we should reduce minigun and pulse
 //       (a bit) for ZeroPingPlus103, or not reduce them for ZPPure7G.
 // TODO: We should also have an option to reduce zp shock primary.
+// TODO: We may be able to process damage done before armour, by giving each
+//       player a high-priority custom armour class.
 
 #define ADJUST_SNIPER_DAMAGE
 
@@ -19,6 +21,7 @@ var config bool bLiveReports;
 #ifdef ADJUST_SNIPER_DAMAGE
 var config float SniperDamageScale,SniperBoostScale;
 var config int SniperMaxDamage;
+var config bool bFixCrouchingBug;   // For ZeroPingPlus103
 #endif
 
 function PostBeginPlay() {
@@ -64,6 +67,19 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		if (bSniperShot) {
 
 			#ifdef ADJUST_SNIPER_DAMAGE
+
+				if (bFixCrouchingBug && Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
+					if (DeathMatchPlus(Level.Game).bHardcoreMode) {
+						if (ActualDamage > 67) {
+							ActualDamage = 67;
+						}
+					} else {
+						if (ActualDamage > 58) {
+							ActualDamage = 58;
+						}
+					}
+				}
+
 				// Always scale damage for sniper rifle?
 				NewDamage = ActualDamage * SniperDamageScale;
 				if (NewDamage < ActualDamage) {
@@ -71,8 +87,10 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 				}
 				ActualDamage = NewDamage;
 				Momentum = Momentum * SniperBoostScale;
-				if (ActualDamage > SniperMaxDamage)
+				if (ActualDamage > SniperMaxDamage) {
 					ActualDamage = SniperMaxDamage;
+				}
+
 			#endif
 
 		}
@@ -213,16 +231,20 @@ defaultproperties {
 	bLogging=False
 	bLiveReports=False
 	#ifdef ADJUST_SNIPER_DAMAGE
-	SniperDamageScale=0.825
+	SniperDamageScale=0.68
 	SniperBoostScale=1.0
-	SniperMaxDamage=110
+	SniperMaxDamage=102
+	bFixCrouchingBug=True
 	#endif
 }
 
 // Note that this does not affect damage to armour, only damage to health.
 // Usually a headshot does 150 damage, and a body shot does 67.
+
 // We want a headshot to do 102, and a bodyshot 52.  (scale 0.78)
-// In non-hardcore mode (Siege), this actually means bodyshot costs 45 (from 58?).
-// This is the almost the minimum that will look normal on a guy with 100 hp.
-// Or we could do headshot 110, and bodyshot 55.  (scale 0.825)
+// This is the minimum that will look normal on a guy with 100 hp and 0 armour.
+
+// In non-hardcore mode (Siege), this actually means bodyshot will cost 45 (from 58).
+
+// (For headshot 110, bodyshot 55, use scale 0.825.)
 
