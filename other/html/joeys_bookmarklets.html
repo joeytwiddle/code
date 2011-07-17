@@ -1,6 +1,6 @@
 <HTML>
 <HEAD>
-	<TITLE>Joey's Bookmarklet (Development) Page</TITLE>
+	<TITLE>Joey&apos;s Bookmarklet (Development) Page</TITLE>
 	<!-- Keep viewer safe from infinte alert trap! -->
 	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'></SCRIPT>
 	<!--
@@ -89,7 +89,7 @@
 </HEAD>
 <BODY>
 
-<H2>Joey's Bookmarklet (Dev<A class='hiddenlink' href='#dev'>elopm</A>ent) Page</H2>
+<H2>Joey&apos;s Bookmarklet (Dev<A class='hiddenlink' href='#dev'>elopm</A>ent) Page</H2>
 
 <DIV class='section' style=" margin: 0 20%; width: 60%; ">
 <H3>Introduction</H3>
@@ -135,7 +135,7 @@
 <H3>Page Bookmarklets</H3>
 <BLOCKQUOTE>
 
-	<!-- I found by setting target='_self', the URL in my browser's location bar was not changed to the script text, which looked messy. -->
+	<!-- I found by setting target='_self', the URL in my browser&apos;s location bar was not changed to the script text, which looked messy. -->
 
 	<P>
 		<LI><A href="javascript:(function(){
@@ -175,7 +175,7 @@
 		<P class='tip'>You can use this <span title="A bookmarklet is a bookmark or link with the &quot;javascript:&quot; protocol, which instead of navigating to a webpage, can be opened by the user to run some code on the currently open web-page">bookmarklet</span> on <i>any</i> web page.  Just drag or copy it into your browser&apos;s <span title="Favorites in IE, or Minitools in Konqueror">Bookmarks</span>, then run it any time when you are surfing.</P>
 		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This was my first Bookmarklet which loads an external javascript file.</LI> -->
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
-		 <LI>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it's easy to add extra tags.)</LI>
+		 <LI>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it&apos;s easy to add extra tags.)</LI>
 		 <LI class='todo'>Shouldn&apos; it be collapsing all the text after each bookmarklet on this page?  (They are in blockquotes.)  Is it missing them because they contain so little, or because we have done the parent and lost track of the child?</LI>
 		 <LI class='todo'>Bug: At the moment this tool only works well if the element we fold up has a short text-heading appearing just before it.  Not all pages are like this, so we need to adapt the algorithm to work over a wider range of pages.</LI>
 		 <!-- <LI class='todo'>Bug: This version tries to find the text node immediately before the folding block, and assume that is a label.  That works well on some pages (such as this one) but not on all - some pages have blocks without any introduction text.  But if the block does have a header, and we don&quot;t use it as the label, that looks messy.  So we need to make a confident decision about whether we found a label or not.</LI> -->
@@ -248,7 +248,7 @@
 		<LI class='todo'>Todo: Actually destroy the element!  This is more like a Zap script, setting style.display=&apos;none&apos;.</LI>
 		<LI class='todo'>Todo: Add two icons to the page, one to turn off the bookmarklet, another to undo deletes (restore deleted elements from the Trash).</LI>
 		<LI class='todo'>Todo: Add info about what was destroyed (e.g. display its XPath in the statusbar, or in Trash list).</LI>
-		<LI class='todo'>Todo: The element we want to destroy might not have any exposed surface to click on, e.g. a FORM.  Maybe we can fatten out invisible/zero-size elements.  (E.g. mark each with a '.'s and give info on mouseover?)</LI>
+		<LI class='todo'>Todo: The element we want to destroy might not have any exposed surface to click on, e.g. a FORM.  Maybe we can fatten out invisible/zero-size elements.  (E.g. mark each with a &apos;.&apos;s and give info on mouseover?)</LI>
 	</BLOCKQUOTE>
 	</P>
 
@@ -1310,7 +1310,7 @@
 		<BLOCKQUOTE>
 			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.</P>
 			<LI class='done'>This version provides a 'Togglebar' to flatten/unflatten the sidebar.</LI>
-			<LI class='todo'>It's working quite OK in Firefox, but a bit messily in Konqueror.</LI>
+			<LI class='todo'>It&apos;s working quite OK in Firefox, but a bit messily in Konqueror.</LI>
 			<LI class='todo'>The ToggleBar should change height if the user resizes the window.</LI>
 		</BLOCKQUOTE>
 	</P>
@@ -1529,7 +1529,7 @@
 
 	<P>
 		To help page investigation, colour every element (a bit like XPathGrabber does).
-		And when we mouseover an element, show which one it is in the StatusBar (e.g. show it's XPath, since colour won't be possible in the StatusBar)p.
+		And when we mouseover an element, show which one it is in the StatusBar (e.g. show it&apos;s XPath, since colour won't be possible in the StatusBar)p.
 	</P>
 
 	<P>
@@ -1562,7 +1562,7 @@
 	</P>
 
 	<P>
-		StripSearch.  Hides all elements except those containing the search text.  Ideal for tables.  OK this was implemented as Trim to Search String above, but it's NOT great for tables!
+		StripSearch.  Hides all elements except those containing the search text.  Ideal for tables.  OK this was implemented as Trim to Search String above, but it&apos;s NOT great for tables!
 	</P>
 
 	<P>BatchNuke (aka BatchSelect*-1): User is given text box to enter an XPath.  (He can get xpath hints by mouseover the document.)  As he types the XPath, elements of the page are hidden, until he finds the XPath he wants.  Then he hits enter, they are permanently hidden/destroyed, and he can enter another XPath if he wishes.</P>
@@ -1957,7 +1957,7 @@
 		<!-- "></INPUT> -->
 		<BLOCKQUOTE>
 			<P>Pops up a floating IFrame, where target pages are displayed when we hover over links on the current page.</P>
-			<LI class='todo'>Bug: When invoked on Google result pages, the IFrame's floating style does not work properly - it sits at the bottom of the page.</LI>
+			<LI class='todo'>Bug: When invoked on Google result pages, the IFrame&apos;s floating style does not work properly - it sits at the bottom of the page.</LI>
 			<LI class='todo'>Bug: It frequently covers up the links we want to hover over!</LI>
 		</BLOCKQUOTE>
 		<!--
