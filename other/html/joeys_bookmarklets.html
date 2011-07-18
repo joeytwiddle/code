@@ -1,107 +1,37 @@
 <HTML>
 <HEAD>
-	<TITLE>Joey&apos;s Bookmarklet (Development) Page</TITLE>
-	<!-- Keep viewer safe from infinte alert trap! -->
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'></SCRIPT>
-	<!--
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xmltoken.js'></SCRIPT>
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/util.js'></SCRIPT>
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/dom.js'></SCRIPT>
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xpath.js'></SCRIPT>
-	-->
 
-	<STYLE type='text/css'>
-		.todo {
-			/*font-size: -1;*/
-			color: #775522;
-		}
-		.done {
-			color: #005500;
-		}
-		.external {
-			/*color: #aa4400;*/
-			color: #999900;
-		}
-		.hiddenlink {
-			color: #000000;
-			text-decoration: none;
-			cursor: crosshair;
-		}
-		.tip {
-			background-color: #ffffdd;
-			padding: 10px;
-			border-style: solid;
-			border-width: 1px;
-			border-color: black;
-		}
-		h3 {
-			color: white;
-			/*background-color: #44bbbb;*/
-			background-color: #2222dd;
-			padding-left: 15px;
-			padding-right: 10px;
-			padding-top: 6px;
-			padding-bottom: 4px;
-			/*
-			padding-bottom: 0px;
-			*/
-			margin-top: 0px;
-		}
-		.section {
-			background-color: #ffffff;
-			padding-top: 0px;
-			padding-left: 0px;
-			padding-right: 0px;
-			padding-bottom: 10px;
-			border-style: solid;
-			border-width: 2px;
-			border-color: black;
-			/*border-style: solid;
-			border-width: medium;
-			border-color: #000000;*/
-			margin-top: 10px;
-		}
-		blockquote {
-			/* margin-left: 32px; */
-		}
-		tt {
-			font-size: 0.8em;
-			font-weight: bold;
-			margin: 0.0em 0.1em;
-			padding: 0.2em 0.75em;
-			/* color: #444400; */
-			/*
-			color: #000088;
-			background-color: #eeeeff;
-			*/
-			color: black;
-			background-color: #eeeeff;
-			color: #000044;
-			color: #444400;
-			background-color: #eeeeee;
-			border-top:    1px solid #cccccc;
-			border-left:   1px solid #cccccc;
-			border-right:  1px solid #dddddd;
-			border-bottom: 1px solid #dddddd;
-		}
-	</STYLE>
+	<TITLE>Joey&apos;s Bookmarklet (Development) Page</TITLE>
 
 </HEAD>
 <BODY>
 
 <H2>Joey&apos;s Bookmarklet (Dev<A class='hiddenlink' href='#dev'>elopm</A>ent) Page</H2>
 
-<DIV class='section' style=" margin: 0 20%; width: 60%; ">
+<DIV class='section'>
 <H3>Introduction</H3>
 <BLOCKQUOTE>
 
+	<DIV style="width:100%;">
+
+		<H4 align="center">What is a Bookmark<B>let</B>?</H4>
+
+		<P align="center">
+			A Bookmarklet is similar to a Bookmark,
+			<br/>but instead of <I style=" color: #0000cc; ">sending you to a different page</I>,
+			<br/>it will <I style=" color: #008800; ">perform some useful action(s)</I>
+			<br/>on whatever web page you are currently browsing,
+			<br/>using your browser's JavaScript implementation and the DOM.
+		</P>
+
+	</DIV
+
 	<DIV>
 
-		<H4>What is a Bookmark-let?</H4>
+		<LI>You can click on the bookmarklets below to try them out.  (Reload the page or navigate back if you don&apos;t like the results!)</LI>
+		<LI>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</LI>
 
-		<P>Bookmarklets are a bit like Bookmarks, but instead of <I>sending you</I> to a web page, they perform <I>useful actions</I> <B>on whatever web page you are currently viewing</B>.</P>
-		<P>Click on the bookmarklets below to try them out.  (Reload the page or navigate back if you don&apos;t like the results!)</P>
-		<P>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</P>
+		<P>Bookmarklets begin with with the <TT>javascript:</TT> namespace, instead of the usual <TT>http://</TT> or <TT>https://</TT> or <TT>ftp://</TT> URL protocols.  The void operator or a function wrapper is commonly used to prevent the browser from operating on the return value.<P/>
 		<!-- <P class='external'>Bookmarklets marked in yellow do not contain all the code themselves, but load an external javascript file from hwi.ath.cx.  You rarely need to upgrade these bookmarklets because they are always loading the latest version.  But if I develop the script and break it, your bookmarklet may stop working.</P> -->
 
 		<H4>This Page</H4>
@@ -110,7 +40,15 @@
 			This page contains bookmarklets which I have developed, and is sometimes in an unstable state.
 			<!-- Maybe misleading since some of the bookmarklets source external scripts. -->
 			<br/>
-			It was last updated <TT><SCRIPT type='text/javascript'>document.write(document.lastModified);</SCRIPT></TT>.
+			It was last updated <SCRIPT type='text/javascript'>
+				(function(){
+					var millis = new Date().getTime() - new Date(document.lastModified).getTime();
+					var days = millis / 1000 / 60 / 60 / 24;
+					/*var daysString = (""+days).substring(0,6);*/
+					var daysString = ""+(days|0);
+					document.write(daysString+" days ago");
+				})();
+			</SCRIPT>.
 			<br/>
 			Stable versions may be found in <A href="http://hwi.ath.cx/cgi-bin/cvsweb/other/html/joeys_bookmarklets.html">CV</A><A href="http://hwi.ath.cx/cgi-bin/viewcvs.cgi/other/html/joeys_bookmarklets.html">S</A>.
 		</P>
@@ -131,12 +69,114 @@
 </BLOCKQUOTE>
 </DIV>
 
+<STYLE type='text/css'>
+	#intro_section {
+		margin: 0 10%;
+		width: 80%;
+	}
+	i {
+		font-weight: bold;
+		font-weight: normal;
+	}
+	/*font-size: -1;*/
+	.todo {
+		color: #775522;
+	}
+	.note {
+		color: #775522;
+	}
+	.done {
+		color: #005500;
+	}
+	.external {
+		/*color: #aa4400;*/
+		color: #999900;
+	}
+	.hiddenlink {
+		color: #000000;
+		text-decoration: none;
+		cursor: crosshair;
+	}
+	.tip {
+		background-color: #ffffdd;
+		margin: 1.0em 10%;
+		padding: 20px 20px;
+		border-style: solid;
+		border-width: 1px;
+		border-color: black;
+	}
+	h3 {
+		color: white;
+		/*background-color: #44bbbb;*/
+		background-color: #2222dd;
+		padding-left: 15px;
+		padding-right: 10px;
+		padding-top: 6px;
+		padding-bottom: 4px;
+		/*
+		padding-bottom: 0px;
+		*/
+		margin-top: 0px;
+	}
+	.section {
+		background-color: #ffffff;
+		padding-top: 0px;
+		padding-left: 0px;
+		padding-right: 0px;
+		padding-bottom: 10px;
+		border-style: solid;
+		border-width: 2px;
+		border-color: black;
+		/*border-style: solid;
+		border-width: medium;
+		border-color: #000000;*/
+		margin-top: 10px;
+	}
+	blockquote {
+		/* margin-left: 32px; */
+	}
+	tt {
+		font-size: 0.8em;
+		font-weight: bold;
+		margin: 0.0em 0.1em;
+		padding: 0.2em 0.75em;
+		background-color: #eeeeee;
+		color: #000088;
+		/* Dark Golden */
+		/* color: #444400; */
+		/*
+		background-color: #eeeeff;
+		border-top:    1px solid #cccccc;
+		border-left:   1px solid #cccccc;
+		border-right:  1px solid #dddddd;
+		border-bottom: 1px solid #dddddd;
+		*/
+	}
+</STYLE>
+
+<!--
+
+A script to keep pre-2008 browsers safe from the infinte alert vulnerability.
+This could be used for the ultimate Rick Roll, playing Flash in the background but denying any user interaction with the browser, requiring a restart.
+
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'></SCRIPT>
+
+Other useful scripts, shims, fallbacks.
+
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xmltoken.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/util.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/dom.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xpath.js'></SCRIPT>
+
+-->
+
 <DIV class='section'>
 <H3>Page Bookmarklets</H3>
 <BLOCKQUOTE>
 
 	<!-- I found by setting target='_self', the URL in my browser&apos;s location bar was not changed to the script text, which looked messy. -->
 
+	<P class='tip'>Note: You can use this <span title="A bookmarklet is a bookmark or link with the &quot;javascript:&quot; protocol, which instead of navigating to a webpage, can be opened by the user to run some code on the currently open web-page">bookmarklet</span> on <i>any</i> web page.  Just drag or copy it into your browser&apos;s <span title="Favorites in IE, or Minitools in Konqueror">Bookmarks</span>, then run it any time when you are surfing.</P>
 	<P>
 		<LI><A href="javascript:(function(){
 			var cnt = 0;
@@ -172,7 +212,6 @@
 	<!-- Nasty - At one point, FF was reloading all the resources except mosifyDOM.js, which is the one I was changing!  I cleared my cache and it stopped doing it after that. -->
 	<BLOCKQUOTE>
 		<P>Makes parts of the page collapsable and expandable, for easier navigation through large (tree-structured) pages.</P>
-		<P class='tip'>You can use this <span title="A bookmarklet is a bookmark or link with the &quot;javascript:&quot; protocol, which instead of navigating to a webpage, can be opened by the user to run some code on the currently open web-page">bookmarklet</span> on <i>any</i> web page.  Just drag or copy it into your browser&apos;s <span title="Favorites in IE, or Minitools in Konqueror">Bookmarks</span>, then run it any time when you are surfing.</P>
 		<!-- <LI title="I had to fiddle the original solution, to get one that also worked with Konqueror.">This was my first Bookmarklet which loads an external javascript file.</LI> -->
 		<!-- <LI class='done'>Fixed: If the item we decide to use as the handle is a link, clicking on it clicks the link, as well as collapsing/expanding the child block, which is undesirable.  The fix is that the user can open/close those folds now by hovering over the handle. Todo: Avoid the real cause of the problem, by making sure the fold handle image sits outside the link.</LI> -->
 		 <LI>Currently collapses BLOCKQUOTEs, ULs and TABLEs.  Are there other tags it could collapse?  (Check the code, it&apos;s easy to add extra tags.)</LI>
@@ -599,8 +638,8 @@
 			}
 		})();">Go Back</A></LI>
 		<BLOCKQUOTE>
-			<P>Magic Back button.  If you have opened a link in a new tab or window, the tab will not have a Back button.  But document.referrer should be set, so you can use this button just once, to go 'back' to the page which we were linked from.</P>
-			<LI class='todo'>This actually takes us forwards, which is why it only works once.  To avoid confusion, we could use document.location.replace() which would prevent creating confusing history.</LI>
+			<P>Magic Back button.  If you have opened a link in a new tab or window, the tab will not have a Back button, but sometimes the document.referrer is set to the page you clicked from, so you can use this button just once, to go 'back' to the page which we were linked from.</P>
+			<LI class='note'>Actually causes a forward navigation action.  Works only once.  To avoid confusion, we could use document.location.replace() which would prevent creating confusing history.</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -962,10 +1001,12 @@
 	<P>
 		<LI>Quick Javascript <A target="_self" href="javascript:(function(){
 
-			/* It appears that evals used later can see this QuickConsole var,
-			* although it is not in the global scope (window).  Presumably the
-			* eval context checks this function's scope before the actual this!
+			/*
+			* Any evals we perform in the console, run under this scope.
+			* Therefore we do not need to place the functions below in window.
+			* In fact we should probably sandbox the eval to see only what it needs!
 			*/
+
 			var QuickConsole = ({});
 
 			/* I'm not convinced we should always want to create this console intercept. */
@@ -976,7 +1017,7 @@
 				if (obj == null) {
 					return ''+obj;
 				}
-				if (typeof obj == 'string') {
+				if (typeof obj === 'string') {
 					return '&quot;'+obj+'&quot;';
 				}
 				if (obj instanceof Array) {
@@ -985,19 +1026,29 @@
 				return '' + obj;
 			};
 
-			window.inspect = function inspect() {
+			window.prettyString = function(str) {
+				str = ''+str;
+				str = str.replace(/\n/g,'\\n');
+				return str;
+			};
+
+			window.inspect = function() {
 				var report = '';
 				for (var i=0;i<arguments.length;i++) {
 					var obj = arguments[i];
 					report += (typeof obj)+': &quot;'+obj+'&quot;\n';
 					report += 'Properties:\n';
 					for (var prop in obj) {
-						/* report += prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
 						if (obj.length && prop.match(/^[0-9]+$/)) { continue; }
-						report += '  ' + typeof obj[prop] + ' ' + prop + ': ' + escape(obj[prop]).substring(0,40) + ',\n';
+						try {
+							/* report += prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
+							report += '  ' + typeof obj[prop] + ' ' + prop + ': ' + prettyString(obj[prop]).substring(0,40) + ',\n';
+						} catch (e) {
+							report += '  Error on '+prop+': '+e+'\n';
+						}
 					}
 					report = report.slice(0,-2) + '\n';
-					/* List-like? */
+					/* Pretty print Arrays and other list-like objects, except for strings */
 					if (obj.length && typeof obj !== 'string') {
 						for (var i=0;i<obj.length;i++) {
 							report += i + ') ' + oneLiner(obj[i]) + '\n';
