@@ -42,7 +42,7 @@ EndCom = <stuff/"*"> "*/"
 
 # Although the repeated RHS are unaesthetic,
 # they are OK when parsing, since the RHS
-# if only reached when the LHS is satisfied.
+# is only reached when the LHS is satisfied.
 HashCom = "#include " HashIncludeLib OptSpc NL
 				| "#include " HashIncludeFile OptSpc NL
 				| "#def" <more/"\n"> NL
