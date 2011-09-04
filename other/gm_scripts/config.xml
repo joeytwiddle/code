@@ -2,7 +2,7 @@
 	<Script filename="first_gm_script.user.js" name="First GM Script" namespace="Timer" description="" version="" enabled="false" basedir="first_gm_script" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2010.10.06" enabled="false" basedir="google_preview_pane" modified="1307366072000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2010.10.06" enabled="true" basedir="google_preview_pane" modified="1309106090000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://www.google.*/*q=*</Include>
 		<Include>http://google.*/*q=*</Include>
 		<Exclude>http://www.google.*/images*</Exclude>
@@ -12,7 +12,7 @@
 		<Include>http://www.google.*/search?*q=*</Include>
 		<Include>http://www.google.*/*</Include>
 	</Script>
-	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" version="0.1" enabled="true" basedir="delicious_search_results" modified="1306782733000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="delicious_search_results.user.js" name="Delicious Search Results on Google" namespace="gaillard" description="Shows results from Delicious on Google search pages" version="0.1" enabled="true" basedir="delicious_search_results" modified="1310521909000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://www.google.*/search?*q=*</Include>
 		<Include>http://www.google.*/*</Include>
 	</Script>
@@ -182,10 +182,6 @@
 		<Include>http://forums.about.com/n/pfx/forum.aspx?webtag=*&amp;nav=search* </Include>
 		<Include>http://forums.about.com/*/messages?msg=*</Include>
 	</Script>
-	<Script filename="auto_highlight_text_on_a.user.js" name="Auto Highlight Search Terms on Result Pages" namespace="search" description="Highlights the words you used in your search on the search result page and on the page itself, by checking for CGI parameters in the Referrer." version="" enabled="true" basedir="auto_highlight_text_on_a" modified="1302709647000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
-		<Include>*</Include>
-		<Exclude>http://*.google.*/*</Exclude>
-	</Script>
 	<Script filename="torrentz_imdb_rating.user.js" name="Torrentz IMDB Rating" namespace="http://userscripts.org/users/68426" description="Adds  IMDB ratings to movie torrents on torrentz.com" version="" enabled="true" basedir="torrentz_imdb_rating" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://www.torrentz.com/*</Include>
 	</Script>
@@ -211,7 +207,7 @@
 	<Script filename="custom_hyperlink_visited.user.js" name="Custom Hyperlink Visited Color (Global)" namespace="http://userstyles.org" description="Hyperlink Visited Styling for ALL WebPages.  This style improves page navigation and element focus, for pages without their own form of displaying the pages you have already visited" version="" enabled="false" basedir="custom_hyperlink_visited" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="hover_preview.user.js" name="Hover Preview" namespace="noggieb" description="Shows a tooltip when you hover over links, containing the target page!" version="" enabled="false" basedir="hover_preview" modified="1292357748000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="hover_preview.user.js" name="Hover Preview" namespace="noggieb" description="Shows a tooltip when you hover over links, containing the target page!" version="" enabled="false" basedir="hover_preview" modified="1307725552000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
 	<Script filename="track_history.user.js" name="track_history" namespace="http://userscripts.org/users/89794   (joeytwiddle)" description="Presents a list of the group of links including the one that took you to the current page.  Allows you to go to a neighbouring link without having to go Back.  THIS IS BETA PREVIEW OF THE FINAL SCRIPT.  I recommend you grab the Userscripts Updater, so that you know when I release the 1.0 version." version="" enabled="false" basedir="track_history" modified="1291785139000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
@@ -318,7 +314,7 @@
 		<Include>http://en.wikipedia.org/*</Include>
 		<Require filename="jquery.js"/>
 	</Script>
-	<Script filename="wikipedia_inline_article.user.js" name="Wikipedia Inline Article Viewer" namespace="http://projects.apathyant.com/wikipediainline/" description="Adds an icon after internal article links on wikipedia pages which, when clicked, opens the article inline in a dhtml frame" version="" enabled="true" basedir="wikipedia_inline_article" modified="1294175215000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="wikipedia_inline_article.user.js" name="Wikipedia Inline Article Viewer" namespace="http://projects.apathyant.com/wikipediainline/" description="Adds an icon after internal article links on wikipedia pages which, when clicked, opens the article inline in a dhtml frame" version="" enabled="false" basedir="wikipedia_inline_article" modified="1294175215000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://wikipedia.tld/*</Include>
 		<Include>http://*.wikipedia.tld/*</Include>
 	</Script>
@@ -1012,7 +1008,7 @@
 		<Include>*</Include>
 		<Exclude>http://*youtube.com/watch?v=*</Exclude>
 	</Script>
-	<Script filename="wikimedia.user.js" name="Wikimedia+" namespace="" description="Add History box at wikimedia's leftmost column" version="" enabled="true" basedir="wikimedia" modified="1299285562000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="wikimedia.user.js" name="Wikimedia+" namespace="" description="Add History box at wikimedia's leftmost column" version="" enabled="true" basedir="wikimedia" modified="1313070814000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*.wikipedia.org/*</Include>
 		<Include>http://*.wikimedia.org/wiki/*</Include>
 		<Include>http://ssdl-wiki.cs.technion.ac.il/wiki/*</Include>
@@ -1059,17 +1055,18 @@
 		<Include>http://www.bbc.co.uk/*/aod.shtml</Include>
 		<Include>http://www.bbc.co.uk/*/aod.shtml*</Include>
 	</Script>
-	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="true" basedir="make_bookmarklet_from_us" modified="1302382067000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="true" basedir="make_bookmarklet_from_us" modified="1310807875000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://hwi.ath.cx/*/gm_scripts/*</Include>
 		<Include>http://hwi.ath.cx/*/userscripts/*</Include>
 		<Include>http://*userscripts.org/*</Include>
 		<Exclude>http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html</Exclude>
 	</Script>
-	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" basedir="wikiindent" modified="1307565552000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" basedir="wikiindent" modified="1314831349000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*wiki*</Include>
 		<Include>http://www.buzztard.com/*</Include>
 		<Include>http://encyclopediadramatica.com/*</Include>
 		<Include>http://www.wormus.com/leakytap/*</Include>
+		<Include>http://theinfosphere.org/*</Include>
 		<Require filename="jquery.js"/>
 	</Script>
 	<Script filename="no_iframes.user.js" name="No IFrames" namespace="...." description="" version="0.0.1" enabled="false" basedir="no_iframes" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
@@ -1136,7 +1133,7 @@
 		<Exclude>http://demoscene.tv/*</Exclude>
 		<Exclude>http://*.other.sites/where/we/want/to/leave/the/page/running</Exclude>
 	</Script>
-	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="false" basedir="delicious_link_tooltop" modified="1303058669000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="false" basedir="delicious_link_tooltop" modified="1313070169000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 		<Exclude>http://facebook.com/*</Exclude>
 		<Exclude>https://facebook.com/*</Exclude>
@@ -1188,14 +1185,14 @@
 	<Script filename="minibrowser.user.js" name="MiniBrowser" namespace="MB" description="" version="" enabled="false" basedir="minibrowser" modified="1288698588000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="bookmarklets_to_user_scr.user.js" name="Bookmarklets to User Scripts" namespace="http://www.squarefree.com/userscripts" description="Lets you install any bookmarklet as a user script." version="" enabled="true" basedir="bookmarklets_to_user_scr" modified="1299345213000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="bookmarklets_to_user_scr.user.js" name="Bookmarklets to User Scripts" namespace="http://www.squarefree.com/userscripts" description="Lets you install any bookmarklet as a user script." version="" enabled="true" basedir="bookmarklets_to_user_scr" modified="1310807847000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
 	<Script filename="linterna_mgica.user.js" name="Linterna Mágica" namespace="Linterna Mágica" description="Watch video on the web in a brand new way: You don't need a glint, the magic lantern is ignited!" version="" enabled="false" basedir="linterna_mgica" modified="1288953667000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="fix_width.user.js" name="Fix_Width" namespace="FW" description="" version="" enabled="true" basedir="fix_width" modified="1289664111000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
-		<Include>http://*/*</Include>
+	<Script filename="fix_width.user.js" name="Fix_Width" namespace="FW" description="..." version="" enabled="true" basedir="fix_width" modified="1308072585000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>http://*/</Include>
 	</Script>
 	<Script filename="event_observer.user.js" name="Event Observer" namespace="EO" description="" version="" enabled="false" basedir="event_observer" modified="1289841314000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*/*</Include>
@@ -1204,7 +1201,7 @@
 		<Include>http://*.wikipedia.org/wiki/Category:*</Include>
 		<Include>http://*wiki*Category*</Include>
 	</Script>
-	<Script filename="storage_viewer.user.js" name="Storage Viewer" namespace="http://userscripts.org/scripts/show/62673" description="Check the use of new kind of cookies: sessionStorage, localStorage, globalStorage and databaseStorage." version="0.13b" enabled="true" basedir="storage_viewer" modified="1306886976000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="storage_viewer.user.js" name="Storage Viewer" namespace="http://userscripts.org/scripts/show/62673" description="Check the use of new kind of cookies: sessionStorage, localStorage, globalStorage and databaseStorage." version="0.13b" enabled="false" basedir="storage_viewer" modified="1306886976000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*</Include>
 		<Include>https://*</Include>
 		<Unwrap/>
@@ -1267,23 +1264,49 @@
 		<Include>http://youtube.com/*</Include>
 		<Include>http://*.youtube.com/*</Include>
 	</Script>
-	<Script filename="fastjslogger.user.js" name="FastJSLogger" namespace="FastJSLogger" description="Attempts to redirect console.log to a div floating on the page." version="" enabled="false" basedir="fastjslogger" modified="1307188023000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="fastjslogger.user.js" name="FastJSLogger" namespace="FastJSLogger" description="Attempts to redirect console.log to a div floating on the page." version="" enabled="false" basedir="fastjslogger" modified="1314236473000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="fallbackgmapi.user.js" name="FallbackGMAPI" namespace="FallbackGMAPI" description="Default functions for GM_ API library for wider browser compatibility and execution of userscripts from bookmarklets." version="" enabled="true" basedir="fallbackgmapi" modified="1307204197000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="fallbackgmapi.user.js" name="FallbackGMAPI" namespace="FallbackGMAPI" description="Default functions for GM_ API library for wider browser compatibility and execution of userscripts from bookmarklets." version="" enabled="true" basedir="fallbackgmapi" modified="1310806317000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://nowhere.example.com/@require_me_to_make_your_userscript_compatible_in_many_browsers</Include>
 		<Exclude>*</Exclude>
 	</Script>
-	<Script filename="one_click_userscripts.user.js" name="One Click Userscripts" namespace="OCU" description="Don't use Greasemonkey to load your userscripts, use this lighter interface instead!  Also works as a bookmarklet." version="" enabled="false" basedir="one_click_userscripts" modified="1305916299000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="one_click_userscripts.user.js" name="One Click Userscripts" namespace="OCU" description="Don't use Greasemonkey to load your userscripts, use this lighter interface instead!  Also works as a bookmarklet." version="" enabled="false" basedir="one_click_userscripts" modified="1313069952000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>*</Include>
 	</Script>
-	<Script filename="urls_need_titles.user.js" name="URLs Need Titles" namespace="UNT" description="When you paste a URL to a friend, it's better it contain the title of the page.  This script adds these missing titles for common websites using # part of URL." version="" enabled="true" basedir="urls_need_titles" modified="1307580114000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+	<Script filename="urls_need_titles.user.js" name="URLs Need Titles" namespace="UNT" description="When you paste a URL to a friend, it's better it contain the title of the page.  This script adds these missing titles for common websites using # part of URL." version="" enabled="true" basedir="urls_need_titles" modified="1309578745000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
 		<Include>http://*/*</Include>
 		<Exclude>https://*/*</Exclude>
 	</Script>
-	<Script filename="freebase_boyfriend.user.js" name="Freebase boyfriend" namespace="http://spencerwaterbed.com/soft/bookmarklet" description="query freebase in natural language by simply typing, from any website" version="" enabled="true" basedir="freebase_boyfriend" modified="1307579452000" dependhash="713a4214971a64291d7329081e4dc4dc8b1dd617" installurl="http://userscripts.org/scripts/source/89265.user.js">
+	<Script filename="freebase_boyfriend.user.js" name="Freebase boyfriend" namespace="http://spencerwaterbed.com/soft/bookmarklet" description="query freebase in natural language by simply typing, from any website" version="" enabled="false" basedir="freebase_boyfriend" modified="1307579452000" dependhash="713a4214971a64291d7329081e4dc4dc8b1dd617" installurl="http://userscripts.org/scripts/source/89265.user.js">
 		<Include>*</Include>
 		<Require filename="jquerymin.js"/>
 		<Require filename="gm_jq_xhr.js"/>
+	</Script>
+	<Script filename="auto_scroll_mouse.user.js" name="Auto Scroll Mouse" namespace="http://www.marcbelmont.com" description="Scrolls the page when you move the mouse up and down" version="" enabled="true" basedir="auto_scroll_mouse" modified="1309818822000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Mouse.user.js">
+		<Include>http://*</Include>
+	</Script>
+	<Script filename="auto_scroll_keys.user.js" name="Auto scroll keys" namespace="http://userscripts.org/users/44573" description="Auto scroll page on Ctrl+Down. Escape to stop." version="" enabled="true" basedir="auto_scroll_keys" modified="1307975997000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js">
+		<Include>*</Include>
+	</Script>
+	<Script filename="tocmonkey.user.js" name="TOCMonkey" namespace="http://hackadelic.com" description="Adds a TOC to a viewed HTML page" version="1.0" enabled="false" basedir="tocmonkey" modified="1310812569000" dependhash="e8c3db9bef11e9af828798171a532a25173457bc" installurl="file:///mnt/hwibot/tmp/tocmonkey.user.js">
+		<Include>*</Include>
+		<Exclude>http://*.google.*</Exclude>
+		<Exclude>http://*.yahoo.*</Exclude>
+		<Exclude>http://*.wikipedia.*</Exclude>
+		<Require filename="jquerymin.js"/>
+	</Script>
+	<Script filename="table_of_contents_everyw.user.js" name="Table of Contents Everywhere" namespace="TOCE" description="On pages which do not have a Table of Contents, but should do, create one!" version="" enabled="true" basedir="table_of_contents_everyw" modified="1315017560000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>http://*/*</Include>
+	</Script>
+	<Script filename="inline_preview.user.js" name="Inline Preview" namespace="IP" description="View links inline (without leaving the current page) by clicking the preview buttons beside them." version="" enabled="true" basedir="inline_preview" modified="1315095085000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>*</Include>
+		<Exclude>https://*</Exclude>
+	</Script>
+	<Script filename="visuallinks.user.js" name="VisualLinks" namespace="VL" description="Hover on a link to get: thumbnails of the page's images." version="" enabled="true" basedir="visuallinks" modified="1315021331000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>http://*/*</Include>
+	</Script>
+	<Script filename="webpage_playlist.user.js" name="WebPage Playlist" namespace="WPP" description="Allows you to add links to a playlist, then navigate through your playlist.  Useful it you want to look at a set of pages without using multiple tabs." version="" enabled="true" basedir="webpage_playlist" modified="1315069035000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709">
+		<Include>http://*/*</Include>
 	</Script>
 </UserScriptConfig>
