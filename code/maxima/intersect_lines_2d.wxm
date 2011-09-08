@@ -1,0 +1,136 @@
+/* [wxMaxima batch file version 1] [ DO NOT EDIT BY HAND! ]*/
+/* [ Created with wxMaxima version 0.8.7 ] */
+
+/* [wxMaxima: input   start ] */
+/* Two lines parameterised by t and u */
+f1(t):=[Ax,Ay]+t*[Ex,Ey];
+f2(u):=[Bx,Cy]+u*[Fx,Fy];
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* Does not work */
+solve([f1(t)=f2(u)],[t,u]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* We must decompose the coordinates */
+x1(t):=f1(t)[1];
+y1(t):=f1(t)[2];
+x2(u):=f2(u)[1];
+y2(u):=f2(u)[2];
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* And now it works! */
+params: solve([x1(t)=x2(u),y1(t)=y2(u)],[t,u]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+first(first(params));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+intersectionpoint: subst(%,f1(t));
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* Does it really?  Maths is flipping awesome. */
+/* I think I got something like that on paper, but with everything on top. */;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* Alternatively */
+y(x) := c + m*x;
+solve(y(x) = 20,x);
+intersection: y(x) = 20;
+solve(intersection, x);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+findIntersectionOfTwoLines(startA,endA,startB,endB) :=
+    block( [
+        Ax: startA[0],
+        Ay: startA[1],
+        Bx: endA[0],
+        By: endA[1],
+        Cx: startB[0],
+        Cy: startB[1],
+        Dx: endB[0],
+        Dy: endB[1]
+    ],
+        /* ... */
+        Ax + Bx
+    )$
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+findIntersectionOfTwoLines( [0,0],[1,0], [0,0],[0,1] );
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+debugmode(false);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+startA: [-4,12]; endA: [6,0];
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+startB: [0,0]; endB: [12,12];
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+pointOnA(t) := startA + (endA-startA)*t;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+pointOnB(v) := startB + (endB-startB)*u;
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+/* magnitude(v) := sqrt( first(v)*first(v) + second(v)*second(v) ); */
+magnitude(v) := sqrt( v[1]*v[1] + v[2]*v[2] );
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+dist(a,b) := magnitude(b-a);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+dist([0,0],[3,4]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+solve( dist(pointOnA(t), pointOnB(u)) = 0 , t);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+subst( first(%), pointOnA(t) );
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+solve( pointOnA(t) = pointOnB(u), [t,u]);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+eq: pointOnA(t) = pointOnB(u);
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+eq[0];
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+eq1: first(eq)[0] = second(eq)[0];
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+eq2: first(eq)[1] = second(eq)[1];
+/* [wxMaxima: input   end   ] */
+
+/* [wxMaxima: input   start ] */
+solve( [eq1, eq2] , [t,u] );
+/* [wxMaxima: input   end   ] */
+
+/* Maxima can't load/batch files which end with a comment! */
+"Created with wxMaxima"$
