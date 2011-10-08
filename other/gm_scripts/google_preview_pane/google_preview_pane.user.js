@@ -341,8 +341,9 @@ function initPreview() {
 		}
 
 		// If user is hovering over startNode, which parent block should we highlight?
-		// This could be re-written (to work better with Delicious Results for example)
+		// This could be re-written (to work better with Delicious Search Results for example)
 		function getContainer(startNode) {
+
 			/*
 			// GM_log("Got startNode = "+startNode);
 			var node = startNode;
@@ -391,8 +392,14 @@ function initPreview() {
 			// Don't highlight the whole document, but highlight the link if we got one.
 			return link;
 			*/
+
+			// CONSIDER: Approach to finding coverage container of a link
+			// If the link is some type of heading (h1,h2,h3,...) then we can find the eldest parent who does not have more headings in it.
+
 			//// New Implementation:
-			var link = ( startNode.tagName == "A" ? startNode : getAncestorByTagName(startNode,'A') );
+			var link = startNode;
+			if (link.tagName != "A")
+				link = getAncestorByTagName(link,'A');
 			if (!link) {
 				// If we are not over a link, ascend to the parent LI block, and select that.
 				var li = getAncestorByTagName(startNode.firstChild,"LI");
@@ -430,6 +437,7 @@ function initPreview() {
 			}
 			return startNode;
 			// return null;
+
 		}
 
 		// If we are highlighting container, then what link does this relate to?
