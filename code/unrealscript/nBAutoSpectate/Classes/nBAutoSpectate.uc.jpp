@@ -25,6 +25,10 @@
 // If we try to observe another player while our ViewClass is on someone else,
 // we will lose the target very quickly.
 
+// OR TODO: If we have moved to spectate a player who is not the focus player,
+// then we should also try to move the actual camera close to him.  This should
+// ensure that the server will continue to send data for that player.
+
 // Auto-set 'ghost' so we can move outside the map and with high FOV get detailed distance-shots :)
 // May avoid us getting snagged on corners during slow-follow mode.
 
@@ -2363,7 +2367,7 @@ defaultproperties {
 
 	bCameraPanning=True
 	bSwitchCamera=False
-	CameraSwitchSeconds=6
+	CameraSwitchSeconds=8
 	bStickWithFC=True
 	bDoViewClass=True
 

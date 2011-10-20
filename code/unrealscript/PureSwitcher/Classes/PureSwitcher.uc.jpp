@@ -15,6 +15,10 @@
 //       and EvilBedrooms.
 //       #define CHECK_MAP_NAMES
 
+// BUGS:
+// <CruSh`> 1) some standart settings of the server get lost (mutators etc)
+// <CruSh`> 2) server gets laggy   <-- This is likely from CHECK_ACTORS.  Set IncompatibleActors="" to reduce lag.
+
 // mutate PureOn | mutate pureoff ?  Is there any point when UTPure already
 // provides mutate EnablePure and DisablePure?
 
@@ -113,14 +117,16 @@ function EnableUTPure(optional String Reason) {
 }
 
 function bool CheckReplacement(Actor Other, out byte bSuperRelevant) {
-	if (InStr(String(Other),"UTPure")>=0) {
-		Log("PureSwitcher.CheckReplacement(): Caught "$Other);
-	}
+	// if (InStr(String(Other),"UTPure")>=0) {
+		// Log("PureSwitcher.CheckReplacement(): Caught "$Other);
+	// }
 	#ifdef CHECK_ACTORS
-	if (InStr(Caps(IncompatibleActors),Caps(Other.class.name)) >= 0) {
-		if (bPureEnabled) {
-			BroadcastMessage("UTPure was enabled but we have loaded "$Other.class.name$" - expect problems!");
-			DisableUTPure("Incompatible actor "$Other$" (class "$Other.class.name$")");
+	if (IncompatibleActors != "") {
+		if (InStr(Caps(IncompatibleActors),Caps(Other.class.name)) >= 0) {
+			if (bPureEnabled) {
+				BroadcastMessage("UTPure was enabled but we have loaded "$Other.class.name$" - expect problems!");
+				DisableUTPure("Incompatible actor "$Other$" (class "$Other.class.name$")");
+			}
 		}
 	}
 	#endif

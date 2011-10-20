@@ -19,7 +19,7 @@ var() config int JumpType; // This is the restriction on jumping
 var() config int JumpStyle; // This is the type of jump that the player performs
 var() config float MaxWallDist;
 var() config float NormalBounce;
-var() config bool bKillInwardVelocity;
+var() config bool bKillInwardVelocity,bCapUpwardVelocity;
 var() config float RechargeRate; // This allows your boots to recharge slowly without walking if you don't use them for some time, for example, when using the grappling hook.
 var() config bool bRestrictFC;
 
@@ -212,14 +212,16 @@ exec function WallJump ()
 			// P.Velocity.X = 0;
 			// P.Velocity.Y = 0;
 
-			// IMO we should cancel the component of velocity parallel to the normal.
-			// Or, "kill inward velocity"
-
+			// We cancel the component of velocity parallel to the normal, aka
 			// Kill any inward velocity
 			if (bKillInwardVelocity) {
 				if (P.Velocity Dot -WallNormal > 0) {
 					DeltaV = DeltaV + WallNormal * (P.Velocity Dot -WallNormal);
 				}
+			}
+
+			if (bCapUpwardVelocity) {
+				DeltaV.Z = 0;
 			}
 
 			P.Velocity = P.Velocity + DeltaV;
@@ -242,12 +244,17 @@ function Actor FindClosestWall(PlayerPawn P, out vector BestHitLocation, out vec
 	local Actor BestA,A;
 	local vector HitLocation,HitNormal;
 	local vector Direction;
-	ClosestSoFar = 1000000.00;
-	// #define distance VSize(P.Location - HitLocation)
-	//// But actually the closest distance to this polygon is:
-	#define distance ((P.Location - HitLocation) Dot HitNormal)
+
+	#define distance VSize(P.Location - HitLocation)
+	//// But actually the closest distance to this plane is:
+	// #define distance ((P.Location - HitLocation) Dot HitNormal)
 	//// assuming that the polygon does actually reach this far.
-	for (angle=0;angle<2.0*PI;angle+=PI/8.0) {
+	/* However that solution is bad, consider the counter-example: when rolling
+	 * around the outside of a 90degree corner, we would flip solution: (0deg)
+	 * wall#1, (1-44deg) wall#2, (46-89deg) wall#1, (90deg) wall#2 */
+
+	ClosestSoFar = 1000000.00;
+	for (angle=0;angle<2.0*PI;angle+=PI/16.0) {
 		// Direction = vect( MaxWallDist*sin(angle), MaxWallDist*cos(angle), 0.0 );
 		// Direction = vector( rotator(angle,0,0) );
 		Direction.X = MaxWallDist*1.5*sin(angle);
@@ -331,6 +338,7 @@ defaultproperties {
 		NormalBounce=0.63121
 		// NormalBounce=0.4   // You can easily reach back to wall to repeat walljump up straight walls.
 		bKillInwardVelocity=True
+		bCapUpwardVelocity=True
 
 		bRestrictFC=False
 		RechargeRate=5.0

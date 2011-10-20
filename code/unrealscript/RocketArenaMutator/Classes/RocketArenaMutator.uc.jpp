@@ -26,7 +26,7 @@ and bio allow for a selected charge.
 === ARMOR_HACK BUGS ===
 
 If you are wearing a shieldbelt or MetalSuit but by boosting or falling you
-destroy it (or knock it down to normal armor), then it will be restored as
+destroy it (or knock it down to normal armor), then it may be restored as
 normal armor.
 
 If one of your armors has a stronger charge, after boosting its charge may be
@@ -113,6 +113,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		// protection!  Why?  Well some maps you can fall off the edge, and the
 		// author expects you to die from it.  If we don't kill the player, then
 		// he will just sit alone at the bottom of the chasm!
+		// Note: This doesn't actively kill the player, it just causes them to
+		// receive the damage they would normal receive.
 		if (ActualDamage < FallLimit) {
 			ActualDamage = 0;
 			#ifdef ARMOR_HACK

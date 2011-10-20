@@ -128,7 +128,7 @@ exec function DoubleJump ()
   // normalJumpBoots = P.FindInventory(class'JumpBoots');
   #endif
 
-  if ( P.Physics == 2 )
+  if (p.Physics == PHYS_Falling)
   {
     if ( nofJumps < MaxJumps )
     {
@@ -151,6 +151,11 @@ exec function DoubleJump ()
         // p.ClientMessage("Disallowed DoubleJump because you are mid-dodge.");
         return;
       }
+
+      // OK we will do a jump
+
+      nofJumps++;
+      LastJumpTime = Level.TimeSeconds;
 
       switch (JumpStyle) {
         case 0: // Set standard upward velocity
@@ -179,11 +184,6 @@ exec function DoubleJump ()
         break;
       }
 
-      // OK we will do a jump
-
-      nofJumps++;
-      LastJumpTime = Level.TimeSeconds;
-
       P.PlaySound(P.JumpSound,SLOT_Interface,1.5,True,1200.0,1.0);
       if ( (Level.Game != None) && (Level.Game.Difficulty > 0) ) {
         P.MakeNoise(0.1 * Level.Game.Difficulty);
@@ -192,7 +192,7 @@ exec function DoubleJump ()
         SetFinalMesh(P);
       // }
     }
-  } else {
+  } else if (p.Physics == PHYS_Walking) {
     // Do a normal jump off the ground:
     P.DoJump();
     nofJumps = 1;

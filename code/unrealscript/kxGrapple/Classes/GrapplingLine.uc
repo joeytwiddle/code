@@ -1,11 +1,22 @@
 class GrapplingLine extends Projectile; // TODO: Projectile?  Is that really needed?
 
+/**
+ A GrapplingLine is actually only one section of the line.
+ *
+ * If the line has been bent, and this section is not direcly attached to the
+ * hook, then ParentLine is the next section of the line, closer to the hook
+ * (further from the player).
+ *
+ * If this section of line is attached to the hook, then GrapplingHook will be set.
+ *
+**/
+
 // TODO: try rewriting this class with just from,to (modified externally) and bSuicide.
 
 var config bool bLogging;
 
-var GrapplingHook GrappleParent;
 var GrapplingLine ParentLine;
+var GrapplingHook GrappleParent;
 var bool bStopped;
 var Vector NearPivot;
 var Vector Reached; // OLD BUG: Never gets updated!

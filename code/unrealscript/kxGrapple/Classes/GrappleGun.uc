@@ -190,6 +190,9 @@ simulated function Destroyed () {
 }
 
 function float RateSelf(out int bUseAltMode) {
+  bUseAltMode = 0;
+  if (FRand()<0.4)
+    bUseAltMode = 1;
   if (bUseAltMode==0) {
     if (GrapplingHook==None)
       return 0.1;
@@ -622,6 +625,8 @@ simulated function DoBehindview() {
   if (PlayerPawn(Owner)==None)
     return;
   LastFOV = PlayerPawn(Owner).DesiredFOV;
+  if (LastFOV < 60 || LastFOV > 150)
+    LastFOV = 90;
   // PlayerPawn(Owner).ConsoleCommand("FOV "$BehindViewFOV);
   PlayerPawn(Owner).DesiredFOV = BehindViewFOV;
   PlayerPawn(Owner).ConsoleCommand("BehindView 1");

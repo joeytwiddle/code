@@ -128,11 +128,12 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 					// PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interface,volume);
 					// PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interface,volume,True,radius,pitch);
 
-					//// The only way I found of making it louder was to play on four slots at once:
+					//// The only way I found of making it louder was to play on four slots at once.
+					//// But since that caused many people to crash, now we only play on 1 slot.
 					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_None,volume,False,radius,pitch);
-					PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Misc,volume,False,radius,pitch);
+					// PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Misc,volume,False,radius,pitch);
 					if (ActualDamage > 100)
-						PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
+						// PlayerPawn(InstigatedBy).PlaySound(snd,SLOT_Interact,volume,False,radius,pitch);
 					/*
 					//// Some player were crashing, I think due to sound overload.
 					//// I hope removing these was a fix for that bug!

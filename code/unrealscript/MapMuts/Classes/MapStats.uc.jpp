@@ -947,7 +947,7 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	if (bDebugLogging && FRand()<0.05) {
 		// DebugLog("Score for "$ MapStats[nextI].MapName $" PreferredPlayers="$ NiceFloat(MapStats[nextI].PreferredPlayers) $"] is: "$ NiceFloat(result));
 		// DebugLog("  ( age "$ NiceFloat(ageInDays) $"d + tweaks "$ NiceFloat(flowTweak) $" + "$ NiceFloat(playerTweak) $" + "$ NiceFloat(ratingTweak) $" ) / playerDiff "$ NiceFloat(playerDiff));
-		DebugLog("  "$ MapStats[nextI].MapName $" score="$ NiceFloat(result) $" age="$ NiceFloat(ageInDays) $"x"$ ratingMultiplierTweak $" tweaks="$ NiceFloat(flowTweak + playerTweak) $" / playerDiff="$ NiceFloat(playerDiff) $"");
+		DebugLog("  "$ MapStats[nextI].MapName $" score="$ NiceFloat(result) $" age="$ NiceFloat(ageInDays) $" rating="$ ratingMultiplierTweak $" tweaks="$ NiceFloat(flowTweak + playerTweak) $" / playerDiff="$ NiceFloat(playerDiff) $"");
 	}
 	return result;
 }
@@ -1201,7 +1201,7 @@ function float GetRatingForMapI(int i) {
 
 function BroadcastMapRating() {
 	// BroadcastAndLog("Current rating for "$ currentMap.MapName $" is +"$ currentMap.GoodVotes $" up -"$ currentMap.BadVotes $" down.");
-	BroadcastAndLog("Current rating for "$ currentMap.MapName $" is "$ GetRatingForMapI(mapI) $" (+"$ currentMap.GoodVotes $" -"$ currentMap.BadVotes $").");
+	BroadcastAndLog("Current rating for "$ currentMap.MapName $" is "$ Left(String(GetRatingForMapI(mapI)),3) $" (+"$ currentMap.GoodVotes $" -"$ currentMap.BadVotes $").");
 }
 
 // Catch messages from players:
@@ -1379,7 +1379,7 @@ function ListMapsTo(PlayerPawn p, String searchStr) {
 			if (MapStats[i].bDisabled) outStr = outStr $ " DISABLED";
 			#ifdef MAP_RATING
 				if (MapStats[i].GoodVotes+MapStats[i].BadVotes > 0) {
-					outStr = outStr $ " rating="$ Left(String( GetRatingForMapI(i) ),3);
+					outStr = outStr $ " rating="$ Left(String(GetRatingForMapI(i)),3);
 					outStr = outStr $" (+"$ MapStats[i].GoodVotes $" -"$ MapStats[i].BadVotes $")";
 				}
 			#endif

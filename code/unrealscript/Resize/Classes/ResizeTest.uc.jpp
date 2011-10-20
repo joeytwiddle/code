@@ -132,6 +132,8 @@ function CheckMessage(String line, PlayerPawn Sender) {
 
 		bResizeEnabled = True;
 
+		ChangeScaleTo(NewScale);
+
 		if (Scale == 100 && NewScale == 100)
 			bResizeEnabled=False;
 
@@ -141,8 +143,6 @@ function CheckMessage(String line, PlayerPawn Sender) {
 		} else {
 			BroadcastMessage("Game has been resized from " $ Int(Scale*100) $ "% to " $ Int(NewScale*100) $ "% by " $ Sender.getHumanName());
 		}
-
-		ChangeScaleTo(NewScale);
 
 	}
 

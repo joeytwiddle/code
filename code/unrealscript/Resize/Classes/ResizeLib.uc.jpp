@@ -326,9 +326,9 @@ function ScaleActor(Actor a) {
 
   if (a.IsA('Inventory')) {
     // a.DrawScale = a.default.DrawScale * Scale;
-    Inventory(a).ThirdPersonScale = Inventory(a).default.ThirdPersonScale * Scale;
     Inventory(a).PickupViewScale = Inventory(a).default.PickupViewScale * Scale;
-    Inventory(a).PlayerViewScale = Inventory(a).default.PlayerViewScale / Scale;
+    Inventory(a).ThirdPersonScale = Inventory(a).default.ThirdPersonScale * Scale; // When you see another player holding a weapon.
+    Inventory(a).PlayerViewScale = Inventory(a).default.PlayerViewScale; // The client's view of his held weapon, should not change.
   }
 
   // if (a.IsA('Translocator')) {
@@ -539,8 +539,11 @@ function bool AlwaysKeep(Actor Other) {
 
       if (Other.IsA('Translocator')) {
         DebugLog("Fixing tossforce of "$Other);
-        Translocator(Other).TossForce = Translocator(Other).TossForce * Scale;
-        Translocator(Other).MaxTossForce = Translocator(Other).MaxTossForce * Scale;
+        // Trying sqrt because it seemed a bit weak.  Hmm this does feel a little better, but still quite weak.
+        // Ah the problem may be that we have fixed gravity artificially, but only for pawns.
+        // No that's not the case.  We change gravity via ZoneInfos/LevelInfo only.
+        Translocator(Other).TossForce = Translocator(Other).default.TossForce * sqrt(Scale);
+        Translocator(Other).MaxTossForce = Translocator(Other).default.MaxTossForce * sqrt(Scale);
       }
 
       doneSomething = True;
@@ -712,9 +715,10 @@ function ScaleProjectileClass(class<Projectile> ProjectileClass) {
   if (ProjectileClass == None) {
     return; // Presumably the parent weapon had no projectile for primary/secondary fire.
   }
-  if (InStr(ProjectilesAlreadyHandled," "$ProjectileClass$" ") != -1) {
-    return; // We already scaled these default properties earlier for this weapon/projectile type.
-  }
+  //// No I think we need to set new defaults each time, but base them on once-read values.
+  // if (InStr(ProjectilesAlreadyHandled," "$ProjectileClass$" ") != -1) {
+    // return; // We already scaled these default properties earlier for this weapon/projectile type.
+  // }
   DebugLog("Scaling projectile type: "$ProjectileClass);
   // BUG TODO: UTChunk and flakslug report 2 x "Accessed None" here.
   // ProjectileClass.default.DrawScale = ProjectileClass.default.DrawScale * Scale; // This does not seem to work, so doing it in HandleNewActor() instead.
@@ -783,7 +787,7 @@ function GlobalRefresh() {
 
 
 function ChangeScaleTo(float NewScale) {
-	if (Scale != 100) {
+	// if (Scale != 100) {
 		// DONE: As a precaution, before setting our new scale, we "undo" our old
 		// scale, by applying the inverse scale to all actors.  Hopefully this will
 		// "reset" actors to their default size before we change them again.
@@ -791,12 +795,13 @@ function ChangeScaleTo(float NewScale) {
 		// It's worth testing with and without.  And fixing all the bugs.  ;)
 		Scale = 1.0/Scale;
 		// Force a refresh of everything:
+		DebugLog("Undoing old scale by applying reciprocal "$Scale);
 		GlobalRefresh();
-	}
+	// }
 
 	// Now we apply the new scale setting:
-	DebugLog("Scale="$NewScale);
 	Scale = NewScale;
+	DebugLog("Now applying new Scale="$Scale);
 	// Force a refresh of everything:
 	GlobalRefresh();
 }

@@ -2,7 +2,10 @@
 // GrapplingHook.
 //================================================================================
 // vim: ts=2 sw=2 expandtab ft=uc
+//#define DEBUG
+#ifdef DEBUG
 /*
+// TODO: Everything is good now, except using a teleporter whilst grappling.  (Seems the case when grapplee moves through tele is fine tho.)
 // DONE: No need to detect sgBuildings, with bDoAttachPawn set, you can grapple onto them.
 // TODO: bWinchingRequiresGrappleWeaponSelected ?
 // TODO: swinging without winding is smooth.  swinging with tiny wind is jerky =/
@@ -93,7 +96,9 @@
 // DONE: Disabled winch when *also* crouching, so you can fire and swing, or fire and winch, or drop without firing!
 // TODO: bJumpAlwaysRetracts - actually only after 1 second after grapple connected.  Before then player might be jumping thinking their grapple has not yet engaged.
 // TODO: ABV switching does not work in NM_Standalone!
+// TODO: I think some of the gravity hacks may not work appropriately underwater.
 */
+#endif
 
 #include "../../build.defs"
 
@@ -1027,41 +1032,47 @@ simulated function DoPhysics(float DeltaTime) { // Returns False if pawn is stuc
       }
       // Do we need to leave doInwardPull set?
 
-      if (bBunnyJump && !(bSingleLine && lineLength<MinRetract*1.5)) {
+      // We only auto jump when player is on the ground (walking).
+      if (Instigator.Physics == PHYS_Walking /*&& FRand()<0.5*/ ) {
 
-        // If Player is being pulled but dragging on floor, make him bounce/jump automatically:
+        // We only auto jump if our player isn't wearing boots.  Auto jump when wearing boots sucks!
+        // We also don't auto jump if he is at/near the end of winching (MinRetract).
+        if (bBunnyJump && Instigator.FindInventoryType(class'UT_JumpBoots')==None && !(bSingleLine && lineLength<MinRetract*1.5)) {
 
-        /*
-        // This is too late.  If they have been set to walking, then they lost their velocity already!
-        if (Instigator.Physics == PHYS_Walking) {
-          // TODO: Should really calculate normal of floor!
-          Instigator.Velocity += vect(0,0,256);
-          // Instigator.Velocity += vect(0,0,1)*(256+128*FRand());
-        }
-        */
+          // If Player is being pulled but dragging on floor, make him bounce/jump automatically:
 
-        // Try to make them bounce before they reach the ground.
-        /*
-        if (Instigator.Velocity.Z <= 0
-            && !CanTrace(Instigator.Location,Instigator.Location+vect(0,0,-16))
-        ) {
-          Instigator.Velocity.Z = Abs(Instigator.Velocity.Z);
-          if (Instigator.Velocity.Z<256) Instigator.Velocity.Z=256;
-        }
-        */
+          /*
+          // This is too late.  If they have been set to walking, then they lost their velocity already!
+          if (Instigator.Physics == PHYS_Walking) {
+            // TODO: Should really calculate normal of floor!
+            Instigator.Velocity += vect(0,0,256);
+            // Instigator.Velocity += vect(0,0,1)*(256+128*FRand());
+          }
+          */
 
-        // Actually this does work, it takes affect immediately, and the player
-        // keeps his velocity, performing perfect bunny jumps.
-        if (Instigator.Physics == PHYS_Walking /*&& FRand()<0.5*/ ) {
+          // Try to make them bounce before they reach the ground.
+          /*
+          if (Instigator.Velocity.Z <= 0
+              && !CanTrace(Instigator.Location,Instigator.Location+vect(0,0,-16))
+          ) {
+            Instigator.Velocity.Z = Abs(Instigator.Velocity.Z);
+            if (Instigator.Velocity.Z<256) Instigator.Velocity.Z=256;
+          }
+          */
+
+          // Actually this does work, it takes affect immediately, and the player
+          // keeps his velocity, performing perfect bunny jumps.
           if (PlayerPawn(Instigator)!=None)
             PlayerPawn(Instigator).bPressedJump = True;
           if (Bot(Instigator)!=None)
             Bot(Instigator).BigJump(Self);
           // In fact I'm inclined to punish the player a little:
           Instigator.Velocity *= 0.75;
+
+          // Consider: Would it be better to make him forward-dodge?
+          // Fixed with FRand(): He starts jumping immediately.
+
         }
-        // Consider: Would it be better to make him forward-dodge?
-        // Fixed with FRand(): He starts jumping immediately.
 
       }
 
@@ -1609,7 +1620,6 @@ defaultproperties {
     // GrappleSpeed=0
     HitDamage=20.00 // Not very strong, but you can switch weapon and hit them with something else too!
     bDoAttachPawn=True
-    bBunnyJump=True
 
     // If GrappleSpeed and VerticalGrappleSpeed were accelerations, they should in theory differ by 950=gravity.  But they are velocities :P
 
@@ -1628,6 +1638,7 @@ defaultproperties {
     bLineFolding=True
     // MinRetract=125
     MinRetract=100
+    bBunnyJump=True
     #endif
 
     #ifdef ND_GRAPPLE
@@ -1641,6 +1652,7 @@ defaultproperties {
     bLineOfSight=True  // This safety check is needed to detach the hook if we lose line-of-sight to our destination grapple.
     bLineFolding=False // This works BADLY if the swing and line physics are off.
     MinRetract=50
+    bBunnyJump=False
     // NOTE: You cannot use /* */ to comment these out!
     #endif
 

@@ -1,17 +1,23 @@
 class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // vim: ft=uc
+// TODO: We should also reduce zp shock primary and enforcer the same way.
 // TODO: To make them like PureStats (CTF), we should reduce minigun and pulse
 //       (a bit) for ZeroPingPlus103, or not reduce them for ZPPure7G.
-// TODO: We should also have an option to reduce zp shock primary.
+// DONE: bFixCrouchingBug for ZeroPingPlus103
 // TODO: We may be able to process damage done before armour, by giving each
 //       player a high-priority custom armour class.
+// TODO: DO NOT adjust damage against general pawns (e.g. siege buildings),
+//       only against players and bots.
+// TODO: Alternative setup: keep ZP sniper strong, increase strength of all
+//       other weapons to match.
 
 #define ADJUST_SNIPER_DAMAGE
 
 // Debugging:
 
-#define DebugLog(X); if (bLogging) { Log("[FixWeaponDamage] "$(X)); } if (bLiveReports) { BroadcastMessage("[FWD] "$(X)); }
+// #define DebugLog(X); if (bLogging) { Log("[FixWeaponDamage] "$(X)); } if (bLiveReports) { BroadcastMessage("[FWD] "$(X)); }
+#define DebugLog(X); if (bLogging) { Log("[FixWeaponDamage] "$(X)); }
 // #define DebugLog(X); 
 
 var config bool bEnabled;
@@ -19,6 +25,7 @@ var config bool bLogging;
 var config bool bLiveReports;
 
 #ifdef ADJUST_SNIPER_DAMAGE
+var config bool bKeepHeadshotsInAllModes;
 var config float SniperDamageScale,SniperBoostScale;
 var config int SniperMaxDamage;
 var config bool bFixCrouchingBug;   // For ZeroPingPlus103
@@ -69,6 +76,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			#ifdef ADJUST_SNIPER_DAMAGE
 
 				if (bFixCrouchingBug && Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
+					// Headshots are not possible on crouched players, so we reduce the damage to a body hit.
 					if (DeathMatchPlus(Level.Game).bHardcoreMode) {
 						if (ActualDamage > 67) {
 							ActualDamage = 67;
@@ -82,10 +90,19 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 				// Always scale damage for sniper rifle?
 				NewDamage = ActualDamage * SniperDamageScale;
+				// In non-hardcore mode, we cannot scale headshots down, because they are only 100 to start with!
+				if (bKeepHeadshotsInAllModes && ActualDamage>=100 && NewDamage<100) {
+					NewDamage = 100; /*
+					NewDamage = ActualDamage; */
+				}
 				if (NewDamage < ActualDamage) {
 					DebugLog("Reducing shot "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
+					if (bLiveReports) {
+						InstigatedBy.ClientMessage("Reducing shot "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
+					}
 				}
 				ActualDamage = NewDamage;
+
 				Momentum = Momentum * SniperBoostScale;
 				if (ActualDamage > SniperMaxDamage) {
 					ActualDamage = SniperMaxDamage;
@@ -167,8 +184,8 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		return True;
 	}
 
-	// Just for early releases, so players can easily turn this on/off:
-	if (command ~= "REPORT") {
+	// Admin can easily turn this on for testing, but it won't be saved for next map
+	if (command ~= "REPORT" || command ~= "FWBREPORT") {
 		bLiveReports = !bLiveReports;
 		if (bLiveReports)
 			BroadcastMessage(Sender.getHumanName()$" has ENABLED FixWeaponBalance reporting with \"mutate report\".");
@@ -231,7 +248,8 @@ defaultproperties {
 	bLogging=False
 	bLiveReports=False
 	#ifdef ADJUST_SNIPER_DAMAGE
-	SniperDamageScale=0.68
+	bKeepHeadshotsInAllModes=True
+	SniperDamageScale=0.78
 	SniperBoostScale=1.0
 	SniperMaxDamage=102
 	bFixCrouchingBug=True
@@ -241,10 +259,11 @@ defaultproperties {
 // Note that this does not affect damage to armour, only damage to health.
 // Usually a headshot does 150 damage, and a body shot does 67.
 
-// We want a headshot to do 102, and a bodyshot 52.  (scale 0.78)
+// We might want a headshot to do 102, and a bodyshot 52.  (scale 0.78)
 // This is the minimum that will look normal on a guy with 100 hp and 0 armour.
 
-// In non-hardcore mode (Siege), this actually means bodyshot will cost 45 (from 58).
+// (Alternatively, for bodyshot 55, use scale 0.825.)
 
-// (For headshot 110, bodyshot 55, use scale 0.825.)
+// In non-hardcore mode (which Siege requires for jetpack), headshots usually
+// cost 100(?) and bodyshots 58.
 

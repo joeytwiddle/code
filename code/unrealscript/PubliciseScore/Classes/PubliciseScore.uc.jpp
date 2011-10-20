@@ -22,6 +22,8 @@ var config String CycledServerName[20];
 var int CycleNum;
 #endif
 
+#define CUSTOM_NZP ".nzp "
+
 var bool Initialized;
 var string titleDefault;
 

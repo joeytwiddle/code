@@ -16,7 +16,7 @@ class GrapplingMut extends Mutator Config(kxGrapple);
 
 var bool bDoneInit;
 var config bool bReplaceTranslocator,bGiveWeapon;
-var config bool bCanGrappleWithoutSelection; // AKA RemoteControl
+var config bool bCanGrappleWithoutSelection; // AKA RemoteControl AKA Mutate ToggleHook|FireHook|ReleaseHook
 
 function PostBeginPlay () {
   local int i;

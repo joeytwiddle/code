@@ -32,6 +32,10 @@ var config bool bSwallowSpokenCommands;
 var bool bOnlyAdmin; // TODO: config
 var config Color SentPainColor,ReceivedPainColor,InfoColor;
 
+#ifdef RECORD_LIFE_LOG
+var Actor LastInstigator;
+#endif
+
 var PlayerSettings settings[64];
 
 
@@ -187,10 +191,13 @@ function ModifyPlayer(Pawn Other) {
 	#endif
 	#ifdef RECORD_LIFE_LOG
 		#define TrimTrail(str,n) Left(str,Len(str)-n)
-		if ( GetPlayerSettingsFor(Other).bShowLifeLog && GetPlayerSettingsFor(Other).LifeLog != "") {
+		if ( Other.IsA('PlayerPawn') && GetPlayerSettingsFor(PlayerPawn(Other)).bShowLifeLog && GetPlayerSettingsFor(Other).LifeLog != "") {
 			Other.ClientMessage("You died thanks to: "$ TrimTrail(GetPlayerSettingsFor(Other).LifeLog,2) );
-			GetPlayerSettingsFor(Other).LifeLog = "";
 		}
+		if ( PlayerPawn(LastInstigator)!=None && GetPlayerSettingsFor(LastInstigator).bShowLifeLog && GetPlayerSettingsFor(Other).LifeLog != "") {
+			PlayerPawn(LastInstigator).ClientMessage("You killed "$Other.getHumanName()$" with: "$ TrimTrail(GetPlayerSettingsFor(Other).LifeLog,2) );
+		}
+		GetPlayerSettingsFor(Other).LifeLog = "";
 	#endif
 }
 
@@ -205,8 +212,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	// Since we can be affected by mutators earlier in the chain, we are now
 	// doing the Super call first, and are affected by ALL mutators in the chain.
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
-	// Consider: We could log any change made by the mutators later in the chain,
-	// during the Super call.  But not those earlier in the chain.
+	// Consider: We could use this to note any change made by the mutators later
+	// in the chain, during the Super call.  But not those earlier in the chain.
 
 	if (bDebugLogging && PlayerPawn(Victim)==None && Bot(Victim)==None)
 		Log("TrackDamage.MutatorTakeDamage(): "$InstigatedBy.getHumanName()$" -> "$ActualDamage$" -> "$Victim$" is not a PlayerPawn or a Bot.");
@@ -274,6 +281,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			GetPlayerSettingsFor(Victim).LifeLog = GetPlayerSettingsFor(Victim).LifeLog $ HIT_REPORT $ ", ";
 		}
 	#endif
+
+	LastInstigator = InstigatedBy;
 
 }
 
