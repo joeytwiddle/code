@@ -264,7 +264,7 @@
 
 //// Preprocessing definitions:
 
-#define ATB_VERSION "1.4.9q"
+#define ATB_VERSION "1.4.9r"
 
 // #define XOL_SPECIFIC
 
@@ -288,6 +288,8 @@
 #define bHideAdminActivity False
 //// Note: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
 #define CLEANUP14
+// This is quite important to ensure old duplicates get forgotten.  Although it has introduced some extra calculation.
+#define TAKE_MOST_RECENT_DUPLICATE
 
 //// Disabled - For good reason.
 // HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
@@ -332,8 +334,6 @@
 #endif
 // #define LOG_TICKRATE
 // #define WARN_TICKRATE_CHANGE
-// This is quite important to ensure old duplicates get forgotten.  Although it has introduced some extra calculation.
-#define TAKE_MOST_RECENT_DUPLICATE
 
 // Changelog:
 // 0209 inlined SHORTHELP
@@ -396,6 +396,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var config bool bUpdatePlayerStatsForAS;
 	var config bool bUpdatePlayerStatsForOtherTeamGames;
 	var config bool bUpdatePlayerStatsForNonTeamGames;
+	var config bool bRandomColorsInLMS;
 
 	#ifdef ENABLE_MUTATOR_SIGNATURE
 	var config bool bSeparateStatsByGamemode;
@@ -404,6 +405,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 	#ifdef WEBSITE
 	var config String WebsiteURL;
+	var config String ForumURL;
 	#endif
 
 	#ifdef TEAMSPEAK
@@ -510,7 +512,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#ifdef ENABLE_USEISPNOTFULLIP
 	var config bool bUseISPNotFullIP;
 	#endif
-	var config bool bShuffleTeamsEarly;
+	var config bool bShuffleTeamsEarly; // BUG: unstable!
 	var config string LastUpdate;
 	var config Color strengthColor,warnColor;
 
@@ -661,7 +663,7 @@ defaultproperties {
 	bAllowSemiAdminForceTravel=True
 	bBalanceBots=False
 	bRankBots=False
-	MinSecondsBeforeRebalance=3
+	MinSecondsBeforeRebalance=120
 	bNeverRebalanceWhenTeamsAreEven=False
 	SemiAdminPass="defaults_to_admin_pass"
 	bAutoBalanceTeamsForCTF=True
@@ -685,7 +687,7 @@ defaultproperties {
 	NormalisedStrength=50
 	UnknownStrength=45
 	BotStrength=30
-	FlagStrength=5
+	FlagStrength=3
 	WinningTeamBonus=5
 	ScoreThresholdLow=-10
 	ScoreThresholdHigh=2000
@@ -696,6 +698,7 @@ defaultproperties {
 	bBroadcastFakenickers=False
 	bLetPlayersViewStrengths=True
 	bAllowUsersToListFakes=True
+	bRandomColorsInLMS=True
 	#ifdef ENABLE_IDC
 	bWaitForIDC=False
 	bIDCDeletesIPRecords=False
@@ -728,6 +731,7 @@ defaultproperties {
 	warnColor=(R=255,G=144,B=32,A=32)
 	#ifdef WEBSITE
 	WebsiteURL=""
+	ForumURL=""
 	#endif
 	#ifdef TEAMSPEAK
 	TeamspeakChannelOther="teamspeak://ekiebox.org:8767?channel=shitbra"
@@ -954,6 +958,13 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 
 	if (NextMutator!= None) NextMutator.ModifyLogin(SpawnClass, Portal, Options);
 
+	if (bRandomColorsInLMS && Level.Game.IsA('LastManStanding')) {
+		selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
+		teamnr=Rand(5);
+		if (teamnr!=selectedTeam) Options="?Team=" $ teamnr $ Options;
+		return;
+	}
+
 	if (!ShouldBalance(Level.Game)) return;
 
 	DebugLog("ModifyLogin("$SpawnClass$","$Portal$",\""$Options$"\")");
@@ -961,7 +972,10 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 	// read this player's selected team
 	selectedTeam=Level.Game.GetIntOption(Options,"Team",255);
 
-	// get team scores
+	// Check team balance of current players in game
+	// Calculate sum of player strengths for each team (as well as the flagbonus above)
+
+	// initiate team scores
 	GRI=TournamentGameReplicationInfo(Level.Game.GameReplicationInfo);
 	teamStr[0]=GRI.Teams[0].Score*GetFlagStrength();
 	teamStr[1]=GRI.Teams[1].Score*GetFlagStrength();
@@ -970,8 +984,6 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 	teamSizeWithBots[0]=0;
 	teamSizeWithBots[1]=0;
 
-	// Check team balance of current players in game
-	// Calculate sum of player strengths for each team (as well as the flagbonus above)
 	for (p=Level.PawnList; p!=None; p=p.NextPawn)
 	{
 		// ignore non-player pawns
@@ -1000,6 +1012,8 @@ function ModifyLogin(out class<playerpawn> SpawnClass, out string Portal, out st
 		if (Instr(Caps(plname),Caps(clanTag))==-1) teamnr=1;
 
 	} else {
+
+		// Do we even know the strength of the joining player?
 
 		// if both teams have the same number of players send the new player to the weaker team
 		if (teamSize[0]==teamSize[1])
@@ -1143,7 +1157,7 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 	timeInGameB = Level.TimeSeconds - B.PlayerReplicationInfo.StartTime; // Only needed since we moved CheckNewPlayer() into bWaitForIDC.
 	if (Abs(newDifference) >= Abs(oldDifference)) // would make balance worse!
 		return;
-	if (Abs(oldDifference)-Abs(newDifference) < 25) // insignificant improvement in balance
+	if (Abs(oldDifference)-Abs(newDifference) < 15) // insignificant improvement in balance (less than 7.5 between these two players)
 		return;
 	if (timeInGameA<AutoSwitchTimeout && timeInGameB<7) { // older player has been on server for less than AutoSwitchTimeout seconds
 		NormalLog("CheckTwoNewPlayers() Auto switching "$B.getHumanName()$" with "$A.getHumanName()$".  Team difference should change from "$ oldDifference $" to "$ newDifference $".");
@@ -2329,6 +2343,11 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 					SendPlayerToUrl(PlayerPawn(Sender),WebsiteURL);
 				}
 			}
+			if (Msg ~= "!FORUM") {
+				if (ForumURL != "") {
+					SendPlayerToUrl(PlayerPawn(Sender),ForumURL);
+				}
+			}
 		}
 		#endif
 
@@ -2336,6 +2355,9 @@ function bool CheckMessage(String Msg, Pawn Sender) {
 		if (Sender.IsA('PlayerPawn')) {
 			if (Msg ~= "!TS" || Msg ~= "!TEAMSPEAK") {
 				SendPlayerToTeamspeak(PlayerPawn(Sender));
+			}
+			if (Msg ~= "!GETTS" || Msg ~= "!GetTeamSpeak") {
+				SendPlayerToUrl(PlayerPawn(Sender),"http://www.teamspeak.com/");
 			}
 		}
 		#endif
@@ -4183,7 +4205,7 @@ function CleanupDatabaseABit() {
 }
 
 function MoveRecordIntoDB(int i) {
-	local int j,k,found;
+	local int start,j,k,found;
 	local float lowestScore,score;
 
 	/*
@@ -4202,10 +4224,11 @@ function MoveRecordIntoDB(int i) {
 
 	// This method is faster but not optimal.  It will replace the oldest out of
 	// a random 64 records.
+	start = 64 + FRand() * (MaxPlayerData - 64);
 	lowestScore = 0.0;
 	found = -1;
 	for (j=0;j<32;j++) {
-		k = 64 + FRand() * (MaxPlayerData - 64);
+		k = 64 + ( (start + j - 64) % (MaxPlayerData - 64) );
 		if (RecordIsEmpty(k)) {
 			found = k;
 			break;
