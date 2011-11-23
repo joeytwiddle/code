@@ -72,28 +72,28 @@ setTimeout(function(){
 // Perhaps we are responding to a mouseout event from a child element, because
 // we are not checking the event target like we should do.
 function initThumbnailAnimator() {
-	// function createThumbnailAnimatorEvent(img) {
-	var img    = null;
+	// function createThumbnailAnimatorEvent(thumbImage) {
+	var thumbImage    = null;
 	var evt    = null;
 	var timer  = null;
 	var frames = ["1.jpg","2.jpg","3.jpg"];   // "default.jpg",
 	var frameI = 0;
 	function changeFrame() {
 		frameI = (frameI + 1) % frames.length;
-		img.src = img.src.replace(/\/[^/]*$/,'') + '/' + frames[frameI];
+		thumbImage.src = thumbImage.src.replace(/\/[^/]*$/,'') + '/' + frames[frameI];
 	}
 	function startAnimation() {
 		// We make this check quite late, due to lazy loading
-		if (img.src.match(/default\.jpg$/)) {
+		if (thumbImage.src.match(/default\.jpg$/)) {
 			timer = setInterval(changeFrame,600);
 		}
 	}
 	function stopAnimation() {
 		if (timer) {
-			// logElem("Stopping elem",img);
+			// logElem("Stopping elem",thumbImage);
 			clearInterval(timer);
 			// This isn't really neccessary, except to ensure the check for default\.jpg above works next time!
-			img.src = img.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
+			thumbImage.src = thumbImage.src.replace(/\/[^/]*$/,'') + '/' + "default.jpg";
 		}
 	}
 	function logElem(name,elem) {
@@ -101,29 +101,30 @@ function initThumbnailAnimator() {
 		GM_log(name+" = "+report);
 	}
 	function check(fn) {
-		return function(e) {
-			evt = e;
+		return function(evt) {
 			// logElem("["+evt.type+"] evt.target",evt.target);
 			var elemToCheck = evt.target || evt.srcElement;
-			var imgCount = elemToCheck.getElementsByTagName("img").length;
 			if (elemToCheck.tagName == "IMG") {
-				img = event.target;
+				thumbImage = elemToCheck;
 				return fn();
 			} else if (elemToCheck.className=='screen') {
 				var seekImg = elemToCheck.parentNode.getElementsByTagName("img")[0];
 				if (seekImg) {
-					img = seekImg;
+					thumbImage = seekImg;
 					fn();
 				}
-			// } else if (imgCount == 1) {
-				// img = elemToCheck.getElementsByTagName("img")[0];
-				// // logElem("["+evt.type+"] checking sub-image",img);
-				// logElem("Whilst checking",elemToCheck);
-				// logElem("  Animating elem",img);
-				// logElem("  with parent",img.parentNode);
-				// logElem("  whilst currentTarget",evt.currentTarget);
-				// logElem("  and srcElement",evt.srcElement);
-				// return fn();
+			// } else {
+				// var imgCount = elemToCheck.getElementsByTagName("img").length;
+				// if (imgCount == 1) {
+					// thumbImage = elemToCheck.getElementsByTagName("img")[0];
+					// // logElem("["+evt.type+"] checking sub-image",thumbImage);
+					// logElem("Whilst checking",elemToCheck);
+					// logElem("  Animating elem",thumbImage);
+					// logElem("  with parent",thumbImage.parentNode);
+					// logElem("  whilst currentTarget",evt.currentTarget);
+					// logElem("  and srcElement",evt.srcElement);
+					// return fn();
+				// }
 			}
 		};
 	}
