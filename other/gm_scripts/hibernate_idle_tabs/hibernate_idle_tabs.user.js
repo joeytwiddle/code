@@ -29,7 +29,7 @@
 /* +++ Config +++ */
 // GM_log("Hibernate Idle is DISABLED."); return;
 // var hibernateIfIdleForMoreThan = 6; // seconds
-var hibernateIfIdleForMoreThan = 4*60*60; // seconds
+var hibernateIfIdleForMoreThan = 6*60*60; // seconds
 // Userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011!
 // var holdingPage = "about:blank";
 var holdingPage = "http://hwi.ath.cx/hibernated_tab.html";
@@ -238,10 +238,29 @@ function setHibernateStatus(msg) {
 
 function loadFavicon(targetHost,callback) {
 	var favicon = document.createElement('img');
-	var extsToTry = ["jpg","gif","png","ico"];   // iterated in reverse order
 	favicon.addEventListener('load',function() {
 		callback(favicon);
 	});
+
+	// If there is a <link rel="icon" ...> in the current page, then I think that overrides the site-global favicon.
+	// NOTE: This is not appropriate if a third party targetHost was requested, only if they really wanted the favicon for the current page.
+	var foundLink = null;
+	var linkElems = document.getElementsByTagName("link");
+	for (var i=0;i<linkElems.length;i++) {
+		var link = linkElems[i];
+		if (link.rel === "icon" || link.rel === "shortcut icon") {
+			foundLink = link;
+			break;
+		}
+	}
+	if (foundLink) {
+		favicon.addEventListener('error',function(){ callback(favicon); });
+		favicon.src = foundLink.href;
+		// NOTE: If we made the callback interface pass favicon as 'this' rather than an argument, then we wouldn't need to wrap it here (the argument may be evt).
+		return;
+	}
+
+	var extsToTry = ["jpg","gif","png","ico"];   // iterated in reverse order
 	function tryNextExtension() {
 		var ext = extsToTry.pop();
 		if (ext == null) {
@@ -255,7 +274,6 @@ function loadFavicon(targetHost,callback) {
 	favicon.addEventListener('error',tryNextExtension);
 	tryNextExtension();
 	// When the favicon is working we can remove the canvas, but until then we may as well keep it visible!
-	// TODO: If there is a <link rel="icon" ...> in the current page, then I think that overrides the site favicon.
 }
 
 function writeFaviconFromCanvas(canvas) {
