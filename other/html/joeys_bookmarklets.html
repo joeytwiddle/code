@@ -6,15 +6,15 @@
 </HEAD>
 <BODY>
 
-<H2>Joey&apos;s Bookmarklet (Dev<A class='hiddenlink' href='#dev'>elopm</A>ent) Page</H2>
+<H1>Joey&apos;s Bookmarklet (Dev<A class='hiddenlink' href='#dev'>elopm</A>ent) Page</H1>
 
-<DIV class='section'>
-<H3>Introduction</H3>
+<DIV id="intro_section" class='section'>
+<H2>Introduction</H2>
 <BLOCKQUOTE>
 
-	<DIV style="width:100%;">
+	<DIV>
 
-		<H4 align="center">What is a Bookmark<B>let</B>?</H4>
+		<H3 align="center">What is a Bookmark<B>let</B>?</H3>
 
 		<P align="center">
 			A Bookmarklet is similar to a Bookmark,
@@ -34,13 +34,14 @@
 		<P>Bookmarklets begin with with the <TT>javascript:</TT> namespace, instead of the usual <TT>http://</TT> or <TT>https://</TT> or <TT>ftp://</TT> URL protocols.  The void operator or a function wrapper is commonly used to prevent the browser from operating on the return value.<P/>
 		<!-- <P class='external'>Bookmarklets marked in yellow do not contain all the code themselves, but load an external javascript file from hwi.ath.cx.  You rarely need to upgrade these bookmarklets because they are always loading the latest version.  But if I develop the script and break it, your bookmarklet may stop working.</P> -->
 
-		<H4>This Page</H4>
+		<H3>This Page</H3>
+
+		<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
 
 		<P>
 			This page contains bookmarklets which I have developed, and is sometimes in an unstable state.
-			<!-- Maybe misleading since some of the bookmarklets source external scripts. -->
 			<br/>
-			It was last updated <SCRIPT type='text/javascript'>
+			(It was last updated <SCRIPT type='text/javascript'>
 				(function(){
 					var millis = new Date().getTime() - new Date(document.lastModified).getTime();
 					var days = millis / 1000 / 60 / 60 / 24;
@@ -48,17 +49,18 @@
 					var daysString = ""+(days|0);
 					document.write(daysString+" days ago");
 				})();
-			</SCRIPT>.
+			</SCRIPT>.)
 			<br/>
-			Stable versions may be found in <A href="http://hwi.ath.cx/cgi-bin/cvsweb/other/html/joeys_bookmarklets.html">CV</A><A href="http://hwi.ath.cx/cgi-bin/viewcvs.cgi/other/html/joeys_bookmarklets.html">S</A>.
+			Stable versions may be found in <A href="http://hwi.ath.cx/cgi-bin/cvsweb/other/html/joeys_bookmarklets.html">CV</A><A href="http://hwi.ath.cx/cgi-bin/viewcvs.cgi/other/html/joeys_bookmarklets.html">S</A>, if I have broken the current copy.
+			<br/>
+			<!-- Maybe misleading since some of the bookmarklets source external scripts. -->
+			I wrote these bookmarklets when I was starting off in Javascript, so some of the code is poor quality!  More recently I have been writing userscripts...
 		</P>
 
-		<P>Known bugs and TODOs are <font class='todo'>shown in orange</font>, changes and added features <font class='done'>in green</font>.</P>
+		<H3>Related Pages</H3>
 
-		<H4>Related Pages</H4>
-
-		<LI><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Konqueror 5 Minitools/Bookmarklets</A> with embedded Bookmarklet Builder.</A></LI>
-		<LI><A href='http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html'>Greasemonkey/Chrome userscripts</A> wrapped up as bookmarklets</A></LI>
+		<LI><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&apos;s Konqueror 5 Minitools/Bookmarklets</A> with embedded Bookmarklet Builder.</A></LI>
+		<LI><A href='http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html'>Joey&apos; Greasemonkey/Chrome userscripts</A> wrapped up as bookmarklets</A></LI>
 
 		<LI>Some inspiration for scripts was drawn from the collection at <A href="https://www.squarefree.com/bookmarklets/">Jesse&apos;s Bookmarklets Site</A> at squarefree.com.</LI>
 
@@ -80,10 +82,10 @@
 	}
 	/*font-size: -1;*/
 	.todo {
-		color: #775522;
+		color: #995500;
 	}
 	.note {
-		color: #775522;
+		color: #999900;
 	}
 	.done {
 		color: #005500;
@@ -105,7 +107,7 @@
 		border-width: 1px;
 		border-color: black;
 	}
-	h3 {
+	h2 {
 		color: white;
 		/*background-color: #44bbbb;*/
 		background-color: #2222dd;
@@ -139,7 +141,7 @@
 		font-size: 0.8em;
 		font-weight: bold;
 		margin: 0.0em 0.1em;
-		padding: 0.2em 0.75em;
+		padding: 0.3em 0.75em;
 		background-color: #eeeeee;
 		color: #000088;
 		/* Dark Golden */
@@ -171,7 +173,7 @@ Other useful scripts, shims, fallbacks.
 -->
 
 <DIV class='section'>
-<H3>Page Bookmarklets</H3>
+<H2>Page Bookmarklets</H2>
 <BLOCKQUOTE>
 
 	<!-- I found by setting target='_self', the URL in my browser&apos;s location bar was not changed to the script text, which looked messy. -->
@@ -222,6 +224,7 @@ Other useful scripts, shims, fallbacks.
 		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
 
+	<A name="focus"></A>
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
 			var newScript = document.createElement('script');
@@ -255,6 +258,7 @@ Other useful scripts, shims, fallbacks.
 		<!-- <LI class='todo'>Todo: Maybe not neighbours.  But maybe all ancestors up to body, tho none of their other children?  Oh we are doing that duh!</LI> -->
 		<LI class='done'>This idea was moved to XPath Tester: Allow trimming by XPath expression.  This can be very useful to extract precise elements of the page (e.g. Headings), or just to test an XPath.  If we display results in a small window (not the doc itself), user can click on each to jump to that part of the page!  So user just needs to find an XPath matching the headings, then he has built an index/contents navigation-assisting sidebar.</LI>
 		<LI class='external'>Note: Loads external script.</LI>
+		<LI class='note'>Here is a <A href="javascript:(function(){var d=document.createElement('div'),t=document.createElement('input'),close=document.createElement('a'),err=document.createElement('div'),val=document.createElement('div');var s=d.style;s.position='fixed';s.bottom=d.style.right=0;s.background='white';s.width='20em';s.height='4em';s.overflow='auto';close.textContent='Close';close.href='#';close.addEventListener('click',function(e){d.parentNode.removeChild(d);e.preventDefault();},false);err.style.color='red';var highlighted=[];var clear=function(){var node;while(node=highlighted.pop()){node.style.border=node.style.boxShadow=node.style.MozBoxShadow=node.style.webkitBoxShadow='';}};t.addEventListener('input',function(){err.textContent=val.textContent='';var node;clear();var it;try{it=document.evaluate(t.value,document,null,XPathResult.ANY_TYPE,null);try{val.textContent=it.stringValue;}catch(e){try{val.textContent='number: '+it.numberValue;}catch(e){try{val.textContent='boolean: '+it.booleanValue;}catch(e){var count=0;while(node=it.iterateNext()){++count;if(node.nodeType!=Node.ELEMENT_NODE)node=node.parentNode;if(!node)continue;highlighted.push(node);}for(var i=0;i!=highlighted.length;++i){var node=highlighted[i];node.style.border='1px solid orange';node.style.boxShadow=node.style.MozBoxShadow=node.style.webkitBoxShadow='2px 2px 7px #666';}val.textContent=count+' node'+(count==1?'':'s')+' matched';}}}}catch(syntaxError){err.textContent='XPath syntax error.';}},false);d.appendChild(t);d.appendChild(close);d.appendChild(err);d.appendChild(val);document.body.appendChild(d);t.focus();})();">Tiny XPath Tester</A> I found on <A href="http://stackoverflow.com/questions/4617621/online-tool-for-xpath-evaluation-with-ajax/4622716">stackoverflow</A> (<A href="http://smallfixes.blogspot.com/2011/01/xpath-tester-bookmarklet.html">homepage</A>.</LI>
 	</BLOCKQUOTE>
 
 	<P>
@@ -294,7 +298,7 @@ Other useful scripts, shims, fallbacks.
 	<P>
 		<LI><A target='_self' href='javascript:
 			var info = document.links.length+" links on <A href=\""+document.location+"\">"+document.title+"</A>";
-			var html = "<HTML><HEAD><TITLE>[Links] "+document.title+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			var html = "<HTML><HEAD><TITLE>[Links] "+document.title+"</TITLE></HEAD><BODY><H1>"+info+"</H1><TABLE>\n";
 			for (i=0;i<document.links.length;i++) {
 				var link = document.links[i];
 				html += "<TR><TD><A href=\""+(link.href)+"\">"+(link.text)+"</A></TD><TD>"+(link.href)+"</TD></TR>\n";
@@ -314,7 +318,7 @@ Other useful scripts, shims, fallbacks.
 		<LI><A target='_self' href='javascript:
 			var images = document.getElementsByTagName("IMG"),
 					info = images.length+" images on <A href=\""+document.location+"\">"+document.title+"</A>";
-			var html = "<HTML><HEAD><TITLE>[Images] "+document.title+"</TITLE></HEAD><BODY><H2>"+info+"</H2><TABLE>\n";
+			var html = "<HTML><HEAD><TITLE>[Images] "+document.title+"</TITLE></HEAD><BODY><H1>"+info+"</H1><TABLE>\n";
 			for (i=0;i<images.length;i++) {
 				var image = images[i];
 				html += "<TR><TD align=\"center\">\n";
@@ -475,7 +479,7 @@ Other useful scripts, shims, fallbacks.
 </DIV>
 
 <DIV class='section'>
-<H3>Navigation Bookmarklets</H3>
+<H2>Navigation Bookmarklets</H2>
 <BLOCKQUOTE>
 
 	<P>
@@ -678,7 +682,7 @@ Other useful scripts, shims, fallbacks.
 </DIV>
 
 <DIV class='section'>
-<H3>Web-Developer Bookmarklets</H3>
+<H2>Web-Developer Bookmarklets</H2>
 <BLOCKQUOTE>
 
 	<P>
@@ -1007,13 +1011,20 @@ Other useful scripts, shims, fallbacks.
 			* In fact we should probably sandbox the eval to see only what it needs!
 			*/
 
+			/* We could put the QuickConsole into window, so that history can be preserved if the console is reloaded. */
+
 			var QuickConsole = ({});
 
 			/* I'm not convinced we should always want to create this console intercept. */
 			var oldConsole = window.console;
-			window.console = { log: function() { if (arguments.length>1) { arguments[0]+=''+arguments.slice(1); } if (oldConsole && oldConsole.log) { oldConsole.log.call(oldConsole,arguments[0]); } textArea.textContent += '\n' + arguments[0]; } };
+			window.console = { log: function() { if (arguments.length!=0 && arguments.length!=1) { arguments[0]+=''+arguments.slice(1); } if (oldConsole && oldConsole.log) { oldConsole.log.call(oldConsole,arguments[0]); } textArea.textContent += '\n' + arguments[0]; } };
 
-			window.oneLiner = function(obj) {
+			function prettyString(str) {
+				str = str.replace(/\n/g,'\\n');
+				return str;
+			}
+
+			function looksLike(obj) {
 				if (obj == null) {
 					return ''+obj;
 				}
@@ -1024,37 +1035,36 @@ Other useful scripts, shims, fallbacks.
 					return '[' + obj.join(', ') + ']';
 				}
 				return '' + obj;
-			};
+			}
 
-			window.prettyString = function(str) {
-				str = ''+str;
-				str = str.replace(/\n/g,'\\n');
-				return str;
-			};
+			function oneLiner(obj) {
+				return prettyString(looksLike(obj).substring(0,60));
+			}
 
-			window.inspect = function() {
+			window.inspect = function(obj) {
 				var report = '';
-				for (var i=0;i<arguments.length;i++) {
-					var obj = arguments[i];
-					report += (typeof obj)+': &quot;'+obj+'&quot;\n';
-					report += 'Properties:\n';
-					for (var prop in obj) {
-						if (obj.length && prop.match(/^[0-9]+$/)) { continue; }
-						try {
-							/* report += prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
-							report += '  ' + typeof obj[prop] + ' ' + prop + ': ' + prettyString(obj[prop]).substring(0,40) + ',\n';
-						} catch (e) {
-							report += '  Error on '+prop+': '+e+'\n';
-						}
-					}
-					report = report.slice(0,-2) + '\n';
-					/* Pretty print Arrays and other list-like objects, except for strings */
-					if (obj.length && typeof obj !== 'string') {
-						for (var i=0;i<obj.length;i++) {
-							report += i + ') ' + oneLiner(obj[i]) + '\n';
-						}
+				if (obj == null) {
+					return ''+obj;
+				}
+				report += (typeof obj)+': &quot;'+obj+'&quot;\n';
+				/* report += 'Properties:\n'; */
+				var looksLikeAnArray = (typeof obj.length === 'number');
+				/* Pretty print Arrays and other list-like objects, except for strings */
+				if (looksLikeAnArray && typeof obj !== 'string') {
+					for (var i=0;i<obj.length;i++) {
+						report += '  ' + i + ': ' + oneLiner(obj[i]) + ',\n';
 					}
 				}
+				for (var prop in obj) {
+					if (looksLikeAnArray && prop.match(/^[0-9]+$/)) { continue; }
+					try {
+						/* report += prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
+						report += '  ' + /*typeof obj[prop] + ' ' +*/ prop + ': ' + oneLiner(obj[prop]) + ',\n';
+					} catch (e) {
+						report += '  Error on '+prop+': '+e+'\n';
+					}
+				}
+				report = report.slice(0,-2) + '\n';
 				return report.slice(0,-1);
 			};
 			window.loadScript = function loadScript(url) {
@@ -1105,7 +1115,7 @@ Other useful scripts, shims, fallbacks.
 					commandInput.value = nullString(history[historyPos]);
 					textArea.value = 'History '+historyPos + '\n';
 					var result = eval(history[historyPos]);
-					textArea.value += inspect(result);
+					textArea.value += ''+result;
 				} catch (e) {
 					textArea.value += ''+e;
 				}
@@ -1141,6 +1151,7 @@ Other useful scripts, shims, fallbacks.
 			function closeQuickConsole() {
 				myDiv.parentNode.removeChild(myDiv);
 				myStyle.parentNode.removeChild(myStyle);
+				document.body.style.marginBottom = (parseInt(document.body.style.marginBottom,10)-110)-'px';
 			}
 
 			var closeBlock = document.createElement('span');
@@ -1171,7 +1182,7 @@ Other useful scripts, shims, fallbacks.
 					evt.preventDefault();
 				/* Up Arrow sends code 38. */
 				} else if (evt.keyCode == 38 && lastChar !== ')') {
-					if (historyPos > 0) {
+					if (historyPos != 0) {
 						historyPos--;
 					}
 					history.loadOldLine();
@@ -1179,9 +1190,11 @@ Other useful scripts, shims, fallbacks.
 				/* Down Arrow sends code 40 in Firefox/Chrome.
 				 * But in Konqueror 3.5, open bracket sends codes 40,16!
 				 * Also in Konqueror 3.5, close bracket sends codes 41,16.
+				 * TODO BUG: This is still happening on '(' despite the detection code!
+				 * On keydown perhaps, before it's the lastChar?
 				*/
 				} else if (evt.keyCode == 40 && lastChar !== '(') {
-					if (historyPos < history.length) {
+					if (historyPos != history.length) {
 						historyPos++;
 					}
 					history.loadOldLine();
@@ -1206,7 +1219,7 @@ Other useful scripts, shims, fallbacks.
 			myStyle.innerHTML = 'div.qcons { color: white; background-color: #44aa44; position: fixed; left: 2px; right: 2px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; } .qcons_inner { position: relative; } .closeBlock { position: absolute; top: 0px; right: 0px; }';
 			document.getElementsByTagName('head')[0].appendChild(myStyle);
 
-			document.body.style.marginBottom = '110px';
+			document.body.style.marginBottom = (parseInt(document.body.style.marginBottom,10)+110)+'px';
 			myDiv.appendChild(innerDiv);
 			document.body.appendChild(myDiv);
 
@@ -1225,6 +1238,7 @@ Other useful scripts, shims, fallbacks.
 		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.  Intercept console.log()?</LI>
 	</BLOCKQUOTE>
 
+	<A name="xpathtester"></A>
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
 			var newScript = document.createElement('script');
@@ -1244,7 +1258,7 @@ Other useful scripts, shims, fallbacks.
 </DIV>
 
 <DIV class='section'>
-<H3 name='dev'>Bookmarklets under Construction</H3>
+<H2 name='dev'>Bookmarklets under Construction</H2>
 <BLOCKQUOTE>
 
 	<!--
@@ -1384,7 +1398,7 @@ Other useful scripts, shims, fallbacks.
 			}
 			function widenStyle(n) {
 				if (n.style && n.style.width) {
-					var w = parseInt(n.style.width);
+					var w = parseInt(n.style.width,10);
 					if (w&gt;500 && w&lt;1024) {
 						/*n.style.width = '100%';*/
 						n.style.width = 'auto';
@@ -1560,7 +1574,7 @@ Other useful scripts, shims, fallbacks.
 </DIV>
 
 <DIV class='section'>
-<H3>Wanted / TODO</H3>
+<H2>Wanted / TODO</H2>
 <BLOCKQUOTE class='todo'>
 
 	<P>I introduced a different loading technique for all the external loading scripts that don&apos;t auto-init, so that they work with Konqueror.  (Such scripts are more powerful since they can be loaded as libraries, although it&apos;s not essential: we could create scripts which call their own init() function.)  Some of these bookmarklets would be smaller/neater without the Konqueror support.  The compatibility of my loading technique has not been tested on other browsers.</P>
@@ -1638,7 +1652,7 @@ Other useful scripts, shims, fallbacks.
 </DIV>
 
 <DIV class='section'>
-<H3>Older Versions</H3>
+<H2>Older Versions</H2>
 <BLOCKQUOTE>
 
 	<P>
@@ -2389,7 +2403,7 @@ document.writeln('<P>Escaped '+cnt+" bookmarklets.</P>");
 </SCRIPT>
 -->
 
-<H4>Comments / Feedback</H4>
+<H2>Comments / Feedback</H2>
 <BLOCKQUOTE>
 <IFRAME width="100%" height="200px" src="http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title="/>
 </BLOCKQUOTE>
