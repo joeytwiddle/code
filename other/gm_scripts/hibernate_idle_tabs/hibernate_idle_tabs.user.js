@@ -29,16 +29,29 @@
 /* +++ Config +++ */
 // GM_log("Hibernate Idle is DISABLED."); return;
 // var hibernateIfIdleForMoreThan = 6; // seconds
-var hibernateIfIdleForMoreThan = 6*60*60; // seconds
-// Userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011!
+var hibernateIfIdleForMoreThan = 6*60*60; // in seconds
+var restoreTime = 0.2; // in seconds
+//// Userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011!
 // var holdingPage = "about:blank";
-var holdingPage = "http://hwi.ath.cx/hibernated_tab.html";
+//// hwi.ath.cx is not always online!
+var oldHoldingPage = "http://hwi.ath.cx/hibernated_tab.html";
+//// Let's just spam Google.  This is not really satisfactory, since it provides an image and unneeded CSS!
+var holdingPage = "http://www.google.com/hibernated_tab";   // Returns a 404 page we can work on :)
+
+
+
+// TODO: Some users may want the hibernated page to restore when the window is focused (when the tab is switched to), rather than waiting for a mouseover.
+// TODO: Expose a function to allow a bookmarklet to force-hibernate the current tab?
 
 
 
 /* +++ Main +++ */
 
-var onHoldingPage = document.location.href.match(holdingPage+"?");
+var onHoldingPage = document.location.href.match(holdingPage+"?") != null;
+
+if (!onHoldingPage) {   // Only need this for a few days.
+	onHoldingPage = document.location.href.match(oldHoldingPage+"?") != null;
+}
 
 function handleNormalPage() {
 
@@ -55,8 +68,13 @@ function handleNormalPage() {
 				hibernate_title: document.title
 			};
 			if (canvas) {
-				var faviconDataURL = canvas.toDataURL("image/png");
-				params.hibernate_favicon_url = faviconDataURL;
+				try {
+					var faviconDataURL = canvas.toDataURL("image/png");
+					params.hibernate_favicon_url = faviconDataURL;
+				} catch (e) {
+					var extra = ( window != top ? " (running in frame or iframe)" : "" );
+					GM_log("[HIT] Got error"+extra+": "+e+" doc.loc="+document.location.href);
+				}
 			}
 			var queryString = buildQueryParameterString(params);
 			document.location = holdingPage + "?" + queryString;
@@ -74,18 +92,19 @@ function handleHoldingPage() {
 	setHibernateStatus(mainReport);
 
 	try {
-		// doCanvasMagic(params.hibernate_url);
-		if (params.hibernate_favicon_url) {
-			GM_log("Writing favicon from: "+params.hibernate_favicon_url);
-			writeFaviconFromDataString(params.hibernate_favicon_url);
+		var faviconDataURL = params.hibernate_favicon_url;
+		if (!faviconDataURL) {
+			// If we do not have a favicon, it is preferable to present an empty/transparent favicon, rather than leave the browser to show the favicon of the particular site we have chosen to put the holding page on.
+			faviconDataURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAEklEQVQ4jWNgGAWjYBSMAggAAAQQAAF/TXiOAAAAAElFTkSuQmCC";
 		}
+		writeFaviconFromDataString(faviconDataURL);
 	} catch (e) {
 		GM_log(""+e);
 	}
 
 	function restoreTab() {
 		var url = decodeURIComponent(params.hibernate_url);
-		setHibernateStatus("Travelling to: "+url);
+		setHibernateStatus("Returning to: "+url);
 		document.location.replace(url);
 	}
 
@@ -109,19 +128,20 @@ function handleHoldingPage() {
 				// There is already a countdown running - do not start.
 				return;
 			}
-			var togo = 3;
+			var togo = restoreTime*1000;
 			function countDown() {
 				setHibernateStatus(mainReport +
-						'\n' + "Tab will restore in "+togo+" seconds.  Click or defocus to pause." +
-						'\n' + "Double click to restore now!"
+						'\n' + "Tab will restore in "+((togo/1000)|0)+" seconds." +
+						'  ' + "Click or defocus to pause." +
+						'  ' + "Or double click to restore now!"
 						);
-				togo--;
-				if (togo >= 0) {
+				if (togo <= 0) {
+					restoreTab();
+				} else {
+					togo -= 1000;
 					if (countdownTimer)
 						clearTimeout(countdownTimer);
 					countdownTimer = setTimeout(countDown,1000);
-				} else {
-					restoreTab();
 				}
 			}
 			countDown();
@@ -242,6 +262,8 @@ function loadFavicon(targetHost,callback) {
 		callback(favicon);
 	});
 
+	var targetProtocol = document.location.protocol || "http:";
+
 	// If there is a <link rel="icon" ...> in the current page, then I think that overrides the site-global favicon.
 	// NOTE: This is not appropriate if a third party targetHost was requested, only if they really wanted the favicon for the current page.
 	var foundLink = null;
@@ -268,7 +290,7 @@ function loadFavicon(targetHost,callback) {
 			// We run the callback anyway!
 			callback(null);
 		} else {
-			favicon.src = "http://"+targetHost+"/favicon."+ext;
+			favicon.src = targetProtocol+"//"+targetHost+"/favicon."+ext;
 		}
 	}
 	favicon.addEventListener('error',tryNextExtension);
@@ -303,7 +325,9 @@ function writeFaviconFromDataString(faviconDataURL) {
 	*/
 	// Add this favicon to the head
 	h.appendChild(ss);
+
 	// Force browser to acknowledge
+	// I saw this trick somewhere.  I don't know what browser requires it.  But I just left it in!
 	var shim = document.createElement('iframe');
 	shim.width = shim.height = 0;
 	document.body.appendChild(shim);
@@ -338,4 +362,3 @@ trying to read something from a different domain than the script!
 In Chrome: "SECURITY_ERR: DOM Exception 18"
 */
 // loadFaviconIntoCanvas(document.location.host,writeFaviconFromCanvas);
-
