@@ -381,7 +381,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var config float MaxHoursWhenCopyingOldRecord;
  var config float HoursBeforeRecyclingStrength;
  var config int MinHumansForStats;
- var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking
+ var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking, 4=75%frags,25%score
  var config bool bNormaliseScores;
  // var config bool bRelativeNormalisation;
  var config float RelativeNormalisationProportion;
@@ -417,6 +417,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
  var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
  var String rkey[4096]; // Not yet stored in config file!  Must be regenerated when needed.
  var String ip[4096]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
+ // These 4 are copied from the config file, and used to re-generate playerData later.
  var String nick[4096];
  var float avg_score[4096];
  var float hours_played[4096];
@@ -1796,22 +1797,22 @@ function SendPlayerToUrl(PlayerPawn Sender, String url) {
 function SendPlayerToTeamspeak(PlayerPawn Sender) {
  local int teamNum;
  local string url,nickname;
- // Use the single common channel during non-team games, or if no other is found.
+ // Use the common channel by default.
  url = TeamspeakChannelOther;
- // During team games, use the player's team.  By default this will only occur
- // during tournament-games, or when no other channel is set; see below.
+ // But try to set a team if it's a team game.
  teamNum = Sender.PlayerReplicationInfo.Team;
- if ( url=="" || (Level.Game.GameReplicationInfo.bTeamGame && teamNum>=0 && teamNum<4) )
+ if (Level.Game.GameReplicationInfo.bTeamGame && teamNum>=0 && teamNum<4)
   url = TeamspeakChannel[teamNum];
- // Public servers may only want team channels during pugs/wars, but use the
- // common channel during FFA.  We assume this!  If you always want to put
- // players in their team-channel, then don't set TeamspeakChannelOther.
- if (!DeathMatchPlus(Level.Game).bTournament && TeamspeakChannelOther!="")
+ // If no team was set, fallback to the common channel again.
+ if (url == "")
   url = TeamspeakChannelOther;
+ // Failing that, fall back to the red team, if we are not playing a war or pug.
+ if (url == "" && !DeathMatchPlus(Level.Game).bTournament)
+  url = TeamspeakChannel[0];
  if (url == "") {
-  Sender.ClientMessage("No TeamSpeak channel has been configured for this server.");
+  Sender.ClientMessage("No TeamSpeak channel has been configured for this game.");
  } else {
-  // DebugLog("SendPlayerToTeamspeak("$Sender.getHumanName()$"): target url "$url);
+  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "SendPlayerToTeamspeak("$Sender.getHumanName()$"): target url "$url); };
   /* For teamspeak urls, append player name: */
   if (StrContains(url,"teamspeak://") && StrContains(url,"?")) {
    nickname = StrFilterBadChars(Sender.getHumanName());
@@ -3062,72 +3063,74 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
  }
  return found;
 }
-// CleanupDatabase empties the first 64 records in preparation for the next game.
-function CleanupDatabase() {
- local int i;
- for (i=0;i<64;i++) {
-  CleanupDatabaseABit();
- }
- // CleanupDatabaseABit(); // 65th call causes DB to be saved
-}
-// CleanupDatabaseABit handles only one record each time, but it is called 5 times a second from Timer().
-function CleanupDatabaseABit() {
- if (CleanupProgress == 64) {
-  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Saving Database after Cleanup."); };
-  CopyArraysIntoConfig();
-  SaveConfig();
-  CleanupProgress++;
- }
- if (CleanupProgress < 64) {
-  if (nick[CleanupProgress] != "") {
-   // NormalLog("CleanupDatabaseABit() Freeing records 0-64, to reduce in-game lag...");
-   MoveRecordIntoDB(CleanupProgress);
+//
+ // CleanupDatabase empties the first 64 records in preparation for the next game.
+ function CleanupDatabase() {
+  local int i;
+  for (i=0;i<64;i++) {
+   CleanupDatabaseABit();
   }
-  ClearRecord(CleanupProgress);
-  CleanupProgress++;
+  // CleanupDatabaseABit(); // 65th call causes DB to be saved
  }
- // This created KEEP_EARLY_RECORDS_EMPTY
-}
-function MoveRecordIntoDB(int i) {
- local int start,j,k,found;
- local float lowestScore,score;
- /*
-	// Replace the oldest record in the DB.  This is too heavy when moving all at
-	// once, and too slow when done in pieces (causes red icon).
-	found = 64;
-	for (j=64;j<MaxPlayerData;j+=BatchSize) {
-		found = FindOldestPlayerRecordInnerBatch(found,j);
-		if (RecordIsEmpty(found)) {
-			break; // An empty record - we can replace this!
+ // CleanupDatabaseABit handles only one record each time, but it is called 5 times a second from Timer().
+ function CleanupDatabaseABit() {
+  if (CleanupProgress == 64) {
+   ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Saving Database after Cleanup."); };
+   CopyArraysIntoConfig();
+   SaveConfig();
+   CleanupProgress++;
+  }
+  if (CleanupProgress < 64) {
+   if (nick[CleanupProgress] != "") {
+    // NormalLog("CleanupDatabaseABit() Freeing records 0-64, to reduce in-game lag...");
+    MoveRecordIntoDB(CleanupProgress);
+   }
+   ClearRecord(CleanupProgress);
+   CleanupProgress++;
+  }
+  // This created KEEP_EARLY_RECORDS_EMPTY
+ }
+ function MoveRecordIntoDB(int i) {
+  local int start,j,k,found;
+  local float lowestScore,score;
+  /*
+		// Replace the oldest record in the DB.  This is too heavy when moving all at
+		// once, and too slow when done in pieces (causes red icon).
+		found = 64;
+		for (j=64;j<MaxPlayerData;j+=BatchSize) {
+			found = FindOldestPlayerRecordInnerBatch(found,j);
+			if (RecordIsEmpty(found)) {
+				break; // An empty record - we can replace this!
+			}
 		}
-	}
-	ClearRecord(found);
-	SwapPlayerRecords(i,found);
-	*/
- // This method is faster but not optimal.  It will replace the oldest out of
- // a random 64 records.
- start = 64 + FRand() * (MaxPlayerData - 64);
- lowestScore = 0.0;
- found = -1;
- for (j=0;j<32;j++) {
-  k = 64 + ( (start + j - 64) % (MaxPlayerData - 64) );
-  if (( nick[k]=="" && ip[k]=="" )) {
-   found = k;
-   break;
+		ClearRecord(found);
+		SwapPlayerRecords(i,found);
+		*/
+  // This method is faster but not optimal.  It will replace the oldest out of
+  // a random 64 records.
+  start = 64 + FRand() * (MaxPlayerData - 64);
+  lowestScore = 0.0;
+  found = -1;
+  for (j=0;j<32;j++) {
+   k = 64 + ( (start + j - 64) % (MaxPlayerData - 64) );
+   if (( nick[k]=="" && ip[k]=="" )) {
+    found = k;
+    break;
+   }
+   score = FindOldestPlayerRecordMeasure(k);
+   if (score < lowestScore) {
+    lowestScore = score;
+    found = k;
+   }
   }
-  score = FindOldestPlayerRecordMeasure(k);
-  if (score < lowestScore) {
-   lowestScore = score;
-   found = k;
+  if (found == -1) {
+   ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Warning: Despite "$j$" attempts, could not find a record to replace, so replacing a random one."); };
+   found = 64 + FRand() * (MaxPlayerData - 64);
   }
+  ClearRecord(found);
+  SwapPlayerRecords(i,found);
  }
- if (found == -1) {
-  ; if (bLogging) { Log("[AutoTeamBalance] "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Warning: Despite "$j$" attempts, could not find a record to replace, so replacing a random one."); };
-  found = 64 + FRand() * (MaxPlayerData - 64);
- }
- ClearRecord(found);
- SwapPlayerRecords(i,found);
-}
+//
 // NOTE: currentDateDays should have been set to DaysFromDateString(GetDate()) recently.
 function float AgeInDays(String dateString) {
  // if (bDebugLogging && FRand()<0.01) { DebugLog("AgeInDays("$ dateString $"): "$ currentDateDays $" - "$ DaysFromDateString(dateString) $" = "$ (currentDateDays - DaysFromDateString(dateString)) ); }
@@ -3284,8 +3287,10 @@ function float GetScoreForPlayer(Pawn p) {
   award_score = p.KillCount * ScaleToFullTime(p);
  } else if (ScoringMethod == 2) {
   award_score = ScaleToFullTime(p) * (p.KillCount + p.PlayerReplicationInfo.Score) / 2.0;
- } else if (ScoringMethod == 3 || ScoringMethod > 3) {
+ } else if (ScoringMethod == 3) {
   award_score = GetRankingPoints(p); // Note that for this method, scaling score to full time is done *inside* GetRankingPoints()
+ } else if (ScoringMethod >= 4) {
+  award_score = ScaleToFullTime(p) * (3*p.KillCount + p.PlayerReplicationInfo.Score) / 4.0;
  }
  // Siege can give dodgy scores.  Sometimes HUGE negative numbers, or leech
  // games produce unrepresentatively high numbers.
@@ -3334,7 +3339,7 @@ function int UpdateStatsForPlayer(Pawn p) {
  }
  // Normalisation, or not:
  // ScoringMethod 3 requires no normalisation.
- if (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2) {
+ if (ScoringMethod != 3) {
   // GetScoreForPlayer() has already scaled players scores up to the full length of this game.
   if (bNormaliseScores) {
    current_score = NormaliseScore(current_score); // to get an average score of 50 (different now that we use bRelativeNormalisation)

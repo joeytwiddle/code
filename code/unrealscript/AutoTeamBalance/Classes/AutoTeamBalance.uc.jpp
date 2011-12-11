@@ -480,7 +480,7 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var config float MaxHoursWhenCopyingOldRecord;
 	var config float HoursBeforeRecyclingStrength;
 	var config int MinHumansForStats;
-	var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking
+	var config int ScoringMethod; // 0=score, 1=frags, 2=average_frags_and_score, 3=0-100_ordered_ranking, 4=75%frags,25%score
 	var config bool bNormaliseScores;
 	// var config bool bRelativeNormalisation;
 	var config float RelativeNormalisationProportion;
@@ -4557,8 +4557,10 @@ function float GetScoreForPlayer(Pawn p) {
 		award_score = p.KillCount * ScaleToFullTime(p);
 	} else if (ScoringMethod == 2) {
 		award_score = ScaleToFullTime(p) * (p.KillCount + p.PlayerReplicationInfo.Score) / 2.0;
-	} else if (ScoringMethod == 3 || ScoringMethod > 3) {
+	} else if (ScoringMethod == 3) {
 		award_score = GetRankingPoints(p); // Note that for this method, scaling score to full time is done *inside* GetRankingPoints()
+	} else if (ScoringMethod >= 4) {
+		award_score = ScaleToFullTime(p) * (3*p.KillCount + p.PlayerReplicationInfo.Score) / 4.0;
 	}
 	// Siege can give dodgy scores.  Sometimes HUGE negative numbers, or leech
 	// games produce unrepresentatively high numbers.
@@ -4614,7 +4616,7 @@ function int UpdateStatsForPlayer(Pawn p) {
 
 	// Normalisation, or not:
 	// ScoringMethod 3 requires no normalisation.
-	if (ScoringMethod==0 || ScoringMethod==1 || ScoringMethod==2) {
+	if (ScoringMethod != 3) {
 		// GetScoreForPlayer() has already scaled players scores up to the full length of this game.
 		if (bNormaliseScores) {
 			current_score = NormaliseScore(current_score); // to get an average score of 50 (different now that we use bRelativeNormalisation)
