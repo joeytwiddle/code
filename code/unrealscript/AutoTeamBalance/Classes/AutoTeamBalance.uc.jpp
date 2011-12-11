@@ -264,7 +264,7 @@
 
 //// Preprocessing definitions:
 
-#define ATB_VERSION "1.4.9r"
+#define ATB_VERSION "1.4.9s"
 
 // #define XOL_SPECIFIC
 
@@ -530,12 +530,16 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 
 	// Internal (parsed) player data:
 	var bool CopyConfigDone; // set to true after the arrays have been populated (so we don't do it twice)
+
 	var String rkey[MaxPlayerDataMax]; // Not yet stored in config file!  Must be regenerated when needed.
 	var String ip[MaxPlayerDataMax]; // We could consider using instead the default struct Guid { var int A, B, C, D; };
+
+	// These 4 are copied from the config file, and used to re-generate playerData later.
 	var String nick[MaxPlayerDataMax];
 	var float avg_score[MaxPlayerDataMax];
 	var float hours_played[MaxPlayerDataMax];
 	var String date_last_played[MaxPlayerDataMax];
+
 	// var int games_played[MaxPlayerDataMax];
 
 	// Runtime
@@ -2396,25 +2400,26 @@ function SendPlayerToTeamspeak(PlayerPawn Sender) {
 	local int teamNum;
 	local string url,nickname;
 
-	// Use the single common channel during non-team games, or if no other is found.
+	// Use the common channel by default.
 	url = TeamspeakChannelOther;
 
-	// During team games, use the player's team.  By default this will only occur
-	// during tournament-games, or when no other channel is set; see below.
+	// But try to set a team if it's a team game.
 	teamNum = Sender.PlayerReplicationInfo.Team;
-	if ( url=="" || (Level.Game.GameReplicationInfo.bTeamGame && teamNum>=0 && teamNum<4) )
+	if (Level.Game.GameReplicationInfo.bTeamGame && teamNum>=0 && teamNum<4)
 		url = TeamspeakChannel[teamNum];
 
-	// Public servers may only want team channels during pugs/wars, but use the
-	// common channel during FFA.  We assume this!  If you always want to put
-	// players in their team-channel, then don't set TeamspeakChannelOther.
-	if (!DeathMatchPlus(Level.Game).bTournament && TeamspeakChannelOther!="")
+	// If no team was set, fallback to the common channel again.
+	if (url == "")
 		url = TeamspeakChannelOther;
 
+	// Failing that, fall back to the red team, if we are not playing a war or pug.
+	if (url == "" && !DeathMatchPlus(Level.Game).bTournament)
+		url = TeamspeakChannel[0];
+
 	if (url == "") {
-		Sender.ClientMessage("No TeamSpeak channel has been configured for this server.");
+		Sender.ClientMessage("No TeamSpeak channel has been configured for this game.");
 	} else {
-		// DebugLog("SendPlayerToTeamspeak("$Sender.getHumanName()$"): target url "$url);
+		DebugLog("SendPlayerToTeamspeak("$Sender.getHumanName()$"): target url "$url);
 		/* For teamspeak urls, append player name: */
 		if (StrContains(url,"teamspeak://") && StrContains(url,"?")) {
 			nickname = StrFilterBadChars(Sender.getHumanName());
@@ -4174,194 +4179,201 @@ function int FindOldestPlayerRecordInnerBatch(int found, int iStart) {
 	return found;
 }
 
+
+
+//
 #ifdef CLEANUP14
 
-// CleanupDatabase empties the first 64 records in preparation for the next game.
-function CleanupDatabase() {
-	local int i;
-	for (i=0;i<64;i++) {
-		CleanupDatabaseABit();
-	}
-	// CleanupDatabaseABit(); // 65th call causes DB to be saved
-}
-
-// CleanupDatabaseABit handles only one record each time, but it is called 5 times a second from Timer().
-function CleanupDatabaseABit() {
-	if (CleanupProgress == 64) {
-		DebugLog("Saving Database after Cleanup.");
-		CopyArraysIntoConfig();
-		SaveConfig();
-		CleanupProgress++;
-	}
-	if (CleanupProgress < 64) {
-		if (nick[CleanupProgress] != "") {
-			// NormalLog("CleanupDatabaseABit() Freeing records 0-64, to reduce in-game lag...");
-			MoveRecordIntoDB(CleanupProgress);
+	// CleanupDatabase empties the first 64 records in preparation for the next game.
+	function CleanupDatabase() {
+		local int i;
+		for (i=0;i<64;i++) {
+			CleanupDatabaseABit();
 		}
-		ClearRecord(CleanupProgress);
-		CleanupProgress++;
+		// CleanupDatabaseABit(); // 65th call causes DB to be saved
 	}
-	// This created KEEP_EARLY_RECORDS_EMPTY
-}
 
-function MoveRecordIntoDB(int i) {
-	local int start,j,k,found;
-	local float lowestScore,score;
-
-	/*
-	// Replace the oldest record in the DB.  This is too heavy when moving all at
-	// once, and too slow when done in pieces (causes red icon).
-	found = 64;
-	for (j=64;j<MaxPlayerData;j+=BatchSize) {
-		found = FindOldestPlayerRecordInnerBatch(found,j);
-		if (RecordIsEmpty(found)) {
-			break; // An empty record - we can replace this!
+	// CleanupDatabaseABit handles only one record each time, but it is called 5 times a second from Timer().
+	function CleanupDatabaseABit() {
+		if (CleanupProgress == 64) {
+			DebugLog("Saving Database after Cleanup.");
+			CopyArraysIntoConfig();
+			SaveConfig();
+			CleanupProgress++;
 		}
-	}
-	ClearRecord(found);
-	SwapPlayerRecords(i,found);
-	*/
-
-	// This method is faster but not optimal.  It will replace the oldest out of
-	// a random 64 records.
-	start = 64 + FRand() * (MaxPlayerData - 64);
-	lowestScore = 0.0;
-	found = -1;
-	for (j=0;j<32;j++) {
-		k = 64 + ( (start + j - 64) % (MaxPlayerData - 64) );
-		if (RecordIsEmpty(k)) {
-			found = k;
-			break;
+		if (CleanupProgress < 64) {
+			if (nick[CleanupProgress] != "") {
+				// NormalLog("CleanupDatabaseABit() Freeing records 0-64, to reduce in-game lag...");
+				MoveRecordIntoDB(CleanupProgress);
+			}
+			ClearRecord(CleanupProgress);
+			CleanupProgress++;
 		}
-		score = FindOldestPlayerRecordMeasure(k);
-		if (score < lowestScore) {
-			lowestScore = score;
-			found = k;
-		}
+		// This created KEEP_EARLY_RECORDS_EMPTY
 	}
-	if (found == -1) {
-		NormalLog("Warning: Despite "$j$" attempts, could not find a record to replace, so replacing a random one.");
-		found = 64 + FRand() * (MaxPlayerData - 64);
-	}
-	ClearRecord(found);
-	SwapPlayerRecords(i,found);
 
-}
+	function MoveRecordIntoDB(int i) {
+		local int start,j,k,found;
+		local float lowestScore,score;
+
+		/*
+		// Replace the oldest record in the DB.  This is too heavy when moving all at
+		// once, and too slow when done in pieces (causes red icon).
+		found = 64;
+		for (j=64;j<MaxPlayerData;j+=BatchSize) {
+			found = FindOldestPlayerRecordInnerBatch(found,j);
+			if (RecordIsEmpty(found)) {
+				break; // An empty record - we can replace this!
+			}
+		}
+		ClearRecord(found);
+		SwapPlayerRecords(i,found);
+		*/
+
+		// This method is faster but not optimal.  It will replace the oldest out of
+		// a random 64 records.
+		start = 64 + FRand() * (MaxPlayerData - 64);
+		lowestScore = 0.0;
+		found = -1;
+		for (j=0;j<32;j++) {
+			k = 64 + ( (start + j - 64) % (MaxPlayerData - 64) );
+			if (RecordIsEmpty(k)) {
+				found = k;
+				break;
+			}
+			score = FindOldestPlayerRecordMeasure(k);
+			if (score < lowestScore) {
+				lowestScore = score;
+				found = k;
+			}
+		}
+		if (found == -1) {
+			NormalLog("Warning: Despite "$j$" attempts, could not find a record to replace, so replacing a random one.");
+			found = 64 + FRand() * (MaxPlayerData - 64);
+		}
+		ClearRecord(found);
+		SwapPlayerRecords(i,found);
+
+	}
 
 #endif
 
+
+//
 #ifdef HASH15
 
-/*
-function MoveRecordIntoDB(int i) {
-	// Doesn't actually clear first 64 atm.  Just testing GetRecord() a bit.
-	local int j,found;
-	if (rkey[i] == "") {
-		rkey[i] = nick[i]$" "$ip[i];
+	/*
+	function MoveRecordIntoDB(int i) {
+		// Doesn't actually clear first 64 atm.  Just testing GetRecord() a bit.
+		local int j,found;
+		if (rkey[i] == "") {
+			rkey[i] = nick[i]$" "$ip[i];
+		}
+		found = GetRecord(rkey[i]);
+		DefaultLog("Migrating "$i$" -> "$j$" ("$rkey[i]$")");
+		SwapPlayerRecords(i,found);
 	}
-	found = GetRecord(rkey[i]);
-	DefaultLog("Migrating "$i$" -> "$j$" ("$rkey[i]$")");
-	SwapPlayerRecords(i,found);
-}
-*/
+	*/
 
-function MigrateDB14To15() {
-	// TODO CONSIDER: ATB 1.4 could occasionally create duplicate records, that was a bug.  How do we handle them here?  I guess ideally newer record should override older.
-	// But really new ATB should keep 4 records per player - Strength(Last2Hours|Last24Hours|LastWeek|LastMonth|LastYear) and on the fly (Last2Minutes).
-	local int i,j,end;
-	if (DBVersion >= 1.51)
-		return;
-	DefaultLog("Migrating DB from version "$DBVersion$" to 1.5 - This may take some time!");
-	for (i=0;i<MaxPlayerData;i+=BatchSize) {
-		end = i+BatchSize;
-		if (end>MaxPlayerData)
-			end = MaxPlayerData;
-		MigrateDB14To15SubLoop(i,end);
+	function MigrateDB14To15() {
+		// TODO CONSIDER: ATB 1.4 could occasionally create duplicate records, that was a bug.  How do we handle them here?  I guess ideally newer record should override older.
+		// But really new ATB should keep 4 records per player - Strength(Last2Hours|Last24Hours|LastWeek|LastMonth|LastYear) and on the fly (Last2Minutes).
+		local int i,j,end;
+		if (DBVersion >= 1.51)
+			return;
+		DefaultLog("Migrating DB from version "$DBVersion$" to 1.5 - This may take some time!");
+		for (i=0;i<MaxPlayerData;i+=BatchSize) {
+			end = i+BatchSize;
+			if (end>MaxPlayerData)
+				end = MaxPlayerData;
+			MigrateDB14To15SubLoop(i,end);
+		}
+		DBVersion = 1.51;
+		CopyArraysIntoConfig();
+		SaveConfig();
+		DefaultLog("Migration completed and saved.");
 	}
-	DBVersion = 1.51;
-	CopyArraysIntoConfig();
-	SaveConfig();
-	DefaultLog("Migration completed and saved.");
-}
 
-function MigrateDB14To15SubLoop(int start, int end) {
-	local int i,j;
-	for (i=start;i<end;i++) {
-		if (nick[i] != "") {
-			j = GetRecord(rkey[i],None);
-			if (j == i) {
-				// Record is already home.
-				NormalLog("Record "$i$" ("$rkey[i]$") is home.");
-			} else {
-				if (rkey[i] == rkey[j]) {
-					DebugLog("Naughty me - found duplicate records "$i$" and "$j$" - clearing latter.");
-					ClearRecord(j);
+	function MigrateDB14To15SubLoop(int start, int end) {
+		local int i,j;
+		for (i=start;i<end;i++) {
+			if (nick[i] != "") {
+				j = GetRecord(rkey[i],None);
+				if (j == i) {
+					// Record is already home.
+					NormalLog("Record "$i$" ("$rkey[i]$") is home.");
+				} else {
+					if (rkey[i] == rkey[j]) {
+						DebugLog("Naughty me - found duplicate records "$i$" and "$j$" - clearing latter.");
+						ClearRecord(j);
+					}
+					DebugLog("Migrating "$i$" -> "$j$" ("$rkey[i]$")");
+					SwapPlayerRecords(i,j);
+					i--; // We need to do the record that just moved here!
 				}
-				DebugLog("Migrating "$i$" -> "$j$" ("$rkey[i]$")");
-				SwapPlayerRecords(i,j);
-				i--; // We need to do the record that just moved here!
 			}
 		}
 	}
-}
 
-// Returns the index of the record with nick == key, or if none exists, returns
-// an empty record in the band, initialised for the Pawn p (if p is non null).
-function int GetRecord(String key, Pawn p) {
-	local int start,i,j;
-	local int bestJ;
-	local float bestScore;
+	// Returns the index of the record with nick == key, or if none exists, returns
+	// an empty record in the band, initialised for the Pawn p (if p is non null).
+	function int GetRecord(String key, Pawn p) {
+		local int start,i,j;
+		local int bestJ;
+		local float bestScore;
 
-	i = GetHash(key);
-	DebugLog("Hash for \""$key$"\" is "$i);
-	start = 64 + (i%(MaxPlayerData-64));
+		i = GetHash(key);
+		DebugLog("Hash for \""$key$"\" is "$i);
+		start = 64 + (i%(MaxPlayerData-64));
 
-	// We will look in range start to start+HTBandSize.
-	#define HTBandSize 128
+		// We will look in range start to start+HTBandSize.
+		#define HTBandSize 128
 
-	// Fast: Try to find the record in the band.
-	for (i=start;i<start+HTBandSize;i++) {
-		j = i;
-		if (j>=MaxPlayerData)
-			j = j-MaxPlayerData+64;
-		if (rkey[j] == key)
-			return j;
-	}
+		// Fast: Try to find the record in the band.
+		for (i=start;i<start+HTBandSize;i++) {
+			j = i;
+			if (j>=MaxPlayerData)
+				j = j-MaxPlayerData+64;
+			if (rkey[j] == key)
+				return j;
+		}
 
-	//// TODO PROBLEM: At this point we should scan for any PARTIAL match which we can use to initialise this record.
-	// Slower: Try to find an empty record in the range.
-	//         Or the oldest record in the range.
-	// Consider: If we are likely to find an empty record, because the table is being pre-cleaned for us, then it may be worthwhile
-	// checking only for empty records first, before trying to find oldest.
-	bestJ = 0;
-	for (i=start;i<start+HTBandSize;i++) {
-		j = i;
-		if (j>=MaxPlayerData)
-			j = j-MaxPlayerData+64;
-		if (RecordIsEmpty(j)) {
-			if (p != None) {
-				InitialiseRecord(j,p);
+		//// TODO PROBLEM: At this point we should scan for any PARTIAL match which we can use to initialise this record.
+		// Slower: Try to find an empty record in the range.
+		//         Or the oldest record in the range.
+		// Consider: If we are likely to find an empty record, because the table is being pre-cleaned for us, then it may be worthwhile
+		// checking only for empty records first, before trying to find oldest.
+		bestJ = 0;
+		for (i=start;i<start+HTBandSize;i++) {
+			j = i;
+			if (j>=MaxPlayerData)
+				j = j-MaxPlayerData+64;
+			if (RecordIsEmpty(j)) {
+				if (p != None) {
+					InitialiseRecord(j,p);
+				}
+				return j;
 			}
-			return j;
+			if (bestJ==0 || FindOldestPlayerRecordMeasure(j)<bestScore) {
+				bestScore = FindOldestPlayerRecordMeasure(j);
+				bestJ = j;
+			}
 		}
-		if (bestJ==0 || FindOldestPlayerRecordMeasure(j)<bestScore) {
-			bestScore = FindOldestPlayerRecordMeasure(j);
-			bestJ = j;
+
+		DebugLog("GetRecord(\""$key$"\") considered whole band and chose to replace "$bestJ);
+
+		ClearRecord(bestJ);
+		if (p != None) {
+			InitialiseRecord(bestJ,p);
 		}
+
+		return bestJ;
+
 	}
-
-	DebugLog("GetRecord(\""$key$"\") considered whole band and chose to replace "$bestJ);
-
-	ClearRecord(bestJ);
-	if (p != None) {
-		InitialiseRecord(bestJ,p);
-	}
-
-	return bestJ;
-
-}
 
 #endif
+
+
 
 // NOTE: currentDateDays should have been set to DaysFromDateString(GetDate()) recently.
 function float AgeInDays(String dateString) {
