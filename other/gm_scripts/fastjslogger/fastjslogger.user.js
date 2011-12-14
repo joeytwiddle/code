@@ -167,7 +167,7 @@ target.console.log = function(a,b,c) {
 	// Replicate to the old loggers we intercepted (overrode)
 
 	if (oldConsole && oldConsole.log) {
-		// Some of the browsers dislike use of .call and .apply here, e.g. GM in FF4.
+		// Some browsers dislike use of .call and .apply here, e.g. GM in FF4.
 		// So to avoid "oldConsole.log is not a function":
 		try {
 			oldConsole.log.apply(oldConsole,arguments);
@@ -188,8 +188,14 @@ target.console.log = function(a,b,c) {
 		}
 		out += (""+arguments[i]);
 	}
-	logContainer.appendChild(document.createElement("br"));
-	logContainer.appendChild(document.createTextNode(out));
+	// logContainer.appendChild(document.createElement("br"));
+	// logContainer.appendChild(document.createTextNode(out));
+	// logContainer.appendChild(document.createTextNode("div")).textContent = out;
+	// var d = document.createElement("div");
+	// d.style.fontStyle = 'Monospaced';
+	var d = document.createElement("div");
+	d.textContent = out;
+	logContainer.appendChild(d);
 
 	// Scroll to bottom
 	// TODO: This is undesirable if the scrollbar was not already at the bottom, i.e. the user has scrolled up manually and is trying to read earlier log entries!
@@ -251,27 +257,38 @@ window.setTimeout = function(fn,ms) {
 		// It is preferable to let the error fall up to Chrome, so we can easily jump to the line number.
 		// Unfortunately, if we don't catch the error, we can't report it to FJSL!
 
-		// try {
+		/*
+		try {
+		*/
+
 			// console.log("Timeout happening after "+ms+"ms: "+fn)
 			if (typeof fn == 'function') {
 				fn();
 			} else if (typeof fn == 'string') {
 				eval(fn);
 			} else  {
-				throw new Error("[FJSL] setTimeout.wrappedFn(): Unsure how to execute fn "+typeof fn+": "+fn);
+				throw new Error("[FJSL] setTimeout.wrappedFn(): Unsure how to execute fn of type \""+typeof fn+"\": "+fn);
 			}
-		// } catch (e) {
+
+		/*
+		} catch (e) {
 			// Actually hard to read!
 			// var prettyFn = fn; // (""+fn) .replace(/\n/g,'\\n');
+			var fnName = fn && fn.name;
+			if (!fnName) {
+				fnName = "<anonymous>";
+			}
 			// console.log("[ERR]",e,prettyFn);
-			// console.log("[Exception]",e,"from",fn.name);
-			// console.log(e.stack);
-			// throw e;
+			console.log("[Exception]",e,"from "+fnName+"()");
+			console.log(""+e.stack);
+			throw e;
 			// Unfortunately even Chrome dev shows the throw as coming from here!
 			// So it is better if we leave it alone.
-		// }
+		}
+		*/
 
 	};
+
 	return oldSetTimeout(wrappedFn,ms);
 };
 
