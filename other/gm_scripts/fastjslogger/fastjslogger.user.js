@@ -26,6 +26,11 @@
 
 
 
+var autoHide = true;
+var autoHideTimer = null;
+
+
+
 function newNode(tag,data) {
 	var elem = document.createElement(tag);
 	if (data) {
@@ -47,6 +52,21 @@ function addStyle(css) {
 	document.getElementsByTagName('head')[0].appendChild(st);
 }
 
+function showLogger() {
+	logDiv.style.display = '';
+	//// BUG: Transition is not working!  Perhaps it only works when switching between CSS classes.
+	// logDiv.style._webkit_transition_property = 'opacity';
+	// logDiv.style._webkit_transition_duration = '2s';
+	logDiv.style.opacity = 1.0;
+}
+
+function hideLogger() {
+	logDiv.style.display = 'none';
+	// logDiv.style._webkit_transition_property = 'opacity';
+	// logDiv.style._webkit_transition_duration = '2s';
+	// logDiv.style.opacity = 0.0;
+}
+
 var css = "";
 css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 45%; /*max-height: 90%; height: 320px;*/ background-color: #ffffcc; color: black; border: 1px solid black; z-index: 10000; } ";
 css += " .fastJSLogger > span { max-height: 10%; }";
@@ -62,7 +82,7 @@ if (document.location.host.match(/wikipedia/))
 addStyle(css);
 
 var logDiv = newNode("div",{id:'fastJSLogger',className:'fastJSLogger'});
-logDiv.style.display = 'none';
+hideLogger();
 document.body.appendChild(logDiv);
 
 logDiv.style.position = 'fixed';
@@ -137,7 +157,7 @@ target.console = {};
 target.console.log = function(a,b,c) {
 
 	// Make visible if hidden
-	logDiv.style.display = '';
+	showLogger();
 
 	if (a+b+c === preventInfLoop) {
 		return;
@@ -175,7 +195,17 @@ target.console.log = function(a,b,c) {
 	// TODO: This is undesirable if the scrollbar was not already at the bottom, i.e. the user has scrolled up manually and is trying to read earlier log entries!
 	logContainer.scrollTop = logContainer.scrollHeight;
 
+	if (autoHide) {
+		if (autoHideTimer !== null) {
+			clearTimeout(autoHideTimer);
+			autoHideTimer = null;
+		}
+		autoHideTimer = setTimeout(hideLogger,15 * 1000);
+	}
+
 };
+
+/*
 target.console.error = function(e) {
 	// target.console.log("[ERROR]",e,e.stack);
 	var newArgs = [];
@@ -192,6 +222,16 @@ target.console.error = function(e) {
 	target.console.log.apply(target.console,newArgs);
 	target.console.log.apply(target.console,["Stacktrace:\n",e.stack]);
 };
+*/
+
+target.console.error = function(a,b,c) {
+	oldConsole.log("[ERROR]",a,b,c);
+	if (oldConsole.error) {
+		oldConsole.error(a,b,c);
+	} else {
+		throw new Error("Nowhere to send console.error() call!",a,b,c);
+	}
+};
 
 target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
 
@@ -206,20 +246,31 @@ target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_lo
 var oldSetTimeout = window.setTimeout;
 window.setTimeout = function(fn,ms) {
 	var wrappedFn = function(){
-		try {
+
+		// We can catch the error here, but if we do, even if we throw it again, the Chrome debugger shows this function as the source.
+		// It is preferable to let the error fall up to Chrome, so we can easily jump to the line number.
+		// Unfortunately, if we don't catch the error, we can't report it to FJSL!
+
+		// try {
+			// console.log("Timeout happening after "+ms+"ms: "+fn)
 			if (typeof fn == 'function') {
 				fn();
 			} else if (typeof fn == 'string') {
 				eval(fn);
 			} else  {
-				throw new Error("setTimeout.wrappedFn(): Unsure whether to execute "+typeof fn+": "+fn);
+				throw new Error("[FJSL] setTimeout.wrappedFn(): Unsure how to execute fn "+typeof fn+": "+fn);
 			}
-		} catch (e) {
+		// } catch (e) {
 			// Actually hard to read!
-			var prettyFn = (""+fn) .replace(/\n/g,'\\n');
-			console.error(e);
-			throw e;
-		}
+			// var prettyFn = fn; // (""+fn) .replace(/\n/g,'\\n');
+			// console.log("[ERR]",e,prettyFn);
+			// console.log("[Exception]",e,"from",fn.name);
+			// console.log(e.stack);
+			// throw e;
+			// Unfortunately even Chrome dev shows the throw as coming from here!
+			// So it is better if we leave it alone.
+		// }
+
 	};
 	return oldSetTimeout(wrappedFn,ms);
 };

@@ -8,10 +8,19 @@
 // @exclude        *
 // ==/UserScript==
 
-// Targets:
-//   Making userscripts work when they are loaded via a bookmarklet.
-//   Making userscripts work better in Google Chrome (installed as extensions or run from bookmarklets).
-//   Making userscripts work better in other browsers (I have not actually been testing this!).
+// This is a shim to provide the Greasemonkey API functions if they are not already available.
+// Goals:
+// - Making userscripts work when they are loaded via a bookmarklet.
+// - Making userscripts work better in Google Chrome (installed as extensions or run from bookmarklets).
+// - Making userscripts work better in other browsers (I have not actually been testing this!).
+
+// Notes:
+// - To use in document scope, just load this script before any userscript JS.
+// - To use as a Chrome or Greasemonkey extension, you need to copy paste from
+//   this library into the top of your userscript.
+//   (Alternatively, in Chrome, you might be able to load this library into
+//   page scope, before continuing your userscript with a callback, but this
+//   will not work in Greasemonkey due to the sandbox.)
 
 (function(){
 
@@ -19,12 +28,13 @@ if (typeof GM_log === 'undefined') {
 	if (this.console && typeof console.log === "function") {
 		console.log("Implementing fallback GM_log");
 	}
-	GM_log = function(data) {
+	// Without 'this' sometimes Bookmarklets in Chrome can't see GM_log!
+	this.GM_log = function(data) {
 		if (this.console && console.log) {
 			console.log(data);
 		} else {
 			// We cannot log to Firefox's error console.
-			if (window.navigator.vendor == "") {
+			if (window.navigator.vendor === "") {
 				setTimeout(function(){ throw new Error(""+data); },0);
 			}
 		}
@@ -35,12 +45,9 @@ if (typeof GM_log === 'undefined') {
 
 var weAreInUserscriptScope = (typeof GM_log != 'undefined');
 if (window.navigator.vendor.match(/Google/) && weAreInUserscriptScope) {
-	GM_log("unsafeWindow was "+typeof unsafeWindow);
-	GM_log("unsafeWindow was "+this.unsafeWindow);
 	var div = document.createElement("div");
 	div.setAttribute("onclick", "return window;");
 	unsafeWindow = div.onclick();
-	GM_log("unsafeWindow is now "+this.unsafeWindow);
 }
 
 if (typeof GM_addStyle == 'undefined') {
