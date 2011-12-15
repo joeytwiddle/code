@@ -22,13 +22,15 @@
 // TODO: Option to watch for new globals.
 // TODO: Options to toggle logging of any intercepted setTimeouts, XMLHttpRequest's etc, in case the reader is interested.
 
+// TODO: all DOM events!  XHR.
+// We could even put intercepts on generic functions, in case an error occurs inside them, in a context which we had otherwise failed to intercept.
+
 (function(){
 
-
-
 var autoHide = true;
-var autoHideTimer = null;
 
+var logDiv = null;
+var logContainer = null;
 
 
 function newNode(tag,data) {
@@ -52,74 +54,11 @@ function addStyle(css) {
 	document.getElementsByTagName('head')[0].appendChild(st);
 }
 
-function showLogger() {
-	logDiv.style.display = '';
-	//// BUG: Transition is not working!  Perhaps it only works when switching between CSS classes.
-	// logDiv.style._webkit_transition_property = 'opacity';
-	// logDiv.style._webkit_transition_duration = '2s';
-	logDiv.style.opacity = 1.0;
-}
 
-function hideLogger() {
-	logDiv.style.display = 'none';
-	// logDiv.style._webkit_transition_property = 'opacity';
-	// logDiv.style._webkit_transition_duration = '2s';
-	// logDiv.style.opacity = 0.0;
-}
 
-var css = "";
-css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 45%; /*max-height: 90%; height: 320px;*/ background-color: #ffffcc; color: black; border: 1px solid black; z-index: 10000; } ";
-css += " .fastJSLogger > span { max-height: 10%; }";
-// css += " .fastJSLogger > pre  { max-height: 90%; overflow: auto; }";
-//// On the pre, max-height: 90% is not working, but specifying px does.
-var maxHeight = window.innerHeight * 0.8 | 0;
-css += " .fastJSLogger > pre  { max-height: "+maxHeight+"px; overflow: auto; }";
-css += " .fastJSLogger > pre  { font-size: 80%; padding: 0.4em; }";
-css += " .fastJSLogger        { opacity: 0.8; } ";
-css += " .fastJSLogger:hover  { opacity: 1.0; } ";
-if (document.location.host.match(/wikipedia/))
-	css += " .fastJSLogger > pre  { font-size: 60%; }";
-addStyle(css);
+var autoHideTimer = null;
 
-var logDiv = newNode("div",{id:'fastJSLogger',className:'fastJSLogger'});
-hideLogger();
-document.body.appendChild(logDiv);
 
-logDiv.style.position = 'fixed';
-logDiv.style.top = '20px';
-logDiv.style.right = '20px';
-
-		// @todo refactor
-		// I/O: logDiv, logContainer
-
-		var heading = newSpan("FastJSLogger");
-		logDiv.appendChild(heading);
-
-		var closeButton = newSpan("[X]");
-		closeButton.style.float = 'right';
-		closeButton.style.cursor = 'pointer';
-		closeButton.style.paddingLeft = '5px';
-		closeButton.onclick = function() { logDiv.parentNode.removeChild(logDiv); };
-		logDiv.appendChild(closeButton);
-
-		var logContainer = newNode("pre");
-
-		var rollupButton = newSpan("[-]");
-		rollupButton.style.float = 'right';
-		rollupButton.style.cursor = 'pointer';
-		rollupButton.style.paddingLeft = '10px';
-		rollupButton.onclick = function() {
-			if (logContainer.style.display == 'none') {
-				logContainer.style.display = '';
-				rollupButton.textContent = "[-]";
-			} else {
-				logContainer.style.display = 'none';
-				rollupButton.textContent = "[+]";
-			}
-		};
-		logDiv.appendChild(rollupButton);
-
-		logDiv.appendChild(logContainer);
 
 function addCloseButtonTo(elem) {
 
@@ -143,12 +82,99 @@ function addCloseButtonTo(elem) {
 	//// BUG: b is not removed from DOM on click!
 
 }
-// addCloseButtonTo(logDiv);
+
+function createGUI() {
+
+	var css = "";
+	css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 45%; /*max-height: 90%; height: 320px;*/ background-color: #ffffcc; color: black; border: 1px solid black; z-index: 10000; } ";
+	css += " .fastJSLogger > span { max-height: 10%; }";
+	// css += " .fastJSLogger > pre  { max-height: 90%; overflow: auto; }";
+	//// On the pre, max-height: 90% is not working, but specifying px does.
+	var maxHeight = window.innerHeight * 0.8 | 0;
+	css += " .fastJSLogger > pre  { max-height: "+maxHeight+"px; overflow: auto; }";
+	css += " .fastJSLogger > pre  { font-size: 80%; padding: 0.4em; }";
+	// css += " .fastJSLogger > pre > input { width: 100%, background-color: #888888; }";
+	css += " .fastJSLogger        { opacity: 0.8; } ";
+	css += " .fastJSLogger:hover  { opacity: 1.0; } ";
+	if (document.location.host.match(/wikipedia/))
+		css += " .fastJSLogger > pre  { font-size: 60%; }";
+	addStyle(css);
+
+	var logDiv = newNode("div",{id:'fastJSLogger',className:'fastJSLogger'});
+	hideLogger();
+	document.body.appendChild(logDiv);
+
+	logDiv.style.position = 'fixed';
+	logDiv.style.top = '20px';
+	logDiv.style.right = '20px';
+
+	// @todo refactor
+	// I/O: logDiv, logContainer
+
+	var heading = newSpan("FastJSLogger");
+	logDiv.appendChild(heading);
+
+	// addCloseButtonTo(logDiv);
+
+	var closeButton = newSpan("[X]");
+	closeButton.style.float = 'right';
+	closeButton.style.cursor = 'pointer';
+	closeButton.style.paddingLeft = '5px';
+	closeButton.onclick = function() { logDiv.parentNode.removeChild(logDiv); };
+	logDiv.appendChild(closeButton);
+
+	var logContainer = newNode("pre");
+
+	var rollupButton = newSpan("[-]");
+	rollupButton.style.float = 'right';
+	rollupButton.style.cursor = 'pointer';
+	rollupButton.style.paddingLeft = '10px';
+	rollupButton.onclick = function() {
+		if (logContainer.style.display == 'none') {
+			logContainer.style.display = '';
+			rollupButton.textContent = "[-]";
+		} else {
+			logContainer.style.display = 'none';
+			rollupButton.textContent = "[+]";
+		}
+	};
+	logDiv.appendChild(rollupButton);
+
+	var displaySearchFilter = true;
+	if (displaySearchFilter) {
+		function createSearchFilter(logDiv,logContainer) {
+			var searchFilter = document.createElement("input");
+			searchFilter.type = 'text';
+			searchFilter.onchange = function(evt) {
+				var searchText = this.value;
+				// console.log("Searching for "+searchText);
+				var logLines = logContainer.childNodes;
+				for (var i=0;i<logLines.length;i++) {
+					if (logLines[i].textContent.indexOf(searchText) >= 0) {
+						logLines[i].style.display = '';
+					} else {
+						logLines[i].style.display = 'none';
+					}
+				}
+			};
+			return searchFilter;
+		}
+		var searchFilter = createSearchFilter(logDiv,logContainer);
+		// logDiv.appendChild(document.createElement("br"));
+		logDiv.appendChild(searchFilter);
+	}
+
+	logDiv.appendChild(logContainer);
+
+	return [logDiv,logContainer];
+
+}
+
+
 
 var oldConsole = this.console; // When running as a userscript in Chrome, cannot see this.console!
 var oldGM_log = this.GM_log;
 
-// Any reason why we're using this.unsafeWindow instead of just unsafeWindow?  Probably not...
 var target = ( this.unsafeWindow ? this.unsafeWindow : window );
 
 var preventInfLoop = null;
@@ -180,26 +206,30 @@ target.console.log = function(a,b,c) {
 		oldGM_log(a,b,c);
 	}
 
-	// We cannot do arguments.join (FF4)
-	var out = "";
-	for (var i=0;i<arguments.length;i++) {
-		if (i>0) {
-			out += " ";
-		}
-		out += (""+arguments[i]);
-	}
-	// logContainer.appendChild(document.createElement("br"));
-	// logContainer.appendChild(document.createTextNode(out));
-	// logContainer.appendChild(document.createTextNode("div")).textContent = out;
-	// var d = document.createElement("div");
-	// d.style.fontStyle = 'Monospaced';
-	var d = document.createElement("div");
-	d.textContent = out;
-	logContainer.appendChild(d);
+	if (logContainer) {
 
-	// Scroll to bottom
-	// TODO: This is undesirable if the scrollbar was not already at the bottom, i.e. the user has scrolled up manually and is trying to read earlier log entries!
-	logContainer.scrollTop = logContainer.scrollHeight;
+		// We cannot do arguments.join (FF4)
+		var out = "";
+		for (var i=0;i<arguments.length;i++) {
+			if (i>0) {
+				out += " ";
+			}
+			out += (""+arguments[i]);
+		}
+		// logContainer.appendChild(document.createElement("br"));
+		// logContainer.appendChild(document.createTextNode(out));
+		// logContainer.appendChild(document.createTextNode("div")).textContent = out;
+		// var d = document.createElement("div");
+		// d.style.fontStyle = 'Monospaced';
+		var d = document.createElement("div");
+		d.textContent = out;
+		logContainer.appendChild(d);
+
+		// Scroll to bottom
+		// TODO: This is undesirable if the scrollbar was not already at the bottom, i.e. the user has scrolled up manually and is trying to read earlier log entries!
+		logContainer.scrollTop = logContainer.scrollHeight;
+
+	}
 
 	if (autoHide) {
 		if (autoHideTimer !== null) {
@@ -209,6 +239,17 @@ target.console.log = function(a,b,c) {
 		autoHideTimer = setTimeout(hideLogger,15 * 1000);
 	}
 
+};
+
+/* Provide optional extra facility: console.error() */
+
+target.console.error = function(a,b,c) {
+	oldConsole.log("[ERROR]",a,b,c);
+	if (oldConsole.error) {
+		oldConsole.error(a,b,c);
+	} else {
+		throw new Error("Nowhere to send console.error() call!",a,b,c);
+	}
 };
 
 /*
@@ -229,17 +270,6 @@ target.console.error = function(e) {
 	target.console.log.apply(target.console,["Stacktrace:\n",e.stack]);
 };
 */
-
-target.console.error = function(a,b,c) {
-	oldConsole.log("[ERROR]",a,b,c);
-	if (oldConsole.error) {
-		oldConsole.error(a,b,c);
-	} else {
-		throw new Error("Nowhere to send console.error() call!",a,b,c);
-	}
-};
-
-target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
 
 //// Not really needed
 // this.GM_log = target.console.log;
@@ -292,20 +322,37 @@ window.setTimeout = function(fn,ms) {
 	return oldSetTimeout(wrappedFn,ms);
 };
 
-// TODO: all DOM events!  XHR.
-// We could even put intercepts on generic functions, in case an error occurs inside them, in a context which we had otherwise failed to intercept.
 
 
-/*
-// TESTING
-for (var i=0;i<45;i++) {
-	var s = "";
-	for (var j=Math.random()*5;j>=0;j--) {
-		s += Math.random();
+var logDiv;
+
+function showLogger() {
+	if (logDiv) {
+		logDiv.style.display = '';
+		//// BUG: Transition is not working!  Perhaps it only works when switching between CSS classes.
+		// logDiv.style._webkit_transition_property = 'opacity';
+		// logDiv.style._webkit_transition_duration = '2s';
+		logDiv.style.opacity = 1.0;
 	}
-	console.log(s);
 }
-*/
+
+function hideLogger() {
+	if (logDiv) {
+		logDiv.style.display = 'none';
+		// logDiv.style._webkit_transition_property = 'opacity';
+		// logDiv.style._webkit_transition_duration = '2s';
+		// logDiv.style.opacity = 0.0;
+	}
+}
+
+var k = createGUI();
+logDiv = k[0];
+logContainer = k[1];
+
+
+
+target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
+
 
 
 })();
