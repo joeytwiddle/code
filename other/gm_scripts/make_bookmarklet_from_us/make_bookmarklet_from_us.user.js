@@ -8,12 +8,23 @@
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // ==/UserScript==
 
+// DONE: All bookmarklets optionally preload the Fallback GMAPI.
+// DONE: All bookmarklets optionally load in non-caching fashion (for changing scripts).
+
+// TODO BUG: Use onload event to ensure prerequisite scripts are loaded before dependent scripts.
+
 // TODO: We could provide neat catches for GM_ API commands so they won't fail
 // entirely.
 
 // TODO: Provide extra feature, which allows the Bookmarks to actually trigger
 // the userscript properly-running inside Greasemonkey, if this userscript is
 // present to handle the request, otherwise (with warning) load outside GM.
+
+// TODO: Support @include/@excude and @require meta rules.
+// This requires parsing the script's header using XHR before creating each bookmarklet.
+
+// TODO: Optionally create static bookmarklet, with all code inline, rather than loaded from a URL.
+//       // comments will need to be removed or converted to /*...*/ comments
 
 function addBookmarklet(link,includeGMCompat,neverCache) {
 	var scriptsToLoad = [];
@@ -42,7 +53,6 @@ function addBookmarklet(link,includeGMCompat,neverCache) {
 		name = name + " (FBAPI)";
 	}
 	*/
-	name += ( neverCache || includeGMCompat ? neverCache && includeGMCompat ? " (NC+FB)" : neverCache ? " (NC)" : " (FB)" : "" );
 
 	var newLink = document.createElement("A");
 	newLink.href = "javascript:" + toRun;
@@ -51,6 +61,14 @@ function addBookmarklet(link,includeGMCompat,neverCache) {
 	var extra = document.createElement("SPAN");
 	extra.appendChild(document.createTextNode("(Bookmarklet: "));
 	extra.appendChild(newLink);
+	var extraString = ( neverCache || includeGMCompat ? neverCache && includeGMCompat ? " (NoCaching,WithGMFallbacks)" : neverCache ? " (NoCaching)" : " (WithGMFallbacks)" : "" );
+	if (extraString) {
+		// extra.appendChild(document.createTextNode(extraString));
+		var extraText = document.createElement("span");
+		extraText.textContent = extraString;
+		extraText.style.fontSize = '80%';
+		extra.appendChild(extraText);
+	}
 	extra.appendChild(document.createTextNode(")"));
 	extra.style.paddingLeft = '8px';
 	link.parentNode.insertBefore(extra,link.nextSibling);
@@ -169,17 +187,21 @@ function getNameFromFilename(href) {
 var links = document.getElementsByTagName("A");
 for (var i=links.length-1;i>=0;i--) {
 	var link = links[i];
-	// Links to subfolders of this greasmonkey scripts folder
-	if (document.location.href.match(/\/(gm_scripts|userscripts)\//)) {
-		if (link.href.match(/\/$/)) {
-			addQuickInstall(link);
-		}
-	}
-	// Direct links to scripts
+
+	// If we see a direct link to a user script, create buttons for it.
 	if (link.href.match(/\.js$/)) { // \.user\.js
 		addBookmarklet(link,true,true);
 		addLiveUserscript(link);
 		addSourceViewer(link);
 	}
+
+	// If the current page looks like a Greasemonkey Userscript Folder, then
+	// create an installer for every subfolder (assuming a script is inside it).
+	if (document.location.href.match(/\/(gm_scripts|userscripts)\//)) {
+		if (link.href.match(/\/$/) && link.textContent!=="Parent Directory") {
+			addQuickInstall(link);
+		}
+	}
+
 }
 
