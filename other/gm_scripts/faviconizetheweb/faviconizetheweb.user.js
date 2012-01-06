@@ -20,8 +20,13 @@ var initialDelay = 2000;
 var delayIncrement = 5; // after 200 links the delay between batches will be 1 second
 var batchSize = 10;
 
-var alwaysUseGoogle = true;
+var alwaysUseGoogle = false;
 
+if (!alwaysUseGoogle) {
+	// We can speed up if we are requesting from multiple sites
+	initialDelay = 100;
+	delayIncrement = 5;
+}
 
 
 
@@ -90,13 +95,13 @@ function createFaviconFor(url) {
 	var img = document.createElement('IMG');
 	// img.src = 'http://'+host+'/favicon.ico';
 
-	var imageExtensions = ( alwaysUseGoogle ? [] : ['ico','png','gif','jpg'] );
-	function tryExtension() {
+	var imageExtensions = ( alwaysUseGoogle ? [] : ['gif','jpg','png','ico'] );
+	function tryExtension(evt) {
 		var ext = imageExtensions.pop();
 		if (ext) {
 			img.src = 'http://'+host+'/favicon.'+ext;
 		} else {
-			img.title = "Fail to find favicon for "+host;
+			img.title = "Failed to find favicon for "+host;
 			img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
 			img.removeEventListener('error',tryExtension,true);
@@ -127,8 +132,8 @@ function checkLink(link) {
 	if (!link.href) {
 		return;
 	}
-	// Skip relative and same-host links:
-	if (link.href.match(/^[/]/) || link.href.match("://"+document.location.host)) {
+	// Skip relative and same-host links (there is no host on file:/// pages):
+	if (link.href.match(/^[/]/) || (document.location.host && link.href.match("://"+document.location.host))) {
 		return;
 	}
 	// Skip Javascript links and relative (same-page) anchors
