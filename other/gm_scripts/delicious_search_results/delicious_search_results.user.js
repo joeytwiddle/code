@@ -163,8 +163,18 @@ GM_DUR = {
 			ds.appendChild(document.createTextNode("No Delicious results"));
 		}
 
-		var results_section = document.getElementById("res");
-		results_section.insertBefore(ds, results_section.firstChild);
+		// Everything is prepared.  But we actually delay the insertion for a
+		// moment.  This gives the browser a chance to process any click that
+		// the user has made since we started running.
+		// (Hopefully fixes the bug that I would click on a Google result link,
+		// then this section would appear and my click would act on one of the
+		// Delicious links which is now under the pointer!)
+		// This might not help if it is something else causing browser lockup.
+		// In that case we may need to disable ourself for clicks for a brief moment.
+		setTimeout(function(){
+			var results_section = document.getElementById("res");
+			results_section.insertBefore(ds, results_section.firstChild);
+		},10);
 
 	},
 };
