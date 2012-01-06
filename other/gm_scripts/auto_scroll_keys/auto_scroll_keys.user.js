@@ -5,6 +5,18 @@
 // @include        *
 // ==/UserScript==
 
+/* BUG: Does not work well in Chromium when zoomed in.  Sometimes moves 1 pixel
+ * down, or scrolls left, but does not scroll down, although scrolling upward
+ * works ok.
+ * Oh it does scroll, if you hold down the key long enough to pass the
+ * threshold needed when zooming.
+ * But when the threshold is exceeded, movement is quite fast.  Perhaps we can
+ * overcome this by holding our own analogue (non-integer) scroll position, and
+ * setting the page scroll from this.
+ * Perhaps this should catch up if the read value differs significantly from
+ * the stored value, indicating perhaps that the user jumped the page manually.
+ * */
+
 var u44573_go = false;
 var scrollSpeed = 0;
 
