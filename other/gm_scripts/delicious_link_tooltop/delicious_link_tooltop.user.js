@@ -53,7 +53,7 @@ function log(x,y,z) {
 		console.log(x,y,z);
 	}
 	window.status = ""+x+" "+y+" "+z;
-};
+}
 
 
 /*
@@ -93,7 +93,7 @@ log = function(x) {
 // The delicious JSON url we use is:
 //   http://feeds.delicious.com/v2/json/urlinfo?url=http://www.google.co.uk/
 
-// TODO: Since bookmarklets can't make CD-XHR, we could use a JSONP proxy like:
+// DONE: Since bookmarklets can't make CD-XHR, we could use a JSONP proxy like:
 //   http://hwi.ath.cx/json_plus_p?url=http://feeds.delicious.com/... ?
 
 // DONE: onclick should cancel the lookup (user has followed link, no need to query)
@@ -285,10 +285,66 @@ function isImageAndWhitespace(elem) {
 
 // == Chrome compatibility layer == //
 
-/*
-//// GM_xhR through a JSONP proxy
+if (typeof GM_log == 'undefined') {
+	GM_log = function(data) {
+		if (this.console && console.log) {
+			console.log(data);
+		}
+		window.status = ""+data;
+	};
+}
+
+//// JSONP request direct from Delicious.  Should work in all browsers.
+//// Lookalike GM_xhR for this script only, actually requests JSONP directly from delicious.
+//// BUG: Since Delicious changed format, they also provide responses with e.g. ... "total_posts": 2L, ...  This does not parse in Javascript!  It throws "identifier starts immediately after numeric literal" in Firefox, and "Unexpected token ILLEGAL" in Chromium.
+////      Interestingly, the "L" does NOT appear if we make a non-callback request through the xhrasjson proxy, or indeed the same callback request direct in Firefox's location bar.  Perhaps we could avoid the "L" by requesting the right content/mime-type - I guess we can we specify that in the script tag?
+// We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
+// ENABLED until we can fix this bug!
+if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
+	// GM_log("[DLT] Using Delicious JSONP");
+	GM_xmlhttpRequest = function(details) {
+		// Insert a callback into the root window, anonymised by a random key.
+		var callbackName = "dlt_jsonp_callback_" + parseInt(Math.random()*987654321);
+		// Where should we place the callback?  Chrome Userscripts need to obtain unsafeWindow.
+		var target = window;
+		var weAreInUserscriptScope = (typeof GM_log != 'undefined');
+		if (window.navigator.vendor.match(/Google/) && weAreInUserscriptScope) {
+			var div = document.createElement("div");
+			div.setAttribute("onclick", "return window;");
+			unsafeWindow = div.onclick();
+			target = unsafeWindow;
+		}
+		var script = document.createElement("script");
+		var callbackFunction = function(dataObj) {
+			var responseDetails = {};
+			responseDetails.responseText = JSON.stringify(dataObj);
+			try {
+				details.onload(responseDetails);
+			} catch (e) {
+				// GM_log("Problem running details.onload: "+e);
+				GM_log("Problem running details.onload ("+details.onload+"): "+e);
+			}
+			// Cleanup artifacts: script and callback function
+			delete target[callbackName];
+			// document.getElementsByTagName("head")[0].removeChild(script);
+			document.body.removeChild(script);
+		};
+		target[callbackName] = callbackFunction;
+		// Request a JSONP response from delicious, which should return some javascript to call the callback.
+		script.type = "text/javascript";
+		script.src = details.url + "?callback="+callbackName;
+		// GM_log("Requesting script "+script.src);
+		// GM_log("Adding "+script+" to "+document.body);
+		// document.getElementsByTagName("head")[0].appendChild(script);
+		document.body.appendChild(script);
+	};
+}
+// DONE: scripts and functions added to the DOM should be removed after use
+
+//// GM_xhR alternative through a JSONP proxy
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
+	GM_log("[DLT] Attempting to use GM_xhr JSONP proxy ...");
 	GM_xmlhttpRequest = function(details) {
 		var proxyHost = "hwi.ath.cx:8124";
 		// We don't want to send functions to the proxy, so we remove them from the details object.
@@ -344,48 +400,6 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 			}
 			throw new Error("Failed to get JSONed XHR response from "+proxyHost+" - the server may be down.");
 		};
-	};
-}
-*/
-
-//// Lookalike GM_xhR for this script only, actually requests JSONP directly from delicious.
-// We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
-if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
-	GM_xmlhttpRequest = function(details) {
-		// Insert a callback into the root window, anonymised by a random key.
-		var callbackName = "xss_xhr_via_jsonp_callback_" + parseInt(Math.random()*987654321);
-		// Where should we place the callback?  Chrome Userscripts need to obtain unsafeWindow.
-		var target = window;
-		var weAreInUserscriptScope = (typeof GM_log != 'undefined');
-		if (window.navigator.vendor.match(/Google/) && weAreInUserscriptScope) {
-			var div = document.createElement("div");
-			div.setAttribute("onclick", "return window;");
-			unsafeWindow = div.onclick();
-			target = unsafeWindow;
-		}
-		var script = document.createElement("script");
-		var callbackFunction = function(dataObj) {
-			var responseDetails = {};
-			responseDetails.responseText = JSON.stringify(dataObj);
-			details.onload(responseDetails);
-			// Cleanup artifacts: script and callback function
-			delete target[callbackName];
-			document.getElementsByTagName("head")[0].removeChild(script);
-		};
-		target[callbackName] = callbackFunction;
-		// Request a JSONP response from delicious, which should return some javascript to call the callback.
-		script.src = details.url + "&callback="+callbackName;
-		document.getElementsByTagName("head")[0].appendChild(script);
-	};
-}
-// DONE: scripts and functions added to the DOM should be removed after use
-
-if (typeof GM_log == 'undefined') {
-	GM_log = function(data) {
-		if (this.console && console.log) {
-			console.log(data);
-		}
-		window.status = ""+data;
 	};
 }
 
@@ -460,6 +474,8 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 
 		GM_getValue = function(name, defaultValue) {
 			var value = storage.getItem(name);
+			// GM_log("DLT GM_get("+name+")");
+			// GM_log("  gave: "+value);
 			if (!value)
 				return defaultValue;
 			var type = value[0];
@@ -491,11 +507,17 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 			return list;
 		};
 
-		maxCacheSize = 1024; // per domain
+		// Wikipedia has many links, so we won't reduce his cachesize.
+		if (!document.location.host.match(/wikipedia/))
+			maxCacheSize = 1024; // per domain
 		// In Chrome 512 means my cache cleanup takes 2-5 seconds.
 
 	} else {
 		GM_log("Warning: Could not implement GM_get/setValue.");
+		GM_setValue = function(){};
+		GM_getValue = function(key,def){ return def; };
+		GM_deleteValue = function(){};
+		GM_listValues = function() { return []; };
 	}
 
 }
@@ -532,9 +554,24 @@ if (typeof GM_listValues == 'undefined') {
 	};
 }
 
+// Not everyone has JSON!  Here is a cheap and insecure fallback.
+if (!this.JSON) {
+	GM_log("Implementing JSON using uneval/eval (insecure!).");
+	this.JSON = {
+		parse: function(str) {
+			return eval(str);
+		},
+		stringify: function(obj) {
+			return uneval(str);
+		},
+	};
+}
+
+/*
 // Chrome also has no uneval, which forced me to change all eval/unevals to
 // JSON.parse/stringify, which was a good thing.  :)
 // Problem is, my stored data in Firefox was in uneval format, not JSON...
+// This wrapper ensures we can parse both types of stored string (new JSON, old uneval).
 function JSON_parse(str) {
 	var result;
 	try {
@@ -551,7 +588,11 @@ function JSON_parse(str) {
 	}
 	return result;
 }
-// TODO: drop this a couple of month into 2011.  if i haven't fixed those old records by then, I never will!  (If I do hit one again, the error will be thrown again.)
+*/
+// DONE: drop this a couple of month into 2011.  if i haven't fixed those old records by then, I never will!  (If I do hit one again, the error will be thrown again.)
+function JSON_parse(str) {
+	return JSON.parse(str);
+}
 
 
 
@@ -573,7 +614,9 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 	}
 
 	// We can use https here, but it is slower.
-	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
+	// var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
+	//// In 2010 this feed URL changed, requiring "?callback" rather than "&callback"
+	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo/' + hex_md5(lookupURL);
 	GM_xmlhttpRequest({
 		method: "GET",
 		url: jsonUrl,
@@ -689,21 +732,26 @@ function cleanupCache() {
 		var startTime = new Date().getTime();
 
 		var fullCacheList = GM_listValues();
-		var cacheList = [];
+		if (typeof fullCacheList.length != 'number') {
+			log("Unable to cleanup cache, since fullCacheList has no length!");
+			log("fullCacheList =",fullCacheList);
+		}
 
-		/*
 		// Trim the list down to only those entries relevant to this plugin.
 		// (Slow but neccessary when we are using localStorage.)
 		// DONE: Although really this should be done by the GM_listValues wrapper!
+		var cacheList = [];
 		for (var i=0;i<fullCacheList.length;i++) {
 			var crURL = fullCacheList[i];
 			if (startsWith(crURL,"CachedResponse")) {
 				cacheList.push(crURL);
 			}
 		}
-		fullCacheList = null; // GC can act sooner if it wishes
-		*/
+		fullCacheList = null; // So GC can act soon if it wishes
+
+		/*
 		cacheList = fullCacheList;   // Let's hope it's a real sortable Array!
+		*/
 
 		log("There are "+cacheList.length+" items in the cache.");
 
@@ -1340,7 +1388,14 @@ function addLabel(link) {
 	var goodUrl = startsWith(link,"http://") || startsWith(link,"https://") || (""+link).indexOf(":")==-1; // skip any "about:config" or "javascript:blah" links
 	var hasHash = (link.href.indexOf("#") >= 0);
 	var samePage = (link.href.split("#")[0] == document.location.href.split("#")[0]);
-	var isSearch = link.href.indexOf("?")>-1;
+	// Some links are just too common to spam Deliciouos for all of them.
+	// e.g. searches maybe not, but page 3 of the search result no!
+	var isGoogleSearch = ( link.href.indexOf("/search?")>-1 || link.href.indexOf("/setprefs?")>-1 );
+	var isCommonSearch = ( link.href.indexOf('?q=')>=0 );
+	var isSearch = isCommonSearch || isGoogleSearch;
+	if (isCommonSearch) {
+		GM_log("Skipping common ?q= in "+link.href);
+	}
 	var isImage = isImageAndWhitespace(link);
 	if (link.href.match(/fbcdn.net\//) || link.href.match(/facebook.com\//))
 		return;
@@ -1420,7 +1475,266 @@ if (annotateAllLinks && document.location.host != "www.delicious.com") {
 
 // == Cleanup old cached data == //
 
-if (Math.random() < 10.1) { // TODO 0.1
-	setTimeout(cleanupCache,30000);
+if (Math.random() < 0.1) { // TODO 0.1
+	setTimeout(cleanupCache,120000);
+}
+
+
+
+/*
+ * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
+ * Digest Algorithm, as defined in RFC 1321.
+ * Version 2.1 Copyright (C) Paul Johnston 1999 - 2002.
+ * Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+ * Distributed under the BSD License
+ * See http://pajhome.org.uk/crypt/md5 for more info.
+ */
+
+/*
+ * Configurable variables. You may need to tweak these to be compatible with
+ * the server-side, but the defaults work in most cases.
+ */
+var hexcase = 0;  /* hex output format. 0 - lowercase; 1 - uppercase        */
+var b64pad  = ""; /* base-64 pad character. "=" for strict RFC compliance   */
+var chrsz   = 8;  /* bits per input character. 8 - ASCII; 16 - Unicode      */
+
+/*
+ * These are the functions you'll usually want to call
+ * They take string arguments and return either hex or base-64 encoded strings
+ */
+function hex_md5(s){ return binl2hex(core_md5(str2binl(s), s.length * chrsz));}
+function b64_md5(s){ return binl2b64(core_md5(str2binl(s), s.length * chrsz));}
+function str_md5(s){ return binl2str(core_md5(str2binl(s), s.length * chrsz));}
+function hex_hmac_md5(key, data) { return binl2hex(core_hmac_md5(key, data)); }
+function b64_hmac_md5(key, data) { return binl2b64(core_hmac_md5(key, data)); }
+function str_hmac_md5(key, data) { return binl2str(core_hmac_md5(key, data)); }
+
+/*
+ * Perform a simple self-test to see if the VM is working
+ */
+function md5_vm_test()
+{
+  return hex_md5("abc") == "900150983cd24fb0d6963f7d28e17f72";
+}
+
+/*
+ * Calculate the MD5 of an array of little-endian words, and a bit length
+ */
+function core_md5(x, len)
+{
+  /* append padding */
+  x[len >> 5] |= 0x80 << ((len) % 32);
+  x[(((len + 64) >>> 9) << 4) + 14] = len;
+
+  var a =  1732584193;
+  var b = -271733879;
+  var c = -1732584194;
+  var d =  271733878;
+
+  for(var i = 0; i < x.length; i += 16)
+  {
+    var olda = a;
+    var oldb = b;
+    var oldc = c;
+    var oldd = d;
+
+    a = md5_ff(a, b, c, d, x[i+ 0], 7 , -680876936);
+    d = md5_ff(d, a, b, c, x[i+ 1], 12, -389564586);
+    c = md5_ff(c, d, a, b, x[i+ 2], 17,  606105819);
+    b = md5_ff(b, c, d, a, x[i+ 3], 22, -1044525330);
+    a = md5_ff(a, b, c, d, x[i+ 4], 7 , -176418897);
+    d = md5_ff(d, a, b, c, x[i+ 5], 12,  1200080426);
+    c = md5_ff(c, d, a, b, x[i+ 6], 17, -1473231341);
+    b = md5_ff(b, c, d, a, x[i+ 7], 22, -45705983);
+    a = md5_ff(a, b, c, d, x[i+ 8], 7 ,  1770035416);
+    d = md5_ff(d, a, b, c, x[i+ 9], 12, -1958414417);
+    c = md5_ff(c, d, a, b, x[i+10], 17, -42063);
+    b = md5_ff(b, c, d, a, x[i+11], 22, -1990404162);
+    a = md5_ff(a, b, c, d, x[i+12], 7 ,  1804603682);
+    d = md5_ff(d, a, b, c, x[i+13], 12, -40341101);
+    c = md5_ff(c, d, a, b, x[i+14], 17, -1502002290);
+    b = md5_ff(b, c, d, a, x[i+15], 22,  1236535329);
+
+    a = md5_gg(a, b, c, d, x[i+ 1], 5 , -165796510);
+    d = md5_gg(d, a, b, c, x[i+ 6], 9 , -1069501632);
+    c = md5_gg(c, d, a, b, x[i+11], 14,  643717713);
+    b = md5_gg(b, c, d, a, x[i+ 0], 20, -373897302);
+    a = md5_gg(a, b, c, d, x[i+ 5], 5 , -701558691);
+    d = md5_gg(d, a, b, c, x[i+10], 9 ,  38016083);
+    c = md5_gg(c, d, a, b, x[i+15], 14, -660478335);
+    b = md5_gg(b, c, d, a, x[i+ 4], 20, -405537848);
+    a = md5_gg(a, b, c, d, x[i+ 9], 5 ,  568446438);
+    d = md5_gg(d, a, b, c, x[i+14], 9 , -1019803690);
+    c = md5_gg(c, d, a, b, x[i+ 3], 14, -187363961);
+    b = md5_gg(b, c, d, a, x[i+ 8], 20,  1163531501);
+    a = md5_gg(a, b, c, d, x[i+13], 5 , -1444681467);
+    d = md5_gg(d, a, b, c, x[i+ 2], 9 , -51403784);
+    c = md5_gg(c, d, a, b, x[i+ 7], 14,  1735328473);
+    b = md5_gg(b, c, d, a, x[i+12], 20, -1926607734);
+
+    a = md5_hh(a, b, c, d, x[i+ 5], 4 , -378558);
+    d = md5_hh(d, a, b, c, x[i+ 8], 11, -2022574463);
+    c = md5_hh(c, d, a, b, x[i+11], 16,  1839030562);
+    b = md5_hh(b, c, d, a, x[i+14], 23, -35309556);
+    a = md5_hh(a, b, c, d, x[i+ 1], 4 , -1530992060);
+    d = md5_hh(d, a, b, c, x[i+ 4], 11,  1272893353);
+    c = md5_hh(c, d, a, b, x[i+ 7], 16, -155497632);
+    b = md5_hh(b, c, d, a, x[i+10], 23, -1094730640);
+    a = md5_hh(a, b, c, d, x[i+13], 4 ,  681279174);
+    d = md5_hh(d, a, b, c, x[i+ 0], 11, -358537222);
+    c = md5_hh(c, d, a, b, x[i+ 3], 16, -722521979);
+    b = md5_hh(b, c, d, a, x[i+ 6], 23,  76029189);
+    a = md5_hh(a, b, c, d, x[i+ 9], 4 , -640364487);
+    d = md5_hh(d, a, b, c, x[i+12], 11, -421815835);
+    c = md5_hh(c, d, a, b, x[i+15], 16,  530742520);
+    b = md5_hh(b, c, d, a, x[i+ 2], 23, -995338651);
+
+    a = md5_ii(a, b, c, d, x[i+ 0], 6 , -198630844);
+    d = md5_ii(d, a, b, c, x[i+ 7], 10,  1126891415);
+    c = md5_ii(c, d, a, b, x[i+14], 15, -1416354905);
+    b = md5_ii(b, c, d, a, x[i+ 5], 21, -57434055);
+    a = md5_ii(a, b, c, d, x[i+12], 6 ,  1700485571);
+    d = md5_ii(d, a, b, c, x[i+ 3], 10, -1894986606);
+    c = md5_ii(c, d, a, b, x[i+10], 15, -1051523);
+    b = md5_ii(b, c, d, a, x[i+ 1], 21, -2054922799);
+    a = md5_ii(a, b, c, d, x[i+ 8], 6 ,  1873313359);
+    d = md5_ii(d, a, b, c, x[i+15], 10, -30611744);
+    c = md5_ii(c, d, a, b, x[i+ 6], 15, -1560198380);
+    b = md5_ii(b, c, d, a, x[i+13], 21,  1309151649);
+    a = md5_ii(a, b, c, d, x[i+ 4], 6 , -145523070);
+    d = md5_ii(d, a, b, c, x[i+11], 10, -1120210379);
+    c = md5_ii(c, d, a, b, x[i+ 2], 15,  718787259);
+    b = md5_ii(b, c, d, a, x[i+ 9], 21, -343485551);
+
+    a = safe_add(a, olda);
+    b = safe_add(b, oldb);
+    c = safe_add(c, oldc);
+    d = safe_add(d, oldd);
+  }
+  return Array(a, b, c, d);
+
+}
+
+/*
+ * These functions implement the four basic operations the algorithm uses.
+ */
+function md5_cmn(q, a, b, x, s, t)
+{
+  return safe_add(bit_rol(safe_add(safe_add(a, q), safe_add(x, t)), s),b);
+}
+function md5_ff(a, b, c, d, x, s, t)
+{
+  return md5_cmn((b & c) | ((~b) & d), a, b, x, s, t);
+}
+function md5_gg(a, b, c, d, x, s, t)
+{
+  return md5_cmn((b & d) | (c & (~d)), a, b, x, s, t);
+}
+function md5_hh(a, b, c, d, x, s, t)
+{
+  return md5_cmn(b ^ c ^ d, a, b, x, s, t);
+}
+function md5_ii(a, b, c, d, x, s, t)
+{
+  return md5_cmn(c ^ (b | (~d)), a, b, x, s, t);
+}
+
+/*
+ * Calculate the HMAC-MD5, of a key and some data
+ */
+function core_hmac_md5(key, data)
+{
+  var bkey = str2binl(key);
+  if(bkey.length > 16) bkey = core_md5(bkey, key.length * chrsz);
+
+  var ipad = Array(16), opad = Array(16);
+  for(var i = 0; i < 16; i++)
+  {
+    ipad[i] = bkey[i] ^ 0x36363636;
+    opad[i] = bkey[i] ^ 0x5C5C5C5C;
+  }
+
+  var hash = core_md5(ipad.concat(str2binl(data)), 512 + data.length * chrsz);
+  return core_md5(opad.concat(hash), 512 + 128);
+}
+
+/*
+ * Add integers, wrapping at 2^32. This uses 16-bit operations internally
+ * to work around bugs in some JS interpreters.
+ */
+function safe_add(x, y)
+{
+  var lsw = (x & 0xFFFF) + (y & 0xFFFF);
+  var msw = (x >> 16) + (y >> 16) + (lsw >> 16);
+  return (msw << 16) | (lsw & 0xFFFF);
+}
+
+/*
+ * Bitwise rotate a 32-bit number to the left.
+ */
+function bit_rol(num, cnt)
+{
+  return (num << cnt) | (num >>> (32 - cnt));
+}
+
+/*
+ * Convert a string to an array of little-endian words
+ * If chrsz is ASCII, characters >255 have their hi-byte silently ignored.
+ */
+function str2binl(str)
+{
+  var bin = Array();
+  var mask = (1 << chrsz) - 1;
+  for(var i = 0; i < str.length * chrsz; i += chrsz)
+    bin[i>>5] |= (str.charCodeAt(i / chrsz) & mask) << (i%32);
+  return bin;
+}
+
+/*
+ * Convert an array of little-endian words to a string
+ */
+function binl2str(bin)
+{
+  var str = "";
+  var mask = (1 << chrsz) - 1;
+  for(var i = 0; i < bin.length * 32; i += chrsz)
+    str += String.fromCharCode((bin[i>>5] >>> (i % 32)) & mask);
+  return str;
+}
+
+/*
+ * Convert an array of little-endian words to a hex string.
+ */
+function binl2hex(binarray)
+{
+  var hex_tab = hexcase ? "0123456789ABCDEF" : "0123456789abcdef";
+  var str = "";
+  for(var i = 0; i < binarray.length * 4; i++)
+  {
+    str += hex_tab.charAt((binarray[i>>2] >> ((i%4)*8+4)) & 0xF) +
+           hex_tab.charAt((binarray[i>>2] >> ((i%4)*8  )) & 0xF);
+  }
+  return str;
+}
+
+/*
+ * Convert an array of little-endian words to a base-64 string
+ */
+function binl2b64(binarray)
+{
+  var tab = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  var str = "";
+  for(var i = 0; i < binarray.length * 4; i += 3)
+  {
+    var triplet = (((binarray[i   >> 2] >> 8 * ( i   %4)) & 0xFF) << 16)
+                | (((binarray[i+1 >> 2] >> 8 * ((i+1)%4)) & 0xFF) << 8 )
+                |  ((binarray[i+2 >> 2] >> 8 * ((i+2)%4)) & 0xFF);
+    for(var j = 0; j < 4; j++)
+    {
+      if(i * 8 + j * 6 > binarray.length * 32) str += b64pad;
+      else str += tab.charAt((triplet >> 6*(3-j)) & 0x3F);
+    }
+  }
+  return str;
 }
 
