@@ -215,7 +215,21 @@ target.console.log = function(a,b,c) {
 				out += " ";
 			}
 			out += (""+arguments[i]);
+			if (typeof obj == 'object') {
+				var objClassName = null;
+				try {
+					objClassName = o.__proto__.constructor.name
+				} catch (e) {
+					out += " [error getting objClassName: "+e+"]";
+				}
+				if (objClassName) {
+					out += " (type "+objClassName+")";
+				} else {
+					out += " [failed to get objClassName]";
+				}
+			}
 		}
+
 		// logContainer.appendChild(document.createElement("br"));
 		// logContainer.appendChild(document.createTextNode(out));
 		// logContainer.appendChild(document.createTextNode("div")).textContent = out;
