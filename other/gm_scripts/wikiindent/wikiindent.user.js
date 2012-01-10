@@ -5,13 +5,9 @@
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
 // @include        http://www.wormus.com/leakytap/*
+// @include        http://theinfosphere.org/*
 // @description    Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining.
 // ==/UserScript==
-
-//// TODO: It would be better to perform some things before the content loads
-//// (e.g. style rules like indentation, floating toc and hidden sidebar).
-//// Chrome could do this using:
-// @run-at         document-start
 
 //// Features:
 var toggleSidebar = true;
@@ -28,6 +24,7 @@ var fixUnderlinesToOverlines = true;
 */
 
 /* Changelog
+ *  3/1/2011 - Fixed Chrome compatibility!
  * 23/3/2011 - Added Chrome compatibility.
 */
 
@@ -45,22 +42,50 @@ function log(x) {
 // For bookmarklets:
 if (typeof GM_addStyle == "undefined") {
 	GM_addStyle = function(css) {
-		var doc = document;
 		var head, style;
-		head = doc.getElementsByTagName("head")[0];
+		head = document.getElementsByTagName("head")[0];
 		if (!head) { return; }
-		style = doc.createElement("style");
+		style = document.createElement("style");
 		style.type = "text/css";
 		style.innerHTML = css;
 		head.appendChild(style);
 	};
 }
 
-if (typeof GM_getValue == 'undefined') {
-	GM_log("WikiIndent: Adding fallback implementation of GM_getValue");
-	GM_getValue = function(key,def) {
-		return def;
-	};
+if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)) {
+	GM_log("WikiIndent: Adding fallback implementation of GM_set/getValue");
+
+	if (typeof localStorage == 'undefined') {
+
+		GM_getValue = function(name, defaultValue) {
+			return defaultValue;
+		};
+
+	} else {
+
+		GM_setValue = function(name, value) {
+			value = (typeof value)[0] + value;
+			localStorage.setItem(name, value);
+		};
+
+		GM_getValue = function(name, defaultValue) {
+			var value = localStorage.getItem(name);
+			if (!value)
+				return defaultValue;
+			var type = value[0];
+			value = value.substring(1);
+			switch (type) {
+				case 'b':
+					return value == 'true';
+				case 'n':
+					return Number(value);
+				default:
+					return value;
+			}
+		};
+
+	}
+
 }
 
 function doIt() {
@@ -219,13 +244,33 @@ function doIt() {
 				toc.style.right = '16px';
 				// toc.style.top = '16px';
 				// A healthy gap from the top allows the user to access things fixed in the top right of the page, if they can scroll finely enough.
-				toc.style.top = '24px';
-				toc.style.left = '';
-				toc.style.bottom = '';
+				// toc.style.top = '24px';
+				toc.style.right = '4%';
+				toc.style.top = '6%';
+				// toc.style.left = '';
+				// toc.style.bottom = '';
 				toc.style.zIndex = '5000';
 				// fadeElement(toc,1.0,0.4);
 				toc.style.opacity = 0.3;
+				// This might work for a simple toc div
+				toc.style.maxHeight = "80%";
+				toc.style.maxWidth = "40%";
+				toc.style.overflow = "auto";
 
+				/*
+				//// Alternative rules from table_of_contents_everywhere script:
+				toc.id = "toc";
+				GM_addStyle("#toc { position: fixed; top: 8%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; overflow: auto; }");
+				GM_addStyle("#toc       { opacity: 0.2; }");
+				GM_addStyle("#toc:hover { opacity: 1.0; }");
+				*/
+
+				// For MediaWiki tocs, we need to fix overflow not for the parent but for the ul:
+				// And again we can't use 80%, we have to provide pixels.
+				var maxHeight = window.innerHeight * 0.8 | 0;
+				var maxWidth = window.innerWidth * 0.4 | 0;
+				toc.id = "toc";
+				GM_addStyle("#toc ul { overflow: auto; max-width: "+maxWidth+"px; max-height: "+maxHeight+"px; }");
 				createFader(toc);
 
 				return true;
@@ -266,7 +311,8 @@ function doIt() {
 			var elems = whereToSearch.getElementsByTagName(tag);
 			if (elems.length == 1)
 				return;
-			for (var i=0;i<elems.length;i++) {
+			// for (var i=0;i<elems.length;i++) {
+			for (var i=elems.length;i-->0;) {
 				var elem = elems[i];
 				/* Don't fiddle with main heading, siteSub, or TOC. */
 				if (elem.className == 'firstHeading')
