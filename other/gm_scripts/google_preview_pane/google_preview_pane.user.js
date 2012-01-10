@@ -14,6 +14,11 @@
 
 // === Changelog ===
 //
+// 2011.12.11
+//
+//   * RELEASE: Uploaded version to userscripts.org
+//   * FIXED: Was not expanding over the sidebar
+//
 // 2011.--.--
 //
 //   * DONE: Google's new preview window is a bit distracting.
@@ -255,7 +260,10 @@ function initPreview() {
 		function setDimensions() {
 			leftCell.width = Number(resultsWidth*100)+"%";
 			rightCell.width = Number(previewWidth*100)+"%";
-			previewFrame.width = '100%';
+			// Chrome needs this for new Google 2011.
+			table.style.width = (window.innerWidth-40|0)+"px";
+			// previewFrame.width = '100%';
+			previewFrame.style.width = '100%';
 			//// If we leave room for vertical scrollbar, we won't need horizontal one. :)
 			//// Fixed for sidebars.
 			//// Fixed for previewWidth=0.8
@@ -868,8 +876,12 @@ function reformatThingsLater() {
 	var sidebar2010 = document.getElementById("leftnav");
 	if (sidebar2010) {
 		sidebar2010.style.display = "none";
-		GM_addStyle("#center_col { margin-left: 0px; }");
 	}
+	GM_addStyle("#center_col { margin-left: 0px; }");
+	// Somehow GPP must be adding some unwanted padding, because the searchform
+	// width 100% gets too wide and creates a horizontal scrollbar!
+	// We can workaround like this:
+	GM_addStyle("#searchform { width: 98%; }");
 
 	if (reduceWidth) {
 
@@ -1003,6 +1015,11 @@ function reformatThingsLater() {
 	applyClassRule("#center_col","margin-right","0px");
 	*/
 
+	// Squash any things on the left panel which may prevent our panes from
+	// filling the whole width!
+	GM_addStyle(".big #center_col, .big #foot { margin-left: 0px; }");
+	GM_addStyle(".mdm #center_col, .mdm #foot { margin-left: 0px; }");
+
 	} catch (e) {
 		GM_log("Exception during reformatThingsLater: "+e);
 	}
@@ -1028,7 +1045,8 @@ function removeSidebar() {
 	// GM_addStyle("#center_col { margin-right: 0px; }");
 	// GM_addStyle("#center_col { margin-right: 0px; }");
 	GM_addStyle("#leftnav { display: none; }");
-	GM_addStyle("#center_col, #foot { margin-left: 0px; margin-right: 0px; }");
+	GM_addStyle("#center_col, #foot { margin: 0px; border: 0px; }");
+	GM_addStyle("table { margin: 0px; border: 0px; }");
 
 	if (document.getElementById("vspb")) {
 		document.getElementById("vspb").style.display = 'none';
