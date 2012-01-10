@@ -6,6 +6,71 @@
 // @exclude        https://*/*
 // ==/UserScript==
 
+var rules = [
+
+	/* A rule:
+		{
+			hostMatch: "youtube.TLD",   youtube.ath.cx, somewhere.youtube.com
+			                            TLD is replaced by 1 or two toplevel domain elements.
+			pathMatch: "/watch",        A regex, will be wrapped with ^..$ so use
+			                            .* at either end for wildcards.
+			get: ...                    A function which returns a sensible title for this page.
+		}
+	*/
+
+	{
+		hostMatch: "youtube.TLD",
+		pathMatch: "/watch",
+		get: function(){
+			return document.getElementsByTagName("h1")[0].textContent || document.title.replace(/^YouTube - /,'');
+		}
+	},
+
+	{
+		hostMatch: "xkcd.TLD",
+		pathMatch: ".*[0-9]+/",
+		get: function(){
+			return (""+document.title).replace(/^[^:]*: /,'','g');
+		}
+	},
+
+	{
+		hostMatch: "imdb.TLD",
+		pathMatch: ".*title.*",
+		get: function(){
+			return (""+document.title).replace(/ - IMDb/,'','g');
+		}
+	},
+
+	{
+		hostMatch: "pouet.net",
+		pathMatch: "",
+		get: function(){ return document.title }
+	}
+
+];
+
+function check() {
+	rules.forEach(checkRule);
+}
+
+function checkRule(rule) {
+	// TODO: Check if location.pathname is cross-browser and/or standards-compliant
+	var hostRegexp = rule.hostMatch.replace(/\.TLD$/, "(\.[^.]*$|\.[^.]*\.[^.]*$)");
+	if (document.location.host.match(hostRegexp)) {
+		if (rule.pathMatch) {
+			var pathRegexp = '^' + rule.pathMatch + '$';
+			if (!document.location.pathname.match(pathRegexp)) {
+				return false;
+			}
+		}
+		var newTitle = rule.get();
+		if (newTitle == '' || newTitle == null) {
+			GM_log("Failed to get new title for "+document.location+" from "+document.title);
+		}
+		setTitle(newTitle);
+	}
+}
 
 function setTitle(title) {
 	if (title)
@@ -19,31 +84,6 @@ function setTitle(title) {
 }
 
 
-function check() {
-
-	// TODO: Check if location.pathname is cross-browser
-
-	// if (hostMatches("<maybe.>youtube.*") && pathMatches("^/watch")) {
-	if (document.location.host.match(/(^|\.)youtube\./)) {
-		if (document.location.pathname == "/watch") {
-			var title = document.getElementsByTagName("h1")[0].textContent
-				|| document.title.replace(/^YouTube - /,'')
-				|| null;
-			setTitle(title);
-		}
-	}
-
-	if (document.location.host.match(/(^|\.)xkcd\.com$/)) {
-		if (document.location.pathname.match(/[0-9]+\/$/)) {
-			var title = (""+document.title).replace(/^[^:]*: /,'','g');
-			setTitle(title);
-		}
-	}
-
-}
-
-
-// YouTube used to crash in Chrome unless we waited a bit.
+// 2010/11: Waiting a bit can prevent crashing (e.g. YouTube in Chrome).
 setTimeout(check,5000);
-
 
