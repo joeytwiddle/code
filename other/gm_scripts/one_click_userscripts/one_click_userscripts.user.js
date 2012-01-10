@@ -8,9 +8,13 @@
 // == TODO ==
 // Respect Include/Exclude rules.
 // Could be renamed: All My Userscripts
+// TODO: If it detects it is running as a userscript, it should load itself as a normal page script, then exit (i.e. run the latest version).  This should be done very carefully (e.g. with a pause and a warning marker set as a global) since we don't want to create an infinite loop!
+
 
 
 // == Config ==
+
+var allowBrowserToCacheScripts = false;
 
 /*
 var defaultScripts = [
@@ -19,20 +23,56 @@ var defaultScripts = [
 ];
 */
 
-var defaultScripts = [
+function hwiScript(scriptName) {
+	return "http://hwi.ath.cx/code/other/gm_scripts/" + scriptName + "/" + scriptName + ".user.js";
+}
+
+var defaultScripts = map([
+		/*
 	"fastjslogger",
+	"hibernate_idle_tabs",
 	"faviconizetheweb",
-	// "wikiindent",
+	"wikiindent",
+	"wikimedia",
 	// "make_bookmarklet_from_us",
 	"title_youtube_locations",
 	"google_preview_pane",
 	"delicious_link_tooltop",
-].map(hwiScript);
+	"auto_scroll_mouse",
+	"auto_scroll_keys",
+	// "tocmonkey",
+	"table_of_contents_everyw",
+	*/
+	"powermonkey"
+],hwiScript);
 
-var allowBrowserToCacheScripts = false;
 
-function hwiScript(scriptName) {
-	return "http://hwi.ath.cx/code/other/gm_scripts/" + scriptName + "/" + scriptName + ".user.js";
+
+// == Library functions ==
+
+// We need logging to work, at least until fastjslogger loads.
+function log(str) {
+	if (typeof GM_log == 'function') {
+		GM_log(str);
+	} else if (this.console && console.log) {
+		console.log(str);
+	}
+}
+
+// For older browsers (Konqueror 3.5):
+
+function map(list,fn) {
+	var newList = [];
+	for (var i=0;i<list.length;i++) {
+		newList.push( fn(list[i]) );
+	}
+	return newList;
+}
+
+function forEach(list,fn) {
+	for (var i=0;i<list.length;i++) {
+		fn(list[i],i);
+	}
 }
 
 
@@ -44,12 +84,12 @@ function loadUserscripts() {
 	var scriptsToLoad;
 
 	try {
-		scriptsToLoad = JSON.parse(GM_getValue("OCU_scriptList",null));
-		GM_log("[OCU] Loaded config: "+scriptsToLoad);
+		// scriptsToLoad = JSON.parse(GM_getValue("OCU_scriptList",null));
+		// log("[OCU] Loaded config: "+scriptsToLoad);
 	} catch (e) { }
 
 	if (!scriptsToLoad || !scriptsToLoad.length) {
-		GM_log("[OCU] No config found, falling back to default script list.");
+		log("[OCU] No config found, falling back to default script list.");
 		scriptsToLoad = defaultScripts;
 		// Some sites (e.g. wikitravel) replace the default JSON with an incomplete implementation.
 		if (this.JSON && JSON.stringify) {
@@ -57,27 +97,42 @@ function loadUserscripts() {
 		}
 	}
 
-	scriptsToLoad.forEach(considerScript);
+	forEach(scriptsToLoad,considerScript);
 
 }
 
 function loadScript(url,thenCallFn) {
+	log("Loading: "+url);
 	var scr = document.createElement("script");
 	if (!allowBrowserToCacheScripts) {
 		var sep = ( url.indexOf('?')>=0 ? '&' : '?' );
 		url = url + sep+"dummy="+Math.random(100000);
 	}
 	scr.src = url;
+	scr.type = "text/javascript";   // Konqueror 3.5 needs this!
 	if (thenCallFn) {
 		// Fixed: scr.onload=thenCallFn fails in Greasemonkey with "Component is not available"
-		scr.addEventListener('load',thenCallFn,false);
-		scr.addEventListener('error',thenCallFn,false);
+		var called = false;
+		function onceOnlyCallback(evt) {
+			if (!called) {
+				called = true;
+				thenCallFn(evt);
+			}
+		}
+		function errorCallback(evt) {
+			log("Failed to load: "+url,evt);
+			onceOnlyCallback(evt);
+		}
+		scr.addEventListener('load',onceOnlyCallback,false);
+		scr.addEventListener('error',errorCallback,false);
+		// Fallback in case above events unsupported by browser (e.g. Konq 3.5)
+		setTimeout(onceOnlyCallback,5000);
 	}
 	document.body.appendChild(scr);
 }
 
 function considerScript(url) {
-	// Check includes/excludes
+	// TODO: Check includes/excludes
 	// But don't do it every time, at least cache the data for occasional update.
 	if (true) {
 		loadScript(url);
