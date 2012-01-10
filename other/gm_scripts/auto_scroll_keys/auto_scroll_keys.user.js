@@ -5,17 +5,16 @@
 // @include        *
 // ==/UserScript==
 
-/* BUG: Does not work well in Chromium when zoomed in.  Sometimes moves 1 pixel
- * down, or scrolls left, but does not scroll down, although scrolling upward
- * works ok.
- * Oh it does scroll, if you hold down the key long enough to pass the
- * threshold needed when zooming.
- * But when the threshold is exceeded, movement is quite fast.  Perhaps we can
+var acceleration = 3;
+
+/* BUG: Does not work well when zoomed in Chrome.
+ * It does scroll, if you hold down the key long enough.
+ * But when the threshold is passed, movement is quite fast.  Perhaps we can
  * overcome this by holding our own analogue (non-integer) scroll position, and
  * setting the page scroll from this.
- * Perhaps this should catch up if the read value differs significantly from
+ * Perhaps this should catch up if the real value differs significantly from
  * the stored value, indicating perhaps that the user jumped the page manually.
- * */
+ */
 
 var u44573_go = false;
 var scrollSpeed = 0;
@@ -28,11 +27,11 @@ var DOM_VK_SPACE = 32;
 window.addEventListener('keydown', u44573_handler, true);
 
 function u44573_handler(e) {
-	if(e.ctrlKey && e.keyCode == DOM_VK_DOWN) { // Scroll downwards with CTRL-Keypad_Down_Arrow
-		scrollSpeed += 1;
+	if(e.ctrlKey && e.keyCode == DOM_VK_DOWN) { // Scroll downwards with CTRL-Down_Arrow
+		scrollSpeed += acceleration;
 	}
-	if(e.ctrlKey && e.keyCode == DOM_VK_UP) { // Scroll upwards with CTRL-Keypad_Up_Arrow
-		scrollSpeed -= 1;
+	if(e.ctrlKey && e.keyCode == DOM_VK_UP) { // Scroll upwards with CTRL-Up_Arrow
+		scrollSpeed -= acceleration;
 	}
 	if(!u44573_go && scrollSpeed != 0) {
 		u44573_go = true;
@@ -53,12 +52,12 @@ var abs = Math.abs;
 function u44573_goScroll() {
 	if (u44573_go) {
 		var s = u44573_getScrollPosition();
-			var timeToNext = 1000/abs(scrollSpeed);
-			if (timeToNext < 1000/20) {
+			var timeToNext = 100/abs(scrollSpeed);
+			if (timeToNext < 100/20) {
 				jumpPixels = abs(scrollSpeed)/20
-				timeToNext = 1000/20;
+				timeToNext = 100/20;
 			} else {
-				jumpPixels = 1
+				jumpPixels = 1;
 			}
 		unsafeWindow.scroll(s[0], s[1] + jumpPixels*sgn(scrollSpeed));
 		if (scrollSpeed == 0) {
