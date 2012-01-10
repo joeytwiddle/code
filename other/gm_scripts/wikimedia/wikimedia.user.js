@@ -24,24 +24,27 @@
 // BUG TODO: appears as a portal, but collapsing does not work
 // DONE: ok added manual collapsing, but still some of the formatting looks different
 
-var inGM = (typeof GM_getValue === 'function');
-
-GM_log("inGM = "+inGM);
-
 // Fix for Chrome
 // Errors in FFox: if (!this.GM_getValue || this.GM_getValue.toString().indexOf("not supported")>-1) {
-if (inGM) {
-} else {
-	if ((""+this.GM_getValue).indexOf("not supported")>-1) {
-		if (localStorage) {
-			this.GM_getValue=function (key,def) {
-				return localStorage[key] || def;
-			};
-			this.GM_setValue=function (key,value) {
-				localStorage[key] = value;
-				return value;
-			};
-		}
+// GM_log("typeof this.GM_getValue = "+typeof this.GM_getValue);
+// GM_log("this.GM_getValue = "+this.GM_getValue);
+// Check if GM_getValue is missing, OR is Chrome's "not supported" function.
+var GM_test;
+try {
+	GM_test = ""+this.GM_getValue;
+} catch (e) {
+	GM_log("Getting GM_test: "+e);
+}
+if (typeof GM_getValue !== 'function' || (""+GM_test).indexOf("not supported")>=0) {
+	GM_log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
+	if (localStorage) {
+		this.GM_getValue=function (key,def) {
+			return localStorage.getItem(key) || def;
+		};
+		this.GM_setValue=function (key,value) {
+			localStorage.setItem(key, value);
+			return value;
+		};
 	}
 }
 
@@ -50,7 +53,7 @@ setTimeout(function()
    var pref = "userscripts.org.wikimediaplus.history";
    var titleKey = pref + ".title.";
    var urlKey = pref + ".url.";
-   var limit = 10;
+   var limit = 12;
    var read = function()
    {
       var r = new Array();
@@ -122,6 +125,7 @@ setTimeout(function()
    // Fix for when running alongside Joey's Reclaim CPU
    titleStr = titleStr.replace(/^[*#+.?] /,'');
    var hist = read();
+   // GM_log("[Wikimedia+] Got "+hist.length+" recent entries.");
    if(document.location.search.indexOf("&action=edit") < 0 && document.location.search.indexOf("&printable=yes") < 0)
       hist = addHist(newHistoryItem, titleStr, hist);
    store(hist);
@@ -184,3 +188,5 @@ setTimeout(function()
    AppendCategoryTreeToSidebar();
 
 },2200);
+
+
