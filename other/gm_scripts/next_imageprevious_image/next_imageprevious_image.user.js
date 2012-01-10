@@ -12,20 +12,21 @@
 // However, you can use <Space> and <Backspace> on flickriver instead of this script!
 
 (function(){
-  // var forwardButton = 102; // F
+  // var forwardButton  = 102; // F
   // var backwardButton = 114; // R
-  var forwardButton = 110; // N
+  var forwardButton  = 110; // N
   var backwardButton = 112; // P
   var positions = [];
-  
+
   document.addEventListener('keypress', function(event){
     if (event.ctrlKey || event.shiftKey || event.altKey) return;
     var code = event.keyCode || event.which;
     if (code != backwardButton && code != forwardButton) return;
     if (event.target.tagName && event.target.tagName.match(/input|select|textarea/i)) return;
 
-    positions = []; // force rescan every time
-    if (positions.length == 0) {
+    // We force a rescan of the page's images every time, for dynamic pages.
+    positions = [];
+    if (positions.length === 0) {
       for (var index = 0; index < document.images.length; index++) {
         var image = document.images[index];
         if (image.width < 200 || image.height < 200) continue;
@@ -35,36 +36,34 @@
 
     var scroll = Math.max(document.documentElement.scrollTop, document.body.scrollTop);
 
-    // if (code == forwardButton) {
+    if (code === forwardButton) {
       for (index = 0; index < positions.length; index++) {
-        if (positions[index][1] - scroll <= 0) continue;
-        if (code == backwardButton)
-          index-=2;
-        if (scroll == document.documentElement.scrollTop) {
-          document.documentElement.scrollTop = positions[index][1];
-        } else {
+        if (positions[index][1] <= scroll) continue;
+        // I swapped body and documentElement here to prefer the former,
+        // because Chrome presents documentElement.scrollTop = 0 all the time!
+        if (scroll === document.body.scrollTop) {
           document.body.scrollTop = positions[index][1];
+        } else {
+          document.documentElement.scrollTop = positions[index][1];
         }
         return;
       }
-    /*
-    } else {
+    } else if (code === backwardButton) {
       for (index = positions.length - 1; index >= 0; index--) {
-        if (positions[index][1] - scroll >= 0) continue;
-        if (scroll == document.documentElement.scrollTop) {
-          document.documentElement.scrollTop = positions[index][1];
-        } else {
+        if (positions[index][1] >= scroll) continue;
+        if (scroll === document.body.scrollTop) {
           document.body.scrollTop = positions[index][1];
+        } else {
+          document.documentElement.scrollTop = positions[index][1];
         }
         return;
       }
     }
-    */
-    
+
   }, false);
-  
+
   function getYOffset(node) {
     for (var offset = 0; node; offset += node.offsetTop, node = node.offsetParent);
     return offset;
   }
-})()
+})();
