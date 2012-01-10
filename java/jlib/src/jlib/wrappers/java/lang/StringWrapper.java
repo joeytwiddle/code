@@ -6,9 +6,9 @@ import java.lang.reflect.*;
 import java.util.*;
 import jlib.*;
 import jlib.wrappers.*;
-import nuju.*;
+
 import jlib.db.*;
-import jlib.multiui.*;
+
 
 public class StringWrapper extends Wrapper {
 

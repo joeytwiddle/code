@@ -9,8 +9,8 @@ import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
 import jlib.*;
-import jlib.multiui.*;
-import nuju.*;
+
+
 
 public class DeleteButton extends Button {
 

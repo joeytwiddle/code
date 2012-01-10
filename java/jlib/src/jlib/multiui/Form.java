@@ -6,7 +6,7 @@ import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import jlib.*;
-import nuju.*;
+
 
 public class Form extends Container {
 

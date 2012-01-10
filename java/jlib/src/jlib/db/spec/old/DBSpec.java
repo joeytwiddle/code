@@ -1,4 +1,4 @@
-package jlib.db.spec;
+package jlib.db.spec.old;
 
 import java.lang.*;
 import java.sql.*;

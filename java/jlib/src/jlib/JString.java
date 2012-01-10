@@ -4,7 +4,7 @@ import java.lang.String;
 import java.lang.StringBuffer;
 import java.util.Vector;
 
-public class JString extends org.neuralyte.StringUtils {
+public class JString extends org.neuralyte.common.StringUtils {
 
   public final static String alphaUpper="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   public final static String alphaLower="abcdefghijklmnopqrstuvwxyz";
@@ -456,6 +456,22 @@ public class JString extends org.neuralyte.StringUtils {
 	public static String initCap(String s) {
 		return Character.toUpperCase(s.charAt(0))+s.substring(1);
 	}
+	
+    public static String before(String str, String search) {
+        return str.substring(0, str.indexOf(search));
+    }
+
+    public static String after(String str, String search) {
+        return str.substring(str.indexOf(search) + search.length());
+    }
+
+    public static String beforelast(String str, String search) {
+        return str.substring(0, str.lastIndexOf(search));
+    }
+
+    public static String afterlast(String str, String search) {
+        return str.substring(str.lastIndexOf(search) + search.length());
+    }
 
 }
 

@@ -16,7 +16,7 @@ import java.util.Hashtable;
 
 import jlib.*;
 import jlib.db.*;
-import jlib.multiui.*;
+
 
 import appserver.*;
 

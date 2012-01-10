@@ -6,9 +6,8 @@ import java.lang.reflect.*;
 import java.net.*;
 import java.util.*;
 import jlib.*;
-import nuju.*;
-import jlib.multiui.*;
 import jlib.db.spec.*;
+import jlib.db.spec.Type;
 
 public class DBSpec extends jlib.db.spec.DBSpec {
 

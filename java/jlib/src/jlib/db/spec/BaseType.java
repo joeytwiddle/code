@@ -6,7 +6,6 @@ import java.lang.reflect.*;
 import java.util.*;
 import jlib.*;
 import jlib.db.*;
-import jlib.multiui.*;
 import jlib.wrappers.*;
 
 public class BaseType extends Type {

@@ -9,7 +9,7 @@ import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
 import jlib.*;
-import nuju.*;
+
 
 /** Currently inefficient for large lists.  Static array re-creation! **/
 

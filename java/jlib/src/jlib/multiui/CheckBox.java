@@ -10,7 +10,7 @@ import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
 import jlib.*;
-import nuju.*;
+
 
 public class CheckBox extends Component implements UserEditableComponent {
 		

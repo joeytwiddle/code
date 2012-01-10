@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
+	<classpathentry excluding="jlib/db/copy/|jlib/strings/.ver*/**|jlib/multiui/AppServer.java|jlib/multiui/|jlib/db/spec/old/" kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry combineaccessrules="false" exported="true" kind="src" path="/CommonUtils"/>
+	<classpathentry kind="lib" path="/home/joey/linux/j/code/java/nuju/bin"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
