@@ -1,13 +1,12 @@
 package org.fairshare;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStream;
 
 import org.common.nap.Nap;
 import org.fairshare.data.Cache;
 import org.fairshare.data.Database;
 import org.fairshare.tasks.FileScanner;
+import org.fairsharex.data.HashProfile;
 
 
 /*
@@ -78,6 +77,9 @@ public class FairShare {
         
         // Collection col = database.tagDB.iterator();
         // Iterator it = ((Collection)database.tagDB).iterator();
+        
+        HashProfile hashProfile = new HashProfile(cache.fileRecordsByHash.keySet());
+        hashProfile.outputInfo();
         
     }
 

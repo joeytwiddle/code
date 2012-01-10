@@ -1,0 +1,15 @@
+If we are planning to use the torrent network, we should also share our
+distributed data over it.
+
+Someone must compile a monthly database torrent release.
+
+People get it, and it also has the latest software.
+
+It should preserve privacy ofc.
+
+It could be crazy encrypted.  So like you have to have a key (data from
+original .torrent files) in order to unlock the database!
+
+
+
+

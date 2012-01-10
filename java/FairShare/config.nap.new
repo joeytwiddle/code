@@ -1,0 +1,9 @@
+org.fairshare.Config {
+	shareDirs = java.util.Vector {
+		[0] = java.io.File "."
+		[1] = java.io.File "/stuff/mp3s/wipeoutlike"
+	}
+	port = 0
+	autoGenerateTags = true
+	autoGenerateRatings = true
+}
