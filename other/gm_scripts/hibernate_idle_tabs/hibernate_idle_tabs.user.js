@@ -27,10 +27,17 @@
 
 
 /* +++ Config +++ */
+
 // GM_log("Hibernate Idle is DISABLED."); return;
-// var hibernateIfIdleForMoreThan = 6; // seconds
-var hibernateIfIdleForMoreThan = 6*60*60; // in seconds
+
+// var hibernateIfIdleForMoreThan = 6*60*60; // for relaxed users with a reasonable computer
+var hibernateIfIdleForMoreThan = 4*60*60; // for me
+// var hibernateIfIdleForMoreThan = 10; // for testing
 var restoreTime = 0.2; // in seconds
+
+//// When we hibernate, we want to go to a mostly-blabk valid webpage somewhere
+//// where the userscript can run again.
+//// This could be a file:///... URL, but atm we use an http://... URL.
 //// Userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011!
 // var holdingPage = "about:blank";
 //// hwi.ath.cx is not always online!
@@ -88,7 +95,8 @@ function handleHoldingPage() {
 	var params = getQueryParameters();
 
 	// setHibernateStatus("Holding page for " + params.hibernate_title + "\n with URL: "+params.hibernate_url);
-	var mainReport = params.hibernate_title + " (Holding Page)";
+	// var mainReport = params.hibernate_title + " (Holding Page)";
+	var mainReport = "(" + params.hibernate_title + " - hibernated)";
 	setHibernateStatus(mainReport);
 
 	try {
