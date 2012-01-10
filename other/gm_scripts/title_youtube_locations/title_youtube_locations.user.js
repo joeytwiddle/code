@@ -36,7 +36,10 @@ setTimeout(function(){
 // == Scrollbars on comments and related vids, to keep the video in view. ==
 setTimeout(function(){
 	// We could alternatively act on watch-panel but that includes the video navigation buttons!
-	// BUG: YouTube doesn't load the later thumbnails until we scroll the actual page.  :S
+	// BUG: Interferes with YouTube's lazy-loading of thumbnails for related video.
+	if (document.location.href.indexOf("/all_comments?") >= 0) {
+		return;   // Leave the full comments page alone.
+	}
 	var watchDiscussion = document.getElementById("watch-discussion");
 	if (watchDiscussion) {
 		watchDiscussion.style.overflow = "auto";
@@ -47,7 +50,8 @@ setTimeout(function(){
 		watchSidebar.style.overflow = "auto";
 		watchSidebar.style.maxHeight = (window.innerHeight - 61)+"px";
 		// Now the text wraps because of the scrollbar, so we widen the element:
-		watchSidebar.style.width = (320+24)+"px";
+		// watchSidebar.style.width = (320+24)+"px";
+		watchSidebar.style.width = '300px';
 		// And we must widen its container also:
 		// TODO BUG: Why does this work in the console, but not from the userscript?
 		document.getElementById("watch-main").style.width = (960+24)+"px";
