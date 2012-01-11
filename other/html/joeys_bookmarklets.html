@@ -19,16 +19,15 @@
 		<P align="center">
 			A Bookmarklet is similar to a Bookmark,
 			<br/>but instead of <I style=" color: #0000cc; ">sending you to a different page</I>,
-			<br/>it will <I style=" color: #008800; ">perform some useful action(s)</I>
-			<br/>on whatever web page you are currently browsing,
-			<br/>using your browser's JavaScript implementation and the DOM.
+			<br/>it will <I style=" color: #008800; ">perform an action on the current page</I>!
+			<br/>Bookmarklets use JavaScript and the DOM to do useful things.
 		</P>
 
 	</DIV
 
 	<DIV>
 
-		<LI>You can click on the bookmarklets below to try them out.  (Reload the page or navigate back if you don&apos;t like the results!)</LI>
+		<LI>You can click on the bookmarklets below to try them out.  (Reload the page if things go wrong!)</LI>
 		<LI>To copy a bookmarklet so you can use it later, drag the link to your Bookmarks Toolbar, or right-click to bookmark it.</LI>
 
 		<P>Bookmarklets begin with with the <TT>javascript:</TT> namespace, instead of the usual <TT>http://</TT> or <TT>https://</TT> or <TT>ftp://</TT> URL protocols.  The void operator or a function wrapper is commonly used to prevent the browser from operating on the return value.<P/>
@@ -41,36 +40,8 @@
 		<P>
 			This page contains bookmarklets which I have developed, and is sometimes in an unstable state.
 			<br/>
-			(It was last updated <SCRIPT type='text/javascript'>
-				(function(){
-					var millis = new Date().getTime() - new Date(document.lastModified).getTime();
-					var days = millis / 1000 / 60 / 60 / 24;
-					/*var daysString = (""+days).substring(0,6);*/
-					var daysString = ""+(days|0);
-					document.write(daysString+" days ago");
-				})();
-			</SCRIPT>.)
-			<br/>
-			Stable versions may be found in <A href="http://hwi.ath.cx/cgi-bin/cvsweb/other/html/joeys_bookmarklets.html">CV</A><A href="http://hwi.ath.cx/cgi-bin/viewcvs.cgi/other/html/joeys_bookmarklets.html">S</A>, if I have broken the current copy.
-			<br/>
-			<!-- Maybe misleading since some of the bookmarklets source external scripts. -->
-			I wrote these bookmarklets when I was starting off in Javascript, so some of the code is poor quality!  More recently I have been writing userscripts...
-		</P>
 
-		<H3>Related Pages</H3>
-
-		<LI><A href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&apos;s Konqueror 5 Minitools/Bookmarklets</A> with embedded Bookmarklet Builder.</A></LI>
-		<LI><A href='http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html'>Joey&apos; Greasemonkey/Chrome userscripts</A> wrapped up as bookmarklets</A></LI>
-
-		<LI>Some inspiration for scripts was drawn from the collection at <A href="https://www.squarefree.com/bookmarklets/">Jesse&apos;s Bookmarklets Site</A> at squarefree.com.</LI>
-
-		<LI class='todo'>I should salvage whatever Bookmarklets were previously available on <A href="http://web.archive.org/web/20070908140900/http://www.jsquickmark.com/">jsquickmark.com</A>.</LI>
-
-	</DIV>
-
-</BLOCKQUOTE>
-</DIV>
-
+<!-- The "last updated" call sometimes stalls, so this is the latest we want to introduce style rules: -->
 <STYLE type='text/css'>
 	#intro_section {
 		margin: 0 10%;
@@ -156,12 +127,59 @@
 	}
 </STYLE>
 
+			(It was last updated <SCRIPT type='text/javascript'>
+				(function(){
+					var millis = new Date().getTime() - new Date(document.lastModified).getTime();
+					/*
+					var days = millis / 1000 / 60 / 60 / 24;
+					var daysString = ""+(days|0);
+					document.write(daysString+" days ago");
+					*/
+					var scales = ["milliseconds",1000,"seconds",60,"hours",60,"days",24];
+					var last = '';
+					var num = millis;
+					var outStr;
+					for (i=0;i<scales.length;i+=2) {
+						var units = scales[i];
+						if ((num|0) === 1) {
+							units = units.replace(/s$/,'');
+						}
+						var current = (num|0)+" "+units;
+						outStr = current + (last ? " and "+last : '') + " ago";
+						var scale = scales[i+1];
+						num /= scale;
+						if ((num|0) === 0)
+							break;
+						last = current;
+					}
+					document.write(outStr);
+				})();
+			</SCRIPT>.)
+			<br/>
+			Stable versions may be found in <A href="http://hwi.ath.cx/cgi-bin/cvsweb/other/html/joeys_bookmarklets.html">CV</A><A href="http://hwi.ath.cx/cgi-bin/viewcvs.cgi/other/html/joeys_bookmarklets.html">S</A>, if I have broken the current copy.
+			<br/>
+			<!-- Maybe misleading since some of the bookmarklets source external scripts. -->
+			I wrote these bookmarklets when I was starting off in Javascript, so some of the code is poor quality!  More recently I have been writing userscripts...
+		</P>
+
+		<H3>Related Pages</H3>
+
+		<LI><SPAN href='http://hwi.ath.cx/xslt/live/minitools/show_minitools.html'>Joey&apos;s Konqueror 5 Minitools/Bookmarklets</SPAN> with embedded Bookmarklet Builder.</A></LI>
+		<LI><A href='http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html'>Joey&apos; Greasemonkey/Chrome userscripts</A> wrapped up as bookmarklets</A></LI>
+
+		<LI>Some inspiration for scripts was drawn from the collection at <A href="https://www.squarefree.com/bookmarklets/">Jesse&apos;s Bookmarklets Site</A> at squarefree.com.</LI>
+
+		<LI class='todo'>We should salvage whatever Bookmarklets were previously available on <A href="http://web.archive.org/web/20070908140900/http://www.jsquickmark.com/">jsquickmark.com</A>.</LI>
+
+	</DIV>
+
+</BLOCKQUOTE>
+</DIV>
+
 <!--
 
 A script to keep pre-2008 browsers safe from the infinte alert vulnerability.
 This could be used for the ultimate Rick Roll, playing Flash in the background but denying any user interaction with the browser, requiring a restart.
-
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'></SCRIPT>
 
 Other useful scripts, shims, fallbacks.
 
@@ -686,6 +704,311 @@ Other useful scripts, shims, fallbacks.
 <BLOCKQUOTE>
 
 	<P>
+		<LI><A target='_self' href='(function(){if(document.styleSheets.length>0){css=!document.styleSheets[0].disabled;for(var%20i=0;i<document.styleSheets.length;i++)%20document.styleSheets[i].disabled=css;};})();void();'>Toggle CSS</A></LI>
+		<BLOCKQUOTE>
+			<P>Stolen from squarefree.</P>
+			<LI class='done'>No globals</LI>
+		</BLOCKQUOTE>
+	</P>
+
+	<P>
+		<LI><A href="
+			javascript:(function(){
+				theForm = document.forms[0];
+				theStr = '';
+				for (i=0; i < theForm.elements.length; i++) {
+					ele = theForm.elements[i];
+					theStr += ele.name + ' : ' + ele.value + '\n';
+				}
+				alert (theStr);
+			})();
+		">Show Form Data</A></LI>
+		<BLOCKQUOTE>
+		</BLOCKQUOTE>
+	</P>
+
+	<A name="console"></A>
+	<P>
+		<LI>Quick Javascript <A target="_self" href="javascript:(function(){
+
+			/*
+			* Any evals we perform in the console, run under this scope.
+			* Therefore we do not need to place the functions below in window.
+			* In fact we should probably sandbox the eval to see only what it needs!
+			*/
+
+			/* We could put the QuickConsole into window, so that history can be preserved if the console is reloaded. */
+
+			var QuickConsole = ({});
+
+			/* I'm not convinced we should always want to create this console intercept. */
+			var oldConsole = window.console;
+			window.console = { log: function() { if (arguments.length!=0 && arguments.length!=1) { arguments[0]+=''+arguments.slice(1); } if (oldConsole && oldConsole.log) { oldConsole.log.call(oldConsole,arguments[0]); } textArea.textContent += '\n' + arguments[0]; } };
+
+			function prettyString(str) {
+				str = str.replace(/\n/g,'\\n');
+				return str;
+			}
+
+			function looksLike(obj) {
+				if (obj == null) {
+					return ''+obj;
+				}
+				if (typeof obj === 'string') {
+					return '&quot;'+obj+'&quot;';
+				}
+				if (obj instanceof Array) {
+					return '[' + obj.join(', ') + ']';
+				}
+				return '' + obj;
+			}
+
+			function oneLiner(obj) {
+				return prettyString(looksLike(obj).substring(0,60));
+			}
+
+			function niceTypeOf(obj) {
+				return (obj && obj.constructor ? '[Object '+obj.constructor.name+']' : typeof obj);
+			}
+
+			window.inspect = function(obj) {
+				var report = '';
+				if (obj == null) {
+					return ''+obj;
+				}
+				report += (niceTypeOf(obj))+': &quot;'+obj+'&quot;\n';
+				/* report += 'Properties:\n'; */
+				var looksLikeAnArray = (typeof obj.length === 'number');
+				/* Pretty print Arrays and other list-like objects, except for strings */
+				if (looksLikeAnArray && typeof obj !== 'string') {
+					for (var i=0;i<obj.length;i++) {
+						report += '  ' + i + ': ' + oneLiner(obj[i]) + ',\n';
+					}
+				}
+				for (var prop in obj) {
+					if (looksLikeAnArray && prop.match(/^[0-9]+$/)) { continue; }
+					try {
+						/* report += prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
+						report += '  ' + /*typeof obj[prop] + ' ' +*/ prop + ': ' + oneLiner(obj[prop]) + ',\n';
+					} catch (e) {
+						report += '  Error on '+prop+': '+e+'\n';
+					}
+				}
+				if (report.slice(-1) == '\n') {
+					report = report.slice(0,-1);
+				}
+				if (report.slice(-1) == ',') {
+					report = report.slice(0,-1);
+				}
+				return report;
+			};
+			window.loadScript = function loadScript(url) {
+				var newScript = document.createElement('SCRIPT');
+				newScript.type = 'text/javascript';
+				newScript.src = url;
+				/*document.body.appendChild(newScript);*/
+				document.getElementsByTagName('head')[0].appendChild(newScript);
+			};
+			window.addStyle = function(css) {
+				var style = document.createElement('style');
+				style.type = 'text/css';
+				style.innerHTML = css;
+				document.getElementsByTagName('head')[0].appendChild(style);
+			};
+
+			/* Load JQuery and other useful scripts: */
+			loadScript('http://hwi.ath.cx/static/js/jquery.js');
+			loadScript('http://hwi.ath.cx/javascript/changeClassProperties.js');
+
+			var myDiv = document.createElement('div');
+			myDiv.className = 'qcons';
+			var myStyle = document.createElement('style');
+			var textArea = document.createElement('TEXTAREA');
+
+			var innerDiv = document.createElement('div');
+			innerDiv.className = 'qcons_inner';
+
+			textArea.rows = 12;
+			textArea.cols = 96;
+			textArea.readonly = true;
+			textArea.style.fontSize = '-2';
+			innerDiv.appendChild(textArea);
+
+			innerDiv.appendChild(document.createElement('BR'));
+
+			var commandInput = document.createElement('INPUT');
+			commandInput.type = 'text';
+			commandInput.name = 'cmd';
+			commandInput.value = '';
+			commandInput.size = 100;
+			innerDiv.appendChild(commandInput);
+
+			var history = [];
+			var historyPos = 0;
+			history.loadOldLine = function() {
+				try {
+					var record = history[historyPos];
+					if (!record) {
+						commandInput.value = '';
+						textArea.value = '';
+					} else {
+						commandInput.value = nullString(record.code);
+						/* textArea.value = 'History '+historyPos + '\n&gt; '; */
+						textArea.value = '['+(historyPos+1)+'] ';
+						textArea.value += ''+record.code + '\n';
+						textArea.value += ''+record.result;
+					}
+				} catch (e) {
+					textArea.value += ''+e;
+				}
+			};
+
+			function runCmd(cmd) {
+				var result;
+				textArea.value = '...';
+				try {
+					if (cmd.substring(0,2) == 'i:') {
+						result = inspect(eval(cmd.substring(2)));
+					} else {
+						result = ''+eval(cmd);
+					}
+				} catch (e) {
+					result = 'Error: '+e;
+				}
+				/*textArea.innerHTML = escape(result);*/
+				textArea.value = (result);
+				if (this.console && console.log) {
+					console.log(result);
+				}
+				return result;
+			}
+
+			function execute() {
+				if (commandInput.value) {
+					var result = runCmd(commandInput.value);
+					history.push({code:commandInput.value,result:result});
+					historyPos = history.length;
+					commandInput.value = '';
+				}
+			}
+			/*commandInput.onchange = execute;*/
+
+			function closeQuickConsole() {
+				myDiv.parentNode.removeChild(myDiv);
+				myStyle.parentNode.removeChild(myStyle);
+				document.body.style.marginBottom = (parseInt(document.body.style.marginBottom,10)-110)-'px';
+			}
+
+			var closeBlock = document.createElement('span');
+			closeBlock.className = 'closeBlock';
+			var closeButton = document.createElement('button');
+			closeButton.appendChild(document.createTextNode('X'));
+			closeButton.onclick = function(e){
+				closeQuickConsole();
+			};
+			closeBlock.appendChild(closeButton);
+			innerDiv.appendChild(closeBlock);
+
+			function nullString(s) {
+				return ( s ? s : '' );
+			}
+			function checkKey(evt) {
+				if (QuickConsole.showKeyEvents) {
+					textArea.value = 'evt.keyCode='+evt.keyCode + '\n' + 'commandInput.value='+commandInput.value + '\n';
+				}
+				var lastChar = commandInput.value.slice(-1);
+				/* Enter */
+				if (evt.keyCode == 13) {
+					execute();
+					evt.preventDefault();
+				/* Escape */
+				} else if (evt.keyCode == 27) {
+					closeQuickConsole();
+					evt.preventDefault();
+				/* Up Arrow sends code 38. */
+				} else if (evt.keyCode == 38 && lastChar !== ')') {
+					if (historyPos != 0) {
+						historyPos--;
+					}
+					history.loadOldLine();
+					evt.preventDefault();
+				/* Down Arrow sends code 40 in Firefox/Chrome.
+				 * But in Konqueror 3.5, open bracket sends codes 40,16!
+				 * Also in Konqueror 3.5, close bracket sends codes 41,16.
+				 * TODO BUG: This is still happening on '(' despite the detection code!
+				 * On keydown perhaps, before it's the lastChar?
+				*/
+				} else if (evt.keyCode == 40 && lastChar !== '(') {
+					if (historyPos != history.length) {
+						historyPos++;
+					}
+					history.loadOldLine();
+					evt.preventDefault();
+				/* Command-line ending in period */
+				} else if (lastChar === '.') {
+					evt.preventDefault();
+					var head = commandInput.value.slice(0,-1);
+					try {
+						var thing = eval(head);
+						textArea.value = inspect(thing);
+					} catch (e) {
+						textArea.value = '' + e;
+					}
+				}
+			}
+
+			/* Under Chrome, Escape does not fire a keypress event, but does keyup. */
+			myDiv.onkeyup = checkKey;
+
+			myStyle.setAttribute('type','text/css');
+			myStyle.innerHTML = 'div.qcons { color: white; background-color: #5c6c5c; position: fixed; left: 80px; right: 80px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; } .qcons_inner { position: relative; } .closeBlock { position: absolute; top: 0px; right: 0px; }';
+			document.getElementsByTagName('head')[0].appendChild(myStyle);
+
+			document.body.style.marginBottom = (parseInt(document.body.style.marginBottom,10)+110)+'px';
+			myDiv.appendChild(innerDiv);
+			document.body.appendChild(myDiv);
+
+			myDiv.getElementsByTagName('INPUT')[0].focus();
+
+		})();">Console</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>My own dodgy console.  With handy inspect() function.  Now auto-loads JQuery.</P>
+		<LI class='done'>Closes on Escape key.</LI>
+		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> (shortcut <TT>i:obj</TT>), <TT>loadScript(url)</TT> and <TT>addStyle(cssString)</TT>.</LI>
+		<LI class='done'>Added runtime option <TT>QuickConsole.showKeyEvents</TT>.</LI>
+		<LI class='done'>Done: Close button is in the right place now.</LI>
+		<LI class='done'>Done: Lots of expansion and bloat, including command-line history (still a couple of bugs to iron out there).</LI>
+		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
+		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> is a much better console!</LI>
+		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.  Intercept console.log()?</LI>
+	</BLOCKQUOTE>
+
+	<A name="xpathtester"></A>
+	<P>
+		<LI><A target="_self" href="javascript:(function(){
+			var newScript = document.createElement('script');
+			newScript.type = 'text/javascript';
+			newScript.src = 'http://hwi.ath.cx/javascript/xpath_tester.js';
+			document.body.appendChild(newScript);
+		})();">XPath Tester</A></LI>
+	</P>
+	<BLOCKQUOTE>
+		<P>Loads a little XPath testing tool which will show you the results of your xpath query.</P>
+		<LI class='external'>Note: Loads external script xpath_tester.js</LI>
+		<LI class='external'>That script may also loads xpath.js XPathResult shim if required, needed by Konqueror 3.5.</LI>
+		<LI>See also: ajaxslt</LI>
+	</BLOCKQUOTE>
+
+	<P>
+	<H3>Quick and easy DOM inspectors.</H3>
+	<blockquote>
+		<div class='todo'>Early scripts, need improvement.</div>
+		<div class='todo'>Issue: Cannot toggle off!</div>
+	</blockquote>
+	</P>
+
+	<P>
 		<LI><A href="javascript:(function(){
 			var firstEvent = true;
 			function processNode(node) {
@@ -984,275 +1307,6 @@ Other useful scripts, shims, fallbacks.
 			<P>Fewer colours (same tags have the same colour, no matter the depth), but still too much contrast.</P>
 		</BLOCKQUOTE>
 	</P>
-
-	<P>
-		<LI><A href="
-			javascript:(function(){
-				theForm = document.forms[0];
-				theStr = '';
-				for (i=0; i < theForm.elements.length; i++) {
-					ele = theForm.elements[i];
-					theStr += ele.name + ' : ' + ele.value + '\n';
-				}
-				alert (theStr);
-			})();
-		">Show Form Data</A></LI>
-		<BLOCKQUOTE>
-		</BLOCKQUOTE>
-	</P>
-
-	<A name="console"></A>
-	<P>
-		<LI>Quick Javascript <A target="_self" href="javascript:(function(){
-
-			/*
-			* Any evals we perform in the console, run under this scope.
-			* Therefore we do not need to place the functions below in window.
-			* In fact we should probably sandbox the eval to see only what it needs!
-			*/
-
-			/* We could put the QuickConsole into window, so that history can be preserved if the console is reloaded. */
-
-			var QuickConsole = ({});
-
-			/* I'm not convinced we should always want to create this console intercept. */
-			var oldConsole = window.console;
-			window.console = { log: function() { if (arguments.length!=0 && arguments.length!=1) { arguments[0]+=''+arguments.slice(1); } if (oldConsole && oldConsole.log) { oldConsole.log.call(oldConsole,arguments[0]); } textArea.textContent += '\n' + arguments[0]; } };
-
-			function prettyString(str) {
-				str = str.replace(/\n/g,'\\n');
-				return str;
-			}
-
-			function looksLike(obj) {
-				if (obj == null) {
-					return ''+obj;
-				}
-				if (typeof obj === 'string') {
-					return '&quot;'+obj+'&quot;';
-				}
-				if (obj instanceof Array) {
-					return '[' + obj.join(', ') + ']';
-				}
-				return '' + obj;
-			}
-
-			function oneLiner(obj) {
-				return prettyString(looksLike(obj).substring(0,60));
-			}
-
-			window.inspect = function(obj) {
-				var report = '';
-				if (obj == null) {
-					return ''+obj;
-				}
-				report += (typeof obj)+': &quot;'+obj+'&quot;\n';
-				/* report += 'Properties:\n'; */
-				var looksLikeAnArray = (typeof obj.length === 'number');
-				/* Pretty print Arrays and other list-like objects, except for strings */
-				if (looksLikeAnArray && typeof obj !== 'string') {
-					for (var i=0;i<obj.length;i++) {
-						report += '  ' + i + ': ' + oneLiner(obj[i]) + ',\n';
-					}
-				}
-				for (var prop in obj) {
-					if (looksLikeAnArray && prop.match(/^[0-9]+$/)) { continue; }
-					try {
-						/* report += prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
-						report += '  ' + /*typeof obj[prop] + ' ' +*/ prop + ': ' + oneLiner(obj[prop]) + ',\n';
-					} catch (e) {
-						report += '  Error on '+prop+': '+e+'\n';
-					}
-				}
-				report = report.slice(0,-2) + '\n';
-				return report.slice(0,-1);
-			};
-			window.loadScript = function loadScript(url) {
-				var newScript = document.createElement('SCRIPT');
-				newScript.type = 'text/javascript';
-				newScript.src = url;
-				/*document.body.appendChild(newScript);*/
-				document.getElementsByTagName('head')[0].appendChild(newScript);
-			};
-			window.addStyle = function(css) {
-				var style = document.createElement('style');
-				style.type = 'text/css';
-				style.innerHTML = css;
-				document.getElementsByTagName('head')[0].appendChild(style);
-			};
-
-			/* Load JQuery and other useful scripts: */
-			loadScript('http://hwi.ath.cx/static/js/jquery.js');
-			loadScript('http://hwi.ath.cx/javascript/changeClassProperties.js');
-
-			var myDiv = document.createElement('div');
-			myDiv.className = 'qcons';
-			var myStyle = document.createElement('style');
-			var textArea = document.createElement('TEXTAREA');
-
-			var innerDiv = document.createElement('div');
-			innerDiv.className = 'qcons_inner';
-
-			textArea.rows = 12;
-			textArea.cols = 96;
-			textArea.readonly = true;
-			textArea.style.fontSize = '-2';
-			innerDiv.appendChild(textArea);
-
-			innerDiv.appendChild(document.createElement('BR'));
-
-			var commandInput = document.createElement('INPUT');
-			commandInput.type = 'text';
-			commandInput.name = 'cmd';
-			commandInput.value = '';
-			commandInput.size = 100;
-			innerDiv.appendChild(commandInput);
-
-			var history = [];
-			var historyPos = 0;
-			history.loadOldLine = function() {
-				try {
-					commandInput.value = nullString(history[historyPos]);
-					textArea.value = 'History '+historyPos + '\n';
-					var result = eval(history[historyPos]);
-					textArea.value += ''+result;
-				} catch (e) {
-					textArea.value += ''+e;
-				}
-			};
-
-			function runCmd(cmd) {
-				var result;
-				textArea.value = '...';
-				try {
-					if (cmd.substring(0,2) == 'i:') {
-						result = inspect(eval(cmd.substring(2)));
-					} else {
-						result = ''+eval(cmd);
-					}
-				} catch (e) {
-					result = 'Error: '+e;
-				}
-				/*textArea.innerHTML = escape(result);*/
-				textArea.value = (result);
-				return result;
-			}
-
-			function execute() {
-				if (commandInput.value) {
-					history.push(commandInput.value);
-					historyPos = history.length;
-					runCmd(commandInput.value);
-					commandInput.value = '';
-				}
-			}
-			/*commandInput.onchange = execute;*/
-
-			function closeQuickConsole() {
-				myDiv.parentNode.removeChild(myDiv);
-				myStyle.parentNode.removeChild(myStyle);
-				document.body.style.marginBottom = (parseInt(document.body.style.marginBottom,10)-110)-'px';
-			}
-
-			var closeBlock = document.createElement('span');
-			closeBlock.className = 'closeBlock';
-			var closeButton = document.createElement('button');
-			closeButton.appendChild(document.createTextNode('X'));
-			closeButton.onclick = function(e){
-				closeQuickConsole();
-			};
-			closeBlock.appendChild(closeButton);
-			innerDiv.appendChild(closeBlock);
-
-			function nullString(s) {
-				return ( s ? s : '' );
-			}
-			function checkKey(evt) {
-				if (QuickConsole.showKeyEvents) {
-					textArea.value = 'evt.keyCode='+evt.keyCode + '\n' + 'commandInput.value='+commandInput.value + '\n';
-				}
-				var lastChar = commandInput.value.slice(-1);
-				/* Enter */
-				if (evt.keyCode == 13) {
-					execute();
-					evt.preventDefault();
-				/* Escape */
-				} else if (evt.keyCode == 27) {
-					closeQuickConsole();
-					evt.preventDefault();
-				/* Up Arrow sends code 38. */
-				} else if (evt.keyCode == 38 && lastChar !== ')') {
-					if (historyPos != 0) {
-						historyPos--;
-					}
-					history.loadOldLine();
-					evt.preventDefault();
-				/* Down Arrow sends code 40 in Firefox/Chrome.
-				 * But in Konqueror 3.5, open bracket sends codes 40,16!
-				 * Also in Konqueror 3.5, close bracket sends codes 41,16.
-				 * TODO BUG: This is still happening on '(' despite the detection code!
-				 * On keydown perhaps, before it's the lastChar?
-				*/
-				} else if (evt.keyCode == 40 && lastChar !== '(') {
-					if (historyPos != history.length) {
-						historyPos++;
-					}
-					history.loadOldLine();
-					evt.preventDefault();
-				/* Command-line ending in period */
-				} else if (lastChar === '.') {
-					evt.preventDefault();
-					var head = commandInput.value.slice(0,-1);
-					try {
-						var thing = eval(head);
-						textArea.value = inspect(thing);
-					} catch (e) {
-						textArea.value = '' + e;
-					}
-				}
-			}
-
-			/* Under Chrome, Escape does not fire a keypress event, but does keyup. */
-			myDiv.onkeyup = checkKey;
-
-			myStyle.setAttribute('type','text/css');
-			myStyle.innerHTML = 'div.qcons { color: white; background-color: #44aa44; position: fixed; left: 2px; right: 2px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; } .qcons_inner { position: relative; } .closeBlock { position: absolute; top: 0px; right: 0px; }';
-			document.getElementsByTagName('head')[0].appendChild(myStyle);
-
-			document.body.style.marginBottom = (parseInt(document.body.style.marginBottom,10)+110)+'px';
-			myDiv.appendChild(innerDiv);
-			document.body.appendChild(myDiv);
-
-			myDiv.getElementsByTagName('INPUT')[0].focus();
-
-		})();">Console</A></LI>
-	</P>
-	<BLOCKQUOTE>
-		<P>My own dodgy console.  With handy inspect() function.  Now auto-loads JQuery.</P>
-		<LI class='done'>Closes on Escape key.</LI>
-		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> (shortcut <TT>i:obj</TT>), <TT>loadScript(url)</TT> and <TT>addStyle(cssString)</TT>.</LI>
-		<LI class='done'>Added runtime option <TT>QuickConsole.showKeyEvents</TT>.</LI>
-		<LI class='done'>Done: Close button is in the right place now.</LI>
-		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
-		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> is a much better console!</LI>
-		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.  Intercept console.log()?</LI>
-	</BLOCKQUOTE>
-
-	<A name="xpathtester"></A>
-	<P>
-		<LI><A target="_self" href="javascript:(function(){
-			var newScript = document.createElement('script');
-			newScript.type = 'text/javascript';
-			newScript.src = 'http://hwi.ath.cx/javascript/xpath_tester.js';
-			document.body.appendChild(newScript);
-		})();">XPath Tester</A></LI>
-	</P>
-	<BLOCKQUOTE>
-		<P>Loads a little XPath testing tool which will show you the results of your xpath query.</P>
-		<LI class='external'>Note: Loads external script xpath_tester.js</LI>
-		<LI class='external'>That script may also loads xpath.js XPathResult shim if required, needed by Konqueror 3.5.</LI>
-		<LI>See also: ajaxslt</LI>
-	</BLOCKQUOTE>
 
 </BLOCKQUOTE>
 </DIV>
@@ -2403,16 +2457,24 @@ document.writeln('<P>Escaped '+cnt+" bookmarklets.</P>");
 </SCRIPT>
 -->
 
+
+
+<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'> </SCRIPT>
+<SCRIPT type="text/javascript">
+	/* Check if it loaded - No Longer Works! */
+	if (alert.oldconfirm) {
+		document.write("<P align='right'>You are protected from infinite alert loops by <A href='http://hwi.ath.cx/javascript/alert_watcher.user.js'>alert_watcher script</A>.</P>");
+	}
+</SCRIPT>
+
+<SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/fallbackgmapi/fallbackgmapi.user.js"></SCRIPT>
+<SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/table_of_contents_everyw/table_of_contents_everyw.user.js"></SCRIPT>
+
 <H2>Comments / Feedback</H2>
 <BLOCKQUOTE>
-<IFRAME width="100%" height="200px" src="http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title="/>
+<IFRAME width="100%" height="200px" src="http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title="></IFRAME>
 </BLOCKQUOTE>
 
-<SCRIPT>
-if (alert.oldconfirm) {
-	document.write("<P align='right'>You are protected from infinite alert loops by <A href='http://hwi.ath.cx/javascript/alert_watcher.user.js'>alert_watcher script</A>.</P>");
-}
-</SCRIPT>
 
 </BODY>
 </HTML>
