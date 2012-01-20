@@ -18,7 +18,7 @@ var fixUnderlinesToOverlines = true;
 
 /* TODO: As we scroll the page, light up the "current" section in the TOC.
  *
- * BUG: One occasional problem with the TOC is when it is taller than the
+ * FIXED: One occasional problem with the TOC is when it is taller than the
  *      window!  (I usually work around this by zooming out (reducing font
  *      size), but perhaps we can use CSS overflow to solve it properly.)
 */
@@ -108,7 +108,10 @@ function doIt() {
 		function toggleWikipediaSidebar(evt) {
 			// We don't want to act on all clicked body elements (notably not the WP
 			// image).  I detected two types of tag we wanted to click.
-			if (!evt || evt.target.tagName == "UL" || evt.target.tagName == "DIV") {
+			//if (!evt || evt.target.tagName == "UL" || evt.target.tagName == "DIV") {
+			// That was still activating on divs in the content!  (Gaps between paragraphs.)
+			// This only acts on the header area.
+			if (!evt || evt.target.id == 'mw-head') {
 				if (evt)
 					evt.preventDefault();
 				// GM_log("evt="+evt);
@@ -129,7 +132,7 @@ function doIt() {
 							column1.parentNode.insertBefore(cac,column1.nextSibling);
 						setTimeout(function(){
 							GM_setValue("sidebarVisible",false);
-						},300);
+						},5);
 					} else {
 						column1.style.display = '';
 						content.style.marginLeft = content.oldMarginLeft;
@@ -140,7 +143,7 @@ function doIt() {
 							cacOldHome.appendChild(cac); // almost back where it was :P
 						setTimeout(function(){
 							GM_setValue("sidebarVisible",true);
-						},300);
+						},5);
 					}
 				}
 			}
@@ -184,6 +187,9 @@ function doIt() {
 
 		// document.getElementById('column-one').appendChild(document.getElementById('toc'));
 
+		// createFader basically worked but was a little bit buggy.  (Unless the bugs were caused by conflict with other TOC script.)
+		// Anyway createFader() has now been deprecated in favour of CSS :hover.
+
 		function createFader(toc) {
 
 			var timer = null;
@@ -210,6 +216,7 @@ function doIt() {
 					resetTimeout(function(){fadeElement(elem,start,stop,speed,current);},50);
 			}
 
+			toc.style.opacity = 0.3;
 			var listenElement = toc;
 			// var listenElement = toc.getElementsByTagName('TD')[0];
 			var focused = false;
@@ -246,32 +253,40 @@ function doIt() {
 				// A healthy gap from the top allows the user to access things fixed in the top right of the page, if they can scroll finely enough.
 				// toc.style.top = '24px';
 				toc.style.right = '4%';
-				toc.style.top = '6%';
+				toc.style.top = '10%';   // We want to be below the search box!
 				// toc.style.left = '';
 				// toc.style.bottom = '';
 				toc.style.zIndex = '5000';
 				// fadeElement(toc,1.0,0.4);
-				toc.style.opacity = 0.3;
 				// This might work for a simple toc div
 				toc.style.maxHeight = "80%";
 				toc.style.maxWidth = "40%";
-				toc.style.overflow = "auto";
 
-				/*
-				//// Alternative rules from table_of_contents_everywhere script:
+				/* In long and complicated TOCs (e.g. Fermi Paradox) some of the
+				 * sub-trees in the list get scrollbars on them!
+				 * I think what we really need to do CSS-wise is only set maxHeight
+				 * and overflow on the first/top UL in the TOC.
+				 * We can't provide 80%, it's not working, so we provide pixels.
+				 */
 				toc.id = "toc";
-				GM_addStyle("#toc { position: fixed; top: 8%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; overflow: auto; }");
-				GM_addStyle("#toc       { opacity: 0.2; }");
-				GM_addStyle("#toc:hover { opacity: 1.0; }");
-				*/
-
-				// For MediaWiki tocs, we need to fix overflow not for the parent but for the ul:
-				// And again we can't use 80%, we have to provide pixels.
 				var maxHeight = window.innerHeight * 0.8 | 0;
 				var maxWidth = window.innerWidth * 0.4 | 0;
-				toc.id = "toc";
-				GM_addStyle("#toc ul { overflow: auto; max-width: "+maxWidth+"px; max-height: "+maxHeight+"px; }");
+				// GM_addStyle("#toc ul { overflow: auto; max-width: "+maxWidth+"px; max-height: "+maxHeight+"px; }");
+				var rootUL = toc.getElementsByTagName("UL")[0];
+				if (!rootUL)
+					rootUL = toc;
+				rootUL.style.overflow = "auto";
+				rootUL.style.maxWidth = maxWidth+'px';
+				rootUL.style.maxHeight = maxHeight+'px';
+
+				/*
 				createFader(toc);
+				*/
+				//// Alternative rules from table_of_contents_everywhere script:
+				toc.id = "toc";
+				// GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; overflow: auto; }");
+				GM_addStyle("#toc       { opacity: 0.2; }");
+				GM_addStyle("#toc:hover { opacity: 1.0; }");
 
 				return true;
 
@@ -321,6 +336,12 @@ function doIt() {
 					continue;
 				if (elem.textContent == 'Contents')
 					continue;
+
+				// We have found a "heading" element.  Every sibling after this
+				// element should be indented a bit.
+
+				//// Current method of indenting:  Create a UL and put everything
+				//// inside that.
 				// var newChild = document.createElement('blockquote');
 				//// Unfortunately blockquotes tend to indent too much!
 				// var newChild = document.createElement('DIV');
@@ -328,11 +349,22 @@ function doIt() {
 				newChild.style.marginLeft = '1.0em';
 				var toAdd = elem.nextSibling;
 				while (toAdd && toAdd.tagName != tag) {
+					// That last condition means a h3 might swallow an h2 if they
+					// are on the same level!  But it *should* swallow an h4.
+					// TODO: We should break if we encounter any marker with level
+					// above or equal to our own, otherwise continue to swallow.
 					var next = toAdd.nextSibling;
 					newChild.appendChild(toAdd);
 					toAdd = next;
 				}
 				elem.parentNode.insertBefore(newChild,elem.nextSibling);
+
+				// CONSIDER: Alternative: Do not swallow at all, do not create
+				// newChild and change the page's tree.  Just modify
+				// style.marginLeft, resetting it if an incompatible element style
+				// already exists there, updating it if we have already indented
+				// this element!
+
 				// GM_log("Placed "+newChild+" after "+elem);
 			}
 		}
