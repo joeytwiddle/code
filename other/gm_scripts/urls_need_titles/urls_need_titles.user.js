@@ -12,7 +12,7 @@ var rules = [
 		{
 			hostMatch: "youtube.TLD",   youtube.ath.cx, somewhere.youtube.com
 			                            TLD is replaced by 1 or two toplevel domain elements.
-			pathMatch: "/watch",        A regex, will be wrapped with ^..$ so use
+			pathMatch: "/watch",        This regex will be wrapped with ^..$ so use
 			                            .* at either end for wildcards.
 			get: ...                    A function which returns a sensible title for this page.
 		}
@@ -46,6 +46,12 @@ var rules = [
 		hostMatch: "pouet.net",
 		pathMatch: "",
 		get: function(){ return document.title }
+	},
+
+	{
+		hostMatch: "userscripts.org",
+		pathMatch: "/scripts/show/.*",
+		get: function(){ return document.title.replace(" for Greasemonkey",''); }
 	}
 
 ];
