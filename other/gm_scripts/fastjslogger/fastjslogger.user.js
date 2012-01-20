@@ -185,6 +185,7 @@ target.console.log = function(a,b,c) {
 	// Make visible if hidden
 	showLogger();
 
+	// I tried disabling this and regretted it!
 	if (a+b+c === preventInfLoop) {
 		return;
 	}
@@ -290,53 +291,6 @@ target.console.error = function(e) {
 
 
 
-// Try to intercept errors
-// Strategy: Whenever a callback is placed, we should wrap it!
-
-var oldSetTimeout = window.setTimeout;
-window.setTimeout = function(fn,ms) {
-	var wrappedFn = function(){
-
-		// We can catch the error here, but if we do, even if we throw it again, the Chrome debugger shows this function as the source.
-		// It is preferable to let the error fall up to Chrome, so we can easily jump to the line number.
-		// Unfortunately, if we don't catch the error, we can't report it to FJSL!
-
-		/*
-		try {
-		*/
-
-			// console.log("Timeout happening after "+ms+"ms: "+fn)
-			if (typeof fn == 'function') {
-				fn();
-			} else if (typeof fn == 'string') {
-				eval(fn);
-			} else  {
-				throw new Error("[FJSL] setTimeout.wrappedFn(): Unsure how to execute fn of type \""+typeof fn+"\": "+fn);
-			}
-
-		/*
-		} catch (e) {
-			// Actually hard to read!
-			// var prettyFn = fn; // (""+fn) .replace(/\n/g,'\\n');
-			var fnName = fn && fn.name;
-			if (!fnName) {
-				fnName = "<anonymous>";
-			}
-			// console.log("[ERR]",e,prettyFn);
-			console.log("[Exception]",e,"from "+fnName+"()");
-			console.log(""+e.stack);
-			throw e;
-			// Unfortunately even Chrome dev shows the throw as coming from here!
-			// So it is better if we leave it alone.
-		}
-		*/
-
-	};
-
-	return oldSetTimeout(wrappedFn,ms);
-};
-
-
 
 var logDiv;
 
@@ -366,6 +320,69 @@ logContainer = k[1];
 
 
 target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
+
+
+
+// Try to intercept errors
+// TODO for others.  Strategy: Whenever a callback is placed, we should wrap it!
+
+var interceptTimeouts = true;
+
+if (this.localStorage) {
+	interceptTimeouts = !Boolean(localStorage['fastjslogger_interceptTimeouts']);
+	localStorage['fastjslogger_interceptTimeouts'] = interceptTimeouts;
+}
+
+if (interceptTimeouts) {
+
+	var oldSetTimeout = window.setTimeout;
+	window.setTimeout = function(fn,ms) {
+		var wrappedFn = function(){
+
+			// We can catch the error here, but if we do, even if we throw it again, the Chrome debugger shows this function as the source.
+			// It is preferable to let the error fall up to Chrome, so we can easily jump to the line number.
+			// Unfortunately, if we don't catch the error, we can't report it to FJSL!
+
+			if (typeof fn === 'string') {
+				var str = fn;
+				fn = function(){ eval(str); };
+			}
+			if (!typeof fn === 'function') {
+				throw new Error("[FJSL] setTimeout was not given a function!",fn);
+			}
+
+			try {
+
+				fn();
+				return;
+
+			} catch (e) {
+				// Actually hard to read!
+				// var prettyFn = fn; // (""+fn) .replace(/\n/g,'\\n');
+				var fnName = fn && fn.name;
+				if (!fnName) {
+					fnName = "<anonymous>";
+				}
+				// console.log("[ERR]",e,prettyFn);
+				console.log("[Exception]",e,"from "+fnName+"()");
+				console.log(""+e.stack);
+				throw e;
+				// Unfortunately even Chrome dev shows the throw as coming from here!
+				// So it is better if we leave it alone.
+			}
+
+			console.log("Re-running to reproduce stack-trace (may fail)");
+			fn();
+			throw new Error("Re-run failed to produce any error!",fn);
+
+		};
+
+		return oldSetTimeout(wrappedFn,ms);
+	};
+
+}
+
+console.log("interceptTimeouts is "+(interceptTimeouts?"ENABLED":"DISABLED"));
 
 
 
