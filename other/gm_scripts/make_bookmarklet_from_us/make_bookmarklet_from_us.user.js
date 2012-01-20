@@ -58,20 +58,20 @@ function addBookmarklet(link,includeGMCompat,neverCache) {
 	newLink.href = "javascript:" + toRun;
 	newLink.textContent = name;
 
-	var extra = document.createElement("SPAN");
-	extra.appendChild(document.createTextNode("(Bookmarklet: "));
-	extra.appendChild(newLink);
+	var newContainer = document.createElement("SPAN");
+	newContainer.appendChild(document.createTextNode("(Bookmarklet: "));
+	newContainer.appendChild(newLink);
 	var extraString = ( neverCache || includeGMCompat ? neverCache && includeGMCompat ? " (NoCaching,WithGMFallbacks)" : neverCache ? " (NoCaching)" : " (WithGMFallbacks)" : "" );
 	if (extraString) {
-		// extra.appendChild(document.createTextNode(extraString));
+		// newContainer.appendChild(document.createTextNode(extraString));
 		var extraText = document.createElement("span");
 		extraText.textContent = extraString;
 		extraText.style.fontSize = '80%';
-		extra.appendChild(extraText);
+		newContainer.appendChild(extraText);
 	}
-	extra.appendChild(document.createTextNode(")"));
-	extra.style.paddingLeft = '8px';
-	link.parentNode.insertBefore(extra,link.nextSibling);
+	newContainer.appendChild(document.createTextNode(")"));
+	newContainer.style.paddingLeft = '8px';
+	link.parentNode.insertBefore(newContainer,link.nextSibling);
 }
 
 function addQuickInstall(link) {
@@ -83,12 +83,12 @@ function addQuickInstall(link) {
 	var newLink = document.createElement("A");
 	newLink.href = link.href + name+".user.js";
 	newLink.textContent = "Install"; // name+".user.js";
-	var extra = document.createElement("span");
-	extra.appendChild(document.createTextNode("      ["));
-	extra.appendChild(newLink);
-	extra.appendChild(document.createTextNode("]"));
-	extra.style.paddingLeft = '8px';
-	link.parentNode.insertBefore(extra,br);
+	var newContainer = document.createElement("span");
+	newContainer.appendChild(document.createTextNode("      ["));
+	newContainer.appendChild(newLink);
+	newContainer.appendChild(document.createTextNode("]"));
+	newContainer.style.paddingLeft = '8px';
+	link.parentNode.insertBefore(newContainer,br);
 	link.style.color = 'grey';
 	addBookmarklet(newLink,true,true);
 	addLiveUserscript(newLink);
