@@ -39,23 +39,19 @@
     if (code === forwardButton) {
       for (index = 0; index < positions.length; index++) {
         if (positions[index][1] <= scroll) continue;
-        // I swapped body and documentElement here to prefer the former,
-        // because Chrome presents documentElement.scrollTop = 0 all the time!
-        if (scroll === document.body.scrollTop) {
-          document.body.scrollTop = positions[index][1];
-        } else {
-          document.documentElement.scrollTop = positions[index][1];
-        }
+        // Hard to detect which one our browser is using when we are at the top of the document.
+        // Because Chrome presents documentElement.scrollTop = 0 all the time!
+        // Likewise Firefox presents document.body.scrollTop = 0 all the time!
+        // Solution?  Just set both of them!
+        document.body.scrollTop = positions[index][1];
+        document.documentElement.scrollTop = positions[index][1];
         return;
       }
     } else if (code === backwardButton) {
       for (index = positions.length - 1; index >= 0; index--) {
         if (positions[index][1] >= scroll) continue;
-        if (scroll === document.body.scrollTop) {
-          document.body.scrollTop = positions[index][1];
-        } else {
-          document.documentElement.scrollTop = positions[index][1];
-        }
+        document.body.scrollTop = positions[index][1];
+        document.documentElement.scrollTop = positions[index][1];
         return;
       }
     }
