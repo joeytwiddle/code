@@ -5,7 +5,43 @@
 // @include        http://*/*
 // ==/UserScript==
 
-(function(){
+setTimeout(function(){
+
+if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)) {
+	GM_log("TOCE: Adding fallback implementation of GM_set/getValue");
+
+	if (typeof localStorage == 'undefined') {
+
+		GM_getValue = function(name, defaultValue) {
+			return defaultValue;
+		};
+
+	} else {
+
+		GM_setValue = function(name, value) {
+			value = (typeof value)[0] + value;
+			localStorage.setItem(name, value);
+		};
+
+		GM_getValue = function(name, defaultValue) {
+			var value = localStorage.getItem(name);
+			if (!value)
+				return defaultValue;
+			var type = value[0];
+			value = value.substring(1);
+			switch (type) {
+				case 'b':
+					return value == 'true';
+				case 'n':
+					return Number(value);
+				default:
+					return value;
+			}
+		};
+
+	}
+
+}
 
 try {
 
@@ -29,7 +65,7 @@ try {
 
 	var toc = tocFound;
 
-	if (true || !toc) {
+	if (!toc) {
 
 		// Can we make a TOC?
 		var nodes = document.evaluate("//h1 | //h2 | //h3 | //h4 | //h5 | //h6 | //h7 | //h8 | //a[@name]",document,null,6,null);
@@ -46,7 +82,7 @@ try {
 			// Interestingly, the overflow settings seems to apply to all sub-elements.
 			// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
 			// Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
-			GM_addStyle("#toc { position: fixed; top: 8%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; /*max-width: 40%;*/ overflow: auto; }");
+			GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 40%; overflow: auto; }");
 			// BUG TODO: max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
 			//           WikiIndent's solution is to set a max-width of all sub-elements of the TOC in pixels.
 			GM_addStyle("#toc       { opacity: 0.2; }");
@@ -70,7 +106,7 @@ try {
 			rollupButton.style.float = 'right';
 			rollupButton.style.cursor = 'pointer';
 			rollupButton.style.paddingLeft = '10px';
-			rollupButton.onclick = function() {
+			function toggleRollUp() {
 				if (table.style.display == 'none') {
 					table.style.display = '';
 					rollupButton.textContent = "[-]";
@@ -78,12 +114,22 @@ try {
 					table.style.display = 'none';
 					rollupButton.textContent = "[+]";
 				}
-			};
+				setTimeout(function(){
+					GM_setValue("TOCE_rolledUp", table.style.display=='none');
+				},5);
+			}
+			rollupButton.onclick = toggleRollUp;
 			toc.appendChild(rollupButton);
+			if (GM_getValue("TOCE_rolledUp",false)) {
+				toggleRollUp();
+			}
 
 			for (var i=0;i<nodes.snapshotLength;i++) {
 				var node = nodes.snapshotItem(i);
 				var level = (node.tagName.substring(1) | 0) - 1;
+				if (node.textContent == null || node.textContent.trim() == "") {
+					continue;
+				}
 				var link = newNode("A");
 				link.textContent = node.textContent;
 				/* Dirty hack for Wikimedia: */
@@ -105,6 +151,10 @@ try {
 				li.style.paddingLeft = (1.5*level)+"em";
 				li.style.fontSize = (100-6*(level+1))+"%";
 				li.style.size = li.style.fontSize;
+				// Debugging:
+				li.title = node.tagName;
+				if (node.name)
+					li.title += " ("+name+")";
 			}
 			toc.appendChild(table);
 
@@ -120,5 +170,5 @@ try {
 	GM_log("[TOCE] Error! "+e);
 }
 
-})();
+},380);
 
