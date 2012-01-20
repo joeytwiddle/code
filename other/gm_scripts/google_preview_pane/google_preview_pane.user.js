@@ -7,7 +7,7 @@
 // @include        http://google.*/*q=*
 // @exclude        http://www.google.*/images*
 // @exclude        http://google.*/images*
-// @version        2010.10.06
+// @version        2012.01.15
 // ==/UserScript==
 
 
@@ -95,7 +95,7 @@ var Colors = {
 	selected: { bg: "#ddeeff", border: "#ccddff" },
 	travel:   { bg: "#ffeecc", border: "#ffccbb" },
 	action:   { bg: "#ddccff", border: "#ccbbff" },
-	checkers: { 0: "#f4f4f4", 1: "#fbfbfb" }
+	checkers: { 0: "#fbfbfb", 1: "#f4f4f4" }
 };
 
 if (renderLikeTabs) {
