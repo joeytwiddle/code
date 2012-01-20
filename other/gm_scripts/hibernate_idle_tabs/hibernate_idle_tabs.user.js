@@ -28,12 +28,11 @@
 
 /* +++ Config +++ */
 
-// GM_log("Hibernate Idle is DISABLED."); return;
-
-// var hibernateIfIdleForMoreThan = 6*60*60; // for relaxed users with a reasonable computer
-var hibernateIfIdleForMoreThan = 4*60*60; // for me
+var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours for me
 // var hibernateIfIdleForMoreThan = 10; // for testing
 var restoreTime = 0.2; // in seconds
+
+// GM_log("Hibernate Idle Tabs is DISABLED."); return;
 
 //// When we hibernate, we want to go to a mostly-blabk valid webpage somewhere
 //// where the userscript can run again.
@@ -110,10 +109,12 @@ function handleHoldingPage() {
 		GM_log(""+e);
 	}
 
-	function restoreTab() {
+	function restoreTab(evt) {
 		var url = decodeURIComponent(params.hibernate_url);
 		setHibernateStatus("Returning to: "+url);
 		document.location.replace(url);
+		evt.preventDefault();   // Accept responsibility for the double-click.
+		return false;   // Prevent browser from doing anything else with it (e.g. selecting the word under the cursor).
 	}
 
 	checkForActivity();
