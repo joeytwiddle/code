@@ -23,6 +23,7 @@ var maxCacheSize = 2048; // Total cache (for all sites).  This value is altered 
 var showProgress = true; // Highlights each link in yellow while we are making a delicious request on it
 var logIO        = false;
 var logResponses = true;
+var displayCleanupInTitle = false;
 
 
 
@@ -725,8 +726,10 @@ function cleanupCache() {
 		log("Cannot cleanupCache - GM_listValues() is unavaiable.");
 	} else {
 
-		var oldTitle = ""+document.title;
-		document.title = "[Cleaning cache..]";
+		if (displayCleanupInTitle) {
+			var oldTitle = ""+document.title;
+			document.title = "[Cleaning cache..]";
+		}
 
 		log("Starting cleanupCache ...");
 		var startTime = new Date().getTime();
@@ -755,7 +758,9 @@ function cleanupCache() {
 
 		log("There are "+cacheList.length+" items in the cache.");
 
-		document.title = "[Cleaning cache...]";
+		if (displayCleanupInTitle) {
+			document.title = "[Cleaning cache...]";
+		}
 
 		// Rather casual method: Keep deleting records at random until we meet
 		// our max cache size.
@@ -820,9 +825,11 @@ function cleanupCache() {
 
 				setTimeout(cleanupOne,100);
 			} else {
-				if (oldTitle === "")
-					oldTitle = " ";   // If we try to set "", Chrome does nothing
-				document.title = oldTitle;
+				if (displayCleanupInTitle) {
+					if (oldTitle === "")
+						oldTitle = " ";   // If we try to set "", Chrome does nothing
+					document.title = oldTitle;
+				}
 				log("Cleanup took "+(new Date().getTime() - startTime)/1000+" seconds.");
 			}
 		}
@@ -833,7 +840,9 @@ function cleanupCache() {
 		// Better scalable method: Find all the low scorers in one pass:
 		// Disadvantage: not run on a timer!
 
-		document.title = "[Cleaning cache....]";
+		if (displayCleanupInTitle) {
+			document.title = "[Cleaning cache....]";
+		}
 
 		function compare(crURLA, crURLB) {
 			return getScoreFor(crURLA) - getScoreFor(crURLB);
@@ -841,7 +850,9 @@ function cleanupCache() {
 
 		var sortedList = cacheList.sort(compare);
 
-		document.title = "[Cleaning cache....]";
+		if (displayCleanupInTitle) {
+			document.title = "[Cleaning cache....]";
+		}
 
 		/*
 		GM_log("Score for 0 = "+getScoreFor(sortedList[0]));
@@ -854,13 +865,16 @@ function cleanupCache() {
 			var crURL = sortedList[i]; // e.g. "CachedResponsehttp://..."
 			var poorestScorer = crURL;
 			var url = crURL.replace(/^CachedResponse/,'');
-			log("Cleaning up "+poorestScorer+" with count="+dataCache[url].cacheCount+" and age="+(""+age(dataCache[url])).substring(0,6));
+			// log("Cleaning up "+poorestScorer+" with count="+dataCache[url].cacheCount+" and age="+(""+age(dataCache[url])).substring(0,6));
 			GM_deleteValue(poorestScorer);
 		}
 
-		if (oldTitle === "")
-			oldTitle = " ";   // If we try to set "", Chrome does nothing
-		document.title = oldTitle;
+		if (displayCleanupInTitle) {
+			if (oldTitle === "")
+				oldTitle = " ";   // If we try to set "", Chrome does nothing
+			document.title = oldTitle;
+		}
+
 		log("Cleanup took "+(new Date().getTime() - startTime)/1000+" seconds.");
 
 	}
@@ -1475,8 +1489,8 @@ if (annotateAllLinks && document.location.host != "www.delicious.com") {
 
 // == Cleanup old cached data == //
 
-if (Math.random() < 0.1) { // TODO 0.1
-	setTimeout(cleanupCache,120000);
+if (Math.random() < 0.1) {
+	setTimeout(cleanupCache,120000); // 2 minutes
 }
 
 
