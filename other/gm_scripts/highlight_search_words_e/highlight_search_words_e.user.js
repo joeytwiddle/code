@@ -5,11 +5,24 @@
 // @include        *
 //// Exclude sites which already highlight search terms!
 // @exclude        http://*.google.*/*
+// @exclude        http://*.imdb.com/*
 // ==/UserScript==
 
 var highlightWholePhrase = true;
 var highlightEachTerm    = true;
 var highlightOnSearchPages = false;  // highlight on the search page, as well as the results pages
+
+var changeTitle = false;
+var titlePrependString = "(Highlighting words...) ";
+var titleAppendString = ""
+
+// Extra excludes (and repeated excludes for monkeys not properly supporting @exclude):
+if (document.location.host.indexOf("imdb.com")>=0) {
+	return;   // Too slow and not really useful on IMDB.
+	// (This script is more useful on unfamiliar websites.)
+} else if (document.location.host.indexOf(".google.")>=0) {
+	return;
+}
 
 /** === Documentation ===
 //
@@ -72,6 +85,25 @@ function loopBackwardsOnTimeout(list,fn,delay) {
 	doOne();
 }
 
+// A problem here might be that many iframes can affect the same title?
+function cleanupTitle() {
+	document.title = document.title.replace(titlePrependString,'');
+	document.title = document.title.replace(titleAppendString,'');
+	//// TODO: To do true string replacement, use:
+	// document.title = document.title.split(titlePrependString).join('');
+	// document.title = document.title.split(titleAppendString).join('');
+}
+
+var clearingTimer = null;
+var oldSetTimeout = window.setTimeout;
+function setTimeout(fn,time) {
+	// GM_log("Setting fn for +"+time);
+	oldSetTimeout(fn,time);
+	if (clearingTimer)
+		clearTimeout(clearingTimer);
+	clearingTimer = oldSetTimeout(function(){ notRunning = true; clearingTimer = null; }, time+1000);
+}
+
 function findSearchTerm_OLD(url) {
 	if (url.indexOf("search=")==0 || url.indexOf("&search=")>=0) {
 		// log(url.replace(/.*search=/,''));
@@ -120,6 +152,10 @@ function startSearch(word) {
 			searchWithinNode(document.body, word.toUpperCase(), word.length, getNextColor());
 		},startSearchDelay);
 		startSearchDelay += 1000;
+	}
+	// At the end:
+	if (changeTitle) {
+		setTimeout(cleanupTitle,startSearchDelay);
 	}
 }
 
@@ -188,12 +224,12 @@ if (words) {
 		return skip;
 	}
 
-	// var hue = 360/6;
 	var hue = 0;
+	// var hue = 360/6;
 	function getNextColor() {
 		var colstr = "hsl("+hue+",100%,80%)";
-		// hue = Math.round(hue + 360/3.3); // cyan, magenta, peach
 		hue = Math.round(hue + 360/5.7); // yellow, green, cyan
+		// hue = Math.round(hue + 360/3.3); // cyan, magenta, peach
 		if (hue > 360)
 			hue -= 360;
 		return colstr;
@@ -203,6 +239,10 @@ if (words) {
 	/* window.status="Searching for '"+words+"'..."; */
 
 	words = unescape(words.replace(/\+/g,' '));
+
+	if (changeTitle) {
+		document.title = titlePrependString + document.title + titleAppendString;
+	}
 
 	if (highlightWholePhrase) {
 		startSearch(words);
