@@ -2,7 +2,7 @@
 	<Script filename="first_gm_script.user.js" name="First GM Script" namespace="Timer" description="" version="" enabled="false" runAt="document-end" basedir="first_gm_script" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
 		<Include>*</Include>
 	</Script>
-	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2012.01.15" enabled="true" runAt="document-end" basedir="google_preview_pane" modified="1326641881000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1323801999000">
+	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2012.01.15" enabled="true" runAt="document-end" basedir="google_preview_pane" modified="1326641881000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326641881000">
 		<Include>http://www.google.*/*q=*</Include>
 		<Include>http://google.*/*q=*</Include>
 		<Exclude>http://www.google.*/images*</Exclude>
@@ -1055,13 +1055,13 @@
 		<Include>http://www.bbc.co.uk/*/aod.shtml</Include>
 		<Include>http://www.bbc.co.uk/*/aod.shtml*</Include>
 	</Script>
-	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="true" runAt="document-end" basedir="make_bookmarklet_from_us" modified="1326404719000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1325878975000">
+	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="true" runAt="document-end" basedir="make_bookmarklet_from_us" modified="1326404719000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326404719000">
 		<Include>http://hwi.ath.cx/*/gm_scripts/*</Include>
 		<Include>http://hwi.ath.cx/*/userscripts/*</Include>
 		<Include>http://*userscripts.org/*</Include>
 		<Exclude>http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html</Exclude>
 	</Script>
-	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" runAt="document-end" basedir="wikiindent" modified="1326826121000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1325632496000">
+	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining." version="" enabled="true" runAt="document-end" basedir="wikiindent" modified="1327237939000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327237939000">
 		<Include>*wiki*</Include>
 		<Include>http://www.buzztard.com/*</Include>
 		<Include>http://encyclopediadramatica.com/*</Include>
@@ -1093,7 +1093,7 @@
 	<Script filename="onepagewonder.user.js" name="OnePageWonder" namespace="OPW" description="Opens all links in IFrame, so going &quot;back&quot; is fast!" version="" enabled="false" runAt="document-end" basedir="onepagewonder" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635616000">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="title_youtube_locations.user.js" name="Title Youtube Locations" namespace="TYTLs" description="Forces all YouTube pages to put the video title in the Location Bar" version="" enabled="false" runAt="document-end" basedir="title_youtube_locations" modified="1326967586000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1322877479000">
+	<Script filename="title_youtube_locations.user.js" name="Title Youtube Locations" namespace="TYTLs" description="Forces all YouTube pages to put the video title in the Location Bar" version="" enabled="false" runAt="document-end" basedir="title_youtube_locations" modified="1326967586000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326967586000">
 		<Include>http://*.youtube.*/*</Include>
 		<Include>http://youtube.*/*</Include>
 	</Script>
@@ -1117,7 +1117,7 @@
 	<Script filename="imdb_search_torrents.user.js" name="IMDB: Search Torrents" namespace="http://userscripts.org/scripts/show/47385" description="Searches multiple torrent sites for the movie, videogame, etc" version="1.2" enabled="true" runAt="document-end" basedir="imdb_search_torrents" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
 		<Include>http://*.imdb.com/title/*</Include>
 	</Script>
-	<Script filename="next_imageprevious_image.user.js" name="Next Image/Previous Image" namespace="http://arty.name/" description="Quick scroll to next/previous image on a page with f/r buttons" version="1.0" enabled="true" runAt="document-end" basedir="next_imageprevious_image" modified="1326921531000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1322067484000">
+	<Script filename="next_imageprevious_image.user.js" name="Next Image/Previous Image" namespace="http://arty.name/" description="Quick scroll to next/previous image on a page with f/r buttons" version="1.0" enabled="true" runAt="document-end" basedir="next_imageprevious_image" modified="1326921531000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326921531000">
 		<Include>*</Include>
 	</Script>
 	<Script filename="personas_liberty.user.js" name="Personas 3D Tweaker" namespace="http://hwi.ath.cx/personas3d" description="Allows you to tweak personas.  TODO: Allows you to load any image on the web as a Persona." version="" enabled="true" runAt="document-end" basedir="personas_liberty-1" modified="1291576493000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1291576493000">
@@ -1133,7 +1133,7 @@
 		<Exclude>http://demoscene.tv/*</Exclude>
 		<Exclude>http://*.other.sites/where/we/want/to/leave/the/page/running</Exclude>
 	</Script>
-	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" runAt="document-end" basedir="delicious_link_tooltop" modified="1325818199000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1325818199000">
+	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" runAt="document-end" basedir="delicious_link_tooltop" modified="1327169993000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327169993000">
 		<Include>*</Include>
 		<Exclude>http://facebook.com/*</Exclude>
 		<Exclude>https://facebook.com/*</Exclude>
@@ -1265,7 +1265,7 @@
 		<Include>http://youtube.com/*</Include>
 		<Include>http://*.youtube.com/*</Include>
 	</Script>
-	<Script filename="fastjslogger.user.js" name="FastJSLogger" namespace="FastJSLogger" description="Attempts to redirect console.log to a div floating on the page." version="" enabled="false" runAt="document-end" basedir="fastjslogger" modified="1326848724000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1323924164000">
+	<Script filename="fastjslogger.user.js" name="FastJSLogger" namespace="FastJSLogger" description="Attempts to redirect console.log to a div floating on the page." version="" enabled="false" runAt="document-end" basedir="fastjslogger" modified="1326848724000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326848724000">
 		<Include>*</Include>
 	</Script>
 	<Script filename="fallbackgmapi.user.js" name="FallbackGMAPI" namespace="FallbackGMAPI" description="Default functions for GM_ API library for wider browser compatibility and execution of userscripts from bookmarklets." version="" enabled="true" runAt="document-end" basedir="fallbackgmapi" modified="1318126236000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1318126236000">
@@ -1275,7 +1275,7 @@
 	<Script filename="one_click_userscripts.user.js" name="One Click Userscripts" namespace="OCU" description="Don't use Greasemonkey to load your userscripts, use this lighter interface instead!  Also works as a bookmarklet." version="" enabled="false" runAt="document-end" basedir="one_click_userscripts" modified="1323888383000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1323888383000">
 		<Include>*</Include>
 	</Script>
-	<Script filename="urls_need_titles.user.js" name="URLs Need Titles" namespace="UNT" description="When you paste a URL to a friend, it's better it contain the title of the page.  This script adds these missing titles for common websites using # part of URL." version="" enabled="true" runAt="document-end" basedir="urls_need_titles" modified="1327035758000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1323557239000">
+	<Script filename="urls_need_titles.user.js" name="URLs Need Titles" namespace="UNT" description="When you paste a URL to a friend, it's better it contain the title of the page.  This script adds these missing titles for common websites using # part of URL." version="" enabled="true" runAt="document-end" basedir="urls_need_titles" modified="1327035758000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327035758000">
 		<Include>http://*/*</Include>
 		<Exclude>https://*/*</Exclude>
 	</Script>
@@ -1287,7 +1287,7 @@
 	<Script filename="auto_scroll_mouse.user.js" name="Auto Scroll Mouse" namespace="http://www.marcbelmont.com" description="Scrolls the page when you move the mouse up and down" version="" enabled="false" runAt="document-end" basedir="auto_scroll_mouse" modified="1309818822000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1309818822000" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Mouse.user.js" updateurl="file:///mnt/hwibot/tmp/Auto_Scroll_Mouse.user.js">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="auto_scroll_keys.user.js" name="Auto scroll keys" namespace="http://userscripts.org/users/44573" description="Auto scroll page on Ctrl+Down. Escape to stop." version="" enabled="true" runAt="document-end" basedir="auto_scroll_keys" modified="1326778065000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1325557874000" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js" updateurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js">
+	<Script filename="auto_scroll_keys.user.js" name="Auto scroll keys" namespace="http://userscripts.org/users/44573" description="Auto scroll page on Ctrl+Down. Escape to stop." version="" enabled="true" runAt="document-end" basedir="auto_scroll_keys" modified="1327165111000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327165111000" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js" updateurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js">
 		<Include>*</Include>
 	</Script>
 	<Script filename="tocmonkey.user.js" name="TOCMonkey" namespace="http://hackadelic.com" description="Adds a TOC to a viewed HTML page" version="1.0" enabled="false" runAt="document-end" basedir="tocmonkey" modified="1310812569000" dependhash="e8c3db9bef11e9af828798171a532a25173457bc" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1310812569000" installurl="file:///mnt/hwibot/tmp/tocmonkey.user.js" updateurl="file:///mnt/hwibot/tmp/tocmonkey.user.js">
@@ -1297,7 +1297,7 @@
 		<Exclude>http://*.wikipedia.*</Exclude>
 		<Require filename="jquerymin.js"/>
 	</Script>
-	<Script filename="table_of_contents_everyw.user.js" name="Table of Contents Everywhere" namespace="TOCE" description="On pages which do not have a Table of Contents, but should do, create one!" version="" enabled="true" runAt="document-end" basedir="table_of_contents_everyw" modified="1326826097000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1325595743000">
+	<Script filename="table_of_contents_everyw.user.js" name="Table of Contents Everywhere" namespace="TOCE" description="On pages which do not have a Table of Contents, but should do, create one!" version="" enabled="true" runAt="document-end" basedir="table_of_contents_everyw" modified="1327180006000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327180006000">
 		<Include>http://*/*</Include>
 	</Script>
 	<Script filename="inline_preview.user.js" name="Inline Preview" namespace="IP" description="View links inline (without leaving the current page) by clicking the preview buttons beside them." version="" enabled="true" runAt="document-end" basedir="inline_preview" modified="1315095085000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1315095085000">
@@ -1310,7 +1310,7 @@
 	<Script filename="webpage_playlist.user.js" name="WebPage Playlist" namespace="WPP" description="Allows you to add links to a playlist, then navigate through your playlist.  Useful it you want to look at a set of pages without using multiple tabs." version="" enabled="true" runAt="document-end" basedir="webpage_playlist" modified="1315069035000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1315069035000">
 		<Include>http://*/*</Include>
 	</Script>
-	<Script filename="hibernate_idle_tabs.user.js" name="Hibernate Idle Tabs" namespace="HIT" description="If a tab is idle for a long time, navigate to a light holding page until it is used again, to recover memory." version="" enabled="true" runAt="document-end" basedir="hibernate_idle_tabs" modified="1326641555000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1323721808000">
+	<Script filename="hibernate_idle_tabs.user.js" name="Hibernate Idle Tabs" namespace="HIT" description="If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions." version="" enabled="true" runAt="document-end" basedir="hibernate_idle_tabs" modified="1327164302000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327164302000">
 		<Include>*</Include>
 	</Script>
 	<Script filename="ffixer.user.js" name="FFixer" namespace="http://code-poet.net/" description="Enhancements for Facebook: bigger profile pictures and photos, easier viewing of albums, links to download videos, showing people's age and sign, google calendar integration, keyboard shortcuts &amp; more. Compatible with new Facebook and fully customizable!" version="2.3.1" enabled="true" runAt="document-end" basedir="ffixer" modified="1315256687000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1315256687000" installurl="http://userscripts.org/scripts/source/8861.user.js" updateurl="http://userscripts.org/scripts/source/8861.meta.js">
