@@ -11,6 +11,7 @@
 // To avoid this we should have a fallback.  E.g. if the title we want to set
 // is the same as the last one we did set (via GM_set/getValue) then do not try
 // again.
+// This has never happened so far.  :)
 
 setTimeout(function(){
 	if (document.location.pathname == "/watch") {
@@ -43,12 +44,12 @@ setTimeout(function(){
 	var watchDiscussion = document.getElementById("watch-discussion");
 	if (watchDiscussion) {
 		watchDiscussion.style.overflow = "auto";
-		watchDiscussion.style.maxHeight = (window.innerHeight - 552)+"px"; /* For a video height 360p */
+		watchDiscussion.style.maxHeight = (window.innerHeight - 562)+"px"; /* For a video height 360p */
 	}
 	var watchSidebar = document.getElementById("watch-sidebar");
 	if (watchSidebar) {
 		watchSidebar.style.overflow = "auto";
-		watchSidebar.style.maxHeight = (window.innerHeight - 61)+"px";
+		watchSidebar.style.maxHeight = (window.innerHeight - 26)+"px";
 		// Now the text wraps because of the scrollbar, so we widen the element:
 		// watchSidebar.style.width = (320+24)+"px";
 		watchSidebar.style.width = '300px';
