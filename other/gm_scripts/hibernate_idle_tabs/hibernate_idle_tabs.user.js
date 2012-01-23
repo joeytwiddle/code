@@ -1,9 +1,28 @@
 // ==UserScript==
 // @name           Hibernate Idle Tabs
 // @namespace      HIT
-// @description    If a tab is idle for a long time, navigate to a light holding page until it is used again, to recover memory.
+// @description    If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions.
 // @include        *
 // ==/UserScript==
+
+
+/* +++ Config +++ */
+
+var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours for me
+var restoreTime = 0.2; // in seconds
+
+// We need an always-available basically blank HTML page we can navigate to for
+// hibernation.  The userscript will run there and await re-activation.
+// Userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011, but a
+// file:///... URL might work.
+
+// I got desperate and aimed for a 404 on Google:
+// This is not really satisfactory, since it provides an image and unneeded CSS!
+var holdingPage = "http://www.google.com/hibernated_tab";
+
+// Unsuitable holding page because the server is not always online.  Mirror this!
+var oldHoldingPage = "http://hwi.ath.cx/hibernated_tab.html";
+
 
 
 /* +++ Documentation +++ */
@@ -14,39 +33,22 @@
 // hopefully freeing up memory in the browser.
 //
 // On a holding page, if the user focuses the window, the window navigates back
-// to the original page.  (This can be canceled in Chrome by clicking on
+// to the original page.  (This can be cancelled in Chrome by clicking on
 // another tab, but not by paging to another tab with the keyboard!)
 //
-// In order for the holding page to present the same favicon as the original
-// page, we must capture this image before leaving the original page, and pass
-// it to the holding page as a CGI parameter.
+// I think single-click is also a cancellation now.
+//
+// In order for the tab of the holding page to present the same favicon as the
+// original page, we must capture this image before leaving the original page,
+// and pass it to the holding page as a CGI parameter.
 //
 // (A simpler alternative might be to aim for a 404 on the same domain and use
 // that as the holding page.)
 
 
 
-/* +++ Config +++ */
+// TODO: Some users may want the hibernated page to restore immediately when the tab is *refocused*, rather than waiting for a mouseover.
 
-var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours for me
-// var hibernateIfIdleForMoreThan = 10; // for testing
-var restoreTime = 0.2; // in seconds
-
-// GM_log("Hibernate Idle Tabs is DISABLED."); return;
-
-//// When we hibernate, we want to go to a mostly-blabk valid webpage somewhere
-//// where the userscript can run again.
-//// This could be a file:///... URL, but atm we use an http://... URL.
-//// Userscripts do not run on about:blank in Firefox 6.0 or Chromium 2011!
-// var holdingPage = "about:blank";
-//// hwi.ath.cx is not always online!
-var oldHoldingPage = "http://hwi.ath.cx/hibernated_tab.html";
-//// Let's just spam Google.  This is not really satisfactory, since it provides an image and unneeded CSS!
-var holdingPage = "http://www.google.com/hibernated_tab";   // Returns a 404 page we can work on :)
-
-
-
-// TODO: Some users may want the hibernated page to restore when the window is focused (when the tab is switched to), rather than waiting for a mouseover.
 // TODO: Expose a function to allow a bookmarklet to force-hibernate the current tab?
 
 
@@ -55,7 +57,9 @@ var holdingPage = "http://www.google.com/hibernated_tab";   // Returns a 404 pag
 
 var onHoldingPage = document.location.href.match(holdingPage+"?") != null;
 
-if (!onHoldingPage) {   // Only need this for a few days.
+// If you change holding page, this keeps the old one working for a while, for
+// the sake of running browsers or saved sessions.
+if (!onHoldingPage && oldHoldingPage) {
 	onHoldingPage = document.location.href.match(oldHoldingPage+"?") != null;
 }
 
@@ -71,7 +75,7 @@ function handleNormalPage() {
 			document.body.appendChild(canvas);
 			var params = {
 				hibernate_url: document.location.href,
-				hibernate_title: document.title
+				hibernate_title: document.title || document.location.href
 			};
 			if (canvas) {
 				try {
