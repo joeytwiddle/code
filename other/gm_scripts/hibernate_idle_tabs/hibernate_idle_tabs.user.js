@@ -8,7 +8,7 @@
 
 /* +++ Config +++ */
 
-var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours for me
+var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours
 var restoreTime = 0.2; // in seconds
 
 // We need an always-available basically blank HTML page we can navigate to for
@@ -20,8 +20,12 @@ var restoreTime = 0.2; // in seconds
 // This is not really satisfactory, since it provides an image and unneeded CSS!
 var holdingPage = "http://www.google.com/hibernated_tab";
 
-// Unsuitable holding page because the server is not always online.  Mirror this!
+// If you want to use another holding page, put the old one here to keep your
+// current/saved browser sessions working.
 var oldHoldingPage = "http://hwi.ath.cx/hibernated_tab.html";
+
+var passFaviconToHoldingPage = true;
+var fadeHibernatedFavicons = true;
 
 
 
@@ -51,6 +55,8 @@ var oldHoldingPage = "http://hwi.ath.cx/hibernated_tab.html";
 
 // TODO: Expose a function to allow a bookmarklet to force-hibernate the current tab?
 
+// CONSIDER: If we forget about fading the favicon, couldn't we simplify things by just sending the favicon URL rather than its image data?  I think I tested this, and although I could load the favicon into the document, I was not successful at getting it into the browser's title tab by adding a new <link rel="icon">.
+
 
 
 /* +++ Main +++ */
@@ -68,27 +74,58 @@ function handleNormalPage() {
 	whenIdleDo(hibernateIfIdleForMoreThan,hibernatePage);
 
 	function hibernatePage() {
-		var url = document.location.href;
-		var targetHost = url.replace(/.*:\/\//,'').replace(/\/.*/,'');
-		loadFaviconIntoCanvas(targetHost,reallyHibernatePage);
-		function reallyHibernatePage(canvas) {
+
+		var params = {
+			title: document.title
+			url: document.location.href,
+		};
+
+		function processFavicon(canvas) {
 			document.body.appendChild(canvas);
-			var params = {
-				hibernate_url: document.location.href,
-				hibernate_title: document.title || document.location.href
-			};
 			if (canvas) {
 				try {
+					if (fadeHibernatedFavicons) {
+						makeCanvasMoreTransparent(canvas);
+					}
 					var faviconDataURL = canvas.toDataURL("image/png");
-					params.hibernate_favicon_url = faviconDataURL;
+					params.favicon_data = faviconDataURL;
 				} catch (e) {
 					var extra = ( window != top ? " (running in frame or iframe)" : "" );
 					GM_log("[HIT] Got error"+extra+": "+e+" doc.loc="+document.location.href);
+					// We get "Error: SECURITY_ERR: DOM Exception 18" (Chrome) if
+					// the favicon is from a different host.
 				}
 			}
+			reallyHibernatePage();
+		}
+
+		function reallyHibernatePage() {
 			var queryString = buildQueryParameterString(params);
 			document.location = holdingPage + "?" + queryString;
 		}
+
+		if (passFaviconToHoldingPage) {
+			var url = document.location.href;
+			var targetHost = url.replace(/.*:\/\//,'').replace(/\/.*/,'');
+			loadFaviconIntoCanvas(targetHost,processFavicon);
+		} else {
+			reallyHibernatePage();
+		}
+
+	}
+
+	function makeCanvasMoreTransparent(canvas) {
+		var wid = canvas.width;
+		var hei = canvas.height;
+		var ctx = canvas.getContext("2d");
+		var img = ctx.getImageData(0,0,wid,hei);
+		var data = img.data;
+		var len = 4*wid*hei;
+		for (var ptr=0;ptr<len;ptr+=4) {
+			data[ptr+3] /= 4;  // alpha channel
+		}
+		// May or may not be needed:
+		ctx.putImageData(img,0,0);
 	}
 
 }
@@ -97,15 +134,15 @@ function handleHoldingPage() {
 
 	var params = getQueryParameters();
 
-	// setHibernateStatus("Holding page for " + params.hibernate_title + "\n with URL: "+params.hibernate_url);
-	// var mainReport = params.hibernate_title + " (Holding Page)";
-	var mainReport = "(" + params.hibernate_title + " - hibernated)";
-	setHibernateStatus(mainReport);
+	// setHibernateStatus("Holding page for " + params.title + "\n with URL: "+params.url);
+	// var mainReport = params.title + " (Holding Page)";
+	var mainReport = "(" + (params.title || params.url) + " :: Hibernated)";
+	setWindowTitle(mainReport);
 
 	try {
-		var faviconDataURL = params.hibernate_favicon_url;
+		var faviconDataURL = params.favicon_data;
 		if (!faviconDataURL) {
-			// If we do not have a favicon, it is preferable to present an empty/transparent favicon, rather than leave the browser to show the favicon of the particular site we have chosen to put the holding page on.
+			// If we do not have a favicon, it is preferable to present an empty/transparent favicon, rather than let the browser show the favicon of the holding page site!
 			faviconDataURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAEklEQVQ4jWNgGAWjYBSMAggAAAQQAAF/TXiOAAAAAElFTkSuQmCC";
 		}
 		writeFaviconFromDataString(faviconDataURL);
@@ -114,7 +151,7 @@ function handleHoldingPage() {
 	}
 
 	function restoreTab(evt) {
-		var url = decodeURIComponent(params.hibernate_url);
+		var url = decodeURIComponent(params.url);
 		setHibernateStatus("Returning to: "+url);
 		document.location.replace(url);
 		evt.preventDefault();   // Accept responsibility for the double-click.
@@ -253,10 +290,13 @@ function checkStatusElement() {
 	}
 }
 
-function setHibernateStatus(msg) {
+function setWindowTitle(msg) {
 	msg = ""+msg;
 	document.title = msg;
+}
 
+function setHibernateStatus(msg) {
+	msg = ""+msg;
 	checkStatusElement();
 	statusElement.textContent = msg;
 	statusElement.innerText   = msg;   // IE
@@ -284,8 +324,11 @@ function loadFavicon(targetHost,callback) {
 	for (var i=0;i<linkElems.length;i++) {
 		var link = linkElems[i];
 		if (link.rel === "icon" || link.rel === "shortcut icon") {
-			foundLink = link;
-			break;
+			// Since we can't read the image data of images from third-party hosts, we skip them and keep searching.
+			if (link.host == document.location.host) {
+				foundLink = link;
+				break;
+			}
 		}
 	}
 	if (foundLink) {
