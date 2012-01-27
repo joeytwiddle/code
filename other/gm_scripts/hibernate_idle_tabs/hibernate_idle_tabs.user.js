@@ -138,6 +138,7 @@ function handleHoldingPage() {
 	// var mainReport = params.title + " (Holding Page)";
 	var mainReport = "(" + (params.title || params.url) + " :: Hibernated)";
 	setWindowTitle(mainReport);
+	setHibernateStatus(mainReport);
 
 	try {
 		var faviconDataURL = params.favicon_data;
