@@ -68,7 +68,11 @@ try {
 	if (!toc) {
 
 		// Can we make a TOC?
-		var nodes = document.evaluate("//h1 | //h2 | //h3 | //h4 | //h5 | //h6 | //h7 | //h8 | //a[@name]",document,null,6,null);
+		var headers = "//h1 | //h2 | //h3 | //h4 | //h5 | //h6 | //h7 | //h8"
+		var anchors = "//a[@name]"
+		// For coffeescript.org:
+		var elementsMarkedAsHeader = "//*[@class='header']"
+		var nodes = document.evaluate(headers+"|"+anchors+"|"+elementsMarkedAsHeader,document,null,6,null);
 		//// Chrome needs lower-case 'h', Firefox needs upper-case 'H'!
 		// var nodes = document.evaluate("//*[starts-with(name(.),'h') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
 		// var nodes = document.evaluate("//*[starts-with(name(.),'H') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
@@ -79,14 +83,6 @@ try {
 
 			toc = newNode("div");
 			toc.id = 'toc';
-			// Interestingly, the overflow settings seems to apply to all sub-elements.
-			// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
-			// Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
-			GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 40%; overflow: auto; }");
-			// BUG TODO: max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
-			//           WikiIndent's solution is to set a max-width of all sub-elements of the TOC in pixels.
-			GM_addStyle("#toc       { opacity: 0.2; }");
-			GM_addStyle("#toc:hover { opacity: 1.0; }");
 
 			var heading = newSpan("Table of Contents");
 			heading.style.fontWeight = "bold";
@@ -128,10 +124,13 @@ try {
 				var node = nodes.snapshotItem(i);
 				var level = (node.tagName.substring(1) | 0) - 1;
 				if (node.textContent == null || node.textContent.trim() == "") {
-					continue;
+					continue; // just skip un-named things which looked like headings
 				}
 				var link = newNode("A");
-				link.textContent = node.textContent;
+				var linkText = node.textContent;
+				if (linkText.length > 40)
+					linkText = linkText.substring(0,32)+"...";
+				link.textContent = linkText;
 				/* Dirty hack for Wikimedia: */
 				if (link.textContent.substring(0,7) == "[edit] ") {
 					link.textContent = link.textContent.substring(7);
@@ -166,9 +165,19 @@ try {
 
 	}
 
+	// We make the TOC float regardless whether we created it or it already existed.
+	// Interestingly, the overflow settings seems to apply to all sub-elements.
+	// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
+	// FIXED: Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
+	// FIXED : max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
+	GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 40%; overflow: auto; }");
+	GM_addStyle("#toc       { opacity: 0.2; }");
+	GM_addStyle("#toc:hover { opacity: 1.0; }");
+
 } catch (e) {
 	GM_log("[TOCE] Error! "+e);
 }
 
 },380);
+// We want it to run fairly soon but it can be quite heavy on large pages - big XPath search.
 
