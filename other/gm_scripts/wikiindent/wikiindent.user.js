@@ -262,15 +262,18 @@ function doIt() {
 				toc.style.maxHeight = "80%";
 				toc.style.maxWidth = "40%";
 
-				/* In long and complicated TOCs (e.g. Fermi Paradox) some of the
-				 * sub-trees in the list get scrollbars on them!
-				 * I think what we really need to do CSS-wise is only set maxHeight
-				 * and overflow on the first/top UL in the TOC.
-				 * We can't provide 80%, it's not working, so we provide pixels.
+				/* 
+				 * Sometimes specifying max-height: 80% does not work, the toc won't shrink.
+				 * This may be when it's a table and not a div.  Then we must set max-height on the content.  (Maybe we don't actually need to set pixels if we find the right element.)
 				 */
 				toc.id = "toc";
 				var maxHeight = window.innerHeight * 0.8 | 0;
 				var maxWidth = window.innerWidth * 0.4 | 0;
+
+				/*
+				 * WikiMedia tree looks like this: <table id="toc" class="toc"><tbody><tr><td><div id="toctitle"><h2>Contents</h2>...</div> <ul> <li class="toclevel-1 tocsection-1">
+				 Here is a long TOC: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
+				 */
 				// GM_addStyle("#toc ul { overflow: auto; max-width: "+maxWidth+"px; max-height: "+maxHeight+"px; }");
 				var rootUL = toc.getElementsByTagName("UL")[0];
 				if (!rootUL)
