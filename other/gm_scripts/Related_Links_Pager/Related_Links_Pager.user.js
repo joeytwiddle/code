@@ -1,10 +1,13 @@
 // ==UserScript==
 // @name           Related Links Pager
 // @namespace      RLP
-// @description    Navigate sideways!  When you click a link, similar links on the current page are carried with you.  They can be accessed from a pager on the target page.
+// @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
 // @include        *
 // @exclude        https://*/*
 // ==/UserScript==
+
+var delayBeforeRunning = 1000;
+var minimumGroupSize = 5;
 
 
 
@@ -120,8 +123,10 @@ function collectLinksMatchingXPath(seekXPath) {
     var link = links[i];
     var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     if (xpath == seekXPath) {
-      var record = [link.textContent, link.href];
-      collected.push(record);
+      if (link.textContent) {   // ignore un-titled (invisible) links
+        var record = [link.textContent, link.href];
+        collected.push(record);
+      }
     }
   }
   return collected;
@@ -141,7 +146,7 @@ function checkClick(evt) {
     var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     // Collect other links matching this one:
     var siblings = collectLinksMatchingXPath(xpath);
-    if (siblings.length < 2) {
+    if (siblings.length <= minimumGroupSize) {
       // No point.  Give the user a clean location bar for a change.  ;)
       return;
     }
@@ -155,9 +160,11 @@ function checkClick(evt) {
   }
 }
 
-document.body.addEventListener("click",checkClick,true);
-document.body.addEventListener("mousedown",checkClick,true);
-document.body.addEventListener("mouseup",checkClick,true);
+setTimeout(function(){
+  document.body.addEventListener("click",checkClick,true);
+  document.body.addEventListener("mousedown",checkClick,true);
+  document.body.addEventListener("mouseup",checkClick,true);
+},delayBeforeRunning);
 
 
 
@@ -205,12 +212,18 @@ function createRelatedLinksPager(siblings) {
   closeButton.onclick = function() { pager.parentNode.removeChild(pager); };
   pager.appendChild(closeButton);
 
+  function maybeTitle(link) {
+    if (link.host != document.location.host) {
+      return " ("+link.host+")";
+    }
+  }
+
   if (currentIndex > 0) {
     var leftLink = document.createElement("A");
     var leftRecord = siblings[currentIndex-1];
-    leftLink.textContent = "<";
-    leftLink.title = "Previous: "+leftRecord[0];
+    leftLink.textContent = "<<";
     leftLink.href = leftRecord[1] + '#siblings=' + encodedList;
+    leftLink.title = "Previous: "+leftRecord[0]+maybeTitle(leftLink);
     pager.appendChild(leftLink);
   }
 
@@ -227,9 +240,9 @@ function createRelatedLinksPager(siblings) {
   if (currentIndex < siblings.length-1) {
     var rightLink = document.createElement("A");
     var rightRecord = siblings[currentIndex+1];
-    rightLink.textContent = ">";
-    rightLink.title = "Next: "+rightRecord[0];
+    rightLink.textContent = ">>";
     rightLink.href = rightRecord[1] + '#siblings=' + encodedList;
+    rightLink.title = "Next: "+rightRecord[0]+maybeTitle(rightLink);
     pager.appendChild(rightLink);
   }
 
@@ -245,7 +258,7 @@ function createRelatedLinksPager(siblings) {
       link = document.createElement("span");
       link.style.fontWeight = 'bold';
     }
-    link.textContent = record[0];
+    link.textContent = record[0] || record[1];   // use address if no title
     link.href = record[1] + '#siblings=' + encodedList;
     pageList.appendChild(link);
     addFaviconToLinkObviouslyIMeanWhyWouldntYou(link);
