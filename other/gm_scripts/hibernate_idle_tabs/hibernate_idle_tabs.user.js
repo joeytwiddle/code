@@ -8,7 +8,7 @@
 
 /* +++ Config +++ */
 
-var hibernateIfIdleForMoreThan = 4*60*60; // 4 hours
+var hibernateIfIdleForMoreThan = 4; // 4 hours
 var restoreTime = 0.2; // in seconds
 
 // We need an always-available basically blank HTML page we can navigate to for
@@ -76,8 +76,8 @@ function handleNormalPage() {
 	function hibernatePage() {
 
 		var params = {
-			title: document.title
-			url: document.location.href,
+			title: document.title,
+			url: document.location.href
 		};
 
 		function processFavicon(canvas) {
