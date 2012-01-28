@@ -565,6 +565,7 @@ Other useful scripts, shims, fallbacks.
 		})();">Split Preview</A> version 0.90</LI>
 		<BLOCKQUOTE>
 			<P>Splits the page, placing the current page on the left, and a preview window on the right.  The user can hover over a link to see its preview.  Great for quickly browsing search results.</P>
+			<P>I have found myself often using the Focus bookmarklet to select the block of interesting links before using SplitPreview, but <A href="#focus">Focus</A> could use some work.</P>
 			<LI class='todo'>Note: This Bookmarklet does not work well on <I>this page</I>, because the links on this page are mostly bookmarklets, so do not point at pages we could preview.  At least the first and last links on the page should work for you.</LI>
 			<LI class='done'>There are now two close buttons available to the user, one for each frame.</LI>
 			<P class='todo'>Todo:</P>
@@ -686,7 +687,7 @@ Other useful scripts, shims, fallbacks.
 		})();">(Revisit)</A></LI>
 		<BLOCKQUOTE>
 			<P>Navigates to the current page.  Acts like the normal browser Refresh/Reload button but less likely to reload cached files.</P>
-			<LI class='todo'>Fails to work when the location contains an anchor (# char) - browsers interpret this as a scroll request, not a load request.  (In those cases I use [Go Up] and lose the # string, or hit the normal browser reload button.)</LI>
+			<LI class='done'>When the location contains an anchor (# char) browsers interpret this as a scroll request, not a load request.  In the presence of # we fall back to document.location.reload().</LI>
 		</BLOCKQUOTE>
 	</P>
 

@@ -8,8 +8,12 @@
 
 var delayBeforeRunning = 1000;
 var minimumGroupSize = 5;
+var maximumGroupSize = 40;
 
 
+
+// You can avoid this script either by clicking a link before it runs or by
+// activating the desired link with the keyboard instead of the mouse.
 
 // TODO: The # method seems to work but could present a BUG on some sites.  It
 // is sometimes needed but it's horrible.  Use alternatives where possible.  In
@@ -17,7 +21,7 @@ var minimumGroupSize = 5;
 // domain.  In Firefox Greasemonkey we can use GM_set/getValue().
 
 // TODO: Pager can only go sideways.  It should also offer ability to go "up"
-// to the page that contained all the siblings.
+// to the page that contained all the links in the current group.
 
 // BUG: Does not work through redirects.
 
@@ -123,7 +127,7 @@ function collectLinksMatchingXPath(seekXPath) {
     var link = links[i];
     var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     if (xpath == seekXPath) {
-      if (link.textContent) {   // ignore un-titled (invisible) links
+      if (link.textContent) {   // ignore if no title
         var record = [link.textContent, link.href];
         collected.push(record);
       }
@@ -142,6 +146,11 @@ function checkClick(evt) {
       // No need to modify it.
       return;
     }
+    if (link.protocol.indexOf(/*"http") != 0)*/ "javascript:") == 0) {
+      // We should not add #s to javascript: links but it seems to work ok on ftp:// (FF)
+      return;
+    }
+
     // GM_log("User clicked on link: "+link.href);
     var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     // Collect other links matching this one:
@@ -150,13 +159,24 @@ function checkClick(evt) {
       // No point.  Give the user a clean location bar for a change.  ;)
       return;
     }
+    if (siblings.length > maximumGroupSize) {
+      // It would be dangerous to proceed!
+      return;
+    }
+
     // GM_log("Found "+siblings.length+" siblings for the clicked link.");
     var sibsEncoded = encodeURIComponent(JSON.stringify(siblings));
     var targetURL = link.href + "#siblings="+sibsEncoded;
+
     // GM_log("Redirecting to: "+targetURL);
+    /*
     document.location = targetURL;
     evt.preventDefault();
     return false;
+    */
+    // Instead of pushing the browser to the magic URL, change the link and see what happens:
+    // This interefes less with websites that wanted to do some AJAX or other JS.
+    link.href = targetURL;
   }
 }
 
@@ -246,7 +266,7 @@ function createRelatedLinksPager(siblings) {
     pager.appendChild(rightLink);
   }
 
-  // We could create this lazily, but why not immediately :P
+  // We could create this lazily, but why not immediately? :P
   var pageList = document.createElement("div");
   pageList.className = "linkGroupPagerList";
   for (var i=0;i<siblings.length;i++) {
