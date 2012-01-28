@@ -633,10 +633,13 @@ Other useful scripts, shims, fallbacks.
 			document.location = 'http://www.google.com/search?q='+escape(q)+'+site:'+domain;
 		})();">Search This Site with Google</A></LI>
 		<BLOCKQUOTE>
-			<P>Uses Google to search this site for your selection, or all pages if you haven't selected anything.</P>
+			<P>Uses Google to search this site for your selection, or all pages if you haven&apos;t selected anything.</P>
 		</BLOCKQUOTE>
 	</P>
 
+	<P>I think of these ones as toolbar buttons.  (You can even give them a monochrome &quot;icon&quot; in Firefox if you copy a Unicode character from somewhere.)</P>
+
+	<A name="up"></A>
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
 			var newURL = document.location.href;
@@ -644,13 +647,14 @@ Other useful scripts, shims, fallbacks.
 				newURL = newURL.slice(0,-1);
 			}
 			document.location.href = document.location.href.replace(/[#/?][^#/?]*[/]*$/,'');
-		})();">Go Up</A></LI>
+		})();">[Go Up]</A></LI>
 		<BLOCKQUOTE>
-			<P>Some browsers don&apos;t have this as a default button!</P>
+			<P>Some browsers no longer have this as a default button!</P>
 			<LI class='todo'>When we run out of path, we could reduce the domain.</LI>
 		</BLOCKQUOTE>
 	</P>
 
+	<A name="back"></A>
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
 			if (document.referrer) {
@@ -658,7 +662,7 @@ Other useful scripts, shims, fallbacks.
 			} else {
 				alert('This page has no referrer.');
 			}
-		})();">Go Back</A></LI>
+		})();">[Go Back]</A> (to referrer)</LI>
 		<BLOCKQUOTE>
 			<P>Magic Back button.  If you have opened a link in a new tab or window, the tab will not have a Back button, but sometimes the document.referrer is set to the page you clicked from, so you can use this button just once, to go 'back' to the page which we were linked from.</P>
 			<LI class='note'>Actually causes a forward navigation action.  Works only once.  To avoid confusion, we could use document.location.replace() which would prevent creating confusing history.</LI>
@@ -668,16 +672,21 @@ Other useful scripts, shims, fallbacks.
 	<P>
 	<LI><A href="javascript:(function(){
 		window.open(document.location.href);
-		})();">Clone*</A> - Opens a new window/tab with the current page.</LI>
+		})();">[Clone]*</A> - Opens a new window/tab with the current page.</LI>
 	</P>
 
 	<P>
-	<LI><A href="javascript:(function(){
-		var targetUrl=document.location.href;document.location.replace(''+targetUrl);
-		})();">Revisit</A></LI>
+		<LI><A href="javascript:(function(){
+			var targetUrl=document.location.href;
+			if (document.location.hash) {
+				document.location.reload();
+			} else {
+				document.location.replace(''+targetUrl);
+			}
+		})();">(Revisit)</A></LI>
 		<BLOCKQUOTE>
-			<P>Navigates to the current page.  Can act like Reload but less heavy.  Usually updates the page correctly, but still uses images from the cache.</P>
-			<LI class='todo'>I believe this fails to work in some browsers when the URL contains an anchor (# char) because the browser attempts only to change the scroll position, and does not make a fresh navigation to the page.</LI>
+			<P>Navigates to the current page.  Acts like the normal browser Refresh/Reload button but less likely to reload cached files.</P>
+			<LI class='todo'>Fails to work when the location contains an anchor (# char) - browsers interpret this as a scroll request, not a load request.  (In those cases I use [Go Up] and lose the # string, or hit the normal browser reload button.)</LI>
 		</BLOCKQUOTE>
 	</P>
 
@@ -704,7 +713,7 @@ Other useful scripts, shims, fallbacks.
 <BLOCKQUOTE>
 
 	<P>
-		<LI><A target='_self' href='(function(){if(document.styleSheets.length>0){css=!document.styleSheets[0].disabled;for(var%20i=0;i<document.styleSheets.length;i++)%20document.styleSheets[i].disabled=css;};})();void();'>Toggle CSS</A></LI>
+		<LI><A target='_self' href='javascript:(function(){if(document.styleSheets.length>0){css=!document.styleSheets[0].disabled;for(var%20i=0;i<document.styleSheets.length;i++)%20document.styleSheets[i].disabled=css;};})();void%200;'>Toggle CSS</A></LI>
 		<BLOCKQUOTE>
 			<P>Stolen from squarefree.</P>
 			<LI class='done'>No globals</LI>
@@ -768,39 +777,44 @@ Other useful scripts, shims, fallbacks.
 			}
 
 			function niceTypeOf(obj) {
-				return (obj && obj.constructor ? '[Object '+obj.constructor.name+']' : typeof obj);
+				if (obj != null && typeof obj === "object" && obj.constructor) {
+					return '[Object '+obj.constructor.name+']';
+				}
+				return typeof obj;
 			}
 
+			var reportTypesOfProperties = true;
+
 			window.inspect = function(obj) {
-				var report = '';
 				if (obj == null) {
 					return ''+obj;
 				}
-				report += (niceTypeOf(obj))+': &quot;'+obj+'&quot;\n';
-				/* report += 'Properties:\n'; */
+				var report = (niceTypeOf(obj))+': &quot;'+obj+'&quot;';
+				var lines = [];
+				/* lines.push('Properties:'); */
 				var looksLikeAnArray = (typeof obj.length === 'number');
 				/* Pretty print Arrays and other list-like objects, except for strings */
 				if (looksLikeAnArray && typeof obj !== 'string') {
-					for (var i=0;i<obj.length;i++) {
-						report += '  ' + i + ': ' + oneLiner(obj[i]) + ',\n';
+					for (var i=0;i&lt;obj.length;i++) {
+						lines.push('  ' + i + ': ' + oneLiner(obj[i]) + ',');
 					}
 				}
 				for (var prop in obj) {
 					if (looksLikeAnArray && prop.match(/^[0-9]+$/)) { continue; }
+					var text;
 					try {
+						text = (reportTypesOfProperties ? niceTypeOf(obj[prop]) + ' ' : '') + prop + ': ' + oneLiner(obj[prop]);
 						/* report += prop + ' ('+(typeof obj[prop]).substring(0,3)+'), '; */
-						report += '  ' + /*typeof obj[prop] + ' ' +*/ prop + ': ' + oneLiner(obj[prop]) + ',\n';
 					} catch (e) {
-						report += '  Error on '+prop+': '+e+'\n';
+						text = '  Error on '+prop+': '+e;
 					}
+					if (obj.hasOwnProperty && !obj.hasOwnProperty(prop)) {
+						text = 'Inherited: '+text+'';
+					}
+					lines.push('  ' + text + ',');
 				}
-				if (report.slice(-1) == '\n') {
-					report = report.slice(0,-1);
-				}
-				if (report.slice(-1) == ',') {
-					report = report.slice(0,-1);
-				}
-				return report;
+				lines.sort();
+				return report + '\n' + lines.join('\n');
 			};
 			window.loadScript = function loadScript(url) {
 				var newScript = document.createElement('SCRIPT');
