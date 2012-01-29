@@ -9,9 +9,13 @@
 var delayBeforeRunning = 1000;
 var minimumGroupSize = 5;
 var maximumGroupSize = 40;
+var groupLinksByClass = true;
 
 
 // CHANGELOG
+// 2012-01-28 Fixed close button positioning in Firefox.
+// 2012-01-28 Restricted related links to those with the same CSS class.
+//       BUG: We still group unrelated (indistinguishable) links on Wikipedia!
 // 2012-01-28 Blacklisted some buggy situations.
 
 // You can avoid this script either by clicking a link before it runs or by
@@ -27,9 +31,12 @@ var maximumGroupSize = 40;
 
 // BUG: Does not work through redirects.
 
-// CONSIDER: Would it be better to use '&' instead of '#' ?
+// CONSIDER: Would it be better to use a normal CGI '&' instead of '#' ?
+// Should we compress the data to survive through more webservers?
 
 
+
+setTimeout(function(){
 
 // This is http://userscripts.org/scripts/review/57679
 // We need it on Google search result pages, or we end up following Google
@@ -133,12 +140,17 @@ if (!this.GM_addStyle) {
 // Collect siblings when the user clicks a link, and pass them forward to the
 // target page in a hash package.
 
-function collectLinksMatchingXPath(seekXPath) {
+function collectLinksInSameGroupAs(clickedLink) {
+  var seekXPath = getXPath(clickedLink).replace(/\[[0-9]*\]/g,'');
+  // NOTE: We could do this with document.query - it might be faster.
   var links = document.getElementsByTagName("A");
   var collected = [];
   for (var i=0;i<links.length;i++) {
     var link = links[i];
     var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
+    if (groupLinksByClass && link.className != clickedLink.className) {
+      continue;
+    }
     if (xpath == seekXPath) {
       if (link.textContent) {   // ignore if no title
         var record = [link.textContent, link.href];
@@ -172,9 +184,8 @@ function checkClick(evt) {
     }
 
     // GM_log("User clicked on link: "+link.href);
-    var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     // Collect other links matching this one:
-    var siblings = collectLinksMatchingXPath(xpath);
+    var siblings = collectLinksInSameGroupAs(link);
     if (siblings.length <= minimumGroupSize) {
       // No point.  Give the user a clean location bar for a change.  ;)
       return;
@@ -186,41 +197,32 @@ function checkClick(evt) {
 
     // GM_log("Found "+siblings.length+" siblings for the clicked link.");
     var sibsEncoded = encodeURIComponent(JSON.stringify(siblings));
-    var targetURL = link.href + "#siblings="+sibsEncoded;
-    // If the link already had a #, append our data as an & parameter (and cross fingers).
-    if (link.href.indexOf('#') >= 0) {
-      GM_log("Appending to existing hash: "+link.hash);
-      targetURL = link.href + "&siblings="+sibsEncoded;
+    // If the link already had a #, we append our data as an & parameter, and cross our fingers.
+    var appendChar = ( link.href.indexOf('#')>=0 ? '&' : '#' );
+    if (appendChar == '&' || link.hash) {
+      GM_log("Appending to existing hash with "+appendChar+": "+link.hash);
     }
+    var targetURL = link.href + appendChar + "siblings="+sibsEncoded;
 
-    // GM_log("Redirecting to: "+targetURL);
+    // A bit aggressive: overrides AJAX or other JS friendliness.
     /*
     document.location = targetURL;
     evt.preventDefault();
     return false;
     */
-    // Instead of pushing the browser to the magic URL, change the link and see what happens:
-    // This interefes less with websites that wanted to do some AJAX or other JS.
-    /*
-    if (link.hash) {
-      GM_log("Warning - already has a #! "+link.href);
-      GM_log("        "+link.hash);
-    }
-    */
+    // Instead of pushing the browser to the magic URL, change the link and see what happens.
     GM_log("Rewriting link "+getXPath(link));
     GM_log(" url: "+link.href);
     GM_log("with: "+targetURL);
-    link.href = targetURL;
     // link.hash = "siblings="+sibsEncoded;
+    link.href = targetURL;
+
   }
-  // evt.preventDefault(); return false;
 }
 
-setTimeout(function(){
-  document.body.addEventListener("click",checkClick,true);
-  document.body.addEventListener("mousedown",checkClick,true);
-  document.body.addEventListener("mouseup",checkClick,true);
-},delayBeforeRunning);
+document.body.addEventListener("click",checkClick,true);
+document.body.addEventListener("mousedown",checkClick,true);
+document.body.addEventListener("mouseup",checkClick,true);
 
 
 
@@ -251,14 +253,6 @@ function createRelatedLinksPager(siblings) {
     "padding: 5px; font-size: 100%; text-align: center; } "+
     ".linkGroupPagerList { text-align: left; }"
   );
-
-  var closeButton = document.createElement("span");
-  closeButton.textContent = "[X]";
-  closeButton.style.float = 'right';
-  closeButton.style.cursor = 'pointer';
-  closeButton.style.paddingLeft = '5px';
-  closeButton.onclick = function() { pager.parentNode.removeChild(pager); };
-  pager.appendChild(closeButton);
 
   function maybeTitle(link) {
     if (link.host != document.location.host) {
@@ -294,6 +288,13 @@ function createRelatedLinksPager(siblings) {
     pager.appendChild(rightLink);
   }
 
+  var closeButton = document.createElement("span");
+  closeButton.textContent = "[X]";
+  closeButton.style.cursor = 'pointer';
+  // closeButton.style.paddingLeft = '5px';
+  closeButton.onclick = function() { pager.parentNode.removeChild(pager); };
+  pager.appendChild(closeButton);
+
   // We could create this lazily, but why not immediately? :P
   var pageList = document.createElement("div");
   pageList.className = "linkGroupPagerList";
@@ -328,4 +329,5 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
 }
 
 
+},delayBeforeRunning);
 
