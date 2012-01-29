@@ -11,6 +11,8 @@ var minimumGroupSize = 5;
 var maximumGroupSize = 40;
 
 
+// CHANGELOG
+// 2012-01-28 Blacklisted some buggy situations.
 
 // You can avoid this script either by clicking a link before it runs or by
 // activating the desired link with the keyboard instead of the mouse.
@@ -24,6 +26,8 @@ var maximumGroupSize = 40;
 // to the page that contained all the links in the current group.
 
 // BUG: Does not work through redirects.
+
+// CONSIDER: Would it be better to use '&' instead of '#' ?
 
 
 
@@ -115,6 +119,15 @@ function addFaviconToLinkObviouslyIMeanWhyWouldntYou(link) {
   link.parentNode.insertBefore(img,link);
 }
 
+if (!this.GM_addStyle) {
+  this.GM_addStyle = function(css) {
+    var s = document.createElement("style");
+    s.type = 'text/css';
+    s.innerHTML = css;
+    document.getElementsByTagName("head")[0].appendChild(s);
+  };
+}
+
 
 
 // Collect siblings when the user clicks a link, and pass them forward to the
@@ -141,6 +154,7 @@ function checkClick(evt) {
   // GM_log("Intercepted click event on "+getXPath(elem));
   if (elem.tagName == "A") {
     var link = elem;
+
     if (link.href.indexOf("#siblings=") >= 0) {
       // This is already a prepared link!  Probably created by the pager.
       // No need to modify it.
@@ -148,6 +162,12 @@ function checkClick(evt) {
     }
     if (link.protocol.indexOf(/*"http") != 0)*/ "javascript:") == 0) {
       // We should not add #s to javascript: links but it seems to work ok on ftp:// (FF)
+      return;
+    }
+    // Some Google search pages complain about our long URLs.
+    var siteWillComplain = link.host.indexOf("google")>=0 &&
+      link.href.indexOf("?q=")>=0 || link.href.indexOf("&q=")>=0;
+    if (siteWillComplain) {
       return;
     }
 
@@ -167,6 +187,11 @@ function checkClick(evt) {
     // GM_log("Found "+siblings.length+" siblings for the clicked link.");
     var sibsEncoded = encodeURIComponent(JSON.stringify(siblings));
     var targetURL = link.href + "#siblings="+sibsEncoded;
+    // If the link already had a #, append our data as an & parameter (and cross fingers).
+    if (link.href.indexOf('#') >= 0) {
+      GM_log("Appending to existing hash: "+link.hash);
+      targetURL = link.href + "&siblings="+sibsEncoded;
+    }
 
     // GM_log("Redirecting to: "+targetURL);
     /*
@@ -176,8 +201,19 @@ function checkClick(evt) {
     */
     // Instead of pushing the browser to the magic URL, change the link and see what happens:
     // This interefes less with websites that wanted to do some AJAX or other JS.
+    /*
+    if (link.hash) {
+      GM_log("Warning - already has a #! "+link.href);
+      GM_log("        "+link.hash);
+    }
+    */
+    GM_log("Rewriting link "+getXPath(link));
+    GM_log(" url: "+link.href);
+    GM_log("with: "+targetURL);
     link.href = targetURL;
+    // link.hash = "siblings="+sibsEncoded;
   }
+  // evt.preventDefault(); return false;
 }
 
 setTimeout(function(){
@@ -210,14 +246,6 @@ function createRelatedLinksPager(siblings) {
   }
   var pager = document.createElement("div");
   pager.id = "linkGroupPager";
-  if (true || !this.GM_addStyle) {
-    this.GM_addStyle = function(css) {
-      var s = document.createElement("style");
-      s.type = 'text/css';
-      s.innerHTML = css;
-      document.body.appendChild(s);
-    };
-  }
   GM_addStyle("#linkGroupPager { position: fixed; top: 5%; right: 5%; "+
     "z-index: 10; background: white; color: black; border: 1px solid black; "+
     "padding: 5px; font-size: 100%; text-align: center; } "+
@@ -293,7 +321,7 @@ function createRelatedLinksPager(siblings) {
 if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   var hash = document.location.hash;
   // GM_log("Noticed hash: "+hash);
-  var encodedList = hash.replace(/.*siblings=([^#]*)/,'$1');
+  var encodedList = hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
   // GM_log("Got encoded: "+encodedList);
   var siblings = JSON.parse(decodeURIComponent(encodedList));
   createRelatedLinksPager(siblings);
