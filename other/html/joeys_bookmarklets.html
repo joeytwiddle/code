@@ -724,13 +724,14 @@ Other useful scripts, shims, fallbacks.
 	<P>
 		<LI><A href="
 			javascript:(function(){
-				theForm = document.forms[0];
-				theStr = '';
+				var theForm = document.forms[0];
+				var theStr = '';
+				theStr += '&lt;FORM name=&quot;'+theForm.name+'&quot; method=&quot;'+theForm.method+'&quot; action=&quot;'+theForm.action+'&quot;&gt;\n';
 				for (i=0; i < theForm.elements.length; i++) {
-					ele = theForm.elements[i];
-					theStr += ele.name + ' : ' + ele.value + '\n';
+					var ele = theForm.elements[i];
+					theStr += '  &lt;' + ele.tagName + ' type=' + ele.type + ' name=&quot;'+ele.name+'&quot; value=&quot;'+ele.value+'&quot;&gt;\n';
 				}
-				alert (theStr);
+				alert(theStr);
 			})();
 		">Show Form Data</A></LI>
 		<BLOCKQUOTE>
