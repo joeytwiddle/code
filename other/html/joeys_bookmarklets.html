@@ -952,6 +952,13 @@
 				return ( s ? s : '' );
 			}
 			function checkKey(evt) {
+				/* Escape */
+				if (evt.keyCode == 27) {
+					closeQuickConsole();
+					evt.preventDefault();
+				}
+			}
+			function checkInputKey(evt) {
 				if (QuickConsole.showKeyEvents) {
 					textArea.value = 'evt.keyCode='+evt.keyCode + '\n' + 'commandInput.value='+commandInput.value + '\n';
 				}
@@ -959,10 +966,6 @@
 				/* Enter */
 				if (evt.keyCode == 13) {
 					execute();
-					evt.preventDefault();
-				/* Escape */
-				} else if (evt.keyCode == 27) {
-					closeQuickConsole();
 					evt.preventDefault();
 				/* Up Arrow sends code 38. */
 				} else if (evt.keyCode == 38 && lastChar !== ')') {
@@ -997,6 +1000,7 @@
 			}
 
 			/* Under Chrome, Escape does not fire a keypress event, but does keyup. */
+			commandInput.onkeyup = checkInputKey;
 			myDiv.onkeyup = checkKey;
 
 			myStyle.setAttribute('type','text/css');
