@@ -179,20 +179,6 @@
 </BLOCKQUOTE>
 </DIV>
 
-<!--
-
-A script to keep pre-2008 browsers safe from the infinte alert vulnerability.
-This could be used for the ultimate Rick Roll, playing Flash in the background but denying any user interaction with the browser, requiring a restart.
-
-Other useful scripts, shims, fallbacks.
-
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xmltoken.js'></SCRIPT>
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/util.js'></SCRIPT>
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/dom.js'></SCRIPT>
-	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xpath.js'></SCRIPT>
-
--->
-
 <DIV class='section'>
 <H2>Page Bookmarklets</H2>
 <BLOCKQUOTE>
@@ -828,7 +814,8 @@ Other useful scripts, shims, fallbacks.
 				newScript.src = url;
 				/*document.body.appendChild(newScript);*/
 				if (callback) {
-					newScript.onLoad = callback;
+					newScript.onload = callback;
+					newScript.onerror = callback;
 				}
 				document.getElementsByTagName('head')[0].appendChild(newScript);
 			};
@@ -889,10 +876,10 @@ Other useful scripts, shims, fallbacks.
 			function coffeeToJS(coffeeExpr,callback) {
 				if (!this.CoffeeScript) {
 					loadScript('http://coffeescript.org/extras/coffee-script.js',function(){
-						if (this.CoffeeScript) {
-							callback(coffeeToJS(coffeeExpr));
+						if (window.CoffeeScript) {
+							coffeeToJS(coffeeExpr,callback);
 						} else {
-							callback(new Error('Failed to load Coffeescript'));
+							callback('new Error(\'Failed to load Coffeescript\')');
 						}
 					});
 				} else {
@@ -1036,7 +1023,7 @@ Other useful scripts, shims, fallbacks.
 		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
 		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> provides Tab-completion!</LI>
 		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.  Intercept console.log()?</LI>
-		<LI class='note'>I somewhat regret having made the CS script lazy-loading, since it forced me to replace lots of nice <TT>return r;</TT>s with <TT>callback(r);</TT>s, increasing the complexity of the code.</LI>
+		<LI class='note'>I somewhat regret having made the CS script lazy-loading, since it forced me to replace lots of nice <TT>return r;</TT>s with <TT>callback(r);</TT>s, increasing the complexity of the code.  <small>(We could have returned, but squeezed in a callback also, in the case where it is needed.)</small></LI>
 	</BLOCKQUOTE>
 
 	<A name="xpathtester"></A>
@@ -2514,21 +2501,52 @@ document.writeln('<P>Escaped '+cnt+" bookmarklets.</P>");
 
 
 
+<!-- By deferring any scripts we can, the page onready happens a bit sooner. -->
+
+<!-- A script to keep pre-2008 browsers safe from the infinte alert
+	  vulnerability.  This vulnerability was used for the ultimate Rick Roll,
+	  playing Flash in the background whilst alert boxes deny the any user
+	  interaction with the browser, forcing them to kill it. -->
+
+<SCRIPT type="text/javascript">
+	var oldAlert = window.alert;
+</SCRIPT>
 <SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/alert_watcher.user.js'> </SCRIPT>
 <SCRIPT type="text/javascript">
-	/* Check if it loaded - No Longer Works! */
-	if (alert.oldconfirm) {
+	/* Check if it loaded. */
+	if (window.alert !== oldAlert) {
 		document.write("<P align='right'>You are protected from infinite alert loops by <A href='http://hwi.ath.cx/javascript/alert_watcher.user.js'>alert_watcher script</A>.</P>");
 	}
 </SCRIPT>
 
 <!-- <SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/fallbackgmapi/fallbackgmapi.user.js"></SCRIPT> -->
-<SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/table_of_contents_everyw/table_of_contents_everyw.user.js"></SCRIPT>
+<SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/table_of_contents_everyw/table_of_contents_everyw.user.js" defer></SCRIPT>
+
+<!--
+
+Other useful scripts, shims, fallbacks.
+
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xmltoken.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/util.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/dom.js'></SCRIPT>
+	<SCRIPT type='text/javascript' src='http://hwi.ath.cx/javascript/ajaxslt-0.8.1/xpath.js'></SCRIPT>
+
+-->
+
 
 <H2>Comments / Feedback</H2>
 <BLOCKQUOTE>
-<IFRAME width="100%" height="200px" src="http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title="></IFRAME>
+<IFRAME id="commentsFrame" width="100%" height="200px"></IFRAME>
 </BLOCKQUOTE>
+
+<SCRIPT>
+/* Lazy load the iframe contents.  Causes the page "load" to finish sooner,
+allowing the browser to scroll to the correct scrollTop.  Otherwise we are left
+waiting for at the top of the page for ages whilst this loads, and then jump!*/
+setTimeout(function(){
+  document.getElementById("commentsFrame").src = "http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title=";
+},20);
+</SCRIPT>
 
 
 </BODY>
