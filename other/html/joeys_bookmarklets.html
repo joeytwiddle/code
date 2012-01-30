@@ -779,7 +779,7 @@ Other useful scripts, shims, fallbacks.
 			}
 
 			function niceTypeOf(obj) {
-				if (obj != null && typeof obj === "object" && obj.constructor) {
+				if (obj != null && typeof obj === 'object' && obj.constructor) {
 					return '[Object '+obj.constructor.name+']';
 				}
 				return typeof obj;
