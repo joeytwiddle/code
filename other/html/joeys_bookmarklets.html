@@ -109,12 +109,15 @@
 		/* margin-left: 32px; */
 	}
 	tt {
-		font-size: 0.8em;
+		/* font-size: 0.8em; */
 		font-weight: bold;
 		margin: 0.0em 0.1em;
-		padding: 0.3em 0.75em;
+		/* padding: 0.3em 0.75em; */
+		/* Strangely I need to provide more on top to look even. */
+		padding: 0.47em 0.5em 0.3em 0.5em;
 		background-color: #eeeeee;
 		color: #000088;
+		vertical-align: middle;
 		/* Dark Golden */
 		/* color: #444400; */
 		/*
@@ -256,6 +259,14 @@ Other useful scripts, shims, fallbacks.
 		<LI class='todo'>Todo: Oh dear I just tried it on this page, and the restore brought everything back in reverse order!</LI>
 		<LI class='external'>Note: Loads external script.</LI>
 	</BLOCKQUOTE>
+
+	<P>
+		<LI><A target='_self' href='javascript:(function(){if(document.styleSheets.length>0){css=!document.styleSheets[0].disabled;for(var%20i=0;i<document.styleSheets.length;i++)%20document.styleSheets[i].disabled=css;};})();void%200;'>Toggle CSS</A></LI>
+		<BLOCKQUOTE>
+			<P>Stolen from squarefree.</P>
+			<LI class='done'>No globals</LI>
+		</BLOCKQUOTE>
+	</P>
 
 	<P>
 		<LI><A target="_self" href="javascript:(function(){
@@ -714,14 +725,6 @@ Other useful scripts, shims, fallbacks.
 <BLOCKQUOTE>
 
 	<P>
-		<LI><A target='_self' href='javascript:(function(){if(document.styleSheets.length>0){css=!document.styleSheets[0].disabled;for(var%20i=0;i<document.styleSheets.length;i++)%20document.styleSheets[i].disabled=css;};})();void%200;'>Toggle CSS</A></LI>
-		<BLOCKQUOTE>
-			<P>Stolen from squarefree.</P>
-			<LI class='done'>No globals</LI>
-		</BLOCKQUOTE>
-	</P>
-
-	<P>
 		<LI><A href="
 			javascript:(function(){
 				var theForm = document.forms[0];
@@ -818,11 +821,15 @@ Other useful scripts, shims, fallbacks.
 				lines.sort();
 				return report + '\n' + lines.join('\n');
 			};
-			window.loadScript = function loadScript(url) {
+			window.loadScript = function loadScript(url,callback) {
+				console.log('Loading '+url);
 				var newScript = document.createElement('SCRIPT');
 				newScript.type = 'text/javascript';
 				newScript.src = url;
 				/*document.body.appendChild(newScript);*/
+				if (callback) {
+					newScript.onLoad = callback;
+				}
 				document.getElementsByTagName('head')[0].appendChild(newScript);
 			};
 			window.addStyle = function(css) {
@@ -831,10 +838,6 @@ Other useful scripts, shims, fallbacks.
 				style.innerHTML = css;
 				document.getElementsByTagName('head')[0].appendChild(style);
 			};
-
-			/* Load JQuery and other useful scripts: */
-			loadScript('http://hwi.ath.cx/static/js/jquery.js');
-			loadScript('http://hwi.ath.cx/javascript/changeClassProperties.js');
 
 			var myDiv = document.createElement('div');
 			myDiv.className = 'qcons';
@@ -849,6 +852,10 @@ Other useful scripts, shims, fallbacks.
 			textArea.readonly = true;
 			textArea.style.fontSize = '-2';
 			innerDiv.appendChild(textArea);
+
+			/* Load JQuery and other useful scripts: */
+			loadScript('http://hwi.ath.cx/static/js/jquery.js');
+			loadScript('http://hwi.ath.cx/javascript/changeClassProperties.js');
 
 			innerDiv.appendChild(document.createElement('BR'));
 
@@ -879,32 +886,61 @@ Other useful scripts, shims, fallbacks.
 				}
 			};
 
-			function runCmd(cmd) {
+			function coffeeToJS(coffeeExpr,callback) {
+				if (!this.CoffeeScript) {
+					loadScript('http://coffeescript.org/extras/coffee-script.js',function(){
+						if (this.CoffeeScript) {
+							callback(coffeeToJS(coffeeExpr));
+						} else {
+							callback(new Error('Failed to load Coffeescript'));
+						}
+					});
+				} else {
+					callback(CoffeeScript.compile(coffeeExpr,{bare:true}));
+				}
+			}
+
+			function runCmd(cmd,callback) {
 				var result;
-				textArea.value = '...';
 				try {
 					if (cmd.substring(0,2) == 'i:') {
-						result = inspect(eval(cmd.substring(2)));
+						runCmd(cmd.substring(2),function(result){
+							callback(inspect(result));
+						});
+						return;
+					} else if (cmd.substring(0,2) == 'c:') {
+						coffeeToJS(cmd.substring(2),function(js){runCmd(js,callback);});
+						return;
+					} else if (cmd.substring(0,2) == 'C:') {
+						coffeeToJS(cmd.substring(2),callback);
+						return;
 					} else {
-						result = ''+eval(cmd);
+						result = eval(cmd);
 					}
 				} catch (e) {
 					result = 'Error: '+e;
 				}
-				/*textArea.innerHTML = escape(result);*/
-				textArea.value = (result);
-				if (this.console && console.log) {
-					console.log(result);
-				}
-				return result;
+				callback(result);
 			}
 
 			function execute() {
-				if (commandInput.value) {
-					var result = runCmd(commandInput.value);
-					history.push({code:commandInput.value,result:result});
-					historyPos = history.length;
-					commandInput.value = '';
+				var cmd = commandInput.value;
+				if (cmd) {
+					textArea.value = '...';
+					runCmd(cmd,function(result){
+						/*textArea.innerHTML = escape(''+result);*/
+						textArea.value = (''+result);
+						if (this.console && console.log) {
+							console.log(result);
+						}
+						history.push({code:commandInput.value,result:''+result});
+						historyPos = history.length;
+						commandInput.value = '';
+						/* Stay in coffeescript mode if we were in it before */
+						if (cmd.substring(0,2) == 'c:') {
+							commandInput.value = 'c:';
+						}
+					});
 				}
 			}
 			/*commandInput.onchange = execute;*/
@@ -992,12 +1028,15 @@ Other useful scripts, shims, fallbacks.
 		<P>My own dodgy console.  With handy inspect() function.  Now auto-loads JQuery.</P>
 		<LI class='done'>Closes on Escape key.</LI>
 		<LI class='done'>Added user convenience functions <TT>inspect(obj)</TT> (shortcut <TT>i:obj</TT>), <TT>loadScript(url)</TT> and <TT>addStyle(cssString)</TT>.</LI>
+		<LI class='note'>Beware: Inspection now runs automatically when you type a <TT>.</TT> at the end of any expression.</LI>
 		<LI class='done'>Added runtime option <TT>QuickConsole.showKeyEvents</TT>.</LI>
 		<LI class='done'>Done: Close button is in the right place now.</LI>
 		<LI class='done'>Done: Lots of expansion and bloat, including command-line history (still a couple of bugs to iron out there).</LI>
+		<LI class='done'>Added shortcuts <TT>c:</TT> to evaluate CoffeeScript and <TT>C:</TT> to show just the JS translation.</LI>
 		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
-		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> is a much better console!</LI>
+		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> provides Tab-completion!</LI>
 		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.  Intercept console.log()?</LI>
+		<LI class='note'>I somewhat regret having made the CS script lazy-loading, since it forced me to replace lots of nice <TT>return r;</TT>s with <TT>callback(r);</TT>s, increasing the complexity of the code.</LI>
 	</BLOCKQUOTE>
 
 	<A name="xpathtester"></A>
@@ -2483,7 +2522,7 @@ document.writeln('<P>Escaped '+cnt+" bookmarklets.</P>");
 	}
 </SCRIPT>
 
-<SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/fallbackgmapi/fallbackgmapi.user.js"></SCRIPT>
+<!-- <SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/fallbackgmapi/fallbackgmapi.user.js"></SCRIPT> -->
 <SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/table_of_contents_everyw/table_of_contents_everyw.user.js"></SCRIPT>
 
 <H2>Comments / Feedback</H2>
