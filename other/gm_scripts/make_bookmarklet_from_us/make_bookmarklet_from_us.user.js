@@ -11,16 +11,15 @@
 // DONE: All bookmarklets optionally preload the Fallback GMAPI.
 // DONE: All bookmarklets optionally load in non-caching fashion (for changing scripts).
 
-// TODO BUG: Use onload event to ensure prerequisite scripts are loaded before dependent scripts.
+// DONE: Use onload event to ensure prerequisite scripts are loaded before dependent scripts.
 
-// TODO: We could provide neat catches for GM_ API commands so they won't fail
-// entirely.
+// TODO: We could provide neat catches for GM_ API commands so they won't fail entirely.
 
 // TODO: Provide extra feature, which allows the Bookmarks to actually trigger
 // the userscript properly-running inside Greasemonkey, if this userscript is
 // present to handle the request, otherwise (with warning) load outside GM.
 
-// TODO: Support @include/@excude and @require meta rules.
+// TODO: Support @include/@excude and @require meta rules?
 // This requires parsing the script's header using XHR before creating each bookmarklet.
 
 // TODO: Optionally create static bookmarklet, with all code inline, rather than loaded from a URL.
@@ -33,6 +32,7 @@ function addBookmarklet(link,includeGMCompat,neverCache) {
 	}
 	scriptsToLoad.push(link.href);
 
+	/*
 	var toRun = "(function(){\n";
 	for (var i=0;i<scriptsToLoad.length;i++) {
 		var neverCacheStr = ( neverCache ? "+'?dummy='+new Date().getTime()" : "" );
@@ -42,6 +42,22 @@ function addBookmarklet(link,includeGMCompat,neverCache) {
 		toRun += "  document.body.appendChild(newScript);\n";
 	}
 	toRun += "})();";
+	*/
+
+	var toRun = "(function(){\n";
+	// Chrome has no .toSource() or uneval(), so we use JSON.  :f
+	toRun += "var scriptsToLoad="+JSON.stringify(scriptsToLoad)+";\n";
+	toRun += "function loadNext() {\n";
+	toRun += "  if (scriptsToLoad.length == 0) { return; }\n";
+	toRun += "  var next = scriptsToLoad.shift();\n";
+	toRun += "  var newScript = document.createElement('script');\n";
+	toRun += "  newScript.src = next;\n";
+	toRun += "  newScript.onload = loadNext;\n";
+	toRun += "  newScript.onerror = function(e){ alert('Problem loading script: '+next+': '+e); };\n";
+	toRun += "  document.body.appendChild(newScript);\n";
+	toRun += "}\n";
+	toRun += "loadNext();\n";
+	toRun += "})(); void 0;";
 
 	// Most people will NOT want the NoCache version.  Only I do for development.
 	var name = getNameFromFilename(link.href);
