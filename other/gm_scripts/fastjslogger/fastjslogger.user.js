@@ -8,14 +8,22 @@
 
 
 
-var autoHide = true;
+var autoHide = false;
 
 var watchWindowForErrors = true;
 var interceptTimeouts = true;
-var interceptEvents = true;
-var logEvents = true;
+var interceptEvents = true;   // Wraps around any listeners registered later, so errors can be caught and reported.
+var logEvents = true;   // Log activity for the listeners.
 
 var bringBackTheStatusBar = true;   // TODO: watch window.status for change
+
+if (this.localStorage) {
+	// TODO: Recall and store FJSL preferences in localStorage.
+
+	// UNWANTED: During testing, I am toggling this setting.
+	interceptTimeouts = !Boolean(localStorage['fastjslogger_interceptTimeouts']);
+	localStorage['fastjslogger_interceptTimeouts'] = interceptTimeouts;
+}
 
 
 
@@ -91,12 +99,6 @@ function addCloseButtonTo(elem) {
 
 	b.style.float = 'right';   // BUG: not working in FF4!
 	elem.appendChild(b);
-
-	// b.style.position = 'absolute';
-	// b.style.right = '4px';
-	// b.style.top = '4px';
-	// document.body.appendChild(b);
-	//// BUG: b is not removed from DOM on click!
 
 }
 
@@ -323,9 +325,12 @@ target.console.log = function(a,b,c) {
 
 
 
+// == MAIN SCRIPT ENDS ==
+// The following are optional and can be stripped for minimifiation.
 
 
-/* Provide optional extra facility: console.error() */
+
+/* Provide/intercept console.info/warn/error(). */
 
 target.console.error = function(a,b,c) {
 	if (a instanceof Error) {
@@ -388,27 +393,7 @@ target.console.error = function(e) {
 
 
 
-// == Extras: Interceptors ==
-
-// Whenever a callback is placed, we should wrap it!
-// DONE:
-//   event listeners (added after we run)
-//   setTimeout
-// TODO:
-//   setInterval
-//   XMLHttpRequest
-
-if (watchWindowForErrors) {
-	function handleError(evt) {
-		// console.log("Error caught by FJSL:");
-		// console.log(evt);
-		// console.log(Object.keys(evt));
-		// target.console.error(evt.filename+":"+evt.lineno+" "+evt.message+" ["+evt.srcElement+"]",evt);
-		console.error(evt.message," ",evt.filename+":"+evt.lineno);
-	}
-	window.addEventListener("error",handleError,true);
-	// document.body.addEventListener("error",handleError,true);
-}
+// Some more library functions:
 
 function tryToDo(fn,target,args) {
 
@@ -436,6 +421,12 @@ function tryToDo(fn,target,args) {
 
 }
 
+function showObject(obj) {
+	return "{ " + Object.keys(obj).map(function(prop) {
+		return prop+": "+obj[prop];
+	}).join(", ") + " }";
+}
+
 function getXPath(node) {
 	var parent = node.parentNode;
 	if (!parent) {
@@ -457,9 +448,31 @@ function getXPath(node) {
 	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
 }
 
-if (this.localStorage) {
-	interceptTimeouts = !Boolean(localStorage['fastjslogger_interceptTimeouts']);
-	localStorage['fastjslogger_interceptTimeouts'] = interceptTimeouts;
+
+
+// == Error Interceptors ==
+
+// Whenever a callback is placed, we should wrap it!
+// DONE:
+//   event listeners (added after we run)
+//   setTimeout
+// TODO:
+//   setInterval
+//   XMLHttpRequest
+
+// We could even wrap any standard functions which are common sources of
+// Errors, in case we fail to catch them any other way.
+
+if (watchWindowForErrors) {
+	function handleError(evt) {
+		// console.log("Error caught by FJSL:");
+		// console.log(evt);
+		// console.log(Object.keys(evt));
+		// target.console.error(evt.filename+":"+evt.lineno+" "+evt.message+" ["+evt.srcElement+"]",evt);
+		console.error(evt.message," ",evt.filename+":"+evt.lineno);
+	}
+	window.addEventListener("error",handleError,true);
+	// document.body.addEventListener("error",handleError,true);
 }
 
 if (interceptTimeouts) {
@@ -494,18 +507,23 @@ if (interceptTimeouts) {
 }
 
 if (interceptEvents) {
+
 	var realAddEventListener = HTMLElement.prototype.addEventListener;
 	// HTMLElement.prototype.oldAddEventListener = realAddEventListener;
 	HTMLElement.prototype.addEventListener = function(type,handler,capture,other){
+		if (logEvents) {
+			var niceFunc = handler.name || (""+handler).substring(0,40).replace(/\n/," ",'g')+"...";
+			console.info("[EVENTS] We will log "+type+" events on "+getXPath(this)+" when they fire "+niceFunc);
+		}
 		var newHandler = function(evt) {
-			if (logEvents && Math.random()<0.1) {
-				// console.log("("+type+") on "+evt.target);
-				function showObject(obj) {
-					return "{ " + Object.keys(obj).map(function(prop) {
-						return prop+": "+obj[prop];
-					}).join(", ") + " }";
+			if (logEvents) {
+				if (evt.target.parentNode == logContainer) {
+					// Do not log events in the console's log area, such as DOMNodeInserted!
+				} else {
+					// console.log("("+type+") on "+evt.target);
+					// console.log("[EVENT] "+type+" on "+getXPath(evt.target)+" evt="+showObject(evt));
+					console.info("[EVENT] "+type+" on "+getXPath(evt.target)+" being handled by "+niceFunc);
 				}
-				console.log("[EVENT] "+type+" on "+getXPath(evt.target)+" evt="+showObject(evt));
 			}
 			// handler.call(this,evt);
 			tryToDo(handler,this,[evt]);
@@ -524,6 +542,7 @@ if (interceptEvents) {
 		*/
 		realAddEventListener.call(this,type,newHandler,capture,other);
 	};
+
 }
 
 
