@@ -6,6 +6,19 @@
 // ==/UserScript==
 // Dropped: @require        http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js
 
+
+
+var autoHide = true;
+
+var watchWindowForErrors = true;
+var interceptTimeouts = true;
+var interceptEvents = true;
+var logEvents = true;
+
+var bringBackTheStatusBar = true;   // TODO: watch window.status for change
+
+
+
 // This fails to intercept GM_log calls from other userscripts.
 // However it intercepts everything when we run bookmarklets.
 
@@ -22,16 +35,33 @@
 // TODO: Option to watch for new globals.
 // TODO: Options to toggle logging of any intercepted setTimeouts, XMLHttpRequest's etc, in case the reader is interested.
 
-// TODO: all DOM events!  XHR.
-// We could even put intercepts on generic functions, in case an error occurs inside them, in a context which we had otherwise failed to intercept.
+// TESTING: all DOM events!  TODO: XHR.
+// TESTING: We could even put intercepts on generic functions, in case an error occurs inside them, in a context which we had otherwise failed to intercept.
+
+// TODO: If the FJSL is wanted for custom logging, not normal console.log
+// logging, we will need to expose a function (FJSL.log()?), and *not*
+// intercept console.log.
 
 (function(){
 
-var autoHide = true;
 
-var logDiv = null;
-var logContainer = null;
 
+// I did have two running happily in parallel (Chrome userscript and page
+// script) but it is rarely useful.
+if (document.getElementById("fastJSLogger") != null) {
+	return;
+}
+
+
+
+// GUI creation library functions
+
+function addStyle(css) {
+	// Konqueror 3.5 does not act on textValue, it requires textContent.
+	// innerHTML doesn't work for selectors containing '>'
+	var st = newNode("style", { type: "text/css", innerHTML: css } );
+	document.getElementsByTagName('head')[0].appendChild(st);
+}
 
 function newNode(tag,data) {
 	var elem = document.createElement(tag);
@@ -46,19 +76,6 @@ function newNode(tag,data) {
 function newSpan(text) {
 	return newNode("span",{textContent:text});
 }
-
-function addStyle(css) {
-	// Konqueror 3.5 does not act on textValue, it requires textContent.
-	// innerHTML doesn't work for selectors containing '>'
-	var st = newNode("style", { type: "text/css", innerHTML: css } );
-	document.getElementsByTagName('head')[0].appendChild(st);
-}
-
-
-
-var autoHideTimer = null;
-
-
 
 function addCloseButtonTo(elem) {
 
@@ -83,6 +100,15 @@ function addCloseButtonTo(elem) {
 
 }
 
+
+
+// == Main Feature - Present floating popup for log messages ==
+
+var logDiv = null;
+var logContainer = null;
+
+var autoHideTimer = null;
+
 function createGUI() {
 
 	var css = "";
@@ -91,7 +117,7 @@ function createGUI() {
 	// css += " .fastJSLogger > pre  { max-height: 90%; overflow: auto; }";
 	//// On the pre, max-height: 90% is not working, but specifying px does.
 	var maxHeight = window.innerHeight * 0.8 | 0;
-	css += " .fastJSLogger > pre  { max-height: "+maxHeight+"px; overflow: auto; }";
+	css += " .fastJSLogger > pre  { max-height: "+maxHeight+"px; overflow: auto; word-wrap: break-word; }";
 	css += " .fastJSLogger > pre  { font-size: 80%; padding: 0.4em; }";
 	// css += " .fastJSLogger > pre > input { width: 100%, background-color: #888888; }";
 	css += " .fastJSLogger        { opacity: 0.8; } ";
@@ -100,7 +126,7 @@ function createGUI() {
 		css += " .fastJSLogger > pre  { font-size: 60%; }";
 	addStyle(css);
 
-	var logDiv = newNode("div",{id:'fastJSLogger',className:'fastJSLogger'});
+	var logDiv = newNode("div",{ id: 'fastJSLogger', className: 'fastJSLogger' });
 	hideLogger();
 	document.body.appendChild(logDiv);
 
@@ -145,6 +171,8 @@ function createGUI() {
 		function createSearchFilter(logDiv,logContainer) {
 			var searchFilter = document.createElement("input");
 			searchFilter.type = 'text';
+			searchFilter.style.float = 'right';
+			searchFilter.style.paddingLeft = '5px';
 			searchFilter.onchange = function(evt) {
 				var searchText = this.value;
 				// console.log("Searching for "+searchText);
@@ -172,63 +200,25 @@ function createGUI() {
 
 
 
-var oldConsole = this.console; // When running as a userscript in Chrome, cannot see this.console!
-var oldGM_log = this.GM_log;
-
-var target = ( this.unsafeWindow ? this.unsafeWindow : window );
-
-var preventInfLoop = null;
-
-target.console = {};
-target.console.log = function(a,b,c) {
-
-	// Make visible if hidden
-	showLogger();
-
-	// I tried disabling this and regretted it!
-	if (a+b+c === preventInfLoop) {
-		return;
-	}
-	preventInfLoop = a+b+c;
-
-	// Replicate to the old loggers we intercepted (overrode)
-
-	if (oldConsole && oldConsole.log) {
-		// Some browsers dislike use of .call and .apply here, e.g. GM in FF4.
-		// So to avoid "oldConsole.log is not a function":
-		try {
-			oldConsole.log.apply(oldConsole,arguments);
-		} catch (e) {
-			oldConsole.log("oldConsole.log.apply() failed!",a,b,c);
-		}
-	}
-
-	if (oldGM_log) {
-		oldGM_log(a,b,c);
-	}
+function addToFastJSLog(a,b,c) {
 
 	if (logContainer) {
 
 		// We cannot do arguments.join (FF4)
 		var out = "";
 		for (var i=0;i<arguments.length;i++) {
-			if (i>0) {
-				out += " ";
-			}
-			out += (""+arguments[i]);
-			if (typeof obj == 'object') {
-				var objClassName = null;
-				try {
-					objClassName = o.__proto__.constructor.name
-				} catch (e) {
-					out += " [error getting objClassName: "+e+"]";
-				}
-				if (objClassName) {
-					out += " (type "+objClassName+")";
+			var obj = arguments[i];
+			var str = ""+obj;
+			// Non-standard: inform type if toString() is dull.
+			if (str === "[object Object]" && typeof obj === 'object' /*&& obj!==null*/) {
+				if (obj.constructor) {
+					str = "[object "+obj.constructor.name+"]";
 				} else {
-					out += " [failed to get objClassName]";
+					// str += " [no type]";
 				}
 			}
+			var gap = (i>0?' ':'');
+			out += gap + str;
 		}
 
 		// logContainer.appendChild(document.createElement("br"));
@@ -254,45 +244,7 @@ target.console.log = function(a,b,c) {
 		autoHideTimer = setTimeout(hideLogger,15 * 1000);
 	}
 
-};
-
-/* Provide optional extra facility: console.error() */
-
-target.console.error = function(a,b,c) {
-	oldConsole.log("[ERROR]",a,b,c);
-	if (oldConsole.error) {
-		oldConsole.error(a,b,c);
-	} else {
-		throw new Error("Nowhere to send console.error() call!",a,b,c);
-	}
-};
-
-/*
-target.console.error = function(e) {
-	// target.console.log("[ERROR]",e,e.stack);
-	var newArgs = [];
-	newArgs.push("[ERROR]");
-	for (var i=0;i<arguments.length;i++) {
-		newArgs.push(arguments[i]);
-	}
-	try {
-		newArgs.push("(reported from function "+arguments.callee.caller.name+")");
-		// console.error("caller = "+arguments.callee.caller);
-		// console.error("stack = "+e.stack);
-	} catch (e) {
-	}
-	target.console.log.apply(target.console,newArgs);
-	target.console.log.apply(target.console,["Stacktrace:\n",e.stack]);
-};
-*/
-
-//// Not really needed
-// this.GM_log = target.console.log;
-
-
-
-
-var logDiv;
+}
 
 function showLogger() {
 	if (logDiv) {
@@ -317,16 +269,193 @@ var k = createGUI();
 logDiv = k[0];
 logContainer = k[1];
 
+// target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
+// console.log("interceptTimeouts is "+(interceptTimeouts?"ENABLED":"DISABLED"));
 
 
-target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
+
+// Intercept messages for console.log if it exists.
+// Create console.log if it does not exist.
+
+var oldConsole = this.console; // When running as a userscript in Chrome, cannot see this.console!
+var oldGM_log = this.GM_log;
+
+var target = ( this.unsafeWindow ? this.unsafeWindow : window );
+
+// Replace the old console
+target.console = {};
+
+var preventInfLoop = null;
+
+target.console.log = function(a,b,c) {
+
+	// Make FJSL visible if hidden
+	showLogger();
+
+	// I tried disabling this and regretted it!
+	if (a+b+c === preventInfLoop) {
+		return;
+	}
+	preventInfLoop = a+b+c;
+
+	addToFastJSLog.apply(this,arguments);
+
+	// Replicate to the old loggers we intercepted (overrode)
+
+	if (oldConsole && oldConsole.log) {
+		// Some browsers dislike use of .call and .apply here, e.g. GM in FF4.
+		// So to avoid "oldConsole.log is not a function":
+		try {
+			oldConsole.log.apply(oldConsole,arguments);
+		} catch (e) {
+			oldConsole.log("oldConsole.log.apply() failed!",a,b,c);
+		}
+	}
+
+	if (oldGM_log) {
+		oldGM_log(a,b,c);
+	}
+
+};
+
+//// Not really needed.  Why not?
+// this.GM_log = target.console.log;
 
 
 
-// Try to intercept errors
-// TODO for others.  Strategy: Whenever a callback is placed, we should wrap it!
 
-var interceptTimeouts = true;
+
+/* Provide optional extra facility: console.error() */
+
+target.console.error = function(a,b,c) {
+	if (a instanceof Error) {
+		a = ""+a.stack;   // Far more informative
+	}
+	addToFastJSLog("[ERROR]",a,b,c);
+	if (oldConsole) {
+		if (oldConsole.error) {
+			oldConsole.error(a,b,c);
+		} else {
+			oldConsole.log("[ERROR]",a,b,c);
+		}
+	}
+};
+
+// Could generalise the two functions below:
+//interceptLogLevel("warn");
+//interceptLogLevel("info");
+
+target.console.warn = function(a,b,c) {
+	addToFastJSLog("[WARN]",a,b,c);
+	if (oldConsole) {
+		if (oldConsole.warn) {
+			oldConsole.warn(a,b,c);
+		} else {
+			oldConsole.log("[WARN]",a,b,c);
+		}
+	}
+};
+
+target.console.info = function(a,b,c) {
+	addToFastJSLog("[INFO]",a,b,c);
+	if (oldConsole) {
+		if (oldConsole.info) {
+			oldConsole.info(a,b,c);
+		} else {
+			oldConsole.log("[INFO]",a,b,c);
+		}
+	}
+};
+
+/*
+target.console.error = function(e) {
+	// target.console.log("[ERROR]",e,e.stack);
+	var newArgs = [];
+	newArgs.push("[ERROR]");
+	for (var i=0;i<arguments.length;i++) {
+		newArgs.push(arguments[i]);
+	}
+	try {
+		newArgs.push("(reported from function "+arguments.callee.caller.name+")");
+		// console.error("caller = "+arguments.callee.caller);
+		// console.error("stack = "+e.stack);
+	} catch (e) {
+	}
+	target.console.log.apply(target.console,newArgs);
+	target.console.log.apply(target.console,["Stacktrace:\n",e.stack]);
+};
+*/
+
+
+
+// == Extras: Interceptors ==
+
+// Whenever a callback is placed, we should wrap it!
+// DONE:
+//   event listeners (added after we run)
+//   setTimeout
+// TODO:
+//   setInterval
+//   XMLHttpRequest
+
+if (watchWindowForErrors) {
+	function handleError(evt) {
+		// console.log("Error caught by FJSL:");
+		// console.log(evt);
+		// console.log(Object.keys(evt));
+		// target.console.error(evt.filename+":"+evt.lineno+" "+evt.message+" ["+evt.srcElement+"]",evt);
+		console.error(evt.message," ",evt.filename+":"+evt.lineno);
+	}
+	window.addEventListener("error",handleError,true);
+	// document.body.addEventListener("error",handleError,true);
+}
+
+function tryToDo(fn,target,args) {
+
+	try {
+
+		fn.apply(target,args);
+		return;
+
+	} catch (e) {
+		// Actually hard to read!
+		// var prettyFn = fn; // (""+fn) .replace(/\n/g,'\\n');
+		var fnName = fn && fn.name;
+		if (!fnName) {
+			fnName = "<anonymous>";
+		}
+		// console.log("[ERR]",e,prettyFn);
+		// console.log("[Exception]",e,"from "+fnName+"()");
+		console.error(""+e.stack);
+		var prettyFn = (""+fn).replace(/\n/,/ /,'g');
+		console.error("occurred when calling: "+prettyFn);
+		// throw e;
+		// Unfortunately even Chrome dev shows the throw as coming from here!
+		// So it is better if we leave it alone.
+	}
+
+}
+
+function getXPath(node) {
+	var parent = node.parentNode;
+	if (!parent) {
+		return '';
+	}
+	var siblings = parent.childNodes;
+	var totalCount = 0;
+	var thisCount = -1;
+	for (var i=0;i<siblings.length;i++) {
+		var sibling = siblings[i];
+		if (sibling.nodeType == node.nodeType) {
+			totalCount++;
+		}
+		if (sibling == node) {
+			thisCount = totalCount;
+			break;
+		}
+	}
+	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
+}
 
 if (this.localStorage) {
 	interceptTimeouts = !Boolean(localStorage['fastjslogger_interceptTimeouts']);
@@ -351,25 +480,7 @@ if (interceptTimeouts) {
 				throw new Error("[FJSL] setTimeout was not given a function!",fn);
 			}
 
-			try {
-
-				fn();
-				return;
-
-			} catch (e) {
-				// Actually hard to read!
-				// var prettyFn = fn; // (""+fn) .replace(/\n/g,'\\n');
-				var fnName = fn && fn.name;
-				if (!fnName) {
-					fnName = "<anonymous>";
-				}
-				// console.log("[ERR]",e,prettyFn);
-				console.log("[Exception]",e,"from "+fnName+"()");
-				console.log(""+e.stack);
-				throw e;
-				// Unfortunately even Chrome dev shows the throw as coming from here!
-				// So it is better if we leave it alone.
-			}
+			tryToDo(fn);
 
 			console.log("Re-running to reproduce stack-trace (may fail)");
 			fn();
@@ -382,7 +493,38 @@ if (interceptTimeouts) {
 
 }
 
-console.log("interceptTimeouts is "+(interceptTimeouts?"ENABLED":"DISABLED"));
+if (interceptEvents) {
+	var realAddEventListener = HTMLElement.prototype.addEventListener;
+	// HTMLElement.prototype.oldAddEventListener = realAddEventListener;
+	HTMLElement.prototype.addEventListener = function(type,handler,capture,other){
+		var newHandler = function(evt) {
+			if (logEvents && Math.random()<0.1) {
+				// console.log("("+type+") on "+evt.target);
+				function showObject(obj) {
+					return "{ " + Object.keys(obj).map(function(prop) {
+						return prop+": "+obj[prop];
+					}).join(", ") + " }";
+				}
+				console.log("[EVENT] "+type+" on "+getXPath(evt.target)+" evt="+showObject(evt));
+			}
+			// handler.call(this,evt);
+			tryToDo(handler,this,[evt]);
+		};
+		// tryToDo(realAddEventListener,this,type,handler,capture,other);
+		/*
+		var that = this;
+		tryToDo(function(){
+			realAddEventListener.call(that,type,newHandler,capture,other);
+			//realAddEventListener.apply(that,[type,handler,capture,other]);
+			//that.oldAddEventListener(type,handler,capture,other);
+		});
+		*/
+		/*
+		tryToDo(realAddEventListener,this,[type,newHandler,capture,other]);
+		*/
+		realAddEventListener.call(this,type,newHandler,capture,other);
+	};
+}
 
 
 
