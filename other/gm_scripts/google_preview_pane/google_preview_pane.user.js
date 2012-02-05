@@ -7,12 +7,18 @@
 // @include        http://google.*/*q=*
 // @exclude        http://www.google.*/images*
 // @exclude        http://google.*/images*
+// @exclude        http://google.*/*&tbm=isch&*
 // @version        2012.01.15
 // ==/UserScript==
 
 
 
 // === Changelog ===
+//
+// 2012.01.29
+//
+//   * Exclude Google Images search by "tbm" parameter match.
+//   * Do not interfere with Shift-click or Ctrl-click.
 //
 // 2011.12.11
 //
@@ -556,7 +562,19 @@ function initPreview() {
 						},500);
 					}
 					setTimeout(function(){
-						previewFrame.src = link.href;
+
+						// Oh progress... Now sites can block embedding with X-Frame-Options.
+						// So for the ones we know about, we ask politely for them not to.
+						var targetPage = link.href;
+						if (targetPage.match("youtube.com/watch/")) {
+							targetPage = targetPage.replace("/watch/","/embed/");
+						}
+						if (targetPage.match("maps.google.")) {
+							/* TOCHECK: Might output already be set?  Would that break it? */
+							targetPage = targetPage + '&output=embed';
+						}
+
+						previewFrame.src = targetPage;
 						if (killGooglesNewPreviewPopup) {
 							/*
 							var vspb = document.getElementById("vspb");
@@ -596,6 +614,11 @@ function initPreview() {
 
 			if (!eventsShouldAct())
 				return;
+
+			// Do not interfere with Ctrl-click or Shift-click or right-click (usually open-in-new-window/tab)
+			if (evt.ctrlKey || evt.shiftKey || evt.button>0) {
+				return;
+			}
 
 			helloMouse(evt); // Without this sometimes we fail to activate because we receive click before mouseover (or for some reason didn't get a mouseover).
 			var node = evt.target;
