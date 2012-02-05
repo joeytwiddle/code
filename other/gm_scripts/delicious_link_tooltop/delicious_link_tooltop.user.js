@@ -27,6 +27,17 @@ var displayCleanupInTitle = false;
 
 
 
+// == Changelog ==
+// 2012-01-31  Use https lookup on https pages, to avoid "insecure content" issues.
+//             This didn't work, Chrome says "failed to load resource".  This
+//             may be because the delicious SSL certificate purports to be for
+//             a different domain (d-statis.com)!
+// 2012-01-30  Uploaded new version to userscripts.org.
+// 2011-11-??  I think I fixed lookup bugs by generating the md5sum here (big lib).
+//             Earlier versions without the md5sum may still be usable!
+
+
+
 // TODO: Move this to its own script!!
 if (this.GM_addStyle) { GM_addStyle("a:visited { color: #440066; }"); }
 
@@ -295,12 +306,12 @@ if (typeof GM_log == 'undefined') {
 	};
 }
 
-//// JSONP request direct from Delicious.  Should work in all browsers.
-//// Lookalike GM_xhR for this script only, actually requests JSONP directly from delicious.
-//// BUG: Since Delicious changed format, they also provide responses with e.g. ... "total_posts": 2L, ...  This does not parse in Javascript!  It throws "identifier starts immediately after numeric literal" in Firefox, and "Unexpected token ILLEGAL" in Chromium.
-////      Interestingly, the "L" does NOT appear if we make a non-callback request through the xhrasjson proxy, or indeed the same callback request direct in Firefox's location bar.  Perhaps we could avoid the "L" by requesting the right content/mime-type - I guess we can we specify that in the script tag?
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
-// ENABLED until we can fix this bug!
+// This performs a direct JSONP request from Delicious, circumventing cross-site issues with GM_xhR and XMLHR.
+// BUG: Chrome complains if this runs while we are on an https page, and more sites are switching to https!
+// OLD BUG: Since Delicious last changed format, they started providing responses with e.g. ... "total_posts": 2L, ...  This 'L' does not parse in Javascript!  It throws "identifier starts immediately after numeric literal" in Firefox, and "Unexpected token ILLEGAL" in Chromium.
+// OLD BUG: Interestingly, the "L" does NOT appear if we make a non-callback request through the xhrasjson proxy, or indeed the same callback request direct in Firefox's location bar.  Perhaps we can avoid the "L" by requesting the right content/mime-type in the script tag?
+// Jan 2012 - Has the L gone away?  Script seems to be working fine now!
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 	// GM_log("[DLT] Using Delicious JSONP");
 	GM_xmlhttpRequest = function(details) {
@@ -340,10 +351,9 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 		document.body.appendChild(script);
 	};
 }
-// DONE: scripts and functions added to the DOM should be removed after use
 
-//// GM_xhR alternative through a JSONP proxy
-// We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
+//// GM_xhR alternative through a JSONP Proxy
+/*
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 	GM_log("[DLT] Attempting to use GM_xhr JSONP proxy ...");
 	GM_xmlhttpRequest = function(details) {
@@ -403,6 +413,7 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 		};
 	};
 }
+*/
 
 if (typeof GM_addStyle == 'undefined') {
 	GM_addStyle = function(css) {
@@ -617,7 +628,11 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 	// We can use https here, but it is slower.
 	// var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo?url=' + encodeURIComponent(lookupURL);
 	//// In 2010 this feed URL changed, requiring "?callback" rather than "&callback"
-	var jsonUrl = 'http://feeds.delicious.com/v2/json/urlinfo/' + hex_md5(lookupURL);
+	// In Chrome using https gave an error.  In Firefox (real GM_xmlhttpRequest), Delicious did not respond!
+	// Conclusion: keep using http, and click "load insecure content" in Chrome.  :)
+	// var s = document.location.protocol == "https:" ? "s" : "";
+	var s = "";
+	var jsonUrl = 'http'+s+'://feeds.delicious.com/v2/json/urlinfo/' + hex_md5(lookupURL);
 	GM_xmlhttpRequest({
 		method: "GET",
 		url: jsonUrl,
@@ -1396,27 +1411,30 @@ var lookupSpeed = 50;
 var lastHref = null;
 
 function addLabel(link) {
-	var sameAsLast = (link.href == lastHref);
+	var url = link.href;
+	var sameAsLast = (url == lastHref);
 	var sameHost = (link.host==document.location.host);
 	var badHost = (link.host=="webcache.googleusercontent.com") || (link.host.match(".google.com"));
-	var goodUrl = startsWith(link,"http://") || startsWith(link,"https://") || (""+link).indexOf(":")==-1; // skip any "about:config" or "javascript:blah" links
-	var hasHash = (link.href.indexOf("#") >= 0);
-	var samePage = (link.href.split("#")[0] == document.location.href.split("#")[0]);
+	var goodUrl = startsWith(url,"http://") || startsWith(url,"https://") || url.indexOf(":")==-1; // skip any "about:config" or "javascript:blah" links
+	var hasHash = (url.indexOf("#") >= 0);
+	var samePage = (url.split("#")[0] == document.location.href.split("#")[0]);
 	// Some links are just too common to spam Deliciouos for all of them.
 	// e.g. searches maybe not, but page 3 of the search result no!
-	var isGoogleSearch = ( link.href.indexOf("/search?")>-1 || link.href.indexOf("/setprefs?")>-1 );
-	var isCommonSearch = ( link.href.indexOf('?q=')>=0 );
+	var isGoogleSearch = ( url.indexOf("/search?")>-1 || url.indexOf("/setprefs?")>-1 );
+	var isCommonSearch = ( url.indexOf('?q=')>=0 || url.indexOf('&q=')>=0 );
 	var isSearch = isCommonSearch || isGoogleSearch;
 	if (isCommonSearch) {
-		GM_log("Skipping common ?q= in "+link.href);
+		// GM_log("Skipping due to ?q= or &q= in "+url);
 	}
 	var isImage = isImageAndWhitespace(link);
-	if (link.href.match(/fbcdn.net\//) || link.href.match(/facebook.com\//))
+	var isBlacklisted = url.match(/fbcdn.net\//) || url.match(/facebook.com\//);
+	if (sameAsLast || badHost || isSearch || samePage || isImage || isBlacklisted) {
 		return;
-	if (link.href && !sameAsLast && !badHost && goodUrl && !isSearch && !samePage && !isImage) { // && !sameHost 
+	}
+	if (url && goodUrl) { // && !sameHost
 
 		function addAnnotationLabel(resultObj,subjectUrl,evt){
-			// log("Adding annotation for "+link.href+" with result "+JSON.stringify(resultObj));
+			// log("Adding annotation for "+url+" with result "+JSON.stringify(resultObj));
 			if (resultObj && resultObj.total_posts) {
 				var newDiv = createScoreSpan(resultObj);
 				var text = " " + (resultObj && addCommasToNumber(resultObj.total_posts)) + " ";
@@ -1455,9 +1473,9 @@ function addLabel(link) {
 			resetColor = function() { };
 		}
 
-		lastHref = link.href;
+		lastHref = url;
 
-		tryLookup(link.href,addAnnotationLabel,resetColor);
+		tryLookup(url,addAnnotationLabel,resetColor);
 
 	}
 }
