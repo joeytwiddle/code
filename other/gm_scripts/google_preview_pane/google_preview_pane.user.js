@@ -229,7 +229,7 @@ function initPreview() {
 		var rightCell = document.createElement("TD");
 
 		previewFrame = document.createElement('IFRAME');
-		previewFrame.id = 'gpf';
+		previewFrame.id = 'Google_Preview_Pane';
 		previewFrame.style.backgroundColor = '#eeeeee';
 		if (!panelHasBorder)
 			previewFrame.style.border = '0px solid white';
@@ -543,7 +543,8 @@ function initPreview() {
 				// GM_log("Got link = "+link);
 				setTimeout(function(){
 					// Sometimes google's AJAX removes previewFrame from the page!
-					if (previewFrame && previewFrame.parentNode==null) {
+					// if (previewFrame && previewFrame.parentNode==null) {
+					if (document.getElementById("Google_Preview_Pane") == null) {
 						// GM_log("previewFrame has been removed from the DOM!");
 						previewFrame = null;
 					}
@@ -781,6 +782,7 @@ function getXPath(elem) {
 	if (!elem)
 		return "[Null elem]";
 	var list = document.getElementsByTagName(elem.tagName);
+	// var index = Array.prototype.indexOf.call(list,elem);
 	var index = findIndexOf(elem,list);
 	if (index>=0) {
 		return "(//"+elem.tagName+")["+(index+1)+"]";
@@ -905,6 +907,9 @@ function reformatThingsLater() {
 	// width 100% gets too wide and creates a horizontal scrollbar!
 	// We can workaround like this:
 	GM_addStyle("#searchform { width: 98%; }");
+
+	// TODO CONSIDER: We may want to use CSS "word-wrap: break-word;" in the
+	// presence of very long URLs or words in the sidebar.
 
 	if (reduceWidth) {
 
