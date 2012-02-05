@@ -13,28 +13,47 @@
 // Some older browsers may need JSON, but this link is broken:
 // @require        http://json.org/json2.js
 
+
+
+// == Config ==
+
 var showTooltips      = true;
 var lookupCurrentPage = true;
-var annotateAllLinks  = true;
+var annotateAllLinks  = true;   // Delicious may occasionally block this if it is spamming.
 
-var maxCacheSize = 2048; // Total cache (for all sites).  This value is altered below if we are using localStorage.
-// 2048 caused cache cleanup to take 27 seconds in Firefox 4.
-// 1024 caused cache cleanup to take 6.7 seconds in Firefox 4.
-var showProgress = true; // Highlights each link in yellow while we are making a delicious request on it
-var logIO        = false;
+var enableJSONPonHTTPS = false;
+
+var maxCacheSize = 2400;   // Global cache size for Greasemonkey/GM_setValue.
+var maxCacheSizeForLocalStorage = 1000;   // Local per-site cache size, for Chrome/localStorage.
+
+var showProgress = true;   // Highlights each link in yellow while we are making a delicious request on it
+var logRequests  = false;
 var logResponses = true;
-var displayCleanupInTitle = false;
+var displayCleanupInTitle = true;
 
 
 
-// == Changelog ==
-// 2012-01-31  Use https lookup on https pages, to avoid "insecure content" issues.
-//             This didn't work, Chrome says "failed to load resource".  This
-//             may be because the delicious SSL certificate purports to be for
-//             a different domain (d-statis.com)!
-// 2012-01-30  Uploaded new version to userscripts.org.
-// 2011-11-??  I think I fixed lookup bugs by generating the md5sum here (big lib).
-//             Earlier versions without the md5sum may still be usable!
+/* == Changelog ==
+
+ 2012-02-05  Added enableJSONPonHTTPS.  If you turn it on in Chrome, you will
+             need to answer the browser's "Load Insecure Content?" popup.
+             (Do this only if you trust Delicious.com!)  Visit github to test.
+
+             Does not affect Firefox.  Greasemonkey's GM_xmlhttpRequest still
+             works fine on https pages.
+
+ 2012-01-31  Use https lookup on https pages, to avoid "insecure content" issues.
+             This didn't work, Chrome says "failed to load resource".  This
+             may be because the delicious SSL certificate purports to be for
+             a different domain (d-statis.com)!  Or it may be Chrome detecting
+             and blocking JSONP.
+
+ 2012-01-30  Uploaded new version to userscripts.org.
+
+ 2011-11-??  I think I fixed lookup bugs by generating the md5sum here (big lib).
+             Earlier versions without the md5sum may still be usable!
+
+*/
 
 
 
@@ -52,6 +71,11 @@ if (this.GM_addStyle) { GM_addStyle("a:visited { color: #440066; }"); }
 // redirects to: http://delicious.com/EHKNIGHT?networkaddconfirm=EHKNIGHT
 
 // TODO: Don't annotate images, duplicates of last, or anything on delicious.com
+
+//// Some old stats:
+// Cleanup of cache size 2048 took 27 seconds in Firefox 4.
+// Cleanup of cache size 1024 took 6.7 seconds in Firefox 4.
+// In Chrome 512 means my cache cleanup takes 2-5 seconds.
 
 
 
@@ -306,6 +330,10 @@ if (typeof GM_log == 'undefined') {
 	};
 }
 
+var allowedToJSONP = ( document.location.protocol === "https:" ? enableJSONPonHTTPS : true );
+
+if (allowedToJSONP) {
+
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 // This performs a direct JSONP request from Delicious, circumventing cross-site issues with GM_xhR and XMLHR.
 // BUG: Chrome complains if this runs while we are on an https page, and more sites are switching to https!
@@ -353,6 +381,7 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 }
 
 //// GM_xhR alternative through a JSONP Proxy
+//// Get your proxy here (for node.js): http://hwi.ath.cx/javascript/xhr_via_json/
 /*
 if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 	GM_log("[DLT] Attempting to use GM_xhr JSONP proxy ...");
@@ -414,6 +443,8 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 	};
 }
 */
+
+}
 
 if (typeof GM_addStyle == 'undefined') {
 	GM_addStyle = function(css) {
@@ -519,10 +550,15 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 			return list;
 		};
 
-		// Wikipedia has many links, so we won't reduce his cachesize.
-		if (!document.location.host.match(/wikipedia/))
-			maxCacheSize = 1024; // per domain
-		// In Chrome 512 means my cache cleanup takes 2-5 seconds.
+		// Reduce cache size since with localStorage we will have many
+		// site-specific caches, not just one!
+		if (document.location.host.match(/wikipedia/)) {
+			// Wikipedia has many links, so we won't reduce his cachesize.
+			// In fact we will make an exception for wikipedia, and double the cache size!
+			maxCacheSize *= 2;
+		} else {
+			maxCacheSize = maxCacheSizeForLocalStorage; // per domain
+		}
 
 	} else {
 		GM_log("Warning: Could not implement GM_get/setValue.");
@@ -621,7 +657,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 		// delay += 120;
 	delay = delay * 1.08;
 	lookupSpeed = delay;
-	if (logIO) {
+	if (logRequests) {
 		log("Requesting info for: "+lookupURL);
 	}
 
@@ -630,8 +666,8 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 	//// In 2010 this feed URL changed, requiring "?callback" rather than "&callback"
 	// In Chrome using https gave an error.  In Firefox (real GM_xmlhttpRequest), Delicious did not respond!
 	// Conclusion: keep using http, and click "load insecure content" in Chrome.  :)
-	// var s = document.location.protocol == "https:" ? "s" : "";
-	var s = "";
+	var s = document.location.protocol == "https:" ? "s" : "";
+	// var s = "";
 	var jsonUrl = 'http'+s+'://feeds.delicious.com/v2/json/urlinfo/' + hex_md5(lookupURL);
 	GM_xmlhttpRequest({
 		method: "GET",
@@ -644,7 +680,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 
 	function responseHandler(response) {
 
-		if (logIO || logResponses) {
+		if (logResponses) {
 			log(("Delicious responded: "+response.responseText+" to "+lookupURL).substring(0,180));
 		}
 		var resultObj;
