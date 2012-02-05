@@ -448,6 +448,16 @@ function getXPath(node) {
 	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
 }
 
+function getStack(drop,max) {
+	var stack;
+	try {
+		throw new Error("Dummy for getStack");
+	} catch (e) {
+		stack = e.stack.split('\n').slice(drop).slice(0,max).join('\n');
+	}
+	return stack;
+}
+
 
 
 // == Error Interceptors ==
@@ -514,6 +524,7 @@ if (interceptEvents) {
 		if (logEvents) {
 			var niceFunc = handler.name || (""+handler).substring(0,40).replace(/\n/," ",'g')+"...";
 			console.info("[EVENTS] We will log "+type+" events on "+getXPath(this)+" when they fire "+niceFunc);
+			console.info(getStack(3,3));
 		}
 		var newHandler = function(evt) {
 			if (logEvents) {
