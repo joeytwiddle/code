@@ -6,7 +6,7 @@
 // @include        http://encyclopediadramatica.com/*
 // @include        http://www.wormus.com/leakytap/*
 // @include        http://theinfosphere.org/*
-// @description    Four tools for MediaWiki sites: hide the sidebar (with toggle), floats the Table of Contents in the corner for quick navigation, indents sub-sections to make the layout clearer, overline all headings instead of underlining.
+// @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // ==/UserScript==
 
 //// Features:
@@ -24,8 +24,9 @@ var fixUnderlinesToOverlines = true;
 */
 
 /* Changelog
- *  3/1/2011 - Fixed Chrome compatibility!
- * 23/3/2011 - Added Chrome compatibility.
+ *  5/ 2/2012 - Better (though more fragile) click-to-toggle areas.
+ *  3/ 1/2012 - Fixed Chrome compatibility so it works!  Doh.
+ * 23/ 3/2011 - Added Chrome compatibility.
 */
 
 function log(x) {
@@ -106,12 +107,19 @@ function doIt() {
 		var cacOldHome = ( cac ? cac.parentNode : null );
 
 		function toggleWikipediaSidebar(evt) {
+
 			// We don't want to act on all clicked body elements (notably not the WP
 			// image).  I detected two types of tag we wanted to click.
 			//if (!evt || evt.target.tagName == "UL" || evt.target.tagName == "DIV") {
+
 			// That was still activating on divs in the content!  (Gaps between paragraphs.)
 			// This only acts on the header area.
-			if (!evt || evt.target.id == 'mw-head') {
+			var inStartup = (evt == null);
+			var clickedHeader = evt && (evt.target.id == 'mw-head');
+			var clickedPanelBackground = evt && (evt.target.id == 'mw-panel' || evt.target.className.indexOf('portal')>=0);
+			var clickedAreaBelowSidebar = evt && (evt.target.tagName == 'HTML' || evt.tagName == 'BODY');
+			if (inStartup || clickedHeader || clickedPanelBackground || clickedAreaBelowSidebar) {
+
 				if (evt)
 					evt.preventDefault();
 				// GM_log("evt="+evt);
@@ -122,7 +130,7 @@ function doIt() {
 						// column-one contains a lot of things we want to hide
 						column1.style.display = 'none';
 						content.oldMarginLeft = content.style.marginLeft;
-						content.style.marginLeft = 0;
+						content.style.marginLeft = '6px';
 						for (var i in toToggle) {
 							if (toToggle[i]) { toToggle[i].style.display = 'none'; }
 						}
@@ -132,7 +140,7 @@ function doIt() {
 							column1.parentNode.insertBefore(cac,column1.nextSibling);
 						setTimeout(function(){
 							GM_setValue("sidebarVisible",false);
-						},5);
+						},200);
 					} else {
 						column1.style.display = '';
 						content.style.marginLeft = content.oldMarginLeft;
@@ -143,15 +151,17 @@ function doIt() {
 							cacOldHome.appendChild(cac); // almost back where it was :P
 						setTimeout(function(){
 							GM_setValue("sidebarVisible",true);
-						},5);
+						},200);
 					}
 				}
+
 			}
 		}
 
 		// log("column1="+column1+" and content="+content);
 		if (column1 && content) {
-			document.body.addEventListener('click',toggleWikipediaSidebar,false);
+			// We need to watch window for clicks below sidebar (Chrome).
+			window.addEventListener('click',toggleWikipediaSidebar,false);
 		} else {
 			log("Did not have column1 "+column1+" or content "+content); // @todo Better to warn or error?
 		}
@@ -260,7 +270,7 @@ function doIt() {
 				// fadeElement(toc,1.0,0.4);
 				// This might work for a simple toc div
 				toc.style.maxHeight = "80%";
-				toc.style.maxWidth = "40%";
+				toc.style.maxWidth = "32%";
 
 				/* 
 				 * Sometimes specifying max-height: 80% does not work, the toc won't shrink.
@@ -299,8 +309,8 @@ function doIt() {
 
 		}
 
-		// We try to act before # anchor position occurs, but if not we
-		// fire later in case the toc loads slowly.
+		// Ideally we want to act before # anchor position occurs, but we may
+		// need to wait for the toc if it is not added to the DOM until later.
 		if (!tryTOC()) {
 			setTimeout(tryTOC,400);
 		}
@@ -316,6 +326,12 @@ function doIt() {
 
 	if (!isWikiPage)
 		return;
+
+
+
+	// Delay.  Feature 3 and 4 can run a bit later, without *too* much page
+	// change, but with significant processor saving!
+	setTimeout(function(){
 
 
 
@@ -372,9 +388,7 @@ function doIt() {
 			}
 		}
 
-		setTimeout(function(){
-			indent("H1"); indent("H2"); indent("H3"); indent("H4"); indent("H5"); indent("H6");
-		},200);
+		indent("H1"); indent("H2"); indent("H3"); indent("H4"); indent("H5"); indent("H6");
 
 	}
 
@@ -389,6 +403,10 @@ function doIt() {
 		// Do not use "text-decoration: underline;" - it makes text look like links.
 
 	}
+
+
+
+	},1000);
 
 
 

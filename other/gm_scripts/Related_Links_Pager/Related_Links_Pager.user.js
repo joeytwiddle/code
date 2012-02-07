@@ -6,17 +6,21 @@
 // @exclude        https://*/*
 // ==/UserScript==
 
-var delayBeforeRunning = 1000;
+var delayBeforeRunning = 2000;
 var minimumGroupSize = 5;
 var maximumGroupSize = 40;
 var groupLinksByClass = true;
 
 
-// CHANGELOG
+// == CHANGELOG ==
+// 2012-02-07 Bugfixes and more heuristics.
+// 2012-01-30 Fixed repeat rewrite bug by checking for &sib as well as #sib.
 // 2012-01-28 Fixed close button positioning in Firefox.
 // 2012-01-28 Restricted related links to those with the same CSS class.
 //       BUG: We still group unrelated (indistinguishable) links on Wikipedia!
 // 2012-01-28 Blacklisted some buggy situations.
+
+// == NOTES ==
 
 // You can avoid this script either by clicking a link before it runs or by
 // activating the desired link with the keyboard instead of the mouse.
@@ -34,9 +38,14 @@ var groupLinksByClass = true;
 // CONSIDER: Would it be better to use a normal CGI '&' instead of '#' ?
 // Should we compress the data to survive through more webservers?
 
+// TODO: Do not load pager if it is redundant (i.e. if we can already see the
+// sibling links on the current page!).
+
 
 
 setTimeout(function(){
+
+
 
 // This is http://userscripts.org/scripts/review/57679
 // We need it on Google search result pages, or we end up following Google
@@ -67,9 +76,9 @@ function removeRedirection() {
 removeRedirection();
 
 
-
 // We consider related links, or "siblings", to be those on the current page
 // with the same DOM path as the clicked link.
+
 function getXPath(node) {
 	var parent = node.parentNode;
 	if (!parent) {
@@ -141,16 +150,17 @@ if (!this.GM_addStyle) {
 // target page in a hash package.
 
 function collectLinksInSameGroupAs(clickedLink) {
+  // We remove the numbers from the XPath
   var seekXPath = getXPath(clickedLink).replace(/\[[0-9]*\]/g,'');
-  // NOTE: We could do this with document.query - it might be faster.
+  // NOTE: We could search for matches with document.query - it might be faster.
   var links = document.getElementsByTagName("A");
   var collected = [];
   for (var i=0;i<links.length;i++) {
     var link = links[i];
-    var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     if (groupLinksByClass && link.className != clickedLink.className) {
       continue;
     }
+    var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     if (xpath == seekXPath) {
       if (link.textContent) {   // ignore if no title
         var record = [link.textContent, link.href];
@@ -164,10 +174,16 @@ function collectLinksInSameGroupAs(clickedLink) {
 function checkClick(evt) {
   var elem = evt.target;
   // GM_log("Intercepted click event on "+getXPath(elem));
+
+  // Do not interfere with Ctrl-click or Shift-click or right-click (usually open-in-new-window/tab)
+  if (evt.ctrlKey || evt.shiftKey || evt.button>0) {
+    return;
+  }
+
   if (elem.tagName == "A") {
     var link = elem;
 
-    if (link.href.indexOf("#siblings=") >= 0) {
+    if (link.href.indexOf("#siblings=")>=0 || link.href.indexOf("&siblings=")>=0) {
       // This is already a prepared link!  Probably created by the pager.
       // No need to modify it.
       return;
@@ -181,6 +197,10 @@ function checkClick(evt) {
       link.href.indexOf("?q=")>=0 || link.href.indexOf("&q=")>=0;
     if (siteWillComplain) {
       return;
+      // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
+    }
+    if (link.href.charAt(0) == '#') {
+      return;   // This link is just pointing to an anchor in the current page
     }
 
     // GM_log("User clicked on link: "+link.href);
@@ -242,9 +262,11 @@ function createRelatedLinksPager(siblings) {
   // GM_log("Current index: "+currentIndex);
   if (currentIndex == -1) {
     // This should be unlikely to happen!
-    GM_log("Could not find: "+seekURL);
-    GM_log("in list: "+siblings);
-    return;
+    GM_log("Odd, I could not find: "+seekURL+" in the siblings list.");
+    // But it does happen occasionally.
+    // One time by navigating to Wikipedia's main page by clicking the top-left logo.
+    // Don't return.  Show the list anyway!
+    // return;
   }
   var pager = document.createElement("div");
   pager.id = "linkGroupPager";
@@ -264,7 +286,8 @@ function createRelatedLinksPager(siblings) {
     var leftLink = document.createElement("A");
     var leftRecord = siblings[currentIndex-1];
     leftLink.textContent = "<<";
-    leftLink.href = leftRecord[1] + '#siblings=' + encodedList;
+    var appendChar = ( leftRecord[1].indexOf('#')>=0 ? '&' : '#' );
+    leftLink.href = leftRecord[1] + appendChar + 'siblings=' + encodedList;
     leftLink.title = "Previous: "+leftRecord[0]+maybeTitle(leftLink);
     pager.appendChild(leftLink);
   }
@@ -283,7 +306,8 @@ function createRelatedLinksPager(siblings) {
     var rightLink = document.createElement("A");
     var rightRecord = siblings[currentIndex+1];
     rightLink.textContent = ">>";
-    rightLink.href = rightRecord[1] + '#siblings=' + encodedList;
+    var appendChar = ( rightRecord[1].indexOf('#')>=0 ? '&' : '#' );
+    rightLink.href = rightRecord[1] + appendChar + 'siblings=' + encodedList;
     rightLink.title = "Next: "+rightRecord[0]+maybeTitle(rightLink);
     pager.appendChild(rightLink);
   }
@@ -291,7 +315,7 @@ function createRelatedLinksPager(siblings) {
   var closeButton = document.createElement("span");
   closeButton.textContent = "[X]";
   closeButton.style.cursor = 'pointer';
-  // closeButton.style.paddingLeft = '5px';
+  closeButton.style.paddingLeft = '5px';
   closeButton.onclick = function() { pager.parentNode.removeChild(pager); };
   pager.appendChild(closeButton);
 
@@ -308,7 +332,8 @@ function createRelatedLinksPager(siblings) {
       link.style.fontWeight = 'bold';
     }
     link.textContent = record[0] || record[1];   // use address if no title
-    link.href = record[1] + '#siblings=' + encodedList;
+    var appendChar = ( record[1].indexOf('#')>=0 ? '&' : '#' );
+    link.href = record[1] + appendChar + 'siblings=' + encodedList;
     pageList.appendChild(link);
     addFaviconToLinkObviouslyIMeanWhyWouldntYou(link);
   }
@@ -327,6 +352,7 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   var siblings = JSON.parse(decodeURIComponent(encodedList));
   createRelatedLinksPager(siblings);
 }
+
 
 
 },delayBeforeRunning);
