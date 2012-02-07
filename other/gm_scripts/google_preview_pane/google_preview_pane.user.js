@@ -8,12 +8,17 @@
 // @exclude        http://www.google.*/images*
 // @exclude        http://google.*/images*
 // @exclude        http://google.*/*&tbm=isch&*
-// @version        2012.01.15
+// @version        2012.02.07
 // ==/UserScript==
 
 
 
 // === Changelog ===
+//
+// 2012.02.05
+//
+//   * Restore the preview pane when it has been removed (when altering the
+//     search replaces the content with new results.)  Needed this for a while!
 //
 // 2012.01.29
 //
