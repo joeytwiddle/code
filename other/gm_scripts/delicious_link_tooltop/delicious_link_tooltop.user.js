@@ -17,19 +17,20 @@
 
 // == Config ==
 
-var showTooltips      = true;
-var lookupCurrentPage = true;
-var annotateAllLinks  = true;   // Delicious may occasionally block this if it is spamming.
+var showTooltips      = true;    // Make little info boxes pop up when you hover over a link.
+var lookupCurrentPage = true;    // Display count for this page shown in top-right corner.
+var annotateAllLinks  = false;   // Lookup *every* link on the page, and display its count in blue next to the link.
+                                 // Delicious may occasionally block this for spamming (temporarily).
 
 var enableJSONPonHTTPS = false;
 
-var maxCacheSize = 2400;   // Global cache size for Greasemonkey/GM_setValue.
-var maxCacheSizeForLocalStorage = 1000;   // Local per-site cache size, for Chrome/localStorage.
+var maxCacheSize = 2400;                 // Global cache limit for Greasemonkey/GM_setValue.
+var maxCacheSizeForLocalStorage = 1000;  // Per-site cache limit for Chrome/localStorage.
 
-var showProgress = true;   // Highlights each link in yellow while we are making a delicious request on it
+var showProgress = true;   // Highlights each link in yellow while we are making a delicious request on it.  Messy but informative if lookup fails!
 var logRequests  = false;
 var logResponses = true;
-var displayCleanupInTitle = true;
+var displayCleanupInTitle = false;   // To debug if (display when) the cleanup is lagging your browser.
 
 
 
@@ -42,11 +43,8 @@ var displayCleanupInTitle = true;
              Does not affect Firefox.  Greasemonkey's GM_xmlhttpRequest still
              works fine on https pages.
 
- 2012-01-31  Use https lookup on https pages, to avoid "insecure content" issues.
-             This didn't work, Chrome says "failed to load resource".  This
-             may be because the delicious SSL certificate purports to be for
-             a different domain (d-statis.com)!  Or it may be Chrome detecting
-             and blocking JSONP.
+ 2012-01-31  Noticed that lookups are not working on https pages.  Surprised I
+             hadn't seen this before.
 
  2012-01-30  Uploaded new version to userscripts.org.
 
@@ -125,7 +123,7 @@ log = function(x) {
 // "Delicious Link Tooltip" with an accidental typo then upload it.
 
 // Some code adapted from Hover Links userscript.
-// Thanks to: http://delicious.com/help/feeds
+// Thanks to: http://delicious.com/developers
 // The delicious JSON url we use is:
 //   http://feeds.delicious.com/v2/json/urlinfo?url=http://www.google.co.uk/
 
@@ -330,17 +328,18 @@ if (typeof GM_log == 'undefined') {
 	};
 }
 
+// We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
+var needToJSONP = !this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/);
+
 var allowedToJSONP = ( document.location.protocol === "https:" ? enableJSONPonHTTPS : true );
 
-if (allowedToJSONP) {
+if (needToJSONP && allowedToJSONP) {
 
-// We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
 // This performs a direct JSONP request from Delicious, circumventing cross-site issues with GM_xhR and XMLHR.
 // BUG: Chrome complains if this runs while we are on an https page, and more sites are switching to https!
 // OLD BUG: Since Delicious last changed format, they started providing responses with e.g. ... "total_posts": 2L, ...  This 'L' does not parse in Javascript!  It throws "identifier starts immediately after numeric literal" in Firefox, and "Unexpected token ILLEGAL" in Chromium.
 // OLD BUG: Interestingly, the "L" does NOT appear if we make a non-callback request through the xhrasjson proxy, or indeed the same callback request direct in Firefox's location bar.  Perhaps we can avoid the "L" by requesting the right content/mime-type in the script tag?
 // Jan 2012 - Has the L gone away?  Script seems to be working fine now!
-if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 	// GM_log("[DLT] Using Delicious JSONP");
 	GM_xmlhttpRequest = function(details) {
 		// Insert a callback into the root window, anonymised by a random key.
@@ -378,12 +377,10 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 		// document.getElementsByTagName("head")[0].appendChild(script);
 		document.body.appendChild(script);
 	};
-}
 
-//// GM_xhR alternative through a JSONP Proxy
-//// Get your proxy here (for node.js): http://hwi.ath.cx/javascript/xhr_via_json/
-/*
-if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
+	/*
+	//// GM_xhR alternative through a JSONP Proxy
+	//// Get your proxy here (for node.js): http://hwi.ath.cx/javascript/xhr_via_json/
 	GM_log("[DLT] Attempting to use GM_xhr JSONP proxy ...");
 	GM_xmlhttpRequest = function(details) {
 		var proxyHost = "hwi.ath.cx:8124";
@@ -441,9 +438,11 @@ if (!this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/)) {
 			throw new Error("Failed to get JSONed XHR response from "+proxyHost+" - the server may be down.");
 		};
 	};
-}
-*/
+	*/
 
+} else if (needToJSONP && !allowedToJSONP) {
+   GM_log("Not attempting to Delicious since we are on https page.");
+	return;
 }
 
 if (typeof GM_addStyle == 'undefined') {
@@ -552,12 +551,15 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 
 		// Reduce cache size since with localStorage we will have many
 		// site-specific caches, not just one!
-		if (document.location.host.match(/wikipedia/)) {
+		if (!document.location.host.match(/wikipedia/)) {
+			maxCacheSize = maxCacheSizeForLocalStorage; // per domain
+		} else {
 			// Wikipedia has many links, so we won't reduce his cachesize.
 			// In fact we will make an exception for wikipedia, and double the cache size!
 			maxCacheSize *= 2;
-		} else {
-			maxCacheSize = maxCacheSizeForLocalStorage; // per domain
+			// This assumes localStorage is more capable than Greasemonkey's data
+			// store (otherwise we should increase GM's max), or we are accepting
+			// the cleanup overhead for the benefit of a large cache on Wikipedia.
 		}
 
 	} else {
