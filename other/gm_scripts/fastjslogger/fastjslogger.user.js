@@ -8,12 +8,13 @@
 
 
 
-var autoHide = false;
+var autoHide = true;
 
-var watchWindowForErrors = true;
+var watchWindowForErrors = false;   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
 var interceptTimeouts = true;
 var interceptEvents = true;   // Wraps around any listeners registered later, so errors can be caught and reported.
-var logEvents = true;   // Log activity for the listeners.
+var logEvents = false;         // Log any activity over the wrapped listeners.
+var logMouseMoveEvents = false;   // These can be triggered a lot.
 
 var bringBackTheStatusBar = true;   // TODO: watch window.status for change
 
@@ -49,6 +50,10 @@ if (this.localStorage) {
 // TODO: If the FJSL is wanted for custom logging, not normal console.log
 // logging, we will need to expose a function (FJSL.log()?), and *not*
 // intercept console.log.
+
+// TODO: Perhaps instead of creating a new console, we should just replace
+// functions in the existing one (and leave anything we haven't altered
+// intact).
 
 (function(){
 
@@ -114,7 +119,7 @@ var autoHideTimer = null;
 function createGUI() {
 
 	var css = "";
-	css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 45%; /*max-height: 90%; height: 320px;*/ background-color: #ffffcc; color: black; border: 1px solid black; z-index: 10000; } ";
+	css += " .fastJSLogger { position: fixed; right: 8px; top: 8px; width: 40%; /*max-height: 90%; height: 320px;*/ background-color: #ffffcc; color: black; border: 1px solid black; z-index: 10000; } ";
 	css += " .fastJSLogger > span { max-height: 10%; }";
 	// css += " .fastJSLogger > pre  { max-height: 90%; overflow: auto; }";
 	//// On the pre, max-height: 90% is not working, but specifying px does.
@@ -126,15 +131,17 @@ function createGUI() {
 	css += " .fastJSLogger:hover  { opacity: 1.0; } ";
 	if (document.location.host.match(/wikipedia/))
 		css += " .fastJSLogger > pre  { font-size: 60%; }";
+	else
+		css += " .fastJSLogger > pre { font-size: 85%; } ";
 	addStyle(css);
 
 	var logDiv = newNode("div",{ id: 'fastJSLogger', className: 'fastJSLogger' });
 	hideLogger();
 	document.body.appendChild(logDiv);
 
-	logDiv.style.position = 'fixed';
-	logDiv.style.top = '20px';
-	logDiv.style.right = '20px';
+	// logDiv.style.position = 'fixed';
+	// logDiv.style.top = '20px';
+	// logDiv.style.right = '20px';
 
 	// @todo refactor
 	// I/O: logDiv, logContainer
@@ -204,6 +211,9 @@ function createGUI() {
 
 function addToFastJSLog(a,b,c) {
 
+	// Make FJSL visible if hidden
+	showLogger();
+
 	if (logContainer) {
 
 		// We cannot do arguments.join (FF4)
@@ -238,7 +248,7 @@ function addToFastJSLog(a,b,c) {
 
 	}
 
-	if (autoHide) {
+	if (FJSL.autoHide) {
 		if (autoHideTimer !== null) {
 			clearTimeout(autoHideTimer);
 			autoHideTimer = null;
@@ -271,6 +281,9 @@ var k = createGUI();
 logDiv = k[0];
 logContainer = k[1];
 
+window.FJSL = logDiv;
+FJSL.autoHide = autoHide;
+
 // target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
 // console.log("interceptTimeouts is "+(interceptTimeouts?"ENABLED":"DISABLED"));
 
@@ -291,10 +304,8 @@ var preventInfLoop = null;
 
 target.console.log = function(a,b,c) {
 
-	// Make FJSL visible if hidden
-	showLogger();
-
 	// I tried disabling this and regretted it!
+	// My Console bookmarklet can cause an infloop with FJSL if you want to test it.
 	if (a+b+c === preventInfLoop) {
 		return;
 	}
@@ -310,13 +321,18 @@ target.console.log = function(a,b,c) {
 		try {
 			oldConsole.log.apply(oldConsole,arguments);
 		} catch (e) {
-			oldConsole.log("oldConsole.log.apply() failed!",a,b,c);
+			// Ugly chars to signify that sucky fallback is being used
+			oldConsole.log("]]",a,b,c);
 		}
 	}
 
+	/*
+	//// WARNING: *This* is the cause of infinite console.logging, if it has been implemented by FallbackGMAPI.
+	//// Solution: FBGMAPI should take a reference to console when creating it's GM_log, not waiting until later to look for the console.
 	if (oldGM_log) {
 		oldGM_log(a,b,c);
 	}
+	*/
 
 };
 
@@ -326,17 +342,20 @@ target.console.log = function(a,b,c) {
 
 
 // == MAIN SCRIPT ENDS ==
-// The following are optional and can be stripped for minimifiation.
+// The following are optional and can be stripped for minification.
 
 
 
 /* Provide/intercept console.info/warn/error(). */
 
 target.console.error = function(a,b,c) {
+	// This was never triggered:
 	if (a instanceof Error) {
-		a = ""+a.stack;   // Far more informative
+		oldConsole && oldConsole.log("Error object",a);
+		a = ">> "+a.stack;   // Far more informative
 	}
 	addToFastJSLog("[ERROR]",a,b,c);
+	addToFastJSLog(getStack(2,20));
 	if (oldConsole) {
 		if (oldConsole.error) {
 			oldConsole.error(a,b,c);
@@ -400,7 +419,7 @@ function tryToDo(fn,target,args) {
 	try {
 
 		fn.apply(target,args);
-		return;
+		return true;
 
 	} catch (e) {
 		// Actually hard to read!
@@ -411,12 +430,13 @@ function tryToDo(fn,target,args) {
 		}
 		// console.log("[ERR]",e,prettyFn);
 		// console.log("[Exception]",e,"from "+fnName+"()");
-		console.error(""+e.stack);
+		console.error("!! "+e.stack);
 		var prettyFn = (""+fn).replace(/\n/,/ /,'g');
 		console.error("occurred when calling: "+prettyFn);
 		// throw e;
 		// Unfortunately even Chrome dev shows the throw as coming from here!
 		// So it is better if we leave it alone.
+		return false;
 	}
 
 }
@@ -479,7 +499,15 @@ if (watchWindowForErrors) {
 		// console.log(evt);
 		// console.log(Object.keys(evt));
 		// target.console.error(evt.filename+":"+evt.lineno+" "+evt.message+" ["+evt.srcElement+"]",evt);
-		console.error(evt.message," ",evt.filename+":"+evt.lineno);
+		if (evt.message && evt.filename) {
+			// E.g. for an error thrown by a page script.
+			console.error(evt.message," ",evt.filename+":"+evt.lineno);
+		} else {
+			// E.g. for a resource that failed to load.
+			// Ths evt gives no indication I can see of the reason, but it does at
+			// least provide the target/srcElement.
+			console.error("[Window Errror]",evt);
+		}
 	}
 	window.addEventListener("error",handleError,true);
 	// document.body.addEventListener("error",handleError,true);
@@ -503,11 +531,18 @@ if (interceptTimeouts) {
 				throw new Error("[FJSL] setTimeout was not given a function!",fn);
 			}
 
-			tryToDo(fn);
+			var passed = tryToDo(fn);
 
-			console.log("Re-running to reproduce stack-trace (may fail)");
-			fn();
-			throw new Error("Re-run failed to produce any error!",fn);
+			if (!passed) {
+
+				// tryToDo has caught and reported the Error, but it is nice to let
+				// it fall out to the browser, since browsers often have nifty features.
+
+				console.log("Re-running to reproduce stack-trace (may fail)");
+				fn();
+				throw new Error("Re-run failed to produce any error!",fn);
+
+			}
 
 		};
 
@@ -522,16 +557,20 @@ if (interceptEvents) {
 	// HTMLElement.prototype.oldAddEventListener = realAddEventListener;
 	HTMLElement.prototype.addEventListener = function(type,handler,capture,other){
 		if (logEvents) {
-			var niceFunc = handler.name || (""+handler).substring(0,40).replace(/\n/," ",'g')+"...";
-			console.info("[EVENTS] We will log "+type+" events on "+getXPath(this)+" when they fire "+niceFunc);
+			// Note niceFunc is re-used later, so don't remove this!
+			var niceFunc = handler.name || (""+handler).substring(0,80).replace(/\n/," ",'g').replace(/[ \t]*/," ",'g')+"...";
+			/*
+			console.info("[EVENTS] Listening for "+type+" events on "+getXPath(this)+" with handler "+niceFunc);
 			console.info(getStack(3,3));
+			*/
 		}
 		var newHandler = function(evt) {
-			if (logEvents) {
+			if (logEvents && (logMouseMoveEvents || evt.type!="mousemove")) {
 				if (evt.target.parentNode == logContainer) {
 					// Do not log events in the console's log area, such as DOMNodeInserted!
 				} else {
 					// console.log("("+type+") on "+evt.target);
+					// console.info("[EVENT] "+type+" on "+getXPath(evt.target));
 					// console.log("[EVENT] "+type+" on "+getXPath(evt.target)+" evt="+showObject(evt));
 					console.info("[EVENT] "+type+" on "+getXPath(evt.target)+" being handled by "+niceFunc);
 				}
