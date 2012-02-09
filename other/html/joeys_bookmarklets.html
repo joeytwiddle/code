@@ -741,9 +741,21 @@
 
 			var QuickConsole = ({});
 
-			/* I'm not convinced we should always want to create this console intercept. */
+			/* Intercept and display calls to console.log(). */
+			/* Disabled because it loops forever if FastJSLogger is loaded. */
+			/* Re-enabled because 'console' is expected later! */
 			var oldConsole = window.console;
-			window.console = { log: function() { if (arguments.length!=0 && arguments.length!=1) { arguments[0]+=''+arguments.slice(1); } if (oldConsole && oldConsole.log) { oldConsole.log.call(oldConsole,arguments[0]); } textArea.textContent += '\n' + arguments[0]; } };
+			window.console = {
+				log: function() {
+					if (arguments.length!=0 && arguments.length!=1) {
+						arguments[0]+=''+arguments.slice(1);
+					}
+					textArea.textContent += '\n' + arguments[0];
+					if (oldConsole && oldConsole.log) {
+						oldConsole.log.call(oldConsole,arguments[0]);
+					}
+				}
+			};
 
 			function prettyString(str) {
 				str = str.replace(/\n/g,'\\n');
@@ -768,8 +780,8 @@
 			}
 
 			function niceTypeOf(obj) {
-				if (obj != null && typeof obj === 'object' && obj.constructor) {
-					return '[Object '+obj.constructor.name+']';
+				if (''+obj == '[object Object]' && typeof obj === 'object' && obj !== null && obj.constructor) {
+					return '[object '+obj.constructor.name+']';
 				}
 				return typeof obj;
 			}
@@ -804,7 +816,7 @@
 					}
 					lines.push('  ' + text + ',');
 				}
-				lines.sort();
+				lines.sort(function(a,b){ return (a<b ? +1 : -1); });
 				return report + '\n' + lines.join('\n');
 			};
 			window.loadScript = function loadScript(url,callback) {
@@ -842,6 +854,7 @@
 
 			/* Load JQuery and other useful scripts: */
 			loadScript('http://hwi.ath.cx/static/js/jquery.js');
+			loadScript('http://hwi.ath.cx/javascript/dollar_get.js');
 			loadScript('http://hwi.ath.cx/javascript/changeClassProperties.js');
 
 			innerDiv.appendChild(document.createElement('BR'));
@@ -910,27 +923,29 @@
 				callback(result);
 			}
 
-			function execute() {
-				var cmd = commandInput.value;
+			function execute(elIn,elOut) {
+				var cmd = elIn.value;
 				if (cmd) {
-					textArea.value = '...';
+					elOut.value = '...';
 					runCmd(cmd,function(result){
-						/*textArea.innerHTML = escape(''+result);*/
-						textArea.value = (''+result);
+						/*elOut.innerHTML = escape(''+result);*/
+						elOut.value = (''+result);
 						if (this.console && console.log) {
 							console.log(result);
 						}
-						history.push({code:commandInput.value,result:''+result});
+						history.push({code:elIn.value,result:''+result});
 						historyPos = history.length;
-						commandInput.value = '';
-						/* Stay in coffeescript mode if we were in it before */
-						if (cmd.substring(0,2) == 'c:') {
-							commandInput.value = 'c:';
+						/* We don't clear the textArea, only the console command box. */
+						if (elIn == commandInput) {
+							elIn.value = '';
+							/* Stay in coffeescript mode if we were in it before */
+							if (cmd.substring(0,2) == 'c:') {
+								elIn.value = 'c:';
+							}
 						}
 					});
 				}
 			}
-			/*commandInput.onchange = execute;*/
 
 			function closeQuickConsole() {
 				myDiv.parentNode.removeChild(myDiv);
@@ -965,7 +980,7 @@
 				var lastChar = commandInput.value.slice(-1);
 				/* Enter */
 				if (evt.keyCode == 13) {
-					execute();
+					execute(commandInput,textArea);
 					evt.preventDefault();
 				/* Up Arrow sends code 38. */
 				} else if (evt.keyCode == 38 && lastChar !== ')') {
@@ -998,10 +1013,16 @@
 					}
 				}
 			}
+			function checkTextAreaKey(evt) {
+				if (evt.keyCode == 13 && /*evt.ctrlKey*/ textArea.value.slice(-3)=='\n\n\n') {
+					execute(textArea,commandInput);
+				}
+			}
 
 			/* Under Chrome, Escape does not fire a keypress event, but does keyup. */
 			commandInput.onkeyup = checkInputKey;
 			myDiv.onkeyup = checkKey;
+			textArea.onkeyup = checkTextAreaKey;
 
 			myStyle.setAttribute('type','text/css');
 			myStyle.innerHTML = 'div.qcons { color: white; background-color: #5c6c5c; position: fixed; left: 80px; right: 80px; bottom: 2px; z-index: 10000; text-align: center; padding: 4px; border: 1px solid #000000; } .qcons_inner { position: relative; } .closeBlock { position: absolute; top: 0px; right: 0px; }';
@@ -2524,6 +2545,15 @@ document.writeln('<P>Escaped '+cnt+" bookmarklets.</P>");
 </SCRIPT>
 
 <!-- <SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/fallbackgmapi/fallbackgmapi.user.js"></SCRIPT> -->
+
+<!-- For debugging: -->
+<!-- <SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/fastjslogger/fastjslogger.user.js"></SCRIPT> -->
+
+<!-- Needed in Konq 3.5 for the TOCE xpath evaluation:
+Disabled because the evaluation in Konq 3.5 takes ages and produces an empty TOC!  Could be tagName capitalisation or something else.
+<SCRIPT type="text/javascript" src="http://hwi.ath.cx/javascript/xpath.js"></SCRIPT>
+-->
+
 <SCRIPT type="text/javascript" src="http://hwi.ath.cx/gm_scripts/table_of_contents_everyw/table_of_contents_everyw.user.js" defer></SCRIPT>
 
 <!--
@@ -2549,7 +2579,7 @@ allowing the browser to scroll to the correct scrollTop.  Otherwise we are left
 waiting for at the top of the page for ages whilst this loads, and then jump!*/
 setTimeout(function(){
   document.getElementById("commentsFrame").src = "http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title=";
-},20);
+},8000);
 </SCRIPT>
 
 
