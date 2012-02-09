@@ -5,8 +5,36 @@
 // @include        http://*/*
 // ==/UserScript==
 
+var minimumItems = 4;   // Don't display a TOC for fewer than this number of entries.
+var delayBeforeRunning = 1600;
+
+// 2012-01-30  Implemented GM_log and GM_addStyle so this script can be included on any web page.
+
+// TODO: derbyjs.com is an example of a site with a <div id=toc> that has no
+// hide or close buttons.  Perhaps we should add close and rollup buttons if we
+// cannot find any recognisable buttons.  (Medawiki tocs for example, do have a
+// show/hide button, so we don't want to add to them!)
+
 setTimeout(function(){
 
+// Implementing these two means we can run as a stand-alone script on any page.
+if (typeof GM_log == "undefined") {
+	GM_log = function() {
+		// Firefox's console.log does not have apply or call functions!
+		var txt = Array.prototype.join.call(arguments," ");
+		console.log(txt);
+	};
+}
+if (typeof GM_addStyle == "undefined") {
+	this.GM_addStyle = function(css) {
+		var s = document.createElement("style");
+		s.type = 'text/css';
+		s.innerHTML = css;
+		document.getElementsByTagName("head")[0].appendChild(s);
+	};
+}
+
+// Implementing these allows us to remember toggled state.  (Chrome's set/getValue don't work.)
 if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)) {
 	GM_log("TOCE: Adding fallback implementation of GM_set/getValue");
 
@@ -43,6 +71,27 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 
 }
 
+function getXPath(node) {
+	var parent = node.parentNode;
+	if (!parent) {
+		return '';
+	}
+	var siblings = parent.childNodes;
+	var totalCount = 0;
+	var thisCount = -1;
+	for (var i=0;i<siblings.length;i++) {
+		var sibling = siblings[i];
+		if (sibling.nodeType == node.nodeType) {
+			totalCount++;
+		}
+		if (sibling == node) {
+			thisCount = totalCount;
+			break;
+		}
+	}
+	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
+}
+
 try {
 
 	function newNode(tag,data) {
@@ -68,18 +117,17 @@ try {
 	if (!toc) {
 
 		// Can we make a TOC?
-		var headers = "//h1 | //h2 | //h3 | //h4 | //h5 | //h6 | //h7 | //h8"
-		var anchors = "//a[@name]"
+		var headers = "//h1 | //h2 | //h3 | //h4 | //h5 | //h6 | //h7 | //h8";
+		var anchors = "//a[@name]";
 		// For coffeescript.org:
-		var elementsMarkedAsHeader = "//*[@class='header']"
-		var nodes = document.evaluate(headers+"|"+anchors+"|"+elementsMarkedAsHeader,document,null,6,null);
+		var elementsMarkedAsHeader = "//*[@class='header']";
+		var nodeSnapshot = document.evaluate(headers+"|"+anchors+"|"+elementsMarkedAsHeader,document,null,6,null);
 		//// Chrome needs lower-case 'h', Firefox needs upper-case 'H'!
-		// var nodes = document.evaluate("//*[starts-with(name(.),'h') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
-		// var nodes = document.evaluate("//*[starts-with(name(.),'H') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
-		GM_log("[TOCE] found "+nodes.snapshotLength+" nodes.");
-		if (nodes.snapshotLength > 1) {
+		// var nodeSnapshot = document.evaluate("//*[starts-with(name(.),'h') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
+		// var nodeSnapshot = document.evaluate("//*[starts-with(name(.),'H') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
+		if (nodeSnapshot.snapshotLength > minimumItems) {
 
-			GM_log("Making TOC with "+nodes.snapshotLength+" nodes!");
+			GM_log("Making TOC with "+nodeSnapshot.snapshotLength+" nodes.");
 
 			toc = newNode("div");
 			toc.id = 'toc';
@@ -120,14 +168,27 @@ try {
 				toggleRollUp();
 			}
 
-			for (var i=0;i<nodes.snapshotLength;i++) {
-				var node = nodes.snapshotItem(i);
+			// Sort them back into the order they appear in the document
+			var nodeArray = [];
+			for (var i=0;i<nodeSnapshot.snapshotLength;i++) {
+				var node = nodeSnapshot.snapshotItem(i);
+				nodeArray.push(node);
+			}
+			nodeArray.sort(function(a,b){
+				return getXPath(a) > getXPath(b) ? +1 : -1;
+			});
+
+			for (var i=0;i<nodeArray.length;i++) {
+				var node = nodeArray[i];
+
 				var level = (node.tagName.substring(1) | 0) - 1;
-				if (node.textContent == null || node.textContent.trim() == "") {
-					continue; // just skip un-named things which looked like headings
+
+				var linkText = node.textContent && node.textContent.trim() || node.name;
+				if (!linkText) {
+					continue;   // skip things we cannot name
 				}
+
 				var link = newNode("A");
-				var linkText = node.textContent;
 				if (linkText.length > 40)
 					linkText = linkText.substring(0,32)+"...";
 				link.textContent = linkText;
@@ -135,14 +196,28 @@ try {
 				if (link.textContent.substring(0,7) == "[edit] ") {
 					link.textContent = link.textContent.substring(7);
 				}
-				(function(node){
-					link.onclick = function(evt){
-						node.scrollIntoView();
-						evt.preventDefault();
-						return false;
-					};
-				})(node);
-				link.href = '#';
+				if (node.tagName == "A") {
+					link.href = '#'+node.name;
+				} else {
+					(function(node){
+						link.onclick = function(evt){
+							node.scrollIntoView();
+
+							// Optional: CSS animation
+							// NOT WORKING!
+							/*
+							node.id = "toc_current_hilight";
+							["","-moz-","-webkit-"].forEach(function(insMode){
+								GM_addStyle("#toc_current_hilight { "+insMode+"animation: 'fadeHighlight 4s ease-in 1s alternate infinite'; }@"+insMode+"keyframes fadeHighlight { 0%: { background-color: yellow; } 100% { background-color: rgba(255,255,0,0); } }");
+							});
+							*/
+
+							evt.preventDefault();
+							return false;
+						};
+					})(node);
+					link.href = '#';
+				}
 				table.appendChild(link);
 				var li = newNode("li");
 				link.parentNode.replaceChild(li,link);
@@ -170,7 +245,7 @@ try {
 	// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
 	// FIXED: Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
 	// FIXED : max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
-	GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 40%; overflow: auto; }");
+	GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 32%; overflow: auto; }");
 	GM_addStyle("#toc       { opacity: 0.2; }");
 	GM_addStyle("#toc:hover { opacity: 1.0; }");
 
@@ -178,6 +253,6 @@ try {
 	GM_log("[TOCE] Error! "+e);
 }
 
-},380);
+},delayBeforeRunning);
 // We want it to run fairly soon but it can be quite heavy on large pages - big XPath search.
 
