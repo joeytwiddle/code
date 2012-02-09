@@ -313,8 +313,6 @@ target.console.log = function(a,b,c) {
 	}
 	preventInfLoop = a+b+c;
 
-	var d = addToFastJSLog.apply(this,arguments);
-
 	// Replicate to the old loggers we intercepted (overrode)
 
 	if (oldConsole && oldConsole.log) {
@@ -336,7 +334,7 @@ target.console.log = function(a,b,c) {
 	}
 	*/
 
-	return d;
+	return addToFastJSLog.apply(this,arguments);
 
 };
 
@@ -358,7 +356,6 @@ target.console.error = function(a,b,c) {
 		oldConsole && oldConsole.log("Error object",a);
 		a = ">> "+a.stack;   // Far more informative
 	}
-	var d = addToFastJSLog("[ERROR]",a,b,c);
 	addToFastJSLog(getStack(2,20));
 	if (oldConsole) {
 		if (oldConsole.error) {
@@ -367,7 +364,7 @@ target.console.error = function(a,b,c) {
 			oldConsole.log("[ERROR]",a,b,c);
 		}
 	}
-	return d;
+	return addToFastJSLog("[ERROR]",a,b,c);
 };
 
 // Could generalise the two functions below:
@@ -375,7 +372,6 @@ target.console.error = function(a,b,c) {
 //interceptLogLevel("info");
 
 target.console.warn = function(a,b,c) {
-	var d = addToFastJSLog("[WARN]",a,b,c);
 	if (oldConsole) {
 		if (oldConsole.warn) {
 			oldConsole.warn(a,b,c);
@@ -383,11 +379,10 @@ target.console.warn = function(a,b,c) {
 			oldConsole.log("[WARN]",a,b,c);
 		}
 	}
-	return d;
+	return addToFastJSLog("[WARN]",a,b,c);
 };
 
 target.console.info = function(a,b,c) {
-	var d = addToFastJSLog("[INFO]",a,b,c);
 	if (oldConsole) {
 		if (oldConsole.info) {
 			oldConsole.info(a,b,c);
@@ -395,7 +390,7 @@ target.console.info = function(a,b,c) {
 			oldConsole.log("[INFO]",a,b,c);
 		}
 	}
-	return d;
+	return addToFastJSLog("[INFO]",a,b,c);
 };
 
 /*
