@@ -256,6 +256,8 @@ function addToFastJSLog(a,b,c) {
 		autoHideTimer = setTimeout(hideLogger,15 * 1000);
 	}
 
+	return d;
+
 }
 
 function showLogger() {
@@ -311,7 +313,7 @@ target.console.log = function(a,b,c) {
 	}
 	preventInfLoop = a+b+c;
 
-	addToFastJSLog.apply(this,arguments);
+	var d = addToFastJSLog.apply(this,arguments);
 
 	// Replicate to the old loggers we intercepted (overrode)
 
@@ -334,6 +336,8 @@ target.console.log = function(a,b,c) {
 	}
 	*/
 
+	return d;
+
 };
 
 //// Not really needed.  Why not?
@@ -354,7 +358,7 @@ target.console.error = function(a,b,c) {
 		oldConsole && oldConsole.log("Error object",a);
 		a = ">> "+a.stack;   // Far more informative
 	}
-	addToFastJSLog("[ERROR]",a,b,c);
+	var d = addToFastJSLog("[ERROR]",a,b,c);
 	addToFastJSLog(getStack(2,20));
 	if (oldConsole) {
 		if (oldConsole.error) {
@@ -363,6 +367,7 @@ target.console.error = function(a,b,c) {
 			oldConsole.log("[ERROR]",a,b,c);
 		}
 	}
+	return d;
 };
 
 // Could generalise the two functions below:
@@ -370,7 +375,7 @@ target.console.error = function(a,b,c) {
 //interceptLogLevel("info");
 
 target.console.warn = function(a,b,c) {
-	addToFastJSLog("[WARN]",a,b,c);
+	var d = addToFastJSLog("[WARN]",a,b,c);
 	if (oldConsole) {
 		if (oldConsole.warn) {
 			oldConsole.warn(a,b,c);
@@ -378,10 +383,11 @@ target.console.warn = function(a,b,c) {
 			oldConsole.log("[WARN]",a,b,c);
 		}
 	}
+	return d;
 };
 
 target.console.info = function(a,b,c) {
-	addToFastJSLog("[INFO]",a,b,c);
+	var d = addToFastJSLog("[INFO]",a,b,c);
 	if (oldConsole) {
 		if (oldConsole.info) {
 			oldConsole.info(a,b,c);
@@ -389,6 +395,7 @@ target.console.info = function(a,b,c) {
 			oldConsole.log("[INFO]",a,b,c);
 		}
 	}
+	return d;
 };
 
 /*
