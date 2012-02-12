@@ -1,0 +1,6 @@
+REPCHAN="#UT=4FUN" ./utp "$@" 62.113.199.63:6800
+## Bah this server does not respond to query :P
+## Livechan works tho.
+# echo -n "unreal://62.113.199.63:6800 Foundation <No query> "
+# sh ./ut_servers/scorefromlivechan "#UT=4FUN"
+# echo

@@ -1,0 +1,1 @@
+REPCHAN="#easy.live" ./utp "$@" 82.96.98.2
