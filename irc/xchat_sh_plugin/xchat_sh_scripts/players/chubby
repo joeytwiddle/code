@@ -1,0 +1,10 @@
+list () {
+cat << !
+[15:52] <+gz-chubbsy> i think rules are cool coz we can shut our eyes, be less sensitive and follow them blindly, so it gives us no problem with thinking like ... omg what to do
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

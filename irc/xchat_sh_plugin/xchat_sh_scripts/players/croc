@@ -1,0 +1,10 @@
+list () {
+cat << !
+Croco likes to taunt the bots.
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

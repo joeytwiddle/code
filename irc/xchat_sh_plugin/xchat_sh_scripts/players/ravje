@@ -1,0 +1,13 @@
+list () {
+cat << !
+<rAAF> i never say something funny :(
+<rAAF> i never say something funny :(
+<rAAF> i never say something funny :(
+<rAAF> you probably gonna ass that  <rAAF> *add  <rAAF> :/
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

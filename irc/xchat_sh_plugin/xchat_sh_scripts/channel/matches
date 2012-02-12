@@ -1,0 +1,5 @@
+if [ "$CHANNEL" = "#smo.priv" ]
+then
+	echo "Summer Slaughter: http://clanbase.ggl.com/league_schedule.php?lid=9437&league=2&poule=1"
+	echo "Action Cup: http://clanbase.ggl.com/league_schedule.php?lid=9481&league=2&poule=1"
+fi

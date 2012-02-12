@@ -1,0 +1,8 @@
+#!/bin/bash
+## We don't want to run in the presence of other bots which provide this feature!
+sleep 2
+[ "$MYNICK" ] || MYNICK="_string_2384320984302402sljdfjsllfdq"
+if tail -n 3 "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" | grep -v "<$MYNICK>" | grep "google" >/dev/null
+then :
+else silly/google "$@"
+fi

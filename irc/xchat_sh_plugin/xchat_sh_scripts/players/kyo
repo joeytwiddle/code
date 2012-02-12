@@ -1,0 +1,12 @@
+list () {
+cat << !
+Cheater!
+<MJ_Kyo_> Every day my love grows for the Nokia N8, nothing more 'beautiful * _ *
+<MJ_Kyo_> Cyclists will take away from the legs to infection when you do not hurt
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

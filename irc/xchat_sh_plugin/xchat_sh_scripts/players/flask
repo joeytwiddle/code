@@ -1,0 +1,13 @@
+list () {
+cat << !
+<@flask> to much irl nowedays first go to coratie medelin ore smt than to the z-german'
+<@flask> man list 6 off the biggest sites are down some gay lords are massive ddoss attacking :D
+<@flask> but nintendo is bit of a gayist name XD
+<@flask> but xeno is a shemale ?
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

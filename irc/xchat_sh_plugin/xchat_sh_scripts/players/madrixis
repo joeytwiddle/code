@@ -1,0 +1,10 @@
+list () {
+cat << !
+<madrixis\`unr> i dont mind, ive 48ms F6 everywhere but i still dont know what to do with it
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

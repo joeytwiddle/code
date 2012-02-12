@@ -1,0 +1,12 @@
+# exit 0
+
+list () {
+cat << !
+<Church> Still unquotable. \\o/
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

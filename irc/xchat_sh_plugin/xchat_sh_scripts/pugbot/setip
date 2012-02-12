@@ -1,0 +1,3 @@
+. pugbot/pugbot.shlib
+
+setip "$@"

@@ -1,0 +1,4 @@
+## This script was well ghey
+exit 0
+
+echo "$NICK"

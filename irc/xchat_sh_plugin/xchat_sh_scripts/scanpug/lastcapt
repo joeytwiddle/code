@@ -1,0 +1,17 @@
+if [ "$1" ]
+then SEARCHNICK="$1"
+else SEARCHNICK="$NICK"
+fi
+
+## TODO: This is a bit messy.  I guess we should loop all known pug chans until we find the auth.
+export CHANNEL="#ut.pug" ## needed to perform auth lookups if on e.g. PM
+
+AUTH=`bash ./scanpug/slowgetauth "$SEARCHNICK"`
+AUTHRE=`toregexp "$AUTH"`
+
+COUNT=`cat ~/.scanpug/*.picks | grep "^\(RED\|BLUE\)CAPT $AUTHRE " | wc -l`
+LASTFILE=`grep -l "^\(RED\|BLUE\)CAPT $AUTHRE " ~/.scanpug/*.picks | tail -n 1`
+[ -f "$LASTFILE" ] && LAST=", last "`datediff -file "$LASTFILE"`" ago"
+
+echo "I saw $AUTH captain $COUNT pugs$LAST."
+

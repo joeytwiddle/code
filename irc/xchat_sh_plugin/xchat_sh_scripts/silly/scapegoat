@@ -1,0 +1,2 @@
+SCAPEGOAT=`echo "$USERS" | sed 's+ +\n+g' | chooserandomline`
+echo "/me blames $SCAPEGOAT"

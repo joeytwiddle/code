@@ -1,0 +1,8 @@
+A sensible bot would have two levels of commands: normal users can join/leave/captain, ops can change settings (if it doesn't break the pug).
+
+But actually what I want utb0t to do is: normal users can do anything if it doesn't break the pug, ops can do anything including breaking the pug!
+
+To be truly smart, utb0t would allow Either Style of Working.
+
+e.g. IS_PRIVILEGED_TO_USE_PUGBOT_POWER_COMMANDS could be set during startup, if the current style means this user has all the pugbot powers.
+

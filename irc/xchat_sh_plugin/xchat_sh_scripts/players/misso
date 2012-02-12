@@ -1,0 +1,10 @@
+list () {
+cat << !
+<A> man have you got misso on msn ?  <A> he really looks like a terrorist =)  <B> some scary people on XOL ^^  <B> i think it's good we keep them off the streets
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,10 @@
+list () {
+cat << !
+<mean> when i play i play for win
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

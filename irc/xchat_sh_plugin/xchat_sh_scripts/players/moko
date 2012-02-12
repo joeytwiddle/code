@@ -1,0 +1,12 @@
+exit 0
+
+list () {
+cat << !
+<nogginBasher> strawberries turn you on!   <Moko__> I'd like to think so
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,10 @@
+list () {
+cat << !
+<@bludistak> netcatting O_o <@Teasy> yes, it's like fishing, but u use a big net on ur neighbor's cats
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

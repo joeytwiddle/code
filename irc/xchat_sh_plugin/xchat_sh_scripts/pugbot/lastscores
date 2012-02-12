@@ -1,0 +1,18 @@
+# if [ "$CHANNEL" = "#ut.pug" ]
+# if echo "$CHANNEL" | grep -i "pug" >/dev/null
+if true
+then :
+else exit 0
+fi
+
+LAST_TWO_MAPS=` tail -n 2000 "$LOGDIR/$NETWORK-$CHANNEL.log" | grep "Game starts" | tail -n 2 | afterlast "(" | beforelast ")" `
+## TODO BUG: This fails if anything else is logged in the channel between last cap and game end.
+LAST_TWO_SCORES=` tail -n 2000 "$LOGDIR/$NETWORK-$CHANNEL.log" | grep -B 1 "Game ended." | grep "New Score" | tail -n 2 | afterfirst "New Score: " | beforefirst "\[" | grep -o "[0-9]*:[0-9]*" `
+
+FIRST_MAP=`echo "$LAST_TWO_MAPS" | head -n 1`
+FIRST_SCORE=`echo "$LAST_TWO_SCORES" | head -n 1`
+SECOND_MAP=`echo "$LAST_TWO_MAPS" | tail -n 1`
+SECOND_SCORE=`echo "$LAST_TWO_SCORES" | tail -n 1`
+
+echo "$FIRST_MAP $FIRST_SCORE / $SECOND_MAP $SECOND_SCORE"
+

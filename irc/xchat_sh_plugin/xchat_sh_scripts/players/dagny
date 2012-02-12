@@ -1,0 +1,10 @@
+list () {
+cat << !
+<DirtySanchez> I just never got into UT3 and I guess I feel a little slimey playing it since it kind of sanctions and supports Epic's consolization and destruction of UT.
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

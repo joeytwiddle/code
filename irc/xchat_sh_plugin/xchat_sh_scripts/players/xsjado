@@ -1,0 +1,10 @@
+list () {
+cat << !
+<Xsjado> i am topless if anyone finds that hot
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

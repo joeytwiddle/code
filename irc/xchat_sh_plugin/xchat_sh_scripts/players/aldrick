@@ -1,0 +1,10 @@
+list () {
+cat << !
+<xw-spidey> aldrick has the most accurate flak of all
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

@@ -1,0 +1,12 @@
+# exit 0
+
+list () {
+cat << !
+[03:37am] <Mermaid`> anyway, think its time for some warhammer before i go to bed need to get some reasnoble sleeping hrs going for me :X
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

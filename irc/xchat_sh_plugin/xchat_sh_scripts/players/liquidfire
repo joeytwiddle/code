@@ -1,0 +1,12 @@
+exit 0
+
+list () {
+cat << !
+<zombixBasher> i'm telling teacher  <zombixBasher> on you  <LiQuidFire> you're behaving like a little child
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

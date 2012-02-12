@@ -1,0 +1,11 @@
+list () {
+cat << !
+<ZaRkO\`> man ppl with GG in his name looks gay   <uggla\`> hahahaha   <uggla\`> gj ZaRkO\` !   <ZaRkO\`> u got GG too   <uggla\`> fuck
+<@ZaRkO> i will run in the street with tanga will be so lol!
+!
+}
+
+list | randomorder | head -n 1
+
+exit 0
+

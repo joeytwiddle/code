@@ -1,0 +1,10 @@
+if [ "$CHANNEL" = "#pug.up" ]
+then
+	EXTRA=""
+	if echo "$NICK" | grep >/dev/null
+	then
+		BADPART=` echo "$NICK" | grep -o "^.\(.\|\)-" `
+		EXTRA="  Also you must remove $BADPART from your nick!" ## If you are already in the pug then FU for confusing me.
+	fi
+	echo "Don't listen to Kai, the command is .join$EXTRA"
+fi

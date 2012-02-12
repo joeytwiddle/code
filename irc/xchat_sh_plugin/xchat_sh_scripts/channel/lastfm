@@ -1,0 +1,1 @@
+echo "http://www.last.fm/search?m=all&q=$*" | tr ' ' '+'

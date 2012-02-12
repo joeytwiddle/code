@@ -1,0 +1,27 @@
+## I got told off for using this on the default ut chat channel.
+exit 0
+
+TARGET="$1"
+
+## Trying to send to self:
+if [ "$TARGET" = "$NICK" ]
+then exit 0
+fi
+
+TARGETRE="`toregexp "$TARGET"`"
+
+## Trying to send to op or voiced user:
+if echo "$USERMODES" | grep "\(^\| \)[@%+]$TARGETRE\( \|$\)" >/dev/null
+then exit 0
+fi
+
+## Check that we are actually sending to a peon:
+if echo "$USERMODES" | grep "\(^\| \)$TARGETRE\( \|$\)" >/dev/null
+then : ## OK target user is in the list and has no flags
+else exit 0
+fi
+
+if [ "$TARGET" ]
+then echo "/msg $TARGET http://dualchaos.com/fu-ut.rar  <-- patched to v436 and no-cd.  Thanks to GameRadius!"
+fi
+
