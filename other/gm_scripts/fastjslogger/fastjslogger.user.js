@@ -1,22 +1,27 @@
 // ==UserScript==
 // @name           FastJSLogger
 // @namespace      FastJSLogger
-// @description    Attempts to redirect console.log to a div floating on the page.
+// @description    Intercepts console.log calls to display log messages in a div floating on the page.  Tries to be a replacement for normal browser Error Consoles (which can be a little slow to open).
 // @include        *
 // ==/UserScript==
-// Dropped: @require        http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js
 
 
 
 var autoHide = true;
 
-var watchWindowForErrors = false;   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
+var watchWindowForErrors = true;   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
 var interceptTimeouts = true;
 var interceptEvents = true;   // Wraps around any listeners registered later, so errors can be caught and reported.
 var logEvents = false;         // Log any activity over the wrapped listeners.
 var logMouseMoveEvents = false;   // These can be triggered a lot.
 
+var muteLogRepeater = true;   // Mute console.log messages repeated to the
+// browser console.  (Display them only in the fastlogger, and keep the browser
+// log clear for warnings, errors and info messages.)
+
 var bringBackTheStatusBar = true;   // TODO: watch window.status for change
+
+var logNodeInsertions = false;   // Watch for and report DOMNodeInserted events.
 
 if (this.localStorage) {
 	// TODO: Recall and store FJSL preferences in localStorage.
@@ -37,6 +42,7 @@ if (this.localStorage) {
 // logs and throws any intercepted exceptions.
 // Unfortunately wrapping a try-catch around the main scripts in the document
 // (which have alread run) is a bit harder from here.  ;)
+// Aha!  Turns out we can catch those errors with window.onerror!
 
 // TODO: No thanks to Wikipedia's pre styling(?) I can't set a good default, so we need font zoom buttons!
 // TODO: Add ability to minimize but popup again on new log message.
@@ -207,8 +213,6 @@ function createGUI() {
 
 }
 
-
-
 function addToFastJSLog(a,b,c) {
 
 	// Make FJSL visible if hidden
@@ -283,13 +287,12 @@ var k = createGUI();
 logDiv = k[0];
 logContainer = k[1];
 
-window.FJSL = logDiv;
+// Expose an object so that options may be tweaked at runtime.
+window.FJSL = {};   // logDiv;  Cleaner to expose the div via id?  It may have been removed from DOM!
 FJSL.autoHide = autoHide;
 
 // target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
 // console.log("interceptTimeouts is "+(interceptTimeouts?"ENABLED":"DISABLED"));
-
-
 
 // Intercept messages for console.log if it exists.
 // Create console.log if it does not exist.
@@ -315,7 +318,7 @@ target.console.log = function(a,b,c) {
 
 	// Replicate to the old loggers we intercepted (overrode)
 
-	if (oldConsole && oldConsole.log) {
+	if (oldConsole && oldConsole.log && !muteLogRepeater) {
 		// Some browsers dislike use of .call and .apply here, e.g. GM in FF4.
 		// So to avoid "oldConsole.log is not a function":
 		try {
@@ -338,25 +341,17 @@ target.console.log = function(a,b,c) {
 
 };
 
-//// Not really needed.  Why not?
+//// NOT TESTED.  Intercept Greasemonkey log messages.  (Worth noting we have disabled calls *to* GM_log above.)
 // this.GM_log = target.console.log;
 
-
-
 // == MAIN SCRIPT ENDS ==
-// The following are optional and can be stripped for minification.
+// The rest is all optional so may be stripped for minification.
 
 
 
 /* Provide/intercept console.info/warn/error(). */
 
 target.console.error = function(a,b,c) {
-	// This was never triggered:
-	if (a instanceof Error) {
-		oldConsole && oldConsole.log("Error object",a);
-		a = ">> "+a.stack;   // Far more informative
-	}
-	addToFastJSLog(getStack(2,20));
 	if (oldConsole) {
 		if (oldConsole.error) {
 			oldConsole.error(a,b,c);
@@ -364,7 +359,7 @@ target.console.error = function(a,b,c) {
 			oldConsole.log("[ERROR]",a,b,c);
 		}
 	}
-	return addToFastJSLog("[ERROR]",a,b,c);
+	return addToFastJSLog("[ERROR]",a,b,c,'\n'+getStack(2,20));
 };
 
 // Could generalise the two functions below:
@@ -497,18 +492,19 @@ function getStack(drop,max) {
 
 if (watchWindowForErrors) {
 	function handleError(evt) {
+		var stack = getStack(0,99);
 		// console.log("Error caught by FJSL:");
 		// console.log(evt);
 		// console.log(Object.keys(evt));
 		// target.console.error(evt.filename+":"+evt.lineno+" "+evt.message+" ["+evt.srcElement+"]",evt);
 		if (evt.message && evt.filename) {
 			// E.g. for an error thrown by a page script.
-			console.error(evt.message," ",evt.filename+":"+evt.lineno);
+			console.error("[Window Error] "+evt.message+" "+evt.filename+":"+evt.lineno+" "+stack);
 		} else {
 			// E.g. for a resource that failed to load.
 			// Ths evt gives no indication I can see of the reason, but it does at
 			// least provide the target/srcElement.
-			console.error("[Window Errror]",evt);
+			console.error("[Window Errror]",evt,stack);
 		}
 	}
 	window.addEventListener("error",handleError,true);
@@ -551,6 +547,21 @@ if (interceptTimeouts) {
 		return oldSetTimeout(wrappedFn,ms);
 	};
 
+}
+
+
+
+// == General Info Logging Utilities ==
+
+if (logNodeInsertions) {
+	document.body.addEventListener('DOMNodeInserted', function(evt) {
+		if (evt.target === logContainer || evt.target.parentNode === logContainer) {
+			return;
+		}
+		// console.log("[DOMNodeInserted]: target=",evt.target," event=",evt);
+		// console.log("[DOMNodeInserted]:",evt,evt.target,"path="+getXPath(evt.target),"html="+evt.target.outerHTML);
+		console.log("[DOMNodeInserted]: path="+getXPath(evt.target)+" html="+evt.target.outerHTML,evt);
+	}, true);
 }
 
 if (interceptEvents) {
