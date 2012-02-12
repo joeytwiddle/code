@@ -1,1 +1,1 @@
-SEARCH="\<RA-" sh ./scraping/scrapegt "$@"
+SEARCH="\<RA-" bash ./scraping/scrapegt "$@"

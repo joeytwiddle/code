@@ -1,1 +1,1 @@
-SEARCH="" IGNORE="\<TO-" sh ./scraping/scrapegt "$@"
+SEARCH="" IGNORE="\<TO-" bash ./scraping/scrapegt "$@"

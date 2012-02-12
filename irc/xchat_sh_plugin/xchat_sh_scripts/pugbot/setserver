@@ -44,7 +44,7 @@ function do_switch () {
   if [ "$FORCE" ] || echo "$PLAYERCOUNT" | grep "^0/[0-9]*$" >/dev/null || echo "$RESPONSE" | grep "\<DOWN\>$"
   then
 	echo "[setserver] Server is empty ($PLAYERCOUNT) - requesting map switch: $MAPS" >&2
-  	verbosely ssh "$SERVER_CONNECT" j/jsh sh ut/switch_map.sh $MAPS > setserver_switch_map.out 2>setserver_switch_map.err &
+  	verbosely ssh "$SERVER_CONNECT" j/jsh bash ut/switch_map.sh $MAPS > setserver_switch_map.out 2>setserver_switch_map.err &
 
 	echo "[setserver] Done ssh, waiting for outcome..." >&2
 	sleep 5

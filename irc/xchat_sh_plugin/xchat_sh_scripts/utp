@@ -16,7 +16,7 @@ IRCNICK="$NICK"
 if [ "$*" = "" ]
 then
 	# echo "To query UT99 servers: !utp [-scores|-s] [-rules|-r|-muts|-m|-i [property]] [-justserver|-noplayers] <ip_and_port>s..."
-	echo "To query UT99 servers: !utp [-ping|-p] [-scores|-s] [-rules|-r] [-m|-muts] <ip_and_port>s..."
+	echo "To query UT99 servers: !utp [-p|-ping] [-s|-scores] [-r|-rules] [-m|-muts] <ip_and_port>s..."
 	## Not really public: [-justserver|-noplayers] 
 	echo "  NOTE: to query a hostname, use !utp unreal://<hostname>[:<port>]"
 	exit 0
@@ -59,6 +59,11 @@ NL="\\
 for URL in $*
 do
 
+NL="\\
+"
+
+	(
+
 	IP=""
 
 	## Check that it is an IP (with optional :port at the end) or an unreal:// URL
@@ -72,13 +77,11 @@ do
 		if [ "$SHOWRULES" ]
 		then
 
-NL="\\
-"
+			echo -n "$COLROYAL$COLBOLD$URL$COLBOLD "
 
-			echo -n "$COLBLUE$COLBOLD$URL$COLBOLD "
-
+			## Seems we need occasionally need to take longer than 18 seconds for XOL!
 			QSTAT_OUTPUT=`
-				qstat -default uns -retry 5 -interval 4 -timeout 20 -R "$IP" 2>&1 | drop 2
+				qstat -default uns -retry 6 -interval 4 -timeout 24 -R "$IP" 2>&1 | drop 2
 			`
 
 			echo "$QSTAT_OUTPUT" |
@@ -158,7 +161,7 @@ NL="\\
 			CACHE_FILE=/tmp/jsh-joey/utpcache/"$IP".last
 			CACHED_COPY=` cat "$CACHE_FILE" `
 
-			QSTAT_OUTPUT=` qstat -default uns -retry 5 -interval 4 -timeout 20 -P "$IP" 2>&1 | dos2unix | drop 1 `
+			QSTAT_OUTPUT=` qstat -default uns -retry 6 -interval 4 -timeout 24 -P "$IP" 2>&1 | dos2unix | drop 1 `
 
 			# echo ">$QSTAT_OUTPUT<" >&2
 
@@ -185,7 +188,7 @@ NL="\\
 					fi
 				else
 					if [ "x$CACHED_COPY" = x ]
-					then echo ">$QSTAT_OUTPUT< no record"
+					then echo "no record for $IP >$QSTAT_OUTPUT<"
 					# else echo "Last: $CACHED_COPY"
 					else
 						CACHED_TIME=`datediff -file "$CACHE_FILE"`
@@ -212,7 +215,7 @@ NL="\\
 					read IPR REST
 					# echo -n "$COLBLUE""unreal://$IPR $COLGREY""$REST "
 					# echo -n "unreal://$IPR$COLNORM ""$REST " |
-					echo -n "$COLBLUE$COLBOLD""unreal://$IPR$COLBOLD$COLNORM ""$REST " | ## i would have used COLRESET but that sets colour to White not Default :P
+					echo -n "$COLROYAL$COLBOLD""unreal://$IPR$COLBOLD$COLNORM ""$REST " | ## i would have used COLRESET but that sets colour to White not Default :P
 					# sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
 					sed "s+\([^ ]*\) *\([^/]*/[^/]*/ *[[:digit:]]* *[^ ]*\) +\1 $KEEPINFO$COLYELLOW+" |
 
@@ -235,7 +238,7 @@ NL="\\
 
 						TEAMCOL="$COLNORM"
 						[ "$TEAM" = "team#0" ] && TEAMCOL="$COLRED"
-						[ "$TEAM" = "team#1" ] && TEAMCOL="$COLBLUE"
+						[ "$TEAM" = "team#1" ] && TEAMCOL="$COLROYAL"
 						[ "$TEAM" = "team#2" ] && TEAMCOL="$COLGREEN"
 						[ "$TEAM" = "team#3" ] && TEAMCOL="$COLYELLOW"
 
@@ -273,7 +276,7 @@ NL="\\
 
 					if [ "$REPCHAN" ]
 					then
-						SCORE_AND_TIMELEFT=$(sh ./ut_servers/scorefromlivechan "$REPCHAN")
+						SCORE_AND_TIMELEFT=$(bash ./ut_servers/scorefromlivechan "$REPCHAN")
 						[ "$SCORE_AND_TIMELEFT" ] && echo -n " $COLGREEN$SCORE_AND_TIMELEFT"
 						# echo -n " $COLRESET""[$REPCHAN]"
 					fi
@@ -283,7 +286,7 @@ NL="\\
 					# echo
 
 				) |
-				## No it's best not to break up the line here, they might be grepped outside of here.
+				## No it_s best not to break up the line here, they might be grepped outside of here.
 				# sed "s+\(.\{0,245\}[^ ]\)\(  *\|$\)+\0$NL +g" | grep -v "^ $"
 				cat
 
@@ -312,6 +315,10 @@ NL="\\
 	then SEARCH="$URL"
 	else echo "/notice $IRCNICK utp: ignoring non-IP \"$URL\""
 	fi
+
+	) &
+
+	sleep 1
 
 done |
 ## For some reason if I /say a line more than 80 chars long, none of the following lines are displayed.

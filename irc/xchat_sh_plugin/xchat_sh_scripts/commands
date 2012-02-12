@@ -22,7 +22,7 @@ list_commands () {
 	while read DIR
 	do
 
-		[ "$PRETTY" ] && echo -n "$COLRED$DIR$COLNORM: $COLBLUE"
+		[ "$PRETTY" ] && echo -n "$COLRED$DIR$COLNORM: $COLROYAL"
 
 		find "$DIR"/ -maxdepth 1 -type f -or -type l |
 		filter_list_with test -x |
@@ -48,7 +48,7 @@ list_commands_pretty () {
 	do
 
 		# echo -n "$COLRED$DIR$COLNORM: $COLGREY"
-		echo -n "$COLBLUE[$COLRED$DIR$COLBLUE] $COLGREY"
+		echo -n "$COLROYAL[$COLRED$DIR$COLROYAL] $COLGREY"
 
 		find "$DIR"/ -maxdepth 1 -type f |
 		filter_list_with test -x |
@@ -66,10 +66,10 @@ list_commands_pretty () {
 			grep -v "^\." | ## hide hidden files ^^
 			sort |
 			while read ALIAS_COMMAND
-			# do echo -n "$COLBLUE$ALIAS_COMMAND$COLGREY "
+			# do echo -n "$COLROYAL$ALIAS_COMMAND$COLGREY "
 			# done | sed 's+^+(+ ; s+ $+) +'
 			do echo -n "$ALIAS_COMMAND,"
-			done | sed "s+^+($COLBLUE+ ; s+,$+$COLGREY) +"
+			done | sed "s+^+($COLROYAL+ ; s+,$+$COLGREY) +"
 		done
 
 		echo
@@ -124,10 +124,10 @@ list_commands_in_category () {
 			grep -v "^\." | ## hide hidden files ^^
 			sort |
 			while read ALIAS_COMMAND
-			# do echo -n "$COLBLUE$ALIAS_COMMAND$COLGREY "
+			# do echo -n "$COLROYAL$ALIAS_COMMAND$COLGREY "
 			# done | sed 's+^+(+ ; s+ $+) +'
 			do echo -n "!$ALIAS_COMMAND,"
-			done | sed "s+^+($COLBLUE+ ; s+,$+$COLRESET) +"
+			done | sed "s+^+($COLROYAL+ ; s+,$+$COLRESET) +"
 
 		done
 

@@ -4,6 +4,9 @@
 	# exit 0
 # fi
 
+# DICTIONARY_FILE="/usr/share/dict/words"
+DICTIONARY_FILE="/home/joey/ircbot/files/british-english-large"
+
 . irc.shlib
 . irccols.shlib
 
@@ -19,15 +22,15 @@ for LETTER in `
 `
 do
 	# echo "$LETTER"
-	NUMWORDS=`memo grep "^$LETTER" /usr/share/dict/words | wc -l`
+	NUMWORDS=`memo grep "^$LETTER" "$DICTIONARY_FILE" | wc -l`
 	# TOTAL=`expr "$TOTAL" '*' "$NUMWORDS"`
 	# TOTAL=$((TOTAL*NUMWORDS))
 	TOTAL=`./calc "$TOTAL * $NUMWORDS"`
 	## these both exceed limits if u !jargon jargon :S
-	# AWORD=`memo grep "^$LETTER" /usr/share/dict/words | chooserandomline`
+	# AWORD=`memo grep "^$LETTER" "$DICTIONARY_FILE" | chooserandomline`
 	## More efficient version:
 	LINE=`awk " BEGIN { srand("$RANDOM$RANDOM"); printf( int( $NUMWORDS * rand() ) ); } "`
-	AWORD=`memo grep "^$LETTER" /usr/share/dict/words | getline "$((LINE+1))"`
+	AWORD=`memo grep "^$LETTER" "$DICTIONARY_FILE" | getline "$((LINE+1))"`
 	EXAMPLE="$EXAMPLE $AWORD"
 done
 

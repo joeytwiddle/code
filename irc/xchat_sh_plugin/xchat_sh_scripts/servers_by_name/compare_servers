@@ -42,7 +42,7 @@ get_rules "$IPB" > "$FILEB"
 
 ) |
 
-sed "s+[, ]\([^=]*\)=\([^,]*\)+$COLGREY,$COLRED\1$COLYELLOW=$COLBLUE\2+g"
+sed "s+[, ]\([^=]*\)=\([^,]*\)+$COLGREY,$COLRED\1$COLYELLOW=$COLROYAL\2+g"
 
 exit
 

@@ -1,5 +1,13 @@
 if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#[a]ssassins" ]
-then exit 0
+then
+	## Do not run, unless we are being used as a pugbot!
+	# PUGBOTDIR="$HOME/.pugbot" ; mkdir -p "$PUGBOTDIR"
+	# PUG_CHANNELS_FILE="$PUGBOTDIR"/pug_channels@"$NETWORK".list
+	# CHANNELREGEXP=`toregexp "$CHANNEL"`
+	# [ -f "$PUG_CHANNELS_FILE" ] || touch "$PUG_CHANNELS_FILE" ## to avoid an error if the file does not yet exist
+	# cat "$PUG_CHANNELS_FILE" | grep -i "^$CHANNELREGEXP$" >/dev/null || exit 0
+	## Somewhat easier:
+	. pugbot/pugbot.shlib
 fi
 
 list () {

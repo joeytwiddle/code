@@ -7,17 +7,18 @@ if [ "`seq 1 10 | chooserandomline`" = 1 ]
 then ./wordgame/wordgamehiscores
 fi
 
+## Unused
 randomvowel () {
 	echolines a e i o u | chooserandomline
 }
-
 randomconsonant () {
 	echolines b c d f g h j k l m n p q r s t v w x y z | chooserandomline
 }
 
 if [ "$1" = new ]
 then
-	[ "$HASOP" ] || . restrict_repetitive_calls "1 minute"
+	# [ "$HASOP" ] || . restrict_repetitive_calls "2 minutes"
+	[ -f "$COMPLETED_ROUND_FILE" ] || . restrict_repetitive_calls "2 minutes"
 	make_new_letterset "$2"
 fi
 

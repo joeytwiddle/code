@@ -1,6 +1,12 @@
 . irc.shlib
 . irccols.shlib
 
+if [ ! "$*" ]
+then
+	./ut_servers/rosebum
+	exit 0
+fi
+
 if [ ! "$NICK" ] ## why?!
 then
 rainbow "$@"

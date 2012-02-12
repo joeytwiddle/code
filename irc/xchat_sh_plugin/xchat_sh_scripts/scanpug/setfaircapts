@@ -1,4 +1,4 @@
-if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#siegepug" ] && [ ! "$CHANNEL" = "#pug.up" ] && [ ! "$CHANNEL" = "#ut994funpug" ] && [ ! "$CHANNEL" = "#pug" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#siegepug" ] && [ ! "$CHANNEL" = "#pug.up" ] && [ ! "$CHANNEL" = "#ut994funpug" ] && [ ! "$CHANNEL" = "#pug" ] && [ ! "$CHANNEL" = "#tehpugz" ] # && [ ! "$CHANNEL" = "#ctf.pug" ]
 then exit 0
 fi
 
@@ -40,7 +40,8 @@ do
 		# afterfirst "±. " | beforefirst " ·(¥)·" |
 		## For Rival:
 		# sed 's+^. + +g ; s+ .$++g' |
-		sed 's+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' ' | grep -v "^$"
+		sed 's+\<[0-9][0-9]*) ++g' | tr ' ' '\n' | tr -d ' ' | grep -v "^$" |
+		sed -u 's+[^][A-Za-z0-9_|^\`{}()\n\-]++g'   ## Strip nasty chars found on spud.  TODO: []
 	`
 
 	## For APug:
@@ -86,8 +87,8 @@ ORDERED_LIST=$(
 	echo "$LIST_LINE" |
 	while read PLAYER
 	do
-		AUTH=`sh scanpug/slowgetauth "$PLAYER"`
-		# AUTH=`IKNOWIDONTHAVEATTY=1 memo -t "1 hour" sh scanpug/slowgetauth "$PLAYER"`
+		AUTH=`bash scanpug/slowgetauth "$PLAYER"`
+		# AUTH=`IKNOWIDONTHAVEATTY=1 memo -t "1 hour" bash scanpug/slowgetauth "$PLAYER"`
 		# COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
 		# if [ "$COUNT" -gt 0 ]
 		# then
@@ -98,8 +99,8 @@ ORDERED_LIST=$(
 		# else
 			# : # echo "4.52963ish? $PLAYER"
 		# fi
-		# STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
-		STRENGTHANDCOUNT=`sh ./scanpug/getstrength -andcount "$AUTH"`
+		# STRENGTH=`bash ./scanpug/getstrength "$AUTH"`
+		STRENGTHANDCOUNT=`bash ./scanpug/getstrength -andcount "$AUTH"`
 		STRENGTH=`echo "$STRENGTHANDCOUNT" | takecols 1`
 		COUNT=`echo "$STRENGTHANDCOUNT" | takecols 2`
 		# if [ "$AUTH" = MrsFace ] || [ "$AUTH" = "~fu" ] ## zR
@@ -134,8 +135,8 @@ do
 	## Check if one of these captains already captained recently
 	PREDC=`echo "$CAPTS" | head -n 1 | takecols 2`
 	PBLUEC=`echo "$CAPTS" | tail -n 1 | takecols 2`
-	PREDCAUTH=`NOINFO=1 sh scanpug/slowgetauth "$PREDC"`
-	PBLUECAUTH=`NOINFO=1 sh scanpug/slowgetauth "$PBLUEC"`
+	PREDCAUTH=`NOINFO=1 bash scanpug/slowgetauth "$PREDC"`
+	PBLUECAUTH=`NOINFO=1 bash scanpug/slowgetauth "$PBLUEC"`
 
 	## DUH - DUNNO_AUTH players were stripped earlier during build of ORDERED_LIST - since we don't know their strength!
 	if [ "$PREDCAUTH" = DUNNO_AUTH ] || [ "$PBLUECAUTH" = DUNNO_AUTH ]
@@ -157,7 +158,7 @@ do
 	[ "$NUM_GAMES_TO_CHECK" -gt 0 ] || NUM_GAMES_TO_CHECK=1
 	## BUG! Will stop working in year 2100!  Better to grep -v "last" (provided that isn't channel name!)
 	## BUG TODO: Will stop working when number of .picks files exceeds shell max args.
-	RECENT_PICK_FILES=`ls -art ~/.scanpug/"$CHANNEL-20"*.picks | dos2unix | tail -n $NUM_GAMES_TO_CHECK`
+	RECENT_PICK_FILES=`'ls' -art ~/.scanpug/"$CHANNEL-20"*.picks | dos2unix | tail -n $NUM_GAMES_TO_CHECK`
 
 	PREDCAUTHRE=`toregexp "$PREDCAUTH"`
 	PBLUECAUTHRE=`toregexp "$PBLUECAUTH"`
@@ -178,13 +179,15 @@ do
 	REDCAPTCOUNT=`echo "$CAPTS" | head -n 1 | takecols 3`
 	BLUECAPTCOUNT=`echo "$CAPTS" | tail -n 1 | takecols 3`
 	if [ "$REDCAPTCOUNT" ] && [ "$BLUECAPTCOUNT" ] &&
-	   ( [ "$REDCAPTCOUNT" -lt 15 ] || [ "$BLUECAPTCOUNT" -lt 15 ] )
+	   ( [ "$REDCAPTCOUNT" -lt 10 ] || [ "$BLUECAPTCOUNT" -lt 10 ] ) &&
+	   [ "$CHANNEL" = "#ut.pug" ]
 	then
 		## 10% chance of making him captain anyway! :P
 		# if [ "`seq 0 9 | chooserandomline`" -gt 1 ]
+		# if [ "$((RANDOM%100))" -gt "$REDCAPTCOUNT" ] && [ "$((RANDOM%100))" -gt "$BLUECAPTCOUNT" ]
 		if [ "$((RANDOM%100))" -gt 9 ]
 		then
-			jshinfo "One of these captains has played fewer than 15 pugs.  Retrying..."
+			jshinfo "One of these captains has played fewer than 10 pugs.  Retrying..."
 			continue
 		else
 			jshwarn "Allowing NEW pugger through!"
@@ -227,11 +230,24 @@ while read STRENGTH CAPT COUNT
 # do echo "!setcapt $CAPT (avgpick #$STRENGTH)"
 ## ABot and Rival:
 do
-	echo "!setcaptain $CAPT (avgpick #$STRENGTH)" ## try this if below works
-	# echo "!setcaptain $CAPT"
+	# if [ "$CHANNEL" = "#ctf.pug" ]
+	# then
+		# echo "!setcaptain $CAPT" ## seeing if this works with AB0T
+		# echo "  (avgpick #$STRENGTH)"
+	# else
+		echo "!setcaptain $CAPT (avgpick #$STRENGTH)" ## works fine with Rival
+	# fi
 	echo "/msg $CAPT If you need help picking your team, consult the Avgpicks list."
 done
 
-sleep 15 ## Rival should now print his "Please pick from the list:" line.  5 was too short once.  10 was too short once!  Plus it's good to be slow, then we appear *after* _StalkeR_ ;)
-BACKCHECK=20 sh ./scanpug/strengths
+sleep 20 ## Rival should now print his "Please pick from the list:" line.  5 was too short once.  10 was too short once!  Plus it's good to be slow, then we appear *after* _StalkeR_ ;)  Increased from 15 to 20, because now we are sending PMs to the players, this creates a little more delay!
+BACKCHECK=40 bash ./scanpug/strengths
+
+# if [ "$CHANNEL" = "#ctf.pug" ]
+# then
+	# sleep 10
+	# # echo "Vetro smells"
+	# # echo "Vetro's feet smell really really bad"
+	# echo "Vetro stinks like a fucking tramp"
+# fi
 

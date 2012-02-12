@@ -14,9 +14,13 @@ then
 	echo "Channel name should start with #"
 else
 	# echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try my backup: /msg utbot !invitebot $CHANNEL_TO_IDLE_IN"
-	echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try one of my clones: utb0t utbot UT"
+	echo "Invitation to $CHANNEL_TO_IDLE_IN received.  If I don't join, I'm probably already in too many channels, but you could try messaging one of my clones instead: utb0t utbot UT"
+	# If it's an invite-only channel, we made need to invite ourselves first O_o
+	echo "/msg Q invite $CHANNEL_TO_IDLE_IN"
+	sleep 3
 	# echo "/join $CHANNEL_TO_IDLE_IN"
 	# if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
+	## Use all arguments in case they gave a channel password too
 	echo "/join $*"
 fi
 

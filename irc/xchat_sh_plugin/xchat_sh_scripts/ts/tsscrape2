@@ -14,7 +14,7 @@ then
 	exit 0
 fi
 
-echo -n "$COLBLUE""teamspeak2://$IP_AND_PORT/$COLGREY [ "
+echo -n "$COLROYAL""teamspeak2://$IP_AND_PORT/$COLGREY [ "
 
 wget -t 3 -T 5 -O - "$URL" 2>/dev/null |
 grep "<td nowrap>\&nbsp;" |

@@ -44,6 +44,10 @@ CURRENT_MAP_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".current_map
 SUB_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".sub
 NUMBER_OF_PLAYERS_NEEDED_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".total_players
 LAST_RESET_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".last_reset
+PUG_IP_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".ip
+PUG_TS_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".ts
+PUG_WEB_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".web
+PUG_STATS_FILE="$PUGBOTDIR"/pug@"$NETWORK"."$CHANNEL".stats
 
 if [ -f "$NUMBER_OF_PLAYERS_NEEDED_FILE" ]
 then NUMBER_OF_PLAYERS_NEEDED="`cat "$NUMBER_OF_PLAYERS_NEEDED_FILE"`"
@@ -52,13 +56,16 @@ fi
 
 ## double_escape_slashes used to be a function, but then it didn't work :o
 ## This implementation appears to be quadruple_escape_slashes, but anyway it's what we need!  :P
-alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
-# alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "
+# alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
+## I moved it back to a function since aliases weren't working on spud.
+double_escape_slashes () {
+	sed 's+\\+\\\\\\\\+g'
+}
 
 function require_ops () {
 	if [ "$HASOP" = "" ]
 	then
-		echo "/notice $NICK Unauthorized access attempt detected - authorities have been informed."
+		echo "/notice $NICK [Unauthorized access attempt detected - security enforcement officers have been informed.]"
 		exit 0
 	fi
 }
@@ -112,6 +119,7 @@ do_pre_checks () {
 	if [ "$USERS" ] && [ ! "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ] && [ ! -f "$RED_TEAM_FILE" ] ## pug has not filled and pickup is not in progress
 	then
 		cat "$PLAYER_LIST_FILE" |
+		sed 's+\\+\\\\+g' |
 		while read PLAYER
 		do
 			PLAYER_REGEXP=`toregexp "$PLAYER"`
@@ -133,7 +141,7 @@ list_players () {
 	## DONE: was not displaying \s in a players nick, making it rather hard to pick them :>
 	INTRO="[$CHANNEL]"
 	[ "$CHANNEL" = "#kawa" ] && INTRO="iCTF zp"
-	echo "$INTRO $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLBLUE$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | double_escape_slashes | sed 's+ $++' ` $COLBLUE]$COLNORM"
+	echo "$INTRO $SHOW_CURRENT_MAP$COLRED$COLBOLD($COLBOLD$COLGREEN$NUMBER_OF_PLAYERS/$NUMBER_OF_PLAYERS_NEEDED$COLRED$COLBOLD)$COLBOLD $COLROYAL$COLBOLD[ $COLGREY` cat "$PLAYER_LIST_FILE" | tr '\n' ' ' | double_escape_slashes | sed 's+ $++' ` $COLROYAL]$COLNORM"
 }
 
 show_last () {
@@ -149,14 +157,16 @@ list_team () {
 	# if [ "$1" = RED ]
 	# then echo -n "$COLRED$COLBOLD""RED: " ; cat "$RED_TEAM_FILE"
 	# elif [ "$1" = BLUE ]
-	# then echo -n "$COLBLUE$COLBOLD""BLUE: " ; cat "$BLUE_TEAM_FILE"
+	# then echo -n "$COLROYAL$COLBOLD""BLUE: " ; cat "$BLUE_TEAM_FILE"
 	# fi |
 	# tr '\n' ',' | sed 's+,$++'
 	# echo
 	TEAM="$1"
 	TEAM_FILE=`eval echo '$'"$TEAM"_TEAM_FILE`
-	TEAMCOL=`eval echo '$COL'"$TEAM"`
-	echo "$COLGREY$COLBOLD""[$TEAMCOL$TEAM$COLGREY] "` cat "$TEAM_FILE" | tr '\n' ' ' | sed 's+ $++' `"$COLBOLD"
+	COLNAMEFORTEAM="$TEAM"
+	[ "$COLNAMEFORTEAM" = BLUE ] && COLNAMEFORTEAM="ROYAL"
+	TEAMCOL=`eval echo '$COL'"$COLNAMEFORTEAM"`
+	echo "$COLGREY$COLBOLD""[$TEAMCOL$TEAM$COLGREY] $TEAMCOL"` cat "$TEAM_FILE" | tr '\n' ' ' | sed 's+ $++' `"$COLBOLD"
 }
 
 update_topic () {
@@ -196,7 +206,8 @@ addplayer () {
 				if [ "$NUMBER_OF_PLAYERS" = "$NUMBER_OF_PLAYERS_NEEDED" ]
 				# then echo "The pug is full!  Choose two captains, and use !pick (take it in turns please 1-2-2-2-1)."
 				then
-					echo "The pug has started!  Type !captain to be a captain."
+					# echo "The pug has started!  Type !captain to be a captain."
+					echo "The pug has started!  Type !captain or !randcapt."
 				fi
 			else echo "Sorry the pug is full, please wait until teams are picked, and the pug will reset."
 			fi
@@ -287,6 +298,13 @@ in_pickup_list () {
 }
 
 get_team_to_pick_next () {
+	# 13/12 players => red picks
+	# 11/10 players => blue picks
+	# 9/8 players => red picks
+	# 7/6 players => blue picks
+	# 5/4 players => red picks
+	# 3/2 players => blue picks
+	# 1 players => automatic
 	if [ ! -f "$RED_TEAM_FILE" ] || [ ! -f "$BLUE_TEAM_FILE" ]
 	then
 		echo "Nobody can pick until there are two captains."
@@ -295,10 +313,10 @@ get_team_to_pick_next () {
 	else
 		get_num_players ## left to pick
 		case "$NUMBER_OF_PLAYERS" in
-			8|5|4)
+			13|12|9|8|5|4)
 				TEAM="RED"
 			;;
-			7|6|3|2)
+			10|11|7|6|3|2)
 				TEAM="BLUE"
 			;;
 			1)
@@ -320,16 +338,13 @@ who_is_captain_of () {
 }
 
 please_pick () {
-	# 8 players => red picks
-	# 7/6 players => blue picks
-	# 5/4 players => red picks
-	# 3/2 players => blue picks
-	# 1 players => automatic
 	get_team_to_pick_next
 	if [ "$TEAM" = AUTO_RED ]
 	then
 		add_player_to_team "`cat "$PLAYER_LIST_FILE"`" RED
-		echo "Pickup is complete.  Decide on a game and TS server, and go play.  Have fun!"
+		# echo "Pickup is complete.  Decide on a game and TS server, and go play.  Have fun!"
+		echo "Pickup is complete.  Go play and have fun!"
+		ip ; ts
 		if [ -f "$MAP_POOL_FILE" ] && [ "`cat "$CURRENT_MAP_FILE"`" = "RANDOM + RANDOM" ]
 		then get_new_map ; echo "Random maps have been chosen: $COLYELLOW$NEW_MAP" | double_escape_slashes
 		fi
@@ -363,7 +378,7 @@ captain () {
 	then
 		removeplayer -quiet "$NICK"
 		echo "$NICK" > "$BLUE_TEAM_FILE"
-		echo "$COLRESET$NICK is captain of the $COLBLUE$COLBOLD""BLUE""$COLRESET team." | double_escape_slashes
+		echo "$COLRESET$NICK is captain of the $COLROYAL$COLBOLD""BLUE""$COLRESET team." | double_escape_slashes
 		# echo "/op $NICK" ## was opping paeutalik in #ut994funpug !
 		please_pick
 		list_players ## Since we no longer list at every iteration, we should at least do a list at the start of the pickup.
@@ -372,7 +387,7 @@ captain () {
 			MAPS="`cat "$CURRENT_MAP_FILE" | sed 's/\(^\| \)+/\1/g'`"
 			if [ "$MAPS" ]
 			then
-				SETSERVER_AUTO=1 sh ./pugbot/setserver -zppug $MAPS || echo "/notice nogginBasher Failed to set server."
+				SETSERVER_AUTO=1 bash ./pugbot/setserver -zppug $MAPS || echo "/notice nogginBasher Failed to set server."
 				## Trying -zppug for the moment instead of -pug, hoping it makes weapon switch faster?
 				# && echo "!kx"
 			fi
@@ -385,7 +400,7 @@ captain () {
 help () {
 	echo "Type !add to join the pug, or !leave to leave."
 	# echo "The bot is kinda nooby, so please try not to confuse him!  If you change your nick, please !leave and !join."
-	echo "If you change your nick, please !leave and !join (or in emergencies use !removeplayer)."
+	# echo "If you change your nick, please !leave and !join (or in emergencies use !removeplayer)."
 	# echo "Have fun, report any problems to an admin."
 	# echo "Rules: No pros, whiners or flamers.  Be friendly, spread the love!"
 	# echo "Piston-camping, telefragging, boosting and spawn-raping are encouraged."
@@ -457,13 +472,13 @@ setlimit () {
 	# then echo "/notice $NICK You can only change the settings of an empty pug." | double_escape_slashes
 	then echo "You can only change the settings of an empty pug." | double_escape_slashes
 	else
-		if echo "$1" | grep "^\([468]\|10\)$" >/dev/null
+		if echo "$1" | grep "^\([468]\|10\|12\|14\|16\)$" >/dev/null
 		then
 			echo "$1" > "$NUMBER_OF_PLAYERS_NEEDED_FILE"
 			echo "Pug set to $1 players."
 		else
 			# echo "/notice $NICK I only support pugs of size 4,6,8 or 10." | double_escape_slashes
-			echo "I only support pugs of size 4,6,8 or 10."
+			echo "I only support pugs of size 4,6,8,10,12,14 or 16."
 		fi
 	fi
 }
@@ -523,7 +538,7 @@ vote () {
 	then
 		## TODO (but can survive): check waiting_for_captains
 		RESTRICT_EXTRA="$NICK" . restrict_repetitive_calls "30 seconds"
-		if [ "`seq 1 5 | chooserandomline`" = "1" ]
+		if [ "`seq 1 3 | chooserandomline`" = "1" ]
 		then NICK="$1" captain
 		else echo "/notice $NICK You failed to make $NICK a captain, better luck next time."
 		fi
@@ -531,10 +546,58 @@ vote () {
 }
 
 randcapt () {
-	if in_pickup_list "$NICK"
-	then
+	# if in_pickup_list "$NICK"   ## Sux that first captain can't do !randcapt
+	# then
 		## TODO (but can survive): check waiting_for_captains
 		NICK=` cat "$PLAYER_LIST_FILE" | chooserandomline ` captain
+	# fi
+}
+
+function setip () {
+	require_ops
+	echo "$*" > "$PUG_IP_FILE"
+	echo "Server set to: $*"
+}
+
+function setts () {
+	require_ops
+	echo "$*" > "$PUG_TS_FILE"
+	echo "Teamspeak set to: $*"
+}
+
+function setweb () {
+	require_ops
+	echo "$*" > "$PUG_WEB_FILE"
+	echo "Web set to: $*"
+}
+
+function setstats () {
+	require_ops
+	echo "$*" > "$PUG_STATS_FILE"
+	echo "Stats set to: $*"
+}
+
+function ip () {
+	if [ -f "$PUG_IP_FILE" ]
+	then echo "$COLRED$COLBOLD""Server: $COLROYAL""[ `cat "$PUG_IP_FILE"` $COLROYAL""]"
+	fi
+}
+
+function ts () {
+	if [ -f "$PUG_TS_FILE" ]
+	then echo "$COLRED$COLBOLD""Teamspeak: $COLROYAL""[ $COLGREEN`cat "$PUG_TS_FILE"` $COLROYAL""]"
+	fi
+}
+
+function web () {
+	if [ -f "$PUG_WEB_FILE" ]
+	then echo "$COLRED$COLBOLD""Server: $COLROYAL""[ $COLYELLOW`cat "$PUG_WEB_FILE"` $COLROYAL""]"
+	fi
+}
+
+function stats () {
+	if [ -f "$PUG_STATS_FILE" ]
+	then echo "$COLRED$COLBOLD""Teamspeak: $COLROYAL""[ $COLCYAN`cat "$PUG_STATS_FILE"` $COLROYAL""]"
 	fi
 }
 

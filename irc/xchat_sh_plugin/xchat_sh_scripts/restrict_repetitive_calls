@@ -5,6 +5,10 @@
 
 DELAY_TIME="$1"
 
+# if [ "$AUTH" = Nownex ] ## abuser
+# then DELAY_TIME="1 day"
+# fi
+
 mkdir -p "$HOME"/.tmp
 ## NOTE that RESTRICT_EXTRA actually makes it harder to get a restriction, e.g. per user nick, but that allow you to increase the delay time.
 [ "$RESTRICT_EXTRA" ] && RESTRICT_EXTRA="-$RESTRICT_EXTRA"

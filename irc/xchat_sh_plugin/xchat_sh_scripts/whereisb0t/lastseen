@@ -3,7 +3,7 @@
 export PREALL="$COLGREY"
 export PRENICK="$COLRED"
 export POSTNICK="$COLGREY"
-export PRESERVER="$COLBLUE"
+export PRESERVER="$COLROYAL"
 export POSTALL="$COLRESET"
 
 if [ "$*" = "" ]

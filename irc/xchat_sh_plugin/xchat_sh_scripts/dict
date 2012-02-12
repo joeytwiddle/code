@@ -1,9 +1,15 @@
 . irc.shlib
 
+[ -d "$HOME"/myroots/dict ] && . includepath "$HOME"/myroots/dict
+
 (
-	dict -d wn "$@"
+	dict "$@"
+	# dict -d gcide "$@"   ## default
+	# dict -d wn "$@"      ## hwi's
 	# dict -d jargon "$@"
 	# dict -d vera "$@"
 ) 2>&1 |
 # cat
-notice
+head -n 50 |
+notice |
+antiflood

@@ -11,7 +11,7 @@ then
 else
 
 	AGE_SECONDS=`datediff -secs -file "$LETTERS_FILE"`
-	if [ "$AGE_SECONDS" -lt 120 ]
+	if [ "$AGE_SECONDS" -lt 120 ] && [ ! -f "$COMPLETED_ROUND_FILE" ]
 	then
 
 		SECONDS_LEFT=$((120-AGE_SECONDS))
@@ -19,25 +19,56 @@ else
 
 	else
 
-		WORDS=` list_answers | sort | tr '\n' ' ' `
+		TOTAL=`list_answers | wc -l`
+		if [ "$TOTAL" -gt 500 ]
+		then
+			echo "Too many answers, I will not display them all."
+		else
 
-		# echo "Answers: $COLYELLOW$WORDS$COLGREY"
+			SCORE_PENALTY=5
+			increase_score "$NICK" -$SCORE_PENALTY
+			echo "$COLRED$COLBOLD $NICK -$SCORE_PENALTY"
 
-		echo -n "Answers:"
-		for WORD in $WORDS
-		do
-			if already_guessed "$WORD"
-			then WORDCOL="$COLBLUE" 
-			elif [ "`strlen "$WORD"`" = 9 ]
-			then WORDCOL="$COLYELLOW$COLBOLD"
-			else WORDCOL="$COLYELLOW"
-			fi
-			echo -n " $WORDCOL$WORD$COLRESET"
-		done
-		echo "$COLGREY"
+			WORDS=` list_answers | sort | tr '\n' ' ' `
 
-		## Force a new game to start (provided answers were not forced, for game-start):
-		[ "$AUTO_START_NEW" ] && ./wordgame/wordgame new || make_new_letterset
+			# echo "Answers: $COLYELLOW$WORDS$COLGREY"
+
+			(
+				TOTAL_NUM_LETTERS=`cat "$LETTERS_FILE" | tr ' ' '\n' | wc -l`
+				echo -n "Answers:"
+				count=0
+				for WORD in $WORDS
+				do
+					if already_guessed "$WORD"
+					then WORDCOL="$COLROYAL" 
+					elif [ "`strlen "$WORD"`" = "$TOTAL_NUM_LETTERS" ]
+					then WORDCOL="$COLYELLOW$COLBOLD"
+					else WORDCOL="$COLYELLOW"
+					fi
+					echo "$WORDCOL$WORD$COLRESET"
+				done |
+				(
+					sleep 5
+					while read coloredWord
+					do
+						echo -n " $coloredWord"
+						## Prevent Excess-flood!  We have to send a newline for this to work.
+						count=`expr "$count" + 1`
+						remainder=`expr "$count" % 30`
+						if [ "$remainder" = 0 ]
+						then echo ; sleep 4
+						fi
+					done
+				)
+				echo "$COLGREY"
+			) &
+
+			## DONE BUG: The anti-flooding above delays the game reset here!
+			sleep 5   ## give backgrounded processor above time to check already_guessed words, but not time to print answers!
+			## Force a new game to start (provided answers were not forced, for game-start):
+			[ "$AUTO_START_NEW" ] && ./wordgame/wordgame new || make_new_letterset
+
+		fi
 
 	fi
 

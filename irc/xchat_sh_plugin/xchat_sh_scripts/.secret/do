@@ -1,9 +1,10 @@
-if [ "$1" = wibble ]
+## Note: X-Chat uses: /doat #channel command args
+if false # && [ "$1" = wibble ] ## password access disabled for now
 then shift; echo "$*"
 else
 	# AUTH=`sh ./scanpug/slowgetauth "$NICK"` ## Doesn't work in PMs, anyway java exports his auth dummy!
 	jshinfo "Auth for $NICK is $AUTH; he requested !do $*"
-	if [ "$AUTH" = "nogginBasher" ] ## TODO SECRET BUG: someone with IDENT nogginBasher could circumvent this security!
+	if [ "$AUTH" = "nogginBasher" ] ## TODO SECRET BUG: someone with IDENT nogginBasher and no auth could circumvent this security!
 	then echo "$*"
 	else : # echo "Usage: !do <password> <action>   -- requires password"
 	fi

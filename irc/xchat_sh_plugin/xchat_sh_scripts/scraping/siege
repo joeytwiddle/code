@@ -1,1 +1,3 @@
-sh ./scraping/searchserv siege "$@"
+echo "Intros: http://www.flawless-victory.com/stu/siege.html http://www.heiland.co.uk/Siege/intro.html" | notice
+bash ./scraping/searchserv siege "$@"
+./utp rosebum | grep SiegeGI

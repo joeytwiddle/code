@@ -22,7 +22,7 @@ NICKREGEXP=`toregexp "$SEARCHNICK"`
 
 COUNT=0
 
-function beforetime () {
+beforetime () {
 	if [ "$LASTNICKCHANGETIME" = "" ]
 	then cat
 	else

@@ -1,2 +1,5 @@
-./utp "$@" 82.94.228.101
-echo "Closed."
+# ./utp "$@" 82.94.228.101
+# echo "Closed."
+# ./ut_servers/trek "$@"
+# ./ut_servers/nzp "$@"
+./utp "$@" 46.4.128.234

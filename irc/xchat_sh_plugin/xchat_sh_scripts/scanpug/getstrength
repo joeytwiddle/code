@@ -2,16 +2,18 @@ if [ "$1" = -andcount ]
 then ANDCOUNT=1; shift
 fi
 
+MAX_STRENGTH_HISTORY=25
+
 AUTH="$1"
 if [ "$AUTH" = "DUNNO_AUTH" ]
 then echo "?.?"
 else
-	COUNT=`cat ~/.scanpug/$CHANNEL-*.picks | grep " $AUTH " | grep -v "^\(RED\|BLUE\)CAPT " | wc -l`
+	COUNT=`cat ~/.scanpug/$CHANNEL-*.picks | grep " $AUTH " | grep -v "^\(RED\|BLUE\)CAPT " | tail -n "$MAX_STRENGTH_HISTORY" | wc -l`
 	PLUSCOUNT=""
 	[ "$ANDCOUNT" ] && PLUSCOUNT=" $COUNT"
 	if [ "$COUNT" -gt 0 ]
 	then
-		SUM=`cat ~/.scanpug/$CHANNEL-*.picks | grep " $AUTH " | grep -v "^\(RED\|BLUE\)CAPT " | takecols 1 | awksum`
+		SUM=`cat ~/.scanpug/$CHANNEL-*.picks | grep " $AUTH " | grep -v "^\(RED\|BLUE\)CAPT " | takecols 1 | tail -n "$MAX_STRENGTH_HISTORY" | awksum`
 		STRENGTH=$((10*SUM/COUNT))
 		STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
 		echo "$STRENGTH$PLUSCOUNT"

@@ -1,7 +1,7 @@
 . irccols.shlib
 . wordgame/wordgame.shlib
 
-COUNT=5
+COUNT=8 ## use 8 or 16, an more will cause a line to overflow
 if [ "$1" = more ]
 then shift ; COUNT=50
 fi

@@ -1,9 +1,12 @@
+## Accepts 1 argument: COUNT
+## Accepts regexps SEARCH and IGNORE.
 ## See also: http://search.hlsw.org/
+
+## Get lynx on neuralyte (for fromhtml):
+. includepath $HOME/myroot
 
 . irc.shlib
 . irccols.shlib
-
-## Accepts regexps SEARCH and IGNORE.
 
 if [ "$1" ]
 then COUNT="$1"
@@ -14,7 +17,7 @@ else COUNT=10
 fi
 
 if [ "$NOCOLS" ]
-then COLBLUE=""; COLBOLD=""; COLRESET=""; COLYELLOW=""
+then COLROYAL=""; COLBOLD=""; COLRESET=""; COLYELLOW=""
 fi
 
 [ "$MAX_RESULTS" ] || MAX_RESULTS=10
@@ -24,16 +27,19 @@ do
 	# sleep 4
 
 	OPTIONS="--load-cookies cookies.txt --save-cookies cookies.txt --keep-session-cookies"
-	# URL="http://www.gametracker.com/search/ut/?sort=players.desc&per_page=50$URLEXTRA" 
-	URL="http://www.gametracker.com/search/ut/?sort=players&order=desc&per_page=50$URLEXTRA" 
+	# URL="http://www.gametracker.com/search/ut/?sort=players.desc&per_page=50$URLEXTRA"
+	# URL="http://www.gametracker.com/search/ut/?sort=players&order=desc&per_page=50$URLEXTRA"
+	URL="http://www.gametracker.com/search/ut/?sort=c_numplayers&order=DESC&per_page=50$URLEXTRA"
 	memo -t "4 minutes" wget $OPTIONS -nv -O - "$URL" |
 	fromhtml |
 	tr "\n" " " |
 	sed 's+ \([0-9][0-9]*\|NR\)\. +\n+g' | ## split lines at "Rank" column
+	tee /tmp/sgt1 |
 	sed 's+\[\([0-9]*\|[^]]*\.gif\)\]++g' |
 	sed 's+Launch with GSC++g' |
 	# tee /tmp/scrapegt.0 |
 	grep "^UT " |
+	tee /tmp/sgt2 |
 	dropcols 1 |
 	sed 's+Rank.*Gm.*Server.*Name.*++' | ## Remove all the crap after the last result
 	cat
@@ -49,7 +55,7 @@ then grep -i "$SEARCH"
 else cat
 fi |
 ## Title Playercount Address Map
-sed "s+^\(.*\) \([0-9][0-9]*/[0-9][0-9]*\)  *\([^ ]*\)  *\(.*\)+$COLBLUE$COLBOLD""unreal://\3 $COLRESET\2 \4 $COLYELLOW\1 +" |
+sed "s+^\(.*\) \([0-9][0-9]*/[0-9][0-9]*\)  *\([^ ]*\)  *\(.*\)+$COLROYAL$COLBOLD""unreal://\3 $COLRESET\2 \4 $COLYELLOW\1 +" |
 sed 's+:7777++' |
 
 head -n "$MAX_RESULTS" |

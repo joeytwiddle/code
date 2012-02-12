@@ -1,13 +1,42 @@
-if [ "$NICK" = altgamer ]
-then exit 0
-fi
+#!/bin/bash
+
+double_escape_slashes () {
+	sed 's+\\+\\\\\\\\+g'
+}
+
+# if [ "$NICK" = altgamer ]
+# then exit 0
+# fi
 
 EXTRA=""
 [ "$1" ] && EXTRA=" $*"
 
 VERB="`filename "$0"`"
 
+R="`expr $RANDOM % 100`"
 
+
+# if [ "$CHANNEL" = "#ctf.pug" ] && ( [ "$HASVOICE" ] || [ "$HASOP" ] ) && [ "$1" ] &&
+   # ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
+   # ! echo "$CALLER $NICK" | grep -i "\<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\|UT\|utb0t\)\>" >/dev/null
+# then
+# 
+	# ## Good security.  Each person can only get this far every 30 minutes.
+	# RESTRICT_EXTRA="$AUTH" . restrict_repetitive_calls "30 minutes"
+	# ## Unfortunately this gives a warning message and exits this script, so not even a /me kicks is performed.  Nevermind he's obviously spamming anyway.
+# 
+	# (
+		# target="$1"
+		# # echo "/kickban $target By popular demand" ## Currently the Java does nothing with this command
+		# # echo "/kick $target By popular demand"
+		# echo "/kick $target Requested"
+		# if [ "$HASOP" ] || [ "$R" -lt 20 ]
+		# then
+			# echo "/msg |Flame| DEVOICE #ctf.pug $target"
+		# fi
+	# ) | double_escape_slashes
+	# exit 0
+# fi
 
 ## In pug channels, the !kick and !ban actions have a small chance of actually doing something!
 ## NOTE: The sleeps here are ok in new framework, but not good under XChat.
@@ -15,7 +44,6 @@ VERB="`filename "$0"`"
 ## TODO: If we kick ourself, we might want to kick the other guy too.  Or come back later and get him.
 TARGET="$*"
 # R="`seq 0 99 | chooserandomline`" 
-R="`expr $RANDOM % 100`"
 # jshinfo "[kick] R=$R"
 if ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
    [ "$*" ] && echo "$CHANNEL" | grep "pug" >/dev/null &&
@@ -23,9 +51,16 @@ if ( [ "$VERB" = kick ] || [ "$VERB" = ban ] ) &&
    ! echo "$CALLER $NICK" | grep -i "\<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)\>" >/dev/null &&
    ## Target is not pugged up.  (z-Name or az-Name)
    ! (echo "$TARGET" | grep "^[A-Za-z]\(-\|[A-Za-z]-\)" >/dev/null) &&
+   # ! echo "$NICK" | grep -i "deep" >/dev/null &&
    ## Probability 1 in 4
    [ "$R" -lt 25 ]
 then
+
+	if [ "$AUTH" = "Deepah" ] && [ "$R" -lt 4 ]
+	then
+		echo "/kick $NICK not liking germans"
+		exit 0
+	fi
 
 	function doop () {
 		LINE="$1" ; shift
@@ -44,7 +79,7 @@ then
 	## Unfortunately this gives a warning message and exits this script, so not even a /me kicks is performed.  Nevermind he's obviously spamming anyway.
 
 	## If ban and both are privileged, 1 in 8 kick both.
-   	if [ "$R" -lt 12 ] &&
+	if [ "$R" -lt 12 ] &&
 	   [ "$VERB" = ban ] &&
 	   echo "$TARGET" | grep "$PRIVILEGED" >/dev/null &&
 	   echo "$NICK" | grep "$PRIVILEGED" >/dev/null
@@ -67,7 +102,7 @@ then
 		then
 			doop "$*" "/kick $TARGET"
 			sleep 15
-			if [ $R -lt 7 ] ## 70% kick caller!
+			if [ $R -lt 7 ] ## 50%/70% of these will also kick caller!
 			then doop "$*" "/kick $NICK"
 			fi
 			exit 0

@@ -1,8 +1,9 @@
 list () {
 cat << !
-rates himself as one of the top 15 UT players
 [20:00] {TG}Sparton\`nec: spartan is a counrty in greece
 !
+# rates himself as one of the top 15 UT players
+# * nogginBasher is now known as kz-necroBasher   * kz-necro is now known as [4F]SpartaN\`
 }
 
 list | randomorder | head -n 1

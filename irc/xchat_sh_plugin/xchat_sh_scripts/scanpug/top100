@@ -1,4 +1,4 @@
 ## Once caused an Excess Flood.
 # exit 0
 
-COUNT=100 sh ./scanpug/top10
+COUNT=100 bash ./scanpug/top10

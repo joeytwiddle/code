@@ -1,4 +1,4 @@
-CHANNEL_TO_PART="$1"
+CHANNEL_TO_PART="$1" ; shift
 
 if [ ! "$CHANNEL_TO_PART" ]
 then
@@ -7,6 +7,8 @@ elif ! echo "$CHANNEL_TO_PART" | grep "^#" >/dev/null
 then
 	echo "Channel name should start with #"
 else
-	if [ "$1" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
-	echo "/part $*"
+	if [ "$CHANNEL_TO_PART" = "#utb0t" ]; then exit 0; fi ## Combat Xeneonic
+	# For some reason, only the last word in $* gets passed as the part reason.  Probably a bug in the Java.
+	REASON="`echo "$*" | sed 's+ +_+g'`"
+	echo "/part $CHANNEL_TO_PART $REASON"
 fi

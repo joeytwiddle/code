@@ -5,5 +5,8 @@
 ## [ CoD|*J0$sty'][*, dutch_beauty.nl, GalaxyNewsRadio, asshole, Fart, CoD|T3RM!N@T0R, halun_hans, .bbk, Nowik, seba, SEM-A-D, () ]
 # ./utp "$@" unreal://84.31.200.198
 
-./utp "$@" 84.31.189.250
+# ./utp "$@" 84.31.189.250
+# ./utp "$@" 84.31.225.47
+./utp "$@" 84.31.129.156
+./utp "$@" cod | grep "Downloads"
 

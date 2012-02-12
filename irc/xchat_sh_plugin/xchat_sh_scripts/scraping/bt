@@ -1,4 +1,12 @@
-SEARCH="\(BT\|CTF-BT\)-" sh ./scraping/scrapegt "$@"
+## Only catches BT servers in the top page (so only if BT servers are more full than other servers):
+# SEARCH="\(BT\|CTF-BT\)-" sh ./scraping/scrapegt "$@"
+
+## Should catch more:
+(
+	bash ./scraping/searchserv BT
+	bash ./scraping/searchserv Bunny
+) | grep "\(BT\|CTF-BT\)-" | removeduplicatelines
+
 sleep 5
 (
 echo "/me was crushed/burnt/slimed/frozen/drowned/depressurised/beheaded again"

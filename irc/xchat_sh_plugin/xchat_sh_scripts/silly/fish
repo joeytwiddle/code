@@ -1,3 +1,8 @@
+## In #ut.unr they have Bodkin_ for !fish and !hunt
+if [ "$CHANNEL" = "#ut.unr" ]
+then exit 0
+fi
+
 list () {
 cat << !
 badger badger badger badger badger badger badger badger badger badger badger badger

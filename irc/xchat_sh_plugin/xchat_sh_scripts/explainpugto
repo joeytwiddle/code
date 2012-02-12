@@ -3,7 +3,7 @@
 # echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug (or leet players go to #ctfpug).  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
 # echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug.  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
 
-. restrict_repetitive_calls "1 minute"
+. restrict_repetitive_calls "1 hour"
 
 EXPLAIN_TO="$1"
 
@@ -19,6 +19,6 @@ else
 	echo "/msg $EXPLAIN_TO People who sign up for a pug but miss it, get banned, for causing inconvenience to the other players."
 	echo "/msg $EXPLAIN_TO The pug tries to make fair teams, by letting each captain choose players in turn.  So it's also IMPORTANT: don't make yourself a captain unless you know the skills of all the players in the pug!"
 	echo "/msg $EXPLAIN_TO Type !rules in the pug channel for the full set of rules for this pug.  Abusing the pug rules can result in a temporary or permanent ban."
-	echo "/msg $EXPLAIN_TO Also, before you add to pug, it's useful to check you can join the server.  Type !ip1 for the server IP.  If you get kicked out by UTDC then you need to install UTDC 2.1 from http://ut-files.com/Anticheat/UTDC/"
+	echo "/msg $EXPLAIN_TO Also, before you add to pug, it's useful to check you can join the server without any problems from anti-cheat.  Type !ip1 for the server IP."
 fi
 

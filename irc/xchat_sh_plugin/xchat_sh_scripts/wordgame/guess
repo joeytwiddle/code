@@ -1,4 +1,6 @@
-if [ "$CHANNEL" = "#xoldog" ]
+#!/bin/bash
+
+if [ "$CHANNEL" = "#ut.pug" ]   # || [ "$CHANNEL" = "#xoldog" ]
 then
 	echo "Spam in #wordgame ;)"
 	exit 0
@@ -10,6 +12,10 @@ fi
 . wordgame/wordgame.shlib
 
 [ "$NICK" ] || NICK=nogginb0t
+
+# if [ "$NICK" = "sy\`" ]
+# then echo "Malfunction." ; exit 0
+# fi
 
 remove_letter () {
 	LETTER_TO_REMOVE="$1"
@@ -81,15 +87,25 @@ do
 
 		## Check to see if the word exists!
 
-		DICT_RESULT=` dict -d wn "$WORD" 2>&1 `
+		# BUG: When utb0t was blocked from hwi by firewall, it caused a very slow
+		# timeout.  Without locking on !guess, this could enable 1 person to score
+		# multiple times by calling !guess in parallel.
+		## -d wn because WordNet gives better definitions
+		DICT_RESULT=` which dict >/dev/null 2>&1 && dict -d wn "$WORD" 2>&1 `
+		if [ ! "$?" = 0 ]
+		then jshinfo "Error code on DICT_RESULT=$DICT_RESULT so emptying it"
+			DICT_RESULT=""
+		fi
+		# Some ovserved dict exit codes: 20 no definition, 21 suggestions
+		# Any other codes may suggest an actual error!
 
 		# echo "dict -d wn \"$WORD\" returned error-code $?" >&2
 
-		if ! echo "$DICT_RESULT" | head -n 1 | grep "^No definition" >/dev/null
+		if ! [ "$DICT_RESULT" = "" ] && ! echo "$DICT_RESULT" | head -n 1 | grep "^No definition" >/dev/null && ! echo "$DICT_RESULT" | grep "^dict: Access to server .* denied" >/dev/null
 		then
 			SHORT_DEFINITION=` echo "$DICT_RESULT" | takeline 6 | beforefirst ";" | sed 's+^[ 	]*++' `
 			# [ "$THIS_WORD_FAILED" ] && EXTRA= || EXTRA=" $COLGREY($NICK gets $COLGREEN$POINTS_FOR_WORD$COLGREY points!)"
-			FOUND_WORDS="$FOUND_WORDS$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD$SHORT_DEFINITION$COLRESET$EXTRA " # ($COLGREY!dict $WORD for more)"
+			FOUND_WORDS="$FOUND_WORDS$COLYELLOW$WORD$COLGREY: $COLROYAL$SHORT_DEFINITION$COLRESET$EXTRA " # ($COLGREY!dict $WORD for more)"
 			# GOT_ONE=true
 			## THIS_WORD_FAILED == "" and TOSHOW definitely has something
 		else
@@ -98,7 +114,7 @@ do
 			# if cat $DICTIONARY_FILES | extract_legal_words | grep -i "^$WORD$" >/dev/null
 			if list_answers | grep -i "^$WORD$" >/dev/null
 			then
-				FOUND_WORDS="$FOUND_WORDS$COLYELLOW$WORD$COLGREY: $COLBLUE$COLBOLD[No definition]$COLRESET "
+				FOUND_WORDS="$FOUND_WORDS$COLYELLOW$WORD$COLGREY: $COLROYAL[No definition]$COLRESET "
 				# GOT_ONE=true
 				## THIS_WORD_FAILED == "" and TOSHOW definitely has something
 			else
@@ -111,17 +127,29 @@ do
 		if [ ! "$THIS_WORD_FAILED" ]
 		then
 			POINTS_FOR_WORD=$((NUM_LETTERS-3))
-			# echo "$COLGREEN$POINTS_FOR_WORD$COLGREY points for $COLRED$WORD$COLGREY: $COLBLUE$COLBOLD$SHORT_DEFINITION$COLGREY"
+			# echo "$COLGREEN$POINTS_FOR_WORD$COLGREY points for $COLRED$WORD$COLGREY: $COLROYAL$SHORT_DEFINITION$COLGREY"
 			increase_score "$NICK" "$POINTS_FOR_WORD"
 			# echo "$COLGREY$NICK gets $COLGREEN$SCORE_TO_ADD$COLGREY points, for a total of $COLGREEN$CURRENT_SCORE$COLGREY!"
 			echo "$WORD was already guessed by $NICK :P" | tolowercase >> "$GUESSED_FILE"
 			# now done by increase_score: CURRENT_SCORE=$((CURRENT_SCORE+SCORE_TO_ADD))
 			SCORE_SUM="$SCORE_SUM $COLGREY+$COLGREEN$SCORE_TO_ADD"
 
-			if [ "$NUM_LETTERS" = "$TOTAL_NUM_LETTERS" ] && [ "$NUM_LETTERS" -gt 8 ] ## only for 9-letter words or longer
+			if [ "$NUM_LETTERS" = "$TOTAL_NUM_LETTERS" ]
 			then
-				increase_score "$NICK" "10"
-				SCORE_SUM="$SCORE_SUM $COLGREY+$COLORANGE""10 for using all the letters!"
+				touch "$COMPLETED_ROUND_FILE"
+				if [ "$NUM_LETTERS" -gt 5 ] ## only reward for 6-letter words or longer
+				then
+					if [ "$NUM_LETTERS" -lt 7 ]
+					then INC=1
+					elif [ "$NUM_LETTERS" -lt 8 ]
+					then INC=2
+					elif [ "$NUM_LETTERS" -lt 9 ]
+					then INC=5
+					else INC=10
+					fi
+					increase_score "$NICK" "$INC"
+					SCORE_SUM="$SCORE_SUM $COLGREY+$COLORANGE""$INC for using all the letters!"
+				fi
 			fi
 
 			if [ "$NICK" = "[A]Melted_Ice" ] && [ `seq 1 5 | chooserandomline` = 1 ]
@@ -132,10 +160,10 @@ do
 
 			SO_FAR=$((SO_FAR+1))
 
-			if [ $((TOTAL-SO_FAR)) -lt 10 ] && [ "$TOTAL_NUM_LETTERS" -gt 6 ] ## bonus only for wordgames with 7 or more letters
+			if [ $((TOTAL-SO_FAR)) -lt 10 ] && [ "$TOTAL_NUM_LETTERS" -gt 6 ] && [ "$TOTAL" -gt 19 ] ## final countdown bonus only for wordgames with 7 or more letters, and 20 or more answers
 			then
 				# BONUS=$(((10-TOTAL+SO_FAR)*10))
-				BONUS=$((10-TOTAL+SO_FAR))
+				BONUS=$(( (10-TOTAL+SO_FAR)/2 ))
 				increase_score "$NICK" "$BONUS"
 				SCORE_SUM="$SCORE_SUM $COLGREY+$COLORANGE"" bonus $BONUS"
 			fi

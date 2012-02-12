@@ -1,7 +1,7 @@
 ## TODO: This has to do a lot of work scanning auths whenever someone does !list
 ##       It would be better just to check whether the most recent list == the last scanned list, *before* doing the auth scanning.  :P
 
-if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#pug.up" ] || [ "$CHANNEL" = "#ut994funpug" ] || [ "$CHANNEL" = "#pug" ]
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#noobpug" ] || [ "$CHANNEL" = "#siegepug" ] || [ "$CHANNEL" = "#pug.up" ] || [ "$CHANNEL" = "#ut994funpug" ] || [ "$CHANNEL" = "#pug" ] || [ "$CHANNEL" = "#ctf.pug" ] || [ "$CHANNEL" = "#tehpugz" ]
 then
 
 	(
@@ -11,11 +11,11 @@ then
 	mkdir -p ~/.scanpug
 	LASTLINES=`cat ~/.scanpug/$CHANNEL-last.lines`
 	LASTDATA=`cat ~/.scanpug/$CHANNEL-last.picks`
-	LINES=`sh scanpug/lastrivalpicks -lines`
+	LINES=`bash scanpug/lastrivalpicks -lines`
 	if [ ! "$LINES" ]
 	then
 		jshwarn "Failed to get LINES"
-		echo "/msg nogginBasher Failed to get LINES in $CHANNEL"
+		[ "$CHANNEL" = "#tehpugz" ] || echo "/msg nogginBasher Failed to get LINES in $CHANNEL"
 		exit 0
 	fi
 	if [ "$LINES" = "$LASTLINES" ]
@@ -23,7 +23,7 @@ then
 		jshinfo "We have already scanned this pug."
 		exit 0
 	fi
-	DATA=`sh scanpug/lastrivalpicks`
+	DATA=`bash scanpug/lastrivalpicks`
 	# echo "$DATA" | grep -v "\.users\.quakenet\.org" | takecols 3 |
 	# while read NOTAUTHED
 	# do echo "/whois $NOTAUTHED"
@@ -33,7 +33,7 @@ then
 		BAD_COUNT=`echo "$DATA" | grep -c "DUNNO_AUTH"`
 		if [ "$BAD_COUNT" -gt 5 ]
 		then
-			echo "/msg nogginBasher Error! Failed attempt to parse $CHANNEL pickup stats: $MINIREPORT"
+			echo "/msg nogginBasher Error! Too many auth failures to update $CHANNEL pickup stats."
 		else
 			## OK go ahead and save the data.
 			echo "$LINES" > ~/.scanpug/"$CHANNEL-last.lines"

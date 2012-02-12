@@ -1,1 +1,1 @@
-COUNT=50 sh ./scanpug/top10
+COUNT=50 bash ./scanpug/top10

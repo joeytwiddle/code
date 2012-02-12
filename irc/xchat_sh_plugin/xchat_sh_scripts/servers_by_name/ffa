@@ -2,18 +2,24 @@
 
 . irc.shlib
 
+NOTICE_STYLE="notice"
+
 (
 
 	##    inz             old friends
 	# ./utp "$@" 82.96.91.3:6100 82.96.91.13:6200
-	./ut_servers/inz "$@"
-
-	./ut_servers/of "$@"
-
-	## [-u-]
-	# ./utp "$@" 213.202.195.43:7777 # 82.96.91.7:6200
-	# ./utp "$@" 85.14.224.120
 	./ut_servers/u "$@"
+	./ut_servers/of "$@"
+	./ut_servers/inz "$@"
+	# if [ "$((RANDOM%100))" -lt 80 ]
+	# then ./ut_servers/of "$@"
+	# else echo "<< I can't be bothered to query !of until they upgrade their anti-cheat >>"
+	# fi
+	# if [ "$((RANDOM%100))" -lt 80 ]
+	# then ./ut_servers/u "$@"
+	# else echo "<< I can't be bothered to query !u until they upgrade their anti-cheat >>"
+	# fi
+	# ./utp 94.75.249.199 | grep -v "DOWN"   # zeit - move into lower section later
 ) | notice
 
 # ./ut_servers/tt "$@"
@@ -31,17 +37,28 @@
 	# ./ut_servers/gla "$@" ## new ffa 195.146.141.95:7000
 	## Servers that have pug mode, but we only want to show when in public mode:
 	(
-		./ut_servers/f0x "$@"
+		# ./ut_servers/f0x "$@"
 		# ./ut_servers/f0x2 "$@"
 		# ./ut_servers/nzp "$@"
-		./ut_servers/kx "$@"
+		# ./ut_servers/kx "$@"
+		:
 	) | grep -i -u -v "\<PRIVATE\>" | grep -i -u -v "\<war\>" | grep -i -u -v "\<pug\>"
-	./ut_servers/dutchnet "$@"
+	# ./ut_servers/lights "$@"   ## passworded
+	./ut_servers/xol "$@"
+	./ut_servers/smo "$@" | grep -i -u -v "\<PRIVATE\>" | grep -i -u -v "\<war\>" | grep -i -u -v "\<pug\>"
 	# ./ut_servers/focr "$@"
+	./ut_servers/judge "$@"
 	./ut_servers/syn "$@"
-	./ut_servers/ae "$@"
-	./ut_servers/cod "$@"
-) | grep -u -v "[^0-9]0/" | grep -u -v "no response" | grep -u -v "unreal: //" | grep -u -v "no record" | grep -u -v " did not respond" |
+	./ut_servers/hh2 "$@"
+	# ./ut_servers/cod "$@"
+	# ./ut_servers/ae "$@"
+	# ./ut_servers/cod "$@"
+	# ./ut_servers/dutchnet "$@"
+	# ./ut_servers/fmj "$@"
+) |
+grep -u -v "[^0-9]0/" |
+grep -u -v "no response" | grep -u -v "unreal: //" | grep -u -v "no record" | grep -u -v " did not respond" |
+# grep "CTF-" |
 notice
 
 ## This is a nwCTF query.  If none of the above have results, we should also try xol/hh2/focr.

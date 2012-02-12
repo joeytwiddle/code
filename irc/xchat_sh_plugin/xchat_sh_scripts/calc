@@ -1,1 +1,13 @@
-echo "$*" | bc
+# echo "$*" | bc -l
+
+res="`echo "$*" | bc -l 2>&1`"
+
+if echo "$res" | grep "Runtime error" >/dev/null
+then
+	# echo "Does not compute."
+	# echo "Does not compute.  Exterminate.  Exterminate!"
+	echo "/me explodes."
+else
+	echo "$res"
+fi
+

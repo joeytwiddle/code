@@ -1,1 +1,1 @@
-SEARCH="\<MH-" sh ./scraping/scrapegt "$@"
+SEARCH="\<MH-" bash ./scraping/scrapegt "$@"

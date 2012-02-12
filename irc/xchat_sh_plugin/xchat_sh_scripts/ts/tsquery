@@ -47,14 +47,14 @@ do
 
 			## TODO BUG: I think the script can block here if the result was not in expected format.
 			read IP REST
-			# echo -n "$COLBLUE""teamspeak2://$IP""?nick=$NICK""$COLGREY ""$REST " |
-			echo -n "$COLBLUE""teamspeak2://$IP$COLGREY ""$REST " |
+			# echo -n "$COLROYAL""teamspeak2://$IP""?nick=$NICK""$COLGREY ""$REST " |
+			echo -n "$COLROYAL""teamspeak2://$IP$COLGREY ""$REST " |
 			sed "s+[^ ]* *[^/]*/[^/]*/ *[[:digit:]]* *[^ ]* +\0$COLYELLOW+"
 
 			# cat > /dev/null
 			dropcols 1 2 |
 			sed "s+^+$COLRED+" |
-			# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLBLUE+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
+			# takecols 3 5 | sed "s+team#0[ 	]*+$COLRED+ ; s+team#1[ 	]*+$COLROYAL+ ; s+team#[^ 	]*[ 	]*+$COLGREY+" |
 			# sed "s+^+$COLRED+" |
 			sed "s+$+$COLGREY, +" |
 			tr '\n' ' ' |

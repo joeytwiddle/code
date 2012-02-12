@@ -1,6 +1,10 @@
 NEW_NICK="$1"
 
-if [ "$NEW_NICK" ]
+# if [ "$NEW_NICK" ]
+# then echo "/nick $NEW_NICK"
+# else echo "You need to give me a new nick to use.  :P"
+# fi
+
+if [ "$NEW_NICK" = utb0t ] || [ "$NEW_NICK" = UT ] || [ "$NEW_NICK" = utbot ]
 then echo "/nick $NEW_NICK"
-else echo "You need to give me a new nick to use.  :P"
 fi

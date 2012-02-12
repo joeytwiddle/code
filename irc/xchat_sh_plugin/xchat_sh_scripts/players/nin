@@ -1,12 +1,16 @@
 list () {
 cat << !
-<+Maxiu> i don't have to own nin he owns himself :P
-If you're not cocking it up, then you're not doing it Nin-style!
 <zh-Shockey> niniepindie <zh-Shockey> x]
+<zh-Shockey> niniepindie <zh-Shockey> x]
+<zh-Shockey> niniepindie <zh-Shockey> x]
+<+Maxiu> i don't have to own nin he owns himself :P
 <Nin]> i'm just an illusion on this channel   <Nin]> my real name is bot376486345   <Nin]> noggin coded me from scratch to fool you   <nB^> i'm quite pleased with it   <nB^> sometimes it acts even dumber than i ever hoped it would   <Nin]> i personally think KGB is a batty
 <gy-Max> Nin change your nickname  <NinIamNooB> i feel fine with my nickname
 Maxiu: It was only the other day that i found out that nin is my god
+http://aticador.files.wordpress.com/2007/07/noddy.jpg
 !
+# If you're not cocking it up, then you're not doing it Nin-style!
+# <Nin]> OMFG you're such a complete3   <Nin]> no offence.   <flask> lol
 }
 
 list | randomorder | head -n 1

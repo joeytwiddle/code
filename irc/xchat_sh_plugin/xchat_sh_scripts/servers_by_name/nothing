@@ -1,1 +1,2 @@
-REPCHAN="#serv" ./utp "$@" 62.113.199.44
+# REPCHAN="#serv" ./utp "$@" 62.113.199.44
+REPCHAN="#0.live" ./utp "$@" 85.131.144.57

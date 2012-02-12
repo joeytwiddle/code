@@ -1,1 +1,5 @@
-./utp "$@" 209.40.96.191
+# ./utp "$@" 209.40.96.191
+#./utp "$@" 208.43.97.227
+## Closed June 1st 2011: ./utp "$@" 209.160.77.22
+# ./utp "$@" 72.5.152.96   ## Oct 11 After weeks of major lags, this became a redirect to...
+./utp "$@" 72.5.152.226

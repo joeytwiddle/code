@@ -3,7 +3,7 @@
 # echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug (or leet players go to #ctfpug).  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
 # echo "PUG means \"pick up game\" - it's like a clanwar.  We meet in #ut994funpug.  Once 10 players sign up, two teams are chosen, and two/three maps, and then we go to play a war.  It's good for practicing communication through TeamSpeak, and experiencing new players and teamwork."
 
-. restrict_repetitive_calls "1 minute"
+. restrict_repetitive_calls "1 hour"
 
 EXPLAIN_TO="$1"
 

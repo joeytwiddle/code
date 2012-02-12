@@ -1,4 +1,5 @@
 [ -d "$HOME"/myroots/an ] && . includepath "$HOME"/myroots/an
+[ -d "$HOME"/myroots/dict ] && . includepath "$HOME"/myroots/dict
 
 WORDGAME_DATA_DIR="$HOME/.wordgame_data"
 
@@ -6,8 +7,10 @@ mkdir -p "$WORDGAME_DATA_DIR"
 
 LETTERS_FILE="$WORDGAME_DATA_DIR"/letters
 GUESSED_FILE="$WORDGAME_DATA_DIR"/guessed_words.list
+COMPLETED_ROUND_FILE="$WORDGAME_DATA_DIR"/completed   ## Whether or not the full-letter word has been guessed
 
-DICTIONARY_FILES="/usr/share/dict/words"
+# DICTIONARY_FILE="/usr/share/dict/words"
+DICTIONARY_FILE="/home/joey/ircbot/files/british-english-large"
 
 LETTERS=`( cat "$LETTERS_FILE" | tr '\n' ' ' ; echo )`
 
@@ -16,6 +19,7 @@ LETTERS=`( cat "$LETTERS_FILE" | tr '\n' ' ' ; echo )`
 extract_legal_words () {
 	grep -v "'" | ## no apostrophes
 	grep -v "^[A-Z]" | ## No Proper Nouns
+	grep -v "[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz]" | ## No accents.
 	grep "...." ## >= 4 letters
 }
 
@@ -48,7 +52,7 @@ make_new_letterset () {
 	for LETTERNUM in `seq 1 $NUM_LETTERS`
 	do REGEXP="$REGEXP".
 	done
-	cat $DICTIONARY_FILES |
+	cat "$DICTIONARY_FILE" |
 	grep "^$REGEXP$" |
 	# grep -v "^[A-Z]" |
 	# grep -v "'" |
@@ -60,6 +64,8 @@ make_new_letterset () {
 
 	printf "" > "$GUESSED_FILE"
 
+	rm -f "$COMPLETED_ROUND_FILE"
+
 }
 
 if [ ! -f "$LETTERS_FILE" ]
@@ -68,7 +74,7 @@ fi
 
 list_answers () {
 	## May not contain all dictionary words (may be an underestimate of possible guessable words)
-	an -w "$LETTERS" |
+	an -d "$DICTIONARY_FILE" -w "$LETTERS" |
 	# grep "...." |
 	# grep -v "'"
 	extract_legal_words
@@ -103,7 +109,8 @@ increase_score () {
 	else CURRENT_SCORE=`cat "$SCORE_FILE"`
 	fi
 	CURRENT_SCORE=$((CURRENT_SCORE+SCORE_TO_ADD))
-	echo "$CURRENT_SCORE" > "$SCORE_FILE"
+	echo "$CURRENT_SCORE" > "$SCORE_FILE".new
+	mv -f "$SCORE_FILE".new "$SCORE_FILE"
 	# echo "$NICK now has a score of $CURRENT_SCORE!"
 }
 

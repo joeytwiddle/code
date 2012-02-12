@@ -7,11 +7,11 @@
 ## lol run mid-edit: <UT> $ Avgpicks :: ++g | [tr -d ?] lover 4) [r-LovelyPmP ?] # tail [-n 1 | afterfirst (10/10) . | # sed s+^. + +g ; s+ .$++g ; s+<[0-9][0-9]*) ?]  ` []  sed [s+^. + +g ; s+ .$++g | tr -d ?] 10) r-goly [3.8] 8) r-Stas 
 
 ## Just for testing:
-if [ "$AUTH" = nogginBasher ]
-then CHANNEL="#pug.up"
-fi
+# if [ "$AUTH" = nogginBasher ]
+# then CHANNEL="#ctf.pug"
+# fi
 
-if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#pug.up" ] && [ ! "$CHANNEL" = "#ut994funpug" ] && [ ! "$CHANNEL" = "#pug" ]
+if [ ! "$CHANNEL" = "#ut.pug" ] && [ ! "$CHANNEL" = "#noobpug" ] && [ ! "$CHANNEL" = "#pug.up" ] && [ ! "$CHANNEL" = "#ut994funpug" ] && [ ! "$CHANNEL" = "#pug" ] && [ ! "$CHANNEL" = "#ctf.pug" ] && [ ! "$CHANNEL" = "#tehpugz" ]
 then exit
 fi
 
@@ -45,7 +45,8 @@ afterlast "<\(Rival\|RF\)>[ 	]*" |
 tail -n 1 |
 afterfirst "/10 " |
 # sed 's+? .)+ +g'
-sed 's+^. + +g ; s+ .$++'
+sed 's+^. + +g ; s+ .$++' |
+sed -u 's+[^-A-Za-z0-9_|^\`{}()\r, .]++g'   ## Strip nasty chars found on spud.  TODO: []
 `
 jshinfo "LASTLIST=$LASTLIST"
 
@@ -99,7 +100,7 @@ do
 	if ! echo "$WORD" | grep "[0-9]*)" >/dev/null
 	then
 		NEWLIST="$NEWLIST""$COLGREY$WORD"
-		AUTH=`sh scanpug/slowgetauth "$WORD"`
+		AUTH=`bash scanpug/slowgetauth "$WORD"`
 		# COUNT=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
 		# if [ "$COUNT" -gt 0 ]
 		# then
@@ -117,7 +118,7 @@ do
 		else
 			if [ "$COUNTPUGS" ]
 			then STRENGTH=`cat ~/.scanpug/*.picks | grep " $AUTH " | wc -l`
-			else STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
+			else STRENGTH=`bash ./scanpug/getstrength "$AUTH"`
 			fi
 		fi
 		[ "$PREFIX" ] || PREFIX="#"
@@ -136,10 +137,12 @@ done > /tmp/pugstrengths.list
 # BRACKETCOL="$COLAQUA"
 # STRENGTHCOL="$COLGREEN"
 BRACKETCOL="$COLGREY"
-STRENGTHCOL="$COLSILVER"
 # STRENGTHCOL="$COLPINK"
 DECOCOL="$COLPINK"
 DECOCHAR="\$"
+NUMCOL="$COLGREY"
+NICKCOL="$COLGREY"
+STRENGTHCOL="$COLSILVER"
 
 if [[ "$COUNTPUGS" ]]
 then
@@ -149,11 +152,20 @@ then
 	DECOCHAR="#"
 fi
 
+if [ "$CHANNEL" = "#ctf.pug" ]
+then
+	DECOCHAR="·(¥)·"
+	DECOCOL="$COLRED"
+	NUMCOL="$COLWHITE"
+	NICKCOL="$COLWHITE"
+	STRENGTHCOL="$COLWHITE"
+fi
+
 TITLE="Avgpicks"
 [[ "$COUNTPUGS" ]] && TITLE="Pugcounts" && SORTREV="-r"
 
-# echo -n "$COLPINK\$ $COLBLUE$COLBOLD""$TITLE$COLBOLD $COLPINK:: "
-echo -n "$DECOCOL$DECOCHAR $COLBLUE$COLBOLD$TITLE$COLBOLD $DECOCOL:: "
+# echo -n "$COLPINK\$ $COLROYAL$COLBOLD""$TITLE$COLBOLD $COLPINK:: "
+echo -n "$DECOCOL$DECOCHAR $COLROYAL$COLBOLD$TITLE$COLBOLD $DECOCOL:: "
 cat /tmp/pugstrengths.list |
 sort -n -k 2 $SORTREV |
 while read NICK STRENGTH NUM
@@ -161,9 +173,9 @@ do
 	[[ "$STRENGTH" = "?" ]] && STRENGTH="$COLYELLOW$STRENGTH""?"
 	# echo -n "$COLWHITE$NUM $COLGREY$NICK $BRACKETCOL""[$STRENGTHCOL""$STRENGTH$BRACKETCOL""] "
 	if [ "$NUM" ]
-	then echo -n "$COLGREY$COLBOLD$NUM$COLBOLD "
+	then echo -n "$NUMCOL$COLBOLD$NUM$COLBOLD "
 	fi
-	echo -n "$COLGREY$NICK "
+	echo -n "$NICKCOL$NICK "
 	if [ "$STRENGTH" ]
 	then echo -n "$BRACKETCOL""[$STRENGTHCOL""$STRENGTH$BRACKETCOL""] "
 	fi
@@ -175,8 +187,8 @@ exit
 jshinfo "NEWLIST=$NEWLIST"
 
 # DECORATIONA="Ã¢Â€Â¡"
-# echo "$COLBLUE$DECORATIONA$COLRESET Average picks: $NEWLIST$COLBLUE$DECORATIONA$COLRESET"
+# echo "$COLROYAL$DECORATIONA$COLRESET Average picks: $NEWLIST$COLROYAL$DECORATIONA$COLRESET"
 
-# echo "$DECOCOL$DECOCHAR $COLBLUE$COLBOLD""$TITLE:$COLBOLD $NEWLIST$DECOCOL$DECOCHAR"
+# echo "$DECOCOL$DECOCHAR $COLROYAL$COLBOLD""$TITLE:$COLBOLD $NEWLIST$DECOCOL$DECOCHAR"
 echo "$DECOCOL$DECOCHAR $COLBOLD$TITLE:$COLBOLD $NEWLIST$DECOCOL$DECOCHAR"
 

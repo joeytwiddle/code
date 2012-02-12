@@ -9,7 +9,11 @@
 # ./utp "$@" 195.149.21.71:7700
 
 ## It wasn't responding from moxbox, but this worked:
-./scraping/searchserv "195.149.21.71:7700"
+# ./scraping/searchserv "195.149.21.71:7700"
+# ./utp 94.75.238.21:7777
+# ./utp "94.75.238.21:7777"
+# ./scraping/searchserv "94.75.238.21:7777"
+./utp "84.31.225.47:666"
 
 ## Show kx if it is on LMS and has players
 ./utp kx |

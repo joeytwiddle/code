@@ -48,3 +48,14 @@ rainbow () {
         done
         printf "%s\n" "$COLRESET"
 }
+
+## The Java layer outputs what it got in sequence, for neatness when a lot is going on.
+## However if are outputting a lot in one moment, this will block the bot, which is undesirable.
+## When sending large blocks of text, run this so that other script responses can get through.
+antiflood () {
+	while read line
+	do
+		printf "%s\n" "${line}"
+		sleep 4
+	done
+}

@@ -1,3 +1,5 @@
+exit 0
+
 PASS="$1"
 shift
 

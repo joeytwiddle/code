@@ -16,7 +16,7 @@ fi
 
 IP=`echo "$URL" | afterfirst "detail=" | beforefirst "\&"`
 
-echo -n "$COLBLUE""teamspeak2://$IP:$CONNECT_PORT/$COLGREY [ "
+echo -n "$COLROYAL""teamspeak2://$IP:$CONNECT_PORT/$COLGREY [ "
 
 wget -t 3 -T 5 -O - "$URL" 2>/dev/null |
 grep "alt=\"User\"" |

@@ -60,11 +60,11 @@ else
 				printf "%s" "$COLGREY, $COLRED$PLAYERNAME$COLRESET"
 			else
 				[ "$LASTSERVERMAP" ] && echo # "..."
-				printf "%s" "$COLBLUE$SERVERURL $COLRESET$MAP $COLRED$PLAYERNAME$COLRESET"
+				printf "%s" "$COLROYAL$SERVERURL $COLRESET$MAP $COLRED$PLAYERNAME$COLRESET"
 				# echo "$PLAYERNAME $SERVERURL $MAP" |
 				# ## Highlight player red and server; also strip server title:
-				# # sed "s+^+$COLRED+ ; s+\( *\)\([^ ]*\)\( *\)+$COLBLUE\1\2\3$COLRESET+ ; s+\$+$COLRESET+" |
-				# sed "s+^\([^ ]*\)\( *\)\([^ ]*\)\( *\)\(.*\)+$COLRED\1\2$COLBLUE\3\4$COLRESET\5$COLRESET+"
+				# # sed "s+^+$COLRED+ ; s+\( *\)\([^ ]*\)\( *\)+$COLROYAL\1\2\3$COLRESET+ ; s+\$+$COLRESET+" |
+				# sed "s+^\([^ ]*\)\( *\)\([^ ]*\)\( *\)\(.*\)+$COLRED\1\2$COLROYAL\3\4$COLRESET\5$COLRESET+"
 			fi
 			LASTSERVERMAP="$SERVERURL$MAP"
 		done

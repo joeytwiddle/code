@@ -15,18 +15,19 @@ else
 ## We don't always do this, we don't need to, it's just an occasional check.
 # if [ "`seq 1 10 | chooserandomline`" -lt 7 ]
 # if [ "$((RANDOM%100))" -lt 80 ]
-if [ `expr $RANDOM % 100` -lt 80 ]
+if [ `expr $RANDOM % 100` -lt 90 ]
 then exit 0
 fi
 
-. restrict_repetitive_calls "1 minute"
+. restrict_repetitive_calls "2 minutes"
 
 fi
 
 # . irc.shlib
 
-# alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
-alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "
+double_escape_slashes () {
+	sed 's+\\\\+\\\\\\\\+g'
+}
 
 ## <Rival> # nwCTF ¬ BM 3/10 ¬ 1) bm-binq^lagsuck  2) bm-zR^  3) bm-koekbliq #
 
@@ -38,6 +39,7 @@ sleep 10 ## Wait for Rival to actually make !list response.
 LIST=`
 	tail -n "$BACKCHECK" "$HOME/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 	grep ".*<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)>[^/]*[^0]/10" |
+	grep -v "Map: .* Admin: .* Pw: .* Players: .* Specs" |   ## Avoid scanning lines which are list server listings :P
 	tail -n 1 |
 	double_escape_slashes |
 	afterlast "<\(Rival\|RF\|APug\|[Aa][Bb][Oo0][Tt]\)> *[^ ]* " |
@@ -49,6 +51,7 @@ LIST=`
 	# betweenthe " [0-9)]* " |
 	betweenthe " )" |
 	# striptermchars |
+	sed -u 's+[^][A-Za-z0-9_|^\`{}()\n\r\-]++g' |   ## Strip nasty chars found on spud.  TODO: []
 	tr -d '‡ ' |
 	# grep -v "^\(.±.\|·(¥\|·\)$" |
 	grep -v "^[0-9]*$" |
@@ -62,27 +65,30 @@ jshinfo "checkforidlers got LIST=$LIST"
 ## TODO CONSIDER: Add $NICK to $LIST here, so he gets scanned before he adds :)
 for PUGGER in $LIST
 do
-	AUTH=`NOINFO=1 sh ./scanpug/slowgetauth "$PUGGER"`
+	AUTH=`NOINFO=1 bash ./scanpug/slowgetauth "$PUGGER"`
 	jshinfo "$PUGGER has auth $AUTH"
 	if [ "$AUTH" = DUNNO_AUTH ]
 	then
 		jshinfo "Problematic idler: $PUGGER ($AUTH)"
+		echo "/msg nogginBasher Lost auth for $PUGGER, warning or kicking him..."
 		# if [ `seq 1 20 | chooserandomline` -lt 6 ]
-		if [ `expr $RANDOM % 100` -lt 15 ]
+		if [ `expr $RANDOM % 100` -lt 30 ]
 		then
 			# echo "/kick $PUGGER Banned: Smelling of toast. Violating Rule 18c+. Fragging other players."
 			# echo "/kick $PUGGER Banned: Rule #17c+ Fragging other players. Talking in teamspeak. Dropping the flag at flagspot."
 			# echo "/kick $PUGGER Banned: Rule #17c+ Fragging other players. Talking in teamspeak."
 			# echo "/kick $PUGGER Banned: Rule #17c+ Talking in teamspeak. Fragging other players. Dropping the flag."
 			# echo "/me sets ban on *.*!@*.*.*.*"
-			# echo "/me inflicts mortal damage upon $PUGGER with /bin/sh"
+			# echo "/me inflicts mortal damage upon $PUGGER with /bin/bash"
 			# echo "/kick $PUGGER Banned: Rule #17c+ Talking in teamspeak. Fragging other players. Dropping the flag. Building mines."
 			if [ `expr $RANDOM % 100` -lt 70 ]
-			then echo "/kick $PUGGER I need you to rejoin the channel you bloody idler <3"
+			# then echo "/kick $PUGGER I need you to rejoin the channel you bloody idler <3"
+			then echo "$PUGGER I need you to rejoin the channel so I can track your strength."
 			else echo "/kick $PUGGER Banned: Idling in IRC, talking in teamspeak, fragging other players."
 			fi
 			# echo "/kick $PUGGER Banned: Idling in IRC, talking in teamspeak, capping flags."
-		else echo "$PUGGER, I can't process your stats until you rejoin the channel." #   Or I may have gone teasy."
+		# else echo "$PUGGER, I can't process your stats until you rejoin the channel." #   Or I may have gone teasy."
+		else echo "/msg $PUGGER, please rejoin $CHANNEL so I can track your stats, ty." #   Or I may have gone teasy."
 		fi
 	else
 		jshinfo "Verified: $PUGGER ($AUTH)"

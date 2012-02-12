@@ -8,7 +8,7 @@ then :
 else COUNT=10
 fi
 
-if [ "$COUNT" -gt 20 ]
+if [ "$COUNT" -gt 50 ]
 then NOTICE=true
 fi
 
@@ -35,10 +35,14 @@ fi
 		then :
 		else LAST_NICK="$AUTH"; jshwarn "Failed to find nick for auth $AUTH"
 		fi
-		echo -n "$COLGREY""[$COLAQUA""$((NUM+1))""$COLGREY] $LAST_NICK (""$COLGREEN""$COUNT""$COLGREY"")  "
+		echo -n "$COLGREY""$COLAQUA""$((NUM+1))""$COLGREY) $COLRED$LAST_NICK$COLGREY [""$COLGREEN""$COUNT""$COLGREY""]  "
 		# if [ $((NUM%10)) = 9 ]
-		if [ $((NUM%8)) = 7 ]
-		then echo
+		if [ $((NUM%5)) = 4 ]
+		then
+			echo
+			if [ $NUM -gt 30 ]
+			then sleep 8 ## Attempt at anti-flood
+			fi
 		fi
 	done
 	echo

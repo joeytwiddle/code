@@ -5,7 +5,4 @@ if [ "$CHANNEL" = "#pug.up" ]
 then echo "!promote"
 fi
 
-## TODO: Shouldn't we always do this?
-if [ "$CHANNEL" = "#crazypug" ]
-then pugbot/promote
-fi
+pugbot/promote

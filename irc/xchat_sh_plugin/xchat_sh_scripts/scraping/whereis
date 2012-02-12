@@ -1,8 +1,11 @@
 ## Disabled
-echo "whereis is disabled until i cba to fix it"
-exit 0
+# echo "whereis is disabled until i cba to fix it.  Try instead !find (written by mox)."
+# exit 0
 
 . irccols.shlib
+
+## Get lynx on neuralyte (for fromhtml):
+. includepath $HOME/myroot
 
 ## Try; http://www.gametracker.com/search/ut/1500/?search_by=online_player&query=max&sort=name.asc
 ## memo -t "4 minutes" wget -nv -O - "http://www.gametracker.com/search/ut/1500/?search_by=online_player&query=mo&sort=name.asc" | tr '\n\t' '  ' | tr -s ' ' | sed 's+<div class=.results_op_c2[^ ]* +\n+g'
@@ -26,28 +29,30 @@ do
 	URL="http://www.gametracker.com/search/ut/?search_by=online_player&query=$SEARCH&sort=name&order=asc"
 	IKNOWIDONTHAVEATTY=1 memo -t "4 minutes" wget -nv -O - "$URL" |
 	tee /tmp/gt |
-	tr '\n\t' '  ' |
-	tr -s ' ' |
-	sed 's+<div class="gttable_item gttable_srchop_c02"> *+\n+g' |
-	sed 's+<a href="\(http://www.gametracker.com\|\)/server/\([^/]*\)/[^"]*">+X +g' |
+	# tr '\n\t' '  ' |
+	# tr -s ' ' |
+	# sed 's+<div class="gttable_item gttable_srchop_c02"> *+\n+g' |
+	# sed 's+<a href="\(http://www.gametracker.com\|\)/server/\([^/]*\)/[^"]*">+X +g' |
+	grep '<a href="/\(server_info\|player\)/' |
 	tee /tmp/gt2 |
-	grep "^X " |
+	sed 's+.*<a href="\(/player/\)[^"]*">\([^<]*\).*+\2+' |
+	sed 's+.*<a href="/server_info/\([^/]*\)/">\([^<]*\)<.*+\1 \2+' |
 	tee /tmp/gt3 |
-	dropcols 1 |
-	# sed 's+</a>.*<a href=.\(http://www.gametracker.com/\|\)/server_info/\([^/]*\)/.>+ \2 +' |
-	sed 's+<a href=.\(http://www.gametracker.com\|\)/server_info/\([^/]*\)/.>+\1 +g' |
-	# sed 's+</a>.*++' |
-	# grep "Online Now" |
-	sed 's+<div class=.results_op_c3.> Online Now </div>++g' |
-	sed 's+<div class=.results_op_c5.>.*+ EOL+' |
-	sed 's+$+<BR>+' |
-	tee /tmp/gt4 |
+	# dropcols 1 |
+	# # sed 's+</a>.*<a href=.\(http://www.gametracker.com/\|\)/server_info/\([^/]*\)/.>+ \2 +' |
+	# sed 's+<a href=.\(http://www.gametracker.com\|\)/server_info/\([^/]*\)/.>+\1 +g' |
+	# # sed 's+</a>.*++' |
+	# # grep "Online Now" |
+	# sed 's+<div class=.results_op_c3.> Online Now </div>++g' |
+	# sed 's+<div class=.results_op_c5.>.*+ EOL+' |
+	# sed 's+$+<BR>+' |
+	# tee /tmp/gt4 |
 
 	# fromhtml -old ## This was failing to convert a lot of &...; codes
-	fromhtml | ## Seems to work
-	tee /tmp/gt5 |
+	# fromhtml | ## Seems to work
+	# tee /tmp/gt5 |
 	trimempty |
-	sed 's+^\*\* ++' | ## Dunno what this means, but some players get ** before their name
+	# sed 's+^\*\* ++' | ## Dunno what this means, but some players get ** before their name
 	## For some reason fromhtml (lynx -dump) was adding extra unwanted newlines.  So to fix that, here we process each line separately, removing the added newlines.
 	## Oh I fixed that with -width=65535 (COLUMNS is ignored!)
 	# while read LINE
@@ -56,23 +61,36 @@ do
 
 	# cat
 
-	sed 's+:7777++' |
+	# sed 's+:7777++' |
 
-	tr '\n' ' ' |
-	sed 's+ EOL +\n+g' |
-	tee /tmp/gt6 |
-
-	# sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+`cursered;cursebold`\1 `curseblue`\2 `curseyellow`\3+"
-	# sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+"
-	# sed "s+^\([^0-9 ]*\) *\([0-9.:]*\) *\(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+" |
-	sed "s+^\([^ ]*\) *\([0-9.:]*\) *\(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+" |
-	cat
+	# tr '\n' ' ' |
+	# sed 's+ EOL +\n+g' |
+	# tee /tmp/gt6 |
+# 
+	# # sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+`cursered;cursebold`\1 `curseblue`\2 `curseyellow`\3+"
+	# # sed "s+^\([^ ]*\) \([^ ]*\) \(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+"
+	# # sed "s+^\([^0-9 ]*\) *\([0-9.:]*\) *\(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+" |
+	# sed "s+^\([^ ]*\) *\([0-9.:]*\) *\(.*\)+$COLBOLD$COLRED\1 $COLBLUE""unreal://\2 $COLYELLOW\3+" |
+	# cat
 
 	# | grep . || echo "I could not find \"$SEARCH\" playing right now."
 
+	tee /tmp/gt4 |
+
+	while read PLAYER
+	do
+		read SERVER SERVER_TITLE
+		SERVER_TITLE="`echo "$SERVER_TITLE" | fromhtml`"
+		echo "$COLRED""$PLAYER""$COLNORM is on $COLROYAL$COLBOLD""unreal://$SERVER/$COLBOLD $COLYELLOW$SERVER_TITLE"
+	done |
+
+	dos2unix |
+	grep -v "^ *$" |
+	tee /tmp/gt5
+
 done |
 
-randomorder | head -n 8 | sort -n -k 1 |
+randomorder | head -n 8 | sort -k 4 |
 
 grep . || echo "I could not find \"$*\" playing right now."
 

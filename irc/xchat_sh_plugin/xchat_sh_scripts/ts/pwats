@@ -1,2 +1,3 @@
 # ./tsquery amok.b3ta.org
+# echo "FragTS is down for the time being."
 ts/tsquery 81.169.186.49

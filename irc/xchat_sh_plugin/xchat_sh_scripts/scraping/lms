@@ -1,1 +1,1 @@
-# SEARCH="CTF" sh ./scraping/scrapegt "$@"
+# SEARCH="CTF" bash ./scraping/scrapegt "$@"

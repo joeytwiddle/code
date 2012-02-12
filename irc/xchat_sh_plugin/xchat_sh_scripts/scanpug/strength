@@ -1,15 +1,15 @@
 ## Only operates in pug channels, or from PM.
-if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#pug.up" ] || ! echo "$CHANNEL" | grep "^#" >/dev/null
+if [ "$CHANNEL" = "#ut.pug" ] || [ "$CHANNEL" = "#pug.up" ] || [ "$CHANNEL" = "#ctf.pug" ] || [ "$CHANNEL" = "#tehpugz" ] || ! echo "$CHANNEL" | grep "^#" >/dev/null
 then :
 else exit
 fi
 
-if [ "$CHANNEL" = "#ut.pug" ]
-then echo "My !strength command only works if you PM me." ; exit 0
-fi ## does nothing outside of #ut.pug
+# if [ "$CHANNEL" = "#ut.pug" ]
+# then echo "My !strength command only works if you PM me." ; exit 0
+# fi ## does nothing outside of #ut.pug
 
 ## In PMs, default to #ut.pug:
-if ! echo "$CHANNEL" | grep "^#" >/dev/null
+if ! echo "$CHANNEL" | grep "^#" >/dev/null || [ "$CHANNEL" = "#ut.pug" ]
 then CHANNEL="#ut.pug"
 fi
 
@@ -25,7 +25,7 @@ fi
 
 if echo "$WHO" | grep "^#" >/dev/null
 then AUTH="`echo "$WHO" | sed 's+^#++'`"
-else AUTH=`sh scanpug/slowgetauth "$WHO"`
+else AUTH=`bash scanpug/slowgetauth "$WHO"`
 fi
 
 if [ "$AUTH" ]
@@ -46,7 +46,7 @@ then
 		# STRENGTH=`echo "$STRENGTH" | sed 's+^.+\0.+'`
 		# # echo "/notice $NICK He/she was picked $STRENGTH on average [scale 1-8]"
 	# fi
-	STRENGTH=`sh ./scanpug/getstrength "$AUTH"`
+	STRENGTH=`bash ./scanpug/getstrength "$AUTH"`
 	[[ ! "$STRENGTH" = "?.?" ]] && EXTRA="  He/she was picked #$STRENGTH on average [scale 1-8]."
 	# echo "I have seen $AUTH play $COUNT pugs.$EXTRA"
 	echo "I have seen $AUTH picked $COUNT times in $CHANNEL.$EXTRA"

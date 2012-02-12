@@ -2,4 +2,7 @@
 # ./utp "$@" 213.121.244.94 ## since utp now only accepts IP *addresses*
 # ./utp "$@" 91.84.38.68 ## since utp now only accepts IP *addresses*
 # ./utp "$@" unreal://hwi.ath.cx/
-./utp "$@" 217.174.240.213
+## spud: ./utp "$@" 217.174.240.213
+## virtual server FAIL: ./utp "$@" 78.47.5.96
+## pea:
+./utp "$@" 46.4.128.234

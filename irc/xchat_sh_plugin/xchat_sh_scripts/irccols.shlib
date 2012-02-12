@@ -42,7 +42,7 @@ then
 	## Added ",01" (black background) because otherwise a comma right after the colour gets gobbled (at least by ksirc)
 	export COLWHITE=`echo -e "00,$IRC_BGCOL"`
 	export COLBLACK=`echo -e "01,$IRC_BGCOL"`
-	export COLBLUE=`echo -e "02,$IRC_BGCOL"` ## navy
+	export COLBLUE=`echo -e "02,$IRC_BGCOL"` ## navy - NEVER USE THIS! It is too dark against black background
 	export COLGREEN=`echo -e "03,$IRC_BGCOL"`
 	export COLRED=`echo -e "04,$IRC_BGCOL"`
 	export COLBROWN=`echo -e "05,$IRC_BGCOL"` ## maroon
@@ -50,6 +50,7 @@ then
 	# export COLORANGE=`echo -e "07,$IRC_BGCOL"` ## olive
 	# export COLYELLOW=`echo -e "08,$IRC_BGCOL"`
 	## I very lazily swapped yellow and orange for the benefit of Rednas who uses Opera and can't see yellow against his unchangeable white background.
+	## Note that BLUE is very dark against black background, so ROYAL is often preferable.
 	export COLORANGE=`echo -e "08,$IRC_BGCOL"`
 	export COLYELLOW=`echo -e "07,$IRC_BGCOL"`
 	export COLLIME=`echo -e "09,$IRC_BGCOL"` ## green

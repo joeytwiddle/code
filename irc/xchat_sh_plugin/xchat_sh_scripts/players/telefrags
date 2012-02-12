@@ -8,10 +8,10 @@ fi
 cd $HOME/.xchat2/xchatlogs/
 
 
-memo -t "7 days" sh ./scrape_telefrag_returns.sh >/dev/null
+memo -t "7 days" bash ./scrape_telefrag_returns.sh >/dev/null
 
 
 for X
-do sh ./telefrags.sh "$X"
+do bash ./telefrags.sh "$X"
 done
 

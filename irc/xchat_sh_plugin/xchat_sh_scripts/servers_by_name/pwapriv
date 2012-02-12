@@ -1,1 +1,20 @@
-./utp "$@" 195.122.135.182
+if [ "$1" = "" ]
+then
+
+	echo " nick ?"
+exit
+fi
+
+QUERY="/tmp/seek/"$NICK".tmp"
+
+touch "$QUERY"
+
+./utp "-s" 81.169.188.18  >> $QUERY
+./utp "-s" 213.163.69.181 >> $QUERY
+
+OUTPUT=`cat "$QUERY"`
+echo "$NICK $OUTPUT"
+
+rm "$QUERY"
+
+exit 0 

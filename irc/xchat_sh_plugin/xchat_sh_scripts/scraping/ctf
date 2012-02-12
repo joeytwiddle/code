@@ -1,1 +1,1 @@
-SEARCH="\<CTF-" IGNORE="\<CTF-BT-" sh ./scraping/scrapegt "$@"
+SEARCH="\<CTF-" IGNORE="\<CTF-BT-" bash ./scraping/scrapegt "$@"

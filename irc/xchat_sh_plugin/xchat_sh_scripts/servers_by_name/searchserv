@@ -19,7 +19,7 @@ else
 	# find /home/utquery/utquery/data/ -maxdepth 1 -name "*.info" |
 	# xargs grep -i -e "$REGEXP" |
 
-	NOCOLS=1 SEARCH="$REGEXP" NICK="" sh ./scraping/scrapegt 9000 | striptermchars | grep "$REGEXP" |
+	NOCOLS=1 SEARCH="$REGEXP" NICK="" bash ./scraping/scrapegt 9000 | striptermchars | grep "$REGEXP" |
 
 	# randomorder | ## See a random subset
 	# beforefirst "\.info" | afterlast / |

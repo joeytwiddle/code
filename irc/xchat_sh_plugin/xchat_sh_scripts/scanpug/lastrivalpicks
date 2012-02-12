@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ## If -lines argument is given, doesn't do the auth conversion.
 #
 ## BUG: Rival does not list blue's last pick on a line with ~> but it does list red's!
@@ -8,8 +10,11 @@
 ## Get the last !last:
 # grep ".*<Rival>.*..*,.*,.*,.*,.*,.*,.*,.*,.*,.*..*" /home/joey/.xchat2.utb0t/logs/irc.quakenet.org-#ut.pug.log | tail -n 1
 
-# alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\\\\\\\\\+g' "
-alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "
+# alias double_escape_slashes=" sed 's+\\\\+\\\\\\\\+g' "   ## When we moved to spud, this stopped working!
+double_escape_slashes () {
+	# sed 's+\\\\+\\\\\\\\\\\\\\\\+g'
+	sed 's+\\\\+\\\\\\\\+g'
+}
 
 [ "$CHANNEL" = "" ] && CHANNEL="#ut.pug"
 
@@ -18,7 +23,10 @@ LASTLINES=`
 tail -n 4000 "/home/joey/.xchat2.utb0t/logs/irc.quakenet.org-$CHANNEL.log" |
 # grep ".*<Rival>.*?.*,.*,.*,.*,.*?.*" | grep -v " ago " | grep -v " Specs: " | tail -n 2
 grep "<\(Rival\|RF\)>" | grep -B2 " Pickup Over " | tail -n 3 | chop 1 |
-afterfirst "<[^>]*> *[^ ]* " |
+afterfirst "<[^>]*>[ 	]*" |
+grep -v "^#" |  # A false positive when someone does !last #another_channel
+afterfirst "[ 	][ 	]*" |
+sed -u 's+[^][A-Za-z0-9_|^\`{}()\n\r, .\-]++g' |   ## Strip nasty chars found on spud.  TODO: []
 tr -d '‡'
 `
 
@@ -39,8 +47,11 @@ grep "<\(APug\|AB[Oo0][Tt]\)>" |
 grep "secs ago" |  # Find the last list
 grep -v " played in " |  # Let's not get caught by !mystats output!
 grep -v "I have served " |  # Another false positive
-afterfirst "<[^>]*> *[^ ]* " |
+grep -v "I joined " |  # Output from .age First seen in #ut.unr
+grep -v "Teams from last pug:" |  # Doesn't parse the same
+afterfirst "<[^>]*>[ 	]*" |
 grep -v "^#" |  # A false positive when someone does !last #another_channel
+afterfirst "[ 	][ 	]*" |
 tail -n 1 |
 # afterfirst ".(.). " | sed 's+ .±. +\n+' | beforelast " .±. " | sed 's+ +, +g'
 strings | head -n 2 | sed 's+\(^\. \| \.$\)++g' | sed 's+\(^ \| $\)++'
@@ -78,24 +89,24 @@ grep -v '^$' |
 (
 
 	read A
-	REDCAPTAUTH=`sh scanpug/slowgetauth "$A"`
+	REDCAPTAUTH=`bash scanpug/slowgetauth "$A"`
 	echo "REDCAPT $REDCAPTAUTH $A"
 
-	read A; echo "1 `sh scanpug/slowgetauth "$A"` $A"
-	read A; echo "4 `sh scanpug/slowgetauth "$A"` $A"
-	read A; echo "5 `sh scanpug/slowgetauth "$A"` $A"
-	read A; echo "8 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "1 `bash scanpug/slowgetauth "$A"` $A"
+	read A; echo "4 `bash scanpug/slowgetauth "$A"` $A"
+	read A; echo "5 `bash scanpug/slowgetauth "$A"` $A"
+	read A; echo "8 `bash scanpug/slowgetauth "$A"` $A"
 
 	# echo
 	# echo ---------
 
 	read A
-	BLUECAPTAUTH=`sh scanpug/slowgetauth "$A"`
+	BLUECAPTAUTH=`bash scanpug/slowgetauth "$A"`
 	echo "BLUECAPT $BLUECAPTAUTH $A"
 
-	read A; echo "2 `sh scanpug/slowgetauth "$A"` $A"
-	read A; echo "3 `sh scanpug/slowgetauth "$A"` $A"
-	read A; echo "6 `sh scanpug/slowgetauth "$A"` $A"
-	read A; echo "7 `sh scanpug/slowgetauth "$A"` $A"
+	read A; echo "2 `bash scanpug/slowgetauth "$A"` $A"
+	read A; echo "3 `bash scanpug/slowgetauth "$A"` $A"
+	read A; echo "6 `bash scanpug/slowgetauth "$A"` $A"
+	read A; echo "7 `bash scanpug/slowgetauth "$A"` $A"
 
 )

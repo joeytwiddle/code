@@ -16,6 +16,7 @@ do
 
 	OPTIONS="--load-cookies cookies.txt --save-cookies cookies.txt --keep-session-cookies"
 	memo -t "4 minutes" wget $OPTIONS -nv -O - "http://www.gametracker.com/search/ut/?query=$SEARCH&sort=players.desc&per_page=50$URLEXTRA" |
+	grep -iv "Copyright.*gametracker" |
 	fromhtml |
 	tr "\n" " " |
 	sed 's+ [0-9][0-9]*\. +\n+g' |
