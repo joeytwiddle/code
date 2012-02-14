@@ -1,3 +1,30 @@
+NOTES 20090708
+The VisualJava desktop is intended for testing calls on live objects, and creating and viewing "Visual code".
+We do not need to restrict ourselves to Java.
+A VisualObject on our desktop could be e.g. a Javascript object running inside
+Rhino, or a reference to a Javascript object in a remote browser, if that
+browser has set up a link to VJ.
+Or it could be a Python or ASP object, if we somehow have access to them.
+So the point is, VJ should not restrict itself only to Java objects and
+methods, but be abstract enough to handle objects from other languages also.
+This will require some refactoring, but the abstraction should be worthwhile.
+
+
+
+
+
+We need a way of being able to set properties (fields).
+Also the menu that lets us get fields out, sometimes shows two.
+
+BUG: Occasionally we get Class dropdown twice on menubar (first is empty).
+BUG: Statusbar does not appear until we resize the window after everything has finished loading.
+
+
+
+
+
+Pre 2009:
+
 getFields() vs. getDeclaredFields()
 Which will give us all the accessible fields?
 Can we ever break field privacy?  If so, show the ones we can access, hide the rest.
@@ -109,4 +136,9 @@ Need to be able to drop objects onto Arguments.
 What sort of component should the Object Arguments be?
 
 Support for setters and getters (eg. get()/accessor properties can be displayed automatically)
+
+
+When we "view code" in VisualJava, the background colour of each line will represent:
+- the age and weight of last change to this line of code
+- the frequency and recentness of calls through this line of code
 
