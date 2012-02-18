@@ -169,17 +169,33 @@ try {
 				toggleRollUp();
 			}
 
+			// The xpath query did not give the elements back in page-order.
 			// Sort them back into the order they appear in the document
 			var nodeArray = [];
 			for (var i=0;i<nodeSnapshot.snapshotLength;i++) {
 				var node = nodeSnapshot.snapshotItem(i);
 				nodeArray.push(node);
-				node.xpath = getXPath(node);
+				// node.xpath = getXPath(node);
+				node.magicPath = getXPath(node).substring(3).slice(0,-1).split("]/*[").map(Number);
 			}
 			nodeArray.sort(function(a,b){
 				// return getXPath(a) > getXPath(b) ? +1 : -1;
-				return a.xpath > b.xpath ? +1 : -1;
+				// return a.xpath > b.xpath ? +1 : -1;
+				GM_log("Comparing "+a.magicPath+" against "+b.magicPath);
+				for (var i=0;i<a.magicPath.length;i++) {
+					if (i >= b.magicPath.length) {
+						return +1; // b wins
+					}
+					if (a.magicPath[i] > b.magicPath[i]) {
+						return +1; // b wins
+					}
+					if (a.magicPath[i] < b.magicPath[i]) {
+						return -1; // a wins
+					}
+				}
+				return -1; // assume b is longer, or they are equal
 			});
+			// Yep it's goofy code, but it works.
 
 			for (var i=0;i<nodeArray.length;i++) {
 				var node = nodeArray[i];
@@ -243,8 +259,8 @@ try {
 				li.title = node.tagName;
 				if (node.name)
 					li.title += " (#"+node.name+")";
-				*/
 				li.title = getXPath(node);
+				*/
 			}
 			toc.appendChild(table);
 
