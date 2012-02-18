@@ -71,6 +71,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 
 }
 
+// Modified for this script's needs.
 function getXPath(node) {
 	var parent = node.parentNode;
 	if (!parent) {
@@ -81,7 +82,7 @@ function getXPath(node) {
 	var thisCount = -1;
 	for (var i=0;i<siblings.length;i++) {
 		var sibling = siblings[i];
-		if (sibling.nodeType == node.nodeType) {
+		if (true /*sibling.nodeType == node.nodeType*/) {
 			totalCount++;
 		}
 		if (sibling == node) {
@@ -89,7 +90,7 @@ function getXPath(node) {
 			break;
 		}
 	}
-	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
+	return getXPath(parent) + '/' + '*' /*node.nodeName.toLowerCase()*/ + (totalCount>1 ? '[' + thisCount + ']' : '' );
 }
 
 try {
@@ -173,15 +174,20 @@ try {
 			for (var i=0;i<nodeSnapshot.snapshotLength;i++) {
 				var node = nodeSnapshot.snapshotItem(i);
 				nodeArray.push(node);
+				node.xpath = getXPath(node);
 			}
 			nodeArray.sort(function(a,b){
-				return getXPath(a) > getXPath(b) ? +1 : -1;
+				// return getXPath(a) > getXPath(b) ? +1 : -1;
+				return a.xpath > b.xpath ? +1 : -1;
 			});
 
 			for (var i=0;i<nodeArray.length;i++) {
 				var node = nodeArray[i];
 
 				var level = (node.tagName.substring(1) | 0) - 1;
+				if (level < 0) {
+					level = 0;
+				}
 
 				var linkText = node.textContent && node.textContent.trim() || node.name;
 				if (!linkText) {
@@ -219,16 +225,26 @@ try {
 					link.href = '#';
 				}
 				table.appendChild(link);
-				var li = newNode("li");
+				liType = "li";
+				if (node.tagName == "A") {
+					liType = "div";
+				}
+				var li = newNode(liType);
 				link.parentNode.replaceChild(li,link);
+				if (node.tagName == "A") {
+					li.appendChild(document.createTextNode("\u2693 "));
+				}
 				li.appendChild(link);
 				li.style.paddingLeft = (1.5*level)+"em";
 				li.style.fontSize = (100-6*(level+1))+"%";
 				li.style.size = li.style.fontSize;
 				// Debugging:
+				/*
 				li.title = node.tagName;
 				if (node.name)
-					li.title += " ("+name+")";
+					li.title += " (#"+node.name+")";
+				*/
+				li.title = getXPath(node);
 			}
 			toc.appendChild(table);
 
