@@ -741,21 +741,30 @@
 
 			var QuickConsole = ({});
 
+			var oldConsole = window.console;
+
+			function qcLog() {
+				if (arguments.length!=0 && arguments.length!=1) {
+					arguments[0]+=''+arguments.slice(1);
+				}
+				/* Not succeeding in Firefox 10: textArea.textContent += '\n' + arguments[0]; */
+				textArea.value += '\n' + arguments[0];
+				textArea.scrollTop = textArea.scrollHeight;
+				if (oldConsole && oldConsole.log) {
+					oldConsole.log.call(oldConsole,arguments[0]);
+				}
+			}
+
 			/* Intercept and display calls to console.log(). */
 			/* Disabled because it loops forever if FastJSLogger is loaded. */
 			/* Re-enabled because 'console' is expected later! */
-			var oldConsole = window.console;
-			window.console = {
-				log: function() {
-					if (arguments.length!=0 && arguments.length!=1) {
-						arguments[0]+=''+arguments.slice(1);
-					}
-					textArea.textContent += '\n' + arguments[0];
-					if (oldConsole && oldConsole.log) {
-						oldConsole.log.call(oldConsole,arguments[0]);
-					}
-				}
-			};
+			/* Anyway the cause of that problem was traced to FJSL. */
+			if (typeof console == 'undefined') {
+				window.console = {};
+			}
+			if (typeof console.log != 'function') {
+				console.log = qcLog;
+			}
 
 			function prettyString(str) {
 				str = str.replace(/\n/g,'\\n');
@@ -820,7 +829,7 @@
 				return report + '\n' + lines.join('\n');
 			};
 			window.loadScript = function loadScript(url,callback) {
-				console.log('Loading '+url);
+				qcLog('Loading '+url);
 				var newScript = document.createElement('SCRIPT');
 				newScript.type = 'text/javascript';
 				newScript.src = url;
@@ -926,13 +935,13 @@
 			function execute(elIn,elOut) {
 				var cmd = elIn.value;
 				if (cmd) {
-					elOut.value = '...';
+					/* elOut.value = '...'; */
+					qcLog('');
+					qcLog('>> '+cmd);
 					runCmd(cmd,function(result){
 						/*elOut.innerHTML = escape(''+result);*/
-						elOut.value = (''+result);
-						if (this.console && console.log) {
-							console.log(result);
-						}
+						/* elOut.value = (''+result); */
+						qcLog(''+result);
 						history.push({code:elIn.value,result:''+result});
 						historyPos = history.length;
 						/* We don't clear the textArea, only the console command box. */
@@ -2579,7 +2588,7 @@ allowing the browser to scroll to the correct scrollTop.  Otherwise we are left
 waiting for at the top of the page for ages whilst this loads, and then jump!*/
 setTimeout(function(){
   document.getElementById("commentsFrame").src = "http://hwi.ath.cx/hwikalong/?url=http%3A//hwi.ath.cx/joeys_bookmarklets.html%23dev&amp;title=";
-},8000);
+},20000);
 </SCRIPT>
 
 
