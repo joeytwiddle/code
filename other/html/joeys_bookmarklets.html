@@ -739,32 +739,39 @@
 
 			/* We could put the QuickConsole into window, so that history can be preserved if the console is reloaded. */
 
-			var QuickConsole = ({});
+			var QuickConsole = window.QuickConsole ? window.QuickConsole : ({});
+			window.QuickConsole = QuickConsole;
 
 			var oldConsole = window.console;
+			var oldLog = oldConsole.log;
 
 			function qcLog() {
-				if (arguments.length!=0 && arguments.length!=1) {
+				/* if (arguments.length!=0 && arguments.length!=1) {
 					arguments[0]+=''+arguments.slice(1);
-				}
+				} */
 				/* Not succeeding in Firefox 10: textArea.textContent += '\n' + arguments[0]; */
-				textArea.value += '\n' + arguments[0];
-				textArea.scrollTop = textArea.scrollHeight;
-				if (oldConsole && oldConsole.log) {
-					oldConsole.log.call(oldConsole,arguments[0]);
+				/* textArea.value += '\n' + arguments[0]; */
+				textArea.value += '\n';
+				for (var i=0;i<arguments.length;i++) {
+					textArea.value += arguments[i]+' ';
 				}
+				if (oldConsole && oldConsole.log) {
+					oldLog.apply(oldConsole,arguments);
+				}
+				textArea.scrollTop = textArea.scrollHeight;
 			}
 
 			/* Intercept and display calls to console.log(). */
 			/* Disabled because it loops forever if FastJSLogger is loaded. */
 			/* Re-enabled because 'console' is expected later! */
 			/* Anyway the cause of that problem was traced to FJSL. */
+			/* Another problem may have been not replacing console but calling the fn in oldConsole!  Now we have oldLog. */
 			if (typeof console == 'undefined') {
 				window.console = {};
 			}
-			if (typeof console.log != 'function') {
+			/* if (typeof console.log != 'function') { */
 				console.log = qcLog;
-			}
+			/* } */
 
 			function prettyString(str) {
 				str = str.replace(/\n/g,'\\n');
@@ -789,7 +796,7 @@
 			}
 
 			function niceTypeOf(obj) {
-				if (''+obj == '[object Object]' && typeof obj === 'object' && obj !== null && obj.constructor) {
+				if (/*''+obj == '[object Object]' &&*/ typeof obj === 'object' && obj !== null && obj.constructor) {
 					return '[object '+obj.constructor.name+']';
 				}
 				return typeof obj;
@@ -825,7 +832,9 @@
 					}
 					lines.push('  ' + text + ',');
 				}
-				lines.sort(function(a,b){ return (a<b ? +1 : -1); });
+				/* This is nice for ordering types but not lists!
+				lines.sort(function(a,b){ return (a<b ? +1 : -1); }); */
+				lines.sort(function(a,b){ return (a<b ? -1 : +1); });
 				return report + '\n' + lines.join('\n');
 			};
 			window.loadScript = function loadScript(url,callback) {
@@ -865,6 +874,13 @@
 			loadScript('http://hwi.ath.cx/static/js/jquery.js');
 			loadScript('http://hwi.ath.cx/javascript/dollar_get.js');
 			loadScript('http://hwi.ath.cx/javascript/changeClassProperties.js');
+			/* console.log('<expr>.      Inspect'); */
+			console.log('');
+			console.log('i:<expr>     Inspect');
+			console.log('<expr>.      Auto-inspect');
+			console.log('');
+			console.log('c:<csexpr>   Coffeescript');
+			console.log('C:<csexpr>   CoffeeScript source');
 
 			innerDiv.appendChild(document.createElement('BR'));
 
@@ -875,7 +891,8 @@
 			commandInput.size = 100;
 			innerDiv.appendChild(commandInput);
 
-			var history = [];
+			var history = QuickConsole.history ? QuickConsole.history : [];
+			QuickConsole.history = history;  /* Beware: two references, we must never replace the history array, only modify it. */
 			var historyPos = 0;
 			history.loadOldLine = function() {
 				try {
