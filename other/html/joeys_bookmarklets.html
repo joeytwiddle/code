@@ -1015,8 +1015,11 @@
 					evt.preventDefault();
 					var head = commandInput.value.slice(0,-1);
 					try {
-						var thing = eval(head);
-						textArea.value = inspect(thing);
+						/* var thing = eval(head);
+						textArea.value = inspect(thing); */
+						runCmd(head,function(result){
+							textArea.value = inspect(result);
+						});
 					} catch (e) {
 						textArea.value = '' + e;
 					}
