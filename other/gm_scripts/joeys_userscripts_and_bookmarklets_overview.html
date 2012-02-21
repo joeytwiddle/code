@@ -35,7 +35,7 @@ if (this.XMLHttpRequest) {
 	}
 
 	function gotIt() {
-		// alert(req.responseText);
+		// alert("Got responseText: "+req.responseText);
 		div = document.createElement("div");
 		div.innerHTML = req.responseText;
 		while (div.childNodes.length) {
@@ -51,7 +51,26 @@ if (this.XMLHttpRequest) {
 
 	var req = new XMLHttpRequest();
 
-	// req.onreadystatechange = ...;
+	// Adopt current query params, or default to most-recent-at-top
+	// Old: var query = ( document.location.search ? document.location.search : "?M=D" );
+	var query = ( document.location.search ? document.location.search : "?C=M;O=D" );
+
+	// Avoid caching (don't think this has ever been needed)
+	// query += "&dummy="+new Date().getTime();
+
+	var sync = true;
+	// false (non-synchronized) fails in FF 3.5.15 and Konq 3.5.10
+
+	req.open("GET", "http://hwi.ath.cx/code/other/gm_scripts/"+query, sync);
+	req.send(null);
+
+	// if (sync) {
+		// If we are doing synchronized, then we must call gotIt manually:
+		// gotIt();
+		// setTimeout(gotIt,1);
+	// }
+
+	// Otherwise we act on callback:
 	req.onreadystatechange = function (aEvt) {
 		if (req.readyState == 4) {
 			if(req.status == 200) {
@@ -61,16 +80,6 @@ if (this.XMLHttpRequest) {
 			}
 		}
 	};
-
-	// Adopt current query params, or default to most-recent-at-top
-	// Old: var query = ( document.location.search ? document.location.search : "?M=D" );
-	var query = ( document.location.search ? document.location.search : "?C=M;O=D" );
-
-	req.open("GET", "http://hwi.ath.cx/code/other/gm_scripts/"+query, false); // false = non-synchronized fails to call gotIt() in FF 3.5.15 :O
-	req.send(null);
-
-	// If we are doing non-synchronized, then in FF3.5.15, we must call gotIt manually:
-	gotItOnce();
 
 } else {
 	alert("This page requires XMLHttpRequest.");
