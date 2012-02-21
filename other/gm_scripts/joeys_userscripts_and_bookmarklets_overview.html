@@ -42,7 +42,7 @@ if (this.XMLHttpRequest) {
 			document.body.appendChild(div.childNodes[0]);
 		}
 		setTimeout(function(){
-			addScript("http://hwi.ath.cx/code/other/gm_scripts/make_bookmarklet_from_us/make_bookmarklet_from_us.user.js");
+			addScript("http://hwi.ath.cx/code/other/gm_scripts/make_bookmarklet_from_us/make_bookmarklet_from_us.user.js?dummy="+Math.random());
 			// addScript("http://hwi.ath.cx/javascript/focus.js");
 		},100);
 	}
@@ -57,12 +57,16 @@ if (this.XMLHttpRequest) {
 			if(req.status == 200) {
 				gotItOnce(req);
 			} else {
-				alert("Error loading page "+req.url+"\n");
+				alert("XHR failed with status "+req.status+"\n");
 			}
 		}
 	};
 
-	req.open("GET", "http://hwi.ath.cx/code/other/gm_scripts/?M=D", false); // false = non-synchronized fails to call gotIt() in FF 3.5.15 :O
+	// Adopt current query params, or default to most-recent-at-top
+	// Old: var query = ( document.location.search ? document.location.search : "?M=D" );
+	var query = ( document.location.search ? document.location.search : "?C=M;O=D" );
+
+	req.open("GET", "http://hwi.ath.cx/code/other/gm_scripts/"+query, false); // false = non-synchronized fails to call gotIt() in FF 3.5.15 :O
 	req.send(null);
 
 	// If we are doing non-synchronized, then in FF3.5.15, we must call gotIt manually:
