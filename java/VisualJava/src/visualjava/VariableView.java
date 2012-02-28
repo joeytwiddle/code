@@ -5,6 +5,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -23,6 +24,8 @@ import org.neuralyte.common.swing.draganddrop.DragAndDropManager;
 import org.neuralyte.common.swing.draganddrop.HasDragDroppableObject;
 import org.neuralyte.common.swing.jmenus.DetachableJMenu;
 import org.neuralyte.common.swing.jmenus.SplittingJMenu;
+import org.neuralyte.supergui.SuperGUI;
+import org.neuralyte.swingcomponents.io.FilesystemTree;
 
 /** joey Nov 1, 2004 2:27:04 AM */
 public class VariableView extends JLabel implements HasDragDroppableObject {
@@ -41,11 +44,12 @@ public class VariableView extends JLabel implements HasDragDroppableObject {
     public VariableView(Desktop _desktop, Class _type, String _name, Object _obj) {
         // super(_obj.getClass().getName() + " x = " + _obj);
         super(
-        		VisualJavaStatics.getSimpleClassName(_obj.getClass())
-        		+ " " + _name + " = " + niceValue(_obj),
-        		// new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj),
-        		new ImageIcon("src/visualjava/"+VisualJavaGUIStatics.getColorForClass(_type)+"dot-32x32.png", "" + _obj),
-        		JLabel.RIGHT
+        	VisualJavaStatics.getSimpleClassName(_obj.getClass())
+        	+ " " + _name + " = " + niceValue(_obj),
+        	// new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj),
+        	// new ImageIcon("src/visualjava/"+VisualJavaGUIStatics.getColorForClass(_type)+"dot-32x32.png", "" + _obj),
+        	new ImageIcon(VariableView.class.getResource(VisualJavaGUIStatics.getColorForClass(_type)+"dot-32x32.png")),
+        	JLabel.RIGHT
         );
         desktop = _desktop;
         variable = new VariableModel(_type,_name,_obj);
@@ -61,6 +65,22 @@ public class VariableView extends JLabel implements HasDragDroppableObject {
         // desktop.displayMethod(_obj.getClass().getDeclaredMethods()[0],value);
         // Moveability.allowUserToMove(this); // Implied by:
         DragAndDropManager.hasObjectCanBeDropped(this);
+        // SuperGUI.addOnAction(this,SuperGUI.ACTION_DOUBLE_CLICK,this.getClass().getMethod("focusInspectionWindow",new Class[0]));
+        this.addMouseListener(
+                new MouseAdapter() {
+                    public void mouseClicked(MouseEvent e) {
+                        if (e.getClickCount() == 2) {
+                            focusInspectionWindow();
+                        }
+                    }
+                }
+        );
+    }
+    
+    
+    public void focusInspectionWindow() {
+        // desktop.
+        desktop.focusInspectionWindow(variable);
     }
     
     private static String niceValue(Object _obj) {
@@ -238,5 +258,23 @@ public class VariableView extends JLabel implements HasDragDroppableObject {
         // return value;
         return this;
     }
+    
+//    class VVActionHandler extends MouseAdapter {
+//
+//        public void mouseClicked(MouseEvent e) {
+//            if (e.getClickCount() == 2) {
+//                VariableView v = this;
+//                /*
+//                Object component = e.getComponent();
+//                FilesystemTree fst = (FilesystemTree)component;
+//                File clicked = fst.getSelectedFile();
+//                if (clicked.isFile()) {
+//                    fileDoubleClicked(clicked);
+//                }
+//                */
+//            }
+//        }
+//
+//    }
 
 }

@@ -36,6 +36,7 @@ public class VisualJavaGUIStatics {
 				return "green";
 		} catch (Exception e) {
 		}
+		// Unknown:
 		return "magenta";
 	}
 

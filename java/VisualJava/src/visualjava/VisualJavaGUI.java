@@ -387,6 +387,7 @@ public class VisualJavaGUI {
     				frame.pack();
     				*/
     				frame.repaint();
+    				/** TODO This does not seem to be working!  I see two "Class" menu dropdowns. **/
     			}
     			classMenu = new ClassMenu("");
 

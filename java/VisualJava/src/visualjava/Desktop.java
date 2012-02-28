@@ -3,10 +3,18 @@ package visualjava;
 import java.awt.Component;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Map;
 
 import javax.swing.JDesktopPane;
 import javax.swing.JFrame;
+import javax.swing.JInternalFrame;
 import javax.swing.JLayeredPane;
+
+import org.neuralyte.Logger;
+
+import visualjava.guicomponents.InspectionWindow;
 
 /** joey Nov 1, 2004 2:11:42 AM */
 public class Desktop extends JDesktopPane {
@@ -25,6 +33,19 @@ public class Desktop extends JDesktopPane {
 	}
 
 	public String showObject(Object object) {
+	    
+	    // It makes the GUI more friendly for the user, if we display methods/constructors
+	    // in their GUI form.  However (until supported) this does break support for the variable's name and
+	    // will hinder programming/recording actions using these objects.
+        if (object instanceof Method) {
+            displayMethod((Method)object,null);
+            return "MethodFrame"+object.hashCode();
+        }
+        if (object instanceof Constructor) {
+            displayConstructor((Constructor)object);
+            return "MethodFrame"+object.hashCode();
+        }
+	    
 		String name = VisualJavaStatics.getSimpleClassName(object.getClass());
 		name = Character.toLowerCase(name.charAt(0)) + name.substring(1);
 		if (name.endsWith("[]")) {
@@ -37,8 +58,15 @@ public class Desktop extends JDesktopPane {
 		// anIcon.setLocation(getWidth()/2,getHeight()/2);
 		placeAnItem(anIcon);
 		anIcon.setSize(anIcon.getPreferredSize());
+
+		// TODO I once got an Exception here:
+		// java.lang.IllegalArgumentException: illegal component position
+		// We were fairly near the bottom of default size window.
+		// I was calling .getClass();
 		add(anIcon,JLayeredPane.DEFAULT_LAYER);
+		
 		anIcon.setVisible(true);
+		
 //		JMenu menu = new JMenu("Menu");
 		// menu.setIcon(anIcon.getIcon());
 		// add(menu);
@@ -96,6 +124,15 @@ public class Desktop extends JDesktopPane {
 		}
 //		}
 		 */
+		if (component instanceof VariableView) {
+		    
+		}
+		if (component instanceof JInternalFrame) {
+		    JInternalFrame frame = (JInternalFrame)component;
+		    frame.setSize(frame.getPreferredSize());
+	        add(frame);
+	        frame.setVisible(true);
+		}
 	}
 
 	public void displayMethod(Method m, Object obj) {
@@ -110,9 +147,6 @@ public class Desktop extends JDesktopPane {
 	private void initMethodFrame(MethodFrame methodFrame) {
 		// methodFrame.setLocation(getWidth()/2,getHeight()/2);
 		placeAnItem(methodFrame);
-		methodFrame.setSize(methodFrame.getPreferredSize());
-		add(methodFrame);
-		methodFrame.setVisible(true);
 		
         if (VisualJavaOptions.autoExecNoParameterMethods && methodFrame.parameterTargets.length == 0) {
         	methodFrame.tryToInvoke();
@@ -125,5 +159,38 @@ public class Desktop extends JDesktopPane {
 		parent.validate();
 		// parent.pack();
 	}
+
+	Map<VariableModel,InspectionWindow> inspectionWindows = new Hashtable<VariableModel,InspectionWindow>();
+    public void focusInspectionWindow(VariableModel var) {
+        cleanupInspectionWindowCache();
+        InspectionWindow iw;
+        iw = inspectionWindows.get(var);
+        if (iw == null) {
+            iw = new InspectionWindow(var,this);
+            inspectionWindows.put(var,iw);
+            placeAnItem(iw.frame);
+        }
+        iw.frame.setVisible(true);
+        // Breaks: setComponentZOrder(iw.frame, 0);
+        if (iw.frame.isIcon()) {
+            try {
+                iw.frame.setIcon(false);
+            } catch (Exception e) {
+                Logger.log(e);
+            }
+        }
+        setSelectedFrame(iw.frame);
+        parent.validate();
+        // return iw;
+    }
+    
+    public void cleanupInspectionWindowCache() {
+        for (VariableModel var : inspectionWindows.keySet()) {
+            InspectionWindow iw = inspectionWindows.get(var); 
+            if (iw.frame.isClosed()) {
+                inspectionWindows.remove(var);
+            }
+        }
+    }
 
 }

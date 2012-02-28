@@ -15,7 +15,10 @@ import javax.swing.JButton;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
 
-/** joey Nov 1, 2004 7:51:00 PM */
+/** joey Nov 1, 2004 7:51:00 PM
+ * @todo If I'm right about MVC, this should become MethodView, extending nothing, and should have a property of type JInternalFrame instead.
+**/
+
 public class MethodFrame extends JInternalFrame {
 
     //// Defined:

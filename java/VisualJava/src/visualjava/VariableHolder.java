@@ -10,9 +10,11 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JTextField;
 
+import org.neuralyte.Logger;
 import org.neuralyte.common.swing.draganddrop.CanAcceptDroppedObject;
 import org.neuralyte.common.swing.draganddrop.DragAndDropManager;
 import org.neuralyte.common.swing.draganddrop.HasDragDroppableObject;
+import org.neuralyte.util.reflection.ReflectionHelper;
 
 import visualjava.objecteditingcomponents.BooleanChooser;
 import visualjava.objecteditingcomponents.DroppableJLabel;
@@ -76,7 +78,7 @@ public class VariableHolder extends JPanel implements CanAcceptDroppedObject {
 			 * } else if (type.isPrimitive() || type.equals(String.class) ||
 			 * type.equals(Double.class) ...
 			 */
-		} else if (ReflectionHelper.isPrimitiveType(type)
+		} else if (ReflectionHelper.isPrimitiveHolder(type)
 				|| type.equals(String.class)) {
 			// org.neuralyte.Logger.log("type = " + type);
 			// component = new JTextField("" +
@@ -150,6 +152,8 @@ public class VariableHolder extends JPanel implements CanAcceptDroppedObject {
 				variable = (VariableView) o;
 				if (component instanceof JLabel) {
 					((JLabel) component).setText(variable.variable.name);
+				} else {
+				    Logger.warn("Cannot set view of component "+component);
 				}
 			}
 			return accepted;

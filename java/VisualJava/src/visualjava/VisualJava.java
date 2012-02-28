@@ -56,9 +56,10 @@ public class VisualJava {
 		desktop.showObject(new XStream(new com.thoughtworks.xstream.io.xml.DomDriver()));
 		// desktop.showObject(new com.thoughtworks.xstream.io.xml.DomDriver());
 		try {
+            desktop.showObject(org.common.nap.Napper.class);
 			Class[] argTypes;
 			argTypes = new Class[0];
-			desktop.showObject(com.thoughtworks.xstream.io.xml.DomDriver.class.getConstructor());
+            desktop.showObject(com.thoughtworks.xstream.io.xml.DomDriver.class.getConstructor());
 			argTypes = new Class[1];
 			argTypes[0] = String.class;
 			desktop.showObject(XStream.class.getMethod("fromXML", argTypes));

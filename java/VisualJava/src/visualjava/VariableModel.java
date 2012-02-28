@@ -1,7 +1,7 @@
 package visualjava;
 
 /** joey Nov 5, 2004 4:05:06 PM
- * @deprecated */
+ * @deprecated WHY?! */
 public class VariableModel {
 
     Class type;
