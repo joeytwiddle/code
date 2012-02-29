@@ -106,7 +106,8 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF0000;  // red
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x00BFFF;  // cyan lightning
-		bscope_cfg.color = 0x008FFF;  // electric cyan
+		bscope_cfg.color = 0x009FFF;  // midletric
+		// bscope_cfg.color = 0x008FFF;  // electric cyan
 		// bscope_cfg.color = 0x007FFF;  // electric blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
@@ -122,12 +123,13 @@ void bscope_read_config(void)
 }
 
 
-// #define blurTao 0.9961
 // #define fadeRate 0.9961
-// #define blurTao 0.94
+// #define blurTao 0.9961
 // #define fadeRate 0.97
-#define blurTao 0.96
-#define fadeRate 0.92
+// #define blurTao 0.94
+#define fadeRate 0.88
+#define blurTao 0.8
+#define blurTao2 0.8
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -155,6 +157,8 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		else
 			sum = 0;
 		*/
+// #define max(a,b) (a>b?a:b)
+		// sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
 
 		// Retain self with blurTao:
 		// if (iptr[0] > sum)
