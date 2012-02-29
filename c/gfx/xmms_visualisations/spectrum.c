@@ -46,6 +46,9 @@
 //// I dropped this to get more raw data, and it was a bit one-sided.
 //// To compensate for its removal, I increased tau and reduced spikiness (previously 3 and 0.5).
 // #define DO_DIFFUSION
+//// TODO: I *think* the visualisation may have been "more accurate" when we
+//// were doing diffusion, and tau and dif were lower.  (It hid its error - we
+//// show data which is biased towards frequencies which hit the centre of a bin.)
 
 #define DEBUG(X,Y); 
 // TODO: #define DEBUG(X,Y); fprintf(stdout,X,Y);
@@ -454,7 +457,7 @@ static Pixmap* take_snapshot() {
 static void fsanalyzer_init(void) {
 	GdkColor palette[5];
 	GdkColor color;
-	int i;
+	int i,x,y;
 
 	if(window)
 		return;
@@ -462,7 +465,6 @@ static void fsanalyzer_init(void) {
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), _("Spectrum Analyzer"));
 	gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, FALSE);
-	// NEW! Joey's stuff:
 	// gtk_window_set_resizable(GTK_WINDOW(window), TRUE); // worked ok, but isn't desirable until we support it!
 	// gtk_window_set_decorated(GTK_WINDOW(window), FALSE); // failed, the window still has a titlebar+frame.
 	/*
@@ -492,6 +494,8 @@ static void fsanalyzer_init(void) {
 		gtk_window_move(GTK_WINDOW(window), wx, wy-WINHEIGHT);
 	// }
 	*/
+	// gdk_window_get_root_origin(window->parent,&x,&y);
+	// gtk_widget_set_uposition(GTK_WINDOW(window),x,y);
 
 #ifdef MASK_TRANSPARENCY
 	mask = create_transparency_mask(window->window);
@@ -525,18 +529,18 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 1.2
+	#define palScale 1.3
 	//// Red and orange flame
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
-	palette[0].red = 0xFFFF; palette[0].green = 0xFF88; palette[0].blue = 0xDDDD;
-	palette[1].red = 0xFFFF; palette[1].green = 0xEE88; palette[1].blue = 0x8800;
+	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
+	palette[1].red = 0xFFFF; palette[1].green = 0xFF88; palette[1].blue = 0xCCCC;
 	palette[2].red = 0xFF77; palette[2].green = 0xDD00; palette[2].blue = 0x4444;
-	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
-	palette[4].red = 0xCCCC; palette[4].green = 0x4444; palette[4].blue = 0x0000;
+	palette[3].red = 0xFF44; palette[3].green = 0x8888; palette[3].blue = 0x0000;
+	palette[4].red = 0xAAAA; palette[4].green = 0x2222; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
-	#define palDelta 0.00
+	#define palDelta 0.07
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -654,16 +658,17 @@ static void fsanalyzer_cleanup(void) {
 	}
 }
 
+#ifdef VELOCITY2
+	// Declared outside so that value from right carries to left next frame.
+	double bar_heights_difference_local;
+#endif
+
 static gint draw_func(gpointer data) {
 	gint i;
 	gdouble heatHere;
 	gint lasty;
 #ifdef MASK_TRANSPARENCY
 	GdkColor pattern;
-#endif
-
-#ifdef VELOCITY2
-	double bar_heights_difference_local;
 #endif
 
 #ifdef SKIP_FRAMES
@@ -822,7 +827,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.3;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.55 /*MINCOL*/ + heatHere*EXPLOSION*0.3;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -837,7 +842,9 @@ static gint draw_func(gpointer data) {
 		#endif
 		#ifdef VELOCITY2
 			// We slightly constrain the color spikes horizontally:
-			#define VELOCITY_X_GAIN 0.15
+			#define VELOCITY_X_GAIN 0.04
+#define arx ( XSCALE(i)+2<SPECWIDTH ? XSCALE(i)+2 : SPECWIDTH-1 )
+			// Note this value is low because it operates over x-pixels, not i-bars.
 			bar_heights_difference_local =
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
@@ -846,7 +853,7 @@ static gint draw_func(gpointer data) {
 			// Mmm ok fixed a bug in VELOCITY2 :P
 			// Well actually that value will be often negative, since bar heights go up in a few frames, but down slowly over many frames.
 			// So although the average may be 0, if gathered over time, the negative values will dominate.
-			cy += bar_heights_difference_local * 20.0 - 0;
+			cy += bar_heights_difference_local * 30.0 - 0;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
@@ -1017,7 +1024,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((double)bar_heights[i] - (double)last_bar_height);
 		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
 		/*#define DIFFERENCE_GAIN_BY_TIME 0.04 0.2 */
-		#define DIFFERENCE_GAIN_BY_TIME 0.02
+		#define DIFFERENCE_GAIN_BY_TIME 0.01
 		double diff = (double)bar_heights[i] - (double)last_bar_height;
 		if (diff<0) diff=0; // This is not a good measure.  Depending on the values, some tracks will respond differently to others.
 		bar_heights_difference[i] =
