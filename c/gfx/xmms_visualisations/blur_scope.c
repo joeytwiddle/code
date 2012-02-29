@@ -18,7 +18,7 @@
  */
 #include "config.h"
 
-#include <stdio.h>
+#include <math.h>
 #include <gtk/gtk.h>
 #include <string.h>
 #include "xmms/plugin.h"
@@ -162,7 +162,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		if (sum <= 0)
 			sum = 0;
 		else if (sum > 64)
-			sum = sum - 16; // Fast initial decay
+			sum = sum - 4; // Fast initial decay
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
@@ -177,7 +177,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
 
-		// sum = iptr[0];  if (sum > DECAY_RATE*4) { sum -= DECAY_RATE*4; } else { sum = 0; } // Rapid decay without blurring
+		sum = iptr[0];  if (sum > DECAY_RATE) { sum -= DECAY_RATE; } else { sum = 0; } // Rapid decay without blurring
 
 		*(optr) = sum;
 		iptr++;
@@ -198,10 +198,7 @@ void generate_cmap(void)
 {
 	guint32 colors[256],i,red,blue,green;
 	// float bluet,whitet,whites;
-#define cmap_middle 180.0
-#define bluet ((float)i/cmap_middle)
-#define whitet (((float)i-cmap_middle)/(255.0-cmap_middle))
-#define whites (1.0-((float)i-cmap_middle)/(255.0-cmap_middle))
+#define thru pow((double)i/255.0,3.0)
 	if(window)
 	{
 		red = (guint32)(bscope_cfg.color / 0x10000);
@@ -209,10 +206,10 @@ void generate_cmap(void)
 		blue = (guint32)(bscope_cfg.color % 0x100);
 		for(i = 255; i > 0; i--)
 		{
-			if (i < cmap_middle)
-				colors[i] = make_rgb(bluet*red,bluet*green,bluet*blue);
+			if (i == 255)
+				colors[i] = make_rgb(255,255,255);
 			else
-				colors[i] = make_rgb(red*whites+255*whitet,green*whites+255*whitet,blue*whites+255*whitet);
+				colors[i] = make_rgb(thru*red,thru*green,thru*blue);
 		}
 		colors[0]=0;
 		if(cmap)
