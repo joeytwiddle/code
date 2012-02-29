@@ -31,6 +31,16 @@
 /* WIDTH should be kept 256, this is the hardwired resolution of the
    spectrum given by XMMS */
 #define WIDTH 256
+#define WINWIDTH 550
+
+// #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH)
+// #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH*0.7)
+#define XSCALE(i) (int)((float)WIDTH*dropEnds(doLog((float)i/(float)WINWIDTH)))
+#define doLog(x) (x)
+// #define doLog(x) pow(x,1.2)
+#define dropEnds(f) (f*0.8)
+// #define dropEnds(f) (f)
+// #define dropEnds(f) (0.2+0.6*(float)(f))
 
 /* HEIGHT can be modified at your pleasure */
 #define HEIGHT 128
@@ -93,11 +103,71 @@ static void fsanalyzer_init(void) {
 	gdk_window_set_back_pixmap(window->window,bg_pixmap,0);
 	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(fsanalyzer_destroy_cb),NULL);
 	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_widget_destroyed), &window);
-	gtk_widget_set_size_request(GTK_WIDGET(window), WIDTH, HEIGHT);
+	gtk_widget_set_size_request(GTK_WIDGET(window), WINWIDTH, HEIGHT);
 	gc = gdk_gc_new(window->window);
-	draw_pixmap = gdk_pixmap_new(window->window,WIDTH,HEIGHT,gdk_rgb_get_visual()->depth);
+	draw_pixmap = gdk_pixmap_new(window->window,WINWIDTH,HEIGHT,gdk_rgb_get_visual()->depth);
 
 	bar = gdk_pixmap_new(window->window,25, HEIGHT, gdk_rgb_get_visual()->depth);
+
+	for(i = 0; i < HEIGHT; i++) {
+		float thruouter,thruinner;
+		thruouter = 1.0 - (float)i/(float)HEIGHT;
+		thruinner = thruouter*4.0 - (int)(thruouter*4.0);
+		thruinner *= 0xFFFF;
+		if (thruouter<0.25) {
+			color.red = 0xbbbb+thruinner/4;
+			color.green = 0xbbbb+thruinner/4;
+			color.blue = 0xFFFF;
+		} else if (thruouter<0.5) {
+			//// blue -> white -> yellow -> red
+			// color.red = thruinner;
+			// color.green = thruinner;
+			// color.blue = 0xFFFF;
+			//// blue -> black -> yellow -> red
+			// color.red = 0;
+			// color.green = 0;
+			// color.blue = 0xFFFF - thruinner;
+			//// yellow -> red -> darkred
+			// color.red = 0xFFFF;
+			// color.green = 0xFFFF - thruinner;
+			// color.blue = 0;
+			//// white -> yellow -> red
+			color.red = 0xFFFF;
+			color.green = 0xFFFF;
+			color.blue = 0xFFFF - thruinner;
+		} else if (thruouter<0.75) {
+			// color.red = 0xFFFF;
+			// color.green = 0xFFFF;
+			// color.blue = 0xFFFF - thruinner;
+			//
+			//
+			//
+			// color.red = thruinner;
+			// color.green = thruinner;
+			// color.blue = 0;
+			// color.red = 0xFFFF - thruinner/2;
+			// color.green = 0;
+			// color.blue = 0;
+			color.red = 0xFFFF;
+			color.green = 0xFFFF - thruinner;
+			color.blue = 0;
+		} else {
+			// color.red = 0xFFFF;
+			// color.green = 0xFFFF - thruinner;
+			// color.blue = 0;
+			//
+			//
+			//
+			color.red = 0xFFFF - thruinner/2;
+			color.green = 0;
+			color.blue = 0;
+		}
+		gdk_color_alloc(gdk_colormap_get_system(),&color);
+		gdk_gc_set_foreground(gc,&color);
+		gdk_draw_line(bar,gc,0,i,24,i);
+	}
+
+	/*
 	for(i = 0; i < HEIGHT / 2; i++) {
 		color.red = 0xFFFF;
 		color.green = ((i * 255) / (HEIGHT / 2)) << 8;
@@ -111,11 +181,14 @@ static void fsanalyzer_init(void) {
 		color.red = (255 - ((i * 255) / (HEIGHT / 2))) <<8;
 		color.green = 0xFFFF;
 		color.blue = 0;
+		// color.blue = (127*i*2/HEIGHT) <<8;
+		// color.blue = (255*i*2/HEIGHT) <<8;
 
 		gdk_color_alloc(gdk_colormap_get_system(),&color);
 		gdk_gc_set_foreground(gc,&color);
 		gdk_draw_line(bar,gc,0,i + (HEIGHT / 2),24,i + (HEIGHT / 2));
 	}
+	*/
 
 	scale = HEIGHT / ( log((1 - d) / d) * 2 );
 	x00 = d*d*32768.0/(2 * d - 1);
@@ -163,6 +236,14 @@ static void fsanalyzer_cleanup(void) {
 	}
 }
 
+static int max(int a,int b) {
+	return ( a>b ? a : b );
+}
+
+static int min(int a,int b) {
+	return ( a<b ? a : b );
+}
+
 static gint draw_func(gpointer data) {
 	gint i;
 
@@ -173,10 +254,22 @@ static gint draw_func(gpointer data) {
 	}
 
 	GDK_THREADS_ENTER();
-	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WIDTH, HEIGHT);
+	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, HEIGHT);
 
-	for(i = 0; i < WIDTH; i++)
-		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[i], i, HEIGHT-1-bar_heights[i], 1, bar_heights[i]);
+	for(i = 0; i < WINWIDTH; i++) {
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 1+bar_heights[XSCALE(i)]/4, i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 1, i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(0,0.8*(HEIGHT-1-bar_heights[XSCALE(i)])), i, HEIGHT-1-bar_heights[XSCALE(i)], 1, min(HEIGHT,bar_heights[XSCALE(i)]));
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 0.75*(HEIGHT-1-bar_heights[XSCALE(i)]), i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(0.0,0.7*(HEIGHT-1-bar_heights[XSCALE(i)])), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
+		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(1,HEIGHT*0.4-0.2*bar_heights[XSCALE(i)]), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
+		int y,cy;
+		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
+		cy = max(1,HEIGHT*0.5-0.8*bar_heights[XSCALE(i)]);
+		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
+	}
 
 	gdk_window_clear(area->window);
 	GDK_THREADS_LEAVE();
