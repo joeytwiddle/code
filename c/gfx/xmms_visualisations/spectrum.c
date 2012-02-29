@@ -34,7 +34,6 @@
 /* WIDTH should be kept 256, this is the hardwired resolution of the
    spectrum given by XMMS */
 #define WIDTH 256
-#define WINWIDTH 550
 
 /* HEIGHT can be modified at your pleasure */
 #define HEIGHT 128
@@ -50,10 +49,14 @@
    added to the neighbouring bars */
 #define dif 4
 
-/* Definitions for fire colouring. */
+/* Parameters and functions for fire colouring. */
+#define WINWIDTH 550
+#define INTERPOLATE_CHEAP
+//// XSCALE() Converts WINWIDTH to WIDTH (maps window x onto bar_heights[]):
 // #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH)
 // #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH*0.7)
 #define XSCALE(i) (int)((float)WIDTH*dropEnds(doLog((float)(i)/(float)WINWIDTH)))
+//// Modify the x scale?
 #define doLog(x) (x)
 // #define doLog(x) pow(x,1.2)
 #define dropEnds(f) (f*0.7)
@@ -123,21 +126,32 @@ static void fsanalyzer_init(void) {
 	gc = gdk_gc_new(window->window);
 	draw_pixmap = gdk_pixmap_new(window->window,WINWIDTH,HEIGHT,gdk_rgb_get_visual()->depth);
 
+	// Our new bar pixel buffer is 3x as tall as the target window.
 	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
 
-	color.red = 0x0000;
-	color.green = 0x0000;
-	color.blue = 0x0000;
-	color.red = 0xFFFF/3;
-	color.blue = 0xFFFF/3; // TODO: This should only be for TESTING!
-	gdk_color_alloc(gdk_colormap_get_system(),&color);
-	gdk_gc_set_foreground(gc,&color);
-	// for(i = 0; i < HEIGHT; i++) {
-		// gdk_draw_line(bar,gc,0,i,24,i);
-	// }
-	i = 0;
-	gdk_draw_line(bar,gc,0,i,0,HEIGHT-1);
+	// The first HEIGHT pixels are "above" the flame.  They are rendered when the top of the flame is darker than 0!
+	// color.red = 0xFFFF/3; // TODO: If we are gonna have extra red, keep fading it.
+	// color.blue = 0xFFFF/*/3*/; // TODO: This should only be for TESTING!
+	for(i = 0; i < HEIGHT; i++) {
+		color.red = 0xFFFF/3 * i/HEIGHT;
+		color.green = 0x0000;
+		color.blue = 0x0000;
+		// color.blue = color.red;   color.red = 0;
+		/*
+		//// Produce a yellow "lick" above the flame.  Did not work well.
+		float t = HEIGHT-i;
+		if (t<8) {
+			color.red = 0xFFFF/3 + 0xFFFF/3*t/8;   color.green = color.red*t/8;
+		}
+		*/
+		gdk_color_alloc(gdk_colormap_get_system(),&color);
+		gdk_gc_set_foreground(gc,&color);
+		gdk_draw_line(bar,gc,0,i,24,i);
+	}
+	// i = 0;
+	// gdk_draw_line(bar,gc,0,i,0,HEIGHT-1);
 
+	// The second HEIGHT pixels are the fire, ranging from dark to light.  We could consider increasing the size of this part.
 	for(i = 0; i < HEIGHT; i++) {
 		float thruouter,thruinner;
 		thruouter = 1.0 - (float)i/(float)HEIGHT;
@@ -213,6 +227,7 @@ static void fsanalyzer_init(void) {
 		gdk_draw_line(bar,gc,0,HEIGHT+i,24,HEIGHT+i);
 	}
 
+	// The third HEIGHT pixels are full fire, max colour no change.
 	color.red = 0xFFFF;
 	color.green = 0xEEEE;
 	color.blue = 0xEEEE;
@@ -293,7 +308,7 @@ static void fsanalyzer_cleanup(void) {
 
 static gint draw_func(gpointer data) {
 	gint i;
-	float local;
+	float heatHere;
 	gint lasty;
 
 	/* FIXME: should allow spare redrawing like the vis. in the main window */
@@ -305,11 +320,11 @@ static gint draw_func(gpointer data) {
 	GDK_THREADS_ENTER();
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, HEIGHT);
 
-	// local = HEIGHT/4;
-	// local = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
-	local = (bar_heights[0] + bar_heights[WIDTH/4] + bar_heights[WIDTH/2] + bar_heights[WIDTH*3/4]) / 4;
-	// local = 0;
-	// local = HEIGHT/16; // When using true local mean method
+	// heatHere = HEIGHT/4;
+	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
+	heatHere = (bar_heights[0] + bar_heights[WIDTH/4] + bar_heights[WIDTH/2] + bar_heights[WIDTH*3/4]) / 4;
+	// heatHere = 0;
+	// heatHere = HEIGHT/16; // When using true heatHere mean method
 	lasty = HEIGHT-1;
 	for(i = 0; i < WINWIDTH; i++) {
 
@@ -317,21 +332,63 @@ static gint draw_func(gpointer data) {
 		// if ((i%8) == 0)
 			// continue;
 
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 1+bar_heights[XSCALE(i)]/4, i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 1, i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(0,0.8*(HEIGHT-1-bar_heights[XSCALE(i)])), i, HEIGHT-1-bar_heights[XSCALE(i)], 1, min(HEIGHT,bar_heights[XSCALE(i)]));
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 0.75*(HEIGHT-1-bar_heights[XSCALE(i)]), i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(0.0,0.7*(HEIGHT-1-bar_heights[XSCALE(i)])), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
-		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(1,HEIGHT*0.4-0.2*bar_heights[XSCALE(i)]), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
-
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
 
+		#ifdef INTERPOLATE_CHEAP
 		// Cheap interpolation trick:
 		y = 0.5*y + 0.5*lasty;
 		lasty = y;
+		#endif
+
+		//// Update heatHere:
+
+		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
+		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
+		// #define LOOKAHEAD 12
+		// #define GAIN 0.03
+		#define LOOKAHEAD 8
+		#define GAIN 0.05
+		// #define LOOKAHEAD 6
+		// #define GAIN 0.06
+		// #define LOOKAHEAD 5
+		// #define GAIN 0.07
+		// #define LOOKAHEAD 1
+		// #define GAIN 0.10
+		if (i+LOOKAHEAD<WINWIDTH)
+			heatHere = heatHere*(1.0-GAIN) + GAIN*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
+		#define MINCOL (HEIGHT/4)
+		// #define MINCOL (HEIGHT/12)
+		#define EXPLOSION 1.2
+		// #define EXPLOSION 1.1
+
+		/*
+		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
+		// BUG: Sometimes rising spikes were getting their tops clipped by some rising curve.  Maybe cy was < HEIGHT ?
+		// #define LOOKAHEAD 64
+		#define LOOKAHEAD 10
+		//// Doing them independently causes fadeouts at the edges.  Maybe a good thing, making the outer flames cooler.
+		// if (i+LOOKAHEAD < WINWIDTH)
+			// heatHere += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1);
+		// if (i-LOOKAHEAD > =0)
+			// heatHere -= (float)bar_heights[XSCALE(i-LOOKAHEAD)] / (LOOKAHEAD*2+1);
+		//// Doing them together is more correct:
+		//// I don't know why DELTA is needed.  It's a horizontal shift.
+		#define DELTA 8
+		if (i+LOOKAHEAD<WINWIDTH && i-LOOKAHEAD-DELTA>=0) {
+			heatHere += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1+DELTA);
+			heatHere -= (float)bar_heights[XSCALE(i-LOOKAHEAD-DELTA)] / (LOOKAHEAD*2+1+DELTA);
+		}
+		//// Very gently, move the global mean towards current state:
+		//// Without this, our average average is dependent on the initial value of heatHere.
+		// #define MINCOL (HEIGHT/4)
+		// if (i+LOOKAHEAD<WINWIDTH)
+			// heatHere = heatHere*0.999 + 0.001*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
+		#define MINCOL (HEIGHT/3)
+		#define EXPLOSION 0.8
+		*/
+
+		//// Choose the colour intensity of this flame:
 
 		/*
 		if (bar_heights[XSCALE(i)]<HEIGHT/2)
@@ -340,55 +397,30 @@ static gint draw_func(gpointer data) {
 			cy = max(1,HEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
 		*/
 
-		// This is a cheap way to approximate the local mean, but it produces good results (localised and spread):
-		#define LOOKAHEAD 8
-		if (i+LOOKAHEAD<WINWIDTH)
-			local = local*0.96 + 0.04*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
-
-		/*
-		// This is a more accurate way to calculate the local mean, but the results are not so good visually!
-		// BUG: Sometimes rising spikes were getting their tops clipped by some rising curve.  Maybe cy was < HEIGHT ?
-		#define LOOKAHEAD 64
-		//// Doing them independently causes fadeouts at the edges.  Maybe a good thing, making the outer flames cooler.
-		if (i+LOOKAHEAD<WINWIDTH)
-			local += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1);
-		if (i-LOOKAHEAD>=0)
-			local -= (float)bar_heights[XSCALE(i-LOOKAHEAD)] / (LOOKAHEAD*2+1);
-		//// Doing them together is more correct:
-		// if (i+LOOKAHEAD<WINWIDTH && i-LOOKAHEAD>=0) {
-			// local += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1);
-			// local -= (float)bar_heights[XSCALE(i-LOOKAHEAD)] / (LOOKAHEAD*2+1);
-		// }
-		//// VERY gently, move the global mean towards current state:
-		//// Without this, our average average it dependent on the initial value of local.
-		if (i+LOOKAHEAD<WINWIDTH)
-			local = local*0.999 + 0.001*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
-		*/
-
-		// cy = (cy + local/2) / 2;
-
+		// cy = (cy + heatHere/2) / 2;
 		// if (cy > HEIGHT*0.75)
 			// cy = HEIGHT*0.75;
 
 		// cy = 1;
 
 		/*
-		if (local<HEIGHT/2)
-			cy = local * 0.3;
+		if (heatHere<HEIGHT/2)
+			cy = heatHere * 0.3;
 		else
-			cy = (HEIGHT-local) * 0.3;
+			cy = (HEIGHT-heatHere) * 0.3;
 		*/
 
-		// local = 64;
+		// heatHere = 64;
 
-		#define MINCOL (HEIGHT/5)
-		// #define MINCOL (HEIGHT/12)
-		#define EXPLOSION 1.2
-		// #define EXPLOSION 1.1
-		cy = HEIGHT + MINCOL + local*EXPLOSION - (HEIGHT-y);
-		// We actually manipulate the spectrum (the height of the flame) to fix the colours:
-		//
+		cy = HEIGHT + MINCOL + heatHere*EXPLOSION - (HEIGHT-y);
+
+		// cy = y;
+
+		// cy = y * heatHere/HEIGHT;
+
+		//// We should not need to check any bounds now that we are using 3 buffers.
 		/*
+		//// This actually manipulated the spectrum (the height of the flame) to fix the colours:
 		if (cy < 1) {
 			y += (1 - cy);
 			cy = 1;
@@ -398,26 +430,19 @@ static gint draw_func(gpointer data) {
 			// cy = y;
 		}
 		*/
-		// if (cy < HEIGHT+1)
-			// cy = HEIGHT+1;
-		// if (cy < HEIGHT+4)
-			// cy = HEIGHT+4;
-
-		// cy = y;
-
-		// cy = y * local/HEIGHT;
-
+		/*
 		// if (cy > y)
 			// cy = y;
-		if (cy < 1) {
-			fprintf("Warning: cy = %i < 1 !\n",&cy);
-			cy = 1;
+		//// I think printf's were causing segfaults!
+		if (cy < HEIGHT+1) {
+			// fprintf("Warning: cy = %i < HEIGHT !\n",&cy);
+			cy = HEIGHT+1;
 		}
-
-		if (cy < HEIGHT) {
-			fprintf("Warning: cy = %i < HEIGHT !\n",&cy);
-			// cy = HEIGHT+1;
-		}
+		*/
+		// if (cy < 1) {
+			// // fprintf("Warning: cy = %i < 1 !\n",&cy);
+			// cy = 1;
+		// }
 
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
 
