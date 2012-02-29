@@ -92,7 +92,8 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x3FFFFF;  // cyan
 		// bscope_cfg.color = 0x3FFFBF;  // green/cyan
-		bscope_cfg.color = 0x3FBFFF;  // blue/cyan
+		// bscope_cfg.color = 0x3FBFFF;  // blue/cyan
+		bscope_cfg.color = 0x007FFF;  // blue/cyan
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
 		
@@ -122,14 +123,18 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 			// sum -= DECAY_RATE;
 		// if (sum > 0)
 			// sum = sum * 0.90;
+		// I made the intensities decay non-linearly.  This could alternatively
+		// be achieved by using a linear decay over a non-linear cmap.
 		if (sum <= 0)
 			sum = 0;
 		else if (sum > 64)
-			sum = sum - 32; // Initial fast decay
+			sum = sum - 16; // Initial fast decay
 		else if (sum > 16)
-			sum = sum - 0; // Middle slow decay
+			sum = sum - 0; // Middle slow decay (in fact blur only)
 		else
-			sum = sum - 1; // Finally fixed decay
+			sum = sum - 1; // Final fixed decay
+		// sum = 0; // Immediate total decay!
+		// sum = iptr[0];  if (sum > DECAY_RATE*8) { sum -= DECAY_RATE*8; } else { sum = 0; } // Rapid decay without blurring
 		*(iptr++) = sum;
 	}
 	
@@ -149,7 +154,10 @@ void generate_cmap(void)
 		blue = (guint32)(bscope_cfg.color % 0x100);
 		for(i = 255; i > 0; i--)
 		{
-			colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
+			if (i == 255)
+				colors[i] = (((guint32)(i*255/256) << 16) | ((guint32)(i*255/256) << 8) | ((guint32)(i*255/256)));
+			else
+				colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
 		}
 		colors[0]=0;
 		if(cmap)
@@ -255,6 +263,7 @@ static void bscope_render_pcm(gint16 data[2][512])
 	for(i = 0; i < WIDTH; i++)
 	{
 		y = (HEIGHT / 2) + (data[0][i >> 1] >> 9);
+		// Since we are reading only 1 sample for 2 pixels, we interpolate the second pixel:
 		if (i%2 == 1)
 			y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
 		if(y < 0)
