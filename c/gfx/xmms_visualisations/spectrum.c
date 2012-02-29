@@ -151,7 +151,7 @@
 //// But our implementation created many vertical lines.
 // #define VELOCITY
 //// VELOCITY2 is a little better, but still I think it needs some horizontal smoothing.
-// #define VELOCITY2
+#define VELOCITY2
 //// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
 //// But I think it should work positively - it highlights the frequencies which have just entered the audio.
 //// Maybe heatHere could act negatively.
@@ -169,26 +169,26 @@
    ... interpolated. ;P)
    If we increase WINWIDTH we should probably increase LOOKAHEAD also, and the
    way heatHere is calculated. */
-// #define WINWIDTH 256
 // #define WINWIDTH 274
 // #define WINWIDTH 550
-#define WINWIDTH 548
+#define WINWIDTH 550
 // #define WINWIDTH 1024
 // #define WINWIDTH 1200
+//// I tweaked the variables for 550x160 (doublesize), but 274x80 works ok.
 
 /* Height 224 should prevent clipping of the tops of flames when FLAMEHEIGHT=128.
    TODO: Users may wish to change the window's height.  If they do I'm guessing
    they would like us to scale FLAMEHEIGHT for them also. */
 // #define WINHEIGHT 224
 // #define WINHEIGHT 196
-#define WINHEIGHT 168
+#define WINHEIGHT 160
 
 /* FLAMEHEIGHT scales the height of the flames, and the colour buffer.
    I have seen flames actually reach 1.7*FLAMEHEIGHT pixels in height.
    If you increase FLAMEHEIGHT without increasing WINHEIGHT, the tops of noisy
    flames may get clipped. */
 // #define FLAMEHEIGHT 96
-#define FLAMEHEIGHT (WINHEIGHT/1.75)
+#define FLAMEHEIGHT (WINHEIGHT/1.5)
 
 /* Linearity of the amplitude scale (0.5 for linear, keep in [0.1, 0.9]) */
 #define d 0.33
@@ -747,7 +747,7 @@ static gint draw_func(gpointer data) {
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
 		#define LOOKAHEAD 1
-		#define GAIN 0.02
+		#define GAIN 0.04
 		//// GAIN might be better around 0.03 if VELOCITY2 is enabled.
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
@@ -770,14 +770,14 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
 		#ifdef VELOCITY
 			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
 		#endif
 		#ifdef VELOCITY2
 			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
-			bar_heights_difference_local = bar_heights_difference_local*0.9 + 0.1*(bar_heights_difference[XSCALE(i)]);
-			cy += bar_heights_difference_local * 0.5;
+			bar_heights_difference_local = bar_heights_difference_local*0.8 + 0.2*(bar_heights_difference[XSCALE(i)]);
+			cy += bar_heights_difference_local * 2.5;
 		#endif
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
@@ -942,9 +942,9 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// This fixes the bug that the left of the flame would go black.
 		// 128 produces a very tall flame (on the bass side at least, yscale applying).
 		// For examples of the bug see "BT - Communicate" or "Chemical Bros - Loops of Fury".
-		if (bar_heights[i]<0) bar_heights[i]=128;
+		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
-		bar_heights_difference[i] = bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height);
+		bar_heights_difference[i] = bar_heights_difference[i]*0.6  +  0.4*((float)bar_heights[i] - (float)last_bar_height);
 		// bar_heights_difference[i] = (gint16)((float)bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height));
 		#endif
 	}
