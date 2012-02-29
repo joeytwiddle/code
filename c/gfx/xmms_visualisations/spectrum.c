@@ -35,7 +35,7 @@
 
 // #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH)
 // #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH*0.7)
-#define XSCALE(i) (int)((float)WIDTH*dropEnds(doLog((float)i/(float)WINWIDTH)))
+#define XSCALE(i) (int)((float)WIDTH*dropEnds(doLog((float)(i)/(float)WINWIDTH)))
 #define doLog(x) (x)
 // #define doLog(x) pow(x,1.2)
 #define dropEnds(f) (f*0.7)
@@ -70,7 +70,7 @@ static void fsanalyzer_playback_stop(void);
 static void fsanalyzer_render_freq(gint16 data[2][256]);
 
 VisPlugin fsanalyzer_vp = {
-	.description = "Spectrum Analyzer",
+	.description = "Fiery Spectrum Analyzer",
 	.num_pcm_chs_wanted = 0,
 	.num_freq_chs_wanted = 1,
 	.init = fsanalyzer_init, /* init */
@@ -86,6 +86,14 @@ DECLARE_PLUGIN(spectrum, NULL, NULL, NULL, NULL, NULL, NULL, spectrum_vplist,NUL
 
 static void fsanalyzer_destroy_cb(GtkWidget *w,gpointer data) {
 	fsanalyzer_vp.disable_plugin(&fsanalyzer_vp);
+}
+
+static int max(int a,int b) {
+	return ( a>b ? a : b );
+}
+
+static int min(int a,int b) {
+	return ( a<b ? a : b );
 }
 
 static void fsanalyzer_init(void) {
@@ -107,12 +115,25 @@ static void fsanalyzer_init(void) {
 	gc = gdk_gc_new(window->window);
 	draw_pixmap = gdk_pixmap_new(window->window,WINWIDTH,HEIGHT,gdk_rgb_get_visual()->depth);
 
-	bar = gdk_pixmap_new(window->window,25, HEIGHT, gdk_rgb_get_visual()->depth);
+	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
+
+	color.red = 0x0000;
+	color.green = 0x0000;
+	color.blue = 0x0000;
+	gdk_color_alloc(gdk_colormap_get_system(),&color);
+	gdk_gc_set_foreground(gc,&color);
+	// for(i = 0; i < HEIGHT; i++) {
+		// gdk_draw_line(bar,gc,0,i,24,i);
+	// }
+	i = 0;
+	gdk_draw_line(bar,gc,0,i,0,HEIGHT-1);
 
 	for(i = 0; i < HEIGHT; i++) {
 		float thruouter,thruinner;
 		thruouter = 1.0 - (float)i/(float)HEIGHT;
 		thruinner = thruouter*5.0 - (int)(thruouter*5.0);
+		if (thruinner == 0)
+			thruinner = 1.0;
 		thruinner *= 0xFFFF;
 		if (thruouter<0.2) {
 			//// bunsen blue -> white -> yellow -> red
@@ -158,11 +179,11 @@ static void fsanalyzer_init(void) {
 			// color.green = 0;
 			// color.blue = 0;
 			color.red = 0xFFFF;
-			color.green = 0xDDDD - thruinner/4;
+			color.green = 0xDDDD - thruinner/3;
 			color.blue = 0;
 		} else if (thruouter<0.8) {
 			color.red = 0xFFFF;
-			color.green = 0xDDDD - 0xFFFF/4 - thruinner/4;
+			color.green = max(0xDDDD - 0xFFFF/3 - thruinner/3,0);
 			color.blue = 0;
 		} else {
 			// color.red = 0xFFFF;
@@ -173,13 +194,22 @@ static void fsanalyzer_init(void) {
 			//
 			// color.red = 0xFFFF - thruinner*0.75; // go down to 25% red, not black
 			// color.green = 0;
-			color.red = 0xFFFF - thruinner/2; // go down to 50% red, not black
-			color.green = 0xDDDD - 0xFFFF*2/4 - thruinner/4;
+			color.red = 0xFFFF - thruinner*2/3; // go down to 33% red, not black
+			color.green = max(0xDDDD - 0xFFFF*2/3 - thruinner/3,0);
 			color.blue = 0;
 		}
 		gdk_color_alloc(gdk_colormap_get_system(),&color);
 		gdk_gc_set_foreground(gc,&color);
-		gdk_draw_line(bar,gc,0,i,24,i);
+		gdk_draw_line(bar,gc,0,HEIGHT+i,24,HEIGHT+i);
+	}
+
+	color.red = 0xFFFF;
+	color.green = 0xEEEE;
+	color.blue = 0xEEEE;
+	gdk_color_alloc(gdk_colormap_get_system(),&color);
+	gdk_gc_set_foreground(gc,&color);
+	for(i = 0; i < HEIGHT; i++) {
+		gdk_draw_line(bar,gc,0,2*HEIGHT+i,24,2*HEIGHT+i);
 	}
 
 	/*
@@ -251,14 +281,6 @@ static void fsanalyzer_cleanup(void) {
 	}
 }
 
-static int max(int a,int b) {
-	return ( a>b ? a : b );
-}
-
-static int min(int a,int b) {
-	return ( a<b ? a : b );
-}
-
 static gint draw_func(gpointer data) {
 	gint i;
 	float local;
@@ -272,7 +294,7 @@ static gint draw_func(gpointer data) {
 	GDK_THREADS_ENTER();
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, HEIGHT);
 
-	local = 0;
+	local = HEIGHT/4;
 	for(i = 0; i < WINWIDTH; i++) {
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
@@ -282,23 +304,68 @@ static gint draw_func(gpointer data) {
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 0.75*(HEIGHT-1-bar_heights[XSCALE(i)]), i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(0.0,0.7*(HEIGHT-1-bar_heights[XSCALE(i)])), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(1,HEIGHT*0.4-0.2*bar_heights[XSCALE(i)]), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
+
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
+
+		/*
 		if (bar_heights[XSCALE(i)]<HEIGHT/2)
 			cy = HEIGHT*0.4 + 0.4*bar_heights[XSCALE(i)];
 		else
 			cy = max(1,HEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
-		// if (i < WINWIDTH-2) // I don't know why, but this fails!
-			// local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i+2)];
-		local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i)];
-		cy = (cy + local/2) / 2;
-		if (cy > y)
-			cy = y;
+		*/
+
+		// local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i)];
+		//// Attempt at was failing miserably.
+		//// Oh dear it was because i had not been not ()ed in XSCALE :f
+		if (i+4<WINWIDTH)
+			local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i+4)];
+
+		// cy = (cy + local/2) / 2;
+
+		// if (cy > HEIGHT*0.75)
+			// cy = HEIGHT*0.75;
+
+		// cy = 1;
+
+		/*
+		if (local<HEIGHT/2)
+			cy = local * 0.3;
+		else
+			cy = (HEIGHT-local) * 0.3;
+		*/
+
+		// local = 64;
+
+		cy = 24 + HEIGHT + local*1.2 - (HEIGHT-y);
+		// We actually manipulate the spectrum (the height of the flame) to fix the colours:
+		//
+		/*
+		if (cy < 1) {
+			y += (1 - cy);
+			cy = 1;
+		}
+		if (cy-2*HEIGHT > y) {
+			y += (cy-2*HEIGHT - y);
+			// cy = y;
+		}
+		*/
+		// if (cy < HEIGHT+1)
+			// cy = HEIGHT+1;
+		// if (cy < HEIGHT+4)
+			// cy = HEIGHT+4;
+
+		// cy = y;
+
+		// cy = y * local/HEIGHT;
+
+		// if (cy > y)
+			// cy = y;
 		if (cy < 1)
 			cy = 1;
-		if (cy > HEIGHT*0.75)
-			cy = HEIGHT*0.75;
+
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
+
 	}
 
 	gdk_window_clear(area->window);
