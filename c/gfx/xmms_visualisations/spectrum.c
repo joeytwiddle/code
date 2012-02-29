@@ -19,7 +19,12 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+// Choose which media player we are compiling for:
+// #define AUDACIOUS
 #define XMMS
+// TODO: There might be an already existing way to find out!
+
+#define TRANSPARENCY
 
 #include "config.h"
 
@@ -117,6 +122,9 @@ static gint16 bar_heights[SPECWIDTH];
 /*static gint timeout_tag;*/
 static gdouble scale, x00, y00;
 static gdouble heatNow;
+#ifdef TRANSPARENCY
+GdkBitmap *mask;
+#endif
 
 #ifdef XMMS
 #define fsanalyzer_vp              sanalyzer_vp
@@ -175,6 +183,42 @@ static int min(int a,int b) {
 static float fclamp(float val, float min, float max) {
 	return ( val<min ? min : val>max ? max : val );
 }
+
+#ifdef TRANSPARENCY
+GdkBitmap *create_transparency_mask(GdkWindow *window) {
+	GdkBitmap *mask = NULL;
+	GdkGC *gc = NULL;
+	GdkColor pattern;
+	GdkPoint *gpoints;
+	gint numpoints;
+
+	mask = gdk_pixmap_new(window, WINWIDTH, WINHEIGHT, 1);
+
+	gc = gdk_gc_new(mask);
+
+	pattern.pixel = 0;
+	gdk_gc_set_foreground(gc, &pattern);
+	gdk_draw_rectangle(mask, gc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
+
+	numpoints = 4;
+	gpoints = g_malloc(numpoints * sizeof (GdkPoint));
+	gpoints[0].x = 0          ; gpoints[0].y = 0;
+	gpoints[1].x = WINWIDTH-1 ; gpoints[1].y = 0;
+	gpoints[2].x = WINWIDTH-1 ; gpoints[2].y = WINHEIGHT-1;
+	gpoints[3].x = 0          ; gpoints[3].y = WINHEIGHT/2-1;
+	// gpoints[4].x = 0 ; gpoints[4].y = 0;
+
+	pattern.pixel = 1;
+	gdk_gc_set_foreground(gc, &pattern);
+	gdk_draw_polygon(mask, gc, TRUE, gpoints, numpoints);
+
+	g_free(gpoints);
+
+	gdk_gc_destroy(gc);
+
+	return mask;
+}
+#endif
 
 static void fsanalyzer_init(void) {
 	GdkColor palette[5];
@@ -338,6 +382,12 @@ static void fsanalyzer_init(void) {
 	gtk_widget_show(window);
 	gdk_window_clear(window->window);
 	gdk_window_clear(area->window);
+
+#ifdef TRANSPARENCY
+	mask = create_transparency_mask(window->window);
+	gtk_widget_shape_combine_mask(window,mask,0,0);
+#endif
+
 }
 
 static void fsanalyzer_cleanup(void) {
@@ -366,6 +416,10 @@ static gint draw_func(gpointer data) {
 	gint i;
 	gdouble heatHere;
 	gint lasty;
+#ifdef TRANSPARENCY
+	GdkGC *mgc; // TODO: just make this a global :P
+	GdkColor pattern;
+#endif
 
 	/* FIXME: should allow spare redrawing like the vis. in the main window */
 	if(!window) {
@@ -375,6 +429,15 @@ static gint draw_func(gpointer data) {
 
 	GDK_THREADS_ENTER();
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
+
+#ifdef TRANSPARENCY
+	mgc = gdk_gc_new(mask);
+	pattern.pixel = 0;
+	gdk_gc_set_foreground(mgc, &pattern);
+	gdk_draw_rectangle(mask, mgc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
+	pattern.pixel = 1;
+	gdk_gc_set_foreground(mgc, &pattern);
+#endif
 
 	// heatHere = FLAMEHEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
@@ -459,16 +522,16 @@ static gint draw_func(gpointer data) {
 
 		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
-		// #define LOOKAHEAD 12
-		// #define GAIN 0.01
+		#define LOOKAHEAD 12
+		#define GAIN 0.01
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
 		// #define LOOKAHEAD 10
 		// #define GAIN 0.02
 		// #define LOOKAHEAD 8
 		// #define GAIN 0.03
-		#define LOOKAHEAD 6
-		#define GAIN 0.04
+		// #define LOOKAHEAD 6
+		// #define GAIN 0.04
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.05
 		// #define LOOKAHEAD 3
@@ -585,7 +648,16 @@ static gint draw_func(gpointer data) {
 
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, WINHEIGHT-y-1);
 
+#ifdef TRANSPARENCY
+		gdk_draw_rectangle(mask, mgc, TRUE, i, y, 1, WINHEIGHT-y-1);
+#endif
+
 	}
+
+#ifdef TRANSPARENCY
+	gtk_widget_shape_combine_mask(window,mask,0,0);
+	gdk_gc_destroy(mgc);
+#endif
 
 	gdk_window_clear(area->window);
 	GDK_THREADS_LEAVE();
