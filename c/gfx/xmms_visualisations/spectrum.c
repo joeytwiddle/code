@@ -264,7 +264,7 @@ static gint16 bar_heights[SPECWIDTH];
 static gint16 last_bar_heights[SPECWIDTH];
 #endif
 #ifdef VELOCITY2
-static float bar_heights_difference[SPECWIDTH];
+static double bar_heights_difference[SPECWIDTH];
 #endif
 /*static gint timeout_tag;*/
 static gdouble scale, x00, y00;
@@ -522,10 +522,10 @@ static void fsanalyzer_init(void) {
 	palette[0].red = 0xFFFF; palette[0].green = 0xFF88; palette[0].blue = 0xDDDD;
 	palette[1].red = 0xFFFF; palette[1].green = 0xEE88; palette[1].blue = 0x8800;
 	palette[2].red = 0xFF77; palette[2].green = 0xDD00; palette[2].blue = 0x4444;
-	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
-	palette[4].red = 0xBBBB; palette[4].green = 0x4444; palette[4].blue = 0x0000;
+	palette[3].red = 0xFF44; palette[3].green = 0x9999; palette[3].blue = 0x0000;
+	palette[4].red = 0xBBBB; palette[4].green = 0x3333; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
-	#define palDelta 0.12
+	#define palDelta 0.18
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -652,7 +652,7 @@ static gint draw_func(gpointer data) {
 #endif
 
 #ifdef VELOCITY2
-	float bar_heights_difference_local;
+	double bar_heights_difference_local;
 #endif
 
 #ifdef SKIP_FRAMES
@@ -811,7 +811,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*0.2;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -831,7 +831,7 @@ static gint draw_func(gpointer data) {
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
 			// Make recently growing bars brighter:
-			cy += bar_heights_difference_local * -15.0;
+			cy += bar_heights_difference_local * +450000.0;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
@@ -1002,7 +1002,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
 		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
 		/*#define DIFFERENCE_GAIN_BY_TIME 0.04 0.2 */
-		#define DIFFERENCE_GAIN_BY_TIME 0.07
+		#define DIFFERENCE_GAIN_BY_TIME 0.000002
 		bar_heights_difference[i] =
 			  DIFFERENCE_GAIN_BY_TIME       * ((float)bar_heights[i] - (float)last_bar_height)
 			+ (1.0-DIFFERENCE_GAIN_BY_TIME) * bar_heights_difference[i];
