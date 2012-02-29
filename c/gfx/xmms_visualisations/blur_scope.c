@@ -63,6 +63,8 @@ VisPlugin *get_vplugin_info(void)
 	return &bscope_vp;
 }
 
+// TODO BUG: bottom line of window does not decay properly.  Test with /stuff/would_like/mp3s/kahvi_new/ftp.scene.org/pub/music/groups/kahvicollective/kahvi101f_vizion-itistheskythatiscrying.ogg
+
 // #define WIDTH 256
 // #define WIDTH 640
 #define WIDTH 720
@@ -72,6 +74,12 @@ VisPlugin *get_vplugin_info(void)
 #define min(x,y) ((x)<(y)?(x):(y))
 #define BPL	((WIDTH + 2))
 #define DECAY_RATE 8
+// #define SKIP_FRAMES 2
+// The human eye may see many white lines even when only 1 is renderered, due to the high framerate.  SKIP_FRAMES can make only 1 white line visible, but the oscilloscope will also appear more flickery / less smooth.
+
+#ifdef SKIP_FRAMES
+static gint frameCount;
+#endif
 
 static guchar rgb_buf[(WIDTH + 2) * (HEIGHT + 2)];
 static GdkRgbCmap *cmap = NULL; 
@@ -92,8 +100,8 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x3FFFFF;  // cyan
 		// bscope_cfg.color = 0x3FFFBF;  // green/cyan
-		// bscope_cfg.color = 0x3FBFFF;  // blue/cyan
-		bscope_cfg.color = 0x007FFF;  // blue/cyan
+		bscope_cfg.color = 0x00BFFF;  // blue/cyan
+		// bscope_cfg.color = 0x007FFF;  // electric blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
 		
@@ -119,10 +127,21 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 	while(i--)
 	{
 		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;
-		// if(sum > DECAY_RATE)
-			// sum -= DECAY_RATE;
 		// if (sum > 0)
 			// sum = sum * 0.90;
+		/*
+		if(sum > DECAY_RATE)
+			sum -= DECAY_RATE;
+		else
+			sum = 0;
+		*/
+
+		if (i < bpl) {
+			sum = sum / 4; // Fix for non-decaying bottom line
+			if (sum > 0)
+				sum -= 1;
+		}
+
 		// I made the intensities decay non-linearly.  This could alternatively
 		// be achieved by using a linear decay over a non-linear cmap.
 		if (sum <= 0)
@@ -133,8 +152,11 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 			sum = sum - 0; // Middle slow decay (in fact blur only)
 		else
 			sum = sum - 1; // Final fixed decay
+
 		// sum = 0; // Immediate total decay!
+
 		// sum = iptr[0];  if (sum > DECAY_RATE*8) { sum -= DECAY_RATE*8; } else { sum = 0; } // Rapid decay without blurring
+
 		*(iptr++) = sum;
 	}
 	
@@ -258,6 +280,14 @@ static void bscope_render_pcm(gint16 data[2][512])
 	
 	if(!window)
 		return;
+
+#ifdef SKIP_FRAMES
+	frameCount++;
+	if (frameCount%SKIP_FRAMES > 0) {
+		return;
+	}
+#endif
+
 	bscope_blur_8_no_asm(rgb_buf, WIDTH, HEIGHT, BPL);
 	prev_y = y = (HEIGHT / 2) + (data[0][0] >> 9);
 	for(i = 0; i < WIDTH; i++)
