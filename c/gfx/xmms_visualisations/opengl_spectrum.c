@@ -22,11 +22,6 @@
  *  Christian Zander <phoenix@minion.de>
  */
 
-//// A makeprg to build and test in one go, and use clist/win.  We must retain
-//// stdout of original make but detach output of xmms.
-// :set makeprg=(make\ &&\ make\ install\ &&\ (\ killall\ xmms\ ;\ sleep\ 2\ )\ &&\ ((nice\ -n\ 12\ xmms\ -p\ &)\ >/dev/null\ 2>&1)\ )
-
-
 
 #include "config.h"
 
@@ -80,7 +75,6 @@ static GLfloat heights[LENGTH][WIDTH], scale;
 static gboolean going = FALSE, grabbed_pointer = FALSE;
 static Atom wm_delete_window_atom;
 static pthread_t draw_thread;
-static unsigned char modeCycle = 0;
 
 static void oglspectrum_init(void);
 static void oglspectrum_cleanup(void);
@@ -207,16 +201,20 @@ static void draw_rectangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLflo
 	}
 }
 
-/*
 static void setHSL(GLfloat hue, GLfloat sat, GLfloat lum) {
 	GLfloat red = 1.0, green = 1.0, blue = 1.0;
 	GLfloat tmp1;
 	tmp1 = hue;
 }
-*/
 
-static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat red, GLfloat green, GLfloat blue, float W, GLfloat width, GLfloat length )
+static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat red, GLfloat green, GLfloat blue, float W )
 {
+	// default spacing in both directions is 0.2 before scaling
+	// original widths and lengths were 0.1 before scaling
+
+	GLfloat width = 0.15 * 15/(WIDTH-1);
+	// GLfloat length = 0.1 * 16/LENGTH;
+	GLfloat length = 0.15 * SCALEBACK;
 
 	// float whiteness = red*red;
 	// float notwhiteness = 1.0 - whiteness;
@@ -249,7 +247,6 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// In depth plane (into history)
 	// glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
 	glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
-	// glColor3f(red,green,blue);
 	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
 	draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
 
@@ -337,29 +334,7 @@ static void draw_bars(void)
 			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
 			#define barHeight peakHeight[x]
 
-			// default spacing in both directions is 0.2 before scaling
-			// original widths and lengths were 0.1 before scaling
-
-#define SCALE_width 15/(WIDTH-1)
-#define SCALE_length SCALEBACK
-
-			GLfloat shortSide,longSide;
-			if (modeCycle%8 < 4) {
-				longSide  = 0.2;
-				shortSide = 0.02;
-			} else {
-				longSide  = 0.1;
-				shortSide = 0.02;
-			}
-
-			if (modeCycle%2 < 1)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
-
-			if (modeCycle%4 < 2)
-				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
-
-			if (modeCycle%4 == 3)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, longSide*SCALE_length);
+			draw_bar(x_offset, z_offset, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness);
 
 			#undef barHeight
 
@@ -496,24 +471,12 @@ void *draw_thread_func(void *arg)
 					x_speed = 0.0;
 					y_speed = 0.0;  // 0.5
 					z_speed = 0.0;
-					/*
 					x_angle = 20.0;
 					y_angle = -15.0;
 					z_angle = 0.0;
-					*/
 					break;					
-				case XK_space:
-					modeCycle++;
-					break;
 				}
-				// Fail on XK_shift and XK_Shift
-				/*
-				case XK_shift:
-					modeCycle++;
-					break;
-				}
-				*/
-
+				
 				break;
 			case ClientMessage:
 				if ((Atom)event.xclient.data.l[0] == wm_delete_window_atom)
@@ -588,7 +551,6 @@ static void start_display(void)
 	x_angle = 20.0;
 	y_angle = -15.0;
 	z_angle = 0.0;
-	modeCycle = 0;
 
 	going = TRUE;
 	pthread_create(&draw_thread, NULL, draw_thread_func, NULL);
