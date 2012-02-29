@@ -48,16 +48,15 @@
 /* NUM_BANDS should be either 32 or 16.  See declaration of xscale. */
 // #define NUM_BANDS 16
 #define NUM_BANDS 32
-// #define NUM_BANDS 64
 
 /* The original LENGTH was 16 */
-#define LENGTH 256
+#define LENGTH 128
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
 #else
 	// After 32 we give up normalising the size, and we let the trail lengthen rather than compress:
-	#define SCALEBACK (64.0/LENGTH)
+	#define SCALEBACK (32.0/LENGTH)
 #endif
 
 #define WIDTH NUM_BANDS
@@ -68,7 +67,7 @@ static Display *dpy = NULL;
 static Colormap colormap = 0;
 static GLXContext glxcontext = NULL;
 static Window window = 0;
-static GLfloat y_angle = -15.0, y_speed = 0.0; // 0.5;
+static GLfloat y_angle = 45.0, y_speed = 0.01; // 0.5;
 static GLfloat x_angle = 20.0, x_speed = 0.0;
 static GLfloat z_angle = 0.0, z_speed = 0.0;
 static GLfloat heights[LENGTH][WIDTH], scale;
@@ -201,20 +200,14 @@ static void draw_rectangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLflo
 	}
 }
 
-static void setHSL(GLfloat hue, GLfloat sat, GLfloat lum) {
-	GLfloat red = 1.0, green = 1.0, blue = 1.0;
-	GLfloat tmp1;
-	tmp1 = hue;
-}
-
 static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat red, GLfloat green, GLfloat blue, float W )
 {
 	// default spacing in both directions is 0.2 before scaling
 	// original widths and lengths were 0.1 before scaling
 
-	GLfloat width = 0.15 * 15/(WIDTH-1);
+	GLfloat width = 0.10 * 15/(WIDTH-1);
 	// GLfloat length = 0.1 * 16/LENGTH;
-	GLfloat length = 0.15 * SCALEBACK;
+	GLfloat length = 0.10 * SCALEBACK;
 
 	// float whiteness = red*red;
 	// float notwhiteness = 1.0 - whiteness;
@@ -228,15 +221,13 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 
 	#define glColor3f_with_scale_then_whiteness(r,g,b,s) glColor3f(W+r*s*NW,W+g*s*NW,W+b*s*NW)
 
-	// If we imagine the spectrum going right across the screen, and history going in to the picture.
-
 	// Flat (horizontal)
 	// glColor3f(red,green,blue);
 	glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
 	draw_rectangle(x_offset, height, z_offset, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset,      0, z_offset, x_offset + width,      0, z_offset + length);
 
-	// In width plane (across spectrum)
+	// In width plane
 	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
@@ -244,7 +235,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	/*
 	*/
 
-	// In depth plane (into history)
+	// In depth plane
 	// glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
 	glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
 	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
@@ -261,26 +252,19 @@ static void draw_bars(void)
 	gint x,y;
 	GLfloat x_offset, z_offset, r_base, b_base;
 
-	GLfloat peakEnergy[WIDTH];
-	GLfloat peakHeight[WIDTH];
+	
 
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glPushMatrix();
-	glTranslatef(0.0,-0.5,-4.0);	      
+	glTranslatef(0.0,-0.5,-5.0);	      
 	glRotatef(x_angle,1.0,0.0,0.0);
 	glRotatef(y_angle,0.0,1.0,0.0);
 	glRotatef(z_angle,0.0,0.0,1.0);
 
-	for(x = 0; x < WIDTH; x++)
-	{
-		peakEnergy[x] = 0.0;
-		peakHeight[x] = 0.0;
-	}
-
 	glBegin(GL_TRIANGLES);
-	for(y = LENGTH-1; y >=0; y--)
+	for(y = 0; y < LENGTH; y++)
 	{
 		// z_offset = -1.6 + ((LENGTH - y)*SCALEBACK * 0.2);
 		z_offset = +1.4 - ((y)*SCALEBACK * 0.2);
@@ -288,56 +272,12 @@ static void draw_bars(void)
 		// b_base = y * (1.0 / (LENGTH-1));
 		b_base = (float)y / (float)(LENGTH-1);
 		r_base = 1.0 - b_base;
-
-		float whiteness;
-		float w_base = 2.0 * (r_base - 0.5);
-		// float w_base = 4.0 * (r_base - 0.75);
-		// float w_base = (r_base - 0.95)/0.05;
-		if (w_base < 0.0)
-			w_base = 0.0;
-		GLfloat breakingEdge = w_base * w_base;
-
+			
 		for(x = 0; x < WIDTH; x++)
 		{
 			x_offset = -1.6 + (x * 0.2*15.0/(WIDTH-1));
-
-			#define compensateForCurve (0.8+1.2*x/(float)WIDTH)
-			// GLfloat energySlowFade = 2.0 * fmin(heights[y][x]-0.1,0.5) * r_base;
-			GLfloat energySlowFade = compensateForCurve*heights[y][x] * r_base;
-			// breakingEdge = breakingEdge * energySlowFade * 4.0;
-			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
-			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
-
-			peakEnergy[x] *= 0.85;
-			// GLfloat energyHere = heights[y][x];
-			GLfloat energyHere = heights[y][x] + 0.5*(heights[y][x] - heights[y+1][x]);
-			energyHere *= compensateForCurve;
-			if (energyHere > peakEnergy[x]) {
-				peakEnergy[x] = energyHere;
-			}
-
-			peakHeight[x] *= 0.5;
-			if (heights[y][x] > peakHeight[x]) {
-				peakHeight[x] = heights[y][x];
-			}
-
-			GLfloat fadeOff = (1.0 - (float)y/(float)(LENGTH-1));
-			fadeOff = fadeOff * fadeOff;
-			// whiteness = fmin(1.0,fmax(energyHere, breakingEdge));
-			// whiteness = peakEnergy[x];
-			whiteness = 1.3 * peakEnergy[x] * breakingEdge;
-			// whiteness = 1.3 * peakEnergy[x] * fadeOff;
-
-			whiteness = fmin(1.0,fmax(0.0,whiteness));
-
-			// #define barHeight heights[y][x]
-			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
-			#define barHeight peakHeight[x]
-
-			draw_bar(x_offset, z_offset, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness);
-
-			#undef barHeight
-
+				
+			draw_bar(x_offset, z_offset, heights[y][x], r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, r_base*r_base*r_base*r_base*r_base);
 		}
 	}
 	glEnd();
@@ -436,24 +376,24 @@ void *draw_thread_func(void *arg)
 				case XK_b:
 					xmms_remote_playlist_next(oglspectrum_vp.xmms_session);
 					break;
-				case XK_Down:					
+				case XK_Up:					
 					x_speed -= 0.1;
 					if(x_speed < -3.0)
 						x_speed = -3.0;
 					break;
-				case XK_Up:					
+				case XK_Down:					
 					x_speed += 0.1;
 					if(x_speed > 3.0)
 						x_speed = 3.0;
 					break;
-				case XK_Right:
-					y_speed -= 0.1;
+				case XK_Left:
+					y_speed += 0.1;
 					if(y_speed < -3.0)
 						y_speed = -3.0;
 					
 					break;
-				case XK_Left:
-					y_speed += 0.1;
+				case XK_Right:
+					y_speed -= 0.1;
 					if(y_speed > 3.0)
 						y_speed = 3.0;
 					break;
@@ -469,10 +409,10 @@ void *draw_thread_func(void *arg)
 					break;
 				case XK_Return:
 					x_speed = 0.0;
-					y_speed = 0.0;  // 0.5
+					y_speed = 0.5;
 					z_speed = 0.0;
 					x_angle = 20.0;
-					y_angle = -15.0;
+					y_angle = 45.0;
 					z_angle = 0.0;
 					break;					
 				}
@@ -546,10 +486,10 @@ static void start_display(void)
 	scale = 1.0 / log(256.0);
 
 	x_speed = 0.0;
-	y_speed = 0.0;  // 0.5
+	y_speed = 0.5;
 	z_speed = 0.0;
 	x_angle = 20.0;
-	y_angle = -15.0;
+	y_angle = 45.0;
 	z_angle = 0.0;
 
 	going = TRUE;
@@ -621,11 +561,7 @@ static void oglspectrum_render_freq(gint16 data[2][256])
 #elif NUM_BANDS <= 32
 	gint xscale[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 24, 28, 34, 40, 47, 54, 64, 74, 87, 101, 119, 137, 162, 187, 221, 255};
 #else
-	// #warn "We have not defined xscale for >32 bands!"
-	gint xscale[NUM_BANDS];
-	for (i=0; i<NUM_BANDS; i++) {
-		xscale[i] = 255*i/(NUM_BANDS-1);
-	}
+  #warn "We have not defined xscale for >32 bands!"
 #endif
 
 	for(y = LENGTH-1; y > 0; y--)
