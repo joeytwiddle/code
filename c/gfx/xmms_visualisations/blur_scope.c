@@ -89,8 +89,10 @@ void bscope_read_config(void)
 
 	if(!config_read)
 	{
-		// bscope_cfg.color = 0xFF3F7F;
-		bscope_cfg.color = 0x3FFFFF;
+		// bscope_cfg.color = 0xFF3F7F;  // pink
+		// bscope_cfg.color = 0x3FFFFF;  // cyan
+		// bscope_cfg.color = 0x3FFFBF;  // green/cyan
+		bscope_cfg.color = 0x3FBFFF;  // blue/cyan
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
 		
@@ -116,10 +118,18 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 	while(i--)
 	{
 		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;
-		if(sum > DECAY_RATE)
-			sum -= DECAY_RATE;
-		else
+		// if(sum > DECAY_RATE)
+			// sum -= DECAY_RATE;
+		// if (sum > 0)
+			// sum = sum * 0.90;
+		if (sum <= 0)
 			sum = 0;
+		else if (sum > 64)
+			sum = sum - 32; // Initial fast decay
+		else if (sum > 16)
+			sum = sum - 0; // Middle slow decay
+		else
+			sum = sum - 1; // Finally fixed decay
 		*(iptr++) = sum;
 	}
 	
@@ -211,16 +221,22 @@ static inline void draw_vert_line(guchar *buffer, gint x, gint y1, gint y2)
 	int y;
 	if(y1 < y2)
 	{
-		for(y = y1; y <= y2; y++)
+		for(y = y1; y < y2; y++)
+		{
 			draw_pixel_8(buffer,x,y,0xFF);
+		}
 	}
 	else if(y2 < y1)
 	{
-		for(y = y2; y <= y1; y++)
+		for(y = y2; y < y1; y++)
+		{
 			draw_pixel_8(buffer,x,y,0xFF);
+		}
 	}
 	else
+	{
 		draw_pixel_8(buffer,x,y1,0xFF);
+	}
 }
 
 static void bscope_render_pcm(gint16 data[2][512])
@@ -234,6 +250,8 @@ static void bscope_render_pcm(gint16 data[2][512])
 	for(i = 0; i < WIDTH; i++)
 	{
 		y = (HEIGHT / 2) + (data[0][i >> 1] >> 9);
+		if (i%2 == 1)
+			y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
 		if(y < 0)
 			y = 0;
 		if(y >= HEIGHT)
