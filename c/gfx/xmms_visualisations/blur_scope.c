@@ -121,6 +121,8 @@ void bscope_read_config(void)
 }
 
 
+#define blurTao 0.5
+
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 {
@@ -148,6 +150,9 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
+		// Retain self with blurTao:
+		sum = iptr[0]*blurTao + sum*(1.0-blurTao);
+
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
 			if (sum > 0)
@@ -158,8 +163,10 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		// be achieved by using a linear decay over a non-linear cmap.
 		if (sum <= 0)
 			sum = 0;
-		else if (sum > 64)
-			sum = sum - 16; // Fast initial decay
+		// else if (sum > 64)
+			// sum = sum - 8; // Fast initial decay
+		else if (sum > 4)
+			sum = sum - 4; // Slow overall decay
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
