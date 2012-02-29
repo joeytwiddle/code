@@ -827,7 +827,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.45 /*MINCOL*/ + heatHere*EXPLOSION*0.35;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.55 /*MINCOL*/ + heatHere*EXPLOSION*0.35;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -844,6 +844,7 @@ static gint draw_func(gpointer data) {
 			// We slightly constrain the color spikes horizontally:
 			#define VELOCITY_X_GAIN 0.04
 #define arx ( XSCALE(i)+2<SPECWIDTH ? XSCALE(i)+2 : SPECWIDTH-1 )
+			// TODO: We should do lookahead to compensate for this!
 			// Note this value is low because it operates over x-pixels, not i-bars.
 			bar_heights_difference_local =
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
