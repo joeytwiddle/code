@@ -53,16 +53,17 @@
 /* NUM_BANDS should be either 16 or 32.  We do have a slow hack for larger values. */
 // #define NUM_BANDS 16
 // #define NUM_BANDS 32
-// #define NUM_BANDS 48
-#define NUM_BANDS 64
+#define NUM_BANDS 48
+// #define NUM_BANDS 64
 // #define NUM_BANDS 128
+// #define NUM_BANDS 256
 
 /* The original LENGTH was 16 */
 // #define LENGTH 64
 // #define LENGTH 200
 // #define LENGTH 160
-#define LENGTH 120
-// #define LENGTH 80
+// #define LENGTH 120
+#define LENGTH 80
 // BUG TOOD: Any higher than 120 and we seem to suddenly lose the far ones anyway!
 
 #if LENGTH < 32
@@ -76,6 +77,7 @@
 #define WIDTH NUM_BANDS
 
 #define PREVENT_HIDING_GLOW
+#define ANGLED_SURFACES_IN_X
 // #define LIGHTER_VERSION
 // #define CHECK_FOR_KICK
 
@@ -324,7 +326,13 @@ static void convertHSLtoRGB(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GL
 	// return "rgba("+red+","+green+","+blue+","+a/100+")";
 }
 
-static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat lastYheight, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
+static void draw_quadrilateral(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLfloat y2, GLfloat z2, GLfloat x3, GLfloat y3, GLfloat z3, GLfloat x4, GLfloat y4, GLfloat z4)
+{
+	draw_triangle(x1,y1,z1, x2,y2,z2, x3,y3,z3);
+	draw_triangle(x1,y1,z1, x4,y4,z4, x3,y3,z3);
+}
+
+static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat lastYheight, GLfloat lastXheight, GLfloat lastXYheight, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
 {
 
 	// float whiteness = red*red;
@@ -349,20 +357,21 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// Flat (horizontal) facing up/down
 	// glColor3f(red,green,blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
-	setHSL(hue, sat, lightness);
+	setHSL(hue, sat*0.8, lightness*0.8);
 	// draw_rectangle(x_offset, height, z_offset, x_offset + width, lastYheight, z_offset + length);
-	draw_triangle(x_offset, lastYheight, z_offset, x_offset, height, z_offset + length, x_offset + width, height, z_offset + length);
-	draw_triangle(x_offset, lastYheight, z_offset, x_offset + width, lastYheight, z_offset, x_offset + width, height, z_offset + length);
+	// draw_triangle(x_offset, lastYheight, z_offset, x_offset, height, z_offset + length, x_offset + width, height, z_offset + length);
+	// draw_triangle(x_offset, lastYheight, z_offset, x_offset + width, lastYheight, z_offset, x_offset + width, height, z_offset + length);
+	draw_quadrilateral(x_offset, lastXYheight, z_offset, x_offset, lastXheight, z_offset + length, x_offset + width, height, z_offset + length, x_offset + width, lastYheight, z_offset);
 	draw_rectangle(x_offset,      0, z_offset, x_offset + width,           0, z_offset + length);
 
 	// In width plane (across spectrum), facing front/back
 	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
-	setHSL(hue, sat*0.8, lightness*0.8);
-	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
-	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, lastYheight, z_offset         );
-	/*
-	*/
+	setHSL(hue, sat, lightness);
+	// draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
+	// draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, lastYheight, z_offset         );
+	draw_quadrilateral(x_offset, 0.0, z_offset + length, x_offset+width, 0.0, z_offset+length, x_offset + width, height, z_offset + length, x_offset, lastXheight, z_offset+length);
+	draw_quadrilateral(x_offset, 0.0, z_offset         , x_offset+width, 0.0, z_offset       , x_offset + width, lastYheight, z_offset, x_offset, lastXYheight, z_offset);
 
 	// In depth plane (into history) facing left/right
 	// glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
@@ -370,16 +379,14 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// glColor3f(red,green,blue);
 	setHSL(hue, sat*0.6, lightness*0.6);
 	// draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
-	draw_triangle(x_offset, 0.0, z_offset, x_offset, 0.0, z_offset + length, x_offset, height, z_offset + length);	
-	draw_triangle(x_offset, 0.0, z_offset, x_offset, lastYheight, z_offset, x_offset, height, z_offset + length);	
+	draw_triangle(x_offset, 0.0, z_offset, x_offset, 0.0, z_offset + length, x_offset, lastXheight, z_offset + length);	
+	draw_triangle(x_offset, 0.0, z_offset, x_offset, lastXYheight, z_offset, x_offset, lastXheight, z_offset + length);	
+	// draw_quadrilateral(x_offset, 0.0, z_offset, x_offset, 0.0, z_offset + length, x_offset, height, z_offset + length, x_offset, lastYheight, z_offset);
 	// draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
-	draw_triangle(x_offset + width, 0.0, z_offset, x_offset + width, 0.0, z_offset + length, x_offset + width, height, z_offset + length);	
-	draw_triangle(x_offset + width, 0.0, z_offset, x_offset + width, lastYheight, z_offset, x_offset + width, height, z_offset + length);	
+	// draw_triangle(x_offset + width, 0.0, z_offset, x_offset + width, 0.0, z_offset + length, x_offset + width, height, z_offset + length);	
+	// draw_triangle(x_offset + width, 0.0, z_offset, x_offset + width, lastYheight, z_offset, x_offset + width, height, z_offset + length);	
+	draw_quadrilateral(x_offset + width, 0.0, z_offset, x_offset + width, 0.0, z_offset + length, x_offset + width, height, z_offset + length, x_offset + width, lastYheight, z_offset);
 
-	/*
-	*/
-
-	
 }
 
 static void draw_bars(void)
@@ -391,13 +398,13 @@ static void draw_bars(void)
 	GLfloat peakHeight[WIDTH];
 	GLfloat localAverage[WIDTH];
 	GLfloat localNoise[WIDTH];
-	GLfloat lastWhiteness[WIDTH];
+	GLfloat lastYwhiteness[WIDTH];
 
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glPushMatrix();
-	glTranslatef(0.0,-0.2,-4.2);	      // originally 0.0,-0.5,-5.0
+	glTranslatef(0.0,-0.2,-4.2);        // originally 0.0,-0.5,-5.0
 	glRotatef(x_angle,1.0,0.0,0.0);
 	glRotatef(y_angle,0.0,1.0,0.0);
 	glRotatef(z_angle,0.0,0.0,1.0);
@@ -432,6 +439,10 @@ static void draw_bars(void)
 		// fadeOff = fadeOff * fadeOff;
 		fadeOff = pow(fadeOff,1.5);
 
+		GLfloat lastXheight = 0;
+		GLfloat lastXYheight = 0;
+		GLfloat lastXwhiteness = 0;
+
 		for(x = 0; x < WIDTH; x++)
 		{
 			GLfloat saturation = 1.0;
@@ -442,14 +453,25 @@ static void draw_bars(void)
 
 			x_offset = -1.6 + 3.2*x/WIDTH;
 
-			#define compensateForCurve (0.5+0.5*(float)x/(float)WIDTH)
+			#define compensateForCurve (0.6+0.4*(float)x/(float)WIDTH)
 
 			// #define barHeight heights[y][x]
 			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
 			// #define barHeight peakHeight[x]
 			#define barHeight compensateForCurve*peakHeight[x]
 
+			// PROBLEM: peakHeight[x] may be valid now, but peakHeight[x-1] was overwritten on the last iteration!
+			// GLfloat lastXYheight = compensateForCurve*peakHeight[x-1];
+
 			GLfloat lastYheight = barHeight; // evaluate it now, before we update peakHeight for the current cell
+
+			// lastXYheight and lastYheight create angled surfaces across the spectrum
+			// If we want the old behaviour (angled surfaces only into history)
+			// then we can override them with the old values:
+			#ifndef ANGLED_SURFACES_IN_X
+				#define lastXheight barHeight
+				#define lastXYheight lastYheight
+			#endif
 
 			// GLfloat energySlowFade = 2.0 * fmin(heights[y][x]-0.1,0.5) * r_base;
 			// GLfloat energySlowFade = compensateForCurve*heights[y][x] * r_base;
@@ -461,8 +483,9 @@ static void draw_bars(void)
 // #define heightDampening 0.25
 // #define energyDampening 0.5
 // #define heightDampening 0.5
-#define energyDampening 0.5
+// #define energyDampening 0.5
 // #define heightDampening 0.15
+#define energyDampening 0.00
 #define heightDampening 0.00
 
 			peakEnergy[x] *= energyDampening;
@@ -552,7 +575,7 @@ static void draw_bars(void)
 #ifdef PREVENT_HIDING_GLOW
 
 			if (y == LENGTH-1) {
-				lastWhiteness[x] = 0;
+				lastYwhiteness[x] = 0;
 			}
 
 			GLfloat useWhiteness;
@@ -560,100 +583,140 @@ static void draw_bars(void)
 			// TODO: TEXTURE and SYMMETRY could be #defined - texture is undesirable for low res
 
 			////// Always merge with old (looks a bit textureless and darkens the lead)
-			// useWhiteness = 0.5 * lastWhiteness[x] + 0.5*whiteness;
+			// useWhiteness = 0.5 * lastYwhiteness[x] + 0.5*whiteness;
 			////// Use peak (symmetrical - that's what you wanted right?)
-			useWhiteness = (lastWhiteness[x] > whiteness ? lastWhiteness[x] : whiteness );
+			useWhiteness = ( lastYwhiteness[x] > whiteness ? lastYwhiteness[x] : whiteness );
+			#ifdef ANGLED_SURFACES_IN_X
+			useWhiteness = ( lastXwhiteness > useWhiteness ? lastXwhiteness : useWhiteness );   // x-based
+			#endif
 			//// Re-add texture (darkens lead but symmetrical)
-			useWhiteness = 0.5 * useWhiteness + 0.25*whiteness + 0.25*lastWhiteness[x];
+			// useWhiteness = 0.5 * useWhiteness + 0.25*whiteness + 0.25*lastYwhiteness[x];
 			//// Re-add texture - central glow, slightly darkened fadeoff.  Favourite!
 			// useWhiteness = 0.5 * useWhiteness + 0.5*whiteness;
-
-			lastWhiteness[x] = whiteness;
 
 	#define whiteness useWhiteness
 #else
 			// Just use whiteness normally :)
 #endif
 
-			if (barHeight <= 0.01 && whiteness <= 0.01) {
-				continue;
-			}
+			if (barHeight >= 0.01 || useWhiteness >= 0.01) {
 
-#define SCALE_width 16.0/WIDTH
-#define SCALE_length SCALEBACK
+				#define SCALE_width 16.0/WIDTH
+				#define SCALE_length SCALEBACK
 
-			GLfloat shortSide,longSide;
-			if (modeCycle%12 < 4) {
+				// Flat surface in z-axis
+				if ((modeCycle/12/6) & 2) {
+					lastYheight = barHeight;
+				}
+
+				// Flat surface in x-axis
+				if ((modeCycle/12/6) & 1) {
+					lastXheight = barHeight;
+					lastXYheight = lastYheight;
+				}
+
+				GLfloat shortSide,longSide;
+				if (modeCycle%12 < 4) {
+					/*
+					// Isolated dots - dropped
+					longSide  = 0.12;
+					shortSide = 0.02;
+					*/
+					// Thin ribbons
+					longSide  = 0.20;
+					shortSide = 0.02;
+				} else if (modeCycle%12 < 8) {
+					// Medium ribbons
+					longSide  = 0.20;
+					shortSide = 0.10;
+				} else {
+					// Thick ribbons
+					longSide  = 0.20;
+					shortSide = 0.20;
+				}
+
+				// #define scaleBars (0.3 + 1.2*whiteness)
+				// #define scaleBars (0.1 + 2.4*heights[y][x]*compensateForCurve*fadeOff)
+				// #define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
+				#define scaleBars 2.5*(0.2 + 2.3*peakEnergy[x]*fadeOff*fadeOff*fadeOff*fadeOff)
+
 				/*
-				// Isolated dots - dropped
-				longSide  = 0.12;
-				shortSide = 0.02;
-				*/
-				// Thin ribbons
-				longSide  = 0.20;
-				shortSide = 0.02;
-			} else if (modeCycle%12 < 8) {
-				// Medium ribbons
-				longSide  = 0.20;
-				shortSide = 0.05;
-			} else {
-				// Thick ribbons
-				longSide  = 0.20;
-				shortSide = 0.10;
-			}
-
-			// #define scaleBars (0.3 + 1.2*whiteness)
-			// #define scaleBars (0.1 + 2.4*heights[y][x]*compensateForCurve*fadeOff)
-			// #define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
-			#define scaleBars 2.5*(0.2 + 2.3*peakEnergy[x]*fadeOff*fadeOff*fadeOff*fadeOff)
-
-			if ((modeCycle/12)%2 == 1) {
-				shortSide *= scaleBars;
-			}
-			if ((modeCycle/12/2)%2 == 1) {
-				longSide  *= scaleBars;
-			}
-
-			/*
-			// Intelligent
-			if ((modeCycle/12)%2 == 1) {
-				shortSide *= scaleBars;
-				if (y == 0) {
+				if ((modeCycle/12)%2 == 1) {
+					shortSide *= scaleBars;
+				}
+				if ((modeCycle/12/2)%2 == 1) {
 					longSide  *= scaleBars;
 				}
-			}
-			*/
+				*/
 
-			// Nicely spaced lines and rows of dots:
-			if (modeCycle%2 > 0)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
-
-			if (modeCycle%4 > 1)
-				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, lastYheight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
-
-			// Crosses:
-			/*
-			if (modeCycle%2 > 0)
-				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
-
-			if (modeCycle%4 > 1)
-				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
-			*/
-
-			if (modeCycle%4 == 0) {
-				// Since neither of the above will fire, we just plot simple bars
-				// We can't use longSide for both 4 and 8 because they are identical.
-				if (modeCycle%12 == 0) {
-					// Plot overlapping bars.  x&1 is a chequered offset to avoid flickering of intersecting surfaces.
-					#define miniGap 0.001*((x+y)&1)
-					draw_bar(x_offset + miniGap - 0.1*scaleBars*SCALE_width/2.0, z_offset + miniGap, barHeight, lastYheight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
-				} else {
-					shortSide = ( modeCycle%12 == 4 ? 0.15 : 0.2 );
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastYheight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+				if ((modeCycle/12)%6 == 1) {
+					shortSide *= scaleBars;
 				}
+				// Intelligent
+				if ((modeCycle/12)%6 == 2 && y==0) {
+					longSide  *= scaleBars;
+				}
+				// Not intelligent
+				if ((modeCycle/12)%6 == 3) {
+					longSide  *= scaleBars;
+				}
+				if ((modeCycle/12)%6 == 4) {
+					shortSide *= scaleBars;
+					if (y == 0) {
+						longSide  *= scaleBars;
+					}
+				}
+				// Not intelligent
+				if ((modeCycle/12)%6 == 5) {
+					shortSide *= scaleBars;
+					longSide  *= scaleBars;
+				}
+
+				// Nicely spaced lines and rows of dots:
+				if (modeCycle%2 > 0)
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastYheight, lastXheight, lastXYheight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+
+				if (modeCycle%4 > 1)
+					draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, lastYheight, lastXheight, lastXYheight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+
+				// Crosses:
+				/*
+				if (modeCycle%2 > 0)
+					draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, barHeight, lastXheight, lastXYheight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+
+				if (modeCycle%4 > 1)
+					draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, barHeight, lastXheight, lastXYheight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				*/
+
+				if (modeCycle%4 == 0) {
+					draw_bar(x_offset, z_offset, barHeight, barHeight, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+					/*
+					// Since neither of the above will fire, we just plot simple bars
+					// We can't use longSide for both 4 and 8 because they are identical.
+					if (modeCycle%12 == 0) {
+						// Plot overlapping bars.  x&1 is a chequered offset to avoid flickering of intersecting surfaces.
+						#define miniGap 0.001*((x+y)&1)
+						draw_bar(x_offset + miniGap - 0.1*scaleBars*SCALE_width/2.0, z_offset + miniGap, barHeight, lastYheight, lastXheight, lastXYheight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
+					} else {
+						shortSide = ( modeCycle%12 == 4 ? 0.15 : 0.2 );
+						draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastYheight, lastXheight, lastXYheight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+					}
+					*/
+				}
+
 			}
 
+			#ifdef lastXheight
+				#undef lastXheight
+				#undef lastXYheight
+			#endif
+			lastXheight = barHeight;
+			lastXYheight = lastYheight;
 			#undef barHeight
+
+			#undef whiteness
+			lastXwhiteness = whiteness;
+			lastYwhiteness[x] = whiteness;
 
 		}
 	}
