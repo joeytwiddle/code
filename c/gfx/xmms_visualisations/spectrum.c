@@ -28,19 +28,13 @@
 
 #include "logo.xpm"
 
+// DONE dirtily: interpolation when bar is >= 2 pixels
+// TODO: smooth (fade to smoke?) the tops of lines?  (May not be needed after interpolation.)
+
 /* WIDTH should be kept 256, this is the hardwired resolution of the
    spectrum given by XMMS */
 #define WIDTH 256
 #define WINWIDTH 550
-
-// #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH)
-// #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH*0.7)
-#define XSCALE(i) (int)((float)WIDTH*dropEnds(doLog((float)(i)/(float)WINWIDTH)))
-#define doLog(x) (x)
-// #define doLog(x) pow(x,1.2)
-#define dropEnds(f) (f*0.7)
-// #define dropEnds(f) (f)
-// #define dropEnds(f) (0.2+0.6*(float)(f))
 
 /* HEIGHT can be modified at your pleasure */
 #define HEIGHT 128
@@ -55,6 +49,16 @@
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
 #define dif 4
+
+/* Definitions for fire colouring. */
+// #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH)
+// #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH*0.7)
+#define XSCALE(i) (int)((float)WIDTH*dropEnds(doLog((float)(i)/(float)WINWIDTH)))
+#define doLog(x) (x)
+// #define doLog(x) pow(x,1.2)
+#define dropEnds(f) (f*0.7)
+// #define dropEnds(f) (f)
+// #define dropEnds(f) (0.2+0.6*(float)(f))
 
 static GtkWidget *window = NULL,*area;
 static GdkPixmap *bg_pixmap = NULL, *draw_pixmap = NULL, *bar = NULL;
@@ -284,6 +288,7 @@ static void fsanalyzer_cleanup(void) {
 static gint draw_func(gpointer data) {
 	gint i;
 	float local;
+	gint lasty;
 
 	/* FIXME: should allow spare redrawing like the vis. in the main window */
 	if(!window) {
@@ -294,7 +299,9 @@ static gint draw_func(gpointer data) {
 	GDK_THREADS_ENTER();
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, HEIGHT);
 
-	local = HEIGHT/4;
+	// local = HEIGHT/4;
+	local = bar_heights[0];
+	lasty = HEIGHT-1;
 	for(i = 0; i < WINWIDTH; i++) {
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
@@ -308,6 +315,10 @@ static gint draw_func(gpointer data) {
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
 
+		// Cheap interpolation trick:
+		y = 0.5*y + 0.5*lasty;
+		lasty = y;
+
 		/*
 		if (bar_heights[XSCALE(i)]<HEIGHT/2)
 			cy = HEIGHT*0.4 + 0.4*bar_heights[XSCALE(i)];
@@ -318,8 +329,9 @@ static gint draw_func(gpointer data) {
 		// local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i)];
 		//// Attempt at was failing miserably.
 		//// Oh dear it was because i had not been not ()ed in XSCALE :f
-		if (i+4<WINWIDTH)
-			local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i+4)];
+		#define LOOKAHEAD 8
+		if (i+LOOKAHEAD<WINWIDTH)
+			local = local*0.96 + 0.04*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
 
 		// cy = (cy + local/2) / 2;
 
@@ -337,7 +349,11 @@ static gint draw_func(gpointer data) {
 
 		// local = 64;
 
-		cy = 24 + HEIGHT + local*1.2 - (HEIGHT-y);
+		#define MINCOL (HEIGHT/5)
+		// #define MINCOL (HEIGHT/12)
+		#define EXPLOSION 1.2
+		// #define EXPLOSION 1.1
+		cy = HEIGHT + MINCOL + local*EXPLOSION - (HEIGHT-y);
 		// We actually manipulate the spectrum (the height of the flame) to fix the colours:
 		//
 		/*
