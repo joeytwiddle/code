@@ -131,19 +131,23 @@ static void fsanalyzer_init(void) {
 	// Our new bar pixel buffer is 3x as tall as the target window.
 	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
 
-	// #define stages 5
+	//// Red and orange flame
+	#define stages 5
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
 	palette[1].red = 0xFFFF; palette[1].green = 0xFFFF; palette[1].blue = 0x0000;
 	palette[2].red = 0xEEEE; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
 	palette[3].red = 0xEEEE; palette[3].green = 0x4444; palette[3].blue = 0x0000;
 	palette[4].red = 0x4444; palette[4].green = 0x0088; palette[4].blue = 0x0000;
 
+	/*
+	//// Blue flame
+	//// This palette may prefer MINCOL = HEIGHT*0.4, EXPLOSION=1.0, with a lower LOOKAHEAD.
 	#define stages 4
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
 	palette[1].red = 0x1111; palette[1].green = 0xBBBB; palette[1].blue = 0xCCCC;
 	palette[2].red = 0x0999; palette[2].green = 0x0999; palette[2].blue = 0x9999;
 	palette[3].red = 0x0222; palette[3].green = 0x0033; palette[3].blue = 0x2222;
-	// This palette may prefer MINCOL = HEIGHT*0.4, EXPLOSION=1.0, with a lower LOOKAHEAD.
+	*/
 
 	if (1>0) {
 
@@ -435,9 +439,10 @@ static gint draw_func(gpointer data) {
 			heatHere = heatHere*(1.0-GAIN) + GAIN*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
 		// CONSIDER: Occasionally (with strong contrast colours like blue and cyan) you can actually see
 		// that the bar_heights[] have flat tops over i=n..n+2.  We could fix this by interpolating like we did with y.
-		#define MINCOL (HEIGHT*0.4)
+		// #define MINCOL (HEIGHT*0.4)
+		#define MINCOL (HEIGHT/4)
 		// #define MINCOL (HEIGHT/12)
-		#define EXPLOSION 1.0
+		#define EXPLOSION 1.2
 		// #define EXPLOSION 1.1
 
 		/*
