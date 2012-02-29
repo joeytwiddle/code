@@ -25,6 +25,7 @@
 #include <math.h>
 #include <audacious/plugin.h>
 #include <audacious/i18n.h>
+// #include <audacious/ui_main.h>
 
 #include "logo.xpm"
 
@@ -108,6 +109,9 @@ static void fsanalyzer_init(void) {
 	GdkColor palette[5];
 	GdkColor color;
 	int i;
+	int wx,wy;
+	// GtkWindow *parent;
+	GdkWindow *parent;
 
 	if(window)
 		return;
@@ -116,8 +120,34 @@ static void fsanalyzer_init(void) {
 	gtk_window_set_title(GTK_WINDOW(window), _("Spectrum Analyzer"));
 	gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, FALSE);
 	// NEW! Joey's stuff:
-	gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
-	//
+	// gtk_window_set_resizable(GTK_WINDOW(window), TRUE); // worked ok, but isn't desirable until we support it!
+	gtk_window_set_decorated(GTK_WINDOW(window), FALSE); // failed, the window still has a titlebar+frame.
+	/*
+	//// TODO:
+	//// I wanted to set the initial position of the fire spectrum window to HEIGHT pixels above the main window.
+	//// But I could not work out how to get the main window!
+	// parent = GTK_WINDOW(window)->parent;
+	// parent = gtk_widget_get_parent_window(GTK_WINDOW(window));
+	// parent = gtk_window_get_transient_for(GTK_WINDOW(window));
+	GdkScreen* screen = gtk_window_get_screen(GTK_WINDOW(window));
+	GList* glist = gdk_screen_get_toplevel_windows(GDK_SCREEN(screen));
+	parent = (GtkWindow*)g_list_first(glist);
+	parent = glist->data;
+	// parent = g_list_next(glist)->data;
+	// parent = gdk_get_default_root_window();
+	// parent = gtk_widget_get_parent_window(GTK_WIDGET(mainwin));
+	if (parent==0) {
+		g_printf("Failed to get parent window!\n");
+	}
+	// g_printf("fsanalyzer_vp.mainwin = %d\n",fsanalyzer_vp.mainwin);
+	// } else {
+		// gtk_window_get_position(GTK_WINDOW(parent), &wx, &wy);
+		// gdk_window_get_position(GDK_WINDOW(parent), &wx, &wy);
+		gdk_window_get_origin(GDK_WINDOW(parent), &wx, &wy);
+		g_printf("got x=%d y=%d\n",wx,wy);
+		gtk_window_move(GTK_WINDOW(window), wx, wy-HEIGHT);
+	// }
+	*/
 	gtk_widget_realize(window);
 
 	bg_pixmap = gdk_pixmap_create_from_xpm_d(window->window,NULL,NULL,logo_xpm);
