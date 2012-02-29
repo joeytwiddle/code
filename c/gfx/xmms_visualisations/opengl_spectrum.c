@@ -302,7 +302,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 
 	// float W = red*red;
 	float W = lightness;
-	float NW = 1.0 - W;
+	// float NW = 1.0 - W;
 
 	#define glColor3f_with_scale_then_whiteness(r,g,b,s) glColor3f(W+r*s*NW,W+g*s*NW,W+b*s*NW)
 
@@ -345,6 +345,7 @@ static void draw_bars(void)
 
 	GLfloat peakEnergy[WIDTH];
 	GLfloat peakHeight[WIDTH];
+	GLfloat localAverage[WIDTH];
 
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -359,6 +360,7 @@ static void draw_bars(void)
 	{
 		peakEnergy[x] = 0.0;
 		peakHeight[x] = 0.0;
+		localAverage[x] = 0.0;
 	}
 
 	glBegin(GL_TRIANGLES);
@@ -380,7 +382,8 @@ static void draw_bars(void)
 		GLfloat breakingEdge = w_base * w_base;
 
 		GLfloat fadeOff = (1.0 - (float)y/(float)(LENGTH-1));
-		fadeOff = fadeOff * fadeOff;
+		// fadeOff = fadeOff * fadeOff;
+		fadeOff = pow(fadeOff,1.5);
 
 		for(x = 0; x < WIDTH; x++)
 		{
@@ -398,7 +401,7 @@ static void draw_bars(void)
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
 
 			peakEnergy[x] *= 0.4;
-			// GLfloat energyHere = heights[y][x];
+			// GLfloat energyHere = 1.5 * heights[y][x];
 			GLfloat energyHere = heights[y][x] + 0.5*fmin(0,heights[y][x] - heights[y+1][x]);
 			energyHere *= compensateForCurve;
 			if (energyHere > peakEnergy[x]) {
@@ -410,6 +413,9 @@ static void draw_bars(void)
 				peakHeight[x] = heights[y][x];
 			}
 
+			localAverage[x] *= 0.95;
+			localAverage[x] += 0.05 * peakHeight[x];
+
 			// #define barHeight heights[y][x]
 			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
 			#define barHeight peakHeight[x]
@@ -419,12 +425,16 @@ static void draw_bars(void)
 			// whiteness = 1.3 * peakEnergy[x] * fadeOff;
 			//// Colored amplitudes fade to white when they drop:
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
-			//// Fade out fast from driving edge (white to color):
-			whiteness = 1.2 * peakEnergy[x] * breakingEdge * compensateForCurve;
 
-			// Subjective leading glow
+			//// Fade out slowly from white to color to black:
+			whiteness = 2.0 * peakEnergy[x] * fadeOff;
+
+			//// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
-			whiteness += 1.2 * peakHeight[x] * fadeOff;
+			whiteness += 1.0 * peakHeight[x] * breakingEdge * compensateForCurve;
+
+			//// Reduce energy of low bars in a busy channel
+			whiteness -= 0.5 * localAverage[x] * fadeOff;
 
 			//// Free leading glow
 			// whiteness += 0.3 * pow(breakingEdge,16);
@@ -752,7 +762,7 @@ static void start_display(void)
 	x_angle = 20.0;
 	y_angle = -15.0;
 	z_angle = 0.0;
-	modeCycle = 6;
+	modeCycle = 0;
 
 	going = TRUE;
 	pthread_create(&draw_thread, NULL, draw_thread_func, NULL);
