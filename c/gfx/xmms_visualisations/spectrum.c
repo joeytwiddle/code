@@ -441,7 +441,7 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 0.9
+	#define palScale 1.0
 	//// Red and orange flame
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
@@ -638,10 +638,22 @@ static gint draw_func(gpointer data) {
 		// #define scaleybyx(x) ( 1.5 - 0.5*(float)x/(float)WINWIDTH )
 		//// But what I really want to do is make the very leftmost bar stronger.
 		//// This is the one which represents the real low bass, and is just unrepresentative to the sound when it is really small.
-		#define scaleybyx(x) 1
+		// #define scaleybyx(x) 1
+		//// OK this works a little better: increase amplitude of leftmost bars, with fast dropoff to 1.0
+		// #define yscale (1.5/(0.5+(float)i/(float)WINWIDTH))
+		// #define yscale (2.0/(1.0+(float)i/(float)WINWIDTH))
+		// #define yscale (2.0-((float)i/(float)WINWIDTH))
+		// #define yscale (1.0 + 2.0/(1.0+512.0*(float)i/(float)WINWIDTH))
+		// #define yscale (1.0 + 1.0/(1.0+256.0*(float)i/(float)WINWIDTH))
+		//// This approaches my idea of 'accurate':
+		// #define yscale (0.7 * (1.0 + 1.2/(1.0+64.0*(float)i/(float)WINWIDTH)))
+		//// This is a bit more natural looking to watch:
+		#define yscale (0.8 * (1.0 + 1.0/(1.0+128.0*(float)i/(float)WINWIDTH)))
+		// #define yscale 1.2
+		// #define yscale 1.0
 
 		int y,cy;
-		y = WINHEIGHT-1 - bar_heights[XSCALE(i)]*scaleybyx(i) - 2;
+		y = WINHEIGHT-1 - bar_heights[XSCALE(i)]*yscale - 2;
 		// TODO: I would rather y went from 0.  We can do the WINHEIGHT-1 - y later!
 
 		#ifdef ORGANIC_INTERPOLATION
@@ -835,10 +847,6 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 	#else
 		#define global_add 0
 	#endif
-	// #define yscale (1.5/(0.5+(float)i/(float)SPECWIDTH))
-	// #define yscale (2.0/(1.0+(float)i/(float)SPECWIDTH))
-	// #define yscale (2.0-((float)i/(float)SPECWIDTH))
-	#define yscale 1.2
 
 	if(!window)
 		return;
@@ -858,7 +866,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 			(i==0           ? y : bar_heights[i-1]) +
 			(i==SPECWIDTH-1 ? y : bar_heights[i+1])) / dif; /* Add some diffusion */
 		y = ((tau-1)*bar_heights[i] + y) / tau; /* Add some dynamics */
-		bar_heights[i] = global_add + yscale*(gint16)y;
+		bar_heights[i] = global_add + (gint16)y;
 	}
 	draw_func(NULL);
 	return;
