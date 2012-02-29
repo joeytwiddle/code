@@ -254,7 +254,7 @@
 
 /* Time factor of the band dinamics. 3 means that the coefficient of the
    last value is half of the current one's. (see source) */
-#define tau 6.0
+#define tau 5.5
 
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
@@ -430,7 +430,8 @@ GdkBitmap *create_transparency_mask(GdkWindow *window) {
 
 #ifdef PSEUDO_TRANSPARENCY
 static Pixmap* take_snapshot() {
-	GdkPixmap root;
+	GdkPixmap *root;
+	gint root_x,root_y;
 	// GdkPixbuf pixbuf;
 	if (background) {
 		gdk_pixmap_unref(background);
@@ -456,13 +457,17 @@ static Pixmap* take_snapshot() {
 	return pixmap;
 	*/
 
+	// gtk_window_get_position(GTK_WINDOW(window),&root_x,&root_y);
+
 	// orig_map = XGetImage(dpy, window, 0, 0, WINWIDTH, WINHEIGHT, ~0L, ZPixmap);
 	// orig_image = ((GdkWindow*)window->window)->get_image(0,0,WINWIDTH,WINHEIGHT);
+	// background = gdk_pixmap_new(window->window,WINWIDTH,WINHEIGHT,gdk_rgb_get_visual()->depth);
 	background = gdk_pixmap_new(window->window,WINWIDTH,WINHEIGHT,gdk_rgb_get_visual()->depth);
-	// background = gdk_pixmap_new(None,WINWIDTH,WINHEIGHT,gdk_rgb_get_visual()->depth);
-	// background = gdk_pixmap_new(None,1280,1024,24);
-	// root = gdk_pixmap_lookup(GDK_ROOT_WINDOW());
-	// background = gdk_pixmap_new(None,1280,1024,24);
+	// root = gdk_pixmap_new(None,1280,1024,24);
+	root = gdk_pixmap_lookup(GDK_ROOT_WINDOW());
+	// gdk_draw_pixmap(root, gc, background, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+	gdk_draw_pixmap(root, gc, background, root_x, root_y, 0, 0, WINWIDTH, WINHEIGHT);
+	// background = gdk_pixmap_new(root,1280,1024,24);
 	// background = gdk_pixbuf_get_from_drawable(NULL, main_wnd->window, NULL,
 			// 0, 0, 0, 0, skin_infos.width, skin_infos.height);
 	// background = gdk_pixmap_foreign_new(GDK_ROOT_WINDOW());
@@ -927,7 +932,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 8 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
+		cy = FLAMEHEIGHT - 8 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.7;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -938,7 +943,7 @@ static gint draw_func(gpointer data) {
 		//// As it was, this acted too strongly on phat spectrums, and flattened the desirable colour spikes (could be fixed by tweaking other values).
 
 		#ifdef VELOCITY
-			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
+			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.4;
 		#endif
 		#ifdef VELOCITY2
 			// We slightly constrain the color spikes horizontally:
@@ -947,7 +952,7 @@ static gint draw_func(gpointer data) {
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
 			// Make recently growing bars brighter:
-			cy += bar_heights_difference_local * -15.0;
+			cy += bar_heights_difference_local * -5.0;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
