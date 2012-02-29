@@ -82,6 +82,10 @@ static gint frameCount;
 #endif
 
 static guchar rgb_buf[(WIDTH + 2) * (HEIGHT + 2)];
+static guchar rgb_buf2[(WIDTH + 2) * (HEIGHT + 2)];
+static guchar *target_rgb_buf;
+static guchar *other_rgb_buf;
+static guchar *temp_rgb_buf;
 static GdkRgbCmap *cmap = NULL; 
 	
 static void inline draw_pixel_8(guchar *buffer,gint x, gint y, guchar c)
@@ -99,8 +103,9 @@ void bscope_read_config(void)
 	{
 		// bscope_cfg.color = 0xFF0000;  // red
 		// bscope_cfg.color = 0xFF3F7F;  // pink
-		// bscope_cfg.color = 0x3FFFFF;  // cyan
+		// bscope_cfg.color = 0x3Fff00;  // green
 		// bscope_cfg.color = 0x3FFFBF;  // green/cyan
+		// bscope_cfg.color = 0x3FFFFF;  // cyan
 		bscope_cfg.color = 0x00BFFF;  // cyan lightning
 		// bscope_cfg.color = 0x007FFF;  // electric blue
 		// bscope_cfg.color = 0x0000FF;  // blue (dark)
@@ -119,12 +124,14 @@ void bscope_read_config(void)
 
 
 // #ifndef I386_ASSEM
-void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
+void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 {
 	register guint i,sum;
 	register guchar *iptr;
+	register guchar *optr;
 	
-	iptr = ptr + bpl + 1;
+	iptr = srcptr + bpl + 1;
+	optr = ptr + bpl + 1;
 	i = bpl * h;
 	while(i--)
 	{
@@ -160,16 +167,18 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 			// sum = sum - 1; // Final fixed decay
 
 		// At low intensity slow down the decay as much as possible
-		else if (sum==2 || sum==4 || sum==8 || sum==16)
+		else if (sum==2 || sum==4 || sum==8 || sum==16 || sum==32 || sum==64)
 			sum = sum - 1;
 		else
 			sum = sum - 0;
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
 
-		// sum = iptr[0];  if (sum > DECAY_RATE*8) { sum -= DECAY_RATE*8; } else { sum = 0; } // Rapid decay without blurring
+		// sum = iptr[0];  if (sum > DECAY_RATE*4) { sum -= DECAY_RATE*4; } else { sum = 0; } // Rapid decay without blurring
 
-		*(iptr++) = sum;
+		*(optr) = sum;
+		iptr++;
+		optr++;
 	}
 	
 	
@@ -229,6 +238,9 @@ static void bscope_init(void)
 	gdk_window_set_back_pixmap(area->window,bg_pixmap,0);
 	generate_cmap();
 	memset(rgb_buf,0,(WIDTH + 2) * (HEIGHT + 2));
+	memset(rgb_buf2,0,(WIDTH + 2) * (HEIGHT + 2));
+	target_rgb_buf = rgb_buf;
+	other_rgb_buf = rgb_buf2;
 		
 	gtk_widget_show(area);
 	gtk_widget_show(window);
@@ -300,7 +312,7 @@ static void bscope_render_pcm(gint16 data[2][512])
 	}
 #endif
 
-	bscope_blur_8_no_asm(rgb_buf, WIDTH, HEIGHT, BPL);
+	bscope_blur_8_no_asm(other_rgb_buf,target_rgb_buf, WIDTH, HEIGHT, BPL);
 	prev_y = y = (HEIGHT / 2) + (data[0][0] >> 9);
 	for(i = 0; i < WIDTH; i++)
 	{
@@ -312,12 +324,15 @@ static void bscope_render_pcm(gint16 data[2][512])
 			y = 0;
 		if(y >= HEIGHT)
 			y = HEIGHT - 1;
-		draw_vert_line(rgb_buf,i,prev_y,y);
+		draw_vert_line(target_rgb_buf,i,prev_y,y);
 		prev_y = y;
 	}
 				
 	GDK_THREADS_ENTER();
-	gdk_draw_indexed_image(area->window,area->style->white_gc,0,0,WIDTH,HEIGHT,GDK_RGB_DITHER_NONE,rgb_buf + BPL + 1,(WIDTH + 2),cmap);
+	gdk_draw_indexed_image(area->window,area->style->white_gc,0,0,WIDTH,HEIGHT,GDK_RGB_DITHER_NONE,target_rgb_buf + BPL + 1,(WIDTH + 2),cmap);
 	GDK_THREADS_LEAVE();
+	temp_rgb_buf = target_rgb_buf;
+	target_rgb_buf = other_rgb_buf;
+	other_rgb_buf = temp_rgb_buf;
 	return;			
 }
