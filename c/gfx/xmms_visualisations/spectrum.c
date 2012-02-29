@@ -57,9 +57,9 @@
 #define DEBUG(X,Y); 
 // #define DEBUG(X,Y); fprintf(stdout,X,Y);
 
-//// Pick one or none, but not both!
+//// Pick one or none, but not both.
 // #define MASK_TRANSPARENCY
-#define PSEUDO_TRANSPARENCY
+// #define PSEUDO_TRANSPARENCY
 // WARNING! This can create a lot of X refresh events, and make your X unresponsive!
 // Wow this works and it was not really too hard! :D
 // But it's still a bit heavy on CPU.  It would be good to make
@@ -76,6 +76,12 @@
 // Occasionally you may see the windows behind the flame flickering, or
 // pixels above the flame flicker black when the flame drops.  This is not my
 // fault!  I think that's X not re-drawing those pixels quickly enough.  ;)
+
+// An alternative attempt, capture the desktop and use that region as
+// the background.
+// Failed and can be removed.
+#define GNOME_SCREENSHOT
+// #define GNOME_SCREENSHOT_EXTRA
 
 // The Audacious version of this plugin scales the spectrum amplitudes to
 // "normalise" them.  This seems pretty worthwhile, but it means the heights of
@@ -199,6 +205,217 @@
 /* This isn't just pretty.  It is still a spectrum analyser.  It retains the
  * same values as the original plugin, adding colour. */
 
+#ifdef GNOME_SCREENSHOT
+
+#include "config.h"
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <string.h>
+#include <locale.h>
+
+// #include <glib/gi18n.h>
+#include <gtk/gtk.h>
+// #include <canberra-gtk.h>
+
+#include <X11/Xatom.h>
+#include <gdk/gdkx.h>
+
+#define SELECTION_NAME "_GDM_SCREENSHOT"
+static GtkWidget *selection_window;
+
+static gboolean debug_in;
+
+
+#ifdef GNOME_SCREENSHOT_EXTRA
+/* To make sure there is only one screenshot taken at a time,
+ * (Imagine key repeat for the print screen key) we hold a selection
+ * until we are done taking the screenshot
+ */
+/*  * Copyright (C) 2001-2006  Jonathan Blandford <jrb@alum.mit.edu> */
+static gboolean
+screenshot_grab_lock (void)
+{
+        Atom       selection_atom;
+        GdkCursor *cursor;
+        gboolean   result = FALSE;
+
+        // selection_atom = gdk_x11_get_xatom_by_name (SELECTION_NAME);
+        XGrabServer (GDK_DISPLAY ());
+        if (XGetSelectionOwner (GDK_DISPLAY(), selection_atom) != None) {
+                goto out;
+        }
+
+        // selection_window = gtk_invisible_new ();
+        gtk_widget_show (selection_window);
+
+        if (!gtk_selection_owner_set (selection_window,
+                                      gdk_atom_intern (SELECTION_NAME, FALSE),
+                                      GDK_CURRENT_TIME)) {
+                gtk_widget_destroy (selection_window);
+                selection_window = NULL;
+                goto out;
+        }
+
+        cursor = gdk_cursor_new (GDK_WATCH);
+        gdk_pointer_grab (selection_window->window, FALSE, 0, NULL,
+                          cursor, GDK_CURRENT_TIME);
+        // gdk_cursor_unref (cursor);
+
+        result = TRUE;
+
+ out:
+        XUngrabServer (GDK_DISPLAY ());
+        gdk_flush ();
+
+        return result;
+}
+
+/*  * Copyright (C) 2001-2006  Jonathan Blandford <jrb@alum.mit.edu> */
+static void
+screenshot_release_lock (void)
+{
+        if (selection_window != NULL) {
+                gtk_widget_destroy (selection_window);
+                selection_window = NULL;
+        }
+        gdk_flush ();
+}
+
+static char *
+screenshot_save (GdkPixbuf *pixbuf)
+{
+        char       *filename;
+        gboolean    res;
+        GError     *error;
+
+        filename = g_build_filename (GDM_SCREENSHOT_DIR,
+                                     "GDM-Screenshot.png",
+                                     NULL);
+
+        error = NULL;
+        res = gdk_pixbuf_save (pixbuf,
+                               filename,
+                               "png",
+                               &error,
+                               "tEXt::CREATOR", "gdm-screenshot",
+                               NULL);
+        if (! res) {
+                g_warning ("Unable to save screenshot: %s", error->message);
+                g_error_free (error);
+                g_free (filename);
+                filename = NULL;
+        }
+
+        return filename;
+}
+
+static void
+sound_effect_finished (ca_context *c,
+                       uint32_t    id,
+                       int         error_code,
+                       void       *userdata)
+{
+}
+
+static void
+play_sound_effect (Window xid)
+{
+        ca_context  *c;
+        ca_proplist *p;
+        int          res;
+
+        c = ca_gtk_context_get ();
+
+        p = NULL;
+        res = ca_proplist_create (&p);
+        if (res < 0) {
+                goto done;
+        }
+
+        res = ca_proplist_sets (p, CA_PROP_EVENT_ID, "screen-capture");
+        if (res < 0) {
+                goto done;
+        }
+
+        res = ca_proplist_sets (p, CA_PROP_EVENT_DESCRIPTION, _("Screenshot taken"));
+        if (res < 0) {
+                goto done;
+        }
+
+        res = ca_proplist_setf (p,
+                                CA_PROP_WINDOW_X11_XID,
+                                "%lu",
+                                (unsigned long) xid);
+        if (res < 0) {
+                goto done;
+        }
+
+        ca_context_play_full (c, 0, p, sound_effect_finished, NULL);
+
+ done:
+        if (p != NULL) {
+                ca_proplist_destroy (p);
+        }
+
+}
+
+static void
+prepare_screenshot (void)
+{
+        Window     win;
+        GdkPixbuf *screenshot;
+        char      *filename;
+
+        if (!screenshot_grab_lock ()) {
+                exit (0);
+        }
+
+        win = GDK_ROOT_WINDOW ();
+
+        screenshot = screenshot_get_pixbuf (win);
+
+        screenshot_release_lock ();
+
+        if (screenshot == NULL) {
+                /* FIXME: dialog? */
+                exit (1);
+        }
+
+        play_sound_effect (win);
+
+        filename = screenshot_save (screenshot);
+        if (filename != NULL) {
+                g_print ("Wrote %s\n", filename);
+                /* FIXME: show a dialog or something */
+                g_free (filename);
+        }
+}
+
+int
+main (int argc, char *argv[])
+{
+        GOptionContext *ctx;
+
+        bindtextdomain (GETTEXT_PACKAGE, GNOMELOCALEDIR);
+        bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
+        textdomain (GETTEXT_PACKAGE);
+        setlocale (LC_ALL, "");
+
+        /* Option parsing */
+
+        gtk_init (&argc, &argv);
+
+        prepare_screenshot ();
+
+        return 1;
+}
+#endif
+
+#endif
+
+
 // DONE dirtily: interpolation when bar is >= 2 pixels
 // TODO: smooth (fade to smoke?) the tops of lines?  (May not be needed after interpolation.)
 // TODO: flame is too boring on soft tracks, and maybe a little bit too excited on some crazy tracks
@@ -239,7 +456,7 @@
    they would like us to scale FLAMEHEIGHT for them also. */
 // #define WINHEIGHT 224
 // #define WINHEIGHT 196
-#define WINHEIGHT 160
+#define WINHEIGHT 140
 
 /* FLAMEHEIGHT scales the height of the flames, and the colour buffer.
    I have seen flames actually reach 1.7*FLAMEHEIGHT pixels in height.
@@ -247,14 +464,15 @@
    flames may get clipped. */
 // #define FLAMEHEIGHT 96
 // #define FLAMEHEIGHT (WINHEIGHT/1.5)
-#define FLAMEHEIGHT (WINHEIGHT/1.5)
+#define FLAMEHEIGHT (160/1.5)
 
 /* Linearity of the amplitude scale (0.5 for linear, keep in [0.1, 0.9]) */
 #define d 0.33
 
 /* Time factor of the band dinamics. 3 means that the coefficient of the
    last value is half of the current one's. (see source) */
-#define tau 5.5
+/* Good values are around 3.5 to 4.5 */
+#define tau 3.7
 
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
@@ -429,6 +647,75 @@ GdkBitmap *create_transparency_mask(GdkWindow *window) {
 #endif
 
 #ifdef PSEUDO_TRANSPARENCY
+
+// From gdm-screenshot.c
+/*  * Copyright (C) 2001-2006  Jonathan Blandford <jrb@alum.mit.edu> */
+static GdkPixmap *
+screenshot_get_pixbuf (Window w)
+{
+        GdkWindow *window;
+        GdkWindow *root;
+        GdkPixmap *screenshot;
+        int        x_real_orig;
+        int        y_real_orig;
+        int        x_orig;
+        int        y_orig;
+        int        real_width;
+        int        real_height;
+        int        width;
+        int        height;
+
+        window = gdk_window_foreign_new (w);
+        if (window == NULL) {
+                return NULL;
+        }
+
+        root = gdk_window_foreign_new (GDK_ROOT_WINDOW ());
+        // gdk_drawable_get_size (window, &real_width, &real_height);
+        // gdk_window_get_origin (window, &x_real_orig, &y_real_orig);
+        real_width=1280; real_height=1024;
+        x_real_orig=0; y_real_orig=0;
+
+        x_orig = x_real_orig;
+        y_orig = y_real_orig;
+        width = real_width;
+        height = real_height;
+
+        if (x_orig < 0) {
+                width = width + x_orig;
+                x_orig = 0;
+        }
+        if (y_orig < 0) {
+                height = height + y_orig;
+                y_orig = 0;
+        }
+
+        if (x_orig + width > gdk_screen_width ()) {
+                width = gdk_screen_width () - x_orig;
+        }
+        if (y_orig + height > gdk_screen_height ()) {
+                height = gdk_screen_height () - y_orig;
+        }
+
+        /*
+        screenshot = gdk_pixbuf_get_from_drawable (NULL,
+                                                   root,
+                                                   NULL,
+                                                   x_orig,
+                                                   y_orig,
+                                                   0,
+                                                   0,
+                                                   width,
+                                                   height);
+        */
+
+        screenshot = gdk_pixmap_new(window,width,height,gdk_rgb_get_visual()->depth);
+        gdk_draw_pixmap(root, gc, screenshot, 0, 0, 0, 0, width, height);
+
+        return screenshot;
+}
+
+
 static Pixmap* take_snapshot() {
 	GdkPixmap *root;
 	gint root_x,root_y;
@@ -801,6 +1088,7 @@ static gint draw_func(gpointer data) {
 #endif
 
 	//// heatHere is a sort of current average, with a bias towards bass.
+	//// We initialise it here, and update it inside the loop.
 	// heatHere = FLAMEHEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
 	heatHere = ( // cheeky initial "average" from the first half of the spectrum
