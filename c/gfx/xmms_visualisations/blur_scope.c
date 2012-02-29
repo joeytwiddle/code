@@ -126,8 +126,9 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.99
+#define fadeRate 0.94
 #define blurTao 0.6
+#define blurTao2 0.9
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -156,14 +157,14 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 #define max(a,b) (a>b?a:b)
-		sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1]));
+		sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
 
 		// Retain self with blurTao:
 		// if (iptr[0] > sum)
-		// if (sum > iptr[0])
-			// sum = sum*blurTao + iptr[0]*(1.0-blurTao);
-		// else
-			// sum = iptr[0];
+		if (sum > iptr[0])
+			sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+		else
+			sum = iptr[0];
 
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
