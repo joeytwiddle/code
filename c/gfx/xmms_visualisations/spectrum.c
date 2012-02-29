@@ -109,6 +109,12 @@
 //// relative to global-bar-change.  Also maybe normalise against self, e.g.
 //// a height growth of 5 pixels is more significant if you are only 3 pixels tall. ;)
 
+//// Keep VELOCITY2?  Well I have now tweaked all the variables for it!
+//// VELOCITY2 brings back visible vertical lines, but in a differeny way than
+//// they appeared before, which may enhance the experience.
+//// Although they are not visually realistic, they do now relay useful
+//// information about the spectrum.
+
 #define COLOR_FROM_BAR_HEIGHT                 1.0
 #define COLOR_FROM_BAR_HEIGHT_CHANGE_WRT_TIME 1.0
 #define COLOR_FROM_LOCAL_HEIGHTS              1.0
@@ -116,6 +122,11 @@
 // CONSIDER: At the moment we add all the contributions together.  But we could
 // approach it differently: have each technique produce an estimate colour for
 // the bar, and then average the result.
+
+// TODO: I think we may want to use a fast local velocity, and a slow more spread velocity.
+// I have recently concentrated the current height and velocity measures on rendering fine peaks,
+// so only heatHere has been drawing anything soft, but it is temporary.
+// We need a slower time-fadeoff heatHere or velocity (or abs(velocity)!).
 
 //// To really 'highlight notes which have just started playing' we should
 //// compare the current bar height to the bar heights from the last second or
@@ -510,7 +521,7 @@ static void fsanalyzer_init(void) {
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.25
+	#define palDelta 0.2
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -768,7 +779,7 @@ static gint draw_func(gpointer data) {
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
 		#define LOOKAHEAD 1
-		#define GAIN 0.011
+		#define GAIN 0.01
 		//// GAIN might be better around 0.03 if VELOCITY2 is enabled.
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
@@ -791,7 +802,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*1.0;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -811,7 +822,7 @@ static gint draw_func(gpointer data) {
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
 			// Make recently growing bars brighter:
-			cy += bar_heights_difference_local * 9.0;
+			cy += bar_heights_difference_local * 6.0;
 		#endif
 
 		DEBUG("cy=%i\n",cy);
