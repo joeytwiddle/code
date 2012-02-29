@@ -26,16 +26,21 @@
 
 // #define AIRFLOW
 
-#define SKIP_FRAMES 4
+// Without transparency, skipping every other frame is fine for XMMS, but visibly slow in Audacious.
+// If MASK_TRANSPARENCY is enabled for Audacious, then I must skip AT LEAST 2 frames to keep my system stable.
+#define SKIP_FRAMES 2
 
-#define BARS
+//// MASK_TRANSPARENCY works in XMMS, but is way too slow in Audacious.
+
+//// For debugging: does not make the tops of the bars spikey, so user can see the original spectrum bars.
+// #define BARS
 
 #define DEBUG(X,Y); 
 // TODO: #define DEBUG(X,Y); fprintf(stdout,X,Y);
 
 //// Pick one or none, not both!
 //// Neither tested for Audacious
-// #define MASK_TRANSPARENCY
+#define MASK_TRANSPARENCY
 // #define PSEUDO_TRANSPARENCY
 // WARNING! This can create a lot of X refresh events, and make your X unresponsive!
 // Wow this works and it was not really too hard! :D
@@ -76,6 +81,17 @@
 #include "xmms_logo.xpm"
 #include "xmms/i18n.h"
 #define logo_xpm sanalyzer_xmms_logo_xpm
+#endif
+
+#ifdef AIRFLOW
+	// One of these provides random():
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
 #endif
 
 /* This isn't just pretty.  It is still a spectrum analyser.  It retains the
@@ -143,7 +159,7 @@
 #define XSCALE(i) (int)((float)SPECWIDTH*dropEnds(doLog((float)(i)/(float)WINWIDTH)))
 //// Modify the x scale?
 #define doLog(x) (x)
-// #define doLog(x) pow(x,1.2)
+// #define doLog(x) pow(x,1.6)
 #define dropEnds(f) (f*0.7)
 // #define dropEnds(f) (f)
 // #define dropEnds(f) (0.2+0.6*(float)(f))
@@ -400,6 +416,7 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
+	#define palScale 0.9
 	//// Red and orange flame
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
@@ -415,18 +432,20 @@ static void fsanalyzer_init(void) {
 	#define palDelta 0.3
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
-	#define palScale 0.9
 
 	/*
 	//// Blue flame
+	#define palScale 0.9
 	//// This palette may prefer MINCOL = FLAMEHEIGHT*0.4, EXPLOSION=1.0, with a lower LOOKAHEAD.
 	#define stages 4
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xEEEE;
 	palette[1].red = 0x0000; palette[1].green = 0x8888; palette[1].blue = 0xCCCC;
 	// palette[2].red = 0x0000; palette[2].green = 0x4444; palette[2].blue = 0x8888;
-	palette[2].red = 0x0077; palette[2].green = 0x2222; palette[2].blue = 0x7777;
-	palette[3].red = 0x0000; palette[3].green = 0x0000; palette[3].blue = 0x1111;
-	#define palDelta 0.4
+	// palette[2].red = 0x0077; palette[2].green = 0x2222; palette[2].blue = 0x7777;
+	// palette[3].red = 0x0000; palette[3].green = 0x0000; palette[3].blue = 0x1111;
+	palette[2].red = 0x0000; palette[2].green = 0x0000; palette[2].blue = 0x1111;
+	palette[3].red = 0x0000; palette[3].green = 0x0000; palette[3].blue = 0x0011;
+	#define palDelta 0.6
 	*/
 
 	/*
@@ -528,7 +547,7 @@ static void fsanalyzer_cleanup(void) {
 }
 
 static gint draw_func(gpointer data) {
-	gint i,j;
+	gint i;
 	gdouble heatHere;
 	gint lasty;
 #ifdef MASK_TRANSPARENCY
@@ -550,11 +569,13 @@ static gint draw_func(gpointer data) {
 
 	GDK_THREADS_ENTER();
 
+#ifndef AIRFLOW
 #ifdef PSEUDO_TRANSPARENCY
 	gdk_draw_pixmap(draw_pixmap, gc, background, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 #else
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
 	// TODO: for efficiency, we don't really need to do this when using MASK_TRANSPARENCY either.
+#endif
 #endif
 
 #ifdef MASK_TRANSPARENCY
@@ -564,65 +585,6 @@ static gint draw_func(gpointer data) {
 	pattern.pixel = 1;
 	gdk_gc_set_foreground(mgc, &pattern);
 #endif
-
-	// Start AIRFLOW ?
-#ifdef AIRFLOW
-	// {
-		// local int i,j;
-
-	// For every cell in our 2D space:
-	for (i=0;i<WINWIDTH;i++) {
-		for (j=0;j<WINHEIGHT;j++) {
-
-			//// TODO
-
-#define flameHeight(j) bar_heights[XSCALE(i)]
-
-			//// Heat contribution from fire (music, spectrum).
-#define fadeout ( (float)j / (float)WINHEIGHT )
-#define hotness ( fadeout*0.5*flameHeight(j) )
-
-/*
-			//// The current_heat for this cell is adjusted by airflow.
-			//// Airflow for this cell (and surrounding(future?)?) is updated.
-			airflow_left[i][j] = airflow_left[i][FitInt(j+upward_speed,WINHEIGHT)];
-			// new_airflow_for_this_cell =
-			//   a_bit_upwards +
-			//   upwards_due_to_heat +
-			//   upwards_due_to_flow(downwards) +
-			//   speed_due_to_expansion_to_compensate_for_pressure
-			// airflow_up[i][j] = 
-			// airflow.cell[i][j].velocity
-
-#define always_up 0.1
-			airflow.cell[i][j].velocity.y = 
-				always_up +
-*/
-
-			//// Pressure for this cell (and surrounding(future?)?) is applied.
-			//// Pressure for this cell (and surrounding(future?)?) is updated.
-
-			//// Temperature of this cell is calculated
-			//// Colour of fire is generated, and plotted if needed.
-			//// Transparency/fading/masking is applied.
-
-			// Current total action of window?
-			// Total variance?
-#define outColor FitInt(hotness,FLAMEHEIGHT)
-
-			// heatHere = outColor;
-			// heatHere = FitInt(heatHere,FLAMEHEIGHT*2);
-			// cy = FitInt(hotness*3,FLAMEHEIGHT*3);
-
-			#define cellColor (3*hotness)
-			DEBUG("cellColor=%f\n",(float)(cellColor));
-			gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cellColor, i, j, 1, 1);
-			// We get full white followed by a few pixels of black.  So cellColor ~=> 3*FLAMEHEIGHT ?
-
-		}
-	}
-
-#else
 
 	// heatHere = FLAMEHEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
@@ -646,66 +608,47 @@ static gint draw_func(gpointer data) {
 		// if ((i%8) == 0)
 			// continue;
 
+		//// I tried to make the bars taller on the left.
+		// #define scaleybyx(x) ( 1.5 - 0.5*(float)x/(float)WINWIDTH )
+		//// But what I really want to do is make the very leftmost bar stronger.
+		//// This is the one which represents the real low bass, and is just unrepresentative to the sound when it is really small.
+		#define scaleybyx(x) 1
+
 		int y,cy;
-		// y = max(0.0,WINHEIGHT-1 - bar_heights[XSCALE(i)] - 3);
-		// this clip >=0 is done later, so not really needed here.
-		y = WINHEIGHT-1 - bar_heights[XSCALE(i)] - 2;
-		// The extra -3 gives a constant 3-pixel significant flat blob of fire at the bottom, so that the fire never disappears or flickers down to 1 pixel.
-		// Use 0 if you don't mind the fire disappearing.
-		// Hmm even with this, we still get a 1-pixel height flicker at very quiet parts.
+		y = WINHEIGHT-1 - bar_heights[XSCALE(i)]*scaleybyx(i) - 2;
+		// TODO: I would rather y went from 0.  We can do the WINHEIGHT-1 - y later!
 
 		#ifdef ORGANIC_INTERPOLATION
 
-		// Quite fun to play with.
-		// This is actually no more expensive.  It is tuned to produce a smoother result.
-		// It can move surprisingly like real fire with a suitable song.  (e.g. Cold Storage - Onyx.)
-		// lasty = lasty*0.9 + y*0.1;
-		// The downside is that it drops information, the user can't see the details of the spectrum.
-		// It works well on spectra with fractal/busy/wiggling peaks, but only
-		// flattens curves further if they were already gentle, in which case we
-		// prefer the details.
-		// lasty = lasty*0.93 + y*0.07; // Too smooth
-		// lasty = lasty*0.8 + y*0.2;
-		//// Vary spikiness according to (lack of) heat.
-		float spikiness;
-		// spikiness = 0.2 + 0.65*abs(fclamp(heatHere/(float)FLAMEHEIGHT,0,1)-0.5)*2.0;
-		//// This smooths the high flames.  But it doesn't look good.  :P
-		// spikiness = 0.6 - fclamp(1.2*heatHere/(float)FLAMEHEIGHT,0,0.5);
-		// spikiness = 0.6 - fclamp(2.0*heatHere/(float)FLAMEHEIGHT,0,0.5);
-		// Good value range: Min: 0.2, Max: 0.5
-		// spikiness = 0.2; // Min recommended. Offers a little smoothing, but doesn't lose too much information.
-		// spikiness = 0.45; // Seems ugly
-		spikiness = 0.5; // Keep spike information (any higher and you end up showing the flat bars!)
-		// I think I prefer full spikiness because it gives more visual information, so I can see the gentler frequencies between the strong ones.
-		/*
-		spikiness += 0.01*g_random_double()-0.5;
-		spikiness = 0.99*spikiness + 0.01*0.25;
-		*/
+			/*
+			if (i==0)
+				// lasty = y + (random()%31)-15;
+				lasty = WINHEIGHT-1 - bar_heights[XSCALE(i)]/2 - 2;
+			*/
 
-		/*
-		// Normalise in case of different window width
-		spikiness /= ((float)WINWIDTH/550.0);
-		spikiness /= ((float)WINWIDTH/550.0); // Square it in fact.
-		spikiness /= ((float)WINWIDTH/550.0); // Still no good =/ cube it :P
-		// those attempts failed
-		*/
+			float spikiness;
+			spikiness = 0.5;
 
-		y = lasty*(1.0-spikiness) + y*spikiness;
-		lasty = y;
-		//// TODO:
-		//// Attempts to fiddle around with interpolation have a nasty habit of exhibiting artefacts resulting from the face that the input is a set of bars (not interpolated yet).
-		//// Again we are using the dirty lop-sided averaging, and this time with heights not colours.
-		//// Maybe better to calculate the true mean here.
+			#ifdef BARS
+				spikiness = 1.0;
+			#endif
+
+			y = lasty*(1.0-spikiness) + y*spikiness;
+			lasty = y;
+			//// TODO:
+			//// Attempts to fiddle around with interpolation have a nasty habit of exhibiting artefacts resulting from the face that the input is a set of bars (not interpolated yet).
+			//// Again we are using the dirty lop-sided averaging, and this time with heights not colours.
+			//// Maybe better to calculate the true mean here.
 
 		#else
 
-		// True interpolation (albeit inefficient :P )
-		int left = (int)((float)SPECWIDTH*0.7*(float)(i)/(float)WINWIDTH);
-		int right = left + 1;
-		float thru = ((float)SPECWIDTH*0.7*(float)(i)/(float)WINWIDTH) - left;
-		float yleft = WINHEIGHT-1 - bar_heights[left] - 3;
-		float yright = WINHEIGHT-1 - bar_heights[right] - 3;
-		y = yleft*(1.0-thru) + yright*thru;
+			// True interpolation (albeit inefficient :P )
+			int left = (int)((float)SPECWIDTH*0.7*(float)(i)/(float)WINWIDTH);
+			int right = left + 1;
+			float thru = ((float)SPECWIDTH*0.7*(float)(i)/(float)WINWIDTH) - left;
+			float yleft = WINHEIGHT-1 - bar_heights[left] - 3;
+			float yright = WINHEIGHT-1 - bar_heights[right] - 3;
+			y = yleft*(1.0-thru) + yright*thru;
 
 		#endif
 
@@ -713,89 +656,26 @@ static gint draw_func(gpointer data) {
 
 		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
-		// #define LOOKAHEAD 12
-		// #define GAIN 0.01
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
-		// #define LOOKAHEAD 10
-		// #define GAIN 0.02
-		// #define LOOKAHEAD 8
-		// #define GAIN 0.03
 		#define LOOKAHEAD 6
 		#define GAIN 0.04
-		// #define LOOKAHEAD 6
-		// #define GAIN 0.05
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
-		// #define LOOKAHEAD 1
-		// #define GAIN 0.10
+
+		#ifdef BARS
+			#undef LOOKAHEAD
+			#undef GAIN
+			#define LOOKAHEAD 0
+			#define GAIN 1.0
+		#endif
+
 		if (i+LOOKAHEAD<WINWIDTH)
 			heatHere = heatHere*(1.0-GAIN) + GAIN*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
 		// CONSIDER: Occasionally (with strong contrast colours like blue and cyan) you can actually see
 		// that the bar_heights[] have flat tops over i=n..n+2.  We could fix this by interpolating like we did with y.
-		// #define MINCOL (FLAMEHEIGHT/3)
-		// #define MINCOL (FLAMEHEIGHT/4)
-		// #define MINCOL (FLAMEHEIGHT/12)
-		// #define MINCOL (FLAMEHEIGHT/16)
 		#define MINCOL 0
-		// #define MINCOL (FLAMEHEIGHT*0.4)
-		// #define MINCOL (FLAMEHEIGHT/7)
-		// #define EXPLOSION 1.1
-		// #define EXPLOSION 1.2
-		// #define EXPLOSION 1.3
 		#define EXPLOSION 1.4
-		// #define EXPLOSION 1.5
-
-		/*
-		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
-		// BUG: Sometimes rising spikes were getting their tops clipped by some rising curve.  Maybe cy was < FLAMEHEIGHT ?
-		// #define LOOKAHEAD 64
-		#define LOOKAHEAD 10
-		//// Doing them independently causes fadeouts at the edges.  Maybe a good thing, making the outer flames cooler.
-		// if (i+LOOKAHEAD < WINWIDTH)
-			// heatHere += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1);
-		// if (i-LOOKAHEAD > =0)
-			// heatHere -= (float)bar_heights[XSCALE(i-LOOKAHEAD)] / (LOOKAHEAD*2+1);
-		//// Doing them together is more correct:
-		//// I don't know why DELTA is needed.  It's a horizontal shift.
-		#define DELTA 8
-		if (i+LOOKAHEAD<WINWIDTH && i-LOOKAHEAD-DELTA>=0) {
-			heatHere += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1+DELTA);
-			heatHere -= (float)bar_heights[XSCALE(i-LOOKAHEAD-DELTA)] / (LOOKAHEAD*2+1+DELTA);
-		}
-		//// Very gently, move the global mean towards current state:
-		//// Without this, our average average is dependent on the initial value of heatHere.
-		// #define MINCOL (FLAMEHEIGHT/4)
-		// if (i+LOOKAHEAD<WINWIDTH)
-			// heatHere = heatHere*0.999 + 0.001*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
-		#define MINCOL (FLAMEHEIGHT/3)
-		#define EXPLOSION 0.8
-		*/
-
-		//// Choose the colour intensity of this flame:
-
-		/*
-		if (bar_heights[XSCALE(i)]<FLAMEHEIGHT/2)
-			cy = FLAMEHEIGHT*0.4 + 0.4*bar_heights[XSCALE(i)];
-		else
-			cy = max(1,FLAMEHEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
-		*/
-
-		// cy = (cy + heatHere/2) / 2;
-		// if (cy > FLAMEHEIGHT*0.75)
-			// cy = FLAMEHEIGHT*0.75;
-
-		// cy = 1;
-
-		/*
-		if (heatHere<FLAMEHEIGHT/2)
-			cy = heatHere * 0.3;
-		else
-			cy = (FLAMEHEIGHT-heatHere) * 0.3;
-		*/
-
-		// heatHere = 64;
-
 
 
 		// Color height:
@@ -811,36 +691,6 @@ static gint draw_func(gpointer data) {
 		//// Or with a better buffer, we could copy a stretch bar to fix the lower col.
 		//// As it was, this acted too strongly on phat spectrums, and flattened the desirable colour spikes (could be fixed by tweaking other values).
 
-		// cy = y;
-
-		// cy = y * heatHere/FLAMEHEIGHT;
-
-		//// We should not need to check any bounds now that we are using 3 buffers.
-		/*
-		//// This actually manipulated the spectrum (the height of the flame) to fix the colours:
-		if (cy < 1) {
-			y += (1 - cy);
-			cy = 1;
-		}
-		if (cy-2*FLAMEHEIGHT > y) {
-			y += (cy-2*FLAMEHEIGHT - y);
-			// cy = y;
-		}
-		*/
-		/*
-		// if (cy > y)
-			// cy = y;
-		//// I think printf's were causing segfaults!
-		if (cy < FLAMEHEIGHT+1) {
-			// fprintf("Warning: cy = %i < FLAMEHEIGHT !\n",&cy);
-			cy = FLAMEHEIGHT+1;
-		}
-		*/
-		// if (cy < 1) {
-			// // fprintf("Warning: cy = %i < 1 !\n",&cy);
-			// cy = 1;
-		// }
-
 
 
 
@@ -852,9 +702,76 @@ static gint draw_func(gpointer data) {
 		gdk_draw_line(mask, mgc, i, y, i, WINHEIGHT-1);
 #endif
 
+
+
+#ifdef AIRFLOW
+
+	{ int j;
+
+	for (j=0;j<cy;j++) {
+
+		//// TODO
+
+#define flameHeight bar_heights[XSCALE(i)]
+
+		//// Heat contribution from fire (music, spectrum).
+#define fadeout ( (float)j / (float)WINHEIGHT )
+#define hotness ( fadeout*0.5*flameHeight )
+
+/*
+		//// The current_heat for this cell is adjusted by airflow.
+		//// Airflow for this cell (and surrounding(future?)?) is updated.
+		airflow_left[i][j] = airflow_left[i][FitInt(j+upward_speed,WINHEIGHT)];
+		// new_airflow_for_this_cell =
+		//   a_bit_upwards +
+		//   upwards_due_to_heat +
+		//   upwards_due_to_flow(downwards) +
+		//   speed_due_to_expansion_to_compensate_for_pressure
+		// airflow_up[i][j] = 
+		// airflow.cell[i][j].velocity
+
+#define always_up 0.1
+		airflow.cell[i][j].velocity.y = 
+			always_up +
+*/
+
+		//// Pressure for this cell (and surrounding(future?)?) is applied.
+		//// Pressure for this cell (and surrounding(future?)?) is updated.
+
+		//// Temperature of this cell is calculated
+		//// Colour of fire is generated, and plotted if needed.
+		//// Transparency/fading/masking is applied.
+
+		// Current total action of window?
+		// Total variance?
+#define outColor FitInt(hotness,FLAMEHEIGHT)
+
+		// heatHere = outColor;
+		// heatHere = FitInt(heatHere,FLAMEHEIGHT*2);
+		// cy = FitInt(hotness*3,FLAMEHEIGHT*3);
+
+		// float dx,dy;
+		dx = -3 + (random()%7);
+		dy = -3 + (random()%7);
+		dy = dy + 1;
+
+		// TODO: blur the pixel with those near it, to create airflow effect
+		//       see rgb_buf in blur_score.c
+
+		#define cellColor (3*hotness)
+		DEBUG("cellColor=%f\n",(float)(cellColor));
+		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cellColor, i, j, 1, 1);
+		// We get full white followed by a few pixels of black.  So cellColor ~=> 3*FLAMEHEIGHT ?
+
+	}
+
 	}
 
 #endif
+
+	}
+
+
 
 #ifndef PSEUDO_TRANSPARENCY
 #ifdef MASK_TRANSPARENCY
@@ -883,6 +800,7 @@ static void fsanalyzer_playback_stop(void) {
 	}
 }
 
+// From Audacious:
 static void fsanalyzer_render_freq(gint16 data[2][256]) {
 	gint i;
 	gdouble y;
@@ -904,3 +822,47 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 	draw_func(NULL);
 	return;
 }
+
+// From XMMS:
+static void sanalyzer_render_freq_DISABLED(gint16 data[2][256])
+{
+	gint i,c;
+	gint y;
+
+	// gint xscale[] = {0, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255};
+	// #define xscale(x) xscale[x]
+	// #define xscale(x) XSCALE(x)
+	// #define xscale(x) ((int)(x*SPECWIDTH/WINWIDTH))
+	// #define xscale(x) ((int)(SPECWIDTH*pow((float)x/(float)WINWIDTH,0.5)))
+	// #define xscale(x) ((int)(SPECWIDTH*pow((float)x/(float)SPECWIDTH,1.0)))
+	#define xscale(x) (x/2)
+
+	if(!window)
+		return;
+	for(i = 0; i < SPECWIDTH; i++)
+	{
+		for(c = xscale(i), y = 0; c < xscale(i + 1); c++)
+		{
+			if(data[0][c] > y)
+				y = data[0][c];
+		}
+		y >>= 7;
+		if(y != 0)
+		{
+			y = (gint)(log(y) * scale);
+			if(y > WINHEIGHT - 1)
+				y = WINHEIGHT - 1;
+		}
+
+		if(y > bar_heights[i])
+			bar_heights[i] = y;
+		else if(bar_heights[i] > 4)
+			bar_heights[i] -= 4;
+		else
+			bar_heights[i] = 0;
+		bar_heights[i] = bar_heights[i] / 2;
+	}
+	draw_func(NULL);
+	return;
+}
+
