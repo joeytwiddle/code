@@ -134,8 +134,10 @@ static void fsanalyzer_init(void) {
 	// color.red = 0xFFFF/3; // TODO: If we are gonna have extra red, keep fading it.
 	// color.blue = 0xFFFF/*/3*/; // TODO: This should only be for TESTING!
 	for(i = 0; i < HEIGHT; i++) {
-		color.red = 0xFFFF/3 * i/HEIGHT;
-		color.green = color.red/3;
+		// color.red = 0xFFFF/3 * i/HEIGHT;
+		// color.green = color.red/3;
+		color.red = 0xFFFF*0.2;
+		color.green = (0xDDDD-0xFFFF/3)*0.2*0.2;
 		color.blue = 0x0000;
 		// color.blue = color.red;   color.red = 0;
 		/*
@@ -208,6 +210,7 @@ static void fsanalyzer_init(void) {
 			// color.green = 0xDDDD - thruinner/3;
 			color.green = 0xDDDD - thruinner/3;
 			color.blue = 0;
+			/*
 		} else if (thruouter<0.8) {
 			color.red = 0xFFFF;
 			color.green = max(0xDDDD - 0xFFFF/3 - thruinner/3,0);
@@ -226,13 +229,14 @@ static void fsanalyzer_init(void) {
 			color.green = max(0xDDDD - 0xFFFF*2/3 - thruinner/3,0);
 			// color.green = color.red/3;
 			color.blue = 0;
-			/*
+			*/
 		} else {
 			thruinner = (thruouter-0.6)/0.4;
-			color.red = 0xFFFF - 0xFFFF*2.0/3.0*thruinner;
-			color.green = 0xFFFF - 0xFFFF*5.0/6.0*thruinner;
-			color.blue = 0xFFFF/2 - 0xFFFF/2.0*thruouter;
-			*/
+			#define loss (1.0-thruinner*0.8)
+			// color.red = 0xFFFF*(1.0-thruouter*0.5);
+			color.red = 0xFFFF*loss;
+			color.green = (0xDDDD - 0xFFFF/3)*loss*loss;
+			color.blue = 0;
 		}
 		gdk_color_alloc(gdk_colormap_get_system(),&color);
 		gdk_gc_set_foreground(gc,&color);
@@ -377,7 +381,7 @@ static gint draw_func(gpointer data) {
 		// #define GAIN 0.10
 		if (i+LOOKAHEAD<WINWIDTH)
 			heatHere = heatHere*(1.0-GAIN) + GAIN*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
-		#define MINCOL (HEIGHT/8)
+		#define MINCOL (HEIGHT/4)
 		// #define MINCOL (HEIGHT/12)
 		#define EXPLOSION 1.2
 		// #define EXPLOSION 1.1
