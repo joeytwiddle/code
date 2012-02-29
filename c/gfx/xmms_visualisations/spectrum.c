@@ -406,9 +406,9 @@ GdkBitmap *create_transparency_mask(GdkWindow *window) {
 #ifdef PSEUDO_TRANSPARENCY
 // Nabbed from Audacious - may be gtk2.
 static Pixmap* take_snapshot() {
-	/*
 	Pixmap pixmap;
 	GC gc;
+	/*
 	// create a pixmap to hold the screenshot.
 	pixmap = XCreatePixmap(window->dpy, window, WINWIDTH, WINHEIGHT,
 			DefaultDepth(window->dpy, DefaultScreen(window->dpy)));
@@ -433,12 +433,20 @@ static Pixmap* take_snapshot() {
 	//// gdk_draw_pixmap(background, gc, DefaultRootWindow(display), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 	gdk_draw_pixmap(background, gc, draw_pixmap, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 	// gdk_draw_pixmap(background, gc, gdk_window_foreign_new(GDK_ROOT_WINDOW()), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
-
 	// TODO: OK so we grabbed something, but it's not the desktop!
 	//       I see a copy of the default equalizer skin bitmap!
 	//       Yeah we seem to be grabbing bits of memory, sometimes dirty.
 	// I tried completely masking the vis window before copying the snapshot, but
 	// we still ended up with bad bitmap data.
+
+	// This is how audacious does it for osd in ghosd.c:
+	pixmap = XCreatePixmap(window->dpy, window->win, window->width, window->height,
+			DefaultDepth(window->dpy, DefaultScreen(window->dpy)));
+	gc = XCreateGC(window->dpy, pixmap, 0, NULL);
+	// make our own copy of the background pixmap as the initial surface.
+	XCopyArea(window->dpy, window->background.pixmap, pixmap, gc,
+			0, 0, window->width, window->height, 0, 0);
+
 	return ((Pixmap*)((int)background));
 }
 #endif
@@ -517,7 +525,7 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 0.9
+	#define palScale 1.2
 	//// Red and orange flame
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
@@ -528,7 +536,7 @@ static void fsanalyzer_init(void) {
 	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
 	palette[4].red = 0xCCCC; palette[4].green = 0x4444; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
-	#define palDelta 0.18
+	#define palDelta 0.00
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -814,7 +822,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.2;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.3;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -838,7 +846,7 @@ static gint draw_func(gpointer data) {
 			// Mmm ok fixed a bug in VELOCITY2 :P
 			// Well actually that value will be often negative, since bar heights go up in a few frames, but down slowly over many frames.
 			// So although the average may be 0, if gathered over time, the negative values will dominate.
-			cy += bar_heights_difference_local * 25.0 - 0;
+			cy += bar_heights_difference_local * 20.0 - 0;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
