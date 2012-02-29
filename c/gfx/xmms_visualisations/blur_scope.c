@@ -122,8 +122,8 @@ void bscope_read_config(void)
 }
 
 
-#define blurTao 0.8
-#define fadeRate 0.92
+#define blurTao 0.9
+#define fadeRate 0.95
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -153,7 +153,8 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		*/
 
 		// Retain self with blurTao:
-		sum = iptr[0]*blurTao + sum*(1.0-blurTao);
+		if (iptr[0] > sum)
+			sum = iptr[0]*blurTao + sum*(1.0-blurTao);
 
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
@@ -179,7 +180,8 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		if (sum > 32)
 			sum = sum * fadeRate;
 		else
-			sum = 0;
+			if (sum > 0)
+				sum--;
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
@@ -344,8 +346,8 @@ static void bscope_render_pcm(gint16 data[2][512])
 	{
 		y = (HEIGHT / 2) + (data[0][i >> 1] >> 9);
 		// Since we are reading only 1 sample for 2 pixels, we interpolate the second pixel:
-		// if (i%2 == 1)
-			// y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
+		if (i%2 == 1)
+			y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
 		// However, that does not produce an even volume spread for the display
 		// (unless we add anti-aliasing).
 		if(y < 0)
