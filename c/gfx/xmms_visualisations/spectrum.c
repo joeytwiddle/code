@@ -285,13 +285,13 @@ static gint draw_func(gpointer data) {
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
 		if (bar_heights[XSCALE(i)]<HEIGHT/2)
-			cy = HEIGHT*0.3 + 0.2*bar_heights[XSCALE(i)];
+			cy = HEIGHT*0.4 + 0.4*bar_heights[XSCALE(i)];
 		else
-			cy = max(1,HEIGHT*0.9 - 1.1*bar_heights[XSCALE(i)]);
+			cy = max(1,HEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
 		// if (i < WINWIDTH-2) // I don't know why, but this fails!
 			// local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i+2)];
 		local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i)];
-		// cy = (cy + local/2) / 2;
+		cy = (cy + local/2) / 2;
 		if (cy > y)
 			cy = y;
 		if (cy < 1)
