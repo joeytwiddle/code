@@ -45,7 +45,7 @@
 
 //// I dropped this to get more raw data, and it was a bit one-sided.
 //// To compensate for its removal, I increased tau and reduced spikiness (previously 3 and 0.5).
-// #define DO_DIFFUSION
+#define DO_DIFFUSION
 
 #define DEBUG(X,Y); 
 // TODO: #define DEBUG(X,Y); fprintf(stdout,X,Y);
@@ -235,8 +235,10 @@
 
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
-#define dif 4
+#define dif 8
 // In other words, the two neighbouring bars count for 1, and the current bar counts for (dif-2).
+// Used to be 4 (or 3?)
+// TODO: it is asymmetrical!  We copy from the right bar before his update, but from the left bar after his update.
 
 /* Parameters and functions for fire colouring. */
 //// I actually prefer the non-true interpolation because it feels more organic, but it does not work at higher resolutions.  (At low-res it puts a slight curve on the flames, but as high-res it exhibits the flat graph underneath, unless we interpolate that input.)
@@ -512,13 +514,13 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 1.4
+	#define palScale 1.1
 	//// Red and orange flame
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
-	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFFFF; palette[1].green = 0xFF00; palette[1].blue = 0xAA00;
+	palette[0].red = 0xFFFF; palette[0].green = 0xFF88; palette[0].blue = 0xDDDD;
+	palette[1].red = 0xFFFF; palette[1].green = 0xEE88; palette[1].blue = 0x8800;
 	palette[2].red = 0xFF77; palette[2].green = 0xDD00; palette[2].blue = 0x4444;
 	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
 	palette[4].red = 0xDDDD; palette[4].green = 0x4444; palette[4].blue = 0x0000;
@@ -809,7 +811,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.4 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -829,7 +831,7 @@ static gint draw_func(gpointer data) {
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
 			// Make recently growing bars brighter:
-			cy += bar_heights_difference_local * -10.0;
+			cy += bar_heights_difference_local * -15.0;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
@@ -1000,7 +1002,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
 		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
 		/*#define DIFFERENCE_GAIN_BY_TIME 0.04 0.2 */
-		#define DIFFERENCE_GAIN_BY_TIME 0.06
+		#define DIFFERENCE_GAIN_BY_TIME 0.07
 		bar_heights_difference[i] =
 			  DIFFERENCE_GAIN_BY_TIME       * ((float)bar_heights[i] - (float)last_bar_height)
 			+ (1.0-DIFFERENCE_GAIN_BY_TIME) * bar_heights_difference[i];
