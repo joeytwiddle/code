@@ -26,11 +26,18 @@
 #include <audacious/plugin.h>
 #include <audacious/i18n.h>
 // #include <audacious/ui_main.h>
+// #include <grand.h>
 
 #include "logo.xpm"
 
 // DONE dirtily: interpolation when bar is >= 2 pixels
 // TODO: smooth (fade to smoke?) the tops of lines?  (May not be needed after interpolation.)
+// TODO: flame is too boring on soft tracks, and maybe a little bit too excited on some crazy tracks
+//       we don't want to fully normalise this, since the tracks do deserve it, we just want to reduce the inter-track variance
+//       the spikes are desirable on very soft tracks
+// TODO: unsmoothed tiny spikes are ok but unrealistic along the whole length of the flame
+//       but well smoothed spikes are equally unrealistic.  we need a mixture!
+//       maybe vary the smoothing as we cross the flame, creating some regions of spikiness, others smooth.
 
 /* WIDTH should be kept 256, this is the hardwired resolution of the
    spectrum given by XMMS */
@@ -106,6 +113,10 @@ static int min(int a,int b) {
 	return ( a<b ? a : b );
 }
 
+static float fclamp(float val, float min, float max) {
+	return ( val<min ? min : val>max ? max : val );
+}
+
 static void fsanalyzer_init(void) {
 	GdkColor palette[5];
 	GdkColor color;
@@ -127,6 +138,7 @@ static void fsanalyzer_init(void) {
 	//// TODO:
 	//// I wanted to set the initial position of the fire spectrum window to HEIGHT pixels above the main window.
 	//// But I could not work out how to get the main window!
+	//// Ah well I finally managed to get my window manager to remember it's position, so this is less important now.  I hope other users can achieve it that way too.
 	// parent = GTK_WINDOW(window)->parent;
 	// parent = gtk_widget_get_parent_window(GTK_WINDOW(window));
 	// parent = gtk_window_get_transient_for(GTK_WINDOW(window));
@@ -163,14 +175,15 @@ static void fsanalyzer_init(void) {
 	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
 
 	//// Red and orange flame
-	#define stages 4
+	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
-	palette[0].red = 0xF000; palette[0].green = 0xEEEE; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFF77; palette[1].green = 0xEE77; palette[1].blue = 0x0000;
-	palette[2].red = 0xEEEE; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
-	palette[3].red = 0xEE77; palette[3].green = 0x4444; palette[3].blue = 0x0000;
-	// I am tending to meet the problem that I want my first colour band to be
-	// short, but if I make it short by increasing MINCOL, then we lose colours!
+	palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
+	palette[1].red = 0xFF22; palette[1].green = 0xFF22; palette[1].blue = 0x4444;
+	palette[2].red = 0xFF22; palette[2].green = 0xCCCC; palette[2].blue = 0x0000;
+	palette[3].red = 0xDDDD; palette[3].green = 0x5555; palette[3].blue = 0x0000;
+	palette[4].red = 0x4444; palette[4].green = 0x0088; palette[4].blue = 0x0000;
+	// The alternative to increasing MINCOL:
+	#define palDelta 0.35
 
 	/*
 	//// Blue flame
@@ -181,17 +194,18 @@ static void fsanalyzer_init(void) {
 	// palette[2].red = 0x0000; palette[2].green = 0x4444; palette[2].blue = 0x8888;
 	palette[2].red = 0x0077; palette[2].green = 0x2222; palette[2].blue = 0x7777;
 	palette[3].red = 0x0000; palette[3].green = 0x0000; palette[3].blue = 0x1111;
+	#define palDelta 0.4
 	*/
 
 	/*
 	//// blue-red-yellow-white - doesn't quite look right, especially the purple!
-	//// Prefers MINCOL=HEIGHT/7
 	#define stages 5
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
 	palette[1].red = 0xEEEE; palette[1].green = 0xBBBB; palette[1].blue = 0x0000;
 	palette[2].red = 0xBBBB; palette[2].green = 0x3333; palette[2].blue = 0x0000;
 	palette[3].red = 0x5555; palette[3].green = 0x0000; palette[3].blue = 0x0000;
 	palette[4].red = 0x0000; palette[4].green = 0x0000; palette[4].blue = 0x2222;
+	#define palDelta 0.15
 	*/
 
 	if (1>0) {
@@ -199,7 +213,9 @@ static void fsanalyzer_init(void) {
 	for(i = 0; i < 3*HEIGHT; i++) {
 		float thruouter,thruinner;
 		int pfrom,pto;
-		thruouter = (float)(i+1 - HEIGHT)/(float)HEIGHT; // the +1 because rather thruouter==1 than ==0!
+		//// palDelta is the proportion of the start of the palette which we drop - the rest is scaled to fit.
+		//// This is because we usually don't really want very much of the first colour, just the end of its transition to the next.
+		thruouter = palDelta + (1.0-palDelta)*(float)(i+1 - HEIGHT)/(float)HEIGHT; // the +1 because rather thruouter==1 than ==0!
 		// if (thruouter<0) thruouter=0;
 		// if (thruouter>1) thruouter=1;
 		if (thruouter<=0) {
@@ -439,9 +455,9 @@ static gint draw_func(gpointer data) {
 
 	// heatHere = HEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
-	heatHere = (
-			bar_heights[0] + bar_heights[WIDTH/4] + bar_heights[WIDTH/2] + bar_heights[WIDTH*3/4]
-			+ bar_heights[WIDTH*1/8] + bar_heights[WIDTH*3/8] + bar_heights[WIDTH*5/8] + bar_heights[WIDTH*7/8]
+	heatHere = ( // cheeky initial "average" from the first half of the spectrum
+			+ bar_heights[WIDTH*0/16] + bar_heights[WIDTH*1/16] + bar_heights[WIDTH*2/16] + bar_heights[WIDTH*3/16]
+			+ bar_heights[WIDTH*4/16] + bar_heights[WIDTH*5/16] + bar_heights[WIDTH*6/16] + bar_heights[WIDTH*7/16]
 		) / 8;
 	heatNow = heatNow*0.99 + (-HEIGHT/32+1.5*heatHere)*0.01; // around 3 seconds to update
 	// heatHere = 0;
@@ -454,14 +470,15 @@ static gint draw_func(gpointer data) {
 			// continue;
 
 		int y,cy;
-		y = max(0.0,HEIGHT-1 - bar_heights[XSCALE(i)] - 3);
+		// y = max(0.0,HEIGHT-1 - bar_heights[XSCALE(i)] - 3);
+		// this clip >=0 is done later, so not really needed here.
+		y = HEIGHT-1 - bar_heights[XSCALE(i)] - 3;
 		// The extra -3 gives a constant 3-pixel significant flat blob of fire at the bottom, so that the fire never disappears or flickers down to 1 pixel.
 		// Use 0 if you don't mind the fire disappearing.
 		// Hmm even with this, we still get a 1-pixel height flicker at very quiet parts.
 
 		#ifdef INTERPOLATE_CHEAP
 		//// Cheap interpolation trick:
-		//// Attempts to fiddle around with interpolation have a nasty habit of exhibiting artefacts resulting from the face that the input is a set of bars (not interpolated yet).
 		// y = 0.2*y + 0.8*lasty; // smoother
 		// y = 0.3*y + 0.7*lasty; // smoother
 		y = 0.5*y + 0.5*lasty; // Finer+sharper.  It keeps the details but also hides the bars (at the current width settings).
@@ -476,12 +493,31 @@ static gint draw_func(gpointer data) {
 		// It works well on spectra with fractal/busy/wiggling peaks, but only
 		// flattens curves further if they were already gentle, in which case we
 		// prefer the details.
-		lasty = lasty*0.8 + y*0.2; // Offers a little smoothing, but doesn't lose too much information.
-		// lasty = lasty*0.93 + y*0.07;
-		y = lasty;
-		// Again we are using the dirty lop-sided averaging, and this time with heights not colours.
-		// Maybe better to calculate the true mean here.
+		// lasty = lasty*0.93 + y*0.07; // Too smooth
+		// lasty = lasty*0.8 + y*0.2;
+		//// Vary spikiness according to (lack of) heat.
+		float spikiness;
+		// spikiness = 0.2 + 0.65*abs(fclamp(heatHere/(float)HEIGHT,0,1)-0.5)*2.0;
+		//// This smooths the high flames.  But it doesn't look good.  :P
+		// spikiness = 0.6 - fclamp(1.2*heatHere/(float)HEIGHT,0,0.5);
+		// spikiness = 0.6 - fclamp(2.0*heatHere/(float)HEIGHT,0,0.5);
+		// Good value range: Min: 0.2, Max: 0.5
+		// spikiness = 0.2; // Min recommended. Offers a little smoothing, but doesn't lose too much information.
+		// spikiness = 0.45; // Seems ugly
+		spikiness = 0.5; // Keep spike information (any higher and you end up showing the flat bars!)
+		// I think I prefer full spikiness because it gives more visual information, so I can see the gentler frequencies between the strong ones.
+		/*
+		spikiness += 0.01*g_random_double()-0.5;
+		spikiness = 0.99*spikiness + 0.01*0.25;
+		*/
+		// But damn the spikes are good, we should never smooth more than 50% of them.
+		y = lasty*(1.0-spikiness) + y*spikiness;
+		lasty = y;
 		#endif
+		//// TODO:
+		//// Attempts to fiddle around with interpolation have a nasty habit of exhibiting artefacts resulting from the face that the input is a set of bars (not interpolated yet).
+		//// Again we are using the dirty lop-sided averaging, and this time with heights not colours.
+		//// Maybe better to calculate the true mean here.
 
 		//// Update heatHere:
 
@@ -503,13 +539,11 @@ static gint draw_func(gpointer data) {
 			heatHere = heatHere*(1.0-GAIN) + GAIN*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
 		// CONSIDER: Occasionally (with strong contrast colours like blue and cyan) you can actually see
 		// that the bar_heights[] have flat tops over i=n..n+2.  We could fix this by interpolating like we did with y.
-		// /3 is dangerous - on very fat spectra, we run out of colours beyond white!
-		// Test with this file: ______Dialect_Live_Stream.mp3
-		// In fact that even breaks HEIGHT/16 at one point !
 		// #define MINCOL (HEIGHT/3)
 		// #define MINCOL (HEIGHT/4)
-		#define MINCOL (HEIGHT/8)
 		// #define MINCOL (HEIGHT/12)
+		// #define MINCOL (HEIGHT/16)
+		#define MINCOL 0
 		// #define MINCOL (HEIGHT*0.4)
 		// #define MINCOL (HEIGHT/7)
 		#define EXPLOSION 1.2
