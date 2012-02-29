@@ -70,6 +70,7 @@
 // which can be a real drain on CPU.
 // We could even fade the two bitmaps together, to make the tops of the flames
 // semi-transparent.
+
 // I don't actually know how to grab a screenshot.  I know amarok does it for
 // its OSD.  xosd uses only a mask.  We could steal an example from xscreensaver.
 // Hmm xscreensaver uses X libraries, audacious uses gtk2.
@@ -1141,8 +1142,16 @@ static gint draw_func(gpointer data) {
 // #define BASS_PUMPER (heatHere/8 + 8*deltaHeatHere)
 #define BASS_PUMPER 0
 
+/* Original */
+#define USE_bar_heights(I) bar_heights[I]
+/* Average top and bottom */
+// #define USE_bar_heights(I) (bar_heights[I/2]+bar_heights[(SPECWIDTH+I)/2])
+// #define USE_bar_heights(I) ((bar_heights[I/2]/3+bar_heights[(SPECWIDTH+I)/2]/2)/2)
+/* Contrast top and bottom */
+// #define USE_bar_heights(I) (( I%1==0 ? bar_heights[I/2] : bar_heights[(SPECWIDTH+I)/2] ))
+
 		int y,cy;
-		y = WINHEIGHT-1 - bar_heights[XSCALE(i)]*yscale*3/4 - BASS_PUMPER - 2;
+		y = WINHEIGHT-1 - USE_bar_heights(XSCALE(i))*yscale*3/4 - BASS_PUMPER - 2;
 		// TODO: I would rather y went from 0.  We can do the WINHEIGHT-1 - y later!
 
 		#ifdef ORGANIC_INTERPOLATION
