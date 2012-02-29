@@ -747,7 +747,7 @@ static gint draw_func(gpointer data) {
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
 		#define LOOKAHEAD 1
-		#define GAIN 0.01
+		#define GAIN 0.011
 		//// GAIN might be better around 0.03 if VELOCITY2 is enabled.
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
@@ -770,7 +770,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.85 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*1.1;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -786,7 +786,7 @@ static gint draw_func(gpointer data) {
 		#ifdef VELOCITY2
 			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
 			bar_heights_difference_local = bar_heights_difference_local*0.8 + 0.2*(bar_heights_difference[XSCALE(i)]);
-			cy += bar_heights_difference_local * 8.0;
+			cy += bar_heights_difference_local * 9.0;
 		#endif
 
 
@@ -898,12 +898,12 @@ static void fsanalyzer_playback_stop(void) {
 	}
 }
 
-double fabs(double x) {
+/*double fabs(double x) {
 	if (x<0)
 		return -x;
 	else
 		return x;
-}
+}*/
 
 // From Audacious:
 static void fsanalyzer_render_freq(gint16 data[2][256]) {
@@ -952,7 +952,8 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// For examples of the bug see "BT - Communicate" or "Chemical Bros - Loops of Fury".
 		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
-		bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
+		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
+		bar_heights_difference[i] = bar_heights_difference[i]*0.94  +  0.06*((float)bar_heights[i] - (float)last_bar_height);
 		// bar_heights_difference[i] = (gint16)((float)bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height));
 		#endif
 	}
