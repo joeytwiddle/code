@@ -284,7 +284,7 @@ static void convertHSLtoRGB(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GL
 	// return "rgba("+red+","+green+","+blue+","+a/100+")";
 }
 
-static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
+static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat lastZheight, GLfloat lastXheight, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
 {
 
 	// float whiteness = red*red;
@@ -318,7 +318,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
 	setHSL(hue, sat*0.8, lightness*0.8);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
-	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, height, z_offset         );
+	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, lastZheight, z_offset         );
 	/*
 	*/
 
@@ -327,7 +327,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
 	// glColor3f(red,green,blue);
 	setHSL(hue, sat*0.6, lightness*0.6);
-	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
+	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , lastXheight, z_offset + length);	
 	draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
 
 	/*
@@ -343,6 +343,7 @@ static void draw_bars(void)
 
 	GLfloat peakEnergy[WIDTH];
 	GLfloat peakHeight[WIDTH];
+	GLfloat lastYheight[WIDTH];
 
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -376,6 +377,8 @@ static void draw_bars(void)
 		if (w_base < 0.0)
 			w_base = 0.0;
 		GLfloat breakingEdge = w_base * w_base;
+
+		GLfloat lastXheight = 0;
 
 		for(x = 0; x < WIDTH; x++)
 		{
@@ -449,29 +452,32 @@ static void draw_bars(void)
 
 			// Nicely spaced lines and rows of dots:
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastXheight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, barHeight, lastYheight[x], hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 
 			// Crosses:
 			/*
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 			*/
 
 			if (modeCycle%4 == 0) {
 				// Since neither of the above will fire, we just plot simple bars
 				// We can't use longSide for both 4 and 8 because they are identical.
 				if (modeCycle%12 == 4) {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
 				} else {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
 				}
 			}
+
+			lastXheight = barHeight;
+			lastYheight[x] = barHeight;
 
 			#undef barHeight
 
