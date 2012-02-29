@@ -191,6 +191,13 @@ void oglspectrum_read_config(void)
 	g_free(filename);
 }
 
+static void draw_triangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLfloat y2, GLfloat z2, GLfloat x3, GLfloat y3, GLfloat z3)
+{
+	glVertex3f(x1, y1, z1);
+	glVertex3f(x2, y2, z2);
+	glVertex3f(x3, y3, z3);
+}
+
 static void draw_rectangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLfloat y2, GLfloat z2)
 {
 	if(y1 == y2) // z goes 112, 221
@@ -287,7 +294,7 @@ static void convertHSLtoRGB(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GL
 	// return "rgba("+red+","+green+","+blue+","+a/100+")";
 }
 
-static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
+static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat lastYheight, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
 {
 
 	// float whiteness = red*red;
@@ -313,15 +320,17 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// glColor3f(red,green,blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
 	setHSL(hue, sat*0.8, lightness*0.8);
-	draw_rectangle(x_offset, height, z_offset, x_offset + width, height, z_offset + length);
-	draw_rectangle(x_offset,      0, z_offset, x_offset + width,      0, z_offset + length);
+	// draw_rectangle(x_offset, height, z_offset, x_offset + width, lastYheight, z_offset + length);
+	draw_triangle(x_offset, lastYheight, z_offset, x_offset, height, z_offset + length, x_offset + width, height, z_offset + length);
+	draw_triangle(x_offset, lastYheight, z_offset, x_offset + width, lastYheight, z_offset, x_offset + width, height, z_offset + length);
+	draw_rectangle(x_offset,      0, z_offset, x_offset + width,           0, z_offset + length);
 
 	// In width plane (across spectrum), facing front/back
 	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
 	setHSL(hue, sat, lightness);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
-	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, height, z_offset         );
+	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, lastYheight, z_offset         );
 	/*
 	*/
 
@@ -330,8 +339,12 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
 	// glColor3f(red,green,blue);
 	setHSL(hue, sat*0.6, lightness*0.6);
-	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
-	draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
+	// draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
+	draw_triangle(x_offset, 0.0, z_offset, x_offset, 0.0, z_offset + length, x_offset, height, z_offset + length);	
+	draw_triangle(x_offset, 0.0, z_offset, x_offset, lastYheight, z_offset, x_offset, height, z_offset + length);	
+	// draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
+	draw_triangle(x_offset + width, 0.0, z_offset, x_offset + width, 0.0, z_offset + length, x_offset + width, height, z_offset + length);	
+	draw_triangle(x_offset + width, 0.0, z_offset, x_offset + width, lastYheight, z_offset, x_offset + width, height, z_offset + length);	
 
 	/*
 	*/
@@ -353,7 +366,7 @@ static void draw_bars(void)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glPushMatrix();
-	glTranslatef(0.0,-0.5,-4.0);	      // originally 0.0,-0.5,-5.0
+	glTranslatef(0.0,-0.2,-4.2);	      // originally 0.0,-0.5,-5.0
 	glRotatef(x_angle,1.0,0.0,0.0);
 	glRotatef(y_angle,0.0,1.0,0.0);
 	glRotatef(z_angle,0.0,0.0,1.0);
@@ -370,7 +383,7 @@ static void draw_bars(void)
 	for(y = LENGTH-1; y >=0; y--)
 	{
 		// z_offset = -1.6 + ((LENGTH - y)*SCALEBACK * 0.2);
-		z_offset = +1.4 - ((y)*SCALEBACK * 0.2);
+		z_offset = +1.6 - ((y)*SCALEBACK * 0.2);
 
 		// b_base = y * (1.0 / (LENGTH-1));
 		b_base = (float)y / (float)(LENGTH-1);
@@ -392,9 +405,16 @@ static void draw_bars(void)
 		{
 			GLfloat saturation = 1.0;
 			// GLfloat hue = x*1.0/WIDTH;
-			GLfloat hue = 2.0/3.0 + x*5.0/6.0/WIDTH;
+			GLfloat hue = 2.0/3.0 + x*5.0/6.0/WIDTH; // blue to cyan
+			// GLfloat hue = 0.0 + x*5.0/6.0/WIDTH; // red to purple
+			// GLfloat hue = -1.0/6.0 + x*5.0/6.0/WIDTH; // purple to blue
 
-			x_offset = -1.6 + (x * 0.2*15.0/(WIDTH-1));
+			x_offset = -1.6 + 3.2*x/WIDTH;
+
+			// #define barHeight heights[y][x]
+			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
+			#define barHeight peakHeight[x]
+			GLfloat lastYheight = peakHeight[x]; // before update, if we are travelling the right way!
 
 			#define compensateForCurve (0.8+1.2*(float)x/(float)WIDTH)
 			// GLfloat energySlowFade = 2.0 * fmin(heights[y][x]-0.1,0.5) * r_base;
@@ -403,7 +423,7 @@ static void draw_bars(void)
 			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
 
-			peakEnergy[x] *= 0.4;
+			peakEnergy[x] *= 0.5;
 			// GLfloat energyHere = 1.5 * heights[y][x];
 			GLfloat energyHere = heights[y][x] + 0.5*fmin(0,heights[y][x] - heights[y+1][x]);
 			energyHere *= compensateForCurve;
@@ -415,16 +435,15 @@ static void draw_bars(void)
 			if (heights[y][x] > peakHeight[x]) {
 				peakHeight[x] = heights[y][x];
 			}
+			// Sinking ship:
+			peakHeight[x] -= 0.05 * y/LENGTH;
+			peakHeight[x] = fmax(0, peakHeight[x]);
 
 			localAverage[x] *= 0.95;
 			localAverage[x] += 0.05 * peakHeight[x];
 
 			localNoise[x] *= 0.95;
 			localNoise[x] += 0.05 * pow(heights[y][x] - heights[y+1][x],2);
-
-			// #define barHeight heights[y][x]
-			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
-			#define barHeight peakHeight[x]
 
 			// whiteness = fmax(energyHere, breakingEdge);
 			// whiteness = peakEnergy[x];
@@ -446,12 +465,15 @@ static void draw_bars(void)
 
 			//// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
-			whiteness += 0.5 * peakHeight[x] * breakingEdge * compensateForCurve;
+			// whiteness += 0.5 * peakHeight[x] * breakingEdge * compensateForCurve;
 
 			//// Reduce energy of all bars in a busy channel
-			whiteness -= 0.5 * localAverage[x] * fadeOff;
-			whiteness -= 1.0 * localNoise[x] * fadeOff;
-			// We should also consider horizontal energy (which we have not yet calculated).
+			whiteness -= 0.5 * localAverage[x] * y/LENGTH;
+			whiteness -= 0.5 * localNoise[x] * y/LENGTH;
+			//// We should also consider horizontal energy (which we have not yet calculated).
+
+			// Sinking ship:
+			whiteness -= 0.05 * y/LENGTH;
 
 			//// Free leading glow
 			// whiteness += 0.3 * pow(breakingEdge,16);
@@ -468,53 +490,59 @@ static void draw_bars(void)
 			// default spacing in both directions is 0.2 before scaling
 			// original widths and lengths were 0.1 before scaling
 
-#define SCALE_width 15/(WIDTH-1)
+#define SCALE_width 16.0/WIDTH
 #define SCALE_length SCALEBACK
 
 			GLfloat shortSide,longSide;
 			if (modeCycle%12 < 4) {
-				// Isolated dots
+				/*
+				// Isolated dots - dropped
 				longSide  = 0.12;
 				shortSide = 0.02;
-			} else if (modeCycle%12 < 8) {
-				// Fat ribbons
-				longSide  = 0.20;
-				shortSide = 0.05;
-			} else {
+				*/
 				// Thin ribbons
 				longSide  = 0.20;
 				shortSide = 0.02;
+			} else if (modeCycle%12 < 8) {
+				// Medium ribbons
+				longSide  = 0.20;
+				shortSide = 0.05;
+			} else {
+				// Thick ribbons
+				longSide  = 0.20;
+				shortSide = 0.10;
 			}
 
 			// Nicely spaced lines and rows of dots:
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, lastYheight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 
 			// Crosses:
 			/*
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 			*/
 
 			if (modeCycle%4 == 0) {
 				// Since neither of the above will fire, we just plot simple bars
 				// We can't use longSide for both 4 and 8 because they are identical.
-				if (modeCycle%12 == 4) {
+				if (modeCycle%12 == 0) {
 					// Plot overlapping bars.  x&1 is a chequered offset to avoid flickering of intersecting surfaces.
 					#define miniGap 0.001*((x+y)&1)
 					// #define scaleBars (0.3 + 1.2*whiteness)
 					// #define scaleBars (0.1 + 2.4*heights[y][x]*compensateForCurve*fadeOff)
 					// #define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
 					#define scaleBars (0.2 + 2.3*peakEnergy[x]*fadeOff*fadeOff*fadeOff*fadeOff)
-					draw_bar(x_offset + miniGap - scaleBars*0.25*SCALE_width/2.0, z_offset + miniGap, barHeight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
+					draw_bar(x_offset + miniGap - scaleBars*0.25*SCALE_width/2.0, z_offset + miniGap, barHeight, lastYheight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
 				} else {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
+					shortSide = ( modeCycle%12 == 4 ? 0.15 : 0.2 );
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastYheight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
 				}
 			}
 
@@ -651,12 +679,12 @@ void *draw_thread_func(void *arg)
 				case XK_b:
 					xmms_remote_playlist_next(oglspectrum_vp.xmms_session);
 					break;
-				case XK_Down:					
+				case XK_Up:					
 					x_speed -= 0.1;
 					// if(x_speed < -3.0)
 						// x_speed = -3.0;
 					break;
-				case XK_Up:					
+				case XK_Down:					
 					x_speed += 0.1;
 					// if(x_speed > 3.0)
 						// x_speed = 3.0;
@@ -782,7 +810,8 @@ static void start_display(void)
 	y_speed = -0.2;  // 0.5
 	z_speed = 0.0;
 	x_angle = 20.0;
-	y_angle = -15.0;
+	y_angle = 55.0;
+	// y_angle = -15.0;
 	z_angle = 0.0;
 	modeCycle = 4;
 
