@@ -427,15 +427,15 @@ static gint draw_func(gpointer data) {
 		// #define GAIN 0.02
 		// #define LOOKAHEAD 8
 		// #define GAIN 0.03
-		// #define LOOKAHEAD 8
+		// #define LOOKAHEAD 6
 		// #define GAIN 0.04
-		#define LOOKAHEAD 8
-		#define GAIN 0.05
 		// #define LOOKAHEAD 7
 		// #define GAIN 0.05
-		// #define LOOKAHEAD 6
+		// #define LOOKAHEAD 7
 		// #define GAIN 0.05
-		// #define LOOKAHEAD 5
+		#define LOOKAHEAD 6
+		#define GAIN 0.05
+		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
 		// #define LOOKAHEAD 1
 		// #define GAIN 0.10
@@ -453,7 +453,7 @@ static gint draw_func(gpointer data) {
 		// #define EXPLOSION 1.1
 		// #define EXPLOSION 1.2
 		// #define EXPLOSION 1.3
-		#define EXPLOSION 1.5
+		#define EXPLOSION 1.4
 
 		/*
 		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
