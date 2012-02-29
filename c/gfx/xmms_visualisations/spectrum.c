@@ -252,9 +252,12 @@
 //// Modify the x scale?
 #define doLog(x) (x)
 // #define doLog(x) pow(x,1.6)
+
 //// Maybe it's a result of 128kbps mp3s, or the way we analyze the spectrum,
-//// but on my spectrum there is no real data in the last quarter.
+//// but on my spectrum there is no real data in the last quarter, so we:
+//// Drop the top end of the spectrum - it's probably empty.
 #define dropEnds(f) (f*0.68) // or 0.71
+//// My copy of "Mason - Exceder" from "Wipeout Pulse" is an example of a track with no top-end data, even less than most tracks - we can see the missing data even after our dropEnds() scaling.  Also Eyesorex_-_Vulnerability.
 
 static GtkWidget *window = NULL,*area;
 static GdkPixmap *bg_pixmap = NULL, *draw_pixmap = NULL, *bar = NULL;
@@ -811,7 +814,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*0.2;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.2;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -831,7 +834,11 @@ static gint draw_func(gpointer data) {
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
 			// Make recently growing bars brighter:
-			cy += bar_heights_difference_local * +450000.0;
+			// This is nonsense.  The value I expect should average around 0, but it doesn't!
+			// Mmm ok fixed a bug in VELOCITY2 :P
+			// Well actually that value will be often negative, since bar heights go up in a few frames, but down slowly over many frames.
+			// So although the average may be 0, if gathered over time, the negative values will dominate.
+			cy += bar_heights_difference_local * 30.0 - 4;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
@@ -960,7 +967,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		#define global_add 0
 	#endif
 	#ifdef VELOCITY2
-		gint16 last_bar_height;
+		double last_bar_height;
 	#endif
 
 	if(!window)
@@ -999,14 +1006,16 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// and it doesn't look unreasonable.
 		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
-		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
+		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((double)bar_heights[i] - (double)last_bar_height);
 		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
 		/*#define DIFFERENCE_GAIN_BY_TIME 0.04 0.2 */
-		#define DIFFERENCE_GAIN_BY_TIME 0.000002
+		#define DIFFERENCE_GAIN_BY_TIME 0.02
+		double diff = (double)bar_heights[i] - (double)last_bar_height;
+		if (diff<0) diff=0; // This is not a good measure.  Depending on the values, some tracks will respond differently to others.
 		bar_heights_difference[i] =
-			  DIFFERENCE_GAIN_BY_TIME       * ((float)bar_heights[i] - (float)last_bar_height)
+			  DIFFERENCE_GAIN_BY_TIME       * diff
 			+ (1.0-DIFFERENCE_GAIN_BY_TIME) * bar_heights_difference[i];
-		// bar_heights_difference[i] = (gint16)((float)bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height));
+		// bar_heights_difference[i] = (gint16)((double)bar_heights_difference[i]*0.9  +  0.1*((double)bar_heights[i] - (double)last_bar_height));
 		#endif
 	}
 	draw_func(NULL);
