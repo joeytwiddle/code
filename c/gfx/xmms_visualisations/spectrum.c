@@ -105,6 +105,7 @@ static int min(int a,int b) {
 }
 
 static void fsanalyzer_init(void) {
+	GdkColor palette[5];
 	GdkColor color;
 	int i;
 
@@ -129,6 +130,53 @@ static void fsanalyzer_init(void) {
 
 	// Our new bar pixel buffer is 3x as tall as the target window.
 	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
+
+	// #define stages 5
+	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
+	palette[1].red = 0xFFFF; palette[1].green = 0xFFFF; palette[1].blue = 0x0000;
+	palette[2].red = 0xEEEE; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
+	palette[3].red = 0xEEEE; palette[3].green = 0x4444; palette[3].blue = 0x0000;
+	palette[4].red = 0x4444; palette[4].green = 0x0088; palette[4].blue = 0x0000;
+
+	#define stages 4
+	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
+	palette[1].red = 0x1111; palette[1].green = 0xBBBB; palette[1].blue = 0xCCCC;
+	palette[2].red = 0x0999; palette[2].green = 0x0999; palette[2].blue = 0x9999;
+	palette[3].red = 0x0222; palette[3].green = 0x0033; palette[3].blue = 0x2222;
+	// This palette may prefer MINCOL = HEIGHT*0.4, EXPLOSION=1.0, with a lower LOOKAHEAD.
+
+	if (1>0) {
+
+	for(i = 0; i < 3*HEIGHT; i++) {
+		float thruouter,thruinner;
+		int pfrom,pto;
+		thruouter = (float)(i+1 - HEIGHT)/(float)HEIGHT; // the +1 because rather thruouter==1 than ==0!
+		// if (thruouter<0) thruouter=0;
+		// if (thruouter>1) thruouter=1;
+		if (thruouter<=0) {
+			// TODO: allocate this colour only once
+			color.red = palette[stages-1].red;
+			color.green = palette[stages-1].green;
+			color.blue = palette[stages-1].blue;
+		} else if (thruouter>=1.0) {
+			color.red = palette[0].red;
+			color.green = palette[0].green;
+			color.blue = palette[0].blue;
+		} else {
+			thruouter = 1.0 - thruouter;
+			thruinner = thruouter*(stages-1) - (int)(thruouter*(stages-1));
+			pfrom = thruouter * (stages-1);
+			pto = pfrom + 1;
+			color.red = palette[pfrom].red + thruinner*(float)(palette[pto].red - palette[pfrom].red);
+			color.green = palette[pfrom].green + thruinner*(float)(palette[pto].green - palette[pfrom].green);
+			color.blue = palette[pfrom].blue + thruinner*(float)(palette[pto].blue - palette[pfrom].blue);
+		}
+		gdk_color_alloc(gdk_colormap_get_system(),&color);
+		gdk_gc_set_foreground(gc,&color);
+		gdk_draw_line(bar,gc,0,i,24,i);
+	}
+
+	} else {
 
 	// The first HEIGHT pixels are "above" the flame.  They are rendered when the top of the flame is darker than 0!
 	// color.red = 0xFFFF/3; // TODO: If we are gonna have extra red, keep fading it.
@@ -253,6 +301,8 @@ static void fsanalyzer_init(void) {
 		gdk_draw_line(bar,gc,0,2*HEIGHT+i,24,2*HEIGHT+i);
 	}
 
+	}
+
 	/*
 	for(i = 0; i < HEIGHT / 2; i++) {
 		color.red = 0xFFFF;
@@ -358,8 +408,10 @@ static gint draw_func(gpointer data) {
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
 
 		#ifdef INTERPOLATE_CHEAP
-		// Cheap interpolation trick:
-		y = 0.5*y + 0.5*lasty;
+		//// Cheap interpolation trick:
+		// y = 0.2*y + 0.8*lasty; // smoother
+		// y = 0.3*y + 0.7*lasty; // smoother
+		y = 0.5*y + 0.5*lasty; // finer+sharper
 		lasty = y;
 		#endif
 
@@ -368,11 +420,11 @@ static gint draw_func(gpointer data) {
 		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
 		// #define LOOKAHEAD 12
-		// #define GAIN 0.03
-		#define LOOKAHEAD 10
+		// #define GAIN 0.01
+		// #define LOOKAHEAD 10
+		// #define GAIN 0.02
+		#define LOOKAHEAD 8
 		#define GAIN 0.04
-		// #define LOOKAHEAD 8
-		// #define GAIN 0.05
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.06
 		// #define LOOKAHEAD 5
@@ -381,9 +433,11 @@ static gint draw_func(gpointer data) {
 		// #define GAIN 0.10
 		if (i+LOOKAHEAD<WINWIDTH)
 			heatHere = heatHere*(1.0-GAIN) + GAIN*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
-		#define MINCOL (HEIGHT/4)
+		// CONSIDER: Occasionally (with strong contrast colours like blue and cyan) you can actually see
+		// that the bar_heights[] have flat tops over i=n..n+2.  We could fix this by interpolating like we did with y.
+		#define MINCOL (HEIGHT*0.4)
 		// #define MINCOL (HEIGHT/12)
-		#define EXPLOSION 1.2
+		#define EXPLOSION 1.0
 		// #define EXPLOSION 1.1
 
 		/*
