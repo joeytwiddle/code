@@ -126,7 +126,7 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.88
+#define fadeRate 0.92
 #define blurTao 1.0
 #define blurTao2 0.9
 
