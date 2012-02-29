@@ -112,9 +112,9 @@ static void fsanalyzer_init(void) {
 	for(i = 0; i < HEIGHT; i++) {
 		float thruouter,thruinner;
 		thruouter = 1.0 - (float)i/(float)HEIGHT;
-		thruinner = thruouter*4.0 - (int)(thruouter*4.0);
+		thruinner = thruouter*5.0 - (int)(thruouter*5.0);
 		thruinner *= 0xFFFF;
-		if (thruouter<0.25) {
+		if (thruouter<0.2) {
 			//// bunsen blue -> white -> yellow -> red
 			// color.red = 0xbbbb+thruinner/4;
 			// color.green = 0xbbbb+thruinner/4;
@@ -123,7 +123,7 @@ static void fsanalyzer_init(void) {
 			color.red = 0xFFFF;
 			color.green = 0xFFFF;
 			color.blue = 0xFFFF - thruinner/2;
-		} else if (thruouter<0.5) {
+		} else if (thruouter<0.4) {
 			//// blue -> white -> yellow -> red
 			// color.red = thruinner;
 			// color.green = thruinner;
@@ -144,7 +144,7 @@ static void fsanalyzer_init(void) {
 			color.red = 0xFFFF;
 			color.green = 0xFFFF;
 			color.blue = 0xFFFF/2 - thruinner/2;
-		} else if (thruouter<0.75) {
+		} else if (thruouter<0.6) {
 			// color.red = 0xFFFF;
 			// color.green = 0xFFFF;
 			// color.blue = 0xFFFF - thruinner;
@@ -158,7 +158,11 @@ static void fsanalyzer_init(void) {
 			// color.green = 0;
 			// color.blue = 0;
 			color.red = 0xFFFF;
-			color.green = 0xFFFF - thruinner/2;
+			color.green = 0xFFFF - thruinner/3;
+			color.blue = 0;
+		} else if (thruouter<0.8) {
+			color.red = 0xFFFF;
+			color.green = 0xFFFF*2/3 - thruinner/3;
 			color.blue = 0;
 		} else {
 			// color.red = 0xFFFF;
@@ -170,7 +174,7 @@ static void fsanalyzer_init(void) {
 			// color.red = 0xFFFF - thruinner*0.75; // go down to 25% red, not black
 			// color.green = 0;
 			color.red = 0xFFFF - thruinner/2; // go down to 50% red, not black
-			color.green = 0xFFFF/2 - thruinner/2;
+			color.green = 0xFFFF/3 - thruinner/3;
 			color.blue = 0;
 		}
 		gdk_color_alloc(gdk_colormap_get_system(),&color);
@@ -281,19 +285,19 @@ static gint draw_func(gpointer data) {
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
 		if (bar_heights[XSCALE(i)]<HEIGHT/2)
-			cy = HEIGHT*0.1 + 0.7*bar_heights[XSCALE(i)];
+			cy = HEIGHT*0.6 + 0.5*bar_heights[XSCALE(i)];
 		else
-			cy = max(1,HEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
-		/*
-		local = local*0.9 + 0.1*(float)bar_heights[XSCALE(i)];
-		cy = local/2;
-		if (cy<1)
-			cy = 1;
-		if (cy>HEIGHT*0.75)
-			cy = HEIGHT*0.75;
-		if (cy>y)
+			cy = max(1,HEIGHT*1.2 - 1.4*bar_heights[XSCALE(i)]);
+		// if (i < WINWIDTH-2) // I don't know why, but this fails!
+			// local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i+2)];
+		cy = (cy + local/2) / 2;
+		local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i)];
+		if (cy > y)
 			cy = y;
-		*/
+		if (cy < 1)
+			cy = 1;
+		if (cy > HEIGHT*0.75)
+			cy = HEIGHT*0.75;
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
 	}
 
