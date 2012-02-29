@@ -529,18 +529,18 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 1.3
+	#define palScale 1.2
 	//// Red and orange flame
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
-	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFFFF; palette[1].green = 0xFF88; palette[1].blue = 0xCCCC;
-	palette[2].red = 0xFF77; palette[2].green = 0xDD00; palette[2].blue = 0x4444;
-	palette[3].red = 0xFF44; palette[3].green = 0x8888; palette[3].blue = 0x0000;
-	palette[4].red = 0xAAAA; palette[4].green = 0x2222; palette[4].blue = 0x0000;
+	palette[0].red = 0xFFFF; palette[0].green = 0xFF77; palette[0].blue = 0xFF11;
+	palette[1].red = 0xFFFF; palette[1].green = 0xEEEE; palette[1].blue = 0xBBBB;
+	palette[2].red = 0xFF77; palette[2].green = 0xCCCC; palette[2].blue = 0x4444;
+	palette[3].red = 0xFF44; palette[3].green = 0x9999; palette[3].blue = 0x0000;
+	palette[4].red = 0xBBBB; palette[4].green = 0x4444; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
-	#define palDelta 0.07
+	#define palDelta 0.09
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -798,7 +798,7 @@ static gint draw_func(gpointer data) {
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
-		#define LOOKAHEAD 2
+		#define LOOKAHEAD 3
 		#define GAIN 0.02
 		//// GAIN might be better around 0.03 if VELOCITY2 is enabled.
 		// #define LOOKAHEAD 3
@@ -827,7 +827,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.55 /*MINCOL*/ + heatHere*EXPLOSION*0.3;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.55 /*MINCOL*/ + heatHere*EXPLOSION*0.35;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -1024,7 +1024,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((double)bar_heights[i] - (double)last_bar_height);
 		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
 		/*#define DIFFERENCE_GAIN_BY_TIME 0.04 0.2 */
-		#define DIFFERENCE_GAIN_BY_TIME 0.01
+		#define DIFFERENCE_GAIN_BY_TIME 0.017
 		double diff = (double)bar_heights[i] - (double)last_bar_height;
 		if (diff<0) diff=0; // This is not a good measure.  Depending on the values, some tracks will respond differently to others.
 		bar_heights_difference[i] =
