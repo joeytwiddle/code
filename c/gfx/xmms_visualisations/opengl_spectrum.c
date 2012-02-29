@@ -486,21 +486,26 @@ static void draw_bars(void)
 			if (whiteness<0)
 				whiteness=0; */
 
-			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
-			whiteness /= 2.5;
-			whiteness *= fadeOff;
-
-			//// Subjective leading glow
-			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
-			// whiteness += 0.5 * peakHeight[x] * breakingEdge * compensateForCurve;
-
 			//// Reduce energy of all bars in a busy channel
-			whiteness -= 0.5 * localAverage[x] * y/LENGTH;
-			whiteness -= 0.5 * localNoise[x] * y/LENGTH;
+			whiteness -= 0.5 * localAverage[x]; // * y/LENGTH;
+			whiteness -= 0.5 * localNoise[x]; // * y/LENGTH;
 			//// We should also consider horizontal energy (which we have not yet calculated).
 
 			// Sinking ship:
 			whiteness -= 0.05 * y/LENGTH;
+
+			if (whiteness < 0)
+				whiteness = 0;
+
+			whiteness *= fadeOff;
+
+			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
+			whiteness /= 2.5;
+			// whiteness *= fadeOff;
+
+			//// Subjective leading glow
+			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
+			// whiteness += 0.5 * peakHeight[x] * breakingEdge * compensateForCurve;
 
 			//// Free leading glow
 			// whiteness += 0.3 * pow(breakingEdge,16);
