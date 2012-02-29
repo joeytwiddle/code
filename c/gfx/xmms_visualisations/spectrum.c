@@ -122,7 +122,7 @@ static void fsanalyzer_init(void) {
 			//// do 1st step of white -> yellow
 			color.red = 0xFFFF;
 			color.green = 0xFFFF;
-			color.blue = 0xFFFF-thruinner/2;
+			color.blue = 0xFFFF - thruinner/2;
 		} else if (thruouter<0.5) {
 			//// blue -> white -> yellow -> red
 			// color.red = thruinner;
@@ -143,7 +143,7 @@ static void fsanalyzer_init(void) {
 			//// do 2nd step of white -> yellow
 			color.red = 0xFFFF;
 			color.green = 0xFFFF;
-			color.blue = 0xFFFF - thruinner/2;
+			color.blue = 0xFFFF/2 - thruinner/2;
 		} else if (thruouter<0.75) {
 			// color.red = 0xFFFF;
 			// color.green = 0xFFFF;
@@ -199,7 +199,7 @@ static void fsanalyzer_init(void) {
 	}
 	*/
 
-	scale = HEIGHT / ( log((1 - d) / d) * 2 );
+	scale = 0.9 * HEIGHT / ( log((1 - d) / d) * 2 );
 	x00 = d*d*32768.0/(2 * d - 1);
 	y00 = -log(-x00) * scale;
 
@@ -276,7 +276,9 @@ static gint draw_func(gpointer data) {
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(1,HEIGHT*0.4-0.2*bar_heights[XSCALE(i)]), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
-		cy = max(1,HEIGHT*0.7-1.2*bar_heights[XSCALE(i)]);
+		cy = max(1,HEIGHT*0.6-1.2*bar_heights[XSCALE(i)]);
+		if (bar_heights[XSCALE(i)]<32)
+			cy = HEIGHT*0.3 + 0.1*bar_heights[XSCALE(i)];
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
 	}
 
