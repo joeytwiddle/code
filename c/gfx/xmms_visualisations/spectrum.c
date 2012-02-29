@@ -955,10 +955,12 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		y = ((tau-1)*bar_heights[i] + y) / tau; /* Add some dynamics */
 		// if (y<0) y=-y;
 		bar_heights[i] = global_add + (gint16)y;
-		// It seems sometimes y is just too big.
-		// This fixes the bug that the left of the flame would go black.
-		// 128 produces a very tall flame (on the bass side at least, yscale applying).
+		// It seems sometimes y is just too big, and makes bar_heights hugely negative!
+		// This only happens on the very low frequency bars, especially the first.
+		// This was causing a bug that the left of the flame would go black.
 		// For examples of the bug see "BT - Communicate" or "Chemical Bros - Loops of Fury".
+		// I set the bar height to very high (near max), so I can see bug occurrences,
+		// and it doesn't look unreasonable.
 		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
