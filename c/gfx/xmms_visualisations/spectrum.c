@@ -807,7 +807,7 @@ static gint draw_func(gpointer data) {
 		#endif
 		#ifdef VELOCITY2
 			// We slightly constrain the color spikes horizontally:
-			#define VELOCITY_X_GAIN 0.6
+			#define VELOCITY_X_GAIN 0.15
 			bar_heights_difference_local =
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
@@ -978,7 +978,11 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
-		bar_heights_difference[i] = bar_heights_difference[i]*0.97  +  0.03*((float)bar_heights[i] - (float)last_bar_height);
+		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
+		#define DIFFERENCE_GAIN_BY_TIME 0.04
+		bar_heights_difference[i] =
+			  DIFFERENCE_GAIN_BY_TIME       * ((float)bar_heights[i] - (float)last_bar_height)
+			+ (1.0-DIFFERENCE_GAIN_BY_TIME) * bar_heights_difference[i];
 		// bar_heights_difference[i] = (gint16)((float)bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height));
 		#endif
 	}
