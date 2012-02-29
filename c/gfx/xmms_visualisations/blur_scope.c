@@ -122,8 +122,8 @@ void bscope_read_config(void)
 }
 
 
-#define blurTao 0.9
-#define fadeRate 0.95
+#define blurTao 0.99
+#define fadeRate 0.93
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -153,8 +153,11 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		*/
 
 		// Retain self with blurTao:
-		if (iptr[0] > sum)
-			sum = iptr[0]*blurTao + sum*(1.0-blurTao);
+		// if (iptr[0] > sum)
+		if (sum > iptr[0])
+			sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+		else
+			sum = iptr[0];
 
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
