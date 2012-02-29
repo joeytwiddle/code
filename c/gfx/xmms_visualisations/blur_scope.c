@@ -126,7 +126,7 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.94
+#define fadeRate 0.91
 #define blurTao 1.0
 #define blurTao2 0.9
 
@@ -187,7 +187,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
-		if (sum > 64)
+		if (sum > 48)
 			sum = sum * fadeRate;
 		else if (sum > 1)
 			sum-=1;
