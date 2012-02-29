@@ -175,21 +175,22 @@ static void fsanalyzer_init(void) {
 	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
 
 	//// Red and orange flame
-	#define stages 5
+	#define stages 4
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
-	palette[0].red = 0xFF77; palette[0].green = 0xFF77; palette[0].blue = 0xCCCC;
-	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
-	palette[2].red = 0xFF77; palette[2].green = 0xCCCC; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x6666; palette[3].blue = 0x0000;
-	palette[4].red = 0x1111; palette[4].green = 0x0011; palette[4].blue = 0x0000;
+	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
+	palette[1].red = 0xFFFF; palette[1].green = 0xEEEE; palette[1].blue = 0x7777;
+	// palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
+	palette[2].red = 0xFFFF; palette[2].green = 0xCCCC; palette[2].blue = 0x0000;
+	// palette[3].red = 0xDDDD; palette[3].green = 0x6666; palette[3].blue = 0x0000;
+	palette[3].red = 0xFFFF; palette[3].green = 0x2222; palette[3].blue = 0x0000;
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.28
+	#define palDelta 0.2
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
-	#define palScale 0.9
+	#define palScale 1.0
 
 	/*
 	//// Blue flame
@@ -406,7 +407,7 @@ static gint draw_func(gpointer data) {
 		// #define MINCOL (HEIGHT/7)
 		// #define EXPLOSION 1.1
 		// #define EXPLOSION 1.2
-		#define EXPLOSION 1.5
+		#define EXPLOSION 1.2
 
 		/*
 		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
