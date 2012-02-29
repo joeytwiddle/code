@@ -349,7 +349,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// Flat (horizontal) facing up/down
 	// glColor3f(red,green,blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
-	setHSL(hue, sat*0.8, lightness*0.8);
+	setHSL(hue, sat, lightness);
 	// draw_rectangle(x_offset, height, z_offset, x_offset + width, lastYheight, z_offset + length);
 	draw_triangle(x_offset, lastYheight, z_offset, x_offset, height, z_offset + length, x_offset + width, height, z_offset + length);
 	draw_triangle(x_offset, lastYheight, z_offset, x_offset + width, lastYheight, z_offset, x_offset + width, height, z_offset + length);
@@ -358,7 +358,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// In width plane (across spectrum), facing front/back
 	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
-	setHSL(hue, sat, lightness);
+	setHSL(hue, sat*0.8, lightness*0.8);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, lastYheight, z_offset         );
 	/*
@@ -442,12 +442,15 @@ static void draw_bars(void)
 
 			x_offset = -1.6 + 3.2*x/WIDTH;
 
+			#define compensateForCurve (0.5+0.5*(float)x/(float)WIDTH)
+
 			// #define barHeight heights[y][x]
 			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
-			#define barHeight peakHeight[x]
-			GLfloat lastYheight = peakHeight[x]; // before update, if we are travelling the right way!
+			// #define barHeight peakHeight[x]
+			#define barHeight compensateForCurve*peakHeight[x]
 
-			#define compensateForCurve (0.8+1.2*(float)x/(float)WIDTH)
+			GLfloat lastYheight = barHeight; // evaluate it now, before we update peakHeight for the current cell
+
 			// GLfloat energySlowFade = 2.0 * fmin(heights[y][x]-0.1,0.5) * r_base;
 			// GLfloat energySlowFade = compensateForCurve*heights[y][x] * r_base;
 			// breakingEdge = breakingEdge * energySlowFade * 4.0;
@@ -459,12 +462,13 @@ static void draw_bars(void)
 // #define energyDampening 0.5
 // #define heightDampening 0.5
 #define energyDampening 0.5
-#define heightDampening 0.15
+// #define heightDampening 0.15
+#define heightDampening 0.00
 
 			peakEnergy[x] *= energyDampening;
 			// GLfloat energyHere = 1.5 * heights[y][x];
 			GLfloat energyHere = heights[y][x] + 0.5*fmin(0,heights[y][x] - heights[y+1][x]);
-			energyHere *= compensateForCurve;
+			energyHere *= compensateForCurve * 1.25;
 			if (energyHere > peakEnergy[x]) {
 				peakEnergy[x] = energyHere;
 			}
@@ -497,7 +501,8 @@ static void draw_bars(void)
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
 			//// Power fade the energy, so the difference between high and low appears stronger in the distance.
-			whiteness = 5.0 * peakEnergy[x];
+			// whiteness = 5.0 * peakEnergy[x];
+			whiteness = 5.0 * peakHeight[x];
 			/* whiteness += 0.0001 - 0.1 * (float)y/(float)LENGTH;
 			if (whiteness<0)
 				whiteness=0; */
@@ -910,7 +915,7 @@ static void start_display(void)
 	}
 	scale = 1.0 / log(256.0);
 
-	x_speed = 0.0; y_speed = 0.2; x_angle = 15.0;   // x=up/down, y=right/left
+	x_speed = 0.0; y_speed = 0.1; x_angle = 20.0;   // x=up/down, y=right/left
 	// x_speed = 0.4; y_speed = -0.2; x_angle = -15.0;  // 0.5   // right/left
 	z_speed = 0.0;
 	// y_angle = 55.0;
