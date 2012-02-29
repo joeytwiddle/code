@@ -34,6 +34,11 @@
 
 //// For debugging: does not make the tops of the bars spikey, so user can see the original spectrum bars.
 // #define BARS
+// #define BARS_COLOR
+
+//// I dropped this to get more raw data, and it was a bit one-sided.
+//// To compensate for its removal, I increased tau and reduced spikiness (previously 3 and 0.5).
+// #define DO_DIFFUSION
 
 #define DEBUG(X,Y); 
 // TODO: #define DEBUG(X,Y); fprintf(stdout,X,Y);
@@ -86,6 +91,12 @@
 // Maybe we can do a little sleep, to give the rest of the system some CPU.
 // Or maybe we should detect when CPU is overloaded, and skip rendering a frame.
 // For now, setting SKIP_FRAMES around 2 or 4 can help.
+
+// TODO: There is an artefact, which is that frequencies which happen to
+// correspond well with the spectrums bars, of course get very good spikes,
+// while other frequencies do not.  This should be normalised, so that all
+// chords get the same fair amount of height.
+// DO_DIFFUSION does help with this, but doesn't entirely solve it.
 
 #include "config.h"
 
@@ -143,6 +154,19 @@
 #define FLAMEHEIGHT 128
 // #define FLAMEHEIGHT (WINHEIGHT/1.75)
 
+//// The idea here was to brighten the areas of recently increasing height.
+//// But our implementation created many vertical lines.
+// #define VELOCITY
+//// VELOCITY2 is a little better, but still I think it needs some horizontal smoothing.
+// #define VELOCITY2
+//// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
+//// But I think it should work positively - it highlights the frequencies which have just entered the audio.
+//// Maybe heatHere could act negatively.
+//// Probably one significant problem with it is that it works the same for every "bar", then changes.  (OK added bar_heights_difference_local.)
+//// heatHere is already creating brightness-when-higher effect, so that should be re-tweaked if VELOCITY2 is used.
+//// Well it's good for visualizing which frequencies are *changing*, but it doesn't
+//// look much like real fire when it's calibrated high enough to be visible!
+
 /* Width 550 fits nicely over a double-size amp.  274 over normal size amp.
    TODO: Make this user configurable, either in preferences or by resizing the
    window manually, so they can place the flame over a single size-amp, or
@@ -168,7 +192,7 @@
 
 /* Time factor of the band dinamics. 3 means that the coefficient of the
    last value is half of the current one's. (see source) */
-#define tau 3
+#define tau 6
 
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
@@ -178,21 +202,29 @@
 /* Parameters and functions for fire colouring. */
 //// I actually prefer the non-true interpolation because it feels more organic, but it does not work at higher resolutions.  (At low-res it puts a slight curve on the flames, but as high-res it exhibits the flat graph underneath, unless we interpolate that input.)
 #define ORGANIC_INTERPOLATION
+
 //// XSCALE() Converts WINWIDTH to SPECWIDTH (maps window x onto bar_heights[]):
 // #define XSCALE(i) (int)(i*(float)SPECWIDTH/(float)WINWIDTH)
 // #define XSCALE(i) (int)(i*(float)SPECWIDTH/(float)WINWIDTH*0.7)
 #define XSCALE(i) (int)((float)SPECWIDTH*dropEnds(doLog((float)(i)/(float)WINWIDTH)))
+
 //// Modify the x scale?
 #define doLog(x) (x)
 // #define doLog(x) pow(x,1.6)
-#define dropEnds(f) (f*0.7)
-// #define dropEnds(f) (f)
-// #define dropEnds(f) (0.2+0.6*(float)(f))
+//// Maybe it's a result of 128kbps mp3s, or the way we analyze the spectrum,
+//// but on my spectrum there is no real data in the last quarter.
+#define dropEnds(f) (f*0.68) // or 0.71
 
 static GtkWidget *window = NULL,*area;
 static GdkPixmap *bg_pixmap = NULL, *draw_pixmap = NULL, *bar = NULL;
 static GdkGC *gc = NULL;
 static gint16 bar_heights[SPECWIDTH];
+#ifdef VELOCITY
+static gint16 last_bar_heights[SPECWIDTH];
+#endif
+#ifdef VELOCITY2
+static float bar_heights_difference[SPECWIDTH];
+#endif
 /*static gint timeout_tag;*/
 static gdouble scale, x00, y00;
 static gdouble heatNow;
@@ -449,12 +481,12 @@ static void fsanalyzer_init(void) {
 	palette[0].red = 0xFF77; palette[0].green = 0xFF77; palette[0].blue = 0xCCCC;
 	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
 	palette[2].red = 0xFF77; palette[2].green = 0xAAAA; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x0000; palette[3].blue = 0x0000;
+	palette[3].red = 0xDDDD; palette[3].green = 0x3333; palette[3].blue = 0x0000;
 	palette[4].red = 0x8888; palette[4].green = 0x0888; palette[4].blue = 0x0000;
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.42
+	#define palDelta 0.4
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -580,6 +612,10 @@ static gint draw_func(gpointer data) {
 	GdkColor pattern;
 #endif
 
+#ifdef VELOCITY2
+	float bar_heights_difference_local;
+#endif
+
 #ifdef SKIP_FRAMES
 	frameCount++;
 	if (frameCount%SKIP_FRAMES > 0) {
@@ -615,9 +651,9 @@ static gint draw_func(gpointer data) {
 	// heatHere = FLAMEHEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
 	heatHere = ( // cheeky initial "average" from the first half of the spectrum
-			+ bar_heights[SPECWIDTH*0/16] + bar_heights[SPECWIDTH*1/16] + bar_heights[SPECWIDTH*2/16] + bar_heights[SPECWIDTH*3/16]
-			+ bar_heights[SPECWIDTH*4/16] + bar_heights[SPECWIDTH*5/16] + bar_heights[SPECWIDTH*6/16] + bar_heights[SPECWIDTH*7/16]
-		) / 8;
+			+ bar_heights[SPECWIDTH*0/16]/8 + bar_heights[SPECWIDTH*1/16]/8 + bar_heights[SPECWIDTH*2/16]/8 + bar_heights[SPECWIDTH*3/16]/8
+			+ bar_heights[SPECWIDTH*4/16]/8 + bar_heights[SPECWIDTH*5/16]/8 + bar_heights[SPECWIDTH*6/16]/8 + bar_heights[SPECWIDTH*7/16]/8
+		); // Putting the /8 inside didn't solve the problem with left of spectrum disappearing!
 
 	// around 3 seconds to update ???  What are units and limits? :P
 	//
@@ -648,7 +684,8 @@ static gint draw_func(gpointer data) {
 		//// This approaches my idea of 'accurate':
 		// #define yscale (0.7 * (1.0 + 1.2/(1.0+64.0*(float)i/(float)WINWIDTH)))
 		//// This is a bit more natural looking to watch:
-		#define yscale (0.8 * (1.0 + 1.0/(1.0+128.0*(float)i/(float)WINWIDTH)))
+		// #define yscale (0.8 * (1.0 + 1.0/(1.0+128.0*(float)i/(float)WINWIDTH)))
+		#define yscale (0.8 * (1.0 + 1.5/(1.0+256.0*(float)i/(float)WINWIDTH)))
 		// #define yscale 1.2
 		// #define yscale 1.0
 
@@ -665,7 +702,8 @@ static gint draw_func(gpointer data) {
 			*/
 
 			float spikiness;
-			spikiness = 0.5;
+			// spikiness = 0.5;
+			spikiness = 0.4;
 
 			#ifdef BARS
 				spikiness = 1.0;
@@ -690,18 +728,23 @@ static gint draw_func(gpointer data) {
 
 		#endif
 
+		/*
+		if (y<FLAMEHEIGHT/2) y = FLAMEHEIGHT/2;
+		if (y>WINHEIGHT) y=WINHEIGHT;
+		*/
+
 		//// Update heatHere:
 
 		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
-		#define LOOKAHEAD 6
-		#define GAIN 0.04
+		#define LOOKAHEAD 2
+		#define GAIN 0.05
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
 
-		#ifdef BARS
+		#ifdef BARS_COLOR
 			#undef LOOKAHEAD
 			#undef GAIN
 			#define LOOKAHEAD 0
@@ -720,6 +763,14 @@ static gint draw_func(gpointer data) {
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
 		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
+		#ifdef VELOCITY
+			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
+		#endif
+		#ifdef VELOCITY2
+			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
+			bar_heights_difference_local = bar_heights_difference_local*0.9 + 0.1*(bar_heights_difference[XSCALE(i)]);
+			cy += bar_heights_difference_local * 0.5;
+		#endif
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -847,26 +898,41 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 	#else
 		#define global_add 0
 	#endif
+	#ifdef VELOCITY2
+		gint16 last_bar_height;
+	#endif
 
 	if(!window)
 		return;
 
 	#ifdef SPREAD_BASS
-	global_add = ( (double)data[0][0] + (double)data[0][1] + (double)data[0][2] ) / 256 * SPREAD_BASS;
-	// sprintf("Added %i\n",global_add);
-	// global_add = 0;
+		global_add = ( (double)data[0][0] + (double)data[0][1] + (double)data[0][2] ) / 256 * SPREAD_BASS;
+		// sprintf("Added %i\n",global_add);
+		// global_add = 0;
 	#endif
 
 	/* FIXME: can anything taken out of the main thread? */
 	for (i = 0; i < SPECWIDTH; i++) {
+		#ifdef VELOCITY
+		// last_bar_heights[i] = bar_heights[i];
+		#endif
+		#ifdef VELOCITY2
+		last_bar_height = bar_heights[i];
+		#endif
 		y = (gdouble)data[0][i] * (i + 1); /* Compensating the energy */
 		y = ( log(y - x00) * scale + y00 ); /* Logarithmic amplitude */
 
+		#ifdef DO_DIFFUSION
 		y = ( (dif-2)*y + /* FIXME: conditionals should be rolled out of the loop */
 			(i==0           ? y : bar_heights[i-1]) +
 			(i==SPECWIDTH-1 ? y : bar_heights[i+1])) / dif; /* Add some diffusion */
+		#endif
 		y = ((tau-1)*bar_heights[i] + y) / tau; /* Add some dynamics */
+		// if (y<0) y=-y;
 		bar_heights[i] = global_add + (gint16)y;
+		#ifdef VELOCITY2
+		bar_heights_difference[i] = bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height);
+		#endif
 	}
 	draw_func(NULL);
 	return;
