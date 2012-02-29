@@ -1,8 +1,6 @@
-/*  Spectrum Analyzer Visualization Plugin for Audacious
+/*  Fiery Spectrum Analyzer Visualization Plugin for XMMS and Audacious
  *
- *  Copyright (C) 2006 William Pitcock
- *  Copyright (C) 1998-2001 V�gv�lgyi Attila, Peter Alm, Mikael Alm,
- *    Olle Hallnas, Thomas Nilsson and 4Front Technologies
+ *  Copyright (C) 2009 Paul Clark (joey@neuralyte.org)
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,18 +22,27 @@
 // #define AUDACIOUS
 // TODO: There might be an already existing way to find out!
 
-// #define AIRFLOW
+// If you want to break your X, turn off SKIP_FRAMES and AUTO_BACKOFF.
+// Neither work 100%, so you can also break your X by turning one off.
+// But turning both off is the most effective way to break X.
 
-// CONSIDER: ANTIALIAS
-// We only have to darken the top-most pixel of the flame, according to the remainder of the float.  That could be any col, we need a fast way to get the right gc pixel?
+#define AUTO_BACKOFF
+#include <sys/time.h>
+// needed for gettimeofday
 
 // To avoid overloading system (especially important with MASK_TRANSPARENCY),
 // we only render 1 frame every SKIP_FRAMES:
-#define SKIP_FRAMES 2
+#define SKIP_FRAMES 3
 // Without transparency, SKIP_FRAMES 2 is fine for XMMS, but visibly slow in
 // Audacious.
 // If MASK_TRANSPARENCY is enabled for Audacious, then I MUST have at least
 // SKIP_FRAMES 2 to keep my system stable!
+// TODO: It appears that draw_func() gets called more often for mp3s with a
+// bigger kbps.  Therefore our frame-dropper should be time-based not
+// call-based.
+// Another issue with higer kbps input is that the right side of the fire
+// becomes too tall and the lower end too short.  In other words the height
+// normalisation that works for 128kbps does not work here.
 
 //// For debugging: removes the flame rendering and returns to rendering
 //// flat-top bars, so developer can see the original spectrum data, but with
@@ -48,12 +55,11 @@
 // #define DO_DIFFUSION
 
 #define DEBUG(X,Y); 
-// TODO: #define DEBUG(X,Y); fprintf(stdout,X,Y);
+// #define DEBUG(X,Y); fprintf(stdout,X,Y);
 
-//// Pick one or none, not both!
-//// Neither tested for Audacious
-#define MASK_TRANSPARENCY
-// #define PSEUDO_TRANSPARENCY
+//// Pick one or none, but not both!
+// #define MASK_TRANSPARENCY
+#define PSEUDO_TRANSPARENCY
 // WARNING! This can create a lot of X refresh events, and make your X unresponsive!
 // Wow this works and it was not really too hard! :D
 // But it's still a bit heavy on CPU.  It would be good to make
@@ -126,6 +132,15 @@
 // approach it differently: have each technique produce an estimate colour for
 // the bar, and then average the result.
 
+// Experimental:
+// #define AIRFLOW
+// #define ANTIALIAS
+// We only have to darken the top-most pixel of the flame, according to the
+// remainder of the float.  That could be any col, we need a fast way to get
+// the right gc pixel?
+
+/*
+
 // TODO: I think we may want to use a fast local velocity, and a slow more spread velocity.
 // I have recently concentrated the current height and velocity measures on rendering fine peaks,
 // so only heatHere has been drawing anything soft, but it is temporary.
@@ -146,11 +161,15 @@
 // chords get the same fair amount of height.
 // DO_DIFFUSION does help with this, but doesn't entirely solve it.
 
+*/
+
 #include "config.h"
 
 #include <gtk/gtk.h>
+#include <gdk/gdk.h>
 #include <math.h>
-#include <gdk/gdkx.h> // Provides GDK_ROOT_WINDOW() for PSEUDO_TRANSPARENCY.
+// Provides GDK_ROOT_WINDOW() for PSEUDO_TRANSPARENCY.
+#include <gdk/gdkx.h>
 
 #ifdef AUDACIOUS
 #include <audacious/plugin.h>
@@ -190,6 +209,10 @@
 //       maybe vary the smoothing as we cross the flame, creating some regions of spikiness, others smooth.
 //       But if there is very little going on, we really want to display any spikes that do exist at full resolution
 // TODO: make palette, and window size, user configurable
+// TODO: There is a feature I would like to add, that I think all X apps should
+//       have.  That is, when I am switched to a different desktop, or the
+//       spectrum is not visible for some other reason, to skip all processing
+//       related to rendering.
 
 /* SPECWIDTH should be kept 256, this is the hardwired resolution of the
    spectrum given by XMMS. */
@@ -281,6 +304,11 @@ static GdkPixmap *background;
 #endif
 
 #define FitInt(I,MAX) ( I<0 ? 0 : I>MAX ? MAX : (int)I )
+
+#ifdef AUTO_BACKOFF
+struct timeval lastframe;
+static gint backoff;
+#endif
 
 #ifdef SKIP_FRAMES
 static gint frameCount;
@@ -401,9 +429,17 @@ GdkBitmap *create_transparency_mask(GdkWindow *window) {
 #endif
 
 #ifdef PSEUDO_TRANSPARENCY
-// Nabbed from Audacious - may be gtk2.
 static Pixmap* take_snapshot() {
+	GdkPixmap root;
+	// GdkPixbuf pixbuf;
+	if (background) {
+		gdk_pixmap_unref(background);
+		background = NULL;
+	}
+
+	//// We grab a snapshot of the desktop/windows behind our window, to use as background.
 	/*
+	// This is how xscreensaver does it.  But using GTK not X, we don't have a dpy object!
 	Pixmap pixmap;
 	GC gc;
 	// create a pixmap to hold the screenshot.
@@ -420,15 +456,28 @@ static Pixmap* take_snapshot() {
 	return pixmap;
 	*/
 
-	//// We grab a snapshot of the desktop/windows behind our window, to use as background.
 	// orig_map = XGetImage(dpy, window, 0, 0, WINWIDTH, WINHEIGHT, ~0L, ZPixmap);
 	// orig_image = ((GdkWindow*)window->window)->get_image(0,0,WINWIDTH,WINHEIGHT);
 	background = gdk_pixmap_new(window->window,WINWIDTH,WINHEIGHT,gdk_rgb_get_visual()->depth);
+	// background = gdk_pixmap_new(None,WINWIDTH,WINHEIGHT,gdk_rgb_get_visual()->depth);
+	// background = gdk_pixmap_new(None,1280,1024,24);
+	// root = gdk_pixmap_lookup(GDK_ROOT_WINDOW());
+	// background = gdk_pixmap_new(None,1280,1024,24);
+	// background = gdk_pixbuf_get_from_drawable(NULL, main_wnd->window, NULL,
+			// 0, 0, 0, 0, skin_infos.width, skin_infos.height);
+	// background = gdk_pixmap_foreign_new(GDK_ROOT_WINDOW());
+
+	// background = gtk_widget_get_snapshot(window->window, NULL); // works if obscured
+	// colormap = gdk_drawable_get_colormap(pixmap);
+	// pixbuf = gdk_pixbuf_get_from_drawable( NULL, GDK_DRAWABLE(background), NULL,
+		// 0, 0, 0, 0, -1, -1);
+
 	//// gdk_draw_pixmap(background, gc, GTK_WINDOW(window)->get_default_root_window(), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 	//// gdk_draw_pixmap(background, gc, Gdk::Window.default_root_window, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 	//// gdk_draw_pixmap(background, gc, GTK_WINDOW(window)->RootWindow(), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 	//// gdk_draw_pixmap(background, gc, DefaultRootWindow(display), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 	gdk_draw_pixmap(background, gc, draw_pixmap, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+	// gdk_draw_pixbuf(draw_pixmap, gc, pixbuf, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 	// gdk_draw_pixmap(background, gc, gdk_window_foreign_new(GDK_ROOT_WINDOW()), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
 
 	// TODO: OK so we grabbed something, but it's not the desktop!
@@ -481,6 +530,11 @@ static void fsanalyzer_init(void) {
 		gtk_window_move(GTK_WINDOW(window), wx, wy-WINHEIGHT);
 	// }
 	*/
+
+#ifdef AUTO_BACKOFF
+	gettimeofday(&lastframe, NULL);
+	backoff = 0;
+#endif
 
 #ifdef MASK_TRANSPARENCY
 	mask = create_transparency_mask(window->window);
@@ -622,13 +676,6 @@ static void fsanalyzer_cleanup(void) {
 		gdk_gc_unref(gc);
 		gc = NULL;
 	}
-#ifdef MASK_TRANSPARENCY
-	if(mgc) {
-		gdk_gc_destroy(mgc);
-		// gdk_gc_unref(mgc); // failed - i guess we can't do both ;)
-		mgc = NULL;
-	}
-#endif
 	if(bg_pixmap) {
 		gdk_pixmap_unref(bg_pixmap);
 		bg_pixmap = NULL;
@@ -637,11 +684,26 @@ static void fsanalyzer_cleanup(void) {
 		gdk_pixmap_unref(draw_pixmap);
 		draw_pixmap = NULL;
 	}
+#ifdef MASK_TRANSPARENCY
+	if(mgc) {
+		gdk_gc_destroy(mgc);
+		// gdk_gc_unref(mgc); // failed - i guess we can't do both ;)
+		mgc = NULL;
+	}
+#endif
+#ifdef PSEUDO_TRANSPARENCY
+	if (background) {
+		gdk_pixmap_unref(background);
+		background = NULL;
+	}
+#endif
 	if(bar) {
 		gdk_pixmap_unref(bar);
 		bar = NULL;
 	}
 }
+
+int heatHereLast;
 
 static gint draw_func(gpointer data) {
 	gint i;
@@ -662,11 +724,57 @@ static gint draw_func(gpointer data) {
 	}
 #endif
 
+#ifdef AUTO_BACKOFF
+	/* Cap frames per second; do not go above specified fps: */
+	/* TODO BUG:
+	 * If other X apps are also working hard, we can exceed the threshold of our
+	 * machine's capabilities, queue up too many X events, and lock out the
+	 * user.  For example, place the fire in front of Audacious.
+	 */
+	{
+		/* unsigned long this_delay = 0; */
+		int maxfps = 10;
+		long utimeperframe = 1000000/maxfps;
+		struct timeval now;
+		long timediff;
+		gettimeofday(&now, NULL);
+		timediff = now.tv_sec*1000000 + now.tv_usec - lastframe.tv_sec*1000000 - lastframe.tv_usec;
+		if (now.tv_usec < 1000000*0.01)
+			fprintf(stdout,"timediff=%07li\n",timediff);
+		/* if (timediff < utimeperframe) {
+			// fprintf(stderr,"sleeping for %i\n",utimeperframe-timediff);
+			this_delay = (utimeperframe-timediff);
+		} */
+		if (timediff > utimeperframe && backoff<528435456) {
+			backoff++;
+			backoff = backoff * 2;
+			if (backoff>1)
+				fprintf(stdout,"backoff=%i\n",backoff);
+		} else {
+			backoff=0;
+		}
+		lastframe = now;
+	}
+
+	if (backoff > 0) {
+		backoff--;
+		return TRUE;
+	}
+#endif
+
 	/* FIXME: should allow spare redrawing like the vis. in the main window */
 	if(!window) {
 /*		timeout_tag = 0;*/
 		return FALSE;
 	}
+
+	/*
+#ifdef PSEUDO_TRANSPARENCY
+	if (random()%34 < 2) {
+		take_snapshot();
+	}
+#endif
+	*/
 
 	GDK_THREADS_ENTER();
 
@@ -687,6 +795,7 @@ static gint draw_func(gpointer data) {
 	gdk_gc_set_foreground(mgc, &pattern);
 #endif
 
+	//// heatHere is a sort of current average, with a bias towards bass.
 	// heatHere = FLAMEHEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
 	heatHere = ( // cheeky initial "average" from the first half of the spectrum
@@ -694,9 +803,9 @@ static gint draw_func(gpointer data) {
 			+ bar_heights[SPECWIDTH*4/16]/8 + bar_heights[SPECWIDTH*5/16]/8 + bar_heights[SPECWIDTH*6/16]/8 + bar_heights[SPECWIDTH*7/16]/8
 		); // Putting the /8 inside didn't solve the problem with left of spectrum disappearing!
 
-	if (heatHere<0) {
-		fprintf(stdout,"hello\n");
-	}
+	// if (heatHere<0) {
+		// fprintf(stdout,"(spectrum.c:draw_func) heatHere < 0 !\n");
+	// }
 
 	// around 3 seconds to update ???  What are units and limits? :P
 	//
@@ -732,8 +841,15 @@ static gint draw_func(gpointer data) {
 		// #define yscale 1.2
 		// #define yscale 1.0
 
+		int deltaHeatHere = heatHere - heatHereLast;
+		heatHereLast = heatHere;
+
+// BASS_PUMPER kinda sucked
+// #define BASS_PUMPER (heatHere/8 + 8*deltaHeatHere)
+#define BASS_PUMPER 0
+
 		int y,cy;
-		y = WINHEIGHT-1 - bar_heights[XSCALE(i)]*yscale - 2;
+		y = WINHEIGHT-1 - bar_heights[XSCALE(i)]*yscale*3/4 - BASS_PUMPER - 2;
 		// TODO: I would rather y went from 0.  We can do the WINHEIGHT-1 - y later!
 
 		#ifdef ORGANIC_INTERPOLATION
@@ -811,7 +927,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
+		cy = FLAMEHEIGHT - 8 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -1014,6 +1130,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 }
 
 // From XMMS, modified some, now pretty naff:
+/*
 static void sanalyzer_render_freq_DISABLED(gint16 data[2][256])
 {
 	gint i,c;
@@ -1056,4 +1173,5 @@ static void sanalyzer_render_freq_DISABLED(gint16 data[2][256])
 	draw_func(NULL);
 	return;
 }
+*/
 
