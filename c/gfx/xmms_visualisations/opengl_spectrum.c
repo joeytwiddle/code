@@ -59,8 +59,8 @@
 
 /* The original LENGTH was 16 */
 // #define LENGTH 200
-// #define LENGTH 120
-#define LENGTH 160
+#define LENGTH 120
+// #define LENGTH 160
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
@@ -398,7 +398,7 @@ static void draw_bars(void)
 
 			#define compensateForCurve (0.8+1.2*(float)x/(float)WIDTH)
 			// GLfloat energySlowFade = 2.0 * fmin(heights[y][x]-0.1,0.5) * r_base;
-			GLfloat energySlowFade = compensateForCurve*heights[y][x] * r_base;
+			// GLfloat energySlowFade = compensateForCurve*heights[y][x] * r_base;
 			// breakingEdge = breakingEdge * energySlowFade * 4.0;
 			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
@@ -436,17 +436,17 @@ static void draw_bars(void)
 			// whiteness = 2.0 * peakEnergy[x] * fadeOff;
 
 			//// Power fade the energy, so the difference between high and low appears stronger in the distance.
-			whiteness = 1.2 * peakEnergy[x];
-			// whiteness += 0.0001 - 0.1 * (float)y/(float)LENGTH;
+			whiteness = 5.0 * peakEnergy[x];
+			/* whiteness += 0.0001 - 0.1 * (float)y/(float)LENGTH;
 			if (whiteness<0)
-				whiteness=0;
+				whiteness=0; */
 			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
-			whiteness *= 2.0;
-			whiteness *= fadeOff;
+			whiteness /= 2.5;
+			whiteness *= fadeOff * fadeOff;
 
 			//// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
-			// whiteness += 1.0 * peakHeight[x] * breakingEdge * compensateForCurve;
+			whiteness += 0.5 * peakHeight[x] * breakingEdge * compensateForCurve;
 
 			//// Reduce energy of all bars in a busy channel
 			whiteness -= 0.5 * localAverage[x] * fadeOff;
@@ -508,9 +508,10 @@ static void draw_bars(void)
 				if (modeCycle%12 == 4) {
 					// Plot overlapping bars.  x&1 is a chequered offset to avoid flickering of intersecting surfaces.
 					#define miniGap 0.001*((x+y)&1)
-					#define scaleBars (0.3 + 1.2*whiteness)
+					// #define scaleBars (0.3 + 1.2*whiteness)
 					// #define scaleBars (0.1 + 2.4*heights[y][x]*compensateForCurve*fadeOff)
-					#define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
+					// #define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
+					#define scaleBars (0.2 + 2.3*peakEnergy[x]*fadeOff*fadeOff*fadeOff*fadeOff)
 					draw_bar(x_offset + miniGap - scaleBars*0.25*SCALE_width/2.0, z_offset + miniGap, barHeight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
 				} else {
 					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
