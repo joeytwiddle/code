@@ -74,7 +74,7 @@ VisPlugin *get_vplugin_info(void)
 #define HEIGHT 128
 #define min(x,y) ((x)<(y)?(x):(y))
 #define BPL	((WIDTH + 2))
-#define DECAY_RATE 14
+#define DECAY_RATE 6
 // #define SKIP_FRAMES 2
 // The human eye may see many white lines even when only 1 is renderered, due to the high framerate.  SKIP_FRAMES can make only 1 white line visible, but the oscilloscope will also appear more flickery / less smooth.
 
@@ -177,10 +177,10 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		// else
 			// sum = sum - 0;
 
-		if (sum > iptr[0])
-			sum = iptr[0]*staticBlur + sum*(1.0-staticBlur);
-		else
-			sum = iptr[0];
+		// if (sum > iptr[0])
+			// sum = iptr[0]*staticBlur + sum*(1.0-staticBlur);
+		// else
+			// sum = iptr[0];
 
 		if (sum > DECAY_RATE)
 			sum -= DECAY_RATE;
