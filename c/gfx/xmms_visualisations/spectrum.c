@@ -747,8 +747,8 @@ static gint draw_func(gpointer data) {
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
 		#define LOOKAHEAD 1
-		#define GAIN 0.1
-		//// GAIN might be better lowered if VELOCITY2 is enabled.
+		#define GAIN 0.02
+		//// GAIN might be better around 0.03 if VELOCITY2 is enabled.
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
 
@@ -770,15 +770,14 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*1.0 /*MINCOL*/ + heatHere*EXPLOSION*1.0;
-		// If we tweak the coefficients here, we might want to tweak GAIN also.
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
 		#ifdef VELOCITY
 			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
 		#endif
 		#ifdef VELOCITY2
 			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
-			bar_heights_difference_local = bar_heights_difference_local*0.2 + 0.8*(bar_heights_difference[XSCALE(i)]);
-			cy += bar_heights_difference_local * 3.0;
+			bar_heights_difference_local = bar_heights_difference_local*0.9 + 0.1*(bar_heights_difference[XSCALE(i)]);
+			cy += bar_heights_difference_local * 0.5;
 		#endif
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
