@@ -392,15 +392,15 @@ static void draw_bars(void)
 			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
 
-			peakEnergy[x] *= 0.70;
+			peakEnergy[x] *= 0.60;
 			// GLfloat energyHere = heights[y][x];
-			GLfloat energyHere = heights[y][x] + 0.5*(heights[y][x] - heights[y+1][x]);
+			GLfloat energyHere = heights[y][x] + 0.5*fmin(0,heights[y][x] - heights[y+1][x]);
 			energyHere *= compensateForCurve;
 			if (energyHere > peakEnergy[x]) {
 				peakEnergy[x] = energyHere;
 			}
 
-			peakHeight[x] *= 0.5;
+			peakHeight[x] *= 0.50;
 			if (heights[y][x] > peakHeight[x]) {
 				peakHeight[x] = heights[y][x];
 			}
@@ -417,6 +417,8 @@ static void draw_bars(void)
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
 			whiteness += 1.5 * peakEnergy[x] * pow(breakingEdge,4);
+
+			whiteness += 0.05;
 
 			// whiteness = fmin(1.0,fmax(0.0,whiteness));
 
