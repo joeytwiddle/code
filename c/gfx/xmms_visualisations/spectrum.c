@@ -19,16 +19,26 @@
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#define XMMS
+
 #include "config.h"
 
 #include <gtk/gtk.h>
 #include <math.h>
+
+#ifdef AUDACIOUS
 #include <audacious/plugin.h>
 #include <audacious/i18n.h>
-// #include <audacious/ui_main.h>
-// #include <grand.h>
-
 #include "logo.xpm"
+#endif
+
+#ifdef XMMS
+#include "xmms/plugin.h"
+#include "libxmms/util.h"
+#include "xmms_logo.xpm"
+#include "xmms/i18n.h"
+#define logo_xpm sanalyzer_xmms_logo_xpm
+#endif
 
 /* This isn't just pretty.  It is still a spectrum analyser.  It retains the
  * same values as the original plugin, adding colour. */
@@ -108,6 +118,16 @@ static gint16 bar_heights[SPECWIDTH];
 static gdouble scale, x00, y00;
 static gdouble heatNow;
 
+#ifdef XMMS
+#define fsanalyzer_vp              sanalyzer_vp
+#define fsanalyzer_init            sanalyzer_init
+#define fsanalyzer_cleanup         sanalyzer_cleanup
+#define fsanalyzer_playback_start  sanalyzer_playback_start
+#define fsanalyzer_playback_stop   sanalyzer_playback_stop
+#define fsanalyzer_render_freq     sanalyzer_render_freq
+#define fsanalyzer_destroy_cb      sanalyzer_destroy_cb
+#endif
+
 static void fsanalyzer_init(void);
 static void fsanalyzer_cleanup(void);
 static void fsanalyzer_playback_start(void);
@@ -125,9 +145,20 @@ VisPlugin fsanalyzer_vp = {
 	.render_freq = fsanalyzer_render_freq  /* render_freq */
 };
 
+#ifdef XMMS
+VisPlugin *get_vplugin_info(void)
+{
+	sanalyzer_vp.description =
+		g_strdup_printf(_("Fiery spectrum analyzer %s"), VERSION);
+	return &sanalyzer_vp;
+}
+#endif
+
 VisPlugin *spectrum_vplist[] = { &fsanalyzer_vp, NULL };
 
+#ifdef AUDACIOUS
 DECLARE_PLUGIN(spectrum, NULL, NULL, NULL, NULL, NULL, NULL, spectrum_vplist,NULL);
+#endif
 
 static void fsanalyzer_destroy_cb(GtkWidget *w,gpointer data) {
 	fsanalyzer_vp.disable_plugin(&fsanalyzer_vp);
@@ -161,7 +192,7 @@ static void fsanalyzer_init(void) {
 	gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, FALSE);
 	// NEW! Joey's stuff:
 	// gtk_window_set_resizable(GTK_WINDOW(window), TRUE); // worked ok, but isn't desirable until we support it!
-	gtk_window_set_decorated(GTK_WINDOW(window), FALSE); // failed, the window still has a titlebar+frame.
+	// gtk_window_set_decorated(GTK_WINDOW(window), FALSE); // failed, the window still has a titlebar+frame.
 	/*
 	//// TODO:
 	//// I wanted to set the initial position of the fire spectrum window to WINHEIGHT pixels above the main window.
@@ -193,9 +224,15 @@ static void fsanalyzer_init(void) {
 
 	bg_pixmap = gdk_pixmap_create_from_xpm_d(window->window,NULL,NULL,logo_xpm);
 	gdk_window_set_back_pixmap(window->window,bg_pixmap,0);
+#ifdef XMMS
+	gtk_signal_connect(GTK_OBJECT(window),"destroy",GTK_SIGNAL_FUNC(sanalyzer_destroy_cb),NULL);
+	gtk_signal_connect(GTK_OBJECT(window), "destroy", GTK_SIGNAL_FUNC(gtk_widget_destroyed), &window);
+	gtk_widget_set_usize(window, WINWIDTH, WINHEIGHT);
+#else
 	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(fsanalyzer_destroy_cb),NULL);
 	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(gtk_widget_destroyed), &window);
 	gtk_widget_set_size_request(GTK_WIDGET(window), WINWIDTH, WINHEIGHT);
+#endif
 	gc = gdk_gc_new(window->window);
 	draw_pixmap = gdk_pixmap_new(window->window,WINWIDTH,WINHEIGHT,gdk_rgb_get_visual()->depth);
 
@@ -450,7 +487,8 @@ static gint draw_func(gpointer data) {
 		// #define EXPLOSION 1.1
 		// #define EXPLOSION 1.2
 		// #define EXPLOSION 1.3
-		#define EXPLOSION 1.5
+		#define EXPLOSION 1.4
+		// #define EXPLOSION 1.5
 
 		/*
 		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
