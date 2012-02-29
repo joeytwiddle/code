@@ -50,9 +50,10 @@
 #include "opengl_spectrum.h"
 #include "xmms/i18n.h"
 
-/* NUM_BANDS should be either 32 or 16.  See declaration of xscale. */
+/* NUM_BANDS should be either 16 or 32.  We do have a slow hack for larger values. */
 // #define NUM_BANDS 16
-#define NUM_BANDS 32
+// #define NUM_BANDS 32
+#define NUM_BANDS 48
 // #define NUM_BANDS 64
 
 /* The original LENGTH was 16 */
@@ -394,12 +395,13 @@ static void draw_bars(void)
 			// whiteness = fmax(energyHere, breakingEdge);
 			// whiteness = peakEnergy[x];
 			// whiteness = 1.3 * peakEnergy[x] * fadeOff;
+			//// Fade out fast from driving edge (white to color):
+			whiteness = 1.3 * peakEnergy[x] * breakingEdge;
+			//// Colored amplitudes fade to white when they drop:
+			GLfloat blackness = 0.8 - 1.1*peakEnergy[x];
 
-			//// Fade out fast from driving edge
-			// whiteness = 1.3 * peakEnergy[x] * breakingEdge;
-
-			// Fade out from color to white instead of from white to color
-			whiteness = 0.8 - 1.2*peakEnergy[x];
+			whiteness -= blackness;
+			whiteness *= 2.0;
 
 			whiteness = fmin(1.0,fmax(0.0,whiteness));
 
@@ -791,10 +793,11 @@ static void oglspectrum_render_freq(gint16 data[2][256])
 #elif NUM_BANDS <= 32
 	gint xscale[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 24, 28, 34, 40, 47, 54, 64, 74, 87, 101, 119, 137, 162, 187, 221, 255};
 #else
-	// #warn "We have not defined xscale for >32 bands!"
+	// #error We have not defined xscale for >32 bands!
 	gint xscale[NUM_BANDS];
 	for (i=0; i<NUM_BANDS; i++) {
-		xscale[i] = 255*i/(NUM_BANDS-1);
+		// xscale[i] = 255*i/(NUM_BANDS-1);
+		xscale[i] = i;
 	}
 #endif
 
