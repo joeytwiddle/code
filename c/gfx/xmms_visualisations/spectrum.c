@@ -55,7 +55,7 @@
 #define FLAMEHEIGHT 128
 // #define FLAMEHEIGHT (WINHEIGHT/1.75)
 
-/* Width 550 fits nicely over a double-size amp.
+/* Width 550 fits nicely over a double-size amp.  274 over normal size amp.
    TODO: Make this user configurable, either in preferences or by resizing the
    window manually, so they can place the flame over a single size-amp, or
    elsewhere on their desktop at their desired width.  If we do this, we should
@@ -65,6 +65,7 @@
    If we increase WINWIDTH we should probably increase LOOKAHEAD also, and the
    way heatHere is calculated. */
 // #define WINWIDTH 256
+// #define WINWIDTH 274
 #define WINWIDTH 550
 // #define WINWIDTH 1024
 // #define WINWIDTH 1200
@@ -211,13 +212,13 @@ static void fsanalyzer_init(void) {
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
 	palette[0].red = 0xFF77; palette[0].green = 0xFF77; palette[0].blue = 0xCCCC;
 	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
-	palette[2].red = 0xFF77; palette[2].green = 0xCCCC; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x6666; palette[3].blue = 0x0000;
-	palette[4].red = 0xCCCC; palette[4].green = 0x0011; palette[4].blue = 0x0000;
+	palette[2].red = 0xFF77; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
+	palette[3].red = 0xDDDD; palette[3].green = 0x5555; palette[3].blue = 0x0000;
+	palette[4].red = 0x8888; palette[4].green = 0x0888; palette[4].blue = 0x0000;
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.34
+	#define palDelta 0.3
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
 	#define palScale 0.9
@@ -449,7 +450,7 @@ static gint draw_func(gpointer data) {
 		// #define EXPLOSION 1.1
 		// #define EXPLOSION 1.2
 		// #define EXPLOSION 1.3
-		#define EXPLOSION 1.4
+		#define EXPLOSION 1.5
 
 		/*
 		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
