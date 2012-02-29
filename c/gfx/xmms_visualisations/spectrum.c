@@ -540,7 +540,7 @@ static void fsanalyzer_init(void) {
 	palette[3].red = 0xFF44; palette[3].green = 0x9999; palette[3].blue = 0x0000;
 	palette[4].red = 0xBBBB; palette[4].green = 0x4444; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
-	#define palDelta 0.20
+	#define palDelta 0.0
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -853,7 +853,7 @@ static gint draw_func(gpointer data) {
 			// Mmm ok fixed a bug in VELOCITY2 :P
 			// Well actually that value will be often negative, since bar heights go up in a few frames, but down slowly over many frames.
 			// So although the average may be 0, if gathered over time, the negative values will dominate.
-			cy += bar_heights_difference_local * 30.0 - 0;
+			cy += bar_heights_difference_local * 15.0 + 24;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
@@ -1024,13 +1024,15 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((double)bar_heights[i] - (double)last_bar_height);
 		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
 		/*#define DIFFERENCE_GAIN_BY_TIME 0.04 0.2 */
-		#define DIFFERENCE_GAIN_BY_TIME 0.005
+		#define DIFFERENCE_GAIN_BY_TIME 0.01
 		double diff = (double)bar_heights[i] - (double)last_bar_height;
 		/*
 		if (diff<=0) diff=0; // This is not a good measure.  Depending on the values, some tracks will respond differently to others.
 		else diff=3;
 		*/
 		if (diff<-5) diff=-5;
+		if (diff>0 && bar_heights_difference[i]<diff/16)
+			bar_heights_difference[i] = diff/16;
 		bar_heights_difference[i] =
 			  DIFFERENCE_GAIN_BY_TIME       * diff
 			+ (1.0-DIFFERENCE_GAIN_BY_TIME) * bar_heights_difference[i];
