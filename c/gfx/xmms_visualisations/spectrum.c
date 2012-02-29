@@ -814,7 +814,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.2;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*0.2;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -838,7 +838,7 @@ static gint draw_func(gpointer data) {
 			// Mmm ok fixed a bug in VELOCITY2 :P
 			// Well actually that value will be often negative, since bar heights go up in a few frames, but down slowly over many frames.
 			// So although the average may be 0, if gathered over time, the negative values will dominate.
-			cy += bar_heights_difference_local * 30.0 - 4;
+			cy += bar_heights_difference_local * 30.0 - 0;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
