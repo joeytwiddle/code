@@ -52,7 +52,8 @@
 
 /* Parameters and functions for fire colouring. */
 #define WINWIDTH 550
-#define INTERPOLATE_CHEAP
+// #define INTERPOLATE_CHEAP
+#define INTERPOLATE_SMOOTH
 //// XSCALE() Converts WINWIDTH to WIDTH (maps window x onto bar_heights[]):
 // #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH)
 // #define XSCALE(i) (int)(i*(float)WIDTH/(float)WINWIDTH*0.7)
@@ -161,23 +162,34 @@ static void fsanalyzer_init(void) {
 	// Our new bar pixel buffer is 3x as tall as the target window.
 	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
 
+	/*
 	//// Red and orange flame
 	#define stages 5
-	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
+	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
+	palette[0].red = 0xF000; palette[0].green = 0xEEEE; palette[0].blue = 0xFFFF;
 	palette[1].red = 0xFFFF; palette[1].green = 0xFFFF; palette[1].blue = 0x0000;
 	palette[2].red = 0xEEEE; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
 	palette[3].red = 0xEEEE; palette[3].green = 0x4444; palette[3].blue = 0x0000;
 	palette[4].red = 0x4444; palette[4].green = 0x0088; palette[4].blue = 0x0000;
+	*/
 
-	/*
 	//// Blue flame
 	//// This palette may prefer MINCOL = HEIGHT*0.4, EXPLOSION=1.0, with a lower LOOKAHEAD.
-	#define stages 4
+	// #define stages 5
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
 	palette[1].red = 0x1111; palette[1].green = 0xBBBB; palette[1].blue = 0xCCCC;
-	palette[2].red = 0x0999; palette[2].green = 0x0999; palette[2].blue = 0x9999;
-	palette[3].red = 0x0222; palette[3].green = 0x0033; palette[3].blue = 0x2222;
-	*/
+	palette[2].red = 0x1111; palette[2].green = 0x4444; palette[2].blue = 0xCCCC;
+	palette[3].red = 0x0333; palette[3].green = 0x0000; palette[3].blue = 0x4444;
+	palette[4].red = 0x0111; palette[4].green = 0x0000; palette[4].blue = 0x2222;
+
+	//// blue-red-yellow-white
+	//// This palette may prefer MINCOL = HEIGHT*0.4, EXPLOSION=1.0, with a lower LOOKAHEAD.
+	#define stages 5
+	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
+	palette[1].red = 0xEEEE; palette[1].green = 0xBBBB; palette[1].blue = 0x0000;
+	palette[2].red = 0xBBBB; palette[2].green = 0x1111; palette[2].blue = 0x0000;
+	palette[3].red = 0x0000; palette[3].green = 0x0000; palette[3].blue = 0x0000;
+	palette[4].red = 0x0000; palette[4].green = 0x0000; palette[4].blue = 0x4444;
 
 	if (1>0) {
 
@@ -439,14 +451,33 @@ static gint draw_func(gpointer data) {
 			// continue;
 
 		int y,cy;
-		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
+		y = max(0.0,HEIGHT-1 - bar_heights[XSCALE(i)] - 3);
+		// The extra -3 gives a constant 3-pixel significant flat blob of fire at the bottom, so that the fire never disappears or flickers down to 1 pixel.
+		// Use 0 if you don't mind the fire disappearing.
+		// Hmm even with this, we still get a 1-pixel height flicker at very quiet parts.
 
 		#ifdef INTERPOLATE_CHEAP
 		//// Cheap interpolation trick:
+		//// Attempts to fiddle around with interpolation have a nasty habit of exhibiting artefacts resulting from the face that the input is a set of bars (not interpolated yet).
 		// y = 0.2*y + 0.8*lasty; // smoother
 		// y = 0.3*y + 0.7*lasty; // smoother
-		y = 0.5*y + 0.5*lasty; // finer+sharper
+		y = 0.5*y + 0.5*lasty; // Finer+sharper.  It keeps the details but also hides the bars (at the current width settings).
 		lasty = y;
+		#endif
+		#ifdef INTERPOLATE_SMOOTH
+		// Quite fun to play with.
+		// This is actually no more expensive.  It is tuned to produce a smoother result.
+		// It can move surprisingly like real fire with a suitable song.  (e.g. Cold Storage - Onyx.)
+		// lasty = lasty*0.9 + y*0.1;
+		// The downside is that it drops information, the user can't see the details of the spectrum.
+		// It works well on spectra with fractal/busy/wiggling peaks, but only
+		// flattens curves further if they were already gentle, in which case we
+		// prefer the details.
+		lasty = lasty*0.8 + y*0.2; // Offers a little smoothing, but doesn't lose too much information.
+		// lasty = lasty*0.93 + y*0.07;
+		y = lasty;
+		// Again we are using the dirty lop-sided averaging, and this time with heights not colours.
+		// Maybe better to calculate the true mean here.
 		#endif
 
 		//// Update heatHere:
@@ -458,7 +489,7 @@ static gint draw_func(gpointer data) {
 		// #define LOOKAHEAD 10
 		// #define GAIN 0.02
 		#define LOOKAHEAD 8
-		#define GAIN 0.04
+		#define GAIN 0.03
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.06
 		// #define LOOKAHEAD 5
