@@ -158,7 +158,7 @@ static void fsanalyzer_init(void) {
 			// color.green = 0;
 			// color.blue = 0;
 			color.red = 0xFFFF;
-			color.green = 0xFFFF - thruinner;
+			color.green = 0xFFFF - thruinner/2;
 			color.blue = 0;
 		} else {
 			// color.red = 0xFFFF;
@@ -167,8 +167,9 @@ static void fsanalyzer_init(void) {
 			//
 			//
 			//
-			color.red = 0xFFFF - thruinner*0.75; // go down to 25% red, not black
-			color.green = 0;
+			// color.red = 0xFFFF - thruinner*0.75; // go down to 25% red, not black
+			color.red = 0xFFFF; // go down to 25% red, not black
+			color.green = 0xFFFF/2 - thruinner/2;
 			color.blue = 0;
 		}
 		gdk_color_alloc(gdk_colormap_get_system(),&color);
@@ -266,7 +267,7 @@ static gint draw_func(gpointer data) {
 	GDK_THREADS_ENTER();
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, HEIGHT);
 
-	local = 0;
+	local = HEIGHT/2;
 	for(i = 0; i < WINWIDTH; i++) {
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
@@ -279,15 +280,23 @@ static gint draw_func(gpointer data) {
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
 		if (bar_heights[XSCALE(i)]<HEIGHT/2)
-			cy = HEIGHT*0.35 + 0.15*bar_heights[XSCALE(i)];
+			cy = HEIGHT*0.15 + 1.5*bar_heights[XSCALE(i)];
 		else
-			cy = max(1,HEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
-		/* cy = local/2;
-		if (cy<0)
-			cy=0;
+			cy = max(1,HEIGHT*3/4 - 0.8*bar_heights[XSCALE(i)]);
+		// No matter what tweaks we use here, the real problem is that we run out of colours!
+		local = local*0.9 + 0.1*(float)bar_heights[XSCALE(i)];
+		// cy = bar_heights[XSCALE(i)];
+		// cy = (cy + local)/2;
+		cy = cy*1/4 + (local)/4;
+		// cy = cy + (local-HEIGHT/2)/4;
+		// cy = (cy + local/2) / 2;
+		// cy = (cy*0.75 + HEIGHT*0.2 + local*0.5) / 2;
+		if (cy<1)
+			cy=1;
 		if (cy>HEIGHT*0.75)
 			cy=HEIGHT*0.75;
-		local = local*0.9 + 0.1*(float)bar_heights[XSCALE(i)]; */
+		if (y<cy)
+			cy = y;
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
 	}
 
