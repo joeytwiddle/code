@@ -20,8 +20,8 @@
  */
 
 // Choose which media player we are compiling for:
-#define XMMS
-// #define AUDACIOUS
+// #define XMMS
+#define AUDACIOUS
 // TODO: There might be an already existing way to find out!
 
 // #define AIRFLOW
@@ -770,7 +770,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*1.1;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.8 /*MINCOL*/ + heatHere*EXPLOSION*1.1;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -785,8 +785,8 @@ static gint draw_func(gpointer data) {
 		#endif
 		#ifdef VELOCITY2
 			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
-			bar_heights_difference_local = bar_heights_difference_local*0.8 + 0.2*(bar_heights_difference[XSCALE(i)]);
-			cy += bar_heights_difference_local * 9.0;
+			bar_heights_difference_local = bar_heights_difference_local*0.85 + 0.15*(bar_heights_difference[XSCALE(i)]);
+			cy += bar_heights_difference_local * 12.0;
 		#endif
 
 
@@ -953,7 +953,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
-		bar_heights_difference[i] = bar_heights_difference[i]*0.94  +  0.06*((float)bar_heights[i] - (float)last_bar_height);
+		bar_heights_difference[i] = bar_heights_difference[i]*0.95  +  0.05*((float)bar_heights[i] - (float)last_bar_height);
 		// bar_heights_difference[i] = (gint16)((float)bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height));
 		#endif
 	}
