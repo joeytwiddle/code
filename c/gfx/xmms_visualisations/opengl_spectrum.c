@@ -24,7 +24,7 @@
 
 //// A makeprg to build and test in one go, and use clist/win.  We must retain
 //// stdout of original make but detach output of xmms.
-// :set makeprg=(make\ &&\ make\ install\ &&\ (\ killall\ xmms\ ;\ sleep\ 2\ )\ &&\ ((nice\ -n\ 12\ xmms\ -p\ &)\ >/dev/null\ 2>&1)\ )
+// :set makeprg=(killall\ xmms\ ;\ make\ &&\ make\ install\ &&\ (\ killall\ xmms\ ;\ sleep\ 2\ )\ &&\ ((nice\ -n\ 12\ xmms\ -p\ &)\ >/dev/null\ 2>&1)\ )
 
 
 
@@ -67,7 +67,7 @@
 
 #define WIDTH NUM_BANDS
 
-#define CHECK_FOR_KICK
+// #define CHECK_FOR_KICK
 
 OGLSpectrumConfig oglspectrum_cfg;
 
@@ -82,7 +82,7 @@ static GLfloat heights[LENGTH][WIDTH], scale;
 static gboolean going = FALSE, grabbed_pointer = FALSE;
 static Atom wm_delete_window_atom;
 static pthread_t draw_thread;
-static unsigned char modeCycle = 7;
+static unsigned char modeCycle = 0;
 #ifdef CHECK_FOR_KICK
 static GLfloat recentPeak = 1.0;
 #endif
@@ -349,11 +349,17 @@ static void draw_bars(void)
 #define SCALE_length SCALEBACK
 
 			GLfloat shortSide,longSide;
-			if (modeCycle%8 < 4) {
-				longSide  = 0.20;
-				shortSide = 0.02;
-			} else {
+			if (modeCycle%12 < 4) {
+				// Isolated dots
 				longSide  = 0.12;
+				shortSide = 0.02;
+			} else if (modeCycle%12 < 8) {
+				// Fat ribbons
+				longSide  = 0.20;
+				shortSide = 0.05;
+			} else {
+				// Thin ribbons
+				longSide  = 0.20;
 				shortSide = 0.02;
 			}
 
