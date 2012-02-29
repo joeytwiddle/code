@@ -127,8 +127,8 @@ void bscope_read_config(void)
 // #define fadeRate 0.97
 // #define blurTao 0.94
 #define fadeRate 0.94
-#define blurTao 0.6
-#define blurTao2 0.9
+#define blurTao 0.8
+#define blurTao2 0.8
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -143,7 +143,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 	while(i--)
 	{
 		// Blurring:
-		// sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;  // Simple 4-neighbour blur
+		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;  // Simple 4-neighbour blur
 		// #define BLUR_DIST 3
 		// sum = (iptr[-BLUR_DIST*bpl] + iptr[-BLUR_DIST] + iptr[BLUR_DIST] + iptr[BLUR_DIST*bpl]) >> 2;  // Simple 4-neighbour blur
 		// sum = iptr[0]; // Do not blur
@@ -156,8 +156,8 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		else
 			sum = 0;
 		*/
-#define max(a,b) (a>b?a:b)
-		sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
+// #define max(a,b) (a>b?a:b)
+		// sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
 
 		// Retain self with blurTao:
 		// if (iptr[0] > sum)
