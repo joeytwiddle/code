@@ -779,7 +779,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.75 /*MINCOL*/ + heatHere*EXPLOSION*1.0;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.7 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
