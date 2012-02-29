@@ -52,18 +52,20 @@
 
 /* NUM_BANDS should be either 16 or 32.  We do have a slow hack for larger values. */
 // #define NUM_BANDS 16
-// #define NUM_BANDS 32
-#define NUM_BANDS 48
+#define NUM_BANDS 32
+// #define NUM_BANDS 48
 // #define NUM_BANDS 64
+// #define NUM_BANDS 128
 
 /* The original LENGTH was 16 */
-#define LENGTH 160
+// #define LENGTH 200
+#define LENGTH 120
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
 #else
 	// After 32 we give up normalising the size, and we let the trail lengthen rather than compress:
-	#define SCALEBACK (64.0/LENGTH)
+	#define SCALEBACK (48.0/LENGTH)
 #endif
 
 #define WIDTH NUM_BANDS
@@ -284,7 +286,7 @@ static void convertHSLtoRGB(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GL
 	// return "rgba("+red+","+green+","+blue+","+a/100+")";
 }
 
-static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat lastZheight, GLfloat lastXheight, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
+static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
 {
 
 	// float whiteness = red*red;
@@ -318,7 +320,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
 	setHSL(hue, sat*0.8, lightness*0.8);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
-	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, lastZheight, z_offset         );
+	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, height, z_offset         );
 	/*
 	*/
 
@@ -327,7 +329,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
 	// glColor3f(red,green,blue);
 	setHSL(hue, sat*0.6, lightness*0.6);
-	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , lastXheight, z_offset + length);	
+	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
 	draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
 
 	/*
@@ -343,7 +345,6 @@ static void draw_bars(void)
 
 	GLfloat peakEnergy[WIDTH];
 	GLfloat peakHeight[WIDTH];
-	GLfloat lastYheight[WIDTH];
 
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -378,7 +379,8 @@ static void draw_bars(void)
 			w_base = 0.0;
 		GLfloat breakingEdge = w_base * w_base;
 
-		GLfloat lastXheight = 0;
+		GLfloat fadeOff = (1.0 - (float)y/(float)(LENGTH-1));
+		fadeOff = fadeOff * fadeOff;
 
 		for(x = 0; x < WIDTH; x++)
 		{
@@ -395,7 +397,7 @@ static void draw_bars(void)
 			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
 
-			peakEnergy[x] *= 0.60;
+			peakEnergy[x] *= 0.25;
 			// GLfloat energyHere = heights[y][x];
 			GLfloat energyHere = heights[y][x] + 0.5*fmin(0,heights[y][x] - heights[y+1][x]);
 			energyHere *= compensateForCurve;
@@ -403,25 +405,32 @@ static void draw_bars(void)
 				peakEnergy[x] = energyHere;
 			}
 
-			peakHeight[x] *= 0.50;
+			peakHeight[x] *= 0.30;
 			if (heights[y][x] > peakHeight[x]) {
 				peakHeight[x] = heights[y][x];
 			}
-
-			GLfloat fadeOff = (1.0 - (float)y/(float)(LENGTH-1));
-			fadeOff = fadeOff * fadeOff;
 
 			// whiteness = fmax(energyHere, breakingEdge);
 			// whiteness = peakEnergy[x];
 			// whiteness = 1.3 * peakEnergy[x] * fadeOff;
 			//// Fade out fast from driving edge (white to color):
-			whiteness = 1.3 * peakEnergy[x] * breakingEdge;
+			whiteness = 1.5 * peakEnergy[x] * fadeOff;
 			//// Colored amplitudes fade to white when they drop:
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
-			whiteness += 1.5 * peakEnergy[x] * pow(breakingEdge,4);
+			// Subjective leading glow
+			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
+			whiteness += 1.5 * peakHeight[x] * breakingEdge;
 
-			whiteness += 0.05;
+			//// Free leading glow
+			// whiteness += 0.3 * pow(breakingEdge,16);
+
+			// Ambient:
+			// whiteness += 0.05 * fadeOff;
+
+			// whiteness *= pow(fadeOff, 1.0);
+
+			// whiteness += 0.02;
 
 			// whiteness = fmin(1.0,fmax(0.0,whiteness));
 
@@ -452,32 +461,29 @@ static void draw_bars(void)
 
 			// Nicely spaced lines and rows of dots:
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastXheight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, barHeight, lastYheight[x], hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 
 			// Crosses:
 			/*
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 			*/
 
 			if (modeCycle%4 == 0) {
 				// Since neither of the above will fire, we just plot simple bars
 				// We can't use longSide for both 4 and 8 because they are identical.
 				if (modeCycle%12 == 4) {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
 				} else {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
 				}
 			}
-
-			lastXheight = barHeight;
-			lastYheight[x] = barHeight;
 
 			#undef barHeight
 
@@ -614,34 +620,34 @@ void *draw_thread_func(void *arg)
 					break;
 				case XK_Down:					
 					x_speed -= 0.1;
-					if(x_speed < -3.0)
-						x_speed = -3.0;
+					// if(x_speed < -3.0)
+						// x_speed = -3.0;
 					break;
 				case XK_Up:					
 					x_speed += 0.1;
-					if(x_speed > 3.0)
-						x_speed = 3.0;
+					// if(x_speed > 3.0)
+						// x_speed = 3.0;
 					break;
 				case XK_Left:
 					y_speed -= 0.1;
-					if(y_speed < -3.0)
-						y_speed = -3.0;
+					// if(y_speed < -3.0)
+						// y_speed = -3.0;
 					
 					break;
 				case XK_Right:
 					y_speed += 0.1;
-					if(y_speed > 3.0)
-						y_speed = 3.0;
+					// if(y_speed > 3.0)
+						// y_speed = 3.0;
 					break;
 				case XK_w:
 					z_speed -= 0.1;
-					if(z_speed < -3.0)
-						z_speed = -3.0;
+					// if(z_speed < -3.0)
+						// z_speed = -3.0;
 					break;
 				case XK_q:
 					z_speed += 0.1;
-					if(z_speed > 3.0)
-						z_speed = 3.0;
+					// if(z_speed > 3.0)
+						// z_speed = 3.0;
 					break;
 				case XK_Return:
 					x_speed = 0.0;
@@ -745,7 +751,7 @@ static void start_display(void)
 	x_angle = 20.0;
 	y_angle = -15.0;
 	z_angle = 0.0;
-	modeCycle = 0;
+	modeCycle = 6;
 
 	going = TRUE;
 	pthread_create(&draw_thread, NULL, draw_thread_func, NULL);
