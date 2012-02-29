@@ -56,7 +56,7 @@
 // #define NUM_BANDS 64
 
 /* The original LENGTH was 16 */
-#define LENGTH 180
+#define LENGTH 160
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
@@ -75,7 +75,7 @@ static Display *dpy = NULL;
 static Colormap colormap = 0;
 static GLXContext glxcontext = NULL;
 static Window window = 0;
-static GLfloat y_angle = -15.0, y_speed = 0.0; // 0.5;
+static GLfloat y_angle = -15.0, y_speed = 0.5; // 0.5;
 static GLfloat x_angle = 20.0, x_speed = 0.0;
 static GLfloat z_angle = 0.0, z_speed = 0.0;
 static GLfloat heights[LENGTH][WIDTH], scale;
@@ -212,13 +212,72 @@ static void draw_rectangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLflo
 	}
 }
 
-/*
-static void setHSL(GLfloat hue, GLfloat sat, GLfloat lum) {
-	GLfloat red = 1.0, green = 1.0, blue = 1.0;
-	GLfloat tmp1;
-	tmp1 = hue;
+// Doing our own hsl->rgb conversion is faster than making Chrome do it!
+static void setHSL(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GLfloat *greenPtr, GLfloat *bluePtr) {
+	// All input and output values are in range 0.0 to 1.0
+	GLfloat red, green, blue;
+	if(s == 0) {
+		red = green = blue = l;
+	} else {
+		GLfloat temp2 = ( l < 0.5 ? l*(1.0+s) : l+s - l*s );
+		GLfloat temp1 = 2.0*l - temp2;
+		GLfloat temp3;
+
+		// Red
+		temp3 = h + 1/3;
+		if (temp3<0)
+			temp3 += 1.0;
+		if (temp3>1)
+			temp3 -= 1.0;
+		if (temp3 < 1/6)
+			red = temp1 + (temp2-temp1)*6*temp3;
+		else if (temp3 < 1/2)
+			red = temp2;
+		else if (temp3 < 2/3)
+			red = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else
+			red = temp1;
+
+		// Green
+		temp3 = h;
+		if (temp3<0)
+			temp3 += 1.0;
+		if (temp3>1)
+			temp3 -= 1.0;
+		if (temp3 < 1/6)
+			green = temp1 + (temp2-temp1)*6*temp3;
+		else if (temp3 < 1/2)
+			green = temp2;
+		else if (temp3 < 2/3)
+			green = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else
+			green = temp1;
+
+		// Blue
+		temp3 = h - 1/3;
+		if (temp3<0)
+			temp3 += 1.0;
+		if (temp3>1)
+			temp3 -= 1.0;
+		if (temp3 < 1/6)
+			blue = temp1 + (temp2-temp1)*6*temp3;
+		else if (temp3 < 1/2)
+			blue = temp2;
+		else if (temp3 < 2/3)
+			blue = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else
+			blue = temp1;
+
+		// red   = (red   * 255) | 0;
+		// green = (green * 255) | 0;
+		// blue  = (blue  * 255) | 0;
+	}
+	glColor3f(red,green,blue);
+	(*redPtr) = red;
+	(*greenPtr) = green;
+	(*bluePtr) = blue;
+	// return "rgba("+red+","+green+","+blue+","+a/100+")";
 }
-*/
 
 static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat red, GLfloat green, GLfloat blue, float W, GLfloat width, GLfloat length )
 {
@@ -331,10 +390,16 @@ static void draw_bars(void)
 
 			GLfloat fadeOff = (1.0 - (float)y/(float)(LENGTH-1));
 			fadeOff = fadeOff * fadeOff;
-			// whiteness = fmin(1.0,fmax(energyHere, breakingEdge));
+
+			// whiteness = fmax(energyHere, breakingEdge);
 			// whiteness = peakEnergy[x];
-			whiteness = 1.3 * peakEnergy[x] * breakingEdge;
 			// whiteness = 1.3 * peakEnergy[x] * fadeOff;
+
+			//// Fade out fast from driving edge
+			// whiteness = 1.3 * peakEnergy[x] * breakingEdge;
+
+			// Fade out from color to white instead of from white to color
+			whiteness = 0.8 - 1.2*peakEnergy[x];
 
 			whiteness = fmin(1.0,fmax(0.0,whiteness));
 
@@ -363,14 +428,31 @@ static void draw_bars(void)
 				shortSide = 0.02;
 			}
 
+			// Nicely spaced lines and rows of dots:
 			if (modeCycle%2 > 0)
 				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
 				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 
-			if (modeCycle%4 == 0)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, longSide*SCALE_length);
+			// Crosses:
+			/*
+			if (modeCycle%2 > 0)
+				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+
+			if (modeCycle%4 > 1)
+				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+			*/
+
+			if (modeCycle%4 == 0) {
+				// Since neither of the above will fire, we just plot simple bars
+				// We can't use longSide for both 4 and 8 because they are identical.
+				if (modeCycle%12 == 4) {
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+				} else {
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, longSide*SCALE_length);
+				}
+			}
 
 			#undef barHeight
 
@@ -402,12 +484,12 @@ static void draw_bars(void)
 
 	if (energyOfCurrent > 0.2 && energyOfCurrent>recentPeak) {
 		modeCycle++;
-		recentPeak = energyOfCurrent*2.0;
+		recentPeak = 4.0 * energyOfCurrent;
 	}
 
 	// If it wasn't a beat, it may have been "noise".  Look for a leading edge!
 	if (energyOfCurrent > recentPeak) {
-		recentPeak = 1.0 * energyOfCurrent;
+		recentPeak = 1.5 * energyOfCurrent;
 	}
 
 	recentPeak *= 0.95;
@@ -515,13 +597,13 @@ void *draw_thread_func(void *arg)
 					if(x_speed > 3.0)
 						x_speed = 3.0;
 					break;
-				case XK_Right:
+				case XK_Left:
 					y_speed -= 0.1;
 					if(y_speed < -3.0)
 						y_speed = -3.0;
 					
 					break;
-				case XK_Left:
+				case XK_Right:
 					y_speed += 0.1;
 					if(y_speed > 3.0)
 						y_speed = 3.0;
@@ -540,12 +622,12 @@ void *draw_thread_func(void *arg)
 					x_speed = 0.0;
 					y_speed = 0.0;  // 0.5
 					z_speed = 0.0;
-					/*
+					break;					
+				case XK_equal:
 					x_angle = 20.0;
 					y_angle = -15.0;
 					z_angle = 0.0;
-					*/
-					break;					
+					break;
 				case XK_space:
 					modeCycle++;
 					break;
@@ -582,6 +664,12 @@ void *draw_thread_func(void *arg)
 			z_angle += z_speed;
 			if(z_angle >= 360.0)
 				z_angle -= 360.0;
+
+#define SPEED_DAMPENING 0.99
+
+			x_speed *= SPEED_DAMPENING;
+			y_speed *= SPEED_DAMPENING;
+			z_speed *= SPEED_DAMPENING;
 
 			draw_bars();
 		}
@@ -627,7 +715,7 @@ static void start_display(void)
 	scale = 1.0 / log(256.0);
 
 	x_speed = 0.0;
-	y_speed = 0.0;  // 0.5
+	y_speed = -0.2;  // 0.5
 	z_speed = 0.0;
 	x_angle = 20.0;
 	y_angle = -15.0;
