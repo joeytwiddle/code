@@ -228,7 +228,7 @@
 
 /* Time factor of the band dinamics. 3 means that the coefficient of the
    last value is half of the current one's. (see source) */
-#define tau 5.5
+#define tau 6.0
 
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
@@ -509,20 +509,17 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 1.4
+	#define palScale 1.2
 	//// Red and orange flame
 	#define stages 4
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFFDD; palette[1].green = 0xFF44; palette[1].blue = 0xEE00;
-	palette[2].red = 0xFF77; palette[2].green = 0xEE00; palette[2].blue = 0x4444;
-	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
-	palette[4].red = 0xDDDD; palette[4].green = 0x4444; palette[4].blue = 0x0000;
-	// We want a lick of red, then orange quickly moving to a strong yellow
-	// But I think I have the scales wrong, I always have a significant band of dark orange.
-	// The alternative to increasing MINCOL:
-	#define palDelta -0.1
+	palette[1].red = 0xFF77; palette[1].green = 0xEE00; palette[1].blue = 0x4444;
+	palette[2].red = 0xFF44; palette[2].green = 0xAAAA; palette[2].blue = 0x0000;
+	palette[3].red = 0xDDDD; palette[3].green = 0x4444; palette[3].blue = 0x0000;
+	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
+	#define palDelta 0.22
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
