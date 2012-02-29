@@ -163,13 +163,14 @@ static void fsanalyzer_init(void) {
 	bar = gdk_pixmap_new(window->window,25, HEIGHT*3, gdk_rgb_get_visual()->depth);
 
 	//// Red and orange flame
-	#define stages 5
+	#define stages 4
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	palette[0].red = 0xF000; palette[0].green = 0xEEEE; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFFFF; palette[1].green = 0xFFFF; palette[1].blue = 0x0000;
+	palette[1].red = 0xFF77; palette[1].green = 0xEE77; palette[1].blue = 0x0000;
 	palette[2].red = 0xEEEE; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
-	palette[3].red = 0xEEEE; palette[3].green = 0x4444; palette[3].blue = 0x0000;
-	palette[4].red = 0x4444; palette[4].green = 0x0088; palette[4].blue = 0x0000;
+	palette[3].red = 0xEE77; palette[3].green = 0x4444; palette[3].blue = 0x0000;
+	// I am tending to meet the problem that I want my first colour band to be
+	// short, but if I make it short by increasing MINCOL, then we lose colours!
 
 	/*
 	//// Blue flame
@@ -502,8 +503,12 @@ static gint draw_func(gpointer data) {
 			heatHere = heatHere*(1.0-GAIN) + GAIN*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
 		// CONSIDER: Occasionally (with strong contrast colours like blue and cyan) you can actually see
 		// that the bar_heights[] have flat tops over i=n..n+2.  We could fix this by interpolating like we did with y.
-		#define MINCOL (HEIGHT/3)
+		// /3 is dangerous - on very fat spectra, we run out of colours beyond white!
+		// Test with this file: ______Dialect_Live_Stream.mp3
+		// In fact that even breaks HEIGHT/16 at one point !
+		// #define MINCOL (HEIGHT/3)
 		// #define MINCOL (HEIGHT/4)
+		#define MINCOL (HEIGHT/8)
 		// #define MINCOL (HEIGHT/12)
 		// #define MINCOL (HEIGHT*0.4)
 		// #define MINCOL (HEIGHT/7)
