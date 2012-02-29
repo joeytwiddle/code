@@ -151,7 +151,7 @@
 //// But our implementation created many vertical lines.
 // #define VELOCITY
 //// VELOCITY2 is a little better, but still I think it needs some horizontal smoothing.
-#define VELOCITY2
+// #define VELOCITY2
 //// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
 //// But I think it should work positively - it highlights the frequencies which have just entered the audio.
 //// Maybe heatHere could act negatively.
@@ -747,7 +747,7 @@ static gint draw_func(gpointer data) {
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
 		#define LOOKAHEAD 1
-		#define GAIN 0.05
+		#define GAIN 0.1
 		//// GAIN might be better lowered if VELOCITY2 is enabled.
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
@@ -770,7 +770,8 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*1.2 /*MINCOL*/ + heatHere*EXPLOSION*1.2;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*1.0 /*MINCOL*/ + heatHere*EXPLOSION*1.0;
+		// If we tweak the coefficients here, we might want to tweak GAIN also.
 		#ifdef VELOCITY
 			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
 		#endif
