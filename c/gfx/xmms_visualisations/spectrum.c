@@ -522,8 +522,8 @@ static void fsanalyzer_init(void) {
 	palette[0].red = 0xFFFF; palette[0].green = 0xFF88; palette[0].blue = 0xDDDD;
 	palette[1].red = 0xFFFF; palette[1].green = 0xEE88; palette[1].blue = 0x8800;
 	palette[2].red = 0xFF77; palette[2].green = 0xDD00; palette[2].blue = 0x4444;
-	palette[3].red = 0xFF44; palette[3].green = 0x9999; palette[3].blue = 0x0000;
-	palette[4].red = 0xBBBB; palette[4].green = 0x3333; palette[4].blue = 0x0000;
+	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
+	palette[4].red = 0xCCCC; palette[4].green = 0x4444; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
 	#define palDelta 0.18
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
