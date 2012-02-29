@@ -110,7 +110,11 @@ static void fsanalyzer_init(void) {
 	window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_title(GTK_WINDOW(window), _("Spectrum Analyzer"));
 	gtk_window_set_policy(GTK_WINDOW(window), FALSE, FALSE, FALSE);
+	// NEW! Joey's stuff:
+	gtk_window_set_resizable(GTK_WINDOW(window), TRUE);
+	//
 	gtk_widget_realize(window);
+
 	bg_pixmap = gdk_pixmap_create_from_xpm_d(window->window,NULL,NULL,logo_xpm);
 	gdk_window_set_back_pixmap(window->window,bg_pixmap,0);
 	g_signal_connect(G_OBJECT(window), "destroy", G_CALLBACK(fsanalyzer_destroy_cb),NULL);
@@ -124,6 +128,8 @@ static void fsanalyzer_init(void) {
 	color.red = 0x0000;
 	color.green = 0x0000;
 	color.blue = 0x0000;
+	color.red = 0xFFFF/3;
+	color.blue = 0xFFFF/3; // TODO: This should only be for TESTING!
 	gdk_color_alloc(gdk_colormap_get_system(),&color);
 	gdk_gc_set_foreground(gc,&color);
 	// for(i = 0; i < HEIGHT; i++) {
@@ -300,9 +306,17 @@ static gint draw_func(gpointer data) {
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, HEIGHT);
 
 	// local = HEIGHT/4;
-	local = bar_heights[0];
+	// local = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
+	local = (bar_heights[0] + bar_heights[WIDTH/4] + bar_heights[WIDTH/2] + bar_heights[WIDTH*3/4]) / 4;
+	// local = 0;
+	// local = HEIGHT/16; // When using true local mean method
 	lasty = HEIGHT-1;
 	for(i = 0; i < WINWIDTH; i++) {
+
+		// Black vertical stripes:
+		// if ((i%8) == 0)
+			// continue;
+
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, 1+bar_heights[XSCALE(i)]/4, i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
@@ -326,12 +340,30 @@ static gint draw_func(gpointer data) {
 			cy = max(1,HEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
 		*/
 
-		// local = local*0.95 + 0.05*(float)bar_heights[XSCALE(i)];
-		//// Attempt at was failing miserably.
-		//// Oh dear it was because i had not been not ()ed in XSCALE :f
+		// This is a cheap way to approximate the local mean, but it produces good results (localised and spread):
 		#define LOOKAHEAD 8
 		if (i+LOOKAHEAD<WINWIDTH)
 			local = local*0.96 + 0.04*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
+
+		/*
+		// This is a more accurate way to calculate the local mean, but the results are not so good visually!
+		// BUG: Sometimes rising spikes were getting their tops clipped by some rising curve.  Maybe cy was < HEIGHT ?
+		#define LOOKAHEAD 64
+		//// Doing them independently causes fadeouts at the edges.  Maybe a good thing, making the outer flames cooler.
+		if (i+LOOKAHEAD<WINWIDTH)
+			local += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1);
+		if (i-LOOKAHEAD>=0)
+			local -= (float)bar_heights[XSCALE(i-LOOKAHEAD)] / (LOOKAHEAD*2+1);
+		//// Doing them together is more correct:
+		// if (i+LOOKAHEAD<WINWIDTH && i-LOOKAHEAD>=0) {
+			// local += (float)bar_heights[XSCALE(i+LOOKAHEAD)] / (LOOKAHEAD*2+1);
+			// local -= (float)bar_heights[XSCALE(i-LOOKAHEAD)] / (LOOKAHEAD*2+1);
+		// }
+		//// VERY gently, move the global mean towards current state:
+		//// Without this, our average average it dependent on the initial value of local.
+		if (i+LOOKAHEAD<WINWIDTH)
+			local = local*0.999 + 0.001*(float)bar_heights[XSCALE(i+LOOKAHEAD)];
+		*/
 
 		// cy = (cy + local/2) / 2;
 
@@ -377,8 +409,15 @@ static gint draw_func(gpointer data) {
 
 		// if (cy > y)
 			// cy = y;
-		if (cy < 1)
+		if (cy < 1) {
+			fprintf("Warning: cy = %i < 1 !\n",&cy);
 			cy = 1;
+		}
+
+		if (cy < HEIGHT) {
+			fprintf("Warning: cy = %i < HEIGHT !\n",&cy);
+			// cy = HEIGHT+1;
+		}
 
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
 
