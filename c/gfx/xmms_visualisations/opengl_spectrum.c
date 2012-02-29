@@ -308,14 +308,14 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 
 	// If we imagine the spectrum going right across the screen, and history going in to the picture.
 
-	// Flat (horizontal)
+	// Flat (horizontal) facing up/down
 	// glColor3f(red,green,blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
 	setHSL(hue, sat, lightness);
 	draw_rectangle(x_offset, height, z_offset, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset,      0, z_offset, x_offset + width,      0, z_offset + length);
 
-	// In width plane (across spectrum)
+	// In width plane (across spectrum), facing front/back
 	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
 	setHSL(hue, sat*0.8, lightness*0.8);
@@ -324,7 +324,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	/*
 	*/
 
-	// In depth plane (into history)
+	// In depth plane (into history) facing left/right
 	// glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
 	// glColor3f(red,green,blue);
@@ -397,7 +397,7 @@ static void draw_bars(void)
 			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
 
-			peakEnergy[x] *= 0.25;
+			peakEnergy[x] *= 0.4;
 			// GLfloat energyHere = heights[y][x];
 			GLfloat energyHere = heights[y][x] + 0.5*fmin(0,heights[y][x] - heights[y+1][x]);
 			energyHere *= compensateForCurve;
@@ -405,22 +405,26 @@ static void draw_bars(void)
 				peakEnergy[x] = energyHere;
 			}
 
-			peakHeight[x] *= 0.30;
+			peakHeight[x] *= 0.25;
 			if (heights[y][x] > peakHeight[x]) {
 				peakHeight[x] = heights[y][x];
 			}
 
+			// #define barHeight heights[y][x]
+			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
+			#define barHeight peakHeight[x]
+
 			// whiteness = fmax(energyHere, breakingEdge);
 			// whiteness = peakEnergy[x];
 			// whiteness = 1.3 * peakEnergy[x] * fadeOff;
-			//// Fade out fast from driving edge (white to color):
-			whiteness = 1.5 * peakEnergy[x] * fadeOff;
 			//// Colored amplitudes fade to white when they drop:
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
+			//// Fade out fast from driving edge (white to color):
+			whiteness = 1.2 * peakEnergy[x] * breakingEdge * compensateForCurve;
 
 			// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
-			whiteness += 1.5 * peakHeight[x] * breakingEdge;
+			whiteness += 1.2 * peakHeight[x] * fadeOff;
 
 			//// Free leading glow
 			// whiteness += 0.3 * pow(breakingEdge,16);
@@ -433,10 +437,6 @@ static void draw_bars(void)
 			// whiteness += 0.02;
 
 			// whiteness = fmin(1.0,fmax(0.0,whiteness));
-
-			// #define barHeight heights[y][x]
-			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
-			#define barHeight peakHeight[x]
 
 			// default spacing in both directions is 0.2 before scaling
 			// original widths and lengths were 0.1 before scaling
@@ -479,7 +479,8 @@ static void draw_bars(void)
 				// Since neither of the above will fire, we just plot simple bars
 				// We can't use longSide for both 4 and 8 because they are identical.
 				if (modeCycle%12 == 4) {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+					// Plot overlapping bars.  x&1 is a chequered offset to avoid flickering of intersecting surfaces.
+					draw_bar(x_offset +(x+y&1)*0.0001, z_offset +(x+y&1)*0.001 + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, 0.25*SCALE_width, 0.25*SCALE_length);
 				} else {
 					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
 				}
