@@ -38,7 +38,7 @@
 #define XSCALE(i) (int)((float)WIDTH*dropEnds(doLog((float)i/(float)WINWIDTH)))
 #define doLog(x) (x)
 // #define doLog(x) pow(x,1.2)
-#define dropEnds(f) (f*0.8)
+#define dropEnds(f) (f*0.7)
 // #define dropEnds(f) (f)
 // #define dropEnds(f) (0.2+0.6*(float)(f))
 
@@ -122,7 +122,7 @@ static void fsanalyzer_init(void) {
 			//// do 1st step of white -> yellow
 			color.red = 0xFFFF;
 			color.green = 0xFFFF;
-			color.blue = 0xFFFF; // - thruinner/2;
+			color.blue = 0xFFFF - thruinner/2;
 		} else if (thruouter<0.5) {
 			//// blue -> white -> yellow -> red
 			// color.red = thruinner;
@@ -143,7 +143,7 @@ static void fsanalyzer_init(void) {
 			//// do 2nd step of white -> yellow
 			color.red = 0xFFFF;
 			color.green = 0xFFFF;
-			color.blue = 0xFFFF - thruinner;
+			color.blue = 0xFFFF/2 - thruinner/2;
 		} else if (thruouter<0.75) {
 			// color.red = 0xFFFF;
 			// color.green = 0xFFFF;
@@ -167,7 +167,7 @@ static void fsanalyzer_init(void) {
 			//
 			//
 			//
-			color.red = 0xFFFF - thruinner/2;
+			color.red = 0xFFFF - thruinner*0.75; // go down to 25% red, not black
 			color.green = 0;
 			color.blue = 0;
 		}
@@ -255,6 +255,7 @@ static int min(int a,int b) {
 
 static gint draw_func(gpointer data) {
 	gint i;
+	float local;
 
 	/* FIXME: should allow spare redrawing like the vis. in the main window */
 	if(!window) {
@@ -265,6 +266,7 @@ static gint draw_func(gpointer data) {
 	GDK_THREADS_ENTER();
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, HEIGHT);
 
+	local = 0;
 	for(i = 0; i < WINWIDTH; i++) {
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, HEIGHT-1-bar_heights[XSCALE(i)], i, HEIGHT-1-bar_heights[XSCALE(i)], 1, bar_heights[XSCALE(i)]);
@@ -276,9 +278,16 @@ static gint draw_func(gpointer data) {
 		// gdk_draw_pixmap(draw_pixmap, gc, bar, 0, max(1,HEIGHT*0.4-0.2*bar_heights[XSCALE(i)]), i, max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]), 1, min(HEIGHT-1,bar_heights[XSCALE(i)]));
 		int y,cy;
 		y = max(0.0,HEIGHT-1-bar_heights[XSCALE(i)]);
-		cy = max(1,HEIGHT*0.8 - 1.2*bar_heights[XSCALE(i)]);
-		if (bar_heights[XSCALE(i)]<48)
+		if (bar_heights[XSCALE(i)]<HEIGHT/2)
 			cy = HEIGHT*0.35 + 0.15*bar_heights[XSCALE(i)];
+		else
+			cy = max(1,HEIGHT*1.0 - 1.2*bar_heights[XSCALE(i)]);
+		/* cy = local/2;
+		if (cy<0)
+			cy=0;
+		if (cy>HEIGHT*0.75)
+			cy=HEIGHT*0.75;
+		local = local*0.9 + 0.1*(float)bar_heights[XSCALE(i)]; */
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, HEIGHT-y-1);
 	}
 
