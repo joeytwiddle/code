@@ -52,21 +52,24 @@
 
 /* NUM_BANDS should be either 16 or 32.  We do have a slow hack for larger values. */
 // #define NUM_BANDS 16
-#define NUM_BANDS 32
+// #define NUM_BANDS 32
 // #define NUM_BANDS 48
-// #define NUM_BANDS 64
+#define NUM_BANDS 64
 // #define NUM_BANDS 128
 
 /* The original LENGTH was 16 */
 // #define LENGTH 64
 // #define LENGTH 200
-#define LENGTH 160
-// #define LENGTH 120
+// #define LENGTH 160
+#define LENGTH 120
+// #define LENGTH 80
+// BUG TOOD: Any higher than 120 and we seem to suddenly lose the far ones anyway!
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
 #else
 	// After 32 we give up normalising the size, and we let the trail lengthen rather than compress:
+	// Increase the number to make things move faster!
 	#define SCALEBACK (48.0/LENGTH)
 #endif
 
@@ -481,11 +484,11 @@ static void draw_bars(void)
 
 #else
 
-			localAverage[x] *= 0.95;
-			localAverage[x] += 0.05 * peakHeight[x];
+			localAverage[x] *= 0.99;
+			localAverage[x] += 0.01 * peakHeight[x];
 
-			localNoise[x] *= 0.95;
-			localNoise[x] += 0.05 * pow(heights[y][x] - heights[y+1][x],2);
+			localNoise[x] *= 0.99;
+			localNoise[x] += 0.01 * pow(heights[y][x] - heights[y+1][x],2);
 
 			// whiteness = fmax(energyHere, breakingEdge);
 			// whiteness = peakEnergy[x];
@@ -498,6 +501,9 @@ static void draw_bars(void)
 			/* whiteness += 0.0001 - 0.1 * (float)y/(float)LENGTH;
 			if (whiteness<0)
 				whiteness=0; */
+
+			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
+			whiteness /= 2.5;
 
 			//// Reduce energy of all bars in a busy channel
 			whiteness -= 0.5 * localAverage[x]; // * y/LENGTH;
@@ -512,11 +518,9 @@ static void draw_bars(void)
 
 			whiteness *= fadeOff;
 
-			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
-			whiteness /= 2.5;
-#ifdef PREVENT_HIDING_GLOW
-			whiteness *= fadeOff;
-#endif
+			#ifdef PREVENT_HIDING_GLOW
+				whiteness *= fadeOff;
+			#endif
 
 			//// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
@@ -600,8 +604,20 @@ static void draw_bars(void)
 
 			if ((modeCycle/12)%2 == 1) {
 				shortSide *= scaleBars;
+			}
+			if ((modeCycle/12/2)%2 == 1) {
 				longSide  *= scaleBars;
 			}
+
+			/*
+			// Intelligent
+			if ((modeCycle/12)%2 == 1) {
+				shortSide *= scaleBars;
+				if (y == 0) {
+					longSide  *= scaleBars;
+				}
+			}
+			*/
 
 			// Nicely spaced lines and rows of dots:
 			if (modeCycle%2 > 0)
@@ -843,11 +859,13 @@ void *draw_thread_func(void *arg)
 			if(z_angle >= 360.0)
 				z_angle -= 360.0;
 
-#define SPEED_DAMPENING 0.99
+// #define SPEED_DAMPENING 0.99
 
+#ifdef SPEED_DAMPENING
 			x_speed *= SPEED_DAMPENING;
 			y_speed *= SPEED_DAMPENING;
 			z_speed *= SPEED_DAMPENING;
+#endif
 
 			draw_bars();
 		}
@@ -892,10 +910,9 @@ static void start_display(void)
 	}
 	scale = 1.0 / log(256.0);
 
-	x_speed = 0.4;
-	y_speed = -0.2;  // 0.5
+	x_speed = 0.0; y_speed = 0.2; x_angle = 15.0;   // x=up/down, y=right/left
+	// x_speed = 0.4; y_speed = -0.2; x_angle = -15.0;  // 0.5   // right/left
 	z_speed = 0.0;
-	x_angle = -15.0;
 	// y_angle = 55.0;
 	y_angle = -15.0;
 	z_angle = 0.0;
@@ -968,7 +985,7 @@ static void oglspectrum_render_freq(gint16 data[2][256])
 #if NUM_BANDS <= 16
 	gint xscale[] = {0, 1, 2, 3, 5, 7, 10, 14, 20, 28, 40, 54, 74, 101, 137, 187, 255};
 #elif NUM_BANDS <= 32
-	gint xscale[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 20, 24, 28, 34, 40, 47, 54, 64, 74, 87, 101, 119, 137, 162, 187, 221, 255};
+	gint xscale[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 17, 20, 24, 28, 34, 40, 47, 54, 64, 74, 87, 101, 119, 137, 162, 187, 221, 255};
 #else
 	// #error We have not defined xscale for >32 bands!
 	gint xscale[NUM_BANDS];
