@@ -449,12 +449,12 @@ static void fsanalyzer_init(void) {
 	palette[0].red = 0xFF77; palette[0].green = 0xFF77; palette[0].blue = 0xCCCC;
 	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
 	palette[2].red = 0xFF77; palette[2].green = 0xAAAA; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x3333; palette[3].blue = 0x0000;
+	palette[3].red = 0xDDDD; palette[3].green = 0x0000; palette[3].blue = 0x0000;
 	palette[4].red = 0x8888; palette[4].green = 0x0888; palette[4].blue = 0x0000;
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.4
+	#define palDelta 0.42
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
