@@ -178,16 +178,16 @@ static void fsanalyzer_init(void) {
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
-	palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFF44;
-	palette[1].red = 0xFF44; palette[1].green = 0xEEEE; palette[1].blue = 0x5555;
-	palette[2].red = 0xEEEE; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
+	palette[0].red = 0xFF77; palette[0].green = 0xFF77; palette[0].blue = 0xCCCC;
+	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
+	palette[2].red = 0xFF77; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
 	palette[3].red = 0xCCCC; palette[3].green = 0x6666; palette[3].blue = 0x0000;
 	palette[4].red = 0x2222; palette[4].green = 0x0088; palette[4].blue = 0x0000;
 	// The alternative to increasing MINCOL:
 	#define palDelta 0.3
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
-	#define palScale 0.8
+	#define palScale 0.9
 
 	/*
 	//// Blue flame
@@ -531,10 +531,14 @@ static gint draw_func(gpointer data) {
 		// #define GAIN 0.01
 		// #define LOOKAHEAD 10
 		// #define GAIN 0.02
-		#define LOOKAHEAD 8
-		#define GAIN 0.03
+		// #define LOOKAHEAD 8
+		// #define GAIN 0.03
+		// #define LOOKAHEAD 8
+		// #define GAIN 0.04
+		#define LOOKAHEAD 7
+		#define GAIN 0.05
 		// #define LOOKAHEAD 6
-		// #define GAIN 0.06
+		// #define GAIN 0.05
 		// #define LOOKAHEAD 5
 		// #define GAIN 0.07
 		// #define LOOKAHEAD 1
