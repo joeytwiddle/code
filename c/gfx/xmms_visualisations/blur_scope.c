@@ -132,6 +132,9 @@ void bscope_read_config(void)
 #define blurTao2 0.9
 #define BOTTOM_OUT 64
 
+// You may want to use this for older machines, to save some CPU cycles:
+// #define SKIP_BLURRING
+
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 {
@@ -144,58 +147,69 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 	i = bpl * h;
 	while(i--)
 	{
+
+#ifdef SKIP_BLURRING
+		sum = *iptr;
+#else
 		// Blurring:
 		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;  // Simple 4-neighbour blur
 		// #define BLUR_DIST 3
 		// sum = (iptr[-BLUR_DIST*bpl] + iptr[-BLUR_DIST] + iptr[BLUR_DIST] + iptr[BLUR_DIST*bpl]) >> 2;  // Simple 4-neighbour blur
 		// sum = iptr[0]; // Do not blur
 
-		// if (sum > 0)
-			// sum = sum * 0.90;
-		/*
-		if(sum > DECAY_RATE)
-			sum -= DECAY_RATE;
-		else
-			sum = 0;
-		*/
-// #define max(a,b) (a>b?a:b)
-		// sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
+		if (sum > 0) { // This check saves us a few CPU cycles
 
-		// Retain self with blurTao:
-		// if (iptr[0] > sum)
-		// if (sum > iptr[0])
-		// { } // sum = sum*blurTao + iptr[0]*(1.0-blurTao);
-		// else
-			// sum = iptr[0];
+			// if (sum > 0)
+				// sum = sum * 0.90;
+			/*
+			if(sum > DECAY_RATE)
+				sum -= DECAY_RATE;
+			else
+				sum = 0;
+			*/
+	// #define max(a,b) (a>b?a:b)
+			// sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
 
-		sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+			// Retain self with blurTao:
+			// if (iptr[0] > sum)
+			// if (sum > iptr[0])
+			// { } // sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+			// else
+				// sum = iptr[0];
 
-		if (i < bpl) {
-			sum = sum / 4; // Fix for non-decaying bottom line
-			if (sum > 0)
-				sum -= 1;
+			sum = sum*blurTao + (*iptr)*(1.0-blurTao);
+
+			if (i < bpl) {
+				sum = sum / 4; // Fix for non-decaying bottom line
+				if (sum > 0)
+					sum -= 1;
+			}
+
+			/*
+			// I made the intensities decay non-linearly.  This could alternatively
+			// be achieved by using a linear decay over a non-linear cmap.
+			if (sum <= 0)
+				sum = 0;
+			// else if (sum > 64)
+				// sum = sum - 8; // Fast initial decay
+			// else
+				// sum = sum - 5; // Slow overall decay
+			else if (sum > DECAY_RATE)
+				sum = sum - DECAY_RATE; // Slow overall decay
+			else
+				sum = 0;
+			*/
+#endif
+
+			if (sum > BOTTOM_OUT)
+				sum = sum * fadeRate;
+			else
+				if (sum > 0)
+					sum--;
+
+#ifndef SKIP_BLURRING
 		}
-
-		/*
-		// I made the intensities decay non-linearly.  This could alternatively
-		// be achieved by using a linear decay over a non-linear cmap.
-		if (sum <= 0)
-			sum = 0;
-		// else if (sum > 64)
-			// sum = sum - 8; // Fast initial decay
-		// else
-			// sum = sum - 5; // Slow overall decay
-		else if (sum > DECAY_RATE)
-			sum = sum - DECAY_RATE; // Slow overall decay
-		else
-			sum = 0;
-		*/
-
-		if (sum > BOTTOM_OUT)
-			sum = sum * fadeRate;
-		else
-			if (sum > 0)
-				sum--;
+#endif
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
