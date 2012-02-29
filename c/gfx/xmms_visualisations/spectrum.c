@@ -45,7 +45,7 @@
 
 //// I dropped this to get more raw data, and it was a bit one-sided.
 //// To compensate for its removal, I increased tau and reduced spikiness (previously 3 and 0.5).
-#define DO_DIFFUSION
+// #define DO_DIFFUSION
 
 #define DEBUG(X,Y); 
 // TODO: #define DEBUG(X,Y); fprintf(stdout,X,Y);
@@ -235,7 +235,7 @@
 
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
-#define dif 8
+#define dif 25
 // In other words, the two neighbouring bars count for 1, and the current bar counts for (dif-2).
 // Used to be 4 (or 3?)
 // TODO: it is asymmetrical!  We copy from the right bar before his update, but from the left bar after his update.
@@ -514,7 +514,7 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 1.1
+	#define palScale 0.9
 	//// Red and orange flame
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
@@ -523,9 +523,9 @@ static void fsanalyzer_init(void) {
 	palette[1].red = 0xFFFF; palette[1].green = 0xEE88; palette[1].blue = 0x8800;
 	palette[2].red = 0xFF77; palette[2].green = 0xDD00; palette[2].blue = 0x4444;
 	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
-	palette[4].red = 0xDDDD; palette[4].green = 0x4444; palette[4].blue = 0x0000;
+	palette[4].red = 0xBBBB; palette[4].green = 0x4444; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
-	#define palDelta 0.17
+	#define palDelta 0.12
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -811,7 +811,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.3 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
