@@ -52,11 +52,11 @@
 
 /* NUM_BANDS should be either 16 or 32.  We do have a slow hack for larger values. */
 // #define NUM_BANDS 16
-#define NUM_BANDS 32
+// #define NUM_BANDS 32
 // #define NUM_BANDS 48
 // #define NUM_BANDS 64
 // #define NUM_BANDS 128
-// #define NUM_BANDS 256
+#define NUM_BANDS 256
 
 /* The original LENGTH was 16 */
 #define LENGTH 64
@@ -77,9 +77,12 @@
 #define WIDTH NUM_BANDS
 
 #define PREVENT_HIDING_GLOW
-#define ANGLED_SURFACES_IN_X
+// #define ANGLED_SURFACES_IN_X
 // #define LIGHTER_VERSION
 // #define CHECK_FOR_KICK
+#define SHOW_PEAKS_ONLY
+#define BUILD_UP_PEAK_ENERGY
+// #define HIDE_TROUGHS
 
 #ifdef LIGHTER_VERSION
 	// For slower PCs with small screens.
@@ -147,6 +150,18 @@ VisPlugin oglspectrum_vp =
 	NULL, /* render_pcm */
 	oglspectrum_render_freq  /* render_freq */
 };
+
+static void setup_camera(void)
+{
+	// x_speed = 0.4; y_speed = -0.2; x_angle = -15.0;  // 0.5   // right/left
+	// x_speed = 0.0; y_speed = 0.1; x_angle = 30.0;   // x=up/down, y=right/left
+	x_speed = 0.0; y_speed = 0.0; y_angle = 35.0; x_angle = 30.0;   // x=up/down, y=right/left
+	z_speed = 0.0;
+	// y_angle = 55.0;
+	// y_angle = -15.0;
+	z_angle = 0.0;
+	modeCycle = 6;
+}
 
 static Window create_window(int width, int height)
 {
@@ -400,6 +415,9 @@ static void draw_bars(void)
 	GLfloat localNoise[WIDTH];
 	GLfloat lastYwhiteness[WIDTH];
 
+	#define compensateForCurveX(x) (0.6+0.4*(float)x/(float)WIDTH)
+	#define compensateForCurve compensateForCurveX(x)
+
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -439,9 +457,17 @@ static void draw_bars(void)
 		// fadeOff = fadeOff * fadeOff;
 		fadeOff = pow(fadeOff,1.5);
 
-		GLfloat lastXheight = 0;
-		GLfloat lastXYheight = 0;
-		GLfloat lastXwhiteness = 0;
+		#ifdef ANGLED_SURFACES_IN_X
+			GLfloat lastXheight = 0;
+			GLfloat lastXYheight = 0;
+			GLfloat lastXwhiteness = 0;
+		#else
+			// lastXYheight and lastYheight create angled surfaces across the spectrum
+			// If we want the old behaviour (angled surfaces only into history)
+			// then we can override them with the old values:
+			#define lastXheight barHeight
+			#define lastXYheight lastYheight
+		#endif
 
 		for(x = 0; x < WIDTH; x++)
 		{
@@ -453,8 +479,6 @@ static void draw_bars(void)
 
 			x_offset = -1.6 + 3.2*x/WIDTH;
 
-			#define compensateForCurve (0.6+0.4*(float)x/(float)WIDTH)
-
 			// #define barHeight heights[y][x]
 			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
 			// #define barHeight peakHeight[x]
@@ -465,14 +489,6 @@ static void draw_bars(void)
 
 			GLfloat lastYheight = barHeight; // evaluate it now, before we update peakHeight for the current cell
 
-			// lastXYheight and lastYheight create angled surfaces across the spectrum
-			// If we want the old behaviour (angled surfaces only into history)
-			// then we can override them with the old values:
-			#ifndef ANGLED_SURFACES_IN_X
-				#define lastXheight barHeight
-				#define lastXYheight lastYheight
-			#endif
-
 			// GLfloat energySlowFade = 2.0 * fmin(heights[y][x]-0.1,0.5) * r_base;
 			// GLfloat energySlowFade = compensateForCurve*heights[y][x] * r_base;
 			// breakingEdge = breakingEdge * energySlowFade * 4.0;
@@ -481,12 +497,16 @@ static void draw_bars(void)
 
 // #define energyDampening 0.5
 // #define heightDampening 0.25
-// #define energyDampening 0.5
-// #define heightDampening 0.5
+			// TODO: This || is probably invalid!
+#ifdef SHOW_PEAKS_ONLY || HIDE_TROUGHS
+#define energyDampening 0.5
+#define heightDampening 0.7
+#else
 // #define energyDampening 0.5
 // #define heightDampening 0.15
 #define energyDampening 0.00
 #define heightDampening 0.00
+#endif
 
 			peakEnergy[x] *= energyDampening;
 			// GLfloat energyHere = 1.5 * heights[y][x];
@@ -524,8 +544,8 @@ static void draw_bars(void)
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
 			//// Power fade the energy, so the difference between high and low appears stronger in the distance.
-			// whiteness = 5.0 * peakEnergy[x];
-			whiteness = 5.0 * peakHeight[x];
+			whiteness = 5.0 * peakEnergy[x];
+			// whiteness = 5.0 * peakHeight[x];
 			/* whiteness += 0.0001 - 0.1 * (float)y/(float)LENGTH;
 			if (whiteness<0)
 				whiteness=0; */
@@ -577,10 +597,12 @@ static void draw_bars(void)
 			}
 
 			#define FLATTEN_TOPS_IN_X ((modeCycle/12/6) & 1)
+#ifdef ANGLED_SURFACES_IN_X
 			if (FLATTEN_TOPS_IN_X) {
 				lastXheight = barHeight;
 				lastXYheight = lastYheight;
 			}
+#endif
 
 // DONE: For trailing edge issue: store last whiteness and use it if it exceeds current whiteness
 #ifdef PREVENT_HIDING_GLOW
@@ -598,9 +620,9 @@ static void draw_bars(void)
 			////// Use peak (symmetrical - that's what you wanted right?)
 			useWhiteness = ( lastYwhiteness[x] > whiteness ? lastYwhiteness[x] : whiteness );
 			if (!FLATTEN_TOPS_IN_X && !(modeCycle%4 == 0)) {
-				// #ifdef ANGLED_SURFACES_IN_X
+				#ifdef ANGLED_SURFACES_IN_X
 					useWhiteness = ( lastXwhiteness > useWhiteness ? lastXwhiteness : useWhiteness );   // x-based
-				// #endif
+				#endif
 			} else {
 				//// Re-add texture (darkens lead but symmetrical)
 				// useWhiteness = 0.5 * useWhiteness + 0.25*whiteness + 0.25*lastYwhiteness[x];
@@ -715,14 +737,18 @@ static void draw_bars(void)
 				#undef lastXheight
 				#undef lastXYheight
 			#endif
-			lastXheight = barHeight;
-			lastXYheight = lastYheight;
+			#ifdef ANGLED_SURFACES_IN_X
+				lastXheight = barHeight;
+				lastXYheight = lastYheight;
+			#endif
 			#undef barHeight
 
 			#ifdef whiteness
 				#undef whiteness
 			#endif
-			lastXwhiteness = whiteness;
+			#ifdef ANGLED_SURFACES_IN_X
+				lastXwhiteness = whiteness;
+			#endif
 			lastYwhiteness[x] = whiteness;
 
 		}
@@ -893,9 +919,7 @@ void *draw_thread_func(void *arg)
 					z_speed = 0.0;
 					break;					
 				case XK_equal:
-					x_angle = 20.0;
-					y_angle = -15.0;
-					z_angle = 0.0;
+					setup_camera();
 					break;
 				case XK_space:
 					modeCycle++;
@@ -987,13 +1011,7 @@ static void start_display(void)
 	}
 	scale = 1.0 / log(256.0);
 
-	x_speed = 0.0; y_speed = 0.1; x_angle = 20.0;   // x=up/down, y=right/left
-	// x_speed = 0.4; y_speed = -0.2; x_angle = -15.0;  // 0.5   // right/left
-	z_speed = 0.0;
-	// y_angle = 55.0;
-	y_angle = -15.0;
-	z_angle = 0.0;
-	modeCycle = 4;
+	setup_camera();
 
 	going = TRUE;
 	pthread_create(&draw_thread, NULL, draw_thread_func, NULL);
@@ -1072,14 +1090,17 @@ static void oglspectrum_render_freq(gint16 data[2][256])
 	}
 #endif
 
-	for(y = LENGTH-1; y > 0; y--)
-	{
-		for(i = 0; i < WIDTH; i++)
+	// It occurs to me, if it was a dynamically allocated array, we could just
+	// switch the rows, and not every cell in their contents!
+	for(y = LENGTH-1; y > 0; y--) { for(i = 0; i < WIDTH; i++)
 		{
 			heights[y][i] = heights[y - 1][i];
 		}
 	}
-	
+	// But cell access is probably a lot faster in a static array, so gains in
+	// switching rows would have to compete against losses for cell access,
+	// which is probably larger and likely to grow in parallel.
+
 	for(i = 0; i < NUM_BANDS; i++)
 	{
 		// Find the max data[0][c] in the range, store in y.
@@ -1099,5 +1120,55 @@ static void oglspectrum_render_freq(gint16 data[2][256])
    
 		
 	}
+
+// #define CFC compensateForCurveX
+#define CFC(x) 1.0
+	// BUG: Does not look right.
+	//      Previously long streams appear too short.
+	//      (Admittedly perhaps because they have been silenced by a peaking neighbour.)
+#ifdef SHOW_PEAKS_ONLY
+	int x;
+	if (modeCycle < 128) {
+		// Gah!  Since we are plotting *CFC, we must compare*CFC to be accurate.
+		// But this is too extreme.
+		for(x = 0; x < WIDTH-1; x++) {
+			if (CFC(x)*heights[0][x] < CFC(x+1)*heights[0][x+1]) {
+#ifdef BUILD_UP_PEAK_ENERGY
+				// Don't throw away the energy.  Put some of it into the final peak value.
+				heights[0][x+1] += heights[0][x]*0.5;
+				heights[0][x] *= 0.5;
+#else
+				heights[0][x] = 0;
+#endif
+			}
+		}
+		for(x = WIDTH-1; x >= 1; x--) {
+			if (CFC(x)*heights[0][x] < CFC(x-1)*heights[0][x-1]) {
+#ifdef BUILD_UP_PEAK_ENERGY
+				heights[0][x-1] += heights[0][x]*0.5;
+				heights[0][x] *= 0.5;
+#else
+				heights[0][x] = 0;
+#endif
+			}
+		}
+	}
+#endif
+
+#ifdef HIDE_TROUGHS
+	int x;
+	if (modeCycle < 128) {
+		// Gah!  Since we are plotting *CFC, we must compare*CFC to be accurate.
+		// But this is too extreme.
+		for(x = 1; x < WIDTH-1; x++) {
+			if ( CFC(x)*heights[0][x] < CFC(x+1)*heights[0][x+1]
+					&& CFC(x)*heights[0][x] < CFC(x-1)*heights[0][x-1]
+			) {
+				heights[0][x] = 0;
+			}
+		}
+	}
+#endif
+
 }
 
