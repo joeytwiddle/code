@@ -52,18 +52,18 @@
 
 /* NUM_BANDS should be either 16 or 32.  We do have a slow hack for larger values. */
 // #define NUM_BANDS 16
-// #define NUM_BANDS 32
-#define NUM_BANDS 48
+#define NUM_BANDS 32
+// #define NUM_BANDS 48
 // #define NUM_BANDS 64
 // #define NUM_BANDS 128
 // #define NUM_BANDS 256
 
 /* The original LENGTH was 16 */
-// #define LENGTH 64
+#define LENGTH 64
 // #define LENGTH 200
 // #define LENGTH 160
 // #define LENGTH 120
-#define LENGTH 80
+// #define LENGTH 80
 // BUG TOOD: Any higher than 120 and we seem to suddenly lose the far ones anyway!
 
 #if LENGTH < 32
@@ -71,7 +71,7 @@
 #else
 	// After 32 we give up normalising the size, and we let the trail lengthen rather than compress:
 	// Increase the number to make things move faster!
-	#define SCALEBACK (48.0/LENGTH)
+	#define SCALEBACK (40.0/LENGTH)
 #endif
 
 #define WIDTH NUM_BANDS
@@ -571,6 +571,17 @@ static void draw_bars(void)
 
 #endif
 
+			#define FLATTEN_TOPS_IN_Z ((modeCycle/12/6) & 2)
+			if (FLATTEN_TOPS_IN_Z) {
+				lastYheight = barHeight;
+			}
+
+			#define FLATTEN_TOPS_IN_X ((modeCycle/12/6) & 1)
+			if (FLATTEN_TOPS_IN_X) {
+				lastXheight = barHeight;
+				lastXYheight = lastYheight;
+			}
+
 // DONE: For trailing edge issue: store last whiteness and use it if it exceeds current whiteness
 #ifdef PREVENT_HIDING_GLOW
 
@@ -586,13 +597,16 @@ static void draw_bars(void)
 			// useWhiteness = 0.5 * lastYwhiteness[x] + 0.5*whiteness;
 			////// Use peak (symmetrical - that's what you wanted right?)
 			useWhiteness = ( lastYwhiteness[x] > whiteness ? lastYwhiteness[x] : whiteness );
-			#ifdef ANGLED_SURFACES_IN_X
-			useWhiteness = ( lastXwhiteness > useWhiteness ? lastXwhiteness : useWhiteness );   // x-based
-			#endif
-			//// Re-add texture (darkens lead but symmetrical)
-			// useWhiteness = 0.5 * useWhiteness + 0.25*whiteness + 0.25*lastYwhiteness[x];
-			//// Re-add texture - central glow, slightly darkened fadeoff.  Favourite!
-			// useWhiteness = 0.5 * useWhiteness + 0.5*whiteness;
+			if (!FLATTEN_TOPS_IN_X && !(modeCycle%4 == 0)) {
+				// #ifdef ANGLED_SURFACES_IN_X
+					useWhiteness = ( lastXwhiteness > useWhiteness ? lastXwhiteness : useWhiteness );   // x-based
+				// #endif
+			} else {
+				//// Re-add texture (darkens lead but symmetrical)
+				// useWhiteness = 0.5 * useWhiteness + 0.25*whiteness + 0.25*lastYwhiteness[x];
+				//// Re-add texture - central glow, slightly darkened fadeoff.  Favourite!
+				// useWhiteness = 0.5 * useWhiteness + 0.5*whiteness;
+			}
 
 	#define whiteness useWhiteness
 #else
@@ -603,17 +617,6 @@ static void draw_bars(void)
 
 				#define SCALE_width 16.0/WIDTH
 				#define SCALE_length SCALEBACK
-
-				// Flat surface in z-axis
-				if ((modeCycle/12/6) & 2) {
-					lastYheight = barHeight;
-				}
-
-				// Flat surface in x-axis
-				if ((modeCycle/12/6) & 1) {
-					lastXheight = barHeight;
-					lastXYheight = lastYheight;
-				}
 
 				GLfloat shortSide,longSide;
 				if (modeCycle%12 < 4) {
@@ -649,6 +652,7 @@ static void draw_bars(void)
 				}
 				*/
 
+				// TODO: If we are modifying bars in this way, we might want to modify centres also (at least in x axis)
 				if ((modeCycle/12)%6 == 1) {
 					shortSide *= scaleBars;
 				}
@@ -672,7 +676,7 @@ static void draw_bars(void)
 					longSide  *= scaleBars;
 				}
 
-				// Nicely spaced lines and rows of dots:
+				// Nicely spaced lines and rows of bars in both axes:
 				if (modeCycle%2 > 0)
 					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastYheight, lastXheight, lastXYheight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
@@ -689,6 +693,7 @@ static void draw_bars(void)
 				*/
 
 				if (modeCycle%4 == 0) {
+					// Basic evenly-proportioned bars
 					draw_bar(x_offset, z_offset, barHeight, barHeight, barHeight, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
 					/*
 					// Since neither of the above will fire, we just plot simple bars
@@ -714,7 +719,9 @@ static void draw_bars(void)
 			lastXYheight = lastYheight;
 			#undef barHeight
 
-			#undef whiteness
+			#ifdef whiteness
+				#undef whiteness
+			#endif
 			lastXwhiteness = whiteness;
 			lastYwhiteness[x] = whiteness;
 
@@ -893,14 +900,16 @@ void *draw_thread_func(void *arg)
 				case XK_space:
 					modeCycle++;
 					break;
-				}
-				// Fail on XK_shift and XK_Shift
-				/*
-				case XK_shift:
-					modeCycle++;
+				case XK_BackSpace:
+					modeCycle--;
+					break;
+				case XK_Shift_R:
+					modeCycle += 4;
+					break;
+				case XK_Shift_L:
+					modeCycle -= 4;
 					break;
 				}
-				*/
 
 				break;
 			case ClientMessage:
