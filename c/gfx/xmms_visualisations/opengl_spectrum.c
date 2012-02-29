@@ -58,9 +58,10 @@
 // #define NUM_BANDS 128
 
 /* The original LENGTH was 16 */
+#define LENGTH 64
 // #define LENGTH 200
-#define LENGTH 120
 // #define LENGTH 160
+// #define LENGTH 120
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
@@ -72,6 +73,20 @@
 #define WIDTH NUM_BANDS
 
 // #define CHECK_FOR_KICK
+
+#define LIGHTER
+
+#ifdef LIGHTER
+	#undef LENGTH
+	#define LENGTH 48
+	// #define WINWIDTH 320
+	// #define WINHEIGHT 180
+	#define WINWIDTH 560
+	#define WINHEIGHT 320
+#else
+	#define WINWIDTH 640
+	#define WINHEIGHT 360
+#endif
 
 OGLSpectrumConfig oglspectrum_cfg;
 
@@ -461,6 +476,7 @@ static void draw_bars(void)
 				whiteness=0; */
 			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
 			whiteness /= 2.5;
+
 			whiteness *= fadeOff * fadeOff;
 
 			//// Subjective leading glow
@@ -489,6 +505,10 @@ static void draw_bars(void)
 
 			// default spacing in both directions is 0.2 before scaling
 			// original widths and lengths were 0.1 before scaling
+
+			if (barHeight <= 0.01 && whiteness <= 0.01) {
+				continue;
+			}
 
 #define SCALE_width 16.0/WIDTH
 #define SCALE_length SCALEBACK
@@ -601,7 +621,7 @@ void *draw_thread_func(void *arg)
 {
 	Bool configured = FALSE;
 
-	if ((window = create_window(640, 480)) == 0)
+	if ((window = create_window(WINWIDTH, WINHEIGHT)) == 0)
 	{
 		g_log(NULL, G_LOG_LEVEL_CRITICAL, __FILE__ ": unable to create window");
 		pthread_exit(NULL);
@@ -810,8 +830,8 @@ static void start_display(void)
 	y_speed = -0.2;  // 0.5
 	z_speed = 0.0;
 	x_angle = 20.0;
-	y_angle = 55.0;
-	// y_angle = -15.0;
+	// y_angle = 55.0;
+	y_angle = -15.0;
 	z_angle = 0.0;
 	modeCycle = 4;
 
