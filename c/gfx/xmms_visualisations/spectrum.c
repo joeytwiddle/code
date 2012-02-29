@@ -69,6 +69,7 @@ static GdkGC *gc = NULL;
 static gint16 bar_heights[WIDTH];
 /*static gint timeout_tag;*/
 static gdouble scale, x00, y00;
+static gdouble heatNow;
 
 static void fsanalyzer_init(void);
 static void fsanalyzer_cleanup(void);
@@ -270,6 +271,8 @@ static void fsanalyzer_init(void) {
 	y00 = -354.979500941;
 */
 
+	heatNow = 0.0;
+
 	gdk_color_black(gdk_colormap_get_system(),&color);
 	gdk_gc_set_foreground(gc,&color);
 
@@ -308,7 +311,7 @@ static void fsanalyzer_cleanup(void) {
 
 static gint draw_func(gpointer data) {
 	gint i;
-	float heatHere;
+	gdouble heatHere;
 	gint lasty;
 
 	/* FIXME: should allow spare redrawing like the vis. in the main window */
@@ -322,7 +325,11 @@ static gint draw_func(gpointer data) {
 
 	// heatHere = HEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
-	heatHere = (bar_heights[0] + bar_heights[WIDTH/4] + bar_heights[WIDTH/2] + bar_heights[WIDTH*3/4]) / 4;
+	heatHere = (
+			bar_heights[0] + bar_heights[WIDTH/4] + bar_heights[WIDTH/2] + bar_heights[WIDTH*3/4]
+			+ bar_heights[WIDTH*1/8] + bar_heights[WIDTH*3/8] + bar_heights[WIDTH*5/8] + bar_heights[WIDTH*7/8]
+		) / 8;
+	heatNow = heatNow*0.99 + (-HEIGHT/32+1.5*heatHere)*0.01; // around 3 seconds to update
 	// heatHere = 0;
 	// heatHere = HEIGHT/16; // When using true heatHere mean method
 	lasty = HEIGHT-1;
@@ -347,8 +354,10 @@ static gint draw_func(gpointer data) {
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
 		// #define LOOKAHEAD 12
 		// #define GAIN 0.03
-		#define LOOKAHEAD 8
-		#define GAIN 0.05
+		#define LOOKAHEAD 10
+		#define GAIN 0.04
+		// #define LOOKAHEAD 8
+		// #define GAIN 0.05
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.06
 		// #define LOOKAHEAD 5
@@ -413,6 +422,14 @@ static gint draw_func(gpointer data) {
 		// heatHere = 64;
 
 		cy = HEIGHT + MINCOL + heatHere*EXPLOSION - (HEIGHT-y);
+		// cy = HEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (HEIGHT-y);
+		// cy = HEIGHT + MINCOL + heatNow*EXPLOSION - (HEIGHT-y);
+		//// heatNow varies at a gentle rate over time
+		//// It was intended to stabilise the overall brightness when the spectrum is bouncing up and down rapidly.
+		//// But it doesn't work, we haven't eliminated the bounce, only dampened it.
+		//// We should be trying to normalise the average targetCol?
+		//// Or with a better buffer, we could copy a stretch bar to fix the lower col.
+		//// As it was, this acted too strongly on phat spectrums, and flattened the desirable colour spikes (could be fixed by tweaking other values).
 
 		// cy = y;
 
