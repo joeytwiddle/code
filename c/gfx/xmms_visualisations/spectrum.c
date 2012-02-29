@@ -255,7 +255,7 @@ static void fsanalyzer_init(void) {
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.3
+	#define palDelta 0.2
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
 	#define palScale 0.9
@@ -540,7 +540,7 @@ static gint draw_func(gpointer data) {
 
 		// heatHere = 64;
 
-		cy = FLAMEHEIGHT + MINCOL + heatHere*EXPLOSION - (WINHEIGHT-y);
+		cy = FLAMEHEIGHT - 64 + (y-FLAMEHEIGHT)*0.75 /*MINCOL*/ + heatHere*EXPLOSION*0.85;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
