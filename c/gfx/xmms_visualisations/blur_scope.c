@@ -126,7 +126,7 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.92
+#define fadeRate 0.89
 #define blurTao 1.0
 #define blurTao2 0.9
 
@@ -162,7 +162,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		// Retain self with blurTao:
 		// if (iptr[0] > sum)
 		if (sum > iptr[0])
-			sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+		{ } // sum = sum*blurTao + iptr[0]*(1.0-blurTao);
 		else
 			sum = iptr[0];
 
@@ -187,7 +187,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
-		if (sum > 56)
+		if (sum > 72)
 			sum = sum * fadeRate;
 		else
 			if (sum > 0)
