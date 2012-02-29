@@ -26,13 +26,17 @@
 
 // #define AIRFLOW
 
-// Without transparency, skipping every other frame is fine for XMMS, but visibly slow in Audacious.
-// If MASK_TRANSPARENCY is enabled for Audacious, then I must skip AT LEAST 2 frames to keep my system stable.
+// To avoid overloading system (especially important with MASK_TRANSPARENCY),
+// we only render 1 frame every SKIP_FRAMES:
 #define SKIP_FRAMES 2
+// Without transparency, SKIP_FRAMES 2 is fine for XMMS, but visibly slow in
+// Audacious.
+// If MASK_TRANSPARENCY is enabled for Audacious, then I MUST have at least
+// SKIP_FRAMES 2 to keep my system stable!
 
-//// MASK_TRANSPARENCY works in XMMS, but is way too slow in Audacious.
-
-//// For debugging: does not make the tops of the bars spikey, so user can see the original spectrum bars.
+//// For debugging: removes the flame rendering and returns to rendering
+//// flat-top bars, so developer can see the original spectrum data, but with
+//// the flame colours.
 // #define BARS
 // #define BARS_COLOR
 
@@ -86,6 +90,36 @@
 //
 // We could even consider removing it, by seeing if there is global minimum
 // over the spectrum, and reducing it if there is.
+
+//// The idea here was to brighten the areas of recently increasing height.
+//// The first implementation created many vertical lines.
+// #define VELOCITY
+//// VELOCITY2 is a little better.
+#define VELOCITY2
+//// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
+//// But I think it should work positively - it highlights the frequencies which have just entered the audio.
+//// Maybe heatHere could act negatively.
+//// Probably one significant problem with it is that it works the same for every "bar", then changes.  (OK added bar_heights_difference_local.)
+//// heatHere is already creating brightness-when-higher effect, so that should be re-tweaked if VELOCITY2 is used.
+//// Well it's good for visualizing which frequencies are *changing*, but it doesn't
+//// look much like real fire when it's calibrated high enough to be visible!
+//// 'Bug': When the whole spectrum is rising or falling together, we see a
+//// kind of red->yellow->red flash, which tends to look a little strong.
+//// Maybe to 'detect new notes' we want to be detecting local-bar-change
+//// relative to global-bar-change.  Also maybe normalise against self, e.g.
+//// a height growth of 5 pixels is more significant if you are only 3 pixels tall. ;)
+
+#define COLOR_FROM_BAR_HEIGHT                 1.0
+#define COLOR_FROM_BAR_HEIGHT_CHANGE_WRT_TIME 1.0
+#define COLOR_FROM_LOCAL_HEIGHTS              1.0
+// #define COLOR_FROM_BAR_HEIGHT_CHANGE_WRT_X    1.0
+// CONSIDER: At the moment we add all the contributions together.  But we could
+// approach it differently: have each technique produce an estimate colour for
+// the bar, and then average the result.
+
+//// To really 'highlight notes which have just started playing' we should
+//// compare the current bar height to the bar heights from the last second or
+//// so, and highlight those areas which are above the average.
 
 // TODO: We need a way to reduce load on the system.
 // Maybe we can do a little sleep, to give the rest of the system some CPU.
@@ -146,27 +180,6 @@
 /* SPECWIDTH should be kept 256, this is the hardwired resolution of the
    spectrum given by XMMS. */
 #define SPECWIDTH 256
-
-//// The idea here was to brighten the areas of recently increasing height.
-//// The first implementation created many vertical lines.
-// #define VELOCITY
-//// VELOCITY2 is a little better.
-#define VELOCITY2
-//// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
-//// But I think it should work positively - it highlights the frequencies which have just entered the audio.
-//// Maybe heatHere could act negatively.
-//// Probably one significant problem with it is that it works the same for every "bar", then changes.  (OK added bar_heights_difference_local.)
-//// heatHere is already creating brightness-when-higher effect, so that should be re-tweaked if VELOCITY2 is used.
-//// Well it's good for visualizing which frequencies are *changing*, but it doesn't
-//// look much like real fire when it's calibrated high enough to be visible!
-//// 'Bug': When the whole spectrum is rising or falling together, we see a
-//// kind of red->yellow->red flash, which tends to look a little strong.
-//// Maybe to 'detect new notes' we want to be detecting local-bar-change
-//// relative to global-bar-change.
-
-//// To really 'highlight notes which have just started playing' we should
-//// compare the current bar height to the bar heights from the last second or
-//// so, and highlight those areas which are above the average.
 
 /* Width 550 fits nicely over a double-size amp.  274 over normal size amp.
    TODO: Make this user configurable, either in preferences or by resizing the
@@ -793,13 +806,14 @@ static gint draw_func(gpointer data) {
 			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
 		#endif
 		#ifdef VELOCITY2
-			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
-			bar_heights_difference_local = bar_heights_difference_local*0.6 + 0.4*(bar_heights_difference[XSCALE(i)]);
+			// We slightly constrain the color spikes horizontally:
+			#define VELOCITY_X_GAIN 0.6
+			bar_heights_difference_local =
+				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
+				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
+			// Make recently growing bars brighter:
 			cy += bar_heights_difference_local * 9.0;
 		#endif
-
-
-
 
 		DEBUG("cy=%i\n",cy);
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, WINHEIGHT-y);
