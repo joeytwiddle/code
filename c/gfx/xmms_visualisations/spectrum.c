@@ -178,12 +178,15 @@ static void fsanalyzer_init(void) {
 	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFF22; palette[1].green = 0xFF22; palette[1].blue = 0x4444;
-	palette[2].red = 0xFF22; palette[2].green = 0xCCCC; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x5555; palette[3].blue = 0x0000;
+	palette[1].red = 0xFF22; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
+	palette[2].red = 0xEEEE; palette[2].green = 0xAAAA; palette[2].blue = 0x0000;
+	palette[3].red = 0xCCCC; palette[3].green = 0x4444; palette[3].blue = 0x0000;
 	palette[4].red = 0x4444; palette[4].green = 0x0088; palette[4].blue = 0x0000;
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.35
+	#define palDelta 0.42
+	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
+	// This makes the last 0.3 of the palette static!
+	#define palScale 0.7
 
 	/*
 	//// Blue flame
@@ -215,7 +218,7 @@ static void fsanalyzer_init(void) {
 		int pfrom,pto;
 		//// palDelta is the proportion of the start of the palette which we drop - the rest is scaled to fit.
 		//// This is because we usually don't really want very much of the first colour, just the end of its transition to the next.
-		thruouter = palDelta + (1.0-palDelta)*(float)(i+1 - HEIGHT)/(float)HEIGHT; // the +1 because rather thruouter==1 than ==0!
+		thruouter = palDelta + (1.0-palDelta)*(float)(i+1 - HEIGHT)/(float)HEIGHT / palScale; // the +1 because rather thruouter==1 than ==0!
 		// if (thruouter<0) thruouter=0;
 		// if (thruouter>1) thruouter=1;
 		if (thruouter<=0) {
@@ -546,8 +549,9 @@ static gint draw_func(gpointer data) {
 		#define MINCOL 0
 		// #define MINCOL (HEIGHT*0.4)
 		// #define MINCOL (HEIGHT/7)
-		#define EXPLOSION 1.2
 		// #define EXPLOSION 1.1
+		// #define EXPLOSION 1.2
+		#define EXPLOSION 1.1
 
 		/*
 		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
