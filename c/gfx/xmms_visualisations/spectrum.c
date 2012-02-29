@@ -213,14 +213,14 @@ static void fsanalyzer_init(void) {
 	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
 	palette[2].red = 0xFF77; palette[2].green = 0xCCCC; palette[2].blue = 0x0000;
 	palette[3].red = 0xDDDD; palette[3].green = 0x6666; palette[3].blue = 0x0000;
-	palette[4].red = 0x4444; palette[4].green = 0x0011; palette[4].blue = 0x0000;
+	palette[4].red = 0xCCCC; palette[4].green = 0x0011; palette[4].blue = 0x0000;
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
 	#define palDelta 0.34
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
-	#define palScale 1.0
+	#define palScale 0.9
 
 	/*
 	//// Blue flame
@@ -427,14 +427,10 @@ static gint draw_func(gpointer data) {
 		// #define GAIN 0.02
 		// #define LOOKAHEAD 8
 		// #define GAIN 0.03
-		// #define LOOKAHEAD 6
-		// #define GAIN 0.04
-		// #define LOOKAHEAD 7
-		// #define GAIN 0.05
-		// #define LOOKAHEAD 7
-		// #define GAIN 0.05
 		#define LOOKAHEAD 6
-		#define GAIN 0.05
+		#define GAIN 0.04
+		// #define LOOKAHEAD 6
+		// #define GAIN 0.05
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
 		// #define LOOKAHEAD 1
