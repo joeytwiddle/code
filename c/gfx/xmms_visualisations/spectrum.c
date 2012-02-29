@@ -20,11 +20,23 @@
  */
 
 // Choose which media player we are compiling for:
-// #define AUDACIOUS
 #define XMMS
+// #define AUDACIOUS
 // TODO: There might be an already existing way to find out!
 
-#define TRANSPARENCY
+// #define AIRFLOW
+
+#define SKIP_FRAMES 4
+
+#define BARS
+
+#define DEBUG(X,Y); 
+// TODO: #define DEBUG(X,Y); fprintf(stdout,X,Y);
+
+//// Pick one or none, not both!
+//// Neither tested for Audacious
+// #define MASK_TRANSPARENCY
+// #define PSEUDO_TRANSPARENCY
 // WARNING! This can create a lot of X refresh events, and make your X unresponsive!
 // Wow this works and it was not really too hard! :D
 // But it's still a bit heavy on CPU.  It would be good to make
@@ -36,12 +48,21 @@
 // We could even fade the two bitmaps together, to make the tops of the flames
 // semi-transparent.
 // I don't actually know how to grab a screenshot.  I know amarok does it for
-// its OSD.  xosd uses only a mask.
+// its OSD.  xosd uses only a mask.  We could steal an example from xscreensaver.
+// Hmm xscreensaver uses X libraries, audacious uses gtk2.
+// Occasionally you may see the windows behind the flame flickering, or
+// pixels above the flame flicker black when the flame drops.  This is not my
+// fault!  I think that's X not re-drawing those pixels quickly enough.  ;)
+
+// TODO: We need a way to reduce load on the system.
+// Maybe we can do a little sleep, to give the rest of the system some CPU.
+// Or maybe we should detect when CPU is overloaded, and skip rendering a frame.
 
 #include "config.h"
 
 #include <gtk/gtk.h>
 #include <math.h>
+#include <gdk/gdkx.h> // Provides GDK_ROOT_WINDOW() for PSEUDO_TRANSPARENCY.
 
 #ifdef AUDACIOUS
 #include <audacious/plugin.h>
@@ -130,15 +151,38 @@
 static GtkWidget *window = NULL,*area;
 static GdkPixmap *bg_pixmap = NULL, *draw_pixmap = NULL, *bar = NULL;
 static GdkGC *gc = NULL;
-#ifdef TRANSPARENCY
-static GdkGC *mgc = NULL; // gc for mask
-#endif
 static gint16 bar_heights[SPECWIDTH];
 /*static gint timeout_tag;*/
 static gdouble scale, x00, y00;
 static gdouble heatNow;
-#ifdef TRANSPARENCY
+#ifdef MASK_TRANSPARENCY
+static GdkGC *mgc = NULL; // gc for mask
 GdkBitmap *mask;
+#endif
+#ifdef PSEUDO_TRANSPARENCY
+// static XImage *orig_map;
+// static Drawable *orig_image;
+// static GdkDrawable *orig_image;
+static GdkPixmap *background;
+#endif
+
+#define FitInt(I,MAX) ( I<0 ? 0 : I>MAX ? MAX : (int)I )
+
+#ifdef SKIP_FRAMES
+static gint frameCount;
+#endif
+
+#ifdef AIRFLOW
+// Amount of air received from left/right/above/below cell at this moment, for each pixel:
+static float airflow_left[WINWIDTH][WINHEIGHT];
+static float airflow_right[WINWIDTH][WINHEIGHT];
+static float airflow_up[WINWIDTH][WINHEIGHT];
+static float airflow_down[WINWIDTH][WINHEIGHT];
+static float current_heat[WINWIDTH][WINHEIGHT];
+// Derived:
+// #define airflow_pressure(x,y) ( x>=1 && x<WINWIDTH-1 && y>=1 && y<WINHEIGHT-1 ? airflow_weight[WINWIDTH][WINHEIGHT]
+#define airflow_pressure(x,y) ( airflow_weight[FitInt(x,WINWIDTH)][FitInt(y,WINHEIGHT)]
+/* AirflowStats airflow_stats = { .  } */
 #endif
 
 #ifdef XMMS
@@ -201,16 +245,18 @@ static float fclamp(float val, float min, float max) {
 }
 */
 
-#ifdef TRANSPARENCY
+#ifdef MASK_TRANSPARENCY
 GdkBitmap *create_transparency_mask(GdkWindow *window) {
 	GdkBitmap *mask = NULL;
 	GdkColor pattern;
-	GdkPoint *gpoints;
-	gint numpoints;
+	// GdkPoint *gpoints;
+	// gint numpoints;
 
 	mask = gdk_pixmap_new(window, WINWIDTH, WINHEIGHT, 1);
 
 	mgc = gdk_gc_new(mask);
+
+	/*
 
 	pattern.pixel = 0;
 	gdk_gc_set_foreground(mgc, &pattern);
@@ -230,7 +276,53 @@ GdkBitmap *create_transparency_mask(GdkWindow *window) {
 
 	g_free(gpoints);
 
+	*/
+
+	pattern.pixel = 1;
+	gdk_gc_set_foreground(mgc, &pattern);
+	gdk_draw_rectangle(mask, mgc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
+
 	return mask;
+}
+#endif
+
+#ifdef PSEUDO_TRANSPARENCY
+// Nabbed from Audacious - may be gtk2.
+static Pixmap* take_snapshot() {
+	/*
+	Pixmap pixmap;
+	GC gc;
+	// create a pixmap to hold the screenshot.
+	pixmap = XCreatePixmap(window->dpy, window, WINWIDTH, WINHEIGHT,
+			DefaultDepth(window->dpy, DefaultScreen(window->dpy)));
+	// then copy the screen into the pixmap.
+	gc = XCreateGC(window->dpy, pixmap, 0, NULL);
+	XSetSubwindowMode(window->dpy, gc, IncludeInferiors);
+	XCopyArea(window->dpy, DefaultRootWindow(window->dpy), pixmap, gc,
+			window->x, window->y, WINWIDTH, WINHEIGHT,
+			0, 0);
+	XSetSubwindowMode(window->dpy, gc, ClipByChildren);
+	XFreeGC(window->dpy, gc);
+	return pixmap;
+	*/
+
+	//// We grab a snapshot of the desktop/windows behind our window, to use as background.
+	// orig_map = XGetImage(dpy, window, 0, 0, WINWIDTH, WINHEIGHT, ~0L, ZPixmap);
+	// orig_image = ((GdkWindow*)window->window)->get_image(0,0,WINWIDTH,WINHEIGHT);
+	background = gdk_pixmap_new(window->window,WINWIDTH,WINHEIGHT,gdk_rgb_get_visual()->depth);
+	//// gdk_draw_pixmap(background, gc, GTK_WINDOW(window)->get_default_root_window(), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+	//// gdk_draw_pixmap(background, gc, Gdk::Window.default_root_window, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+	//// gdk_draw_pixmap(background, gc, GTK_WINDOW(window)->RootWindow(), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+	//// gdk_draw_pixmap(background, gc, DefaultRootWindow(display), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+	gdk_draw_pixmap(background, gc, draw_pixmap, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+	// gdk_draw_pixmap(background, gc, gdk_window_foreign_new(GDK_ROOT_WINDOW()), 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+
+	// TODO: OK so we grabbed something, but it's not the desktop!
+	//       I see a copy of the default equalizer skin bitmap!
+	//       Yeah we seem to be grabbing bits of memory, sometimes dirty.
+	// I tried completely masking the vis window before copying the snapshot, but
+	// we still ended up with bad bitmap data.
+	return ((Pixmap*)((int)background));
 }
 #endif
 
@@ -275,6 +367,16 @@ static void fsanalyzer_init(void) {
 		gtk_window_move(GTK_WINDOW(window), wx, wy-WINHEIGHT);
 	// }
 	*/
+
+#ifdef MASK_TRANSPARENCY
+	mask = create_transparency_mask(window->window);
+	gtk_widget_shape_combine_mask(window,mask,0,0);
+#endif
+
+#ifdef PSEUDO_TRANSPARENCY
+	take_snapshot();
+#endif
+
 	gtk_widget_realize(window);
 
 	bg_pixmap = gdk_pixmap_create_from_xpm_d(window->window,NULL,NULL,logo_xpm);
@@ -394,11 +496,6 @@ static void fsanalyzer_init(void) {
 	gdk_window_clear(window->window);
 	gdk_window_clear(area->window);
 
-#ifdef TRANSPARENCY
-	mask = create_transparency_mask(window->window);
-	gtk_widget_shape_combine_mask(window,mask,0,0);
-#endif
-
 }
 
 static void fsanalyzer_cleanup(void) {
@@ -409,7 +506,7 @@ static void fsanalyzer_cleanup(void) {
 		gdk_gc_unref(gc);
 		gc = NULL;
 	}
-#ifdef TRANSPARENCY
+#ifdef MASK_TRANSPARENCY
 	if(mgc) {
 		gdk_gc_destroy(mgc);
 		// gdk_gc_unref(mgc); // failed - i guess we can't do both ;)
@@ -431,11 +528,18 @@ static void fsanalyzer_cleanup(void) {
 }
 
 static gint draw_func(gpointer data) {
-	gint i;
+	gint i,j;
 	gdouble heatHere;
 	gint lasty;
-#ifdef TRANSPARENCY
+#ifdef MASK_TRANSPARENCY
 	GdkColor pattern;
+#endif
+
+#ifdef SKIP_FRAMES
+	frameCount++;
+	if (frameCount%SKIP_FRAMES > 0) {
+		return TRUE;
+	}
 #endif
 
 	/* FIXME: should allow spare redrawing like the vis. in the main window */
@@ -445,9 +549,15 @@ static gint draw_func(gpointer data) {
 	}
 
 	GDK_THREADS_ENTER();
-	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
 
-#ifdef TRANSPARENCY
+#ifdef PSEUDO_TRANSPARENCY
+	gdk_draw_pixmap(draw_pixmap, gc, background, 0, 0, 0, 0, WINWIDTH, WINHEIGHT);
+#else
+	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
+	// TODO: for efficiency, we don't really need to do this when using MASK_TRANSPARENCY either.
+#endif
+
+#ifdef MASK_TRANSPARENCY
 	pattern.pixel = 0;
 	gdk_gc_set_foreground(mgc, &pattern);
 	gdk_draw_rectangle(mask, mgc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
@@ -455,15 +565,80 @@ static gint draw_func(gpointer data) {
 	gdk_gc_set_foreground(mgc, &pattern);
 #endif
 
+	// Start AIRFLOW ?
+#ifdef AIRFLOW
+	// {
+		// local int i,j;
+
+	// For every cell in our 2D space:
+	for (i=0;i<WINWIDTH;i++) {
+		for (j=0;j<WINHEIGHT;j++) {
+
+			//// TODO
+
+#define flameHeight(j) bar_heights[XSCALE(i)]
+
+			//// Heat contribution from fire (music, spectrum).
+#define fadeout ( (float)j / (float)WINHEIGHT )
+#define hotness ( fadeout*0.5*flameHeight(j) )
+
+/*
+			//// The current_heat for this cell is adjusted by airflow.
+			//// Airflow for this cell (and surrounding(future?)?) is updated.
+			airflow_left[i][j] = airflow_left[i][FitInt(j+upward_speed,WINHEIGHT)];
+			// new_airflow_for_this_cell =
+			//   a_bit_upwards +
+			//   upwards_due_to_heat +
+			//   upwards_due_to_flow(downwards) +
+			//   speed_due_to_expansion_to_compensate_for_pressure
+			// airflow_up[i][j] = 
+			// airflow.cell[i][j].velocity
+
+#define always_up 0.1
+			airflow.cell[i][j].velocity.y = 
+				always_up +
+*/
+
+			//// Pressure for this cell (and surrounding(future?)?) is applied.
+			//// Pressure for this cell (and surrounding(future?)?) is updated.
+
+			//// Temperature of this cell is calculated
+			//// Colour of fire is generated, and plotted if needed.
+			//// Transparency/fading/masking is applied.
+
+			// Current total action of window?
+			// Total variance?
+#define outColor FitInt(hotness,FLAMEHEIGHT)
+
+			// heatHere = outColor;
+			// heatHere = FitInt(heatHere,FLAMEHEIGHT*2);
+			// cy = FitInt(hotness*3,FLAMEHEIGHT*3);
+
+			#define cellColor (3*hotness)
+			DEBUG("cellColor=%f\n",(float)(cellColor));
+			gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cellColor, i, j, 1, 1);
+			// We get full white followed by a few pixels of black.  So cellColor ~=> 3*FLAMEHEIGHT ?
+
+		}
+	}
+
+#else
+
 	// heatHere = FLAMEHEIGHT/4;
 	// heatHere = (bar_heights[0] + bar_heights[4] + bar_heights[8] + bar_heights[12]) / 4;
 	heatHere = ( // cheeky initial "average" from the first half of the spectrum
 			+ bar_heights[SPECWIDTH*0/16] + bar_heights[SPECWIDTH*1/16] + bar_heights[SPECWIDTH*2/16] + bar_heights[SPECWIDTH*3/16]
 			+ bar_heights[SPECWIDTH*4/16] + bar_heights[SPECWIDTH*5/16] + bar_heights[SPECWIDTH*6/16] + bar_heights[SPECWIDTH*7/16]
 		) / 8;
-	heatNow = heatNow*0.99 + (-FLAMEHEIGHT/32+1.5*heatHere)*0.01; // around 3 seconds to update
+
+	// around 3 seconds to update ???  What are units and limits? :P
+	//
+	// Should we be using oldHeatHere instead of heatNow on the RHS?
+	heatNow = heatNow*0.99 + (-FLAMEHEIGHT/32+1.5*heatHere)*0.01;
+
 	// heatHere = 0;
 	// heatHere = FLAMEHEIGHT/16; // When using true heatHere mean method
+
 	lasty = WINHEIGHT-1;
 	for(i = 0; i < WINWIDTH; i++) {
 
@@ -621,6 +796,10 @@ static gint draw_func(gpointer data) {
 
 		// heatHere = 64;
 
+
+
+		// Color height:
+
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
 		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
@@ -662,16 +841,25 @@ static gint draw_func(gpointer data) {
 			// cy = 1;
 		// }
 
+
+
+
+		DEBUG("cy=%i\n",cy);
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, WINHEIGHT-y);
 
-#ifdef TRANSPARENCY
-		gdk_draw_rectangle(mask, mgc, TRUE, i, y, 1, WINHEIGHT-y);
+#ifdef MASK_TRANSPARENCY
+		// gdk_draw_rectangle(mask, mgc, TRUE, i, y, 1, WINHEIGHT-y);
+		gdk_draw_line(mask, mgc, i, y, i, WINHEIGHT-1);
 #endif
 
 	}
 
-#ifdef TRANSPARENCY
+#endif
+
+#ifndef PSEUDO_TRANSPARENCY
+#ifdef MASK_TRANSPARENCY
 	gtk_widget_shape_combine_mask(window,mask,0,0);
+#endif
 #endif
 
 	gdk_window_clear(area->window);
@@ -708,7 +896,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		y = ( log(y - x00) * scale + y00 ); /* Logarithmic amplitude */
 
 		y = ( (dif-2)*y + /* FIXME: conditionals should be rolled out of the loop */
-			(i==0       ? y : bar_heights[i-1]) +
+			(i==0           ? y : bar_heights[i-1]) +
 			(i==SPECWIDTH-1 ? y : bar_heights[i+1])) / dif; /* Add some diffusion */
 		y = ((tau-1)*bar_heights[i] + y) / tau; /* Add some dynamics */
 		bar_heights[i] = (gint16)y;
