@@ -74,7 +74,7 @@
 
 // #define CHECK_FOR_KICK
 
-#define LIGHTER_VERSION
+// #define LIGHTER_VERSION
 
 #ifdef LIGHTER_VERSION
 	// For slower PCs with small screens.
@@ -551,6 +551,16 @@ static void draw_bars(void)
 				shortSide = 0.10;
 			}
 
+			// #define scaleBars (0.3 + 1.2*whiteness)
+			// #define scaleBars (0.1 + 2.4*heights[y][x]*compensateForCurve*fadeOff)
+			// #define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
+			#define scaleBars 2.5*(0.2 + 2.3*peakEnergy[x]*fadeOff*fadeOff*fadeOff*fadeOff)
+
+			if ((modeCycle/12)%2 == 1) {
+				shortSide *= scaleBars;
+				longSide  *= scaleBars;
+			}
+
 			// Nicely spaced lines and rows of dots:
 			if (modeCycle%2 > 0)
 				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
@@ -573,11 +583,7 @@ static void draw_bars(void)
 				if (modeCycle%12 == 0) {
 					// Plot overlapping bars.  x&1 is a chequered offset to avoid flickering of intersecting surfaces.
 					#define miniGap 0.001*((x+y)&1)
-					// #define scaleBars (0.3 + 1.2*whiteness)
-					// #define scaleBars (0.1 + 2.4*heights[y][x]*compensateForCurve*fadeOff)
-					// #define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
-					#define scaleBars (0.2 + 2.3*peakEnergy[x]*fadeOff*fadeOff*fadeOff*fadeOff)
-					draw_bar(x_offset + miniGap - scaleBars*0.25*SCALE_width/2.0, z_offset + miniGap, barHeight, lastYheight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
+					draw_bar(x_offset + miniGap - 0.1*scaleBars*SCALE_width/2.0, z_offset + miniGap, barHeight, lastYheight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
 				} else {
 					shortSide = ( modeCycle%12 == 4 ? 0.15 : 0.2 );
 					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, lastYheight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
