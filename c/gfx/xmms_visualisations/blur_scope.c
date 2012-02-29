@@ -101,7 +101,7 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x3FFFFF;  // cyan
 		// bscope_cfg.color = 0x3FFFBF;  // green/cyan
-		bscope_cfg.color = 0x00BFFF;  // blue-cyan
+		bscope_cfg.color = 0x00BFFF;  // cyan lightning
 		// bscope_cfg.color = 0x007FFF;  // electric blue
 		// bscope_cfg.color = 0x0000FF;  // blue (dark)
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
@@ -152,11 +152,18 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 		if (sum <= 0)
 			sum = 0;
 		else if (sum > 64)
-			sum = sum - 4; // Initial fast decay
-		else if (sum > 16)
-			sum = sum - 1; // Middle slow decay (in fact blur only)
+			sum = sum - 16; // Initial fast decay
+
+		// else if (sum > 16)
+			// sum = sum - 0; // Middle slow decay (in fact blur only)
 		else
 			sum = sum - 1; // Final fixed decay
+
+		// At low intensity slow down the decay as much as possible
+		// else if (sum==2 || sum==4 || sum==8 || sum==16)
+			// sum = sum - 1;
+		// else
+			// sum = sum - 0;
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
 
@@ -182,7 +189,7 @@ void generate_cmap(void)
 		for(i = 255; i > 0; i--)
 		{
 			if (i == 255)
-				colors[i] = (((guint32)(i*0xFF/256) << 16) | ((guint32)(i*0xFF/256) << 8) | ((guint32)(i*0xFF/256)));
+				colors[i] = 0xFFFFFF;
 			else
 				colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
 		}
