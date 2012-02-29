@@ -26,13 +26,17 @@
 
 // #define AIRFLOW
 
-// Without transparency, skipping every other frame is fine for XMMS, but visibly slow in Audacious.
-// If MASK_TRANSPARENCY is enabled for Audacious, then I must skip AT LEAST 2 frames to keep my system stable.
+// To avoid overloading system (especially important with MASK_TRANSPARENCY),
+// we only render 1 frame every SKIP_FRAMES:
 #define SKIP_FRAMES 2
+// Without transparency, SKIP_FRAMES 2 is fine for XMMS, but visibly slow in
+// Audacious.
+// If MASK_TRANSPARENCY is enabled for Audacious, then I MUST have at least
+// SKIP_FRAMES 2 to keep my system stable!
 
-//// MASK_TRANSPARENCY works in XMMS, but is way too slow in Audacious.
-
-//// For debugging: does not make the tops of the bars spikey, so user can see the original spectrum bars.
+//// For debugging: removes the flame rendering and returns to rendering
+//// flat-top bars, so developer can see the original spectrum data, but with
+//// the flame colours.
 // #define BARS
 // #define BARS_COLOR
 
@@ -86,6 +90,47 @@
 //
 // We could even consider removing it, by seeing if there is global minimum
 // over the spectrum, and reducing it if there is.
+
+//// The idea here was to brighten the areas of recently increasing height.
+//// The first implementation created many vertical lines.
+// #define VELOCITY
+//// VELOCITY2 is a little better.
+#define VELOCITY2
+//// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
+//// But I think it should work positively - it highlights the frequencies which have just entered the audio.
+//// Maybe heatHere could act negatively.
+//// Probably one significant problem with it is that it works the same for every "bar", then changes.  (OK added bar_heights_difference_local.)
+//// heatHere is already creating brightness-when-higher effect, so that should be re-tweaked if VELOCITY2 is used.
+//// Well it's good for visualizing which frequencies are *changing*, but it doesn't
+//// look much like real fire when it's calibrated high enough to be visible!
+//// 'Bug': When the whole spectrum is rising or falling together, we see a
+//// kind of red->yellow->red flash, which tends to look a little strong.
+//// Maybe to 'detect new notes' we want to be detecting local-bar-change
+//// relative to global-bar-change.  Also maybe normalise against self, e.g.
+//// a height growth of 5 pixels is more significant if you are only 3 pixels tall. ;)
+
+//// Keep VELOCITY2?  Well I have now tweaked all the variables for it!
+//// VELOCITY2 brings back visible vertical lines, but in a differeny way than
+//// they appeared before, which may enhance the experience.
+//// Although they are not visually realistic, they do now relay useful
+//// information about the spectrum.
+
+#define COLOR_FROM_BAR_HEIGHT                 1.0
+#define COLOR_FROM_BAR_HEIGHT_CHANGE_WRT_TIME 1.0
+#define COLOR_FROM_LOCAL_HEIGHTS              1.0
+// #define COLOR_FROM_BAR_HEIGHT_CHANGE_WRT_X    1.0
+// CONSIDER: At the moment we add all the contributions together.  But we could
+// approach it differently: have each technique produce an estimate colour for
+// the bar, and then average the result.
+
+// TODO: I think we may want to use a fast local velocity, and a slow more spread velocity.
+// I have recently concentrated the current height and velocity measures on rendering fine peaks,
+// so only heatHere has been drawing anything soft, but it is temporary.
+// We need a slower time-fadeoff heatHere or velocity (or abs(velocity)!).
+
+//// To really 'highlight notes which have just started playing' we should
+//// compare the current bar height to the bar heights from the last second or
+//// so, and highlight those areas which are above the average.
 
 // TODO: We need a way to reduce load on the system.
 // Maybe we can do a little sleep, to give the rest of the system some CPU.
@@ -147,19 +192,6 @@
    spectrum given by XMMS. */
 #define SPECWIDTH 256
 
-//// The idea here was to brighten the areas of recently increasing height.
-//// But our implementation created many vertical lines.
-// #define VELOCITY
-//// VELOCITY2 is a little better, but still I think it needs some horizontal smoothing.
-// #define VELOCITY2
-//// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
-//// But I think it should work positively - it highlights the frequencies which have just entered the audio.
-//// Maybe heatHere could act negatively.
-//// Probably one significant problem with it is that it works the same for every "bar", then changes.  (OK added bar_heights_difference_local.)
-//// heatHere is already creating brightness-when-higher effect, so that should be re-tweaked if VELOCITY2 is used.
-//// Well it's good for visualizing which frequencies are *changing*, but it doesn't
-//// look much like real fire when it's calibrated high enough to be visible!
-
 /* Width 550 fits nicely over a double-size amp.  274 over normal size amp.
    TODO: Make this user configurable, either in preferences or by resizing the
    window manually, so they can place the flame over a single size-amp, or
@@ -169,33 +201,34 @@
    ... interpolated. ;P)
    If we increase WINWIDTH we should probably increase LOOKAHEAD also, and the
    way heatHere is calculated. */
-// #define WINWIDTH 256
 // #define WINWIDTH 274
 // #define WINWIDTH 550
-#define WINWIDTH 548
+#define WINWIDTH 550
 // #define WINWIDTH 1024
 // #define WINWIDTH 1200
+//// I tweaked the variables for 550x160 (doublesize), but 274x80 works ok.
 
 /* Height 224 should prevent clipping of the tops of flames when FLAMEHEIGHT=128.
    TODO: Users may wish to change the window's height.  If they do I'm guessing
    they would like us to scale FLAMEHEIGHT for them also. */
 // #define WINHEIGHT 224
 // #define WINHEIGHT 196
-#define WINHEIGHT 168
+#define WINHEIGHT 160
 
 /* FLAMEHEIGHT scales the height of the flames, and the colour buffer.
    I have seen flames actually reach 1.7*FLAMEHEIGHT pixels in height.
    If you increase FLAMEHEIGHT without increasing WINHEIGHT, the tops of noisy
    flames may get clipped. */
 // #define FLAMEHEIGHT 96
-#define FLAMEHEIGHT (WINHEIGHT/1.75)
+// #define FLAMEHEIGHT (WINHEIGHT/1.5)
+#define FLAMEHEIGHT (WINHEIGHT/1.5)
 
 /* Linearity of the amplitude scale (0.5 for linear, keep in [0.1, 0.9]) */
 #define d 0.33
 
 /* Time factor of the band dinamics. 3 means that the coefficient of the
    last value is half of the current one's. (see source) */
-#define tau 6
+#define tau 5.5
 
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
@@ -476,19 +509,20 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 1.0
+	#define palScale 1.4
 	//// Red and orange flame
 	#define stages 4
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFF77; palette[1].green = 0xEE00; palette[1].blue = 0x4444;
-	palette[2].red = 0xFF44; palette[2].green = 0xAAAA; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x4444; palette[3].blue = 0x0000;
+	palette[1].red = 0xFFDD; palette[1].green = 0xFF44; palette[1].blue = 0xEE00;
+	palette[2].red = 0xFF77; palette[2].green = 0xEE00; palette[2].blue = 0x4444;
+	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
+	palette[4].red = 0xDDDD; palette[4].green = 0x4444; palette[4].blue = 0x0000;
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.2
+	#define palDelta -0.1
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -691,7 +725,7 @@ static gint draw_func(gpointer data) {
 		// #define yscale (0.7 * (1.0 + 1.2/(1.0+64.0*(float)i/(float)WINWIDTH)))
 		//// This is a bit more natural looking to watch:
 		// #define yscale (0.8 * (1.0 + 1.0/(1.0+128.0*(float)i/(float)WINWIDTH)))
-		#define yscale (1.0 * (1.0 + 1.5/(1.0+256.0*(float)i/(float)WINWIDTH)))
+		#define yscale (1.0 * (1.0 + 2.0/(1.0+256.0*(float)i/(float)WINWIDTH)))
 		// #define yscale 1.2
 		// #define yscale 1.0
 
@@ -745,8 +779,8 @@ static gint draw_func(gpointer data) {
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
-		#define LOOKAHEAD 1
-		#define GAIN 0.01
+		#define LOOKAHEAD 2
+		#define GAIN 0.02
 		//// GAIN might be better around 0.03 if VELOCITY2 is enabled.
 		// #define LOOKAHEAD 3
 		// #define GAIN 0.07
@@ -766,18 +800,15 @@ static gint draw_func(gpointer data) {
 		#define EXPLOSION 1.4
 
 
+		/** TODO:
+		 * Low bars which are slight peaks above the rest should be rewarded MORE
+		 * with extra brightness, and High bar peaks LESS so.
+		**/
+
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
-		#ifdef VELOCITY
-			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
-		#endif
-		#ifdef VELOCITY2
-			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
-			bar_heights_difference_local = bar_heights_difference_local*0.9 + 0.1*(bar_heights_difference[XSCALE(i)]);
-			cy += bar_heights_difference_local * 0.5;
-		#endif
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.4 /*MINCOL*/ + heatHere*EXPLOSION*0.9;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -787,8 +818,21 @@ static gint draw_func(gpointer data) {
 		//// Or with a better buffer, we could copy a stretch bar to fix the lower col.
 		//// As it was, this acted too strongly on phat spectrums, and flattened the desirable colour spikes (could be fixed by tweaking other values).
 
-
-
+		#ifdef VELOCITY
+			cy += (bar_heights[XSCALE(i)] - last_bar_heights[XSCALE(i)]) * 0.7;
+		#endif
+		#ifdef VELOCITY2
+			// We slightly constrain the color spikes horizontally:
+			#define VELOCITY_X_GAIN 0.15
+			bar_heights_difference_local =
+				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
+				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
+			// Make recently growing bars brighter:
+			cy += bar_heights_difference_local * -5.0;
+			// Negative velocity!
+			// In theory this reduces the spikiness of sudden peaks at the start,
+			// but helps them to stay around longer, by compensating as they fall.
+		#endif
 
 		DEBUG("cy=%i\n",cy);
 		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, WINHEIGHT-y);
@@ -896,6 +940,13 @@ static void fsanalyzer_playback_stop(void) {
 	}
 }
 
+/*double fabs(double x) {
+	if (x<0)
+		return -x;
+	else
+		return x;
+}*/
+
 // From Audacious:
 static void fsanalyzer_render_freq(gint16 data[2][256]) {
 	gint i;
@@ -937,13 +988,21 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		y = ((tau-1)*bar_heights[i] + y) / tau; /* Add some dynamics */
 		// if (y<0) y=-y;
 		bar_heights[i] = global_add + (gint16)y;
-		// It seems sometimes y is just too big.
-		// This fixes the bug that the left of the flame would go black.
-		// 128 produces a very tall flame (on the bass side at least, yscale applying).
+		// It seems sometimes y is just too big, and makes bar_heights hugely negative!
+		// This only happens on the very low frequency bars, especially the first.
+		// This was causing a bug that the left of the flame would go black.
 		// For examples of the bug see "BT - Communicate" or "Chemical Bros - Loops of Fury".
-		if (bar_heights[i]<0) bar_heights[i]=128;
+		// I set the bar height to very high (near max), so I can see bug occurrences,
+		// and it doesn't look unreasonable.
+		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
-		bar_heights_difference[i] = bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height);
+		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
+		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
+		/*#define DIFFERENCE_GAIN_BY_TIME 0.04*/
+		#define DIFFERENCE_GAIN_BY_TIME 0.2
+		bar_heights_difference[i] =
+			  DIFFERENCE_GAIN_BY_TIME       * ((float)bar_heights[i] - (float)last_bar_height)
+			+ (1.0-DIFFERENCE_GAIN_BY_TIME) * bar_heights_difference[i];
 		// bar_heights_difference[i] = (gint16)((float)bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height));
 		#endif
 	}
