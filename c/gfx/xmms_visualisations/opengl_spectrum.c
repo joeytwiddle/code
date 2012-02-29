@@ -59,7 +59,8 @@
 
 /* The original LENGTH was 16 */
 // #define LENGTH 200
-#define LENGTH 120
+// #define LENGTH 120
+#define LENGTH 160
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
@@ -301,7 +302,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// blue = 1.0*whiteness +  blue*notwhiteness;
 
 	// float W = red*red;
-	float W = lightness;
+	// float W = lightness;
 	// float NW = 1.0 - W;
 
 	#define glColor3f_with_scale_then_whiteness(r,g,b,s) glColor3f(W+r*s*NW,W+g*s*NW,W+b*s*NW)
@@ -311,14 +312,14 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// Flat (horizontal) facing up/down
 	// glColor3f(red,green,blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
-	setHSL(hue, sat, lightness);
+	setHSL(hue, sat*0.8, lightness*0.8);
 	draw_rectangle(x_offset, height, z_offset, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset,      0, z_offset, x_offset + width,      0, z_offset + length);
 
 	// In width plane (across spectrum), facing front/back
 	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
-	setHSL(hue, sat*0.8, lightness*0.8);
+	setHSL(hue, sat, lightness);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, height, z_offset         );
 	/*
@@ -346,6 +347,7 @@ static void draw_bars(void)
 	GLfloat peakEnergy[WIDTH];
 	GLfloat peakHeight[WIDTH];
 	GLfloat localAverage[WIDTH];
+	GLfloat localNoise[WIDTH];
 
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -361,6 +363,7 @@ static void draw_bars(void)
 		peakEnergy[x] = 0.0;
 		peakHeight[x] = 0.0;
 		localAverage[x] = 0.0;
+		localNoise[x] = 0.0;
 	}
 
 	glBegin(GL_TRIANGLES);
@@ -416,6 +419,9 @@ static void draw_bars(void)
 			localAverage[x] *= 0.95;
 			localAverage[x] += 0.05 * peakHeight[x];
 
+			localNoise[x] *= 0.95;
+			localNoise[x] += 0.05 * pow(heights[y][x] - heights[y+1][x],2);
+
 			// #define barHeight heights[y][x]
 			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
 			#define barHeight peakHeight[x]
@@ -427,14 +433,25 @@ static void draw_bars(void)
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
 			//// Fade out slowly from white to color to black:
-			whiteness = 2.0 * peakEnergy[x] * fadeOff;
+			// whiteness = 2.0 * peakEnergy[x] * fadeOff;
+
+			//// Power fade the energy, so the difference between high and low appears stronger in the distance.
+			whiteness = 1.2 * peakEnergy[x];
+			// whiteness += 0.0001 - 0.1 * (float)y/(float)LENGTH;
+			if (whiteness<0)
+				whiteness=0;
+			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
+			whiteness *= 2.0;
+			whiteness *= fadeOff;
 
 			//// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
-			whiteness += 1.0 * peakHeight[x] * breakingEdge * compensateForCurve;
+			// whiteness += 1.0 * peakHeight[x] * breakingEdge * compensateForCurve;
 
-			//// Reduce energy of low bars in a busy channel
+			//// Reduce energy of all bars in a busy channel
 			whiteness -= 0.5 * localAverage[x] * fadeOff;
+			whiteness -= 1.0 * localNoise[x] * fadeOff;
+			// We should also consider horizontal energy (which we have not yet calculated).
 
 			//// Free leading glow
 			// whiteness += 0.3 * pow(breakingEdge,16);
@@ -490,7 +507,11 @@ static void draw_bars(void)
 				// We can't use longSide for both 4 and 8 because they are identical.
 				if (modeCycle%12 == 4) {
 					// Plot overlapping bars.  x&1 is a chequered offset to avoid flickering of intersecting surfaces.
-					draw_bar(x_offset +(x+y&1)*0.0001, z_offset +(x+y&1)*0.001 + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, 0.25*SCALE_width, 0.25*SCALE_length);
+					#define miniGap 0.001*((x+y)&1)
+					#define scaleBars (0.3 + 1.2*whiteness)
+					// #define scaleBars (0.1 + 2.4*heights[y][x]*compensateForCurve*fadeOff)
+					#define scaleBars (0.1 + 2.4*peakEnergy[x]*fadeOff)
+					draw_bar(x_offset + miniGap - scaleBars*0.25*SCALE_width/2.0, z_offset + miniGap, barHeight, hue, saturation, whiteness, scaleBars*0.25*SCALE_width, scaleBars*0.25*SCALE_length);
 				} else {
 					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
 				}
@@ -762,7 +783,7 @@ static void start_display(void)
 	x_angle = 20.0;
 	y_angle = -15.0;
 	z_angle = 0.0;
-	modeCycle = 0;
+	modeCycle = 4;
 
 	going = TRUE;
 	pthread_create(&draw_thread, NULL, draw_thread_func, NULL);
