@@ -148,9 +148,9 @@
 #define SPECWIDTH 256
 
 //// The idea here was to brighten the areas of recently increasing height.
-//// But our implementation created many vertical lines.
+//// The first implementation created many vertical lines.
 // #define VELOCITY
-//// VELOCITY2 is a little better, but still I think it needs some horizontal smoothing.
+//// VELOCITY2 is a little better.
 #define VELOCITY2
 //// It was interesting to set VELOCITY2 to work negatively, created some smoother colours.
 //// But I think it should work positively - it highlights the frequencies which have just entered the audio.
@@ -159,6 +159,14 @@
 //// heatHere is already creating brightness-when-higher effect, so that should be re-tweaked if VELOCITY2 is used.
 //// Well it's good for visualizing which frequencies are *changing*, but it doesn't
 //// look much like real fire when it's calibrated high enough to be visible!
+//// 'Bug': When the whole spectrum is rising or falling together, we see a
+//// kind of red->yellow->red flash, which tends to look a little strong.
+//// Maybe to 'detect new notes' we want to be detecting local-bar-change
+//// relative to global-bar-change.
+
+//// To really 'highlight notes which have just started playing' we should
+//// compare the current bar height to the bar heights from the last second or
+//// so, and highlight those areas which are above the average.
 
 /* Width 550 fits nicely over a double-size amp.  274 over normal size amp.
    TODO: Make this user configurable, either in preferences or by resizing the
@@ -490,7 +498,7 @@ static void fsanalyzer_init(void) {
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.4
+	#define palDelta 0.45
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -771,7 +779,7 @@ static gint draw_func(gpointer data) {
 		// Color height:
 
 		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
-		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.8 /*MINCOL*/ + heatHere*EXPLOSION*1.1;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.75 /*MINCOL*/ + heatHere*EXPLOSION*1.0;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
@@ -786,8 +794,8 @@ static gint draw_func(gpointer data) {
 		#endif
 		#ifdef VELOCITY2
 			// cy += (bar_heights_difference[XSCALE(i)]) * 1.0;
-			bar_heights_difference_local = bar_heights_difference_local*0.85 + 0.15*(bar_heights_difference[XSCALE(i)]);
-			cy += bar_heights_difference_local * 12.0;
+			bar_heights_difference_local = bar_heights_difference_local*0.6 + 0.4*(bar_heights_difference[XSCALE(i)]);
+			cy += bar_heights_difference_local * 9.0;
 		#endif
 
 
@@ -954,7 +962,7 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		if (bar_heights[i]<0) bar_heights[i]=FLAMEHEIGHT;
 		#ifdef VELOCITY2
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
-		bar_heights_difference[i] = bar_heights_difference[i]*0.95  +  0.05*((float)bar_heights[i] - (float)last_bar_height);
+		bar_heights_difference[i] = bar_heights_difference[i]*0.97  +  0.03*((float)bar_heights[i] - (float)last_bar_height);
 		// bar_heights_difference[i] = (gint16)((float)bar_heights_difference[i]*0.9  +  0.1*((float)bar_heights[i] - (float)last_bar_height));
 		#endif
 	}
