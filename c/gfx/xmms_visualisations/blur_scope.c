@@ -161,8 +161,8 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		// be achieved by using a linear decay over a non-linear cmap.
 		if (sum <= 0)
 			sum = 0;
-		else if (sum > 64)
-			sum = sum - 4; // Fast initial decay
+		else if (sum > 1)
+			sum = sum - 2; // Fast initial decay
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
@@ -170,14 +170,14 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			// sum = sum - 1; // Final fixed decay
 
 		// At low intensity slow down the decay as much as possible
-		else if (sum==2 || sum==4 || sum==8 || sum==16 || sum==32 || sum==64)
-			sum = sum - 1;
-		else
-			sum = sum - 0;
+		// else if (sum==2 || sum==4 || sum==8 || sum==16 || sum==32 || sum==64)
+			// sum = sum - 1;
+		// else
+			// sum = sum - 0;
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
 
-		sum = iptr[0];  if (sum > DECAY_RATE) { sum -= DECAY_RATE; } else { sum = 0; } // Rapid decay without blurring
+		// sum = iptr[0];  if (sum > DECAY_RATE*4) { sum -= DECAY_RATE*4; } else { sum = 0; } // Rapid decay without blurring
 
 		*(optr) = sum;
 		iptr++;
