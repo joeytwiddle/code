@@ -214,7 +214,7 @@ static void draw_rectangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLflo
 }
 
 // Doing our own hsl->rgb conversion is faster than making Chrome do it!
-static void setHSL(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GLfloat *greenPtr, GLfloat *bluePtr) {
+static void convertHSLtoRGB(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GLfloat *greenPtr, GLfloat *bluePtr) {
 	// All input and output values are in range 0.0 to 1.0
 	GLfloat red, green, blue;
 	if(s == 0) {
@@ -225,17 +225,17 @@ static void setHSL(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GLfloat *gr
 		GLfloat temp3;
 
 		// Red
-		temp3 = h + 1/3;
+		temp3 = h + 1.0/3.0;
 		if (temp3<0)
 			temp3 += 1.0;
 		if (temp3>1)
 			temp3 -= 1.0;
-		if (temp3 < 1/6)
+		if (temp3 < 1.0/6.0)
 			red = temp1 + (temp2-temp1)*6*temp3;
-		else if (temp3 < 1/2)
+		else if (temp3 < 1.0/2.0)
 			red = temp2;
-		else if (temp3 < 2/3)
-			red = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else if (temp3 < 2.0/3.0)
+			red = temp1 + (temp2-temp1)*(2.0/3.0-temp3)*6;
 		else
 			red = temp1;
 
@@ -243,29 +243,29 @@ static void setHSL(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GLfloat *gr
 		temp3 = h;
 		if (temp3<0)
 			temp3 += 1.0;
-		if (temp3>1)
+		if (temp3>1.0)
 			temp3 -= 1.0;
-		if (temp3 < 1/6)
+		if (temp3 < 1.0/6.0)
 			green = temp1 + (temp2-temp1)*6*temp3;
-		else if (temp3 < 1/2)
+		else if (temp3 < 1.0/2.0)
 			green = temp2;
-		else if (temp3 < 2/3)
-			green = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else if (temp3 < 2.0/3.0)
+			green = temp1 + (temp2-temp1)*(2.0/3.0-temp3)*6.0;
 		else
 			green = temp1;
 
 		// Blue
-		temp3 = h - 1/3;
+		temp3 = h - 1.0/3.0;
 		if (temp3<0)
 			temp3 += 1.0;
 		if (temp3>1)
 			temp3 -= 1.0;
-		if (temp3 < 1/6)
-			blue = temp1 + (temp2-temp1)*6*temp3;
-		else if (temp3 < 1/2)
+		if (temp3 < 1.0/6.0)
+			blue = temp1 + (temp2-temp1)*6.0*temp3;
+		else if (temp3 < 1.0/2.0)
 			blue = temp2;
-		else if (temp3 < 2/3)
-			blue = temp1 + (temp2-temp1)*(2/3-temp3)*6;
+		else if (temp3 < 2.0/3.0)
+			blue = temp1 + (temp2-temp1)*(2.0/3.0-temp3)*6.0;
 		else
 			blue = temp1;
 
@@ -280,17 +280,22 @@ static void setHSL(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GLfloat *gr
 	// return "rgba("+red+","+green+","+blue+","+a/100+")";
 }
 
-static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat red, GLfloat green, GLfloat blue, float W, GLfloat width, GLfloat length )
+static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat hue, GLfloat sat, GLfloat lightness, GLfloat width, GLfloat length )
 {
 
 	// float whiteness = red*red;
 	// float notwhiteness = 1.0 - whiteness;
+
+	GLfloat red, green, blue;
+
+	convertHSLtoRGB(hue, sat, lightness, &red, &green, &blue);
 
 	//  red = 1.0*whiteness +  red*notwhiteness;
 	// green = 1.0*whiteness + green*notwhiteness;
 	// blue = 1.0*whiteness +  blue*notwhiteness;
 
 	// float W = red*red;
+	float W = lightness;
 	float NW = 1.0 - W;
 
 	#define glColor3f_with_scale_then_whiteness(r,g,b,s) glColor3f(W+r*s*NW,W+g*s*NW,W+b*s*NW)
@@ -298,22 +303,22 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// If we imagine the spectrum going right across the screen, and history going in to the picture.
 
 	// Flat (horizontal)
-	// glColor3f(red,green,blue);
-	glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
+	glColor3f(red,green,blue);
+	// glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
 	draw_rectangle(x_offset, height, z_offset, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset,      0, z_offset, x_offset + width,      0, z_offset + length);
 
 	// In width plane (across spectrum)
-	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
-	glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
+	glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
+	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, height, z_offset         );
 	/*
 	*/
 
 	// In depth plane (into history)
-	// glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
-	glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
+	glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
+	// glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
 	// glColor3f(red,green,blue);
 	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
 	draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
@@ -367,6 +372,10 @@ static void draw_bars(void)
 
 		for(x = 0; x < WIDTH; x++)
 		{
+			GLfloat saturation = 1.0;
+			// GLfloat hue = x*1.0/WIDTH;
+			GLfloat hue = 2.0/3.0 + x*5.0/6.0/WIDTH;
+
 			x_offset = -1.6 + (x * 0.2*15.0/(WIDTH-1));
 
 			#define compensateForCurve (0.8+1.2*(float)x/(float)WIDTH)
@@ -398,10 +407,7 @@ static void draw_bars(void)
 			//// Fade out fast from driving edge (white to color):
 			whiteness = 1.3 * peakEnergy[x] * breakingEdge;
 			//// Colored amplitudes fade to white when they drop:
-			GLfloat blackness = 0.8 - 1.1*peakEnergy[x];
-
-			whiteness -= blackness;
-			whiteness *= 2.0;
+			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
 			whiteness = fmin(1.0,fmax(0.0,whiteness));
 
@@ -432,27 +438,27 @@ static void draw_bars(void)
 
 			// Nicely spaced lines and rows of dots:
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset + 0.15*SCALE_width, z_offset, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 
 			// Crosses:
 			/*
 			if (modeCycle%2 > 0)
-				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
+				draw_bar(x_offset - longSide*SCALE_width/2, z_offset - shortSide*SCALE_length/2, barHeight, hue, saturation, whiteness, longSide*SCALE_width, shortSide*SCALE_length);
 
 			if (modeCycle%4 > 1)
-				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
+				draw_bar(x_offset - shortSide*SCALE_width/2, z_offset - longSide*SCALE_length/2, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, longSide*SCALE_length);
 			*/
 
 			if (modeCycle%4 == 0) {
 				// Since neither of the above will fire, we just plot simple bars
 				// We can't use longSide for both 4 and 8 because they are identical.
 				if (modeCycle%12 == 4) {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, shortSide*SCALE_width, shortSide*SCALE_length);
 				} else {
-					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, whiteness, longSide*SCALE_width, longSide*SCALE_length);
+					draw_bar(x_offset, z_offset + 0.15*SCALE_length, barHeight, hue, saturation, whiteness, longSide*SCALE_width, longSide*SCALE_length);
 				}
 			}
 
