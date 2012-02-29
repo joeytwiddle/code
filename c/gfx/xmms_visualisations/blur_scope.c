@@ -152,7 +152,7 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 		if (sum <= 0)
 			sum = 0;
 		else if (sum > 64)
-			sum = sum - 3; // Fast initial decay
+			sum = sum - 8; // Fast initial decay
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
