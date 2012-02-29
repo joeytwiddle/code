@@ -216,6 +216,10 @@ static void draw_rectangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLflo
 // Doing our own hsl->rgb conversion is faster than making Chrome do it!
 static void convertHSLtoRGB(GLfloat h, GLfloat s, GLfloat l, GLfloat *redPtr, GLfloat *greenPtr, GLfloat *bluePtr) {
 	// All input and output values are in range 0.0 to 1.0
+	if (s > 1) s=1;
+	if (s < 0) s=0;
+	if (l > 1) l=1;
+	if (l < 0) l=0;
 	GLfloat red, green, blue;
 	if(s == 0) {
 		red = green = blue = l;
@@ -288,7 +292,7 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 
 	GLfloat red, green, blue;
 
-	convertHSLtoRGB(hue, sat, lightness, &red, &green, &blue);
+	#define setHSL(hue, sat, lightness) convertHSLtoRGB(hue, sat, lightness, &red, &green, &blue); glColor3f(red,green,blue)
 
 	//  red = 1.0*whiteness +  red*notwhiteness;
 	// green = 1.0*whiteness + green*notwhiteness;
@@ -303,23 +307,26 @@ static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat
 	// If we imagine the spectrum going right across the screen, and history going in to the picture.
 
 	// Flat (horizontal)
-	glColor3f(red,green,blue);
+	// glColor3f(red,green,blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
+	setHSL(hue, sat, lightness);
 	draw_rectangle(x_offset, height, z_offset, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset,      0, z_offset, x_offset + width,      0, z_offset + length);
 
 	// In width plane (across spectrum)
-	glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
+	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
+	setHSL(hue, sat*0.8, lightness*0.8);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, height, z_offset         );
 	/*
 	*/
 
 	// In depth plane (into history)
-	glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
+	// glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
 	// glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
 	// glColor3f(red,green,blue);
+	setHSL(hue, sat*0.6, lightness*0.6);
 	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
 	draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
 
@@ -385,7 +392,7 @@ static void draw_bars(void)
 			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
 
-			peakEnergy[x] *= 0.85;
+			peakEnergy[x] *= 0.70;
 			// GLfloat energyHere = heights[y][x];
 			GLfloat energyHere = heights[y][x] + 0.5*(heights[y][x] - heights[y+1][x]);
 			energyHere *= compensateForCurve;
@@ -409,7 +416,9 @@ static void draw_bars(void)
 			//// Colored amplitudes fade to white when they drop:
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
-			whiteness = fmin(1.0,fmax(0.0,whiteness));
+			whiteness += 1.5 * peakEnergy[x] * pow(breakingEdge,4);
+
+			// whiteness = fmin(1.0,fmax(0.0,whiteness));
 
 			// #define barHeight heights[y][x]
 			// #define barHeight (heights[y][x] + peakEnergy[x]) / 2.0
