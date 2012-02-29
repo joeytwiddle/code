@@ -58,10 +58,10 @@
 // #define NUM_BANDS 128
 
 /* The original LENGTH was 16 */
-#define LENGTH 64
+// #define LENGTH 64
 // #define LENGTH 200
 // #define LENGTH 160
-// #define LENGTH 120
+#define LENGTH 120
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
@@ -74,15 +74,22 @@
 
 // #define CHECK_FOR_KICK
 
-#define LIGHTER
+#define LIGHTER_VERSION
 
-#ifdef LIGHTER
-	#undef LENGTH
-	#define LENGTH 48
-	// #define WINWIDTH 320
-	// #define WINHEIGHT 180
+#ifdef LIGHTER_VERSION
+	// For slower PCs with small screens.
 	#define WINWIDTH 560
 	#define WINHEIGHT 320
+	#undef LENGTH
+	// Good framerate at 32
+	// 48 poor framerate and poor depth
+	// 64+ poor framerate but at least some history!
+	#define LENGTH 64
+/*
+	// #define WINWIDTH 320
+	// #define WINHEIGHT 180
+	#define SIMPLE_LIGHTING
+*/
 #else
 	#define WINWIDTH 640
 	#define WINHEIGHT 360
@@ -410,7 +417,7 @@ static void draw_bars(void)
 		// float w_base = (r_base - 0.95)/0.05;
 		if (w_base < 0.0)
 			w_base = 0.0;
-		GLfloat breakingEdge = w_base * w_base;
+		// GLfloat breakingEdge = w_base * w_base;
 
 		GLfloat fadeOff = (1.0 - (float)y/(float)(LENGTH-1));
 		// fadeOff = fadeOff * fadeOff;
@@ -454,6 +461,13 @@ static void draw_bars(void)
 			peakHeight[x] -= 0.05 * y/LENGTH;
 			peakHeight[x] = fmax(0, peakHeight[x]);
 
+#ifdef SIMPLE_LIGHTING
+
+			//// Fade out slowly from white to color to black:
+			whiteness = 2.0 * peakEnergy[x] * fadeOff;
+
+#else
+
 			localAverage[x] *= 0.95;
 			localAverage[x] += 0.05 * peakHeight[x];
 
@@ -466,18 +480,15 @@ static void draw_bars(void)
 			//// Colored amplitudes fade to white when they drop:
 			// whiteness = 0.8 - 1.1*peakEnergy[x];
 
-			//// Fade out slowly from white to color to black:
-			// whiteness = 2.0 * peakEnergy[x] * fadeOff;
-
 			//// Power fade the energy, so the difference between high and low appears stronger in the distance.
 			whiteness = 5.0 * peakEnergy[x];
 			/* whiteness += 0.0001 - 0.1 * (float)y/(float)LENGTH;
 			if (whiteness<0)
 				whiteness=0; */
+
 			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
 			whiteness /= 2.5;
-
-			whiteness *= fadeOff * fadeOff;
+			whiteness *= fadeOff;
 
 			//// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
@@ -505,6 +516,8 @@ static void draw_bars(void)
 
 			// default spacing in both directions is 0.2 before scaling
 			// original widths and lengths were 0.1 before scaling
+
+#endif
 
 			if (barHeight <= 0.01 && whiteness <= 0.01) {
 				continue;
