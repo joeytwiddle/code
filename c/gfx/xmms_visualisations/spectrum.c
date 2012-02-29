@@ -180,11 +180,13 @@ static void fsanalyzer_init(void) {
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
 	palette[0].red = 0xFF77; palette[0].green = 0xFF77; palette[0].blue = 0xCCCC;
 	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
-	palette[2].red = 0xFF77; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
-	palette[3].red = 0xCCCC; palette[3].green = 0x6666; palette[3].blue = 0x0000;
-	palette[4].red = 0x2222; palette[4].green = 0x0088; palette[4].blue = 0x0000;
+	palette[2].red = 0xFF77; palette[2].green = 0xCCCC; palette[2].blue = 0x0000;
+	palette[3].red = 0xDDDD; palette[3].green = 0x6666; palette[3].blue = 0x0000;
+	palette[4].red = 0x1111; palette[4].green = 0x0011; palette[4].blue = 0x0000;
+	// We want a lick of red, then orange quickly moving to a strong yellow
+	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.3
+	#define palDelta 0.28
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
 	#define palScale 0.9
@@ -211,8 +213,6 @@ static void fsanalyzer_init(void) {
 	palette[4].red = 0x0000; palette[4].green = 0x0000; palette[4].blue = 0x2222;
 	#define palDelta 0.15
 	*/
-
-	if (1>0) {
 
 	for(i = 0; i < 3*HEIGHT; i++) {
 		float thruouter,thruinner;
@@ -244,156 +244,6 @@ static void fsanalyzer_init(void) {
 		gdk_gc_set_foreground(gc,&color);
 		gdk_draw_line(bar,gc,0,i,24,i);
 	}
-
-	} else {
-
-	// The first HEIGHT pixels are "above" the flame.  They are rendered when the top of the flame is darker than 0!
-	// color.red = 0xFFFF/3; // TODO: If we are gonna have extra red, keep fading it.
-	// color.blue = 0xFFFF/*/3*/; // TODO: This should only be for TESTING!
-	for(i = 0; i < HEIGHT; i++) {
-		// color.red = 0xFFFF/3 * i/HEIGHT;
-		// color.green = color.red/3;
-		color.red = 0xFFFF*0.2;
-		color.green = (0xDDDD-0xFFFF/3)*0.2*0.2;
-		color.blue = 0x0000;
-		// color.blue = color.red;   color.red = 0;
-		/*
-		//// Produce a yellow "lick" above the flame.  Did not work well.
-		float t = HEIGHT-i;
-		if (t<8) {
-			color.red = 0xFFFF/3 + 0xFFFF/3*t/8;   color.green = color.red*t/8;
-		}
-		*/
-		gdk_color_alloc(gdk_colormap_get_system(),&color);
-		gdk_gc_set_foreground(gc,&color);
-		gdk_draw_line(bar,gc,0,i,24,i);
-	}
-	// i = 0;
-	// gdk_draw_line(bar,gc,0,i,0,HEIGHT-1);
-
-	// The second HEIGHT pixels are the fire, ranging from dark to light.  We could consider increasing the size of this part.
-	for(i = 0; i < HEIGHT; i++) {
-		float thruouter,thruinner;
-		thruouter = 1.0 - (float)i/(float)HEIGHT;
-		thruinner = thruouter*5.0 - (int)(thruouter*5.0);
-		if (thruinner == 0)
-			thruinner = 1.0;
-		thruinner *= 0xFFFF;
-		if (thruouter<0.2) {
-			//// bunsen blue -> white -> yellow -> red
-			// color.red = 0xbbbb+thruinner/4;
-			// color.green = 0xbbbb+thruinner/4;
-			// color.blue = 0xFFFF;
-			//// do 1st step of white -> yellow
-			color.red = 0xFFFF;
-			color.green = 0xEEEE - thruinner/32;
-			color.blue = 0xEEEE - thruinner*7/16;
-		} else if (thruouter<0.4) {
-			//// blue -> white -> yellow -> red
-			// color.red = thruinner;
-			// color.green = thruinner;
-			// color.blue = 0xFFFF;
-			//// blue -> black -> yellow -> red
-			// color.red = 0;
-			// color.green = 0;
-			// color.blue = 0xFFFF - thruinner;
-			//// yellow -> red -> darkred
-			// color.red = 0xFFFF;
-			// color.green = 0xFFFF - thruinner;
-			// color.blue = 0;
-			//// bunsen blue -> white -> yellow -> red
-			// color.red = 0xFFFF;
-			// color.green = 0xFFFF;
-			// color.blue = 0xFFFF - thruinner;
-			//// do 2nd step of white -> yellow
-			color.red = 0xFFFF;
-			color.green = 0xEEEE - 0x1111/2 - thruinner/32;
-			color.blue = 0xFFFF/2 - thruinner/2;
-		} else if (thruouter<0.6) {
-			// color.red = 0xFFFF;
-			// color.green = 0xFFFF;
-			// color.blue = 0xFFFF - thruinner;
-			//
-			//
-			//
-			// color.red = thruinner;
-			// color.green = thruinner;
-			// color.blue = 0;
-			// color.red = 0xFFFF - thruinner/2;
-			// color.green = 0;
-			// color.blue = 0;
-			// yellow -> red:
-			color.red = 0xFFFF;
-			// color.green = 0xDDDD - thruinner/3;
-			color.green = 0xDDDD - thruinner/3;
-			color.blue = 0;
-			/*
-		} else if (thruouter<0.8) {
-			color.red = 0xFFFF;
-			color.green = max(0xDDDD - 0xFFFF/3 - thruinner/3,0);
-			// color.green = color.red/3;
-			color.blue = 0;
-		} else {
-			// color.red = 0xFFFF;
-			// color.green = 0xFFFF - thruinner;
-			// color.blue = 0;
-			//
-			//
-			//
-			// color.red = 0xFFFF - thruinner*0.75; // go down to 25% red, not black
-			// color.green = 0;
-			color.red = 0xFFFF - thruinner*2/3; // go down to 33% red, not black
-			color.green = max(0xDDDD - 0xFFFF*2/3 - thruinner/3,0);
-			// color.green = color.red/3;
-			color.blue = 0;
-			*/
-		} else {
-			thruinner = (thruouter-0.6)/0.4;
-			#define loss (1.0-thruinner*0.8)
-			// color.red = 0xFFFF*(1.0-thruouter*0.5);
-			color.red = 0xFFFF*loss;
-			color.green = (0xDDDD - 0xFFFF/3)*loss*loss;
-			color.blue = 0;
-		}
-		gdk_color_alloc(gdk_colormap_get_system(),&color);
-		gdk_gc_set_foreground(gc,&color);
-		gdk_draw_line(bar,gc,0,HEIGHT+i,24,HEIGHT+i);
-	}
-
-	// The third HEIGHT pixels are full fire, max colour no change.
-	color.red = 0xFFFF;
-	color.green = 0xEEEE;
-	color.blue = 0xEEEE;
-	gdk_color_alloc(gdk_colormap_get_system(),&color);
-	gdk_gc_set_foreground(gc,&color);
-	for(i = 0; i < HEIGHT; i++) {
-		gdk_draw_line(bar,gc,0,2*HEIGHT+i,24,2*HEIGHT+i);
-	}
-
-	}
-
-	/*
-	for(i = 0; i < HEIGHT / 2; i++) {
-		color.red = 0xFFFF;
-		color.green = ((i * 255) / (HEIGHT / 2)) << 8;
-		color.blue = 0;
-
-		gdk_color_alloc(gdk_colormap_get_system(),&color);
-		gdk_gc_set_foreground(gc,&color);
-		gdk_draw_line(bar,gc,0,i,24,i);
-	}
-	for(i = 0; i < HEIGHT / 2; i++) {
-		color.red = (255 - ((i * 255) / (HEIGHT / 2))) <<8;
-		color.green = 0xFFFF;
-		color.blue = 0;
-		// color.blue = (127*i*2/HEIGHT) <<8;
-		// color.blue = (255*i*2/HEIGHT) <<8;
-
-		gdk_color_alloc(gdk_colormap_get_system(),&color);
-		gdk_gc_set_foreground(gc,&color);
-		gdk_draw_line(bar,gc,0,i + (HEIGHT / 2),24,i + (HEIGHT / 2));
-	}
-	*/
 
 	scale = 1.0 * HEIGHT / ( log((1 - d) / d) * 2 );
 	x00 = d*d*32768.0/(2 * d - 1);
@@ -533,10 +383,10 @@ static gint draw_func(gpointer data) {
 		// #define GAIN 0.02
 		// #define LOOKAHEAD 8
 		// #define GAIN 0.03
-		// #define LOOKAHEAD 8
-		// #define GAIN 0.04
-		#define LOOKAHEAD 7
+		#define LOOKAHEAD 8
 		#define GAIN 0.05
+		// #define LOOKAHEAD 7
+		// #define GAIN 0.05
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.05
 		// #define LOOKAHEAD 5
@@ -556,7 +406,7 @@ static gint draw_func(gpointer data) {
 		// #define MINCOL (HEIGHT/7)
 		// #define EXPLOSION 1.1
 		// #define EXPLOSION 1.2
-		#define EXPLOSION 1.3
+		#define EXPLOSION 1.5
 
 		/*
 		// This is a more accurate way to calculate the heatHere mean, but the results are not so good visually!
