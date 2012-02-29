@@ -18,7 +18,6 @@
  */
 #include "config.h"
 
-#include <stdio.h>
 #include <gtk/gtk.h>
 #include <string.h>
 #include "xmms/plugin.h"
@@ -69,12 +68,13 @@ VisPlugin *get_vplugin_info(void)
 // #define WIDTH 256
 // #define WIDTH 640
 // #define WIDTH 720
-// #define WIDTH 800
-#define WIDTH 960
+#define WIDTH 800
+// #define WIDTH 960
+// #define WIDTH 1024
 #define HEIGHT 128
 #define min(x,y) ((x)<(y)?(x):(y))
 #define BPL	((WIDTH + 2))
-#define DECAY_RATE 6
+#define DECAY_RATE 8
 // #define SKIP_FRAMES 2
 // The human eye may see many white lines even when only 1 is renderered, due to the high framerate.  SKIP_FRAMES can make only 1 white line visible, but the oscilloscope will also appear more flickery / less smooth.
 
@@ -104,13 +104,10 @@ void bscope_read_config(void)
 	{
 		// bscope_cfg.color = 0xFF0000;  // red
 		// bscope_cfg.color = 0xFF3F7F;  // pink
-		// bscope_cfg.color = 0x3Fff00;  // green
-		// bscope_cfg.color = 0x3FFFBF;  // green/cyan
-		// bscope_cfg.color = 0x3FFFFF;  // cyan
 		// bscope_cfg.color = 0x00BFFF;  // cyan lightning
-		bscope_cfg.color = 0x009FFF;  // electric cyan
+		// bscope_cfg.color = 0x009FFF;  // electric cyan
+		bscope_cfg.color = 0x008FFF;  // electric blue light
 		// bscope_cfg.color = 0x007FFF;  // electric blue
-		// bscope_cfg.color = 0x0000FF;  // blue (dark)
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
 		
@@ -124,7 +121,14 @@ void bscope_read_config(void)
 	}
 }
 
-#define staticBlur 0.0
+
+// #define fadeRate 0.9961
+// #define blurTao 0.9961
+// #define fadeRate 0.97
+// #define blurTao 0.94
+#define fadeRate 0.96
+// #define blurTao 0.999
+// #define blurTao2 0.8
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -152,6 +156,15 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		else
 			sum = 0;
 		*/
+// #define max(a,b) (a>b?a:b)
+		// sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
+
+		// Retain self with blurTao:
+		// if (iptr[0] > sum)
+		// if (sum > iptr[0])
+			// sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+		// else
+			// sum = iptr[0];
 
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
@@ -159,12 +172,31 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 				sum -= 1;
 		}
 
+		/*
 		// I made the intensities decay non-linearly.  This could alternatively
 		// be achieved by using a linear decay over a non-linear cmap.
-		// if (sum <= 0)
-			// sum = 0;
+		if (sum <= 0)
+			sum = 0;
 		// else if (sum > 64)
-			// sum = sum - 16; // Fast initial decay
+			// sum = sum - 8; // Fast initial decay
+		// else
+			// sum = sum - 5; // Slow overall decay
+		else if (sum > DECAY_RATE)
+			sum = sum - DECAY_RATE; // Slow overall decay
+		else
+			sum = 0;
+		*/
+
+		// if (sum > 32)
+			// sum = sum * fadeRate;
+		// else
+			// if (sum > 0)
+				// sum--;
+
+		if (sum > 64)
+			sum -= DECAY_RATE;
+		else if (sum > 0)
+			sum--;
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
@@ -176,16 +208,12 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			// sum = sum - 1;
 		// else
 			// sum = sum - 0;
-
-		// if (sum > iptr[0])
-			// sum = iptr[0]*staticBlur + sum*(1.0-staticBlur);
 		// else
-			// sum = iptr[0];
+			// sum = sum - 1;
 
-		if (sum > DECAY_RATE)
-			sum -= DECAY_RATE;
-		else
-			sum = 0;
+		// @requires gint sum;
+		// if (sum < 0)
+			// sum = 0;
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
 
@@ -202,18 +230,9 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 // extern void bscope_blur_8(guchar *ptr,gint w, gint h, gint bpl);
 // #endif
 
-guint32 make_rgb(guint32 red, guint32 green, guint32 blue) {
-	return (((guint32)(red) << 16) | ((guint32)(green) << 8) | ((guint32)(blue)));
-}
-
 void generate_cmap(void)
 {
 	guint32 colors[256],i,red,blue,green;
-	// float bluet,whitet,whites;
-#define cmap_middle 180.0
-#define bluet ((float)i/cmap_middle)
-#define whitet (((float)i-cmap_middle)/(255.0-cmap_middle))
-#define whites (1.0-((float)i-cmap_middle)/(255.0-cmap_middle))
 	if(window)
 	{
 		red = (guint32)(bscope_cfg.color / 0x10000);
@@ -221,10 +240,10 @@ void generate_cmap(void)
 		blue = (guint32)(bscope_cfg.color % 0x100);
 		for(i = 255; i > 0; i--)
 		{
-			if (i < cmap_middle)
-				colors[i] = make_rgb(bluet*red,bluet*green,bluet*blue);
+			if (i == 255)
+				colors[i] = 0xFFFFFF;
 			else
-				colors[i] = make_rgb(red*whites+255*whitet,green*whites+255*whitet,blue*whites+255*whitet);
+				colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
 		}
 		colors[0]=0;
 		if(cmap)
@@ -344,6 +363,8 @@ static void bscope_render_pcm(gint16 data[2][512])
 		// Since we are reading only 1 sample for 2 pixels, we interpolate the second pixel:
 		if (i%2 == 1)
 			y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
+		// However, that does not produce an even volume spread for the display
+		// (unless we add anti-aliasing).
 		if(y < 0)
 			y = 0;
 		if(y >= HEIGHT)
