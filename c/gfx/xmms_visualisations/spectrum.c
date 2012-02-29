@@ -59,9 +59,33 @@
 // pixels above the flame flicker black when the flame drops.  This is not my
 // fault!  I think that's X not re-drawing those pixels quickly enough.  ;)
 
+// The Audacious version of this plugin scales the spectrum amplitudes to
+// "normalise" them.  This seems pretty worthwhile, but it means the heights of
+// bass frequencies can appear very low, even though they may be very audible.
+//
+// For the fire spectrum, pumping bass looks silly as a tiny little flame on
+// the far left.  So this was an attempt to make the bass "better visible" by
+// spreading it over the whole width of the spectrum.
+
+// #define SPREAD_BASS 1/32
+
+// Unfortunately imo this had too strong effect on tracks which don't need it,
+// and too weak effect on tracks which do!  After dropping it to 1/32 it became
+// invisible on quiet tracks despite the audible pumping bass.
+//
+// Some tracks seem to already have in their data exactly this
+// "bass-spread-over-spectrum" effect we are trying to produce.
+//
+// I guess that is to do with the way the audio was recorded or encoded; it
+// doesn't have a huge bearing on the resulting sound.
+//
+// We could even consider removing it, by seeing if there is global minimum
+// over the spectrum, and reducing it if there is.
+
 // TODO: We need a way to reduce load on the system.
 // Maybe we can do a little sleep, to give the rest of the system some CPU.
 // Or maybe we should detect when CPU is overloaded, and skip rendering a frame.
+// For now, setting SKIP_FRAMES around 2 or 4 can help.
 
 #include "config.h"
 
@@ -149,6 +173,7 @@
 /* Factor used for the diffusion. 4 means that half of the height is
    added to the neighbouring bars */
 #define dif 4
+// In other words, the two neighbouring bars count for 1, and the current bar counts for (dif-2).
 
 /* Parameters and functions for fire colouring. */
 //// I actually prefer the non-true interpolation because it feels more organic, but it does not work at higher resolutions.  (At low-res it puts a slight curve on the flames, but as high-res it exhibits the flat graph underneath, unless we interpolate that input.)
@@ -423,13 +448,14 @@ static void fsanalyzer_init(void) {
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
 	palette[0].red = 0xFF77; palette[0].green = 0xFF77; palette[0].blue = 0xCCCC;
 	palette[1].red = 0xFF77; palette[1].green = 0xEEEE; palette[1].blue = 0x4444;
-	palette[2].red = 0xFF77; palette[2].green = 0xBBBB; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x5555; palette[3].blue = 0x0000;
+	palette[2].red = 0xFF77; palette[2].green = 0xAAAA; palette[2].blue = 0x0000;
+	palette[3].red = 0xDDDD; palette[3].green = 0x3333; palette[3].blue = 0x0000;
 	palette[4].red = 0x8888; palette[4].green = 0x0888; palette[4].blue = 0x0000;
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.3
+	#define palDelta 0.4
+	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
 
@@ -804,9 +830,24 @@ static void fsanalyzer_playback_stop(void) {
 static void fsanalyzer_render_freq(gint16 data[2][256]) {
 	gint i;
 	gdouble y;
+	#ifdef SPREAD_BASS
+		gint global_add;
+	#else
+		#define global_add 0
+	#endif
+	// #define yscale (1.5/(0.5+(float)i/(float)SPECWIDTH))
+	// #define yscale (2.0/(1.0+(float)i/(float)SPECWIDTH))
+	// #define yscale (2.0-((float)i/(float)SPECWIDTH))
+	#define yscale 1.2
 
 	if(!window)
 		return;
+
+	#ifdef SPREAD_BASS
+	global_add = ( (double)data[0][0] + (double)data[0][1] + (double)data[0][2] ) / 256 * SPREAD_BASS;
+	// sprintf("Added %i\n",global_add);
+	// global_add = 0;
+	#endif
 
 	/* FIXME: can anything taken out of the main thread? */
 	for (i = 0; i < SPECWIDTH; i++) {
@@ -817,13 +858,13 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 			(i==0           ? y : bar_heights[i-1]) +
 			(i==SPECWIDTH-1 ? y : bar_heights[i+1])) / dif; /* Add some diffusion */
 		y = ((tau-1)*bar_heights[i] + y) / tau; /* Add some dynamics */
-		bar_heights[i] = (gint16)y;
+		bar_heights[i] = global_add + yscale*(gint16)y;
 	}
 	draw_func(NULL);
 	return;
 }
 
-// From XMMS:
+// From XMMS, modified some, now pretty naff:
 static void sanalyzer_render_freq_DISABLED(gint16 data[2][256])
 {
 	gint i,c;
@@ -833,6 +874,7 @@ static void sanalyzer_render_freq_DISABLED(gint16 data[2][256])
 	// #define xscale(x) xscale[x]
 	// #define xscale(x) XSCALE(x)
 	// #define xscale(x) ((int)(x*SPECWIDTH/WINWIDTH))
+	//// These failed I dunno why:
 	// #define xscale(x) ((int)(SPECWIDTH*pow((float)x/(float)WINWIDTH,0.5)))
 	// #define xscale(x) ((int)(SPECWIDTH*pow((float)x/(float)SPECWIDTH,1.0)))
 	#define xscale(x) (x/2)
