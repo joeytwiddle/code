@@ -255,7 +255,7 @@ static void fsanalyzer_init(void) {
 	// We want a lick of red, then orange quickly moving to a strong yellow
 	// But I think I have the scales wrong, I always have a significant band of dark orange.
 	// The alternative to increasing MINCOL:
-	#define palDelta 0.1
+	#define palDelta 0.3
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
 	#define palScale 0.9
@@ -459,14 +459,16 @@ static gint draw_func(gpointer data) {
 
 		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
-		#define LOOKAHEAD 12
-		#define GAIN 0.01
+		// #define LOOKAHEAD 12
+		// #define GAIN 0.01
+		// #define LOOKAHEAD 24
+		// #define GAIN 0.005
 		// #define LOOKAHEAD 10
 		// #define GAIN 0.02
 		// #define LOOKAHEAD 8
 		// #define GAIN 0.03
-		// #define LOOKAHEAD 6
-		// #define GAIN 0.04
+		#define LOOKAHEAD 6
+		#define GAIN 0.04
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.05
 		// #define LOOKAHEAD 3
@@ -540,7 +542,8 @@ static gint draw_func(gpointer data) {
 
 		// heatHere = 64;
 
-		cy = FLAMEHEIGHT - 32 + y/4 /*MINCOL*/ + heatHere*EXPLOSION/4;
+		// cy = FLAMEHEIGHT + MINCOL - (WINHEIGHT-y) + heatHere*EXPLOSION;
+		cy = FLAMEHEIGHT - 6 + MINCOL - (WINHEIGHT-y)*0.6 /*MINCOL*/ + heatHere*EXPLOSION*0.8;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
