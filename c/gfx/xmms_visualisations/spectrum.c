@@ -459,14 +459,14 @@ static gint draw_func(gpointer data) {
 
 		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
-		// #define LOOKAHEAD 12
-		// #define GAIN 0.01
+		#define LOOKAHEAD 12
+		#define GAIN 0.01
 		// #define LOOKAHEAD 10
 		// #define GAIN 0.02
 		// #define LOOKAHEAD 8
 		// #define GAIN 0.03
-		#define LOOKAHEAD 6
-		#define GAIN 0.04
+		// #define LOOKAHEAD 6
+		// #define GAIN 0.04
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.05
 		// #define LOOKAHEAD 3
@@ -540,7 +540,7 @@ static gint draw_func(gpointer data) {
 
 		// heatHere = 64;
 
-		cy = FLAMEHEIGHT + 32 - y/16 /*MINCOL*/ + heatHere*EXPLOSION/5;
+		cy = FLAMEHEIGHT - 32 + y/4 /*MINCOL*/ + heatHere*EXPLOSION/4;
 		// cy = FLAMEHEIGHT + MINCOL + (0.75*heatHere+0.25*heatNow)*EXPLOSION - (WINHEIGHT-y);
 		// cy = FLAMEHEIGHT + MINCOL + heatNow*EXPLOSION - (WINHEIGHT-y);
 		//// heatNow varies at a gentle rate over time
