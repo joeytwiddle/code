@@ -74,8 +74,7 @@ VisPlugin *get_vplugin_info(void)
 #define HEIGHT 128
 #define min(x,y) ((x)<(y)?(x):(y))
 #define BPL	((WIDTH + 2))
-// #define DECAY_RATE 8
-#define DECAY_RATE 7
+#define DECAY_RATE 4
 // #define SKIP_FRAMES 2
 // The human eye may see many white lines even when only 1 is renderered, due to the high framerate.  SKIP_FRAMES can make only 1 white line visible, but the oscilloscope will also appear more flickery / less smooth.
 
@@ -106,8 +105,8 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF0000;  // red
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x00BFFF;  // cyan lightning
-		bscope_cfg.color = 0x009FFF;  // midletric
-		// bscope_cfg.color = 0x008FFF;  // electric cyan
+		// bscope_cfg.color = 0x009FFF;  // electric cyan
+		bscope_cfg.color = 0x008FFF;  // electric blue light
 		// bscope_cfg.color = 0x007FFF;  // electric blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
@@ -127,9 +126,9 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.88
-#define blurTao 0.8
-#define blurTao2 0.8
+#define fadeRate 0.96
+// #define blurTao 0.999
+// #define blurTao2 0.8
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -162,10 +161,10 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 
 		// Retain self with blurTao:
 		// if (iptr[0] > sum)
-		if (sum > iptr[0])
-			sum = sum*blurTao + iptr[0]*(1.0-blurTao);
-		else
-			sum = iptr[0];
+		// if (sum > iptr[0])
+			// sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+		// else
+			// sum = iptr[0];
 
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
@@ -188,11 +187,16 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
-		if (sum > 32)
-			sum = sum * fadeRate;
+		// if (sum > 32)
+			// sum = sum * fadeRate;
+		// else
+			// if (sum > 0)
+				// sum--;
+
+		if (sum > DECAY_RATE)
+			sum -= DECAY_RATE;
 		else
-			if (sum > 0)
-				sum--;
+			sum = 0;
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
