@@ -106,7 +106,7 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF0000;  // red
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x00BFFF;  // cyan lightning
-		bscope_cfg.color = 0x008FFF;  // electric cyan
+		bscope_cfg.color = 0x007FFF;  // electric cyan
 		// bscope_cfg.color = 0x007FFF;  // electric blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
@@ -126,7 +126,7 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.94
+#define fadeRate 0.92
 #define blurTao 1.0
 #define blurTao2 0.9
 
@@ -143,7 +143,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 	while(i--)
 	{
 		// Blurring:
-		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;  // Simple 4-neighbour blur
+		sum = (int)(((iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2) + 0.5);  // Simple 4-neighbour blur
 		// #define BLUR_DIST 3
 		// sum = (iptr[-BLUR_DIST*bpl] + iptr[-BLUR_DIST] + iptr[BLUR_DIST] + iptr[BLUR_DIST*bpl]) >> 2;  // Simple 4-neighbour blur
 		// sum = iptr[0]; // Do not blur
@@ -187,7 +187,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
-		if (sum > 64)
+		if (sum > 56)
 			sum = sum * fadeRate;
 		else if (sum > 1)
 			sum-=1;
