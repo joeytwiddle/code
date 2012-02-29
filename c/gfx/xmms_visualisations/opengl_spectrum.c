@@ -54,9 +54,9 @@
 // #define NUM_BANDS 16
 // #define NUM_BANDS 32
 // #define NUM_BANDS 48
-// #define NUM_BANDS 64
+#define NUM_BANDS 64
 // #define NUM_BANDS 128
-#define NUM_BANDS 256
+// #define NUM_BANDS 256
 
 /* The original LENGTH was 16 */
 #define LENGTH 64
@@ -80,8 +80,8 @@
 // #define ANGLED_SURFACES_IN_X
 // #define LIGHTER_VERSION
 // #define CHECK_FOR_KICK
-#define SHOW_PEAKS_ONLY
-#define BUILD_UP_PEAK_ENERGY
+// #define SHOW_PEAKS_ONLY
+// #define BUILD_UP_PEAK_ENERGY
 // #define HIDE_TROUGHS
 
 #ifdef LIGHTER_VERSION
