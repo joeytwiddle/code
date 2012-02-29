@@ -126,9 +126,9 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.92
-#define blurTao 1.0
-#define blurTao2 0.9
+#define fadeRate 0.96
+#define blurTao 0.2
+#define blurTao2 1.0
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -143,7 +143,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 	while(i--)
 	{
 		// Blurring:
-		sum = (int)(((iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2) + 0.5);  // Simple 4-neighbour blur
+		// sum = (int)(((iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2) + 0.5);  // Simple 4-neighbour blur
 		// #define BLUR_DIST 3
 		// sum = (iptr[-BLUR_DIST*bpl] + iptr[-BLUR_DIST] + iptr[BLUR_DIST] + iptr[BLUR_DIST*bpl]) >> 2;  // Simple 4-neighbour blur
 		// sum = iptr[0]; // Do not blur
@@ -156,19 +156,17 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		else
 			sum = 0;
 		*/
-// #define max(a,b) (a>b?a:b)
-		// sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
+#define max(a,b) (a>b?a:b)
+		sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
+
+		sum = sum*blurTao + iptr[0]*(1.0-blurTao);
 
 		// Retain self with blurTao:
 		// if (iptr[0] > sum)
-		if (sum > iptr[0])
-		{ } // sum = sum*blurTao + iptr[0]*(1.0-blurTao);
-		else
-			sum = iptr[0];
-
-		// #define keepP 0.2
-		// #define blendP 0.79
-		// sum = iptr[0]*keepP + sum*blendP;
+		// if (sum > iptr[0])
+		// { } // sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+		// else
+			// sum = iptr[0];
 
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
@@ -191,7 +189,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
-		if (sum > 56)
+		if (sum > 48)
 			sum = sum * fadeRate;
 		else if (sum > 1)
 			sum-=1;
@@ -213,9 +211,6 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 
 		// @requires gint sum;
 		// if (sum < 0)
-			// sum = 0;
-		// @hack "detect overflow" when using guint
-		// if (sum < 0 || sum > 65536)
 			// sum = 0;
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
@@ -245,8 +240,6 @@ void generate_cmap(void)
 		{
 			if (i == 255)
 				colors[i] = 0xFFFFFF;
-			// else if (i >= 220)
-				// colors[i] = 0x44DDFF;
 			else
 				colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
 		}
