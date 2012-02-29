@@ -221,21 +221,26 @@ static inline void draw_vert_line(guchar *buffer, gint x, gint y1, gint y2)
 	int y;
 	if(y1 < y2)
 	{
-		for(y = y1; y < y2; y++)
+		for(y = y1; y <= y2; y++)
 		{
 			draw_pixel_8(buffer,x,y,0xFF);
+			draw_pixel_8(buffer,x+1,y,0xFF);
 		}
 	}
 	else if(y2 < y1)
 	{
-		for(y = y2; y < y1; y++)
+		for(y = y2; y <= y1; y++)
 		{
 			draw_pixel_8(buffer,x,y,0xFF);
+			draw_pixel_8(buffer,x+1,y,0xFF);
 		}
 	}
 	else
 	{
 		draw_pixel_8(buffer,x,y1,0xFF);
+		draw_pixel_8(buffer,x+1,y1,0xFF);
+		draw_pixel_8(buffer,x,y1+1,0xFF);
+		draw_pixel_8(buffer,x+1,y1+1,0xFF);
 	}
 }
 
