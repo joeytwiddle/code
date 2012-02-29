@@ -126,7 +126,7 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.91
+#define fadeRate 0.92
 #define blurTao 1.0
 #define blurTao2 0.9
 
@@ -166,6 +166,10 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		else
 			sum = iptr[0];
 
+		// #define keepP 0.2
+		// #define blendP 0.79
+		// sum = iptr[0]*keepP + sum*blendP;
+
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
 			if (sum > 0)
@@ -187,7 +191,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
-		if (sum > 48)
+		if (sum > 56)
 			sum = sum * fadeRate;
 		else if (sum > 1)
 			sum-=1;
@@ -209,6 +213,9 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 
 		// @requires gint sum;
 		// if (sum < 0)
+			// sum = 0;
+		// @hack "detect overflow" when using guint
+		// if (sum < 0 || sum > 65536)
 			// sum = 0;
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
@@ -238,6 +245,8 @@ void generate_cmap(void)
 		{
 			if (i == 255)
 				colors[i] = 0xFFFFFF;
+			// else if (i >= 220)
+				// colors[i] = 0x44DDFF;
 			else
 				colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
 		}
