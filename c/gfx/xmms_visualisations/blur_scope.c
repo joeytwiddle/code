@@ -137,6 +137,8 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 	{
 		// Blurring:
 		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;  // Simple 4-neighbour blur
+		// #define BLUR_DIST 3
+		// sum = (iptr[-BLUR_DIST*bpl] + iptr[-BLUR_DIST] + iptr[BLUR_DIST] + iptr[BLUR_DIST*bpl]) >> 2;  // Simple 4-neighbour blur
 		// sum = iptr[0]; // Do not blur
 
 		// if (sum > 0)
@@ -159,7 +161,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		if (sum <= 0)
 			sum = 0;
 		else if (sum > 64)
-			sum = sum - 24; // Fast initial decay
+			sum = sum - 8; // Fast initial decay
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
