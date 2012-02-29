@@ -48,9 +48,9 @@
 /* NUM_BANDS should be either 32 or 16.  See declaration of xscale. */
 // #define NUM_BANDS 16
 #define NUM_BANDS 32
+// Originally: #define LENGTH 16
+/* LENGTH was originally 16 */
 
-/* The original LENGTH was 16 */
-#define LENGTH 128
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
@@ -58,8 +58,8 @@
 	// After 32 we give up normalising the size, and we let the trail lengthen rather than compress:
 	#define SCALEBACK (32.0/LENGTH)
 #endif
-
 #define WIDTH NUM_BANDS
+
 
 OGLSpectrumConfig oglspectrum_cfg;
 
@@ -200,44 +200,35 @@ static void draw_rectangle(GLfloat x1, GLfloat y1, GLfloat z1, GLfloat x2, GLflo
 	}
 }
 
-static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat red, GLfloat green, GLfloat blue, float W )
+static void draw_bar(GLfloat x_offset, GLfloat z_offset, GLfloat height, GLfloat red, GLfloat green, GLfloat blue )
 {
-	// default spacing in both directions is 0.2 before scaling
-	// original widths and lengths were 0.1 before scaling
-
-	GLfloat width = 0.10 * 15/(WIDTH-1);
+	GLfloat width = 0.1 * 15/(WIDTH-1);
 	// GLfloat length = 0.1 * 16/LENGTH;
-	GLfloat length = 0.10 * SCALEBACK;
+	GLfloat length = 0.2 * SCALEBACK;
 
-	// float whiteness = red*red;
-	// float notwhiteness = 1.0 - whiteness;
+	float whiteness = red*red;
+	float notwhiteness = 1.0 - whiteness;
 
-	//  red = 1.0*whiteness +  red*notwhiteness;
-	// green = 1.0*whiteness + green*notwhiteness;
-	// blue = 1.0*whiteness +  blue*notwhiteness;
-
-	// float W = red*red;
-	float NW = 1.0 - W;
-
-	#define glColor3f_with_scale_then_whiteness(r,g,b,s) glColor3f(W+r*s*NW,W+g*s*NW,W+b*s*NW)
+	/*
+	  red = 1.0*whiteness *  red*notwhiteness;
+	green = 1.0*whiteness * green*notwhiteness;
+	 blue = 1.0*whiteness *  blue*notwhiteness;
+	 */
 
 	// Flat (horizontal)
-	// glColor3f(red,green,blue);
-	glColor3f_with_scale_then_whiteness(red,green,blue,1.0);
+	glColor3f(red,green,blue);
 	draw_rectangle(x_offset, height, z_offset, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset,      0, z_offset, x_offset + width,      0, z_offset + length);
 
 	// In width plane
-	// glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
-	glColor3f_with_scale_then_whiteness(red,green,blue,0.5);
+	glColor3f(0.5 * red, 0.5 * green, 0.5 * blue);
 	draw_rectangle(x_offset, 0.0, z_offset + length, x_offset + width, height, z_offset + length);
 	draw_rectangle(x_offset, 0.0, z_offset         , x_offset + width, height, z_offset         );
 	/*
 	*/
 
 	// In depth plane
-	// glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
-	glColor3f_with_scale_then_whiteness(red,green,blue,0.25);
+	glColor3f(0.25 * red, 0.25 * green, 0.25 * blue);
 	draw_rectangle(x_offset        , 0.0, z_offset , x_offset        , height, z_offset + length);	
 	draw_rectangle(x_offset + width, 0.0, z_offset , x_offset + width, height, z_offset + length);
 
@@ -275,9 +266,9 @@ static void draw_bars(void)
 			
 		for(x = 0; x < WIDTH; x++)
 		{
-			x_offset = -1.6 + (x * 0.2*15.0/(WIDTH-1));
+			x_offset = -1.6 + (x * 0.2*(15/(WIDTH-1));
 				
-			draw_bar(x_offset, z_offset, heights[y][x], r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base, r_base*r_base*r_base*r_base*r_base);
+			draw_bar(x_offset, z_offset, heights[y][x], r_base - (x * (r_base / (WIDTH-1))), x * (1.0 / (WIDTH-1)), b_base);
 		}
 	}
 	glEnd();
@@ -387,13 +378,13 @@ void *draw_thread_func(void *arg)
 						x_speed = 3.0;
 					break;
 				case XK_Left:
-					y_speed += 0.1;
+					y_speed -= 0.1;
 					if(y_speed < -3.0)
 						y_speed = -3.0;
 					
 					break;
 				case XK_Right:
-					y_speed -= 0.1;
+					y_speed += 0.1;
 					if(y_speed > 3.0)
 						y_speed = 3.0;
 					break;
