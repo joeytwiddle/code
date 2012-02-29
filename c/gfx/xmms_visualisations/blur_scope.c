@@ -106,7 +106,7 @@ void bscope_read_config(void)
 		// bscope_cfg.color = 0xFF0000;  // red
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x00BFFF;  // cyan lightning
-		bscope_cfg.color = 0x007FFF;  // electric cyan
+		bscope_cfg.color = 0x008FFF;  // electric cyan
 		// bscope_cfg.color = 0x007FFF;  // electric blue
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
@@ -126,9 +126,10 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.94
-#define blurTao 0.8
-#define blurTao2 0.8
+#define fadeRate 0.98
+#define blurTao 0.2
+#define blurTao2 0.9
+#define BOTTOM_OUT 48
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -143,7 +144,7 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 	while(i--)
 	{
 		// Blurring:
-		// sum = (int)(((iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2) + 0.5);  // Simple 4-neighbour blur
+		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;  // Simple 4-neighbour blur
 		// #define BLUR_DIST 3
 		// sum = (iptr[-BLUR_DIST*bpl] + iptr[-BLUR_DIST] + iptr[BLUR_DIST] + iptr[BLUR_DIST*bpl]) >> 2;  // Simple 4-neighbour blur
 		// sum = iptr[0]; // Do not blur
@@ -156,17 +157,17 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 		else
 			sum = 0;
 		*/
-#define max(a,b) (a>b?a:b)
-		sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
-
-		sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+// #define max(a,b) (a>b?a:b)
+		// sum = max(max(iptr[-bpl],iptr[bpl]),max(iptr[-1],iptr[+1])) * blurTao2;
 
 		// Retain self with blurTao:
 		// if (iptr[0] > sum)
-		if (sum > iptr[0])
-		{ } // sum = sum*blurTao + iptr[0]*(1.0-blurTao);
-		else
-			sum = iptr[0];
+		// if (sum > iptr[0])
+		// { } // sum = sum*blurTao + iptr[0]*(1.0-blurTao);
+		// else
+			// sum = iptr[0];
+
+		sum = sum*blurTao + iptr[0]*(1.0-blurTao);
 
 		if (i < bpl) {
 			sum = sum / 4; // Fix for non-decaying bottom line
@@ -189,12 +190,11 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			sum = 0;
 		*/
 
-		if (sum > 48)
+		if (sum > BOTTOM_OUT)
 			sum = sum * fadeRate;
-		else if (sum > 1)
-			sum-=1;
 		else
-			sum = 0;
+			if (sum > 0)
+				sum--;
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
