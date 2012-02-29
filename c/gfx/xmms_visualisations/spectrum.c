@@ -26,6 +26,9 @@
 
 // #define AIRFLOW
 
+// CONSIDER: ANTIALIAS
+// We only have to darken the top-most pixel of the flame, according to the remainder of the float.  That could be any col, we need a fast way to get the right gc pixel?
+
 // To avoid overloading system (especially important with MASK_TRANSPARENCY),
 // we only render 1 frame every SKIP_FRAMES:
 #define SKIP_FRAMES 2
@@ -509,17 +512,18 @@ static void fsanalyzer_init(void) {
    // palette, when the flame is full white.
 	bar = gdk_pixmap_new(window->window,25, FLAMEHEIGHT*3.5, gdk_rgb_get_visual()->depth);
 
-	#define palScale 1.2
+	#define palScale 1.4
 	//// Red and orange flame
-	#define stages 4
+	#define stages 5
 	// A hint of blue in the bright "white" makes it even brighter.  Although my eyes cannot see the blue, they actually notice a red stripe where yellow meets white.
 	// palette[0].red = 0xFF44; palette[0].green = 0xFF44; palette[0].blue = 0xFFFF;
 	palette[0].red = 0xFFFF; palette[0].green = 0xFFFF; palette[0].blue = 0xFFFF;
-	palette[1].red = 0xFF77; palette[1].green = 0xEE00; palette[1].blue = 0x4444;
-	palette[2].red = 0xFF44; palette[2].green = 0xAAAA; palette[2].blue = 0x0000;
-	palette[3].red = 0xDDDD; palette[3].green = 0x4444; palette[3].blue = 0x0000;
+	palette[1].red = 0xFFFF; palette[1].green = 0xFF00; palette[1].blue = 0xAA00;
+	palette[2].red = 0xFF77; palette[2].green = 0xDD00; palette[2].blue = 0x4444;
+	palette[3].red = 0xFF44; palette[3].green = 0xAAAA; palette[3].blue = 0x0000;
+	palette[4].red = 0xDDDD; palette[4].green = 0x4444; palette[4].blue = 0x0000;
 	// Fine tune this to get the right amount of red.  Alternatively adjust MINCOL.
-	#define palDelta 0.22
+	#define palDelta 0.17
 	// At 0.4 we have now (almost?) passed palette[4] entirely!
 	// Unfortunately, now that we are using the whole range, we do not get the bright white candle areas!
 	// This makes the last 0.3 of the palette static!
@@ -825,7 +829,7 @@ static gint draw_func(gpointer data) {
 				  VELOCITY_X_GAIN       * bar_heights_difference[XSCALE(i)]
 				+ (1.0-VELOCITY_X_GAIN) * bar_heights_difference_local;
 			// Make recently growing bars brighter:
-			cy += bar_heights_difference_local * -5.0;
+			cy += bar_heights_difference_local * -10.0;
 			// Negative velocity!
 			// In theory this reduces the spikiness of sudden peaks at the start,
 			// but helps them to stay around longer, by compensating as they fall.
@@ -995,8 +999,8 @@ static void fsanalyzer_render_freq(gint16 data[2][256]) {
 		#ifdef VELOCITY2
 		// bar_heights_difference[i] = bar_heights_difference[i]*0.96  +  0.04*fabs((float)bar_heights[i] - (float)last_bar_height);
 		/** Increase DIFFERENCE_GAIN_BY_TIME to respond more quickly to bar growth/fall. **/
-		/*#define DIFFERENCE_GAIN_BY_TIME 0.04*/
-		#define DIFFERENCE_GAIN_BY_TIME 0.2
+		/*#define DIFFERENCE_GAIN_BY_TIME 0.04 0.2 */
+		#define DIFFERENCE_GAIN_BY_TIME 0.06
 		bar_heights_difference[i] =
 			  DIFFERENCE_GAIN_BY_TIME       * ((float)bar_heights[i] - (float)last_bar_height)
 			+ (1.0-DIFFERENCE_GAIN_BY_TIME) * bar_heights_difference[i];
