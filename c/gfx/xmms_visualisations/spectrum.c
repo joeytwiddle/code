@@ -20,8 +20,8 @@
  */
 
 // Choose which media player we are compiling for:
-// #define XMMS
-#define AUDACIOUS
+#define XMMS
+// #define AUDACIOUS
 // TODO: There might be an already existing way to find out!
 
 // #define AIRFLOW
@@ -188,6 +188,7 @@
    If you increase FLAMEHEIGHT without increasing WINHEIGHT, the tops of noisy
    flames may get clipped. */
 // #define FLAMEHEIGHT 96
+// #define FLAMEHEIGHT (WINHEIGHT/1.5)
 #define FLAMEHEIGHT (WINHEIGHT/1.5)
 
 /* Linearity of the amplitude scale (0.5 for linear, keep in [0.1, 0.9]) */
