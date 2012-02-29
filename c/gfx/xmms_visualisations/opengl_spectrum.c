@@ -60,8 +60,8 @@
 /* The original LENGTH was 16 */
 // #define LENGTH 64
 // #define LENGTH 200
-// #define LENGTH 160
-#define LENGTH 120
+#define LENGTH 160
+// #define LENGTH 120
 
 #if LENGTH < 32
 	#define SCALEBACK (16.0/LENGTH)
@@ -72,27 +72,32 @@
 
 #define WIDTH NUM_BANDS
 
-// #define CHECK_FOR_KICK
-
+#define PREVENT_HIDING_GLOW
 // #define LIGHTER_VERSION
+// #define CHECK_FOR_KICK
 
 #ifdef LIGHTER_VERSION
 	// For slower PCs with small screens.
 	#define WINWIDTH 560
-	#define WINHEIGHT 320
+	// #define WINHEIGHT 320
+	#define WINHEIGHT 420
 	#undef LENGTH
-	// Good framerate at 32
+	// Good framerate at 16, some framerate at 32
 	// 48 poor framerate and poor depth
 	// 64+ poor framerate but at least some history!
-	#define LENGTH 64
+	#define LENGTH 16
+	#if LENGTH <= 32
+		// With too few history samples, fast fading makes things invisible too soon!
+		#define SIMPLE_LIGHTING
+	#endif
 /*
 	// #define WINWIDTH 320
 	// #define WINHEIGHT 180
-	#define SIMPLE_LIGHTING
 */
 #else
 	#define WINWIDTH 640
-	#define WINHEIGHT 360
+	// #define WINHEIGHT 360
+	#define WINHEIGHT 480
 #endif
 
 OGLSpectrumConfig oglspectrum_cfg;
@@ -383,6 +388,7 @@ static void draw_bars(void)
 	GLfloat peakHeight[WIDTH];
 	GLfloat localAverage[WIDTH];
 	GLfloat localNoise[WIDTH];
+	GLfloat lastWhiteness[WIDTH];
 
 	glClearColor(0,0,0,0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -445,7 +451,14 @@ static void draw_bars(void)
 			// energySlowFade = energySlowFade*energySlowFade; // fast fade!
 			// whiteness = fmin(1.0,fmax(energySlowFade, breakingEdge));
 
-			peakEnergy[x] *= 0.5;
+// #define energyDampening 0.5
+// #define heightDampening 0.25
+// #define energyDampening 0.5
+// #define heightDampening 0.5
+#define energyDampening 0.5
+#define heightDampening 0.15
+
+			peakEnergy[x] *= energyDampening;
 			// GLfloat energyHere = 1.5 * heights[y][x];
 			GLfloat energyHere = heights[y][x] + 0.5*fmin(0,heights[y][x] - heights[y+1][x]);
 			energyHere *= compensateForCurve;
@@ -453,7 +466,7 @@ static void draw_bars(void)
 				peakEnergy[x] = energyHere;
 			}
 
-			peakHeight[x] *= 0.25;
+			peakHeight[x] *= heightDampening;
 			if (heights[y][x] > peakHeight[x]) {
 				peakHeight[x] = heights[y][x];
 			}
@@ -501,7 +514,9 @@ static void draw_bars(void)
 
 			whiteness = pow(whiteness, 1.0 + 2.0*(float)y/(float)LENGTH);
 			whiteness /= 2.5;
-			// whiteness *= fadeOff;
+#ifdef PREVENT_HIDING_GLOW
+			whiteness *= fadeOff;
+#endif
 
 			//// Subjective leading glow
 			// whiteness += 1.5 * energyHere * pow(breakingEdge,4);
@@ -522,6 +537,33 @@ static void draw_bars(void)
 			// default spacing in both directions is 0.2 before scaling
 			// original widths and lengths were 0.1 before scaling
 
+#endif
+
+// DONE: For trailing edge issue: store last whiteness and use it if it exceeds current whiteness
+#ifdef PREVENT_HIDING_GLOW
+
+			if (y == LENGTH-1) {
+				lastWhiteness[x] = 0;
+			}
+
+			GLfloat useWhiteness;
+
+			// TODO: TEXTURE and SYMMETRY could be #defined - texture is undesirable for low res
+
+			////// Always merge with old (looks a bit textureless and darkens the lead)
+			// useWhiteness = 0.5 * lastWhiteness[x] + 0.5*whiteness;
+			////// Use peak (symmetrical - that's what you wanted right?)
+			useWhiteness = (lastWhiteness[x] > whiteness ? lastWhiteness[x] : whiteness );
+			//// Re-add texture (darkens lead but symmetrical)
+			useWhiteness = 0.5 * useWhiteness + 0.25*whiteness + 0.25*lastWhiteness[x];
+			//// Re-add texture - central glow, slightly darkened fadeoff.  Favourite!
+			// useWhiteness = 0.5 * useWhiteness + 0.5*whiteness;
+
+			lastWhiteness[x] = whiteness;
+
+	#define whiteness useWhiteness
+#else
+			// Just use whiteness normally :)
 #endif
 
 			if (barHeight <= 0.01 && whiteness <= 0.01) {
@@ -850,10 +892,10 @@ static void start_display(void)
 	}
 	scale = 1.0 / log(256.0);
 
-	x_speed = 0.0;
+	x_speed = 0.4;
 	y_speed = -0.2;  // 0.5
 	z_speed = 0.0;
-	x_angle = 20.0;
+	x_angle = -15.0;
 	// y_angle = 55.0;
 	y_angle = -15.0;
 	z_angle = 0.0;
