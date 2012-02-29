@@ -67,9 +67,9 @@ VisPlugin *get_vplugin_info(void)
 
 // #define WIDTH 256
 // #define WIDTH 640
-#define WIDTH 720
+// #define WIDTH 720
 // #define WIDTH 800
-// #define WIDTH 960
+#define WIDTH 960
 #define HEIGHT 128
 #define min(x,y) ((x)<(y)?(x):(y))
 #define BPL	((WIDTH + 2))
@@ -97,11 +97,13 @@ void bscope_read_config(void)
 
 	if(!config_read)
 	{
+		// bscope_cfg.color = 0xFF0000;  // red
 		// bscope_cfg.color = 0xFF3F7F;  // pink
 		// bscope_cfg.color = 0x3FFFFF;  // cyan
 		// bscope_cfg.color = 0x3FFFBF;  // green/cyan
-		bscope_cfg.color = 0x00BFFF;  // blue/cyan
+		bscope_cfg.color = 0x00BFFF;  // blue-cyan
 		// bscope_cfg.color = 0x007FFF;  // electric blue
+		// bscope_cfg.color = 0x0000FF;  // blue (dark)
 		filename = g_strconcat(g_get_home_dir(), "/.xmms/config", NULL);
 		cfg = xmms_cfg_open_file(filename);
 		
@@ -126,7 +128,10 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 	i = bpl * h;
 	while(i--)
 	{
-		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;
+		// Blurring:
+		sum = (iptr[-bpl] + iptr[-1] + iptr[1] + iptr[bpl]) >> 2;  // Simple 4-neighbour blur
+		// sum = iptr[0]; // Do not blur
+
 		// if (sum > 0)
 			// sum = sum * 0.90;
 		/*
@@ -147,13 +152,13 @@ void bscope_blur_8_no_asm(guchar *ptr,gint w, gint h, gint bpl)
 		if (sum <= 0)
 			sum = 0;
 		else if (sum > 64)
-			sum = sum - 16; // Initial fast decay
+			sum = sum - 4; // Initial fast decay
 		else if (sum > 16)
-			sum = sum - 0; // Middle slow decay (in fact blur only)
+			sum = sum - 1; // Middle slow decay (in fact blur only)
 		else
 			sum = sum - 1; // Final fixed decay
 
-		// sum = 0; // Immediate total decay!
+		// sum = 0; // Immediate total decay!  We only see the last plot.
 
 		// sum = iptr[0];  if (sum > DECAY_RATE*8) { sum -= DECAY_RATE*8; } else { sum = 0; } // Rapid decay without blurring
 
@@ -177,7 +182,7 @@ void generate_cmap(void)
 		for(i = 255; i > 0; i--)
 		{
 			if (i == 255)
-				colors[i] = (((guint32)(i*255/256) << 16) | ((guint32)(i*255/256) << 8) | ((guint32)(i*255/256)));
+				colors[i] = (((guint32)(i*0xFF/256) << 16) | ((guint32)(i*0xFF/256) << 8) | ((guint32)(i*0xFF/256)));
 			else
 				colors[i] = (((guint32)(i*red/256) << 16) | ((guint32)(i*green/256) << 8) | ((guint32)(i*blue/256)));
 		}
