@@ -25,6 +25,18 @@
 // TODO: There might be an already existing way to find out!
 
 #define TRANSPARENCY
+// WARNING! This can create a lot of X refresh events, and make your X unresponsive!
+// Wow this works and it was not really too hard! :D
+// But it's still a bit heavy on CPU.  It would be good to make
+// PSEUDO_TRANSPARENCY, which would take a snapshot of the desktop/window
+// beneath us at the beginning of each song, and use this is the backing bitmap
+// instead of using a mask.
+// This would save X from constantly forcing windows behind the fire to redraw,
+// which can be a real drain on CPU.
+// We could even fade the two bitmaps together, to make the tops of the flames
+// semi-transparent.
+// I don't actually know how to grab a screenshot.  I know amarok does it for
+// its OSD.  xosd uses only a mask.
 
 #include "config.h"
 
@@ -118,6 +130,9 @@
 static GtkWidget *window = NULL,*area;
 static GdkPixmap *bg_pixmap = NULL, *draw_pixmap = NULL, *bar = NULL;
 static GdkGC *gc = NULL;
+#ifdef TRANSPARENCY
+static GdkGC *mgc = NULL; // gc for mask
+#endif
 static gint16 bar_heights[SPECWIDTH];
 /*static gint timeout_tag;*/
 static gdouble scale, x00, y00;
@@ -172,6 +187,7 @@ static void fsanalyzer_destroy_cb(GtkWidget *w,gpointer data) {
 	fsanalyzer_vp.disable_plugin(&fsanalyzer_vp);
 }
 
+/*
 static int max(int a,int b) {
 	return ( a>b ? a : b );
 }
@@ -183,38 +199,36 @@ static int min(int a,int b) {
 static float fclamp(float val, float min, float max) {
 	return ( val<min ? min : val>max ? max : val );
 }
+*/
 
 #ifdef TRANSPARENCY
 GdkBitmap *create_transparency_mask(GdkWindow *window) {
 	GdkBitmap *mask = NULL;
-	GdkGC *gc = NULL;
 	GdkColor pattern;
 	GdkPoint *gpoints;
 	gint numpoints;
 
 	mask = gdk_pixmap_new(window, WINWIDTH, WINHEIGHT, 1);
 
-	gc = gdk_gc_new(mask);
+	mgc = gdk_gc_new(mask);
 
 	pattern.pixel = 0;
-	gdk_gc_set_foreground(gc, &pattern);
-	gdk_draw_rectangle(mask, gc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
+	gdk_gc_set_foreground(mgc, &pattern);
+	gdk_draw_rectangle(mask, mgc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
 
 	numpoints = 4;
 	gpoints = g_malloc(numpoints * sizeof (GdkPoint));
 	gpoints[0].x = 0          ; gpoints[0].y = 0;
-	gpoints[1].x = WINWIDTH-1 ; gpoints[1].y = 0;
-	gpoints[2].x = WINWIDTH-1 ; gpoints[2].y = WINHEIGHT-1;
-	gpoints[3].x = 0          ; gpoints[3].y = WINHEIGHT/2-1;
+	gpoints[1].x = WINWIDTH   ; gpoints[1].y = 0;
+	gpoints[2].x = WINWIDTH   ; gpoints[2].y = WINHEIGHT;
+	gpoints[3].x = 0          ; gpoints[3].y = WINHEIGHT;
 	// gpoints[4].x = 0 ; gpoints[4].y = 0;
 
 	pattern.pixel = 1;
-	gdk_gc_set_foreground(gc, &pattern);
-	gdk_draw_polygon(mask, gc, TRUE, gpoints, numpoints);
+	gdk_gc_set_foreground(mgc, &pattern);
+	gdk_draw_polygon(mask, mgc, TRUE, gpoints, numpoints);
 
 	g_free(gpoints);
-
-	gdk_gc_destroy(gc);
 
 	return mask;
 }
@@ -224,9 +238,6 @@ static void fsanalyzer_init(void) {
 	GdkColor palette[5];
 	GdkColor color;
 	int i;
-	int wx,wy;
-	// GtkWindow *parent;
-	GdkWindow *parent;
 
 	if(window)
 		return;
@@ -398,6 +409,13 @@ static void fsanalyzer_cleanup(void) {
 		gdk_gc_unref(gc);
 		gc = NULL;
 	}
+#ifdef TRANSPARENCY
+	if(mgc) {
+		gdk_gc_destroy(mgc);
+		// gdk_gc_unref(mgc); // failed - i guess we can't do both ;)
+		mgc = NULL;
+	}
+#endif
 	if(bg_pixmap) {
 		gdk_pixmap_unref(bg_pixmap);
 		bg_pixmap = NULL;
@@ -417,7 +435,6 @@ static gint draw_func(gpointer data) {
 	gdouble heatHere;
 	gint lasty;
 #ifdef TRANSPARENCY
-	GdkGC *mgc; // TODO: just make this a global :P
 	GdkColor pattern;
 #endif
 
@@ -431,7 +448,6 @@ static gint draw_func(gpointer data) {
 	gdk_draw_rectangle(draw_pixmap, gc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
 
 #ifdef TRANSPARENCY
-	mgc = gdk_gc_new(mask);
 	pattern.pixel = 0;
 	gdk_gc_set_foreground(mgc, &pattern);
 	gdk_draw_rectangle(mask, mgc, TRUE, 0, 0, WINWIDTH, WINHEIGHT);
@@ -458,7 +474,7 @@ static gint draw_func(gpointer data) {
 		int y,cy;
 		// y = max(0.0,WINHEIGHT-1 - bar_heights[XSCALE(i)] - 3);
 		// this clip >=0 is done later, so not really needed here.
-		y = WINHEIGHT-1 - bar_heights[XSCALE(i)] - 3;
+		y = WINHEIGHT-1 - bar_heights[XSCALE(i)] - 2;
 		// The extra -3 gives a constant 3-pixel significant flat blob of fire at the bottom, so that the fire never disappears or flickers down to 1 pixel.
 		// Use 0 if you don't mind the fire disappearing.
 		// Hmm even with this, we still get a 1-pixel height flicker at very quiet parts.
@@ -522,16 +538,16 @@ static gint draw_func(gpointer data) {
 
 		//// This is a cheap way to approximate the heatHere mean, but it produces good results (localised and spread):
 		//// If you increase LOOKAHEAD, you should also reduce GAIN accordingly, to calibrate phase on the x-axis.
-		#define LOOKAHEAD 12
-		#define GAIN 0.01
+		// #define LOOKAHEAD 12
+		// #define GAIN 0.01
 		// #define LOOKAHEAD 24
 		// #define GAIN 0.005
 		// #define LOOKAHEAD 10
 		// #define GAIN 0.02
 		// #define LOOKAHEAD 8
 		// #define GAIN 0.03
-		// #define LOOKAHEAD 6
-		// #define GAIN 0.04
+		#define LOOKAHEAD 6
+		#define GAIN 0.04
 		// #define LOOKAHEAD 6
 		// #define GAIN 0.05
 		// #define LOOKAHEAD 3
@@ -646,17 +662,16 @@ static gint draw_func(gpointer data) {
 			// cy = 1;
 		// }
 
-		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, WINHEIGHT-y-1);
+		gdk_draw_pixmap(draw_pixmap, gc, bar, 0, cy, i, y, 1, WINHEIGHT-y);
 
 #ifdef TRANSPARENCY
-		gdk_draw_rectangle(mask, mgc, TRUE, i, y, 1, WINHEIGHT-y-1);
+		gdk_draw_rectangle(mask, mgc, TRUE, i, y, 1, WINHEIGHT-y);
 #endif
 
 	}
 
 #ifdef TRANSPARENCY
 	gtk_widget_shape_combine_mask(window,mask,0,0);
-	gdk_gc_destroy(mgc);
 #endif
 
 	gdk_window_clear(area->window);
