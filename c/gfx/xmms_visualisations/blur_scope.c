@@ -74,7 +74,8 @@ VisPlugin *get_vplugin_info(void)
 #define HEIGHT 128
 #define min(x,y) ((x)<(y)?(x):(y))
 #define BPL	((WIDTH + 2))
-#define DECAY_RATE 8
+// #define DECAY_RATE 8
+#define DECAY_RATE 7
 // #define SKIP_FRAMES 2
 // The human eye may see many white lines even when only 1 is renderered, due to the high framerate.  SKIP_FRAMES can make only 1 white line visible, but the oscilloscope will also appear more flickery / less smooth.
 
@@ -121,7 +122,8 @@ void bscope_read_config(void)
 }
 
 
-#define blurTao 0.5
+#define blurTao 0.8
+#define fadeRate 0.95
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
@@ -159,14 +161,25 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 				sum -= 1;
 		}
 
+		/*
 		// I made the intensities decay non-linearly.  This could alternatively
 		// be achieved by using a linear decay over a non-linear cmap.
 		if (sum <= 0)
 			sum = 0;
 		// else if (sum > 64)
 			// sum = sum - 8; // Fast initial decay
-		else if (sum > 4)
-			sum = sum - 4; // Slow overall decay
+		// else
+			// sum = sum - 5; // Slow overall decay
+		else if (sum > DECAY_RATE)
+			sum = sum - DECAY_RATE; // Slow overall decay
+		else
+			sum = 0;
+		*/
+
+		if (sum > 32)
+			sum = sum * fadeRate;
+		else
+			sum = 0;
 
 		// else if (sum > 16)
 			// sum = sum - 0; // Slow middle decay (in fact blur only)
@@ -178,8 +191,12 @@ void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
 			// sum = sum - 1;
 		// else
 			// sum = sum - 0;
-		else
-			sum = sum - 1;
+		// else
+			// sum = sum - 1;
+
+		// @requires gint sum;
+		// if (sum < 0)
+			// sum = 0;
 
 		// sum = 0; // Immediate total decay!  We only see the last plot.
 
@@ -327,8 +344,10 @@ static void bscope_render_pcm(gint16 data[2][512])
 	{
 		y = (HEIGHT / 2) + (data[0][i >> 1] >> 9);
 		// Since we are reading only 1 sample for 2 pixels, we interpolate the second pixel:
-		if (i%2 == 1)
-			y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
+		// if (i%2 == 1)
+			// y = (y + (HEIGHT / 2) + (data[0][(i+2) >> 1] >> 9))/2;
+		// However, that does not produce an even volume spread for the display
+		// (unless we add anti-aliasing).
 		if(y < 0)
 			y = 0;
 		if(y >= HEIGHT)
