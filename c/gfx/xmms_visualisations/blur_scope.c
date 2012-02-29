@@ -126,10 +126,10 @@ void bscope_read_config(void)
 // #define blurTao 0.9961
 // #define fadeRate 0.97
 // #define blurTao 0.94
-#define fadeRate 0.98
-#define blurTao 0.2
+#define fadeRate 0.95
+#define blurTao 0.3
 #define blurTao2 0.9
-#define BOTTOM_OUT 48
+#define BOTTOM_OUT 72
 
 // #ifndef I386_ASSEM
 void bscope_blur_8_no_asm(guchar *srcptr, guchar *ptr,gint w, gint h, gint bpl)
