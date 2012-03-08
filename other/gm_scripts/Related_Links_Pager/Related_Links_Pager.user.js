@@ -8,8 +8,9 @@
 
 var delayBeforeRunning = 2000;
 var minimumGroupSize = 5;
-var maximumGroupSize = 40;
+var maximumGroupSize = 160;
 var groupLinksByClass = true;
+var leaveHashUrlsAlone = true;
 
 
 // == CHANGELOG ==
@@ -41,6 +42,10 @@ var groupLinksByClass = true;
 // TODO: Do not load pager if it is redundant (i.e. if we can already see the
 // sibling links on the current page!).
 
+// DONE: removeRedirection only runs on links originally in the page, not
+// those added later, e.g. by Ajax when refining a Google search.  This may be
+// the cause of some issues.  (Google says "This url is too long.")
+
 
 
 setTimeout(function(){
@@ -70,10 +75,12 @@ function removeRedirection() {
   if (window.AutoPagerize) {
     registerPageHandler();
   } else {
+    GM_log("[RLP] Adding GM_AutoPagerizeLoaded listener");
     window.addEventListener('GM_AutoPagerizeLoaded', registerPageHandler, false);
   }
 }
-removeRedirection();
+// document.evaluate fails on really old browsers:
+try { removeRedirection(); } catch (e) { GM_log("removeRedirection failed: "+e); }
 
 
 // We consider related links, or "siblings", to be those on the current page
@@ -193,14 +200,24 @@ function checkClick(evt) {
       return;
     }
     // Some Google search pages complain about our long URLs.
-    var siteWillComplain = link.host.indexOf("google")>=0 &&
-      link.href.indexOf("?q=")>=0 || link.href.indexOf("&q=")>=0;
+    var siteWillComplain =
+      link.host.indexOf("google")>=0 &&
+        (    link.href.indexOf("?q=")>=0
+          || link.href.indexOf("&q=")>=0
+          || link.href.indexOf("url?")>=0
+        );
     if (siteWillComplain) {
       return;
       // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
     }
-    if (link.href.charAt(0) == '#') {
+    // Note that .href gives the whole URL, so we check getAttribute("href")
+    if (link.getAttribute("href").charAt(0) == '#') {
       return;   // This link is just pointing to an anchor in the current page
+    }
+    // What about links to #s in other pages?  I decided in the end to preserve
+    // them.  (Appending with & will still break them.)
+    if (link.hash && leaveHashUrlsAlone) {
+      return;
     }
 
     // GM_log("User clicked on link: "+link.href);
@@ -221,6 +238,10 @@ function checkClick(evt) {
     var appendChar = ( link.href.indexOf('#')>=0 ? '&' : '#' );
     if (appendChar == '&' || link.hash) {
       GM_log("Appending to existing hash with "+appendChar+": "+link.hash);
+      // Note: If it was a normal # to an anchor then we have probably broken
+      // it!  In that case we should either not append, or perhaps we can
+      // append, but force movement to the correct anchor anyway (which may be
+      // on the current page, or after navigation!).
     }
     var targetURL = link.href + appendChar + "siblings="+sibsEncoded;
 
@@ -237,6 +258,10 @@ function checkClick(evt) {
     // link.hash = "siblings="+sibsEncoded;
     link.href = targetURL;
 
+    // If it was a Google link not already handled (perhaps due to late loading):
+    link.removeAttribute('onmousedown');
+    // This may make the redirection remover above redundant!
+
   }
 }
 
@@ -249,12 +274,13 @@ document.body.addEventListener("mouseup",checkClick,true);
 // If we have been passed a hash package of siblings, present the lovely pager.
 
 function createRelatedLinksPager(siblings) {
-  var seekURL = document.location.href.replace(new RegExp("#.*"),'');
+  var hashPart = new RegExp("#.*");
+  var seekURL = document.location.href.replace(hashPart,'');
   // var currentIndex = siblings.indexOf(seekURL);   // No because the list contains records not urls!
   var currentIndex = -1;
   for (var i=0;i<siblings.length;i++) {
     var record = siblings[i];
-    if (record[1] == seekURL) {
+    if (record[1].replace(hashPart,'') == seekURL) {
       currentIndex = i;
       break;
     }
@@ -272,7 +298,8 @@ function createRelatedLinksPager(siblings) {
   pager.id = "linkGroupPager";
   GM_addStyle("#linkGroupPager { position: fixed; top: 5%; right: 5%; "+
     "z-index: 10; background: white; color: black; border: 1px solid black; "+
-    "padding: 5px; font-size: 100%; text-align: center; } "+
+    "padding: 5px; font-size: 100%; text-align: center; "+
+    "max-width: 40%; max-height: 90%; overflow: auto; } "+
     ".linkGroupPagerList { text-align: left; }"
   );
 
