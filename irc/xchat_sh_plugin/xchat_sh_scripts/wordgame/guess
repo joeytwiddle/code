@@ -96,7 +96,7 @@ do
 		then jshinfo "Error code on DICT_RESULT=$DICT_RESULT so emptying it"
 			DICT_RESULT=""
 		fi
-		# Some ovserved dict exit codes: 20 no definition, 21 suggestions
+		# Some observed dict exit codes: 20 no definition, 21 suggestions
 		# Any other codes may suggest an actual error!
 
 		# echo "dict -d wn \"$WORD\" returned error-code $?" >&2

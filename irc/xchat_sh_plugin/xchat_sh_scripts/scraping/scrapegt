@@ -32,6 +32,7 @@ do
 	URL="http://www.gametracker.com/search/ut/?sort=c_numplayers&order=DESC&per_page=50$URLEXTRA"
 	memo -t "4 minutes" wget $OPTIONS -nv -O - "$URL" |
 	fromhtml |
+	tee /tmp/sgt0 |
 	tr "\n" " " |
 	sed 's+ \([0-9][0-9]*\|NR\)\. +\n+g' | ## split lines at "Rank" column
 	tee /tmp/sgt1 |

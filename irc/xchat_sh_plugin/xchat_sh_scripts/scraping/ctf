@@ -1,1 +1,5 @@
-SEARCH="\<CTF-" IGNORE="\<CTF-BT-" bash ./scraping/scrapegt "$@"
+SEARCH="\<CTF-" IGNORE="\<CTF-BT-" bash ./scraping/scrapegt "$@" |
+
+# Caps hides popular siege servers but not nzp which does have CTF
+grep -v "\<SIEGE\>"
+
