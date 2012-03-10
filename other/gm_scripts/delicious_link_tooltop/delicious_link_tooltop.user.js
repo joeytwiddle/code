@@ -19,10 +19,10 @@
 
 var showTooltips      = true;    // Make little info boxes pop up when you hover over a link.
 var lookupCurrentPage = true;    // Display count for this page shown in top-right corner.
-var annotateAllLinks  = false;   // Lookup *every* link on the page, and display its count in blue next to the link.
+var annotateAllLinks  = true;   // Lookup *every* link on the page, and display its count in blue next to the link.
                                  // Delicious may occasionally block this for spamming (temporarily).
 
-var enableJSONPonHTTPS = false;
+var enableJSONPonHTTPS = false;  // JSONP only works on https pages if the user confirms each page.
 
 var maxCacheSize = 2400;                 // Global cache limit for Greasemonkey/GM_setValue.
 var maxCacheSizeForLocalStorage = 1000;  // Per-site cache limit for Chrome/localStorage.
@@ -30,11 +30,13 @@ var maxCacheSizeForLocalStorage = 1000;  // Per-site cache limit for Chrome/loca
 var showProgress = true;   // Highlights each link in yellow while we are making a delicious request on it.  Messy but informative if lookup fails!
 var logRequests  = false;
 var logResponses = true;
-var displayCleanupInTitle = false;   // To debug if (display when) the cleanup is lagging your browser.
+var displayCleanupInTitle = true;   // To debug if (display when) the cleanup is lagging your browser.
 
 
 
 /* == Changelog ==
+
+ 2012-02-20  Prevented interfering with top bar of Google.
 
  2012-02-05  Added enableJSONPonHTTPS.  If you turn it on in Chrome, you will
              need to answer the browser's "Load Insecure Content?" popup.
@@ -176,6 +178,17 @@ log = function(x) {
 // e.g. some search ? links could be checked if they are short.  Some same-host links
 // we may also want to checked.  But some URLs we definitely won't want to, e.g. if
 // they appear to contain a (large) session ID.
+
+// TODO BUG: The addition of the blue number "flag" by annotateAllLinks will
+// often cause parts of the page to grow, breaking the intended CSS layout.  We
+// should seek to mitigate this.
+//
+// Proposal: If flag is being added in the middle of some text, then expand the
+// text by adding it inline.  But if flag is being added at the end (last
+// child) of a layout element, then instead float it above the element to avoid
+// changing the size of the container.  This will require determination of the
+// real offset of the element.  Note the link may be inside a <b> which we must
+// step outside to determine whether it is at the end of a container or not.
 
 
 
@@ -545,7 +558,7 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 					list.push(key);
 				}
 			}
-			GM_log("localstorage is holding "+storage.length+" records, "+list.length+" of which were selected.");
+			GM_log("localstorage is holding "+storage.length+" records, "+list.length+" of which are DLT cached responses.");
 			return list;
 		};
 
@@ -796,6 +809,7 @@ function cleanupCache() {
 		// Trim the list down to only those entries relevant to this plugin.
 		// (Slow but neccessary when we are using localStorage.)
 		// DONE: Although really this should be done by the GM_listValues wrapper!
+		// One of the above implementations have it, but do all?
 		var cacheList = [];
 		for (var i=0;i<fullCacheList.length;i++) {
 			var crURL = fullCacheList[i];
@@ -912,6 +926,10 @@ function cleanupCache() {
 		GM_log("Score for 10 = "+getScoreFor(sortedList[10]));
 		GM_log("Score for 100 = "+getScoreFor(sortedList[100]));
 		*/
+
+		if (sortedList.length > maxCacheSize) {
+			GM_log("Removing "+(sortedList.length-maxCacheSize)+" records.");
+		}
 
 		// sortedList.slice(maxCacheSize)
 		for (var i=maxCacheSize; i<sortedList.length; i++) {
@@ -1318,7 +1336,8 @@ function initialiseTooltipListeners() {
 		if (checkParentsForId(node,"DLTtooltip"))
 			return null;
 		while (node) {
-			if (node.tagName == "A")
+			// We do not want to count e.g. <A name="..."> links!
+			if (node.tagName == "A" && node.href)
 				return node;
 			node = node.parentNode;
 		}
@@ -1466,7 +1485,8 @@ function addLabel(link) {
 	}
 	var isImage = isImageAndWhitespace(link);
 	var isBlacklisted = url.match(/fbcdn.net\//) || url.match(/facebook.com\//);
-	if (sameAsLast || badHost || isSearch || samePage || isImage || isBlacklisted) {
+	var causesDivGrowthOnGoogle = link.parentNode.className=='gbt' || link.className=='gbzt';
+	if (sameAsLast || badHost || isSearch || samePage || isImage || isBlacklisted || causesDivGrowthOnGoogle) {
 		return;
 	}
 	if (url && goodUrl) { // && !sameHost
