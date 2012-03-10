@@ -16,7 +16,7 @@
 var placeFaviconAfter = false;
 var placeFaviconInsideLink = false;
 var scaleIcon = 0.75;
-var initialDelay = 2000;
+var initialDelay = 1000;
 var delayIncrement = 5; // after 200 links the delay between batches will be 1 second
 var batchSize = 10;
 
@@ -95,9 +95,9 @@ function createFaviconFor(url) {
 	var img = document.createElement('IMG');
 	// img.src = 'http://'+host+'/favicon.ico';
 
-	var imageExtensions = ( alwaysUseGoogle ? [] : ['gif','jpg','png','ico'] );
+	var imageExtensions = ( alwaysUseGoogle ? [] : ['ico','png','gif','jpg'] );
 	function tryExtension(evt) {
-		var ext = imageExtensions.pop();
+		var ext = imageExtensions.shift();
 		if (ext) {
 			img.src = 'http://'+host+'/favicon.'+ext;
 		} else {
@@ -106,6 +106,14 @@ function createFaviconFor(url) {
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
 			img.removeEventListener('error',tryExtension,true);
 		}
+		/*
+		if (evt) {
+			// Will this stop the browser from displaying the error?
+			evt.preventDefault();
+			return false;
+			// Answer: NO!
+		}
+		*/
 	}
 	img.addEventListener('error',tryExtension,true);
 	tryExtension();
@@ -149,6 +157,9 @@ function checkLink(link) {
 	var sameAsLast = (link.href == lastURL);
 	if (sameAsLast)
 		return;
+	// TODO CONSIDER: Instead of that, just never add the same favicon twice in a row, i.e. same host.
+	// But optional.  At other times it might be desirable to have both, e.g. in a list of 10 with a few from the same domain.
+
 	lastURL = link.href;
 
 	var img = createFaviconFor(link.href);
@@ -234,4 +245,6 @@ function startCountdown(total,fnToDo) {
 	doCountdown(total);
 }
 startCountdown(initialDelay,doIt);
+
+// Alternatively, just: setTimeout(doIt,initialDelay);
 
