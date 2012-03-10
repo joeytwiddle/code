@@ -1348,7 +1348,7 @@
 	<Script filename="Convert_Dates_to_Ages.user.js" name="Convert Dates to Ages" namespace="CDTA" description="Looks for dates displayed on the current page and converts them to ages of the form &quot;3 days 6 hours ago&quot;." version="" enabled="true" runAt="document-end" basedir="Convert_Dates_to_Ages" modified="1331169365000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1329813477000">
 		<Include>http://*/</Include>
 	</Script>
-	<Script filename="YouTube_Thumb_Likes_Dislikes.user.js" name="YouTube Thumb Likes Dislikes" namespace="YTTLD" description="Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail." version="" enabled="true" runAt="document-end" basedir="YouTube_Thumb_Likes_Dislikes" modified="1331387418000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1330149780000">
+	<Script filename="YouTube_Thumb_Likes_Dislikes.user.js" name="YouTube Thumb Likes Dislikes" namespace="YTTLD" description="Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail." version="" enabled="true" runAt="document-end" basedir="YouTube_Thumb_Likes_Dislikes" modified="1331390318000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1330149780000">
 		<Include>http://youtube.com/*</Include>
 		<Include>https://youtube.com/*</Include>
 		<Include>http://*.youtube.com/*</Include>
