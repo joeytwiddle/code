@@ -8,18 +8,27 @@
 // @include        https://*.youtube.com/*
 // ==/UserScript==
 
-// THANKS A LOT YOUTUBE FOR LEAVING THIS FOR ME TO DO.  WE ASKED FOR THIS
-// FEATURE FOR AGES BUT YOU DID NOTHING SO YOUR USERS ARE STILL GETTING
-// REGULARLY RICK-ROLLED.  LETS HOPE YOU ENJOY THE EXTRA SPAM YOUR SERVERS WILL
-// NOW RECEIVE!  (Yeah, I stopped smoking this week, so I'm a bit on edge.)
+// Some YouTube videos get lots of views even though they are rubbish, maybe
+// even Rick Rolls.  This is probably because they have some faked screenshot
+// and title that was part of an older or existing trend.
+
+// However, it is fairly easy to filter these out, if we see the video has
+// significantly more dislikes than likes!
+
+var spamYouTube = true;   // Automatically looks up all thumbnails on the page.
+                          // Otherwise, waits for mouseovers before doing lookup.
 
 // Some other scripts like this:
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
 
+function suitableLink(link) {
+	return (link.tagName == "A" && link.pathname.indexOf("/watch")==0);
+}
+
 // Display likes/dislikes on links to other videos
 function checkLikesDislikes(evt) {
 	var target = evt.target || evt.srcElement;
-	if (target.tagName == "A" && target.pathname.indexOf("/watch")==0 && !target.doneLikesDislikes) {
+	if (suitableLink(target) && !target.doneLikesDislikes) {
 		target.doneLikesDislikes = true;
 
 		function gotTargetPage(response) {
@@ -31,7 +40,7 @@ function checkLikesDislikes(evt) {
 				var infoElem = lePage.getElementsByClassName("watch-likes-dislikes")[0];
 				// GM_log("GOT INFOELEM: "+infoElem);
 				if (infoElem) {
-					var info = infoElem.textContent.trim();
+					var infoText = infoElem.textContent.trim();
 
 					var elemWithTitle = null;
 
@@ -48,32 +57,35 @@ function checkLikesDislikes(evt) {
 					}
 
 					if (elemWithTitle) {
-						elemWithTitle.title += " ("+info+")";
+						elemWithTitle.title += " ("+infoText+")";
 						// Optional: effectively gives a title to the thumbnail image too:
 						//target.title = elemWithTitle.title;
 						// Not convinced we want that.  :P
 					} else {
 						// Not what we expected, but lets give it a bash anyway!
-						target.title += " ("+info+")";
+						target.title += " ("+infoText+")";
 					}
 
 					// OK adding to the title sucks balls anyway - the browser
 					// (Chrome) does not update the displayed title until
 					// mouseoff/over again. :f
 
+					var span = document.createElement("div");
+					span.className = "stat";
+					span.appendChild(document.createTextNode(infoText));
+					target.appendChild(span);
+
 					var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
 					if (lightSaber) {
 						// Pictures are easier to read than words:
 						target.appendChild(lightSaber);
+						// It often falls on the line below the thumbnail, aligned left
+						// Here is a dirty fix to align it right, with all the other info.
+						lightSaber.style.marginLeft = '124px';
 						// DONE: Bars are unneccessarily wide on search results pages.
 						if (lightSaber.clientWidth > 150) {
 							lightSaber.style.maxWidth = '120px';
 						}
-					} else {
-						var span = document.createElement("span");
-						span.textContent = info;
-						span.className = "stat";
-						target.appendChild(span);
 					}
 
 				}
@@ -89,6 +101,26 @@ function checkLikesDislikes(evt) {
 	}
 }
 document.body.addEventListener("mouseover",checkLikesDislikes,true);
+
+if (spamYouTube) {
+	function queueLink(link,when) {
+		GM_log("In "+(when/1000|0)+" seconds will do "+link);
+		setTimeout(function(){
+			checkLikesDislikes({target:link});
+		},when);
+	}
+	var ls = document.getElementsByTagName("A");
+	var lastUrlDone = "";
+	var num = 0;
+	for (var i=0;i<ls.length;i++) {
+		var link = ls[i];
+		if (link.href != lastUrlDone && suitableLink(link)) {
+			num++;
+			queueLink(link, 1000 * Math.pow(1.2 + 1.2*num,1.7) );
+			lastUrlDone = link.href;
+		}
+	}
+}
 
 // TODO:
 // On search results pages, why does feature not active/work when we hover over
