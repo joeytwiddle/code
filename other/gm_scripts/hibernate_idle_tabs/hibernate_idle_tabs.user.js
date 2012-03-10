@@ -18,11 +18,11 @@ var restoreTime = 0.2; // in seconds
 
 // I got desperate and aimed for a 404 on Google:
 // This is not really satisfactory, since it provides an image and unneeded CSS!
-var holdingPage = "http://www.google.com/hibernated_tab";
+var holdingPage = "http://neuralyte.org/~joey/hibernated_tab.html";
 
 // If you want to use another holding page, put the old one here to keep your
 // current/saved browser sessions working.
-var oldHoldingPage = "http://hwi.ath.cx/hibernated_tab.html";
+var oldHoldingPage = "http://www.google.com/hibernated_tab";
 
 var passFaviconToHoldingPage = true;
 var fadeHibernatedFavicons = true;
@@ -50,6 +50,9 @@ var fadeHibernatedFavicons = true;
 // that as the holding page.)
 
 
+
+// BUG: Sometimes when un-hibernating, the webserver of the page we return to
+// complains that the referrer URL header is too long!
 
 // TODO: Some users may want the hibernated page to restore immediately when the tab is *refocused*, rather than waiting for a mouseover.
 
@@ -288,6 +291,7 @@ function checkStatusElement() {
 		}
 		statusElement = document.createElement("div");
 		document.body.insertBefore(statusElement,document.body.firstChild);
+		statusElement.style.textAlign = "center";
 	}
 }
 
@@ -311,6 +315,9 @@ function setHibernateStatus(msg) {
 /* +++ Favicon, Canvas and DataURL Magic +++ */
 
 function loadFavicon(targetHost,callback) {
+	// Try to load a favicon image for the given host, and pass it to callback.
+	// Except: If there is a link with rel="icon" in the page, use that image instead!
+
 	var favicon = document.createElement('img');
 	favicon.addEventListener('load',function() {
 		callback(favicon);
@@ -319,7 +326,7 @@ function loadFavicon(targetHost,callback) {
 	var targetProtocol = document.location.protocol || "http:";
 
 	// If there is a <link rel="icon" ...> in the current page, then I think that overrides the site-global favicon.
-	// NOTE: This is not appropriate if a third party targetHost was requested, only if they really wanted the favicon for the current page.
+	// NOTE: This is not appropriate if a third party targetHost was requested, only if they really wanted the favicon for the current page!
 	var foundLink = null;
 	var linkElems = document.getElementsByTagName("link");
 	for (var i=0;i<linkElems.length;i++) {
@@ -334,8 +341,10 @@ function loadFavicon(targetHost,callback) {
 	}
 	if (foundLink) {
 		favicon.addEventListener('error',function(){ callback(favicon); });
-		favicon.src = foundLink.href;
+		favicon.src = foundLink.href;   // Won't favicon.onload cause an additional callback to the one below?
 		// NOTE: If we made the callback interface pass favicon as 'this' rather than an argument, then we wouldn't need to wrap it here (the argument may be evt).
+		favicon = foundLink;
+		callback(favicon);
 		return;
 	}
 
