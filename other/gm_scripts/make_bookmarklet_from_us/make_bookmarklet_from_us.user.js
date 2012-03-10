@@ -8,6 +8,12 @@
 // @exclude        http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html
 // ==/UserScript==
 
+// Most people will NOT want the NoCache version.  It's only useful for script developers.
+
+var preventBrowserFromCachingBookmarklets = true;
+
+var addGreasemonkeyLibToBookmarklets = true;
+
 // DONE: All bookmarklets optionally preload the Fallback GMAPI.
 // DONE: All bookmarklets optionally load in non-caching fashion (for changing scripts).
 
@@ -25,17 +31,21 @@
 // TODO: Optionally create static bookmarklet, with all code inline, rather than loaded from a URL.
 //       // comments will need to be removed or converted to /*...*/ comments
 
-function addBookmarklet(link,includeGMCompat,neverCache) {
+function addBookmarklet(link) {
+	var includeGMCompat = addGreasemonkeyLibToBookmarklets;
+	var neverCache = preventBrowserFromCachingBookmarklets;
+
 	var scriptsToLoad = [];
 	if (includeGMCompat) {
 		scriptsToLoad.push("http://hwi.ath.cx/code/other/gm_scripts/fallbackgmapi/fallbackgmapi.user.js");
 	}
 	scriptsToLoad.push(link.href);
 
+	var neverCacheStr = ( neverCache ? "+'?dummy='+new Date().getTime()" : "" );
+
 	/*
 	var toRun = "(function(){\n";
 	for (var i=0;i<scriptsToLoad.length;i++) {
-		var neverCacheStr = ( neverCache ? "+'?dummy='+new Date().getTime()" : "" );
 		var script = scriptsToLoad[i];
 		toRun += "  var newScript = document.createElement('script');\n";
 		toRun += "  newScript.src = '" + script + "'" + neverCacheStr + ";\n";
@@ -51,15 +61,14 @@ function addBookmarklet(link,includeGMCompat,neverCache) {
 	toRun += "  if (scriptsToLoad.length == 0) { return; }\n";
 	toRun += "  var next = scriptsToLoad.shift();\n";
 	toRun += "  var newScript = document.createElement('script');\n";
-	toRun += "  newScript.src = next;\n";
+	toRun += "  newScript.src = next"+neverCacheStr+";\n";
 	toRun += "  newScript.onload = loadNext;\n";
-	toRun += "  newScript.onerror = function(e){ alert('Problem loading script: '+next+': '+e); };\n";
+	toRun += "  newScript.onerror = function(e){ console.error('Problem loading script: '+next,e); };\n";
 	toRun += "  document.body.appendChild(newScript);\n";
 	toRun += "}\n";
 	toRun += "loadNext();\n";
 	toRun += "})(); void 0;";
 
-	// Most people will NOT want the NoCache version.  Only I do for development.
 	var name = getNameFromFilename(link.href);
 	/*
 	if (neverCache) {
@@ -106,7 +115,7 @@ function addQuickInstall(link) {
 	newContainer.style.paddingLeft = '8px';
 	link.parentNode.insertBefore(newContainer,br);
 	link.style.color = 'grey';
-	addBookmarklet(newLink,true,true);
+	addBookmarklet(newLink);
 	addLiveUserscript(newLink);
 }
 
@@ -181,6 +190,16 @@ function getNameFromFilename(href) {
 	var isUserscript = href.match(/\.user\.js$/);
 	// Remove any leading folders and trailing ".user.js"
 	var name = href.match(/[^\/]*$/)[0].replace(/\.user\.js$/,'');
+
+	// The scripts on userscripts.org do not have their name in the filename,
+	// but we can get the name from the page title!
+	if (document.location.host=="userscripts.org" && document.location.pathname=="/scripts/show/"+name) {
+		var scriptID = name;
+		name = document.title.replace(/ for Greasemonkey/,'');
+		// Optionally, include id in name:
+		name += " ("+scriptID+")";
+	}
+
 	if (isUserscript) {
 		var words = name.split("_");
 		for (var i=0;i<words.length;i++) {
@@ -206,7 +225,7 @@ for (var i=links.length-1;i>=0;i--) {
 
 	// If we see a direct link to a user script, create buttons for it.
 	if (link.href.match(/\.js$/)) { // \.user\.js
-		addBookmarklet(link,true,true);
+		addBookmarklet(link);
 		addLiveUserscript(link);
 		addSourceViewer(link);
 	}
