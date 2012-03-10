@@ -24,12 +24,14 @@
 
 (function(){
 
+var exportTarget = window;
+
 if (typeof GM_log === 'undefined') {
 	if (this.console && typeof console.log === "function") {
 		console.log("Implementing fallback GM_log");
 	}
 	// Without 'this' sometimes Bookmarklets in Chrome can't see GM_log!
-	this.GM_log = function(data) {
+	exportTarget.GM_log = function(data) {
 		if (this.console && console.log) {
 			console.log(data);
 		} else {
@@ -47,12 +49,12 @@ var weAreInUserscriptScope = (typeof GM_log != 'undefined');
 if (window.navigator.vendor.match(/Google/) && weAreInUserscriptScope) {
 	var div = document.createElement("div");
 	div.setAttribute("onclick", "return window;");
-	unsafeWindow = div.onclick();
+	exportTarget.unsafeWindow = div.onclick();
 }
 
 if (typeof GM_addStyle == 'undefined') {
 	// GM_log("Implementing fallback GM_addStyle");
-	GM_addStyle = function(css) {
+	exportTarget.GM_addStyle = function(css) {
 		var style = document.createElement('style');
 		style.textContent = css;
 		document.getElementsByTagName('head')[0].appendChild(style);
@@ -61,14 +63,14 @@ if (typeof GM_addStyle == 'undefined') {
 
 if (typeof GM_openInTab == 'undefined') {
 	// GM_log("Implementing fallback GM_openInTab");
-	GM_openInTab = function(url) {
+	exportTarget.GM_openInTab = function(url) {
 		return window.open(url, "_blank");
 	};
 }
 
 if (typeof GM_registerMenuCommand == 'undefined') {
 	// GM_log("Implementing fallback GM_registerMenuCommand");
-	GM_registerMenuCommand = function(name, funk) {
+	exportTarget.GM_registerMenuCommand = function(name, funk) {
 		// TODO
 	};
 }
@@ -122,7 +124,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 
 		GM_log("Implementing fallback GM_get/setValue using "+name+" storage.");
 
-		GM_setValue = function(name, value) {
+		exportTarget.GM_setValue = function(name, value) {
 			value = (typeof value)[0] + value;
 			storage.setItem(name, value);
 		};
@@ -130,7 +132,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 		// This causes a security error in FF4 with GM present.  (I presume that
 		// means while running in GM?  Or does it occur when we run in the page
 		// too?)
-		GM_getValue = function(name, defaultValue) {
+		exportTarget.GM_getValue = function(name, defaultValue) {
 			var value = storage.getItem(name);
 			if (!value)
 				return defaultValue;
@@ -146,11 +148,11 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 			}
 		};
 
-		GM_deleteValue = function(name) {
+		exportTarget.GM_deleteValue = function(name) {
 			storage.removeItem(name);
 		};
 
-		GM_listValues = function() {
+		exportTarget.GM_listValues = function() {
 			var list = [];
 			for (var i=0;i<storage.length;i++) {
 				list.push(storage.key(i));
@@ -180,19 +182,19 @@ if (typeof GM_listValues == 'undefined') {
 	GM_log("Implementing fallback GM_listValues using intercepts.");
 	var original_GM_setValue = GM_setValue;
 	var original_GM_deleteValue = GM_deleteValue;
-	GM_setValue = function(name, value) {
+	exportTarget.GM_setValue = function(name, value) {
 		original_GM_setValue(name,value);
 		var values = JSON.parse(GM_getValue("#_LISTVALUES") || "{}");
 		values[name] = true;
 		original_GM_setValue("#_LISTVALUES",JSON.stringify(values));
 	};
-	GM_deleteValue = function(name) {
+	exportTarget.GM_deleteValue = function(name) {
 		original_GM_deleteValue(name);
 		var values = JSON.parse(GM_getValue("#_LISTVALUES") || "{}");
 		delete values[name];
 		original_GM_setValue("#_LISTVALUES",JSON.stringify(values));
 	};
-	GM_listValues = function() {
+	exportTarget.GM_listValues = function() {
 		var values = JSON.parse(GM_getValue("#_LISTVALUES") || "{}");
 		var list = [];
 		for (var key in values) {
@@ -200,6 +202,25 @@ if (typeof GM_listValues == 'undefined') {
 		}
 		GM_log("GM_listValues is holding "+list.length+" records.");
 		return list;
+	};
+}
+
+if (typeof GM_xmlhttpRequest == "undefined") {
+	GM_log("Implementing fallback GM_xmlhttpRequest, will only work for local domain.");
+	exportTarget.GM_xmlhttpRequest = function(details) {
+		var req = new XMLHttpRequest();
+		req.open(details.method, details.url);
+		req.send(null);
+		req.onreadystatechange = function() {
+			details.onload(req);
+			/*
+			if (req.readyState == 4) {
+				if (req.status == 200) {
+					details.onload(req);
+				}
+			}
+			*/
+		}
 	};
 }
 
