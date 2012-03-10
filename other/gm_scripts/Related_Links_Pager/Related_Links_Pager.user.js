@@ -8,7 +8,7 @@
 
 var delayBeforeRunning = 2000;
 var minimumGroupSize = 5;
-var maximumGroupSize = 160;
+var maximumGroupSize = 110;   // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request")
 var groupLinksByClass = true;
 var leaveHashUrlsAlone = true;
 
@@ -50,37 +50,6 @@ var leaveHashUrlsAlone = true;
 
 setTimeout(function(){
 
-
-
-// This is http://userscripts.org/scripts/review/57679
-// We need it on Google search result pages, or we end up following Google
-// feedback/tracking links, which then throw away our hash package!
-function removeRedirection() {
-  handle(document);
-
-  function handle(doc) {
-    var links = document.evaluate('descendant::a', doc, null, 7, null);
-    for (var i = 0; i < links.snapshotLength; i++){
-      links.snapshotItem(i).removeAttribute('onmousedown');
-    }
-  }
-
-  function registerPageHandler() {
-    window.AutoPagerize.addFilter(function(pages) {
-      pages.forEach(function(page) {
-        handle(page);
-      });
-    });
-  }
-  if (window.AutoPagerize) {
-    registerPageHandler();
-  } else {
-    GM_log("[RLP] Adding GM_AutoPagerizeLoaded listener");
-    window.addEventListener('GM_AutoPagerizeLoaded', registerPageHandler, false);
-  }
-}
-// document.evaluate fails on really old browsers:
-try { removeRedirection(); } catch (e) { GM_log("removeRedirection failed: "+e); }
 
 
 // We consider related links, or "siblings", to be those on the current page
@@ -211,7 +180,7 @@ function checkClick(evt) {
       // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
     }
     // Note that .href gives the whole URL, so we check getAttribute("href")
-    if (link.getAttribute("href").charAt(0) == '#') {
+    if (link.getAttribute("href") && link.getAttribute("href").charAt(0) == '#') {
       return;   // This link is just pointing to an anchor in the current page
     }
     // What about links to #s in other pages?  I decided in the end to preserve
@@ -258,9 +227,10 @@ function checkClick(evt) {
     // link.hash = "siblings="+sibsEncoded;
     link.href = targetURL;
 
-    // If it was a Google link not already handled (perhaps due to late loading):
+    // We need this on Google search result pages, or we end up following
+    // feedback/tracking redirection links, which throw away our hash data!
     link.removeAttribute('onmousedown');
-    // This may make the redirection remover above redundant!
+    // Thanks to http://userscripts.org/scripts/review/57679
 
   }
 }
