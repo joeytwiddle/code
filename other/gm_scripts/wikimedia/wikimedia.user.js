@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name          Wikimedia+
+// @name          Wikimedia+ for Chrome (localStorage)
 // @description   Add History box at wikimedia's leftmost column
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
@@ -8,10 +8,22 @@
 // @include       *wiki*
 // ==/UserScript==
 
+/*
+ * Original Wikimedia+: http://userscripts.org/scripts/show/7877
+ *
+ * 2012-03-09  Click "More..." for longer stored history (numToRemember/numToShow)
+ *
+ * 2011-??-??  Work in Chrome by using localStorage instead of GM_setValue.
+ *             (localStorage is per-site, not global like GM_set/getValue.)
+ *
+*/
 
+var numToRemember = 100;
+var numToShow = 10;
 
 // Release notes
 // =============
+//        2011: Implemented GM_set/getValue for Chrome using localStorage (joey)
 // 21-Mar-2007: Multiple occurrences of the same page (&edit, #section) eliminated
 // 22-Mar-2007: Multiple occurrences due to a printable version of the page eliminated
 // 24-Mar-2007: If no left column is present, exit quietly
@@ -24,16 +36,17 @@
 // BUG TODO: appears as a portal, but collapsing does not work
 // DONE: ok added manual collapsing, but still some of the formatting looks different
 
+var delayBeforeRunning = 2200;
+
 // Fix for Chrome
-// Errors in FFox: if (!this.GM_getValue || this.GM_getValue.toString().indexOf("not supported")>-1) {
-// GM_log("typeof this.GM_getValue = "+typeof this.GM_getValue);
-// GM_log("this.GM_getValue = "+this.GM_getValue);
 // Check if GM_getValue is missing, OR is Chrome's "not supported" function.
 var GM_test;
 try {
 	GM_test = ""+this.GM_getValue;
 } catch (e) {
-	GM_log("Getting GM_test: "+e);
+	// Greasemonkey: can't convert this.GM_getValue to primitive type
+	// because: this.GM_getValue.toString is not a function
+	// GM_log("Getting GM_test: "+e);
 }
 if (typeof GM_getValue !== 'function' || (""+GM_test).indexOf("not supported")>=0) {
 	GM_log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
@@ -57,7 +70,7 @@ setTimeout(function()
    var read = function()
    {
       var r = new Array();
-      for(var i = 0; i < limit; ++i)
+      for(var i = 0; i < numToRemember; ++i)
       {
          var o = new Object();
          o.title = GM_getValue(titleKey + i, null);
@@ -72,7 +85,7 @@ setTimeout(function()
    };
    var store = function(a)
    {
-      for(var i = 0; i < limit; ++i)
+      for(var i = 0; i < numToRemember; ++i)
       {
          var o = a[i];
          if(!o)
@@ -134,10 +147,13 @@ setTimeout(function()
    }
    var listItem = function(href,name) { return '<li><a href="' + myEscape(href) + '">' + myEscape(name) + '</a></li>\n'; }
    var s = '<div class="portlet"><h5>Recent Pages</h5><div class="pBody"><ul>';
-   for(var x in hist)
+   // for(var x in hist)
+   for(var x=0; x<numToShow; x++)
    {
       var o = hist[x];
-      s += listItem(o.url, o.title);
+      if (o) {   // early users have little history
+         s += listItem(o.url, o.title);
+      }
    }
    s += '</ul></div></div>';
    var indentLaterLines = 'padding-left: 1.5em; text-indent: -1.5em;';
@@ -155,6 +171,33 @@ setTimeout(function()
       e.getElementsByTagName("h5")[0].addEventListener("click",function(e){
             document.getElementsByClassName("pBody")[0].style.display = ( document.getElementsByClassName("pBody")[0].style.display ? '' : 'none' );
       },true);
+
+      if (hist.length > numToShow) {
+         var openMore = document.createElement("div");
+         var openMoreLink = document.createElement("a");
+         openMoreLink.textContent = "More...";
+         openMoreLink.href = "#";
+         openMore.appendChild(openMoreLink);
+         var targetUL = e.getElementsByTagName("ul")[0];
+         targetUL.appendChild(openMore);
+         openMore.onclick = function(evt) {
+            targetUL.removeChild(openMore);
+            var fragment = document.createDocumentFragment();
+            for (var i=numToShow;i<hist.length;i++) {
+               var o = hist[i];
+               if (o) {
+                  // I tried to set innerHTML of the fragment after building a
+                  // big string as above, but the items did not appear.
+                  var div = document.createElement("div");
+                  div.innerHTML = listItem(o.url, o.title);
+                  fragment.appendChild(div);
+               }
+            }
+            targetUL.appendChild(fragment);
+            evt.preventDefault(); // Do not follow the #
+         };
+      }
+
    } else {
       GM_log("Found no sidebar to write to.");
    }
@@ -187,6 +230,6 @@ setTimeout(function()
 
    AppendCategoryTreeToSidebar();
 
-},2200);
+},delayBeforeRunning);
 
 
