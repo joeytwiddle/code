@@ -1,3 +1,5 @@
-interface QIO implements QIn, QOut {
+package qcode;
+
+interface QIO extends QIn, QOut {
 }
 

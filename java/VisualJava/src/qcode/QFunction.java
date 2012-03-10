@@ -1,12 +1,14 @@
-class QFunction implements QIO {
+package qcode;
+
+abstract class QFunction implements QIO {
 
     // Namespace?  Backlink to class/lib/module?  No.
 
     String name;  // May be null for anon
 
-    List arglist;  // List of pairs of type and name
+    java.util.List arglist;  // List of pairs of type and name
 
-    Code code;  // "content"
+    // Code code;  // "content"
 
     // The code may reference vars in the arglist
     // properties of this (in the case of a method)

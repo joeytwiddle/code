@@ -1,3 +1,5 @@
+package qcode;
+
 interface QOut {
 
     String toC();
