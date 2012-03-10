@@ -15,9 +15,11 @@ var interceptEvents = true;   // Wraps around any listeners registered later, so
 var logEvents = false;         // Log any activity over the wrapped listeners.
 var logMouseMoveEvents = false;   // These can be triggered a lot.
 
-var muteLogRepeater = true;   // Mute console.log messages repeated to the
-// browser console.  (Display them only in the fastlogger, and keep the browser
-// log clear for warnings, errors and info messages.)
+var muteLogRepeater = 0;   // Mute console.log messages repeated to the
+// browser console.  (Display them only in the fastlogger, keep the browser log
+// clear for warnings, errors and info messages.)
+// TODO: Similarly, we may want to mute log messages in the FJSL, and only show
+// info/warn/errors.
 
 var bringBackTheStatusBar = true;   // TODO: watch window.status for change
 
@@ -352,14 +354,26 @@ target.console.log = function(a,b,c) {
 /* Provide/intercept console.info/warn/error(). */
 
 target.console.error = function(a,b,c) {
+	// We can get away with this in Chrome!
+
+	var args = Array.prototype.slice.call(arguments,0);
+	args.unshift("[ERROR]");
+
 	if (oldConsole) {
 		if (oldConsole.error) {
-			oldConsole.error(a,b,c);
+			oldConsole.error.apply(oldConsole,arguments);
 		} else {
-			oldConsole.log("[ERROR]",a,b,c);
+			oldConsole.log.apply(oldConsole,args);
 		}
 	}
-	return addToFastJSLog("[ERROR]",a,b,c,'\n'+getStack(2,20));
+
+	// TODO CONSIDER: if (a instanceof Error) { ... report stack?
+	if (a instanceof Error) {
+		addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20));
+		return target.console.error(""+a.stack);
+	}
+
+	return addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20));
 };
 
 // Could generalise the two functions below:
@@ -367,25 +381,34 @@ target.console.error = function(a,b,c) {
 //interceptLogLevel("info");
 
 target.console.warn = function(a,b,c) {
+	var args = Array.prototype.slice.call(arguments,0);
+	args.unshift("[WARN]");
 	if (oldConsole) {
 		if (oldConsole.warn) {
-			oldConsole.warn(a,b,c);
+			oldConsole.warn.apply(oldConsole,arguments);
 		} else {
-			oldConsole.log("[WARN]",a,b,c);
+			oldConsole.log.apply(oldConsole,args);
 		}
 	}
-	return addToFastJSLog("[WARN]",a,b,c);
+	// CONSIDER: I guess we should forward the log-level as an argument to
+	// addToFastJSLog, so it can decide whether to mark or color entries.
+	// OTOH we are marking here, which is kind of a good place!
+	// So perhaps we should forward level marker and color, like cool_logger does.
+	// addToFastJSLog can decide whether to ignore them based on options (bare/mono).
+	return addToFastJSLog.apply(this,args);
 };
 
 target.console.info = function(a,b,c) {
+	var args = Array.prototype.slice.call(arguments,0);
+	args.unshift("[INFO]");
 	if (oldConsole) {
 		if (oldConsole.info) {
-			oldConsole.info(a,b,c);
+			oldConsole.info.apply(oldConsole,arguments);
 		} else {
-			oldConsole.log("[INFO]",a,b,c);
+			oldConsole.log.apply(oldConsole,args);
 		}
 	}
-	return addToFastJSLog("[INFO]",a,b,c);
+	return addToFastJSLog.apply(this,args);
 };
 
 /*
@@ -492,19 +515,43 @@ function getStack(drop,max) {
 
 if (watchWindowForErrors) {
 	function handleError(evt) {
-		var stack = getStack(0,99);
+
+		if (!FJSL.firstWindowErrorEvent) {
+			FJSL.firstWindowErrorEvent = evt;
+		}
+		FJSL.lastWindowErrorEvent = evt;
 		// console.log("Error caught by FJSL:");
 		// console.log(evt);
 		// console.log(Object.keys(evt));
 		// target.console.error(evt.filename+":"+evt.lineno+" "+evt.message+" ["+evt.srcElement+"]",evt);
-		if (evt.message && evt.filename) {
-			// E.g. for an error thrown by a page script.
-			console.error("[Window Error] "+evt.message+" "+evt.filename+":"+evt.lineno+" "+stack);
+
+		// In fact repeating these to the browser log is redundant, since the
+		// browser is likely to report these errors anyway.
+		// Therefore, we could use addToFastJSLog instead of console.log below.
+
+		// Chrome sometimes gives us a message, sometimes doesn't.
+		if (evt.message) {
+			// This is what Chrome provides for an error thrown by a page script.
+			// In Chrome this event object contains neither an Error nor a stack-trace.
+			// Also the current stack-trace is uninformative (see nothing about the call to handleError.)
+			// So we don't use the following: , evt, getStack(0,99)
+			console.error("[Window Error] "+evt.message+" "+evt.filename+":"+evt.lineno);
 		} else {
-			// E.g. for a resource that failed to load.
-			// Ths evt gives no indication I can see of the reason, but it does at
-			// least provide the target/srcElement.
-			console.error("[Window Errror]",evt,stack);
+			// But for some errors neither Firefox nor Chrome give us anything!
+			// Except perhaps the script/file with the error.
+			var fromElement = null;
+			try {
+				fromElement = evt.srcElement.src;
+			} catch (e) { }
+			/*
+			var evtReportBits = [];
+			for (var k in evt) {
+				evtReportBits.push( k + (":" + evt[k]).replace(/\n/g,' ') );
+			}
+			var evtReport = evtReportBits.join(", ");
+			// console.error("[Window Errror] Unknown Error src="+fromElement,evtReport);
+			*/
+			console.error("[Window Errror] Unknown Error src="+fromElement);
 		}
 	}
 	window.addEventListener("error",handleError,true);
