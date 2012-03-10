@@ -3,17 +3,24 @@
 // @namespace      TOCE
 // @description    On pages which do not have a Table of Contents, but should do, create one!
 // @include        http://*/*
+// @include        https://*/*
 // ==/UserScript==
 
 var minimumItems = 4;   // Don't display a TOC for fewer than this number of entries.
 var delayBeforeRunning = 1600;
+var showAnchors = true;
+var pushAnchorsToBottom = true;   // They can look messy interspersed amongst TOC tree
 
+// 2012-02-19  Removed verbose log.  Added showAnchors.  Added https since everyone is forcing that now (e.g. github).
+// 2012-02-18  Fixed sorting of TOC elements.  Added anchor unicode.
 // 2012-01-30  Implemented GM_log and GM_addStyle so this script can be included on any web page.
 
 // TODO: derbyjs.com is an example of a site with a <div id=toc> that has no
 // hide or close buttons.  Perhaps we should add close and rollup buttons if we
 // cannot find any recognisable buttons.  (Medawiki tocs for example, do have a
 // show/hide button, so we don't want to add to them!)
+
+// BUG: Displays links for elements which may be invisible due to CSS.  (e.g. see github markdown pages)
 
 setTimeout(function(){
 
@@ -72,6 +79,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 }
 
 // Modified for this script's needs.
+// Returns e.g. "/*[2]/*[4]/*[9]"
 function getXPath(node) {
 	var parent = node.parentNode;
 	if (!parent) {
@@ -90,7 +98,9 @@ function getXPath(node) {
 			break;
 		}
 	}
-	return getXPath(parent) + '/' + '*' /*node.nodeName.toLowerCase()*/ + (totalCount>1 ? '[' + thisCount + ']' : '' );
+	// return getXPath(parent) + '/*' /*node.nodeName.toLowerCase()*/ + (totalCount>1 ? '[' + thisCount + ']' : '' );
+	// Remain consistent:
+	return getXPath(parent) + '/*' + '[' + thisCount + ']';
 }
 
 try {
@@ -122,7 +132,7 @@ try {
 		var anchors = "//a[@name]";
 		// For coffeescript.org:
 		var elementsMarkedAsHeader = "//*[@class='header']";
-		var nodeSnapshot = document.evaluate(headers+"|"+anchors+"|"+elementsMarkedAsHeader,document,null,6,null);
+		var nodeSnapshot = document.evaluate(headers+(showAnchors?"|"+anchors:"")+"|"+elementsMarkedAsHeader,document,null,6,null);
 		//// Chrome needs lower-case 'h', Firefox needs upper-case 'H'!
 		// var nodeSnapshot = document.evaluate("//*[starts-with(name(.),'h') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
 		// var nodeSnapshot = document.evaluate("//*[starts-with(name(.),'H') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
@@ -169,22 +179,24 @@ try {
 				toggleRollUp();
 			}
 
-			// The xpath query did not give the elements back in page-order.
-			// Sort them back into the order they appear in the document
+			// The xpath query did not return the elements in page-order.
+			// We sort them back into the order they appear in the document
+			// Yep it's goofy code, but it works.
 			var nodeArray = [];
 			for (var i=0;i<nodeSnapshot.snapshotLength;i++) {
 				var node = nodeSnapshot.snapshotItem(i);
 				nodeArray.push(node);
-				// node.xpath = getXPath(node);
+				// We need to sort numerically, since with strings "24" < "4"
 				node.magicPath = getXPath(node).substring(3).slice(0,-1).split("]/*[").map(Number);
+				if (pushAnchorsToBottom && node.tagName==="A") {
+					node.magicPath.unshift(+Infinity);
+				}
 			}
 			nodeArray.sort(function(a,b){
-				// return getXPath(a) > getXPath(b) ? +1 : -1;
-				// return a.xpath > b.xpath ? +1 : -1;
-				GM_log("Comparing "+a.magicPath+" against "+b.magicPath);
+				// GM_log("Comparing "+a.magicPath+" against "+b.magicPath);
 				for (var i=0;i<a.magicPath.length;i++) {
 					if (i >= b.magicPath.length) {
-						return +1; // b wins
+						return +1; // b wins (comes earlier)
 					}
 					if (a.magicPath[i] > b.magicPath[i]) {
 						return +1; // b wins
@@ -195,7 +207,6 @@ try {
 				}
 				return -1; // assume b is longer, or they are equal
 			});
-			// Yep it's goofy code, but it works.
 
 			for (var i=0;i<nodeArray.length;i++) {
 				var node = nodeArray[i];
