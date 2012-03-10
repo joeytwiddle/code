@@ -4,6 +4,8 @@
 // @description    Forces all YouTube pages to put the video title in the Location Bar
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
+// For thumbnails when google is presenting video search:
+// @include        https://www.google.co.uk/search?q=*&tbm=vid&*
 // ==/UserScript==
 
 // TODO: In case for some reason YouTube or another script redirects us to
@@ -31,6 +33,12 @@ setTimeout(function(){
 		}
 	}
 },5000); // This is what really stops the crashing!
+
+
+
+// == Reduce font size of thumbnail titles ==
+GM_addStyle(".yt-tile-default.video-list-item a .title, #watch-sidebar .video-list-item .title { font-size: 11px; line-height: 10px; }");
+// Defaults are font-size: 13px; and line-height: 15px; which show only two lines in my browser.
 
 
 
