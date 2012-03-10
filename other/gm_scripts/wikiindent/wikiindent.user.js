@@ -29,6 +29,13 @@ var fixUnderlinesToOverlines = true;
  * 23/ 3/2011 - Added Chrome compatibility.
 */
 
+// Recent versions do not play nice together, so just in case we run WI twice:
+if (unsafeWindow.WikiIndent_loaded) {
+	return;
+} else {
+	unsafeWindow.WikiIndent_loaded = true;
+}
+
 function log(x) {
 	if (this.GM_log) {
 		this.GM_log(x);
@@ -101,7 +108,9 @@ function doIt() {
 	if (toggleSidebar) {
 
 		var content = document.getElementById("content") || document.getElementById("column-content");
-		var column1 = document.getElementById("column-one") || document.getElementById("panel") || document.getElementById("mw-panel") || document.getElementById("jq-interiorNavigation");
+		var sideBar = document.getElementById("column-one") || document.getElementById("panel")
+			|| document.getElementById("mw-panel") || document.getElementById("jq-interiorNavigation")
+			|| /* pmwiki: */ document.getElementById('wikileft');
 		var toToggle = [ document.getElementById("page-base"), document.getElementById("siteNotice"), document.getElementById("head") ];
 		var cac = document.getElementById("p-cactions");
 		var cacOldHome = ( cac ? cac.parentNode : null );
@@ -125,10 +134,10 @@ function doIt() {
 				// GM_log("evt="+evt);
 				// if (evt) GM_log("evt.target.tagName="+evt.target.tagName);
 				/* We put the GM_setValue calls on timers, so they won't slow down the rendering. */
-				if (column1) {
-					if (column1.style.display == '') {
+				if (sideBar) {
+					if (sideBar.style.display == '') {
 						// column-one contains a lot of things we want to hide
-						column1.style.display = 'none';
+						sideBar.style.display = 'none';
 						content.oldMarginLeft = content.style.marginLeft;
 						content.style.marginLeft = '6px';
 						for (var i in toToggle) {
@@ -137,12 +146,12 @@ function doIt() {
 						// but one of them we want to preserve
 						// (the row of tools across the top):
 						if (cac)
-							column1.parentNode.insertBefore(cac,column1.nextSibling);
+							sideBar.parentNode.insertBefore(cac,sideBar.nextSibling);
 						setTimeout(function(){
 							GM_setValue("sidebarVisible",false);
 						},200);
 					} else {
-						column1.style.display = '';
+						sideBar.style.display = '';
 						content.style.marginLeft = content.oldMarginLeft;
 						for (var i in toToggle) {
 							if (toToggle[i]) { toToggle[i].style.display = ''; }
@@ -158,12 +167,12 @@ function doIt() {
 			}
 		}
 
-		// log("column1="+column1+" and content="+content);
-		if (column1 && content) {
+		// log("sideBar="+sideBar+" and content="+content);
+		if (sideBar && content) {
 			// We need to watch window for clicks below sidebar (Chrome).
 			window.addEventListener('click',toggleWikipediaSidebar,false);
 		} else {
-			log("Did not have column1 "+column1+" or content "+content); // @todo Better to warn or error?
+			log("Did not have sideBar "+sideBar+" or content "+content); // @todo Better to warn or error?
 		}
 
 		if (!GM_getValue("sidebarVisible",true)) {
