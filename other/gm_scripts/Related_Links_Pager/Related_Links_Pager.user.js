@@ -2,15 +2,18 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
-// @include        *
-// @exclude        https://*/*
+// @include        http://*/*
+// @include        https://*/*
 // ==/UserScript==
 
 var delayBeforeRunning = 2000;
 var minimumGroupSize = 5;
-var maximumGroupSize = 110;   // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request")
+var maximumGroupSize = 110;       // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request")
 var groupLinksByClass = true;
 var leaveHashUrlsAlone = true;
+var enableOnCtrlClick = true;
+var enableOnShiftClick = false;   // Allows you to avoid the script when needed
+var enableOnRightClick = false;
 
 
 // == CHANGELOG ==
@@ -152,7 +155,7 @@ function checkClick(evt) {
   // GM_log("Intercepted click event on "+getXPath(elem));
 
   // Do not interfere with Ctrl-click or Shift-click or right-click (usually open-in-new-window/tab)
-  if (evt.ctrlKey || evt.shiftKey || evt.button>0) {
+  if ((evt.ctrlKey && !enableOnCtrlClick) || (evt.shiftKey && !enableOnShiftClick) || (evt.button>0 && !enableOnRightClick)) {
     return;
   }
 
@@ -348,6 +351,7 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   // GM_log("Got encoded: "+encodedList);
   var siblings = JSON.parse(decodeURIComponent(encodedList));
   createRelatedLinksPager(siblings);
+  document.location.hash = ".";
 }
 
 
