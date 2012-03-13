@@ -1,4 +1,4 @@
-package visualjava;
+package visualjava.guicomponents;
 
 import java.awt.Component;
 import java.awt.event.ActionEvent;
@@ -10,7 +10,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 
-import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuItem;
@@ -25,14 +24,19 @@ import org.neuralyte.common.swing.draganddrop.HasDragDroppableObject;
 import org.neuralyte.common.swing.jmenus.DetachableJMenu;
 import org.neuralyte.common.swing.jmenus.SplittingJMenu;
 import org.neuralyte.supergui.SuperGUI;
-import org.neuralyte.swingcomponents.io.FilesystemTree;
+
+import visualjava.Desktop;
+import visualjava.MenuBuilder;
+import visualjava.VariableModel;
+import visualjava.VisualJavaGUIStatics;
+import visualjava.VisualJavaStatics;
 
 /** joey Nov 1, 2004 2:27:04 AM */
 public class VariableView extends JLabel implements HasDragDroppableObject {
 
     Desktop desktop;
 
-    VariableModel variable;
+    public VariableModel variable;
     
     // Class type;
     // String name;
@@ -43,12 +47,14 @@ public class VariableView extends JLabel implements HasDragDroppableObject {
     }
     public VariableView(Desktop _desktop, Class _type, String _name, Object _obj) {
         // super(_obj.getClass().getName() + " x = " + _obj);
+   	 // @todo This can throw a NPE if the resource returned by getIconForClass is not available!
+   	 // Should be able to fall back instead.  :P
         super(
         	VisualJavaStatics.getSimpleClassName(_obj.getClass())
         	+ " " + _name + " = " + niceValue(_obj),
         	// new ImageIcon("/usr/share/pixmaps/gnome-gmush.png", "" + _obj),
         	// new ImageIcon("src/visualjava/"+VisualJavaGUIStatics.getColorForClass(_type)+"dot-32x32.png", "" + _obj),
-        	new ImageIcon(VariableView.class.getResource(VisualJavaGUIStatics.getColorForClass(_type)+"dot-32x32.png")),
+        	VisualJavaGUIStatics.getIconForClass(_type),
         	JLabel.RIGHT
         );
         desktop = _desktop;
@@ -76,9 +82,7 @@ public class VariableView extends JLabel implements HasDragDroppableObject {
                 }
         );
     }
-    
-    
-    public void focusInspectionWindow() {
+	public void focusInspectionWindow() {
         // desktop.
         desktop.focusInspectionWindow(variable);
     }

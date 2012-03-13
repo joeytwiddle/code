@@ -1,4 +1,4 @@
-package visualjava;
+package visualjava.guicomponents;
 
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
@@ -14,6 +14,9 @@ import java.lang.reflect.Modifier;
 import javax.swing.JButton;
 import javax.swing.JInternalFrame;
 import javax.swing.JLabel;
+
+import visualjava.VisualJava;
+import visualjava.VisualJavaStatics;
 
 /** joey Nov 1, 2004 7:51:00 PM
  * @todo If I'm right about MVC, this should become MethodView, extending nothing, and should have a property of type JInternalFrame instead.
@@ -32,7 +35,7 @@ public class MethodFrame extends JInternalFrame {
     Class[] parameterTypes;
 
     //// Generated:
-    VariableHolder[] parameterTargets;
+    public VariableHolder[] parameterTargets;
 
     private static String getTitle(Method m, Object o) {
         return m.getDeclaringClass().getName() + "." + m.getName() + "()";
@@ -129,7 +132,7 @@ public class MethodFrame extends JInternalFrame {
         );
     }
 
-    void tryToInvoke() {
+    public void tryToInvoke() {
         VisualJava.executeMethodOrConstructor(objTarget, member, parameterTargets);
 		// TODO: this used to be called at the end of the invoke thread
         // But really it should be called whenever a parameterTarget is modified.

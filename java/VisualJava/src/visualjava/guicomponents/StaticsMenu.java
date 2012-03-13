@@ -1,4 +1,4 @@
-package visualjava;
+package visualjava.guicomponents;
 
 import javax.swing.JSeparator;
 
@@ -6,10 +6,12 @@ import org.neuralyte.Logger;
 import org.neuralyte.common.swing.jmenus.DetachableJMenu;
 import org.neuralyte.common.swing.jmenus.LazyJMenu;
 
+import visualjava.MenuBuilder;
+
 /** joey Nov 2, 2004 2:11:30 AM */
 public class StaticsMenu extends LazyJMenu {
     String className;
-    StaticsMenu(String name, String _className) {
+    public StaticsMenu(String name, String _className) {
         super(name);
         className = _className;
     }

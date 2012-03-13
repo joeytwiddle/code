@@ -1,7 +1,6 @@
 package visualjava;
 
-import javax.swing.*;
-import java.io.File;
+import javax.swing.JFrame;
 
 /** joey Nov 4, 2004 1:55:14 AM */
 public class ClassPathEditor extends JFrame {

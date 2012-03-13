@@ -7,24 +7,23 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Vector;
 
-import org.common.nap.Nap;
+import javax.swing.BoxLayout;
+import javax.swing.JFrame;
+
 import org.neuralyte.Logger;
-
-import visualjava.guicomponents.MethodFrame;
-import visualjava.guicomponents.VariableHolder;
-import visualjava.guicomponents.VariableView;
+import org.neuralyte.common.JavaStackUtils;
+/*
+import org.neuralyte.dyno.DynoCommand;
+import org.neuralyte.dyno.DynoMethod;
+import org.neuralyte.dyno.DynoMethodImpl;
+import org.neuralyte.dyno.interpreter.Dyno;
+import org.neuralyte.dyno.interpreter.DynoInterpreter;
+import org.neuralyte.dyno.interpreter.DynoWorkspace;
+import org.neuralyte.dyno.javawrappers.DynoJavaMethod;
+*/
 
 import com.thoughtworks.xstream.XStream;
-
-import dlang.java.DJavaMethod;
-import dlang.lang.expressions.DExpression;
-import dlang.lang.expressions.DMethodCall;
-import dlang.lang.expressions.DVarReference;
-import dlang.lang.statements.DNamedExpression;
-import dlang.lang.tokens.DMethod;
 
 /** joey Jul 11, 2004 3:26:31 AM */
 public class VisualJava {
@@ -33,9 +32,7 @@ public class VisualJava {
 	public static VisualJavaOptions options; // All its methods are static, but the user can get it easily here, and the dev if he wants to. :o Does he? ^^
 
 	public static void main(String[] args) {
-
-		Logger.log("Welcome to VisualJava.");
-
+<<<<<<< VisualJava.java
 		VisualJavaGUI visualJavaGUI = new VisualJavaGUI();
 		desktop = visualJavaGUI.desktop;
 
@@ -56,13 +53,12 @@ public class VisualJava {
 		desktop.showObject(new DynoInterpreter());
 		*/
 		// TODO: take out these dependencies unless we really want to ship them too
-		desktop.showObject(new XStream(new com.thoughtworks.xstream.io.xml.DomDriver()));
+		desktop.showObject(new XStream());
 		// desktop.showObject(new com.thoughtworks.xstream.io.xml.DomDriver());
 		try {
-            desktop.showObject(org.common.nap.Napper.class);
 			Class[] argTypes;
 			argTypes = new Class[0];
-            desktop.showObject(com.thoughtworks.xstream.io.xml.DomDriver.class.getConstructor());
+			desktop.showObject(com.thoughtworks.xstream.io.xml.DomDriver.class.getConstructor());
 			argTypes = new Class[1];
 			argTypes[0] = String.class;
 			desktop.showObject(XStream.class.getMethod("fromXML", argTypes));
@@ -80,16 +76,6 @@ public class VisualJava {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		/* Let the user set it.
-		try {
-            javax.swing.UIManager.setLookAndFeel("javax.swing.plaf.metal.MetalLookAndFeel");
-        } catch (Exception e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        }
-        */
-        
 	}
 
 	public static void showObject(Object obj) {
@@ -139,6 +125,7 @@ public class VisualJava {
 						}
 					}
 					code.append(");");
+					org.neuralyte.Logger.log("[CODE] " + code);
 
 					if (result == null) {
 						org.neuralyte.Logger.log("Result was null.");
@@ -147,8 +134,6 @@ public class VisualJava {
 						Class returnType = ( member instanceof Method ? ((Method)member).getReturnType() : ((Constructor)member).getDeclaringClass() );
 						code.insert(0,returnType.getName() + " " + nameOfNewDesktopVariable + " = ");
 					}
-
-					org.neuralyte.Logger.log("[CODE] " + code);
 
 					VariableModel var = ( objTarget == null ? null :
 						objTarget.variable == null ? null :
@@ -183,6 +168,25 @@ public class VisualJava {
 			return null;
 		else 
 			return getTextForObject(on);
+=======
+		// visualjava.VisualJavaGui.oldShowDeprecated(new String("hello test"));
+        final JFrame f = new JFrame();
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.setSize(600,400);
+        desktop = new Desktop(f);
+        desktop.setSize(800,400);
+        // f.setContentPane(desktop);
+        f.getContentPane().setLayout(new BoxLayout(f.getContentPane(),BoxLayout.Y_AXIS));
+        f.getContentPane().add(desktop);
+        f.setVisible(true);
+        desktop.showObject("Hello");
+        desktop.showObject(f);
+        desktop.showObject(desktop);
+        try { desktop.displayMethod(Arrays.class.getMethod("asList",new Class[]{ new Object[0].getClass() }),null); }
+        catch (Exception e) { }
+        new Thread() { public void run() { VisualJavaGUIStatics.addMenuBar(f); } }.start();
+        f.validate();
+>>>>>>> 1.14
 	}
 	
 	public static String getVariableName(VariableModel variable) {
@@ -212,11 +216,10 @@ public class VisualJava {
         }
     }
 
-    public static List<DNamedExpression> namedExpressions = new Vector<DNamedExpression>();
-    
 	// public static DynoMethodImpl globalDynoMethod = new DynoMethodImpl();
 	public static void passToDyno(VariableModel variable,
 			Member member, VariableHolder[] parameterTargets) {
+		/*
 		String newVariableName = "newVar"+(int)(4096*Math.random());
 		String calledObject = getVariableName(variable);
 		String[] parameterNames = null;
@@ -228,37 +231,13 @@ public class VisualJava {
 			}
 		}
 		if (member instanceof Method) {
-		    
-			/*DynoCommand dynoCommand = new DynoCommand(newVariableName,
+			DynoCommand dynoCommand = new DynoCommand(newVariableName,
 					calledObject, new DynoJavaMethod((Method)member), parameterNames);
-			*/
-			// globalDynoMethod.commands.add(dynoCommand);
-		    
-		    DVarReference dObj = new DVarReference(variable);
-		    DVarReference[] dArgs = new DVarReference[parameterNames.length];
-		    
-		    for (int i=0;i<parameterNames.length;i++) {
-		        dArgs[i] = new DVarReference(parameterTargets[i].variable.variable);
-		    }
-		    
-		    DMethod dMethod = new DJavaMethod((Method)member);
-		    
-		    DExpression expression = new DMethodCall(dObj, dMethod, dArgs);
-		    
-		    DNamedExpression dne = new DNamedExpression(newVariableName, expression);
-		    
-		    namedExpressions.add(dne);
-		    
-		    // @todo
-		    // Test calling the dne through DInterpreter.
-		    // If it returns something significantly from the Java, that is interesting.
-		    // If it returns the same, that would be great!
-		    
-		    Logger.log("[CODE] Created " + Nap.toString(dne) );
-		    
+			globalDynoMethod.commands.add(dynoCommand);
 		} else {
 			Logger.warn("I do not yet know how to handle: "+VisualJavaStatics.getShortClassName(member)+"s");
 		}
+		*/
 	}
 
 }

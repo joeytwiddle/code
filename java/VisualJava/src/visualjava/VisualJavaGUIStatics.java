@@ -3,8 +3,11 @@ package visualjava;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
 
 import javax.swing.ImageIcon;
+
+import visualjava.guicomponents.VariableView;
 
 /** joey Nov 2, 2004 3:15:13 PM */
 public class VisualJavaGUIStatics {
@@ -56,5 +59,10 @@ public class VisualJavaGUIStatics {
         imageIcon.setImage(imageIcon.getImage().getScaledInstance(15,15,15));
         return imageIcon;
     }
+
+	public static ImageIcon getIconForClass(Class _type) {
+		URL resource = VariableView.class.getResource(VisualJavaGUIStatics.getColorForClass(_type)+"dot-32x32.png");
+      return new ImageIcon(resource);
+   }
 
 }

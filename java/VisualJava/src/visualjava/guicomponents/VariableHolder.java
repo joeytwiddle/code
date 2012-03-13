@@ -1,4 +1,4 @@
-package visualjava;
+package visualjava.guicomponents;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -16,6 +16,7 @@ import org.neuralyte.common.swing.draganddrop.DragAndDropManager;
 import org.neuralyte.common.swing.draganddrop.HasDragDroppableObject;
 import org.neuralyte.util.reflection.ReflectionHelper;
 
+import visualjava.VisualJavaStatics;
 import visualjava.objecteditingcomponents.BooleanChooser;
 import visualjava.objecteditingcomponents.DroppableJLabel;
 import visualjava.objecteditingcomponents.DroppableJTextField;
@@ -34,7 +35,7 @@ public class VariableHolder extends JPanel implements CanAcceptDroppedObject {
 
 	Class type;
 
-	VariableView variable;
+	public VariableView variable;
 
 	JComponent component;
 

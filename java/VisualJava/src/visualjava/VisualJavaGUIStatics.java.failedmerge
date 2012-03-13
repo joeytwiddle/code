@@ -1,0 +1,294 @@
+package visualjava;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+import javax.swing.ImageIcon;
+
+/** joey Nov 2, 2004 3:15:13 PM */
+public class VisualJavaGUIStatics {
+
+<<<<<<< VisualJavaGUIStatics.java
+	public static String getColorForClass(Class type) {
+		// TODO: define distinctive colour if it's a primitive, or non-existent (e.g. void)?
+		// Logger.info(type+".getPackage().getName() = " + type.getPackage().getName());
+		if (type == Field.class)
+			return "blue";
+		if (type == Constructor.class)
+			return "cyan";
+		if (type == Method.class)
+			return "orange";
+		// if (type == Exception.class)
+		if (type.isAssignableFrom(Throwable.class))
+			return "red";
+		// if (type.getSuperclass() == Object.class)
+			// return "green";
+		try { // We get NPE if type is an array type.
+			if (type.getPackage().getName().startsWith("java.")
+					|| type.getPackage().getName().startsWith("javax.")
+					|| type.getPackage().getName().startsWith("sun.")
+					|| type.getPackage().getName().startsWith("sunw.")
+			)
+				return "yellow";
+			if (type.getPackage().getName().startsWith("com."))
+				return "red";
+			if (type.getPackage().getName().startsWith("org."))
+				return "green";
+		} catch (Exception e) {
+		}
+		return "magenta";
+	}
+=======
+    static StatusBar statusBar = null;
+
+    public static void addMenuBar(JFrame frame) {
+        // public static void addMenuBar(JMenu myMenu) {
+>>>>>>> 1.8
+
+<<<<<<< VisualJavaGUIStatics.java
+	public static ImageIcon getImageIconForClass(Class c) {
+		String color = VisualJavaGUIStatics.getColorForClass(c);
+		ImageIcon imageIcon = new ImageIcon("src/visualjava/"+color+"dot-32x32.png");
+		return imageIcon;
+	}
+=======
+		JMenuBar menuBar;
+		JMenu menu, submenu;
+		JMenuItem menuItem;
+		JRadioButtonMenuItem rbMenuItem;
+		JCheckBoxMenuItem cbMenuItem;
+
+		//Create the menu bar.
+		menuBar = new JMenuBar();
+
+        menu = new JMenu("File");
+        menuItem = new JMenuItem("Exit");
+        menuItem.addActionListener(
+            new ActionListener() {
+                public void actionPerformed(ActionEvent e) {
+                    System.exit(0);
+                }
+            }
+        );
+        menu.add(menuItem);
+        menuBar.add(menu);
+
+        statusBar = new StatusBar();
+        frame.getContentPane().add(statusBar);
+        menu = new ClassMenu("");
+        buildClassMenu((ClassMenu)menu);
+        menuBar.add(menu);
+
+        frame.setJMenuBar(menuBar);
+        // One if not both needed:
+        frame.validate();
+        frame.repaint();
+
+        /*
+
+		//Build the first menu.
+		menu = new JMenu("Class");
+        menu = myMenu;
+		menu.setMnemonic(KeyEvent.VK_C);
+		menu.getAccessibleContext().setAccessibleDescription("Create a new Object or find a Class");
+		menuBar.add(menu);
+
+		//a group of JMenuItems
+		menuItem = new JMenuItem("A text-only menu item",KeyEvent.VK_T);
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(
+					KeyEvent.VK_1, ActionEvent.ALT_MASK));
+		menuItem.getAccessibleContext().setAccessibleDescription(
+				"This doesn't really do anything");
+		menu.add(menuItem);
+
+		menuItem = new JMenuItem("Both text and icon",
+				new ImageIcon("images/middle.gif"));
+		menuItem.setMnemonic(KeyEvent.VK_B);
+		menu.add(menuItem);
+
+		menuItem = new JMenuItem(new ImageIcon("images/middle.gif"));
+		menuItem.setMnemonic(KeyEvent.VK_D);
+		menu.add(menuItem);
+
+		//a group of radio button menu items
+		menu.addSeparator();
+		ButtonGroup group = new ButtonGroup();
+		rbMenuItem = new JRadioButtonMenuItem("A radio button menu item");
+		rbMenuItem.setSelected(true);
+		rbMenuItem.setMnemonic(KeyEvent.VK_R);
+		group.add(rbMenuItem);
+		menu.add(rbMenuItem);
+
+		rbMenuItem = new JRadioButtonMenuItem("Another one");
+		rbMenuItem.setMnemonic(KeyEvent.VK_O);
+		group.add(rbMenuItem);
+		menu.add(rbMenuItem);
+
+		//a group of check box menu items
+		menu.addSeparator();
+		cbMenuItem = new JCheckBoxMenuItem("A check box menu item");
+		cbMenuItem.setMnemonic(KeyEvent.VK_C);
+		menu.add(cbMenuItem);
+
+		cbMenuItem = new JCheckBoxMenuItem("Another one");
+		cbMenuItem.setMnemonic(KeyEvent.VK_H);
+		menu.add(cbMenuItem);
+
+		//a submenu
+		menu.addSeparator();
+		submenu = new JMenu("A submenu");
+		submenu.setMnemonic(KeyEvent.VK_S);
+
+		menuItem = new JMenuItem("An item in the submenu");
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(
+					KeyEvent.VK_2, ActionEvent.ALT_MASK));
+		submenu.add(menuItem);
+
+		menuItem = new JMenuItem("Another item");
+		submenu.add(menuItem);
+		menu.add(submenu);
+
+		//Build second menu in the menu bar.
+		menu = new JMenu("Another Menu");
+		menu.setMnemonic(KeyEvent.VK_N);
+		menu.getAccessibleContext().setAccessibleDescription(
+				"This menu does nothing");
+		menuBar.add(menu);
+
+//		frame.setJMenuBar(menuBar);
+
+        */
+>>>>>>> 1.8
+
+	public static ImageIcon getSmallImageIconForClass(Class c) {
+		ImageIcon imageIcon = getImageIconForClass(c);
+		imageIcon.setImage(imageIcon.getImage().getScaledInstance(15,15,15));
+		return imageIcon;
+	}
+
+<<<<<<< VisualJavaGUIStatics.java
+=======
+    static JMenu buildClassMenu(final ClassMenu menu) {
+        BufferedReader in = VisualJavaStatics.getListOfAllClasses();
+        try {
+            Thread.currentThread().setPriority(1);
+            while (true) {
+                Thread.yield();
+                String line = in.readLine();
+                if (line == null)
+                    break;
+                if (line.length() == 0) {
+                    System.err.println("VisualJavaGUIStatics.buildClassMenu(): Got class = \"\"!");
+                }
+                menu.addClass(line);
+            }
+        } catch (IOException e) {
+            // if (!e.getMessage().equals("Write end dead")) {
+                e.printStackTrace(System.err);
+            // }
+        }
+        System.out.println("Class menu built.");
+        if (statusBar != null) {
+            statusBar.setStatus("Class menu built.");
+        }
+        // A nice touch: starts to split/populate the menu in the background (because it is a slow operation!)
+        // Strangely if I wrap the above population reading in this Thread, the menu still does not appear.
+        new Thread() {
+            public synchronized void start() {
+                menu.ensurePopulated();
+            }
+        }.start();
+        return menu;
+    }
+
+    public static void addStaticsToMenu(JMenu statics, Class c) {
+        try {
+            for (int i=0;i<c.getConstructors().length;i++) {
+                Constructor con = c.getConstructors()[i];
+                if (Modifier.isPublic(con.getModifiers())) {
+                    // menuItem = new JMenuItem("new " + con.getName() + "(" + listParams(con.getParameterTypes()) + ")");
+                    addConstructorToMenu(con, statics);
+                }
+            }
+            // statics.add(new JMenuItem("--------"));
+            statics.add(new JSeparator());
+            for (int i=0;i<c.getDeclaredMethods().length;i++) {
+                Method m = c.getDeclaredMethods()[i];
+                if (Modifier.isStatic(m.getModifiers()) && Modifier.isPublic(m.getModifiers())) {
+                    addMethodToMenu(m, statics, null);
+                }
+            }
+            statics.add(new JSeparator());
+            for (int i=0;i<c.getDeclaredFields().length;i++) {
+                Field f = c.getDeclaredFields()[i];
+                if (Modifier.isStatic(f.getModifiers()) && Modifier.isPublic(f.getModifiers())) {
+                    try {
+                        addFieldToMenu(f, statics, null);
+                    } catch (Exception e) {
+                        e.printStackTrace(System.err);
+                        // I once got: java.lang.IllegalAccessException: Class visualjava.VisualJavaGUIStatics can not access a member of class org.neuralyte.common.swing.MoveabilityListener with modifiers "public static final"
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace(System.err);
+        }
+    }
+
+    public static void addConstructorToMenu(final Constructor con, JMenu menu) {
+        Class c = con.getDeclaringClass();
+        JMenuItem menuItem = new JMenuItem("new " + VisualJavaStatics.getSimpleClassName(c) + "(" + VisualJavaStatics.listParams(con.getParameterTypes()) + ")");
+        menuItem.addActionListener(
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        VisualJava.desktop.displayConstructor(con);
+                    }
+                }
+        );
+        menu.add(menuItem);
+    }
+
+    public static void addMethodToMenu(final Method m, JMenu menu, final Object obj) {
+        // JMenuItem menuItem = new JMenuItem(VisualJavaStatics.getSimpleClassName(m.getReturnType()) + " " + m.getName() + "(" + VisualJavaStatics.listParams(m.getParameterTypes()) + ")");
+        JMenuItem menuItem = new JMenuItem(m.getName() + "(" + VisualJavaStatics.listParams(m.getParameterTypes()) + ") : " + VisualJavaStatics.getSimpleClassName(m.getReturnType()));
+        menuItem.addActionListener(
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        VisualJava.desktop.displayMethod(m,obj);
+                    }
+                }
+        );
+        menu.add(menuItem);
+    }
+
+    /** Do not pass Variable, pass actual Object! **/
+    public static void addFieldToMenu(final Field f, JMenu menu, final Object obj) throws IllegalAccessException {
+        JMenuItem menuItem = new JMenuItem(VisualJavaStatics.getSimpleClassName(f.getType()) + " " + f.getName() + " = \"" + f.get(obj) + "\"");
+        menuItem.addActionListener(
+                new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            Object value = f.get(obj);
+                            VisualJava.desktop.showObject(value);
+                        } catch (Exception ex) {
+                            VisualJava.desktop.showObject(ex);
+                        }
+                    }
+                }
+        );
+        menu.add(menuItem);
+    }
+
+>>>>>>> 1.8
+}
+
+class StatusBar extends JLabel {
+    public StatusBar() {
+        super();
+    }
+    public void setStatus(String newStatus) {
+        setText(newStatus);
+        // repaint();
+    }
+}

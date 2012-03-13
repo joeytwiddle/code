@@ -1,4 +1,4 @@
-package visualjava;
+package visualjava.guicomponents;
 
 import java.awt.Component;
 import java.util.Arrays;
@@ -14,6 +14,9 @@ import org.neuralyte.Logger;
 import org.neuralyte.common.swing.jmenus.DetachableJMenu;
 import org.neuralyte.common.swing.jmenus.LazyJMenu;
 import org.neuralyte.common.swing.jmenus.SplittingJMenu;
+
+import visualjava.ClassMenuBuilder;
+import visualjava.VisualJavaGUIStatics;
 
 
 

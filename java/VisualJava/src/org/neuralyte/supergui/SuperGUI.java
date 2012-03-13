@@ -2,7 +2,7 @@ package org.neuralyte.supergui;
 
 import java.lang.reflect.Method;
 
-import visualjava.VariableView;
+import visualjava.guicomponents.VariableView;
 
 
 public class SuperGUI {
