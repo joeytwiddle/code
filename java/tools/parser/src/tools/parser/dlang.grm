@@ -4,12 +4,23 @@
 
 Main = DLangFile
 
-DLangFile = DLangFileSome
+DLangFile = DLangImports DLangFileSome
 
-# Should it be 0 or more?
+# DLangImports = DLangImport [ DLangImports ]
+
+DLangImports = DLangImport DLangImports
+             | DLangImport
+
+DLangImport = DLangImportProper
+            | Comment
+            | Space
+
+DLangImportProper = "import" Space <import/"\n"> "\n"
 
 DLangFileSome = DLangFileBit DLangFile
               | DLangFileBit
+
+# Should it be 0 or more?
 
 DLangFileBit = Comment | ClassDefinition | FunctionDefinition | Statement
 
@@ -39,7 +50,7 @@ UntypedArg = WS Type Space VarName WS
 
 MoreArgs = "," Args
 
-VarName = "<" <varname/"<>\n!qt!/ "> ">"
+VarName = <varname/"<>\n!qt!/ ">
 
 VarReference = VarName
 

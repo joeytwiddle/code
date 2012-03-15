@@ -19,6 +19,10 @@ import java.awt.event.ActionListener; // debug
 import java.awt.event.ActionEvent; // debug
 import java.awt.Button; // debug
 
+import org.neuralyte.Logger;
+import org.neuralyte.common.ArrayUtils;
+import org.neuralyte.common.StringUtils;
+
 import jlib.Files;
 import jlib.JString;
 import jlib.strings.*;
@@ -48,8 +52,11 @@ public class Atom implements Type {
 			Profile.start("Atom.match: Outside loop");
 			Vector rules=(Vector)rs.rules.get(i);
 			if (rules.size()==0) {
-				//System.out.println("rulesetforatom("+type+") number "+i+" is empty!");
+				System.err.println("rulesetforatom("+type+") number "+i+" is empty!");
 				System.exit(1);
+			}
+			if (Parser.Debugging) {
+				Logger.log("Trying to match "+rules+" against: "+StringUtils.escapeSpecialChars(s.substring(0, 40))+"..");
 			}
 			Vector ms=new Vector();
 			SomeString left=s;

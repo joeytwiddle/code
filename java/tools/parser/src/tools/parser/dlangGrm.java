@@ -13,6 +13,8 @@ public class dlangGrm {
 
     // DLang - A dumb language
 
+    // @OPTION rewrite_meaningful_indentation "{" "}"
+
     ruleset=new RuleSet("Main");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -23,12 +25,46 @@ public class dlangGrm {
     ruleset=new RuleSet("DLangFile");
       rulesets.add(ruleset);
       rule=new Vector();
+        rule.add(new Atom("DLangImports"));
         rule.add(new Atom("DLangFileSome"));
       ruleset.add(rule);
     // Replacements
 
-    // DLangFileSome = 1 or more DLangFileBits
-    // Should it be 0 or more?
+    // DLangImports = DLangImport [ DLangImports ]
+
+    ruleset=new RuleSet("DLangImports");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("DLangImport"));
+        rule.add(new Atom("DLangImports"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("DLangImport"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("DLangImport");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("DLangImportProper"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Comment"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Space"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("DLangImportProper");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("import"));
+        rule.add(new Atom("Space"));
+        rule.add(new Var("import","\n"));
+        rule.add(new Text("\n"));
+      ruleset.add(rule);
+    // Replacements
 
     ruleset=new RuleSet("DLangFileSome");
       rulesets.add(ruleset);
@@ -41,8 +77,13 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    // Should it be 0 or more?
+
     ruleset=new RuleSet("DLangFileBit");
       rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Comment"));
+      ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("ClassDefinition"));
       ruleset.add(rule);
@@ -54,9 +95,21 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
-    // WS = Optional WhiteSpace
-    // RWS = Required WhiteSpace?
+    ruleset=new RuleSet("Comment");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("#"));
+        rule.add(new Var("comment","\n"));
+        rule.add(new Text("\n"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("//"));
+        rule.add(new Var("comment","\n"));
+        rule.add(new Text("\n"));
+      ruleset.add(rule);
+    // Replacements
 
+    // DLangFileSome = 1 or more DLangFileBits
     // TODO: Parametrised classes (templates)
     ruleset=new RuleSet("ClassDefinition");
       rulesets.add(ruleset);
@@ -117,7 +170,28 @@ public class dlangGrm {
     ruleset=new RuleSet("Arg");
       rulesets.add(ruleset);
       rule=new Vector();
+        rule.add(new Atom("TypedArg"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("UntypedArg"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("TypedArg");
+      rulesets.add(ruleset);
+      rule=new Vector();
         rule.add(new Atom("WS"));
+        rule.add(new Atom("VarName"));
+        rule.add(new Atom("WS"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("UntypedArg");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("Type"));
+        rule.add(new Atom("Space"));
         rule.add(new Atom("VarName"));
         rule.add(new Atom("WS"));
       ruleset.add(rule);
@@ -131,12 +205,17 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    ruleset=new RuleSet("VarName");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Var("varname","<>\n\"/ "));
+      ruleset.add(rule);
+    // Replacements
+
     ruleset=new RuleSet("VarReference");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Text("<"));
-        rule.add(new Var("varname","<>\n\"/ "));
-        rule.add(new Text(">"));
+        rule.add(new Atom("VarName"));
       ruleset.add(rule);
     // Replacements
 
@@ -294,10 +373,65 @@ public class dlangGrm {
     // Replacements
 
 
+    ruleset=new RuleSet("VarDeclaration");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("VarDeclarationAndAssignment"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("VarDeclarationWithoutAssignment"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("VarDeclarationWithoutAssignment");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("var"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("VarName"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Type"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("VarName"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("var"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("VarName"));
+        rule.add(new Atom("WS"));
+        rule.add(new Text(":"));
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("Type"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("VarName"));
+        rule.add(new Atom("WS"));
+        rule.add(new Text(":"));
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("Type"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("VarDeclarationAndAssignment");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("VarDeclarationWithoutAssignment"));
+        rule.add(new Atom("WS"));
+        rule.add(new Text("="));
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("Expression"));
+      ruleset.add(rule);
+    // Replacements
+
+
 
     // HTF will I deal with indentation?
 
 
+
+    // WS    = Optional WhiteSpace
+    // Space = Required WhiteSpace
 
     ruleset=new RuleSet("NL");
       rulesets.add(ruleset);
@@ -316,7 +450,7 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
-    ruleset=new RuleSet("RWS");
+    ruleset=new RuleSet("Space");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("Whitespace"));
