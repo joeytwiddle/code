@@ -1,21 +1,23 @@
-echo "Redefine the parsers grammar grammar?"
+#!/bin/bash
+
+echo "Redefine the parser's grammar grammar?"
 read X
-test "$X" = "y" || exit 0
+[ "$X" = "y" ] || exit 0
 
 echo "Compiling everything, making backup."
-./j
+./build.sh
 cp grmGrm.java grmGrm.java.bak
 
 rm -f grmGrm.java.2
 
 echo "Translating grammar to java"
-jparse grm grm.grm java $@ > grmGrm.java
+jparse grm grm.grm java "$@" > grmGrm.java
 if [ "$1" = "debug" ]; then
   edit grmGrm.java
 fi
 
 echo "Compiling new grammar"
-./j
+./build.sh
 
 echo "Translating using itself"
 jparse grm grm.grm java $@ > grmGrm.java
@@ -28,7 +30,7 @@ cmp grmGrm.java.bak grmGrm.java
 jfcsh grmGrm.java.bak grmGrm.java
 
 echo "Compiling own version"
-./j
+./build.sh
 
 echo "Creating child version to compare"
 jparse grm grm.grm java $@ > grmGrm.java.2
@@ -46,7 +48,7 @@ else
   # Reset to original
   echo "Bad grammar!  Resetting to original"
   cp grmGrm.java.bak grmGrm.java
-  ./j
+  ./build.sh
 fi
 
 # echo "stringhash=$# stringunderscore=$_"

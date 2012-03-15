@@ -1,0 +1,66 @@
+# This grammar defines defines the file
+# format for a grammar
+
+GrammarDefn = Grm
+java: "import java.lang.String;\nimport java.util.Vector;\n\nimport Grammar;\nimport RuleSet;\n\npublic class SrcGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector rule;\n\n" Grm "  }\n}\n"
+
+Grm = "\n" Grm
+    | "\n"
+    | GrmBit "\n" Grm
+    | GrmBit
+
+GrmBit = Comment
+       | Atom
+
+Comment = "#" <comment/"\n">
+java: "    //" <comment> "\n"
+
+Atom = AtomWith "\n"
+     | AtomWithout "\n"
+
+AtomWithout = <atomname/"<>\n\" "> " = " Defn
+java: "    ruleset=new RuleSet(\"" <atomname> "\");\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n\n"
+
+AtomWith = <atomname/"<>\n\" "> " = " Defn "\n" Replacements
+java: "    ruleset=new RuleSet(\"" <atomname> "\");\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n" Replacements "\n"
+
+Replacements = Replacement
+             | Replacement "\n" Replacements
+
+Replacement = <target/"<>\n\" "> ": " Defn
+java: "    rule=new Vector();\n" Defn "    ruleset.replacements.put(\"" <target> "\",rule);\n"
+
+Defn = DefnBit
+     | DefnAnd
+     | DefnOr
+
+DefnBit = Variable
+        | Text
+        | AtomRef
+
+DefnOr = DefnBit " | " Defn
+       | DefnBit "\n" Whitespace "| " Defn
+java: DefnBit "      ruleset.add(rule);\n      rule=new Vector();\n" Defn
+
+DefnAnd = DefnBit " " Defn
+java: DefnBit Defn
+
+Variable = Var
+         | VarDeny
+
+Var = "<" <varname/"<>\n\"/ "> ">"
+java: "        rule.add(new Var(\"" <varname> "\"));\n"
+
+VarDeny = "<" <varname/"<>\n\"/ "> "/\"" <denied/"\""> "\">"
+java: "        rule.add(new Var(\"" <varname> "\",\"" <denied> "\"));\n"
+
+AtomRef = <atomtype/"<>\n\" ">
+java: "        rule.add(new Atom(\"" <atomtype> "\"));\n"
+
+Text = "\"" <text/"\""> "\""
+java: "        rule.add(new Text(\"" <text> "\"));\n"
+
+Whitespace = " "
+           | "\n"
+           | Whitespace Whitespace
+

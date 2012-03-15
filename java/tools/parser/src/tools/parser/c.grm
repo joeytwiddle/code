@@ -1,0 +1,294 @@
+##### Joey's grammar for C++ parsing
+### Provided a single c file,
+### targets "h" and "c" should output the correct split.
+
+
+##### Main
+
+Main = CSrc
+
+CSrc = CSrcBit CSrc
+     | ""
+
+CSrcBit = WS
+	| Special
+        | Comment
+        | HashCom
+        | ClassDecl
+        | ClassDefn
+        | Method
+        | VariableDecl
+
+# Note: Methods given priority because VariableDecl tries to catch eg. "operator==" !
+
+# Doesn't appear to be picking up in joeylib.c
+
+Special = "/*special c*/" EndSpecial
+        | "/*special h*/" EndSpecial
+
+EndSpecial = <stuff/"/"> ContSpecial
+
+ContSpecial = "/*end special*/"
+	    | "/" EndSpecial
+
+##### Simple comments and #commands
+
+Comment = "/*" EndCom
+        | "//" <stuff/"\n"> NL
+
+# Hack for /* */ to deal with eg. " ... /* blah foo*bar */ ... "
+EndCom = <stuff/"*"> "*/"
+       | <stuff/"*"> "*" EndCom
+
+# Although the repeated RHS are unaesthetic,
+# they are OK when parsing, since the RHS
+# is only reached when the LHS is satisfied.
+HashCom = "#include " HashIncludeLib OptSpc NL
+				| "#include " HashIncludeFile OptSpc NL
+				| "#def" <more/"\n"> NL
+				| "#ifdef" <more/"\n"> NL
+				| "#" <other/"\n"> NL
+
+HashIncludeLib = "<" <file/"."> ".c>"
+							 | "<" <file/"."> ".h>"
+h: "<" <file> ".h>"
+  
+HashIncludeFile = "!qt!" <file/"."> ".c!qt!"
+								| "!qt!" <file/"."> ".h!qt!"
+h: "!qt!" <file> ".h!qt!"
+
+
+
+##### Classes
+
+# However, the class declaration vs. definition is
+# inefficient, since the LHS is searched in both cases.
+# However, it is neccessary to classify this LHS
+# data according the the resulting match on the RHS.
+
+ClassDecl = OptClassTemplate "class" WS <name/" =(){};"> ";"
+h: OptClassTemplate " class " <name> ";"
+c: "// Class declaration of existence: " <name> "\n"
+
+ClassDefn = TemplateClass
+    			| Class
+			
+TemplateClass = ClassTemplate Class
+h: "// Template class appears in original format:\n" ` jlib.strings.FakeOutputStream out=new jlib.strings.FakeOutputStream(); match.render(null,"none",new java.io.PrintStream(out)); return ""+out.store; ` "// End template class\n"
+c: "// Template class must appear in .h file\n"
+
+Class = OptClassMods "class " <name/"\n ;{}()"> WS OptMoreClassMods "{" ClassInside "};"
+h: OptClassMods "class " <name> WS OptMoreClassMods "{" ClassInside "};"
+c: "// Starts of class " <name> "\n" ClassInside "// End class " <name> "\n"
+
+OptMoreClassMods = <moremods/"\n;{}()">
+
+OptClassMods = ClassMod WS OptClassMods
+             | OptWS
+
+ClassMod = "public"
+         | "private"
+
+ClassInside = Publicity WS ClassInside
+            | CSrcBit ClassInside
+						| ""
+
+Publicity = "public:"
+          | "private:"
+c: ""
+
+OptClassTemplate = ClassTemplate | ""
+
+ClassTemplate = Template
+
+
+
+##### Templates
+
+# 1) Templates used to declare a template class or method
+
+OptTemplate = Template | ""
+
+Template = OptWS "template" OptWS "<" TemplateSuperInside ">" OptWS
+
+TemplateSuperInside = OptWS "class" WS TemplateInside
+
+# 2) Templates used to declare a template object instance
+
+OptTemplateType = TemplateType
+                | ""
+
+TemplateType = OptWS <temptype/" (){}<>,"> "<" TemplateTypeInner OptPtr OptWS ">"
+
+# Note: recursion to deal with eg. " List< List<int> > listOfLists(); "
+TemplateTypeInner = TemplateType
+                  | TemplateInside
+
+# Took comma out to deal with eg. "template <class A,class B>"
+TemplateInside = <inside/"<>(){}">
+
+
+
+##### Methods
+
+# Second case is constructor (no type)
+MDecl = OptTemplate OptVarMods OptWS VarType WS OptPtr OptLater MethName OptWS "(" OptArgs ")"
+      | OptTemplate OptPtr OptLater MethName OptWS "(" OptArgs ")"
+h: OptTemplate OptVarMods VarType " " OptPtr OptLater MethName "(" OptArgs ")"
+c: TemplateClass^ClassTemplate OptTemplate OptVarMods VarType " " OptPtr Class^<name> ` Match m=match.getUp("Class").getDown("TemplateClass").getDown("TemplateSuperInside").getDown("TemplateInside"); return "<"+m.string+">"; ` ` return ( match.getUp("Class")==null ? "" : "::" ); ` OptLater MethName "(" OptArgs ")"
+
+# ` return ( match.getUp("Class")==null ? "extern " : "" ); ` 
+# c: Class^OptTemplate OptTemplate OptVarMods VarType " " OptPtr Class^<name> ` Match m=match.getUp("Class").getDown("ClassOptTemplate").getDown("TemplateSuperInside").getDown("TemplateInside"); return "<"+m.string+">"; ` ` return ( match.getUp("Class")==null ? "/* no class */" : "::" ); ` OptLater MethName "(" OptArgs ")"
+# h: ` if ( ! match.getDown("OptLater").string.toString().equals("") ) { unusedmatches.clear(); return "/* Skipping >"+match.getDown("OptLater").string+"< */\n"; } return "/* =) */"; ` OptTemplate OptVarMods VarType " " MethName "(" OptArgs ")"
+
+OptPtr = OptWS "*" OptWS
+       | OptWS
+
+OptLater = MethName "::"
+         | ""
+
+# Method names can contain, eg. operator=
+MethName = "operator" <op/" ()">
+         | <varname/" =:;(){}">
+
+Method = MethodWithCode
+       | MethodWithoutCode
+h: ` return ( match.getDown("OptLater").string.toString().equals("") ? "" : "/* Skipping later :: " ); ` MethodWithCode MethodWithoutCode ` return ( match.getDown("OptLater").string.toString().equals("") ? "" : "*/\n" ); `
+
+MethodWithCode = MDecl OptWS "{" Code "}"
+h: MDecl "; // Method\n"
+
+MethodWithoutCode = MDecl OptWS ";"
+h: MDecl "; // Method\n"
+c: "/* Skipping declared method " MDecl " */\n"
+
+
+
+##### Code - not yet fully parsed
+
+Code = <code/"{}!qt!/"> RestCode Code
+     | <other/"{}">
+
+RestCode = String
+         | Comment
+         | "/"
+         | InnerCode
+
+InnerCode = "{" Code "}"
+
+
+
+##### Variables
+
+OptVarMods = OptVarMod OptWS OptVarMods
+           | OptVarMod OptWS
+           | ""
+
+# fillin is one of my #defs, abstract may be Java only, not C
+# These should really be split up for methods, variables etc.
+OptVarMod = "public"
+          | "private"
+          | "static"
+          | "virtual"
+          | "abstract"
+          | "extern"
+          | "unsigned"
+          | "signed"
+          | "const"
+          | "static"
+          | "struct"
+	  | Fillin
+	  | Fillup
+c: ` String val=match.string.toString(); if ( val.equals("virtual") || val.equals("static") || val.equals("fillin") /* && match.getUp("Class")==null */ ) return ""; else return ""+match.string; `
+
+#          | "fillin"
+#          | "fillup"
+
+Fillin = "fillin"
+c: "// fillin"
+
+Fillup = "fillup"
+h: "// fillup"
+
+VarBeing = OptWS "=" OptWS <varbeing/";">
+
+# Method: Second option is a method declaration
+
+VariableDecl = VariableDeclBeing
+             | VariableDeclExist
+
+VariableDeclExist = OptVarMods VarType WS VarNames ";"
+h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Exists"
+c: ` return ( match.getUp("Class")==null ? match.renderString("normal") : "// Variable declared in .h file" ); `
+
+# NB: If you try putting OptVarMods after `...` you may end up with "extern // fillup ..." in the output :-(
+
+VariableDeclBeing = OptVarMods VarType WS VarNames VarBeing ";"
+h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Variable initialised in .c file"
+c: OptVarMods VarType WS Class^<name> ` Match cls=match.getUp("Class"); return ( cls==null ? "" : "::" ); ` VarNames VarBeing ";"
+
+VarType = ArgType
+
+VarNames = VarName OptWS "," OptWS VarNames
+         | VarName OptWS
+
+
+
+##### Arguments and types
+
+ArgType = OptArgMods OptWS TemplateType
+        | OptArgMods OptWS <vartype/" <>\n;(){},">
+        | ""
+
+OptArgMods = OptVarMods | ""
+
+# need to avoid = or it will be read!
+VarName = ArgName
+
+OptArgs = Args
+        | OptWS
+
+Args = DoubleArg
+     | Arg
+
+DoubleArg = Arg "," Args
+h: Arg "," Args
+c: Arg "," Args
+
+Arg = OptWS ArgA OptWS
+
+ArgA = ArgType WS ArgName
+     | ArgType
+     | "..."
+
+# h: <argtype> " " ArgName
+# c: <argtype> " " ArgName
+
+# ArgType = VarType OptTemplateType
+
+ArgName = "(" <argname/" ;=(){},<>\n"> ")" OptWS "(" OptArgs ")"
+        | <argname/" ;=(){},<>\n"> OptWS "(" OptArgs ")"
+        | <argname/" ;=(){},<>\n">
+
+
+
+##### And everything else
+
+String = "!qt!" <str/"!qt!"> "!qt!"
+
+OptWS = WS
+      | ""
+
+WS = NL OptWS
+   | Comment OptWS
+	 | SpcBit OptWS
+
+NL = "\r\n"
+   | "\n"
+
+OptSpc = SpcBit OptSpc
+       | ""
+
+SpcBit = " " | "\t"
+
+

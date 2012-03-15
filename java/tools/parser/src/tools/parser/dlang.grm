@@ -1,0 +1,99 @@
+# DLang - A dumb language
+
+Main = DLangFile
+
+DLangFile = DLangFileSome
+
+# DLangFileSome = 1 or more DLangFileBits
+# Should it be 0 or more?
+
+DLangFileSome = DLangFileBit DLangFile
+              | DLangFileBit
+
+DLangFileBit = ClassDefinition | FunctionDefinition | Statement
+
+# TODO: Parametrised classes (templates)
+ClassDefinition = "class" WS <className/" \n"> WS NL WS ClassBody
+
+ClassBody = IndentedDLangFileSome
+
+# TODO
+IndentedDLangFileBit = DLangFileSome
+
+FunctionDefinition = <fnname/" ("> "(" Args ")" WS "=" WS FunctionBody
+
+Args = Arg MoreArgs
+     | Arg
+     | WS
+
+Arg = WS VarName WS
+
+MoreArgs = "," Args
+
+VarName = "<" <varname/"<>\n!qt!/ "> ">"
+
+VarReference = VarName
+
+Statement = Assignment
+
+Assignment = NormalAssignment
+           | SpecialAssignment
+
+NormalAssignment = VarReference WS "=" Expression
+
+SpecialAssignment = VarReference WS SpecialOperator Expression
+
+SpecialOperator = "+=" | "-=" | "*=" | "/="
+
+Expression = ExpressionBit
+
+ExpressionBit = VarReference
+              | BracketedExpression
+              | Algebra
+
+BracketedExpression = "(" WS ExpressionBit WS ")"
+
+Algebra = ExpressionBit Operator ExpressionBit
+
+Operator = AlgebraicOperator | BooleanOperator | OtherOperator
+
+AlgebraicOperator = "*" | "/" | "+" | "-"
+
+BooleanOperator = "==" | "!=" | ">" | "<" | ">=" | "<="
+
+OtherOperator = "<" <varname/" \n\t,."> ">"
+
+
+VarDeclaration = VarDeclarationAndAssignment
+               | VarDeclarationWithoutAssignment
+
+VarDeclarationWithoutAssignment = "var" Space VarName
+                                | Type Space VarName
+                                | "var" Space VarName WS ":" WS Type
+                                | VarName WS ":" WS Type
+
+VarDeclarationAndAssignment = VarDeclarationWithoutAssignment WS "=" WS Expression
+
+
+
+# HTF will I deal with indentation?
+
+
+
+# WS    = Optional WhiteSpace
+# Space = Required WhiteSpace
+
+NL = "\n"
+
+WS = Whitespace | ""
+
+Space = Whitespace
+
+Whitespace = WhitespaceBit Whitespace
+           | WhitespaceBit
+
+WhitespaceBit = "\n"
+              | " "
+              | "\t"
+              | "\r"
+
