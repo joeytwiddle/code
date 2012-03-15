@@ -91,13 +91,15 @@ SpecialAssignment = VarOrMemberReference WS SpecialAssignmentOperator Expression
 
 SpecialAssignmentOperator = "+=" | "-=" | "*=" | "/="
 
+ExpressionTerminal = VarOrMemberReference
+
 Expression = ExpressionBit
 
 ExpressionBit = Space ExpressionBit
+              | Algebra
+              | FunctionCall
               | VarOrMemberReference
               | BracketedExpression
-              | FunctionCall
-              | Algebra
 
 # TODO: There is no support here for calling the results of expressions (or their members) :F
 

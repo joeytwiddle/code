@@ -12,6 +12,20 @@ public class dlangGrm {
     Vector rule;
 
     // DLang - A dumb language
+    //
+    // Export targets:
+    //
+    // dintj - runtime structures suitable for interpreting by Java dlang.interpreter.*
+
+    // TODO:
+    //   Array dereference (aka List shortcuts)
+    //   Member dereference (fields and methods of objects).  Similar for statics...
+    //   .. namespaces
+    //   Constructor definition and invocation
+    //   Templating (generics)
+    //   Anonymous implementations?  Or first order functions...
+    //   Shortcuts for hashmaps
+    //   Loops
 
     // @OPTION rewrite_meaningful_indentation "{" "}"
 
@@ -144,7 +158,7 @@ public class dlangGrm {
       rule=new Vector();
         rule.add(new Var("fnname"," ("));
         rule.add(new Text("("));
-        rule.add(new Atom("Args"));
+        rule.add(new Atom("ArgumentSignatureList"));
         rule.add(new Text(")"));
         rule.add(new Atom("WS"));
         rule.add(new Text("="));
@@ -152,22 +166,82 @@ public class dlangGrm {
         rule.add(new Atom("FunctionBody"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector();
+        rule.add(new Text("new Function(\""));
+        rule.add(new Var("fnname"));
+        rule.add(new Text("\","));
+        rule.add(new Atom("ArgumentSignatureList"));
+        rule.add(new Text(","));
+        rule.add(new Atom("FunctionBody"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
 
-    ruleset=new RuleSet("Args");
+    ruleset=new RuleSet("FunctionBody");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("Arg"));
+        rule.add(new Atom("NiceCode"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("MutableCode"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("NiceCode");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Expression"));
+        rule.add(new Atom("Space"));
+        rule.add(new Text("where"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("NiceNEDefs"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Expression"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("NiceNEDefs");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("NamedExpression"));
+        rule.add(new Atom("'\n'"));
+        rule.add(new Atom("NiceNEDefs"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("NamedExpression"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("MutableCode");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("Statement"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("MutableCode"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("Statement"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("ArgumentSignatureList");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("ArgumentSignature"));
         rule.add(new Atom("MoreArgs"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Atom("Arg"));
+        rule.add(new Atom("ArgumentSignature"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("WS"));
       ruleset.add(rule);
     // Replacements
 
-    ruleset=new RuleSet("Arg");
+    ruleset=new RuleSet("ArgumentSignature");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("TypedArg"));
@@ -201,14 +275,14 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Text(","));
-        rule.add(new Atom("Args"));
+        rule.add(new Atom("ArgumentSignatureList"));
       ruleset.add(rule);
     // Replacements
 
     ruleset=new RuleSet("VarName");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Var("varname","<>\n\"/ "));
+        rule.add(new Var("varname","<>\n\". :^+-*/"));
       ruleset.add(rule);
     // Replacements
 
@@ -239,7 +313,7 @@ public class dlangGrm {
     ruleset=new RuleSet("NormalAssignment");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("VarReference"));
+        rule.add(new Atom("VarOrMemberReference"));
         rule.add(new Atom("WS"));
         rule.add(new Text("="));
         rule.add(new Atom("Expression"));
@@ -249,14 +323,14 @@ public class dlangGrm {
     ruleset=new RuleSet("SpecialAssignment");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("VarReference"));
+        rule.add(new Atom("VarOrMemberReference"));
         rule.add(new Atom("WS"));
-        rule.add(new Atom("SpecialOperator"));
+        rule.add(new Atom("SpecialAssignmentOperator"));
         rule.add(new Atom("Expression"));
       ruleset.add(rule);
     // Replacements
 
-    ruleset=new RuleSet("SpecialOperator");
+    ruleset=new RuleSet("SpecialAssignmentOperator");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Text("+="));
@@ -282,13 +356,68 @@ public class dlangGrm {
     ruleset=new RuleSet("ExpressionBit");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("VarReference"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("ExpressionBit"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("VarOrMemberReference"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("BracketedExpression"));
       ruleset.add(rule);
       rule=new Vector();
+        rule.add(new Atom("FunctionCall"));
+      ruleset.add(rule);
+      rule=new Vector();
         rule.add(new Atom("Algebra"));
+      ruleset.add(rule);
+    // Replacements
+
+    // TODO: There is no support here for calling the results of expressions (or their members) :F
+
+    ruleset=new RuleSet("FunctionCall");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("MemberReferenceOrNot"));
+        rule.add(new Text("("));
+        rule.add(new Atom("ArgumentParameterList"));
+        rule.add(new Text(")"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("MemberName");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("VarName"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("VarOrMemberReference");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("VarReference"));
+        rule.add(new Text("."));
+        rule.add(new Atom("MemberName"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("VarReference"));
+      ruleset.add(rule);
+    // Replacements
+
+    //                      | VarName
+
+    ruleset=new RuleSet("ArgumentParameterList");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Expression"));
+        rule.add(new Text(","));
+        rule.add(new Atom("ArgumentParameterList"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Expression"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
       ruleset.add(rule);
     // Replacements
 
@@ -313,6 +442,18 @@ public class dlangGrm {
     // Replacements
 
     ruleset=new RuleSet("Operator");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("OperatorSymbol"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("new Operator("));
+        rule.add(new Atom("OperatorSymbol"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
+
+    ruleset=new RuleSet("OperatorSymbol");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("AlgebraicOperator"));
