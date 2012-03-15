@@ -48,6 +48,7 @@ public class Parser implements ActionListener {
 	public static int lastselend = 0;
 	public static int k = 0;
 	public static Vector allMatches = new Vector();
+	public static String lastMatchAttempt;
 
 	public final static void main(String[] argv) throws FileNotFoundException {
 
@@ -61,7 +62,7 @@ public class Parser implements ActionListener {
 			DebuggingWin = true;
 			DebuggingText = true;
 		}
-		if (a.contains("-out", "Write debug data to stdout")) {
+		if (a.contains("-debug", "Write debug data to stdout")) {
 			Debugging = true;
 			DebuggingText = true;
 			DebuggingOut = true;
@@ -158,7 +159,10 @@ public class Parser implements ActionListener {
 			e.printStackTrace();
 		}
 	
+		System.err.println();
 		System.err.println("Failure.");
+		System.err.println("Last match attempt:");
+		System.err.println(lastMatchAttempt);
 		if (m == null || m.left == null || toparse == null)
 			System.err.println("m=" + m + " toparse=" + toparse);
 		else {

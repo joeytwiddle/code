@@ -48,6 +48,9 @@ public class Atom implements Type {
 	public Match match(SomeString s) {
 		Profile.start("Atom.match: Elsewhere");
 		RuleSet rs=Grammar.getrulesetforatom(type);
+		if (Parser.Debugging) {
+			Logger.log("Entered atom "+type+" with "+rs.rules.size()+" rules...");
+		}
 		for (int i=0;i<rs.rules.size();i++) {
 			Profile.start("Atom.match: Outside loop");
 			Vector rules=(Vector)rs.rules.get(i);
@@ -55,8 +58,14 @@ public class Atom implements Type {
 				System.err.println("rulesetforatom("+type+") number "+i+" is empty!");
 				System.exit(1);
 			}
+			
+			// This is often not enough info when a match is failing. The grammar
+			// writer is more interested in the stack of trial matches we recently
+			// tried.
+			int lastchar = s.length() < 40 ? s.length() : 40;
+			Parser.lastMatchAttempt = "Trying to match "+rules+" against: "+StringUtils.escapeSpecialChars(s.substring(0, lastchar))+"..";
 			if (Parser.Debugging) {
-				Logger.log("Trying to match "+rules+" against: "+StringUtils.escapeSpecialChars(s.substring(0, 40))+"..");
+				Logger.log(Parser.lastMatchAttempt);
 			}
 			Vector ms=new Vector();
 			SomeString left=s;
@@ -81,11 +90,16 @@ public class Atom implements Type {
 			}
 			depth--;
 			if (!failure) {
+				if (Parser.Debugging) {
+					Logger.log("Succeeded: "+rules);
+				}
 				Match m=new Match(this,s.subString(0,s.length()-left.length()),ms,left);
 				depth--;
 				Profile.stop("Atom.match: Outside loop");
 				Profile.stop("Atom.match: Elsewhere");
 				return m;
+			} else {
+				// Logger.log("Failed.");
 			}
 			Profile.stop("Atom.match: Outside loop");
 		}

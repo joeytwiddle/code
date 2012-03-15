@@ -8,9 +8,12 @@ find . -name "*.java" |
 grep -v "/CVS/" |
 withalldo javac
 
-mkdir -p ../bin
-find . -name "*.class" |
-while read C
-do mv "$C" ../bin/"$C"
-done
+# mkdir -p ../bin
+# find . -name "*.class" |
+# while read C
+# do mv "$C" ../bin/"$C"
+# done
+
+cd ..
+cp -a build/* bin/
 
