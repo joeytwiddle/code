@@ -26,7 +26,10 @@ Args = Arg MoreArgs
      | Arg
      | WS
 
-Arg = WS VarName WS
+Arg = TypedArg | UntypedArg
+
+TypedArg = WS VarName WS
+UntypedArg = WS Type Space VarName WS
 
 MoreArgs = "," Args
 

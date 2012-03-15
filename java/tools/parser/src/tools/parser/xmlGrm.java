@@ -3,8 +3,6 @@ package tools.parser;
 import java.lang.String;
 import java.util.Vector;
 
-import Grammar;
-import RuleSet;
 
 public class xmlGrm {
   public static void setupgrammar() {
