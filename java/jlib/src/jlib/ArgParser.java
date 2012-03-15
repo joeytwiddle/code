@@ -295,7 +295,7 @@ public class ArgParser {
   }
 	
 	public List getRest(String type) {
-		command+="[ "+type+" ]* ";
+		command+="[ <"+type+"...> ] ";
 		List tmp=args;
 		args=new Vector();
 		return tmp;
