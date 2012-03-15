@@ -1,3 +1,7 @@
 .*.sw?
 bin
 build
+nbproject/private
+*.grm.*
+*.java.*
+*.b4sr

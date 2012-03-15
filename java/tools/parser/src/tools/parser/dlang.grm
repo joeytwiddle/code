@@ -4,13 +4,16 @@ Main = DLangFile
 
 DLangFile = DLangFileSome
 
+Comment = "#" <comment/"\n"> "\n"
+        | "//" <comment/"\n"> "\n"
+
 # DLangFileSome = 1 or more DLangFileBits
 # Should it be 0 or more?
 
 DLangFileSome = DLangFileBit DLangFile
               | DLangFileBit
 
-DLangFileBit = ClassDefinition | FunctionDefinition | Statement
+DLangFileBit = Comment | ClassDefinition | FunctionDefinition | Statement
 
 # TODO: Parametrised classes (templates)
 ClassDefinition = "class" WS <className/" \n"> WS NL WS ClassBody
