@@ -25,7 +25,6 @@ import org.neuralyte.common.swing.jmenus.DetachableJMenu;
 import org.neuralyte.common.swing.jmenus.SplittingJMenu;
 import org.neuralyte.supergui.SuperGUI;
 
-import visualjava.Desktop;
 import visualjava.MenuBuilder;
 import visualjava.VariableModel;
 import visualjava.VisualJavaGUIStatics;

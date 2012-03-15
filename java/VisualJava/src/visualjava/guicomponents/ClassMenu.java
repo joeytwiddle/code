@@ -86,7 +86,7 @@ public class ClassMenu extends LazyJMenu {
             // is about to be viewed.
             statics.setIcon(new ImageIcon("src/visualjava/class-15x15.png"));
             try {
-            	Class cl = Class.forName(c);
+            	Class cl = Class.forName(c,false,null);
             	ImageIcon imageIcon = VisualJavaGUIStatics.getSmallImageIconForClass(cl);
                 statics.setIcon(imageIcon);
             } catch (ClassNotFoundException e) {

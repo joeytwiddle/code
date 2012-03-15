@@ -10,7 +10,6 @@ import javax.swing.JLabel;
 import org.neuralyte.genericgui.CollectionViewer;
 import org.neuralyte.gui.FoldingNode;
 
-import visualjava.Desktop;
 import visualjava.VariableModel;
 
 

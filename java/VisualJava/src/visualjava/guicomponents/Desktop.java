@@ -1,4 +1,4 @@
-package visualjava;
+package visualjava.guicomponents;
 
 import java.awt.Component;
 import java.lang.reflect.Constructor;
@@ -14,9 +14,9 @@ import javax.swing.JLayeredPane;
 
 import org.neuralyte.Logger;
 
-import visualjava.guicomponents.InspectionWindow;
-import visualjava.guicomponents.MethodFrame;
-import visualjava.guicomponents.VariableView;
+import visualjava.VariableModel;
+import visualjava.VisualJavaOptions;
+import visualjava.VisualJavaStatics;
 
 /** joey Nov 1, 2004 2:11:42 AM */
 public class Desktop extends JDesktopPane {

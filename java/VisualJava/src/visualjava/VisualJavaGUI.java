@@ -32,6 +32,7 @@ import org.neuralyte.common.ArrayUtils;
 import org.neuralyte.common.swing.jmenus.SplittingJMenu;
 
 import visualjava.guicomponents.ClassMenu;
+import visualjava.guicomponents.Desktop;
 import visualjava.guicomponents.VariableView;
 
 import com.thoughtworks.xstream.XStream;

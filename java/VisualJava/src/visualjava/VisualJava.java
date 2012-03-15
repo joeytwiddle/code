@@ -13,6 +13,7 @@ import java.util.Vector;
 import org.common.nap.Nap;
 import org.neuralyte.Logger;
 
+import visualjava.guicomponents.Desktop;
 import visualjava.guicomponents.MethodFrame;
 import visualjava.guicomponents.VariableHolder;
 import visualjava.guicomponents.VariableView;
@@ -22,8 +23,8 @@ import com.thoughtworks.xstream.XStream;
 import dlang.java.DJavaMethod;
 import dlang.lang.expressions.DExpression;
 import dlang.lang.expressions.DMethodCall;
+import dlang.lang.expressions.DNamedExpression;
 import dlang.lang.expressions.DVarReference;
-import dlang.lang.statements.DNamedExpression;
 import dlang.lang.tokens.DMethod;
 
 /** joey Jul 11, 2004 3:26:31 AM */

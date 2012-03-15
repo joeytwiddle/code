@@ -7,6 +7,8 @@ import java.util.Enumeration;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+import org.neuralyte.Logger;
+
 public class ClassMenuBuilder {
 
 	public static void printClassListFromResource(final PrintWriter writer,
@@ -14,19 +16,19 @@ public class ClassMenuBuilder {
 		File jarOrDirFile = new File(jarOrDir);
 		if (jarOrDirFile.isFile() && jarOrDirFile.getName().endsWith(".jar")) {
 			// if (jarOrDirFile.getName().equals("rt.jar")) {
-			org.neuralyte.Logger.log("Extracting class list from jar: "
-			      + jarOrDirFile);
+			Logger.log("Extracting class list from jar: " + jarOrDirFile);
 			ClassMenuBuilder.printClassesInJarTo(jarOrDirFile, writer);
 			// } else {
 			// org.neuralyte.Logger.log("Skipping non rt.jar: " + jarOrDirFile);
 			// }
-		} else {
-			org.neuralyte.Logger.log("Extracting class list from directory: "
-			      + jarOrDirFile);
+		} else if (jarOrDirFile.isDirectory()){
+			Logger.log("Extracting class list from directory: " + jarOrDirFile);
 			ClassMenuBuilder.printClassesInDirTo(jarOrDirFile, jarOrDirFile,
 			      writer);
 			// org.neuralyte.Logger.log("Do not yet know how to parse class list from directory or non-jar: "
 			// + jarOrDirFile);
+		} else {
+			Logger.warn("Could not parse "+jarOrDirFile+" for classes.");
 		}
 	}
 
