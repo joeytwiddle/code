@@ -1,5 +1,20 @@
-# This grammar defines defines the file
-# format for a grammar
+# This grammar defines the file format for a grammar.
+# It can be used to parse .grm files.
+#
+# Export targets:
+#
+#   java - output the grammar as a Java RuleSet builder class for Parser.java
+#
+#   hugs - output the grammar in Haskell, for import by hwi.ath.cx's parser.hs
+#
+#   pojo (experimental and fugly) - create a set of bean-like classes to hold grammar atoms in Java
+#
+
+# TODO:
+#   Allow easier definition of repeat and optional elements with + * and [ ... ]
+
+# CONSIDER:
+#   Allow Comments without blank lines (inbetween other Atoms / almost anywhere)
 
 Main = GrammarDefn
 
@@ -18,6 +33,7 @@ GrmBit = Whitespace
 
 Comment = "#" <comment/"\n"> "\n"
 java: "    //" <comment> "\n"
+pojo: "    //" <comment> "\n"
 
 OptComment = Comment | ""
 
@@ -35,6 +51,9 @@ SpcBit = " " | "\t"
 AtomDef = <atomname/"^.<>\n!qt! ="> " = " Defn OptReplacements NL OptSpc NL
 java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
 hugs: "  ( Atom !qt!" <atomname> "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
+pojo: "interface " <atomname> " {\n\n}\n  class AnImplmentation {\n" Defn "  }\n\n"
+
+# Replacements are the lines defining export targets: java, hugs, pojo
 
 OptReplacements = "\n" Replacements
                 | ""
@@ -59,7 +78,7 @@ DefnBit = RelativeElement
 
 BasicElement = Variable
              | ActiveReplacement
-						 | Text
+             | Text
              | AtomRef
 
 ActiveReplacement = "`" <java/"`"> "`"
@@ -68,6 +87,7 @@ java: "      rule.add( new ActiveReplacement() { public String replace() { " <ja
 DefnOr = DefnBit Whitespace "|" Whitespace Defn
 java: DefnBit "      ruleset.add(rule);\n      rule=new Vector();\n" Defn
 hugs: DefnBit "] ,\n      [ " Defn
+pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
 
 DefnAnd = DefnBit " " Defn
 java: DefnBit Defn
@@ -79,19 +99,25 @@ Variable = Var
 Var = "<" <varname/"<>\n!qt!/ "> ">"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
 hugs: "Var !qt!" <varname> "!qt!"
+pojo: "    String " <varname> ";\n"
 
 VarDeny = "<" <varname/"<>\n!qt!/ "> "/!qt!" <denied/"!qt!"> "!qt!>"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!,!qt!" <denied> "!qt!));\n"
 hugs: "VarExcl !qt!" <varname> "!qt! !qt!" <denied> "!qt!"
+pojo: "    String " <varname> ";\n"
 
 AtomRef = <atomtype/"^.<>\n!qt! ">
 java: "        rule.add(new Atom(!qt!" <atomtype> "!qt!));\n"
 hugs: "Atom !qt!" <atomtype> "!qt!"
+pojo: "    " <atomtype> " arg1;\n"
+
+# pojo: "  /* Possible " <atomtype> " */\n"
 
 Text = "!qt!" <text/"!qt!"> "!qt!"
      | "!qt!!qt!"
 java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
 hugs: "Str !qt!" <text> "!qt!"
+pojo: "  /* Matched: !qt!" <text> "!qt! */\n"
 
 RelativeElement = RelUp
                 | RelDown
@@ -114,6 +140,4 @@ WhitespaceBit = "\n"
               | " "
               | "\t"
               | "\r"
-
-
 

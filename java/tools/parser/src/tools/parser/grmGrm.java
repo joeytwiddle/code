@@ -11,8 +11,23 @@ public class grmGrm {
     RuleSet ruleset;
     Vector rule;
 
-    // This grammar defines defines the file
-    // format for a grammar
+    // This grammar defines the file format for a grammar.
+    // It can be used to parse .grm files.
+    //
+    // Export targets:
+    //
+    //   java - output the grammar as a Java RuleSet builder class for Parser.java
+    //
+    //   hugs - output the grammar in Haskell, for import by hwi.ath.cx's parser.hs
+    //
+    //   pojo (experimental and fugly) - create a set of bean-like classes to hold grammar atoms in Java
+    //
+
+    // TODO:
+    //   Allow easier definition of repeat and optional elements with + * and [ ... ]
+
+    // CONSIDER:
+    //   Allow Comments without blank lines (inbetween other Atoms / almost anywhere)
 
     ruleset=new RuleSet("Main");
       rulesets.add(ruleset);
@@ -79,6 +94,12 @@ public class grmGrm {
         rule.add(new Text("\n"));
     ruleset.replacements.put("java",rule);
 
+    rule=new Vector();
+        rule.add(new Text("    //"));
+        rule.add(new Var("comment"));
+        rule.add(new Text("\n"));
+    ruleset.replacements.put("pojo",rule);
+
     ruleset=new RuleSet("OptComment");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -119,6 +140,8 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+    // Note that two AtomDefs without an empty line between them will not parse!
+
     ruleset=new RuleSet("AtomDef");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -150,6 +173,16 @@ public class grmGrm {
         rule.add(new Atom("OptReplacements"));
         rule.add(new Text("\n  ] ) ,\n"));
     ruleset.replacements.put("hugs",rule);
+
+    rule=new Vector();
+        rule.add(new Text("interface "));
+        rule.add(new Var("atomname"));
+        rule.add(new Text(" {\n\n}\n  class AnImplmentation {\n"));
+        rule.add(new Atom("Defn"));
+        rule.add(new Text("  }\n\n"));
+    ruleset.replacements.put("pojo",rule);
+
+    // Replacements are the lines defining export targets: java, hugs, pojo
 
     ruleset=new RuleSet("OptReplacements");
       rulesets.add(ruleset);
@@ -289,6 +322,12 @@ public class grmGrm {
         rule.add(new Atom("Defn"));
     ruleset.replacements.put("hugs",rule);
 
+    rule=new Vector();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Text("  }\n  class AnotherImplementation {\n"));
+        rule.add(new Atom("Defn"));
+    ruleset.replacements.put("pojo",rule);
+
     ruleset=new RuleSet("DefnAnd");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -338,6 +377,12 @@ public class grmGrm {
         rule.add(new Text("\""));
     ruleset.replacements.put("hugs",rule);
 
+    rule=new Vector();
+        rule.add(new Text("    String "));
+        rule.add(new Var("varname"));
+        rule.add(new Text(";\n"));
+    ruleset.replacements.put("pojo",rule);
+
     ruleset=new RuleSet("VarDeny");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -364,6 +409,12 @@ public class grmGrm {
         rule.add(new Text("\""));
     ruleset.replacements.put("hugs",rule);
 
+    rule=new Vector();
+        rule.add(new Text("    String "));
+        rule.add(new Var("varname"));
+        rule.add(new Text(";\n"));
+    ruleset.replacements.put("pojo",rule);
+
     ruleset=new RuleSet("AtomRef");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -381,6 +432,14 @@ public class grmGrm {
         rule.add(new Var("atomtype"));
         rule.add(new Text("\""));
     ruleset.replacements.put("hugs",rule);
+
+    rule=new Vector();
+        rule.add(new Text("    "));
+        rule.add(new Var("atomtype"));
+        rule.add(new Text(" arg1;\n"));
+    ruleset.replacements.put("pojo",rule);
+
+    // pojo: "  /* Possible " <atomtype> " */\n"
 
     ruleset=new RuleSet("Text");
       rulesets.add(ruleset);
@@ -404,6 +463,12 @@ public class grmGrm {
         rule.add(new Var("text"));
         rule.add(new Text("\""));
     ruleset.replacements.put("hugs",rule);
+
+    rule=new Vector();
+        rule.add(new Text("  /* Matched: \""));
+        rule.add(new Var("text"));
+        rule.add(new Text("\" */\n"));
+    ruleset.replacements.put("pojo",rule);
 
     ruleset=new RuleSet("RelativeElement");
       rulesets.add(ruleset);
@@ -487,8 +552,6 @@ public class grmGrm {
         rule.add(new Text("\r"));
       ruleset.add(rule);
     // Replacements
-
-
 
   }
 }

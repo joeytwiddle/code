@@ -1,13 +1,11 @@
 # DLang - A dumb language
 
+# @OPTION rewrite_meaningful_indentation "{" "}"
+
 Main = DLangFile
 
 DLangFile = DLangFileSome
 
-Comment = "#" <comment/"\n"> "\n"
-        | "//" <comment/"\n"> "\n"
-
-# DLangFileSome = 1 or more DLangFileBits
 # Should it be 0 or more?
 
 DLangFileSome = DLangFileBit DLangFile
@@ -15,6 +13,10 @@ DLangFileSome = DLangFileBit DLangFile
 
 DLangFileBit = Comment | ClassDefinition | FunctionDefinition | Statement
 
+Comment = "#" <comment/"\n"> "\n"
+        | "//" <comment/"\n"> "\n"
+
+# DLangFileSome = 1 or more DLangFileBits
 # TODO: Parametrised classes (templates)
 ClassDefinition = "class" WS <className/" \n"> WS NL WS ClassBody
 
@@ -32,6 +34,7 @@ Args = Arg MoreArgs
 Arg = TypedArg | UntypedArg
 
 TypedArg = WS VarName WS
+
 UntypedArg = WS Type Space VarName WS
 
 MoreArgs = "," Args

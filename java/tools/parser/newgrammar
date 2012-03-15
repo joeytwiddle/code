@@ -1,54 +1,84 @@
 #!/bin/bash
 
-echo "Redefine the parser's grammar grammar?"
-read X
-[ "$X" = "y" ] || exit 0
+info() {
+  echo
+  echo "$@"
+}
 
-echo "Compiling everything, making backup."
+failandquit() {
+
+  # Display the problem
+  info "Bad grammar!  Here are the first generation differences:"
+  #jfcsh "$gdir"/grmGrm.java "$gdir"/grmGrm.java.2
+  diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java.new | diffhighlight
+
+  # Reset to original
+  info "Bad grammar!  Resetting to original"
+  cp -a "$gdir"/grmGrm.java "$gdir"/grmGrm.java.failed
+  ./build.sh
+  restored="$?"
+
+  info "Check files $gdir/grmGrm.java.new and $gdir/grm.java.failed"
+
+  if [ "$restored" = 0 ]
+  then
+    info "Original grammar restored.  Please fix $gdir/grm.grm"
+  else
+    info "FAILED to restore original grammar!  Sorry about that."
+    exit 99
+  fi
+  exit 4
+}
+
+# echo -n "Redefine the parser's grammar grammar (y/n)? "
+# read X
+# [ "$X" = "y" ] || exit 9
+
+gdir="src/tools/parser"
+
+info "Compiling everything, making backup."
 ./build.sh
-cp grmGrm.java grmGrm.java.bak
+cp -a "$gdir"/grmGrm.java "$gdir"/grmGrm.java.previous
 
-rm -f grmGrm.java.2
+rm -f "$gdir"/grmGrm.java.2
 
-echo "Translating grammar to java"
-jparse grm grm.grm java "$@" > grmGrm.java
+info "Converting grammar into java ruleset"
+jparse grm "$gdir"/grm.grm java "$@" > "$gdir"/grmGrm.java
+[ "$?" = 0 ] || failandquit
 if [ "$1" = "debug" ]; then
-  edit grmGrm.java
+  edit "$gdir"/grmGrm.java
+fi
+cp "$gdir"/grmGrm.java "$gdir"/grmGrm.java.new
+
+info "Compiling new grammar"
+./build.sh
+
+info "Test: Converting using new grammar"
+jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java
+if [ "$1" = "debug" ]; then
+  edit "$gdir"/grmGrm.java
 fi
 
-echo "Compiling new grammar"
+info "Are they different?"
+cmp "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
+jfcsh "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
+
+info "Test: Convert once again"
 ./build.sh
 
-echo "Translating using itself"
-jparse grm grm.grm java $@ > grmGrm.java
+info "Creating final ruleset to compare"
+jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java.2
 if [ "$1" = "debug" ]; then
-  edit grmGrm.java
+  edit "$gdir"/grmGrm.java
 fi
 
-echo "Are they different?"
-cmp grmGrm.java.bak grmGrm.java
-jfcsh grmGrm.java.bak grmGrm.java
-
-echo "Compiling own version"
-./build.sh
-
-echo "Creating child version to compare"
-jparse grm grm.grm java $@ > grmGrm.java.2
-if [ "$1" = "debug" ]; then
-  edit grmGrm.java
-fi
-
-echo "Comparing first and second generations"
-if cmp grmGrm.java grmGrm.java.2 > /dev/null 2>&1 ; then
+info "Comparing first and second generations"
+if cmp "$gdir"/grmGrm.java "$gdir"/grmGrm.java.2 > /dev/null 2>&1 ; then
   echo "New grammar installed OK"
 else
-  echo "Bad grammar!  Resetting to original"
-  # Display the problem
-  jfcsh grmGrm.java grmGrm.java.2
-  # Reset to original
-  echo "Bad grammar!  Resetting to original"
-  cp grmGrm.java.bak grmGrm.java
-  ./build.sh
+  failandquit
 fi
 
 # echo "stringhash=$# stringunderscore=$_"
+
+exit 0
