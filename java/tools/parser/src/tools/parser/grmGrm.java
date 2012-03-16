@@ -52,6 +52,7 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+
     // java: "package grammars;\n\n" GrammarDefn
 
     ruleset=new RuleSet("GrammarDefn");
@@ -72,6 +73,7 @@ public class grmGrm {
         rule.add(new Text(" ]\n"));
     ruleset.replacements.put("hugs",rule);
 
+
     ruleset=new RuleSet("Grm");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -82,6 +84,7 @@ public class grmGrm {
         rule.add(new Atom("GrmBit"));
       ruleset.add(rule);
     // Replacements
+
 
     ruleset=new RuleSet("GrmBit");
       rulesets.add(ruleset);
@@ -95,6 +98,7 @@ public class grmGrm {
         rule.add(new Atom("AtomDef"));
       ruleset.add(rule);
     // Replacements
+
 
     ruleset=new RuleSet("Comment");
       rulesets.add(ruleset);
@@ -119,6 +123,7 @@ public class grmGrm {
         rule.add(new Text("\n"));
     ruleset.replacements.put("pojo",rule);
 
+
     ruleset=new RuleSet("OptComment");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -129,6 +134,7 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+
     // hugs: "-- " <comment> "\n"
 
     ruleset=new RuleSet("NL");
@@ -137,6 +143,7 @@ public class grmGrm {
         rule.add(new Text("\n"));
       ruleset.add(rule);
     // Replacements
+
 
     ruleset=new RuleSet("OptSpc");
       rulesets.add(ruleset);
@@ -149,6 +156,7 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+
     ruleset=new RuleSet("SpcBit");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -159,6 +167,7 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+
     // Note that two AtomDefs without an empty line between them will not parse!
 
     ruleset=new RuleSet("AtomDef");
@@ -168,8 +177,6 @@ public class grmGrm {
         rule.add(new Text(" = "));
         rule.add(new Atom("Defn"));
         rule.add(new Atom("OptReplacements"));
-        rule.add(new Atom("NL"));
-        rule.add(new Atom("OptSpc"));
         rule.add(new Atom("NL"));
       ruleset.add(rule);
     // Replacements
@@ -201,6 +208,7 @@ public class grmGrm {
         rule.add(new Text("  }\n\n"));
     ruleset.replacements.put("pojo",rule);
 
+
     // Replacements are the lines defining export targets: java, hugs, pojo
 
     ruleset=new RuleSet("OptReplacements");
@@ -218,17 +226,19 @@ public class grmGrm {
         rule.add(new Atom("Replacements"));
     ruleset.replacements.put("java",rule);
 
+
     ruleset=new RuleSet("Replacements");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("TwoReplacements"));
+        rule.add(new Atom("ManyReplacements"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("Replacement"));
       ruleset.add(rule);
     // Replacements
 
-    ruleset=new RuleSet("TwoReplacements");
+
+    ruleset=new RuleSet("ManyReplacements");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("Replacement"));
@@ -241,6 +251,7 @@ public class grmGrm {
         rule.add(new Text(",\n"));
         rule.add(new Atom("Replacements"));
     ruleset.replacements.put("hugs",rule);
+
 
     ruleset=new RuleSet("Replacement");
       rulesets.add(ruleset);
@@ -266,6 +277,7 @@ public class grmGrm {
         rule.add(new Text(" ] ) "));
     ruleset.replacements.put("hugs",rule);
 
+
     ruleset=new RuleSet("Defn");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -279,6 +291,7 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+
     ruleset=new RuleSet("DefnBit");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -288,6 +301,7 @@ public class grmGrm {
         rule.add(new Atom("BasicElement"));
       ruleset.add(rule);
     // Replacements
+
 
     ruleset=new RuleSet("BasicElement");
       rulesets.add(ruleset);
@@ -303,7 +317,107 @@ public class grmGrm {
       rule=new Vector();
         rule.add(new Atom("AtomRef"));
       ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Regexp"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("BracketedElement"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("OptionalElement"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("RepeatElement"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("MagicTokenOfDoom"));
+      ruleset.add(rule);
     // Replacements
+
+
+    // This might be called "exclusion" in Prolog.  *yawn*
+    // If the magic token is reached, none of later options in a DefnBit will be attempted.
+    // In other words, ! commits us to the current line, or failure.
+
+    ruleset=new RuleSet("MagicTokenOfDoom");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("!"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    // This can make things more efficient, by allowing us to exclude searches that
+    // we know are invalid.
+    // But should it be a full commit?  I.e.:
+    //   1) If rest of arguments fail, fall back out and try next in parent.
+    //   2) If rest of arguments fail, report error and stop parsing!
+
+    ruleset=new RuleSet("BracketedElement");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("("));
+        rule.add(new Atom("OWS"));
+        rule.add(new Atom("Variable"));
+        rule.add(new Atom("OWS"));
+        rule.add(new Text(")"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("OptionalElement");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("["));
+        rule.add(new Atom("OWS"));
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Atom("OWS"));
+        rule.add(new Text("]"));
+        rule.add(new Atom("OptionalOptionalMarker"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("OptionalOptionalMarker");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("OptionalOptionalMarker2"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("if ("));
+        rule.add(new Atom("OptionalOptionalMarker2"));
+        rule.add(new Text("!=\"\") { rule.replace(rule.size()-1, new OptionalMarker(rule.get(rule.size()-1),\""));
+        rule.add(new Atom("OptionalOptionalMarker2"));
+        rule.add(new Text("\"));\n"));
+    ruleset.replacements.put("java",rule);
+
+
+    ruleset=new RuleSet("OptionalOptionalMarker2");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("*"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("+"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+
+    // Too recursive I suspect:
+    //RepeatElement = DefnBit "*"
+    ruleset=new RuleSet("RepeatElement");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("not likely govna"));
+      ruleset.add(rule);
+    // Replacements
+
+    // Since RepeatElement was hard to define, I made repeats a part of
+    // OptionalElement.  Perhaps the sensible way to Parse 
 
     ruleset=new RuleSet("DefnOr");
       rulesets.add(ruleset);
@@ -333,6 +447,7 @@ public class grmGrm {
         rule.add(new Atom("Defn"));
     ruleset.replacements.put("pojo",rule);
 
+
     ruleset=new RuleSet("DefnAnd");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -352,6 +467,7 @@ public class grmGrm {
         rule.add(new Atom("Defn"));
     ruleset.replacements.put("hugs",rule);
 
+
     ruleset=new RuleSet("Variable");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -364,6 +480,7 @@ public class grmGrm {
         rule.add(new Atom("VarAccept"));
       ruleset.add(rule);
     // Replacements
+
 
     ruleset=new RuleSet("Var");
       rulesets.add(ruleset);
@@ -390,6 +507,7 @@ public class grmGrm {
         rule.add(new Var("varname"));
         rule.add(new Text(";\n"));
     ruleset.replacements.put("pojo",rule);
+
 
     ruleset=new RuleSet("VarDeny");
       rulesets.add(ruleset);
@@ -423,6 +541,7 @@ public class grmGrm {
         rule.add(new Text(";\n"));
     ruleset.replacements.put("pojo",rule);
 
+
     ruleset=new RuleSet("VarAccept");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -455,6 +574,7 @@ public class grmGrm {
         rule.add(new Text(";\n"));
     ruleset.replacements.put("pojo",rule);
 
+
     ruleset=new RuleSet("AtomRef");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -478,6 +598,7 @@ public class grmGrm {
         rule.add(new Var("atomtype"));
         rule.add(new Text(" arg1;\n"));
     ruleset.replacements.put("pojo",rule);
+
 
     // pojo: "  /* Possible " <atomtype> " */\n"
 
@@ -505,10 +626,11 @@ public class grmGrm {
     ruleset.replacements.put("hugs",rule);
 
     rule=new Vector();
-        rule.add(new Text("  /* Matched: \""));
+        rule.add(new Text("    /* Matched: \""));
         rule.add(new Var("text"));
         rule.add(new Text("\" */\n"));
     ruleset.replacements.put("pojo",rule);
+
 
     ruleset=new RuleSet("Whitespace");
       rulesets.add(ruleset);
@@ -520,6 +642,7 @@ public class grmGrm {
         rule.add(new Atom("WhitespaceBit"));
       ruleset.add(rule);
     // Replacements
+
 
     ruleset=new RuleSet("WhitespaceBit");
       rulesets.add(ruleset);
@@ -536,6 +659,20 @@ public class grmGrm {
         rule.add(new Text("\r"));
       ruleset.add(rule);
     // Replacements
+
+
+    // Optional whitespace:
+
+    ruleset=new RuleSet("OWS");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Whitespace"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
 
 
 
@@ -557,6 +694,7 @@ public class grmGrm {
         rule.add(new Text(" } } );\n"));
     ruleset.replacements.put("java",rule);
 
+
     // I think RelativeElement might be a dodgy way to access variables in parent/child types.
     // ^SearchUp->SearchDown.DirectDown
 
@@ -569,6 +707,7 @@ public class grmGrm {
         rule.add(new Atom("RelDown"));
       ruleset.add(rule);
     // Replacements
+
 
     ruleset=new RuleSet("RelUp");
       rulesets.add(ruleset);
@@ -586,6 +725,7 @@ public class grmGrm {
         rule.add(new Text(",(Type)rule.get(0))); rule=realrule; }\n"));
     ruleset.replacements.put("java",rule);
 
+
     ruleset=new RuleSet("RelDown");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -602,6 +742,7 @@ public class grmGrm {
         rule.add(new Text(",(Type)rule.get(0))); rule=realrule; }\n"));
     ruleset.replacements.put("java",rule);
 
+
     ruleset=new RuleSet("Ref");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -613,6 +754,80 @@ public class grmGrm {
         rule.add(new Var("ref"));
         rule.add(new Text("\""));
     ruleset.replacements.put("java",rule);
+
+
+
+
+    // Untested...
+
+    // TODO: Gah presumably we need to escape any "s in the output of RegexpBody
+    ruleset=new RuleSet("Regexp");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("/"));
+        rule.add(new Atom("RegexpBody"));
+        rule.add(new Text("/"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("new Regexp(\""));
+        rule.add(new Atom("RegexpBody"));
+        rule.add(new Text("\")"));
+    ruleset.replacements.put("java",rule);
+
+
+    ruleset=new RuleSet("RegexpBody");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("RegexpBit"));
+        rule.add(new Atom("RegexpBody"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("RegexpBit");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("\\"));
+        rule.add(new Atom("AnyOneChar"));
+        rule.add(new Atom("RegexpBit"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("["));
+        rule.add(new Atom("RegexpCharBlock"));
+        rule.add(new Text("]"));
+        rule.add(new Atom("RegexpBit"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Var("regexpbit","\\/[\n"));
+        rule.add(new Atom("RegexpBit"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("RegexpCharBlock");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("\\"));
+        rule.add(new Atom("AnyOneChar"));
+        rule.add(new Atom("RegexpCharBlock"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Var("regexpcharblock","]\n"));
+        rule.add(new Atom("RegexpCharBlock"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+
 
   }
 }

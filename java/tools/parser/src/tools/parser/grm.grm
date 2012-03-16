@@ -91,7 +91,7 @@ Defn = DefnOr
      | DefnBit
 
 DefnBit = RelativeElement
-        | BasicElement
+        | BasicElement OptRepeatMarker
 
 BasicElement = Variable
              | ActiveReplacement
@@ -117,12 +117,12 @@ MagicTokenOfDoom = "!"
 
 BracketedElement = "(" OWS Variable OWS ")"
 
-OptionalElement = "[" OWS DefnBit OWS "]" OptionalOptionalMarker
+OptionalElement = "[" OWS DefnBit OWS "]"
 
-OptionalOptionalMarker = OptionalOptionalMarker2
-java: "if (" OptionalOptionalMarker2 "!=!qt!!qt!) { rule.replace(rule.size()-1, new OptionalMarker(rule.get(rule.size()-1),!qt!" OptionalOptionalMarker2 "!qt!));\n"
+OptRepeatMarker = OptRepeatMarker2
+java: "if (" OptRepeatMarker2 "!=!qt!!qt!) { rule.replace(rule.size()-1, new OptionalMarker(rule.get(rule.size()-1),!qt!" OptRepeatMarker2 "!qt!));\n"
 
-OptionalOptionalMarker2 = "*" | "+" | ""
+OptRepeatMarker2 = "*" | "+" | ""
 
 # Too recursive I suspect:
 #RepeatElement = DefnBit "*"
