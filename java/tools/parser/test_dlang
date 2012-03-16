@@ -1,1 +1,7 @@
-./creategrammar dlang && jparse -debug dlang spiral.d dintj 2>&1 > debug.out
+debug="-debug"
+
+verbosely ./creategrammar dlang &&
+verbosely jparse $debug dlang spiral.d dintj 2>&1 |
+# tee debug.out
+cat > debug.out
+

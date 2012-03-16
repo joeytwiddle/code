@@ -132,7 +132,6 @@ Expression = ExpressionBit OptHorizSpace
 # If I let Algebra contain Expressions, then it calls its repeatedly!
 
 ExpressionBit = HorizSpace ExpressionBit
-              | TerminalAlgebraicOperation
               | Algebra
               | ExpressionAtom
 

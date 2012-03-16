@@ -34,6 +34,8 @@ import tools.parser.*;
 public class Atom implements Type {
 
 	public static int depth = 0;
+	public static Vector path = new Vector();
+	
 	String type;
 
 	/* Feature!  If all the line numbers are above 100, they align nicely in the log. :P
@@ -156,6 +158,7 @@ public class Atom implements Type {
 			SomeString rest = s;
 			boolean failure = false;
 			depth++;
+			path.add(type);
 			for (int j = 0; j < rules.size() && !failure; j++) {
 				Profile.start("Atom.match: Inside loop");
 				Type t = (Type) rules.get(j);
@@ -180,6 +183,7 @@ public class Atom implements Type {
 				Profile.stop("Atom.match: Inside loop");
 			}
 			depth--;
+			path.remove(path.size()-1);
 			if (!failure) {
 				SomeString matchedString = s.subString(0, s.length() - rest.length());
 				if (Parser.Debugging) {
@@ -197,12 +201,6 @@ public class Atom implements Type {
 		return null;
 	}
 
-	private String headSome(SomeString s) {
-	   int lastchar = s.length() < 40 ? s.length() : 40;
-	   String head = StringUtils.escapeSpecialChars(s.substring(0, lastchar));
-	   return head;
-   }
-
 	public String toString() {
 		return type;
 	}
@@ -216,7 +214,15 @@ public class Atom implements Type {
 	}
 	
 	public static String indent() {
-		return JString.repeat(">", depth);
+		// return JString.repeat(">", depth);
+		// return path.toString();
+		return JString.repeat(">", depth) + (path.size()>0 ? path.lastElement() : "");
 	}
-	
+
+	public static String headSome(SomeString s) {
+	   int lastchar = s.length() < 40 ? s.length() : 40;
+	   String head = StringUtils.escapeSpecialChars(s.substring(0, lastchar));
+	   return head;
+   }
+
 }

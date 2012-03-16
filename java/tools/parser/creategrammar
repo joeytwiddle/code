@@ -16,7 +16,8 @@ then
 fi
 #mv "$1Grm.java" tmp.txt
 #mv tmp.txt "$1Grm.java"
-jfcsh "$1Grm.java.b4create" "$1Grm.java"
+# jfcsh "$1Grm.java.b4create" "$1Grm.java"
+diff "$1Grm.java.b4create" "$1Grm.java" | diffhighlight
 
 cd ../../..
 

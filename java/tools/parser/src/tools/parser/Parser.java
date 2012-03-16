@@ -75,7 +75,7 @@ public class Parser implements ActionListener {
 		// target=null; // ( argv.length<3 ? null : argv[2]);
 		a.done();
 
-			Parser p = new Parser();
+		Parser p = new Parser();
 		p.setupgrammar(grammar);
 		String toparse = Files.readStringfromfile(file);
 		

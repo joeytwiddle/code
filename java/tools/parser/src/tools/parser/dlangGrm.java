@@ -488,9 +488,6 @@ public class dlangGrm {
         rule.add(new Atom("ExpressionBit"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Atom("TerminalAlgebraicOperation"));
-      ruleset.add(rule);
-      rule=new Vector();
         rule.add(new Atom("Algebra"));
       ruleset.add(rule);
       rule=new Vector();
