@@ -396,6 +396,18 @@ public class dlangGrm {
       rule=new Vector();
         rule.add(new Atom("Assignment"));
       ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Comment"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("FunctionDefinition"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("FunctionCall"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Loop"));
+      ruleset.add(rule);
     // Replacements
 
     ruleset=new RuleSet("Assignment");
@@ -446,13 +458,15 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    // ConstReference must come first because ATM VarOrMemberReference swallows numbers!
+
     ruleset=new RuleSet("ExpressionTerminal");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("VarOrMemberReference"));
+        rule.add(new Atom("ConstReference"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Atom("ConstReference"));
+        rule.add(new Atom("VarOrMemberReference"));
       ruleset.add(rule);
     // Replacements
 
@@ -506,10 +520,29 @@ public class dlangGrm {
     ruleset=new RuleSet("FunctionCall");
       rulesets.add(ruleset);
       rule=new Vector();
+        rule.add(new Atom("ConstructorCall"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("RealFunctionCall"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("RealFunctionCall");
+      rulesets.add(ruleset);
+      rule=new Vector();
         rule.add(new Atom("VarOrMemberReference"));
         rule.add(new Text("("));
         rule.add(new Atom("ArgumentParameterList"));
         rule.add(new Text(")"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("ConstructorCall");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("new"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("RealFunctionCall"));
       ruleset.add(rule);
     // Replacements
 
@@ -819,8 +852,76 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    ruleset=new RuleSet("Loop");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("ForLoop"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("WhileLoop"));
+      ruleset.add(rule);
+    // Replacements
 
-    // HTF will I deal with indentation?
+    ruleset=new RuleSet("ForLoop");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("for"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("VarName"));
+        rule.add(new Atom("WS"));
+        rule.add(new Text("="));
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("LoopRange"));
+      ruleset.add(rule);
+    // Replacements
+
+    //# TODO: Gah - Expressions don't parse nicely here!  (They swallow the "to" or what?)
+    // LoopRange = Expression Space "to" Space Expression
+
+    ruleset=new RuleSet("LoopRange");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("ConstReference"));
+        rule.add(new Atom("Space"));
+        rule.add(new Text("to"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("Expression"));
+        rule.add(new Atom("OptStep"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("OptStep");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("WS"));
+        rule.add(new Text("step"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("Expression"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("WhileLoop");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("while"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("Condition"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("Condition");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Expression"));
+      ruleset.add(rule);
+    // Replacements
+
+    // We hope to handle significant indentation by pre-parsing the lines and
+    // rewriting with "{" and "}"s which the grammar can easily detect.  This may
+    // cause issues on multi-line statements which should not have "{" and "}"s!
 
 
 
@@ -851,30 +952,18 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    // Whitespace = WhitespaceBit Whitespace
+               // | WhitespaceBit
+    // 
+    // WhitespaceBit = "\n"
+                  // | " "
+                  // | "\t"
+                  // | "\r"
+
     ruleset=new RuleSet("Whitespace");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("WhitespaceBit"));
-        rule.add(new Atom("Whitespace"));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Atom("WhitespaceBit"));
-      ruleset.add(rule);
-    // Replacements
-
-    ruleset=new RuleSet("WhitespaceBit");
-      rulesets.add(ruleset);
-      rule=new Vector();
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text(" "));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text("\t"));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text("\r"));
+        rule.add(new Var("whitespace",null," \t\n\r"));
       ruleset.add(rule);
     // Replacements
 
@@ -882,13 +971,11 @@ public class dlangGrm {
     // They don't know when to stop!
     // So we only allow them to swallow HorizSpace
 
+    // HorizSpace = " " | "\t"
     ruleset=new RuleSet("HorizSpace");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Text(" "));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text("\t"));
+        rule.add(new Var("horizspace",null," \t"));
       ruleset.add(rule);
     // Replacements
 

@@ -166,6 +166,11 @@ public class Atom implements Type {
 				Profile.stop("Atom.match: inner inner");
 				if (m == null) {
 					failure = true;
+					if (Parser.Debugging) {
+						String lastFailure = "Failed to match "+j+" of " + rules + " against: "
+						      + headSome(s) + "..";
+						Logger.log(indent()+" "+lastFailure);
+					}
 				} else {
 					ms.add(m);
 					// System.out.println("  Original: "+strip(left));
@@ -185,11 +190,6 @@ public class Atom implements Type {
 				Profile.stop("Atom.match: Elsewhere");
 				return m;
 			} else {
-				if (Parser.Debugging) {
-					String lastFailure = "Failed to match " + rules + " against: "
-					      + headSome(s) + "..";
-					Logger.log(indent()+" "+lastFailure);
-				}
 			}
 			Profile.stop("Atom.match: Outside loop");
 		}

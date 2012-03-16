@@ -69,10 +69,10 @@ public class Var implements Type {
 		if (most == 0) {
 			// Failure!
 			if (Parser.Debugging) {
-				Logger.log("Failed to match var "+name+" with accept="+accept+" and deny="+deny);
-				if (accept != null && deny == null) {
+				// Logger.log("Failed to match var "+name+" with accept="+accept+" and deny="+deny);
+				// if (accept != null && deny == null) {
 					return null;
-				}
+				// }
 			}
 		}
 		return new Match(this, s.subString(0, most), s.subString(most));

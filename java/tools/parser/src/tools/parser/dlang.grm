@@ -111,7 +111,7 @@ VarReference = VarName
 # Could also be called a PrimitiveLiteral
 ConstReference = Number | String
 
-Statement = Assignment
+Statement = Assignment | Comment | FunctionDefinition | FunctionCall | Loop
 
 Assignment = NormalAssignment
            | SpecialAssignment
@@ -122,7 +122,9 @@ SpecialAssignment = VarOrMemberReference OptHorizSpace SpecialAssignmentOperator
 
 SpecialAssignmentOperator = "+=" | "-=" | "*=" | "/="
 
-ExpressionTerminal = VarOrMemberReference | ConstReference
+# ConstReference must come first because ATM VarOrMemberReference swallows numbers!
+
+ExpressionTerminal = ConstReference | VarOrMemberReference
 
 Expression = ExpressionBit OptHorizSpace
 
@@ -141,7 +143,11 @@ ExpressionAtom = HorizSpace ExpressionAtom
 
 # TODO: There is no support here for calling the results of expressions (or their members) :F
 
-FunctionCall = VarOrMemberReference "(" ArgumentParameterList ")"
+FunctionCall = ConstructorCall | RealFunctionCall
+
+RealFunctionCall = VarOrMemberReference "(" ArgumentParameterList ")"
+
+ConstructorCall = "new" Space RealFunctionCall
 
 MemberName = VarName
 
@@ -212,8 +218,25 @@ Digit = <number~"0123456789">
 
 String = "!qt!" <string/"!qt!"> "!qt!"
 
+Loop = ForLoop | WhileLoop
 
-# HTF will I deal with indentation?
+ForLoop = "for" Space VarName WS "=" WS LoopRange
+
+## TODO: Gah - Expressions don't parse nicely here!  (They swallow the "to" or what?)
+# LoopRange = Expression Space "to" Space Expression
+
+LoopRange = ConstReference Space "to" Space Expression OptStep
+
+OptStep = WS "step" Space Expression
+        | ""
+
+WhileLoop = "while" Space Condition
+
+Condition = Expression
+
+# We hope to handle significant indentation by pre-parsing the lines and
+# rewriting with "{" and "}"s which the grammar can easily detect.  This may
+# cause issues on multi-line statements which should not have "{" and "}"s!
 
 
 
@@ -226,19 +249,22 @@ WS = Whitespace | ""
 
 Space = Whitespace
 
-Whitespace = WhitespaceBit Whitespace
-           | WhitespaceBit
+# Whitespace = WhitespaceBit Whitespace
+           # | WhitespaceBit
+# 
+# WhitespaceBit = "\n"
+              # | " "
+              # | "\t"
+              # | "\r"
 
-WhitespaceBit = "\n"
-              | " "
-              | "\t"
-              | "\r"
+Whitespace = <whitespace~" \t\n\r">
 
 # Expressions will eat into the next line if allowed to swallow "\n"s
 # They don't know when to stop!
 # So we only allow them to swallow HorizSpace
 
-HorizSpace = " " | "\t"
+# HorizSpace = " " | "\t"
+HorizSpace = <horizspace~" \t">
 
 OptHorizSpace = HorizSpace | ""
 
