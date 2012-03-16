@@ -83,8 +83,11 @@ NiceCode = Expression Space "where" Space NiceNEDefs EOL
 NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression
 
-MutableCode = WS Statement MutableCode
-            | WS Statement WS
+MutableCode = MutableCodeInner
+dintj: "new MutableCode([" MutableCodeInner "])"
+
+MutableCodeInner = WS Statement MutableCode
+                 | WS Statement WS
 
 ArgumentSignatureList = ArgumentSignature MoreArgs
      | ArgumentSignature
@@ -117,8 +120,10 @@ Assignment = NormalAssignment
            | SpecialAssignment
 
 NormalAssignment = VarOrMemberReference OptHorizSpace "=" Expression EOL
+dintj: "new NormalAssignment(" VarOrMemberReference "," Expression ")"
 
 SpecialAssignment = VarOrMemberReference OptHorizSpace SpecialAssignmentOperator Expression EOL
+dintj: "new SpecialAssignment(" VarOrMemberReference "," SpecialAssignmentOperator "," Expression ")"
 
 SpecialAssignmentOperator = "+=" | "-=" | "*=" | "/="
 
@@ -165,11 +170,18 @@ BracketedExpression = "(" WS ExpressionBit WS ")"
 # Algebra = ExpressionBit Operator ExpressionBit
 
 Algebra = ExpressionAtom OptHorizSpace Operator OptHorizSpace Expression
+dintj: "new Operation(" ExpressionAtom "," Operator "," Expression ")"
 
 TerminalAlgebraicOperation = ExpressionAtom OptHorizSpace Operator OptHorizSpace Expression
 
 Operator = OperatorSymbol
 dintj: "new Operator(" OperatorSymbol ")"
+
+# We can't do: Constants.getOperator("*") here because not all are defined by
+# default, i.e. there may be an operator with a custom name.  I suppose
+# context.lookupOperator("*") might work.  For the moment though, we refer to
+# it by string, which would allow for operators to be defined after their first
+# appearance in the file.
 
 OperatorSymbol = BooleanOperator | AlgebraicOperator | OtherOperator
 

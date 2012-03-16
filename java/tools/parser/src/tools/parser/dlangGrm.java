@@ -290,6 +290,18 @@ public class dlangGrm {
     ruleset=new RuleSet("MutableCode");
       rulesets.add(ruleset);
       rule=new Vector();
+        rule.add(new Atom("MutableCodeInner"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("new MutableCode(["));
+        rule.add(new Atom("MutableCodeInner"));
+        rule.add(new Text("])"));
+    ruleset.replacements.put("dintj",rule);
+
+    ruleset=new RuleSet("MutableCodeInner");
+      rulesets.add(ruleset);
+      rule=new Vector();
         rule.add(new Atom("WS"));
         rule.add(new Atom("Statement"));
         rule.add(new Atom("MutableCode"));
@@ -430,6 +442,13 @@ public class dlangGrm {
         rule.add(new Atom("EOL"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector();
+        rule.add(new Text("new NormalAssignment("));
+        rule.add(new Atom("VarOrMemberReference"));
+        rule.add(new Text(","));
+        rule.add(new Atom("Expression"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
 
     ruleset=new RuleSet("SpecialAssignment");
       rulesets.add(ruleset);
@@ -441,6 +460,15 @@ public class dlangGrm {
         rule.add(new Atom("EOL"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector();
+        rule.add(new Text("new SpecialAssignment("));
+        rule.add(new Atom("VarOrMemberReference"));
+        rule.add(new Text(","));
+        rule.add(new Atom("SpecialAssignmentOperator"));
+        rule.add(new Text(","));
+        rule.add(new Atom("Expression"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
 
     ruleset=new RuleSet("SpecialAssignmentOperator");
       rulesets.add(ruleset);
@@ -603,6 +631,15 @@ public class dlangGrm {
         rule.add(new Atom("Expression"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector();
+        rule.add(new Text("new Operation("));
+        rule.add(new Atom("ExpressionAtom"));
+        rule.add(new Text(","));
+        rule.add(new Atom("Operator"));
+        rule.add(new Text(","));
+        rule.add(new Atom("Expression"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
 
     ruleset=new RuleSet("TerminalAlgebraicOperation");
       rulesets.add(ruleset);
@@ -626,6 +663,12 @@ public class dlangGrm {
         rule.add(new Atom("OperatorSymbol"));
         rule.add(new Text(")"));
     ruleset.replacements.put("dintj",rule);
+
+    // We can't do: Constants.getOperator("*") here because not all are defined by
+    // default, i.e. there may be an operator with a custom name.  I suppose
+    // context.lookupOperator("*") might work.  For the moment though, we refer to
+    // it by string, which would allow for operators to be defined after their first
+    // appearance in the file.
 
     ruleset=new RuleSet("OperatorSymbol");
       rulesets.add(ruleset);

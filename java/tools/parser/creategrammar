@@ -7,6 +7,10 @@ info() {
   echo "$@"
 }
 
+# If CVS leaves files read-only, these can end up being copied into build/ and
+# bin/ and then I can't recompile my grammars and I get annoyed.
+chmod u+rw src build bin -R
+
 cd src/tools/parser || exit 3
 
 info "Parsing grammar $1.grm"

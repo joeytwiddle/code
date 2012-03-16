@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 info() {
   echo
   echo "$@"
@@ -15,6 +17,7 @@ failandquit() {
   # Reset to original
   info "Bad grammar!  Resetting to original"
   cp -a "$gdir"/grmGrm.java "$gdir"/grmGrm.java.failed
+  cp -a "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
   ./build.sh
   restored="$?"
 
@@ -33,6 +36,10 @@ failandquit() {
 # echo -n "Redefine the parser's grammar grammar (y/n)? "
 # read X
 # [ "$X" = "y" ] || exit 9
+
+# If CVS leaves files read-only, these can end up being copied into build/ and
+# bin/ and then I can't recompile my grammars and I get annoyed.
+chmod u+rw src build bin -R
 
 gdir="src/tools/parser"
 
@@ -60,8 +67,10 @@ if [ "$1" = "debug" ]; then
 fi
 
 info "Are they different?"
+set +e
 cmp "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
 jfcsh "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
+set -e
 
 info "Test: Convert once again"
 ./build.sh

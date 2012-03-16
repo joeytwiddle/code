@@ -65,7 +65,7 @@ SpcBit = " " | "\t"
 
 # Note that two AtomDefs without an empty line between them will not parse!
 
-AtomDef = <atomname/"^.<>\n!qt! ="> " = " Defn OptReplacements NL OptSpc NL
+AtomDef = <atomname/"^.<>\n!qt! ="> " = " Defn OptReplacements NL
 java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
 hugs: "  ( Atom !qt!" <atomname> "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " <atomname> " {\n\n}\n  class AnImplmentation {\n" Defn "  }\n\n"
@@ -76,10 +76,10 @@ OptReplacements = "\n" Replacements
                 | ""
 java: "    // Replacements\n" Replacements
 
-Replacements = TwoReplacements
+Replacements = ManyReplacements
              | Replacement
 
-TwoReplacements = Replacement "\n" Replacements
+ManyReplacements = Replacement "\n" Replacements
 hugs: Replacement ",\n" Replacements
 
 Replacement = <target/"<>\n!qt! :"> ": " Defn
@@ -97,6 +97,38 @@ BasicElement = Variable
              | ActiveReplacement
              | Text
              | AtomRef
+             | Regexp
+             | BracketedElement
+             | OptionalElement
+             | RepeatElement
+             | MagicTokenOfDoom
+
+# This might be called "exclusion" in Prolog.  *yawn*
+# If the magic token is reached, none of later options in a DefnBit will be attempted.
+# In other words, ! commits us to the current line, or failure.
+
+MagicTokenOfDoom = "!"
+
+# This can make things more efficient, by allowing us to exclude searches that
+# we know are invalid.
+# But should it be a full commit?  I.e.:
+#   1) If rest of arguments fail, fall back out and try next in parent.
+#   2) If rest of arguments fail, report error and stop parsing!
+
+BracketedElement = "(" OWS Variable OWS ")"
+
+OptionalElement = "[" OWS DefnBit OWS "]" OptionalOptionalMarker
+
+OptionalOptionalMarker = OptionalOptionalMarker2
+java: "if (" OptionalOptionalMarker2 "!=!qt!!qt!) { rule.replace(rule.size()-1, new OptionalMarker(rule.get(rule.size()-1),!qt!" OptionalOptionalMarker2 "!qt!));\n"
+
+OptionalOptionalMarker2 = "*" | "+" | ""
+
+# Too recursive I suspect:
+#RepeatElement = DefnBit "*"
+RepeatElement = "not likely govna"
+# Since RepeatElement was hard to define, I made repeats a part of
+# OptionalElement.  Perhaps the sensible way to Parse 
 
 DefnOr = DefnBit Whitespace "|" Whitespace Defn
 java: DefnBit "      ruleset.add(rule);\n      rule=new Vector();\n" Defn
@@ -137,7 +169,7 @@ Text = "!qt!" <text/"!qt!"> "!qt!"
      | "!qt!!qt!"
 java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
 hugs: "Str !qt!" <text> "!qt!"
-pojo: "  /* Matched: !qt!" <text> "!qt! */\n"
+pojo: "    /* Matched: !qt!" <text> "!qt! */\n"
 
 Whitespace = WhitespaceBit Whitespace
            | WhitespaceBit
@@ -146,6 +178,11 @@ WhitespaceBit = "\n"
               | " "
               | "\t"
               | "\r"
+
+# Optional whitespace:
+
+OWS = Whitespace
+    | ""
 
 
 
@@ -170,4 +207,25 @@ java: "        { Vector realrule=rule; rule=new Vector(); " BasicElement " realr
 
 Ref = <ref/" !qt!\n.^">
 java: "!qt!" <ref> "!qt!"
+
+
+
+# Untested...
+
+# TODO: Gah presumably we need to escape any "s in the output of RegexpBody
+Regexp = "/" RegexpBody "/"
+java: "new Regexp(!qt!" RegexpBody "!qt!)"
+
+RegexpBody = RegexpBit RegexpBody
+           | ""
+
+RegexpBit = "\\" AnyOneChar RegexpBit
+          | "[" RegexpCharBlock "]" RegexpBit
+          | <regexpbit/"\\/[\n"> RegexpBit
+          | ""
+
+RegexpCharBlock = "\\" AnyOneChar RegexpCharBlock
+                | <regexpcharblock/"]\n"> RegexpCharBlock
+                | ""
+
 
