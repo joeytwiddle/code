@@ -5,11 +5,11 @@ package tools.parser;
  * would be delighted to hear if have made use of this code. If you make money
  * with this code, please give me some! If you find this code useful, or have
  * any queries, please feel free to contact me: pclark@cs.bris.ac.uk /
- * joeyclark@usa.net Paul "Joey" Clark, hacking for humanity, Feb 99
+ * joey@neuralyte.org Paul "Joey" Clark, hacking for humanity, Feb 99
  * www.cs.bris.ac.uk/~pclark / www.changetheworld.org.uk
  */
 
-import java.lang.*;
+// import java.lang.*;
 import java.util.*;
 
 import java.awt.TextArea; // debug
@@ -27,10 +27,8 @@ import jlib.strings.*;
 import jlib.ArgParser;
 import jlib.Profile;
 
-import jlib.JReflect;
+// import jlib.JReflect;
 import java.lang.reflect.*;
-
-import tools.parser.*;
 
 public class Parser implements ActionListener {
 
@@ -47,7 +45,7 @@ public class Parser implements ActionListener {
 	public static String debugdata = "";
 	public static int lastselend = 0;
 	public static int k = 0;
-	public static Vector allMatches = new Vector();
+	public static Vector<Match> allMatches = new Vector<Match>();
 	public static String lastMatchAttempt;
 
 	public final static void main(String[] argv) throws FileNotFoundException {
@@ -70,7 +68,7 @@ public class Parser implements ActionListener {
 		String grammar = a.get("grammar");
 		String file = a.get("file to parse");
 
-		List targets = a.getRest("target",
+		List<String> targets = a.getRest("target",
 		      "output type of form <target>[:<file to append>]");
 		// String target=a.getOr("target","null");
 		// if (target.equals("null"))
@@ -96,11 +94,65 @@ public class Parser implements ActionListener {
 			dbf.add(dbta);
 			dbf.add(dbdta);
 			dbf.add(dbb);
-			dbf.show();
+			dbf.setVisible(true);
 			dbdta.setSize(400, 300);
 		}
 		
-		Type t = new Atom("Main");
+		Match m = parseString(targets, toparse);
+
+		// System.err.println(" # substrings created: "+SubString.sscnt);
+		// System.err.println("# substrings realised: "+SubString.ssrealedcnt);
+		// System.err.println("               that's: "+(int)(100*SubString.ssrealedcnt/SubString.sscnt)+"%");
+		// System.err.println("        # realstrings: "+RealString.realcnt);
+		// System.err.println(SubString.ssrealedcnt+" ("+(int)(100*SubString.ssrealedcnt/SubString.sscnt)+"%) of the "+SubString.sscnt+" generated substrings were realised.");
+		// System.err.println("Parse took "+(Profile.timeSpentOn("parse")/1000)+" seconds");
+		boolean failure = false;
+		if (m == null) {
+			failure = true;
+		} else if (m.left == null) {
+			failure = true; // unlikely
+		} else if (m.left.length() > 0) {
+			failure = true;
+		}
+
+		if (failure) {
+
+			System.err.println();
+			System.err.println("Failure.");
+			System.err.println("Last match attempt:");
+			System.err.println(lastMatchAttempt);
+			if (m == null || m.left == null || toparse == null)
+				System.err.println("m=" + m + " toparse=" + toparse);
+			else {
+				System.err.println("Error: failed to match last "
+						+ m.left.length() + " characters = "
+						+ (100 * m.left.length() / toparse.length()) + "%");
+				System.err.println("Did match up to "
+						+ JString.lineChar(toparse, m.left + ""));
+			}
+
+			String profReport = Profile.report();
+			PrintStream profOut = new PrintStream(new FileOutputStream(new File(
+			"/tmp/jparse_profile.html")));
+			profOut.print(profReport);
+			profOut.close();
+
+			System.exit(1);
+			
+		}
+		
+	}
+
+	/**
+	 * Note that even if you receive a Match, it may not be complete. Check
+	 * match.left.length() to see if there are trailing chars which were not
+	 * parsed.
+	 * 
+	 * At a later date we may act if that is the case, e.g. by returning a null Match.
+	**/
+	public static Match parseString(List<String> targets, String toparse) {
+		
+	   Type t = new Atom("Main");
 		Profile.clear();
 		Profile.start("parse");
 		Match m = null;
@@ -137,51 +189,12 @@ public class Parser implements ActionListener {
 
 			}
 
-			// System.err.println(" # substrings created: "+SubString.sscnt);
-			// System.err.println("# substrings realised: "+SubString.ssrealedcnt);
-			// System.err.println("               that's: "+(int)(100*SubString.ssrealedcnt/SubString.sscnt)+"%");
-			// System.err.println("        # realstrings: "+RealString.realcnt);
-			// System.err.println(SubString.ssrealedcnt+" ("+(int)(100*SubString.ssrealedcnt/SubString.sscnt)+"%) of the "+SubString.sscnt+" generated substrings were realised.");
-			// System.err.println("Parse took "+(Profile.timeSpentOn("parse")/1000)+" seconds");
-			boolean failure = false;
-			if (m == null)
-				failure = true;
-			else if (m.left == null)
-				failure = true;
-			else if (m.left.length() > 0) failure = true;
-
-			if (!failure) {
-				System.exit(0);
-			}
-
 		} catch (Exception e) {
 			System.out.println("" + e);
 			e.printStackTrace();
 		}
-	
-		System.err.println();
-		System.err.println("Failure.");
-		System.err.println("Last match attempt:");
-		System.err.println(lastMatchAttempt);
-		if (m == null || m.left == null || toparse == null)
-			System.err.println("m=" + m + " toparse=" + toparse);
-		else {
-			System.err.println("Error: failed to match last "
-			      + m.left.length() + " characters = "
-			      + (100 * m.left.length() / toparse.length()) + "%");
-			System.err.println("Did match up to "
-			      + JString.lineChar(toparse, m.left + ""));
-		}
-
-		String profReport = Profile.report();
-		PrintStream profOut = new PrintStream(new FileOutputStream(new File(
-		      "/tmp/jparse_profile.html")));
-		profOut.print(profReport);
-		profOut.close();
-		
-		System.exit(1);
-
-	}
+	   return m;
+   }
 
 	public static void registerAllMatches(Match m) {
 		if (m == null) return;

@@ -18,12 +18,23 @@
 
 Main = DLangFile
 
-DLangFile = DLangImports DLangFileSome
+DLangFile = DLangHeader DLangFileSome
+
+DLangHeader = DLangModuleBlock DLangImports
+
+DLangModuleBlock = Comment DLangModuleBlock
+                 | Space DLangModuleBlock
+                 | DLangModule
+                 | ""
+
+DLangModule = "package" Space <module/"\n;"> EOL
+            | "module" Space <module/"\n;"> EOL
 
 # DLangImports = DLangImport [ DLangImports ]
 
 DLangImports = DLangImport DLangImports
              | DLangImport
+             | WS
 
 DLangImport = DLangImportProper
             | Comment
@@ -31,79 +42,106 @@ DLangImport = DLangImportProper
 
 DLangImportProper = "import" Space <import/"\n"> "\n"
 
-DLangFileSome = DLangFileBit DLangFile
+DLangFileSome = DLangFileBit DLangFileSome
               | DLangFileBit
 
 # Should it be 0 or more?
 
-DLangFileBit = Comment | ClassDefinition | FunctionDefinition | Statement
+DLangFileBit = Space DLangFileBit
+             | Comment | ClassDefinition | FunctionDefinition | Statement
 
 Comment = "#" <comment/"\n"> "\n"
         | "//" <comment/"\n"> "\n"
 
 # DLangFileSome = 1 or more DLangFileBits
 # TODO: Parametrised classes (templates)
-ClassDefinition = "class" WS <className/" \n"> WS NL WS ClassBody
+ClassDefinition = "class" Space <className/" \n"> ClassMods NL ClassBody
 
-ClassBody = IndentedDLangFileSome
+ClassMods = Space "extends" Space ClassRef
+          | Space "implements" Space ClassRef
+          | OptHorizSpace
+
+ClassBody = ""
+
+# IndentedDLangBlock
 
 # TODO
-IndentedDLangFileBit = DLangFileSome
+IndentedDLangBlock = DLangFileSome
 
 FunctionDefinition = <fnname/" ("> "(" ArgumentSignatureList ")" WS "=" WS FunctionBody
 dintj: "new Function(!qt!" <fnname> "!qt!," ArgumentSignatureList "," FunctionBody ")"
 
 FunctionBody = NiceCode | MutableCode
 
-NiceCode = Expression Space "where" Space NiceNEDefs
-         | Expression
+## NiceCode swallowed the var from an assignment statement
+## Should NiceCode demand that it ends neatly with an EOL?
+# FunctionBody = MutableCode
+
+NiceCode = Expression Space "where" Space NiceNEDefs EOL
+         | Expression EOL
 
 NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression
 
-MutableCode = WS Statement | MutableCode
-            | WS Statement
+MutableCode = WS Statement MutableCode
+            | WS Statement WS
 
 ArgumentSignatureList = ArgumentSignature MoreArgs
      | ArgumentSignature
      | WS
 
-ArgumentSignature = TypedArg | UntypedArg
+# ArgumentSignature = TypedArg | UntypedArg
+ArgumentSignature = UntypedArg
 
-TypedArg = WS VarName WS
+UntypedArg = WS VarName WS
 
-UntypedArg = WS Type Space VarName WS
+TypedArg = WS Type Space VarName WS
 
 MoreArgs = "," ArgumentSignatureList
 
-VarName = <varname/"<>\n!qt!. :^+-*/">
+# Identifier = <varname/"<>\n!qt!. :^+-*()/">
+Identifier = <varname~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$@0-9">
+
+VarName = Identifier
+
+ClassName = Identifier
 
 VarReference = VarName
+
+# Could also be called a PrimitiveLiteral
+ConstReference = Number | String
 
 Statement = Assignment
 
 Assignment = NormalAssignment
            | SpecialAssignment
 
-NormalAssignment = VarOrMemberReference WS "=" Expression
+NormalAssignment = VarOrMemberReference OptHorizSpace "=" Expression EOL
 
-SpecialAssignment = VarOrMemberReference WS SpecialAssignmentOperator Expression
+SpecialAssignment = VarOrMemberReference OptHorizSpace SpecialAssignmentOperator Expression EOL
 
 SpecialAssignmentOperator = "+=" | "-=" | "*=" | "/="
 
-ExpressionTerminal = VarOrMemberReference
+ExpressionTerminal = VarOrMemberReference | ConstReference
 
-Expression = ExpressionBit
+Expression = ExpressionBit OptHorizSpace
 
-ExpressionBit = Space ExpressionBit
+# We have a problem with Algebra
+# If I let Algebra contain Expressions, then it calls its repeatedly!
+
+ExpressionBit = HorizSpace ExpressionBit
+              | TerminalAlgebraicOperation
               | Algebra
-              | FunctionCall
-              | VarOrMemberReference
-              | BracketedExpression
+              | ExpressionAtom
+
+ExpressionAtom = HorizSpace ExpressionAtom
+               | FunctionCall
+               | BracketedExpression
+               | ExpressionTerminal
 
 # TODO: There is no support here for calling the results of expressions (or their members) :F
 
-FunctionCall = MemberReferenceOrNot "(" ArgumentParameterList ")"
+FunctionCall = VarOrMemberReference "(" ArgumentParameterList ")"
 
 MemberName = VarName
 
@@ -118,16 +156,21 @@ ArgumentParameterList = Expression "," ArgumentParameterList
 
 BracketedExpression = "(" WS ExpressionBit WS ")"
 
-Algebra = ExpressionBit Operator ExpressionBit
+## Can lock us in a cyclic loop ExpressionBit -> Algebra -> ExpressionBit !
+# Algebra = ExpressionBit Operator ExpressionBit
+
+Algebra = ExpressionAtom OptHorizSpace Operator OptHorizSpace Expression
+
+TerminalAlgebraicOperation = ExpressionAtom OptHorizSpace Operator OptHorizSpace Expression
 
 Operator = OperatorSymbol
 dintj: "new Operator(" OperatorSymbol ")"
 
-OperatorSymbol = AlgebraicOperator | BooleanOperator | OtherOperator
+OperatorSymbol = BooleanOperator | AlgebraicOperator | OtherOperator
 
-AlgebraicOperator = "*" | "/" | "+" | "-"
+AlgebraicOperator = "*" | "/" | "+" | "-" | "^" | "<<" | ">>" | "&" | "|"
 
-BooleanOperator = "==" | "!=" | ">" | "<" | ">=" | "<="
+BooleanOperator = "==" | "!=" | ">" | "<" | ">=" | "<=" | "&&" | "||"
 
 OtherOperator = "<" <varname/" \n\t,."> ">"
 
@@ -136,12 +179,38 @@ VarDeclaration = VarDeclarationAndAssignment
                | VarDeclarationWithoutAssignment
 
 VarDeclarationWithoutAssignment = "var" Space VarName
-                                | Type Space VarName
-                                | "var" Space VarName WS ":" WS Type
-                                | VarName WS ":" WS Type
+
+#                                 | Type Space VarName
+#                                 | "var" Space VarName WS ":" WS Type
+#                                 | VarName WS ":" WS Type
+
+Type = TypeWithoutTemplate | TypeWithTemplate
+
+TypeWithoutTemplate = Identifier
+
+TypeWithTemplate = TypeWithoutTemplate WS Template
+
+Template = "<" TemplateBits ">"
+
+TemplateBits = WS TemplateBit WS "," WS TemplateBits
+             | WS TemplateBit
 
 VarDeclarationAndAssignment = VarDeclarationWithoutAssignment WS "=" WS Expression
 
+Number = Float | Int
+
+Float = Digits "." Digits
+
+Int = Digits
+
+Digits = Digit Digits
+       | Digit
+
+# Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+Digit = <number~"0123456789">
+
+String = "!qt!" <string/"!qt!"> "!qt!"
 
 
 # HTF will I deal with indentation?
@@ -164,4 +233,16 @@ WhitespaceBit = "\n"
               | " "
               | "\t"
               | "\r"
+
+# Expressions will eat into the next line if allowed to swallow "\n"s
+# They don't know when to stop!
+# So we only allow them to swallow HorizSpace
+
+HorizSpace = " " | "\t"
+
+OptHorizSpace = HorizSpace | ""
+
+# EOL = ";" | "\n"
+
+EOL = "\n"
 

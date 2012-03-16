@@ -39,8 +39,50 @@ public class dlangGrm {
     ruleset=new RuleSet("DLangFile");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("DLangImports"));
+        rule.add(new Atom("DLangHeader"));
         rule.add(new Atom("DLangFileSome"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("DLangHeader");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("DLangModuleBlock"));
+        rule.add(new Atom("DLangImports"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("DLangModuleBlock");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Comment"));
+        rule.add(new Atom("DLangModuleBlock"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("DLangModuleBlock"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("DLangModule"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("DLangModule");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("package"));
+        rule.add(new Atom("Space"));
+        rule.add(new Var("module","\n;"));
+        rule.add(new Atom("EOL"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("module"));
+        rule.add(new Atom("Space"));
+        rule.add(new Var("module","\n;"));
+        rule.add(new Atom("EOL"));
       ruleset.add(rule);
     // Replacements
 
@@ -54,6 +96,9 @@ public class dlangGrm {
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("DLangImport"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("WS"));
       ruleset.add(rule);
     // Replacements
 
@@ -84,7 +129,7 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("DLangFileBit"));
-        rule.add(new Atom("DLangFile"));
+        rule.add(new Atom("DLangFileSome"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("DLangFileBit"));
@@ -95,6 +140,10 @@ public class dlangGrm {
 
     ruleset=new RuleSet("DLangFileBit");
       rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("DLangFileBit"));
+      ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("Comment"));
       ruleset.add(rule);
@@ -129,24 +178,44 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Text("class"));
-        rule.add(new Atom("WS"));
+        rule.add(new Atom("Space"));
         rule.add(new Var("className"," \n"));
-        rule.add(new Atom("WS"));
+        rule.add(new Atom("ClassMods"));
         rule.add(new Atom("NL"));
-        rule.add(new Atom("WS"));
         rule.add(new Atom("ClassBody"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("ClassMods");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Space"));
+        rule.add(new Text("extends"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("ClassRef"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Space"));
+        rule.add(new Text("implements"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("ClassRef"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("OptHorizSpace"));
       ruleset.add(rule);
     // Replacements
 
     ruleset=new RuleSet("ClassBody");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("IndentedDLangFileSome"));
+        rule.add(new Text(""));
       ruleset.add(rule);
     // Replacements
 
+    // IndentedDLangBlock
+
     // TODO
-    ruleset=new RuleSet("IndentedDLangFileBit");
+    ruleset=new RuleSet("IndentedDLangBlock");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("DLangFileSome"));
@@ -186,6 +255,10 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    //# NiceCode swallowed the var from an assignment statement
+    //# Should NiceCode demand that it ends neatly with an EOL?
+    // FunctionBody = MutableCode
+
     ruleset=new RuleSet("NiceCode");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -194,9 +267,11 @@ public class dlangGrm {
         rule.add(new Text("where"));
         rule.add(new Atom("Space"));
         rule.add(new Atom("NiceNEDefs"));
+        rule.add(new Atom("EOL"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("Expression"));
+        rule.add(new Atom("EOL"));
       ruleset.add(rule);
     // Replacements
 
@@ -217,13 +292,12 @@ public class dlangGrm {
       rule=new Vector();
         rule.add(new Atom("WS"));
         rule.add(new Atom("Statement"));
-      ruleset.add(rule);
-      rule=new Vector();
         rule.add(new Atom("MutableCode"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("WS"));
         rule.add(new Atom("Statement"));
+        rule.add(new Atom("WS"));
       ruleset.add(rule);
     // Replacements
 
@@ -241,17 +315,15 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    // ArgumentSignature = TypedArg | UntypedArg
     ruleset=new RuleSet("ArgumentSignature");
       rulesets.add(ruleset);
-      rule=new Vector();
-        rule.add(new Atom("TypedArg"));
-      ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("UntypedArg"));
       ruleset.add(rule);
     // Replacements
 
-    ruleset=new RuleSet("TypedArg");
+    ruleset=new RuleSet("UntypedArg");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("WS"));
@@ -260,7 +332,7 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
-    ruleset=new RuleSet("UntypedArg");
+    ruleset=new RuleSet("TypedArg");
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("WS"));
@@ -279,10 +351,25 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    // Identifier = <varname/"<>\n\". :^+-*()/">
+    ruleset=new RuleSet("Identifier");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Var("varname",null,"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$@0-9"));
+      ruleset.add(rule);
+    // Replacements
+
     ruleset=new RuleSet("VarName");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Var("varname","<>\n\". :^+-*/"));
+        rule.add(new Atom("Identifier"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("ClassName");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Identifier"));
       ruleset.add(rule);
     // Replacements
 
@@ -290,6 +377,17 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("VarName"));
+      ruleset.add(rule);
+    // Replacements
+
+    // Could also be called a PrimitiveLiteral
+    ruleset=new RuleSet("ConstReference");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Number"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("String"));
       ruleset.add(rule);
     // Replacements
 
@@ -314,9 +412,10 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("VarOrMemberReference"));
-        rule.add(new Atom("WS"));
+        rule.add(new Atom("OptHorizSpace"));
         rule.add(new Text("="));
         rule.add(new Atom("Expression"));
+        rule.add(new Atom("EOL"));
       ruleset.add(rule);
     // Replacements
 
@@ -324,9 +423,10 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Atom("VarOrMemberReference"));
-        rule.add(new Atom("WS"));
+        rule.add(new Atom("OptHorizSpace"));
         rule.add(new Atom("SpecialAssignmentOperator"));
         rule.add(new Atom("Expression"));
+        rule.add(new Atom("EOL"));
       ruleset.add(rule);
     // Replacements
 
@@ -346,30 +446,58 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
-    ruleset=new RuleSet("Expression");
+    ruleset=new RuleSet("ExpressionTerminal");
       rulesets.add(ruleset);
-      rule=new Vector();
-        rule.add(new Atom("ExpressionBit"));
-      ruleset.add(rule);
-    // Replacements
-
-    ruleset=new RuleSet("ExpressionBit");
-      rulesets.add(ruleset);
-      rule=new Vector();
-        rule.add(new Atom("Space"));
-        rule.add(new Atom("ExpressionBit"));
-      ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("VarOrMemberReference"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Atom("BracketedExpression"));
+        rule.add(new Atom("ConstReference"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("Expression");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("ExpressionBit"));
+        rule.add(new Atom("OptHorizSpace"));
+      ruleset.add(rule);
+    // Replacements
+
+    // We have a problem with Algebra
+    // If I let Algebra contain Expressions, then it calls its repeatedly!
+
+    ruleset=new RuleSet("ExpressionBit");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("HorizSpace"));
+        rule.add(new Atom("ExpressionBit"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("TerminalAlgebraicOperation"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Algebra"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("ExpressionAtom"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("ExpressionAtom");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("HorizSpace"));
+        rule.add(new Atom("ExpressionAtom"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("FunctionCall"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Atom("Algebra"));
+        rule.add(new Atom("BracketedExpression"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("ExpressionTerminal"));
       ruleset.add(rule);
     // Replacements
 
@@ -378,7 +506,7 @@ public class dlangGrm {
     ruleset=new RuleSet("FunctionCall");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("MemberReferenceOrNot"));
+        rule.add(new Atom("VarOrMemberReference"));
         rule.add(new Text("("));
         rule.add(new Atom("ArgumentParameterList"));
         rule.add(new Text(")"));
@@ -432,12 +560,28 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    //# Can lock us in a cyclic loop ExpressionBit -> Algebra -> ExpressionBit !
+    // Algebra = ExpressionBit Operator ExpressionBit
+
     ruleset=new RuleSet("Algebra");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("ExpressionBit"));
+        rule.add(new Atom("ExpressionAtom"));
+        rule.add(new Atom("OptHorizSpace"));
         rule.add(new Atom("Operator"));
-        rule.add(new Atom("ExpressionBit"));
+        rule.add(new Atom("OptHorizSpace"));
+        rule.add(new Atom("Expression"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("TerminalAlgebraicOperation");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("ExpressionAtom"));
+        rule.add(new Atom("OptHorizSpace"));
+        rule.add(new Atom("Operator"));
+        rule.add(new Atom("OptHorizSpace"));
+        rule.add(new Atom("Expression"));
       ruleset.add(rule);
     // Replacements
 
@@ -456,10 +600,10 @@ public class dlangGrm {
     ruleset=new RuleSet("OperatorSymbol");
       rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("AlgebraicOperator"));
+        rule.add(new Atom("BooleanOperator"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Atom("BooleanOperator"));
+        rule.add(new Atom("AlgebraicOperator"));
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Atom("OtherOperator"));
@@ -479,6 +623,21 @@ public class dlangGrm {
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Text("-"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("^"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("<<"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(">>"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("&"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("|"));
       ruleset.add(rule);
     // Replacements
 
@@ -501,6 +660,12 @@ public class dlangGrm {
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Text("<="));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("&&"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("||"));
       ruleset.add(rule);
     // Replacements
 
@@ -531,26 +696,60 @@ public class dlangGrm {
         rule.add(new Atom("Space"));
         rule.add(new Atom("VarName"));
       ruleset.add(rule);
+    // Replacements
+
+    //                                 | Type Space VarName
+    //                                 | "var" Space VarName WS ":" WS Type
+    //                                 | VarName WS ":" WS Type
+
+    ruleset=new RuleSet("Type");
+      rulesets.add(ruleset);
       rule=new Vector();
-        rule.add(new Atom("Type"));
-        rule.add(new Atom("Space"));
-        rule.add(new Atom("VarName"));
+        rule.add(new Atom("TypeWithoutTemplate"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Text("var"));
-        rule.add(new Atom("Space"));
-        rule.add(new Atom("VarName"));
+        rule.add(new Atom("TypeWithTemplate"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("TypeWithoutTemplate");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Identifier"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("TypeWithTemplate");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("TypeWithoutTemplate"));
         rule.add(new Atom("WS"));
-        rule.add(new Text(":"));
+        rule.add(new Atom("Template"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("Template");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("<"));
+        rule.add(new Atom("TemplateBits"));
+        rule.add(new Text(">"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("TemplateBits");
+      rulesets.add(ruleset);
+      rule=new Vector();
         rule.add(new Atom("WS"));
-        rule.add(new Atom("Type"));
+        rule.add(new Atom("TemplateBit"));
+        rule.add(new Atom("WS"));
+        rule.add(new Text(","));
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("TemplateBits"));
       ruleset.add(rule);
       rule=new Vector();
-        rule.add(new Atom("VarName"));
         rule.add(new Atom("WS"));
-        rule.add(new Text(":"));
-        rule.add(new Atom("WS"));
-        rule.add(new Atom("Type"));
+        rule.add(new Atom("TemplateBit"));
       ruleset.add(rule);
     // Replacements
 
@@ -565,6 +764,60 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    ruleset=new RuleSet("Number");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Float"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Int"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("Float");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Digits"));
+        rule.add(new Text("."));
+        rule.add(new Atom("Digits"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("Int");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Digits"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("Digits");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("Digit"));
+        rule.add(new Atom("Digits"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("Digit"));
+      ruleset.add(rule);
+    // Replacements
+
+    // Digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9"
+
+    ruleset=new RuleSet("Digit");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Var("number",null,"0123456789"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("String");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("\""));
+        rule.add(new Var("string","\""));
+        rule.add(new Text("\""));
+      ruleset.add(rule);
+    // Replacements
 
 
     // HTF will I deal with indentation?
@@ -622,6 +875,39 @@ public class dlangGrm {
       ruleset.add(rule);
       rule=new Vector();
         rule.add(new Text("\r"));
+      ruleset.add(rule);
+    // Replacements
+
+    // Expressions will eat into the next line if allowed to swallow "\n"s
+    // They don't know when to stop!
+    // So we only allow them to swallow HorizSpace
+
+    ruleset=new RuleSet("HorizSpace");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text(" "));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("\t"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("OptHorizSpace");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("HorizSpace"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+    // EOL = ";" | "\n"
+
+    ruleset=new RuleSet("EOL");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("\n"));
       ruleset.add(rule);
     // Replacements
 

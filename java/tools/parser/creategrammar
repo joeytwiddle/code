@@ -7,14 +7,15 @@ cd src/tools/parser || exit 3
 mv "$1Grm.java" "$1Grm.java.b4create"
 # echo "package tools.parser;"
 jparse grm "$1.grm" java $2 $3 $4 $5 $6 > "$1Grm.java"
-if [ ! "$?" = 0 ]
+success="$?"
+sedreplace "grmGrm" "$1Grm" "$1Grm.java"
+if [ ! "$success" = 0 ]
 then
 	echo "jparse failed - not trying to compile."
 	exit 4
 fi
 #mv "$1Grm.java" tmp.txt
 #mv tmp.txt "$1Grm.java"
-sedreplace "grmGrm" "$1Grm" "$1Grm.java"
 jfcsh "$1Grm.java.b4create" "$1Grm.java"
 
 cd ../../..

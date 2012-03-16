@@ -1,11 +1,13 @@
 package tools.parser;
-/* This source code is freely distributable under the GNU public licence.
-	I would be delighted to hear if have made use of this code.
-	If you make money with this code, please give me some!
-	If you find this code useful, or have any queries, please feel free to
-	contact me: pclark@cs.bris.ac.uk / joeyclark@usa.net
-	Paul "Joey" Clark, hacking for humanity, Feb 99
-	www.cs.bris.ac.uk/~pclark / www.changetheworld.org.uk */
+
+/*
+ * This source code is freely distributable under the GNU public licence. I
+ * would be delighted to hear if have made use of this code. If you make money
+ * with this code, please give me some! If you find this code useful, or have
+ * any queries, please feel free to contact me: pclark@cs.bris.ac.uk /
+ * joey@neuralyte.org Paul "Joey" Clark, hacking for humanity, Feb 99
+ * www.cs.bris.ac.uk/~pclark / www.changetheworld.org.uk
+ */
 
 import jlib.Profile;
 
@@ -30,92 +32,191 @@ import jlib.strings.*;
 import tools.parser.*;
 
 public class Atom implements Type {
-	public static int depth=0;
+
+	public static int depth = 0;
 	String type;
+
+	/* Feature!  If all the line numbers are above 100, they align nicely in the log. :P
+	
+	    Fold this comment block away in your editor, or delete it if you don't need this feature.
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	*/
+	
 	Atom(String t) {
-		type=t;
+		type = t;
 	}
+
 	public static String strip(SomeString s) {
 		return strip(s.toString());
 	}
+
 	public static String strip(String s) {
-		int max=20;
-		if (s.length()>max)
-			s=JString.left(s,max)+"..."+(s.length()-max);
-		s=JString.replace(s,"\n","\\n");
+		int max = 20;
+		if (s.length() > max)
+		   s = JString.left(s, max) + "..." + (s.length() - max);
+		s = JString.replace(s, "\n", "\\n");
 		return s;
 	}
+
 	public Match match(SomeString s) {
+		
+		// This is bad, it does not scale, because our grammars often use
+		// concatenation. We would need to implement tail-recursion, or make more
+		// horizontal grammars, e.g. introduce ( ... | ... | ... )*, to get an
+		// accurate stack depth reading.
+		// It is better to wait for the stack-trace, and use -debug for logging.
+		/* if (depth > 499) {
+			Logger.error("Breaking out because depth="+depth);
+			return null;
+		} */
+		
 		Profile.start("Atom.match: Elsewhere");
-		RuleSet rs=Grammar.getrulesetforatom(type);
+		RuleSet rs = Grammar.getrulesetforatom(type);
 		if (Parser.Debugging) {
-			Logger.log("Entered atom "+type+" with "+rs.rules.size()+" rules...");
+			Logger.log(indent()+" Entered atom " + type + " with " + rs.rules.size()
+			      + " rules...");
 		}
-		for (int i=0;i<rs.rules.size();i++) {
+		for (int i = 0; i < rs.rules.size(); i++) {
 			Profile.start("Atom.match: Outside loop");
-			Vector rules=(Vector)rs.rules.get(i);
-			if (rules.size()==0) {
-				System.err.println("rulesetforatom("+type+") number "+i+" is empty!");
+			Vector rules = (Vector) rs.rules.get(i);
+			if (rules.size() == 0) {
+				System.err.println("rulesetforatom(" + type + ") number " + i
+				      + " is empty!");
 				System.exit(1);
 			}
-			
-			// This is often not enough info when a match is failing. The grammar
-			// writer is more interested in the stack of trial matches we recently
-			// tried.
-			int lastchar = s.length() < 40 ? s.length() : 40;
-			Parser.lastMatchAttempt = "Trying to match "+rules+" against: "+StringUtils.escapeSpecialChars(s.substring(0, lastchar))+"..";
+
 			if (Parser.Debugging) {
-				Logger.log(Parser.lastMatchAttempt);
+				// This is often not enough info when a match is failing. The
+				// grammar writer is more interested in the stack of trial matches
+				// we recently tried.
+				// Also it is costly to construct, and not usually needed, only
+				// during failed parses.
+				String head = headSome(s); 
+				Parser.lastMatchAttempt = "Trying to match " + rules + " against: "
+				      + head
+				      + "..";
+				Logger.log(indent()+" "+Parser.lastMatchAttempt);
 			}
-			Vector ms=new Vector();
-			SomeString left=s;
-			boolean failure=false;
-			for (int j=0;j<rules.size() && !failure;j++) {
+			Vector ms = new Vector();
+			SomeString rest = s;
+			boolean failure = false;
+			depth++;
+			for (int j = 0; j < rules.size() && !failure; j++) {
 				Profile.start("Atom.match: Inside loop");
-				Type t=(Type)rules.get(j);
+				Type t = (Type) rules.get(j);
 				Profile.start("Atom.match: inner inner");
 				// Profile.start(t.getClass().getName()+".match()"); // heavy
-				Match m=t.match(left);
+				Match m = t.match(rest);
 				// Profile.stop(t.getClass().getName()+".match()"); // heavy
 				Profile.stop("Atom.match: inner inner");
-				if (m==null)
-					failure=true;
-				else {
+				if (m == null) {
+					failure = true;
+				} else {
 					ms.add(m);
-					//          System.out.println("  Original: "+strip(left));
-					left=m.left;
-					//          System.out.println("       New: "+strip(left));
+					// System.out.println("  Original: "+strip(left));
+					rest = m.left;
+					// System.out.println("       New: "+strip(left));
 				}
 				Profile.stop("Atom.match: Inside loop");
 			}
 			depth--;
 			if (!failure) {
+				SomeString matchedString = s.subString(0, s.length() - rest.length());
 				if (Parser.Debugging) {
-					Logger.log("Succeeded: "+rules);
+					Logger.log(indent()+" Succeeded: " + rules +" swallows: "+headSome(matchedString)+" ["+matchedString.length()+" chars]");
 				}
-				Match m=new Match(this,s.subString(0,s.length()-left.length()),ms,left);
-				depth--;
+				Match m = new Match(this, matchedString, ms, rest);
 				Profile.stop("Atom.match: Outside loop");
 				Profile.stop("Atom.match: Elsewhere");
 				return m;
 			} else {
-				// Logger.log("Failed.");
+				if (Parser.Debugging) {
+					String lastFailure = "Failed to match " + rules + " against: "
+					      + headSome(s) + "..";
+					Logger.log(indent()+" "+lastFailure);
+				}
 			}
 			Profile.stop("Atom.match: Outside loop");
 		}
-		depth--;
 		Profile.stop("Atom.match: Elsewhere");
 		return null;
 	}
+
+	private String headSome(SomeString s) {
+	   int lastchar = s.length() < 40 ? s.length() : 40;
+	   String head = StringUtils.escapeSpecialChars(s.substring(0, lastchar));
+	   return head;
+   }
+
 	public String toString() {
 		return type;
 	}
+
 	public boolean replacementfor(Type o) {
 		if (o instanceof Atom) {
-			Atom a=(Atom)o;
-			if (type.equals(a.type))
-				return true;
+			Atom a = (Atom) o;
+			if (type.equals(a.type)) return true;
 		}
 		return false;
 	}
+	
+	public static String indent() {
+		return JString.repeat(">", depth);
+	}
+	
 }

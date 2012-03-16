@@ -355,6 +355,9 @@ public class grmGrm {
       rule=new Vector();
         rule.add(new Atom("VarDeny"));
       ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("VarAccept"));
+      ruleset.add(rule);
     // Replacements
 
     ruleset=new RuleSet("Var");
@@ -387,7 +390,7 @@ public class grmGrm {
       rulesets.add(ruleset);
       rule=new Vector();
         rule.add(new Text("<"));
-        rule.add(new Var("varname","<>\n\"/ "));
+        rule.add(new Var("varname","<>\n\"/ ~"));
         rule.add(new Text("/\""));
         rule.add(new Var("denied","\""));
         rule.add(new Text("\">"));
@@ -403,6 +406,38 @@ public class grmGrm {
 
     rule=new Vector();
         rule.add(new Text("VarExcl \""));
+        rule.add(new Var("varname"));
+        rule.add(new Text("\" \""));
+        rule.add(new Var("denied"));
+        rule.add(new Text("\""));
+    ruleset.replacements.put("hugs",rule);
+
+    rule=new Vector();
+        rule.add(new Text("    String "));
+        rule.add(new Var("varname"));
+        rule.add(new Text(";\n"));
+    ruleset.replacements.put("pojo",rule);
+
+    ruleset=new RuleSet("VarAccept");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("<"));
+        rule.add(new Var("varname","<>\n\"/ ~"));
+        rule.add(new Text("~\""));
+        rule.add(new Var("accepted","\""));
+        rule.add(new Text("\">"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("        rule.add(new Var(\""));
+        rule.add(new Var("varname"));
+        rule.add(new Text("\",null,\""));
+        rule.add(new Var("accepted"));
+        rule.add(new Text("\"));\n"));
+    ruleset.replacements.put("java",rule);
+
+    rule=new Vector();
+        rule.add(new Text("VarIncl \""));
         rule.add(new Var("varname"));
         rule.add(new Text("\" \""));
         rule.add(new Var("denied"));

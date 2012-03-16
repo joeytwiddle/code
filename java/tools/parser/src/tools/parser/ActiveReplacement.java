@@ -4,7 +4,7 @@ package tools.parser;
    I would be delighted to hear if have made use of this code.
    If you make money with this code, please give me some!
    If you find this code useful, or have any queries, please feel free to
-   contact me: pclark@cs.bris.ac.uk / joeyclark@usa.net
+   contact me: pclark@cs.bris.ac.uk / joey@neuralyte.org
    Paul "Joey" Clark, hacking for humanity, Feb 99
    www.cs.bris.ac.uk/~pclark / www.changetheworld.org.uk */
 

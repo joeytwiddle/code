@@ -11,7 +11,12 @@
 #
 
 # TODO:
+#
 #   Allow easier definition of repeat and optional elements with + * and [ ... ]
+#
+#   The Var type is not very powerful.  An anonymous regexp match might be
+#   preferable.  e.g. /[$@_a-zA-Z][$@_a-zA-Z0-9]*/
+#
 
 # CONSIDER:
 #   Allow Comments without blank lines (inbetween other Atoms / almost anywhere)
@@ -81,9 +86,6 @@ BasicElement = Variable
              | Text
              | AtomRef
 
-ActiveReplacement = "`" <java/"`"> "`"
-java: "      rule.add( new ActiveReplacement() { public String replace() { " <java> " } } );\n"
-
 DefnOr = DefnBit Whitespace "|" Whitespace Defn
 java: DefnBit "      ruleset.add(rule);\n      rule=new Vector();\n" Defn
 hugs: DefnBit "] ,\n      [ " Defn
@@ -95,15 +97,21 @@ hugs: DefnBit ", " Defn
 
 Variable = Var
          | VarDeny
+         | VarAccept
 
 Var = "<" <varname/"<>\n!qt!/ "> ">"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"
 hugs: "Var !qt!" <varname> "!qt!"
 pojo: "    String " <varname> ";\n"
 
-VarDeny = "<" <varname/"<>\n!qt!/ "> "/!qt!" <denied/"!qt!"> "!qt!>"
+VarDeny = "<" <varname/"<>\n!qt!/ ~"> "/!qt!" <denied/"!qt!"> "!qt!>"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!,!qt!" <denied> "!qt!));\n"
 hugs: "VarExcl !qt!" <varname> "!qt! !qt!" <denied> "!qt!"
+pojo: "    String " <varname> ";\n"
+
+VarAccept = "<" <varname/"<>\n!qt!/ ~"> "~!qt!" <accepted/"!qt!"> "!qt!>"
+java: "        rule.add(new Var(!qt!" <varname> "!qt!,null,!qt!" <accepted> "!qt!));\n"
+hugs: "VarIncl !qt!" <varname> "!qt! !qt!" <denied> "!qt!"
 pojo: "    String " <varname> ";\n"
 
 AtomRef = <atomtype/"^.<>\n!qt! ">
@@ -119,10 +127,28 @@ java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
 hugs: "Str !qt!" <text> "!qt!"
 pojo: "  /* Matched: !qt!" <text> "!qt! */\n"
 
+Whitespace = WhitespaceBit Whitespace
+           | WhitespaceBit
+
+WhitespaceBit = "\n"
+              | " "
+              | "\t"
+              | "\r"
+
+
+
+# == Experimental Stuff ==
+
+# This might be stable or entirely ignored - I don't know.
+
+ActiveReplacement = "`" <java/"`"> "`"
+java: "      rule.add( new ActiveReplacement() { public String replace() { " <java> " } } );\n"
+
+# I think RelativeElement might be a dodgy way to access variables in parent/child types.
+# ^SearchUp->SearchDown.DirectDown
+
 RelativeElement = RelUp
                 | RelDown
-
-# ^SearchUp->SearchDown.DirectDown
 
 RelUp = Ref "^" BasicElement
 java: "        { Vector realrule=rule; rule=new Vector(); " BasicElement " realrule.add(new RelElement('^'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
@@ -132,12 +158,4 @@ java: "        { Vector realrule=rule; rule=new Vector(); " BasicElement " realr
 
 Ref = <ref/" !qt!\n.^">
 java: "!qt!" <ref> "!qt!"
-
-Whitespace = WhitespaceBit Whitespace
-           | WhitespaceBit
-
-WhitespaceBit = "\n"
-              | " "
-              | "\t"
-              | "\r"
 
