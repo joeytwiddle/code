@@ -24,10 +24,26 @@ public class grmGrm {
     //
 
     // TODO:
+    //
     //   Allow easier definition of repeat and optional elements with + * and [ ... ]
-
+    //   We could also create more advanced rules with e.g. ( ... ) | ...
+    //
+    //   The Var type is not very powerful.  An anonymous regexp match might be
+    //   preferable.  e.g. /[$@_a-zA-Z][$@_a-zA-Z0-9]*/
+    //
+    //
     // CONSIDER:
+    //
     //   Allow Comments without blank lines (inbetween other Atoms / almost anywhere)
+
+    // SIGNIFICANT CHANGES:
+    //
+    //    2012-03-16 Exclude Vars now *fail* if 0 chars are matched.  Rules which
+    //    previously found 0-length matches acceptable should be updated to accept
+    //    them explicitly.
+    //
+    //    2012-03-15 Introduced Include Vars (VarAccept).
+    //
 
     ruleset=new RuleSet("Main");
       rulesets.add(ruleset);
@@ -86,6 +102,9 @@ public class grmGrm {
         rule.add(new Text("#"));
         rule.add(new Var("comment","\n"));
         rule.add(new Text("\n"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("#\n"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector();
@@ -285,20 +304,6 @@ public class grmGrm {
         rule.add(new Atom("AtomRef"));
       ruleset.add(rule);
     // Replacements
-
-    ruleset=new RuleSet("ActiveReplacement");
-      rulesets.add(ruleset);
-      rule=new Vector();
-        rule.add(new Text("`"));
-        rule.add(new Var("java","`"));
-        rule.add(new Text("`"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector();
-        rule.add(new Text("      rule.add( new ActiveReplacement() { public String replace() { "));
-        rule.add(new Var("java"));
-        rule.add(new Text(" } } );\n"));
-    ruleset.replacements.put("java",rule);
 
     ruleset=new RuleSet("DefnOr");
       rulesets.add(ruleset);
@@ -505,6 +510,56 @@ public class grmGrm {
         rule.add(new Text("\" */\n"));
     ruleset.replacements.put("pojo",rule);
 
+    ruleset=new RuleSet("Whitespace");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Atom("WhitespaceBit"));
+        rule.add(new Atom("Whitespace"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Atom("WhitespaceBit"));
+      ruleset.add(rule);
+    // Replacements
+
+    ruleset=new RuleSet("WhitespaceBit");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("\n"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text(" "));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("\t"));
+      ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("\r"));
+      ruleset.add(rule);
+    // Replacements
+
+
+
+    // == Experimental Stuff ==
+
+    // This might be stable or entirely ignored - I don't know.
+
+    ruleset=new RuleSet("ActiveReplacement");
+      rulesets.add(ruleset);
+      rule=new Vector();
+        rule.add(new Text("`"));
+        rule.add(new Var("java","`"));
+        rule.add(new Text("`"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector();
+        rule.add(new Text("      rule.add( new ActiveReplacement() { public String replace() { "));
+        rule.add(new Var("java"));
+        rule.add(new Text(" } } );\n"));
+    ruleset.replacements.put("java",rule);
+
+    // I think RelativeElement might be a dodgy way to access variables in parent/child types.
+    // ^SearchUp->SearchDown.DirectDown
+
     ruleset=new RuleSet("RelativeElement");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -514,8 +569,6 @@ public class grmGrm {
         rule.add(new Atom("RelDown"));
       ruleset.add(rule);
     // Replacements
-
-    // ^SearchUp->SearchDown.DirectDown
 
     ruleset=new RuleSet("RelUp");
       rulesets.add(ruleset);
@@ -560,33 +613,6 @@ public class grmGrm {
         rule.add(new Var("ref"));
         rule.add(new Text("\""));
     ruleset.replacements.put("java",rule);
-
-    ruleset=new RuleSet("Whitespace");
-      rulesets.add(ruleset);
-      rule=new Vector();
-        rule.add(new Atom("WhitespaceBit"));
-        rule.add(new Atom("Whitespace"));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Atom("WhitespaceBit"));
-      ruleset.add(rule);
-    // Replacements
-
-    ruleset=new RuleSet("WhitespaceBit");
-      rulesets.add(ruleset);
-      rule=new Vector();
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text(" "));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text("\t"));
-      ruleset.add(rule);
-      rule=new Vector();
-        rule.add(new Text("\r"));
-      ruleset.add(rule);
-    // Replacements
 
   }
 }

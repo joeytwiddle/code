@@ -35,6 +35,7 @@ ContSpecial = "/*end special*/"
 
 Comment = "/*" EndCom
         | "//" <stuff/"\n"> NL
+        | "//" NL
 
 # Hack for /* */ to deal with eg. " ... /* blah foo*bar */ ... "
 EndCom = <stuff/"*"> "*/"

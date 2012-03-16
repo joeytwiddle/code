@@ -1,4 +1,5 @@
 package tools.parser;
+
 import java.lang.String;
 import java.util.Vector;
 
@@ -111,6 +112,10 @@ public class cGrm {
         rule.add(new Var("stuff","\n"));
         rule.add(new Atom("NL"));
       ruleset.add(rule);
+      rule=new Vector();
+        rule.add(new Text("//"));
+        rule.add(new Atom("NL"));
+      ruleset.add(rule);
     // Replacements
 
     // Hack for /* */ to deal with eg. " ... /* blah foo*bar */ ... "
@@ -129,7 +134,7 @@ public class cGrm {
 
     // Although the repeated RHS are unaesthetic,
     // they are OK when parsing, since the RHS
-    // if only reached when the LHS is satisfied.
+    // is only reached when the LHS is satisfied.
     ruleset=new RuleSet("HashCom");
       rulesets.add(ruleset);
       rule=new Vector();
@@ -779,6 +784,8 @@ public class cGrm {
     rule=new Vector();
       rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? match.renderString("normal") : "// Variable declared in .h file" );  } } );
     ruleset.replacements.put("c",rule);
+
+    // NB: If you try putting OptVarMods after `...` you may end up with "extern // fillup ..." in the output :-(
 
     ruleset=new RuleSet("VariableDeclBeing");
       rulesets.add(ruleset);

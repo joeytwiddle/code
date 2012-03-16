@@ -5,3 +5,5 @@ verbosely jparse $debug dlang spiral.d dintj 2>&1 |
 tee debug.out
 # cat > debug.out
 
+# BUG! Does not return correct exit code
+

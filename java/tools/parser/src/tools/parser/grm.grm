@@ -13,13 +13,24 @@
 # TODO:
 #
 #   Allow easier definition of repeat and optional elements with + * and [ ... ]
+#   We could also create more advanced rules with e.g. ( ... ) | ...
 #
 #   The Var type is not very powerful.  An anonymous regexp match might be
 #   preferable.  e.g. /[$@_a-zA-Z][$@_a-zA-Z0-9]*/
 #
-
+#
 # CONSIDER:
+#
 #   Allow Comments without blank lines (inbetween other Atoms / almost anywhere)
+
+# SIGNIFICANT CHANGES:
+#
+#    2012-03-16 Exclude Vars now *fail* if 0 chars are matched.  Rules which
+#    previously found 0-length matches acceptable should be updated to accept
+#    them explicitly.
+#
+#    2012-03-15 Introduced Include Vars (VarAccept).
+#
 
 Main = GrammarDefn
 
@@ -37,6 +48,7 @@ GrmBit = Whitespace
        | AtomDef
 
 Comment = "#" <comment/"\n"> "\n"
+        | "#\n"
 java: "    //" <comment> "\n"
 pojo: "    //" <comment> "\n"
 

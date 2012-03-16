@@ -71,9 +71,18 @@ public class Var implements Type {
 			if (Parser.Debugging) {
 				// Logger.log("Failed to match var "+name+" with accept="+accept+" and deny="+deny);
 			}
-			if (accept != null && deny == null) {
+			
+			// Originally exclude vars would be valid even if they accepted 0 chars!
+			// Disabling that behaviour did cause some old rules to break, e.g. in
+			//   Comment = "//" <comment/"\n"> "\n"
+			// a 0-length var could be valid.
+			// Such rules may now need to become:
+			//   Comment = "//" <comment/"\n"> "\n" | "//\n"
+			
+			// if (accept != null && deny == null) {
 				return null;
-			}
+			// }
+				
 		}
 		return new Match(this, s.subString(0, most), s.subString(most));
 	}
