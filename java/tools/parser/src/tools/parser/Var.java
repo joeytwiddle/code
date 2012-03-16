@@ -70,9 +70,9 @@ public class Var implements Type {
 			// Failure!
 			if (Parser.Debugging) {
 				// Logger.log("Failed to match var "+name+" with accept="+accept+" and deny="+deny);
-				// if (accept != null && deny == null) {
-					return null;
-				// }
+			}
+			if (accept != null && deny == null) {
+				return null;
 			}
 		}
 		return new Match(this, s.subString(0, most), s.subString(most));

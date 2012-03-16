@@ -2,7 +2,14 @@
 
 name="$1"
 
+info() {
+  echo
+  echo "$@"
+}
+
 cd src/tools/parser || exit 3
+
+info "Parsing grammar $1.grm"
 
 mv "$1Grm.java" "$1Grm.java.b4create"
 # echo "package tools.parser;"
@@ -20,6 +27,8 @@ fi
 diff "$1Grm.java.b4create" "$1Grm.java" | diffhighlight
 
 cd ../../..
+
+info "Building new Java ruleset"
 
 # ./build.sh
 cd src

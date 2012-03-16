@@ -1,7 +1,7 @@
-debug="-debug"
+# debug="-debug"
 
 verbosely ./creategrammar dlang &&
 verbosely jparse $debug dlang spiral.d dintj 2>&1 |
-# tee debug.out
-cat > debug.out
+tee debug.out
+# cat > debug.out
 
