@@ -69,10 +69,14 @@ SpcBit = " " | "\t"
 
 # Note that two AtomDefs without an empty line between them will not parse!
 
-AtomDef = <atomname/"^.<>\n!qt! =!"> " = " Defn OptReplacements NL
-java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
-hugs: "  ( Atom !qt!" <atomname> "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
-pojo: "interface " <atomname> " {\n\n}\n  class AnImplmentation {\n" Defn "  }\n\n"
+# AtomName = <atomname/"^.<>\n!qt! =">
+AtomName = <atomtype/"^.<>\n!qt! +*()!">
+# AtomName = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
+
+AtomDef = AtomName " = " Defn OptReplacements NL
+java: "    ruleset=new RuleSet(!qt!" AtomName "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
+hugs: "  ( Atom !qt!" AtomName "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
+pojo: "interface " AtomName " {\n\n}\n  class AnImplmentation {\n" Defn "  }\n\n"
 
 # Replacements are the lines defining export targets: java, hugs, pojo
 
@@ -177,11 +181,10 @@ java: "        rule.add(new Var(!qt!" <varname> "!qt!,null,!qt!" <accepted> "!qt
 hugs: "VarIncl !qt!" <varname> "!qt! !qt!" <denied> "!qt!"
 pojo: "    String " <varname> ";\n"
 
-# AtomRef = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
-AtomRef = <atomtype/"^.<>\n!qt! +*()">
-java: "        rule.add(new Atom(!qt!" <atomtype> "!qt!));\n"
-hugs: "Atom !qt!" <atomtype> "!qt!"
-pojo: "    " <atomtype> " arg1;\n"
+AtomRef = AtomName
+java: "        rule.add(new Atom(!qt!" AtomName "!qt!));\n"
+hugs: "Atom !qt!" AtomName "!qt!"
+pojo: "    " AtomName " arg1;\n"
 
 # pojo: "  /* Possible " <atomtype> " */\n"
 
