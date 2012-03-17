@@ -43,6 +43,10 @@ hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String
 Grm = GrmBit Grm
     | GrmBit
 
+# Grm = GrmBit+
+
+# TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
+
 GrmBit = Whitespace
        | Comment
        | AtomDef
@@ -65,7 +69,7 @@ SpcBit = " " | "\t"
 
 # Note that two AtomDefs without an empty line between them will not parse!
 
-AtomDef = <atomname/"^.<>\n!qt! ="> " = " Defn OptReplacements NL
+AtomDef = <atomname/"^.<>\n!qt! =!"> " = " Defn OptReplacements NL
 java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
 hugs: "  ( Atom !qt!" <atomname> "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " <atomname> " {\n\n}\n  class AnImplmentation {\n" Defn "  }\n\n"
@@ -79,10 +83,14 @@ java: "    // Replacements\n" Replacements
 Replacements = ManyReplacements
              | Replacement
 
-# Replacements = Replacement+
-
 ManyReplacements = Replacement "\n" Replacements
 hugs: Replacement ",\n" Replacements
+
+# Note that use of + and * make it harder to place things *inbetween* the
+# elements during output (list join), so the above hugs output cannot currently
+# be easily reproduced with + or * as in the new rule below!
+
+# Replacements = ( Replacement "\n" )+
 
 Replacement = <target/"<>\n!qt! :"> ": " Defn
 java: "    rule=new Vector<Type>();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
@@ -98,9 +106,9 @@ DefnBit = RelativeElement
 BasicElement = Variable
              | ActiveReplacement
              | Text
+             | GroupedDefnBits
              | AtomRef
              | Regexp
-             | GroupedDefnBits
              | OptionalElement
              | RepeatElement
              | MagicTokenOfDoom
@@ -117,10 +125,10 @@ MagicTokenOfDoom = "!"
 #   1) If rest of arguments fail, fall back out and try next in parent.
 #   2) If rest of arguments fail, report error and stop parsing!
 
-GroupedDefnBits = "(" OWS DefnBit OWS ")"
-java: "        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n      Vector<Type> rule = new Vector<Type>();\n" DefnBit "        return rule;\n        } }.run() ) );\n"
+GroupedDefnBits = "(" OWS Defn OWS ")"
+java: "        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n          Vector<Type> rule = new Vector<Type>();\n" DefnBit "          return rule;\n        } }.run() ) );\n"
 
-OptionalElement = "[" OWS DefnBit OWS "]"
+OptionalElement = "[" OWS Defn OWS "]"
 
 OptRepeatMarker = OptRepeatMarker2 | ""
 
@@ -169,7 +177,8 @@ java: "        rule.add(new Var(!qt!" <varname> "!qt!,null,!qt!" <accepted> "!qt
 hugs: "VarIncl !qt!" <varname> "!qt! !qt!" <denied> "!qt!"
 pojo: "    String " <varname> ";\n"
 
-AtomRef = <atomtype/"^.<>\n!qt! +*">
+# AtomRef = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
+AtomRef = <atomtype/"^.<>\n!qt! +*()">
 java: "        rule.add(new Atom(!qt!" <atomtype> "!qt!));\n"
 hugs: "Atom !qt!" <atomtype> "!qt!"
 pojo: "    " <atomtype> " arg1;\n"
@@ -187,7 +196,8 @@ WhitespaceBit = "\n" | " " | "\t" | "\r"
 # Whitespace = WhitespaceBit Whitespace
 #            | WhitespaceBit
 
-Whitespace = WhitespaceBit+
+# Whitespace = WhitespaceBit+
+Whitespace = <whitespace~"\n \t\r">
 
 # Optional whitespace:
 
@@ -240,5 +250,8 @@ RegexpBit = "\\" AnyOneChar RegexpBit
 RegexpCharBlock = "\\" AnyOneChar RegexpCharBlock
                 | <regexpcharblock/"]\n"> RegexpCharBlock
                 | ""
+
+
+DummyTestRule = ( AbeosMom )
 
 

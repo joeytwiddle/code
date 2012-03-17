@@ -100,6 +100,32 @@ public class Parser implements ActionListener {
 		
 		Match m = parseString(targets, toparse);
 
+		if (m == null)
+			System.out.println("Failed to match.");
+		else {
+
+			// if (target==null)
+			if (targets.size() == 0)
+				m.render(System.out, "");
+			else {
+				for (int k = 0; k < targets.size(); k++) {
+					String targetcom = (String) targets.get(k);
+					if (targetcom.indexOf(":") == -1)
+						m.render(null, targetcom, System.out);
+					else {
+						String target = JString.before(targetcom, ":");
+						String outfile = JString.after(targetcom, ":");
+						PrintStream out = new PrintStream(new FileOutputStream(
+						      outfile));
+						m.render(null, target, out);
+						out.flush();
+						out.close();
+					}
+				}
+			}
+
+		}
+
 		// System.err.println(" # substrings created: "+SubString.sscnt);
 		// System.err.println("# substrings realised: "+SubString.ssrealedcnt);
 		// System.err.println("               that's: "+(int)(100*SubString.ssrealedcnt/SubString.sscnt)+"%");
@@ -162,33 +188,6 @@ public class Parser implements ActionListener {
 			Profile.start("register");
 			registerAllMatches(m);
 			Profile.stop("register");
-
-			if (m == null)
-				System.out.println("Failed to match.");
-			else {
-
-				// if (target==null)
-				if (targets.size() == 0)
-					m.render(System.out, "");
-				else {
-					for (int k = 0; k < targets.size(); k++) {
-						String targetcom = (String) targets.get(k);
-						if (targetcom.indexOf(":") == -1)
-							m.render(null, targetcom, System.out);
-						else {
-							String target = JString.before(targetcom, ":");
-							String outfile = JString.after(targetcom, ":");
-							PrintStream out = new PrintStream(new FileOutputStream(
-							      outfile));
-							m.render(null, target, out);
-							out.flush();
-							out.close();
-						}
-					}
-				}
-
-			}
-
 		} catch (Exception e) {
 			System.out.println("" + e);
 			e.printStackTrace();

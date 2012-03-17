@@ -86,6 +86,10 @@ public class grmGrm {
     // Replacements
 
 
+    // Grm = GrmBit+
+
+    // TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
+
     ruleset=new RuleSet("GrmBit");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
@@ -173,7 +177,7 @@ public class grmGrm {
     ruleset=new RuleSet("AtomDef");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("atomname","^.<>\n\" ="));
+        rule.add(new Var("atomname","^.<>\n\" =!"));
         rule.add(new Text(" = "));
         rule.add(new Atom("Defn"));
         rule.add(new Atom("OptReplacements"));
@@ -238,8 +242,6 @@ public class grmGrm {
     // Replacements
 
 
-    // Replacements = Replacement+
-
     ruleset=new RuleSet("ManyReplacements");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
@@ -254,6 +256,12 @@ public class grmGrm {
         rule.add(new Atom("Replacements"));
     ruleset.replacements.put("hugs",rule);
 
+
+    // Note that use of + and * make it harder to place things *inbetween* the
+    // elements during output (list join), so the above hugs output cannot currently
+    // be easily reproduced with + or * as in the new rule below!
+
+    // Replacements = ( Replacement "\n" )+
 
     ruleset=new RuleSet("Replacement");
       rulesets.add(ruleset);
@@ -318,13 +326,13 @@ public class grmGrm {
         rule.add(new Atom("Text"));
       ruleset.add(rule);
       rule=new Vector<Type>();
+        rule.add(new Atom("GroupedDefnBits"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
         rule.add(new Atom("AtomRef"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("Regexp"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GroupedDefnBits"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("OptionalElement"));
@@ -361,15 +369,15 @@ public class grmGrm {
       rule=new Vector<Type>();
         rule.add(new Text("("));
         rule.add(new Atom("OWS"));
-        rule.add(new Atom("DefnBit"));
+        rule.add(new Atom("Defn"));
         rule.add(new Atom("OWS"));
         rule.add(new Text(")"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n      Vector<Type> rule = new Vector<Type>();\n"));
+        rule.add(new Text("        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n          Vector<Type> rule = new Vector<Type>();\n"));
         rule.add(new Atom("DefnBit"));
-        rule.add(new Text("        return rule;\n        } }.run() ) );\n"));
+        rule.add(new Text("          return rule;\n        } }.run() ) );\n"));
     ruleset.replacements.put("java",rule);
 
 
@@ -378,7 +386,7 @@ public class grmGrm {
       rule=new Vector<Type>();
         rule.add(new Text("["));
         rule.add(new Atom("OWS"));
-        rule.add(new Atom("DefnBit"));
+        rule.add(new Atom("Defn"));
         rule.add(new Atom("OWS"));
         rule.add(new Text("]"));
       ruleset.add(rule);
@@ -610,10 +618,11 @@ public class grmGrm {
     ruleset.replacements.put("pojo",rule);
 
 
+    // AtomRef = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
     ruleset=new RuleSet("AtomRef");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("atomtype","^.<>\n\" +*"));
+        rule.add(new Var("atomtype","^.<>\n\" +*()"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
@@ -687,11 +696,11 @@ public class grmGrm {
     // Whitespace = WhitespaceBit Whitespace
     //            | WhitespaceBit
 
+    // Whitespace = WhitespaceBit+
     ruleset=new RuleSet("Whitespace");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("WhitespaceBit"));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
+        rule.add(new Var("whitespace",null,"\n \t\r"));
       ruleset.add(rule);
     // Replacements
 
@@ -861,6 +870,18 @@ public class grmGrm {
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+
+
+    ruleset=new RuleSet("DummyTestRule");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){
+          Vector<Type> rule = new Vector<Type>();
+          return rule;
+        } }.run() ) );
       ruleset.add(rule);
     // Replacements
 
