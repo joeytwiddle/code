@@ -579,9 +579,13 @@ public class cGrm {
       rule=new Vector();
         rule.add(new Atom("MDecl"));
         rule.add(new Atom("OptWS"));
+      rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){
+  	   Vector<Type> rule = new Vector<Type>(); 
         rule.add(new Text("{"));
         rule.add(new Atom("Code"));
         rule.add(new Text("}"));
+        return rule;
+        } }.run() ) );
       ruleset.add(rule);
     // Replacements
     rule=new Vector();

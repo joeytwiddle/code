@@ -52,10 +52,12 @@ DLangFileBit = Space DLangFileBit
 
 Comment = "#" <comment/"\n"> "\n"
         | "//" <comment/"\n"> "\n"
+dintj: "//" <comment>
 
 # DLangFileSome = 1 or more DLangFileBits
 # TODO: Parametrised classes (templates)
 ClassDefinition = "class" Space <className/" \n"> ClassMods NL ClassBody
+dintj: "new ClassDefinition(!qt!" className "!qt!, " ClassBody ", !qt!" ClassMods "!qt!)"
 
 ClassMods = Space "extends" Space ClassRef
           | Space "implements" Space ClassRef
@@ -83,11 +85,10 @@ NiceCode = Expression Space "where" Space NiceNEDefs EOL
 NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression
 
-MutableCode = MutableCodeInner
+MutableCode = MutableCodeInner*
 dintj: "new MutableCode([" MutableCodeInner "])"
 
-MutableCodeInner = WS Statement MutableCode
-                 | WS Statement WS
+MutableCodeInner = Statement WS
 
 ArgumentSignatureList = ArgumentSignature MoreArgs
      | ArgumentSignature
@@ -110,6 +111,7 @@ VarName = Identifier
 ClassName = Identifier
 
 VarReference = VarName
+dintj: "new VarReference(!qt!" VarName "!qt!)"
 
 # Could also be called a PrimitiveLiteral
 ConstReference = Number | String
@@ -150,8 +152,10 @@ ExpressionAtom = HorizSpace ExpressionAtom
 FunctionCall = ConstructorCall | RealFunctionCall
 
 RealFunctionCall = VarOrMemberReference "(" ArgumentParameterList ")"
+dintj: "new FunctionCall(!qt!" VarOrMemberReference "!qt!, [" ArgumentParameterList "])"
 
 ConstructorCall = "new" Space RealFunctionCall
+dintj: "new ConstructorCall(" RealFunctionCall ")"
 
 MemberName = VarName
 
@@ -175,7 +179,7 @@ dintj: "new Operation(" ExpressionAtom "," Operator "," Expression ")"
 TerminalAlgebraicOperation = ExpressionAtom OptHorizSpace Operator OptHorizSpace Expression
 
 Operator = OperatorSymbol
-dintj: "new Operator(" OperatorSymbol ")"
+dintj: "new Operator(!qt!" OperatorSymbol "!qt!)"
 
 # We can't do: Constants.getOperator("*") here because not all are defined by
 # default, i.e. there may be an operator with a custom name.  I suppose

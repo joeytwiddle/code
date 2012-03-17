@@ -129,7 +129,12 @@ public class Atom implements Type {
 		
 		Profile.start("Atom.match: Elsewhere");
 		RuleSet rs = Grammar.getrulesetforatom(type);
-		if (Parser.Debugging) {
+		
+		return matchAgainstRuleset(type, this, rs, s);
+	}
+
+	public static Match matchAgainstRuleset(String type, Type realType, RuleSet rs, SomeString s) {
+	   if (Parser.Debugging) {
 			Logger.log(indent()+" Entered atom " + type + " with " + rs.rules.size()
 			      + " rules...");
 		}
@@ -189,7 +194,7 @@ public class Atom implements Type {
 				if (Parser.Debugging) {
 					Logger.log(indent()+" Succeeded: " + rules +" swallows: "+headSome(matchedString)+" ["+matchedString.length()+" chars]");
 				}
-				Match m = new Match(this, matchedString, ms, rest);
+				Match m = new Match(realType, matchedString, ms, rest);
 				Profile.stop("Atom.match: Outside loop");
 				Profile.stop("Atom.match: Elsewhere");
 				return m;
@@ -199,7 +204,7 @@ public class Atom implements Type {
 		}
 		Profile.stop("Atom.match: Elsewhere");
 		return null;
-	}
+   }
 
 	public String toString() {
 		return type;

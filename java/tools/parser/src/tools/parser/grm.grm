@@ -100,7 +100,7 @@ BasicElement = Variable
              | Text
              | AtomRef
              | Regexp
-             | BracketedElement
+             | GroupedDefnBits
              | OptionalElement
              | RepeatElement
              | MagicTokenOfDoom
@@ -117,7 +117,8 @@ MagicTokenOfDoom = "!"
 #   1) If rest of arguments fail, fall back out and try next in parent.
 #   2) If rest of arguments fail, report error and stop parsing!
 
-BracketedElement = "(" OWS Variable OWS ")"
+GroupedDefnBits = "(" OWS DefnBit OWS ")"
+java: "        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n      Vector<Type> rule = new Vector<Type>();\n" DefnBit "        return rule;\n        } }.run() ) );\n"
 
 OptionalElement = "[" OWS DefnBit OWS "]"
 
@@ -183,10 +184,10 @@ pojo: "    /* Matched: !qt!" <text> "!qt! */\n"
 
 WhitespaceBit = "\n" | " " | "\t" | "\r"
 
-Whitespace = WhitespaceBit Whitespace
-           | WhitespaceBit
+# Whitespace = WhitespaceBit Whitespace
+#            | WhitespaceBit
 
-# Whitespace = WhitespaceBit+
+Whitespace = WhitespaceBit+
 
 # Optional whitespace:
 

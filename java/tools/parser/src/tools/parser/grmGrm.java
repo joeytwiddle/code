@@ -324,7 +324,7 @@ public class grmGrm {
         rule.add(new Atom("Regexp"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("BracketedElement"));
+        rule.add(new Atom("GroupedDefnBits"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("OptionalElement"));
@@ -356,16 +356,21 @@ public class grmGrm {
     //   1) If rest of arguments fail, fall back out and try next in parent.
     //   2) If rest of arguments fail, report error and stop parsing!
 
-    ruleset=new RuleSet("BracketedElement");
+    ruleset=new RuleSet("GroupedDefnBits");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("("));
         rule.add(new Atom("OWS"));
-        rule.add(new Atom("Variable"));
+        rule.add(new Atom("DefnBit"));
         rule.add(new Atom("OWS"));
         rule.add(new Text(")"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n      Vector<Type> rule = new Vector<Type>();\n"));
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Text("        return rule;\n        } }.run() ) );\n"));
+    ruleset.replacements.put("java",rule);
 
 
     ruleset=new RuleSet("OptionalElement");
@@ -679,19 +684,17 @@ public class grmGrm {
     // Replacements
 
 
+    // Whitespace = WhitespaceBit Whitespace
+    //            | WhitespaceBit
+
     ruleset=new RuleSet("Whitespace");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("WhitespaceBit"));
-        rule.add(new Atom("Whitespace"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("WhitespaceBit"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
       ruleset.add(rule);
     // Replacements
 
-
-    // Whitespace = WhitespaceBit+
 
     // Optional whitespace:
 
