@@ -174,10 +174,20 @@ public class grmGrm {
 
     // Note that two AtomDefs without an empty line between them will not parse!
 
+    // AtomName = <atomname/"^.<>\n\" =">
+    ruleset=new RuleSet("AtomName");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Var("atomtype","^.<>\n\" +*()!"));
+      ruleset.add(rule);
+    // Replacements
+
+    // AtomName = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
+
     ruleset=new RuleSet("AtomDef");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("atomname","^.<>\n\" =!"));
+        rule.add(new Atom("AtomName"));
         rule.add(new Text(" = "));
         rule.add(new Atom("Defn"));
         rule.add(new Atom("OptReplacements"));
@@ -186,7 +196,7 @@ public class grmGrm {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("    ruleset=new RuleSet(\""));
-        rule.add(new Var("atomname"));
+        rule.add(new Atom("AtomName"));
         rule.add(new Text("\");\n      rulesets.add(ruleset);\n      rule=new Vector<Type>();\n"));
         rule.add(new Atom("Defn"));
         rule.add(new Text("      ruleset.add(rule);\n"));
@@ -196,7 +206,7 @@ public class grmGrm {
 
     rule=new Vector<Type>();
         rule.add(new Text("  ( Atom \""));
-        rule.add(new Var("atomname"));
+        rule.add(new Atom("AtomName"));
         rule.add(new Text("\",[\n    [ "));
         rule.add(new Atom("Defn"));
         rule.add(new Text(" ]\n    ] , [\n"));
@@ -206,7 +216,7 @@ public class grmGrm {
 
     rule=new Vector<Type>();
         rule.add(new Text("interface "));
-        rule.add(new Var("atomname"));
+        rule.add(new Atom("AtomName"));
         rule.add(new Text(" {\n\n}\n  class AnImplmentation {\n"));
         rule.add(new Atom("Defn"));
         rule.add(new Text("  }\n\n"));
@@ -618,28 +628,27 @@ public class grmGrm {
     ruleset.replacements.put("pojo",rule);
 
 
-    // AtomRef = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
     ruleset=new RuleSet("AtomRef");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("atomtype","^.<>\n\" +*()"));
+        rule.add(new Atom("AtomName"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("        rule.add(new Atom(\""));
-        rule.add(new Var("atomtype"));
+        rule.add(new Atom("AtomName"));
         rule.add(new Text("\"));\n"));
     ruleset.replacements.put("java",rule);
 
     rule=new Vector<Type>();
         rule.add(new Text("Atom \""));
-        rule.add(new Var("atomtype"));
+        rule.add(new Atom("AtomName"));
         rule.add(new Text("\""));
     ruleset.replacements.put("hugs",rule);
 
     rule=new Vector<Type>();
         rule.add(new Text("    "));
-        rule.add(new Var("atomtype"));
+        rule.add(new Atom("AtomName"));
         rule.add(new Text(" arg1;\n"));
     ruleset.replacements.put("pojo",rule);
 
