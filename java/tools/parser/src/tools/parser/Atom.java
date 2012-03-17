@@ -127,13 +127,13 @@ public class Atom implements Type {
 			return null;
 		} */
 		
-		Profile.start("Atom.match: Elsewhere");
 		RuleSet rs = Grammar.getrulesetforatom(type);
 		
 		return matchAgainstRuleset(type, this, rs, s);
 	}
 
 	public static Match matchAgainstRuleset(String type, Type realType, RuleSet rs, SomeString s) {
+		Profile.start("Atom.match: Elsewhere");
 	   if (Parser.Debugging) {
 			Logger.log(indent()+" Entered atom " + type + " with " + rs.rules.size()
 			      + " rules...");

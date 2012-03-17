@@ -137,10 +137,7 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("DLangFileBit"));
-        rule.add(new Atom("DLangFileSome"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DLangFileBit"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
       ruleset.add(rule);
     // Replacements
 
@@ -182,8 +179,9 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("//"));
+        rule.add(new Text("\n/*"));
         rule.add(new Var("comment"));
+        rule.add(new Text("*/\n"));
     ruleset.replacements.put("dintj",rule);
 
 
@@ -266,9 +264,9 @@ public class dlangGrm {
     rule=new Vector<Type>();
         rule.add(new Text("new Function(\""));
         rule.add(new Var("fnname"));
-        rule.add(new Text("\","));
+        rule.add(new Text("\", ["));
         rule.add(new Atom("ArgumentSignatureList"));
-        rule.add(new Text(","));
+        rule.add(new Text("], "));
         rule.add(new Atom("FunctionBody"));
         rule.add(new Text(")"));
     ruleset.replacements.put("dintj",rule);
@@ -594,6 +592,10 @@ public class dlangGrm {
 
 
     // TODO: There is no support here for calling the results of expressions (or their members) :F
+    // If it is impossible to replace VarOrMemberReference with Expression because
+    // of infinite recursion, then perhaps OptFinalCall should be available at the
+    // end of any expression (or expression bit), as a postfix, the same way we
+    // dealt with + and * in grm.
 
     ruleset=new RuleSet("FunctionCall");
       rulesets.add(ruleset);
@@ -616,9 +618,9 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("new FunctionCall(\""));
+        rule.add(new Text("new FunctionCall("));
         rule.add(new Atom("VarOrMemberReference"));
-        rule.add(new Text("\", ["));
+        rule.add(new Text(", ["));
         rule.add(new Atom("ArgumentParameterList"));
         rule.add(new Text("])"));
     ruleset.replacements.put("dintj",rule);

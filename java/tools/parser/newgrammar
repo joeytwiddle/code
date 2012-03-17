@@ -42,7 +42,7 @@ chmod u+rw src build bin -R
 gdir="src/tools/parser"
 
 info "Compiling everything, making backup."
-./build.sh
+./build.sh || exit 91
 cp -a "$gdir"/grmGrm.java "$gdir"/grmGrm.java.previous
 
 rm -f "$gdir"/grmGrm.java.2

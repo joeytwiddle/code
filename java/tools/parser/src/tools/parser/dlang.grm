@@ -52,7 +52,7 @@ DLangFileBit = Space DLangFileBit
 
 Comment = "#" <comment/"\n"> "\n"
         | "//" <comment/"\n"> "\n"
-dintj: "//" <comment>
+dintj: "\n/*" <comment> "*/\n"
 
 # DLangFileSome = 1 or more DLangFileBits
 # TODO: Parametrised classes (templates)
@@ -71,7 +71,7 @@ ClassBody = ""
 IndentedDLangBlock = DLangFileSome
 
 FunctionDefinition = <fnname/" ("> "(" ArgumentSignatureList ")" WS "=" WS FunctionBody
-dintj: "new Function(!qt!" <fnname> "!qt!," ArgumentSignatureList "," FunctionBody ")"
+dintj: "new Function(!qt!" <fnname> "!qt!, [" ArgumentSignatureList "], " FunctionBody ")"
 
 FunctionBody = NiceCode | MutableCode
 
@@ -148,11 +148,15 @@ ExpressionAtom = HorizSpace ExpressionAtom
                | ExpressionTerminal
 
 # TODO: There is no support here for calling the results of expressions (or their members) :F
+# If it is impossible to replace VarOrMemberReference with Expression because
+# of infinite recursion, then perhaps OptFinalCall should be available at the
+# end of any expression (or expression bit), as a postfix, the same way we
+# dealt with + and * in grm.
 
 FunctionCall = ConstructorCall | RealFunctionCall
 
 RealFunctionCall = VarOrMemberReference "(" ArgumentParameterList ")"
-dintj: "new FunctionCall(!qt!" VarOrMemberReference "!qt!, [" ArgumentParameterList "])"
+dintj: "new FunctionCall(" VarOrMemberReference ", [" ArgumentParameterList "])"
 
 ConstructorCall = "new" Space RealFunctionCall
 dintj: "new ConstructorCall(" RealFunctionCall ")"
