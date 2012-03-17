@@ -81,8 +81,10 @@ FunctionBody = NiceCode | MutableCode
 ## Should NiceCode demand that it ends neatly with an EOL?
 # FunctionBody = MutableCode
 
-NiceCode = Expression Space "where" Space NiceNEDefs EOL
-         | Expression EOL
+# NiceCode = Expression Space "where" Space NiceNEDefs EOL
+#          | Expression EOL
+
+NiceCode = Expression ( Space "where" Space NiceNEDefs EOL | EOL )
 
 NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression

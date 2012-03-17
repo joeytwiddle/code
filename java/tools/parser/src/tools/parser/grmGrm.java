@@ -400,9 +400,9 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n          Vector<Type> rule = new Vector<Type>();\n"));
+        rule.add(new Text("        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(\"Anonymous\");\n        Vector<Type> rule = new Vector<Type>();\n"));
         rule.add(new Atom("Defn"));
-        rule.add(new Text("          return rule;\n        } }.run() ) );\n"));
+        rule.add(new Text("        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"));
     ruleset.replacements.put("java",rule);
 
 
@@ -898,6 +898,20 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+
+
+    ruleset=new RuleSet("DummyTestRule");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
+          RuleSet ruleset = new RuleSet("Anonymous");
+        Vector<Type> rule = new Vector<Type>();
+        rule.add(new Atom("DummyTestContents"));
+        ruleset.add(rule);
+          return ruleset;
+        } }.run() ) );
+      ruleset.add(rule);
+    // Replacements
 
 
   }

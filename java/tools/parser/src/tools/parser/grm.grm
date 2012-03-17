@@ -145,7 +145,7 @@ MagicTokenOfDoom = "!"
 # Perhaps ! should be renamed . so % can be renamed ! (since it basically means "not").
 
 GroupElement = "(" OWS Defn OWS ")"
-java: "        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n          Vector<Type> rule = new Vector<Type>();\n" Defn "          return rule;\n        } }.run() ) );\n"
+java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" Defn "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
 
 OptionalElement = "[" OWS Defn OWS "]"
 
@@ -269,4 +269,6 @@ RegexpCharBlock = "\\" AnyOneChar RegexpCharBlock
                 | <regexpcharblock/"]\n"> RegexpCharBlock
                 | ""
 
+
+DummyTestRule = ( DummyTestContents )
 

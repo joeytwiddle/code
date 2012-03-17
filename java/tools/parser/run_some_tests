@@ -1,0 +1,10 @@
+set -e
+
+./newgrammar
+
+# ./creategrammar dlang
+# jparse dlang spiral.d
+
+./test_dlang
+
+

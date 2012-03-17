@@ -290,10 +290,16 @@ public class dlangGrm {
     //# Should NiceCode demand that it ends neatly with an EOL?
     // FunctionBody = MutableCode
 
+    // NiceCode = Expression Space "where" Space NiceNEDefs EOL
+    //          | Expression EOL
+
     ruleset=new RuleSet("NiceCode");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("Expression"));
+        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
+          RuleSet ruleset = new RuleSet("Anonymous");
+        Vector<Type> rule = new Vector<Type>();
         rule.add(new Atom("Space"));
         rule.add(new Text("where"));
         rule.add(new Atom("Space"));
@@ -301,8 +307,10 @@ public class dlangGrm {
         rule.add(new Atom("EOL"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("Expression"));
         rule.add(new Atom("EOL"));
+        ruleset.add(rule);
+          return ruleset;
+        } }.run() ) );
       ruleset.add(rule);
     // Replacements
 
