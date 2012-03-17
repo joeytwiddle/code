@@ -133,6 +133,9 @@ public class dlangGrm {
     // Replacements
 
 
+    // DLangFileSome = DLangFileBit DLangFileSome
+    //               | DLangFileBit
+
     ruleset=new RuleSet("DLangFileSome");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
@@ -239,7 +242,7 @@ public class dlangGrm {
 
     // IndentedDLangBlock
 
-    // TODO
+    // TODO: I guess it will be "{" OWS DLangFileSome OWS "}"
     ruleset=new RuleSet("IndentedDLangBlock");
       rulesets.add(ruleset);
       rule=new Vector<Type>();

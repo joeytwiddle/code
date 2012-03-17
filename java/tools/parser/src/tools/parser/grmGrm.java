@@ -314,6 +314,8 @@ public class grmGrm {
     // Replacements
 
 
+    // RelativeElement is only used for output, not matching.
+
     ruleset=new RuleSet("DefnBit");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
@@ -375,6 +377,17 @@ public class grmGrm {
     // But should it be a full commit?  I.e.:
     //   1) If rest of arguments fail, fall back out and try next in parent.
     //   2) If rest of arguments fail, report error and stop parsing!
+
+    // I can envisage another token which might be useful.  Let's call it % for now.
+    // It can be used to mark a force-fail match, e.g. in the following
+    //   cat = % Dog
+    //       | BlackCat | WhiteCat | GreyCat | OtherCat
+    // % Dog means drop out immediately with failure if we match a Dog.  It can be
+    // used a an heuristic in some situations, where we expect a Dog is much more
+    // likely, so generally more efficient to check that than to check all the cats
+    // first.
+
+    // Perhaps ! should be renamed . so % can be renamed ! (since it basically means "not").
 
     ruleset=new RuleSet("GroupElement");
       rulesets.add(ruleset);

@@ -42,8 +42,10 @@ DLangImport = DLangImportProper
 
 DLangImportProper = "import" Space <import/"\n"> "\n"
 
-DLangFileSome = DLangFileBit DLangFileSome
-              | DLangFileBit
+# DLangFileSome = DLangFileBit DLangFileSome
+#               | DLangFileBit
+
+DLangFileSome = DLangFileBit+
 
 # Should it be 0 or more?
 
@@ -67,7 +69,7 @@ ClassBody = ""
 
 # IndentedDLangBlock
 
-# TODO
+# TODO: I guess it will be "{" OWS DLangFileSome OWS "}"
 IndentedDLangBlock = DLangFileSome
 
 FunctionDefinition = <fnname/" ("> "(" ArgumentSignatureList ")" WS "=" WS FunctionBody
