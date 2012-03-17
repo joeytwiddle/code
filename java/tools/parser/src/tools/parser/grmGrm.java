@@ -89,6 +89,7 @@ public class grmGrm {
     // Grm = GrmBit+
 
     // TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
+    // No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
 
     ruleset=new RuleSet("GrmBit");
       rulesets.add(ruleset);
@@ -178,7 +179,7 @@ public class grmGrm {
     ruleset=new RuleSet("AtomName");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("atomtype","^.<>\n\" +*()!"));
+        rule.add(new Var("atomtype","^.<>\n\t\r \"+*()![]{}"));
       ruleset.add(rule);
     // Replacements
 
@@ -272,6 +273,7 @@ public class grmGrm {
     // be easily reproduced with + or * as in the new rule below!
 
     // Replacements = ( Replacement "\n" )+
+    // Replacements = Replacement ( "\n" Replacement )+ | ""
 
     ruleset=new RuleSet("Replacement");
       rulesets.add(ruleset);
@@ -336,7 +338,7 @@ public class grmGrm {
         rule.add(new Atom("Text"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("GroupedDefnBits"));
+        rule.add(new Atom("GroupElement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("AtomRef"));
@@ -374,7 +376,7 @@ public class grmGrm {
     //   1) If rest of arguments fail, fall back out and try next in parent.
     //   2) If rest of arguments fail, report error and stop parsing!
 
-    ruleset=new RuleSet("GroupedDefnBits");
+    ruleset=new RuleSet("GroupElement");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("("));
@@ -386,7 +388,7 @@ public class grmGrm {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){\n          Vector<Type> rule = new Vector<Type>();\n"));
-        rule.add(new Atom("DefnBit"));
+        rule.add(new Atom("Defn"));
         rule.add(new Text("          return rule;\n        } }.run() ) );\n"));
     ruleset.replacements.put("java",rule);
 
@@ -879,18 +881,6 @@ public class grmGrm {
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Text(""));
-      ruleset.add(rule);
-    // Replacements
-
-
-
-    ruleset=new RuleSet("DummyTestRule");
-      rulesets.add(ruleset);
-      rule=new Vector<Type>();
-        rule.add( new GroupedDefn((Vector<Type>) new Runner(){ Object run(){
-          Vector<Type> rule = new Vector<Type>();
-          return rule;
-        } }.run() ) );
       ruleset.add(rule);
     // Replacements
 

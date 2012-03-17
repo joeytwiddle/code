@@ -13,7 +13,7 @@ failandquit() {
   diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java.new | diffhighlight -nm
 
   # Reset to original
-  info "Bad grammar!  Resetting to original"
+  info "Bad grammar!  Restoring original..."
   cp -a "$gdir"/grmGrm.java "$gdir"/grmGrm.java.failed
   cp -a "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
   ./build.sh
