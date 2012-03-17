@@ -707,14 +707,15 @@ public class grmGrm {
     // Whitespace = WhitespaceBit Whitespace
     //            | WhitespaceBit
 
-    // Whitespace = WhitespaceBit+
     ruleset=new RuleSet("Whitespace");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("whitespace",null,"\n \t\r"));
+        rule.add(new Atom("WhitespaceBit"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
       ruleset.add(rule);
     // Replacements
 
+    // Whitespace = <whitespace~"\n \t\r">
 
     // Optional whitespace:
 

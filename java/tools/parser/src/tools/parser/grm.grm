@@ -201,8 +201,8 @@ WhitespaceBit = "\n" | " " | "\t" | "\r"
 # Whitespace = WhitespaceBit Whitespace
 #            | WhitespaceBit
 
-# Whitespace = WhitespaceBit+
-Whitespace = <whitespace~"\n \t\r">
+Whitespace = WhitespaceBit+
+# Whitespace = <whitespace~"\n \t\r">
 
 # Optional whitespace:
 
