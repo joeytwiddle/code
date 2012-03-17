@@ -1034,7 +1034,7 @@ public class cGrm {
 
     ruleset=new RuleSet("SpcBit");
       rulesets.add(ruleset);
-      rule=new Vector();
+      rule=new Vector<Type>();
         rule.add(new Text(" "));
       ruleset.add(rule);
       rule=new Vector();

@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -e
-
 info() {
   echo
   echo "$@"
@@ -12,7 +10,7 @@ failandquit() {
   # Display the problem
   info "Bad grammar!  Here are the first generation differences:"
   #jfcsh "$gdir"/grmGrm.java "$gdir"/grmGrm.java.2
-  diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java.new | diffhighlight
+  diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java.new | diffhighlight -nm
 
   # Reset to original
   info "Bad grammar!  Resetting to original"
@@ -21,7 +19,7 @@ failandquit() {
   ./build.sh
   restored="$?"
 
-  info "Check files $gdir/grmGrm.java.new and $gdir/grm.java.failed"
+  info "Check files $gdir/grmGrm.java.new and $gdir/grmGrm.java.failed"
 
   if [ "$restored" = 0 ]
   then
@@ -50,7 +48,7 @@ cp -a "$gdir"/grmGrm.java "$gdir"/grmGrm.java.previous
 rm -f "$gdir"/grmGrm.java.2
 
 info "Converting grammar into java ruleset"
-jparse grm "$gdir"/grm.grm java "$@" > "$gdir"/grmGrm.java
+jparse grm "$gdir"/grm.grm java "$@" > "$gdir"/grmGrm.java || failandquit
 [ "$?" = 0 ] || failandquit
 if [ "$1" = "debug" ]; then
   edit "$gdir"/grmGrm.java
@@ -58,10 +56,10 @@ fi
 cp "$gdir"/grmGrm.java "$gdir"/grmGrm.java.new
 
 info "Compiling new grammar"
-./build.sh
+./build.sh || failandquit
 
 info "Test: Converting using new grammar"
-jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java
+jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java || failandquit
 if [ "$1" = "debug" ]; then
   edit "$gdir"/grmGrm.java
 fi
@@ -69,14 +67,16 @@ fi
 info "Are they different?"
 set +e
 cmp "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
-jfcsh "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
+echo "Changes are:"
+# diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java | diffhighlight -nm
+JDSCONTEXT="-C2" jdiffsimple "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
 set -e
 
 info "Test: Convert once again"
-./build.sh
+./build.sh || failandquit
 
 info "Creating final ruleset to compare"
-jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java.2
+jparse grm "$gdir"/grm.grm java $@ > "$gdir"/grmGrm.java.2 || failandquit
 if [ "$1" = "debug" ]; then
   edit "$gdir"/grmGrm.java
 fi

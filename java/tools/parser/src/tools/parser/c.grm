@@ -11,7 +11,7 @@ CSrc = CSrcBit CSrc
      | ""
 
 CSrcBit = WS
-	| Special
+        | Special
         | Comment
         | HashCom
         | ClassDecl
@@ -29,7 +29,7 @@ Special = "/*special c*/" EndSpecial
 EndSpecial = <stuff/"/"> ContSpecial
 
 ContSpecial = "/*end special*/"
-	    | "/" EndSpecial
+            | "/" EndSpecial
 
 ##### Simple comments and #commands
 
@@ -45,17 +45,17 @@ EndCom = <stuff/"*"> "*/"
 # they are OK when parsing, since the RHS
 # is only reached when the LHS is satisfied.
 HashCom = "#include " HashIncludeLib OptSpc NL
-				| "#include " HashIncludeFile OptSpc NL
-				| "#def" <more/"\n"> NL
-				| "#ifdef" <more/"\n"> NL
-				| "#" <other/"\n"> NL
+        | "#include " HashIncludeFile OptSpc NL
+        | "#def" <more/"\n"> NL
+        | "#ifdef" <more/"\n"> NL
+        | "#" <other/"\n"> NL
 
 HashIncludeLib = "<" <file/"."> ".c>"
-							 | "<" <file/"."> ".h>"
+               | "<" <file/"."> ".h>"
 h: "<" <file> ".h>"
-  
+
 HashIncludeFile = "!qt!" <file/"."> ".c!qt!"
-								| "!qt!" <file/"."> ".h!qt!"
+                | "!qt!" <file/"."> ".h!qt!"
 h: "!qt!" <file> ".h!qt!"
 
 
@@ -72,8 +72,8 @@ h: OptClassTemplate " class " <name> ";"
 c: "// Class declaration of existence: " <name> "\n"
 
 ClassDefn = TemplateClass
-    			| Class
-			
+          | Class
+
 TemplateClass = ClassTemplate Class
 h: "// Template class appears in original format:\n" ` jlib.strings.FakeOutputStream out=new jlib.strings.FakeOutputStream(); match.render(null,"none",new java.io.PrintStream(out)); return ""+out.store; ` "// End template class\n"
 c: "// Template class must appear in .h file\n"
@@ -92,7 +92,7 @@ ClassMod = "public"
 
 ClassInside = Publicity WS ClassInside
             | CSrcBit ClassInside
-						| ""
+            | ""
 
 Publicity = "public:"
           | "private:"
@@ -198,8 +198,8 @@ OptVarMod = "public"
           | "const"
           | "static"
           | "struct"
-	  | Fillin
-	  | Fillup
+          | Fillin
+          | Fillup
 c: ` String val=match.string.toString(); if ( val.equals("virtual") || val.equals("static") || val.equals("fillin") /* && match.getUp("Class")==null */ ) return ""; else return ""+match.string; `
 
 #          | "fillin"
@@ -282,7 +282,7 @@ OptWS = WS
 
 WS = NL OptWS
    | Comment OptWS
-	 | SpcBit OptWS
+   | SpcBit OptWS
 
 NL = "\r\n"
    | "\n"

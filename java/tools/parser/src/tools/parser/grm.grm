@@ -37,7 +37,7 @@ Main = GrammarDefn
 # java: "package grammars;\n\n" GrammarDefn
 
 GrammarDefn = Grm
-java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector rule;\n\n" Grm "  }\n}\n"
+java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
 hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
 
 Grm = GrmBit Grm
@@ -66,7 +66,7 @@ SpcBit = " " | "\t"
 # Note that two AtomDefs without an empty line between them will not parse!
 
 AtomDef = <atomname/"^.<>\n!qt! ="> " = " Defn OptReplacements NL
-java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
+java: "    ruleset=new RuleSet(!qt!" <atomname> "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
 hugs: "  ( Atom !qt!" <atomname> "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " <atomname> " {\n\n}\n  class AnImplmentation {\n" Defn "  }\n\n"
 
@@ -79,11 +79,13 @@ java: "    // Replacements\n" Replacements
 Replacements = ManyReplacements
              | Replacement
 
+# Replacements = Replacement+
+
 ManyReplacements = Replacement "\n" Replacements
 hugs: Replacement ",\n" Replacements
 
 Replacement = <target/"<>\n!qt! :"> ": " Defn
-java: "    rule=new Vector();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
+java: "    rule=new Vector<Type>();\n" Defn "    ruleset.replacements.put(!qt!" <target> "!qt!,rule);\n"
 hugs: "      ( !qt!" <target> "!qt! , [ " Defn " ] ) "
 
 Defn = DefnOr
@@ -119,10 +121,18 @@ BracketedElement = "(" OWS Variable OWS ")"
 
 OptionalElement = "[" OWS DefnBit OWS "]"
 
-OptRepeatMarker = OptRepeatMarker2
-java: "if (" OptRepeatMarker2 "!=!qt!!qt!) { rule.replace(rule.size()-1, new OptionalMarker(rule.get(rule.size()-1),!qt!" OptRepeatMarker2 "!qt!));\n"
+OptRepeatMarker = OptRepeatMarker2 | ""
 
-OptRepeatMarker2 = "*" | "+" | ""
+OptRepeatMarker2 = OptRepeatMarker3
+java: "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),!qt!" OptRepeatMarker3 "!qt!));\n"
+
+OptRepeatMarker3 = ZeroOrMore | OneOrMore
+
+ZeroOrMore = "*"
+java: "*"
+
+OneOrMore = "+"
+java: "+"
 
 # Too recursive I suspect:
 #RepeatElement = DefnBit "*"
@@ -131,7 +141,7 @@ RepeatElement = "not likely govna"
 # OptionalElement.  Perhaps the sensible way to Parse 
 
 DefnOr = DefnBit Whitespace "|" Whitespace Defn
-java: DefnBit "      ruleset.add(rule);\n      rule=new Vector();\n" Defn
+java: DefnBit "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" Defn
 hugs: DefnBit "] ,\n      [ " Defn
 pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
 
@@ -158,7 +168,7 @@ java: "        rule.add(new Var(!qt!" <varname> "!qt!,null,!qt!" <accepted> "!qt
 hugs: "VarIncl !qt!" <varname> "!qt! !qt!" <denied> "!qt!"
 pojo: "    String " <varname> ";\n"
 
-AtomRef = <atomtype/"^.<>\n!qt! ">
+AtomRef = <atomtype/"^.<>\n!qt! +*">
 java: "        rule.add(new Atom(!qt!" <atomtype> "!qt!));\n"
 hugs: "Atom !qt!" <atomtype> "!qt!"
 pojo: "    " <atomtype> " arg1;\n"
@@ -171,24 +181,26 @@ java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
 hugs: "Str !qt!" <text> "!qt!"
 pojo: "    /* Matched: !qt!" <text> "!qt! */\n"
 
+WhitespaceBit = "\n" | " " | "\t" | "\r"
+
 Whitespace = WhitespaceBit Whitespace
            | WhitespaceBit
 
-WhitespaceBit = "\n"
-              | " "
-              | "\t"
-              | "\r"
+# Whitespace = WhitespaceBit+
 
 # Optional whitespace:
 
-OWS = Whitespace
-    | ""
+# OWS = Whitespace
+#     | ""
+
+OWS = WhitespaceBit*
 
 
 
 # == Experimental Stuff ==
 
-# This might be stable or entirely ignored - I don't know.
+# This is used in c.grm.  It allows for more complex output, but calling the
+# code inside `...`s with the match Object available as a local field.
 
 ActiveReplacement = "`" <java/"`"> "`"
 java: "      rule.add( new ActiveReplacement() { public String replace() { " <java> " } } );\n"
@@ -200,10 +212,10 @@ RelativeElement = RelUp
                 | RelDown
 
 RelUp = Ref "^" BasicElement
-java: "        { Vector realrule=rule; rule=new Vector(); " BasicElement " realrule.add(new RelElement('^'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
+java: "        { Vector realrule=rule; rule=new Vector<Type>(); " BasicElement " realrule.add(new RelElement('^'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
 
 RelDown = Ref "." BasicElement
-java: "        { Vector realrule=rule; rule=new Vector(); " BasicElement " realrule.add(new RelElement('.'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
+java: "        { Vector realrule=rule; rule=new Vector<Type>(); " BasicElement " realrule.add(new RelElement('.'," Ref ",(Type)rule.get(0))); rule=realrule; }\n"
 
 Ref = <ref/" !qt!\n.^">
 java: "!qt!" <ref> "!qt!"

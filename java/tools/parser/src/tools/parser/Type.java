@@ -22,6 +22,8 @@ import jlib.strings.*;
 
 import tools.parser.*;
 
+/** A better name for this interface might be Matchable or MatchableGrammarRule. */
+
 public interface Type {
 	
   Match match(SomeString s);

@@ -28,9 +28,13 @@ public class Match {
 
 	Type type;
 	SomeString string;
-	Vector<Match> matches; // sub-matches making up this one
+	Vector<Match> matches; // sub-matches making up this one, if any (can be null).
 	Match parent; // parent match of which this is a sub-match
 	SomeString left = null; // new RealString("error: left not initialised!");
+
+	/*
+	
+	// Other parts of the code assume left to exist, so hiding these constructors where it doesn't!
 
 	Match(Type t, SomeString s) {
 		type = t;
@@ -43,18 +47,19 @@ public class Match {
 		string = s;
 		matches = ms;
 	}
-
-	Match(Type t, SomeString s, Vector<Match> ms, SomeString ll) {
-		type = t;
-		string = s;
-		matches = ms;
-		left = ll;
-	}
+	*/
 
 	Match(Type t, SomeString s, SomeString ll) {
 		type = t;
 		string = s;
 		matches = null;
+		left = ll;
+	}
+
+	Match(Type t, SomeString s, Vector<Match> ms, SomeString ll) {
+		type = t;
+		string = s;
+		matches = ms;
 		left = ll;
 	}
 
