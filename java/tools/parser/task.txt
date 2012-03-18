@@ -1,0 +1,22 @@
+Establish task.txt framework, whereby you can track todos, and use them as commit messages once the task is complete.
+
+This should allow us to 
+
+Using indentation we can group sub-tasks which are required to complete a larger goal.
+
+Parser:
+
+	Test what happens if you try to use replacements in the new atom types, GroupedElement and OptionalElement.
+
+	What is the solution to e.g. the for structure?  Currently if we try to read the starting value as an expression, we suck in the "to" - we need to somehow stop on that keyword.
+	Easy solution: use parenthesis around the for parameters.
+	Perhaps it can go in the main expression rule as a keyword, so if "to" is ever encountered, it drops out.  (That would need the new "X" rule.)  But that is pretty heavy-handed, most languages allow use of to as a variable!  Consider using .. instead?
+
+DLang:
+
+	Finish generation of dlang objects for interpreter.
+
+		It may be fiddly to insert ","s for the array of statements a function body.  So instead of passing an array, pass some generator code  instead.  Yes, time for another ugly anonymous class wrapper!
+
+
+

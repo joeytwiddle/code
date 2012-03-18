@@ -49,8 +49,7 @@ DLangFileSome = DLangFileBit+
 
 # Should it be 0 or more?
 
-DLangFileBit = Space DLangFileBit
-             | Comment | ClassDefinition | FunctionDefinition | Statement
+DLangFileBit = Statement | NonStatement
 
 Comment = "#" <comment/"\n"> "\n"
         | "//" <comment/"\n"> "\n"
@@ -58,22 +57,23 @@ dintj: "\n/*" <comment> "*/\n"
 
 # DLangFileSome = 1 or more DLangFileBits
 # TODO: Parametrised classes (templates)
-ClassDefinition = "class" Space <className/" \n"> ClassMods NL ClassBody
-dintj: "new ClassDefinition(!qt!" className "!qt!, " ClassBody ", !qt!" ClassMods "!qt!)"
+ClassDefinition = "class" Space <className/" \n"> OptClassMods NL ClassBody
+dintj: "new ClassDefinition(!qt!" className "!qt!, " ClassBody ", !qt!" OptClassMods "!qt!)"
 
-ClassMods = Space "extends" Space ClassRef
+OptClassMods = Space "extends" Space ClassRef
           | Space "implements" Space ClassRef
           | OptHorizSpace
 
 ClassBody = ""
+dintj: "[]"
 
-# IndentedDLangBlock
+# ClassBody = IndentedDLangBlock
 
 # TODO: I guess it will be "{" OWS DLangFileSome OWS "}"
 IndentedDLangBlock = DLangFileSome
 
 FunctionDefinition = <fnname/" ("> "(" ArgumentSignatureList ")" WS "=" WS FunctionBody
-dintj: "new Function(!qt!" <fnname> "!qt!, [" ArgumentSignatureList "], " FunctionBody ")"
+dintj: "new Function(!qt!" <fnname> "!qt!, {" ArgumentSignatureList "}, " FunctionBody ")"
 
 FunctionBody = NiceCode | MutableCode
 
@@ -90,7 +90,7 @@ NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression
 
 MutableCode = MutableCodeInner*
-dintj: "new MutableCode([" MutableCodeInner "])"
+dintj: "new MutableCode({" MutableCodeInner "})"
 
 MutableCodeInner = Statement WS
 
@@ -120,7 +120,9 @@ dintj: "new VarReference(!qt!" VarName "!qt!)"
 # Could also be called a PrimitiveLiteral
 ConstReference = Number | String
 
-Statement = Assignment | Comment | FunctionDefinition | FunctionCall | Loop
+Statement = Assignment | FunctionCall | Loop
+
+NonStatement = Comment | ClassDefinition | FunctionDefinition
 
 Assignment = NormalAssignment
            | SpecialAssignment
@@ -129,7 +131,7 @@ NormalAssignment = VarOrMemberReference OptHorizSpace "=" Expression EOL
 dintj: "new NormalAssignment(" VarOrMemberReference "," Expression ")"
 
 SpecialAssignment = VarOrMemberReference OptHorizSpace SpecialAssignmentOperator Expression EOL
-dintj: "new SpecialAssignment(" VarOrMemberReference "," SpecialAssignmentOperator "," Expression ")"
+dintj: "new SpecialAssignment(" VarOrMemberReference ",!qt!" SpecialAssignmentOperator "!qt!," Expression ")"
 
 SpecialAssignmentOperator = "+=" | "-=" | "*=" | "/="
 
@@ -244,11 +246,13 @@ String = "!qt!" <string/"!qt!"> "!qt!"
 Loop = ForLoop | WhileLoop
 
 ForLoop = "for" Space VarName WS "=" WS LoopRange
+dintj: "new ForLoop(" VarName "," LoopRange ")"
 
 ## TODO: Gah - Expressions don't parse nicely here!  (They swallow the "to" or what?)
 # LoopRange = Expression Space "to" Space Expression
 
 LoopRange = ConstReference Space "to" Space Expression OptStep
+dintj: "new LoopRange(" ConstReference "," Expression ")"
 
 OptStep = WS "step" Space Expression
         | ""

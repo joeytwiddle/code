@@ -71,6 +71,7 @@ public class Match {
 		// return "Match.toString(): gone to render(PrintStream,int)";
 	}
 
+	// @todo Rename this: printParseTree
 	public void render(PrintStream out, String ind) {
 		// System.out.println("Generating Match "+type+" with "+(matches==null?"no match":""+matches.size()));
 		out.print(ind + type + " = " + "\"" + Atom.strip("" + string) + "\"");
@@ -124,6 +125,11 @@ public class Match {
 
 	public void renderIn(Vector<Match> unusedmatches, Type t, String target,
 	      PrintStream out) {
+		// TODO: Do we need all these instanceof checks?  Could we instead
+		// create a common interface each Type to implement, e.g.
+		// Type.renderIn(...) ?
+		//
+		// TODO: I suspect we may want to do some error reporting somewhere here, if the desired replacement is not found.
 		if (t instanceof Text) {
 			out.print(((Text) t).rendertext());
 		} else if (t instanceof RelElement) {

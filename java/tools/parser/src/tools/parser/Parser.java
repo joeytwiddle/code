@@ -105,14 +105,14 @@ public class Parser implements ActionListener {
 		else {
 
 			// if (target==null)
-			if (targets.size() == 0)
+			if (targets.size() == 0) {
 				m.render(System.out, "");
-			else {
+			} else {
 				for (int k = 0; k < targets.size(); k++) {
 					String targetcom = (String) targets.get(k);
-					if (targetcom.indexOf(":") == -1)
+					if (targetcom.indexOf(":") == -1) {
 						m.render(null, targetcom, System.out);
-					else {
+					} else {
 						String target = JString.before(targetcom, ":");
 						String outfile = JString.after(targetcom, ":");
 						PrintStream out = new PrintStream(new FileOutputStream(

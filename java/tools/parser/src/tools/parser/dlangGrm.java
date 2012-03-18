@@ -196,7 +196,7 @@ public class dlangGrm {
         rule.add(new Text("class"));
         rule.add(new Atom("Space"));
         rule.add(new Var("className"," \n"));
-        rule.add(new Atom("ClassMods"));
+        rule.add(new Atom("OptClassMods"));
         rule.add(new Atom("NL"));
         rule.add(new Atom("ClassBody"));
       ruleset.add(rule);
@@ -207,12 +207,12 @@ public class dlangGrm {
         rule.add(new Text("\", "));
         rule.add(new Atom("ClassBody"));
         rule.add(new Text(", \""));
-        rule.add(new Atom("ClassMods"));
+        rule.add(new Atom("OptClassMods"));
         rule.add(new Text("\")"));
     ruleset.replacements.put("dintj",rule);
 
 
-    ruleset=new RuleSet("ClassMods");
+    ruleset=new RuleSet("OptClassMods");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("Space"));
@@ -238,9 +238,12 @@ public class dlangGrm {
         rule.add(new Text(""));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("[]"));
+    ruleset.replacements.put("dintj",rule);
 
 
-    // IndentedDLangBlock
+    // ClassBody = IndentedDLangBlock
 
     // TODO: I guess it will be "{" OWS DLangFileSome OWS "}"
     ruleset=new RuleSet("IndentedDLangBlock");
@@ -267,9 +270,9 @@ public class dlangGrm {
     rule=new Vector<Type>();
         rule.add(new Text("new Function(\""));
         rule.add(new Var("fnname"));
-        rule.add(new Text("\", ["));
+        rule.add(new Text("\", {"));
         rule.add(new Atom("ArgumentSignatureList"));
-        rule.add(new Text("], "));
+        rule.add(new Text("}, "));
         rule.add(new Atom("FunctionBody"));
         rule.add(new Text(")"));
     ruleset.replacements.put("dintj",rule);
@@ -519,9 +522,9 @@ public class dlangGrm {
     rule=new Vector<Type>();
         rule.add(new Text("new SpecialAssignment("));
         rule.add(new Atom("VarOrMemberReference"));
-        rule.add(new Text(","));
+        rule.add(new Text(",\""));
         rule.add(new Atom("SpecialAssignmentOperator"));
-        rule.add(new Text(","));
+        rule.add(new Text("\","));
         rule.add(new Atom("Expression"));
         rule.add(new Text(")"));
     ruleset.replacements.put("dintj",rule);
@@ -1021,6 +1024,12 @@ public class dlangGrm {
         rule.add(new Atom("LoopRange"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("new ForLoop("));
+        rule.add(new Atom("VarName,"));
+        rule.add(new Atom("LoopRange"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
 
 
     //# TODO: Gah - Expressions don't parse nicely here!  (They swallow the "to" or what?)
@@ -1037,6 +1046,13 @@ public class dlangGrm {
         rule.add(new Atom("OptStep"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("new LoopRange("));
+        rule.add(new Atom("ConstReference"));
+        rule.add(new Text(","));
+        rule.add(new Atom("Expression"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
 
 
     ruleset=new RuleSet("OptStep");

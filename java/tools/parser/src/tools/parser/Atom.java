@@ -99,7 +99,7 @@ public class Atom implements Type {
 	
 	*/
 	
-	Atom(String t) {
+	public Atom(String t) {
 		type = t;
 	}
 
