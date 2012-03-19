@@ -66,10 +66,12 @@ fi
 
 info "Are they different?"
 set +e
-cmp "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
-echo "Changes are:"
-# diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java | diffhighlight -nm
-JDSCONTEXT="-C2" jdiffsimple "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
+if ! cmp "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
+then
+  echo "Changes are:"
+  # diff "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java | diffhighlight -nm
+  JDSCONTEXT="-C2" jdiffsimple "$gdir"/grmGrm.java.previous "$gdir"/grmGrm.java
+fi
 set -e
 
 info "Test: Convert once again"

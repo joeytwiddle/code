@@ -118,8 +118,13 @@ BasicElement = Variable
              | AtomRef
              | Regexp
              | OptionalElement
-             | RepeatElement
              | MagicTokenOfDoom
+
+#              | RepeatElement
+
+# CONSIDER: Could be put = BasicElement RepeatMarker | ... at the top?
+# No, again that's inf recursive.  But we could try:
+# BasicElement = BasicElement2 RepeatMarker | BasicElement2
 
 # This might be called "exclusion" in Prolog.  *yawn*
 # If the magic token is reached, none of later options in a DefnBit will be attempted.
@@ -147,26 +152,32 @@ MagicTokenOfDoom = "!"
 GroupElement = "(" OWS Defn OWS ")"
 java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n          RuleSet ruleset = new RuleSet(!qt!Anonymous!qt!);\n        Vector<Type> rule = new Vector<Type>();\n" Defn "        ruleset.add(rule);\n          return ruleset;\n        } }.run() ) );\n"
 
+# Too recursive I suspect:
+#RepeatElement = DefnBit "*"
+# Since RepeatElement was hard to define for "*" and "+", we parse repeat
+# through OptRepeatMarker, a single char after an atom match.
+
 OptionalElement = "[" OWS Defn OWS "]"
 
-OptRepeatMarker = OptRepeatMarker2 | ""
+OptRepeatMarker = RepeatMarker | ""
 
-OptRepeatMarker2 = OptRepeatMarker3
-java: "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),!qt!" OptRepeatMarker3 "!qt!));\n"
+RepeatMarker = RepeatMarker2
+java: "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),!qt!" RepeatMarker2 "!qt!));\n"
 
-OptRepeatMarker3 = ZeroOrMore | OneOrMore
+RepeatMarker2 = ZeroOrMore | OneOrMore
 
 ZeroOrMore = "*"
 java: "*"
+javaB: 0,-1
 
 OneOrMore = "+"
 java: "+"
+javaB: 1,-1
 
-# Too recursive I suspect:
-#RepeatElement = DefnBit "*"
-RepeatElement = "not likely govna"
-# Since RepeatElement was hard to define, I made repeats a part of
-# OptionalElement.  Perhaps the sensible way to Parse 
+ZeroOrOne = OptionalElement
+javaB: 0,1
+
+# javaB: pass min and max rather than symbols
 
 DefnOr = DefnBit Whitespace "|" Whitespace Defn
 java: DefnBit "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" Defn
@@ -180,6 +191,11 @@ hugs: DefnBit ", " Defn
 Variable = Var
          | VarDeny
          | VarAccept
+
+# I think Var is a VarReference - cannot be used for parsing (no terminal
+# condition!) but is used in replacements.
+
+# TODO: Perhaps make it explicit that Var and Re
 
 Var = "<" <varname/"<>\n!qt!/ "> ">"
 java: "        rule.add(new Var(!qt!" <varname> "!qt!));\n"

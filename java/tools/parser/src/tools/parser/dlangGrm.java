@@ -41,7 +41,7 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("DLangHeader"));
-        rule.add(new Atom("DLangFileSome"));
+        rule.add(new Atom("MutableCodeBlock"));
       ruleset.add(rule);
     // Replacements
 
@@ -133,40 +133,7 @@ public class dlangGrm {
     // Replacements
 
 
-    // DLangFileSome = DLangFileBit DLangFileSome
-    //               | DLangFileBit
-
-    ruleset=new RuleSet("DLangFileSome");
-      rulesets.add(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DLangFileBit"));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
-      ruleset.add(rule);
-    // Replacements
-
-
     // Should it be 0 or more?
-
-    ruleset=new RuleSet("DLangFileBit");
-      rulesets.add(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Space"));
-        rule.add(new Atom("DLangFileBit"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ClassDefinition"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("FunctionDefinition"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Statement"));
-      ruleset.add(rule);
-    // Replacements
-
 
     ruleset=new RuleSet("Comment");
       rulesets.add(ruleset);
@@ -188,7 +155,6 @@ public class dlangGrm {
     ruleset.replacements.put("dintj",rule);
 
 
-    // DLangFileSome = 1 or more DLangFileBits
     // TODO: Parametrised classes (templates)
     ruleset=new RuleSet("ClassDefinition");
       rulesets.add(ruleset);
@@ -284,7 +250,7 @@ public class dlangGrm {
         rule.add(new Atom("NiceCode"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("MutableCode"));
+        rule.add(new Atom("MutableCodeBlock"));
       ruleset.add(rule);
     // Replacements
 
@@ -331,7 +297,7 @@ public class dlangGrm {
     // Replacements
 
 
-    ruleset=new RuleSet("MutableCode");
+    ruleset=new RuleSet("MutableCodeBlock");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("MutableCodeInner"));
@@ -339,17 +305,24 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("new MutableCode(["));
+        rule.add(new Text("new MutableCodeBlock({"));
         rule.add(new Atom("MutableCodeInner"));
-        rule.add(new Text("])"));
+        rule.add(new Text("})"));
     ruleset.replacements.put("dintj",rule);
 
+
+    // Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
 
     ruleset=new RuleSet("MutableCodeInner");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
+        rule.add(new Atom("Space"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("NonStatement"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
         rule.add(new Atom("Statement"));
-        rule.add(new Atom("WS"));
       ruleset.add(rule);
     // Replacements
 
@@ -457,6 +430,14 @@ public class dlangGrm {
         rule.add(new Atom("String"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("new ConstReference("));
+        rule.add(new Atom("Number"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("String"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
 
 
     ruleset=new RuleSet("Statement");
@@ -465,16 +446,24 @@ public class dlangGrm {
         rule.add(new Atom("Assignment"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("FunctionDefinition"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
         rule.add(new Atom("FunctionCall"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("Loop"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("NonStatement");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Comment"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("ClassDefinition"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("FunctionDefinition"));
       ruleset.add(rule);
     // Replacements
 
@@ -1026,7 +1015,8 @@ public class dlangGrm {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("new ForLoop("));
-        rule.add(new Atom("VarName,"));
+        rule.add(new Atom("VarName"));
+        rule.add(new Text(","));
         rule.add(new Atom("LoopRange"));
         rule.add(new Text(")"));
     ruleset.replacements.put("dintj",rule);

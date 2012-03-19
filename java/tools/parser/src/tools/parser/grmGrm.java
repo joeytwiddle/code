@@ -352,13 +352,16 @@ public class grmGrm {
         rule.add(new Atom("OptionalElement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("RepeatElement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
         rule.add(new Atom("MagicTokenOfDoom"));
       ruleset.add(rule);
     // Replacements
 
+
+    //              | RepeatElement
+
+    // CONSIDER: Could be put = BasicElement RepeatMarker | ... at the top?
+    // No, again that's inf recursive.  But we could try:
+    // BasicElement = BasicElement2 RepeatMarker | BasicElement2
 
     // This might be called "exclusion" in Prolog.  *yawn*
     // If the magic token is reached, none of later options in a DefnBit will be attempted.
@@ -406,6 +409,11 @@ public class grmGrm {
     ruleset.replacements.put("java",rule);
 
 
+    // Too recursive I suspect:
+    //RepeatElement = DefnBit "*"
+    // Since RepeatElement was hard to define for "*" and "+", we parse repeat
+    // through OptRepeatMarker, a single char after an atom match.
+
     ruleset=new RuleSet("OptionalElement");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
@@ -421,7 +429,7 @@ public class grmGrm {
     ruleset=new RuleSet("OptRepeatMarker");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("OptRepeatMarker2"));
+        rule.add(new Atom("RepeatMarker"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Text(""));
@@ -429,20 +437,20 @@ public class grmGrm {
     // Replacements
 
 
-    ruleset=new RuleSet("OptRepeatMarker2");
+    ruleset=new RuleSet("RepeatMarker");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("OptRepeatMarker3"));
+        rule.add(new Atom("RepeatMarker2"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),\""));
-        rule.add(new Atom("OptRepeatMarker3"));
+        rule.add(new Atom("RepeatMarker2"));
         rule.add(new Text("\"));\n"));
     ruleset.replacements.put("java",rule);
 
 
-    ruleset=new RuleSet("OptRepeatMarker3");
+    ruleset=new RuleSet("RepeatMarker2");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("ZeroOrMore"));
@@ -463,6 +471,10 @@ public class grmGrm {
         rule.add(new Text("*"));
     ruleset.replacements.put("java",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Atom("0,-1"));
+    ruleset.replacements.put("javaB",rule);
+
 
     ruleset=new RuleSet("OneOrMore");
       rulesets.add(ruleset);
@@ -474,18 +486,23 @@ public class grmGrm {
         rule.add(new Text("+"));
     ruleset.replacements.put("java",rule);
 
+    rule=new Vector<Type>();
+        rule.add(new Atom("1,-1"));
+    ruleset.replacements.put("javaB",rule);
 
-    // Too recursive I suspect:
-    //RepeatElement = DefnBit "*"
-    ruleset=new RuleSet("RepeatElement");
+
+    ruleset=new RuleSet("ZeroOrOne");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Text("not likely govna"));
+        rule.add(new Atom("OptionalElement"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Atom("0,1"));
+    ruleset.replacements.put("javaB",rule);
 
-    // Since RepeatElement was hard to define, I made repeats a part of
-    // OptionalElement.  Perhaps the sensible way to Parse 
+
+    // javaB: pass min and max rather than symbols
 
     ruleset=new RuleSet("DefnOr");
       rulesets.add(ruleset);
@@ -549,6 +566,11 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
 
+
+    // I think Var is a VarReference - cannot be used for parsing (no terminal
+    // condition!) but is used in replacements.
+
+    // TODO: Perhaps make it explicit that Var and Re
 
     ruleset=new RuleSet("Var");
       rulesets.add(ruleset);

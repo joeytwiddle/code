@@ -18,7 +18,7 @@
 
 Main = DLangFile
 
-DLangFile = DLangHeader DLangFileSome
+DLangFile = DLangHeader MutableCodeBlock
 
 DLangHeader = DLangModuleBlock DLangImports
 
@@ -42,20 +42,12 @@ DLangImport = DLangImportProper
 
 DLangImportProper = "import" Space <import/"\n"> "\n"
 
-# DLangFileSome = DLangFileBit DLangFileSome
-#               | DLangFileBit
-
-DLangFileSome = DLangFileBit+
-
 # Should it be 0 or more?
-
-DLangFileBit = Statement | NonStatement
 
 Comment = "#" <comment/"\n"> "\n"
         | "//" <comment/"\n"> "\n"
 dintj: "\n/*" <comment> "*/\n"
 
-# DLangFileSome = 1 or more DLangFileBits
 # TODO: Parametrised classes (templates)
 ClassDefinition = "class" Space <className/" \n"> OptClassMods NL ClassBody
 dintj: "new ClassDefinition(!qt!" className "!qt!, " ClassBody ", !qt!" OptClassMods "!qt!)"
@@ -75,7 +67,7 @@ IndentedDLangBlock = DLangFileSome
 FunctionDefinition = <fnname/" ("> "(" ArgumentSignatureList ")" WS "=" WS FunctionBody
 dintj: "new Function(!qt!" <fnname> "!qt!, {" ArgumentSignatureList "}, " FunctionBody ")"
 
-FunctionBody = NiceCode | MutableCode
+FunctionBody = NiceCode | MutableCodeBlock
 
 ## NiceCode swallowed the var from an assignment statement
 ## Should NiceCode demand that it ends neatly with an EOL?
@@ -89,10 +81,12 @@ NiceCode = Expression ( Space "where" Space NiceNEDefs EOL | EOL )
 NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression
 
-MutableCode = MutableCodeInner*
-dintj: "new MutableCode({" MutableCodeInner "})"
+MutableCodeBlock = MutableCodeInner*
+dintj: "new MutableCodeBlock({" MutableCodeInner "})"
 
-MutableCodeInner = Statement WS
+# Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
+
+MutableCodeInner = Space | NonStatement | Statement
 
 ArgumentSignatureList = ArgumentSignature MoreArgs
      | ArgumentSignature
@@ -119,6 +113,7 @@ dintj: "new VarReference(!qt!" VarName "!qt!)"
 
 # Could also be called a PrimitiveLiteral
 ConstReference = Number | String
+dintj: "new ConstReference(" Number | String ")"
 
 Statement = Assignment | FunctionCall | Loop
 
