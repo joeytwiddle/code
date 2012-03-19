@@ -20,24 +20,26 @@
 Main = DLangFile
 
 DLangFile = DLangHeader MutableCodeBlock
+java: "package dlang.parsed;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport dlang.types.*;\n\npublic class DLangFile {\n  public static void build() {\n    \n\n" Grm "  }\n}\n"
 
 # DLangHeader = DLangModuleBlock DLangImports
 
-DLangHeader = [ Comment ] [ DLangModule ] [ Comment ] [ DLangImports ]
+# DLangModuleBlock = Comment DLangModuleBlock
+#                  | Space DLangModuleBlock
+#                  | DLangModule
+#                  | ""
 
-DLangModuleBlock = Comment DLangModuleBlock
-                 | Space DLangModuleBlock
-                 | DLangModule
-                 | ""
+DLangHeader = [ Comment ] [ DLangModule ] [ Comment ] [ DLangImports ]
 
 DLangModule = "package" Space <module/"\n;"> EOL
             | "module" Space <module/"\n;"> EOL
 
 # DLangImports = DLangImport [ DLangImports ]
 
-DLangImports = DLangImport DLangImports
-             | DLangImport
-             | WS
+# Bad defn but gets caught - try it!
+# DLangImports = ( DLangImport | WS )*
+
+DLangImports = ( DLangImport | Space )*
 
 DLangImport = DLangImportProper
             | Comment
@@ -116,7 +118,7 @@ dintj: "new VarReference(!qt!" VarName "!qt!)"
 
 # Could also be called a PrimitiveLiteral
 ConstReference = Number | String
-dintj: "new ConstReference(" Number | String ")"
+dintj: "Constants.getConstRef(" Number String ")"
 
 Statement = Assignment | FunctionCall | Loop
 
@@ -167,7 +169,7 @@ dintj: "new ConstructorCall(" RealFunctionCall ")"
 
 MemberName = VarName
 
-VarOrMemberReference = VarReference "." MemberName
+VarOrMemberReference = VarReference "." VarOrMemberReference
                      | VarReference
 
 #                      | VarName
@@ -187,7 +189,8 @@ dintj: "new Operation(" ExpressionAtom "," Operator "," Expression ")"
 TerminalAlgebraicOperation = ExpressionAtom OptHorizSpace Operator OptHorizSpace Expression
 
 Operator = OperatorSymbol
-dintj: "new Operator(!qt!" OperatorSymbol "!qt!)"
+dintj: "Operators.getOperator(!qt!" OperatorSymbol "!qt!)"
+# dintj: "new Operator(!qt!" OperatorSymbol "!qt!)"
 
 # We can't do: Constants.getOperator("*") here because not all are defined by
 # default, i.e. there may be an operator with a custom name.  I suppose

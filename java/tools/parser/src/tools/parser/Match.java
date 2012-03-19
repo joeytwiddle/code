@@ -125,8 +125,8 @@ public class Match {
 
 	public void renderIn(Vector<Match> unusedmatches, Type t, String target,
 	      PrintStream out) {
-		// TODO: Do we need all these instanceof checks?  Could we instead
-		// create a common interface each Type to implement, e.g.
+		// TODO: Do we need all these instanceof checks?  Couldn't we instead
+		// create a common interface for each Type to implement, e.g.
 		// Type.renderIn(...) ?
 		//
 		// TODO: I suspect we may want to do some error reporting somewhere here, if the desired replacement is not found.

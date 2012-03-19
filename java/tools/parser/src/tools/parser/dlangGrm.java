@@ -45,9 +45,19 @@ public class dlangGrm {
         rule.add(new Atom("MutableCodeBlock"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("package dlang.parsed;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport dlang.types.*;\n\npublic class DLangFile {\n  public static void build() {\n    \n\n"));
+        rule.add(new Atom("Grm"));
+        rule.add(new Text("  }\n}\n"));
+    ruleset.replacements.put("java",rule);
 
 
     // DLangHeader = DLangModuleBlock DLangImports
+
+    // DLangModuleBlock = Comment DLangModuleBlock
+    //                  | Space DLangModuleBlock
+    //                  | DLangModule
+    //                  | ""
 
     ruleset=new RuleSet("DLangHeader");
       rulesets.add(ruleset);
@@ -60,25 +70,6 @@ public class dlangGrm {
         rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));
         rule.add(new Atom("DLangImports"));
         rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));
-      ruleset.add(rule);
-    // Replacements
-
-
-    ruleset=new RuleSet("DLangModuleBlock");
-      rulesets.add(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-        rule.add(new Atom("DLangModuleBlock"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Space"));
-        rule.add(new Atom("DLangModuleBlock"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DLangModule"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
       ruleset.add(rule);
     // Replacements
 
@@ -102,17 +93,23 @@ public class dlangGrm {
 
     // DLangImports = DLangImport [ DLangImports ]
 
+    // Bad defn but gets caught - try it!
+    // DLangImports = ( DLangImport | WS )*
+
     ruleset=new RuleSet("DLangImports");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
+        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
+          RuleSet ruleset = new RuleSet("Anonymous");
+        Vector<Type> rule = new Vector<Type>();
         rule.add(new Atom("DLangImport"));
-        rule.add(new Atom("DLangImports"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("DLangImport"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("WS"));
+        rule.add(new Atom("Space"));
+        ruleset.add(rule);
+          return ruleset;
+        } }.run() ) );
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
       ruleset.add(rule);
     // Replacements
 
@@ -440,10 +437,8 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("new ConstReference("));
+        rule.add(new Text("Constants.getConstRef("));
         rule.add(new Atom("Number"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
         rule.add(new Atom("String"));
         rule.add(new Text(")"));
     ruleset.replacements.put("dintj",rule);
@@ -666,7 +661,7 @@ public class dlangGrm {
       rule=new Vector<Type>();
         rule.add(new Atom("VarReference"));
         rule.add(new Text("."));
-        rule.add(new Atom("MemberName"));
+        rule.add(new Atom("VarOrMemberReference"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("VarReference"));
@@ -747,11 +742,12 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("new Operator(\""));
+        rule.add(new Text("Operators.getOperator(\""));
         rule.add(new Atom("OperatorSymbol"));
         rule.add(new Text("\")"));
     ruleset.replacements.put("dintj",rule);
 
+    // dintj: "new Operator(\"" OperatorSymbol "\")"
 
     // We can't do: Constants.getOperator("*") here because not all are defined by
     // default, i.e. there may be an operator with a custom name.  I suppose

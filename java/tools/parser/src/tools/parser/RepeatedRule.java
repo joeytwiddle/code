@@ -2,6 +2,8 @@ package tools.parser;
 
 import java.util.Vector;
 
+import org.neuralyte.Logger;
+
 import jlib.strings.SomeString;
 
 public class RepeatedRule implements Type {
@@ -53,6 +55,15 @@ public class RepeatedRule implements Type {
 				matches.add(m);
 				charsMatched += m.string.length();
 				if (maxMatches > -1 && matches.size() >= maxMatches) {
+					break;
+				}
+				// @todo If 0 chars were matched, we probably don't want to repeat!
+				// It means the grammar author has foolishly put a 0-length match
+				// inside a * rule!
+				// Otoh it might be legal, e.g. if it's a 0 to 1 match, it will happily break out with "" above.
+				// We only really need to worry if maxMatches == -1.
+				if (m.string.length() == 0 && maxMatches == -1) {
+					Logger.warn("Zero-length match made in unbounded RepeatedRule!  (Contents = "+type+".)  Breaking out of loop.");
 					break;
 				}
 			}

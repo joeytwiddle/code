@@ -35,12 +35,17 @@ cd ../../..
 info "Building new Java ruleset"
 
 # ./build.sh
-cd src
-javac tools/parser/"$1Grm.java"
-success="$?"
-if [ "$success" ]
+# cd src
+# javac tools/parser/"$1Grm.java"
+# success="$?"
+# if [ "$success" ]
+# then
+	# mv -f tools/parser/"$1Grm.class" ../bin/tools/parser/"$1Grm.class"
+if cp src/tools/parser/"$1Grm.java" bin/tools/parser/"$1Grm.java" &&
+	cd bin &&
+	javac tools/parser/"$1Grm.java"
 then
-	mv -f tools/parser/"$1Grm.class" ../bin/tools/parser/"$1Grm.class"
+	echo "New grammar \"$1\" compiled and ready to try!"
 else
 	echo "Failed to compile the new ruleset!"
 	exit 6
