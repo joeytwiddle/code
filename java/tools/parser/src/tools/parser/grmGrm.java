@@ -453,6 +453,10 @@ public class grmGrm {
         rule.add(new Text("]"));
       ruleset.add(rule);
     // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Atom("Defn"));
+        rule.add(new Text("        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n"));
+    ruleset.replacements.put("java",rule);
 
 
     ruleset=new RuleSet("OptRepeatMarker");

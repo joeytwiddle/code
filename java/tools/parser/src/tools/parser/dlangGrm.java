@@ -47,11 +47,19 @@ public class dlangGrm {
     // Replacements
 
 
+    // DLangHeader = DLangModuleBlock DLangImports
+
     ruleset=new RuleSet("DLangHeader");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("DLangModuleBlock"));
+        rule.add(new Atom("Comment"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));
+        rule.add(new Atom("DLangModule"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));
+        rule.add(new Atom("Comment"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));
         rule.add(new Atom("DLangImports"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));
       ruleset.add(rule);
     // Replacements
 

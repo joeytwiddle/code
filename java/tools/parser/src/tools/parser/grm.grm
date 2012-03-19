@@ -187,6 +187,7 @@ java: "        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){\n
 # through OptRepeatMarker, a single char after an atom match.
 
 OptionalElement = "[" OWS Defn OWS "]"
+java: Defn "        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),0,1));\n"
 
 OptRepeatMarker = RepeatMarker | ""
 

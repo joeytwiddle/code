@@ -21,7 +21,9 @@ Main = DLangFile
 
 DLangFile = DLangHeader MutableCodeBlock
 
-DLangHeader = DLangModuleBlock DLangImports
+# DLangHeader = DLangModuleBlock DLangImports
+
+DLangHeader = [ Comment ] [ DLangModule ] [ Comment ] [ DLangImports ]
 
 DLangModuleBlock = Comment DLangModuleBlock
                  | Space DLangModuleBlock
