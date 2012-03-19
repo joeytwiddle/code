@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# echo -n "Redefine the parser's grammar grammar (y/n)? "
+# read X
+# [ "$X" = "y" ] || exit 9
+
 info() {
   echo
   echo "$@"
@@ -30,10 +34,6 @@ failandquit() {
   fi
   exit 4
 }
-
-# echo -n "Redefine the parser's grammar grammar (y/n)? "
-# read X
-# [ "$X" = "y" ] || exit 9
 
 # If CVS leaves files read-only, these can end up being copied into build/ and
 # bin/ and then I can't recompile my grammars and I get annoyed.

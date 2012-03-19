@@ -14,7 +14,8 @@
 #   Shortcuts for hashmaps
 #   Loops
 
-# @OPTION rewrite_meaningful_indentation "{" "}"
+# @IMPORT DExpression "dexpr.grm"
+# @OPTION wrap_meaningful_indentation "{" "}"
 
 Main = DLangFile
 
@@ -238,10 +239,17 @@ Digit = <number~"0123456789">
 
 String = "!qt!" <string/"!qt!"> "!qt!"
 
-Loop = ForLoop | WhileLoop
+Loop = ForNumLoop | ForListLoop | WhileLoop
 
-ForLoop = "for" Space VarName WS "=" WS LoopRange
-dintj: "new ForLoop(" VarName "," LoopRange ")"
+ForNumLoop = "for" Space VarName WS "=" WS LoopRange WS ForBody
+dintj: "new ForNumLoop(" VarName "," LoopRange ")"
+# "{" ForBody "}"
+
+ForListLoop = "for" Space VarName Space "in" Space Expression WS ForBody
+dintj: "new ForListLoop(" VarName "," Expression ")"
+# "{" ForBody "}"
+
+ForBody = MutableCodeBlock
 
 ## TODO: Gah - Expressions don't parse nicely here!  (They swallow the "to" or what?)
 # LoopRange = Expression Space "to" Space Expression

@@ -27,7 +27,8 @@ public class dlangGrm {
     //   Shortcuts for hashmaps
     //   Loops
 
-    // @OPTION rewrite_meaningful_indentation "{" "}"
+    // @IMPORT DExpression "dexpr.grm"
+    // @OPTION wrap_meaningful_indentation "{" "}"
 
     ruleset=new RuleSet("Main");
       rulesets.add(ruleset);
@@ -993,7 +994,10 @@ public class dlangGrm {
     ruleset=new RuleSet("Loop");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("ForLoop"));
+        rule.add(new Atom("ForNumLoop"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("ForListLoop"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("WhileLoop"));
@@ -1001,7 +1005,7 @@ public class dlangGrm {
     // Replacements
 
 
-    ruleset=new RuleSet("ForLoop");
+    ruleset=new RuleSet("ForNumLoop");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("for"));
@@ -1011,15 +1015,50 @@ public class dlangGrm {
         rule.add(new Text("="));
         rule.add(new Atom("WS"));
         rule.add(new Atom("LoopRange"));
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("ForBody"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("new ForLoop("));
+        rule.add(new Text("new ForNumLoop("));
         rule.add(new Atom("VarName"));
         rule.add(new Text(","));
         rule.add(new Atom("LoopRange"));
         rule.add(new Text(")"));
     ruleset.replacements.put("dintj",rule);
+
+    // "{" ForBody "}"
+
+    ruleset=new RuleSet("ForListLoop");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text("for"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("VarName"));
+        rule.add(new Atom("Space"));
+        rule.add(new Text("in"));
+        rule.add(new Atom("Space"));
+        rule.add(new Atom("Expression"));
+        rule.add(new Atom("WS"));
+        rule.add(new Atom("ForBody"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("new ForListLoop("));
+        rule.add(new Atom("VarName"));
+        rule.add(new Text(","));
+        rule.add(new Atom("Expression"));
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
+
+    // "{" ForBody "}"
+
+    ruleset=new RuleSet("ForBody");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("MutableCodeBlock"));
+      ruleset.add(rule);
+    // Replacements
 
 
     //# TODO: Gah - Expressions don't parse nicely here!  (They swallow the "to" or what?)

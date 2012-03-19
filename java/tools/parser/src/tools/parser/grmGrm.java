@@ -14,7 +14,7 @@ public class grmGrm {
     // This grammar defines the file format for a grammar.
     // It can be used to parse .grm files.
     //
-    // Export targets:
+    // Export targets ("replacements"/output types - really need to standardise this term!):
     //
     //   java - output the grammar as a Java RuleSet builder class for Parser.java
     //
@@ -22,19 +22,6 @@ public class grmGrm {
     //
     //   pojo (experimental and fugly) - create a set of bean-like classes to hold grammar atoms in Java
     //
-
-    // TODO:
-    //
-    //   Allow easier definition of repeat and optional elements with + * and [ ... ]
-    //   We could also create more advanced rules with e.g. ( ... ) | ...
-    //
-    //   The Var type is not very powerful.  An anonymous regexp match might be
-    //   preferable.  e.g. /[$@_a-zA-Z][$@_a-zA-Z0-9]*/
-    //
-    //
-    // CONSIDER:
-    //
-    //   Allow Comments without blank lines (inbetween other Atoms / almost anywhere)
 
     // SIGNIFICANT CHANGES:
     //
@@ -44,6 +31,46 @@ public class grmGrm {
     //
     //    2012-03-15 Introduced Include Vars (VarAccept).
     //
+
+    // TESTING:
+    //
+    //   Allow easier definition of repeat and optional elements with + * and [ ... ]
+    //   We could also create more advanced rules with e.g. ( ... ) | ...
+    //
+    // TODO:
+    //
+    //   The Var type is not very powerful.  An anonymous regexp match might be
+    //   preferable.  e.g. /[$@_a-zA-Z][$@_a-zA-Z0-9]*/
+    //
+    // TODO: Provide special marker _ or . in replacements which signify whatever
+    // was matched.  Would allow:
+    //   A = B | C
+    //   out: _
+    // instead of:
+    //   A = B | C
+    //   out: B | C
+    // which is sucky.
+    // We could also provide $1, $2, $3 like Coffescript's, in which case $0 or $_
+    // might be a preferable marker for "all".
+    //
+    // CONSIDER:
+    //
+    //   Done? Allow Comments without blank lines (inbetween other Atoms / almost anywhere)
+    //   TODO? Allow Comments everywhere!  (Inbetween macros, at the end of rule lines, ...)
+    //
+    // CONSIDER: A special grammar rule type which can be given custom decision code
+    // *inside* the grammar, e.g. $(...) where ... contains some text-matching code
+    // (an implementation of the Java parser's Type.match() interface).
+    //
+    // TODO: Allow importing of other grammars.  So that, e.g. the Expression
+    // grammar could be imported by many other grammars.  (It might also be nice if
+    // we could extend the Expression grammar to e.g. CExpression and
+    // JavaScriptExpression, so that we can handle minor differences, presumably by
+    // overwriting existing atoms.)
+    // Importing and extending would differ in that importing will place the grammar
+    // rules into a namespace (so we might refer to JavaExpression.Expression),
+    // whereas extending would bring the rules into the local namespace, so they may
+    // be overridden.
 
     ruleset=new RuleSet("Main");
       rulesets.add(ruleset);
@@ -315,6 +342,8 @@ public class grmGrm {
 
 
     // RelativeElement is only used for output, not matching.
+    // Perhaps we should create DefnBit and OutDefnBit, the latter containing those
+    // few extra rules which can only be used for outputs.
 
     ruleset=new RuleSet("DefnBit");
       rulesets.add(ruleset);
@@ -691,6 +720,17 @@ public class grmGrm {
 
 
     // pojo: "  /* Possible " <atomtype> " */\n"
+
+    // CONSIDER: To avoid this stupid \" marker, we could ensure \" is interpreted
+    // by the Text reader.
+    //
+    // We could also offer TextApos, which would be a '...' string instead of "..."
+    //
+    // Note that TextApos would need a different reader setup (if we adopt the same
+    // as JS and sh, that "s can exist inside a '...' but we then must escape \')
+    //
+    // Introduction of '...' seems unneccessary, and could be saved for something
+    // special!  But replacement of \" with \" seems desirable.
 
     ruleset=new RuleSet("Text");
       rulesets.add(ruleset);
