@@ -59,6 +59,25 @@
 # whereas extending would bring the rules into the local namespace, so they may
 # be overridden.
 
+# CONSIDER: MagicTokenOfDoom could be more powerful than
+# MagicTokenOfEfficiency, in that the former would commit to the current line
+# not just for the current atom but for the whole parse.  So if the line does
+# not match after a MagicTokenOfDoom has been passed, we can display an error
+# "expected <NextToken> but got <remaining_string>".
+#
+# Possible magic tokens:
+#   Taken: * + ( ) [ ] $ = #
+#   Available: ! ^ % & ~ _ - /
+# ^ is light on the eye (except in Lucida), so may be suitable for the most common MagicTokenOfEfficiency.
+# But - _ and ~ are also quite light, and & is friendly and suggestive of continuation
+# ! and ^ are suitable for the DoNotMatch condition.
+# The association of ! with warnings makes it a good candidate for MagicTokenOfDoom.
+# We can also consider different meanings for &, && and &&&.
+
+# TODO: Do we want to demand spaces separate the elements of atom rules?  If
+# so, we should check that this is enforced by the grammar (it should be
+# tightened up), or risk people creating grammars without spaces!
+
 Main = GrammarDefn
 
 # java: "package grammars;\n\n" GrammarDefn

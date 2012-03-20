@@ -62,8 +62,8 @@ ClassDefinition = "class" Space <className/" \n"> OptClassMods NL ClassBody
 dintj: "new ClassDefinition(!qt!" className "!qt!, " ClassBody ", !qt!" OptClassMods "!qt!)"
 
 OptClassMods = Space "extends" Space ClassRef
-          | Space "implements" Space ClassRef
-          | OptHorizSpace
+             | Space "implements" Space ClassRef
+             | OptHorizSpace
 
 ClassBody = ""
 dintj: "[]"
