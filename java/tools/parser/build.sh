@@ -1,3 +1,7 @@
+javaTop="$JPATH/code/java"
+[ -d "$javaTop" ] || javaTop="$HOME/j/code/java"
+export CLASSPATH="$CLASSPATH:$javaTop/jlib/bin:$javaTop/web/CommonUtils/bin:$javaTop/tools/parser/bin"
+
 set -e
 
 rm -rf build/ bin/

@@ -79,7 +79,7 @@ public class grmGrm {
     // "expected <NextToken> but got <remaining_string>".
     //
     // Possible magic tokens:
-    //   Taken: * + ( ) [ ] $ = #
+    //   Taken: * + ( ) [ ] $ = # @
     //   Available: ! ^ % & ~ _ - /
     // ^ is light on the eye (except in Lucida), so may be suitable for the most common MagicTokenOfEfficiency.
     // But - _ and ~ are also quite light, and & is friendly and suggestive of continuation
@@ -125,6 +125,53 @@ public class grmGrm {
       rule=new Vector<Type>();
         rule.add(new Atom("GrmBit"));
         rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("GrmHeaderBit");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("GrmImport"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("GrmOption"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("GrmImport");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text("@IMPORT"));
+        rule.add(new Atom("Whitespace"));
+        rule.add(new Var("intonamespace"," \t\n\r"));
+        rule.add(new Atom("Whitespace"));
+        rule.add(new Text("\""));
+        rule.add(new Var("filename","\"\n"));
+        rule.add(new Text("\""));
+        rule.add(new Atom("NL"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("GrmOption");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text("@OPTION"));
+        rule.add(new Atom("Whitespace"));
+        rule.add(new Var("optname"," \t\n\r"));
+        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
+          RuleSet ruleset = new RuleSet("Anonymous");
+        Vector<Type> rule = new Vector<Type>();
+        rule.add(new Var("arg"," \t\n\r"));
+        rule.add(new Text(" "));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
+        ruleset.add(rule);
+          return ruleset;
+        } }.run() ) );
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
+        rule.add(new Atom("NL"));
       ruleset.add(rule);
     // Replacements
 
@@ -754,6 +801,9 @@ public class grmGrm {
     ruleset=new RuleSet("NL");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
+        rule.add(new Text("\r\n"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
         rule.add(new Text("\n"));
       ruleset.add(rule);
     // Replacements
@@ -806,7 +856,7 @@ public class grmGrm {
     ruleset=new RuleSet("Whitespace");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Var("whitespace",null,"\n \t\r"));
+        rule.add(new Var("whitespace",null," \n\t\r"));
       ruleset.add(rule);
     // Replacements
 

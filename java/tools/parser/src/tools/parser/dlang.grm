@@ -18,8 +18,9 @@
 # This is not exactly minimal, but we'd like a nicer way to access the last
 # element in an array than l[l.length-1]
 
-# @IMPORT DExpression "dexpr.grm"
-# @OPTION wrap_meaningful_indentation "{" "}"
+@OPTION wrap_meaningful_indentation "{" "}"
+
+@IMPORT DExpression "dexpr.grm"
 
 Main = DLangFile
 

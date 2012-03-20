@@ -66,7 +66,7 @@
 # "expected <NextToken> but got <remaining_string>".
 #
 # Possible magic tokens:
-#   Taken: * + ( ) [ ] $ = #
+#   Taken: * + ( ) [ ] $ = # @
 #   Available: ! ^ % & ~ _ - /
 # ^ is light on the eye (except in Lucida), so may be suitable for the most common MagicTokenOfEfficiency.
 # But - _ and ~ are also quite light, and & is friendly and suggestive of continuation
@@ -87,6 +87,12 @@ java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vecto
 hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
 
 Grm = GrmBit*
+
+GrmHeaderBit = GrmImport | GrmOption
+
+GrmImport = "@IMPORT" Whitespace <intonamespace/" \t\n\r"> Whitespace "!qt!" <filename/"!qt!\n"> "!qt!" NL
+
+GrmOption = "@OPTION" Whitespace <optname/" \t\n\r"> ( <arg/" \t\n\r"> " "* )* NL
 
 # TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
 # No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
@@ -277,7 +283,7 @@ pojo: "    /* Matched: !qt!" <text> "!qt! */\n"
 
 
 
-NL = "\n"
+NL = "\r\n" | "\n"
 
 OptSpc = SpcBit OptSpc
        | ""
@@ -290,7 +296,7 @@ WhitespaceBit = "\n" | " " | "\t" | "\r"
 #            | WhitespaceBit
 
 # Whitespace = WhitespaceBit+
-Whitespace = <whitespace~"\n \t\r">
+Whitespace = <whitespace~" \n\t\r">
 
 # Optional whitespace:
 
