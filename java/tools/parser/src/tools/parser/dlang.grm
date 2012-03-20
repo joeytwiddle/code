@@ -13,6 +13,10 @@
 #   Anonymous implementations?  Or first order functions...
 #   Shortcuts for hashmaps
 #   Loops
+#   Define terminator symbol, e.g. "\n" | ";"
+
+# This is not exactly minimal, but we'd like a nicer way to access the last
+# element in an array than l[l.length-1]
 
 # @IMPORT DExpression "dexpr.grm"
 # @OPTION wrap_meaningful_indentation "{" "}"
@@ -259,10 +263,10 @@ ForBody = MutableCodeBlock
 ## TODO: Gah - Expressions don't parse nicely here!  (They swallow the "to" or what?)
 # LoopRange = Expression Space "to" Space Expression
 
-LoopRange = ConstReference Space "to" Space Expression OptStep
+LoopRange = ConstReference Space ( "to" | ".." ) Space Expression OptStep
 dintj: "new LoopRange(" ConstReference "," Expression ")"
 
-OptStep = WS "step" Space Expression
+OptStep = WS ( "step" | "by" ) Space Expression
         | ""
 
 WhileLoop = "while" Space Condition

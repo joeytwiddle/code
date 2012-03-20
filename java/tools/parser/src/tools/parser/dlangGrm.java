@@ -26,6 +26,10 @@ public class dlangGrm {
     //   Anonymous implementations?  Or first order functions...
     //   Shortcuts for hashmaps
     //   Loops
+    //   Define terminator symbol, e.g. "\n" | ";"
+
+    // This is not exactly minimal, but we'd like a nicer way to access the last
+    // element in an array than l[l.length-1]
 
     // @IMPORT DExpression "dexpr.grm"
     // @OPTION wrap_meaningful_indentation "{" "}"
@@ -1073,7 +1077,16 @@ public class dlangGrm {
       rule=new Vector<Type>();
         rule.add(new Atom("ConstReference"));
         rule.add(new Atom("Space"));
+        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
+          RuleSet ruleset = new RuleSet("Anonymous");
+        Vector<Type> rule = new Vector<Type>();
         rule.add(new Text("to"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text(".."));
+        ruleset.add(rule);
+          return ruleset;
+        } }.run() ) );
         rule.add(new Atom("Space"));
         rule.add(new Atom("Expression"));
         rule.add(new Atom("OptStep"));
@@ -1092,7 +1105,16 @@ public class dlangGrm {
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("WS"));
+        rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
+          RuleSet ruleset = new RuleSet("Anonymous");
+        Vector<Type> rule = new Vector<Type>();
         rule.add(new Text("step"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text("by"));
+        ruleset.add(rule);
+          return ruleset;
+        } }.run() ) );
         rule.add(new Atom("Space"));
         rule.add(new Atom("Expression"));
       ruleset.add(rule);

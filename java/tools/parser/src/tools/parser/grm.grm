@@ -35,18 +35,10 @@
 #   out: _
 # instead of:
 #   A = B | C
-#   out: B C
+#   out: B | C
 # which is sucky.
-#
 # We could also provide $1, $2, $3 like Coffescript's, in which case $0 or $_
 # might be a preferable marker for "all".
-#
-# Hmm perhaps we could be cunning and do:
-# dj:: context.add(new FunctionCall($1, $2));
-# where $1 and $2 will be replaced with the actual objects returned by the
-# sub-matches?  Hmm this is not possible atm since Java is not interpreted.
-# If $2 is a repeat type, it should always return a list (except for
-# OptionalElements which would simply be null or not.)
 #
 # CONSIDER:
 #
@@ -75,10 +67,7 @@ GrammarDefn = Grm
 java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
 hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
 
-Grm = GrmBit Grm
-    | GrmBit
-
-# Grm = GrmBit+
+Grm = GrmBit*
 
 # TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
 # No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
@@ -95,13 +84,6 @@ pojo: "    //" <comment> "\n"
 OptComment = Comment | ""
 
 # hugs: "-- " <comment> "\n"
-
-NL = "\n"
-
-OptSpc = SpcBit OptSpc
-       | ""
-
-SpcBit = " " | "\t"
 
 # Note that two AtomDefs without an empty line between them will not parse!
 
@@ -274,13 +256,22 @@ java: "        rule.add(new Text(!qt!" <text> "!qt!));\n"
 hugs: "Str !qt!" <text> "!qt!"
 pojo: "    /* Matched: !qt!" <text> "!qt! */\n"
 
+
+
+NL = "\n"
+
+OptSpc = SpcBit OptSpc
+       | ""
+
+SpcBit = " " | "\t"
+
 WhitespaceBit = "\n" | " " | "\t" | "\r"
 
 # Whitespace = WhitespaceBit Whitespace
 #            | WhitespaceBit
 
-Whitespace = WhitespaceBit+
-# Whitespace = <whitespace~"\n \t\r">
+# Whitespace = WhitespaceBit+
+Whitespace = <whitespace~"\n \t\r">
 
 # Optional whitespace:
 

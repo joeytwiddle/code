@@ -60,10 +60,19 @@ public class Var implements Type {
 			}
 		}
 		else if (deny != null) {
+			/* This method does not scale very well, if some of the deny chars appear far into s or not at all!
 			for (int i = 0; i < deny.length(); i++) {
 				int j = s.indexOf(deny.charAt(i));
 				// System.out.println("Found '"+Atom.strip(""+deny.charAt(i))+"' at "+j+" of "+Atom.strip(""+s));
 				if (j >= 0 && j < most) most = j;
+			}
+			*/
+			for (int i=0;i<s.length();i++) {
+				int found = deny.indexOf(s.charAt(i));
+				if (found >= 0) {
+					most = i;
+					break;
+				}
 			}
 		}
 		if (most == 0) {

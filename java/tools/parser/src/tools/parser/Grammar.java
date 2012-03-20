@@ -4,6 +4,9 @@ import java.util.Vector;
 
 import tools.parser.*;
 
+// @todo Replace the Vector with a Hashtable, so that later atom definitions can
+// overwrite earlier ones.
+
 public class Grammar {
   public static Vector rulesets=new Vector();
   public static RuleSet getrulesetforatom(String type) {

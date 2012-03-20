@@ -98,7 +98,7 @@ public class Parser implements ActionListener {
 			dbdta.setSize(400, 300);
 		}
 		
-		Match m = parseString(targets, toparse);
+		Match m = parseString(toparse);
 
 		if (m == null)
 			System.out.println("Failed to match.");
@@ -176,18 +176,18 @@ public class Parser implements ActionListener {
 	 * 
 	 * At a later date we may act if that is the case, e.g. by returning a null Match.
 	**/
-	public static Match parseString(List<String> targets, String toparse) {
+	public static Match parseString(String toparse) {
 		
 	   Type t = new Atom("Main");
 		Profile.clear();
-		Profile.start("parse");
+		// Profile.start("parse");
 		Match m = null;
 		try {
 			m = t.match(new SubString(toparse));
-			Profile.stop("parse");
-			Profile.start("register");
+			// Profile.stop("parse");
+			// Profile.start("register");
 			registerAllMatches(m);
-			Profile.stop("register");
+			// Profile.stop("register");
 		} catch (Exception e) {
 			System.out.println("" + e);
 			e.printStackTrace();

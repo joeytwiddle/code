@@ -133,13 +133,14 @@ public class Atom implements Type {
 	}
 
 	public static Match matchAgainstRuleset(String type, Type realType, RuleSet rs, SomeString s) {
-		Profile.start("Atom.match: Elsewhere");
+		String profileName = "Atom.matchAgainstRuleset()"; 
+		Profile.start(profileName);
 	   if (Parser.Debugging) {
 			Logger.log(indent()+" Entered atom " + type + " with " + rs.rules.size()
 			      + " rules...");
 		}
 		for (int i = 0; i < rs.rules.size(); i++) {
-			Profile.start("Atom.match: Outside loop");
+//			Profile.start("Atom.match: Outside loop");
 			Vector rules = (Vector) rs.rules.get(i);
 			if (rules.size() == 0) {
 				System.err.println("rulesetforatom(" + type + ") number " + i
@@ -165,13 +166,13 @@ public class Atom implements Type {
 			depth++;
 			path.add(type);
 			for (int j = 0; j < rules.size() && !failure; j++) {
-				Profile.start("Atom.match: Inside loop");
+//				Profile.start("Atom.match: Inside loop");
 				Type t = (Type) rules.get(j);
-				Profile.start("Atom.match: inner inner");
+//				Profile.start("Atom.match: inner inner");
 				// Profile.start(t.getClass().getName()+".match()"); // heavy
 				Match m = t.match(rest);
 				// Profile.stop(t.getClass().getName()+".match()"); // heavy
-				Profile.stop("Atom.match: inner inner");
+//				Profile.stop("Atom.match: inner inner");
 				if (m == null) {
 					failure = true;
 					if (Parser.Debugging) {
@@ -185,7 +186,7 @@ public class Atom implements Type {
 					rest = m.left;
 					// System.out.println("       New: "+strip(left));
 				}
-				Profile.stop("Atom.match: Inside loop");
+//				Profile.stop("Atom.match: Inside loop");
 			}
 			depth--;
 			path.remove(path.size()-1);
@@ -195,14 +196,14 @@ public class Atom implements Type {
 					Logger.log(indent()+" Succeeded: " + rules +" swallows: "+headSome(matchedString)+" ["+matchedString.length()+" chars]");
 				}
 				Match m = new Match(realType, matchedString, ms, rest);
-				Profile.stop("Atom.match: Outside loop");
-				Profile.stop("Atom.match: Elsewhere");
+//				Profile.stop("Atom.match: Outside loop");
+//				Profile.stop("Atom.match: Elsewhere");
 				return m;
 			} else {
 			}
-			Profile.stop("Atom.match: Outside loop");
+//			Profile.stop("Atom.match: Outside loop");
 		}
-		Profile.stop("Atom.match: Elsewhere");
+		Profile.stop(profileName);
 		return null;
    }
 

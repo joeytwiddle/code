@@ -1,6 +1,8 @@
 set -e
 
+rm -rf build/ bin/
 mkdir -p build
+mkdir -p bin
 cp -a src/* build/ || true
 
 cd build
@@ -13,7 +15,7 @@ withalldo javac
 # while read C
 # do mv "$C" ../bin/"$C"
 # done
-
 cd ..
+
 cp -a build/* bin/
 

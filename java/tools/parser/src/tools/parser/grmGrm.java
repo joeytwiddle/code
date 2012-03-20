@@ -105,15 +105,10 @@ public class grmGrm {
       rulesets.add(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("GrmBit"));
-        rule.add(new Atom("Grm"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("GrmBit"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
       ruleset.add(rule);
     // Replacements
 
-
-    // Grm = GrmBit+
 
     // TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
     // No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
@@ -168,37 +163,6 @@ public class grmGrm {
 
 
     // hugs: "-- " <comment> "\n"
-
-    ruleset=new RuleSet("NL");
-      rulesets.add(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text("\n"));
-      ruleset.add(rule);
-    // Replacements
-
-
-    ruleset=new RuleSet("OptSpc");
-      rulesets.add(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("SpcBit"));
-        rule.add(new Atom("OptSpc"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text(""));
-      ruleset.add(rule);
-    // Replacements
-
-
-    ruleset=new RuleSet("SpcBit");
-      rulesets.add(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Text(" "));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Text("\t"));
-      ruleset.add(rule);
-    // Replacements
-
 
     // Note that two AtomDefs without an empty line between them will not parse!
 
@@ -766,6 +730,39 @@ public class grmGrm {
     ruleset.replacements.put("pojo",rule);
 
 
+
+
+    ruleset=new RuleSet("NL");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text("\n"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("OptSpc");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("SpcBit"));
+        rule.add(new Atom("OptSpc"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text(""));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("SpcBit");
+      rulesets.add(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text(" "));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text("\t"));
+      ruleset.add(rule);
+    // Replacements
+
+
     ruleset=new RuleSet("WhitespaceBit");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
@@ -786,15 +783,14 @@ public class grmGrm {
     // Whitespace = WhitespaceBit Whitespace
     //            | WhitespaceBit
 
+    // Whitespace = WhitespaceBit+
     ruleset=new RuleSet("Whitespace");
       rulesets.add(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("WhitespaceBit"));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"+"));
+        rule.add(new Var("whitespace",null,"\n \t\r"));
       ruleset.add(rule);
     // Replacements
 
-    // Whitespace = <whitespace~"\n \t\r">
 
     // Optional whitespace:
 
