@@ -1,3 +1,12 @@
+# Hmm interesting.  This could probably be a valid input.
+#
+# Although the vars do not have terminators, when they are followed immediately
+# by a single-char Text type, that char could be used as the implied
+# terminator.
+#
+# It might be possible for the grm grammar to seek and responds to this
+# pattern, so it needn't be a special case for the Parser.
+
 XML = "<" <type> ">" Inside "</" <type> ">"
     | "<" <type> Param ">" Inside "</" <type> ">"
     | "<" <type> "/>"

@@ -78,6 +78,23 @@
 # so, we should check that this is enforced by the grammar (it should be
 # tightened up), or risk people creating grammars without spaces!
 
+# Efficiency in parsers.  One great inefficiency in our existing system is that
+# often the same matches will be attempted on the same text many times.
+#
+# For example when matching Defn = DefnOr | DefnAnd | DefnBit against a single
+# item, three matches before DefnBit will be made, the first two failing after
+# the match because there are no extra arguments for DefnOr or DefnAnd.
+#
+# Obviously memoing can solve this, which we got for free when we were in
+# Haskell.
+#
+# Alternatively we should structure our grammars in a post-"fix-it" style, e.g.
+#
+#   Defn = DefnBit OptDefnPostAndOr
+#
+# where OptDefnPostAndOr if matched would have to manage the existing
+# translation of DefnBit similarly to how * and [] do now.
+
 Main = GrammarDefn
 
 # java: "package grammars;\n\n" GrammarDefn
@@ -90,22 +107,27 @@ Grm = GrmHeaderBit* GrmBit*
 
 GrmHeaderBit = GrmOption | GrmImport | GrmExtend | Whitespace | Comment
 
-# GrmOption = "@OPTION" Whitespace <optname/" \t\n\r"> ( <arg/" \t\n\r"> " "* )* NL
-GrmOption = "@OPTION" Whitespace <optname/" \t\n\r"> ( OptionArgs | Whitespace | "" ) NL
-java: "    grammar.setOption(!qt!" <optname> "!qt!, { OptionArgs } );\n"
+GrmOption = "@OPTION" HorizSpace <optname/" \t\n\r"> HorizSpace OptOptionArgs NL
+java: "    grammar.setOption_" <optname> "(" OptOptionArgs ");\n"
+## Had trouble referring to grouped atom when OptOptionArgs was inline.
+# java: "    grammar.setOption_" <optname> "(" OptionArgs ");\n"
+## Alternative, less hard-coded into grammar object.
+# java: "    grammar.setOption(!qt!" <optname> "!qt!, { " OptionArgs " } );\n"
+
+OptOptionArgs = ( OptionArgs | HorizSpace | "" )
 
 OptionArgs = MultipleOptionArgs
            | OptionArg
 
-MultipleOptionArgs = OptionArg Whitespace OptionArgs
+MultipleOptionArgs = OptionArg HorizSpace OptionArgs
 java: OptionArg ", " OptionArgs
 
 OptionArg = <arg/" \t\n\r">
 
-GrmImport = "@IMPORT" Whitespace <namespace/" \t\n\r"> Whitespace "!qt!" <filename/"!qt!\n"> "!qt!" NL
+GrmImport = "@IMPORT" HorizSpace <namespace/" \t\n\r"> HorizSpace "!qt!" <filename/"!qt!\n"> "!qt!" NL
 java: "    grammar.importNamespace(!qt!" <namespace> "!qt!,!qt!" <filename> "!qt!);\n"
 
-GrmExtend = "@EXTEND" Whitespace "!qt!" <filename/"!qt!\n"> "!qt!" NL
+GrmExtend = "@EXTEND" HorizSpace "!qt!" <filename/"!qt!\n"> "!qt!" NL
 
 # TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
 # No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
@@ -141,6 +163,7 @@ OptReplacements = "\n" Replacements
 java: "    // Replacements\n" Replacements
 
 Replacements = ManyReplacements
+             | Comment Replacements
              | Replacement
 
 ManyReplacements = Replacement "\n" Replacements
@@ -160,6 +183,15 @@ hugs: "      ( !qt!" <target> "!qt! , [ " Defn " ] ) "
 Defn = DefnOr
      | DefnAnd
      | DefnBit
+
+DefnOr = DefnBit Whitespace "|" Whitespace Defn
+java: DefnBit "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" Defn
+hugs: DefnBit "] ,\n      [ " Defn
+pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
+
+DefnAnd = DefnBit " " Defn
+java: DefnBit Defn
+hugs: DefnBit ", " Defn
 
 # RelativeElement is only used for output, not matching.
 # Perhaps we should create DefnBit and OutDefnBit, the latter containing those
@@ -237,15 +269,6 @@ javaB: 0,1
 
 # javaB: pass min and max rather than symbols
 
-DefnOr = DefnBit Whitespace "|" Whitespace Defn
-java: DefnBit "      ruleset.add(rule);\n      rule=new Vector<Type>();\n" Defn
-hugs: DefnBit "] ,\n      [ " Defn
-pojo: DefnBit "  }\n  class AnotherImplementation {\n" Defn
-
-DefnAnd = DefnBit " " Defn
-java: DefnBit Defn
-hugs: DefnBit ", " Defn
-
 Variable = Var
          | VarDeny
          | VarAccept
@@ -297,6 +320,11 @@ pojo: "    /* Matched: !qt!" <text> "!qt! */\n"
 
 
 NL = "\r\n" | "\n"
+
+# HorizSpace = " " | "\t"
+HorizSpace = <horizspace~" \t">
+
+OptHorizSpace = HorizSpace | ""
 
 OptSpc = SpcBit OptSpc
        | ""

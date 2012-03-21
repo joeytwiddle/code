@@ -36,6 +36,7 @@ public class Parser implements ActionListener {
 	static boolean DebuggingWin = false;
 	static boolean DebuggingText = false;
 	static boolean DebuggingOut = false;
+	static boolean DebugPath = false;
 	public static String all;
 	public static Frame dbf;
 	public static TextArea dbta;
@@ -55,15 +56,17 @@ public class Parser implements ActionListener {
 		if (a.contains("-win", "Show parse window")) {
 			DebuggingWin = true;
 		}
-		if (a.contains("-debugwin", "Show debug window")) {
-			Debugging = true;
-			DebuggingWin = true;
-			DebuggingText = true;
-		}
 		if (a.contains("-debug", "Write debug data to stdout")) {
 			Debugging = true;
 			DebuggingText = true;
 			DebuggingOut = true;
+			DebugPath = true;
+		}
+		if (a.contains("-debugwin", "Show debug window")) {
+			Debugging = true;
+			DebuggingWin = true;
+			DebuggingText = true;
+			DebugPath = true;
 		}
 		String grammar = a.get("grammar");
 		String file = a.get("file to parse");
@@ -86,6 +89,7 @@ public class Parser implements ActionListener {
 			dbdta = new TextArea("");
 			dbdta.setEditable(false);
 			dbdta.setSelectionStart(0);
+			// dbdta.setColumns(20);
 			dbb = new Button("Start/Stop");
 			dbb.addActionListener(p);
 			dbf = new Frame();
@@ -98,7 +102,8 @@ public class Parser implements ActionListener {
 			dbdta.setSize(400, 300);
 		}
 		
-		Match m = parseString(toparse);
+		ParseContext ctx = new ParseContext();
+		Match m = parseString(toparse, ctx);
 
 		if (m == null)
 			System.out.println("Failed to match.");
@@ -156,6 +161,9 @@ public class Parser implements ActionListener {
 				System.err.println("Did match up to "
 						+ JString.lineChar(toparse, m.left + ""));
 			}
+			if (ctx.closestFailure != null) {
+				System.err.println("At furthest reach, "+ctx.closestFailure);
+			}
 
 			String profReport = Profile.reportInHTML();
 			PrintStream profOut = new PrintStream(new FileOutputStream(new File(
@@ -175,10 +183,10 @@ public class Parser implements ActionListener {
 	 * parsed.
 	 * 
 	 * At a later date we may act if that is the case, e.g. by returning a null Match.
+	 * @param ctx 
 	**/
-	public static Match parseString(String toparse) {
+	public static Match parseString(String toparse, ParseContext ctx) {
 		
-		ParseContext ctx = new ParseContext();
 	   Type t = new Atom("Main");
 		Profile.clear();
 		// Profile.start("parse");

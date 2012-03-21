@@ -91,6 +91,23 @@ public class grmGrm {
     // so, we should check that this is enforced by the grammar (it should be
     // tightened up), or risk people creating grammars without spaces!
 
+    // Efficiency in parsers.  One great inefficiency in our existing system is that
+    // often the same matches will be attempted on the same text many times.
+    //
+    // For example when matching Defn = DefnOr | DefnAnd | DefnBit against a single
+    // item, three matches before DefnBit will be made, the first two failing after
+    // the match because there are no extra arguments for DefnOr or DefnAnd.
+    //
+    // Obviously memoing can solve this, which we got for free when we were in
+    // Haskell.
+    //
+    // Alternatively we should structure our grammars in a post-"fix-it" style, e.g.
+    //
+    //   Defn = DefnBit OptDefnPostAndOr
+    //
+    // where OptDefnPostAndOr if matched would have to manage the existing
+    // translation of DefnBit similarly to how * and [] do now.
+
     ruleset=new RuleSet("Main");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
@@ -151,34 +168,48 @@ public class grmGrm {
     // Replacements
 
 
-    // GrmOption = "@OPTION" Whitespace <optname/" \t\n\r"> ( <arg/" \t\n\r"> " "* )* NL
     ruleset=new RuleSet("GrmOption");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("@OPTION"));
-        rule.add(new Atom("Whitespace"));
+        rule.add(new Atom("HorizSpace"));
         rule.add(new Var("optname"," \t\n\r"));
+        rule.add(new Atom("HorizSpace"));
+        rule.add(new Atom("OptOptionArgs"));
+        rule.add(new Atom("NL"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("    grammar.setOption_"));
+        rule.add(new Var("optname"));
+        rule.add(new Text("("));
+        rule.add(new Atom("OptOptionArgs"));
+        rule.add(new Text(");\n"));
+    ruleset.replacements.put("java",rule);
+
+    //# Had trouble referring to grouped atom when OptOptionArgs was inline.
+    // java: "    grammar.setOption_" <optname> "(" OptionArgs ");\n"
+    //# Alternative, less hard-coded into grammar object.
+    // java: "    grammar.setOption(\"" <optname> "\", { " OptionArgs " } );\n"
+
+    ruleset=new RuleSet("OptOptionArgs");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
         rule.add( new GroupedDefn((RuleSet) new Runner(){ Object run(){
           RuleSet ruleset = new RuleSet("Anonymous");
         Vector<Type> rule = new Vector<Type>();
         rule.add(new Atom("OptionArgs"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("Whitespace"));
+        rule.add(new Atom("HorizSpace"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Text(""));
         ruleset.add(rule);
           return ruleset;
         } }.run() ) );
-        rule.add(new Atom("NL"));
       ruleset.add(rule);
     // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("    grammar.setOption(\""));
-        rule.add(new Var("optname"));
-        rule.add(new Text("\", { OptionArgs } );\n"));
-    ruleset.replacements.put("java",rule);
 
 
     ruleset=new RuleSet("OptionArgs");
@@ -196,7 +227,7 @@ public class grmGrm {
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("OptionArg"));
-        rule.add(new Atom("Whitespace"));
+        rule.add(new Atom("HorizSpace"));
         rule.add(new Atom("OptionArgs"));
       ruleset.add(rule);
     // Replacements
@@ -219,9 +250,9 @@ public class grmGrm {
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("@IMPORT"));
-        rule.add(new Atom("Whitespace"));
+        rule.add(new Atom("HorizSpace"));
         rule.add(new Var("namespace"," \t\n\r"));
-        rule.add(new Atom("Whitespace"));
+        rule.add(new Atom("HorizSpace"));
         rule.add(new Text("\""));
         rule.add(new Var("filename","\"\n"));
         rule.add(new Text("\""));
@@ -241,7 +272,7 @@ public class grmGrm {
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Text("@EXTEND"));
-        rule.add(new Atom("Whitespace"));
+        rule.add(new Atom("HorizSpace"));
         rule.add(new Text("\""));
         rule.add(new Var("filename","\"\n"));
         rule.add(new Text("\""));
@@ -379,6 +410,10 @@ public class grmGrm {
         rule.add(new Atom("ManyReplacements"));
       ruleset.add(rule);
       rule=new Vector<Type>();
+        rule.add(new Atom("Comment"));
+        rule.add(new Atom("Replacements"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
         rule.add(new Atom("Replacement"));
       ruleset.add(rule);
     // Replacements
@@ -443,6 +478,55 @@ public class grmGrm {
         rule.add(new Atom("DefnBit"));
       ruleset.add(rule);
     // Replacements
+
+
+    ruleset=new RuleSet("DefnOr");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Atom("Whitespace"));
+        rule.add(new Text("|"));
+        rule.add(new Atom("Whitespace"));
+        rule.add(new Atom("Defn"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Text("      ruleset.add(rule);\n      rule=new Vector<Type>();\n"));
+        rule.add(new Atom("Defn"));
+    ruleset.replacements.put("java",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Text("] ,\n      [ "));
+        rule.add(new Atom("Defn"));
+    ruleset.replacements.put("hugs",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Text("  }\n  class AnotherImplementation {\n"));
+        rule.add(new Atom("Defn"));
+    ruleset.replacements.put("pojo",rule);
+
+
+    ruleset=new RuleSet("DefnAnd");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Text(" "));
+        rule.add(new Atom("Defn"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Atom("Defn"));
+    ruleset.replacements.put("java",rule);
+
+    rule=new Vector<Type>();
+        rule.add(new Atom("DefnBit"));
+        rule.add(new Text(", "));
+        rule.add(new Atom("Defn"));
+    ruleset.replacements.put("hugs",rule);
 
 
     // RelativeElement is only used for output, not matching.
@@ -641,55 +725,6 @@ public class grmGrm {
 
     // javaB: pass min and max rather than symbols
 
-    ruleset=new RuleSet("DefnOr");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-        rule.add(new Atom("Whitespace"));
-        rule.add(new Text("|"));
-        rule.add(new Atom("Whitespace"));
-        rule.add(new Atom("Defn"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-        rule.add(new Text("      ruleset.add(rule);\n      rule=new Vector<Type>();\n"));
-        rule.add(new Atom("Defn"));
-    ruleset.replacements.put("java",rule);
-
-    rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-        rule.add(new Text("] ,\n      [ "));
-        rule.add(new Atom("Defn"));
-    ruleset.replacements.put("hugs",rule);
-
-    rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-        rule.add(new Text("  }\n  class AnotherImplementation {\n"));
-        rule.add(new Atom("Defn"));
-    ruleset.replacements.put("pojo",rule);
-
-
-    ruleset=new RuleSet("DefnAnd");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-        rule.add(new Text(" "));
-        rule.add(new Atom("Defn"));
-      ruleset.add(rule);
-    // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-        rule.add(new Atom("Defn"));
-    ruleset.replacements.put("java",rule);
-
-    rule=new Vector<Type>();
-        rule.add(new Atom("DefnBit"));
-        rule.add(new Text(", "));
-        rule.add(new Atom("Defn"));
-    ruleset.replacements.put("hugs",rule);
-
-
     ruleset=new RuleSet("Variable");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
@@ -879,6 +914,26 @@ public class grmGrm {
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Text("\n"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    // HorizSpace = " " | "\t"
+    ruleset=new RuleSet("HorizSpace");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Var("horizspace",null," \t"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("OptHorizSpace");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("HorizSpace"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Text(""));
       ruleset.add(rule);
     // Replacements
 

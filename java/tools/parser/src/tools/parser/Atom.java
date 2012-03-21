@@ -169,7 +169,14 @@ public class Atom implements Type {
 				Type t = (Type) rules.get(j);
 //				Profile.start("Atom.match: inner inner");
 				// Profile.start(t.getClass().getName()+".match()"); // heavy
+				if (Parser.DebugPath) {
+					ctx.path.add(t);
+					Parser.dbdta.setText( "" + ctx.path );
+				}
 				Match m = t.match(rest, ctx);
+				if (Parser.DebugPath) {
+					ctx.path.remove(ctx.path.size() - 1);
+				}
 				// Profile.stop(t.getClass().getName()+".match()"); // heavy
 //				Profile.stop("Atom.match: inner inner");
 				if (m == null) {
@@ -179,6 +186,10 @@ public class Atom implements Type {
 						      + headSome(s) + "..";
 						Logger.log(indent()+" "+lastFailure);
 					}
+					int charsRemaining = rest.length();
+					if (charsRemaining < ctx.closestToEnd) {
+						ctx.closestFailure = "Failed to match "+t+", argument "+(j+1)+" of "+type;
+					}
 				} else {
 					ms.add(m);
 					// System.out.println("  Original: "+strip(left));
@@ -186,6 +197,10 @@ public class Atom implements Type {
 					// System.out.println("       New: "+strip(left));
 				}
 //				Profile.stop("Atom.match: Inside loop");
+				if (Parser.DebuggingWin) {
+					Parser.doing(Parser.all.length() - s.length(), Parser.all.length() - rest.length());
+					// try { Thread.sleep(2); } catch (Exception e) { }
+				}
 			}
 			depth--;
 			path.remove(path.size()-1);

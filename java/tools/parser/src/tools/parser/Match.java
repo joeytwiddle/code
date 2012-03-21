@@ -126,11 +126,14 @@ public class Match {
 
 	public void renderIn(Vector<Match> unusedmatches, Type t, String target,
 	      PrintStream out) {
+		
 		// TODO: Do we need all these instanceof checks?  Couldn't we instead
 		// create a common interface for each Type to implement, e.g.
 		// Type.renderIn(...) ?
-		//
-		// TODO: I suspect we may want to do some error reporting somewhere here, if the desired replacement is not found.
+
+		// TODO: I suspect we may want to do some error reporting somewhere here,
+		// if the desired replacement is not found.
+		
 		if (t instanceof Text) {
 			out.print(((Text) t).rendertext());
 		} else if (t instanceof RelElement) {
@@ -161,6 +164,11 @@ public class Match {
 				}
 			}
 		}
+		
+		// TODO: If we have an Atom, we may want to descend into ()s []s *s and
+		// +s, in case the replacement refers to atoms which appear to the in the
+		// "flat" definition, but are actually hidden inside these types.
+		
 		// out.print("\n<Match.renderIn failed "+t+" on \n"+this+">");
 	}
 
