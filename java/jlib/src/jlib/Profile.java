@@ -153,7 +153,7 @@ public class Profile {
     return ((Long)modes.get(key)).longValue();
   }
 
-  public static String report() {
+  public static String reportInHTML() {
    if (profilingOn) {
 //    stop();
     time=new Date().getTime();

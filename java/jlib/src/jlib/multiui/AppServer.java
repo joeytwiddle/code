@@ -3,8 +3,8 @@ package jlib.multiui;
 import jlib.JString;
 
 import java.lang.String;
-import javax.servlet.*;
-import javax.servlet.http.*;
+// import javax.servlet.*;
+// import javax.servlet.http.*;
 import java.applet.*;
 import java.util.Random;
 import java.io.*;
@@ -18,7 +18,7 @@ import jlib.*;
 import jlib.db.*;
 
 
-import appserver.*;
+// import appserver.*;
 
 public interface AppServer {
 	public void moveToPage(Page p);

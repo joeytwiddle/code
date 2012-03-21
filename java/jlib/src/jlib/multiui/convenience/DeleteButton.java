@@ -9,21 +9,19 @@ import javax.swing.*;
 import javax.swing.text.*;
 import javax.swing.text.html.*;
 import jlib.*;
-
-
+import jlib.multiui.Button;
 
 public class DeleteButton extends Button {
 
-	public Vector vector;
+    public Vector vector;
 
-  public DeleteButton(String t,Vector v,Object o) {
-		text=t;
-    carry=o;
-		vector=v;
-  }
+    public DeleteButton(String t, Vector v, Object o) {
+        text = t;
+        carry = o;
+        vector = v;
+    }
 
-	public void action() {
-		vector.remove(carry);
-	}
-
+    public void action() {
+        vector.remove(carry);
+    }
 }
