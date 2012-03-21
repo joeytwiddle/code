@@ -50,16 +50,26 @@ public class ActiveReplacement implements /*Replacement*/Type {
 	   return null;
    }
 
-	public void render(List um,Match btwyourdadis,String t,PrintStream out) {
+   /*
+	public void render(List um, Match btwyourdadis, String t, PrintStream out) {
 		try {
-		unusedmatches=um;
-		match=btwyourdadis;
-		target=t;
-		out.print(replace());
+			// unusedmatches is not currently used, but was used by a commented out
+			// rule in c.grm
+			unusedmatches = um;
+			match = btwyourdadis;
+			target = t;
+			out.print(replace());
 		} catch (Exception e) {
 			// System.err.println("( ActiveReplacement: "+this+": "+e+" )");
-/*			e.printStackTrace(); */
+			// e.printStackTrace();
 		}
 	}
+	*/
+
+	public void renderMatchAs(Match match, String target, PrintStream out) {
+		this.match = match;
+		this.target = target;
+		out.print(replace());
+   }
 	
 }

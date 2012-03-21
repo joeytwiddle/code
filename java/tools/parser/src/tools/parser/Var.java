@@ -9,6 +9,7 @@ package tools.parser;
  * www.cs.bris.ac.uk/~pclark / www.changetheworld.org.uk
  */
 
+import java.io.PrintStream;
 import java.lang.*;
 import java.util.*;
 
@@ -107,4 +108,15 @@ public class Var implements Type {
 		}
 		return false;
 	}
+	
+	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
+		Match m = parentMatch.grabUnusedMatchMatching(this);
+		if (m == null) {
+			Logger.error("Could not find match for "+this+" in "+parentMatch);
+			return;
+		}
+		out.print( Parser.decode(m.string.toString()) );
+   }
+
+	
 }

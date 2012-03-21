@@ -1,6 +1,9 @@
 package tools.parser;
 
+import java.io.PrintStream;
 import java.util.Vector;
+
+import org.neuralyte.Logger;
 
 import jlib.strings.SomeString;
 
@@ -35,9 +38,16 @@ public class GroupedDefn implements Type {
 	// @Override
    public boolean replacementfor(Type o) {
 	   // TODO Auto-generated method stub
-	   return false;
+	   return o instanceof GroupedDefn;
    }
 
-	
-	
+	// @Override
+   public String toString() {
+	   return "(" + ruleset + ")";
+   }
+
+	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
+		Logger.error("Never expected to enter this method!");
+   }
+
 }

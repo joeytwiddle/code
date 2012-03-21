@@ -1,5 +1,6 @@
 package tools.parser;
 
+import java.io.PrintStream;
 import java.util.Vector;
 
 import org.neuralyte.Logger;
@@ -73,22 +74,31 @@ public class RepeatedRule implements Type {
 		}
 		SomeString matchedStr = strIn.subString(0, charsMatched);
 		// @todo I want to replace type with this, but then grm.grm fails to build!
-		Match repeatedMatch = new Match(type, matchedStr, matches, togo);
-		// Logger.debug("Created repeat match "+repeatedMatch+" length "+matches.size()+" with type "+type+" with this="+this);
+		Match repeatedMatch = new Match(this, matchedStr, matches, togo);
+		Logger.debug("Created repeat match "+repeatedMatch+" length "+matches.size()+" with type "+type+" with this="+this);
 		return repeatedMatch;
 	}
 
 	// @Override
 	public boolean replacementfor(Type o) {
-		// TODO Auto-generated method stub
-		return false;
+		return o instanceof RepeatedRule;
 	}
 
 	@Override
    public String toString() {
-	   return "[ " + type + " ]"; 
+		if (minMatches == 0 && maxMatches == 1) {
+			return "[" + type + "]";
+		} else {
+			String regexpRepeatDescriber =
+				minMatches == 0 && maxMatches == -1 ? "*"
+				: minMatches == 1 && maxMatches == -1 ? "+"
+				: "{"+minMatches+","+(maxMatches==-1?"":maxMatches)+"}";
+		   return type+regexpRepeatDescriber;
+		}
    }
-	
-	
+
+	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
+		Logger.error("Never expected to enter this method!");
+   }
 
 }

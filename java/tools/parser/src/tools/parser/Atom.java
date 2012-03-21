@@ -11,6 +11,7 @@ package tools.parser;
 
 import jlib.Profile;
 
+import java.io.PrintStream;
 import java.lang.*;
 import java.util.*;
 
@@ -255,6 +256,19 @@ public class Atom implements Type {
 	   int lastchar = s.length() < 40 ? s.length() : 40;
 	   String head = StringUtils.escapeSpecialChars(s.substring(0, lastchar));
 	   return head;
+   }
+
+	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
+		Match m = parentMatch.grabUnusedMatchMatching(this);
+		if (m == null) {
+			// Logger.error("Could not find match for "+this+" in "+parentMatch);
+			// This is pretty much allowed. Grammar authors can put a lot of atoms
+			// in a replacement rule, since the ruleset may have collapsed in a
+			// number of different ways; only those which were present in the final
+			// match will be renderered.
+			return;
+		}
+		m.render(parentMatch, target, out);
    }
 
 }

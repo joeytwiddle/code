@@ -6,6 +6,7 @@ package tools.parser;
    Paul "Joey" Clark, hacking for humanity, Feb 99
    www.cs.bris.ac.uk/~pclark / www.changetheworld.org.uk */
 
+import java.io.PrintStream;
 import java.lang.*;
 import java.util.*;
 
@@ -27,5 +28,5 @@ import tools.parser.*;
 public interface Type extends ReplacementType {
 	
   Match match(SomeString s, ParseContext ctx);
-  
+
 }

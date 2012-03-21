@@ -33,6 +33,7 @@ public class Match {
 	Vector<Match> matches; // sub-matches making up this one, if any (can be null).
 	Match parent; // parent match of which this is a sub-match
 	SomeString left = null; // new RealString("error: left not initialised!");
+	private Vector<Match> unusedMatches;
 
 	/*
 	
@@ -105,20 +106,52 @@ public class Match {
 	/** render needs to learn to deal with RelElements. **/
 	public void render(Match btwyourdadis, String target, PrintStream out) {
 		if (parent == null) parent = btwyourdadis;
-		Atom a = (Atom) type;
-		ParseContext ctx = new ParseContext();   /** @todo Should be passed in! **/
-		RuleSet ruleset = Grammar.getrulesetforatom(a.type, ctx);
-		Object tmp = ruleset.replacements.get(target);
-		// if (tmp!=null || target.length()==0)
-		// if (tmp==null)
-		// return "";
-		Vector rs = (tmp == null ? rulefrommatch() : (Vector) tmp);
-		// out.print("    // Rendering "+Atom.strip(""+this)+" against "+rs+"\n";
-		// out.print("    // Rendering "+a.type+": "+rs+"\n";
-		Vector<Match> unusedmatches = (Vector<Match>) matches.clone();
-		for (int i = 0; i < rs.size(); i++) {
-			Type t = (Type) rs.get(i);
-			renderIn(unusedmatches, t, target, out);
+
+		Vector<Type> replacementRule = null;
+		
+		// Find the replacement rule for this type, if possible
+		if (type instanceof Atom) {
+			Atom a = (Atom) type;
+			ParseContext ctx = new ParseContext();   /** @todo Should be passed in! **/
+			RuleSet ruleset = Grammar.getrulesetforatom(a.type, ctx);
+			replacementRule = ruleset.replacements.get(target);
+		}
+			
+		if (replacementRule == null) {
+
+			// If there is no replacement ruleset, we just render every sub-match.
+			// They may have their own replacement rules.
+			
+			if (matches == null) {
+				
+				// Logger.warn("No sub matches for "+this);
+				// So far I have only seen this for Vars and ""
+				out.print( this.string.toString() );
+				
+			} else {
+
+				for (int i=0; i<matches.size();i++) {
+					Match m = matches.get(i);
+					m.render(this, target, out);
+				}
+
+			}
+			
+		} else {
+
+			// if (tmp!=null || target.length()==0)
+			// if (tmp==null)
+			// return "";
+			// Vector rs = (tmp == null ? rulefrommatch() : (Vector) tmp);
+			// out.print("    // Rendering "+Atom.strip(""+this)+" against "+rs+"\n";
+			// out.print("    // Rendering "+a.type+": "+rs+"\n";
+			Vector<Match> unusedmatches = (Vector<Match>) matches.clone();
+			for (int i = 0; i < replacementRule.size(); i++) {
+				Type t = (Type) replacementRule.get(i);
+				// renderIn(unusedmatches, t, target, out);
+				t.renderMatchAs(this, target, out);
+			}
+
 		}
 	}
 
@@ -127,7 +160,28 @@ public class Match {
 		render(null, target, new PrintStream(out));
 		return out.store.toString();
 	}
+	
+	public Vector<Match> getUnusedMatches() {
+		if (this.unusedMatches == null) {
+			this.unusedMatches = (Vector<Match>) matches.clone();
+		}
+		return unusedMatches;
+	}
+	
+	public Match grabUnusedMatchMatching(Type t) {
+		Vector<Match> unused = getUnusedMatches();
+		for (int i=0;i<unused.size();i++) {
+			Match m = unused.get(i);
+			// if (m.type.equals(t)) {
+			if (t.replacementfor(m.type)) {
+				unused.remove(i);
+				return m;
+			}
+		}
+		return null;
+	}
 
+	/*
 	public void renderIn(Vector<Match> unusedmatches, Type outType, String target,
 	      PrintStream out) {
 		
@@ -135,11 +189,13 @@ public class Match {
 		// create a common interface for each Type to implement, e.g.
 		// Type.renderIn(...) ?
 
-		// TODO: I suspect we may want to do some error reporting somewhere here,
-		// if the desired replacement is not found.
+		// I suspect we may want to do some error reporting somewhere here,
+		// if the desired replacement is not found.  (Done a bit.)
 
 		// TODO: use ReplacementType interface:
-		// outType.render(unusedmatches, this, target, out);
+		//   outType.render(unusedmatches, this, target, out);
+		// or just:
+		//   outType.render(this, target, out);
 		
 		if (outType instanceof Text) {
 			out.print(((Text)outType).rendertext());
@@ -149,7 +205,12 @@ public class Match {
 			((ActiveReplacement)outType).render(unusedmatches, this, target, out);
 		} else if (outType instanceof ArgReplacement) {
 			((ArgReplacement)outType).render(unusedmatches, this, target, out);
+		
 		} else {
+			
+			// Some replacements are simply references to matched atoms
+			// For each replacement, we must find which matched atom it refers to.
+			
 			for (int j = 0; j < unusedmatches.size(); j++) {
 				// for (int j=0;j<matches.size();j++) {
 				// Match m=(Match)matches.get(j);
@@ -174,14 +235,18 @@ public class Match {
 					break;
 				}
 			}
+
 		}
-		
+
+		// outType.renderMatchAs(this, target, out);
+
 		// TODO: If we have an Atom, we may want to descend into ()s []s *s and
 		// +s, in case the replacement refers to atoms which appear to the in the
 		// "flat" definition, but are actually hidden inside these types.
 		
 		// out.print("\n<Match.renderIn failed "+t+" on \n"+this+">");
 	}
+	 */
 
 	/**
 	 * At the moment only Atom searching is possible. Variable searching could be

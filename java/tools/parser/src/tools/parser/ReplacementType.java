@@ -1,5 +1,7 @@
 package tools.parser;
 
+import java.io.PrintStream;
+
 /* It is a bit fiddly to make our replacement rules use this instead of a normal Type, but they should! */
 
 public interface ReplacementType {
@@ -19,5 +21,7 @@ public interface ReplacementType {
 	   * and maybe even conditionals for optionals, e.g. $2 ? $2 : "null"
 	  **/
 	  boolean replacementfor(Type o);
-	  
+
+	  void renderMatchAs(Match parentMatch, String target, PrintStream out);
+
 }
