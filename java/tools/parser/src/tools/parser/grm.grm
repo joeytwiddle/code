@@ -83,16 +83,29 @@ Main = GrammarDefn
 # java: "package grammars;\n\n" GrammarDefn
 
 GrammarDefn = Grm
-java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Vector rulesets=Grammar.rulesets;\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
+java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
 hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
 
-Grm = GrmBit*
+Grm = GrmHeaderBit* GrmBit*
 
-GrmHeaderBit = GrmImport | GrmOption
+GrmHeaderBit = GrmOption | GrmImport | GrmExtend | Whitespace | Comment
 
-GrmImport = "@IMPORT" Whitespace <intonamespace/" \t\n\r"> Whitespace "!qt!" <filename/"!qt!\n"> "!qt!" NL
+# GrmOption = "@OPTION" Whitespace <optname/" \t\n\r"> ( <arg/" \t\n\r"> " "* )* NL
+GrmOption = "@OPTION" Whitespace <optname/" \t\n\r"> ( OptionArgs | Whitespace | "" ) NL
+java: "    grammar.setOption(!qt!" <optname> "!qt!, { OptionArgs } );\n"
 
-GrmOption = "@OPTION" Whitespace <optname/" \t\n\r"> ( <arg/" \t\n\r"> " "* )* NL
+OptionArgs = MultipleOptionArgs
+           | OptionArg
+
+MultipleOptionArgs = OptionArg Whitespace OptionArgs
+java: OptionArg ", " OptionArgs
+
+OptionArg = <arg/" \t\n\r">
+
+GrmImport = "@IMPORT" Whitespace <namespace/" \t\n\r"> Whitespace "!qt!" <filename/"!qt!\n"> "!qt!" NL
+java: "    grammar.importNamespace(!qt!" <namespace> "!qt!,!qt!" <filename> "!qt!);\n"
+
+GrmExtend = "@EXTEND" Whitespace "!qt!" <filename/"!qt!\n"> "!qt!" NL
 
 # TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
 # No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
@@ -117,7 +130,7 @@ AtomName = <atomtype/"^.<>\n\t\r !qt!+*()![]{}">
 # AtomName = <atomtype~"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_">
 
 AtomDef = AtomName " = " Defn OptReplacements NL
-java: "    ruleset=new RuleSet(!qt!" AtomName "!qt!);\n      rulesets.add(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
+java: "    ruleset=new RuleSet(!qt!" AtomName "!qt!);\n      grammar.addRuleset(ruleset);\n      rule=new Vector<Type>();\n" Defn "      ruleset.add(rule);\n" OptReplacements "\n"
 hugs: "  ( Atom !qt!" AtomName "!qt!,[\n    [ " Defn " ]\n    ] , [\n" OptReplacements "\n  ] ) ,\n"
 pojo: "interface " AtomName " {\n\n}\n  class AnImplmentation {\n" Defn "  }\n\n"
 

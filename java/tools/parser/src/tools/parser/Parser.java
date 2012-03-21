@@ -157,7 +157,7 @@ public class Parser implements ActionListener {
 						+ JString.lineChar(toparse, m.left + ""));
 			}
 
-			String profReport = Profile.report();
+			String profReport = Profile.reportInHTML();
 			PrintStream profOut = new PrintStream(new FileOutputStream(new File(
 			"/tmp/jparse_profile.html")));
 			profOut.print(profReport);

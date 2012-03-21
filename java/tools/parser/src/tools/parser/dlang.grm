@@ -18,7 +18,7 @@
 # This is not exactly minimal, but we'd like a nicer way to access the last
 # element in an array than l[l.length-1]
 
-@OPTION wrap_meaningful_indentation "{" "}"
+# @OPTION wrap_meaningful_indentation "{" "}"
 
 @IMPORT DExpression "dexpr.grm"
 
@@ -173,6 +173,26 @@ ConstructorCall = "new" Space RealFunctionCall
 dintj: "new ConstructorCall(" RealFunctionCall ")"
 
 MemberName = VarName
+
+# Could be renamed: CompoundReference
+#
+# NOTE: The dot (".") dereference "operator" may conflict with the general
+# customizable "." operator.
+# Unless we specify that the dereferencer may not be surrounded by space,
+# whilst general operators may.
+#
+# TODO: Both when calling functions, and making assignments, the target may be
+# the result of any expression, although for assignments it must end in a var
+# or property or indexed item, no?
+#
+#   e.g. field1.getCows( \(cow) -> cow.age < 2 ).health++;
+#
+#   but not field1.getCows( \(cow) -> cow.age < 2 ) = Farm.getFreshCowList();
+#
+# Better to create instead TargettableReference for assignments, and ensure it ends in a property/varref.
+#
+# FunctionCall is difficult to parse, if we say the fn can be an expression.
+# Hmm...  maybe not so hard, we must just check for () in/after Expression matches.
 
 VarOrMemberReference = VarReference "." VarOrMemberReference
                      | VarReference
