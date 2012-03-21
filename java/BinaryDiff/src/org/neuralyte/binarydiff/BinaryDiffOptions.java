@@ -28,8 +28,8 @@ public class BinaryDiffOptions {
 
     //// For the outputter, depends on numBytesForRawBlockLength
     // int MAX_BEFORE_FLUSH = 65536 / 2 - 2; // withing range of short; @todo could be expanded to 65535
-    // int MAX_BEFORE_FLUSH = 65535; // withing range of short
-    int MAX_BEFORE_FLUSH = 255; // withing range of byte (because we only use 1 byte to specify the number of raw bytes to copy)
+    // int MAX_BEFORE_FLUSH = 65535; // within range of short
+    int MAX_BEFORE_FLUSH = 255; // within range of byte (because we only use 1 byte to specify the number of raw bytes to copy)
 
     // int MAX_EXPANSION_LENGTH = 256*256*256*256 / 2 - 2; // within range of int
     // int MAX_EXPANSION_LENGTH = 256*256 / 2 - 2; // within range of short
