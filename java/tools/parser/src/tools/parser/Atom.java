@@ -173,6 +173,9 @@ public class Atom implements Type {
 					ctx.path.add(t);
 					Parser.dbdta.setText( "" + ctx.path );
 				}
+				// @todo Perhaps we should ask ctx.parser to do the match here.
+				// By going through one central function for all match attempts, it
+				// would be easier to implement match caching.
 				Match m = t.match(rest, ctx);
 				if (Parser.DebugPath) {
 					ctx.path.remove(ctx.path.size() - 1);
@@ -188,7 +191,8 @@ public class Atom implements Type {
 					}
 					int charsRemaining = rest.length();
 					if (charsRemaining < ctx.closestToEnd) {
-						ctx.closestFailure = "Failed to match "+t+", argument "+(j+1)+" of "+type;
+						ctx.closestToEnd = charsRemaining;
+						ctx.closestFailure = "Failed to match "+t+", argument "+(j+1)+" of "+type+" against "+headSome(s)+" to form "+ctx.path;
 					}
 				} else {
 					ms.add(m);

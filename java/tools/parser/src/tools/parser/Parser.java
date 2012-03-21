@@ -100,6 +100,15 @@ public class Parser implements ActionListener {
 			dbf.add(dbb);
 			dbf.setVisible(true);
 			dbdta.setSize(400, 300);
+
+			try {
+				// visualjava.VisualJava.showObject(dbf);
+				Class< ? > argTypes = Object.class;
+				Class.forName("visualjava.VisualJava").getMethod("showObject", argTypes ).invoke(null, dbdta);
+			} catch (Exception e) {
+				org.neuralyte.Logger.error(e);
+			}
+			
 		}
 		
 		ParseContext ctx = new ParseContext();

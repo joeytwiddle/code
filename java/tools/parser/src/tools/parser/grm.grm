@@ -86,14 +86,23 @@
 # the match because there are no extra arguments for DefnOr or DefnAnd.
 #
 # Obviously memoing can solve this, which we got for free when we were in
-# Haskell.
+# Haskell.  We could set up our own cache to catch common/likely repeats or all
+# repeats.  (E.g. it would not be too hard to detect possible repeat atoms in a
+# single ruleset, and decide to cache just them, but harder if the repeats are
+# in sub-atoms, though they could be caught by caching every match!)
+# Failed matches could also be cached.  Some failures are fast, some not.
 #
-# Alternatively we should structure our grammars in a post-"fix-it" style, e.g.
+# Alternatively we should structure our grammars in an ugly post-"fix-it"
+# style, e.g.
 #
 #   Defn = DefnBit OptDefnPostAndOr
 #
 # where OptDefnPostAndOr if matched would have to manage the existing
 # translation of DefnBit similarly to how * and [] do now.
+#
+# OptDefnPostAndOr = DefnPostOr | DefnPostAnd | ""
+# DefnPostOr = "|" Defn
+# DefnPostAnd = Defn
 
 Main = GrammarDefn
 

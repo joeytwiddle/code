@@ -158,6 +158,8 @@ public class Match {
 						// target.length()==0)) {
 						out.print(Parser.decode("" + m.string));
 						// We don't expect two vars the same!
+					} else {
+						
 					}
 					unusedmatches.remove(j);
 					break;
