@@ -41,10 +41,10 @@ public class ActiveReplacement implements /*Replacement*/Type {
 	}
 
 	public boolean replacementfor(Type o) {
-		return true;
+		return o instanceof ActiveReplacement;
 	}
 
-	@Override
+	// @Override
    public Match match(SomeString s, ParseContext ctx) {
 	   JLib.error("ActiveReplacement.match(): Not supposed to try to match, should be for replacements only");
 	   return null;

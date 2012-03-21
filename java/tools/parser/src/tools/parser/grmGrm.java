@@ -5,7 +5,7 @@ import java.util.Vector;
 
 import tools.parser.*;
 
-public class grmGrm {
+public class grmGrm extends GrammarHelper {
   public static void setupgrammar() {
     Grammar grammar = new Grammar();
     RuleSet ruleset;
@@ -99,14 +99,23 @@ public class grmGrm {
     // the match because there are no extra arguments for DefnOr or DefnAnd.
     //
     // Obviously memoing can solve this, which we got for free when we were in
-    // Haskell.
+    // Haskell.  We could set up our own cache to catch common/likely repeats or all
+    // repeats.  (E.g. it would not be too hard to detect possible repeat atoms in a
+    // single ruleset, and decide to cache just them, but harder if the repeats are
+    // in sub-atoms, though they could be caught by caching every match!)
+    // Failed matches could also be cached.  Some failures are fast, some not.
     //
-    // Alternatively we should structure our grammars in a post-"fix-it" style, e.g.
+    // Alternatively we should structure our grammars in an ugly post-"fix-it"
+    // style, e.g.
     //
     //   Defn = DefnBit OptDefnPostAndOr
     //
     // where OptDefnPostAndOr if matched would have to manage the existing
     // translation of DefnBit similarly to how * and [] do now.
+    //
+    // OptDefnPostAndOr = DefnPostOr | DefnPostAnd | ""
+    // DefnPostOr = "|" Defn
+    // DefnPostAnd = Defn
 
     ruleset=new RuleSet("Main");
       grammar.addRuleset(ruleset);
@@ -125,7 +134,7 @@ public class grmGrm {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
+        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
         rule.add(new Atom("Grm"));
         rule.add(new Text("  }\n}\n"));
     ruleset.replacements.put("java",rule);
@@ -536,7 +545,7 @@ public class grmGrm {
     ruleset=new RuleSet("DefnBit");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("RelativeElement"));
+        rule.add(new Atom("ReplacementElement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("BasicElement"));
@@ -545,13 +554,24 @@ public class grmGrm {
     // Replacements
 
 
+    ruleset=new RuleSet("ReplacementElement");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("ArgReplacement"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("RelativeElement"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("ActiveReplacement"));
+      ruleset.add(rule);
+    // Replacements
+
+
     ruleset=new RuleSet("BasicElement");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("Variable"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("ActiveReplacement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("Text"));
@@ -1084,6 +1104,20 @@ public class grmGrm {
         rule.add(new Text("\""));
         rule.add(new Var("ref"));
         rule.add(new Text("\""));
+    ruleset.replacements.put("java",rule);
+
+
+    ruleset=new RuleSet("ArgReplacement");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text("$"));
+        rule.add(new Var("num",null,"0123456789_"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("        rule.add( new ArgReplacement("));
+        rule.add(new Var("num"));
+        rule.add(new Text(") );\n"));
     ruleset.replacements.put("java",rule);
 
 

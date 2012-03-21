@@ -26,13 +26,13 @@ public class GroupedDefn implements Type {
    }
    */
 
-	@Override
+	// @Override
    public Match match(SomeString s, ParseContext ctx) {
 		String type = "AnonymousType";
 	   return Atom.matchAgainstRuleset(type, this, ruleset, s, ctx);
    }
 
-	@Override
+	// @Override
    public boolean replacementfor(Type o) {
 	   // TODO Auto-generated method stub
 	   return false;

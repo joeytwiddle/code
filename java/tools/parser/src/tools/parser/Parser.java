@@ -30,6 +30,8 @@ import jlib.Profile;
 // import jlib.JReflect;
 import java.lang.reflect.*;
 
+import org.neuralyte.Logger;
+
 public class Parser implements ActionListener {
 
 	static boolean Debugging = false;
@@ -78,6 +80,10 @@ public class Parser implements ActionListener {
 		// target=null; // ( argv.length<3 ? null : argv[2]);
 		a.done();
 
+		// Since this app writes meaningful data on stdout, we will send log
+		// messages elsewhere.
+		Logger.outputStream = System.err;
+		
 		Parser p = new Parser();
 		p.setupgrammar(grammar);
 		String toparse = Files.readStringfromfile(file);
@@ -120,7 +126,7 @@ public class Parser implements ActionListener {
 
 			// if (target==null)
 			if (targets.size() == 0) {
-				m.render(System.out, "");
+				m.printParseTree(System.out, "");
 			} else {
 				for (int k = 0; k < targets.size(); k++) {
 					String targetcom = (String) targets.get(k);

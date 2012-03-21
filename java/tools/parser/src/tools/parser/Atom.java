@@ -126,7 +126,15 @@ public class Atom implements Type {
 			Logger.error("Breaking out because depth="+depth);
 			return null;
 		} */
+		
+		// The ruleset could be locally cached, or even loaded in a post-load
+		// stage, but what it can't be is loaded on instantiation, because the
+		// grammar is not complete at that time.
 		RuleSet rs = Grammar.getrulesetforatom(type, ctx);
+
+		if (rs == null) {
+			throw new Error("Failed to find ruleset for atom type \""+type+"\"");
+		}
 		
 		return matchAgainstRuleset(type, this, rs, s, ctx);
 	}
@@ -159,7 +167,7 @@ public class Atom implements Type {
 				      + "..";
 				Logger.log(indent()+" "+Parser.lastMatchAttempt);
 			}
-			Vector ms = new Vector();
+			Vector<Match> ms = new Vector<Match>();
 			SomeString rest = s;
 			boolean failure = false;
 			depth++;
@@ -171,7 +179,7 @@ public class Atom implements Type {
 				// Profile.start(t.getClass().getName()+".match()"); // heavy
 				if (Parser.DebugPath) {
 					ctx.path.add(t);
-					Parser.dbdta.setText( "" + ctx.path );
+					Parser.dbdta.setText( "" + ctx.path /*+ "\n" + ctx.closestFailure*/ );
 				}
 				// @todo Perhaps we should ask ctx.parser to do the match here.
 				// By going through one central function for all match attempts, it

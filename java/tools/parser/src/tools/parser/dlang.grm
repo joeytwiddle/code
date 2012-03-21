@@ -92,11 +92,16 @@ NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression
 
 MutableCodeBlock = MutableCodeInner*
-dintj: "new MutableCodeBlock({" MutableCodeInner "})"
+# dintj: "new MutableCodeBlock( newList()" $1 " )"
+# dintj: "new MutableCodeBlock({" MutableCodeInner "})"
+# dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
 
 # Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
 
 MutableCodeInner = Space | NonStatement | Statement
+# dintj: $1 ", "
+# dintj: Space NonStatement Statement ", "
+# dintj: ".concat(" NonStatement | Statement ")"
 
 ArgumentSignatureList = ArgumentSignature MoreArgs
      | ArgumentSignature

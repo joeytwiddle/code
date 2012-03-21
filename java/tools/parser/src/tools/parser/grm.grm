@@ -109,7 +109,7 @@ Main = GrammarDefn
 # java: "package grammars;\n\n" GrammarDefn
 
 GrammarDefn = Grm
-java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
+java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
 hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
 
 Grm = GrmHeaderBit* GrmBit*
@@ -206,11 +206,14 @@ hugs: DefnBit ", " Defn
 # Perhaps we should create DefnBit and OutDefnBit, the latter containing those
 # few extra rules which can only be used for outputs.
 
-DefnBit = RelativeElement
+DefnBit = ReplacementElement
         | BasicElement OptRepeatMarker
 
+ReplacementElement = ArgReplacement
+                   | RelativeElement
+                   | ActiveReplacement
+
 BasicElement = Variable
-             | ActiveReplacement
              | Text
              | GroupElement
              | AtomRef
@@ -379,6 +382,9 @@ java: "        { Vector realrule=rule; rule=new Vector<Type>(); " BasicElement "
 
 Ref = <ref/" !qt!\n.^">
 java: "!qt!" <ref> "!qt!"
+
+ArgReplacement = "$" <num~"0123456789_">
+java: "        rule.add( new ArgReplacement(" <num> ") );\n"
 
 
 

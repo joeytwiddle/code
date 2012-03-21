@@ -41,7 +41,7 @@ public class RepeatedRule implements Type {
 		maxMatches = max;
 	}
 
-	@Override
+	// @Override
 	public Match match(SomeString strIn, ParseContext ctx) {
 		Vector<Match> matches = new Vector<Match>();
 		SomeString togo = strIn;
@@ -72,10 +72,13 @@ public class RepeatedRule implements Type {
 			return null;
 		}
 		SomeString matchedStr = strIn.subString(0, charsMatched);
-		return new Match(type, matchedStr, matches, togo);
+		// @todo I want to replace type with this, but then grm.grm fails to build!
+		Match repeatedMatch = new Match(type, matchedStr, matches, togo);
+		// Logger.debug("Created repeat match "+repeatedMatch+" length "+matches.size()+" with type "+type+" with this="+this);
+		return repeatedMatch;
 	}
 
-	@Override
+	// @Override
 	public boolean replacementfor(Type o) {
 		// TODO Auto-generated method stub
 		return false;

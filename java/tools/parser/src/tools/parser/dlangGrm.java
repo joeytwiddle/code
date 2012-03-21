@@ -5,7 +5,7 @@ import java.util.Vector;
 
 import tools.parser.*;
 
-public class dlangGrm {
+public class dlangGrm extends GrammarHelper {
   public static void setupgrammar() {
     Grammar grammar = new Grammar();
     RuleSet ruleset;
@@ -315,12 +315,10 @@ public class dlangGrm {
         rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
       ruleset.add(rule);
     // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Text("new MutableCodeBlock({"));
-        rule.add(new Atom("MutableCodeInner"));
-        rule.add(new Text("})"));
-    ruleset.replacements.put("dintj",rule);
 
+    // dintj: "new MutableCodeBlock( newList()" $1 " )"
+    // dintj: "new MutableCodeBlock({" MutableCodeInner "})"
+    // dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
 
     // Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
 
@@ -337,6 +335,9 @@ public class dlangGrm {
       ruleset.add(rule);
     // Replacements
 
+    // dintj: $1 ", "
+    // dintj: Space NonStatement Statement ", "
+    // dintj: ".concat(" NonStatement | Statement ")"
 
     ruleset=new RuleSet("ArgumentSignatureList");
       grammar.addRuleset(ruleset);

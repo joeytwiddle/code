@@ -14,6 +14,8 @@ import java.util.*;
 
 import java.io.PrintStream; // import java.io.PrintWriter;
 
+import org.neuralyte.Logger;
+
 /*
  * import java.awt.TextArea; // debug import java.awt.Frame; // debug import
  * java.awt.FlowLayout; // debug import java.awt.event.ActionListener; // debug
@@ -72,14 +74,14 @@ public class Match {
 	}
 
 	// @todo Rename this: printParseTree
-	public void render(PrintStream out, String ind) {
+	public void printParseTree(PrintStream out, String ind) {
 		// System.out.println("Generating Match "+type+" with "+(matches==null?"no match":""+matches.size()));
 		out.print(ind + type + " = " + "\"" + Atom.strip("" + string) + "\"");
 		if (matches != null) {
 			out.print(" with: [");
 			for (int i = 0; i < matches.size(); i++) {
 				out.print("\n" + ind);
-				matches.get(i).render(out, ind + " ");
+				matches.get(i).printParseTree(out, ind + " ");
 			}
 			// System.out.println("a");
 			// tmp=JString.replace(tmp,"\n","\n  ");
@@ -93,8 +95,10 @@ public class Match {
 
 	public Vector<Type> rulefrommatch() {
 		Vector<Type> v = new Vector<Type>();
-		for (int i = 0; i < matches.size(); i++)
+		for (int i = 0; i < matches.size(); i++) {
 			v.add(matches.get(i).type);
+		}
+		// Logger.debug("Generated replacement rule from match: "+v);
 		return v;
 	}
 
@@ -124,7 +128,7 @@ public class Match {
 		return out.store.toString();
 	}
 
-	public void renderIn(Vector<Match> unusedmatches, Type t, String target,
+	public void renderIn(Vector<Match> unusedmatches, Type outType, String target,
 	      PrintStream out) {
 		
 		// TODO: Do we need all these instanceof checks?  Couldn't we instead
@@ -133,33 +137,38 @@ public class Match {
 
 		// TODO: I suspect we may want to do some error reporting somewhere here,
 		// if the desired replacement is not found.
+
+		// TODO: use ReplacementType interface:
+		// outType.render(unusedmatches, this, target, out);
 		
-		if (t instanceof Text) {
-			out.print(((Text) t).rendertext());
-		} else if (t instanceof RelElement) {
-			((RelElement) t).render(this, target, out);
-		} else if (t instanceof ActiveReplacement) {
-			((ActiveReplacement) t).render(unusedmatches, this, target, out);
+		if (outType instanceof Text) {
+			out.print(((Text)outType).rendertext());
+		} else if (outType instanceof RelElement) {
+			((RelElement)outType).render(this, target, out);
+		} else if (outType instanceof ActiveReplacement) {
+			((ActiveReplacement)outType).render(unusedmatches, this, target, out);
+		} else if (outType instanceof ArgReplacement) {
+			((ArgReplacement)outType).render(unusedmatches, this, target, out);
 		} else {
 			for (int j = 0; j < unusedmatches.size(); j++) {
 				// for (int j=0;j<matches.size();j++) {
 				// Match m=(Match)matches.get(j);
 				Match m = unusedmatches.get(j);
-				Type couldbe = (Type) m.type;
-				if (t.replacementfor(couldbe)) {
-					if (t instanceof Atom) {
+				Type couldbe = (Type)m.type;
+				if (outType.replacementfor(couldbe)) {
+					if (outType instanceof Atom) {
 						m.render(this, target, out);
 						// Remove the match, so that subsequent Atoms of same type get
 						// the subsequent matches
 						// matches.remove(m);
-					} else if ((t instanceof Var)) { // *** needed if you don't want
-						// all vars printing! &&
-						// (tmp!=null ||
-						// target.length()==0)) {
+					} else if ((outType instanceof Var)) {
+						// *** needed if you don't want all vars printing!
+						// && (tmp!=null || target.length()==0)) {
 						out.print(Parser.decode("" + m.string));
 						// We don't expect two vars the same!
 					} else {
-						
+						Logger.warn("Unsure how to replace " + outType + " in "
+						      + this);
 					}
 					unusedmatches.remove(j);
 					break;
