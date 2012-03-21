@@ -27,9 +27,9 @@ public class GroupedDefn implements Type {
    */
 
 	@Override
-   public Match match(SomeString s) {
+   public Match match(SomeString s, ParseContext ctx) {
 		String type = "AnonymousType";
-	   return Atom.matchAgainstRuleset(type, this, ruleset, s);
+	   return Atom.matchAgainstRuleset(type, this, ruleset, s, ctx);
    }
 
 	@Override

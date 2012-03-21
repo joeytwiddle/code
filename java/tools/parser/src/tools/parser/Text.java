@@ -28,7 +28,7 @@ public class Text implements Type {
   Text(String t) {
     text=t;
   }
-  public Match match(SomeString s) {
+  public Match match(SomeString s, ParseContext ctx) {
 //    System.out.println("\""+text+"\"==\""+s+"\"? "+text.equals(s));
     if (s.startsWith(text)) {
       return new Match(this,s.subString(0,text.length()),s.subString(text.length()));

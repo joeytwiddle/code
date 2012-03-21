@@ -18,7 +18,7 @@ public class Grammar {
 		}
 	};*/
 	
-  public static RuleSet getrulesetforatom(String type) {
+  public static RuleSet getrulesetforatom(String type, ParseContext ctx) {
     for (int i=0;i<rulesets.size();i++) {
       RuleSet rs=(RuleSet)rulesets.get(i);
       if (rs.type.equals(type))

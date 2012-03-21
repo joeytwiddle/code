@@ -48,7 +48,7 @@ public class Var implements Type {
 		accept = a;
 	}
 
-	public Match match(SomeString s) {
+	public Match match(SomeString s, ParseContext ctx) {
 		int most = s.length();
 		if (accept != null) {
 			for (int i=0;i<s.length();i++) {

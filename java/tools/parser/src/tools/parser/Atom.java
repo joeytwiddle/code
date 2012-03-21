@@ -115,7 +115,7 @@ public class Atom implements Type {
 		return s;
 	}
 
-	public Match match(SomeString s) {
+	public Match match(SomeString s, ParseContext ctx) {
 		
 		// This is bad, it does not scale, because our grammars often use
 		// concatenation. We would need to implement tail-recursion, or make more
@@ -126,13 +126,12 @@ public class Atom implements Type {
 			Logger.error("Breaking out because depth="+depth);
 			return null;
 		} */
+		RuleSet rs = Grammar.getrulesetforatom(type, ctx);
 		
-		RuleSet rs = Grammar.getrulesetforatom(type);
-		
-		return matchAgainstRuleset(type, this, rs, s);
+		return matchAgainstRuleset(type, this, rs, s, ctx);
 	}
 
-	public static Match matchAgainstRuleset(String type, Type realType, RuleSet rs, SomeString s) {
+	public static Match matchAgainstRuleset(String type, Type realType, RuleSet rs, SomeString s, ParseContext ctx) {
 		String profileName = "Atom.matchAgainstRuleset()"; 
 		Profile.start(profileName);
 	   if (Parser.Debugging) {
@@ -170,7 +169,7 @@ public class Atom implements Type {
 				Type t = (Type) rules.get(j);
 //				Profile.start("Atom.match: inner inner");
 				// Profile.start(t.getClass().getName()+".match()"); // heavy
-				Match m = t.match(rest);
+				Match m = t.match(rest, ctx);
 				// Profile.stop(t.getClass().getName()+".match()"); // heavy
 //				Profile.stop("Atom.match: inner inner");
 				if (m == null) {

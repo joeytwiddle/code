@@ -34,7 +34,7 @@ public class RelElement implements Type {
     to=t;
     leaf=l;
   }
-  public Match match(SomeString s) {
+  public Match match(SomeString s, ParseContext ctx) {
     JLib.error("RelElement.match(): Not supposed to try to match, these are for output targetting!");
     return null;
   }

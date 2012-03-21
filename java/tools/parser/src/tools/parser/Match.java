@@ -102,7 +102,8 @@ public class Match {
 	public void render(Match btwyourdadis, String target, PrintStream out) {
 		if (parent == null) parent = btwyourdadis;
 		Atom a = (Atom) type;
-		RuleSet ruleset = Grammar.getrulesetforatom(a.type);
+		ParseContext ctx = new ParseContext();   /** @todo Should be passed in! **/
+		RuleSet ruleset = Grammar.getrulesetforatom(a.type, ctx);
 		Object tmp = ruleset.replacements.get(target);
 		// if (tmp!=null || target.length()==0)
 		// if (tmp==null)

@@ -178,12 +178,13 @@ public class Parser implements ActionListener {
 	**/
 	public static Match parseString(String toparse) {
 		
+		ParseContext ctx = new ParseContext();
 	   Type t = new Atom("Main");
 		Profile.clear();
 		// Profile.start("parse");
 		Match m = null;
 		try {
-			m = t.match(new SubString(toparse));
+			m = t.match(new SubString(toparse), ctx);
 			// Profile.stop("parse");
 			// Profile.start("register");
 			registerAllMatches(m);

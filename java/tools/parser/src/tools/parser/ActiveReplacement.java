@@ -26,7 +26,11 @@ import jlib.strings.*;
 
 import tools.parser.*;
 
-public class ActiveReplacement implements Type {
+// implementing ReplacementType requires redefinition of the rule builders in
+// all existing grammars!
+// (Replacement rules will differ from the rules found in matcher rulesets.)
+
+public class ActiveReplacement implements /*Replacement*/Type {
 
 	Match match;
 	String target;
@@ -36,14 +40,15 @@ public class ActiveReplacement implements Type {
 		return "Must be overwritten by grammar!";
 	}
 
-	public Match match(SomeString s) {
-   JLib.error("ActiveReplacement.match(): Not supposed to try to match, should be for replacements only");
-	 return null;
-	}
-
 	public boolean replacementfor(Type o) {
 		return true;
 	}
+
+	@Override
+   public Match match(SomeString s, ParseContext ctx) {
+	   JLib.error("ActiveReplacement.match(): Not supposed to try to match, should be for replacements only");
+	   return null;
+   }
 
 	public void render(List um,Match btwyourdadis,String t,PrintStream out) {
 		try {

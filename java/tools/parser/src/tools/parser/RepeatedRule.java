@@ -42,12 +42,12 @@ public class RepeatedRule implements Type {
 	}
 
 	@Override
-	public Match match(SomeString strIn) {
+	public Match match(SomeString strIn, ParseContext ctx) {
 		Vector<Match> matches = new Vector<Match>();
 		SomeString togo = strIn;
 		int charsMatched = 0;
 		while (true) {
-			Match m = type.match(togo);
+			Match m = type.match(togo, ctx);
 			if (m == null) {
 				break;
 			} else {
