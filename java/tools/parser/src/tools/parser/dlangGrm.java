@@ -162,9 +162,9 @@ public class dlangGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("\nnew Comment(/*"));
+        rule.add(new Text("\n/*"));
         rule.add(new Var("comment"));
-        rule.add(new Text("*/)\n"));
+        rule.add(new Text(" */\n"));
     ruleset.replacements.put("dintj",rule);
 
 
@@ -459,10 +459,24 @@ public class dlangGrm extends GrammarHelper {
         rule.add(new Atom("Space"));
       ruleset.add(rule);
       rule=new Vector<Type>();
+        rule.add(new Atom("Comment"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
         rule.add(new Atom("NonStatement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("Statement"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("RelevantCodeBit");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Statement"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("NonStatement"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
@@ -490,9 +504,6 @@ public class dlangGrm extends GrammarHelper {
 
     ruleset=new RuleSet("NonStatement");
       grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
-      ruleset.add(rule);
       rule=new Vector<Type>();
         rule.add(new Atom("ClassDefinition"));
       ruleset.add(rule);
