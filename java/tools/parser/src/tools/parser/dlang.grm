@@ -57,7 +57,7 @@ DLangImportProper = "import" Space <import/"\n"> "\n"
 # TODO: Comments might perceivably be 0 chars long, but <var> demands > 0
 Comment = "#" <comment/"\n"> "\n"
         | "//" <comment/"\n"> "\n"
-dintj: "\nnew Comment(/*" <comment> "*/)\n"
+dintj: "\n/*" <comment> " */\n"
 
 # TODO: Parametrised classes (templates)
 ClassDefinition = "class" Space <className/" \n"> OptClassMods NL ClassBody
@@ -131,14 +131,16 @@ dintj: "new MutableCodeBlock( newList()" $1 " )"
 
 # Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
 
-MutableCodeInner = Space | NonStatement | Statement
+MutableCodeInner = Space | Comment | NonStatement | Statement
+
+RelevantCodeBit = Statement | NonStatement
 dintj: ".with(" $1 ")"
 # dintj: Space NonStatement Statement ", "
 # dintj: ".concat(" NonStatement | Statement ")"
 
 Statement = Assignment | FunctionCall | Loop
 
-NonStatement = Comment | ClassDefinition | FunctionDefinition
+NonStatement = ClassDefinition | FunctionDefinition
 
 
 

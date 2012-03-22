@@ -47,14 +47,15 @@ public class dlangGrm extends GrammarHelper {
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
         rule.add(new Atom("DLangHeader"));
-        rule.add(new Atom("MutableCodeBlock"));
+        rule.add(new Atom("DLangFileMain"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("package dlang.parsed;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport dlang.types.*;\n\npublic class DLangFile {\n  public static void build() {\n    \n\n"));
-        rule.add(new Atom("Grm"));
+        rule.add(new Atom("DLangHeader"));
+        rule.add(new Atom("DLangFileMain"));
         rule.add(new Text("  }\n}\n"));
-    ruleset.replacements.put("java",rule);
+    ruleset.replacements.put("dintj",rule);
 
 
     // DLangHeader = DLangModuleBlock DLangImports
@@ -144,8 +145,9 @@ public class dlangGrm extends GrammarHelper {
     // Replacements
 
 
-    // Should it be 0 or more?
 
+
+    // TODO: Comments might perceivably be 0 chars long, but <var> demands > 0
     ruleset=new RuleSet("Comment");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
@@ -160,9 +162,9 @@ public class dlangGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("\n/*"));
+        rule.add(new Text("\nnew Comment(/*"));
         rule.add(new Var("comment"));
-        rule.add(new Text("*/\n"));
+        rule.add(new Text("*/)\n"));
     ruleset.replacements.put("dintj",rule);
 
 
@@ -308,37 +310,6 @@ public class dlangGrm extends GrammarHelper {
     // Replacements
 
 
-    ruleset=new RuleSet("MutableCodeBlock");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("MutableCodeInner"));
-        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
-      ruleset.add(rule);
-    // Replacements
-
-    // dintj: "new MutableCodeBlock( newList()" $1 " )"
-    // dintj: "new MutableCodeBlock({" MutableCodeInner "})"
-    // dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
-
-    // Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
-
-    ruleset=new RuleSet("MutableCodeInner");
-      grammar.addRuleset(ruleset);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Space"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("NonStatement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Statement"));
-      ruleset.add(rule);
-    // Replacements
-
-    // dintj: $1 ", "
-    // dintj: Space NonStatement Statement ", "
-    // dintj: ".concat(" NonStatement | Statement ")"
-
     ruleset=new RuleSet("ArgumentSignatureList");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
@@ -450,6 +421,59 @@ public class dlangGrm extends GrammarHelper {
     ruleset.replacements.put("dintj",rule);
 
 
+
+
+    ruleset=new RuleSet("DLangFileMain");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("MutableCodeBlock"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("MutableCodeBlock allCode = "));
+        rule.add(new Atom("MutableCodeBlock"));
+    ruleset.replacements.put("dintj",rule);
+
+
+    ruleset=new RuleSet("MutableCodeBlock");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("MutableCodeInner"));
+        rule.set(rule.size()-1, new RepeatedRule((Type)rule.lastElement(),"*"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text("new MutableCodeBlock( newList()"));
+        rule.add( new ArgReplacement(1) );
+        rule.add(new Text(" )"));
+    ruleset.replacements.put("dintj",rule);
+
+    // dintj: "new MutableCodeBlock({" MutableCodeInner "})"
+    // dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
+
+    // Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
+
+    ruleset=new RuleSet("MutableCodeInner");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Space"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("NonStatement"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Statement"));
+      ruleset.add(rule);
+    // Replacements
+    rule=new Vector<Type>();
+        rule.add(new Text(".with("));
+        rule.add( new ArgReplacement(1) );
+        rule.add(new Text(")"));
+    ruleset.replacements.put("dintj",rule);
+
+    // dintj: Space NonStatement Statement ", "
+    // dintj: ".concat(" NonStatement | Statement ")"
+
     ruleset=new RuleSet("Statement");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
@@ -476,6 +500,8 @@ public class dlangGrm extends GrammarHelper {
         rule.add(new Atom("FunctionDefinition"));
       ruleset.add(rule);
     // Replacements
+
+
 
 
     ruleset=new RuleSet("Assignment");
