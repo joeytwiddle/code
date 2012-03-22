@@ -430,8 +430,9 @@ public class dlangGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("MutableCodeBlock allCode = "));
+        rule.add(new Text("MutableCodeBlock allTheCode = "));
         rule.add(new Atom("MutableCodeBlock"));
+        rule.add(new Text(";"));
     ruleset.replacements.put("dintj",rule);
 
 
@@ -462,10 +463,7 @@ public class dlangGrm extends GrammarHelper {
         rule.add(new Atom("Comment"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("NonStatement"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Statement"));
+        rule.add(new Atom("RelevantCodeBit"));
       ruleset.add(rule);
     // Replacements
 
@@ -473,16 +471,16 @@ public class dlangGrm extends GrammarHelper {
     ruleset=new RuleSet("RelevantCodeBit");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
-        rule.add(new Atom("Statement"));
+        rule.add(new Atom("NonStatement"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("NonStatement"));
+        rule.add(new Atom("Statement"));
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text(".with("));
+        rule.add(new Text("      .with("));
         rule.add( new ArgReplacement(1) );
-        rule.add(new Text(")"));
+        rule.add(new Text(")\n"));
     ruleset.replacements.put("dintj",rule);
 
     // dintj: Space NonStatement Statement ", "

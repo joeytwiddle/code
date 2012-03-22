@@ -122,7 +122,7 @@ dintj: "Constants.getConstRef(" Number String ")"
 
 
 DLangFileMain = MutableCodeBlock
-dintj: "MutableCodeBlock allCode = " MutableCodeBlock
+dintj: "MutableCodeBlock allTheCode = " MutableCodeBlock ";"
 
 MutableCodeBlock = MutableCodeInner*
 dintj: "new MutableCodeBlock( newList()" $1 " )"
@@ -131,10 +131,10 @@ dintj: "new MutableCodeBlock( newList()" $1 " )"
 
 # Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
 
-MutableCodeInner = Space | Comment | NonStatement | Statement
+MutableCodeInner = Space | Comment | RelevantCodeBit
 
-RelevantCodeBit = Statement | NonStatement
-dintj: ".with(" $1 ")"
+RelevantCodeBit = NonStatement | Statement
+dintj: "      .with(" $1 ")\n"
 # dintj: Space NonStatement Statement ", "
 # dintj: ".concat(" NonStatement | Statement ")"
 
