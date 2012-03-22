@@ -168,7 +168,7 @@ public class Match {
 		return unusedMatches;
 	}
 	
-	public Match grabUnusedMatchMatching(Type t) {
+	public Match grabUnusedMatchMatching(MagicType t) {
 		Vector<Match> unused = getUnusedMatches();
 		for (int i=0;i<unused.size();i++) {
 			Match m = unused.get(i);

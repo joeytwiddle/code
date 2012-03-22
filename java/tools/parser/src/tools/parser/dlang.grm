@@ -24,8 +24,8 @@
 
 Main = DLangFile
 
-DLangFile = DLangHeader MutableCodeBlock
-java: "package dlang.parsed;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport dlang.types.*;\n\npublic class DLangFile {\n  public static void build() {\n    \n\n" Grm "  }\n}\n"
+DLangFile = DLangHeader DLangFileMain
+dintj: "package dlang.parsed;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport dlang.types.*;\n\npublic class DLangFile {\n  public static void build() {\n    \n\n" DLangHeader DLangFileMain "  }\n}\n"
 
 # DLangHeader = DLangModuleBlock DLangImports
 
@@ -52,11 +52,12 @@ DLangImport = DLangImportProper
 
 DLangImportProper = "import" Space <import/"\n"> "\n"
 
-# Should it be 0 or more?
 
+
+# TODO: Comments might perceivably be 0 chars long, but <var> demands > 0
 Comment = "#" <comment/"\n"> "\n"
         | "//" <comment/"\n"> "\n"
-dintj: "\n/*" <comment> "*/\n"
+dintj: "\nnew Comment(/*" <comment> "*/)\n"
 
 # TODO: Parametrised classes (templates)
 ClassDefinition = "class" Space <className/" \n"> OptClassMods NL ClassBody
@@ -91,18 +92,6 @@ NiceCode = Expression ( Space "where" Space NiceNEDefs EOL | EOL )
 NiceNEDefs = NamedExpression '\n' NiceNEDefs
            | NamedExpression
 
-MutableCodeBlock = MutableCodeInner*
-# dintj: "new MutableCodeBlock( newList()" $1 " )"
-# dintj: "new MutableCodeBlock({" MutableCodeInner "})"
-# dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
-
-# Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
-
-MutableCodeInner = Space | NonStatement | Statement
-# dintj: $1 ", "
-# dintj: Space NonStatement Statement ", "
-# dintj: ".concat(" NonStatement | Statement ")"
-
 ArgumentSignatureList = ArgumentSignature MoreArgs
      | ArgumentSignature
      | WS
@@ -130,9 +119,28 @@ dintj: "new VarReference(!qt!" VarName "!qt!)"
 ConstReference = Number | String
 dintj: "Constants.getConstRef(" Number String ")"
 
+
+
+DLangFileMain = MutableCodeBlock
+dintj: "MutableCodeBlock allCode = " MutableCodeBlock
+
+MutableCodeBlock = MutableCodeInner*
+dintj: "new MutableCodeBlock( newList()" $1 " )"
+# dintj: "new MutableCodeBlock({" MutableCodeInner "})"
+# dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
+
+# Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
+
+MutableCodeInner = Space | NonStatement | Statement
+dintj: ".with(" $1 ")"
+# dintj: Space NonStatement Statement ", "
+# dintj: ".concat(" NonStatement | Statement ")"
+
 Statement = Assignment | FunctionCall | Loop
 
 NonStatement = Comment | ClassDefinition | FunctionDefinition
+
+
 
 Assignment = NormalAssignment
            | SpecialAssignment

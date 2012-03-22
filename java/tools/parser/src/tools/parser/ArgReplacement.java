@@ -28,7 +28,7 @@ public class ArgReplacement implements Type {
    }
 
    public void renderMatchAs(Match match, String target, PrintStream out) {
-		Logger.debug("Doing matches.get("+argNum+") inside "+match.type+" with size "+match.matches.size());
+		// Logger.debug("Doing matches.get("+argNum+") inside "+match.type+" with size "+match.matches.size());
 		match.matches.get(argNum).render(match,target,out);
    }
 

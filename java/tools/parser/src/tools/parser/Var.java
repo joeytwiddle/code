@@ -28,7 +28,7 @@ import jlib.strings.*;
 
 import tools.parser.*;
 
-public class Var implements Type {
+public class Var implements MagicType {
 
 	String name;
 	String deny; // characters which are not allowed
@@ -112,7 +112,10 @@ public class Var implements Type {
 	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
 		Match m = parentMatch.grabUnusedMatchMatching(this);
 		if (m == null) {
-			Logger.error("Could not find match for "+this+" in "+parentMatch);
+			// Logger.error("Could not find match for "+this+" in "+parentMatch);
+			// Failed matches are also allowed here. The grammar author may want to
+			// print the var if it was matched in one of the rules, but not mind if
+			// a different rule in the set was matched.
 			return;
 		}
 		out.print( Parser.decode(m.string.toString()) );

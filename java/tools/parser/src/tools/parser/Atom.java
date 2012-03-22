@@ -32,7 +32,7 @@ import jlib.strings.*;
 
 import tools.parser.*;
 
-public class Atom implements Type {
+public class Atom implements MagicType {
 
 	public static int depth = 0;
 	public static Vector path = new Vector();

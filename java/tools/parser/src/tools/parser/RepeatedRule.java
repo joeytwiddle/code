@@ -75,7 +75,7 @@ public class RepeatedRule implements Type {
 		SomeString matchedStr = strIn.subString(0, charsMatched);
 		// @todo I want to replace type with this, but then grm.grm fails to build!
 		Match repeatedMatch = new Match(this, matchedStr, matches, togo);
-		Logger.debug("Created repeat match "+repeatedMatch+" length "+matches.size()+" with type "+type+" with this="+this);
+		// Logger.debug("Created repeat match "+repeatedMatch+" length "+matches.size()+" with type "+type+" with this="+this);
 		return repeatedMatch;
 	}
 
