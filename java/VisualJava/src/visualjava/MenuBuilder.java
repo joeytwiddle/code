@@ -108,7 +108,8 @@ public class MenuBuilder {
 			// org.neuralyte.Logger.log("VisualJavaGUIStatics.addFieldToMenu(): cannot work on field \""+f+"\" because: "+e);
 		}
 	}
-
+	
+	/*
 	public static JMenu getOrCreateSubMenu(JMenu menu, String text) {
 		JMenu child = getChildWithText(menu, text);
 		if (child == null) {
@@ -128,5 +129,6 @@ public class MenuBuilder {
 		}
 		return null;
 	}
+	*/
 
 }

@@ -3,7 +3,6 @@
 	<classpathentry excluding="**/CVS/**" kind="src" path="src"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/CommonUtils"/>
 	<classpathentry kind="lib" path="lib/xstream-1.1.2.jar"/>
-	<classpathentry kind="lib" path="/FairShare/bin"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/DLang"/>
 	<classpathentry kind="output" path="bin"/>
