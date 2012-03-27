@@ -14,6 +14,13 @@ var leaveHashUrlsAlone = true;
 var enableOnCtrlClick = true;
 var enableOnShiftClick = false;   // Allows you to avoid the script when needed
 var enableOnRightClick = false;
+var highlightLinkGroups = true;
+// var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
+// var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
+var highlightColor         = null;
+var thisLinkHighlightColor = "rgba(130,230,255,0.1)";
+var forceTravel = true;           // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
+var verbose = true;
 
 
 // == CHANGELOG ==
@@ -142,16 +149,76 @@ function collectLinksInSameGroupAs(clickedLink) {
     var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
     if (xpath == seekXPath) {
       if (link.textContent) {   // ignore if no title
-        var record = [link.textContent, link.href];
-        collected.push(record);
+        collected.push(link);
       }
     }
   }
   return collected;
 }
 
+function isSuitable(link) {
+
+  if (link.tagName != "A") {
+    return;
+  }
+
+  if (link.href.indexOf("#siblings=")>=0 || link.href.indexOf("&siblings=")>=0) {
+    // This is already a prepared link!  Probably created by the pager.
+    // No need to modify it.
+    return;
+  }
+  if (link.protocol.indexOf(/*"http") != 0)*/ "javascript:") == 0) {
+    // We should not add #s to javascript: links but it seems to work ok on ftp:// (FF)
+    return;
+  }
+
+  // Ignore links which are simply anchor into the current page
+  // Note that .href gives the whole URL, so we check getAttribute("href")
+  if (link.getAttribute("href") && link.getAttribute("href").charAt(0) == '#') {
+    return;
+  }
+
+  // What about links to #s in other pages?  I decided in the end to leave them
+  // alone by default (preserve the existing hash string).
+  // Altering # strings can break the way some sites use # strings, and can
+  // prevent the browser from scrolling to the anchor.
+  // You can force appending of siblings package to hash strings using '&' if
+  // desired by disabling leaveHashUrlsAlone.
+  // Perhaps in these "emergency" circumstances, we should append with '&' or
+  // '?' *outside* the hash.  (Which will no doubt break some sites, but
+  // perhaps fewer!)
+  if (link.hash && leaveHashUrlsAlone) {
+    return;
+  }
+
+  //// === Some sites complain about long URLs or unexpected strings. ===
+
+  // Some Google search pages complain about our long URLs.
+  var googleWillComplain =
+    link.host.indexOf("google")>=0 &&
+      (    link.href.indexOf("?q=")>=0
+        || link.href.indexOf("&q=")>=0
+        || link.href.indexOf("url?")>=0
+      );
+  // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
+
+  var isYouTubePagerLink
+    link.host.indexof("www.youtube.") == 0
+    && link.href.indexOf("/all_comments?") >= -1;
+  var youtubeWillComplain = isYouTubePagerLink;
+
+  var siteWillComplain = googleWillComplain || youtubeWillComplain;
+
+  if (siteWillComplain) {
+    return;
+  }
+
+  return true;
+
+}
+
 function checkClick(evt) {
-  var elem = evt.target;
+  var elem = evt.target || evt.sourceElement;
   // GM_log("Intercepted click event on "+getXPath(elem));
 
   // Do not interfere with Ctrl-click or Shift-click or right-click (usually open-in-new-window/tab)
@@ -162,39 +229,17 @@ function checkClick(evt) {
   if (elem.tagName == "A") {
     var link = elem;
 
-    if (link.href.indexOf("#siblings=")>=0 || link.href.indexOf("&siblings=")>=0) {
-      // This is already a prepared link!  Probably created by the pager.
-      // No need to modify it.
-      return;
-    }
-    if (link.protocol.indexOf(/*"http") != 0)*/ "javascript:") == 0) {
-      // We should not add #s to javascript: links but it seems to work ok on ftp:// (FF)
-      return;
-    }
-    // Some Google search pages complain about our long URLs.
-    var siteWillComplain =
-      link.host.indexOf("google")>=0 &&
-        (    link.href.indexOf("?q=")>=0
-          || link.href.indexOf("&q=")>=0
-          || link.href.indexOf("url?")>=0
-        );
-    if (siteWillComplain) {
-      return;
-      // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
-    }
-    // Note that .href gives the whole URL, so we check getAttribute("href")
-    if (link.getAttribute("href") && link.getAttribute("href").charAt(0) == '#') {
-      return;   // This link is just pointing to an anchor in the current page
-    }
-    // What about links to #s in other pages?  I decided in the end to preserve
-    // them.  (Appending with & will still break them.)
-    if (link.hash && leaveHashUrlsAlone) {
+    if (!isSuitable(link)) {
       return;
     }
 
     // GM_log("User clicked on link: "+link.href);
     // Collect other links matching this one:
     var siblings = collectLinksInSameGroupAs(link);
+    // Convert from links to records:
+    siblings = siblings.map(function(link) {
+      return [link.textContent, link.href];
+    });
     if (siblings.length <= minimumGroupSize) {
       // No point.  Give the user a clean location bar for a change.  ;)
       return;
@@ -209,7 +254,9 @@ function checkClick(evt) {
     // If the link already had a #, we append our data as an & parameter, and cross our fingers.
     var appendChar = ( link.href.indexOf('#')>=0 ? '&' : '#' );
     if (appendChar == '&' || link.hash) {
-      GM_log("Appending to existing hash with "+appendChar+": "+link.hash);
+      if (verbose) {
+        GM_log("Appending to existing hash with "+appendChar+": "+link.hash);
+      }
       // Note: If it was a normal # to an anchor then we have probably broken
       // it!  In that case we should either not append, or perhaps we can
       // append, but force movement to the correct anchor anyway (which may be
@@ -217,17 +264,24 @@ function checkClick(evt) {
     }
     var targetURL = link.href + appendChar + "siblings="+sibsEncoded;
 
-    // A bit aggressive: overrides AJAX or other JS friendliness.
-    /*
-    document.location = targetURL;
-    evt.preventDefault();
-    return false;
-    */
-    // Instead of pushing the browser to the magic URL, change the link and see what happens.
-    GM_log("Rewriting link "+getXPath(link));
-    GM_log(" url: "+link.href);
-    GM_log("with: "+targetURL);
-    // link.hash = "siblings="+sibsEncoded;
+    if (verbose) {
+      GM_log("Rewriting link "+getXPath(link));
+      GM_log(" url: "+link.href);
+      GM_log("with: "+targetURL);
+    }
+
+    // Force travel to the new URL.  (Don't wait for the page to handle the
+    // click - some sites e.g. YouTube will throw away our hash-data!)
+    if (forceTravel) {
+      // We only do this for normal left-clicks.
+      if (!evt.ctrlKey && !evt.shiftKey && evt.button==0) {
+        document.location = targetURL;
+        evt.preventDefault();
+        return false;
+      }
+    }
+
+    // Instead of pushing the browser to the magic URL, just change the link and see what happens.
     link.href = targetURL;
 
     // We need this on Google search result pages, or we end up following
@@ -352,6 +406,87 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   var siblings = JSON.parse(decodeURIComponent(encodedList));
   createRelatedLinksPager(siblings);
   document.location.hash = ".";
+}
+
+
+
+// Optional: Show link's siblings on hover
+
+if (highlightLinkGroups) {
+
+  function seekLinkInAncestry(startElem) {
+    var node = startElem;
+    while (node) {
+      if (node.tagName == "A") {
+        return node;
+      }
+      node = node.parentNode;
+    }
+    return startElem;
+  }
+
+  var list = [];
+
+  function highlightList() {
+    if (verbose) {
+      GM_log("Highlighting "+list.length+" elements.");
+    }
+    for (var i=0;i<list.length;i++) {
+      list[i].oldBackgroundColor = list[i].style.backgroundColor;
+      if (highlightColor) {
+        list[i].style.backgroundColor = highlightColor;
+      }
+      /*
+      list[i].oldBorderLeft = list[i].style.borderLeft;
+      list[i].oldMarginLeft = list[i].style.marginLeft;
+      list[i].oldBorderRight = list[i].style.borderRight;
+      list[i].oldMarginRight = list[i].style.marginRight;
+      list[i].oldBorderTop = list[i].style.borderTop;
+      list[i].oldMarginTop = list[i].style.marginTop;
+      list[i].oldBorderBottom = list[i].style.borderBottom;
+      list[i].oldMarginBottom = list[i].style.marginBottom;
+      list[i].style.border = "2px dashed "+highlightColor;
+      list[i].style.margin = "-2px";
+      */
+    }
+  }
+
+  function clearList() {
+    for (var i=0;i<list.length;i++) {
+      list[i].style.backgroundColor = list[i].oldBackgroundColor;
+      /*
+      list[i].style.marginLeft = list[i].oldMarginLeft;
+      list[i].style.borderLeft = list[i].oldBorderLeft;
+      list[i].style.marginRight = list[i].oldMarginRight;
+      list[i].style.borderRight = list[i].oldBorderRight;
+      list[i].style.marginTop = list[i].oldMarginTop;
+      list[i].style.borderTop = list[i].oldBorderTop;
+      list[i].style.marginBottom = list[i].oldMarginBottom;
+      list[i].style.borderBottom = list[i].oldBorderBottom;
+      */
+    }
+    list.length = 0;
+  }
+
+  document.body.addEventListener("mouseover",function(evt) {
+    var link = seekLinkInAncestry(evt.target || evt.sourceElement);
+    if (isSuitable(link)) {
+      clearList();
+      list = collectLinksInSameGroupAs(link);
+      highlightList();
+      if (thisLinkHighlightColor) {
+        link.style.backgroundColor = thisLinkHighlightColor;
+      }
+      // link.style.border = "2px solid "+highlightColor;
+    }
+  },true);
+  document.body.addEventListener("mouseout",function(evt) {
+    var link = seekLinkInAncestry(evt.target || evt.sourceElement);
+    if (isSuitable(link)) {
+      clearList();
+    }
+  },true);
+
 }
 
 
