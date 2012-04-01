@@ -87,7 +87,7 @@ function CheckActionOn(Actor A) {
 		}
 		if ( Caps(UpdateActor[i]) == Caps(""$A) ) { // Caps(""$A) could be pre-calculated for efficiency
 			Log("[ActorEditor] Updating "$A$"."$UpdateProperty[i]$" -> "$UpdateValue[i]);
-			A.SetPropertyText(UpdateProperty[i],UpdateValue[i]);
+			DoSetProperty(A,UpdateProperty[i],UpdateValue[i]);
 		}
 	}
 	// Log("[ActorEditor] Done: "$A);
@@ -376,11 +376,10 @@ function String ShortActorName(Actor A) {
 
 function SaveUpdate(Actor A, String property, String newValue) {
 	local int i;
-	Log("ActorEditor.SaveUpdate("$A$",\""$property$"\",\""$newValue$"\") was called.");
 	if (A == None) {
 		return;
 	}
-	A.SetPropertyText(property,newValue);
+	DoSetProperty(A,property,newValue);
 	for (i=0;i<1024;i++) {
 		// Find first empty record, or matching record to replace:
 		if (UpdateActor[i] == "" || (UpdateActor[i]~=(""$A) && UpdateProperty[i]~=property)) {
@@ -391,6 +390,31 @@ function SaveUpdate(Actor A, String property, String newValue) {
 			break;
 		}
 	}
+}
+
+function DoSetProperty(Actor A, String property, String newValue) {
+	local String tmp;
+
+	// Works on most things (including some vectors!)
+	A.SetPropertyText(property,newValue);
+
+	Log("ActorEditor.DoSetProperty("$A$",\""$property$"\",\""$newValue$"\") was called.");
+
+	// We can set ZoneInfo.ZoneGravity just fine with SetPropertyText(), but we
+	// can't set Location because it's a const.  We must use SetVelocity().
+	// tmp = A.GetPropertyText(property);
+	// if (StrStartsWith(tmp,"(X=") && StrEndsWith(tmp,")")) {
+		// Looks like a vector
+		//#define StoreVect(STRNAME,FLATNAME) if (property ~= STRNAME) { A.FLATNAME = vector(newValue); }
+		//StoreVect("Location",Location)
+		//StoreVect("Velocity",Velocity)
+		if (property ~= "Location") {
+			A.SetLocation( vector(newValue) );
+		} /* else if (property ~= "Velocity") {
+			A.SetVelocity( vector(newValue) );
+		} */
+	// }
+
 }
 
 #ifdef ENABLE_SCREEN_SUPPORT
