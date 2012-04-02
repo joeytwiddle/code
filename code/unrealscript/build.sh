@@ -3,7 +3,8 @@
 ## DONE: Maybe the .uc.jpp file has not change, but one of the included files HAS changed, hence a reparse IS required although it doesn't look like it.
 ##       OK for now, it will reparse the file, if ANY file ending ".jpp" in that folder is newer than it.  This still doesn't resolve #included files from *other* folders.
 
-# TOPDIR="$PWD"
+TOPDIR="$PWD"
+
 # # find */Classes -maxdepth 2 -name "*.jpp" |
 # find */Classes/*.uc.jpp -type f |
 # while read JPPFILE
@@ -44,7 +45,7 @@ check_age_of_pakage_against_source () {
 	if [ ! -f "$PKGFILE" ]
 	then return 0
 	fi
-	if find "$SRCPKG/Classes" -type f -newer "$PKGFILE" | grep -v "/CVS/" | grep . >/dev/null
+	if find "$SRCPKG/Classes" -maxdepth 1 -type f -newer "$PKGFILE" | grep -v "/CVS/" | grep . >/dev/null
 	then return 0
 	fi
 	## In some inconvenient situations, I wish to recompile $PKGFILE if one of its dependencies has been recompiled.
@@ -54,6 +55,7 @@ check_age_of_pakage_against_source () {
 		cat "$SRCPKG/Classes/.depends" |
 		while read SUBPKG
 		do
+			echo "[build.sh] Checking child of $PKGFILE: $SUBPKG" >&2
 			if check_age_of_pakage_against_source "$PKGFILE" "$SUBPKG"
 			then return 0
 			fi
@@ -76,12 +78,55 @@ uncomment_editpackage () {
 	cat compiling.ini | dos2unix | sed "s+^[; ]*EditPackages=$PKG$+EditPackages=$PKG+" | dog compiling.ini
 }
 
+
+
 ## TODO: What's really nasty is when we compile a script, then try to load it as a lib when recompiling other things.  On hwi atm, it's causing ucc to stick on that package.
 
 EDITPACKAGES=""
 echo "EDITPACKAGES=\"$EDITPACKAGES\"" > editpackages.ini
 
-TOPDIR="$PWD"
+rebuild_package_1() {
+
+	PKG="$1"
+	echo "Needs rebuild: $PKG"
+
+	uncomment_editpackage "$PKG"
+
+	[ -f "System/$PKG.u" ] && verbosely mv "System/$PKG.u" "System/$PKG.u.last"
+
+	cd "$PKG"/Classes &&
+	find . -maxdepth 1 -type f -name "*.jpp" |
+	while read JPPFILE
+	do
+		TARGETFILE="`echo "$JPPFILE" | sed 's+\.jpp$++'`"
+		jshinfo "Preprocessing: $JPPFILE -> $TARGETFILE"
+		NOEXEC=1 verbosely \
+		jpp -- "$JPPFILE" > "$TARGETFILE"
+		## We can always safely strip comments here.  This is not the original it's a temporary post-processed compile file.
+		# sh ../../strip_comments.sh "$TARGETFILE"
+	done
+
+	## Warning: This should only be used on one-time builds.  Any comments in non-jpp .uc files will be lost!
+	## Disabled here: We don't want to just strip all .uc files in our build.
+	## This is better run from other places, when appropriate.
+	# if [ "$STRIPCOMMENTS" ]
+	# then
+		# for CLASSFILE in *.uc
+		# do sh ../../strip_comments.sh "$CLASSFILE"
+		# done
+	# fi
+
+	cd "$TOPDIR"
+	if [ -f "$PKG/Classes/.dependson" ]
+	then
+		for NEEDPKG in `cat "$PKG/Classes/.dependson"`
+		do add_to_build_path "$NEEDPKG"
+		done
+		echo "EDITPACKAGES=\"$EDITPACKAGES\"" > editpackages.ini
+	fi
+
+}
+
 ## Problem: comments out required packages!  also adds some packages (e.g. Screen) which we don't actually want to recompile
 ##    TODO: But it doesn't have to.  As long as it checks that it is really a custom package.
 cat compiling.ini | dos2unix | grep "^\(; \|\)"EditPackages= |
@@ -95,44 +140,7 @@ do
 		# if [ ! -f "System/$PKG.u" ] || find "$PKG/Classes" -type f -newer "System/$PKG.u" | grep -v "/CVS/" | grep . >/dev/null
 		if check_age_of_pakage_against_source "System/$PKG.u" "$PKG"
 		then
-
-			echo "Needs rebuild: $PKG"
-
-			uncomment_editpackage "$PKG"
-
-			[ -f "System/$PKG.u" ] && verbosely mv "System/$PKG.u" "System/$PKG.u.last"
-
-			cd "$PKG"/Classes &&
-			find . -maxdepth 1 -type f -name "*.jpp" |
-			while read JPPFILE
-			do
-				TARGETFILE="`echo "$JPPFILE" | sed 's+\.jpp$++'`"
-				jshinfo "Preprocessing: $JPPFILE -> $TARGETFILE"
-				NOEXEC=1 verbosely \
-				jpp -- "$JPPFILE" > "$TARGETFILE"
-				## We can always safely strip comments here.  This is not the original it's a temporary post-processed compile file.
-				# sh ../../strip_comments.sh "$TARGETFILE"
-			done
-
-			## Warning: This should only be used on one-time builds.  Any comments in non-jpp .uc files will be lost!
-			## Disabled here: We don't want to just strip all .uc files in our build.
-			## This is better run from other places, when appropriate.
-			# if [ "$STRIPCOMMENTS" ]
-			# then
-				# for CLASSFILE in *.uc
-				# do sh ../../strip_comments.sh "$CLASSFILE"
-				# done
-			# fi
-
-			cd "$TOPDIR"
-			if [ -f "$PKG/Classes/.dependson" ]
-			then
-				for NEEDPKG in `cat "$PKG/Classes/.dependson"`
-				do add_to_build_path "$NEEDPKG"
-				done
-				echo "EDITPACKAGES=\"$EDITPACKAGES\"" > editpackages.ini
-			fi
-
+			rebuild_package_1 "$PKG"
 		else
 			echo "Nothing new: $PKG"
 			comment_editpackage "$PKG"
@@ -157,8 +165,14 @@ then
 	exit
 fi
 
-## We must remove .u files before ucc make will recompile them.
-## Strangely I think this was already done above.  Perhaps it didn't catch all however.
+
+
+## Move .u files out of the way or ucc make will not recompile them.
+
+## TODO: Sadly this was not done by the previous stage, which only checked for
+## .jpp files to compile, not manually edited .ucc files (normal).  This may
+## not be true.  Nevertheless these two passes should be combined.
+
 # REBUILD=true
 cat compiling.ini |
 dos2unix |
@@ -177,6 +191,8 @@ do
 		verbosely mv -f System/$PKGNAME.u System/$PKGNAME.u.last
 	fi
 done 2>&1 | grep . || jshwarn "No .u files out-of-date or missing."
+
+
 
 ## Recompile!
 cd System
