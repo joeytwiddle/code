@@ -18,7 +18,7 @@ Add the package name to EditorActors= in UT.ini, and then run ucc.exe make.
 Some of them are experimental.  Some of them are overdeveloped, in which case
 you may prefer to look for an earlier stable version from CVS:
 
-  http://hwi.ath.cx/cgi-bin/viewcvs.cgi/code/unrealscript/
+  http://hwi.ath.cx/cgi-bin/cvsweb/code/unrealscript/
 
 
 
@@ -82,15 +82,6 @@ you may prefer to look for an earlier stable version from CVS:
 
   Provides a few commands to players: !red !blue !green !spec !play !vote
 
-* ActorEditor
-
-  Allows the admin to set some properties of game actors during play.
-  Only top-level text properties can be adjusted.  (E.g. PlayerStart12.Team,
-  ZoneInfo3.Gravity, Bot5.Health)
-  Changes can be saved to be re-applied when map is next loaded.  (Can
-  occasionally be used to fix small map bugs.)
-  No support yet for spawning new actors.
-
 * MapMuts
 
   Collects stats on maps into one big file, including approximate size
@@ -116,6 +107,16 @@ you may prefer to look for an earlier stable version from CVS:
 
 === GOOD ===
 
++ ActorEditor
+
+  Allows the admin to set some properties of game actors during play.
+  Only top-level text properties can be adjusted.  (E.g. PlayerStart12.Team,
+  ZoneInfo3.Gravity, Bot5.Health)
+  Changes can be saved to be re-applied when map is next loaded!
+  (This can be used to fix small map bugs server-side without a rebuild.)
+  There is no support yet for spawning new actors.
+  It is not very easy to use!
+
 + ChatMuts
 
   Simple mutator ChatMuts.Ignore allows players to type !ignore KGB so they
@@ -129,6 +130,9 @@ you may prefer to look for an earlier stable version from CVS:
   [ChatLog] lines. :)
 
 + NDgrapnc.GrapplingMut
+
+  An earlier release of my grappling hook, made as a clone of the No Downloads
+  grapple, when ND CTF went down *sob*.
 
 + PainSounds
 
@@ -178,76 +182,89 @@ you may prefer to look for an earlier stable version from CVS:
   Updated Rush's mod a bit so it records the IP addresses of muted players.
   This means they will remain muted if they rejoin, and after mapswitch.
 
-  Did not call it V17 without his consent, and to cause extra confusion.  ;)
+  Did not call it V17 - he can suck in my changes if he wants.
 
 ~ FixWeaponBalance
 
-  The ZeroPing mode makes hitscan weapons work properly.  That's the sniper,
-  enforcer, shock primary and of course instagib gun.  It makes it possible to
-  make more hits than would usually occur on a 40 ping national server.  This
-  has the effect of making the non-hitscan weapons less powerful relative to
-  the ones zeroping fixed.
+  Attempts to fix weapon unbalance caused by ZeroPing and non-hardcore mode.
 
-  Furthermore Siege games are played in non-hardcore mode, in order for the
+  The ZeroPing mod makes hitscan weapons work properly for the client.  (That's
+  the sniper, enforcer, shock primary and of course instagib gun.)  But by
+  increasing realism, it makes it possible to make more hits than would usually
+  occur on a 40 ping national non-zp server.  This has the effect of making the
+  non-hitscan weapons less powerful relative to the ones zeroping fixed.
+
+  Furthermore, Siege games are played in non-hardcore mode, in order for the
   jetpack to work properly.  This mode reduces the power of all the weapons,
   but on a player with no armour or vials, a headshot is still a headshot, so
   there is no real reduction.  That's why Siege games turn into a sniper arena,
-  because nothing else really works as well.
+  because no other weapon really works as well.
 
   This mutator attempts to restore the balance, and has gone through a number
   of iterations.
 
-  *) I believe the ideal solution is to make a new ZeroPing which slightly
-     reduces the headshot radius to create accuracy like a 40 ping server.
+  NOTE) I believe the ideal solution is to make a new ZeroPing which slightly
+     reduces the headshot and body radius to create accuracy like a 40 ping
+     ClanBase server.
 
-  *) Nope that's wrong.  All we need to do is fix the jatpack, and play Siege
-     in hardcore mode.  Headshots will do even more damage, but the other
-     weapons will do their proper damage too.  We probably also want to do TRI
-     for Pulse/Minigun.
+  NOTE) Alternatively we can fix the jetpack, and play Siege in hardcore mode.
+     Headshots will still be easy, but the other weapons will do their proper
+     damage too.  (We could also consider TIW for pulse and minigun.)
 
-  My attempts so far have been a variety of failures:
+  Attempt 1) just an experiment
 
-  Attempt 1) Attempted to reduce the cylinder radius of the player's head and body
-     using trace - the ideal solution.
+    Attempted to reduce the cylinder radius of the player's head and body,
+    which I think is the ideal solution.  Unfortunately as a mutator using
+    Trace(), this suffers from the very lag that zp tries to avoid, so it was
+    horridly inaccurate and high-pingers could rarely make a headshot!
+    (An American kindly tested it for me and got into a fit doing it. ;)
 
-     It also let you keep the thin outer cylinder as lighter flesh wounds.
+  Attempt 2) * CURRENT! *
 
-     It did seem to work for players with low ping, but for high-pingers the
-     vectors on the server were too inaccurate and they always grazed.
+    Reduces the damage caused by hitscan shots.  Amount configurable.
 
-  Attempt 2) Attempted to simply reduce the damage caused by hitscan shots.
+    Works well in zp CTF and LMS games, which are usually played in hardcore
+    mode, and give 150 damage for a headshot.  You can scale down to 0.825 or
+    even 0.78, and still kill a 0:100 player with the same number of shots as
+    normal.  You only actually need to make more hits than usual if the enemy
+    has armour/vials.
 
-     Unfortunately mutators cannot affect armour damage, which is not reduced
-     at all, only damage done to health after armour is reduced.
-     I need to look into altering the Damage taken in the GameType.
+    But less perfect for Siege (non-hardcore) which only gives 100 for a
+    headshot (two-thirds the hardcore damage).  If we reduce that we can never
+    make a one-shot headshot on a newly spawned player!  It will require 2
+    shots (unless they have been hit by a SuperProtector or team-mate).  This
+    is not the same behaviour as in non-zp mode!
 
-     Works well in CTF and LMS games, which are usually played in hardcore
-     mode, and give 150 damage.  You can scale down to 0.825 or 0.78, and
-     still still kill a 0:100 player with the same number of shots as normal.
-     Only bodyshots on players with armour cause less real damage.
+    Unfortunately mutators cannot affect armour damage, which is not reduced at
+    all, only damage done to health after armour is reduced.  It would need to
+    be done by altering the Damage taken in the GameType (out of mutator reach).
 
-     But Siege only gives 100, two-thirds the hardcore damage for a headshot.
-     If we reduce that we can never make a single bullet headshot on a player
-     with only 100 health.  It will require 2 shots (unless they have been
-     hit by a SuperProtector or team-mate).  This is not the case in non-zp
-     mode!
+  Attempt 3) + Next! +
 
-     Configurable, please experiment!
+    Simply make damage for all weapons configurable.
 
-  Attempt 3) Another dirty hack: Now I will attempt to simply make damage for
-     all weapons configurable.
-
-     My default config will probably increase the damage of all of the
-     weapons to hardcore mode defaults in non-hardcore games.
+    This would allow us to increase the damage of all of the weapons to
+    hardcore mode levels in non-hardcore games.  ZP would still make the sniper
+    more accurate, but that could be reduced in damage if desired.
 
   Aside: Due to the nature of Siege gameplay, and the large flat maps, ripper
   spamming has become quite popular, and one day it might be nice to address
   this.  Perhaps a bouncy ripper (primary) should cost double ammo, or the
-  weapon could overheat and pause.
+  weapon could overheat and pause (lock up, cooldown).  Or we could ... tweak
+  its damage.  :P
 
-~ JLib
+  Aside: Even when the sniper is back at ClanBase level, I still hate it!  I
+  prefer weapons where you have to predict the opponents's future movement, and
+  there is some chance involved.  Random shit can be funny.
 
-  Some common functions I use in UnrealScripts, mostly String related.
+~ RocketArenaMutator
+
+  Allows you to boost yourself with your own weapons, like you can in
+  RocketArena.  I actually changed some of the parameters so the boosts are
+  more like CTF warmup mode.  Does not yet provide all weapons like RocketArena
+  maps do.  Does not break the game up into 1v1 or 2v2 rounds, it's only a
+  simple damage/boost mutator.  Perhaps rocket count may need to be log scaled
+  to match the real RA mod.
 
 ~ PureSwitcher
 
@@ -269,17 +286,9 @@ you may prefer to look for an earlier stable version from CVS:
 ~ Resurector
 
   If a player disconnects from the server, will bring them back with some of
-  their stats intact.  Does not work for SmartCTF.  I just fixed a couple of
-  bugs in this mod, and stopped it from fragging AutoTeamBalance stats.
-
-~ RocketArenaMutator
-
-  Allows you to boost yourself with your own weapons, like you can in
-  RocketArena.  I actually changed some of the parameters so the boosts are
-  more like CTF warmup mode.  Does not yet provide all weapons like RocketArena
-  maps do.  Does not break the game up into 1v1 or 2v2 rounds, it's only a
-  simple damage/boost mutator.  Perhaps rocket count may need to be log scaled
-  to match the real RA mod.
+  their stats intact.  Does not work for SmartCTF.  I just finished a couple of
+  missing features in this mod, to stop it from fragging AutoTeamBalance stats.
+  Sorry if I wasn't supposed to share it.  :P
 
 ~ ScreenExtensions
 
@@ -338,6 +347,10 @@ you may prefer to look for an earlier stable version from CVS:
 
   A build for SiegeXtreme2
 
+~ JLib
+
+  Some common functions I use in UnrealScripts, mostly String related.
+
 
 
 === DODGY ===
@@ -353,7 +366,8 @@ you may prefer to look for an earlier stable version from CVS:
 - CrouchBlocksDamage
 
   My first ever mutator, for protection against shock balls on XOL.  Never
-  really tried it, you can boost over Face crouching with your own ripper.
+  actually tried it there!  With some configs, I could boost over Face with
+  your own ripper, wheeee!
 
 - RandomMutators
 
