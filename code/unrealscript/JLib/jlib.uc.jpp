@@ -99,6 +99,7 @@ function string StrBeforeLast(string s, string x) {
 	}
 }
 
+#define StrIndexOf(X,Y,Z) InStrOff(Y,X,Z)
 function int InStrOff(string haystack, string needle, int offset) {
 	local int instrRest;
 	instrRest = InStr(Mid(haystack,offset),needle);
@@ -109,6 +110,7 @@ function int InStrOff(string haystack, string needle, int offset) {
 	}
 }
 
+#define StrLastIndexOf(X,Y,Z) InStrLast(Y,X,Z)
 function int InStrLast(string haystack, string needle) {
 	local int pos;
 	local int posRest;
@@ -202,4 +204,29 @@ function String StrPop(out String str, String delimiter) {
 	}
 	return result;
 }
+
+#if 0
+/*
+// Causes a compile error!
+function String StrNextWord(String str, out int strPos) {
+	local int len;
+	local String word;
+	len = Len(str);
+	while (strPos < len) {
+		if (str[strPos] == " ") {
+			strPos++;
+		} else {
+			break;
+		}
+	}
+	if (strPos >= len) {
+		return "";
+	}
+	nextSpace = StrIndexOf(" ",str,strPos);
+	word = Mid(str,strPos,nextSpace);
+	strPos = nextSpace;
+	return word;
+}
+*/
+#endif
 
