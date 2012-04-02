@@ -33,7 +33,7 @@ var bool bOnlyAdmin; // TODO: config
 var config Color SentPainColor,ReceivedPainColor,InfoColor;
 
 #ifdef RECORD_LIFE_LOG
-var Actor LastInstigator;
+var Pawn LastInstigator;
 #endif
 
 var PlayerSettings settings[64];
