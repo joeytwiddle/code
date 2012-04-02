@@ -98,32 +98,40 @@ class MapStats expands Mutator config(MapStats);
 
 var config bool bBroadcastStuff;
 var config bool bShowLevelEnterText;
-var config bool bEndGameSwitchMap;
-var config int EndGameSwitchSeconds;
-var config bool bAllowMutateSwitch;
-var config bool bEmptyServerSwitchMap;
-var config bool bEmptyServerRandomMap;
-var config int EmptyServerSwitchSeconds;
-var config bool bStickWithCurrentMode; // turn it on to keep server playable (no CTF on DM maps etc.!) - turn it off to scan all map-sizes
+
 var config bool bSetMaxPlayers;
 var config bool bAutoExpandMaxPlayers;
 var config int ServerMinPlayers;
 var config int ServerMaxPlayers;
+
 var config bool bLogging;
 var config bool bDebugLogging;
 var config bool bLogStats;
 var config bool bCollectDamage;
 var config bool bDoMapScan;
-var config bool bEstimatePreferredPlayers;
-var config bool bDetectCrashingMaps;
-var config bool bRetryCrashedMaps;
+
+var config bool bEstimatePreferredPlayers;     // Actually it always makes an estimate if there is none.  Really means bAllowEmptyServerSwitchToUnsizedMapsToLearnPP
+var config bool bRegeneratePreferredPlayers;   // Whether current non-0 values should be overwritten.  Enable this to use the latest MapStats algorithm, provided you don't mind losing any values you have set by hand.
 #ifdef LIST_RECENTLY_PLAYED
 var config bool bListRecentlyPlayed;
 var config String RecentlyPlayedMaps;
 #endif
+// var config bool bDisplayInfoWhenVoting;
+
+// Auto map-switching:
+var config bool bEndGameSwitchMap;
+var config int EndGameSwitchSeconds;
+var config bool bAllowMutateSwitch;
+var config bool bEmptyServerSwitchMap;
+var config int EmptyServerSwitchSeconds;
+var config bool bStickWithCurrentMode; // turn it on to keep server playable (no CTF on DM maps etc.!) - turn it off to scan all map-sizes
+var config bool bDetectCrashingMaps;   // This is really bRecordCrashingMaps.  I think it only discovers crashes if MapStats is doing the map switching.
+var config bool bRetryCrashedMaps;
 var config String KnownGameTypes; // used to associate map prefixes with their gametypes
-var config float MaxPlayerSizeDifference;
-var config bool bDisplayInfoWhenVoting;
+var config float MaxPlayerSizeDifference;   // Not actually an enforced maximum, but a recommendation.
+// This is needed to pick unsized maps, otherwise we will never get around to estimating their player size!
+// Deprecated: var config bool bEmptyServerRandomMap;
+#define bEmptyServerRandomMap bEstimatePreferredPlayers
 
 struct MapInfo {
 	var String MapName;
@@ -181,23 +189,23 @@ defaultproperties {
 bBroadcastStuff=True
 bLogging=True
 bDebugLogging=False
-bDetectCrashingMaps=False
+bDetectCrashingMaps=True
 bRetryCrashedMaps=False
 bLogStats=False
 bCollectDamage=False
 bEstimatePreferredPlayers=True
+bRegeneratePreferredPlayers=False
 bEndGameSwitchMap=False
-EndGameSwitchSeconds=30
+EndGameSwitchSeconds=12
 bEmptyServerSwitchMap=False
-bEmptyServerRandomMap=False
-EmptyServerSwitchSeconds=120
+EmptyServerSwitchSeconds=1800
 bAllowMutateSwitch=False
 bSetMaxPlayers=False
 bAutoExpandMaxPlayers=False
 ServerMinPlayers=6
 ServerMaxPlayers=16
 bDoMapScan=True
-bShowLevelEnterText=False
+bShowLevelEnterText=True
 bStickWithCurrentMode=True
 #ifdef LIST_RECENTLY_PLAYED
 bListRecentlyPlayed=False
@@ -301,11 +309,6 @@ function DoStart() {
 
 	// Should we regenerate the map's PreferredPlayers estimate with the latest algorithm?
 	// DONE: set this False for final release.  If admin really wants them regenerated, he can set them to 0.
-	#ifdef TESTING
-	#define bRegeneratePreferredPlayers True
-	#else
-	#define bRegeneratePreferredPlayers False
-	#endif
 	if (currentMap.PreferredPlayers == 0 || bRegeneratePreferredPlayers) {
 		// We are allowed to modify the PreferredPlayers count for this map, and should now do our best
 
@@ -367,11 +370,11 @@ function DoStart() {
 	if (currentMap.bCrashes || !currentMap.bOnDisk) bMustSave=True;
 	// Update some stats:
 	currentMap.GamesStarted++;
-	// #ifdef TESTING
-	// currentMap.DateLastPlayed = DaysSince1999(); // We need this to stop empty-switching to the same map every time.  But if we only want to record when a player actually plays the map, remove this line.
-	// #else
-	// currentMap.DateLastPlayed = (currentMap.DateLastPlayed + DaysSince1999()) / 2.0; // Compromise: we mix the two values (it becomes half as old).
-	currentMap.DateLastPlayed = (currentMap.DateLastPlayed*0.7 + DaysSince1999()*0.3); // Compromise: we pull its date forward by 30%, so other maps with similar age/score will now have their chance.
+	// In case no players join, we only pull the map's date forward by 30%, so
+	// other maps with similar age/score will now have their chance.
+	// Will be updated later if any players do join.
+	currentMap.DateLastPlayed = (currentMap.DateLastPlayed*0.7 + DaysSince1999()*0.3);
+	NormalLog("Brought age to " $ NiceAge(DaysSince1999() - currentMap.DateLastPlayed) $ " ago.");
 	// #endif
 	// if (currentMap.bCrashes) { NormalLog("FIXED! Map "$ mapName $" was previously crashing, but now works!"); } // Can't do, this is usually set to true by DoLevelSwitch :P
 	currentMap.bCrashes = False; // Was most likely set just before the server switched to this map.  We reset it here, to prove this is a non-crashing map.
@@ -702,6 +705,9 @@ function DoLevelSwitch() {
 	}
 	url = NextMap;
 	gametype = GetGameTypeFromPrefix(NextMap);
+	if (bStickWithCurrentMode) {
+		gametype = string(Level.Game.Class);
+	}
 	if (gametype == "") {
 		WarnLog("DoLevelSwitch() Warning! Unrecognised gametype "$ StrBeforeFirst(NextMap,"-") $" - please update KnownGameTypes.");
 		// TODO CONSIDER: Would it be better to do "game=" here, rather than leaving the server on the current mode - it may use the gametype in the map's LevelProperties.
@@ -711,7 +717,8 @@ function DoLevelSwitch() {
 	// TODO: We didn't handle mutators yet ... leaving them empty just keeps them the same as last map.
 	//       This is undesirable on kx if, say, we change from eLMS mode to CTF!
 	// url = url $"?mutator=...";
-	
+
+	// MINOR BUG: Sometimes the switch does not happen the first time.  5 seconds later the timer is called and tries again.
 	// NOTE: We're using Level.ServerTravel(url,false) this will crash if we're using AnthChecker_v138 and bEnableNetFix=true
 	Level.ServerTravel(url,false);
 	/*
@@ -825,6 +832,7 @@ function int MapIndex(String mapName) {
 
 function int MapIndex(String mapName) {
 	local int i,empty;
+	local MapInfo freshRecord;
 	empty = -1;
 	for (i=0;i<MaxData;i++) {
 		if (MapStats[i].MapName ~= mapName) {
@@ -840,7 +848,13 @@ function int MapIndex(String mapName) {
 	} else {
 		i = empty;
 	}
+	// Creating a new record - we use freshRecord to overwrite any values that were not empty.
+	MapStats[i] = freshRecord;
 	MapStats[i].MapName = mapName;
+	MapStats[i].DateLastPlayed = DaysSince1999() - 30;
+	MapStats[i].PreferredPlayers = 0;
+	MapStats[i].bOnDisk = true;
+	MapStats[i].bCrashes = false;
 	return i;
 }
 
@@ -908,7 +922,7 @@ function float DaysSince1999() {
 }
 
 function float ScoreForNextMap(int nextI, int currentNumPlayers) {
-	local float ageInDays, playerDiff, result;
+	local float ageInDays, playerDiff, result, preferredCount;
 	// if (MapStats[nextI].DateLastPlayed>719540) MapStats[nextI].DateLastPlayed = MapStats[nextI].DateLastPlayed - 719540; // legacy: when i changed my date calculation :P
 	ageInDays = DaysSince1999() - MapStats[nextI].DateLastPlayed;
 	// if (ageInDays>719050) ageInDays = ageInDays - 719050; // legacy: when i changed my date calculation :P
@@ -917,15 +931,24 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	// Now I give +/-0.5random in order to be fair on currentNumPlayers==Int and PreferredPlayers==Float.
 	// #define deltaPlayers ( FRand() - 0.5 )
 	#define deltaPlayers (FRand()*0.5)
-	playerDiff = Abs(currentNumPlayers + deltaPlayers - MapStats[nextI].PreferredPlayers);
-	#ifdef XOL_BUILD
-		// Rork's suggestions - to make playerDiff more relevant than ageInDays
-		if (playerDiff > MaxPlayerSizeDifference) {
-			playerDiff = playerDiff + 5;
-		}
-	#endif
+	preferredCount = MapStats[nextI].PreferredPlayers;
+	if (preferredCount == 0) {
+		// Under certain conditions we may be asked to score a map for which we do not yet know the PreferredPlayers.
+		// In this case we use a useful average/estimate.
+		preferredCount = 9.5;
+	}
+	playerDiff = Abs(currentNumPlayers + deltaPlayers - preferredCount);
+
+	// Since we divide later, we should not start playerDiff from 0.  In that
+	// case, given 6 players, a map with PP=6.1 will always beat one with PP=6.5
+	// even if it is a lot older.
+	// Adding 5 here (almost) means a difference of 5 players is twice as bad as a difference of 1.
+	playerDiff = MaxPlayerSizeDifference + playerDiff;
+
 	// Punish large playerDiff more than small playerDiff.  (Basically 0-4 playerdiff is acceptable, but >7 playerdiff is terrible.)
-	playerDiff = 20.0 + (playerDiff*playerDiff*playerDiff);   // plot [0:10] [0:500] 20+(x)**3
+	// playerDiff = 20.0 + (playerDiff*playerDiff*playerDiff);   // plot [0:10] [0:500] 20+(x)**3
+	// That was way to strong.  It's no good making it stronger than linear.  I'd even be tempted to square-root it, or raise ageInDays to a power.
+	// We want age to be most relevant, but playerDiff included in consideration.
 	// playerDiff += 2.0; // Makes playerDiff more fuzzy, less significant, so that cycle is really more based on age of map.  This prevents us from playing the same maps repeatedly, just because the player size is "perfect".  This also avoids the possiblity of a divide-by-zero below.
 	#ifndef XOL_BUILD
 		if (currentNumPlayers==0) playerDiff = 12.0; // When the server is empty, all maps have the same weighting in terms of player count
@@ -980,10 +1003,10 @@ function String ChooseNextMap() {
 	if (currentNumPlayers == 0 && bEmptyServerRandomMap) {
 		bCanChooseUnsizedMaps = True;   // A chance to estimate player size for maps we have not yet processed
 		currentNumPlayers = ServerMinPlayers + FRand() * (ServerMaxPlayers - ServerMinPlayers + 1);
-		BroadcastMessage("Seeking map for "$ currentNumPlayers $" players.");
+		BroadcastMessage("Using random number of players "$ currentNumPlayers $" for choice.");
 		NormalLog("Seeking map for "$ currentNumPlayers $" players.");
-	} // TODO: If MapStats is the server's only method of map switching, it may refuse to ever try a new map.  (e.g. if bEmptyServerSwitchMap is unset)
-	NormalLog("Current players = "$ currentNumPlayers $", choosing...");
+	} // TODO: If MapStats is the server's only method of map switching, it may refuse to ever try a new map.  (e.g. if bEmptyServerRandomMap is unset)
+	NormalLog("Current players is "$ currentNumPlayers $", choosing...");
 	for (i=0;i<MaxData;i++) {
 		if (MapStats[i].PreferredPlayers > 0 || (bCanChooseUnsizedMaps && MapStats[i].MapName!="")) {
 			mapScore = ScoreForNextMap(i,currentNumPlayers);
@@ -1035,8 +1058,8 @@ function String ChooseNextMap() {
 			}
 		}
 	}
-	NormalLog("Best map was "$ bestMap $" (score "$ NiceFloat(bestScore) $", age "$ NiceAge(DaysSince1999() - MapRecord(bestMap).DateLastPlayed) $", players "$ NiceFloat(MapRecord(bestMap).PreferredPlayers)$ ")");
-	NormalLog("Other considered maps were: "$ ConsideredMaps);
+	NormalLog("Best map for " $ currentNumPlayers $ " was "$ bestMap $" (score "$ NiceFloat(bestScore) $", age "$ NiceAge(DaysSince1999() - MapRecord(bestMap).DateLastPlayed) $", players "$ NiceFloat(MapRecord(bestMap).PreferredPlayers)$ ")" /* );
+	NormalLog( */ $"  "$ "Other considered maps were: "$ ConsideredMaps);
 	return bestMap;
 }
 
@@ -1288,10 +1311,10 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 		// }
 		#endif
 
-		if (bDisplayInfoWhenVoting) {
+		// if (bDisplayInfoWhenVoting) {
 			// TODO: We want to catch messages such as: The_Master voted for xLMS-Gothic
 			// And then display its size to the players (and maybe its ratings too).
-		}
+		// }
 
 	}
 	return Super.MutatorTeamMessage(Sender,Receiver,PRI,Msg,Type,bBeep) && (!hideMessage /* || !bSwallowSpokenCommands */ );
