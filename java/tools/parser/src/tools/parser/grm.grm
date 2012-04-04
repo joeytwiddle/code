@@ -63,7 +63,7 @@
 # MagicTokenOfEfficiency, in that the former would commit to the current line
 # not just for the current atom but for the whole parse.  So if the line does
 # not match after a MagicTokenOfDoom has been passed, we can display an error
-# "expected <NextToken> but got <remaining_string>".
+# "expected <NextType> but got <remaining_string>".
 #
 # Possible magic tokens:
 #   Taken: * + ( ) [ ] $ = # @
@@ -73,6 +73,9 @@
 # ! and ^ are suitable for the DoNotMatch condition.
 # The association of ! with warnings makes it a good candidate for MagicTokenOfDoom.
 # We can also consider different meanings for &, && and &&&.
+#   !   = not
+#   !!  = MagicTokenOfEfficiency
+#   !!! = MagicTokenOfDoom
 
 # TODO: Do we want to demand spaces separate the elements of atom rules?  If
 # so, we should check that this is enforced by the grammar (it should be

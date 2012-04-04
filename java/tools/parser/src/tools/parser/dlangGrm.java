@@ -79,6 +79,7 @@ public class dlangGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
 
+    // DLangHeader = (WS Comment)* WS [DLangModule] (WS | Comment | DLangImportProper)*
 
     ruleset=new RuleSet("DLangModule");
       grammar.addRuleset(ruleset);
@@ -453,6 +454,7 @@ public class dlangGrm extends GrammarHelper {
     // dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
 
     // Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
+    // This now means NonStatement must be tested before Statement.
 
     ruleset=new RuleSet("MutableCodeInner");
       grammar.addRuleset(ruleset);

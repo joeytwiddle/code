@@ -19,6 +19,10 @@
 # element in an array than l[l.length-1]
 
 # @OPTION wrap_meaningful_indentation "{" "}"
+# Wrapping indented blocks in {...} is one way to make them easily visible to the grammar/parse.  Another way would be to detect and mark only OUTDENTs.  These could be used to catch the end of a block when expected, or ignored when uninteresting (e.g. sometimes long expressions are broken onto lines and indented).
+
+# Many languages suffer from stuff that is irrelevant.  E.g. whitespace and comments.  Usually wherever we accept one we also accept the other.  So WS searches are in fact incorrect.  Recommend creating a minimalist gramelle for this: _ = (WS | Comment)+
+# We could attempt to swallow unneccessary braces "{" in multi-line expressions "}" using _e = (WS | Comment | RedundantBrace)*
 
 @IMPORT DExpression "dexpr.grm"
 
@@ -35,6 +39,7 @@ dintj: "package dlang.parsed;\n\nimport java.lang.String;\nimport java.util.Vect
 #                  | ""
 
 DLangHeader = [ Comment ] [ DLangModule ] [ Comment ] [ DLangImports ]
+# DLangHeader = (WS Comment)* WS [DLangModule] (WS | Comment | DLangImportProper)*
 
 DLangModule = "package" Space <module/"\n;"> EOL
             | "module" Space <module/"\n;"> EOL
@@ -130,6 +135,7 @@ dintj: "new MutableCodeBlock( newList()" $1 " )"
 # dintj: "new MutableCodeBlock( newList()" MutableCodeInner " )"
 
 # Note we test FunctionDefinition before FunctionCall - they both look similar at the start!
+# This now means NonStatement must be tested before Statement.
 
 MutableCodeInner = Space | Comment | RelevantCodeBit
 

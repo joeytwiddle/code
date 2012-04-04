@@ -1,0 +1,37 @@
+
+
+= Interesting parts of tree =
+
+Frequently we will be more interested in the leaves, and less about structural elements.
+
+When printing the parse tree, how could we separate interesting from non-interesting matches?
+Where non-interesting is defined as a match with no raw data in it, just a set of child atom matches.
+In other words, they are not leaf but branch nodes, and may not be of interest in the final tree.
+
+Perhaps when *building* matches, we could create a simplification or specification of a general match (by extending/conreting Match), that describes what kind of match it is, for example TextMatch, VarMatch, RuleMatch.  These might contain enough information to aid the separation desired above.
+
+
+
+
+A = B | C
+
+
+
+We would like to import other grammars, and maybe overwrite parts of them.
+So we could import a general expression, and then maybe extend it a bit.
+
+Consider:
+
+@import Expression "expr.grm"
+
+Expression.Operator = @Expression.Operator | "." | "&"
+
+The @ signifies that we wish to refer to the previously parsed/imported E.Operator, not the top-level one (the one we are currently defining, which will override the other).
+Currently the parser does not support this.  It refers to other atoms by string-name, not a direct reference.
+
+I prefer packaging/namespacing with "." over ":".  "." does suggest more than one level may be allowed!
+
+
+
+
+

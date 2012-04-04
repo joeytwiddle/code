@@ -1,0 +1,8 @@
+*.java.*
+*.grm.*
+.*.sw?
+c.grm,v
+.cvsignore
+grmGrm
+grm.old.withhaskell
+marffGrm.class.1

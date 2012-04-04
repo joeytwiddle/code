@@ -254,6 +254,7 @@ public class Atom implements MagicType {
 
 	public static String headSome(SomeString s) {
 	   int lastchar = s.length() < 40 ? s.length() : 40;
+	   // @todo See also Atom.strip() - these two should probably be merged
 	   String head = StringUtils.escapeSpecialChars(s.substring(0, lastchar));
 	   return head;
    }

@@ -77,23 +77,43 @@ public class Match {
 	// @todo Rename this: printParseTree
 	public void printParseTree(PrintStream out, String ind) {
 		// System.out.println("Generating Match "+type+" with "+(matches==null?"no match":""+matches.size()));
-		out.print(ind + type + " = " + "\"" + Atom.strip("" + string) + "\"");
-		if (matches != null) {
-			out.print(" with: [");
+		
+		// Skip display of elements which are purely structural
+		boolean hideme = (type instanceof RepeatedRule || type instanceof GroupedDefn);
+		// boolean hideme = false;
+		
+		// boolean hideMatchedText = (matches!=null && matches.size()>0);
+		boolean hideMatchedText = false;
+		
+		String matchedText = ( hideMatchedText ? "" : "\"" + Atom.strip("" + string) + "\" " );
+		
+		if (!hideme)
+			out.print(ind + type + " = " + matchedText);
+		if (matches != null && matches.size() > 0) {
+			if (!hideme)
+				out.print( (hideMatchedText ? "" : "with ") + "[\n");
+			String childInd = ind + (hideme ? "" : " ");
 			for (int i = 0; i < matches.size(); i++) {
-				out.print("\n" + ind);
-				matches.get(i).printParseTree(out, ind + " ");
+				matches.get(i).printParseTree(out, childInd);
+				// if (!hideme || i>0)
+					// out.print("\n");
 			}
 			// System.out.println("a");
 			// tmp=JString.replace(tmp,"\n","\n  ");
 			// System.out.println("b");
-			String weirdind = (ind + ind);
-			if (weirdind.length() > 0) weirdind = weirdind.substring(1);
-			out.print("\n" + weirdind + "] leaving \"" + Atom.strip("" + left)
-			      + "\"");
+			// String weirdind = (ind + ind);
+			// if (weirdind.length() > 0) weirdind = weirdind.substring(1);
+			if (!hideme)
+				out.print(ind + "]\n");
+		} else {
+			if (!hideme)
+				out.print("\n");
 		}
+		// if (!hideme)
+			// out.print(" leaving \"" + Atom.strip("" + left) + "\"");
 	}
 
+	/*
 	public Vector<Type> rulefrommatch() {
 		Vector<Type> v = new Vector<Type>();
 		for (int i = 0; i < matches.size(); i++) {
@@ -102,6 +122,7 @@ public class Match {
 		// Logger.debug("Generated replacement rule from match: "+v);
 		return v;
 	}
+	*/
 
 	/** render needs to learn to deal with RelElements. **/
 	public void render(Match btwyourdadis, String target, PrintStream out) {
@@ -145,7 +166,7 @@ public class Match {
 			// Vector rs = (tmp == null ? rulefrommatch() : (Vector) tmp);
 			// out.print("    // Rendering "+Atom.strip(""+this)+" against "+rs+"\n";
 			// out.print("    // Rendering "+a.type+": "+rs+"\n";
-			Vector<Match> unusedmatches = (Vector<Match>) matches.clone();
+			// Vector<Match> unusedmatches = (Vector<Match>) matches.clone();
 			for (int i = 0; i < replacementRule.size(); i++) {
 				Type t = (Type) replacementRule.get(i);
 				// renderIn(unusedmatches, t, target, out);
@@ -153,6 +174,10 @@ public class Match {
 			}
 
 		}
+		
+		
+		this.unusedMatches = null;
+		
 	}
 
 	public String renderString(String target) {
