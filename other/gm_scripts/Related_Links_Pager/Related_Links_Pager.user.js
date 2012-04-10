@@ -10,20 +10,26 @@ var delayBeforeRunning = 2000;
 var minimumGroupSize = 5;
 var maximumGroupSize = 110;       // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request")
 var groupLinksByClass = true;
-var leaveHashUrlsAlone = true;
+
 var enableOnCtrlClick = true;
 var enableOnShiftClick = false;   // Allows you to avoid the script when needed
 var enableOnRightClick = false;
-var highlightLinkGroups = true;
+
+var keepNavigationHistory = false;   // When off, paging is not added to browser history.  The back button will return you to the page before you started paging.
+var leaveHashUrlsAlone = true;    // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
+var forceTravel = true;           // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
+
+var verbose = true;                     // Extra logging for debugging
+var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
+var highlightLinkGroups = true;         // Change the background color of links in the current group on hover.
 // var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
 // var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
 var highlightColor         = null;
-var thisLinkHighlightColor = "rgba(130,230,255,0.1)";
-var forceTravel = true;           // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
-var verbose = true;
+var thisLinkHighlightColor = "rgba(130,230,255,0.3)";
 
 
 // == CHANGELOG ==
+// 2012-03-22 Added highlighting and further heuristics.
 // 2012-02-07 Bugfixes and more heuristics.
 // 2012-01-30 Fixed repeat rewrite bug by checking for &sib as well as #sib.
 // 2012-01-28 Fixed close button positioning in Firefox.
@@ -203,7 +209,7 @@ function isSuitable(link) {
   // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
 
   var isYouTubePagerLink
-    link.host.indexof("www.youtube.") == 0
+    link.host.indexOf("www.youtube.") == 0
     && link.href.indexOf("/all_comments?") >= -1;
   var youtubeWillComplain = isYouTubePagerLink;
 
@@ -330,19 +336,30 @@ function createRelatedLinksPager(siblings) {
     ".linkGroupPagerList { text-align: left; }"
   );
 
-  function maybeTitle(link) {
+  function maybeHost(link) {
     if (link.host != document.location.host) {
       return " ("+link.host+")";
     }
   }
 
+  function createLinkFromRecord(record, text) {
+    var link = document.createElement("A");
+    link.textContent = text;
+    var appendChar = ( record[1].indexOf('#')>=0 ? '&' : '#' );
+    link.href = record[1] + appendChar + 'siblings=' + encodedList;
+    link.title = "Previous: "+record[0]+maybeHost(link);
+    link.onclick = function(evt){
+      if (!keepNavigationHistory) {
+        document.location.replace(this.href);
+        evt.preventDefault();
+      }
+    };
+  }
+
   if (currentIndex > 0) {
-    var leftLink = document.createElement("A");
     var leftRecord = siblings[currentIndex-1];
-    leftLink.textContent = "<<";
-    var appendChar = ( leftRecord[1].indexOf('#')>=0 ? '&' : '#' );
-    leftLink.href = leftRecord[1] + appendChar + 'siblings=' + encodedList;
-    leftLink.title = "Previous: "+leftRecord[0]+maybeTitle(leftLink);
+    var leftLink = createLinkFromRecord(leftRecord, "<<");
+    leftLink.title = "Previous: "+leftLink.title;
     pager.appendChild(leftLink);
   }
 
@@ -357,12 +374,9 @@ function createRelatedLinksPager(siblings) {
   pager.appendChild(pagerButton);
 
   if (currentIndex < siblings.length-1) {
-    var rightLink = document.createElement("A");
     var rightRecord = siblings[currentIndex+1];
-    rightLink.textContent = ">>";
-    var appendChar = ( rightRecord[1].indexOf('#')>=0 ? '&' : '#' );
-    rightLink.href = rightRecord[1] + appendChar + 'siblings=' + encodedList;
-    rightLink.title = "Next: "+rightRecord[0]+maybeTitle(rightLink);
+    var rightLink = createLinkFromRecord(rightRecord, ">>");
+    rightLink.title = "Next: "+link.title;
     pager.appendChild(rightLink);
   }
 
@@ -380,14 +394,15 @@ function createRelatedLinksPager(siblings) {
     pageList.appendChild(document.createElement("br"));
     pageList.appendChild(document.createTextNode(""+(i+1)+". "));
     var record = siblings[i];
-    var link = document.createElement("A");
+    var text = record[0] || record[1];   // use address if no title
+    var link = createLinkFromRecord(record, text);
     if (record[1] == seekURL) {
-      link = document.createElement("span");
-      link.style.fontWeight = 'bold';
+      // Replace link with just a bold span
+      var span = document.createElement("span");
+      span.style.fontWeight = 'bold';
+      span.textContent = link.textContent;
+      link = span;
     }
-    link.textContent = record[0] || record[1];   // use address if no title
-    var appendChar = ( record[1].indexOf('#')>=0 ? '&' : '#' );
-    link.href = record[1] + appendChar + 'siblings=' + encodedList;
     pageList.appendChild(link);
     addFaviconToLinkObviouslyIMeanWhyWouldntYou(link);
   }
@@ -405,7 +420,8 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   // GM_log("Got encoded: "+encodedList);
   var siblings = JSON.parse(decodeURIComponent(encodedList));
   createRelatedLinksPager(siblings);
-  document.location.hash = ".";
+  // document.location.hash = ".";   // Creates an unwanted history step
+  document.location.replace('#');   // #. breaks google search results pages, tho we rarely page through them.
 }
 
 
@@ -473,11 +489,17 @@ if (highlightLinkGroups) {
     if (isSuitable(link)) {
       clearList();
       list = collectLinksInSameGroupAs(link);
-      highlightList();
-      if (thisLinkHighlightColor) {
-        link.style.backgroundColor = thisLinkHighlightColor;
+      if (list.length>=minimumGroupSize && list.length<maximumGroupSize) {
+        highlightList();
+        if (thisLinkHighlightColor) {
+          link.style.backgroundColor = thisLinkHighlightColor;
+        }
+        // link.style.border = "2px solid "+highlightColor;
+        if (showGroupCountInLinkTitle && !link.doneAppendGroupsize) {
+          link.doneAppendGroupsize = true;
+          link.title += " ("+list.length+" in group)";
+        }
       }
-      // link.style.border = "2px solid "+highlightColor;
     }
   },true);
   document.body.addEventListener("mouseout",function(evt) {
