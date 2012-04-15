@@ -739,10 +739,10 @@
 
 			/* We could put the QuickConsole into window, so that history can be preserved if the console is reloaded. */
 
-			var QuickConsole = window.QuickConsole ? window.QuickConsole : ({});
+			var QuickConsole = window.QuickConsole ? window.QuickConsole : {};
 			window.QuickConsole = QuickConsole;
 
-			var oldConsole = window.console;
+			var oldConsole = window.console || {};
 			var oldLog = oldConsole.log;
 
 			function qcLog() {
@@ -1074,10 +1074,13 @@
 		<LI class='done'>Done: Close button is in the right place now.</LI>
 		<LI class='done'>Done: Lots of expansion and bloat, including command-line history (still a couple of bugs to iron out there).</LI>
 		<LI class='done'>Added shortcuts <TT>c:</TT> to evaluate CoffeeScript and <TT>C:</TT> to show just the JS translation.</LI>
-		<LI class='todo'>Todo: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
+		<LI class='todo'>Testing: It would be groovy if both boxes worked the same, on the other.  So you can choose which box to edit in depending if you have big code producing little output, or little code producing big output.</LI>
 		<LI class='todo'>The Javascript Shell on <A href="https://www.squarefree.com/bookmarklets/webdevel.html">SquareFree</A> provides Tab-completion!</LI>
-		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.  Intercept console.log()?</LI>
+		<LI class='todo'>Todo: Improve looks.  Move towards an IDE style (e.g. Firebug Lite) by integrate with XPathTester, JSInspector and HighlightStructure.  Steal good bits from SquareFree&apos;s Console.</LI>
+		<LI class='done'>Intercept console.log()?</LI>
 		<LI class='note'>I somewhat regret having made the CS script lazy-loading, since it forced me to replace lots of nice <TT>return r;</TT>s with <TT>callback(r);</TT>s, increasing the complexity of the code.  <small>(We could have returned, but squeezed in a callback also, in the case where it is needed.)</small></LI>
+		<LI class='todo'>The <TT>.</TT> shortcut occasionally activates when we don't want it to (e.g. in <tt>document.location = myObj.somePro oh damn</tt>).  To avoid this, do not fire until user pauses typing.</LI>
+		<LI class='todo'>In the case of <tt>document.body.appendChild(document.createElement('div')).</tt> then <tt>style.</tt> we often want to re-use the result from the first evaluation (although it may occasionally be undesirable - we could possibly break an object's state although it appears we are making a fresh one).  Doing this <i>properly</i> may be beyond the scope of a bookmarklet; really we would need need an expression/statement parser and evaluator in order to re-use sub-expressions.</LI>
 	</BLOCKQUOTE>
 
 	<A name="xpathtester"></A>
@@ -1100,7 +1103,6 @@
 	<H3>Quick and easy DOM inspectors.</H3>
 	<blockquote>
 		<div class='todo'>Early scripts, need improvement.</div>
-		<div class='todo'>Issue: Cannot toggle off!</div>
 	</blockquote>
 	</P>
 
@@ -1218,6 +1220,7 @@
 			<LI class='done'>More useful for developers: as well as showing the XPath, we now also show the attributes of the element in its title/popup.</LI>
 			<LI class='done'>Added tag and attributes to title.  Too bad the newlines don&apos;t work in the fox.</LI>
 			<LI class='done'>Added limited CSS info to title.</LI>
+			<LI class='todo'>Issue: Cannot toggle off!</LI>
 			<LI class='todo'>The current &quot;webdeveloper&quot; version is psychedelic but informative.  We might want to make a friendlier few-colour version, for common browsing usage.  Example usage: The structure of this page (and some others on the web), whilst tree-like, is not immediately intuitive.  However if we were to set the background of all level 1 DIVs to green, and level 2 DIVs to blue, and level 3 BLOCKQUOTES to orange, etc., the page might be easier to navigate.</LI>
 			<LI class='todo'>Can be sluggish to run on the heavier DOMs, due to poor event capturing.</LI>
 			<LI class='todo'>It acts on every element you move the mouse over, which can be a lot.  It could take a break while you move, if it doesn&apos;t highlight newly entered elements, it won&apos;t have to unhighlight them on the way out.</LI>
