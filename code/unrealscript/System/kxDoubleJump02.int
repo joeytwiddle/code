@@ -1,0 +1,3 @@
+[Public]
+Object=(Name=kxDoubleJump02.DoubleJumpUT,Class=Class,MetaClass=Engine.Mutator,Description="kx DoubleJump")
+Object=(Name=kxDoubleJump02.Boots,Class=Class,MetaClass=Tournament.Pickup,Description="kx DoubleJump Boots")

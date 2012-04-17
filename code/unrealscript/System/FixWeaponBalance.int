@@ -1,0 +1,3 @@
+[Public]
+Object=(Name=FixWeaponBalance.FixWeaponBalance,Class=Class,MetaClass=Engine.Mutator,Description="FixWeaponBalance")
+Object=(Name=FixWeaponBalance.FixWeaponBalanceZP,Class=Class,MetaClass=Engine.Mutator,Description="FixWeaponBalanceZP")
