@@ -363,6 +363,7 @@ function createRelatedLinksPager(siblings) {
         evt.preventDefault();
       }
     };
+    return link;
   }
 
   if (currentIndex > 0) {
@@ -509,7 +510,7 @@ if (highlightLinkGroups) {
         // link.style.border = "2px solid "+highlightColor;
         if (showGroupCountInLinkTitle && !link.doneAppendGroupsize) {
           link.doneAppendGroupsize = true;
-          link.title += " ("+list.length+" in group)";
+          link.title = (link.title ? link.title+" " : "") + "("+list.length+" in group)";
         }
       }
     }
