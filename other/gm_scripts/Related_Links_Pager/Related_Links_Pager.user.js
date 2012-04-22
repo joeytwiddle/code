@@ -20,12 +20,13 @@ var leaveHashUrlsAlone = true;    // Many sites use # these days for their own p
 var forceTravel = true;           // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
 
 var verbose = true;                     // Extra logging for debugging
-var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
+
 var highlightLinkGroups = true;         // Change the background color of links in the current group on hover.
-// var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
-// var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
-var highlightColor         = null;
-var thisLinkHighlightColor = "rgba(130,230,255,0.3)";
+var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
+var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
+// var thisLinkHighlightColor = "rgba(130,230,255,0.3)";
+// var highlightColor         = null;
+var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
 
 
 // == CHANGELOG ==
@@ -70,6 +71,13 @@ setTimeout(function(){
 
 // We consider related links, or "siblings", to be those on the current page
 // with the same DOM path as the clicked link.
+
+function getGroupSignature(link) {
+	if (!link.cachedGroupSignature) {
+		link.cachedGroupSignature = getXPath(link).replace(/\[[0-9]*\]/g,'');
+	}
+	return link.cachedGroupSignature;
+}
 
 function getXPath(node) {
 	var parent = node.parentNode;
@@ -143,7 +151,7 @@ if (!this.GM_addStyle) {
 
 function collectLinksInSameGroupAs(clickedLink) {
   // We remove the numbers from the XPath
-  var seekXPath = getXPath(clickedLink).replace(/\[[0-9]*\]/g,'');
+  var seekXPath = getGroupSignature(clickedLink);
   // NOTE: We could search for matches with document.query - it might be faster.
   var links = document.getElementsByTagName("A");
   var collected = [];
@@ -152,7 +160,7 @@ function collectLinksInSameGroupAs(clickedLink) {
     if (groupLinksByClass && link.className != clickedLink.className) {
       continue;
     }
-    var xpath = getXPath(link).replace(/\[[0-9]*\]/g,'');
+    var xpath = getGroupSignature(link);
     if (xpath == seekXPath) {
       if (link.textContent) {   // ignore if no title
         collected.push(link);
@@ -208,7 +216,7 @@ function isSuitable(link) {
       );
   // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
 
-  var isYouTubePagerLink
+  var isYouTubePagerLink =
     link.host.indexOf("www.youtube.") == 0
     && link.href.indexOf("/all_comments?") >= -1;
   var youtubeWillComplain = isYouTubePagerLink;
@@ -489,6 +497,9 @@ if (highlightLinkGroups) {
     if (isSuitable(link)) {
       clearList();
       list = collectLinksInSameGroupAs(link);
+      if (verbose) {
+        GM_log("Got "+list.length+" matching siblings: "+list);
+      }
       if (list.length>=minimumGroupSize && list.length<maximumGroupSize) {
         highlightList();
         if (thisLinkHighlightColor) {
