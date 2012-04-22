@@ -26,6 +26,7 @@ var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
 var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
 // var thisLinkHighlightColor = "rgba(130,230,255,0.3)";
 // var highlightColor         = null;
+
 var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
 
 
