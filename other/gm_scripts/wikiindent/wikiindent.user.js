@@ -15,6 +15,9 @@ var makeTableOfContentsFloat = true;
 var indentSubBlocks = true;
 var fixUnderlinesToOverlines = true;
 
+// var minimisedSidebarSize = 6;   // Small
+var minimisedSidebarSize = 16;
+
 
 /* TODO: As we scroll the page, light up the "current" section in the TOC.
  *
@@ -126,7 +129,7 @@ function doIt() {
 			var inStartup = (evt == null);
 			var clickedHeader = evt && (evt.target.id == 'mw-head');
 			var clickedPanelBackground = evt && (evt.target.id == 'mw-panel' || evt.target.className.indexOf('portal')>=0);
-			var clickedAreaBelowSidebar = evt && (evt.target.tagName == 'HTML' || evt.tagName == 'BODY');
+			var clickedAreaBelowSidebar = evt && (evt.target.tagName == 'HTML' || evt.target.tagName == 'BODY');
 			if (inStartup || clickedHeader || clickedPanelBackground || clickedAreaBelowSidebar) {
 
 				if (evt)
@@ -139,7 +142,7 @@ function doIt() {
 						// column-one contains a lot of things we want to hide
 						sideBar.style.display = 'none';
 						content.oldMarginLeft = content.style.marginLeft;
-						content.style.marginLeft = '6px';
+						content.style.marginLeft = minimisedSidebarSize+'px';
 						for (var i in toToggle) {
 							if (toToggle[i]) { toToggle[i].style.display = 'none'; }
 						}
@@ -170,7 +173,7 @@ function doIt() {
 		// log("sideBar="+sideBar+" and content="+content);
 		if (sideBar && content) {
 			// We need to watch window for clicks below sidebar (Chrome).
-			window.addEventListener('click',toggleWikipediaSidebar,false);
+			document.documentElement.addEventListener('click',toggleWikipediaSidebar,false);
 		} else {
 			log("Did not have sideBar "+sideBar+" or content "+content); // @todo Better to warn or error?
 		}
