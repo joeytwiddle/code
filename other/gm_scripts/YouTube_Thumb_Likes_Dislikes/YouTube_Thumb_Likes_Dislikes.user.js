@@ -6,6 +6,8 @@
 // @include        https://youtube.com/*
 // @include        http://*.youtube.com/*
 // @include        https://*.youtube.com/*
+// For thumbnails when google is presenting video search - may not work!
+// @include        https://www.google.co.uk/search?q=*&tbm=vid&*
 // ==/UserScript==
 
 // Some YouTube videos get lots of views even though they are rubbish, maybe
@@ -15,8 +17,8 @@
 // However, it is fairly easy to filter these out, if we see the video has
 // significantly more dislikes than likes!
 
-var spamYouTube = true;   // Automatically looks up all thumbnails on the page.
-                          // Otherwise, waits for mouseovers before doing lookup.
+var spamYouTube = false;   // Automatically looks up all thumbnails on the page.
+                           // Otherwise, waits for mouseovers before doing lookup.
 
 // Some other scripts like this:
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
@@ -81,8 +83,10 @@ function checkLikesDislikes(evt) {
 						target.appendChild(lightSaber);
 						// It often falls on the line below the thumbnail, aligned left
 						// Here is a dirty fix to align it right, with all the other info.
-						lightSaber.style.marginLeft = '124px';
-						// DONE: Bars are unneccessarily wide on search results pages.
+						if (document.pathname === "/watch") { // not on search results
+							lightSaber.style.marginLeft = '124px';
+						}
+						// Bars are unneccessarily wide on search results pages, so:
 						if (lightSaber.clientWidth > 150) {
 							lightSaber.style.maxWidth = '120px';
 						}
