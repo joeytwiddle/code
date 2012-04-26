@@ -43,7 +43,7 @@ if (typeof GM_addStyle == "undefined") {
 
 // Implementing these allows us to remember toggled state.  (Chrome's set/getValue don't work.)
 if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)) {
-	GM_log("TOCE: Adding fallback implementation of GM_set/getValue");
+	GM_log("[TOCE] Adding fallback implementation of GM_set/getValue");
 
 	if (typeof localStorage == 'undefined') {
 
@@ -138,7 +138,7 @@ try {
 		// var nodeSnapshot = document.evaluate("//*[starts-with(name(.),'H') and substring(name(.),2) = string(number(substring(name(.),2)))]",document,null,6,null);
 		if (nodeSnapshot.snapshotLength > minimumItems) {
 
-			GM_log("Making TOC with "+nodeSnapshot.snapshotLength+" nodes.");
+			GM_log("[TOCE] Making TOC with "+nodeSnapshot.snapshotLength+" nodes.");
 
 			toc = newNode("div");
 			toc.id = 'toc';
@@ -288,9 +288,10 @@ try {
 	// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
 	// FIXED: Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
 	// FIXED : max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
-	GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 32%; overflow: auto; }");
-	GM_addStyle("#toc       { opacity: 0.2; }");
-	GM_addStyle("#toc:hover { opacity: 1.0; }");
+	GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 32%; overflow: auto; }"
+		+ "#toc       { opacity: 0.2; }"
+		+ "#toc:hover { opacity: 1.0; }"
+	);
 
 } catch (e) {
 	GM_log("[TOCE] Error! "+e);
