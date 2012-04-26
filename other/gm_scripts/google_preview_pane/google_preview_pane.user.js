@@ -3,13 +3,29 @@
 // @namespace      GPP
 // @homepage       http://userscripts.org/users/89794
 // @description    Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page.
-// @include        http://www.google.*/*q=*
+// @include        http://*.google.*/*q=*
 // @include        http://google.*/*q=*
-// @exclude        http://www.google.*/images*
+// @include        https://*.google.*/*q=*
+// @include        https://google.*/*q=*
+// @exclude        http://*.google.*/images*
+// @exclude        http://*.google.*/*&tbm=isch&*
 // @exclude        http://google.*/images*
 // @exclude        http://google.*/*&tbm=isch&*
+// @exclude        https://*.google.*/images*
+// @exclude        https://*.google.*/*&tbm=isch&*
+// @exclude        https://google.*/images*
+// @exclude        https://google.*/*&tbm=isch&*
 // @version        2012.02.07
 // ==/UserScript==
+
+// Notes on the patterns:
+//
+// Google hosts might include "www.google.co.uk" and "google.com"
+// Google search URLs are sometimes "/search?" but sometimes "/#" with no "?" in sight.
+// There is often "&q=" but "?q=" should probably also be considered valid.
+//
+// We want to exclude Google images search result pages.  This might be ok to
+// do in the script.
 
 
 
@@ -64,6 +80,8 @@
 //
 // ==== /Changelog ===
 
+
+GM_log("[GPP] Running");
 
 
 //// Settings ////
@@ -147,25 +165,6 @@ function initPreview() {
 
 			resultsBlock = document.createElement("DIV");
 
-			// Copy wanted parts of window into our left-pane block:
-			if (keepHeaderAbove) {
-				var ssb = document.getElementById("ssb") || document.getElementById("not_ssb");
-				if (!ssb) {
-					GM_log("Failed to find ssb!");
-				} else {
-					var curNode = ssb.nextSibling;
-					while (curNode) {
-						var nextNode = curNode.nextSibling;
-						resultsBlock.appendChild(curNode);
-						curNode = nextNode;
-					}
-				}
-			} else {
-				while (document.body.childNodes.length > 0) {
-					resultsBlock.appendChild(document.body.childNodes[0]);
-				}
-			}
-
 			document.body.appendChild(resultsBlock);
 
 			document.body.style.margin = '0px 8px';
@@ -246,6 +245,7 @@ function initPreview() {
 		row.appendChild(rightCell);
 
 		resultsBlock = getResultsBlock();
+
 		resultsBlock.parentNode.insertBefore(table,resultsBlock.nextSibling);
 		leftCell.appendChild(resultsBlock);
 
@@ -327,7 +327,14 @@ function initPreview() {
 
 		removeSidebar();
 
-		reformatThingsLater();
+		hideSidebar();
+
+		// Squash any things on the left panel which may prevent our panes from
+		// filling the whole width!
+		GM_addStyle(".big #center_col, .big #foot { margin-left: 0px; }");
+		GM_addStyle(".mdm #center_col, .mdm #foot { margin-left: 0px; }");
+
+		setTimeout(reformatThingsLater,20);
 
 	}
 
@@ -567,17 +574,20 @@ function initPreview() {
 							// unsafeWindow.document.location.hash = link.name;
 						},500);
 					}
-					setTimeout(function(){
+
+					// setTimeout(function(){
 
 						// Oh progress... Now sites can block embedding with X-Frame-Options.
 						// So for the ones we know about, we ask politely for them not to.
 						var targetPage = link.href;
 						if (targetPage.match("youtube.com/watch/")) {
 							targetPage = targetPage.replace("/watch/","/embed/");
+							GM_log("Switching to embed for YouTube: "+targetPage);
 						}
 						if (targetPage.match("maps.google.")) {
 							/* TOCHECK: Might output already be set?  Would that break it? */
 							targetPage = targetPage + '&output=embed';
+							GM_log("Switching to embed for GoogleMaps: "+targetPage);
 						}
 
 						previewFrame.src = targetPage;
@@ -594,7 +604,9 @@ function initPreview() {
 							GM_addStyle("#botstuff { display: none; }");
 							// I think the vspb might appear at "some point" in the future, and write its own element styles.  But the GM_addStyle will override that if it is called after the vspb appears (a second preview).
 						}
-					},10);
+
+					// },10);
+
 					// lastPreview = lastHover;
 					lastPreview = container; // normalises - two different nodes might both hit the same container
 				},10);
@@ -889,19 +901,7 @@ function reformatThingsEarly() {
 
 }
 
-function reformatThingsLater() {
-
-	try {
-
-	// Mainly this shrinks things down in the sidebar, so it displays better.
-
-	// Do some styling on the main result LI nodes.
-	var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
-	for (var i=0;i<resNodes.snapshotLength;i++) {
-		var elem = resNodes.snapshotItem(i);
-		showUnselected(elem);
-	}
-
+function hideSidebar() {
 	// Hide the new sidebar
 	var sidebar2010 = document.getElementById("leftnav");
 	if (sidebar2010) {
@@ -912,6 +912,41 @@ function reformatThingsLater() {
 	// width 100% gets too wide and creates a horizontal scrollbar!
 	// We can workaround like this:
 	GM_addStyle("#searchform { width: 98%; }");
+}
+
+function reformatThingsLater() {
+
+	try {
+
+		// Copy wanted parts of window into our left-pane block:
+		if (keepHeaderAbove) {
+			var ssb = document.getElementById("ssb") || document.getElementById("not_ssb")
+				|| document.getElementById("mw") /*2012*/;
+			if (!ssb) {
+				GM_log("Failed to find ssb!");
+			} else {
+				// Bring everthing after the ssb into our sidebar
+				var curNode = ssb.nextSibling;
+				while (curNode) {
+					var nextNode = curNode.nextSibling;
+					resultsBlock.appendChild(curNode);
+					curNode = nextNode;
+				}
+			}
+		} else {
+			while (document.body.childNodes.length > 0) {
+				resultsBlock.appendChild(document.body.childNodes[0]);
+			}
+		}
+
+	// Mainly this shrinks things down in the sidebar, so it displays better.
+
+	// Do some styling on the main result LI nodes.
+	var resNodes = document.evaluate("//div[@id='res']//li", document, null, XPathResult.UNORDERED_NODE_SNAPSHOT_TYPE, null)
+	for (var i=0;i<resNodes.snapshotLength;i++) {
+		var elem = resNodes.snapshotItem(i);
+		showUnselected(elem);
+	}
 
 	// TODO CONSIDER: We may want to use CSS "word-wrap: break-word;" in the
 	// presence of very long URLs or words in the sidebar.
@@ -1047,11 +1082,6 @@ function reformatThingsLater() {
 	applyClassRule("#cnt","max-width","9999999px");
 	applyClassRule("#center_col","margin-right","0px");
 	*/
-
-	// Squash any things on the left panel which may prevent our panes from
-	// filling the whole width!
-	GM_addStyle(".big #center_col, .big #foot { margin-left: 0px; }");
-	GM_addStyle(".mdm #center_col, .mdm #foot { margin-left: 0px; }");
 
 	} catch (e) {
 		GM_log("Exception during reformatThingsLater: "+e);
