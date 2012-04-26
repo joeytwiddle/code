@@ -29,6 +29,8 @@ var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
 
 var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
 
+GM_log("RLP version 1.0.2");
+
 
 // == CHANGELOG ==
 // 2012-03-22 Added highlighting and further heuristics.
@@ -70,15 +72,39 @@ setTimeout(function(){
 
 
 
-// We consider related links, or "siblings", to be those on the current page
-// with the same DOM path as the clicked link.
+// This is http://userscripts.org/scripts/review/57679
+// We need it on Google search result pages, or we end up following Google
+// feedback/tracking links, which then throw away our hash package!
+function removeRedirection() {
+  handle(document);
 
-function getGroupSignature(link) {
-	if (!link.cachedGroupSignature) {
-		link.cachedGroupSignature = getXPath(link).replace(/\[[0-9]*\]/g,'');
-	}
-	return link.cachedGroupSignature;
+  function handle(doc) {
+    var links = document.evaluate('descendant::a', doc, null, 7, null);
+    for (var i = 0; i < links.snapshotLength; i++){
+      links.snapshotItem(i).removeAttribute('onmousedown');
+    }
+  }
+
+  function registerPageHandler() {
+    window.AutoPagerize.addFilter(function(pages) {
+      pages.forEach(function(page) {
+        handle(page);
+      });
+    });
+  }
+  if (window.AutoPagerize) {
+    registerPageHandler();
+  } else {
+    GM_log("[RLP] Adding GM_AutoPagerizeLoaded listener");
+    window.addEventListener('GM_AutoPagerizeLoaded', registerPageHandler, false);
+  }
 }
+// document.evaluate fails on really old browsers:
+try { removeRedirection(); } catch (e) { GM_log("removeRedirection failed: "+e); }
+
+
+
+// Library functions
 
 function getXPath(node) {
 	var parent = node.parentNode;
@@ -103,6 +129,10 @@ function getXPath(node) {
 
 // What can I say?  I loooove favicons!
 function addFaviconToLinkObviouslyIMeanWhyWouldntYou(link) {
+
+  if (!link.href) {
+    return;
+  }
 
   var host = link.href.replace(/^[^\/]*:\/\//,'').replace(/\/.*$/,'');
   var img = document.createElement('IMG');
@@ -147,8 +177,16 @@ if (!this.GM_addStyle) {
 
 
 
-// Collect siblings when the user clicks a link, and pass them forward to the
-// target page in a hash package.
+// We consider related links, or "siblings", to be those on the current page
+// with the same DOM path as the clicked link.
+
+function getGroupSignature(link) {
+	if (!link.cachedGroupSignature) {
+		// We remove offsets like [4] from the unique xpath to get a more general path signature.
+		link.cachedGroupSignature = getXPath(link).replace(/\[[0-9]*\]/g,'');
+	}
+	return link.cachedGroupSignature;
+}
 
 function collectLinksInSameGroupAs(clickedLink) {
   // We remove the numbers from the XPath
@@ -170,6 +208,9 @@ function collectLinksInSameGroupAs(clickedLink) {
   }
   return collected;
 }
+
+// Collect siblings when the user clicks a link, and pass them forward to the
+// target page in a hash package.
 
 function isSuitable(link) {
 
@@ -356,7 +397,7 @@ function createRelatedLinksPager(siblings) {
     link.textContent = text;
     var appendChar = ( record[1].indexOf('#')>=0 ? '&' : '#' );
     link.href = record[1] + appendChar + 'siblings=' + encodedList;
-    link.title = "Previous: "+record[0]+maybeHost(link);
+    link.title = record[0] + maybeHost(link);
     link.onclick = function(evt){
       if (!keepNavigationHistory) {
         document.location.replace(this.href);
@@ -386,7 +427,7 @@ function createRelatedLinksPager(siblings) {
   if (currentIndex < siblings.length-1) {
     var rightRecord = siblings[currentIndex+1];
     var rightLink = createLinkFromRecord(rightRecord, ">>");
-    rightLink.title = "Next: "+link.title;
+    rightLink.title = "Next: "+rightLink.title;
     pager.appendChild(rightLink);
   }
 
@@ -502,16 +543,16 @@ if (highlightLinkGroups) {
       if (verbose) {
         GM_log("Got "+list.length+" matching siblings: "+list);
       }
+      if (showGroupCountInLinkTitle && !link.doneAppendGroupsize) {
+        link.doneAppendGroupsize = true;
+        link.title = (link.title ? link.title+" " : "") + "("+list.length+" in group)";
+      }
       if (list.length>=minimumGroupSize && list.length<maximumGroupSize) {
         highlightList();
         if (thisLinkHighlightColor) {
           link.style.backgroundColor = thisLinkHighlightColor;
         }
         // link.style.border = "2px solid "+highlightColor;
-        if (showGroupCountInLinkTitle && !link.doneAppendGroupsize) {
-          link.doneAppendGroupsize = true;
-          link.title = (link.title ? link.title+" " : "") + "("+list.length+" in group)";
-        }
       }
     }
   },true);
