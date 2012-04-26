@@ -52,7 +52,7 @@ setTimeout(function(){
 	var watchDiscussion = document.getElementById("watch-discussion");
 	if (watchDiscussion) {
 		watchDiscussion.style.overflow = "auto";
-		watchDiscussion.style.maxHeight = (window.innerHeight - 562)+"px"; /* For a video height 360p */
+		watchDiscussion.style.maxHeight = (window.innerHeight - 574)+"px"; /* For a video height 360p */
 	}
 	var watchSidebar = document.getElementById("watch-sidebar");
 	if (watchSidebar) {
