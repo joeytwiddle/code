@@ -1,0 +1,92 @@
+Many great CTF maps are unsuitable for siege simply because their flagspot is
+too exposed, so the base core can be easily spammed to death.
+
+The ActorEditor mutator allows us to set new positions for FlagBase0.Location
+and FlagBase1.Location, so you can hide the base core in a more appropriate
+position on the map.
+
+
+
+Where is a good place to put the core?
+
+Hard to reach.  This usually means somewhere deep in the base, so enemies must
+be passed to reach it.  Height is always an advantage, but not out of reach!
+
+Not too exposed.  Think about the amount of floor space available to someone
+who wants to hit your core.  If there is a wide area from which people can see
+your core, they will run around in that space spamming.  (Avoid Thorns4way!)
+
+But don't make it *impossible* for players to reach the enemy core.  Leave them
+some floor space when they do reach the core.  Give them one or two vaguely
+passable routes to the enemy flagroom.  (Avoid HillForts or Niven.)
+
+
+
+HOW TO MOVE THE BASE CORES using ActorEditor
+
+I do this as a spectator.  It might be easier to work in CTF mode, so you can
+see the flag moving.  Otherwise follow the instructions closely!
+
+Install the ActorEditor mutator, and configure it to run in Siege games.
+
+Join the server, and log in as admin.
+
+Find the first core you want to move:
+
+> mutate seek flagbase0
+
+Read its team number if you like:
+
+> mutate check team
+
+Now focus ActorEditor on yourself:
+
+> mutate seek chspec
+
+(The camera may jump backwards, as you attempt to look at yourself!)
+
+Move to exactly where you want the base core to be.  Then read your position:
+
+> mutate check location
+
+Now focus back on the flag marker, and input the location you just saw:
+
+> mutate seek flagbase0
+
+> mutate store location 500,-600,320
+
+Be careful to read the little -s!
+
+You can check to see if the actor went to the right place by refocusing:
+
+> mutate seek flagbase0
+
+Once you are happy, repeat the process for the other core:
+
+> mutate seek flagbase1
+...
+
+If you are happy with what you did, save to ActorEditor.ini with:
+
+> mutate saveall
+
+That is all.  Restart the map to check the cores load up in the new locations!
+
+
+
+
+
+Notes:
+
+You can try moving BaseCore0 instead of FlagBase0, but it won't work!  You will
+see the glow move (maybe useful), but the mesh will not move, and your new
+location will be IGNORED when the map restarts.  We must set FlagBase
+positions, since they are the markers from which BaseCores are spawned.
+
+If your server runs CTF and Siege modes, the flags will move in both games!  If
+you don't want that to happen, configure your server/mapvote to only run the
+ActorEditor mutator during Siege matches, and not for CTF games.
+
+
+
+
