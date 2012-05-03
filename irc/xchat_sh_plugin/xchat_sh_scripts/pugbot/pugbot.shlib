@@ -416,7 +416,9 @@ promote () {
 	get_num_players
 	SPACES_LEFT=$((NUMBER_OF_PLAYERS_NEEDED-NUMBER_OF_PLAYERS))
 	echo "/mode $CHANNEL -N"
+	sleep 1
 	echo "/notice $CHANNEL $SPACES_LEFT spots left in $CHANNEL, type !add to join"
+	sleep 1
 	echo "/mode $CHANNEL +N"
 }
 
@@ -554,8 +556,17 @@ randcapt () {
 }
 
 function setip () {
+	setipext "" "$@"
+}
+
+function setipn () {
+	setipext ".$1" "$@"
+}
+
+function setipext () {
+	EXT="$1" ; shift
 	require_ops
-	echo "$*" > "$PUG_IP_FILE"
+	echo "$*" > "$PUG_IP_FILE$EXT"
 	echo "Server set to: $*"
 }
 
@@ -578,8 +589,17 @@ function setstats () {
 }
 
 function ip () {
-	if [ -f "$PUG_IP_FILE" ]
-	then echo "$COLRED$COLBOLD""Server: $COLROYAL""[ `cat "$PUG_IP_FILE"` $COLROYAL""]"
+	ipext "" "$@"
+}
+
+function ipn () {
+	ipext ".$1" "$@"
+}
+
+function ipext () {
+	EXT="$1"
+	if [ -f "$PUG_IP_FILE$EXT" ]
+	then echo "$COLRED$COLBOLD""Server: $COLROYAL""[ `cat "$PUG_IP_FILE$EXT"` $COLROYAL""]"
 	fi
 }
 
