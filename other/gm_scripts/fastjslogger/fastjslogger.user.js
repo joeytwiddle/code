@@ -7,35 +7,41 @@
 
 
 
-var watchWindowForErrors = true;   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
-var interceptTimeouts = true;   // Wraps calls to setTimeout, so any errors thrown may be reported.
-var interceptEvents = true;   // Wraps any listeners registered later, so errors can be caught and reported.
+// Optionals (may or may not be exposed as global).
+var FJSL = {
+	autoHide: true,
+	logTimeouts: true,
+	logEvents: true,              // Log any activity over the wrapped listeners.
+	logCommonMouseEvents: false,  // These can be triggered a lot!
+	logChangesToGlobal: true,     // Logs any new properties which are added to window
 
-var muteLogRepeater = 0;   // Mute console.log messages repeated to the
-// browser console.  (Display them only in the fastlogger, keep the browser log
-// clear for warnings, errors and info messages.)
-// TODO: Similarly, we may want to mute log messages in the FJSL, and only show
-// info/warn/errors.
+	watchWindowForErrors: true,   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
+	interceptTimeouts: true,      // Wraps calls to setTimeout, so any errors thrown may be reported.
+	interceptEvents: true,        // Wraps any listeners registered later, so errors can be caught and reported.
 
-var bringBackTheStatusBar = true;   // TODO: add fake statusbar div, watch window.status for change?
+	displaySearchFilter: false,   // This messes up the size of the textbox on Firefox and Konqueror but not Chrome.
 
-var logNodeInsertions = false;   // Watch for and report DOMNodeInserted events.
+	// Hack to avoid infinite loops.  Disabled since they have stopped!  :)
+	// Mute console.log messages repeated to the browser console.
+	// (Display them only in the fastlogger, keep the browser log clear for
+	// warnings, errors and info messages.)
+	// TODO: Similarly, we may want to mute log messages in the FJSL, and only
+	// show info/warn/errors.
+	muteLogRepeater: 0,
+
+	logNodeInsertions: false,     // Watch for and report DOMNodeInserted events.
+
+	bringBackTheStatusBar: true   // TODO: add fake statusbar div, watch window.status for change?
+
+};
+window.FJSL = FJSL;
 
 if (this.localStorage) {
 	// TODO: Recall and store FJSL preferences in localStorage.
-
 	// UNWANTED: During testing, I am toggling this setting.
-	interceptTimeouts = !Boolean(localStorage['fastjslogger_interceptTimeouts']);
-	localStorage['fastjslogger_interceptTimeouts'] = interceptTimeouts;
+	// FJSL.interceptTimeouts = !Boolean(localStorage['fastjslogger_interceptTimeouts']);
+	localStorage['fastjslogger_interceptTimeouts'] = FJSL.interceptTimeouts;
 }
-
-// Expose an object for options that may be tweaked at runtime.
-var FJSL = ({});
-FJSL.autoHide = true;
-FJSL.logTimeouts = true;
-FJSL.logEvents = true;              // Log any activity over the wrapped listeners.
-FJSL.logCommonMouseEvents = false;  // These can be triggered a lot!
-window.FJSL = FJSL;
 
 
 
@@ -196,8 +202,7 @@ function createGUI() {
 	};
 	logDiv.appendChild(rollupButton);
 
-	var displaySearchFilter = true;
-	if (displaySearchFilter) {
+	if (FJSL.displaySearchFilter) {
 		function createSearchFilter(logDiv,logContainer) {
 			var searchFilter = document.createElement("input");
 			searchFilter.type = 'text';
@@ -304,7 +309,7 @@ logDiv = k[0];
 logContainer = k[1];
 
 // target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
-// console.log("interceptTimeouts is "+(interceptTimeouts?"ENABLED":"DISABLED"));
+// console.log("interceptTimeouts is "+(FJSL.interceptTimeouts?"ENABLED":"DISABLED"));
 
 // Intercept messages for console.log if it exists.
 // Create console.log if it does not exist.
@@ -330,14 +335,14 @@ target.console.log = function(a,b,c) {
 
 	// Replicate to the old loggers we intercepted (overrode)
 
-	if (oldConsole && oldConsole.log && !muteLogRepeater) {
+	if (oldConsole && oldConsole.log && !FJSL.muteLogRepeater) {
 		// Some browsers dislike use of .call and .apply here, e.g. GM in FF4.
 		// So to avoid "oldConsole.log is not a function":
 		try {
 			oldConsole.log.apply(oldConsole,arguments);
 		} catch (e) {
 			// Ugly chars to signify that sucky fallback is being used
-			oldConsole.log("]]",a,b,c);
+			oldConsole.log("[noapply]",a,b,c);
 		}
 	}
 
@@ -524,7 +529,7 @@ function getStack(drop,max) {
 // We could even wrap any standard functions which are common sources of
 // Errors, in case we fail to catch them any other way.
 
-if (watchWindowForErrors) {
+if (FJSL.watchWindowForErrors) {
 	function handleError(evt) {
 
 		if (!FJSL.firstWindowErrorEvent) {
@@ -578,7 +583,7 @@ function shortenString(s) {
 	return s;
 }
 
-if (interceptTimeouts) {
+if (FJSL.interceptTimeouts) {
 
 	window.setTimeout = function(fn,ms) {
 		if (FJSL.logTimeouts) {
@@ -623,7 +628,7 @@ if (interceptTimeouts) {
 
 // == General Info Logging Utilities ==
 
-if (logNodeInsertions) {
+if (FJSL.logNodeInsertions) {
 	document.body.addEventListener('DOMNodeInserted', function(evt) {
 		if (evt.target === logContainer || evt.target.parentNode === logContainer) {
 			return;
@@ -634,7 +639,7 @@ if (logNodeInsertions) {
 	}, true);
 }
 
-if (interceptEvents) {
+if (FJSL.interceptEvents) {
 
 	var realAddEventListener = HTMLElement.prototype.addEventListener;
 	// HTMLElement.prototype.oldAddEventListener = realAddEventListener;
@@ -679,6 +684,29 @@ if (interceptEvents) {
 		realAddEventListener.call(this,type,newHandler,capture,other);
 	};
 
+}
+
+if (FJSL.logChangesToGlobal) {
+	function newChangeWatcher() {
+		var checkSpeed = 4000;
+		var watcher = {};
+		var global = window;
+		function checkGlobal() {
+			if (FJSL.logChangesToGlobal) {
+				for (var key in global) {
+					if (knownKeys[key] === undefined) {
+						var obj = global[key];
+						console.log("[GLOBAL] "+key+"="+shortenString(obj));
+						knownKeys[key] = 1;
+					}
+				}
+			}
+			oldSetTimeout(checkGlobal,checkSpeed);
+		}
+		oldSetTimeout(checkGlobal,checkSpeed);
+		return watcher;
+	};
+	var changeWatcher = newChangeWatcher();
 }
 
 
