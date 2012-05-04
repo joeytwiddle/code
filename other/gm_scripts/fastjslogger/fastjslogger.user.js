@@ -7,13 +7,9 @@
 
 
 
-var autoHide = true;
-
 var watchWindowForErrors = true;   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
-var interceptTimeouts = true;
-var interceptEvents = true;   // Wraps around any listeners registered later, so errors can be caught and reported.
-var logEvents = false;         // Log any activity over the wrapped listeners.
-var logMouseMoveEvents = false;   // These can be triggered a lot.
+var interceptTimeouts = true;   // Wraps calls to setTimeout, so any errors thrown may be reported.
+var interceptEvents = true;   // Wraps any listeners registered later, so errors can be caught and reported.
 
 var muteLogRepeater = 0;   // Mute console.log messages repeated to the
 // browser console.  (Display them only in the fastlogger, keep the browser log
@@ -21,7 +17,7 @@ var muteLogRepeater = 0;   // Mute console.log messages repeated to the
 // TODO: Similarly, we may want to mute log messages in the FJSL, and only show
 // info/warn/errors.
 
-var bringBackTheStatusBar = true;   // TODO: watch window.status for change
+var bringBackTheStatusBar = true;   // TODO: add fake statusbar div, watch window.status for change?
 
 var logNodeInsertions = false;   // Watch for and report DOMNodeInserted events.
 
@@ -32,6 +28,14 @@ if (this.localStorage) {
 	interceptTimeouts = !Boolean(localStorage['fastjslogger_interceptTimeouts']);
 	localStorage['fastjslogger_interceptTimeouts'] = interceptTimeouts;
 }
+
+// Expose an object for options that may be tweaked at runtime.
+var FJSL = ({});
+FJSL.autoHide = true;
+FJSL.logTimeouts = true;
+FJSL.logEvents = true;              // Log any activity over the wrapped listeners.
+FJSL.logCommonMouseEvents = false;  // These can be triggered a lot!
+window.FJSL = FJSL;
 
 
 
@@ -62,6 +66,9 @@ if (this.localStorage) {
 // TODO: Perhaps instead of creating a new console, we should just replace
 // functions in the existing one (and leave anything we haven't altered
 // intact).
+
+// TODO: See https://github.com/h5bp/html5-boilerplate/blob/master/js/plugins.js
+// for more log actions.
 
 (function(){
 
@@ -119,10 +126,14 @@ function addCloseButtonTo(elem) {
 
 // == Main Feature - Present floating popup for log messages ==
 
+// Cleaner to expose the div via id?  It may have been removed from DOM!
+// We could fetch logDiv from FJSL when needed?
 var logDiv = null;
 var logContainer = null;
 
 var autoHideTimer = null;
+
+var oldSetTimeout = window.setTimeout;
 
 function createGUI() {
 
@@ -133,7 +144,9 @@ function createGUI() {
 	//// On the pre, max-height: 90% is not working, but specifying px does.
 	var maxHeight = window.innerHeight * 0.8 | 0;
 	css += " .fastJSLogger > pre  { max-height: "+maxHeight+"px; overflow: auto; word-wrap: break-word; }";
-	css += " .fastJSLogger > pre  { font-size: 80%; padding: 0.4em; }";
+	css += " .fastJSLogger > pre  { padding: 0.4em; }";
+	// Must set the colors again, in case the page defined its own bg or fg color for pres that conflicts ours.
+	css += " .fastJSLogger > pre  { background-color: #ffffcc; color: black; }";
 	// css += " .fastJSLogger > pre > input { width: 100%, background-color: #888888; }";
 	css += " .fastJSLogger        { opacity: 0.8; } ";
 	css += " .fastJSLogger:hover  { opacity: 1.0; } ";
@@ -259,7 +272,8 @@ function addToFastJSLog(a,b,c) {
 			clearTimeout(autoHideTimer);
 			autoHideTimer = null;
 		}
-		autoHideTimer = setTimeout(hideLogger,15 * 1000);
+		// Never log this setTimeout!  That produces an infinite loop!
+		autoHideTimer = oldSetTimeout(hideLogger,15 * 1000);
 	}
 
 	return d;
@@ -288,10 +302,6 @@ function hideLogger() {
 var k = createGUI();
 logDiv = k[0];
 logContainer = k[1];
-
-// Expose an object so that options may be tweaked at runtime.
-window.FJSL = {};   // logDiv;  Cleaner to expose the div via id?  It may have been removed from DOM!
-FJSL.autoHide = autoHide;
 
 // target.console.log("FastJSLogger loaded this="+this+" GM_log="+typeof this.GM_log);
 // console.log("interceptTimeouts is "+(interceptTimeouts?"ENABLED":"DISABLED"));
@@ -451,7 +461,8 @@ function tryToDo(fn,target,args) {
 		// console.log("[ERR]",e,prettyFn);
 		// console.log("[Exception]",e,"from "+fnName+"()");
 		console.error("!! "+e.stack);
-		var prettyFn = (""+fn).replace(/\n/,/ /,'g');
+		// var prettyFn = (""+fn).replace(/\n/,/ /,'g');
+		var prettyFn = shortenString(fn);
 		console.error("occurred when calling: "+prettyFn);
 		// throw e;
 		// Unfortunately even Chrome dev shows the throw as coming from here!
@@ -558,10 +569,22 @@ if (watchWindowForErrors) {
 	// document.body.addEventListener("error",handleError,true);
 }
 
+function shortenString(s) {
+	s = ""+s;
+	s = s.replace(/\n/,'\\n','g');
+	if (s.length>77) {
+		s = s.substring(0,77)+"...";
+	}
+	return s;
+}
+
 if (interceptTimeouts) {
 
-	var oldSetTimeout = window.setTimeout;
 	window.setTimeout = function(fn,ms) {
+		if (FJSL.logTimeouts) {
+			// TODO: We used to pass ,fn to log here.  That was nice in Chrome, because we can fold it open or closed, but too spammy for plain FJSL.  Recommendation: Refactor out prettyShow() fn which will determine browser and provide raw object for chrome or shortened string for noob browsers?
+			console.info("[EVENT] setTimeout() called: "+ms+", "+shortenString(fn));
+		}
 		var wrappedFn = function(){
 
 			// We can catch the error here, but if we do, even if we throw it again, the Chrome debugger shows this function as the source.
@@ -616,7 +639,7 @@ if (interceptEvents) {
 	var realAddEventListener = HTMLElement.prototype.addEventListener;
 	// HTMLElement.prototype.oldAddEventListener = realAddEventListener;
 	HTMLElement.prototype.addEventListener = function(type,handler,capture,other){
-		if (logEvents) {
+		if (FJSL.logEvents) {
 			// Note niceFunc is re-used later, so don't remove this!
 			var niceFunc = handler.name || (""+handler).substring(0,80).replace(/\n/," ",'g').replace(/[ \t]*/," ",'g')+"...";
 			/*
@@ -625,14 +648,17 @@ if (interceptEvents) {
 			*/
 		}
 		var newHandler = function(evt) {
-			if (logEvents && (logMouseMoveEvents || evt.type!="mousemove")) {
-				if (evt.target.parentNode == logContainer) {
-					// Do not log events in the console's log area, such as DOMNodeInserted!
-				} else {
-					// console.log("("+type+") on "+evt.target);
-					// console.info("[EVENT] "+type+" on "+getXPath(evt.target));
-					// console.log("[EVENT] "+type+" on "+getXPath(evt.target)+" evt="+showObject(evt));
-					console.info("[EVENT] "+type+" on "+getXPath(evt.target)+" being handled by "+niceFunc);
+			if (FJSL.logEvents) {
+				var isNastyMouseEvent = ["mousemove","mouseover","mouseout"].indexOf(evt.type) >= 0;
+				if (!isNastyMouseEvent || FJSL.logCommonMouseEvents) {
+					if (evt.target.parentNode == logContainer) {
+						// Do not log events in the console's log area, such as DOMNodeInserted!
+					} else {
+						// console.log("("+type+") on "+evt.target);
+						// console.info("[EVENT] "+type+" on "+getXPath(evt.target));
+						// console.log("[EVENT] "+type+" on "+getXPath(evt.target)+" evt="+showObject(evt));
+						console.info("[EVENT] "+type+" on "+getXPath(evt.target)+" being handled by "+niceFunc);
+					}
 				}
 			}
 			// handler.call(this,evt);
