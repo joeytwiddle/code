@@ -14,6 +14,10 @@ var preventBrowserFromCachingBookmarklets = true;
 
 var addGreasemonkeyLibToBookmarklets = true;
 
+// Sometimes Chrome refuses to acknowledge that a script has been updated, and
+// repeatedly installs an old version from its cache!
+var preventCachingOfInstallScripts = true;
+
 // DONE: All bookmarklets optionally preload the Fallback GMAPI.
 // DONE: All bookmarklets optionally load in non-caching fashion (for changing scripts).
 
@@ -117,6 +121,26 @@ function addQuickInstall(link) {
 	link.style.color = 'grey';
 	addBookmarklet(newLink);
 	addLiveUserscript(newLink);
+	// Do this after the other two builders have used the .href
+	if (preventCachingOfInstallScripts) {
+		newLink.href = newLink.href + '?dummy='+new Date().getTime();
+	}
+}
+
+function getURLThen(url,handlerFn) {
+	var req = new XMLHttpRequest();
+	req.open("GET", url, false);
+	req.send(null);
+	req.onreadystatechange = function (aEvt) {
+		if (req.readyState == 4) {
+			if(req.status == 200) {
+				// Got it
+				handlerFn(req);
+			} else {
+				alert("XHR failed with status "+req.status+"\n");
+			}
+		}
+	};
 }
 
 function addSourceViewer(link) {
@@ -125,7 +149,15 @@ function addSourceViewer(link) {
 	newLink.textContent = "Source";
 	newLink.addEventListener('click',function(e) {
 		var div = document.createElement("iframe");
-		div.src = link.href;
+
+		// BUG TODO: This doesn't help.  Loading it directly into the iframe still triggers Greasemonkey to install it.
+		// What we need to do is get the script with an XHR, then place it into th e div.
+		//div.src = link.href;
+
+		getURLThen(link.href, function(res){
+			div.document.body.textContent = res.responseText;
+		});
+
 		div.style.position = 'fixed';
 		div.style.top = e.clientY+4+'px';
 		div.style.left = e.clientX+4+'px';
