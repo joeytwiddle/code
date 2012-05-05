@@ -567,6 +567,7 @@ function initPreview() {
 						// visible now that we have moved the results into the side
 						// panel.  So we ensure it is still visible...
 						setTimeout(function(){
+							// TODO: This probably needs to be moved later, so it occurs after the delayed font size reduction, or done in both places.  Oh it is already delayed quite a lot.
 							//// Neither of these work for me in Firefox 4 alpha 6
 							link.scrollIntoView(false); // Works in Chrome
 							//// This one work in FF4 from the console!
@@ -645,6 +646,9 @@ function initPreview() {
 				GM_log("overLink = "+getXPath(overLink)+" container="+getXPath(getContainer(overLink)));
 			// GM_log("Mouseover "+node+" overLink="+overLink);
 			if (linksActNormally && overLink && getContainer(overLink) != overLink) {
+
+				// *** RESULT *** Click the link normally.  (User has clicked direclty on a link instead of its block.)
+
 				return;   // The user could have previewed this by clicking the
 							 // background, but since the user actually clicked the
 							 // link, we perform a normal click.
@@ -652,6 +656,7 @@ function initPreview() {
 				// Specifically does not return if hovering over a lone link which
 				// is not the main link of a block (a results link with no way to
 				// preview it other than directly clicking it.)
+
 			}
 			if (node == lastHover) {
 				// If the user is selecting a link to another results page, they
@@ -660,6 +665,9 @@ function initPreview() {
 				if (link && link.tagName=='A' && link.host==document.location.host
 					&& link.pathname.match('/(search|webhp)')
 				) {
+
+					// *** RESULT *** Click the link normally / force click.  (User has clicked on a navigation page, e.g. next/previous page.)
+
 					// We will pass the event up to click on the actual link.
 					// If it works, we can set this:
 					// highlightNode(node,'#ffeecc','#ffeebb');
@@ -669,22 +677,21 @@ function initPreview() {
 					// Pff we need to give FF time to colour the highlight :P
 					if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},10); }
 					setTimeout(function(){document.location = link.href;},20);
+
 				} else {
+
 					// Let's try to Preview what the user clicked
 					if (checkFocus()) {
-						// OK we set focus, preview is loading.
+
+						// *** RESULT *** OK we have activated, the preview iframe should be loading.  User clicked on an area that loaded a new page.
 						evt.preventDefault();
 						GM_log("Previewing \""+link.textContent+"\" ("+link.href+")");
+
 					} else {
-						// Well we didn't want to focus this node.
-						// Let's pass the event to other elements.
-						// This means that if we click the focused node a second time,
-						// and there is a link below it, then we will follow it
-						// normally.
-						// Nah let's force it.  We want this to work even if they didn't
-						// click directly:
-						// BUG MAYBE FIXED: I fear we are sometimes not reaching here
-						// because we earlier failed the check container != lastPreview.
+
+						// Well we didn't want to focus this node.  Let's pass the event to other elements.  This means that if we click the focused node a second time, and there is a link below it, then we will follow it normally.
+						// Nah let's force it.  We want this to work even if they didn't click directly:
+						// BUG MAYBE FIXED: I fear we are sometimes not reaching here because we earlier failed the check container != lastPreview.
 						if (link) {
 							// highlightNode(node,'#ddccff','#ccbbff');
 							highlightNode(node,Colors.action.bg,Colors.action.border);
@@ -697,6 +704,7 @@ function initPreview() {
 							//// "google reader help", maybe the IFrame messed with the top window?
 						}
 						GM_log("Dropout link="+getXPath(link));
+
 					}
 				}
 			}
@@ -711,15 +719,13 @@ function initPreview() {
 			var container = getContainer(node);
 			// Should we hover on this?
 			if (container) {
-				// This is needed for when we hover a new thing *inside* something
-				// already hovered (i.e. we haven't done mouseout on lastHover yet).
+				// This is needed for when we hover a new thing *inside* something already hovered (i.e. we haven't done mouseout on lastHover yet).
 				if (lastHover && getContainer(lastHover)!=lastPreview) {
 					highlightNode(lastHover,'','');
 					if (renderLikeTabs)
 						showUnselected(getContainer(lastHover));
 				}
-				// OK start hover on this.  checkFocus() will check if we are still
-				// here in hoverTime ms, and if so activate.
+				// OK start hover on this.  checkFocus() will check if we are still here in hoverTime ms, and if so activate.
 				lastHover = node;
 				if (focusWithHover) {
 					if (currentTimerID)
