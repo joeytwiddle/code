@@ -3,8 +3,11 @@
 // @description    Adds a favicon for the website next to every external link on the page.  Clearly shows when you will be leaving the current site, and where you will be going!
 // @namespace      FTW
 // @include        *
-//// Delicious already provide favicons on some pages (via yimg).
+//// Awesome websites already provide favicons:
 // @exclude        http://www.delicious.com/search*
+// @exclude        https://www.delicious.com/search*
+// @exclude        http://duckduckgo.com/*
+// @exclude        https://duckduckgo.com/*
 // @version        1.3
 // ==/UserScript==
 // Based on FaviconizeGoogle.
@@ -16,6 +19,7 @@
 var placeFaviconAfter = false;
 var placeFaviconInsideLink = false;
 var scaleIcon = 0.75;
+
 var initialDelay = 1000;
 var delayIncrement = 5; // after 200 links the delay between batches will be 1 second
 var batchSize = 10;
@@ -27,7 +31,6 @@ if (!alwaysUseGoogle) {
 	initialDelay = 100;
 	delayIncrement = 5;
 }
-
 
 
 
@@ -56,11 +59,11 @@ function getElementsByClassName(cN) {
 }
 
 function filterListBy(l,c) {
-	var ret = new Array();
+	var ret = [];
 	for (var i=0;i<l.length;i++) {
 		var it = l[i];
 		if (c(it)) {
-			ret[ret.length] = it;
+			ret.push(it);
 		}
 	}
 	return ret;
