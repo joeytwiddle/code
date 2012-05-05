@@ -4,6 +4,8 @@
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
 // @include        http://*/*
 // @include        https://*/*
+// @exclude        http://www.facebook.com/*
+// @exclude        https://www.facebook.com/*
 // ==/UserScript==
 
 var delayBeforeRunning = 2000;
@@ -29,7 +31,6 @@ var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
 
 var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
 
-GM_log("RLP version 1.0.2");
 
 
 // == CHANGELOG ==
