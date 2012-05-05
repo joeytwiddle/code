@@ -9,17 +9,17 @@
 
 // Optionals (may or may not be exposed as global).
 var FJSL = {
-	autoHide: true,
-	logTimeouts: true,
-	logEvents: true,              // Log any activity over the wrapped listeners.
+	autoHide:    true,
+	logTimeouts: false,
+	logEvents:   true,            // Log any activity over the wrapped listeners.
 	logCommonMouseEvents: false,  // These can be triggered a lot!
-	logChangesToGlobal: true,     // Logs any new properties which are added to window
+	logChangesToGlobal:   true,   // Logs any new properties which are added to window
 
 	watchWindowForErrors: true,   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
-	interceptTimeouts: true,      // Wraps calls to setTimeout, so any errors thrown may be reported.
-	interceptEvents: true,        // Wraps any listeners registered later, so errors can be caught and reported.
+	interceptTimeouts:    true,   // Wraps calls to setTimeout, so any errors thrown may be reported.
+	interceptEvents:      true,   // Wraps any listeners registered later, so errors can be caught and reported.
 
-	displaySearchFilter: false,   // This messes up the size of the textbox on Firefox and Konqueror but not Chrome.
+	displaySearchFilter:  false,  // This messes up the size of the textbox on Firefox and Konqueror but not Chrome.
 
 	// Hack to avoid infinite loops.  Disabled since they have stopped!  :)
 	// Mute console.log messages repeated to the browser console.
@@ -29,7 +29,7 @@ var FJSL = {
 	// show info/warn/errors.
 	muteLogRepeater: 0,
 
-	logNodeInsertions: false,     // Watch for and report DOMNodeInserted events.
+	logNodeInsertions:     false, // Watch for and report DOMNodeInserted events.
 
 	bringBackTheStatusBar: true   // TODO: add fake statusbar div, watch window.status for change?
 
@@ -81,7 +81,7 @@ if (this.localStorage) {
 
 
 // I did have two running happily in parallel (Chrome userscript and page
-// script) but it is rarely useful.
+// script) but it is rarely useful.  Perhaps we should close the older one?
 if (document.getElementById("fastJSLogger") != null) {
 	return;
 }
