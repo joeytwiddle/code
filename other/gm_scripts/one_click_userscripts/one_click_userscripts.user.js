@@ -28,23 +28,30 @@ function hwiScript(scriptName) {
 }
 
 var defaultScripts = map([
-		/*
 	"fastjslogger",
-	"hibernate_idle_tabs",
+	"auto_scroll_mouse",
+	"auto_scroll_keys",
+	"table_of_contents_everyw",
 	"faviconizetheweb",
+	"Related_Links_Pager",
+	"hibernate_idle_tabs",
 	"wikiindent",
 	"wikimedia",
 	// "make_bookmarklet_from_us",
 	"title_youtube_locations",
 	"google_preview_pane",
-	"delicious_link_tooltop",
-	"auto_scroll_mouse",
-	"auto_scroll_keys",
+	// "delicious_link_tooltop",
 	// "tocmonkey",
-	"table_of_contents_everyw",
-	*/
+	/*
 	"powermonkey"
+	*/
+	""
 ],hwiScript);
+
+// Emergency Shims:
+if (!document.evaluate) {
+	defaultScripts.unshift("http://hwi.ath.cx/javascript/xpath.js");
+}
 
 
 
