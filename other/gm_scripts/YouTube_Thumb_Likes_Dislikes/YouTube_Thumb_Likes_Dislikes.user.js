@@ -17,14 +17,59 @@
 // However, it is fairly easy to filter these out, if we see the video has
 // significantly more dislikes than likes!
 
-var spamYouTube = false;   // Automatically looks up all thumbnails on the page.
-                           // Otherwise, waits for mouseovers before doing lookup.
+
+// == Configuration == //
+
+var addCountsToTooltip = false;           // Shows likes/dislikes when
+                                          // (re-)hovering a thumbail/link.
+
+var addCountsToThumbnail = true;          // Display likes/dislikes next to the
+                                          // thumbnail.
+
+var addLightSaberBarToThumbnail = true;   // The lightsaber is the green/red
+                                          // bar, easier than reading numbers!
+
+var addVideoDescriptionToTooltip = true;  // The "tooltip" is actually the
+                                          // alt/title of a link, which
+                                          // browsers display on hover.
+
+var spamYouTube = false;   // Automatically looks up ALL thumbnails on the page.
+                           // Normally it waits for a mouseover before doing lookup.
+
 
 // Some other scripts like this:
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
 
 function suitableLink(link) {
 	return (link.tagName == "A" && link.pathname.indexOf("/watch")==0);
+}
+
+function fakeGetElementById(root, id) {
+	var allElems = root.getElementsByTagName("*");
+	for (var i=0;i<allElems.length;i++) {
+		if (allElems[i].id == id) {
+			return allElems[i];
+		}
+	}
+	return null;
+}
+
+// Sometimes the element hovered is not the one we want to modify to show extra info.  We need to find a nearby element with a title attribute we can add to.
+function findClosestLinkElem(orig) {
+	var startFrom = orig;
+	while (startFrom != null) {
+		if (startFrom.tagName == "A") {
+			return startFrom;
+		}
+		var descendents = startFrom.getElementsByTagName("A");
+		for (var i=0;i<descendents.length;i++) {
+			if (true) {
+				return descendents[i];
+			}
+		}
+		startFrom = startFrom.parentNode;
+	}
+	return orig;
 }
 
 // Display likes/dislikes on links to other videos
@@ -44,51 +89,48 @@ function checkLikesDislikes(evt) {
 				if (infoElem) {
 					var infoText = infoElem.textContent.trim();
 
-					var elemWithTitle = null;
+					// Find suitable element for adding tooltip info.
+					var elemWithTitle = findClosestLinkElem(target);
+					// On sidebar thumbnails this tends to be the containing <A> rather
+					// than the <span> holding the video title, which is what I usually
+					// mouseover!  However on YT's front page it does find the title.
 
-					// Now, target is not actually the element with the title attribute.
-					// It was actually a <span dir="ltr" class="title"> which held
-					// the full name in its title attribute...
-
-					var descendents = target.getElementsByTagName("*");
-					for (var i=0;i<descendents.length;i++) {
-						if (descendents[i].title) {
-							elemWithTitle = descendents[i];
-							break;
-						}
-					}
-
-					if (elemWithTitle) {
+					if (addCountsToTooltip) {
 						elemWithTitle.title += " ("+infoText+")";
-						// Optional: effectively gives a title to the thumbnail image too:
-						//target.title = elemWithTitle.title;
-						// Not convinced we want that.  :P
-					} else {
-						// Not what we expected, but lets give it a bash anyway!
-						target.title += " ("+infoText+")";
 					}
 
-					// OK adding to the title sucks balls anyway - the browser
-					// (Chrome) does not update the displayed title until
-					// mouseoff/over again. :f
+					if (addCountsToThumbnail) {
+						var span = document.createElement("div");
+						span.className = "stat";
+						span.appendChild(document.createTextNode(infoText));
+						target.appendChild(span);
+					}
 
-					var span = document.createElement("div");
-					span.className = "stat";
-					span.appendChild(document.createTextNode(infoText));
-					target.appendChild(span);
+					if (addLightSaberBarToThumbnail) {
 
-					var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
-					if (lightSaber) {
-						// Pictures are easier to read than words:
-						target.appendChild(lightSaber);
-						// It often falls on the line below the thumbnail, aligned left
-						// Here is a dirty fix to align it right, with all the other info.
-						if (document.pathname === "/watch") { // not on search results
-							lightSaber.style.marginLeft = '124px';
+						var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
+						if (lightSaber) {
+							// Pictures are easier to read than words:
+							target.appendChild(lightSaber);
+							// It often falls on the line below the thumbnail, aligned left
+							// Here is a dirty fix to align it right, with all the other info.
+							if (document.location.pathname === "/watch") { // not on search results
+								lightSaber.style.marginLeft = '124px';
+							}
+							// Bars are unneccessarily wide on search results pages, so:
+							if (lightSaber.clientWidth > 150) {
+								lightSaber.style.maxWidth = '120px';
+							}
 						}
-						// Bars are unneccessarily wide on search results pages, so:
-						if (lightSaber.clientWidth > 150) {
-							lightSaber.style.maxWidth = '120px';
+
+					}
+
+					if (addVideoDescriptionToTooltip) {
+						// Uncaught TypeError: Object #<HTMLDivElement> has no method 'getElementById'
+						// var descrElem = lePage.getElementById("watch-description-text");
+						var descrElem = fakeGetElementById(lePage,"watch-description-text");
+						if (descrElem) {
+							elemWithTitle.title += " ::: " + descrElem.textContent.trim();
 						}
 					}
 
@@ -99,6 +141,9 @@ function checkLikesDislikes(evt) {
 		GM_xmlhttpRequest({
 			method: "GET",
 			url: target.href,
+			headers: {
+				"Reason": "I want to display watch-likes-dislikes, watch-sparkbars and watch-description-text by this thumbnail"
+			},
 			onload: gotTargetPage
 		});
 
