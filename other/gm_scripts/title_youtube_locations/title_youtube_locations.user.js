@@ -58,12 +58,13 @@ setTimeout(function(){
 	if (watchSidebar) {
 		watchSidebar.style.overflow = "auto";
 		watchSidebar.style.maxHeight = (window.innerHeight - 26)+"px";
+		// May 2012 - fixes below no longer needed.
 		// Now the text wraps because of the scrollbar, so we widen the element:
 		// watchSidebar.style.width = (320+24)+"px";
-		watchSidebar.style.width = '300px';
+		// watchSidebar.style.width = '300px';
 		// And we must widen its container also:
 		// TODO BUG: Why does this work in the console, but not from the userscript?
-		document.getElementById("watch-main").style.width = (960+24)+"px";
+		// document.getElementById("watch-main").style.width = (960+24)+"px";
 	}
 	// Title text
 	//document.getElementById("eow-title").scrollIntoView();
