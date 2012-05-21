@@ -18,6 +18,11 @@ var fixUnderlinesToOverlines = true;
 // var minimisedSidebarSize = 6;   // Small
 var minimisedSidebarSize = 16;
 
+// Wikipedia's new transition displays the sidebar text before there is space
+// for it, causing brief ugly overlap!  So we delay unhiding to look prettier.
+var delayHide = 0;
+var delayUnhide = ( document.getElementById("mw-panel") ? 250 : 0 );
+
 
 /* TODO: As we scroll the page, light up the "current" section in the TOC.
  *
@@ -110,10 +115,13 @@ function doIt() {
 
 	if (toggleSidebar) {
 
-		var content = document.getElementById("content") || document.getElementById("column-content");
-		var sideBar = document.getElementById("column-one") || document.getElementById("panel")
-			|| document.getElementById("mw-panel") || document.getElementById("jq-interiorNavigation")
-			|| /* pmwiki: */ document.getElementById('wikileft');
+		var content = document.getElementById("content")
+			|| document.getElementById("column-content");
+		var sideBar = document.getElementById("column-one")
+			|| document.getElementById("panel")
+			|| /* WikiMedia: */ document.getElementById("mw-panel")
+			|| /* forgot:    */ document.getElementById("jq-interiorNavigation")
+			|| /* pmwiki:    */ document.getElementById('wikileft');
 		var toToggle = [ document.getElementById("page-base"), document.getElementById("siteNotice"), document.getElementById("head") ];
 		var cac = document.getElementById("p-cactions");
 		var cacOldHome = ( cac ? cac.parentNode : null );
@@ -154,7 +162,10 @@ function doIt() {
 							GM_setValue("sidebarVisible",false);
 						},200);
 					} else {
-						sideBar.style.display = '';
+						function unhide() {
+							sideBar.style.display = '';
+						}
+						setTimeout(unhide,delayUnhide);
 						content.style.marginLeft = content.oldMarginLeft;
 						for (var i in toToggle) {
 							if (toToggle[i]) { toToggle[i].style.display = ''; }
