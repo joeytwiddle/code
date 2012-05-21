@@ -42,20 +42,22 @@ var delayBeforeRunning = 2200;
 // Check if GM_getValue is missing, OR is Chrome's "not supported" function.
 var GM_test;
 try {
-	GM_test = ""+this.GM_getValue;
+	GM_test = ""+window.GM_getValue;
 } catch (e) {
-	// Greasemonkey: can't convert this.GM_getValue to primitive type
-	// because: this.GM_getValue.toString is not a function
+	// Greasemonkey: can't convert window.GM_getValue to primitive type
+	// because: window.GM_getValue.toString is not a function
 	// GM_log("Getting GM_test: "+e);
 }
 if (typeof GM_getValue !== 'function' || (""+GM_test).indexOf("not supported")>=0) {
 	GM_log("[Wikimedia+] Adding localStorage implementation of GMget/setValue for Chrome.");
 	if (localStorage) {
-		this.GM_getValue=function (key,def) {
-			return localStorage.getItem(key) || def;
+		// We add and remove leading "s" to match records saved/loaded via FallbackGMAPI.
+		// This stops the bookmarklet-loaded version from trashing the userscript version's values.
+		window.GM_getValue=function (key,def) {
+			return (""+localStorage.getItem(key)).replace(/^s/,'') || def;
 		};
 		this.GM_setValue=function (key,value) {
-			localStorage.setItem(key, value);
+			localStorage.setItem(key, "s"+value);
 			return value;
 		};
 	}
