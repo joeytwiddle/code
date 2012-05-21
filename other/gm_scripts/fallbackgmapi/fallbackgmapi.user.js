@@ -133,18 +133,20 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 		// means while running in GM?  Or does it occur when we run in the page
 		// too?)
 		exportTarget.GM_getValue = function(name, defaultValue) {
-			var value = storage.getItem(name);
-			if (!value)
+			var originalValue = storage.getItem(name);
+			if (!originalValue)
 				return defaultValue;
-			var type = value[0];
-			value = value.substring(1);
+			var type = originalValue[0];
+			var value = originalValue.substring(1);
 			switch (type) {
 				case 'b':
 					return value == 'true';
 				case 'n':
 					return Number(value);
-				default:
+				case 's':
 					return value;
+				default:
+					return originalValue;
 			}
 		};
 
