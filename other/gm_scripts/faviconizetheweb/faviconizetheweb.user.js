@@ -32,6 +32,12 @@ if (!alwaysUseGoogle) {
 	delayIncrement = 5;
 }
 
+if (document.location.host.indexOf(".google.") >= 0) {
+	scaleIcon = 1.0;
+	return;   // REMOVE THIS TO RUN ON GOOGLE!
+}
+
+
 
 
 // == Library Functions == //
@@ -148,12 +154,19 @@ function checkLink(link) {
 		return;
 	}
 	// Skip Javascript links and relative (same-page) anchors
-	if (link.href.match(/^#/) || link.href.match(/^javascript:/)) {
+	if ( link.href.match(/^#/) || link.href.match(/^javascript:/)
+		// Sometimes .href is the full URL whereas .getAttrib starts just #
+		|| link.getAttribute("href").match(/^#/) || link.getAttribute("href").match(/^javascript:/)
+	) {
 		return;
 	}
 	// Do not faviconize links which contain (or are only) an image
 	if (link.getElementsByTagName("IMG").length > 0) {
 		return;
+	}
+	if (link.protocol === "file:") {
+		return;
+		// We might be able to guess the real hostname from the path and do a web request for the favicon, or search the folders above for a favicon file?
 	}
 
 	// Let's not create a duplicate favicon if the page offers the same link with two different <A>s:
