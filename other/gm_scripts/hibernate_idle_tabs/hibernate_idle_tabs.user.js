@@ -27,6 +27,8 @@ var oldHoldingPage = "http://www.google.com/hibernated_tab";
 var passFaviconToHoldingPage = true;
 var fadeHibernatedFavicons = true;
 
+var forceHibernateWhenRunTwice = true;
+
 
 
 /* +++ Documentation +++ */
@@ -56,7 +58,7 @@ var fadeHibernatedFavicons = true;
 
 // TODO: Some users may want the hibernated page to restore immediately when the tab is *refocused*, rather than waiting for a mouseover.
 
-// TODO: Expose a function to allow a bookmarklet to force-hibernate the current tab?
+// TESTING: Expose a function to allow a bookmarklet to force-hibernate the current tab?
 
 // CONSIDER: If we forget about fading the favicon, couldn't we simplify things by just sending the favicon URL rather than its image data?  I think I tested this, and although I could load the favicon into the document, I was not successful at getting it into the browser's title tab by adding a new <link rel="icon">.
 
@@ -130,6 +132,16 @@ function handleNormalPage() {
 		// May or may not be needed:
 		ctx.putImageData(img,0,0);
 	}
+
+
+
+	if (forceHibernateWhenRunTwice) {
+		if (window.hibernate_idle_tabs_loaded) {
+			hibernatePage();
+		}
+		window.hibernate_idle_tabs_loaded = true;
+	}
+
 
 }
 
@@ -428,3 +440,4 @@ trying to read something from a different domain than the script!
 In Chrome: "SECURITY_ERR: DOM Exception 18"
 */
 // loadFaviconIntoCanvas(document.location.host,writeFaviconFromCanvas);
+
