@@ -120,10 +120,15 @@ try {
 	}
 
 	var tocFound = document.getElementById("toc");
-	//// Konqueror 3.5 does NOT have document.getElementsByClassName()!
-	// tocFound = tocFound || document.getElementsByClassName("toc")[0];
+	// Konqueror 3.5 does NOT have document.getElementsByClassName(), so we check for it.
+	tocFound = tocFound || (document.getElementsByClassName && document.getElementsByClassName("toc")[0]);
+	tocFound = tocFound || document.getElementById("article-nav");   // developer.mozilla.org
+	tocFound = tocFound || document.getElementById("page-toc");      // developer.mozilla.org
 
 	var toc = tocFound;
+
+	// With the obvious exception of Wikimedia sites, most found tocs do not contain a hide/close button.
+	// TODO: If we are going to make the toc float, we should give it rollup/close buttons, unless it already has them.
 
 	if (!toc) {
 
@@ -279,19 +284,28 @@ try {
 
 			// TODO scrollIntoView if newly matching 1.hash exists
 
+		} else {
+			log("Not enough items found to create toc.");
 		}
 
 	}
 
-	// We make the TOC float regardless whether we created it or it already existed.
-	// Interestingly, the overflow settings seems to apply to all sub-elements.
-	// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
-	// FIXED: Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
-	// FIXED : max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
-	GM_addStyle("#toc { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 5555; max-height: 80%; max-width: 32%; overflow: auto; }"
-		+ "#toc       { opacity: 0.2; }"
-		+ "#toc:hover { opacity: 1.0; }"
-	);
+	if (toc) {
+		// We make the TOC float regardless whether we created it or it already existed.
+		// Interestingly, the overflow settings seems to apply to all sub-elements.
+		// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
+		// FIXED: Some of the sub-trees are so long that they also get scrollbars, which is a bit messy!
+		// FIXED : max-width does not do what I want!  To see, find a TOC with really wide section titles (long lines).
+		if (toc.id === "") {
+			toc.id = "toc";
+		}
+		var tocID = toc.id;
+		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; max-height: 80%; max-width: 32%; overflow: auto; }"
+			+ "#"+tocID+"       { opacity: 0.2; }"
+			+ "#"+tocID+":hover { opacity: 1.0; }"
+		);
+
+	}
 
 } catch (e) {
 	GM_log("[TOCE] Error! "+e);
