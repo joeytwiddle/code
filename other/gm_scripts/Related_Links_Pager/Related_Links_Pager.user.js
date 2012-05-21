@@ -10,27 +10,29 @@
 
 var delayBeforeRunning = 2000;
 var minimumGroupSize = 5;
-var maximumGroupSize = 110;       // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request")
+var maximumGroupSize = 110;           // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request")
 var groupLinksByClass = true;
 
 var enableOnCtrlClick = true;
-var enableOnShiftClick = false;   // Allows you to avoid the script when needed
+var enableOnShiftClick = false;       // Allows you to avoid the script when needed
 var enableOnRightClick = false;
 
-var keepNavigationHistory = false;   // When off, paging is not added to browser history.  The back button will return you to the page before you started paging.
-var leaveHashUrlsAlone = true;    // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
-var forceTravel = true;           // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
+var keepNavigationHistory = false;    // When off, paging is not added to browser history.  The back button will return you to the page before you started paging.
+var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
+var forceTravel = true;               // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
+                                      // BUG: I think this overrides Google Preview Pane's handler if we click a link expecting it to be previewed.
+var clearDataFromLocation = false;    // Looks tidier but can prevent Pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.
 
-var verbose = true;                     // Extra logging for debugging
+var verbose = true;                   // Extra logging for debugging
 
-var highlightLinkGroups = true;         // Change the background color of links in the current group on hover.
+var highlightLinkGroups = true;       // Change the background color of links in the current group on hover.
 var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
 var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
 // var thisLinkHighlightColor = "rgba(130,230,255,0.3)";
 // var highlightColor         = null;
 
-var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
-
+var showGroupCountInLinkTitle = true; // Updates hovered links' titles to show number of siblings.
+var showPageNumberInWindowTitle = true;
 
 
 // == CHANGELOG ==
@@ -378,10 +380,15 @@ function createRelatedLinksPager(siblings) {
     // Don't return.  Show the list anyway!
     // return;
   }
+
+  if (showPageNumberInWindowTitle) {
+    document.title = document.title + " (Page "+(currentIndex+1)+" of "+siblings.length+")";
+  }
+
   var pager = document.createElement("div");
   pager.id = "linkGroupPager";
   GM_addStyle("#linkGroupPager { position: fixed; top: 5%; right: 5%; "+
-    "z-index: 10; background: white; color: black; border: 1px solid black; "+
+    "z-index: 9999999; background: white; color: black; border: 1px solid black; "+
     "padding: 5px; font-size: 100%; text-align: center; "+
     "max-width: 40%; max-height: 90%; overflow: auto; } "+
     ".linkGroupPagerList { text-align: left; }"
@@ -390,6 +397,8 @@ function createRelatedLinksPager(siblings) {
   function maybeHost(link) {
     if (link.host != document.location.host) {
       return " ("+link.host+")";
+    } else {
+      return "";
     }
   }
 
@@ -448,7 +457,8 @@ function createRelatedLinksPager(siblings) {
     var record = siblings[i];
     var text = record[0] || record[1];   // use address if no title
     var link = createLinkFromRecord(record, text);
-    if (record[1] == seekURL) {
+    // if (record[1] == seekURL) {
+    if (record[1].replace(hashPart,'') == seekURL) {
       // Replace link with just a bold span
       var span = document.createElement("span");
       span.style.fontWeight = 'bold';
@@ -472,8 +482,11 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   // GM_log("Got encoded: "+encodedList);
   var siblings = JSON.parse(decodeURIComponent(encodedList));
   createRelatedLinksPager(siblings);
-  // document.location.hash = ".";   // Creates an unwanted history step
-  document.location.replace('#');   // #. breaks google search results pages, tho we rarely page through them.
+  if (clearDataFromLocation) {
+    // document.location.hash = ".";    // BAD.  "#." breaks google search results pages, tho we rarely page through them.
+    document.location.hash = '';        // Creates an extra history step, but the user may want that, to retain the data!
+    // document.location.replace('#');  // Does not create history.  Data lost!  Fine if only navigating forwards.
+  }
 }
 
 
