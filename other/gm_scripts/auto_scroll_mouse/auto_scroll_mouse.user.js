@@ -38,35 +38,6 @@ var _go = 0;
 var _mNow = new Date();
 var _mThen = new Date();
 
-// 1. Catch mouse movement
-document.addEventListener('mousemove', mousemove, true);
-function mousemove(e)
-{
-  // get mouse pos and the date
-  if (!e)
-    var e = window.event || window.Event;
-  if('undefined'!=typeof e.pageX) {
-    _mX = e.pageX;
-    _mY = e.pageY;
-  } else {
-    _mX = e.clientX + document.body.scrollLeft;
-    _mY = e.clientY + document.body.scrollTop;
-  }
-  _mNow = Date.now();
-
-  // Hack to avoid unwanted scrolling when the mouse enters a window
-  // if no event for too long, no scrolling
-  if (_mNow - _mThen > ONLYLEFTRIGHT_DONTSCROLL)
-    _go = 0;
-
-  // Scroll the window
-  ScrollWindow();
-
-  _mXOld = _mX;
-  _mYOld = _mY;
-  _mThen = _mNow;
-}
-
 // 2. scroll the window
 function ScrollWindow() {
   // don't scroll if we're in the middle of the page
@@ -103,4 +74,46 @@ function ScrollWindow() {
   }
 }
 
+function maybe(scrollWindow) {
+  var timer;
+  return function(){
+    if (!timer) {
+      timer = setTimeout(function(){
+        timer = null;
+        scrollWindow();
+      },10);
+    }
+  };
+}
+
+var maybeScrollWindow = maybe(ScrollWindow);
+
+// 1. Catch mouse movement
+document.addEventListener('mousemove', mousemove, true);
+function mousemove(e)
+{
+  // get mouse pos and the date
+  if (!e)
+    var e = window.event || window.Event;
+  if('undefined'!=typeof e.pageX) {
+    _mX = e.pageX;
+    _mY = e.pageY;
+  } else {
+    _mX = e.clientX + document.body.scrollLeft;
+    _mY = e.clientY + document.body.scrollTop;
+  }
+  _mNow = Date.now();
+
+  // Hack to avoid unwanted scrolling when the mouse enters a window
+  // if no event for too long, no scrolling
+  if (_mNow - _mThen > ONLYLEFTRIGHT_DONTSCROLL)
+    _go = 0;
+
+  // Scroll the window
+  maybeScrollWindow();
+
+  _mXOld = _mX;
+  _mYOld = _mY;
+  _mThen = _mNow;
+}
 
