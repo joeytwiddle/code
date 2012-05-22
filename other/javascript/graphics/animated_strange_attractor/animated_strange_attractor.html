@@ -1,0 +1,282 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+	<head>
+		<title>&lt;canvas&gt; strange attractor (307.200 particles)</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style type="text/css"> 
+			body
+			{
+				background-color: #000000;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style> 
+	</head>
+	<body>
+
+		<div id="container"></div>
+
+		<script type="text/javascript" src="http://github.com/mrdoob/stats.js/raw/master/build/Stats.js"></script> 
+
+		<script type="text/javascript">
+
+			/*
+			 * <canvas> Strange Attractor
+			 * by Mr.doob
+			 *
+			 * Code ported from the Silverlight version done by Joa:
+			 * http://blog.joa-ebert.com/2009/08/10/flirting-with-silverlight/
+			 */
+
+			function Particle() {
+
+				this.X = 0;
+				this.Y = 0;
+				this.Z = 0;
+				this.Next;
+
+			}
+
+			function Matrix4x4() {
+
+				this.I00 = 1; this.I01 = 0; this.I02 = 0; this.I03 = 0;
+				this.I10 = 0; this.I11 = 1; this.I12 = 0; this.I13 = 0;
+				this.I20 = 0; this.I21 = 0; this.I22 = 1; this.I23 = 0;
+				this.I30 = 0; this.I31 = 0; this.I32 = 0; this.I33 = 1;
+			}
+
+			Matrix4x4.prototype = {
+
+				Translation: function(x, y, z) {
+
+					var result = new Matrix4x4();
+
+					result.I03 = x;
+					result.I13 = y;
+					result.I23 = z;
+
+					return result;
+				},
+
+				RotationX: function(radiants) {
+
+					var result = new Matrix4x4();
+
+					var cos = Math.cos(radiants);
+					var sin = Math.sin(radiants);
+
+					result.I11 = cos;
+					result.I12 = -sin;
+					result.I21 = sin;
+					result.I22 = cos;
+
+					return result;
+				},
+
+				RotationY: function(radiants) {
+
+					var result = new Matrix4x4();
+
+					var cos = Math.cos(radiants);
+					var sin = Math.sin(radiants);
+
+					result.I00 = cos;
+					result.I02 = -sin;
+					result.I20 = sin;
+					result.I22 = cos;
+
+					return result;
+				},
+
+				Multiply: function(mtx) {
+
+					var result = new Matrix4x4();
+
+					result.I00 = this.I00 * mtx.I00 + this.I01 * mtx.I10 + this.I02 * mtx.I20;
+					result.I01 = this.I00 * mtx.I01 + this.I01 * mtx.I11 + this.I02 * mtx.I21;
+					result.I02 = this.I00 * mtx.I02 + this.I01 * mtx.I12 + this.I02 * mtx.I22;
+					result.I03 = this.I00 * mtx.I03 + this.I01 * mtx.I13 + this.I02 * mtx.I23 + this.I03;
+
+					result.I10 = this.I10 * mtx.I00 + this.I11 * mtx.I10 + this.I12 * mtx.I20;
+					result.I11 = this.I10 * mtx.I01 + this.I11 * mtx.I11 + this.I12 * mtx.I21;
+					result.I12 = this.I10 * mtx.I02 + this.I11 * mtx.I12 + this.I12 * mtx.I22;
+					result.I13 = this.I10 * mtx.I03 + this.I11 * mtx.I13 + this.I12 * mtx.I23 + this.I13;
+
+					result.I20 = this.I20 * mtx.I00 + this.I21 * mtx.I10 + this.I22 * mtx.I20;
+					result.I21 = this.I20 * mtx.I01 + this.I21 * mtx.I11 + this.I22 * mtx.I21;
+					result.I22 = this.I20 * mtx.I02 + this.I21 * mtx.I12 + this.I22 * mtx.I22;
+					result.I23 = this.I20 * mtx.I03 + this.I21 * mtx.I13 + this.I22 * mtx.I23 + this.I23;
+
+					result.I30 = this.I30 * mtx.I00 + this.I31 * mtx.I10 + this.I32 * mtx.I20;
+					result.I31 = this.I30 * mtx.I01 + this.I31 * mtx.I11 + this.I32 * mtx.I21;
+					result.I32 = this.I30 * mtx.I02 + this.I31 * mtx.I12 + this.I32 * mtx.I22;
+					result.I33 = this.I30 * mtx.I03 + this.I31 * mtx.I13 + this.I32 * mtx.I23 + this.I33;
+
+					return result;
+				}
+			}
+
+			var SCREEN_WIDTH = 550, SCREEN_HEIGHT = 400, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
+			MAX_PARTICLES = 1024 * 300;
+
+
+			// Vars
+
+			var canvas, context, image, data;
+
+			var particles, mouseX = 0, mouseY = 0, targetX = 0, targetY = 0, focalLength = 400,
+			matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
+			translationMatrix = matrixStatic.Translation(0, 0, 10);
+
+			var stats;
+
+			// Main
+
+			Init();
+			InitParticles();
+			CalculatePositions();
+
+			setInterval(loop, 1000 / 60);
+
+			function Init() {
+
+				container = document.getElementById('container');
+
+				canvas = document.createElement("canvas");
+				canvas.width = SCREEN_WIDTH;
+				canvas.height = SCREEN_HEIGHT;
+				canvas.style.position = "absolute";
+				container.appendChild(canvas);
+
+				context = canvas.getContext("2d");
+				context.fillStyle = '#101010';
+				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
+
+				stats = new Stats();
+				stats.domElement.style.position = 'absolute';
+				stats.domElement.style.top = '0px';
+				container.appendChild(stats.domElement);
+
+				window.addEventListener('mousemove', onWindowMouseMove, false);
+
+			}
+
+			function InitParticles() {
+
+				particles = new Particle();
+
+				var currentParticle = particles;
+				var numParticles = MAX_PARTICLES;
+
+			 	while (--numParticles != 0) {
+
+					currentParticle = currentParticle.Next = new Particle();
+
+				}
+
+			}
+
+			function CalculatePositions() {
+
+				var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135,
+				cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0,
+
+				scale = 40.0, particle = particles;
+
+				while(null != particle) {
+
+					mx = cx + _d * (-_a * cx - cy * cy - cz * cz + _a * _f);
+					my = cy + _d * (-cy + cx * cy - _b * cx * cz + _g);
+					mz = cz + _d * (-cz + _b * cx * cy + cx * cz);
+
+					cx = mx;
+					cy = my;
+					cz = mz;
+
+					particle.X = mx * scale;
+					particle.Y = my * scale;
+					particle.Z = mz * scale;
+
+					particle = particle.Next;
+
+				}
+
+			}
+
+
+			function onWindowMouseMove(event) {
+
+				mouseX = event.clientX;
+				mouseY = event.clientY;
+
+			}
+
+			function loop() {
+
+				targetX += (mouseX - targetX) * 0.1;
+				targetY += (mouseY - targetY) * 0.1;
+
+				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+				image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+				data = image.data;
+
+				matrix = matrixStatic.RotationY(targetX * 0.05).Multiply(matrixStatic.RotationX(targetY * 0.05)).Multiply(translationMatrix);
+
+				var cx = 275, cy = 200;
+
+				var w = 0, xi = 0, yi = 0;
+				var x = 0, y = 0, z = 0, pz = 0;
+
+				var maxIndex = MAX_SCREEN * 4;
+				var index = maxIndex;
+
+				var particle = particles;
+
+				while (null != particle) {
+
+					x = particle.X;
+					y = particle.Y;
+					z = particle.Z;
+
+					pz = focalLength + x * matrix.I02 + y * matrix.I12 + z * matrix.I22 + matrix.I32;
+
+					if (0 < pz) {
+
+						xi = Math.floor((w = focalLength / pz ) * (x * matrix.I00 + y * matrix.I10 + z * matrix.I20) + cx);
+						yi = Math.floor(w * (x * matrix.I01 + y * matrix.I11 + z * matrix.I21) + cy);
+
+						index = (xi + yi * SCREEN_WIDTH) * 4;
+
+						if (index > -1 && index < maxIndex) {
+
+							data[index] += 32;
+
+						}
+
+					}
+
+					particle = particle.Next;
+				}
+
+				context.putImageData(image, 0, 0);
+
+				stats.update();
+			}
+
+		</script>
+
+		<script type="text/javascript"> 
+		  var _gaq = _gaq || [];
+		  _gaq.push(['_setAccount', 'UA-86951-7']);
+		  _gaq.push(['_trackPageview']);
+ 
+		  (function() {
+		    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+		    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+		  })();
+		</script>
+
+	</body>
+</html>
