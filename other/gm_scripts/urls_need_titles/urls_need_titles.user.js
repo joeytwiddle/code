@@ -11,7 +11,7 @@ var rules = [
 	/* A rule:
 		{
 			hostMatch: "youtube.TLD",   youtube.ath.cx, somewhere.youtube.com
-			                            TLD is replaced by 1 or two toplevel domain elements.
+			                            TLD will match 1 or two toplevel domain elements.
 			pathMatch: "/watch",        This regex will be wrapped with ^..$ so use
 			                            .* at either end for wildcards.
 			get: ...                    A function which returns a sensible title for this page.
@@ -52,6 +52,12 @@ var rules = [
 		hostMatch: "userscripts.org",
 		pathMatch: "/scripts/show/.*",
 		get: function(){ return document.title.replace(" for Greasemonkey",''); }
+	},
+
+	{
+		hostMatch: "bbc.co.uk",
+		pathMatch: "/news/.*",
+		get: function(){ return document.title.replace(/BBC News - /,''); }
 	}
 
 ];
@@ -62,7 +68,7 @@ function check() {
 
 function checkRule(rule) {
 	// TODO: Check if location.pathname is cross-browser and/or standards-compliant
-	var hostRegexp = rule.hostMatch.replace(/\.TLD$/, "(\.[^.]*$|\.[^.]*\.[^.]*$)");
+	var hostRegexp = '(^|\\.)' + rule.hostMatch.replace(/\.TLD$/, "(\\.[^.]*$|\\.[^.]*\\.[^.]*$)") + '$';
 	if (document.location.host.match(hostRegexp)) {
 		if (rule.pathMatch) {
 			var pathRegexp = '^' + rule.pathMatch + '$';
