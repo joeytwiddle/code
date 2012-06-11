@@ -227,8 +227,10 @@ try {
 				}
 
 				var link = newNode("A");
-				if (linkText.length > 40)
+				if (linkText.length > 40) {
+					link.title = linkText;   // Show full title on hover
 					linkText = linkText.substring(0,32)+"...";
+				}
 				link.textContent = linkText;
 				/* Dirty hack for Wikimedia: */
 				if (link.textContent.substring(0,7) == "[edit] ") {
@@ -257,6 +259,8 @@ try {
 					link.href = '#';
 				}
 				table.appendChild(link);
+
+				// For better layout, we will now replace that link with a neater li.
 				liType = "li";
 				if (node.tagName == "A") {
 					liType = "div";
@@ -270,6 +274,7 @@ try {
 				li.style.paddingLeft = (1.5*level)+"em";
 				li.style.fontSize = (100-6*(level+1))+"%";
 				li.style.size = li.style.fontSize;
+
 				// Debugging:
 				/*
 				li.title = node.tagName;
@@ -277,6 +282,7 @@ try {
 					li.title += " (#"+node.name+")";
 				li.title = getXPath(node);
 				*/
+
 			}
 			toc.appendChild(table);
 
