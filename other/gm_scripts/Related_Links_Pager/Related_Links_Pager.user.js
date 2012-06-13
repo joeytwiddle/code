@@ -69,6 +69,10 @@ var showPageNumberInWindowTitle = true;
 // those added later, e.g. by Ajax when refining a Google search.  This may be
 // the cause of some issues.  (Google says "This url is too long.")
 
+// BUG TODO: Now we are passing ,1 to mark the "current" page, but this is
+// being passed into the siblings package.  The package needs to be rebuilt and
+// altered!
+
 
 
 setTimeout(function(){
@@ -296,8 +300,12 @@ function checkClick(evt) {
     // Collect other links matching this one:
     var siblings = collectLinksInSameGroupAs(link);
     // Convert from links to records:
-    siblings = siblings.map(function(link) {
-      return [link.textContent, link.href];
+    siblings = siblings.map(function(l) {
+      var record = [l.textContent, l.href];
+      if (l.href == link.href) {
+        record[2] = 1; // Mark this record as the (soon-to-be) current one
+      }
+      return record;
     });
     if (siblings.length <= minimumGroupSize) {
       // No point.  Give the user a clean location bar for a change.  ;)
@@ -360,13 +368,21 @@ document.body.addEventListener("mouseup",checkClick,true);
 // If we have been passed a hash package of siblings, present the lovely pager.
 
 function createRelatedLinksPager(siblings) {
+
+  //// Find currentIndex.
   var hashPart = new RegExp("#.*");
   var seekURL = document.location.href.replace(hashPart,'');
   // var currentIndex = siblings.indexOf(seekURL);   // No because the list contains records not urls!
   var currentIndex = -1;
   for (var i=0;i<siblings.length;i++) {
     var record = siblings[i];
+    /*
+    //// KNOWN BUG: This can fail if the receiving website redirects us, e.g. blogspot.com pushes me to the same page on blogspot.co.uk.
+    //// Poor solution: Use wordex to find closest match.
+    //// Good solution: TODO: Pass forward index along with siblings, just in case.
     if (record[1].replace(hashPart,'') == seekURL) {
+    */
+    if (record[2]) {
       currentIndex = i;
       break;
     }
