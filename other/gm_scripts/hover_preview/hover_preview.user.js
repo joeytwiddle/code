@@ -18,8 +18,12 @@
 // Could be a bit heavy.  It depends on the page...
 // A different bookmarklet to turn all "links to images" into "images" would be nice. :)
 
+var focusReactionTime = 2000;
+var unfocusReactionTime = 2000;
+
 var focus = undefined;
 var lastFocus = undefined;
+var timer = null;
 
 var myPopup;
 var myFrame;
@@ -40,12 +44,15 @@ function checkFocus() {
 function eekAMouse(evt) {
 	if (!focus) {
 		focus = evt.currentTarget;
-		// setTimeout('checkFocus();',1000);
+		// setTimeout('checkFocus();',focusReactionTime);
 		// Hack to bring the popup back immediately if we've gone back to the same link.
 		if (myFrame && myFrame.href == focus.href) {
 			showPreviewWindow(focus,evt);
 		} else {
-			setTimeout(checkFocus,100);
+			if (timer) {
+				clearTimeout(timer);
+			}
+			timer = setTimeout(checkFocus,focusReactionTime);
 		}
 	} else {
 		window.status = "Already focused on a link wtf!";
@@ -54,8 +61,11 @@ function eekAMouse(evt) {
 
 function phewMouseGone(evt) {
 	focus = undefined;
+	if (timer) {
+		clearTimeout(timer);
+	}
 	// TESTING: Don't hide the popup if mouse is currently over the popup!
-	setTimeout(clearPopup,50);
+	timer = setTimeout(clearPopup,unfocusReactionTime);
 }
 
 function clearPopup(e) {
@@ -83,7 +93,7 @@ function createPopup() {
 		+
 		"<IFRAME class='preview' width='"+(window.innerWidth*0.75)+"' height='"+(window.innerHeight*0.75)+"' src='about:blank'></IFRAME>";
 	myPopup.addEventListener("mouseover", function(evt) { isOverPopup=true; }, false);
-	myPopup.addEventListener("mouseout", function(evt) { isOverPopup=false; setTimeout(clearPopup,500); }, false);
+	myPopup.addEventListener("mouseout", function(evt) { isOverPopup=false; setTimeout(clearPopup,unfocusReactionTime); }, false);
 	document.documentElement.appendChild(myPopup);
 	/*
 	myPopup.style.border = "4px solid white";
