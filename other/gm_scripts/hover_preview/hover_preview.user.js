@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name           Hover Preview
-// @namespace      noggieb
+// @namespace      HP
 // @description    Shows a tooltip when you hover over links, containing the target page!
 // @include        *
 // ==/UserScript==
