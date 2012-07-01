@@ -19,7 +19,7 @@
 
 var showTooltips      = true;    // Make little info boxes pop up when you hover over a link.
 var lookupCurrentPage = true;    // Display count for this page shown in top-right corner.
-var annotateAllLinks  = true;   // Lookup every link on the page (almost), and display its count in a blue box after the link.
+var annotateAllLinks  = false;   // Lookup every link on the page (almost), and display its count in a blue box after the link.
                                  // Delicious may occasionally block this for spamming (temporarily).
 
 var enableJSONPonHTTPS = false;  // JSONP only works on https pages in Chrome if the user confirms each page.  This is a hassle so it is disabled by default.
@@ -377,8 +377,8 @@ if (needToJSONP && (allowedToJSONP || secondRun)) {
 			try {
 				details.onload(responseDetails);
 			} catch (e) {
-				// GM_log("Problem running details.onload: "+e);
-				GM_log("Problem running details.onload ("+details.onload+"): "+e);
+				// GM_log("[DLT] Problem running details.onload: "+e);
+				GM_log("[DLT] Problem running details.onload ("+details.onload+"): "+e);
 			}
 			// Cleanup artifacts: script and callback function
 			delete target[callbackName];
@@ -389,8 +389,8 @@ if (needToJSONP && (allowedToJSONP || secondRun)) {
 		// Request a JSONP response from delicious, which should return some javascript to call the callback.
 		script.type = "text/javascript";
 		script.src = details.url + "?callback="+callbackName;
-		// GM_log("Requesting script "+script.src);
-		// GM_log("Adding "+script+" to "+document.body);
+		// GM_log("[DLT] Requesting script "+script.src);
+		// GM_log("[DLT] Adding "+script+" to "+document.body);
 		// document.getElementsByTagName("head")[0].appendChild(script);
 		document.body.appendChild(script);
 	};
@@ -441,7 +441,7 @@ if (needToJSONP && (allowedToJSONP || secondRun)) {
 		script.src = "http://" + proxyHost + "/xhrasjson?" + params;
 		document.getElementsByTagName("head")[0].appendChild(script);
 		// The callback should run on a successful response.  But we need to handle errors too.
-		// script.onload = function(e) { GM_log("Script has loaded."); };
+		// script.onload = function(e) { GM_log("[DLT] Script has loaded."); };
 		script.onerror = function(e) {
 			var responseDetails = {};
 			responseDetails.status = 12345;
@@ -458,7 +458,7 @@ if (needToJSONP && (allowedToJSONP || secondRun)) {
 	*/
 
 } else if (needToJSONP && !allowedToJSONP) {
-   GM_log("Not attempting to Delicious since we are on https page.");
+   GM_log("[DLT] Not attempting to Delicious since we are on https page.");
 	return;   // may throw error ;)
 }
 
@@ -524,7 +524,7 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 		var name = (i >= 0 ? names[i] : "unknown");
 		*/
 
-		GM_log("Implementing GM_get/setValue using "+name+" storage.");
+		GM_log("[DLT] Implementing GM_get/setValue using "+name+" storage.");
 
 		GM_setValue = function(name, value) {
 			value = (typeof value)[0] + value;
@@ -533,8 +533,8 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 
 		GM_getValue = function(name, defaultValue) {
 			var value = storage.getItem(name);
-			// GM_log("DLT GM_get("+name+")");
-			// GM_log("  gave: "+value);
+			// GM_log("[DLT] GM_get("+name+")");
+			// GM_log("[DLT]   gave: "+value);
 			if (!value)
 				return defaultValue;
 			var type = value[0];
@@ -565,7 +565,7 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 					// list.push(key);
 				// }
 			}
-			GM_log("localstorage is holding "+storage.length+" records, "+list.length+" of which are DLT cached responses.");
+			GM_log("[DLT] localstorage is holding "+storage.length+" records, "+list.length+" of which are DLT cached responses.");
 			return list;
 		};
 
@@ -583,7 +583,7 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 		}
 
 	} else {
-		GM_log("Warning: Could not implement GM_get/setValue.");
+		GM_log("[DLT] Warning: Could not implement GM_get/setValue.");
 		GM_setValue = function(){};
 		GM_getValue = function(key,def){ return def; };
 		GM_deleteValue = function(){};
@@ -598,7 +598,7 @@ if (typeof GM_setValue === 'undefined' || window.navigator.vendor.match(/Google/
 // find some of the existing names through GM_getValue.
 // TODO: UNTESTED!
 if (typeof GM_listValues == 'undefined') {
-	GM_log("Implementing GM_listValues using intercepts.");
+	GM_log("[DLT] Implementing GM_listValues using intercepts.");
 	var original_GM_setValue = GM_setValue;
 	var original_GM_deleteValue = GM_deleteValue;
 	GM_setValue = function(name, value) {
@@ -619,14 +619,14 @@ if (typeof GM_listValues == 'undefined') {
 		for (var key in values) {
 			list.push(key);
 		}
-		GM_log("GM_listValues is holding "+list.length+" records.");
+		GM_log("[DLT] GM_listValues is holding "+list.length+" records.");
 		return list;
 	};
 }
 
 // Not everyone has JSON!  Here is a cheap and insecure fallback.
 if (!this.JSON) {
-	GM_log("Implementing JSON using uneval/eval (insecure!).");
+	GM_log("[DLT] Implementing JSON using uneval/eval (insecure!).");
 	this.JSON = {
 		parse: function(str) {
 			return eval(str);
@@ -648,11 +648,11 @@ function JSON_parse(str) {
 		result = JSON.parse(str);
 	} catch (e) {
 		// Parse Error?  Must be an old record!
-		GM_log("Difficulty parsing \""+str+"\" with JSON - trying uneval.  e="+e);
+		GM_log("[DLT] Difficulty parsing \""+str+"\" with JSON - trying uneval.  e="+e);
 		try {
 			result = eval(str);
 		} catch (e2) {
-			GM_log("Could not parse: \""+str+"\".  e2="+e2);
+			GM_log("[DLT] Could not parse: \""+str+"\".  e2="+e2);
 			result = null;
 		}
 	}
@@ -735,7 +735,7 @@ function doLookup(lookupURL,onSuccess,onFailFn) {
 			if (onFailFn) {
 				onFailFn();
 			} else {
-				GM_log("No result from Delicious, and no onFailFn.");
+				GM_log("[DLT] No result from Delicious, and no onFailFn.");
 			}
 		}
 
@@ -944,13 +944,13 @@ function cleanupCache() {
 			}
 
 			/*
-			GM_log("Score for 0 = "+getScoreFor(sortedList[0]));
-			GM_log("Score for 10 = "+getScoreFor(sortedList[10]));
-			GM_log("Score for 100 = "+getScoreFor(sortedList[100]));
+			GM_log("[DLT] Score for 0 = "+getScoreFor(sortedList[0]));
+			GM_log("[DLT] Score for 10 = "+getScoreFor(sortedList[10]));
+			GM_log("[DLT] Score for 100 = "+getScoreFor(sortedList[100]));
 			*/
 
 			if (sortedList.length > maxCacheSize) {
-				GM_log("Removing "+(sortedList.length-maxCacheSize)+" records.");
+				GM_log("[DLT] Removing "+(sortedList.length-maxCacheSize)+" records.");
 			}
 
 			// sortedList.slice(maxCacheSize)
@@ -1075,7 +1075,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 	if (resultObj && resultObj.total_posts==1 /*&& resultObj.hash*/ &&
 			resultObj.url=="" && resultObj.title=="" &&
 			resultObj.top_tags.length==0) {
-		GM_log("Got boring response: "+JSON.stringify(resultObj));
+		GM_log("[DLT] Got boring response: "+JSON.stringify(resultObj));
 		resultObj = null;
 	}
 	// However I think this may be due to the fact that there are *private*
@@ -1270,7 +1270,7 @@ function createTooltip(evt) {
 		return;  // We can't do anything useful here.  We must wait for the XHR to respond.
 	}
 
-	var waitTime = ( dataCache[subjectUrl] != null ? 300 : 1000 );
+	var waitTime = ( dataCache[subjectUrl] != null ? 300 : 2000 );
 
 	timer = setTimeout(
 			function(){
@@ -1505,9 +1505,9 @@ function addLabel(link) {
 	var isCommonSearch = ( url.indexOf('?q=')>=0 || url.indexOf('&q=')>=0 );
 	var isSearch = isCommonSearch || isGoogleSearch;
 	if (isCommonSearch) {
-		// GM_log("Skipping due to ?q= or &q= in "+url);
+		// GM_log("[DLT] Skipping due to ?q= or &q= in "+url);
 	}
-	var isImage = isImageAndWhitespace(link);
+	var isImage = false; // isImageAndWhitespace(link);
 	var isBlacklisted = url.match(/fbcdn.net\//) || url.match(/facebook.com\//);
 	var causesDivGrowthOnGoogle = link.parentNode.className=='gbt' || link.className=='gbzt';
 	if (sameAsLast || badHost || isSearch || samePage || isImage || isBlacklisted || causesDivGrowthOnGoogle) {
