@@ -281,6 +281,11 @@ function populateInnerWindow(href,windowID) {
 				var dp = new XPCNativeWrapper(window, "DOMParser()");
 				var parser = new dp.DOMParser();
 				xmlDoc = parser.parseFromString(response.responseText, "application/xhtml+xml");
+			} else {
+				// xmlDoc = document.createDocumentFragment(); // does not have getElementsByTagName!
+				xmlDoc = document.createElement("div");
+				xmlDoc.innerHTML = response.responseText;
+				// xmlDoc = xmlDoc.firstChild;
 			}
 
 			if(!xmlDoc) {
@@ -293,7 +298,7 @@ function populateInnerWindow(href,windowID) {
 				break;
 			}
 			
-			content = xmlDoc.getElementById('content');
+			content = findElementById(xmlDoc,'content');
 			
 			if (innerWindowContentBox) {
 				if (content && content.hasChildNodes()) {
@@ -317,7 +322,28 @@ function populateInnerWindow(href,windowID) {
 		}});
 }
 
-function fetchContent(href){
+function findElementById(node, id) {
+	if (node.id == id) {
+		return node;
+	}
+	if (node.childNodes) {
+		for (var i=0;i<node.childNodes.length;i++) {
+			var found = findElementById(node.childNodes[i],id);
+			if (found)
+				return found;
+		}
+	}
+	return null;
+}
+
+function findElementByIdAlternative(node, id) {
+	var elems = node.getElementsByTagName("*");
+	for (var i=0;i<elems.length;i++) {
+		if (elems[i].id == id) {
+			return elems[i];
+		}
+	}
+	return null;
 }
 
 function closeInlineWindows(){
@@ -349,5 +375,44 @@ function getElementOffset(element,whichCoord) {
 }
 
 // Begin the action
-setTimeout(rewriteLinks,4000);
+//setTimeout(rewriteLinks,4000);
+
+// Joey's hover detection:
+var hoverTimer, hoverTarget;
+function isSuitableLink(evt) {
+	var target = evt.target || evt.sourceElement;
+	return (target && target.tagName=="A" && target.getAttribute("href").indexOf("/wiki/")==0);
+	// Check: '//div[@id="content"]//a[starts-with(@href,"/wiki/")]',
+}
+function onMouseOver(evt) {
+	if (isSuitableLink(evt)) {
+		hoverTarget = evt.target || evt.sourceElement;
+		hoverTimer = setTimeout(hoverDetected, 2000);
+	}
+}
+function onMouseOut(evt) {
+	if (isSuitableLink(evt)) {
+		if (hoverTimer) {
+			clearTimeout(hoverTimer);
+			hoverTimer = null;
+		}
+	}
+}
+function hoverDetected() {
+	if (!hoverTarget.getAttribute('inlinewindow')) {
+		hoverTarget.setAttribute('inlinewindow',inlineWindowCount++);
+	}
+	var windowID = hoverTarget.getAttribute('inlinewindow');
+	// check to see if the window is open and if so close it, otherwise pop a new window
+	var openWindow = document.getElementById('inlineWindow-' + windowID);
+	if(openWindow) {
+		// openWindow.parentNode.removeChild(openWindow);
+	} else {
+		inlineWindow = newInlineWindow(null, hoverTarget.pathname, hoverTarget, windowID);
+	}
+}
+document.body.addEventListener("mouseover",onMouseOver,true);
+document.body.addEventListener("mouseout",onMouseOut,true);
+
+// TODO: Easier close, e.g. click anywhere outside the inlineWindow to close it.
 
