@@ -8,31 +8,38 @@
 // @exclude        https://www.facebook.com/*
 // ==/UserScript==
 
+
+
+// == OPTIONS ==
+
 var delayBeforeRunning = 2000;
-var minimumGroupSize = 5;
-var maximumGroupSize = 110;           // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request")
+var minimumGroupSize = 2;
+var maximumGroupSize = 250;           // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request").  I've seen Chrome on Wikipedia manage 200 siblings!
 var groupLinksByClass = true;
 
 var enableOnCtrlClick = true;
-var enableOnShiftClick = false;       // Allows you to avoid the script when needed
+var enableOnShiftClick = true;       // Allows you to avoid the script when needed
 var enableOnRightClick = false;
 
 var keepNavigationHistory = false;    // When off, paging is not added to browser history.  The back button will return you to the page before you started paging.
 var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
-var forceTravel = true;               // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
+var forceTravel = false;              // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
                                       // BUG: I think this overrides Google Preview Pane's handler if we click a link expecting it to be previewed.
 var clearDataFromLocation = false;    // Looks tidier but can prevent Pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.
 
-var verbose = true;                   // Extra logging for debugging
+var verbose = false;                  // Extra logging for debugging
 
 var highlightLinkGroups = true;       // Change the background color of links in the current group on hover.
-var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
-var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
+// var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
+// var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
 // var thisLinkHighlightColor = "rgba(130,230,255,0.3)";
 // var highlightColor         = null;
+var thisLinkHighlightColor = "rgba(0,0,255,0.0)";
+var highlightColor         = "rgba(0,0,255,0.8)"; // very light blue
 
 var showGroupCountInLinkTitle = true; // Updates hovered links' titles to show number of siblings.
 var showPageNumberInWindowTitle = true;
+
 
 
 // == CHANGELOG ==
@@ -44,6 +51,8 @@ var showPageNumberInWindowTitle = true;
 //       BUG: We still group unrelated (indistinguishable) links on Wikipedia!
 // 2012-01-28 Blacklisted some buggy situations.
 
+
+
 // == NOTES ==
 
 // You can avoid this script either by clicking a link before it runs or by
@@ -54,7 +63,7 @@ var showPageNumberInWindowTitle = true;
 // Chrome that could be localStorage *if* the followed sibling is on the same
 // domain.  In Firefox Greasemonkey we can use GM_set/getValue().
 
-// TODO: Pager can only go sideways.  It should also offer ability to go "up"
+// TODO: Pager can only go sideways.  It could also offer ability to go "up"
 // to the page that contained all the links in the current group.
 
 // BUG: Does not work through redirects.
@@ -69,45 +78,55 @@ var showPageNumberInWindowTitle = true;
 // those added later, e.g. by Ajax when refining a Google search.  This may be
 // the cause of some issues.  (Google says "This url is too long.")
 
-// BUG TODO: Now we are passing ,1 to mark the "current" page, but this is
+// FIXED: Now we are passing ,1 to mark the "current" page, but this is
 // being passed into the siblings package.  The package needs to be rebuilt and
-// altered!
+// altered!  That was a fairly rare case: redirected to a new domain but
+// siblings retained!
+
+// BUG TODO: With forceTravel=true, submitting an answer on StackOverflow, we
+// get a warning message that we are about to leave the current page!  (In fact
+// is was fine for me to accept the warning and the post happened ok, but still
+// hardly tidy!)
+//
+// Recommend: Default to forceTravel=false, and override with heuristics only
+// for Google search!  So it works gently for all users, never causing
+// problems, but sometimes failing(being invisibly overriden - gah!).  Enable
+// it for personal use, as other powerusers might do.
+//
+// Another place our script is overzealous is on StackOverflow, when clicking
+// to expand a post, AJAX works just fine, but forceTravel sends us to a
+// different page regardless!  Solution: don't click on the link, click on the
+// div.
+//
+// I can't see any way how forceTravel could detect whether the user wants it
+// or not.  Well, the user wants it only if clicking would take them to a new
+// page.  Could we perhaps catch the page change event and if it happened
+// immediately after a click, ensure the target URL has siblings packet.  I'm
+// not sure JS has the power to do that through onbeforeunload.
+//
+// Perhaps we should go for a medium option - remove .onclick and unregister
+// any event handlers (we can't do that!).  Sites *should* fall back to their
+// non-JS method.
+//
+// Oh well we already are removing onmousedown, perhaps we should do click and
+// mouseup also, but make them all optional.
+
+// TODO: Appending # data breaks Twitter.  @exclude is not the solution.  We
+// should just not append to links who land on twitter (from in or out), whilst
+// links leaving Twitter should be fine!
 
 
 
-setTimeout(function(){
-
-
-
-// This is http://userscripts.org/scripts/review/57679
-// We need it on Google search result pages, or we end up following Google
-// feedback/tracking links, which then throw away our hash package!
-function removeRedirection() {
-  handle(document);
-
-  function handle(doc) {
-    var links = document.evaluate('descendant::a', doc, null, 7, null);
-    for (var i = 0; i < links.snapshotLength; i++){
-      links.snapshotItem(i).removeAttribute('onmousedown');
-    }
-  }
-
-  function registerPageHandler() {
-    window.AutoPagerize.addFilter(function(pages) {
-      pages.forEach(function(page) {
-        handle(page);
-      });
-    });
-  }
-  if (window.AutoPagerize) {
-    registerPageHandler();
-  } else {
-    GM_log("[RLP] Adding GM_AutoPagerizeLoaded listener");
-    window.addEventListener('GM_AutoPagerizeLoaded', registerPageHandler, false);
-  }
+// We grab the data as early as possible, in case any other scripts decide to
+// change the #.  We delay running anything else for a little while.
+var grabbedList;
+if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
+  grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
 }
-// document.evaluate fails on really old browsers:
-try { removeRedirection(); } catch (e) { GM_log("removeRedirection failed: "+e); }
+
+
+
+function runRelatedLinksPager(){
 
 
 
@@ -135,6 +154,8 @@ function getXPath(node) {
 }
 
 // What can I say?  I loooove favicons!
+// BUG: Does not add a favicon for the current page, because the current page
+// is not shown as a link.  This breaks left-alignment of the text!
 function addFaviconToLinkObviouslyIMeanWhyWouldntYou(link) {
 
   if (!link.href) {
@@ -213,6 +234,9 @@ function collectLinksInSameGroupAs(clickedLink) {
       }
     }
   }
+  if (verbose) {
+    GM_log("Got "+list.length+" matching siblings: for "+link.outerHTML+" with xpath "+seekXPath);
+  }
   return collected;
 }
 
@@ -267,7 +291,7 @@ function isSuitable(link) {
 
   var isYouTubePagerLink =
     link.host.indexOf("www.youtube.") == 0
-    && link.href.indexOf("/all_comments?") >= -1;
+    && link.href.indexOf("/all_comments?") >= 0;
   var youtubeWillComplain = isYouTubePagerLink;
 
   var siteWillComplain = googleWillComplain || youtubeWillComplain;
@@ -281,7 +305,8 @@ function isSuitable(link) {
 }
 
 function checkClick(evt) {
-  var elem = evt.target || evt.sourceElement;
+  // var elem = evt.target || evt.sourceElement;
+  var elem = seekLinkInAncestry(evt.target || evt.sourceElement);
   // GM_log("Intercepted click event on "+getXPath(elem));
 
   // Do not interfere with Ctrl-click or Shift-click or right-click (usually open-in-new-window/tab)
@@ -298,9 +323,9 @@ function checkClick(evt) {
 
     // GM_log("User clicked on link: "+link.href);
     // Collect other links matching this one:
-    var siblings = collectLinksInSameGroupAs(link);
+    var linksInGroup = collectLinksInSameGroupAs(link);
     // Convert from links to records:
-    siblings = siblings.map(function(l) {
+    var siblings = linksInGroup.map(function(l) {
       var record = [l.textContent, l.href];
       if (l.href == link.href) {
         record[2] = 1; // Mark this record as the (soon-to-be) current one
@@ -412,18 +437,36 @@ function createRelatedLinksPager(siblings) {
 
   function maybeHost(link) {
     if (link.host != document.location.host) {
-      return " ("+link.host+")";
+      return "("+link.host+")";
     } else {
       return "";
     }
   }
 
-  function createLinkFromRecord(record, text) {
+  function createLinkFromRecord(selectedRecord, text) {
     var link = document.createElement("A");
     link.textContent = text;
-    var appendChar = ( record[1].indexOf('#')>=0 ? '&' : '#' );
-    link.href = record[1] + appendChar + 'siblings=' + encodedList;
-    link.title = record[0] + maybeHost(link);
+    var appendChar = ( selectedRecord[1].indexOf('#')>=0 ? '&' : '#' );
+
+    // Move the "current page marker" to the newly selected page
+    var records = siblings;
+    var newRecords = records.map(function(record) {
+        record = record.slice(0); // clone to preserve original
+        if (record[2]) {
+          record.pop();
+        }
+        if (record[1] === selectedRecord[1]) {
+          record[2] = 1;
+        }
+        return record;
+    });
+    var newEncodedList = encodeURIComponent(JSON.stringify(newRecords));
+
+    link.href = selectedRecord[1] + appendChar + 'siblings=' + newEncodedList;
+    if (text != selectedRecord[0]) {
+      link.title = selectedRecord[0];
+    }
+    link.title = (link.title ? link.title+' ' : '') + maybeHost(link);
     link.onclick = function(evt){
       if (!keepNavigationHistory) {
         document.location.replace(this.href);
@@ -474,7 +517,8 @@ function createRelatedLinksPager(siblings) {
     var text = record[0] || record[1];   // use address if no title
     var link = createLinkFromRecord(record, text);
     // if (record[1] == seekURL) {
-    if (record[1].replace(hashPart,'') == seekURL) {
+    // if (record[1].replace(hashPart,'') == seekURL) {
+    if (record[2]) {
       // Replace link with just a bold span
       var span = document.createElement("span");
       span.style.fontWeight = 'bold';
@@ -491,12 +535,8 @@ function createRelatedLinksPager(siblings) {
   document.body.appendChild(pager);
 }
 
-if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
-  var hash = document.location.hash;
-  // GM_log("Noticed hash: "+hash);
-  var encodedList = hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
-  // GM_log("Got encoded: "+encodedList);
-  var siblings = JSON.parse(decodeURIComponent(encodedList));
+if (grabbedList) {
+  var siblings = JSON.parse(decodeURIComponent(grabbedList));
   createRelatedLinksPager(siblings);
   if (clearDataFromLocation) {
     // document.location.hash = ".";    // BAD.  "#." breaks google search results pages, tho we rarely page through them.
@@ -529,29 +569,30 @@ if (highlightLinkGroups) {
       GM_log("Highlighting "+list.length+" elements.");
     }
     for (var i=0;i<list.length;i++) {
-      list[i].oldBackgroundColor = list[i].style.backgroundColor;
       if (highlightColor) {
+        /*
+        list[i].oldBackgroundColor = list[i].style.backgroundColor;
         list[i].style.backgroundColor = highlightColor;
+        */
+        list[i].oldBorderLeft = list[i].style.borderLeft;
+        list[i].oldMarginLeft = list[i].style.marginLeft;
+        list[i].oldBorderRight = list[i].style.borderRight;
+        list[i].oldMarginRight = list[i].style.marginRight;
+        list[i].oldBorderTop = list[i].style.borderTop;
+        list[i].oldMarginTop = list[i].style.marginTop;
+        list[i].oldBorderBottom = list[i].style.borderBottom;
+        list[i].oldMarginBottom = list[i].style.marginBottom;
+        list[i].style.border = "1px dashed "+highlightColor;
+        list[i].style.margin = "-1px";
       }
-      /*
-      list[i].oldBorderLeft = list[i].style.borderLeft;
-      list[i].oldMarginLeft = list[i].style.marginLeft;
-      list[i].oldBorderRight = list[i].style.borderRight;
-      list[i].oldMarginRight = list[i].style.marginRight;
-      list[i].oldBorderTop = list[i].style.borderTop;
-      list[i].oldMarginTop = list[i].style.marginTop;
-      list[i].oldBorderBottom = list[i].style.borderBottom;
-      list[i].oldMarginBottom = list[i].style.marginBottom;
-      list[i].style.border = "2px dashed "+highlightColor;
-      list[i].style.margin = "-2px";
-      */
     }
   }
 
   function clearList() {
     for (var i=0;i<list.length;i++) {
-      list[i].style.backgroundColor = list[i].oldBackgroundColor;
       /*
+      list[i].style.backgroundColor = list[i].oldBackgroundColor;
+      */
       list[i].style.marginLeft = list[i].oldMarginLeft;
       list[i].style.borderLeft = list[i].oldBorderLeft;
       list[i].style.marginRight = list[i].oldMarginRight;
@@ -560,7 +601,6 @@ if (highlightLinkGroups) {
       list[i].style.borderTop = list[i].oldBorderTop;
       list[i].style.marginBottom = list[i].oldMarginBottom;
       list[i].style.borderBottom = list[i].oldBorderBottom;
-      */
     }
     list.length = 0;
   }
@@ -570,19 +610,16 @@ if (highlightLinkGroups) {
     if (isSuitable(link)) {
       clearList();
       list = collectLinksInSameGroupAs(link);
-      if (verbose) {
-        GM_log("Got "+list.length+" matching siblings: "+list);
-      }
       if (showGroupCountInLinkTitle && !link.doneAppendGroupsize) {
         link.doneAppendGroupsize = true;
-        link.title = (link.title ? link.title+" " : "") + "("+list.length+" in group)";
+        link.title = (link.title ? link.title+" " : "") + "("+list.length+" related links)";
       }
       if (list.length>=minimumGroupSize && list.length<maximumGroupSize) {
         highlightList();
         if (thisLinkHighlightColor) {
-          link.style.backgroundColor = thisLinkHighlightColor;
+          // link.style.backgroundColor = thisLinkHighlightColor;
+          link.style.border = "1px solid "+thisLinkHighlightColor;
         }
-        // link.style.border = "2px solid "+highlightColor;
       }
     }
   },true);
@@ -597,5 +634,9 @@ if (highlightLinkGroups) {
 
 
 
-},delayBeforeRunning);
+}
+
+
+
+setTimeout(runRelatedLinksPager, delayBeforeRunning);
 
