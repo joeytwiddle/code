@@ -324,15 +324,17 @@ function buildTableOfContents() {
 
 		// TODO scrollIntoView if newly matching 1.hash exists
 
-		postTOC();
+		postTOC(toc);
 
 	} else {
 		GM_log("[TOCE] Not enough items found to create toc.");
 	}
 
+	return toc;
+
 }
 
-function postTOC() {
+function postTOC(toc) {
 
 	if (toc) {
 		// We make the TOC float regardless whether we created it or it already existed.
@@ -369,11 +371,11 @@ function searchForTOC() {
 
 		if (toc) {
 
-			postTOC();
+			postTOC(toc);
 
 		} else {
 
-			buildTableOfContents();
+			toc = buildTableOfContents();
 
 		}
 
