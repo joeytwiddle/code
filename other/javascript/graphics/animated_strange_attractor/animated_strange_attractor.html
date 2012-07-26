@@ -117,7 +117,7 @@
 				}
 			}
 
-			var SCREEN_WIDTH = 550, SCREEN_HEIGHT = 400, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
+			var SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
 			MAX_PARTICLES = 1024 * 300;
 
 
@@ -177,12 +177,29 @@
 
 			}
 
+			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135,
+			cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0,
+			// scale = 40.0;
+			scale = SCREEN_HEIGHT/10;
+
+			function perturb(amount) {
+				return (Math.random()*2-1) * amount;
+			}
+
 			function CalculatePositions() {
 
-				var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135,
-				cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0,
+				if (true || Math.random() < 0.2) {
+					_a += perturb(0.001);
+					_b += perturb(0.001);
+					_f += perturb(0.0001);
+					_g += perturb(0.001);
+					_d += perturb(0.0001);
+					/*
+					*/
+					// scale += perturb(0.01);
+				}
 
-				scale = 40.0, particle = particles;
+				var particle = particles;
 
 				while(null != particle) {
 
@@ -214,6 +231,8 @@
 
 			function loop() {
 
+				CalculatePositions();
+
 				targetX += (mouseX - targetX) * 0.1;
 				targetY += (mouseY - targetY) * 0.1;
 
@@ -223,7 +242,7 @@
 
 				matrix = matrixStatic.RotationY(targetX * 0.05).Multiply(matrixStatic.RotationX(targetY * 0.05)).Multiply(translationMatrix);
 
-				var cx = 275, cy = 200;
+				var cx = SCREEN_WIDTH/2, cy = SCREEN_HEIGHT/2;
 
 				var w = 0, xi = 0, yi = 0;
 				var x = 0, y = 0, z = 0, pz = 0;
