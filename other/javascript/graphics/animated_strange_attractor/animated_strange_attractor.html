@@ -133,6 +133,11 @@
 
 			// Main
 
+			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135,
+			cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0,
+			// scale = 40.0;
+			scale = SCREEN_HEIGHT/10;
+
 			Init();
 			InitParticles();
 			CalculatePositions();
@@ -177,27 +182,24 @@
 
 			}
 
-			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135,
-			cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0,
-			// scale = 40.0;
-			scale = SCREEN_HEIGHT/10;
-
 			function perturb(amount) {
 				return (Math.random()*2-1) * amount;
 			}
 
+			function wobble(amount,freq) {
+				var now = new Date().getTime();
+				return amount * Math.sin(now/1000 / freq);
+			}
+
 			function CalculatePositions() {
 
-				if (true || Math.random() < 0.2) {
-					_a += perturb(0.001);
-					_b += perturb(0.001);
-					_f += perturb(0.0001);
-					_g += perturb(0.001);
-					_d += perturb(0.0001);
-					/*
-					*/
-					// scale += perturb(0.01);
-				}
+				/*
+				_a += perturb(0.001);
+				_b += perturb(0.001);
+				_f += perturb(0.0001);
+				_g += perturb(0.001);
+				_d += perturb(0.0001);
+				*/
 
 				var particle = particles;
 
@@ -230,6 +232,12 @@
 			}
 
 			function loop() {
+
+				_a = 1.111 + wobble(0.01,1);
+				_b = 1.479 + wobble(0.01,2);
+				_f = 4.494 + wobble(0.001,3);
+				_g = 0.44 + wobble(0.01,5);
+				_d = 0.135 + wobble(0.001,7);
 
 				CalculatePositions();
 
