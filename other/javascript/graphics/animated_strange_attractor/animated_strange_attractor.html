@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
 <html>
 	<head>
-		<title>&lt;canvas&gt; strange attractor (307.200 particles)</title>
+		<title>&lt;canvas&gt; strange attractor</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
 		<style type="text/css"> 
@@ -18,8 +18,8 @@
 		<div id="container"></div>
 
 		<script type="text/javascript" src="http://github.com/mrdoob/stats.js/raw/master/build/Stats.js"></script> 
-		<!--
 		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
+		<!--
 		<script type="text/javascript" src="http://hwi.ath.cx/code/other/gm_scripts/fastjslogger/fastjslogger.user.js"></script>
 		-->
 
@@ -129,7 +129,18 @@
 				}
 			}
 
-			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES = 1024 * 2400;
+			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES;
+
+			MAX_PARTICLES = 1024 * 600;
+
+			var params = {};
+			document.location.hash.slice(1).split('&').forEach(function(x){
+				params[x.split('=')[0]] = x.split('=')[1];
+			});
+			if (params["points"]) {
+				MAX_PARTICLES = parseInt(params["points"],10);
+			}
+			document.title += " ("+MAX_PARTICLES+" particles)";
 
 			var incRate;
 
@@ -201,10 +212,12 @@
 				context.fillStyle = '#000000';
 				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
 
-				stats = new Stats();
-				stats.domElement.style.position = 'absolute';
-				stats.domElement.style.top = '0px';
-				container.appendChild(stats.domElement);
+				if (this.Stats) {
+					stats = new Stats();
+					stats.domElement.style.position = 'absolute';
+					stats.domElement.style.top = '0px';
+					container.appendChild(stats.domElement);
+				}
 
 				window.addEventListener('mousemove', onWindowMouseMove, false);
 
@@ -360,7 +373,8 @@
 
 				if (avgHitValue > 220 || avgHitValue<1) {
 					animationSpeed *= 2.31213121;
-					context.fillText("DOING FAST FORWARD: "+animationSpeed,40,80);
+					var debugData = (debug?" "+animationSpeed+" "+avgHitValue:'');
+					context.fillText("DOING FAST FORWARD"+debugData,40,80);
 				} else {
 					animationSpeed = defaultAnimationSpeed;
 				}
@@ -369,7 +383,9 @@
 					context.fillText("avgHitValue = "+avgHitValue,40,120);
 				}
 
-				stats.update();
+				if (stats) {
+					stats.update();
+				}
 			}
 
 		</script>
