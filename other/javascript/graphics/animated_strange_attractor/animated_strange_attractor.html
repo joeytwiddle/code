@@ -139,6 +139,10 @@
 				// document.location.hash = virtualTime;
 			};
 
+			// TODO: Sliders for #particles, animationSpeed, and ranges of params.
+			// Re-usable "zero-config" control library.
+
+
 			// Vars
 
 			var canvas, context, image, data;
@@ -174,10 +178,12 @@
 					canvas.width = SCREEN_WIDTH;
 					canvas.height = SCREEN_HEIGHT;
 					MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
-					incRate = (8 * MAX_SCREEN/MAX_PARTICLES);
+					incRate = Math.ceil(8 * MAX_SCREEN/MAX_PARTICLES);
+					// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
 					scale = SCREEN_HEIGHT/12;
 				}
 				doResize();
+
 				window.onresize = doResize;
 
 				canvas.style.position = "absolute";
@@ -246,12 +252,12 @@
 
 				var cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 
-				targetX += (mouseX-cenx - targetX) * 0.1;
-				targetY += (mouseY-ceny - targetY) * 0.1;
+				targetX += (mouseX-cenx - targetX) * 0.1/4;
+				targetY += (mouseY-ceny - targetY) * 0.1/16;
 				// targetX += (mouseX-cenx) * 0.01;
 				// targetY += (mouseY-ceny) * 0.01;
 
-				context.fillStyle = 'black';
+				context.fillStyle = '#000000';
 				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				data = image.data;
@@ -301,11 +307,10 @@
 
 						if (index > -1 && index < maxIndex) {
 
-							data[index]++;
-							// data[index] += incRate;
-							// data[index] += 4;
-							// data[index+1] += 2*incRate;
-							// data[index+2] += 4*incRate;
+							// data[index]++;
+							data[index] += incRate;
+							data[index+1] += 2*incRate;
+							data[index+2] += 4*incRate;
 
 							if (2*i<MAX_PARTICLES){
 								avgHitValue += data[index];
@@ -318,8 +323,19 @@
 					// particle = particle.Next;
 				}
 
-				avgHitValue *= 2*incRate/MAX_PARTICLES;
+				//// This value is a little too dependent on image size!
+				// avgHitValue *= 1/MAX_PARTICLES;
+				avgHitValue *= 2/MAX_PARTICLES;
+				// avgHitValue *= incRate/MAX_PARTICLES;
+				// avgHitValue *= 2*incRate/MAX_PARTICLES;
 
+				// We can choose where to optimize: e.g. we can reduce
+				// accumulations in the central loop, if we do this post-pass of
+				// the image afterwards.
+				// The post-pass is faster for SMALL images.
+				// The no-post-pass is faster for LARGE images!
+
+				/*
 				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
 				while ( (ptr = ptr-4) >= 0 ) {
 					if (data[ptr]>0) {
@@ -329,13 +345,13 @@
 						// data[ptr] = data[ptr] / 2;
 					}
 				}
-
-				context.fillStyle="white";
+				*/
 
 				context.putImageData(image, 0, 0);
 
-				if (avgHitValue > 200 || avgHitValue<1) {
-					// virtualTime += 120.0;
+				context.fillStyle = "#FFFFFF";
+
+				if (avgHitValue > 220 || avgHitValue<1) {
 					animationSpeed *= 2.31213121;
 					context.fillText("DOING FAST FORWARD: "+animationSpeed,40,80);
 				} else {
