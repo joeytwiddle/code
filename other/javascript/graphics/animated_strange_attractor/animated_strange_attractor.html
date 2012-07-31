@@ -8,16 +8,34 @@
 			body
 			{
 				background-color: #000000;
+				color: #ffffff;
 				margin: 0px;
 				overflow: hidden;
+			}
+			#stats
+			{
+				right: 0px;
+			}
+			#controls
+			{
+				font-size: 12px;
+				margin: 0px 6px;
+			}
+			#controls > *
+			{
+				margin: 0px 6px;
 			}
 		</style> 
 	</head>
 	<body>
 
+		<div id="controls"></div>
 		<div id="container"></div>
 
-		<script type="text/javascript" src="http://github.com/mrdoob/stats.js/raw/master/build/Stats.js"></script> 
+		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
+		<!--
+		<script type="text/javascript" src="Stats.js"></script> 
+		-->
 		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
 		<!--
 		<script type="text/javascript" src="http://hwi.ath.cx/code/other/gm_scripts/fastjslogger/fastjslogger.user.js"></script>
@@ -25,368 +43,495 @@
 
 		<script type="text/javascript">
 
-			/*
-			 * <canvas> Strange Attractor
-			 * by Mr.doob
-			 *
-			 * Code ported from the Silverlight version done by Joa:
-			 * http://blog.joa-ebert.com/2009/08/10/flirting-with-silverlight/
-			 *
-			 * Animation added by Joeytwiddle.
-			 *
-			 */
+	/*
+	 * <canvas> Strange Attractor
+	 * by Mr.doob
+	 *
+	 * Code ported from the Silverlight version done by Joa:
+	 * http://blog.joa-ebert.com/2009/08/10/flirting-with-silverlight/
+	 *
+	 * Animation added by Joeytwiddle.
+	 *
+	 */
 
-			// DONE: Move parameters through the whole possible range, but have
-			// movement/time speed up if we detect boring images are being drawn.
-			// DONE: Better colors.
-			// TODO: Get GPU to do it instead of canvas!
+	// DONE: Move parameters through the whole possible range, but have
+	// movement/time speed up if we detect boring images are being drawn.
+	// DONE: Better colors.
+	// TODO: Get GPU to do it instead of canvas!
 
-			function Particle() {
 
-				this.X = 0;
-				this.Y = 0;
-				this.Z = 0;
-				this.Next;
 
+	var options = {
+		numParticles: 100000,
+		debug: false,
+	};
+
+	var params = {};
+	document.location.hash.slice(1).split('&').forEach(function(x){
+		params[x.split('=')[0]] = x.split('=')[1];
+	});
+
+	if (params["points"]) {
+		options.numParticles = parseInt(params["points"],10);
+	}
+	options.debug = Boolean(params.debug);
+
+	document.title += " ("+MAX_PARTICLES+" particles)";
+
+	setTimeout(function(){
+		var controls = document.getElementById("controls");
+		addControl(controls,"numParticles");
+	},1);
+
+	function addControl(where,varName,postChangeFn,min,max,minDesc,maxDesc) {
+
+		var input = document.createElement("input");
+		var otherInput;
+
+		var currentValue = options[varName]; // eval(varName);
+		if (min === undefined)
+			min = currentValue/16;
+		if (max === undefined)
+			max = currentValue*16;
+
+		var step;
+		if (typeof currentValue == 'number') {
+			input.type = "number";
+			input.size = "4";
+			input.min = min;
+			input.max = max;
+			// Floating point inputs don't work without a step value!
+			if (Math.floor(min)==min && Math.floor(max)==max) {
+				// Integer range assumed
+				// BUG: Dev might want floating step for range 0,1 or -1,+1 or 0,2
+				step = 1;
+			} else {
+				step = (max - min)/25;
 			}
+			input.step = step;
+		} else if (typeof currentValue == 'boolean') {
+			input.type = "checkbox";
+		} else {
+			input.type = "text";
+		}
+		setValue(input,currentValue);
 
-			function Matrix4x4() {
+		// The update function is called when the user edits a control.
+		// It copies the new value into the options var, and then requests a rerender.
+		function update() {
+			var newValue = getValue(this);
+			// log("update on input "+this+" newValue = ("+typeof newValue+") "+newValue);
+			options[varName] = newValue;
+			// Call provided function if it exists
+			if (typeof postChangeFn == "function")
+				postChangeFn();
+			// Update any other related inputs
+			// Fortunately this doesn't cause an infloop :)
+			// However it was causing trouble with html5slider in Firefox, so now it
+			// checks to ensure not setting value on self.
+			if (this != input)
+				setValue(input,newValue);
+			if (otherInput && this != otherInput)
+				setValue(otherInput,newValue);
+			// postChangeFn=-1 implies we should not re-render!
+			// if (postChangeFn != -1)
+				// queueFrame(1000);
+		}
 
-				this.I00 = 1; this.I01 = 0; this.I02 = 0; this.I03 = 0;
-				this.I10 = 0; this.I11 = 1; this.I12 = 0; this.I13 = 0;
-				this.I20 = 0; this.I21 = 0; this.I22 = 1; this.I23 = 0;
-				this.I30 = 0; this.I31 = 0; this.I32 = 0; this.I33 = 1;
-			}
+		// Delay updates a little, in case the user is making multiple clicks, or string-editing a number
+		// (This is desirable for text fields and number+/- editors, but not so much the range sliders.)
+		// We want a long delay in non-animation mode, so the GUI doesn't lock up before we finish editing controls.  But in animation mode, we don't want much delay.
+		// var updateWhenIdle = afterIdle(500,update);
+		// input.onchange = update;
+		input.addEventListener("change",update,true);
 
-			Matrix4x4.prototype = {
+		where.appendChild(document.createTextNode(varName+":"));
 
-				Translation: function(x, y, z) {
+		if (typeof currentValue == 'number') {
+			minDesc = minDesc ? '('+minDesc+')' : '';
+			maxDesc = maxDesc ? '('+maxDesc+')' : '';
+			where.appendChild(document.createTextNode(minDesc));
+			where.appendChild(document.createTextNode(min));
+			otherInput = document.createElement("input");
+			otherInput.type = "range";
+			otherInput.min = min;
+			otherInput.max = max;
+			otherInput.step = step;
+			setValue(otherInput,currentValue);
+			otherInput.addEventListener("change",update,true);
+			where.appendChild(otherInput);
+			where.appendChild(document.createTextNode(max));
+			where.appendChild(document.createTextNode(maxDesc));
+		}
 
-					var result = new Matrix4x4();
+		/*
+		listOfUpdateFunctions.push(function(){
+			var currentValue = options[varName]; // eval(varName);
+			setValue(input,currentValue);
+			if (otherInput)
+				setValue(otherInput,currentValue);
+		});
+		*/
 
-					result.I03 = x;
-					result.I13 = y;
-					result.I23 = z;
+		where.appendChild(document.createElement("br"));
 
-					return result;
-				},
+	}
 
-				RotationX: function(radiants) {
-
-					var result = new Matrix4x4();
-
-					var cos = Math.cos(radiants);
-					var sin = Math.sin(radiants);
-
-					result.I11 = cos;
-					result.I12 = -sin;
-					result.I21 = sin;
-					result.I22 = cos;
-
-					return result;
-				},
-
-				RotationY: function(radiants) {
-
-					var result = new Matrix4x4();
-
-					var cos = Math.cos(radiants);
-					var sin = Math.sin(radiants);
-
-					result.I00 = cos;
-					result.I02 = -sin;
-					result.I20 = sin;
-					result.I22 = cos;
-
-					return result;
-				},
-
-				Multiply: function(mtx) {
-
-					var result = new Matrix4x4();
-
-					result.I00 = this.I00 * mtx.I00 + this.I01 * mtx.I10 + this.I02 * mtx.I20;
-					result.I01 = this.I00 * mtx.I01 + this.I01 * mtx.I11 + this.I02 * mtx.I21;
-					result.I02 = this.I00 * mtx.I02 + this.I01 * mtx.I12 + this.I02 * mtx.I22;
-					result.I03 = this.I00 * mtx.I03 + this.I01 * mtx.I13 + this.I02 * mtx.I23 + this.I03;
-
-					result.I10 = this.I10 * mtx.I00 + this.I11 * mtx.I10 + this.I12 * mtx.I20;
-					result.I11 = this.I10 * mtx.I01 + this.I11 * mtx.I11 + this.I12 * mtx.I21;
-					result.I12 = this.I10 * mtx.I02 + this.I11 * mtx.I12 + this.I12 * mtx.I22;
-					result.I13 = this.I10 * mtx.I03 + this.I11 * mtx.I13 + this.I12 * mtx.I23 + this.I13;
-
-					result.I20 = this.I20 * mtx.I00 + this.I21 * mtx.I10 + this.I22 * mtx.I20;
-					result.I21 = this.I20 * mtx.I01 + this.I21 * mtx.I11 + this.I22 * mtx.I21;
-					result.I22 = this.I20 * mtx.I02 + this.I21 * mtx.I12 + this.I22 * mtx.I22;
-					result.I23 = this.I20 * mtx.I03 + this.I21 * mtx.I13 + this.I22 * mtx.I23 + this.I23;
-
-					result.I30 = this.I30 * mtx.I00 + this.I31 * mtx.I10 + this.I32 * mtx.I20;
-					result.I31 = this.I30 * mtx.I01 + this.I31 * mtx.I11 + this.I32 * mtx.I21;
-					result.I32 = this.I30 * mtx.I02 + this.I31 * mtx.I12 + this.I32 * mtx.I22;
-					result.I33 = this.I30 * mtx.I03 + this.I31 * mtx.I13 + this.I32 * mtx.I23 + this.I33;
-
-					return result;
+	// These wrappers work around the glitches in input.value
+	// i.e. they work on checkboxes and ...
+	function getValue(input) {
+		if (input.type == "checkbox") {
+			return input.checked;
+		} else if (input.type == "number" || input.type == "range") {
+			return parseFloat(input.value);
+		} else {
+			return input.value;
+		}
+	}
+	function setValue(input,newValue) {
+		if (input.type == "checkbox") {
+			input.checked = newValue;
+		} else if (input.type == "select") {
+			// TODO BUG: Does not seem to work!
+			for (var i=0;i<input.length;i++) {
+				if (input[i].value == newValue) {
+					input.selectedIndex = i;
+					break;
 				}
 			}
+			if (i==input.length)
+				log("Failed to set "+input+" value to "+newValue);
+		} else {
+			input.value = newValue;
+		}
+	}
 
-			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES;
 
-			MAX_PARTICLES = 1024 * 600;
 
-			var params = {};
-			document.location.hash.slice(1).split('&').forEach(function(x){
-				params[x.split('=')[0]] = x.split('=')[1];
-			});
-			if (params["points"]) {
-				MAX_PARTICLES = parseInt(params["points"],10);
-			}
-			document.title += " ("+MAX_PARTICLES+" particles)";
+	function Particle() {
 
-			var incRate;
+		this.X = 0;
+		this.Y = 0;
+		this.Z = 0;
+		this.Next;
 
-			var virtualTime = 1000000;
+	}
 
-			var defaultAnimationSpeed = 0.4;
-			var animationSpeed = defaultAnimationSpeed;
+	function Matrix4x4() {
 
-			window.onclick = function(evt) {
-				virtualTime = 1000000 * Math.random() | 0;
-				// document.location.hash = virtualTime;
-			};
+		this.I00 = 1; this.I01 = 0; this.I02 = 0; this.I03 = 0;
+		this.I10 = 0; this.I11 = 1; this.I12 = 0; this.I13 = 0;
+		this.I20 = 0; this.I21 = 0; this.I22 = 1; this.I23 = 0;
+		this.I30 = 0; this.I31 = 0; this.I32 = 0; this.I33 = 1;
+	}
 
-			// TODO: Sliders for #particles, animationSpeed, and ranges of params.
-			// Re-usable "zero-config" control library.
+	Matrix4x4.prototype = {
 
+		Translation: function(x, y, z) {
 
-			// Vars
+			var result = new Matrix4x4();
 
-			var canvas, context, image, data;
+			result.I03 = x;
+			result.I13 = y;
+			result.I23 = z;
 
-			var debug = false;
+			return result;
+		},
 
-			var particles, mouseX = 0, mouseY = 0, targetX = 0, targetY = 0, focalLength = 400,
-			matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
-			translationMatrix = matrixStatic.Translation(0, 0, 10);
+		RotationX: function(radiants) {
 
-			var stats;
+			var result = new Matrix4x4();
 
-			// Main
+			var cos = Math.cos(radiants);
+			var sin = Math.sin(radiants);
 
-			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135;
-			// scale = 40.0;
-			var scale;
+			result.I11 = cos;
+			result.I12 = -sin;
+			result.I21 = sin;
+			result.I22 = cos;
 
-			// var cb = new ControlBuilder();
-			// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
+			return result;
+		},
 
-			Init();
-			InitParticles();
+		RotationY: function(radiants) {
 
-			setInterval(loop, 1000 / 60);
+			var result = new Matrix4x4();
 
-			function Init() {
+			var cos = Math.cos(radiants);
+			var sin = Math.sin(radiants);
 
-				container = document.getElementById('container');
+			result.I00 = cos;
+			result.I02 = -sin;
+			result.I20 = sin;
+			result.I22 = cos;
 
-				canvas = document.createElement("canvas");
+			return result;
+		},
 
-				function doResize() {
-					SCREEN_WIDTH = window.innerWidth;
-					SCREEN_HEIGHT = window.innerHeight;
-					canvas.width = SCREEN_WIDTH;
-					canvas.height = SCREEN_HEIGHT;
-					MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
-					incRate = Math.ceil(8 * MAX_SCREEN/MAX_PARTICLES);
-					// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
-					scale = SCREEN_HEIGHT/12;
-				}
-				doResize();
+		Multiply: function(mtx) {
 
-				window.onresize = doResize;
+			var result = new Matrix4x4();
 
-				canvas.style.position = "absolute";
-				container.appendChild(canvas);
+			result.I00 = this.I00 * mtx.I00 + this.I01 * mtx.I10 + this.I02 * mtx.I20;
+			result.I01 = this.I00 * mtx.I01 + this.I01 * mtx.I11 + this.I02 * mtx.I21;
+			result.I02 = this.I00 * mtx.I02 + this.I01 * mtx.I12 + this.I02 * mtx.I22;
+			result.I03 = this.I00 * mtx.I03 + this.I01 * mtx.I13 + this.I02 * mtx.I23 + this.I03;
 
-				context = canvas.getContext("2d");
-				// context.fillStyle = '#101010';
-				context.fillStyle = '#000000';
-				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
+			result.I10 = this.I10 * mtx.I00 + this.I11 * mtx.I10 + this.I12 * mtx.I20;
+			result.I11 = this.I10 * mtx.I01 + this.I11 * mtx.I11 + this.I12 * mtx.I21;
+			result.I12 = this.I10 * mtx.I02 + this.I11 * mtx.I12 + this.I12 * mtx.I22;
+			result.I13 = this.I10 * mtx.I03 + this.I11 * mtx.I13 + this.I12 * mtx.I23 + this.I13;
 
-				if (this.Stats) {
-					stats = new Stats();
-					stats.domElement.style.position = 'absolute';
-					stats.domElement.style.top = '0px';
-					container.appendChild(stats.domElement);
-				}
+			result.I20 = this.I20 * mtx.I00 + this.I21 * mtx.I10 + this.I22 * mtx.I20;
+			result.I21 = this.I20 * mtx.I01 + this.I21 * mtx.I11 + this.I22 * mtx.I21;
+			result.I22 = this.I20 * mtx.I02 + this.I21 * mtx.I12 + this.I22 * mtx.I22;
+			result.I23 = this.I20 * mtx.I03 + this.I21 * mtx.I13 + this.I22 * mtx.I23 + this.I23;
 
-				window.addEventListener('mousemove', onWindowMouseMove, false);
+			result.I30 = this.I30 * mtx.I00 + this.I31 * mtx.I10 + this.I32 * mtx.I20;
+			result.I31 = this.I30 * mtx.I01 + this.I31 * mtx.I11 + this.I32 * mtx.I21;
+			result.I32 = this.I30 * mtx.I02 + this.I31 * mtx.I12 + this.I32 * mtx.I22;
+			result.I33 = this.I30 * mtx.I03 + this.I31 * mtx.I13 + this.I32 * mtx.I23 + this.I33;
 
-			}
+			return result;
+		}
+	}
 
-			function InitParticles() {
+	var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES;
 
-				particles = new Particle();
+	// MAX_PARTICLES = 1024 * 600;
+	// MAX_PARTICLES = options.numParticles;
 
-				var currentParticle = particles;
-				var numParticles = MAX_PARTICLES;
+	var virtualTime = 1000000;
+	var incRate;
 
-				/*
-			 	while (--numParticles != 0) {
+	var defaultAnimationSpeed = 0.4;
+	var animationSpeed = defaultAnimationSpeed;
 
-					currentParticle = currentParticle.Next = new Particle();
+	window.onclick = function(evt) {
+		virtualTime = 1000000 * Math.random() | 0;
+		// document.location.hash = virtualTime;
+	};
 
-				}
-				*/
+	// TODO: Sliders for #particles, animationSpeed, and ranges of params.
+	// Re-usable "zero-config" control library.
 
-			}
 
-			function perturb(amount) {
-				return (Math.random()*2-1) * amount;
-			}
+	// Vars
 
-			function wobble(amount,wavelength) {
-				var now = virtualTime;
-				return amount * Math.sin(2*Math.PI * now/1000 / wavelength);
-			}
+	var canvas, context, image, data;
 
-			function onWindowMouseMove(event) {
+	var particles, mouseX = 0, mouseY = 0, targetX = 0, targetY = 0, focalLength = 400,
+	matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
+	translationMatrix = matrixStatic.Translation(0, 0, 10);
 
-				mouseX = event.clientX;
-				mouseY = event.clientY;
+	var stats;
 
-			}
+	// Main
 
-			function loop() {
+	var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135;
+	// scale = 40.0;
+	var scale;
 
-				var cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0;
+	// var cb = new ControlBuilder();
+	// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
 
-				virtualTime += animationSpeed;
+	Init();
 
-				_a = 1.111 + wobble(0.05,1.01);
-				_b = 1.479 + wobble(0.05,2.0021);
-				_f = 4.494 + wobble(0.005,3.012);
-				_g = 0.44  + wobble(0.05,5.023);
-				_d = 0.135 + wobble(0.005,7.0149234);
+	setInterval(loop, 1000 / 60);
 
-				// CalculatePositions();
+	function updateConstants() {
+		MAX_PARTICLES = options.numParticles;
+		SCREEN_WIDTH = window.innerWidth;
+		SCREEN_HEIGHT = window.innerHeight;
+		canvas.width = SCREEN_WIDTH;
+		canvas.height = SCREEN_HEIGHT;
+		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
+		incRate = Math.ceil(8 * MAX_SCREEN/MAX_PARTICLES);
+		// Too high incRate can mistrigger avgHitValue threshold, and looks horrid!
+		if (incRate > 40) {
+			incRate = 40;
+			// But when I put this threshold down to 20, it undertriggered.
+		}
+		// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
+		scale = SCREEN_HEIGHT/12;
+	}
 
-				var cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
+	function Init() {
 
-				targetX += (mouseX-cenx - targetX) * 0.1/4;
-				targetY += (mouseY-ceny - targetY) * 0.1/16;
-				// targetX += (mouseX-cenx) * 0.01;
-				// targetY += (mouseY-ceny) * 0.01;
+		container = document.getElementById('container');
 
-				context.fillStyle = '#000000';
-				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-				image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-				data = image.data;
+		canvas = document.createElement("canvas");
 
-				matrix = matrixStatic.RotationY(targetX * 0.05).Multiply(matrixStatic.RotationX(targetY * 0.05)).Multiply(translationMatrix);
+		updateConstants();
 
-				var w = 0, xi = 0, yi = 0;
-				var x = 0, y = 0, z = 0, pz = 0;
+		window.onresize = updateConstants;
 
-				var maxIndex = MAX_SCREEN * 4;
-				var index = maxIndex;
+		canvas.style.position = "absolute";
+		container.appendChild(canvas);
 
-				var particle = particles;
+		context = canvas.getContext("2d");
+		// context.fillStyle = '#101010';
+		context.fillStyle = '#000000';
+		context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
 
-				/*
-				while (null != particle) {
+		if (this.Stats) {
+			stats = new Stats();
+			stats.domElement.style.position = 'absolute';
+			stats.domElement.style.top = '0px';
+			container.appendChild(stats.domElement);
+		}
 
-					x = particle.X;
-					y = particle.Y;
-					z = particle.Z;
-					*/
+		window.addEventListener('mousemove', onWindowMouseMove, false);
 
-				var avgHitValue = 0;
+	}
 
-				for (var i=MAX_PARTICLES;i-->0;) {
+	function wobble(amount,wavelength) {
+		var now = virtualTime;
+		return amount * Math.sin(2*Math.PI * now/1000 / wavelength);
+	}
 
-					mx = cx + _d * (-_a * cx - cy * cy - cz * cz + _a * _f);
-					my = cy + _d * (-cy + cx * cy - _b * cx * cz + _g);
-					mz = cz + _d * (-cz + _b * cx * cy + cx * cz);
+	function onWindowMouseMove(event) {
 
-					cx = mx;
-					cy = my;
-					cz = mz;
+		mouseX = event.clientX;
+		mouseY = event.clientY;
 
-					x = mx*scale;
-					y = my*scale;
-					z = mz*scale;
+	}
 
-					pz = focalLength + x * matrix.I02 + y * matrix.I12 + z * matrix.I22 + matrix.I32;
+	function loop() {
 
-					if (0 < pz) {
+		updateConstants();
 
-						xi = Math.floor((w = focalLength / pz ) * (x * matrix.I00 + y * matrix.I10 + z * matrix.I20) + cenx);
-						yi = Math.floor(w * (x * matrix.I01 + y * matrix.I11 + z * matrix.I21) + ceny);
+		var cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0;
 
-						index = (xi + yi * SCREEN_WIDTH) * 4;
+		virtualTime += animationSpeed;
 
-						if (index > -1 && index < maxIndex) {
+		_a = 1.111 + wobble(0.05,1.01);
+		_b = 1.479 + wobble(0.05,2.0021);
+		_f = 4.494 + wobble(0.005,3.012);
+		_g = 0.44  + wobble(0.05,5.023);
+		_d = 0.135 + wobble(0.005,7.0149234);
 
-							// data[index]++;
-							data[index] += incRate;
-							data[index+1] += 2*incRate;
-							data[index+2] += 4*incRate;
+		// CalculatePositions();
 
-							if (2*i<MAX_PARTICLES){
-								avgHitValue += data[index];
-							}
+		var cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 
-						}
+		targetX += (mouseX-cenx - targetX) * 0.1/4;
+		targetY += (mouseY-ceny - targetY) * 0.1/16;
+		// targetX += (mouseX-cenx) * 0.01;
+		// targetY += (mouseY-ceny) * 0.01;
 
+		context.fillStyle = '#000000';
+		context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+		image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+		data = image.data;
+
+		matrix = matrixStatic.RotationY(targetX * 0.05).Multiply(matrixStatic.RotationX(targetY * 0.05)).Multiply(translationMatrix);
+
+		var w = 0, xi = 0, yi = 0;
+		var x = 0, y = 0, z = 0, pz = 0;
+
+		var maxIndex = MAX_SCREEN * 4;
+		var index = maxIndex;
+
+		var particle = particles;
+
+		/*
+		while (null != particle) {
+
+			x = particle.X;
+			y = particle.Y;
+			z = particle.Z;
+			*/
+
+		var avgHitValue = 0;
+
+		for (var i=MAX_PARTICLES;i-->0;) {
+
+			mx = cx + _d * (-_a * cx - cy * cy - cz * cz + _a * _f);
+			my = cy + _d * (-cy + cx * cy - _b * cx * cz + _g);
+			mz = cz + _d * (-cz + _b * cx * cy + cx * cz);
+
+			cx = mx;
+			cy = my;
+			cz = mz;
+
+			x = mx*scale;
+			y = my*scale;
+			z = mz*scale;
+
+			pz = focalLength + x * matrix.I02 + y * matrix.I12 + z * matrix.I22 + matrix.I32;
+
+			if (0 < pz) {
+
+				xi = Math.floor((w = focalLength / pz ) * (x * matrix.I00 + y * matrix.I10 + z * matrix.I20) + cenx);
+				yi = Math.floor(w * (x * matrix.I01 + y * matrix.I11 + z * matrix.I21) + ceny);
+
+				index = (xi + yi * SCREEN_WIDTH) * 4;
+
+				if (index > -1 && index < maxIndex) {
+
+					// data[index]++;
+					data[index] += incRate;
+					data[index+1] += 2*incRate;
+					data[index+2] += 4*incRate;
+
+					if (2*i<MAX_PARTICLES){
+						avgHitValue += data[index];
 					}
 
-					// particle = particle.Next;
 				}
 
-				//// This value is a little too dependent on image size!
-				// avgHitValue *= 1/MAX_PARTICLES;
-				avgHitValue *= 2/MAX_PARTICLES;
-				// avgHitValue *= incRate/MAX_PARTICLES;
-				// avgHitValue *= 2*incRate/MAX_PARTICLES;
-
-				// We can choose where to optimize: e.g. we can reduce
-				// accumulations in the central loop, if we do this post-pass of
-				// the image afterwards.
-				// The post-pass is faster for SMALL images.
-				// The no-post-pass is faster for LARGE images!
-
-				/*
-				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
-				while ( (ptr = ptr-4) >= 0 ) {
-					if (data[ptr]>0) {
-						data[ptr+2] = incRate*data[ptr]*4;
-						data[ptr+1] = incRate*data[ptr]*2;
-						data[ptr]   = incRate*data[ptr];
-						// data[ptr] = data[ptr] / 2;
-					}
-				}
-				*/
-
-				context.putImageData(image, 0, 0);
-
-				context.fillStyle = "#FFFFFF";
-
-				if (avgHitValue > 220 || avgHitValue<1) {
-					animationSpeed *= 2.31213121;
-					var debugData = (debug?" "+animationSpeed+" "+avgHitValue:'');
-					context.fillText("DOING FAST FORWARD"+debugData,40,80);
-				} else {
-					animationSpeed = defaultAnimationSpeed;
-				}
-
-				if (debug) {
-					context.fillText("avgHitValue = "+avgHitValue,40,120);
-				}
-
-				if (stats) {
-					stats.update();
-				}
 			}
+
+			// particle = particle.Next;
+		}
+
+		//// This value is a little too dependent on image size!
+		// avgHitValue *= 1/MAX_PARTICLES;
+		avgHitValue *= 2/MAX_PARTICLES;
+		// avgHitValue *= incRate/MAX_PARTICLES;
+		// avgHitValue *= 2*incRate/MAX_PARTICLES;
+
+		// We can choose where to optimize: e.g. we can reduce
+		// accumulations in the central loop, if we do this post-pass of
+		// the image afterwards.
+		// The post-pass is faster for SMALL images.
+		// The no-post-pass is faster for LARGE images!
+
+		/*
+		var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
+		while ( (ptr = ptr-4) >= 0 ) {
+			if (data[ptr]>0) {
+				data[ptr+2] = incRate*data[ptr]*4;
+				data[ptr+1] = incRate*data[ptr]*2;
+				data[ptr]   = incRate*data[ptr];
+				// data[ptr] = data[ptr] / 2;
+			}
+		}
+		*/
+
+		context.putImageData(image, 0, 0);
+
+		context.fillStyle = "#FFFFFF";
+
+		if (avgHitValue > 220 || avgHitValue<1) {
+			animationSpeed *= 1.31213121;
+			var debugData = (options.debug?" "+animationSpeed+" "+avgHitValue:'');
+			context.fillText("DOING FAST FORWARD"+debugData,40,80);
+		} else {
+			animationSpeed = defaultAnimationSpeed;
+		}
+
+		if (options.debug) {
+			context.fillText("avgHitValue = "+avgHitValue+" incRate="+incRate,40,120);
+		}
+
+		if (stats) {
+			stats.update();
+		}
+	}
+
+	// vim: ft=javascript
 
 		</script>
 
