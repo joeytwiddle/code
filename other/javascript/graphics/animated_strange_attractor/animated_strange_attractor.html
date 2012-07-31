@@ -148,10 +148,9 @@
 
 			// Main
 
-			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135,
-			cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0,
+			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135;
 			// scale = 40.0;
-			scale = SCREEN_HEIGHT/12;
+			var scale = SCREEN_HEIGHT/12;
 
 			Init();
 			InitParticles();
@@ -216,6 +215,8 @@
 			}
 
 			function loop() {
+
+				var cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0;
 
 				virtualTime += animationSpeed;
 
@@ -312,10 +313,10 @@
 
 				context.putImageData(image, 0, 0);
 
-				if (avgHitValue > 200 || avgHitValue===0) {
-					context.fillText("DOING FAST FORWARD",40,80);
+				if (avgHitValue > 200 || avgHitValue<1) {
 					// virtualTime += 120.0;
-					animationSpeed *= 2.0;
+					animationSpeed *= 1.11213121;
+					context.fillText("DOING FAST FORWARD: "+animationSpeed,40,80);
 				} else {
 					animationSpeed = defaultAnimationSpeed;
 				}
