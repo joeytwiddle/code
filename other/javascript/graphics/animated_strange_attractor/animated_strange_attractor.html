@@ -125,13 +125,13 @@
 				}
 			}
 
-			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES = 1024 * 1000;
+			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES = 1024 * 600;
 
 			var incRate;
 
 			var virtualTime = 1000000;
 
-			var defaultAnimationSpeed = 0.1;
+			var defaultAnimationSpeed = 0.4;
 			var animationSpeed = defaultAnimationSpeed;
 
 			window.onclick = function(evt) {
@@ -174,7 +174,7 @@
 					canvas.width = SCREEN_WIDTH;
 					canvas.height = SCREEN_HEIGHT;
 					MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
-					incRate = (10 * MAX_SCREEN/MAX_PARTICLES);
+					incRate = (8 * MAX_SCREEN/MAX_PARTICLES);
 					scale = SCREEN_HEIGHT/12;
 				}
 				doResize();
@@ -306,7 +306,7 @@
 							// data[index+1] += 6;
 							// data[index+2] += 4;
 
-							if (i<MAX_PARTICLES/2){
+							if (2*i<MAX_PARTICLES){
 								avgHitValue += data[index];
 							}
 
@@ -331,9 +331,9 @@
 
 				context.putImageData(image, 0, 0);
 
-				if (avgHitValue > 150 || avgHitValue<1) {
+				if (avgHitValue > 200 || avgHitValue<1) {
 					// virtualTime += 120.0;
-					animationSpeed *= 1.31213121;
+					animationSpeed *= 2.31213121;
 					context.fillText("DOING FAST FORWARD: "+animationSpeed,40,80);
 				} else {
 					animationSpeed = defaultAnimationSpeed;
