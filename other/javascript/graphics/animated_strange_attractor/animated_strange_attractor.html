@@ -27,7 +27,15 @@
 			 *
 			 * Code ported from the Silverlight version done by Joa:
 			 * http://blog.joa-ebert.com/2009/08/10/flirting-with-silverlight/
+			 *
+			 * Animation added by Joeytwiddle.
+			 *
 			 */
+
+			// TODO: Move parameters through the whole possible range, but have
+			// movement/time speed up if we detect boring images are being drawn.
+			// TODO: Better colors.
+			// TODO: Get GPU to do it instead of canvas!
 
 			function Particle() {
 
@@ -117,8 +125,8 @@
 				}
 			}
 
-			var SCREEN_WIDTH = 800, SCREEN_HEIGHT = 600, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
-			MAX_PARTICLES = 1024 * 300;
+			var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
+			MAX_PARTICLES = 1024 * 100;
 
 
 			// Vars
@@ -136,7 +144,7 @@
 			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135,
 			cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0,
 			// scale = 40.0;
-			scale = SCREEN_HEIGHT/10;
+			scale = SCREEN_HEIGHT/12;
 
 			Init();
 			InitParticles();
@@ -186,9 +194,9 @@
 				return (Math.random()*2-1) * amount;
 			}
 
-			function wobble(amount,freq) {
+			function wobble(amount,wavelength) {
 				var now = new Date().getTime();
-				return amount * Math.sin(now/1000 / freq);
+				return amount * Math.sin(2*Math.PI * now/1000 / wavelength);
 			}
 
 			function CalculatePositions() {
@@ -233,24 +241,26 @@
 
 			function loop() {
 
-				_a = 1.111 + wobble(0.01,1);
-				_b = 1.479 + wobble(0.01,2);
-				_f = 4.494 + wobble(0.001,3);
-				_g = 0.44 + wobble(0.01,5);
-				_d = 0.135 + wobble(0.001,7);
+				_a = 1.111 + wobble(0.005,1);
+				_b = 1.479 + wobble(0.005,2);
+				_f = 4.494 + wobble(0.0005,3);
+				_g = 0.44  + wobble(0.005,5);
+				_d = 0.135 + wobble(0.0005,7);
 
 				CalculatePositions();
 
-				targetX += (mouseX - targetX) * 0.1;
-				targetY += (mouseY - targetY) * 0.1;
+				var cx = SCREEN_WIDTH/2, cy = SCREEN_HEIGHT/2;
+
+				// targetX += (mouseX-cx - targetX) * 0.1;
+				// targetY += (mouseY-cy - targetY) * 0.1;
+				targetX += (mouseX-cx) * 0.01;
+				targetY += (mouseY-cy) * 0.01;
 
 				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				data = image.data;
 
 				matrix = matrixStatic.RotationY(targetX * 0.05).Multiply(matrixStatic.RotationX(targetY * 0.05)).Multiply(translationMatrix);
-
-				var cx = SCREEN_WIDTH/2, cy = SCREEN_HEIGHT/2;
 
 				var w = 0, xi = 0, yi = 0;
 				var x = 0, y = 0, z = 0, pz = 0;
