@@ -18,6 +18,10 @@
 		<div id="container"></div>
 
 		<script type="text/javascript" src="http://github.com/mrdoob/stats.js/raw/master/build/Stats.js"></script> 
+		<!--
+		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
+		<script type="text/javascript" src="http://hwi.ath.cx/code/other/gm_scripts/fastjslogger/fastjslogger.user.js"></script>
+		-->
 
 		<script type="text/javascript">
 
@@ -32,9 +36,9 @@
 			 *
 			 */
 
-			// TODO: Move parameters through the whole possible range, but have
+			// DONE: Move parameters through the whole possible range, but have
 			// movement/time speed up if we detect boring images are being drawn.
-			// TODO: Better colors.
+			// DONE: Better colors.
 			// TODO: Get GPU to do it instead of canvas!
 
 			function Particle() {
@@ -147,7 +151,7 @@
 
 			var canvas, context, image, data;
 
-			var debug = true;
+			var debug = false;
 
 			var particles, mouseX = 0, mouseY = 0, targetX = 0, targetY = 0, focalLength = 400,
 			matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
@@ -160,6 +164,9 @@
 			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135;
 			// scale = 40.0;
 			var scale;
+
+			// var cb = new ControlBuilder();
+			// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
 
 			Init();
 			InitParticles();
@@ -242,11 +249,11 @@
 
 				virtualTime += animationSpeed;
 
-				_a = 1.111 + wobble(0.05,1);
-				_b = 1.479 + wobble(0.05,2);
-				_f = 4.494 + wobble(0.005,3);
-				_g = 0.44  + wobble(0.05,5);
-				_d = 0.135 + wobble(0.005,7);
+				_a = 1.111 + wobble(0.05,1.01);
+				_b = 1.479 + wobble(0.05,2.0021);
+				_f = 4.494 + wobble(0.005,3.012);
+				_g = 0.44  + wobble(0.05,5.023);
+				_d = 0.135 + wobble(0.005,7.0149234);
 
 				// CalculatePositions();
 
