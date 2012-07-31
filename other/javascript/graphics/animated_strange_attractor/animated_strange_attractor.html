@@ -126,9 +126,14 @@
 			}
 
 			var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
-			MAX_PARTICLES = 1024 * 4000;
+			MAX_PARTICLES = 1024 * 400;
 
 			var incRate = (4 * (1024*1200)/MAX_PARTICLES) | 0;
+
+			var virtualTime = 1000000;
+
+			var defaultAnimationSpeed = 8;
+			var animationSpeed = defaultAnimationSpeed;
 
 
 			// Vars
@@ -199,7 +204,7 @@
 			}
 
 			function wobble(amount,wavelength) {
-				var now = new Date().getTime();
+				var now = virtualTime;
 				return amount * Math.sin(2*Math.PI * now/1000 / wavelength);
 			}
 
@@ -212,11 +217,13 @@
 
 			function loop() {
 
+				virtualTime += animationSpeed;
+
 				_a = 1.111 + wobble(0.005,1);
 				_b = 1.479 + wobble(0.005,2);
-				_f = 4.494 + wobble(0.0005,3);
+				_f = 4.494 + wobble(0.005,3);
 				_g = 0.44  + wobble(0.005,5);
-				_d = 0.135 + wobble(0.0005,7);
+				_d = 0.135 + wobble(0.005,7);
 
 				// CalculatePositions();
 
@@ -227,6 +234,7 @@
 				targetX += (mouseX-cenx) * 0.01;
 				targetY += (mouseY-ceny) * 0.01;
 
+				context.fillStyle = 'black';
 				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				data = image.data;
@@ -248,6 +256,8 @@
 					y = particle.Y;
 					z = particle.Z;
 					*/
+
+				var avgHitValue = 0;
 
 				for (var i=MAX_PARTICLES;i-->0;) {
 
@@ -279,12 +289,16 @@
 							// data[index+1] += 6;
 							// data[index+2] += 4;
 
+							avgHitValue += data[index];
+
 						}
 
 					}
 
 					// particle = particle.Next;
 				}
+
+				avgHitValue /= MAX_PARTICLES;
 
 				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
 				while ( (ptr = ptr-4) >= 0 ) {
@@ -294,7 +308,19 @@
 					// data[ptr] = data[ptr] / 2;
 				}
 
+				context.fillStyle="white";
+
 				context.putImageData(image, 0, 0);
+
+				if (avgHitValue > 200 || avgHitValue===0) {
+					context.fillText("DOING FAST FORWARD",40,80);
+					// virtualTime += 120.0;
+					animationSpeed *= 2.0;
+				} else {
+					animationSpeed = defaultAnimationSpeed;
+				}
+
+				context.fillText("avgHitValue = "+avgHitValue,40,120);
 
 				stats.update();
 			}
