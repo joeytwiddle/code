@@ -126,7 +126,7 @@
 			}
 
 			var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
-			MAX_PARTICLES = 1024 * 400;
+			MAX_PARTICLES = 1024 * 2400;
 
 			var incRate = (4 * (1024*1200)/MAX_PARTICLES) | 0;
 
@@ -135,6 +135,10 @@
 			var defaultAnimationSpeed = 8;
 			var animationSpeed = defaultAnimationSpeed;
 
+			window.onclick = function(evt) {
+				virtualTime = 1000000 * Math.random() | 0;
+				// document.location.hash = virtualTime;
+			};
 
 			// Vars
 
@@ -220,20 +224,20 @@
 
 				virtualTime += animationSpeed;
 
-				_a = 1.111 + wobble(0.005,1);
-				_b = 1.479 + wobble(0.005,2);
+				_a = 1.111 + wobble(0.05,1);
+				_b = 1.479 + wobble(0.05,2);
 				_f = 4.494 + wobble(0.005,3);
-				_g = 0.44  + wobble(0.005,5);
+				_g = 0.44  + wobble(0.05,5);
 				_d = 0.135 + wobble(0.005,7);
 
 				// CalculatePositions();
 
 				var cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 
-				// targetX += (mouseX-cenx - targetX) * 0.1;
-				// targetY += (mouseY-ceny - targetY) * 0.1;
-				targetX += (mouseX-cenx) * 0.01;
-				targetY += (mouseY-ceny) * 0.01;
+				targetX += (mouseX-cenx - targetX) * 0.1;
+				targetY += (mouseY-ceny - targetY) * 0.1;
+				// targetX += (mouseX-cenx) * 0.01;
+				// targetY += (mouseY-ceny) * 0.01;
 
 				context.fillStyle = 'black';
 				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -303,9 +307,9 @@
 
 				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
 				while ( (ptr = ptr-4) >= 0 ) {
-					data[ptr+2] = data[ptr];
+					data[ptr+2] = data[ptr]*4;
 					data[ptr+1] = data[ptr]*2;
-					data[ptr] = data[ptr]*4;
+					// data[ptr] = data[ptr];
 					// data[ptr] = data[ptr] / 2;
 				}
 
@@ -315,13 +319,13 @@
 
 				if (avgHitValue > 200 || avgHitValue<1) {
 					// virtualTime += 120.0;
-					animationSpeed *= 1.11213121;
+					animationSpeed *= 3.11213121;
 					context.fillText("DOING FAST FORWARD: "+animationSpeed,40,80);
 				} else {
 					animationSpeed = defaultAnimationSpeed;
 				}
 
-				context.fillText("avgHitValue = "+avgHitValue,40,120);
+				// context.fillText("avgHitValue = "+avgHitValue,40,120);
 
 				stats.update();
 			}
