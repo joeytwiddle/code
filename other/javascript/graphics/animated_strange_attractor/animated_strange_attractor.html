@@ -126,7 +126,9 @@
 			}
 
 			var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
-			MAX_PARTICLES = 1024 * 1200;
+			MAX_PARTICLES = 1024 * 4000;
+
+			var incRate = (4 * (1024*1200)/MAX_PARTICLES) | 0;
 
 
 			// Vars
@@ -148,7 +150,6 @@
 
 			Init();
 			InitParticles();
-			CalculatePositions();
 
 			setInterval(loop, 1000 / 60);
 
@@ -183,11 +184,13 @@
 				var currentParticle = particles;
 				var numParticles = MAX_PARTICLES;
 
+				/*
 			 	while (--numParticles != 0) {
 
 					currentParticle = currentParticle.Next = new Particle();
 
 				}
+				*/
 
 			}
 
@@ -199,39 +202,6 @@
 				var now = new Date().getTime();
 				return amount * Math.sin(2*Math.PI * now/1000 / wavelength);
 			}
-
-			function CalculatePositions() {
-
-				/*
-				_a += perturb(0.001);
-				_b += perturb(0.001);
-				_f += perturb(0.0001);
-				_g += perturb(0.001);
-				_d += perturb(0.0001);
-				*/
-
-				var particle = particles;
-
-				while(null != particle) {
-
-					mx = cx + _d * (-_a * cx - cy * cy - cz * cz + _a * _f);
-					my = cy + _d * (-cy + cx * cy - _b * cx * cz + _g);
-					mz = cz + _d * (-cz + _b * cx * cy + cx * cz);
-
-					cx = mx;
-					cy = my;
-					cz = mz;
-
-					particle.X = mx * scale;
-					particle.Y = my * scale;
-					particle.Z = mz * scale;
-
-					particle = particle.Next;
-
-				}
-
-			}
-
 
 			function onWindowMouseMove(event) {
 
@@ -248,14 +218,14 @@
 				_g = 0.44  + wobble(0.005,5);
 				_d = 0.135 + wobble(0.0005,7);
 
-				CalculatePositions();
+				// CalculatePositions();
 
-				var cx = SCREEN_WIDTH/2, cy = SCREEN_HEIGHT/2;
+				var cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 
-				// targetX += (mouseX-cx - targetX) * 0.1;
-				// targetY += (mouseY-cy - targetY) * 0.1;
-				targetX += (mouseX-cx) * 0.01;
-				targetY += (mouseY-cy) * 0.01;
+				// targetX += (mouseX-cenx - targetX) * 0.1;
+				// targetY += (mouseY-ceny - targetY) * 0.1;
+				targetX += (mouseX-cenx) * 0.01;
+				targetY += (mouseY-ceny) * 0.01;
 
 				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 				image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -271,24 +241,41 @@
 
 				var particle = particles;
 
+				/*
 				while (null != particle) {
 
 					x = particle.X;
 					y = particle.Y;
 					z = particle.Z;
+					*/
+
+				for (var i=MAX_PARTICLES;i-->0;) {
+
+					mx = cx + _d * (-_a * cx - cy * cy - cz * cz + _a * _f);
+					my = cy + _d * (-cy + cx * cy - _b * cx * cz + _g);
+					mz = cz + _d * (-cz + _b * cx * cy + cx * cz);
+
+					cx = mx;
+					cy = my;
+					cz = mz;
+
+					x = mx*scale;
+					y = my*scale;
+					z = mz*scale;
 
 					pz = focalLength + x * matrix.I02 + y * matrix.I12 + z * matrix.I22 + matrix.I32;
 
 					if (0 < pz) {
 
-						xi = Math.floor((w = focalLength / pz ) * (x * matrix.I00 + y * matrix.I10 + z * matrix.I20) + cx);
-						yi = Math.floor(w * (x * matrix.I01 + y * matrix.I11 + z * matrix.I21) + cy);
+						xi = Math.floor((w = focalLength / pz ) * (x * matrix.I00 + y * matrix.I10 + z * matrix.I20) + cenx);
+						yi = Math.floor(w * (x * matrix.I01 + y * matrix.I11 + z * matrix.I21) + ceny);
 
 						index = (xi + yi * SCREEN_WIDTH) * 4;
 
 						if (index > -1 && index < maxIndex) {
 
-							data[index] += 4;
+							data[index] += incRate;
+							// data[index] += 4;
 							// data[index+1] += 6;
 							// data[index+2] += 4;
 
@@ -296,7 +283,7 @@
 
 					}
 
-					particle = particle.Next;
+					// particle = particle.Next;
 				}
 
 				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
@@ -312,18 +299,6 @@
 				stats.update();
 			}
 
-		</script>
-
-		<script type="text/javascript"> 
-		  var _gaq = _gaq || [];
-		  _gaq.push(['_setAccount', 'UA-86951-7']);
-		  _gaq.push(['_trackPageview']);
- 
-		  (function() {
-		    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-		    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-		    (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
-		  })();
 		</script>
 
 	</body>
