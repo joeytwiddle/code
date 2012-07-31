@@ -126,7 +126,7 @@
 			}
 
 			var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
-			MAX_PARTICLES = 1024 * 100;
+			MAX_PARTICLES = 1024 * 700;
 
 
 			// Vars
@@ -163,7 +163,8 @@
 				container.appendChild(canvas);
 
 				context = canvas.getContext("2d");
-				context.fillStyle = '#101010';
+				// context.fillStyle = '#101010';
+				context.fillStyle = '#000000';
 				context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
 
 				stats = new Stats();
@@ -287,13 +288,23 @@
 
 						if (index > -1 && index < maxIndex) {
 
-							data[index] += 32;
+							data[index] += 8;
+							// data[index+1] += 6;
+							// data[index+2] += 4;
 
 						}
 
 					}
 
 					particle = particle.Next;
+				}
+
+				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
+				while ( (ptr = ptr-4) >= 0 ) {
+					data[ptr+2] = data[ptr];
+					data[ptr+1] = data[ptr]*2;
+					data[ptr] = data[ptr]*4;
+					// data[ptr] = data[ptr] / 2;
 				}
 
 				context.putImageData(image, 0, 0);
