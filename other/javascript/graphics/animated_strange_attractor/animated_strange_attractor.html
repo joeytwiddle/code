@@ -125,7 +125,7 @@
 				}
 			}
 
-			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES = 1024 * 600;
+			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES = 1024 * 2400;
 
 			var incRate;
 
@@ -236,11 +236,11 @@
 
 				virtualTime += animationSpeed;
 
-				_a = 1.111 + wobble(0.05,5);
-				_b = 1.479 + wobble(0.05,7);
-				_f = 4.494 + wobble(0.005,1);
-				_g = 0.44  + wobble(0.05,3);
-				_d = 0.135 + wobble(0.005,2);
+				_a = 1.111 + wobble(0.05,1);
+				_b = 1.479 + wobble(0.05,2);
+				_f = 4.494 + wobble(0.005,3);
+				_g = 0.44  + wobble(0.05,5);
+				_d = 0.135 + wobble(0.005,7);
 
 				// CalculatePositions();
 
@@ -301,10 +301,11 @@
 
 						if (index > -1 && index < maxIndex) {
 
-							data[index] += incRate;
+							data[index]++;
+							// data[index] += incRate;
 							// data[index] += 4;
-							// data[index+1] += 6;
-							// data[index+2] += 4;
+							// data[index+1] += 2*incRate;
+							// data[index+2] += 4*incRate;
 
 							if (2*i<MAX_PARTICLES){
 								avgHitValue += data[index];
@@ -317,14 +318,16 @@
 					// particle = particle.Next;
 				}
 
-				avgHitValue /= MAX_PARTICLES/2;
+				avgHitValue *= 2*incRate/MAX_PARTICLES;
 
 				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
 				while ( (ptr = ptr-4) >= 0 ) {
-					data[ptr+2] = data[ptr]*4;
-					data[ptr+1] = data[ptr]*2;
-					// data[ptr] = data[ptr];
-					// data[ptr] = data[ptr] / 2;
+					if (data[ptr]>0) {
+						data[ptr+2] = incRate*data[ptr]*4;
+						data[ptr+1] = incRate*data[ptr]*2;
+						data[ptr]   = incRate*data[ptr];
+						// data[ptr] = data[ptr] / 2;
+					}
 				}
 
 				context.fillStyle="white";
