@@ -125,14 +125,13 @@
 				}
 			}
 
-			var SCREEN_WIDTH = window.innerWidth, SCREEN_HEIGHT = window.innerHeight, MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT,
-			MAX_PARTICLES = 1024 * 2400;
+			var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES = 1024 * 1000;
 
-			var incRate = (4 * (1024*1200)/MAX_PARTICLES) | 0;
+			var incRate;
 
 			var virtualTime = 1000000;
 
-			var defaultAnimationSpeed = 8;
+			var defaultAnimationSpeed = 0.1;
 			var animationSpeed = defaultAnimationSpeed;
 
 			window.onclick = function(evt) {
@@ -144,6 +143,8 @@
 
 			var canvas, context, image, data;
 
+			var debug = true;
+
 			var particles, mouseX = 0, mouseY = 0, targetX = 0, targetY = 0, focalLength = 400,
 			matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
 			translationMatrix = matrixStatic.Translation(0, 0, 10);
@@ -154,7 +155,7 @@
 
 			var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135;
 			// scale = 40.0;
-			var scale = SCREEN_HEIGHT/12;
+			var scale;
 
 			Init();
 			InitParticles();
@@ -166,8 +167,19 @@
 				container = document.getElementById('container');
 
 				canvas = document.createElement("canvas");
-				canvas.width = SCREEN_WIDTH;
-				canvas.height = SCREEN_HEIGHT;
+
+				function doResize() {
+					SCREEN_WIDTH = window.innerWidth;
+					SCREEN_HEIGHT = window.innerHeight;
+					canvas.width = SCREEN_WIDTH;
+					canvas.height = SCREEN_HEIGHT;
+					MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
+					incRate = (10 * MAX_SCREEN/MAX_PARTICLES);
+					scale = SCREEN_HEIGHT/12;
+				}
+				doResize();
+				window.onresize = doResize;
+
 				canvas.style.position = "absolute";
 				container.appendChild(canvas);
 
@@ -294,7 +306,9 @@
 							// data[index+1] += 6;
 							// data[index+2] += 4;
 
-							avgHitValue += data[index];
+							if (i<MAX_PARTICLES/2){
+								avgHitValue += data[index];
+							}
 
 						}
 
@@ -303,7 +317,7 @@
 					// particle = particle.Next;
 				}
 
-				avgHitValue /= MAX_PARTICLES;
+				avgHitValue /= MAX_PARTICLES/2;
 
 				var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
 				while ( (ptr = ptr-4) >= 0 ) {
@@ -317,15 +331,17 @@
 
 				context.putImageData(image, 0, 0);
 
-				if (avgHitValue > 200 || avgHitValue<1) {
+				if (avgHitValue > 150 || avgHitValue<1) {
 					// virtualTime += 120.0;
-					animationSpeed *= 3.11213121;
+					animationSpeed *= 1.31213121;
 					context.fillText("DOING FAST FORWARD: "+animationSpeed,40,80);
 				} else {
 					animationSpeed = defaultAnimationSpeed;
 				}
 
-				// context.fillText("avgHitValue = "+avgHitValue,40,120);
+				if (debug) {
+					context.fillText("avgHitValue = "+avgHitValue,40,120);
+				}
 
 				stats.update();
 			}
