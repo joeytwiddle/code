@@ -33,8 +33,8 @@
 		<div id="container"></div>
 
 		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
-		<!--
 		<script type="text/javascript" src="Stats.js"></script> 
+		<!--
 		-->
 		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
 		<!--
@@ -92,7 +92,7 @@
 		if (min === undefined)
 			min = currentValue/16;
 		if (max === undefined)
-			max = currentValue*16;
+			max = currentValue*64;
 
 		var step;
 		if (typeof currentValue == 'number') {
@@ -302,14 +302,16 @@
 	// MAX_PARTICLES = options.numParticles;
 
 	var virtualTime = 1000000;
-	var incRate;
 
 	var defaultAnimationSpeed = 0.4;
 	var animationSpeed = defaultAnimationSpeed;
 
 	window.onclick = function(evt) {
-		virtualTime = 1000000 * Math.random() | 0;
-		// document.location.hash = virtualTime;
+		var src = evt.target || evt.srcElement;
+		if (src == document.body || src == canvas) {
+			virtualTime = 1000000 * Math.random() | 0;
+			// document.location.hash = virtualTime;
+		}
 	};
 
 	// TODO: Sliders for #particles, animationSpeed, and ranges of params.
@@ -320,7 +322,7 @@
 
 	var canvas, context, image, data;
 
-	var particles, mouseX = 0, mouseY = 0, targetX = 0, targetY = 0, focalLength = 400,
+	var particles, mouseX = 0, mouseY = 0, yaw = 0, pitch = 0, focalLength = 400,
 	matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
 	translationMatrix = matrixStatic.Translation(0, 0, 10);
 
@@ -331,6 +333,7 @@
 	var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135;
 	// scale = 40.0;
 	var scale;
+	var cenx,ceny;
 
 	// var cb = new ControlBuilder();
 	// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
@@ -340,18 +343,13 @@
 	setInterval(loop, 1000 / 60);
 
 	function updateConstants() {
+		cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 		MAX_PARTICLES = options.numParticles;
 		SCREEN_WIDTH = window.innerWidth;
 		SCREEN_HEIGHT = window.innerHeight;
 		canvas.width = SCREEN_WIDTH;
 		canvas.height = SCREEN_HEIGHT;
 		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
-		incRate = Math.ceil(8 * MAX_SCREEN/MAX_PARTICLES);
-		// Too high incRate can mistrigger avgHitValue threshold, and looks horrid!
-		if (incRate > 40) {
-			incRate = 40;
-			// But when I put this threshold down to 20, it undertriggered.
-		}
 		// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
 		scale = SCREEN_HEIGHT/12;
 	}
@@ -385,9 +383,17 @@
 
 	}
 
+	function myCurve(x) {
+		// We used to use Math.sin to wander space but it has an undesirable
+		// feature: that for a given output, the differential is always the same.
+		// This curve gives a differential 0 at various different outputs
+		return 0.5*Math.sin(x) + 0.5*Math.sin(0.113137317*x);
+	}
+
 	function wobble(amount,wavelength) {
+		amount *= 6.0; // Les Fudgeurs Independantes Internationale
 		var now = virtualTime;
-		return amount * Math.sin(2*Math.PI * now/1000 / wavelength);
+		return amount * myCurve(2*Math.PI * now/1000 / wavelength);
 	}
 
 	function onWindowMouseMove(event) {
@@ -395,6 +401,29 @@
 		mouseX = event.clientX;
 		mouseY = event.clientY;
 
+	}
+
+	function perturb(amount) {
+		return (Math.random()*2-1) * amount;
+	}
+
+	var listOfParams = ['a','b','f','g','d'];
+
+	// WORTH REMEMBERING: When this code was inlined in the main loop, it caused
+	// a significant drop in framerate, whether running or not (small window,
+	// Chrome)!  We must presumably blame the function instantiation for this.
+	// Perhaps it is causing a tiny bit of GC, and perhaps in other ways
+	// preventing V8 from taking some shortcuts!  Putting in this function
+	// restores the original framerate, even if it runs.  Chrome must be more
+	// confident about cleanup/caching when the anonymous function and map live
+	// in here.  Firefox does suffer similarly, although the difference is less
+	// noticeable.
+	function showParams() {
+		// Move these 4 lines next to the showParams(); call for badness!
+		listOfParams.map(function(name,i) {
+			var val = eval("_"+name);
+			context.fillText(name+" = "+val,40,60+10*i);
+		});
 	}
 
 	function loop() {
@@ -405,27 +434,59 @@
 
 		virtualTime += animationSpeed;
 
+		/*
+		// Prioritised frequencies:
 		_a = 1.111 + wobble(0.05,1.01);
 		_b = 1.479 + wobble(0.05,2.0021);
 		_f = 4.494 + wobble(0.005,3.012);
 		_g = 0.44  + wobble(0.05,5.023);
 		_d = 0.135 + wobble(0.005,7.0149234);
+		*/
+
+		// Similar frequencies:
+		_a = 1.111 + wobble(0.05,1.1234);
+		_b = 1.479 + wobble(0.05,1.4321);
+		_f = 4.494 + wobble(0.005,1.8231);
+		_g = 0.44  + wobble(0.05,1.7437);
+		_d = 0.135 + wobble(0.005,1.7834);
+
+		/*
+		// DANGER: Possible to wander into empty space forever!
+		_a += perturb(0.001);
+		_b += perturb(0.001);
+		_f += perturb(0.0001);
+		_g += perturb(0.001);
+		_d += perturb(0.0001);
+		*/
 
 		// CalculatePositions();
 
-		var cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
+		// yaw += (mouseX-cenx - yaw) * 0.1/4;
+		// pitch += (mouseY-ceny - pitch) * 0.1/64;
+		yaw += 0.05 * 3.2*(mouseX-cenx) / SCREEN_WIDTH;
+		pitch += 0.05 * 1.6*(mouseY-ceny) / SCREEN_HEIGHT;
 
-		targetX += (mouseX-cenx - targetX) * 0.1/4;
-		targetY += (mouseY-ceny - targetY) * 0.1/16;
-		// targetX += (mouseX-cenx) * 0.01;
-		// targetY += (mouseY-ceny) * 0.01;
+		// Dampen back to flat (nicer if chopped)
+		if (pitch > Math.PI)
+			pitch -= 2.0*Math.PI;
+		if (pitch < -Math.PI)
+			pitch += 2.0*Math.PI;
+		pitch *= 0.996;
+
+		var incRate;
+		incRate = Math.ceil(8 * MAX_SCREEN/MAX_PARTICLES);
+		// Too high incRate can mistrigger avgHitValue threshold, and looks horrid!
+		if (incRate > 40) {
+			incRate = 40;
+			// But when I put this threshold down to 20, it undertriggered.
+		}
 
 		context.fillStyle = '#000000';
 		context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 		image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 		data = image.data;
 
-		matrix = matrixStatic.RotationY(targetX * 0.05).Multiply(matrixStatic.RotationX(targetY * 0.05)).Multiply(translationMatrix);
+		matrix = matrixStatic.RotationY(yaw).Multiply(matrixStatic.RotationX(pitch)).Multiply(translationMatrix);
 
 		var w = 0, xi = 0, yi = 0;
 		var x = 0, y = 0, z = 0, pz = 0;
@@ -495,10 +556,11 @@
 		// We can choose where to optimize: e.g. we can reduce
 		// accumulations in the central loop, if we do this post-pass of
 		// the image afterwards.
-		// The post-pass is faster for SMALL images.
-		// The no-post-pass is faster for LARGE images!
+		// The post-pass is faster for SMALL images with many many particles.
+		// The no-post-pass is faster for LARGE images or medium/low numParticles!
 
 		/*
+		// Post-pass:
 		var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
 		while ( (ptr = ptr-4) >= 0 ) {
 			if (data[ptr]>0) {
@@ -517,7 +579,7 @@
 		if (avgHitValue > 220 || avgHitValue<1) {
 			animationSpeed *= 1.31213121;
 			var debugData = (options.debug?" "+animationSpeed+" "+avgHitValue:'');
-			context.fillText("DOING FAST FORWARD"+debugData,40,80);
+			context.fillText("DOING FAST FORWARD"+debugData,40,20);
 		} else {
 			animationSpeed = defaultAnimationSpeed;
 		}
@@ -526,12 +588,20 @@
 			context.fillText("avgHitValue = "+avgHitValue+" incRate="+incRate,40,120);
 		}
 
+		if (options.debug) {
+			showParams();
+		}
+
+		if (incRate === 40) {
+			context.fillStyle = 'yellow';
+			context.fillText("Recommendation: Make the window smaller, or increase particle count!",40,40);
+		}
+
 		if (stats) {
 			stats.update();
 		}
-	}
 
-	// vim: ft=javascript
+	}
 
 		</script>
 
