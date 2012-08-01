@@ -80,33 +80,45 @@
 
 	setTimeout(function(){
 		var controls = document.getElementById("controls");
-		addControl(controls,"numParticles");
+		addControl(controls,"numParticles",{min:1000,max:6000000});
 	},1);
 
-	function addControl(where,varName,postChangeFn,min,max,minDesc,maxDesc) {
+	function addControl(where,varName,detailsIn) {
+
+		// Le nouveau pattern de les details configurational!
+		var det = {
+			min: 0,
+			max: 100,
+			postChangeFn: null,
+			minDesc: null,
+			maxDesc: null
+		};
+		for (var prop in detailsIn) {
+			det[prop] = detailsIn[prop];
+		}
 
 		var input = document.createElement("input");
 		var otherInput;
 
 		var currentValue = options[varName]; // eval(varName);
-		if (min === undefined)
-			min = currentValue/16;
-		if (max === undefined)
-			max = currentValue*64;
+		if (det.min === undefined)
+			det.min = currentValue/16;
+		if (det.max === undefined)
+			det.max = currentValue*64;
 
 		var step;
 		if (typeof currentValue == 'number') {
 			input.type = "number";
 			input.size = "4";
-			input.min = min;
-			input.max = max;
+			input.min = det.min;
+			input.max = det.max;
 			// Floating point inputs don't work without a step value!
-			if (Math.floor(min)==min && Math.floor(max)==max) {
+			if (Math.floor(det.min)==det.min && Math.floor(det.max)==det.max) {
 				// Integer range assumed
 				// BUG: Dev might want floating step for range 0,1 or -1,+1 or 0,2
 				step = 1;
 			} else {
-				step = (max - min)/25;
+				step = (det.max - det.min)/25;
 			}
 			input.step = step;
 		} else if (typeof currentValue == 'boolean') {
@@ -123,8 +135,8 @@
 			// log("update on input "+this+" newValue = ("+typeof newValue+") "+newValue);
 			options[varName] = newValue;
 			// Call provided function if it exists
-			if (typeof postChangeFn == "function")
-				postChangeFn();
+			if (typeof det.postChangeFn == "function")
+				det.postChangeFn();
 			// Update any other related inputs
 			// Fortunately this doesn't cause an infloop :)
 			// However it was causing trouble with html5slider in Firefox, so now it
@@ -133,8 +145,8 @@
 				setValue(input,newValue);
 			if (otherInput && this != otherInput)
 				setValue(otherInput,newValue);
-			// postChangeFn=-1 implies we should not re-render!
-			// if (postChangeFn != -1)
+			// det.postChangeFn=-1 implies we should not re-render!
+			// if (det.postChangeFn != -1)
 				// queueFrame(1000);
 		}
 
@@ -148,20 +160,20 @@
 		where.appendChild(document.createTextNode(varName+":"));
 
 		if (typeof currentValue == 'number') {
-			minDesc = minDesc ? '('+minDesc+')' : '';
-			maxDesc = maxDesc ? '('+maxDesc+')' : '';
-			where.appendChild(document.createTextNode(minDesc));
-			where.appendChild(document.createTextNode(min));
+			det.minDesc = det.minDesc ? '('+det.minDesc+')' : '';
+			det.maxDesc = det.maxDesc ? '('+det.maxDesc+')' : '';
+			where.appendChild(document.createTextNode(det.minDesc));
+			where.appendChild(document.createTextNode(det.min));
 			otherInput = document.createElement("input");
 			otherInput.type = "range";
-			otherInput.min = min;
-			otherInput.max = max;
+			otherInput.min = det.min;
+			otherInput.max = det.max;
 			otherInput.step = step;
 			setValue(otherInput,currentValue);
 			otherInput.addEventListener("change",update,true);
 			where.appendChild(otherInput);
-			where.appendChild(document.createTextNode(max));
-			where.appendChild(document.createTextNode(maxDesc));
+			where.appendChild(document.createTextNode(det.max));
+			where.appendChild(document.createTextNode(det.maxDesc));
 		}
 
 		/*
@@ -343,10 +355,10 @@
 	setInterval(loop, 1000 / 60);
 
 	function updateConstants() {
-		cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 		MAX_PARTICLES = options.numParticles;
 		SCREEN_WIDTH = window.innerWidth;
 		SCREEN_HEIGHT = window.innerHeight;
+		cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 		canvas.width = SCREEN_WIDTH;
 		canvas.height = SCREEN_HEIGHT;
 		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
@@ -363,6 +375,9 @@
 		updateConstants();
 
 		window.onresize = updateConstants;
+
+		mouseX = cenx*1.5;
+		mouseY = ceny;
 
 		canvas.style.position = "absolute";
 		container.appendChild(canvas);
@@ -383,11 +398,22 @@
 
 	}
 
+	if (typeof Math.sgn != "function") {
+		Math.sgn = function(x) {
+			return x<0 ? -1 : x>0 ? +1 : 0;
+		};
+	}
+
+	function flatterSin(x) {
+		var ms = Math.sin(x);
+		return ms*ms * Math.sgn(ms);
+	}
+
 	function myCurve(x) {
 		// We used to use Math.sin to wander space but it has an undesirable
 		// feature: that for a given output, the differential is always the same.
 		// This curve gives a differential 0 at various different outputs
-		return 0.5*Math.sin(x) + 0.5*Math.sin(0.113137317*x);
+		return 0.5*flatterSin(x) + 0.5*flatterSin(0.113137317*x);
 	}
 
 	function wobble(amount,wavelength) {
@@ -404,6 +430,7 @@
 	}
 
 	function perturb(amount) {
+		amount *= (animationSpeed / defaultAnimationSpeed);
 		return (Math.random()*2-1) * amount;
 	}
 
@@ -448,10 +475,10 @@
 		_b = 1.479 + wobble(0.05,1.4321);
 		_f = 4.494 + wobble(0.005,1.8231);
 		_g = 0.44  + wobble(0.05,1.7437);
-		_d = 0.135 + wobble(0.005,1.7834);
+		_d = 0.135 + wobble(0.001,1.7834);
 
-		/*
 		// DANGER: Possible to wander into empty space forever!
+		/*
 		_a += perturb(0.001);
 		_b += perturb(0.001);
 		_f += perturb(0.0001);
@@ -507,6 +534,8 @@
 		var avgHitValue = 0;
 
 		for (var i=MAX_PARTICLES;i-->0;) {
+
+			// _d += 0.0000001;
 
 			mx = cx + _d * (-_a * cx - cy * cy - cz * cz + _a * _f);
 			my = cy + _d * (-cy + cx * cy - _b * cx * cz + _g);
