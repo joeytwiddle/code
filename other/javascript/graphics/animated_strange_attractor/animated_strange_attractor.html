@@ -73,6 +73,7 @@
 	var options = {
 		numParticles: 100000,
 		debug: false,
+		animationSpeedControl: 0.25,
 		defaultAnimationSpeed: 0.1,
 		variationAmount: 6.0
 	};
@@ -100,8 +101,8 @@
 	setTimeout(function(){
 		var controls = document.getElementById("controlsTable");
 		addControl(controls,options,'numParticles',{ label:"Particles", min:1000, max:6000000 });
-		addControl(controls,options,'defaultAnimationSpeed',{ label: "Changerate", min: 0, max: 8.01 });
-		addControl(controls,options,'variationAmount',{ min: 0, max: 32, label: "Variation" });
+		addControl(controls,options,'animationSpeedControl',{ label: "Changerate", min: 0, max: 1 });
+		addControl(controls,options,'variationAmount',{ min: 0, max: 40, label: "Variation" });
 		addControl(controls,parameterCentres,'_a');
 		addControl(controls,parameterCentres,'_b');
 		addControl(controls,parameterCentres,'_f');
@@ -147,7 +148,7 @@
 			input.max = det.max;
 			input.style.width='60px';
 			// Floating point inputs don't work without a step value!
-			if (Math.floor(det.min)==det.min && Math.floor(det.max)==det.max) {
+			if (Math.floor(det.min)==det.min && Math.floor(det.max)==det.max && det.max-det.min>1) {
 				// Integer range assumed
 				// BUG: Dev might want floating step for range 0,1 or -1,+1 or 0,2
 				step = 1;
@@ -374,7 +375,7 @@
 	// MAX_PARTICLES = 1024 * 600;
 	// MAX_PARTICLES = options.numParticles;
 
-	var virtualTime = 1000000;
+	var virtualTime = 0;
 
 	var animationSpeed = options.defaultAnimationSpeed;
 
@@ -424,6 +425,7 @@
 		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
 		// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
 		scale = SCREEN_HEIGHT/12;
+		options.defaultAnimationSpeed = 100000000*Math.pow(options.animationSpeedControl,15);
 	}
 
 	function Init() {
