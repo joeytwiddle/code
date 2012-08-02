@@ -16,20 +16,29 @@
 			{
 				right: 0px;
 			}
-			#controls
+			#controlsDiv
 			{
-				font-size: 12px;
-				margin: 0px 6px;
+				position: absolute;
+				top: 0px;
+				left: 0px;
+				z-index: 5;
 			}
-			#controls > *
+			#controlsTable *
 			{
-				margin: 0px 6px;
+				font-size: 11px;
 			}
-		</style> 
+			#controlsTable
+			{
+				background-color: rgba(20,20,20,0.6);
+			}
+		</style>
 	</head>
 	<body>
 
-		<div id="controls"></div>
+		<div id="controlsDiv">
+			<button id="controlsButton">Controls</button>
+			<table id="controlsTable" style="display:none"></table>
+		</div>
 		<div id="container"></div>
 
 		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
@@ -64,6 +73,16 @@
 	var options = {
 		numParticles: 100000,
 		debug: false,
+		defaultAnimationSpeed: 0.1,
+		variationAmount: 6.0
+	};
+
+	var parameterCentres = {
+		_a: 1.111,
+		_b: 1.479,
+		_f: 4.494,
+		_g: 0.44,
+		_d: 0.135
 	};
 
 	var params = {};
@@ -76,35 +95,50 @@
 	}
 	options.debug = Boolean(params.debug);
 
-	document.title += " ("+MAX_PARTICLES+" particles)";
+	document.title += " ("+options.numParticles+" particles)";
 
 	setTimeout(function(){
-		var controls = document.getElementById("controls");
-		addControl(controls,"numParticles",{min:1000,max:6000000});
+		var controls = document.getElementById("controlsTable");
+		addControl(controls,options,'numParticles',{ label:"Particles", min:1000, max:6000000 });
+		addControl(controls,options,'defaultAnimationSpeed',{ label: "Speed", min: 0, max: 8.01 });
+		addControl(controls,options,'variationAmount',{ min: 0, label: "Variation" });
+		addControl(controls,parameterCentres,'_a');
+		addControl(controls,parameterCentres,'_a');
+		addControl(controls,parameterCentres,'_b');
+		addControl(controls,parameterCentres,'_f');
+		addControl(controls,parameterCentres,'_g');
+		addControl(controls,parameterCentres,'_d');
 	},1);
 
-	function addControl(where,varName,detailsIn) {
+	document.getElementById("controlsButton").onclick = function(evt){
+		controlsTable.style.display = controlsTable.style.display ? '' : 'none';
+	};
+
+	function addControl(what,where,varName,detailsIn) {
 
 		// Le nouveau pattern de les details configurational!
 		var det = {
-			min: 0,
-			max: 100,
+			min: null,
+			max: null,
 			postChangeFn: null,
 			minDesc: null,
-			maxDesc: null
+			maxDesc: null,
+			label: varName
 		};
-		for (var prop in detailsIn) {
-			det[prop] = detailsIn[prop];
+		if (detailsIn) {
+			for (var prop in detailsIn) {
+				det[prop] = detailsIn[prop];
+			}
 		}
 
 		var input = document.createElement("input");
 		var otherInput;
 
-		var currentValue = options[varName]; // eval(varName);
-		if (det.min === undefined)
-			det.min = currentValue/16;
-		if (det.max === undefined)
-			det.max = currentValue*64;
+		var currentValue = where[varName]; // eval(varName);
+		if (det.min == undefined)
+			det.min = currentValue * 0.2;
+		if (det.max == undefined)
+			det.max = currentValue * 1.8;
 
 		var step;
 		if (typeof currentValue == 'number') {
@@ -112,13 +146,14 @@
 			input.size = "4";
 			input.min = det.min;
 			input.max = det.max;
+			input.style.width='60px';
 			// Floating point inputs don't work without a step value!
 			if (Math.floor(det.min)==det.min && Math.floor(det.max)==det.max) {
 				// Integer range assumed
 				// BUG: Dev might want floating step for range 0,1 or -1,+1 or 0,2
 				step = 1;
 			} else {
-				step = (det.max - det.min)/25;
+				step = (det.max - det.min)/200;
 			}
 			input.step = step;
 		} else if (typeof currentValue == 'boolean') {
@@ -129,11 +164,11 @@
 		setValue(input,currentValue);
 
 		// The update function is called when the user edits a control.
-		// It copies the new value into the options var, and then requests a rerender.
+		// It copies the new value into the where var, and then requests a rerender.
 		function update() {
 			var newValue = getValue(this);
 			// log("update on input "+this+" newValue = ("+typeof newValue+") "+newValue);
-			options[varName] = newValue;
+			where[varName] = newValue;
 			// Call provided function if it exists
 			if (typeof det.postChangeFn == "function")
 				det.postChangeFn();
@@ -157,13 +192,30 @@
 		// input.onchange = update;
 		input.addEventListener("change",update,true);
 
-		where.appendChild(document.createTextNode(varName+":"));
+		var tr = document.createElement("tr");
+
+		var td = document.createElement("td");
+		td.appendChild(document.createTextNode(det.label+":"));
+		tr.appendChild(td);
+
+		function friendlyFloat(f) {
+			var str = ""+f;
+			while (str.indexOf(".")>=0 && str.length>5) {
+				str = str.substring(0,str.length-1);
+			}
+			return str;
+		}
 
 		if (typeof currentValue == 'number') {
 			det.minDesc = det.minDesc ? '('+det.minDesc+')' : '';
 			det.maxDesc = det.maxDesc ? '('+det.maxDesc+')' : '';
-			where.appendChild(document.createTextNode(det.minDesc));
-			where.appendChild(document.createTextNode(det.min));
+			/*
+			td = document.createElement("td");
+			td.appendChild(document.createTextNode(det.minDesc));
+			td.appendChild(document.createTextNode(friendlyFloat(det.min)));
+			td.align='right';
+			tr.appendChild(td);
+			*/
 			otherInput = document.createElement("input");
 			otherInput.type = "range";
 			otherInput.min = det.min;
@@ -171,21 +223,31 @@
 			otherInput.step = step;
 			setValue(otherInput,currentValue);
 			otherInput.addEventListener("change",update,true);
-			where.appendChild(otherInput);
-			where.appendChild(document.createTextNode(det.max));
-			where.appendChild(document.createTextNode(det.maxDesc));
+			td = document.createElement("td");
+			td.appendChild(otherInput);
+			tr.appendChild(td);
+			/*
+			td = document.createElement("td");
+			td.appendChild(document.createTextNode(friendlyFloat(det.max)));
+			td.appendChild(document.createTextNode(det.maxDesc));
+			tr.appendChild(td);
+			*/
 		}
+
+		td = document.createElement("td");
+		td.appendChild(input);
+		tr.appendChild(td);
+
+		what.appendChild(tr);
 
 		/*
 		listOfUpdateFunctions.push(function(){
-			var currentValue = options[varName]; // eval(varName);
+			var currentValue = where[varName]; // eval(varName);
 			setValue(input,currentValue);
 			if (otherInput)
 				setValue(otherInput,currentValue);
 		});
 		*/
-
-		where.appendChild(document.createElement("br"));
 
 	}
 
@@ -315,8 +377,7 @@
 
 	var virtualTime = 1000000;
 
-	var defaultAnimationSpeed = 0.4;
-	var animationSpeed = defaultAnimationSpeed;
+	var animationSpeed = options.defaultAnimationSpeed;
 
 	window.onclick = function(evt) {
 		var src = evt.target || evt.srcElement;
@@ -398,6 +459,11 @@
 
 	}
 
+	function onWindowMouseMove(event) {
+		mouseX = event.clientX;
+		mouseY = event.clientY;
+	}
+
 	if (typeof Math.sgn != "function") {
 		Math.sgn = function(x) {
 			return x<0 ? -1 : x>0 ? +1 : 0;
@@ -417,20 +483,13 @@
 	}
 
 	function wobble(amount,wavelength) {
-		amount *= 6.0; // Les Fudgeurs Independantes Internationale
+		amount *= options.variationAmount; // Les Fudgeurs Independantes Internationale
 		var now = virtualTime;
 		return amount * myCurve(2*Math.PI * now/1000 / wavelength);
 	}
 
-	function onWindowMouseMove(event) {
-
-		mouseX = event.clientX;
-		mouseY = event.clientY;
-
-	}
-
 	function perturb(amount) {
-		amount *= (animationSpeed / defaultAnimationSpeed);
+		amount *= (animationSpeed / options.defaultAnimationSpeed);
 		return (Math.random()*2-1) * amount;
 	}
 
@@ -449,7 +508,7 @@
 		// Move these 4 lines next to the showParams(); call for badness!
 		listOfParams.map(function(name,i) {
 			var val = eval("_"+name);
-			context.fillText(name+" = "+val,40,60+10*i);
+			context.fillText(name+" = "+val,40,80+10*i);
 		});
 	}
 
@@ -471,11 +530,20 @@
 		*/
 
 		// Similar frequencies:
-		_a = 1.111 + wobble(0.05,1.1234);
-		_b = 1.479 + wobble(0.05,1.4321);
-		_f = 4.494 + wobble(0.005,1.8231);
-		_g = 0.44  + wobble(0.05,1.7437);
+		/*
+		_a = 1.0 + wobble(0.05,1.3234);
+		_b = 1.5 + wobble(0.05,1.4321);
+		_f = 4.5 + wobble(0.005,1.8231);
+		_g = 0.45  + wobble(0.02,1.7437);
 		_d = 0.135 + wobble(0.001,1.7834);
+		*/
+
+		// Similar frequencies:
+		_a = parameterCentres._a + wobble(0.05,1.3234);
+		_b = parameterCentres._b + wobble(0.05,1.4321);
+		_f = parameterCentres._f + wobble(0.005,1.8231);
+		_g = parameterCentres._g + wobble(0.02,1.7437);
+		_d = parameterCentres._d + wobble(0.001,1.7834);
 
 		// DANGER: Possible to wander into empty space forever!
 		/*
@@ -490,8 +558,9 @@
 
 		// yaw += (mouseX-cenx - yaw) * 0.1/4;
 		// pitch += (mouseY-ceny - pitch) * 0.1/64;
-		yaw += 0.05 * 3.2*(mouseX-cenx) / SCREEN_WIDTH;
-		pitch += 0.05 * 1.6*(mouseY-ceny) / SCREEN_HEIGHT;
+		// yaw += 0.05 * 3.2*(mouseX-cenx) / SCREEN_WIDTH;
+		// pitch += 0.05 * 1.6*(mouseY-ceny) / SCREEN_HEIGHT;
+		yaw += 0.04;
 
 		// Dampen back to flat (nicer if chopped)
 		if (pitch > Math.PI)
@@ -608,13 +677,13 @@
 		if (avgHitValue > 220 || avgHitValue<1) {
 			animationSpeed *= 1.31213121;
 			var debugData = (options.debug?" "+animationSpeed+" "+avgHitValue:'');
-			context.fillText("DOING FAST FORWARD"+debugData,40,20);
+			context.fillText("DOING FAST FORWARD"+debugData,40,40);
 		} else {
-			animationSpeed = defaultAnimationSpeed;
+			animationSpeed = options.defaultAnimationSpeed;
 		}
 
 		if (options.debug) {
-			context.fillText("avgHitValue = "+avgHitValue+" incRate="+incRate,40,120);
+			context.fillText("avgHitValue = "+avgHitValue+" incRate="+incRate,40,140);
 		}
 
 		if (options.debug) {
@@ -623,7 +692,7 @@
 
 		if (incRate === 40) {
 			context.fillStyle = 'yellow';
-			context.fillText("Recommendation: Make the window smaller, or increase particle count!",40,40);
+			context.fillText("Recommendation: Make the window smaller, or increase particle count!",40,60);
 		}
 
 		if (stats) {
