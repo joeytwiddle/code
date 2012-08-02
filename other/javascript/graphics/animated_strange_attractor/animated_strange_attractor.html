@@ -100,9 +100,8 @@
 	setTimeout(function(){
 		var controls = document.getElementById("controlsTable");
 		addControl(controls,options,'numParticles',{ label:"Particles", min:1000, max:6000000 });
-		addControl(controls,options,'defaultAnimationSpeed',{ label: "Speed", min: 0, max: 8.01 });
-		addControl(controls,options,'variationAmount',{ min: 0, label: "Variation" });
-		addControl(controls,parameterCentres,'_a');
+		addControl(controls,options,'defaultAnimationSpeed',{ label: "Changerate", min: 0, max: 8.01 });
+		addControl(controls,options,'variationAmount',{ min: 0, max: 32, label: "Variation" });
 		addControl(controls,parameterCentres,'_a');
 		addControl(controls,parameterCentres,'_b');
 		addControl(controls,parameterCentres,'_f');
