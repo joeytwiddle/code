@@ -41,9 +41,9 @@
 		</div>
 		<div id="container"></div>
 
-		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
 		<script type="text/javascript" src="Stats.js"></script> 
 		<!--
+		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
 		-->
 		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
 		<!--
@@ -99,8 +99,9 @@
 	};
 
 	// My overrides:
-	options.variationAmount = 10.0;
-	options.defaultAnimationSpeed *= 0.75;
+	options.variationAmount = 20.0;
+	parameterCentres._d = 0.20;
+	options.defaultAnimationSpeed *= 0.5;
 
 	// Sob.  I just want to find some nice defaults which give 5 or so different
 	// shapes, without a strong donut theme.  This is the last feature I really
@@ -454,7 +455,7 @@
 		canvas.height = SCREEN_HEIGHT;
 		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
 		// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
-		scale = SCREEN_HEIGHT/12;
+		scale = SCREEN_HEIGHT/16;
 		options.defaultAnimationSpeed = 100000000*Math.pow(options.animationSpeedControl,15);
 	}
 
