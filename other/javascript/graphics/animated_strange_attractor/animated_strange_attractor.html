@@ -99,9 +99,9 @@
 	};
 
 	// My overrides:
-	options.variationAmount = 20.0;
-	parameterCentres._d = 0.20;
-	options.defaultAnimationSpeed *= 0.5;
+	options.variationAmount = 5.0;
+	parameterCentres._d = 0.15;
+	// options.animationSpeedControl *= 0.5;
 
 	// Sob.  I just want to find some nice defaults which give 5 or so different
 	// shapes, without a strong donut theme.  This is the last feature I really
@@ -456,7 +456,7 @@
 		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
 		// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
 		scale = SCREEN_HEIGHT/16;
-		options.defaultAnimationSpeed = 100000000*Math.pow(options.animationSpeedControl,15);
+		options.defaultAnimationSpeed = 100000000/options.variationAmount*Math.pow(options.animationSpeedControl,15);
 	}
 
 	function Init() {
@@ -762,5 +762,7 @@
 
 		</script>
 
+		<!-- vim: ft=javascript noexpandtab
+		-->
 	</body>
 </html>
