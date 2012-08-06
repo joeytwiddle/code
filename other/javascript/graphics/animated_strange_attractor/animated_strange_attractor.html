@@ -74,6 +74,15 @@
 	// var cb = new ControlBuilder();
 	// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
 
+	// BUG: Under poor conditions (e.g. user slides to bad parameters) the
+	// search can fast-forward virtualTime to 3.833966983522884e+51 beyond which
+	// it will not go!  (Our max animationSpeed is too small to affect this
+	// number.)
+
+	// BUG TODO: We introduced distance slider but we have not compensated
+	// incRate or avgHitValue threshold to compensate for it.  (Zooming far out
+	// can trigger fast forward due to white-out.)
+
 
 
 	function addControl(what,where,varName,detailsIn) {
@@ -342,7 +351,10 @@
 		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
 		// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
 		scale = SCREEN_HEIGHT/16;
-		options.defaultAnimationSpeed = 2000000000/options.variationAmount*Math.pow(options.animationSpeedControl,15);
+		var maxSpeed = 2000000000/options.variationAmount;
+		if (maxSpeed === +Infinity)
+			maxSpeed = 2000000000;
+		options.defaultAnimationSpeed = maxSpeed*Math.pow(options.animationSpeedControl,15);
 	}
 
 	function Init() {
@@ -666,7 +678,7 @@
 		_b: 0.1,
 		_f: 0.01,
 		_g: 0.04,
-		_d: 0.0025
+		_d: 0.002
 	};
 
 	// My overrides:
@@ -679,9 +691,9 @@
 	// want, but it's taking days to find suitable values!
 
 	var parameterFrequencies = {
-		_a: 1.3734,
-		_b: 1.4421,
-		_f: 1.8131,
+		_a: 1.3234,
+		_b: 1.4321,
+		_f: 1.8231,
 		_g: 1.7437,
 		_d: 1.7834
 	};
