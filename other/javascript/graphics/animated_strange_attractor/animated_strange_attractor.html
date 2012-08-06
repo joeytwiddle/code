@@ -41,9 +41,9 @@
 		</div>
 		<div id="container"></div>
 
-		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
 		<script type="text/javascript" src="Stats.js"></script> 
 		<!--
+		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
 		-->
 		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
 		<!--
@@ -68,51 +68,13 @@
 	// DONE: Better colors.
 	// TODO: Get GPU to do it instead of canvas!
 
+	// DONE: Sliders for #particles, animationSpeed, and ranges of params.
+	// TODO: Re-usable "zero-config" control library.
+
+	// var cb = new ControlBuilder();
+	// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
 
 
-	var options = {
-		numParticles: 100000,
-		debug: false,
-		animationSpeedControl: 0.25,
-		defaultAnimationSpeed: 0.1,
-		variationAmount: 6.0
-	};
-
-	var parameterCentres = {
-		_a: 1.111,
-		_b: 1.479,
-		_f: 4.494,
-		_g: 0.44,
-		_d: 0.135
-	};
-
-	var params = {};
-	document.location.hash.slice(1).split('&').forEach(function(x){
-		params[x.split('=')[0]] = x.split('=')[1];
-	});
-
-	if (params["points"]) {
-		options.numParticles = parseInt(params["points"],10);
-	}
-	options.debug = Boolean(params.debug);
-
-	document.title += " ("+options.numParticles+" particles)";
-
-	setTimeout(function(){
-		var controls = document.getElementById("controlsTable");
-		addControl(controls,options,'numParticles',{ label:"Particles", min:1000, max:6000000 });
-		addControl(controls,options,'animationSpeedControl',{ label: "Changerate", min: 0, max: 1 });
-		addControl(controls,options,'variationAmount',{ min: 0, max: 40, label: "Variation" });
-		addControl(controls,parameterCentres,'_a');
-		addControl(controls,parameterCentres,'_b');
-		addControl(controls,parameterCentres,'_f');
-		addControl(controls,parameterCentres,'_g');
-		addControl(controls,parameterCentres,'_d');
-	},1);
-
-	document.getElementById("controlsButton").onclick = function(evt){
-		controlsTable.style.display = controlsTable.style.display ? '' : 'none';
-	};
 
 	function addControl(what,where,varName,detailsIn) {
 
@@ -370,51 +332,6 @@
 		}
 	}
 
-	var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES;
-
-	// MAX_PARTICLES = 1024 * 600;
-	// MAX_PARTICLES = options.numParticles;
-
-	var virtualTime = 0;
-
-	var animationSpeed = options.defaultAnimationSpeed;
-
-	window.onclick = function(evt) {
-		var src = evt.target || evt.srcElement;
-		if (src == document.body || src == canvas) {
-			virtualTime = 1000000 * Math.random() | 0;
-			// document.location.hash = virtualTime;
-		}
-	};
-
-	// TODO: Sliders for #particles, animationSpeed, and ranges of params.
-	// Re-usable "zero-config" control library.
-
-
-	// Vars
-
-	var canvas, context, image, data;
-
-	var particles, mouseX = 0, mouseY = 0, yaw = 0, pitch = 0, focalLength = 400,
-	matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
-	translationMatrix = matrixStatic.Translation(0, 0, 10);
-
-	var stats;
-
-	// Main
-
-	var _a = 1.111, _b = 1.479, _f = 4.494, _g = 0.44, _d = 0.135;
-	// scale = 40.0;
-	var scale;
-	var cenx,ceny;
-
-	// var cb = new ControlBuilder();
-	// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
-
-	Init();
-
-	setInterval(loop, 1000 / 60);
-
 	function updateConstants() {
 		MAX_PARTICLES = options.numParticles;
 		SCREEN_WIDTH = window.innerWidth;
@@ -424,8 +341,8 @@
 		canvas.height = SCREEN_HEIGHT;
 		MAX_SCREEN = SCREEN_WIDTH * SCREEN_HEIGHT;
 		// Withuot ceil, very small images can get incRate<1 i.e. incRate=0!
-		scale = SCREEN_HEIGHT/12;
-		options.defaultAnimationSpeed = 100000000*Math.pow(options.animationSpeedControl,15);
+		scale = SCREEN_HEIGHT/16;
+		options.defaultAnimationSpeed = 2000000000/options.variationAmount*Math.pow(options.animationSpeedControl,15);
 	}
 
 	function Init() {
@@ -490,7 +407,7 @@
 	}
 
 	function perturb(amount) {
-		amount *= (animationSpeed / options.defaultAnimationSpeed);
+		amount *= (options.animationSpeed / options.defaultAnimationSpeed);
 		return (Math.random()*2-1) * amount;
 	}
 
@@ -513,47 +430,30 @@
 		});
 	}
 
+	var currentVals = {};
+	function updateParameters() {
+		for (var par in parameterCentres) {
+			var newVal = parameterCentres[par] + wobble(parameterVariation[par], parameterFrequencies[par]);
+			// eval(par + " = " + newVal + ";");
+			currentVals[par] = newVal;
+		}
+	}
+
 	function loop() {
 
 		updateConstants();
 
+		virtualTime += options.animationSpeed;
+
+		updateParameters();
+
+		var _a = currentVals._a, _b = currentVals._b, _f = currentVals._f,
+		    _g = currentVals._g, _d = currentVals._d;
+
+		var focalLength = 400;
+		var distance = options.distance;
+
 		var cx = 1.0, cy = 1.0, cz = 1.0, mx = 0.0, my = 0.0, mz = 0.0;
-
-		virtualTime += animationSpeed;
-
-		/*
-		// Prioritised frequencies:
-		_a = 1.111 + wobble(0.05,1.01);
-		_b = 1.479 + wobble(0.05,2.0021);
-		_f = 4.494 + wobble(0.005,3.012);
-		_g = 0.44  + wobble(0.05,5.023);
-		_d = 0.135 + wobble(0.005,7.0149234);
-		*/
-
-		// Similar frequencies:
-		/*
-		_a = 1.0 + wobble(0.05,1.3234);
-		_b = 1.5 + wobble(0.05,1.4321);
-		_f = 4.5 + wobble(0.005,1.8231);
-		_g = 0.45  + wobble(0.02,1.7437);
-		_d = 0.135 + wobble(0.001,1.7834);
-		*/
-
-		// Similar frequencies:
-		_a = parameterCentres._a + wobble(0.05,1.3234);
-		_b = parameterCentres._b + wobble(0.05,1.4321);
-		_f = parameterCentres._f + wobble(0.005,1.8231);
-		_g = parameterCentres._g + wobble(0.02,1.7437);
-		_d = parameterCentres._d + wobble(0.001,1.7834);
-
-		// DANGER: Possible to wander into empty space forever!
-		/*
-		_a += perturb(0.001);
-		_b += perturb(0.001);
-		_f += perturb(0.0001);
-		_g += perturb(0.001);
-		_d += perturb(0.0001);
-		*/
 
 		// CalculatePositions();
 
@@ -561,14 +461,19 @@
 		// pitch += (mouseY-ceny - pitch) * 0.1/64;
 		// yaw += 0.05 * 3.2*(mouseX-cenx) / SCREEN_WIDTH;
 		// pitch += 0.05 * 1.6*(mouseY-ceny) / SCREEN_HEIGHT;
-		yaw += 0.04;
+		// yaw += 0.04;
+		yaw += options.deltaYaw;
 
+		/*
 		// Dampen back to flat (nicer if chopped)
 		if (pitch > Math.PI)
 			pitch -= 2.0*Math.PI;
 		if (pitch < -Math.PI)
 			pitch += 2.0*Math.PI;
 		pitch *= 0.996;
+		*/
+
+		pitch = -options.pitch;
 
 		var incRate;
 		incRate = Math.ceil(8 * MAX_SCREEN/MAX_PARTICLES);
@@ -603,6 +508,16 @@
 
 		var avgHitValue = 0;
 
+		// We can choose where to optimize: e.g. we can reduce ACCUMULATIONS in
+		// the central loop, using just ++ there, if we do a POSTPASS of the
+		// image afterwards.
+		//
+		// The post-pass is faster for TINY images with HUGE numbers of
+		// particles.  But you would never actually want that extreme!
+		//
+		// The no-post-pass is faster for medium/large images or medium/low
+		// numParticles.
+
 		for (var i=MAX_PARTICLES;i-->0;) {
 
 			// _d += 0.0000001;
@@ -619,19 +534,21 @@
 			y = my*scale;
 			z = mz*scale;
 
-			pz = focalLength + x * matrix.I02 + y * matrix.I12 + z * matrix.I22 + matrix.I32;
+			pz = distance + x * matrix.I02 + y * matrix.I12 + z * matrix.I22 + matrix.I32;
 
 			if (0 < pz) {
 
-				xi = Math.floor((w = focalLength / pz ) * (x * matrix.I00 + y * matrix.I10 + z * matrix.I20) + cenx);
-				yi = Math.floor(w * (x * matrix.I01 + y * matrix.I11 + z * matrix.I21) + ceny);
+				w = focalLength / pz;
+				xi = (w * (x * matrix.I00 + y * matrix.I10 + z * matrix.I20) + cenx) | 0;
+				yi = (w * (x * matrix.I01 + y * matrix.I11 + z * matrix.I21) + ceny) | 0;
 
 				index = (xi + yi * SCREEN_WIDTH) * 4;
 
 				if (index > -1 && index < maxIndex) {
 
+					//// ACCUMULATIONS
 					// data[index]++;
-					data[index] += incRate;
+					data[index]   += incRate;
 					data[index+1] += 2*incRate;
 					data[index+2] += 4*incRate;
 
@@ -652,14 +569,8 @@
 		// avgHitValue *= incRate/MAX_PARTICLES;
 		// avgHitValue *= 2*incRate/MAX_PARTICLES;
 
-		// We can choose where to optimize: e.g. we can reduce
-		// accumulations in the central loop, if we do this post-pass of
-		// the image afterwards.
-		// The post-pass is faster for SMALL images with many many particles.
-		// The no-post-pass is faster for LARGE images or medium/low numParticles!
-
 		/*
-		// Post-pass:
+		//// POSTPASS
 		var ptr = SCREEN_WIDTH*SCREEN_WIDTH*4;
 		while ( (ptr = ptr-4) >= 0 ) {
 			if (data[ptr]>0) {
@@ -675,12 +586,16 @@
 
 		context.fillStyle = "#FFFFFF";
 
+		// Decide whether to speed up the search
 		if (avgHitValue > 220 || avgHitValue<1) {
-			animationSpeed *= 1.31213121;
-			var debugData = (options.debug?" "+animationSpeed+" "+avgHitValue:'');
+			options.animationSpeed *= 1.31213121;
+			if (Math.abs(options.animationSpeed) < 0.00000001) {
+				options.animationSpeed = 0.00000001;
+			}
+			var debugData = (options.debug?" "+options.animationSpeed+" "+avgHitValue:'');
 			context.fillText("DOING FAST FORWARD"+debugData,40,40);
 		} else {
-			animationSpeed = options.defaultAnimationSpeed;
+			options.animationSpeed = options.defaultAnimationSpeed;
 		}
 
 		if (options.debug) {
@@ -693,7 +608,8 @@
 
 		if (incRate === 40) {
 			context.fillStyle = 'yellow';
-			context.fillText("Recommendation: Make the window smaller, or increase particle count!",40,60);
+			// context.fillText("Recommendation: Make the window smaller, or increase particle count!",40,60);
+			context.fillText("Reduce window size for smoother animation!",40,60);
 		}
 
 		if (stats) {
@@ -702,7 +618,124 @@
 
 	}
 
+
+
+
+	// Vars
+
+	var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES;
+	var scale;
+	var cenx,ceny;
+
+	// MAX_PARTICLES = 1024 * 600;
+	// MAX_PARTICLES = options.numParticles;
+
+	var virtualTime = 0;
+
+	var canvas, context, image, data;
+
+	var particles, mouseX = 0, mouseY = 0, yaw = 0, pitch = 0,
+	matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
+	translationMatrix = matrixStatic.Translation(0, 0, 10);
+
+	var stats;
+
+	var options = {
+		numParticles: 100000,
+		debug: false,
+		animationSpeedControl: 0.25,
+		defaultAnimationSpeed: 0.1,
+		variationAmount: 2.0,
+		deltaYaw: 0.04,
+		pitch: 0.0,
+		distance: 400
+	};
+
+	// Originals:
+	var parameterCentres = {
+		_a: 1.111,
+		_b: 1.479,
+		_f: 4.494,
+		_g: 0.44,
+		_d: 0.135
+	};
+
+	// My originals
+	var parameterVariation = {
+		_a: 0.1,
+		_b: 0.1,
+		_f: 0.01,
+		_g: 0.04,
+		_d: 0.0025
+	};
+
+	// My overrides:
+	options.variationAmount = 10.0;
+	parameterCentres._d = 0.17;
+	// options.animationSpeedControl *= 0.5;
+
+	// Sob.  I just want to find some nice defaults which give 5 or so different
+	// shapes, without a strong donut theme.  This is the last feature I really
+	// want, but it's taking days to find suitable values!
+
+	var parameterFrequencies = {
+		_a: 1.3734,
+		_b: 1.4421,
+		_f: 1.8131,
+		_g: 1.7437,
+		_d: 1.7834
+	};
+
+	options.animationSpeed = options.defaultAnimationSpeed;
+
+	var params = {};
+	document.location.hash.slice(1).split('&').forEach(function(x){
+		params[x.split('=')[0]] = x.split('=')[1];
+	});
+
+	if (params["points"]) {
+		options.numParticles = parseInt(params["points"],10);
+	}
+	options.debug = Boolean(params.debug);
+
+	document.title += " ("+options.numParticles+" particles)";
+
+	setTimeout(function(){
+		var controls = document.getElementById("controlsTable");
+		addControl(controls,options,'numParticles',{ label:"Particles", min:1000, max:6000000 });
+		addControl(controls,options,'animationSpeedControl',{ label: "Changerate", min: -1.01, max: 1.01 });
+		addControl(controls,options,'variationAmount',{ min: 0, max: 9.9, label: "Variation" });
+		addControl(controls,parameterCentres,'_a');
+		addControl(controls,parameterCentres,'_b');
+		addControl(controls,parameterCentres,'_f');
+		addControl(controls,parameterCentres,'_g');
+		addControl(controls,parameterCentres,'_d');
+		addControl(controls,options,'deltaYaw',{ min:-0.2, max: +0.2});
+		addControl(controls,options,'pitch',{ min:-1.57, max: +1.57});
+		addControl(controls,options,'distance',{ label: "Distance", min:100, max: 1000});
+	},1);
+
+	document.getElementById("controlsButton").onclick = function(evt){
+		controlsTable.style.display = controlsTable.style.display ? '' : 'none';
+	};
+
+	window.onclick = function(evt) {
+		var src = evt.target || evt.srcElement;
+		if (src == document.body || src == canvas) {
+			virtualTime = -1000000 * Math.random() | 0;
+			// document.location.hash = virtualTime;
+		}
+	};
+
+	Init();
+
+	setInterval(loop, 1000 / 60);
+
+
+
 		</script>
 
+		<!-- vim: ft=javascript noexpandtab
+		-->
 	</body>
 </html>
