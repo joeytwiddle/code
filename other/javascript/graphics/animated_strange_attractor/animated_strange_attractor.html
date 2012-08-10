@@ -35,31 +35,38 @@
 	</head>
 	<body>
 
+		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
+
+		<!-- Optional -->
+		<script type="text/javascript" src="Stats.js"></script> 
+		<!--
+		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
+		-->
+		<!--
+		<script type="text/javascript" src="http://hwi.ath.cx/code/other/gm_scripts/fastjslogger/fastjslogger.user.js"></script>
+		-->
+
 		<div id="controlsDiv">
 			<button id="controlsButton">Controls</button>
 			<table id="controlsTable" style="display:none"></table>
 		</div>
 		<div id="container"></div>
 
-		<script type="text/javascript" src="Stats.js"></script> 
-		<!--
-		<script type="text/javascript" src="http://raw.github.com/mrdoob/stats.js/master/build/Stats.js"></script>
-		-->
-		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
-		<!--
-		<script type="text/javascript" src="http://hwi.ath.cx/code/other/gm_scripts/fastjslogger/fastjslogger.user.js"></script>
-		-->
-
 		<script type="text/javascript">
+
+
 
 	/*
 	 * <canvas> Strange Attractor
-	 * by Mr.doob
 	 *
-	 * Code ported from the Silverlight version done by Joa:
+	 * Silverlight version done by Joa:
 	 * http://blog.joa-ebert.com/2009/08/10/flirting-with-silverlight/
 	 *
-	 * Animation added by Joeytwiddle.
+	 * Code ported to Javascript by Mr.doob:
+	 * http://mrdoob.com/lab/javascript/strangeattractor/
+	 *
+	 * Animation and navigation controls added by Joeytwiddle:
+	 * http://hwi.ath.cx/javascript/graphics/animated_strange_attractor.html
 	 *
 	 */
 
@@ -68,9 +75,14 @@
 	// DONE: Better colors.
 	// TODO: Get GPU to do it instead of canvas!
 
-	// DONE: Sliders for #particles, animationSpeed, and ranges of params.
-	// TODO: Re-usable "zero-config" control library.
+	// DONE: Good parameterCentres/Variation/Frequencies to showcase the pretty
+	// shapes.  The main issue here was to avoid boring doughnuts!  Still we are
+	// getting a few too many barbed-wire donuts.
 
+	// DONE: Sliders for #particles, animationSpeed, and ranges of params.
+	// TODO: Re-usable "zero-config" control library.  (Current status: copied
+	// and modified addControl from mandelbox.html)
+	//
 	// var cb = new ControlBuilder();
 	// controls.appendChild( cb.createControl(options,"_a",0.8,1.4) );
 
@@ -83,7 +95,27 @@
 	// incRate or avgHitValue threshold to compensate for it.  (Zooming far out
 	// can trigger fast forward due to white-out.)
 
+	// BUG: We are not anti-aliasing; we floor the coordinates to increment just
+	// one pixel.  Occasionally this might be visible!  For a perfect image, we
+	// should increment the four nearest pixels appropriately.  (Or as approx.
+	// we could plot on a quadruple-sized buffer image and scale down.)
 
+	// TODO: Changerate 0 should probably disable fast-forwarding, so that the
+	// user can play with a parameter without fear of the variation moving.
+	// The exception to this is when a click jumps us to a new virtualTime, then
+	// we muse have non-zero changerate in order to seek to next visible shape.
+	//
+	// Perhaps this idea could be broadened to disable fast-forwarding whenever
+	// the user is adjusting parameters (whenever mouse is down, assuming if
+	// they do wander into darkness, they will return to a visible shape before
+	// releasing the button).
+
+	// TODO: Replace distance with zoom, inverse relationship.  Or switch
+	// min/max of distance control (left high to right low).
+
+
+
+	/* == Library functions == */
 
 	function addControl(what,where,varName,detailsIn) {
 
@@ -341,10 +373,83 @@
 		}
 	}
 
+
+
+	/* == Vars and config == */
+
+	var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES;
+	var scale;
+	var cenx,ceny;
+
+	// MAX_PARTICLES = 1024 * 600;
+	// MAX_PARTICLES = options.numParticles;
+
+	var virtualTime = 0;
+
+	var canvas, context, image, data;
+
+	var particles, mouseX = 0, mouseY = 0, yaw = 0, pitch = 0,
+	matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
+	translationMatrix = matrixStatic.Translation(0, 0, 10);
+
+	var stats;
+
+	var options = {
+		numParticles: 100000,
+		debug: false,
+		animationSpeedControl: 0.25,
+		defaultAnimationSpeed: 0.1,
+		variationAmount: 2.0,
+		deltaYaw: 0.04,
+		pitch: 0.0,
+		distance: 400
+	};
+
+	// Originals:
+	var parameterCentres = {
+		_a: 1.111,
+		_b: 1.479,
+		_f: 4.494,
+		_g: 0.44,
+		_d: 0.135
+	};
+
+	// My originals
+	var parameterVariation = {
+		_a: 0.1,
+		_b: 0.1,
+		_f: 0.01,
+		_g: 0.04,
+		_d: 0.0025
+	};
+
+	// My overrides:
+	options.variationAmount = 10.0;
+	parameterCentres._d = 0.17;
+	// options.animationSpeedControl *= 0.5;
+
+	var parameterFrequencies = {
+		_a: 1.3734,
+		_b: 1.4421,
+		_f: 1.8131,
+		_g: 1.7437,
+		_d: 1.7834
+	};
+
+	options.animationSpeed = options.defaultAnimationSpeed;
+
+
+
+	/* == Main == */
+
 	function updateConstants() {
 		MAX_PARTICLES = options.numParticles;
 		SCREEN_WIDTH = window.innerWidth;
 		SCREEN_HEIGHT = window.innerHeight;
+		//// What the?  This messes up nastily in FF.  Bad math elsewhere?
+		// if (SCREEN_WIDTH > 1.2*SCREEN_HEIGHT) {
+			// SCREEN_WIDTH = 1.2*SCREEN_HEIGHT;
+		// }
 		cenx = SCREEN_WIDTH/2, ceny = SCREEN_HEIGHT/2;
 		canvas.width = SCREEN_WIDTH;
 		canvas.height = SCREEN_HEIGHT;
@@ -365,18 +470,11 @@
 
 		updateConstants();
 
-		window.onresize = updateConstants;
-
 		mouseX = cenx*1.5;
 		mouseY = ceny;
 
 		canvas.style.position = "absolute";
 		container.appendChild(canvas);
-
-		context = canvas.getContext("2d");
-		// context.fillStyle = '#101010';
-		context.fillStyle = '#000000';
-		context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT );
 
 		if (this.Stats) {
 			stats = new Stats();
@@ -384,6 +482,8 @@
 			stats.domElement.style.top = '0px';
 			container.appendChild(stats.domElement);
 		}
+
+		window.onresize = updateConstants;
 
 		window.addEventListener('mousemove', onWindowMouseMove, false);
 
@@ -400,15 +500,19 @@
 		};
 	}
 
+	// We used to use Math.sin to wander space but it has an undesirable
+	// feature: that for a given output, the differential is always the same.
+	// This "flatterSin" curve gives a differential of 0 at various different
+	// outputs.
+	// Another feature we might like is for n-dimensional velocity to be
+	// constant (well, with respective axes scaled).
+
 	function flatterSin(x) {
 		var ms = Math.sin(x);
 		return ms*ms * Math.sgn(ms);
 	}
 
 	function myCurve(x) {
-		// We used to use Math.sin to wander space but it has an undesirable
-		// feature: that for a given output, the differential is always the same.
-		// This curve gives a differential 0 at various different outputs
 		return 0.5*flatterSin(x) + 0.5*flatterSin(0.113137317*x);
 	}
 
@@ -495,6 +599,8 @@
 			// But when I put this threshold down to 20, it undertriggered.
 		}
 
+		context = canvas.getContext("2d");
+		// context.fillStyle = '#101010';
 		context.fillStyle = '#000000';
 		context.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
 		image = context.getImageData(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
@@ -561,10 +667,10 @@
 					//// ACCUMULATIONS
 					// data[index]++;
 					data[index]   += incRate;
-					data[index+1] += 2*incRate;
+					data[index+1] += 2*incRate; // blue/turquoise glow
 					data[index+2] += 4*incRate;
 
-					if (2*i<MAX_PARTICLES){
+					if (2*i < MAX_PARTICLES){
 						avgHitValue += data[index];
 					}
 
@@ -605,7 +711,7 @@
 				options.animationSpeed = 0.00000001;
 			}
 			var debugData = (options.debug?" "+options.animationSpeed+" "+avgHitValue:'');
-			context.fillText("DOING FAST FORWARD"+debugData,40,40);
+			context.fillText("SEARCHING..."+debugData,40,40);
 		} else {
 			options.animationSpeed = options.defaultAnimationSpeed;
 		}
@@ -622,6 +728,7 @@
 			context.fillStyle = 'yellow';
 			// context.fillText("Recommendation: Make the window smaller, or increase particle count!",40,60);
 			context.fillText("Reduce window size for smoother animation!",40,60);
+			context.fillText("Or increase number of points for a high-res image.",40,70);
 		}
 
 		if (stats) {
@@ -633,72 +740,8 @@
 
 
 
-	// Vars
 
-	var SCREEN_WIDTH, SCREEN_HEIGHT, MAX_SCREEN, MAX_PARTICLES;
-	var scale;
-	var cenx,ceny;
-
-	// MAX_PARTICLES = 1024 * 600;
-	// MAX_PARTICLES = options.numParticles;
-
-	var virtualTime = 0;
-
-	var canvas, context, image, data;
-
-	var particles, mouseX = 0, mouseY = 0, yaw = 0, pitch = 0,
-	matrix = new Matrix4x4(), matrixStatic = new Matrix4x4(),
-	translationMatrix = matrixStatic.Translation(0, 0, 10);
-
-	var stats;
-
-	var options = {
-		numParticles: 100000,
-		debug: false,
-		animationSpeedControl: 0.25,
-		defaultAnimationSpeed: 0.1,
-		variationAmount: 2.0,
-		deltaYaw: 0.04,
-		pitch: 0.0,
-		distance: 400
-	};
-
-	// Originals:
-	var parameterCentres = {
-		_a: 1.111,
-		_b: 1.479,
-		_f: 4.494,
-		_g: 0.44,
-		_d: 0.135
-	};
-
-	// My originals
-	var parameterVariation = {
-		_a: 0.1,
-		_b: 0.1,
-		_f: 0.01,
-		_g: 0.04,
-		_d: 0.002
-	};
-
-	// My overrides:
-	options.variationAmount = 10.0;
-	parameterCentres._d = 0.17;
-	// options.animationSpeedControl *= 0.5;
-
-	// Sob.  I just want to find some nice defaults which give 5 or so different
-	// shapes, without a strong donut theme.  This is the last feature I really
-	// want, but it's taking days to find suitable values!
-
-	var parameterFrequencies = {
-		_a: 1.3234,
-		_b: 1.4321,
-		_f: 1.8231,
-		_g: 1.7437,
-		_d: 1.7834
-	};
-
-	options.animationSpeed = options.defaultAnimationSpeed;
+	/* == Read any # params from URL == */
 
 	var params = {};
 	document.location.hash.slice(1).split('&').forEach(function(x){
@@ -709,21 +752,33 @@
 		options.numParticles = parseInt(params["points"],10);
 	}
 	options.debug = Boolean(params.debug);
+	// Just read them all dufus!
+	for (var k in params) {
+		if (options[k] !== undefined) {
+			options[k] = options[k].constructor(params[k]);
+		} else if (parameterCentres[k] !== undefined) {
+			parameterCentres[k] = parameterCentres[k].constructor(params[k]);
+		}
+	}
 
 	document.title += " ("+options.numParticles+" particles)";
 
+
+
+	/* == Setup Controls == */
+
 	setTimeout(function(){
 		var controls = document.getElementById("controlsTable");
-		addControl(controls,options,'numParticles',{ label:"Particles", min:1000, max:6000000 });
+		addControl(controls,options,'numParticles',{ label:"Points", min:1000, max:6000000 });
 		addControl(controls,options,'animationSpeedControl',{ label: "Changerate", min: -1.01, max: 1.01 });
-		addControl(controls,options,'variationAmount',{ min: 0, max: 9.9, label: "Variation" });
+		addControl(controls,options,'variationAmount',{ min: 0, max: 39.9, label: "Variation" });
 		addControl(controls,parameterCentres,'_a');
 		addControl(controls,parameterCentres,'_b');
 		addControl(controls,parameterCentres,'_f');
 		addControl(controls,parameterCentres,'_g');
 		addControl(controls,parameterCentres,'_d');
-		addControl(controls,options,'deltaYaw',{ min:-0.2, max: +0.2});
-		addControl(controls,options,'pitch',{ min:-1.57, max: +1.57});
+		addControl(controls,options,'deltaYaw',{ label: "Rotation rate", min:-0.2, max: +0.2});
+		addControl(controls,options,'pitch',{ label: "Pitch", min:-1.57, max: +1.57});
 		addControl(controls,options,'distance',{ label: "Distance", min:100, max: 1000});
 	},1);
 
