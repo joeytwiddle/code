@@ -36,9 +36,11 @@
 	<body>
 
 		<!--
-		Does not work for Firefox 13.0.1 and below.
-		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
+		Firefox does not yet support HML5 sliders.  This shim almost works.
+		Does not work for Firefox 13.0.1 and earlier.  Also seen failing on Firefox 15.  Exhibits bug: slider range is always 0 to 100.
+		Seen working perfectly in Firefox ~16a/b and 18.0a1.
 		-->
+		<script type="text/javascript" src="/javascript/shims/html5slider.js"></script>
 
 		<!-- Optional -->
 		<script type="text/javascript" src="Stats.js"></script> 
@@ -72,6 +74,8 @@
 	 * http://hwi.ath.cx/javascript/graphics/animated_strange_attractor.html
 	 *
 	 */
+
+	// BUG: Zooming page to change canvas size (may also happen when resizing window) seems to change focal depth!
 
 	// DONE: Move parameters through the whole possible range, but have
 	// movement/time speed up if we detect boring images are being drawn.
@@ -730,8 +734,9 @@
 		if (incRate === 40) {
 			context.fillStyle = 'yellow';
 			// context.fillText("Recommendation: Make the window smaller, or increase particle count!",40,60);
-			context.fillText("Reduce window size for smoother animation!",40,60);
-			context.fillText("Or increase number of points for a high-res image.",40,70);
+			context.fillText("Overlap too low for accurate searching.",40,55);
+			context.fillText("Shrink window or zoom in for smoother animation,",40,65);
+			context.fillText("or increase number of points for a high-res image!",40,75);
 		}
 
 		if (stats) {
