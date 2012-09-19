@@ -91,7 +91,6 @@ function check() {
 }
 
 function checkRule(rule) {
-    // TODO: Check if location.pathname is cross-browser and/or standards-compliant
     var hostRegexp = '(^|\\.)' + rule.hostMatch.replace(/\.TLD$/, "(\\.[^.]*$|\\.[^.]*\\.[^.]*$)") + '$';
     if (document.location.host.match(hostRegexp)) {
         if (rule.pathMatch) {
