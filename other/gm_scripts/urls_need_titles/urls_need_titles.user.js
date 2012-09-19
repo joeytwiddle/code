@@ -1,101 +1,125 @@
 // ==UserScript==
 // @name           URLs Need Titles
 // @namespace      UNT
-// @description    When you paste a URL to a friend, it's better it contain the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs.
+// @description    When you paste a URL to a friend, it is useful if it contains the title of the page.  This script adds these missing titles for common websites using # part of URL.  In other words, it turns non-semantic URLs into semantic URLs!
 // @include        http://*/*
 // @exclude        https://*/*
 // ==/UserScript==
 
+var overwriteExistingHash = true;
+
 var rules = [
 
-	/* A rule:
-		{
-			hostMatch: "youtube.TLD",   youtube.ath.cx, somewhere.youtube.com
-			                            TLD will match 1 or two toplevel domain elements.
-			pathMatch: "/watch",        This regex will be wrapped with ^..$ so use
-			                            .* at either end for wildcards.
-			get: ...                    A function which returns a sensible title for this page.
-		}
-	*/
+    /* An example rule:
 
-	{
-		hostMatch: "youtube.TLD",
-		pathMatch: "/watch",
-		get: function(){
-			return document.getElementsByTagName("h1")[0].textContent || document.title.replace(/^YouTube - /,'');
-		}
-	},
+    {
+        hostMatch: "youtube.TLD",   All subdomains will be accepted, e.g.
+                                    somewhere.youtube.com.  TLD will match one
+                                    or two toplevel domain elements, e.g.
+                                    "youtube.ath.cx" or "youtube.net".
 
-	{
-		hostMatch: "xkcd.TLD",
-		pathMatch: ".*[0-9]+/",
-		get: function(){
-			return (""+document.title).replace(/^[^:]*: /,'','g');
-		}
-	},
+        pathMatch: "/watch",        This regex will be wrapped with ^..$ so use
+                                    .* at either end for wildcards.  Note that
+                                    path does not include the search part of
+                                    the URL, "?q=squash&type=image".  Filtering
+                                    on this part of the URL may be added later.
+                                    If left blank all paths will be accepted.
 
-	{
-		hostMatch: "imdb.TLD",
-		pathMatch: ".*title.*",
-		get: function(){
-			return (""+document.title).replace(/ - IMDb/,'','g');
-		}
-	},
+        getTitle: function(){...}   A function which returns a sensible title
+                                    for this page.  If left blank will just
+                                    grab document.title.
+    }
 
-	{
-		hostMatch: "pouet.net",
-		pathMatch: "",
-		get: function(){ return document.title }
-	},
+    */
 
-	{
-		hostMatch: "userscripts.org",
-		pathMatch: "/scripts/show/.*",
-		get: function(){ return document.title.replace(" for Greasemonkey",''); }
-	},
+    {
+        hostMatch: "youtube.TLD",
+        pathMatch: "/watch",
+        getTitle: function(){
+            return document.getElementsByTagName("h1")[0].textContent || document.title.replace(/^YouTube - /,'');
+        }
+    },
 
-	{
-		hostMatch: "bbc.co.uk",
-		pathMatch: "/news/.*",
-		get: function(){ return document.title.replace(/BBC News - /,''); }
-	}
+    {
+        hostMatch: "xkcd.TLD",
+        pathMatch: ".*[0-9]+/",
+        getTitle: function(){ return (""+document.title).replace(/^[^:]*: /,'','g'); }
+    },
+
+    {
+        hostMatch: "imdb.TLD",
+        pathMatch: ".*title.*",
+        getTitle: function(){ return (""+document.title).replace(/ - IMDb/,'','g'); }
+    },
+
+    {
+        hostMatch: "pouet.net",
+        pathMatch: ".*"
+    },
+
+    {
+        hostMatch: "userscripts.org",
+        pathMatch: "/scripts/show/.*",
+        getTitle: function(){ return document.title.replace(" for Greasemonkey",''); }
+    },
+
+    {
+        hostMatch: "bbc.co.uk",
+        pathMatch: "/news/.*",
+        getTitle: function(){ return document.title.replace(/BBC News - /,''); }
+    },
+
+    {
+        hostMatch: "imgur.com",
+        pathMatch: "/gallery/.*",
+        getTitle: function(){ return document.title.replace(/ - Imgur/,''); }
+    },
+
+    {
+        hostMatch: "9gag.com",
+        pathMatch: "/gag/.*",
+        getTitle: function(){ return document.title.replace(/9GAG - /,''); }
+    }
 
 ];
 
 function check() {
-	rules.forEach(checkRule);
+    if (document.location.hash && !overwriteExistingHash) {
+        return;
+    }
+    rules.forEach(checkRule);
 }
 
 function checkRule(rule) {
-	// TODO: Check if location.pathname is cross-browser and/or standards-compliant
-	var hostRegexp = '(^|\\.)' + rule.hostMatch.replace(/\.TLD$/, "(\\.[^.]*$|\\.[^.]*\\.[^.]*$)") + '$';
-	if (document.location.host.match(hostRegexp)) {
-		if (rule.pathMatch) {
-			var pathRegexp = '^' + rule.pathMatch + '$';
-			if (!document.location.pathname.match(pathRegexp)) {
-				return false;
-			}
-		}
-		var newTitle = rule.get();
-		if (newTitle == '' || newTitle == null) {
-			GM_log("Failed to get new title for "+document.location+" from "+document.title);
-		}
-		setTitle(newTitle);
-	}
+    // TODO: Check if location.pathname is cross-browser and/or standards-compliant
+    var hostRegexp = '(^|\\.)' + rule.hostMatch.replace(/\.TLD$/, "(\\.[^.]*$|\\.[^.]*\\.[^.]*$)") + '$';
+    if (document.location.host.match(hostRegexp)) {
+        if (rule.pathMatch) {
+            var pathRegexp = '^' + rule.pathMatch + '$';
+            if (!document.location.pathname.match(pathRegexp)) {
+                return false;
+            }
+        }
+        var newTitle = ( rule.getTitle ? rule.getTitle() : document.title );
+        if (newTitle == '' || newTitle == null) {
+            GM_log("Failed to get new title for "+document.location+" from "+document.title);
+        }
+        setTitle(newTitle);
+    }
 }
 
 function setTitle(title) {
-	if (title)
-		title = title.replace(/ /g,'_').replace(/^[\r\n_]*/,'').replace(/[\r\n_]*$/,''); // "_"s paste better into IRC, since " "s become "%20"s which are hard to read.  The second and third parts trim "_"s and newlines from the start and end of the string.
-	if (title) {
-		if (!document.location.hash) {
-			document.location.replace(document.location.href + '#' + title); // Does not alter browser history
-			// document.location.hash = title; // Crashes Chrome less often
-		}
-	}
+    if (title) {
+        // "_"s paste better into IRC, since " "s become "%20"s which are hard to read.  The second and third parts trim "_"s and newlines from the start and end of the string.
+        title = title.replace(/ /g,'_').replace(/^[\r\n_]*/,'').replace(/[\r\n_]*$/,'');
+        var strippedHref = document.location.href.replace(/#.*/,'');
+        document.location.replace(strippedHref + '#' + title); // Does not alter browser history
+        // document.location.hash = title; // Crashes Chrome less often
+    }
 }
 
 
 // 2010/11: Waiting a bit can prevent crashing (e.g. YouTube in Chrome).
 setTimeout(check,5000);
 
+// vim: ts=4 sw=4 expandtab
