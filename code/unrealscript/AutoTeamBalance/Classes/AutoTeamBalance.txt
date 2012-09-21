@@ -114,7 +114,7 @@ the password entirely, so that any player who knows the commands can be a
 semi-admin, without having to type the password every time, but this may be
 subject to abuse.)
 
-    mutate help
+    mutate help [password]
 
         Displays a quick reminder of all these commands.
 
@@ -169,6 +169,10 @@ subject to abuse.)
         or server-testing, if you want to move all the players to another
         server.  Untested: If <url> is "http://..." it may cause every player's
         web-browser to open on that page!
+
+    mutate pushplayer <player_name> <url> [password]
+
+        Same as forcetravel, but only sends the one player named.
 
 
 

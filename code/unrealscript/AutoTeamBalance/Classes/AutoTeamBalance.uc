@@ -269,17 +269,28 @@
 
 
 
-// #define XOL_SPECIFIC
 
-//// Testing - Things we are finalising for next release:
-// #define TESTING
-// #define DEBUGGING
-// #define SWING_PROPS
 
-//// Features which worked and we are keeping:
+
+/* === MAJOR OPTIONS === */
+
+ // DEBUGGING: Extra debugging info, in server log and in client chat console, for devs
+ // only.  Should not affect functionality.
+ // #define DEBUGGING
+
+ // TESTING: Testing - Things we are finalising for next release:
+ // #define TESTING
+
+ // #define XOL_SPECIFIC
+
+
+
+//// FINALISED: Features which worked and we are keeping:
 // Semi-admin stuff:
 //// Note: CLEANUP14 achieves KEEP_EARLY_RECORDS_EMPTY, which reduces mid-game lag.
 // This is quite important to ensure old duplicates get forgotten.  Although it has introduced some extra calculation.
+// #define EXPORT_HIGHSCORES_LISTS
+// UNDER consideration for the next release.  Not finalised/mature yet.
 //// Disabled - For good reason.
 // HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
 //// #define HASH15
@@ -835,7 +846,8 @@ function CheckTwoNewPlayers(PlayerPawn A, PlayerPawn B) {
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
  // Swallow lines containing the semi-admin pass:
- if (StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
+ // But not if pass is empty!
+ if (GetEffectiveSemiAdminPass()!="" && StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
   return False;
  if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
   ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "MutatorBroadcastMessage() Checking ("$Sender.getHumanName()$") "$Msg$""); };
@@ -847,7 +859,8 @@ function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce st
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
  // Swallow lines containing the semi-admin pass:
- if (StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
+ // But not if pass is empty!
+ if (GetEffectiveSemiAdminPass()!="" && StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
   return False;
  if (Sender == Receiver) { // Only process the message once.
   ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "MutatorTeamMessage() Checking ("$Sender.getHumanName()$") "$Msg$""); };
@@ -1256,19 +1269,44 @@ function Mutate(String str, PlayerPawn Sender) {
      }
     }
    break;
+   // Same thing, but just for one player
+   case "PUSHPLAYER":
+    if (bAllowSemiAdminForceTravel || Sender.bAdmin) {
+     //// We may not want to publicise the password of the server we are forwarding to.  (e.g. server may have an irc reporter)
+     p = FindPlayerWithID(Int(args[1]));
+     if (args[1]=="" || p == None) {
+      Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+     } else {
+      if (bBroadcastHelloGoodbye) { BroadcastMessageAndLog("Admin is forcing a server switch!"); }
+      if (p.IsA('PlayerPawn') && !(args[2]~=localPass)) { // yes we forward spectators too!
+       PlayerPawn(p).PreClientTravel();
+       PlayerPawn(p).ClientTravel(args[2], TRAVEL_Absolute, False);
+      }
+     }
+    }
+   break;
+   // BUG: Sometimes the mutator's config is not loaded, and falls back to default.  (Found it with "redirectplayers.redirectplayers")
+   // This seems to be an issue with the case of the given class name?  The config loads fine, provided I use the correct case to addmut.
+   // Not sure how to work around this.  Even after the class has loaded, it has the wrong case!
+   // Just make sure you use the correct case when calling addmut!
+   //   Good: mutate addmut RedirectPlayers.RedirectPlayers
+   //   Bad:  mutate addmut redirectplayers.redirectplayers
    case "ADDMUT":
     mutStr = args[1];
     mutClass = class<Mutator>(DynamicLoadObject(mutStr, class'Class'));
+    if (mutClass != None) {
+     BroadcastMessageAndLog("[+] Adding New Mutator: "$mutClass.Name);
+    }
     mut = Spawn(mutClass,None,,Self.Location);
     if (mut == None) {
-     // BroadcastMessageAndLog("! Prepare for new mutator !");
      Sender.ClientMessage("Failed to load mutator \""$args[1]$"\".  Try \"mutate addmut <full_mutator_name>\".");
     } else {
-     // BroadcastMessageAndLog("! Prepare for new mutator "$args[1]);
-     BroadcastMessageAndLog("[+] Adding mutator: "$mutClass.Name);
      // mut.NextMutator = Level.Game.BaseMutator.NextMutator;
      // Level.Game.BaseMutator.NextMutator = mut;
      Level.Game.BaseMutator.AddMutator(mut);
+     // It seems the Pre/PostBeginPlay f_nctions are called by the engine just fine, no need for us to.
+     // mut.PreBeginPlay();
+     // mut.PostBeginPlay();
     }
    break;
    case "DELMUT":
@@ -1384,20 +1422,20 @@ function Mutate(String str, PlayerPawn Sender) {
   else
    pass_if_needed = " [password]";
   if (bEnablePlayerCommands) {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9r" $" commands: teams !teams !red !blue !spec !play !vote !stats");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9u" $" commands: teams !teams !red !blue !spec !play !vote !stats");
   } else {
-   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9r" $" commands: teams !teams");
+   Sender.ClientMessage("AutoTeamBalance"$ "1.4.9u" $" commands: teams !teams");
   }
-  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9r" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
+  Sender.ClientMessage("AutoTeamBalance "$ "1.4.9u" $" mutate commands: mutate [atb] ( strengths [extra] | listmuts | listfakes )");
   if (localPass == "") {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9r" $" semi-admin console commands:");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9u" $" semi-admin console commands:");
    Sender.ClientMessage("    mutate [atb] ( teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | kick <p> <msg> | kickban <p> <msg> ");
-   Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> ) "$pass_if_needed);
+   Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> | pushplayer <p> <url> ) "$pass_if_needed);
   } else {
    Sender.ClientMessage("    mutate help [<password>]");
   }
   if (Sender.bAdmin) {
-   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9r" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> | cc <p> <cmd>)");
+   Sender.ClientMessage("AutoTeamBalance "$ "1.4.9u" $" admin-only console commands: mutate [atb] ( saveconfig | grantadmin <p> | get <pkg> <var> | set <pkg> <var> | getprop <var> | setprop <var> | console <cmd> | cc <p> <cmd>)");
   }
  }
  Super.Mutate(str,Sender);
@@ -2630,6 +2668,7 @@ function float GetPlayerStrength(Pawn p) {
    return GetRecordedPlayerStrength(p);
   }
   if (gameStartDone) {
+   // We do not trust the current game until he has played for 2 minutes.  This could be smoothed in, rather than jumping on.
    timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
    if (timeInGame > 180) {
     return NormaliseScore(GetScoreForPlayer(p)) * StrengthProportionFromCurrentGame + GetRecordedPlayerStrength(p) * (1.0 - StrengthProportionFromCurrentGame);
@@ -2732,7 +2771,8 @@ function CopyArraysIntoConfig() {
 function String getISP(String ip) {
  local int i;
  if (bUseISPNotFullIP) {
-  return StrAfter(StrAfter(ip,"."),".");
+  // This was the wrong way round until mid-2012; it was stripping the first two numbers!
+  return StrBefore(ip,".") $"."$ StrBefore(StrAfter(ip,"."),".");
  } else {
   return ip;
  }
@@ -2751,12 +2791,15 @@ function String getIP(Pawn p) {
 // Returns player name, with gametype and/or mutator signature appended
 // e.g.: nogginBasher@CTFGame:NR+WPM+IA (NoRedeemer,WhoPushedMe,InstagibArena)
 function String GetDBName(Pawn p) {
+ return p.getHumanName() $ ThisModeAppender();
+}
+function String ThisModeAppender() {
  local String str;
  local String tmpstr;
  local int i;
  local int c;
  local Mutator m;
- str = p.getHumanName();
+ str = "";
  if (bSeparateStatsByGamemode) {
   str = str $ "@" $ StrAfter(String(Level.Game.Class),".");
  }
@@ -2784,6 +2827,9 @@ function String GetDBName(Pawn p) {
   }
  }
  return str;
+}
+function String UnFudge(String s) {
+ return Left(s,Len(s) - Len(ThisModeAppender()));
 }
 function int FindPlayerRecord(Pawn p) {
   return FindPlayerRecordGuaranteed(p);
@@ -2834,7 +2880,7 @@ function int FindPlayerRecordGuaranteed(Pawn p) {
   // date_last_played[i] = "copied_from_"$nick[found]$":"$ip[found]; // should get set before being written
   date_last_played[i] = GetDate();
   // SO: changing nick or IP will NOT reset your avg_score immediately, but after some hours of play your old record will only count for 50%.  This helps to protect players who were matched incorrectly.  (Different members of a family playing from the same IP, or different players using the same nick.)
-  // Optionally log/broadcast the fakenicker, now only if IP was matched but nick is different.
+  // Optionally, if the IP was matched but eh nick was different, log/broadcast the fakenicker!
   if (!(GetDBName(p) ~= nick[i])) {
    if (bLogFakenickers) { ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Fakenicker "$p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")");; }
    if (bBroadcastFakenickers) { BroadcastMessage(p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }

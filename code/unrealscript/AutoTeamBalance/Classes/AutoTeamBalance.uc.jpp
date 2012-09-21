@@ -264,16 +264,25 @@
 
 //// Preprocessing definitions:
 
-#define ATB_VERSION "1.4.9s"
+#define ATB_VERSION "1.4.9u"
 
-// #define XOL_SPECIFIC
 
-//// Testing - Things we are finalising for next release:
-// #define TESTING
-// #define DEBUGGING
-// #define SWING_PROPS
 
-//// Features which worked and we are keeping:
+
+/* === MAJOR OPTIONS === */
+
+	// DEBUGGING: Extra debugging info, in server log and in client chat console, for devs
+	// only.  Should not affect functionality.
+	// #define DEBUGGING
+
+	// TESTING: Testing - Things we are finalising for next release:
+	// #define TESTING
+
+	// #define XOL_SPECIFIC
+
+
+
+//// FINALISED: Features which worked and we are keeping:
 #define ENABLE_USEISPNOTFULLIP
 #define ENABLE_ADMIN_COMMANDS
 #define ENABLE_MUTATOR_SIGNATURE
@@ -290,6 +299,13 @@
 #define CLEANUP14
 // This is quite important to ensure old duplicates get forgotten.  Although it has introduced some extra calculation.
 #define TAKE_MOST_RECENT_DUPLICATE
+// #define EXPORT_HIGHSCORES_LISTS
+
+// UNDER consideration for the next release.  Not finalised/mature yet.
+#ifdef TESTING
+	#define CONFIGURABLE_RESPONDERS
+	// #define SWING_PROPS
+#endif
 
 //// Disabled - For good reason.
 // HASH15 is not yet complete.  It's fail because we are hashing by Name+IP when really we need 1 hashtable for each.
@@ -516,6 +532,12 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var config string LastUpdate;
 	var config Color strengthColor,warnColor;
 
+	#ifdef CONFIGURABLE_RESPONDERS
+	var config bool bConfigurableResponders;
+	#define MaxConfigurableResponders 64
+	var config String RespondToCommand[MaxConfigurableResponders];
+	#endif
+
 	#define MaxPlayerDataMax 4096
 	var config String playerData[MaxPlayerDataMax]; // String-format of the player data stored in the config (ini-file), including ip/nick/avg_score/time_played data
 
@@ -603,6 +625,24 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#ifdef CLEANUP14
 	var int CleanupProgress;
 	#endif
+
+	#ifdef EXPORT_HIGHSCORES_LISTS
+	var config bool bExportHighScoresLists;
+	// var config float LadderPointsLostPerDay;
+	var config float MinHoursForFullScore;
+	var String Top20[20];
+	var float Top20Score[20];
+	var float Top20Age[20];
+	var String Top20IP[20];
+	var int NumPlayerScores;
+	var String Top20Combined,Top5Combined;
+	var String PlayerScoresCombined;
+	var config bool bExportCountries;
+	var Actor IpToCountry;
+	var int DoneSortListsCount;
+	#endif
+
+
 
 // Default values:
 
@@ -745,6 +785,63 @@ defaultproperties {
 	// We don't really want to force their browser to open:
 	// TeamspeakChannelOther=
 	#endif
+	#ifdef CONFIGURABLE_RESPONDERS
+
+	bConfigurableResponders=true
+
+	RespondToCommand(1)="  !ctf    !xol"
+	RespondToCommand(2)="  !ffa    !ug"
+	RespondToCommand(3)="  !ffa2   !nzp"
+	RespondToCommand(4)="  !dm     !fmj"
+	RespondToCommand(5)="  !dm2    !multiplay2"
+	RespondToCommand(6)="  !insta  !44oz"
+	RespondToCommand(7)="  !siege  !uk"
+	RespondToCommand(8)="  !siege2 !fh"
+	RespondToCommand(9)="  !combogib !urs"
+
+	RespondToCommand(10)="  !xol   81.169.188.18     XOL DOG 400s CTF Fun"
+	RespondToCommand(11)="  !ug    85.14.224.120     [-underground-]"
+	RespondToCommand(12)="  !of    62.113.199.13:6200  .:old friends:."
+	RespondToCommand(13)="  !inz   62.113.199.3:6100   iNzane"
+	RespondToCommand(14)="  !hh2   208.71.112.190    >>Haley's HotHouse #2 <<"
+	RespondToCommand(15)="  !judge !realm"
+	RespondToCommand(16)="  !realm 208.71.112.190    The Realm (FOCR ruling)"
+	RespondToCommand(17)="  !nzp   neuralyte.org     noggin's demo server (various mods)"
+	RespondToCommand(18)="  !syn   synapse"
+	RespondToCommand(19)="  !synapse  64.22.125.230  [A]Synapse's CTF Server "
+	RespondToCommand(20)="  !vkk   vkk.hu:8020       "
+
+	RespondToCommand(21)="  !fmj   72.51.60.94       FullMetalJacket Combat Arena"
+	RespondToCommand(22)="  !multiplay2 85.236.100.100:27808   Multiplay :: Public DM #2 (Popular Maps)"
+
+	RespondToCommand(23)="  !instagib 85.236.100.100:27808   Multiplay :: Public DM #2 (Popular Maps)"
+	RespondToCommand(24)="  !quicknet   213.73.255.134:7788   QuickNet UT CTF [InstaGib]"
+
+	RespondToCommand(25)="  !combo 85.236.100.115:8277   Multiplay :: Public CTF #7"
+	RespondToCommand(26)="  !urs   108.61.255.62         ComboGib >GRAPPLE< Server <//UrS//>"
+
+	RespondToCommand(27)="  !uk    72.5.152.226      |uK| One Night Stand"
+	RespondToCommand(28)="  !fh -> !funhouse"
+	RespondToCommand(29)="  !funhouse"
+
+	RespondToCommand(30)="  !wh    208.71.112.196    WhartHog's PigPen"
+
+	RespondToCommand(31)="  !fbt   213.163.66.227    FBT BunnyTrack 1 "
+	RespondToCommand(32)="  !fbt2  213.163.66.228    FBT BunnyTrack 2 "
+
+	RespondToCommand(35)=" !rules   Help even out the teams.  If you can make it fair, switch over."
+	RespondToCommand(36)=" !rules   We prefer longer games.  Play for fun, not for frags!"
+	RespondToCommand(37)=" !rules2  Have fun with weaker players, but don't take advantage of them."
+
+	RespondToCommand(50)=" !follow follow://last_leaver?explain=1"
+	RespondToCommand(52)=" !list   list://commands"
+
+	#endif
+	#ifdef EXPORT_HIGHSCORES_LISTS
+	bExportHighScoresLists=True
+	bExportCountries=False
+	MinHoursForFullScore=2.0
+	#endif
 }
 
 
@@ -827,9 +924,279 @@ function PostBeginPlay() {
 	MigrateDB14To15();
 #endif
 
+	#ifdef EXPORT_HIGHSCORES_LISTS
+		if (bExportHighScoresLists) {
+			// We do it early for old versions of ATBHighScores, and to populate the list for players who join the server really fast.
+			SortLists();
+			// But we need do it later when the IpToCountry actor is available.
+			// And again to pick up the results requested from IpToCountry.  :S
+		}
+	#endif
+
 	initialized = true;
 
 }
+
+#ifdef EXPORT_HIGHSCORES_LISTS
+
+// ISSUES: It seems IpToCountry doesn't immediately return results already cached in IpData.  O_o
+// Perhaps it will do so after a normal end-game?
+// Without caching, lookups of many IPs can take a long time, so the flag data may not be available for 10+ seconds.
+// We could cache country alongside players in ATB DB, to make them resolve faster.
+// We could also store real player IPs, since atm we only store their ISP.
+
+// ISSUES: Lookup of country for every player is overkill, likely to run very
+// slow, and flood the IpData table!  It would be better to store index numbers
+// for players as we build the high score table, and then only lookup for those
+// who made it into the Top20/5.  However, caching as above would also solve
+// this.
+
+// STATUS: ATB runs SortLists every few seconds for a while, hoping eventually to get the needed results from IpToCountry.  TODO: If IpToCountry won't answer immediately, then we will need to implement our own IpData cache.  Also/alternatively, we need not request country of players until the final list is made.  (No need querying 100 countries for top 20 list!)  We'll need to collect Top20I[i] I guess, as stated in previous issue
+
+// BUG TODO: ATB seems to be refreshing date_last_played[i] as soon as a player joins a game.  This might be useful for ATB to know to keep a player record active, even if the player doesn't finish the game.  But for highscores it kinda sucks.  Perhaps we can isolate it and switch it just for ATBHS releases.
+
+// BTW noggin did you notice that UnrealScript is Object Oriented, so you can
+// use inheritance to extend code, rather than building something monolithic
+// with #ifdefs?  STFU noggin.
+
+function SortLists() {
+	local Actor A;
+	local int i;
+	DebugLog("Doing SortLists()");
+
+	// We will use IpToCountry if we can find it.
+	if (bExportCountries) {
+
+		if (IpToCountry == None) {
+			// It does not have that tag during PostBeginPlay.
+			// But if we check on a late enough timer, it does.
+			foreach AllActors(class'Actor', A, 'IpToCountry') {
+				IpToCountry = A;
+				break;
+			}
+			/*
+			if (IpToCountry == None) {
+				// Set a random actor so we won't search again.
+				IpToCountry = Level;
+				// No good: We may need to search again later!
+			}
+			*/
+			DebugLog("IpToCountry = "$IpToCountry);
+		}
+
+	}
+
+	BringTopPlayersWithin(1.0); // 1 day
+	Top5Combined = CombineTop(5);
+
+	BringTopPlayersWithin(4*30.0); // 4 months
+	Top20Combined = CombineTop(20);
+	DebugLog("Top20Combined="$Top20Combined);
+
+	DebugLog("Done SortLists()");
+}
+
+function String CombineTop(int num) {
+	local String s;
+	local int i;
+	for (i=0;i<num;i++) {
+		if (i > 0) s = s $ "____DELIM____";
+		s = s $ Top20[i];
+	}
+	return s;
+}
+
+#define GetAgeOfRecordInDays(i) (currentDateDays - DaysFromDateString(date_last_played[i]))
+
+function BringTopPlayersWithin(float maxAge) {
+	local int i;
+	local int j;
+	local bool skipped;
+	local String tma;
+	local float Score;
+	local float ageOfRecord_i_inDays;
+
+	for (j=0;j<20;j++) {
+		Top20[j] = "";
+		Top20Score[j] = 0;
+		Top20Age[j] = 0;
+		Top20IP[j] = "";
+	}
+
+	tma = ThisModeAppender();
+
+	// DONE: If gametype signature enabled, filter records by that, to show table only for current gametype.
+	for (i=0;i<MaxPlayerData;i++) {
+		// TODO: Add efficiency check - if list is full and they score lower than 19th - skip them immediately.  Or perhaps we should just do reverse search?
+		// In fact we know the current number of list entries will be Min(j,20)
+
+		// if (hours_played[i] < 0.8 /*MaxHoursWhenCopyingOldRecord + 0.5*/) {
+			// continue;
+		// }
+
+		if (tma != "" && !StrEndsWith(nick[i],tma)) {
+			continue;
+		}
+
+		ageOfRecord_i_inDays = GetAgeOfRecordInDays(i);
+
+		// DebugLog("["$i$"] "$nick[i]$" "$ ageOfRecord_i_inDays $" "$ date_last_played[i] $" "$ CalcLadderScore(i));
+
+		if (ageOfRecord_i_inDays > maxAge) {
+			continue;
+		}
+
+		Score = CalcLadderScore(i);
+		if (Score <= 0) {
+			continue;
+		}
+
+		// DONE: In absence of UIDs, we should also merge/reject any records from
+		// the same IP (not only same-name records).  Yes occasionally this might
+		// be two brothers, but more often it's someone just changing their nick.
+
+		// Check for existing entry with same nick:
+		skipped=false;
+		for (j=0;j<20;j++) {
+			if (StrStartsWith(Top20[j],UnFudge(nick[i])$" ") || Top20IP[j]==ip[i]) {
+				// BUG: If we change the score for this entry, he may now be at the wrong position in the list!
+				/*
+				// We don't want to take it just cos the score is larger.
+				// if (Score > Top20Score[j]) {
+				// We should keep the most recent record.
+				if (ageOfRecord_i_inDays < Top20Age[j]) {
+					Top20[j] = UnFudge(nick[i]) @ Score @ GetCountryForRecord(i);
+					Top20Score[j] = Score;
+					Top20Age[j] = ageOfRecord_i_inDays;
+					Top20IP[j] = ip[i];
+				}
+				skipped=true;
+				break;
+				*/
+				// SOLUTION:
+				// if (ageOfRecord_i_inDays < Top20Age[j]) {
+				//// On second thought let's be nice and take whatever his highest record is.  This seems reasonable now that CalcLadderScore is auto fading old records, but also auto-fading small fresh records.
+				if (Score > Top20Score[j]) {
+					// We delete the existing entry, and add the new one (don't set skipped)
+					UnshiftFrom(j);
+				} else {
+					skipped = true;
+				}
+			}
+		}
+
+		// If not, find where in the list he belongs:
+		if (!skipped) {
+			for (j=0;j<20;j++) {
+				if (Score > Top20Score[j] || Top20[j]=="") {
+					ShiftFrom(j);
+					Top20[j] = UnFudge(nick[i]) @ Score @ GetCountryForRecord(i);
+					Top20Score[j] = Score;
+					Top20Age[j] = ageOfRecord_i_inDays;
+					Top20IP[j] = ip[i];
+					break;
+				}
+			}
+		}
+
+	}
+
+}
+
+// Generates a ladder score from ATB record i.
+// Unfortunately ATB wasn't designed for this, and didn't collect the right stats for it, so here we have a rather strained attempt using only avg_score[i], hours_played[i] and date_last_played[i].
+function float CalcLadderScore(int i) {
+	local float Score;
+	local float daysOld;
+
+	// return avg_score[i];
+
+	Score = avg_score[i];
+
+	daysOld = GetAgeOfRecordInDays(i);
+
+	// CONSIDER TODO: We could reduce effect _A_ below, but increase effect _B_ *when* the players hoursPlayed is low.  I.e. this doesn't affect current score, but when absent, short records fall faster than long records.  I.e. one-minute wonders can occupy a high place in the scoreboard for a short time, but records who have really proved themselves stay up there for longer.
+
+	// _A_ Allow new players to appear in the scoreboard, but don't give them their full score until they have played for a while.
+	if (hours_played[i] < MinHoursForFullScore) {
+		Score = Score * (hours_played[i]/MinHoursForFullScore);
+	}
+	// For people with dynamic IPs, anything above an hour might seem unfair.
+	// But to properly earn a place, skill should be proven, not a one off lucky strike.
+	// So I recommend a min of 1.5 hours, perhaps up to 3.0, to really earn the top of the scoreboard.
+
+	// _C_ Reducing score by absence causes the player's score to jump up suddenly when they join a game.
+	// This can make the Top20/"Your score" differ because only "Your score:" displays the new value.
+	// Score -= LadderPointsLostPerDay * daysOld;
+
+	// _B_ Player retains his score for 24 hours
+	if (24.0*daysOld < 24.0) {
+		// Do nothing.
+	} else {
+		// After 1 day, we begin to consider his record as old.
+		daysOld -= 1.0; // Start from then
+		// We reduce his score so that in 1 year it will become 0 (after 6 months it is halved).
+		Score = Score * (1.0 - daysOld / 365.25);
+		// That means his score drops 1/52th each week.
+		// For a star player at 900, that's 18 points per week, or 2.467 per day.
+	}
+
+	// BUG: daysOld is pretty volatile, it can be easily refreshed without much
+	// play.  A player with a high score can turn up, not play out the game, but
+	// perhaps trigger refresh of his record.
+
+	// strength 100 = ladder 1000
+	return 10.0 * Score;
+}
+
+function ShiftFrom(int j) {
+	local int i;
+	for (i=18;i>=j;i--) {
+		Top20[i+1] = Top20[i];
+		Top20Age[i+1] = Top20Age[i];
+		Top20Score[i+1] = Top20Score[i];
+		Top20IP[i+1] = Top20IP[i];
+	}
+}
+
+function UnshiftFrom(int j) {
+	local int i;
+	for (i=j;i<=18;i++) {
+		Top20[i] = Top20[i+1];
+		Top20Age[i] = Top20Age[i+1];
+		Top20Score[i] = Top20Score[i+1];
+		Top20IP[i] = Top20IP[i+1];
+	}
+}
+
+function String GetCountryForRecord(int i) {
+	local String ipdata;
+	local String args[256];
+	local String append;
+
+	if (!bExportCountries)
+		return "";
+
+	append = "";
+	#ifdef ENABLE_USEISPNOTFULLIP
+	if (bUseISPNotFullIP) {
+		append = ".0.0";
+	}
+	#endif
+
+	if (IpToCountry != None && IpToCountry != Level) {
+		ipdata = IpToCountry.GetItemName(ip[i] $ append);
+		DebugLog("Got IPTC data for "$ip[i]$" >>> "$ ipdata);
+		if (Left(ipdata,1) == "!") {
+			return "";
+		}
+		SplitString(ipdata,":",args);
+		return args[4]; // 2-code lowercase country field
+	}
+	return "";
+}
+
+#endif
 
 // Implementation of AddMutator which prevents double or recursive adding:
 function AddMutator(Mutator Other) {
@@ -946,6 +1313,18 @@ event Timer() {
 	}
 #endif
 #endif
+	#ifdef EXPORT_HIGHSCORES_LISTS
+		if (bExportHighScoresLists) {
+			// For Country lookup we need to repeat the query, until IpToCountry return the data.
+			// The more lookups we do, the longer it takes to get the results from IpToCountry.  So this needs testing on a big DB.
+			if (bExportCountries && DoneSortListsCount<14 && !gameStartDone) {
+				DoneSortListsCount++;
+				if (DoneSortListsCount%4 == 1) {
+					SortLists();
+				}
+			}
+		}
+	#endif
 }
 
 // If a new player joins a game which has already started, this will send him to the most appropriate ("weaker") team (based on summed strength of each team, plus capbonuses).
@@ -1077,6 +1456,14 @@ function ModifyPlayer(Pawn paw) {
 	// Check if this is the player's first spawn:
 	p = PlayerPawn(paw);
 	if (p!=None && p.PlayerReplicationInfo.Deaths == 0 && Spectator(p)==None) {
+
+		#ifdef EXPORT_HIGHSCORES_LISTS
+			// BUG: These stats are rubbish.  Far preferable would be points *earned* today, so any noob can get there by spamming hard and long; currently 5 great players can dominate today's top5 with a short visit.
+			if (bExportHighScoresLists) {
+				PlayerScoresCombined = PlayerScoresCombined $" "$ Int(paw.PlayerReplicationInfo.PlayerID%128) $":"$ CalcLadderScore(FindPlayerRecordGuaranteed(p)) $" ";
+			}
+		#endif
+
 		if (gameStartDone && Level.TimeSeconds >= timeGameStarted+10) {
 
 			NormalLog("ModifyPlayer() Player join detected: "$p.getHumanName()$" ("$getTeamName(p.PlayerReplicationInfo.Team)$")");
@@ -1198,7 +1585,8 @@ function RandomBotGreet(PlayerPawn player) {
 // Catch messages from spectators:
 function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce string Msg, optional bool bBeep, out optional name Type) {
 	// Swallow lines containing the semi-admin pass:
-	if (StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
+	// But not if pass is empty!
+	if (GetEffectiveSemiAdminPass()!="" && StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
 		return False;
 	if (Sender == Receiver && Sender.IsA('Spectator')) { // Only process the message once.
 		DebugLog("MutatorBroadcastMessage() Checking ("$Sender.getHumanName()$") "$Msg$"");
@@ -1211,7 +1599,8 @@ function bool MutatorBroadcastMessage(Actor Sender, Pawn Receiver, out coerce st
 // Catch messages from players:
 function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationInfo PRI, coerce string Msg, name Type, optional bool bBeep) {
 	// Swallow lines containing the semi-admin pass:
-	if (StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
+	// But not if pass is empty!
+	if (GetEffectiveSemiAdminPass()!="" && StrContains(Caps(Msg),Caps(GetEffectiveSemiAdminPass())))
 		return False;
 	if (Sender == Receiver) { // Only process the message once.
 		DebugLog("MutatorTeamMessage() Checking ("$Sender.getHumanName()$") "$Msg$"");
@@ -1730,19 +2119,46 @@ function Mutate(String str, PlayerPawn Sender) {
 				}
 			break;
 
+			// Same thing, but just for one player
+			case "PUSHPLAYER":
+				if (bAllowSemiAdminForceTravel || Sender.bAdmin) {
+					//// We may not want to publicise the password of the server we are forwarding to.  (e.g. server may have an irc reporter)
+					p = FindPlayerWithID(Int(args[1]));
+					if (args[1]=="" || p == None) {
+						Sender.ClientMessage("Could not find player matching \""$args[1]$"\".");
+					} else {
+						if (bBroadcastHelloGoodbye) { BroadcastMessageAndLog("Admin is forcing a server switch!"); }
+						if (p.IsA('PlayerPawn') && !(args[2]~=localPass)) { // yes we forward spectators too!
+							PlayerPawn(p).PreClientTravel();
+							PlayerPawn(p).ClientTravel(args[2], TRAVEL_Absolute, False);
+						}
+					}
+				}
+			break;
+
+			// BUG: Sometimes the mutator's config is not loaded, and falls back to default.  (Found it with "redirectplayers.redirectplayers")
+			// This seems to be an issue with the case of the given class name?  The config loads fine, provided I use the correct case to addmut.
+			// Not sure how to work around this.  Even after the class has loaded, it has the wrong case!
+			// Just make sure you use the correct case when calling addmut!
+			//   Good: mutate addmut RedirectPlayers.RedirectPlayers
+			//   Bad:  mutate addmut redirectplayers.redirectplayers
+
 			case "ADDMUT":
 				mutStr = args[1];
 				mutClass = class<Mutator>(DynamicLoadObject(mutStr, class'Class'));
+				if (mutClass != None) {
+					BroadcastMessageAndLog("[+] Adding New Mutator: "$mutClass.Name);
+				}
 				mut = Spawn(mutClass,None,,Self.Location);
 				if (mut == None) {
-					// BroadcastMessageAndLog("! Prepare for new mutator !");
 					Sender.ClientMessage("Failed to load mutator \""$args[1]$"\".  Try \"mutate addmut <full_mutator_name>\".");
 				} else {
-					// BroadcastMessageAndLog("! Prepare for new mutator "$args[1]);
-					BroadcastMessageAndLog("[+] Adding mutator: "$mutClass.Name);
 					// mut.NextMutator = Level.Game.BaseMutator.NextMutator;
 					// Level.Game.BaseMutator.NextMutator = mut;
 					Level.Game.BaseMutator.AddMutator(mut);
+					// It seems the Pre/PostBeginPlay f_nctions are called by the engine just fine, no need for us to.
+					// mut.PreBeginPlay();
+					// mut.PostBeginPlay();
 				}
 			break;
 
@@ -1894,7 +2310,7 @@ function Mutate(String str, PlayerPawn Sender) {
 		if (localPass == "") {
 			Sender.ClientMessage("AutoTeamBalance "$ ATB_VERSION $" semi-admin console commands:");
 			Sender.ClientMessage("    mutate [atb] ( teams | forceteams | tored <p> | toblue <p> | switch <p> <p> | flash <msg> | warn <p> <msg> | kick <p> <msg> | kickban <p> <msg> ");
-			Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> ) "$pass_if_needed);
+			Sender.ClientMessage("        | listids | kickid <n> <msg> | kickbanid <n> <msg> | addmut <mut> | delmut <mut> | logstats | forcetravel <url> | pushplayer <p> <url> ) "$pass_if_needed);
 		} else {
 			Sender.ClientMessage("    mutate help [<password>]");
 		}
@@ -3431,7 +3847,7 @@ function float GetPlayerStrength(Pawn p) {
 		local float powerOfNow,powerOfRecent,powerOfRecord,powerOfUnknown;
 
 		timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
-		#define currentDateDayZ = DaysFromDateString(GetDate());
+		#define currentDateDayZ DaysFromDateString(GetDate());
 		#define record_index FindPlayerRecordGuaranteed(p)
 		#define ageOfRecordMins (60.0*24.0*(currentDateDayZ - DaysFromDateString(date_last_played[record_index]));
 		#define hoursOfRecord (hours_played[record_index])
@@ -3516,6 +3932,7 @@ function float GetPlayerStrength(Pawn p) {
 			return GetRecordedPlayerStrength(p);
 		}
 		if (gameStartDone) {
+			// We do not trust the current game until he has played for 2 minutes.  This could be smoothed in, rather than jumping on.
 			timeInGame = Level.TimeSeconds - p.PlayerReplicationInfo.StartTime;
 			if (timeInGame > 180) {
 				return NormaliseScore(GetScoreForPlayer(p)) * StrengthProportionFromCurrentGame + GetRecordedPlayerStrength(p) * (1.0 - StrengthProportionFromCurrentGame);
@@ -3699,7 +4116,8 @@ function CopyArraysIntoConfig() {
 function String getISP(String ip) {
 	local int i;
 	if (bUseISPNotFullIP) {
-		return StrAfter(StrAfter(ip,"."),".");
+		// This was the wrong way round until mid-2012; it was stripping the first two numbers!
+		return StrBefore(ip,".") $"."$ StrBefore(StrAfter(ip,"."),".");
 	} else {
 		return ip;
 	}
@@ -3749,15 +4167,20 @@ function String getIDCOrNick(Pawn p) {
 */
 
 #ifdef ENABLE_MUTATOR_SIGNATURE
+
 // Returns player name, with gametype and/or mutator signature appended
 // e.g.: nogginBasher@CTFGame:NR+WPM+IA (NoRedeemer,WhoPushedMe,InstagibArena)
 function String GetDBName(Pawn p) {
+	return getNick(p) $ ThisModeAppender();
+}
+
+function String ThisModeAppender() {
 	local String str;
 	local String tmpstr;
 	local int i;
 	local int c;
 	local Mutator m;
-	str = getNick(p);
+	str = "";
 	if (bSeparateStatsByGamemode) {
 		str = str $ "@" $ StrAfter(String(Level.Game.Class),".");
 	}
@@ -3789,8 +4212,15 @@ function String GetDBName(Pawn p) {
 	}
 	return str;
 }
+
+function String UnFudge(String s) {
+	return Left(s,Len(s) - Len(ThisModeAppender()));
+}
+
 #else
 #define GetDBName(p) getNick(p)
+#define ThisModeAppender(_) ""
+#define UnFudge(s) s
 #endif
 
 function int FindPlayerRecord(Pawn p) {
@@ -3883,7 +4313,7 @@ function int FindPlayerRecordGuaranteed(Pawn p) {
 		date_last_played[i] = GetDate();
 		// SO: changing nick or IP will NOT reset your avg_score immediately, but after some hours of play your old record will only count for 50%.  This helps to protect players who were matched incorrectly.  (Different members of a family playing from the same IP, or different players using the same nick.)
 
-		// Optionally log/broadcast the fakenicker, now only if IP was matched but nick is different.
+		// Optionally, if the IP was matched but eh nick was different, log/broadcast the fakenicker!
 		if (!(GetDBName(p) ~= nick[i])) {
 			if (bLogFakenickers) { DefaultLog("Fakenicker "$p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }
 			if (bBroadcastFakenickers) { BroadcastMessage(p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }
