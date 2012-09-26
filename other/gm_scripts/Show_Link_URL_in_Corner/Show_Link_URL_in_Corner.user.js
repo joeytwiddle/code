@@ -49,15 +49,16 @@ function hoverDetected() {
 	if (!urlDisplayer) {
 		urlDisplayer = document.createElement('div');
 		urlDisplayer.style.position = 'fixed';
-		urlDisplayer.style.left = '0px';
-		urlDisplayer.style.bottom = '0px';
-		urlDisplayer.style.backgroundColor = '#eeeeee';
+		urlDisplayer.style.left = '-4px';
+		urlDisplayer.style.bottom = '-4px';
+		urlDisplayer.style.backgroundColor = '#e8e8e8';
 		urlDisplayer.style.color = 'black';
-		urlDisplayer.style.padding = '1px 4px';
-		urlDisplayer.style.border = '';
-		urlDisplayer.style.borderTop = '1px solid black';
-		urlDisplayer.style.borderRight = '1px solid black';
-		urlDisplayer.style.fontSize = '13px';
+		urlDisplayer.style.padding = '0px 3px 4px 5px';
+		urlDisplayer.style.border = '1px solid #a0a0a0';
+		urlDisplayer.style.fontSize = '12px';
+		urlDisplayer.style.maxHeight = '15px';
+		urlDisplayer.style.borderRadius = '4px';
+		urlDisplayer.style._mozBorderRadius = '4px';
 		urlDisplayer.style.zIndex = 100;
 		document.body.appendChild(urlDisplayer);
 	}
