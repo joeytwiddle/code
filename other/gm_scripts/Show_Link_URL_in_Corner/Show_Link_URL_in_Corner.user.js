@@ -53,7 +53,7 @@ function hoverDetected() {
 		urlDisplayer.style.bottom = '-4px';
 		urlDisplayer.style.backgroundColor = '#e8e8e8';
 		urlDisplayer.style.color = 'black';
-		urlDisplayer.style.padding = '0px 3px 4px 5px';
+		urlDisplayer.style.padding = '1px 3px 6px 5px';
 		urlDisplayer.style.border = '1px solid #a0a0a0';
 		urlDisplayer.style.fontSize = '12px';
 		urlDisplayer.style.maxHeight = '15px';
