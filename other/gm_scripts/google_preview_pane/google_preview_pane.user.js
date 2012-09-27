@@ -11,10 +11,12 @@
 // @exclude        http://*.google.*/*&tbm=isch&*
 // @exclude        http://google.*/images*
 // @exclude        http://google.*/*&tbm=isch&*
+// @exclude        http://images.google.*/*
 // @exclude        https://*.google.*/images*
 // @exclude        https://*.google.*/*&tbm=isch&*
 // @exclude        https://google.*/images*
 // @exclude        https://google.*/*&tbm=isch&*
+// @exclude        https://images.google.*/*
 // @version        2012.02.07
 // ==/UserScript==
 
@@ -87,7 +89,7 @@ GM_log("[GPP] Running");
 //// Settings ////
 
 var previewWidth    = 0.75;    // Width of the preview pane (proportion of window width).
-var gapBelow        = 144;      // Space left below panes (pixels).
+var gapBelow        = 190;     // Space left below panes (pixels).
 var fillWholeWindow = true;    // Bring more of the page into the left pane.
 var keepHeaderAbove = true;    // Do not bring the top of the page in.  (BUG: has little effect on new google)
 
@@ -99,7 +101,7 @@ var linksActNormally = true;   // clicking directly on a link skips the preview 
                                // TODO: if this=true and we are hovering a link, then DON'T highlight!
 
 // Reformatting
-var miniLogo        = false;    // miniLogo or removeLogo can help to reduce the
+var miniLogo        = false;   // miniLogo or removeLogo can help to reduce the
 var removeLogo      = false;   // width and the height of the header.
 var reduceWidth     = true;    // Try lots of little things to make things fit into the left pane.
 var reduceTextSize  = true;    // Reduce size of text in results area (maybe also top).
@@ -281,7 +283,7 @@ function initPreview() {
 			resultsBlock.style.width = (document.body.clientWidth * resultsWidth) +'px';
 			// getResultsBlock().style.width = (document.body.clientWidth * resultsWidth - 32) +'px';
 			// resultsBlock.style.width = '30em';
-			getResultsBlock().style.width = (resultsBlock.clientWidth - 16) +'px';
+			// getResultsBlock().style.width = (resultsBlock.clientWidth - 16) +'px';
 			// resultsBlock.style.width = (resultsBlock.clientWidth - 16) +'px';
 			//// If we still fail to lose the horizontal scrollbar, in fact 32 is a little large for display with one, may as well use 24.
 			resultsBlock.style.overflow = 'auto';
@@ -333,6 +335,15 @@ function initPreview() {
 		// filling the whole width!
 		GM_addStyle(".big #center_col, .big #foot { margin-left: 0px; }");
 		GM_addStyle(".mdm #center_col, .mdm #foot { margin-left: 0px; }");
+
+		// If the user has run the Google Search Sidebar userscript, we must
+		// remove that from the preview area; so we add it to the results column.
+		var gSearchSidebar = document.getElementById("gSearchSidebar");
+		if (gSearchSidebar) {
+			resultsBlock.appendChild(gSearchSidebar);
+			// And undo its position: absolute, to stop it floating.
+			gSearchSidebar.style.position = 'relative';
+		}
 
 		setTimeout(reformatThingsLater,20);
 
@@ -507,7 +518,8 @@ function initPreview() {
 			if (borderCol) {
 				// Before setting the border, we take a copy of the existing border.
 				if (oldBorder[xp] == null) {
-					oldBorder[xp] = elem.style.border.replace(/initial[ ]*/g,''); // "initial" is a bug we got from konqueror
+					oldBorder[xp] = elem.style.border.replace(/initial[ ]*/g,''); // "initial" is a bug we got from konqueror  <-- ? meaning?!
+					// Hmmm now the style="..." in Chrome is filling up with repeated "border-width: initial; border-color: initial;".  It would be nice to stop that!
 					// GM_log(elem.tagName+" "+elem+" Stored to oldBorder="+oldBorder[xp]);
 				}
 				elem.style.border = '2px solid '+borderCol;
@@ -581,16 +593,19 @@ function initPreview() {
 						// Oh progress... Now sites can block embedding with X-Frame-Options.
 						// So for the ones we know about, we ask politely for them not to.
 						var targetPage = link.href;
-						if (targetPage.match("youtube.com/watch/")) {
-							targetPage = targetPage.replace("/watch/","/embed/");
-							GM_log("Switching to embed for YouTube: "+targetPage);
+						if (targetPage.match("youtube.com/watch.")) {
+							targetPage = targetPage.replace("/watch.","/embed/");
+							GM_log("Switching to embed for YouTube "+link.href+" becomes "+targetPage);
 						}
 						if (targetPage.match("maps.google.")) {
 							/* TOCHECK: Might output already be set?  Would that break it? */
 							targetPage = targetPage + '&output=embed';
-							GM_log("Switching to embed for GoogleMaps: "+targetPage);
+							GM_log("Switching to embed for GoogleMaps "+link.href+" becomes "+targetPage);
 						}
 
+						if (link.protocol == "https:" || link.protocol != document.location.protocol) {
+							previewFrame.innerHTML = "Warning!  Opening "+link.protocol+" link may not work!";
+						}
 						previewFrame.src = targetPage;
 						if (killGooglesNewPreviewPopup) {
 							/*
@@ -676,7 +691,7 @@ function initPreview() {
 					// document.location = link.href;
 					// Pff we need to give FF time to colour the highlight :P
 					if (clearFrameWhenLeaving) { setTimeout(function(){closeFrame();},10); }
-					setTimeout(function(){document.location = link.href;},20);
+					// setTimeout(function(){document.location = link.href;},20);
 
 				} else {
 
@@ -714,6 +729,8 @@ function initPreview() {
 
 			if (!eventsShouldAct())
 				return;
+
+			// TODO: We should only really highlight the container IFF clicking on the currently focused element would cause a preview (and NOT if it would cause a normal link follow).
 
 			var node = evt.target;
 			var container = getContainer(node);
@@ -918,9 +935,28 @@ function hideSidebar() {
 	// width 100% gets too wide and creates a horizontal scrollbar!
 	// We can workaround like this:
 	GM_addStyle("#searchform { width: 98%; }");
+	// 8px padding on the left and top/bottom margins made left column look weird.
+	GM_addStyle("#res { padding: 0px; margin: 0px }");
+}
+// Hmm some redundancy here?  xD
+
+// Removes the new sidebar and its layout
+function removeSidebar() {
+	GM_addStyle("#cnt { max-width: 9999999px; }");
+	// GM_addStyle("#center_col { margin-right: 0px; }");
+	// GM_addStyle("#center_col { margin-right: 0px; }");
+	GM_addStyle("#leftnav { display: none; }");
+	GM_addStyle("#center_col, #foot { margin: 0px; border: 0px; }");
+	GM_addStyle("table { margin: 0px; border: 0px; }");
+
+	if (document.getElementById("vspb")) {
+		document.getElementById("vspb").style.display = 'none';
+	}
 }
 
 function reformatThingsLater() {
+
+	var resultsBlock = getResultsBlock();
 
 	try {
 
@@ -1106,20 +1142,6 @@ function addSomeCSS(css) {
 }
 if (typeof GM_addStyle == 'undefined') {
 	this.GM_addStyle = addSomeCSS;
-}
-
-// Removes the new sidebar and its layout
-function removeSidebar() {
-	GM_addStyle("#cnt { max-width: 9999999px; }");
-	// GM_addStyle("#center_col { margin-right: 0px; }");
-	// GM_addStyle("#center_col { margin-right: 0px; }");
-	GM_addStyle("#leftnav { display: none; }");
-	GM_addStyle("#center_col, #foot { margin: 0px; border: 0px; }");
-	GM_addStyle("table { margin: 0px; border: 0px; }");
-
-	if (document.getElementById("vspb")) {
-		document.getElementById("vspb").style.display = 'none';
-	}
 }
 
 
