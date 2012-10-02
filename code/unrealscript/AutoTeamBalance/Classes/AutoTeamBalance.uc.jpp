@@ -31,7 +31,7 @@
 
 /*
 
-// Note: Server admins who use Resurrector should be aware that restoring the
+// Note: Server admins who use Resurector should be aware that restoring the
 // player's Score without restoring his TimeInGame will break ATB's scoring
 // calculations.
 
@@ -629,7 +629,8 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	#ifdef EXPORT_HIGHSCORES_LISTS
 	var config bool bExportHighScoresLists;
 	// var config float LadderPointsLostPerDay;
-	var config float MinHoursForFullScore;
+	var config float MinHoursForFullScore;      // How long before they get their full score
+	var config float MinHoursToRetainFullScore; // Influences how fast they fall down the ladder
 	var String Top20[20];
 	var float Top20Score[20];
 	var float Top20Age[20];
@@ -840,7 +841,8 @@ defaultproperties {
 	#ifdef EXPORT_HIGHSCORES_LISTS
 	bExportHighScoresLists=True
 	bExportCountries=False
-	MinHoursForFullScore=2.0
+	MinHoursForFullScore=1.0
+	MinHoursToRetainFullScore=3.0
 	#endif
 }
 
@@ -1075,7 +1077,7 @@ function BringTopPlayersWithin(float maxAge) {
 				*/
 				// SOLUTION:
 				// if (ageOfRecord_i_inDays < Top20Age[j]) {
-				//// On second thought let's be nice and take whatever his highest record is.  This seems reasonable now that CalcLadderScore is auto fading old records, but also auto-fading small fresh records.
+				//// On second thought let's be nice and take whatever his highest record is.  This seems reasonable now that CalcLadderScore is auto fading old records, and also auto-fading small fresh records.
 				if (Score > Top20Score[j]) {
 					// We delete the existing entry, and add the new one (don't set skipped)
 					UnshiftFrom(j);
@@ -1115,7 +1117,7 @@ function float CalcLadderScore(int i) {
 
 	daysOld = GetAgeOfRecordInDays(i);
 
-	// CONSIDER TODO: We could reduce effect _A_ below, but increase effect _B_ *when* the players hoursPlayed is low.  I.e. this doesn't affect current score, but when absent, short records fall faster than long records.  I.e. one-minute wonders can occupy a high place in the scoreboard for a short time, but records who have really proved themselves stay up there for longer.
+	// DONE: _D_ We could reduce effect _A_ below, but increase effect _B_ *when* the players hoursPlayed is low.  I.e. this doesn't affect current score, but when absent, short records fall faster than long records.  I.e. one-minute wonders can occupy a high place in the scoreboard for a short time, but records who have really proved themselves stay up there for longer.
 
 	// _A_ Allow new players to appear in the scoreboard, but don't give them their full score until they have played for a while.
 	if (hours_played[i] < MinHoursForFullScore) {
@@ -1136,12 +1138,18 @@ function float CalcLadderScore(int i) {
 		// After 1 day, we begin to consider his record as old.
 		daysOld -= 1.0; // Start from then
 		// We reduce his score so that in 1 year it will become 0 (after 6 months it is halved).
+		// _D_ Except we modify the dropoff if his record is small.
+		if (hours_played[i] < MinHoursToRetainFullScore) {
+			daysOld *= (1 + 4*(1.0-hours_played[i]/MinHoursToRetainFullScore));
+			// If he played for 0 hours his record falls five times as quickly.
+			// If he played for MinHoursToRetainFullScore/2, his record falls 3 times as quickly.
+		}
 		Score = Score * (1.0 - daysOld / 365.25);
 		// That means his score drops 1/52th each week.
 		// For a star player at 900, that's 18 points per week, or 2.467 per day.
 	}
 
-	// BUG: daysOld is pretty volatile, it can be easily refreshed without much
+	// BUG: daysOld is pretty volatile, it might be easily refreshed without much
 	// play.  A player with a high score can turn up, not play out the game, but
 	// perhaps trigger refresh of his record.
 
@@ -2917,7 +2925,7 @@ function ForceFullTeamsRebalance() {
 			pl[pid]=p;
 			ps[pid]=st;
 			moved[pid] = 0;
-			DebugLog("ForceFullTeamsRebalance() Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has db-key " $ GetDBName(p) $ " and score " $ p.PlayerReplicationInfo.Score $ ".");
+			DebugLog("ForceFullTeamsRebalance() Player " $ p.getHumanName() $ " on team " $ p.PlayerReplicationInfo.Team $ " has db-key " $ GetDBName(p) $ " and game score " $ p.PlayerReplicationInfo.Score $ ".");
 		}
 	}
 
@@ -4309,11 +4317,13 @@ function int FindPlayerRecordGuaranteed(Pawn p) {
 		// Copy over strength from the partial-match player, but partially reset their time, to make their old strength last for max MaxHoursWhenCopyingOldRecord hours.
 		avg_score[i] = avg_score[found]; // Copy score from partial match record
 		hours_played[i] = Min(MaxHoursWhenCopyingOldRecord,hours_played[found]);
-		// date_last_played[i] = "copied_from_"$nick[found]$":"$ip[found]; // should get set before being written
-		date_last_played[i] = GetDate();
 		// SO: changing nick or IP will NOT reset your avg_score immediately, but after some hours of play your old record will only count for 50%.  This helps to protect players who were matched incorrectly.  (Different members of a family playing from the same IP, or different players using the same nick.)
+		// date_last_played[i] = "copied_from_"$nick[found]$":"$ip[found]; // should get set before being written
+		// date_last_played[i] = GetDate();   // Records that this player is still active, even if they don't finish the game.
+		//// No we won't refresh their date yet.  If they play out the game, UpdateStatsForPlayer() will.
+		date_last_played[i] = date_last_played[found];
 
-		// Optionally, if the IP was matched but eh nick was different, log/broadcast the fakenicker!
+		// Optionally, if the IP was matched but the nick was different, log/broadcast the fakenicker!
 		if (!(GetDBName(p) ~= nick[i])) {
 			if (bLogFakenickers) { DefaultLog("Fakenicker "$p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }
 			if (bBroadcastFakenickers) { BroadcastMessage(p.getHumanName()$" was previously "$nick[found]$" (ip "$ip[found]$")"); }

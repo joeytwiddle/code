@@ -10,32 +10,32 @@
 
     Then do one of the following:
 
+      * Tell your server to use AutoTeamBalance.AutoTeamBalance as a mutator
+        (for example, using WebAdmin, in ucc.init, or on the startup command).
+
+      OR
+
       * Add the following line to your server's UnrealTournament.ini, under the
         [Engine.GameEngine] section:
 
           ServerActors=AutoTeamBalance.AutoTeamBalance
 
-      OR
-
-      * Tell your server to use AutoTeamBalance as a mutator (for example,
-        using WebAdmin, or on the startup command).
-
     Don't worry, if you manged to do both of the above, AutoTeamBalance should
     detect that it is running twice, and recover gracefully.
 
-    [ Do not add it as a ServerPackage; there is no need, and it will only
+    [ DO NOT add it as a ServerPackage; there is no need, and it will only
     cause "Version mismatch" errors for your players if you upgrade to a newer
     version. ]
 
-    You may also wish to increase your server's NetWait to 10 or 20 seconds.
-    (This value can be found in the [Botpack.DeathMatchPlus] section.)
+    You should delay game-start by increasing your server's NetWait to 10 or 15
+    seconds.  (This value can be found under [Botpack.DeathMatchPlus] .)
     Initial teambalance is more effective if all the players are on the server
     when the game starts.  Players who join after game-start (e.g. because they
     were downloading the map) cannot be balanced so well.
 
     You should also ensure your server waits at least 10 seconds after the end
-    of each game, before switching map, otherwise AutoTeamBalance will not
-    have time to update the stats.  This *might* be the RestartWait variable.
+    of each game before switching map, otherwise AutoTeamBalance will not have
+    time to update the stats.  I think this is the RestartWait variable.
 
     I think, if your server has any bots, you should ensure that bBalanceTeams
     is set in your UnrealTournament.ini.  Since AutoTeamBalance does not affect
