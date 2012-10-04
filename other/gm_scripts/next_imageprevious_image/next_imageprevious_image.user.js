@@ -7,9 +7,10 @@
 // @include *
 // ==/UserScript==
 
-// This still has bugs on flickriver
+// This still has bugs seen on flickriver and Facebook
 // Notably, sometimes the backwardButton will return us to the top image =/
 // However, you can use <Space> and <Backspace> on flickriver instead of this script!
+// TODO: Perhaps the problem is we don't sort the images by y-coordinate, we just assume they are in order?
 
 (function(){
   // var forwardButton  = 102; // F
