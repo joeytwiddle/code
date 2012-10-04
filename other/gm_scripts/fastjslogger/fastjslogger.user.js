@@ -7,7 +7,7 @@
 
 
 
-// Optionals (may or may not be exposed as global).
+// Options (may or may not be exposed as global).
 var FJSL = {
 	autoHide:    true,
 	logTimeouts: false,
@@ -15,7 +15,7 @@ var FJSL = {
 	logCommonMouseEvents: false,  // These can be triggered a lot!
 	logChangesToGlobal:   true,   // Logs any new properties which are added to window
 
-	watchWindowForErrors: true,   // Catches and reports syntax errors!  But may hide the line number from Chrome's console.  :(
+	watchWindowForErrors: true,   // Catches and reports DOM error events, including syntax errors from scripts loaded later, and missing images.  BUG: It can hide the line number from Chrome's console - sometimes worth disabling to get that back.
 	interceptTimeouts:    true,   // Wraps calls to setTimeout, so any errors thrown may be reported.
 	interceptEvents:      true,   // Wraps any listeners registered later, so errors can be caught and reported.
 
@@ -76,7 +76,7 @@ if (this.localStorage) {
 // TODO: See https://github.com/h5bp/html5-boilerplate/blob/master/js/plugins.js
 // for more log actions.
 
-(function(){
+var loadFJSL = function(){
 
 
 
@@ -253,6 +253,9 @@ function addToFastJSLog(a,b,c) {
 					// str += " [no type]";
 				}
 			}
+			if (str.length > 77) {
+				str = shortenString(str);
+			}
 			var gap = (i>0?' ':'');
 			out += gap + str;
 		}
@@ -272,11 +275,11 @@ function addToFastJSLog(a,b,c) {
 
 	}
 
+	if (autoHideTimer !== null) {
+		clearTimeout(autoHideTimer);
+		autoHideTimer = null;
+	}
 	if (FJSL.autoHide) {
-		if (autoHideTimer !== null) {
-			clearTimeout(autoHideTimer);
-			autoHideTimer = null;
-		}
 		// Never log this setTimeout!  That produces an infinite loop!
 		autoHideTimer = oldSetTimeout(hideLogger,15 * 1000);
 	}
@@ -384,11 +387,11 @@ target.console.error = function(a,b,c) {
 
 	// TODO CONSIDER: if (a instanceof Error) { ... report stack?
 	if (a instanceof Error) {
-		addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20));
+		addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20).join("\n"));
 		return target.console.error(""+a.stack);
 	}
 
-	return addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20));
+	return addToFastJSLog.apply(this,args); // ,'\n'+getStack(2,20).join("\n"));
 };
 
 // Could generalise the two functions below:
@@ -398,6 +401,7 @@ target.console.error = function(a,b,c) {
 target.console.warn = function(a,b,c) {
 	var args = Array.prototype.slice.call(arguments,0);
 	args.unshift("[WARN]");
+	// args.push(""+getCallerFromStack());
 	if (oldConsole) {
 		if (oldConsole.warn) {
 			oldConsole.warn.apply(oldConsole,arguments);
@@ -405,6 +409,10 @@ target.console.warn = function(a,b,c) {
 			oldConsole.log.apply(oldConsole,args);
 		}
 	}
+	//// This was quite useful on one occasion.  But not in the presence of lots of warnings!
+	// logStack(getStackFromCaller());
+	//// It appeared before the warn line in FJSL, although in the correct order in Chrome's console.
+
 	// CONSIDER: I guess we should forward the log-level as an argument to
 	// addToFastJSLog, so it can decide whether to mark or color entries.
 	// OTOH we are marking here, which is kind of a good place!
@@ -479,7 +487,7 @@ function tryToDo(fn,target,args) {
 
 function showObject(obj) {
 	return "{ " + Object.keys(obj).map(function(prop) {
-		return prop+": "+obj[prop];
+		return prop+": "+shortenString(obj[prop]);
 	}).join(", ") + " }";
 }
 
@@ -509,9 +517,25 @@ function getStack(drop,max) {
 	try {
 		throw new Error("Dummy for getStack");
 	} catch (e) {
-		stack = e.stack.split('\n').slice(drop).slice(0,max).join('\n');
+		stack = e.stack.split('\n').slice(drop).slice(0,max);
 	}
 	return stack;
+}
+
+// What frame/function called the function which called us?
+function getCallerFromStack() {
+	return getStack(4,1);
+}
+
+// The frame/function which called our caller, and all above it.
+function getStackFromCaller() {
+	return getStack(4,-1);
+}
+
+function logStack(stack) {
+	for (var i=0;i<stack.length;i++) {
+		console.log(""+stack[i]);
+	}
 }
 
 
@@ -530,11 +554,14 @@ function getStack(drop,max) {
 // Errors, in case we fail to catch them any other way.
 
 if (FJSL.watchWindowForErrors) {
+	// Registers a window.onerror event handler, which catches DOM Errors like
+	// img elements which failed to load their src resource.
 	function handleError(evt) {
 
 		if (!FJSL.firstWindowErrorEvent) {
 			FJSL.firstWindowErrorEvent = evt;
 		}
+		//// Expose this event for inspection
 		FJSL.lastWindowErrorEvent = evt;
 		// console.log("Error caught by FJSL:");
 		// console.log(evt);
@@ -550,24 +577,60 @@ if (FJSL.watchWindowForErrors) {
 			// This is what Chrome provides for an error thrown by a page script.
 			// In Chrome this event object contains neither an Error nor a stack-trace.
 			// Also the current stack-trace is uninformative (see nothing about the call to handleError.)
-			// So we don't use the following: , evt, getStack(0,99)
-			console.error("[Window Error] "+evt.message+" "+evt.filename+":"+evt.lineno);
+			// So we don't use the following: , evt, getStack(0,99).join('\n')
+			console.error("[Caught Error] "+evt.message+" "+evt.filename+":"+evt.lineno);
 		} else {
-			// But for some errors neither Firefox nor Chrome give us anything!
-			// Except perhaps the script/file with the error.
-			var fromElement = null;
-			try {
-				fromElement = evt.srcElement.src;
-			} catch (e) { }
-			/*
-			var evtReportBits = [];
-			for (var k in evt) {
-				evtReportBits.push( k + (":" + evt[k]).replace(/\n/g,' ') );
+			var report = '[Caught Unknown Error] ';
+			report += "type="+evt.type+" ";
+
+			// For some errors neither Firefox nor Chrome give us a message.
+			// But sometimes we can peek into the element that fired the error.
+			// If it was an image, then its src attribute may be useful.
+			var elem = evt.srcElement || evt.target;
+			if (elem) {
+				report += "From element "+elem+" ";
+				try {
+					report += "with src="+elem.src+" ";
+				} catch (e) { }
 			}
-			var evtReport = evtReportBits.join(", ");
-			// console.error("[Window Errror] Unknown Error src="+fromElement,evtReport);
+
+			/*
+			if (elem == window) {
+				FJSL.lastEE = evt;
+			}
 			*/
-			console.error("[Window Errror] Unknown Error src="+fromElement);
+
+			/*
+			if (!elem) {
+				// Firefox 14 was providing only a constructor function in the event,
+				// so I wonder if calling it will reproduce the error for us.  Either
+				// that, or it will try to construct an event object.  :P
+				// I will probably remove this if I see it again and confirm that it's useless.
+				// I did get a HUGE string from Firefox which was pretty interesting.
+				// But it's not what we were looking for.
+				if (typeof evt.constructor == "function") {
+					try {
+						var result = evt.constructor();
+						if (result) {
+							console.error(report + "Constructor result: "+result);
+						}
+					} catch (e) {
+						// I think in Firefox this gives us useful information.
+						// TODO: But I have seen us reach here in Chrome, with an error "cannot call DOM Object constructor" presumably meaning out evt.constructor() call was forbidden, and we should look elsewhere for information.
+						report += "(Constructor error: \""+e+"\") ";
+						// Dirty cheat expose it for dev/debugger:
+						evt.FJSLconstructorError = e;
+						// I have come to the conclusion that although they are different, the errors I get in both Firefox and Chrome are errors about the way I have called the constructor, and not any useful error I was after :P
+						// FF: Timestamp: 29/07/12 18:10:14
+						// Error: NS_ERROR_XPC_NOT_ENOUGH_ARGS: Not enough arguments
+						console.log("[Constructor Error]",e);
+						throw e;
+					}
+				}
+			}
+			*/
+
+			console.error(report,evt);
 		}
 	}
 	window.addEventListener("error",handleError,true);
@@ -576,7 +639,9 @@ if (FJSL.watchWindowForErrors) {
 
 function shortenString(s) {
 	s = ""+s;
+	s = s.replace(/\n[ \t]+/,'\\n ','g');
 	s = s.replace(/\n/,'\\n','g');
+	s = s.replace(/\t/,'  ','g');
 	if (s.length>77) {
 		s = s.substring(0,77)+"...";
 	}
@@ -649,7 +714,7 @@ if (FJSL.interceptEvents) {
 			var niceFunc = handler.name || (""+handler).substring(0,80).replace(/\n/," ",'g').replace(/[ \t]*/," ",'g')+"...";
 			/*
 			console.info("[EVENTS] Listening for "+type+" events on "+getXPath(this)+" with handler "+niceFunc);
-			console.info(getStack(3,3));
+			console.info(getStack(3,3).join("\n"));
 			*/
 		}
 		var newHandler = function(evt) {
@@ -691,15 +756,20 @@ if (FJSL.logChangesToGlobal) {
 		var checkSpeed = 4000;
 		var watcher = {};
 		var global = window;
+		var knownKeys = {};
+		var firstCheck = true;
 		function checkGlobal() {
 			if (FJSL.logChangesToGlobal) {
 				for (var key in global) {
 					if (knownKeys[key] === undefined) {
-						var obj = global[key];
-						console.log("[GLOBAL] "+key+"="+shortenString(obj));
+						if (!firstCheck) {
+							var obj = global[key];
+							console.log("[GLOBAL] "+key+" =",obj);
+						}
 						knownKeys[key] = 1;
 					}
 				}
+				firstCheck = false;
 			}
 			oldSetTimeout(checkGlobal,checkSpeed);
 		}
@@ -711,4 +781,15 @@ if (FJSL.logChangesToGlobal) {
 
 
 
-})();
+};
+
+if (document.body) {
+	loadFJSL();
+} else {
+	// doc bod may not exist if we are loaded in the HEAD!  Better wait till later...
+	setTimeout(loadFJSL,1000);
+	// But we would quite like to start doing stuff now anyway!
+	// TODO: Load what we can immediately, delay only things we must.
+	// E.g. start capturing text, even if we can't display it yet.
+}
+
