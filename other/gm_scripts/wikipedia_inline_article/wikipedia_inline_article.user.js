@@ -1,12 +1,15 @@
 // ==UserScript==
 // @name          Wikipedia Inline Article Viewer
 // @namespace     http://projects.apathyant.com/wikipediainline/
-// @description   Adds an icon after internal article links on wikipedia pages which, when clicked, opens the article inline in a dhtml frame
+// @description   Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame.
 // @include       http://wikipedia.tld/*
 // @include       http://*.wikipedia.tld/*
-// Since TLD doesn't work in Chrome:
+//// Since TLD doesn't work in Chrome:
 // @include       http://wikipedia.org/*
 // @include       http://*.wikipedia.org/*
+//// https:
+// @include       https://wikipedia.org/*
+// @include       https://*.wikipedia.org/*
 // ==/UserScript==
 
 // Wikipedia Inline Article Viewer
@@ -30,6 +33,20 @@
 //
 // --------------------------------------------------------------------
 
+/* Joey's version, instead of adding an image-button after every link,
+ * activates on mouse hover.  This does not slow down page load!
+ *
+ * An alternative might be: on link hover, float up an image-button the user
+ * can click for inline preview.  Hide the button on unhover.
+ */
+
+// BUG: Works fine under https in Chrome, but not in Firefox!
+
+var allowPreviewsOfPreviews = false;
+
+var inlineWindowCount = 0;
+
+/*
 var icon = document.createElement('img');
 icon.src = "data:image/png,%89PNG%0D%0A%1A%0A%00%00%00%0DIHDR%00%00%00%0A%00%"+
 			"00%00%0A%08%06%00%00%00%8D2%CF%BD%00%00%00%04gAMA%00%00%AF%C87%05%8"+
@@ -44,8 +61,6 @@ icon.style.border = 'none';
 icon.width = 10;
 icon.height = 10;
 
-var inlineWindowCount = 0;
-			
 function rewriteLinks() {
 	// This function grabs all the links within the page's #content div and 
 	// sends them off to be modified
@@ -153,11 +168,11 @@ function inlineViewClickHandler(event) {
 	event.preventDefault();
 	return true;
 }
-
+*/
 
 function newInlineWindow(event, href, link, windowID){
 	// Close all previous inline windows...
-	closeInlineWindows();
+	//closeInlineWindows();
 	
 	// Setup some constants for use in creating the inline window...
 	var windowWidth = Math.round(document.width * 0.45);
@@ -336,12 +351,12 @@ function findElementById(node, id) {
 	return null;
 }
 
-function findElementByIdAlternative(node, id) {
-	var elems = node.getElementsByTagName("*");
-	for (var i=0;i<elems.length;i++) {
-		if (elems[i].id == id) {
-			return elems[i];
+function findParentInlineWindow(node) {
+	while (node) {
+		if (node.id && node.id.indexOf("inlineWindow-")==0) {
+			return node;
 		}
+		node = node.parentNode;
 	}
 	return null;
 }
@@ -398,7 +413,15 @@ function onMouseOut(evt) {
 		}
 	}
 }
+function onClick(evt) {
+	// The user has clicked on a link, so the browser should go there.
+	// Equivalent behaviour to mouse out - cancel any hover detection.
+	onMouseOut(evt);
+}
 function hoverDetected() {
+	if (!allowPreviewsOfPreviews && findParentInlineWindow(hoverTarget)) {
+		return;
+	}
 	if (!hoverTarget.getAttribute('inlinewindow')) {
 		hoverTarget.setAttribute('inlinewindow',inlineWindowCount++);
 	}
@@ -413,6 +436,13 @@ function hoverDetected() {
 }
 document.body.addEventListener("mouseover",onMouseOver,true);
 document.body.addEventListener("mouseout",onMouseOut,true);
+document.body.addEventListener("click",onClick,true);
 
-// TODO: Easier close, e.g. click anywhere outside the inlineWindow to close it.
-
+// Easier close, just click anywhere outside the inlineWindow to close it.
+document.body.addEventListener("click",function(evt){
+	var node = evt.target || evt.sourceElement;
+	var parentWindow = findParentInlineWindow(node);
+	if (!parentWindow) {
+		closeInlineWindows();
+	}
+},true);
