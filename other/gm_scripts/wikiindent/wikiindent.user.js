@@ -23,12 +23,18 @@ var minimisedSidebarSize = 16;
 var delayHide = 0;
 var delayUnhide = ( document.getElementById("mw-panel") ? 250 : 0 );
 
+var debug = true;
+
 
 /* TODO: As we scroll the page, light up the "current" section in the TOC.
  *
  * FIXED: One occasional problem with the TOC is when it is taller than the
  *      window!  (I usually work around this by zooming out (reducing font
  *      size), but perhaps we can use CSS overflow to solve it properly.)
+ *
+ * NOTE: The sidebar toggle now animates smoothly.  This is caused by animation
+ * rules in Wikipedia's CSS.  I don't know why they are there, I haven't seen
+ * anything that makes use of them, except by circumstance, this script!
 */
 
 /* Changelog
@@ -45,6 +51,7 @@ if (unsafeWindow.WikiIndent_loaded) {
 }
 
 function log(x) {
+	x = "[WI] "+x;
 	if (this.GM_log) {
 		this.GM_log(x);
 	} else if (this.console && console.log) {
@@ -104,6 +111,53 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 
 }
 
+function newNode(tag,data) {
+	var elem = document.createElement(tag);
+	if (data) {
+		for (var prop in data) {
+			elem[prop] = data[prop];
+		}
+	}
+	return elem;
+}
+
+function newSpan(text) {
+	return newNode("span",{textContent:text});
+}
+
+function addCloseButtonTo(where, toc) {
+	var closeButton = newSpan("[X]");
+	// closeButton.style.float = 'right';
+	closeButton.style.cursor = 'pointer';
+	closeButton.style.paddingLeft = '5px';
+	closeButton.onclick = function() { toc.parentNode.removeChild(toc); };
+	where.appendChild(closeButton);
+}
+
+function addHideButtonTo(toc, tocInner) {
+	var rollupButton = newSpan("[hide]");
+	// rollupButton.style.float = 'right';
+	rollupButton.style.cursor = 'pointer';
+	rollupButton.style.paddingLeft = '10px';
+	function toggleRollUp() {
+		if (tocInner.style.display == 'none') {
+			tocInner.style.display = '';
+			rollupButton.textContent = "[hide]";
+		} else {
+			tocInner.style.display = 'none';
+			rollupButton.textContent = "[show]";
+		}
+		setTimeout(function(){
+			GM_setValue("WI_toc_rolledUp", tocInner.style.display=='none');
+		},5);
+	}
+	rollupButton.onclick = toggleRollUp;
+	toc.appendChild(rollupButton);
+	if (GM_getValue("WI_toc_rolledUp",false)) {
+		toggleRollUp();
+	}
+}
+
 function doIt() {
 
 
@@ -134,23 +188,38 @@ function doIt() {
 
 			// That was still activating on divs in the content!  (Gaps between paragraphs.)
 			// This only acts on the header area.
+			var thisElementTogglesSidebar;
 			var inStartup = (evt == null);
-			var clickedHeader = evt && (evt.target.id == 'mw-head');
-			var clickedPanelBackground = evt && (evt.target.id == 'mw-panel' || evt.target.className.indexOf('portal')>=0);
-			var clickedAreaBelowSidebar = evt && (evt.target.tagName == 'HTML' || evt.target.tagName == 'BODY');
-			if (inStartup || clickedHeader || clickedPanelBackground || clickedAreaBelowSidebar) {
+			if (inStartup) {
+				thisElementTogglesSidebar = true;
+			} else {
+				var elem = evt.target;
+				var clickedHeader = (elem.id == 'mw-head');
+				// For wikia.com:
+				clickedHeader |= (elem.id=="WikiHeader");
+				// For Wikimedia:
+				var clickedPanelBackground = elem.id == 'mw-panel' || elem.className.indexOf('portal')>=0;
+				clickedPanelBackground |= elem.id == 'column-content';  // for beebwiki (old mediawiki?)
+				// Hopefully for sites in general.  Allow one level below body.  Needed for Wikia's UL.
+				var clickedAreaBelowSidebar = (elem.tagName == 'HTML' || elem.tagName == 'BODY');
+				var clickedBackground = (elem.parentNode && elem.parentNode.tagName == "BODY");
+				thisElementTogglesSidebar = clickedHeader || clickedPanelBackground || clickedAreaBelowSidebar || clickedBackground;
+			}
+			if (thisElementTogglesSidebar) {
 
 				if (evt)
 					evt.preventDefault();
-				// GM_log("evt="+evt);
+				if (debug) { GM_log("evt=",evt); }
 				// if (evt) GM_log("evt.target.tagName="+evt.target.tagName);
 				/* We put the GM_setValue calls on timers, so they won't slow down the rendering. */
 				if (sideBar) {
 					if (sideBar.style.display == '') {
-						// column-one contains a lot of things we want to hide
+						// Wikipedia's column-one contains a lot of things we want to hide
 						sideBar.style.display = 'none';
-						content.oldMarginLeft = content.style.marginLeft;
-						content.style.marginLeft = minimisedSidebarSize+'px';
+						if (content) {
+							content.oldMarginLeft = content.style.marginLeft;
+							content.style.marginLeft = minimisedSidebarSize+'px';
+						}
 						for (var i in toToggle) {
 							if (toToggle[i]) { toToggle[i].style.display = 'none'; }
 						}
@@ -166,7 +235,9 @@ function doIt() {
 							sideBar.style.display = '';
 						}
 						setTimeout(unhide,delayUnhide);
-						content.style.marginLeft = content.oldMarginLeft;
+						if (content) {
+							content.style.marginLeft = content.oldMarginLeft;
+						}
 						for (var i in toToggle) {
 							if (toToggle[i]) { toToggle[i].style.display = ''; }
 						}
@@ -182,7 +253,7 @@ function doIt() {
 		}
 
 		// log("sideBar="+sideBar+" and content="+content);
-		if (sideBar && content) {
+		if (sideBar) {
 			// We need to watch window for clicks below sidebar (Chrome).
 			document.documentElement.addEventListener('click',toggleWikipediaSidebar,false);
 		} else {
@@ -277,6 +348,31 @@ function doIt() {
 					 || document.getElementsByClassName("wt-toc")[0];   /* Wikitravel */
 
 			if (toc) {
+
+				// Provide a hide/show toggle button if the TOC does not already have one.
+
+				// Wikimedia's toc element is actually a table.  We must put the
+				// buttons in the title div, if we can find it!
+				var tocTitle = toc.getElementsByTagName("div")[0]; // fingers crossed!
+
+				// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
+				// We cannot test this immediately, because it gets loaded in later!
+				setTimeout(function(){
+
+					var hideShowButton = document.getElementById("togglelink");
+					if (!hideShowButton) {
+						var tocInner = toc.getElementsByTagName("ul")[0]; // fingers crossed!
+						if (tocInner) {
+							addHideButtonTo(tocTitle || toc, tocInner);
+						}
+					}
+
+					// May be redundant, but provide a close button too.
+					// We also do this later, to ensure it appears on the right of
+					// any existing [hide/show] button.
+					addCloseButtonTo(tocTitle || toc, toc);
+
+				},4000);
 
 				// toc.style.backgroundColor = '#eeeeee';
 				// alert("doing it!");
