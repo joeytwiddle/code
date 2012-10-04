@@ -28,7 +28,7 @@ var exportTarget = window;
 
 if (typeof GM_log === 'undefined') {
 	if (this.console && typeof console.log === "function") {
-		console.log("Implementing fallback GM_log");
+		console.log("[FBGM] Implementing fallback GM_log");
 	}
 	// Without 'this' sometimes Bookmarklets in Chrome can't see GM_log!
 	exportTarget.GM_log = function(data) {
@@ -53,7 +53,7 @@ if (window.navigator.vendor.match(/Google/) && weAreInUserscriptScope) {
 }
 
 if (typeof GM_addStyle == 'undefined') {
-	// GM_log("Implementing fallback GM_addStyle");
+	// GM_log("[FBGM] Implementing fallback GM_addStyle");
 	exportTarget.GM_addStyle = function(css) {
 		var style = document.createElement('style');
 		style.textContent = css;
@@ -62,14 +62,14 @@ if (typeof GM_addStyle == 'undefined') {
 }
 
 if (typeof GM_openInTab == 'undefined') {
-	// GM_log("Implementing fallback GM_openInTab");
+	// GM_log("[FBGM] Implementing fallback GM_openInTab");
 	exportTarget.GM_openInTab = function(url) {
 		return window.open(url, "_blank");
 	};
 }
 
 if (typeof GM_registerMenuCommand == 'undefined') {
-	// GM_log("Implementing fallback GM_registerMenuCommand");
+	// GM_log("[FBGM] Implementing fallback GM_registerMenuCommand");
 	exportTarget.GM_registerMenuCommand = function(name, funk) {
 		// TODO
 	};
@@ -122,7 +122,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 		var name = (i >= 0 ? names[i] : "unknown");
 		*/
 
-		GM_log("Implementing fallback GM_get/setValue using "+name+" storage.");
+		GM_log("[FBGM] Implementing fallback GM_get/setValue using "+name+" storage.");
 
 		exportTarget.GM_setValue = function(name, value) {
 			value = (typeof value)[0] + value;
@@ -159,7 +159,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 			for (var i=0;i<storage.length;i++) {
 				list.push(storage.key(i));
 			}
-			GM_log("localstorage is holding "+storage.length+" records.");
+			GM_log("[FBGM] localstorage is holding "+storage.length+" records.");
 			return list;
 		};
 
@@ -170,7 +170,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 		maxCacheSize = 4096; // per domain
 
 	} else {
-		GM_log("Warning: Could not implement GM_get/setValue.");
+		GM_log("[FBGM] Warning: Could not implement GM_get/setValue.");
 	}
 
 }
@@ -181,7 +181,7 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 // find some of the existing names through GM_getValue.
 // TODO: UNTESTED!
 if (typeof GM_listValues == 'undefined') {
-	GM_log("Implementing fallback GM_listValues using intercepts.");
+	GM_log("[FBGM] Implementing fallback GM_listValues using intercepts.");
 	var original_GM_setValue = GM_setValue;
 	var original_GM_deleteValue = GM_deleteValue;
 	exportTarget.GM_setValue = function(name, value) {
@@ -202,13 +202,13 @@ if (typeof GM_listValues == 'undefined') {
 		for (var key in values) {
 			list.push(key);
 		}
-		GM_log("GM_listValues is holding "+list.length+" records.");
+		GM_log("[FBGM] GM_listValues is holding "+list.length+" records.");
 		return list;
 	};
 }
 
 if (typeof GM_xmlhttpRequest == "undefined") {
-	GM_log("Implementing fallback GM_xmlhttpRequest, will only work for local domain.");
+	GM_log("[FBGM] Implementing fallback GM_xmlhttpRequest, will only work for local domain.");
 	exportTarget.GM_xmlhttpRequest = function(details) {
 		var req = new XMLHttpRequest();
 		req.open(details.method, details.url);
