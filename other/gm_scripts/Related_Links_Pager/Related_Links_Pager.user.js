@@ -6,6 +6,7 @@
 // @include        https://*/*
 // @exclude        http://www.facebook.com/*
 // @exclude        https://www.facebook.com/*
+// @exclude        https://*.xmarks.com/*
 // ==/UserScript==
 
 
@@ -13,12 +14,15 @@
 // == OPTIONS ==
 
 var delayBeforeRunning = 2000;
-var minimumGroupSize = 2;
-var maximumGroupSize = 250;           // TODO: should really be based on length of final URL, which some webservers restrict ("Bad Request").  I've seen Chrome on Wikipedia manage 200 siblings!
-var groupLinksByClass = true;
+var minimumGroupSize   = 2;
+var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
+var groupLinksByClass  = true;
 
-var enableOnCtrlClick = true;
-var enableOnShiftClick = true;       // Allows you to avoid the script when needed
+var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
+var showPageNumberInWindowTitle = true; // Updates title of current page to show current "page" number.
+
+var enableOnCtrlClick  = true;
+var enableOnShiftClick = true;        // Allows you to avoid the script when needed
 var enableOnRightClick = false;
 
 var keepNavigationHistory = false;    // When off, paging is not added to browser history.  The back button will return you to the page before you started paging.
@@ -27,18 +31,20 @@ var forceTravel = false;              // Attempt to fix loss of #data when click
                                       // BUG: I think this overrides Google Preview Pane's handler if we click a link expecting it to be previewed.
 var clearDataFromLocation = false;    // Looks tidier but can prevent Pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.
 
+var highlightLinkGroups = true;       // Change the background or border of links in the current group on hover.
+var changeBackgroundNotBorder = true; // If false, draws boxes around related links.
+var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // very light blueish
+var highlightColor         = "rgba(130,200,255,0.2)"; // light blueish
+// var thisLinkHighlightColor = "rgba(0,255,255,0.01)"; // faint cyan
+// var highlightColor         = "rgba(0,255,255,0.08)"; // very faint cyan
+// var thisLinkHighlightColor = null;
+// var highlightColor         = "rgba(130,230,255,0.3)";
+// var thisLinkHighlightColor = "rgba(0,0,255,0.1)"; // very faint blue
+// var highlightColor         = "rgba(0,0,255,0.2)"; // faint blue
+var lineStyle = "solid";
+// var lineStyle = "dashed";
+
 var verbose = false;                  // Extra logging for debugging
-
-var highlightLinkGroups = true;       // Change the background color of links in the current group on hover.
-// var thisLinkHighlightColor = "rgba(130,200,255,0.1)"; // light blue
-// var highlightColor         = "rgba(130,200,255,0.2)"; // very light blue
-// var thisLinkHighlightColor = "rgba(130,230,255,0.3)";
-// var highlightColor         = null;
-var thisLinkHighlightColor = "rgba(0,0,255,0.0)";
-var highlightColor         = "rgba(0,0,255,0.8)"; // very light blue
-
-var showGroupCountInLinkTitle = true; // Updates hovered links' titles to show number of siblings.
-var showPageNumberInWindowTitle = true;
 
 
 
@@ -209,11 +215,11 @@ if (!this.GM_addStyle) {
 // with the same DOM path as the clicked link.
 
 function getGroupSignature(link) {
-	if (!link.cachedGroupSignature) {
-		// We remove offsets like [4] from the unique xpath to get a more general path signature.
-		link.cachedGroupSignature = getXPath(link).replace(/\[[0-9]*\]/g,'');
-	}
-	return link.cachedGroupSignature;
+  if (!link.cachedGroupSignature) {
+    // We remove offsets like [4] from the unique xpath to get a more general path signature.
+    link.cachedGroupSignature = getXPath(link).replace(/\[[0-9]*\]/g,'');
+  }
+  return link.cachedGroupSignature;
 }
 
 function collectLinksInSameGroupAs(clickedLink) {
@@ -222,6 +228,7 @@ function collectLinksInSameGroupAs(clickedLink) {
   // NOTE: We could search for matches with document.query - it might be faster.
   var links = document.getElementsByTagName("A");
   var collected = [];
+  var lastLink = null;
   for (var i=0;i<links.length;i++) {
     var link = links[i];
     if (groupLinksByClass && link.className != clickedLink.className) {
@@ -229,8 +236,12 @@ function collectLinksInSameGroupAs(clickedLink) {
     }
     var xpath = getGroupSignature(link);
     if (xpath == seekXPath) {
-      if (link.textContent) {   // ignore if no title
-        collected.push(link);
+      if (link.href !== lastLink) {
+        // CONSIDER TODO: If no textContent, invent one?  Otherwise this will never group links of e.g. thumbnails.
+        if (link.textContent && link.textContent.trim()) {   // ignore if no title
+          collected.push(link);
+          lastLink = link.href;
+        }
       }
     }
   }
@@ -380,6 +391,10 @@ function checkClick(evt) {
     // feedback/tracking redirection links, which throw away our hash data!
     link.removeAttribute('onmousedown');
     // Thanks to http://userscripts.org/scripts/review/57679
+
+    if (highlightLinkGroups) {
+      clearList();
+    }
 
   }
 }
@@ -564,43 +579,56 @@ if (highlightLinkGroups) {
 
   var list = [];
 
-  function highlightList() {
+  var directions = ["Top","Bottom","Left","Right"];
+
+  function highlightList(link) {
     if (verbose) {
       GM_log("Highlighting "+list.length+" elements.");
     }
     for (var i=0;i<list.length;i++) {
+      var elem = list[i];
+      var style = getComputedStyle(elem,null);
       if (highlightColor) {
-        /*
-        list[i].oldBackgroundColor = list[i].style.backgroundColor;
-        list[i].style.backgroundColor = highlightColor;
-        */
-        list[i].oldBorderLeft = list[i].style.borderLeft;
-        list[i].oldMarginLeft = list[i].style.marginLeft;
-        list[i].oldBorderRight = list[i].style.borderRight;
-        list[i].oldMarginRight = list[i].style.marginRight;
-        list[i].oldBorderTop = list[i].style.borderTop;
-        list[i].oldMarginTop = list[i].style.marginTop;
-        list[i].oldBorderBottom = list[i].style.borderBottom;
-        list[i].oldMarginBottom = list[i].style.marginBottom;
-        list[i].style.border = "1px dashed "+highlightColor;
-        list[i].style.margin = "-1px";
+        if (changeBackgroundNotBorder) {
+          elem.savedOldBackgroundColor = elem.style.backgroundColor;
+          if (thisLinkHighlightColor && elem == link) {
+            link.style.backgroundColor = thisLinkHighlightColor;
+          } else {
+            elem.style.backgroundColor = highlightColor;
+          }
+        } else {
+          for (var dir in directions) {
+            dir = directions[dir];
+            elem["savedOldBorder"+dir] = style["border"+dir];
+            elem["savedOldMargin"+dir] = style["margin"+dir];
+            elem["savedOldPadding"+dir] = style["padding"+dir];
+            // parseInt will drop any "px", but produces NaN on "", so we |0 that.
+            if (thisLinkHighlightColor && elem == link) {
+              link.style["border"+dir] = ((parseInt(style["border"+dir])|0)+1)+"px "+lineStyle+" "+thisLinkHighlightColor;
+            } else {
+              elem.style["border"+dir] = ((parseInt(style["border"+dir])|0)+1)+"px "+lineStyle+" "+highlightColor;
+            }
+            elem.style["margin"+dir] = ((parseInt(style["margin"+dir])|0)-1)+"px";
+            // elem.style["padding"+dir] = ((parseInt(style["padding"+dir])|0)+1)+"px";
+          }
+        }
       }
     }
   }
 
   function clearList() {
     for (var i=0;i<list.length;i++) {
-      /*
-      list[i].style.backgroundColor = list[i].oldBackgroundColor;
-      */
-      list[i].style.marginLeft = list[i].oldMarginLeft;
-      list[i].style.borderLeft = list[i].oldBorderLeft;
-      list[i].style.marginRight = list[i].oldMarginRight;
-      list[i].style.borderRight = list[i].oldBorderRight;
-      list[i].style.marginTop = list[i].oldMarginTop;
-      list[i].style.borderTop = list[i].oldBorderTop;
-      list[i].style.marginBottom = list[i].oldMarginBottom;
-      list[i].style.borderBottom = list[i].oldBorderBottom;
+      var elem = list[i];
+      if (changeBackgroundNotBorder) {
+        elem.style.backgroundColor = elem.savedOldBackgroundColor;
+      } else {
+        for (var dir in directions) {
+          dir = directions[dir];
+          elem.style["border"+dir] = elem["savedOldBorder"+dir];
+          elem.style["margin"+dir] = elem["savedOldMargin"+dir];
+          elem.style["padding"+dir] = elem["savedOldPadding"+dir];
+        }
+      }
     }
     list.length = 0;
   }
@@ -615,11 +643,7 @@ if (highlightLinkGroups) {
         link.title = (link.title ? link.title+" " : "") + "("+list.length+" related links)";
       }
       if (list.length>=minimumGroupSize && list.length<maximumGroupSize) {
-        highlightList();
-        if (thisLinkHighlightColor) {
-          // link.style.backgroundColor = thisLinkHighlightColor;
-          link.style.border = "1px solid "+thisLinkHighlightColor;
-        }
+        highlightList(link);
       }
     }
   },true);
