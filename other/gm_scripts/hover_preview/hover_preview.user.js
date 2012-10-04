@@ -1,14 +1,16 @@
 // ==UserScript==
 // @name           Hover Preview
 // @namespace      HP
-// @description    Shows a tooltip when you hover over links, containing the target page!
+// @description    Pops up a floating div when you hover over a link, containing the target page!
 // @include        *
 // ==/UserScript==
 
 // TODO:
 // Don't act if the target is a file-type.  i.e. we don't want to be prompted
 // to save a zip file just because we hovered on it.
-// Dammit some pages break out of the iframe!
+// KNOWN UNFIXABLE BUG:
+// Damnit some pages break out of the iframe!  Don't try to use this on
+// StackOverflow links!
 
 // if (window.document != document) {
 	// return; // Don't run in iframes
@@ -18,8 +20,8 @@
 // Could be a bit heavy.  It depends on the page...
 // A different bookmarklet to turn all "links to images" into "images" would be nice. :)
 
-var focusReactionTime = 2000;
-var unfocusReactionTime = 2000;
+var focusReactionTime = 1500;
+var unfocusReactionTime = 1500;
 
 var focus = undefined;
 var lastFocus = undefined;
@@ -42,11 +44,14 @@ function checkFocus() {
 }
 
 function eekAMouse(evt) {
+	if (evt.currentTarget.tagName !== "A") {
+		return;
+	}
 	if (!focus) {
 		focus = evt.currentTarget;
 		// setTimeout('checkFocus();',focusReactionTime);
 		// Hack to bring the popup back immediately if we've gone back to the same link.
-		if (myFrame && myFrame.href == focus.href) {
+		if (myFrame && focus.href && myFrame.href == focus.href) {
 			showPreviewWindow(focus,evt);
 		} else {
 			if (timer) {
@@ -60,6 +65,9 @@ function eekAMouse(evt) {
 }
 
 function phewMouseGone(evt) {
+	if (evt.currentTarget.tagName !== "A") {
+		return;
+	}
 	focus = undefined;
 	if (timer) {
 		clearTimeout(timer);
@@ -124,9 +132,9 @@ function init() {
 		// link.onmouseover = eekAMouse;
 		// link.onmouseout = phewMouseGone;
 		/** The new way: **/
-		link.addEventListener("mouseover", function(evt) { eekAMouse(evt) }, false);
-		link.addEventListener("mouseout", function(evt) { phewMouseGone(); }, false);
-		link.addEventListener("click", function(evt) { aClick(); }, false);
+		link.addEventListener("mouseover", eekAMouse, false);
+		link.addEventListener("mouseout", phewMouseGone, false);
+		link.addEventListener("click", aClick, false);
 		// link.addEventListener("mousemove", function(evt) { locate(evt); }, true);
 	}
 }
