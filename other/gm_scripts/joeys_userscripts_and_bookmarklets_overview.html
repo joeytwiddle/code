@@ -2,10 +2,14 @@
 "http://www.w3.org/TR/REC-html40/loose.dtd">
 <HTML>
  <HEAD>
-  <TITLE>Joey's Userscripts and Bookmarklets Overview</TITLE>
+  <TITLE>Joey&apos;s Userscripts and Bookmarklets Overview</TITLE>
  <META NAME="generator", CONTENT="mod_autoindex"> </HEAD>
  <BODY bgcolor="#ffffff" text="#000000">
 	 <script type="text/javascript">
+
+if (navigator.appVersion.match(/Chrome/)) {
+	document.body.innerHTML += '<p style="width:50%; float: right;" align="right"><small>Google Chrome / Chromium browser: Recent versions of Chrome will now only install addons from the Chrome Web Store.  To install userscripts from sites such as this one, you may need to pass <code>--enable-easy-off-store-extension-install</code> as a command-line parameter.  Or you could install the <a href="http://www.chromeextensions.org/appearance-functioning/tampermonkey">TamperMonkey extension</a>.</small></p>';
+}
 
 function addScript(url) {
 	var s = document.createElement("script");
@@ -36,9 +40,9 @@ if (this.XMLHttpRequest) {
 
 	function gotIt() {
 		// alert("Got responseText: "+req.responseText);
-		while (document.body.firstChild) {
-			document.body.removeChild(document.body.firstChild);
-		}
+		//while (document.body.firstChild) {
+			//document.body.removeChild(document.body.firstChild);
+		//}
 		div = document.createElement("div");
 		div.innerHTML = req.responseText;
 		while (div.childNodes.length) {
@@ -88,7 +92,7 @@ if (this.XMLHttpRequest) {
 		}
 	};
 
-	document.body.appendChild(document.createTextNode("Loading..."));
+	// document.body.appendChild(document.createTextNode("Loading..."));
 
 } else {
 	alert("This page requires XMLHttpRequest.");
