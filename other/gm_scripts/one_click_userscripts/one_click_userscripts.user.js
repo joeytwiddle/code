@@ -28,7 +28,7 @@ function hwiScript(scriptName) {
 }
 
 var defaultScripts = map([
-	"fastjslogger",
+	// "fastjslogger",   DONE in sequence below, since these are opened in parallel.
 	"auto_scroll_mouse",
 	"auto_scroll_keys",
 	"table_of_contents_everyw",
@@ -40,13 +40,14 @@ var defaultScripts = map([
 	// "make_bookmarklet_from_us",
 	"title_youtube_locations",
 	"google_preview_pane",
-	// "delicious_link_tooltop",
 	// "tocmonkey",
 	/*
 	"powermonkey"
 	*/
-	""
+	"delicious_link_tooltop"
 ],hwiScript);
+
+var loadScriptsSequentially = false;
 
 // Emergency Shims:
 if (!document.evaluate) {
@@ -104,12 +105,29 @@ function loadUserscripts() {
 		}
 	}
 
+	if (loadScriptsSequentially) {
+
+		// Slow but useful for debugging.
+		function doOne() {
+			if (scriptsToLoad.length) {
+				var script = scriptsToLoad.shift();
+				loadScript(script,doOne);
+			} else {
+				GM_log("[OCU] Finished loading scripts.");
+			}
+		}
+		doOne();
+
+	} else {
+
 	forEach(scriptsToLoad,considerScript);
+
+	}
 
 }
 
 function loadScript(url,thenCallFn) {
-	log("Loading: "+url);
+	log("[OCU] Loading: "+url);
 	var scr = document.createElement("script");
 	if (!allowBrowserToCacheScripts) {
 		var sep = ( url.indexOf('?')>=0 ? '&' : '?' );
@@ -127,7 +145,7 @@ function loadScript(url,thenCallFn) {
 			}
 		}
 		function errorCallback(evt) {
-			log("Failed to load: "+url,evt);
+			log("[OCU] Failed to load: "+url,evt);
 			onceOnlyCallback(evt);
 		}
 		scr.addEventListener('load',onceOnlyCallback,false);
@@ -150,5 +168,7 @@ function considerScript(url) {
 
 // == Load fallback GM API library in case we need it. ==
 
-loadScript(hwiScript("fallbackgmapi"),loadUserscripts);
+loadScript(hwiScript("fallbackgmapi"),function(){
+	loadScript(hwiScript("fastjslogger"),loadUserscripts);
+});
 
