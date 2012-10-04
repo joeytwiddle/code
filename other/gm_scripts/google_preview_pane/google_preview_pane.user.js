@@ -8,14 +8,10 @@
 // @include        https://*.google.*/*q=*
 // @include        https://google.*/*q=*
 // @exclude        http://*.google.*/images*
-// @exclude        http://*.google.*/*&tbm=isch&*
 // @exclude        http://google.*/images*
-// @exclude        http://google.*/*&tbm=isch&*
 // @exclude        http://images.google.*/*
 // @exclude        https://*.google.*/images*
-// @exclude        https://*.google.*/*&tbm=isch&*
 // @exclude        https://google.*/images*
-// @exclude        https://google.*/*&tbm=isch&*
 // @exclude        https://images.google.*/*
 // @version        2012.02.07
 // ==/UserScript==
@@ -138,6 +134,13 @@ if (renderLikeTabs) {
 var resultsWidth = 1.0 - previewWidth;
 
 
+
+// Don't run on Google Images search results page.
+if (document.location.search.match(/[?&]tbm=isch([?&]|$)/)) {
+	// return;   // This causes a syntax error in Firefox 15, regardless of whether or not it is reached!
+	throw new Error("[GPP] Not running on Google images search.");
+	// todo: If we don't want to pollute the logs with an error message, then put a conditional around the actual initialisation.
+}
 
 // Don't run if we are in a sub-frame:
 // Mmm should be more like don't run if we have already run in a sub-frame. :P
