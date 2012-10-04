@@ -79,6 +79,11 @@ var rules = [
         hostMatch: "9gag.com",
         pathMatch: "/gag/.*",
         getTitle: function(){ return document.title.replace(/9GAG - /,''); }
+    },
+
+    {
+        hostMatch: "unrealadmin.org",
+        getTitle: function(){ return document.title.replace(/ - The Unreal Admins Page .*/,''); }
     }
 
 ];
