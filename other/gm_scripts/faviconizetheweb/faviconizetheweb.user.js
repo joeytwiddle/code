@@ -8,7 +8,9 @@
 // @exclude        https://www.delicious.com/search*
 // @exclude        http://duckduckgo.com/*
 // @exclude        https://duckduckgo.com/*
-// @version        1.3
+//// Causes login dialogs to open!
+// @exclude        http://www.jobs.ac.uk/*
+// @version        1.4
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 
@@ -24,7 +26,9 @@ var initialDelay = 1000;
 var delayIncrement = 5; // after 200 links the delay between batches will be 1 second
 var batchSize = 10;
 
-var alwaysUseGoogle = false;
+var alwaysUseGoogle = false;   // Uses a google service to load the favicon images
+
+
 
 if (!alwaysUseGoogle) {
 	// We can speed up if we are requesting from multiple sites
@@ -34,9 +38,15 @@ if (!alwaysUseGoogle) {
 
 if (document.location.host.indexOf(".google.") >= 0) {
 	scaleIcon = 1.0;
-	return;   // REMOVE THIS TO RUN ON GOOGLE!
+	// return;   // REMOVE THIS TO RUN ON GOOGLE!
 }
 
+
+
+// BUG: When a link only just fits inside its container, adding the favicon may
+// cause the container to grow or overflow or wrap!  This can look very messy
+// if the site uses a strict CSS layout.  We have a fix for Google; can we
+// detect in general when this fix should be employed?  (AVOID_OVERFLOW)
 
 
 
@@ -62,6 +72,15 @@ function getElementsByTagNameAndClassName(tN,cN) {
 
 function getElementsByClassName(cN) {
 	return getElementsByTagNameAndClassName("*",cN);
+}
+
+function checkAncestorsForId(node, id) {
+	while (node = node.parentNode) {
+		if (node.id == id) {
+			return true;
+		}
+	}
+	return false;
 }
 
 function filterListBy(l,c) {
@@ -110,19 +129,19 @@ function createFaviconFor(url) {
 		if (ext) {
 			img.src = 'http://'+host+'/favicon.'+ext;
 		} else {
-			img.title = "Failed to find favicon for "+host;
+			if (!alwaysUseGoogle) {
+				img.title = "Failed to find favicon for "+host;
+			}
 			img.src = 'http://www.google.com/s2/favicons?domain=' + host; // Google's cache will sometimes provide a favicon we would have missed, e.g. if the site uses .png instead of .ico.  Thanks to NV for suggesting this, and to Google.
 			// @consider We could also generate an md5sum and request a gravatar, which might simply allow human recognition of repeats.
 			img.removeEventListener('error',tryExtension,true);
 		}
-		/*
 		if (evt) {
 			// Will this stop the browser from displaying the error?
 			evt.preventDefault();
 			return false;
 			// Answer: NO!
 		}
-		*/
 	}
 	img.addEventListener('error',tryExtension,true);
 	tryExtension();
@@ -203,6 +222,14 @@ function checkLink(link) {
 		img.style.float = 'left';
 	}
 
+	// AVOID_OVERFLOW
+	// Lots of links at the top of Google's search page overflow and look messy.
+	if (document.location.host.indexOf(".google.") >= 0) {
+		if (checkAncestorsForId(link,"mngb") || checkAncestorsForId(link,"gb")) {
+			img.style.float = 'left';
+		}
+	}
+
 	// If any website puts a border on their images, we want to remove it
 	// img.style.border = '0px';
 
@@ -211,16 +238,24 @@ function checkLink(link) {
 
 }
 
+function addStyle(css) {
+	var style = document.createElement('STYLE');
+	style.innerHTML = css;
+	document.getElementsByTagName('head')[0].appendChild(style);
+}
+
 function doIt() {
 
 	// GM_log("doIt() was called!");
 
-	var style = document.createElement('STYLE');
 	var padSide = (placeFaviconAfter?'left':'right');
-	style.innerHTML = ".ftwFavicon { margin-"+padSide+": "+(scaleIcon/3)+"em; opacity: 0.7; width: "+scaleIcon+"em; height: "+scaleIcon+"em; vertical-align: 0em; }";
+	// var avoidOverflow = "float: left;"; // AVOID_OVERFLOW TESTING is it always suitable?  Works well on Google search results header links.  Yeah ok it was rubbish.  The favicon for a link in a paragraph appears at the beginning of the paragraph!
+	var resetStyles = " display: none; margin: 0px; padding: 0px; border: 0px; background: none; ";
+	var setStyles = " margin-"+padSide+": "+(scaleIcon/3)+"em; opacity: 0.7; width: "+scaleIcon+"em; height: "+scaleIcon+"em; vertical-align: 0em; ";
+	addStyle(".ftwFavicon { "+resetStyles+" "+setStyles+" }");
+
 	// vertical-align: middle; <-- appears to make alignment worse in Chrome!
 	// Settled for vertical-align: 0em; which fits since capital text seem to be about 0.75em tall
-	document.getElementsByTagName('head')[0].appendChild(style);
 
 	// var links = document.evaluate("//a[@class='l']",document,null,6,null);
 	// var links = filterListBy(document.links, function(x){ return x.className=='l'; } );
