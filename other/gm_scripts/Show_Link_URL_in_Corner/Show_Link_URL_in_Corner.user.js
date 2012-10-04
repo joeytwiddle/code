@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name           Show Link URL in Corner
 // @namespace      SLUC
-// @description    When hovering a link, some browsers (cough Firefox) present no information about what action clicking will perform.  This script pops up the target href/URL in the corner of the page, like Chrome does.
+// @description    When hovering a link, some browsers fail to present information about the link.  This script displays the target href/URL in the bottom-left corner of the page, like Chrome and Firefox do.
 // @include        *
 // ==/UserScript==
 
+// FIXED: Now works when hovering child/descendent of A, e.g. IMG or EM.
 // TODO: Like Chrome's built-in popup, hide it when mouse is in that corner.
 // BUG: Doesn't show "..." when URL is too long to fit.
 
@@ -13,13 +14,20 @@ var targetElem = null;
 
 var urlDisplayer = null;
 
-function actOn(elem) {
-	return (elem.tagName == 'A');
+function findRelevant(evt) {
+	var elem = evt.target || evt.sourceElement;
+	while (elem) {
+		if (elem.tagName == 'A') {
+			return elem;
+		}
+		elem = elem.parentNode;
+	}
+	return null;
 }
 
 function enteredElement(evt) {
-	var elem = evt.target || evt.sourceElement;
-	if (actOn(elem)) {
+	var elem = findRelevant(evt);
+	if (elem) {
 		if (timer) {
 			clearTimeout(timer);
 		}
@@ -30,7 +38,7 @@ function enteredElement(evt) {
 
 function leftElement(evt) {
 	var elem = evt.target || evt.sourceElement;
-	if (actOn(elem)) {
+	if (elem) {
 		if (timer) {
 			clearTimeout(timer);
 			timer = null;
