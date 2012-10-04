@@ -62,6 +62,18 @@ if (this.GM_addStyle) { GM_addStyle("a:visited { color: #440066; }"); }
 
 
 
+var secondRun = ( window.DLT_loaded ? true : (window.DLT_loaded=true) && false );
+
+GM_log("window.DLT_loaded = "+window.DLT_loaded);
+
+// I want to switch annotateAllLinks on if I run the userscript twice.
+if (secondRun) {
+	annotateAllLinks = true;
+	lookupCurrentPage = true;
+}
+
+
+
 //// NOTES for Delicious Network Add:
 // GET http://delicious.com/settings/networkadd?networkadd=EHKNIGHT&.crumb=7FsAGAcj8szIc7Pt_37ua1qsjMM-
 // GET http://delicious.com/network?add=EHKNIGHT
@@ -347,9 +359,7 @@ var needToJSONP = !this.GM_xmlhttpRequest || window.navigator.vendor.match(/Goog
 var allowedToJSONP = ( document.location.protocol === "https:" ? enableJSONPonHTTPS : true );
 
 // allowedToJSONP can be overridden by loading this script twice.
-var secondRun = ( window.DLT_loaded ? true : (window.DLT_loaded=true) && false );
 // It was still failing in Chrome even when "load insecure content" was enabled!
-
 if (needToJSONP && (allowedToJSONP || secondRun)) {
 
 // This performs a direct JSONP request from Delicious, circumventing cross-site issues with GM_xhR and XMLHR.
@@ -458,8 +468,9 @@ if (needToJSONP && (allowedToJSONP || secondRun)) {
 	*/
 
 } else if (needToJSONP && !allowedToJSONP) {
-   GM_log("[DLT] Not attempting to Delicious since we are on https page.");
-	return;   // may throw error ;)
+	// BUG TODO: Firefox keeps coming here on the second run, when it shouldn't, and also never logs this line.
+	GM_log("[DLT] Not attempting to Delicious since we are on https page.");
+	return;   // can throw error ;)
 }
 
 if (typeof GM_addStyle == 'undefined') {
@@ -989,12 +1000,16 @@ var rolledOverTooltip = false;
 
 // A different version of tryLookup, which will try to lookup the hostname if the initial URL failed.
 function initiateDoubleLookup(lookupURL,onSuccess) {
-	function onFailure() {
-		var hostUrl = "http://"+getHostnameOfUrl(lookupURL)+"/";
-		if (hostUrl != lookupURL) {
+	var onFailure;
+	var hostUrl = "http://"+getHostnameOfUrl(lookupURL)+"/";
+	if (hostUrl != lookupURL) {
+		onFailure = function() {
 			lookupURL = hostUrl;
-			tryLookup(lookupURL,onSuccess,function(){log("Both URL and host lookup failed for "+hostUrl+"");});
-		}
+			tryLookup(lookupURL,onSuccess,onSuccess);
+			// ,function(){log("Both URL and host lookup failed for "+hostUrl+"");});
+		};
+	} else {
+		onFailure = onSuccess;
 	}
 	tryLookup(lookupURL,onSuccess,onFailure);
 }
@@ -1235,7 +1250,7 @@ function showResultsTooltip(resultObj,subjectUrl,evt) {
 		}
 
 	} else {
-		tooltipDiv.appendChild(document.createTextNode("No info for "+subjectUrl));
+		tooltipDiv.appendChild(document.createTextNode("No delicious tags for "+subjectUrl));
 	}
 	document.body.appendChild(tooltipDiv);
 	positionTooltip(evt);
@@ -1270,16 +1285,15 @@ function createTooltip(evt) {
 		return;  // We can't do anything useful here.  We must wait for the XHR to respond.
 	}
 
-	var waitTime = ( dataCache[subjectUrl] != null ? 300 : 2000 );
+	var waitTime = ( dataCache[subjectUrl] != null ? 300 : 1000 );
 
-	timer = setTimeout(
-			function(){
-				if (stillFocused==link) {
-					initiateDoubleLookup(subjectUrl,function(foundResults,foundUrl) {
-						showResultsTooltip(foundResults,subjectUrl,lastMoveEvent || evt);
-					});
-				}
-			},waitTime);
+	timer = setTimeout(function(){
+		if (stillFocused==link) {
+			initiateDoubleLookup(subjectUrl,function(foundResults,foundUrl) {
+				showResultsTooltip(foundResults,subjectUrl,lastMoveEvent || evt);
+			});
+		}
+	},waitTime);
 
 
 }
