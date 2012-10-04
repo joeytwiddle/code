@@ -6,6 +6,7 @@
 // ==/UserScript==
 
 // TODO: Like Chrome's built-in popup, hide it when mouse is in that corner.
+// BUG: Doesn't show "..." when URL is too long to fit.
 
 var timer = null;
 var targetElem = null;
@@ -51,10 +52,10 @@ function hoverDetected() {
 		urlDisplayer.style.position = 'fixed';
 		urlDisplayer.style.left = '-4px';
 		urlDisplayer.style.bottom = '-4px';
-		urlDisplayer.style.backgroundColor = '#e8e8e8';
+		urlDisplayer.style.backgroundColor = '#E8E8E8';
 		urlDisplayer.style.color = 'black';
 		urlDisplayer.style.padding = '1px 3px 6px 5px';
-		urlDisplayer.style.border = '1px solid #a0a0a0';
+		urlDisplayer.style.border = '1px solid #A0A0A0';
 		urlDisplayer.style.fontSize = '12px';
 		urlDisplayer.style.maxHeight = '15px';
 		urlDisplayer.style.borderRadius = '4px';
