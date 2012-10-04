@@ -110,6 +110,8 @@ function handleNormalPage() {
 		}
 
 		if (passFaviconToHoldingPage) {
+			// I don't know how to grab the contents of the current favicon, so we
+			// try to directly load a copy for ourselves.
 			var url = document.location.href;
 			var targetHost = url.replace(/.*:\/\//,'').replace(/\/.*/,'');
 			loadFaviconIntoCanvas(targetHost,processFavicon);
@@ -155,6 +157,14 @@ function handleHoldingPage() {
 	setWindowTitle(mainReport);
 	setHibernateStatus(mainReport);
 
+	if (params.title) {
+		statusElement.appendChild(document.createElement("P"));
+		var div = document.createElement("tt");
+		div.style.fontSize = "0.8em";
+		div.appendChild(document.createTextNode(params.url));
+		statusElement.appendChild(div);
+	}
+
 	try {
 		var faviconDataURL = params.favicon_data;
 		if (!faviconDataURL) {
@@ -170,6 +180,17 @@ function handleHoldingPage() {
 		var url = decodeURIComponent(params.url);
 		setHibernateStatus("Returning to: "+url);
 		document.location.replace(url);
+		/*
+		// Alternative; preserves "forward"
+		window.history.back();  // TESTING!  With the fallback below, this seemed to work 90% of the time?
+		// Sometimes it doesn't work.  So we fallback to old method:
+		setTimeout(function(){
+			setHibernateStatus("window.history.back() FAILED - setting document.location");
+			setTimeout(function(){
+				document.location.replace(url);   // I once saw this put ':'s when it should have put '%35's or whatever.  (That broke 'Up' bookmarklet.)
+			},1000);
+		},2500);
+		*/
 		evt.preventDefault();   // Accept responsibility for the double-click.
 		return false;   // Prevent browser from doing anything else with it (e.g. selecting the word under the cursor).
 	}
@@ -326,9 +347,12 @@ function setHibernateStatus(msg) {
 
 /* +++ Favicon, Canvas and DataURL Magic +++ */
 
-function loadFavicon(targetHost,callback) {
+function loadFaviconForHost(targetHost,callback) {
+
 	// Try to load a favicon image for the given host, and pass it to callback.
-	// Except: If there is a link with rel="icon" in the page, use that image instead!
+	// Except: If there is a link with rel="icon" in the page, with host
+	// matching the current page location, load that image file instead of
+	// guessing the extension!
 
 	var favicon = document.createElement('img');
 	favicon.addEventListener('load',function() {
@@ -421,7 +445,7 @@ function loadFaviconIntoCanvas(targetHost,callback) {
 	var canvas = document.createElement('canvas');
 	var ctx = canvas.getContext('2d');
 
-	loadFavicon(targetHost,gotFavicon);
+	loadFaviconForHost(targetHost,gotFavicon);
 
 	function gotFavicon(favicon) {
 		if (favicon) {
