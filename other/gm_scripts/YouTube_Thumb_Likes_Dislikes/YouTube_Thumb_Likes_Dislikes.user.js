@@ -6,16 +6,18 @@
 // @include        https://youtube.com/*
 // @include        http://*.youtube.com/*
 // @include        https://*.youtube.com/*
-// For thumbnails when google is presenting video search - may not work!
+// For thumbnails when google is presenting video search - but probably fails from XSS
+// @include        http://www.google.co.uk/search?q=*&tbm=vid&*
 // @include        https://www.google.co.uk/search?q=*&tbm=vid&*
 // ==/UserScript==
 
 // Some YouTube videos get lots of views even though they are rubbish, maybe
-// even Rick Rolls.  This is probably because they have some faked screenshot
+// even Rick Rolls.  This may be because they have some enticing screenshot
 // and title that was part of an older or existing trend.
 
-// However, it is fairly easy to filter these out, if we see the video has
+// However, it is fairly easy to filter these out, if we can see the video has
 // significantly more dislikes than likes!
+
 
 
 // == Configuration == //
@@ -33,15 +35,25 @@ var addVideoDescriptionToTooltip = true;  // The "tooltip" is actually the
                                           // alt/title of a link, which
                                           // browsers display on hover.
 
-var spamYouTube = false;   // Automatically looks up ALL thumbnails on the page.
-                           // Normally it waits for a mouseover before doing lookup.
+var spamYouTube = false;   // Automatically looks up data for ALL the thumbnails on the page.
+                           // Normally it waits for a mouseover before doing a lookup.
+
+
+
+// BUG: It only triggers when we move our mouse *off* the link.  Why is that?!
+
 
 
 // Some other scripts like this:
 // http://userscripts.org/scripts/search?q=youtube+likes+dislikes&submit=Search
 
 function suitableLink(link) {
-	return (link.tagName == "A" && link.pathname.indexOf("/watch")==0);
+	return (
+		link.tagName == "A"
+		&& link.pathname.indexOf("/watch")==0
+		// But not if it's the same page:
+		&& link.href.replace(/#.*/,'') != document.location.href.replace(/#.*/,'')
+	);
 }
 
 function fakeGetElementById(root, id) {
@@ -121,6 +133,8 @@ function checkLikesDislikes(evt) {
 							if (lightSaber.clientWidth > 150) {
 								lightSaber.style.maxWidth = '120px';
 							}
+						} else {
+							elemWithTitle.title += " [No likes/dislikes available]";
 						}
 
 					}
@@ -149,7 +163,7 @@ function checkLikesDislikes(evt) {
 
 	}
 }
-document.body.addEventListener("mouseover",checkLikesDislikes,true);
+document.body.addEventListener("mouseover",checkLikesDislikes,false);
 
 if (spamYouTube) {
 	function queueLink(link,when) {
@@ -174,4 +188,7 @@ if (spamYouTube) {
 // TODO:
 // On search results pages, why does feature not active/work when we hover over
 // thumbs, only when we hover over the text/title links?
+
+// BUG TODO: Not all information is appearing on Feed pages, guess it's
+// appending to the wrong place.
 
