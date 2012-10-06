@@ -131,6 +131,7 @@ function addCloseButtonTo(where, toc) {
 	closeButton.style.cursor = 'pointer';
 	closeButton.style.paddingLeft = '5px';
 	closeButton.onclick = function() { toc.parentNode.removeChild(toc); };
+	closeButton.id = "closeTOC";
 	where.appendChild(closeButton);
 }
 
@@ -152,6 +153,7 @@ function addHideButtonTo(toc, tocInner) {
 		},5);
 	}
 	rollupButton.onclick = toggleRollUp;
+	rollupButton.id = "togglelink";
 	toc.appendChild(rollupButton);
 	if (GM_getValue("WI_toc_rolledUp",false)) {
 		toggleRollUp();
@@ -339,6 +341,14 @@ function doIt() {
 		}
 
 
+		function verbosely(fn) {
+			return function() {
+				// GM_log("[WI] Calling: "+fn+" with ",arguments);
+				return fn.apply(this,arguments);
+			};
+		};
+
+
 		function tryTOC() {
 
 			// Find the table of contents element:
@@ -353,7 +363,10 @@ function doIt() {
 
 				// Wikimedia's toc element is actually a table.  We must put the
 				// buttons in the title div, if we can find it!
-				var tocTitle = toc.getElementsByTagName("div")[0]; // fingers crossed!
+
+				var tocTitle = document.getElementById("toctitle"); // Wikipedia
+				tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
+				// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
 
 				// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
 				// We cannot test this immediately, because it gets loaded in later!
@@ -361,16 +374,18 @@ function doIt() {
 
 					var hideShowButton = document.getElementById("togglelink");
 					if (!hideShowButton) {
-						var tocInner = toc.getElementsByTagName("ul")[0]; // fingers crossed!
+						var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
+						tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
 						if (tocInner) {
-							addHideButtonTo(tocTitle || toc, tocInner);
+							verbosely(addHideButtonTo)(tocTitle || toc, tocInner);
 						}
 					}
 
-					// May be redundant, but provide a close button too.
-					// We also do this later, to ensure it appears on the right of
+					// We do this later, to ensure it appears on the right of
 					// any existing [hide/show] button.
-					addCloseButtonTo(tocTitle || toc, toc);
+					if (document.getElementById("closeTOC") == null) {
+						verbosely(addCloseButtonTo)(tocTitle || toc, toc);
+					}
 
 				},4000);
 
