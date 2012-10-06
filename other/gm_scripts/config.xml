@@ -1076,7 +1076,7 @@
 		<Include>http://*userscripts.org/*</Include>
 		<Exclude>http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html</Exclude>
 	</Script>
-	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines." version="" enabled="true" runAt="document-end" basedir="wikiindent" modified="1348799612000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327237939000">
+	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines." version="" enabled="true" runAt="document-end" basedir="wikiindent" modified="1349518091000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327237939000">
 		<Include>*wiki*</Include>
 		<Include>http://www.buzztard.com/*</Include>
 		<Include>http://encyclopediadramatica.com/*</Include>
@@ -1313,7 +1313,7 @@
 		<Exclude>http://*.wikipedia.*</Exclude>
 		<Require filename="jquerymin.js"/>
 	</Script>
-	<Script filename="table_of_contents_everyw.user.js" name="Table of Contents Everywhere" namespace="TOCE" description="On pages which do not have a Table of Contents, but should do, create one!" version="" enabled="true" runAt="document-end" basedir="table_of_contents_everyw" modified="1346802005000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327180006000">
+	<Script filename="table_of_contents_everyw.user.js" name="Table of Contents Everywhere" namespace="TOCE" description="On pages which do not have a Table of Contents, but should do, create one!" version="" enabled="true" runAt="document-end" basedir="table_of_contents_everyw" modified="1349518098000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327180006000">
 		<Include>http://*/*</Include>
 		<Include>https://*/*</Include>
 	</Script>
@@ -1327,7 +1327,7 @@
 	<Script filename="webpage_playlist.user.js" name="WebPage Playlist" namespace="WPP" description="Allows you to add links to a playlist, then navigate through your playlist.  Useful it you want to look at a set of pages without using multiple tabs." version="" enabled="true" runAt="document-end" basedir="webpage_playlist" modified="1315069035000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1315069035000">
 		<Include>http://*/*</Include>
 	</Script>
-	<Script filename="hibernate_idle_tabs.user.js" name="Hibernate Idle Tabs" namespace="HIT" description="If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions." version="" enabled="false" runAt="document-end" basedir="hibernate_idle_tabs" modified="1348697293000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327164302000">
+	<Script filename="hibernate_idle_tabs.user.js" name="Hibernate Idle Tabs" namespace="HIT" description="If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions." version="" enabled="false" runAt="document-end" basedir="hibernate_idle_tabs" modified="1349365014000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327164302000">
 		<Include>*</Include>
 	</Script>
 	<Script filename="ffixer.user.js" name="FFixer" namespace="http://code-poet.net/" description="Enhancements for Facebook: bigger profile pictures and photos, easier viewing of albums, links to download videos, showing people's age and sign, google calendar integration, keyboard shortcuts &amp; more. Compatible with new Facebook and fully customizable!" version="2.3.1" enabled="true" runAt="document-end" basedir="ffixer" modified="1315256687000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1315256687000" installurl="http://userscripts.org/scripts/source/8861.user.js" updateurl="http://userscripts.org/scripts/source/8861.meta.js">
@@ -1420,7 +1420,10 @@
 		<Include>https://images.google.*/search?*</Include>
 		<Include>https://encrypted.google.com/search?*</Include>
 	</Script>
-	<Script filename="Show_Link_URL_in_Corner.user.js" name="Show Link URL in Corner" namespace="SLUC" description="When hovering a link, some browsers (cough Firefox) no longer present information about what action clicking will perform.  This script pops up the target href/URL in the bottom-left corner of the page, like Chrome does." version="" enabled="true" runAt="document-end" basedir="Show_Link_URL_in_Corner" modified="1349362864000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1348703595000">
+	<Script filename="Show_Link_URL_in_Corner.user.js" name="Show Link URL in Corner" namespace="SLUC" description="When hovering a link, some browsers fail to present information about the link.  This script displays the target href/URL in the bottom-left corner of the page, like Chrome and Firefox do." version="" enabled="false" runAt="document-end" basedir="Show_Link_URL_in_Corner" modified="1349364230000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1348703595000">
+		<Include>*</Include>
+	</Script>
+	<Script filename="Bring_Back_The_Status_Bar.user.js" name="Bring Back The Status Bar" namespace="BBTSB" description="Miss being able to see the good old window.status?  This userscript will pop up the status in the corner of the page." version="" enabled="true" runAt="document-end" basedir="Bring_Back_The_Status_Bar" modified="1349514037000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="" lastUpdateCheck="">
 		<Include>*</Include>
 	</Script>
 </UserScriptConfig>
