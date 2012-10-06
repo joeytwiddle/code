@@ -160,6 +160,43 @@ if (!String.prototype.trim) {
 	};
 }
 
+function addCloseButtonTo(where, toc) {
+	var closeButton = newSpan("[X]");
+	// closeButton.style.float = 'right';
+	closeButton.style.cursor = 'pointer';
+	closeButton.style.paddingLeft = '5px';
+	closeButton.onclick = function() { toc.parentNode.removeChild(toc); };
+	closeButton.id = "closeTOC";
+	where.appendChild(closeButton);
+}
+
+function addHideButtonTo(toc,table) {
+	var rollupButton = newSpan("[-]");
+	// rollupButton.style.float = 'right';
+	// rollupButton.style.cssFloat = 'right'; // Firefox
+	// rollupButton.style.styleFloat = 'right'; // IE7
+	rollupButton.style.cursor = 'pointer';
+	rollupButton.style.paddingLeft = '10px';
+	function toggleRollUp() {
+		if (table.style.display == 'none') {
+			table.style.display = '';
+			rollupButton.textContent = "[-]";
+		} else {
+			table.style.display = 'none';
+			rollupButton.textContent = "[+]";
+		}
+		setTimeout(function(){
+			GM_setValue("TOCE_rolledUp", table.style.display=='none');
+		},5);
+	}
+	rollupButton.onclick = toggleRollUp;
+	rollupButton.id = "togglelink";
+	toc.appendChild(rollupButton);
+	if (GM_getValue("TOCE_rolledUp",false)) {
+		toggleRollUp();
+	}
+}
+
 
 
 // == Main == //
@@ -187,36 +224,10 @@ function buildTableOfContents() {
 		heading.style.fontSize = "100%";
 		toc.appendChild(heading);
 
-		var closeButton = newSpan("[X]");
-		closeButton.style.float = 'right';
-		closeButton.style.cursor = 'pointer';
-		closeButton.style.paddingLeft = '5px';
-		closeButton.onclick = function() { toc.parentNode.removeChild(toc); };
-		toc.appendChild(closeButton);
+		addCloseButtonTo(toc,toc);
 
 		var table = newNode("div");
-
-		var rollupButton = newSpan("[-]");
-		rollupButton.style.float = 'right';
-		rollupButton.style.cursor = 'pointer';
-		rollupButton.style.paddingLeft = '10px';
-		function toggleRollUp() {
-			if (table.style.display == 'none') {
-				table.style.display = '';
-				rollupButton.textContent = "[-]";
-			} else {
-				table.style.display = 'none';
-				rollupButton.textContent = "[+]";
-			}
-			setTimeout(function(){
-				GM_setValue("TOCE_rolledUp", table.style.display=='none');
-			},5);
-		}
-		rollupButton.onclick = toggleRollUp;
-		toc.appendChild(rollupButton);
-		if (GM_getValue("TOCE_rolledUp",false)) {
-			toggleRollUp();
-		}
+		addHideButtonTo(toc,table);
 
 		// The xpath query did not return the elements in page-order.
 		// We sort them back into the order they appear in the document
@@ -335,8 +346,8 @@ function buildTableOfContents() {
 }
 
 function postTOC(toc) {
-
 	if (toc) {
+
 		// We make the TOC float regardless whether we created it or it already existed.
 		// Interestingly, the overflow settings seems to apply to all sub-elements.
 		// E.g.: http://mewiki.project357.com/wiki/X264_Settings#Input.2FOutput
@@ -350,8 +361,8 @@ function postTOC(toc) {
 			+ "#"+tocID+"       { opacity: 0.2; }"
 			+ "#"+tocID+":hover { opacity: 1.0; }"
 		);
-	}
 
+	}
 }
 
 function searchForTOC() {
@@ -363,15 +374,41 @@ function searchForTOC() {
 		tocFound = tocFound || (document.getElementsByClassName && document.getElementsByClassName("toc")[0]);
 		tocFound = tocFound || document.getElementById("article-nav");   // developer.mozilla.org
 		tocFound = tocFound || document.getElementById("page-toc");      // developer.mozilla.org
+		tocFound = tocFound || (document.getElementsByClassName && document.getElementsByClassName("twikiToc")[0]);      // TWiki
 
 		var toc = tocFound;
 
 		// With the obvious exception of Wikimedia sites, most found tocs do not contain a hide/close button.
 		// TODO: If we are going to make the toc float, we should give it rollup/close buttons, unless it already has them.
+		// The difficulty here is: where to add the buttons in the TOC, and which part of the TOC to hide, without hiding the buttons!
+		// Presumably we need to identify the title element (first with textContent) and collect everything after that into a hideable block (or hide/unhide each individually when needed).
 
 		if (toc) {
 
 			postTOC(toc);
+
+			// The following from wikiindent.user.js
+
+			var tocTitle = document.getElementById("toctitle"); // Wikipedia
+			tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
+			// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
+
+			// GM_log("TOC = "+toc.innerHTML+" firstChild="+toc.firstChild+" tocTitle="+tocTitle);
+
+			var hideShowButton = document.getElementById("togglelink");
+			if (!hideShowButton) {
+				var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
+				tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
+				if (tocInner) {
+					// GM_log("[TOCE] Adding hide button to "+toc+" acting on "+tocInner);
+					addHideButtonTo(tocTitle || toc, tocInner);
+				}
+			}
+
+			// GM_log("[TOCE] Adding close button to "+toc);
+			if (document.getElementById("closeTOC") == null) {
+				addCloseButtonTo(tocTitle || toc, toc);
+			}
 
 		} else {
 
