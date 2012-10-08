@@ -61,6 +61,10 @@ var verbose = false;                  // Extra logging for debugging
 
 // == NOTES ==
 
+// BUG: On very large pages this can run very slowly, locking up your Firefox.
+// I blame this on inefficient generation of XPaths (the for loop in getXPath).
+// TODO: This can be easily fixed, since we don't actually use those numbers!
+
 // You can avoid this script either by clicking a link before it runs or by
 // activating the desired link with the keyboard instead of the mouse.
 
