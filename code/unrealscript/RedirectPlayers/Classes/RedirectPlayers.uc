@@ -1,7 +1,8 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
 
-// BUG TODO: If a player joins and leaves before SecondsBeforeRedirection, they will not get redirected, and NextPlayerToDo may get stuck on that players PlayerID, and will fail to redirect any more players.
+// AVOIDED: If a player joins and leaves before SecondsBeforeRedirection, they will not get redirected, and NextPlayerToDo may get stuck on that players PlayerID, and will fail to redirect any more players.  So we are no longer using NextPlayerToDo.
 // TODO CONSIDER: If the redirection fails (e.g. because the map on the target server switches before they join) then redirection should ideally be retried.  But we don't want to retry every say 30 seconds, in case the map download takes 40 seconds.  Can we actually tell if the player is in the process of connecting to another server?
+// BUG TODO: What happens after we have redirected 64 players?  When can we reset bHasBeenRedirected[id]=0?  Current workaround: restart the map often :p
 
 class RedirectPlayers expands Mutator config(RedirectPlayers);
 
@@ -11,11 +12,13 @@ var config float SecondsBeforeRedirection;
 var config bool bTellPlayers;
 var config bool bLog;
 
+var int bHasBeenRedirected[64];
+
 // We must not redirect the same player twice, as this will cause his download
 // to restart if he is downloading a big file from the target server.
-var int NextPlayerToDo;
-// However this approach sucks.  If a player joins and leaves fast, it might
-// leave a gap that NextPlayerToDo will never cross.
+// var int NextPlayerToDo;
+// However this approach sucked.  If a player joins and leaves fast, it might
+// leave a gap that NextPlayerToDo will never cross!
 
 defaultproperties {
 	bEnabled=True
@@ -28,40 +31,46 @@ defaultproperties {
 function PostBeginPlay() {
 	// If we were not added as a mutator, but run in some other way (e.g. as a ServerActor), then we need to register as a mutator:
 	// Level.Game.BaseMutator.AddMutator(Self);
-	if (bEnabled) {
-		Log("[RedirectPlayers] Will send players to: "$ TargetURL);
-		// SetTimer(10,True); // BUG DONE: When I had SetTimer(1) my UT crashed.  But there's a 1 in 10 chance of hitting the timer right when you join, so this may still happen to some players.  We should check their time-in-game.
-		SetTimer(1,True);
-		// BUG DONE: Also this will call repeatedly and if a player has to download packages, it may restart their download every 10 seconds.  =/
-		NextPlayerToDo=0;
-	}
+	Log("[RedirectPlayers] Will send players to: "$ TargetURL);
+	// SetTimer(10,True); // BUG DONE: When I had SetTimer(1) my UT crashed.  But there's a 1 in 10 chance of hitting the timer right when you join, so this may still happen to some players.  We should check their time-in-game.
+	SetTimer(1,True);
+	// BUG DONE: Also this will call repeatedly and if a player has to download packages, it may restart their download every 10 seconds.  =/
+	// NextPlayerToDo=0;
 	Super.PostBeginPlay();
 }
 
 function CheckRedirect(Pawn p) {
-	// We must check bots too, or NextPlayerToDo will never increase.
+	local int id;
 	if (bEnabled) {
+
 		// if (UTServerAdminSpectator(p)!=None) // he has id 0 although first player has id 0 also!
 		if (InStr(""$p.Class,"UTServerAdminSpectator")>=0 || InStr(""$p.Class,"MvReporterSpectator")>=0) {
-			if (bLog)
-				Log("[RedirectPlayers] Skipping player "$p$" because class="$p.Class);
-			NextPlayerToDo++;
+			//// Meh we don't want to spam the log ever time we check.
+			// if (bLog)
+				// Log("[RedirectPlayers] Skipping player "$p$" because class="$p.Class);
+			// NextPlayerToDo++;
 			return;
 		}
-		if (p.PlayerReplicationInfo!=None && p.PlayerReplicationInfo.PlayerID==NextPlayerToDo && (Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)>SecondsBeforeRedirection) {
-			if (PlayerPawn(p) != None) {
-				if (!PlayerPawn(p).bAdmin) {
-					if (bTellPlayers)
-						PlayerPawn(p).ClientMessage("You are being redirected to "$ TargetURL);
-					if (bLog)
-						Log("[RedirectPlayers] Redirecting "$ p.getHumanName() $" to "$ TargetURL $" class="$p.Class);
-					PlayerPawn(p).PreClientTravel();
-					PlayerPawn(p).ClientTravel(TargetURL, TRAVEL_Absolute, False);
-					// Consider: Just curious, can we also do this with p.ConsoleCommand("open "$ TargetURL); ?
+
+		id = p.PlayerReplicationInfo.PlayerID; // %64
+		// && p.PlayerReplicationInfo.PlayerID==NextPlayerToDo 
+		if (bHasBeenRedirected[id] == 0) {
+			if ((Level.TimeSeconds - p.PlayerReplicationInfo.StartTime)>SecondsBeforeRedirection) {
+				if (PlayerPawn(p) != None) {
+					if (!PlayerPawn(p).bAdmin) {
+						if (bTellPlayers)
+							PlayerPawn(p).ClientMessage("You are being redirected to "$ TargetURL);
+						if (bLog)
+							Log("[RedirectPlayers] Redirecting "$ p.getHumanName() $" to "$ TargetURL $" class="$p.Class);
+						PlayerPawn(p).PreClientTravel();
+						PlayerPawn(p).ClientTravel(TargetURL, TRAVEL_Absolute, False);
+						bHasBeenRedirected[id] = 1;
+						// Consider: Just curious, can we also do this with p.ConsoleCommand("open "$ TargetURL); ?
+					}
 				}
+				// Log("[RedirectPlayers] Dealt with ["$NextPlayerToDo$"] "$ p.getHumanName());
+				// NextPlayerToDo++;
 			}
-			Log("[RedirectPlayers] Dealt with ["$NextPlayerToDo$"] "$ p.getHumanName());
-			NextPlayerToDo++;
 		}
 	}
 }
