@@ -198,8 +198,14 @@ function checkLink(link) {
 	lastURL = link.href;
 
 	var img = createFaviconFor(link.href);
+	// img.style = getStyleString();
+	getStyleString().split(/; */).forEach(function(r){
+		var p = r.split(/: */);
+		img.style[p[0]] = p[1];
+		GM_log("img.style["+p[0]+"] = "+p[1]);
+	});
 	img.style.display = 'none';
-	var loadListener = function(img){return function(){ img.style.display = ''; };}(img);
+	var loadListener = function(img){return function(){ img.style.display = 'inline'; };}(img);
 	img.addEventListener('load',loadListener,false);
 	var targetNode = link;
 	if (placeFaviconInsideLink) {
@@ -244,15 +250,21 @@ function addStyle(css) {
 	document.getElementsByTagName('head')[0].appendChild(style);
 }
 
+function getStyleString() {
+	var padSide = (placeFaviconAfter?'left':'right');
+	// var avoidOverflow = "float: left;"; // AVOID_OVERFLOW TESTING is it always suitable?  Works well on Google search results header links.  Yeah ok it was rubbish.  The favicon for a link in a paragraph appears at the beginning of the paragraph!
+	var resetStyles = "display: inline; margin: 0px; padding: 0px; border: 0px; background: none; position: static;";
+	var setStyles = "margin-"+padSide+": "+(scaleIcon/3)+"em; opacity: 0.7; width: "+scaleIcon+"em; height: "+scaleIcon+"em; vertical-align: 0em;";
+	return resetStyles + " "+ setStyles;
+}
+
 function doIt() {
 
 	// GM_log("doIt() was called!");
 
-	var padSide = (placeFaviconAfter?'left':'right');
-	// var avoidOverflow = "float: left;"; // AVOID_OVERFLOW TESTING is it always suitable?  Works well on Google search results header links.  Yeah ok it was rubbish.  The favicon for a link in a paragraph appears at the beginning of the paragraph!
-	var resetStyles = " display: none; margin: 0px; padding: 0px; border: 0px; background: none; ";
-	var setStyles = " margin-"+padSide+": "+(scaleIcon/3)+"em; opacity: 0.7; width: "+scaleIcon+"em; height: "+scaleIcon+"em; vertical-align: 0em; ";
-	addStyle(".ftwFavicon { "+resetStyles+" "+setStyles+" }");
+	//// Unfortunately this can be overridden by more specific page rules.
+	// addStyle(".ftwFavicon { "+getStyleString()+" }");
+	//// To override that, we put style rules in each element.
 
 	// vertical-align: middle; <-- appears to make alignment worse in Chrome!
 	// Settled for vertical-align: 0em; which fits since capital text seem to be about 0.75em tall
