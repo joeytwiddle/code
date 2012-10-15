@@ -201,8 +201,14 @@ function checkLink(link) {
 	// img.style = getStyleString();
 	getStyleString().split(/; */).forEach(function(r){
 		var p = r.split(/: */);
-		img.style[p[0]] = p[1];
-		// GM_log("img.style["+p[0]+"] = "+p[1]);
+		var prop = p[0];
+		var val  = p[1];
+		var i;
+		while ( (i = prop.indexOf("-")) >= 0) {
+			prop = prop.substring(0,i) + prop.substring(i+1,i+2).toUpperCase() + prop.substring(i+2);
+		}
+		// GM_log("img.style["+prop+"] = "+val);
+		img.style[prop] = val;
 	});
 	img.style.display = 'none';
 	var loadListener = function(img){return function(){ img.style.display = 'inline'; };}(img);
