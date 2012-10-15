@@ -202,7 +202,7 @@ function checkLink(link) {
 	getStyleString().split(/; */).forEach(function(r){
 		var p = r.split(/: */);
 		img.style[p[0]] = p[1];
-		GM_log("img.style["+p[0]+"] = "+p[1]);
+		// GM_log("img.style["+p[0]+"] = "+p[1]);
 	});
 	img.style.display = 'none';
 	var loadListener = function(img){return function(){ img.style.display = 'inline'; };}(img);
