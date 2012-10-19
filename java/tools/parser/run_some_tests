@@ -13,3 +13,7 @@ echo "Balling up a backup."
 tar cfz last_working_build.tgz src/ bin/ &
 # Beware: Since this tarball contains CVS folders, it can disrupt your local CVS status if it's old!
 
+mkdir -p backups
+cp -f ./last_working_build.tgz backups/last_working_build.tgz
+rotate -keep -nozip -max 5 backups/last_working_build.tgz
+
