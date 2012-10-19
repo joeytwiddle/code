@@ -112,12 +112,14 @@ Main = GrammarDefn
 # java: "package grammars;\n\n" GrammarDefn
 
 GrammarDefn = Grm
-java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
+java: "package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n" Grm "  }\n}\n"
 hugs: "module Grammar where\n\ndata Type = Atom String | Var String | Str String\n          | VarExcl String String\n  deriving (Eq)\n\ndata Match = No | Yes Type String [Match] String\n  deriving (Eq)\n\ntype RuleSet = [[Type]]\n\ntype Rule = ( Type , RuleSet , [Replacement] )\n\ntype Replacement = ( String , [Type])\n\n\nrules = [ " Grm " ]\n"
 
 Grm = GrmHeaderBit* GrmBit*
 
-GrmHeaderBit = GrmOption | GrmImport | GrmExtend | Whitespace | Comment
+GrmHeaderBit = GrmAt | Whitespace | Comment
+
+GrmAt = GrmOption | GrmImport | GrmExtend | GrmOtherAt
 
 GrmOption = "@OPTION" HorizSpace <optname/" \t\n\r"> HorizSpace OptOptionArgs NL
 java: "    grammar.setOption_" <optname> "(" OptOptionArgs ");\n"
@@ -140,6 +142,10 @@ GrmImport = "@IMPORT" HorizSpace <namespace/" \t\n\r"> HorizSpace "!qt!" <filena
 java: "    grammar.importNamespace(!qt!" <namespace> "!qt!,!qt!" <filename> "!qt!);\n"
 
 GrmExtend = "@EXTEND" HorizSpace "!qt!" <filename/"!qt!\n"> "!qt!" NL
+
+GrmOtherAt = "@" <option_name/" \n"> OptHorizSpace <rest/"\n"> NL
+## For prototyping, for now, we allow grammar to insert any Java it likes.
+java: "    " <rest>
 
 # TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.
 # No dude it won't ever test Comment or AtomDef if Whitespace matched, it returns on a whole match.  Therefore ! is only useful if it comes before the end of the line.
@@ -184,6 +190,7 @@ hugs: Replacement ",\n" Replacements
 # Note that use of + and * make it harder to place things *inbetween* the
 # elements during output (list join), so the above hugs output cannot currently
 # be easily reproduced with + or * as in the new rule below!
+# Really?  Doesn't the "\n" just get output again literally?
 
 # Replacements = ( Replacement "\n" )+
 # Replacements = Replacement ( "\n" Replacement )+ | ""
@@ -205,9 +212,11 @@ DefnAnd = DefnBit " " Defn
 java: DefnBit Defn
 hugs: DefnBit ", " Defn
 
-# RelativeElement is only used for output, not matching.
+# ReplacementElement is only used for output/replacement lines, not the rule definition.
+# However at the moment we have included it in DefnBit.
 # Perhaps we should create DefnBit and OutDefnBit, the latter containing those
 # few extra rules which can only be used for outputs.
+# Yes we should.
 
 DefnBit = ReplacementElement
         | BasicElement OptRepeatMarker

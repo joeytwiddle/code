@@ -4,6 +4,7 @@ import java.lang.String;
 import java.util.Vector;
 
 import tools.parser.*;
+import tools.parser.extensions.*;
 
 public class dlangGrm extends GrammarHelper {
   public static void setupgrammar() {
@@ -32,6 +33,10 @@ public class dlangGrm extends GrammarHelper {
     // element in an array than l[l.length-1]
 
     // @OPTION wrap_meaningful_indentation "{" "}"
+    grammar.addPreProcessor(new WrapMeaningfulIndentation("{","}"));    // Wrapping indented blocks in {...} is one way to make them easily visible to the grammar/parse.  Another way would be to detect and mark only OUTDENTs.  These could be used to catch the end of a block when expected, or ignored when uninteresting (e.g. sometimes long expressions are broken onto lines and indented).
+
+    // Many languages suffer from stuff that is irrelevant.  E.g. whitespace and comments.  Usually wherever we accept one we also accept the other.  So WS searches are in fact incorrect.  Recommend creating a minimalist gramelle for this: _ = (WS | Comment)+
+    // We could attempt to swallow unneccessary braces "{" in multi-line expressions "}" using _e = (WS | Comment | RedundantBrace)*
 
     grammar.importNamespace("DExpression","dexpr.grm");
 

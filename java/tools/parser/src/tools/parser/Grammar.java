@@ -1,9 +1,11 @@
 package tools.parser;
 import java.lang.String;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Vector;
 
 import tools.parser.*;
+import tools.parser.extensions.WrapMeaningfulIndentation;
 
 // @todo Replace the Vector with a Hashtable, so that later atom definitions can
 // overwrite earlier ones.
@@ -48,5 +50,10 @@ public class Grammar {
 	public void setOption(String name, String[] args) {
 		
 	}
+
+	List<PreProcessor> preProcessors = new Vector<PreProcessor>();
+	public void addPreProcessor(PreProcessor preProcessor) {
+		preProcessors.add(preProcessor);
+   }
   
 }

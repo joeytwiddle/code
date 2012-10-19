@@ -4,6 +4,7 @@ import java.lang.String;
 import java.util.Vector;
 
 import tools.parser.*;
+import tools.parser.extensions.*;
 
 public class grmGrm extends GrammarHelper {
   public static void setupgrammar() {
@@ -76,7 +77,7 @@ public class grmGrm extends GrammarHelper {
     // MagicTokenOfEfficiency, in that the former would commit to the current line
     // not just for the current atom but for the whole parse.  So if the line does
     // not match after a MagicTokenOfDoom has been passed, we can display an error
-    // "expected <NextToken> but got <remaining_string>".
+    // "expected <NextType> but got <remaining_string>".
     //
     // Possible magic tokens:
     //   Taken: * + ( ) [ ] $ = # @
@@ -86,6 +87,9 @@ public class grmGrm extends GrammarHelper {
     // ! and ^ are suitable for the DoNotMatch condition.
     // The association of ! with warnings makes it a good candidate for MagicTokenOfDoom.
     // We can also consider different meanings for &, && and &&&.
+    //   !   = not
+    //   !!  = MagicTokenOfEfficiency
+    //   !!! = MagicTokenOfDoom
 
     // TODO: Do we want to demand spaces separate the elements of atom rules?  If
     // so, we should check that this is enforced by the grammar (it should be
@@ -134,7 +138,7 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
+        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
         rule.add(new Atom("Grm"));
         rule.add(new Text("  }\n}\n"));
     ruleset.replacements.put("java",rule);
@@ -160,6 +164,20 @@ public class grmGrm extends GrammarHelper {
     ruleset=new RuleSet("GrmHeaderBit");
       grammar.addRuleset(ruleset);
       rule=new Vector<Type>();
+        rule.add(new Atom("GrmAt"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Whitespace"));
+      ruleset.add(rule);
+      rule=new Vector<Type>();
+        rule.add(new Atom("Comment"));
+      ruleset.add(rule);
+    // Replacements
+
+
+    ruleset=new RuleSet("GrmAt");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
         rule.add(new Atom("GrmOption"));
       ruleset.add(rule);
       rule=new Vector<Type>();
@@ -169,10 +187,7 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Atom("GrmExtend"));
       ruleset.add(rule);
       rule=new Vector<Type>();
-        rule.add(new Atom("Whitespace"));
-      ruleset.add(rule);
-      rule=new Vector<Type>();
-        rule.add(new Atom("Comment"));
+        rule.add(new Atom("GrmOtherAt"));
       ruleset.add(rule);
     // Replacements
 
@@ -288,6 +303,23 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Atom("NL"));
       ruleset.add(rule);
     // Replacements
+
+
+    ruleset=new RuleSet("GrmOtherAt");
+      grammar.addRuleset(ruleset);
+      rule=new Vector<Type>();
+        rule.add(new Text("@"));
+        rule.add(new Var("option_name"," \n"));
+        rule.add(new Atom("OptHorizSpace"));
+        rule.add(new Var("rest","\n"));
+        rule.add(new Atom("NL"));
+      ruleset.add(rule);
+    // Replacements
+    //# For prototyping, for now, we allow grammar to insert any Java it likes.
+    rule=new Vector<Type>();
+        rule.add(new Text("    "));
+        rule.add(new Var("rest"));
+    ruleset.replacements.put("java",rule);
 
 
     // TODO: We can try adding ! after Whitespace.  If we have matched some Whitespace then it can't be a comment or an AtomDef, so recursion back through here can quit easily.

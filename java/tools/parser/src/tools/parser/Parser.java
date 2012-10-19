@@ -118,6 +118,9 @@ public class Parser implements ActionListener {
 		}
 		
 		ParseContext ctx = new ParseContext();
+		
+		// @todo Apply preprocessors
+		
 		Match m = parseString(toparse, ctx);
 
 		if (m == null)
