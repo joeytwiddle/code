@@ -1,3 +1,5 @@
+#!/bin/sh
+
 [ "$1" = "" ] && echo "grammar name?" && exit 0
 
 name="$1"
