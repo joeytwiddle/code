@@ -39,13 +39,15 @@ public class Atom implements MagicType {
 	
 	String type;
 
-	/* Feature!  If all the line numbers are above 100, they align nicely in the log. :P
-	
-	    Fold this comment block away in your editor, or delete it if you don't need this feature.
-	
-	
-	
-	
+
+	/* The following gap is a feature!
+
+	   If all the line numbers are above 100, they align nicely in the log. :P
+
+	   Fold this comment block away in your editor, or delete it if you don't need this feature.
+
+
+
 	
 	
 	
