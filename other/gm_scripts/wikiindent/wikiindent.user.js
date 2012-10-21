@@ -26,7 +26,7 @@ var delayUnhide = ( document.getElementById("mw-panel") ? 250 : 0 );
 var debug = true;
 
 
-/* TODO: As we scroll the page, light up the "current" section in the TOC.
+/* CONSIDER: As we scroll the page, light up the "current" section in the TOC.
  *
  * FIXED: One occasional problem with the TOC is when it is taller than the
  *      window!  (I usually work around this by zooming out (reducing font
@@ -35,6 +35,8 @@ var debug = true;
  * NOTE: The sidebar toggle now animates smoothly.  This is caused by animation
  * rules in Wikipedia's CSS.  I don't know why they are there, I haven't seen
  * anything that makes use of them, except by circumstance, this script!
+ *
+ * TODO: Indentation was not working well in edit preview on Hwiki(MW).
 */
 
 /* Changelog
@@ -158,6 +160,49 @@ function addHideButtonTo(toc, tocInner) {
 	if (GM_getValue("WI_toc_rolledUp",false)) {
 		toggleRollUp();
 	}
+}
+
+// The following mirrored in table_of_contents_everyw.user.js
+
+function addButtonsConditionally(toc) {
+
+	function verbosely(fn) {
+		return function() {
+			// GM_log("[WI] Calling: "+fn+" with ",arguments);
+			return fn.apply(this,arguments);
+		};
+	};
+
+	// Provide a hide/show toggle button if the TOC does not already have one.
+
+	// Wikimedia's toc element is actually a table.  We must put the
+	// buttons in the title div, if we can find it!
+
+	var tocTitle = document.getElementById("toctitle"); // Wikipedia
+	tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
+	// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
+
+	// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
+	// We cannot test this immediately, because it gets loaded in later!
+	setTimeout(function(){
+
+		var hideShowButton = document.getElementById("togglelink");
+		if (!hideShowButton) {
+			var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
+			tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
+			if (tocInner) {
+				verbosely(addHideButtonTo)(tocTitle || toc, tocInner);
+			}
+		}
+
+		// We do this later, to ensure it appears on the right of
+		// any existing [hide/show] button.
+		if (document.getElementById("closeTOC") == null) {
+			verbosely(addCloseButtonTo)(tocTitle || toc, toc);
+		}
+
+	},4000);
+
 }
 
 function doIt() {
@@ -341,14 +386,6 @@ function doIt() {
 		}
 
 
-		function verbosely(fn) {
-			return function() {
-				// GM_log("[WI] Calling: "+fn+" with ",arguments);
-				return fn.apply(this,arguments);
-			};
-		};
-
-
 		function tryTOC() {
 
 			// Find the table of contents element:
@@ -359,35 +396,7 @@ function doIt() {
 
 			if (toc) {
 
-				// Provide a hide/show toggle button if the TOC does not already have one.
-
-				// Wikimedia's toc element is actually a table.  We must put the
-				// buttons in the title div, if we can find it!
-
-				var tocTitle = document.getElementById("toctitle"); // Wikipedia
-				tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
-				// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
-
-				// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
-				// We cannot test this immediately, because it gets loaded in later!
-				setTimeout(function(){
-
-					var hideShowButton = document.getElementById("togglelink");
-					if (!hideShowButton) {
-						var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
-						tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
-						if (tocInner) {
-							verbosely(addHideButtonTo)(tocTitle || toc, tocInner);
-						}
-					}
-
-					// We do this later, to ensure it appears on the right of
-					// any existing [hide/show] button.
-					if (document.getElementById("closeTOC") == null) {
-						verbosely(addCloseButtonTo)(tocTitle || toc, toc);
-					}
-
-				},4000);
+				addButtonsConditionally(toc);
 
 				// toc.style.backgroundColor = '#eeeeee';
 				// alert("doing it!");
