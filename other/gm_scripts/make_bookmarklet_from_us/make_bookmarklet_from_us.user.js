@@ -88,9 +88,9 @@ function addBookmarklet(link) {
 	newLink.textContent = name;
 
 	var newContainer = document.createElement("SPAN");
-	newContainer.appendChild(document.createTextNode("(Bookmarklet: "));
+	newContainer.appendChild(document.createTextNode("(Drag Bookmarklet: "));
 	newContainer.appendChild(newLink);
-	var extraString = ( neverCache || includeGMCompat ? neverCache && includeGMCompat ? " (NoCaching,WithGMFallbacks)" : neverCache ? " (NoCaching)" : " (WithGMFallbacks)" : "" );
+	var extraString = ( neverCache || includeGMCompat ? neverCache && includeGMCompat ? " (no-caching, with GM fallbacks)" : neverCache ? " (no-caching)" : " (with GM fallbacks)" : "" );
 	if (extraString) {
 		// newContainer.appendChild(document.createTextNode(extraString));
 		var extraText = document.createElement("span");
@@ -111,7 +111,7 @@ function addQuickInstall(link) {
 	var name = link.href.match(/([^\/]*)\/$/)[1];
 	var newLink = document.createElement("A");
 	newLink.href = link.href + name+".user.js";
-	newLink.textContent = "Install"; // name+".user.js";
+	newLink.textContent = "Install Userscript"; // name+".user.js";
 	var newContainer = document.createElement("span");
 	newContainer.appendChild(document.createTextNode("      ["));
 	newContainer.appendChild(newLink);
