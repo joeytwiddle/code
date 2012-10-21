@@ -55,6 +55,22 @@
           var flink = link+ytvidid;
           var lcheck = location.href;
           if(lcheck != flink){
+
+             try {
+                var player = window.document.getElementById('movie_player');
+                // If we are in Greasemonkey's sandbox, we need to get out!
+                if (player.wrappedJSObject) {
+                   player = player.wrappedJSObject;
+                }
+                if (player) {
+                   player.pauseVideo();
+                   var time = player.getCurrentTime();
+                   flink += "#at="+(time|0);
+                }
+             } catch (e) {
+                GM_log(""+e);
+             }
+
              // window.location = flink;
              window.open(flink,"Youtube Popout","menubar=no,location=no,resizable=no,scrollbars=no,status=no,toolbar=no");
           }
