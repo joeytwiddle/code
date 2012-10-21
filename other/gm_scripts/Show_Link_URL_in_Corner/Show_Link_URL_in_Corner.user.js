@@ -6,8 +6,7 @@
 // ==/UserScript==
 
 // FIXED: Now works when hovering child/descendent of A, e.g. IMG or EM.
-// TODO: Like Chrome's built-in popup, hide it when mouse is in that corner.
-// BUG: Doesn't show "..." when URL is too long to fit.
+// BUG: Doesn't show "..." when URL is too long to fit.  Can remove maxHeight below.
 
 var timer = null;
 var targetElem = null;
@@ -65,7 +64,7 @@ function hoverDetected() {
 		urlDisplayer.style.padding = '1px 3px 6px 5px';
 		urlDisplayer.style.border = '1px solid #A0A0A0';
 		urlDisplayer.style.fontSize = '12px';
-		urlDisplayer.style.maxHeight = '15px';
+		urlDisplayer.style.maxHeight = '15px';   // Remove this line if you want the popup to get taller to accomodate really long links.
 		urlDisplayer.style.borderRadius = '4px';
 		urlDisplayer.style._mozBorderRadius = '4px';
 		urlDisplayer.style.zIndex = 100;
