@@ -7,6 +7,9 @@
 
 var initialSpeed = 10;
 
+// var resetThreshold = 1;   // Detects when user scrolls during auto-scroll (occasionally!)
+var resetThreshold = 10;   // Allows auto-scroll to work when zoomed in.
+
 // 2012/10/09  Now runs at 60fps or whatever machine can handle
 // However, this means PageDown/PageUp now have no effect, because the real value is always used.
 // TODO: We could check if getScrollPosition gives us something far from realy, and if so assume the user has moved the page, then re-init realy if we want to continue scrolling.
@@ -87,7 +90,7 @@ var abs = Math.abs;
 
 var maxPerSecond = 60;
 
-var realx,realy,lastTime;   // real as in float
+var realx,realy,lastTime;   // real as in float, we store fractional position for smoothness
 
 function startScroller() {
 	u44573_go = true;
@@ -100,10 +103,22 @@ function startScroller() {
 
 function u44573_goScroll() {
 	if (u44573_go) {
+
+		// Check if the user has scrolled the page with a key since we last scrolled.
+		// If so, update our realx,realy.
+		// BUG: Argh the check isn't working in Firefox 90% of the time!
+		//      Hold down the key to beat those odds.
+		var s = u44573_getScrollPosition();
+		if ( abs(s[0]-realx) > resetThreshold || abs(s[1]-realy) > resetThreshold ) {
+			realx = s[0];
+			realy = s[1];
+		}
+
 		var timeNow = new Date().getTime();
 		var elapsed = timeNow - lastTime;
 		var jumpPixels = abs(scrollSpeed) * elapsed/1000;
 		var timeToNext = 1000/maxPerSecond;
+
 		// The browser can only jump a whole number of pixels, and it rounds down.
 		// We had to do the following anyway for jumpPixels<1 but by doing it for
 		// small numbers (<5) we workaround the analogue/digital bug.  (5*1.2=6)
@@ -124,14 +139,18 @@ function u44573_goScroll() {
 			}
 		*/
 		// unsafeWindow.scroll(s[0], s[1] + jumpPixels*sgn(scrollSpeed));
+
 		realy += jumpPixels*sgn(scrollSpeed);
 		unsafeWindow.scroll(realx, realy); // Leave it to browser to round real values to ints
+
 		lastTime = timeNow;
+
 		if (scrollSpeed == 0) {
 			u44573_go = false;
 		} else {
 			setTimeout(u44573_goScroll, timeToNext);
 		}
+
 	}
 }
 
