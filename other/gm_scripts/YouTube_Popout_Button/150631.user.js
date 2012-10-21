@@ -58,11 +58,11 @@
 
              try {
                 var player = window.document.getElementById('movie_player');
-                // If we are in Greasemonkey's sandbox, we need to get out!
-                if (player.wrappedJSObject) {
-                   player = player.wrappedJSObject;
-                }
                 if (player) {
+                   // If we are in Greasemonkey's sandbox, we need to get out!
+                   if (player.wrappedJSObject) {
+                      player = player.wrappedJSObject;
+                   }
                    player.pauseVideo();
                    var time = player.getCurrentTime();
                    flink += "#at="+(time|0);
@@ -72,7 +72,8 @@
              }
 
              // window.location = flink;
-             window.open(flink,"Youtube Popout","menubar=no,location=no,resizable=no,scrollbars=no,status=no,toolbar=no");
+             // Change "YoutubePopout" to "_blank" if you want new popouts to appear in a separate window from the existing popout.
+             window.open(flink,"YoutubePopout","menubar=no,location=no,resizable=yes,status=no,toolbar=no,personalbar=no");
           }
        }
 
