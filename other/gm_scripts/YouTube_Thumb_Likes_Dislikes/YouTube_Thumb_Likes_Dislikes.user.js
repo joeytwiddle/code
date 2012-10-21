@@ -6,7 +6,7 @@
 // @include        https://youtube.com/*
 // @include        http://*.youtube.com/*
 // @include        https://*.youtube.com/*
-// For thumbnails when google is presenting video search - but probably fails from XSS
+//// For thumbnails when google search presents video results - but probably fails from XSS in Chrome
 // @include        http://www.google.co.uk/search?q=*&tbm=vid&*
 // @include        https://www.google.co.uk/search?q=*&tbm=vid&*
 // ==/UserScript==
@@ -92,11 +92,12 @@ function checkLikesDislikes(evt) {
 
 		function gotTargetPage(response) {
 			var content = response.responseText;
-			// GM_log("GOT CONTENT: "+content);
+			// GM_log("GOT CONTENT LENGTH: "+content.length);
 			if (content) {
 				var lePage = document.createElement("div");
 				lePage.innerHTML = content;
 				var infoElem = lePage.getElementsByClassName("watch-likes-dislikes")[0];
+				infoElem = infoElem || lePage.getElementsByClassName("video-extras-likes-dislikes")[0]; // Oct 2012
 				// GM_log("GOT INFOELEM: "+infoElem);
 				if (infoElem) {
 					var infoText = infoElem.textContent.trim();
@@ -121,6 +122,7 @@ function checkLikesDislikes(evt) {
 					if (addLightSaberBarToThumbnail) {
 
 						var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
+						lightSaber = lightSaber || lePage.getElementsByClassName("video-extras-sparkbars")[0]; // Oct 2012
 						if (lightSaber) {
 							// Pictures are easier to read than words:
 							target.appendChild(lightSaber);
@@ -152,13 +154,17 @@ function checkLikesDislikes(evt) {
 			}
 		}
 
+		// GM_log("Requesting: "+target.href);
 		GM_xmlhttpRequest({
 			method: "GET",
 			url: target.href,
 			headers: {
-				"Reason": "I want to display watch-likes-dislikes, watch-sparkbars and watch-description-text by this thumbnail"
+				// "Reason": "I want to display watch-likes-dislikes, watch-sparkbars and watch-description-text by this thumbnail"
 			},
-			onload: gotTargetPage
+			onload: gotTargetPage,
+			onerror: function(err){
+				GM_log("Got error requesting YT page: "+err);
+			}
 		});
 
 	}
@@ -167,7 +173,7 @@ document.body.addEventListener("mouseover",checkLikesDislikes,false);
 
 if (spamYouTube) {
 	function queueLink(link,when) {
-		GM_log("In "+(when/1000|0)+" seconds will do "+link);
+		GM_log("In "+(when/1000|0)+" seconds I will do "+link);
 		setTimeout(function(){
 			checkLikesDislikes({target:link});
 		},when);
