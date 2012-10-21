@@ -40,7 +40,7 @@
  * can click for inline preview.  Hide the button on unhover.
  */
 
-// BUG: Works fine under https in Chrome, but not in Firefox!
+// BUG: Works fine under in Chrome, but not in Firefox!
 
 var allowPreviewsOfPreviews = false;
 
