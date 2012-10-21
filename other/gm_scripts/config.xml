@@ -2,7 +2,7 @@
 	<Script filename="first_gm_script.user.js" name="First GM Script" namespace="Timer" description="" version="" enabled="false" runAt="document-end" basedir="first_gm_script" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
 		<Include>*</Include>
 	</Script>
-	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2012.02.07" enabled="true" runAt="document-end" basedir="google_preview_pane" modified="1348754164000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326641881000">
+	<Script filename="google_preview_pane.user.js" name="Google Preview Pane" namespace="GPP" description="Displays Google results in a Preview Pane so you don't have to leave the results page.  Click a second time to load the selected page." version="2012.02.07" enabled="true" runAt="document-end" basedir="google_preview_pane" modified="1349698131000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326641881000">
 		<Include>http://*.google.*/*q=*</Include>
 		<Include>http://google.*/*q=*</Include>
 		<Include>https://*.google.*/*q=*</Include>
@@ -115,11 +115,20 @@
 		<Include>http://216.239.*.*/*</Include>
 		<Exclude>http://*.google.*/complete/*</Exclude>
 	</Script>
-	<Script filename="googles_old_favicon.user.js" name="Google's Old Favicon" namespace="userscripts.org" description="Brings back the old Google favicon" version="2.16" enabled="true" runAt="document-end" basedir="googles_old_favicon" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
+	<Script filename="googles_old_favicon.user.js" name="Google's Old Favicon" namespace="" description="Brings back the old Google favicon" version="2.16" enabled="true" runAt="document-end" basedir="googles_old_favicon" modified="1349797571000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
 		<Include>http://*.google.tld/*</Include>
 		<Include>http://google.tld/*</Include>
 		<Include>https://*.google.tld/*</Include>
 		<Include>https://google.tld/*</Include>
+		<Include>http://*.google.com/*</Include>
+		<Include>http://google.com/*</Include>
+		<Include>http://*.google.co.uk/*</Include>
+		<Include>http://google.co.uk/*</Include>
+		<Include>https://*.google.com/*</Include>
+		<Include>https://google.com/*</Include>
+		<Include>https://*.google.co.uk/*</Include>
+		<Include>https://google.co.uk/*</Include>
+		<Exclude>http://code.google.com/*</Exclude>
 		<Exclude>http://desktop.google.tld/*</Exclude>
 		<Exclude>http://docs.google.tld/*</Exclude>
 		<Exclude>http://google.tld/notebook/*</Exclude>
@@ -325,7 +334,7 @@
 		<Include>http://en.wikipedia.org/*</Include>
 		<Require filename="jquery.js"/>
 	</Script>
-	<Script filename="wikipedia_inline_article.user.js" name="Wikipedia Inline Article Viewer" namespace="http://projects.apathyant.com/wikipediainline/" description="Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame." version="" enabled="true" runAt="document-end" basedir="wikipedia_inline_article" modified="1348334048000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1294175215000">
+	<Script filename="wikipedia_inline_article.user.js" name="Wikipedia Inline Article Viewer" namespace="http://projects.apathyant.com/wikipediainline/" description="Adds a hover event to internal article links on wikipedia pages which, opens the article inline in a dhtml frame." version="" enabled="true" runAt="document-end" basedir="wikipedia_inline_article" modified="1350489236000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1294175215000">
 		<Include>http://wikipedia.tld/*</Include>
 		<Include>http://*.wikipedia.tld/*</Include>
 		<Include>http://wikipedia.org/*</Include>
@@ -1013,9 +1022,6 @@
 		<Include>http://*.metafilter.com/*</Include>
 		<Include>http://metafilter.com/*</Include>
 	</Script>
-	<Script filename="google_search_sidebar_fo.user.js" name="Google Search Sidebar for FF3 - Wikipedia, Dictionary.com, Flickr, and Youtube Results" namespace=" " description="Adds a sidebar with search results from Dictionary.com, Wikipedia, Flickr, and Youtube. Please report any bugs." version="" enabled="false" runAt="document-end" basedir="google_search_sidebar_fo" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
-		<Include>http://www.google.com/search?*</Include>
-	</Script>
 	<Script filename="deliciouscom_-_dim_saved.user.js" name="Delicious.com - Dim Saved Links" namespace="http://murklins.talkoncorners.net" description="Dim out any links on Delicious that you've already saved in your own account." version="" enabled="false" runAt="document-end" basedir="deliciouscom_-_dim_saved" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
 		<Include>http://delicious.com/*</Include>
 	</Script>
@@ -1070,13 +1076,13 @@
 		<Include>http://www.bbc.co.uk/*/aod.shtml</Include>
 		<Include>http://www.bbc.co.uk/*/aod.shtml*</Include>
 	</Script>
-	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="false" runAt="document-end" basedir="make_bookmarklet_from_us" modified="1335466715000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326404719000">
+	<Script filename="make_bookmarklet_from_us.user.js" name="Make Bookmarklet From Javascript URL" namespace="MBFU" description="When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course)." version="" enabled="false" runAt="document-end" basedir="make_bookmarklet_from_us" modified="1349796959000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326404719000">
 		<Include>http://hwi.ath.cx/*/gm_scripts/*</Include>
 		<Include>http://hwi.ath.cx/*/userscripts/*</Include>
 		<Include>http://*userscripts.org/*</Include>
 		<Exclude>http://hwi.ath.cx/code/other/gm_scripts/joeys_userscripts_and_bookmarklets_overview.html</Exclude>
 	</Script>
-	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines." version="" enabled="true" runAt="document-end" basedir="wikiindent" modified="1349518091000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327237939000">
+	<Script filename="wikiindent.user.js" name="WikiIndent" namespace="joeytwiddle" description="Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines." version="" enabled="true" runAt="document-end" basedir="wikiindent" modified="1349520342000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327237939000">
 		<Include>*wiki*</Include>
 		<Include>http://www.buzztard.com/*</Include>
 		<Include>http://encyclopediadramatica.com/*</Include>
@@ -1091,7 +1097,7 @@
 	<Script filename="google_tracking-b-gone.user.js" name="Google Tracking-B-Gone" namespace="http://sbdev.org" description="Strips click tracking from Google search results" version="" enabled="false" runAt="document-end" basedir="google_tracking-b-gone" modified="1277635615000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635615000">
 		<Include>http://*.google.com/*</Include>
 	</Script>
-	<Script filename="faviconizetheweb.user.js" name="FaviconizeTheWeb" namespace="FTW" description="Adds a favicon for the website next to every external link on the page.  Clearly shows when you will be leaving the current site, and where you will be going!" version="1.4" enabled="true" runAt="document-end" basedir="faviconizetheweb" modified="1349343539000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1319494884000">
+	<Script filename="faviconizetheweb.user.js" name="FaviconizeTheWeb" namespace="FTW" description="Adds a favicon for the website next to every external link on the page.  Clearly shows when you will be leaving the current site, and where you will be going!" version="1.5" enabled="true" runAt="document-end" basedir="faviconizetheweb" modified="1350843793000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1319494884000">
 		<Include>*</Include>
 		<Exclude>http://www.delicious.com/search*</Exclude>
 		<Exclude>https://www.delicious.com/search*</Exclude>
@@ -1111,7 +1117,7 @@
 	<Script filename="onepagewonder.user.js" name="OnePageWonder" namespace="OPW" description="Opens all links in IFrame, so going &quot;back&quot; is fast!" version="" enabled="false" runAt="document-end" basedir="onepagewonder" modified="1277635616000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1277635616000">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="title_youtube_locations.user.js" name="Title Youtube Locations" namespace="TYTLs" description="Forces all YouTube pages to put the video title in the Location Bar.  Now with extra undocumented features addScrollbars and animateThumbnails!" version="" enabled="true" runAt="document-end" basedir="title_youtube_locations" modified="1343494601000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326967586000">
+	<Script filename="title_youtube_locations.user.js" name="Title Youtube Locations" namespace="TYTLs" description="Forces all YouTube pages to put the video title in the Location Bar.  Now with extra undocumented features addScrollbars and animateThumbnails!" version="" enabled="true" runAt="document-end" basedir="title_youtube_locations" modified="1350786921000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1326967586000">
 		<Include>http://*.youtube.*/*</Include>
 		<Include>http://youtube.*/*</Include>
 		<Include>https://*.youtube.*/*</Include>
@@ -1155,7 +1161,7 @@
 		<Exclude>http://demoscene.tv/*</Exclude>
 		<Exclude>http://*.other.sites/where/we/want/to/leave/the/page/running</Exclude>
 	</Script>
-	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" runAt="document-end" basedir="delicious_link_tooltop" modified="1348569471000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327169993000">
+	<Script filename="delicious_link_tooltop.user.js" name="Delicious Link Tooltop" namespace="GPM" description="Shows Delicious info for the target page in a tooltip when you hover over a link." version="" enabled="true" runAt="document-end" basedir="delicious_link_tooltop" modified="1349704761000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327169993000">
 		<Include>*</Include>
 		<Exclude>http://facebook.com/*</Exclude>
 		<Exclude>https://facebook.com/*</Exclude>
@@ -1303,7 +1309,7 @@
 	<Script filename="auto_scroll_mouse.user.js" name="Auto Scroll Mouse" namespace="http://www.marcbelmont.com" description="Scrolls the page when you move the mouse up and down" version="" enabled="false" runAt="document-end" basedir="auto_scroll_mouse" modified="1336197912000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1309818822000" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Mouse.user.js" updateurl="file:///mnt/hwibot/tmp/Auto_Scroll_Mouse.user.js">
 		<Include>http://*</Include>
 	</Script>
-	<Script filename="auto_scroll_keys.user.js" name="Auto scroll keys" namespace="http://userscripts.org/users/44573" description="Auto scroll page on Ctrl+Down. Escape to stop." version="" enabled="true" runAt="document-end" basedir="auto_scroll_keys" modified="1327165111000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327165111000" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js" updateurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js">
+	<Script filename="auto_scroll_keys.user.js" name="Auto scroll keys" namespace="http://userscripts.org/users/44573" description="Auto scroll page on Ctrl+Down. Escape to stop." version="" enabled="true" runAt="document-end" basedir="auto_scroll_keys" modified="1350321193000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327165111000" installurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js" updateurl="file:///mnt/hwibot/tmp/Auto_Scroll_Keys.user.js">
 		<Include>*</Include>
 	</Script>
 	<Script filename="tocmonkey.user.js" name="TOCMonkey" namespace="http://hackadelic.com" description="Adds a TOC to a viewed HTML page" version="1.0" enabled="false" runAt="document-end" basedir="tocmonkey" modified="1310812569000" dependhash="e8c3db9bef11e9af828798171a532a25173457bc" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1310812569000" installurl="file:///mnt/hwibot/tmp/tocmonkey.user.js" updateurl="file:///mnt/hwibot/tmp/tocmonkey.user.js">
@@ -1313,7 +1319,7 @@
 		<Exclude>http://*.wikipedia.*</Exclude>
 		<Require filename="jquerymin.js"/>
 	</Script>
-	<Script filename="table_of_contents_everyw.user.js" name="Table of Contents Everywhere" namespace="TOCE" description="On pages which do not have a Table of Contents, but should do, create one!" version="" enabled="true" runAt="document-end" basedir="table_of_contents_everyw" modified="1349518098000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327180006000">
+	<Script filename="table_of_contents_everyw.user.js" name="Table of Contents Everywhere" namespace="TOCE" description="On pages which do not have a Table of Contents, but should do, create one!" version="" enabled="true" runAt="document-end" basedir="table_of_contents_everyw" modified="1350784807000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327180006000">
 		<Include>http://*/*</Include>
 		<Include>https://*/*</Include>
 	</Script>
@@ -1327,7 +1333,7 @@
 	<Script filename="webpage_playlist.user.js" name="WebPage Playlist" namespace="WPP" description="Allows you to add links to a playlist, then navigate through your playlist.  Useful it you want to look at a set of pages without using multiple tabs." version="" enabled="true" runAt="document-end" basedir="webpage_playlist" modified="1315069035000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1315069035000">
 		<Include>http://*/*</Include>
 	</Script>
-	<Script filename="hibernate_idle_tabs.user.js" name="Hibernate Idle Tabs" namespace="HIT" description="If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions." version="" enabled="false" runAt="document-end" basedir="hibernate_idle_tabs" modified="1349365014000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327164302000">
+	<Script filename="hibernate_idle_tabs.user.js" name="Hibernate Idle Tabs" namespace="HIT" description="If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions." version="" enabled="false" runAt="document-end" basedir="hibernate_idle_tabs" modified="1349539005000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327164302000">
 		<Include>*</Include>
 	</Script>
 	<Script filename="ffixer.user.js" name="FFixer" namespace="http://code-poet.net/" description="Enhancements for Facebook: bigger profile pictures and photos, easier viewing of albums, links to download videos, showing people's age and sign, google calendar integration, keyboard shortcuts &amp; more. Compatible with new Facebook and fully customizable!" version="2.3.1" enabled="true" runAt="document-end" basedir="ffixer" modified="1315256687000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1315256687000" installurl="http://userscripts.org/scripts/source/8861.user.js" updateurl="http://userscripts.org/scripts/source/8861.meta.js">
@@ -1339,11 +1345,13 @@
 	<Script filename="powermonkey.user.js" name="user-script" namespace="" description="" version="" enabled="true" runAt="document-end" basedir="powermonkey" modified="1329226626000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1324247920000">
 		<Include>*</Include>
 	</Script>
-	<Script filename="Related_Links_Pager.user.js" name="Related Links Pager" namespace="RLP" description="Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser." version="" enabled="true" runAt="document-end" basedir="Related_Links_Pager" modified="1348264578000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327718647000">
+	<Script filename="Related_Links_Pager.user.js" name="Related Links Pager" namespace="RLP" description="Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser." version="" enabled="true" runAt="document-end" basedir="Related_Links_Pager" modified="1350850688000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1327718647000">
 		<Include>http://*/*</Include>
 		<Include>https://*/*</Include>
 		<Exclude>http://www.facebook.com/*</Exclude>
 		<Exclude>https://www.facebook.com/*</Exclude>
+		<Exclude>http://twitter.com/*</Exclude>
+		<Exclude>https://twitter.com/*</Exclude>
 		<Exclude>https://*.xmarks.com/*</Exclude>
 	</Script>
 	<Script filename="48293.user.js" name="Google Images direct links" namespace="http://userscripts.org/scripts/show/48293" description="Makes images link directly to the original in Google Images search. The source website link is moved to the green URL below the image. Also gives the option to always use the basic (old) version of Google Images." version="2011-10-06" enabled="false" runAt="document-end" basedir="Google_Images_direct_links" modified="1327815082000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1341341452847" installurl="http://userscripts.org/scripts/source/48293.user.js" updateurl="https://userscripts.org/scripts/source/48293.meta.js">
@@ -1357,10 +1365,10 @@
 		<Include>http://www.freesound.org/*</Include>
 		<Include>http://freesound.org/*</Include>
 	</Script>
-	<Script filename="Convert_Dates_to_Ages.user.js" name="Convert Dates to Ages" namespace="CDTA" description="Looks for dates displayed on the current page and converts them to ages of the form &quot;3 days 6 hours ago&quot;." version="" enabled="true" runAt="document-end" basedir="Convert_Dates_to_Ages" modified="1331169365000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1329813477000">
+	<Script filename="Convert_Dates_to_Ages.user.js" name="Convert Dates to Ages" namespace="CDTA" description="Looks for dates displayed on the current page and converts them to ages of the form &quot;3 days 6 hours ago&quot;." version="" enabled="true" runAt="document-end" basedir="Convert_Dates_to_Ages" modified="1350852709000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1329813477000">
 		<Include>http://*/</Include>
 	</Script>
-	<Script filename="YouTube_Thumb_Likes_Dislikes.user.js" name="YouTube Thumb Likes Dislikes" namespace="YTTLD" description="Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail." version="" enabled="true" runAt="document-end" basedir="YouTube_Thumb_Likes_Dislikes" modified="1341512220000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1330149780000">
+	<Script filename="YouTube_Thumb_Likes_Dislikes.user.js" name="YouTube Thumb Likes Dislikes" namespace="YTTLD" description="Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail." version="" enabled="true" runAt="document-end" basedir="YouTube_Thumb_Likes_Dislikes" modified="1350847561000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1330149780000">
 		<Include>http://youtube.com/*</Include>
 		<Include>https://youtube.com/*</Include>
 		<Include>http://*.youtube.com/*</Include>
@@ -1386,12 +1394,6 @@
 		<Match>http://www.youtube.com/watch?v=*</Match>
 		<Match>http://www.youtube.com/watch?feature=*</Match>
 		<Require filename="jquery.min.js"/>
-	</Script>
-	<Script filename="76700.user.js" name="Google Search Sidebar for FF3 - Wikipedia, Dictionary.com, Flickr, and Youtube Results FIX 2" namespace="" description="Adds a sidebar with search results from Dictionary.com, Wikipedia, Flickr, and Youtube. Please report any bugs." version="" enabled="true" runAt="document-end" basedir="Google_Search_Sidebar_for_FF3_-_Wikipedia,_Dictionary.com,_Flickr,_and_Youtube_Results_FIX_2" modified="1339329648000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1339329648000" installurl="http://userscripts.org/scripts/source/76700.user.js" updateurl="http://userscripts.org/scripts/source/76700.meta.js">
-		<Include>http*://*.google.*/search?*</Include>
-		<Include>http*://*.google.*/#hl=</Include>
-		<Include>http*://*.google.*/webhp?</Include>
-		<Exclude>http*://*.google.*/*tbm=isch*</Exclude>
 	</Script>
 	<Script filename="26086.user.js" name="Delicious.com Thumbs" namespace="userscripts.org" description="Add thumbnail previews to bookmarks on Delicious.com." version="" enabled="true" runAt="document-end" basedir="Delicious.com_Thumbs" modified="1341560173000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1341560173000" installurl="http://userscripts.org/scripts/source/26086.user.js" updateurl="http://userscripts.org/scripts/source/26086.meta.js">
 		<Include>http://delicious.com/*</Include>
@@ -1420,10 +1422,17 @@
 		<Include>https://images.google.*/search?*</Include>
 		<Include>https://encrypted.google.com/search?*</Include>
 	</Script>
-	<Script filename="Show_Link_URL_in_Corner.user.js" name="Show Link URL in Corner" namespace="SLUC" description="When hovering a link, some browsers fail to present information about the link.  This script displays the target href/URL in the bottom-left corner of the page, like Chrome and Firefox do." version="" enabled="false" runAt="document-end" basedir="Show_Link_URL_in_Corner" modified="1349364230000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1348703595000">
+	<Script filename="Show_Link_URL_in_Corner.user.js" name="Show Link URL in Corner" namespace="SLUC" description="When hovering a link, some browsers fail to present information about the link.  This script displays the target href/URL in the bottom-left corner of the page, like Chrome and Firefox do." version="" enabled="false" runAt="document-end" basedir="Show_Link_URL_in_Corner" modified="1349705799000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1348703595000">
 		<Include>*</Include>
 	</Script>
-	<Script filename="Bring_Back_The_Status_Bar.user.js" name="Bring Back The Status Bar" namespace="BBTSB" description="Miss being able to see the good old window.status?  This userscript will pop up the status in the corner of the page." version="" enabled="true" runAt="document-end" basedir="Bring_Back_The_Status_Bar" modified="1349514037000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="" lastUpdateCheck="">
+	<Script filename="Bring_Back_The_Status_Bar.user.js" name="Bring Back The Status Bar" namespace="BBTSB" description="Miss being able to see the good old window.status?  This userscript will pop up the status in the corner of the page." version="" enabled="true" runAt="document-end" basedir="Bring_Back_The_Status_Bar" modified="1349706809000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1349514037000">
 		<Include>*</Include>
+	</Script>
+	<Script filename="77561.user.js" name="Google Search Sidebar for FF3 - Wikipedia, Dictionary.com, Flickr, and Youtube Results FIX 2" namespace="" description="Adds a sidebar with search results from Dictionary.com, Wikipedia, Flickr, and Youtube. Please report any bugs." version="" enabled="false" runAt="document-end" basedir="Google_Search_Sidebar_for_FF3_-_Wikipedia,_Dictionary.com,_Flickr,_and_Youtube_Results_FIX_2" modified="1349698121000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1349698121000" installurl="http://userscripts.org/scripts/source/77561.user.js" updateurl="http://userscripts.org/scripts/source/77561.meta.js">
+		<Include>http*://*.google.*/search?*</Include>
+	</Script>
+	<Script filename="150631.user.js" name="YouTube Popout Button" namespace="userscripts.org" description="Provides a button to pupout the current YouTube video in a new window." version="" enabled="true" runAt="document-end" basedir="YouTube_Popout_Button" modified="1350788660000" dependhash="da39a3ee5e6b4b0d3255bfef95601890afd80709" checkRemoteUpdates="true" updateAvailable="false" lastUpdateCheck="1350788660000" installurl="http://userscripts.org/scripts/source/150631.user.js" updateurl="http://userscripts.org/scripts/source/150631.meta.js">
+		<Include>http://*.youtube.com/watch*</Include>
+		<Include>http://youtube.com/watch*</Include>
 	</Script>
 </UserScriptConfig>
