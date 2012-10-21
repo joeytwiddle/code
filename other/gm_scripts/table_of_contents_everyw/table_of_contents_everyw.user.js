@@ -105,6 +105,17 @@ function loadScript(url,thenCallFn) {
 	document.body.appendChild(scr);
 }
 
+function clearStyle(elem) {
+	// We set some crucial defaults, so we don't inherit CSS from the page:
+	elem.style.display = 'inline';
+	elem.style.position = 'static';
+	elem.style.top = 'auto';
+	elem.style.right = 'auto';
+	elem.style.bottom = 'auto';
+	elem.style.left = 'auto';
+	return elem;
+}
+
 function newNode(tag,data) {
 	var elem = document.createElement(tag);
 	if (data) {
@@ -116,7 +127,7 @@ function newNode(tag,data) {
 }
 
 function newSpan(text) {
-	return newNode("span",{textContent:text});
+	return clearStyle(newNode("span",{textContent:text}));
 }
 
 // Modified for this script's needs.
@@ -163,6 +174,8 @@ if (!String.prototype.trim) {
 function addCloseButtonTo(where, toc) {
 	var closeButton = newSpan("[X]");
 	// closeButton.style.float = 'right';
+	// closeButton.style.cssFloat = 'right'; // Firefox
+	// closeButton.style.styleFloat = 'right'; // IE7
 	closeButton.style.cursor = 'pointer';
 	closeButton.style.paddingLeft = '5px';
 	closeButton.onclick = function() { toc.parentNode.removeChild(toc); };
@@ -197,6 +210,57 @@ function addHideButtonTo(toc,table) {
 	}
 }
 
+// The following mirrored in wikiindent.user.js
+
+function addButtonsConditionally(toc) {
+
+	function verbosely(fn) {
+		return function() {
+			// GM_log("[WI] Calling: "+fn+" with ",arguments);
+			return fn.apply(this,arguments);
+		};
+	};
+
+	// Provide a hide/show toggle button if the TOC does not already have one.
+
+	// Wikimedia's toc element is actually a table.  We must put the
+	// buttons in the title div, if we can find it!
+
+	var tocTitle = document.getElementById("toctitle"); // Wikipedia
+	tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
+	// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
+
+	function addButtonsNow() {
+
+		var hideShowButton = document.getElementById("togglelink");
+		if (!hideShowButton) {
+			var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
+			tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
+			tocInner = tocInner || toc.getElementsByTagName("div")[0]; // Our own
+			if (tocInner) {
+				verbosely(addHideButtonTo)(tocTitle || toc, tocInner);
+			}
+		}
+
+		// We do this later, to ensure it appears on the right of
+		// any existing [hide/show] button.
+		if (document.getElementById("closeTOC") == null) {
+			verbosely(addCloseButtonTo)(tocTitle || toc, toc);
+		}
+
+	}
+
+	// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
+	// We cannot test this immediately, because it gets loaded in later!
+	if (document.location.href.indexOf("wiki") >= 0) {
+		setTimeout(addButtonsNow,2000);
+	} else {
+		addButtonsNow();
+	}
+
+}
+
+
 
 
 // == Main == //
@@ -219,15 +283,18 @@ function buildTableOfContents() {
 		var toc = newNode("div");
 		toc.id = 'toc';
 
-		var heading = newSpan("Table of Contents");
+		// var heading = newSpan("Table of Contents");
+		var heading = clearStyle(newNode("h2",{textContent:"Table of Contents"}));
 		heading.style.fontWeight = "bold";
 		heading.style.fontSize = "100%";
 		toc.appendChild(heading);
 
-		addCloseButtonTo(toc,toc);
-
 		var table = newNode("div");
-		addHideButtonTo(toc,table);
+		// addHideButtonTo(toc,table);
+		toc.appendChild(table);
+
+		// We need to do this *after* adding the table.
+		addButtonsConditionally(toc);
 
 		// The xpath query did not return the elements in page-order.
 		// We sort them back into the order they appear in the document
@@ -329,7 +396,6 @@ function buildTableOfContents() {
 			*/
 
 		}
-		toc.appendChild(table);
 
 		document.body.appendChild(toc);
 
@@ -387,28 +453,7 @@ function searchForTOC() {
 
 			postTOC(toc);
 
-			// The following from wikiindent.user.js
-
-			var tocTitle = document.getElementById("toctitle"); // Wikipedia
-			tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
-			// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
-
-			// GM_log("TOC = "+toc.innerHTML+" firstChild="+toc.firstChild+" tocTitle="+tocTitle);
-
-			var hideShowButton = document.getElementById("togglelink");
-			if (!hideShowButton) {
-				var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
-				tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
-				if (tocInner) {
-					// GM_log("[TOCE] Adding hide button to "+toc+" acting on "+tocInner);
-					addHideButtonTo(tocTitle || toc, tocInner);
-				}
-			}
-
-			// GM_log("[TOCE] Adding close button to "+toc);
-			if (document.getElementById("closeTOC") == null) {
-				addCloseButtonTo(tocTitle || toc, toc);
-			}
+			addButtonsConditionally(toc);
 
 		} else {
 
