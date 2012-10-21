@@ -13,7 +13,7 @@
 (function() {
 
     // Create Button
-    var divWatchHeadline = document.evaluate("//div[@id='watch-headline-user-info']", document, null, XPathResult.ANY_UNORDERED_NODE_TYPE, null).singleNodeValue;
+    var divWatchHeadline = document.evaluate("//div[@id='watch-actions']", document, null, XPathResult.ANY_UNORDERED_NODE_TYPE, null).singleNodeValue;
     divWatchHeadline.appendChild(document.createTextNode("\n"));
     var buttonPopout = divWatchHeadline.appendChild(document.createElement("button"));
     divWatchHeadline.appendChild(document.createTextNode("\n"));
@@ -56,7 +56,7 @@
           var lcheck = location.href;
           if(lcheck != flink){
              // window.location = flink;
-             window.open(flink);
+             window.open(flink,"Youtube Popout","menubar=no,location=no,resizable=no,scrollbars=no,status=no,toolbar=no");
           }
        }
 
