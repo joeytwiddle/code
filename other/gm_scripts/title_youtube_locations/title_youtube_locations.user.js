@@ -27,12 +27,15 @@
 
 
 var addTitleToLocation = true;
+var reduceFontSizes    = true;
 var addScrollbars      = true;
 var animateThumbnails  = true;
 
 
 
 if (addTitleToLocation) {
+
+	// NOTE: This code is deprecated, as I now use the userscripts URLs_Need_Titles
 
 	setTimeout(function(){
 		if (document.location.pathname == "/watch") {
@@ -57,11 +60,15 @@ if (addTitleToLocation) {
 
 
 
-if (addScrollbars) {
-
+if (reduceFontSizes) {
 	// == Reduce font size of thumbnail titles ==
 	GM_addStyle(".yt-tile-default.video-list-item a .title, #watch-sidebar .video-list-item .title { font-size: 11px; line-height: 10px; }");
 	// Defaults are font-size: 13px; and line-height: 15px; which show only two lines in my browser.
+}
+
+
+
+if (addScrollbars) {
 
 	// == Scrollbars on comments and related vids, to keep the video in view. ==
 	setTimeout(function(){
@@ -130,14 +137,14 @@ if (animateThumbnails) {
 				return;
 			}
 			// We make this check quite late, due to lazy loading
-			if (thumbImage.src.match(/\/(default|0)\.jpg$/)) {
-				logElem("Starting animation",thumbImage);
+			if (thumbImage.src.match(/\/(.qdefault|default|0)\.jpg$/)) {
+				// logElem("Starting animation",thumbImage);
 				timer = setInterval(changeFrame,600);
 			}
 		}
 		function stopAnimation() {
 			if (timer) {
-				logElem("Stopping animation",thumbImage);
+				// logElem("Stopping animation",thumbImage);
 				clearInterval(timer);
 				timer = null;
 				// This isn't really neccessary, except to ensure the check for default\.jpg above works next time!
@@ -159,7 +166,7 @@ if (animateThumbnails) {
 					var seekImg = elemToCheck.parentNode.getElementsByTagName("img")[0];
 					if (seekImg) {
 						thumbImage = seekImg;
-						fn();
+						return fn();
 					}
 				// } else {
 					// var imgCount = elemToCheck.getElementsByTagName("img").length;
