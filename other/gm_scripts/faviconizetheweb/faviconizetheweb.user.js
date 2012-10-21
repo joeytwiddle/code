@@ -10,7 +10,7 @@
 // @exclude        https://duckduckgo.com/*
 //// Causes login dialogs to open!
 // @exclude        http://www.jobs.ac.uk/*
-// @version        1.4
+// @version        1.5
 // ==/UserScript==
 // Based on FaviconizeGoogle.
 
@@ -39,7 +39,15 @@ if (!alwaysUseGoogle) {
 if (document.location.host.indexOf(".google.") >= 0) {
 	scaleIcon = 1.0;
 	// return;   // REMOVE THIS TO RUN ON GOOGLE!
+	//// For search results pages with late loading results via AJAX.
+	initialDelay = 1000;   // Pause to wait for AJAX results (e.g. going back to a URL where search terms were modified and updated in the # part).
+	// TODO: The proper way to deal with AJAX is to watch for DOMNodeInserted event.
 }
+
+
+
+// CHANGELOG
+// 2012-10.15  Applied CSS rules to elements, to override more specific page rules.
 
 
 
@@ -269,6 +277,7 @@ function doIt() {
 	// GM_log("doIt() was called!");
 
 	//// Unfortunately this can be overridden by more specific page rules.
+	//// e.g. ".article .body img" is more specific than ".ftwFavicon"
 	// addStyle(".ftwFavicon { "+getStyleString()+" }");
 	//// To override that, we put style rules in each element.
 
@@ -305,8 +314,8 @@ function startCountdown(total,fnToDo) {
 	function doCountdown(msToGo) {
 		if (msToGo > 0) {
 			setTimeout(function(){
-				doCountdown(msToGo-5);
-			},5);
+				doCountdown(msToGo-20);
+			},20);
 		} else {
 			fnToDo();
 		}
