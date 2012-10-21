@@ -6,6 +6,8 @@
 // @include        https://*/*
 // @exclude        http://www.facebook.com/*
 // @exclude        https://www.facebook.com/*
+// @exclude        http://twitter.com/*
+// @exclude        https://twitter.com/*
 // @exclude        https://*.xmarks.com/*
 // ==/UserScript==
 
@@ -18,8 +20,8 @@ var minimumGroupSize   = 2;
 var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
 var groupLinksByClass  = true;
 
-var showGroupCountInLinkTitle = true;   // Updates hovered links' titles to show number of siblings.
-var showPageNumberInWindowTitle = true; // Updates title of current page to show current "page" number.
+var showGroupCountInLinkTitle = true;    // Updates hovered links' titles to show number of siblings.
+var showPageNumberInWindowTitle = false; // Updates title of current page to show current "page" number.
 
 var enableOnCtrlClick  = true;
 var enableOnShiftClick = true;        // Allows you to avoid the script when needed
@@ -29,7 +31,7 @@ var keepNavigationHistory = false;    // When off, paging is not added to browse
 var leaveHashUrlsAlone = true;        // Many sites use # these days for their own purposes - this avoids the risk of breaking them.
 var forceTravel = false;              // Attempt to fix loss of #data when clicking thumbnails on YouTube.  Failed to fix it!
                                       // BUG: I think this overrides Google Preview Pane's handler if we click a link expecting it to be previewed.
-var clearDataFromLocation = false;    // Looks tidier but can prevent Pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.
+var clearDataFromLocation = false;    // Tidies up your location bar URL, but prevents the pager from re-appearing when navigating Back to this page (or reloading it) - OR adds an extra step to history, depending on the implementation chosen below.
 
 var highlightLinkGroups = true;       // Change the background or border of links in the current group on hover.
 var changeBackgroundNotBorder = true; // If false, draws boxes around related links.
@@ -49,6 +51,8 @@ var verbose = false;                  // Extra logging for debugging
 
 
 // == CHANGELOG ==
+// 2012-10-21 Fixes for Google search results link rewriting war!
+// 2012-10-08 Fixed inefficiencies in getXPath which could cause lockups.
 // 2012-03-22 Added highlighting and further heuristics.
 // 2012-02-07 Bugfixes and more heuristics.
 // 2012-01-30 Fixed repeat rewrite bug by checking for &sib as well as #sib.
@@ -61,9 +65,9 @@ var verbose = false;                  // Extra logging for debugging
 
 // == NOTES ==
 
-// BUG: On very large pages this can run very slowly, locking up your Firefox.
-// I blame this on inefficient generation of XPaths (the for loop in getXPath).
-// TODO: This can be easily fixed, since we don't actually use those numbers!
+// FIXED: On huge pages this used to run very slowly, locking up Firefox.
+// This was due to an inefficient for loop in getXPath.
+// DONE: This can be easily fixed, since we don't actually use the numbers!
 
 // You can avoid this script either by clicking a link before it runs or by
 // activating the desired link with the keyboard instead of the mouse.
@@ -134,6 +138,14 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
   grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
 }
 
+// CHECK_IF_GOOGLE
+if (document.location.hostname.indexOf("google")>=0 && document.location.indexOf("search")>=0) {
+  forceTravel = true;          // Since removeAttribute("onmousedown") stopped working
+  groupLinksByClass = false;   // Most links get class "l" but some get class "l vst"
+}
+// Dear Google: I don't mind giving you useful feedback about which links I
+// clicked, but I *need* my siblings packet in the final arrival URL!
+
 
 
 function runRelatedLinksPager(){
@@ -143,24 +155,10 @@ function runRelatedLinksPager(){
 // Library functions
 
 function getXPath(node) {
-	var parent = node.parentNode;
-	if (!parent) {
-		return '';
-	}
-	var siblings = parent.childNodes;
-	var totalCount = 0;
-	var thisCount = -1;
-	for (var i=0;i<siblings.length;i++) {
-		var sibling = siblings[i];
-		if (sibling.nodeType == node.nodeType) {
-			totalCount++;
-		}
-		if (sibling == node) {
-			thisCount = totalCount;
-			break;
-		}
-	}
-	return getXPath(parent) + '/' + node.nodeName.toLowerCase() + (totalCount>1 ? '[' + thisCount + ']' : '' );
+  if (!node) {
+    return '';
+  }
+  return getXPath(node.parentNode) + '/' + node.nodeName.toLowerCase();
 }
 
 // What can I say?  I loooove favicons!
@@ -377,6 +375,15 @@ function checkClick(evt) {
       GM_log("with: "+targetURL);
     }
 
+    // We need this on Google search result pages, or we end up following
+    // feedback/tracking redirection links, which throw away our hash data!
+    /*
+    link.removeAttribute('onmousedown');
+    // Thanks to http://userscripts.org/scripts/review/57679
+    // Stopped working Oct 2012.  Google was seemingly changing the link URL of the first link we hover on, and also makes us go to their page if we click it.
+    */
+    // Alternative fix see CHECK_IF_GOOGLE.
+
     // Force travel to the new URL.  (Don't wait for the page to handle the
     // click - some sites e.g. YouTube will throw away our hash-data!)
     if (forceTravel) {
@@ -390,11 +397,6 @@ function checkClick(evt) {
 
     // Instead of pushing the browser to the magic URL, just change the link and see what happens.
     link.href = targetURL;
-
-    // We need this on Google search result pages, or we end up following
-    // feedback/tracking redirection links, which throw away our hash data!
-    link.removeAttribute('onmousedown');
-    // Thanks to http://userscripts.org/scripts/review/57679
 
     if (highlightLinkGroups) {
       clearList();
