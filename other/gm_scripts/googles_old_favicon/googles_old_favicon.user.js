@@ -7,6 +7,18 @@
 // @include       http://google.tld/*
 // @include       https://*.google.tld/*
 // @include       https://google.tld/*
+//// Joey added these, so they work in Chromium:
+// @include       http://*.google.com/*
+// @include       http://google.com/*
+// @include       http://*.google.co.uk/*
+// @include       http://google.co.uk/*
+// @include       https://*.google.com/*
+// @include       https://google.com/*
+// @include       https://*.google.co.uk/*
+// @include       https://google.co.uk/*
+//// And some new excludes:
+// @exclude       http://code.google.com/*
+//// Joey end.
 // @exclude       http://desktop.google.tld/*
 // @exclude       http://docs.google.tld/*
 // @exclude       http://google.tld/notebook/*
