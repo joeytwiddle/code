@@ -9,6 +9,8 @@
 // @exclude        http://twitter.com/*
 // @exclude        https://twitter.com/*
 // @exclude        https://*.xmarks.com/*
+// @exclude        http://github.com/*
+// @exclude        https://github.com/*
 // ==/UserScript==
 
 
@@ -129,6 +131,14 @@ var verbose = false;                  // Extra logging for debugging
 // should just not append to links who land on twitter (from in or out), whilst
 // links leaving Twitter should be fine!
 
+// TODO: Despite setting forceTravel, Google search results pages sometimes
+// send us to their own click-tracking URL which redirects us to the target
+// page but loses our siblings packet.  One solution to this might be to
+// replace the link in the page with our own A element, so that clicking it
+// will not fire directly linked events.  (It could still however trigger
+// events attached to a parent.  Is it possible to override/prevent them with
+// an event listener we add later?)
+
 
 
 // We grab the data as early as possible, in case any other scripts decide to
@@ -139,10 +149,11 @@ if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
 }
 
 // CHECK_IF_GOOGLE
-if (document.location.hostname.indexOf("google")>=0 && document.location.indexOf("search")>=0) {
+// This is heavy-handed and didn't even work.  stopPropagation did.
+/*if (document.location.hostname.indexOf("google")>=0 && document.location.href.indexOf("search")>=0) {
   forceTravel = true;          // Since removeAttribute("onmousedown") stopped working
   groupLinksByClass = false;   // Most links get class "l" but some get class "l vst"
-}
+}*/
 // Dear Google: I don't mind giving you useful feedback about which links I
 // clicked, but I *need* my siblings packet in the final arrival URL!
 
@@ -380,7 +391,7 @@ function checkClick(evt) {
     /*
     link.removeAttribute('onmousedown');
     // Thanks to http://userscripts.org/scripts/review/57679
-    // Stopped working Oct 2012.  Google was seemingly changing the link URL of the first link we hover on, and also makes us go to their page if we click it.
+    // Stopped working Oct 2012.
     */
     // Alternative fix see CHECK_IF_GOOGLE.
 
@@ -391,6 +402,7 @@ function checkClick(evt) {
       if (!evt.ctrlKey && !evt.shiftKey && evt.button==0) {
         document.location = targetURL;
         evt.preventDefault();
+        evt.stopPropagation();
         return false;
       }
     }
@@ -398,8 +410,19 @@ function checkClick(evt) {
     // Instead of pushing the browser to the magic URL, just change the link and see what happens.
     link.href = targetURL;
 
+    // I like to clear our highlights before travel, nice feedback to see something change.
     if (highlightLinkGroups) {
       clearList();
+    }
+
+    // CHECK_IF_GOOGLE
+    // In the second half of 2012, Google's events got more powerful.
+    // stopPropagation manages to work around this.
+    // But we only do it on Google for now - we let other sites override us if they wanna (they might need to!).
+    if (document.location.hostname.indexOf("google")>=0 && document.location.href.indexOf("search")>=0) {
+      // evt.preventDefault();
+      evt.stopPropagation();
+      // return false;
     }
 
   }
