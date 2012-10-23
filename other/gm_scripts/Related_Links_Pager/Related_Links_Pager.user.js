@@ -141,11 +141,37 @@ var verbose = false;                  // Extra logging for debugging
 
 
 
+var passPacketByGM = false;
+if (typeof GM_setValue != 'undefined') {
+  passPacketByGM = true;
+  // In Chrome though, GM_setValue is not cross-domain, which we need!
+  if (window.navigator.vendor.match(/Google/)) {
+    passPacketByGM = false;
+  }
+  // TODO: I think we need more specific checks here.  The presence of
+  // GM_setValue does not indicate that it will work cross-domain.  It would be
+  // safer to use the # fallback unless we are *sure* we have a XD GMsV.
+}
+
+
+
 // We grab the data as early as possible, in case any other scripts decide to
 // change the #.  We delay running anything else for a little while.
 var grabbedList;
-if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
-  grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
+if (passPacketByGM) {
+  grabbedList = GM_getValue("siblings_data");
+  // GM_log("[RLP] Got siblings_data="+grabbedList);
+  // I often see this logged twice, and no pager appears.  Let's delay the cleansing.  By a full 15 seconds for modem users.  The only reason to cleanse is when the user later visits URLs without using the pager, it doesn't want to pick up the packet here!
+  setTimeout(function(){
+    GM_setValue("siblings_data","");
+  },15000);
+} else {
+  if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
+    grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
+    if (grabbedList) {
+      grabbedList = decodeURIComponent(grabbedList);
+    }
+  }
 }
 
 // CHECK_IF_GOOGLE
@@ -365,8 +391,17 @@ function checkClick(evt) {
       return;
     }
 
+    siblings = JSON.stringify(siblings);
+
+    if (passPacketByGM) {
+      // GM_log("[RLP] Saving siblings_data");
+      GM_setValue("siblings_data",siblings);
+      // GM_log("[RLP] Saving done");
+      return; // Let the even occur naturally, if we do load a new page the packet will be picked up.
+    }
+
     // GM_log("Found "+siblings.length+" siblings for the clicked link.");
-    var sibsEncoded = encodeURIComponent(JSON.stringify(siblings));
+    var sibsEncoded = encodeURIComponent(siblings);
     // If the link already had a #, we append our data as an & parameter, and cross our fingers.
     var appendChar = ( link.href.indexOf('#')>=0 ? '&' : '#' );
     if (appendChar == '&' || link.hash) {
@@ -580,7 +615,7 @@ function createRelatedLinksPager(siblings) {
 }
 
 if (grabbedList) {
-  var siblings = JSON.parse(decodeURIComponent(grabbedList));
+  var siblings = JSON.parse(grabbedList);
   createRelatedLinksPager(siblings);
   if (clearDataFromLocation) {
     // document.location.hash = ".";    // BAD.  "#." breaks google search results pages, tho we rarely page through them.
