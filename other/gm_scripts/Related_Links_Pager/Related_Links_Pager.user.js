@@ -2,6 +2,7 @@
 // @name           Related Links Pager
 // @namespace      RLP
 // @description    Navigate sideways!  When you click a link, related links on the current page are carried with you.  They can be accessed from a pager on the target page, so you won't have to go back in your browser.
+// @downstreamURL  http://userscripts.org/scripts/source/124293.user.js
 // @include        http://*/*
 // @include        https://*/*
 // @exclude        http://www.facebook.com/*
@@ -15,12 +16,19 @@
 
 
 
+// DONE: Using the pager always sets the siblings packet in the target URL, even if passPacketByGM is enabled!  Fix that.
+// TODO: Pager not working with passPacketByGM, because the next/prev links are actually ...
+
+
 // == OPTIONS ==
 
 var delayBeforeRunning = 2000;
 var minimumGroupSize   = 2;
 var maximumGroupSize   = 250;         // Some webservers restrict long URLs, responding with "Bad Request".
 var groupLinksByClass  = true;
+if (document.location.href.match(/google.*(search|q=)/)) {
+  groupLinksByClass = false;   // Most Google results have class "l" but any previously visited have "l vst".
+}
 
 var showGroupCountInLinkTitle = true;    // Updates hovered links' titles to show number of siblings.
 var showPageNumberInWindowTitle = false; // Updates title of current page to show current "page" number.
@@ -142,13 +150,13 @@ var verbose = false;                  // Extra logging for debugging
 
 
 var passPacketByGM = false;
-if (typeof GM_setValue != 'undefined') {
-  passPacketByGM = true;
+if (typeof GM_setValue == 'function') {
+  passPacketByGM = true;   // It is safe to disable this if you want the old behaviour
   // In Chrome though, GM_setValue is not cross-domain, which we need!
   if (window.navigator.vendor.match(/Google/)) {
     passPacketByGM = false;
   }
-  // TODO: I think we need more specific checks here.  The presence of
+  // TODO: We may want more specific checks here.  The presence of
   // GM_setValue does not indicate that it will work cross-domain.  It would be
   // safer to use the # fallback unless we are *sure* we have a XD GMsV.
 }
@@ -161,10 +169,13 @@ var grabbedList;
 if (passPacketByGM) {
   grabbedList = GM_getValue("siblings_data");
   // GM_log("[RLP] Got siblings_data="+grabbedList);
-  // I often see this logged twice, and no pager appears.  Let's delay the cleansing.  By a full 15 seconds for modem users.  The only reason to cleanse is when the user later visits URLs without using the pager, it doesn't want to pick up the packet here!
+  // I often see this logged twice, and if we cleanse the siblings_data immediately, no pager appears.  This could be caused by google redirection, or perhaps even by an iframe which loads faster than the page.
+  // Let's delay the cleansing (by a full 15 seconds for modem users).
+  // The reason we want to cleanse is when the user later visits pages without the pager (e.g. from a bookmark), then that page should not pick up the packet!  We *could* address that by checking whether we are one of the targets in the packet, but we very occasionally had issues with that check, so opted to always display the pager if we have data
   setTimeout(function(){
     GM_setValue("siblings_data","");
   },15000);
+  // This approach loses the earlier feature of retaining the pager if we come Back to this page.
 } else {
   if (document.location.hash && document.location.hash.indexOf("siblings=")>=0) {
     grabbedList = document.location.hash.replace(/.*[#&]siblings=([^#]*)/,'$1');
@@ -299,9 +310,15 @@ function isSuitable(link) {
     return;
   }
 
+  /*
   if (link.href.indexOf("#siblings=")>=0 || link.href.indexOf("&siblings=")>=0) {
     // This is already a prepared link!  Probably created by the pager.
     // No need to modify it.
+    return;
+  }
+  */
+  // The above check doesn't work if we are using passPacketByGM, so:
+  if (link.isRLPPagerLink) {
     return;
   }
   if (link.protocol.indexOf(/*"http") != 0)*/ "javascript:") == 0) {
@@ -331,12 +348,13 @@ function isSuitable(link) {
   //// === Some sites complain about long URLs or unexpected strings. ===
 
   // Some Google search pages complain about our long URLs.
-  var googleWillComplain =
+  var googleWillComplain = (
     link.host.indexOf("google")>=0 &&
       (    link.href.indexOf("?q=")>=0
         || link.href.indexOf("&q=")>=0
         || link.href.indexOf("url?")>=0
-      );
+      )
+  );
   // TODO: There are more of these cases on Google!  (When earlier rewriting failed?)
 
   var isYouTubePagerLink =
@@ -397,7 +415,7 @@ function checkClick(evt) {
       // GM_log("[RLP] Saving siblings_data");
       GM_setValue("siblings_data",siblings);
       // GM_log("[RLP] Saving done");
-      return; // Let the even occur naturally, if we do load a new page the packet will be picked up.
+      return; // Let the event occur naturally, if we do load a new page the packet will be picked up.
     }
 
     // GM_log("Found "+siblings.length+" siblings for the clicked link.");
@@ -541,7 +559,16 @@ function createRelatedLinksPager(siblings) {
     });
     var newEncodedList = encodeURIComponent(JSON.stringify(newRecords));
 
-    link.href = selectedRecord[1] + appendChar + 'siblings=' + newEncodedList;
+    link.isRLPPagerLink = true;
+    if (passPacketByGM) {
+      link.href = selectedRecord[1];
+      // We wait and set the packet only when the user clicks, since GM_setValue is a single global.  He may have gone browsing in another tab, using RLP there also and overwriting the packet, before coming back to click in this tab.
+      link.addEventListener("click",function(e){
+        GM_setValue("siblings_data",siblings);
+      },false);
+    } else {
+      link.href = selectedRecord[1] + appendChar + 'siblings=' + newEncodedList;
+    }
     if (text != selectedRecord[0]) {
       link.title = selectedRecord[0];
     }
