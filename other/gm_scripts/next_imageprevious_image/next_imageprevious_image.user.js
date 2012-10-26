@@ -7,10 +7,7 @@
 // @include *
 // ==/UserScript==
 
-// This still has bugs seen on flickriver and Facebook
-// Notably, sometimes the backwardButton will return us to the top image =/
-// However, you can use <Space> and <Backspace> on flickriver instead of this script!
-// TODO: Perhaps the problem is we don't sort the images by y-coordinate, we just assume they are in order?
+// 2012/10 - Now sorting positions so out-of-order images do not break the sequence.
 
 (function(){
   // var forwardButton  = 102; // F
@@ -30,10 +27,18 @@
     if (positions.length === 0) {
       for (var index = 0; index < document.images.length; index++) {
         var image = document.images[index];
-        if (image.width < 200 || image.height < 200) continue;
-        positions.push([index, getYOffset(image)]);
+        if (image.width * image.height < 200*200) continue;
+        var ytop = getYOffset(image);
+        // Vertically centralise smaller images.
+        if (image.height && image.height < window.innerHeight) {
+          ytop -= (window.innerHeight - image.height)/2 | 0;
+        }
+        positions.push([index, ytop]);
       }
     }
+    positions.sort(function(a,b) {
+      return a[1] - b[1];
+    });
 
     var scroll = Math.max(document.documentElement.scrollTop, document.body.scrollTop);
 

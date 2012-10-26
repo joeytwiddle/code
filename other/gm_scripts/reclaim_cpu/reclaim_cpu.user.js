@@ -2,6 +2,7 @@
 // @name           Reclaim CPU
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Stops Firefox from using up CPU unneccessarily, by removing plugins and disabling javascript timers on tabs which have been left idle.  Useful if you have a slow PC, or you like to open 20 tabs and then do something else without closing them.  Allows the user to restart the plugins when they return to the tab, but not the timers.
+// @downstreamURL  http://userscripts.org/scripts/source/48754.user.js
 // @include        *
 // @exclude        http://www.last.fm/*
 // @exclude        http://www.deezer.com/*

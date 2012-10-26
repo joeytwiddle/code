@@ -84,6 +84,19 @@ var rules = [
     {
         hostMatch: "unrealadmin.org",
         getTitle: function(){ return document.title.replace(/ - The Unreal Admins Page .*/,''); }
+    },
+
+    {
+        hostMatch: "vim.org",
+        getTitle: function(){
+            // When viewing user profile page
+            if (document.location.pathname.indexOf("/profile.php") >= 0) {
+                var username = document.evaluate("//td[string(.)='user name']/following-sibling::*",document,null,6,null).snapshotItem(0).textContent; // maybe I should start using jquery
+                return username+"'s profile";
+            }
+            // Otherwise (good when viewing a script page)
+            return document.title.replace(/ - .*/,'');
+        }
     }
 
 ];

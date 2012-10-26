@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Table of Contents Everywhere
-// @namespace      TOCE
 // @description    On pages which do not have a Table of Contents, but should do, create one!
+// @downstreamURL  http://userscripts.org/scripts/source/123255.user.js
 // @include        http://*/*
 // @include        https://*/*
 // ==/UserScript==
@@ -19,6 +19,8 @@ var pushAnchorsToBottom = true;   // They can look messy interspersed amongst TO
 // hide or close buttons.  Perhaps we should add close and rollup buttons if we
 // cannot find any recognisable buttons.  (Medawiki tocs for example, do have a
 // show/hide button, so we don't want to add to them!)
+
+// TODO: whatwg.org presents its own TOC but with no title.  Our buttons appear in the wrong place!
 
 // BUG: Displays links for elements which may be invisible due to CSS.  (e.g. see github markdown pages)
 
@@ -105,31 +107,6 @@ function loadScript(url,thenCallFn) {
 	document.body.appendChild(scr);
 }
 
-function clearStyle(elem) {
-	// We set some crucial defaults, so we don't inherit CSS from the page:
-	elem.style.display = 'inline';
-	elem.style.position = 'static';
-	elem.style.top = 'auto';
-	elem.style.right = 'auto';
-	elem.style.bottom = 'auto';
-	elem.style.left = 'auto';
-	return elem;
-}
-
-function newNode(tag,data) {
-	var elem = document.createElement(tag);
-	if (data) {
-		for (var prop in data) {
-			elem[prop] = data[prop];
-		}
-	}
-	return elem;
-}
-
-function newSpan(text) {
-	return clearStyle(newNode("span",{textContent:text}));
-}
-
 // Modified for this script's needs.
 // Returns e.g. "/*[2]/*[4]/*[9]"
 function getXPath(node) {
@@ -171,6 +148,37 @@ if (!String.prototype.trim) {
 	};
 }
 
+
+
+// The following mirrored in wikiindent.user.js
+
+function clearStyle(elem) {
+	// We set some crucial defaults, so we don't inherit CSS from the page:
+	elem.style.display = 'inline';
+	elem.style.position = 'static';
+	elem.style.top = 'auto';
+	elem.style.right = 'auto';
+	elem.style.bottom = 'auto';
+	elem.style.left = 'auto';
+	elem.style.color = 'black';
+	elem.style.backgroundColor = 'white';
+	return elem;
+}
+
+function newNode(tag,data) {
+	var elem = document.createElement(tag);
+	if (data) {
+		for (var prop in data) {
+			elem[prop] = data[prop];
+		}
+	}
+	return elem;
+}
+
+function newSpan(text) {
+	return clearStyle(newNode("span",{textContent:text}));
+}
+
 function addCloseButtonTo(where, toc) {
 	var closeButton = newSpan("[X]");
 	// closeButton.style.float = 'right';
@@ -183,7 +191,7 @@ function addCloseButtonTo(where, toc) {
 	where.appendChild(closeButton);
 }
 
-function addHideButtonTo(toc,table) {
+function addHideButtonTo(toc, tocInner) {
 	var rollupButton = newSpan("[-]");
 	// rollupButton.style.float = 'right';
 	// rollupButton.style.cssFloat = 'right'; // Firefox
@@ -191,15 +199,15 @@ function addHideButtonTo(toc,table) {
 	rollupButton.style.cursor = 'pointer';
 	rollupButton.style.paddingLeft = '10px';
 	function toggleRollUp() {
-		if (table.style.display == 'none') {
-			table.style.display = '';
+		if (tocInner.style.display == 'none') {
+			tocInner.style.display = '';
 			rollupButton.textContent = "[-]";
 		} else {
-			table.style.display = 'none';
+			tocInner.style.display = 'none';
 			rollupButton.textContent = "[+]";
 		}
 		setTimeout(function(){
-			GM_setValue("TOCE_rolledUp", table.style.display=='none');
+			GM_setValue("TOCE_rolledUp", tocInner.style.display=='none');
 		},5);
 	}
 	rollupButton.onclick = toggleRollUp;
@@ -209,8 +217,6 @@ function addHideButtonTo(toc,table) {
 		toggleRollUp();
 	}
 }
-
-// The following mirrored in wikiindent.user.js
 
 function addButtonsConditionally(toc) {
 
@@ -228,8 +234,11 @@ function addButtonsConditionally(toc) {
 
 	var tocTitle = document.getElementById("toctitle"); // Wikipedia
 	tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
-	// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
+	// tocTitle = tocTitle || toc.getElementsByTagName("div")[0]; // Fingers crossed for general
+	tocTitle = tocTitle || toc.firstChild; // Fingers crossed for general
 
+	// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
+	// We cannot test this immediately, because it gets loaded in later!
 	function addButtonsNow() {
 
 		var hideShowButton = document.getElementById("togglelink");
@@ -259,7 +268,6 @@ function addButtonsConditionally(toc) {
 	}
 
 }
-
 
 
 
@@ -338,7 +346,7 @@ function buildTableOfContents() {
 				continue;   // skip things we cannot name
 			}
 
-			var link = newNode("A");
+			var link = clearStyle(newNode("A"));
 			if (linkText.length > 40) {
 				link.title = linkText;   // Show full title on hover
 				linkText = linkText.substring(0,32)+"...";
@@ -423,6 +431,7 @@ function postTOC(toc) {
 			toc.id = "toc";
 		}
 		var tocID = toc.id;
+		// TODO: If we can cleanly separate them, we might want to make put a scrollbar on the content element, leaving the title outside it.
 		GM_addStyle("#"+tocID+" { position: fixed; top: 10%; right: 4%; background-color: white; color: black; font-weight: normal; padding: 5px; border: 1px solid grey; z-index: 9999999; max-height: 80%; max-width: 32%; overflow: auto; }"
 			+ "#"+tocID+"       { opacity: 0.2; }"
 			+ "#"+tocID+":hover { opacity: 1.0; }"
@@ -441,6 +450,14 @@ function searchForTOC() {
 		tocFound = tocFound || document.getElementById("article-nav");   // developer.mozilla.org
 		tocFound = tocFound || document.getElementById("page-toc");      // developer.mozilla.org
 		tocFound = tocFound || (document.getElementsByClassName && document.getElementsByClassName("twikiToc")[0]);      // TWiki
+		if (document.location.host.indexOf("dartlang.org")>=0) {
+			tocFound = null;   // The toc they gives us contains top-level only.  It's preferable to generate our own full tree.
+		}
+		// whatwg.org:
+		/* if (document.getElementsByTagName("nav").length == 1) {
+			GM_log("[TOCE] Using nav element.");
+			tocFound = document.getElementsByTagName("nav")[0];
+		} */
 
 		var toc = tocFound;
 

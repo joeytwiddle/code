@@ -2,6 +2,7 @@
 // @name           YouTube Thumb Likes Dislikes
 // @namespace      YTTLD
 // @description    Adds the likes/dislikes light-saber to YouTube thumbnails, so you can avoid watching crap videos.  Activates when mouse passes over a thumbnail.
+// @downstreamURL  http://userscripts.org/scripts/source/126705.user.js
 // @include        http://youtube.com/*
 // @include        https://youtube.com/*
 // @include        http://*.youtube.com/*
@@ -85,9 +86,8 @@ function findClosestLinkElem(orig) {
 }
 
 // Display likes/dislikes on links to other videos
-function checkLikesDislikes(evt) {
-	var target = evt.target || evt.srcElement;
-	if (suitableLink(target) && !target.doneLikesDislikes) {
+function lookupLikesDislikes(target) {
+	if (!target.doneLikesDislikes) {
 		target.doneLikesDislikes = true;
 
 		function gotTargetPage(response) {
@@ -112,13 +112,6 @@ function checkLikesDislikes(evt) {
 						elemWithTitle.title += " ("+infoText+")";
 					}
 
-					if (addCountsToThumbnail) {
-						var span = document.createElement("div");
-						span.className = "stat";
-						span.appendChild(document.createTextNode(infoText));
-						target.appendChild(span);
-					}
-
 					if (addLightSaberBarToThumbnail) {
 
 						var lightSaber = lePage.getElementsByClassName("watch-sparkbars")[0];
@@ -139,6 +132,13 @@ function checkLikesDislikes(evt) {
 							elemWithTitle.title += " [No likes/dislikes available]";
 						}
 
+					}
+
+					if (addCountsToThumbnail) {
+						var span = document.createElement("div");
+						span.className = "stat";
+						span.appendChild(document.createTextNode(infoText));
+						target.appendChild(span);
 					}
 
 					if (addVideoDescriptionToTooltip) {
@@ -169,13 +169,77 @@ function checkLikesDislikes(evt) {
 
 	}
 }
-document.body.addEventListener("mouseover",checkLikesDislikes,false);
+
+function ifSuitable(fn) {
+	return function(evt) {
+		var target = evt.target || evt.srcElement;
+		if (suitableLink(target)) {
+			fn(target);
+		}
+	};
+}
+
+// document.body.addEventListener("mouseover",ifSuitable(lookupLikesDislikes),false);
+
+// Hover detection is a fiddle, because a mouseout event is fired on the A element immediately after the mouseover, presumably due to all the things inside it.
+// I suppose we could say "don't cancel hover if we are firing on a child of the hoveredElem...  Or we could use jQuery, or steal jQuery's mechanism.
+
+var hoveredElem = null;
+var hoverTimer = null;
+
+/*
+function startHover(target) {
+	stopHover();
+	hoveredElem = target;
+	hoverTimer = setTimeout(function(){
+		lookupLikesDislikes(hoveredElem);
+	},1000);
+}
+function stopHover() {
+	clearTimeout(hoverTimer);
+}
+
+document.body.addEventListener("mouseover",ifSuitable(startHover),false);
+document.body.addEventListener("mouseout",ifSuitable(stopHover),false);
+*/
+
+function hasParent(node,seekNode) {
+	while (node != null) {
+		if (node == seekNode) {
+			return true;
+		}
+		node = node.parentNode;
+	}
+	return false;
+}
+
+function watchForHover(evt) {
+	var target = evt.target || evt.srcElement;
+	if (suitableLink(target)) {
+		hoveredElem = target;
+		hoverTimer = setTimeout(function(){
+			lookupLikesDislikes(hoveredElem);
+		},1000);
+	} else {
+		// Don't cancel if we are a child of hoveredElem
+		if (hasParent(target,hoveredElem)) {
+			return;
+		}
+		// GM_log("Cancelling hover on "+hoveredElem+" because of mousemove on "+target.outerHTML);
+		hoveredElem = null;
+		clearTimeout(hoverTimer);
+		hoverTimer = null;
+	}
+}
+
+document.body.addEventListener("mousemove",watchForHover,false);
+
 
 if (spamYouTube) {
 	function queueLink(link,when) {
 		GM_log("In "+(when/1000|0)+" seconds I will do "+link);
 		setTimeout(function(){
-			checkLikesDislikes({target:link});
+			lookupLikesDislikes(link);
 		},when);
 	}
 	var ls = document.getElementsByTagName("A");

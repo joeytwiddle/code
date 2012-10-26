@@ -2,6 +2,7 @@
 // @name           FallbackGMAPI
 // @namespace      FallbackGMAPI
 // @description    Default functions for GM_ API library for wider browser compatibility and execution of userscripts from bookmarklets.
+// @downstreamURL  http://userscripts.org/scripts/source/123254.user.js
 // @include        http://nowhere.example.com/@require_me_to_make_your_userscript_compatible_in_many_browsers
 // @copyright      2009, 2010, 2011 James Campos, Paul Clark
 // @license        cc-by-3.0; http://creativecommons.org/licenses/by/3.0/
@@ -224,6 +225,7 @@ if (typeof GM_xmlhttpRequest == "undefined") {
 			*/
 		}
 	};
+	exportTarget.GM_xmlhttpRequest.localDomainOnly = true;
 }
 
 })();

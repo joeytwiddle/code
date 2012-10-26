@@ -2,6 +2,7 @@
 // @name           FaviconizeGoogle
 // @namespace      http://userscripts.org/users/89794   (joeytwiddle)
 // @description    Adds favicons next to Google search results.
+// @downstreamURL  http://userscripts.org/scripts/source/48636.user.js
 // @include        http://google.*/search?*
 // @include        http://www.google.*/search?*
 //// TODO DEV: This is just here so I can *see* if it works on other Google pages, e.g. Google Images (altho it would suck there unless we target urls instead of links).

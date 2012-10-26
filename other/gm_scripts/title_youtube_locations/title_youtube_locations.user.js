@@ -2,6 +2,7 @@
 // @name           Title Youtube Locations
 // @namespace      TYTLs
 // @description    Forces all YouTube pages to put the video title in the Location Bar.  Now with extra undocumented features addScrollbars and animateThumbnails!
+// @downstreamURL  http://userscripts.org/scripts/source/87416.user.js
 // @include        http://*.youtube.*/*
 // @include        http://youtube.*/*
 // @include        https://*.youtube.*/*

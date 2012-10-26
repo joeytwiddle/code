@@ -2,6 +2,7 @@
 // @name           Delicious Link Tooltop
 // @namespace      GPM
 // @description    Shows Delicious info for the target page in a tooltip when you hover over a link.
+// @downstreamURL  http://userscripts.org/scripts/source/60831.user.js
 // @include        *
 // @exclude        http://facebook.com/*
 // @exclude        https://facebook.com/*
@@ -64,8 +65,6 @@ if (this.GM_addStyle) { GM_addStyle("a:visited { color: #440066; }"); }
 
 var secondRun = ( window.DLT_loaded ? true : (window.DLT_loaded=true) && false );
 
-GM_log("window.DLT_loaded = "+window.DLT_loaded);
-
 // I want to switch annotateAllLinks on if I run the userscript twice.
 if (secondRun) {
 	annotateAllLinks = true;
@@ -101,6 +100,7 @@ function log(x,y,z) {
 		console.log(x,y,z);
 	}
 	window.status = ""+x+" "+y+" "+z;
+	// window.status = Array.prototype.join(arguments," "); // Didn't work for me (GM in FF)
 }
 
 
@@ -342,7 +342,7 @@ function isImageAndWhitespace(elem) {
 
 
 
-// == Chrome compatibility layer == //
+// == Chrome and Bookmarklet compatibility layer == //
 
 if (typeof GM_log == 'undefined') {
 	GM_log = function(data) {
@@ -354,7 +354,8 @@ if (typeof GM_log == 'undefined') {
 }
 
 // We always replace Google Chrome's GM_xmlhttpRequest because it is not cross-site.
-var needToJSONP = !this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/);
+// Likewise, we always replace FallbackGMAPI's localDomainOnly implementation.
+var needToJSONP = !this.GM_xmlhttpRequest || window.navigator.vendor.match(/Google/) || this.GM_xmlhttpRequest.localDomainOnly;
 
 var allowedToJSONP = ( document.location.protocol === "https:" ? enableJSONPonHTTPS : true );
 
@@ -362,11 +363,11 @@ var allowedToJSONP = ( document.location.protocol === "https:" ? enableJSONPonHT
 // It was still failing in Chrome even when "load insecure content" was enabled!
 if (needToJSONP && (allowedToJSONP || secondRun)) {
 
-// This performs a direct JSONP request from Delicious, circumventing cross-site issues with GM_xhR and XMLHR.
-// BUG: Chrome complains if this runs while we are on an https page, and more sites are switching to https!
-// OLD BUG: Since Delicious last changed format, they started providing responses with e.g. ... "total_posts": 2L, ...  This 'L' does not parse in Javascript!  It throws "identifier starts immediately after numeric literal" in Firefox, and "Unexpected token ILLEGAL" in Chromium.
-// OLD BUG: Interestingly, the "L" does NOT appear if we make a non-callback request through the xhrasjson proxy, or indeed the same callback request direct in Firefox's location bar.  Perhaps we can avoid the "L" by requesting the right content/mime-type in the script tag?
-// Jan 2012 - Has the L gone away?  Script seems to be working fine now!
+	// This performs a direct JSONP request from Delicious, circumventing cross-site issues with GM_xhR and XMLHR.
+	// BUG: Chrome complains if this runs while we are on an https page, and more sites are switching to https!
+	// OLD BUG: Since Delicious last changed format, they started providing responses with e.g. ... "total_posts": 2L, ...  This 'L' does not parse in Javascript!  It throws "identifier starts immediately after numeric literal" in Firefox, and "Unexpected token ILLEGAL" in Chromium.
+	// OLD BUG: Interestingly, the "L" does NOT appear if we make a non-callback request through the xhrasjson proxy, or indeed the same callback request direct in Firefox's location bar.  Perhaps we can avoid the "L" by requesting the right content/mime-type in the script tag?
+	// Jan 2012 - Has the L gone away?  Script seems to be working fine now!  Perhaps Delicious changed their format back.
 	// GM_log("[DLT] Using Delicious JSONP");
 	GM_xmlhttpRequest = function(details) {
 		// Insert a callback into the root window, anonymised by a random key.
@@ -468,9 +469,11 @@ if (needToJSONP && (allowedToJSONP || secondRun)) {
 	*/
 
 } else if (needToJSONP && !allowedToJSONP) {
-	// BUG TODO: Firefox keeps coming here on the second run, when it shouldn't, and also never logs this line.
 	GM_log("[DLT] Not attempting to Delicious since we are on https page.");
-	return;   // can throw error ;)
+	// We must not use this return; in Firefox.  It causes a "SyntaxError: return not in function" to be thrown, without running even the top of this script.
+	// return;
+	// Instead we throw an error:
+	throw new Error("[DLT] Not attempting to Delicious since we are on https page.");
 }
 
 if (typeof GM_addStyle == 'undefined') {
@@ -478,18 +481,6 @@ if (typeof GM_addStyle == 'undefined') {
 		var style = document.createElement('style');
 		style.textContent = css;
 		document.getElementsByTagName('head')[0].appendChild(style);
-	};
-}
-
-if (typeof GM_openInTab == 'undefined') {
-	GM_openInTab = function(url) {
-		return window.open(url, "_blank");
-	};
-}
-
-if (typeof GM_registerMenuCommand == 'undefined') {
-	GM_registerMenuCommand = function(name, funk) {
-		// TODO
 	};
 }
 

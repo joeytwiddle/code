@@ -17,7 +17,8 @@
 
 
 // DONE: Using the pager always sets the siblings packet in the target URL, even if passPacketByGM is enabled!  Fix that.
-// TODO: Pager not working with passPacketByGM, because the next/prev links are actually ...
+// TODO: Still problems with the pager not working when passPacketByGM is enabled.  For some reason the pager shows us focused on the wrong link in the list!  (Was browsing vim.org, URLs_Need_Titles was adding #s to the title but not the links.)  Also, sometimes the old packet was getting cleared and a new one was not loading when clicking pager clicks.
+
 
 
 // == OPTIONS ==

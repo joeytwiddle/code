@@ -1,6 +1,7 @@
 // ==UserScript==
 // @name          Wikimedia+ for Chrome (localStorage)
 // @description   Add History box at wikimedia's leftmost column
+// @downstreamURL http://userscripts.org/scripts/source/124389.user.js
 // @include       http://*.wikipedia.org/*
 // @include       http://*.wikimedia.org/wiki/*
 // @include       http://ssdl-wiki.cs.technion.ac.il/wiki/*

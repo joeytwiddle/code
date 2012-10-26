@@ -38,6 +38,8 @@
  *
  * An alternative might be: on link hover, float up an image-button the user
  * can click for inline preview.  Hide the button on unhover.
+ *
+ * For FF I renamed document.width to document.body.clientWidth.
  */
 
 // BUG: Works fine under in Chrome, but not in Firefox!
@@ -175,7 +177,7 @@ function newInlineWindow(event, href, link, windowID){
 	//closeInlineWindows();
 	
 	// Setup some constants for use in creating the inline window...
-	var windowWidth = Math.round(document.width * 0.45);
+	var windowWidth = Math.round(document.body.clientWidth * 0.45);
 	var windowHeight = Math.round(window.innerHeight * 0.45);
 	var windowPadding = 13;
 	var windowTextPadding = 5;
@@ -203,8 +205,8 @@ function newInlineWindow(event, href, link, windowID){
 		xpos = pageBoundPadding;
 	} 
 	// check to see if the right 2/3 of the window will overlap the right page bound...
-	else if ( elementLeft + (windowWidth*2/3) > document.width - pageBoundPadding ) {
-		xpos = document.width - pageBoundPadding - windowWidth;
+	else if ( elementLeft + (windowWidth*2/3) > document.body.clientWidth - pageBoundPadding ) {
+		xpos = document.body.clientWidth - pageBoundPadding - windowWidth;
 	}
 	else {
 		// if we're not going to hit either wall, set the window to be offset
@@ -224,7 +226,7 @@ function newInlineWindow(event, href, link, windowID){
 	var container = document.createElement('div');
 	container.id = windowFullID;
 	
-	var cssBoxWidth = Math.round((windowWidth - (windowPadding+windowBorderSize)*2)/document.width*100);
+	var cssBoxWidth = Math.round((windowWidth - (windowPadding+windowBorderSize)*2)/document.body.clientWidth*100);
 	var cssBoxHeight = windowHeight - (windowPadding+windowBorderSize*2);
 
 	container.innerHTML = '<div style="' +
@@ -291,8 +293,8 @@ function populateInnerWindow(href,windowID) {
 			var xmlDoc;
 			// Pre 0.6.4 Method...
 			//var parser = new DOMParser();
-			// Post 0.6.4 Method...
-			if (typeof(XPCNativeWrapper) == "function") {
+			// Post 0.6.4 Method...   joey disabled it, not working in FF GM
+			if (false && typeof(XPCNativeWrapper) == "function") {
 				var dp = new XPCNativeWrapper(window, "DOMParser()");
 				var parser = new dp.DOMParser();
 				xmlDoc = parser.parseFromString(response.responseText, "application/xhtml+xml");

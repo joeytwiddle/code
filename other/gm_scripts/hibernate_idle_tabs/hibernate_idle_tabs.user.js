@@ -2,6 +2,7 @@
 // @name           Hibernate Idle Tabs
 // @namespace      HIT
 // @description    If a tab is unused for a long time, it switches to a light holding page until the tab is focused again.  This helps the browser to recover memory, and can speed up the re-opening of large sessions.
+// @downstreamURL  http://userscripts.org/scripts/source/123252.user.js
 // @include        *
 // ==/UserScript==
 
@@ -152,18 +153,23 @@ function handleHoldingPage() {
 	var params = getQueryParameters();
 
 	// setHibernateStatus("Holding page for " + params.title + "\n with URL: "+params.url);
-	// var mainReport = params.title + " (Holding Page)";
-	var mainReport = "(" + (params.title || params.url) + " :: Hibernated)";
-	setWindowTitle(mainReport);
-	setHibernateStatus(mainReport);
+	// var titleReport = params.title + " (Holding Page)";
+	var titleReport = "(" + (params.title || params.url) + " :: Hibernated)";
+	setWindowTitle(titleReport);
 
+	var mainReport = titleReport;
 	if (params.title) {
+		/*
 		statusElement.appendChild(document.createElement("P"));
 		var div = document.createElement("tt");
 		div.style.fontSize = "0.8em";
 		div.appendChild(document.createTextNode(params.url));
 		statusElement.appendChild(div);
+		*/
+		mainReport += "\n" + params.url;
 	}
+
+	setHibernateStatus(mainReport);
 
 	try {
 		var faviconDataURL = params.favicon_data;
@@ -338,6 +344,7 @@ function setHibernateStatus(msg) {
 	checkStatusElement();
 	statusElement.textContent = msg;
 	statusElement.innerText   = msg;   // IE
+	// Currently '\n' works in Chrome, but not in Firefox.
 }
 
 

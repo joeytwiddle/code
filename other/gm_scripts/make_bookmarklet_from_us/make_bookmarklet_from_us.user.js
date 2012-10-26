@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name           Make Bookmarklet From Javascript URL
+// @name           Make Bookmarklets from Javascript URLs
 // @namespace      MBFU
 // @description    When it sees a link to a userscript or general Javascript URL, adds a Bookmarklet besides it, which you can drag to your toolbar to load the script when you next need it (running outside Greasemonkey of course).
 // @include        http://hwi.ath.cx/*/gm_scripts/*
@@ -86,6 +86,7 @@ function addBookmarklet(link) {
 	var newLink = document.createElement("A");
 	newLink.href = "javascript:" + toRun;
 	newLink.textContent = name;
+	newLink.title = newLink.href;
 
 	var newContainer = document.createElement("SPAN");
 	newContainer.appendChild(document.createTextNode("(Drag Bookmarklet: "));
@@ -121,15 +122,16 @@ function addQuickInstall(link) {
 	link.style.color = 'grey';
 	addBookmarklet(newLink);
 	addLiveUserscript(newLink);
+	addSourcePopup(newLink);
 	// Do this after the other two builders have used the .href
 	if (preventCachingOfInstallScripts) {
 		newLink.href = newLink.href + '?dummy='+new Date().getTime();
 	}
 }
 
-function getURLThen(url,handlerFn) {
+function getURLThen(url,handlerFn,onErrorFn) {
 	var req = new XMLHttpRequest();
-	req.open("GET", url, false);
+	req.open("GET", url, true);
 	req.send(null);
 	req.onreadystatechange = function (aEvt) {
 		if (req.readyState == 4) {
@@ -137,45 +139,117 @@ function getURLThen(url,handlerFn) {
 				// Got it
 				handlerFn(req);
 			} else {
-				alert("XHR failed with status "+req.status+"\n");
+				var msg = ("XHR failed with status "+req.status+"\n");
+				window.status = msg;
+				onErrorFn(req);
+				console.warn(msg);
 			}
 		}
 	};
+}
+
+var frame = null;
+
+function loadSourceViewer(url, newLink, evt) {
+
+	// window.lastEVT = evt;
+
+	if (frame && frame.parentNode) {
+		frame.parentNode.removeChild(frame);
+	}
+	frame = document.createElement("iframe");
+
+	// BUG TODO: This doesn't help.  Loading it directly into the iframe still triggers Greasemonkey to install it.
+	// What we need to do is get the script with an XHR, then place it into the div.
+	//frame.src = url;
+
+	var cleanup = function(evt) {
+		frame.parentNode.removeChild(frame);
+		document.body.removeEventListener("click",cleanup,false);
+		// frame.removeEventListener("mouseout",cleanup,false);
+	};
+	document.body.addEventListener("click",cleanup,false);
+
+	getURLThen(url, function(res){
+		var displayDiv = document.createElement("pre");
+		displayDiv.style.fontSize = '0.8em';
+		displayDiv.textContent = res.responseText;
+		displayDiv.style.whiteSpace = "pre-wrap";
+		frame.contentWindow.document.body.appendChild(displayDiv);
+		// frame.addEventListener("mouseout",cleanup,false);
+		// newLink.title = res.responseText;
+		var lines = res.responseText.split("\n");
+		for (var i=0;i<lines.length;i++) {
+			var line = lines[i];
+			if (line.match(/@description\s/)) {
+				var descr = line.replace(/.*@description\s*/,'');
+				newLink.title = descr;
+				break;
+			}
+		}
+	}, function(res){
+		frame.contentWindow.document.body.appendChild( document.createTextNode("Failed to load "+url+": HTTP "+res.status) );
+	});
+
+	/*
+	frame.style.position = 'fixed';
+	frame.style.top = evt.clientY+4+'px';
+	frame.style.left = evt.clientX+4+'px';
+	*/
+	frame.style.position = 'absolute';
+	// frame.style.top = evt.layerY+12+'px';
+	// frame.style.left = evt.layerX+12+'px';
+	frame.style.top = evt.layerY - window.innerHeight*35/100 + 'px';
+	frame.style.left = evt.layerX + 64 + 'px';
+	frame.style.width = "70%";
+	frame.style.height = "70%";
+	frame.style.backgroundColor = 'white';
+	frame.style.color = 'black';
+	frame.style.padding = '8px';
+	frame.style.border = '2px solid #555555';
+	document.body.appendChild(frame);
+
+	frame.contentWindow.document.body.appendChild( document.createTextNode("Loading...") );
+
 }
 
 function addSourceViewer(link) {
 	var newLink = document.createElement("A");
 	// newLink.href = '#';
 	newLink.textContent = "Source";
+
 	newLink.addEventListener('click',function(e) {
-		var div = document.createElement("iframe");
+		loadSourceViewer(link.href,newLink,e);
+	},false);
 
-		// BUG TODO: This doesn't help.  Loading it directly into the iframe still triggers Greasemonkey to install it.
-		// What we need to do is get the script with an XHR, then place it into th e div.
-		//div.src = link.href;
-
-		getURLThen(link.href, function(res){
-			div.document.body.textContent = res.responseText;
-		});
-
-		div.style.position = 'fixed';
-		div.style.top = e.clientY+4+'px';
-		div.style.left = e.clientX+4+'px';
-		div.style.backgroundColor = 'white';
-		div.style.color = 'black';
-		div.style.padding = '8px';
-		div.style.border = '2px solid #555555';
-		document.body.appendChild(div);
-	},true);
 	// TODO: Problem with .user.js files and Chrome:
 	// In Chrome, opens an empty iframe then the statusbar says it wants to install an extension.
-	// For Chrome we could try: div.src = "view-source:"+...;
+	// For Chrome we could try: frame.src = "view-source:"+...;
 	var extra = document.createElement("span");
 	extra.appendChild(document.createTextNode("["));
 	extra.appendChild(newLink);
 	extra.appendChild(document.createTextNode("]"));
 	extra.style.paddingLeft = '8px';
 	link.parentNode.insertBefore(extra,link.nextSibling);
+}
+
+function addSourcePopup(link) {
+	var hoverTimer = null;
+	function startHover(evt) {
+		stopHover(evt);
+		hoverTimer = setTimeout(function(){
+			loadSourceViewer(link.href, link, evt);
+			stopHover(evt);
+			// link.removeEventListener("mouseover",startHover,false);
+			// link.removeEventListener("mouseout",stopHover,false);
+		},1000);
+	}
+	function stopHover(evt) {
+		clearTimeout(hoverTimer);
+		hoverTimer = null;
+	}
+	link.addEventListener("mouseover",startHover,false);
+	link.addEventListener("mouseout",stopHover,false);
 }
 
 function addLiveUserscript(link) {
@@ -264,7 +338,7 @@ for (var i=links.length-1;i>=0;i--) {
 
 	// If the current page looks like a Greasemonkey Userscript Folder, then
 	// create an installer for every subfolder (assuming a script is inside it).
-	if (document.location.href.match(/\/(gm_scripts|userscripts)\//)) {
+	if (document.location.pathname.match(/\/(gm_scripts|userscripts)\//)) {
 		if (link.href.match(/\/$/) && link.textContent!=="Parent Directory") {
 			addQuickInstall(link);
 		}

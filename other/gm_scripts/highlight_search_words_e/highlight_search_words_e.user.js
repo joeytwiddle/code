@@ -2,6 +2,7 @@
 // @name           Highlight Search Words Everywhere
 // @namespace      HSWE
 // @description    Like Google Cache, highlights the words you used in your search on all search result pages, by checking for CGI parameters in the Referrer.  You can also add #search=a+b+c to the URL to highlight any words of your choosing (may require a reload).
+// @downstreamURL  http://userscripts.org/scripts/source/104652.user.js
 // @include        *
 //// Exclude sites which already highlight search terms!
 // @exclude        http://*.google.*/*
@@ -12,7 +13,7 @@ var highlightWholePhrase = true;
 var highlightEachTerm    = true;
 var highlightOnSearchPages = false;  // highlight on the search page, as well as the results pages
 
-var changeTitle = false;
+var changeTitle = true;   // I think this script may be the cause of a lot of perceived lag in my browser when doing Google searches!
 var titlePrependString = "(Highlighting words...) ";
 var titleAppendString = ""
 

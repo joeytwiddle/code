@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name           WikiIndent
 // @namespace      joeytwiddle
+// @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
+// @downstreamURL  http://userscripts.org/scripts/source/60832.user.js
 // @include        *wiki*
 // @include        http://www.buzztard.com/*
 // @include        http://encyclopediadramatica.com/*
 // @include        http://www.wormus.com/leakytap/*
 // @include        http://theinfosphere.org/*
-// @description    Four visual improvements for Wikipedia (and other wikis):  Indents sub-sections to make the layout clearer.  Hides the sidebar (toggle by clicking the header).  Floats the Table of Contents for access when scrolled.  Converts heading underlines to overlines.
 // ==/UserScript==
 
 //// Features:
@@ -113,6 +114,23 @@ if (typeof GM_setValue == 'undefined' || window.navigator.vendor.match(/Google/)
 
 }
 
+
+
+// The following mirrored in table_of_contents_everyw.user.js
+
+function clearStyle(elem) {
+	// We set some crucial defaults, so we don't inherit CSS from the page:
+	elem.style.display = 'inline';
+	elem.style.position = 'static';
+	elem.style.top = 'auto';
+	elem.style.right = 'auto';
+	elem.style.bottom = 'auto';
+	elem.style.left = 'auto';
+	elem.style.color = 'black';
+	elem.style.backgroundColor = 'white';
+	return elem;
+}
+
 function newNode(tag,data) {
 	var elem = document.createElement(tag);
 	if (data) {
@@ -124,12 +142,14 @@ function newNode(tag,data) {
 }
 
 function newSpan(text) {
-	return newNode("span",{textContent:text});
+	return clearStyle(newNode("span",{textContent:text}));
 }
 
 function addCloseButtonTo(where, toc) {
 	var closeButton = newSpan("[X]");
 	// closeButton.style.float = 'right';
+	// closeButton.style.cssFloat = 'right'; // Firefox
+	// closeButton.style.styleFloat = 'right'; // IE7
 	closeButton.style.cursor = 'pointer';
 	closeButton.style.paddingLeft = '5px';
 	closeButton.onclick = function() { toc.parentNode.removeChild(toc); };
@@ -140,6 +160,8 @@ function addCloseButtonTo(where, toc) {
 function addHideButtonTo(toc, tocInner) {
 	var rollupButton = newSpan("[hide]");
 	// rollupButton.style.float = 'right';
+	// rollupButton.style.cssFloat = 'right'; // Firefox
+	// rollupButton.style.styleFloat = 'right'; // IE7
 	rollupButton.style.cursor = 'pointer';
 	rollupButton.style.paddingLeft = '10px';
 	function toggleRollUp() {
@@ -162,8 +184,6 @@ function addHideButtonTo(toc, tocInner) {
 	}
 }
 
-// The following mirrored in table_of_contents_everyw.user.js
-
 function addButtonsConditionally(toc) {
 
 	function verbosely(fn) {
@@ -180,16 +200,18 @@ function addButtonsConditionally(toc) {
 
 	var tocTitle = document.getElementById("toctitle"); // Wikipedia
 	tocTitle = tocTitle || toc.getElementsByTagName("h2")[0]; // Mozdev
-	// tocTitle |= toc.getElementsByTagName("div")[0]; // Fingers crossed for general
+	// tocTitle = tocTitle || toc.getElementsByTagName("div")[0]; // Fingers crossed for general
+	tocTitle = tocTitle || toc.firstChild; // Fingers crossed for general
 
 	// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
 	// We cannot test this immediately, because it gets loaded in later!
-	setTimeout(function(){
+	function addButtonsNow() {
 
 		var hideShowButton = document.getElementById("togglelink");
 		if (!hideShowButton) {
 			var tocInner = toc.getElementsByTagName("ol")[0]; // Mozdev (can't get them all!)
 			tocInner = tocInner || toc.getElementsByTagName("ul")[0]; // Wikipedia
+			tocInner = tocInner || toc.getElementsByTagName("div")[0]; // Our own
 			if (tocInner) {
 				verbosely(addHideButtonTo)(tocTitle || toc, tocInner);
 			}
@@ -201,9 +223,21 @@ function addButtonsConditionally(toc) {
 			verbosely(addCloseButtonTo)(tocTitle || toc, toc);
 		}
 
-	},4000);
+	}
+
+	// Sometimes Wikimedia does not add a hide/show button (if the TOC is small).
+	// We cannot test this immediately, because it gets loaded in later!
+	if (document.location.href.indexOf("wiki") >= 0) {
+		setTimeout(addButtonsNow,2000);
+	} else {
+		addButtonsNow();
+	}
 
 }
+
+
+
+// == Main == //
 
 function doIt() {
 
@@ -431,6 +465,7 @@ function doIt() {
 				var rootUL = toc.getElementsByTagName("UL")[0];
 				if (!rootUL)
 					rootUL = toc;
+				// TODO: If we can cleanly separate them, we might want to make put a scrollbar on the content element, leaving the title outside it.
 				rootUL.style.overflow = "auto";
 				rootUL.style.maxWidth = maxWidth+'px';
 				rootUL.style.maxHeight = maxHeight+'px';
@@ -479,6 +514,11 @@ function doIt() {
 
 
 	//// Feature #3 : Indent the blocks so their tree-like structure is visible
+
+	// Oct 2012: Disabled - was making a right mess of the header/nav on Wikia
+	if (document.location.host.match(/wikia.com/)) {
+		indentSubBlocks = false;
+	}
 
 	if (indentSubBlocks) {
 
