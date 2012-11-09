@@ -1,5 +1,7 @@
 class NerfSniper expands Mutator config(NerfAmmo);
 
+// This seems to work fine in normal games (LMS,CTF) but in fSG on nzp it gives you a sniper but no hits register.  O_o
+
 var config int StartingAmmo;
 var config int MaxAmmo;
 var config int AmmoPerPack;
