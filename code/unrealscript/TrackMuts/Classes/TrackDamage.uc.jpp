@@ -193,6 +193,7 @@ function ModifyPlayer(Pawn Other) {
 		#define TrimTrail(str,n) Left(str,Len(str)-n)
 		if ( Other.IsA('PlayerPawn') && GetPlayerSettingsFor(PlayerPawn(Other)).bShowLifeLog && GetPlayerSettingsFor(Other).LifeLog != "") {
 			Other.ClientMessage("You died thanks to: "$ TrimTrail(GetPlayerSettingsFor(Other).LifeLog,2) );
+			GetPlayerSettingsFor(Other).LifeLog = "";
 		}
 		if ( PlayerPawn(LastInstigator)!=None && GetPlayerSettingsFor(LastInstigator).bShowLifeLog && GetPlayerSettingsFor(Other).LifeLog != "") {
 			PlayerPawn(LastInstigator).ClientMessage("You killed "$Other.getHumanName()$" with: "$ TrimTrail(GetPlayerSettingsFor(Other).LifeLog,2) );
@@ -219,7 +220,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		Log("TrackDamage.MutatorTakeDamage(): "$InstigatedBy.getHumanName()$" -> "$ActualDamage$" -> "$Victim$" is not a PlayerPawn or a Bot.");
 	// Maybe it's an sgBuilding, which is a type of Pawn.
 
-	bSameTeam = (Victim!=None && InstigatedBy!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team);
+	bSameTeam = (Level.Game.bTeamGame && Victim!=None && InstigatedBy!=None && Victim.PlayerReplicationInfo!=None && InstigatedBy.PlayerReplicationInfo!=None && Victim.PlayerReplicationInfo.Team == InstigatedBy.PlayerReplicationInfo.Team);
 	if (ActualDamage == 0 && !bSameTeam)
 		actualDamageStr = "(absorbed)"; // shield or armor (or some other reason) caused this to give 0 damage to enemy
 	else
