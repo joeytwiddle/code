@@ -178,6 +178,7 @@ function TryToLoadBuildings() {
 	if (redOwner != None && blueOwner != None) {
 		LoadBuildings();
 		if (bBroadcastInfo) {
+			// TODO: Would be nice to show how many
 			BroadcastMessage("Buildings were loaded.  Type mutate clear to remove them.");
 		}
 		bDoneLoad = True;
