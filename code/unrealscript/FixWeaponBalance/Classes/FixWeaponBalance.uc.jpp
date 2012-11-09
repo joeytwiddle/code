@@ -1,15 +1,12 @@
 class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // vim: ft=uc
-// TODO: We should also reduce zp shock primary and enforcer the same way.
-// TODO: To make them like PureStats (CTF), we should reduce minigun and pulse
-//       (a bit) for ZeroPingPlus103, or not reduce them for ZPPure7G.
 // DONE: bFixCrouchingBug for ZeroPingPlus103
 // TODO: We may be able to process damage done before armour, by giving each
 //       player a high-priority custom armour class.
-// TODO: DO NOT adjust damage against general pawns (e.g. siege buildings),
+// DONE: DO NOT adjust damage against general pawns (e.g. siege buildings),
 //       only against players and bots.
-// TODO: Alternative setup: keep ZP sniper strong, increase strength of all
+// DONE: Alternative setup: keep ZP sniper strong, increase strength of all
 //       other weapons to match.
 
 #define ADJUST_SNIPER_DAMAGE
@@ -17,32 +14,47 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 // Debugging:
 
 // #define DebugLog(X); if (bLogging) { Log("[FixWeaponDamage] "$(X)); } if (bLiveReports) { BroadcastMessage("[FWD] "$(X)); }
-#define DebugLog(X); if (bLogging) { Log("[FixWeaponDamage] "$(X)); }
+#define DebugLog(X) if (bLogging) { Log("[FixWeaponDamage] "$(X)); }
 // #define DebugLog(X); 
 
 var config bool bEnabled;
 var config bool bLogging;
 var config bool bLiveReports;
 
-#ifdef ADJUST_SNIPER_DAMAGE
 var config bool bKeepHeadshotsInAllModes;
-var config float SniperDamageScale,SniperBoostScale;
+var config float SniperDamageScale;
 var config int SniperMaxDamage;
 var config bool bFixCrouchingBug;   // For ZeroPingPlus103
-#endif
+
+var config float RocketDamageScale;
+var config float RocketGrenadeDamageScale;
+var config float BioDamageScale;
+var config float EnforcerDamageScale;
+var config float MinigunDamageScale;
+var config float ShockPrimaryDamageScale;
+var config float ShockBallDamageScale;
+var config float FlakPrimaryDamageScale;
+var config float FlakSecondaryDamageScale;
+var config float PulseDamageScale;
+var config float PulsebeamDamageScale;
+var config float RipperDamageScale;
+var config float RipperSecondaryDamageScale;
+var config float RipperHeadshotDamageScale;
+var config float MeleeWeaponDamageScale;
+
+var config bool bAdjustBoost;
+
 
 function PostBeginPlay() {
-	// if (bEnabled) {
 	Level.Game.RegisterDamageMutator(Self);
 	Level.Game.RegisterMessageMutator(Self);
-	// }
 }
 
 function ModifyPlayer(Pawn Other) {
 	Super.ModifyPlayer(Other);
 	if (bEnabled) {
 		if (PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
-			Other.ClientMessage("FixWeaponBalance has reduced sniper damage for this game.");
+			Other.ClientMessage("FixWeaponBalance is running.  See mutate status for details.");
 		}
 	}
 }
@@ -50,72 +62,129 @@ function ModifyPlayer(Pawn Other) {
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
+	local bool bHardcore,isShockPrimary,isEnforcer;
 	local int NewDamage;
 
 	if (bEnabled && PlayerPawn(InstigatedBy)!=None) {
 
-		bHeadshot = (DamageType=='decapitated') || (DamageType=='shot' && ActualDamage>34);
+		bHardcore = DeathMatchPlus(Level.Game).bHardcoreMode;
 
+		bHeadshot = (DamageType=='decapitated');
+
+		bSniperShot = False;
 		// Is this a sniper or enforcer hit?
+		// BUG: This could identify a ripper headshot as a sniper shot, if the player changed to sniper before it hit!
+		// I fear there is no solution to that in mutator.
 		if (DamageType == 'shot' || DamageType == 'decapitated') {
-
-			if ( SniperRifle(InstigatedBy.Weapon)!=None || Enforcer(InstigatedBy.Weapon)!=None ) {
+			if (InstigatedBy!=None && SniperRifle(InstigatedBy.Weapon) != None) {
 				bSniperShot = True;
-			} else if (Minigun2(InstigatedBy.Weapon)!=None) {
-				// I hate minigun, so I'm counting it as a sniper for now :P
-				bSniperShot = True;
-			} else {
-				DebugLog("Ignoring 'shot' from unexpected weapon: "$ InstigatedBy.Weapon);
-				bSniperShot = False;
 			}
-
 		}
+
+		NewDamage = ActualDamage;
 
 		if (bSniperShot) {
 
-			#ifdef ADJUST_SNIPER_DAMAGE
-
-				if (bFixCrouchingBug && Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
-					// Headshots are not possible on crouched players, so we reduce the damage to a body hit.
-					if (DeathMatchPlus(Level.Game).bHardcoreMode) {
-						if (ActualDamage > 67) {
-							ActualDamage = 67;
-						}
-					} else {
-						if (ActualDamage > 58) {
-							ActualDamage = 58;
-						}
+			if (bFixCrouchingBug && Victim!=None && Victim.IsA('PlayerPawn') && PlayerPawn(Victim).bIsCrouching) {
+				// Headshots are not possible on crouched players, so we reduce the damage to a body hit.
+				if (bHardcore) {
+					if (ActualDamage > 67) {
+						ActualDamage = 67;
+					}
+				} else {
+					if (ActualDamage > 58) {
+						ActualDamage = 58;
 					}
 				}
+			}
 
-				// Always scale damage for sniper rifle?
-				NewDamage = ActualDamage * SniperDamageScale;
-				// In non-hardcore mode, we cannot scale headshots down, because they are only 100 to start with!
-				if (bKeepHeadshotsInAllModes && ActualDamage>=100 && NewDamage<100) {
-					NewDamage = 100; /*
-					NewDamage = ActualDamage; */
-				}
-				if (NewDamage < ActualDamage) {
-					DebugLog("Reducing shot "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
-					if (bLiveReports) {
-						InstigatedBy.ClientMessage("Reducing shot "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
-					}
-				}
-				ActualDamage = NewDamage;
+			// Always scale damage for sniper rifle?
+			NewDamage = ActualDamage * SniperDamageScale;
 
-				Momentum = Momentum * SniperBoostScale;
-				if (ActualDamage > SniperMaxDamage) {
-					ActualDamage = SniperMaxDamage;
-				}
+			// In non-hardcore mode, we may not want to scale headshots down, because they are only 100 to start with!
+			if (bKeepHeadshotsInAllModes && ActualDamage>=100 && NewDamage<100) {
+				NewDamage = 100;
+			}
 
-			#endif
+			if (NewDamage > SniperMaxDamage) {
+				NewDamage = SniperMaxDamage;
+			}
 
+		// WARNING: Some of the damage dealt may have already been partially absorbed by armour, making the == comparisons we make later inaccurate - they may fail to scale up/down damage on a weapon they should have.  In case of inaccuracies, they will fall to the final else case, so at least the damage scale there will be applied.
+		// If all their armour is gone, and they have only 12 health left, I believe 60 damage still reaches us as 60 (not reduced to 12).  If not for that, scaling damage down would make it impossible to kill people!
+		} else if (DamageType == 'RocketDeath') {
+			NewDamage *= RocketDamageScale;
+		} else if (DamageType == 'GrenadeDeath') {
+			NewDamage *= RocketGrenadeDamageScale;
+		} else if (DamageType == 'Corroded') {
+			NewDamage *= BioDamageScale;
+		} else if (DamageType == 'shot') {
+			// isEnforcer = (bHardcore && NewDamage==25 || !bHardcore && NewDamage==10);
+			isEnforcer = Enforcer(InstigatedBy.Weapon)!=None;
+			if (isEnforcer) {
+				NewDamage *= EnforcerDamageScale;
+			} else {
+				// Presumably now Minigun2(InstigatedBy.Weapon)!=None
+				// Or coule be sniper (if somehow we failed to recognise sniper above)
+				NewDamage *= MinigunDamageScale;
+			}
+		} else if (DamageType == 'jolted') {
+			// Bugs:
+			// Armor absorpotion will fail to recognise primary, applying ShockBallDamageScale!
+			// (More rarely, combos which caused ==60 after absorption will be marked primaries!)
+			// Solution: Keep ShockPrimaryDamageScale and ShockBallDamageScale the same, or experience weirdness you did not want!
+			//isShockPrimary = (bHardcore && NewDamage==60 || !bHardcore && NewDamage==40);
+			// Compensation: Never misclassify true primary, often misclassify weak combo as primary.
+			isShockPrimary = (bHardcore && NewDamage<=60 || !bHardcore && NewDamage<=40);
+			if (isShockPrimary) {
+				NewDamage *= ShockPrimaryDamageScale;
+			} else {
+				// The damage caused by a shock ball can vary (centrality?), so it counts with a shock combo.
+				NewDamage *= ShockBallDamageScale;
+			}
+		} else if (DamageType == 'FlakDeath') {
+			NewDamage *= FlakPrimaryDamageScale;
+		} else if (DamageType == 'Mortared') {
+			NewDamage *= FlakSecondaryDamageScale;
+		} else if (DamageType == 'Pulsed') {
+			NewDamage *= PulseDamageScale;
+		} else if (DamageType == 'zapped') {
+			NewDamage *= PulsebeamDamageScale;
+		} else if (DamageType == 'shredded') {
+			NewDamage *= RipperDamageScale;
+		} else if (DamageType == 'RipperAltDeath') {
+			NewDamage *= RipperSecondaryDamageScale;
+		} else if (DamageType == 'decapitated') {
+			NewDamage *= RipperHeadshotDamageScale;
+		} else if (DamageType == 'Impact') { // hammer
+			NewDamage *= MeleeWeaponDamageScale;
+		} else if (DamageType == 'slashed') { // chainsaw
+			NewDamage *= MeleeWeaponDamageScale;
+		} else {
+			if (bLiveReports) {
+				InstigatedBy.ClientMessage("Did not recognise DamageType="$DamageType);
+			}
 		}
 
-		if (ActualDamage == 0) {
-			Momentum = vect(0,0,0);
+		if (bAdjustBoost && NewDamage != ActualDamage && ActualDamage!=0) {
+			Momentum = Momentum * (NewDamage/ActualDamage);
+		}
+
+		if (NewDamage != ActualDamage) {
+			DebugLog("Adjusting "$DamageType$": "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
+			if (bLiveReports) {
+				InstigatedBy.ClientMessage("Inflicted "$DamageType$": "$ActualDamage$" -> "$NewDamage);
+				if (PlayerPawn(Victim) != None) {
+					Victim.ClientMessage("Received "$DamageType$": "$ActualDamage$" -> "$NewDamage);
+				}
+			}
+		}
+
+		ActualDamage = NewDamage;
+
+		// if (ActualDamage == 0) {
 			// DamageType = ''; //// Does not pr_vent blood spurts from appearing
-		}
+		// }
 
 	}
 
@@ -180,7 +249,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 
 	if (command ~= "HELP") {
 		Sender.ClientMessage("FixWeaponBalance.bEnabled = "$bEnabled);
-		Sender.ClientMessage("FixWeaponBalance commands: !fwb !report | !status");
+		Sender.ClientMessage("FixWeaponBalance commands: fwb | report | status");
 		return True;
 	}
 
@@ -221,12 +290,26 @@ function SendStatusTo(Pawn Sender) {
 	Send("  Enabled = "$bEnabled);
 	Send("  Logging = "$bLogging);
 	Send("  Reporting = "$bLiveReports);
-	#ifdef ADJUST_SNIPER_DAMAGE
 	Send("  SniperDamageScale = "$PercentageChangeStr(SniperDamageScale));
-	Send("  SniperBoostScale = "$PercentageChangeStr(SniperBoostScale));
+	// Send("  SniperBoostScale = "$PercentageChangeStr(SniperBoostScale));
 	Send("  SniperMaxDamage = "$SniperMaxDamage);
-	Send("So headshot 150 now gives "$ Int(150*SniperDamageScale) $" and bodyhit 67 gives "$ Int(67*SniperDamageScale) $".");
-	#endif
+	Send("  RocketDamageScale = "$PercentageChangeStr(RocketDamageScale));
+	Send("  RocketGrenadeDamageScale = "$PercentageChangeStr(RocketGrenadeDamageScale));
+	Send("  BioDamageScale = "$PercentageChangeStr(BioDamageScale));
+	Send("  EnforcerDamageScale = "$PercentageChangeStr(EnforcerDamageScale));
+	Send("  MinigunDamageScale = "$PercentageChangeStr(MinigunDamageScale));
+	Send("  ShockPrimaryDamageScale = "$PercentageChangeStr(ShockPrimaryDamageScale));
+	Send("  ShockBallDamageScale = "$PercentageChangeStr(ShockBallDamageScale));
+	Send("  FlakPrimaryDamageScale = "$PercentageChangeStr(FlakPrimaryDamageScale));
+	Send("  FlakSecondaryDamageScale = "$PercentageChangeStr(FlakSecondaryDamageScale));
+	Send("  PulseDamageScale = "$PercentageChangeStr(PulseDamageScale));
+	Send("  PulsebeamDamageScale = "$PercentageChangeStr(PulsebeamDamageScale));
+	Send("  RipperDamageScale = "$PercentageChangeStr(RipperDamageScale));
+	Send("  RipperSecondaryDamageScale = "$PercentageChangeStr(RipperSecondaryDamageScale));
+	Send("  RipperHeadshotDamageScale = "$PercentageChangeStr(RipperHeadshotDamageScale));
+	Send("  MeleeWeaponDamageScale = "$PercentageChangeStr(MeleeWeaponDamageScale));
+	Send("  bAdjustBoost = "$bAdjustBoost);
+	Send("So hardcore headshot 150 now gives "$ Int(150*SniperDamageScale) $" and bodyhit 67 gives "$ Int(67*SniperDamageScale) $".");
 }
 
 function String PercentageChangeStr(float proportion) {
@@ -247,13 +330,29 @@ defaultproperties {
 	bEnabled=True
 	bLogging=False
 	bLiveReports=False
-	#ifdef ADJUST_SNIPER_DAMAGE
 	bKeepHeadshotsInAllModes=True
 	SniperDamageScale=0.78
-	SniperBoostScale=1.0
 	SniperMaxDamage=102
 	bFixCrouchingBug=True
-	#endif
+
+	RocketDamageScale=1.00
+	RocketGrenadeDamageScale=1.00
+	BioDamageScale=1.00
+	EnforcerDamageScale=1.00
+	MinigunDamageScale=1.00
+	ShockPrimaryDamageScale=1.00
+	ShockBallDamageScale=1.00
+	FlakPrimaryDamageScale=1.00
+	FlakSecondaryDamageScale=1.00
+	PulseDamageScale=1.00
+	PulsebeamDamageScale=1.00
+	RipperDamageScale=1.00
+	RipperSecondaryDamageScale=1.00
+	RipperHeadshotDamageScale=1.00
+	MeleeWeaponDamageScale=1.00
+
+	bAdjustBoost=False
+
 }
 
 // Note that this does not affect damage to armour, only damage to health.
@@ -265,5 +364,5 @@ defaultproperties {
 // (Alternatively, for bodyshot 55, use scale 0.825.)
 
 // In non-hardcore mode (which Siege requires for jetpack), headshots usually
-// cost 100(?) and bodyshots 58.
+// cost 100 and bodyshots 58.
 
