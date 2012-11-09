@@ -25,6 +25,8 @@
 var config float StartingMaxRU, StartingRU;
 var config float FriendlyFireScale;
 var config bool bAllWeapons;
+var config bool bNoAmmo;
+var config bool bLogging;
 
 // #define RUGainedPerKill 75
 #define RUGainedPerKill 100
@@ -40,6 +42,10 @@ var config bool bAllWeapons;
 // #define sgProtectorsStopAt 10
 
 // var class<HUD> OriginalHUDType;
+
+// #define DebugLog(X) 
+#define DebugLog(X) if (bLogging) { Log(X); }
+#define WarnLog(X) Log(X);
 
 function PreBeginPlay() {
 	Super.PreBeginPlay();
@@ -57,7 +63,7 @@ function PostBeginPlay() {
 	Super.PostBeginPlay();
 	// OriginalHUDType = Level.Game.HUDType;
 	Level.Game.HUDType = SiegeAnywhereHUDType;
-	// Log(Self$": Original HUD type "$OriginalHUDType$" overriden by "$Level.Game.HUDType);
+	// DebugLog(Self$": Original HUD type "$OriginalHUDType$" overriden by "$Level.Game.HUDType);
 	// CONSIDER: we could set GoalTeamScore to 0, so the game goes the full time.
 	Level.Game.GameName = Level.Game.GameName $ " Sieged";
 	Enable('Tick');
@@ -92,17 +98,24 @@ function AddDefaultInventory(Pawn p) {
 
 	local Inventory inv;
 
-	Super.AddDefaultInventory(p);
+	//// Let's not call parent.  We try to add everything we need here.
+	// Super.AddDefaultInventory(p);
 
-	// If player doesn't have a siege constructor, give him one:
-	// TODO: If he has an sgConstructor, but not a SiegeAnywhereConstructor, shouldn't we replace former with latter?
+	// Does player have a constructor already?
 	cons = sgConstructor(p.FindInventoryType(class'sgConstructor'));
+	// DONE: If he has an sgConstructor which is not a SiegeAnywhereConstructor, destroy it!
+	if (SiegeAnywhereConstructor(cons) == None) {
+		p.DeleteInventory(cons);
+		cons.Destroy();
+		cons = None;
+	}
+	// If player doesn't have a SiegeAnywhereConstructor, give him one:
 	if (cons == None)
 		cons = SiegeAnywhereConstructor(p.FindInventoryType(class'SiegeAnywhereConstructor'));
 	if (cons == None) {
 		// cons = Spawn(class'sgConstructor',p,,,rot(0,0,0));
 		cons = Spawn(class'SiegeAnywhereConstructor',p,,,rot(0,0,0));
-		// Log("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") Adding cons = " $ cons);
+		// DebugLog("SiegeAnywhere.ModifyPlayer(" $ p.getHumanName() $ ") Adding cons = " $ cons);
 		cons.GiveTo(p);
 	}
 
@@ -116,32 +129,48 @@ function AddDefaultInventory(Pawn p) {
 		t.GiveTo(p);
 	}
 
-	/*
 	if (bAllWeapons) {
-		// Copied from SiegeGI:
+		// Copied from SiegeGI (and minimalised?)
 		// DOES NOT WORK WELL!
 		// We end up getting two of each type of weapon, and there are a lot of log errors.
 		for (i=0;i<16;i++) {
 			weaponClass = class'SiegeGI'.default.WeaponClasses[i];
+			if (weaponClass == None) {
+				continue;
+			}
+			// If player already have one, remove it.
+			inv = p.FindInventoryType(weaponClass);
+			if (inv != None) {
+				p.DeleteInventory(inv);
+				inv.Destroy();
+			}
+			// Create new one
 			w = Spawn(weaponClass);
 			if (w != None) {
-				Log(Self$".AddDefaultInventory(): Spawned "$w$" giving it to "$p);
-				w.AmmoType.AmmoAmount = 0;
+				DebugLog(Self$".AddDefaultInventory(): Spawned "$w$" giving it to "$p);
+				// Add it
 				w.GiveTo(p);
+				if (bNoAmmo) {
+					// Enforcer gets ammo, nothing else does!
+					if (Enforcer(w) != None) {
+						if (w.AmmoType != None) {
+							w.AmmoType.AmmoAmount = 0;
+						}
+					}
+				}
 			}
 		}
 	}
-	*/
 
 	#ifdef INCLUDE_BUILDOPTION_ADDER
 	Inv = Spawn(class'sgBuildOptionAdder');
 	if (Inv == None) {
-		Log(Self$".ModifyPlayer("$P.getHumanName()$") Warning! Failed to spawn sgBuildOptionAdder!");
+		WarnLog(Self$".ModifyPlayer("$P.getHumanName()$") Warning! Failed to spawn sgBuildOptionAdder!");
 	} else {
 		inv.Instigator = p;
 		inv.BecomeItem();
 		p.AddInventory(Inv);
-		Log("Gave "$inv$" to "$p.getHumanName());
+		DebugLog("Gave "$inv$" to "$p.getHumanName());
 	}
 	#endif
 
@@ -285,7 +314,7 @@ function int ReduceDamage(int damage, name damageType, Pawn injured,  Pawn insti
 		}
 	}
 	if (sgProtector(instigatedBy) != None && damageType != 'sgSpecial') {
-		Log(Self$".ReduceDamage() Warning: "$instigatedBy$" just gave "$injured$" damage of unknown type: "$damageType);
+		DebugLog(Self$".ReduceDamage() Warning: "$instigatedBy$" just gave "$injured$" damage of unknown type: "$damageType);
 		// If this happens, it means the code above will not have acted, although it should have.
 	}
 	/*
@@ -340,9 +369,10 @@ function byte PriorityObjective(Bot aBot) {
 function Actor SetDefenseFor(Bot aBot) {
 	return None;
 }
-function byte AssessBotAttitude(Bot aBot, Pawn Other) {
-	return 0;
-}
+//// disabled for TESTING: I don't see why the CTF version of this would break, although it might break in some of the other gametypes we override.
+// function byte AssessBotAttitude(Bot aBot, Pawn Other) {
+	// return 3; // teammate - don't attack
+// }
 function float GameThreatAdd(Bot aBot, Pawn Other) {
 	return 0;
 }
@@ -362,10 +392,12 @@ event InitGame( string Options, out string Error ) {
 
 
 defaultproperties {
-	StartingMaxRU=100
-	StartingRU=0
+	StartingMaxRU=300
+	StartingRU=1
 	FriendlyFireScale=0
-	// bAllWeapons=True
+	bAllWeapons=True
+	bNoAmmo=True
+	bLogging=True
 }
 
 
