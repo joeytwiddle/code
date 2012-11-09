@@ -34,11 +34,14 @@ import org.neuralyte.Logger;
 
 public class Parser implements ActionListener {
 
-	static boolean Debugging = false;
-	static boolean DebuggingWin = false;
-	static boolean DebuggingText = false;
-	static boolean DebuggingOut = false;
-	static boolean DebugPath = false;
+	// Debugging settings
+	static boolean debugging = false;
+	static boolean debuggingWin = false;
+	static boolean debuggingText = false;
+	static boolean debuggingOut = false;
+	static boolean debugPath = false;
+
+	// Debugging data
 	public static String all;
 	public static Frame dbf;
 	public static TextArea dbta;
@@ -56,19 +59,19 @@ public class Parser implements ActionListener {
 		ArgParser a = new ArgParser(argv);
 
 		if (a.contains("-win", "Show parse window")) {
-			DebuggingWin = true;
+			debuggingWin = true;
 		}
 		if (a.contains("-debug", "Write debug data to stdout")) {
-			Debugging = true;
-			DebuggingText = true;
-			DebuggingOut = true;
-			DebugPath = true;
+			debugging = true;
+			debuggingText = true;
+			debuggingOut = true;
+			debugPath = true;
 		}
 		if (a.contains("-debugwin", "Show debug window")) {
-			Debugging = true;
-			DebuggingWin = true;
-			DebuggingText = true;
-			DebugPath = true;
+			debugging = true;
+			debuggingWin = true;
+			debuggingText = true;
+			debugPath = true;
 		}
 		String grammar = a.get("grammar");
 		String file = a.get("file to parse");
@@ -89,7 +92,7 @@ public class Parser implements ActionListener {
 		String toparse = Files.readStringfromfile(file);
 		
 		all = toparse;
-		if (DebuggingWin) {
+		if (debuggingWin) {
 			dbta = new TextArea(all);
 			dbta.setEditable(false);
 			dbdta = new TextArea("");
@@ -251,7 +254,7 @@ public class Parser implements ActionListener {
 
 	public void actionPerformed(ActionEvent e) {
 		stopped = !stopped;
-		if (!stopped) Parser.DebuggingText = !Parser.DebuggingText;
+		if (!stopped) Parser.debuggingText = !Parser.debuggingText;
 	}
 
 	public static void gotto(int i) {
@@ -281,7 +284,7 @@ public class Parser implements ActionListener {
 		// dbta.setSelectionStart(0);
 		// if (i!=lastselend) {
 		// lastselend=i;
-		if (Debugging) {
+		if (debugging) {
 			dbta.setSelectionStart(i);
 			dbta.setSelectionEnd(j);
 		}
@@ -325,8 +328,8 @@ public class Parser implements ActionListener {
 	}
 
 	public static void report(String s) {
-		if (DebuggingText) {
-			if (DebuggingOut) {
+		if (debuggingText) {
+			if (debuggingOut) {
 				String tmp = s;
 				if (tmp.endsWith("\n")) tmp = tmp.substring(0, tmp.length() - 1);
 				System.out.println(tmp);

@@ -145,7 +145,7 @@ public class Atom implements MagicType {
 	public static Match matchAgainstRuleset(String type, Type realType, RuleSet rs, SomeString s, ParseContext ctx) {
 		String profileName = "Atom.matchAgainstRuleset()"; 
 		Profile.start(profileName);
-	   if (Parser.Debugging) {
+	   if (Parser.debugging) {
 			Logger.log(indent()+" Entered atom " + type + " with " + rs.rules.size()
 			      + " rules...");
 		}
@@ -158,7 +158,7 @@ public class Atom implements MagicType {
 				System.exit(1);
 			}
 
-			if (Parser.Debugging) {
+			if (Parser.debugging) {
 				// This is often not enough info when a match is failing. The
 				// grammar writer is more interested in the stack of trial matches
 				// we recently tried.
@@ -180,7 +180,7 @@ public class Atom implements MagicType {
 				Type t = (Type) rules.get(j);
 //				Profile.start("Atom.match: inner inner");
 				// Profile.start(t.getClass().getName()+".match()"); // heavy
-				if (Parser.DebugPath) {
+				if (Parser.debugPath) {
 					ctx.path.add(t);
 					Parser.dbdta.setText( "" + ctx.path /*+ "\n" + ctx.closestFailure*/ );
 				}
@@ -188,14 +188,14 @@ public class Atom implements MagicType {
 				// By going through one central function for all match attempts, it
 				// would be easier to implement match caching.
 				Match m = t.match(rest, ctx);
-				if (Parser.DebugPath) {
+				if (Parser.debugPath) {
 					ctx.path.remove(ctx.path.size() - 1);
 				}
 				// Profile.stop(t.getClass().getName()+".match()"); // heavy
 //				Profile.stop("Atom.match: inner inner");
 				if (m == null) {
 					failure = true;
-					if (Parser.Debugging) {
+					if (Parser.debugging) {
 						String lastFailure = "Failed to match "+j+" of " + rules + " against: "
 						      + headSome(s) + "..";
 						Logger.log(indent()+" "+lastFailure);
@@ -212,7 +212,7 @@ public class Atom implements MagicType {
 					// System.out.println("       New: "+strip(left));
 				}
 //				Profile.stop("Atom.match: Inside loop");
-				if (Parser.DebuggingWin) {
+				if (Parser.debuggingWin) {
 					Parser.doing(Parser.all.length() - s.length(), Parser.all.length() - rest.length());
 					// try { Thread.sleep(2); } catch (Exception e) { }
 				}
@@ -221,7 +221,7 @@ public class Atom implements MagicType {
 			path.remove(path.size()-1);
 			if (!failure) {
 				SomeString matchedString = s.subString(0, s.length() - rest.length());
-				if (Parser.Debugging) {
+				if (Parser.debugging) {
 					Logger.log(indent()+" Succeeded: " + rules +" swallows: "+headSome(matchedString)+" ["+matchedString.length()+" chars]");
 				}
 				Match m = new Match(realType, matchedString, ms, rest);

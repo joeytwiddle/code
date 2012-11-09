@@ -78,7 +78,7 @@ public class Var implements MagicType {
 		}
 		if (most == 0) {
 			// Failure!
-			if (Parser.Debugging) {
+			if (Parser.debugging) {
 				// Logger.log("Failed to match var "+name+" with accept="+accept+" and deny="+deny);
 			}
 			

@@ -23,7 +23,7 @@ import jlib.strings.*;
 
 import tools.parser.*;
 
-/** A better name for this interface might be Matchable or MatchableGrammarRule. */
+/** A better name for this interface might be Matchable or MatchableGrammarRule or Parsable. */
 
 public interface Type extends ReplacementType {
 	
