@@ -28,19 +28,22 @@ you may prefer to look for an earlier stable version from CVS:
 * AutoTeamBalance
 
   Tracks player scores in order to balance the teams at the beginning of each
-  game.
+  game.  Could be better at aiding voluntary mid-game rebalance.
 
-* kxWallJump
+* kxWallJump (ServerPackage *and* Mutator)
 
   This one is a lot of fun!  It's a mod of UT_DoubleJump restricted to work
-  only near walls.  Trapped in a corner?  Want to get on top of that box?
-  Bounce off the walls like a ninja, using boots that grip the walls.
+  only near walls.  Trapped in a corner, or want to get on top of a box?
+  Bounce off the walls like a ninja, as if your boots could grip the walls.
+
+  Admins or single-players can "mutate jumptype" to cycle the jumping modes.
+  The default is a difficult/useful.  I even managed to set suitable meshes!
 
 * PubliciseScore
 
   Add info to the server's title as displayed in the UT server list.  Can show
   the number of players, current team scores, and time remaining in the game.
-  Later versions can also cycle the server title.
+  Later versions can also cycle the server title, e.g. to present news ticker.
 
 * PostBox
 
@@ -54,14 +57,14 @@ you may prefer to look for an earlier stable version from CVS:
   more health, and 4 frags will give you a powerup!  Great fun.  Too bad the
   jolt server is empty these days.
 
-* kxGrapple
+* kxGrapple (ServerPackage *and* mutator)
 
   My advanced grappling hook for UT.  Simulates a strong rope with a strong
   winch, and realistic gravity, swinging the player, and wrapping around edges.
   Offers players the option of winch-in, hold or wind-out, offhand grappling,
   and toggling of behind-view and FOV when grapple is selected.  Based on
   Expert100, inspired by No Downloads.  A fun substitute for the Translocator
-  on CTF maps, except those with no walls or ceiling, or where the player needs
+  on CTF maps, *except* those with no walls or ceiling, or where the player needs
   to translocate through a small window.
 
   NOTE: You should not download kxGrapple.u since this is my development
@@ -70,13 +73,23 @@ you may prefer to look for an earlier stable version from CVS:
 
   NOTE: Might be incompatible with UTPure.  I don't remember for sure.
 
-  BUGS: Replication could be improved.  Nin really warps around a lot when he
-  uses it in LMS!
+  BUGS: Replication could be improved.  Laggers can warp around a lot when
+  using it rapidly.
 
   Some players like to toggle grapple on/off with either mouse button, but
   kxGrapple strictly toggles with left-throw, right-retract bindings, like a
   translocator does.  I have left it configurable (client or server side?), but
   I should probably make the defaults noob-friendly.
+
+  If enabled, offhand grapple is available on: MUTATE TOGGLEHOOK
+
+* NDgrapnc
+
+  An earlier rigid-line grappling hook, made as a clone of the No Downloads
+  grapple, when their CTF disappeared.  The red line may be disabled in the
+  ini.
+
+  Must be installed as a ServerPackage.  Run the mutator NDgrapnc.GrapplingMut.
 
 * TeamSwitcher
 
@@ -87,21 +100,15 @@ you may prefer to look for an earlier stable version from CVS:
   Collects stats on maps into one big file, including approximate size
   (player-capacity) of map, number of times played, total frags, has it
   crashed.  Can also catch counts of players saying "good map" and "bad map".
-  Can automatically switch to the "ideal" next map for servers without
-  mapvote.
+
+  Can automatically choose a suitable next map for the current number of
+  players, providing a nice map cycle for servers without mapvote.
 
 * MessageAdmin
 
   Allows players to leave a message for the server admin by saying in game
-  "!admin xer0 just made me cry".  Basically a cut-down copy of PostBox.
-  Not connected to IRC, Twitter or e-mail, just dumps the message in an ini
-  file which the admin must check and clear.
-
-* NDgrapnc.GrapplingMut
-
-  A simplified configuration of kxGrapple, which acts similarly to the No
-  Downloads grapple.  Shows a red "rope" between the player and the hook, which
-  can be disabled.  Does not show team-colored glow on the hook like ND's does.
+  "!admin xer0 just made me cry".  Not connected to IRC, Twitter or e-mail,
+  just dumps the message in an ini file which the admin must read and clear.
 
 
 
@@ -123,16 +130,11 @@ you may prefer to look for an earlier stable version from CVS:
   won't receive further chat messages from KGB that game.  Unfortunately does
   not work on taunts.  (For that try semiadmin mod EasyMute.)
 
-+ ClientConsoleLogger
++ ClientConsoleLogger (Client package)
 
   There are a couple of these already, but this one works in Linux!  Well
   actually it just logs to the standard log.  You have to grep out the
   [ChatLog] lines. :)
-
-+ NDgrapnc.GrapplingMut
-
-  An earlier release of my grappling hook, made as a clone of the No Downloads
-  grapple, when ND CTF went down *sob*.
 
 + PainSounds
 
@@ -148,25 +150,21 @@ you may prefer to look for an earlier stable version from CVS:
 
 + ReduceBalls, PowerfulWeapons, NoPickups and RechargeAmmo
 
-  Four mutators I wrote on request for scarface's  ZeroPing ComboGib server.
-  Use them alongside ZP_ShockArena.
+  Four mutators I wrote on request for scarface's ZeroPing ComboGib server.
+  Use them alongside UTPure's ZP_ShockArena.  (May also work with ZPP103.)
 
-  Not as good as some other ComboGib mods!  The original non-zp may have been
-  from No Downloads.  iloveut99 released a ZP version on UnrealAdmin in 2011.
+  Not as good as some other ComboGib mods, but purely mutators, no
+  ServerPackages.  iloveut99 released a ZP version on UnrealAdmin in 2011.
 
   ReduceBalls BUGS: it only removes balls after they have spawned, so sometimes
   you can see a ball briefly appear then disappear, and if you are standing
   right next to someone, you can kill them with a ball before it gets removed!
   (Increasing tickrate might help with this.)
-  TODO: Sucks.  Cannot distinguish the 3 different shock hit-types (other
-  versions give 0 damage for unpopped balls.)  Cooldown is rubbish; should have
-  a proper overheat/cooldown/refuel pattern.
+  BUG: Cooldown is a bit naff; should have a proper overheat/refuel pattern.
 
-  PowerfulWeapons BUGS: increases strength of shock primary so it acts like
-  instagib, but also makes unpopped balls and landing on someone's heads
-  deadly!
-
-  Grapple hits kill players.  This may or may not be desirable.
+  PowerfulWeapons: Increases strength of shock primary so it acts like
+  instagib, but BUG: also makes unpopped balls, landing on someone's head and
+  grapple hits deadly!
 
   Optional config for UnrealTournament.ini:
 
@@ -186,76 +184,38 @@ you may prefer to look for an earlier stable version from CVS:
 
 ~ FixWeaponBalance
 
-  Attempts to fix weapon unbalance caused by ZeroPing and non-hardcore mode.
+  Allows admin to tweak the damage done by various weapons.  Note that as a
+  mutator it cannot affect armour absorption which remains normal, only health
+  damage remaining after absorption is affected.  (Which kind of sucks.)
 
-  The ZeroPing mod makes hitscan weapons work properly for the client.  (That's
-  the sniper, enforcer, shock primary and of course instagib gun.)  But by
-  increasing realism, it makes it possible to make more hits than would usually
-  occur on a 40 ping national non-zp server.  This has the effect of making the
-  non-hitscan weapons less powerful relative to the ones zeroping fixed.
+  FixWeaponBalance.FixWeaponBalance and FixWeaponBalance.FixWeaponBalanceZP
+  are identical mutators, but with different configurations, so on a server
+  with multiple modes you can use two different settings.
 
-  Furthermore, Siege games are played in non-hardcore mode, in order for the
-  jetpack to work properly.  This mode reduces the power of all the weapons,
-  but on a player with no armour or vials, a headshot is still a headshot, so
-  there is no real reduction.  That's why Siege games turn into a sniper arena,
-  because no other weapon really works as well.
+  The defaults for FixWeaponBalanceZP are intended for Siege games with
+  Zeroping and non-hardcore mode.  Most projectile weapon damage is increased
+  by 10% whilst minugun and pulse are reduced (too powerful near superpros) and
+  sniper is also reduced (too easy in zeroping).  Enforcer, shock and ripper
+  primary are left unaffected.  Damage done to buildings is unaffected.
 
-  This mutator attempts to restore the balance, and has gone through a number
-  of iterations.
+  The defaults for FixWeaponBalance are for hardcore games (e.g. CTF).  All
+  weapons are left as normal except for the sniper which has reduced damage,
+  although the reduction only affects the number of shots needed to kill
+  players who are wearing armour, and does not affect headshots.
 
-  NOTE) I believe the ideal solution is to make a new ZeroPing which slightly
-     reduces the headshot and body radius to create accuracy like a 40 ping
-     ClanBase server.
+  Admins who are logged in can try "mutate help".  The mod can be toggled with
+  "mutate fwb" and display live damage changes with "mutate report".
 
-  NOTE) Alternatively we can fix the jetpack, and play Siege in hardcore mode.
-     Headshots will still be easy, but the other weapons will do their proper
-     damage too.  (We could also consider TIW for pulse and minigun.)
+  NewNet/UTProMod is also attempting to rebalance the weapons:
 
-  Attempt 1) just an experiment
+    http://www.prounreal.org/forums/viewtopic.php?t=81140&postdays=0&postorder=asc&start=0&sid=831433b665e346683c2b24a6345777bd
 
-    Attempted to reduce the cylinder radius of the player's head and body,
-    which I think is the ideal solution.  Unfortunately as a mutator using
-    Trace(), this suffers from the very lag that zp tries to avoid, so it was
-    horridly inaccurate and high-pingers could rarely make a headshot!
-    (An American kindly tested it for me and got into a fit doing it. ;)
+~ NerfAmmo
 
-  Attempt 2) * CURRENT! *
+  So far only one mutator: NerfAmmo.NerfSniper
 
-    Reduces the damage caused by hitscan shots.  Amount configurable.
-
-    Works well in zp CTF and LMS games, which are usually played in hardcore
-    mode, and give 150 damage for a headshot.  You can scale down to 0.825 or
-    even 0.78, and still kill a 0:100 player with the same number of shots as
-    normal.  You only actually need to make more hits than usual if the enemy
-    has armour/vials.
-
-    But less perfect for Siege (non-hardcore) which only gives 100 for a
-    headshot (two-thirds the hardcore damage).  If we reduce that we can never
-    make a one-shot headshot on a newly spawned player!  It will require 2
-    shots (unless they have been hit by a SuperProtector or team-mate).  This
-    is not the same behaviour as in non-zp mode!
-
-    Unfortunately mutators cannot affect armour damage, which is not reduced at
-    all, only damage done to health after armour is reduced.  It would need to
-    be done by altering the Damage taken in the GameType (out of mutator reach).
-
-  Attempt 3) + Next! +
-
-    Simply make damage for all weapons configurable.
-
-    This would allow us to increase the damage of all of the weapons to
-    hardcore mode levels in non-hardcore games.  ZP would still make the sniper
-    more accurate, but that could be reduced in damage if desired.
-
-  Aside: Due to the nature of Siege gameplay, and the large flat maps, ripper
-  spamming has become quite popular, and one day it might be nice to address
-  this.  Perhaps a bouncy ripper (primary) should cost double ammo, or the
-  weapon could overheat and pause (lock up, cooldown).  Or we could ... tweak
-  its damage.  :P
-
-  Aside: Even when the sniper is back at ClanBase level, I still hate it!  I
-  prefer weapons where you have to predict the opponents's future movement, and
-  there is some chance involved.  Random shit can be funny.
+  Allows configuration of StartingAmmo, AmmoPerPack, and MaxAmmo.  Can stop
+  camper sprees from lasting too long, e.g. by setting MaxAmmo=20.
 
 ~ RocketArenaMutator
 
@@ -280,8 +240,8 @@ you may prefer to look for an earlier stable version from CVS:
   mutator: cannot increase splash radius.
 
   BUG: Will adjust projectile speeds "permanently".  I.e. after a map switch,
-  even without the mutator, shock balls will fly slowly.  You had better do a
-  server restart after using it!
+  even without the mutator, shock balls will fly slowly.  You should really do
+  a server restart after using it!
 
 ~ Resurector
 
@@ -317,7 +277,7 @@ you may prefer to look for an earlier stable version from CVS:
 
   TrackMuts.TrackPlayers can be used to display messages about your Flag
   Carrier's location (ZoneName), for servers without SmartCTF.  (Admins can
-  also use it for more general player location tracking.)
+  also use it for more general player zone tracking.)
 
 ~ WeirdMuts
 
@@ -326,6 +286,12 @@ you may prefer to look for an earlier stable version from CVS:
 
   (There's also a dodgy GrowthMutator which spawns a new piece of flora
   wherever a player dies, sometimes half-embedded in the wall or floor.)
+
+~ kxDoubleJump
+
+  Minor changes to DoubleJump to make it more organic (input velocity partially
+  retained, you can jump to higher spots but it's difficult!).  This behaviour
+  was carried into kxWallJump which I prefer!
 
 ~ kxForceGun
 
@@ -336,8 +302,8 @@ you may prefer to look for an earlier stable version from CVS:
 
 ~ sgGrapple
 
-  This patch to Siege provides build options for the kxGrapple, kxForceGun and
-  kxDoubleJump items under Items and Teleport categories.
+  This addon to Siege provides build options for the kxGrapple, kxForceGun and
+  kxDoubleJumpBoots items under Items and Teleport categories.
 
 ~ sgGrapple2f
 
@@ -366,8 +332,8 @@ you may prefer to look for an earlier stable version from CVS:
 - CrouchBlocksDamage
 
   My first ever mutator, for protection against shock balls on XOL.  Never
-  actually tried it there!  With some configs, I could boost over Face with
-  your own ripper, wheeee!
+  actually tried it there!  Reduces boost as well as damage.  With some config
+  tweaks, I could boost myself over Face with my own ripper, wheeee!
 
 - RandomMutators
 
@@ -399,7 +365,8 @@ you may prefer to look for an earlier stable version from CVS:
 - RealCrouching
 
   Make crouching actually reduce a player's height, so they can fit under
-  smaller spaces.
+  smaller spaces.  The fact that UT does not already do this is a little too
+  unreal-istic for me.
 
   We could even offer a even lower and slower flatten/crawl stance, but we
   don't have meshes for it.  (Perhaps we could re-animate/switch between some
