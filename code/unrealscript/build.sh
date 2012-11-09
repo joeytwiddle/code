@@ -3,6 +3,8 @@
 ## DONE: Maybe the .uc.jpp file has not change, but one of the included files HAS changed, hence a reparse IS required although it doesn't look like it.
 ##       OK for now, it will reparse the file, if ANY file ending ".jpp" in that folder is newer than it.  This still doesn't resolve #included files from *other* folders.
 
+## TODO: Certainly update of .uc or .jpp should trigger rebuild, but also update of Texture or Sound package etc. should!
+
 TOPDIR="$PWD"
 
 # # find */Classes -maxdepth 2 -name "*.jpp" |
@@ -38,6 +40,7 @@ verbosely findjob ucc
 
 ## Argh there was a situation where I wanted .depends to act in an entirely different way.
 ## I just wanted to list there, the packages which should be present when compiling this package.
+## OK now that it in .dependson
 
 check_age_of_pakage_against_source () {
 	PKGFILE="$1"
@@ -45,7 +48,7 @@ check_age_of_pakage_against_source () {
 	if [ ! -f "$PKGFILE" ]
 	then return 0
 	fi
-	if find "$SRCPKG/Classes" -maxdepth 1 -type f -newer "$PKGFILE" | grep -v "/CVS/" | grep . >/dev/null
+	if find "$SRCPKG/Classes" "$SRCPKG/Textures" "$SRCPKG/Sounds" -maxdepth 1 -type f -newer "$PKGFILE" 2>/dev/null | grep -v "/CVS/" | grep . >/dev/null
 	then return 0
 	fi
 	## In some inconvenient situations, I wish to recompile $PKGFILE if one of its dependencies has been recompiled.
@@ -119,6 +122,7 @@ rebuild_package_1() {
 	cd "$TOPDIR"
 	if [ -f "$PKG/Classes/.dependson" ]
 	then
+		## TODO: We ideally want to process also each added package's .dependson, IFF it is not already in build list!
 		for NEEDPKG in `cat "$PKG/Classes/.dependson"`
 		do add_to_build_path "$NEEDPKG"
 		done
