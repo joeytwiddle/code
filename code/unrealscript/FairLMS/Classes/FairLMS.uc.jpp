@@ -4,17 +4,17 @@
 // BUG: bUnlit is not reset if the player fixed his health by taking a healthpack (in non LMS-modes).  Or if some another mod heals him.
 // BUG: Low health warning sound is not fired if player was knocked down to 1-9 HP from combat (it activates on 10).
 // DONE: bRemovePickups
-// TODO: When a player gets the shieldbelt, other players do not see it surround him.
+// DONE: When a player gets the shieldbelt, other players do not see it surround him.  Still true?  It might be the spawning code has improved!
 // TESTING FIX: Uggla keeps getting two warheads, or respawning with one.  I dunno how this is happening!  I think this happens because he was given it after dying.
 // DONE: It seemed Invis was never being given.  And in CTF mode, it seemed health packs were far too popular!  We must use UT_Stealth, Stealth just doesn't work.
-// TODO: Improved health dropping.  1) grace period after respawn and after a kill.  2) increased health drop if player is camping (need good detection from this, it's no good if they run slightly up and down the same corridor, they should move about the whole map!)  Maybe seperately have idler detection (for player who is afk).
-// TODO: In the original, the health countdown stops for a few seconds after you make a kill.
+// TESTING: Improved health dropping.  1) grace period after respawn and after a kill.  2) increased health drop if player is camping (need good detection from this, it's no good if they run slightly up and down the same corridor, they should move about the whole map!)  Maybe seperately have idler detection (for player who is afk).
+// TESTING: In the original, the health countdown stops for a few seconds after you make a kill.
 // TODO CONSIDER: Maybe we should integrate anti-camper with the health countdown.  We could apply the health countdown only to players who are far from other players, and not moving towards the other players.  Beware - 3 players on a large map might not know HOW to find each other, and might lose health unfairly.  Check values against average?
 // TODO: Anti-camper anti-idler detection.  Otherwise you still get some advantage by sitting on your spawnpoint - people might avoid killing you because you are idling and they don't wanna be lame!
-// TODO: Move some of this class to BonusPowerups, and then let this class add the FairLMS stuff on top.
+// CONSIDER: Move some of this class to BonusPowerups, and then let this class add the FairLMS stuff on top.  OTOH, given nice default config vars, leave power with the admin.
 // FIXED: When running during a CTFGame, if the player runs out of health whilst holding the flag, he/she respawns still holding the flag!
 // FIXED: Similar problem with invis during FairLMS.
-// TODO: If someone runs out of energy, but you hit him 10 seconds ago, maybe you should get at least a weak late-kill bonus.
+// TODO: If someone runs out of energy, but you hit him 10 seconds ago, maybe you should get at least a weak late-kill bonus.  (He ran away from you and died, hardly fair on the aggressor!)
 // DONE: We didn't really need to give the player those weapons, since LMS will probably suit them up anyway.  (bGiveWeapons is optional for LMS.)
 //       But maybe we aren't in the LMS gametype.  In which case, we should probably remove weapons and other pickup items from the map.
 // WAS NOT A BUG: Were some of the armor+pads getting left invisible on the spawnpoints?  I kept spawning with 150, but maybe that was done by normal LMS.
@@ -22,10 +22,11 @@
 // DONE: WarheadLauncher DM-Liandri.WarheadLauncher0 (Function Botpack.WarheadLauncher.AltFire:002C) Accessed None
 // DONE: WarheadLauncher DM-Liandri.WarheadLauncher12 (Function Botpack.WarheadLauncher.RateSelf:0027) Accessed None
 // FIXED: LMS seems a bit stingy on initial ammo.
-// TODO: It is sometimes a bit laggy to load a new external object (e.g. the siege jetpack) during play due to DynamicLoadObject() calls.
+// DONE/TESTING: It is sometimes a bit laggy to load a new external object (e.g. the siege jetpack) during play due to DynamicLoadObject() calls.
 //       Since one is likely to spawn during the game anyway, have server and client pre-load the Powerups resources before the game starts.
 //       But do we need to spawn one in order to get the client to load it?
-// TODO: I think you only get given one WarheadLauncher per life.  This is a feature, so ensure it stays that way!
+// CONSIDER: But part of the lag might also be the ugly loop in GiveRandomPowerup().  For a tooled-up player, we might keep spawning and destroying weapons the player already has!
+// DONE: I think you only get given one WarheadLauncher per life.  This is a feature, so ensure it stays that way!  (It's pretty powerful - let them have a different powerup instead.)
 // DONE: Detect last 2 players, display it, and then stop giving powerups+health.
 // DONE: Some errors from the bots - are they due to pathing on spawned items which they think are navigable to/through?  Seemed to be fixed with some more additions to GiveInventory().
 // DONE: Rather than watch health go down 2 points each second, set the timer frequency calculated to remove 1hp each call to Timer().
@@ -59,7 +60,7 @@ var config bool bLogging;
 #ifdef DEBUG
 var config bool bDebugLogging;
 #endif
-var config bool bGiveWeapons;
+var config bool bGiveWeapons;  // Set this to get all the weapons in the InitialWeapon list on spawn.  But beware: If you set this in LMS games, you will get two of every weapon!  Only put the *extra* weapons you want in the list.  If we want to remove default weapons from LMS, that will need to be a new config e.g. bClearDefaultWeapons.
 var config bool bRemovePickups;
 var config int InitialArmour,InitialHealth;
 var config float HealthLostPerSec,HealthGainedPerKill;
@@ -69,27 +70,34 @@ var config bool bBroadcastPowerups;
 var config bool bInformHealth;
 var config bool bSpawnPowerupsAsDroppedPickups;
 var config bool bPainSounds;
+var config bool bMinifyDeemer;
 var config Color MessageColor;
 var config Sound PowerupSound;
 var config Sound WarningSound;
+var config float HealthLossTimeout;
 
 var config String InitialWeapon[20];
 var config LMSBonus Powerup[25];
 
 var int KillsSinceSpawn[64];
 var bool bGameStarted,bTwoPlayersLeft;
+var bool bDonePreloadPowerups;
+var float LastCombatTime[64];
 
 // These turned out pretty good: FairLMS.Timer() at 275.035034 gap 0.477356 average 0.500064 
 // var float TimerLast;
 // var float TimerAverage;
 // var int TimerCount;
 
-function LogWarn(String Msg) {
-	// BroadcastMessage("[FairLMS] "$Msg);
-	Log("[FairLMS] Warning: "$Msg);
-}
+// DO NOT use Log!  Use MaybeLog, LogWarn, or in real emergencies, AlwaysLog.
 
-#define MaybeLog(Msg) if (bLogging) { Log("[FairLMS] Log: " $ Msg); }
+#define AlwaysLog(Msg) Log("[FairLMS] " $ Msg);
+#define MaybeLog(Msg) if (bLogging) { AlwaysLog(Msg) }
+#define LogWarn(Msg) MaybeLog(" - WARNING - " $ Msg)
+
+// In FairLMS LogWarns are optional, because they appear in an inner loop, so
+// may be printed often, contributing to lag.  Until this is resolved, warning
+// messages are togglable just like normal messages.
 
 function PostBeginPlay() {
 	local Mutator m;
@@ -120,24 +128,26 @@ function PostBeginPlay() {
 	if (HealthLostPerSec>0)
 		DeathMatchPlus(Level.Game).StartMessage = "Your are losing health!  Kill to stay alive!";
 
-	//// It might have been neater to create a new weapon class.  Although it would need the same name, or player keybinds would break.
-	// TESTING: Turn redeemers into mini-redeemers.  I think this is working!
-	// TODO CHECK: Do these changes propogate over maps, messing with other types of game, or next round of LMS?
-	// CONSIDER: If setting defaults doesn't work, change values after it has spawned.  (CheckReplacement() / IsRelevant()?)
-	class'WarheadLauncher'.default.ItemName = "Mini Redeemer";
-	class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.3;
-	class'WarShell'.default.Speed = class'WarShell'.default.Speed * 0.6;
-	class'WarShell'.default.Damage = class'WarShell'.default.Damage * 0.3;
-	class'WarShell'.default.MomentumTransfer = class'WarShell'.default.MomentumTransfer * 0.3;
-	class'GuidedWarShell'.default.DrawScale = class'GuidedWarShell'.default.DrawScale * 0.3;
-	class'GuidedWarShell'.default.Speed = class'GuidedWarShell'.default.Speed * 0.6; // BUG: This doesn't seem to work!
-	class'WarheadLauncher'.default.ProjectileSpeed = class'WarheadLauncher'.default.ProjectileSpeed * 0.6;   // TESTING: Maybe this will.
-	class'GuidedWarShell'.default.Damage = class'GuidedWarShell'.default.Damage * 0.3;
-	class'GuidedWarShell'.default.MomentumTransfer = class'GuidedWarShell'.default.MomentumTransfer * 0.3;
-	//// TODO: Value sometimes set from PostBeginPlay().  We should intercept just after creation.  bIsRelevant/CheckReplacement?
-	class'WarExplosion'.default.DrawScale = class'WarExplosion'.default.DrawScale * 0.3;
-	class'WarExplosion2'.default.DrawScale = class'WarExplosion2'.default.DrawScale * 0.3;
-	// I think these don't work during Siege games; probably WarheadLauncher gets replaced by sgWarheadLauncher.
+	if (bMinifyDeemer) {
+		//// It might have been neater to create a new weapon class.  Although it would need the same name, or player keybinds would break.
+		// Turn redeemers into mini-redeemers.  I think this is working!
+		// OK: Does slow down the deemer on primary fire.
+		// BUGS: Does *not* slow it down on secondary fire!  Also I think it fails to change the deemer's damage.
+		class'WarheadLauncher'.default.ItemName = "Mini Redeemer";
+		class'WarShell'.default.DrawScale = class'WarShell'.default.DrawScale * 0.3;
+		class'WarShell'.default.Speed = class'WarShell'.default.Speed * 0.6;
+		class'WarShell'.default.Damage = class'WarShell'.default.Damage * 0.3;
+		class'WarShell'.default.MomentumTransfer = class'WarShell'.default.MomentumTransfer * 0.3;
+		class'GuidedWarShell'.default.DrawScale = class'GuidedWarShell'.default.DrawScale * 0.3;
+		class'GuidedWarShell'.default.Speed = class'GuidedWarShell'.default.Speed * 0.6; // BUG: This doesn't seem to work!
+		class'WarheadLauncher'.default.ProjectileSpeed = class'WarheadLauncher'.default.ProjectileSpeed * 0.6;   // TESTING: Maybe this will.
+		class'GuidedWarShell'.default.Damage = class'GuidedWarShell'.default.Damage * 0.3;
+		class'GuidedWarShell'.default.MomentumTransfer = class'GuidedWarShell'.default.MomentumTransfer * 0.3;
+		//// TODO: Value sometimes set from PostBeginPlay().  We should intercept just after creation.  bIsRelevant/CheckReplacement?
+		class'WarExplosion'.default.DrawScale = class'WarExplosion'.default.DrawScale * 0.3;
+		class'WarExplosion2'.default.DrawScale = class'WarExplosion2'.default.DrawScale * 0.3;
+		// I think these don't work during Siege games; probably WarheadLauncher gets replaced by sgWarheadLauncher.
+	}
 
 	if (bPainSounds) {
 		m = Spawn(class'PainSounds',,,);
@@ -149,6 +159,9 @@ function PostBeginPlay() {
 			i.Destroy();
 		}
 	}
+
+	Level.Game.RegisterDamageMutator(Self);
+
 }
 
 event Timer() {
@@ -157,12 +170,13 @@ event Timer() {
 	local int aliveCount;
 	local String players;
 	local Inventory inv;
+	local float timeSinceLastCombat;
 	/*
 	if (bLogging) {
 		TimerAverage = ( TimerAverage*TimerCount + (Level.TimeSeconds-TimerLast)*1 ) / (TimerCount+1);
 		TimerCount++;
-		// MaybeLog("FairLMS.Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) );
-		MaybeLog("FairLMS.Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) $" average "$TimerAverage);
+		// MaybeLog("Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) );
+		MaybeLog("Timer() at "$Level.TimeSeconds$" gap "$ (Level.TimeSeconds-TimerLast) $" average "$TimerAverage);
 		TimerLast = Level.TimeSeconds;
 	}
 	*/
@@ -180,33 +194,37 @@ event Timer() {
 				}
 			}
 
-			if (!bTwoPlayersLeft && bGameStarted && (!Level.Game.bGameEnded || Level.Game.bOverTime)) {
-				// This technique was nice - they always die after the same amount of time.
-				// But it caused problems - a player with <=0 HP can't take pickups!
-				/*
-				p.Health -= 1;
-				if (p.Health == 0) {
-					// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
-					FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
-					p.PlaySound(WarningSound,SLOT_Interface,1.0); // Other players can hear this, if they are close.
-					p.bUnlit=True;
-				}
-				if (p.Health <= -15) {
-					p.Died(None, 'Suicided', p.Location);
-					// TODO: make a puff of smoke appear here!!! xD
-				}
-				*/
-				if (p.Health == 10) {
-					// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
-					FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
-					p.PlaySound(WarningSound,SLOT_Interface,1.0); // TEST: Does this go to the player alone, or all?  All might be fun, probably we should make it a little quiet tho, or 2/3 or 3/4 radius.
-					p.bUnlit=True;
-				}
-				if (p.Health > 1) {
+			if (HealthLostPerSec>0 && !bTwoPlayersLeft && bGameStarted && (!Level.Game.bGameEnded || Level.Game.bOverTime)) {
+				timeSinceLastCombat = Level.TimeSeconds - LastCombatTime[ p.PlayerReplicationInfo.PlayerID % 64 ];
+				if (timeSinceLastCombat >= HealthLossTimeout) {
+					// This technique was nice - they always die after the same amount of time.
+					// But it caused problems - a player with <=0 HP can't take pickups!
+					/*
 					p.Health -= 1;
-				} else {
-					if (FRand()<0.2) {
+					if (p.Health == 0) {
+						// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
+						FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
+						p.PlaySound(WarningSound,SLOT_Interface,1.0); // Other players can hear this, if they are close.
+						p.bUnlit=True;
+					}
+					if (p.Health <= -15) {
 						p.Died(None, 'Suicided', p.Location);
+						// TODO: make a puff of smoke appear here!!! xD
+					}
+					*/
+					if (p.Health == Int(HealthLostPerSec*5)) {
+						// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
+						// FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
+						FlashMessage(p,"Your health is dropping ... Engage in combat!",MessageColor);
+						p.PlaySound(WarningSound,SLOT_Interface,1.0); // TEST: Does this go to the player alone, or all?  All might be fun, probably we should make it a little quiet tho, or 2/3 or 3/4 radius.
+						p.bUnlit=True;
+					}
+					if (p.Health > 1) {
+						p.Health -= 1;
+					} else {
+						if (FRand()<0.2) {
+							p.Died(None, 'Suicided', p.Location);
+						}
 					}
 				}
 			}
@@ -267,8 +285,38 @@ event Timer() {
 
 }
 
+function RegisterCombat(Pawn p) {
+	if (p != None && p.IsA('Bot') || p.IsA('PlayerPawn')) {
+		LastCombatTime[ p.PlayerReplicationInfo.PlayerID % 64 ] = Level.TimeSeconds;
+	}
+}
+
+function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
+	// We only register valid pawn -> pawn damage not by self of to/from none.
+	if (InstigatedBy != Victim && InstigatedBy != None) {
+		RegisterCombat(Victim);
+	}
+	if (Victim != InstigatedBy && Victim != None) {
+		RegisterCombat(InstigatedBy);
+	}
+	// Whilst it seems rather odd for another player hitting you to cancel your
+	// health-drop, it does prev_nt the aggressor from losing his kill to
+	// his victim's health-drop, if the victim hides behind pillar!
+	// We could consider dropping this if we also implement
+	// LastInstigatorGetsKillFromSuicides.
+	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
+}
+
 function ModifyPlayer(Pawn p) {
 	p.bUnlit=False;
+
+	// We want to do this near game-start, so all players get to preload the
+	// powerup.  (No points doing it before anyone has joined the server!)
+	// This might look odd: big lag at start!  But it beats lag mid-game!
+	if (!bDonePreloadPowerups) {
+		PreloadPowerups();
+		bDonePreloadPowerups = True;
+	}
 
 	Super.ModifyPlayer(p);
 
@@ -287,10 +335,23 @@ function ModifyPlayer(Pawn p) {
 		KillsSinceSpawn[p.PlayerReplicationInfo.PlayerID%64] = 0;
 	}
 
+	RegisterCombat(p);
+
+	if (bSpawnPowerupsAsDroppedPickups) {
+		p.DropWhenKilled = None;
+	}
+
 }
 
 function ScoreKill(Pawn killer, Pawn victim) {
 	Super.ScoreKill(killer,victim);
+
+	if (bSpawnPowerupsAsDroppedPickups && Victim!=None) {
+		// Reset any set before
+		// I think dropping his weapon may be done separately
+		Victim.DropWhenKilled = None;
+		// Also done in ModifyPlayer - perhaps ScoreKill is not called if he suicides.
+	}
 	if (killer != None && killer!=victim) {
 
 		// I was dropping my powerup weapon when dying from crater/suicide etc, during siege games.
@@ -305,13 +366,15 @@ function ScoreKill(Pawn killer, Pawn victim) {
 		if (!bTwoPlayersLeft) {
 
 			// HealthGainedPerKill:
-			Killer.bUnlit=False;
-			killer.Health += HealthGainedPerKill;
-			if (killer.Health > 199) killer.Health = 199;
-			// killer.PlaySound(class'Botpack.TournamentHealth'.default.PickupSound,SLOT_Interface,3.0);
-			killer.PlaySound(Sound'Botpack.Pickups.UTHealth',SLOT_Interface,3.0); // TEST: I think this is ok, all hear it.
-			if (bInformHealth) {
-				killer.ClientMessage("You gained "$int(HealthGainedPerKill)$" health for your kill.");
+			if (HealthGainedPerKill > 0) {
+				Killer.bUnlit=False;
+				killer.Health += HealthGainedPerKill;
+				if (killer.Health > 199) killer.Health = 199;
+				// killer.PlaySound(class'Botpack.TournamentHealth'.default.PickupSound,SLOT_Interface,3.0);
+				killer.PlaySound(Sound'Botpack.Pickups.UTHealth',SLOT_Interface,3.0); // TEST: I think this is ok, all hear it.
+				if (bInformHealth) {
+					killer.ClientMessage("You gained "$int(HealthGainedPerKill)$" health for your kill.");
+				}
 			}
 
 			// bGivePowerups:
@@ -332,12 +395,13 @@ function ScoreKill(Pawn killer, Pawn victim) {
 function GiveInitialInventory(Pawn p) {
 	local Inventory Inv;
 	local int i;
-	local class<Weapon> wType;
-	// local class<Inventory> iType;
+	// local class<Weapon> wType;
+	local class<Inventory> iType;
 
 	// Give appropriate armour.
 	// CONSIDER: Alternatively, give them normal armour, but adjust its Charge.
 	/* Disabled due to bugs :P
+	// I think the bug way having lots of armour but it not always being displayed!
 	if (InitialArmour<50) {
 	} else if (InitialArmour>=50 && InitialArmour<100) {
 		GivePickupType(p,class'ThighPads');
@@ -350,20 +414,29 @@ function GiveInitialInventory(Pawn p) {
 	}
 	*/
 
-	if (bGiveWeapons && LastManStanding(Level.Game)==None) {
+	// This code doesn't work well in LMS gametype.  We get two of every weapon!
+	// If the below code is correct, then perhaps LMS adds them *after* us.
+	// But we let it run in LMS games, in case admins want to add custom weapons.
+	// If you use this mutator in both LMS and non-LMS gametypes, you can use
+	// BonusPowerups config for one gametype, and set bGiveWeapons=True there.
+	if (bGiveWeapons /*&& bIsLMSGame*/) {
 		for (i=0;i<20;i++) {
 			if (InitialWeapon[i]!="") {
-				wType = class<Weapon>(DynamicLoadObject(InitialWeapon[i],class'class'));
-				// iType = class<Inventory>(DynamicLoadObject(InitialWeapon[i],class'class'));
-				Inv = p.FindInventoryType(wType);
+				// wType = class<Weapon>(DynamicLoadObject(InitialWeapon[i],class'class'));
+				iType = class<Inventory>(DynamicLoadObject(InitialWeapon[i],class'class'));
+				Inv = p.FindInventoryType(iType);
 				if (Inv != None) {
 					Inv.Destroy();
 				}
 				// GivePickupType(p,wType);
 				// GivePickupType(p,iType);
-				inv = Spawn(wType,p);
+				inv = Spawn(iType,p);
 				// MaybeLog("Giving "$inv$" to "$p.getHumanName());
-				GiveInventory(p,inv);
+				if (inv == None) {
+					LogWarn("GiveInitialInventory() Failed to spawn a "$iType$" for "$p.getHumanName());
+				} else {
+					GiveInventory(p,inv);
+				}
 			}
 		}
 	}
@@ -375,18 +448,18 @@ function Inventory GivePickupType(Pawn p, class<Inventory> t) {
 	local Inventory Inv;
 	Inv = p.FindInventoryType(t);
 	if (Inv!=None) {
-		MaybeLog(Self$".GivePickupType() "$p.getHumanName()$" already has a "$Inv$" - destroying it.");
+		MaybeLog("GivePickupType() "$p.getHumanName()$" already has a "$Inv$" - destroying it.");
 		Inv.Destroy();
 		Inv = None;
 		// This might be a bummer if it destroys the weapon you are currently holding, but I've never seen that happen.
 	}
 	// In the case of amp at least, re-using is bad because you don't get the fresh charge!
 	if (Inv==None) {
-		// MaybeLog(Self$".GivePickupType() Spawning a new "$t$" for "$p.getHumanName());
+		// MaybeLog("GivePickupType() Spawning a new "$t$" for "$p.getHumanName());
 		Inv = Spawn(t,p);
 	}
 	if (Inv==None) {
-		MaybeLog(Self$".GivePickupType() Warning! Failed to spawn a "$t);
+		LogWarn("GivePickupType() Failed to spawn a "$t);
 	} else {
 		GiveInventory(p,Inv);
 
@@ -452,15 +525,58 @@ function BoostAmmoFor(Pawn p) {
 	for (inv=p.Inventory;inv!=None;inv=inv.Inventory) {
 		if (Weapon(inv)!=None) {
 			if (Weapon(inv).AmmoType==None) {
-				LogWarn("FairLMS.GiveRandomPowerup() Can not boost ammo for "$inv);
+				LogWarn("GiveRandomPowerup() Can not boost ammo for "$inv);
 			} else {
 				if (Weapon(inv).AmmoType.default.AmmoAmount>1) { // Not for deemer
 					Weapon(inv).AmmoType.AmmoAmount = Weapon(inv).AmmoType.MaxAmmo;
-					// MaybeLog("FairLMS.GiveRandomPowerup() Boosted ammo "$Weapon(inv).AmmoType$" to "$Weapon(inv).AmmoType.AmmoAmount);
+					// MaybeLog("GiveRandomPowerup() Boosted ammo "$Weapon(inv).AmmoType$" to "$Weapon(inv).AmmoType.AmmoAmount);
 				} else {
-					LogWarn("FairLMS.GiveRandomPowerup() Not boosting ammo for "$inv);
+					LogWarn("GiveRandomPowerup() Not boosting ammo for "$inv);
 				}
 			}
+		}
+	}
+}
+
+function PreloadPowerups() {
+	local int i;
+	local class<Class> leClass;
+	local class<Inventory> type;
+	local Inventory inv;
+
+	for (i=0;i<25;i++) {
+		if (Powerup[i].Type != "") {
+			if (Powerup[i].Type == "FairLMS.AmmoBoost") {
+				continue;
+			}
+			type = class<Inventory>( DynamicLoadObject(Powerup[i].Type,class'Class') );
+			/*
+			leClass = DynamicLoadObject(Powerup[i].Type,class'Class');
+			if (leClass == None) {
+				continue;
+			}
+			type = class<Inventory>(leClass);
+			*/
+			if (type == None) {
+				continue;
+			}
+			inv = Spawn(type,None);
+			// This makes each powerup spawn in the middle of the map (0,0,0), so
+			// now we want to destroy it.  (Unless it needs a tick for replication
+			// to occur.  Oh dear I fear it might!)
+			inv.Destroy();
+			// Instead of destroy, let's try to make it un-noticeable.
+			/*
+			// inv.DrawType = DT_None;   Re-enable this when below is effective!
+			// This does not work!  E.g. on Stalwart, go to the centre of the map
+			// for all powerups!
+			if (Pickup(inv) != None) {
+				Pickup(inv).bCanActivate = False;
+			}
+			*/
+			// OK well we've done what we can.
+			// BUG: Now I fear the problem is that the sounds have not been
+			// loaded, so the client lags while loading this.  :F
 		}
 	}
 }
@@ -499,21 +615,21 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
 		} else {
 			type = class<Inventory>( DynamicLoadObject(Powerup[i].Type,class'Class') );
 			if (type == None) {
-				MaybeLog("[FairLMS] Powerup #"$i$" type \""$Powerup[i].Type$"\" does not exist!");
+				LogWarn("Powerup #"$i$" type \""$Powerup[i].Type$"\" does not exist!");
 				continue;
 			}
 			inv = p.FindInventoryType(type);
 			if (inv != None) {
 				// A bit log spammy:
-				// MaybeLog(Self$".GiveRandomPowerup() "$p.getHumanName()$" already has a "$inv);
-				// MaybeLog(Self$".GiveRandomPowerup() maybe they don't want another - maybe we could upgrade it?");
+				// MaybeLog("GiveRandomPowerup() "$p.getHumanName()$" already has a "$inv);
+				// MaybeLog("GiveRandomPowerup() maybe they don't want another - maybe we could upgrade it?");
 				// It seems to me that items *are* being removed from a player's inventory when he loses them.
 				// I don't know if warhead 2nd time around is working now.
 				continue;
 			}
 			inv = Spawn(type,p);
 			if (inv == None) {
-				MaybeLog(Self$".GiveRandomPowerup() Failed to spawn "$type);
+				LogWarn("GiveRandomPowerup() Failed to spawn "$type);
 				continue;
 			}
 
@@ -522,13 +638,23 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
 			}
 
 			if (bSpawnPowerupsAsDroppedPickups) {
+
 				/*
+				// This works, called from ScoreKill, the drop happens right after.
+				// But he will continue to drop this item if killed again later!
+				// So we reset it.
+				*/
+				Victim.DropWhenKilled = inv.class;
+
+				/*
+				// This does not work yet!
+				// Perhaps we need to make it visible somehow... Perhaps more.  I can't seem to find it by walking!
 				inv.BecomePickup();
 				inv.SetLocation(Victim.Location+vect(0,0,1)*Victim.CollisionHeight/2);
 				inv.Velocity = vect(0,0,200) + VRand()*5;
 				inv.SetPhysics(PHYS_Falling);
 				*/
-				Victim.DropWhenKilled = inv.class;
+
 				//// This isn't really bBroadcastPowerups, it's more like bInformKillerOfPowerup.
 				if (bBroadcastPowerups) {
 					// Repeated code:
@@ -536,13 +662,16 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
 						Powerup[i].Name = inv.ItemName;
 					// TODO: not always grammatically correct.
 					// p.ClientMessage(Victim.getHumanName()$" dropped a "$Powerup[i].Name$" for you.");
+					p.ClientMessage(Victim.getHumanName()$" dropped the "$Powerup[i].Name$".");
 					// if ends with "s" then "dropped some "
 					//// This is grammatically correct, but not accurate.  The player may not have been weilding an amp, or armour.
+					/*
 					if (InStr(Caps(Victim.VoiceType),"FEMALE") > -1) {
 						p.ClientMessage("She dropped her "$Powerup[i].Name$".");
 					} else {
 						p.ClientMessage("He dropped his "$Powerup[i].Name$".");
 					}
+					*/
 				}
 				// We have established that it will load into the level.  But in
 				// fact the engine will spawn it fresh from DropWhenKilled, so we
@@ -555,7 +684,7 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
 			GiveInventory(p,inv);
 
 			if (bLogging) {
-				MaybeLog("[FairLMS] Gave "$inv$" to "$p);
+				MaybeLog("Gave "$inv$" to "$p);
 			}
 		}
 
@@ -595,7 +724,7 @@ function GiveRandomPowerup(Pawn p, Pawn victim) {
 
 	}
 	if (j==100) {
-		MaybeLog(Self$".GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already.");
+		LogWarn("GiveRandomPowerup() Tried 100 times but could not find a suitable powerup!  Maybe "$p.getHumanName()$" has everything already.");
 		// TODO: maybe remove something from his inventory and retry?  Then at least he could get a fresh one.
 		if (bBroadcastPowerups)
 			BroadcastMessage(p.getHumanName()$" is MAXXED OUT!");
@@ -669,17 +798,25 @@ defaultproperties {
 	InitialArmour=100     // For non-LMS game-modes
 	InitialHealth=100     // For non-LMS game-modes
 	// InitialArmour=100
-	HealthLostPerSec=1.9
+	// HealthLostPerSec=1.9
+	HealthLossTimeout=12
+	HealthLostPerSec=4.0
 	HealthGainedPerKill=50.0
 	bGivePowerups=True
 	FragsForPowerup=3
 	// bBroadcastPowerups=False
 	// bSpawnPowerupsAsDroppedPickups=False
 	bPainSounds=False     // Current implementation causes some players to crash
+	bMinifyDeemer=True
 	// MessageColor=(R=255,G=255,B=31,A=0)
 	MessageColor=(R=255,G=255,B=255,A=31)
 	PowerupSound=Sound'Botpack.Pickups.BeltSnd'
 	WarningSound=Sound'Botpack.FlagBase.FlagTaken'
+
+	//// Alternative sounds I played with:
+	// PowerupSound=Sound'Botpack.Pickups.Sbelthe2'
+	// PowerupSound=Sound'Botpack.Pickups.AmpOut'
+
 	InitialWeapon(0)="Botpack.ImpactHammer"
 	InitialWeapon(1)="Botpack.Enforcer"
 	InitialWeapon(2)="Botpack.UT_BioRifle"
@@ -690,27 +827,44 @@ defaultproperties {
 	InitialWeapon(7)="Botpack.ShockRifle"
 	InitialWeapon(8)="Botpack.SniperRifle"
 	InitialWeapon(9)="Botpack.Ripper"
-	//// On my zp server, I think I needed to add the following zp weapons:
+
+	//// On my zp server, I needed to add the following zp weapons:
+	//
 	// InitialWeapon[9]=ZeroPingPlus103.zp_ShockRifle
 	// InitialWeapon[10]=ZeroPingPlus103.zp_SniperRifle
 	// InitialWeapon[11]=ZeroPingPlus103.zp_Enforcer
-	// PowerupSound=Sound'Botpack.Pickups.Sbelthe2'
-	// PowerupSound=Sound'Botpack.Pickups.AmpOut'
-	//// I removed HealthPack and AmmoBoost cos they just kinda suck.
-	// Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32),Name="Health Boost")
+
 	Powerup(1)=(Type="Botpack.Armor2",Color=(R=255,G=131,B=91,A=32))
 	Powerup(2)=(Type="Botpack.UDamage",Color=(R=192,G=31,B=192,A=32))
-	Powerup(3)=(Type="Botpack.UT_Invisibility",Color=(R=3,G=3,B=150,A=48),Name="Invisibility")
-	Powerup(4)=(Type="Botpack.UT_ShieldBelt",Color=(R=255,G=255,B=31,A=32))
-	Powerup(5)=(Type="Botpack.UT_JumpBoots",Color=(R=91,G=255,B=255,A=32))
-	Powerup(6)=(Type="Botpack.WarheadLauncher",Color=(R=180,G=21,B=21,A=32))
-	// Powerup(7)=(Type="FairLMS.AmmoBoost",Color=(R=102,G=102,B=102,A=32),Name="Ammo Boost")
-	// Speed - too much!
-	// Relics...
+	Powerup(3)=(Type="Botpack.UT_ShieldBelt",Color=(R=255,G=255,B=31,A=32))
+	Powerup(4)=(Type="Botpack.UT_JumpBoots",Color=(R=91,G=255,B=255,A=32))
+	Powerup(5)=(Type="Botpack.WarheadLauncher",Color=(R=180,G=21,B=21,A=32))
+
+	//// AmmoBoost will boost all your ammo; useful in gametypes where ammo runs out!
+	// Powerup(6)=(Type="FairLMS.AmmoBoost",Color=(R=102,G=102,B=102,A=32),Name="Ammo Boost")
+
+	//// The Big Keg o' Health (+100 hp).
+	// Powerup(0)=(Type="Botpack.HealthPack",Color=(R=131,G=255,B=131,A=32),Name="Health Boost")
+
+	//// I feel invisibility is a bit too powerful to put as default:
+	// Powerup(7)=(Type="Botpack.UT_Invisibility",Color=(R=3,G=3,B=150,A=48),Name="Invisibility")
+	//// Recommend using this not the Stealth class - does that last forever?
+
+	//// Here are some powerups you can import from Siege:
 	// Powerup(8)=(Type="SiegeXXL2f.JetPack",Color=(R=91,G=192,B=255,A=32))
+	// Powerup[8]=(Type="SiegeXtreme002.Jetpack",Color=(R=91,G=192,B=255,A=32))
+	// Powerup[11]=(Type="SiegeXtreme002.HyperLeecher",Color=(R=91,G=192,B=255,A=32),Name="Hyper Leecher (Bio Gun)")
+	// Powerup[12]=(Type="SiegeXtreme002.WildcardsMetalSuit",Color=(R=160,G=160,B=160,A=32),Name="Bulletproof Metal Suit")
+
+	//// Relic of speed (too powerful?) - I haven't tested which of these is needed:
+	// Powerup(13)=(Type="Relics.RelicSpeed",Color=(R=255,G=60,B=60,A=44))
+	// Powerup(13)=(Type="Relics.RelicSpeedInventory",Color=(R=255,G=60,B=60,A=44))
+
 	// Powerup(9)=(Type="kxGrapple.GrappleGun",Color=(R=255,G=60,B=60,A=44))
 	// Powerup(10)=(Type="kxDoubleJump.DoubleJumpBoots",Color=(R=91,G=255,B=255,A=32))
+
 	//// Not working - I get a second enforcer, rather than my single becoming double!  Oh that may have been zp related.
 	// Powerup(19)=(Type="Botpack.DoubleEnforcer",Color=(R=180,G=180,B=180,A=32))
+
 }
 
