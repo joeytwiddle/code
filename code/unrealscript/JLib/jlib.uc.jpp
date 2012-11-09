@@ -182,8 +182,8 @@ function String StrReplaceAll(String in, String search, String replace) {
 	out = "";
 	for (i=0;i<Len(in);i++) {
 		if (Mid(in,i,Len(search)) == search) {
-			in = Left(in,i) $ replace $ Mid(in,i+Len(search));
-			i = i - Len(search) + Len(replace);
+			out = out $ replace;
+			i = i + Len(search) - 1;
 		} else {
 			out = out $ Mid(in,i,1);
 		}
