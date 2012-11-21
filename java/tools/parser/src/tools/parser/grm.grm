@@ -18,12 +18,9 @@
 #
 #    2012-03-15 Introduced Include Vars (VarAccept).
 #
+#   2012-??-?? Allowed easier definition of repeat and optional elements with + * [ ... ] and ( ... )
+#              See OneOrMore ZeroOrMore OptionalElement and GroupElement
 
-# TESTING:
-#
-#   Allow easier definition of repeat and optional elements with + * and [ ... ]
-#   We could also create more advanced rules with e.g. ( ... ) | ...
-#
 # TODO:
 #
 #   The Var type is not very powerful.  An anonymous regexp match might be
@@ -282,16 +279,16 @@ RepeatMarker2 = ZeroOrMore | OneOrMore
 
 ZeroOrMore = "*"
 java: "*"
-javaB: 0,-1
+# javaB: 0,-1
 
 OneOrMore = "+"
 java: "+"
-javaB: 1,-1
+# javaB: 1,-1
 
 ZeroOrOne = OptionalElement
-javaB: 0,1
+# javaB: 0,1
 
-# javaB: pass min and max rather than symbols
+# javaB: unused example of passing min and max rather than symbols
 
 Variable = Var
          | VarDeny

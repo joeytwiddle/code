@@ -32,12 +32,9 @@ public class grmGrm extends GrammarHelper {
     //
     //    2012-03-15 Introduced Include Vars (VarAccept).
     //
+    //   2012-??-?? Allowed easier definition of repeat and optional elements with + * [ ... ] and ( ... )
+    //              See OneOrMore ZeroOrMore OptionalElement and GroupElement
 
-    // TESTING:
-    //
-    //   Allow easier definition of repeat and optional elements with + * and [ ... ]
-    //   We could also create more advanced rules with e.g. ( ... ) | ...
-    //
     // TODO:
     //
     //   The Var type is not very powerful.  An anonymous regexp match might be
@@ -478,6 +475,7 @@ public class grmGrm extends GrammarHelper {
     // Note that use of + and * make it harder to place things *inbetween* the
     // elements during output (list join), so the above hugs output cannot currently
     // be easily reproduced with + or * as in the new rule below!
+    // Really?  Doesn't the "\n" just get output again literally?
 
     // Replacements = ( Replacement "\n" )+
     // Replacements = Replacement ( "\n" Replacement )+ | ""
@@ -570,9 +568,11 @@ public class grmGrm extends GrammarHelper {
     ruleset.replacements.put("hugs",rule);
 
 
-    // RelativeElement is only used for output, not matching.
+    // ReplacementElement is only used for output/replacement lines, not the rule definition.
+    // However at the moment we have included it in DefnBit.
     // Perhaps we should create DefnBit and OutDefnBit, the latter containing those
     // few extra rules which can only be used for outputs.
+    // Yes we should.
 
     ruleset=new RuleSet("DefnBit");
       grammar.addRuleset(ruleset);
@@ -744,10 +744,7 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Text("*"));
     ruleset.replacements.put("java",rule);
 
-    rule=new Vector<Type>();
-        rule.add(new Atom("0,-1"));
-    ruleset.replacements.put("javaB",rule);
-
+    // javaB: 0,-1
 
     ruleset=new RuleSet("OneOrMore");
       grammar.addRuleset(ruleset);
@@ -759,10 +756,7 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Text("+"));
     ruleset.replacements.put("java",rule);
 
-    rule=new Vector<Type>();
-        rule.add(new Atom("1,-1"));
-    ruleset.replacements.put("javaB",rule);
-
+    // javaB: 1,-1
 
     ruleset=new RuleSet("ZeroOrOne");
       grammar.addRuleset(ruleset);
@@ -770,12 +764,10 @@ public class grmGrm extends GrammarHelper {
         rule.add(new Atom("OptionalElement"));
       ruleset.add(rule);
     // Replacements
-    rule=new Vector<Type>();
-        rule.add(new Atom("0,1"));
-    ruleset.replacements.put("javaB",rule);
 
+    // javaB: 0,1
 
-    // javaB: pass min and max rather than symbols
+    // javaB: unused example of passing min and max rather than symbols
 
     ruleset=new RuleSet("Variable");
       grammar.addRuleset(ruleset);
