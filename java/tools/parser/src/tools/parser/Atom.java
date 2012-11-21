@@ -133,7 +133,7 @@ public class Atom implements MagicType {
 		// The ruleset could be locally cached, or even loaded in a post-load
 		// stage, but what it can't be is loaded on instantiation, because the
 		// grammar is not complete at that time.
-		RuleSet rs = Grammar.getrulesetforatom(type, ctx);
+		RuleSet rs = ctx.getGrammar().getrulesetforatom(type, ctx);
 
 		if (rs == null) {
 			throw new Error("Failed to find ruleset for atom type \""+type+"\"");
@@ -261,7 +261,7 @@ public class Atom implements MagicType {
 	   return head;
    }
 
-	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
+	public void renderMatchAs(OutputContext ctx, Match parentMatch, String target, PrintStream out) {
 		Match m = parentMatch.grabUnusedMatchMatching(this);
 		if (m == null) {
 			// Logger.error("Could not find match for "+this+" in "+parentMatch);
@@ -271,7 +271,7 @@ public class Atom implements MagicType {
 			// match will be renderered.
 			return;
 		}
-		m.render(parentMatch, target, out);
+		m.render(ctx, parentMatch, target, out);
    }
 
 }

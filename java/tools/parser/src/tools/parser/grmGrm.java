@@ -1066,7 +1066,7 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("      rule.add( new ActiveReplacement() { public String replace() { "));
+        rule.add(new Text("      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) { "));
         rule.add(new Var("java"));
         rule.add(new Text(" } } );\n"));
     ruleset.replacements.put("java",rule);

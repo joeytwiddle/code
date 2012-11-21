@@ -109,7 +109,7 @@ public class Var implements MagicType {
 		return false;
 	}
 	
-	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
+	public void renderMatchAs(OutputContext ctx, Match parentMatch, String target, PrintStream out) {
 		Match m = parentMatch.grabUnusedMatchMatching(this);
 		if (m == null) {
 			// Logger.error("Could not find match for "+this+" in "+parentMatch);

@@ -27,9 +27,9 @@ public class ArgReplacement implements Type {
 	   return null;
    }
 
-   public void renderMatchAs(Match match, String target, PrintStream out) {
+   public void renderMatchAs(OutputContext ctx, Match match, String target, PrintStream out) {
 		// Logger.debug("Doing matches.get("+argNum+") inside "+match.type+" with size "+match.matches.size());
-		match.matches.get(argNum).render(match,target,out);
+		match.matches.get(argNum).render(ctx, match,target,out);
    }
 
 }

@@ -125,7 +125,7 @@ public class Match {
 	*/
 
 	/** render needs to learn to deal with RelElements. **/
-	public void render(Match btwyourdadis, String target, PrintStream out) {
+	public void render(OutputContext ctx, Match btwyourdadis, String target, PrintStream out) {
 		if (parent == null) parent = btwyourdadis;
 
 		Vector<Type> replacementRule = null;
@@ -133,8 +133,8 @@ public class Match {
 		// Find the replacement rule for this type, if possible
 		if (type instanceof Atom) {
 			Atom a = (Atom) type;
-			ParseContext ctx = new ParseContext();   /** @todo Should be passed in! **/
-			RuleSet ruleset = Grammar.getrulesetforatom(a.type, ctx);
+			// ParseContext ctx = new ParseContext();   /** @todo Should be passed in! **/
+			RuleSet ruleset = ctx.getGrammar().getrulesetforatom(a.type, ctx);
 			replacementRule = ruleset.replacements.get(target);
 		}
 			
@@ -153,7 +153,7 @@ public class Match {
 
 				for (int i=0; i<matches.size();i++) {
 					Match m = matches.get(i);
-					m.render(this, target, out);
+					m.render(ctx, this, target, out);
 				}
 
 			}
@@ -170,7 +170,7 @@ public class Match {
 			for (int i = 0; i < replacementRule.size(); i++) {
 				Type t = (Type) replacementRule.get(i);
 				// renderIn(unusedmatches, t, target, out);
-				t.renderMatchAs(this, target, out);
+				t.renderMatchAs(ctx, this, target, out);
 			}
 
 		}
@@ -180,9 +180,9 @@ public class Match {
 		
 	}
 
-	public String renderString(String target) {
+	public String renderString(OutputContext ctx, String target) {
 		FakeOutputStream out = new FakeOutputStream();
-		render(null, target, new PrintStream(out));
+		render(ctx, null, target, new PrintStream(out));
 		return out.store.toString();
 	}
 	

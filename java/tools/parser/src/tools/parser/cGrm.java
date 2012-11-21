@@ -271,7 +271,7 @@ public class cGrm extends GrammarHelper {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Text("// Template class appears in original format:\n"));
-      rule.add( new ActiveReplacement() { public String replace() {  jlib.strings.FakeOutputStream out=new jlib.strings.FakeOutputStream(); match.render(null,"none",new java.io.PrintStream(out)); return ""+out.store;  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  jlib.strings.FakeOutputStream out=new jlib.strings.FakeOutputStream(); match.render(ctx,null,"none",new java.io.PrintStream(out)); return ""+out.store;  } } );
         rule.add(new Text("// End template class\n"));
     ruleset.replacements.put("h",rule);
 
@@ -542,8 +542,8 @@ public class cGrm extends GrammarHelper {
         rule.add(new Atom("OptPtr"));
         { Vector realrule=rule; rule=new Vector<Type>();         rule.add(new Var("name"));
  realrule.add(new RelElement('^',"Class",(Type)rule.get(0))); rule=realrule; }
-      rule.add( new ActiveReplacement() { public String replace() {  Match m=match.getUp("Class").getDown("TemplateClass").getDown("TemplateSuperInside").getDown("TemplateInside"); return "<"+m.string+">";  } } );
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "" : "::" );  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  Match m=match.getUp("Class").getDown("TemplateClass").getDown("TemplateSuperInside").getDown("TemplateInside"); return "<"+m.string+">";  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  return ( match.getUp("Class")==null ? "" : "::" );  } } );
         rule.add(new Atom("OptLater"));
         rule.add(new Atom("MethName"));
         rule.add(new Text("("));
@@ -604,10 +604,10 @@ public class cGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getDown("OptLater").string.toString().equals("") ? "" : "/* Skipping later :: " );  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  return ( match.getDown("OptLater").string.toString().equals("") ? "" : "/* Skipping later :: " );  } } );
         rule.add(new Atom("MethodWithCode"));
         rule.add(new Atom("MethodWithoutCode"));
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getDown("OptLater").string.toString().equals("") ? "" : "*/\n" );  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  return ( match.getDown("OptLater").string.toString().equals("") ? "" : "*/\n" );  } } );
     ruleset.replacements.put("h",rule);
 
 
@@ -757,7 +757,7 @@ public class cGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-      rule.add( new ActiveReplacement() { public String replace() {  String val=match.string.toString(); if ( val.equals("virtual") || val.equals("static") || val.equals("fillin") /* && match.getUp("Class")==null */ ) return ""; else return ""+match.string;  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  String val=match.string.toString(); if ( val.equals("virtual") || val.equals("static") || val.equals("fillin") /* && match.getUp("Class")==null */ ) return ""; else return ""+match.string;  } } );
     ruleset.replacements.put("c",rule);
 
 
@@ -822,7 +822,7 @@ public class cGrm extends GrammarHelper {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Atom("OptVarMods"));
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));
@@ -830,7 +830,7 @@ public class cGrm extends GrammarHelper {
     ruleset.replacements.put("h",rule);
 
     rule=new Vector<Type>();
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? match.renderString("normal") : "// Variable declared in .h file" );  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  return ( match.getUp("Class")==null ? match.renderString(ctx,"normal") : "// Variable declared in .h file" );  } } );
     ruleset.replacements.put("c",rule);
 
 
@@ -849,7 +849,7 @@ public class cGrm extends GrammarHelper {
     // Replacements
     rule=new Vector<Type>();
         rule.add(new Atom("OptVarMods"));
-      rule.add( new ActiveReplacement() { public String replace() {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  return ( match.getUp("Class")==null ? "extern " : "" );  } } );
         rule.add(new Atom("VarType"));
         rule.add(new Atom("WS"));
         rule.add(new Atom("VarNames"));
@@ -862,7 +862,7 @@ public class cGrm extends GrammarHelper {
         rule.add(new Atom("WS"));
         { Vector realrule=rule; rule=new Vector<Type>();         rule.add(new Var("name"));
  realrule.add(new RelElement('^',"Class",(Type)rule.get(0))); rule=realrule; }
-      rule.add( new ActiveReplacement() { public String replace() {  Match cls=match.getUp("Class"); return ( cls==null ? "" : "::" );  } } );
+      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) {  Match cls=match.getUp("Class"); return ( cls==null ? "" : "::" );  } } );
         rule.add(new Atom("VarNames"));
         rule.add(new Atom("VarBeing"));
         rule.add(new Text(";"));

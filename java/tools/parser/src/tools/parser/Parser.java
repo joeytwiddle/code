@@ -88,7 +88,7 @@ public class Parser implements ActionListener {
 		Logger.outputStream = System.err;
 		
 		Parser p = new Parser();
-		p.setupgrammar(grammar);
+		Grammar g = p.setupgrammar(grammar);
 		String toparse = Files.readStringfromfile(file);
 		
 		all = toparse;
@@ -120,7 +120,7 @@ public class Parser implements ActionListener {
 			
 		}
 		
-		ParseContext ctx = new ParseContext();
+		ParseContext ctx = new ParseContext(g);
 		
 		// @todo Apply preprocessors
 		
@@ -134,16 +134,17 @@ public class Parser implements ActionListener {
 			if (targets.size() == 0) {
 				m.printParseTree(System.out, "");
 			} else {
+				OutputContext octx = new OutputContext(g);
 				for (int k = 0; k < targets.size(); k++) {
 					String targetcom = (String) targets.get(k);
 					if (targetcom.indexOf(":") == -1) {
-						m.render(null, targetcom, System.out);
+						m.render(octx, null, targetcom, System.out);
 					} else {
 						String target = JString.before(targetcom, ":");
 						String outfile = JString.after(targetcom, ":");
 						PrintStream out = new PrintStream(new FileOutputStream(
 						      outfile));
-						m.render(null, target, out);
+						m.render(octx, null, target, out);
 						out.flush();
 						out.close();
 					}
@@ -235,7 +236,7 @@ public class Parser implements ActionListener {
 		}
 	}
 
-	public void setupgrammar(String gram) {
+	public Grammar setupgrammar(String gram) {
 		String whole = "tools.parser." + gram + "Grm";
 		try {
 			// Class c = JReflect.classcalled(whole);
@@ -244,10 +245,12 @@ public class Parser implements ActionListener {
 			Method m = c.getMethod("setupgrammar", new Class[0]);
 			// System.out.println("Got method "+m);
 			Object dummy = m.invoke(null, new Object[0]);
+			return (Grammar)dummy;
 		} catch (Exception e) {
 			System.out.println("Problem initialising grammar \"" + gram + "\": "
 			      + e);
 			e.printStackTrace();
+			return null;
 		}
 		// grmGrm.setupgrammar();
 	}

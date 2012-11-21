@@ -56,7 +56,7 @@ public class RelElement implements Type {
 		return true;
 	}
 
-	public void render(Match btwyourdadis, String target, PrintStream out) {
+	public void render(OutputContext ctx, Match btwyourdadis, String target, PrintStream out) {
 		if (dir == '^') {
 			Match m = btwyourdadis;
 			while (m != null) {
@@ -67,7 +67,7 @@ public class RelElement implements Type {
 						// Vector unusedmatches = (Vector) m.matches.clone();
 						// m.renderIn(unusedmatches, leaf, target, out);
 						
-						leaf.renderMatchAs(m, target, out);
+						leaf.renderMatchAs(ctx, m, target, out);
 						
 						return;
 					}
@@ -103,8 +103,8 @@ public class RelElement implements Type {
 		}
 	}
 
-	public void renderMatchAs(Match match, String target, PrintStream out) {
-		render(match, target, out);
+	public void renderMatchAs(OutputContext ctx, Match match, String target, PrintStream out) {
+		render(ctx,match, target, out);
 	}
 	
 }

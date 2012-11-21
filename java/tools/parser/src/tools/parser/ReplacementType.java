@@ -7,6 +7,6 @@ import java.io.PrintStream;
 
 public interface ReplacementType {
 
-	  void renderMatchAs(Match parentMatch, String target, PrintStream out);
+	  void renderMatchAs(OutputContext ctx, Match parentMatch, String target, PrintStream out);
 
 }

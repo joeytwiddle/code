@@ -21,9 +21,9 @@ public class Grammar {
 		}
 	};*/
 
-	public static HashMap<String, RuleSet> rulesets = new HashMap<String, RuleSet>();
+	public HashMap<String, RuleSet> rulesets = new HashMap<String, RuleSet>();
 
-  public static RuleSet getrulesetforatom(String type, ParseContext ctx) {
+  public RuleSet getrulesetforatom(String type, ParseContext ctx) {
 	  /*
     for (int i=0;i<rulesets.size();i++) {
       RuleSet rs=(RuleSet)rulesets.get(i);
@@ -37,7 +37,7 @@ public class Grammar {
 	  return rulesets.get(type);
   }
   
-  public static void addRuleset(RuleSet ruleset) {
+  public void addRuleset(RuleSet ruleset) {
 	  // rulesets.add(ruleset);
 	  rulesets.put(ruleset.type, ruleset);
   }

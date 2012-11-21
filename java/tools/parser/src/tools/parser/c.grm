@@ -77,7 +77,7 @@ ClassDefn = TemplateClass
           | Class
 
 TemplateClass = ClassTemplate Class
-h: "// Template class appears in original format:\n" ` jlib.strings.FakeOutputStream out=new jlib.strings.FakeOutputStream(); match.render(null,"none",new java.io.PrintStream(out)); return ""+out.store; ` "// End template class\n"
+h: "// Template class appears in original format:\n" ` jlib.strings.FakeOutputStream out=new jlib.strings.FakeOutputStream(); match.render(ctx,null,"none",new java.io.PrintStream(out)); return ""+out.store; ` "// End template class\n"
 c: "// Template class must appear in .h file\n"
 
 Class = OptClassMods "class " <name/"\n ;{}()"> WS OptMoreClassMods "{" ClassInside "};"
@@ -222,7 +222,7 @@ VariableDecl = VariableDeclBeing
 
 VariableDeclExist = OptVarMods VarType WS VarNames ";"
 h: OptVarMods ` return ( match.getUp("Class")==null ? "extern " : "" ); ` VarType WS VarNames "; // Exists"
-c: ` return ( match.getUp("Class")==null ? match.renderString("normal") : "// Variable declared in .h file" ); `
+c: ` return ( match.getUp("Class")==null ? match.renderString(ctx,"normal") : "// Variable declared in .h file" ); `
 
 # NB: If you try putting OptVarMods after `...` you may end up with "extern // fillup ..." in the output :-(
 

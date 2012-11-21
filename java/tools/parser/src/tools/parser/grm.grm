@@ -377,7 +377,7 @@ OWS = WhitespaceBit*
 # code inside `...`s with the match Object available as a local field.
 
 ActiveReplacement = "`" <java/"`"> "`"
-java: "      rule.add( new ActiveReplacement() { public String replace() { " <java> " } } );\n"
+java: "      rule.add( new ActiveReplacement() { public String replace(OutputContext ctx) { " <java> " } } );\n"
 
 # I think RelativeElement might be a dodgy way to access variables in parent/child types.
 # ^SearchUp->SearchDown.DirectDown

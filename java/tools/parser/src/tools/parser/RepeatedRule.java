@@ -97,7 +97,7 @@ public class RepeatedRule implements Type {
 		}
    }
 
-	public void renderMatchAs(Match parentMatch, String target, PrintStream out) {
+	public void renderMatchAs(OutputContext ctx, Match parentMatch, String target, PrintStream out) {
 		Logger.error("Never expected to enter this method!");
    }
 

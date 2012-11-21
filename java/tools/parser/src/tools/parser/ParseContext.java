@@ -7,6 +7,10 @@ public class ParseContext {
 
 	private Grammar grammar;
 	
+	public ParseContext(Grammar grammar) {
+		this.grammar = grammar;
+	}
+	
 	public Grammar getGrammar() {
 		return grammar;
 	}

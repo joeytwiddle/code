@@ -66,7 +66,7 @@ public class ActiveReplacement implements /*Replacement*/Type {
 	}
 	*/
 
-	public void renderMatchAs(Match match, String target, PrintStream out) {
+	public void renderMatchAs(OutputContext ctx, Match match, String target, PrintStream out) {
 		this.match = match;
 		this.target = target;
 		out.print(replace());

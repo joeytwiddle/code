@@ -17,3 +17,9 @@ mkdir -p backups
 cp -f ./last_working_build.tgz backups/last_working_build.tgz
 rotate -keep -nozip -max 5 backups/last_working_build.tgz
 
+echo "Build all the grammars."
+./creategrammar c
+./creategrammar marff
+./creategrammar xml
+# ./creategrammar dlang
+

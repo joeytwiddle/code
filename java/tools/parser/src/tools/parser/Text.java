@@ -61,7 +61,7 @@ public class Text implements Type {
 		return text;
 	}
 
-	public void renderMatchAs(Match match, String target, PrintStream out) {
+	public void renderMatchAs(OutputContext ctx, Match match, String target, PrintStream out) {
 		out.print(rendertext());
 	}
 	
