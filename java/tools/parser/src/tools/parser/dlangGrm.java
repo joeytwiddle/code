@@ -7,7 +7,7 @@ import tools.parser.*;
 import tools.parser.extensions.*;
 
 public class dlangGrm extends GrammarHelper {
-  public static void setupgrammar() {
+  public static Grammar setupgrammar() {
     Grammar grammar = new Grammar();
     RuleSet ruleset;
     Vector<Type> rule;
@@ -1292,5 +1292,6 @@ public class dlangGrm extends GrammarHelper {
     // Replacements
 
 
+    return grammar;
   }
 }

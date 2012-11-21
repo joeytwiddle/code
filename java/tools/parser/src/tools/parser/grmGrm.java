@@ -7,7 +7,7 @@ import tools.parser.*;
 import tools.parser.extensions.*;
 
 public class grmGrm extends GrammarHelper {
-  public static void setupgrammar() {
+  public static Grammar setupgrammar() {
     Grammar grammar = new Grammar();
     RuleSet ruleset;
     Vector<Type> rule;
@@ -26,27 +26,29 @@ public class grmGrm extends GrammarHelper {
 
     // SIGNIFICANT CHANGES:
     //
-    //    2012-03-16 Exclude Vars now *fail* if 0 chars are matched.  Rules which
-    //    previously found 0-length matches acceptable should be updated to accept
-    //    them explicitly.
+    // 2012-03-16 Exclude Vars now *fail* if 0 chars are matched.  Rules which
+    //            previously found 0-length matches acceptable should be updated to
+    //            accept them explicitly.
     //
-    //    2012-03-15 Introduced Include Vars (VarAccept).
+    // 2012-03-15 Introduced Include Vars (VarAccept).
     //
-    //   2012-??-?? Allowed easier definition of repeat and optional elements with + * [ ... ] and ( ... )
-    //              See OneOrMore ZeroOrMore OptionalElement and GroupElement
+    // 2012-??-?? Allowed easier definition of repeat and optional elements with + * [ ... ] and ( ... )
+    //            See OneOrMore ZeroOrMore OptionalElement and GroupElement
 
     // TODO:
     //
     //   The Var type is not very powerful.  An anonymous regexp match might be
     //   preferable.  e.g. /[$@_a-zA-Z][$@_a-zA-Z0-9]*/
     //
-    // TODO: Provide special marker _ or . in replacements which signify whatever
+    //   On the other hand, the simplicity of our Vars may be a feature.
+    //
+    // Provide special marker _ or . in replacements which signify whatever
     // was matched.  Would allow:
     //   A = B | C
-    //   out: _
+    //   out: "blah: " _
     // instead of:
     //   A = B | C
-    //   out: B | C
+    //   out: "blah: " B C
     // which is sucky.
     // We could also provide $1, $2, $3 like Coffescript's, in which case $0 or $_
     // might be a preferable marker for "all".
@@ -135,9 +137,9 @@ public class grmGrm extends GrammarHelper {
       ruleset.add(rule);
     // Replacements
     rule=new Vector<Type>();
-        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static void setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
+        rule.add(new Text("package tools.parser;\n\nimport java.lang.String;\nimport java.util.Vector;\n\nimport tools.parser.*;\nimport tools.parser.extensions.*;\n\npublic class grmGrm extends GrammarHelper {\n  public static Grammar setupgrammar() {\n    Grammar grammar = new Grammar();\n    RuleSet ruleset;\n    Vector<Type> rule;\n\n"));
         rule.add(new Atom("Grm"));
-        rule.add(new Text("  }\n}\n"));
+        rule.add(new Text("    return grammar;\n  }\n}\n"));
     ruleset.replacements.put("java",rule);
 
     rule=new Vector<Type>();
@@ -1232,5 +1234,6 @@ public class grmGrm extends GrammarHelper {
     // Replacements
 
 
+    return grammar;
   }
 }

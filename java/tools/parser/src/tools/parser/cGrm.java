@@ -4,16 +4,19 @@ import java.lang.String;
 import java.util.Vector;
 
 import tools.parser.*;
+import tools.parser.extensions.*;
 
-public class cGrm {
-  public static void setupgrammar() {
+public class cGrm extends GrammarHelper {
+  public static Grammar setupgrammar() {
     Grammar grammar = new Grammar();
     RuleSet ruleset;
     Vector<Type> rule;
 
     //#### Joey's grammar for C++ parsing
-    //## Provided a single c file,
-    //## targets "h" and "c" should output the correct split.
+    //## The content of code blocks is not currently classified, and probably only a subset of the whole language can currently be matched.
+    //## Furthermore it may no longer work since the 2011/12 parser changes!
+    //## Its current usage is to split a C class defined in one file
+    //## into two separate .h and a .c files, using the "h" and "c" targets.
 
 
     //#### Main
@@ -1107,5 +1110,6 @@ public class cGrm {
 
 
 
+    return grammar;
   }
 }

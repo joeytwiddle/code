@@ -4,9 +4,10 @@ import java.lang.String;
 import java.util.Vector;
 
 import tools.parser.*;
+import tools.parser.extensions.*;
 
-public class marffGrm {
-  public static void setupgrammar() {
+public class marffGrm extends GrammarHelper {
+  public static Grammar setupgrammar() {
     Grammar grammar = new Grammar();
     RuleSet ruleset;
     Vector<Type> rule;
@@ -197,5 +198,6 @@ public class marffGrm {
     // Replacements
 
 
+    return grammar;
   }
 }
