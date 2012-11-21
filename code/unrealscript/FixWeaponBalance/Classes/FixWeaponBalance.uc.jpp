@@ -9,6 +9,8 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 // DONE: Alternative setup: keep ZP sniper strong, increase strength of all
 //       other weapons to match.
 
+// TODO: make sniper damage normal at close/medium range, less at long range
+
 #define ADJUST_SNIPER_DAMAGE
 
 // Debugging:
@@ -24,7 +26,11 @@ var config bool bLiveReports;
 var config bool bKeepHeadshotsInAllModes;
 var config float SniperDamageScale;
 var config int SniperMaxDamage;
+// We cannot apply SniperMinDamage globally in mutator mode.  Hitting an enemy with shield might/should idd inflict 0 health damage.  Currently it does provide a cap on SniperMaxRange's reduction.
+var config int SniperMinDamage;
 var config bool bFixCrouchingBug;   // For ZeroPingPlus103
+var config float SniperPowerRange;
+var config float SniperMaxRange;
 
 var config float RocketDamageScale;
 var config float RocketGrenadeDamageScale;
@@ -48,6 +54,7 @@ var config bool bAdjustBoost;
 function PostBeginPlay() {
 	Level.Game.RegisterDamageMutator(Self);
 	Level.Game.RegisterMessageMutator(Self);
+	SaveConfig(); // Just easier for admin to create file / missing vars
 }
 
 function ModifyPlayer(Pawn Other) {
@@ -64,6 +71,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
 	local bool bHardcore,isShockPrimary,isEnforcer;
 	local int NewDamage;
+	local float distance;
 
 	if (bEnabled && PlayerPawn(InstigatedBy)!=None) {
 
@@ -100,6 +108,23 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 			// Always scale damage for sniper rifle?
 			NewDamage = ActualDamage * SniperDamageScale;
+
+			if (SniperMaxRange > 0) {
+				distance = VSize(Victim.Location - InstigatedBy.Location);
+				if (distance < SniperPowerRange) {
+					// Do nothing: leave strength unaffected
+				} else {
+					if (distance > SniperMaxRange) {
+						NewDamage = SniperMinDamage;
+					} else {
+						// Scale from 1.0 at SniperPowerRange to 0.0 at SniperMaxRange.
+						NewDamage = NewDamage * (1.0 - (distance - SniperPowerRange)/(SniperMaxRange - SniperPowerRange)) + 0.5;
+						if (NewDamage < SniperMinDamage) {
+							NewDamage = SniperMinDamage;
+						}
+					}
+				}
+			}
 
 			// In non-hardcore mode, we may not want to scale headshots down, because they are only 100 to start with!
 			if (bKeepHeadshotsInAllModes && ActualDamage>=100 && NewDamage<100) {
@@ -331,9 +356,14 @@ defaultproperties {
 	bLogging=False
 	bLiveReports=False
 	bKeepHeadshotsInAllModes=True
-	SniperDamageScale=0.78
-	SniperMaxDamage=102
+	// SniperDamageScale=0.78
+	// SniperMaxDamage=102
+	SniperDamageScale=1.0
+	SniperMaxDamage=150
+	SniperMinDamage=1
 	bFixCrouchingBug=True
+	SniperPowerRange=256
+	SniperMaxRange=4000
 
 	RocketDamageScale=1.00
 	RocketGrenadeDamageScale=1.00
