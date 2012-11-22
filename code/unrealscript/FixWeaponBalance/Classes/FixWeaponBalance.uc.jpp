@@ -26,11 +26,11 @@ var config bool bLiveReports;
 var config bool bKeepHeadshotsInAllModes;
 var config float SniperDamageScale;
 var config int SniperMaxDamage;
-// We cannot apply SniperMinDamage globally in mutator mode.  Hitting an enemy with shield might/should idd inflict 0 health damage.  Currently it does provide a cap on SniperMaxRange's reduction.
-var config int SniperMinDamage;
-var config bool bFixCrouchingBug;   // For ZeroPingPlus103
+var config bool bScaleSniperByDistance;
 var config float SniperPowerRange;
 var config float SniperMaxRange;
+var config int SniperMinDamage;
+var config bool bFixCrouchingBug;   // For ZeroPingPlus103
 
 var config float RocketDamageScale;
 var config float RocketGrenadeDamageScale;
@@ -70,8 +70,10 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
 	local bool bHardcore,isShockPrimary,isEnforcer;
+	local bool bDidCrouchReduction;
 	local int NewDamage;
 	local float distance;
+	local String CrouchStr;
 
 	if (bEnabled && PlayerPawn(InstigatedBy)!=None) {
 
@@ -98,18 +100,21 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 				if (bHardcore) {
 					if (ActualDamage > 67) {
 						ActualDamage = 67;
+						bDidCrouchReduction = True;
 					}
 				} else {
 					if (ActualDamage > 58) {
 						ActualDamage = 58;
+						bDidCrouchReduction = True;
 					}
 				}
+				// TODO: If we can find accurate values in zeroping, we could compare HitLocation.Z against Victim.Location.Z, to see if the shot went over their head!
 			}
 
 			// Always scale damage for sniper rifle?
 			NewDamage = ActualDamage * SniperDamageScale;
 
-			if (SniperMaxRange > 0) {
+			if (bScaleSniperByDistance) {
 				distance = VSize(Victim.Location - InstigatedBy.Location);
 				if (distance < SniperPowerRange) {
 					// Do nothing: leave strength unaffected
@@ -194,7 +199,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			// Do nothing
 		} else {
 			if (bLiveReports) {
-				InstigatedBy.ClientMessage("Did not recognise DamageType="$DamageType);
+				InstigatedBy.ClientMessage("Did not recognise DamageType '"$DamageType$"'");
 			}
 		}
 
@@ -203,11 +208,16 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 		}
 
 		if (NewDamage != ActualDamage) {
-			DebugLog("Adjusting "$DamageType$": "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )");
+			if (bDidCrouchReduction) {
+				CrouchStr = " [crouch]";
+			} else {
+				CrouchStr = "";
+			}
+			DebugLog("Adjusting '"$DamageType$"': "$ActualDamage$" -> "$NewDamage$" ( "$GHN(InstigatedBy)$" -> "$GHN(Victim)$" )" $ CrouchStr);
 			if (bLiveReports) {
-				InstigatedBy.ClientMessage("Inflicted "$DamageType$": "$ActualDamage$" -> "$NewDamage);
+				InstigatedBy.ClientMessage("Inflicted '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ CrouchStr);
 				if (PlayerPawn(Victim) != None) {
-					Victim.ClientMessage("Received "$DamageType$": "$ActualDamage$" -> "$NewDamage);
+					Victim.ClientMessage("Received '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ CrouchStr);
 				}
 			}
 		}
@@ -322,9 +332,14 @@ function SendStatusTo(Pawn Sender) {
 	Send("  Enabled = "$bEnabled);
 	Send("  Logging = "$bLogging);
 	Send("  Reporting = "$bLiveReports);
+	Send("  bKeepHeadshotsInAllModes = "$bKeepHeadshotsInAllModes);
 	Send("  SniperDamageScale = "$PercentageChangeStr(SniperDamageScale));
-	// Send("  SniperBoostScale = "$PercentageChangeStr(SniperBoostScale));
 	Send("  SniperMaxDamage = "$SniperMaxDamage);
+	Send("  bScaleSniperByDistance = "$bScaleSniperByDistance);
+	Send("    SniperPowerRange = "$SniperPowerRange);
+	Send("    SniperMaxRange = "$SniperMaxRange);
+	Send("    SniperMinDamage = "$SniperMinDamage);
+	Send("  bFixCrouchingBug = "$bFixCrouchingBug);
 	Send("  RocketDamageScale = "$PercentageChangeStr(RocketDamageScale));
 	Send("  RocketGrenadeDamageScale = "$PercentageChangeStr(RocketGrenadeDamageScale));
 	Send("  BioDamageScale = "$PercentageChangeStr(BioDamageScale));
@@ -341,7 +356,8 @@ function SendStatusTo(Pawn Sender) {
 	Send("  RipperHeadshotDamageScale = "$PercentageChangeStr(RipperHeadshotDamageScale));
 	Send("  MeleeWeaponDamageScale = "$PercentageChangeStr(MeleeWeaponDamageScale));
 	Send("  bAdjustBoost = "$bAdjustBoost);
-	Send("So hardcore headshot 150 now gives "$ Int(150*SniperDamageScale) $" and bodyhit 67 gives "$ Int(67*SniperDamageScale) $".");
+	//// Inaccurate approximation, given thresholds.
+	/* Send("So hardcore headshot 150 now gives "$ Int(150*SniperDamageScale) $" and bodyhit 67 gives "$ Int(67*SniperDamageScale) $"."); */
 }
 
 function String PercentageChangeStr(float proportion) {
@@ -349,10 +365,10 @@ function String PercentageChangeStr(float proportion) {
 		return "normal";
 	}
 	if (proportion < 1.0) {
-		return Int(100*(1.0-proportion)+0.5)$"% smaller";
+		return Int(100*(1.0-proportion)+0.5)$"% smaller ["$proportion$"]";
 	}
 	if (proportion > 1.0) {
-		return Int(100*(proportion-1.0)+0.5)$"% larger";
+		return Int(100*(proportion-1.0)+0.5)$"% larger ["$proportion$"]";
 	}
 }
 
@@ -362,15 +378,15 @@ defaultproperties {
 	bEnabled=True
 	bLogging=False
 	bLiveReports=False
-	bKeepHeadshotsInAllModes=True
-	// SniperDamageScale=0.78
-	// SniperMaxDamage=102
+	bKeepHeadshotsInAllModes=False
+
 	SniperDamageScale=1.0
 	SniperMaxDamage=150
-	SniperMinDamage=12
-	bFixCrouchingBug=True
+	bScaleSniperByDistance=True
 	SniperPowerRange=384
 	SniperMaxRange=6144
+	SniperMinDamage=12
+	bFixCrouchingBug=False
 
 	RocketDamageScale=1.00
 	RocketGrenadeDamageScale=1.00
@@ -389,7 +405,6 @@ defaultproperties {
 	MeleeWeaponDamageScale=1.00
 
 	bAdjustBoost=True
-
 }
 
 // Note that this does not affect damage to armour, only damage to health.
