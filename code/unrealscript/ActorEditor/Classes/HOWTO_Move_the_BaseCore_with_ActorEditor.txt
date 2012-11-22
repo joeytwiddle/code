@@ -33,46 +33,60 @@ Join the server, and log in as admin.
 
 Find the first core you want to move:
 
-> mutate seek flagbase0
+1> mutate seek flagbase0
 
 Read its team number if you like:
 
-> mutate check team
+2> mutate check team
 
 Now focus ActorEditor on yourself:
 
-> mutate seek chspec
+3> mutate seek chspec
 
 (The camera may jump backwards, as you attempt to look at yourself!)
 
 Move to exactly where you want the base core to be.  Then read your position:
 
-> mutate check location
+4> mutate check location
 
 Now focus back on the flag marker, and input the location you just saw:
 
-> mutate seek flagbase0
+5> mutate seek flagbase0
 
-> mutate store location 500,-600,320
+6> mutate store location 500,-600,320
 
 Be careful to read the little -s!
 
 You can check to see if the actor went to the right place by refocusing:
 
-> mutate seek flagbase0
+7> mutate seek flagbase0
 
 Once you are happy, repeat the process for the other core:
 
-> mutate seek flagbase1
+8> mutate seek flagbase1
 ...
 
 If you are happy with what you did, save to ActorEditor.ini with:
 
-> mutate saveall
+9> mutate saveall
 
 That is all.  Restart the map to check the cores load up in the new locations!
 
 
+
+New method!
+
+With recent versions of ActorEditor you can skip steps 2-7 above, by moving to
+the desired position and invoking simply:
+
+10> mutate bring
+
+This should bring the actor you last focused (FlagBase0) to your current
+location.  Of course you will still need to:
+
+11> mutate saveall
+
+when you are finished.
 
 
 
@@ -80,8 +94,8 @@ Notes:
 
 You can try moving BaseCore0 instead of FlagBase0, but it won't work!  You will
 see the glow move (maybe useful), but the mesh will not move, and your new
-location will be IGNORED when the map restarts.  We must set FlagBase
-positions, since they are the markers from which BaseCores are spawned.
+location will be IGNORED when the map restarts.  We must change the FlagBase
+positions, since the BaseCores are spawned from these *after* the map has loaded.
 
 If your server runs CTF and Siege modes, the flags will move in both games!  If
 you don't want that to happen, configure your server/mapvote to only run the

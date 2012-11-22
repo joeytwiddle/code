@@ -1,5 +1,5 @@
 // vim: tabstop=2 shiftwidth=2 noexpandtab filetype=uc
-
+ 
 // Can we set/change location of objects?
 
 // TODO: things to match (logical combinations of (map-regexp) or (game-variable)
@@ -11,6 +11,10 @@
 
 // TODO: ActorEditor only works on actors which exist at (before) the start of the game.  (It never acts on an sgBaseCore for example.)
 //       Maybe we should check whether to act on Actors at CheckReplacement() stage.
+
+// TODO: make any selected actor's sprite visible?  DrawType=DT_Sprite?  But this might stop displaying mesh actors?
+
+#define ActorEditorVersion "0.7.1"
 
 class ActorEditor expands Mutator config(ActorEditor);
 
@@ -228,14 +232,21 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 	}
 
 	if (command ~= "HELP") {
-		Sender.ClientMessage("ActorEditor commands:");
-		Sender.ClientMessage("  help | look | search/find/seek <actor_name_part> | findclosest <actor_name_part> | searchprop/findprop/seekprop <property> <value_part> | ");
-		// Sender.ClientMessage("  get/check <property> | set/put <property> <value> | store/save <property> <value> | grab <property>");
-		Sender.ClientMessage("  get/check <property> | set/put/save/store <property> <value> | grab <property> | setscale <float>");
+		Sender.ClientMessage("ActorEditor v" $ ActorEditorVersion $ " commands:");
+		Sender.ClientMessage("  help");
+		Sender.ClientMessage("Find or inspect actors:");
+		Sender.ClientMessage("  showinvis");
+		Sender.ClientMessage("  look");
+		Sender.ClientMessage("  search/find/seek/searchlast/findlast/seeklast <part_of_actor_name>");
+		Sender.ClientMessage("  findclosest <part_of_actor_name>");
+		Sender.ClientMessage("  searchprop/findprop/seekprop <property> <part_of_value>");
+		Sender.ClientMessage("  get/check <property> | grab <property>");
+		Sender.ClientMessage("Change actor properties:");
+		Sender.ClientMessage("  set/put/save/store <property> <value> | setscale <float> | bring");
 		#ifdef ENABLE_SCREEN_SUPPORT
 		Sender.ClientMessage("  setserver <server_address> <server_title/description> | settext <new_text_for_screen> | seturl <new_url_for_teleporter>");
 		#endif
-		Sender.ClientMessage("  saveconf <actor_name_part> | saveall");
+		Sender.ClientMessage("  saveconf <part_of_actor_name> | saveall");
 		// Sender.ClientMessage("  ev"$"ent <tag>");
 		return True;
 	}
@@ -270,7 +281,7 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		return True;
 	}
 
-	if (command ~= "FINDCLOSEST") {
+	if (command ~= "FINDCLOSEST" || command ~= "CLOSEST") {
 		workingActor = FindClosestActorMatching(Sender,args[1]);
 		Sender.ClientMessage("Found: "$workingActor);
 		return True;
@@ -311,6 +322,14 @@ function bool CheckMessage(String line, PlayerPawn Sender) {
 		workingActor.default.DrawScale = Float(args[1]);
 		workingActor.DrawScale = Float(args[1]);
 		Sender.ClientMessage(workingActor $".DrawScale is now "$ workingActor.DrawScale);
+		return True;
+	}
+
+	if (command ~= "BRING" || command ~= "PLACEHERE" || command ~= "PLACE") {
+		rebuilt_string = Sender.GetPropertyText("Location");
+		SaveUpdate(workingActor,"Location",rebuilt_string);
+		result = workingActor.GetPropertyText("Location");
+		Sender.ClientMessage(workingActor $ ".Location => " $ result);
 		return True;
 	}
 
