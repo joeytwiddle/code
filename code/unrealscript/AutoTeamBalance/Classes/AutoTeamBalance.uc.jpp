@@ -300,6 +300,7 @@
 // This is quite important to ensure old duplicates get forgotten.  Although it has introduced some extra calculation.
 #define TAKE_MOST_RECENT_DUPLICATE
 // #define EXPORT_HIGHSCORES_LISTS
+// #define IPTC_CACHE
 
 // UNDER consideration for the next release.  Not finalised/mature yet.
 #ifdef TESTING
@@ -641,6 +642,12 @@ class AutoTeamBalance expands Mutator config(AutoTeamBalance);
 	var config bool bExportCountries;
 	var Actor IpToCountry;
 	var int DoneSortListsCount;
+	#endif
+
+	#ifdef IPTC_CACHE
+	#define IptcCacheMax 64
+	var config String IptcCachedIP[IptcCacheMax];
+	var config String IptcCachedCountry[IptcCacheMax];
 	#endif
 
 
@@ -1178,23 +1185,52 @@ function UnshiftFrom(int j) {
 }
 
 function String GetCountryForRecord(int i) {
-	local String ipdata;
-	local String args[256];
 	local String append;
+	local String ip_addr;
+	local int j;
+	local String country;
 
 	if (!bExportCountries)
 		return "";
 
 	append = "";
 	#ifdef ENABLE_USEISPNOTFULLIP
-	if (bUseISPNotFullIP) {
-		append = ".0.0";
-	}
+		if (bUseISPNotFullIP) {
+			append = ".0.0";
+		}
+	#endif
+	ip_addr = ip[i] $ append;
+
+	#ifdef IPTC_CACHE
+		// Is it in the cache?
+		for (j=0;j<IptcCacheMax;j++) {
+			if (IptcCachedIP[j] == ip_addr) {
+				return IptcCachedCountry[j];
+			}
+		}
 	#endif
 
+	// It wasn't but it will be
+	country = LookupCountryForIp(ip_addr);
+	#ifdef IPTC_CACHE
+		// We aren't always guaranteed a result
+		if (country != "") {
+			j = FRand() * IptcCacheMax;
+			IptcCachedIP[j] = ip_addr;
+			IptcCachedCountry[j] = country;
+		}
+	#endif
+	return country;
+
+}
+
+function String LookupCountryForIp(String ip_addr) {
+	local String args[256];
+	local String ipdata;
+
 	if (IpToCountry != None && IpToCountry != Level) {
-		ipdata = IpToCountry.GetItemName(ip[i] $ append);
-		DebugLog("Got IPTC data for "$ip[i]$" >>> "$ ipdata);
+		ipdata = IpToCountry.GetItemName(ip_addr);
+		DebugLog("Got IPTC data for "$ip_addr$" >>> "$ ipdata);
 		if (Left(ipdata,1) == "!") {
 			return "";
 		}
@@ -1325,10 +1361,12 @@ event Timer() {
 		if (bExportHighScoresLists) {
 			// For Country lookup we need to repeat the query, until IpToCountry return the data.
 			// The more lookups we do, the longer it takes to get the results from IpToCountry.  So this needs testing on a big DB.
-			if (bExportCountries && DoneSortListsCount<14 && !gameStartDone) {
-				DoneSortListsCount++;
-				if (DoneSortListsCount%4 == 1) {
-					SortLists();
+			if (bExportCountries) {
+				if (Level.Game.bGameEnded || (!gameStartDone && DoneSortListsCount<14)) {
+					DoneSortListsCount++;
+					if (DoneSortListsCount%4 == 1) {
+						SortLists();
+					}
 				}
 			}
 		}
@@ -1763,7 +1801,11 @@ function ListMutsTo(PlayerPawn Sender) {
 	if (Sender == None) {
 		DefaultLog("Mutators: "$s);
 	} else {
-		Sender.ClientMessage("Mutators are: "$s);
+		while (Len(s) > 120) {
+			Sender.ClientMessage("Mutators: "$Left(s,120));
+			s = Right(s,Len(s)-120);
+		}
+		Sender.ClientMessage("Mutators: "$s);
 	}
 }
 
@@ -3457,7 +3499,7 @@ function bool MidGameTeamBalanceSwitchTwoPlayers(bool bDo) {
 						// bothTimeInGame = redPTimeInGame + bluePTimeInGame;
 						bothTimeInGame = Max(redPTimeInGame,bluePTimeInGame);
 						#ifdef APPLY_LASTBADPLAYER_TO_REBALANCE
-						if (redP == LastPlayerToJoin || blueP == LastBadPlayer)
+						if (redP == LastPlayerToJoin || blueP == LastPlayerToJoin)
 							bothTimeInGame = bothTimeInGame * 0.5;
 						#endif
 						bothTimeInGame += 240.0;
