@@ -973,9 +973,9 @@ function ListMutsTo(PlayerPawn Sender) {
  if (Sender == None) {
   ; Log(".AutoTeamBalance. "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Mutators: "$s);;
  } else {
-  while (Len(s) > 140) {
-   Sender.ClientMessage("Mutators: "$Left(s,140));
-   s = Right(s,Len(s)-140);
+  while (Len(s) > 120) {
+   Sender.ClientMessage("Mutators: "$Left(s,120));
+   s = Right(s,Len(s)-120);
   }
   Sender.ClientMessage("Mutators: "$s);
  }
