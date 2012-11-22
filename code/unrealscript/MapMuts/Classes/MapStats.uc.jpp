@@ -89,6 +89,7 @@ class MapStats expands Mutator config(MapStats);
 #define PLAYERS_CAN_VETO
 //// I'm afraid it can't be done.  We can't compile against MapVoteLA13 (at least not under Linux/wine/ucc), and we can't access elements of MapListTemp's array using ConsoleCommands.  TEST: Can we read MapListTemp using config() ?
 // #define ADJUST_MAPVOTELA_LIST
+#define PLAYERS_CAN_SKIP_MAP
 
 //// The XOL build has slightly different equations, and not all the extra (unneccessary) features.
 // #define XOL_BUILD
@@ -112,6 +113,7 @@ var config bool bDoMapScan;
 
 var config bool bEstimatePreferredPlayers;     // Actually it always makes an estimate if there is none.  Really means bAllowEmptyServerSwitchToUnsizedMapsToLearnPP
 var config bool bRegeneratePreferredPlayers;   // Whether current non-0 values should be overwritten.  Enable this to use the latest MapStats algorithm, provided you don't mind losing any values you have set by hand.
+
 #ifdef LIST_RECENTLY_PLAYED
 var config bool bListRecentlyPlayed;
 var config String RecentlyPlayedMaps;
@@ -185,6 +187,11 @@ var String VetoersList;
 #ifdef MAP_RATING
 #endif
 
+#ifdef PLAYERS_CAN_SKIP_MAP
+var config int PercentageForMapSkip;
+var float WhenVotedForSkip[64];
+#endif
+
 defaultproperties {
 bBroadcastStuff=True
 bLogging=True
@@ -214,6 +221,9 @@ KnownGameTypes="CTF:botpack.CTFGame|DM:botpack.DeathMatchPlus:botpack.TeamGamePl
 MaxPlayerSizeDifference=5.0
 #ifdef PLAYERS_CAN_VETO
 MinimumNosForVeto=2
+#endif
+#ifdef PLAYERS_CAN_SKIP_MAP
+PercentageForMapSkip=51
 #endif
 }
 
@@ -425,7 +435,9 @@ function ModifyPlayer(Pawn Other) {
 				}
 				#endif
 				// bMustSave = True;
-				SaveConfig(); // In case mapswitch is forced by admin or mapvote or another mod.
+				// SaveConfig(); // In case mapswitch is forced by admin or mapvote or another mod.
+				//// Disabled because it can cause red-disconnect-icon at game start.  :f
+				//// Will be saved in DoEnd() if game is played through.
 
 			}
 			// currentMap.DateLastPlayed = DaysSince1999(); // hope that a SaveConfig happens later (should happen in DoEnd())
@@ -961,6 +973,7 @@ function float ScoreForNextMap(int nextI, int currentNumPlayers) {
 	//// ratingTweak makes a map 2 hours older * number of good ratings (-2*bad).
 	// #define ratingTweak (2.0/24.0*(MapStats[nextI].GoodVotes - 2*MapStats[nextI].BadVotes))
 	//// ratingMultiplierTweak scales better since GetRatingForMapI is bound 0-10.
+	//// A map rated 10/10 is 4 times more likely to be chosen than a map rated 0/10.
 	#define ratingMultiplierTweak (0.5 + 1.5 * GetRatingForMapI(nextI)/10.0)
 	// TODO: anyway playerTweak should work wrt currentNumPlayers!  playerTweak tends towards slightly larger maps, in order to encourage players to join? :o
 	// if (currentNumPlayers==0 && MapStats[nextI].PreferredPlayers==0) // When the server is empty
@@ -1297,6 +1310,15 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 						NoCount = 0;
 						VetoersList = "";
 						RejectedMaps = RejectedMaps $ " " $ NextMap;
+						#ifdef MAP_RATING
+							// I want this to count only a little while testing, but it's an integer, so:
+							if (FRand() < 0.2) {
+								MapRecord(NextMap).BadVotes++;
+								if (!StrContains(MapRecord(NextMap).RatedDownBy,"and vetoes ")) {
+									MapRecord(NextMap).RatedDownBy = MapRecord(NextMap).RatedDownBy $ "and vetoes ";
+								}
+							}
+						#endif
 						NextMap = ChooseNextMap();
 						// BroadcastAndLog("Next map will be: "$ NextMap $" (last "$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $" ago) [Beaten: "$ConsideredMaps$"]");
 						BroadcastAndLog("Next map will be: "$ NextMap $" (last played "$ NiceAge(DaysSince1999() - MapRecord(NextMap).DateLastPlayed) $" ago)");
@@ -1309,6 +1331,12 @@ function bool MutatorTeamMessage(Actor Sender, Pawn Receiver, PlayerReplicationI
 			}
 		}
 		// }
+		#endif
+
+		#ifdef PLAYERS_CAN_SKIP_MAP
+		if (Msg ~= "!SKIP") {
+			CountSkip(PlayerPawn(Sender));
+		}
 		#endif
 
 		// if (bDisplayInfoWhenVoting) {
@@ -1432,6 +1460,33 @@ function ListMapsTo(PlayerPawn p, String searchStr) {
 function AddTags(String tags) {
 	currentMap.Tags = currentMap.Tags $ tags $ ",";
 	// done outside atm: SaveConfig();
+}
+#endif
+
+#ifdef PLAYERS_CAN_SKIP_MAP
+function CountSkip(PlayerPawn Sender) {
+	local int countedPlayers, countedVotes;
+	local Pawn p;
+	local int votesNeeded;
+	WhenVotedForSkip[Sender.PlayerReplicationInfo.PlayerID % 64] = Level.TimeSeconds;
+	countedVotes = 0;
+	for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+		if (p.IsA('PlayerPawn') && !p.IsA('Spectator')) {
+			countedPlayers++;
+			// Votes only count for 1 minute, then they are forgotten.  (UT is a fast game, remember.)
+			if (WhenVotedForSkip[p.PlayerReplicationInfo.PlayerID % 64] > 0 && Level.TimeSeconds - WhenVotedForSkip[p.PlayerReplicationInfo.PlayerID % 64] < 60) {
+				countedVotes++;
+			}
+		}
+	}
+	votesNeeded = countedPlayers * PercentageForMapSkip / 100 + 1;
+	if (countedVotes >= votesNeeded) {
+		// BroadcastAndLog("Skipping map as requested by " $ countedVotes $ " players.");
+		BroadcastAndLog("Skipping map as requested.");
+		DoLevelSwitch();
+	} else {
+		BroadcastAndLog((votesNeeded-countedVotes) $ " more votes needed to skip map.");
+	}
 }
 #endif
 
