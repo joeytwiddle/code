@@ -1,10 +1,14 @@
-==== nogginBasher's Unreal Tournament mods ====
+= nogginBasher's Unreal Tournament mods =
 
-Some stable .u .ini and .int files are available from:
+
+
+== Downloads ==
+
+Some stable releases are available (either as zip or as .u .ini and .int):
 
   http://neuralyte.org/~joey/ut_releases/
 
-All the others are here, but may be in developmental state:
+Most of the others are here, but some may be in developmental state:
 
   http://hwi.ath.cx/ut/dev/System/
 
@@ -20,10 +24,17 @@ you may prefer to look for an earlier stable version from CVS:
 
   http://hwi.ath.cx/cgi-bin/cvsweb/code/unrealscript/
 
+If you are really lazy, you can search the site with Google:
+
+  https://www.google.co.uk/search?q=grapple%20site%3Ahwi.ath.cx%2Fut%2F
+
+I write some of the classes using # preprocessor directives.  These classes are
+stored in .uc.jpp files, and jpp is used to process them into .uc files.  You
+can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
 
 
 
-=== GREAT ===
+== GREAT ==
 
 * AutoTeamBalance
 
@@ -112,7 +123,7 @@ you may prefer to look for an earlier stable version from CVS:
 
 
 
-=== GOOD ===
+== GOOD ==
 
 + ActorEditor
 
@@ -173,7 +184,7 @@ you may prefer to look for an earlier stable version from CVS:
 
 
 
-=== MAYBE ===
+== MAYBE ==
 
 ~ EasyMuteV16
 
@@ -182,7 +193,7 @@ you may prefer to look for an earlier stable version from CVS:
 
   Did not call it V17 - he can suck in my changes if he wants.
 
-~ FixWeaponBalance
+~ FixWeaponBalance (3rd generation)
 
   Allows admin to tweak the damage done by various weapons.  Note that as a
   mutator it cannot affect armour absorption which remains normal, only health
@@ -209,6 +220,9 @@ you may prefer to look for an earlier stable version from CVS:
   NewNet/UTProMod is also attempting to rebalance the weapons:
 
     http://www.prounreal.org/forums/viewtopic.php?t=81140&postdays=0&postorder=asc&start=0&sid=831433b665e346683c2b24a6345777bd
+
+  4th generation?  One more attempt can be made to tweak weapon balance through
+  a mutator.  That will be a separate mutator called WeaponsOverheat.
 
 ~ NerfAmmo
 
@@ -275,9 +289,9 @@ you may prefer to look for an earlier stable version from CVS:
   see damage absorbed by armour/shield - you only see the final health
   reduction.
 
-  TrackMuts.TrackPlayers can be used to display messages about your Flag
-  Carrier's location (ZoneName), for servers without SmartCTF.  (Admins can
-  also use it for more general player zone tracking.)
+  TrackMuts.TrackPlayers can be used to display hints for noobs: messages about
+  your Flag Carrier's location, for servers without SmartCTF.  It can also be
+  used to track zone-changes by specific players.
 
 ~ WeirdMuts
 
@@ -290,8 +304,8 @@ you may prefer to look for an earlier stable version from CVS:
 ~ kxDoubleJump
 
   Minor changes to DoubleJump to make it more organic (input velocity partially
-  retained, you can jump to higher spots but it's difficult!).  This behaviour
-  was carried into kxWallJump which I prefer!
+  retained, you can jump to higher spots but it's difficult!).  This package
+  later became kxWallJump which I prefer!
 
 ~ kxForceGun
 
@@ -307,19 +321,23 @@ you may prefer to look for an earlier stable version from CVS:
 
 ~ sgGrapple2f
 
-  A build for SiegeXXL2d
+  A build for SiegeXXL2d.  That's right, 2d, not 2f.
 
 ~ sgGrappleXtreme02
 
-  A build for SiegeXtreme2
+  A build for SiegeXtreme2.
 
 ~ JLib
 
   Some common functions I use in UnrealScripts, mostly String related.
 
+~ ut_magic_redirect
+
+  Find this on github.  Needs to have node.js installed!
 
 
-=== DODGY ===
+
+== DODGY ==
 
 - ArenaFallback
 
@@ -345,7 +363,7 @@ you may prefer to look for an earlier stable version from CVS:
   On maps using Mychael's Screen actor, allows players to write messages onto
   the screens, or link nearby screens+teleporters to certain servers.  In the
   end I moved this into ActorEditor, and work on the code in ScreenEditor was
-  discontinued.
+  discontinued.  I embedded it in the later crashy ThornsPortal map.
 
 - TranslocBots
 
@@ -355,12 +373,12 @@ you may prefer to look for an earlier stable version from CVS:
 
   My terrible modification of the AutoSpectate mod.  Attempts to setup
   interesting camera angles when spectating or replaying demos.  Results are
-  sometimes interesting, but can be a bit jerky.  Does not work well on demos
+  sometimes interesting, and sometimes buggy.  Does not work well on demos
   you recorded as a spectator.
 
 
 
-=== Some Future Ideas? ===
+== Some Future Ideas? ==
 
 - RealCrouching
 
@@ -368,9 +386,9 @@ you may prefer to look for an earlier stable version from CVS:
   smaller spaces.  The fact that UT does not already do this is a little too
   unreal-istic for me.
 
-  We could even offer a even lower and slower flatten/crawl stance, but we
+  We could even offer an even lower and slower flatten/crawl stance, but we
   don't have meshes for it.  (Perhaps we could re-animate/switch between some
-  of the existing feign deaeth sequences.)
+  of the existing feign death sequences.)
 
 
 
