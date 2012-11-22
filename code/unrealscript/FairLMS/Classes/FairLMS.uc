@@ -58,24 +58,31 @@ var config bool bLogging;
 var config bool bGiveWeapons; // Set this to get all the weapons in the InitialWeapon list on spawn.  But beware: If you set this in LMS games, you will get two of every weapon!  Only put the *extra* weapons you want in the list.  If we want to remove default weapons from LMS, that will need to be a new config e.g. bClearDefaultWeapons.
 var config bool bRemovePickups;
 var config int InitialArmour,InitialHealth;
-var config float HealthLostPerSec,HealthGainedPerKill;
+var config float HealthGainedPerKill;
 var config bool bGivePowerups;
 var config int FragsForPowerup;
 var config bool bBroadcastPowerups;
+var config bool bPunishIdlers;
+var config float HealthLossTimeout;
+var config float HealthLostPerSec;
 var config bool bInformHealth;
+var config float CheckProximity;
 var config bool bSpawnPowerupsAsDroppedPickups;
 var config bool bPainSounds;
 var config bool bMinifyDeemer;
 var config Color MessageColor;
 var config Sound PowerupSound;
 var config Sound WarningSound;
-var config float HealthLossTimeout;
+var config bool bShowLeadingPlayer;
+var config int MinLeadForShow;
+var String LastLeaderName;
 var config String InitialWeapon[20];
 var config LMSBonus Powerup[25];
 var int KillsSinceSpawn[64];
 var bool bGameStarted,bTwoPlayersLeft;
 var bool bDonePreloadPowerups;
 var float LastCombatTime[64];
+var int CheckTicks;
 // These turned out pretty good: FairLMS.Timer() at 275.035034 gap 0.477356 average 0.500064 
 // var float TimerLast;
 // var float TimerAverage;
@@ -95,6 +102,8 @@ function PostBeginPlay() {
    return;
   }
  }
+ // In case they don't have an ini file, create one :)
+ SaveConfig();
  if (HealthLostPerSec > 0) {
   SetTimer(1.0/HealthLostPerSec,True);
  } else {
@@ -148,7 +157,9 @@ event Timer() {
  local int aliveCount;
  local String players;
  local Inventory inv;
- local float timeSinceLastCombat;
+ local String LeaderName;
+ local int LeaderLives;
+ local int LeadingBy;
  /*
 	if (bLogging) {
 		TimerAverage = ( TimerAverage*TimerCount + (Level.TimeSeconds-TimerLast)*1 ) / (TimerCount+1);
@@ -159,6 +170,10 @@ event Timer() {
 	}
 	*/
  Super.Timer();
+ CheckTicks++;
+ LeaderName = "";
+ LeaderLives = 0;
+ LeadingBy = 0;
  foreach AllActors(class'Pawn',p) {
   if ((PlayerPawn(p)!=None || Bot(p)!=None) && Spectator(p)==None) {
    // We detect gamestart by looking for a weapon in a player/pawn's inventory.
@@ -166,59 +181,51 @@ event Timer() {
     for (Inv=p.Inventory; Inv!=None; Inv=Inv.Inventory) {
      if (Inv.IsA('Weapon')) {
       bGameStarted = True;
-      break; // Don't drop any health on the first iteration.
+      break; // Don't drop any health on the first iteration.  (Will also break player count for first iteration!)
      }
     }
    }
-   if (HealthLostPerSec>0 && !bTwoPlayersLeft && bGameStarted && (!Level.Game.bGameEnded || Level.Game.bOverTime)) {
-    timeSinceLastCombat = Level.TimeSeconds - LastCombatTime[ p.PlayerReplicationInfo.PlayerID % 64 ];
-    if (timeSinceLastCombat >= HealthLossTimeout) {
-     // This technique was nice - they always die after the same amount of time.
-     // But it caused problems - a player with <=0 HP can't take pickups!
-     /*
-					p.Health -= 1;
-					if (p.Health == 0) {
-						// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
-						FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
-						p.PlaySound(WarningSound,SLOT_Interface,1.0); // Other players can hear this, if they are close.
-						p.bUnlit=True;
-					}
-					if (p.Health <= -15) {
-						p.Died(None, 'Suicided', p.Location);
-						// TODO: make a puff of smoke appear here!!! xD
-					}
-					*/
-     if (p.Health == Int(HealthLostPerSec*5)) {
-      // FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
-      // FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
-      FlashMessage(p,"Your health is dropping ... Engage in combat!",MessageColor);
-      p.PlaySound(WarningSound,SLOT_Interface,1.0); // TEST: Does this go to the player alone, or all?  All might be fun, probably we should make it a little quiet tho, or 2/3 or 3/4 radius.
-      p.bUnlit=True;
+   if (bPunishIdlers) {
+    PunishPlayerIfIdle(p);
+   }
+   // Count the number of players still in the game.
+   /* p.getHumanName()!="Player" && */
+   if ( p.PlayerReplicationInfo != None
+        && !p.PlayerReplicationInfo.bIsSpectator
+        && !p.PlayerReplicationInfo.bWaitingPlayer
+        && p.PlayerReplicationInfo.Score > 0
+   ) {
+    aliveCount++;
+    if (LeaderName == "" || p.PlayerReplicationInfo.Score>LeaderLives) {
+     LeadingBy = p.PlayerReplicationInfo.Score - LeaderLives;
+     LeaderName = p.getHumanName();
+     LeaderLives = p.PlayerReplicationInfo.Score;
+    } else {
+     // We are not the leader, but if we are close we may reduce how much he leads by.
+     if (LeaderLives - p.PlayerReplicationInfo.Score < LeadingBy) {
+      LeadingBy = LeaderLives - p.PlayerReplicationInfo.Score;
      }
-     if (p.Health > 1) {
-      p.Health -= 1;
-     } else {
-      if (FRand()<0.2) {
-       p.Died(None, 'Suicided', p.Location);
-      }
-     }
+    }
+    // Update the players string.  (We won't use it anyway if aliveCount>=3)
+    if (players == "") {
+     players = p.getHumanName();
+    } else {
+     players = players $ " v " $ p.getHumanName();
     }
    }
   }
-  // Count the number of players still in the game.
-  if ( p.getHumanName()!="Player"
-      && p.PlayerReplicationInfo!=None
-      && !p.PlayerReplicationInfo.bIsSpectator
-      && !p.PlayerReplicationInfo.bWaitingPlayer
-      && p.PlayerReplicationInfo.Score>0
-     ) {
-   aliveCount++;
-   // Update the players string.  (We won't use it anyway if aliveCount>=3)
-   if (players == "") {
-    players = p.getHumanName();
+ }
+ // Display leader?
+ if (bShowLeadingPlayer && !Level.Game.bGameEnded && LeaderName!=LastLeaderName) {
+  if (LeadingBy >= MinLeadForShow) {
+   if (MinLeadForShow > 1) {
+    // BroadcastMessage(LeaderName$" is now in the lead with "$LeaderLives$" lives.");
+    BroadcastMessage(LeaderName$" is now in the lead by "$LeadingBy$" lives.");
+    // BroadcastMessage(LeaderName$" is now in the lead.");
    } else {
-    players = players $ " v " $ p.getHumanName();
+    BroadcastMessage(LeaderName$" is now in the lead.");
    }
+   LastLeaderName = LeaderName;
   }
  }
  // First check fails on LMS++
@@ -241,9 +248,88 @@ event Timer() {
   bTwoPlayersLeft = False;
  }
 }
+function PunishPlayerIfIdle(Pawn p) {
+ local float timeSinceLastCombat;
+ if (HealthLostPerSec>0 && !bTwoPlayersLeft && bGameStarted && (!Level.Game.bGameEnded || Level.Game.bOverTime)) {
+  timeSinceLastCombat = Level.TimeSeconds - LastCombatTime[ p.PlayerReplicationInfo.PlayerID % 64 ];
+  // We don't want to check proximity all the time, that's a bit of an overhead.
+  // But we don't want to punish a player who was recently near someone.
+  // Checking only after they have exceeded the timeout will miss that.
+  // So as a compromise, we will check when they are _approaching_ the timeout.
+  if (timeSinceLastCombat >= HealthLossTimeout/2) {
+   if (CheckProximity>0 && CheckPlayerProximity(p)) {
+    return; // They are close to someone right now!
+   }
+  }
+  if (timeSinceLastCombat >= HealthLossTimeout) {
+   // This technique was nice - they always die after the same amount of time.
+   // But it caused problems - a player with <=0 HP can't take pickups!
+   /*
+				p.Health -= 1;
+				if (p.Health == 0) {
+			// FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
+			FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
+			p.PlaySound(WarningSound,SLOT_Interface,1.0); // Other players can hear this, if they are close.
+			p.bUnlit=True;
+			}
+			if (p.Health <= -15) {
+			p.Died(None, 'Suicided', p.Location);
+			// TODO: make a puff of smoke appear here!!! xD
+			}
+			 */
+   if (p.Health == 80) {
+    // FlashMessage(p,"You are about to die!  Kill to survive!",MessageColor);
+    // FlashMessage(p,"You have low health ... Kill someone quickly!",MessageColor);
+    FlashMessage(p,"Your health is dropping ... Engage in combat!",MessageColor);
+    p.PlaySound(WarningSound,SLOT_Interface,1.0); // This can be heard by nearby players too!
+   }
+   if (p.Health > 10) {
+    // Go fast at first!
+    p.Health -= 1;
+   } else if (p.Health > 1) {
+    // Keep him around a bit longer, at low health
+    // if (FRand()<0.35) {
+    if (CheckTicks%4 == 0) {
+     p.Health -= 1;
+    }
+    p.bUnlit=True;
+   } else {
+    // if (FRand()<0.2) {
+    if (CheckTicks%4 == 0) {
+     // Don't set their health to 0.  That might not kill them!
+     p.Died(None, 'Suicided', p.Location);
+    }
+   }
+  }
+ }
+}
+function bool CheckPlayerProximity(Pawn Trouble) {
+ local Actor a;
+ local Pawn p;
+ // foreach RadiusActors(class 'PlayerPawn', p, CheckProximity, Trouble.Location) {
+ foreach VisibleActors(class'Actor', a, CheckProximity, Trouble.Location) {
+  if (a.IsA('PlayerPawn') || a.IsA('Bot')) {
+   p = Pawn(a);
+   if (p!=Trouble && !p.PlayerReplicationInfo.bIsSpectator && !p.PlayerReplicationInfo.bWaitingPlayer) {
+    // Trouble is near to an active player!
+    RegisterProbation(Trouble);
+    return true;
+   }
+  }
+ }
+ return false;
+}
 function RegisterCombat(Pawn p) {
  if (p != None && p.IsA('Bot') || p.IsA('PlayerPawn')) {
   LastCombatTime[ p.PlayerReplicationInfo.PlayerID % 64 ] = Level.TimeSeconds;
+ }
+}
+function RegisterProbation(Pawn p) {
+ if (p != None && p.IsA('Bot') || p.IsA('PlayerPawn')) {
+  // Only apply if better than current time.
+  if (LastCombatTime[ p.PlayerReplicationInfo.PlayerID % 64 ] < Level.TimeSeconds - HealthLossTimeout/2) {
+   LastCombatTime[ p.PlayerReplicationInfo.PlayerID % 64 ] = Level.TimeSeconds - HealthLossTimeout/2;
+  }
  }
 }
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
@@ -284,7 +370,14 @@ function ModifyPlayer(Pawn p) {
  if (p.PlayerReplicationInfo!=None) {
   KillsSinceSpawn[p.PlayerReplicationInfo.PlayerID%64] = 0;
  }
- RegisterCombat(p);
+ if (p.PlayerReplicationInfo.Deaths == 0) {
+  // On their first life, give them full time
+  RegisterCombat(p);
+ } else {
+  // If they just died from damage, then they have full time
+  // If they just died from idler suicide, then we only give them probation.
+  RegisterProbation(p);
+ }
  if (bSpawnPowerupsAsDroppedPickups) {
   p.DropWhenKilled = None;
  }
@@ -688,16 +781,20 @@ defaultproperties {
  InitialArmour=100 // For non-LMS game-modes
  InitialHealth=100 // For non-LMS game-modes
  // InitialArmour=100
- // HealthLostPerSec=1.9
- HealthLossTimeout=12
- HealthLostPerSec=4.0
  HealthGainedPerKill=50.0
  bGivePowerups=True
  FragsForPowerup=3
+ bPunishIdlers=True
+ // HealthLostPerSec=1.9
+ HealthLossTimeout=12
+ HealthLostPerSec=6.0
+ CheckProximity=512
  // bBroadcastPowerups=False
  // bSpawnPowerupsAsDroppedPickups=False
  bPainSounds=False // Current implementation causes some players to crash
  bMinifyDeemer=True
+ bShowLeadingPlayer=False
+ MinLeadForShow=2
  // MessageColor=(R=255,G=255,B=31,A=0)
  MessageColor=(R=255,G=255,B=255,A=31)
  PowerupSound=Sound'Botpack.Pickups.BeltSnd'
