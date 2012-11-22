@@ -363,12 +363,10 @@ function PunishPlayerIfIdle(Pawn p) {
 }
 
 function bool CheckPlayerProximity(Pawn Trouble) {
-	local Actor a;
 	local Pawn p;
-	// foreach RadiusActors(class 'PlayerPawn', p, CheckProximity, Trouble.Location) {
-	foreach VisibleActors(class'Actor', a, CheckProximity, Trouble.Location) {
-		if (a.IsA('PlayerPawn') || a.IsA('Bot')) {
-			p = Pawn(a);
+	// foreach RadiusActors(class 'Pawn', p, CheckProximity, Trouble.Location) {
+	foreach VisibleActors(class'Pawn', p, CheckProximity, Trouble.Location) {
+		if (p.IsA('PlayerPawn') || p.IsA('Bot')) {
 			if (p!=Trouble && !p.PlayerReplicationInfo.bIsSpectator && !p.PlayerReplicationInfo.bWaitingPlayer) {
 				// Trouble is near to an active player!
 				RegisterProbation(Trouble);
