@@ -119,9 +119,14 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 					} else {
 						// Scale from 1.0 at SniperPowerRange to 0.0 at SniperMaxRange.
 						NewDamage = NewDamage * (1.0 - (distance - SniperPowerRange)/(SniperMaxRange - SniperPowerRange)) + 0.5;
+						// +0.5 rounds float result to nearest int (NewDamage must be int!)
 						if (NewDamage < SniperMinDamage) {
 							NewDamage = SniperMinDamage;
 						}
+					}
+					// SniperMinDamage may have been set even though ActualDamage was 0 (all absorbed by belt)!
+					if (ActualDamage == 0) {
+						NewDamage = 0;
 					}
 				}
 			}
@@ -185,6 +190,8 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			NewDamage *= MeleeWeaponDamageScale;
 		} else if (DamageType == 'slashed') { // chainsaw
 			NewDamage *= MeleeWeaponDamageScale;
+		} else if (DamageType == 'RedeemerDeath') {
+			// Do nothing
 		} else {
 			if (bLiveReports) {
 				InstigatedBy.ClientMessage("Did not recognise DamageType="$DamageType);
@@ -360,10 +367,10 @@ defaultproperties {
 	// SniperMaxDamage=102
 	SniperDamageScale=1.0
 	SniperMaxDamage=150
-	SniperMinDamage=1
+	SniperMinDamage=12
 	bFixCrouchingBug=True
-	SniperPowerRange=256
-	SniperMaxRange=4000
+	SniperPowerRange=384
+	SniperMaxRange=6144
 
 	RocketDamageScale=1.00
 	RocketGrenadeDamageScale=1.00
@@ -381,7 +388,7 @@ defaultproperties {
 	RipperHeadshotDamageScale=1.00
 	MeleeWeaponDamageScale=1.00
 
-	bAdjustBoost=False
+	bAdjustBoost=True
 
 }
 
