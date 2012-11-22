@@ -28,8 +28,8 @@ function bool AlwaysKeep(Actor Other)
 }
 
 defaultproperties {
-	StartingAmmo=6
-	MaxAmmo=10
-	AmmoPerPack=3
+	StartingAmmo=8
+	MaxAmmo=16
+	AmmoPerPack=4
 }
 
