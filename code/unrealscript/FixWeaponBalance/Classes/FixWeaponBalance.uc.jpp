@@ -1,6 +1,6 @@
 class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
-// vim: ft=uc
+// vim: ft=uc cindent
 // DONE: bFixCrouchingBug for ZeroPingPlus103
 // TODO: We may be able to process damage done before armour, by giving each
 //       player a high-priority custom armour class.
@@ -16,7 +16,7 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // TODO: Try to become first mutator if not already.  (To avoid other mutators seeing some damage twice, or bad momentum values.)
 
-#define ADJUST_SNIPER_DAMAGE
+// TODO: Boost should work equally on team-mates (no damage) as it would against an enemy (with damage).
 
 // Debugging:
 
@@ -28,12 +28,14 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 var config bool bEnabled;
 var config bool bLogging;
 var bool bLiveReports;
+var config bool bReportAllDamage;
 
 var config bool bKeepHeadshotsInAllModes;
 var config float SniperDamageScale;
 var config int SniperMaxDamage;
 var config bool bScaleSniperByDistance;
 var config float SniperPowerRange;
+var config float SniperMidRange;    // TODO: This should define where power is one-quarter.  The shape should correspond somewhat to the danger from other weapons across that range.
 var config float SniperMaxRange;
 var config int SniperMinDamage;
 var config bool bFixCrouchingBug;   // For ZeroPingPlus103
@@ -77,32 +79,66 @@ function PostBeginPlay() {
 }
 
 function ModifyPlayer(Pawn Other) {
-	local FWBArmor inv;
 	Super.ModifyPlayer(Other);
 	if (bEnabled) {
 		if (PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
 			Other.ClientMessage("FixWeaponBalance is running.  See mutate status for details.");
 		}
-		inv = Spawn(Class'FWBArmor',Other,,Other.Location);
-		if (inv != None) {
-			inv.Mut = Self;
-			inv.GiveTo(Other);
+		GiveMagicArmorToPlayer(Other);
+	}
+}
+
+// Unfortunately some versions of siege (XXL2e, XTreme02) forget to call ModifyPlayer, so they player does not get their armour on spawn.
+// We check harder here, to ensure they get it.
+function bool AlwaysKeep(Actor Other) {
+	local Pawn p;
+	if (Other.IsA('Enforcer')) {
+		Log("Someone is being given an enforcer.  Dunno who.");
+		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
+			if ((p.bIsPlayer && !p.IsA('Spectator')) || p.IsA('Bot')) {
+				GiveMagicArmorToPlayer(p);
+			}
+		}
+	}
+	if ( NextMutator != None )
+		return ( NextMutator.AlwaysKeep(Other) );
+	return false;
+}
+
+// Implementation of AddMutator which prevents double or recursive adding:
+function AddMutator(Mutator Other) {
+	if (Other != None && Other.Class == Self.Class) {
+		if (Other == Self) {
+			DEBUG(Self$".AddMutator("$Other$") No need to add mutator self again.");
+		} else {
+			DEBUG(Self$".AddMutator("$Other$") Destroying other instance.");
+			Other.Destroy(); // seems to do nothing useful; the mutator continues to run through PostBeginPlay().
+		}
+	} else {
+		Super.AddMutator(Other);
+	}
+}
+
+function GiveMagicArmorToPlayer(Pawn Other) {
+	local Inventory inv;
+	local FWBArmor arm;
+	inv = Other.FindInventoryType(class'FWBArmor');
+	if (inv == None) {
+		arm = Spawn(class'FWBArmor',Other,,Other.Location);
+		if (arm != None) {
+			arm.Mut = Self;
+			arm.GiveTo(Other);
 		}
 	}
 }
 
 // Unfortunately Inventory.ArmorAbsorbDamage() is not given the Instigator, which is rather inconvenient if we want to scale a weapon's strength according to the distance between the two players!
 // The solution was somewhat convoluted and dirty.
-// DONE: Here's what we need to do...
-// Override ArmorAbsorbDamage in the first armor inventory item (ensured by AbsorptionPriority=-999).
-// Have that DO NOTHING, except leave a TODO for the mutator.  (I.e. it absorbs all damage on that first call, and waits for second call from the mutator, once MutatorTakeDamage is reached.)
-// Wait for MutatorTakeDamage to be called on the mutator.  Now we have the InstigatedBy!
-// Now we must do whatever we didn't do before, by calling Victim.TakeDamage *a second time*.
-// Except this time, we allow things to pass through as "normal", applying our changes as intended.
-
-// Old waffle:
-// We also need to keep ourselves first in the Inventory list at all times, or we won't receive ReduceDamage.
-// (We can't prevent calls to others from ArmorAbsorbDamage, but we could try to break the armor chain on PrioritizeArmor.)
+//   - Override ArmorAbsorbDamage in the first armor inventory item (ensured by AbsorptionPriority=-999).
+//   - Have that DO NOTHING, except leave a TODO for the mutator.  (I.e. it absorbs all damage on that first call, and waits for second call from the mutator, once MutatorTakeDamage is reached.)
+//   - Wait for MutatorTakeDamage to be called on the mutator.  Now we have the InstigatedBy!
+//   - Now we must do whatever we didn't do before, by calling Victim.TakeDamage *a second time*.
+//   - Except this time, we allow things to pass through as "normal", applying our changes as intended.
 
 function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy, out Vector HitLocation, out Vector Momentum, name DamageType) {
 
@@ -117,15 +153,22 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 			return; // No point walking the chain now - we have just done it!
 		} else if (Stage == 3) {
 			Stage = 0;
-			//// The new value of Momentum is bad.  We use LastMomentum.
+			//// OK it's all over.  We just need to 
+			//// The current value for Momentum might be bogus.
+			//// Anyway, we return the one stored for us by ModifyDamage().
+			Momentum = NewMomentum;
+			// Instead of NewMomentum vector we could have passed around ScaleMomentum.
 			// if (VSize(LastMomentum - Momentum)>0.000001) {
 			// 	REPORT(InstigatedBy,"Momentum got lost Last="$ VSize(LastMomentum) $" Bogus="$ VSize(Momentum));
 			// }
+			/* Seems to  be working fine; check/log disabled
 			if (VSize(LastMomentum - NewMomentum)>0.000001) {
-				#define momChange VSize(Momentum) $" to "$ VSize(NewMomentum)
-				REPORT(InstigatedBy,"Adjusted momentum "$ momChange $", InDamage="$InDamage$" NewDamage="$NewDamage);
+				#define momChange Int(VSize(LastMomentum)) $" to "$ Int(VSize(NewMomentum))
+				REPORT(InstigatedBy,"Adjusted momentum "$ momChange);
+				// This confirmed the right numbers were getting through:
+				// " InDamage="$InDamage$" NewDamage="$NewDamage);
 			}
-			Momentum = NewMomentum; // Instead of NewMomentum we could have passed around ScaleMomentum
+			*/
 		} else {
 			Log("BUG! Stage="$ Stage $" in FixWeaponBalance.MutatorTakeDamage()!");
 		}
@@ -135,6 +178,7 @@ function MutatorTakeDamage( out int ActualDamage, Pawn Victim, Pawn InstigatedBy
 	Super.MutatorTakeDamage(ActualDamage,Victim,InstigatedBy,HitLocation,Momentum,DamageType);
 }
 
+// Stores outputs NewDamage and NewMomentum.
 function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vector HitLocation, Vector Momentum, name DamageType) {
 
 	local bool bSniperShot,bHeadshot; // bSniperShot also counts of Enforcer.
@@ -160,12 +204,25 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 	*/
 	// Alternative: Detect from damage values.
 	if (DamageType == 'decapitated') {
-		if ((bHardcore && ActualDamage==150) || (!bHardcore && ActualDamage==100)) {
-			bSniperShot = True; // detected a headshot
+		if (bHardcore) {
+			if (ActualDamage == 150) {
+				bSniperShot = True; // detected a headshot
+			}
+		} else {
+			if (ActualDamage == 100) {
+				bSniperShot = True; // detected a headshot
+			}
 		}
 	} else if (DamageType == 'shot') {
-		if ((bHardcore && ActualDamage==67) || (!bHardcore && ActualDamage==58)) {
-			bSniperShot = True; // detected a body hit
+		if (bHardcore) {
+			if (ActualDamage == 67) {
+				bSniperShot = True; // detected a body hit
+			}
+		} else {
+			// I saw 45 for a bodyhit in siege.  Where does 58 come from?
+			if (ActualDamage == 58 || ActualDamage == 45) {
+				bSniperShot = True; // detected a body hit
+			}
 		}
 	}
 
@@ -240,7 +297,7 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 	} else if (DamageType == 'Corroded') {
 		NewDamage *= BioDamageScale;
 	} else if (DamageType == 'shot') {
-		// isEnforcer = (bHardcore && NewDamage==25 || !bHardcore && NewDamage==10);
+		// isEnforcer = (bHardcore && ActualDamage==25 || !bHardcore && ActualDamage==10);
 		isEnforcer = InstigatedBy!=None && Enforcer(InstigatedBy.Weapon)!=None;
 		if (isEnforcer) {
 			NewDamage *= EnforcerDamageScale;
@@ -250,7 +307,8 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 			NewDamage *= MinigunDamageScale;
 		}
 	} else if (DamageType == 'jolted') {
-		isShockPrimary = (bHardcore && NewDamage==60) || (!bHardcore && NewDamage==40);
+		// Quite unlikely, but this check might flag a combo of just the right strength as a primary.
+		isShockPrimary = (bHardcore && ActualDamage==60) || (!bHardcore && ActualDamage==40);
 		if (isShockPrimary) {
 			NewDamage *= ShockPrimaryDamageScale;
 		} else {
@@ -283,11 +341,12 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 
 	if (bAdjustBoost && NewDamage != ActualDamage && ActualDamage!=0) {
 		if (!bOnlyAdjustBoostDownwards || NewDamage<ActualDamage) {
-			Momentum = Momentum * (NewDamage/ActualDamage);
+			// REPORT(InstigatedBy,"Changing momentum "$VSize(Momentum));
+			Momentum = (Momentum * NewDamage) / ActualDamage;
 		}
 	}
 
-	if (NewDamage != ActualDamage) {
+	if (NewDamage != ActualDamage || bLiveReports && bReportAllDamage) {
 		if (bDidCrouchReduction) {
 			ReportStr = " [crouch]";
 		} else {
@@ -296,11 +355,17 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 		if (bSniperShot) {
 			ReportStr = ReportStr $ " [sniper]";
 		}
-		REPORT(InstigatedBy,"Inflicted '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ ReportStr);
-		REPORT(Victim,"Received '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ ReportStr);
+		if (NewDamage == ActualDamage) {
+			REPORT(InstigatedBy,"Normal '"$DamageType$"': "$ActualDamage $ ReportStr);
+		} else {
+			REPORT(InstigatedBy,"Inflicted '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ ReportStr);
+			REPORT(Victim,"Received '"$DamageType$"': "$ActualDamage$" -> "$NewDamage $ ReportStr);
+		}
 	}
 
 	NewMomentum = Momentum;
+	// NewMomentum = vect(Momentum.X,Momentum.Y,Momentum.Z);
+	// NewMomentum = Momentum*1;
 
 	// if (NewDamage == 0) {
 		// DamageType = ''; //// Does not pr_vent blood spurts from appearing
@@ -461,15 +526,16 @@ function String PercentageChangeStr(float proportion) {
 
 defaultproperties {
 	bEnabled=True
-	bLogging=False
+	bLogging=True
 	bLiveReports=False
-	bKeepHeadshotsInAllModes=False
+	bReportAllDamage=True
 
+	bKeepHeadshotsInAllModes=False
 	SniperDamageScale=1.0
-	SniperMaxDamage=999
+	SniperMaxDamage=150
 	bScaleSniperByDistance=True
-	SniperPowerRange=384
-	SniperMaxRange=6144
+	SniperPowerRange=256
+	SniperMaxRange=3072
 	SniperMinDamage=12
 	bFixCrouchingBug=False
 

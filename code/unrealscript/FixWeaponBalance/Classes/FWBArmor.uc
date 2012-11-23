@@ -3,6 +3,12 @@ class FWBArmor extends TournamentPickup;
 var FixWeaponBalance Mut;
 
 function int ArmorAbsorbDamage(int Damage, name DamageType, vector HitLocation) {
+	// We should always be given a mutator
+	// If we are not, do nothing.
+	// This might happen if the mutator gets destroyed during a game.
+	if (Mut == None) {
+		return Damage;
+	}
 	if (Mut.Stage == 0) {
 		Mut.Stage = 1;
 		Mut.InDamage = Damage;
