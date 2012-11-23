@@ -27,6 +27,7 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 var config bool bEnabled;
 var config bool bLogging;
+var config bool bAdvertise;
 var bool bLiveReports;
 var config bool bReportAllDamage;
 
@@ -81,9 +82,6 @@ function PostBeginPlay() {
 function ModifyPlayer(Pawn Other) {
 	Super.ModifyPlayer(Other);
 	if (bEnabled) {
-		if (PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
-			Other.ClientMessage("FixWeaponBalance is running.  See mutate status for details.");
-		}
 		GiveMagicArmorToPlayer(Other);
 	}
 }
@@ -97,6 +95,13 @@ function bool AlwaysKeep(Actor Other) {
 		for (p=Level.PawnList; p!=None; p=p.NextPawn) {
 			if ((p.bIsPlayer && !p.IsA('Spectator')) || p.IsA('Bot')) {
 				GiveMagicArmorToPlayer(p);
+				if (PlayerPawn(Other)!=None && PlayerPawn(Other).PlayerReplicationInfo.Deaths==0) {
+					if (bScaleSniperByDistance) {
+						PlayerPawn(Other).ClientMessage("The sniper rifle is now a close-range weapon.  See !status for details.");
+					} else {
+						PlayerPawn(Other).ClientMessage("FixWeaponBalance is running.  See !status for details.");
+					}
+				}
 			}
 		}
 	}
@@ -258,19 +263,28 @@ function int ModifyDamage(int ActualDamage, Pawn Victim, Pawn InstigatedBy, Vect
 		NewDamage = ActualDamage * SniperDamageScale;
 
 		if (bScaleSniperByDistance && InstigatedBy!=None) {
+			/*
 			distance = VSize(Victim.Location - InstigatedBy.Location);
+			scale = (0.5) ^ (distance / SniperHalflifeDistance);
+			*/
 			if (distance < SniperPowerRange) {
 				// Do nothing: leave strength unaffected
+			} else if (distance > SniperMaxRange) {
+				NewDamage = SniperMinDamage;
 			} else {
-				if (distance > SniperMaxRange) {
-					NewDamage = SniperMinDamage;
-				} else {
-					// Scale from 1.0 at SniperPowerRange to 0.0 at SniperMaxRange.
-					NewDamage = NewDamage * (1.0 - (distance - SniperPowerRange)/(SniperMaxRange - SniperPowerRange)) + 0.5;
+				if (distance < SniperMidRange) {
+					// Scale from 1.0 at SniperPowerRange to 0.25 at SniperMidRange.
+					#define thruMid ((distance - SniperPowerRange)/(SniperMidRange - SniperPowerRange))
+					NewDamage = float(NewDamage) * (1.0 - thruMid) + float(NewDamage) * thruMid / 4.0 + 0.5;
 					// +0.5 rounds float result to nearest int (NewDamage must be int!)
-					if (NewDamage < SniperMinDamage) {
-						NewDamage = SniperMinDamage;
-					}
+				} else {
+					// Scale from 0.25 at SniperMidRange to 0.0 at SniperMaxRange.
+					#define thruMax ((distance - SniperMidRange)/(SniperMaxRange - SniperMidRange))
+					NewDamage = float(NewDamage) * (1.0 - thruMax) / 4.0 + float(SniperMinDamage) * thruMax + 0.5;
+					// +0.5 rounds float result to nearest int (NewDamage must be int!)
+				}
+				if (NewDamage < SniperMinDamage) {
+					NewDamage = SniperMinDamage;
 				}
 				// SniperMinDamage may have been set even though ActualDamage was 0 (all absorbed by belt)!
 				if (ActualDamage == 0) {
@@ -528,6 +542,7 @@ defaultproperties {
 	bEnabled=True
 	bLogging=True
 	bLiveReports=False
+	bAdvertise=True
 	bReportAllDamage=True
 
 	bKeepHeadshotsInAllModes=False
