@@ -550,7 +550,8 @@ defaultproperties {
 	SniperMaxDamage=150
 	bScaleSniperByDistance=True
 	SniperPowerRange=256
-	SniperMaxRange=3072
+	SniperMidRange=2048
+	SniperMaxRange=9216
 	SniperMinDamage=12
 	bFixCrouchingBug=False
 
