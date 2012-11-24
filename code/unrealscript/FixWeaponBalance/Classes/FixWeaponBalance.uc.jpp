@@ -613,10 +613,10 @@ function String PercentageChangeStr(float proportion) {
 
 defaultproperties {
 	bEnabled=True
-	bLogging=True
+	bLogging=False
 	bLiveReports=False
 	bAdvertise=True
-	bReportAllDamage=True
+	bReportAllDamage=False
 	bExtraCheckForPlayerSpawn=True
 
 	bKeepHeadshotsInAllModes=False
