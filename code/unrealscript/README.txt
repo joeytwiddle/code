@@ -195,24 +195,44 @@ can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
 
 ~ FixWeaponBalance (3rd generation)
 
-  Allows admin to tweak the damage done by various weapons.  Note that as a
-  mutator it cannot affect armour absorption which remains normal, only health
-  damage remaining after absorption is affected.  (Which kind of sucks.)
+  Allows admin to tweak the damage dealt by various weapons.  Note that as a
+  damage mutator it cannot affect armour absorption which remains normal, only
+  health damage remaining after absorption is affected.  A fix for that may
+  come soon.
 
   FixWeaponBalance.FixWeaponBalance and FixWeaponBalance.FixWeaponBalanceZP
   are identical mutators, but with different configurations, so on a server
   with multiple modes you can use two different settings.
 
-  The defaults for FixWeaponBalanceZP are intended for Siege games with
-  Zeroping and non-hardcore mode.  Most projectile weapon damage is increased
-  by 10% whilst minugun and pulse are reduced (too powerful near superpros) and
-  sniper is also reduced (too easy in zeroping).  Enforcer, shock and ripper
-  primary are left unaffected.  Damage done to buildings is unaffected.
+  The defaults for FixWeaponBalance are for hardcore games (e.g. CTF) without
+  zeroping.  All weapons are left at 100% (use PureStats for TRI!) except for
+  the sniper which has reduced damage according to distance.  Withing 384um of
+  a player sniper damage remains normal; beyond 6144um sniper damage is fixed
+  at 12.  This reduces power to the minimum over the midfield of CTF-CelticLair
+  (a long open CTF map), and deals half damage to players half-way across.
 
-  The defaults for FixWeaponBalance are for hardcore games (e.g. CTF).  All
-  weapons are left as normal except for the sniper which has reduced damage,
-  although the reduction only affects the number of shots needed to kill
-  players who are wearing armour, and does not affect headshots.
+  The defaults for FixWeaponBalanceZP are intended for games with Zeroping and
+  non-hardcore mode (i.e. Siege).  Most projectile weapon damage is increased
+  by 10% whilst minugun and pulse are reduced (too powerful near superpros) and
+  sniper is also reduced (too powerful in zeroping).  Enforcer, shock and
+  ripper primary are left unaffected.  Damage done to buildings is unaffected.
+
+  If you think that's too much, try putting everything back to 100% but leaving
+  in the sniper distance dropoff and crouch bug fix.  This will stop rewarding
+  campers/retreaters and instead reward snipers who *move in for the kill*.
+
+  You could even increase sniper damage to hardcore level 150 at very close
+  range, whilst reducing the max range to remove that power from mid-range:
+
+    ; For non-hardcore mode, get hardcore power at close range,
+    ; then steady drop through the mid-range, then deal 16 beyond it.
+    SniperDamageScale=1.50   ; Scale Siege's 100 headshot up to 150
+    SniperPowerRange=256     ; Deal full damage within this range
+    SniperMaxRange=3072      ; Drop damage to minimum over mid range
+    SniperMinDamage=16       ; All long range shots deal this
+
+  Perhaps I should make the dropoff properly exponential.
+  To disable distance dropoff entirely, set SniperMaxRange=0
 
   Admins who are logged in can try "mutate help".  The mod can be toggled with
   "mutate fwb" and display live damage changes with "mutate report".
@@ -221,8 +241,10 @@ can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
 
     http://www.prounreal.org/forums/viewtopic.php?t=81140&postdays=0&postorder=asc&start=0&sid=831433b665e346683c2b24a6345777bd
 
-  4th generation?  One more attempt can be made to tweak weapon balance through
-  a mutator.  That will be a separate mutator called WeaponsOverheat.
+  Alternatives?  Another idea to rebalance weapons might be to change their
+  re-fire time.  That could be a separate mutator called WeaponsOverheat.
+
+  Also see NerfAmmo...
 
 ~ NerfAmmo
 
@@ -230,6 +252,10 @@ can pick up and work on the .uc, or squeeze "gcc -E" into your build process.
 
   Allows configuration of StartingAmmo, AmmoPerPack, and MaxAmmo.  Can stop
   camper sprees from lasting too long, e.g. by setting MaxAmmo=20.
+
+  TODO: This could be done in a structured config that would allow admins to
+  add settings for new weapons without needing a rebuild.  The same applies to
+  FixWeaponBalance.
 
 ~ RocketArenaMutator
 
