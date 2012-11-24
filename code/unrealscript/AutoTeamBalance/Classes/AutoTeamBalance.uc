@@ -1028,6 +1028,7 @@ function Mutate(String str, PlayerPawn Sender) {
  local class<Mutator> mutClass;
  local Actor a;
  local Mutator mut,nmut;
+ local Inventory Inv;
  ; if (bDebugLogging) { Log("+AutoTeamBalance+ "$ PrePad(Int(Level.TimeSeconds)," ",4) $" "$ "Mutate("$str$","$sender$") was called."); };
  // #ifdef LOG_LAG
  // debugTimerReason = "ATB caught \"mutate "$str$"\" from "$sender.getHumanName();
@@ -1078,6 +1079,17 @@ function Mutate(String str, PlayerPawn Sender) {
  if ( args[0]~="LISTMUTS" || args[0]~="LISTMUTATORS" ) {
   Sender.ClientMessage("Game type is "$ Level.Game.Name);
   ListMutsTo(Sender);
+ }
+ if ( args[0]~="LISTINV") {
+  msg = "";
+  for (Inv=Sender.Inventory; Inv!=None; Inv=Inv.Inventory) {
+   msg = msg $ Inv.Name $" ";
+   if (Len(msg)>1500) {
+    msg = msg $ "...";
+    break;
+   }
+  }
+  Sender.ClientMessage("Your inventory: "$msg);
  }
  if ( (args[0]~="LISTNICKS" || args[0]~="LISTFAKES" || args[0]~="LISTFAKERS") && (bAllowUsersToListFakes || Sender.bAdmin) ) {
   ListFakesTo(Sender);
