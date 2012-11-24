@@ -2,7 +2,7 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // vim: ft=uc cindent
 // DONE: bFixCrouchingBug for ZeroPingPlus103
-// TODO: We may be able to process damage done before armour, by giving each
+// DONE: We may be able to process damage done before armour, by giving each
 //       player a high-priority custom armour class.
 // DONE: DO NOT adjust damage against general pawns (e.g. siege buildings),
 //       only against players and bots.
@@ -11,12 +11,12 @@ class FixWeaponBalance expands Mutator config(FixWeaponBalance);
 
 // DONE: make sniper damage normal at close/medium range, less at long range
 
-// TODO: Having got this far, at least make headshot vs body shot configurable.
+// DONE: Having got this far, at least make headshot vs body shot configurable.
 //       I suppose we could have two different scales.
 
 // TODO: Try to become first mutator if not already.  (To avoid other mutators seeing some damage twice, or bad momentum values.)
 
-// TODO: Boost should work equally on team-mates (no damage) as it would against an enemy (with damage).
+// TODO: Boost should work equally on team-mates (no damage) as it would against an enemy (with damage).  Another reason to calc ScaleDamage => ScaleMomemtum.
 
 // Why half-life may have precedent: http://images49.fotki.com/v1556/photos/3/363331/1447715/300FPSEnergyChart-vi.jpg
 
@@ -85,7 +85,7 @@ var int NewDamage;
 function PostBeginPlay() {
 	Level.Game.RegisterDamageMutator(Self);
 	Level.Game.RegisterMessageMutator(Self);
-	// SaveConfig(); // Just easier for admin to create file / missing vars
+	SaveConfig(); // Just easier for admin to create file / missing vars
 }
 
 function ModifyPlayer(Pawn Other) {
@@ -398,6 +398,8 @@ function int AdjustDamageAndMomentum(int ActualDamage, Pawn Victim, Pawn Instiga
 	} else if (DamageType == 'slashed') { // chainsaw
 		NewDamage *= MeleeWeaponDamageScale;
 	} else if (DamageType == 'RedeemerDeath') {
+		// Do nothing
+	} else if (DamageType == 'Fell' || DamageType == None) {
 		// Do nothing
 	} else {
 		REPORT(InstigatedBy,"Did not recognise DamageType '"$DamageType$"'");
